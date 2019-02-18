@@ -105,6 +105,13 @@ void CCue::Stop(IObject* const pIObject)
 	auto const pBaseObject = static_cast<CBaseObject*>(pIObject);
 	pBaseObject->StopCue(m_id);
 }
+
+//////////////////////////////////////////////////////////////////////////
+void CCue::DecrementNumInstances()
+{
+	CRY_ASSERT_MESSAGE(m_numInstances > 0, "Number of cue instances must be at least 1 during %s", __FUNCTION__);
+	--m_numInstances;
+}
 } // namespace Adx2
 } // namespace Impl
 } // namespace CryAudio

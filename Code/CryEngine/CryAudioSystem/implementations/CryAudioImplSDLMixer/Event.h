@@ -56,6 +56,8 @@ public:
 		, m_fadeInTime(fadeInTime)
 		, m_fadeOutTime(fadeOutTime)
 		, m_isPanningEnabled(isPanningEnabled)
+		, m_numInstances(0)
+		, m_toBeDestructed(false)
 	{}
 #else
 	explicit CEvent(
@@ -79,6 +81,8 @@ public:
 		, m_fadeInTime(fadeInTime)
 		, m_fadeOutTime(fadeOutTime)
 		, m_isPanningEnabled(isPanningEnabled)
+		, m_numInstances(0)
+		, m_toBeDestructed(false)
 	{}
 #endif  // CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE
 
@@ -105,6 +109,12 @@ public:
 	int   GetFadeOutTime() const            { return m_fadeOutTime; }
 	bool  IsPanningEnabled() const          { return m_isPanningEnabled; }
 
+	void  IncrementNumInstances()           { ++m_numInstances; }
+	void  DecrementNumInstances();
+
+	bool  CanBeDestructed() const   { return m_toBeDestructed && (m_numInstances == 0); }
+	void  SetToBeDestructed() const { m_toBeDestructed = true; }
+
 private:
 
 #if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE)
@@ -121,6 +131,8 @@ private:
 	int const         m_fadeInTime;
 	int const         m_fadeOutTime;
 	bool const        m_isPanningEnabled;
+	uint16            m_numInstances;
+	mutable bool      m_toBeDestructed;
 };
 } // namespace SDL_mixer
 } // namespace Impl

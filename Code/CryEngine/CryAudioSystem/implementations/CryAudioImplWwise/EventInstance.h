@@ -34,7 +34,7 @@ public:
 	CEventInstance& operator=(CEventInstance&&) = delete;
 
 #if defined(CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE)
-	CEventInstance(TriggerInstanceId const triggerInstanceId, CEvent const& event, CBaseObject const& baseObject)
+	CEventInstance(TriggerInstanceId const triggerInstanceId, CEvent& event, CBaseObject const& baseObject)
 		: m_triggerInstanceId(triggerInstanceId)
 		, m_event(event)
 		, m_state(EEventInstanceState::None)
@@ -43,7 +43,7 @@ public:
 		, m_baseObject(baseObject)
 	{}
 #else
-	CEventInstance(TriggerInstanceId const triggerInstanceId, CEvent const& event)
+	CEventInstance(TriggerInstanceId const triggerInstanceId, CEvent& event)
 		: m_triggerInstanceId(triggerInstanceId)
 		, m_event(event)
 		, m_state(EEventInstanceState::None)
@@ -55,7 +55,7 @@ public:
 	~CEventInstance() = default;
 
 	TriggerInstanceId   GetTriggerInstanceId() const             { return m_triggerInstanceId; }
-	CEvent const&       GetEvent() const                         { return m_event; }
+	CEvent&             GetEvent() const                         { return m_event; }
 	EEventInstanceState GetState() const                         { return m_state; }
 
 	AkUniqueID          GetPlayingId() const                     { return m_playingId; }
@@ -74,7 +74,7 @@ public:
 private:
 
 	TriggerInstanceId const m_triggerInstanceId;
-	CEvent const&           m_event;
+	CEvent&                 m_event;
 	EEventInstanceState     m_state;
 	AkUniqueID              m_playingId;
 	std::atomic_bool        m_toBeRemoved;

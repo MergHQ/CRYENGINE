@@ -43,7 +43,7 @@ public:
 	explicit CCueInstance(
 		TriggerInstanceId const triggerInstanceId,
 		CriAtomExPlaybackId const playbackId,
-		CCue const& cue,
+		CCue& cue,
 		CBaseObject const& baseObject)
 		: m_triggerInstanceId(triggerInstanceId)
 		, m_playbackId(playbackId)
@@ -56,7 +56,7 @@ public:
 	explicit CCueInstance(
 		TriggerInstanceId const triggerInstanceId,
 		CriAtomExPlaybackId const playbackId,
-		CCue const& cue)
+		CCue& cue)
 		: m_triggerInstanceId(triggerInstanceId)
 		, m_playbackId(playbackId)
 		, m_cue(cue)
@@ -68,7 +68,7 @@ public:
 
 	TriggerInstanceId   GetTriggerInstanceId() const             { return m_triggerInstanceId; }
 
-	CCue const&         GetCue() const                           { return m_cue; }
+	CCue&               GetCue() const                           { return m_cue; }
 	CriAtomExPlaybackId GetPlaybackId() const                    { return m_playbackId; }
 
 	ECueInstanceFlags   GetFlags() const                         { return m_flags; }
@@ -92,7 +92,7 @@ private:
 	TriggerInstanceId const        m_triggerInstanceId;
 	CriAtomExPlaybackId const      m_playbackId;
 	std::atomic<ECueInstanceFlags> m_flags;
-	CCue const&                    m_cue;
+	CCue&                          m_cue;
 
 #if defined(CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE)
 	float              m_timeFadeOutStarted;

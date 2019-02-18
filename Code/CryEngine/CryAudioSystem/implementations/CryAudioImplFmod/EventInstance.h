@@ -48,7 +48,7 @@ public:
 	CEventInstance& operator=(CEventInstance&&) = delete;
 
 #if defined(CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE)
-	explicit CEventInstance(TriggerInstanceId const triggerInstanceId, CEvent const& event, CBaseObject const& baseObject)
+	explicit CEventInstance(TriggerInstanceId const triggerInstanceId, CEvent& event, CBaseObject const& baseObject)
 		: m_triggerInstanceId(triggerInstanceId)
 		, m_event(event)
 		, m_state(EEventState::Pending)
@@ -64,7 +64,7 @@ public:
 		, m_baseObject(baseObject)
 	{}
 #else
-	explicit CEventInstance(TriggerInstanceId const triggerInstanceId, CEvent const& event)
+	explicit CEventInstance(TriggerInstanceId const triggerInstanceId, CEvent& event)
 		: m_triggerInstanceId(triggerInstanceId)
 		, m_event(event)
 		, m_state(EEventState::Pending)
@@ -82,7 +82,7 @@ public:
 	~CEventInstance();
 
 	TriggerInstanceId            GetTriggerInstanceId() const                                       { return m_triggerInstanceId; }
-	CEvent const&                GetEvent() const                                                   { return m_event; }
+	CEvent&                      GetEvent() const                                                   { return m_event; }
 	EEventState                  GetState() const                                                   { return m_state; }
 
 	FMOD::Studio::EventInstance* GetFmodEventInstance() const                                       { return m_pInstance; }
@@ -110,7 +110,7 @@ public:
 private:
 
 	TriggerInstanceId const          m_triggerInstanceId;
-	CEvent const&                    m_event;
+	CEvent&                          m_event;
 
 	EEventState                      m_state;
 

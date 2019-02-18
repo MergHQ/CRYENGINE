@@ -40,7 +40,7 @@ public:
 	CEventInstance& operator=(CEventInstance&&) = delete;
 
 #if defined(CRY_AUDIO_IMPL_PORTAUDIO_USE_PRODUCTION_CODE)
-	explicit CEventInstance(TriggerInstanceId const triggerInstanceId, CEvent const& event, CObject const& object)
+	explicit CEventInstance(TriggerInstanceId const triggerInstanceId, CEvent& event, CObject const& object)
 		: m_triggerInstanceId(triggerInstanceId)
 		, m_event(event)
 		, m_pSndFile(nullptr)
@@ -53,7 +53,7 @@ public:
 		, m_object(object)
 	{}
 #else
-	explicit CEventInstance(TriggerInstanceId const triggerInstanceId, CEvent const& event)
+	explicit CEventInstance(TriggerInstanceId const triggerInstanceId, CEvent& event)
 		: m_triggerInstanceId(triggerInstanceId)
 		, m_event(event)
 		, m_pSndFile(nullptr)
@@ -77,7 +77,7 @@ public:
 	void                Stop();
 
 	TriggerInstanceId   GetTriggerInstanceId() const              { return m_triggerInstanceId; }
-	CEvent const&       GetEvent() const                          { return m_event; }
+	CEvent&             GetEvent() const                          { return m_event; }
 	SNDFILE*            GetSoundFile() const                      { return m_pSndFile; }
 	int                 GetNumChannels() const                    { return m_numChannels; }
 	void*               GetData() const                           { return m_pData; }
@@ -96,7 +96,7 @@ private:
 	void Reset();
 
 	TriggerInstanceId const          m_triggerInstanceId;
-	CEvent const&                    m_event;
+	CEvent&                          m_event;
 	SNDFILE*                         m_pSndFile;
 	PaStream*                        m_pStream;
 	void*                            m_pData;

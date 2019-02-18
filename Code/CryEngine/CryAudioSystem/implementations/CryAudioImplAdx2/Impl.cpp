@@ -870,7 +870,22 @@ ITriggerConnection* CImpl::ConstructTriggerConnection(ITriggerInfo const* const 
 ///////////////////////////////////////////////////////////////////////////
 void CImpl::DestructTriggerConnection(ITriggerConnection const* const pITriggerConnection)
 {
-	delete pITriggerConnection;
+	auto const pBaseTriggerConnection = static_cast<CBaseTriggerConnection const*>(pITriggerConnection);
+
+	if (pBaseTriggerConnection->GetType() == CBaseTriggerConnection::EType::Cue)
+	{
+		auto const pCue = static_cast<CCue const*>(pBaseTriggerConnection);
+		pCue->SetToBeDestructed();
+
+		if (pCue->CanBeDestructed())
+		{
+			delete pCue;
+		}
+	}
+	else
+	{
+		delete pBaseTriggerConnection;
+	}
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -1132,8 +1147,10 @@ void CImpl::SetLanguage(char const* const szLanguage)
 
 #if defined(CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE)
 //////////////////////////////////////////////////////////////////////////
-CCueInstance* CImpl::ConstructCueInstance(TriggerInstanceId const triggerInstanceId, CriAtomExPlaybackId const playbackId, CCue const& cue, CBaseObject const& baseObject)
+CCueInstance* CImpl::ConstructCueInstance(TriggerInstanceId const triggerInstanceId, CriAtomExPlaybackId const playbackId, CCue& cue, CBaseObject const& baseObject)
 {
+	cue.IncrementNumInstances();
+
 	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Adx2::CCueInstance");
 	auto const pCueInstance = new CCueInstance(triggerInstanceId, playbackId, cue, baseObject);
 	g_constructedCueInstances.push_back(pCueInstance);
@@ -1142,8 +1159,10 @@ CCueInstance* CImpl::ConstructCueInstance(TriggerInstanceId const triggerInstanc
 }
 #else
 //////////////////////////////////////////////////////////////////////////
-CCueInstance* CImpl::ConstructCueInstance(TriggerInstanceId const triggerInstanceId, CriAtomExPlaybackId const playbackId, CCue const& cue)
+CCueInstance* CImpl::ConstructCueInstance(TriggerInstanceId const triggerInstanceId, CriAtomExPlaybackId const playbackId, CCue& cue)
 {
+	cue.IncrementNumInstances();
+
 	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Adx2::CCueInstance");
 	return new CCueInstance(triggerInstanceId, playbackId, cue);
 }
@@ -1173,7 +1192,15 @@ void CImpl::DestructCueInstance(CCueInstance const* const pCueInstance)
 	}
 #endif  // CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE
 
+	CCue* const pCue = &pCueInstance->GetCue();
 	delete pCueInstance;
+
+	pCue->DecrementNumInstances();
+
+	if (pCue->CanBeDestructed())
+	{
+		delete pCue;
+	}
 }
 //////////////////////////////////////////////////////////////////////////
 bool CImpl::InitializeLibrary()

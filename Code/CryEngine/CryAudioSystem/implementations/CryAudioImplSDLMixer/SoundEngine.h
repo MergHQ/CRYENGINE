@@ -39,7 +39,7 @@ const SampleId LoadSampleFromMemory(void* pMemory, const size_t size, const stri
 void           UnloadSample(const SampleId id);
 
 // Events
-ETriggerResult ExecuteEvent(CObject* const pObject, CEvent const* const pEvent, TriggerInstanceId const triggerInstanceId);
+ETriggerResult ExecuteEvent(CObject* const pObject, CEvent* const pEvent, TriggerInstanceId const triggerInstanceId);
 } // namespace SoundEngine
 } // namespace SDL_mixer
 } // namespace Impl

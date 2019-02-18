@@ -458,7 +458,7 @@ void SoundEngine::UnMute()
 }
 
 //////////////////////////////////////////////////////////////////////////
-ETriggerResult SoundEngine::ExecuteEvent(CObject* const pObject, CEvent const* const pEvent, TriggerInstanceId const triggerInstanceId)
+ETriggerResult SoundEngine::ExecuteEvent(CObject* const pObject, CEvent* const pEvent, TriggerInstanceId const triggerInstanceId)
 {
 	ETriggerResult result = ETriggerResult::Failure;
 

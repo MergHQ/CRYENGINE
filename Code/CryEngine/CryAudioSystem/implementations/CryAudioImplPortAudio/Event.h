@@ -48,6 +48,8 @@ public:
 		, m_folder(szFolder)
 		, m_name(szName)
 		, m_isLocalized(isLocalized)
+		, m_numInstances(0)
+		, m_toBeDestructed(false)
 	{}
 
 	virtual ~CEvent() override = default;
@@ -56,6 +58,12 @@ public:
 	virtual ETriggerResult Execute(IObject* const pIObject, TriggerInstanceId const triggerInstanceId) override;
 	virtual void           Stop(IObject* const pIObject) override;
 	// ~CryAudio::Impl::ITriggerConnection
+
+	void IncrementNumInstances() { ++m_numInstances; }
+	void DecrementNumInstances();
+
+	bool CanBeDestructed() const   { return m_toBeDestructed && (m_numInstances == 0); }
+	void SetToBeDestructed() const { m_toBeDestructed = true; }
 
 	uint32 const                                pathId;
 	int const                                   numLoops;
@@ -66,6 +74,11 @@ public:
 	CryFixedStringT<MaxFilePathLength> const    m_folder;
 	CryFixedStringT<MaxControlNameLength> const m_name;
 	bool const                                  m_isLocalized;
+
+private:
+
+	uint16       m_numInstances;
+	mutable bool m_toBeDestructed;
 };
 } // namespace PortAudio
 } // namespace Impl

@@ -86,6 +86,13 @@ void CEvent::Stop(IObject* const pIObject)
 	auto const pBaseObject = static_cast<CBaseObject*>(pIObject);
 	pBaseObject->StopEvent(m_id);
 }
+
+//////////////////////////////////////////////////////////////////////////
+void CEvent::DecrementNumInstances()
+{
+	CRY_ASSERT_MESSAGE(m_numInstances > 0, "Number of event instances must be at least 1 during %s", __FUNCTION__);
+	--m_numInstances;
+}
 } // namespace Wwise
 } // namespace Impl
 } // namespace CryAudio
