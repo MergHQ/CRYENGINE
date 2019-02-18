@@ -39,7 +39,6 @@ public:
 				  return;
 				}
 
-				const CAssetType* const pAssetType = GetIEditor()->GetAssetManager()->FindAssetType("Environment");
 				CProgressNotification notif(QObject::tr("Importing environment presets"), "", true);
 				for (size_t i = 0, n = presets.size(); i < n; ++i)
 				{

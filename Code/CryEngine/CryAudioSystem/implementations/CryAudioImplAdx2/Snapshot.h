@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include <ITriggerConnection.h>
+#include "BaseTriggerConnection.h"
 #include <PoolObject.h>
 
 #include <cri_atom_ex.h>
@@ -18,7 +18,7 @@ constexpr char const* g_debugNoneSnapshot = "<none>";
 extern CryFixedStringT<MaxControlNameLength> g_debugActiveSnapShotName;
 #endif  // CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE
 
-class CSnapshot final : public ITriggerConnection, public CPoolObject<CSnapshot, stl::PSyncNone>
+class CSnapshot final : public CBaseTriggerConnection, public CPoolObject<CSnapshot, stl::PSyncNone>
 {
 public:
 
@@ -39,7 +39,7 @@ public:
 		char const* const szName,
 		EActionType const type,
 		CriSint32 const changeoverTime)
-		: m_name(szName)
+		: CBaseTriggerConnection(EType::Snapshot, szName)
 		, m_actionType(type)
 		, m_changeoverTime(changeoverTime)
 	{}
@@ -53,9 +53,8 @@ public:
 
 private:
 
-	CryFixedStringT<MaxControlNameLength> const m_name;
-	EActionType const                           m_actionType;
-	CriSint32 const                             m_changeoverTime;
+	EActionType const m_actionType;
+	CriSint32 const   m_changeoverTime;
 };
 } // namespace Adx2
 } // namespace Impl

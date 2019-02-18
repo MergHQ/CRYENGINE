@@ -1256,7 +1256,13 @@ ITriggerConnection* CImpl::ConstructTriggerConnection(ITriggerInfo const* const 
 ///////////////////////////////////////////////////////////////////////////
 void CImpl::DestructTriggerConnection(ITriggerConnection const* const pITriggerConnection)
 {
-	delete pITriggerConnection;
+	auto const pEvent = static_cast<CEvent const*>(pITriggerConnection);
+	pEvent->SetToBeDestructed();
+
+	if (pEvent->CanBeDestructed())
+	{
+		delete pEvent;
+	}
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -1598,8 +1604,10 @@ void CImpl::SetLanguage(char const* const szLanguage)
 
 #if defined(CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE)
 //////////////////////////////////////////////////////////////////////////
-CEventInstance* CImpl::ConstructEventInstance(TriggerInstanceId const triggerInstanceId, CEvent const& event, CBaseObject const& baseObject)
+CEventInstance* CImpl::ConstructEventInstance(TriggerInstanceId const triggerInstanceId, CEvent& event, CBaseObject const& baseObject)
 {
+	event.IncrementNumInstances();
+
 	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Wwise::CEventInstance");
 	auto const pEventInstance = new CEventInstance(triggerInstanceId, event, baseObject);
 	g_constructedEventInstances.push_back(pEventInstance);
@@ -1608,8 +1616,10 @@ CEventInstance* CImpl::ConstructEventInstance(TriggerInstanceId const triggerIns
 }
 #else
 //////////////////////////////////////////////////////////////////////////
-CEventInstance* CImpl::ConstructEventInstance(TriggerInstanceId const triggerInstanceId, CEvent const& event)
+CEventInstance* CImpl::ConstructEventInstance(TriggerInstanceId const triggerInstanceId, CEvent& event)
 {
+	event.IncrementNumInstances();
+
 	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Wwise::CEventInstance");
 	return new CEventInstance(triggerInstanceId, event);
 }
@@ -1644,7 +1654,15 @@ void CImpl::DestructEventInstance(CEventInstance const* const pEventInstance)
 	}
 #endif  // CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE
 
+	CEvent* const pEvent = &pEventInstance->GetEvent();
 	delete pEventInstance;
+
+	pEvent->DecrementNumInstances();
+
+	if (pEvent->CanBeDestructed())
+	{
+		delete pEvent;
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////

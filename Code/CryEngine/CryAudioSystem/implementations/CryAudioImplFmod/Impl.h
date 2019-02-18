@@ -73,9 +73,9 @@ public:
 	// ~CryAudio::Impl::IImpl
 
 #if defined(CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE)
-	CEventInstance* ConstructEventInstance(TriggerInstanceId const triggerInstanceId, CEvent const& event, CBaseObject const& baseObject);
+	CEventInstance* ConstructEventInstance(TriggerInstanceId const triggerInstanceId, CEvent& event, CBaseObject const& baseObject);
 #else
-	CEventInstance* ConstructEventInstance(TriggerInstanceId const triggerInstanceId, CEvent const& event);
+	CEventInstance* ConstructEventInstance(TriggerInstanceId const triggerInstanceId, CEvent& event);
 #endif  // CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE
 
 	void DestructEventInstance(CEventInstance const* const pEventInstance);

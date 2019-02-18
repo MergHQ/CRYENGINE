@@ -51,9 +51,7 @@ private:
 	// ~IStreamCallback
 
 	// Internal methods
-	void AllocateHeap(size_t const size, char const* const szUsage);
 	bool UncacheFileCacheEntryInternal(CFileEntry* const pFileEntry, bool const bNow, bool const bIgnoreUsedCount = false);
-	bool DoesRequestFitInternal(size_t const requestSize);
 	bool FinishStreamInternal(IReadStreamPtr const pStream, int unsigned const error);
 	bool AllocateMemoryBlockInternal(CFileEntry* const __restrict pFileEntry);
 	void UncacheFile(CFileEntry* const pFileEntry);
@@ -64,7 +62,13 @@ private:
 	// Internal members
 	FileEntries                     m_fileEntries;
 	_smart_ptr<::ICustomMemoryHeap> m_pMemoryHeap;
-	size_t                          m_currentByteTotal = 0;
-	size_t                          m_maxByteTotal = 0;
+
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
+	size_t m_currentByteTotal = 0;
+
+	#if CRY_PLATFORM_DURANGO
+	size_t m_maxByteTotal = 0;
+	#endif // CRY_PLATFORM_DURANGO
+#endif   // CRY_AUDIO_USE_PRODUCTION_CODE
 };
 } // namespace CryAudio

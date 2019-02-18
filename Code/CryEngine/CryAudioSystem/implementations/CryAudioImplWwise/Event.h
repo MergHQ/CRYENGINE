@@ -26,12 +26,16 @@ public:
 	explicit CEvent(AkUniqueID const id, float const maxAttenuation, char const* const szName)
 		: m_id(id)
 		, m_maxAttenuation(maxAttenuation)
+		, m_numInstances(0)
+		, m_toBeDestructed(false)
 		, m_name(szName)
 	{}
 #else
 	explicit CEvent(AkUniqueID const id, float const maxAttenuation)
 		: m_id(id)
 		, m_maxAttenuation(maxAttenuation)
+		, m_numInstances(0)
+		, m_toBeDestructed(false)
 	{}
 #endif  // CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE
 
@@ -45,6 +49,12 @@ public:
 	AkUniqueID GetId() const             { return m_id; }
 	float      GetMaxAttenuation() const { return m_maxAttenuation; }
 
+	void       IncrementNumInstances()   { ++m_numInstances; }
+	void       DecrementNumInstances();
+
+	bool       CanBeDestructed() const   { return m_toBeDestructed && (m_numInstances == 0); }
+	void       SetToBeDestructed() const { m_toBeDestructed = true; }
+
 #if defined(CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE)
 	char const* GetName() const { return m_name.c_str(); }
 #endif  // CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE
@@ -53,6 +63,8 @@ private:
 
 	AkUniqueID const m_id;
 	float const      m_maxAttenuation;
+	uint16           m_numInstances;
+	mutable bool     m_toBeDestructed;
 
 #if defined(CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE)
 	CryFixedStringT<MaxControlNameLength> const m_name;

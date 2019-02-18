@@ -23,7 +23,7 @@ public:
 	CEventInstance& operator=(CEventInstance&&) = delete;
 
 #if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE)
-	explicit CEventInstance(TriggerInstanceId const triggerInstanceId, CEvent const& event, CObject const& object)
+	explicit CEventInstance(TriggerInstanceId const triggerInstanceId, CEvent& event, CObject const& object)
 		: m_triggerInstanceId(triggerInstanceId)
 		, m_event(event)
 		, m_toBeRemoved(false)
@@ -32,7 +32,7 @@ public:
 		, m_object(object)
 	{}
 #else
-	explicit CEventInstance(TriggerInstanceId const triggerInstanceId, CEvent const& event)
+	explicit CEventInstance(TriggerInstanceId const triggerInstanceId, CEvent& event)
 		: m_triggerInstanceId(triggerInstanceId)
 		, m_event(event)
 		, m_toBeRemoved(false)
@@ -42,7 +42,7 @@ public:
 	~CEventInstance() = default;
 
 	TriggerInstanceId GetTriggerInstanceId() const { return m_triggerInstanceId; }
-	CEvent const&     GetEvent() const             { return m_event; }
+	CEvent&           GetEvent() const             { return m_event; }
 
 	void              Stop();
 	void              Pause();
@@ -62,7 +62,7 @@ public:
 private:
 
 	TriggerInstanceId const m_triggerInstanceId;
-	CEvent const&           m_event;
+	CEvent&                 m_event;
 	bool                    m_toBeRemoved;
 
 #if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE)

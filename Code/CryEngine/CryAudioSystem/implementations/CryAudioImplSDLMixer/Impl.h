@@ -72,9 +72,9 @@ public:
 	// ~CryAudio::Impl::IImpl
 
 #if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE)
-	CEventInstance* ConstructEventInstance(TriggerInstanceId const triggerInstanceId, CEvent const& event, CObject const& object);
+	CEventInstance* ConstructEventInstance(TriggerInstanceId const triggerInstanceId, CEvent& event, CObject const& object);
 #else
-	CEventInstance* ConstructEventInstance(TriggerInstanceId const triggerInstanceId, CEvent const& event);
+	CEventInstance* ConstructEventInstance(TriggerInstanceId const triggerInstanceId, CEvent& event);
 #endif  // CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE
 
 	void DestructEventInstance(CEventInstance const* const pEventInstance);

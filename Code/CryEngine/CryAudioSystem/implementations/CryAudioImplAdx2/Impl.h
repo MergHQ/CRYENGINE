@@ -76,9 +76,9 @@ public:
 	// ~CryAudio::Impl::IImpl
 
 #if defined(CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE)
-	CCueInstance* ConstructCueInstance(TriggerInstanceId const triggerInstanceId, CriAtomExPlaybackId const playbackId, CCue const& cue, CBaseObject const& baseObject);
+	CCueInstance* ConstructCueInstance(TriggerInstanceId const triggerInstanceId, CriAtomExPlaybackId const playbackId, CCue& cue, CBaseObject const& baseObject);
 #else
-	CCueInstance* ConstructCueInstance(TriggerInstanceId const triggerInstanceId, CriAtomExPlaybackId const playbackId, CCue const& cue);
+	CCueInstance* ConstructCueInstance(TriggerInstanceId const triggerInstanceId, CriAtomExPlaybackId const playbackId, CCue& cue);
 #endif  // CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE
 
 	void DestructCueInstance(CCueInstance const* const pCueInstance);

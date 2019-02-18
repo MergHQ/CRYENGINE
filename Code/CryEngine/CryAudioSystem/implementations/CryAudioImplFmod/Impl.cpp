@@ -801,7 +801,22 @@ ITriggerConnection* CImpl::ConstructTriggerConnection(ITriggerInfo const* const 
 ///////////////////////////////////////////////////////////////////////////
 void CImpl::DestructTriggerConnection(ITriggerConnection const* const pITriggerConnection)
 {
-	delete pITriggerConnection;
+	auto const pBaseTriggerConnection = static_cast<CBaseTriggerConnection const*>(pITriggerConnection);
+
+	if (pBaseTriggerConnection->GetType() == CBaseTriggerConnection::EType::Event)
+	{
+		auto const pEvent = static_cast<CEvent const*>(pBaseTriggerConnection);
+		pEvent->SetToBeDestructed();
+
+		if (pEvent->CanBeDestructed())
+		{
+			delete pEvent;
+		}
+	}
+	else
+	{
+		delete pBaseTriggerConnection;
+	}
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -1373,8 +1388,10 @@ void CImpl::PauseMasterBus(bool const shouldPause)
 
 #if defined(CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE)
 //////////////////////////////////////////////////////////////////////////
-CEventInstance* CImpl::ConstructEventInstance(TriggerInstanceId const triggerInstanceId, CEvent const& event, CBaseObject const& baseObject)
+CEventInstance* CImpl::ConstructEventInstance(TriggerInstanceId const triggerInstanceId, CEvent& event, CBaseObject const& baseObject)
 {
+	event.IncrementNumInstances();
+
 	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Fmod::CEventInstance");
 	auto const pEventInstance = new CEventInstance(triggerInstanceId, event, baseObject);
 	g_constructedEventInstances.push_back(pEventInstance);
@@ -1383,8 +1400,10 @@ CEventInstance* CImpl::ConstructEventInstance(TriggerInstanceId const triggerIns
 }
 #else
 //////////////////////////////////////////////////////////////////////////
-CEventInstance* CImpl::ConstructEventInstance(TriggerInstanceId const triggerInstanceId, CEvent const& event)
+CEventInstance* CImpl::ConstructEventInstance(TriggerInstanceId const triggerInstanceId, CEvent& event)
 {
+	event.IncrementNumInstances();
+
 	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Fmod::CEventInstance");
 	return new CEventInstance(triggerInstanceId, event);
 }
@@ -1414,7 +1433,15 @@ void CImpl::DestructEventInstance(CEventInstance const* const pEventInstance)
 	}
 #endif  // CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE
 
+	CEvent* const pEvent = &pEventInstance->GetEvent();
 	delete pEventInstance;
+
+	pEvent->DecrementNumInstances();
+
+	if (pEvent->CanBeDestructed())
+	{
+		delete pEvent;
+	}
 }
 
 #if defined(CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE)
