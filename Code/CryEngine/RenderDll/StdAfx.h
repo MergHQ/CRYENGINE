@@ -123,9 +123,6 @@
 	#define CRTDBG_MAP_ALLOC
 #endif //_DEBUG
 
-#undef USE_STATIC_NAME_TABLE
-#define USE_STATIC_NAME_TABLE
-
 #if !defined(_RELEASE)
 	#define ENABLE_FRAME_PROFILER
 #endif

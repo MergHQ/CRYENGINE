@@ -11,10 +11,6 @@
 
 #define STORE_CRCNAME_STRINGS (1)
 
-#if !defined(USE_STATIC_NAME_TABLE)
-	#define USE_STATIC_NAME_TABLE
-#endif
-
 namespace NameCRCHelper
 {
 
