@@ -140,14 +140,17 @@ namespace Cry
 		constexpr ServiceIdentifier PSNServiceID = CryClassID("{F7729E26-464F-4BE9-A58E-06C72C03EAE1}"_cry_guid);
 		constexpr ServiceIdentifier DiscordServiceID = CryClassID("{D68238FE-AA88-4C0C-9E9C-56A848AE0F37}"_cry_guid);
 		constexpr ServiceIdentifier RailServiceID = CryClassID("{B536B2AE-E363-4765-8E15-7B021C356E9C}"_cry_guid);
+		constexpr ServiceIdentifier XboxServiceID = CryClassID("{BE28931B-8843-419F-BDE4-C167F3EAAFBA}"_cry_guid);
+
 
 		inline const char* GetServiceDebugName(const ServiceIdentifier& svcId)
 		{
 			return (svcId == SteamServiceID) ? "Steam" :
 					((svcId == PSNServiceID) ? "PSN" :
+					((svcId == XboxServiceID) ? "Xbox" :
 					((svcId == DiscordServiceID) ? "Discord" :
 					((svcId == RailServiceID) ? "Rail" :
-					((svcId == NullServiceID) ? "Null" : "Unknown"))));
+					((svcId == NullServiceID) ? "Null" : "Unknown")))));
 		}
 
 		namespace Detail
@@ -187,7 +190,7 @@ namespace Cry
 					if (stl::holds_alternative<StringIdentifierValue>(value))
 					{
 						const StringIdentifierValue& str = stl::get<StringIdentifierValue>(value);
-						const int ok = sscanf_s(str.c_str(), "%" PRIu64, out);
+						const int ok = sscanf_s(str.c_str(), "%" PRIu64, &out);
 						return ok == 1;
 					}
 					else if (stl::holds_alternative<NumericIdentifierValue>(value))
@@ -198,7 +201,6 @@ namespace Cry
 
 					return false;
 				}
-
 				template<class StrType>
 				static bool AsString(const ValueType& value, StrType& out)
 				{
@@ -212,11 +214,9 @@ namespace Cry
 						out.Format("%" PRIu64, stl::get<NumericIdentifierValue>(value));
 						return true;
 					}
-
 					return false;
 				}
 			};
-
 			struct SAccountTraits : public STraitsBase
 			{
 				static const char* ToDebugString(const ServiceIdentifier& svcId, const ValueType& value)
