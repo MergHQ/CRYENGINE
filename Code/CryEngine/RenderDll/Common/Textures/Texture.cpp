@@ -948,6 +948,7 @@ void CTexture::RT_Precache(const bool isFinalPrecache)
 			{
 				if (!pTexture->m_bStreamPrepared || !pTexture->IsStreamable())
 				{
+					pTexture->m_fpMinMipCur = MAX_MIP_LEVELS << 8;
 					pTexture->m_bPostponed = false;
 					pTexture->Load(pTexture->m_eDstFormat);
 				}
@@ -991,7 +992,7 @@ void CTexture::RT_Precache(const bool isFinalPrecache)
 			pFoundTextures.remove_if([](_smart_ptr<CTexture>& pTexture)
 			{
 				pTexture->m_bStreamHighPriority |= 1;
-				pTexture->m_fpMinMipCur = 0;
+				pTexture->m_fpMinMipCur = MAX_MIP_LEVELS << 8;
 
 				s_pTextureStreamer->Precache(pTexture);
 
