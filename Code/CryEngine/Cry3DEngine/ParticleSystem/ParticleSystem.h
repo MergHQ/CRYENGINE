@@ -104,6 +104,7 @@ private:
 	bool                     m_bResetEmitters = false;
 	QuatT                    m_lastCameraPose = IDENTITY;
 	uint                     m_numFrames      = 0;
+	uint                     m_numLevelLoads  = 0;
 	uint                     m_nextEmitterId  = 0;
 	ESystemConfigSpec        m_lastSysSpec    = END_CONFIG_SPEC_ENUM;
 };

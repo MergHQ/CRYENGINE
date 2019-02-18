@@ -1511,8 +1511,7 @@ void CGeomCacheRenderNode::PrecacheStandIn(IStatObj* pStandIn, float fImportance
 		if (pLod)
 		{
 			CObjManager* pObjManager = GetObjManager();
-			Matrix34A matrix = GetMatrix();
-			static_cast<CStatObj*>(pLod)->UpdateStreamableComponents(fImportance, matrix, bFullUpdate, nLod);
+			static_cast<CStatObj*>(pLod)->UpdateStreamableComponents(fImportance, bFullUpdate, nLod);
 			pObjManager->PrecacheStatObjMaterial(pLod->GetMaterial(), fDistance * fInvScale, pLod, bFullUpdate, bDrawNear);
 		}
 	}

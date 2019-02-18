@@ -427,8 +427,11 @@ IMaterial* CParticleComponent::MakeMaterial()
 	{
 		const char* shaderName = UsesGPU() ? "Particles.ParticlesGpu" : "Particles";
 		const string& diffuseMap = m_params.m_diffuseMap;
-		static uint32 textureLoadFlags = 0;//FT_DONT_STREAM;
-		ITexture* pTexture = gEnv->pRenderer->EF_GetTextureByName(diffuseMap.c_str(), textureLoadFlags);
+		static uint32 preload = !!GetCVars()->e_ParticlesPrecacheAssets;
+		static uint32 textureLoadFlags = FT_DONT_STREAM * preload;
+		ITexture* pTexture = nullptr;
+		if (GetPSystem()->IsRuntime())
+			pTexture = gEnv->pRenderer->EF_GetTextureByName(diffuseMap.c_str(), textureLoadFlags);
 		if (!pTexture)
 		{
 			GetPSystem()->CheckFileAccess(diffuseMap.c_str());
@@ -442,7 +445,7 @@ IMaterial* CParticleComponent::MakeMaterial()
 		uint32 mask = eGpuParticlesVertexShaderFlags_None;
 		if (GPUComponentParams().facingMode == gpu_pfx2::EFacingMode::Velocity)
 			mask |= eGpuParticlesVertexShaderFlags_FacingVelocity;
-		SShaderItem shaderItem = gEnv->pRenderer->EF_LoadShaderItem(shaderName, false, 0, pResources, mask);
+		SShaderItem shaderItem = gEnv->pRenderer->EF_LoadShaderItem(shaderName, false, EF_PRECACHESHADER * preload, pResources, mask);
 		pMaterial->AssignShaderItem(shaderItem);
 	}
 	Vec3 white = Vec3(1.0f, 1.0f, 1.0f);

@@ -1213,7 +1213,7 @@ void CParticleEmitter::UpdateStreamingPriority(const SUpdateStreamingPriorityCon
 
 		if (CStatObj* pStatObj = static_cast<CStatObj*>(params.pStatObj.get()))
 		{
-			m_pObjManager->PrecacheStatObj(pStatObj, context.lod, Matrix34A(m_Loc), pStatObj->GetMaterial(),
+			m_pObjManager->PrecacheStatObj(pStatObj, context.lod, pStatObj->GetMaterial(),
 				context.importance, normalizedDist, context.bFullUpdate, params.bDrawNear);
 		}
 	}

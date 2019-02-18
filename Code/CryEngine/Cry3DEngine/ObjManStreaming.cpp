@@ -983,7 +983,7 @@ void CObjManager::PrecacheStatObjMaterial(IMaterial* pMaterial, const float fEnt
 	}
 }
 
-void CObjManager::PrecacheStatObj(CStatObj* pStatObj, int nLod, const Matrix34A& statObjMatrix, IMaterial* pMaterial, float fImportance, float fEntDistance, bool bFullUpdate, bool bHighPriority)
+void CObjManager::PrecacheStatObj(CStatObj* pStatObj, int nLod, IMaterial* pMaterial, float fImportance, float fEntDistance, bool bFullUpdate, bool bHighPriority)
 {
 	if (!pStatObj)
 		return;
@@ -998,7 +998,7 @@ void CObjManager::PrecacheStatObj(CStatObj* pStatObj, int nLod, const Matrix34A&
 		IStatObj* pLodStatObj = pStatObj->GetLodObject(currentLod, true);
 		IMaterial* pLodMaterial = pLodStatObj->GetMaterial();
 		PrecacheStatObjMaterial(pMaterial ? pMaterial : pLodMaterial, fEntDistance, pLodStatObj, bFullUpdate, bHighPriority);
-		pStatObj->UpdateStreamableComponents(fImportance, statObjMatrix, bFullUpdate, nLod);
+		pStatObj->UpdateStreamableComponents(fImportance, bFullUpdate, nLod);
 	}
 }
 
@@ -1109,7 +1109,7 @@ void CObjManager::UpdateRenderNodeStreamingPriority(IRenderNode* pObj, float fEn
 	Matrix34A matParent;
 	if (CStatObj* pStatObj = (CStatObj*)pObj->GetEntityStatObj(0, &matParent, false))
 	{
-		PrecacheStatObj(pStatObj, nLod, matParent, pRenderNodeMat ? pRenderNodeMat : pStatObj->GetMaterial(), fImportance, fEntDistanceReal / fObjScale, bFullUpdate, bHighPriority);
+		PrecacheStatObj(pStatObj, nLod, pRenderNodeMat ? pRenderNodeMat : pStatObj->GetMaterial(), fImportance, fEntDistanceReal / fObjScale, bFullUpdate, bHighPriority);
 	}
 	else if (pRenderNodeMat)
 	{

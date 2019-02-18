@@ -422,12 +422,9 @@ void CCharacterRenderNode::PrecacheCharacterCollect(const float fImportance, ICh
 					const int minPrecacheLod = clamp_tpl(nLod - 1, minLod, maxLod);
 					const int maxPrecacheLod = clamp_tpl(nLod + 1, minLod, maxLod);
 
-					const QuatT& q = pAtt->GetAttAbsoluteDefault();
-					Matrix34A tm34 = matParent * Matrix34(q);
-
 					for (int currentLod = minPrecacheLod; currentLod <= maxPrecacheLod; ++currentLod)
 					{
-						pStatObj->UpdateStreamableComponents(fImportance, tm34, bFullUpdate, currentLod);
+						pStatObj->UpdateStreamableComponents(fImportance, bFullUpdate, currentLod);
 
 						pStatObj = (CStatObj*)pStatObj->GetLodObject(currentLod, true);
 						IMaterial* pAttMatOverride = (IMaterial*)pIAttachmentObject->GetReplacementMaterial();
@@ -486,8 +483,7 @@ void CCharacterRenderNode::PrecacheCharacterCollect(const float fImportance, ICh
 
 				for (int currentLod = minPrecacheLod; currentLod <= maxPrecacheLod; ++currentLod)
 				{
-					Matrix34A tm34 = matParent * Matrix34(pSkeletonPose->GetAbsJointByID(i));
-					pStatObj->UpdateStreamableComponents(fImportance, tm34, bFullUpdate, currentLod);
+					pStatObj->UpdateStreamableComponents(fImportance, bFullUpdate, currentLod);
 
 					IMaterial* pStatObjMat = pStatObj->GetMaterial();
 					IStatObj* pStatObjLod = pStatObj->GetLodObject(currentLod, true);

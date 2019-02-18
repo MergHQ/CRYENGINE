@@ -2058,7 +2058,7 @@ bool CVoxelSegment::CheckCollectObjectsForVoxelization(const AABB& cloudBoxWS, P
 							// request streaming of missing meshes
 							if (Cry3DEngineBase::GetCVars()->e_svoTI_VoxelizationPostpone == 2)
 							{
-								info.pStatObj->UpdateStreamableComponents(0.5f, info.matObj, false, lodId);
+								info.pStatObj->UpdateStreamableComponents(0.5f, false, lodId);
 							}
 
 							if (Cry3DEngineBase::GetCVars()->e_svoDebug == 7)

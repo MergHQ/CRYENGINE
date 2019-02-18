@@ -3,7 +3,7 @@
 #pragma once
 
 #include <CryParticleSystem/IParticlesPfx2.h>
-#include <CryRenderer/RenderElements/CREParticle.h>
+#include <CryMemory/HeapAllocator.h>
 
 // compile options
 #ifdef _DEBUG
@@ -48,11 +48,11 @@
 namespace pfx2
 {
 
-const uint gMinimumVersion = 1;
-const uint gCurrentVersion = 13;
+const uint gMinimumVersion   = 1;
+const uint gCurrentVersion   = 13;
 
-const TParticleId gInvalidId           = -1;
-const float gInfinity                  = std::numeric_limits<float>::infinity();
+const TParticleId gInvalidId = -1;
+const float gInfinity        = std::numeric_limits<float>::infinity();
 
 class HeapAllocator
 {
@@ -219,7 +219,11 @@ private:
 };
 
 ///////////////////////////////////////////////////////////////////////////////
-inline int ThreadMode() { return Cry3DEngineBase::GetCVars()->e_ParticlesThread; }
+inline const CVars* GetCVars() { return Cry3DEngineBase::GetCVars(); }
+inline int ThreadMode() { return GetCVars()->e_ParticlesThread; }
+inline int DebugVar() { return GetCVars()->e_ParticlesDebug; }
+inline int DebugMode(char flag) { return (DebugVar() & AlphaBit(flag)); }
+inline int DebugMode(int flags) { return (DebugVar() & AlphaBits(flags)); }
 
 }
 

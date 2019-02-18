@@ -1119,6 +1119,9 @@ void WriteToStreamingLog(const char* str)
 //////////////////////////////////////////////////////////////////////////
 void CStreamEngine::DrawStatistics()
 {
+	if (!IRenderAuxGeom::GetAux())
+		return;
+
 	std::vector<CAsyncIOFileRequest_AutoPtr> tempRequests;
 
 	if (g_cvars.sys_streaming_debug == 4)

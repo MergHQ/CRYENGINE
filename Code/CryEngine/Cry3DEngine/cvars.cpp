@@ -233,6 +233,8 @@ void CVars::Init()
 	              "Enable preloading of all particle effects at the beginning");
 	REGISTER_CVAR(e_ParticlesAllowRuntimeLoad, 1, VF_NULL,
 	              "Allow loading of dynamic particle effects at runtime");
+	REGISTER_CVAR(e_ParticlesPrecacheAssets, 1, VF_NULL,
+	              "Precache particle textures and meshes instead of streaming");
 	REGISTER_CVAR(e_ParticlesConvertPfx1, 0, VF_NULL,
 	              "Convert pfx1 to pfx2 when loaded. Combinable options:\n"
 	              "  1 = Convert if pfx2 version doesn't exist.\n"
