@@ -37,9 +37,6 @@
 
 		"ca_SampleQuatHemisphereFromCurrentPose": "1",
 		"ca_ForceAnimationLod": "0",
-		
-		"cl_AISystem": "0",
-		"cl_initClientActor": "0",
 
 		"r_HDREyeAdaptationMode": "1",
 		"e_svoTI_VoxelizeUnderTerrain": "1",
