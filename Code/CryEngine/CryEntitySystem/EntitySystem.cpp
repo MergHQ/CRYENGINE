@@ -43,7 +43,6 @@
 #include <CryPhysics/IDeferredCollisionEvent.h>
 #include <CryNetwork/IRemoteCommand.h>
 #include <CryGame/IGameFramework.h>
-#include <CrySystem/Profilers/FrameProfiler/FrameProfiler_JobSystem.h>
 
 #include "EntityComponentsCache.h"
 
@@ -946,7 +945,6 @@ int CEntitySystem::QueryProximity(SEntityProximityQuery& query)
 void CEntitySystem::PrePhysicsUpdate()
 {
 	CRY_PROFILE_REGION(PROFILE_ENTITY, "EntitySystem::PrePhysicsUpdate");
-	CRYPROFILE_SCOPE_PROFILE_MARKER("EntitySystem::PrePhysicsUpdate");
 	MEMSTAT_FUNCTION_CONTEXT(EMemStatContextTypes::MSC_Other);
 
 	SEntityEvent event(ENTITY_EVENT_PREPHYSICSUPDATE);
@@ -1000,7 +998,6 @@ void CEntitySystem::PrePhysicsUpdate()
 void CEntitySystem::Update()
 {
 	CRY_PROFILE_REGION(PROFILE_ENTITY, "EntitySystem::Update");
-	CRYPROFILE_SCOPE_PROFILE_MARKER("EntitySystem::Update");
 	MEMSTAT_FUNCTION_CONTEXT(EMemStatContextTypes::MSC_Other);
 
 	const float fFrameTime = gEnv->pTimer->GetFrameTime();
@@ -1154,7 +1151,6 @@ std::array<const char*, static_cast<size_t>(Cry::Entity::EEvent::Count)> s_event
 void CEntitySystem::UpdateEntityComponents(float fFrameTime)
 {
 	CRY_PROFILE_REGION(PROFILE_ENTITY, "EntitySystem::UpdateEntityComponents");
-	CRYPROFILE_SCOPE_PROFILE_MARKER("EntitySystem::UpdateEntityComponents");
 
 	SEntityUpdateContext ctx = { fFrameTime, gEnv->pTimer->GetCurrTime(), gEnv->nMainFrameID };
 

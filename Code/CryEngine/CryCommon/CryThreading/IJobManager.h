@@ -227,16 +227,13 @@ struct CRY_ALIGN(16) SJobProfilingData
 {
 	typedef CTimeValue TimeValueT;
 
-	TimeValueT nStartTime;
-	TimeValueT nEndTime;
-
-	TimeValueT nWaitBegin;
-	TimeValueT nWaitEnd;
+	TimeValueT startTime;
+	TimeValueT endTime;
 
 	TJobHandle jobHandle;
 	threadID nThreadId;
 	uint32 nWorkerThread;
-
+	bool isWaiting;
 };
 
 struct SJobProfilingDataContainer
@@ -923,8 +920,6 @@ struct IJobManager
 	virtual uint16                         ReserveProfilingData() = 0;
 
 	virtual void                           Update(int nJobSystemProfiler) = 0;
-	virtual void                           PushProfilingMarker(const char* pName) = 0;
-	virtual void                           PopProfilingMarker() = 0;
 
 	virtual uint32                         GetNumWorkerThreads() const = 0;
 
@@ -943,6 +938,8 @@ struct IJobManager
 	virtual void                           DumpJobList() = 0;
 
 	virtual void                           SetFrameStartTime(const CTimeValue& rFrameStartTime) = 0;
+	virtual void                           SetMainDoneTime(const CTimeValue &) = 0;
+	virtual void                           SetRenderDoneTime(const CTimeValue &) = 0;
 };
 
 //! Utility function to get the worker thread id in a job, returns 0xFFFFFFFF otherwise.

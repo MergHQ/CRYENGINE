@@ -278,6 +278,8 @@ void CSystem::RenderEnd(bool bRenderStats)
 	if (IConsole* pConsole = GetIConsole())
 		pConsole->Draw();
 
+	gEnv->GetJobManager()->SetMainDoneTime(m_env.pTimer->GetAsyncTime());
+
 	m_env.pRenderer->ForceGC(); // XXX Rename this
 	m_env.pRenderer->EndFrame();
 

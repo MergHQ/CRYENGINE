@@ -62,10 +62,10 @@
 	#define PROFILE_LABEL(X)      do { CRY_PROFILE_MARKER(X); PROFILE_LABEL_GPU(X); } while (0)
 
 	#define PROFILE_LABEL_PUSH(X) \
-		do { CryProfile::PushProfilingMarker(EProfileDescription::PUSH_MARKER, X); CRY_PROFILE_PUSH_MARKER(X); PROFILE_LABEL_PUSH_GPU(X); if (gcpRendD3D->m_pPipelineProfiler) gcpRendD3D->m_pPipelineProfiler->BeginSection(X); } while (0)
+		do { CRY_PROFILE_PUSH_MARKER(X); PROFILE_LABEL_PUSH_GPU(X); if (gcpRendD3D->m_pPipelineProfiler) gcpRendD3D->m_pPipelineProfiler->BeginSection(X); } while (0)
 	
 	#define PROFILE_LABEL_POP(X)\
-		do { CryProfile::PopProfilingMarker (EProfileDescription::POP_MARKER, X);  CRY_PROFILE_POP_MARKER(X);  PROFILE_LABEL_POP_GPU(X);  if (gcpRendD3D->m_pPipelineProfiler) gcpRendD3D->m_pPipelineProfiler->EndSection(X); } while (0)
+		do { CRY_PROFILE_POP_MARKER(X);  PROFILE_LABEL_POP_GPU(X);  if (gcpRendD3D->m_pPipelineProfiler) gcpRendD3D->m_pPipelineProfiler->EndSection(X); } while (0)
 
 	// scope util class for GPU profiling Marker
 	#define PROFILE_LABEL_SCOPE(X)                             \

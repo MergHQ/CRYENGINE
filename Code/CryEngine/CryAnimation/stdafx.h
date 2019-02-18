@@ -57,4 +57,3 @@
 
 #include <CryAnimation/ICryAnimation.h>
 #include "AnimationBase.h"
-#include <CrySystem/Profilers/FrameProfiler/FrameProfiler_JobSystem.h>  // to be removed

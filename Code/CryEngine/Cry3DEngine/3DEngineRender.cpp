@@ -804,7 +804,6 @@ void C3DEngine::DebugDraw_UpdateDebugNode()
 void C3DEngine::RenderWorld(const int nRenderFlags, const SRenderingPassInfo& passInfo, const char* szDebugName)
 {
 	CRY_PROFILE_REGION(PROFILE_3DENGINE, "3DEngine: RenderWorld");
-	CRYPROFILE_SCOPE_PROFILE_MARKER("RenderWorld");
 	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "C3DEngine::RenderWorld");
 
 	passInfo.GetIRenderView()->SetShaderRenderingFlags(nRenderFlags);

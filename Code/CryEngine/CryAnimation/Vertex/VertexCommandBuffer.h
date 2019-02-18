@@ -3,6 +3,7 @@
 #pragma once
 
 #include "VertexData.h"
+#include <CryThreading/IJobManager.h>
 
 class CVertexCommandBufferAllocator
 {

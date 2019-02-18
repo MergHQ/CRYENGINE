@@ -13,7 +13,9 @@
 #include "../JobManager.h"
 #include "../../System.h"
 #include "../../CPUDetect.h"
-#include <CrySystem/Profilers/FrameProfiler/FrameProfiler_JobSystem.h>
+
+// used to distinguish regular and blocking worker threads
+#define BLOCKING_WORKER_ID_FLAG 0x40000000
 
 ///////////////////////////////////////////////////////////////////////////////
 JobManager::BlockingBackEnd::CBlockingBackEnd::CBlockingBackEnd(JobManager::SInfoBlock** pRegularWorkerFallbacks, uint32 nRegularWorkerThreads) :
@@ -159,12 +161,22 @@ void JobManager::BlockingBackEnd::CBlockingBackEndWorkerThread::SignalStopWork()
 	m_bStop = true;
 }
 
+bool JobManager::BlockingBackEnd::IsBlockingWorkerId(uint32 workerId)
+{
+	return (workerId & BLOCKING_WORKER_ID_FLAG) != 0;
+}
+
+uint32 JobManager::BlockingBackEnd::GetIndexFromWorkerId(uint32 workerId)
+{
+	CRY_ASSERT(IsBlockingWorkerId(workerId));
+	return workerId & !BLOCKING_WORKER_ID_FLAG;
+}
+
 //////////////////////////////////////////////////////////////////////////
 void JobManager::BlockingBackEnd::CBlockingBackEndWorkerThread::ThreadEntry()
 {
 	// set up thread id
-	JobManager::detail::SetWorkerThreadId(m_nId | 0x40000000);
-
+	JobManager::detail::SetWorkerThreadId(m_nId | BLOCKING_WORKER_ID_FLAG);
 	do
 	{
 		SInfoBlock infoBlock;
@@ -274,19 +286,11 @@ void JobManager::BlockingBackEnd::CBlockingBackEndWorkerThread::ThreadEntry()
 		assert(infoBlock.jobInvoker);
 		assert(infoBlock.GetParamAddress());
 
-		// store job start time
-#if defined(JOBMANAGER_SUPPORT_PROFILING) && 0
-		IF (infoBlock.GetJobState(), 1)
-		{
-			SJobState* pJobState = infoBlock.GetJobState();
-			pJobState->LockProfilingData();
-			if (pJobState->pJobProfilingData)
-			{
-				pJobState->pJobProfilingData->nStartTime = gEnv->pTimer->GetAsyncTime();
-				pJobState->pJobProfilingData->nWorkerThread = GetWorkerThreadId();
-			}
-			pJobState->UnLockProfilingData();
-		}
+#if defined(JOBMANAGER_SUPPORT_PROFILING)
+		SJobProfilingData* pJobProfilingData = gEnv->GetJobManager()->GetProfilingData(infoBlock.profilerIndex);
+		pJobProfilingData->startTime = gEnv->pTimer->GetAsyncTime();
+		pJobProfilingData->isWaiting = false;
+		pJobProfilingData->nWorkerThread = GetWorkerThreadId();
 #endif
 
 #if defined(JOBMANAGER_SUPPORT_FRAMEPROFILER)
@@ -296,7 +300,6 @@ void JobManager::BlockingBackEnd::CBlockingBackEndWorkerThread::ThreadEntry()
 		// call delegator function to invoke job entry
 #if !defined(_RELEASE) || defined(PERFORMANCE_BUILD)
 		CRY_PROFILE_REGION(PROFILE_SYSTEM, "Job");
-		CRYPROFILE_SCOPE_PROFILE_MARKER(CJobManager::Instance()->GetJobName(infoBlock.jobInvoker));
 		CRYPROFILE_SCOPE_PLATFORM_MARKER(CJobManager::Instance()->GetJobName(infoBlock.jobInvoker));
 #endif
 		(*infoBlock.jobInvoker)(infoBlock.GetParamAddress());
@@ -313,9 +316,11 @@ void JobManager::BlockingBackEnd::CBlockingBackEndWorkerThread::ThreadEntry()
 			pJobState->SetStopped();
 		}
 
+#if defined(JOBMANAGER_SUPPORT_PROFILING)
+		pJobProfilingData->endTime = gEnv->pTimer->GetAsyncTime();
+#endif
 	}
 	while (m_bStop == false);
-
 }
 ///////////////////////////////////////////////////////////////////////////////
 ILINE void IncrQueuePullPointer_Blocking(INT_PTR& rCurPullAddr, const INT_PTR cIncr, const INT_PTR cQueueStart, const INT_PTR cQueueEnd)

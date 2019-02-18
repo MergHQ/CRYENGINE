@@ -830,7 +830,6 @@ void SRenderThread::FlushAndWait()
 void SRenderThread::SyncMainWithRender(bool bFrameToFrame)
 {
 	CRY_PROFILE_REGION_WAITING(PROFILE_RENDERER, "Wait - SyncMainWithRender");
-	CRYPROFILE_SCOPE_PROFILE_MARKER("SyncMainWithRender");
 
 	if (!IsMultithreaded())
 	{

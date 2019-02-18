@@ -16,7 +16,6 @@
 
 #include "StreamEngine.h"
 #include <CrySystem/Profilers/IDiskProfiler.h>
-#include <CrySystem/Profilers/FrameProfiler/FrameProfiler_JobSystem.h>
 #include "../System.h"
 #include "../CryPak.h"
 
@@ -691,7 +690,6 @@ uint32 CAsyncIOFileRequest::ReadFileInPages(CStreamingIOThread* pIOThread, CCryF
 	char eventName[128] = { 0 };
 	cry_sprintf(eventName, "ReadFileInPages %s", pFileNameShort);
 	CRY_PROFILE_REGION(PROFILE_SYSTEM, "ReadFileInPages");
-	CRYPROFILE_SCOPE_PROFILE_MARKER(eventName);
 	CRYPROFILE_SCOPE_PLATFORM_MARKER(eventName);
 #endif
 

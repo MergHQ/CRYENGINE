@@ -4306,7 +4306,6 @@ void CMergedMeshesManager::SortActiveInstances(const SRenderingPassInfo& passInf
 void CMergedMeshesManager::Update(const SRenderingPassInfo& passInfo)
 {
 	CRY_PROFILE_REGION(PROFILE_3DENGINE, "MergedMeshesManager: Update");
-	CRYPROFILE_SCOPE_PROFILE_MARKER("MMRMGR: update")
 
 	if (GetCVars()->e_MergedMeshes == 0 || !passInfo.IsGeneralPass())
 		return;
@@ -4350,7 +4349,6 @@ void CMergedMeshesManager::Update(const SRenderingPassInfo& passInfo)
 	// Update registered particles
 	{
 		CRY_PROFILE_REGION(PROFILE_3DENGINE, "MMRMGR: update projectiles");
-		CRYPROFILE_SCOPE_PROFILE_MARKER("MMRMGR: update projectiles");
 
 		WriteLock _lock(m_ProjectileLock);
 		size_t pi = 0, pe = m_Projectiles.size();
@@ -4370,7 +4368,6 @@ void CMergedMeshesManager::Update(const SRenderingPassInfo& passInfo)
 
 	{
 		CRY_PROFILE_REGION(PROFILE_3DENGINE, "MMRMGR: state jobsync");
-		CRYPROFILE_SCOPE_PROFILE_MARKER("MMRMGR: state jobsync");
 
 		// Maintain a sorted list of active instances - we have to wait here for the job to have completed
 		gEnv->pJobManager->WaitForJob(m_updateState);
@@ -4379,7 +4376,6 @@ void CMergedMeshesManager::Update(const SRenderingPassInfo& passInfo)
 	// Stream in instances up until main memory pool limit
 	{
 		CRY_PROFILE_REGION(PROFILE_3DENGINE, "MMRMGR: streaming");
-		CRYPROFILE_SCOPE_PROFILE_MARKER("MMRMGR: streaming");
 
 		float yPos = 8.f;
 		bool hadOverflow = m_PoolOverFlow;

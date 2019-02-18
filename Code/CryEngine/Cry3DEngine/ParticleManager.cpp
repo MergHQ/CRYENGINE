@@ -642,7 +642,6 @@ void CParticleManager::OnFrameStart()
 void CParticleManager::Update()
 {
 	CRY_PROFILE_REGION(PROFILE_3DENGINE, "ParticleManager Update");
-	CRYPROFILE_SCOPE_PROFILE_MARKER("ParticleManager Update");
 
 	if (m_bEnabled && GetCVars()->e_Particles)
 	{

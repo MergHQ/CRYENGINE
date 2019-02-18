@@ -49,8 +49,6 @@ struct SGraphicsPipelinePassContext;
 	#include "../Scaleform/ScaleformRender.h"
 #endif
 
-#include <CrySystem/Profilers/FrameProfiler/FrameProfiler_JobSystem.h>
-
 #include "Common/RenderOutput.h"
 #include <Common/ElementPool.h>
 
@@ -962,7 +960,6 @@ inline void CD3D9Renderer::WaitForAsynchronousDevice() const
 	if (m_nAsyncDeviceState)
 	{
 		CRY_PROFILE_REGION_WAITING(PROFILE_RENDERER, "Sync Async DIPS");
-		CRYPROFILE_SCOPE_PROFILE_MARKER("Sync Async DIPS");
 
 		while (m_nAsyncDeviceState)
 		{
