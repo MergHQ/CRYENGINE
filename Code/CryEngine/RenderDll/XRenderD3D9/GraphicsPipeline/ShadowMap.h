@@ -170,7 +170,6 @@ private:
 	_smart_ptr<CTexture>     m_pRsmNormalTex;
 	_smart_ptr<CTexture>     m_pRsmPoolColorTex;
 	_smart_ptr<CTexture>     m_pRsmPoolNormalTex;
-	_smart_ptr<CTexture>     m_pRsmPoolDepth;
 
 	PassGroupList            m_ShadowMapPasses;
 	CFullscreenPass          m_CopyShadowMapPass;
