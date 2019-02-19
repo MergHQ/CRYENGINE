@@ -132,7 +132,7 @@ ILINE void CrySpinLock(volatile int* pLock, int checkVal, int setVal)
 	CSimpleThreadBackOff threadBackoff;
 	while (CryInterlockedCompareExchange((volatile LONG*)pLock, setVal, checkVal) != checkVal)
 	{
-		threadBackoff.backoff();
+		threadBackoff.Backoff();
 	}
 }
 
@@ -153,7 +153,7 @@ ILINE void CryReadLock(volatile int* rw)
 	CSimpleThreadBackOff backoff;
 	for (; *pw; )
 	{
-		backoff.backoff();
+		backoff.Backoff();
 	}
 }
 

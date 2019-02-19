@@ -167,23 +167,15 @@ ILINE unsigned char CryInterlockedCompareExchange128(volatile int64* pDst, int64
 class CSimpleThreadBackOff
 {
 public:
-	static const uint32 kSoftYieldInterval = 0x3FF;
-	static const uint32 kHardYieldInterval = 0x1FFF;
+	static const uint32 kSoftYieldInterval = 0x3F; // after 63 tries follow soft yield strategy
+	static const uint32 kHardYieldInterval = 0x7F; // after 127 tries follow hard yield strategy
 
 public:
 	CSimpleThreadBackOff() : m_counter(0) {}
 
-	void reset() { m_counter = 0; }
+	void Reset() { m_counter = 0; }
 
-	void backoff()
-	{
-		// Note: Not using Sleep(x) and SwitchToThread()
-		// Sleep(0): Give OS the CPU ... something none game related could block the core for a while (same for SwitchToThread())
-		// Sleep(1): System timer resolution dependent. Usual default is 1/64sec. So the worst case is we have to wait 15.6ms.
-
-		// Simply yield processor (good for hyper threaded systems. Allows the logical core to run)
-		_mm_pause();
-	}
+	void Backoff();
 
 private:
 	int m_counter;
