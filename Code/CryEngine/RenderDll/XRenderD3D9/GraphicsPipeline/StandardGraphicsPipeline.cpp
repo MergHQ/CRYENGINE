@@ -736,7 +736,10 @@ void CStandardGraphicsPipeline::ExecuteMinimumForwardShading()
 	m_pSceneGBufferStage->ExecuteMinimumZpass();
 
 	// forward opaque and transparent passes for recursive rendering
-	m_pSkyStage->Execute(pColorTex, pDepthTex);
+	if (!bSecondaryViewport)
+	{
+		m_pSkyStage->Execute(pColorTex, pDepthTex);
+	}	
 	m_pSceneForwardStage->ExecuteMinimum(pColorTex, pDepthTex);
 
 	// Insert fence which is used on consoles to prevent overwriting video memory
