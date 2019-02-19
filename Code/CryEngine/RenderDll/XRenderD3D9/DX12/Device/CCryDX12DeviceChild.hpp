@@ -82,7 +82,7 @@ public:
 			m_Data[guid] = std::make_pair(DataSize, Blob);
 			memcpy(Blob, pData, DataSize);
 		}
-		else
+		else if (elm != m_Data.end())
 		{
 			m_Data.erase(elm);
 		}

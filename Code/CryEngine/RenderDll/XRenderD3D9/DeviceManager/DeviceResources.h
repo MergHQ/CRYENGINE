@@ -115,9 +115,7 @@ public:
 	inline void SetDebugName(const char* name) const
 	{
 		using namespace DeviceResources_Internal;
-		string escapedStr = name;
-		EscapeStringForCStyleFormatting(escapedStr);
-		::SetDebugName(m_pNativeResource, escapedStr.c_str());
+		::SetDebugName(m_pNativeResource, name);
 	}
 
 	inline D3DResource* GetNativeResource() const
