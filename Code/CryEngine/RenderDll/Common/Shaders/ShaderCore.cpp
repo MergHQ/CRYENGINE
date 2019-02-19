@@ -433,7 +433,9 @@ void CShader::mfFlushCache()
 			for (const auto& pShader : shaders)
 			{
 				if (pShader)
+				{
 					pShader->mfFlushCacheFile();
+				}
 			}
 		}
 	}

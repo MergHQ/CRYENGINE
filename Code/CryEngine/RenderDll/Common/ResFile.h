@@ -18,8 +18,6 @@
 #define RF_DUPLICATE   BIT(1)
 #define RF_COMPRESS    BIT(2)
 #define RF_TEMPDATA    BIT(3)
-#define RF_RES_$TOKENS BIT(5)
-#define RF_RES_$ (RF_RES_$TOKENS)
 #define RF_COMPRESSED  BIT(7)
 
 class  CResFileLookupDataMan;

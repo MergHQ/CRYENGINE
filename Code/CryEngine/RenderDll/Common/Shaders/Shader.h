@@ -28,7 +28,7 @@
 
 // bump this value up if you want to invalidate shader cache (e.g. changed some code or .ext file)
 // #### VIP NOTE ####: DON'T USE MORE THAN ONE DECIMAL PLACE!!!! else it doesn't work...
-#define FX_CACHE_VER     0.6
+#define FX_CACHE_VER     1.0
 #define FX_SER_CACHE_VER 1.2    // Shader serialization version (FX_CACHE_VER + FX_SER_CACHE_VER)
 
 // Maximum 1 digit here
@@ -846,7 +846,6 @@ public:
 	virtual const char* mfGetEntryName() = 0;
 	virtual void        mfUpdatePreprocessFlags(SShaderTechnique* pTech) = 0;
 	virtual bool        mfFlushCacheFile() = 0;
-	bool                mfWriteoutTokensToCache();
 
 	// Used to precache shader combination during shader cache generation.
 	virtual bool        PrecacheShader(CShader* pSH, const SShaderCombIdent &cacheIdent,uint32 nFlags) = 0;

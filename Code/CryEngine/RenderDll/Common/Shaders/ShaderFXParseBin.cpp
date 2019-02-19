@@ -46,6 +46,8 @@ int CShaderManBin::Size()
 
 void CShaderManBin::GetMemoryUsage(ICrySizer* pSizer) const
 {
+	SIZER_COMPONENT_NAME(pSizer, "Bin Shaders");
+
 	pSizer->AddObject(m_BinPaths);
 	pSizer->AddObject(m_BinValidCRCs);
 
