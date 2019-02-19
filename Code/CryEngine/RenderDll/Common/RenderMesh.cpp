@@ -1564,7 +1564,18 @@ void CRenderMesh::ComputeSkinningCreateBindPoseAndMorphBuffers(CMesh& mesh)
 		else
 			vertices[i].pos = mesh.m_pPositionsF16[i].ToVec3();
 
-		vertices[i].qtangent = mesh.m_pQTangents[i].GetQ();
+		if (mesh.m_pQTangents)
+			vertices[i].qtangent = mesh.m_pQTangents[i].GetQ();
+		else if (mesh.m_pTangents)
+		{
+			// This shouldn't be done here...
+			Vec4sf t, b;
+			mesh.m_pTangents[i].ExportTo(t, b);
+			SPipQTangents q;
+			MeshTangentsFrameToQTangents(&t, sizeof(t), &b, sizeof(b), 1, &q, sizeof(q));
+			vertices[i].qtangent = q.GetQ();
+		}
+
 		vertices[i].uv = mesh.m_pTexCoord[i].GetUV();
 		vertices[i].morphDeltaOffset = haveDeltaMorphs ? mesh.m_verticesDeltaOffsets[i] : 0;
 		vertices[i].triOffset = count;
