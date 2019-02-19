@@ -740,7 +740,8 @@ void CSnowStage::RenderSnowClusters()
 
 	auto pPerViewCB = GetStdGraphicsPipeline().GetMainViewConstantBuffer();
 
-	CTexture* pOcclusionTex = (rainVolParams.bApplyOcclusion) ? CRendererResources::s_ptexRainOcclusion : CRendererResources::s_ptexBlack;
+	CTexture* pOcclusionTex = (rainVolParams.bApplyOcclusion && CTexture::IsTextureExist(CRendererResources::s_ptexRainOcclusion)) ? 
+		CRendererResources::s_ptexRainOcclusion : CRendererResources::s_ptexBlack;
 
 	uint64 rtMask = 0;
 	if (rainVolParams.bApplyOcclusion)
