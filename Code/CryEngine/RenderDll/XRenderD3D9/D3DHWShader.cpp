@@ -304,12 +304,6 @@ CHWShader* CHWShader::mfForName(const char* name, const char* nameSource, uint32
 			{
 				if (SHData.size())
 				{
-					char strName[256];
-#if defined(CRY_COMPILER_GCC) || defined(CRY_COMPILER_CLANG)
-					cry_sprintf(strName, "$MAP_%llx", pSH->m_nMaskGenShader);
-#else
-					cry_sprintf(strName, "$MAP_%I64x", pSH->m_nMaskGenShader);
-#endif
 					pSH->mfStoreCacheTokenMap(Table, SHData);
 				}
 			}
@@ -563,12 +557,6 @@ void CHWShader_D3D::mfConstructFX(const FXShaderToken& Table, const TArray<uint3
 	{
 		if (SHData.size())
 		{
-			char strName[256];
-#if defined(CRY_COMPILER_GCC) || defined(CRY_COMPILER_CLANG)
-			cry_sprintf(strName, "$MAP_%llx", m_nMaskGenShader);
-#else
-			cry_sprintf(strName, "$MAP_%I64x", m_nMaskGenShader);
-#endif
 			mfStoreCacheTokenMap(Table, SHData);
 		}
 	}
@@ -793,8 +781,7 @@ void CHWShader_D3D::mfPrecacheAllCombinations(CShader* pFX, CResFileOpenScope &r
 		const auto devCacheKey = static_cast<SHWShaderCache::deviceShaderCacheKey>(name);
 
 		// Already exists or invalid
-		if (!shaderEntry.IsValid() || 
-			(shaderEntry.GetFlags() & (RF_RES_$TOKENS | RF_RES_$)))
+		if (!shaderEntry.IsValid())
 			continue;
 
 		// Store duplicates for later and continue

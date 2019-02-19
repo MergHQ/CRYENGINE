@@ -45,7 +45,7 @@ CTraySearchBox::CTraySearchBox(QWidget* pParent /* = nullptr*/)
 {
 	EnableContinuousSearch(true);
 	connect(this, &QLineEdit::textChanged, this, &CTraySearchBox::ShowSearchResults);
-	signalOnFiltered.Connect(this, &CTraySearchBox::OnFilter);
+	signalOnSearch.Connect(this, &CTraySearchBox::OnFilter);
 
 	m_pFilterProxy = new QDeepFilterProxyModel();
 	m_pFilterProxy->setSourceModel(CreateMainMenuModel());

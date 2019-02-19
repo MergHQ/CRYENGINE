@@ -566,17 +566,21 @@ SPlanningMemoryState CPlanningTextureStreamer::GetMemoryState()
 {
 	SPlanningMemoryState ms = { 0 };
 
-	ms.nMemStreamed      = CTexture::s_nStatsStreamPoolInUseMem;   // Sum of all allocated memory
-	ms.nMemBoundStreamed = CTexture::s_nStatsStreamPoolBoundMem;   // Sum of all in-used memory
-	ms.nMemTemp          = ms.nMemStreamed - ms.nMemBoundStreamed; // Sum of allocated temporary/overhang memory
-
 #if CRY_PLATFORM_DURANGO && (CRY_RENDERER_DIRECT3D >= 110) && (CRY_RENDERER_DIRECT3D < 120)
+	ms.nMemStreamed      = GetDeviceObjectFactory().m_texturePool.GetTotalAllocated(); // Sum of all allocated memory
+	ms.nMemBoundStreamed = ms.nMemStreamed;                                            // Sum of all in-used memory
+	ms.nMemTemp          = 0;                                                          // Sum of allocated temporary/overhang memory
+
 	// Keep 30MB free to preserve the ability to conduct defragmentation
 	ms.nPoolLimit    = std::max(0ULL, GetDeviceObjectFactory().m_texturePool.GetPoolSize() - 30 * 1024 * 1024);
 
 	ms.nMemLimit     = ms.nPoolLimit * 96 / 100;
 	ms.nMemFreeSlack = ms.nPoolLimit *  4 / 100;
 #else
+	ms.nMemStreamed      = CTexture::s_nStatsStreamPoolInUseMem;   // Sum of all allocated memory
+	ms.nMemBoundStreamed = CTexture::s_nStatsStreamPoolBoundMem;   // Sum of all in-used memory
+	ms.nMemTemp          = ms.nMemStreamed - ms.nMemBoundStreamed; // Sum of allocated temporary/overhang memory
+
 	ms.nPoolLimit    = CRenderer::GetTexturesStreamPoolSize() * 1024 * 1024;
 
 	ms.nMemLimit     = ms.nPoolLimit * 95 / 100;

@@ -1821,10 +1821,7 @@ void CShaderMan::_PrecacheShaderList(bool bStatsOnly)
 									if (!bStatsOnly)
 										shader->mfAddEmptyCombination(nFlagsOrigShader_RT, nFlagsOrigShader_GL, nFlagsOrigShader_LT, cmbSaved);
 								}
-
-								shader->mfWriteoutTokensToCache();
-							}
-							
+							}							
 						}
 
 						if (bStatsOnly)
@@ -1841,7 +1838,6 @@ void CShaderMan::_PrecacheShaderList(bool bStatsOnly)
 	#endif
 					}
 				}
-				pSH->mfFlushPendedShaders();
 				iLog->Update();
 			}
 

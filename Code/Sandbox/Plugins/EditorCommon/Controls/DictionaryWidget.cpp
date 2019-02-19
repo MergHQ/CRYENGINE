@@ -369,7 +369,7 @@ CDictionaryWidget::CDictionaryWidget(QWidget* pParent, QFilteringPanel* pFilteri
 
 	m_pFilter->EnableContinuousSearch(true);
 	m_pFilter->setPlaceholderText("Search");
-	m_pFilter->signalOnFiltered.Connect(this, &CDictionaryWidget::OnFiltered);
+	m_pFilter->signalOnSearch.Connect(this, &CDictionaryWidget::OnFiltered);
 
 	m_pTreeView->setSelectionMode(QAbstractItemView::NoSelection);
 	m_pTreeView->setHeaderHidden(true);

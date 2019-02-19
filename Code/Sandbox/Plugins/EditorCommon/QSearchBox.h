@@ -47,7 +47,7 @@ public:
 	//! Returns true if there is an active search text in the searchBox
 	bool IsEmpty() const;
 
-	CCrySignal<void()> signalOnFiltered;
+	CCrySignal<void(bool /*isNewSearch*/)> signalOnSearch;
 
 private:
 

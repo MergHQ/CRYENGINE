@@ -764,7 +764,7 @@ inline FILE* fxopen(const char* file, const char* mode, bool bGameRelativePath =
 class CScopedAllowFileAccessFromThisThread
 {
 public:
-#if defined(_RELEASE)
+#if defined(_RELEASE) && !defined(ENABLE_PROFILING_CODE)
 	CScopedAllowFileAccessFromThisThread() = default;
 	~CScopedAllowFileAccessFromThisThread()	{}
 	void End() {}
@@ -797,7 +797,7 @@ protected:
 #endif
 };
 
-#if defined(_RELEASE)
+#if defined(_RELEASE) && !defined(ENABLE_PROFILING_CODE)
 	#define SCOPED_ALLOW_FILE_ACCESS_FROM_THIS_THREAD()
 #else
 	#define SCOPED_ALLOW_FILE_ACCESS_FROM_THIS_THREAD() CScopedAllowFileAccessFromThisThread allowFileAccess

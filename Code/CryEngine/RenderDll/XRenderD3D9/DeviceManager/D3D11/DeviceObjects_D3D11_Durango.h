@@ -100,7 +100,16 @@ public:
 	void DeInit();
 
 	size_t GetPoolSize() const;
+	//! Not including overflow allocations
 	size_t GetPoolAllocated() const;
+	//! Only overflow allocations
+	size_t GetPoolOverflowAllocated() const;
+	//! The number of overflow allocations
+	size_t GetPoolOverflowAllocationCount() const;
+	//! Including overflow allocations
+	size_t GetTotalAllocated() const;
+	//! Pool size minus all allocations including overflow
+	size_t GetTotalRemainingPoolSize() const;
 
 	void RT_Tick();
 
@@ -237,6 +246,8 @@ private:
 	UINT_PTR m_bankShift;
 	UINT m_memType;
 	bool m_allowAdditionalBanks;
+	size_t m_overflowAllocationSize;
+	std::unordered_map<void*, size_t> m_overflowAllocationMap;
 
 	PendingFreeVec m_pendingFrees;
 	std::vector<Bank> m_banks;

@@ -7,12 +7,6 @@
 
 #include <CryThreading/IThreadManager.h>
 
-#if CRY_PLATFORM_DURANGO
-	#include <CryCore/Platform/CryWindows.h>
-	#define JOB_SPIN_DURING_IDLE
-	#define DURANGO_ENABLE_ASYNC_DIPS 1
-#endif
-
 namespace JobManager
 {
 class CJobManager;

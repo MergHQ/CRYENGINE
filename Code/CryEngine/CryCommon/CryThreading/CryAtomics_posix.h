@@ -255,9 +255,9 @@ public:
 public:
 	CSimpleThreadBackOff() : m_counter(0) {}
 
-	void reset() { m_counter = 0; }
+	void Reset() { m_counter = 0; }
 
-	void backoff()
+	void Backoff()
 	{
 #if !CRY_PLATFORM_ANDROID
 		_mm_pause();

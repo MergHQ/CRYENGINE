@@ -2059,6 +2059,8 @@ void CRenderer::EF_QueryImpl(ERenderQueryTypes eQuery, void* pInOut0, uint32 nIn
 #if CRY_PLATFORM_DURANGO && (CRY_RENDERER_DIRECT3D >= 110) && (CRY_RENDERER_DIRECT3D < 120)
 			IDefragAllocatorStats allocStats = GetDeviceObjectFactory().GetTexturePoolStats();
 			stats->nCurrentPoolSize         = allocStats.nInUseSize;
+			stats->nOverflowAllocationSize  = GetDeviceObjectFactory().m_texturePool.GetPoolOverflowAllocated();
+			stats->nOverflowAllocationCount = GetDeviceObjectFactory().m_texturePool.GetPoolOverflowAllocationCount();
 #else
 			stats->nCurrentPoolSize         = CTexture::s_pPoolMgr->GetReservedSize();      // s_nStatsStreamPoolInUseMem;
 #endif

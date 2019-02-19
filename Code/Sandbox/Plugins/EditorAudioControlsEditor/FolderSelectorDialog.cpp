@@ -89,7 +89,7 @@ CFolderSelectorDialog::CFolderSelectorDialog(QString const& assetFolderPath, QSt
 	QObject::connect(pDialogButtons, &QDialogButtonBox::accepted, this, &CFolderSelectorDialog::OnAccept);
 	QObject::connect(pDialogButtons, &QDialogButtonBox::rejected, this, &CFolderSelectorDialog::reject);
 
-	m_pSearchBox->signalOnFiltered.Connect([&]()
+	m_pSearchBox->signalOnSearch.Connect([&]()
 		{
 			m_pTreeView->scrollTo(m_pTreeView->currentIndex());
 		}, reinterpret_cast<uintptr_t>(this));
@@ -98,7 +98,7 @@ CFolderSelectorDialog::CFolderSelectorDialog(QString const& assetFolderPath, QSt
 //////////////////////////////////////////////////////////////////////////
 CFolderSelectorDialog::~CFolderSelectorDialog()
 {
-	m_pSearchBox->signalOnFiltered.DisconnectById(reinterpret_cast<uintptr_t>(this));
+	m_pSearchBox->signalOnSearch.DisconnectById(reinterpret_cast<uintptr_t>(this));
 }
 
 //////////////////////////////////////////////////////////////////////////

@@ -849,34 +849,6 @@ void CHWShader::mfValidateDirEntries(CResFile* pRF)
 #endif
 }
 
-bool CHWShader::mfWriteoutTokensToCache()
-{
-	if (!m_CachedTokens.size())
-		return true;
-
-	char szName[256];
-#if defined(CRY_COMPILER_GCC) || defined(CRY_COMPILER_CLANG)
-	cry_sprintf(szName, "$MAP_%llx", m_nMaskGenFX);
-#else
-	cry_sprintf(szName, "$MAP_%I64x", m_nMaskGenFX);
-#endif
-
-	auto cache = AcquireDiskCache(cacheSource::user);
-	CRY_ASSERT_MESSAGE(cache && cache->m_pRes, "Could not acquire user disk cache");
-	if (cache && cache->m_pRes)
-	{
-		CDirEntry de(szName, m_CachedTokens.size(), RF_RES_$TOKENS);
-		cache->m_pRes->mfFileAdd(&de);
-		SDirEntryOpen* pOE = cache->m_pRes->mfOpenEntry(de.GetName());
-		pOE->pData = const_cast<char*>(m_CachedTokens.data());
-		cache->m_pRes->mfFlush();
-		cache->m_pRes->mfCloseEntry(de.GetName(), de.GetFlags());
-
-		return true;
-	}
-
-	return false;
-}
 
 bool CHWShader_D3D::mfStoreCacheTokenMap(const FXShaderToken& Table, const TArray<uint32>& SHData)
 {
@@ -913,8 +885,6 @@ bool CHWShader_D3D::mfStoreCacheTokenMap(const FXShaderToken& Table, const TArra
 
 	m_CachedTokens.resize(Data.size());
 	std::memcpy(&m_CachedTokens[0], Data.Data(), Data.size());
-
-	mfWriteoutTokensToCache();
 
 	return true;
 }
@@ -2421,40 +2391,18 @@ bool SDiskShaderCache::mfOptimiseCacheFile(SOptimiseStats* pStats)
 		if (!DE.IsValid())
 			continue;
 
-		if (DE.GetFlags() & RF_RES_$)
-		{
-			if (DE.GetName() == CShaderMan::s_cNameHEAD)
-				continue;
-
-			SData d;
-			d.nSizeComp = d.nSizeDecomp = 0;
-			d.pData = m_pRes->mfFileReadCompressed(&DE, d.nSizeDecomp, d.nSizeComp);
-			assert(d.pData && d.nSizeComp && d.nSizeDecomp);
-			if (!d.pData || !d.nSizeComp || !d.nSizeDecomp)
-				continue;
-			if (pStats)
-				pStats->nTokenDataSize += d.nSizeDecomp;
-			d.nOffset = 0;
-			d.needsProcessing = false;
-			d.Name = DE.GetName();
-			d.flags = DE.GetFlags();
-			Data.push_back(d);
-		}
-		else
-		{
-			SData d;
-			d.flags = DE.GetFlags();
-			d.nSizeComp = d.nSizeDecomp = 0;
-			d.pData = m_pRes->mfFileReadCompressed(&DE, d.nSizeDecomp, d.nSizeComp);
-			assert(d.pData && d.nSizeComp && d.nSizeDecomp);
-			if (!d.pData || !d.nSizeComp || !d.nSizeDecomp)
-				continue;
-			d.nOffset = DE.GetOffset();
-			d.needsProcessing = true;
-			d.Name = DE.GetName();
-			Data.push_back(d);
-			m_pRes->mfCloseEntry(DE.GetName(), DE.GetFlags());
-		}
+		SData d;
+		d.flags = DE.GetFlags();
+		d.nSizeComp = d.nSizeDecomp = 0;
+		d.pData = m_pRes->mfFileReadCompressed(&DE, d.nSizeDecomp, d.nSizeComp);
+		assert(d.pData && d.nSizeComp && d.nSizeDecomp);
+		if (!d.pData || !d.nSizeComp || !d.nSizeDecomp)
+			continue;
+		d.nOffset = DE.GetOffset();
+		d.needsProcessing = true;
+		d.Name = DE.GetName();
+		Data.push_back(d);
+		m_pRes->mfCloseEntry(DE.GetName(), DE.GetFlags());
 	}
 
 	int nOutFiles = Data.size();
@@ -2519,13 +2467,7 @@ bool SDiskShaderCache::mfOptimiseCacheFile(SOptimiseStats* pStats)
 			SData* pD = &Data[i];
 			CDirEntry de;
 
-			if (pD->flags & RF_RES_$)
-			{
-				de = CDirEntry(pD->Name, pD->nSizeDecomp, pD->flags);
-				SDirEntryOpen* pOE = m_pRes->mfOpenEntry(pD->Name);
-				pOE->pData = pD->pData;
-			}
-			else if (pD->flags & RF_DUPLICATE)
+			if (pD->flags & RF_DUPLICATE)
 			{
 				de = CDirEntry(pD->Name, pD->nSizeComp + 4, pD->nOffset, pD->flags | RF_COMPRESS);
 				SAFE_DELETE_ARRAY(pD->pData);

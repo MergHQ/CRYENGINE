@@ -74,3 +74,34 @@ void* CryInterlockedFlushSList(SLockFreeSingleLinkedListHeader& list)
 	static_assert(sizeof(SLockFreeSingleLinkedListHeader) == sizeof(SLIST_HEADER), "CRY_INTERLOCKED_SLIST_HEADER_HAS_WRONG_SIZE");
 	return InterlockedFlushSList(alias_cast<PSLIST_HEADER>(&list));
 }
+
+
+//////////////////////////////////////////////////////////////////////////
+// Helper
+//////////////////////////////////////////////////////////////////////////
+
+
+void CSimpleThreadBackOff::Backoff()
+{
+	// Simply yield processor (good for hyper threaded systems. Allows the logical core to run)
+	_mm_pause();
+
+	// Note: Not using Sleep(x) and SwitchToThread()
+	// SwitchToThread(): Gives up thread timeslice. Allows another thread of "any" prio to run "if" it resides on the same processor.
+	// Sleep(0): Gives up thread timeslice. Allows another thread of the "same" prio to. Processor affinity is not mentioned in the documentation.
+	// Sleep(1): System timer resolution dependent. Usual default is 1/64sec. So the worst case is we have to wait 15.6ms.
+	if (!(++m_counter & kHardYieldInterval))
+	{
+		// Alternate strategies
+		if (m_counter & 1)
+		{
+			// Allow threads with "same" prio to run that are scheduled on "any" processor.
+			CrySleep(0);
+		}
+		else
+		{
+			// Allow threads with "any" prio to run that are scheduled on the "same" processor.
+			SwitchToThread();
+		}
+	}
+}
