@@ -51,7 +51,7 @@ private:
 
 	static const float        kExtendedFlareRadiusRatio;
 
-	void RT_RenderPreview(const SLensFlareRenderParam* pParam, const Vec3& vPos);
+	void RT_RenderPreview(const Vec3& vPos);
 
 public:
 

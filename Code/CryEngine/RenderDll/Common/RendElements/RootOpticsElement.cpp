@@ -217,21 +217,20 @@ void RootOpticsElement::RenderPreview(const SLensFlareRenderParam* pParam, const
 
 	if (gcpRendD3D->m_pRT->IsRenderThread())
 	{
-		return RT_RenderPreview(pParam, vPos);
+		return RT_RenderPreview(vPos);
 	}
 	
-	SLensFlareRenderParam copyParam = *pParam;
-	gcpRendD3D->m_pRT->ExecuteRenderThreadCommand([=] 
+	_smart_ptr<CRenderView> pRenderView = pParam->passInfo.GetRenderView();
+	gcpRendD3D->m_pRT->ExecuteRenderThreadCommand([=]
 	{
-		RT_RenderPreview(&copyParam, vPos);
+		gcpRendD3D->GetGraphicsPipeline().SetCurrentRenderView(pRenderView.get());
+		RT_RenderPreview(vPos);
 	}, ERenderCommandFlags::None);
 }
 
-void RootOpticsElement::RT_RenderPreview(const SLensFlareRenderParam* pParam, const Vec3& vPos)
+void RootOpticsElement::RT_RenderPreview(const Vec3& vPos)
 {
 	CRY_PROFILE_REGION(PROFILE_RENDERER, "RootOpticsElement::RT_RenderPreview");
-
-	CRY_ASSERT(pParam  && pParam->IsValid());
 
 	SFlareLight light;
 	light.m_vPos = vPos;
