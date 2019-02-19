@@ -161,6 +161,7 @@ public:
 	static int CV_r_shadersCacheClearOnVersionChange;
 	static int CV_r_meshpoolsize;
 	static int CV_r_meshinstancepoolsize;
+	static int CV_r_MeshPoolForceFreeAfterUpdate;
 	static int CV_r_multigpu;
 
 	static int CV_r_nodrawnear;

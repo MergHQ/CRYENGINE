@@ -3310,7 +3310,8 @@ void CD3D9Renderer::RT_EndFrame()
 	#if DURANGO_ENABLE_ASYNC_DIPS
 			WaitForAsynchronousDevice();
 	#endif
-			hReturn = swapDC->GetSwapChain().Present(m_VSync ? 1 : 0, 0);
+			DWORD syncInterval = swapDC->ComputePresentInterval(m_VSync ? 1 : 0);
+			hReturn = swapDC->GetSwapChain().Present(syncInterval, 0);
 	#if DURANGO_ENABLE_ASYNC_DIPS
 			WaitForAsynchronousDevice();
 	#endif
@@ -5161,6 +5162,7 @@ public:
 	virtual void OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lparam)
 	{
 		static bool bInside = false;
+		static bool bWasConstrained = false;
 		if (bInside)
 			return;
 		bInside = true;
@@ -5182,24 +5184,34 @@ public:
 
 #if CRY_PLATFORM_DURANGO
 		case ESYSTEM_EVENT_PLM_ON_CONSTRAINED:
+		{
+			if (!bWasConstrained)
 			{
 				ICVar* pWidth  = iConsole->GetCVar("r_CustomResWidth");
 				ICVar* pHeight = iConsole->GetCVar("r_CustomResHeight");
 
-				if (pWidth ) pWidth ->Set(pWidth ->GetIVal() * 9 / 10);
+				if (pWidth)  pWidth->Set(pWidth->GetIVal() * 9 / 10);
 				if (pHeight) pHeight->Set(pHeight->GetIVal() * 9 / 10);
+
+				bWasConstrained = true;
 			}
-			break;
+		}
+		break;
 
 		case ESYSTEM_EVENT_PLM_ON_FULL:
+		{
+			if (bWasConstrained)
 			{
 				ICVar* pWidth  = iConsole->GetCVar("r_CustomResWidth");
 				ICVar* pHeight = iConsole->GetCVar("r_CustomResHeight");
 
-				if (pWidth ) pWidth ->Set(pWidth ->GetIVal() * 10 / 9);
+				if (pWidth)  pWidth->Set(pWidth->GetIVal() * 10 / 9);
 				if (pHeight) pHeight->Set(pHeight->GetIVal() * 10 / 9);
+
+				bWasConstrained = false;
 			}
-			break;
+		}
+		break;
 #endif
 
 		case ESYSTEM_EVENT_LEVEL_LOAD_START:

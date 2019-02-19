@@ -2560,17 +2560,18 @@ void C3DEngine::DisplayInfo(float& fTextPosX, float& fTextPosY, float& fTextStep
 
 			const int iPercentage = int((float)stats.nCurrentPoolSize / stats.nMaxPoolSize * 100.f);
 			const int iStaticPercentage = int((float)stats.nStaticTexturesSize / stats.nMaxPoolSize * 100.f);
-			cry_sprintf(szTexStreaming, "TexStrm: TexRend: %u NumTex: %u Req:%.1fMB Mem(strm/stat/tot):%.1f/%.1f/%.1fMB(%d%%/%d%%) PoolSize:%" PRISIZE_T "MB PoolFrag:%.1f%%",
+			cry_sprintf(szTexStreaming, "TexStrm: TexRend: %u NumTex: %u Req:%.1fMB Mem(strm/stat/tot):%.1f/%.1f/%.1fMB(%d%%/%d%%) Overflow:(%llu MB, Num: %llu), PoolSize:%" PRISIZE_T "MB PoolFrag:%.1f%%",
 			            stats.nNumTexturesPerFrame, nTexCount, (float)nPlatformSize / 1024 / 1024,
 			            (float)stats.nStreamedTexturesSize / 1024 / 1024,
 			            (float)stats.nStaticTexturesSize / 1024 / 1024,
 			            (float)stats.nCurrentPoolSize / 1024 / 1024,
 			            iPercentage, iStaticPercentage,
+				        stats.nOverflowAllocationSize / 1024 / 1024, stats.nOverflowAllocationCount,
 			            stats.nMaxPoolSize / 1024 / 1024,
 			            stats.fPoolFragmentation * 100.0f
 			            );
 			bOverloadedPool |= stats.bPoolOverflowTotally;
-
+			bCloseToOutOfMem |= stats.nOverflowAllocationCount != 0;
 			bCloseToOutOfMem = iPercentage >= 90;
 			bOutOfMem = stats.bPoolOverflow;
 		}

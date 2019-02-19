@@ -235,6 +235,8 @@ struct STextureStreamingStats
 		nStaticTexturesSize = 0;
 		nNumStreamingRequests = 0;
 		nThroughput = 0;
+		nOverflowAllocationSize = 0;
+		nOverflowAllocationCount = 0;
 		nNumTexturesPerFrame = 0;
 		nRequiredStreamedTexturesSize = 0;
 		nRequiredStreamedTexturesCount = 0;
@@ -247,6 +249,8 @@ struct STextureStreamingStats
 	size_t     nStreamedTexturesSize;
 	size_t     nStaticTexturesSize;
 	size_t     nNumStreamingRequests;
+	size_t     nOverflowAllocationSize;
+	size_t     nOverflowAllocationCount;
 	uint32     nNumTexturesPerFrame;
 	size_t     nThroughput;
 	size_t     nRequiredStreamedTexturesSize;

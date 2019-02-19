@@ -493,7 +493,7 @@ const SSpecData gConfigSpecs[] =
 	{ "Medium",   "Medium",         CONFIG_MEDIUM_SPEC },
 	{ "High",     "High",           CONFIG_HIGH_SPEC },
 	{ "VeryHigh", "Very High",      CONFIG_VERYHIGH_SPEC },
-	{ "XboxOne",  "XBox One",       CONFIG_DURANGO },
+	{ "XBO",      "XBox One",       CONFIG_DURANGO },
 	{ "XboxOneX", "XBox One X",     CONFIG_DURANGO_X },
 	{ "PS4",      "Playstation 4",  CONFIG_ORBIS },
 };

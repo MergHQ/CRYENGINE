@@ -5212,7 +5212,7 @@ void CSystem::CreateSystemVars()
 #endif
 #endif
 
-	REGISTER_CVAR2("sys_usePlatformSavingAPI", &g_cvars.sys_usePlatformSavingAPI, default_sys_usePlatformSavingAPI, VF_CHEAT, "Use the platform APIs for saving and loading (complies with TRCs, but allocates lots of memory)");
+	REGISTER_CVAR2("sys_usePlatformSavingAPI", &g_cvars.sys_usePlatformSavingAPI, default_sys_usePlatformSavingAPI, VF_REQUIRE_APP_RESTART, "Use the platform APIs for saving and loading (complies with TRCs, but allocates lots of memory)");
 #ifndef _RELEASE
 	REGISTER_CVAR2("sys_usePlatformSavingAPIEncryption", &g_cvars.sys_usePlatformSavingAPIEncryption, default_sys_usePlatformSavingAPIDefault, VF_CHEAT, "Use encryption cipher when using the platform APIs for saving and loading");
 #endif

@@ -9,15 +9,19 @@
 #include "GraphicsPipeline/DebugRenderTargets.h"
 #include <cctype>
 
-#if CRY_PLATFORM_DURANGO || CRY_PLATFORM_ORBIS
+#if CRY_PLATFORM_CONSOLE
 	#define RENDERER_DEFAULT_MESHPOOLSIZE         (64U << 10)
 	#define RENDERER_DEFAULT_MESHINSTANCEPOOLSIZE (16U << 10)
+	#define RENDERER_DEFAULT_MESHPOOLFREEAFTERUPDATE 1
 #endif
 #if !defined(RENDERER_DEFAULT_MESHPOOLSIZE)
 	#define RENDERER_DEFAULT_MESHPOOLSIZE (0U)
 #endif
 #if !defined(RENDERER_DEFAULT_MESHINSTANCEPOOLSIZE)
 	#define RENDERER_DEFAULT_MESHINSTANCEPOOLSIZE (0U)
+#endif
+#if !defined(RENDERER_DEFAULT_MESHPOOLFREEAFTERUPDATE)
+	#define RENDERER_DEFAULT_MESHPOOLFREEAFTERUPDATE 0
 #endif
 
 //////////////////////////////////////////////////////////////////////////
@@ -289,6 +293,7 @@ int CRendererCVars::CV_r_shadersCacheClearOnVersionChange;
 AllocateConstIntCVar(CRendererCVars, CV_r_meshprecache);
 int CRendererCVars::CV_r_meshpoolsize;
 int CRendererCVars::CV_r_meshinstancepoolsize;
+int CRendererCVars::CV_r_MeshPoolForceFreeAfterUpdate;
 
 AllocateConstIntCVar(CRendererCVars, CV_r_ZPassDepthSorting);
 float CRendererCVars::CV_r_ZPrepassMaxDist;
@@ -2409,6 +2414,11 @@ void CRendererCVars::InitCVars()
 	REGISTER_CVAR3("r_MeshInstancePoolSize", CV_r_meshinstancepoolsize, RENDERER_DEFAULT_MESHINSTANCEPOOLSIZE, VF_NULL,
 	               "The size of the pool for volatile render data in kilobytes. "
 	               "Disabled by default on PC (mesh data allocated on heap)."
+	               "Enabled by default on consoles. Requires app restart to change.");
+	REGISTER_CVAR3("r_MeshPoolForceFreeAfterUpdate", CV_r_MeshPoolForceFreeAfterUpdate, RENDERER_DEFAULT_MESHPOOLFREEAFTERUPDATE, VF_NULL,
+	               "Force mesh pool (malloc) allocations to free after the GPU buffer update."
+	               "Fixes allocations not being freed when RENDERMESH_BUFFER_ENABLE_DIRECT_ACCESS is off on consoles."
+	               "Disabled by default on PC."
 	               "Enabled by default on consoles. Requires app restart to change.");
 
 	CV_r_excludeshader = REGISTER_STRING("r_ExcludeShader", "0", VF_CHEAT,

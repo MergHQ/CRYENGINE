@@ -198,7 +198,12 @@ CSwapChain CSwapChain::CreateSwapChain(IDXGIFactory2ToCall* pDXGIFactory, ID3D11
 		CRY_ASSERT(SUCCEEDED(hr) && pSwapChain != nullptr);
 	}
 
-	return CSwapChain{ pSwapChain, nullptr };
+	CSwapChain sc = { pSwapChain, nullptr };
+
+	sc.m_refreshRateNumerator = 60;
+	sc.m_refreshRateDenominator = 1;
+
+	return sc;
 }
 #endif
 

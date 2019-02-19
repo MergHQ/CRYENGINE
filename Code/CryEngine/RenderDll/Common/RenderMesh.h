@@ -18,6 +18,7 @@
 #include <CryCore/Containers/VectorMap.h>
 #include <CryCore/Containers/VectorSet.h>
 #include <CryMath/GeomQuery.h>
+#include <3rdParty/concqueue/concqueue-mpsc.hpp>
 #include <CryThreading/IJobManager.h>
 
 #include "ComputeSkinningStorage.h"
@@ -537,7 +538,10 @@ public:
 	static util::list<CRenderMesh> s_MeshGarbageList[MAX_RELEASED_MESH_FRAMES];
 	static util::list<CRenderMesh> s_MeshDirtyList[2];
 	static util::list<CRenderMesh> s_MeshModifiedList[2];
-
+	
+	// this queue is used when RENDERMESH_BUFFER_ENABLE_DIRECT_ACCESS is off to clean up the mesh pool allocations after the data is uploaded
+	static concqueue::mpsc_queue_t<void*> s_FreeableMeshDataList; 
+	
 	TRenderChunkArray              m_Chunks;
 	TRenderChunkArray              m_ChunksSubObjects; // Chunks of sub-objects.
 	TRenderChunkArray              m_ChunksSkinned;

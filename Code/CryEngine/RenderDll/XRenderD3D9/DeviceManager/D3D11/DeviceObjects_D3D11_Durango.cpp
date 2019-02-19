@@ -204,6 +204,7 @@ private:
 CDurangoGPUMemoryManager::CDurangoGPUMemoryManager()
 	: m_pAllocator(NULL)
 	, m_pCPUAddr(NULL)
+	, m_overflowAllocationSize(0)
 {
 }
 
@@ -343,6 +344,28 @@ size_t CDurangoGPUMemoryManager::GetPoolAllocated() const
 	return m_pAllocator->GetAllocated();
 }
 
+size_t CDurangoGPUMemoryManager::GetPoolOverflowAllocated() const
+{
+	return m_overflowAllocationSize;
+}
+
+size_t CDurangoGPUMemoryManager::GetPoolOverflowAllocationCount() const
+{
+	return m_overflowAllocationMap.size();
+}
+
+size_t CDurangoGPUMemoryManager::GetTotalAllocated() const
+{
+	return GetPoolAllocated() + GetPoolOverflowAllocated();
+}
+
+size_t CDurangoGPUMemoryManager::GetTotalRemainingPoolSize() const
+{
+	const size_t poolSize = GetPoolSize();
+	const size_t totalAlloc = GetTotalAllocated();
+	return totalAlloc > poolSize ? 0 : poolSize - totalAlloc;
+}
+
 void CDurangoGPUMemoryManager::RT_Tick()
 {
 	FUNCTION_PROFILER_RENDERER();
@@ -454,6 +477,8 @@ CDurangoGPUMemoryManager::AllocateResult CDurangoGPUMemoryManager::AllocatePinne
 		{
 			ret.hdl = SGPUMemHdl(pBaseAddress);
 			ret.baseAddress = pBaseAddress;
+			m_overflowAllocationSize += amount;
+			m_overflowAllocationMap[pBaseAddress] = amount;
 		}
 	}
 
@@ -518,8 +543,9 @@ void CDurangoGPUMemoryManager::FreeUnused(SGPUMemHdl hdl)
 #if !defined(MEMREPLAY_INSTRUMENT_TEXTUREPOOL)
 		MEMREPLAY_HIDE_BANKALLOC();
 #endif
-
 		pBaseAddress = hdl.GetFixedAddress();
+		m_overflowAllocationSize -= m_overflowAllocationMap[pBaseAddress];
+		m_overflowAllocationMap.erase(pBaseAddress);
 		D3DFreeGraphicsMemory(pBaseAddress);
 	}
 
@@ -726,8 +752,9 @@ void CDurangoGPUMemoryManager::TickFrees_Locked()
 #if !defined(MEMREPLAY_INSTRUMENT_TEXTUREPOOL)
 				MEMREPLAY_HIDE_BANKALLOC();
 #endif
-
 				pBaseAddress = pf.hdl.GetFixedAddress();
+				m_overflowAllocationSize -= m_overflowAllocationMap[pBaseAddress];
+				m_overflowAllocationMap.erase(pBaseAddress);
 				D3DFreeGraphicsMemory(pBaseAddress);
 			}
 

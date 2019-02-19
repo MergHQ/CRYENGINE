@@ -319,10 +319,11 @@ namespace
 
 CryCriticalSection CRenderMesh::m_sLinkLock;
 
-util::list<CRenderMesh> CRenderMesh::s_MeshList;
-util::list<CRenderMesh> CRenderMesh::s_MeshGarbageList[MAX_RELEASED_MESH_FRAMES];
-util::list<CRenderMesh> CRenderMesh::s_MeshDirtyList[2];
-util::list<CRenderMesh> CRenderMesh::s_MeshModifiedList[2];
+util::list<CRenderMesh>        CRenderMesh::s_MeshList;
+util::list<CRenderMesh>        CRenderMesh::s_MeshGarbageList[MAX_RELEASED_MESH_FRAMES];
+util::list<CRenderMesh>        CRenderMesh::s_MeshDirtyList[2];
+util::list<CRenderMesh>        CRenderMesh::s_MeshModifiedList[2];
+concqueue::mpsc_queue_t<void*> CRenderMesh::s_FreeableMeshDataList;
 
 int CRenderMesh::Release()
 {
@@ -2908,40 +2909,45 @@ bool CRenderMesh::UpdateVidIndices(SMeshStream& IBStream, bool stall)
 	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_RenderMesh, 0, this->GetSourceName());
 	SCOPED_RENDERER_ALLOCATION_NAME_HINT( GetSourceName() );
 
-  assert(gRenDev->m_pRT->IsRenderThread());
+	assert(gRenDev->m_pRT->IsRenderThread());
 
-  SREC_AUTO_LOCK(m_sResLock);
+	SREC_AUTO_LOCK(m_sResLock);
 
-  assert(gRenDev->m_pRT->IsRenderThread());
+	assert(gRenDev->m_pRT->IsRenderThread());
 
-  int nInds = m_nInds;
+	int nInds = m_nInds;
 
-  if (!nInds)
+	if (!nInds)
 	{
 		// 0 size index buffer creation crashes on 360
 		assert( nInds );
 		return false;
 	}
 
-  if (IBStream.m_nElements != m_nInds && _HasIBStream())
-    ReleaseIB();
+	if (IBStream.m_nElements != m_nInds && _HasIBStream())
+		ReleaseIB();
 
-  if (IBStream.m_nID == ~0u)
-  {
-    IBStream.m_nID = gRenDev->m_DevBufMan.Create(BBT_INDEX_BUFFER, (BUFFER_USAGE)m_eType, nInds * sizeof(vtx_idx));
-    IBStream.m_nElements = m_nInds;
+	if (IBStream.m_nID == ~0u)
+	{
+		IBStream.m_nID = gRenDev->m_DevBufMan.Create(BBT_INDEX_BUFFER, (BUFFER_USAGE)m_eType, nInds * sizeof(vtx_idx));
+		IBStream.m_nElements = m_nInds;
 		IBStream.m_nFrameCreate = GetCurrentFrameID();
-  }
-  if (IBStream.m_nID != ~0u)
-  {
-    UnlockIndexStream();
-    if (IBStream.m_pUpdateData)
-    {
-      bool bRes = true;
-      return gRenDev->m_DevBufMan.UpdateBuffer(IBStream.m_nID, IBStream.m_pUpdateData, AlignedMeshDataSize(m_nInds * sizeof(vtx_idx)));
-    }
-  }
-  return false;
+	}
+	if (IBStream.m_nID != ~0u)
+	{
+		UnlockIndexStream();
+		if (IBStream.m_pUpdateData)
+		{
+			bool bRes = gRenDev->m_DevBufMan.UpdateBuffer(IBStream.m_nID, IBStream.m_pUpdateData, AlignedMeshDataSize(m_nInds * sizeof(vtx_idx)));
+			if (CRendererCVars::CV_r_MeshPoolForceFreeAfterUpdate)
+			{
+				CRenderMesh::s_FreeableMeshDataList.enqueue(IBStream.m_pUpdateData);
+				IBStream.m_pUpdateData = nullptr;
+			}
+			return bRes;
+		}
+	}
+	return false;
 }
 
 bool CRenderMesh::CreateVidVertices(int nVerts, InputLayoutHandle eVF, int nStream)
@@ -2973,32 +2979,38 @@ bool CRenderMesh::UpdateVidVertices(int nStream)
 	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_RenderMeshType, 0, this->GetTypeName());
 	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_RenderMesh, 0, this->GetSourceName());
 
-  assert(gRenDev->m_pRT->IsRenderThread());
+	assert(gRenDev->m_pRT->IsRenderThread());
 
-  SREC_AUTO_LOCK(m_sResLock);
+	SREC_AUTO_LOCK(m_sResLock);
 
-  assert(nStream < VSF_NUM);
-  SMeshStream* pMS = GetVertexStream(nStream, FSL_WRITE);
+	assert(nStream < VSF_NUM);
+	SMeshStream* pMS = GetVertexStream(nStream, FSL_WRITE);
 
-  if (m_nVerts != pMS->m_nElements && _HasVBStream(nStream))
-    ReleaseVB(nStream);
+	if (m_nVerts != pMS->m_nElements && _HasVBStream(nStream))
+		ReleaseVB(nStream);
 
-  if (pMS->m_nID==~0u)
-  {
+	if (pMS->m_nID == ~0u)
+	{
 		if (!CreateVidVertices(m_nVerts, m_eVF, nStream))
 			return false;
-  }
-	if (pMS->m_nID!=~0u)
-  {
+	}
+	if (pMS->m_nID != ~0u)
+	{
 		UnlockStream(nStream);
-    if (pMS->m_pUpdateData)
-    {
-			return gRenDev->m_DevBufMan.UpdateBuffer(pMS->m_nID, pMS->m_pUpdateData, AlignedMeshDataSize(GetStreamSize(nStream)));
-    }
-    else
-    {
-      assert(0);
-    }
+		if (pMS->m_pUpdateData)
+		{
+			bool bRes = gRenDev->m_DevBufMan.UpdateBuffer(pMS->m_nID, pMS->m_pUpdateData, AlignedMeshDataSize(GetStreamSize(nStream)));
+			if (CRendererCVars::CV_r_MeshPoolForceFreeAfterUpdate)
+			{
+				CRenderMesh::s_FreeableMeshDataList.enqueue(pMS->m_pUpdateData);
+				pMS->m_pUpdateData = nullptr;
+			}
+			return bRes;
+		}
+		else
+		{
+			assert(0);
+		}
 	}
 	return false;
 }
@@ -4110,28 +4122,28 @@ void CRenderMesh::PrintMeshLeaks()
 
 bool CRenderMesh::ClearStaleMemory(bool bAcquireLock, int threadId)
 {
-  MEMORY_SCOPE_CHECK_HEAP();
-  CRY_PROFILE_FUNCTION(PROFILE_RENDERER);
+	MEMORY_SCOPE_CHECK_HEAP();
+	CRY_PROFILE_FUNCTION(PROFILE_RENDERER);
 	bool cleared = false; 
 	bool bKeepSystem = false; 
 	AUTO_LOCK(m_sLinkLock);
 	// Clean up the stale mesh temporary data
-  for (util::list<CRenderMesh>* iter=s_MeshDirtyList[threadId].next, *pos=iter->next; iter != &s_MeshDirtyList[threadId]; iter=pos, pos=pos->next)
-  {
+	for (util::list<CRenderMesh>* iter=s_MeshDirtyList[threadId].next, *pos=iter->next; iter != &s_MeshDirtyList[threadId]; iter=pos, pos=pos->next)
+	{
 		CRenderMesh* pRM = iter->item<&CRenderMesh::m_Dirty>(threadId);
 		if (pRM->m_sResLock.TryLock() == false)
 			continue;
 		// If the mesh data is still being read, skip it. The stale data will be picked up at a later point
 		if (pRM->m_nThreadAccessCounter)
 		{
-#     if !defined(_RELEASE) && defined(RM_CATCH_EXCESSIVE_LOCKS)
-			if (gEnv->pTimer->GetAsyncTime().GetSeconds()-pRM->m_lockTime > 32.f)
+#if !defined(_RELEASE) && defined(RM_CATCH_EXCESSIVE_LOCKS)
+			if (gEnv->pTimer->GetAsyncTime().GetSeconds() - pRM->m_lockTime > 32.f)
 			{
-				CryError("data lock for mesh '%s:%s' held longer than 32 seconds", (pRM->m_sType?pRM->m_sType:"unknown"), (pRM->m_sSource?pRM->m_sSource:"unknown"));
+				CryError("data lock for mesh '%s:%s' held longer than 32 seconds", (pRM->m_sType ? pRM->m_sType : "unknown"), (pRM->m_sSource ? pRM->m_sSource : "unknown"));
 				if (CRenderer::CV_r_BreakOnError)
 					__debugbreak();
 			}
-#     endif
+#endif
 			goto dirty_done;
 		}
 
@@ -4159,18 +4171,27 @@ bool CRenderMesh::ClearStaleMemory(bool bAcquireLock, int threadId)
 #if RENDERMESH_BUFFER_ENABLE_DIRECT_ACCESS
 		if (!bKeepSystem) 
 		{
-			for (int i=0; i<VSF_NUM; i++)
+			for (int i = 0; i < VSF_NUM; i++)
 				pRM->FreeVB(i);
 			pRM->FreeIB();
-			cleared = true; 
+			cleared = true;
 		}
-		#endif
+#endif
 
 		// ToDo: only remove this mesh from the dirty list if no stream contains dirty data anymore
 		pRM->m_Dirty[threadId].erase();
-	dirty_done:
+dirty_done:
 		pRM->m_sResLock.Unlock();
-  }
+	}
+
+	if (CRendererCVars::CV_r_MeshPoolForceFreeAfterUpdate && threadId == gRenDev->GetMainThreadID())
+	{
+		void* pMeshData = nullptr;
+		while (CRenderMesh::s_FreeableMeshDataList.dequeue(pMeshData))
+		{
+			FreeMeshData(pMeshData);
+		}
+	}
 
 	return cleared;
 }
