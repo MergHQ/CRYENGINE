@@ -44,10 +44,12 @@ void CFileCacheManager::Initialize()
 #if CRY_PLATFORM_DURANGO
 	m_pMemoryHeap = gEnv->pSystem->GetIMemoryManager()->CreateCustomMemoryHeapInstance(IMemoryManager::eapAPU);
 
+	#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 	if (m_pMemoryHeap != nullptr)
 	{
 		m_maxByteTotal = static_cast<size_t>(g_cvars.m_fileCacheManagerSize) << 10;
 	}
+	#endif // CRY_AUDIO_USE_PRODUCTION_CODE
 #else
 	m_pMemoryHeap = gEnv->pSystem->GetIMemoryManager()->CreateCustomMemoryHeapInstance(IMemoryManager::eapCustomAlignment);
 #endif // CRY_PLATFORM_DURANGO
