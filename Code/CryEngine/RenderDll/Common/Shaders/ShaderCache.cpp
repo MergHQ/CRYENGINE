@@ -1886,7 +1886,6 @@ void CShaderMan::_PrecacheShaderList(bool bStatsOnly)
 				Stats.nUniqueEntries += _Stats.nUniqueEntries;
 				Stats.nSizeCompressed += _Stats.nSizeCompressed;
 				Stats.nSizeUncompressed += _Stats.nSizeUncompressed;
-				Stats.nTokenDataSize += _Stats.nTokenDataSize;
 			}
 		}
 	}
@@ -1907,7 +1906,7 @@ void CShaderMan::_PrecacheShaderList(bool bStatsOnly)
 	float t1 = gEnv->pTimer->GetAsyncCurTime();
 	CryLogAlways("All shaders combinations compiled in %.2f seconds", (t1 - t0));
 	CryLogAlways("Combinations: (Material: %d, Processed: %d; Compiled: %d; Removed: %d)", nMaterialCombinations, nProcessed, nCompiled, nEmpty);
-	CryLogAlways("-- Shader cache overall stats: Entries: %d, Unique Entries: %d, Size: %d, Compressed Size: %d, Token data size: %d", Stats.nEntries, Stats.nUniqueEntries, Stats.nSizeUncompressed, Stats.nSizeCompressed, Stats.nTokenDataSize);
+	CryLogAlways("-- Shader cache overall stats: Entries: %d, Unique Entries: %d, Size: %d, Compressed Size: %d", Stats.nEntries, Stats.nUniqueEntries, Stats.nSizeUncompressed, Stats.nSizeCompressed);
 
 	m_nCombinationsProcess = -1;
 	m_nCombinationsCompiled = -1;
