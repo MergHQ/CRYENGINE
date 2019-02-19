@@ -38,7 +38,20 @@ namespace Cry
 			virtual ~CSampleActorComponent();
 
 			static void Register(Schematyc::CEnvRegistrationScope& componentScope);
-			static void ReflectType(Schematyc::CTypeDesc<CSampleActorComponent>& desc);
+			static void ReflectType(Schematyc::CTypeDesc<CSampleActorComponent>& desc)
+			{
+				desc.SetGUID(CSampleActorComponent::IID());
+				desc.SetEditorCategory("Physics");
+				desc.SetLabel("Sample Rigidbody Actor");
+				desc.SetDescription("Very basic sample support for the new actor (walking rigid) entity in physics");
+				//desc.SetIcon("icons:ObjectTypes/object.ico");
+				desc.SetComponentFlags({ IEntityComponent::EFlags::Transform, IEntityComponent::EFlags::Socket, IEntityComponent::EFlags::Attach });
+
+				desc.AddMember(&CSampleActorComponent::m_friction, 'fric', "Friction", "Friction", "Ground friction when standing still", 1.0f);
+				desc.AddMember(&CSampleActorComponent::m_minMass, 'gmas', "MinGroundMass", "MinGroundMass", "Only check ground colliders with this or higher masses", 1.0f);
+				desc.AddMember(&CSampleActorComponent::m_legStiffness, 'stif', "LegStiffness", "LegStiffness", "Leg stiffness", 10.0f);
+			}
+
 
 			static CryGUID& IID()
 			{

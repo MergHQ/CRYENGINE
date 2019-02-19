@@ -42,8 +42,6 @@ void CSkyStage::CreateSkyDomeTextures(int32 width, int32 height)
 
 bool CSkyStage::LoadStarsData()
 {
-	SAFE_RELEASE(m_pStarMesh);
-
 	const uint32 c_fileTag(0x52415453);       // "STAR"
 	const uint32 c_fileVersion(0x00010001);
 	const char c_fileName[] = "%ENGINE%/engineassets/sky/stars.dat";
@@ -383,7 +381,7 @@ void CSkyStage::Execute(CTexture* pColorTex, CTexture* pDepthTex)
 			m_starsPrimitive.SetRenderState(depthState | GS_BLSRC_ONE | GS_BLDST_ONE);
 			m_starsPrimitive.SetCullMode(eCULL_None);
 
-			CRenderMesh* pStarMesh = static_cast<CRenderMesh*>(m_pStarMesh);
+			CRenderMesh* pStarMesh = static_cast<CRenderMesh*>(m_pStarMesh.get());
 			buffer_handle_t hVertexStream = pStarMesh->_GetVBStream(VSF_GENERAL);
 
 			m_starsPrimitive.SetCustomVertexStream(hVertexStream, pStarMesh->_GetVertexFormat(), pStarMesh->GetStreamStride(VSF_GENERAL));

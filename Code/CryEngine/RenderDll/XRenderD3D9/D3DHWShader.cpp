@@ -1059,26 +1059,15 @@ NO_INLINE void sGetScreenSize(UFloat4* sData, CD3D9Renderer* r)
 
 NO_INLINE void sGetIrregKernel(UFloat4* sData, CD3D9Renderer* r)
 {
-	int nSamplesNum = 1;
-	switch (gRenDev->GetRenderQuality().shaderQuality)
+	const EShaderQuality shaderQuality = gRenDev->m_cEF.m_ShaderProfiles[eST_Shadow].GetShaderQuality();
+	constexpr int32 sampleCountByQuality[eSQ_Max] =
 	{
-	case eSQ_Low:
-		nSamplesNum = 4;
-		break;
-	case eSQ_Medium:
-		nSamplesNum = 8;
-		break;
-	case eSQ_High:
-		nSamplesNum = 16;
-		break;
-	case eSQ_VeryHigh:
-		nSamplesNum = 16;
-		break;
-	default:
-		assert(0);
-	}
-
-	CShadowUtils::GetIrregKernel((float(*)[4]) & sData[0], nSamplesNum);
+		4,  // eSQ_Low
+		8,  // eSQ_Medium
+		16, // eSQ_High
+		16, // eSQ_VeryHigh
+	};
+	CShadowUtils::GetIrregKernel((float(*)[4]) & sData[0], sampleCountByQuality[shaderQuality]);
 }
 
 NO_INLINE void sGetRegularKernel(UFloat4* sData, CD3D9Renderer* r)
