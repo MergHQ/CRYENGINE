@@ -52,7 +52,7 @@ public:
 	void                 SelectAsset(const char* szPath) const;
 	void                 SelectAsset(const CAsset& asset) const;
 
-	std::vector<string> GetSelectedFolders() const;
+	std::vector<string>  GetSelectedFolders() const;
 
 	//CEditor implementation
 	virtual const char* GetEditorName() const override { return "Asset Browser"; }
@@ -72,22 +72,21 @@ public:
 		Max
 	};
 
-	bool    IsRecursiveView() const;
-	bool    IsFoldersViewVisible() const;
+	bool         IsRecursiveView() const;
+	bool         IsFoldersViewVisible() const;
 
-	void    SetViewMode(ViewMode viewMode);
-	void    SetRecursiveView(bool recursiveView);
-	void    SetRecursiveSearch(bool recursiveSearch);
-	void    SetFoldersViewVisible(bool isVisible);
+	void         SetViewMode(ViewMode viewMode);
+	void         SetRecursiveView(bool recursiveView);
+	void         SetFoldersViewVisible(bool isVisible);
 
-	CAsset* QueryNewAsset(const CAssetType& type, const CAssetType::SCreateParams* pCreateParams);
+	CAsset*      QueryNewAsset(const CAssetType& type, const CAssetType::SCreateParams* pCreateParams);
 
-	void    NotifyContextMenuCreation(CAbstractMenu& menu, const std::vector<CAsset*>& assets, const std::vector<string>& folders);
+	void         NotifyContextMenuCreation(CAbstractMenu& menu, const std::vector<CAsset*>& assets, const std::vector<string>& folders);
 
-	int     GetButtonsSpacing() const       { return m_buttonsSpacing; }
-	void    SetButtonsSpacing(int val)      { m_buttonsSpacing = val; }
-	int     GetButtonGroupsSpacing() const  { return m_buttonGroupsSpacing; }
-	void    SetButtonGroupsSpacing(int val) { m_buttonGroupsSpacing = val; }
+	int          GetButtonsSpacing() const       { return m_buttonsSpacing; }
+	void         SetButtonsSpacing(int val)      { m_buttonsSpacing = val; }
+	int          GetButtonGroupsSpacing() const  { return m_buttonGroupsSpacing; }
+	void         SetButtonGroupsSpacing(int val) { m_buttonGroupsSpacing = val; }
 
 	virtual void customEvent(QEvent* pEvent) override;
 
@@ -135,43 +134,43 @@ private:
 	virtual void       resizeEvent(QResizeEvent* event) override;
 
 	//extract actual content from the selection for further processing
-	void                ProcessSelection(std::vector<CAsset*>& assets, std::vector<string>& folders) const;
+	void ProcessSelection(std::vector<CAsset*>& assets, std::vector<string>& folders) const;
 
-	void                OnContextMenu();
-	void                AppendFilterDependenciesActions(CAbstractMenu* pAbstractMenu, const CAsset* pAsset);
-	void                OnFolderViewContextMenu();
+	void OnContextMenu();
+	void AppendFilterDependenciesActions(CAbstractMenu* pAbstractMenu, const CAsset* pAsset);
+	void OnFolderViewContextMenu();
 
-	void                CreateContextMenu(bool isFolderView = false);
+	void CreateContextMenu(bool isFolderView = false);
 
-	void                BuildContextMenuForEmptiness(CAbstractMenu& abstractMenu);
-	void                BuildContextMenuForFolders(const std::vector<string>& folders, CAbstractMenu& abstractMenu);
-	void                BuildContextMenuForAssets(const std::vector<CAsset*>& assets, const std::vector<string>& folders, CAbstractMenu& abstractMenu);
+	void BuildContextMenuForEmptiness(CAbstractMenu& abstractMenu);
+	void BuildContextMenuForFolders(const std::vector<string>& folders, CAbstractMenu& abstractMenu);
+	void BuildContextMenuForAssets(const std::vector<CAsset*>& assets, const std::vector<string>& folders, CAbstractMenu& abstractMenu);
 
-	void                AddWorkFilesMenu(CAbstractMenu& abstractMenu, CAsset* pAsset);
+	void AddWorkFilesMenu(CAbstractMenu& abstractMenu, CAsset* pAsset);
 
-	void                OnFolderSelectionChanged(const QStringList& selectedFolders);
-	void                OnActivated(const QModelIndex& index);
-	void                OnCurrentChanged(const QModelIndex& current, const QModelIndex& previous);
-	void                OnImport();
-	void                OnReimport(const std::vector<CAsset*>& assets);
-	void                OnDelete(const std::vector<CAsset*>& assets);
+	void OnFolderSelectionChanged(const QStringList& selectedFolders);
+	void OnActivated(const QModelIndex& index);
+	void OnCurrentChanged(const QModelIndex& current, const QModelIndex& previous);
+	void OnImport();
+	void OnReimport(const std::vector<CAsset*>& assets);
+	void OnDelete(const std::vector<CAsset*>& assets);
 
-	void                OnRenameAsset(CAsset& asset);
-	void                OnRenameFolder(const QString& folder);
-	void                OnCreateFolder(const QString& parentFolder);
-	void                OnOpenInExplorer(const QString& folder);
-	void                OnNavBack();
-	void                OnNavForward();
-	void                OnBreadcrumbClick(const QString& text, const QVariant& data);
-	void                OnBreadcrumbsTextChanged(const QString& text);
+	void OnRenameAsset(CAsset& asset);
+	void OnRenameFolder(const QString& folder);
+	void OnCreateFolder(const QString& parentFolder);
+	void OnOpenInExplorer(const QString& folder);
+	void OnNavBack();
+	void OnNavForward();
+	void OnBreadcrumbClick(const QString& text, const QVariant& data);
+	void OnBreadcrumbsTextChanged(const QString& text);
 
-	void                GenerateThumbnailsAsync(const string& folder, const std::function<void()>& finalize = std::function<void()>());
+	void GenerateThumbnailsAsync(const string& folder, const std::function<void()>& finalize = std::function<void()>());
 
-	void                UpdateModels();
-	void                UpdateNavigation(bool clearHistory);
-	void                UpdateBreadcrumbsBar(const QString& path);
+	void OnSearch(bool isNewSearch);
+	void UpdateNavigation(bool clearHistory);
+	void UpdateBreadcrumbsBar(const QString& path);
 
-	void                EditNewAsset();
+	void EditNewAsset();
 
 	// CEditor impl
 	virtual bool OnFind() override;
@@ -181,7 +180,7 @@ private:
 	virtual bool OnPaste() override;
 	virtual bool OnDuplicate() override;
 
-	void Paste(bool pasteNextToOriginal);
+	void         Paste(bool pasteNextToOriginal);
 
 	//ui components
 	CAssetFoldersView*                          m_pFoldersView = nullptr;
@@ -212,9 +211,9 @@ private:
 	//state variables
 	QVector<QStringList> m_navigationHistory;
 	ViewMode             m_viewMode = Max;
-	bool                 m_recursiveSearch = true;
 	int                  m_navigationIndex = -1;       //-1 is "all assets"
 	bool                 m_dontPushNavHistory = false; //true when folder changes are triggered by back/forward buttons
+	bool                 m_recursiveSearch = false;
 
 	int                  m_buttonsSpacing = 4;
 	int                  m_buttonGroupsSpacing = 24;

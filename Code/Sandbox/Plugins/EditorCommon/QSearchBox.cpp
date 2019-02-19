@@ -95,7 +95,7 @@ void QSearchBox::SetModel(QDeepFilterProxyModel* model, SearchMode mode /*= Sear
 void QSearchBox::SetAutoExpandOnSearch(QTreeView* treeView)
 {
 	//if need to detach, you can detach with the treeView pointer
-	signalOnFiltered.Connect([this, treeView]() 
+	signalOnSearch.Connect([this, treeView]() 
 	{ 
 		if(!text().isEmpty())
 			treeView->expandAll(); 
@@ -153,12 +153,12 @@ void QSearchBox::OnSearch()
 		m_timer->stop();
 	}
 
-	QString currentText = text();
+	const QString currentText = text();
 	if (m_searchFunction && currentText != m_lastSearchedText)
 	{
-		m_lastSearchedText = currentText;
 		m_searchFunction(text());
-		signalOnFiltered();
+		signalOnSearch(m_lastSearchedText.isEmpty());
+		m_lastSearchedText = currentText;
 	}
 }
 

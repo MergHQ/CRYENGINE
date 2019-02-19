@@ -1221,7 +1221,7 @@ CScriptBrowserWidget::CScriptBrowserWidget(CrySchematycEditor::CMainWindow& edit
 	m_pFilter = new QSearchBox(this);
 	m_pFilter->EnableContinuousSearch(true);
 	m_pFilter->setPlaceholderText("Search");
-	m_pFilter->signalOnFiltered.Connect(this, &CScriptBrowserWidget::OnFiltered);
+	m_pFilter->signalOnSearch.Connect(this, &CScriptBrowserWidget::OnFiltered);
 
 	m_pAddButton->setMenu(m_pAddMenu);
 	m_pAddButton->setEnabled(false);

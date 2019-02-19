@@ -75,7 +75,7 @@ CResourceSelectorDialog::CResourceSelectorDialog(EAssetType const type, Scope co
 	QObject::connect(m_pDialogButtons, &QDialogButtonBox::accepted, this, &CResourceSelectorDialog::accept);
 	QObject::connect(m_pDialogButtons, &QDialogButtonBox::rejected, this, &CResourceSelectorDialog::reject);
 
-	m_pSearchBox->signalOnFiltered.Connect([&]()
+	m_pSearchBox->signalOnSearch.Connect([&]()
 		{
 			m_pTreeView->scrollTo(m_pTreeView->currentIndex());
 		}, reinterpret_cast<uintptr_t>(this));
@@ -92,7 +92,7 @@ CResourceSelectorDialog::CResourceSelectorDialog(EAssetType const type, Scope co
 //////////////////////////////////////////////////////////////////////////
 CResourceSelectorDialog::~CResourceSelectorDialog()
 {
-	m_pSearchBox->signalOnFiltered.DisconnectById(reinterpret_cast<uintptr_t>(this));
+	m_pSearchBox->signalOnSearch.DisconnectById(reinterpret_cast<uintptr_t>(this));
 
 	OnStopTrigger();
 	DeleteModels();

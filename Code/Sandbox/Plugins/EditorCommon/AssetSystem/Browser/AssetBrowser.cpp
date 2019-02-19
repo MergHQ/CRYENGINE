@@ -982,8 +982,7 @@ void CAssetBrowser::InitViews(bool bHideEngineFolder)
 	m_pFilterPanel->EnableDelayedSearch(true, 500.f);
 	m_pFilterPanel->SetContent(pAssetsView);
 	m_pFilterPanel->GetSearchBox()->setPlaceholderText(tr("Search Assets"));
-	m_pFilterPanel->GetSearchBox()->signalOnFiltered.Connect(this, &CAssetBrowser::UpdateModels);
-	m_pFilterPanel->signalOnFiltered.Connect(this, &CAssetBrowser::UpdateModels);
+	m_pFilterPanel->GetSearchBox()->signalOnSearch.Connect(this, &CAssetBrowser::OnSearch);
 
 	m_pFoldersSplitter = new QSplitter();
 	m_pFoldersSplitter->setOrientation(Qt::Horizontal);
@@ -1068,7 +1067,12 @@ void CAssetBrowser::InitActions()
 	pAction->setCheckable(true);
 	pAction->setChecked(false);
 	pAction->setIconVisibleInMenu(false);
-	connect(pAction, &QAction::toggled, this, [this](bool checked) { UpdateModels(); });
+	connect(pAction, &QAction::toggled, this, [this](bool checked) 
+	{ 
+		m_pFolderFilterModel->SetRecursive(checked);
+		m_pFolderFilterModel->SetShowFolders(!checked);
+		m_recursiveSearch = false;
+	});
 	m_pActionRecursiveView = pAction;
 }
 
@@ -1186,12 +1190,6 @@ void CAssetBrowser::InitMenus()
 
 		CRY_ASSERT(m_pActionRecursiveView);
 		menuView->AddAction(m_pActionRecursiveView, sec);
-
-		action = menuView->CreateAction(tr("Recursive Search"), sec);
-		action->setCheckable(true);
-		action->setEnabled(!IsRecursiveView());
-		action->setChecked(m_recursiveSearch || IsRecursiveView());
-		connect(action, &QAction::triggered, this, [&]() { SetRecursiveSearch(!m_recursiveSearch); });
 
 		if (m_pFilterPanel)
 		{
@@ -1493,12 +1491,6 @@ void CAssetBrowser::SetLayout(const QVariantMap& state)
 		SetRecursiveView(recursiveViewVar.toBool());
 	}
 
-	QVariant recursiveSearchVar = state.value("recursiveSearch");
-	if (recursiveSearchVar.isValid())
-	{
-		SetRecursiveSearch(recursiveSearchVar.toBool());
-	}
-
 	QVariant showFoldersVar = state.value("showFolders");
 	if (showFoldersVar.isValid())
 	{
@@ -1554,7 +1546,6 @@ QVariantMap CAssetBrowser::GetLayout() const
 	state.insert("foldersSplitter", m_pFoldersSplitter->saveState().toBase64());
 	state.insert("viewMode", (int)m_viewMode);
 	state.insert("recursiveView", IsRecursiveView());
-	state.insert("recursiveSearch", m_recursiveSearch);
 	state.insert("showFolders", IsFoldersViewVisible());
 #if ASSET_BROWSER_USE_PREVIEW_WIDGET
 	state.insert("showPreview", m_previewWidget->isVisibleTo(this));
@@ -1655,29 +1646,22 @@ void CAssetBrowser::SetRecursiveView(bool recursiveView)
 	}
 }
 
-void CAssetBrowser::SetRecursiveSearch(bool recursiveSearch)
+void CAssetBrowser::OnSearch(bool isNewSearch)
 {
-	if (m_recursiveSearch != recursiveSearch)
-	{
-		m_recursiveSearch = recursiveSearch;
-		UpdateModels();
-	}
-}
+	// If recursive view is disabled:
+	//  - Enable recursive view as soon as the first character is entered.
+	//  - Disable recursive view when the last character is removed from the query. 
 
-void CAssetBrowser::UpdateModels()
-{
-	//swaps to recursive view when recursive search is on
-	bool searching = !m_pFilterPanel->GetSearchBox()->IsEmpty() || m_pFilterPanel->HasActiveFilters();
-
-	if (searching && m_recursiveSearch && !m_pFolderFilterModel->IsRecursive())
+	const bool searching = !m_pFilterPanel->GetSearchBox()->IsEmpty();
+	if (searching && !m_recursiveSearch && isNewSearch && !IsRecursiveView())
 	{
-		m_pFolderFilterModel->SetShowFolders(false);
-		m_pFolderFilterModel->SetRecursive(true);
+		SetRecursiveView(true);
+		m_recursiveSearch = true;
 	}
-	else if (!searching && IsRecursiveView() != m_pFolderFilterModel->IsRecursive())
+	else if (!searching && m_recursiveSearch)
 	{
-		m_pFolderFilterModel->SetRecursive(IsRecursiveView());
-		m_pFolderFilterModel->SetShowFolders(!IsRecursiveView());
+		m_recursiveSearch = false;
+		SetRecursiveView(false);
 	}
 }
 
@@ -1830,8 +1814,6 @@ void CAssetBrowser::CreateContextMenu(bool isFolderView /*= false*/)
 
 void CAssetBrowser::BuildContextMenuForEmptiness(CAbstractMenu& abstractMenu)
 {
-	const bool isRecursiveView = m_recursiveSearch || IsRecursiveView();
-
 	std::vector<string> selectedFolders = GetSelectedFolders();
 	CAssetFoldersModel* pModel = CAssetFoldersModel::GetInstance();
 
@@ -1849,7 +1831,7 @@ void CAssetBrowser::BuildContextMenuForEmptiness(CAbstractMenu& abstractMenu)
 
 		action = abstractMenu.CreateAction(tr("Paste"), foldersSection);
 		connect(action, &QAction::triggered, [this]() { OnPaste(); });
-		action->setDisabled(Private_AssetBrowser::g_clipboard.empty() || isRecursiveView);
+		action->setDisabled(Private_AssetBrowser::g_clipboard.empty() || m_pFolderFilterModel->IsRecursive());
 
 		action = abstractMenu.CreateAction(tr("Import"), foldersSection);
 		connect(action, &QAction::triggered, [this]() { OnImport(); });
@@ -2419,9 +2401,19 @@ void CAssetBrowser::Paste(bool pasteNextToOriginal)
 	string selectedFolder;
 	if (!pasteNextToOriginal)
 	{
-		if (m_recursiveSearch || IsRecursiveView())
+		if (m_recursiveSearch)
 		{
-			CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_WARNING, "Target folder is ambiguous. Please turn off the recursive view/search");
+			CRY_ASSERT(!m_pFilterPanel->GetSearchBox()->IsEmpty());
+
+			const char* szMsg = QT_TR_NOOP("The target folder is ambiguous when the search result is displayed. Please cancel the search by clearing the search bar.");
+			CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_WARNING, szMsg);
+			return;
+		}
+
+		if (IsRecursiveView())
+		{
+			const char* szMsg = QT_TR_NOOP("Target folder is ambiguous.Please turn off the recursive view");
+			CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_WARNING, szMsg);
 			return;
 		}
 
