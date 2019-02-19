@@ -536,7 +536,6 @@ struct SOptimiseStats
 	int nUniqueEntries;
 	int nSizeUncompressed;
 	int nSizeCompressed;
-	int nTokenDataSize;
 	int nDirDataSize;
 	SOptimiseStats()
 	{
@@ -544,7 +543,6 @@ struct SOptimiseStats
 		nUniqueEntries = 0;
 		nSizeUncompressed = 0;
 		nSizeCompressed = 0;
-		nTokenDataSize = 0;
 		nDirDataSize = 0;
 	}
 };
@@ -873,7 +871,6 @@ public:
 	static byte*            mfIgnoreRemapsFromCache(int nRemaps, byte* pP);
 	static byte*            mfIgnoreBindsFromCache(int nParams, byte* pP);
 
-	static void             mfValidateTokenData(CResFile* pRF);
 	static void             mfValidateDirEntries(CResFile* pRF);
 
 	// Import/Export

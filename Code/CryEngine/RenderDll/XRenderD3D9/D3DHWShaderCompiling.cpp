@@ -785,53 +785,6 @@ static bool sGetMask(char* str, SShaderGen* pGen, uint64& nMask)
 	return false;
 }
 
-void CHWShader::mfValidateTokenData(CResFile* pRes)
-{
-#ifdef _DEBUG
-	if (pRes == 0)
-		return;
-
-	bool bTokenValid = true;
-	ResDir* Dir = pRes->mfGetDirectory();
-	for (unsigned int i = 0; i < Dir->size(); i++)
-	{
-		CDirEntry* pDE = &(*Dir)[i];
-		if (pDE->GetFlags() & RF_RES_$TOKENS)
-		{
-			uint32 nSize = pRes->mfFileRead(pDE);
-			byte* pData = (byte*)pRes->mfFileGetBuf(pDE);
-			if (!pData)
-			{
-				bTokenValid = false;
-				break;
-			}
-
-			uint32 nL = *(uint32*)pData;
-			if (CParserBin::m_bEndians)
-				SwapEndian(nL, eBigEndian);
-
-			if (nL * sizeof(uint32) > nSize)
-			{
-				bTokenValid = false;
-				break;
-			}
-
-			int nTableSize = nSize - (4 + nL * sizeof(uint32));
-			if (nTableSize < 0)
-			{
-				bTokenValid = false;
-				break;
-			}
-
-			pRes->mfCloseEntry(pDE->GetName(), pDE->GetFlags());
-		}
-	}
-
-	if (!bTokenValid)
-		CryFatalError("Invalid token data in shader cache file");
-#endif
-}
-
 void CHWShader::mfValidateDirEntries(CResFile* pRF)
 {
 #ifdef _DEBUG
@@ -2434,14 +2387,18 @@ bool SDiskShaderCache::mfOptimiseCacheFile(SOptimiseStats* pStats)
 		}
 	}
 
+	if (strstr(m_pRes->mfGetFileName(), "DepthOfField@FullscreenTriVS"))
+	{
+		int nnn = 0;
+	}
 	if (nOutFiles != Data.size() || CRenderer::CV_r_shaderscachedeterministic)
 	{
 		if (nOutFiles == Data.size())
 		{
-			iLog->Log(" Forcing optimise for deterministic order...");
+			iLog->Log(" Force optimizing for deterministic order...");
 		}
 
-		iLog->Log(" Optimising shaders resource '%s' (%" PRISIZE_T " items)...", m_pRes->mfGetFileName(), Data.size() - 1);
+		iLog->Log(" Optimizing shaders resource '%s' (%" PRISIZE_T " items)...", m_pRes->mfGetFileName(), Data.size());
 
 		m_pRes->mfClose();
 		m_pRes->mfOpen(RA_CREATE | (CParserBin::m_bEndians ? RA_ENDIANS : 0), &gRenDev->m_cEF.m_ResLookupDataMan[static_cast<int>(GetType())]);
@@ -2514,7 +2471,7 @@ bool SDiskShaderCache::mfOptimiseCacheFile(SOptimiseStats* pStats)
 	}
 
 	if (pStats)
-		CryLog("  -- Shader cache '%s' stats: Entries: %d, Unique Entries: %d, Size: %.3f Mb, Compressed Size: %.3f Mb, Token data size: %3f Mb, Directory Size: %.3f Mb", m_pRes->mfGetFileName(), pStats->nEntries, pStats->nUniqueEntries, pStats->nSizeUncompressed / 1024.0f / 1024.0f, pStats->nSizeCompressed / 1024.0f / 1024.0f, pStats->nTokenDataSize / 1024.0f / 1024.0f, pStats->nDirDataSize / 1024.0f / 1024.0f);
+		CryLog("  -- Shader cache '%s' stats: Entries: %d, Unique Entries: %d, Size: %.3f Mb, Compressed Size: %.3f Mb, Directory Size: %.3f Mb", m_pRes->mfGetFileName(), pStats->nEntries, pStats->nUniqueEntries, pStats->nSizeUncompressed / 1024.0f / 1024.0f, pStats->nSizeCompressed / 1024.0f / 1024.0f, pStats->nDirDataSize / 1024.0f / 1024.0f);
 
 	return true;
 }

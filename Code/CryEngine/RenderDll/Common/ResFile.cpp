@@ -1617,12 +1617,12 @@ int CResFile::mfFlush()
 		if (curDir.flags & RF_NOTSAVED)
 		{
 			SDirEntryOpen* pOE = mfGetOpenEntry(curDir.GetName());
-			CRY_ASSERT(pOE);
+			if (!pOE)
+				continue;
 
 			if (!curDir.IsDuplicate())
 			{
-				assert(pOE && pOE->pData);
-				if (!pOE || !pOE->pData)
+				if (!pOE->pData)
 					continue;
 				gEnv->pCryPak->FSeek(m_handle, nSeek, SEEK_SET);
 				if (curDir.flags & RF_COMPRESS)
