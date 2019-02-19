@@ -168,7 +168,7 @@ class CSimpleThreadBackOff
 {
 public:
 	static const uint32 kSoftYieldInterval = 0x3F; // after 63 tries follow soft yield strategy
-	static const uint32 kHardYieldInterval = 0x7F; // after 127 tries follow hard yield strategy
+	static const uint32 kHardYieldInterval = 0x1FFF; // after 8191 tries follow hard yield strategy
 
 public:
 	CSimpleThreadBackOff() : m_counter(0) {}
