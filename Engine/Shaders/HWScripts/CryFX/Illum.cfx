@@ -605,7 +605,7 @@ half3 GetEmittanceMask(float2 baseTC)
 	emittanceMap.rgb *= pow(max(GetLuminance(emittanceMap.rgb), 1e-6), EmittanceMapGamma - 1);
 	
 	// DEPRECATED: Just for backwards compatibility (up to 3.8.3)
-	emittanceMap.rgb *= emittanceMap.a;
+    emittanceMap.rgb = max(emittanceMap.rgb * emittanceMap.a, 0);
 	
 	return emittanceMap.rgb;
 }

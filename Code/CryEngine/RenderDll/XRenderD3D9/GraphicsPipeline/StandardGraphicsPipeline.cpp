@@ -664,7 +664,7 @@ void CStandardGraphicsPipeline::ExecuteHDRPostProcessing()
 		m_pColorGradingStage->Execute();
 
 	// 0 is used for disable debugging and 1 is used to just show the average and estimated luminance, and exposure values.
-	if (m_pToneMappingStage->IsDebugInfoEnabled())
+	if (m_pToneMappingStage->IsDebugDrawEnabled())
 		m_pToneMappingStage->ExecuteDebug();
 	else
 		m_pToneMappingStage->Execute();
