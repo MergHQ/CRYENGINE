@@ -270,7 +270,6 @@ void CCSharpEditorPlugin::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UIN
 		{
 			// Got focus back
 			m_isSandboxInFocus = true;
-			UpdatePluginsAndSolution();
 		}
 	}
 }
