@@ -4,7 +4,6 @@
 #include "EventInstance.h"
 #include "Object.h"
 #include <CryAudio/IAudioSystem.h>
-#include <CrySystem/ISystem.h> // needed for gEnv in Release builds
 
 #if defined(CRY_AUDIO_IMPL_PORTAUDIO_USE_PRODUCTION_CODE)
 	#include <Logger.h>
@@ -85,6 +84,8 @@ static int StreamCallback(
 				}
 			}
 			break;
+		default:
+			break;
 		}
 
 		if (numFramesRead != framesPerBuffer)
@@ -158,6 +159,8 @@ bool CEventInstance::Execute(
 					m_pData = CryModuleMalloc(sizeof(float) * numEntries);
 					std::fill(static_cast<float*>(m_pData), static_cast<float*>(m_pData) + numEntries, 0.0f);
 				}
+				break;
+			default:
 				break;
 			}
 

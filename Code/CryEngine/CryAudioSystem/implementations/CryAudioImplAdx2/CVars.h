@@ -23,27 +23,26 @@ public:
 	void    RegisterVariables();
 	void    UnregisterVariables();
 
-	int   m_cuePoolSize = 0;
-	int   m_maxVirtualVoices = 0;
-	int   m_maxVoiceLimitGroups = 0;
-	int   m_maxCategories = 0;
-	int   m_categoriesPerPlayback = 0;
-	int   m_maxTracks = 0;
-	int   m_maxTrackItems = 0;
-	int   m_maxFaders = 0;
-	int   m_numVoices = 0;
-	int   m_maxChannels = 0;
-	int   m_maxSamplingRate = 0;
-	int   m_numBuses = 0;
-	int   m_outputChannels = 0;
-	int   m_outputSamplingRate = 0;
-	int   m_maxStreams = 0;
-	int   m_maxBps = 0;
-	int   m_maxFiles = 0;
+	int   m_cuePoolSize = 256;
+	int   m_maxVirtualVoices = 16;
+	int   m_maxVoiceLimitGroups = 16;
+	int   m_maxCategories = 16;
+	int   m_categoriesPerPlayback = 4;
+	int   m_maxTracks = 32;
+	int   m_maxTrackItems = 32;
+	int   m_maxFaders = 4;
+	int   m_numVoices = 8;
+	int   m_maxChannels = 2;
+	int   m_maxSamplingRate = 48000;
+	int   m_numBuses = 8;
+	int   m_outputChannels = 6;
+	int   m_outputSamplingRate = 48000;
+	int   m_maxStreams = 8;
+	int   m_maxFiles = 32;
 	int   m_voiceAllocationMethod = 0;
 
-	float m_maxPitch = 0;
-	float m_velocityTrackingThreshold = 0.0f;
+	float m_maxPitch = 2400.0f;
+	float m_velocityTrackingThreshold = 0.1f;
 	float m_positionUpdateThresholdMultiplier = 0.02f;
 	float m_maxVelocity = 100.0f;
 

@@ -12,11 +12,11 @@ namespace Fmod
 //////////////////////////////////////////////////////////////////////////
 CListener::CListener(CTransformation const& transformation, int const id)
 	: m_id(id)
-	, m_transformation(transformation)
 	, m_isMovingOrDecaying(false)
 	, m_velocity(ZERO)
 	, m_position(transformation.GetPosition())
 	, m_previousPosition(transformation.GetPosition())
+	, m_transformation(transformation)
 {
 	Fill3DAttributeTransformation(transformation, m_attributes);
 	FMOD_RESULT const fmodResult = g_pSystem->setListenerAttributes(id, &m_attributes);

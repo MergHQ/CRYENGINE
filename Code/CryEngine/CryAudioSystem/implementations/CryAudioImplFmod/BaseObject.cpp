@@ -220,23 +220,24 @@ void CBaseObject::RemoveParameter(uint32 const id)
 //////////////////////////////////////////////////////////////////////////
 void CBaseObject::SetReturn(CReturn const* const pReturn, float const amount)
 {
-	bool shouldUpdate = true;
 	auto const iter(m_returns.find(pReturn));
 
 	if (iter != m_returns.end())
 	{
-		if (shouldUpdate = (fabs(iter->second - amount) > 0.001f))
+		if (fabs(iter->second - amount) > 0.001f)
 		{
 			iter->second = amount;
+
+			for (auto const pEventInstance : m_eventInstances)
+			{
+				pEventInstance->SetReturnSend(pReturn, amount);
+			}
 		}
 	}
 	else
 	{
 		m_returns.emplace(pReturn, amount);
-	}
 
-	if (shouldUpdate)
-	{
 		for (auto const pEventInstance : m_eventInstances)
 		{
 			pEventInstance->SetReturnSend(pReturn, amount);

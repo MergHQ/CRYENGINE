@@ -415,7 +415,7 @@ void CGlobalObject::DrawDebugInfo(IRenderAuxGeom& auxGeom, float const posX, flo
 					Debug::g_objectFontSize,
 					Debug::s_objectColorTrigger,
 					false,
-					debugText.c_str());
+					"%s", debugText.c_str());
 
 				posY += Debug::g_objectLineHeight;
 			}

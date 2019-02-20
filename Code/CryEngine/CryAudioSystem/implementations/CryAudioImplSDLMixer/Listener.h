@@ -42,8 +42,8 @@ public:
 
 private:
 
-	ListenerId const m_id;
 	CTransformation  m_transformation;
+	ListenerId const m_id;
 
 #if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE)
 	CryFixedStringT<MaxObjectNameLength> m_name;

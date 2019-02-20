@@ -497,18 +497,31 @@ ERequestStatus CImpl::Init(uint16 const objectPoolSize)
 	deviceSettings.uIOMemorySize = g_cvars.m_streamDeviceMemoryPoolSize << 10; // 2 MiB is the default value!
 
 	// Device thread settings
-	if (pDeviceThread->paramActivityFlag & SThreadConfig::eThreadParamFlag_Affinity)
+	if ((pDeviceThread->paramActivityFlag & SThreadConfig::eThreadParamFlag_Affinity) != 0)
+	{
 		deviceSettings.threadProperties.dwAffinityMask = pDeviceThread->affinityFlag;
-	if (pDeviceThread->paramActivityFlag & SThreadConfig::eThreadParamFlag_Priority)
-#if defined(CRY_PLATFORM_POSIX)
-		if (!(pDeviceThread->priority > 0 && pDeviceThread->priority <= 99))
-			CryWarning(VALIDATOR_MODULE_AUDIO, VALIDATOR_WARNING, "Thread 'Wwise_Device' requested priority %d when allowed range is 1 to 99. Applying default value of %d.", pDeviceThread->priority, deviceSettings.threadProperties.nPriority);
-		else
-#endif
-		deviceSettings.threadProperties.nPriority = pDeviceThread->priority;
+	}
 
-	if (pDeviceThread->paramActivityFlag & SThreadConfig::eThreadParamFlag_StackSize)
+	if ((pDeviceThread->paramActivityFlag & SThreadConfig::eThreadParamFlag_Priority) != 0)
+	{
+#if CRY_PLATFORM_POSIX
+		if (!((pDeviceThread->priority > 0) && (pDeviceThread->priority <= 99)))
+		{
+			CryWarning(VALIDATOR_MODULE_AUDIO, VALIDATOR_WARNING, "Thread 'Wwise_Device' requested priority %d when allowed range is 1 to 99. Applying default value of %d.", pDeviceThread->priority, deviceSettings.threadProperties.nPriority);
+		}
+		else
+		{
+			deviceSettings.threadProperties.nPriority = pDeviceThread->priority;
+		}
+#else
+		deviceSettings.threadProperties.nPriority = pDeviceThread->priority;
+#endif    // CRY_PLATFORM_POSIX
+	}
+
+	if ((pDeviceThread->paramActivityFlag & SThreadConfig::eThreadParamFlag_StackSize) != 0)
+	{
 		deviceSettings.threadProperties.uStackSize = pDeviceThread->stackSizeBytes;
+	}
 
 	wwiseResult = m_fileIOHandler.Init(deviceSettings);
 
@@ -562,49 +575,85 @@ ERequestStatus CImpl::Init(uint16 const objectPoolSize)
 	platformInitSettings.uNumRefillsInVoice = static_cast<AkUInt16>(g_cvars.m_numRefillsInVoice);
 
 	// Bank Manager thread settings
-	if (pBankManger->paramActivityFlag & SThreadConfig::eThreadParamFlag_Affinity)
+	if ((pBankManger->paramActivityFlag & SThreadConfig::eThreadParamFlag_Affinity) != 0)
+	{
 		platformInitSettings.threadBankManager.dwAffinityMask = pBankManger->affinityFlag;
+	}
 
-	if (pBankManger->paramActivityFlag & SThreadConfig::eThreadParamFlag_Priority)
-#if defined(CRY_PLATFORM_POSIX)
-		if (!(pBankManger->priority > 0 && pBankManger->priority <= 99))
+	if ((pBankManger->paramActivityFlag & SThreadConfig::eThreadParamFlag_Priority) != 0)
+	{
+#if CRY_PLATFORM_POSIX
+		if (!((pBankManger->priority > 0) && (pBankManger->priority <= 99)))
+		{
 			CryWarning(VALIDATOR_MODULE_AUDIO, VALIDATOR_WARNING, "Thread 'Wwise_BankManager' requested priority %d when allowed range is 1 to 99. Applying default value of %d.", pBankManger->priority, platformInitSettings.threadBankManager.nPriority);
+		}
 		else
-#endif
+		{
+			platformInitSettings.threadBankManager.nPriority = pBankManger->priority;
+		}
+#else
 		platformInitSettings.threadBankManager.nPriority = pBankManger->priority;
+#endif    // CRY_PLATFORM_POSIX
+	}
 
-	if (pBankManger->paramActivityFlag & SThreadConfig::eThreadParamFlag_StackSize)
+	if ((pBankManger->paramActivityFlag & SThreadConfig::eThreadParamFlag_StackSize) != 0)
+	{
 		platformInitSettings.threadBankManager.uStackSize = pBankManger->stackSizeBytes;
+	}
 
 	// LEngine thread settings
-	if (pLEngineThread->paramActivityFlag & SThreadConfig::eThreadParamFlag_Affinity)
+	if ((pLEngineThread->paramActivityFlag & SThreadConfig::eThreadParamFlag_Affinity) != 0)
+	{
 		platformInitSettings.threadLEngine.dwAffinityMask = pLEngineThread->affinityFlag;
+	}
 
-	if (pLEngineThread->paramActivityFlag & SThreadConfig::eThreadParamFlag_Priority)
-#if defined(CRY_PLATFORM_POSIX)
-		if (!(pLEngineThread->priority > 0 && pLEngineThread->priority <= 99))
+	if ((pLEngineThread->paramActivityFlag & SThreadConfig::eThreadParamFlag_Priority) != 0)
+	{
+#if CRY_PLATFORM_POSIX
+		if (!((pLEngineThread->priority > 0) && (pLEngineThread->priority <= 99)))
+		{
 			CryWarning(VALIDATOR_MODULE_AUDIO, VALIDATOR_WARNING, "Thread 'Wwise_LEngine' requested priority %d when allowed range is 1 to 99. Applying default value of %d.", pLEngineThread->priority, platformInitSettings.threadLEngine.nPriority);
+		}
 		else
-#endif
+		{
+			platformInitSettings.threadLEngine.nPriority = pLEngineThread->priority;
+		}
+#else
 		platformInitSettings.threadLEngine.nPriority = pLEngineThread->priority;
+#endif    // CRY_PLATFORM_POSIX
+	}
 
-	if (pLEngineThread->paramActivityFlag & SThreadConfig::eThreadParamFlag_StackSize)
+	if ((pLEngineThread->paramActivityFlag & SThreadConfig::eThreadParamFlag_StackSize) != 0)
+	{
 		platformInitSettings.threadLEngine.uStackSize = pLEngineThread->stackSizeBytes;
+	}
 
 	// Monitor thread settings
-	if (pMonitorThread->paramActivityFlag & SThreadConfig::eThreadParamFlag_Affinity)
+	if ((pMonitorThread->paramActivityFlag & SThreadConfig::eThreadParamFlag_Affinity) != 0)
+	{
 		platformInitSettings.threadMonitor.dwAffinityMask = pMonitorThread->affinityFlag;
+	}
 
-	if (pMonitorThread->paramActivityFlag & SThreadConfig::eThreadParamFlag_Priority)
-#if defined(CRY_PLATFORM_POSIX)
-		if (!(pMonitorThread->priority > 0 && pMonitorThread->priority <= 99))
+	if ((pMonitorThread->paramActivityFlag & SThreadConfig::eThreadParamFlag_Priority) != 0)
+	{
+#if CRY_PLATFORM_POSIX
+		if (!((pMonitorThread->priority > 0) && (pMonitorThread->priority <= 99)))
+		{
 			CryWarning(VALIDATOR_MODULE_AUDIO, VALIDATOR_WARNING, "Thread 'Wwise_Monitor' requested priority %d when allowed range is 1 to 99. Applying default value of %d.", pMonitorThread->priority, platformInitSettings.threadMonitor.nPriority);
+		}
 		else
-#endif
+		{
+			platformInitSettings.threadMonitor.nPriority = pMonitorThread->priority;
+		}
+#else
 		platformInitSettings.threadMonitor.nPriority = pMonitorThread->priority;
+#endif    // CRY_PLATFORM_POSIX
+	}
 
-	if (pMonitorThread->paramActivityFlag & SThreadConfig::eThreadParamFlag_StackSize)
+	if ((pMonitorThread->paramActivityFlag & SThreadConfig::eThreadParamFlag_StackSize) != 0)
+	{
 		platformInitSettings.threadMonitor.uStackSize = pMonitorThread->stackSizeBytes;
+	}
 
 	wwiseResult = AK::SoundEngine::Init(&initSettings, &platformInitSettings);
 
@@ -1729,7 +1778,7 @@ void CImpl::DrawDebugMemoryInfo(IRenderAuxGeom& auxGeom, float const posX, float
 		memInfoString.Format("%s (Total Memory: %u KiB)", m_name.c_str(), memAlloc >> 10);
 	}
 
-	auxGeom.Draw2dLabel(posX, posY, Debug::g_systemHeaderFontSize, Debug::s_globalColorHeader, false, memInfoString.c_str());
+	auxGeom.Draw2dLabel(posX, posY, Debug::g_systemHeaderFontSize, Debug::s_globalColorHeader, false, "%s", memInfoString.c_str());
 	posY += Debug::g_systemHeaderLineSpacerHeight;
 
 	if (showDetailedInfo)

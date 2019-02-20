@@ -225,38 +225,24 @@ else()
 endif()
 if (ORBIS OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
 	target_compile_options(${THIS_PROJECT} PRIVATE
-		-Wno-unknown-pragmas
-		-Wno-reorder
-		-Wno-parentheses
 		-Wno-format
-		-Wno-switch
-		-Wno-unused-value
-		-Wno-comment
-		-Wno-empty-body
-		-Wno-format-security
-		-Wno-unused-function
 		-Wno-multichar
+		-Wno-parentheses
+		-Wno-unknown-pragmas
+		-Wno-unused-function
 		-Wno-unused-private-field
 	)
 elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
 	target_compile_options(${THIS_PROJECT} PRIVATE
-		-Wno-unused-function
-		-Wno-unused-value
-		-Wno-sign-compare
-		-Wno-ignored-attributes
-		-Wno-int-in-bool-context
-		-Wno-unused-but-set-variable
-		-Wno-misleading-indentation
-		-Wno-unknown-pragmas
-		-Wno-strict-aliasing
-		-Wno-maybe-uninitialized
-		-Wno-unused-const-variable
-		-Wno-multichar
-		-Wno-char-subscripts
-		-Wno-parentheses
-		-Wno-comment
-		-Wno-address
 		-Wno-format
-		-Wno-switch
+		-Wno-maybe-uninitialized
+		-Wno-misleading-indentation
+		-Wno-multichar
+		-Wno-parentheses
+		-Wno-sign-compare
+		-Wno-strict-aliasing
+		-Wno-unknown-pragmas
+		-Wno-unused-but-set-variable
+		-Wno-unused-function
 	)
 endif()

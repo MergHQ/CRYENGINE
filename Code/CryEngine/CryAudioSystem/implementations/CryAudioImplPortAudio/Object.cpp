@@ -5,6 +5,7 @@
 #include "Event.h"
 #include "EventInstance.h"
 #include "Impl.h"
+#include <CryAudio/IAudioSystem.h>
 
 namespace CryAudio
 {

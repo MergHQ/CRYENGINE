@@ -128,11 +128,11 @@ int CPropagationProcessor::OnObstructionTest(EventPhys const* pEvent)
 CPropagationProcessor::CPropagationProcessor(CObject& object)
 	: m_lastQuerriedOcclusion(0.0f)
 	, m_occlusion(0.0f)
+	, m_currentListenerDistance(0.0f)
+	, m_occlusionRayOffset(0.1f)
 	, m_remainingRays(0)
 	, m_rayIndex(0)
 	, m_object(object)
-	, m_currentListenerDistance(0.0f)
-	, m_occlusionRayOffset(0.1f)
 	, m_occlusionType(EOcclusionType::None)
 	, m_originalOcclusionType(EOcclusionType::None)
 	, m_occlusionTypeWhenAdaptive(EOcclusionType::Low) //will be updated in the first Update
@@ -753,6 +753,8 @@ void CPropagationProcessor::RunObstructionQuery()
 		case EOcclusionType::High:
 			ProcessHigh(up, side, bSynch);
 			break;
+		default:
+			break;
 		}
 	}
 }
@@ -849,6 +851,8 @@ uint8 CPropagationProcessor::GetNumConcurrentRays() const
 	case EOcclusionType::High:
 		numConcurrentRays = g_numConcurrentRaysHigh;
 		break;
+	default:
+		break;
 	}
 
 	return numConcurrentRays;
@@ -888,6 +892,8 @@ uint8 CPropagationProcessor::GetNumSamplePositions() const
 		break;
 	case EOcclusionType::High:
 		numSamplePositions = g_numRaySamplePositionsHigh;
+		break;
+	default:
 		break;
 	}
 

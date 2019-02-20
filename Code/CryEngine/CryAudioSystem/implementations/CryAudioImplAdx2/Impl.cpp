@@ -36,7 +36,7 @@
 	#include <CrySystem/ITimer.h>
 #endif  // CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE
 
-#if defined(CRY_PLATFORM_WINDOWS)
+#if CRY_PLATFORM_WINDOWS
 	#include <cri_atom_wasapi.h>
 #endif // CRY_PLATFORM_WINDOWS
 
@@ -374,7 +374,7 @@ void CImpl::ShutDown()
 	criAtomExDbas_Destroy(m_dbasId);
 	criAtomExVoicePool_FreeAll();
 
-#if defined(CRY_PLATFORM_WINDOWS)
+#if CRY_PLATFORM_WINDOWS
 	criAtomEx_Finalize_WASAPI();
 #else
 	criAtomEx_Finalize();
@@ -1205,7 +1205,7 @@ void CImpl::DestructCueInstance(CCueInstance const* const pCueInstance)
 //////////////////////////////////////////////////////////////////////////
 bool CImpl::InitializeLibrary()
 {
-#if defined(CRY_PLATFORM_WINDOWS)
+#if CRY_PLATFORM_WINDOWS
 	CriAtomExConfig_WASAPI libraryConfig;
 	criAtomEx_SetDefaultConfig_WASAPI(&libraryConfig);
 #else
@@ -1225,7 +1225,7 @@ bool CImpl::InitializeLibrary()
 	libraryConfig.asr.output_channels = static_cast<CriSint32>(g_cvars.m_outputChannels);
 	libraryConfig.asr.output_sampling_rate = static_cast<CriSint32>(g_cvars.m_outputSamplingRate);
 
-#if defined(CRY_PLATFORM_WINDOWS)
+#if CRY_PLATFORM_WINDOWS
 	criAtomEx_Initialize_WASAPI(&libraryConfig, nullptr, 0);
 #else
 	criAtomEx_Initialize(&libraryConfig, nullptr, 0);
@@ -1457,7 +1457,7 @@ void CImpl::DrawDebugMemoryInfo(IRenderAuxGeom& auxGeom, float const posX, float
 		memInfoString.Format("%s (Total Memory: %u KiB)", m_name.c_str(), memAlloc >> 10);
 	}
 
-	auxGeom.Draw2dLabel(posX, posY, Debug::g_systemHeaderFontSize, Debug::s_globalColorHeader, false, memInfoString.c_str());
+	auxGeom.Draw2dLabel(posX, posY, Debug::g_systemHeaderFontSize, Debug::s_globalColorHeader, false, "%s", memInfoString.c_str());
 	posY += Debug::g_systemHeaderLineSpacerHeight;
 
 	if (showDetailedInfo)
@@ -1622,7 +1622,7 @@ void CImpl::DrawDebugInfoList(IRenderAuxGeom& auxGeom, float& posX, float posY, 
 							color = Debug::s_listColorItemStopping;
 						}
 
-						auxGeom.Draw2dLabel(posX, posY, Debug::g_listFontSize, color, false, debugText);
+						auxGeom.Draw2dLabel(posX, posY, Debug::g_listFontSize, color, false, "%s", debugText.c_str());
 
 						posY += Debug::g_listLineHeight;
 					}

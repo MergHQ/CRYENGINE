@@ -23,8 +23,8 @@ public:
 		SwitchStateId const switchStateId,
 		SwitchStateConnections const& connections,
 		char const* const szName)
-		: m_switchStateId(switchStateId)
-		, m_switchId(switchId)
+		: m_switchId(switchId)
+		, m_switchStateId(switchStateId)
 		, m_connections(connections)
 		, m_name(szName)
 	{}
@@ -33,8 +33,8 @@ public:
 		ControlId const switchId,
 		SwitchStateId const switchStateId,
 		SwitchStateConnections const& connections)
-		: m_switchStateId(switchStateId)
-		, m_switchId(switchId)
+		: m_switchId(switchId)
+		, m_switchStateId(switchStateId)
 		, m_connections(connections)
 	{}
 #endif // CRY_AUDIO_USE_PRODUCTION_CODE

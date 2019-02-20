@@ -9,6 +9,7 @@
 #include "VolumeParameter.h"
 #include "VolumeState.h"
 #include "SoundEngine.h"
+#include <CryAudio/IAudioSystem.h>
 
 #include <SDL_mixer.h>
 
@@ -32,7 +33,7 @@ void CObject::Update(float const deltaTime)
 
 		while (iter != iterEnd)
 		{
-			CEventInstance* const pEventInstance = *iter;
+			CEventInstance const* const pEventInstance = *iter;
 
 			if (pEventInstance->IsToBeRemoved())
 			{

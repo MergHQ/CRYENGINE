@@ -30,8 +30,8 @@ public:
 	};
 
 	CAuxThread()
-		: m_bQuit(false)
-		, m_threadState(EAuxThreadState::Wait)
+		: m_threadState(EAuxThreadState::Wait)
+		, m_bQuit(false)
 	{}
 
 	virtual ~CAuxThread() override = default;

@@ -15,12 +15,12 @@ namespace Wwise
 //////////////////////////////////////////////////////////////////////////
 CListener::CListener(CTransformation const& transformation, AkGameObjectID const id)
 	: m_id(id)
-	, m_transformation(transformation)
 	, m_hasMoved(false)
 	, m_isMovingOrDecaying(false)
 	, m_velocity(ZERO)
 	, m_position(transformation.GetPosition())
 	, m_previousPosition(transformation.GetPosition())
+	, m_transformation(transformation)
 {
 	AkListenerPosition listenerPos;
 	FillAKListenerPosition(transformation, listenerPos);

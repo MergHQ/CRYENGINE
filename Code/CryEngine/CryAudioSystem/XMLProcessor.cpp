@@ -277,6 +277,10 @@ void CXMLProcessor::ParseControlsData(char const* const szFolderPath, EDataScope
 
 			break;
 		}
+	default:
+		{
+			break;
+		}
 	}
 
 	float const duration = (gEnv->pTimer->GetAsyncTime() - startTime).GetMilliSeconds();
@@ -471,6 +475,10 @@ void CXMLProcessor::ParsePreloadsData(char const* const szFolderPath, EDataScope
 		{
 			szDataScope = "Level Specific";
 
+			break;
+		}
+	default:
+		{
 			break;
 		}
 	}

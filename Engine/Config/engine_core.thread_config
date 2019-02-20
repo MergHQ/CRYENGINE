@@ -95,7 +95,8 @@ StackSizeKB:
 		<Thread name ="RemoteCommandServer"/>
 		<Thread name ="ServiceNetwork"/>	
 		<Thread name ="SysCrashTestOnThread"/>
-		
+		<Thread name ="LogThread" Affinity="6" Priority="Below_Normal"/>
+
 		<!-- [SYSTEM] - JobSystem -->
 		<Thread name ="JobSystem_Worker_0 (Blocking)" Affinity="5,6" StackSizeKB="64"/>
 		<Thread name ="JobSystem_Worker_1 (Blocking)" Affinity="5,6" StackSizeKB="64"/>
@@ -207,6 +208,7 @@ StackSizeKB:
 		<Thread name ="RemoteCommandServer"/>
 		<Thread name ="ServiceNetwork" Affinity="5"/>
 		<Thread name ="SysCrashTestOnThread"/>
+		<Thread name ="LogThread" Priority="Below_Normal"/>
 
 		<!-- [SYSTEM] - JobSystem -->
 		<Thread name ="JobSystem_Worker_0 (Blocking)" Affinity="5"/>
@@ -319,7 +321,8 @@ StackSizeKB:
 		<Thread name ="ServiceNetwork"/>
 		<Thread name ="SysCrashTestOnThread"/>
 		<Thread name ="UserAnalytics"/>
-		
+		<Thread name ="LogThread" Priority="Below_Normal"/>
+
 		<!-- [SYSTEM] - Streaming -->
 		<Thread name ="Streaming File IO HDD" Priority="Above_Normal"/>
 		<Thread name ="Streaming File IO Optical" Priority="Above_Normal"/>
@@ -435,6 +438,7 @@ StackSizeKB:
 		<Thread name ="RemoteCommandServer"/>
 		<Thread name ="ServiceNetwork"/>
 		<Thread name ="SysCrashTestOnThread"/>
+		<Thread name ="LogThread" Priority="Below_Normal"/>
 
 		<!-- [SYSTEM] - Streaming -->
 		<Thread name ="Streaming File IO HDD" Priority="Above_Normal"/>
@@ -521,6 +525,7 @@ StackSizeKB:
 		<Thread name ="RemoteCommandServer"/>
 		<Thread name ="ServiceNetwork"/>
 		<Thread name ="SysCrashTestOnThread"/>
+		<Thread name ="LogThread" Priority="Below_Normal"/>
 
 		<!-- [AUDIO] -->
 		<Thread name ="AudioMainThread" Affinity="ignore" Priority="below_normal" StackSize="ignore"/>
