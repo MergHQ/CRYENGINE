@@ -44,7 +44,7 @@ struct SCallbackRequestData final : public SCallbackRequestDataBase
 		: SCallbackRequestDataBase(T)
 	{}
 
-	explicit SCallbackRequestData(SCallbackRequestData<T> const* const pACMRData)
+	explicit SCallbackRequestData(SCallbackRequestData<T> const* const pCRData)
 		: SCallbackRequestDataBase(T)
 	{}
 
@@ -61,10 +61,10 @@ struct SCallbackRequestData<ECallbackRequestType::ReportStartedTriggerConnection
 		, result(result_)
 	{}
 
-	explicit SCallbackRequestData(SCallbackRequestData<ECallbackRequestType::ReportStartedTriggerConnectionInstance> const* const pACMRData)
+	explicit SCallbackRequestData(SCallbackRequestData<ECallbackRequestType::ReportStartedTriggerConnectionInstance> const* const pCRData)
 		: SCallbackRequestDataBase(ECallbackRequestType::ReportStartedTriggerConnectionInstance)
-		, triggerInstanceId(pACMRData->triggerInstanceId)
-		, result(pACMRData->result)
+		, triggerInstanceId(pCRData->triggerInstanceId)
+		, result(pCRData->result)
 	{}
 
 	virtual ~SCallbackRequestData() override = default;
@@ -83,10 +83,10 @@ struct SCallbackRequestData<ECallbackRequestType::ReportFinishedTriggerConnectio
 		, result(result_)
 	{}
 
-	explicit SCallbackRequestData(SCallbackRequestData<ECallbackRequestType::ReportFinishedTriggerConnectionInstance> const* const pACMRData)
+	explicit SCallbackRequestData(SCallbackRequestData<ECallbackRequestType::ReportFinishedTriggerConnectionInstance> const* const pCRData)
 		: SCallbackRequestDataBase(ECallbackRequestType::ReportFinishedTriggerConnectionInstance)
-		, triggerInstanceId(pACMRData->triggerInstanceId)
-		, result(pACMRData->result)
+		, triggerInstanceId(pCRData->triggerInstanceId)
+		, result(pCRData->result)
 	{}
 
 	virtual ~SCallbackRequestData() override = default;
@@ -105,10 +105,10 @@ struct SCallbackRequestData<ECallbackRequestType::ReportFinishedTriggerInstance>
 		, entityId(entityId_)
 	{}
 
-	explicit SCallbackRequestData(SCallbackRequestData<ECallbackRequestType::ReportFinishedTriggerInstance> const* const pACMRData)
+	explicit SCallbackRequestData(SCallbackRequestData<ECallbackRequestType::ReportFinishedTriggerInstance> const* const pCRData)
 		: SCallbackRequestDataBase(ECallbackRequestType::ReportFinishedTriggerInstance)
-		, triggerId(pACMRData->triggerId)
-		, entityId(pACMRData->entityId)
+		, triggerId(pCRData->triggerId)
+		, entityId(pCRData->entityId)
 	{}
 
 	virtual ~SCallbackRequestData() override = default;
@@ -126,9 +126,9 @@ struct SCallbackRequestData<ECallbackRequestType::ReportPhysicalizedObject> fina
 		, pIObject(pIObject_)
 	{}
 
-	explicit SCallbackRequestData(SCallbackRequestData<ECallbackRequestType::ReportPhysicalizedObject> const* const pACMRData)
+	explicit SCallbackRequestData(SCallbackRequestData<ECallbackRequestType::ReportPhysicalizedObject> const* const pCRData)
 		: SCallbackRequestDataBase(ECallbackRequestType::ReportPhysicalizedObject)
-		, pIObject(pACMRData->pIObject)
+		, pIObject(pCRData->pIObject)
 	{}
 
 	virtual ~SCallbackRequestData() override = default;
@@ -145,9 +145,9 @@ struct SCallbackRequestData<ECallbackRequestType::ReportVirtualizedObject> final
 		, pIObject(pIObject_)
 	{}
 
-	explicit SCallbackRequestData(SCallbackRequestData<ECallbackRequestType::ReportVirtualizedObject> const* const pACMRData)
+	explicit SCallbackRequestData(SCallbackRequestData<ECallbackRequestType::ReportVirtualizedObject> const* const pCRData)
 		: SCallbackRequestDataBase(ECallbackRequestType::ReportVirtualizedObject)
-		, pIObject(pACMRData->pIObject)
+		, pIObject(pCRData->pIObject)
 	{}
 
 	virtual ~SCallbackRequestData() override = default;
