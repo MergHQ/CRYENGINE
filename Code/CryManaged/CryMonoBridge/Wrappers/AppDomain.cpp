@@ -41,6 +41,14 @@ CAppDomain::CAppDomain(const char *name, bool bActivate)
 		return;
 	}
 
+	libraryPath = PathUtil::Make(executableFolder, "CryEngine.Core.UI");
+	m_pLibCoreUI = LoadLibrary(libraryPath);
+	if (m_pLibCoreUI == nullptr)
+	{
+		CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_ERROR, "Failed to load managed core ui library!");
+		return;
+	}
+
 	m_pVector2Class = m_pLibCore->GetClass("CryEngine", "Vector2");
 	m_pVector3Class = m_pLibCore->GetClass("CryEngine", "Vector3");
 	m_pVector4Class = m_pLibCore->GetClass("CryEngine", "Vector4");
