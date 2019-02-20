@@ -73,6 +73,9 @@ void CSkyLightManager::SetSkyDomeCondition(const SSkyDomeCondition& skyDomeCondi
 
 void CSkyLightManager::FullUpdate()
 {
+	if (!GetRenderer())
+		return;
+
 	Sync();
 	PushUpdateParams();
 	TSkyJob job(GetRenderer()->GetFrameID(false), SSkyLightRenderParams::skyDomeTextureSize, (int)1);
