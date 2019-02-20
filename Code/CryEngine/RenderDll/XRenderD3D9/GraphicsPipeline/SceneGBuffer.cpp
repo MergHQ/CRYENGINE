@@ -502,7 +502,7 @@ void CSceneGBufferStage::Execute()
 
 	if (CRenderer::CV_r_DeferredShadingTiled < CTiledShadingStage::eDeferredMode_Disabled)
 	{
-		bool bClearAll = CRenderer::CV_r_wireframe != 0;
+		bool bClearAll = CRenderer::CV_r_wireframe != 0 || CRendererCVars::CV_r_DeferredShadingDebugGBuffer > 0;
 
 		if (CVrProjectionManager::IsMultiResEnabledStatic())
 			bClearAll = true;
