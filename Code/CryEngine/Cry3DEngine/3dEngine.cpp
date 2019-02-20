@@ -2814,7 +2814,7 @@ void C3DEngine::DeleteVisArea(IVisArea* pVisArea)
 void C3DEngine::UpdateVisArea(IVisArea* pVisArea, const Vec3* pPoints, int nCount, const char* szName,
                               const SVisAreaInfo& info, bool bReregisterObjects)
 {
-	if (!m_pObjManager)
+	if (!m_pObjManager || !m_pVisAreaManager)
 		return;
 
 	CVisArea* pArea = (CVisArea*)pVisArea;

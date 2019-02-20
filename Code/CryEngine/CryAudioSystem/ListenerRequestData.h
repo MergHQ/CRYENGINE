@@ -40,7 +40,7 @@ struct SListenerRequestData final : public SListenerRequestDataBase
 		: SListenerRequestDataBase(T)
 	{}
 
-	explicit SListenerRequestData(SListenerRequestData<T> const* const pALRData)
+	explicit SListenerRequestData(SListenerRequestData<T> const* const pLRData)
 		: SListenerRequestDataBase(T)
 	{}
 
@@ -59,10 +59,10 @@ struct SListenerRequestData<EListenerRequestType::SetTransformation> final : pub
 		, pListener(pListener_)
 	{}
 
-	explicit SListenerRequestData(SListenerRequestData<EListenerRequestType::SetTransformation> const* const pALRData)
+	explicit SListenerRequestData(SListenerRequestData<EListenerRequestType::SetTransformation> const* const pLRData)
 		: SListenerRequestDataBase(EListenerRequestType::SetTransformation)
-		, transformation(pALRData->transformation)
-		, pListener(pALRData->pListener)
+		, transformation(pLRData->transformation)
+		, pListener(pLRData->pListener)
 	{}
 
 	virtual ~SListenerRequestData() override = default;
@@ -82,10 +82,10 @@ struct SListenerRequestData<EListenerRequestType::SetName> final : public SListe
 		, name(szName)
 	{}
 
-	explicit SListenerRequestData(SListenerRequestData<EListenerRequestType::SetName> const* const pALRData)
+	explicit SListenerRequestData(SListenerRequestData<EListenerRequestType::SetName> const* const pLRData)
 		: SListenerRequestDataBase(EListenerRequestType::SetName)
-		, pListener(pALRData->pListener)
-		, name(pALRData->name)
+		, pListener(pLRData->pListener)
+		, name(pLRData->name)
 	{}
 
 	virtual ~SListenerRequestData() override = default;
