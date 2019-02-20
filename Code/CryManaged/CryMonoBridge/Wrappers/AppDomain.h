@@ -53,6 +53,7 @@ protected:
 	uint64 m_serializationTicks;
 
 	CMonoLibrary* m_pLibCore;
+	CMonoLibrary* m_pLibCoreUI;
 	CMonoLibrary* m_pLibCommon;
 
 	CMonoClass* m_pVector2Class;

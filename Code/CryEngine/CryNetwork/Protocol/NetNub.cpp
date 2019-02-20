@@ -657,27 +657,32 @@ void CNetNub::DoConnectTo(const TNetAddressVec& ips, CrySessionHandle session, s
 	pc.conlk = conlk;
 	pc.session = session;
 
+	const bool isLocal = stl::get_if<TLocalNetAddress>(&pc.to) != nullptr;
+
 	// Initialize in legacy mode
 	pc.tokenMode = CNetProfileTokens::EMode::Legacy;
 	pc.profileTokenPair.profile = CNetCVars::Get().ProfileId;
 	pc.legacyToken = CNetCVars::Get().TokenId;
 	ChannelSecurity::CHMac::FillDummyToken(pc.profileTokenPair.token);
 
-	INetworkServicePtr pNetTokens = CNetwork::Get()->GetService("NetProfileTokens");
-	if (pNetTokens && (eNSS_Ok == pNetTokens->GetState()))
+	if (!isLocal)
 	{
-		CNetProfileTokens* pNetProfileTokens = static_cast<CNetProfileTokens*>(pNetTokens->GetNetProfileTokens());
-		pc.tokenMode = pNetProfileTokens->GetMode();
-		switch (pc.tokenMode)
+		INetworkServicePtr pNetTokens = CNetwork::Get()->GetService("NetProfileTokens");
+		if (pNetTokens && (eNSS_Ok == pNetTokens->GetState()))
 		{
-		case CNetProfileTokens::EMode::ProfileTokens:
-			pNetProfileTokens->Client_GetToken(pc.profileTokenPair);
-			break;
-		case CNetProfileTokens::EMode::Legacy:
-			break;
-		default:
-			NetWarning("Unexpected NetProfileTokens mode");
-			return;
+			CNetProfileTokens* pNetProfileTokens = static_cast<CNetProfileTokens*>(pNetTokens->GetNetProfileTokens());
+			pc.tokenMode = pNetProfileTokens->GetMode();
+			switch (pc.tokenMode)
+			{
+			case CNetProfileTokens::EMode::ProfileTokens:
+				pNetProfileTokens->Client_GetToken(pc.profileTokenPair);
+				break;
+			case CNetProfileTokens::EMode::Legacy:
+				break;
+			default:
+				NetWarning("Unexpected NetProfileTokens mode");
+				return;
+			}
 		}
 	}
 

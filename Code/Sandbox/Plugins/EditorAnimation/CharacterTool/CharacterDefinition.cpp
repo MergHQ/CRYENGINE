@@ -1398,6 +1398,11 @@ void CharacterAttachment::Serialize(Serialization::IArchive& ar)
 				ar(Serialization::Range(m_vclothParams.debugPrint,0, std::numeric_limits<int>::max()), "debugPrint", "Debug");
 				ar.closeBlock();
 			}
+			
+			if (m_vclothParams.hide)
+			{
+				ar.warning(*this, "Hidden by default.");
+			}
 
 			ar.closeBlock(); // close "vcloth-parameter"
 		}
