@@ -6453,8 +6453,7 @@ bool C3DEngine::IsTessellationAllowed(const CRenderObject* pObj, const SRenderin
 
 bool C3DEngine::IsStatObjBufferRenderTasksAllowed() const
 {
-	static const auto bMnDebugEnabled = gEnv->pConsole->GetCVar("mn_debug") != nullptr && strlen(gEnv->pConsole->GetCVar("mn_debug")->GetString()) != 0;
-	return GetCVars()->e_StatObjBufferRenderTasks && !GetCVars()->e_DebugDraw && !bMnDebugEnabled;
+	return !!GetCVars()->e_StatObjBufferRenderTasks;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
