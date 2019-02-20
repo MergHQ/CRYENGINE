@@ -22,9 +22,9 @@ public:
 	void RegisterVariables();
 	void UnregisterVariables();
 
-	float m_velocityTrackingThreshold = 0.0f;
+	float m_velocityTrackingThreshold = 0.1f;
 	float m_positionUpdateThresholdMultiplier = 0.02f;
-	int   m_eventPoolSize = 0;
+	int   m_eventPoolSize = 256;
 	int   m_secondaryMemoryPoolSize = 0;
 	int   m_prepareEventMemoryPoolSize = 0;
 	int   m_streamManagerMemoryPoolSize = 0;

@@ -55,6 +55,10 @@ ETriggerResult CSnapshot::Execute(IObject* const pIObject, TriggerInstanceId con
 
 			break;
 		}
+	default:
+		{
+			break;
+		}
 	}
 
 	return result;

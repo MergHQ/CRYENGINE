@@ -211,6 +211,10 @@ ETriggerResult CEvent::Execute(IObject* const pIObject, TriggerInstanceId const 
 
 			break;
 		}
+	default:
+		{
+			break;
+		}
 	}
 
 	return result;

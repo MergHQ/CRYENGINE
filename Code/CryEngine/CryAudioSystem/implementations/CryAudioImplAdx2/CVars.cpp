@@ -20,27 +20,6 @@ void SetVoiceAllocationMethod(ICVar* const pCvar)
 //////////////////////////////////////////////////////////////////////////
 void CCVars::RegisterVariables()
 {
-	// To do: Add platform specific default values.
-	m_cuePoolSize = 256;
-	m_maxVirtualVoices = 16;
-	m_maxVoiceLimitGroups = 16;
-	m_maxCategories = 16;
-	m_categoriesPerPlayback = 4;
-	m_maxTracks = 32;
-	m_maxTrackItems = 32;
-	m_maxFaders = 4;
-	m_numVoices = 8;
-	m_maxChannels = 2;
-	m_maxSamplingRate = 48000;
-	m_numBuses = 8;
-	m_outputChannels = 6;
-	m_outputSamplingRate = 48000;
-	m_maxStreams = 8;
-	m_maxFiles = 32;
-	m_voiceAllocationMethod = 0;
-	m_maxPitch = 2400.0f;
-	m_velocityTrackingThreshold = 0.1f;
-
 	REGISTER_CVAR2("s_Adx2CuePoolSize", &m_cuePoolSize, m_cuePoolSize, VF_REQUIRE_APP_RESTART,
 	               "Sets the number of preallocated cue instances.\n"
 	               "Usage: s_Adx2CuePoolSize [0/...]\n"

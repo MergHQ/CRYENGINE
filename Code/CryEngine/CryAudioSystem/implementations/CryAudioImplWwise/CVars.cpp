@@ -28,8 +28,6 @@ void SetPanningRule(ICVar* const pPanningRule)
 void CCVars::RegisterVariables()
 {
 #if CRY_PLATFORM_WINDOWS
-	m_velocityTrackingThreshold = 0.1f;
-	m_eventPoolSize = 256;
 	m_secondaryMemoryPoolSize = 0;
 	m_prepareEventMemoryPoolSize = 4 << 10;        // 4 MiB
 	m_streamManagerMemoryPoolSize = 128;           // 128 KiB
@@ -47,8 +45,6 @@ void CCVars::RegisterVariables()
 	m_monitorQueueMemoryPoolSize = 64; // 64 KiB
 	#endif                             // CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE
 #elif CRY_PLATFORM_DURANGO
-	m_velocityTrackingThreshold = 0.1f;
-	m_eventPoolSize = 256;
 	m_secondaryMemoryPoolSize = 32 << 10;          // 32 MiB
 	m_prepareEventMemoryPoolSize = 4 << 10;        // 4 MiB
 	m_streamManagerMemoryPoolSize = 128;           // 128 KiB
@@ -66,8 +62,6 @@ void CCVars::RegisterVariables()
 	m_monitorQueueMemoryPoolSize = 64; // 64 KiB
 	#endif                             // CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE
 #elif CRY_PLATFORM_ORBIS
-	m_velocityTrackingThreshold = 0.1f;
-	m_eventPoolSize = 256;
 	m_secondaryMemoryPoolSize = 0;
 	m_prepareEventMemoryPoolSize = 4 << 10;        // 4 MiB
 	m_streamManagerMemoryPoolSize = 128;           // 128 KiB
@@ -85,8 +79,6 @@ void CCVars::RegisterVariables()
 	m_monitorQueueMemoryPoolSize = 64; // 64 KiB
 	#endif                             // CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE
 #elif CRY_PLATFORM_MAC
-	m_velocityTrackingThreshold = 0.1f;
-	m_eventPoolSize = 256;
 	m_secondaryMemoryPoolSize = 0;
 	m_prepareEventMemoryPoolSize = 4 << 10;        // 4 MiB
 	m_streamManagerMemoryPoolSize = 128;           // 128 KiB
@@ -104,8 +96,6 @@ void CCVars::RegisterVariables()
 	m_monitorQueueMemoryPoolSize = 64; // 64 KiB
 	#endif                             // CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE
 #elif CRY_PLATFORM_LINUX
-	m_velocityTrackingThreshold = 0.1f;
-	m_eventPoolSize = 256;
 	m_secondaryMemoryPoolSize = 0;
 	m_prepareEventMemoryPoolSize = 4 << 10;        // 4 MiB
 	m_streamManagerMemoryPoolSize = 128;           // 128 KiB
@@ -122,9 +112,7 @@ void CCVars::RegisterVariables()
 	m_monitorMemoryPoolSize = 256;     // 256 KiB
 	m_monitorQueueMemoryPoolSize = 64; // 64 KiB
 	#endif                             // CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE
-#elif defined(CRY_PLATFORM_IOS)
-	m_velocityTrackingThreshold = 0.1f;
-	m_eventPoolSize = 256;
+#elif CRY_PLATFORM_IOS
 	m_secondaryMemoryPoolSize = 0;
 	m_prepareEventMemoryPoolSize = 4 << 10;        // 4 MiB
 	m_streamManagerMemoryPoolSize = 128;           // 128 KiB
@@ -142,8 +130,6 @@ void CCVars::RegisterVariables()
 	m_monitorQueueMemoryPoolSize = 64; // 64 KiB
 	#endif                             // CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE
 #elif CRY_PLATFORM_ANDROID
-	m_velocityTrackingThreshold = 0.1f;
-	m_eventPoolSize = 256;
 	m_secondaryMemoryPoolSize = 0;
 	m_prepareEventMemoryPoolSize = 4 << 10;        // 4 MiB
 	m_streamManagerMemoryPoolSize = 128;           // 128 KiB

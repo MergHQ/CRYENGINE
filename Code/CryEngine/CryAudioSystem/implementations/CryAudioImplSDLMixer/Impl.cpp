@@ -824,7 +824,7 @@ void CImpl::DrawDebugMemoryInfo(IRenderAuxGeom& auxGeom, float const posX, float
 		memInfoString.Format("%s (Total Memory: %u KiB)", m_name.c_str(), memAlloc >> 10);
 	}
 
-	auxGeom.Draw2dLabel(posX, posY, Debug::g_systemHeaderFontSize, Debug::s_globalColorHeader, false, memInfoString.c_str());
+	auxGeom.Draw2dLabel(posX, posY, Debug::g_systemHeaderFontSize, Debug::s_globalColorHeader, false, "%s", memInfoString.c_str());
 	posY += Debug::g_systemHeaderLineSpacerHeight;
 
 	if (showDetailedInfo)
@@ -910,7 +910,7 @@ void CImpl::DrawDebugInfoList(IRenderAuxGeom& auxGeom, float& posX, float posY, 
 					color = Debug::s_listColorItemStopping;
 				}
 
-				auxGeom.Draw2dLabel(posX, posY, Debug::g_listFontSize, color, false, debugText);
+				auxGeom.Draw2dLabel(posX, posY, Debug::g_listFontSize, color, false, "%s", debugText.c_str());
 
 				posY += Debug::g_listLineHeight;
 			}

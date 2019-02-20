@@ -88,16 +88,18 @@ bool GetSoundInfo(char const* const szPath, SF_INFO& sfInfo, PaStreamParameters&
 
 		switch (subFormat)
 		{
-		case SF_FORMAT_PCM_16:
+		case SF_FORMAT_PCM_16: // Intentional fall-through.
 		case SF_FORMAT_PCM_24:
 			streamParameters.sampleFormat = paInt16;
 			break;
 		case SF_FORMAT_PCM_32:
 			streamParameters.sampleFormat = paInt32;
 			break;
-		case SF_FORMAT_FLOAT:
+		case SF_FORMAT_FLOAT: // Intentional fall-through.
 		case SF_FORMAT_VORBIS:
 			streamParameters.sampleFormat = paFloat32;
+			break;
+		default:
 			break;
 		}
 
@@ -757,7 +759,7 @@ void CImpl::DrawDebugMemoryInfo(IRenderAuxGeom& auxGeom, float const posX, float
 		memInfoString.Format("%s (Total Memory: %u KiB)", m_name.c_str(), memAlloc >> 10);
 	}
 
-	auxGeom.Draw2dLabel(posX, posY, Debug::g_systemHeaderFontSize, Debug::s_globalColorHeader, false, memInfoString.c_str());
+	auxGeom.Draw2dLabel(posX, posY, Debug::g_systemHeaderFontSize, Debug::s_globalColorHeader, false, "%s", memInfoString.c_str());
 	posY += Debug::g_systemHeaderLineSpacerHeight;
 
 	if (showDetailedInfo)

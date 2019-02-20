@@ -22,11 +22,11 @@ public:
 	void RegisterVariables();
 	void UnregisterVariables();
 
-	int   m_eventPoolSize = 0;
-	int   m_maxChannels = 0;
+	int   m_eventPoolSize = 256;
+	int   m_maxChannels = 512;
 	int   m_enableSynchronousUpdate = 1;
 
-	float m_velocityTrackingThreshold = 0.0f;
+	float m_velocityTrackingThreshold = 0.1f;
 	float m_positionUpdateThresholdMultiplier = 0.02f;
 	float m_lowpassMinCutoffFrequency = 10.0f;
 	float m_distanceFactor = 1.0f;

@@ -528,7 +528,7 @@ void CObject::DrawDebugInfo(
 						Debug::g_objectFontSize,
 						isVirtual ? Debug::s_globalColorVirtual : (hasActiveData ? Debug::s_objectColorActive : Debug::s_globalColorInactive),
 						false,
-						m_name.c_str());
+						"%s", m_name.c_str());
 
 					screenPos.y += Debug::g_objectLineHeight;
 				}
@@ -543,7 +543,7 @@ void CObject::DrawDebugInfo(
 							Debug::g_objectFontSize,
 							isVirtual ? Debug::s_globalColorVirtual : Debug::s_objectColorTrigger,
 							false,
-							debugText.c_str());
+							"%s", debugText.c_str());
 
 						screenPos.y += Debug::g_objectLineHeight;
 					}
@@ -629,7 +629,7 @@ void CObject::DrawDebugInfo(
 						Debug::g_objectFontSize,
 						isVirtual ? Debug::s_globalColorVirtual : Debug::s_objectColorActive,
 						false,
-						debugText.c_str());
+						"%s", debugText.c_str());
 
 					screenPos.y += Debug::g_objectLineHeight;
 				}

@@ -579,6 +579,8 @@ ETriggerResult SoundEngine::ExecuteEvent(CObject* const pObject, CEvent* const p
 				case CEvent::EActionType::Resume:
 					pEventInstance->Resume();
 					break;
+				default:
+					break;
 				}
 			}
 		}

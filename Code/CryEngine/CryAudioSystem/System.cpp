@@ -2566,6 +2566,10 @@ void CSystem::NotifyListener(CRequest const& request)
 
 					break;
 				}
+			default:
+				{
+					break;
+				}
 			}
 
 			break;
@@ -2585,6 +2589,10 @@ void CSystem::NotifyListener(CRequest const& request)
 
 					break;
 				}
+			default:
+				{
+					break;
+				}
 			}
 
 			break;
@@ -2602,6 +2610,10 @@ void CSystem::NotifyListener(CRequest const& request)
 					controlID = pRequestData->triggerId;
 					systemEvent = ESystemEvents::TriggerExecuted;
 
+					break;
+				}
+			default:
+				{
 					break;
 				}
 			}
@@ -3029,7 +3041,7 @@ void DrawRequestPeakInfo(IRenderAuxGeom& auxGeom, float const posX, float& posY,
 		Debug::g_systemFontSize,
 		poolSizeExceeded ? Debug::s_globalColorError : Debug::s_systemColorTextPrimary,
 		false,
-		debugText.c_str());
+		"%s", debugText.c_str());
 	posY += Debug::g_systemLineHeight;
 }
 
@@ -3092,7 +3104,7 @@ void DrawGlobalObjectInfo(
 		auxGeom.Draw2dLabel(posX, posY, Debug::g_listFontSize,
 		                    !hasActiveData ? Debug::s_globalColorInactive : Debug::s_listColorItemActive,
 		                    false,
-		                    szObjectName);
+		                    "%s", szObjectName);
 
 		posY += Debug::g_listLineHeight;
 		++numObjects;
@@ -3137,7 +3149,7 @@ void DrawObjectInfo(
 			auxGeom.Draw2dLabel(posX, posY, Debug::g_listFontSize,
 			                    !hasActiveData ? Debug::s_globalColorInactive : (isVirtual ? Debug::s_globalColorVirtual : Debug::s_listColorItemActive),
 			                    false,
-			                    debugText.c_str());
+			                    "%s", debugText.c_str());
 
 			posY += Debug::g_listLineHeight;
 			++numObjects;

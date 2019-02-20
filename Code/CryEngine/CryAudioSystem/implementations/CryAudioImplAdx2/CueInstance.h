@@ -3,6 +3,7 @@
 #pragma once
 
 #include <PoolObject.h>
+#include <CryAudio/IAudioInterfacesCommonData.h>
 #include <atomic>
 #include <cri_atom_ex.h>
 

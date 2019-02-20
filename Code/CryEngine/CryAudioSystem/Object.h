@@ -45,26 +45,26 @@ public:
 #if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 	explicit CObject(CTransformation const& transformation, char const* const szName)
 		: m_pIObject(nullptr)
-		, m_transformation(transformation)
 		, m_flags(EObjectFlags::InUse)
+		, m_transformation(transformation)
+		, m_entityId(INVALID_ENTITYID)
+		, m_numPendingSyncCallbacks(0)
 	#if defined(CRY_AUDIO_USE_OCCLUSION)
 		, m_propagationProcessor(*this)
 	#endif // CRY_AUDIO_USE_OCCLUSION
-		, m_entityId(INVALID_ENTITYID)
-		, m_numPendingSyncCallbacks(0)
 		, m_maxRadius(0.0f)
 		, m_name(szName)
 	{}
 #else
 	explicit CObject(CTransformation const& transformation)
 		: m_pIObject(nullptr)
-		, m_transformation(transformation)
 		, m_flags(EObjectFlags::InUse)
+		, m_transformation(transformation)
+		, m_entityId(INVALID_ENTITYID)
+		, m_numPendingSyncCallbacks(0)
 	#if defined(CRY_AUDIO_USE_OCCLUSION)
 		, m_propagationProcessor(*this)
 	#endif // CRY_AUDIO_USE_OCCLUSION
-		, m_entityId(INVALID_ENTITYID)
-		, m_numPendingSyncCallbacks(0)
 	{}
 #endif // CRY_AUDIO_USE_PRODUCTION_CODE
 
