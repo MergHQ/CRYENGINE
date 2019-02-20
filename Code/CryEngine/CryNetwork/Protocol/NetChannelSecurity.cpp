@@ -175,10 +175,7 @@ namespace ChannelSecurity
 	void CHMac::FillDummyToken(CNetProfileTokens::SToken& token)
 	{
 #if ALLOW_HMAC
-#if ENCRYPTION_GENERATE_KEYS
-		NetWarning("Using dummy HMAC secret");
 		token.hmacSecret.resize(4, eZeroInit);
-#endif
 #endif
 	}
 	
