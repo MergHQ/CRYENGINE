@@ -156,7 +156,7 @@ float CFlareSoftOcclusionQuery::ComputeLinearDepth(const Vec3& worldPos, const M
 
 void CFlareSoftOcclusionQuery::UpdateCachedResults()
 {
-	int cacheIdx = 4 * m_nID;
+	int cacheIdx = CHANNELS_PER_GATHER * m_nID;
 	m_fOccResultCache = s_paletteRawCache[cacheIdx + 0] / 255.0f;
 	m_fDirResultCache = (s_paletteRawCache[cacheIdx + 1] / 255.0f) * 2.0f * PI;
 	sincos_tpl(m_fDirResultCache, &m_DirVecResultCache.y, &m_DirVecResultCache.x);
