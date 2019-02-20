@@ -15,6 +15,7 @@ public:
 	void DisplayDebugInfo();
 
 	bool IsDebugInfoEnabled() const { return CRendererCVars::CV_r_HDRDebug == 1 && !RenderView()->IsRecursive(); }
+	bool IsDebugDrawEnabled() const { return CRendererCVars::CV_r_HDRDebug > 1 && !RenderView()->IsRecursive(); }
 
 private:
 	_smart_ptr<CTexture> m_pColorChartTex;

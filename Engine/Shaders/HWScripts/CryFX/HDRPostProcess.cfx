@@ -396,9 +396,9 @@ pixout HDRFinalSceneDebugPS(vert2frag IN)
 	half3 vSample = hdrTex.Load(int3(IN.WPos.xy, 0));
 	half3 oSample;
 
-	if(any(isnan(col)) || any(isinf(col)))
+	if(any(isnan(vSample)) || any(isinf(vSample)))
 		oSample = float3(1.0f, 0.0f, 0.0f);
-	else if(any(col<0.0f))
+	else if(any(vSample<0.0f))
 		oSample = float3(0.0f, 1.0f, 0.0f);
 	else 
 		oSample = float3(0.5f, 0.5f, 0.5f);
