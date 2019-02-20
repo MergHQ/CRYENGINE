@@ -5,6 +5,8 @@
 #include <CrySystem/ILog.h>
 #include <CryThreading/CryAtomics.h>
 #include <CryThreading/MultiThread_Containers.h>
+#include <CryThreading/IThreadManager.h>
+#include <3rdParty/concqueue/concqueue-mpsc.hpp>
 
 struct ISystem;
 struct ICVar;
@@ -15,11 +17,29 @@ struct IConsoleCmdArgs;
 
 #define MAX_FILENAME_SIZE 256
 
-#if defined(DEDICATED_SERVER) || defined (CRY_PLATFORM_WINDOWS)
+#if defined(DEDICATED_SERVER) || defined (CRY_PLATFORM_WINDOWS) || (defined(CRY_PLATFORM_DURANGO) && !defined(EXCLUDE_NORMAL_LOG))
 	#define KEEP_LOG_FILE_OPEN 1
 #else
 	#define KEEP_LOG_FILE_OPEN 0
 #endif
+
+class CLogThread : public IThread
+{
+public:
+
+	CLogThread(concqueue::mpsc_queue_t<string>& logQueue);
+	virtual ~CLogThread();
+	virtual void ThreadEntry() override;
+	void SignalStopWork();
+	void SignalStartWork();
+	void AddLog(const string& str) { m_logQueue.enqueue(str); }
+	bool IsRunning() const         { return m_bIsRunning; }
+
+private:
+
+	bool m_bIsRunning;
+	concqueue::mpsc_queue_t<string>& m_logQueue;
+};
 
 struct SExclusiveThreadAccessLock
 {
@@ -29,7 +49,7 @@ struct SExclusiveThreadAccessLock
 };
 
 //////////////////////////////////////////////////////////////////////
-class CLog : public ILog
+class CLog : public ILog, public ISystemEventListener
 {
 public:
 	typedef std::list<ILogCallback*>   Callbacks;
@@ -39,6 +59,10 @@ public:
 	CLog(ISystem* pSystem);
 	// destructor
 	~CLog();
+
+	// interface ISystemEventListener -------------------------------------------
+
+	virtual void OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lparam);
 
 	// interface ILog, IMiniLog -------------------------------------------------
 
@@ -115,6 +139,13 @@ private: // -------------------------------------------------------------------
 	virtual const char* GetAssetScopeString();
 #endif
 
+	static void OnUseLogThreadChange(ICVar* var);
+
+	CLogThread*                     m_pLogThread;
+	ICVar*                          m_pUseLogThread;
+	concqueue::mpsc_queue_t<string> m_logQueue;
+	bool                            m_bIsPostSystemInit;
+
 	ISystem*                  m_pSystem;
 	float                     m_fLastLoadingUpdateTime; // for non-frequent streamingEngine update
 	string                    m_filename;               // Contains exactly what was passed in SetFileName
@@ -166,7 +197,7 @@ private: // -------------------------------------------------------------------
 	static void LogFlushFile(IConsoleCmdArgs* pArgs);
 
 	bool m_bFirstLine;
-	char m_logBuffer[0x200000];
+	char m_logBuffer[256 * 1024];
 #endif
 
 public: // -------------------------------------------------------------------

@@ -113,16 +113,83 @@ ILINE void UnlockExclusiveAccess(SExclusiveThreadAccessLock* pExclusiveLock)
 }
 
 #undef LOG_EXCLUSIVE_ACCESS_SINGLE_WRITER_LOCK_VALUE
+//////////////////////////////////////////////////////////////////////
+ILINE void CryOutputDebugString(const string& str)
+{
+	// Note: OutputDebugStringW will not actually output Unicode unless the attached debugger has explicitly opted in to this behavior.
+	// This is only possible on Windows 10; on older operating systems the W variant internally converts the input to the local codepage (ANSI) and calls the A variant.
+	// Both VS2015 and VS2017 do opt-in to this behavior on Windows 10, so we use the W variant despite the slight overhead on older Windows versions.
+#if CRY_PLATFORM_WINDOWS || CRY_PLATFORM_DURANGO
+	OutputDebugStringW(CryStringUtils::UTF8ToWStr(str));
+#else
+	OutputDebugString(str);
+#endif
+}
 
 //////////////////////////////////////////////////////////////////////
 namespace LogCVars
 {
-float s_log_tick = 0;
+	float s_log_tick = 0;
+	int s_log_UseLogThread = 0;
 };
 
 #ifndef _RELEASE
 static CLog::LogStringType indentString("    ");
 #endif
+
+//////////////////////////////////////////////////////////////////////
+CLogThread::CLogThread(concqueue::mpsc_queue_t<string>& logQueue)
+	: m_logQueue(logQueue)
+	, m_bIsRunning(false)
+{
+}
+
+//////////////////////////////////////////////////////////////////////
+CLogThread::~CLogThread()
+{
+	SignalStopWork();
+}
+
+//////////////////////////////////////////////////////////////////////
+void CLogThread::SignalStartWork()
+{
+	if (!m_bIsRunning)
+	{
+		m_bIsRunning = true;
+		if (!gEnv->pThreadManager->SpawnThread(this, "LogThread"))
+		{
+			m_bIsRunning = false;
+			CryFatalError(R"(Error spawning "LogThread" thread.)");
+		}
+	}
+}
+
+//////////////////////////////////////////////////////////////////////
+void CLogThread::SignalStopWork()
+{
+	if (m_bIsRunning)
+	{
+		m_bIsRunning = false;
+		gEnv->pThreadManager->JoinThread(this, eJM_Join);
+	}
+}
+
+//////////////////////////////////////////////////////////////////////
+void CLogThread::ThreadEntry()
+{
+	while (m_bIsRunning)
+	{
+		string log;
+		if (m_logQueue.dequeue(log))
+		{
+			CryOutputDebugString(log);
+		}
+		else
+		{
+			CrySleep(2);
+		}
+	}
+}
 
 //////////////////////////////////////////////////////////////////////
 CLog::CLog(ISystem* pSystem)
@@ -136,6 +203,7 @@ CLog::CLog(ISystem* pSystem)
 	, m_topIndenter(nullptr)
 #endif
 	, m_pLogIncludeTime(nullptr)
+	, m_bIsPostSystemInit(false)
 	, m_pConsole(nullptr)
 	, m_iLastHistoryItem(0)
 #if KEEP_LOG_FILE_OPEN
@@ -150,7 +218,10 @@ CLog::CLog(ISystem* pSystem)
 	, m_eLogMode(eLogMode_Normal)
 	, m_logFormat("%Y-%m-%dT%H:%M:%S:fffzzz")
 {
+	gEnv->pSystem->GetISystemEventDispatcher()->RegisterListener(this, "CLog");
+
 	m_nMainThreadId = CryGetCurrentThreadId();
+	m_pLogThread = new CLogThread(m_logQueue);
 }
 
 void CLog::RegisterConsoleVariables()
@@ -199,6 +270,16 @@ void CLog::RegisterConsoleVariables()
 		                                          "3=additional messages\n"
 		                                          "4=additional comments");
 		m_pLogVerbosityOverridesWriteToFile = REGISTER_INT("log_VerbosityOverridesWriteToFile", 1, VF_DUMPTODISK, "when enabled, setting log_verbosity to 0 will stop all logging including writing to file");
+
+#if CRY_PLATFORM_CONSOLE
+		const int defaultUseLogThreadVal = 1;
+#else
+		const int defaultUseLogThreadVal = 0;
+#endif
+		m_pUseLogThread = REGISTER_CVAR3_CB("log_UseLogThread", LogCVars::s_log_UseLogThread, defaultUseLogThreadVal, VF_NULL,
+		                                    "When enabled, OutputDebugString will be done on a seperate thread to \n"
+			                                "reduce main thread time on platforms where logging is expensive", 
+		                                    OnUseLogThreadChange);
 
 		// put time into begin of the string if requested by cvar
 		m_pLogIncludeTime = REGISTER_INT("log_IncludeTime", DEFAULT_LOG_INCLUDE_TIME, 0,
@@ -266,6 +347,10 @@ CLog::~CLog()
 	assert(m_indentation == 0);
 #endif
 
+	gEnv->pSystem->GetISystemEventDispatcher()->RemoveListener(this);
+
+	SAFE_DELETE(m_pLogThread);
+
 	CreateBackupFile();
 
 	UnregisterConsoleVariables();
@@ -281,6 +366,34 @@ void CLog::UnregisterConsoleVariables()
 	m_pLogVerbosityOverridesWriteToFile = 0;
 	m_pLogIncludeTime = 0;
 	m_pLogSpamDelay = 0;
+}
+
+//////////////////////////////////////////////////////////////////////
+void CLog::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lparam)
+{
+	switch (event)
+	{
+	case ESYSTEM_EVENT_CRYSYSTEM_INIT_DONE:
+		m_bIsPostSystemInit = true;
+		if (LogCVars::s_log_UseLogThread)
+		{
+			m_pLogThread->SignalStartWork();
+		}
+	}
+}
+
+//////////////////////////////////////////////////////////////////////
+void CLog::OnUseLogThreadChange(ICVar* var)
+{
+	CLog* pCLog = static_cast<CLog*>(gEnv->pLog);
+	if (pCLog->m_bIsPostSystemInit && var->GetIVal())
+	{
+		pCLog->m_pLogThread->SignalStartWork();
+	}
+	else
+	{
+		pCLog->m_pLogThread->SignalStopWork();
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -943,9 +1056,9 @@ void CLog::FormatTimestampInternal(stack_string& timeStr, const string& logForma
 #if !defined(EXCLUDE_NORMAL_LOG)
 void CLog::LogStringToFile(const char* szString, bool bAdd, bool bError)
 {
-	#if defined(_RELEASE) && defined(EXCLUDE_NORMAL_LOG) // no file logging in release
+#if defined(_RELEASE) && defined(EXCLUDE_NORMAL_LOG) // no file logging in release
 	return;
-	#endif
+#endif
 
 	if (!szString)
 	{
@@ -988,14 +1101,14 @@ void CLog::LogStringToFile(const char* szString, bool bAdd, bool bError)
 
 	RemoveColorCodeInPlace(tempString);
 
-	#if defined(SUPPORT_LOG_IDENTER)
+#if defined(SUPPORT_LOG_IDENTER)
 	if (m_topIndenter)
 	{
 		m_topIndenter->DisplaySectionText();
 	}
 
 	tempString = m_indentWithString + tempString;
-	#endif
+#endif
 
 	if (m_pLogIncludeTime && gEnv->pTimer)
 	{
@@ -1063,13 +1176,13 @@ void CLog::LogStringToFile(const char* szString, bool bAdd, bool bError)
 		}
 	}
 
-	#if !KEEP_LOG_FILE_OPEN
+#if !KEEP_LOG_FILE_OPEN
 	// add \n at end.
 	if (tempString.empty() || tempString[tempString.length() - 1] != '\n')
 	{
 		tempString += '\n';
 	}
-	#endif
+#endif
 
 	//////////////////////////////////////////////////////////////////////////
 	// Call callback function (on invoke if we are not in application crash)
@@ -1091,7 +1204,7 @@ void CLog::LogStringToFile(const char* szString, bool bAdd, bool bError)
 	{
 		SCOPED_ALLOW_FILE_ACCESS_FROM_THIS_THREAD();
 
-	#if KEEP_LOG_FILE_OPEN
+#if KEEP_LOG_FILE_OPEN
 		if (!m_pLogFile)
 		{
 			OpenLogFile(m_filePath, "at");
@@ -1118,7 +1231,7 @@ void CLog::LogStringToFile(const char* szString, bool bAdd, bool bError)
 				fflush(m_pLogFile); // Flush or the changes will only show up on shutdown.
 			}
 		}
-	#else
+#else
 		if (bAdd)
 		{
 			FILE* fp = OpenLogFile(m_filePath, "r+t");
@@ -1145,20 +1258,19 @@ void CLog::LogStringToFile(const char* szString, bool bAdd, bool bError)
 				CloseLogFile();
 			}
 		}
-	#endif
+#endif
 	}
 
-	#if !defined(_RELEASE)
-		#if CRY_PLATFORM_WINDOWS || CRY_PLATFORM_DURANGO
-	// Note: OutputDebugStringW will not actually output Unicode unless the attached debugger has explicitly opted in to this behavior.
-	// This is only possible on Windows 10; on older operating systems the W variant internally converts the input to the local codepage (ANSI) and calls the A variant.
-	// Both VS2015 and VS2017 do opt-in to this behavior on Windows 10, so we use the W variant despite the slight overhead on older Windows versions.
-	wstring tempWString = CryStringUtils::UTF8ToWStr(tempString);
-	OutputDebugStringW(tempWString.c_str());
-		#else
-	OutputDebugString(tempString.c_str());
-		#endif
-	#endif
+#if !defined(_RELEASE)
+	if (LogCVars::s_log_UseLogThread)
+	{
+		m_logQueue.enqueue(tempString);
+	}
+	else
+	{
+		CryOutputDebugString(tempString);
+	}
+#endif // !defined(_RELEASE)
 }
 
 //same as above but to a file
