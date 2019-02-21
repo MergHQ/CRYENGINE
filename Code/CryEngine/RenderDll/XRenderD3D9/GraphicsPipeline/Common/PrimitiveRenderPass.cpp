@@ -608,6 +608,8 @@ void CPrimitiveRenderPass::Prepare(CDeviceCommandListRef RESTRICT_REFERENCE comm
 	CDeviceGraphicsCommandInterface* pCommandInterface = commandList.GetGraphicsInterface();
 
 	pCommandInterface->PrepareRenderPassForUse(*m_pRenderPass.get());
+	if (m_pOutputResourceSet)
+		pCommandInterface->PrepareResourcesForUse(0, m_pOutputResourceSet.get());
 
 	for (auto pPrimitive : m_compiledPrimitives)
 	{
