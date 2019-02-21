@@ -4369,8 +4369,9 @@ void CGpuBuffer::PrepareUnusedBuffer()
 			CDeviceObjectFactory::ReleaseBasePointer(m_pDeviceBuffer->GetBuffer());
 		}
 #endif
-
-		if (m_pDeviceBuffer->SubstituteUsedResource() == CDeviceResource::eSubResult_Substituted)
+		const CDeviceResource::ESubstitutionResult substitutionResult = m_pDeviceBuffer->SubstituteUsedResource();
+		CRY_ASSERT_MESSAGE(substitutionResult != CDeviceResource::eSubResult_Failed, "Failed to create resource substitute, probably out of memory");
+		if (substitutionResult == CDeviceResource::eSubResult_Substituted)
 			InvalidateDeviceResource(this, eDeviceResourceDirty);
 
 #if (CRY_RENDERER_DIRECT3D >= 120)
