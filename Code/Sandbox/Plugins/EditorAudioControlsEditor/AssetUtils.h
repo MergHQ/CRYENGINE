@@ -8,6 +8,7 @@
 namespace ACE
 {
 class CAsset;
+struct IConnection;
 
 namespace AssetUtils
 {
@@ -17,5 +18,6 @@ string      GenerateUniqueControlName(string const& name, EAssetType const type)
 CAsset*     GetParentLibrary(CAsset* const pAsset);
 char const* GetTypeName(EAssetType const type);
 void        SelectTopLevelAncestors(Assets const& source, Assets& dest);
+void        TryConstructTriggerConnectionNode(XmlNodeRef const pTriggerNode, IConnection const* const pIConnection);
 } // namespace AssetUtils
 } // namespace ACE

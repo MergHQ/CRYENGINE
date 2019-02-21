@@ -43,7 +43,8 @@ public:
 
 	static void       SaveData();
 	static void       ReloadData(EReloadFlags const flags);
-	static void       ExecuteTrigger(string const& sTriggerName);
+	static void       ExecuteTrigger(string const& triggerName);
+	static void       ExecuteTriggerEx(string const& triggerName, XmlNodeRef const pNode);
 	static void       StopTriggerExecution();
 	static EErrorCode GetLoadingErrorMask() { return s_loadingErrorMask; }
 

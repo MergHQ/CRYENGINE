@@ -58,6 +58,7 @@ public:
 	// Below data is only used when CRY_AUDIO_USE_PRODUCTION_CODE is defined!
 	virtual void ExecutePreviewTrigger(ControlId const triggerId) override;
 	virtual void ExecutePreviewTriggerEx(Impl::ITriggerInfo const& triggerInfo) override;
+	virtual void ExecutePreviewTriggerEx(XmlNodeRef const pNode) override;
 	virtual void StopPreviewTrigger() override;
 	// ~CryAudio::IAudioSystem
 

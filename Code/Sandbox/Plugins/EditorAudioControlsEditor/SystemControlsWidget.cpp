@@ -50,14 +50,21 @@ void GetAssetsFromIndexesSeparated(
 			switch (type.toInt())
 			{
 			case static_cast<int>(EAssetType::Library):
-				outLibraries.push_back(reinterpret_cast<CLibrary*>(internalPtr.value<intptr_t>()));
-				break;
+				{
+					outLibraries.push_back(reinterpret_cast<CLibrary*>(internalPtr.value<intptr_t>()));
+					break;
+				}
+
 			case static_cast<int>(EAssetType::Folder):
-				outFolders.push_back(reinterpret_cast<CFolder*>(internalPtr.value<intptr_t>()));
-				break;
+				{
+					outFolders.push_back(reinterpret_cast<CFolder*>(internalPtr.value<intptr_t>()));
+					break;
+				}
 			default:
-				outControls.push_back(reinterpret_cast<CControl*>(internalPtr.value<intptr_t>()));
-				break;
+				{
+					outControls.push_back(reinterpret_cast<CControl*>(internalPtr.value<intptr_t>()));
+					break;
+				}
 			}
 		}
 	}
@@ -76,6 +83,30 @@ void GetAssetsFromIndexesCombined(QModelIndexList const& indexes, Assets& outAss
 			outAssets.push_back(reinterpret_cast<CAsset*>(internalPtr.value<intptr_t>()));
 		}
 	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+XmlNodeRef ConstructTemporaryTrigger(CControl const* const pControl)
+{
+	XmlNodeRef const pNode = GetISystem()->CreateXmlNode(CryAudio::g_szTriggerTag);
+
+	if (pNode != nullptr)
+	{
+		pNode->setAttr(CryAudio::g_szNameAttribute, pControl->GetName());
+		size_t const numConnections = pControl->GetConnectionCount();
+
+		for (size_t i = 0; i < numConnections; ++i)
+		{
+			IConnection const* const pIConnection = pControl->GetConnectionAt(i);
+
+			if (pIConnection != nullptr)
+			{
+				AssetUtils::TryConstructTriggerConnectionNode(pNode, pIConnection);
+			}
+		}
+	}
+
+	return pNode;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -753,7 +784,15 @@ void CSystemControlsWidget::ExecuteControl()
 
 	if ((pAsset != nullptr) && (pAsset->GetType() == EAssetType::Trigger))
 	{
-		CAudioControlsEditorPlugin::ExecuteTrigger(pAsset->GetName());
+		if ((pAsset->GetFlags() & EAssetFlags::IsModified) == 0)
+		{
+			CAudioControlsEditorPlugin::ExecuteTrigger(pAsset->GetName());
+		}
+		else
+		{
+			auto const pControl = static_cast<CControl const*>(pAsset);
+			CAudioControlsEditorPlugin::ExecuteTriggerEx(pControl->GetName(), ConstructTemporaryTrigger(pControl));
+		}
 	}
 }
 

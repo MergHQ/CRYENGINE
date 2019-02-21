@@ -21,6 +21,8 @@
 	#define REINST(y)
 #endif
 
+class XmlNodeRef;
+
 /**
  * @namespace CryAudio
  * @brief Most parent audio namespace used throughout the entire engine.
@@ -486,6 +488,14 @@ struct IAudioSystem
 	 * @see StopPreviewTrigger
 	 */
 	virtual void ExecutePreviewTriggerEx(Impl::ITriggerInfo const& triggerInfo) = 0;
+
+	/**
+	 * Constructs a trigger from the given XML node and executes it on the preview object.
+	 * @param pNode - XML node to construct a trigger.
+	 * @return void
+	 * @see StopPreviewTrigger
+	 */
+	virtual void ExecutePreviewTriggerEx(XmlNodeRef const pNode) = 0;
 
 	/**
 	 * Stops the active trigger on the preview object.

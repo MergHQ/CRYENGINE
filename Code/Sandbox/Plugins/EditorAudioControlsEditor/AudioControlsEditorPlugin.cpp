@@ -175,13 +175,24 @@ void CAudioControlsEditorPlugin::ReloadImplData(EReloadFlags const flags)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAudioControlsEditorPlugin::ExecuteTrigger(string const& sTriggerName)
+void CAudioControlsEditorPlugin::ExecuteTrigger(string const& triggerName)
 {
-	if (!sTriggerName.empty())
+	if (!triggerName.empty())
 	{
 		StopTriggerExecution();
-		s_audioTriggerId = CryAudio::StringToId(sTriggerName.c_str());
+		s_audioTriggerId = CryAudio::StringToId(triggerName.c_str());
 		gEnv->pAudioSystem->ExecutePreviewTrigger(s_audioTriggerId);
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CAudioControlsEditorPlugin::ExecuteTriggerEx(string const& triggerName, XmlNodeRef const pNode)
+{
+	if (pNode != nullptr)
+	{
+		StopTriggerExecution();
+		s_audioTriggerId = CryAudio::StringToId(triggerName.c_str());
+		gEnv->pAudioSystem->ExecutePreviewTriggerEx(pNode);
 	}
 }
 
@@ -201,8 +212,14 @@ void CAudioControlsEditorPlugin::OnSystemEvent(ESystemEvent event, UINT_PTR wpar
 	switch (event)
 	{
 	case ESYSTEM_EVENT_AUDIO_IMPLEMENTATION_LOADED:
-		g_implementationManager.LoadImplementation();
-		break;
+		{
+			g_implementationManager.LoadImplementation();
+			break;
+		}
+	default:
+		{
+			break;
+		}
 	}
 }
 } // namespace ACE
