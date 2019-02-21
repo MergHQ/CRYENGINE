@@ -45,10 +45,12 @@ private:
 	bool eventFilter(QObject* pObject, QEvent* pEvent) override;
 	// ~QObject
 
-	void RemoveSelectedConnection();
-	void RefreshConnectionProperties();
-	void UpdateSelectedConnections();
-	void ResizeColumns();
+	void       RemoveSelectedConnection();
+	void       RefreshConnectionProperties();
+	void       UpdateSelectedConnections();
+	void       ResizeColumns();
+	void       ExecuteConnection();
+	XmlNodeRef ConstructTemporaryTriggerConnections(CControl const* const pControl);
 
 	CControl*                         m_pControl;
 	QPropertyTree* const              m_pConnectionProperties;

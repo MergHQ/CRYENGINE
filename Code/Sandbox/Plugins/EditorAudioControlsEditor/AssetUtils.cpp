@@ -4,6 +4,8 @@
 #include "AssetUtils.h"
 
 #include "AudioControlsEditorPlugin.h"
+#include "Common/IConnection.h"
+#include "Common/IImpl.h"
 
 #include <PathUtils.h>
 
@@ -167,6 +169,60 @@ void SelectTopLevelAncestors(Assets const& source, Assets& dest)
 		if (!isAncestorAlsoSelected)
 		{
 			dest.push_back(pAsset);
+		}
+	}
+}
+
+void TryConstructTriggerConnectionNode(XmlNodeRef const pTriggerNode, IConnection const* const pIConnection)
+{
+	XmlNodeRef const pConnectionNode = g_pIImpl->CreateXMLNodeFromConnection(pIConnection, EAssetType::Trigger);
+
+	if (pConnectionNode != nullptr)
+	{
+		// Don't add identical nodes!
+		bool shouldAddNode = true;
+		int const numNodeChilds = pTriggerNode->getChildCount();
+
+		for (int i = 0; i < numNodeChilds; ++i)
+		{
+			XmlNodeRef const pTempNode = pTriggerNode->getChild(i);
+
+			if ((pTempNode != nullptr) && (_stricmp(pTempNode->getTag(), pConnectionNode->getTag()) == 0))
+			{
+				int const numAttributes1 = pTempNode->getNumAttributes();
+				int const numAttributes2 = pConnectionNode->getNumAttributes();
+
+				if (numAttributes1 == numAttributes2)
+				{
+					shouldAddNode = false;
+					char const* key1 = nullptr;
+					char const* val1 = nullptr;
+					char const* key2 = nullptr;
+					char const* val2 = nullptr;
+
+					for (int k = 0; k < numAttributes1; ++k)
+					{
+						pTempNode->getAttributeByIndex(k, &key1, &val1);
+						pConnectionNode->getAttributeByIndex(k, &key2, &val2);
+
+						if ((_stricmp(key1, key2) != 0) || (_stricmp(val1, val2) != 0))
+						{
+							shouldAddNode = true;
+							break;
+						}
+					}
+
+					if (!shouldAddNode)
+					{
+						break;
+					}
+				}
+			}
+		}
+
+		if (shouldAddNode)
+		{
+			pTriggerNode->addChild(pConnectionNode);
 		}
 	}
 }

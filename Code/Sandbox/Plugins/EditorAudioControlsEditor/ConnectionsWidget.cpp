@@ -8,6 +8,7 @@
 #include "ImplementationManager.h"
 #include "TreeView.h"
 #include "ConnectionsModel.h"
+#include "AssetUtils.h"
 #include "Common/IConnection.h"
 #include "Common/IImpl.h"
 #include "Common/IItem.h"
@@ -52,6 +53,7 @@ CConnectionsWidget::CConnectionsWidget(QWidget* const pParent)
 	m_pTreeView->sortByColumn(m_nameColumn, Qt::AscendingOrder);
 	m_pTreeView->setItemsExpandable(false);
 	m_pTreeView->setRootIsDecorated(false);
+	m_pTreeView->viewport()->installEventFilter(this);
 	m_pTreeView->installEventFilter(this);
 	m_pTreeView->header()->setMinimumSectionSize(25);
 	m_pTreeView->header()->setSectionResizeMode(static_cast<int>(CConnectionsModel::EColumns::Notification), QHeaderView::ResizeToContents);
@@ -112,25 +114,28 @@ CConnectionsWidget::~CConnectionsWidget()
 //////////////////////////////////////////////////////////////////////////
 bool CConnectionsWidget::eventFilter(QObject* pObject, QEvent* pEvent)
 {
-	bool isEvent = false;
-
-	if (pEvent->type() == QEvent::KeyPress)
+	if (pEvent->type() == QEvent::KeyRelease)
 	{
 		QKeyEvent const* const pKeyEvent = static_cast<QKeyEvent*>(pEvent);
 
-		if ((pKeyEvent != nullptr) && (pKeyEvent->key() == Qt::Key_Delete) && (pObject == m_pTreeView))
+		if (pKeyEvent != nullptr)
 		{
-			RemoveSelectedConnection();
-			isEvent = true;
+			if (pKeyEvent->key() == Qt::Key_Delete)
+			{
+				RemoveSelectedConnection();
+			}
+			else if (pKeyEvent->key() == Qt::Key_Space)
+			{
+				ExecuteConnection();
+			}
 		}
 	}
-
-	if (!isEvent)
+	else if (pEvent->type() == QEvent::MouseButtonDblClick)
 	{
-		isEvent = QWidget::eventFilter(pObject, pEvent);
+		ExecuteConnection();
 	}
 
-	return isEvent;
+	return QWidget::eventFilter(pObject, pEvent);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -143,14 +148,21 @@ void CConnectionsWidget::OnContextMenu(QPoint const& pos)
 	{
 		auto const pContextMenu = new QMenu(this);
 
-		char const* actionName = "Remove Connection";
+		char const* executeActionName = "Execute Connection";
+		char const* removeActionName = "Remove Connection";
 
 		if (selectionCount > 1)
 		{
-			actionName = "Remove Connections";
+			executeActionName = "Execute Connections";
+			removeActionName = "Remove Connections";
 		}
 
-		pContextMenu->addAction(tr(actionName), [&]() { RemoveSelectedConnection(); });
+		if (m_pControl->GetType() == EAssetType::Trigger)
+		{
+			pContextMenu->addAction(tr(executeActionName), [&]() { ExecuteConnection(); });
+		}
+
+		pContextMenu->addAction(tr(removeActionName), [&]() { RemoveSelectedConnection(); });
 
 		if (selectionCount == 1)
 		{
@@ -237,6 +249,43 @@ void CConnectionsWidget::RemoveSelectedConnection()
 			}
 		}
 	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CConnectionsWidget::ExecuteConnection()
+{
+	if ((m_pControl != nullptr) && (m_pControl->GetType() == EAssetType::Trigger))
+	{
+		CAudioControlsEditorPlugin::ExecuteTriggerEx(m_pControl->GetName(), ConstructTemporaryTriggerConnections(m_pControl));
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+XmlNodeRef CConnectionsWidget::ConstructTemporaryTriggerConnections(CControl const* const pControl)
+{
+	XmlNodeRef const pNode = GetISystem()->CreateXmlNode(CryAudio::g_szTriggerTag);
+
+	if (pNode != nullptr)
+	{
+		pNode->setAttr(CryAudio::g_szNameAttribute, pControl->GetName());
+		QModelIndexList const& selectedIndexes = m_pTreeView->selectionModel()->selectedRows(m_nameColumn);
+
+		for (auto const& index : selectedIndexes)
+		{
+			if (index.isValid())
+			{
+				ControlId const id = static_cast<ControlId>(index.data(static_cast<int>(ModelUtils::ERoles::Id)).toInt());
+				IConnection const* const pIConnection = m_pControl->GetConnection(id);
+
+				if (pIConnection != nullptr)
+				{
+					AssetUtils::TryConstructTriggerConnectionNode(pNode, pIConnection);
+				}
+			}
+		}
+	}
+
+	return pNode;
 }
 
 //////////////////////////////////////////////////////////////////////////

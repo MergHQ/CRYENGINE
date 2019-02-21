@@ -1108,6 +1108,16 @@ void CSystem::ExecutePreviewTriggerEx(Impl::ITriggerInfo const& triggerInfo)
 }
 
 //////////////////////////////////////////////////////////////////////////
+void CSystem::ExecutePreviewTriggerEx(XmlNodeRef const pNode)
+{
+#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
+	SSystemRequestData<ESystemRequestType::ExecutePreviewTriggerExNode> const requestData(pNode);
+	CRequest const request(&requestData);
+	PushRequest(request);
+#endif  // CRY_AUDIO_USE_PRODUCTION_CODE
+}
+
+//////////////////////////////////////////////////////////////////////////
 void CSystem::StopPreviewTrigger()
 {
 #if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
@@ -2026,6 +2036,15 @@ ERequestStatus CSystem::ProcessSystemRequest(CRequest const& request)
 			auto const pRequestData = static_cast<SSystemRequestData<ESystemRequestType::ExecutePreviewTriggerEx> const*>(request.GetData());
 
 			g_previewTrigger.Execute(pRequestData->triggerInfo);
+			result = ERequestStatus::Success;
+
+			break;
+		}
+	case ESystemRequestType::ExecutePreviewTriggerExNode:
+		{
+			auto const pRequestData = static_cast<SSystemRequestData<ESystemRequestType::ExecutePreviewTriggerExNode> const*>(request.GetData());
+
+			g_previewTrigger.Execute(pRequestData->pNode);
 			result = ERequestStatus::Success;
 
 			break;
