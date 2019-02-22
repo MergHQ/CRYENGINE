@@ -20,7 +20,7 @@ constexpr uint8 g_numConcurrentRaysMedium = 2;
 constexpr uint8 g_numConcurrentRaysHigh = 4;
 constexpr uint8 g_numInitialSamplePositions = 5;
 
-class CPropagationProcessor
+class CPropagationProcessor final
 {
 public:
 
@@ -101,22 +101,21 @@ public:
 
 private:
 
-	void DrawRay(IRenderAuxGeom& auxGeom, uint8 const rayIndex) const;
-
-	struct SRayDebugInfo
+	struct SRayDebugInfo final
 	{
 		SRayDebugInfo() = default;
 
 		Vec3  begin = ZERO;
 		Vec3  end = ZERO;
-		Vec3  stableEnd = ZERO;
 		float occlusionValue = 0.0f;
 		float distanceToNearestObstacle = FLT_MAX;
 		uint8 numHits = 0;
+		uint8 samplePosIndex = 0;
 	};
 
 	SRayDebugInfo m_rayDebugInfos[g_numConcurrentRaysHigh];
 	ColorB        m_listenerOcclusionPlaneColor;
+	Vec3          m_collisionSpherePositions[g_numRaySamplePositionsHigh] = { ZERO };
 	#endif // CRY_AUDIO_USE_PRODUCTION_CODE
 };
 }      // namespace CryAudio

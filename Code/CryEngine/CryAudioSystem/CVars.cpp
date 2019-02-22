@@ -331,9 +331,9 @@ void CCVars::RegisterVariables()
 	               "b: Warnings\n"
 	               "c: Comments\n");
 
-	REGISTER_CVAR2("s_DrawAudioDebug", &m_drawDebug, 0, VF_CHEAT | VF_CHEAT_NOCHECK | VF_BITFIELD,
+	REGISTER_CVAR2("s_DrawDebug", &m_drawDebug, 0, VF_CHEAT | VF_CHEAT_NOCHECK | VF_BITFIELD,
 	               "Draws AudioTranslationLayer related debug data to the screen.\n"
-	               "Usage: s_DrawAudioDebug [0ab...] (flags can be combined)\n"
+	               "Usage: s_DrawDebug [0ab...] (flags can be combined)\n"
 	               "0: No audio debug info on the screen.\n"
 	               "a: Draw spheres around active audio objects.\n"
 	               "b: Draw text labels for active audio objects.\n"
@@ -345,17 +345,17 @@ void CCVars::RegisterVariables()
 	               "h: Draw occlusion ray labels.\n"
 	               "i: Draw occlusion rays.\n"
 	               "j: Draw spheres with occlusion ray offset radius around active audio objects.\n"
-	               "k: Draw listener occlusion plane.\n"
-	               "l: Draw global object info.\n"
-	               "m: Draw middleware specific info for active audio objects.\n"
+	               "k: Draw occlusion listener plane.\n"
+	               "l: Draw occlusion collision spheres.\n"
+	               "m: Draw global object info.\n"
+	               "n: Draw middleware specific info for active audio objects.\n"
 	               "q: Hide audio system memory info.\n"
 	               "r: Apply filter also to inactive object debug info.\n"
 	               "s: Draw detailed memory pool debug info.\n"
 	               "v: List implementation specific info.\n"
 	               "w: List active audio objects.\n"
 	               "x: Draw FileCache Manager debug info.\n"
-	               "y: Draw Request debug info.\n"
-	               );
+	               "y: Draw Request debug info.\n");
 
 	REGISTER_CVAR2("s_FileCacheManagerDebugFilter", &m_fileCacheManagerDebugFilter, 0, VF_CHEAT | VF_CHEAT_NOCHECK | VF_BITFIELD,
 	               "Allows for filtered display of the different AFCM entries such as Globals, Level Specifics, Game Hints and so on.\n"
@@ -431,8 +431,8 @@ void CCVars::RegisterVariables()
 	                 "Usage: s_UnloadSetting main_menu\n");
 
 	REGISTER_COMMAND("s_ResetRequestCount", CmdResetRequestCount, VF_CHEAT,
-	                 "Resets the request counts shown in s_DrawAudioDebug y.\n"
-	                 "Usage: s_resetRequestCount\n");
+	                 "Resets the request counts shown in s_DrawDebug y.\n"
+	                 "Usage: s_ResetRequestCount\n");
 
 	REGISTER_COMMAND("s_Refresh", CmdRefresh, VF_CHEAT,
 	                 "Refreshes the audio system.\n"
@@ -474,10 +474,9 @@ void CCVars::UnregisterVariables()
 #if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 		pConsole->UnregisterVariable("s_DebugDistance");
 		pConsole->UnregisterVariable("s_LoggingOptions");
-		pConsole->UnregisterVariable("s_DrawAudioDebug");
+		pConsole->UnregisterVariable("s_DrawDebug");
 		pConsole->UnregisterVariable("s_FileCacheManagerDebugFilter");
 		pConsole->UnregisterVariable("s_HideInactiveAudioObjects");
-
 		pConsole->UnregisterVariable("s_DebugFilter");
 		pConsole->UnregisterVariable("s_ExecuteTrigger");
 		pConsole->UnregisterVariable("s_StopTrigger");
