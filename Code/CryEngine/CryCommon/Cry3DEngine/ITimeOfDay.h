@@ -348,8 +348,8 @@ struct ITimeOfDay
 		virtual TotalIllum&    GetTotalIlluminationParams() = 0;
 		virtual TotalIllumAdv& GetTotalIlluminationAdvParams() = 0;
 
-		virtual void Serialize(Serialization::IArchive& ar) = 0;
-		virtual void Reset() = 0;
+		virtual void           Serialize(Serialization::IArchive& ar) = 0;
+		virtual void           Reset() = 0;
 	};
 
 	struct IPreset
@@ -399,7 +399,7 @@ struct ITimeOfDay
 	virtual const char* GetDefaultPresetName() const = 0;
 
 	//! Adds a new preset with a default values to the list of presets of the active level. Sets the preset as current.
-	//! \return Returns true if succeeded, false if a preset with the specified name is already exists. 
+	//! \return Returns true if succeeded, false if a preset with the specified name is already exists.
 	virtual bool AddNewPreset(const char* szPresetName) = 0;
 
 	//! Loads and adds the loaded preset to the list of presets of the active level. Sets the preset as current.
@@ -408,11 +408,11 @@ struct ITimeOfDay
 	//! Removes preset from the list of presets of the active level.
 	virtual bool RemovePreset(const char* szPresetName) = 0;
 
-	//! Returns true if succeeded, false if the preset with the specified name could not be found or the save failed. 
+	//! Returns true if succeeded, false if the preset with the specified name could not be found or the save failed.
 	virtual bool SavePreset(const char* szPresetName) const = 0;
 
 	//! Resets the preset to a default values.
-	//! \return Returns true if succeeded, false if a preset with the specified name is not found. 
+	//! \return Returns true if succeeded, false if a preset with the specified name is not found.
 	virtual bool ResetPreset(const char* szPresetName) = 0;
 
 	//! Unconditionally discards unsaved changes and reloads the preset from the preset data file.
@@ -481,6 +481,8 @@ struct ITimeOfDay
 	const CloudShadows&  GetCloudShadowsParams()                             { return GetConstants().GetCloudShadowsParams(); }
 	const TotalIllum&    GetTotalIlluminationParams()                        { return GetConstants().GetTotalIlluminationParams(); }
 	const TotalIllumAdv& GetTotalIlluminationAdvParams()                     { return GetConstants().GetTotalIlluminationAdvParams(); }
+
+	static const char*   GetDefaultPresetFilepath()                          { return "EngineAssets/Shading/default.env"; }
 
 protected:
 	virtual bool RegisterListenerImpl(IListener* const pListener, const char* const szDbgName, const bool staticName) = 0;

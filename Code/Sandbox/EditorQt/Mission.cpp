@@ -359,8 +359,11 @@ void CMission::SyncContent(bool bRetrieve, bool bIgnoreObjects, bool bSkipLoadin
 			m_numCGFObjects = GetIEditorImpl()->Get3DEngine()->GetLoadedObjectCount();
 
 		// Load time of day.
-		GetIEditorImpl()->Get3DEngine()->GetTimeOfDay()->Serialize(m_timeOfDay, true);
-		gameEngine->ReloadEnvironment();
+		if (m_timeOfDay->getChildCount())
+		{
+			GetIEditorImpl()->Get3DEngine()->GetTimeOfDay()->Serialize(m_timeOfDay, true);
+			gameEngine->ReloadEnvironment();
+		}
 	}
 	else
 	{
