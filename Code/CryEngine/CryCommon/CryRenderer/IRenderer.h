@@ -11,6 +11,7 @@
 #include <CryCore/Containers/CryArray.h>
 #include <CryCore/CryVariant.h>
 #include <CryRenderer/RenderObject.h>
+#include <CryMemory/IDefragAllocator.h>
 
 class CCamera;
 class CMesh;
@@ -142,6 +143,9 @@ enum ERenderQueryTypes
 	//! Memory allocated by meshes in system memory.
 	EFQ_Alloc_Mesh_SysMem,
 	EFQ_Mesh_Count,
+
+	EFQ_GetDeviceBufferMaxCounts,
+	EFQ_GetDeviceBufferPoolStats,
 
 	EFQ_HDRModeEnabled,
 	EFQ_ParticlesTessellation,
@@ -1743,6 +1747,45 @@ struct SMeshPoolStatistics
 		nInstanceFallbacks(),
 		nFlushes()
 	{}
+};
+
+struct SDeviceBufferIndices
+{
+	uint32 nBufferUsage;
+	uint32 nBufferBindType;
+
+	SDeviceBufferIndices()
+		: nBufferUsage()
+		, nBufferBindType()
+	{}
+};
+
+struct SDeviceBufferPoolStats
+{
+	//! A description to the buffer
+	string                buffer_descr;
+
+	//! Size of a pool bank in bytes
+	size_t                bank_size;
+
+	//! Number of banks currently allocated
+	size_t                num_banks;
+
+	//! Number of allocations present in the device pool
+	size_t                num_allocs;
+
+	//! Backing allocator statistics
+	IDefragAllocatorStats allocator_stats;
+
+	SDeviceBufferPoolStats()
+		: buffer_descr()
+		, bank_size()
+		, num_banks()
+		, num_allocs()
+		, allocator_stats()
+	{
+		memset(&allocator_stats, 0x0, sizeof(allocator_stats));
+	}
 };
 
 struct SRendererQueryGetAllTexturesParam

@@ -180,27 +180,6 @@ private:
 	static CryCriticalSection                          s_accessLock;
 };
 
-////////////////////////////////////////////////////////////////////////////////////////
-// Pool statistics
-struct SDeviceBufferPoolStats : private NoCopy
-{
-	string                buffer_descr;
-	size_t                bank_size;       // size of a pool bank in bytes
-	size_t                num_banks;       // number of banks currently allocated
-	size_t                num_allocs;      // number of allocs present in the device pool
-	IDefragAllocatorStats allocator_stats; // backing allocator statistics
-
-	SDeviceBufferPoolStats()
-		: buffer_descr()
-		, bank_size()
-		, num_banks()
-		, num_allocs()
-		, allocator_stats()
-	{ memset(&allocator_stats, 0x0, sizeof(allocator_stats)); }
-
-	~SDeviceBufferPoolStats() {}
-};
-
 class CDeviceBufferManager
 {
 	////////////////////////////////////////////////////////////////////////////////////////
