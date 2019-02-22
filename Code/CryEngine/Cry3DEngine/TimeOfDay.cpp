@@ -580,9 +580,24 @@ bool CTimeOfDay::RemovePreset(const char* szPresetName)
 		return false;
 	}
 
+	if (m_pCurrentPreset == findResult->second.get())
+	{
+		m_pCurrentPreset = nullptr;
+		m_currentPresetName.clear();
+	}
+
 	// The preset interface can still be used outside the class, so we never delete the presets, just move them to the list of preview's preset.
 	m_previewPresets[findResult->first] = std::move(findResult->second);
 	m_presets.erase(findResult);
+
+	if (!m_pCurrentPreset && m_presets.size())
+	{
+		const auto it = m_presets.begin();
+		m_pCurrentPreset = it->second.get();
+		m_currentPresetName = it->first;
+		Update(true, true);
+		ConstantsChanged();
+	}
 	
 	NotifyOnChange(IListener::EChangeType::PresetRemoved, szPresetName);
 	return true;
@@ -656,16 +671,19 @@ bool CTimeOfDay::ResetPreset(const char* szPresetName)
 	TPresetsSet::iterator it = m_presets.find(szPresetName);
 	if (it == m_presets.end())
 	{
-		return false;
+		it = m_previewPresets.find(szPresetName);
+		if (it == m_previewPresets.end())
+		{
+			return false;
+		}
 	}
 
 	it->second->Reset();
 	if (it->second.get() == m_pCurrentPreset)
 	{
+		Update(true, true);
 		ConstantsChanged();
 	}
-
-	Update(true, true);
 	return true;
 }
 
@@ -708,9 +726,15 @@ void CTimeOfDay::DiscardPresetChanges(const char* szPresetName)
 
 bool CTimeOfDay::ImportPreset(const char* szPresetName, const char* szFilePath)
 {
-	TPresetsSet::iterator it = m_presets.find(szPresetName);
+	TPresetsSet::const_iterator it = m_presets.find(szPresetName);
 	if (it == m_presets.end())
-		return false;
+	{
+		it = m_previewPresets.find(szPresetName);
+		if (it == m_previewPresets.end())
+		{
+			return false;
+		}
+	}
 
 	XmlNodeRef root = GetISystem()->LoadXmlFromFile(szFilePath);
 	if (!root)
@@ -733,18 +757,23 @@ bool CTimeOfDay::ImportPreset(const char* szPresetName, const char* szFilePath)
 
 bool CTimeOfDay::ExportPreset(const char* szPresetName, const char* szFilePath) const
 {
-	const string sPresetName(szPresetName);
-	TPresetsSet::const_iterator it = m_presets.find(sPresetName);
-	if (it != m_presets.end())
+	TPresetsSet::const_iterator it = m_presets.find(szPresetName);
+	if (it == m_presets.end())
 	{
-		if (!Serialization::SaveXmlFile(szFilePath, *it->second.get(), sPresetXMLRootNodeName))
+		it = m_previewPresets.find(szPresetName);
+		if (it == m_previewPresets.end())
 		{
-			CryWarning(VALIDATOR_MODULE_3DENGINE, VALIDATOR_ERROR, "TimeOfDay: Failed to save preset: %s", szFilePath);
 			return false;
 		}
-		return true;
 	}
-	return false;
+
+	if (!Serialization::SaveXmlFile(szFilePath, *it->second.get(), sPresetXMLRootNodeName))
+	{
+		CryWarning(VALIDATOR_MODULE_3DENGINE, VALIDATOR_ERROR, "TimeOfDay: Failed to save preset: %s", szFilePath);
+		return false;
+	}
+
+	return true;
 }
 
 bool CTimeOfDay::PreviewPreset(const char* szPresetName)
@@ -764,10 +793,11 @@ bool CTimeOfDay::PreviewPreset(const char* szPresetName)
 		return false;
 	}
 
-	std::pair<TPresetsSet::iterator, bool> insertResult = m_previewPresets.emplace(path, stl::make_unique<CEnvironmentPreset>());
-	CEnvironmentPreset& preset = *insertResult.first->second;
+	std::pair<TPresetsSet::iterator, bool> insertResult = m_previewPresets.emplace(path, nullptr);
 	if (insertResult.second)
 	{
+		insertResult.first->second.reset(new CEnvironmentPreset());
+		CEnvironmentPreset& preset = *insertResult.first->second;
 		if (root->isTag(sPresetXMLRootNodeName))
 		{
 			Serialization::LoadXmlFile(preset, szPresetName);
@@ -779,7 +809,7 @@ bool CTimeOfDay::PreviewPreset(const char* szPresetName)
 		}
 	}
 
-	m_pCurrentPreset = &preset;
+	m_pCurrentPreset = insertResult.first->second.get();
 	m_currentPresetName = insertResult.first->first;
 
 	Update(true, true);
@@ -866,8 +896,19 @@ void CTimeOfDay::Reset()
 	m_pCurrentPreset = nullptr;
 	m_currentPresetName.clear();
 	m_defaultPresetName.clear();
+
+	if (!gEnv->IsEditor())
+	{
+		m_previewPresets.clear();
+	}
+	else // do not delete and overwrite state of loaded presets, as they may have active editing sessions and unsaved changes.
+	{
+		for (auto&& preset : m_presets)
+		{
+			m_previewPresets[preset.first] = std::move(preset.second);
+		}
+	}
 	m_presets.clear();
-	m_previewPresets.clear();
 
 	m_fTime = 12;
 	m_bEditMode = false;
@@ -1338,6 +1379,8 @@ void CTimeOfDay::Serialize(XmlNodeRef& node, bool bLoading)
 {
 	if (bLoading)
 	{
+		Reset();
+
 		node->getAttr("Time", m_fTime);
 
 		node->getAttr("TimeStart", m_advancedInfo.fStartTime);
@@ -1346,24 +1389,6 @@ void CTimeOfDay::Serialize(XmlNodeRef& node, bool bLoading)
 
 		if (m_pTimeOfDaySpeedCVar->GetFVal() != m_advancedInfo.fAnimSpeed)
 			m_pTimeOfDaySpeedCVar->Set(m_advancedInfo.fAnimSpeed);
-
-		m_pCurrentPreset = nullptr;
-		m_currentPresetName.clear();
-		m_defaultPresetName.clear();
-
-		if (!gEnv->IsEditor())
-		{
-			m_presets.clear();
-			m_previewPresets.clear();
-		}
-		else // do not delete and overwrite state of loaded presets, as they may have active editing sessions and unsaved changes.
-		{
-			for (auto&& preset : m_presets)
-			{
-				m_previewPresets[preset.first] = std::move(preset.second);
-			}
-			m_presets.clear();
-		}
 
 		if (XmlNodeRef presetsNode = node->findChild("Presets"))
 		{
@@ -1399,29 +1424,31 @@ void CTimeOfDay::Serialize(XmlNodeRef& node, bool bLoading)
 				}
 			}
 		}
-		else if (m_presets.empty()) // create a new default preset
+		else if (node->getChildCount()) // if the root node is not empty, this is probably the old XML format.
 		{
-			string presetName("default");
 			if (gEnv->pGameFramework)
 			{
 				const char* szLevelName = gEnv->pGameFramework->GetLevelName();
 				if (szLevelName && *szLevelName)
 				{
-					presetName = PathUtil::Make(sPresetsLibsPath, szLevelName, "env");
+					const string presetName = PathUtil::Make(sPresetsLibsPath, szLevelName, "env");
+					std::pair<CEnvironmentPreset*, bool> result = GetOrCreatePreset(presetName);
+					// Try to load only if the preset has just been created.
+					if (!result.second)
+					{
+						CEnvironmentPreset& preset = *result.first;
+						LoadPresetFromOldFormatXML(preset, node);
+						SavePreset(presetName);
+					}
 				}
-			}
-
-			std::pair<TPresetsSet::iterator, bool> insertRes = m_presets.emplace(presetName, stl::make_unique<CEnvironmentPreset>());
-			CEnvironmentPreset& preset = *insertRes.first->second.get();
-
-			// if the root node is not empty, this is probably the old XML format, try to convert.
-			if (node->getChildCount())
-			{
-				LoadPresetFromOldFormatXML(preset, node);
 			}
 		}
 
-		if (!m_pCurrentPreset && !m_presets.empty())
+		if (m_presets.empty()) // create a new default preset
+		{
+			LoadPreset(GetDefaultPresetFilepath());
+		}
+		else if (!m_pCurrentPreset)
 		{
 			const auto it = m_presets.begin();
 			m_pCurrentPreset = it->second.get();

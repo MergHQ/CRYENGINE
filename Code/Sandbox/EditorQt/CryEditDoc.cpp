@@ -1461,13 +1461,9 @@ void CCryEditDoc::InitEmptyLevel(int resolution, float unitSize, bool bUseTerrai
 		GetIEditorImpl()->GetGameEngine()->SetLevelCreated(false);
 
 		// Default time of day.
-		XmlNodeRef root = GetISystem()->LoadXmlFromFile("%EDITOR%/default_time_of_day.xml");
-		if (root)
-		{
-			ITimeOfDay* pTimeOfDay = gEnv->p3DEngine->GetTimeOfDay();
-			pTimeOfDay->Serialize(root, true);
-			pTimeOfDay->SetTime(12.0f, true);  // Set to 12:00.
-		}
+		ITimeOfDay* const pTimeOfDay = gEnv->p3DEngine->GetTimeOfDay();
+		pTimeOfDay->LoadPreset(ITimeOfDay::GetDefaultPresetFilepath());
+		pTimeOfDay->SetTime(12.0f, true);
 	}
 
 	auto* pObjectLayerManager = GetIEditorImpl()->GetObjectManager()->GetLayersManager();

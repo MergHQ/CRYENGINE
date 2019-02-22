@@ -581,11 +581,8 @@ void C3DEngine::UnloadLevel()
 	m_nCustomShadowFrustumCount = 0;
 
 	Cry3DEngineBase::m_pRenderMeshMerger->Reset();
+	m_pTimeOfDay->Reset();
 
-	if (!gEnv->IsEditor())
-	{
-		m_pTimeOfDay->Reset();
-	}
 	CLightEntity::StaticReset();
 	CVisArea::StaticReset();
 	CRoadRenderNode::FreeStaticMemoryUsage();

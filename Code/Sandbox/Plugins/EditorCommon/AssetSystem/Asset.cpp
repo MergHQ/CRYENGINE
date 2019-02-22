@@ -289,7 +289,7 @@ void CAsset::Save()
 		return;
 	}
 
-	if (!IsWritable(false))
+	if (IsImmutable() || !IsWritable(false))
 	{
 		CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_WARNING, "Unable to save \"%s\". The asset is read-only.", m_name.c_str());
 		return;

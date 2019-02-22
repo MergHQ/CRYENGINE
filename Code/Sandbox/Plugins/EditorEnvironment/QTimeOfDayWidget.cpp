@@ -365,7 +365,7 @@ private:
 		if (bUndo)
 		{
 			ITimeOfDay::IPreset* const pPreset = m_pTodWidget->GetPreset();
-			gEnv->pSystem->GetArchiveHost()->SaveBinaryBuffer(m_undoState, Serialization::SStruct(pPreset->GetConstants()));
+			gEnv->pSystem->GetArchiveHost()->SaveBinaryBuffer(m_redoState, Serialization::SStruct(pPreset->GetConstants()));
 		}
 
 		ApplyState(m_undoState);

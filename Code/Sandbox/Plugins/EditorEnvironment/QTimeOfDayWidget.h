@@ -3,6 +3,7 @@
 #pragma once
 
 #include <IEditor.h>
+#include <EditorFramework/StateSerializable.h>
 
 #include <Cry3DEngine/ITimeOfDay.h>
 
@@ -89,6 +90,7 @@ class CTimeEditControl;
 class QTimeOfDayWidget : public QWidget, public IEditorNotifyListener, public IStateSerializable
 {
 	Q_OBJECT
+	Q_INTERFACES(IStateSerializable)
 
 	friend struct STODParameter;
 
@@ -103,7 +105,6 @@ public:
 
 	void                 Refresh();
 	void                 OnIdleUpdate();
-
 	void                 UpdateCurveContent();
 	void                 OnOpenAsset();
 	void                 OnCloseAsset(CAsset* pAsset);

@@ -48,13 +48,9 @@ public:
 	virtual bool OnCopyAsset(INewAsset& asset)
 	{
 		const string dataFilePath = PathUtil::RemoveExtension(asset.GetMetadataFile());
-		if (!FileUtils::Pak::CopyFileAllowOverwrite(m_presetPath, dataFilePath))
-		{
-			return false;
-		}
 
 		ITimeOfDay* const pTimeOfDay = GetIEditor()->Get3DEngine()->GetTimeOfDay();
-		if (!pTimeOfDay->LoadPreset(dataFilePath))
+		if (!pTimeOfDay->ExportPreset(m_presetPath, dataFilePath) || !pTimeOfDay->LoadPreset(dataFilePath))
 		{
 			return false;
 		}
@@ -92,6 +88,8 @@ CEditorEnvironmentWindow::CEditorEnvironmentWindow()
 	: CAssetEditor("Environment")
 	, m_pPreset(nullptr)
 {
+	AddToMenu(CEditor::MenuItems::SaveAs);
+
 	auto* pTopLayout = new QVBoxLayout;
 	pTopLayout->setMargin(0);
 
