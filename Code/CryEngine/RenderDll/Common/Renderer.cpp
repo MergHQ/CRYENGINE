@@ -1791,6 +1791,8 @@ void CRenderer::EF_QueryImpl(ERenderQueryTypes eQuery, void* pInOut0, uint32 nIn
 
 	case EFQ_Alloc_APITextures:
 	{
+		CryAutoReadLock<CryRWLock> lock(CBaseResource::s_cResLock);
+
 		int nSize               = 0;
 		SResourceContainer* pRL = CBaseResource::GetResourcesForClass(CTexture::mfGetClassName());
 		if (pRL)
@@ -1812,6 +1814,7 @@ void CRenderer::EF_QueryImpl(ERenderQueryTypes eQuery, void* pInOut0, uint32 nIn
 	case EFQ_Alloc_APIMesh:
 	{
 		uint32 nSize = 0;
+		AUTO_LOCK(CRenderMesh::m_sLinkLock);
 		for (util::list<CRenderMesh>* iter = CRenderMesh::s_MeshList.next; iter != &CRenderMesh::s_MeshList; iter = iter->next)
 		{
 			CRenderMesh* pRM = iter->item<& CRenderMesh::m_Chain>();
@@ -1825,6 +1828,7 @@ void CRenderer::EF_QueryImpl(ERenderQueryTypes eQuery, void* pInOut0, uint32 nIn
 	case EFQ_Alloc_Mesh_SysMem:
 	{
 		uint32 nSize = 0;
+		AUTO_LOCK(CRenderMesh::m_sLinkLock);
 		for (util::list<CRenderMesh>* iter = CRenderMesh::s_MeshList.next; iter != &CRenderMesh::s_MeshList; iter = iter->next)
 		{
 			CRenderMesh* pRM = iter->item<& CRenderMesh::m_Chain>();
@@ -1846,12 +1850,34 @@ void CRenderer::EF_QueryImpl(ERenderQueryTypes eQuery, void* pInOut0, uint32 nIn
 	}
 	break;
 
+	case EFQ_GetDeviceBufferMaxCounts:
+	{
+		if (nInOutSize0 == sizeof(SDeviceBufferIndices))
+		{
+			SDeviceBufferIndices* pIndexes = reinterpret_cast<SDeviceBufferIndices*>(pInOut0);
+			pIndexes->nBufferUsage = BUFFER_USAGE::BU_MAX;
+			pIndexes->nBufferBindType = BUFFER_BIND_TYPE::BBT_MAX;
+		}
+	}
+	break;
+
+	case EFQ_GetDeviceBufferPoolStats:
+	{
+		if (nInOutSize0 == sizeof(SDeviceBufferIndices) && nInOutSize1 == sizeof(SDeviceBufferPoolStats))
+		{
+			SDeviceBufferIndices* pIndexes = reinterpret_cast<SDeviceBufferIndices*>(pInOut0);
+			SDeviceBufferPoolStats* pStats = reinterpret_cast<SDeviceBufferPoolStats*>(pInOut1);
+			m_DevBufMan.GetStats((BUFFER_BIND_TYPE)pIndexes->nBufferBindType, (BUFFER_USAGE)pIndexes->nBufferUsage, *pStats);
+		}
+	}
+	break;
+
 	case EFQ_GetAllMeshes:
 	{
 		//Get render mesh lock, to ensure that the mesh list doesn't change while we're copying
-		AUTO_LOCK(CRenderMesh::m_sLinkLock);
 		IRenderMesh** ppMeshes = NULL;
 		uint32 nSize           = 0;
+		AUTO_LOCK(CRenderMesh::m_sLinkLock);
 		for (util::list<CRenderMesh>* iter = CRenderMesh::s_MeshList.next; iter != &CRenderMesh::s_MeshList; iter = iter->next)
 		{
 			++nSize;
