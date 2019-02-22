@@ -100,7 +100,7 @@ int CPropagationProcessor::OnObstructionTest(EventPhys const* pEvent)
 
 		// The very first entry in "pHits" is reserved for a solid hit.
 		// As we're using "rwi_max_piercing" when issuing a ray cast we're guaranteed to never have a solid hit.
-		// This means we're safe to always ignore the very first entry in returned in "ray_hit".
+		// This means we're safe to always ignore the very first entry returned in "ray_hit".
 		CRY_ASSERT_MESSAGE(pRWIResult->pHits[0].dist < 0.0f, "<Audio> encountered a solid hit in %s", __FUNCTION__);
 
 		// Skip the "solid hit entry".
@@ -150,7 +150,7 @@ void CPropagationProcessor::Init()
 	m_currentListenerDistance = g_listenerManager.GetActiveListenerTransformation().GetPosition().GetDistance(m_object.GetTransformation().GetPosition());
 
 	#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
-	m_listenerOcclusionPlaneColor.set(cry_random<uint8>(0, 255), cry_random<uint8>(0, 255), cry_random<uint8>(0, 255), uint8(64));
+	m_listenerOcclusionPlaneColor.set(cry_random<uint8>(0, 255), cry_random<uint8>(0, 255), cry_random<uint8>(0, 255), uint8(128));
 	#endif // CRY_AUDIO_USE_PRODUCTION_CODE
 }
 
@@ -210,22 +210,21 @@ void CPropagationProcessor::Update()
 
 	if (CanRunOcclusion())
 	{
-		if (m_currentListenerDistance < g_cvars.m_occlusionHighDistance)
+		if (m_occlusionType == EOcclusionType::Adaptive)
 		{
-			m_occlusionTypeWhenAdaptive = EOcclusionType::High;
+			if (m_currentListenerDistance < g_cvars.m_occlusionHighDistance)
+			{
+				m_occlusionTypeWhenAdaptive = EOcclusionType::High;
+			}
+			else if (m_currentListenerDistance < g_cvars.m_occlusionMediumDistance)
+			{
+				m_occlusionTypeWhenAdaptive = EOcclusionType::Medium;
+			}
+			else
+			{
+				m_occlusionTypeWhenAdaptive = EOcclusionType::Low;
+			}
 		}
-		else if (m_currentListenerDistance < g_cvars.m_occlusionMediumDistance)
-		{
-			m_occlusionTypeWhenAdaptive = EOcclusionType::Medium;
-		}
-		else
-		{
-			m_occlusionTypeWhenAdaptive = EOcclusionType::Low;
-		}
-
-	#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
-		UpdateOcclusionPlanes();
-	#endif // CRY_AUDIO_USE_PRODUCTION_CODE
 
 		RunObstructionQuery();
 	}
@@ -396,7 +395,7 @@ float CPropagationProcessor::CastInitialRay(Vec3 const& origin, Vec3 const& targ
 
 	// The very first entry in "hits" is reserved for a solid hit.
 	// As we're using "rwi_max_piercing" when issuing a ray cast we're guaranteed to never have a solid hit.
-	// This means we're safe to always ignore the very first entry in returned in "ray_hit".
+	// This means we're safe to always ignore the very first entry returned in "ray_hit".
 	CRY_ASSERT_MESSAGE(hits[0].dist < 0.0f, "<Audio> encountered a solid hit in %s", __FUNCTION__);
 
 	// Skip the "solid hit entry".
@@ -590,6 +589,7 @@ void CPropagationProcessor::ProcessObstructionOcclusion()
 		}
 
 		// Calculate the new occlusion average.
+		// TODO: Optimize this!
 		for (uint8 i = 0; i < numSamplePositions; ++i)
 		{
 			m_occlusion += m_raysOcclusion[i];
@@ -599,26 +599,15 @@ void CPropagationProcessor::ProcessObstructionOcclusion()
 	}
 
 	#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
-	if ((m_object.GetFlags() & EObjectFlags::CanRunOcclusion) != 0) // only re-sample the rays about 10 times per second for a smoother debug drawing
+	if ((m_object.GetFlags() & EObjectFlags::CanRunOcclusion) != 0)
 	{
-		for (uint8 i = 0; i < g_numConcurrentRaysHigh; ++i)
+		for (uint8 i = 0; i < numConcurrentRays; ++i)
 		{
 			CRayInfo const& rayInfo = m_raysInfo[i];
 			SRayDebugInfo& rayDebugInfo = m_rayDebugInfos[i];
-
+			rayDebugInfo.samplePosIndex = rayInfo.samplePosIndex;
 			rayDebugInfo.begin = rayInfo.startPosition;
 			rayDebugInfo.end = rayInfo.startPosition + rayInfo.direction;
-
-			if (rayDebugInfo.stableEnd.IsZeroFast())
-			{
-				// to be moved to the PropagationProcessor Reset method
-				rayDebugInfo.stableEnd = rayDebugInfo.end;
-			}
-			else
-			{
-				rayDebugInfo.stableEnd += (rayDebugInfo.end - rayDebugInfo.stableEnd) * 0.1f;
-			}
-
 			rayDebugInfo.distanceToNearestObstacle = rayInfo.distanceToFirstObstacle;
 			rayDebugInfo.numHits = rayInfo.numHits;
 			rayDebugInfo.occlusionValue = rayInfo.totalSoundOcclusion;
@@ -643,6 +632,21 @@ void CPropagationProcessor::CastObstructionRay(
 	// Note: The very first entry of rayInfo.hits (solid slot) is always empty.
 	CRayInfo& rayInfo = m_raysInfo[rayIndex];
 	rayInfo.samplePosIndex = samplePosIndex;
+
+	#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
+	rayInfo.startPosition = origin;
+	rayInfo.direction = finalDirection;
+
+	if (bSynch)
+	{
+		++s_totalSyncPhysRays;
+	}
+	else
+	{
+		++s_totalAsyncPhysRays;
+	}
+	#endif // CRY_AUDIO_USE_PRODUCTION_CODE
+
 	++m_remainingRays;
 
 	if (bSynch)
@@ -665,7 +669,7 @@ void CPropagationProcessor::CastObstructionRay(
 
 		// The very first entry in "hits" is reserved for a solid hit.
 		// As we're using "rwi_max_piercing" when issuing a ray cast we're guaranteed to never have a solid hit.
-		// This means we're safe to always ignore the very first entry in returned in "ray_hit".
+		// This means we're safe to always ignore the very first entry returned in "ray_hit".
 		CRY_ASSERT_MESSAGE(hits[0].dist < 0.0f, "<Audio> encountered a solid hit in %s", __FUNCTION__);
 
 		// Skip the "solid hit entry".
@@ -693,20 +697,6 @@ void CPropagationProcessor::CastObstructionRay(
 			&rayInfo,
 			PHYS_FOREIGN_ID_SOUND_OBSTRUCTION);
 	}
-
-	#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
-	rayInfo.startPosition = origin;
-	rayInfo.direction = finalDirection;
-
-	if (bSynch)
-	{
-		++s_totalSyncPhysRays;
-	}
-	else
-	{
-		++s_totalAsyncPhysRays;
-	}
-	#endif // CRY_AUDIO_USE_PRODUCTION_CODE
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -1145,17 +1135,67 @@ void CPropagationProcessor::DrawDebugInfo(IRenderAuxGeom& auxGeom)
 {
 	if ((m_object.GetFlags() & EObjectFlags::CanRunOcclusion) != 0)
 	{
-		if ((g_cvars.m_drawDebug & Debug::EDrawFilter::OcclusionRays) != 0)
+		if ((g_cvars.m_drawDebug & Debug::EDrawFilter::OcclusionRays) != 0 ||
+		    (g_cvars.m_drawDebug & Debug::EDrawFilter::OcclusionCollisionSpheres) != 0)
 		{
 			uint8 const numConcurrentRays = GetNumConcurrentRays();
 
 			for (uint8 i = 0; i < numConcurrentRays; ++i)
 			{
-				DrawRay(auxGeom, i);
+				SRayDebugInfo const& rayDebugInfo = m_rayDebugInfos[i];
+				bool const isRayObstructed = (rayDebugInfo.numHits > 0);
+				Vec3 const rayEnd = isRayObstructed ?
+				                    rayDebugInfo.begin + (rayDebugInfo.end - rayDebugInfo.begin).GetNormalized() * rayDebugInfo.distanceToNearestObstacle :
+				                    rayDebugInfo.end; // Only draw the ray to the first collision point.
+
+				if ((g_cvars.m_drawDebug & Debug::EDrawFilter::OcclusionRays) != 0)
+				{
+					SAuxGeomRenderFlags const previousRenderFlags = auxGeom.GetRenderFlags();
+					SAuxGeomRenderFlags newRenderFlags(e_Def3DPublicRenderflags);
+					newRenderFlags.SetCullMode(e_CullModeNone);
+					ColorF const& rayColor = isRayObstructed ? Debug::s_rayColorObstructed : Debug::s_rayColorFree;
+					auxGeom.SetRenderFlags(newRenderFlags);
+					auxGeom.DrawLine(rayDebugInfo.begin, rayColor, rayEnd, rayColor, 1.0f);
+					auxGeom.SetRenderFlags(previousRenderFlags);
+				}
+
+				if ((g_cvars.m_drawDebug & Debug::EDrawFilter::OcclusionCollisionSpheres) != 0)
+				{
+					if (isRayObstructed)
+					{
+						m_collisionSpherePositions[rayDebugInfo.samplePosIndex] = rayEnd;
+					}
+					else
+					{
+						m_collisionSpherePositions[rayDebugInfo.samplePosIndex] = ZERO;
+					}
+				}
+			}
+
+			if ((g_cvars.m_drawDebug & Debug::EDrawFilter::OcclusionCollisionSpheres) != 0)
+			{
+				uint8 const numSamplePositions = GetNumSamplePositions();
+
+				for (uint8 i = 0; i < g_numRaySamplePositionsHigh; ++i)
+				{
+					auto& spherePos = m_collisionSpherePositions[i];
+
+					if (i < numSamplePositions)
+					{
+						if (!spherePos.IsZero())
+						{
+							auxGeom.DrawSphere(spherePos, Debug::g_rayRadiusCollisionSphere, m_listenerOcclusionPlaneColor);
+						}
+					}
+					else
+					{
+						spherePos = ZERO;
+					}
+				}
 			}
 		}
 
-		if ((g_cvars.m_drawDebug & Debug::EDrawFilter::ListenerOcclusionPlane) != 0)
+		if ((g_cvars.m_drawDebug & Debug::EDrawFilter::OcclusionListenerPlane) != 0)
 		{
 			SAuxGeomRenderFlags const previousRenderFlags = auxGeom.GetRenderFlags();
 			SAuxGeomRenderFlags newRenderFlags;
@@ -1181,32 +1221,6 @@ void CPropagationProcessor::DrawDebugInfo(IRenderAuxGeom& auxGeom)
 			auxGeom.SetRenderFlags(previousRenderFlags);
 		}
 	}
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CPropagationProcessor::DrawRay(IRenderAuxGeom& auxGeom, uint8 const rayIndex) const
-{
-	SAuxGeomRenderFlags const previousRenderFlags = auxGeom.GetRenderFlags();
-	SAuxGeomRenderFlags newRenderFlags(e_Def3DPublicRenderflags);
-	newRenderFlags.SetCullMode(e_CullModeNone);
-
-	bool const isRayObstructed = (m_rayDebugInfos[rayIndex].numHits > 0);
-	Vec3 const rayEnd = isRayObstructed ?
-	                    m_rayDebugInfos[rayIndex].begin + (m_rayDebugInfos[rayIndex].end - m_rayDebugInfos[rayIndex].begin).GetNormalized() * m_rayDebugInfos[rayIndex].distanceToNearestObstacle :
-	                    m_rayDebugInfos[rayIndex].end; // Only draw the ray to the first collision point.
-
-	ColorF const& rayColor = isRayObstructed ? Debug::s_rayColorObstructed : Debug::s_rayColorFree;
-
-	auxGeom.SetRenderFlags(newRenderFlags);
-
-	if (isRayObstructed)
-	{
-		// Mark the nearest collision with a small sphere.
-		auxGeom.DrawSphere(rayEnd, Debug::g_rayRadiusCollisionSphere, Debug::s_rayColorCollisionSphere);
-	}
-
-	auxGeom.DrawLine(m_rayDebugInfos[rayIndex].begin, rayColor, rayEnd, rayColor, 1.0f);
-	auxGeom.SetRenderFlags(previousRenderFlags);
 }
 
 ///////////////////////////////////////////////////////////////////////////

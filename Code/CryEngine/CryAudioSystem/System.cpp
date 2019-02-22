@@ -3407,9 +3407,14 @@ void CSystem::HandleDrawDebug()
 			debugDraw += "Occlusion Ray Offset, ";
 		}
 
-		if ((g_cvars.m_drawDebug & Debug::EDrawFilter::ListenerOcclusionPlane) != 0)
+		if ((g_cvars.m_drawDebug & Debug::EDrawFilter::OcclusionListenerPlane) != 0)
 		{
-			debugDraw += "Listener Occlusion Plane, ";
+			debugDraw += "Occlusion Listener Plane, ";
+		}
+
+		if ((g_cvars.m_drawDebug & Debug::EDrawFilter::OcclusionCollisionSpheres) != 0)
+		{
+			debugDraw += "Occlusion Collision Spheres, ";
 		}
 
 		if ((g_cvars.m_drawDebug & Debug::EDrawFilter::GlobalObjectInfo) != 0)

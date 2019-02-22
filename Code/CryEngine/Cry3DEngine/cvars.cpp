@@ -1128,9 +1128,6 @@ void CVars::Init()
 	                   " 0 = off\n"
 	                   " 1 = activated");
 
-	REGISTER_CVAR(e_GI, 0, VF_CVARGRP_IGNOREINREALVAL,
-	              "Enable/disable global illumination. Default: 1 - enabled");
-
 	REGISTER_CVAR(e_RenderMeshCollisionTolerance, 0.3f, VF_NULL,
 	              "Min distance between physics-proxy and rendermesh before collision is considered a hole");
 
