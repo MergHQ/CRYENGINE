@@ -308,10 +308,8 @@ void CDeferredDecalsStage::Execute()
 
 	ResizeDecalBuffers(deferredDecals.size());
 
-#if !CRY_PLATFORM_ORBIS
 	// Want the buffer cleared or we'll just get black out
 	if (deferredDecals.empty())
-#endif
 		return;
 
 	PROFILE_LABEL_SCOPE("DEFERRED_DECALS");
