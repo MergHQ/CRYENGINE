@@ -78,8 +78,7 @@ const char* render_category_cvars[] =
 	"e_ProcVegetation",         "Procedural Vegetation",
 	"e_Particles",              "Particles",
 	"e_Clouds",                 "Clouds",
-	"e_GeomCaches",             "Geom Caches",
-	"e_GI",                     "Global Illumination", };
+	"e_GeomCaches",             "Geom Caches",};
 
 void OnCVarChanged(ICVar* var)
 {
