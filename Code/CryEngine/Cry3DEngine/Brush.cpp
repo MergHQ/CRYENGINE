@@ -395,19 +395,17 @@ void CBrush::PhysicalizeOnHeap(IGeneralMemoryHeap* pHeap, bool bInstant)
 	params.pMtx3x4 = &mtxScale;
 	m_pStatObj->Physicalize(m_pPhysEnt, &params);
 
-	if (m_dwRndFlags & (ERF_HIDABLE | ERF_HIDABLE_SECONDARY | ERF_EXCLUDE_FROM_TRIANGULATION | ERF_NODYNWATER))
-	{
+	{ // Update foreign data flags based on render flags
 		pe_params_foreign_data foreignData;
-		m_pPhysEnt->GetParams(&foreignData);
+		foreignData.iForeignFlagsAND = ~(PFF_HIDABLE | PFF_HIDABLE_SECONDARY | PFF_EXCLUDE_FROM_STATIC | PFF_OUTDOOR_AREA);
 		if (m_dwRndFlags & ERF_HIDABLE)
-			foreignData.iForeignFlags |= PFF_HIDABLE;
+			foreignData.iForeignFlagsOR |= PFF_HIDABLE;
 		if (m_dwRndFlags & ERF_HIDABLE_SECONDARY)
-			foreignData.iForeignFlags |= PFF_HIDABLE_SECONDARY;
-		//[PETAR] new flag to exclude from triangulation
+			foreignData.iForeignFlagsOR |= PFF_HIDABLE_SECONDARY;
 		if (m_dwRndFlags & ERF_EXCLUDE_FROM_TRIANGULATION)
-			foreignData.iForeignFlags |= PFF_EXCLUDE_FROM_STATIC;
+			foreignData.iForeignFlagsOR |= PFF_EXCLUDE_FROM_STATIC;
 		if (m_dwRndFlags & ERF_NODYNWATER)
-			foreignData.iForeignFlags |= PFF_OUTDOOR_AREA;
+			foreignData.iForeignFlagsOR |= PFF_OUTDOOR_AREA;
 		m_pPhysEnt->SetParams(&foreignData);
 	}
 

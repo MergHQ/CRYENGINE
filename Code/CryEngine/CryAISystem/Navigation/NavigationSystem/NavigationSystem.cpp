@@ -100,10 +100,20 @@ bool ShouldBeConsideredByVoxelizer(IPhysicalEntity& physicalEntity, uint32& flag
 		return false;
 	}
 
-	if (IEntity* pEntity = static_cast<IEntity*>(physicalEntity.GetForeignData(PHYS_FOREIGN_ID_ENTITY)))
+	pe_params_foreign_data pfd;
+	if (physicalEntity.GetParams(&pfd))
 	{
-		if(pEntity->GetFlagsExtended() & ENTITY_FLAG_EXTENDED_IGNORED_IN_NAVMESH_GENERATION)
+		if (pfd.iForeignFlags & PFF_EXCLUDE_FROM_STATIC)
 			return false;
+
+		if (pfd.iForeignData == PHYS_FOREIGN_ID_ENTITY)
+		{
+			if (IEntity* pEntity = static_cast<IEntity*>(pfd.pForeignData))
+			{
+				if (pEntity->GetFlagsExtended() & ENTITY_FLAG_EXTENDED_IGNORED_IN_NAVMESH_GENERATION)
+					return false;
+			}
+		}
 	}
 	
 	bool considerMass = (physicalEntity.GetType() == PE_RIGID);
