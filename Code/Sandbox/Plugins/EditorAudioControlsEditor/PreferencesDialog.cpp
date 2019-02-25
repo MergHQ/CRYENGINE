@@ -104,9 +104,9 @@ CPreferencesDialog::CPreferencesDialog(QWidget* const pParent)
 			QString fixedProjectPath = pLineEdit->text();
 			pValidator->fixup(fixedProjectPath);
 			g_pIImpl->SetProjectPath(QtUtil::ToString(fixedProjectPath));
-			SignalOnBeforeImplementationSettingsChange();
+			SignalOnBeforeImplSettingsChange();
 			CAudioControlsEditorPlugin::ReloadData(EReloadFlags::ReloadImplData | EReloadFlags::BackupConnections);
-			SignalOnAfterImplementationSettingsChanged();
+			SignalOnAfterImplSettingsChanged();
 
 			accept();
 		});

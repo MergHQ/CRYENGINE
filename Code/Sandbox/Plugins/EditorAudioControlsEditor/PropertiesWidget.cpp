@@ -4,7 +4,7 @@
 #include "PropertiesWidget.h"
 
 #include "AssetsManager.h"
-#include "ImplementationManager.h"
+#include "ImplManager.h"
 #include "ConnectionsWidget.h"
 #include "Common/IImpl.h"
 
@@ -79,7 +79,7 @@ CPropertiesWidget::CPropertiesWidget(QWidget* const pParent)
 			}
 		}, reinterpret_cast<uintptr_t>(this));
 
-	g_implementationManager.SignalOnAfterImplementationChange.Connect([this]()
+	g_implManager.SignalOnAfterImplChange.Connect([this]()
 		{
 			setEnabled(g_pIImpl != nullptr);
 		}, reinterpret_cast<uintptr_t>(this));
@@ -95,7 +95,7 @@ CPropertiesWidget::~CPropertiesWidget()
 	g_assetsManager.SignalOnAfterAssetRemoved.DisconnectById(reinterpret_cast<uintptr_t>(this));
 	g_assetsManager.SignalControlModified.DisconnectById(reinterpret_cast<uintptr_t>(this));
 	g_assetsManager.SignalAssetRenamed.DisconnectById(reinterpret_cast<uintptr_t>(this));
-	g_implementationManager.SignalOnAfterImplementationChange.DisconnectById(reinterpret_cast<uintptr_t>(this));
+	g_implManager.SignalOnAfterImplChange.DisconnectById(reinterpret_cast<uintptr_t>(this));
 }
 
 //////////////////////////////////////////////////////////////////////////

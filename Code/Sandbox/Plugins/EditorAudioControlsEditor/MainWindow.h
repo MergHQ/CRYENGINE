@@ -82,7 +82,7 @@ private:
 	void                   RegisterWidgets();
 	void                   Reload(bool const hasImplChanged = false);
 	void                   Save();
-	void                   SaveBeforeImplementationChange();
+	void                   SaveBeforeImplChange();
 	void                   CheckErrorMask();
 	void                   UpdateAudioSystemData();
 	void                   ReloadSystemData();

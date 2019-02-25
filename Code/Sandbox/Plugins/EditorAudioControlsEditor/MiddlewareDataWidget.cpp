@@ -4,7 +4,7 @@
 #include "MiddlewareDataWidget.h"
 
 #include "AssetsManager.h"
-#include "ImplementationManager.h"
+#include "ImplManager.h"
 #include "SystemControlsWidget.h"
 #include "AssetIcons.h"
 #include "FileImporterUtils.h"
@@ -24,12 +24,12 @@ CMiddlewareDataWidget::CMiddlewareDataWidget(QWidget* const pParent)
 	m_pLayout->setContentsMargins(0, 0, 0, 0);
 	InitImplDataWidget();
 
-	g_implementationManager.SignalOnBeforeImplementationChange.Connect([this]()
+	g_implManager.SignalOnBeforeImplChange.Connect([this]()
 		{
 			ClearImplDataWidget();
 		}, reinterpret_cast<uintptr_t>(this));
 
-	g_implementationManager.SignalOnAfterImplementationChange.Connect([this]()
+	g_implManager.SignalOnAfterImplChange.Connect([this]()
 		{
 			InitImplDataWidget();
 		}, reinterpret_cast<uintptr_t>(this));
@@ -38,8 +38,8 @@ CMiddlewareDataWidget::CMiddlewareDataWidget(QWidget* const pParent)
 //////////////////////////////////////////////////////////////////////////
 CMiddlewareDataWidget::~CMiddlewareDataWidget()
 {
-	g_implementationManager.SignalOnBeforeImplementationChange.DisconnectById(reinterpret_cast<uintptr_t>(this));
-	g_implementationManager.SignalOnAfterImplementationChange.DisconnectById(reinterpret_cast<uintptr_t>(this));
+	g_implManager.SignalOnBeforeImplChange.DisconnectById(reinterpret_cast<uintptr_t>(this));
+	g_implManager.SignalOnAfterImplChange.DisconnectById(reinterpret_cast<uintptr_t>(this));
 
 	ClearImplDataWidget();
 }

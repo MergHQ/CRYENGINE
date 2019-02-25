@@ -5,7 +5,7 @@
 
 #include "AudioControlsEditorPlugin.h"
 #include "AssetsManager.h"
-#include "ImplementationManager.h"
+#include "ImplManager.h"
 #include "PreferencesDialog.h"
 #include "SystemControlsWidget.h"
 #include "PropertiesWidget.h"
@@ -124,8 +124,8 @@ CMainWindow::CMainWindow()
 			m_pSaveAction->setEnabled(isDirty);
 		}, reinterpret_cast<uintptr_t>(this));
 
-	g_implementationManager.SignalOnBeforeImplementationChange.Connect(this, &CMainWindow::SaveBeforeImplementationChange);
-	g_implementationManager.SignalOnAfterImplementationChange.Connect([this]()
+	g_implManager.SignalOnBeforeImplChange.Connect(this, &CMainWindow::SaveBeforeImplChange);
+	g_implManager.SignalOnAfterImplChange.Connect([this]()
 		{
 			UpdateImplLabel();
 			Reload(true);
@@ -140,8 +140,8 @@ CMainWindow::CMainWindow()
 //////////////////////////////////////////////////////////////////////////
 CMainWindow::~CMainWindow()
 {
-	g_implementationManager.SignalOnBeforeImplementationChange.DisconnectById(reinterpret_cast<uintptr_t>(this));
-	g_implementationManager.SignalOnAfterImplementationChange.DisconnectById(reinterpret_cast<uintptr_t>(this));
+	g_implManager.SignalOnBeforeImplChange.DisconnectById(reinterpret_cast<uintptr_t>(this));
+	g_implManager.SignalOnAfterImplChange.DisconnectById(reinterpret_cast<uintptr_t>(this));
 	g_assetsManager.SignalIsDirty.DisconnectById(reinterpret_cast<uintptr_t>(this));
 	GetIEditor()->UnregisterNotifyListener(this);
 	GetISystem()->GetISystemEventDispatcher()->RemoveListener(this);
@@ -406,7 +406,7 @@ void CMainWindow::Reload(bool const hasImplChanged /*= false*/)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CMainWindow::SaveBeforeImplementationChange()
+void CMainWindow::SaveBeforeImplChange()
 {
 	if (m_isModified)
 	{
@@ -558,12 +558,12 @@ void CMainWindow::OnPreferencesDialog()
 {
 	auto const pPreferencesDialog = new CPreferencesDialog(this);
 
-	QObject::connect(pPreferencesDialog, &CPreferencesDialog::SignalOnBeforeImplementationSettingsChange, [&]()
+	QObject::connect(pPreferencesDialog, &CPreferencesDialog::SignalOnBeforeImplSettingsChange, [&]()
 		{
 			OnBeforeReload();
 		});
 
-	QObject::connect(pPreferencesDialog, &CPreferencesDialog::SignalOnAfterImplementationSettingsChanged, [&]()
+	QObject::connect(pPreferencesDialog, &CPreferencesDialog::SignalOnAfterImplSettingsChanged, [&]()
 		{
 			if (g_pPropertiesWidget != nullptr)
 			{

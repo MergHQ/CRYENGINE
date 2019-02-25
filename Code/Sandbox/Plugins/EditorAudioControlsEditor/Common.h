@@ -12,7 +12,7 @@ struct IImpl;
 } // namespace Impl
 
 class CAssetsManager;
-class CImplementationManager;
+class CImplManager;
 class CAsset;
 class CControl;
 class CLibrary;
@@ -31,7 +31,7 @@ using FileNames = std::set<string>;
 using AssetNames = std::vector<string>;
 
 extern CAssetsManager g_assetsManager;
-extern CImplementationManager g_implementationManager;
+extern CImplManager g_implManager;
 extern Impl::IImpl* g_pIImpl;
 extern CMainWindow* g_pMainWindow;
 extern CSystemControlsWidget* g_pSystemControlsWidget;

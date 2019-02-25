@@ -1,7 +1,7 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-#include "ImplementationManager.h"
+#include "ImplManager.h"
 
 #include "Common.h"
 #include "AudioControlsEditorPlugin.h"
@@ -11,7 +11,7 @@
 #include <IUndoManager.h>
 #include <CrySystem/IConsole.h>
 
-constexpr char const* g_implementationCVarName = "s_AudioImplName";
+constexpr char const* g_implCVarName = "s_AudioImplName";
 
 namespace ACE
 {
@@ -19,7 +19,7 @@ typedef void (WINAPI * PGNSI)();
 using TPfnGetAudioInterface = Impl::IImpl* (*)(ISystem*);
 
 //////////////////////////////////////////////////////////////////////////
-CImplementationManager::~CImplementationManager()
+CImplManager::~CImplManager()
 {
 	if (m_hMiddlewarePlugin != nullptr)
 	{
@@ -31,20 +31,20 @@ CImplementationManager::~CImplementationManager()
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool CImplementationManager::LoadImplementation()
+bool CImplManager::LoadImpl()
 {
-	SignalOnBeforeImplementationChange();
+	SignalOnBeforeImplChange();
 	GetIEditor()->GetIUndoManager()->Suspend();
 
 	bool isLoaded = true;
-	ICVar const* const pCVar = gEnv->pConsole->GetCVar(g_implementationCVarName);
+	ICVar const* const pCVar = gEnv->pConsole->GetCVar(g_implCVarName);
 
 	if (pCVar != nullptr)
 	{
 		if (m_hMiddlewarePlugin != nullptr)
 		{
 			// Need to flush the undo/redo queue to make sure we're not keeping data from
-			// previous implementation there
+			// previous impl there
 			GetIEditor()->GetIUndoManager()->Flush();
 
 			FreeLibrary(m_hMiddlewarePlugin);
@@ -89,17 +89,17 @@ bool CImplementationManager::LoadImplementation()
 	}
 	else
 	{
-		CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_WARNING, "[Audio Controls Editor] CVar %s not defined. Needed to derive the Editor plugin name.", g_implementationCVarName);
+		CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_WARNING, "[Audio Controls Editor] CVar %s not defined. Needed to derive the Editor plugin name.", g_implCVarName);
 		isLoaded = false;
 	}
 
 	GetIEditor()->GetIUndoManager()->Resume();
-	SignalOnAfterImplementationChange();
+	SignalOnAfterImplChange();
 	return isLoaded;
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CImplementationManager::Release()
+void CImplManager::Release()
 {
 	if (m_hMiddlewarePlugin)
 	{

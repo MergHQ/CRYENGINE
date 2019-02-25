@@ -4,7 +4,7 @@
 #include "AssetsManager.h"
 
 #include "AudioControlsEditorPlugin.h"
-#include "ImplementationManager.h"
+#include "ImplManager.h"
 #include "AssetUtils.h"
 #include "Common/IConnection.h"
 #include "Common/IImpl.h"
@@ -31,8 +31,8 @@ CAssetsManager::CAssetsManager()
 //////////////////////////////////////////////////////////////////////////
 CAssetsManager::~CAssetsManager()
 {
-	g_implementationManager.SignalOnBeforeImplementationChange.DisconnectById(reinterpret_cast<uintptr_t>(this));
-	g_implementationManager.SignalOnAfterImplementationChange.DisconnectById(reinterpret_cast<uintptr_t>(this));
+	g_implManager.SignalOnBeforeImplChange.DisconnectById(reinterpret_cast<uintptr_t>(this));
+	g_implManager.SignalOnAfterImplChange.DisconnectById(reinterpret_cast<uintptr_t>(this));
 	CAudioControlsEditorPlugin::SignalOnBeforeLoad.DisconnectById(reinterpret_cast<uintptr_t>(this));
 	CAudioControlsEditorPlugin::SignalOnAfterLoad.DisconnectById(reinterpret_cast<uintptr_t>(this));
 	Clear();
@@ -54,12 +54,12 @@ void CAssetsManager::Initialize()
 	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioSystem, 0, "ACE Library Pool");
 	CLibrary::CreateAllocator(g_libraryPoolSize);
 
-	g_implementationManager.SignalOnBeforeImplementationChange.Connect([this]()
+	g_implManager.SignalOnBeforeImplChange.Connect([this]()
 		{
 			ClearAllConnections();
 		}, reinterpret_cast<uintptr_t>(this));
 
-	g_implementationManager.SignalOnAfterImplementationChange.Connect([this]()
+	g_implManager.SignalOnAfterImplChange.Connect([this]()
 		{
 			m_isLoading = false;
 		}, reinterpret_cast<uintptr_t>(this));

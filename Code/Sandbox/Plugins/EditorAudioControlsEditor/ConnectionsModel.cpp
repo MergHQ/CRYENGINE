@@ -4,7 +4,7 @@
 #include "ConnectionsModel.h"
 
 #include "AssetsManager.h"
-#include "ImplementationManager.h"
+#include "ImplManager.h"
 #include "FileImporterUtils.h"
 #include "Common/IConnection.h"
 #include "Common/IImpl.h"
@@ -53,7 +53,7 @@ bool CanDropData(QMimeData const* const pData, CAsset* const pControl)
 	{
 		ControlIds ids;
 
-		// Handle first if mime data is an external (from the implementation side) source
+		// Handle first if mime data is an external (from the impl side) source
 		if (ProcessDragDropData(pData, ids))
 		{
 			canDrop = true;
@@ -115,7 +115,7 @@ void CConnectionsModel::ConnectSignals()
 			}
 		}, reinterpret_cast<uintptr_t>(this));
 
-	g_implementationManager.SignalOnBeforeImplementationChange.Connect([this]()
+	g_implManager.SignalOnBeforeImplChange.Connect([this]()
 		{
 			beginResetModel();
 			m_pControl = nullptr;
@@ -123,7 +123,7 @@ void CConnectionsModel::ConnectSignals()
 			endResetModel();
 		}, reinterpret_cast<uintptr_t>(this));
 
-	g_implementationManager.SignalOnAfterImplementationChange.Connect([this]()
+	g_implManager.SignalOnAfterImplChange.Connect([this]()
 		{
 			beginResetModel();
 			ResetCache();
@@ -136,8 +136,8 @@ void CConnectionsModel::DisconnectSignals()
 {
 	g_assetsManager.SignalConnectionAdded.DisconnectById(reinterpret_cast<uintptr_t>(this));
 	g_assetsManager.SignalConnectionRemoved.DisconnectById(reinterpret_cast<uintptr_t>(this));
-	g_implementationManager.SignalOnBeforeImplementationChange.DisconnectById(reinterpret_cast<uintptr_t>(this));
-	g_implementationManager.SignalOnAfterImplementationChange.DisconnectById(reinterpret_cast<uintptr_t>(this));
+	g_implManager.SignalOnBeforeImplChange.DisconnectById(reinterpret_cast<uintptr_t>(this));
+	g_implManager.SignalOnAfterImplChange.DisconnectById(reinterpret_cast<uintptr_t>(this));
 }
 
 //////////////////////////////////////////////////////////////////////////

@@ -5,7 +5,7 @@
 
 #include "AudioControlsEditorPlugin.h"
 #include "AssetsManager.h"
-#include "ImplementationManager.h"
+#include "ImplManager.h"
 #include "TreeView.h"
 #include "ConnectionsModel.h"
 #include "AssetUtils.h"
@@ -93,7 +93,7 @@ CConnectionsWidget::CConnectionsWidget(QWidget* const pParent)
 			}
 		}, reinterpret_cast<uintptr_t>(this));
 
-	g_implementationManager.SignalOnBeforeImplementationChange.Connect([this]()
+	g_implManager.SignalOnBeforeImplChange.Connect([this]()
 		{
 			m_pTreeView->selectionModel()->clear();
 			RefreshConnectionProperties();
@@ -106,7 +106,7 @@ CConnectionsWidget::CConnectionsWidget(QWidget* const pParent)
 CConnectionsWidget::~CConnectionsWidget()
 {
 	g_assetsManager.SignalConnectionRemoved.DisconnectById(reinterpret_cast<uintptr_t>(this));
-	g_implementationManager.SignalOnBeforeImplementationChange.DisconnectById(reinterpret_cast<uintptr_t>(this));
+	g_implManager.SignalOnBeforeImplChange.DisconnectById(reinterpret_cast<uintptr_t>(this));
 
 	m_pConnectionModel->DisconnectSignals();
 	m_pConnectionModel->deleteLater();
