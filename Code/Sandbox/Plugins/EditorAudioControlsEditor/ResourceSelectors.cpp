@@ -2,7 +2,7 @@
 
 #include "StdAfx.h"
 
-#include "AudioControlsEditorPlugin.h"
+#include "AssetsManager.h"
 #include "ResourceSelectorDialog.h"
 
 #include <IResourceSelectorHost.h>

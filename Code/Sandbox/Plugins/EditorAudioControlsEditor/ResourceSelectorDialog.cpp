@@ -3,10 +3,11 @@
 #include "StdAfx.h"
 #include "ResourceSelectorDialog.h"
 
+#include "AudioControlsEditorPlugin.h"
 #include "ResourceSourceModel.h"
 #include "ResourceLibraryModel.h"
 #include "ResourceFilterProxyModel.h"
-#include "AudioControlsEditorPlugin.h"
+#include "AssetsManager.h"
 #include "TreeView.h"
 
 #include <QtUtil.h>

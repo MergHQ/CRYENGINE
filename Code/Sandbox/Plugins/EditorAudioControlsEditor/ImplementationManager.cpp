@@ -5,12 +5,13 @@
 
 #include "Common.h"
 #include "AudioControlsEditorPlugin.h"
+#include "FileImporterUtils.h"
 #include "Common/IImpl.h"
 
 #include <IUndoManager.h>
 #include <CrySystem/IConsole.h>
 
-string const g_sImplementationCVarName = "s_AudioImplName";
+constexpr char const* g_implementationCVarName = "s_AudioImplName";
 
 namespace ACE
 {
@@ -36,7 +37,7 @@ bool CImplementationManager::LoadImplementation()
 	GetIEditor()->GetIUndoManager()->Suspend();
 
 	bool isLoaded = true;
-	ICVar const* const pCVar = gEnv->pConsole->GetCVar(g_sImplementationCVarName);
+	ICVar const* const pCVar = gEnv->pConsole->GetCVar(g_implementationCVarName);
 
 	if (pCVar != nullptr)
 	{
@@ -78,7 +79,9 @@ bool CImplementationManager::LoadImplementation()
 				{
 					g_pIImpl = pfnAudioInterface(GetIEditor()->GetSystem());
 					ZeroStruct(g_implInfo);
-					g_pIImpl->Initialize(g_implInfo, g_platforms);
+					g_extensionFilters.clear();
+					g_supportedFileTypes.clear();
+					g_pIImpl->Initialize(g_implInfo, g_platforms, g_extensionFilters, g_supportedFileTypes);
 					CAudioControlsEditorPlugin::ReloadData(EReloadFlags::ReloadImplData);
 				}
 			}
@@ -86,7 +89,7 @@ bool CImplementationManager::LoadImplementation()
 	}
 	else
 	{
-		CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_WARNING, "[Audio Controls Editor] CVar %s not defined. Needed to derive the Editor plugin name.", g_sImplementationCVarName);
+		CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_WARNING, "[Audio Controls Editor] CVar %s not defined. Needed to derive the Editor plugin name.", g_implementationCVarName);
 		isLoaded = false;
 	}
 

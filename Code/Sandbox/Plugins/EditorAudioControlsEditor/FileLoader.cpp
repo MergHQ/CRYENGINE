@@ -3,8 +3,7 @@
 #include "StdAfx.h"
 #include "FileLoader.h"
 
-#include "AudioControlsEditorPlugin.h"
-#include "Control.h"
+#include "AssetsManager.h"
 
 #include <CrySystem/File/CryFile.h>
 #include <QtUtil.h>

@@ -3,14 +3,16 @@
 #include "StdAfx.h"
 #include "SystemControlsWidget.h"
 
+#include "AudioControlsEditorPlugin.h"
 #include "SystemSourceModel.h"
 #include "SystemLibraryModel.h"
 #include "SystemFilterProxyModel.h"
-#include "AudioControlsEditorPlugin.h"
+#include "AssetsManager.h"
 #include "ImplementationManager.h"
 #include "PropertiesWidget.h"
 #include "AssetIcons.h"
 #include "AssetUtils.h"
+#include "FileImporterUtils.h"
 #include "TreeView.h"
 #include "Common/IImpl.h"
 #include "Common/ModelUtils.h"
@@ -410,6 +412,8 @@ void CSystemControlsWidget::OnContextMenu(QPoint const& pos)
 	QMenu* const pAddMenu = new QMenu(tr("Add"), pContextMenu);
 	auto const& selection = m_pTreeView->selectionModel()->selectedRows(m_nameColumn);
 
+	CAsset* pImportAsset = nullptr;
+
 	pContextMenu->addMenu(pAddMenu);
 	pContextMenu->addSeparator();
 
@@ -447,7 +451,7 @@ void CSystemControlsWidget::OnContextMenu(QPoint const& pos)
 
 				if (index.isValid())
 				{
-					CAsset const* const pAsset = CSystemSourceModel::GetAssetFromIndex(index, m_nameColumn);
+					CAsset* const pAsset = CSystemSourceModel::GetAssetFromIndex(index, m_nameColumn);
 
 					if (pAsset != nullptr)
 					{
@@ -509,6 +513,11 @@ void CSystemControlsWidget::OnContextMenu(QPoint const& pos)
 
 									pContextMenu->addSeparator();
 								}
+							}
+
+							if ((g_implInfo.flags & EImplInfoFlags::SupportsFileImport) != 0)
+							{
+								pImportAsset = pAsset;
 							}
 						}
 					}
@@ -632,6 +641,15 @@ void CSystemControlsWidget::OnContextMenu(QPoint const& pos)
 
 	pContextMenu->addAction(tr("Expand All"), [=]() { m_pTreeView->expandAll(); });
 	pContextMenu->addAction(tr("Collapse All"), [=]() { m_pTreeView->collapseAll(); });
+
+	if (pImportAsset != nullptr)
+	{
+		pContextMenu->addSeparator();
+		pContextMenu->addAction(tr("Import Files"), [=]()
+			{
+				OpenFileSelector(EImportTargetType::SystemControls, pImportAsset);
+			});
+	}
 
 	pContextMenu->exec(QCursor::pos());
 }
@@ -1018,6 +1036,18 @@ void CSystemControlsWidget::OnAfterReload()
 {
 	m_pTreeView->RestoreExpanded();
 	m_pTreeView->RestoreSelection();
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CSystemControlsWidget::OnFileImporterOpened()
+{
+	m_pTreeView->setDragDropMode(QAbstractItemView::NoDragDrop);
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CSystemControlsWidget::OnFileImporterClosed()
+{
+	m_pTreeView->setDragDropMode(QAbstractItemView::DragDrop);
 }
 
 //////////////////////////////////////////////////////////////////////////

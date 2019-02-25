@@ -3,8 +3,7 @@
 #include "StdAfx.h"
 #include "FileWriter.h"
 
-#include "AudioControlsEditorPlugin.h"
-#include "Control.h"
+#include "AssetsManager.h"
 #include "LibraryScope.h"
 #include "Common/IConnection.h"
 #include "Common/IImpl.h"

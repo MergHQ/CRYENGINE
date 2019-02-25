@@ -4,7 +4,7 @@
 #include "SystemLibraryModel.h"
 
 #include "SystemSourceModel.h"
-#include "AudioControlsEditorPlugin.h"
+#include "AssetsManager.h"
 #include "AssetIcons.h"
 #include "AssetUtils.h"
 #include "Common/IItem.h"

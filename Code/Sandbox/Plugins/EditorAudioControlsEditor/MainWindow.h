@@ -48,17 +48,7 @@ public:
 	virtual IViewPaneClass::EDockingDirection GetDockingDirection() const override { return IViewPaneClass::DOCK_FLOAT; }
 	// ~IPane
 
-protected:
-
-	// QWidget
-	virtual void keyPressEvent(QKeyEvent* pEvent) override;
-	virtual void closeEvent(QCloseEvent* pEvent) override;
-	// ~QWidget
-
-	// CEditor
-	virtual void CreateDefaultLayout(CDockableContainer* pSender) override;
-	virtual bool CanQuit(std::vector<string>& unsavedChanges) override;
-	// ~CEditor
+	void ReloadMiddlewareData();
 
 protected slots:
 
@@ -76,6 +66,16 @@ private:
 	virtual void OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lparam) override;
 	// ~ISystemEventListener
 
+	// QWidget
+	virtual void keyPressEvent(QKeyEvent* pEvent) override;
+	virtual void closeEvent(QCloseEvent* pEvent) override;
+	// ~QWidget
+
+	// CEditor
+	virtual void CreateDefaultLayout(CDockableContainer* pSender) override;
+	virtual bool CanQuit(std::vector<string>& unsavedChanges) override;
+	// ~CEditor
+
 	void                   InitMenuBar();
 	void                   InitToolbar(QVBoxLayout* const pWindowLayout);
 	void                   UpdateImplLabel();
@@ -86,10 +86,7 @@ private:
 	void                   CheckErrorMask();
 	void                   UpdateAudioSystemData();
 	void                   ReloadSystemData();
-	void                   ReloadMiddlewareData();
 	void                   RefreshAudioSystem();
-	void                   OnBeforeReload();
-	void                   OnAfterReload();
 	bool                   TryClose();
 
 	Assets                 GetSelectedAssets();
@@ -98,12 +95,11 @@ private:
 	CPropertiesWidget*     CreatePropertiesWidget();
 	CMiddlewareDataWidget* CreateMiddlewareDataWidget();
 
-	QToolBar*                     m_pToolBar;
-	QAction*                      m_pSaveAction;
-	QLabel* const                 m_pImplNameLabel;
-	CFileMonitorSystem* const     m_pMonitorSystem;
-	CFileMonitorMiddleware* const m_pMonitorMiddleware;
-	bool                          m_isModified;
-	bool                          m_isReloading;
+	QToolBar*                 m_pToolBar;
+	QAction*                  m_pSaveAction;
+	QLabel* const             m_pImplNameLabel;
+	CFileMonitorSystem* const m_pMonitorSystem;
+	bool                      m_isModified;
+	bool                      m_isReloading;
 };
 } // namespace ACE

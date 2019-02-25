@@ -3,12 +3,13 @@
 #include "StdAfx.h"
 #include "ConnectionsWidget.h"
 
-#include "Common.h"
 #include "AudioControlsEditorPlugin.h"
+#include "AssetsManager.h"
 #include "ImplementationManager.h"
 #include "TreeView.h"
 #include "ConnectionsModel.h"
 #include "AssetUtils.h"
+#include "FileImporterUtils.h"
 #include "Common/IConnection.h"
 #include "Common/IImpl.h"
 #include "Common/IItem.h"
@@ -141,13 +142,13 @@ bool CConnectionsWidget::eventFilter(QObject* pObject, QEvent* pEvent)
 //////////////////////////////////////////////////////////////////////////
 void CConnectionsWidget::OnContextMenu(QPoint const& pos)
 {
+	bool canExec = false;
 	auto const selection = m_pTreeView->selectionModel()->selectedRows();
 	int const selectionCount = selection.count();
+	auto const pContextMenu = new QMenu(this);
 
 	if (selectionCount > 0)
 	{
-		auto const pContextMenu = new QMenu(this);
-
 		char const* executeActionName = "Execute Connection";
 		char const* removeActionName = "Remove Connection";
 
@@ -182,6 +183,22 @@ void CConnectionsWidget::OnContextMenu(QPoint const& pos)
 			}
 		}
 
+		canExec = true;
+	}
+
+	if ((g_implInfo.flags & EImplInfoFlags::SupportsFileImport) != 0)
+	{
+		pContextMenu->addSeparator();
+		pContextMenu->addAction(tr("Import Files"), [=]()
+			{
+				OpenFileSelector(EImportTargetType::Connections, m_pControl);
+			});
+
+		canExec = true;
+	}
+
+	if (canExec)
+	{
 		pContextMenu->exec(QCursor::pos());
 	}
 }
@@ -405,5 +422,17 @@ void CConnectionsWidget::OnBeforeReload()
 void CConnectionsWidget::OnAfterReload()
 {
 	m_pTreeView->RestoreSelection();
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CConnectionsWidget::OnFileImporterOpened()
+{
+	m_pTreeView->setDragDropMode(QAbstractItemView::NoDragDrop);
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CConnectionsWidget::OnFileImporterClosed()
+{
+	m_pTreeView->setDragDropMode(QAbstractItemView::DropOnly);
 }
 } // namespace ACE
