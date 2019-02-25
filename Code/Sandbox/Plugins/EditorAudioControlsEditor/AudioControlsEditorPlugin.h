@@ -2,17 +2,13 @@
 
 #pragma once
 
+#include "Common.h"
+#include <CryAudio/IAudioInterfacesCommonData.h>
 #include <IPlugin.h>
 #include <IEditor.h>
 
-#include "AssetsManager.h"
-
 namespace ACE
 {
-class CImplementationManager;
-extern CAssetsManager g_assetsManager;
-extern CImplementationManager g_implementationManager;
-
 enum class EReloadFlags : CryAudio::EnumFlagsType
 {
 	None = 0,

@@ -41,6 +41,8 @@ public:
 	void   Reset();
 	void   OnBeforeReload();
 	void   OnAfterReload();
+	void   OnFileImporterOpened();
+	void   OnFileImporterClosed();
 
 private slots:
 

@@ -3,10 +3,11 @@
 #include "StdAfx.h"
 #include "SystemSourceModel.h"
 
-#include "Common.h"
 #include "AudioControlsEditorPlugin.h"
+#include "AssetsManager.h"
 #include "AssetIcons.h"
 #include "AssetUtils.h"
+#include "FileImporterUtils.h"
 #include "Common/IImpl.h"
 #include "Common/IItem.h"
 #include "Common/ModelUtils.h"
@@ -140,6 +141,16 @@ bool CSystemSourceModel::CanDropData(QMimeData const* const pData, CAsset const&
 
 		canDrop = hasValidParent;
 	}
+	else if (g_pIImpl->CanDropExternalData(pData))
+	{
+		// Handle if mime data is external files that are supported by the middleware.
+		EAssetType const parentType = parent.GetType();
+
+		if ((parentType == EAssetType::Library) || (parentType == EAssetType::Folder))
+		{
+			canDrop = true;
+		}
+	}
 	else
 	{
 		// Handle if mime data is an internal move (rearranging controls).
@@ -194,6 +205,22 @@ bool CSystemSourceModel::DropData(QMimeData const* const pData, CAsset* const pP
 			}
 
 			wasDropped = true;
+		}
+		else if (g_pIImpl->CanDropExternalData(pData))
+		{
+			// Handle if mime data are external files that are supported by the middleware.
+			EAssetType const parentType = pParent->GetType();
+
+			if ((parentType == EAssetType::Library) || (parentType == EAssetType::Folder))
+			{
+				FileImportInfos fileImportInfos;
+
+				if (g_pIImpl->DropExternalData(pData, fileImportInfos))
+				{
+					OpenFileImporter(fileImportInfos, "", false, EImportTargetType::SystemControls, pParent);
+					wasDropped = true;
+				}
+			}
 		}
 		else
 		{
@@ -768,7 +795,7 @@ Qt::DropActions CSystemSourceModel::supportedDropActions() const
 //////////////////////////////////////////////////////////////////////////
 QStringList CSystemSourceModel::mimeTypes() const
 {
-	QStringList types;
+	QStringList types = QAbstractItemModel::mimeTypes();
 	types << CDragDropData::GetMimeFormatForType(ModelUtils::s_szSystemMimeType);
 	types << CDragDropData::GetMimeFormatForType(ModelUtils::s_szImplMimeType);
 	return types;

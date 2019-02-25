@@ -213,7 +213,7 @@ void CDataPanel::OnImportFiles()
 		targetFolderName = m_pModel->GetTargetFolderName(m_pFilterProxyModel->mapToSource(m_pTreeView->currentIndex()), isLocalized);
 	}
 
-	m_impl.SignalImportFiles(s_extensionFilters, s_supportedFileTypes, targetFolderName, isLocalized);
+	m_impl.SignalImportFiles(targetFolderName, isLocalized);
 }
 
 //////////////////////////////////////////////////////////////////////////

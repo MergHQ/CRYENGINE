@@ -3,7 +3,7 @@
 #include "StdAfx.h"
 #include "PropertiesWidget.h"
 
-#include "AudioControlsEditorPlugin.h"
+#include "AssetsManager.h"
 #include "ImplementationManager.h"
 #include "ConnectionsWidget.h"
 #include "Common/IImpl.h"
@@ -161,6 +161,12 @@ void CPropertiesWidget::OnSetSelectedAssets(Assets const& selectedAssets, bool c
 }
 
 //////////////////////////////////////////////////////////////////////////
+void CPropertiesWidget::OnConnectionAdded(ControlId const id)
+{
+	m_pConnectionsWidget->OnConnectionAdded(id);
+}
+
+//////////////////////////////////////////////////////////////////////////
 void CPropertiesWidget::OnBeforeReload()
 {
 	m_pConnectionsWidget->OnBeforeReload();
@@ -170,6 +176,18 @@ void CPropertiesWidget::OnBeforeReload()
 void CPropertiesWidget::OnAfterReload()
 {
 	m_pConnectionsWidget->OnAfterReload();
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CPropertiesWidget::OnFileImporterOpened()
+{
+	m_pConnectionsWidget->OnFileImporterOpened();
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CPropertiesWidget::OnFileImporterClosed()
+{
+	m_pConnectionsWidget->OnFileImporterClosed();
 }
 
 //////////////////////////////////////////////////////////////////////////

@@ -3,8 +3,7 @@
 #include "StdAfx.h"
 #include "AudioControlsLoader.h"
 
-#include "Common.h"
-#include "AudioControlsEditorPlugin.h"
+#include "AssetsManager.h"
 
 #include <CrySystem/File/CryFile.h>
 #include <CrySystem/ISystem.h>

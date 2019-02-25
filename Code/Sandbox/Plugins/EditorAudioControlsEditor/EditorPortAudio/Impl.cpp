@@ -9,10 +9,14 @@
 #include "DataPanel.h"
 #include "Utils.h"
 
+#include <QtUtil.h>
 #include <CryAudioImplPortAudio/GlobalData.h>
 #include <CrySystem/ISystem.h>
 #include <CryCore/StlUtils.h>
 #include <CrySystem/XML/IXml.h>
+#include <DragDrop.h>
+
+#include <QDirIterator>
 
 namespace ACE
 {
@@ -22,6 +26,69 @@ namespace PortAudio
 {
 constexpr uint32 g_itemPoolSize = 2048;
 constexpr uint32 g_eventConnectionPoolSize = 2048;
+
+//////////////////////////////////////////////////////////////////////////
+bool HasDirValidData(QDir const& dir)
+{
+	bool hasValidData = false;
+
+	if (dir.exists())
+	{
+		QDirIterator itFiles(dir.path(), (QDir::Files | QDir::NoSymLinks | QDir::NoDotAndDotDot));
+
+		while (itFiles.hasNext())
+		{
+			QFileInfo const& fileInfo(itFiles.next());
+
+			if (fileInfo.isFile())
+			{
+				hasValidData = true;
+				break;
+			}
+		}
+
+		if (!hasValidData)
+		{
+			QDirIterator itDirs(dir.path(), (QDir::Dirs | QDir::NoSymLinks | QDir::NoDotAndDotDot));
+
+			while (itDirs.hasNext())
+			{
+				QDir const& folder(itDirs.next());
+
+				if (HasDirValidData(folder))
+				{
+					hasValidData = true;
+					break;
+				}
+			}
+		}
+	}
+
+	return hasValidData;
+}
+
+//////////////////////////////////////////////////////////////////////////
+void GetFilesFromDir(QDir const& dir, QString const& folderName, FileImportInfos& fileImportInfos)
+{
+	if (dir.exists())
+	{
+		QString const parentFolderName = (folderName.isEmpty() ? (dir.dirName() + "/") : (folderName + dir.dirName() + "/"));
+
+		for (auto const& fileInfo : dir.entryInfoList(QDir::Files | QDir::NoSymLinks | QDir::NoDotAndDotDot))
+		{
+			if (fileInfo.isFile())
+			{
+				fileImportInfos.emplace_back(fileInfo, s_supportedFileTypes.contains(fileInfo.suffix(), Qt::CaseInsensitive), parentFolderName);
+			}
+		}
+
+		for (auto const& fileInfo : dir.entryInfoList(QDir::Dirs | QDir::NoSymLinks | QDir::NoDotAndDotDot))
+		{
+			QDir const& folder(fileInfo.absoluteFilePath());
+			GetFilesFromDir(folder, parentFolderName, fileImportInfos);
+		}
+	}
+}
 
 //////////////////////////////////////////////////////////////////////////
 CImpl::CImpl()
@@ -45,7 +112,11 @@ CImpl::~CImpl()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CImpl::Initialize(SImplInfo& implInfo, Platforms const& platforms)
+void CImpl::Initialize(
+	SImplInfo& implInfo,
+	Platforms const& platforms,
+	ExtensionFilterVector& extensionFilters,
+	QStringList& supportedFileTypes)
 {
 	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "Port Audio ACE Item Pool");
 	CItem::CreateAllocator(g_itemPoolSize);
@@ -58,6 +129,8 @@ void CImpl::Initialize(SImplInfo& implInfo, Platforms const& platforms)
 	m_implName = systemImplInfo.name.c_str();
 
 	SetImplInfo(implInfo);
+	extensionFilters = s_extensionFilters;
+	supportedFileTypes = s_supportedFileTypes;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -408,6 +481,84 @@ void CImpl::OnFileImporterClosed()
 }
 
 //////////////////////////////////////////////////////////////////////////
+bool CImpl::CanDropExternalData(QMimeData const* const pData) const
+{
+	bool hasValidData = false;
+	CDragDropData const* const pDragDropData = CDragDropData::FromMimeData(pData);
+
+	if (pDragDropData->HasFilePaths())
+	{
+		QStringList& allFiles = pDragDropData->GetFilePaths();
+
+		for (auto const& filePath : allFiles)
+		{
+			QFileInfo const& fileInfo(filePath);
+
+			if (fileInfo.isFile() && s_supportedFileTypes.contains(fileInfo.suffix(), Qt::CaseInsensitive))
+			{
+				hasValidData = true;
+				break;
+			}
+		}
+
+		if (!hasValidData)
+		{
+			for (auto const& filePath : allFiles)
+			{
+				QDir const& folder(filePath);
+
+				if (HasDirValidData(folder))
+				{
+					hasValidData = true;
+					break;
+				}
+			}
+		}
+	}
+
+	return hasValidData;
+}
+
+//////////////////////////////////////////////////////////////////////////
+bool CImpl::DropExternalData(QMimeData const* const pData, FileImportInfos& fileImportInfos) const
+{
+	CRY_ASSERT_MESSAGE(fileImportInfos.empty(), "Passed container must be empty during %s", __FUNCTION__);
+
+	if (CanDropExternalData(pData))
+	{
+		CDragDropData const* const pDragDropData = CDragDropData::FromMimeData(pData);
+
+		if (pDragDropData->HasFilePaths())
+		{
+			QStringList const& allFiles = pDragDropData->GetFilePaths();
+
+			for (auto const& filePath : allFiles)
+			{
+				QFileInfo const& fileInfo(filePath);
+
+				if (fileInfo.isFile())
+				{
+					fileImportInfos.emplace_back(fileInfo, s_supportedFileTypes.contains(fileInfo.suffix(), Qt::CaseInsensitive));
+				}
+				else
+				{
+					QDir const& folder(filePath);
+					GetFilesFromDir(folder, "", fileImportInfos);
+				}
+			}
+		}
+	}
+
+	return !fileImportInfos.empty();
+}
+
+//////////////////////////////////////////////////////////////////////////
+ControlId CImpl::GenerateItemId(QString const& name, QString const& path, bool const isLocalized)
+{
+	return Utils::GetId(EItemType::Event, QtUtil::ToString(name), QtUtil::ToString(path), isLocalized);
+}
+
+//////////////////////////////////////////////////////////////////////////
 void CImpl::Clear()
 {
 	for (auto const& itemPair : m_itemCache)
@@ -430,6 +581,7 @@ void CImpl::SetImplInfo(SImplInfo& implInfo)
 	implInfo.assetsPath = m_assetAndProjectPath.c_str();
 	implInfo.localizedAssetsPath = m_localizedAssetsPath.c_str();
 	implInfo.flags = (
+		EImplInfoFlags::SupportsFileImport |
 		EImplInfoFlags::SupportsTriggers);
 }
 

@@ -4,6 +4,7 @@
 #include "MainWindow.h"
 
 #include "AudioControlsEditorPlugin.h"
+#include "AssetsManager.h"
 #include "ImplementationManager.h"
 #include "PreferencesDialog.h"
 #include "SystemControlsWidget.h"
@@ -30,14 +31,54 @@
 namespace ACE
 {
 //////////////////////////////////////////////////////////////////////////
+void OnBeforeReload()
+{
+	if (g_pSystemControlsWidget != nullptr)
+	{
+		g_pSystemControlsWidget->OnBeforeReload();
+	}
+
+	if (g_pIImpl != nullptr)
+	{
+		g_pIImpl->OnBeforeReload();
+	}
+
+	if (g_pPropertiesWidget != nullptr)
+	{
+		g_pPropertiesWidget->OnBeforeReload();
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void OnAfterReload()
+{
+	if (g_pSystemControlsWidget != nullptr)
+	{
+		g_pSystemControlsWidget->OnAfterReload();
+	}
+
+	if (g_pIImpl != nullptr)
+	{
+		g_pIImpl->OnAfterReload();
+	}
+
+	if (g_pPropertiesWidget != nullptr)
+	{
+		g_pPropertiesWidget->OnAfterReload();
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
 CMainWindow::CMainWindow()
 	: m_pImplNameLabel(new QLabel(this))
 	, m_pToolBar(new QToolBar("ACE Tools", this))
 	, m_pMonitorSystem(new CFileMonitorSystem(1000, this))
-	, m_pMonitorMiddleware(new CFileMonitorMiddleware(500, this))
 	, m_isModified(false)
 	, m_isReloading(false)
 {
+	g_pMainWindow = this;
+	g_pFileMonitorMiddleware = new CFileMonitorMiddleware(500, this);
+
 	setAttribute(Qt::WA_DeleteOnClose);
 	setObjectName(GetEditorName());
 
@@ -75,7 +116,7 @@ CMainWindow::CMainWindow()
 	m_pToolBar->setEnabled(g_pIImpl != nullptr);
 
 	QObject::connect(m_pMonitorSystem, &CFileMonitorSystem::SignalReloadData, this, &CMainWindow::ReloadSystemData);
-	QObject::connect(m_pMonitorMiddleware, &CFileMonitorMiddleware::SignalReloadData, this, &CMainWindow::ReloadMiddlewareData);
+	QObject::connect(g_pFileMonitorMiddleware, &CFileMonitorMiddleware::SignalReloadData, this, &CMainWindow::ReloadMiddlewareData);
 
 	g_assetsManager.SignalIsDirty.Connect([this](bool const isDirty)
 		{
@@ -104,6 +145,7 @@ CMainWindow::~CMainWindow()
 	g_assetsManager.SignalIsDirty.DisconnectById(reinterpret_cast<uintptr_t>(this));
 	GetIEditor()->UnregisterNotifyListener(this);
 	GetISystem()->GetISystemEventDispatcher()->RemoveListener(this);
+	g_pMainWindow = nullptr;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -298,7 +340,7 @@ void CMainWindow::UpdateImplLabel()
 void CMainWindow::Reload(bool const hasImplChanged /*= false*/)
 {
 	m_pMonitorSystem->Disable();
-	m_pMonitorMiddleware->Disable();
+	g_pFileMonitorMiddleware->Disable();
 
 	bool shouldReload = true;
 
@@ -360,7 +402,7 @@ void CMainWindow::Reload(bool const hasImplChanged /*= false*/)
 	}
 
 	m_pMonitorSystem->Enable();
-	m_pMonitorMiddleware->Enable();
+	g_pFileMonitorMiddleware->Enable();
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -495,7 +537,7 @@ void CMainWindow::ReloadSystemData()
 //////////////////////////////////////////////////////////////////////////
 void CMainWindow::ReloadMiddlewareData()
 {
-	m_pMonitorMiddleware->Disable();
+	g_pFileMonitorMiddleware->Disable();
 	QGuiApplication::setOverrideCursor(Qt::WaitCursor);
 	OnBeforeReload();
 
@@ -508,45 +550,7 @@ void CMainWindow::ReloadMiddlewareData()
 
 	OnAfterReload();
 	QGuiApplication::restoreOverrideCursor();
-	m_pMonitorMiddleware->Enable();
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CMainWindow::OnBeforeReload()
-{
-	if (g_pSystemControlsWidget != nullptr)
-	{
-		g_pSystemControlsWidget->OnBeforeReload();
-	}
-
-	if (g_pIImpl != nullptr)
-	{
-		g_pIImpl->OnBeforeReload();
-	}
-
-	if (g_pPropertiesWidget != nullptr)
-	{
-		g_pPropertiesWidget->OnBeforeReload();
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CMainWindow::OnAfterReload()
-{
-	if (g_pSystemControlsWidget != nullptr)
-	{
-		g_pSystemControlsWidget->OnAfterReload();
-	}
-
-	if (g_pIImpl != nullptr)
-	{
-		g_pIImpl->OnAfterReload();
-	}
-
-	if (g_pPropertiesWidget != nullptr)
-	{
-		g_pPropertiesWidget->OnAfterReload();
-	}
+	g_pFileMonitorMiddleware->Enable();
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -567,7 +571,7 @@ void CMainWindow::OnPreferencesDialog()
 			}
 
 			OnAfterReload();
-			m_pMonitorMiddleware->Enable();
+			g_pFileMonitorMiddleware->Enable();
 		});
 
 	pPreferencesDialog->exec();
@@ -635,5 +639,4 @@ bool CMainWindow::CanQuit(std::vector<string>& unsavedChanges)
 
 	return canQuit;
 }
-
 } // namespace ACE

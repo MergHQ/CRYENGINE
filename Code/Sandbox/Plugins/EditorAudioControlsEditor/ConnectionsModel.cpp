@@ -3,9 +3,9 @@
 #include "StdAfx.h"
 #include "ConnectionsModel.h"
 
-#include "Common.h"
-#include "AudioControlsEditorPlugin.h"
+#include "AssetsManager.h"
 #include "ImplementationManager.h"
+#include "FileImporterUtils.h"
 #include "Common/IConnection.h"
 #include "Common/IImpl.h"
 #include "Common/IItem.h"
@@ -45,7 +45,7 @@ bool ProcessDragDropData(QMimeData const* const pData, ControlIds& ids)
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool CanDropData(QMimeData const* const pData, CAsset const* pControl)
+bool CanDropData(QMimeData const* const pData, CAsset* const pControl)
 {
 	bool canDrop = false;
 
@@ -53,6 +53,7 @@ bool CanDropData(QMimeData const* const pData, CAsset const* pControl)
 	{
 		ControlIds ids;
 
+		// Handle first if mime data is an external (from the implementation side) source
 		if (ProcessDragDropData(pData, ids))
 		{
 			canDrop = true;
@@ -70,6 +71,11 @@ bool CanDropData(QMimeData const* const pData, CAsset const* pControl)
 					}
 				}
 			}
+		}
+		else if ((pControl->GetType() == EAssetType::Trigger) && (g_pIImpl->CanDropExternalData(pData)))
+		{
+			// Handle if mime data is external files that are supported by the middleware.
+			canDrop = true;
 		}
 	}
 
@@ -445,6 +451,17 @@ bool CConnectionsModel::dropMimeData(QMimeData const* pData, Qt::DropAction acti
 			if (wasDropped)
 			{
 				SignalConnectionAdded(lastConnectedId);
+			}
+		}
+		else if ((m_pControl->GetType() == EAssetType::Trigger) && (g_pIImpl->CanDropExternalData(pData)))
+		{
+			// Handle if mime data are external files that are supported by the middleware.
+			FileImportInfos fileImportInfos;
+
+			if (g_pIImpl->DropExternalData(pData, fileImportInfos))
+			{
+				OpenFileImporter(fileImportInfos, "", false, EImportTargetType::Connections, m_pControl);
+				wasDropped = true;
 			}
 		}
 	}

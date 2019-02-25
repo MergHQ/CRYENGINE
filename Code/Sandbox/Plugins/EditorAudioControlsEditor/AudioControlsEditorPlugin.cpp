@@ -3,7 +3,7 @@
 #include "StdAfx.h"
 #include "AudioControlsEditorPlugin.h"
 
-#include "Common.h"
+#include "AssetsManager.h"
 #include "MainWindow.h"
 #include "AudioControlsLoader.h"
 #include "FileWriter.h"
@@ -22,8 +22,6 @@ REGISTER_PLUGIN(ACE::CAudioControlsEditorPlugin);
 
 namespace ACE
 {
-CAssetsManager g_assetsManager;
-CImplementationManager g_implementationManager;
 FileNames CAudioControlsEditorPlugin::s_currentFilenames;
 CryAudio::ControlId CAudioControlsEditorPlugin::s_audioTriggerId = CryAudio::InvalidControlId;
 EErrorCode CAudioControlsEditorPlugin::s_loadingErrorMask;

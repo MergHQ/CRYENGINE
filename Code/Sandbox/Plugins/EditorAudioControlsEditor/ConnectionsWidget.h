@@ -33,11 +33,13 @@ public:
 	void Reset();
 	void OnBeforeReload();
 	void OnAfterReload();
+	void OnFileImporterOpened();
+	void OnFileImporterClosed();
+	void OnConnectionAdded(ControlId const id);
 
 private slots:
 
 	void OnContextMenu(QPoint const& pos);
-	void OnConnectionAdded(ControlId const id);
 
 private:
 

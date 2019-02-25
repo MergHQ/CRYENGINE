@@ -12,149 +12,12 @@
 #include <PathUtils.h>
 #include <QtUtil.h>
 
-#include <QDirIterator>
-
 namespace ACE
 {
 namespace Impl
 {
 namespace SDLMixer
 {
-//////////////////////////////////////////////////////////////////////////
-bool HasDirValidData(QDir const& dir)
-{
-	bool hasValidData = false;
-
-	if (dir.exists())
-	{
-		QDirIterator itFiles(dir.path(), (QDir::Files | QDir::NoSymLinks | QDir::NoDotAndDotDot));
-
-		while (itFiles.hasNext())
-		{
-			QFileInfo const& fileInfo(itFiles.next());
-
-			if (fileInfo.isFile())
-			{
-				hasValidData = true;
-				break;
-			}
-		}
-
-		if (!hasValidData)
-		{
-			QDirIterator itDirs(dir.path(), (QDir::Dirs | QDir::NoSymLinks | QDir::NoDotAndDotDot));
-
-			while (itDirs.hasNext())
-			{
-				QDir const& folder(itDirs.next());
-
-				if (HasDirValidData(folder))
-				{
-					hasValidData = true;
-					break;
-				}
-			}
-		}
-	}
-
-	return hasValidData;
-}
-
-//////////////////////////////////////////////////////////////////////////
-void GetFilesFromDir(QDir const& dir, QString const& folderName, FileImportInfos& outFileImportInfos)
-{
-	if (dir.exists())
-	{
-		QString const parentFolderName = (folderName.isEmpty() ? (dir.dirName() + "/") : (folderName + dir.dirName() + "/"));
-
-		for (auto const& fileInfo : dir.entryInfoList(QDir::Files | QDir::NoSymLinks | QDir::NoDotAndDotDot))
-		{
-			if (fileInfo.isFile())
-			{
-				outFileImportInfos.emplace_back(fileInfo, s_supportedFileTypes.contains(fileInfo.suffix(), Qt::CaseInsensitive), parentFolderName);
-			}
-		}
-
-		for (auto const& fileInfo : dir.entryInfoList(QDir::Dirs | QDir::NoSymLinks | QDir::NoDotAndDotDot))
-		{
-			QDir const& folder(fileInfo.absoluteFilePath());
-			GetFilesFromDir(folder, parentFolderName, outFileImportInfos);
-		}
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////
-bool CanDropExternalData(QMimeData const* const pData)
-{
-	bool hasValidData = false;
-	CDragDropData const* const pDragDropData = CDragDropData::FromMimeData(pData);
-
-	if (pDragDropData->HasFilePaths())
-	{
-		QStringList& allFiles = pDragDropData->GetFilePaths();
-
-		for (auto const& filePath : allFiles)
-		{
-			QFileInfo const& fileInfo(filePath);
-
-			if (fileInfo.isFile() && s_supportedFileTypes.contains(fileInfo.suffix(), Qt::CaseInsensitive))
-			{
-				hasValidData = true;
-				break;
-			}
-		}
-
-		if (!hasValidData)
-		{
-			for (auto const& filePath : allFiles)
-			{
-				QDir const& folder(filePath);
-
-				if (HasDirValidData(folder))
-				{
-					hasValidData = true;
-					break;
-				}
-			}
-		}
-	}
-
-	return hasValidData;
-}
-
-//////////////////////////////////////////////////////////////////////////
-bool DropExternalData(QMimeData const* const pData, FileImportInfos& outFileImportInfos)
-{
-	CRY_ASSERT_MESSAGE(outFileImportInfos.empty(), "Passed container must be empty during %s", __FUNCTION__);
-
-	if (CanDropExternalData(pData))
-	{
-		CDragDropData const* const pDragDropData = CDragDropData::FromMimeData(pData);
-
-		if (pDragDropData->HasFilePaths())
-		{
-			QStringList const& allFiles = pDragDropData->GetFilePaths();
-
-			for (auto const& filePath : allFiles)
-			{
-				QFileInfo const& fileInfo(filePath);
-
-				if (fileInfo.isFile())
-				{
-					outFileImportInfos.emplace_back(fileInfo, s_supportedFileTypes.contains(fileInfo.suffix(), Qt::CaseInsensitive));
-				}
-				else
-				{
-					QDir const& folder(filePath);
-					GetFilesFromDir(folder, "", outFileImportInfos);
-				}
-			}
-		}
-	}
-
-	return !outFileImportInfos.empty();
-}
-
 //////////////////////////////////////////////////////////////////////////
 QString GetTargetFolderPath(CItem const* const pItem)
 {
@@ -526,14 +389,14 @@ QModelIndex CItemModel::parent(QModelIndex const& index) const
 //////////////////////////////////////////////////////////////////////////
 bool CItemModel::canDropMimeData(QMimeData const* pData, Qt::DropAction action, int row, int column, QModelIndex const& parent) const
 {
-	return CanDropExternalData(pData);
+	return m_impl.CanDropExternalData(pData);
 }
 
 //////////////////////////////////////////////////////////////////////////
 bool CItemModel::dropMimeData(QMimeData const* pData, Qt::DropAction action, int row, int column, QModelIndex const& parent)
 {
 	FileImportInfos fileImportInfos;
-	bool const wasDropped = DropExternalData(pData, fileImportInfos);
+	bool const wasDropped = m_impl.DropExternalData(pData, fileImportInfos);
 
 	if (wasDropped)
 	{

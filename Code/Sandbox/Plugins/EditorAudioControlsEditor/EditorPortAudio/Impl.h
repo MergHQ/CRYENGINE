@@ -28,7 +28,7 @@ public:
 	virtual ~CImpl() override;
 
 	// IImpl
-	virtual void           Initialize(SImplInfo& implInfo, Platforms const& platforms) override;
+	virtual void           Initialize(SImplInfo& implInfo, Platforms const& platforms, ExtensionFilterVector& extensionFilters, QStringList& supportedFileTypes) override;
 	virtual QWidget*       CreateDataPanel() override;
 	virtual void           DestroyDataPanel() override;
 	virtual void           Reload(SImplInfo& implInfo) override;
@@ -50,6 +50,9 @@ public:
 	virtual void           OnSelectConnectedItem(ControlId const id) const override;
 	virtual void           OnFileImporterOpened() override;
 	virtual void           OnFileImporterClosed() override;
+	virtual bool           CanDropExternalData(QMimeData const* const pData) const override;
+	virtual bool           DropExternalData(QMimeData const* const pData, FileImportInfos& fileImportInfos) const override;
+	virtual ControlId      GenerateItemId(QString const& name, QString const& path, bool const isLocalized) override;
 	// ~IImpl
 
 	CItem const& GetRootItem() const { return m_rootItem; }

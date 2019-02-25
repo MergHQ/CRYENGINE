@@ -323,7 +323,11 @@ CImpl::~CImpl()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CImpl::Initialize(SImplInfo& implInfo, Platforms const& platforms)
+void CImpl::Initialize(
+	SImplInfo& implInfo,
+	Platforms const& platforms,
+	ExtensionFilterVector& extensionFilters,
+	QStringList& supportedFileTypes)
 {
 	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "Adx2 ACE Item Pool");
 	CItem::CreateAllocator(g_itemPoolSize);
