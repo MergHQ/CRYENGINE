@@ -81,23 +81,15 @@ bool CFBXExporter::ExportToFile(const char* filename, const SExportData* pData)
 
 	// Create a scene object
 	FbxScene* pFBXScene = FbxScene::Create(m_pFBXManager, "Test");
-	if (m_settings.axis == eAxis_Z)
-	{
-		pFBXScene->GetGlobalSettings().SetAxisSystem(FbxAxisSystem::Max);
-		pFBXScene->GetGlobalSettings().SetOriginalUpAxis(FbxAxisSystem::Max);
-	}
-	else
-	{
-		pFBXScene->GetGlobalSettings().SetAxisSystem(FbxAxisSystem::MayaYUp);
-		pFBXScene->GetGlobalSettings().SetOriginalUpAxis(FbxAxisSystem::MayaYUp);
-	}
+	pFBXScene->GetGlobalSettings().SetAxisSystem(FbxAxisSystem::Max);
+	pFBXScene->GetGlobalSettings().SetOriginalUpAxis(FbxAxisSystem::Max);
 
 	// Create document info
 	FbxDocumentInfo* pDocInfo = FbxDocumentInfo::Create(m_pFBXManager, "DocInfo");
 	pDocInfo->mTitle = name.c_str();
 	pDocInfo->mSubject = "Exported geometry from Crytek Sandbox application.";
 	pDocInfo->mAuthor = "Crytek Sandbox FBX exporter.";
-	pDocInfo->mRevision = "rev. 2.0";
+	pDocInfo->mRevision = "rev. 2.0.1";
 	pDocInfo->mKeywords = "Crytek Sandbox FBX export";
 	pDocInfo->mComment = "";
 	pFBXScene->SetDocumentInfo(pDocInfo);
@@ -173,6 +165,12 @@ bool CFBXExporter::ExportToFile(const char* filename, const SExportData* pData)
 
 	pSettings->SetBoolProp(EXP_FBX_EMBEDDED, m_settings.bEmbedded);
 
+	if (m_settings.axis == eAxis_Y)
+	{
+		FbxAxisSystem axisSystem(FbxAxisSystem::MayaYUp);
+		axisSystem.ConvertScene(pFBXScene);
+	}
+
 	//Save a scene
 	bool bRet = false;
 	FbxExporter* pFBXExporter = FbxExporter::Create(m_pFBXManager, name.c_str());
@@ -226,10 +224,7 @@ FbxMesh* CFBXExporter::CreateFBXMesh(const SExportObject* pObj)
 	for (int i = 0; i < numVertices; ++i)
 	{
 		const Export::Vector3D& vertex = pVerts[i];
-		if (m_settings.axis == eAxis_Z)
-			pControlPoints[i] = FbxVector4(vertex.x, vertex.y, vertex.z);
-		else
-			pControlPoints[i] = FbxVector4(vertex.x, vertex.z, -vertex.y);
+		pControlPoints[i] = FbxVector4(vertex.x, vertex.y, vertex.z);
 	}
 
 	int numNormals = pObj->GetNormalCount();
@@ -539,24 +534,14 @@ FbxNode* CFBXExporter::CreateFBXNode(const SExportObject* pObj)
 
 	// create a FbxNode
 	FbxNode* pNode = FbxNode::Create(m_pFBXManager, pObj->name);
-	if (m_settings.axis == eAxis_Z)
-		pNode->LclTranslation.Set(FbxVector4(pObj->pos.x, pObj->pos.y, pObj->pos.z));
-	else
-		pNode->LclTranslation.Set(FbxVector4(pObj->pos.x, pObj->pos.z, -pObj->pos.y));
+	pNode->LclTranslation.Set(FbxVector4(pObj->pos.x, pObj->pos.y, pObj->pos.z));
 
 	// Rotation: Create Euler angels from quaternion throughout a matrix
 	FbxAMatrix rotMat;
-	if (m_settings.axis == eAxis_Z)
-		rotMat.SetQ(FbxQuaternion(pObj->rot.v.x, pObj->rot.v.y, pObj->rot.v.z, pObj->rot.w));
-	else
-		rotMat.SetQ(FbxQuaternion(pObj->rot.v.x, pObj->rot.v.z, -pObj->rot.v.y, pObj->rot.w));
+	rotMat.SetQ(FbxQuaternion(pObj->rot.v.x, pObj->rot.v.y, pObj->rot.v.z, pObj->rot.w));
 
 	pNode->LclRotation.Set(rotMat.GetR());
-
-	if (m_settings.axis == eAxis_Z)
-		pNode->LclScaling.Set(FbxVector4(pObj->scale.x, pObj->scale.y, pObj->scale.z));
-	else
-		pNode->LclScaling.Set(FbxVector4(pObj->scale.x, pObj->scale.z, -pObj->scale.y));
+	pNode->LclScaling.Set(FbxVector4(pObj->scale.x, pObj->scale.y, pObj->scale.z));
 
 	// collect materials
 	int materialIndex = 0;
