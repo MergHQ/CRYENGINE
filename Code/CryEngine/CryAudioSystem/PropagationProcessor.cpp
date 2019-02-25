@@ -1133,94 +1133,88 @@ void CPropagationProcessor::UpdateOcclusionPlanes()
 //////////////////////////////////////////////////////////////////////////
 void CPropagationProcessor::DrawDebugInfo(IRenderAuxGeom& auxGeom)
 {
-	if ((m_object.GetFlags() & EObjectFlags::CanRunOcclusion) != 0)
+	uint8 const numConcurrentRays = GetNumConcurrentRays();
+
+	for (uint8 i = 0; i < numConcurrentRays; ++i)
 	{
-		if ((g_cvars.m_drawDebug & Debug::EDrawFilter::OcclusionRays) != 0 ||
-		    (g_cvars.m_drawDebug & Debug::EDrawFilter::OcclusionCollisionSpheres) != 0)
-		{
-			uint8 const numConcurrentRays = GetNumConcurrentRays();
+		SRayDebugInfo const& rayDebugInfo = m_rayDebugInfos[i];
+		bool const isRayObstructed = (rayDebugInfo.numHits > 0);
+		Vec3 const rayEnd = isRayObstructed ?
+		                    rayDebugInfo.begin + (rayDebugInfo.end - rayDebugInfo.begin).GetNormalized() * rayDebugInfo.distanceToNearestObstacle :
+		                    rayDebugInfo.end; // Only draw the ray to the first collision point.
 
-			for (uint8 i = 0; i < numConcurrentRays; ++i)
-			{
-				SRayDebugInfo const& rayDebugInfo = m_rayDebugInfos[i];
-				bool const isRayObstructed = (rayDebugInfo.numHits > 0);
-				Vec3 const rayEnd = isRayObstructed ?
-				                    rayDebugInfo.begin + (rayDebugInfo.end - rayDebugInfo.begin).GetNormalized() * rayDebugInfo.distanceToNearestObstacle :
-				                    rayDebugInfo.end; // Only draw the ray to the first collision point.
-
-				if ((g_cvars.m_drawDebug & Debug::EDrawFilter::OcclusionRays) != 0)
-				{
-					SAuxGeomRenderFlags const previousRenderFlags = auxGeom.GetRenderFlags();
-					SAuxGeomRenderFlags newRenderFlags(e_Def3DPublicRenderflags);
-					newRenderFlags.SetCullMode(e_CullModeNone);
-					ColorF const& rayColor = isRayObstructed ? Debug::s_rayColorObstructed : Debug::s_rayColorFree;
-					auxGeom.SetRenderFlags(newRenderFlags);
-					auxGeom.DrawLine(rayDebugInfo.begin, rayColor, rayEnd, rayColor, 1.0f);
-					auxGeom.SetRenderFlags(previousRenderFlags);
-				}
-
-				if ((g_cvars.m_drawDebug & Debug::EDrawFilter::OcclusionCollisionSpheres) != 0)
-				{
-					if (isRayObstructed)
-					{
-						m_collisionSpherePositions[rayDebugInfo.samplePosIndex] = rayEnd;
-					}
-					else
-					{
-						m_collisionSpherePositions[rayDebugInfo.samplePosIndex] = ZERO;
-					}
-				}
-			}
-
-			if ((g_cvars.m_drawDebug & Debug::EDrawFilter::OcclusionCollisionSpheres) != 0)
-			{
-				uint8 const numSamplePositions = GetNumSamplePositions();
-
-				for (uint8 i = 0; i < g_numRaySamplePositionsHigh; ++i)
-				{
-					auto& spherePos = m_collisionSpherePositions[i];
-
-					if (i < numSamplePositions)
-					{
-						if (!spherePos.IsZero())
-						{
-							auxGeom.DrawSphere(spherePos, Debug::g_rayRadiusCollisionSphere, m_listenerOcclusionPlaneColor);
-						}
-					}
-					else
-					{
-						spherePos = ZERO;
-					}
-				}
-			}
-		}
-
-		if ((g_cvars.m_drawDebug & Debug::EDrawFilter::OcclusionListenerPlane) != 0)
+		if ((g_cvars.m_drawDebug & Debug::EDrawFilter::OcclusionRays) != 0)
 		{
 			SAuxGeomRenderFlags const previousRenderFlags = auxGeom.GetRenderFlags();
-			SAuxGeomRenderFlags newRenderFlags;
-			newRenderFlags.SetDepthTestFlag(e_DepthTestOff);
-			newRenderFlags.SetAlphaBlendMode(e_AlphaBlended);
+			SAuxGeomRenderFlags newRenderFlags(e_Def3DPublicRenderflags);
 			newRenderFlags.SetCullMode(e_CullModeNone);
+			ColorF const& rayColor = isRayObstructed ? Debug::s_rayColorObstructed : Debug::s_rayColorFree;
 			auxGeom.SetRenderFlags(newRenderFlags);
-
-			Vec3 const& listenerPosition = g_listenerManager.GetActiveListenerTransformation().GetPosition();
-
-			// TODO: this breaks if listener and object x and y coordinates are exactly the same.
-			Vec3 const side((listenerPosition - m_object.GetTransformation().GetPosition()).Cross(Vec3Constants<float>::fVec3_OneZ).normalize());
-			Vec3 const up((listenerPosition - m_object.GetTransformation().GetPosition()).Cross(side).normalize());
-
-			Vec3 const quadVertices[g_numPoints] =
-			{
-				Vec3(listenerPosition + up * g_listenerHeadSizeHalf + side * g_listenerHeadSizeHalf),
-				Vec3(listenerPosition + up * -g_listenerHeadSizeHalf + side * g_listenerHeadSizeHalf),
-				Vec3(listenerPosition + up * g_listenerHeadSizeHalf + side * -g_listenerHeadSizeHalf),
-				Vec3(listenerPosition + up * -g_listenerHeadSizeHalf + side * -g_listenerHeadSizeHalf) };
-
-			auxGeom.DrawTriangles(quadVertices, g_numPoints, g_auxIndices, g_numIndices, m_listenerOcclusionPlaneColor);
+			auxGeom.DrawLine(rayDebugInfo.begin, rayColor, rayEnd, rayColor, 1.0f);
 			auxGeom.SetRenderFlags(previousRenderFlags);
 		}
+
+		if ((g_cvars.m_drawDebug & Debug::EDrawFilter::OcclusionCollisionSpheres) != 0)
+		{
+			if (isRayObstructed)
+			{
+				m_collisionSpherePositions[rayDebugInfo.samplePosIndex] = rayEnd;
+			}
+			else
+			{
+				m_collisionSpherePositions[rayDebugInfo.samplePosIndex] = ZERO;
+			}
+		}
 	}
+
+	if ((g_cvars.m_drawDebug & Debug::EDrawFilter::OcclusionCollisionSpheres) != 0)
+	{
+		uint8 const numSamplePositions = GetNumSamplePositions();
+
+		for (uint8 i = 0; i < g_numRaySamplePositionsHigh; ++i)
+		{
+			auto& spherePos = m_collisionSpherePositions[i];
+
+			if (i < numSamplePositions)
+			{
+				if (!spherePos.IsZero())
+				{
+					auxGeom.DrawSphere(spherePos, Debug::g_rayRadiusCollisionSphere, m_listenerOcclusionPlaneColor);
+				}
+			}
+			else
+			{
+				spherePos = ZERO;
+			}
+		}
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CPropagationProcessor::DrawListenerPlane(IRenderAuxGeom& auxGeom)
+{
+	SAuxGeomRenderFlags const previousRenderFlags = auxGeom.GetRenderFlags();
+	SAuxGeomRenderFlags newRenderFlags;
+	newRenderFlags.SetDepthTestFlag(e_DepthTestOff);
+	newRenderFlags.SetAlphaBlendMode(e_AlphaBlended);
+	newRenderFlags.SetCullMode(e_CullModeNone);
+	auxGeom.SetRenderFlags(newRenderFlags);
+
+	Vec3 const& listenerPosition = g_listenerManager.GetActiveListenerTransformation().GetPosition();
+
+	// TODO: this breaks if listener and object x and y coordinates are exactly the same.
+	Vec3 const side((listenerPosition - m_object.GetTransformation().GetPosition()).Cross(Vec3Constants<float>::fVec3_OneZ).normalize());
+	Vec3 const up((listenerPosition - m_object.GetTransformation().GetPosition()).Cross(side).normalize());
+
+	Vec3 const quadVertices[g_numPoints] =
+	{
+		Vec3(listenerPosition + up * g_listenerHeadSizeHalf + side * g_listenerHeadSizeHalf),
+		Vec3(listenerPosition + up * -g_listenerHeadSizeHalf + side * g_listenerHeadSizeHalf),
+		Vec3(listenerPosition + up * g_listenerHeadSizeHalf + side * -g_listenerHeadSizeHalf),
+		Vec3(listenerPosition + up * -g_listenerHeadSizeHalf + side * -g_listenerHeadSizeHalf) };
+
+	auxGeom.DrawTriangles(quadVertices, g_numPoints, g_auxIndices, g_numIndices, m_listenerOcclusionPlaneColor);
+	auxGeom.SetRenderFlags(previousRenderFlags);
 }
 
 ///////////////////////////////////////////////////////////////////////////

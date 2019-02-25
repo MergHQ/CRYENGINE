@@ -94,6 +94,7 @@ public:
 	static uint16 s_totalAsyncPhysRays;
 
 	void           DrawDebugInfo(IRenderAuxGeom& auxGeom);
+	void           DrawListenerPlane(IRenderAuxGeom& auxGeom);
 	EOcclusionType GetOcclusionType() const             { return m_occlusionType; }
 	EOcclusionType GetOcclusionTypeWhenAdaptive() const { return m_occlusionTypeWhenAdaptive; }
 	float          GetOcclusionRayOffset() const        { return m_occlusionRayOffset; }
