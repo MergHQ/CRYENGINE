@@ -14,7 +14,7 @@
 #include "ListenerRequestData.h"
 #include "CallbackRequestData.h"
 #include "CVars.h"
-#include "FileEntry.h"
+#include "File.h"
 #include "Listener.h"
 #include "Object.h"
 #include "GlobalObject.h"
@@ -358,7 +358,7 @@ void AllocateMemoryPools()
 	CSetting::CreateAllocator(g_poolSizes.settings);
 
 	// Files
-	CFileEntry::CreateAllocator(g_poolSizes.files);
+	CFile::CreateAllocator(g_poolSizes.files);
 
 	// System requests
 	SSystemRequestData<ESystemRequestType::ExecuteTrigger>::CreateAllocator(g_systemExecuteTriggerPoolSize);
@@ -403,7 +403,7 @@ void FreeMemoryPools()
 	CSetting::FreeMemoryPool();
 
 	// Files
-	CFileEntry::FreeMemoryPool();
+	CFile::FreeMemoryPool();
 
 	// System requests
 	SSystemRequestData<ESystemRequestType::ExecuteTrigger>::FreeMemoryPool();
@@ -3287,7 +3287,7 @@ void CSystem::HandleDrawDebug()
 
 			if (g_debugPoolSizes.files > 0)
 			{
-				auto& allocator = CFileEntry::GetAllocator();
+				auto& allocator = CFile::GetAllocator();
 				totalPoolSize += DrawMemoryPoolInfo(pAuxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "Files", g_poolSizes.files);
 			}
 

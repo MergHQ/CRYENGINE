@@ -29,17 +29,17 @@ enum class EFileFlags : EnumFlagsType
 };
 CRY_CREATE_ENUM_FLAG_OPERATORS(EFileFlags);
 
-class CFileEntry final : public CPoolObject<CFileEntry, stl::PSyncNone>
+class CFile final : public CPoolObject<CFile, stl::PSyncNone>
 {
 public:
 
-	CFileEntry() = delete;
-	CFileEntry(CFileEntry const&) = delete;
-	CFileEntry(CFileEntry&&) = delete;
-	CFileEntry& operator=(CFileEntry const&) = delete;
-	CFileEntry& operator=(CFileEntry&&) = delete;
+	CFile() = delete;
+	CFile(CFile const&) = delete;
+	CFile(CFile&&) = delete;
+	CFile& operator=(CFile const&) = delete;
+	CFile& operator=(CFile&&) = delete;
 
-	explicit CFileEntry(char const* const szPath = nullptr, Impl::IFile* const pImplData = nullptr)
+	explicit CFile(char const* const szPath = nullptr, Impl::IFile* const pImplData = nullptr)
 		: m_path(szPath)
 		, m_size(0)
 		, m_useCount(0)

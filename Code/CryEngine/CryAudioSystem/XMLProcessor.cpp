@@ -648,16 +648,16 @@ void CXMLProcessor::ParsePreloads(XmlNodeRef const pPreloadDataRoot, EDataScope 
 					// Found the config group corresponding to the specified platform.
 					int const fileCount = pFileListParentNode->getChildCount();
 
-					CPreloadRequest::FileEntryIds cFileEntryIDs;
-					cFileEntryIDs.reserve(fileCount);
+					CPreloadRequest::FileIds fileIds;
+					fileIds.reserve(fileCount);
 
 					for (int k = 0; k < fileCount; ++k)
 					{
-						FileEntryId const id = g_fileCacheManager.TryAddFileCacheEntry(pFileListParentNode->getChild(k), dataScope, isAutoLoad);
+						FileId const id = g_fileCacheManager.TryAddFileCacheEntry(pFileListParentNode->getChild(k), dataScope, isAutoLoad);
 
-						if (id != InvalidFileEntryId)
+						if (id != InvalidFileId)
 						{
-							cFileEntryIDs.push_back(id);
+							fileIds.push_back(id);
 						}
 #if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
 						else
@@ -673,9 +673,9 @@ void CXMLProcessor::ParsePreloads(XmlNodeRef const pPreloadDataRoot, EDataScope 
 					{
 						MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioSystem, 0, "CryAudio::CPreloadRequest");
 #if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
-						pPreloadRequest = new CPreloadRequest(preloadRequestId, dataScope, isAutoLoad, cFileEntryIDs, szPreloadRequestName);
+						pPreloadRequest = new CPreloadRequest(preloadRequestId, dataScope, isAutoLoad, fileIds, szPreloadRequestName);
 #else
-						pPreloadRequest = new CPreloadRequest(preloadRequestId, dataScope, isAutoLoad, cFileEntryIDs);
+						pPreloadRequest = new CPreloadRequest(preloadRequestId, dataScope, isAutoLoad, fileIds);
 #endif        // CRY_AUDIO_USE_PRODUCTION_CODE
 
 						if (pPreloadRequest != nullptr)
@@ -690,7 +690,7 @@ void CXMLProcessor::ParsePreloads(XmlNodeRef const pPreloadDataRoot, EDataScope 
 					else
 					{
 						// Add to existing preload request.
-						pPreloadRequest->m_fileEntryIds.insert(pPreloadRequest->m_fileEntryIds.end(), cFileEntryIDs.begin(), cFileEntryIDs.end());
+						pPreloadRequest->m_fileIds.insert(pPreloadRequest->m_fileIds.end(), fileIds.begin(), fileIds.end());
 					}
 				}
 			}
@@ -1196,7 +1196,7 @@ void CXMLProcessor::DeletePreloadRequest(CPreloadRequest const* const pPreloadRe
 	{
 		EDataScope const dataScope = pPreloadRequest->GetDataScope();
 
-		for (auto const fileId : pPreloadRequest->m_fileEntryIds)
+		for (auto const fileId : pPreloadRequest->m_fileIds)
 		{
 			g_fileCacheManager.TryRemoveFileCacheEntry(fileId, dataScope);
 		}
