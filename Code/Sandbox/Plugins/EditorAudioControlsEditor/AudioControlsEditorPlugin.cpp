@@ -8,7 +8,7 @@
 #include "AudioControlsLoader.h"
 #include "FileWriter.h"
 #include "FileLoader.h"
-#include "ImplementationManager.h"
+#include "ImplManager.h"
 #include "AssetIcons.h"
 #include "Common/IImpl.h"
 
@@ -51,7 +51,7 @@ CAudioControlsEditorPlugin::CAudioControlsEditorPlugin()
 	InitAssetIcons();
 
 	g_assetsManager.Initialize();
-	g_implementationManager.LoadImplementation();
+	g_implManager.LoadImpl();
 
 	ReloadData(EReloadFlags::ReloadSystemControls | EReloadFlags::SendSignals);
 
@@ -61,7 +61,7 @@ CAudioControlsEditorPlugin::CAudioControlsEditorPlugin()
 //////////////////////////////////////////////////////////////////////////
 CAudioControlsEditorPlugin::~CAudioControlsEditorPlugin()
 {
-	g_implementationManager.Release();
+	g_implManager.Release();
 	StopTriggerExecution();
 	GetISystem()->GetISystemEventDispatcher()->RemoveListener(this);
 }
@@ -211,7 +211,7 @@ void CAudioControlsEditorPlugin::OnSystemEvent(ESystemEvent event, UINT_PTR wpar
 	{
 	case ESYSTEM_EVENT_AUDIO_IMPLEMENTATION_LOADED:
 		{
-			g_implementationManager.LoadImplementation();
+			g_implManager.LoadImpl();
 			break;
 		}
 	default:

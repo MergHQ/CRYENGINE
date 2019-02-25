@@ -1,95 +1,13 @@
-// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
-
-#ifndef __MNM_H
-#define __MNM_H
+// Copyright 2001-2019 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
 
 #include <CryAISystem/NavigationSystem/MNMTile.h>
-#include "MNM_Type_info.h"
-#include "MNMDebugDefines.h"
 
 namespace MNM
 {
-
-//! Structure for storing agent setting used for NavMesh generation
-struct SAgentSettings
+namespace Utils
 {
-	SAgentSettings()
-		: radius(4)
-		, height(18)
-		, climbableHeight(4)
-		, maxWaterDepth(8)
-		, climbableInclineGradient(0.0f)
-		, climbableStepRatio(0.0f)
-	{}
-
-	//! Returns horizontal distance from any feature in voxels that could be affected during the generation process
-	size_t GetPossibleAffectedSizeH() const
-	{
-		// TODO pavloi 2016.03.16: inclineTestCount = (height + 1) comes from FilterWalkable
-		const size_t inclineTestCount = climbableHeight + 1;
-		return radius + inclineTestCount + 1;
-	}
-
-	//! Returns vertical distance from any feature in voxels that could be affected during the generation process
-	size_t GetPossibleAffectedSizeV() const
-	{
-		// TODO pavloi 2016.03.16: inclineTestCount = (height + 1) comes from FilterWalkable
-		const size_t inclineTestCount = climbableHeight + 1;
-		const size_t maxZDiffInWorstCase = inclineTestCount * climbableHeight;
-
-		// TODO pavloi 2016.03.16: agent.height is not applied here, because it's usually applied additionally in other places.
-		// Or such places just don't care.
-		// +1 just in case, I'm not fully tested this formula.
-		return maxZDiffInWorstCase + 1;
-	}
-
-	uint32 radius : 8; //!< Agent radius in voxels count
-	uint32 height : 8; //!< Agent height in voxels count
-	uint32 climbableHeight : 8; //!< Maximum step height that the agent can still walk through in voxels count
-	uint32 maxWaterDepth : 8; //!< Maximum walkable water depth in voxels count
-
-	float  climbableInclineGradient; //!< The steepness of a surface to still be climbable
-	float  climbableStepRatio;
-};
-
-struct WayTriangleData
-{
-	WayTriangleData()
-		: triangleID()
-		, offMeshLinkID()
-		, costMultiplier(1.0f)
-		, incidentEdge((unsigned int)MNM::Constants::InvalidEdgeIndex)
-	{}
-
-	WayTriangleData(const TriangleID _triangleID, const OffMeshLinkID _offMeshLinkID)
-		: triangleID(_triangleID)
-		, offMeshLinkID(_offMeshLinkID)
-		, costMultiplier(1.f)
-		, incidentEdge((unsigned int)MNM::Constants::InvalidEdgeIndex)
-	{}
-
-	operator bool() const
-	{
-		return (triangleID.IsValid());
-	}
-
-	bool operator<(const WayTriangleData& other) const
-	{
-		return triangleID == other.triangleID ? offMeshLinkID < other.offMeshLinkID : triangleID.GetValue() < other.triangleID.GetValue();
-	}
-
-	bool operator==(const WayTriangleData& other) const
-	{
-		return ((triangleID == other.triangleID) && (offMeshLinkID == other.offMeshLinkID));
-	}
-
-	TriangleID     triangleID;
-	OffMeshLinkID  offMeshLinkID;
-	float          costMultiplier;
-	unsigned int   incidentEdge;
-};
 
 template<typename Ty>
 inline bool maximize(Ty& val, const Ty& x)
@@ -99,7 +17,6 @@ inline bool maximize(Ty& val, const Ty& x)
 		val = x;
 		return true;
 	}
-
 	return false;
 }
 
@@ -111,7 +28,6 @@ inline bool minimize(Ty& val, const Ty& x)
 		val = x;
 		return true;
 	}
-
 	return false;
 }
 
@@ -167,7 +83,6 @@ inline real_t ProjectionPointLineSeg(const VecType& p, const VecType& a0, const 
 		const real_t dot = a.dot(ap);
 		return dot / lenSq;
 	}
-
 	return 0;
 }
 
@@ -258,7 +173,7 @@ inline bool ProjectPointOnTriangleVertical(const vector3_t& p, const vector3_t& 
 		projected.z = a.z;
 		return true;
 	}
-	
+
 	const vector3_t v0 = c - a;
 	const vector3_t v1 = b - a;
 	const vector3_t v2 = p - a;
@@ -287,7 +202,7 @@ inline bool ProjectPointOnTriangleVertical(const vector3_t& p, const vector3_t& 
 	const real_t v = (dot00 * dot12 - dot01 * dot02);
 
 	CRY_ASSERT_MESSAGE(u >= -tolerance * 10 && v >= -tolerance * 10 && (u + v) <= denom + tolerance * 10, "Projecting point is too far outside of the triangle.");
-	
+
 	// Compute only z value of the projected position, x and y stays the same
 	projected.z = a.z + v0.z * u / denom + v1.z * v / denom;
 	return true;
@@ -305,7 +220,7 @@ inline bool PointInTriangle(const vector2_t& p, const vector2_t& a, const vector
 
 template<typename VecType>
 inline real_t ClosestPtSegmentSegment(const VecType& a0, const VecType& a1, const VecType& b0, const VecType& b1,
-                                      real_t& s, real_t& t, VecType& closesta, VecType& closestb)
+	real_t& s, real_t& t, VecType& closesta, VecType& closestb)
 {
 	const VecType da = a1 - a0;
 	const VecType db = b1 - b0;
@@ -413,16 +328,16 @@ enum EIntersectionResult
 
 template<typename VecType>
 inline EIntersectionResult DetailedIntersectSegmentSegment(const VecType& a0, const VecType& a1, const VecType& b0, const VecType& b1,
-                                                           real_t& s, real_t& t)
+	real_t& s, real_t& t)
 {
 	/*
-	          a0
-	          |
-	          s
+			  a0
+			  |
+			  s
 	   b0-----t----------b1
-	          |
-	          |
-	          a1
+			  |
+			  |
+			  a1
 
 	   Assuming
 	   da = a1 - a0
@@ -473,24 +388,19 @@ inline EIntersectionResult DetailedIntersectSegmentSegment(const VecType& a0, co
 		t = clampunit(t / det * signAdjustment);
 		return eIR_Intersection;
 	}
-
 	return eIR_ParallelOrCollinearSegments;
 }
 
 template<typename VecType>
 inline bool IntersectSegmentSegment(const VecType& a0, const VecType& a1, const VecType& b0, const VecType& b1,
-                                    real_t& s, real_t& t)
+	real_t& s, real_t& t)
 {
 	return DetailedIntersectSegmentSegment(a0, a1, b0, b1, s, t) == eIR_Intersection;
 }
-}
 
-namespace MNMUtils
-{
 inline const MNM::real_t CalculateMinHorizontalRange(const uint16 radiusVoxelUnits, const float voxelHSize)
 {
 	assert(voxelHSize > 0.0f);
-
 	// The horizontal x-y size for the voxels it's recommended to be the same.
 	return MNM::real_t(max(radiusVoxelUnits * voxelHSize * 2.0f, 1.0f));
 }
@@ -498,9 +408,9 @@ inline const MNM::real_t CalculateMinHorizontalRange(const uint16 radiusVoxelUni
 inline const MNM::real_t CalculateMinVerticalRange(const uint16 agentHeightVoxelUnits, const float voxelVSize)
 {
 	assert(voxelVSize > 0.0f);
-
 	return MNM::real_t(max(agentHeightVoxelUnits * voxelVSize, 1.0f));
 }
-}
 
-#endif  // #ifndef __MNM_H
+} // namespace Utils
+} // namespace MNM
+

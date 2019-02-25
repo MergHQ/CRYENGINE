@@ -8,7 +8,7 @@
 #include <CryAISystem/INavigationSystem.h>
 #include <CryAISystem/NavigationSystem/MNMNavMesh.h>
 
-#include "../MNM/MNM.h"
+#include "../MNM/AgentSettings.h"
 #include "../MNM/Tile.h"
 #include "../MNM/NavMesh.h"
 #include "../MNM/TileGenerator.h"

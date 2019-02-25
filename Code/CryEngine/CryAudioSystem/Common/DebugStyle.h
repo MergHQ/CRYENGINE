@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include <CryAudio/IAudioInterfacesCommonData.h>
 #include <CryMath/Cry_Color.h>
 
 namespace CryAudio
@@ -41,5 +42,12 @@ constexpr float g_listLineHeight = 11.0f;
 static ColorF const s_listColorItemActive = Col_LimeGreen;
 static ColorF const s_listColorItemLoading = Col_OrangeRed;
 static ColorF const s_listColorItemStopping = Col_Yellow;
+
+constexpr uint8 MaxMemInfoStringLength = 16;
+
+static void FormatMemoryString(CryFixedStringT<MaxMemInfoStringLength>& string, size_t const size)
+{
+	(size < 1024) ? (string.Format("%" PRISIZE_T " Byte", size)) : (string.Format("%" PRISIZE_T " KiB", size >> 10));
+}
 } // namespace Debug
 } // namespace CryAudio

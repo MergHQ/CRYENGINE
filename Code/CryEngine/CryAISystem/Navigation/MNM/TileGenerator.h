@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include "MNM.h"
+#include "AgentSettings.h"
 #include "MNMProfiler.h"
 #include "CompactSpanGrid.h"
 #include "Tile.h"
@@ -13,6 +13,7 @@
 #include "BoundingVolume.h"
 #include "MarkupVolume.h"
 #include "HashComputer.h"
+#include "MNMDebugDefines.h"
 
 #include <CryAISystem/NavigationSystem/MNMTileGenerator.h>
 
@@ -138,12 +139,12 @@ public:
 		{
 			SMarkupTriangles(uint16 markupIdx) : markupIdx(markupIdx) {}
 
-			uint16 markupIdx;                 //Index of markup volume in markups array
+			uint16              markupIdx;    //Index of markup volume in markups array
 			std::vector<uint16> trianglesIdx; //Indices of triangles in generated tile
 		};
 
 		std::vector<SMarkupTriangles> markupTriangles;
-		CTileConnectivityData connectivityData;
+		CTileConnectivityData         connectivityData;
 	};
 
 	enum ProfilerTimers
@@ -151,7 +152,6 @@ public:
 		Voxelization = 0,
 		Filter,
 		DistanceTransform,
-		Blur,
 		ContourExtraction,
 		Simplification,
 		Triangulation,
@@ -209,8 +209,9 @@ public:
 
 	enum SpanFlags
 	{
-		NotWalkable  = BIT(0),
-		TileBoundary = BIT(1),
+		NotWalkable         = BIT(0),
+		TileBoundary        = BIT(1),
+		LessThanAgentHeight = BIT(2),
 	};
 
 	enum Labels
@@ -228,6 +229,8 @@ public:
 		NoPaint = 0,
 		BadPaint,
 		OkPaintStart,
+
+		PaintBorderFlag = BIT(15),
 	};
 
 	typedef std::vector<uint16> SpanExtraInfo;
@@ -374,15 +377,29 @@ protected:
 
 	struct PaintData
 	{
+		enum class Type
+		{
+			Default,
+			Markup,
+			LowHeightArea,
+		};
+
 		AreaAnnotation areaAnotation;
-		int markupIdx;
+		int            dataIdx;
+		Type           type;
 	};
 
 	struct MarkupData
 	{
 		const SMarkupVolume* pVolume;
-		int markupIdx; // Index of the markup volume in the generator params markups
-		int paintIdx; // Index of the paint in the palette
+		int                  markupIdx; // Index of the markup volume in the generator params markups
+		uint16               paintIdx;  // Index of the paint in the palette
+	};
+
+	struct SLowAreaData
+	{
+		int    lowAreaIdx; // Index the lower height area params in m_params.agent.lowerHeightAreas
+		uint16 paintIdx;   // Index of the paint in the palette
 	};
 
 	class CGeneratedMesh : public TileGenerator::IMesh
@@ -425,21 +442,26 @@ protected:
 		void                 CreateConnectivityData();
 
 	private:
-		Triangles                  m_triangles;
-		Vertices                   m_vertices;
-		Links                      m_links;
-		TileVertexIndexLookUp      m_vertexIndexLookUp;
-		AABB                       m_tileAabb;
-		HashComputer               m_hashComputer;
-		SMetaData                  m_metaData;
+		Triangles             m_triangles;
+		Vertices              m_vertices;
+		Links                 m_links;
+		TileVertexIndexLookUp m_vertexIndexLookUp;
+		AABB                  m_tileAabb;
+		HashComputer          m_hashComputer;
+		SMetaData             m_metaData;
 	};
 
 	// Call this when reusing an existing TileGenerator for a second job.
 	// Clears all the data but leaves the allocated memory.
-	void                 Clear();
+	void                Clear();
 
-	static size_t        BorderSizeH(const Params& params);
-	static size_t        BorderSizeV(const Params& params);
+	static size_t       BorderSizeH(const Params& params);
+	static size_t       BorderSizeV(const Params& params);
+
+	inline static Vec2i SpanToContourVertexOffset(const Vec2i& walkDirection)
+	{
+		return Vec2i((walkDirection.x == 1) | (walkDirection.y == -1), (walkDirection.y == 1) | (walkDirection.x == 1));
+	}
 
 	inline static size_t Top(const Params& params)
 	{
@@ -508,15 +530,17 @@ protected:
 	bool        GenerateFromVoxelizedVolume(const AABB& aabb, const bool fullyContained);
 
 	void        FilterWalkable(const AABB& aabb, bool fullyContained = true);
+	bool        FilterWalkableSpan(CompactSpanGrid::Span& span, const SSpanCoord& spanCoord, const CompactSpanGrid::Cell& cell, const SFilterWalkableParams& filterParams);
 	static bool FilterWalkable_CheckSpanBackface(const CompactSpanGrid::Span& span);
 	static bool FilterWalkable_CheckSpanWaterDepth(const CompactSpanGrid::Span& span, const Params& params);
 	static bool FilterWalkable_CheckNeighbours(const SSpanCoord& spanCoord, const SSpanClearance& spanClearance, const SFilterWalkableParams& filterParams, SNonWalkableNeighbourReason* pOutReason);
 	void        FilterWalkable_CheckBoundaries(const AABB& aabb, const size_t gridWidth, const size_t gridHeight);
 
 	void        ComputeDistanceTransform();
+	void        ExpandAreaForPaint(const uint16 paint);
 	void        BlurDistanceTransform();
 
-	void        PaintBorder(uint16* data, size_t borderH, size_t borderV);
+	void        LabelBorders();
 
 	struct NeighbourInfoRequirements
 	{
@@ -559,8 +583,7 @@ protected:
 		}
 	};
 
-	uint16 GetPaintVal(const AABB& aabb, size_t x, size_t y, size_t z, size_t index, size_t borderH, size_t borderV, size_t erosion);
-	void   AssessNeighbour(NeighbourInfo& info, size_t erosion, size_t climbableVoxelCount);
+	void AssessNeighbour(NeighbourInfo& info, size_t erosion, size_t climbableVoxelCount);
 
 	enum TracerDir
 	{
@@ -606,10 +629,12 @@ protected:
 	void   CalcPaintValues(const AABB& aabb);
 	void   CreatePaintPalette();
 	void   PaintMarkups(const AABB& tileAabb);
+	void   PaintLowerHeightAreas();
 	void   PaintMarkupDirect(const MarkupData& markupData, const AABB& tileAabb, const Vec2i& canvasSize, const Vec2i& borderSize, const Vec3& voxelSize, const Vec3& voxelSizeInv);
 	void   PaintMarkupExpanded(const MarkupData& markupData, const AABB& tileAabb, const Vec2i& canvasSize, const Vec2i& borderSize, const Vec3& voxelSize, const Vec3& voxelSizeInv);
 
 	void   FilterBadRegions(size_t minSpanCount);
+	void   RemoveSmallRegionByPaint(size_t minRegionSize, uint16 paint);
 
 	bool   SimplifyContour(const Contour& contour, const real_t& tolerance2DSq, const real_t& tolerance3DSq,
 	                       PolygonContour& poly);
@@ -673,9 +698,12 @@ protected:
 		       && ((contourVertex.flags & ContourVertex::Unremovable) == 0);
 	}
 
-	void   AddContourVertex(const ContourVertex& vertex, Region& region, Contour& contour) const;
+	void   UpdateContourUnremovableVertices(Contour& contour, const bool isHole) const;
 
+	void   AddContourVertex(const ContourVertex& vertex, Region& region, Contour& contour) const;
 	size_t InsertUniqueVertex(VertexIndexLookUp& lookUp, size_t x, size_t y, size_t z);
+
+	void   ReleaseSpanExtraInfo();
 
 	void   DrawNavTriangulation() const;
 	void   DrawTracers(const Vec3& origin) const;
@@ -702,6 +730,9 @@ protected:
 	typedef std::vector<MarkupData> MarkupsData;
 	MarkupsData m_markups;
 
+	typedef CryFixedArray<SLowAreaData, SAgentSettings::kMaxLowerHeightAreas> LowAreasData;
+	LowAreasData m_lowerHeightAreas;
+
 	typedef std::vector<Region> Regions;
 	Regions m_regions;
 
@@ -713,7 +744,6 @@ protected:
 
 	CompactSpanGrid m_spanGridRaw;
 	CompactSpanGrid m_spanGridFlagged;
-
 
 #if DEBUG_MNM_ENABLED
 	std::vector<Triangle> m_debugRawGeometry;

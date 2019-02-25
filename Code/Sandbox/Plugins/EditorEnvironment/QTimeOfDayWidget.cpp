@@ -295,6 +295,18 @@ public:
 		m_paramId = pWidget->m_selectedParamId;
 		SCurveEditorContent* pContent = pWidget->m_pCurveContent.get();
 		Serialization::SaveBinaryBuffer(m_oldState, *pContent);
+		m_connection = QObject::connect(m_pWidget, &QWidget::destroyed, [this]()
+		{
+			m_pWidget = nullptr;
+		});
+	}
+
+	~CContentChangedUndoCommand()
+	{
+		if (m_pWidget)
+		{
+			QObject::disconnect(m_connection);
+		}
 	}
 
 	void SaveNewState(QTimeOfDayWidget* pWidget)
@@ -310,12 +322,22 @@ private:
 
 	virtual void        Undo(bool bUndo) override
 	{
+		if (!m_pWidget)
+		{
+			return;
+		}
+
 		SaveNewState(m_pWidget);
 		Update(m_oldState);
 	}
 
 	virtual void Redo() override
 	{
+		if (!m_pWidget)
+		{
+			return;
+		}
+
 		Update(m_newState);
 	}
 
@@ -340,10 +362,11 @@ private:
 		}
 	}
 
-	DynArray<char> m_oldState;
-	DynArray<char> m_newState;
-	int            m_paramId;
-	QTimeOfDayWidget* m_pWidget;
+	DynArray<char>          m_oldState;
+	DynArray<char>          m_newState;
+	int                     m_paramId;
+	QTimeOfDayWidget*       m_pWidget;
+	QMetaObject::Connection m_connection;
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -355,13 +378,30 @@ public:
 	{
 		ITimeOfDay::IPreset* const pPreset = m_pTodWidget->GetPreset();
 		gEnv->pSystem->GetArchiveHost()->SaveBinaryBuffer(m_undoState, Serialization::SStruct(pPreset->GetConstants()));
+
+		m_connection = QObject::connect(m_pTodWidget, &QWidget::destroyed, [this]()
+		{
+			m_pTodWidget = nullptr;
+		});
 	}
 
+	~CUndoConstPropTreeCommand()
+	{
+		if (m_pTodWidget)
+		{
+			QObject::disconnect(m_connection);
+		}
+	}
 private:
 	virtual const char* GetDescription() override { return "Set Environment constant properties"; }
 
 	virtual void        Undo(bool bUndo = true) override
 	{
+		if (!m_pTodWidget)
+		{
+			return;
+		}
+
 		if (bUndo)
 		{
 			ITimeOfDay::IPreset* const pPreset = m_pTodWidget->GetPreset();
@@ -373,6 +413,11 @@ private:
 
 	virtual void Redo() override
 	{
+		if (!m_pTodWidget)
+		{
+			return;
+		}
+
 		ApplyState(m_redoState);
 	}
 
@@ -384,9 +429,10 @@ private:
 		m_pTodWidget->OnChanged();
 	}
 
-	QTimeOfDayWidget* m_pTodWidget;
-	DynArray<char>    m_undoState;
-	DynArray<char>    m_redoState;
+	DynArray<char>          m_undoState;
+	DynArray<char>          m_redoState;
+	QTimeOfDayWidget*       m_pTodWidget;
+	QMetaObject::Connection m_connection;
 };
 
 //////////////////////////////////////////////////////////////////////////

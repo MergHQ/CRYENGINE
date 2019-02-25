@@ -710,32 +710,30 @@ void CImpl::DestructEventInstance(CEventInstance const* const pEventInstance)
 
 #if defined(CRY_AUDIO_IMPL_PORTAUDIO_USE_PRODUCTION_CODE)
 //////////////////////////////////////////////////////////////////////////
-void DrawMemoryPoolInfo(
+size_t DrawMemoryPoolInfo(
 	IRenderAuxGeom& auxGeom,
 	float const posX,
 	float& posY,
 	stl::SPoolMemoryUsage const& mem,
 	stl::SMemoryUsage const& pool,
 	char const* const szType,
-	uint16 const poolSize)
+	uint16 const poolSize,
+	bool const drawInfo)
 {
-	CryFixedStringT<MaxMiscStringLength> memAllocString;
-
-	if (mem.nAlloc < 1024)
+	if (drawInfo)
 	{
-		memAllocString.Format("%" PRISIZE_T " Byte", mem.nAlloc);
-	}
-	else
-	{
-		memAllocString.Format("%" PRISIZE_T " KiB", mem.nAlloc >> 10);
+		CryFixedStringT<Debug::MaxMemInfoStringLength> memAllocString;
+		Debug::FormatMemoryString(memAllocString, mem.nAlloc);
+
+		ColorF const& color = (static_cast<uint16>(pool.nUsed) > poolSize) ? Debug::s_globalColorError : Debug::s_systemColorTextPrimary;
+
+		posY += Debug::g_systemLineHeight;
+		auxGeom.Draw2dLabel(posX, posY, Debug::g_systemFontSize, color, false,
+		                    "[%s] Constructed: %" PRISIZE_T " | Allocated: %" PRISIZE_T " | Preallocated: %u | Pool Size: %s",
+		                    szType, pool.nUsed, pool.nAlloc, poolSize, memAllocString.c_str());
 	}
 
-	ColorF const& color = (static_cast<uint16>(pool.nUsed) > poolSize) ? Debug::s_globalColorError : Debug::s_systemColorTextPrimary;
-
-	posY += Debug::g_systemLineHeight;
-	auxGeom.Draw2dLabel(posX, posY, Debug::g_systemFontSize, color, false,
-	                    "[%s] Constructed: %" PRISIZE_T " | Allocated: %" PRISIZE_T " | Preallocated: %u | Pool Size: %s",
-	                    szType, pool.nUsed, pool.nAlloc, poolSize, memAllocString.c_str());
+	return mem.nAlloc;
 }
 #endif  // CRY_AUDIO_IMPL_PORTAUDIO_USE_PRODUCTION_CODE
 
@@ -743,43 +741,47 @@ void DrawMemoryPoolInfo(
 void CImpl::DrawDebugMemoryInfo(IRenderAuxGeom& auxGeom, float const posX, float& posY, bool const showDetailedInfo)
 {
 #if defined(CRY_AUDIO_IMPL_PORTAUDIO_USE_PRODUCTION_CODE)
-	CryModuleMemoryInfo memInfo;
-	ZeroStruct(memInfo);
-	CryGetMemoryInfoForModule(&memInfo);
-
-	CryFixedStringT<MaxMiscStringLength> memInfoString;
-	auto const memAlloc = static_cast<uint32>(memInfo.allocated - memInfo.freed);
-
-	if (memAlloc < 1024)
-	{
-		memInfoString.Format("%s (Total Memory: %u Byte)", m_name.c_str(), memAlloc);
-	}
-	else
-	{
-		memInfoString.Format("%s (Total Memory: %u KiB)", m_name.c_str(), memAlloc >> 10);
-	}
-
-	auxGeom.Draw2dLabel(posX, posY, Debug::g_systemHeaderFontSize, Debug::s_globalColorHeader, false, "%s", memInfoString.c_str());
+	float const headerPosY = posY;
 	posY += Debug::g_systemHeaderLineSpacerHeight;
+
+	size_t totalPoolSize = 0;
 
 	if (showDetailedInfo)
 	{
 		{
 			auto& allocator = CObject::GetAllocator();
-			DrawMemoryPoolInfo(auxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "Objects", g_objectPoolSize);
+			totalPoolSize += DrawMemoryPoolInfo(auxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "Objects", g_objectPoolSize, showDetailedInfo);
 		}
 
 		{
 			auto& allocator = CEventInstance::GetAllocator();
-			DrawMemoryPoolInfo(auxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "Event Instances", g_eventInstancePoolSize);
+			totalPoolSize += DrawMemoryPoolInfo(auxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "Event Instances", g_eventInstancePoolSize, showDetailedInfo);
 		}
 
 		if (g_debugEventrPoolSize > 0)
 		{
 			auto& allocator = CEvent::GetAllocator();
-			DrawMemoryPoolInfo(auxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "Events", g_eventsPoolSize);
+			totalPoolSize += DrawMemoryPoolInfo(auxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "Events", g_eventsPoolSize, showDetailedInfo);
 		}
 	}
+
+	CryModuleMemoryInfo memInfo;
+	ZeroStruct(memInfo);
+	CryGetMemoryInfoForModule(&memInfo);
+
+	CryFixedStringT<Debug::MaxMemInfoStringLength> memInfoString;
+	auto const memAlloc = static_cast<uint32>(memInfo.allocated - memInfo.freed);
+	Debug::FormatMemoryString(memInfoString, memAlloc);
+
+	CryFixedStringT<Debug::MaxMemInfoStringLength> totalPoolSizeString;
+	Debug::FormatMemoryString(totalPoolSizeString, totalPoolSize);
+
+	CryFixedStringT<Debug::MaxMemInfoStringLength> totalMemSizeString;
+	size_t const totalMemSize = static_cast<size_t>(memAlloc) + totalPoolSize;
+	Debug::FormatMemoryString(totalMemSizeString, totalMemSize);
+
+	auxGeom.Draw2dLabel(posX, headerPosY, Debug::g_systemHeaderFontSize, Debug::s_globalColorHeader, false, "%s (System: %s | Pools: %s | Total: %s)",
+	                    m_name.c_str(), memInfoString.c_str(), totalPoolSizeString.c_str(), totalMemSizeString.c_str());
 
 	size_t const numEvents = g_constructedEventInstances.size();
 

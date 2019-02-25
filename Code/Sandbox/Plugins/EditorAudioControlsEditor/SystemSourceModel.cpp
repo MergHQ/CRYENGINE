@@ -125,7 +125,7 @@ bool CSystemSourceModel::CanDropData(QMimeData const* const pData, CAsset const&
 	bool canDrop = false;
 	bool hasValidParent = true;
 
-	// Handle first if mime data is an external (from the implementation side) source.
+	// Handle first if mime data is an external (from the impl side) source.
 	std::vector<Impl::IItem*> implItems;
 
 	if (ProcessImplDragDropData(pData, implItems))
@@ -192,7 +192,7 @@ bool CSystemSourceModel::DropData(QMimeData const* const pData, CAsset* const pP
 
 	if (CanDropData(pData, *pParent))
 	{
-		// Handle first if mime data is an external (from the implementation side) source
+		// Handle first if mime data is an external (from the impl side) source
 		std::vector<Impl::IItem*> implItems;
 
 		if (ProcessImplDragDropData(pData, implItems))

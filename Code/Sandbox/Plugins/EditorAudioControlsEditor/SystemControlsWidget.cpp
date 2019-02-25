@@ -8,7 +8,7 @@
 #include "SystemLibraryModel.h"
 #include "SystemFilterProxyModel.h"
 #include "AssetsManager.h"
-#include "ImplementationManager.h"
+#include "ImplManager.h"
 #include "PropertiesWidget.h"
 #include "AssetIcons.h"
 #include "AssetUtils.h"
@@ -208,13 +208,13 @@ CSystemControlsWidget::CSystemControlsWidget(QWidget* const pParent)
 	                                                       StopControlExecution();
 			}, reinterpret_cast<uintptr_t>(this));
 
-	g_implementationManager.SignalOnBeforeImplementationChange.Connect([this]()
+	g_implManager.SignalOnBeforeImplChange.Connect([this]()
 		{
 			StopControlExecution();
 			ClearFilters();
 		}, reinterpret_cast<uintptr_t>(this));
 
-	g_implementationManager.SignalOnAfterImplementationChange.Connect([this]()
+	g_implManager.SignalOnAfterImplChange.Connect([this]()
 		{
 			setEnabled(g_pIImpl != nullptr);
 		}, reinterpret_cast<uintptr_t>(this));
@@ -226,8 +226,8 @@ CSystemControlsWidget::~CSystemControlsWidget()
 	g_assetsManager.SignalOnBeforeLibraryRemoved.DisconnectById(reinterpret_cast<uintptr_t>(this));
 	g_assetsManager.SignalAssetRenamed.DisconnectById(reinterpret_cast<uintptr_t>(this));
 	CAudioControlsEditorPlugin::SignalOnBeforeLoad.DisconnectById(reinterpret_cast<uintptr_t>(this));
-	g_implementationManager.SignalOnBeforeImplementationChange.DisconnectById(reinterpret_cast<uintptr_t>(this));
-	g_implementationManager.SignalOnAfterImplementationChange.DisconnectById(reinterpret_cast<uintptr_t>(this));
+	g_implManager.SignalOnBeforeImplChange.DisconnectById(reinterpret_cast<uintptr_t>(this));
+	g_implManager.SignalOnAfterImplChange.DisconnectById(reinterpret_cast<uintptr_t>(this));
 
 	StopControlExecution();
 	DeleteModels();

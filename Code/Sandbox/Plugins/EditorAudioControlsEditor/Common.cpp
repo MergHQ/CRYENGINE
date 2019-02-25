@@ -3,12 +3,12 @@
 #include "StdAfx.h"
 #include "Common.h"
 #include "AssetsManager.h"
-#include "ImplementationManager.h"
+#include "ImplManager.h"
 
 namespace ACE
 {
 CAssetsManager g_assetsManager;
-CImplementationManager g_implementationManager;
+CImplManager g_implManager;
 Impl::IImpl* g_pIImpl = nullptr;
 CMainWindow* g_pMainWindow = nullptr;
 CSystemControlsWidget* g_pSystemControlsWidget = nullptr;

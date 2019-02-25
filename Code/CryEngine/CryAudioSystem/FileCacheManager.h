@@ -37,7 +37,8 @@ public:
 	ERequestStatus UnloadDataByScope(EDataScope const dataScope);
 
 #if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
-	void DrawDebugInfo(IRenderAuxGeom& auxGeom, float const posX, float posY);
+	void   DrawDebugInfo(IRenderAuxGeom& auxGeom, float const posX, float posY);
+	size_t GetTotalCachedFileSize() const { return m_currentByteTotal; }
 #endif // CRY_AUDIO_USE_PRODUCTION_CODE
 
 private:

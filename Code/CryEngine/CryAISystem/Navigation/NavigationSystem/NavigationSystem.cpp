@@ -4,8 +4,9 @@
 #include "NavigationSystem.h"
 #include "DebugDrawContext.h"
 #include "MNMPathfinder.h"
-#include "../MNM/NavMeshQueryManager.h"
-#include "../MNM/NavMeshQueryProcessing.h"
+#include "Navigation/MNM/NavMeshQueryManager.h"
+#include "Navigation/MNM/NavMeshQueryProcessing.h"
+#include "Navigation/MNM/MNMUtils.h"
 #include "SmartObjects.h"
 
 #include "Components/Navigation/NavigationComponent.h"
@@ -2183,7 +2184,7 @@ AABB NavigationSystem::GetAABBFromSnappingMetric(const Vec3& position, const MNM
 	const uint16 agentRadiusUnits = agentType.settings.agent.radius;
 	const uint16 agentHeightUnits = agentType.settings.agent.height;
 
-	const float verticalDefaultDownRange = MNMUtils::CalculateMinVerticalRange(agentHeightUnits, voxelSize.z).as_float();
+	const float verticalDefaultDownRange = MNM::Utils::CalculateMinVerticalRange(agentHeightUnits, voxelSize.z).as_float();
 	const float verticalDefaultUpRange = float(min(uint16(2), agentHeightUnits)) * voxelSize.z;
 
 	const float verticalDownRange = snappingMetric.verticalDownRange == -FLT_MAX ? verticalDefaultDownRange : snappingMetric.verticalDownRange;
@@ -2201,7 +2202,7 @@ AABB NavigationSystem::GetAABBFromSnappingMetric(const Vec3& position, const MNM
 	case MNM::SSnappingMetric::EType::Box:
 	case MNM::SSnappingMetric::EType::Circular: //TODO: do more precise check for Circular type?
 	{
-		const float horizontalDefaultRange = MNMUtils::CalculateMinHorizontalRange(agentRadiusUnits, voxelSize.x).as_float();
+		const float horizontalDefaultRange = MNM::Utils::CalculateMinHorizontalRange(agentRadiusUnits, voxelSize.x).as_float();
 		const float horizontalRange = snappingMetric.horizontalRange == -FLT_MAX ? horizontalDefaultRange : snappingMetric.horizontalRange;
 		aabbAroundPos.max += Vec3(horizontalRange, horizontalRange, verticalUpRange);
 		aabbAroundPos.min -= Vec3(horizontalRange, horizontalRange, verticalDownRange);
@@ -2653,17 +2654,56 @@ bool NavigationSystem::ReloadConfig()
 			if (!agentTypeID)
 				return false;
 
-			//////////////////////////////////////////////////////////////////////////
-			/// Add supported SO classes for this AgentType/Mesh
+			AgentType& agentType = m_agentTypes[agentTypeID - 1];
 
 			for (size_t childIdx = 0; childIdx < (size_t)agentTypeNode->getChildCount(); ++childIdx)
 			{
 				XmlNodeRef agentTypeChildNode = agentTypeNode->getChild(childIdx);
-
-				if (!stricmp(agentTypeChildNode->getTag(), "SmartObjectUserClasses"))
+				if (!stricmp(agentTypeChildNode->getTag(), "LowerHeightArea"))
 				{
-					AgentType& agentType = m_agentTypes[agentTypeID - 1];
+					// Add lower height area for this agent type
+					MNM::SAgentSettings& agentSettings = agentType.settings.agent;
+					if (agentSettings.lowerHeightAreas.isfull())
+					{
+						AIWarning("Maximum number of LowerHeightAreas reached!");
+						continue;
+					}
 
+					uint16 height;
+					uint16 minAreaSize;
+					if (!agentTypeChildNode->getAttr("height", height))
+					{
+						AIWarning("LowerHeightArea doesn't have height attribute set!");
+						continue;
+					}
+
+					if (height <= 0 || height >= agentSettings.height)
+					{
+						AIWarning("LowerHeightArea height attribute needs to be positive and lower than AgentType height!");
+						continue;
+					}
+
+					MNM::SAgentSettings::SLowerHeightArea lowerHeightArea;
+					lowerHeightArea.height = height;
+					if (agentTypeChildNode->getAttr("minAreaSize", minAreaSize))
+					{
+						lowerHeightArea.minAreaSize = minAreaSize;
+					}
+
+					const char* szAreaTypeName = agentTypeChildNode->getAttr("areaType");
+					const NavigationAreaTypeID areaTypeId = m_annotationsLibrary.GetAreaTypeID(szAreaTypeName);
+					if (!areaTypeId.IsValid())
+					{
+						AIWarning("LowerHeightArea doesn't have valid areaType name ('%s').", szAreaTypeName ? szAreaTypeName : "not found");
+						continue;
+					}
+					lowerHeightArea.annotation = GetAreaTypeAnnotation(areaTypeId);
+					agentSettings.lowerHeightAreas.push_back(lowerHeightArea);
+					
+				}
+				else if (!stricmp(agentTypeChildNode->getTag(), "SmartObjectUserClasses"))
+				{
+					// Add supported SO classes for this AgentType/Mesh
 					size_t soClassesCount = agentTypeChildNode->getChildCount();
 					agentType.smartObjectUserClasses.reserve(soClassesCount);
 
@@ -2678,6 +2718,11 @@ bool NavigationSystem::ReloadConfig()
 					}
 				}
 			}
+
+			// Sort lower height areas by their height - the order is important in tile generation
+			std::sort(agentType.settings.agent.lowerHeightAreas.begin(), agentType.settings.agent.lowerHeightAreas.end(), [](const MNM::SAgentSettings::SLowerHeightArea& a, const MNM::SAgentSettings::SLowerHeightArea& b) {
+				return a.height < b.height;
+			});
 		}
 	}
 	return true;
@@ -2858,7 +2903,7 @@ bool NavigationSystem::GetClosestPointInNavigationMesh(const NavigationAgentType
 		{
 			MNM::vector3_t v0, v1, v2;
 			navMesh.GetVertices(enclosingTriID, v0, v1, v2);
-			const MNM::vector3_t closest = ClosestPtPointTriangle(mnmLocation, v0, v1, v2);
+			const MNM::vector3_t closest = MNM::Utils::ClosestPtPointTriangle(mnmLocation, v0, v1, v2);
 
 			if (meshLocation)
 			{
@@ -3051,7 +3096,7 @@ MNM::TriangleID NavigationSystem::GetTriangleIDWhereLocationIsAtForMesh(const Na
 		const Vec3& voxelSize = mesh.navMesh.GetGridParams().voxelSize;
 		const uint16 agentHeightUnits = GetAgentHeightInVoxelUnits(agentID);
 
-		const MNM::real_t verticalRange = MNMUtils::CalculateMinVerticalRange(agentHeightUnits, voxelSize.z);
+		const MNM::real_t verticalRange = MNM::Utils::CalculateMinVerticalRange(agentHeightUnits, voxelSize.z);
 		const MNM::real_t verticalDownwardRange(verticalRange);
 
 		AgentType agentTypeProperties;
@@ -3153,7 +3198,7 @@ MNM::ERayCastResult NavigationSystem::NavMeshRayCast(const NavigationAgentTypeID
 	const Vec3& voxelSize = mesh.navMesh.GetGridParams().voxelSize;
 	const uint16 agentHeightUnits = GetAgentHeightInVoxelUnits(agentTypeID);
 
-	const MNM::real_t verticalRange = MNMUtils::CalculateMinVerticalRange(agentHeightUnits, voxelSize.z);
+	const MNM::real_t verticalRange = MNM::Utils::CalculateMinVerticalRange(agentHeightUnits, voxelSize.z);
 	const MNM::real_t verticalDownwardRange(verticalRange);
 
 	AgentType agentTypeProperties;
@@ -3389,7 +3434,7 @@ bool NavigationSystem::ReadFromFile(const char* fileName, bool bAfterExporting)
 					uint32 verticesCount;
 					uint32 volumeAreaNameSize;
 
-					MNMUtils::ReadNavigationIdType(file, volumeId);
+					MNM::Utils::ReadNavigationIdType(file, volumeId);
 					file.ReadType(&volumeHeight);
 					file.ReadType(&verticesCount);
 
@@ -3462,7 +3507,7 @@ bool NavigationSystem::ReadFromFile(const char* fileName, bool bAfterExporting)
 					uint32 verticesCount;
 					MNM::AreaAnnotation::value_type areaAnnotation;
 					
-					MNMUtils::ReadNavigationIdType(file, markupId);
+					MNM::Utils::ReadNavigationIdType(file, markupId);
 					
 					file.ReadType(&params.height);
 					file.ReadType(&areaAnnotation);
@@ -3520,7 +3565,7 @@ bool NavigationSystem::ReadFromFile(const char* fileName, bool bAfterExporting)
 					for (uint32 mIdx = 0; mIdx < markupsCount; ++mIdx)
 					{
 						NavigationVolumeID markupId;
-						MNMUtils::ReadNavigationIdType(file, markupId);
+						MNM::Utils::ReadNavigationIdType(file, markupId);
 						markups.push_back(markupId);
 					}
 					m_agentTypes[agentTypeID - 1].markups = markups;
@@ -3567,7 +3612,7 @@ bool NavigationSystem::ReadFromFile(const char* fileName, bool bAfterExporting)
 					file.ReadType(&boundaryGUID);
 #else
 					NavigationVolumeID boundaryID;
-					MNMUtils::ReadNavigationIdType(file, boundaryID);
+					MNM::Utils::ReadNavigationIdType(file, boundaryID);
 #endif
 
 					{
@@ -3621,7 +3666,7 @@ bool NavigationSystem::ReadFromFile(const char* fileName, bool bAfterExporting)
 					for (uint32 exclusionsCounter = 0; exclusionsCounter < exclusionShapesCount; ++exclusionsCounter)
 					{
 						NavigationVolumeID exclusionId;
-						MNMUtils::ReadNavigationIdType(file, exclusionId);
+						MNM::Utils::ReadNavigationIdType(file, exclusionId);
 						// Save the exclusion shape with the read ID
 						exclusions.push_back(exclusionId);
 					}
@@ -3637,7 +3682,7 @@ bool NavigationSystem::ReadFromFile(const char* fileName, bool bAfterExporting)
 						for (uint32 mIdx = 0; mIdx < markupsCount; ++mIdx)
 						{
 							NavigationVolumeID markupId;
-							MNMUtils::ReadNavigationIdType(file, markupId);
+							MNM::Utils::ReadNavigationIdType(file, markupId);
 							markups.push_back(markupId);
 						}
 					}
@@ -3770,7 +3815,7 @@ bool NavigationSystem::ReadFromFile(const char* fileName, bool bAfterExporting)
 			for (uint32 idx = 0; idx < dataCount; ++idx)
 			{
 				NavigationVolumeID markupId;
-				MNMUtils::ReadNavigationIdType(file, markupId);
+				MNM::Utils::ReadNavigationIdType(file, markupId);
 
 				m_markupsData.insert(markupId, MNM::SMarkupVolumeData());
 
@@ -3782,7 +3827,7 @@ bool NavigationSystem::ReadFromFile(const char* fileName, bool bAfterExporting)
 				for (uint32 meshTriIdx = 0; meshTriIdx < meshTrianglesCount; ++meshTriIdx)
 				{
 					NavigationMeshID meshId;
-					MNMUtils::ReadNavigationIdType(file, meshId);
+					MNM::Utils::ReadNavigationIdType(file, meshId);
 
 					const MNM::CNavMesh& navMesh = m_meshes[meshId].navMesh;
 
@@ -4002,7 +4047,7 @@ bool NavigationSystem::SaveToFile(const char* fileName) const PREFAST_SUPPRESS_W
 			m_volumesManager.GetAreaName(volumeId, *&volumeAreaName);
 			const uint32 volumeAreaNameSize = static_cast<uint32>(volumeAreaName.size());
 
-			MNMUtils::WriteNavigationIdType(file, volumeId);
+			MNM::Utils::WriteNavigationIdType(file, volumeId);
 			file.WriteType(&volume.height);
 			file.WriteType(&verticesCount);
 			for (const Vec3& vertex : volume.GetBoundaryVertices())
@@ -4033,7 +4078,7 @@ bool NavigationSystem::SaveToFile(const char* fileName) const PREFAST_SUPPRESS_W
 			const uint32 verticesCount = markupVolume.GetBoundaryVertices().size();
 			MNM::AreaAnnotation::value_type areaAnnotation = markupVolume.areaAnnotation.GetRawValue();
 
-			MNMUtils::WriteNavigationIdType(file, volumeId);
+			MNM::Utils::WriteNavigationIdType(file, volumeId);
 			file.WriteType(&markupVolume.height);
 			file.WriteType(&areaAnnotation);
 			file.WriteType(&markupVolume.bExpandByAgentRadius);
@@ -4076,7 +4121,7 @@ bool NavigationSystem::SaveToFile(const char* fileName) const PREFAST_SUPPRESS_W
 			file.WriteType(&markupsCount);
 			for (NavigationVolumeID markupID : agentType.markups)
 			{
-				MNMUtils::WriteNavigationIdType(file, markupID);
+				MNM::Utils::WriteNavigationIdType(file, markupID);
 			}
 		}
 
@@ -4128,7 +4173,7 @@ bool NavigationSystem::SaveToFile(const char* fileName) const PREFAST_SUPPRESS_W
 #ifdef SW_NAVMESH_USE_GUID
 			file.Write(&mesh.boundaryGUID, sizeof(mesh.boundaryGUID));
 #else
-			MNMUtils::WriteNavigationIdType(file, mesh.boundary);
+			MNM::Utils::WriteNavigationIdType(file, mesh.boundary);
 #endif
 
 			// Saving mesh exclusion shapes
@@ -4158,7 +4203,7 @@ bool NavigationSystem::SaveToFile(const char* fileName) const PREFAST_SUPPRESS_W
 				file.Write(&exclusionShapesCount, sizeof(exclusionShapesCount));
 				for (uint32 exclusionCounter = 0; exclusionCounter < exclusionShapesCount; ++exclusionCounter)
 				{
-					MNMUtils::WriteNavigationIdType(file, validExlusionVolumes[exclusionCounter]);
+					MNM::Utils::WriteNavigationIdType(file, validExlusionVolumes[exclusionCounter]);
 				}
 			}
 #endif
@@ -4169,7 +4214,7 @@ bool NavigationSystem::SaveToFile(const char* fileName) const PREFAST_SUPPRESS_W
 				file.WriteType(&markupsCount);
 				for (NavigationVolumeID markupID : mesh.markups)
 				{
-					MNMUtils::WriteNavigationIdType(file, markupID);
+					MNM::Utils::WriteNavigationIdType(file, markupID);
 				}
 			}
 
@@ -4298,7 +4343,7 @@ bool NavigationSystem::SaveToFile(const char* fileName) const PREFAST_SUPPRESS_W
 		const MNM::SMarkupVolumeData& markupData = m_markupsData.get_index(idx);
 		NavigationVolumeID markupId = NavigationVolumeID(m_markupsData.get_index_id(idx));
 
-		MNMUtils::WriteNavigationIdType(file, markupId);
+		MNM::Utils::WriteNavigationIdType(file, markupId);
 
 		const uint32 meshTrianglesCount = markupData.meshTriangles.size();
 		file.WriteType(&meshTrianglesCount);
@@ -4307,7 +4352,7 @@ bool NavigationSystem::SaveToFile(const char* fileName) const PREFAST_SUPPRESS_W
 		{
 			const MNM::CNavMesh& navMesh = m_meshes[meshTriangles.meshId].navMesh;
 
-			MNMUtils::WriteNavigationIdType(file, meshTriangles.meshId);
+			MNM::Utils::WriteNavigationIdType(file, meshTriangles.meshId);
 
 			const uint32 trianglesCount = meshTriangles.triangleIds.size();
 			file.WriteType(&trianglesCount);
