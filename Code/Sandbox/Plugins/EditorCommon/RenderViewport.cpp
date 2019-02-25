@@ -261,6 +261,12 @@ void CRenderViewport::ProcessMouse()
 	{
 		if (gEnv->pHardwareMouse && m_lastMousePos != point)
 		{
+			// Ensure, viewport is set correctly, even after switching widgets while in game mode
+			if (GetIEditor()->GetViewportManager()->GetSelectedViewport() != this)
+			{
+				GetIEditor()->GetViewportManager()->SelectViewport(this);
+			}
+
 			gEnv->pHardwareMouse->Event(point.x, point.y, HARDWAREMOUSEEVENT_MOVE);
 		}
 		m_lastMousePos = point;
