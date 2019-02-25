@@ -1446,32 +1446,30 @@ void CImpl::DestructEventInstance(CEventInstance const* const pEventInstance)
 
 #if defined(CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE)
 //////////////////////////////////////////////////////////////////////////
-void DrawMemoryPoolInfo(
+size_t DrawMemoryPoolInfo(
 	IRenderAuxGeom& auxGeom,
 	float const posX,
 	float& posY,
 	stl::SPoolMemoryUsage const& mem,
 	stl::SMemoryUsage const& pool,
 	char const* const szType,
-	uint16 const poolSize)
+	uint16 const poolSize,
+	bool const drawInfo)
 {
-	CryFixedStringT<MaxMiscStringLength> memAllocString;
-
-	if (mem.nAlloc < 1024)
+	if (drawInfo)
 	{
-		memAllocString.Format("%" PRISIZE_T " Byte", mem.nAlloc);
-	}
-	else
-	{
-		memAllocString.Format("%" PRISIZE_T " KiB", mem.nAlloc >> 10);
+		CryFixedStringT<Debug::MaxMemInfoStringLength> memAllocString;
+		Debug::FormatMemoryString(memAllocString, mem.nAlloc);
+
+		ColorF const& color = (static_cast<uint16>(pool.nUsed) > poolSize) ? Debug::s_globalColorError : Debug::s_systemColorTextPrimary;
+
+		posY += Debug::g_systemLineHeight;
+		auxGeom.Draw2dLabel(posX, posY, Debug::g_systemFontSize, color, false,
+		                    "[%s] Constructed: %" PRISIZE_T " | Allocated: %" PRISIZE_T " | Preallocated: %u | Pool Size: %s",
+		                    szType, pool.nUsed, pool.nAlloc, poolSize, memAllocString.c_str());
 	}
 
-	ColorF const& color = (static_cast<uint16>(pool.nUsed) > poolSize) ? Debug::s_globalColorError : Debug::s_systemColorTextPrimary;
-
-	posY += Debug::g_systemLineHeight;
-	auxGeom.Draw2dLabel(posX, posY, Debug::g_systemFontSize, color, false,
-	                    "[%s] Constructed: %" PRISIZE_T " | Allocated: %" PRISIZE_T " | Preallocated: %u | Pool Size: %s",
-	                    szType, pool.nUsed, pool.nAlloc, poolSize, memAllocString.c_str());
+	return mem.nAlloc;
 }
 #endif  // CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE
 
@@ -1479,107 +1477,96 @@ void DrawMemoryPoolInfo(
 void CImpl::DrawDebugMemoryInfo(IRenderAuxGeom& auxGeom, float const posX, float& posY, bool const showDetailedInfo)
 {
 #if defined(CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE)
+	float const headerPosY = posY;
+	posY += Debug::g_systemHeaderLineSpacerHeight;
+
+	size_t totalPoolSize = 0;
+
+	{
+		auto& allocator = CObject::GetAllocator();
+		totalPoolSize += DrawMemoryPoolInfo(auxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "Objects", g_objectPoolSize, showDetailedInfo);
+	}
+
+	{
+		auto& allocator = CEventInstance::GetAllocator();
+		totalPoolSize += DrawMemoryPoolInfo(auxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "Event Instances", g_eventPoolSize, showDetailedInfo);
+	}
+
+	if (g_debugPoolSizes.events > 0)
+	{
+		auto& allocator = CEvent::GetAllocator();
+		totalPoolSize += DrawMemoryPoolInfo(auxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "Events", g_poolSizes.events, showDetailedInfo);
+	}
+
+	if (g_debugPoolSizes.parameters > 0)
+	{
+		auto& allocator = CParameter::GetAllocator();
+		totalPoolSize += DrawMemoryPoolInfo(auxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "Parameters", g_poolSizes.parameters, showDetailedInfo);
+	}
+
+	if (g_debugPoolSizes.parameterEnvironments > 0)
+	{
+		auto& allocator = CParameterEnvironment::GetAllocator();
+		totalPoolSize += DrawMemoryPoolInfo(auxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "Parameter Environments", g_poolSizes.parameterEnvironments, showDetailedInfo);
+	}
+
+	if (g_debugPoolSizes.parameterStates > 0)
+	{
+		auto& allocator = CParameterState::GetAllocator();
+		totalPoolSize += DrawMemoryPoolInfo(auxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "Parameter States", g_poolSizes.parameterStates, showDetailedInfo);
+	}
+
+	if (g_debugPoolSizes.snapshots > 0)
+	{
+		auto& allocator = CSnapshot::GetAllocator();
+		totalPoolSize += DrawMemoryPoolInfo(auxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "Snapshots", g_poolSizes.snapshots, showDetailedInfo);
+	}
+
+	if (g_debugPoolSizes.returns > 0)
+	{
+		auto& allocator = CReturn::GetAllocator();
+		totalPoolSize += DrawMemoryPoolInfo(auxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "Returns", g_poolSizes.returns, showDetailedInfo);
+	}
+
+	if (g_debugPoolSizes.vcas > 0)
+	{
+		auto& allocator = CVca::GetAllocator();
+		totalPoolSize += DrawMemoryPoolInfo(auxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "VCAs", g_poolSizes.vcas, showDetailedInfo);
+	}
+
+	if (g_debugPoolSizes.vcaStates > 0)
+	{
+		auto& allocator = CVcaState::GetAllocator();
+		totalPoolSize += DrawMemoryPoolInfo(auxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "VCA States", g_poolSizes.vcaStates, showDetailedInfo);
+	}
+
+	if (g_debugPoolSizes.banks > 0)
+	{
+		auto& allocator = CBank::GetAllocator();
+		totalPoolSize += DrawMemoryPoolInfo(auxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "Banks", g_poolSizes.banks, showDetailedInfo);
+	}
+
 	CryModuleMemoryInfo memInfo;
 	ZeroStruct(memInfo);
 	CryGetMemoryInfoForModule(&memInfo);
 
-	CryFixedStringT<MaxMiscStringLength> memInfoString;
+	CryFixedStringT<Debug::MaxMemInfoStringLength> memInfoString;
 	auto const memAlloc = static_cast<uint32>(memInfo.allocated - memInfo.freed);
+	Debug::FormatMemoryString(memInfoString, memAlloc);
 
-	if (memAlloc < 1024)
-	{
-		memInfoString.Format("%s (Total Memory: %u Byte)", m_name.c_str(), memAlloc);
-	}
-	else
-	{
-		memInfoString.Format("%s (Total Memory: %u KiB)", m_name.c_str(), memAlloc >> 10);
-	}
+	CryFixedStringT<Debug::MaxMemInfoStringLength> totalPoolSizeString;
+	Debug::FormatMemoryString(totalPoolSizeString, totalPoolSize);
 
-	auxGeom.Draw2dLabel(posX, posY, Debug::g_systemHeaderFontSize, Debug::s_globalColorHeader, false, "%s", memInfoString.c_str());
-	posY += Debug::g_systemHeaderLineSpacerHeight;
+	CryFixedStringT<Debug::MaxMemInfoStringLength> totalMasterBankSizeString;
+	size_t const totalMasterBankSize = m_masterBankSize + m_masterStringsBankSize + m_masterAssetsBankSize;
+	Debug::FormatMemoryString(totalMasterBankSizeString, totalMasterBankSize);
 
-	if (showDetailedInfo)
-	{
-		posY += Debug::g_systemLineHeight;
+	CryFixedStringT<Debug::MaxMemInfoStringLength> totalMemSizeString;
+	size_t const totalMemSize = static_cast<size_t>(memAlloc) + totalPoolSize + totalMasterBankSize;
+	Debug::FormatMemoryString(totalMemSizeString, totalMemSize);
 
-		if (m_pMasterAssetsBank != nullptr)
-		{
-			auxGeom.Draw2dLabel(posX, posY, Debug::g_systemFontSize, Debug::s_systemColorTextPrimary, false, "Master Bank: %uKiB | Master Strings Bank: %uKiB | Master Assets Bank: %uKiB",
-			                    static_cast<uint32>(m_masterBankSize / 1024),
-			                    static_cast<uint32>(m_masterStringsBankSize / 1024),
-			                    static_cast<uint32>(m_masterAssetsBankSize / 1024));
-		}
-		else
-		{
-			auxGeom.Draw2dLabel(posX, posY, Debug::g_systemFontSize, Debug::s_systemColorTextPrimary, false, "Master Bank: %uKiB | Master Strings Bank: %uKiB",
-			                    static_cast<uint32>(m_masterBankSize / 1024),
-			                    static_cast<uint32>(m_masterStringsBankSize / 1024));
-		}
-
-		{
-			auto& allocator = CObject::GetAllocator();
-			DrawMemoryPoolInfo(auxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "Objects", g_objectPoolSize);
-		}
-
-		{
-			auto& allocator = CEventInstance::GetAllocator();
-			DrawMemoryPoolInfo(auxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "Event Instances", g_eventPoolSize);
-		}
-
-		if (g_debugPoolSizes.events > 0)
-		{
-			auto& allocator = CEvent::GetAllocator();
-			DrawMemoryPoolInfo(auxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "Events", g_poolSizes.events);
-		}
-
-		if (g_debugPoolSizes.parameters > 0)
-		{
-			auto& allocator = CParameter::GetAllocator();
-			DrawMemoryPoolInfo(auxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "Parameters", g_poolSizes.parameters);
-		}
-
-		if (g_debugPoolSizes.parameterEnvironments > 0)
-		{
-			auto& allocator = CParameterEnvironment::GetAllocator();
-			DrawMemoryPoolInfo(auxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "Parameter Environments", g_poolSizes.parameterEnvironments);
-		}
-
-		if (g_debugPoolSizes.parameterStates > 0)
-		{
-			auto& allocator = CParameterState::GetAllocator();
-			DrawMemoryPoolInfo(auxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "Parameter States", g_poolSizes.parameterStates);
-		}
-
-		if (g_debugPoolSizes.snapshots > 0)
-		{
-			auto& allocator = CSnapshot::GetAllocator();
-			DrawMemoryPoolInfo(auxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "Snapshots", g_poolSizes.snapshots);
-		}
-
-		if (g_debugPoolSizes.returns > 0)
-		{
-			auto& allocator = CReturn::GetAllocator();
-			DrawMemoryPoolInfo(auxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "Returns", g_poolSizes.returns);
-		}
-
-		if (g_debugPoolSizes.vcas > 0)
-		{
-			auto& allocator = CVca::GetAllocator();
-			DrawMemoryPoolInfo(auxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "VCAs", g_poolSizes.vcas);
-		}
-
-		if (g_debugPoolSizes.vcaStates > 0)
-		{
-			auto& allocator = CVcaState::GetAllocator();
-			DrawMemoryPoolInfo(auxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "VCA States", g_poolSizes.vcaStates);
-		}
-
-		if (g_debugPoolSizes.banks > 0)
-		{
-			auto& allocator = CBank::GetAllocator();
-			DrawMemoryPoolInfo(auxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "Banks", g_poolSizes.banks);
-		}
-	}
+	auxGeom.Draw2dLabel(posX, headerPosY, Debug::g_systemHeaderFontSize, Debug::s_globalColorHeader, false, "%s (System: %s | Pools: %s | Master Bank: %s | Total: %s)",
+	                    m_name.c_str(), memInfoString.c_str(), totalPoolSizeString.c_str(), totalMasterBankSizeString.c_str(), totalMemSizeString.c_str());
 
 	size_t const numEvents = g_constructedEventInstances.size();
 

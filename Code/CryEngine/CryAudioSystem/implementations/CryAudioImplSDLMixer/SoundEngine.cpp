@@ -252,6 +252,10 @@ void FreeAllSampleData()
 
 	g_sampleData.clear();
 	g_samplePaths.clear();
+
+#if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE)
+	g_loadedSampleSize = 0;
+#endif    // CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -298,6 +302,11 @@ const SampleId SoundEngine::LoadSampleFromMemory(void* pMemory, size_t const siz
 		{
 			g_sampleData[id] = pSample;
 			g_samplePaths[id] = samplePath;
+
+#if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE)
+			g_loadedSampleSize += size;
+#endif      // CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE
+
 			return id;
 		}
 #if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE)

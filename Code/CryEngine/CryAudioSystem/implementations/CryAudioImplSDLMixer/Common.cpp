@@ -114,6 +114,10 @@ void SetChannelPosition(CEvent const& event, int const channelID, float const di
 	}
 #endif  // CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE
 }
-} // namespace SDL_mixer
-} // namespace Impl
-} // namespace CryAudio
+
+#if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE)
+size_t g_loadedSampleSize = 0;
+#endif // CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE
+}      // namespace SDL_mixer
+}      // namespace Impl
+}      // namespace CryAudio
