@@ -25,8 +25,8 @@
 #include "QtUtil.h"
 #include "ThreadingUtils.h"
 
-#include "Cry3DEngine/I3DEngine.h"
-#include "Cry3DEngine/ITimeOfDay.h"
+#include <Cry3DEngine/I3DEngine.h>
+#include <Cry3DEngine/ITimeOfDay.h>
 
 #include <Controls/QuestionDialog.h>
 #include <QDirIterator> 

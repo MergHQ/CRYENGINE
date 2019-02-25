@@ -343,6 +343,9 @@ void CObject::DrawDebugInfo(
 	#if defined(CRY_AUDIO_USE_OCCLUSION)
 			bool const drawOcclusionRayLabel = (g_cvars.m_drawDebug & Debug::EDrawFilter::OcclusionRayLabels) != 0;
 			bool const drawOcclusionRayOffset = (g_cvars.m_drawDebug & Debug::EDrawFilter::OcclusionRayOffset) != 0;
+			bool const drawOcclusionRaysOrSpheres = ((g_cvars.m_drawDebug & Debug::EDrawFilter::OcclusionRays) != 0) ||
+			                                        ((g_cvars.m_drawDebug & Debug::EDrawFilter::OcclusionCollisionSpheres) != 0);
+			bool const drawOcclusionListenerPlane = (g_cvars.m_drawDebug & Debug::EDrawFilter::OcclusionListenerPlane) != 0;
 	#endif // CRY_AUDIO_USE_OCCLUSION
 			bool const filterAllObjectInfo = (g_cvars.m_drawDebug & Debug::EDrawFilter::FilterAllObjectInfo) != 0;
 
@@ -499,7 +502,19 @@ void CObject::DrawDebugInfo(
 			// Check if object name matches text filter.
 			bool doesObjectNameMatchFilter = false;
 
-			if (!isTextFilterDisabled && (drawLabel || filterAllObjectInfo))
+	#if defined(CRY_AUDIO_USE_OCCLUSION)
+			if (!isTextFilterDisabled &&
+			    (drawSphere ||
+			     drawLabel ||
+			     drawDistance ||
+			     drawOcclusionRayLabel ||
+			     drawOcclusionRayOffset ||
+			     drawOcclusionRaysOrSpheres ||
+			     drawOcclusionListenerPlane ||
+			     filterAllObjectInfo))
+	#else
+			if (!isTextFilterDisabled && (drawSphere || drawLabel || drawDistance || filterAllObjectInfo))
+	#endif // CRY_AUDIO_USE_OCCLUSION
 			{
 				CryFixedStringT<MaxControlNameLength> lowerCaseObjectName(m_name.c_str());
 				lowerCaseObjectName.MakeLower();
@@ -512,7 +527,7 @@ void CObject::DrawDebugInfo(
 
 			if (canDraw)
 			{
-				if (drawSphere)
+				if (drawSphere && (isTextFilterDisabled || doesObjectNameMatchFilter))
 				{
 					auxGeom.DrawSphere(
 						position,
@@ -610,7 +625,7 @@ void CObject::DrawDebugInfo(
 					}
 				}
 
-				if (drawDistance)
+				if (drawDistance && (isTextFilterDisabled || doesObjectNameMatchFilter))
 				{
 					CryFixedStringT<MaxMiscStringLength> debugText;
 
@@ -635,63 +650,76 @@ void CObject::DrawDebugInfo(
 				}
 
 	#if defined(CRY_AUDIO_USE_OCCLUSION)
-				if (drawOcclusionRayLabel)
+				if (((m_flags& EObjectFlags::CanRunOcclusion) != 0) && (isTextFilterDisabled || doesObjectNameMatchFilter))
 				{
-					EOcclusionType const occlusionType = m_propagationProcessor.GetOcclusionType();
-					float const occlusion = m_propagationProcessor.GetOcclusion();
-
-					CryFixedStringT<MaxMiscStringLength> debugText;
-
-					if (distance < g_cvars.m_occlusionMaxDistance)
+					if (drawOcclusionRayLabel)
 					{
-						if (occlusionType == EOcclusionType::Adaptive)
+						EOcclusionType const occlusionType = m_propagationProcessor.GetOcclusionType();
+						float const occlusion = m_propagationProcessor.GetOcclusion();
+
+						CryFixedStringT<MaxMiscStringLength> debugText;
+
+						if (distance < g_cvars.m_occlusionMaxDistance)
 						{
-							debugText.Format(
-								"%s(%s)",
-								Debug::g_szOcclusionTypes[static_cast<std::underlying_type<EOcclusionType>::type>(occlusionType)],
-								Debug::g_szOcclusionTypes[static_cast<std::underlying_type<EOcclusionType>::type>(m_propagationProcessor.GetOcclusionTypeWhenAdaptive())]);
+							if (occlusionType == EOcclusionType::Adaptive)
+							{
+								debugText.Format(
+									"%s(%s)",
+									Debug::g_szOcclusionTypes[static_cast<std::underlying_type<EOcclusionType>::type>(occlusionType)],
+									Debug::g_szOcclusionTypes[static_cast<std::underlying_type<EOcclusionType>::type>(m_propagationProcessor.GetOcclusionTypeWhenAdaptive())]);
+							}
+							else
+							{
+								debugText.Format("%s", Debug::g_szOcclusionTypes[static_cast<std::underlying_type<EOcclusionType>::type>(occlusionType)]);
+							}
 						}
 						else
 						{
-							debugText.Format("%s", Debug::g_szOcclusionTypes[static_cast<std::underlying_type<EOcclusionType>::type>(occlusionType)]);
+							debugText.Format("Ignore (exceeded activity range)");
+						}
+
+						ColorF const activeRayLabelColor = { occlusion, 1.0f - occlusion, 0.0f };
+
+						auxGeom.Draw2dLabel(
+							screenPos.x,
+							screenPos.y,
+							Debug::g_objectFontSize,
+							isVirtual ? Debug::s_globalColorVirtual : (((occlusionType != EOcclusionType::None) && (occlusionType != EOcclusionType::Ignore)) ? activeRayLabelColor : Debug::s_globalColorInactive),
+							false,
+							"Occl: %3.2f | Type: %s",
+							occlusion,
+							debugText.c_str());
+
+						screenPos.y += Debug::g_objectLineHeight;
+					}
+
+					if (drawOcclusionRayOffset && !isVirtual)
+					{
+						float const occlusionRayOffset = m_propagationProcessor.GetOcclusionRayOffset();
+
+						if (occlusionRayOffset > 0.0f)
+						{
+							SAuxGeomRenderFlags const previousRenderFlags = auxGeom.GetRenderFlags();
+							SAuxGeomRenderFlags newRenderFlags(e_Def3DPublicRenderflags | e_AlphaBlended);
+							auxGeom.SetRenderFlags(newRenderFlags);
+
+							auxGeom.DrawSphere(
+								position,
+								occlusionRayOffset,
+								Debug::s_objectColorOcclusionOffsetSphere);
+
+							auxGeom.SetRenderFlags(previousRenderFlags);
 						}
 					}
-					else
+
+					if (drawOcclusionRaysOrSpheres)
 					{
-						debugText.Format("Ignore (exceeded activity range)");
+						m_propagationProcessor.DrawDebugInfo(auxGeom);
 					}
 
-					ColorF const activeRayLabelColor = { occlusion, 1.0f - occlusion, 0.0f };
-
-					auxGeom.Draw2dLabel(
-						screenPos.x,
-						screenPos.y,
-						Debug::g_objectFontSize,
-						isVirtual ? Debug::s_globalColorVirtual : (((occlusionType != EOcclusionType::None) && (occlusionType != EOcclusionType::Ignore)) ? activeRayLabelColor : Debug::s_globalColorInactive),
-						false,
-						"Occl: %3.2f | Type: %s",
-						occlusion,
-						debugText.c_str());
-
-					screenPos.y += Debug::g_objectLineHeight;
-				}
-
-				if (drawOcclusionRayOffset && !isVirtual)
-				{
-					float const occlusionRayOffset = m_propagationProcessor.GetOcclusionRayOffset();
-
-					if (occlusionRayOffset > 0.0f)
+					if (drawOcclusionListenerPlane)
 					{
-						SAuxGeomRenderFlags const previousRenderFlags = auxGeom.GetRenderFlags();
-						SAuxGeomRenderFlags newRenderFlags(e_Def3DPublicRenderflags | e_AlphaBlended);
-						auxGeom.SetRenderFlags(newRenderFlags);
-
-						auxGeom.DrawSphere(
-							position,
-							occlusionRayOffset,
-							Debug::s_objectColorOcclusionOffsetSphere);
-
-						auxGeom.SetRenderFlags(previousRenderFlags);
+						m_propagationProcessor.DrawListenerPlane(auxGeom);
 					}
 				}
 	#endif  // CRY_AUDIO_USE_OCCLUSION
@@ -700,10 +728,6 @@ void CObject::DrawDebugInfo(
 				{
 					m_pIObject->DrawDebugInfo(auxGeom, screenPos.x, screenPos.y, (isTextFilterDisabled ? nullptr : lowerCaseSearchString.c_str()));
 				}
-
-	#if defined(CRY_AUDIO_USE_OCCLUSION)
-				m_propagationProcessor.DrawDebugInfo(auxGeom);
-	#endif  // CRY_AUDIO_USE_OCCLUSION
 			}
 		}
 	}
