@@ -223,9 +223,9 @@ void CCVars::RegisterVariables()
 	               "Default: 393216 (384 MiB)\n");
 #endif // CRY_PLATFORM_DURANGO
 
-	REGISTER_CVAR2("s_AudioObjectPoolSize", &m_objectPoolSize, m_objectPoolSize, VF_REQUIRE_APP_RESTART,
+	REGISTER_CVAR2("s_ObjectPoolSize", &m_objectPoolSize, m_objectPoolSize, VF_REQUIRE_APP_RESTART,
 	               "Sets the number of preallocated audio objects and corresponding audio proxies.\n"
-	               "Usage: s_AudioObjectPoolSize [0/...]\n"
+	               "Usage: s_ObjectPoolSize [0/...]\n"
 	               "Default: 256\n");
 
 	REGISTER_CVAR2("s_TriggerInstancePoolSize", &m_triggerInstancePoolSize, m_triggerInstancePoolSize, VF_REQUIRE_APP_RESTART,
@@ -365,9 +365,9 @@ void CCVars::RegisterVariables()
 	               "b: Level Specifics\n"
 	               "c: Game Hints\n");
 
-	REGISTER_CVAR2("s_HideInactiveAudioObjects", &m_hideInactiveObjects, 1, VF_DEV_ONLY,
+	REGISTER_CVAR2("s_HideInactiveObjects", &m_hideInactiveObjects, 1, VF_DEV_ONLY,
 	               "When drawing audio object names on the screen this cvar can be used to choose between all registered audio objects or only those that reference active audio triggers.\n"
-	               "Usage: s_HideInactiveAudioObjects [0/1]\n"
+	               "Usage: s_HideInactiveObjects [0/1]\n"
 	               "Default: 1 (active only)\n");
 
 	m_pDebugFilter = REGISTER_STRING("s_DebugFilter", "", 0,
@@ -451,7 +451,7 @@ void CCVars::UnregisterVariables()
 		pConsole->UnregisterVariable("s_FileCacheManagerSize");
 #endif // CRY_PLATFORM_DURANGO
 
-		pConsole->UnregisterVariable("s_AudioObjectPoolSize");
+		pConsole->UnregisterVariable("s_ObjectPoolSize");
 		pConsole->UnregisterVariable("s_TriggerInstancePoolSize");
 		pConsole->UnregisterVariable("s_IgnoreWindowFocus");
 
@@ -476,7 +476,7 @@ void CCVars::UnregisterVariables()
 		pConsole->UnregisterVariable("s_LoggingOptions");
 		pConsole->UnregisterVariable("s_DrawDebug");
 		pConsole->UnregisterVariable("s_FileCacheManagerDebugFilter");
-		pConsole->UnregisterVariable("s_HideInactiveAudioObjects");
+		pConsole->UnregisterVariable("s_HideInactiveObjects");
 		pConsole->UnregisterVariable("s_DebugFilter");
 		pConsole->UnregisterVariable("s_ExecuteTrigger");
 		pConsole->UnregisterVariable("s_StopTrigger");
