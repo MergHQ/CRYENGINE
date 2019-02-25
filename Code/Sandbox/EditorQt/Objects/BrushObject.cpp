@@ -9,6 +9,7 @@
 #include "Material/MaterialManager.h"
 #include "Objects/EntityObject.h"
 
+#include <IAIManager.h>
 #include <IObjectManager.h>
 #include <LevelEditor/Tools/SubObjectSelectionReferenceFrameCalculator.h>
 #include <Objects/ObjectLoader.h>
@@ -144,7 +145,7 @@ CBrushObject::CBrushObject()
 	static string sVarName_HideableSecondary = "HideableSecondary";
 	static string sVarName_LodRatio = "LodRatio";
 	static string sVarName_ViewDistRatio = "ViewDistRatio";
-	static string sVarName_NotTriangulate = "NotTriangulate";
+	static string sVarName_ExcludeFromNavigation = "ExcludeFromNavigation";
 	static string sVarName_NoDynWater = "NoDynamicWater";
 	static string sVarName_AIRadius = "AIRadius";
 	static string sVarName_LightmapQuality = "RAMmapQuality";
@@ -179,7 +180,7 @@ CBrushObject::CBrushObject()
 	m_pVarObject->AddVariable(mv_hideable, sVarName_Hideable, functor(*this, &CBrushObject::OnRenderVarChange));
 	m_pVarObject->AddVariable(mv_ratioLOD, sVarName_LodRatio, functor(*this, &CBrushObject::OnRenderVarChange));
 	m_pVarObject->AddVariable(mv_ratioViewDist, sVarName_ViewDistRatio, functor(*this, &CBrushObject::OnRenderVarChange));
-	m_pVarObject->AddVariable(mv_excludeFromTriangulation, sVarName_NotTriangulate, functor(*this, &CBrushObject::OnRenderVarChange));
+	m_pVarObject->AddVariable(mv_excludeFromTriangulation, sVarName_ExcludeFromNavigation, functor(*this, &CBrushObject::OnExludeFromNavigationVarChange));
 	m_pVarObject->AddVariable(mv_noDynWater, sVarName_NoDynWater, functor(*this, &CBrushObject::OnRenderVarChange));
 	m_pVarObject->AddVariable(mv_aiRadius, sVarName_AIRadius, functor(*this, &CBrushObject::OnAIRadiusVarChange));
 	m_pVarObject->AddVariable(mv_noDecals, sVarName_NoDecals, functor(*this, &CBrushObject::OnRenderVarChange));
@@ -681,6 +682,27 @@ void CBrushObject::ReloadGeometry()
 	{
 		m_pGeometry->ReloadGeometry();
 	}
+}
+
+void CBrushObject::OnExludeFromNavigationVarChange(IVariable* var)
+{
+	if (m_bIgnoreNodeUpdate)
+		return;
+
+	UpdateEngineNode();
+	UpdatePrefab();
+
+	if (IPhysicalEntity* pent = GetCollisionEntity())
+	{
+		pe_params_foreign_data pfd;
+		pfd.iForeignFlagsAND = ~PFF_EXCLUDE_FROM_STATIC;
+		pfd.iForeignFlagsOR = (m_renderFlags & ERF_EXCLUDE_FROM_TRIANGULATION) ? PFF_EXCLUDE_FROM_STATIC : 0;
+		pent->SetParams(&pfd);
+	}
+
+	AABB bbox;
+	GetBoundBox(bbox);
+	GetIEditorImpl()->GetAIManager()->OnAreaModified(bbox);
 }
 
 void CBrushObject::OnAIRadiusVarChange(IVariable* var)
