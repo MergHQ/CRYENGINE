@@ -22,7 +22,6 @@
 
 #include <Cry3DEngine/I3DEngine.h>
 
-#include "Navigation/MNM/MNM.h"
 #include "Navigation/NavigationSystem/NavigationSystem.h"
 
 #include <numeric>

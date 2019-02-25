@@ -406,8 +406,8 @@ CMNMUpdatesManager::MeshUpdateBoundaries CMNMUpdatesManager::ComputeMeshUpdateBo
 	const AABB& boundary = m_pNavigationSystem->m_volumes[mesh.boundary].aabb;
 	const AgentType& agentType = m_pNavigationSystem->m_agentTypes[mesh.agentTypeID - 1];
 
-	const float extraH = std::max(paramsGrid.voxelSize.x, paramsGrid.voxelSize.y) * agentType.settings.agent.GetPossibleAffectedSizeH();
-	const float extraV = paramsGrid.voxelSize.z * agentType.settings.agent.GetPossibleAffectedSizeV();
+	const float extraH = std::max(paramsGrid.voxelSize.x, paramsGrid.voxelSize.y) * agentType.settings.agent.GetPossibleAffectedSizeHorizontal();
+	const float extraV = paramsGrid.voxelSize.z * agentType.settings.agent.GetPossibleAffectedSizeVertical();
 	const float extraVM = paramsGrid.voxelSize.z; // tiles above are not directly influenced
 
 	Vec3 bmin(std::max(0.0f, std::max(boundary.min.x, aabb.min.x - extraH) - paramsGrid.origin.x),
@@ -445,8 +445,8 @@ CMNMUpdatesManager::MeshUpdateBoundaries CMNMUpdatesManager::ComputeMeshUpdateDi
 
 	const AgentType& agentType = m_pNavigationSystem->m_agentTypes[mesh.agentTypeID - 1];
 
-	const float extraH = std::max(paramsGrid.voxelSize.x, paramsGrid.voxelSize.y) * agentType.settings.agent.GetPossibleAffectedSizeH();
-	const float extraV = paramsGrid.voxelSize.z * agentType.settings.agent.GetPossibleAffectedSizeV();
+	const float extraH = std::max(paramsGrid.voxelSize.x, paramsGrid.voxelSize.y) * agentType.settings.agent.GetPossibleAffectedSizeHorizontal();
+	const float extraV = paramsGrid.voxelSize.z * agentType.settings.agent.GetPossibleAffectedSizeVertical();
 	const float extraVM = paramsGrid.voxelSize.z; // tiles above are not directly influenced
 
 	Vec3 bmin(std::max(0.0f, (aabb.min.x - extraH) - paramsGrid.origin.x),
@@ -788,7 +788,7 @@ void CMNMUpdatesManager::SaveData(CCryFile& file, const uint16 version) const
 		const uint32 state = uint32(tileRequest.state);
 
 		file.WriteType(&state);
-		MNMUtils::WriteNavigationIdType(file, tileRequest.meshID);
+		MNM::Utils::WriteNavigationIdType(file, tileRequest.meshID);
 		file.WriteType(&tileRequest.flags);
 		file.WriteType(&tileRequest.x);
 		file.WriteType(&tileRequest.y);
@@ -826,7 +826,7 @@ void CMNMUpdatesManager::LoadData(CCryFile& file, const uint16 version)
 
 			uint32 state;
 			file.ReadType(&state);
-			MNMUtils::ReadNavigationIdType(file, tileRequest.meshID);
+			MNM::Utils::ReadNavigationIdType(file, tileRequest.meshID);
 			file.ReadType(&tileRequest.flags);
 			file.ReadType(&tileRequest.x);
 			file.ReadType(&tileRequest.y);

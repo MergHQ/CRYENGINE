@@ -28,7 +28,6 @@
 #include "SmartObjectOffMeshNavigation.h"
 
 #include "Navigation/NavigationSystem/NavigationSystem.h"
-#include "Navigation/MNM/MNM.h"
 
 CSmartObject::CState::MapSmartObjectStateIds CSmartObject::CState::g_mapStateIds;
 CSmartObject::CState::MapSmartObjectStates CSmartObject::CState::g_mapStates;

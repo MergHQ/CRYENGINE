@@ -20,10 +20,11 @@
 #include "CAISystem.h"
 #include "AILog.h"
 #include "NavPath.h"
-#include "DebugDrawContext.h"
-#include <CryGame/IGameFramework.h>
-
 #include "Navigation/NavigationSystem/NavigationSystem.h"
+#include "Navigation/MNM/MNMUtils.h"
+#include "DebugDrawContext.h"
+
+#include <CryGame/IGameFramework.h>
 #include <CryAISystem/NavigationSystem/INavMeshQueryFilter.h>
 #include <CryAISystem/NavigationSystem/INavMeshQueryManager.h>
 
@@ -1517,7 +1518,7 @@ bool CSmartPathFollower::CheckWalkability(const Vec2* path, const size_t length)
 #else
 				mesh.navMesh.GetVertices(triEnd, v0, v1, v2);
 #endif
-				const MNM::vector3_t closest = MNM::ClosestPtPointTriangle(mnmEndLoc, v0, v1, v2);
+				const MNM::vector3_t closest = MNM::Utils::ClosestPtPointTriangle(mnmEndLoc, v0, v1, v2);
 				currentZ = closest.GetVec3().z;
 
 				startLoc = endLoc;

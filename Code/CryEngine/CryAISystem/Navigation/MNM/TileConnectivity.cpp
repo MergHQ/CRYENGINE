@@ -2,7 +2,7 @@
 
 #include "StdAfx.h"
 #include "TileConnectivity.h"
-#include "Navigation/MNM/MNM.h"
+#include "Navigation/MNM/MNMUtils.h"
 #include <CryAISystem/NavigationSystem/MNMNavMesh.h>
 
 namespace MNM
@@ -43,7 +43,7 @@ size_t CTileConnectivityData::ComputeTriangleAdjacency(
 		for (uint16 vertexIdx = 0; vertexIdx < 3; ++vertexIdx)
 		{
 			const uint16 i1 = triangle.vertex[vertexIdx];
-			const uint16 i2 = triangle.vertex[next_mod3(vertexIdx)];
+			const uint16 i2 = triangle.vertex[Utils::next_mod3(vertexIdx)];
 
 			if (i1 < i2)
 			{
@@ -69,7 +69,7 @@ size_t CTileConnectivityData::ComputeTriangleAdjacency(
 		for (uint16 vertexIdx = 0; vertexIdx < 3; ++vertexIdx)
 		{
 			const uint16 i1 = triangle.vertex[vertexIdx];
-			const uint16 i2 = triangle.vertex[next_mod3(vertexIdx)];
+			const uint16 i2 = triangle.vertex[Utils::next_mod3(vertexIdx)];
 
 			if (i1 > i2)
 			{
