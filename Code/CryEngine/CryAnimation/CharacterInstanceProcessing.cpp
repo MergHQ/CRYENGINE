@@ -75,12 +75,6 @@ SContext::EState SExecuteJob::operator()(const SContext& ctx)
 	CRY_ASSERT(ctx.pInstance->GetRefCount() > 0);
 	CRY_ASSERT(ctx.pInstance->GetProcessingContext() == &ctx);
 
-	if (ctx.pParent)
-	{
-		CRY_ASSERT(ctx.pAttachment != nullptr);
-		ctx.pInstance->m_location = ctx.pAttachment->GetAttWorldAbsolute();
-	}
-
 	CSkeletonAnim& skelAnim = ctx.pInstance->m_SkeletonAnim;
 	if (!skelAnim.m_pSkeletonPose->m_bFullSkeletonUpdate)
 		return SContext::EState::JobSkipped;
@@ -116,6 +110,12 @@ SContext::EState SFinishAnimationComputations::operator()(const SContext& ctx)
 
 	CRY_ASSERT(ctx.state != SContext::EState::StartAnimationProcessed);
 	CRY_ASSERT(ctx.state != SContext::EState::Failure);
+
+	if (ctx.pParent)
+	{
+		CRY_ASSERT(ctx.pAttachment != nullptr);
+		ctx.pInstance->m_location = ctx.pAttachment->GetAttWorldAbsolute();
+	}
 
 	// make sure that the job has been run or has been skipped
 	// for some reason (usually because we did not request a full skeleton update)
