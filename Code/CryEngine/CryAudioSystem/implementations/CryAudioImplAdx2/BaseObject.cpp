@@ -161,7 +161,7 @@ void CBaseObject::Update(float const deltaTime)
 //////////////////////////////////////////////////////////////////////////
 void CBaseObject::UpdateVirtualState(CCueInstance* const pCueInstance)
 {
-#if defined(CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE)
 	// Always update in production code for debug draw.
 	if ((pCueInstance->GetFlags() & ECueInstanceFlags::IsVirtual) == 0)
 	{
@@ -175,18 +175,18 @@ void CBaseObject::UpdateVirtualState(CCueInstance* const pCueInstance)
 			m_flags &= ~EObjectFlags::IsVirtual;
 		}
 	}
-#endif      // CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE
+#endif      // CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CBaseObject::StopAllTriggers()
 {
-#if defined(CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE)
 	for (auto const pCueInstance : m_cueInstances)
 	{
 		pCueInstance->StartFadeOut();
 	}
-#endif  // CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE
 
 	criAtomExPlayer_Stop(m_pPlayer);
 }
@@ -194,9 +194,9 @@ void CBaseObject::StopAllTriggers()
 //////////////////////////////////////////////////////////////////////////
 ERequestStatus CBaseObject::SetName(char const* const szName)
 {
-#if defined(CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE)
 	m_name = szName;
-#endif  // CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE
 
 	return ERequestStatus::Success;
 }

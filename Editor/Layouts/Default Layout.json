@@ -1,31 +1,11 @@
 {
-    "MainWindowGeometry": "AdnQywACAAAAAAAAAAAAAAAAB0EAAAQ3AAAB1wAAAEYAAAZqAAADdgAAAAACAAAAB4A=",
-    "MainWindowState": "AAAA/wAAAAD9AAAAAAAAB0AAAAPcAAAABAAAAAIAAAAIAAAAAvwAAAAGAAAAAAAAAAAAAAAAAAAAAAAAAAIAAAAAAAAAAgAAAAoAAAAeAFMAdABhAG4AZABhAHIAZABUAG8AbwBsAEIAYQByAAAAAAD/////AAAAAAAAAAAAAAAiAEUAZABpAHQAIABNAG8AZABlAHMAVABvAG8AbABCAGEAcgEAAAAA/////wAAAAAAAAAAAAAAJABDAG8AbwByAGQAaQBuAGEAdABlAHMAVABvAG8AbABCAGEAcgEAAACP/////wAAAAAAAAAAAAAAJABDAG8AbgBzAHQAcgBhAGkAbgB0AHMAVABvAG8AbABCAGEAcgAAAAEW/////wAAAAAAAAAAAAAAIABTAGUAbABlAGMAdABpAG8AbgBUAG8AbwBsAEIAYQByAQAAAR7/////AAAAAAAAAAAAAAAcAFAAaAB5AHMAaQBjAHMAVABvAG8AbABCAGEAcgAAAAOM/////wAAAAAAAAAAAAAAFgBHAGEAbQBlAFQAbwBvAGwAQgBhAHIBAAACYP////8AAAAAAAAAAAAAABgAQQB1AGQAaQBvAFQAbwBvAGwAQgBhAHIBAAAC7/////8AAAAAAAAAAAAAABwATABhAHkAbwB1AHQAcwBUAG8AbwBsAEIAYQByAQAAA13/////AAAAAAAAAAAAAAAgAFYAaQBlAHcATQBvAGQAZQBzAFQAbwBvAGwAQgBhAHIAAAAD8AAAAT0AAAAAAAAAAAAAAAIAAAAAAAAAAwAAAAA=",
+    "MainWindowGeometry": "AdnQywADAAAAAAAAAAAAAAAAB38AAAQPAAAABwAAABQAAASaAAAD0wAAAAACAAAAB4AAAAAAAAAAAAAAB38AAAQP",
+    "MainWindowState": "AAAA/wAAAAD9AAAAAAAAB4AAAAO2AAAABAAAAAIAAAAIAAAAAvwAAAAGAAAAAAAAAAAAAAAAAAAAAAAAAAIAAAAAAAAAAgAAAAoAAAAeAFMAdABhAG4AZABhAHIAZABUAG8AbwBsAEIAYQByAAAAAAD/////AAAAAAAAAAAAAAAiAEUAZABpAHQAIABNAG8AZABlAHMAVABvAG8AbABCAGEAcgEAAAAA/////wAAAAAAAAAAAAAAJABDAG8AbwByAGQAaQBuAGEAdABlAHMAVABvAG8AbABCAGEAcgEAAACP/////wAAAAAAAAAAAAAAJABDAG8AbgBzAHQAcgBhAGkAbgB0AHMAVABvAG8AbABCAGEAcgAAAAEW/////wAAAAAAAAAAAAAAIABTAGUAbABlAGMAdABpAG8AbgBUAG8AbwBsAEIAYQByAQAAAR7/////AAAAAAAAAAAAAAAcAFAAaAB5AHMAaQBjAHMAVABvAG8AbABCAGEAcgAAAAOM/////wAAAAAAAAAAAAAAFgBHAGEAbQBlAFQAbwBvAGwAQgBhAHIBAAACYP////8AAAAAAAAAAAAAABgAQQB1AGQAaQBvAFQAbwBvAGwAQgBhAHIBAAAC7/////8AAAAAAAAAAAAAABwATABhAHkAbwB1AHQAcwBUAG8AbwBsAEIAYQByAQAAA13/////AAAAAAAAAAAAAAAgAFYAaQBlAHcATQBvAGQAZQBzAFQAbwBvAGwAQgBhAHIAAAAD8AAAAT0AAAAAAAAAAAAAAAIAAAAAAAAAAwAAAAA=",
     "ToolsLayout": {
         "floatingWindows": [
-            {
-                "geometry": "AdnQywACAAAAAAAoAAAAPwAAA0cAAAIyAAAAKAAAAD8AAANHAAACMgAAAAAAAAAAB4A=",
-                "name": "wrapper#32693",
-                "splitter": {
-                    "items": [
-                    ],
-                    "state": "AAAA/wAAAAEAAAAAAP////8BAAAAAgA=",
-                    "type": "splitter"
-                }
-            },
-            {
-                "geometry": "AdnQywACAAAAAADoAAAA/wAABAcAAALyAAAA6AAAAP8AAAQHAAAC8gAAAAAAAAAAB4A=",
-                "name": "wrapper#970",
-                "splitter": {
-                    "items": [
-                    ],
-                    "state": "AAAA/wAAAAEAAAAAAP////8BAAAAAgA=",
-                    "type": "splitter"
-                }
-            }
         ],
         "mainWrapper": {
-            "geometry": "AdnQywACAAAAAAAAAAAAAAAABz8AAAPbAAAAAAAAAAAAAAc/AAAD2wAAAAAAAAAAB4A=",
+            "geometry": "AdnQywADAAAAAAAAAAAAAAAAB38AAAO1AAAAAAAAAAAAAAd/AAADtQAAAAAAAAAAB4AAAAAAAAAAAAAAB38AAAO1",
             "name": "mainWrapper",
             "splitter": {
                 "items": [
@@ -42,7 +22,8 @@
                             {
                                 "currentIndex": 0,
                                 "objectNames": [
-                                    "Level Explorer"
+                                    "Level Explorer",
+                                    "Level Settings"
                                 ],
                                 "type": "area"
                             }
@@ -67,7 +48,7 @@
                                 "type": "area"
                             }
                         ],
-                        "state": "AAAA/wAAAAEAAAACAAACCQAAAa4A/////wEAAAACAA==",
+                        "state": "AAAA/wAAAAEAAAACAAACEgAAAW0A/////wEAAAACAA==",
                         "type": "splitter"
                     },
                     {
@@ -79,7 +60,7 @@
                         "type": "area"
                     }
                 ],
-                "state": "AAAA/wAAAAEAAAADAAABWwAABNYAAAFFAP////8BAAAAAQA=",
+                "state": "AAAA/wAAAAEAAAADAAABWQAABNEAAAFEAP////8BAAAAAQA=",
                 "type": "splitter"
             }
         },
@@ -97,22 +78,40 @@
                             "visualIndex": 13,
                             "width": 0
                         },
+                        "Components count": {
+                            "data": "Components count",
+                            "visible": false,
+                            "visualIndex": 24,
+                            "width": 0
+                        },
+                        "Dependencies": {
+                            "data": "Dependencies",
+                            "visible": false,
+                            "visualIndex": 21,
+                            "width": 0
+                        },
                         "Favorite": {
                             "data": "Favorite",
                             "visible": true,
                             "visualIndex": 0,
                             "width": 16
                         },
+                        "Features count": {
+                            "data": "Features count",
+                            "visible": false,
+                            "visualIndex": 27,
+                            "width": 0
+                        },
                         "File extension": {
                             "data": "File extension",
                             "visible": false,
-                            "visualIndex": 18,
+                            "visualIndex": 23,
                             "width": 0
                         },
                         "Files count": {
                             "data": "Files count",
                             "visible": false,
-                            "visualIndex": 19,
+                            "visualIndex": 25,
                             "width": 0
                         },
                         "Folder": {
@@ -144,6 +143,12 @@
                             "visible": true,
                             "visualIndex": 1,
                             "width": 208
+                        },
+                        "Parent": {
+                            "data": "Parent",
+                            "visible": false,
+                            "visualIndex": 26,
+                            "width": 0
                         },
                         "Status": {
                             "data": "Status",
@@ -181,6 +186,30 @@
                             "visualIndex": 5,
                             "width": 0
                         },
+                        "Usage count": {
+                            "data": "Usage count",
+                            "visible": false,
+                            "visualIndex": 22,
+                            "width": 0
+                        },
+                        "VC status": {
+                            "data": "VC status",
+                            "visible": true,
+                            "visualIndex": 20,
+                            "width": 100
+                        },
+                        "VCS status": {
+                            "data": "VCS status",
+                            "visible": false,
+                            "visualIndex": 19,
+                            "width": 0
+                        },
+                        "Version Control Status": {
+                            "data": "Version Control Status",
+                            "visible": true,
+                            "visualIndex": 18,
+                            "width": 100
+                        },
                         "Vertex count": {
                             "data": "Vertex count",
                             "visible": false,
@@ -191,6 +220,12 @@
                             "data": "Width",
                             "visible": false,
                             "visualIndex": 14,
+                            "width": 0
+                        },
+                        "Work File": {
+                            "data": "Work File",
+                            "visible": false,
+                            "visualIndex": 19,
                             "width": 0
                         },
                         "XML Type": {
@@ -221,6 +256,11 @@
                         "Unique Id",
                         "_thumb_",
                         "_filter_string_",
+                        "VC status",
+                        "Version Control Status",
+                        "Dependencies",
+                        "Usage count",
+                        "Work File",
                         "File extension",
                         "Files count",
                         "Sub Mtl count",
@@ -228,10 +268,13 @@
                         "Triangle count",
                         "Vertex count",
                         "Material count",
+                        "Components count",
+                        "Features count",
                         "Bones count",
                         "Width",
                         "Height",
                         "Mip count",
+                        "Parent",
                         "XML Type"
                     ],
                     "headerSortingOrder": {
@@ -241,7 +284,7 @@
                     "version": 1
                 },
                 "filters": {
-                    "expanded": false,
+                    "expanded": true,
                     "favoriteFilter": false
                 },
                 "foldersSplitter": "AAAA/wAAAAEAAAACAAABAAAAAwAB/////wEAAAABAA==",
@@ -250,8 +293,7 @@
                         ""
                     ]
                 },
-                "mainViewSplitter": "AAAA/wAAAAEAAAAC/////wAAAQAB/////wEAAAABAA==",
-                "recursiveSearch": true,
+                "mainViewSplitter": "AAAA/wAAAAEAAAACAAAARAAAAQAB/////wEAAAABAA==",
                 "recursiveView": false,
                 "showFolders": true,
                 "thumbnailView": {
@@ -280,21 +322,56 @@
                     "expanded": false
                 },
                 "model": 2,
-                "showActiveLayerLabel": true,
                 "syncSelection": true,
                 "treeView": {
                     "columnData": {
-                        "Layer Color": {
-                            "data": "Layer Color",
+                        "": {
+                            "data": "",
                             "visible": true,
-                            "visualIndex": 0,
-                            "width": 6
+                            "visualIndex": 23,
+                            "width": 0
                         },
-                        "Visible": {
-                            "data": "Visible",
-                            "visible": true,
-                            "visualIndex": 1,
-                            "width": 25
+                        "AI GroupID": {
+                            "data": "AI GroupID",
+                            "visible": false,
+                            "visualIndex": 22,
+                            "width": 0
+                        },
+                        "Breakable": {
+                            "data": "Breakable",
+                            "visible": false,
+                            "visualIndex": 14,
+                            "width": 0
+                        },
+                        "Custom Material": {
+                            "data": "Custom Material",
+                            "visible": false,
+                            "visualIndex": 13,
+                            "width": 0
+                        },
+                        "Default Material": {
+                            "data": "Default Material",
+                            "visible": false,
+                            "visualIndex": 12,
+                            "width": 0
+                        },
+                        "Exportable": {
+                            "data": "Exportable",
+                            "visible": false,
+                            "visualIndex": 5,
+                            "width": 0
+                        },
+                        "Exportable to Pak": {
+                            "data": "Exportable to Pak",
+                            "visible": false,
+                            "visualIndex": 21,
+                            "width": 0
+                        },
+                        "Flow Graph": {
+                            "data": "Flow Graph",
+                            "visible": false,
+                            "visualIndex": 16,
+                            "width": 0
                         },
                         "Frozen": {
                             "data": "Frozen",
@@ -302,80 +379,74 @@
                             "visualIndex": 2,
                             "width": 25
                         },
-                        "Version Control": {
-                            "data": "Version Control",
-                            "visible": true,
-                            "visualIndex": 3,
-                            "width": 25
-                        },
-                        "Name": {
-                            "data": "Name",
-                            "visible": true,
-                            "visualIndex": 4,
-                            "width": 275
-                        },
-                        "Layer": {
-                            "data": "Layer",
-                            "visible": true,
-                            "visualIndex": 5,
-                            "width": 100
-                        },
-                        "Type": {
-                            "data": "Type",
-                            "visible": true,
-                            "visualIndex": 6,
-                            "width": 353
-                        },
-                        "Object Type": {
-                            "data": "Object Type",
-                            "visible": false,
-                            "visualIndex": 7,
-                            "width": 0
-                        },
-                        "Default Material": {
-                            "data": "Default Material",
-                            "visible": false,
-                            "visualIndex": 8,
-                            "width": 0
-                        },
-                        "Custom Material": {
-                            "data": "Custom Material",
-                            "visible": false,
-                            "visualIndex": 9,
-                            "width": 0
-                        },
-                        "Breakable": {
-                            "data": "Breakable",
-                            "visible": false,
-                            "visualIndex": 10,
-                            "width": 0
-                        },
-                        "Smart Object": {
-                            "data": "Smart Object",
-                            "visible": false,
-                            "visualIndex": 11,
-                            "width": 0
-                        },
-                        "Flow Graph": {
-                            "data": "Flow Graph",
-                            "visible": false,
-                            "visualIndex": 12,
-                            "width": 0
-                        },
                         "Geometry": {
                             "data": "Geometry",
                             "visible": false,
-                            "visualIndex": 13,
+                            "visualIndex": 17,
+                            "width": 0
+                        },
+                        "Has Physics": {
+                            "data": "Has Physics",
+                            "visible": false,
+                            "visualIndex": 8,
                             "width": 0
                         },
                         "Instances": {
                             "data": "Instances",
                             "visible": false,
-                            "visualIndex": 14,
+                            "visualIndex": 18,
                             "width": 0
                         },
                         "LOD Count": {
                             "data": "LOD Count",
+                            "visible": false,
+                            "visualIndex": 19,
+                            "width": 0
+                        },
+                        "Layer": {
+                            "data": "Layer",
+                            "visible": true,
+                            "visualIndex": 7,
+                            "width": 100
+                        },
+                        "Layer Color": {
+                            "data": "Layer Color",
+                            "visible": true,
+                            "visualIndex": 0,
+                            "width": 10
+                        },
+                        "Linked to": {
+                            "data": "Linked to",
+                            "visible": false,
+                            "visualIndex": 23,
+                            "width": 0
+                        },
+                        "Loaded in Game": {
+                            "data": "Loaded in Game",
+                            "visible": false,
+                            "visualIndex": 6,
+                            "width": 0
+                        },
+                        "Name": {
+                            "data": "Name",
+                            "visible": true,
+                            "visualIndex": 4,
+                            "width": 250
+                        },
+                        "Object Type": {
+                            "data": "Object Type",
+                            "visible": false,
+                            "visualIndex": 11,
+                            "width": 0
+                        },
+                        "Platform": {
+                            "data": "Platform",
+                            "visible": false,
+                            "visualIndex": 9,
+                            "width": 0
+                        },
+                        "Smart Object": {
+                            "data": "Smart Object",
                             "visible": false,
                             "visualIndex": 15,
                             "width": 0
@@ -383,61 +454,43 @@
                         "Spec": {
                             "data": "Spec",
                             "visible": false,
-                            "visualIndex": 16,
-                            "width": 0
-                        },
-                        "AI GroupID": {
-                            "data": "AI GroupID",
-                            "visible": false,
-                            "visualIndex": 17,
-                            "width": 0
-                        },
-                        "Exportable": {
-                            "data": "Exportable",
-                            "visible": false,
-                            "visualIndex": 18,
-                            "width": 0
-                        },
-                        "Exportable to Pak": {
-                            "data": "Exportable to Pak",
-                            "visible": false,
-                            "visualIndex": 19,
-                            "width": 0
-                        },
-                        "Has Physics": {
-                            "data": "Has Physics",
-                            "visible": false,
                             "visualIndex": 20,
                             "width": 0
                         },
-                        "Loaded in Game": {
-                            "data": "Loaded in Game",
-                            "visible": false,
-                            "visualIndex": 21,
-                            "width": 0
-                        },
-                        "Platform": {
-                            "data": "Platform",
-                            "visible": false,
-                            "visualIndex": 22,
-                            "width": 0
-                        },
-                        "": {
-                            "data": "",
+                        "Type": {
+                            "data": "Type",
                             "visible": true,
-                            "visualIndex": 23,
-                            "width": 0
+                            "visualIndex": 10,
+                            "width": 623
+                        },
+                        "Version Control": {
+                            "data": "Version Control",
+                            "visible": true,
+                            "visualIndex": 3,
+                            "width": 25
+                        },
+                        "Version Control Status": {
+                            "data": "Version Control Status",
+                            "visible": true,
+                            "visualIndex": 3,
+                            "width": 25
+                        },
+                        "Visible": {
+                            "data": "Visible",
+                            "visible": true,
+                            "visualIndex": 1,
+                            "width": 25
                         }
                     },
                     "columnOrder": [
                         "Layer Color",
                         "Visible",
                         "Frozen",
-                        "Version Control",
+                        "Version Control Status",
                         "Name",
                         "Layer",
-                        "Type",
                         "Object Type",
+                        "Type",
                         "Default Material",
                         "Custom Material",
                         "Breakable",
@@ -450,9 +503,10 @@
                         "AI GroupID",
                         "Exportable",
                         "Exportable to Pak",
-                        "Has Physics",
                         "Loaded in Game",
-                        "Platform"
+                        "Has Physics",
+                        "Platform",
+                        "Linked to"
                     ],
                     "headerSortingOrder": {
                         "sortOrder": 0,
@@ -462,13 +516,75 @@
                 }
             }
         },
+        "Level Settings": {
+            "class": "Level Settings",
+            "state": {
+                "dockingState": {
+                    "ToolsLayout": {
+                        "floatingWindows": [
+                        ],
+                        "mainWrapper": {
+                            "area": {
+                                "currentIndex": 1,
+                                "objectNames": [
+                                    "Settings",
+                                    "Environment Presets"
+                                ],
+                                "type": "area"
+                            },
+                            "geometry": "AdnQywADAAAAAAAAAAAAAAAAAVgAAAJ6AAAAAAAAAAAAAAFYAAACegAAAAAAAAAAB4AAAAAAAAAAAAAAAVgAAAJ6",
+                            "name": "mainWrapper"
+                        },
+                        "toolWindowManagerStateFormat": 2
+                    },
+                    "Windows": {
+                        "Environment Presets": {
+                            "class": "Environment Presets"
+                        },
+                        "Settings": {
+                            "class": "Settings"
+                        }
+                    }
+                }
+            }
+        },
         "Perspective": {
             "class": "ViewportClass_Perspective",
             "state": {
-                "cameraSpeed": 0.010999999940395355,
+                "Helpers": {
+                    "enabled": true,
+                    "fillSelectedShapes": false,
+                    "showAnimationTracks": true,
+                    "showAreaHelper": true,
+                    "showBoundingBoxes": false,
+                    "showBrushHelper": true,
+                    "showComponentHelpers": true,
+                    "showDecalHelper": true,
+                    "showDimensions": false,
+                    "showEntityObjectHelper": true,
+                    "showEntityObjectsTextLabels": false,
+                    "showEnviromentProbeHelper": true,
+                    "showFrozenObjectsHelpers": true,
+                    "showGroupHelper": true,
+                    "showIcons": true,
+                    "showLinks": true,
+                    "showMesh": true,
+                    "showMeshStatsOnMouseOver": false,
+                    "showPrefabBounds": true,
+                    "showPrefabChildrenHelpers": true,
+                    "showPrefabHelper": true,
+                    "showRadii": false,
+                    "showRoadHelper": true,
+                    "showSelectedObjectOrientation": false,
+                    "showShapeHelper": true,
+                    "showSnappingGridGuide": true,
+                    "showTextLabels": false,
+                    "showTriggerBounds": false
+                },
+                "cameraSpeed": 0.04177248105406761,
                 "resolutionMode": 1,
-                "xViewportRes": 1198,
-                "yViewportRes": 490
+                "xViewportRes": 1238,
+                "yViewportRes": 510
             }
         },
         "Properties": {
@@ -515,13 +631,13 @@
                             "data": "Min Height",
                             "visible": true,
                             "visualIndex": 2,
-                            "width": 100
+                            "width": 70
                         },
                         "Name": {
                             "data": "Name",
                             "visible": true,
                             "visualIndex": 0,
-                            "width": 100
+                            "width": 89
                         },
                         "Texture": {
                             "data": "Texture",

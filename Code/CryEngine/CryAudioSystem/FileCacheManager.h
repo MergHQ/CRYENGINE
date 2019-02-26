@@ -6,9 +6,9 @@
 #include <CrySystem/IStreamEngine.h>
 #include <CryMemory/IMemory.h>
 
-#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_DEBUG_CODE)
 struct IRenderAuxGeom;
-#endif // CRY_AUDIO_USE_PRODUCTION_CODE
+#endif // CRY_AUDIO_USE_DEBUG_CODE
 
 namespace CryAudio
 {
@@ -36,10 +36,10 @@ public:
 	ERequestStatus TryUnloadRequest(PreloadRequestId const preloadRequestId);
 	ERequestStatus UnloadDataByScope(EDataScope const dataScope);
 
-#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_DEBUG_CODE)
 	void   DrawDebugInfo(IRenderAuxGeom& auxGeom, float const posX, float posY);
 	size_t GetTotalCachedFileSize() const { return m_currentByteTotal; }
-#endif // CRY_AUDIO_USE_PRODUCTION_CODE
+#endif // CRY_AUDIO_USE_DEBUG_CODE
 
 private:
 
@@ -64,12 +64,12 @@ private:
 	Files                           m_files;
 	_smart_ptr<::ICustomMemoryHeap> m_pMemoryHeap;
 
-#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_DEBUG_CODE)
 	size_t m_currentByteTotal = 0;
 
 	#if CRY_PLATFORM_DURANGO
 	size_t m_maxByteTotal = 0;
 	#endif // CRY_PLATFORM_DURANGO
-#endif   // CRY_AUDIO_USE_PRODUCTION_CODE
+#endif   // CRY_AUDIO_USE_DEBUG_CODE
 };
 } // namespace CryAudio

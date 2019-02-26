@@ -3,9 +3,9 @@
 #include "stdafx.h"
 #include "GlobalObject.h"
 
-#if defined(CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_WWISE_USE_DEBUG_CODE)
 	#include <Logger.h>
-#endif // CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE
+#endif // CRY_AUDIO_IMPL_WWISE_USE_DEBUG_CODE
 
 namespace CryAudio
 {
@@ -16,25 +16,25 @@ namespace Wwise
 //////////////////////////////////////////////////////////////////////////
 void CGlobalObject::SetTransformation(CTransformation const& transformation)
 {
-#if defined(CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_WWISE_USE_DEBUG_CODE)
 	Cry::Audio::Log(ELogType::Error, "Trying to set transformation on the global object!");
-#endif  // CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_WWISE_USE_DEBUG_CODE
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CGlobalObject::SetOcclusion(float const occlusion)
 {
-#if defined(CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_WWISE_USE_DEBUG_CODE)
 	Cry::Audio::Log(ELogType::Error, "Trying to set occlusion and obstruction values on the global object!");
-#endif  // CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_WWISE_USE_DEBUG_CODE
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CGlobalObject::SetOcclusionType(EOcclusionType const occlusionType)
 {
-#if defined(CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_WWISE_USE_DEBUG_CODE)
 	Cry::Audio::Log(ELogType::Error, "Trying to set occlusion type on the global object!");
-#endif  // CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_WWISE_USE_DEBUG_CODE
 }
 }      // namespace Wwise
 }      // namespace Impl

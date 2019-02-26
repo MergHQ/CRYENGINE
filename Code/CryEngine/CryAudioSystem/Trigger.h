@@ -20,7 +20,7 @@ public:
 	CTrigger& operator=(CTrigger const&) = delete;
 	CTrigger& operator=(CTrigger&&) = delete;
 
-#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_DEBUG_CODE)
 	explicit CTrigger(
 		ControlId const id,
 		EDataScope const dataScope,
@@ -39,7 +39,7 @@ public:
 		: Control(id, dataScope)
 		, m_connections(connections)
 	{}
-#endif // CRY_AUDIO_USE_PRODUCTION_CODE
+#endif // CRY_AUDIO_USE_DEBUG_CODE
 
 	~CTrigger();
 
@@ -59,7 +59,7 @@ public:
 
 	void Stop(Impl::IObject* const pIObject) const;
 
-#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_DEBUG_CODE)
 	void Execute(
 		CObject& object,
 		TriggerInstanceId const triggerInstanceId,
@@ -73,14 +73,14 @@ public:
 		uint16 const triggerCounter) const;
 
 	float GetRadius() const { return m_radius; }
-#endif // CRY_AUDIO_USE_PRODUCTION_CODE
+#endif // CRY_AUDIO_USE_DEBUG_CODE
 
 private:
 
 	TriggerConnections const m_connections;
 
-#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_DEBUG_CODE)
 	float const m_radius;
-#endif // CRY_AUDIO_USE_PRODUCTION_CODE
+#endif // CRY_AUDIO_USE_DEBUG_CODE
 };
 } // namespace CryAudio

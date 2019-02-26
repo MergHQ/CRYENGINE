@@ -8,9 +8,9 @@
 #include <CrySystem/IEngineModule.h>
 #include <CryExtension/ClassWeaver.h>
 
-#if defined(CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_FMOD_USE_DEBUG_CODE)
 	#include <Logger.h>
-#endif // CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE
+#endif // CRY_AUDIO_IMPL_FMOD_USE_DEBUG_CODE
 
 namespace CryAudio
 {
@@ -47,7 +47,7 @@ class CEngineModule_CryAudioImplFmod : public CryAudio::IImplModule
 		gEnv->pAudioSystem->SetImpl(new CImpl, data);
 		gEnv->pAudioSystem->RemoveRequestListener(&CEngineModule_CryAudioImplFmod::OnEvent, nullptr);
 
-#if defined(CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_FMOD_USE_DEBUG_CODE)
 		if (m_bSuccess)
 		{
 			Cry::Audio::Log(ELogType::Always, "CryAudioImplFmod loaded");
@@ -56,7 +56,7 @@ class CEngineModule_CryAudioImplFmod : public CryAudio::IImplModule
 		{
 			Cry::Audio::Log(ELogType::Error, "CryAudioImplFmod failed to load");
 		}
-#endif    // CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE
+#endif    // CRY_AUDIO_IMPL_FMOD_USE_DEBUG_CODE
 
 		return m_bSuccess;
 	}

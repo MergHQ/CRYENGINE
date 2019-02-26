@@ -18,7 +18,7 @@ public:
 	CTriggerInstance& operator=(CTriggerInstance const&) = delete;
 	CTriggerInstance& operator=(CTriggerInstance&&) = delete;
 
-#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_DEBUG_CODE)
 	explicit CTriggerInstance(
 		ControlId const triggerId,
 		uint16 const numPlayingConnectionInstances,
@@ -54,7 +54,7 @@ public:
 		, m_pUserData(pUserData)
 		, m_pUserDataOwner(pUserDataOwner)
 	{}
-#endif // CRY_AUDIO_USE_PRODUCTION_CODE
+#endif // CRY_AUDIO_USE_DEBUG_CODE
 
 	ControlId GetTriggerId() const                     { return m_triggerId; }
 
@@ -68,10 +68,10 @@ public:
 	void      SendFinishedRequest(EntityId const entityId);
 	void      Release();
 
-#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_DEBUG_CODE)
 	float GetRadius() const             { return m_radius; }
 	void  SetRadius(float const radius) { m_radius = radius; }
-#endif // CRY_AUDIO_USE_PRODUCTION_CODE
+#endif // CRY_AUDIO_USE_DEBUG_CODE
 
 private:
 
@@ -84,9 +84,9 @@ private:
 	void* const         m_pUserData;
 	void* const         m_pUserDataOwner;
 
-#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_DEBUG_CODE)
 	float m_radius;
-#endif // CRY_AUDIO_USE_PRODUCTION_CODE
+#endif // CRY_AUDIO_USE_DEBUG_CODE
 };
 
 using TriggerInstances = std::map<TriggerInstanceId, CTriggerInstance*>;

@@ -124,7 +124,7 @@ MACRO(setup_cryaudio)
 		)
     endif()
 
-		target_compile_definitions(${THIS_PROJECT} PRIVATE $<$<NOT:$<CONFIG:Release>>:CRY_AUDIO_USE_PRODUCTION_CODE>)
+		target_compile_definitions(${THIS_PROJECT} PRIVATE $<$<NOT:$<CONFIG:Release>>:CRY_AUDIO_USE_DEBUG_CODE>)
 
 		IF(AUDIO_USE_OCCLUSION)
 			target_compile_definitions(${THIS_PROJECT} PRIVATE -DCRY_AUDIO_USE_OCCLUSION)

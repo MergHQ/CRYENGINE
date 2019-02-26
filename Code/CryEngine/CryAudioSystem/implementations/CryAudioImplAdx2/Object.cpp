@@ -7,10 +7,10 @@
 #include "Listener.h"
 #include "Cvars.h"
 
-#if defined(CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE)
 	#include <Logger.h>
 	#include <DebugStyle.h>
-#endif  // CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE
 
 namespace CryAudio
 {
@@ -28,10 +28,10 @@ CObject::CObject(CTransformation const& transformation)
 	, m_position(transformation.GetPosition())
 	, m_previousPosition(transformation.GetPosition())
 	, m_velocity(ZERO)
-#if defined(CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE)
 	, m_absoluteVelocity(0.0f)
 	, m_absoluteVelocityNormalized(0.0f)
-#endif  // CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE
 {
 	Fill3DAttributeTransformation(transformation, m_3dAttributes);
 	criAtomEx3dSource_SetPosition(m_p3dSource, &m_3dAttributes.pos);
@@ -106,7 +106,7 @@ void CObject::SetOcclusion(float const occlusion)
 //////////////////////////////////////////////////////////////////////////
 void CObject::DrawDebugInfo(IRenderAuxGeom& auxGeom, float const posX, float posY, char const* const szTextFilter)
 {
-#if defined(CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE)
 
 	if (((m_flags& EObjectFlags::TrackAbsoluteVelocity) != 0) || ((m_flags& EObjectFlags::TrackVelocityForDoppler) != 0))
 	{
@@ -141,7 +141,7 @@ void CObject::DrawDebugInfo(IRenderAuxGeom& auxGeom, float const posX, float pos
 		}
 	}
 
-#endif  // CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE
 }
 
 /////////////////////////////////////////////////////////////////////////
@@ -167,12 +167,12 @@ void CObject::UpdateVelocityTracking()
 		{
 			m_flags |= EObjectFlags::TrackAbsoluteVelocity;
 		}
-#if defined(CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE)
 		else
 		{
 			Cry::Audio::Log(ELogType::Error, "Adx2 - Cannot enable absolute velocity tracking, because s_Adx2MaxVelocity is not greater than 0.");
 		}
-#endif    // CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE
+#endif    // CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE
 	}
 	else
 	{
@@ -181,10 +181,10 @@ void CObject::UpdateVelocityTracking()
 		criAtomExPlayer_SetAisacControlByName(m_pPlayer, g_szAbsoluteVelocityAisacName, 0.0f);
 		criAtomExPlayer_UpdateAll(m_pPlayer);
 
-#if defined(CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE)
 		m_absoluteVelocity = 0.0f;
 		m_absoluteVelocityNormalized = 0.0f;
-#endif    // CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE
+#endif    // CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE
 	}
 
 	if (trackDoppler)
@@ -253,10 +253,10 @@ void CObject::UpdateVelocities(float const deltaTime)
 			criAtomExPlayer_SetAisacControlByName(m_pPlayer, g_szAbsoluteVelocityAisacName, static_cast<CriFloat32>(absoluteVelocityNormalized));
 			criAtomExPlayer_UpdateAll(m_pPlayer);
 
-#if defined(CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE)
 			m_absoluteVelocity = absoluteVelocity;
 			m_absoluteVelocityNormalized = absoluteVelocityNormalized;
-#endif      // CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE
+#endif      // CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE
 		}
 	}
 }

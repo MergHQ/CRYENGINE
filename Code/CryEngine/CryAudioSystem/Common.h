@@ -46,10 +46,10 @@ enum class ESystemStates : EnumFlagsType
 	None             = 0,
 	ImplShuttingDown = BIT(0),
 	IsMuted          = BIT(1),
-#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_DEBUG_CODE)
 	IsPaused         = BIT(2),
 	PoolsAllocated   = BIT(3),
-#endif  // CRY_AUDIO_USE_PRODUCTION_CODE
+#endif  // CRY_AUDIO_USE_DEBUG_CODE
 };
 CRY_CREATE_ENUM_FLAG_OPERATORS(ESystemStates);
 
@@ -122,7 +122,7 @@ static void IncrementTriggerInstanceIdCounter()
 	}
 }
 
-#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_DEBUG_CODE)
 extern Objects g_constructedObjects;
 
 constexpr char const* g_szPreviewTriggerName = "preview_trigger";
@@ -136,5 +136,5 @@ extern SPoolSizes g_debugPoolSizes;
 using SwitchStateIds = std::map<ControlId, SwitchStateId>;
 using ParameterValues = std::map<ControlId, float>;
 using EnvironmentValues = std::map<EnvironmentId, float>;
-#endif // CRY_AUDIO_USE_PRODUCTION_CODE
+#endif // CRY_AUDIO_USE_DEBUG_CODE
 }      // namespace CryAudio

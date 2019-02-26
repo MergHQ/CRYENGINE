@@ -7,9 +7,9 @@
 #include "EventInstance.h"
 #include "Listener.h"
 
-#if defined(CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_FMOD_USE_DEBUG_CODE)
 	#include <DebugStyle.h>
-#endif  // CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_FMOD_USE_DEBUG_CODE
 
 namespace CryAudio
 {
@@ -145,7 +145,7 @@ void CObject::ToggleFunctionality(EObjectFunctionality const type, bool const en
 //////////////////////////////////////////////////////////////////////////
 void CObject::DrawDebugInfo(IRenderAuxGeom& auxGeom, float const posX, float posY, char const* const szTextFilter)
 {
-#if defined(CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_FMOD_USE_DEBUG_CODE)
 
 	if (((m_flags& EObjectFlags::TrackAbsoluteVelocity) != 0) || ((m_flags& EObjectFlags::TrackVelocityForDoppler) != 0))
 	{
@@ -187,7 +187,7 @@ void CObject::DrawDebugInfo(IRenderAuxGeom& auxGeom, float const posX, float pos
 		}
 	}
 
-#endif  // CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_FMOD_USE_DEBUG_CODE
 }
 
 //////////////////////////////////////////////////////////////////////////

@@ -29,9 +29,9 @@ public:
 	void                   ReleaseListener(CListener* const pListener);
 	CTransformation const& GetActiveListenerTransformation() const;
 
-#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_DEBUG_CODE)
 	size_t GetNumActiveListeners() const;
-#endif // CRY_AUDIO_USE_PRODUCTION_CODE
+#endif // CRY_AUDIO_USE_DEBUG_CODE
 
 private:
 

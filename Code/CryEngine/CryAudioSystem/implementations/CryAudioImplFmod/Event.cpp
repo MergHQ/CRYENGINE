@@ -103,11 +103,11 @@ ETriggerResult CEvent::Execute(IObject* const pIObject, TriggerInstanceId const 
 		{
 			FMOD_RESULT fmodResult = FMOD_ERR_UNINITIALIZED;
 
-#if defined(CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_FMOD_USE_DEBUG_CODE)
 			CEventInstance* const pEventInstance = g_pImpl->ConstructEventInstance(triggerInstanceId, *this, *pBaseObject);
 #else
 			CEventInstance* const pEventInstance = g_pImpl->ConstructEventInstance(triggerInstanceId, *this);
-#endif        // CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE
+#endif        // CRY_AUDIO_IMPL_FMOD_USE_DEBUG_CODE
 
 			if (m_pEventDescription == nullptr)
 			{
@@ -183,11 +183,11 @@ ETriggerResult CEvent::Execute(IObject* const pIObject, TriggerInstanceId const 
 					{
 						int count = 0;
 
-#if defined(CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_FMOD_USE_DEBUG_CODE)
 						fmodResult = m_pEventDescription->getInstanceCount(&count);
 						CRY_AUDIO_IMPL_FMOD_ASSERT_OK;
 						CRY_ASSERT_MESSAGE(count < capacity, "Instance count (%d) is higher or equal than array capacity (%d) during %s", count, capacity, __FUNCTION__);
-#endif              // CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE
+#endif              // CRY_AUDIO_IMPL_FMOD_USE_DEBUG_CODE
 
 						FMOD::Studio::EventInstance* eventInstances[capacity];
 						fmodResult = m_pEventDescription->getInstanceList(eventInstances, capacity, &count);

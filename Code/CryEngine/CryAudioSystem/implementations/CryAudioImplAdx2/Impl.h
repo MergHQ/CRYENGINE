@@ -70,16 +70,16 @@ public:
 	virtual void                    OnRefresh() override;
 	virtual void                    SetLanguage(char const* const szLanguage) override;
 
-	// Below data is only used when CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE is defined!
+	// Below data is only used when CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE is defined!
 	virtual void DrawDebugMemoryInfo(IRenderAuxGeom& auxGeom, float const posX, float& posY, bool const drawDetailedInfo) override;
 	virtual void DrawDebugInfoList(IRenderAuxGeom& auxGeom, float& posX, float posY, float const debugDistance, char const* const szTextFilter) const override;
 	// ~CryAudio::Impl::IImpl
 
-#if defined(CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE)
 	CCueInstance* ConstructCueInstance(TriggerInstanceId const triggerInstanceId, CriAtomExPlaybackId const playbackId, CCue& cue, CBaseObject const& baseObject);
 #else
 	CCueInstance* ConstructCueInstance(TriggerInstanceId const triggerInstanceId, CriAtomExPlaybackId const playbackId, CCue& cue);
-#endif  // CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE
 
 	void DestructCueInstance(CCueInstance const* const pCueInstance);
 
@@ -107,10 +107,10 @@ private:
 	CriAtomDbasId                         m_dbasId;
 	CriAtomEx3dListenerConfig             m_listenerConfig;
 
-#if defined(CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE)
 	CryFixedStringT<MaxInfoStringLength> const m_name;
 	size_t m_acfFileSize = 0;
-#endif  // CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE
 };
 } // namespace Adx2
 } // namespace Impl

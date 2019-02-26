@@ -20,7 +20,7 @@ public:
 	CGlobalObject& operator=(CGlobalObject const&) = delete;
 	CGlobalObject& operator=(CGlobalObject&&) = delete;
 
-#if defined(CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_WWISE_USE_DEBUG_CODE)
 	CGlobalObject(AkGameObjectID const id, char const* const szName)
 		: CBaseObject(id, szName)
 	{}
@@ -28,7 +28,7 @@ public:
 	CGlobalObject(AkGameObjectID const id)
 		: CBaseObject(id)
 	{}
-#endif  // CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_WWISE_USE_DEBUG_CODE
 
 	virtual ~CGlobalObject() override = default;
 

@@ -17,7 +17,7 @@ public:
 	CResumeAllTrigger& operator=(CResumeAllTrigger const&) = delete;
 	CResumeAllTrigger& operator=(CResumeAllTrigger&&) = delete;
 
-#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_DEBUG_CODE)
 	CResumeAllTrigger()
 		: Control(g_resumeAllTriggerId, EDataScope::Global, g_szResumeAllTriggerName)
 	{}
@@ -25,7 +25,7 @@ public:
 	CResumeAllTrigger()
 		: Control(g_resumeAllTriggerId, EDataScope::Global)
 	{}
-#endif // CRY_AUDIO_USE_PRODUCTION_CODE
+#endif // CRY_AUDIO_USE_DEBUG_CODE
 
 	~CResumeAllTrigger();
 

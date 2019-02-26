@@ -55,7 +55,7 @@ public:
 	virtual void        GetImplInfo(SImplInfo& implInfo) override;
 	virtual void        Log(ELogType const type, char const* const szFormat, ...) override;
 
-	// Below data is only used when CRY_AUDIO_USE_PRODUCTION_CODE is defined!
+	// Below data is only used when CRY_AUDIO_USE_DEBUG_CODE is defined!
 	virtual void ExecutePreviewTrigger(ControlId const triggerId) override;
 	virtual void ExecutePreviewTriggerEx(Impl::ITriggerInfo const& triggerInfo) override;
 	virtual void ExecutePreviewTriggerEx(XmlNodeRef const pNode) override;
@@ -117,7 +117,7 @@ private:
 	CryEvent              m_mainEvent;
 	CryEvent              m_audioThreadWakeupEvent;
 
-#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_DEBUG_CODE)
 public:
 
 	void RetriggerControls(SRequestUserData const& userData = SRequestUserData::GetEmptyObject());
@@ -135,6 +135,6 @@ private:
 	std::atomic<IRenderAuxGeom*> m_currentRenderAuxGeom{ nullptr };
 	std::atomic<IRenderAuxGeom*> m_lastRenderAuxGeom{ nullptr };
 	std::atomic_bool             m_canDraw{ true };
-#endif // CRY_AUDIO_USE_PRODUCTION_CODE
+#endif // CRY_AUDIO_USE_DEBUG_CODE
 };
 } // namespace CryAudio

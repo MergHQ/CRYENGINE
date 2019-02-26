@@ -8,9 +8,9 @@
 #include <CrySystem/IEngineModule.h>
 #include <CryExtension/ClassWeaver.h>
 
-#if defined(CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE)
 	#include <Logger.h>
-#endif // CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE
+#endif // CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE
 
 #if CRY_PLATFORM_DURANGO
 	#include <apu.h>
@@ -51,7 +51,7 @@ class CEngineModule_CryAudioImplAdx2 : public CryAudio::IImplModule
 		gEnv->pAudioSystem->SetImpl(new CImpl, data);
 		gEnv->pAudioSystem->RemoveRequestListener(&CEngineModule_CryAudioImplAdx2::OnEvent, nullptr);
 
-#if defined(CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE)
 		if (m_bSuccess)
 		{
 			Cry::Audio::Log(ELogType::Always, "CryAudioImplAdx2 loaded");
@@ -60,7 +60,7 @@ class CEngineModule_CryAudioImplAdx2 : public CryAudio::IImplModule
 		{
 			Cry::Audio::Log(ELogType::Error, "CryAudioImplAdx2 failed to load");
 		}
-#endif    // CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE
+#endif    // CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE
 
 		return m_bSuccess;
 	}

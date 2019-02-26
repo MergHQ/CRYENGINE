@@ -4,10 +4,10 @@
 #include "State.h"
 #include "Object.h"
 
-#if defined(CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_WWISE_USE_DEBUG_CODE)
 	#include "BaseObject.h"
 	#include <Logger.h>
-#endif  // CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_WWISE_USE_DEBUG_CODE
 
 #include <AK/SoundEngine/Common/AkSoundEngine.h>
 
@@ -22,11 +22,11 @@ void CState::Set(IObject* const pIObject)
 {
 	SetGlobally();
 
-#if defined(CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_WWISE_USE_DEBUG_CODE)
 	auto const pObject = static_cast<CBaseObject*>(pIObject);
 	Cry::Audio::Log(ELogType::Warning, R"(Wwise - state "%s: %s" was set on object "%s". Consider setting it globally.)",
 	                m_stateGroupName.c_str(), m_stateName.c_str(), pObject->GetName());
-#endif  // CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_WWISE_USE_DEBUG_CODE
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -34,9 +34,9 @@ void CState::SetGlobally()
 {
 	AK::SoundEngine::SetState(m_stateGroupId, m_stateId);
 
-#if defined(CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_WWISE_USE_DEBUG_CODE)
 	g_debugStates[m_stateGroupName] = m_stateName;
-#endif  // CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_WWISE_USE_DEBUG_CODE
 }
 } // namespace Wwise
 } // namespace Impl

@@ -5,9 +5,9 @@
 #include "Object.h"
 #include <CryAudio/IAudioSystem.h>
 
-#if defined(CRY_AUDIO_IMPL_PORTAUDIO_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_PORTAUDIO_USE_DEBUG_CODE)
 	#include <Logger.h>
-#endif        // CRY_AUDIO_IMPL_PORTAUDIO_USE_PRODUCTION_CODE
+#endif        // CRY_AUDIO_IMPL_PORTAUDIO_USE_DEBUG_CODE
 
 #include <portaudio.h>
 #include <sndfile.hh>
@@ -172,9 +172,9 @@ bool CEventInstance::Execute(
 			}
 			else
 			{
-#if defined(CRY_AUDIO_IMPL_PORTAUDIO_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_PORTAUDIO_USE_DEBUG_CODE)
 				Cry::Audio::Log(ELogType::Error, "StartStream failed: %s", Pa_GetErrorText(err));
-#endif        // CRY_AUDIO_IMPL_PORTAUDIO_USE_PRODUCTION_CODE
+#endif        // CRY_AUDIO_IMPL_PORTAUDIO_USE_DEBUG_CODE
 
 				Reset();
 
@@ -182,12 +182,12 @@ bool CEventInstance::Execute(
 				m_state = EEventInstanceState::WaitingForDestruction;
 			}
 		}
-#if defined(CRY_AUDIO_IMPL_PORTAUDIO_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_PORTAUDIO_USE_DEBUG_CODE)
 		else
 		{
 			Cry::Audio::Log(ELogType::Error, "OpenStream failed: %s", Pa_GetErrorText(err));
 		}
-#endif        // CRY_AUDIO_IMPL_PORTAUDIO_USE_PRODUCTION_CODE
+#endif        // CRY_AUDIO_IMPL_PORTAUDIO_USE_DEBUG_CODE
 	}
 
 	return m_state == EEventInstanceState::Playing;
@@ -247,7 +247,7 @@ void CEventInstance::Reset()
 {
 	if (m_pStream != nullptr)
 	{
-#if defined(CRY_AUDIO_IMPL_PORTAUDIO_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_PORTAUDIO_USE_DEBUG_CODE)
 		PaError const err = Pa_AbortStream(m_pStream);
 
 		if (err != paNoError)
@@ -256,14 +256,14 @@ void CEventInstance::Reset()
 		}
 #else
 		Pa_AbortStream(m_pStream);
-#endif        // CRY_AUDIO_IMPL_PORTAUDIO_USE_PRODUCTION_CODE
+#endif        // CRY_AUDIO_IMPL_PORTAUDIO_USE_DEBUG_CODE
 
 		m_pStream = nullptr;
 	}
 
 	if (m_pSndFile != nullptr)
 	{
-#if defined(CRY_AUDIO_IMPL_PORTAUDIO_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_PORTAUDIO_USE_DEBUG_CODE)
 		int const result = sf_close(m_pSndFile);
 
 		if (result != 0)
@@ -272,7 +272,7 @@ void CEventInstance::Reset()
 		}
 #else
 		sf_close(m_pSndFile);
-#endif        // CRY_AUDIO_IMPL_PORTAUDIO_USE_PRODUCTION_CODE
+#endif        // CRY_AUDIO_IMPL_PORTAUDIO_USE_DEBUG_CODE
 
 		m_pSndFile = nullptr;
 	}

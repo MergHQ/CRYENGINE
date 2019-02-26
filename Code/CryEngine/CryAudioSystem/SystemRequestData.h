@@ -6,9 +6,9 @@
 #include "Common/PoolObject.h"
 #include <CryAudio/IAudioSystem.h>
 
-#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_DEBUG_CODE)
 	#include <CrySystem/XML/IXml.h>
-#endif // CRY_AUDIO_USE_PRODUCTION_CODE
+#endif // CRY_AUDIO_USE_DEBUG_CODE
 
 namespace CryAudio
 {
@@ -49,7 +49,7 @@ enum class ESystemRequestType : EnumFlagsType
 	ExecuteDefaultTrigger,
 	StopTrigger,
 	StopAllTriggers,
-#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_DEBUG_CODE)
 	RefreshSystem,
 	ReloadControlsData,
 	RetriggerControls,
@@ -59,7 +59,7 @@ enum class ESystemRequestType : EnumFlagsType
 	ExecutePreviewTriggerExNode,
 	StopPreviewTrigger,
 	ResetRequestCount,
-#endif // CRY_AUDIO_USE_PRODUCTION_CODE
+#endif // CRY_AUDIO_USE_DEBUG_CODE
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -652,7 +652,7 @@ struct SSystemRequestData<ESystemRequestType::StopTrigger> final : public SSyste
 	ControlId const triggerId;
 };
 
-#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_DEBUG_CODE)
 //////////////////////////////////////////////////////////////////////////
 template<>
 struct SSystemRequestData<ESystemRequestType::RefreshSystem> final : public SSystemRequestDataBase
@@ -750,5 +750,5 @@ struct SSystemRequestData<ESystemRequestType::ExecutePreviewTriggerExNode> final
 
 	XmlNodeRef const pNode;
 };
-#endif // CRY_AUDIO_USE_PRODUCTION_CODE
+#endif // CRY_AUDIO_USE_DEBUG_CODE
 }      // namespace CryAudio

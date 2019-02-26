@@ -5,9 +5,9 @@
 #include <CryCore/StlUtils.h>
 #include <CrySystem/Profilers/FrameProfiler/FrameProfiler.h>
 
-#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_DEBUG_CODE)
 	#include "Common/Logger.h"
-#endif // CRY_AUDIO_USE_PRODUCTION_CODE
+#endif // CRY_AUDIO_USE_DEBUG_CODE
 
 namespace CryAudio
 {
@@ -68,12 +68,12 @@ ERequestStatus CEventListenerManager::RemoveRequestListener(void (*func)(SReques
 		}
 	}
 
-#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_DEBUG_CODE)
 	if (result == ERequestStatus::Failure)
 	{
 		Cry::Audio::Log(ELogType::Warning, "Failed to remove a request listener!");
 	}
-#endif // CRY_AUDIO_USE_PRODUCTION_CODE
+#endif // CRY_AUDIO_USE_DEBUG_CODE
 
 	return result;
 }

@@ -17,7 +17,7 @@
 #include <CryEntitySystem/IEntitySystem.h>
 #include <CryMath/Cry_Camera.h>
 
-#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_DEBUG_CODE)
 	#include "LoseFocusTrigger.h"
 	#include "GetFocusTrigger.h"
 	#include "MuteAllTrigger.h"
@@ -28,7 +28,7 @@
 	#include "Common/Logger.h"
 	#include "Common/DebugStyle.h"
 	#include <CryRenderer/IRenderAuxGeom.h>
-#endif // CRY_AUDIO_USE_PRODUCTION_CODE
+#endif // CRY_AUDIO_USE_DEBUG_CODE
 
 namespace CryAudio
 {
@@ -55,7 +55,7 @@ void CGlobalObject::ConstructTriggerInstance(
 	void* const pUserData,
 	void* const pUserDataOwner)
 {
-#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_DEBUG_CODE)
 	m_triggerInstances.emplace(
 		std::piecewise_construct,
 		std::forward_as_tuple(g_triggerInstanceIdCounter),
@@ -65,7 +65,7 @@ void CGlobalObject::ConstructTriggerInstance(
 		std::piecewise_construct,
 		std::forward_as_tuple(g_triggerInstanceIdCounter),
 		std::forward_as_tuple(new CTriggerInstance(triggerId, numPlayingConnectionInstances, numPendingConnectionInstances, flags, pOwner, pUserData, pUserDataOwner)));
-#endif // CRY_AUDIO_USE_PRODUCTION_CODE
+#endif // CRY_AUDIO_USE_DEBUG_CODE
 
 	g_triggerInstanceIdToGlobalObject[g_triggerInstanceIdCounter] = this;
 	IncrementTriggerInstanceIdCounter();
@@ -114,12 +114,12 @@ void CGlobalObject::ReportFinishedTriggerInstance(TriggerInstanceId const trigge
 			}
 		}
 	}
-#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_DEBUG_CODE)
 	else
 	{
 		Cry::Audio::Log(ELogType::Warning, "Unknown trigger instance id %u during %s", triggerInstanceId, __FUNCTION__);
 	}
-#endif  // CRY_AUDIO_USE_PRODUCTION_CODE
+#endif  // CRY_AUDIO_USE_DEBUG_CODE
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -143,7 +143,7 @@ void CGlobalObject::Update(float const deltaTime)
 	}
 }
 
-#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_DEBUG_CODE)
 ///////////////////////////////////////////////////////////////////////////
 void CGlobalObject::ForceImplementationRefresh(bool const setTransformation)
 {
@@ -470,5 +470,5 @@ void CGlobalObject::DrawDebugInfo(IRenderAuxGeom& auxGeom, float const posX, flo
 		}
 	}
 }
-#endif // CRY_AUDIO_USE_PRODUCTION_CODE
+#endif // CRY_AUDIO_USE_DEBUG_CODE
 }      // namespace CryAudio

@@ -33,7 +33,7 @@ public:
 	CCue& operator=(CCue const&) = delete;
 	CCue& operator=(CCue&&) = delete;
 
-#if defined(CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE)
 	explicit CCue(
 		uint32 const id,
 		char const* const szCueName,
@@ -65,7 +65,7 @@ public:
 		, m_numInstances(0)
 		, m_toBeDestructed(false)
 	{}
-#endif  // CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE
 
 	virtual ~CCue() override = default;
 
@@ -83,9 +83,9 @@ public:
 	bool           CanBeDestructed() const   { return m_toBeDestructed && (m_numInstances == 0); }
 	void           SetToBeDestructed() const { m_toBeDestructed = true; }
 
-#if defined(CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE)
 	float GetFadeOutTime() const { return m_fadeOutTime; }
-#endif  // CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE
 
 private:
 
@@ -96,10 +96,10 @@ private:
 	uint16            m_numInstances;
 	mutable bool      m_toBeDestructed;
 
-#if defined(CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE)
 	CryFixedStringT<MaxControlNameLength> const m_cueSheetName;
 	float const m_fadeOutTime;
-#endif  // CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE
 };
 } // namespace Adx2
 } // namespace Impl

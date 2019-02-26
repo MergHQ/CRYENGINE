@@ -2,7 +2,7 @@
 
 #pragma once
 
-#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_DEBUG_CODE)
 	#include <CryAudio/IAudioInterfacesCommonData.h>
 	#include <CryMath/Cry_Color.h>
 
@@ -114,4 +114,4 @@ using StateDrawInfo = std::map<ControlId, CStateDrawData>;
 using TriggerCounts = std::map<ControlId const, uint8>;
 }      // namespace Debug
 }      // namespace CryAudio
-#endif // CRY_AUDIO_USE_PRODUCTION_CODE
+#endif // CRY_AUDIO_USE_DEBUG_CODE

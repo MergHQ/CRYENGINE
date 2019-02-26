@@ -6,9 +6,9 @@
 #include "Event.h"
 #include <CryAudio/IAudioInterfacesCommonData.h>
 
-#if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE)
 	#include <Logger.h>
-#endif  // CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE
 
 #include <SDL_mixer.h>
 
@@ -107,17 +107,17 @@ void SetChannelPosition(CEvent const& event, int const channelID, float const di
 			               static_cast<uint8>(255.0f * rightVolume));
 		}
 	}
-#if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE)
 	else
 	{
 		Cry::Audio::Log(ELogType::Error, "The minimum attenuation distance (%f) is higher than the maximum (%f) of %s", min, max, event.GetName());
 	}
-#endif  // CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE
 }
 
-#if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE)
 size_t g_loadedSampleSize = 0;
-#endif // CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE
+#endif // CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE
 }      // namespace SDL_mixer
 }      // namespace Impl
 }      // namespace CryAudio

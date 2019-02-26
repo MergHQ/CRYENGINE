@@ -71,11 +71,11 @@ public:
 	virtual void DrawDebugInfoList(IRenderAuxGeom& auxGeom, float& posX, float posY, float const debugDistance, char const* const szTextFilter) const override;
 	// ~CryAudio::Impl::IImpl
 
-#if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE)
 	CEventInstance* ConstructEventInstance(TriggerInstanceId const triggerInstanceId, CEvent& event, CObject const& object);
 #else
 	CEventInstance* ConstructEventInstance(TriggerInstanceId const triggerInstanceId, CEvent& event);
-#endif  // CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE
 
 	void DestructEventInstance(CEventInstance const* const pEventInstance);
 
@@ -84,9 +84,9 @@ private:
 	size_t m_memoryAlignment;
 	string m_language;
 
-#if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE)
 	CryFixedStringT<MaxInfoStringLength> const m_name;
-#endif  // CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE
 };
 } // namespace SDL_mixer
 } // namespace Impl

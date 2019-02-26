@@ -30,7 +30,7 @@ public:
 	CEvent& operator=(CEvent const&) = delete;
 	CEvent& operator=(CEvent&&) = delete;
 
-#if defined(CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_FMOD_USE_DEBUG_CODE)
 	// For pure events.
 	explicit CEvent(
 		uint32 const id,
@@ -96,7 +96,7 @@ public:
 		, m_key(szKey)
 		, m_pEventDescription(nullptr)
 	{}
-#endif  // CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_FMOD_USE_DEBUG_CODE
 
 	virtual ~CEvent() override;
 

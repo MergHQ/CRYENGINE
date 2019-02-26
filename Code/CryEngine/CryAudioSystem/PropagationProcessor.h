@@ -87,7 +87,7 @@ private:
 
 	static int     s_occlusionRayFlags;
 
-	#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
+	#if defined(CRY_AUDIO_USE_DEBUG_CODE)
 public:
 
 	static uint16 s_totalSyncPhysRays;
@@ -117,7 +117,7 @@ private:
 	SRayDebugInfo m_rayDebugInfos[g_numConcurrentRaysHigh];
 	ColorB        m_listenerOcclusionPlaneColor;
 	Vec3          m_collisionSpherePositions[g_numRaySamplePositionsHigh] = { ZERO };
-	#endif // CRY_AUDIO_USE_PRODUCTION_CODE
+	#endif // CRY_AUDIO_USE_DEBUG_CODE
 };
 }      // namespace CryAudio
 #endif // CRY_AUDIO_USE_OCCLUSION

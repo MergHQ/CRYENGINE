@@ -24,9 +24,9 @@ enum class ECueInstanceFlags : EnumFlagsType
 	HasAbsoluteVelocity = BIT(2),
 	HasDoppler          = BIT(3),
 	ToBeRemoved         = BIT(4),
-#if defined(CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE)
 	IsStopping          = BIT(5),
-#endif  // CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE
 };
 CRY_CREATE_ENUM_FLAG_OPERATORS(ECueInstanceFlags);
 
@@ -40,7 +40,7 @@ public:
 	CCueInstance& operator=(CCueInstance const&) = delete;
 	CCueInstance& operator=(CCueInstance&&) = delete;
 
-#if defined(CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE)
 	explicit CCueInstance(
 		TriggerInstanceId const triggerInstanceId,
 		CriAtomExPlaybackId const playbackId,
@@ -63,7 +63,7 @@ public:
 		, m_cue(cue)
 		, m_flags(ECueInstanceFlags::None)
 	{}
-#endif  // CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE
 
 	~CCueInstance() = default;
 
@@ -82,11 +82,11 @@ public:
 	void                Pause();
 	void                Resume();
 
-#if defined(CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE)
 	void               StartFadeOut();
 	float              GetTimeFadeOutStarted() const { return m_timeFadeOutStarted; }
 	CBaseObject const& GetObject() const             { return m_baseObject; }
-#endif  // CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE
 
 private:
 
@@ -95,10 +95,10 @@ private:
 	std::atomic<ECueInstanceFlags> m_flags;
 	CCue&                          m_cue;
 
-#if defined(CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE)
 	float              m_timeFadeOutStarted;
 	CBaseObject const& m_baseObject;
-#endif  // CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE
 };
 } // namespace Adx2
 } // namespace Impl

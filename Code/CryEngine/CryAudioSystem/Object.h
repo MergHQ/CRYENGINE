@@ -10,11 +10,11 @@
 	#include "PropagationProcessor.h"
 #endif // CRY_AUDIO_USE_OCCLUSION
 
-#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_DEBUG_CODE)
 	#include "Debug.h"
 
 struct IRenderAuxGeom;
-#endif // CRY_AUDIO_USE_PRODUCTION_CODE
+#endif // CRY_AUDIO_USE_DEBUG_CODE
 
 namespace CryAudio
 {
@@ -24,11 +24,11 @@ enum class EObjectFlags : EnumFlagsType
 	InUse                 = BIT(0),
 	Active                = BIT(1),
 	Virtual               = BIT(2),
-#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_DEBUG_CODE)
 	CanRunOcclusion       = BIT(3),
 	TrackAbsoluteVelocity = BIT(4),
 	TrackRelativeVelocity = BIT(5),
-#endif // CRY_AUDIO_USE_PRODUCTION_CODE
+#endif // CRY_AUDIO_USE_DEBUG_CODE
 };
 CRY_CREATE_ENUM_FLAG_OPERATORS(EObjectFlags);
 
@@ -42,7 +42,7 @@ public:
 	CObject& operator=(CObject const&) = delete;
 	CObject& operator=(CObject&&) = delete;
 
-#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_DEBUG_CODE)
 	explicit CObject(CTransformation const& transformation, char const* const szName)
 		: m_pIObject(nullptr)
 		, m_flags(EObjectFlags::InUse)
@@ -66,7 +66,7 @@ public:
 		, m_propagationProcessor(*this)
 	#endif // CRY_AUDIO_USE_OCCLUSION
 	{}
-#endif // CRY_AUDIO_USE_PRODUCTION_CODE
+#endif // CRY_AUDIO_USE_DEBUG_CODE
 
 	// CryAudio::IObject
 	virtual EntityId GetEntityId() const override { return m_entityId; }
@@ -102,7 +102,7 @@ public:
 	void                   IncrementSyncCallbackCounter() { CryInterlockedIncrement(&m_numPendingSyncCallbacks); }
 	void                   DecrementSyncCallbackCounter() { CRY_ASSERT(m_numPendingSyncCallbacks >= 1); CryInterlockedDecrement(&m_numPendingSyncCallbacks); }
 
-#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_DEBUG_CODE)
 	void ConstructTriggerInstance(
 		ControlId const triggerId,
 		uint16 const numPlayingConnectionInstances,
@@ -121,7 +121,7 @@ public:
 		void* const pOwner,
 		void* const pUserData,
 		void* const pUserDataOwner);
-#endif // CRY_AUDIO_USE_PRODUCTION_CODE
+#endif // CRY_AUDIO_USE_DEBUG_CODE
 
 	void ReportStartedTriggerInstance(TriggerInstanceId const triggerInstanceId, ETriggerResult const result);
 	void ReportFinishedTriggerInstance(TriggerInstanceId const triggerInstanceId, ETriggerResult const result);
@@ -156,7 +156,7 @@ private:
 	CPropagationProcessor m_propagationProcessor;
 #endif // CRY_AUDIO_USE_OCCLUSION
 
-#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_DEBUG_CODE)
 public:
 
 	void           Release();
@@ -188,6 +188,6 @@ private:
 	float                                m_maxRadius;
 	CryFixedStringT<MaxObjectNameLength> m_name;
 	Debug::StateDrawInfo                 m_stateDrawInfo;
-#endif // CRY_AUDIO_USE_PRODUCTION_CODE
+#endif // CRY_AUDIO_USE_DEBUG_CODE
 };
 } // namespace CryAudio

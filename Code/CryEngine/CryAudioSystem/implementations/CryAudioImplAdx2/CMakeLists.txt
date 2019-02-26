@@ -78,7 +78,7 @@ if(AUDIO_ADX2)
 	endif()
 
 	CryEngineModule(CryAudioImplAdx2 FORCE_SHARED_WIN PCH "stdafx.cpp" SOLUTION_FOLDER "CryEngine/Audio/Implementations")
-	target_compile_definitions(${THIS_PROJECT} PRIVATE $<$<NOT:$<CONFIG:Release>>:CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE>)
+	target_compile_definitions(${THIS_PROJECT} PRIVATE $<$<NOT:$<CONFIG:Release>>:CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE>)
 	target_include_directories(${THIS_PROJECT} PRIVATE ../../Common "${SDK_DIR}/Audio/adx2/SDK/${ADX2_PLATFORM_FOLDER}/include" )
 
 	set( ADX2_LIB_Path "${SDK_DIR}/Audio/adx2/SDK/${ADX2_PLATFORM_FOLDER}/libs/${ADX2_LIB_FOLDER}/" )

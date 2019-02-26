@@ -2,7 +2,7 @@
 
 #pragma once
 
-#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_DEBUG_CODE)
 	#include "Entity.h"
 	#include "Common.h"
 
@@ -39,4 +39,4 @@ private:
 	TriggerConnections m_connections;
 };
 }      // namespace CryAudio
-#endif // CRY_AUDIO_USE_PRODUCTION_CODE
+#endif // CRY_AUDIO_USE_DEBUG_CODE

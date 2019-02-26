@@ -20,10 +20,10 @@ CriAtomEx3dSourceConfig g_3dSourceConfig;
 
 uint32 g_numObjectsWithDoppler = 0;
 
-#if defined(CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE)
 GameVariableValues g_gameVariableValues;
 CategoryValues g_categoryValues;
-#endif // CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE
+#endif // CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE
 }      // namespace Adx2
 }      // namespace Impl
 }      // namespace CryAudio

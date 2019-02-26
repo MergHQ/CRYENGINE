@@ -14,7 +14,7 @@ public:
 
 	using FileIds = std::vector<FileId>;
 
-#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_DEBUG_CODE)
 	explicit CPreloadRequest(
 		PreloadRequestId const id,
 		EDataScope const dataScope,
@@ -35,7 +35,7 @@ public:
 		, m_bAutoLoad(bAutoLoad)
 		, m_fileIds(fileIds)
 	{}
-#endif // CRY_AUDIO_USE_PRODUCTION_CODE
+#endif // CRY_AUDIO_USE_DEBUG_CODE
 
 	bool const m_bAutoLoad;
 	FileIds    m_fileIds;

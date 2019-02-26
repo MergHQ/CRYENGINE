@@ -20,11 +20,11 @@
 #include <CrySystem/IProjectManager.h>
 #include <CrySystem/IConsole.h>
 
-#if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE)
 	#include <Logger.h>
 	#include <DebugStyle.h>
 	#include <CrySystem/ITimer.h>
-#endif  // CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE
 
 #include <SDL_mixer.h>
 
@@ -37,13 +37,13 @@ namespace SDL_mixer
 SPoolSizes g_poolSizes;
 SPoolSizes g_poolSizesLevelSpecific;
 
-#if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE)
 SPoolSizes g_debugPoolSizes;
 uint16 g_objectPoolSize = 0;
 uint16 g_eventPoolSize = 0;
 
 EventInstances g_constructedEventInstances;
-#endif  // CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE
 
 //////////////////////////////////////////////////////////////////////////
 void CountPoolSizes(XmlNodeRef const pNode, SPoolSizes& poolSizes)
@@ -102,9 +102,9 @@ string GetFullFilePath(char const* const szFileName, char const* const szPath)
 
 ///////////////////////////////////////////////////////////////////////////
 CImpl::CImpl()
-#if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE)
 	: m_name("SDL Mixer 2.0.2")
-#endif  // CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE
 {
 	g_pImpl = this;
 
@@ -136,19 +136,19 @@ ERequestStatus CImpl::Init(uint16 const objectPoolSize)
 	{
 		g_cvars.m_eventPoolSize = 1;
 
-#if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE)
 		Cry::Audio::Log(ELogType::Warning, R"(Event pool size must be at least 1. Forcing the cvar "s_SDLMixerEventPoolSize" to 1!)");
-#endif    // CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE
+#endif    // CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE
 	}
 
 	g_objects.reserve(static_cast<size_t>(objectPoolSize));
 	AllocateMemoryPools(objectPoolSize, static_cast<uint16>(g_cvars.m_eventPoolSize));
 
-#if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE)
 	g_constructedEventInstances.reserve(static_cast<size_t>(g_cvars.m_eventPoolSize));
 	g_objectPoolSize = objectPoolSize;
 	g_eventPoolSize = static_cast<uint16>(g_cvars.m_eventPoolSize);
-#endif        // CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE
+#endif        // CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE
 
 	if (ICVar* const pCVar = gEnv->pConsole->GetCVar("g_languageAudio"))
 	{
@@ -210,9 +210,9 @@ void CImpl::OnBeforeLibraryDataChanged()
 	ZeroStruct(g_poolSizes);
 	ZeroStruct(g_poolSizesLevelSpecific);
 
-#if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE)
 	ZeroStruct(g_debugPoolSizes);
-#endif  // CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -222,10 +222,10 @@ void CImpl::OnAfterLibraryDataChanged()
 	g_poolSizes.parameters += g_poolSizesLevelSpecific.parameters;
 	g_poolSizes.switchStates += g_poolSizesLevelSpecific.switchStates;
 
-#if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE)
 	// Used to hide pools without allocations in debug draw.
 	g_debugPoolSizes = g_poolSizes;
-#endif  // CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE
 
 	g_poolSizes.events = std::max<uint16>(1, g_poolSizes.events);
 	g_poolSizes.parameters = std::max<uint16>(1, g_poolSizes.parameters);
@@ -313,11 +313,11 @@ char const* const CImpl::GetFileLocation(SFileInfo* const pFileInfo)
 //////////////////////////////////////////////////////////////////////////
 void CImpl::GetInfo(SImplInfo& implInfo) const
 {
-#if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE)
 	implInfo.name = m_name.c_str();
 #else
 	implInfo.name = "name-not-present-in-release-mode";
-#endif  // CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE
 	implInfo.folderName = g_szImplFolderName;
 }
 
@@ -369,16 +369,16 @@ ITriggerConnection* CImpl::ConstructTriggerConnection(XmlNodeRef const pRootNode
 
 				if (minDistance > maxDistance)
 				{
-#if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE)
 					Cry::Audio::Log(ELogType::Warning, "Min distance (%f) was greater than max distance (%f) of %s", minDistance, maxDistance, szFileName);
-#endif          // CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE
+#endif          // CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE
 
 					std::swap(minDistance, maxDistance);
 				}
 
-#if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE)
 				radius = maxDistance;
-#endif        // CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE
+#endif        // CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE
 			}
 
 			// Translate decibel to normalized value.
@@ -404,7 +404,7 @@ ITriggerConnection* CImpl::ConstructTriggerConnection(XmlNodeRef const pRootNode
 
 			MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::SDL_mixer::CEvent");
 
-#if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE)
 			pITriggerConnection = static_cast<ITriggerConnection*>(
 				new CEvent(
 					fullFilePath.c_str(),
@@ -431,26 +431,26 @@ ITriggerConnection* CImpl::ConstructTriggerConnection(XmlNodeRef const pRootNode
 					fadeInTimeMs,
 					fadeOutTimeMs,
 					isPanningEnabled));
-#endif        // CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE
+#endif        // CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE
 		}
 		else
 		{
 			MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::SDL_mixer::CEvent");
 
-#if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE)
 			pITriggerConnection = static_cast<ITriggerConnection*>(new CEvent(fullFilePath.c_str(), StringToId(fullFilePath.c_str()), type, sampleId));
 
 #else
 			pITriggerConnection = static_cast<ITriggerConnection*>(new CEvent(StringToId(fullFilePath.c_str()), type, sampleId));
-#endif        // CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE
+#endif        // CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE
 		}
 	}
-#if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE)
 	else
 	{
 		Cry::Audio::Log(ELogType::Warning, "Unknown SDL Mixer tag: %s", pRootNode->getTag());
 	}
-#endif  // CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE
 
 	return pITriggerConnection;
 }
@@ -458,7 +458,7 @@ ITriggerConnection* CImpl::ConstructTriggerConnection(XmlNodeRef const pRootNode
 //////////////////////////////////////////////////////////////////////////
 ITriggerConnection* CImpl::ConstructTriggerConnection(ITriggerInfo const* const pITriggerInfo)
 {
-#if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE)
 	ITriggerConnection* pITriggerConnection = nullptr;
 	auto const pTriggerInfo = static_cast<STriggerInfo const*>(pITriggerInfo);
 
@@ -486,7 +486,7 @@ ITriggerConnection* CImpl::ConstructTriggerConnection(ITriggerInfo const* const 
 	return pITriggerConnection;
 #else
 	return nullptr;
-#endif  // CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -525,11 +525,11 @@ IParameterConnection* CImpl::ConstructParameterConnection(XmlNodeRef const pRoot
 
 		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::SDL_mixer::CParameter");
 
-#if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE)
 		pIParameterConnection = static_cast<IParameterConnection*>(new CVolumeParameter(sampleId, multiplier, shift, szFileName));
 #else
 		pIParameterConnection = static_cast<IParameterConnection*>(new CVolumeParameter(sampleId, multiplier, shift));
-#endif    // CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE
+#endif    // CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE
 	}
 
 	return pIParameterConnection;
@@ -563,11 +563,11 @@ ISwitchStateConnection* CImpl::ConstructSwitchStateConnection(XmlNodeRef const p
 
 		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::SDL_mixer::CSwitchState");
 
-#if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE)
 		pISwitchStateConnection = static_cast<ISwitchStateConnection*>(new CVolumeState(sampleId, value, szFileName));
 #else
 		pISwitchStateConnection = static_cast<ISwitchStateConnection*>(new CVolumeState(sampleId, value));
-#endif    // CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE
+#endif    // CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE
 	}
 
 	return pISwitchStateConnection;
@@ -609,9 +609,9 @@ IObject* CImpl::ConstructGlobalObject()
 	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::SDL_mixer::CObject");
 	g_pObject = new CObject(CTransformation::GetEmptyObject(), 0);
 
-#if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE)
 	g_pObject->SetName("Global Object");
-#endif  // CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE
 
 	g_objects.push_back(g_pObject);
 	return static_cast<IObject*>(g_pObject);
@@ -625,12 +625,12 @@ IObject* CImpl::ConstructObject(CTransformation const& transformation, char cons
 	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::SDL_mixer::CObject");
 	auto const pObject = new CObject(transformation, id++);
 
-#if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE)
 	if (szName != nullptr)
 	{
 		pObject->SetName(szName);
 	}
-#endif  // CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE
 
 	g_objects.push_back(pObject);
 	return static_cast<IObject*>(pObject);
@@ -664,9 +664,9 @@ IListener* CImpl::ConstructListener(CTransformation const& transformation, char 
 	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::SDL_mixer::CListener");
 	g_pListener = new CListener(transformation, id++);
 
-#if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE)
 	g_pListener->SetName(szName);
-#endif  // CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE
 
 	return static_cast<IListener*>(g_pListener);
 }
@@ -713,7 +713,7 @@ void CImpl::SetLanguage(char const* const szLanguage)
 	}
 }
 
-#if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE)
 //////////////////////////////////////////////////////////////////////////
 CEventInstance* CImpl::ConstructEventInstance(TriggerInstanceId const triggerInstanceId, CEvent& event, CObject const& object)
 {
@@ -734,12 +734,12 @@ CEventInstance* CImpl::ConstructEventInstance(TriggerInstanceId const triggerIns
 	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::SDL_mixer::CEventInstance");
 	return new CEventInstance(triggerInstanceId, event);
 }
-#endif  // CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE
 
 //////////////////////////////////////////////////////////////////////////
 void CImpl::DestructEventInstance(CEventInstance const* const pEventInstance)
 {
-#if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE)
 	CRY_ASSERT_MESSAGE(pEventInstance != nullptr, "pEventInstance is nullpter during %s", __FUNCTION__);
 
 	auto iter(g_constructedEventInstances.begin());
@@ -759,7 +759,7 @@ void CImpl::DestructEventInstance(CEventInstance const* const pEventInstance)
 		}
 	}
 
-#endif  // CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE
 
 	CEvent* const pEvent = &pEventInstance->GetEvent();
 	delete pEventInstance;
@@ -775,7 +775,7 @@ void CImpl::DestructEventInstance(CEventInstance const* const pEventInstance)
 //////////////////////////////////////////////////////////////////////////
 void CImpl::DrawDebugMemoryInfo(IRenderAuxGeom& auxGeom, float const posX, float& posY, bool const drawDetailedInfo)
 {
-#if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE)
 	float const headerPosY = posY;
 	posY += Debug::g_systemHeaderLineSpacerHeight;
 
@@ -871,13 +871,13 @@ void CImpl::DrawDebugMemoryInfo(IRenderAuxGeom& auxGeom, float const posX, float
 
 	posY += Debug::g_systemLineHeight;
 	auxGeom.Draw2dLabel(posX, posY, Debug::g_systemFontSize, Debug::s_systemColorListenerActive, false, "Listener: %s | PosXYZ: %.2f %.2f %.2f | FwdXYZ: %.2f %.2f %.2f", szName, listenerPosition.x, listenerPosition.y, listenerPosition.z, listenerDirection.x, listenerDirection.y, listenerDirection.z);
-#endif  // CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CImpl::DrawDebugInfoList(IRenderAuxGeom& auxGeom, float& posX, float posY, float const debugDistance, char const* const szTextFilter) const
 {
-#if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE)
 	CryFixedStringT<MaxControlNameLength> lowerCaseSearchString(szTextFilter);
 	lowerCaseSearchString.MakeLower();
 
@@ -920,7 +920,7 @@ void CImpl::DrawDebugInfoList(IRenderAuxGeom& auxGeom, float& posX, float posY, 
 	}
 
 	posX += 600.0f;
-#endif  // CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE
 }
 } // namespace SDL_mixer
 } // namespace Impl

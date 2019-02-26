@@ -41,7 +41,7 @@ public:
 	virtual void                   StopAllTriggers() override;
 	virtual ERequestStatus         SetName(char const* const szName) override;
 
-	// Below data is only used when CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE is defined!
+	// Below data is only used when CRY_AUDIO_IMPL_FMOD_USE_DEBUG_CODE is defined!
 	virtual void DrawDebugInfo(IRenderAuxGeom& auxGeom, float const posX, float posY, char const* const szTextFilter) override {}
 	// ~CryAudio::Impl::IObject
 
@@ -59,9 +59,9 @@ public:
 	void                  SetReturn(CReturn const* const pReturn, float const amount);
 	void                  RemoveReturn(CReturn const* const pReturn);
 
-#if defined(CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_FMOD_USE_DEBUG_CODE)
 	char const* GetName() const { return m_name.c_str(); }
-#endif  // CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_FMOD_USE_DEBUG_CODE
 
 protected:
 
@@ -80,9 +80,9 @@ protected:
 	float              m_occlusion = 0.0f;
 	float              m_absoluteVelocity = 0.0f;
 
-#if defined(CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_FMOD_USE_DEBUG_CODE)
 	CryFixedStringT<MaxObjectNameLength> m_name;
-#endif  // CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_FMOD_USE_DEBUG_CODE
 };
 } // namespace Fmod
 } // namespace Impl

@@ -18,7 +18,7 @@ public:
 	CSetting& operator=(CSetting const&) = delete;
 	CSetting& operator=(CSetting&&) = delete;
 
-#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_DEBUG_CODE)
 	explicit CSetting(
 		ControlId const id,
 		EDataScope const dataScope,
@@ -39,7 +39,7 @@ public:
 		, m_isAutoLoad(isAutoLoad)
 		, m_connections(connections)
 	{}
-#endif // CRY_AUDIO_USE_PRODUCTION_CODE
+#endif // CRY_AUDIO_USE_DEBUG_CODE
 
 	~CSetting();
 

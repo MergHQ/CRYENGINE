@@ -29,11 +29,11 @@
 #include <CrySystem/IProjectManager.h>
 #include <CryAudio/IAudioSystem.h>
 
-#if defined(CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE)
 	#include <Logger.h>
 	#include <DebugStyle.h>
 	#include <CrySystem/ITimer.h>
-#endif  // CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE
 
 #if CRY_PLATFORM_WINDOWS
 	#include <cri_atom_wasapi.h>
@@ -48,12 +48,12 @@ namespace Adx2
 SPoolSizes g_poolSizes;
 SPoolSizes g_poolSizesLevelSpecific;
 
-#if defined(CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE)
 SPoolSizes g_debugPoolSizes;
 CueInstances g_constructedCueInstances;
 uint16 g_objectPoolSize = 0;
 uint16 g_cueInstancePoolSize = 0;
-#endif  // CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE
 
 //////////////////////////////////////////////////////////////////////////
 void CountPoolSizes(XmlNodeRef const pNode, SPoolSizes& poolSizes)
@@ -151,7 +151,7 @@ void FreeMemoryPools()
 	CBinary::FreeMemoryPool();
 }
 
-#if defined(CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE)
 using CueInfo = std::map<uint32, std::vector<std::pair<uint32, float>>>;
 CueInfo g_cueRadiusInfo;
 CueInfo g_cueFadeOutTimes;
@@ -267,7 +267,7 @@ static void errorCallback(Char8 const* const errid, Uint32 const p1, Uint32 cons
 	errorMessage = criErr_ConvertIdToMessage(errid, p1, p2);
 	Cry::Audio::Log(ELogType::Error, static_cast<char const*>(errorMessage));
 }
-#endif // CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE
+#endif // CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE
 
 //////////////////////////////////////////////////////////////////////////
 CriError selectIoFunc(CriChar8 const* szPath, CriFsDeviceId* pDeviceId, CriFsIoInterfacePtr* pIoInterface)
@@ -299,9 +299,9 @@ void userFree(void* const pObj, void* const pMem)
 CImpl::CImpl()
 	: m_pAcfBuffer(nullptr)
 	, m_dbasId(CRIATOMEXDBAS_ILLEGAL_ID)
-#if defined(CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE)
 	, m_name("Adx2 - " CRI_ATOM_VER_NUM)
-#endif  // CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE
 {
 	g_pImpl = this;
 }
@@ -315,9 +315,9 @@ ERequestStatus CImpl::Init(uint16 const objectPoolSize)
 	{
 		g_cvars.m_cuePoolSize = 1;
 
-#if defined(CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE)
 		Cry::Audio::Log(ELogType::Warning, R"(Cue pool size must be at least 1. Forcing the cvar "s_Adx2CuePoolSize" to 1!)");
-#endif    // CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE
+#endif    // CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE
 	}
 
 	g_constructedObjects.reserve(static_cast<size_t>(objectPoolSize));
@@ -330,7 +330,7 @@ ERequestStatus CImpl::Init(uint16 const objectPoolSize)
 	m_regularSoundBankFolder += g_szAssetsFolderName;
 	m_localizedSoundBankFolder = m_regularSoundBankFolder;
 
-#if defined(CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE)
 	g_constructedCueInstances.reserve(static_cast<size_t>(g_cvars.m_cuePoolSize));
 
 	g_objectPoolSize = objectPoolSize;
@@ -345,7 +345,7 @@ ERequestStatus CImpl::Init(uint16 const objectPoolSize)
 	}
 
 	criErr_SetCallback(errorCallback);
-#endif  // CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE
 
 	criAtomEx_SetUserAllocator(userMalloc, userFree, nullptr);
 
@@ -428,9 +428,9 @@ void CImpl::OnBeforeLibraryDataChanged()
 	ZeroStruct(g_poolSizes);
 	ZeroStruct(g_poolSizesLevelSpecific);
 
-#if defined(CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE)
 	ZeroStruct(g_debugPoolSizes);
-#endif  // CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -450,10 +450,10 @@ void CImpl::OnAfterLibraryDataChanged()
 	g_poolSizes.dspBusSettings += g_poolSizesLevelSpecific.dspBusSettings;
 	g_poolSizes.binaries += g_poolSizesLevelSpecific.binaries;
 
-#if defined(CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE)
 	// Used to hide pools without allocations in debug draw.
 	g_debugPoolSizes = g_poolSizes;
-#endif  // CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE
 
 	g_poolSizes.cues = std::max<uint16>(1, g_poolSizes.cues);
 	g_poolSizes.aisacControls = std::max<uint16>(1, g_poolSizes.aisacControls);
@@ -536,19 +536,19 @@ void CImpl::RegisterInMemoryFile(SFileInfo* const pFileInfo)
 				PathUtil::RemoveExtension(name);
 				g_acbHandles[StringToId(name.c_str())] = pFileData->pAcb;
 			}
-#if defined(CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE)
 			else
 			{
 				Cry::Audio::Log(ELogType::Error, "Failed to load ACB %s\n", pFileInfo->szFileName);
 			}
-#endif      // CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE
+#endif      // CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE
 		}
-#if defined(CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE)
 		else
 		{
 			Cry::Audio::Log(ELogType::Error, "Invalid FileData passed to the Adx2 implementation of %s", __FUNCTION__);
 		}
-#endif    // CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE
+#endif    // CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE
 	}
 }
 
@@ -563,12 +563,12 @@ void CImpl::UnregisterInMemoryFile(SFileInfo* const pFileInfo)
 		{
 			criAtomExAcb_Release(pFileData->pAcb);
 		}
-#if defined(CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE)
 		else
 		{
 			Cry::Audio::Log(ELogType::Error, "Invalid FileData passed to the Adx2 implementation of %s", __FUNCTION__);
 		}
-#endif    // CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE
+#endif    // CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE
 	}
 }
 
@@ -629,11 +629,11 @@ char const* const CImpl::GetFileLocation(SFileInfo* const pFileInfo)
 //////////////////////////////////////////////////////////////////////////
 void CImpl::GetInfo(SImplInfo& implInfo) const
 {
-#if defined(CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE)
 	implInfo.name = m_name.c_str();
 #else
 	implInfo.name = "name-not-present-in-release-mode";
-#endif  // CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE
 	implInfo.folderName = g_szImplFolderName;
 }
 
@@ -645,9 +645,9 @@ IObject* CImpl::ConstructGlobalObject()
 
 	if (!stl::push_back_unique(g_constructedObjects, static_cast<CBaseObject*>(g_pObject)))
 	{
-#if defined(CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE)
 		Cry::Audio::Log(ELogType::Warning, "Trying to construct an already registered object.");
-#endif    // CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE
+#endif    // CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE
 	}
 
 	return static_cast<IObject*>(g_pObject);
@@ -659,7 +659,7 @@ IObject* CImpl::ConstructObject(CTransformation const& transformation, char cons
 	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Adx2::CObject");
 	auto const pObject = new CObject(transformation);
 
-#if defined(CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE)
 	pObject->SetName(szName);
 
 	if (!stl::push_back_unique(g_constructedObjects, pObject))
@@ -668,7 +668,7 @@ IObject* CImpl::ConstructObject(CTransformation const& transformation, char cons
 	}
 #else
 	stl::push_back_unique(g_constructedObjects, pObject);
-#endif  // CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE
 
 	return static_cast<IObject*>(pObject);
 }
@@ -680,9 +680,9 @@ void CImpl::DestructObject(IObject const* const pIObject)
 
 	if (!stl::find_and_erase(g_constructedObjects, pBaseObject))
 	{
-#if defined(CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE)
 		Cry::Audio::Log(ELogType::Warning, "Trying to delete a non-existing object.");
-#endif    // CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE
+#endif    // CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE
 	}
 
 	delete pBaseObject;
@@ -701,9 +701,9 @@ IListener* CImpl::ConstructListener(CTransformation const& transformation, char 
 		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Adx2::CListener");
 		g_pListener = new CListener(transformation, id++, pHandle);
 
-#if defined(CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE)
 		g_pListener->SetName(szName);
-#endif    // CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE
+#endif    // CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE
 
 		pIListener = static_cast<IListener*>(g_pListener);
 	}
@@ -760,7 +760,7 @@ ITriggerConnection* CImpl::ConstructTriggerConnection(XmlNodeRef const pRootNode
 			}
 		}
 
-#if defined(CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE)
 		uint32 const cueSheetId = StringToId(szCueSheetName);
 		float fadeOutTime = 0.0f;
 
@@ -800,7 +800,7 @@ ITriggerConnection* CImpl::ConstructTriggerConnection(XmlNodeRef const pRootNode
 #else
 		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Adx2::CCue");
 		pITriggerConnection = static_cast<ITriggerConnection*>(new CCue(cueId, szName, StringToId(szCueSheetName), type));
-#endif    // CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE
+#endif    // CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE
 	}
 	else if (_stricmp(pRootNode->getTag(), g_szSnapshotTag) == 0)
 	{
@@ -816,12 +816,12 @@ ITriggerConnection* CImpl::ConstructTriggerConnection(XmlNodeRef const pRootNode
 		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Adx2::CSnapshot");
 		pITriggerConnection = static_cast<ITriggerConnection*>(new CSnapshot(szName, type, static_cast<CriSint32>(changeoverTime)));
 	}
-#if defined(CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE)
 	else
 	{
 		Cry::Audio::Log(ELogType::Warning, "Unknown Adx2 tag: %s", pRootNode->getTag());
 	}
-#endif    // CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE
+#endif    // CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE
 
 	return pITriggerConnection;
 }
@@ -829,7 +829,7 @@ ITriggerConnection* CImpl::ConstructTriggerConnection(XmlNodeRef const pRootNode
 //////////////////////////////////////////////////////////////////////////
 ITriggerConnection* CImpl::ConstructTriggerConnection(ITriggerInfo const* const pITriggerInfo)
 {
-#if defined(CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE)
 	ITriggerConnection* pITriggerConnection = nullptr;
 	auto const pTriggerInfo = static_cast<STriggerInfo const*>(pITriggerInfo);
 
@@ -863,7 +863,7 @@ ITriggerConnection* CImpl::ConstructTriggerConnection(ITriggerInfo const* const 
 	return pITriggerConnection;
 #else
 	return nullptr;
-#endif  // CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -927,12 +927,12 @@ IParameterConnection* CImpl::ConstructParameterConnection(XmlNodeRef const pRoot
 		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Adx2::CGameVariable");
 		pIParameterConnection = static_cast<IParameterConnection*>(new CGameVariable(szName, multiplier, shift));
 	}
-#if defined(CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE)
 	else
 	{
 		Cry::Audio::Log(ELogType::Warning, "Unknown Adx2 tag: %s", szTag);
 	}
-#endif    // CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE
+#endif    // CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE
 
 	return pIParameterConnection;
 }
@@ -966,12 +966,12 @@ bool ParseSelectorNode(XmlNodeRef const pNode, string& selectorName, string& sel
 			}
 		}
 	}
-#if defined(CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE)
 	else
 	{
 		Cry::Audio::Log(ELogType::Warning, "An Adx2 Selector %s inside SwitchState needs to have exactly one Selector Label.", szSelectorName);
 	}
-#endif    // CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE
+#endif    // CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE
 
 	return foundAttributes;
 }
@@ -1022,12 +1022,12 @@ ISwitchStateConnection* CImpl::ConstructSwitchStateConnection(XmlNodeRef const p
 		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Adx2::CCategoryState");
 		pISwitchStateConnection = static_cast<ISwitchStateConnection*>(new CCategoryState(szName, static_cast<CriFloat32>(value)));
 	}
-#if defined(CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE)
 	else
 	{
 		Cry::Audio::Log(ELogType::Warning, "Unknown Adx2 tag: %s", szTag);
 	}
-#endif    // CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE
+#endif    // CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE
 
 	return pISwitchStateConnection;
 }
@@ -1063,12 +1063,12 @@ IEnvironmentConnection* CImpl::ConstructEnvironmentConnection(XmlNodeRef const p
 		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Adx2::CAisacEnvironment");
 		pEnvironmentConnection = static_cast<IEnvironmentConnection*>(new CAisacEnvironment(szName, multiplier, shift));
 	}
-#if defined(CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE)
 	else
 	{
 		Cry::Audio::Log(ELogType::Warning, "Unknown Adx2 tag: %s", szTag);
 	}
-#endif    // CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE
+#endif    // CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE
 
 	return pEnvironmentConnection;
 }
@@ -1093,12 +1093,12 @@ ISettingConnection* CImpl::ConstructSettingConnection(XmlNodeRef const pRootNode
 		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Adx2::CDspBusSetting");
 		pISettingConnection = static_cast<ISettingConnection*>(new CDspBusSetting(szName));
 	}
-#if defined(CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE)
 	else
 	{
 		Cry::Audio::Log(ELogType::Warning, "Unknown Adx2 tag: %s", szTag);
 	}
-#endif    // CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE
+#endif    // CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE
 
 	return pISettingConnection;
 }
@@ -1112,14 +1112,14 @@ void CImpl::DestructSettingConnection(ISettingConnection const* const pISettingC
 //////////////////////////////////////////////////////////////////////////
 void CImpl::OnRefresh()
 {
-#if defined(CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE)
 	g_debugCurrentDspBusSettingName = g_debugNoneDspBusSetting;
 	m_acfFileSize = 0;
 	g_cueRadiusInfo.clear();
 	g_cueFadeOutTimes.clear();
 	LoadAcbInfos(m_regularSoundBankFolder);
 	LoadAcbInfos(m_localizedSoundBankFolder);
-#endif  // CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE
 
 	criAtomEx_UnregisterAcf();
 	RegisterAcf();
@@ -1144,7 +1144,7 @@ void CImpl::SetLanguage(char const* const szLanguage)
 	}
 }
 
-#if defined(CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE)
 //////////////////////////////////////////////////////////////////////////
 CCueInstance* CImpl::ConstructCueInstance(TriggerInstanceId const triggerInstanceId, CriAtomExPlaybackId const playbackId, CCue& cue, CBaseObject const& baseObject)
 {
@@ -1165,12 +1165,12 @@ CCueInstance* CImpl::ConstructCueInstance(TriggerInstanceId const triggerInstanc
 	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Adx2::CCueInstance");
 	return new CCueInstance(triggerInstanceId, playbackId, cue);
 }
-#endif  // CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE
 
 //////////////////////////////////////////////////////////////////////////
 void CImpl::DestructCueInstance(CCueInstance const* const pCueInstance)
 {
-#if defined(CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE)
 	CRY_ASSERT_MESSAGE(pCueInstance != nullptr, "pCueInstance is nullpter during %s", __FUNCTION__);
 
 	auto iter(g_constructedCueInstances.begin());
@@ -1189,7 +1189,7 @@ void CImpl::DestructCueInstance(CCueInstance const* const pCueInstance)
 			break;
 		}
 	}
-#endif  // CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE
 
 	CCue* const pCue = &pCueInstance->GetCue();
 	delete pCueInstance;
@@ -1232,12 +1232,12 @@ bool CImpl::InitializeLibrary()
 
 	bool const isInitialized = (criAtomEx_IsInitialized() == CRI_TRUE);
 
-#if defined(CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE)
 	if (!isInitialized)
 	{
 		Cry::Audio::Log(ELogType::Error, "Failed to initialize CriAtomEx");
 	}
-#endif  // CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE
 
 	return isInitialized;
 }
@@ -1254,12 +1254,12 @@ bool CImpl::AllocateVoicePool()
 
 	bool const isAllocated = (criAtomExVoicePool_AllocateStandardVoicePool(&voicePoolConfig, nullptr, 0) != nullptr);
 
-#if defined(CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE)
 	if (!isAllocated)
 	{
 		Cry::Audio::Log(ELogType::Error, "Failed to allocate voice pool");
 	}
-#endif  // CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE
 
 	return isAllocated;
 }
@@ -1274,12 +1274,12 @@ bool CImpl::CreateDbas()
 
 	bool const isCreated = (m_dbasId != CRIATOMEXDBAS_ILLEGAL_ID);
 
-#if defined(CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE)
 	if (!isCreated)
 	{
 		Cry::Audio::Log(ELogType::Error, "Failed to create D-BAS");
 	}
-#endif  // CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE
 
 	return isCreated;
 }
@@ -1333,23 +1333,23 @@ bool CImpl::RegisterAcf()
 		{
 			acfRegistered = true;
 
-#if defined(CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE)
 			m_acfFileSize = acfFileSize;
-#endif      // CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE
+#endif      // CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE
 		}
-#if defined(CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE)
 		else
 		{
 			Cry::Audio::Log(ELogType::Error, "Failed to register ACF");
 		}
-#endif    // CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE
+#endif    // CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE
 	}
-#if defined(CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE)
 	else
 	{
 		Cry::Audio::Log(ELogType::Error, "ACF not found.");
 	}
-#endif  // CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE
 
 	return acfRegistered;
 }
@@ -1408,7 +1408,7 @@ void CImpl::PauseAllObjects(CriBool const shouldPause)
 //////////////////////////////////////////////////////////////////////////
 void CImpl::DrawDebugMemoryInfo(IRenderAuxGeom& auxGeom, float const posX, float& posY, bool const drawDetailedInfo)
 {
-#if defined(CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE)
 
 	float const headerPosY = posY;
 	posY += Debug::g_systemHeaderLineSpacerHeight;
@@ -1629,13 +1629,13 @@ void CImpl::DrawDebugMemoryInfo(IRenderAuxGeom& auxGeom, float const posX, float
 	posY += Debug::g_systemLineHeight;
 	auxGeom.Draw2dLabel(posX, posY, Debug::g_systemFontSize, Debug::s_systemColorListenerActive, false, "Listener: %s | PosXYZ: %.2f %.2f %.2f | FwdXYZ: %.2f %.2f %.2f | Velocity: %.2f m/s",
 	                    szName, listenerPosition.x, listenerPosition.y, listenerPosition.z, listenerDirection.x, listenerDirection.y, listenerDirection.z, listenerVelocity);
-#endif  // CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CImpl::DrawDebugInfoList(IRenderAuxGeom& auxGeom, float& posX, float posY, float const debugDistance, char const* const szTextFilter) const
 {
-#if defined(CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE)
 	if ((g_cvars.m_debugListFilter & g_debugListMask) != 0)
 	{
 		CryFixedStringT<MaxControlNameLength> lowerCaseSearchString(szTextFilter);
@@ -1745,7 +1745,7 @@ void CImpl::DrawDebugInfoList(IRenderAuxGeom& auxGeom, float& posX, float posY, 
 			posX += 300.0f;
 		}
 	}
-#endif  // CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE
 }
 } // namespace Adx2
 } // namespace Impl

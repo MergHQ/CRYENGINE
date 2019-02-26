@@ -67,16 +67,16 @@ public:
 	virtual void                    OnRefresh() override;
 	virtual void                    SetLanguage(char const* const szLanguage) override;
 
-	// Below data is only used when CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE is defined!
+	// Below data is only used when CRY_AUDIO_IMPL_FMOD_USE_DEBUG_CODE is defined!
 	virtual void DrawDebugMemoryInfo(IRenderAuxGeom& auxGeom, float const posX, float& posY, bool const drawDetailedInfo) override;
 	virtual void DrawDebugInfoList(IRenderAuxGeom& auxGeom, float& posX, float posY, float const debugDistance, char const* const szTextFilter) const override;
 	// ~CryAudio::Impl::IImpl
 
-#if defined(CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_FMOD_USE_DEBUG_CODE)
 	CEventInstance* ConstructEventInstance(TriggerInstanceId const triggerInstanceId, CEvent& event, CBaseObject const& baseObject);
 #else
 	CEventInstance* ConstructEventInstance(TriggerInstanceId const triggerInstanceId, CEvent& event);
-#endif  // CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_FMOD_USE_DEBUG_CODE
 
 	void DestructEventInstance(CEventInstance const* const pEventInstance);
 
@@ -104,12 +104,12 @@ private:
 	FMOD::Studio::Bank*                   m_pMasterStringsBank;
 	CryFixedStringT<MaxControlNameLength> m_language;
 
-#if defined(CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_FMOD_USE_DEBUG_CODE)
 	CryFixedStringT<MaxInfoStringLength> m_name;
 	size_t                               m_masterBankSize = 0;
 	size_t                               m_masterAssetsBankSize = 0;
 	size_t                               m_masterStringsBankSize = 0;
-#endif  // CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_FMOD_USE_DEBUG_CODE
 };
 } // namespace Fmod
 } // namespace Impl

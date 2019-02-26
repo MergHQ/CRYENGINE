@@ -70,16 +70,16 @@ public:
 	virtual IListener*              ConstructListener(CTransformation const& transformation, char const* const szName = nullptr) override;
 	virtual void                    DestructListener(IListener* const pIListener) override;
 
-	// Below data is only used when CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE is defined!
+	// Below data is only used when CRY_AUDIO_IMPL_WWISE_USE_DEBUG_CODE is defined!
 	virtual void DrawDebugMemoryInfo(IRenderAuxGeom& auxGeom, float const posX, float& posY, bool const drawDetailedInfo) override;
 	virtual void DrawDebugInfoList(IRenderAuxGeom& auxGeom, float& posX, float posY, float const debugDistance, char const* const szTextFilter) const override;
 	// ~CryAudio::Impl::IImpl
 
-#if defined(CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_WWISE_USE_DEBUG_CODE)
 	CEventInstance* ConstructEventInstance(TriggerInstanceId const triggerInstanceId, CEvent& event, CBaseObject const& baseObject);
 #else
 	CEventInstance* ConstructEventInstance(TriggerInstanceId const triggerInstanceId, CEvent& event);
-#endif  // CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_WWISE_USE_DEBUG_CODE
 
 	void DestructEventInstance(CEventInstance const* const pEventInstance);
 
@@ -110,13 +110,13 @@ private:
 	using AudioInputDevices = std::map<DeviceId, SInputDeviceInfo>;
 	AudioInputDevices m_mapInputDevices;
 
-#if defined(CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_WWISE_USE_DEBUG_CODE)
 	void GetInitBankSize();
 
 	bool   m_bCommSystemInitialized;
 	CryFixedStringT<MaxInfoStringLength> m_name;
 	size_t m_initBankSize = 0;
-#endif  // CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_WWISE_USE_DEBUG_CODE
 
 #if defined(WWISE_USE_OCULUS)
 	void* m_pOculusSpatializerLibrary;

@@ -13,9 +13,9 @@
 #include <CrySystem/File/CryFile.h>
 #include <CryString/CryPath.h>
 
-#if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE)
 	#include <Logger.h>
-#endif  // CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE
 
 #include <SDL.h>
 #include <SDL_mixer.h>
@@ -73,12 +73,12 @@ void SoundEngine::UnloadSample(SampleId const nID)
 		Mix_FreeChunk(pSample);
 		stl::member_find_and_erase(g_sampleData, nID);
 	}
-#if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE)
 	else
 	{
 		Cry::Audio::Log(ELogType::Error, "Could not find sample with id %d", nID);
 	}
-#endif  // CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -193,9 +193,9 @@ bool SoundEngine::Init()
 {
 	if (SDL_Init(SDL_INIT_AUDIO) < 0)
 	{
-#if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE)
 		Cry::Audio::Log(ELogType::Error, "SDL::SDL_Init() returned: %s", SDL_GetError());
-#endif    // CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE
+#endif    // CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE
 
 		return false;
 	}
@@ -204,18 +204,18 @@ bool SoundEngine::Init()
 
 	if ((loadedFormats & g_supportedFormats) != g_supportedFormats)
 	{
-#if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE)
 		Cry::Audio::Log(ELogType::Error, R"(SDLMixer::Mix_Init() failed to init support for format flags %d with error "%s")", g_supportedFormats, Mix_GetError());
-#endif    // CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE
+#endif    // CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE
 
 		return false;
 	}
 
 	if (Mix_OpenAudio(g_sampleRate, MIX_DEFAULT_FORMAT, 2, g_bufferSize) < 0)
 	{
-#if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE)
 		Cry::Audio::Log(ELogType::Error, R"(SDLMixer::Mix_OpenAudio() failed to init the SDL Mixer API with error "%s")", Mix_GetError());
-#endif    // CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE
+#endif    // CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE
 
 		return false;
 	}
@@ -253,9 +253,9 @@ void FreeAllSampleData()
 	g_sampleData.clear();
 	g_samplePaths.clear();
 
-#if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE)
 	g_loadedSampleSize = 0;
-#endif    // CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE
+#endif    // CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -287,9 +287,9 @@ const SampleId SoundEngine::LoadSampleFromMemory(void* pMemory, size_t const siz
 	{
 		Mix_FreeChunk(pSample);
 
-#if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE)
 		Cry::Audio::Log(ELogType::Warning, "Loading sample %s which had already been loaded", samplePath.c_str());
-#endif    // CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE
+#endif    // CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE
 	}
 
 	SDL_RWops* pData = SDL_RWFromMem(pMemory, size);
@@ -303,25 +303,25 @@ const SampleId SoundEngine::LoadSampleFromMemory(void* pMemory, size_t const siz
 			g_sampleData[id] = pSample;
 			g_samplePaths[id] = samplePath;
 
-#if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE)
 			g_loadedSampleSize += size;
-#endif      // CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE
+#endif      // CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE
 
 			return id;
 		}
-#if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE)
 		else
 		{
 			Cry::Audio::Log(ELogType::Error, R"(SDL Mixer failed to load sample. Error: "%s")", Mix_GetError());
 		}
-#endif    // CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE
+#endif    // CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE
 	}
-#if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE)
 	else
 	{
 		Cry::Audio::Log(ELogType::Error, R"(SDL Mixer failed to transform the audio data. Error: "%s")", SDL_GetError());
 	}
-#endif  // CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE
 
 	return g_invalidSampleId;
 }
@@ -334,7 +334,7 @@ bool LoadSampleImpl(const SampleId id, const string& samplePath)
 
 	if (pSample != nullptr)
 	{
-#if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE)
 		SampleNameMap::const_iterator it = g_samplePaths.find(id);
 
 		if (it != g_samplePaths.end() && it->second != samplePath)
@@ -345,7 +345,7 @@ bool LoadSampleImpl(const SampleId id, const string& samplePath)
 		{
 			Cry::Audio::Log(ELogType::Error, "Loading sample '%s' which had already been loaded", samplePath.c_str());
 		}
-#endif    // CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE
+#endif    // CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE
 		g_sampleData[id] = pSample;
 		g_samplePaths[id] = samplePath;
 	}
@@ -363,9 +363,9 @@ bool LoadSampleImpl(const SampleId id, const string& samplePath)
 
 			if (newId == g_invalidSampleId)
 			{
-#if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE)
 				Cry::Audio::Log(ELogType::Error, R"(SDL Mixer failed to load sample %s. Error: "%s")", samplePath.c_str(), Mix_GetError());
-#endif        // CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE
+#endif        // CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE
 
 				bSuccess = false;
 			}
@@ -476,7 +476,7 @@ ETriggerResult SoundEngine::ExecuteEvent(CObject* const pObject, CEvent* const p
 
 	if (type == CEvent::EActionType::Start)
 	{
-#if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE)
 		CEventInstance* const pEventInstance = g_pImpl->ConstructEventInstance(
 			triggerInstanceId,
 			*pEvent,
@@ -485,7 +485,7 @@ ETriggerResult SoundEngine::ExecuteEvent(CObject* const pObject, CEvent* const p
 		CEventInstance* const pEventInstance = g_pImpl->ConstructEventInstance(
 			triggerInstanceId,
 			*pEvent);
-#endif      // CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE
+#endif      // CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE
 
 		// Start playing samples
 		Mix_Chunk* pSample = stl::find_in_map(g_sampleData, sampleId, nullptr);
@@ -543,26 +543,26 @@ ETriggerResult SoundEngine::ExecuteEvent(CObject* const pObject, CEvent* const p
 					g_channels[channelID].pObject = pObject;
 					pEventInstance->m_channels.push_back(channelID);
 				}
-#if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE)
 				else
 				{
 					Cry::Audio::Log(ELogType::Error, "Could not play sample. Error: %s", Mix_GetError());
 				}
-#endif          // CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE
+#endif          // CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE
 			}
-#if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE)
 			else
 			{
 				Cry::Audio::Log(ELogType::Error, "Could not play sample. Error: %s", Mix_GetError());
 			}
-#endif        // CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE
+#endif        // CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE
 		}
-#if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE)
 		else
 		{
 			Cry::Audio::Log(ELogType::Error, "Ran out of free audio channels. Are you trying to play more than %d samples?", g_numMixChannels);
 		}
-#endif      // CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE
+#endif      // CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE
 
 		if (!pEventInstance->m_channels.empty())
 		{

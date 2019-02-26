@@ -41,16 +41,16 @@ public:
 	virtual ERequestStatus         SetName(char const* const szName) override;
 	virtual void                   ToggleFunctionality(EObjectFunctionality const type, bool const enable) override {}
 
-	// Below data is only used when CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE is defined!
+	// Below data is only used when CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE is defined!
 	virtual void DrawDebugInfo(IRenderAuxGeom& auxGeom, float const posX, float posY, char const* const szTextFilter) override {}
 	// ~CryAudio::Impl::IObject
 
 	void StopEvent(uint32 const id);
 	void SetVolume(SampleId const sampleId, float const value);
 
-#if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE)
 	char const* GetName() const { return m_name.c_str(); }
-#endif  // CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE
 
 	EventInstances    m_eventInstances;
 	VolumeMultipliers m_volumeMultipliers;
@@ -60,9 +60,9 @@ private:
 	uint32 const    m_id;
 	CTransformation m_transformation;
 
-#if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE)
 	CryFixedStringT<MaxObjectNameLength> m_name;
-#endif  // CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE
 };
 } // namespace SDL_mixer
 } // namespace Impl
