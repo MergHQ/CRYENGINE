@@ -12,7 +12,6 @@
 #if defined(CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE)
 	#include <Logger.h>
 	#include <DebugStyle.h>
-	#include <CryRenderer/IRenderAuxGeom.h>
 #endif  // CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE
 
 namespace CryAudio

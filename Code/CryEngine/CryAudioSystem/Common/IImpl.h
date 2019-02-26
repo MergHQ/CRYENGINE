@@ -381,10 +381,10 @@ struct IImpl
 	 * @param[out] auxGeom - a reference to the IRenderAuxGeom that draws the debug info.
 	 * @param[in] posX - x-axis position of the auxGeom.
 	 * @param[out] posY - y-axis position of the auxGeom.
-	 * @param[in] showDetailedInfo - should detailed memory info be shown or not.
+	 * @param[in] drawDetailedInfo - should detailed memory info be drawn or not.
 	 * @return void
 	 */
-	virtual void DrawDebugMemoryInfo(IRenderAuxGeom& auxGeom, float const posX, float& posY, bool const showDetailedInfo) = 0;
+	virtual void DrawDebugMemoryInfo(IRenderAuxGeom& auxGeom, float const posX, float& posY, bool const drawDetailedInfo) = 0;
 
 	/**
 	 * Informs the audio middlware that it can draw debug information below the debug header in form of a list or multiple lists, e.g events.

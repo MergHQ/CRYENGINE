@@ -265,7 +265,7 @@ void CImpl::SetLanguage(char const* const szLanguage)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CImpl::DrawDebugMemoryInfo(IRenderAuxGeom& auxGeom, float posX, float& posY, bool const showDetailedInfo)
+void CImpl::DrawDebugMemoryInfo(IRenderAuxGeom& auxGeom, float posX, float& posY, bool const drawDetailedInfo)
 {
 }
 

@@ -67,7 +67,7 @@ public:
 	virtual void                    SetLanguage(char const* const szLanguage) override;
 
 	// Below data is only used when INCLUDE_AUDIO_PRODUCTION_CODE is defined!
-	virtual void DrawDebugMemoryInfo(IRenderAuxGeom& auxGeom, float const posX, float& posY, bool const showDetailedInfo) override;
+	virtual void DrawDebugMemoryInfo(IRenderAuxGeom& auxGeom, float const posX, float& posY, bool const drawDetailedInfo) override;
 	virtual void DrawDebugInfoList(IRenderAuxGeom& auxGeom, float& posX, float posY, float const debugDistance, char const* const szTextFilter) const override;
 	// ~CryAudio::Impl::IImpl
 

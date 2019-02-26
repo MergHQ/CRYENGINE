@@ -9,7 +9,6 @@
 
 #if defined(CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE)
 	#include <DebugStyle.h>
-	#include <CryRenderer/IRenderAuxGeom.h>
 #endif  // CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE
 
 namespace CryAudio
