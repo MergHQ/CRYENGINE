@@ -49,6 +49,11 @@ bool COBJExporter::ExportToFile(const char* filename, const SExportData* pExport
 		Quat rot(pObj->rot.w, pObj->rot.v.x, pObj->rot.v.y, pObj->rot.v.z);
 		Vec3 scale(pObj->scale.x, pObj->scale.y, pObj->scale.z);
 
+		if (numObjects == 1)
+		{
+			pos.SetZero();
+		}
+
 		Matrix34 tm = Matrix33::CreateScale(scale) * Matrix34(rot);
 		tm.SetTranslation(pos);
 
