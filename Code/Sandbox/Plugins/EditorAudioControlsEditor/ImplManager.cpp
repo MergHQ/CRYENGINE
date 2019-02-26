@@ -11,8 +11,6 @@
 #include <IUndoManager.h>
 #include <CrySystem/IConsole.h>
 
-constexpr char const* g_implCVarName = "s_AudioImplName";
-
 namespace ACE
 {
 typedef void (WINAPI * PGNSI)();
@@ -37,7 +35,7 @@ bool CImplManager::LoadImpl()
 	GetIEditor()->GetIUndoManager()->Suspend();
 
 	bool isLoaded = true;
-	ICVar const* const pCVar = gEnv->pConsole->GetCVar(g_implCVarName);
+	ICVar const* const pCVar = gEnv->pConsole->GetCVar(CryAudio::g_implCVarName);
 
 	if (pCVar != nullptr)
 	{
@@ -89,7 +87,7 @@ bool CImplManager::LoadImpl()
 	}
 	else
 	{
-		CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_WARNING, "[Audio Controls Editor] CVar %s not defined. Needed to derive the Editor plugin name.", g_implCVarName);
+		CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_WARNING, "[Audio Controls Editor] CVar %s not defined. Needed to derive the Editor plugin name.", CryAudio::g_implCVarName);
 		isLoaded = false;
 	}
 

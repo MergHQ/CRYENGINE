@@ -41,6 +41,8 @@ constexpr uint16 MaxMiscStringLength = 512;
 constexpr uint32 InvalidCRC32 = 0xFFFFffff;
 constexpr float FloatEpsilon = 1.0e-3f;
 
+constexpr char const* g_implCVarName = "s_ImplName";
+
 constexpr char const* g_szLoseFocusTriggerName = "lose_focus";
 constexpr char const* g_szGetFocusTriggerName = "get_focus";
 constexpr char const* g_szMuteAllTriggerName = "mute_all";
