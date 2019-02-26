@@ -23,7 +23,6 @@
 #if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE)
 	#include <Logger.h>
 	#include <DebugStyle.h>
-	#include <CryRenderer/IRenderAuxGeom.h>
 	#include <CrySystem/ITimer.h>
 #endif  // CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE
 
@@ -773,37 +772,8 @@ void CImpl::DestructEventInstance(CEventInstance const* const pEventInstance)
 	}
 }
 
-#if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE)
 //////////////////////////////////////////////////////////////////////////
-size_t DrawMemoryPoolInfo(
-	IRenderAuxGeom& auxGeom,
-	float const posX,
-	float& posY,
-	stl::SPoolMemoryUsage const& mem,
-	stl::SMemoryUsage const& pool,
-	char const* const szType,
-	uint16 const poolSize,
-	bool const drawInfo)
-{
-	if (drawInfo)
-	{
-		CryFixedStringT<Debug::MaxMemInfoStringLength> memAllocString;
-		Debug::FormatMemoryString(memAllocString, mem.nAlloc);
-
-		ColorF const& color = (static_cast<uint16>(pool.nUsed) > poolSize) ? Debug::s_globalColorError : Debug::s_systemColorTextPrimary;
-
-		posY += Debug::g_systemLineHeight;
-		auxGeom.Draw2dLabel(posX, posY, Debug::g_systemFontSize, color, false,
-		                    "[%s] Constructed: %" PRISIZE_T " | Allocated: %" PRISIZE_T " | Preallocated: %u | Pool Size: %s",
-		                    szType, pool.nUsed, pool.nAlloc, poolSize, memAllocString.c_str());
-	}
-
-	return mem.nAlloc;
-}
-#endif  // CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE
-
-//////////////////////////////////////////////////////////////////////////
-void CImpl::DrawDebugMemoryInfo(IRenderAuxGeom& auxGeom, float const posX, float& posY, bool const showDetailedInfo)
+void CImpl::DrawDebugMemoryInfo(IRenderAuxGeom& auxGeom, float const posX, float& posY, bool const drawDetailedInfo)
 {
 #if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE)
 	float const headerPosY = posY;
@@ -813,30 +783,60 @@ void CImpl::DrawDebugMemoryInfo(IRenderAuxGeom& auxGeom, float const posX, float
 
 	{
 		auto& allocator = CObject::GetAllocator();
-		totalPoolSize += DrawMemoryPoolInfo(auxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "Objects", g_objectPoolSize, showDetailedInfo);
+		size_t const memAlloc = allocator.GetTotalMemory().nAlloc;
+		totalPoolSize += memAlloc;
+
+		if (drawDetailedInfo)
+		{
+			Debug::DrawMemoryPoolInfo(auxGeom, posX, posY, memAlloc, allocator.GetCounts(), "Objects", g_objectPoolSize);
+		}
 	}
 
 	{
 		auto& allocator = CEventInstance::GetAllocator();
-		totalPoolSize += DrawMemoryPoolInfo(auxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "Event Instances", g_eventPoolSize, showDetailedInfo);
+		size_t const memAlloc = allocator.GetTotalMemory().nAlloc;
+		totalPoolSize += memAlloc;
+
+		if (drawDetailedInfo)
+		{
+			Debug::DrawMemoryPoolInfo(auxGeom, posX, posY, memAlloc, allocator.GetCounts(), "Event Instances", g_eventPoolSize);
+		}
 	}
 
 	if (g_debugPoolSizes.events > 0)
 	{
 		auto& allocator = CEvent::GetAllocator();
-		totalPoolSize += DrawMemoryPoolInfo(auxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "Events", g_poolSizes.events, showDetailedInfo);
+		size_t const memAlloc = allocator.GetTotalMemory().nAlloc;
+		totalPoolSize += memAlloc;
+
+		if (drawDetailedInfo)
+		{
+			Debug::DrawMemoryPoolInfo(auxGeom, posX, posY, memAlloc, allocator.GetCounts(), "Events", g_poolSizes.events);
+		}
 	}
 
 	if (g_debugPoolSizes.parameters > 0)
 	{
 		auto& allocator = CVolumeParameter::GetAllocator();
-		totalPoolSize += DrawMemoryPoolInfo(auxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "Parameters", g_poolSizes.parameters, showDetailedInfo);
+		size_t const memAlloc = allocator.GetTotalMemory().nAlloc;
+		totalPoolSize += memAlloc;
+
+		if (drawDetailedInfo)
+		{
+			Debug::DrawMemoryPoolInfo(auxGeom, posX, posY, memAlloc, allocator.GetCounts(), "Parameters", g_poolSizes.parameters);
+		}
 	}
 
 	if (g_debugPoolSizes.switchStates > 0)
 	{
 		auto& allocator = CVolumeState::GetAllocator();
-		totalPoolSize += DrawMemoryPoolInfo(auxGeom, posX, posY, allocator.GetTotalMemory(), allocator.GetCounts(), "SwitchStates", g_poolSizes.switchStates, showDetailedInfo);
+		size_t const memAlloc = allocator.GetTotalMemory().nAlloc;
+		totalPoolSize += memAlloc;
+
+		if (drawDetailedInfo)
+		{
+			Debug::DrawMemoryPoolInfo(auxGeom, posX, posY, memAlloc, allocator.GetCounts(), "SwitchStates", g_poolSizes.switchStates);
+		}
 	}
 
 	CryModuleMemoryInfo memInfo;

@@ -4,6 +4,7 @@
 
 #include <CryAudio/IAudioInterfacesCommonData.h>
 #include <CryMath/Cry_Color.h>
+#include <CryRenderer/IRenderAuxGeom.h>
 
 namespace CryAudio
 {
@@ -45,9 +46,31 @@ static ColorF const s_listColorItemStopping = Col_Yellow;
 
 constexpr uint8 MaxMemInfoStringLength = 16;
 
+//////////////////////////////////////////////////////////////////////////
 static void FormatMemoryString(CryFixedStringT<MaxMemInfoStringLength>& string, size_t const size)
 {
 	(size < 1024) ? (string.Format("%" PRISIZE_T " Byte", size)) : (string.Format("%" PRISIZE_T " KiB", size >> 10));
+}
+
+//////////////////////////////////////////////////////////////////////////
+static void DrawMemoryPoolInfo(
+	IRenderAuxGeom& auxGeom,
+	float const posX,
+	float& posY,
+	size_t memAlloc,
+	stl::SMemoryUsage const& pool,
+	char const* const szType,
+	uint16 const preallocated)
+{
+	CryFixedStringT<MaxMemInfoStringLength> memAllocString;
+	FormatMemoryString(memAllocString, memAlloc);
+
+	ColorF const& color = (static_cast<uint16>(pool.nUsed) > preallocated) ? s_globalColorError : s_systemColorTextPrimary;
+
+	posY += g_systemLineHeight;
+	auxGeom.Draw2dLabel(posX, posY, g_systemFontSize, color, false,
+	                    "[%s] Constructed: %" PRISIZE_T " | Allocated: %" PRISIZE_T " | Preallocated: %u | Pool Size: %s",
+	                    szType, pool.nUsed, pool.nAlloc, preallocated, memAllocString.c_str());
 }
 } // namespace Debug
 } // namespace CryAudio
