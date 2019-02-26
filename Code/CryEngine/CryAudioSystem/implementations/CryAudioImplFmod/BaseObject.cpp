@@ -11,9 +11,9 @@
 
 #include <CryAudio/IAudioSystem.h>
 
-#if defined(CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_FMOD_USE_DEBUG_CODE)
 	#include <Logger.h>
-#endif // CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE
+#endif // CRY_AUDIO_IMPL_FMOD_USE_DEBUG_CODE
 
 namespace CryAudio
 {
@@ -115,9 +115,9 @@ void CBaseObject::StopAllTriggers()
 //////////////////////////////////////////////////////////////////////////
 ERequestStatus CBaseObject::SetName(char const* const szName)
 {
-#if defined(CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_FMOD_USE_DEBUG_CODE)
 	m_name = szName;
-#endif  // CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_FMOD_USE_DEBUG_CODE
 	return ERequestStatus::Success;
 }
 
@@ -327,7 +327,7 @@ bool CBaseObject::SetEventInstance(CEventInstance* const pEventInstance)
 //////////////////////////////////////////////////////////////////////////
 void CBaseObject::UpdateVirtualFlag(CEventInstance* const pEventInstance)
 {
-#if defined(CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_FMOD_USE_DEBUG_CODE)
 	// Always update in production code for debug draw.
 	pEventInstance->UpdateVirtualState();
 
@@ -345,7 +345,7 @@ void CBaseObject::UpdateVirtualFlag(CEventInstance* const pEventInstance)
 			m_flags &= ~EObjectFlags::IsVirtual;
 		}
 	}
-#endif      // CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE
+#endif      // CRY_AUDIO_IMPL_FMOD_USE_DEBUG_CODE
 }
 
 //////////////////////////////////////////////////////////////////////////

@@ -22,7 +22,7 @@ public:
 	CParameterEnvironment& operator=(CParameterEnvironment const&) = delete;
 	CParameterEnvironment& operator=(CParameterEnvironment&&) = delete;
 
-#if defined(CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_FMOD_USE_DEBUG_CODE)
 	explicit CParameterEnvironment(
 		uint32 const id,
 		float const multiplier,
@@ -42,7 +42,7 @@ public:
 		, m_multiplier(multiplier)
 		, m_shift(shift)
 	{}
-#endif  // CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_FMOD_USE_DEBUG_CODE
 
 	virtual ~CParameterEnvironment() override;
 
@@ -56,9 +56,9 @@ private:
 	float const  m_multiplier;
 	float const  m_shift;
 
-#if defined(CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_FMOD_USE_DEBUG_CODE)
 	CryFixedStringT<MaxControlNameLength> const m_name;
-#endif  // CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_FMOD_USE_DEBUG_CODE
 };
 } // namespace Fmod
 } // namespace Impl

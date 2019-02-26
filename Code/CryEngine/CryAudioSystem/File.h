@@ -50,9 +50,9 @@ public:
 		, m_pMemoryBlock(nullptr)
 		, m_pReadStream(nullptr)
 		, m_pImplData(pImplData)
-#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_DEBUG_CODE)
 		, m_timeCached(0.0f)
-#endif // CRY_AUDIO_USE_PRODUCTION_CODE
+#endif // CRY_AUDIO_USE_DEBUG_CODE
 	{
 	}
 
@@ -67,8 +67,8 @@ public:
 	IReadStreamPtr                     m_pReadStream;
 	Impl::IFile*                       m_pImplData;
 
-#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_DEBUG_CODE)
 	float m_timeCached;
-#endif // CRY_AUDIO_USE_PRODUCTION_CODE
+#endif // CRY_AUDIO_USE_DEBUG_CODE
 };
 } // namespace CryAudio

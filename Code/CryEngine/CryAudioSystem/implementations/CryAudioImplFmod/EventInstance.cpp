@@ -8,9 +8,9 @@
 #include "Event.h"
 #include <CryAudio/IAudioSystem.h>
 
-#if defined(CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_FMOD_USE_DEBUG_CODE)
 	#include <Logger.h>
-#endif  // CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_FMOD_USE_DEBUG_CODE
 
 namespace CryAudio
 {
@@ -139,12 +139,12 @@ void CEventInstance::SetReturnSend(CReturn const* const pReturn, float const val
 			}
 		}
 	}
-#if defined(CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_FMOD_USE_DEBUG_CODE)
 	else
 	{
 		Cry::Audio::Log(ELogType::Error, "Event instance or master track of %s does not exist during %s", m_event.GetName(), __FUNCTION__);
 	}
-#endif  // CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_FMOD_USE_DEBUG_CODE
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -176,9 +176,9 @@ void CEventInstance::SetAbsoluteVelocity(float const velocity)
 //////////////////////////////////////////////////////////////////////////
 void CEventInstance::StopAllowFadeOut()
 {
-#if defined(CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_FMOD_USE_DEBUG_CODE)
 	m_isFadingOut = true;
-#endif  // CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_FMOD_USE_DEBUG_CODE
 
 	CRY_VERIFY(m_pInstance->stop(FMOD_STUDIO_STOP_ALLOWFADEOUT) == FMOD_OK);
 }

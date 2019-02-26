@@ -8,9 +8,9 @@
 #include "Common/IObject.h"
 #include "Common/ITriggerConnection.h"
 
-#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_DEBUG_CODE)
 	#include "Common/Logger.h"
-#endif  // CRY_AUDIO_USE_PRODUCTION_CODE
+#endif  // CRY_AUDIO_USE_DEBUG_CODE
 
 namespace CryAudio
 {
@@ -51,9 +51,9 @@ void ExecuteDefaultTriggerConnections(Control const* const pControl, TriggerConn
 
 		if ((result == ETriggerResult::Playing) || (result == ETriggerResult::Virtual) || (result == ETriggerResult::Pending))
 		{
-#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_DEBUG_CODE)
 			CRY_ASSERT_MESSAGE(pControl->GetDataScope() == EDataScope::Global, "Default controls must always have global data scope! (%s) during %s", pControl->GetName(), __FUNCTION__);
-#endif    // CRY_AUDIO_USE_PRODUCTION_CODE
+#endif    // CRY_AUDIO_USE_DEBUG_CODE
 
 			if (result != ETriggerResult::Pending)
 			{
@@ -64,12 +64,12 @@ void ExecuteDefaultTriggerConnections(Control const* const pControl, TriggerConn
 				++numPendingInstances;
 			}
 		}
-#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_DEBUG_CODE)
 		else if (result != ETriggerResult::DoNotTrack)
 		{
 			Cry::Audio::Log(ELogType::Warning, R"(Trigger "%s" failed on object "%s" during %s)", pControl->GetName(), g_object.GetName(), __FUNCTION__);
 		}
-#endif  // CRY_AUDIO_USE_PRODUCTION_CODE
+#endif  // CRY_AUDIO_USE_DEBUG_CODE
 	}
 
 	if ((numPlayingInstances > 0) || (numPendingInstances > 0))

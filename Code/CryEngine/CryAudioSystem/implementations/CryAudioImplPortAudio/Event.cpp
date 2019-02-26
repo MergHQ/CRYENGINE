@@ -6,9 +6,9 @@
 #include "EventInstance.h"
 #include "Impl.h"
 
-#if defined(CRY_AUDIO_IMPL_PORTAUDIO_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_PORTAUDIO_USE_DEBUG_CODE)
 	#include <Logger.h>
-#endif        // CRY_AUDIO_IMPL_PORTAUDIO_USE_PRODUCTION_CODE
+#endif        // CRY_AUDIO_IMPL_PORTAUDIO_USE_DEBUG_CODE
 
 namespace CryAudio
 {
@@ -25,11 +25,11 @@ ETriggerResult CEvent::Execute(IObject* const pIObject, TriggerInstanceId const 
 
 	if (actionType == EActionType::Start)
 	{
-#if defined(CRY_AUDIO_IMPL_PORTAUDIO_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_PORTAUDIO_USE_DEBUG_CODE)
 		CEventInstance* const pEventInstance = g_pImpl->ConstructEventInstance(triggerInstanceId, *this, *pObject);
 #else
 		CEventInstance* const pEventInstance = g_pImpl->ConstructEventInstance(triggerInstanceId, *this);
-#endif        // CRY_AUDIO_IMPL_PORTAUDIO_USE_PRODUCTION_CODE
+#endif        // CRY_AUDIO_IMPL_PORTAUDIO_USE_DEBUG_CODE
 
 		result = pEventInstance->Execute(
 			numLoops,

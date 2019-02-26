@@ -6,11 +6,11 @@
 #include "Common/IObject.h"
 #include "Common/IParameterConnection.h"
 
-#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_DEBUG_CODE)
 	#include "Object.h"
 	#include "GlobalObject.h"
 	#include "Common/Logger.h"
-#endif // CRY_AUDIO_USE_PRODUCTION_CODE
+#endif // CRY_AUDIO_USE_DEBUG_CODE
 
 namespace CryAudio
 {
@@ -25,7 +25,7 @@ CParameter::~CParameter()
 	}
 }
 
-#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_DEBUG_CODE)
 //////////////////////////////////////////////////////////////////////////
 void CParameter::Set(CObject const& object, float const value) const
 {
@@ -70,7 +70,7 @@ void CParameter::Set(Impl::IObject* const pIObject, float const value) const
 		pConnection->Set(pIObject, value);
 	}
 }
-#endif // CRY_AUDIO_USE_PRODUCTION_CODE
+#endif // CRY_AUDIO_USE_DEBUG_CODE
 
 //////////////////////////////////////////////////////////////////////////
 void CParameter::SetGlobally(float const value) const
@@ -80,11 +80,11 @@ void CParameter::SetGlobally(float const value) const
 		pConnection->SetGlobally(value);
 	}
 
-#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_DEBUG_CODE)
 	if (m_connections.empty())
 	{
 		Cry::Audio::Log(ELogType::Warning, R"(Parameter "%s" set globally without connections)", GetName());
 	}
-#endif // CRY_AUDIO_USE_PRODUCTION_CODE
+#endif // CRY_AUDIO_USE_DEBUG_CODE
 }
 } // namespace CryAudio

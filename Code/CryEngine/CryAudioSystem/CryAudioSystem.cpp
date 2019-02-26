@@ -10,9 +10,9 @@
 #include <CryExtension/ICryFactory.h>
 #include <CryExtension/ClassWeaver.h>
 
-#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_DEBUG_CODE)
 	#include <CryGame/IGameFramework.h>
-#endif // CRY_AUDIO_USE_PRODUCTION_CODE
+#endif // CRY_AUDIO_USE_DEBUG_CODE
 
 #if CRY_PLATFORM_DURANGO
 	#include <apu.h>
@@ -120,7 +120,7 @@ class CEngineModule_CryAudioSystem : public ISystemModule
 	//////////////////////////////////////////////////////////////////////////
 	static void OnImplChanged(ICVar* pImplNameCvar)
 	{
-#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_DEBUG_CODE)
 		CryFixedStringT<MAX_MODULE_NAME_LENGTH> const previousModuleName(s_currentModuleName);
 		auto const pSystem = static_cast<CSystem*>(gEnv->pAudioSystem);
 		SSystemInitParams systemInitParams;
@@ -185,7 +185,7 @@ class CEngineModule_CryAudioSystem : public ISystemModule
 
 		// In any case send the event as we always loaded some implementation (either the proper or the NULL one).
 		GetISystem()->GetISystemEventDispatcher()->OnSystemEvent(ESYSTEM_EVENT_AUDIO_IMPLEMENTATION_LOADED, 0, 0);
-#endif  // CRY_AUDIO_USE_PRODUCTION_CODE
+#endif  // CRY_AUDIO_USE_DEBUG_CODE
 	}
 
 private:

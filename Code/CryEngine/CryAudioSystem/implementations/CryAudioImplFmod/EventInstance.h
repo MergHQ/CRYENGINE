@@ -47,7 +47,7 @@ public:
 	CEventInstance& operator=(CEventInstance const&) = delete;
 	CEventInstance& operator=(CEventInstance&&) = delete;
 
-#if defined(CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_FMOD_USE_DEBUG_CODE)
 	explicit CEventInstance(TriggerInstanceId const triggerInstanceId, CEvent& event, CBaseObject const& baseObject)
 		: m_triggerInstanceId(triggerInstanceId)
 		, m_event(event)
@@ -77,7 +77,7 @@ public:
 		, m_pAbsoluteVelocityParameter(nullptr)
 		, m_toBeRemoved(false)
 	{}
-#endif  // CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_FMOD_USE_DEBUG_CODE
 
 	~CEventInstance();
 
@@ -102,10 +102,10 @@ public:
 	void                         SetToBeRemoved()      { m_toBeRemoved = true; }
 	bool                         IsToBeRemoved() const { return m_toBeRemoved; }
 
-#if defined(CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_FMOD_USE_DEBUG_CODE)
 	bool               IsFadingOut() const { return m_isFadingOut; }
 	CBaseObject const& GetObject() const   { return m_baseObject; }
-#endif  // CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_FMOD_USE_DEBUG_CODE
 
 private:
 
@@ -125,10 +125,10 @@ private:
 
 	std::atomic_bool                 m_toBeRemoved;
 
-#if defined(CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_FMOD_USE_DEBUG_CODE)
 	bool               m_isFadingOut;
 	CBaseObject const& m_baseObject;
-#endif  // CRY_AUDIO_IMPL_FMOD_USE_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_FMOD_USE_DEBUG_CODE
 };
 } // namespace Fmod
 } // namespace Impl

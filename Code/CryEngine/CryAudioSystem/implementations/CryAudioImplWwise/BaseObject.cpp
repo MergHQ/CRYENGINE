@@ -24,9 +24,9 @@ CBaseObject::CBaseObject(
 	, m_flags(EObjectFlags::None)
 	, m_position(position)
 	, m_distanceToListener(0.0f)
-#if defined(CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_WWISE_USE_DEBUG_CODE)
 	, m_name(szName)
-#endif  // CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_WWISE_USE_DEBUG_CODE
 {
 	m_eventInstances.reserve(2);
 }
@@ -66,7 +66,7 @@ void CBaseObject::Update(float const deltaTime)
 		}
 		else
 		{
-#if defined(CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_WWISE_USE_DEBUG_CODE)
 			// Always update in production code for debug draw.
 			pEventInstance->UpdateVirtualState(m_distanceToListener);
 
@@ -84,7 +84,7 @@ void CBaseObject::Update(float const deltaTime)
 					m_flags &= ~EObjectFlags::IsVirtual;
 				}
 			}
-#endif      // CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE
+#endif      // CRY_AUDIO_IMPL_WWISE_USE_DEBUG_CODE
 			++iter;
 		}
 	}
@@ -136,7 +136,7 @@ void CBaseObject::StopAllTriggers()
 //////////////////////////////////////////////////////////////////////////
 ERequestStatus CBaseObject::SetName(char const* const szName)
 {
-#if defined(CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_WWISE_USE_DEBUG_CODE)
 	StopAllTriggers();
 
 	AKRESULT wwiseResult = AK::SoundEngine::UnregisterGameObj(m_id);
@@ -150,7 +150,7 @@ ERequestStatus CBaseObject::SetName(char const* const szName)
 	return ERequestStatus::SuccessNeedsRefresh;
 #else
 	return ERequestStatus::Success;
-#endif  // CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE
+#endif  // CRY_AUDIO_IMPL_WWISE_USE_DEBUG_CODE
 }
 
 //////////////////////////////////////////////////////////////////////////

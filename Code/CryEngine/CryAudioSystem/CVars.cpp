@@ -10,10 +10,10 @@
 	#include "PropagationProcessor.h"
 #endif // CRY_AUDIO_USE_OCCLUSION
 
-#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_DEBUG_CODE)
 	#include "Common/Logger.h"
 	#include <CryGame/IGameFramework.h>
-#endif // CRY_AUDIO_USE_PRODUCTION_CODE
+#endif // CRY_AUDIO_USE_DEBUG_CODE
 
 namespace CryAudio
 {
@@ -31,7 +31,7 @@ void OnOcclusionPlaneSizeChanged(ICVar* const pCvar)
 }
 #endif // CRY_AUDIO_USE_OCCLUSION
 
-#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_DEBUG_CODE)
 //////////////////////////////////////////////////////////////////////////
 void CmdExecuteTrigger(IConsoleCmdArgs* pCmdArgs)
 {
@@ -211,7 +211,7 @@ void CmdRefresh(IConsoleCmdArgs* pCmdArgs)
 {
 	GetISystem()->GetISystemEventDispatcher()->OnSystemEvent(ESYSTEM_EVENT_AUDIO_REFRESH, reinterpret_cast<UINT_PTR>(gEnv->pGameFramework->GetLevelName()), 0);
 }
-#endif // CRY_AUDIO_USE_PRODUCTION_CODE
+#endif // CRY_AUDIO_USE_DEBUG_CODE
 
 //////////////////////////////////////////////////////////////////////////
 void CCVars::RegisterVariables()
@@ -299,7 +299,7 @@ void CCVars::RegisterVariables()
 	               "1: Initial occlusion check uses 1 ray from the center of the listener occlusion plane.\n"
 	               "2: Initial occlusion check uses 5 rays. The center ray and one at each corner of the listener occlusion plane.\n");
 
-	#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
+	#if defined(CRY_AUDIO_USE_DEBUG_CODE)
 	REGISTER_CVAR2("s_OcclusionGlobalType", &m_occlusionGlobalType, m_occlusionGlobalType, VF_DEV_ONLY,
 	               "Can override audio objects' obstruction/occlusion ray type on a global scale.\n"
 	               "If set it determines whether audio objects use no, adaptive, low, medium or high granularity for rays.\n"
@@ -313,10 +313,10 @@ void CCVars::RegisterVariables()
 	               "5: All audio objects use high ray casting.\n"
 	               "Usage: s_OcclusionGlobalType [0/1/2/3/4/5]\n"
 	               "Default: 0\n");
-	#endif // CRY_AUDIO_USE_PRODUCTION_CODE
+	#endif // CRY_AUDIO_USE_DEBUG_CODE
 #endif   // CRY_AUDIO_USE_OCCLUSION
 
-#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_DEBUG_CODE)
 	REGISTER_CVAR2("s_DebugDistance", &m_debugDistance, m_debugDistance, VF_CHEAT | VF_CHEAT_NOCHECK,
 	               "Limits drawing of audio object debug info to the specified distance around the active listeners. Setting this cvar to 0 disables the limiting.\n"
 	               "Usage: s_DebugDistance [0/...]\n"
@@ -437,7 +437,7 @@ void CCVars::RegisterVariables()
 	REGISTER_COMMAND("s_Refresh", CmdRefresh, VF_CHEAT,
 	                 "Refreshes the audio system.\n"
 	                 "Usage: s_Refresh\n");
-#endif // CRY_AUDIO_USE_PRODUCTION_CODE
+#endif // CRY_AUDIO_USE_DEBUG_CODE
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -466,12 +466,12 @@ void CCVars::UnregisterVariables()
 		pConsole->UnregisterVariable("s_OcclusionCollisionTypes");
 		pConsole->UnregisterVariable("s_OcclusionSetFullOnMaxHits");
 		pConsole->UnregisterVariable("s_OcclusionInitialRayCastMode");
-	#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
+	#if defined(CRY_AUDIO_USE_DEBUG_CODE)
 		pConsole->UnregisterVariable("s_OcclusionGlobalType");
-	#endif // CRY_AUDIO_USE_PRODUCTION_CODE
+	#endif // CRY_AUDIO_USE_DEBUG_CODE
 #endif   // CRY_AUDIO_USE_OCCLUSION
 
-#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_DEBUG_CODE)
 		pConsole->UnregisterVariable("s_DebugDistance");
 		pConsole->UnregisterVariable("s_LoggingOptions");
 		pConsole->UnregisterVariable("s_DrawDebug");
@@ -490,7 +490,7 @@ void CCVars::UnregisterVariables()
 		pConsole->UnregisterVariable("s_UnloadSetting");
 		pConsole->UnregisterVariable("s_ResetRequestCount");
 		pConsole->UnregisterVariable("s_Refresh");
-#endif // CRY_AUDIO_USE_PRODUCTION_CODE
+#endif // CRY_AUDIO_USE_DEBUG_CODE
 	}
 }
 }      // namespace CryAudio

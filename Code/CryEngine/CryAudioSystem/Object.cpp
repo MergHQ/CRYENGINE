@@ -20,12 +20,12 @@
 #include <CryEntitySystem/IEntitySystem.h>
 #include <CryMath/Cry_Camera.h>
 
-#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_DEBUG_CODE)
 	#include "PreviewTrigger.h"
 	#include "Common/Logger.h"
 	#include "Common/DebugStyle.h"
 	#include <CryRenderer/IRenderAuxGeom.h>
-#endif // CRY_AUDIO_USE_PRODUCTION_CODE
+#endif // CRY_AUDIO_USE_DEBUG_CODE
 
 namespace CryAudio
 {
@@ -39,9 +39,9 @@ void PushRequest(SRequestData const& requestData, SRequestUserData const& userDa
 //////////////////////////////////////////////////////////////////////////
 void CObject::Destruct()
 {
-#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_DEBUG_CODE)
 	stl::find_and_erase(g_constructedObjects, this);
-#endif      // CRY_AUDIO_USE_PRODUCTION_CODE
+#endif      // CRY_AUDIO_USE_DEBUG_CODE
 
 	g_pIImpl->DestructObject(m_pIObject);
 	m_pIObject = nullptr;
@@ -67,7 +67,7 @@ void CObject::SetActive()
 	g_triggerInstanceIdToObject[g_triggerInstanceIdCounter] = this;
 }
 
-#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_DEBUG_CODE)
 //////////////////////////////////////////////////////////////////////////
 void CObject::ConstructTriggerInstance(
 	ControlId const triggerId,
@@ -109,7 +109,7 @@ void CObject::ConstructTriggerInstance(
 
 	IncrementTriggerInstanceIdCounter();
 }
-#endif // CRY_AUDIO_USE_PRODUCTION_CODE
+#endif // CRY_AUDIO_USE_DEBUG_CODE
 
 ///////////////////////////////////////////////////////////////////////////
 void CObject::ReportStartedTriggerInstance(TriggerInstanceId const triggerInstanceId, ETriggerResult const result)
@@ -162,7 +162,7 @@ void CObject::ReportFinishedTriggerInstance(TriggerInstanceId const triggerInsta
 			}
 		}
 	}
-#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_DEBUG_CODE)
 	else
 	{
 		Cry::Audio::Log(ELogType::Warning, "Unknown trigger instance id %u during %s", triggerInstanceId, __FUNCTION__);
@@ -175,7 +175,7 @@ void CObject::ReportFinishedTriggerInstance(TriggerInstanceId const triggerInsta
 	{
 		m_maxRadius = std::max(triggerState.second->GetRadius(), m_maxRadius);
 	}
-#endif  // CRY_AUDIO_USE_PRODUCTION_CODE
+#endif  // CRY_AUDIO_USE_DEBUG_CODE
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -262,9 +262,9 @@ void CObject::Init(Impl::IObject* const pIObject, EntityId const entityId)
 	m_entityId = entityId;
 	m_pIObject = pIObject;
 
-#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_DEBUG_CODE)
 	CRY_ASSERT_MESSAGE(m_pIObject != nullptr, "m_pIObject is nullptr on object \"%s\" during %s", m_name.c_str(), __FUNCTION__);
-#endif  // CRY_AUDIO_USE_PRODUCTION_CODE
+#endif  // CRY_AUDIO_USE_DEBUG_CODE
 
 #if defined(CRY_AUDIO_USE_OCCLUSION)
 	m_propagationProcessor.Init();
@@ -283,7 +283,7 @@ void CObject::RemoveFlag(EObjectFlags const flag)
 	m_flags &= ~flag;
 }
 
-#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_DEBUG_CODE)
 //////////////////////////////////////////////////////////////////////////
 void CObject::Release()
 {
@@ -831,7 +831,7 @@ void CObject::UpdateMaxRadius(float const radius)
 {
 	m_maxRadius = std::max(radius, m_maxRadius);
 }
-#endif // CRY_AUDIO_USE_PRODUCTION_CODE
+#endif // CRY_AUDIO_USE_DEBUG_CODE
 
 //////////////////////////////////////////////////////////////////////////
 void CObject::ExecuteTrigger(ControlId const triggerId, SRequestUserData const& userData /* = SAudioRequestUserData::GetEmptyObject() */)
@@ -914,10 +914,10 @@ void CObject::SetOcclusionRayOffset(float const offset, SRequestUserData const& 
 //////////////////////////////////////////////////////////////////////////
 void CObject::SetName(char const* const szName, SRequestUserData const& userData /* = SAudioRequestUserData::GetEmptyObject() */)
 {
-#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_DEBUG_CODE)
 	SObjectRequestData<EObjectRequestType::SetName> requestData(this, szName);
 	PushRequest(requestData, userData);
-#endif // CRY_AUDIO_USE_PRODUCTION_CODE
+#endif // CRY_AUDIO_USE_DEBUG_CODE
 }
 
 //////////////////////////////////////////////////////////////////////////

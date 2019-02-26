@@ -40,19 +40,19 @@ public:
 	float m_occlusionHighDistance = 10.0f;
 	float m_occlusionMediumDistance = 80.0f;
 	float m_occlusionListenerPlaneSize = 0.0f;
-	#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
+	#if defined(CRY_AUDIO_USE_DEBUG_CODE)
 	int   m_occlusionGlobalType = 0;
-	#endif // CRY_AUDIO_USE_PRODUCTION_CODE
+	#endif // CRY_AUDIO_USE_DEBUG_CODE
 #endif   // CRY_AUDIO_USE_OCCLUSION
 
-#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_DEBUG_CODE)
 	float  m_debugDistance = 0.0f;
 	int    m_loggingOptions = 0;
 	int    m_drawDebug = 0;
 	int    m_fileCacheManagerDebugFilter = 0;
 	int    m_hideInactiveObjects = 0;
 	ICVar* m_pDebugFilter = nullptr;
-#endif // CRY_AUDIO_USE_PRODUCTION_CODE
+#endif // CRY_AUDIO_USE_DEBUG_CODE
 };
 
 extern CCVars g_cvars;

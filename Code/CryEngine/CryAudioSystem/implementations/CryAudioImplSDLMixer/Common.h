@@ -36,9 +36,9 @@ void  GetDistanceAngleToObject(
 	float& angle);
 void SetChannelPosition(CEvent const& event, int const channelID, float const distance, float const angle);
 
-#if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE)
 extern size_t g_loadedSampleSize;
-#endif // CRY_AUDIO_IMPL_SDLMIXER_USE_PRODUCTION_CODE
+#endif // CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE
 }      // namespace SDL_mixer
 }      // namespace Impl
 }      // namespace CryAudio

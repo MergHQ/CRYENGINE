@@ -37,7 +37,7 @@ public:
 
 	Impl::IListener* m_pImplData;
 
-#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_DEBUG_CODE)
 	void                   HandleSetName(char const* const szName);
 	char const*            GetName() const                { return m_name.c_str(); }
 	CTransformation const& GetDebugTransformation() const { return m_transformation; }
@@ -46,6 +46,6 @@ private:
 
 	CTransformation                      m_transformation;
 	CryFixedStringT<MaxObjectNameLength> m_name;
-#endif // CRY_AUDIO_USE_PRODUCTION_CODE
+#endif // CRY_AUDIO_USE_DEBUG_CODE
 };
 } // namespace CryAudio

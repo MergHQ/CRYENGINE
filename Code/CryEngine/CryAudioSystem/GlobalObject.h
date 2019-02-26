@@ -4,11 +4,11 @@
 
 #include "TriggerInstance.h"
 
-#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_DEBUG_CODE)
 	#include "Debug.h"
 
 struct IRenderAuxGeom;
-#endif // CRY_AUDIO_USE_PRODUCTION_CODE
+#endif // CRY_AUDIO_USE_DEBUG_CODE
 
 namespace CryAudio
 {
@@ -21,7 +21,7 @@ public:
 	CGlobalObject& operator=(CGlobalObject const&) = delete;
 	CGlobalObject& operator=(CGlobalObject&&) = delete;
 
-#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_DEBUG_CODE)
 
 	CGlobalObject() = delete;
 
@@ -34,7 +34,7 @@ public:
 	CGlobalObject()
 		: m_pIObject(nullptr)
 	{}
-#endif // CRY_AUDIO_USE_PRODUCTION_CODE
+#endif // CRY_AUDIO_USE_DEBUG_CODE
 
 	void           Release();
 
@@ -62,7 +62,7 @@ private:
 	TriggerInstances m_triggerInstances;
 	Impl::IObject*   m_pIObject;
 
-#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_USE_DEBUG_CODE)
 public:
 
 	void ForceImplementationRefresh(bool const setTransformation);
@@ -90,6 +90,6 @@ private:
 	SwitchStateIds                       m_switchStates;
 	CryFixedStringT<MaxObjectNameLength> m_name;
 	Debug::StateDrawInfo                 m_stateDrawInfo;
-#endif // CRY_AUDIO_USE_PRODUCTION_CODE
+#endif // CRY_AUDIO_USE_DEBUG_CODE
 };
 } // namespace CryAudio

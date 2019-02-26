@@ -48,11 +48,11 @@ ETriggerResult CEvent::Execute(IObject* const pIObject, TriggerInstanceId const 
 
 	auto const pBaseObject = static_cast<CBaseObject*>(pIObject);
 
-#if defined(CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_WWISE_USE_DEBUG_CODE)
 	CEventInstance* const pEventInstance = g_pImpl->ConstructEventInstance(triggerInstanceId, *this, *pBaseObject);
 #else
 	CEventInstance* const pEventInstance = g_pImpl->ConstructEventInstance(triggerInstanceId, *this);
-#endif      // CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE
+#endif      // CRY_AUDIO_IMPL_WWISE_USE_DEBUG_CODE
 
 	pBaseObject->SetAuxSendValues();
 
@@ -60,12 +60,12 @@ ETriggerResult CEvent::Execute(IObject* const pIObject, TriggerInstanceId const 
 
 	if (playingId != AK_INVALID_PLAYING_ID)
 	{
-#if defined(CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_WWISE_USE_DEBUG_CODE)
 		{
 			CryAutoLock<CryCriticalSection> const lock(CryAudio::Impl::Wwise::g_cs);
 			g_playingIds[playingId] = pEventInstance;
 		}
-#endif      // CRY_AUDIO_IMPL_WWISE_USE_PRODUCTION_CODE
+#endif      // CRY_AUDIO_IMPL_WWISE_USE_DEBUG_CODE
 
 		pEventInstance->SetPlayingId(playingId);
 		pBaseObject->AddEventInstance(pEventInstance);

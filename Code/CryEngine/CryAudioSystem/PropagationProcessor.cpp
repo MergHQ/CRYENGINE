@@ -14,19 +14,19 @@
 	#include <Cry3DEngine/I3DEngine.h>
 	#include <Cry3DEngine/ISurfaceType.h>
 
-	#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
+	#if defined(CRY_AUDIO_USE_DEBUG_CODE)
 		#include "Debug.h"
 		#include <CryRenderer/IRenderAuxGeom.h>
 		#include <CryMath/Random.h>
-	#endif // CRY_AUDIO_USE_PRODUCTION_CODE
+	#endif // CRY_AUDIO_USE_DEBUG_CODE
 
 namespace CryAudio
 {
-	#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
+	#if defined(CRY_AUDIO_USE_DEBUG_CODE)
 constexpr uint32 g_numIndices = 6;
 constexpr vtx_idx g_auxIndices[g_numIndices] = { 2, 1, 0, 2, 3, 1 };
 constexpr uint32 g_numPoints = 4;
-	#endif // CRY_AUDIO_USE_PRODUCTION_CODE
+	#endif // CRY_AUDIO_USE_DEBUG_CODE
 
 float g_listenerHeadSize = 0.0f;
 float g_listenerHeadSizeHalf = 0.0f;
@@ -74,19 +74,19 @@ void CRayInfo::Reset()
 {
 	totalSoundOcclusion = 0.0f;
 	numHits = 0;
-	#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
+	#if defined(CRY_AUDIO_USE_DEBUG_CODE)
 	startPosition.zero();
 	direction.zero();
 	distanceToFirstObstacle = FLT_MAX;
-	#endif // CRY_AUDIO_USE_PRODUCTION_CODE
+	#endif // CRY_AUDIO_USE_DEBUG_CODE
 }
 
 bool CPropagationProcessor::s_bCanIssueRWIs = false;
 
-	#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
+	#if defined(CRY_AUDIO_USE_DEBUG_CODE)
 uint16 CPropagationProcessor::s_totalSyncPhysRays = 0;
 uint16 CPropagationProcessor::s_totalAsyncPhysRays = 0;
-	#endif // CRY_AUDIO_USE_PRODUCTION_CODE
+	#endif // CRY_AUDIO_USE_DEBUG_CODE
 
 ///////////////////////////////////////////////////////////////////////////
 int CPropagationProcessor::OnObstructionTest(EventPhys const* pEvent)
@@ -149,9 +149,9 @@ void CPropagationProcessor::Init()
 
 	m_currentListenerDistance = g_listenerManager.GetActiveListenerTransformation().GetPosition().GetDistance(m_object.GetTransformation().GetPosition());
 
-	#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
+	#if defined(CRY_AUDIO_USE_DEBUG_CODE)
 	m_listenerOcclusionPlaneColor.set(cry_random<uint8>(0, 255), cry_random<uint8>(0, 255), cry_random<uint8>(0, 255), uint8(128));
-	#endif // CRY_AUDIO_USE_PRODUCTION_CODE
+	#endif // CRY_AUDIO_USE_DEBUG_CODE
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -197,7 +197,7 @@ void CPropagationProcessor::UpdateOcclusionRayFlags()
 ///////////////////////////////////////////////////////////////////////////
 void CPropagationProcessor::Update()
 {
-	#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
+	#if defined(CRY_AUDIO_USE_DEBUG_CODE)
 	if (g_cvars.m_occlusionGlobalType > 0)
 	{
 		m_occlusionType = clamp_tpl<EOcclusionType>(static_cast<EOcclusionType>(g_cvars.m_occlusionGlobalType), EOcclusionType::Ignore, EOcclusionType::High);
@@ -206,7 +206,7 @@ void CPropagationProcessor::Update()
 	{
 		m_occlusionType = m_originalOcclusionType;
 	}
-	#endif // CRY_AUDIO_USE_PRODUCTION_CODE
+	#endif // CRY_AUDIO_USE_DEBUG_CODE
 
 	if (CanRunOcclusion())
 	{
@@ -468,9 +468,9 @@ bool CPropagationProcessor::CanRunOcclusion()
 		}
 	}
 
-	#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
+	#if defined(CRY_AUDIO_USE_DEBUG_CODE)
 	canRun ? m_object.SetFlag(EObjectFlags::CanRunOcclusion) : m_object.RemoveFlag(EObjectFlags::CanRunOcclusion);
-	#endif // CRY_AUDIO_USE_PRODUCTION_CODE
+	#endif // CRY_AUDIO_USE_DEBUG_CODE
 
 	return canRun;
 }
@@ -483,9 +483,9 @@ void CPropagationProcessor::ProcessPhysicsRay(CRayInfo& rayInfo)
 	float finalOcclusion = 0.0f;
 	uint8 numRealHits = 0;
 
-	#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
+	#if defined(CRY_AUDIO_USE_DEBUG_CODE)
 	float minDistance = FLT_MAX;
-	#endif // CRY_AUDIO_USE_PRODUCTION_CODE
+	#endif // CRY_AUDIO_USE_DEBUG_CODE
 
 	if ((g_cvars.m_occlusionSetFullOnMaxHits > 0) && (rayInfo.numHits == g_maxRayHits))
 	{
@@ -520,9 +520,9 @@ void CPropagationProcessor::ProcessPhysicsRay(CRayInfo& rayInfo)
 
 					++numRealHits;
 
-	#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
+	#if defined(CRY_AUDIO_USE_DEBUG_CODE)
 					minDistance = std::min(minDistance, distance);
-	#endif    // CRY_AUDIO_USE_PRODUCTION_CODE
+	#endif    // CRY_AUDIO_USE_DEBUG_CODE
 
 					if (finalOcclusion >= 1.0f)
 					{
@@ -536,14 +536,14 @@ void CPropagationProcessor::ProcessPhysicsRay(CRayInfo& rayInfo)
 	rayInfo.numHits = numRealHits;
 	rayInfo.totalSoundOcclusion = clamp_tpl(finalOcclusion, 0.0f, 1.0f);
 
-	#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
+	#if defined(CRY_AUDIO_USE_DEBUG_CODE)
 	rayInfo.distanceToFirstObstacle = minDistance;
 
 	if (m_remainingRays == 0)
 	{
 		CryFatalError("Negative ref or ray count on audio object");
 	}
-	#endif // CRY_AUDIO_USE_PRODUCTION_CODE
+	#endif // CRY_AUDIO_USE_DEBUG_CODE
 
 	if (--m_remainingRays == 0)
 	{
@@ -598,7 +598,7 @@ void CPropagationProcessor::ProcessObstructionOcclusion()
 		m_occlusion = (m_occlusion / numSamplePositions);
 	}
 
-	#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
+	#if defined(CRY_AUDIO_USE_DEBUG_CODE)
 	if ((m_object.GetFlags() & EObjectFlags::CanRunOcclusion) != 0)
 	{
 		for (uint8 i = 0; i < numConcurrentRays; ++i)
@@ -613,7 +613,7 @@ void CPropagationProcessor::ProcessObstructionOcclusion()
 			rayDebugInfo.occlusionValue = rayInfo.totalSoundOcclusion;
 		}
 	}
-	#endif // CRY_AUDIO_USE_PRODUCTION_CODE
+	#endif // CRY_AUDIO_USE_DEBUG_CODE
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -633,7 +633,7 @@ void CPropagationProcessor::CastObstructionRay(
 	CRayInfo& rayInfo = m_raysInfo[rayIndex];
 	rayInfo.samplePosIndex = samplePosIndex;
 
-	#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
+	#if defined(CRY_AUDIO_USE_DEBUG_CODE)
 	rayInfo.startPosition = origin;
 	rayInfo.direction = finalDirection;
 
@@ -645,7 +645,7 @@ void CPropagationProcessor::CastObstructionRay(
 	{
 		++s_totalAsyncPhysRays;
 	}
-	#endif // CRY_AUDIO_USE_PRODUCTION_CODE
+	#endif // CRY_AUDIO_USE_DEBUG_CODE
 
 	++m_remainingRays;
 
@@ -1129,7 +1129,7 @@ void CPropagationProcessor::UpdateOcclusionPlanes()
 	}
 }
 
-	#if defined(CRY_AUDIO_USE_PRODUCTION_CODE)
+	#if defined(CRY_AUDIO_USE_DEBUG_CODE)
 //////////////////////////////////////////////////////////////////////////
 void CPropagationProcessor::DrawDebugInfo(IRenderAuxGeom& auxGeom)
 {
@@ -1229,6 +1229,6 @@ void CPropagationProcessor::ResetRayData()
 		}
 	}
 }
-	#endif // CRY_AUDIO_USE_PRODUCTION_CODE
+	#endif // CRY_AUDIO_USE_DEBUG_CODE
 }        // namespace CryAudio
 #endif   // CRY_AUDIO_USE_OCCLUSION

@@ -7,9 +7,9 @@
 #include "Impl.h"
 #include "Listener.h"
 
-#if defined(CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE)
 	#include <Logger.h>
-#endif // CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE
+#endif // CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE
 
 namespace CryAudio
 {
@@ -43,11 +43,11 @@ ETriggerResult CCue::Execute(IObject* const pIObject, TriggerInstanceId const tr
 				criAtomExPlayer_SetCueName(pPlayer, m_pAcbHandle, cueName);
 				CriAtomExPlaybackId const playbackId = criAtomExPlayer_Start(pPlayer);
 
-#if defined(CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE)
 				CCueInstance* const pCueInstance = g_pImpl->ConstructCueInstance(triggerInstanceId, playbackId, *this, *pBaseObject);
 #else
 				CCueInstance* const pCueInstance = g_pImpl->ConstructCueInstance(triggerInstanceId, playbackId, *this);
-#endif                // CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE
+#endif                // CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE
 
 				pBaseObject->AddCueInstance(pCueInstance);
 
@@ -60,13 +60,13 @@ ETriggerResult CCue::Execute(IObject* const pIObject, TriggerInstanceId const tr
 					result = ETriggerResult::Pending;
 				}
 			}
-#if defined(CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE)
+#if defined(CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE)
 			else
 			{
 				Cry::Audio::Log(ELogType::Warning, R"(Cue "%s" failed to play because ACB file "%s" was not loaded)",
 				                static_cast<char const*>(m_name), static_cast<char const*>(m_cueSheetName));
 			}
-#endif        // CRY_AUDIO_IMPL_ADX2_USE_PRODUCTION_CODE
+#endif        // CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE
 
 			break;
 		}
