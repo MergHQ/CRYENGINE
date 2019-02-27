@@ -1427,18 +1427,14 @@ bool CShaderManBin::ParseBinFX_Global_Annotations(CParserBin& Parser, SParserFra
 			ef->m_Flags2 |= EF2_FORCE_DRAWAFTERWATER;
 			break;
 		case eT_DepthFixup:
-#if !CRY_PLATFORM_ORBIS
 			if (!ef)
 				break;
 			ef->m_Flags2 |= EF2_DEPTH_FIXUP;
-#endif
 			break;
 		case eT_DepthFixupReplace:
-#if !CRY_PLATFORM_ORBIS
 			if (!ef)
 				break;
 			ef->m_Flags2 |= EF2_DEPTH_FIXUP_REPLACE;
-#endif
 			break;
 		case eT_SingleLightPass:
 			if (!ef)
