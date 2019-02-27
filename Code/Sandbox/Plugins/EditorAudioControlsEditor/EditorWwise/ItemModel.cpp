@@ -16,6 +16,8 @@ namespace Impl
 {
 namespace Wwise
 {
+using Items = std::vector<CItem const*>;
+
 //////////////////////////////////////////////////////////////////////////
 CItemModelAttribute* GetAttributeForColumn(CItemModel::EColumns const column)
 {
@@ -41,6 +43,46 @@ CItemModelAttribute* GetAttributeForColumn(CItemModel::EColumns const column)
 	}
 
 	return pAttribute;
+}
+
+//////////////////////////////////////////////////////////////////////////
+void GetTopLevelSelectedIds(Items& items, ControlIds& ids)
+{
+	for (auto const pItem : items)
+	{
+		// Check if item has ancestors that are also selected
+		bool isAncestorAlsoSelected = false;
+
+		for (auto const pOtherItem : items)
+		{
+			if (pItem != pOtherItem)
+			{
+				// Find if pOtherItem is the ancestor of pItem
+				auto pParent = static_cast<CItem*>(pItem->GetParent());
+
+				while (pParent != nullptr)
+				{
+					if (pParent == pOtherItem)
+					{
+						break;
+					}
+
+					pParent = static_cast<CItem*>(pParent->GetParent());
+				}
+
+				if (pParent != nullptr)
+				{
+					isAncestorAlsoSelected = true;
+					break;
+				}
+			}
+		}
+
+		if (!isAncestorAlsoSelected)
+		{
+			ids.push_back(pItem->GetId());
+		}
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -331,14 +373,27 @@ QMimeData* CItemModel::mimeData(QModelIndexList const& indexes) const
 
 	nameIndexes.erase(std::unique(nameIndexes.begin(), nameIndexes.end()), nameIndexes.end());
 
+	Items items;
+	items.reserve(static_cast<size_t>(nameIndexes.size()));
+
 	for (auto const& index : nameIndexes)
 	{
 		CItem const* const pItem = ItemFromIndex(index);
 
 		if (pItem != nullptr)
 		{
-			stream << pItem->GetId();
+			items.push_back(pItem);
 		}
+	}
+
+	ControlIds ids;
+	ids.reserve(items.size());
+
+	GetTopLevelSelectedIds(items, ids);
+
+	for (auto const id : ids)
+	{
+		stream << id;
 	}
 
 	pDragDropData->SetCustomData(ModelUtils::s_szImplMimeType, byteArray);
