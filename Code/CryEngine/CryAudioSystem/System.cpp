@@ -3329,9 +3329,9 @@ void CSystem::HandleDrawDebug()
 			ZeroStruct(memInfo);
 			CryGetMemoryInfoForModule(&memInfo);
 
-			CryFixedStringT<Debug::MaxMemInfoStringLength> memInfoString;
-			auto const memAlloc = static_cast<uint32>(memInfo.allocated - memInfo.freed);
-			Debug::FormatMemoryString(memInfoString, memAlloc);
+			CryFixedStringT<Debug::MaxMemInfoStringLength> memAllocSizeString;
+			auto const memAllocSize = static_cast<size_t>(memInfo.allocated - memInfo.freed);
+			Debug::FormatMemoryString(memAllocSizeString, memAllocSize - totalPoolSize);
 
 			CryFixedStringT<Debug::MaxMemInfoStringLength> totalPoolSizeString;
 			Debug::FormatMemoryString(totalPoolSizeString, totalPoolSize);
@@ -3339,7 +3339,7 @@ void CSystem::HandleDrawDebug()
 			size_t const totalFileSize = g_fileCacheManager.GetTotalCachedFileSize();
 
 			CryFixedStringT<Debug::MaxMemInfoStringLength> totalMemSizeString;
-			size_t const totalMemSize = static_cast<size_t>(memAlloc) + totalPoolSize + totalFileSize;
+			size_t const totalMemSize = memAllocSize + totalFileSize;
 			Debug::FormatMemoryString(totalMemSizeString, totalMemSize);
 
 			char const* const szMuted = ((g_systemStates& ESystemStates::IsMuted) != 0) ? " - Muted" : "";
@@ -3352,13 +3352,13 @@ void CSystem::HandleDrawDebug()
 
 				pAuxGeom->Draw2dLabel(posX, headerPosY, Debug::g_systemHeaderFontSize, Debug::s_globalColorHeader, false,
 				                      "Audio (System: %s | Pools: %s | Assets: %s | Total: %s)%s%s",
-				                      memInfoString.c_str(), totalPoolSizeString.c_str(), totalFileSizeString.c_str(), totalMemSizeString.c_str(), szMuted, szPaused);
+				                      memAllocSizeString.c_str(), totalPoolSizeString.c_str(), totalFileSizeString.c_str(), totalMemSizeString.c_str(), szMuted, szPaused);
 			}
 			else
 			{
 				pAuxGeom->Draw2dLabel(posX, headerPosY, Debug::g_systemHeaderFontSize, Debug::s_globalColorHeader, false,
 				                      "Audio (System: %s | Pools: %s | Total: %s)%s%s",
-				                      memInfoString.c_str(), totalPoolSizeString.c_str(), totalMemSizeString.c_str(), szMuted, szPaused);
+				                      memAllocSizeString.c_str(), totalPoolSizeString.c_str(), totalMemSizeString.c_str(), szMuted, szPaused);
 			}
 
 			size_t const numObjects = g_constructedObjects.size();
