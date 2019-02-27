@@ -754,19 +754,18 @@ void CImpl::DrawDebugMemoryInfo(IRenderAuxGeom& auxGeom, float const posX, float
 	ZeroStruct(memInfo);
 	CryGetMemoryInfoForModule(&memInfo);
 
-	CryFixedStringT<Debug::MaxMemInfoStringLength> memInfoString;
-	auto const memAlloc = static_cast<uint32>(memInfo.allocated - memInfo.freed);
-	Debug::FormatMemoryString(memInfoString, memAlloc);
+	CryFixedStringT<Debug::MaxMemInfoStringLength> memAllocSizeString;
+	auto const memAllocSize = static_cast<size_t>(memInfo.allocated - memInfo.freed);
+	Debug::FormatMemoryString(memAllocSizeString, memAllocSize - totalPoolSize);
 
 	CryFixedStringT<Debug::MaxMemInfoStringLength> totalPoolSizeString;
 	Debug::FormatMemoryString(totalPoolSizeString, totalPoolSize);
 
 	CryFixedStringT<Debug::MaxMemInfoStringLength> totalMemSizeString;
-	size_t const totalMemSize = static_cast<size_t>(memAlloc) + totalPoolSize;
-	Debug::FormatMemoryString(totalMemSizeString, totalMemSize);
+	Debug::FormatMemoryString(totalMemSizeString, memAllocSize);
 
 	auxGeom.Draw2dLabel(posX, headerPosY, Debug::g_systemHeaderFontSize, Debug::s_globalColorHeader, false, "%s (System: %s | Pools: %s | Total: %s)",
-	                    m_name.c_str(), memInfoString.c_str(), totalPoolSizeString.c_str(), totalMemSizeString.c_str());
+	                    m_name.c_str(), memAllocSizeString.c_str(), totalPoolSizeString.c_str(), totalMemSizeString.c_str());
 
 	size_t const numEvents = g_constructedEventInstances.size();
 
