@@ -55,16 +55,13 @@ namespace Cry
 				discordPresence.partySize = m_presence.partySize;
 				discordPresence.partyMax = m_presence.partyMax;
 
-				if (m_presence.seconds > 0)
+				if (m_presence.countdownTimer == SRichPresence::ETimer::Remaining && m_presence.seconds > 0)
 				{
-					if (m_presence.countdownTimer == SRichPresence::ETimer::Remaining)
-					{
-						discordPresence.endTimestamp = time(0) + m_presence.seconds;
-					}
-					else if (m_presence.countdownTimer == SRichPresence::ETimer::Elapsed)
-					{
-						discordPresence.startTimestamp = time(0) + m_presence.seconds;
-					}
+					discordPresence.endTimestamp = time(0) + m_presence.seconds;
+				}
+				else if (m_presence.countdownTimer == SRichPresence::ETimer::Elapsed)
+				{
+					discordPresence.startTimestamp = time(0) + m_presence.seconds;
 				}
 
 				CryComment("[Discord] Setting rich presence (first line): %s", m_presence.headline.c_str());
