@@ -63,41 +63,13 @@ public:
 
 	virtual void AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams) override
 	{
-		CRY_PFX2_PROFILE_DETAIL;
-
-		if (GetPSystem()->IsRuntime())
-			m_pStaticObject = Get3DEngine()->FindStatObjectByFilename(m_meshName);
-		if (!m_pStaticObject)
-		{
-			GetPSystem()->CheckFileAccess(m_meshName);
-			m_pStaticObject = Get3DEngine()->LoadStatObj(m_meshName, NULL, NULL, m_piecesMode == EPiecesMode::Whole);
-		}
-		pParams->m_pMesh = m_pStaticObject;
-		pParams->m_meshCentered = m_originMode == EOriginMode::Center;
+		pComponent->LoadResources.add(this);
+		LoadResources(*pComponent, true);
 		if (m_pStaticObject)
 		{
 			pComponent->RenderDeferred.add(this);
 			pComponent->AddParticleData(EPVF_Position);
 			pComponent->AddParticleData(EPQF_Orientation);
-
-			m_aSubObjects.clear();
-			float maxRadiusSqr = 0.0f;
-			if (m_piecesMode != EPiecesMode::Whole)
-			{
-				int subObjectCount = m_pStaticObject->GetSubObjectCount();
-				for (int i = 0; i < subObjectCount; ++i)
-				{
-					if (IStatObj::SSubObject* pSub = m_pStaticObject->GetSubObject(i))
-						if (pSub->nType == STATIC_SUB_OBJECT_MESH && pSub->pStatObj)
-						{
-							if (string(pSub->name).Right(5) == "_main")
-								continue;
-							m_aSubObjects.push_back(pSub);
-							SetMax(maxRadiusSqr, MeshRadiusSqr(pSub->pStatObj));
-						}
-				}
-			}
-
 			if (m_aSubObjects.size() > 0)
 			{
 				// Require per-particle sub-objects
@@ -105,24 +77,79 @@ public:
 				pComponent->OnEdit.add(this);
 				pComponent->InitParticles.add(this);
 				pComponent->AddParticleData(EPDT_MeshGeometry);
-				if (m_piecesMode == EPiecesMode::AllPieces)
+			}
+		}
+	}
+
+	virtual void LoadResources(CParticleComponent& component, bool load) override
+	{
+		CRY_PFX2_PROFILE_DETAIL;
+
+		SComponentParams& params = component.ComponentParams();
+		if (load)
+		{
+			if (m_pStaticObject)
+				return;
+			if (GetPSystem()->IsRuntime())
+				m_pStaticObject = Get3DEngine()->FindStatObjectByFilename(m_meshName);
+			if (!m_pStaticObject)
+			{
+				GetPSystem()->CheckFileAccess(m_meshName);
+				m_pStaticObject = Get3DEngine()->LoadStatObj(m_meshName, NULL, NULL, m_piecesMode == EPiecesMode::Whole);
+			}
+			params.m_pMesh = m_pStaticObject;
+			params.m_meshCentered = m_originMode == EOriginMode::Center;
+			if (m_pStaticObject)
+			{
+				m_aSubObjects.clear();
+				float maxRadiusSqr = 0.0f;
+				if (m_piecesMode != EPiecesMode::Whole)
 				{
-					pParams->m_scaleParticleCount *= m_aSubObjects.size();
+					int subObjectCount = m_pStaticObject->GetSubObjectCount();
+					for (int i = 0; i < subObjectCount; ++i)
+					{
+						if (IStatObj::SSubObject* pSub = m_pStaticObject->GetSubObject(i))
+							if (pSub->nType == STATIC_SUB_OBJECT_MESH && pSub->pStatObj)
+							{
+								if (string(pSub->name).Right(5) == "_main")
+									continue;
+								m_aSubObjects.push_back(pSub);
+								SetMax(maxRadiusSqr, MeshRadiusSqr(pSub->pStatObj));
+							}
+					}
+				}
+
+				if (m_aSubObjects.size() > 0)
+				{
+					// Require per-particle sub-objects
+					assert(m_aSubObjects.size() < 256);
+					component.OnEdit.add(this);
+					component.InitParticles.add(this);
+					component.AddParticleData(EPDT_MeshGeometry);
+					if (m_piecesMode == EPiecesMode::AllPieces)
+					{
+						component.AddParticleData(EPDT_SpawnId);
+						params.m_scaleParticleCount *= m_aSubObjects.size();
+					}
+				}
+				else
+				{
+					maxRadiusSqr = MeshRadiusSqr(m_pStaticObject);
+				}
+				if (m_sizeMode == ESizeMode::Scale)
+					params.m_scaleParticleSize *= sqrt(maxRadiusSqr);
+
+				if (GetCVars()->e_ParticlesPrecacheAssets)
+				{
+					m_pObjManager->PrecacheStatObj(static_cast<CStatObj*>(m_pStaticObject.get()), 0,
+						m_pStaticObject->GetMaterial(), 1.0f, 0.0f, true, true);
 				}
 			}
-			else
-			{
-				maxRadiusSqr = MeshRadiusSqr(m_pStaticObject);
-			}
-			if (m_sizeMode == ESizeMode::Scale)
-				pParams->m_scaleParticleSize *= sqrt(maxRadiusSqr);
-
-			if (GetCVars()->e_ParticlesPrecacheAssets)
-			{
-				m_pObjManager->PrecacheStatObj(static_cast<CStatObj*>(m_pStaticObject.get()), 0,
-					m_pStaticObject->GetMaterial(), 1.0f, 0.0f, true, true);
-			}
-
+		}
+		else
+		{
+			params.m_pMesh = m_pStaticObject = nullptr;
+			m_aSubObjects.clear();
 		}
 	}
 
