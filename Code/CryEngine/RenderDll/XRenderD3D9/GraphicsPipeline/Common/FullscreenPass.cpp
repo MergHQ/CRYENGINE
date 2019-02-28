@@ -48,7 +48,6 @@ static void GetFullScreenTriWPOS(const SRenderViewInfo& viewInfo, SVF_P3F_T2F_T3
 	Vec3 vLT = viewInfo.m_frustumCorners[SRenderViewInfo::eFrustum_LT];
 	Vec3 vLB = viewInfo.m_frustumCorners[SRenderViewInfo::eFrustum_LB];
 	Vec3 vRT = viewInfo.m_frustumCorners[SRenderViewInfo::eFrustum_RT];
-	Vec3 vRB = viewInfo.m_frustumCorners[SRenderViewInfo::eFrustum_RB];
 
 	z = 1.0f - z;
 

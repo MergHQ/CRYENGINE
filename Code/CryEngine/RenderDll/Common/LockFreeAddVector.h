@@ -24,7 +24,9 @@ struct lockfree_add_vector
 		//CryAutoLock<CryCriticalSectionNonRecursive> lock_temp(m_temp_lock);
 
 		int newIndex = CryInterlockedIncrement(&m_lastIndex);
+#if defined(USE_CRY_ASSERT)
 		int lastCapacity = m_capacity;
+#endif
 
 		// When new index gets close to the end of the capacity meaning vector will soon need to be reallocated, we start really locking access
 		if (newIndex < m_safe_capacity)

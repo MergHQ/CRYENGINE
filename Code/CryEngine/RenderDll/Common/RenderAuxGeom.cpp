@@ -2240,13 +2240,6 @@ void CAuxGeomCB::Submit(uint frames)
 void CAuxGeomCB::Draw2dImages(SAux2DImages& images, bool reset)
 {
 	IRenderAuxGeom* pAux = this;
-
-	const CCamera& camera = m_rawData->m_camera;
-
-	SRenderViewport viewport = SRenderViewport(0, 0, camera.GetViewSurfaceX(), camera.GetViewSurfaceZ());
-	const float vw = static_cast<float>(viewport.width);
-	const float vh = static_cast<float>(viewport.height);
-
 	SAuxGeomRenderFlags oldRenderFlags = pAux->GetRenderFlags();
 	SAuxGeomRenderFlags currRenderFlags = oldRenderFlags;
 	for (const SRender2DImageDescription &img : images)
@@ -2266,15 +2259,6 @@ void CAuxGeomCB::Draw2dImages(SAux2DImages& images, bool reset)
 		pAux->SetTexture(img.textureId);
 		UCol color;
 		color.dcolor = PackColor(img.color);
-
-		float parallax = 0;
-		/*TODO@ implement
-		if (img.stereoDepth > 0)
-		{
-			parallax = 800 * maxParallax * (1 - screenDist / img.stereoDepth);
-			//xpos = xpos + parallax * (stereoLeftEye ? -1 : 1)
-		}
-		*/
 
 		// yv.y is swapped (1-inputTexCoord.y) for compatibility of old pipeline
 		SAuxVertex verts[6] = {

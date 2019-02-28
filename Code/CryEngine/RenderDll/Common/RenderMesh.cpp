@@ -617,7 +617,9 @@ void *CRenderMesh::LockVB(int nStream, uint32 nFlags, int nOffset, int nVerts, i
 	SREC_AUTO_LOCK(m_sResLock);//need lock as resource must not be updated concurrently
 	SMeshStream* MS = GetVertexStream(nStream, nFlags);
 
+#if defined(USE_VBIB_PUSH_DOWN) || RENDERMESH_BUFFER_ENABLE_DIRECT_ACCESS
 	int nFrame = GetCurrentFrameID();
+#endif
 
 #if defined(USE_VBIB_PUSH_DOWN)
 	m_VBIBFramePushID = nFrame;
@@ -1836,7 +1838,6 @@ int CRenderMesh::GetRenderChunksCount(IMaterial * pMaterial, int & nRenderTrisCo
   int nCount = 0;
   nRenderTrisCount = 0;
 
-  CRenderer *rd = gRenDev;
   const uint32 ni = (uint32)m_Chunks.size();
   for (uint32 i=0; i<ni; i++)
   {
@@ -2376,7 +2377,7 @@ void CRenderMesh::BuildAdjacency(const VertexFormat *pVerts, unsigned int nVerts
 	std::vector<int> arrSortedVertIDs;
 	// we allocate a bit more (by one) because we will need extra element for scan operation (lower)
 	arrSortedVertIDs.resize(nVerts + 1);
-	int *_iSortedVerts = &arrSortedVertIDs[0];
+
 	for (int iv = 0; iv < nVerts; ++iv)
 		arrSortedVertIDs[iv] = iv;
 
@@ -2413,7 +2414,7 @@ void CRenderMesh::BuildAdjacency(const VertexFormat *pVerts, unsigned int nVerts
 	std::vector<int> &arrConnectedTrianglesCount = arrSortedVertIDs;
 	for (int i = 0; i < arrConnectedTrianglesCount.size(); ++i)
 		arrConnectedTrianglesCount[i] = 0;
-	int *_nConnectedTriangles = &arrConnectedTrianglesCount[0];
+
 	for (int it = 0; it < nTrgs; ++it)
 	{
 		const vtx_idx *pTrg = &pIndexBuffer[it * 3];
@@ -2527,14 +2528,11 @@ bool CRenderMesh::RT_CheckUpdate(CRenderMesh *pVContainer, InputLayoutHandle eVF
 {
 	CRY_ASSERT(gRenDev->m_pRT->IsRenderThread());
 
-	const int threadId = gRenDev->GetRenderThreadID();
 	int nFrame = gRenDev->GetRenderFrameID();
 	
 	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_RenderMeshType, 0, this->GetTypeName());
 	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_RenderMesh, 0, this->GetSourceName());
 	PrefetchLine(&m_IBStream, 0);
-
-	bool bSkinned = (m_nFlags & (FRM_SKINNED | FRM_SKINNEDNEXTDRAW)) != 0;
 
 	m_nFlags &= ~FRM_SKINNEDNEXTDRAW;
 
@@ -2674,7 +2672,6 @@ bool CRenderMesh::RT_CheckUpdate(CRenderMesh *pVContainer, InputLayoutHandle eVF
 							}
 							else if (i != VSF_HWSKIN_INFO)
 							{
-								int nnn = 0;
 								if (pMS->m_nID == ~0u)
 									return false;
 							}
@@ -2968,7 +2965,6 @@ bool CRenderMesh::CreateVidVertices(int nVerts, InputLayoutHandle eVF, int nStre
 	SCOPED_RENDERER_ALLOCATION_NAME_HINT( GetSourceName() );
 
 	SREC_AUTO_LOCK(m_sResLock);
-	CRenderer* pRend = gRenDev;
 
   if (!nVerts && eVF==InputLayoutHandle::Unspecified)
   {
@@ -3539,7 +3535,6 @@ void CRenderMesh::UpdateBBoxFromMesh()
 
   int nVertCount = _GetVertexContainer()->GetVerticesCount();
   int nPosStride=0;
-  int nIndCount = GetIndicesCount();
   const byte * pPositions = GetPosPtr(nPosStride, FSL_READ);
   const vtx_idx * pIndices = GetIndexPtr(FSL_READ);
 
@@ -3978,8 +3973,6 @@ void CRenderMesh::DebugDraw( const struct SGeometryDebugDrawInfo &info,uint32 nV
 	IRenderAuxGeom *pRenderAuxGeom = gEnv->pRenderer->GetIRenderAuxGeom();
 	SScopedMeshDataLock _lock(this);
 
-	const Matrix34 &mat = info.tm;
-
 	const bool bNoCull = info.bNoCull;
 	const bool bNoLines = info.bNoLines;
 	const bool bDrawInFront = info.bDrawInFront;
@@ -4032,7 +4025,9 @@ void CRenderMesh::DebugDraw( const struct SGeometryDebugDrawInfo &info,uint32 nV
 		int posStride = 1;
 		const byte *pPositions = GetPosPtr(posStride, FSL_READ);
 		const vtx_idx *pIndices = GetIndexPtr(FSL_READ);
+#if defined(USE_CRY_ASSERT)
 		const uint32 numVertices = GetVerticesCount();
+#endif
 		const uint32 indexStep = 3;
 		uint32 numIndices = pChunk->nNumIndices;
 
@@ -4287,8 +4282,7 @@ void CRenderMesh::Tick(uint numFrames)
 
 	MEMORY_SCOPE_CHECK_HEAP();
 	ASSERT_IS_RENDER_THREAD(gRenDev->m_pRT)
-		
-	bool bKeepSystem = false;
+
 	const threadID threadId = gRenDev->m_pRT->IsMultithreaded() ? gRenDev->GetRenderThreadID() : threadID(1);
 	int nFrame = GetCurrentFrameID();
 
@@ -4927,8 +4921,7 @@ void CRenderMesh::Render(CRenderObject* pObj, const SRenderingPassInfo& passInfo
 	IF(!CanUpdate(), 0)
 	return;
 
-	CRenderer* RESTRICT_POINTER rd = gRenDev;
-	bool bSkinned                  = (GetChunksSkinned().size() && (pObj->m_ObjFlags & (FOB_SKINNED)));
+	bool bSkinned = (GetChunksSkinned().size() && (pObj->m_ObjFlags & (FOB_SKINNED)));
 
 	hidemaskLoc nMeshSubSetMask = 0;
 #if !defined(_RELEASE)
@@ -5270,7 +5263,6 @@ void SMeshSubSetIndicesJobEntry::CreateSubSetRenderMesh()
 	uint32 nChunkCount              = renderChunks.size();
 
 	SScopedMeshDataLock _lock(pSrcMesh);
-	int nIndCount = pSrcMesh->GetIndicesCount();
 	if (vtx_idx* pInds = pSrcMesh->GetIndexPtr(FSL_READ))
 	{
 		TRenderChunkArray newChunks;

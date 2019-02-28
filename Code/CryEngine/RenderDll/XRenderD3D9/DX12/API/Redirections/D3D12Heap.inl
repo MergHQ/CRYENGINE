@@ -25,9 +25,9 @@ public:
 		DX12_ASSERT(~0, "0 is not allowed in the broadcaster!");
 		for (int i = 0; i < numTargets; ++i)
 		{
-			HRESULT ret = pDevice->CreateHeap(
-			  &Desc, riid, (void**)&m_Targets[i]);
-			DX12_ASSERT(ret == S_OK, "Failed to create heap!");
+			CRY_DX12_VERIFY(
+				pDevice->CreateHeap(&Desc, riid, (void**)&m_Targets[i]) == S_OK,
+				"Failed to create heap!");
 		}
 	}
 

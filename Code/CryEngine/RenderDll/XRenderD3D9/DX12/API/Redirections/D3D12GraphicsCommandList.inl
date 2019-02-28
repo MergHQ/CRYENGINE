@@ -39,10 +39,10 @@ public:
 				if (CRenderer::CV_r_StereoEnableMgpu < 0)
 					nM = 1;
 #endif
-
-				HRESULT ret = pDevice->CreateCommandList(
-				  nM, type, *(*pCommandAllocator)[i], pInitialState, riid, (void**)&m_Targets[i]);
-				DX12_ASSERT(ret == S_OK, "Failed to create graphics command list!");
+				CRY_DX12_VERIFY(
+					pDevice->CreateCommandList(
+				  nM, type, *(*pCommandAllocator)[i], pInitialState, riid, (void**)&m_Targets[i]) == S_OK,
+					"Failed to create graphics command list!");
 			}
 		}
 	}
@@ -71,8 +71,8 @@ public:
   }                                             \
   else                                          \
   {                                             \
-    { int i = 0; DX12_ASSERT(func, message); }  \
-    { int i = 1; DX12_ASSERT(func, message); }  \
+    { int i; i = 0; DX12_ASSERT(func, message); } \
+    { int i; i = 1; DX12_ASSERT(func, message); } \
   }
 
 #define Parallelize(func)                       \

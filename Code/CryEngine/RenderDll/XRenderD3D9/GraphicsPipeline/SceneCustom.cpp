@@ -20,9 +20,7 @@ void CSceneCustomStage::Init()
 	
 	CTypedConstantBuffer<HLSL_PerPassConstantBuffer_Custom, 256> cb(m_pPerPassConstantBuffer);
 	cb.UploadZeros();
-	
-	bool bSuccess = SetAndBuildPerPassResources(true);
-	assert(bSuccess);
+	CRY_VERIFY(SetAndBuildPerPassResources(true));
 
 	// Create resource layout
 	m_pResourceLayout = GetStdGraphicsPipeline().CreateScenePassLayout(m_perPassResources);
@@ -328,7 +326,6 @@ void CSceneCustomStage::ExecuteDebugger()
 
 	bool bViewTexelDensity = CRenderer::CV_r_TexelsPerMeter > 0;
 	bool bViewWireframe = gcpRendD3D->GetWireframeMode() != R_SOLID_MODE;
-	const bool bReverseDepth = true;
 
 	{
 		CTypedConstantBuffer<HLSL_PerPassConstantBuffer_Custom, 256> cb(m_pPerPassConstantBuffer);
@@ -374,7 +371,6 @@ void CSceneCustomStage::ExecuteDebugOverlay()
 
 	CRenderView* pRenderView = RenderView();
 	auto& renderItemDrawer = pRenderView->GetDrawer();
-	const bool bReverseDepth = true;
 
 	{
 		CTypedConstantBuffer<HLSL_PerPassConstantBuffer_Custom, 256> cb(m_pPerPassConstantBuffer);
@@ -417,7 +413,6 @@ void CSceneCustomStage::ExecuteSelectionHighlight()
 	CD3D9Renderer* pRenderer = gcpRendD3D;
 	CRenderView* pRenderView = RenderView();
 	auto& renderItemDrawer = pRenderView->GetDrawer();
-	const bool bReverseDepth = true;
 
 	// first check if we actually have anything worth drawing
 	uint32 numItems = pRenderView->GetRenderItems(EFSLIST_HIGHLIGHT).size();
@@ -532,8 +527,6 @@ void CSceneCustomStage::ExecuteHelpers()
 		return;
 
 	{
-		bool bViewTexelDensity = CRenderer::CV_r_TexelsPerMeter > 0;
-
 		CTypedConstantBuffer<HLSL_PerPassConstantBuffer_Custom, 256> cb(m_pPerPassConstantBuffer);
 		cb->CP_Custom_ViewMode = Vec4(0.f, 0.f, 0.f, 0.f);
 		cb.CopyToDevice();

@@ -449,8 +449,6 @@ void CUnderwaterGodRaysPass::Execute(const CPostEffectContext& context)
 
 	PROFILE_LABEL_SCOPE("UNDERWATER_GODRAYS");
 
-	CD3D9Renderer* const RESTRICT_POINTER rd = gcpRendD3D;
-
 	static CCryNameR param0Name("PB_GodRaysParamsVS");
 	static CCryNameR param1Name("PB_GodRaysParamsPS");
 
@@ -563,8 +561,6 @@ void CWaterDropletsPass::Execute(const CPostEffectContext& context)
 		return;
 	}
 
-	CD3D9Renderer* const RESTRICT_POINTER rd = gcpRendD3D;
-
 	auto& pass = m_passWaterDroplets;
 
 	CTexture* pSrcTex = context.GetSrcBackBufferTexture();
@@ -627,8 +623,6 @@ void CWaterFlowPass::Execute(const CPostEffectContext& context)
 		return;
 	}
 
-	CD3D9Renderer* const RESTRICT_POINTER rd = gcpRendD3D;
-
 	auto& pass = m_passWaterFlow;
 
 	CTexture* pSrcTex = context.GetSrcBackBufferTexture();
@@ -680,8 +674,6 @@ void CSharpeningPass::Execute(const CPostEffectContext& context)
 	}
 
 	PROFILE_LABEL_SCOPE("SHARPENING");
-
-	CD3D9Renderer* const RESTRICT_POINTER rd = gcpRendD3D;
 
 	CTexture* pSrcTex = context.GetSrcBackBufferTexture();
 	CTexture* pDstTex = context.GetDstBackBufferTexture();
@@ -741,8 +733,6 @@ void CBlurringPass::Execute(const CPostEffectContext& context)
 
 	PROFILE_LABEL_SCOPE("BLURRING");
 
-	CD3D9Renderer* const RESTRICT_POINTER rd = gcpRendD3D;
-
 	auto& pass = m_passBlurring;
 
 	float fAmount = pAmount->GetParam();
@@ -796,8 +786,6 @@ void CUberGamePostEffectPass::Execute(const CPostEffectContext& context)
 	if (pPostEffect)
 	{
 		PROFILE_LABEL_SCOPE("UBER_GAME_POSTPROCESS");
-
-		CD3D9Renderer* const RESTRICT_POINTER rd = gcpRendD3D;
 
 		const auto& gamePostEffect = *static_cast<const CUberGamePostProcess*>(pPostEffect);
 
@@ -891,8 +879,6 @@ void CFlashBangPass::Execute(const CPostEffectContext& context)
 	auto* pPostEffect = const_cast<CPostEffect*>(context.GetPostEffect(EPostEffectID::FlashBang));
 	if (pPostEffect)
 	{
-		CD3D9Renderer* const RESTRICT_POINTER rd = gcpRendD3D;
-
 		CTexture* pSrcTex = context.GetSrcBackBufferTexture();
 
 		auto& postEffect = *static_cast<CFlashBang*>(pPostEffect);
@@ -1326,8 +1312,6 @@ void CScreenFaderPass::Execute(const CPostEffectContext& context)
 	}
 
 	PROFILE_LABEL_SCOPE("SCREEN FADER");
-
-	CD3D9Renderer* const RESTRICT_POINTER rd = gcpRendD3D;
 
 	auto& pass = m_passScreenFader;
 	const Vec4 &color = pColor->GetParamVec4();

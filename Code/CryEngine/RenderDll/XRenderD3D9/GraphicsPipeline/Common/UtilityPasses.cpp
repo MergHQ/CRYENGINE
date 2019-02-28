@@ -27,8 +27,6 @@ void CStretchRectPass::Execute(CTexture* pSrcRT, CTexture* pDestRT)
 	if (CShaderMan::s_shPostEffects == nullptr)
 		return;
 
-	CD3D9Renderer* const __restrict rd = gcpRendD3D;
-
 	if (pSrcRT == NULL || pDestRT == NULL)
 		return;
 
@@ -99,8 +97,6 @@ void CStretchRectPass::Execute(CTexture* pSrcRT, CTexture* pDestRT)
 
 void CStretchRegionPass::Execute(CTexture* pSrcRT, CTexture* pDestRT, const RECT *pSrcRect, const RECT *pDstRect, bool bBigDownsample, const ColorF& color, const int renderStateFlags)
 {
-	CD3D9Renderer* const __restrict rd = gcpRendD3D;
-
 	if (pSrcRT == NULL || pDestRT == NULL)
 		return;
 
@@ -617,8 +613,6 @@ void CGaussianBlurPass::ComputeParams(int texWidth, int texHeight, int numSample
 
 void CGaussianBlurPass::Execute(CTexture* pScrDestRT, CTexture* pTempRT, float scale, float distribution, bool bAlphaOnly)
 {
-	CD3D9Renderer* const __restrict rd = gcpRendD3D;
-
 	if (pScrDestRT == NULL || pTempRT == NULL)
 		return;
 
@@ -997,7 +991,6 @@ void CAnisotropicVerticalBlurPass::Execute(CTexture* pTex, int nAmount, float fS
 	static CCryNameR paramName("blurParams0");
 
 	// setup texture offsets, for texture sampling
-	float s1 = 1.0f / (float)pTex->GetWidth();
 	float t1 = 1.0f / (float)pTex->GetHeight();
 
 	Vec4 pWeightsPS;

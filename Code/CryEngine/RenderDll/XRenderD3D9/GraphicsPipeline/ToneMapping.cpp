@@ -19,7 +19,6 @@ void CToneMappingStage::Execute()
 	CBloomStage*        pBloomStage        = (CBloomStage       *)GetStdGraphicsPipeline().GetStage(eStage_Bloom);
 	CColorGradingStage* pColorGradingStage = (CColorGradingStage*)GetStdGraphicsPipeline().GetStage(eStage_ColorGrading);
 
-	bool bHighQualitySunshafts = false;
 	bool bColorGradingEnabled = pColorGradingStage->IsStageActive(EShaderRenderingFlags(0));
 	bool bSunShaftsEnabled = pSunShaftsStage->IsStageActive(EShaderRenderingFlags(0));
 	bool bBloomEnabled = pBloomStage->IsStageActive(EShaderRenderingFlags(0));
@@ -167,9 +166,6 @@ void CToneMappingStage::ExecuteDebug()
 void CToneMappingStage::ExecuteFixedExposure(CTexture* pColorTex, CTexture* pDepthTex)
 {
 	PROFILE_LABEL_SCOPE("TONEMAPPING_FIXED_EXPOSURE");
-
-	CRenderView* pRenderView = RenderView();
-	const CRenderOutput* pOutput = pRenderView->GetRenderOutput();
 
 //	ASSERT_LEGACY_PIPELINE
 	return;

@@ -516,7 +516,6 @@ STexAnim* CShaderMan::mfReadTexSequence(const char* na, int Flags, bool bFindOnl
 			ta->m_Time = fSpeed;
 		}
 
-		ITexture* pTex = (ITexture*)tp;
 		ta->m_TexPics.AddElem(tp);
 		n++;
 	}
@@ -568,7 +567,7 @@ CTexture* CShaderMan::mfTryToLoadTexture(const char* nameTex, STexSamplerRT* smp
 {
 	if (nameTex && strchr(nameTex, '#')) // test for " #" to skip max material names
 	{
-		int n = mfReadTexSequence(smp, nameTex, Flags, bFindOnly);
+		mfReadTexSequence(smp, nameTex, Flags, bFindOnly);
 	}
 
 	CTexture* tx = smp->m_pTex;

@@ -34,9 +34,9 @@ public:
 					Desc.NodeMask = 1;
 #endif
 
-				HRESULT ret = pDevice->CreateQueryHeap(
-				  &Desc, riid, (void**)&m_Targets[i]);
-				DX12_ASSERT(ret == S_OK, "Failed to create query heap!");
+				CRY_DX12_VERIFY(
+					pDevice->CreateQueryHeap(&Desc, riid, (void**)&m_Targets[i]) == S_OK,
+					"Failed to create query heap!");
 			}
 		}
 	}

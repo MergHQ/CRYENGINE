@@ -59,7 +59,6 @@ void CLensOpticsStage::Execute()
 			m_passLensOptics.BeginAddingPrimitives();
 			std::vector<CPrimitiveRenderPass*> prePasses;
 
-			CD3D9Renderer* pRD = gcpRendD3D;
 			CRenderObject* pObj = re.pRenderObject;
 			SRenderObjData* pOD = pObj->GetObjData();
 

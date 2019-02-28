@@ -230,13 +230,13 @@ void CResFile::StoreLookupData(uint32 CRC, float fVersion)
 {
 	if (m_pLookupDataMan)
 	{
-		CCryNameTSCRC name = m_pLookupDataMan->AdjustName(m_name.c_str());
-
 		m_pLookupDataMan->AddData(this, CRC);
+#if defined(USE_CRY_ASSERT)
+		CCryNameTSCRC name = m_pLookupDataMan->AdjustName(m_name.c_str());
 		SResFileLookupData* pData = m_pLookupDataMan->GetData(name);
-		m_pLookupDataMan->MarkDirty(true);
-
 		CRY_ASSERT(pData);
+#endif
+		m_pLookupDataMan->MarkDirty(true);
 	}
 }
 
@@ -443,7 +443,7 @@ bool CResFile::mfPrepareDir()
 		{
 			SizeT size = sizeof(CDirEntry) * m_nNumFilesUnique;
 			SizeT inSize = m_nComprDirSize;
-			int res = Lzma86_Decode((byte*)pFileDir, &size, m_pCompressedDir, &inSize);
+			Lzma86_Decode((byte*)pFileDir, &size, m_pCompressedDir, &inSize);
 		}
 		else if (m_version == RESVERSION_DEBUG)
 		{
@@ -470,8 +470,7 @@ bool CResFile::mfPrepareDir()
 	}
 	else
 	{
-		int nRes = mfLoadDir(m_pStreamInfo);
-		assert(nRes);
+		CRY_VERIFY(mfLoadDir(m_pStreamInfo) != 0);
 	}
 
 	return true;
@@ -1725,8 +1724,7 @@ int CResFile::mfFlush()
 	if (updateCount > 0)
 	{
 		m_bDirCompressed = false;
-		int sizeDir = mfFlushDir(nSeek);
-		CRY_ASSERT(sizeDir == nSizeDir);
+		CRY_VERIFY(mfFlushDir(nSeek) == nSizeDir);
 
 		SFileResHeader frh;
 		frh.hid = IDRESHEADER;

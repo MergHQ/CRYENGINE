@@ -102,7 +102,7 @@ const byte* CTexture::Convert(const byte* pSrc, int nWidth, int nHeight, int nMi
 	byte* pDst = NULL;
 	if (eTFSrc == eTFDst && nMips == nOutMips)
 		return pSrc;
-	CD3D9Renderer* r = gcpRendD3D;
+
 	DXGI_FORMAT DeviceFormatSRC = (DXGI_FORMAT)DeviceFormats::ConvertFromTexFormat(eTFSrc);
 	if (eTFDst == eTF_L8)
 		eTFDst = eTF_A8;
@@ -233,12 +233,14 @@ bool CTexture::Resolve(int nTarget, bool bUseViewportSize)
 	if (!(m_eFlags & FT_USAGE_MSAA))
 		return true;
 
-	assert((m_eFlags & (FT_USAGE_RENDERTARGET | FT_USAGE_DEPTHSTENCIL)) && (m_eFlags & FT_USAGE_MSAA) && GetDevTexture() && GetDevTexture()->GetMSAATexture());
-	CDeviceTexture* pDestSurf = GetDevTexture();
-	CDeviceTexture* pSrcSurf = pDestSurf->GetMSAATexture();
+	CRY_ASSERT((m_eFlags & (FT_USAGE_RENDERTARGET | FT_USAGE_DEPTHSTENCIL)) && (m_eFlags & FT_USAGE_MSAA) && GetDevTexture() && GetDevTexture()->GetMSAATexture());
 
-	assert(pSrcSurf != NULL);
-	assert(pDestSurf != NULL);
+#if defined(USE_CRY_ASSERT) || defined(RENDERER_ENABLE_LEGACY_PIPELINE)
+	CDeviceTexture* pDestSurf = GetDevTexture();
+	CRY_ASSERT(pDestSurf != nullptr);
+	CDeviceTexture* pSrcSurf = pDestSurf->GetMSAATexture();
+	CRY_ASSERT(pSrcSurf != nullptr);
+#endif
 
 #ifdef RENDERER_ENABLE_LEGACY_PIPELINE
 	const SPixFormat* pPF;
@@ -572,7 +574,6 @@ void CTexture::RT_UpdateTextureRegion(const byte* pSrcData, int nX, int nY, int 
 		return;
 	}
 
-	HRESULT hr = S_OK;
 	CDeviceTexture* pDevTex = GetDevTexture();
 	assert(pDevTex);
 	if (!pDevTex)
@@ -712,7 +713,10 @@ static void DrawSceneToCubeSide(CRenderOutputPtr pRenderOutput, const Vec3& Pos,
 		{ 0,  0,  -1, 0, 1, 0,  0 }, //negz
 	};
 
+#ifdef DO_RENDERLOG
 	CRenderer* r = gRenDev;
+#endif
+
 	CCamera prevCamera = gEnv->pSystem->GetViewCamera();
 	CCamera tmpCamera = prevCamera;
 
@@ -807,7 +811,6 @@ private:
 
 DynArray<std::uint16_t> CTexture::RenderEnvironmentCMHDR(std::size_t size, const Vec3& Pos)
 {
-	bool result = true;
 	DynArray<std::uint16_t> vecData;
 
 #if CRY_PLATFORM_DESKTOP
@@ -815,8 +818,6 @@ DynArray<std::uint16_t> CTexture::RenderEnvironmentCMHDR(std::size_t size, const
 	float timeStart = gEnv->pTimer->GetAsyncTime().GetSeconds();
 
 	iLog->Log("Start generating a cubemap (%d x %d) at position (%.1f, %.1f, %.1f)", size, size, Pos.x, Pos.y, Pos.z);
-
-	bool bFullScreen = gcpRendD3D->IsFullscreen();
 
 	CTexture* ptexGenEnvironmentCM = CTexture::GetOrCreate2DTexture("$GenEnvironmentCM", size, size, 1, FT_DONT_STREAM | FT_USAGE_RENDERTARGET, nullptr, eTF_R16G16B16A16F);
 	if (!ptexGenEnvironmentCM)
@@ -1001,8 +1002,6 @@ void CD3D9Renderer::DrawAllDynTextures(const char* szFilter, const bool bLogName
 	strlwr(name);
 	TArray<CTexture*> UsedRT;
 	int nMaxCount = CV_r_ShowDynTexturesMaxCount;
-
-	CRenderDisplayContext* pDC = GetActiveDisplayContext();
 
 	float width = 800;
 	float height = 600;
@@ -1262,16 +1261,16 @@ bool CFlashTextureSourceSharedRT::Update()
 void CTexture::CopySliceChain(CDeviceTexture* const pDstDevTex, int8 nDstNumMips, int nDstSliceOffset, int8 nDstMipOffset,
                               CDeviceTexture* const pSrcDevTex, int8 nSrcNumMips, int nSrcSliceOffset, int8 nSrcMipOffset, int nNumSlices, int8 nNumMips)
 {
-	HRESULT hr = S_OK;
-	assert(pSrcDevTex && pDstDevTex);
-	assert(nNumSlices == 1 && "TODO: allow multiple slices being uploaded with the same command");
+	CRY_ASSERT(pSrcDevTex && pDstDevTex);
+	CRY_ASSERT_MESSAGE(nNumSlices == 1, "TODO: allow multiple slices being uploaded with the same command");
 
 #if CRY_PLATFORM_DURANGO && (CRY_RENDERER_DIRECT3D >= 110) && (CRY_RENDERER_DIRECT3D < 120)
 	pDstDevTex->InitD3DTexture();
 #endif
-
+#if !defined(_RELEASE) || (CRY_PLATFORM_DURANGO && (CRY_RENDERER_DIRECT3D >= 110) && (CRY_RENDERER_DIRECT3D < 120)  && defined(DEVICE_SUPPORTS_PERFORMANCE_DEVICE))
 	D3DBaseTexture* pDstResource = pDstDevTex->GetBaseTexture();
 	D3DBaseTexture* pSrcResource = pSrcDevTex->GetBaseTexture();
+#endif
 
 #ifndef _RELEASE
 	if (!pDstResource) __debugbreak();

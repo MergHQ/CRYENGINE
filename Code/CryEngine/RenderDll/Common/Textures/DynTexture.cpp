@@ -478,19 +478,13 @@ void SDynTexture::ReleaseDynamicRT(bool bForce)
 		pSubset->erase(coTexture);
 		s_iNumTextureBytesCheckedOut -= m_pTexture->GetDataSize();
 	}
-	else
-	{
-		//assert(false);
-		int nnn = 0;
-	}
 
 	// Don't cache too many unused textures.
 	if (bForce)
 	{
 		s_nMemoryOccupied -= m_pTexture->GetDataSize();
 		assert(s_iNumTextureBytesCheckedOut + s_iNumTextureBytesCheckedIn == s_nMemoryOccupied);
-		int refCount = m_pTexture->Release();
-		assert(refCount <= 0);
+		CRY_VERIFY(m_pTexture->Release() <= 0);
 		m_pTexture = NULL;
 		Unlink();
 		return;

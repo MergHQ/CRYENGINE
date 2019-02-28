@@ -130,8 +130,6 @@ void CSceneRenderPass::PrepareRenderPassForUse(CDeviceCommandListRef RESTRICT_RE
 
 void CSceneRenderPass::ResolvePass(CDeviceCommandListRef RESTRICT_REFERENCE commandList, const std::vector<TRect_tpl<uint16>>& screenBounds) const
 {
-	CDeviceGraphicsCommandInterface* pCommandInterface = commandList.GetGraphicsInterface();
-
 	const auto textureWidth = CRendererResources::s_ptexHDRTarget->GetWidth();
 	const auto textureHeight = CRendererResources::s_ptexHDRTarget->GetHeight();
 
@@ -204,7 +202,6 @@ void CSceneRenderPass::EndRenderPass(CDeviceCommandListRef RESTRICT_REFERENCE co
 
 	if (m_passFlags & ePassFlags_UseVrProjectionState)
 	{
-		CDeviceGraphicsCommandInterface* pCommandInterface = commandList.GetGraphicsInterface();
 		CVrProjectionManager::Instance()->RestoreState(commandList);
 	}
 }

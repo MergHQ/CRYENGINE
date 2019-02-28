@@ -69,7 +69,6 @@ bool CCommandList::Init(UINT64 currentFenceValue)
 		m_CmdQueue = m_rPool.GetVkCommandQueue();
 	}
 
-	VkQueueFlagBits eCmdListType = m_rPool.GetVkQueueType();
 	uint32 nCmdListFamily = m_rPool.GetVkQueueFamily();
 
 	if (!m_CmdAllocator)
@@ -138,7 +137,7 @@ void CCommandList::Begin()
 	const VkCommandBufferBeginInfo Info = { VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO, nullptr, VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT, nullptr };
 
 	VkResult res = vkBeginCommandBuffer(m_CmdList, &Info);
-	VK_ASSERT(res == VK_SUCCESS && "Could not open command list!");
+	CRY_VULKAN_VERIFY(res == VK_SUCCESS, "Could not open command list!");
 }
 
 void CCommandList::End()
@@ -149,7 +148,7 @@ void CCommandList::End()
 	}
 
 	VkResult res = vkEndCommandBuffer(m_CmdList);
-	VK_ASSERT(res == VK_SUCCESS && "Could not close command list!");
+	CRY_VULKAN_VERIFY(res == VK_SUCCESS, "Could not close command list!");
 
 	m_eState = CLSTATE_COMPLETED;
 }
@@ -240,7 +239,7 @@ bool CCommandList::Reset()
 	{
 		PROFILE_FRAME("vkResetCommandBuffer");
 		ret = vkResetCommandBuffer(m_CmdList, VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT);
-		VK_ASSERT(ret == VK_SUCCESS);
+		VK_ASSERT(ret == VK_SUCCESS, "");
 	}
 
 	m_eState = CLSTATE_FREE;
@@ -658,7 +657,7 @@ void CCommandListPool::ForfeitCommandList(VK_PTR(CCommandList)& result, bool bWa
 	VK_PTR(CCommandList) pWaitable = result;
 
 	{
-		VK_ASSERT(result->IsCompleted() && "It's not possible to forfeit an unclosed command list!");
+		VK_ASSERT(result->IsCompleted(), "It's not possible to forfeit an unclosed command list!");
 		result->Schedule();
 		result = nullptr;
 	}
@@ -689,7 +688,7 @@ void CCommandListPool::ForfeitCommandLists(uint32 numCLs, VK_PTR(CCommandList)* 
 	int32 i = numCLs;
 	while (--i >= 0)
 	{
-		VK_ASSERT(results[i]->IsCompleted() && "It's not possible to forfeit an unclosed command list!");
+		VK_ASSERT(results[i]->IsCompleted(), "It's not possible to forfeit an unclosed command list!");
 		results[i]->Schedule();
 		results[i] = nullptr;
 	}

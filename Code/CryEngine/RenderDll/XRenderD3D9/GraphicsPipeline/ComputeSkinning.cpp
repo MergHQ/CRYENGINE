@@ -201,7 +201,6 @@ void CStorage::RetirePerInstanceResources(int64 frameId)
 
 void CStorage::DebugDraw()
 {
-	ColorF c0 = ColorF(0.0f, 1.0f, 1.0f, 1.0f);
 	ColorF c1 = ColorF(0.0f, 0.8f, 0.8f, 1.0f);
 
 	uint32 totalPerInstance = 0;

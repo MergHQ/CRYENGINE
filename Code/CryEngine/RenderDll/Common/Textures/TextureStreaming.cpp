@@ -454,7 +454,6 @@ bool STexStreamInState::TryCommit()
 			}
 
 			// bind new texture
-			const int nNewNumMips = m_nHigherUploadedMip;
 			tp->StreamAssignPoolItem(pNewPoolItem, m_nActivateMip);
 			pNewPoolItem = NULL;
 			tp->SetWasUnload(false);
@@ -1489,8 +1488,6 @@ void CTexture::InitStreaming()
 	if (!s_pPoolMgr)
 		s_pPoolMgr = new CTextureStreamPoolMgr();
 
-	SSystemGlobalEnvironment* pEnv = iSystem->GetGlobalEnvironment();
-
 #if CRY_PLATFORM_DESKTOP
 	if (CRenderer::CV_r_texturesstreaming)
 	{
@@ -1724,8 +1721,7 @@ void CTexture::AbortStreamingTasks(CTexture* pTex)
 				}
 			}
 
-			bool bCommitted = streamState.TryCommit();
-			assert(bCommitted);
+			CRY_VERIFY(streamState.TryCommit());
 
 			StreamState_ReleaseIn(&streamState);
 		}

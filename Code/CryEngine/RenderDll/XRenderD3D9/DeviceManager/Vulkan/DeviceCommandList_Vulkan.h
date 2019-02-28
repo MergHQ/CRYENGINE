@@ -322,7 +322,7 @@ protected:
 
 	void CopyImpl(const void* pSrc, CConstantBuffer* pDst, const SResourceMemoryAlignment& memoryLayout)
 	{
-		VK_ASSERT(memoryLayout.typeStride == 1);
+		VK_ASSERT(memoryLayout.typeStride == 1, "");
 		SResourceMemoryMapping mapping;
 		mapping.MemoryLayout = memoryLayout;
 		mapping.ResourceOffset.Left = 0;

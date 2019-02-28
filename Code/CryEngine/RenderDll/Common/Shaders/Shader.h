@@ -250,10 +250,7 @@ struct SFXParam
 		m_nRegister[4] = 10000;
 		m_nRegister[5] = 10000;
 	}
-	~SFXParam()
-	{
-		int nnn = 0;
-	}
+	~SFXParam() = default;
 	uint32 GetComponent(EHWShaderClass eSHClass);
 	void   GetParamComp(uint32 nOffset, CryFixedStringT<128>& param);
 	uint32 GetParamFlags() { return m_nFlags; }
@@ -1425,7 +1422,6 @@ public:
 
 inline SShaderTechnique* SShaderItem::GetTechnique() const
 {
-	SShaderTechnique* pTech = NULL;
 	int nTech = m_nTechnique;
 	if (nTech < 0)
 		nTech = 0;

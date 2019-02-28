@@ -567,8 +567,7 @@ inline bool CAuxGeomCB::IsThickLine(const SAuxGeomRenderFlags& renderFlags)
 
 inline CAuxGeomCB::EAuxDrawObjType CAuxGeomCB::GetAuxObjType(const SAuxGeomRenderFlags& renderFlags)
 {
-	EPrimType primType(GetPrimType(renderFlags));
-	CRY_ASSERT(e_Obj == primType);
+	CRY_ASSERT(GetPrimType(renderFlags) == e_Obj);
 
 	uint32 objType((renderFlags.m_renderFlags & e_PrivateRenderflagsMask));
 	switch (objType)

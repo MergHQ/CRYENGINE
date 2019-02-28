@@ -595,7 +595,7 @@ uint32 CPostEffectsMgr::GetCRC(const char* pszName)
 {
 	if (!pszName)
 	{
-		assert(false && "CPostEffectsMgr::GetCRC() invalid string passed");
+		CRY_ASSERT_MESSAGE(false, "CPostEffectsMgr::GetCRC() invalid string passed");
 		return 0;
 	}
 

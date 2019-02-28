@@ -422,7 +422,6 @@ uint64 CHWShader_D3D::CheckIfExpr_r(const uint32* pTokens, uint32& nCur, uint32 
 
 	while (nCur < nSize)
 	{
-		int nRecurs = 0;
 		uint32 nToken = pTokens[nCur++];
 		if (nToken == eT_br_rnd_1) // check for '('
 		{
@@ -565,7 +564,6 @@ void CHWShader_D3D::mfConstructFX(const FXShaderToken& Table, const TArray<uint3
 CHWShader_D3D::cacheValidationResult CHWShader_D3D::mfValidateCache(const SDiskShaderCache &cache)
 {
 	static constexpr auto fVersion = static_cast<float>(FX_CACHE_VER);
-	const auto cacheType = cache.GetType();
 
 	const SResFileLookupData* pLookup = cache.m_pRes->GetLookupData();
 	if (!pLookup)
@@ -954,7 +952,6 @@ int CGParamManager::GetParametersGroup(SParamsGroup& InGr, int nId)
 	}
 	else if (nId == 1)
 	{
-		SCGParam& Pr = InParams[0];
 		bGeneral = false;
 	}
 	s_Groups[n].bGeneral = bGeneral;
@@ -1739,7 +1736,6 @@ void CHWShader_D3D::mfSetParameters(SCGParam* pParams, const int nINParams, EHWS
 	Vec4 v4;
 	const SCGParam* ParamBind = pParams;
 	int nParams;
-	const int rLog = CRenderer::CV_r_log;
 
 	if (!pParams)
 		return;
@@ -2393,7 +2389,6 @@ CHWShader_D3D::SHWSInstance* CHWShader_D3D::mfGetInstance(SShaderCombIdent& Iden
 		s_nInstFrame++;
 		pInst->m_Ident = Ident;
 		pInst->m_eClass = m_eSHClass;
-		size_t i = std::distance(pInstCont->begin(), it);
 		pInstCont->insert(it, pInst);
 		if (nFlags & HWSF_FAKE)
 			pInst->m_Handle.SetFake();

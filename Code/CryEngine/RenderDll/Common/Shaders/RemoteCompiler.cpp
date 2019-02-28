@@ -473,10 +473,6 @@ EServerError CShaderSrv::Send(std::vector<uint8>& rCompileData) const
 	// Always add localhost as last resort
 	ServerVec.push_back("localhost");
 
-#if CRY_PLATFORM_WINDOWS
-	int nPort = 0;
-#endif
-
 	//connect
 	for (uint32 nRetries = m_LastWorkingServer; nRetries < m_LastWorkingServer + ServerVec.size() + 6; nRetries++)
 	{

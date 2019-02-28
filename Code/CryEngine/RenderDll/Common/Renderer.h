@@ -40,7 +40,7 @@ enum eAntialiasingType
 	eAT_REQUIRES_SUBPIXELSHIFT_MASK = (eAT_SMAA_2TX_MASK | eAT_TSAA_MASK)
 };
 
-static const char* s_pszAAModes[eAT_AAMODES_COUNT] =
+constexpr const char* s_pszAAModes[eAT_AAMODES_COUNT] =
 {
 	"NO AA",
 	"SMAA 1X",

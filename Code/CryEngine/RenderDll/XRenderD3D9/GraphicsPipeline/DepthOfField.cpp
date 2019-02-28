@@ -12,8 +12,8 @@ float NGon_Rad(float theta, float n)
 // Shirley's concentric mapping
 Vec4 CDepthOfFieldStage::ToUnitDisk(Vec4& origin, float blades, float fstop)
 {
-	float max_fstops = 8;
-	float min_fstops = 1;
+	//float max_fstops = 8;
+	//float min_fstops = 1;
 	float normalizedStops = 1.0f; //clamp_tpl((fstop - max_fstops) / (max_fstops - min_fstops), 0.0f, 1.0f);
 
 	float phi;
@@ -41,8 +41,6 @@ Vec4 CDepthOfFieldStage::ToUnitDisk(Vec4& origin, float blades, float fstop)
 void CDepthOfFieldStage::Execute()
 {
 	FUNCTION_PROFILER_RENDERER();
-
-	CD3D9Renderer* rd = gcpRendD3D;
 
 	CDepthOfField* pDofRenderTech = (CDepthOfField*)PostEffectMgr()->GetEffect(EPostEffectID::DepthOfField);
 	SDepthOfFieldParams dofParams = pDofRenderTech->GetParams();
@@ -110,11 +108,6 @@ void CDepthOfFieldStage::Execute()
 			}
 
 			m_passLayerDownscale.BeginConstantUpdate();
-			Vec4 vParams = Vec4(
-				(float)CRendererResources::s_ptexHDRTargetMaskedScaled[0][0]->GetWidth(),
-				(float)CRendererResources::s_ptexHDRTargetMaskedScaled[0][0]->GetHeight(),
-				1.0f / (float)CRendererResources::s_ptexHDRTargetMaskedScaled[0][0]->GetWidth(),
-				1.0f / (float)CRendererResources::s_ptexHDRTargetMaskedScaled[0][0]->GetHeight());
 			m_passLayerDownscale.SetConstant(dofFocusParam0Name, vDofParams0, eHWSC_Pixel);
 			m_passLayerDownscale.SetConstant(dofFocusParam1Name, vDofParams1, eHWSC_Pixel);
 			m_passLayerDownscale.Execute();

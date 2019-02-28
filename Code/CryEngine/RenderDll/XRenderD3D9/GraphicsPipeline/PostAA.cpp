@@ -172,7 +172,6 @@ void CPostAAStage::Init()
 
 void CPostAAStage::ApplySMAA(CTexture*& pCurrRT)
 {
-	auto& RESTRICT_REFERENCE commandList = GetDeviceObjectFactory().GetCoreCommandList();
 	CD3D9Renderer* pRenderer = gcpRendD3D;
 
 	CTexture* pEdgesRT = CRendererResources::s_ptexSceneNormalsMap;   // Reusing ESRAM resident target
@@ -293,8 +292,6 @@ void CPostAAStage::ApplySRGB(CTexture*& pCurrRT)
 
 void CPostAAStage::ApplyTemporalAA(CTexture*& pCurrRT, CTexture*& pMgpuRT, uint32 aaMode)
 {
-	CD3D9Renderer* pRenderer = gcpRendD3D;
-
 	CShader* pShader = CShaderMan::s_shPostAA;
 	CTexture* pDestRT = GetAARenderTarget(RenderView(), true);
 	CTexture* pPrevRT = ((SPostEffectsUtils::m_iFrameCounter - m_lastFrameID) < 10) ? GetAARenderTarget(RenderView(),false) : pCurrRT;

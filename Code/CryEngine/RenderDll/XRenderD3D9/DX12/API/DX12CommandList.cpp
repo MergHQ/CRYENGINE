@@ -173,8 +173,7 @@ void CCommandList::End()
 	{
 		PendingResourceBarriers();
 
-		HRESULT res = m_pCmdList->Close();
-		DX12_ASSERT(res == S_OK, "Could not close command list!");
+		CRY_DX12_VERIFY(m_pCmdList->Close() == S_OK, "Could not close command list!");
 	}
 
 	m_eState = CLSTATE_COMPLETED;
@@ -936,8 +935,8 @@ void CCommandList::CopyResource(CResource& rDstResource, CResource& rSrcResource
 	MaxResourceFenceValue(rSrcResource, CMDTYPE_WRITE);
 
 	// TODO: if we know early that the resource(s) will be DEST and SOURCE we can begin the barrier early and end it here
-	D3D12_RESOURCE_STATES prevDstState = SetResourceState(rDstResource, D3D12_RESOURCE_STATE_COPY_DEST);        // compatible with D3D12_HEAP_TYPE_READBACK's D3D12_RESOURCE_STATE_COPY_DEST requirement
-	D3D12_RESOURCE_STATES prevSrcState = SetResourceState(rSrcResource, D3D12_RESOURCE_STATE_COPY_SOURCE);      // compatible with D3D12_HEAP_TYPE_UPLOAD's D3D12_RESOURCE_STATE_GENERIC_READ requirement
+	/*D3D12_RESOURCE_STATES prevDstState = */SetResourceState(rDstResource, D3D12_RESOURCE_STATE_COPY_DEST);        // compatible with D3D12_HEAP_TYPE_READBACK's D3D12_RESOURCE_STATE_COPY_DEST requirement
+	/*D3D12_RESOURCE_STATES prevSrcState = */SetResourceState(rSrcResource, D3D12_RESOURCE_STATE_COPY_SOURCE);      // compatible with D3D12_HEAP_TYPE_UPLOAD's D3D12_RESOURCE_STATE_GENERIC_READ requirement
 
 	PendingResourceBarriers();
 
@@ -963,8 +962,8 @@ void CCommandList::CopySubresources(CResource& rDstResource, UINT dstSubResource
 	MaxResourceFenceValue(rSrcResource, CMDTYPE_WRITE);
 
 	// TODO: if we know early that the resource(s) will be DEST and SOURCE we can begin the barrier early and end it here
-	D3D12_RESOURCE_STATES prevDstState = SetResourceState(rDstResource, D3D12_RESOURCE_STATE_COPY_DEST);        // compatible with D3D12_HEAP_TYPE_READBACK's D3D12_RESOURCE_STATE_COPY_DEST requirement
-	D3D12_RESOURCE_STATES prevSrcState = SetResourceState(rSrcResource, D3D12_RESOURCE_STATE_COPY_SOURCE);      // compatible with D3D12_HEAP_TYPE_UPLOAD's D3D12_RESOURCE_STATE_GENERIC_READ requirement
+	/*D3D12_RESOURCE_STATES prevDstState = */SetResourceState(rDstResource, D3D12_RESOURCE_STATE_COPY_DEST);        // compatible with D3D12_HEAP_TYPE_READBACK's D3D12_RESOURCE_STATE_COPY_DEST requirement
+	/*D3D12_RESOURCE_STATES prevSrcState = */SetResourceState(rSrcResource, D3D12_RESOURCE_STATE_COPY_SOURCE);      // compatible with D3D12_HEAP_TYPE_UPLOAD's D3D12_RESOURCE_STATE_GENERIC_READ requirement
 
 	PendingResourceBarriers();
 
@@ -1080,7 +1079,7 @@ void CCommandList::UpdateSubresourceRegion(CResource& rResource, UINT subResourc
 	MaxResourceFenceValue(rResource, CMDTYPE_ANY);
 
 	// TODO: if we know early that the resource(s) will be DEST we can begin the barrier early and end it here
-	D3D12_RESOURCE_STATES prevDstState = SetResourceState(rResource, D3D12_RESOURCE_STATE_COPY_DEST);        // compatible with D3D12_HEAP_TYPE_READBACK's D3D12_RESOURCE_STATE_COPY_DEST requirement
+	/*D3D12_RESOURCE_STATES prevDstState = */SetResourceState(rResource, D3D12_RESOURCE_STATE_COPY_DEST);        // compatible with D3D12_HEAP_TYPE_READBACK's D3D12_RESOURCE_STATE_COPY_DEST requirement
 
 	ID3D12Resource* res12 = rResource.GetD3D12Resource();
 	const D3D12_RESOURCE_DESC& desc = rResource.GetDesc();

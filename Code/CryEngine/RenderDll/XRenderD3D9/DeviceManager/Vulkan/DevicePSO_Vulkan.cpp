@@ -137,7 +137,6 @@ CDeviceGraphicsPSO::EInitResult CDeviceGraphicsPSO_Vulkan::Init(const CDeviceGra
 
 			const auto& inputLayoutPair = CDeviceObjectFactory::GetOrCreateInputLayout(&pVsInstance->m_Shader, streamMask, psoDesc.m_VertexFormat);
 			const auto& inputLayout = inputLayoutPair->first;
-			const unsigned int declarationCount = inputLayout.m_Declaration.size();
 
 			// match shader inputs to input layout by semantic
 			for (const auto& declInputElement : inputLayout.m_Declaration)

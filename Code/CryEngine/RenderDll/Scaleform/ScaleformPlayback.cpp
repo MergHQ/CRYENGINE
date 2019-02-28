@@ -123,7 +123,7 @@ static size_t IndexSizes[] =
 IScaleformPlayback::DeviceData* CScaleformPlayback::CreateDeviceData(const void* pVertices, int numVertices, VertexFormat vf, bool bTemp)
 {
 	DeviceData* pData = new DeviceData;
-	CRY_ASSERT((vf == Vertex_XY16i || vf == Vertex_XY16iC32 || vf == Vertex_XY16iCF32) && "CScaleformPlayback::SetVertexData() -- Unsupported source vertex format!");
+	CRY_ASSERT_MESSAGE((vf == Vertex_XY16i || vf == Vertex_XY16iC32 || vf == Vertex_XY16iCF32), "CScaleformPlayback::SetVertexData() -- Unsupported source vertex format!");
 
 	pData->Type = DevDT_Vertex;
 	pData->NumElements = numVertices;
@@ -142,7 +142,7 @@ IScaleformPlayback::DeviceData* CScaleformPlayback::CreateDeviceData(const void*
 IScaleformPlayback::DeviceData* CScaleformPlayback::CreateDeviceData(const void* pIndices, int numIndices, IndexFormat idxf, bool bTemp)
 {
 	DeviceData* pData = new DeviceData;
-	CRY_ASSERT((idxf == Index_16) && "CScaleformPlayback::SetIndexData() -- Unsupported source index format!");
+	CRY_ASSERT_MESSAGE((idxf == Index_16), "CScaleformPlayback::SetIndexData() -- Unsupported source index format!");
 
 	pData->Type = DevDT_Index;
 	pData->NumElements = numIndices;
@@ -656,7 +656,7 @@ void CScaleformPlayback::CalcTransMat3D(const Matrix23* pSrc, Matrix44* __restri
 	if (m_matCachedWVPDirty)
 	{
 		Matrix44 matProjPatched = m_matProj3D;
-		assert((matProjPatched.m23 == -1.0f || matProjPatched.m23 == 0.0f) && "CScaleformPlayback::SetPerspective3D() -- projMatIn is not right handed");
+		CRY_ASSERT_MESSAGE((matProjPatched.m23 == -1.0f || matProjPatched.m23 == 0.0f), "CScaleformPlayback::SetPerspective3D() -- projMatIn is not right handed");
 		if (!m_stereoFixedProjDepth)
 		{
 			matProjPatched.m20 = -m_maxParallax;   // negative here as m_matProj3D is RH
@@ -772,18 +772,18 @@ void CScaleformPlayback::ApplyMatrix(const Matrix23* pMatIn)
 
 ITexture* CScaleformPlayback::CreateRenderTarget()
 {
-	assert(0 && "CScaleformPlayback::CreateRenderTarget() -- Not implemented!");
+	CRY_ASSERT_MESSAGE(false, "CScaleformPlayback::CreateRenderTarget() -- Not implemented!");
 	return 0;
 }
 
 void CScaleformPlayback::SetDisplayRenderTarget(ITexture* /*pRT*/, bool /*setState*/)
 {
-	assert(0 && "CScaleformPlayback::SetDisplayRenderTarget() -- Not implemented!");
+	CRY_ASSERT_MESSAGE(false, "CScaleformPlayback::SetDisplayRenderTarget() -- Not implemented!");
 }
 
 void CScaleformPlayback::PushRenderTarget(const RectF& /*frameRect*/, ITexture* /*pRT*/)
 {
-	assert(0 && "CScaleformPlayback::PushRenderTarget() -- Not implemented!");
+	CRY_ASSERT_MESSAGE(false, "CScaleformPlayback::PushRenderTarget() -- Not implemented!");
 }
 
 void CScaleformPlayback::PopOutputTarget()
@@ -1178,7 +1178,7 @@ void CScaleformPlayback::SetMatrix(const Matrix23& m)
 
 void CScaleformPlayback::SetUserMatrix(const Matrix23& /*m*/)
 {
-	assert(0 && "CScaleformPlayback::SetUserMatrix() -- Not implemented!");
+	CRY_ASSERT_MESSAGE(false, "CScaleformPlayback::SetUserMatrix() -- Not implemented!");
 }
 
 void CScaleformPlayback::SetCxform(const ColorF& cx0, const ColorF& cx1)
@@ -1199,7 +1199,7 @@ void CScaleformPlayback::PushBlendMode(BlendType mode)
 
 void CScaleformPlayback::PopBlendMode()
 {
-	assert(m_blendOpStack.size() && "CScaleformPlayback::PopBlendMode() -- Blend mode stack is empty!");
+	CRY_ASSERT_MESSAGE(!m_blendOpStack.empty(), "CScaleformPlayback::PopBlendMode() -- Blend mode stack is empty!");
 
 	if (m_blendOpStack.size())
 	{

@@ -278,7 +278,6 @@ void CREFogVolume::DrawToCommandList(CRenderObject* pObj, const struct SGraphics
 	}
 
 	auto& RESTRICT_REFERENCE compiledObj = *m_pCompiledObject;
-	CD3D9Renderer* const RESTRICT_POINTER rd = gcpRendD3D;
 
 #if defined(ENABLE_PROFILING_CODE)
 	if (!compiledObj.m_bValid)

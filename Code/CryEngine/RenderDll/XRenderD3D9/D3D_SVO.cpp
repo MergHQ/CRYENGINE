@@ -706,7 +706,6 @@ void CSvoRenderer::SetupCommonConstants(SSvoTargetsSet* pTS, T& rp, CTexture* pR
 
 	{
 		static CCryNameR paramName("SVO_CloudShadowAnimParams");
-		CD3D9Renderer* const __restrict r = gcpRendD3D;
 		SRenderViewShaderConstants& PF = pRenderView->GetShaderConstants();
 		Vec4 vData;
 		vData[0] = PF.pCloudShadowAnimParams.x;
@@ -718,7 +717,6 @@ void CSvoRenderer::SetupCommonConstants(SSvoTargetsSet* pTS, T& rp, CTexture* pR
 
 	{
 		static CCryNameR paramName("SVO_CloudShadowParams");
-		CD3D9Renderer* const __restrict r = gcpRendD3D;
 		SRenderViewShaderConstants& PF = pRenderView->GetShaderConstants();
 		Vec4 vData;
 		vData[0] = PF.pCloudShadowParams.x;
@@ -1013,16 +1011,17 @@ void CSvoRenderer::CheckAllocateRT(bool bSpecPass)
 	int nWidth = screenResolution.x;
 	int nHeight = screenResolution.y;
 
-	int nVoxProxyViewportDim = e_svoVoxGenRes;
-
 	int nResScaleBase = max(e_svoTI_ResScaleBase + e_svoTI_LowSpecMode, 1);
-	int nDownscaleAir = max(e_svoTI_ResScaleAir + e_svoTI_LowSpecMode, 1);
 	int resScaleSpec = max(e_svoTI_ResScaleSpecular + e_svoTI_LowSpecMode, 1);
 
 	int nInW = (nWidth / nResScaleBase);
 	int nInH = (nHeight / nResScaleBase);
+#ifdef FEATURE_SVO_GI_ALLOW_HQ
+	int nDownscaleAir = max(e_svoTI_ResScaleAir + e_svoTI_LowSpecMode, 1);
 	int nAirW = (nWidth / nDownscaleAir);
 	int nAirH = (nHeight / nDownscaleAir);
+#endif
+
 	int specW = (nWidth / resScaleSpec);
 	int specH = (nHeight / resScaleSpec);
 
@@ -1154,13 +1153,13 @@ size_t CSvoRenderer::GetAllocatedMemory()
 bool CSvoRenderer::IsShaderItemUsedForVoxelization(SShaderItem& rShaderItem, IRenderNode* pRN)
 {
 	CShader* pS = (CShader*)rShaderItem.m_pShader;
-	CShaderResources* pR = (CShaderResources*)rShaderItem.m_pShaderResources;
 
 	// skip some objects marked by level designer
 	//	if(pRN && pRN->IsRenderNode() && pRN->GetIntegrationType())
 	//	return false;
 
 	// skip transparent meshes except decals
+	//	CShaderResources* pR = (CShaderResources*)rShaderItem.m_pShaderResources;
 	//	if((pR->Opacity() != 1.f) && !(pS->GetFlags()&EF_DECAL))
 	//	return false;
 
@@ -1836,8 +1835,6 @@ void CSvoRenderer::BindTiledLights(PodArray<I3DEngine::SLightTI>& lightsTI, T& r
 
 	CTiledLightVolumesStage::STiledLightShadeInfo* tiledLightShadeInfo = tiledLights->GetTiledLightShadeInfo();
 
-	const auto& viewInfo = RenderView()->GetViewInfo(CCamera::eEye_Left);
-
 	for (int l = 0; l < lightsTI.Count(); l++)
 	{
 		I3DEngine::SLightTI& svoLight = lightsTI[l];
@@ -1845,11 +1842,9 @@ void CSvoRenderer::BindTiledLights(PodArray<I3DEngine::SLightTI>& lightsTI, T& r
 		if (!svoLight.vDirF.w)
 			continue;
 
-		Vec4 worldViewPos = Vec4(viewInfo.cameraOrigin, 0);
-
 		for (uint32 lightIdx = 0; lightIdx < MaxNumTileLights && tiledLightShadeInfo[lightIdx].lightType != CTiledLightVolumesStage::tlTypeNone; ++lightIdx)
 		{
-			if ((tiledLightShadeInfo[lightIdx].lightType == CTiledLightVolumesStage::tlTypeRegularProjector) && svoLight.vPosR.IsEquivalent(tiledLightShadeInfo[lightIdx].posRad /*+ worldViewPos*/, .5f))
+			if ((tiledLightShadeInfo[lightIdx].lightType == CTiledLightVolumesStage::tlTypeRegularProjector) && svoLight.vPosR.IsEquivalent(tiledLightShadeInfo[lightIdx].posRad, .5f))
 			{
 				if (svoLight.vCol.w > 0)
 					svoLight.vCol.w = ((float)lightIdx + 100);

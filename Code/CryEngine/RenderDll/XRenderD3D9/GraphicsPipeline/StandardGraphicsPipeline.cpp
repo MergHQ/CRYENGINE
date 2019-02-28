@@ -426,7 +426,6 @@ void CStandardGraphicsPipeline::GeneratePerViewConstantBuffer(const SRenderViewI
 			float zn = viewInfo.nearClipPlane;
 			float zf = viewInfo.farClipPlane;
 			float nearZRange = CRendererCVars::CV_r_DrawNearZRange;
-			float camScale = CRendererCVars::CV_r_DrawNearFarPlane / gEnv->p3DEngine->GetMaxViewDistance();
 			cb.CV_NearestScaled.x = bReverseDepth ? 1.0f - zf / (zf - zn) * nearZRange : zf / (zf - zn) * nearZRange;
 			cb.CV_NearestScaled.y = bReverseDepth ? zn / (zf - zn) * nearZRange * nearZRange : zn / (zn - zf) * nearZRange * nearZRange;
 			cb.CV_NearestScaled.z = bReverseDepth ? 1.0f - (nearZRange - 0.001f) : nearZRange - 0.001f;
@@ -472,7 +471,6 @@ bool CStandardGraphicsPipeline::FillCommonScenePassStates(const SGraphicsPipelin
 
 	CShaderResources* pRes = static_cast<CShaderResources*>(inputDesc.shaderItem.m_pShaderResources);
 	const uint64 objectFlags = inputDesc.objectFlags;
-	const uint8 renderState = inputDesc.renderState;
 	SShaderPass* pShaderPass = &pTechnique->m_Passes[0];
 
 	// Handle quality flags
@@ -684,7 +682,6 @@ void CStandardGraphicsPipeline::ExecuteBillboards()
 {
 	FUNCTION_PROFILER_RENDERER();
 
-	CD3D9Renderer* pRenderer = gcpRendD3D;
 	CRenderView* pRenderView = GetCurrentRenderView();
 
 	CClearSurfacePass::Execute(CRendererResources::s_ptexSceneNormalsMap, Clr_Transparent);

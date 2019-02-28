@@ -290,8 +290,6 @@ bool CUnderwaterGodRays::Preprocess(const SRenderViewInfo& viewInfo)
 	if (!bQualityCheck)
 		return false;
 
-	static ICVar* pVar = iConsole->GetCVar("e_WaterOcean");
-
 	//bool bOceanVolumeVisible = (gEnv->p3DEngine->GetOceanRenderFlags() & OCR_OCEANVOLUME_VISIBLE) != 0;
 
 	if (CRenderer::CV_r_water_godrays && m_pAmount->GetParam() > 0.005f) // && bOceanEnabled && bOceanVolumeVisible)

@@ -141,9 +141,9 @@ void CSwapChainBackedRenderDisplayContext::CreateSwapChain(CRY_HWND hWnd, bool i
 #endif
 #endif
 
-	auto w = m_DisplayWidth,
-	     h = m_DisplayHeight;
 #if CRY_PLATFORM_WINDOWS
+	auto w = m_DisplayWidth, h = m_DisplayHeight;
+
 	if (TRUE == ::IsWindow((HWND)hWnd))
 	{
 		RECT rc;
@@ -313,7 +313,7 @@ void CSwapChainBackedRenderDisplayContext::AllocateBackBuffers()
 #else
 			D3DTexture* pBackBuffer = nullptr;
 			HRESULT hr = m_swapChain.GetSwapChain()->GetBuffer(i, IID_GFX_ARGS(&pBackBuffer));
-			CRY_ASSERT(SUCCEEDED(hr) && pBackBuffer != nullptr);
+			CRY_VERIFY(SUCCEEDED(hr) && pBackBuffer != nullptr);
 #endif
 
 			const auto &layout = m_backBuffersArray[i]->GetLayout();
@@ -348,8 +348,7 @@ void CSwapChainBackedRenderDisplayContext::CreateOutput()
 
 	if (m_pOutput != nullptr)
 	{
-		unsigned long numRemainingReferences = m_pOutput->Release();
-		CRY_ASSERT(numRemainingReferences == 0);
+		CRY_VERIFY(m_pOutput->Release() == 0);
 		m_pOutput = nullptr;
 	}
 
@@ -428,8 +427,7 @@ void CSwapChainBackedRenderDisplayContext::ChangeOutputIfNecessary(bool isFullsc
 
 		if (m_pOutput != nullptr)
 		{
-			unsigned long numRemainingReferences = m_pOutput->Release();
-			CRY_ASSERT(numRemainingReferences == 0);
+			CRY_VERIFY(m_pOutput->Release() == 0);
 			m_pOutput = nullptr;
 		}
 	}

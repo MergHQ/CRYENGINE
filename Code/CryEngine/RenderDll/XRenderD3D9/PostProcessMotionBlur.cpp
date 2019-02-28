@@ -27,7 +27,6 @@ bool CMotionBlur::GetPrevObjToWorldMat(CRenderObject* pObj, uint64 objFlags, Mat
 
 	if (objFlags & FOB_HAS_PREVMATRIX)
 	{
-		uint32 nThreadID = gRenDev->GetRenderThreadID();
 		SRenderObjData* const __restrict pOD = pObj->GetObjData();
 
 		const uintptr_t ObjID = pOD ? pOD->m_uniqueObjectId : 0;

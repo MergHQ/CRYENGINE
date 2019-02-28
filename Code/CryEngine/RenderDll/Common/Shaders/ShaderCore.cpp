@@ -668,11 +668,9 @@ void CShaderMan::mfCreateCommonGlobalFlags(const char* szName)
 					pCurrOffset += 4;
 					char dummy[256] = "\n";
 					char name[256] = "\n";
-					int res = sscanf(pCurrOffset, "%255s %255s", dummy, name);         // Get flag name..
-					assert(res);
+					CRY_VERIFY(sscanf(pCurrOffset, "%255s %255s", dummy, name) != 0); // Get flag name
 
 					string pszNameFlag = name;
-					int nSzSize = pszNameFlag.size();
 					pszNameFlag.MakeUpper();
 
 					MapNameFlagsItor pCheck = m_pShaderCommonGlobalFlag.find(pszNameFlag);
@@ -820,12 +818,10 @@ bool CShaderMan::mfRemapCommonGlobalFlagsWithLegacy(void)
 
 			// Search for duplicates and swap with old mask
 			MapNameFlagsItor pCommonGlobalsIter = m_pShaderCommonGlobalFlag.begin();
-			uint64 test = (uint64)0x10;
 			for (; pCommonGlobalsIter != pCommonGlobalsEnd; ++pCommonGlobalsIter)
 			{
 				if (pFoundMatch != pCommonGlobalsIter && pCommonGlobalsIter->second == nRemapedMask)
 				{
-					uint64 nPrev = pCommonGlobalsIter->second;
 					pCommonGlobalsIter->second = nOldMask;
 					bRemaped = true;
 					break;
@@ -863,8 +859,7 @@ void CShaderMan::mfInitCommonGlobalFlags(void)
 		if (strstr(str, "FX_CACHE_VER"))
 		{
 			float fCacheVer = 0.0f;
-			int res = sscanf(str, "%127s %f", name, &fCacheVer);
-			assert(res);
+			CRY_VERIFY(sscanf(str, "%127s %f", name, &fCacheVer) != 0);
 			if (!stricmp(name, "FX_CACHE_VER") && fabs(FX_CACHE_VER - fCacheVer) >= 0.01f)
 			{
 				// re-create common global flags (shader cache bumped)
@@ -1698,8 +1693,7 @@ void CShaderMan::mfPreloadShaderExts(void)
 		char s[256];
 		cry_strcpy(s, fileinfo.name);
 		PathUtil::RemoveExtension(s);
-		SShaderGen* pShGen = mfCreateShaderGenInfo(s, false);
-		assert(pShGen);
+		CRY_VERIFY(mfCreateShaderGenInfo(s, false) != nullptr);
 	}
 	while (gEnv->pCryPak->FindNext(handle, &fileinfo) != -1);
 
@@ -1741,7 +1735,6 @@ CShader* CShaderMan::mfNewShader(const char* szName)
 
 SEnvTexture* SHRenderTarget::GetEnv2D()
 {
-	CRenderer* rd = gRenDev;
 	SEnvTexture* pEnvTex = NULL;
 	if (m_nIDInPool >= 0)
 	{
@@ -1801,7 +1794,6 @@ void CShaderResources::CreateModifiers(SInputShaderResources* pInRes)
 		InTex.m_Ext.m_nUpdateFlags = 0;
 		InTex.m_Ext.m_nLastRecursionLevel = -1;
 		m_nLastTexture = i;
-		SEfResTexture* pTex = m_Textures[i];
 		SEfTexModificator* pMod = InTex.m_Ext.m_pTexModifier;
 		if (i != EFTT_DETAIL_OVERLAY)
 		{
@@ -1905,7 +1897,6 @@ void SEfResTexture::Update(int nTSlot, uint32& nMDMask)
 {
 	FUNCTION_PROFILER_RENDER_FLAT
 	  PrefetchLine(m_Sampler.m_pTex, 0);
-	CRenderer* rd = gRenDev;
 
 	assert(nTSlot < MAX_TMU);
 
@@ -1925,7 +1916,6 @@ void SEfResTexture::Update(int nTSlot, uint32& nMDMask)
 
 void SEfResTexture::UpdateWithModifier(int nTSlot, uint32& nMDMask)
 {
-	CRenderer* rd = gRenDev;
 	int nFrameID = gRenDev->GetRenderFrameID();
 	int recursion = 0;
 	if (m_Ext.m_nFrameUpdated == nFrameID && m_Ext.m_nLastRecursionLevel == recursion)
@@ -1955,7 +1945,6 @@ void SEfResTexture::UpdateWithModifier(int nTSlot, uint32& nMDMask)
 	}
 
 	bool bTr = false;
-	bool bTranspose = false;
 	Plane Pl;
 	Plane PlTr;
 

@@ -28,7 +28,10 @@ void DrawCompiledRenderItemsToCommandList(
 	const SGraphicsPipelinePassContext &passContext = *pInputPassContext;
 	const bool shouldIssueStartTimeStamp = startRenderItem == passContext.rendItems.start && (passContext.type != GraphicsPipelinePassType::resolve);
 	const bool shouldIssueEndTimeStamp   = endRenderItem   == passContext.rendItems.end   && (passContext.type != GraphicsPipelinePassType::resolve);
+
+#if defined(ENABLE_PROFILING_CODE)
 	CTimeValue deltaTimestamp(0LL);
+#endif
 
 	// Prepare command list
 	commandList->Reset();

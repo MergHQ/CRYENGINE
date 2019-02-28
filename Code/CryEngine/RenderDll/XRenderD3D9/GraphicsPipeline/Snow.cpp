@@ -139,7 +139,6 @@ void CSnowStage::ExecuteDeferredSnowGBuffer()
 
 	auto* pRenderView = RenderView();
 	CRY_ASSERT(pRenderView);
-	CRenderView& rv = *pRenderView;
 
 	uint64 rtMask = 0;
 	rtMask |= (rainVolParams.bApplyOcclusion) ? g_HWSR_MaskBit[HWSR_SAMPLE0] : 0;
@@ -262,10 +261,7 @@ void CSnowStage::ExecuteDeferredSnowDisplacement()
 {
 	FUNCTION_PROFILER_RENDERER();
 
-	CD3D9Renderer* const RESTRICT_POINTER rd = gcpRendD3D;
-
 	const SSnowParams& snowVolParams = m_SnowVolParams;
-	const SRainParams& rainVolParams = m_RainVolParams;
 
 	if (snowVolParams.m_fSnowAmount < 0.05f ||
 	    snowVolParams.m_fRadius     < 0.05f)
@@ -286,9 +282,7 @@ void CSnowStage::ExecuteDeferredSnowDisplacement()
 	matView.m13 = -matView.m23;
 	matView.m23 = z;
 
-	auto* pRenderView = RenderView();
-	CRY_ASSERT(pRenderView);
-	CRenderView& rv = *pRenderView;
+	CRY_ASSERT(RenderView() != nullptr);
 
 	int32 sX;
 	int32 sY;
@@ -822,8 +816,6 @@ void CSnowStage::ExecuteHalfResComposite()
 {
 	PROFILE_LABEL_SCOPE("SCENE_SNOW_FLAKES_HALFRES_COMPOSITE");
 
-	CD3D9Renderer* const RESTRICT_POINTER rd = gcpRendD3D;
-
 	auto& pass = m_passSnowHalfResCompisite;
 
 	if (pass.IsDirty())
@@ -853,8 +845,6 @@ void CSnowStage::ExecuteHalfResComposite()
 
 void CSnowStage::GetScissorRegion(const Vec3& cameraOrigin, const Vec3& vCenter, float fRadius, int32& sX, int32& sY, int32& sWidth, int32& sHeight) const
 {
-	CD3D9Renderer* const RESTRICT_POINTER rd = gcpRendD3D;
-
 	Vec3 vViewVec = vCenter - cameraOrigin;
 	float fDistToLS = vViewVec.GetLength();
 
@@ -915,8 +905,6 @@ void CSnowStage::GetScissorRegion(const Vec3& cameraOrigin, const Vec3& vCenter,
 		pBRectVertices[3] = vLPosVS - r * vTanBottom;
 	}
 
-	Vec2 vPMin = Vec2(1, 1);
-	Vec2 vPMax = Vec2(0, 0);
 	Vec2 vMin = Vec2(1, 1);
 	Vec2 vMax = Vec2(0, 0);
 

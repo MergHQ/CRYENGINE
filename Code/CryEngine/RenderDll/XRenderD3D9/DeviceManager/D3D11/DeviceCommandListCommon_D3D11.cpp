@@ -154,10 +154,9 @@ void CDeviceCommandListImpl::ClearStateImpl(bool bOutputMergerOnly) const
 	{
 		D3DDepthSurface* pDSV = 0;
 		D3DSurface*      pRTVs[D3D11_SIMULTANEOUS_RENDER_TARGET_COUNT] = { 0 };
-		D3DUAV*          pUAVs[D3D11_PS_CS_UAV_REGISTER_COUNT] = { 0 };
 
 		if (bOutputMergerOnly)
-			rd->GetDeviceContext().OMSetRenderTargets/*AndUnorderedAccessViews*/(D3D11_SIMULTANEOUS_RENDER_TARGET_COUNT, pRTVs, pDSV/*, 0, D3D11_PS_CS_UAV_REGISTER_COUNT, pUAVs, nullptr*/);
+			rd->GetDeviceContext().OMSetRenderTargets(D3D11_SIMULTANEOUS_RENDER_TARGET_COUNT, pRTVs, pDSV);
 		else
 			rd->GetDeviceContext().ClearState();
 	}
@@ -623,8 +622,6 @@ void CDeviceGraphicsCommandInterfaceImpl::DrawIndexedImpl(uint32 IndexCountPerIn
 
 void CDeviceGraphicsCommandInterfaceImpl::ClearSurfaceImpl(D3DSurface* pView, const float color[4], UINT numRects, const D3D11_RECT* pRects)
 {
-	CD3D9Renderer* const __restrict rd = gcpRendD3D;
-
 #if (CRY_RENDERER_DIRECT3D >= 111)
 	gcpRendD3D->GetDeviceContext().ClearView(pView, color, numRects, pRects);
 #else
@@ -786,8 +783,6 @@ void CDeviceComputeCommandInterfaceImpl::DispatchImpl(uint32 X, uint32 Y, uint32
 
 void CDeviceComputeCommandInterfaceImpl::ClearUAVImpl(D3DUAV* pView, const FLOAT Values[4], UINT NumRects, const D3D11_RECT* pRects)
 {
-	CD3D9Renderer* const __restrict rd = gcpRendD3D;
-
 #if (CRY_RENDERER_DIRECT3D >= 120)
 	gcpRendD3D->GetDeviceContext().ClearRectsUnorderedAccessViewFloat(pView, Values, NumRects, pRects);
 #else
@@ -798,8 +793,6 @@ void CDeviceComputeCommandInterfaceImpl::ClearUAVImpl(D3DUAV* pView, const FLOAT
 
 void CDeviceComputeCommandInterfaceImpl::ClearUAVImpl(D3DUAV* pView, const UINT Values[4], UINT NumRects, const D3D11_RECT* pRects)
 {
-	CD3D9Renderer* const __restrict rd = gcpRendD3D;
-
 #if (CRY_RENDERER_DIRECT3D >= 120)
 	gcpRendD3D->GetDeviceContext().ClearRectsUnorderedAccessViewUint(pView, Values, NumRects, pRects);
 #else

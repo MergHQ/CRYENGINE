@@ -133,12 +133,15 @@ void CDeviceCommandListImpl::CeaseCommandListEvent(int nPoolId)
 	if (nPoolId != CMDQUEUE_GRAPHICS)
 		return;
 
+#if defined(USE_CRY_ASSERT) || defined(ENABLE_FRAME_PROFILER_LABELS)
 	auto* pCommandList = GetScheduler()->GetCommandList(nPoolId);
+#endif
+
 	CRY_ASSERT(m_sharedState.pCommandList == pCommandList || m_sharedState.pCommandList == nullptr);
 	m_sharedState.pCommandList = nullptr;
 
 #if defined(ENABLE_FRAME_PROFILER_LABELS)
-	for (auto pEventLabel : m_profilerEventStack)
+	for (size_t num = m_profilerEventStack.size(), i = 0; i < num; ++i)
 	{
 		PIXEndEvent(pCommandList->GetD3D12CommandList());
 	}
@@ -458,14 +461,13 @@ void CDeviceGraphicsCommandInterfaceImpl::BeginRenderPassImpl(const CDeviceRende
 	if (renderPass.m_pDepthStencilView)
 	{
 		const NCryDX12::CView& View = renderPass.m_pDepthStencilView->GetDX12View();
-		NCryDX12::CResource& Resource = View.GetDX12Resource();
 
 		pDSV = &View;
 
 		D3D11_DEPTH_STENCIL_VIEW_DESC Desc; renderPass.m_pDepthStencilView->GetDesc(&Desc);
 		const D3D12_RESOURCE_STATES desiredState = Desc.Flags & D3D11_DSV_READ_ONLY_DEPTH ? D3D12_RESOURCE_STATE_DEPTH_READ : D3D12_RESOURCE_STATE_DEPTH_WRITE;
 
-		assert(!Resource.NeedsTransitionBarrier(pCommandListDX12, View, desiredState));
+		assert(!View.GetDX12Resource().NeedsTransitionBarrier(pCommandListDX12, View, desiredState));
 	}
 
 	// Get current render target views
@@ -533,9 +535,8 @@ void CDeviceGraphicsCommandInterfaceImpl::SetVertexBuffersImpl(uint32 numStreams
 			// TODO: try not to call GetD3D() here, overhead: 1 call (and no inlinening) + 1 look-up + 2 accesses + branch
 			buffer_size_t offset;
 			auto* pBuffer = reinterpret_cast<CCryDX12Buffer*>(gcpRendD3D.m_DevBufMan.GetD3D(vertexStream.hStream, &offset));
-			NCryDX12::CResource& Resource = pBuffer->GetDX12Resource();
 
-			DX12_ASSERT(!Resource.InitHasBeenDeferred(), "Resource %s hasn't been uploaded prior to use!", Resource.GetName());
+			DX12_ASSERT(!pBuffer->GetDX12Resource().InitHasBeenDeferred(), "Resource %s hasn't been uploaded prior to use!", pBuffer->GetDX12Resource().GetName());
 			DX12_ASSERT(!pBuffer->GetDX12Resource().NeedsTransitionBarrier(pCommandListDX12, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER));
 
 #if defined(ENABLE_PROFILING_CODE)
@@ -559,10 +560,9 @@ void CDeviceGraphicsCommandInterfaceImpl::SetIndexBufferImpl(const CDeviceInputS
 		// TODO: try not to call GetD3D() here, overhead: 1 call (and no inlinening) + 1 look-up + 2 accesses + branch
 		buffer_size_t offset;
 		auto* pBuffer = reinterpret_cast<CCryDX12Buffer*>(gcpRendD3D.m_DevBufMan.GetD3D(indexStream->hStream, &offset));
-		NCryDX12::CResource& Resource = pBuffer->GetDX12Resource();
 
-		DX12_ASSERT(!Resource.InitHasBeenDeferred(), "Resource %s hasn't been uploaded prior to use!", Resource.GetName());
-		DX12_ASSERT(!Resource.NeedsTransitionBarrier(pCommandListDX12, D3D12_RESOURCE_STATE_INDEX_BUFFER));
+		DX12_ASSERT(!pBuffer->GetDX12Resource().InitHasBeenDeferred(), "Resource %s hasn't been uploaded prior to use!", pBuffer->GetDX12Resource().GetName());
+		DX12_ASSERT(!pBuffer->GetDX12Resource().NeedsTransitionBarrier(pCommandListDX12, D3D12_RESOURCE_STATE_INDEX_BUFFER));
 
 #if defined(ENABLE_PROFILING_CODE)
 		CryInterlockedIncrement(&SRenderStatistics::Write().m_nNumBoundIndexBuffers[pBuffer->GetDX12Resource().IsOffCard()]);

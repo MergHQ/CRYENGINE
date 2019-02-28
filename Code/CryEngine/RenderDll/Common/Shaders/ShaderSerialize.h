@@ -83,7 +83,9 @@ template<typename Container> void sAddDataArray_POD(TArray<byte>& Dst, const Con
 
 template<typename T> void sExport(TArray<byte>& dst, const T& data)
 {
+#if defined(USE_CRY_ASSERT)
 	int startNum = dst.Num();
+#endif
 
 	data.Export(dst);
 
@@ -91,7 +93,7 @@ template<typename T> void sExport(TArray<byte>& dst, const T& data)
 	// Only works on native export since structures are different sizes on console :(
 	if (!CParserBin::m_bEndians)
 	{
-		assert(dst.Num() - startNum == sizeof(T));
+		CRY_ASSERT(dst.Num() - startNum == sizeof(T));
 	}
 }
 
@@ -224,7 +226,9 @@ struct SSShader
 
 	void Export(TArray<byte>& dst) const
 	{
+#if defined(USE_CRY_ASSERT)
 		uint32 startOffset = dst.Num();
+#endif
 
 		sAddData(dst, m_nMaskGenFX);
 		sAddData(dst, (uint32)m_eSHDType);
@@ -255,7 +259,7 @@ struct SSShader
 		uint32 PAD = 0;
 		sAddData(dst, PAD); //pad to 64bit
 
-		assert(dst.Num() - startOffset == sizeof(*this));
+		CRY_ASSERT(dst.Num() - startOffset == sizeof(*this));
 	}
 
 	void Import(const byte* pData)
@@ -558,7 +562,9 @@ struct SCHWShader
 
 	void Export(TArray<byte>& dst) const
 	{
+#if defined(USE_CRY_ASSERT)
 		uint32 startOffset = dst.Num();
+#endif
 
 		sAddData(dst, m_nMaskGenShader);
 		sAddData(dst, m_nMaskGenFX);
@@ -578,7 +584,7 @@ struct SCHWShader
 		//uint32 PAD=0;
 		//sAddData(dst, PAD); //pad up to 64bit align due to uint64
 
-		assert(dst.Num() - startOffset == sizeof(*this));
+		CRY_ASSERT(dst.Num() - startOffset == sizeof(*this));
 	}
 
 	void Import(const byte* pData)

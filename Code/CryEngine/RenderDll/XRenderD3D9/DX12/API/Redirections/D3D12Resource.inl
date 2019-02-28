@@ -109,10 +109,10 @@ public:
 				if (CRenderer::CV_r_StereoEnableMgpu < 0)
 					Properties.CreationNodeMask = Properties.VisibleNodeMask = 1;
 #endif
-
-				HRESULT ret = pDevice->CreateCommittedResource(
-				  &Properties, HeapFlags, &Desc, InitialResourceState, pOptimizedClearValue, riid, (void**)&m_Targets[i]);
-				DX12_ASSERT(ret == S_OK, "Failed to create comitted resource!");
+				CRY_DX12_VERIFY(
+					pDevice->CreateCommittedResource(
+					&Properties, HeapFlags, &Desc, InitialResourceState, pOptimizedClearValue, riid, (void**)&m_Targets[i]) == S_OK,
+					"Failed to create comitted resource!");
 			}
 		}
 

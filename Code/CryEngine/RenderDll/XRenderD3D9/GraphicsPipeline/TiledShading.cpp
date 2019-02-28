@@ -22,8 +22,6 @@ CTiledShadingStage::~CTiledShadingStage()
 
 void CTiledShadingStage::Init()
 {
-	CD3D9Renderer* pRenderer = gcpRendD3D;
-	
 	m_pPerViewConstantBuffer = gcpRendD3D->m_DevBufMan.CreateConstantBuffer(sizeof(HLSL_PerViewGlobalConstantBuffer));
 	if (m_pPerViewConstantBuffer) m_pPerViewConstantBuffer->SetDebugName("TiledShadingStage Per-View CB");
 }

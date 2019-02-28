@@ -181,16 +181,16 @@ void CSwapChain::AcquireBuffers()
 		std::vector<UINT> createNodeMasks(m_Desc.BufferCount, 0x1);
 		std::vector<IUnknown*> presentCommandQueues(m_Desc.BufferCount, pDevice->GetNativeObject(m_pCommandQueue.GetD3D12CommandQueue(), 0));
 
-		HRESULT ret = m_pDXGISwapChain->ResizeBuffers1(
+		CRY_DX12_VERIFY(
+			m_pDXGISwapChain->ResizeBuffers1(
 		  m_Desc.BufferCount,
 		  m_Desc.BufferDesc.Width,
 		  m_Desc.BufferDesc.Height,
 		  m_Desc.BufferDesc.Format,
 		  m_Desc.Flags,
 		  &createNodeMasks[0],
-		  &presentCommandQueues[0]);
-
-		DX12_ASSERT(ret == S_OK, "Failed to re-locate the swap-chain's backbuffer(s) to all device nodes!");
+		  &presentCommandQueues[0]) == S_OK,
+			"Failed to re-locate the swap-chain's backbuffer(s) to all device nodes!");
 	}
 #endif
 
@@ -204,7 +204,7 @@ void CSwapChain::AcquireBuffers()
 			{
 				ID3D12Resource* pResource12s[2] = { pResource12, nullptr };
 
-				HRESULT ret = pDevice->DuplicateNativeCommittedResource(
+				pDevice->DuplicateNativeCommittedResource(
 					1U << 1U,
 					pDevice->GetNodeMask(),
 					pResource12s[0],
@@ -222,10 +222,11 @@ void CSwapChain::AcquireBuffers()
 				// Get broadcast resource from node "0" valid for all nodes
 				pResource12 = pDevice->CreateBroadcastObject(pResource12s);
 
-				ULONG refCount = pResource12s[0]->Release();
-
 	#if !defined(RELEASE) && defined(I_WONT_USE_THE_FRAME_DEBUGGER)
+				ULONG refCount = pResource12s[0]->Release();
 				DX12_ASSERT(refCount == 1 + i, "RefCount corruption!");
+	#else
+				pResource12s[0]->Release();
 	#endif  // !RELEASE
 			}
 #endif
@@ -236,9 +237,8 @@ void CSwapChain::AcquireBuffers()
 
 			SetDebugName(pResource12, stack_string().Format("SwapChain %08x, Buffer %x", (UINT64)m_pDXGISwapChain.get(), i));
 
-			ULONG refCount = pResource12->Release();
-
 #if !defined(RELEASE) && defined(I_WONT_USE_THE_FRAME_DEBUGGER)
+			ULONG refCount = pResource12->Release();
 			if (pDevice->IsMultiAdapter())
 			{
 				DX12_ASSERT(refCount == 1 + 0, "RefCount corruption!");
@@ -247,6 +247,8 @@ void CSwapChain::AcquireBuffers()
 			{
 				DX12_ASSERT(refCount == 1 + i, "RefCount corruption!");
 			}
+#else
+			pResource12->Release();
 #endif  // !RELEASE
 		}
 	}
@@ -266,9 +268,9 @@ void CSwapChain::UnblockBuffers(CCommandList* pCommandList)
 
 void CSwapChain::VerifyBufferCounters()
 {
+#if !defined(RELEASE) && defined(I_WONT_USE_THE_FRAME_DEBUGGER)
 	CDevice* pDevice = m_pCommandQueue.GetDevice();
 
-#if !defined(RELEASE) && defined(I_WONT_USE_THE_FRAME_DEBUGGER)
 	for (int i = 0; i < m_Desc.BufferCount; ++i)
 	{
 		ID3D12Resource* pResource12 = m_BackBuffers[i].GetD3D12Resource();
