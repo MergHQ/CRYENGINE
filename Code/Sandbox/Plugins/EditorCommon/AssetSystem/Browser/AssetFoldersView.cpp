@@ -190,6 +190,30 @@ void CAssetFoldersView::ClearSelection()
 	SelectFolder(assetsRootIndex);
 }
 
+void CAssetFoldersView::RenameFolder(const QModelIndex& folderIndex)
+{
+	CRY_ASSERT(folderIndex.model() == CAssetFoldersModel::GetInstance());
+
+	const QAbstractProxyModel* const pProxyModel = qobject_cast<QAbstractProxyModel*>(m_treeView->model());
+	const QModelIndex proxyIndex = pProxyModel->mapFromSource(folderIndex);
+
+	m_treeView->expand(proxyIndex.parent());
+	m_treeView->scrollTo(proxyIndex);
+	m_treeView->selectionModel()->setCurrentIndex(proxyIndex, QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows);
+	m_treeView->edit(proxyIndex);
+}
+
+void CAssetFoldersView::RenameFolder(const QString& folder)
+{
+	const QModelIndex folderIndex = CAssetFoldersModel::GetInstance()->FindIndexForFolder(folder);
+	if (!folderIndex.isValid())
+	{
+		return;
+	}
+
+	RenameFolder(folderIndex);
+}
+
 const QStringList& CAssetFoldersView::GetSelectedFolders() const
 {
 	return m_selectedFolders;
@@ -216,19 +240,7 @@ QString CAssetFoldersView::ToFolder(const QModelIndex& index)
 void CAssetFoldersView::OnCreateFolder(const QString& parentFolder)
 {
 	QString newFolderPath = CAssetFoldersModel::GetInstance()->CreateFolder(parentFolder);
-	OnRenameFolder(newFolderPath);
-}
-
-void CAssetFoldersView::OnRenameFolder(const QString& folder)
-{
-	auto folderIndex = CAssetFoldersModel::GetInstance()->FindIndexForFolder(folder);
-	auto proxyModel = qobject_cast<QAbstractProxyModel*>(m_treeView->model());
-	auto proxyIndex = proxyModel->mapFromSource(folderIndex);
-
-	m_treeView->expand(proxyIndex.parent());
-	m_treeView->scrollTo(proxyIndex);
-	m_treeView->selectionModel()->setCurrentIndex(proxyIndex, QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows);
-	m_treeView->edit(proxyIndex);
+	RenameFolder(newFolderPath);
 }
 
 void CAssetFoldersView::OnDeleteFolder(const QString& folder)
