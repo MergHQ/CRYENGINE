@@ -2456,22 +2456,35 @@ void CAssetBrowser::Paste(bool pasteNextToOriginal)
 
 void CAssetBrowser::OnRenameFolder(const QString& folder)
 {
-	auto view = GetFocusedView();
-	if (!view)
+	const QModelIndex sourceIndex = CAssetFoldersModel::GetInstance()->FindIndexForFolder(folder);
+	if (!sourceIndex.isValid())
 	{
 		return;
 	}
 
-	QModelIndex sourceIndex = CAssetFoldersModel::GetInstance()->FindIndexForFolder(folder);
+	// renaming in assets views.
 
-	auto column = view == m_pDetailsView ? EAssetColumns::eAssetColumns_Name : EAssetColumns::eAssetColumns_Thumbnail;
-	sourceIndex = sourceIndex.sibling(sourceIndex.row(), column);
-	QModelIndex index;
-	if (QtUtil::MapFromSourceIndirect(view, sourceIndex, index))
+	QAbstractItemView* const pView = GetFocusedView();
+	if (pView)
 	{
-		m_pSelection->setCurrentIndex(index, QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows);
-		view->edit(index);
+		const auto column = pView == m_pThumbnailView->GetInternalView() ? EAssetColumns::eAssetColumns_Thumbnail : EAssetColumns::eAssetColumns_Name;
+		QModelIndex index;
+		if (QtUtil::MapFromSourceIndirect(pView, sourceIndex.sibling(sourceIndex.row(), column), index))
+		{
+			m_pSelection->setCurrentIndex(index, QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows);
+			pView->edit(index);
+		}
+		return;
 	}
+
+	// folders view.
+
+	QWidget* pWidget = QApplication::focusWidget();
+	if (pWidget != m_pFoldersView->GetInternalView())
+	{
+		return;
+	}
+	m_pFoldersView->RenameFolder(sourceIndex);
 }
 
 void CAssetBrowser::OnCreateFolder(const QString& parentFolder)

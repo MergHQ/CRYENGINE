@@ -22,10 +22,12 @@ public:
 	void SelectFolder(const QString& folder);
 	void SelectFolders(const QStringList& folders);
 	void ClearSelection();
+	void RenameFolder(const QString& folder);
 
 	//! Index must belong to CAssetFoldersModel instance
 	void SelectFolder(const QModelIndex& folderIndex);
 	void SelectFolders(const QModelIndexList& foldersIndices);
+	void RenameFolder(const QModelIndex& folderIndex);
 
 	//! List of folder paths which content should be visible in other views.
 	//! Other views showing both folders and assets (i.e., details view and thumbnails view) should
@@ -44,7 +46,6 @@ private:
 
 	void OnSelectionChanged();
 	void OnCreateFolder(const QString& parentFolder);
-	void OnRenameFolder(const QString& folder);
 	void OnDeleteFolder(const QString& folder);
 	void OnOpenInExplorer(const QString& folder);
 	void OnDataChanged(const QModelIndex& topLeft, const QModelIndex& bottomRight);
