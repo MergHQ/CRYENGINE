@@ -104,24 +104,40 @@ public:
 
 	virtual void AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams) override
 	{
-		CRY_PFX2_PROFILE_DETAIL;
-		if (!m_materialName.empty())
-		{
-			if (GetPSystem()->IsRuntime())
-				pParams->m_pMaterial = gEnv->p3DEngine->GetMaterialManager()->FindMaterial(m_materialName);
-			if (!pParams->m_pMaterial)
-			{
-				GetPSystem()->CheckFileAccess(m_materialName);
-				pParams->m_pMaterial = gEnv->p3DEngine->GetMaterialManager()->LoadMaterial(m_materialName);
-			}
-			if (pParams->m_pMaterial && GetCVars()->e_ParticlesPrecacheAssets)
-			{
-				pParams->m_pMaterial->PrecacheMaterial(0.0f, nullptr, true, true);
-			}
-		}
-		if (!m_textureName.empty())
-			pParams->m_diffuseMap = m_textureName;
+		pComponent->LoadResources.add(this);
+		LoadResources(*pComponent, true);
 		MakeGpuInterface(pComponent, gpu_pfx2::eGpuFeatureType_Dummy);
+	}
+
+	virtual void LoadResources(CParticleComponent& component, bool load) override
+	{
+		SComponentParams& params = component.ComponentParams();
+		if (load)
+		{
+			if (params.m_pMaterial)
+				return;
+			if (!m_materialName.empty())
+			{
+				if (GetPSystem()->IsRuntime())
+					params.m_pMaterial = gEnv->p3DEngine->GetMaterialManager()->FindMaterial(m_materialName);
+				if (!params.m_pMaterial)
+				{
+					GetPSystem()->CheckFileAccess(m_materialName);
+					params.m_pMaterial = gEnv->p3DEngine->GetMaterialManager()->LoadMaterial(m_materialName);
+				}
+				if (params.m_pMaterial && GetCVars()->e_ParticlesPrecacheAssets)
+				{
+					params.m_pMaterial->PrecacheMaterial(0.0f, nullptr, true, true);
+				}
+			}
+			if (!m_textureName.empty())
+				params.m_diffuseMap = m_textureName;
+		}
+		else
+		{
+			params.m_pMaterial = nullptr;
+			params.m_diffuseMap = "";
+		}
 	}
 
 	virtual void Serialize(Serialization::IArchive& ar) override

@@ -320,6 +320,8 @@ void CParticleSystem::ClearRenderResources()
 				it = m_effects.erase(it);
 				continue;
 			}
+			for (auto& comp : pEffect->GetComponents())
+				comp->LoadResources(*comp, false);
 		}
 		++it;
 	}
@@ -361,6 +363,17 @@ void CParticleSystem::Reset()
 {
 	m_bResetEmitters = true;
 	m_numFrames = 0;
+	for (auto& elem : m_effects)
+	{
+		if (auto& pEffect = elem.second)
+		{
+			for (auto& comp : pEffect->GetComponents())
+			{
+				comp->LoadResources(*comp, true);
+				comp->MakeMaterial();
+			}
+		}
+	}
 }
 
 void CParticleSystem::Serialize(TSerialize ser)

@@ -233,8 +233,12 @@ void CParticleManager::PrintParticleMemory()
 
 void CParticleManager::Reset()
 {
+	ClearData();
 	m_pParticleSystem->Reset();
-	
+}
+
+void CParticleManager::ClearData()
+{
 	m_bRegisteredListener = false;
 
 	for (auto& e : m_Emitters)
@@ -282,7 +286,7 @@ void CParticleManager::ClearRenderResources(bool bForceClear)
 	if (GetCVars()->e_ParticlesDebug & AlphaBit('m'))
 		PrintParticleMemory();
 
-	Reset();
+	ClearData();
 
 	if (bClearEmitters)
 	{

@@ -408,12 +408,14 @@ IMaterial* CParticleComponent::MakeMaterial()
 	};
 
 	IMaterial* pMaterial = m_params.m_pMaterial;
-	if (m_params.m_requiredShaderType != eST_All)
+	if (pMaterial)
 	{
-		if (pMaterial)
+		IShader* pShader = pMaterial->GetShaderItem().m_pShader;
+		if (!pShader)
+			pMaterial = nullptr;
+		else if (m_params.m_requiredShaderType != eST_All)
 		{
-			IShader* pShader = pMaterial->GetShaderItem().m_pShader;
-			if (!pShader || (pShader->GetFlags() & EF_LOADED && pShader->GetShaderType() != m_params.m_requiredShaderType))
+			if (pShader->GetFlags() & EF_LOADED && pShader->GetShaderType() != m_params.m_requiredShaderType)
 				pMaterial = nullptr;
 		}
 	}
@@ -446,6 +448,7 @@ IMaterial* CParticleComponent::MakeMaterial()
 		if (GPUComponentParams().facingMode == gpu_pfx2::EFacingMode::Velocity)
 			mask |= eGpuParticlesVertexShaderFlags_FacingVelocity;
 		SShaderItem shaderItem = gEnv->pRenderer->EF_LoadShaderItem(shaderName, false, EF_PRECACHESHADER * preload, pResources, mask);
+		assert(shaderItem.m_pShader);
 		pMaterial->AssignShaderItem(shaderItem);
 	}
 	Vec3 white = Vec3(1.0f, 1.0f, 1.0f);

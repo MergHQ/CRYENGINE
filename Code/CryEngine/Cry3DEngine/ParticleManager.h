@@ -3,11 +3,11 @@
 #pragma once
 
 #include "ParticleEffect.h"
-#include <CryCore/BitFiddling.h>
 #include "ParticleList.h"
 #include "ParticleEnviron.h"
 #include "ParticleMemory.h"
 #include <CrySystem/Profilers/IPerfHud.h>
+#include <CryThreading/IJobManager.h>
 
 #if !defined(_RELEASE)
 // when not in release, collect information about vertice/indice pool usage
@@ -148,6 +148,7 @@ public:
 
 	void OnFrameStart();
 	void Reset();
+	void ClearData();
 	void ClearRenderResources(bool bForceClear);
 	void ClearDeferredReleaseResources();
 	void Serialize(TSerialize ser);

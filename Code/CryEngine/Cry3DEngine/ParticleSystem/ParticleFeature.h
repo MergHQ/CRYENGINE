@@ -58,6 +58,7 @@ public:
 	virtual void              AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams) {}
 	virtual EFeatureType      GetFeatureType()                                                          { return EFT_Generic; }
 	virtual bool              CanMakeRuntime(CParticleEmitter* pEmitter) const                          { return true; }
+	virtual void              LoadResources(CParticleComponent& component, bool load)                   {}
 
 	// Runtime and instance initialization
 	virtual void OnEdit(CParticleComponentRuntime& runtime) {}
@@ -119,6 +120,7 @@ private:
 
 struct SFeatureDispatchers
 {
+	FEATURE_DISPATCHER(LoadResources);
 	FEATURE_DISPATCHER(OnEdit);
 	FEATURE_DISPATCHER(OnPreRun);
 	FEATURE_DISPATCHER(MainPreUpdate);
