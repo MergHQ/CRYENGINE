@@ -99,7 +99,6 @@ void CRenderPipelineProfiler::Finish()
 	{
 		// All the current frame's information has to be stored and associated with the current index
 		// Otherwise global statistics and detailed statistics can be from entirely different frames (and utilization >100%)
-		const uint32 processThreadID = (uint32)gRenDev->GetRenderThreadID();
 		SFrameData& frameData = *m_frameDataRT;
 
 		frameData.m_frameTimings = SRenderStatistics::Write().m_Summary;

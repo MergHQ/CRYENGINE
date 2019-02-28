@@ -293,8 +293,6 @@ CCryVKShaderReflection::CCryVKShaderReflection(const void* pShaderBytecode, size
 		for (auto& input : m_shaderResources.stage_inputs)
 		{
 			uint32_t location = m_pCompiler->get_decoration(input.id, spv::DecorationLocation);
-			uint32_t set = m_pCompiler->get_decoration(input.id, spv::DecorationDescriptorSet);
-			uint32_t binding = m_pCompiler->get_decoration(input.id, spv::DecorationBinding);
 
 			SInputParameter inputParam;
 			inputParam.semanticIndex = 0;
@@ -323,8 +321,6 @@ CCryVKShaderReflection::CCryVKShaderReflection(const void* pShaderBytecode, size
 					inputParam.attributeLocation = location;
 					m_shaderInputs.push_back(inputParam);
 				}
-
-				uint32_t no = m_pCompiler->get_decoration(input.id, spv::DecorationHlslCounterBufferGOOGLE);
 			}
 		}
 	}
@@ -335,10 +331,7 @@ CCryVKShaderReflection::CCryVKShaderReflection(const void* pShaderBytecode, size
 		for (UINT localListIndex = 0; localListIndex < pResourceList->size(); ++localListIndex)
 		{
 			spirv_cross::Resource& resource = pResourceList->at(localListIndex);
-
 			const spirv_cross::SPIRType& resourceType = m_pCompiler->get_type(resource.type_id);
-			uint32 descriptorIndex = m_pCompiler->get_decoration(resource.base_type_id, spv::DecorationBinding);
-			uint32 setIndex = m_pCompiler->get_decoration(resource.base_type_id, spv::DecorationDescriptorSet);
 
 			struct isEqual
 			{
@@ -413,7 +406,6 @@ CCryVKShaderReflection::CCryVKShaderReflection(const void* pShaderBytecode, size
 
 				auto type = m_pCompiler->get_type(resource.type_id);
 				auto binding = m_pCompiler->get_decoration(resource.id, spv::DecorationBinding);
-				auto set = m_pCompiler->get_decoration(resource.id, spv::DecorationDescriptorSet);
 
 				resourceBindingT.bindPoint = binding;
 				resourceBindingS.bindPoint = binding;
@@ -674,7 +666,6 @@ CCryVKShaderReflectionConstantBuffer::CCryVKShaderReflectionConstantBuffer(CCryV
 
 	std::string name = !m_resource.name.empty() ? m_resource.name : compiler.get_fallback_name(m_resource.base_type_id);
 	int bindPoint = compiler.get_decoration(m_resource.id, spv::DecorationBinding);
-	int set = compiler.get_decoration(m_resource.id, spv::DecorationDescriptorSet);
 	//int space = compiler.get_decoration(m_resource.id, spv::DecorationSpecId);
 
 	
@@ -724,10 +715,7 @@ ID3D11ShaderReflectionVariable* STDMETHODCALLTYPE CCryVKShaderReflectionConstant
 {
 	if (!m_variables[Index])
 	{
-		spirv_cross::Compiler& compiler = *m_pShaderReflection->m_pCompiler;
-		const spirv_cross::SPIRType& structType = compiler.get_type(m_resource.type_id);
-
-		CRY_ASSERT(Index < structType.member_types.size());
+		CRY_ASSERT(Index < (*m_pShaderReflection->m_pCompiler).get_type(m_resource.type_id).member_types.size());
 
 		bool bInUse = false;
 		for (auto& range : m_usedVariables)

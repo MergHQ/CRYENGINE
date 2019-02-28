@@ -31,8 +31,6 @@ void CFogStage::Init()
 void CFogStage::ResizeResource(int resourceWidth, int resourceHeight)
 {
 #if defined(VOLUMETRIC_FOG_SHADOWS)
-	const uint32 flags = FT_NOMIPS | FT_DONT_STREAM | FT_USAGE_RENDERTARGET;
-
 	for (uint32 i = 0; i < 2; ++i)
 	{
 		if (CRendererResources::s_ptexVolFogShadowBuf[i])
@@ -102,8 +100,10 @@ void CFogStage::Execute()
 
 	PROFILE_LABEL_SCOPE("FOG_GLOBAL");
 
+#if defined(FEATURE_SVO_GI)
 	int32 width  = RenderView()->GetViewport().width;
 	int32 height = RenderView()->GetViewport().height;
+#endif
 
 	const bool bReverseDepth = true;
 	const bool bVolumtricFog = (gRenDev->m_bVolumetricFogEnabled != 0);
@@ -466,7 +466,6 @@ void CFogStage::ExecuteVolumetricFogShadow()
 
 f32 CFogStage::GetFogCullDistance() const
 {
-	CD3D9Renderer* const __restrict rd = gcpRendD3D;
 	CRenderView* pRenderView = RenderView();
 	SRenderViewShaderConstants& PF = pRenderView->GetShaderConstants();
 

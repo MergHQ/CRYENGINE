@@ -29,8 +29,6 @@ void CAutoExposureStage::MeasureLuminance()
 {
 	PROFILE_LABEL_SCOPE("MEASURE_LUMINANCE");
 
-	CD3D9Renderer* pRenderer = gcpRendD3D;
-
 	int32 curTexture = NUM_HDR_TONEMAP_TEXTURES - 1;
 
 	float tU = 1.0f / (3.0f * CRendererResources::s_ptexHDRToneMaps[curTexture]->GetWidth());

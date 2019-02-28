@@ -84,8 +84,6 @@ void CDeferredDecalsStage::ResizeDecalBuffers(size_t requiredDecalCount)
 
 void CDeferredDecalsStage::SetupDecalPrimitive(const SDeferredDecal& decal, CRenderPrimitive& primitive, _smart_ptr<IRenderShaderResources>& pShaderResources)
 {
-	CD3D9Renderer* const __restrict rd = gcpRendD3D;
-
 	IMaterial* pDecalMaterial = decal.pMaterial;
 	if (!pDecalMaterial)
 		return;
@@ -149,7 +147,6 @@ void CDeferredDecalsStage::SetupDecalPrimitive(const SDeferredDecal& decal, CRen
 			if (pDiffuseRes->IsHasModificators())
 			{
 				pDiffuseRes->UpdateWithModifier(EFTT_MAX, mdFlags);
-				SEfTexModificator* mod = pDiffuseRes->m_Ext.m_pTexModifier;
 				texMatrix = pDiffuseRes->m_Ext.m_pTexModifier->m_TexMatrix;
 			}
 		}
@@ -175,7 +172,7 @@ void CDeferredDecalsStage::SetupDecalPrimitive(const SDeferredDecal& decal, CRen
 		auto constants = constantManager.BeginTypedConstantUpdate<SDecalConstants>(eConstantBufferShaderSlot_PerPrimitive, EShaderStage_Pixel | EShaderStage_Vertex);
 
 		SRenderViewInfo viewInfo[2];
-		size_t viewInfoCount = GetGraphicsPipeline().GenerateViewInfo(viewInfo);
+		GetGraphicsPipeline().GenerateViewInfo(viewInfo);
 
 		const Vec3 vBasisX = decal.projMatrix.GetColumn0();
 		const Vec3 vBasisY = decal.projMatrix.GetColumn1();
@@ -183,7 +180,6 @@ void CDeferredDecalsStage::SetupDecalPrimitive(const SDeferredDecal& decal, CRen
 
 		Vec3  camFront = viewInfo[0].cameraVZ.normalized();
 		Vec3  camPos   = viewInfo[0].cameraOrigin;
-		float camFar   = viewInfo[0].farClipPlane;
 		float camNear  = viewInfo[0].nearClipPlane;
 	
 		const float r = fabs(vBasisX.dot(camFront)) + fabs(vBasisY.dot(camFront)) + fabs(vBasisZ.dot(camFront));
@@ -301,8 +297,6 @@ void CDeferredDecalsStage::SetupDecalPrimitive(const SDeferredDecal& decal, CRen
 void CDeferredDecalsStage::Execute()
 {
 	FUNCTION_PROFILER_RENDERER();
-
-	CD3D9Renderer* const __restrict rd = gcpRendD3D;
 
 	auto& deferredDecals = RenderView()->GetDeferredDecals();
 

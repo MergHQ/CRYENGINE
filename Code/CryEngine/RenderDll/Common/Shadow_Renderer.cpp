@@ -94,7 +94,6 @@ void ShadowMapFrustum::PrepareForShadowPool(uint32 frameID, uint32& numShadowPoo
 
 	const auto lightID = light.m_nEntityId;
 	int nBlockW = nTexSize >> TEX_POOL_BLOCKLOGSIZE;
-	int nBlockH = nTexSize >> TEX_POOL_BLOCKLOGSIZE;
 	int nLogBlockW = IntegerLog2((uint32)nBlockW);
 	int nLogBlockH = nLogBlockW;
 

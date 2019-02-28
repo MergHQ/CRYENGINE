@@ -44,8 +44,6 @@ CComputeRenderPass::EDirtyFlags CComputeRenderPass::Compile()
 	{
 		EDirtyFlags revertMask = dirtyMask;
 
-		CD3D9Renderer* const __restrict rd = gcpRendD3D;
-
 		m_bCompiled = false;
 
 		if (dirtyMask & (eDirty_Resources))
@@ -118,8 +116,6 @@ void CComputeRenderPass::BeginConstantUpdate()
 
 void CComputeRenderPass::PrepareResourcesForUse(CDeviceCommandListRef RESTRICT_REFERENCE commandList)
 {
-	CD3D9Renderer* const __restrict rd = gcpRendD3D;
-
 	if (m_bPendingConstantUpdate)
 	{
 		// Shader reflection might not be initialized if a compile failed

@@ -25,12 +25,12 @@ public:
 
 	~CMemoryHandle()
 	{
-		VK_ASSERT(handle == 0 && "Must deallocate memory handle before destroying it");
+		VK_ASSERT(handle == 0, "Must deallocate memory handle before destroying it");
 	}
 
 	CMemoryHandle& operator=(CMemoryHandle&& other)
 	{
-		VK_ASSERT(handle == 0 && "Must deallocate memory handle before overwriting it");
+		VK_ASSERT(handle == 0, "Must deallocate memory handle before overwriting it");
 		handle = other.handle;
 		other.handle = 0;
 		return *this;

@@ -23,9 +23,7 @@ CSceneGBufferStage::CSceneGBufferStage()
 void CSceneGBufferStage::Init()
 {
 	m_pPerPassResourceSet = GetDeviceObjectFactory().CreateResourceSet(CDeviceResourceSet::EFlags_ForceSetAllState);
-
-	bool bSuccess = SetAndBuildPerPassResources(true);
-	assert(bSuccess);
+	CRY_VERIFY(SetAndBuildPerPassResources(true));
 
 	// Create resource layout
 	m_pResourceLayout = gcpRendD3D->GetGraphicsPipeline().CreateScenePassLayout(m_perPassResources);
@@ -37,11 +35,6 @@ void CSceneGBufferStage::Init()
 	m_depthPrepass.SetLabel("ZPREPASS");
 	m_depthPrepass.SetFlags(CSceneRenderPass::ePassFlags_ReverseDepth | CSceneRenderPass::ePassFlags_RenderNearest | CSceneRenderPass::ePassFlags_VrProjectionPass);
 	m_depthPrepass.SetPassResources(m_pResourceLayout, m_pPerPassResourceSet);
-
-	CTexture* pSceneSpecular = CRendererResources::s_ptexSceneSpecular;
-#if defined(DURANGO_USE_ESRAM)
-	pSceneSpecular = CRendererResources::s_ptexSceneSpecularESRAM;
-#endif
 
 	// Opaque Pass
 	m_opaquePass.SetLabel("OPAQUE");
@@ -583,7 +576,7 @@ void CSceneGBufferStage::ExecuteMinimumZpass()
 	PROFILE_LABEL_SCOPE("MINIMUM_ZPASS");
 
 	// NOTE: no more external state changes in here, everything should have been setup
-	auto& rViewport = GetViewport();
+
 	CRenderView* pRenderView = RenderView();
 	auto& rendItemDrawer = pRenderView->GetDrawer();
 

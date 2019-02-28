@@ -8,7 +8,6 @@
 void CHeightMapAOStage::Init()
 {
 	const bool shouldApplyHMAO = CRendererCVars::CV_r_HeightMapAO > 0 ? true : false;
-	const int scaleHMAO = clamp_tpl(3 - CRenderer::CV_r_HeightMapAO, 0, 2);
 	const int resourceSize = (int)clamp_tpl(CRendererCVars::CV_r_HeightMapAOResolution, 0.f, 16384.f);
 	const ETEX_Format texFormat = CRendererCVars::CV_r_ShadowsCacheFormat == 0 ? eTF_D32F : eTF_D16;
 

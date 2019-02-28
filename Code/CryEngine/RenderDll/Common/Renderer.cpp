@@ -736,13 +736,14 @@ void CRenderer::FreeSystemResources(int nFlags)
 	iLog->Log("*** Start clearing render resources ***");
 
 	// validate flag combinations
+#if defined(USE_CRY_ASSERT)
 	constexpr int requiredForSystem          = (FRR_SYSTEM | FRR_OBJECTS);
 	constexpr int requiredForSystemResources = (FRR_SYSTEM_RESOURCES | FRR_DELETED_MESHES | FRR_FLUSH_TEXTURESTREAMING | FRR_RP_BUFFERS | FRR_POST_EFFECTS | FRR_OBJECTS | FRR_PERMANENT_RENDER_OBJECTS);
 	constexpr int requiredForTextures        = (FRR_SYSTEM_RESOURCES | FRR_DELETED_MESHES | FRR_FLUSH_TEXTURESTREAMING | FRR_RP_BUFFERS | FRR_POST_EFFECTS | FRR_OBJECTS | FRR_PERMANENT_RENDER_OBJECTS | FRR_TEXTURES);
-
-	CRY_ASSERT((nFlags & FRR_SYSTEM) == 0           || ((nFlags & requiredForSystem)          == requiredForSystem));
+	CRY_ASSERT((nFlags & FRR_SYSTEM) == 0 || ((nFlags & requiredForSystem) == requiredForSystem));
 	CRY_ASSERT((nFlags & FRR_SYSTEM_RESOURCES) == 0 || ((nFlags & requiredForSystemResources) == requiredForSystemResources));
-	CRY_ASSERT((nFlags & FRR_TEXTURES) == 0         || ((nFlags & requiredForTextures)        == requiredForTextures));
+	CRY_ASSERT((nFlags & FRR_TEXTURES) == 0 || ((nFlags & requiredForTextures) == requiredForTextures));
+#endif
 
 	CTimeValue tBegin = gEnv->pTimer->GetAsyncTime();
 
@@ -1215,9 +1216,11 @@ void CRenderer::EF_StartEf (const SRenderingPassInfo& passInfo)
 	pRenderView->SwitchUsageMode(CRenderView::eUsageModeWriting);
 
 	ASSERT_IS_MAIN_THREAD(m_pRT)
-	int nThreadID = passInfo.ThreadID();
+#if defined(USE_CRY_ASSERT) || !defined(_RELEASE)
 	int nR = passInfo.GetRecursiveLevel();
-	assert(nR < 2);
+	CRY_VERIFY(nR < 2);
+#endif
+
 	if (!passInfo.IsRecursivePass())
 	{
 		ClearSkinningDataPool();
@@ -1257,7 +1260,6 @@ void CRenderer::EF_SubmitWind(const SWindGrid* pWind)
 			CRendererResources::s_ptexWindGrid->Create2DTexture(pWind->m_nWidth, pWind->m_nHeight, 1, FT_DONT_RELEASE | FT_DONT_STREAM, nullptr, eTF_R16G16F);
 		}
 		CDeviceTexture* pDevTex = CRendererResources::s_ptexWindGrid->GetDevTexture();
-		int nThreadID = m_pRT->m_nCurThreadProcess;
 		pDevTex->UploadFromStagingResource(0, [=](void* pData, uint32 rowPitch, uint32 slicePitch)
 		{
 			cryMemcpy(pData, pWind->m_pData, CTexture::TextureDataSize(pWind->m_nWidth, pWind->m_nHeight, 1, 1, 1, eTF_R16G16F, eTM_None));
@@ -1391,7 +1393,6 @@ bool CRenderer::EF_IsFakeDLight(const SRenderLight* Source) const
 void CRenderer::EF_CheckLightMaterial(SRenderLight* pLight, uint16 nRenderLightID, const SRenderingPassInfo& passInfo)
 {
 	ASSERT_IS_MAIN_THREAD(m_pRT);
-	const auto nThreadID = gRenDev->GetMainThreadID();
 
 	{
 		// Add render element if light has mtl bound
@@ -1570,7 +1571,6 @@ bool CRenderer::EF_UpdateDLight(SRenderLight* dl) const
 		IAnimTrack* pSpecMultTrack = pLightAnimNode->GetTrackForParameter(eAnimParamType_LightSpecularMult);
 		IAnimTrack* pHDRDynamicTrack = pLightAnimNode->GetTrackForParameter(eAnimParamType_LightHDRDynamic);
 
-		TRange<SAnimTime> timeRange = const_cast<IAnimNode*>(pLightAnimNode)->GetSequence()->GetTimeRange();
 		float time = (dl->m_Flags & DLF_TRACKVIEW_TIMESCRUBBING) ? dl->m_fTimeScrubbed : fTime;
 		float phase = static_cast<float>(dl->m_nLightPhase) / 100.0f;
 
@@ -2137,7 +2137,6 @@ void CRenderer::EF_QueryImpl(ERenderQueryTypes eQuery, void* pInOut0, uint32 nIn
 						int8 nCurMip  = bStale ? nPersMip : tp->GetRequiredMip();
 						if (tp->IsForceStreamHighRes())
 							nCurMip = 0;
-						int8 nMips = tp->GetNumMips();
 						nCurMip = min(nCurMip, nPersMip);
 
 						uint32 nTexSize = tp->StreamComputeSysDataSize(nCurMip);
@@ -2270,8 +2269,7 @@ void CRenderer::EF_QueryImpl(ERenderQueryTypes eQuery, void* pInOut0, uint32 nIn
 	break;
 	case EFQ_ReverseDepthEnabled:
 	{
-		const uint32 nThreadID = m_pRT->GetThreadList();
-		uint32 nReverseDepth   = 1;
+		uint32 nReverseDepth = 1;
 
 		WriteQueryResult(pInOut0, nInOutSize0, nReverseDepth);
 	}
@@ -2475,7 +2473,7 @@ bool CRenderer::EF_PrecacheResource(IRenderMesh* _pPB, IMaterial* pMaterial, flo
 		assert(0);
 
 		//@TODO: Timur
-		assert(pMaterial && "RenderMesh must have material");
+		CRY_ASSERT_MESSAGE(pMaterial, "RenderMesh must have material");
 		CShaderResources* pSR = (CShaderResources*)pMaterial->GetShaderItem(pChunk->m_nMatID).m_pShaderResources;
 		if (!pSR)
 			continue;
@@ -3932,7 +3930,7 @@ void CRenderer::ExecuteAsyncDIP()
 //////////////////////////////////////////////////////////////////////////
 void CRenderer::EF_SetPostEffectParam(const char* pParam, float fValue, bool bForceValue)
 {
-	CRY_ASSERT((pParam) && "mfSetParameter: null parameter");
+	CRY_ASSERT_MESSAGE((pParam), "mfSetParameter: null parameter");
 	if (!pParam)
 	{
 		return;
@@ -3949,7 +3947,7 @@ void CRenderer::EF_SetPostEffectParam(const char* pParam, float fValue, bool bFo
 
 void CRenderer::EF_SetPostEffectParamVec4(const char* pParam, const Vec4& pValue, bool bForceValue)
 {
-	CRY_ASSERT((pParam) && "mfSetParameter: null parameter");
+	CRY_ASSERT_MESSAGE((pParam), "mfSetParameter: null parameter");
 
 	CEffectParam* pEffectParam = PostEffectMgr()->GetByName(pParam);
 	if (!pEffectParam)
@@ -3963,7 +3961,7 @@ void CRenderer::EF_SetPostEffectParamVec4(const char* pParam, const Vec4& pValue
 //////////////////////////////////////////////////////////////////////////
 void CRenderer::EF_SetPostEffectParamString(const char* pParam, const char* pszArg)
 {
-	CRY_ASSERT((pParam && pszArg) && "mfSetParameter: null parameter");
+	CRY_ASSERT_MESSAGE((pParam && pszArg), "mfSetParameter: null parameter");
 
 	CEffectParam* pEffectParam = PostEffectMgr()->GetByName(pParam);
 	if (!pEffectParam)
@@ -3977,7 +3975,7 @@ void CRenderer::EF_SetPostEffectParamString(const char* pParam, const char* pszA
 //////////////////////////////////////////////////////////////////////////
 void CRenderer::EF_GetPostEffectParam(const char* pParam, float& fValue)
 {
-	CRY_ASSERT((pParam) && "mfGetParameter: null parameter");
+	CRY_ASSERT_MESSAGE((pParam), "mfGetParameter: null parameter");
 
 	CEffectParam* pEffectParam = PostEffectMgr()->GetByName(pParam);
 	if (!pEffectParam)
@@ -3991,7 +3989,7 @@ void CRenderer::EF_GetPostEffectParam(const char* pParam, float& fValue)
 //////////////////////////////////////////////////////////////////////////
 void CRenderer::EF_GetPostEffectParamVec4(const char* pParam, Vec4& pValue)
 {
-	CRY_ASSERT((pParam) && "mfGetParameter: null parameter");
+	CRY_ASSERT_MESSAGE((pParam), "mfGetParameter: null parameter");
 
 	CEffectParam* pEffectParam = PostEffectMgr()->GetByName(pParam);
 	if (!pEffectParam)
@@ -4005,7 +4003,7 @@ void CRenderer::EF_GetPostEffectParamVec4(const char* pParam, Vec4& pValue)
 //////////////////////////////////////////////////////////////////////////
 void CRenderer::EF_GetPostEffectParamString(const char* pParam, const char*& pszArg)
 {
-	CRY_ASSERT((pParam && pszArg) && "mfGetParameter: null parameter");
+	CRY_ASSERT_MESSAGE((pParam && pszArg), "mfGetParameter: null parameter");
 
 	CEffectParam* pEffectParam = PostEffectMgr()->GetByName(pParam);
 	if(!pParam || !pszArg)
@@ -4019,7 +4017,7 @@ void CRenderer::EF_GetPostEffectParamString(const char* pParam, const char*& psz
 //////////////////////////////////////////////////////////////////////////
 int32 CRenderer::EF_GetPostEffectID(const char* pPostEffectName)
 {
-	CRY_ASSERT(pPostEffectName && "mfGetParameter: null parameter");
+	CRY_ASSERT_MESSAGE(pPostEffectName, "mfGetParameter: null parameter");
 
 	if (!pPostEffectName)
 	{
@@ -4073,8 +4071,6 @@ IOpticsElementBase* CRenderer::CreateOptics(EFlareType type) const
 //////////////////////////////////////////////////////////////////////////
 SSkinningData* CRenderer::EF_CreateSkinningData(IRenderView* pRenderView, uint32 nNumBones, bool bNeedJobSyncVar)
 {
-	int nList = m_nPoolIndex % m_computeSkinningData.size();
-
 	uint32 nNeededSize = Align(sizeof(SSkinningData), 16);
 	nNeededSize += Align(bNeedJobSyncVar ? sizeof(JobManager::SJobState) : 0, 16);
 	nNeededSize += Align(bNeedJobSyncVar ? sizeof(JobManager::SJobState) : 0, 16);
@@ -4126,8 +4122,6 @@ SSkinningData* CRenderer::EF_CreateRemappedSkinningData(IRenderView* pRenderView
 {
 	assert(pSourceSkinningData);
 	assert(pSourceSkinningData->nNumBones >= nNumBones);    // don't try to remap more bones than exist
-
-	int nList = m_nPoolIndex % m_computeSkinningData.size();
 
 	uint32 nNeededSize = Align(sizeof(SSkinningData), 16);
 	nNeededSize += Align(nCustomDataSize, 16);

@@ -115,7 +115,6 @@ class CCompiledParticle
 public:
 	CCompiledParticle()
 	{
-		auto& graphicsPipeline = gcpRendD3D->GetGraphicsPipeline();
 		m_pPerDrawCB = gcpRendD3D->m_DevBufMan.CreateConstantBuffer(sizeof(SParticleInstanceCB), true);
 		m_pShaderDataCB = gcpRendD3D->m_DevBufMan.CreateConstantBuffer(sizeof(SParticleShaderData));
 		m_pPerDrawExtraRS = GetDeviceObjectFactory().CreateResourceSet(CDeviceResourceSet::EFlags_ForceSetAllState);
@@ -312,9 +311,6 @@ void CRenderer::EF_AddMultipleParticlesToScene(const SAddParticlesToSceneJob* jo
 	ASSERT_IS_MAIN_THREAD(m_pRT)
 
 	// update fill thread id for particle jobs
-	const CCamera& camera = passInfo.GetCamera();
-	int threadList = passInfo.ThreadID();
-
 	auto& particleBuffer = gcpRendD3D.GetGraphicsPipeline().GetParticleBufferSet();
 
 	// skip particle rendering in rare cases (like after a resolution change)
@@ -375,7 +371,6 @@ void CRenderer::PrepareParticleRenderObjects(Array<const SAddParticlesToSceneJob
 		if (!bReadyToRender)
 			continue;
 
-		size_t ij = &job - aJobs.data();
 		CREParticle* pRE = static_cast<CREParticle*>(pRenderObject->m_pRE);
 
 		// Clamp AABB
@@ -458,7 +453,6 @@ void CRenderer::EF_GetParticleListAndBatchFlags(uint32& nBatchFlags, ERenderList
 	                && pRenderObject->m_ObjFlags & FOB_AFTER_WATER;
 
 	const bool bVolumeFog = (pRenderObject->m_ParticleObjFlags & CREParticle::ePOF_VOLUME_FOG) != 0;
-	const bool bPulledVertices = (pRenderObject->m_ParticleObjFlags & CREParticle::ePOF_USE_VERTEX_PULL_MODEL) != 0;
 	const bool bUseTessShader = !bVolumeFog && (pRenderObject->m_ObjFlags & FOB_ALLOW_TESSELLATION) != 0;
 	const bool bNearest = (pRenderObject->m_ObjFlags & FOB_NEAREST) != 0;
 
@@ -472,6 +466,7 @@ void CRenderer::EF_GetParticleListAndBatchFlags(uint32& nBatchFlags, ERenderList
 	// Disable vertex instancing on unsupported hardware, or from cvar.
 	const bool useTessellation = (pRenderObject->m_ObjFlags & FOB_ALLOW_TESSELLATION) != 0;
 #if CRY_PLATFORM_ORBIS
+	const bool bPulledVertices = (pRenderObject->m_ParticleObjFlags & CREParticle::ePOF_USE_VERTEX_PULL_MODEL) != 0;
 	const bool canUsePointSprites = useTessellation || bPulledVertices;
 #else
 	const bool canUsePointSprites = useTessellation || CV_r_ParticlesInstanceVertices;
@@ -490,7 +485,6 @@ void CRenderer::EF_GetParticleListAndBatchFlags(uint32& nBatchFlags, ERenderList
 
 	if (pTech)
 	{
-		int nThreadID = passInfo.ThreadID();
 		SRenderObjData* pRenderObjectData = pRenderObject->GetObjData();
 		if (pTech->m_nTechnique[TTYPE_CUSTOMRENDERPASS] > 0)
 		{
@@ -535,7 +529,6 @@ bool CREParticle::Compile(CRenderObject* pRenderObject, uint64 objFlags, ERender
 	auto& coreCommandList = GetDeviceObjectFactory().GetCoreCommandList();
 	auto& commandInterface = *coreCommandList.GetGraphicsInterface();
 	const SShaderItem& shaderItem = pRenderObject->m_pCurrMaterial->GetShaderItem();
-	CShader* pShader = static_cast<CShader*>(shaderItem.m_pShader);
 	CShaderResources* pShaderResources = static_cast<CShaderResources*>(shaderItem.m_pShaderResources);
 
 	const int TECHNIQUE_TESS = 0;
@@ -722,7 +715,6 @@ bool CREParticle::Compile(CRenderObject* pRenderObject, uint64 objFlags, ERender
 
 	PrepareDataToRender(pRenderView, pRenderObject);
 
-	CD3D9Renderer* const RESTRICT_POINTER rd = gcpRendD3D;
 	const EShaderStage perDrawInlineShaderStages = (EShaderStage_Vertex | EShaderStage_Pixel | EShaderStage_Domain);
 
 	commandInterface.PrepareResourcesForUse(EResourceLayoutSlot_PerMaterialRS, pShaderResources->m_pCompiledResourceSet.get());
@@ -826,8 +818,6 @@ void CREParticle::PrepareDataToRender(CRenderView *pRenderView, CRenderObject* p
 
 void CREParticle::BindPipeline(CRenderObject* pRenderObject, CDeviceGraphicsCommandInterface& commandInterface, CDeviceGraphicsPSOPtr pGraphicsPSO)
 {
-	CD3D9Renderer* const RESTRICT_POINTER rd = gcpRendD3D;
-
 	const SShaderItem& shaderItem = pRenderObject->m_pCurrMaterial->GetShaderItem();
 	const CShaderResources* pShaderResources = static_cast<CShaderResources*>(shaderItem.m_pShaderResources);
 	const EShaderStage perDrawInlineShaderStages = (EShaderStage_Vertex | EShaderStage_Domain | EShaderStage_Pixel);

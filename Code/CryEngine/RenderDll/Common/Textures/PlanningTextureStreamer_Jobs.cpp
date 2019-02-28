@@ -377,7 +377,6 @@ size_t CPlanningTextureStreamer::Job_Plan(SPlanningSortState& sortState, const S
 		}
 
 		int8 deltaMip = (wantKey >> 8) - haveMip;
-		int16 deltaKey = wantKey - (haveMip << 8);
 		int8 wantMip  = haveMip + std::max<int8>(deltaMip, -CRenderer::CV_r_TexturesStreamingMaxUpdateRate);
 		int8 reqstMip = haveMip + deltaMip;
 		uint32 prevMipSize  = GetTexReqStreamSizePreClamped(key, haveMip);
@@ -462,7 +461,6 @@ size_t CPlanningTextureStreamer::Job_Plan(SPlanningSortState& sortState, const S
 		}
 
 		int8 deltaMip = (wantKey >> 8) - haveMip;
-		int16 deltaKey = wantKey - (haveMip << 8);
 		int8 wantMip  = haveMip + std::max<int8>(deltaMip, -CRenderer::CV_r_TexturesStreamingMaxUpdateRate);
 		int8 reqstMip = haveMip + deltaMip;
 		uint32 prevMipSize = GetTexReqStreamSizePreClamped(key, haveMip);
@@ -542,7 +540,6 @@ void CPlanningTextureStreamer::Job_Sort()
 	CTexture** pTextures = &(*sortState.pTextures)[0];
 	size_t nTextures = sortState.nTextures;
 
-	int nOnScreenFrameId = sortState.nFrameId - 8;
 	int8 nMinMip = sortState.fpMinMip >> 8;
 
 	size_t const nStreamLimit = sortState.nStreamLimit;
@@ -607,14 +604,11 @@ void CPlanningTextureStreamer::Job_CommitKeys(CTexture** pTextures, SPlanningTex
 
 void CPlanningTextureStreamer::Job_CheckEnqueueForStreaming(CTexture* pTexture, const float fMipFactor, bool bHighPriority)
 {
-	STexStreamingInfo* pStrmInfo = pTexture->m_pFileTexMips;
-
 	// calculate the new lod value
 	const int16 fpMipIdSigned = pTexture->StreamCalculateMipsSignedFP(fMipFactor);
 	const int16 fpNewMip = std::max<int16>(0, fpMipIdSigned);
 
 	const int8 nNewMip = fpNewMip >> 8;
-	const int8 nMipIdSigned = fpMipIdSigned >> 8;
 
 	if ((CRenderer::CV_r_TexturesStreamingDebug == 2) && (pTexture->GetRequiredMip() != nNewMip))
 		iLog->Log("Updating mips: %s - Previous: %i, Current: %i", pTexture->m_SrcName.c_str(), pTexture->GetRequiredMip(), nNewMip);

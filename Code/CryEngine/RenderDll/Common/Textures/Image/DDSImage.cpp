@@ -141,8 +141,6 @@ bool CImageDDSFile::LoadFromFile(DDSSplitted::FileWrapper& file, uint32 nFlags, 
 
 	if (file.IsValid())
 	{
-		const size_t fileSize = file.GetLength();
-
 		_smart_ptr<IMemoryBlock> pImageMemory;
 
 		// alloc space for header
@@ -913,9 +911,6 @@ bool SeekToAttachedImage(FileWrapper& file)
 		ddsFileDesc.header.dwDepth,
 		int8(ddsFileDesc.header.dwMipMapCount),
 		numSlices, eTF, eTM);
-
-	size_t fileLength = file.GetLength();
-	size_t trailLength = fileLength - ddsSize;
 
 	size_t headerEnd = file.Tell();
 

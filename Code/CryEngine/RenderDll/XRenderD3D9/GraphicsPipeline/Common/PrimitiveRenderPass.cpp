@@ -156,8 +156,6 @@ CRenderPrimitive::EDirtyFlags CRenderPrimitive::Compile(const CPrimitiveRenderPa
 	{
 		EDirtyFlags revertMask = dirtyMask;
 
-		CD3D9Renderer* const __restrict rd = gcpRendD3D;
-
 		if (dirtyMask & eDirty_Geometry)
 		{
 			dirtyMask |= eDirty_InstanceData;
@@ -273,8 +271,6 @@ void CRenderPrimitive::AddPrimitiveGeometryCacheUser()
 {
 	if (s_nPrimitiveGeometryCacheUsers == 0)
 	{
-		CD3D9Renderer* const __restrict rd = gcpRendD3D;
-
 		// ePrim_Triangle
 		{
 			SPrimitiveGeometry& primitiveGeometry = s_primitiveGeometryCache[ePrim_Triangle];
@@ -657,7 +653,6 @@ void CPrimitiveRenderPass::Execute()
 		return;
 	}
 
-	CD3D9Renderer* const __restrict rd = gcpRendD3D;
 	CDeviceCommandListRef commandList = GetDeviceObjectFactory().GetCoreCommandList();
 	CDeviceGraphicsCommandInterface* pCommandInterface = commandList.GetGraphicsInterface();
 
@@ -749,6 +744,6 @@ void CPrimitiveRenderPass::Execute()
 	pCommandInterface->EndRenderPass(*m_pRenderPass);
 
 #ifdef ENABLE_PROFILING_CODE
-	rd->AddRecordedProfilingStats(commandList.EndProfilingSection(), EFSLIST_GENERAL, false);
+	gcpRendD3D->AddRecordedProfilingStats(commandList.EndProfilingSection(), EFSLIST_GENERAL, false);
 #endif
 }

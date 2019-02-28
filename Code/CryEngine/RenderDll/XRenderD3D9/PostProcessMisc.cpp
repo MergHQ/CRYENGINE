@@ -183,7 +183,7 @@ void CPost3DRenderer::RenderSilhouettes(uint8 groupId, float screenRect[4])
 	CTexture* pOutlineTex = CRendererResources::s_ptexDisplayTargetScaled[0];
 	CTexture* pGlowTex = CRendererResources::s_ptexDisplayTargetScaled[1];
 
-	uint64 nRTMaskQ = ApplyShaderQuality();
+	ApplyShaderQuality();
 	SilhouetteOutlines(pOutlineTex, pGlowTex);
 	SilhouetteGlow(pOutlineTex, pGlowTex);
 	SilhouetteCombineBlurAndOutline(pOutlineTex, pGlowTex);

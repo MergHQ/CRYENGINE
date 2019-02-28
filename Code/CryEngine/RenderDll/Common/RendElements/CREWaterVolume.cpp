@@ -348,7 +348,6 @@ void CREWaterVolume::DrawToCommandList(CRenderObject* pObj, const struct SGraphi
 	CRY_ASSERT(compiledObj.m_pPerDrawCB);
 	CRY_ASSERT(compiledObj.m_pPerDrawRS && compiledObj.m_pPerDrawRS->IsValid());
 
-	CD3D9Renderer* const RESTRICT_POINTER rd = gcpRendD3D;
 	CDeviceGraphicsCommandInterface& RESTRICT_REFERENCE commandInterface = *(commandList->GetGraphicsInterface());
 
 	// Set states
@@ -381,7 +380,6 @@ void CREWaterVolume::DrawToCommandList(CRenderObject* pObj, const struct SGraphi
 
 void CREWaterVolume::PrepareForUse(watervolume::SCompiledWaterVolume& compiledObj, bool bInstanceOnly, CDeviceCommandList& RESTRICT_REFERENCE commandList) const
 {
-	CD3D9Renderer* const RESTRICT_POINTER rd = gcpRendD3D;
 	CDeviceGraphicsCommandInterface* RESTRICT_POINTER pCommandInterface = commandList.GetGraphicsInterface();
 
 	if (!bInstanceOnly)
@@ -549,9 +547,10 @@ void CREWaterVolume::UpdateVertex(watervolume::SCompiledWaterVolume& compiledObj
 {
 	CRenderElement::SGeometryInfo geomInfo;
 	ZeroStruct(geomInfo);
-
+#if defined(USE_CRY_ASSERT)
 	const bool bDrawSurface = (m_drawWaterSurface || !m_pParams->m_viewerInsideVolume);
 	CRY_ASSERT((bFullscreen && !bDrawSurface) || (!bFullscreen && bDrawSurface));
+#endif
 
 	if (!bFullscreen)
 	{

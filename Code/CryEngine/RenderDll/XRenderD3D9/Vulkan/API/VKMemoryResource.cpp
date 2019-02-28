@@ -46,7 +46,7 @@ void CMemoryResource::Unmap()
 
 void CMemoryResource::Destroy()
 {
-	VK_ASSERT(false);
+	VK_ASSERT(false, "");
 }
 
 //---------------------------------------------------------------------------------------------------------------------

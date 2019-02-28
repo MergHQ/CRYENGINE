@@ -26,9 +26,10 @@ public:
 		DX12_ASSERT(~0, "0 is not allowed in the broadcaster!");
 		for (int i = 0; i < numTargets; ++i)
 		{
-			HRESULT ret = pDevice->CreateFence(
-			  InitialValue, Flags, riid, (void**)&m_Targets[i]);
-			DX12_ASSERT(ret == S_OK, "Failed to create fence!");
+			CRY_DX12_VERIFY(
+				pDevice->CreateFence(
+				InitialValue, Flags, riid, (void**)&m_Targets[i]) == S_OK,
+				"Failed to create fence!");
 
 			m_Events[i] = CreateEventEx(NULL, FALSE, FALSE, EVENT_ALL_ACCESS);
 			m_CompletedValues[i] = 0ULL;

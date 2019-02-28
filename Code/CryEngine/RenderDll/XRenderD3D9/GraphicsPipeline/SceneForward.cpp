@@ -45,9 +45,7 @@ void CSceneForwardStage::Init()
 #endif
 
 	m_pPerPassCB = gcpRendD3D->m_DevBufMan.CreateConstantBuffer(sizeof(SPerPassConstantBuffer));
-	
-	bool bSuccess = PreparePerPassResources(true);
-	assert(bSuccess);
+	CRY_VERIFY(PreparePerPassResources(true));
 
 #if RENDERER_ENABLE_FULL_PIPELINE
 	// Create resource layout
@@ -135,14 +133,7 @@ void CSceneForwardStage::Init()
 void CSceneForwardStage::Update()
 {
 	const CRenderView*   pRenderView = RenderView();
-	const CRenderOutput* pRenderOutput = pRenderView->GetRenderOutput();
 	const SRenderViewport& viewport = pRenderView->GetViewport();
-
-	CTexture* pCTexture = pRenderView->GetColorTarget();
-	CTexture* pZTexture = pRenderView->GetDepthTarget();
-
-	CTexture* pCTextureOut = pRenderOutput->GetColorTarget();
-	CTexture* pZTextureOut = pRenderOutput->GetDepthTarget();
 
 	CStandardGraphicsPipeline* p = static_cast<CStandardGraphicsPipeline*>(&GetGraphicsPipeline());
 	EShaderRenderingFlags flags = (EShaderRenderingFlags)p->GetRenderFlags();
@@ -151,6 +142,10 @@ void CSceneForwardStage::Update()
 	if (!isForwardMinimal)
 	{
 #if RENDERER_ENABLE_FULL_PIPELINE
+		const CRenderOutput* pRenderOutput = pRenderView->GetRenderOutput();
+		
+		CTexture* pCTextureOut = pRenderOutput->GetColorTarget();
+		CTexture* pZTextureOut = pRenderOutput->GetDepthTarget();
 		CTexture* pDepthTexture = pRenderView->GetDepthTarget();
 
 		// Opaque forward scene pass
@@ -207,7 +202,7 @@ void CSceneForwardStage::Update()
 		m_forwardHDRPass.SetViewport(viewport);
 		m_forwardHDRPass.SetRenderTargets(
 			// Depth
-			pZTexture,
+			pDepthTexture,
 			// Color 0
 			// TODO: CPostEffectContext::GetDstBackBufferTexture() pre-EnableAltBackBuffer()
 			CRendererResources::s_ptexDisplayTargetDst
@@ -541,17 +536,12 @@ bool CSceneForwardStage::CreatePipelineStates(DevicePipelineStatesArray* pStateA
 
 bool CSceneForwardStage::PreparePerPassResources(bool bOnInit, bool bShadowMask, bool bFog)
 {
-	CD3D9Renderer* pRenderer = gcpRendD3D;
 	CRenderView* pRenderView = RenderView();
 
 	auto* pClipVolumes = GetStdGraphicsPipeline().GetClipVolumesStage();
 	auto* pTiledLights = GetStdGraphicsPipeline().GetTiledLightVolumesStage();
 	auto* pFogStage    = GetStdGraphicsPipeline().GetFogStage();
 	auto* pVolFogStage = GetStdGraphicsPipeline().GetVolumetricFogStage();
-
-#if defined(FEATURE_SVO_GI)
-	auto* pSVOGIStage  = CSvoRenderer::GetInstance();
-#endif
 
 	CTexture* pShadowMask = bShadowMask ? CRendererResources::s_ptexShadowMask : CRendererResources::s_ptexBlack;
 
@@ -614,7 +604,6 @@ bool CSceneForwardStage::PreparePerPassResources(bool bOnInit, bool bShadowMask,
 		CDeviceResourceSet*     pResourceSet   = resourceSetsToBuild[i].pResourceSet;
 		const uint32_t&         resourceSubset = resourceSetsToBuild[i].flags;
 
-		const bool includeOpaquePassResources      = !!(resourceSubset & eResSubset_TiledShadingOpaque);
 		const bool includeTransparentPassResources = !!(resourceSubset & eResSubset_TiledShadingTransparent);
 		const bool includeEyeOverlayPassResources  = !!(resourceSubset & eResSubset_EyeOverlay);
 		const bool includeForwardShadowResources   = !!(resourceSubset & eResSubset_ForwardShadows);
@@ -934,7 +923,6 @@ void CSceneForwardStage::ExecuteOpaque()
 
 void CSceneForwardStage::ExecuteTransparent(bool bBelowWater)
 {
-	CD3D9Renderer* pRenderer = gcpRendD3D;
 	CRenderView* pRenderView = RenderView();
 
 	CSceneRenderPass& scenePass = bBelowWater ? m_forwardTransparentBWPass : m_forwardTransparentAWPass;
@@ -1142,8 +1130,6 @@ void CSceneForwardStage::ExecuteMobile()
 	CRenderView* pRenderView = RenderView();
 	auto& renderItemDrawer = pRenderView->GetDrawer();
 
-	D3DViewPort viewport = RenderViewportToD3D11Viewport(pRenderView->GetViewport());
-
 	PreparePerPassResources(false);
 
 	auto& RESTRICT_REFERENCE commandList = GetDeviceObjectFactory().GetCoreCommandList();
@@ -1187,12 +1173,10 @@ void CSceneForwardStage::ExecuteMinimum(CTexture* pColorTex, CTexture* pDepthTex
 {
 	PROFILE_LABEL_SCOPE("FORWARD_MINIMUM");
 
-	CD3D9Renderer* pRenderer = gcpRendD3D;
-
 	CRenderView* pRenderView = RenderView();
 	auto& renderItemDrawer = pRenderView->GetDrawer();
 
-	CRY_ASSERT(pRenderer->m_nGraphicsPipeline == 3);
+	CRY_ASSERT(gcpRendD3D->m_nGraphicsPipeline == 3);
 
 	D3DViewPort viewport = RenderViewportToD3D11Viewport(RenderView()->GetViewport());
 	if (pRenderView->IsRecursive())

@@ -149,17 +149,16 @@ bool CColorGradingController::Update(const SColorGradingMergeParams* pMergeParam
 
 	gRenDev->m_cEF.mfRefreshSystemShader("PostEffectsGame", CShaderMan::s_shPostEffectsGame);
 
+	// OLD PIPELINE
+	ASSERT_LEGACY_PIPELINE
+
+		/*
 	const uint64 sample0 = g_HWSR_MaskBit[HWSR_SAMPLE0];
 	const uint64 sample1 = g_HWSR_MaskBit[HWSR_SAMPLE1];
 	const uint64 sample2 = g_HWSR_MaskBit[HWSR_SAMPLE2];
 	const uint64 sample5 = g_HWSR_MaskBit[HWSR_SAMPLE5];
 
 	auto pColorGradingStage = static_cast<CColorGradingStage*>(gRenDev->GetGraphicsPipeline().GetStage(eStage_ColorGrading));
-
-	// OLD PIPELINE
-	ASSERT_LEGACY_PIPELINE
-
-		/*
 
 	// merge layers
 	const size_t numLayers = m_layers.size();

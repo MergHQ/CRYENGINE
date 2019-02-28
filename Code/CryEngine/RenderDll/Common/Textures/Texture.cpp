@@ -900,7 +900,10 @@ void CTexture::RT_Precache(const bool isFinalPrecache)
 		}
 	}
 
+#if !defined(EXCLUDE_NORMAL_LOG)
 	CTimeValue t0 = gEnv->pTimer->GetAsyncTime();
+#endif
+
 	CryLog("-- Precaching textures...");
 	iLog->UpdateLoadingScreen(0);
 
@@ -1004,9 +1007,11 @@ void CTexture::RT_Precache(const bool isFinalPrecache)
 	if (!gEnv->IsEditor())
 		CryLog("========================== Finished loading textures ============================");
 
+#if !defined(EXCLUDE_NORMAL_LOG)
 	CTimeValue t1 = gEnv->pTimer->GetAsyncTime();
 	float dt = (t1 - t0).GetSeconds();
 	CryLog("Precaching textures done in %.2f seconds", dt);
+#endif
 
 	if (isFinalPrecache)
 	{
@@ -1283,7 +1288,9 @@ STexDataPtr CTexture::ImagePreprocessing(STexDataPtr&& td, ETEX_Format eDstForma
 {
 	CRY_PROFILE_FUNCTION(PROFILE_RENDERER);
 
+	#if !defined(_RELEASE)
 	const char* pTexFileName = td->m_pFilePath ? td->m_pFilePath : "$Unknown";
+#endif
 
 	if (eDstFormat == eTF_Unknown)
 	{
@@ -1826,9 +1833,6 @@ void CTexture::Update()
 {
 	FUNCTION_PROFILER_RENDERER();
 
-	CRenderer* rd = gRenDev;
-	char buf[256] = "";
-
 	// reload pending texture reload requests
 	{
 		std::set<string> queue;
@@ -1860,6 +1864,8 @@ void CTexture::Update()
 	}
 
 #ifndef CONSOLE_CONST_CVAR_MODE
+	char buf[256] = "";
+
 	if (CRenderer::CV_r_texlog)
 	{
 		CryAutoReadLock<CryRWLock> lock(CBaseResource::s_cResLock);
@@ -3446,7 +3452,10 @@ void CRenderer::EF_PrintRTStats(const char* szName)
 
 STexPool::~STexPool()
 {
+#ifndef _RELEASE
 	bool poolEmpty = true;
+#endif
+
 	STexPoolItemHdr* pITH = m_ItemsList.m_Next;
 	while (pITH != &m_ItemsList)
 	{

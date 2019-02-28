@@ -20,9 +20,11 @@ void CBloomStage::Execute()
 	int height = CRendererResources::s_ptexHDRFinalBloom->GetHeight();
 
 	// Note: Just scaling the sampling offsets depending on the resolution is not very accurate but works acceptably
+#if defined(USE_CRY_ASSERT)
 	int widthHalfRes = (CRendererResources::s_ptexHDRTarget->GetWidth() + 1) / 2;
 	int widthQuarterRes = (widthHalfRes + 1) / 2;
-	assert(CRendererResources::s_ptexHDRFinalBloom->GetWidth() == widthQuarterRes);
+	CRY_ASSERT(CRendererResources::s_ptexHDRFinalBloom->GetWidth() == widthQuarterRes);
+#endif
 	float scaleW = ((float)width / 400.0f) / (float)width;
 	float scaleH = ((float)height / 225.0f) / (float)height;
 

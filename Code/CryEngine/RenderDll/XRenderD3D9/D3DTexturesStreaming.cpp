@@ -42,7 +42,6 @@ bool CTexture::IsStillUsedByGPU()
 	if (pDeviceTexture)
 	{
 		CHK_RENDTH;
-		D3DBaseTexture* pD3DTex = pDeviceTexture->GetBaseTexture();
 	}
 	return false;
 }
@@ -71,8 +70,6 @@ void CTexture::StreamExpandMip(const void* vpRawData, int8 nMip, int8 nBaseMipOf
 
 	const uint32 nSrcSurfaceSize = CTexture::TextureDataSize(nCurMipWidth, nCurMipHeight, 1, 1, 1, m_eSrcFormat, m_eSrcTileMode);
 	const uint32 nSrcSidePitch = nSrcSurfaceSize + nSideDelta;
-
-	SRenderThread* pRT = gRenDev->m_pRT;
 
 	for (int iSide = 0; iSide < nSides; ++iSide)
 	{
@@ -270,14 +267,11 @@ void CTexture::StreamCopyMipsTexToMem(int8 nStartMip, int8 nEndMip, bool bToDevi
 {
 	PROFILE_FRAME(Texture_StreamUpload);
 
-	HRESULT h = S_OK;
 	nEndMip = std::min<int8>(nEndMip + 1, m_nMips) - 1;//+1 -1 needed as the compare is <=
 	STexMipHeader* mh = m_pFileTexMips->m_pMipHeader;
 
 	const bool bIsDXT = CTexture::IsBlockCompressed(m_eSrcFormat);
 	const int nMipAlign = bIsDXT ? 4 : 1;
-
-	const int nOldMinMipVidUploaded = m_nMinMipVidUploaded;
 
 	if (bToDevice && !pNewPoolItem)
 		SetMinLoadedMip(nStartMip);
@@ -331,8 +325,6 @@ void CTexture::StreamCopyMipsTexToMem(int8 nStartMip, int8 nEndMip, bool bToDevi
 
 	const int8 nMipOffset = m_nMips - nTexMips;
 	const int32 nSides = StreamGetNumSlices();
-
-	D3DBaseTexture* pID3DTexture = pDevTexture->GetBaseTexture();
 
 	size_t SizeToLoad = 0;
 	for (int32 iSide = 0; iSide < nSides; ++iSide)
@@ -412,7 +404,6 @@ ID3D11CommandList* CTexture::StreamCreateDeferred(int8 nStartMip, int8 nEndMip, 
 
 	if (CTexture::s_pStreamDeferredCtx)
 	{
-		HRESULT h = S_OK;
 		nEndMip = std::min<int8>(nEndMip + 1, m_nMips) - 1;//+1 -1 needed as the compare is <=
 		STexMipHeader* mh = m_pFileTexMips->m_pMipHeader;
 
@@ -707,12 +698,8 @@ void CTexture::StreamCopyMipsTexToTex(STexPoolItem* const pSrcItem, int8 nSrcMip
 {
 	CHK_RENDTH;
 
-	CDeviceTexture* pSrcDevTexture = pSrcItem->m_pDevTexture;
-	CDeviceTexture* pDstDevTexture = pDstItem->m_pDevTexture;
-
-	const uint32 nDstNumSlices = pDstItem->m_pOwner->GetNumSlices();
 	const uint32 nSrcNumSlices = pSrcItem->m_pOwner->GetNumSlices();
-	assert(nDstNumSlices == nSrcNumSlices && "Can't stream individual slices!");
+	CRY_ASSERT_MESSAGE(pDstItem->m_pOwner->GetNumSlices() == nSrcNumSlices, "Can't stream individual slices!");
 
 	if (0)
 	{
@@ -728,7 +715,7 @@ void CTexture::StreamCopyMipsTexToTex(STexPoolItem* const pSrcItem, int8 nSrcMip
 #endif
 	else
 	{
-		GPUPIN_DEVICE_TEXTURE(gcpRendD3D->GetPerformanceDeviceContext(), pDstDevTexture);
+		GPUPIN_DEVICE_TEXTURE(gcpRendD3D->GetPerformanceDeviceContext(), pDstItem->m_pDevTexture);
 
 		for (uint32 iSlice = 0; iSlice < nSrcNumSlices; ++iSlice)
 			CopySliceChain(

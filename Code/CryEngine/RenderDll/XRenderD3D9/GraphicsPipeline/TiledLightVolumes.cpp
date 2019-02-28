@@ -328,7 +328,6 @@ void CTiledLightVolumesStage::GenerateLightVolumeInfo()
 	for (uint32 i = 0; i < kNumPasses; i++)
 		m_numVolumesPerPass[i] = 0;
 
-	CD3D9Renderer* pRenderer = gcpRendD3D;
 	STiledLightInfo* pLightInfo = GetTiledLightInfo();
 
 	const SRenderViewInfo& viewInfo = GetCurrentViewInfo();
@@ -370,8 +369,6 @@ void CTiledLightVolumesStage::GenerateLightVolumeInfo()
 	STiledLightVolumeInfo volumeInfo[MaxNumTileLights];
 	for (uint32 i = 0; i < kNumPasses; i++)
 	{
-		bool bInsideVolume = i < eVolumeType_Count;
-
 		for (uint32 j = 0; j < m_numVolumesPerPass[i]; j++)
 		{
 			STiledLightInfo& lightInfo = pLightInfo[volumeLightIndices[i][j]];
@@ -457,7 +454,6 @@ void CTiledLightVolumesStage::GenerateLightVolumeInfo()
 
 int CTiledLightVolumesStage::InsertTexture(CTexture* pTexInput, float mipFactor, TextureAtlas& atlas, int arrayIndex)
 {
-	CD3D9Renderer* const __restrict rd = gcpRendD3D;
 	const int frameID = gRenDev->GetRenderFrameID();
 
 	// Make sure the texture is loaded already
@@ -695,10 +691,6 @@ void CTiledLightVolumesStage::UploadTextures(TextureAtlas& atlas)
 
 std::pair<size_t, size_t> CTiledLightVolumesStage::MeasureTextures(TextureAtlas& atlas)
 {
-	const UINT w = atlas.texArray->GetWidth();
-	const UINT h = atlas.texArray->GetHeight();
-	const UINT d = atlas.texArray->GetDepth();
-
 	std::pair<size_t, size_t> atlasSize = {};
 
 	// Check if texture is already in atlas
@@ -787,8 +779,6 @@ void CTiledLightVolumesStage::GenerateLightList()
 	matView.m12 *= -1;
 	matView.m22 *= -1;
 	matView.m32 *= -1;
-
-	int nThreadID = gRenDev->GetRenderThreadID();
 
 	uint32 numTileLights = 0;
 	uint32 numSkipLights = 0;
@@ -1196,8 +1186,6 @@ void CTiledLightVolumesStage::GenerateLightList()
 			int streamed0 = 0; // 32x32 non-streamed full-resolution
 			int streamed1 = pItem && pItem->texture && pItem->texture->IsStreamed() ? std::max<int8>(0, pItem->texture->StreamGetLoadedMip()) : 0;
 
-			Vec4 color = lightShadeInfo.color;
-
 #if 0
 			SDrawTextInfo ti;
 			ti.color[0] = Col_Yellow.r;
@@ -1312,8 +1300,6 @@ void CTiledLightVolumesStage::ExecuteVolumeListGen(uint32 dispatchSizeX, uint32 
 
 					constants->screenScale = Vec4((float)pDepthRT->GetWidth(), (float)pDepthRT->GetHeight(), 0, 0);
 
-					float zn = viewInfo[0].nearClipPlane;
-					float zf = viewInfo[0].farClipPlane;
 					constants->lightIndexOffset = curIndex;
 					constants->numVertices = numVertices;
 

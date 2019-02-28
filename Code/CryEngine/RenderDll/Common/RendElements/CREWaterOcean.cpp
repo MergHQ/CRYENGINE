@@ -194,9 +194,7 @@ bool CREWaterOcean::RequestVerticesBuffer(SVF_P3F_C4B_T2F** pOutputVertices, uin
 		return false;
 	}
 
-	CD3D9Renderer* const RESTRICT_POINTER rd = gcpRendD3D;
-	auto nThreadID = gRenDev->GetMainThreadID();
-	CRY_ASSERT(rd->m_pRT->IsMainThread());
+	CRY_ASSERT(gcpRendD3D->m_pRT->IsMainThread());
 
 	*pOutputVertices = new SVF_P3F_C4B_T2F[nVerticesCount];
 	*pOutputIndices = new uint8[nIndicesCount * nIndexSizeof];
@@ -225,9 +223,8 @@ bool CREWaterOcean::SubmitVerticesBuffer(uint32 nVerticesCount, uint32 nIndicesC
 		return false;
 	}
 
-	CD3D9Renderer* const RESTRICT_POINTER rd = gcpRendD3D;
 	auto nThreadID = gRenDev->GetMainThreadID();
-	CRY_ASSERT(rd->m_pRT->IsMainThread());
+	CRY_ASSERT(gcpRendD3D->m_pRT->IsMainThread());
 
 	auto& requests = m_verticesUpdateRequests[nThreadID];
 
@@ -251,7 +248,6 @@ void CREWaterOcean::Create(uint32 nVerticesCount, SVF_P3F_C4B_T2F* pVertices, ui
 	if (!nVerticesCount || !pVertices || !nIndicesCount || !pIndices || (nIndexSizeof != 2 && nIndexSizeof != 4))
 		return;
 
-	CD3D9Renderer* rd(gcpRendD3D);
 	ReleaseOcean();
 
 	m_nVerticesCount = nVerticesCount;
@@ -356,7 +352,6 @@ void CREWaterOcean::FrameUpdate()
 		if (pDispGrid == NULL)
 			return;
 
-		const uint32 pitch = 4 * sizeof(f32) * nGridSize;
 		const uint32 width = nGridSize;
 		const uint32 height = nGridSize;
 
@@ -575,7 +570,6 @@ void CREWaterOcean::DrawToCommandList(CRenderObject* pObj, const struct SGraphic
 	CRY_ASSERT(compiledObj.m_pPerDrawCB);
 	CRY_ASSERT(compiledObj.m_pPerDrawRS && compiledObj.m_pPerDrawRS->IsValid());
 
-	CD3D9Renderer* const RESTRICT_POINTER rd = gcpRendD3D;
 	CDeviceGraphicsCommandInterface& RESTRICT_REFERENCE commandInterface = *(commandList->GetGraphicsInterface());
 
 	// Set states

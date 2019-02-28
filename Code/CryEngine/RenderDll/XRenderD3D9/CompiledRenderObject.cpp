@@ -55,7 +55,7 @@ void CRenderObjectsPools::FreePerDrawConstantBuffer(CConstantBufferPtr&& buffer)
 {
 	if (buffer && !buffer->IsNullBuffer())
 	{
-		// Constant buffer can still be temporary used CRY_ASSERT(buffer->m_nRefCount == 1 && "Attempt to free a buffer that is still used elsewhere");
+		// Constant buffer can still be temporary used CRY_ASSERT_MESSAGE(buffer->m_nRefCount == 1, "Attempt to free a buffer that is still used elsewhere");
 		m_freeConstantBuffers.emplace_back(std::move(buffer));
 	}
 }
@@ -392,7 +392,7 @@ void CCompiledRenderObject::CompilePerDrawExtraResources(CRenderObject* pRenderO
 	if (!m_bHasTessellation && !pRenderObject->m_data.m_pSkinningData) // only needed for skinning and tessellation at the moment
 	{
 		m_perDrawExtraResources = pGraphicsPipeline.GetDefaulDrawExtraResourceSet();
-		assert(m_perDrawExtraResources && m_perDrawExtraResources->IsValid() && "Bad shared default resources");
+		CRY_ASSERT_MESSAGE(m_perDrawExtraResources && m_perDrawExtraResources->IsValid(), "Bad shared default resources");
 		CryInterlockedExchangeOr((volatile LONG*)&m_compiledFlags, eObjCompilationOption_PerInstanceExtraResources);
 		return;
 	}
@@ -593,8 +593,6 @@ bool CCompiledRenderObject::Compile(const EObjectCompilationOptions& compilation
 		PrepareForUse(GetDeviceObjectFactory().GetCoreCommandList(), true);
 		return true;
 	}
-
-	CRenderElement* pRenderElement = m_pRenderElement;
 
 	CShaderResources* RESTRICT_POINTER pResources = static_cast<CShaderResources*>(m_shaderItem.m_pShaderResources);
 	assert(pResources);

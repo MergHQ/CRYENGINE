@@ -942,12 +942,12 @@ const int32 g_nD3D10MaxSupportedSubres = (6 * 8 * 64);
 	public:
 		void AssignDevice(D3DDevice* pDevice) { m_pDevice = pDevice; }
 		void ReleaseDevice() { SAFE_RELEASE(m_pDevice); }
-		D3DDevice* GetRealDevice() const { assert(false && "Don't use device wrapper without legacy define set!"); return m_pDevice; }
+		D3DDevice* GetRealDevice() const { CRY_ASSERT_MESSAGE(false, "Don't use device wrapper without legacy define set!"); return m_pDevice; }
 		UINT GetNodeCount() const { return 1; }
 		void SwitchNodeVisibility(UINT) {}
 		bool IsValid() const { return m_pDevice != nullptr; }
-		void RegisterHook(ICryDeviceWrapperHook*) { assert(false); }
-		void UnregisterHook(const char*) { assert(false); }
+		void RegisterHook(ICryDeviceWrapperHook*) { CRY_ASSERT(false); }
+		void UnregisterHook(const char*) { CRY_ASSERT(false); }
 		HRESULT GetDeviceRemovedReason() const { return DXGI_ERROR_DRIVER_INTERNAL_ERROR; }
 	private:
 		D3DDevice* m_pDevice = nullptr;
@@ -958,12 +958,12 @@ const int32 g_nD3D10MaxSupportedSubres = (6 * 8 * 64);
 	public:
 		void AssignDeviceContext(D3DDeviceContext* pDevice) { m_pDevice = pDevice; }
 		void ReleaseDeviceContext() { SAFE_RELEASE(m_pDevice); }
-		D3DDeviceContext* GetRealDeviceContext() const { assert(false && "Don't use device context wrapper without legacy define set!"); return m_pDevice; }
+		D3DDeviceContext* GetRealDeviceContext() const { CRY_ASSERT_MESSAGE(false, "Don't use device context wrapper without legacy define set!"); return m_pDevice; }
 		int GetNodeCount() const { return 1; }
 		bool IsValid() const { return m_pDevice != nullptr; }
-		void RegisterHook(ICryDeviceWrapperHook*) { assert(false); }
-		void UnregisterHook(const char*) { assert(false); }
-		void CopyResourceOvercross(ID3D11Resource*, ID3D11Resource*) { assert(false); }
+		void RegisterHook(ICryDeviceWrapperHook*) { CRY_ASSERT(false); }
+		void UnregisterHook(const char*) { CRY_ASSERT(false); }
+		void CopyResourceOvercross(ID3D11Resource*, ID3D11Resource*) { CRY_ASSERT(false); }
 		void ResetCachedState() {}
 	private:
 		D3DDeviceContext* m_pDevice = nullptr;

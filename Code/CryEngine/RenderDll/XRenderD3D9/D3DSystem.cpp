@@ -73,11 +73,6 @@ void CD3D9Renderer::DisplaySplash()
 		GetObjectA(hImage, sizeof(bm), &bm);
 		SelectObject(hDCBitmap, hImage);
 
-		DWORD x = rect.left + (((rect.right - rect.left) - bm.bmWidth) >> 1);
-		DWORD y = rect.top + (((rect.bottom - rect.top) - bm.bmHeight) >> 1);
-
-		//    BitBlt(hDC, x, y, bm.bmWidth, bm.bmHeight, hDCBitmap, 0, 0, SRCCOPY);
-
 		RECT Rect;
 		GetWindowRect(hwnd, &Rect);
 		StretchBlt(hDC, 0, 0, Rect.right - Rect.left, Rect.bottom - Rect.top, hDCBitmap, 0, 0, bm.bmWidth, bm.bmHeight, SRCCOPY);
@@ -320,7 +315,6 @@ bool CD3D9Renderer::ChangeDisplayResolution(int nNewDisplayWidth, int nNewDispla
 
 	m_isChangingResolution = true;
 
-	const int  nPrevColorDepth = m_cbpp;
 	if (nNewColDepth < 24)
 		nNewColDepth = 16;
 	else
@@ -344,7 +338,6 @@ bool CD3D9Renderer::ChangeDisplayResolution(int nNewDisplayWidth, int nNewDispla
 
 	CRY_ASSERT(!IsEditorMode() || bForceReset);
 
-	HRESULT hr = S_OK;
 	if (!IsEditorMode() && (pDC == pBC))
 	{
 		// This is only allowed for the main viewport
@@ -397,12 +390,6 @@ bool CD3D9Renderer::ChangeDisplayResolution(int nNewDisplayWidth, int nNewDispla
 
 	CRendererResources::OnDisplayResolutionChanged(nNewDisplayWidth, nNewDisplayHeight);
 
-	ICryFont* pCryFont = gEnv->pCryFont;
-	if (pCryFont)
-	{
-		IFFont* pFont = pCryFont->GetFont("default");
-	}
-
 	PostDeviceReset();
 
 	m_isChangingResolution = false;
@@ -441,14 +428,13 @@ void CD3D9Renderer::PostDeviceReset()
 //-----------------------------------------------------------------------------
 HRESULT CD3D9Renderer::ChangeWindowProperties(const int displayWidth, const int displayHeight)
 {
-	CSwapChainBackedRenderDisplayContext* pDC = GetBaseDisplayContext();
-
 #if CRY_PLATFORM_WINDOWS || CRY_RENDERER_OPENGL
 	if (IsEditorMode())
 		return S_OK;
 #endif
 
 #if CRY_RENDERER_OPENGL
+	CSwapChainBackedRenderDisplayContext* pDC = GetBaseDisplayContext();
 	const DXGI_SWAP_CHAIN_DESC& swapChainDesc(m_devInfo.SwapChainDesc());
 
 	DXGI_MODE_DESC modeDesc;
@@ -463,6 +449,8 @@ HRESULT CD3D9Renderer::ChangeWindowProperties(const int displayWidth, const int 
 	if (FAILED(result))
 		return result;
 #elif CRY_PLATFORM_WINDOWS
+	CSwapChainBackedRenderDisplayContext* pDC = GetBaseDisplayContext();
+
 	HWND hwnd = (HWND)m_hWnd;
 	if (IsFullscreen())
 	{
@@ -624,7 +612,9 @@ void CD3D9Renderer::DestroyWindow(void)
 
 static CD3D9Renderer::SGammaRamp orgGamma;
 
+#if CRY_PLATFORM_WINDOWS
 static BOOL g_doGamma = false;
+#endif
 
 void CD3D9Renderer::RestoreGamma(void)
 {
@@ -933,7 +923,7 @@ void CD3D9Renderer::ShutDown(bool bReInit)
 LRESULT CALLBACK LowLevelKeyboardProc(INT nCode, WPARAM wParam, LPARAM lParam)
 {
 	KBDLLHOOKSTRUCT* pkbhs = (KBDLLHOOKSTRUCT*) lParam;
-	BOOL bControlKeyDown = 0;
+
 	switch (nCode)
 	{
 	case HC_ACTION:
@@ -2017,8 +2007,6 @@ bool CD3D9Renderer::CreateDevice()
 	LOADING_TIME_PROFILE_SECTION;
 	ChangeLog();
 
-	auto* pDC = GetBaseDisplayContext();
-
 	m_pixelAspectRatio = 1.0f;
 	m_dwCreateFlags = 0;
 
@@ -2097,9 +2085,9 @@ void CD3D9Renderer::GetVideoMemoryUsageStats(size_t& vidMemUsedThisFrame, size_t
 		}
 #else
 		struct { SIZE_T CurrentUsage; } videoMemoryInfoA = {};
-		struct { SIZE_T CurrentUsage; } videoMemoryInfoB = {};
 
 	#if CRY_RENDERER_GNM
+		struct { SIZE_T CurrentUsage; } videoMemoryInfoB = {};
 		gGnmDevice->GetMemoryUsageStats(videoMemoryInfoA.CurrentUsage, videoMemoryInfoB.CurrentUsage);
 	#endif
 #endif

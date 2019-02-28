@@ -357,8 +357,6 @@ void CDeferredShading::SetupGlobalConsts(CRenderView* pRenderView)
 
 void CDeferredShading::GetLightRenderSettings(const CRenderView* pRenderView, const SRenderLight* const __restrict pDL, bool& bStencilMask, bool& bUseLightVolumes, EShapeMeshType& meshType)
 {
-	CD3D9Renderer* const __restrict rd = gcpRendD3D;
-
 	const bool bAreaLight = (pDL->m_Flags & DLF_AREA_LIGHT) && pDL->m_fAreaWidth && pDL->m_fAreaHeight && pDL->m_fLightFrustumAngle;
 
 	if (CRenderer::CV_r_deferredshadingLightVolumes)

@@ -301,7 +301,6 @@ void CWaterStage::OnCVarsChanged(const CCVarUpdateRecorder& cvarUpdater)
 void CWaterStage::Update()
 {
 	CRenderView*   pRenderView = RenderView();
-	const CRenderOutput* pRenderOutput = pRenderView->GetRenderOutput();
 	const SRenderViewport& viewport = pRenderView->GetViewport();
 
 	auto* pCTexture = CRendererResources::s_ptexHDRTarget;
@@ -350,7 +349,6 @@ void CWaterStage::Update()
 		const int32 nHeight = int32(CRendererResources::s_ptexWaterVolumeRefl[0]->GetHeight() * (downscaleFactor.y));
 
 		// TODO: looks something wrong between rect and viewport?
-		const RECT rect = { 0, CRendererResources::s_ptexWaterVolumeRefl[0]->GetHeight() - nHeight, nWidth, nHeight };
 		D3DViewPort viewport = { 0.0f, float(CRendererResources::s_ptexWaterVolumeRefl[0]->GetHeight() - nHeight), float(nWidth), float(nHeight), 0.0f, 1.0f };
 
 		m_passWaterReflectionGen.SetViewport(viewport);
@@ -815,8 +813,6 @@ void CWaterStage::Execute()
 	// TODO: these should be kept in new graphics pipeline when main viewport is rendered.
 	CRY_ASSERT(pRenderView->GetShaderRenderingFlags() & (SHDF_ALLOW_WATER | SHDF_ALLOWPOSTPROCESS));
 
-	auto* pWaterRipplesStage = GetStdGraphicsPipeline().GetWaterRipplesStage();
-
 	const auto& waterRenderItems = pRenderView->GetRenderItems(EFSLIST_WATER);
 	const auto& waterVolumeRenderItems = pRenderView->GetRenderItems(EFSLIST_WATER_VOLUMES);
 	const bool bEmpty = waterRenderItems.empty() && waterVolumeRenderItems.empty();
@@ -1036,7 +1032,6 @@ bool CWaterStage::SetAndBuildPerPassResources(bool bOnInit, EPass passId)
 	auto& resources    = m_perPassResources    [passId];
 	auto& pResourceSet = m_pPerPassResourceSets[passId];
 
-	CD3D9Renderer* RESTRICT_POINTER pRenderer = gcpRendD3D;
 	const int32 frameID = (pRenderView) ? pRenderView->GetFrameId() : gRenDev->GetRenderFrameID();
 
 	// Samplers
@@ -1062,7 +1057,7 @@ bool CWaterStage::SetAndBuildPerPassResources(bool bOnInit, EPass passId)
 
 	CTexture* pVolFogShadowTex = CRendererResources::s_ptexBlack;
 #if defined(VOLUMETRIC_FOG_SHADOWS)
-	if (pRenderer->m_bVolFogShadowsEnabled)
+	if (gcpRendD3D->m_bVolFogShadowsEnabled)
 	{
 		pVolFogShadowTex = CRendererResources::s_ptexVolFogShadowBuf[0];
 	}
@@ -1072,13 +1067,9 @@ bool CWaterStage::SetAndBuildPerPassResources(bool bOnInit, EPass passId)
 
 	// NOTE: update this resource set at every frame, otherwise have double resource sets.
 	const int32 currWaterVolID = GetCurrentFrameID(frameID);
-	const int32 prevWaterVolID = GetPreviousFrameID(frameID);
 	CTexture* pCurrWaterVolRefl = CRendererResources::s_ptexWaterVolumeRefl[currWaterVolID];
-	CTexture* pPrevWaterVolRefl = CRendererResources::s_ptexWaterVolumeRefl[prevWaterVolID];
 
 	// NOTE: only water surface needs water reflection texture.
-	const bool bWaterSurface = (passId == ePass_WaterSurface);
-	auto* pWaterReflectionTex = bWaterSurface ? pCurrWaterVolRefl : CRendererResources::s_ptexBlack;
 
 	// Textures
 	{
@@ -1210,8 +1201,6 @@ void CWaterStage::UpdatePerPassResources(EPass passId)
 		auto* pVolFogStage = GetStdGraphicsPipeline().GetVolumetricFogStage();
 #if defined(VOLUMETRIC_FOG_SHADOWS)
 		const bool bRenderFogShadow = pRenderer->m_bVolFogShadowsEnabled;
-#else
-		const bool bRenderFogShadow = false;
 #endif
 		N3DEngineCommon::SCausticInfo& causticInfo = pRenderer->m_p3DEngineCommon.m_CausticInfo;
 
@@ -1395,7 +1384,6 @@ void CWaterStage::ExecuteWaterNormalGen()
 
 				Vec4* pDispGrid = WaterSimMgr()->GetDisplaceGrid();
 
-				const uint32 pitch = 4 * sizeof(f32) * nGridSize;
 				const uint32 width = nGridSize;
 				const uint32 height = nGridSize;
 

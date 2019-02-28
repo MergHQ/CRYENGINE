@@ -285,8 +285,7 @@ Matrix44 VCGetReprojectionMatrix(
 
 	Matrix44_tpl<f64> matViewInv, matProjInv;
 	mathMatrixLookAtInverse(&matViewInv, &matViewCurrent);
-	const bool bCanInvert = mathMatrixPerspectiveFovInverse(&matProjInv, &matProj);
-	CRY_ASSERT(bCanInvert);
+	CRY_VERIFY(mathMatrixPerspectiveFovInverse(&matProjInv, &matProj));
 
 	Matrix44_tpl<f64> matScaleBias1 = Matrix44_tpl<f64>(
 	  0.5, 0, 0, 0,
@@ -674,12 +673,14 @@ void CVolumetricCloudsStage::Execute()
 	{
 		const int32 curEye = static_cast<int32>(RenderView()->GetCurrentEye());
 		const int32 gpuCount = rd->GetActiveGPUCount();
+
+#ifdef ENABLE_FULL_SIZE_FOG
 		auto* pVolFogStage = rd->GetGraphicsPipeline().GetVolumetricFogStage();
+#endif
 
 		CShader* pShader = CShaderMan::s_ShaderClouds;
 
 		const int32 bufferIndex = GetBufferIndex(gpuCount, context.bStereoMultiGPURendering);
-		const int32 previousFrameIndex = GetPreviousFrameIndex(gpuCount, context.bStereoMultiGPURendering);
 
 		CRY_ASSERT(curEye == 0 || curEye == 1);
 		CTexture* prevMaxTex = bufferIndex ? m_pDownscaledMaxTex[curEye][0] : m_pDownscaledMaxTex[curEye][1];
@@ -1077,7 +1078,6 @@ void CVolumetricCloudsStage::ExecuteComputeDensityAndShadow(const VCCloudRenderC
 		PROFILE_LABEL_SCOPE("INJECT_CLOUD_SHADOW");
 #endif
 
-		CD3D9Renderer* const __restrict rd = gcpRendD3D;
 		const int32 currentRenderEye = static_cast<int32>(RenderView()->GetCurrentEye());
 
 		CShader* pShader = CShaderMan::s_ShaderClouds;
@@ -1160,7 +1160,6 @@ void CVolumetricCloudsStage::ExecuteComputeDensityAndShadow(const VCCloudRenderC
 		// Tile sizes defined in [numthreads()] in shader
 		const uint32 nTileSizeX = 8;
 		const uint32 nTileSizeY = 8;
-		const uint32 nTileSizeZ = 1;
 		const uint32 dispatchSizeX = gridWidth / nTileSizeX + (gridWidth % nTileSizeX > 0 ? 1 : 0);
 		const uint32 dispatchSizeY = gridHeight / nTileSizeY + (gridHeight % nTileSizeY > 0 ? 1 : 0);
 		const uint32 dispatchSizeZ = 1;
@@ -1297,7 +1296,6 @@ void CVolumetricCloudsStage::ExecuteRenderClouds(const VCCloudRenderContext& con
 	// Tile sizes defined in [numthreads()] in shader
 	const uint32 nTileSizeX = 8;
 	const uint32 nTileSizeY = 8;
-	const uint32 nTileSizeZ = 1;
 	const uint32 dispatchSizeX = gridWidth / nTileSizeX + (gridWidth % nTileSizeX > 0 ? 1 : 0);
 	const uint32 dispatchSizeY = gridHeight / nTileSizeY + (gridHeight % nTileSizeY > 0 ? 1 : 0);
 	const uint32 dispatchSizeZ = 1;
@@ -1741,8 +1739,7 @@ void CVolumetricCloudsStage::GenerateCloudBlockerSSList()
 	CRY_ASSERT(pRenderView);
 
 	const auto& blockers = pRenderView->GetCloudBlockers(1);
-	auto numBlocker = blockers.size();
-	CRY_ASSERT(numBlocker <= CRenderView::MaxCloudBlockerScreenSpaceNum);
+	CRY_ASSERT(static_cast<int32>(blockers.size()) <= CRenderView::MaxCloudBlockerScreenSpaceNum);
 
 	// build screen space blocker list for current frame.
 	m_blockerSSPosArray.SetUse(0);

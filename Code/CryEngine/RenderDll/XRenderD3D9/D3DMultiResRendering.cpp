@@ -326,7 +326,6 @@ void CVrProjectionManager::ExecuteFlattenDepth(CTexture* pSrcRT, CTexture* pDest
 
 	PROFILE_LABEL_SCOPE("FLATTEN_DEPTH");
 
-	CD3D9Renderer* pRenderer = gcpRendD3D;
 	CShader* pShader = CShaderMan::s_shPostEffects;
 
 	const int dstWidth  = pSrcRT->GetWidth();
@@ -359,7 +358,6 @@ void CVrProjectionManager::ExecuteLensMatchedOctagon(CTexture* pDestRT)
 {
 	CRY_ASSERT(IsMultiResEnabled());
 
-	CD3D9Renderer* pRenderer = gcpRendD3D;
 	CShader* pShader = CShaderMan::s_shPostEffects;
 
 	static const CCryNameTSCRC techName("DrawLensMatchedOctagon");

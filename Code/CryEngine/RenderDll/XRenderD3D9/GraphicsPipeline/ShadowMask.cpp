@@ -317,7 +317,6 @@ void CShadowMaskStage::Execute()
 	FUNCTION_PROFILER_RENDERER();
 	PROFILE_LABEL_SCOPE("SHADOWMASK");
 
-	CD3D9Renderer* const __restrict rd = gcpRendD3D;
 
 	// sun shadows
 	if (m_sunShadowPrimitives > 0)
@@ -886,7 +885,6 @@ void CSunShadows::PrepareStencilPassConstants(CRenderPrimitive& primitive, Shado
 
 void CSunShadows::PrepareConstantBuffers(CRenderPrimitive& primitive, ShadowMapFrustum* pFrustum, ShadowMapFrustum* pVolumeProvider, bool bScaledVolume) const
 {
-	CD3D9Renderer* const __restrict rd = gcpRendD3D;
 	SRenderViewShaderConstants& PF =  shadowMaskStage.RenderView()->GetShaderConstants();
 	auto& constantManager = primitive.GetConstantManager();
 
@@ -1146,8 +1144,6 @@ int CLocalLightShadows::PreparePrimitives(std::vector<CPrimitiveRenderPass>& mas
 
 int CLocalLightShadows::PreparePrimitivesForLight(const CRenderView* pRenderView, CPrimitiveRenderPass& sliceGenPass, int& firstUnusedStencilValue, bool usingScreenSpaceShadows, SShadowFrustumToRender* pFrustumToRender, uint64 qualityFlags, int& volumePrimitiveCount, int& quadPrimitiveCount)
 {
-	CD3D9Renderer* const __restrict rd = gcpRendD3D;
-
 	const SRenderLight* pLight = pFrustumToRender->pLight;
 	ShadowMapFrustum* pFrustum = pFrustumToRender->pFrustum;
 	const SRenderViewInfo& viewInfo = shadowMaskStage.m_viewInfo[0];
@@ -1169,7 +1165,6 @@ int CLocalLightShadows::PreparePrimitivesForLight(const CRenderView* pRenderView
 	CRenderPrimitive::EPrimitiveType primitiveType = meshToPrimtype[meshType];
 
 	const int nSides = pFrustum->GetNumSides();
-	const bool bAreaLight = (pLight->m_Flags & DLF_AREA_LIGHT) && pLight->m_fAreaWidth && pLight->m_fAreaHeight && pLight->m_fLightFrustumAngle;
 	const bool bReverseDepth = (viewInfo.flags & SRenderViewInfo::eFlags_ReverseDepth) != 0;
 
 	/* TheoM TODO: scissor
@@ -1274,7 +1269,7 @@ int CLocalLightShadows::PreparePrimitivesForLight(const CRenderView* pRenderView
 void CLocalLightShadows::PrepareConstantBuffersForPrimitives(SLocalLightPrimitives& primitives, SShadowFrustumToRender* pFrustumToRender, int side, bool bVolumePrimitive) const
 {
 	SRenderViewShaderConstants& PF = shadowMaskStage.RenderView()->GetShaderConstants();
-	const bool bAreaLight = false;   // TheoM TODO
+	//const bool bAreaLight = false;   // TheoM TODO
 
 	const auto pLight = pFrustumToRender->pLight;
 	const auto pFrustum = pFrustumToRender->pFrustum;

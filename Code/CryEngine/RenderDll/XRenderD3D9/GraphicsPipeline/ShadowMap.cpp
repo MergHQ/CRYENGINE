@@ -922,8 +922,6 @@ CShadowMapStage::CShadowMapPass::CShadowMapPass(CShadowMapPass&& other)
 
 bool CShadowMapStage::CShadowMapPass::PrepareResources(const CRenderView* pMainView)
 {
-	CD3D9Renderer* pRenderer = gcpRendD3D;
-
 	assert(m_pFrustumToRender);
 	assert(m_pPerPassResourceSet);
 	assert(m_pPerViewConstantBuffer);
@@ -1168,8 +1166,6 @@ void CShadowMapStage::Execute()
 	FUNCTION_PROFILER_RENDERER();
 	PROFILE_LABEL_SCOPE("SHADOWMAPS");
 
-	CD3D9Renderer* rd = gcpRendD3D;
-	const int nThreadID = gRenDev->GetRenderThreadID();
 	CRenderItemDrawer& rendItemDrawer = RenderView()->GetDrawer();
 
 	// Cached shadow maps cannot run concurrent due to CopyShadowMap pass

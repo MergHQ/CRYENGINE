@@ -22,12 +22,11 @@ void CMotionBlurStage::Execute()
 	FUNCTION_PROFILER_RENDERER();
 	PROFILE_LABEL_SCOPE("MB");
 
-	CD3D9Renderer* rd = gcpRendD3D;
 	CShader* pShader = CShaderMan::s_shPostMotionBlur;
 
 	SRenderViewport viewport = RenderView()->GetViewport();
 
-	int vpX = viewport.x, vpY=viewport.y, vpWidth=viewport.width, vpHeight=viewport.height;
+	int vpWidth=viewport.width, vpHeight=viewport.height;
 
 	// Check if DOF is enabled
 	CDepthOfField* pDofRenderTech = (CDepthOfField*)PostEffectMgr()->GetEffect(EPostEffectID::DepthOfField);
@@ -36,10 +35,9 @@ void CMotionBlurStage::Execute()
 	const bool bGatherDofEnabled = CRenderer::CV_r_dof > 0 && CRenderer::CV_r_DofMode == 1 && dofParams.vFocus.w > 0.0001f;
 
 	SRenderViewInfo viewInfo[2];
-	size_t viewInfoCount = GetGraphicsPipeline().GenerateViewInfo(viewInfo);
+	GetGraphicsPipeline().GenerateViewInfo(viewInfo);
 
 	Matrix44A mViewProjPrev =  viewInfo[0].prevCameraMatrix;
-	Matrix44 mViewProj = GetUtils().m_pView;
 	mViewProjPrev = mViewProjPrev * GetUtils().m_pProj * GetUtils().m_pScaleBias;
 	mViewProjPrev.Transpose();
 

@@ -434,7 +434,6 @@ public:
 	// Update simulation
 	void Update(SWaterUpdateThreadInfo& pThreadInfo)
 	{
-		int nFrameID = pThreadInfo.nFrameID;
 		float fTime = pThreadInfo.fTime;
 		bool bOnlyHeight = pThreadInfo.bOnlyHeight;
 
@@ -526,8 +525,6 @@ public:
 
 	void Update(int nFrameID, float fTime, bool bOnlyHeight)
 	{
-		CRenderer* rd = gRenDev;
-
 		m_nFillThreadID = m_nWorkerThreadID = 0;
 
 		SWaterUpdateThreadInfo& pThreadInfo = m_pThreadInfo[m_nFillThreadID];
@@ -536,7 +533,6 @@ public:
 		pThreadInfo.bOnlyHeight = bOnlyHeight;
 
 		Update(pThreadInfo);
-
 	}
 
 	/////////////////////////////////////////////////////////////////////////////////////////////////////

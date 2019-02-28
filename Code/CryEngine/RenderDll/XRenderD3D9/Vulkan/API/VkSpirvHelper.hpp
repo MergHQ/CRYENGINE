@@ -98,8 +98,6 @@ namespace VkSpvHelper
 		uint32_t spirvBinCodeLen = static_cast<uint32_t>(spirvBinCode.size());
 		uint32_t* pSpirvBinData = spirvBinCode.data();
 
-		int minGoogleExtStrSize = std::min(sizeof(SpvExtGoogleDecorateString), sizeof(SpvExtGoogleHLSLFunctionality1));
-
 		// Make sure we at least have a header and the magic number is correct
 		if (spirvBinCode.size() < SpirvHeaderLength || spirvBinCode[0] != spv::MagicNumber)
 			return false;

@@ -72,7 +72,6 @@ public:
 
 	std::string GetName() threadsafe_const
 	{
-		UINT len = 512;
 		char str[512] = "-";
 
 		if (true)

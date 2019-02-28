@@ -139,7 +139,6 @@ void CClipVolumesStage::ResizeResource(int volumeWidth, int volumeHeight, int vo
 	m_depthTargetArrayVolFog.resize(volumeDepth);
 
 	const uint32 commonFlags = FT_NOMIPS | FT_DONT_STREAM | FT_DONT_RELEASE;
-	const uint32 rtFlags = commonFlags | FT_USAGE_RENDERTARGET;
 	const uint32 dsFlags = commonFlags | FT_USAGE_DEPTHSTENCIL;
 	const int32 w = volumeWidth;
 	const int32 h = volumeHeight;
@@ -272,7 +271,6 @@ void CClipVolumesStage::ResizeResource(int volumeWidth, int volumeHeight, int vo
 
 		for (int32 i = 0; i < m_depthTargetArrayVolFog.size(); ++i)
 		{
-			auto& depthTarget = m_depthTargetArrayVolFog[i];
 			CTexture* pTex = m_pClipVolumeStencilVolumeTexArray[i];
 
 			// this buffer is managed explicitly on multi GPU.
@@ -501,7 +499,6 @@ void CClipVolumesStage::Prepare()
 
 #ifdef FEATURE_RENDER_CLIPVOLUME_GEOMETRY_SHADER
 	static CCryNameTSCRC techStencilVolFog = "ClipVolumeStencilVolFog";
-	const Vec3 cameraFrontVec = viewInfo[0].cameraVZ;
 	SRenderViewShaderConstants& PF = pRenderView->GetShaderConstants();
 	const float raymarchStart = PF.pVolumetricFogSamplingParams.x;
 	const float invRaymarchDistance = PF.pVolumetricFogSamplingParams.y;
@@ -767,7 +764,6 @@ void CClipVolumesStage::Execute()
 
 void CClipVolumesStage::FillVolumetricFogDepth()
 {
-	CD3D9Renderer* const RESTRICT_POINTER rd = gcpRendD3D;
 	const SRenderViewInfo& viewInfo = GetCurrentViewInfo();
 
 	auto maxDSVCount = m_depthTargetArrayVolFog.size();

@@ -128,7 +128,6 @@ bool CWaterRipplesStage::RefreshParameters()
 	UpdateAndDrawDebugInfo();
 #endif
 
-	const uint32 nThreadID = gRenDev->GetRenderThreadID();
 	const float fTime = GetGraphicsPipeline().GetAnimationTime().GetSeconds();
 	const uint32 gpuCount = gRenDev->GetActiveGPUCount();
 
@@ -338,8 +337,6 @@ void CWaterRipplesStage::ExecuteWaterRipples(CTexture* pTargetTex, const D3DView
 		return;
 	}
 
-	const float z = 1.0f;
-
 	const float fWidth = viewport.Width;
 	const float fHeight = viewport.Height;
 	const float fWidthRcp = 1.0f / fWidth;
@@ -355,7 +352,6 @@ void CWaterRipplesStage::ExecuteWaterRipples(CTexture* pTargetTex, const D3DView
 		pass.SetViewport(viewport);
 		pass.BeginAddingPrimitives();
 
-		Vec4 param = m_shaderParam;
 		int32 vertexOffset = 0;
 
 		CRY_ASSERT(waterRipples.size() <= SWaterRippleInfo::MaxWaterRipplesInScene);

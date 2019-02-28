@@ -30,7 +30,7 @@ CryCriticalSection CGraphicsDeviceConstantBuffer::s_accessLock;
 #if DEVBUFFERMAN_DEBUG
 	#define DEVBUFFERMAN_ASSERT(x) assert(x)
 #else
-	#define DEVBUFFERMAN_ASSERT(x) (void)0
+	#define DEVBUFFERMAN_ASSERT(x) ((void)(x))
 #endif
 
 // Change this to != 0 to allocate CConstantBuffers from pool
@@ -1467,11 +1467,11 @@ struct CConstantBufferAllocator
 	bool Allocate(CConstantBuffer* cbuffer)
 	{
 		CRY_PROFILE_FUNCTION(PROFILE_RENDERER);
-		CRY_ASSERT(cbuffer && cbuffer->m_size && "Bad allocation request");
+		CRY_ASSERT_MESSAGE(cbuffer && cbuffer->m_size, "Bad allocation request");
 		const unsigned size = cbuffer->m_size;
 		const unsigned nsize = NextPower2(size);
 		const unsigned bucket = IntegerLog2(nsize) - 8;
-		CRY_ASSERT(bucket < CRY_ARRAY_COUNT(m_page_buckets) && "Bad allocation size");
+		CRY_ASSERT_MESSAGE(bucket < CRY_ARRAY_COUNT(m_page_buckets), "Bad allocation size");
 		bool failed = false;
 retry:
 		for (size_t i = m_page_buckets[bucket].size(); i > 0; --i)
@@ -1957,7 +1957,9 @@ struct CBufferPoolImpl final
 		DEVBUFFERMAN_ASSERT(move.m_relocating == false);
 		SBufferPoolItem& item = m_item_table[move.m_item_handle];
 		SBufferPoolBank* bank = &m_bank_table[m_banks[item.m_bank]];
+#ifdef TRACK_DEVBUFFER_WITH_MEMREPLAY
 		uint8* old_offset = bank->m_base_ptr + item.m_offset;
+#endif // TRACK_DEVBUFFER_WITH_MEMREPLAY
 		item.m_bank = move.m_dst_offset / s_PoolConfig.m_pool_bank_size;
 		item.m_offset = move.m_dst_offset & s_PoolConfig.m_pool_bank_mask;
 		bank = &m_bank_table[m_banks[item.m_bank]];

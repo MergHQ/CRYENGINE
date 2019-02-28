@@ -897,8 +897,7 @@ public:
 		if (szStr[0] == '0' && szStr[1] == 'x')
 		{
 			int i = 0;
-			int res = sscanf(&szStr[2], "%x", &i);
-			assert(res != 0);
+			CRY_VERIFY(sscanf(&szStr[2], "%x", &i) != 0);
 			return i;
 		}
 		return atoi(szStr);
@@ -954,20 +953,12 @@ public:
 	int                CopyTokens(SCodeFragment* pCF, PodArray<uint32>& SHData, TArray<SCodeFragment>& Replaces, TArray<uint32>& NewTokens, uint32 nID);
 	static inline void AddDefineToken(uint32 dwToken, ShaderTokensVec& Tokens)
 	{
-		if (dwToken == 611)
-		{
-			int nnn = 0;
-		}
 		Tokens.push_back(eT_define);
 		Tokens.push_back(dwToken);
 		Tokens.push_back(0);
 	}
 	static inline void AddDefineToken(uint32 dwToken, uint32 dwToken2, ShaderTokensVec& Tokens)
 	{
-		if (dwToken == 611)
-		{
-			int nnn = 0;
-		}
 		Tokens.push_back(eT_define);
 		Tokens.push_back(dwToken);
 		Tokens.push_back(dwToken2);

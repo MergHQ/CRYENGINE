@@ -652,19 +652,19 @@ void CSubmissionQueue_DX11::BindUAVs(SHADER_TYPE type, CCryDeviceContextWrapper&
 			switch (type)
 			{
 			case TYPE_VS:
-				assert(0 && "NOT IMPLEMENTED ON D3D11.0");
+				CRY_ASSERT_MESSAGE(false, "NOT IMPLEMENTED ON D3D11.0");
 				break;
 			case TYPE_PS:
 				rDeviceContext.OMSetRenderTargetsAndUnorderedAccessViews(D3D11_KEEP_RENDER_TARGETS_AND_DEPTH_STENCIL, NULL, NULL, base, count, &m_UAV[TYPE_PS].views[base], &m_UAV[TYPE_PS].counts[base]);
 				break;
 			case TYPE_GS:
-				assert(0 && "NOT IMPLEMENTED ON D3D11.0");
+				CRY_ASSERT_MESSAGE(false, "NOT IMPLEMENTED ON D3D11.0");
 				break;
 			case TYPE_DS:
-				assert(0 && "NOT IMPLEMENTED ON D3D11.0");
+				CRY_ASSERT_MESSAGE(false, "NOT IMPLEMENTED ON D3D11.0");
 				break;
 			case TYPE_HS:
-				assert(0 && "NOT IMPLEMENTED ON D3D11.0");
+				CRY_ASSERT_MESSAGE(false, "NOT IMPLEMENTED ON D3D11.0");
 				break;
 			case TYPE_CS:
 				rDeviceContext.CSSetUnorderedAccessViews(base, count, &m_UAV[TYPE_CS].views[base], &m_UAV[TYPE_CS].counts[base]);
@@ -683,19 +683,19 @@ void CSubmissionQueue_DX11::BindUAVs(SHADER_TYPE type, CCryDeviceContextWrapper&
 				switch (type)
 				{
 				case TYPE_VS:
-					assert(0 && "NOT IMPLEMENTED ON D3D11.0");
+					CRY_ASSERT_MESSAGE(false, "NOT IMPLEMENTED ON D3D11.0");
 					break;
 				case TYPE_PS:
 					rDeviceContext.OMSetRenderTargetsAndUnorderedAccessViews(D3D11_KEEP_RENDER_TARGETS_AND_DEPTH_STENCIL, NULL, NULL, base, count, &m_UAV[TYPE_PS].views[base], &m_UAV[TYPE_PS].counts[base]);
 					break;
 				case TYPE_GS:
-					assert(0 && "NOT IMPLEMENTED ON D3D11.0");
+					CRY_ASSERT_MESSAGE(false, "NOT IMPLEMENTED ON D3D11.0");
 					break;
 				case TYPE_DS:
-					assert(0 && "NOT IMPLEMENTED ON D3D11.0");
+					CRY_ASSERT_MESSAGE(false, "NOT IMPLEMENTED ON D3D11.0");
 					break;
 				case TYPE_HS:
-					assert(0 && "NOT IMPLEMENTED ON D3D11.0");
+					CRY_ASSERT_MESSAGE(false, "NOT IMPLEMENTED ON D3D11.0");
 					break;
 				case TYPE_CS:
 					rDeviceContext.CSSetUnorderedAccessViews(base, count, &m_UAV[TYPE_CS].views[base], &m_UAV[TYPE_CS].counts[base]);

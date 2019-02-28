@@ -139,11 +139,9 @@ void CParticleBufferSet::CreateSpriteBuffer(uint poolSize)
 #if defined(PFX_16BIT_IB)
 	typedef uint16 idxFormat;
 	m_maxSpriteCount = 1 << 14; // max sprite count for 16 bit ibs is 2^16/4
-	const auto format = DXGI_FORMAT_R16_UINT;
 #elif defined(PFX_32BIT_IB)
 	typedef uint32 idxFormat;
 	m_maxSpriteCount = poolSize;
-	const auto format = DXGI_FORMAT_R32_UINT;
 #endif
 
 	std::vector<idxFormat> spriteIndices;

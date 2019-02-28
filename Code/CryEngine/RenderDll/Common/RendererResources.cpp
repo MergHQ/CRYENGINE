@@ -353,10 +353,6 @@ void CRendererResources::LoadDefaultSystemTextures()
 	{
 		m_bLoadedSystem = true;
 
-		const float  clearDepth   = Clr_FarPlane_Rev.r;
-		const uint8  clearStencil = Val_Stencil;
-		const ColorF clearValues  = ColorF(clearDepth, FLOAT(clearStencil), 0.f, 0.f);
-
 		// Textures loaded directly from file
 		struct
 		{
@@ -705,8 +701,7 @@ void CRendererResources::ResizeSystemTargets(int renderWidth, int renderHeight)
 		resourceWidth  = renderWidth;
 		resourceHeight = renderHeight;
 #endif
-		const bool bR11G11B10FAvailable = s_hwTexFormatSupport.IsFormatSupported(eTF_R11G11B10F);
-		ETEX_Format nHDRFormat = (CRenderer::CV_r_HDRTexFormat == 0 && bR11G11B10FAvailable) ? eTF_R11G11B10F : eTF_R16G16B16A16F;
+
 		// Resize ZTarget
 		CreateDepthMaps(resourceWidth, resourceHeight);
 
@@ -770,7 +765,6 @@ void CRendererResources::CreateDepthMaps(int resourceWidth, int resourceHeight)
 		preferredDepthFormat == eTF_D24S8  ? eTF_R32F :
 		preferredDepthFormat == eTF_D16S8  ? eTF_R16  : eTF_R16;
 
-	const uint32 nDSFlags = FT_DONT_STREAM | FT_DONT_RELEASE | FT_USAGE_DEPTHSTENCIL;
 	const uint32 nRTFlags = FT_DONT_STREAM | FT_DONT_RELEASE | FT_USAGE_RENDERTARGET;
 	uint32 nUAFlags = FT_DONT_STREAM | FT_DONT_RELEASE | FT_USAGE_RENDERTARGET | FT_USAGE_UNORDERED_ACCESS | FT_USAGE_UAV_RWTEXTURE;
 
@@ -1105,10 +1099,12 @@ bool CRendererResources::CreatePostFXMaps(int resourceWidth, int resourceHeight)
 	const int width  = resourceWidth , width_r2  = (width  + 1) / 2, width_r4  = (width_r2  + 1) / 2, width_r8  = (width_r4  + 1) / 2;
 	const int height = resourceHeight, height_r2 = (height + 1) / 2, height_r4 = (height_r2 + 1) / 2, height_r8 = (height_r4 + 1) / 2;
 	
+	CRY_DISABLE_WARN_UNUSED_VARIABLES();
 	const ETEX_Format nHDRFormat  = GetHDRFormat(false, false); // No alpha, default is HiQ, can be downgraded
-	const ETEX_Format nHDRQFormat = GetHDRFormat(false, true ); // No alpha, default is LoQ, can be upgraded
 	const ETEX_Format nHDRAFormat = GetHDRFormat(true , false); // With alpha
+	const ETEX_Format nHDRQFormat = GetHDRFormat(false, true ); // No alpha, default is LoQ, can be upgraded
 	const ETEX_Format nLDRPFormat = GetLDRFormat(true);         // With more than 8 mantissa bits for calculations
+	CRY_RESTORE_WARN_UNUSED_VARIABLES();
 
 	if (!s_ptexDisplayTargetSrc ||
 		s_ptexDisplayTargetSrc->GetWidth() != width ||
@@ -1362,7 +1358,6 @@ Ang3 sDeltAngles(Ang3& Ang0, Ang3& Ang1)
 
 SEnvTexture* CRendererResources::FindSuitableEnvTex(Vec3& Pos, Ang3& Angs, bool bMustExist, int RendFlags, bool bUseExistingREs, CShader* pSH, CShaderResources* pRes, CRenderObject* pObj, bool bReflect, CRenderElement* pRE, bool* bMustUpdate, const SRenderingPassInfo* pPassInfo)
 {
-	SEnvTexture* cm = NULL;
 	float time0 = iTimer->GetAsyncCurTime();
 
 	int i;

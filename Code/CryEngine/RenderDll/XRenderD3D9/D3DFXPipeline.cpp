@@ -98,7 +98,7 @@ bool CD3D9Renderer::FX_DrawToRenderTarget(
 	if (!pRT)
 		return false;
 
-	int nThreadList = m_pRT->GetThreadList();
+	//int nThreadList = m_pRT->GetThreadList();
 
 	uint32 nPrFlags = pRT->m_nFlags;
 	if (nPrFlags & FRT_RENDTYPE_CURSCENE)
@@ -297,7 +297,6 @@ bool CD3D9Renderer::FX_DrawToRenderTarget(
 		Vec3  camPos   = passInfo.GetCamera().GetPosition();
 		float fDistCam = (camPos - m_waterUpdateInfo.m_LastWaterPosUpdate).GetLength();
 		float fDotView = camView * m_waterUpdateInfo.m_LastWaterViewdirUpdate;
-		float fDotUp   = camUp * m_waterUpdateInfo.m_LastWaterUpdirUpdate;
 		float fFOV     = passInfo.GetCamera().GetFov();
 		if (m_waterUpdateInfo.m_fLastWaterUpdate - 1.0f > animTime.GetSeconds())
 			m_waterUpdateInfo.m_fLastWaterUpdate = animTime.GetSeconds();
@@ -364,11 +363,9 @@ bool CD3D9Renderer::FX_DrawToRenderTarget(
 
 	static CCamera tmp_cam_mgpu = passInfo.GetCamera();
 	CCamera tmp_cam             = passInfo.GetCamera();
-	CCamera prevCamera          = tmp_cam;
 	bool bMirror                = false;
 	bool bOceanRefl             = false;
 
-	SRenderViewInfo::EFlags recusriveViewFlags = SRenderViewInfo::eFlags_None;
 	passInfo.GetRenderView()->CalculateViewInfo();
 	const auto& viewInfo = passInfo.GetRenderView()->GetViewInfo(CCamera::eEye_Left);
 

@@ -76,7 +76,7 @@ CRenderView::CRenderView(const char* name, EViewType type, CRenderView* pParentV
 		m_tempRenderObjects.pRenderObjectsPool = (CRenderObject*)CryModuleMemalign(sizeof(CRenderObject) * (m_tempRenderObjects.numObjectsInPool) + sizeof(CRenderObject), 16);
 		for (uint32 j = 0; j < m_tempRenderObjects.numObjectsInPool; j++)
 		{
-			CRenderObject* pRendObj = new(&m_tempRenderObjects.pRenderObjectsPool[j])CRenderObject();
+			new(&m_tempRenderObjects.pRenderObjectsPool[j])CRenderObject();
 			arrPrefill[j] = &m_tempRenderObjects.pRenderObjectsPool[j];
 		}
 		m_tempRenderObjects.tempObjects.PrefillContainer(arrPrefill, m_tempRenderObjects.numObjectsInPool);
@@ -1078,7 +1078,7 @@ static inline uint32 CalculateRenderItemBatchFlags(SShaderItem& shaderItem, CRen
 	CShaderResources* const __restrict pShaderResources = (CShaderResources*)shaderItem.m_pShaderResources;
 	CShader* const __restrict pShader = (CShader*)shaderItem.m_pShader;
 
-	float fAlpha = pObj->m_fAlpha;
+	//float fAlpha = pObj->m_fAlpha;
 	uint32 uTransparent = 0; //(bool)(fAlpha < 1.0f); Not supported in new rendering pipeline 
 	const ERenderObjectFlags ObjFlags = pObj->m_ObjFlags;
 
@@ -1499,8 +1499,6 @@ void CRenderView::AddRenderItem(CRenderElement* pElem, CRenderObject* RESTRICT_P
 {
 	assert(m_usageMode == eUsageModeWriting || m_bAddingClientPolys || nList == EFSLIST_PREPROCESS);  // Adding items only in writing mode
 
-	CShader* RESTRICT_POINTER pShader = (CShader*)shaderItem.m_pShader;
-
 	nBatchFlags |= shaderItem.m_nPreprocessFlags & FSPR_MASK;
 
 	if (passInfo.IsShadowPass() && (nList == EFSLIST_NEAREST_OBJECTS))
@@ -1902,7 +1900,10 @@ void CRenderView::CompileModifiedRenderObjects()
 	uint32 passId = IsShadowGenView() ? 1 : 0;
 	uint32 passMask = BIT(passId);
 
+#if defined(ENABLE_PROFILING_CODE)
 	const auto numObjects = m_permanentRenderObjectsToCompile.size();
+#endif
+
 	const auto nFrameId = gEnv->pRenderer->GetFrameID(false);
 
 	for (const auto &compilationData : m_permanentRenderObjectsToCompile)
@@ -1967,10 +1968,12 @@ void CRenderView::CompileModifiedRenderObjects()
 
 	// Compile all temporary compiled objects
 	m_temporaryCompiledObjects.CoalesceMemory();
+#if defined(ENABLE_PROFILING_CODE)
 	int numTempObjects = m_temporaryCompiledObjects.size();
+#endif
 	for (const auto &t : m_temporaryCompiledObjects)
 	{
-		const bool isCompiled = t.pObject->Compile(eObjCompilationOption_All, t.objFlags, t.elmFlags, t.localAABB, this);
+		t.pObject->Compile(eObjCompilationOption_All, t.objFlags, t.elmFlags, t.localAABB, this);
 		const bool cachedShadowPsosAreValid = gcpRendD3D->GetGraphicsPipeline().GetShadowStage()->CanRenderCachedShadows(t.pObject);
 
 		if (!cachedShadowPsosAreValid && IsShadowGenView())
@@ -2975,8 +2978,7 @@ Matrix44 SRenderViewInfo::GetReprojection() const
 
 	Matrix44_tpl<f64> matViewInv, matProjInv;
 	mathMatrixLookAtInverse(&matViewInv, &matView);
-	const bool bCanInvert = mathMatrixPerspectiveFovInverse(&matProjInv, &matProj);
-	assert(bCanInvert);
+	CRY_VERIFY(mathMatrixPerspectiveFovInverse(&matProjInv, &matProj));
 
 	Matrix44_tpl<f64> matScaleBias1 = Matrix44_tpl<f64>(
 		 0.5,  0.0, 0.0, 0.0,

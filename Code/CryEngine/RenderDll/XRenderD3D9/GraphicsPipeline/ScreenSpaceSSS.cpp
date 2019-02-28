@@ -8,7 +8,6 @@ void CScreenSpaceSSSStage::Execute(CTexture* pIrradianceTex)
 	FUNCTION_PROFILER_RENDERER();
 	PROFILE_LABEL_SCOPE("SSSSS");
 
-	CD3D9Renderer* const __restrict rd = gcpRendD3D;
 	CShader* pShader = CShaderMan::s_shDeferredShading;
 
 	const auto& projMatrix = GetCurrentViewInfo().projMatrix;

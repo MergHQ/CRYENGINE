@@ -187,9 +187,6 @@ bool CD3D9Renderer::EF_PrepareShadowGenForLight(CRenderView* pRenderView, SRende
 
 void CD3D9Renderer::PrepareShadowPool(CRenderView* pRenderView) const
 {
-	CD3D9Renderer* const __restrict rd = gcpRendD3D;
-	int nDLights = pRenderView->GetDynamicLightsCount();
-
 	const auto nRequestedPoolSize = iConsole->GetCVar("e_ShadowsPoolSize")->GetIVal();
 	auto& shadowPoolSize = CDeferredShading::Instance().m_nShadowPoolSize;
 	auto& blockPack = CDeferredShading::Instance().m_blockPack;
@@ -247,7 +244,6 @@ void CD3D9Renderer::PrepareShadowPool(CRenderView* pRenderView) const
 
 bool CD3D9Renderer::PrepareShadowGenForFrustum(CRenderView* pRenderView, ShadowMapFrustum* pCurFrustum, const SRenderLight* pLight, int nLightID, int nLOD)
 {
-	const auto nThreadID = gRenDev->GetMainThreadID();
 	const auto frameID = pRenderView->GetFrameId();
 	const auto nSides = pCurFrustum->GetNumSides();
 	const auto allSidesMask = std::bitset<OMNI_SIDES_NUM>((1 << nSides) - 1);
@@ -323,10 +319,6 @@ bool CD3D9Renderer::PrepareShadowGenForFrustum(CRenderView* pRenderView, ShadowM
 		if ((invalidatedOrOutdatedMask & pCurFrustum->nOmniFrustumMask).none())
 			return true;
 	}
-
-	//////////////////////////////////////////////////////////////////////////
-	//actual view camera position
-	Vec3 vCamOrigin = iSystem->GetViewCamera().GetPosition();
 
 	CCamera tmpCamera;
 
