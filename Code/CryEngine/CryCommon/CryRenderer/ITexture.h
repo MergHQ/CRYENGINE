@@ -1,20 +1,12 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-/*=============================================================================
-   IShader.h : Shaders common interface.
+#pragma once
 
-   Revision history:
-* Created by Anton Kaplanyan
-
-   =============================================================================*/
-
-#ifndef _ITEXTURE_H_
-#define _ITEXTURE_H_
+#include "Tarray.h"
 
 #include <CryCore/CryEnumMacro.h>
 #include <CryMath/Cry_Math.h>
 #include <CryMath/Cry_Color.h>
-#include "Tarray.h"
 
 class CTexture;
 
@@ -671,5 +663,3 @@ struct STexAnim
 	}
 };
 //! \endcond
-
-#endif// _ITEXTURE_H_

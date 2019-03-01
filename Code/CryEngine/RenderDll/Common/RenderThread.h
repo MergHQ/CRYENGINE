@@ -1,15 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-/*=============================================================================
-   RenderThread.h : Render thread commands processing.
-
-   Revision history:
-* Created by Honitch Andrey
-
-   =============================================================================*/
-
-#ifndef __RENDERTHREAD_H__
-#define __RENDERTHREAD_H__
+#pragma once
 
 #include <CryCore/AlignmentTools.h>
 
@@ -24,17 +15,18 @@
 
 //====================================================================
 
+class CDeviceResourceSet;
+class CRenderMesh;
+
+struct IColorGradingControllerInt;
+struct IDynTextureSourceImpl;
 struct IFlashPlayer;
 struct IFlashPlayer_RenderProxy;
 struct IRenderAuxGeomImpl;
 struct SAuxGeomCBRawDataPackagedConst;
-struct IColorGradingControllerInt;
 struct SColorChartLayer;
-class CRenderMesh;
-struct IDynTextureSourceImpl;
 struct SDynTexture;
 struct STexStreamInState;
-class CDeviceResourceSet;
 
 #if CRY_PLATFORM_ORBIS || CRY_PLATFORM_DURANGO || CRY_PLATFORM_MOBILE || CRY_PLATFORM_WINDOWS
 	#define USE_LOCKS_FOR_FLUSH_SYNC
@@ -342,13 +334,13 @@ struct CRY_ALIGN(128) SRenderThread
 	void ProcessCommands();
 	void Process();         // Render thread
 	void ProcessLoading();  // Loading thread
-	int GetThreadList() const;
+	int  GetThreadList() const;
 	bool IsRenderThread(bool bAlwaysCheck = false) const;
 	bool IsRenderLoadingThread(bool bAlwaysCheck = false);
 	bool IsLevelLoadingThread(bool bAlwaysCheck=false) const;
 	bool IsMainThread(bool bAlwaysCheck = false) const;
 	bool IsMultithreaded();
-	int CurThreadFill() const;
+	int  CurThreadFill() const;
 
 	bool RC_CreateDevice();
 	void RC_ResetDevice();
@@ -505,6 +497,3 @@ inline void SRenderThread::ExecuteRenderThreadCommand(RenderThreadCallback&& cal
 	}
 #endif
 }
-
-
-#endif  // __RENDERTHREAD_H__

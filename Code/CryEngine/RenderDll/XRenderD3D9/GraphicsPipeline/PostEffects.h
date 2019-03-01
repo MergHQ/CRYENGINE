@@ -23,7 +23,7 @@ public:
 	void EnableAltBackBuffer(bool enable);
 
 	void         SetRenderView( CRenderView *pRenderView ) { m_pRenderView = pRenderView; }
-	CRenderView* GetRenderView() const { return m_pRenderView; };
+	CRenderView* GetRenderView() const { return m_pRenderView; }
 
 public:
 	uint64              GetShaderRTMask() const;
@@ -112,7 +112,6 @@ private:
 	CFullscreenPass m_passWaterDroplets;
 
 	CTexture*       m_pWaterDropletsBumpTex = nullptr;
-
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -129,7 +128,6 @@ private:
 	CFullscreenPass m_passWaterFlow;
 
 	CTexture*       m_pWaterFlowBumpTex = nullptr;
-
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -142,7 +140,6 @@ public:
 private:
 	CStretchRectPass m_passStrechRect;
 	CFullscreenPass  m_passSharpeningAndChromaticAberration;
-
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -156,7 +153,6 @@ private:
 	CStretchRectPass  m_passStrechRect;
 	CGaussianBlurPass m_passGaussianBlur;
 	CFullscreenPass   m_passBlurring;
-
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -168,7 +164,6 @@ public:
 
 private:
 	CFullscreenPass m_passRadialBlurAndChromaShift;
-
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -181,7 +176,6 @@ public:
 private:
 	CStretchRectPass m_passStrechRect;
 	CFullscreenPass  m_passFlashBang;
-
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -196,7 +190,6 @@ private:
 	CFullscreenPass m_passPostStereo;
 
 	SamplerStateHandle m_samplerLinearMirror = EDefaultSamplerStates::Unspecified;
-
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -213,7 +206,6 @@ private:
 	CFullscreenPass m_passKillCameraFilter;
 
 	CTexture*       m_pNoiseTex = nullptr;
-
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -230,7 +222,6 @@ private:
 	CFullscreenPass m_passScreenBlood;
 
 	CTexture*       m_pWaterDropletsBumpTex = nullptr;
-
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -244,7 +235,6 @@ public:
 
 private:
 	CFullscreenPass m_passScreenFader;
-
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -260,7 +250,6 @@ private:
 private:
 	CStretchRectPass m_passStrechRect;
 	CFullscreenPass  m_passDeferredSilhouettesOptimised;
-
 };
 
 //////////////////////////////////////////////////////////////////////////

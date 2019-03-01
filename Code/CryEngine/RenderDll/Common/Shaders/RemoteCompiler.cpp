@@ -308,7 +308,6 @@ bool CShaderSrv::Send(CRYSOCKET Socket, const char* pBuffer, uint32 Size)  const
 		CrySock::eCrySockError sockErr = CrySock::TranslateSocketError(result);
 		if (sockErr != CrySock::eCSE_NO_ERROR)
 		{
-			;
 			iLog->Log("ERROR:CShaderSrv::Send failed (%d, %d)\n", (int)result, CrySock::TranslateToSocketError(sockErr));
 			return false;
 		}
@@ -549,7 +548,6 @@ EServerError CShaderSrv::Send(std::vector<uint8>& rCompileData) const
 		CrySock::closesocket(Socket);
 		return ESNetworkError;
 	}
-	;
 
 	int Status = WSAEventSelect(Socket, wsaEvent, FD_READ);
 	if (Status == CRY_SOCKET_ERROR)

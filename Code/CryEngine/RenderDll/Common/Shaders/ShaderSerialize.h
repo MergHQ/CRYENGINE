@@ -1,19 +1,10 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-/*=============================================================================
-   ShaderSerialize.h : Shaders serialization declarations.
-
-   Revision history:
-* Created by Honich Andrey
-
-   =============================================================================*/
-
-#ifndef __SHADERSERIALIZE_H__
-#define __SHADERSERIALIZE_H__
+#pragma once
 
 #if defined(SHADERS_SERIALIZING)
 
-	#include "../ResFile.h"
+#include "../ResFile.h"
 
 inline void sAlignData(TArray<byte>& Dst, uint32 align)
 {
@@ -270,9 +261,7 @@ struct SSShader
 		{
 			SwapEndian(m_nMaskGenFX, eBigEndian);
 			SwapEndianEnum(m_eSHDType, eBigEndian);
-			;
 			SwapEndian(m_Flags, eBigEndian);
-			;
 			SwapEndian(m_Flags2, eBigEndian);
 			SwapEndian(m_nMDV, eBigEndian);
 			SwapEndianHandle(m_eVertexFormat, eBigEndian);
@@ -793,7 +782,7 @@ struct SSFXParam
 {
 	int    m_nsName;     // Parameter name
 	uint32 m_nFlags;
-	short  m_nParameters;   // Number of paramters
+	short  m_nParameters;   // Number of parameters
 	short  m_nComps;        // Number of components in single parameter
 	uint32 m_nsAnnotations; // Additional parameters (between <>)
 	uint32 m_nsSemantic;    // Parameter app handling type (after ':')
@@ -801,7 +790,7 @@ struct SSFXParam
 	byte   m_eType;         // EParamType
 	int8   m_nCB;
 
-	//TODO, this struct will array will be bigger on PC, to supprt more shader types
+	//TODO, this struct will array will be bigger on PC, to support more shader types
 	short m_nRegister[3];  // VS, PS, GS
 
 	SSFXParam()
@@ -855,13 +844,13 @@ struct SSFXSampler
 {
 	int    m_nsName;     // Parameter name
 	uint32 m_nFlags;
-	short  m_nArray;        // Number of paramters
+	short  m_nArray;        // Number of parameters
 	uint32 m_nsAnnotations; // Additional parameters (between <>)
 	uint32 m_nsSemantic;    // Parameter app handling type (after ':')
 	uint32 m_nsValues;      // Parameter values (after '=')
 	byte   m_eType;         // EParamType
 
-	//TODO, this struct will array will be bigger on PC, to supprt more shader types
+	//TODO, this struct will array will be bigger on PC, to support more shader types
 	short m_nRegister[3];  // VS, PS, GS
 
 	SSFXSampler()
@@ -912,14 +901,14 @@ struct SSFXTexture
 	int    m_nsName;     // Parameter name
 	int    m_nsNameTexture;
 	uint32 m_nFlags;
-	short  m_nArray;        // Number of paramters
+	short  m_nArray;        // Number of parameters
 	uint32 m_nsAnnotations; // Additional parameters (between <>)
 	uint32 m_nsSemantic;    // Parameter app handling type (after ':')
 	uint32 m_nsValues;      // Parameter values (after '=')
 	bool   m_bSRGBLookup;
 	byte   m_eType;       // EParamType
 
-	//TODO, this struct will array will be bigger on PC, to supprt more shader types
+	//TODO, this struct will array will be bigger on PC, to support more shader types
 	short m_nRegister[3];  // VS, PS, GS
 
 	SSFXTexture()
@@ -1044,5 +1033,3 @@ inline const char* sString(int nOffs, TArray<char>& Strings)
 }
 
 #endif // SHADERS_SERIALIZING
-
-#endif

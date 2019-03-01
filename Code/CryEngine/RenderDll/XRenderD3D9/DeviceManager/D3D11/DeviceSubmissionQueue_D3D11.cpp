@@ -1,13 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-/*=============================================================================
-   DeviceManager.cpp : Device manager
-
-   Revision history:
-* Created by Khonich Andrey
-
-   =============================================================================*/
-
 #include "StdAfx.h"
 #include "../../DriverD3D.h"
 
@@ -353,7 +345,7 @@ void CSubmissionQueue_DX11::BindConstantBuffers(SHADER_TYPE type, CCryDeviceCont
 			break;
 		}
 		#endif
-		;
+
 		const signed mask = iszero(32 - (signed)hbit) - 1;
 		m_CB[type].dirty &= (~((1 << hbit) - (1 << lbit)) & mask);
 	}
@@ -389,7 +381,7 @@ void CSubmissionQueue_DX11::BindConstantBuffers(SHADER_TYPE type, CCryDeviceCont
 				break;
 			}
 			#endif
-			;
+
 			m_CB[type].dirty &= ~(1 << i);
 		}
 	}
@@ -433,7 +425,7 @@ void CSubmissionQueue_DX11::BindOffsetConstantBuffers(SHADER_TYPE type, CCryDevi
 			break;
 		}
 		#endif
-		;
+
 		const signed mask = iszero(32 - (signed)hbit) - 1;
 		m_CB[type].dirty1 &= (~((1 << hbit) - (1 << lbit)) & mask);
 	}
@@ -469,7 +461,7 @@ void CSubmissionQueue_DX11::BindOffsetConstantBuffers(SHADER_TYPE type, CCryDevi
 				break;
 			}
 			#endif
-			;
+
 			m_CB[type].dirty1 &= ~(1 << i);
 		}
 	}
@@ -513,7 +505,7 @@ void CSubmissionQueue_DX11::BindSamplers(SHADER_TYPE type, CCryDeviceContextWrap
 			break;
 		}
 		#endif
-		;
+
 		const signed mask = iszero(32 - (signed)hbit) - 1;
 		m_Samplers[type].dirty &= (~((1 << hbit) - (1 << lbit)) & mask);
 	}
@@ -549,7 +541,7 @@ void CSubmissionQueue_DX11::BindSamplers(SHADER_TYPE type, CCryDeviceContextWrap
 				break;
 			}
 			#endif
-			;
+
 			m_Samplers[type].dirty &= ~(1 << i);
 		}
 	}
