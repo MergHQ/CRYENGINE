@@ -81,12 +81,9 @@ void CResourcePicker::OnValueChanged(const char* newValue)
 		}
 
 		//Run validation check
-		//When we get here we have NO way of knowing what the actual previous value is, the line edit might have been modified with a new (possibly invalid) path
-		//Note that this is currently a hack to avoid problems when newValue and m_previousValue are the same, this can happen after continuous editing or after line change when a value is modified and then set back to the previous one
-		string invalid = "invalid";
-		dll_string validatedPath = m_pSelector->ValidateValue(m_context, newValue, invalid.c_str());
+		SResourceValidationResult validatedPath = m_pSelector->ValidateValue(m_context, newValue, m_previousValue.toStdString().c_str());
 
-		if (invalid == validatedPath.c_str())
+		if (validatedPath.isValid)
 		{
 			CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_WARNING, "Invalid %s: %s", m_context.typeName, newValue);
 			m_pLineEdit->setText(m_previousValue);
@@ -120,10 +117,9 @@ void CResourcePicker::OnValueContinuousChange(const char* newValue)
 	}
 
 	// Run validation check
-	//Note that this is currently a hack to avoid problems when newValue and m_previousValue are the same, this can happen after continuous editing or after line change when a value is modified and then set back to the previous one
-	string invalid = "invalid";
-	dll_string validatedPath = m_pSelector->ValidateValue(m_context, newValue, invalid.c_str());
-	if (invalid == validatedPath.c_str())
+	SResourceValidationResult validatedPath = m_pSelector->ValidateValue(m_context, newValue, m_previousValue.toStdString().c_str());
+
+	if (!validatedPath.isValid)
 	{
 		CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_WARNING, "Invalid %s: %s", m_context.typeName, newValue);
 		m_pLineEdit->setText(m_previousValue);
