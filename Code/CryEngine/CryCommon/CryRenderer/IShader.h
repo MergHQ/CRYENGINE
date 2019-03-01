@@ -1,48 +1,36 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-/*=============================================================================
-   IShader.h : Shaders common interface.
-
-   Revision history:
-* Created by Honich Andrey
-
-   =============================================================================*/
 #pragma once
-
-#include <CryCore/smartptr.h>
-#include <CryRenderer/IFlares.h>
-#include <CryRenderer/VertexFormats.h>
-
-#include <CryMath/Cry_XOptimise.h>
-#include <CryMemory/CrySizer.h>
-
-#include <CryThreading/CryThreadSafeRendererContainer.h>
 
 #include <CryCore/BitMask.h>
 #include <CryCore/Containers/CryArray.h>
+#include <CryCore/smartptr.h>
+#include <CryMath/Cry_XOptimise.h>
+#include <CryMemory/CrySizer.h>
+#include <CryRenderer/IFlares.h>
+#include <CryRenderer/VertexFormats.h>
+#include <CryThreading/CryThreadSafeRendererContainer.h>
 
-struct IMaterial;
+class CMaterial;
+class CREMesh;
 class CRenderElement;
 class CRenderObject;
-class CREMesh;
+class CShader;
+class ITexture;
+
+struct IAnimNode;
+struct IClipVolume;
+struct IMaterial;
 struct IRenderMesh;
 struct IShader;
 struct IVisArea;
-class CShader;
-class CRenderElement;
-class CRenderElement;
-struct STexAnim;
-struct SShaderPass;
-struct SShaderItem;
-class ITexture;
-struct IMaterial;
 struct SParam;
-class CMaterial;
+struct SShaderItem;
+struct SShaderPass;
 struct SShaderSerializeContext;
-struct IAnimNode;
 struct SSkinningData;
 struct SSTexSamplerFX;
-struct IClipVolume;
+struct STexAnim;
 
 namespace JobManager {
 struct SJobState;

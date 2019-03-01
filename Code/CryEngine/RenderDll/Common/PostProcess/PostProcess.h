@@ -1,17 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-/*=============================================================================
-   PostProcess.h : Post processing techniques base interface
-
-   Revision history:
-* 18/06/2005: Re-organized (to minimize code dependencies/less annoying compiling times)
-* 23/02/2005: Re-factored/Converted to CryEngine 2.0
-* Created by Tiago Sousa
-
-   =============================================================================*/
-
-#ifndef _POSTPROCESS_H_
-#define _POSTPROCESS_H_
+#pragma once
 
 struct SRenderViewInfo;
 
@@ -746,5 +735,3 @@ struct SContainerPostEffectOnBeginFrame
 			pObj->OnBeginFrame(localPassInfo);
 	}
 };
-
-#endif

@@ -2668,7 +2668,6 @@ void CREBreakableGlass::BuildFragmentTriangleData(const uint8 fragIndex, uint& v
 	default: // EGlassSurfaceSide_Center
 		surfaceZOffset = m_glassParams.thickness * 0.5f;
 	}
-	;
 
 	// Create vertex data
 	for (int i = 0; i < vertCount; ++i)

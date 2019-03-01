@@ -1097,9 +1097,7 @@ NO_INLINE void sGetRegularKernel(UFloat4* sData, CD3D9Renderer* r)
 		else
 		{
 			sData[nInd / 2].f[2] = regular_kernel[nInd].x * fFilterRange;
-			;
 			sData[nInd / 2].f[3] = regular_kernel[nInd].y * fFilterRange;
-			;
 		}
 	}
 }

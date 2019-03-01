@@ -1,23 +1,21 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
-////////////////////////////////////////////////////////////////////////////
-// -------------------------------------------------------------------------
-//  File name:   IFlares.h
-//  Created:     8/12/2011
-////////////////////////////////////////////////////////////////////////////
+
 #include <CrySandbox/IFuncVariable.h> // <> required for Interfuscator
 #include <CrySystem/XML/IXml.h>       // <> required for Interfuscator
 #include <CryCore/smartptr.h>
 #include <CryCore/Containers/CryArray.h>
 
-struct IShader;
 class CCamera;
+
+struct IShader;
 struct SRenderingPassInfo;
 
 class __MFPA
 {
 };
+
 class __MFPB
 {
 };

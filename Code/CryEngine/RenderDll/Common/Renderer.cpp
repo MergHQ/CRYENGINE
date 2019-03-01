@@ -1890,7 +1890,6 @@ void CRenderer::EF_QueryImpl(ERenderQueryTypes eQuery, void* pInOut0, uint32 nIn
 			for (util::list<CRenderMesh>* iter = CRenderMesh::s_MeshList.next; iter != &CRenderMesh::s_MeshList; iter = iter->next)
 			{
 				ppMeshes[nSize] = iter->item<& CRenderMesh::m_Chain>();
-				;
 				nSize++;
 			}
 		}
@@ -4776,7 +4775,6 @@ CRenderObject* CRenderer::EF_DuplicateRO(CRenderObject* pSrc, const SRenderingPa
 			WriteLock lock(pObjSrc->m_accessLock);
 			pObjNew->m_pNextPermanent = pObjSrc->m_pNextPermanent;
 			pObjSrc->m_pNextPermanent = pObjNew;
-			;
 		}
 
 		return pObjNew;
