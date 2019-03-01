@@ -47,13 +47,20 @@ SResourceSelectionResult SequenceCameraSelector(const SResourceSelectorContext& 
 	return result;
 }
 
-dll_string ValidateSequenceCamera(const SResourceSelectorContext& x, const char* newValue, const char* previousValue, IAnimSequence* pSequence)
+SResourceValidationResult ValidateSequenceCamera(const SResourceSelectorContext& context, const char* newValue, const char* previousValue, IAnimSequence* pSequence)
 {
+	SResourceValidationResult result{ false, previousValue };
+
 	if (!newValue || !*newValue)
-		return dll_string();
+	{
+		result.validatedResource = "";
+		return result;
+	}
 
 	if (!pSequence)
-		return previousValue;
+	{
+		return result;
+	}
 
 	CSequenceCamerasModel* pModel = new CSequenceCamerasModel(*pSequence);
 	int itemCount = pModel->rowCount();
@@ -61,10 +68,13 @@ dll_string ValidateSequenceCamera(const SResourceSelectorContext& x, const char*
 	{
 		QModelIndex index = pModel->index(i, 0);
 		if (pModel->data(index, Qt::DisplayRole).value<QString>() == newValue)
-			return newValue;
+		{
+			result.validatedResource = newValue;
+			result.isValid = true;
+		}
 	}
 
-	return previousValue;
+	return result;
 }
 
 REGISTER_RESOURCE_VALIDATING_SELECTOR("SequenceCamera", SequenceCameraSelector, ValidateSequenceCamera, "")

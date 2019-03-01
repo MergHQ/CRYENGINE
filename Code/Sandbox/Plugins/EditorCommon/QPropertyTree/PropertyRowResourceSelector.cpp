@@ -132,10 +132,10 @@ void PropertyRowResourceSelector::setValue(PropertyTree* tree, const char* str, 
 	CRY_ASSERT(selector_);
 
 	context_.typeName = type_.c_str();
-	QPropertyTree* qtree = static_cast<QPropertyTree*>(tree);
-	context_.parentWidget = qtree;
-	dll_string validatedPath = selector_->ValidateValue(context_, str, value_.c_str());
-	value_ = validatedPath.c_str();
+	QPropertyTree* pPropertyTree = static_cast<QPropertyTree*>(tree);
+	context_.parentWidget = pPropertyTree;
+	SResourceValidationResult validatedPath = selector_->ValidateValue(context_, str, value_.c_str());
+	value_ = validatedPath.validatedResource.c_str();
 	serializer_.setPointer((void*)handle);
 	serializer_.setType(type);
 }

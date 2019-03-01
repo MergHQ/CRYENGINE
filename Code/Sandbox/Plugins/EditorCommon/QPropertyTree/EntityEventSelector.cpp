@@ -57,17 +57,25 @@ SResourceSelectionResult EntityEventSelector(const SResourceSelectorContext& con
 	return result;
 }
 
-dll_string ValidateEntityEvent(const SResourceSelectorContext& x, const char* newValue, const char* previousValue, IEntity* pEntity)
+SResourceValidationResult ValidateEntityEvent(const SResourceSelectorContext& x, const char* newValue, const char* previousValue, IEntity* pEntity)
 {
+	SResourceValidationResult result{ false, previousValue };
 	if (!newValue || !*newValue)
-		return dll_string();
+	{
+		result.validatedResource = "";
+		return result;
+	}
 
 	if (!pEntity)
-		return previousValue;
+	{
+		return result;
+	}
 
 	IEntityClass* pClass = pEntity->GetClass();
 	if (!pClass)
-		return previousValue;
+	{
+		return result;
+	}
 
 	CEntityEventsModel* pModel = new CEntityEventsModel(*pClass);
 	int itemCount = pModel->rowCount();
@@ -75,10 +83,13 @@ dll_string ValidateEntityEvent(const SResourceSelectorContext& x, const char* ne
 	{
 		QModelIndex index = pModel->index(i, 0);
 		if (pModel->data(index, Qt::DisplayRole).value<QString>() == newValue)
-			return newValue;
+		{
+			result.validatedResource = newValue;
+			result.isValid = true;
+		}
 	}
 
-	return previousValue;
+	return result;
 }
 
 REGISTER_RESOURCE_VALIDATING_SELECTOR("EntityEvent", EntityEventSelector, ValidateEntityEvent, "")

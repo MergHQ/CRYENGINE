@@ -47,13 +47,20 @@ SResourceSelectionResult SequenceEventSelector(const SResourceSelectorContext& c
 	return result;
 }
 
-dll_string ValidateSequenceEvent(const SResourceSelectorContext& x, const char* newValue, const char* previousValue, IAnimSequence* pSequence)
+SResourceValidationResult ValidateSequenceEvent(const SResourceSelectorContext& context, const char* newValue, const char* previousValue, IAnimSequence* pSequence)
 {
+	SResourceValidationResult result{ false, previousValue };
+
 	if (!newValue || !*newValue)
-		return dll_string();
+	{
+		result.validatedResource = "";
+		return result;
+	}
 
 	if (!pSequence)
-		return previousValue;
+	{
+		return result;
+	}
 
 	CSequenceEventsModel* pModel = new CSequenceEventsModel(*pSequence);
 	int itemCount = pModel->rowCount();
@@ -61,10 +68,14 @@ dll_string ValidateSequenceEvent(const SResourceSelectorContext& x, const char* 
 	{
 		QModelIndex index = pModel->index(i, 0);
 		if (pModel->data(index, Qt::DisplayRole).value<QString>() == newValue)
-			return newValue;
+		{
+			result.validatedResource = newValue;
+			result.isValid = true;
+			return result;
+		}
 	}
 
-	return previousValue;
+	return result;
 }
 
 REGISTER_RESOURCE_VALIDATING_SELECTOR("SequenceEvent", SequenceEventSelector, ValidateSequenceEvent, "")
