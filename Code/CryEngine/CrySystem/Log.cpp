@@ -347,7 +347,8 @@ CLog::~CLog()
 	assert(m_indentation == 0);
 #endif
 
-	gEnv->pSystem->GetISystemEventDispatcher()->RemoveListener(this);
+	if (gEnv->pSystem->GetISystemEventDispatcher())
+	  gEnv->pSystem->GetISystemEventDispatcher()->RemoveListener(this);
 
 	SAFE_DELETE(m_pLogThread);
 
