@@ -768,8 +768,6 @@ void CVars::Init()
 	              "Turns on on-demand physicalization (0=off, 1=vegetation only[default], 2=brushes only, 3=brushes&vegetation");
 	REGISTER_CVAR(e_OnDemandMaxSize, 20.0f, VF_NULL,
 	              "Specifies the maximum size of vegetation objects that are physicalized on-demand");
-	DefineConstIntCVar(e_Sleep, 0, VF_CHEAT,
-	                   "Sleep X in C3DEngine::Draw");
 	REGISTER_CVAR(e_ObjectLayersActivation, (m_bEditor ? 0 : 1), VF_CHEAT, "Allow game to activate/deactivate object layers");
 	DefineConstIntCVar(e_ObjectLayersActivationPhysics, 1, VF_CHEAT,
 	                   "Allow game to create/free physics of objects: 0: Disable; 1: All; 2: Water only.");
