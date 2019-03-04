@@ -409,6 +409,7 @@ void InitContactSolver(float time_interval)
 	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Physics, 0, "Physics Contact Solver");
 
 	int iCaller = get_iCaller_int();
+	iCaller &= iCaller-MAX_PHYS_THREADS >> 31;
 	if (!g_RBdata[iCaller])
 		g_RBdata[iCaller] = new RBdata;
 	g_nContacts = g_nBodies = 0;
@@ -429,6 +430,7 @@ void CleanupContactSolvers()
 char *AllocSolverTmpBuf(int size)
 {
 	int iCaller = get_iCaller_int();
+	iCaller &= iCaller-MAX_PHYS_THREADS >> 31;
 	if (g_iSolverBufPos+size<sizeof(g_SolverBuf)) {
 		g_iSolverBufPos += size;
 		memset(g_SolverBuf+g_iSolverBufPos-size, 0, size);
@@ -455,6 +457,7 @@ extern RigidBody g_StaticRigidBodies[];
 void RegisterContact(entity_contact *pcontact)
 {
 	int iCaller = get_iCaller_int();
+	iCaller &= iCaller-MAX_PHYS_THREADS >> 31;
 	if (!(pcontact->flags & (contact_maintain_count|contact_rope)))
 		pcontact->pBounceCount = &pcontact->iCount;
 	if ((UINT_PTR)pcontact->pbody[1]-(UINT_PTR)g_StaticRigidBodies<(UINT_PTR)(sizeof(RigidBody)*MAX_PHYS_THREADS))
@@ -463,9 +466,12 @@ void RegisterContact(entity_contact *pcontact)
 	g_nContacts = min(g_nContacts,(int)(CRY_ARRAY_COUNT(g_pContacts))-1);
 }
 
+entity_contact **GetContacts(int &nContacts, int iCaller) { nContacts	= g_nContacts; return g_pContacts; }
+
 void DisablePreCG()
 {
 	int iCaller = get_iCaller_int();
+	iCaller &= iCaller-MAX_PHYS_THREADS >> 31;
 	g_bUsePreCG = false;
 }
 
