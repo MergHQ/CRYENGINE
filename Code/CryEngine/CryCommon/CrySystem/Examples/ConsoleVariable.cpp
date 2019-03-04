@@ -15,7 +15,11 @@ class CMySystem
 
 		// Retrieve an ICVar instance for the variable from the console
 		ICVar* pCVar = gEnv->pConsole->GetCVar("g_mySystem_enable");
-		/* If necessary, utilize pCVar here */
+
+		if (pCVar != nullptr)
+		{
+			/* If necessary, utilize pCVar here */
+		}
 	}
 
 	~CMySystem()
