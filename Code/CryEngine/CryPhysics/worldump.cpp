@@ -2311,7 +2311,6 @@ struct CPhysicalWorldSerializer : CPhysSerializer {
 				pWorld->m_nEntsAlloc += 512;
 				ReallocateList(pWorld->m_pTmpEntList, pWorld->m_nEntsAlloc-512, pWorld->m_nEntsAlloc);
 				ReallocateList(pWorld->m_pTmpEntList1, pWorld->m_nEntsAlloc-512, pWorld->m_nEntsAlloc);
-				ReallocateList(pWorld->m_pTmpEntList2, pWorld->m_nEntsAlloc-512, pWorld->m_nEntsAlloc);
 				ReallocateList(pWorld->m_pGroupMass, 0, pWorld->m_nEntsAlloc);
 				ReallocateList(pWorld->m_pMassList, 0, pWorld->m_nEntsAlloc);
 				ReallocateList(pWorld->m_pGroupIds, 0, pWorld->m_nEntsAlloc);
