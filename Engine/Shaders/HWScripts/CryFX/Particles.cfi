@@ -274,7 +274,7 @@ OutputVS ParticleVS(
 	[branch] if (IN.baseTC.x)
 	{
 		// Octagonal shape
-		static const half2 avOctVerts[] =
+		static const half2 avOctVerts[8] =
 		{
 			half2(0.294h, 0.h),    //0
 			half2(0.706h, 0.h),    //1
@@ -1108,7 +1108,7 @@ OutputParticleVolumeFogVS ParticleVolumeFogVS(in float4 Position: POSITION, app2
 	[branch] if (IN.baseTC.x)
 	{
 		// Octagonal shape
-		static const half2 avOctVerts[] =
+		static const half2 avOctVerts[8] =
 		{
 			half2(0.294h, 0.h),    //0
 			half2(0.706h, 0.h),    //1
