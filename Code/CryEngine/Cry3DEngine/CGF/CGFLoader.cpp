@@ -2153,7 +2153,9 @@ bool CLoaderCGF::ProcessSkinning()
 		//init internal morph-targets
 		MorphTargets* pMorphtarget = pSkinningInfo->m_arrMorphTargets[it];
 		uint32 numMorphVerts = pMorphtarget->m_arrIntMorph.size();
-
+#if !defined(_RELEASE)
+		uint32 intVertexCount = pSkinningInfo->m_arrIntVertices.size();
+#endif
 		for (uint32 i = 0; i < numMorphVerts; i++)
 		{
 			uint32 idx = pMorphtarget->m_arrIntMorph[i].nVertexId;
