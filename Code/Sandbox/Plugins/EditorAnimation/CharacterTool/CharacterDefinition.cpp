@@ -145,7 +145,7 @@ SERIALIZATION_ENUM_END()
 SERIALIZATION_ENUM_BEGIN_NESTED(CharacterAttachment, ProxyPurpose, "Proxy Pupose")
 SERIALIZATION_ENUM(CharacterAttachment::AUXILIARY, "auxiliary", "Auxiliary")
 SERIALIZATION_ENUM(CharacterAttachment::CLOTH, "cloth", "Cloth")
-SERIALIZATION_ENUM(CharacterAttachment::RAGDOLL, "ragdoll", "Rag Doll")
+SERIALIZATION_ENUM(CharacterAttachment::RAGDOLL, "ragdoll", "Main Physics")
 SERIALIZATION_ENUM_END()
 
 SERIALIZATION_ENUM_BEGIN_NESTED(SJointPhysics, EType, "JointPhysics Type")
