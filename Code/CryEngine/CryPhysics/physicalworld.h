@@ -437,6 +437,7 @@ public:
 		int iChunk; for(iChunk=0; iChunk<m_nPlaceholderChunks && (unsigned int)(pent-m_pPlaceholders[iChunk])>=(unsigned int)PLACEHOLDER_CHUNK_SZ; iChunk++);
 		return iChunk<m_nPlaceholderChunks ? (iChunk<<PLACEHOLDER_CHUNK_SZLG2 | (int)(pent-m_pPlaceholders[iChunk]))+1 : 0;
 	}
+	virtual IPhysicalEntity* ClonePhysicalEntity(IPhysicalEntity *src, bool regInWorld=true, int newId=-1);
 
 	virtual void TimeStep(float time_interval, int flags=ent_all|ent_deleted);
 	virtual float GetPhysicsTime() { return m_timePhysics; }

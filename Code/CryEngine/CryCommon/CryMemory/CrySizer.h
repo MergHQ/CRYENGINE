@@ -372,6 +372,8 @@ public:
 		return AddObject(&rObject, sizeof(T));
 	}
 
+	virtual int GetMode() const { return 0; }
+
 	//! Used to collect the assets needed for streaming and to gather statistics always returns a valid reference.
 	virtual IResourceCollector* GetResourceCollector() = 0;
 	virtual void                SetResourceCollector(IResourceCollector* pColl) = 0;

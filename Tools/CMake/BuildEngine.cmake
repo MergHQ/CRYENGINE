@@ -581,3 +581,6 @@ if (OPTION_ENGINE OR OPTION_SHADERCACHEGEN)
 	add_subdirectory ("Code/Libs/lzss")
 	add_subdirectory ("Code/Libs/tiff")	
 endif()
+
+add_subdirectory ("Code/Libs/qpOASES")
+

@@ -1247,6 +1247,8 @@ IPhysicalEntity* CPhysicalWorld::CreatePhysicalEntity(pe_type type, float lifeTi
 	res->m_flags |= 0x80000000u;
 	if (params)
 		res->SetParams(params, iForeignData==0x5AFE || get_iCaller()<MAX_PHYS_THREADS);
+	if (iForeignData=='nreg')
+		return res;
 
 	int isPOD = IsPODThread(this);
 	if (!m_lockStep && (isPOD || !m_lockTPR) && lifeTime==0) {
