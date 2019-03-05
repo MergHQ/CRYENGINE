@@ -17,12 +17,12 @@
 #ifdef _DEBUG
 	#define VK_LOG(cond, ...) \
 		do { if (cond) CryLog("Vulkan Log: ", __VA_ARGS__); } while (false)
-	#define VK_WARNING(cond, ...) \
-		do { if (!(cond)) { CryLog("Vulkan Warning: ", __VA_ARGS__); } } while (false)
+	#define VK_WARNING(...) \
+		do { { CryLog("Vulkan Warning: ", __VA_ARGS__); } } while (false)
 	#define VK_ASSERT_DEBUG(cond, ...) VK_ASSERT(cond, __VA_ARGS__)
 #else
 	#define VK_LOG(cond, ...)          ((void)0)
-	#define VK_WARNING(cond, ...)      ((void)0)
+	#define VK_WARNING(...)            ((void)0)
 	#define VK_ASSERT_DEBUG(cond, ...) ((void)0)
 #endif
 
