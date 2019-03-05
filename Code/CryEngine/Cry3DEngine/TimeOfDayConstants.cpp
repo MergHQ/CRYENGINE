@@ -139,6 +139,25 @@ void CloudShadowsImpl::Serialize(Serialization::IArchive& ar)
 	ar(invert, "Invert", "Invert");
 }
 
+//////////////////////////////////////////////////////////////////////////
+ColorGradingImpl::ColorGradingImpl()
+{
+	ResetVariables();
+}
+
+void ColorGradingImpl::ResetVariables()
+{
+	useTexture = false;
+	texture = "";
+}
+
+void ColorGradingImpl::Serialize(Serialization::IArchive& ar)
+{
+	ar(useTexture, "UseStaticTexture", "Use Static Texture");
+	ar(Serialization::TextureFilename(texture), "Texture", useTexture ? "Texture" : "!Texture");
+}
+
+//////////////////////////////////////////////////////////////////////////
 TotalIllumImpl::TotalIllumImpl()
 {
 	ResetVariables();
@@ -274,6 +293,7 @@ void STimeOfDayConstants::Reset()
 	moon.ResetVariables();
 	wind.ResetVariables();
 	cloudShadows.ResetVariables();
+	colorGrading.ResetVariables();
 	totalIllumination.ResetVariables();
 	totalIlluminationAdvanced.ResetVariables();
 }
@@ -284,6 +304,7 @@ void STimeOfDayConstants::Serialize(Serialization::IArchive& ar)
 	ar(moon, "Moon", "Moon");
 	ar(wind, "Wind", "Wind");
 	ar(cloudShadows, "CloudShadows", "Cloud Shadows");
+	ar(colorGrading, "ColorGrading", "Color Grading");
 	ar(totalIllumination, "TotalIllumination", "Total Illumination");
 	ar(totalIlluminationAdvanced, "TotalIlluminationAdv", "Total Illumination Advanced");
 }
@@ -306,6 +327,11 @@ ITimeOfDay::Wind& STimeOfDayConstants::GetWindParams()
 ITimeOfDay::CloudShadows& STimeOfDayConstants::GetCloudShadowsParams()
 {
 	return cloudShadows;
+}
+
+ITimeOfDay::ColorGrading& STimeOfDayConstants::GetColorGradingParams()
+{
+	return colorGrading;
 }
 
 ITimeOfDay::TotalIllum& STimeOfDayConstants::GetTotalIlluminationParams()

@@ -7,8 +7,6 @@ sources_platform(ALL)
 add_sources("CryFlowGraph_flowsystem_nodes_uber.cpp"
 	SOURCE_GROUP "Flow System\\\\Nodes"
 		"FlowSystem/Nodes/FlowVRNodes.cpp"
-		"FlowSystem/Nodes/ColorGradientNode.cpp"
-		"FlowSystem/Nodes/ColorGradientNode.h"
 		"FlowSystem/Nodes/ComputeLightingNode.cpp"
 		"FlowSystem/Nodes/EntitiesInRangeNode.cpp"
 		"FlowSystem/Nodes/FlowCVarsNode.cpp"

@@ -261,6 +261,12 @@ struct ITimeOfDay
 		bool   invert;
 	};
 
+	struct ColorGrading
+	{
+		bool   useTexture;
+		string texture;
+	};
+	
 	struct TotalIllum
 	{
 		bool  active;
@@ -345,6 +351,7 @@ struct ITimeOfDay
 		virtual Moon&          GetMoonParams() = 0;
 		virtual Wind&          GetWindParams() = 0;
 		virtual CloudShadows&  GetCloudShadowsParams() = 0;
+		virtual ColorGrading&  GetColorGradingParams() = 0;
 		virtual TotalIllum&    GetTotalIlluminationParams() = 0;
 		virtual TotalIllumAdv& GetTotalIlluminationAdvParams() = 0;
 

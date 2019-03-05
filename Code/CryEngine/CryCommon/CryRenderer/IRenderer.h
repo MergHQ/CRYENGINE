@@ -1377,7 +1377,6 @@ struct IRenderer//: public IRendererCallbackServer
 	//! Interface for renderer side SVO.
 	virtual ISvoRenderer*            GetISvoRenderer() { return 0; }
 
-	virtual IColorGradingController* GetIColorGradingController() = 0;
 	virtual IStereoRenderer*         GetIStereoRenderer() const = 0;
 
 	virtual void                     Graph(byte* g, int x, int y, int wdt, int hgt, int nC, int type, const char* text, ColorF& color, float fScale) = 0;

@@ -26,31 +26,31 @@
 struct SPixFormat;
 struct SGraphicsPipelinePassContext;
 
-#include "D3DRenderAuxGeom.h"
-#include "D3DColorGradingController.h"
-#include "D3DStereo.h"
-#include "D3DMultiResRendering.h"
-
 #include "D3DDeferredShading.h"
+#include "D3DMultiResRendering.h"
+#include "D3DRenderAuxGeom.h"
+#include "D3DStereo.h"
+#include "DeviceInfo.h"
 #include "PipelineProfiler.h"
+
 #if defined(DX11_ALLOW_D3D_DEBUG_RUNTIME)
 	#include "D3DDebug.h"
 #endif
-#include "DeviceInfo.h"
-#include <memory>
+
+#include "Common/DeferredRenderUtils.h"
+#include "Common/ElementPool.h"
+#include "Common/OcclQuery.h"
+#include "Common/RenderOutput.h"
 #include "Common/RenderView.h"
-#include "Common/OcclQuery.h"               // COcclusionQuery
-#include "Common/DeferredRenderUtils.h"     // t_arrDeferredMeshIndBuff
-#include "Common/Textures/Texture.h"        // CTexture
 #include "Common/ShadowUtils.h"
+#include "Common/Textures/Texture.h"
 
 #if RENDERER_SUPPORT_SCALEFORM
 	#include "../Scaleform/ScaleformPlayback.h"
 	#include "../Scaleform/ScaleformRender.h"
 #endif
 
-#include "Common/RenderOutput.h"
-#include <Common/ElementPool.h>
+#include <memory>
 
 //=====================================================
 
@@ -155,9 +155,7 @@ public:
 	virtual void     LockParticleVideoMemory(int frameId) override;
 	virtual void     UnLockParticleVideoMemory(int frameId) override;
 	virtual void     ActivateLayer(const char* pLayerName, bool activate) override;
-
-	void             SetDefaultTexParams(bool bUseMips, bool bRepeat, bool bLoad);
-
+	
 public:
 #ifdef USE_PIX_DURANGO
 	ILINE ID3DUserDefinedAnnotation* GetPixProfiler() { return m_pPixPerf; }
@@ -671,9 +669,6 @@ private:
 #endif
 
 public:
-	
-	virtual IColorGradingController* GetIColorGradingController() override;
-
 	virtual IStereoRenderer*         GetIStereoRenderer() const override;
 
 	virtual void                     StartLoadtimeFlashPlayback(ILoadtimeCallback* pCallback) override;
@@ -794,8 +789,6 @@ public:
 
 	CCryNameTSCRC               m_LevelShaderCacheMissIcon;
 
-	CColorGradingController*    m_pColorGradingControllerD3D;
-
 	CRenderPipelineProfiler*    m_pPipelineProfiler;
 
 #ifdef SHADER_ASYNC_COMPILATION
@@ -895,7 +888,7 @@ private:
 	// fields to access the D3D Driver: Device, Context and other related objects
 	// all should be accessed through the provided getters:
 	// GetDevice(), GetDeviceContext() and so on
-	// To access the device without synchronization (which happens in presentce of a asynchrounous device)
+	// To access the device without synchronization (which happens in presence of a asynchronous device)
 	// please use GetDevice_Unsynchronized(), GetDeviceContext_Unsynchronized() etc
 	CCryDeviceWrapper        m_DeviceWrapper;
 	CCryDeviceContextWrapper m_DeviceContextWrapper;

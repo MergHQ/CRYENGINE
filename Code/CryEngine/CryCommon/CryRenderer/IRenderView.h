@@ -16,7 +16,6 @@ struct SRenderViewport;
 // It could be an offscreen target or a back buffer
 struct IRenderViewOutput
 {
-
 };
 
 //! Describes a 3D Polygon to be rendered as a 3D Object and added to a Render View
@@ -68,6 +67,24 @@ struct SRenderGlobalFogDescription
 	ColorF color = {};
 };
 
+namespace RD
+{
+	struct SColorGradingInfo
+	{
+		struct SChart
+		{
+			int   texID;
+			float blendAmount;
+		};
+		std::vector<SChart> charts;
+	};
+}
+
+struct SRendererData
+{
+	RD::SColorGradingInfo colorGrading;
+};
+
 // Interface to the render view.
 struct IRenderView : public CMultiThreadRefCount
 {
@@ -106,8 +123,8 @@ struct IRenderView : public CMultiThreadRefCount
 	virtual void   SetShaderRenderingFlags(uint32 nFlags) = 0;
 	virtual uint32 GetShaderRenderingFlags() const = 0;
 
-	virtual void       SetZoomFactor(float zFactor) = 0;
-	virtual float      GetZoomFactor() const = 0;
+	virtual void   SetZoomFactor(float zFactor) = 0;
+	virtual float  GetZoomFactor() const = 0;
 
 	virtual void   SetCameras(const CCamera* pCameras, int cameraCount) = 0;
 	virtual void   SetPreviousFrameCameras(const CCamera* pCameras, int cameraCount) = 0;
@@ -140,6 +157,10 @@ struct IRenderView : public CMultiThreadRefCount
 	virtual RenderLightIndex GetLightsCount(eDeferredLightType lightType) const = 0;
 	virtual SRenderLight&    GetLight(eDeferredLightType lightType, RenderLightIndex nLightId) = 0;
 	//////////////////////////////////////////////////////////////////////////
+
+	//////////////////////////////////////////////////////////////////////////
+	virtual const SRendererData& GetRendererData() const = 0;
+	virtual SRendererData& GetRendererData() = 0;
 
 	//////////////////////////////////////////////////////////////////////////
 	// Interface for 3d engine
@@ -181,10 +202,10 @@ struct IRenderView : public CMultiThreadRefCount
 	virtual ShadowMapFrustum* GetShadowFrustumOwner() const = 0;
 
 	//! Set associated shadow frustum
-	virtual void              SetShadowFrustumOwner(ShadowMapFrustum* pOwner) = 0;
+	virtual void                                                  SetShadowFrustumOwner(ShadowMapFrustum* pOwner) = 0;
 
 	virtual void                                                  InjectAuxiliaryStatObject(SRendParams rp, IStatObj* pStatObj) = 0;
-	virtual const std::vector<std::pair<SRendParams, IStatObj*>> &GetAuxiliaryStatObjects() const = 0;
+	virtual const std::vector<std::pair<SRendParams, IStatObj*>>& GetAuxiliaryStatObjects() const = 0;
 };
 
 typedef _smart_ptr<IRenderView> IRenderViewPtr;

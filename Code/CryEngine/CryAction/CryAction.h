@@ -73,7 +73,6 @@ class CSharedParamsManager;
 struct ICooperativeAnimationManager;
 struct IGameSessionHandler;
 class CRuntimeAreaManager;
-class CColorGradientManager;
 
 struct CAnimationGraphCVars;
 struct IRealtimeRemoteUpdate;
@@ -296,7 +295,6 @@ public:
 	CPersistantDebug*           GetPersistantDebug()       { return m_pPersistantDebug; }
 	virtual IPersistantDebug*   GetIPersistantDebug();
 	virtual IGameStatsConfig*   GetIGameStatsConfig();
-	CColorGradientManager*      GetColorGradientManager() const { return m_pColorGradientManager; }
 
 	virtual void                AddBreakEventListener(IBreakEventListener* pListener);
 	virtual void                RemoveBreakEventListener(IBreakEventListener* pListener);
@@ -561,8 +559,6 @@ private:
 
 	CNetworkCVars*                m_pNetworkCVars;
 	CCryActionCVars*              m_pCryActionCVars;
-
-	CColorGradientManager*        m_pColorGradientManager;
 
 	//-- Network Stall ticker thread
 #ifdef USE_NETWORK_STALL_TICKER_THREAD
