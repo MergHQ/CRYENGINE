@@ -1833,6 +1833,8 @@ void C3DEngine::RenderScene(const int nRenderFlags, const SRenderingPassInfo& pa
 		passInfo.GetIRenderView()->SetGlobalFog(fog);
 	}
 
+	m_colorGradingCtrl.UpdateRenderView(*passInfo.GetIRenderView(), gEnv->pTimer->GetFrameTime());
+
 	if (passInfo.IsGeneralPass())
 		SetupClearColor(passInfo);
 
@@ -3443,7 +3445,7 @@ void C3DEngine::ScreenShotHighRes(CStitchedImage* pStitchedImage, const int nRen
 
 	GetRenderer()->EndFrame();
 
-	// Check output format and adjust acordingly
+	// Check output format and adjust accordingly
 	const char* szExtension = GetCVars()->e_ScreenShotFileFormat->GetString();
 	EReadTextureFormat dstFormat = (stricmp(szExtension, "tga") == 0) ? EReadTextureFormat::BGR8 : EReadTextureFormat::RGB8;
 	

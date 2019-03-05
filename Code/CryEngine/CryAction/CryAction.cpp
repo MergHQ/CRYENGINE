@@ -1,17 +1,4 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
-
-/*************************************************************************
-   -------------------------------------------------------------------------
-   $Id$
-   $DateTime$
-
-   -------------------------------------------------------------------------
-   History:
-   - 20:7:2004   11:07 : Created by Marco Koegler
-   - 3:8:2004		16:00 : Taken-ver by Marcio Martins
-   - 2005              : Changed by everyone
-
-*************************************************************************/
 #include "StdAfx.h"
 #include "CryAction.h"
 
@@ -55,6 +42,7 @@
 #include <CrySystem/CryVersion.h>
 #include <CrySystem/Profilers/IStatoscope.h>
 #include <CrySystem/IStreamEngine.h>
+#include <Cry3DEngine/IColorGradingCtrl.h>
 #include <Cry3DEngine/ITimeOfDay.h>
 #include <CryGame/IGameStartup.h>
 
@@ -106,7 +94,6 @@
 #include "VehicleSystem.h"
 #include "SharedParams/SharedParamsManager.h"
 #include "ActionMapManager.h"
-#include "ColorGradientManager.h"
 
 #include "Statistics/GameStatistics.h"
 #include "UIDraw/UIDraw.h"
@@ -323,7 +310,6 @@ CCryAction::CCryAction(SSystemInitParams& initParams)
 	m_pScriptBindMFX(0),
 	m_pScriptBindUIAction(0),
 	m_pPersistantDebug(0),
-	m_pColorGradientManager(nullptr),
 #ifdef USE_NETWORK_STALL_TICKER_THREAD
 	m_pNetworkStallTickerThread(nullptr),
 	m_networkStallTickerReferences(0),
@@ -2017,11 +2003,6 @@ bool CCryAction::Initialize(SSystemInitParams& startupParams)
 	m_pEntityContainerMgr = new CEntityContainerMgr();
 	m_pEntityAttachmentExNodeRegistry = new CEntityAttachmentExNodeRegistry();
 	
-	if (gEnv->pRenderer)
-	{
-		m_pColorGradientManager = new CColorGradientManager();
-	}
-
 	InitGame(startupParams);
 
 	if (m_pVehicleSystem)
@@ -2479,8 +2460,6 @@ void CCryAction::ShutDown()
 	ReleaseScriptBinds();
 	ReleaseCVars();
 
-	SAFE_DELETE(m_pColorGradientManager);
-
 	SAFE_DELETE(m_pDevMode);
 	SAFE_DELETE(m_pCallbackTimer);
 
@@ -2674,11 +2653,6 @@ bool CCryAction::PostSystemUpdate(bool haveFocus, CEnumFlags<ESystemUpdateFlags>
 
 		if (m_pCooperativeAnimationManager)
 			m_pCooperativeAnimationManager->Update(frameTime);
-	}
-
-	if (gEnv->pRenderer)
-	{
-		m_pColorGradientManager->UpdateForThisFrame(gEnv->pTimer->GetFrameTime());
 	}
 
 	CRConServerListener::GetSingleton().Update();
@@ -4801,9 +4775,9 @@ void CCryAction::OnActionEvent(const SActionEvent& ev)
 
 	case eAE_unloadLevel:
 		{
-			if (gEnv->pRenderer)
+			if (gEnv->p3DEngine)
 			{
-				m_pColorGradientManager->Reset();
+				gEnv->p3DEngine->GetColorGradingCtrl()->SetColorGradingLut("", 0);
 			}
 		}
 		break;

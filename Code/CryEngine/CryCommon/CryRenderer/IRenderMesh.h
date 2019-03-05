@@ -7,21 +7,21 @@
 #include <CryCore/Containers/CryArray.h>
 
 class CMesh;
-struct CRenderChunk;
 class CRenderObject;
-struct SSkinningData;
+
+struct CRenderChunk;
+struct GeomInfo;
+struct IIndexedMesh;
 struct IMaterial;
 struct IShader;
-struct IIndexedMesh;
-struct SMRendTexVert;
-struct UCol;
-struct GeomInfo;
-
-struct TFace;
 struct SMeshSubset;
+struct SMRendTexVert;
 struct SRenderingPassInfo;
 struct SRenderObjectModifier;
-struct CRenderChunk;
+struct SSkinningData;
+struct TFace;
+struct UCol;
+
 typedef DynArray<CRenderChunk> TRenderChunkArray;
 
 //! Keep this in sync with BUFFER_USAGE hints DevBuffer.h.

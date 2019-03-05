@@ -141,13 +141,6 @@ class CStatsEntityIdRegistry;
 class CMovingPlatformMgr;
 class CGamePhysicsSettings;
 
-namespace Graphics
-{
-class CColorGradientManager;
-//	class CScreenFader;
-//	class CPostEffectBlender;
-}
-
 enum AsyncState
 {
 	AsyncFailed = 0,

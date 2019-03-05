@@ -19,27 +19,19 @@ class CRenderView;
 class ICrySizer;
 class IOpticsManager;
 
-struct AnimTexInfo;
 struct bop_meshupdate;
 struct CryEngineDecalInfo;
-struct CVars;
 struct IBreezeGenerator;
 struct IBSPTree3D;
 struct ICharacterInstance;
+struct IColorGradingCtrl;
 struct IDeferredPhysicsEventManager;
 struct IGeometry;
-struct IMaterial;
 struct IParticleManager;
 struct IRenderView;
 struct IShadowCaster;
-struct ISplineInterpolator;
 struct ISurfaceType;
-struct ISystem;
 struct ITimeOfDay;
-struct pe_params_particle;
-struct RenderLMData;
-struct SpawnParams;
-struct SRenderNodeTempData;
 
 enum EERType;
 
@@ -2098,6 +2090,8 @@ struct I3DEngine : public IProcess
 
 	//! \return TOD interface.
 	virtual ITimeOfDay* GetTimeOfDay() = 0;
+
+	virtual IColorGradingCtrl* GetColorGradingCtrl() = 0;
 
 	//////////////////////////////////////////////////////////////////////////
 	// Sky

@@ -795,7 +795,6 @@ void CD3D9Renderer::RT_ShutDown(uint32 nFlags)
 	CVrProjectionManager::Reset();
 
 	CREBreakableGlassBuffer::RT_ReleaseInstance();
-	SAFE_DELETE(m_pColorGradingControllerD3D);
 	SAFE_DELETE(m_pPostProcessMgr);
 	SAFE_DELETE(m_pWaterSimMgr);
 	SAFE_DELETE(m_pStereoRenderer);
@@ -1293,42 +1292,6 @@ const char* sGetSQuality(const char* szName)
 	}
 }
 
-static void Command_ColorGradingChartImage(IConsoleCmdArgs* pCmd)
-{
-	CColorGradingController* pCtrl = gcpRendD3D->m_pColorGradingControllerD3D;
-	if (pCmd && pCtrl)
-	{
-		const int numArgs = pCmd->GetArgCount();
-		if (numArgs == 1)
-		{
-			const CTexture* pChart = pCtrl->GetStaticColorChart();
-			if (pChart)
-				iLog->Log("current static chart is \"%s\"", pChart->GetName());
-			else
-				iLog->Log("no static chart loaded");
-		}
-		else if (numArgs == 2)
-		{
-			const char* pArg = pCmd->GetArg(1);
-			if (pArg && pArg[0])
-			{
-				if (pArg[0] == '0' && !pArg[1])
-				{
-					pCtrl->LoadStaticColorChart(0);
-					iLog->Log("static chart reset");
-				}
-				else
-				{
-					if (pCtrl->LoadStaticColorChart(pArg))
-						iLog->Log("\"%s\" loaded successfully", pArg);
-					else
-						iLog->Log("failed to load \"%s\"", pArg);
-				}
-			}
-		}
-	}
-}
-
 CRY_HWND CD3D9Renderer::Init(int x, int y, int width, int height, unsigned int colorBits, int depthBits, int stencilBits, CRY_HWND Glhwnd, bool bReInit, bool bShaderCacheGen)
 {
 	LOADING_TIME_PROFILE_SECTION;
@@ -1585,13 +1548,6 @@ iLog->Log(" %s shader quality: %s", # name, sGetSQuality("q_Shader" # name)); } 
 	                 "If called with a parameter it sets the quality of all q_.. variables\n"
 	                 "otherwise it prints their current state\n"
 	                 "Usage: q_Quality [0=low/1=med/2=high/3=very high]");
-
-	REGISTER_COMMAND("r_ColorGradingChartImage", &Command_ColorGradingChartImage, 0,
-	                 "If called with a parameter it loads a color chart image. This image will overwrite\n"
-	                 " the dynamic color chart blending result and be used during post processing instead.\n"
-	                 "If called with no parameter it displays the name of the previously loaded chart.\n"
-	                 "To reset a previously loaded chart call r_ColorGradingChartImage 0.\n"
-	                 "Usage: r_ColorGradingChartImage [path of color chart image/reset]");
 
 #if defined(DURANGO_VSGD_CAP)
 	REGISTER_COMMAND("GPUCapture", &GPUCapture, VF_NULL,

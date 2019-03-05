@@ -21,7 +21,6 @@
 #include "MaterialEffects/MaterialEffects.h"
 #include "Network/GameContext.h"
 #include "Network/GameServerNub.h"
-#include "ColorGradientManager.h"
 
 #ifdef USE_COPYPROTECTION
 	#include "CopyProtection.h"
@@ -45,7 +44,6 @@ static const char* SAVEGAME_GAMETOKEN_SECTION = "GameTokens";
 static const char* SAVEGAME_TERRAINSTATE_SECTION = "TerrainState";
 static const char* SAVEGAME_TIMER_SECTION = "Timer";
 static const char* SAVEGAME_FLOWSYSTEM_SECTION = "FlowSystem";
-static const char* SAVEGAME_COLORGRADIANTMANAGER_SECTION = "ColorGradientManager";
 static const char* SAVEGAME_DIALOGSYSTEM_SECTION = "DialogSystem";
 static const char* SAVEGAME_LTLINVENTORY_SECTION = "LTLInventory";
 static const char* SAVEGAME_VIEWSYSTEM_SECTION = "ViewSystem";
@@ -1058,11 +1056,6 @@ void CGameSerialize::SaveEngineSystems(SSaveEnvironment& savEnv)
 		savEnv.m_pCryAction->GetIFlowSystem()->Serialize(savEnv.m_pSaveGame->AddSection(SAVEGAME_FLOWSYSTEM_SECTION));
 	savEnv.m_checkpoint.Check("FlowSystem");
 
-	//ColorGradientManager data
-	if (savEnv.m_pCryAction->GetColorGradientManager())
-		savEnv.m_pCryAction->GetColorGradientManager()->Serialize(savEnv.m_pSaveGame->AddSection(SAVEGAME_COLORGRADIANTMANAGER_SECTION));
-	savEnv.m_checkpoint.Check("ColorGradientManager");
-
 	CMaterialEffects* pMatFX = static_cast<CMaterialEffects*>(savEnv.m_pCryAction->GetIMaterialEffects());
 	if (pMatFX)
 		pMatFX->Serialize(savEnv.m_pSaveGame->AddSection(SAVEGAME_MATERIALEFFECTS_SECTION));
@@ -1457,17 +1450,6 @@ void CGameSerialize::LoadEngineSystems(SLoadEnvironment& loadEnv)
 			GameWarning("Unable to open section %s", SAVEGAME_FLOWSYSTEM_SECTION);
 	}
 	loadEnv.m_checkpoint.Check("FlowSystem");
-
-	// Load ColorGradientManager data
-	if (loadEnv.m_pCryAction->GetColorGradientManager())
-	{
-		loadEnv.m_pSer = loadEnv.m_pLoadGame->GetSection(SAVEGAME_COLORGRADIANTMANAGER_SECTION);
-		if (loadEnv.m_pSer)
-			loadEnv.m_pCryAction->GetColorGradientManager()->Serialize(*loadEnv.m_pSer);
-		else
-			GameWarning("Unable to open section %s", SAVEGAME_COLORGRADIANTMANAGER_SECTION);
-	}
-	loadEnv.m_checkpoint.Check("ColorGradientManager");
 
 	// Dialog System Reset & Serialization
 	CDialogSystem* pDS = loadEnv.m_pCryAction->GetDialogSystem();

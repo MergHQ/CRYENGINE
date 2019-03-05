@@ -5,7 +5,6 @@
 #include <CryGame/IGameFramework.h>
 #include <CryAudio/IAudioSystem.h>
 #include <CryParticleSystem/IParticlesPfx2.h>
-
 #include <CryRenderer/IStereoRenderer.h>
 
 #include "3dEngine.h"
@@ -537,6 +536,8 @@ bool C3DEngine::Init()
 		frameLodInfo.nMaxLod = 0;
 	}
 	SetFrameLodInfo(frameLodInfo);
+
+	m_colorGradingCtrl.Init();
 
 	return  (true);
 }
@@ -2748,7 +2749,7 @@ void C3DEngine::GetHDRSetupParams(Vec4 pParams[5]) const
 	pParams[2] = Vec4(m_vColorBalance, m_fHDRSaturation);
 	pParams[3] = Vec4(m_vHDREyeAdaptation, 1.0f);
 	pParams[4] = Vec4(m_vHDREyeAdaptationLegacy, 1.0f);
-};
+}
 
 void C3DEngine::GetOceanAnimationParams(Vec4& pParams0, Vec4& pParams1) const
 {
@@ -4134,6 +4135,7 @@ void C3DEngine::SerializeState(TSerialize ser)
 
 	m_pPartManager->Serialize(ser);
 	m_pTimeOfDay->Serialize(ser);
+	m_colorGradingCtrl.Serialize(ser);
 }
 
 void C3DEngine::PostSerialize(bool bReading)

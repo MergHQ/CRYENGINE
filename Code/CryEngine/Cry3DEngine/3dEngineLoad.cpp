@@ -2,36 +2,36 @@
 
 #include "StdAfx.h"
 
-#include "3dEngine.h"
 #include "3dEngineLoad.h"
-#include "terrain.h"
-#include "ObjMan.h"
-#include "VisAreas.h"
-#include <CryParticleSystem/IParticles.h>
-#include "ParticleSystem/ParticleSystem.h"
-#include "DecalManager.h"
-#include "Vegetation.h"
-#include "Brush.h"
-#include "MatMan.h"
-#include "IndexedMesh.h"
-#include "SkyLightManager.h"
-#include "ObjectsTree.h"
-#include "LightEntity.h"
-#include "WaterWaveRenderNode.h"
-#include "RoadRenderNode.h"
-#include "PhysCallbacks.h"
-#include "TimeOfDay.h"
-#include "LightEntity.h"
-#include "RenderMeshMerger.h"
-#include "FogVolumeRenderNode.h"
-#include "RopeRenderNode.h"
-#include "MergedMeshRenderNode.h"
+#include "3dEngine.h"
 #include "BreezeGenerator.h"
-#include <CryAnimation/ICryAnimation.h>
-#include <CryAction/IMaterialEffects.h>
-#include <CryEntitySystem/IEntitySystem.h>
+#include "Brush.h"
 #include "ClipVolumeManager.h"
+#include "DecalManager.h"
+#include "FogVolumeRenderNode.h"
+#include "IndexedMesh.h"
+#include "LightEntity.h"
+#include "MatMan.h"
+#include "MergedMeshRenderNode.h"
+#include "ObjectsTree.h"
+#include "ObjMan.h"
+#include "ParticleSystem/ParticleSystem.h"
+#include "PhysCallbacks.h"
+#include "RenderMeshMerger.h"
+#include "RoadRenderNode.h"
+#include "RopeRenderNode.h"
+#include "SkyLightManager.h"
 #include "StatObjFoliage.h"
+#include "terrain.h"
+#include "TimeOfDay.h"
+#include "Vegetation.h"
+#include "VisAreas.h"
+#include "WaterWaveRenderNode.h"
+
+#include <CryAction/IMaterialEffects.h>
+#include <CryAnimation/ICryAnimation.h>
+#include <CryEntitySystem/IEntitySystem.h>
+#include <CryParticleSystem/IParticles.h>
 
 #if defined(FEATURE_SVO_GI)
 	#include "SVO/SceneTreeManager.h"
@@ -393,7 +393,7 @@ void C3DEngine::UnloadLevel()
 
 	if (m_pTerrain)
 	{
-		CryComment("Deleting Terain");
+		CryComment("Deleting Terrain");
 		SAFE_DELETE(m_pTerrain);
 		CryComment("done");
 	}
@@ -515,6 +515,7 @@ void C3DEngine::UnloadLevel()
 	assert(m_pObjectsTree == NULL);
 
 	COctreeNode::StaticReset();
+	m_colorGradingCtrl.Reset();
 
 	// Now that all meshes and objects are deleted we final release permanent renderobjects
 	// as they hold references to materials.

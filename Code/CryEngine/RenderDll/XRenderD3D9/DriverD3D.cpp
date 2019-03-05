@@ -144,7 +144,6 @@ void CD3D9Renderer::InitRenderer()
 	if (CV_r_enableauxgeom)
 		m_pRenderAuxGeomD3D = CRenderAuxGeomD3D::Create(*this);
 #endif
-	m_pColorGradingControllerD3D = new CColorGradingController();
 
 	m_wireframe_mode = R_SOLID_MODE;
 
@@ -2863,9 +2862,6 @@ void CD3D9Renderer::RT_RenderDebug(bool bRenderStats)
 
 	DrawTexelsPerMeterInfo();
 
-	if (m_pColorGradingControllerD3D)
-		m_pColorGradingControllerD3D->DrawDebugInfo();
-
 	double time = 0;
 	ticks(time);
 
@@ -3188,7 +3184,7 @@ void CD3D9Renderer::RT_EndFrame()
 	m_pPipelineProfiler->Display();
 #endif
 
-	// Rnder-thread Aux
+	// Render-thread Aux
 	RenderAux_RT();
 
 	// VR social screen
@@ -5034,11 +5030,6 @@ void CD3D9Renderer::DeleteAuxGeomCollectors()
 #endif
 }
 
-IColorGradingController* CD3D9Renderer::GetIColorGradingController()
-{
-	return m_pColorGradingControllerD3D;
-}
-
 IStereoRenderer* CD3D9Renderer::GetIStereoRenderer() const
 {
 	return m_pStereoRenderer;
@@ -5092,10 +5083,6 @@ void CD3D9Renderer::PostLevelUnload()
 #endif
 
 	CPoissonDiskGen::FreeMemory();
-	if (m_pColorGradingControllerD3D)
-	{
-		m_pColorGradingControllerD3D->FreeMemory();
-	}
 
 	CDynTextureSourceLayerActivator::ReleaseData();
 

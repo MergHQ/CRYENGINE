@@ -1,19 +1,9 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-/*=============================================================================
-   PostEffects.h : Post process effects
-
-   Revision history:
-* 18/06/2005: Re-organized (to minimize code dependencies/less annoying compiling times)
-* Created by Tiago Sousa
-   =============================================================================*/
-
-#ifndef _POSTEFFECTS_H_
-#define _POSTEFFECTS_H_
+#pragma once
 
 #include "PostProcessUtils.h"
 
-struct SColorGradingMergeParams;
 class CSoundEventsListener;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -462,6 +452,15 @@ private:
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+struct SColorGradingMergeParams
+{
+	Vec4   pColorMatrix[3];
+	Vec4   pLevels[2];
+	Vec4   pFilterColor;
+	Vec4   pSelectiveColor[2];
+	uint64 nFlagsShaderRT;
+};
+
 class CColorGrading : public CPostEffect
 {
 public:
@@ -507,7 +506,7 @@ public:
 	virtual bool        Preprocess(const SRenderViewInfo& viewInfo);
 	virtual void        Render();
 	virtual void        Reset(bool bOnSpecChange = false);
-	bool                UpdateParams(SColorGradingMergeParams& pMergeParams, bool bUpdateChart = true);
+	void                UpdateParams(SColorGradingMergeParams& pMergeParams);
 
 	virtual const char* GetName() const
 	{
@@ -1767,8 +1766,3 @@ private:
 	uint8         m_post3DRendererflags;
 	uint8         m_deferDisableFrameCountDown;
 };
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-#endif

@@ -1,30 +1,20 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-/*=============================================================================
-   RenderThread.cpp: Render thread commands processing.
-
-   Revision history:
-* Created by Honich Andrey
-
-   =============================================================================*/
-
 #include "StdAfx.h"
 
-#include <CrySystem/Scaleform/IFlashPlayer.h>
-#include <Cry3DEngine/I3DEngine.h>
-#include "RenderAuxGeom.h"
-#include "IColorGradingControllerInt.h"
-#include <CrySystem/Profilers/IStatoscope.h>
-#include <CryGame/IGameFramework.h>
-#include <CryAnimation/ICryAnimation.h>
+#include "DriverD3D.h"
 #include "PostProcess/PostEffects.h"
+#include "RenderAuxGeom.h"
+#include "RenderView.h"
+
+#include <Cry3DEngine/I3DEngine.h>
+#include <CryAnimation/ICryAnimation.h>
+#include <CryGame/IGameFramework.h>
+#include <CrySystem/Profilers/IStatoscope.h>
+#include <CrySystem/Scaleform/IFlashPlayer.h>
 #include <CryThreading/IThreadManager.h>
 
-#include <DriverD3D.h>
-
 #include <cstring>
-
-#include "RenderView.h"
 
 #ifdef STRIP_RENDER_THREAD
 	#define m_nCurThreadFill    0
