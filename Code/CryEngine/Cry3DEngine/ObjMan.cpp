@@ -532,7 +532,7 @@ class CStatObjAsyncLoader : IStatObjLoadedCallback
 {
 public:
 	CStatObjAsyncLoader(CStatObj* pObject, uint32 loadingFlags, const char* szGeomName, IStatObjFoundCallback* pCallback) :
-		m_pObject(pObject), m_pCallback(pCallback), m_geomName(szGeomName), m_loadingFlags(loadingFlags)
+		m_pObject(pObject), m_pCallback(pCallback), m_geomName(szGeomName), m_loadingFlags(loadingFlags), m_lodLoadingStarted(false), m_useStreaming(false)
 	{
 		if (s_pStreamEngine == nullptr)
 			s_pStreamEngine = gEnv->pSystem->GetStreamEngine();

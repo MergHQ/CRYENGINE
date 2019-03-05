@@ -178,7 +178,10 @@ CRYMEMORYMANAGER_API void* CryMalloc(size_t size, size_t& allocated, size_t alig
 		//
 		// We use getSize and not getSizeEx because in the case of an allocation with "alignment" == 0 and "size" bigger than the bucket size
 		// the bucket allocator will end up allocating memory using CryCrtMalloc which falls outside the address range of the bucket allocator
-		sizePlus = g_GlobPageBucketAllocator.getSize(p);
+		if(p)
+		{
+			sizePlus = g_GlobPageBucketAllocator.getSize(p);
+		}
 	}
 	else
 	{
