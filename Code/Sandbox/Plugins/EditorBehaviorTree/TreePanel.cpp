@@ -46,7 +46,7 @@ void TreePanel::OnWindowEvent_NewFile()
 	QString gameFolder = QString::fromLocal8Bit(GetIEditor()->GetSystem()->GetIPak()->GetGameFolder());
 	QDir behaviorFolder(QDir::fromNativeSeparators(gameFolder));
 
-	QString absoluteFilePath = QFileDialog::getSaveFileName(this, "Interim Behavior Tree", behaviorFolder.absolutePath(), "XML files (*.xml)");
+	QString absoluteFilePath = QFileDialog::getSaveFileName(this, "Behavior Tree", behaviorFolder.absolutePath(), "XML files (*.xml)");
 
 	if (absoluteFilePath.isEmpty())
 		return;
@@ -68,7 +68,7 @@ void TreePanel::OnWindowEvent_OpenFile()
 	QString gameFolder = QString::fromLocal8Bit(GetIEditor()->GetSystem()->GetIPak()->GetGameFolder());
 	QDir behaviorFolder(QDir::fromNativeSeparators(gameFolder));
 
-	QString absoluteFilePath = QFileDialog::getOpenFileName(this, "Interim Behavior Tree", behaviorFolder.absolutePath(), "XML files (*.xml)");
+	QString absoluteFilePath = QFileDialog::getOpenFileName(this, "Behavior Tree", behaviorFolder.absolutePath(), "XML files (*.xml)");
 
 	TryOpenFileDirectly(absoluteFilePath);
 }
@@ -106,7 +106,7 @@ void TreePanel::OnWindowEvent_SaveToFile()
 	QString gameFolder = QString::fromStdString(GetIEditor()->GetSystem()->GetIPak()->GetGameFolder());
 	QDir behaviorFolder(QDir::fromNativeSeparators(gameFolder));
 
-	QString absoluteFilePath = QFileDialog::getSaveFileName(this, "Interim Behavior Tree", behaviorFolder.absolutePath(), "XML files (*.xml)");
+	QString absoluteFilePath = QFileDialog::getSaveFileName(this, "Behavior Tree", behaviorFolder.absolutePath(), "XML files (*.xml)");
 
 	if (absoluteFilePath.isEmpty())
 		return;
@@ -260,7 +260,7 @@ bool TreePanel::CheckForBehaviorTreeErrors()
 	if (m_propertyTree->containsErrors())
 	{
 		m_propertyTree->focusFirstError();
-		QMessageBox::critical(0, "Interim Behavior Tree Editor", "This behavior tree contains an error and could not be saved.");
+		QMessageBox::critical(0, "Behavior Tree Editor", "This behavior tree contains an error and could not be saved.");
 		return false;
 	}
 
