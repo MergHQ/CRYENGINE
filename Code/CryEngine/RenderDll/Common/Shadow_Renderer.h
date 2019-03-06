@@ -8,6 +8,7 @@
 #include "Textures/PowerOf2BlockPacker.h" // CPowerOf2BlockPacker
 
 #include <CryCore/Containers/VectorSet.h>
+#include <CryRenderer/IRenderAuxGeom.h>
 
 #include <array>
 #include <bitset>

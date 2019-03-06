@@ -28,6 +28,11 @@ end_sources()
 CryEngineStaticModule(qpOASES SOLUTION_FOLDER "Libs")
 
 if (ORBIS OR LINUX OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-	target_compile_options(${THIS_PROJECT} PRIVATE -Wno-overloaded-virtual -Wno-dangling-else -Wno-misleading-indentation )
+	target_compile_options(${THIS_PROJECT} PRIVATE
+	-Wno-overloaded-virtual
+	-Wno-dangling-else
+	-Wno-misleading-indentation
+	-Wno-enum-compare
+	)
 endif()
 target_include_directories(${THIS_PROJECT} PUBLIC "${SDK_DIR}/qpOASES/include")
