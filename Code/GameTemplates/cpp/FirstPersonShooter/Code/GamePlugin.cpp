@@ -89,7 +89,7 @@ bool CGamePlugin::OnClientConnectionReceived(int channelId, bool bIsReset)
 	spawnParams.sName = "Player";
 	
 	// Set local player details
-	if (m_players.size() == 0 && !gEnv->IsDedicated())
+	if (m_players.empty() && !gEnv->IsDedicated())
 	{
 		spawnParams.id = LOCAL_PLAYER_ENTITY_ID;
 		spawnParams.nFlags |= ENTITY_FLAG_LOCAL_PLAYER;
