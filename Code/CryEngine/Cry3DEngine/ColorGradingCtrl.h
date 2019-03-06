@@ -43,7 +43,7 @@ public:
 	void Serialize(TSerialize& ar) override;
 
 private:
-	virtual void SetColorGradingLut(const string& texture, float timeToFadeInSeconds) override;
+	virtual void SetColorGradingLut(const char* szTexture, float timeToFadeInSeconds) override;
 
 	void ProcessNewCharts();
 	void Update(float timeSinceLastFrame);
