@@ -154,16 +154,27 @@ private:
 
 enum EDataDomain
 {
-	EDD_None           = 0, // Data is per-emitter or global
+	EDD_None           = 0,      // Data is per-emitter or global
 
-	EDD_PerInstance    = 1, // Data is per sub-emitter
-	EDD_PerParticle    = 2, // Data is per particle
+	EDD_Particle       = BIT(0), // Data is per particle
+	EDD_Spawner        = BIT(1), // Data is per particle spawner
 
-	EDD_HasUpdate      = 4, // Data is updated per-frame, has additional init-value element
+	EDD_HasUpdate      = BIT(2), // Data is updated per-frame, has additional init-value element
 
-	EDD_ParticleUpdate = EDD_PerParticle | EDD_HasUpdate,
-	EDD_InstanceUpdate = EDD_PerInstance | EDD_HasUpdate
+	EDD_ParticleUpdate = EDD_Particle | EDD_HasUpdate,
+	EDD_SpawnerUpdate  = EDD_Spawner | EDD_HasUpdate
 };
+
+inline int ElementType(EDataDomain domain) { return (domain & 3) - 1; }
+
+template<typename T>
+struct ElementTypeArray: std::array<T, 2>
+{
+	using base = std::array<T, 2>;
+	const T& operator[](EDataDomain domain) const { return base::operator[](ElementType(domain)); }
+	T& operator[](EDataDomain domain) { return base::operator[](ElementType(domain)); }
+};
+
 
 // Traits for extracting element-type info from scalar and vector types
 template<typename T>
@@ -280,7 +291,7 @@ struct TDataType: EParticleDataType
 //  MakeDataType(EPDT_SpawnID, TParticleID)
 //  MakeDataType(EPVF_Velocity, Vec3)
 
-inline EDataDomain PDT_FLAGS(EDataDomain domain = EDD_PerParticle) { return domain; } // Helper function for variadic macro
+inline EDataDomain PDT_FLAGS(EDataDomain domain = EDD_Particle) { return domain; } // Helper function for variadic macro
 
 #define MakeDataType(Name, T, ...) \
   TDataType<T> Name(SkipPrefix(#Name), nullptr, SDataInfo((T*)0, PDT_FLAGS(__VA_ARGS__)))
@@ -296,12 +307,13 @@ inline cstr SkipPrefix(cstr name)
 // Store usage of particle data types
 struct SUseData
 {
-	TDynArray<int16> offsets;        // Offset of data type if used, -1 if not
-	int16            totalSize = 0;  // Total size of data per-particle
+	TDynArray<int16>        offsets;    // Offset of data type if used, -1 if not
+	ElementTypeArray<int16> totalSizes; // Total size of data per-element data
 
 	SUseData()
 		: offsets(EParticleDataType::size(), -1)
 	{
+		totalSizes.fill(0);
 	}
 	bool Used(EParticleDataType type) const
 	{
@@ -311,12 +323,14 @@ struct SUseData
 	{
 		if (!Used(type))
 		{
+			auto domain = type.info().domain;
 			uint dim = type.info().dimension;
 			int16 size = Align(type.info().typeSize, 4);
 			for (uint i = 0; i < dim; ++i)
 			{
-				offsets[type + i] = totalSize;
-				totalSize += size;
+				offsets[type + i] = totalSizes[domain];
+				assert(totalSizes[domain] + size > totalSizes[domain]);
+				totalSizes[domain] += size;
 			}
 		}
 	}
@@ -329,18 +343,20 @@ struct SUseDataRef
 {
 	TConstArray<int16> offsets;
 	int16              totalSize = 0;
+	EDataDomain        domain;
 	PUseData           pRefData;
 
 	SUseDataRef() 
 	{}
-	SUseDataRef(const PUseData& pUseData)
+	SUseDataRef(const PUseData& pUseData, EDataDomain domain)
 		: offsets(pUseData->offsets)
-		, totalSize(pUseData->totalSize)
+		, totalSize(pUseData->totalSizes[domain])
+		, domain(domain)
 		, pRefData(pUseData)
 	{}
 	bool Used(EParticleDataType type) const
 	{
-		return offsets[type] >= 0;
+		return type.info().domain & domain && offsets[type] >= 0;
 	}
 };
 
@@ -367,6 +383,12 @@ extern TDataType<Vec3>
 
 extern TDataType<Quat>
 	EPQF_Orientation;
+
+// Spawner data types
+extern TDataType<TParticleId>
+	ESDT_ParentId;
+extern TDataType<float>
+	ESDT_Age;
 
 // NormalAge functions
 inline bool IsAlive(float age)   { return age < 1.0f; }

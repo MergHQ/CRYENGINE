@@ -113,12 +113,12 @@ struct STimingParams
 
 struct SComponentParams: STimingParams
 {
-	static string             s_defaultDiffuseMap;
-
 	bool                      m_usesGPU              = false;
+	bool                      m_isPreAged            = false;
 	SParticleShaderData       m_shaderData;
 	_smart_ptr<IMaterial>     m_pMaterial;
 	EShaderType               m_requiredShaderType   = eST_All;
+	static string             s_defaultDiffuseMap;
 	string                    m_diffuseMap           = s_defaultDiffuseMap;
 	ERenderObjectFlags        m_renderObjectFlags;
 	int                       m_renderStateFlags     = OS_ALPHA_BLEND;
@@ -126,25 +126,13 @@ struct SComponentParams: STimingParams
 	float                     m_renderObjectSortBias = 0;
 	_smart_ptr<IMeshObj>      m_pMesh;
 	bool                      m_meshCentered         = false;
-	bool                      m_isPreAged            = false;
-	bool                      m_positionsPreInit     = false;
-	size_t                    m_instanceDataStride   = 0;
 	STextureAnimation         m_textureAnimation;
 	float                     m_scaleParticleCount   = 1;
 	float                     m_maxParticleSize      = 0;
 	float                     m_scaleParticleSize    = 1;
 	SVisibilityParams         m_visibility;
 
-	void  Serialize(Serialization::IArchive& ar);
-};
-
-template<typename T> struct TDataOffset
-{
-	TDataOffset(uint offset = 0) : m_offset(offset) {}
-	operator uint() const { return m_offset; }
-
-private:
-	uint m_offset;
+	void Serialize(Serialization::IArchive& ar);
 };
 
 class CParticleComponent final : public IParticleComponent, public SFeatureDispatchers
@@ -189,7 +177,6 @@ public:
 	CParticleEffect*                      GetEffect() const                     { return m_pEffect; }
 	void                                  SetEffect(CParticleEffect* pEffect)   { m_pEffect = pEffect; }
 
-	template<typename T> TDataOffset<T>   AddInstanceData()                     { return AddInstanceData(sizeof(T)); }
 	void                                  AddParticleData(EParticleDataType type);
 
 	bool                                  UsesGPU() const                       { return m_params.m_usesGPU; }
@@ -206,11 +193,9 @@ public:
 	const TComponents&      GetChildComponents() const                          { return m_children; }
 	void                    ClearChildren()                                     { m_children.resize(0); }
 
-	bool                    CanMakeRuntime(CParticleEmitter* pEmitter) const;
+	bool                    CanMakeRuntime(CParticleEmitter* pEmitter = nullptr) const;
 
 private:
-	uint AddInstanceData(uint size);
-
 	friend class CParticleEffect;
 
 	string                                   m_name;

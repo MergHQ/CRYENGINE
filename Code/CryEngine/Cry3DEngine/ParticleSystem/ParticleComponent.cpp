@@ -90,7 +90,7 @@ void SComponentParams::Serialize(Serialization::IArchive& ar)
 	}
 	ar(string(buffer), "", "!Fields used:");
 
-	cry_sprintf(buffer, "%d", pComponent->GetUseData()->totalSize);
+	cry_sprintf(buffer, "%d", pComponent->GetUseData()->totalSizes[EDD_Particle]);
 	ar(string(buffer), "", "!Bytes per Particle:");
 }
 
@@ -163,15 +163,6 @@ Vec2 CParticleComponent::GetNodePosition() const
 void CParticleComponent::SetNodePosition(Vec2 position)
 {
 	m_nodePosition = position;
-}
-
-uint CParticleComponent::AddInstanceData(uint size)
-{
-	CRY_PFX2_ASSERT(size > 0);        // instance data of 0 bytes makes no sense
-	SetChanged();
-	uint offset = m_params.m_instanceDataStride;
-	m_params.m_instanceDataStride += size;
-	return offset;
 }
 
 void CParticleComponent::AddParticleData(EParticleDataType type)
@@ -258,7 +249,7 @@ void CParticleComponent::UpdateTimings()
 		float maxChildEq = 0.0f, maxChildLife = 0.0f;
 		for (auto& pChild : m_children)
 		{
-			if (!pChild->IsEnabled())
+			if (!pChild->CanMakeRuntime())
 				continue;
 			pChild->UpdateTimings();
 			const STimingParams& timingsChild = pChild->ComponentParams();
@@ -306,17 +297,6 @@ void CParticleComponent::PreCompile()
 
 	static_cast<SFeatureDispatchers&>(*this) = {};
 	m_gpuFeatures.clear();
-
-	// Create new use data array, existing containers reference old array
-	m_pUseData = NewUseData();
-
-	// Add default particle data
-	AddParticleData(EPDT_ParentId);
-	AddParticleData(EPVF_Position);
-	AddParticleData(EPVF_Velocity);
-	AddParticleData(EPDT_NormalAge);
-	AddParticleData(EPDT_InvLifeTime);
-	AddParticleData(EPDT_LifeTime);
 }
 
 void CParticleComponent::ResolveDependencies()
@@ -345,6 +325,21 @@ void CParticleComponent::Compile()
 		return;
 
 	CRY_PFX2_PROFILE_DETAIL;
+
+	// Create new use data array, existing containers reference old array
+	SUseData usePrev;
+	if (m_pUseData)
+		usePrev = *m_pUseData;
+
+	m_pUseData = NewUseData();
+
+	// Add default particle data
+	AddParticleData(EPDT_ParentId);
+	AddParticleData(EPVF_Position);
+	AddParticleData(EPVF_Velocity);
+	AddParticleData(EPDT_NormalAge);
+	AddParticleData(EPDT_InvLifeTime);
+	AddParticleData(EPDT_LifeTime);
 
 	uint featureMask = 0;
 	for (auto& it : m_features)
@@ -504,6 +499,8 @@ void CParticleComponent::Serialize(Serialization::IArchive& ar)
 	ar(m_params, "Stats", "Component Statistics");
 	ar(m_nodePosition, "nodePos", "Node Position");
 	ar(m_features, "Features", "^");
+	if (ar.isInput())
+		m_features.shrink_to_fit();
 	if (ar.isInput())
 		SetChanged();
 }

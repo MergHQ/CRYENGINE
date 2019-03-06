@@ -9,7 +9,7 @@ namespace pfx2
 template<EDataDomain Domain, typename T>
 void CParamMod<Domain, T>::AddToComponent(CParticleComponent* pComponent, CParticleFeature* pFeature)
 {
-	if (Domain & EDD_PerParticle)
+	if (Domain & EDD_Particle)
 		pComponent->InitParticles.add(pFeature);
 
 	for (auto& pMod : m_modifiers)
@@ -34,7 +34,7 @@ void CParamMod<Domain, T>::AddToComponent(CParticleComponent* pComponent, CParti
 	if (Domain & EDD_HasUpdate && m_updateMask)
 	{
 		pComponent->AddParticleData(dataType.InitType());
-		if (Domain & EDD_PerParticle)
+		if (Domain & EDD_Particle)
 			pComponent->UpdateParticles.add(pFeature);
 	}
 }
@@ -73,29 +73,31 @@ void CParamMod<Domain, T>::SerializeImpl(Serialization::IArchive& ar)
 }
 
 template<EDataDomain Domain, typename T>
-void CParamMod<Domain, T>::Init(CParticleComponentRuntime& runtime, ThisDataType dataType) const
+void CParamMod<Domain, T>::Init(CParticleComponentRuntime& runtime, ThisDataType dataType, SUpdateRange range) const
 {
-	CParticleContainer& container = runtime.GetContainer();
-	if (container.GetMaxParticles() == 0 || !container.HasData(dataType))
+	CParticleContainer& container = runtime.Container(Domain);
+	if (!range.size() || !container.HasData(dataType))
 		return;
 
 	TIOStream<TType> stream = container.IOStream(dataType);
-	ModifyInit(runtime, stream, runtime.SpawnedRange());
+	ModifyInit(runtime, stream, range);
 
 	if (Domain & EDD_HasUpdate)
-		container.CopyData(dataType.InitType(), dataType, runtime.SpawnedRange());
+		container.CopyData(dataType.InitType(), dataType, range);
 }
 
 template<EDataDomain Domain, typename T>
-void CParamMod<Domain, T>::Update(CParticleComponentRuntime& runtime, ThisDataType dataType) const
+void CParamMod<Domain, T>::Update(CParticleComponentRuntime& runtime, ThisDataType dataType, SUpdateRange range) const
 {
-	CParticleContainer& container = runtime.GetContainer();
-	if (container.GetMaxParticles() == 0 || !container.HasData(dataType))
+	if (!m_updateMask)
+		return;
+	CParticleContainer& container = runtime.Container(Domain);
+	if (!range.size() || !container.HasData(dataType))
 		return;
 
-	CRY_PFX2_ASSERT(runtime.FullRange().m_end <= container.GetNumParticles());
+	runtime.Container(Domain).CopyData(dataType, dataType.InitType(), range);
 	TIOStream<TType> stream = container.IOStream(dataType);
-	ModifyUpdate(runtime, stream, runtime.FullRange());
+	ModifyUpdate(runtime, stream, range);
 }
 
 template<EDataDomain Domain, typename T>
