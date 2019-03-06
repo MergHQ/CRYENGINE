@@ -982,7 +982,7 @@ void CTimeOfDay::ConstantsChanged()
 	
 	// Empty texture means disable color grading; Transition time == 0 -> switch immediately
 	const auto& cgp = GetConstants().GetColorGradingParams();
-	p3DEngine->GetColorGradingCtrl()->SetColorGradingLut(cgp.useTexture ? cgp.texture : "", 0.f);
+	p3DEngine->GetColorGradingCtrl()->SetColorGradingLut(cgp.useTexture ? cgp.texture.c_str() : "", 0.f);
 
 #if defined(FEATURE_SVO_GI)
 	p3DEngine->UpdateTISettings();

@@ -121,8 +121,9 @@ void CColorGradingCtrl::Reset()
 	stl::reconstruct(m_charts);
 }
 
-void CColorGradingCtrl::SetColorGradingLut(const string& texture, float timeToFadeInSeconds)
+void CColorGradingCtrl::SetColorGradingLut(const char* szTexture, float timeToFadeInSeconds)
 {
+	const string texture(szTexture);
 	if (!texture.empty() && texture != "0")
 	{
 		m_textureLoader.LoadTexture(texture, timeToFadeInSeconds);

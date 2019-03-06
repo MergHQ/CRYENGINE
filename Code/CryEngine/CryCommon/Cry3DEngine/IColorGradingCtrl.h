@@ -15,7 +15,7 @@ struct IColorGradingCtrl
 	// If texture is empty or == '0', neutral color chart will be used
 	// If timeToFadeInSeconds == 0, texture will be switched without blending transition between current state and new texture
 	// Condition when Color Grading Stage is not running at all is here: CColorGradingStage::IsStageActive()
-	virtual void SetColorGradingLut(const string& texture, float timeToFadeInSeconds) = 0;
+	virtual void SetColorGradingLut(const char* szTexture, float timeToFadeInSeconds) = 0;
 
 	virtual void Serialize(TSerialize& ar) = 0;
 
