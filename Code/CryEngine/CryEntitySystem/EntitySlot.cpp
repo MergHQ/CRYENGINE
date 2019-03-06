@@ -241,17 +241,27 @@ void CEntitySlot::UpdateRenderNode(bool bForceRecreateNode)
 
 		m_pRenderNode->Hide(!bSlotShouldRender);
 
-		if ((m_pEntity->GetFlags() & ENTITY_FLAG_CUSTOM_VIEWDIST_RATIO) == 0)
-		{
-			if (GetFlags() & ENTITY_SLOT_RENDER_NEAREST)
-				m_pRenderNode->SetLodRatio(0); // Use LOD 0 on nearest objects
-			else
-				m_pRenderNode->SetLodRatio(renderNodeParams.lodRatio);
-
-			m_pRenderNode->SetViewDistRatio(renderNodeParams.viewDistRatio);
-		}
+		UpdateViewDistRatio(renderNodeParams);
 
 		m_pRenderNode->SetMinSpec(renderNodeParams.minSpec);
+	}
+}
+
+void CEntitySlot::UpdateViewDistRatio(const IEntity::SRenderNodeParams& renderNodeParams)
+{
+	if ((m_pEntity->GetFlags() & ENTITY_FLAG_CUSTOM_VIEWDIST_RATIO) == 0)
+	{
+		const uint32 slotFlags = GetFlags();
+
+		if (slotFlags & ENTITY_SLOT_RENDER_NEAREST)
+			m_pRenderNode->SetLodRatio(0); // Use LOD 0 on nearest objects.
+		else
+			m_pRenderNode->SetLodRatio(renderNodeParams.lodRatio);
+
+		if ((slotFlags & ENTITY_SLOT_CUSTOM_VIEWDIST_RATIO) == 0)
+		{
+			m_pRenderNode->SetViewDistRatio(renderNodeParams.viewDistRatio);
+		}
 	}
 }
 
