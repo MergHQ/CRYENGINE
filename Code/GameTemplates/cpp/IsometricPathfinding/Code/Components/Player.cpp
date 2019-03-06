@@ -185,8 +185,6 @@ void CPlayerComponent::SpawnCursorEntity()
 
 void CPlayerComponent::UpdateAnimation(float frameTime)
 {
-	ICharacterInstance *pCharacter = m_pAnimationComponent->GetCharacter();
-
 	// Update the Mannequin tags
 	m_pAnimationComponent->SetTagWithId(m_walkTagId, m_pCharacterController->IsWalking());
 
