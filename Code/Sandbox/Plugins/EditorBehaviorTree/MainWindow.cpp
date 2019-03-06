@@ -18,7 +18,7 @@
 #include <QFileDialog>
 #include <QMenuBar>
 
-#define APPLICATION_USER_DIRECTORY                   "/interim_behavior_tree_editor/"
+#define APPLICATION_USER_DIRECTORY                   "/behavior_tree_editor/"
 #define APPLICATION_USER_STATE_FILEPATH              APPLICATION_USER_DIRECTORY "editor_state.json"
 
 #define APPLICATION_MAX_FILES_IN_RECENT_FILE_HISTORY (10)
@@ -168,7 +168,7 @@ MainWindow::~MainWindow()
 
 const char* MainWindow::GetPaneTitle() const
 {
-	return "Interim Behavior Tree Editor";
+	return "Behavior Tree Editor";
 }
 
 void MainWindow::OnEditorNotifyEvent(EEditorNotifyEvent editorNotifyEvent)

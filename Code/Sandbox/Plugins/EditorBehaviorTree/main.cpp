@@ -9,9 +9,9 @@
 #include <CryCore/Platform/platform.h>
 #include <CryCore/Platform/platform_impl.inl>
 
-REGISTER_VIEWPANE_FACTORY(MainWindow, "Interim Behavior Tree Editor", "Tools", false);
+REGISTER_VIEWPANE_FACTORY(MainWindow, "Behavior Tree Editor", "Tools", false);
 
-class InterimBehaviorTreePlugin : public IPlugin
+class BehaviorTreeEditorPlugin : public IPlugin
 {
 	enum
 	{
@@ -20,11 +20,11 @@ class InterimBehaviorTreePlugin : public IPlugin
 
 public:
 
-	InterimBehaviorTreePlugin() {}
+	BehaviorTreeEditorPlugin() {}
 
 	int         GetPluginVersion() override     { return Version; }
-	const char* GetPluginName() override        { return "Interim Behavior Tree Editor"; }
+	const char* GetPluginName() override        { return "Behavior Tree Editor"; }
 	const char* GetPluginDescription() override { return GetPluginName(); }
 };
 
-REGISTER_PLUGIN(InterimBehaviorTreePlugin)
+REGISTER_PLUGIN(BehaviorTreeEditorPlugin)
