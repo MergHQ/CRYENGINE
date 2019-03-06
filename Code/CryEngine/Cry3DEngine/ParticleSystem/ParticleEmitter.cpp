@@ -74,8 +74,8 @@ CParticleEmitter::CParticleEmitter(CParticleEffect* pEffect, uint emitterId)
 		m_attributeInstance.Reset(m_pEffect->GetAttributeTable());
 
 	static PUseData s_emitterData = std::make_shared<SEmitterData>();
-	m_parentContainer.SetUsedData(s_emitterData);
-	m_parentContainer.AddParticle();
+	m_parentContainer.SetUsedData(s_emitterData, EDD_Particle);
+	m_parentContainer.AddElement();
 
 	m_debug = DebugVar();
 }
@@ -167,22 +167,6 @@ bool CParticleEmitter::UpdateState()
 
 	if (m_time > m_timeDeath && m_timeUpdated < m_time)
 		m_alive = false;
-	if (!m_alive)
-	{
-		if (!m_componentRuntimesFor.empty())
-			Clear();
-		return false;
-	}
-
-	if (m_componentRuntimesFor.empty())
-	{
-		if (!m_active)
-			return false;
-		UpdateRuntimes();
-	}
-
-	if (m_attributeInstance.WasChanged())
-		SetChanged();
 
 	if (ThreadMode() >= 3 && IsStable())
 		// Update only for last frame, even if update skipped for longer
@@ -192,6 +176,23 @@ bool CParticleEmitter::UpdateState()
 	m_time += frameTime;
 	++m_currentSeed;
 	m_unrendered++;
+
+	if (!m_alive)
+	{
+		if (!m_componentRuntimesFor.empty())
+			Clear();
+		return false;
+	}
+
+	if (m_attributeInstance.WasChanged())
+		SetChanged();
+
+	if (m_componentRuntimesFor.empty())
+	{
+		if (!m_active)
+			return false;
+		UpdateRuntimes();
+	}
 
 	UpdateFromEntity();
 
@@ -382,14 +383,10 @@ float CParticleEmitter::GetMaxViewDist() const
 	float maxViewDist = 0.0f;
 	for (auto& pRuntime : m_componentRuntimes)
 	{
-		const auto* pComponent = pRuntime->GetComponent();
-		if (pComponent->IsEnabled())
-		{
-			const auto& params = pComponent->GetComponentParams();
-			const float sizeDist = params.m_maxParticleSize * angularDensity * params.m_visibility.m_viewDistanceMultiple;
-			const float dist = min(sizeDist, +params.m_visibility.m_maxCameraDistance);
-			SetMax(maxViewDist, dist);
-		}
+		const auto& params = pRuntime->ComponentParams();
+		const float sizeDist = params.m_maxParticleSize * angularDensity * params.m_visibility.m_viewDistanceMultiple;
+		const float dist = min(sizeDist, +params.m_visibility.m_maxCameraDistance);
+		SetMax(maxViewDist, dist);
 	}
 	return maxViewDist;
 }
@@ -459,7 +456,7 @@ void CParticleEmitter::Activate(bool activate)
 		for (auto& pRuntime : m_componentRuntimes)
 		{
 			if (!pRuntime->IsChild())
-				pRuntime->RemoveAllSubInstances();
+				pRuntime->RemoveAllSpawners();
 			hasParticles += pRuntime->HasParticles();
 		}
 		m_timeDeath = m_time;
@@ -539,7 +536,7 @@ void CParticleEmitter::SetLocation(const QuatTS& loc)
 
 void CParticleEmitter::EmitParticle(const EmitParticleData* pData)
 {
-	// #PFX2_TODO : handle EmitParticleData (create new instances)
+	// #PFX2_TODO : handle EmitParticleData (create new spawners)
 	for (auto pRuntime: m_componentRuntimes)
 	{
 		if (!pRuntime->IsChild())
@@ -863,12 +860,7 @@ uint CParticleEmitter::GetParticleSpec() const
 	if (m_spawnParams.eSpec != EParticleSpec::Default)
 		return uint(m_spawnParams.eSpec);
 
-	int quality = C3DEngine::GetCVars()->e_ParticlesQuality;
-	if (quality != 0)
-		return quality;
-
-	const ESystemConfigSpec configSpec = gEnv->pSystem->GetConfigSpec();
-	return uint(configSpec);
+	return GetPSystem()->GetParticleSpec();
 }
 
 }

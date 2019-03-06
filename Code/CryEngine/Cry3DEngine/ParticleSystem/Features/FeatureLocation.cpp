@@ -8,8 +8,8 @@
 namespace pfx2
 {
 
-MakeDataType(ESDT_SpatialExtents, Vec4, EDD_PerInstance);
-MakeDataType(ESDT_EmitOffset, Vec3, EDD_PerInstance);
+MakeDataType(ESDT_SpatialExtents, Vec4, EDD_Spawner);
+MakeDataType(ESDT_EmitOffset, Vec3, EDD_Spawner);
 
 //////////////////////////////////////////////////////////////////////////
 // CFeatureLocationOffset
@@ -40,7 +40,7 @@ public:
 		{
 			if (!m_scale.HasModifiers())
 				return;
-			SInstanceUpdateBuffer<float> sizes(runtime, m_scale, domain);
+			SSpawnerUpdateBuffer<float> sizes(runtime, m_scale, domain);
 			for (auto i : range)
 			{
 				float e = abs(sizes[i].Length());
@@ -49,7 +49,7 @@ public:
 		}
 		else if (auto offsets = ESDT_EmitOffset.Cast(type, data, range))
 		{
-			SInstanceUpdateBuffer<float> sizes(runtime, m_scale, domain);
+			SSpawnerUpdateBuffer<float> sizes(runtime, m_scale, domain);
 			for (auto i : range)
 			{
 				const float scale = (sizes[i].start + sizes[i].end) * 0.5f;
@@ -91,8 +91,8 @@ public:
 	}
 
 private:
-	Vec3                                 m_offset {0};
-	CParamMod<EDD_PerParticle, UFloat10> m_scale = 1;
+	Vec3                              m_offset {0};
+	CParamMod<EDD_Particle, UFloat10> m_scale = 1;
 };
 
 CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureLocationOffset, "Location", "Offset", colorLocation);
@@ -125,7 +125,7 @@ public:
 	{
 		if (auto extents = ESDT_SpatialExtents.Cast(type, data, range))
 		{
-			SInstanceUpdateBuffer<float> sizes(runtime, m_scale, domain);
+			SSpawnerUpdateBuffer<float> sizes(runtime, m_scale, domain);
 			for (auto i : range)
 			{
 				float sizeAvg = (sizes[i].start + sizes[i].end) * 0.5f * 2.0f;
@@ -177,9 +177,9 @@ public:
 	}
 
 private:
-	Vec3                                 m_box = ZERO;
-	CParamMod<EDD_PerParticle, UFloat10> m_scale;
-	SDistribution<3, Vec3>               m_distribution;
+	Vec3                              m_box = ZERO;
+	CParamMod<EDD_Particle, UFloat10> m_scale;
+	SDistribution<3, Vec3>            m_distribution;
 };
 
 CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureLocationBox, "Location", "Box", colorLocation);
@@ -238,7 +238,7 @@ public:
 	{
 		if (auto extents = ESDT_SpatialExtents.Cast(type, data, range))
 		{
-			SInstanceUpdateBuffer<float> sizes(runtime, m_radius, domain);
+			SSpawnerUpdateBuffer<float> sizes(runtime, m_radius, domain);
 			for (auto i : range)
 			{
 				const Vec3 axis1 = m_axisScale * abs(sizes[i].end),
@@ -289,11 +289,11 @@ private:
 		}
 	}
 
-	CParamMod<EDD_PerParticle, UFloat10> m_radius;
-	CParamMod<EDD_PerParticle, SFloat10> m_velocity;
-	UUnitFloat                           m_innerFraction = 1;
-	Vec3                                 m_axisScale {1};
-	SDistribution<3>                     m_distribution;
+	CParamMod<EDD_Particle, UFloat10> m_radius;
+	CParamMod<EDD_Particle, SFloat10> m_velocity;
+	UUnitFloat                        m_innerFraction = 1;
+	Vec3                              m_axisScale {1};
+	SDistribution<3>                  m_distribution;
 };
 
 CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureLocationSphere, "Location", "Sphere", colorLocation);
@@ -354,7 +354,7 @@ public:
 	{
 		if (auto extents = ESDT_SpatialExtents.Cast(type, data, range))
 		{
-			SInstanceUpdateBuffer<float> sizes(runtime, m_radius, domain);
+			SSpawnerUpdateBuffer<float> sizes(runtime, m_radius, domain);
 			for (auto i : range)
 			{
 				const Vec2 axis1 = m_axisScale * abs(sizes[i].end),
@@ -413,12 +413,12 @@ private:
 	}
 
 private:
-	CParamMod<EDD_PerParticle, UFloat10> m_radius;
-	CParamMod<EDD_PerParticle, SFloat10> m_velocity;
-	UUnitFloat                           m_innerFraction = 1;
-	Vec3                                 m_axis {0, 0, 1};
-	Vec2                                 m_axisScale {1, 1};
-	SDistribution<2>                     m_distribution;
+	CParamMod<EDD_Particle, UFloat10> m_radius;
+	CParamMod<EDD_Particle, SFloat10> m_velocity;
+	UUnitFloat                        m_innerFraction = 1;
+	Vec3                              m_axis {0, 0, 1};
+	Vec2                              m_axisScale {1, 1};
+	SDistribution<2>                  m_distribution;
 };
 
 CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureLocationCircle, "Location", "Circle", colorLocation);
@@ -500,6 +500,7 @@ public:
 				if (IMeshObj* pMesh = pParentComponent->GetComponentParams().m_pMesh)
 					emitterGeometry.Set(pMesh);
 			}
+			auto parentIds = runtime.IStream(ESDT_ParentId);
 			auto parentMeshes = runtime.GetParentContainer().IStream(EPDT_MeshGeometry, +emitterGeometry.m_pMeshObj);
 			auto parentPhysics = runtime.GetParentContainer().IStream(EPDT_PhysicalEntity);
 
@@ -507,16 +508,13 @@ public:
 			{
 				if (pParentComponent)
 				{
-					if (i < runtime.GetNumInstances())
+					TParticleId parentId = parentIds[i];
+					if (IMeshObj* mesh = parentMeshes.Load(parentId))
+						emitterGeometry.Set(mesh);
+					if (m_source == EGeometrySource::Physics)
 					{
-						TParticleId parentId = runtime.GetInstance(i).m_parentId;
-						if (IMeshObj* mesh = parentMeshes.Load(parentId))
-							emitterGeometry.Set(mesh);
-						if (m_source == EGeometrySource::Physics)
-						{
-							if (IPhysicalEntity* pPhysics = parentPhysics.Load(parentId))
-								emitterGeometry.Set(pPhysics);
-						}
+						if (IPhysicalEntity* pPhysics = parentPhysics.Load(parentId))
+							emitterGeometry.Set(pPhysics);
 					}
 				}
 				float extent = emitterGeometry.GetExtent((EGeomType)m_source, (EGeomForm)m_location);
@@ -567,7 +565,7 @@ public:
 		STempInitBuffer<float> offsets(runtime, m_offset);
 		STempInitBuffer<float> velocityMults(runtime, m_velocity);
 
-		auto spawnRange = container.GetSpawnedRange();
+		auto spawnRange = container.SpawnedRange();
 		TParticleHeap::Array<PosNorm> randomPoints(runtime.MemHeap(), spawnRange.size());
 
 		// Count children for each parent attachment object
@@ -680,12 +678,12 @@ public:
 		}
 	}
 
-	EGeometrySource                      m_source          = EGeometrySource::Render;
-	EGeometryLocation                    m_location        = EGeometryLocation::Surface;
-	CParamMod<EDD_PerParticle, SFloat10> m_offset          = 0;
-	CParamMod<EDD_PerParticle, SFloat10> m_velocity        = 0;
-	bool                                 m_orientToNormal  = true;
-	bool                                 m_augmentLocation = false;
+	EGeometrySource                   m_source          = EGeometrySource::Render;
+	EGeometryLocation                 m_location        = EGeometryLocation::Surface;
+	CParamMod<EDD_Particle, SFloat10> m_offset          = 0;
+	CParamMod<EDD_Particle, SFloat10> m_velocity        = 0;
+	bool                              m_orientToNormal  = true;
+	bool                              m_augmentLocation = false;
 };
 
 CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureLocationGeometry, "Location", "Geometry", colorLocation);
@@ -805,10 +803,10 @@ private:
 		return total;
 	}
 
-	CParamMod<EDD_PerParticle, SFloat10> m_amplitude;
-	UFloat10                             m_size;
-	UFloat10                             m_rate;
-	UIntOctaves                          m_octaves;
+	CParamMod<EDD_Particle, SFloat10> m_amplitude;
+	UFloat10                          m_size;
+	UFloat10                          m_rate;
+	UIntOctaves                       m_octaves;
 };
 
 CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureLocationNoise, "Location", "Noise", colorLocation);
@@ -874,11 +872,12 @@ public:
 	{
 		if (auto extents = ESDT_SpatialExtents.Cast(type, data, range))
 		{
-			if (domain == EDD_PerInstance)
+			if (domain == EDD_Spawner)
 			{
+				auto parentIds = runtime.IStream(ESDT_ParentId);
 				for (auto i : range)
 				{
-					TParticleId parentId = runtime.GetInstance(i).m_parentId;
+					const TParticleId parentId = parentIds[i];
 					const Vec3 wSource = m_source.GetTarget(runtime, parentId, true);
 					const Vec3 wDestination = m_destination.GetTarget(runtime, parentId, true);
 					extents[i] += Vec4(1,
@@ -890,9 +889,9 @@ public:
 	}
 
 private:
-	CTargetSource                          m_source      = ETargetSource::Parent;
-	CTargetSource                          m_destination = ETargetSource::Target;
-	CParamMod<EDD_PerParticle, UUnitFloat> m_position    = 1;
+	CTargetSource                       m_source      = ETargetSource::Parent;
+	CTargetSource                       m_destination = ETargetSource::Target;
+	CParamMod<EDD_Particle, UUnitFloat> m_position    = 1;
 };
 
 CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureLocationBeam, "Location", "Beam", colorLocation);
@@ -972,7 +971,7 @@ public:
 		auto orientations = container.IOStream(EPQF_Orientation);
 		auto velocities = container.IOStream(EPVF_Velocity);
 
-		for (auto particleId : container.GetNonSpawnedRange())
+		for (auto particleId : container.NonSpawnedRange())
 		{
 			Vec3 wPosition = positions.Load(particleId);
 			wPosition = cameraRotation * (wPosition - wPrevCameraPose.t) + wCurCameraPose.t;
@@ -999,6 +998,9 @@ CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureLocationBindToCamera, "Loca
 
 //////////////////////////////////////////////////////////////////////////
 // CFeatureLocationOmni
+
+MakeDataType(ESVF_VelocityFinal, Vec3, EDD_Spawner);
+MakeDataType(ESVF_Travel, Vec3, EDD_Spawner);
 
 extern TDataType<Vec3> EPVF_PositionPrev;
 
@@ -1032,14 +1034,16 @@ public:
 	virtual void AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams) override
 	{
 		pComponent->OnPreRun.add(this);
-		pComponent->CullSubInstances.add(this);
+		pComponent->CullSpawners.add(this);
 		pComponent->GetDynamicData.add(this);
 		pComponent->KillParticles.add(this);
 		pComponent->SpawnParticles.add(this);
 		pComponent->InitParticles.add(this);
 		m_visibilityRange.AddToComponent(pComponent, this);
+
 		pComponent->AddParticleData(EPVF_PositionPrev);
-		// pParams->m_positionsPreInit = true;
+		pComponent->AddParticleData(ESVF_VelocityFinal);
+		pComponent->AddParticleData(ESVF_Travel);
 
 		if (m_spawnOutsideView)
 		{
@@ -1076,23 +1080,26 @@ public:
 		auto positionsPrev = container.IStream(EPVF_PositionPrev, runtime.GetEmitter()->GetLocation().t);
 		auto velocities = container.IStream(EPVF_Velocity);
 
-		m_averageData.velocityFinal.zero();
-		m_averageData.vectorTravel.zero();
+		Vec3 velocityFinal(0), travel(0);
 		for (auto particleId : runtime.FullRange())
 		{
-			m_averageData.velocityFinal += velocities.Load(particleId);
-			m_averageData.vectorTravel += positions.Load(particleId) - positionsPrev.SafeLoad(particleId);
+			velocityFinal += velocities.Load(particleId);
+			travel += positions.Load(particleId) - positionsPrev.SafeLoad(particleId);
 		}
-		m_averageData.velocityFinal /= (float)container.GetNumParticles();
-		m_averageData.vectorTravel /= (float)container.GetNumParticles();
+		velocityFinal /= (float)container.GetNumParticles();
+		travel /= (float)container.GetNumParticles();
+
+		CRY_ASSERT(runtime.Container(EDD_Spawner).Size() == 1);
+		runtime.IOStream(ESVF_VelocityFinal).Store(0, velocityFinal);
+		runtime.IOStream(ESVF_Travel).Store(0, travel);
 	}
 
-	virtual void CullSubInstances(CParticleComponentRuntime& runtime, TVarArray<SInstance>& instances) override
+	virtual void CullSpawners(CParticleComponentRuntime& runtime, TVarArray<SSpawnerDesc>& spawners) override
 	{
-		// Allow only one instance
-		uint numAllowed = 1 - runtime.GetNumInstances();
-		if (numAllowed < instances.size())
-			instances.resize(numAllowed);
+		// Allow only one spawner
+		uint numAllowed = 1 - runtime.Container(EDD_Spawner).Size();
+		if (numAllowed < spawners.size())
+			spawners.resize(numAllowed);
 	}
 
 	virtual void GetDynamicData(const CParticleComponentRuntime& runtime, EParticleDataType type, void* data, EDataDomain domain, SUpdateRange range) override
@@ -1147,13 +1154,16 @@ public:
 
 		UpdateCameraData(runtime);
 
-		Vec3 travelPrev = m_averageData.velocityFinal * m_camData.deltaTimePrev;
+		CRY_ASSERT(runtime.Container(EDD_Spawner).Size() == 1);
+		const Vec3 velocityFinal = runtime.IStream(ESVF_VelocityFinal).Load(0);
+
+		Vec3 travelPrev = velocityFinal * m_camData.deltaTimePrev;
 		Matrix34v toPrev = m_camData.fromWorldPrev * Matrix34::CreateTranslationMat(-travelPrev) * m_camData.toWorld;
 		Matrix34v toWorld = m_camData.toWorld;
 
 		// Determine normal particle count from number previously spawned
 		CParticleContainer& container = runtime.GetContainer();
-		uint numSpawned = container.GetNumSpawnedParticles();
+		uint numSpawned = container.NumSpawned();
 		uint numParticles = uint(numSpawned * runtime.ComponentParams().m_maxParticleLife / runtime.DeltaTime());
 
 		// Randomly generate positions in current sector; only those not in previous sector spawn as particles
@@ -1220,20 +1230,22 @@ public:
 		auto velocities = container.IOStream(EPVF_Velocity);
 		auto normAges = container.IOStream(EPDT_NormalAge);
 
-		Vec3v travel = ToVec3v(m_averageData.vectorTravel);
-		Vec3v velFinal = ToVec3v(m_averageData.velocityFinal);
+		CRY_ASSERT(runtime.Container(EDD_Spawner).Size() == 1);
+		const Vec3 travel = runtime.IStream(ESVF_Travel).Load(0);
+		const Vec3v travelV = ToVec3v(travel);
+		const Vec3v velocityFinalV = ToVec3v(runtime.IStream(ESVF_VelocityFinal).Load(0));
 
 		for (auto particleId : runtime.SpawnedRangeV())
 		{
 			Vec3v pos = positions.Load(particleId);
-			positionsPrev.Store(particleId, pos - travel);
+			positionsPrev.Store(particleId, pos - travelV);
 
 			Vec3v vel = velocities.Load(particleId);
-			vel += velFinal;
+			vel += velocityFinalV;
 			velocities.Store(particleId, vel);
 		}
 
-		float lifeFraction = 1.5f * m_camData.maxDistance * m_averageData.vectorTravel.GetInvLengthSafe();
+		float lifeFraction = 1.5f * m_camData.maxDistance * travel.GetInvLengthSafe();
 		float curAge = max(1.0f - 2.0f * lifeFraction, 0.0f);
 		float ageInc = lifeFraction / runtime.SpawnedRange().size();
 
@@ -1259,14 +1271,6 @@ private:
 		float               deltaTimePrev {0};
 	};
 	SCameraData m_camData;
-
-	// PFX2_TODO: This must be moved to per-instance data
-	struct SComponentData
-	{
-		Vec3 velocityFinal {ZERO};
-		Vec3 vectorTravel  {ZERO};
-	};
-	SComponentData  m_averageData;
 
 	void UpdateCameraData(const CParticleComponentRuntime& runtime)
 	{

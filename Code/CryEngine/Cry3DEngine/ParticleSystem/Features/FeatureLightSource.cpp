@@ -87,7 +87,7 @@ public:
 		const float distRatio = GetFloatCVar(e_ParticlesLightsViewDistRatio);
 		AABB bounds { AABB::RESET };
 
-		for (auto particleId : container.GetFullRange())
+		for (auto particleId : container.FullRange())
 		{
 			const Vec3 position = positions.Load(particleId);
 			light.SetPosition(position);

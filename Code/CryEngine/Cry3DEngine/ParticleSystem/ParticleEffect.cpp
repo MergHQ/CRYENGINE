@@ -4,6 +4,7 @@
 #include "ParticleEffect.h"
 #include "ParticleEmitter.h"
 #include "ParticleSystem.h"
+#include "Material.h"
 #include <CrySerialization/STL.h>
 #include <CrySerialization/IArchive.h>
 #include <CrySerialization/SmartPtr.h>
@@ -62,7 +63,7 @@ void CParticleEffect::Compile()
 	for (auto& component : m_components)
 	{
 		component->m_componentId = id++;
-		if (!component->IsEnabled())
+		if (!component->CanMakeRuntime())
 			continue;
 		component->Compile();
 		if (component->MainPreUpdate.size())
@@ -79,7 +80,7 @@ void CParticleEffect::Compile()
 		if (!component->GetParentComponent())
 		{
 			m_topComponents.push_back(component);
-			if (!component->IsEnabled())
+			if (!component->CanMakeRuntime())
 				continue;
 			component->UpdateTimings();
 			const STimingParams& timings = component->ComponentParams();

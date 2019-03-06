@@ -70,10 +70,12 @@ public:
 	void          AddToComponent(CParticleComponent* pComponent, CParticleFeature* pFeature, ThisDataType dataType);
 	void          SerializeImpl(Serialization::IArchive& ar) override;
 
-	void          Init(CParticleComponentRuntime& runtime, ThisDataType dataType) const;
+	void          Init(CParticleComponentRuntime& runtime, ThisDataType dataType) const { Init(runtime, dataType, runtime.SpawnedRange(Domain)); }
+	void          Init(CParticleComponentRuntime& runtime, ThisDataType dataType, SUpdateRange range) const;
 	void          ModifyInit(const CParticleComponentRuntime& runtime, TIOStream<TType>& stream, SUpdateRange range) const;
 
-	void          Update(CParticleComponentRuntime& runtime, ThisDataType dataType) const;
+	void          Update(CParticleComponentRuntime& runtime, ThisDataType dataType) const { Update(runtime, dataType, runtime.FullRange(Domain)); }
+	void          Update(CParticleComponentRuntime& runtime, ThisDataType dataType, SUpdateRange range) const;
 	void          ModifyUpdate(const CParticleComponentRuntime& runtime, TIOStream<TType>& stream, SUpdateRange range) const;
 
 	TRange<TFrom> GetValues(const CParticleComponentRuntime& runtime, TVarArray<TType> data, EDataDomain domain) const;
@@ -172,33 +174,32 @@ struct STempUpdateBuffer: STempBuffer<T>
 };
 
 template<typename T>
-struct SInstanceUpdateBuffer: STempBuffer<T>
+struct SSpawnerUpdateBuffer: STempBuffer<T>
 {
 	template<typename TParamMod>
-	SInstanceUpdateBuffer(const CParticleComponentRuntime& runtime, TParamMod& paramMod, EDataDomain domain)
-		: STempBuffer<T>(runtime, paramMod), m_runtime(runtime), m_range(1, 1)
+	SSpawnerUpdateBuffer(const CParticleComponentRuntime& runtime, TParamMod& paramMod, EDataDomain domain)
+		: STempBuffer<T>(runtime, paramMod)
+		, m_parentIds(runtime.IStream(ESDT_ParentId))
+		, m_range(1, 1)
 	{
 		if (paramMod.HasModifiers())
 		{
-			this->Allocate(SUpdateRange(0, runtime.GetDomainSize(domain)));
+			this->Allocate(SUpdateRange(0, runtime.DomainSize(domain)));
 			m_range = paramMod.GetValues(runtime, this->m_buffer, domain);
 		}
 	}
 
 	TRange<T> operator[](uint id) const
 	{
-		if (this->IsValid() && id < m_runtime.GetNumInstances())
-		{
-			const TParticleId parentId = m_runtime.GetInstance(id).m_parentId;
-			return m_range * this->Load(parentId);
-		}
+		if (this->IsValid())
+			return m_range * this->SafeLoad(m_parentIds[id]);
 		else
 			return this->Load(0);
 	}
 
 private:
-	const CParticleComponentRuntime& m_runtime;
-	TRange<T>                        m_range;
+	IPidStream m_parentIds;
+	TRange<T>  m_range;
 };
 
 

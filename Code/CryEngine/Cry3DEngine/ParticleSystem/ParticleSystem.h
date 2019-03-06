@@ -78,6 +78,7 @@ public:
 	QuatT                    GetLastCameraPose() const        { return m_lastCameraPose; }
 	const TParticleEmitters& GetActiveEmitters() const        { return m_emitters; }
 	IMaterial*               GetFlareMaterial();
+	uint                     GetParticleSpec() const;
 
 	typedef std::vector<SParticleFeatureParams> TFeatureParams;
 	

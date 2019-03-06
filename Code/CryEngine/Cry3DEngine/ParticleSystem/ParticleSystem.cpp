@@ -359,6 +359,16 @@ IMaterial* CParticleSystem::GetFlareMaterial()
 	return m_pFlareMaterial;
 }
 
+uint CParticleSystem::GetParticleSpec() const
+{
+	int quality = GetCVars()->e_ParticlesQuality;
+	if (quality != 0)
+		return quality;
+
+	const ESystemConfigSpec configSpec = gEnv->pSystem->GetConfigSpec();
+	return uint(configSpec);
+}
+
 void CParticleSystem::Reset()
 {
 	m_bResetEmitters = true;
