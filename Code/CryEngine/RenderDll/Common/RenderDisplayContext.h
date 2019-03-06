@@ -188,7 +188,7 @@ public:
 	void                 PrePresent() override;
 	void                 PostPresent() override;
 
-	ETEX_Format          GetColorFormat() const override { return GetBackBufferFormat(); };
+	ETEX_Format          GetColorFormat() const override { return GetBackBufferFormat(); }
 	ETEX_Format          GetBackBufferFormat() const;
 
 	CTexture*            GetCurrentBackBuffer() const override;

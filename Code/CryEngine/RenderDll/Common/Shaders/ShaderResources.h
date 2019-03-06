@@ -177,7 +177,7 @@ public:
 
 	virtual void          SetInvalid() final;
 	// Check if shader resource is valid
-	virtual bool          IsValid() { return 0 == (m_flags & eFlagInvalid); };
+	virtual bool          IsValid() { return 0 == (m_flags & eFlagInvalid); }
 
 	~CShaderResources();
 	void                      RT_Release();

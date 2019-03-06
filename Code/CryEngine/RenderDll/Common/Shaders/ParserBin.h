@@ -1,15 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-/*=============================================================================
-   ParserBin.h : Script parser declarations.
-
-   Revision history:
-* Created by Honich Andrey
-
-   =============================================================================*/
-
-#ifndef PARSERBIN_H
-#define PARSERBIN_H
+#pragma once
 
 #include "ShaderCache.h"
 #include "ShaderAllocator.h"
@@ -972,17 +963,16 @@ public:
 	static uint32        NextToken(const char*& buf, char* com, bool& bKey);
 	static uint32        NextToken(char*& buf, char* com, bool& bKey);
 	static void          Init();
-	static void          RemovePlatformDefines();
 	static void          SetupForPlatform(uint32 nPlatform);
 	static void          SetupFeatureDefines();
 	static CCryNameTSCRC GetPlatformSpecName(CCryNameTSCRC orgName);
 	static const char*   GetPlatformShaderlistName();
-	static bool          PlatformSupportsConstantBuffers() { return (CParserBin::m_nPlatform & (SF_D3D12 | SF_D3D11 | SF_ORBIS | SF_DURANGO | SF_GL4 | SF_VULKAN | SF_GLES3)) != 0; };
+	static bool          PlatformSupportsConstantBuffers() { return (CParserBin::m_nPlatform & (SF_D3D12 | SF_D3D11 | SF_ORBIS | SF_DURANGO | SF_GL4 | SF_VULKAN | SF_GLES3)) != 0; }
 	static bool          PlatformSupportsGeometryShaders() { return (CParserBin::m_nPlatform & (SF_D3D12 | SF_D3D11 | SF_ORBIS | SF_DURANGO | SF_GL4 | SF_VULKAN)) != 0; }
 	static bool          PlatformSupportsHullShaders()     { return (CParserBin::m_nPlatform & (SF_D3D12 | SF_D3D11 | SF_ORBIS | SF_DURANGO | SF_GL4 | SF_VULKAN)) != 0; }
 	static bool          PlatformSupportsDomainShaders()   { return (CParserBin::m_nPlatform & (SF_D3D12 | SF_D3D11 | SF_ORBIS | SF_DURANGO | SF_GL4 | SF_VULKAN)) != 0; }
 	static bool          PlatformSupportsComputeShaders()  { return (CParserBin::m_nPlatform & (SF_D3D12 | SF_D3D11 | SF_ORBIS | SF_DURANGO | SF_GL4 | SF_VULKAN)) != 0; }
-	static bool          PlatformIsConsole()               { return (CParserBin::m_nPlatform & (SF_ORBIS | SF_DURANGO)) != 0; };
+	static bool          PlatformIsConsole()               { return (CParserBin::m_nPlatform & (SF_ORBIS | SF_DURANGO)) != 0; }
 
 	static bool m_bEditable;
 	static uint32 m_nPlatform;
@@ -992,5 +982,3 @@ public:
 };
 
 char* fxFillPr(char** buf, char* dst);
-
-#endif

@@ -1488,7 +1488,7 @@ void CRenderer::ReadPerFrameShaderConstants(const SRenderingPassInfo& passInfo, 
 	// Per frame - hardcoded/fast - update of commonly used data - feel free to improve this
 	CRenderView* pRenderView = passInfo.GetRenderView();
 
-	SRenderViewShaderConstants& PF = pRenderView->GetShaderConstants();;
+	SRenderViewShaderConstants& PF = pRenderView->GetShaderConstants();
 	uint32 nFrameID = passInfo.GetFrameID();
 	if (PF.nFrameID == nFrameID)
 		return;

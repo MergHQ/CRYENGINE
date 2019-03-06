@@ -81,7 +81,7 @@ public:
 
 	void                SetLifeTime(float lifeTime) { m_parameters->lifeTime = lifeTime; }
 
-	int                 GetNumParticles() const { return m_parameters->numParticles; };
+	int                 GetNumParticles() const { return m_parameters->numParticles; }
 	float               GetDeltaTime() const { return m_parameters->deltaTime; }
 
 	// this is from the render thread
@@ -105,7 +105,7 @@ public:
 	// currently called from the render element mfDraw, but may go somewhere else
 	void SwapToEnd(const SUpdateContext& context, CDeviceCommandListRef RESTRICT_REFERENCE commandList);
 
-	Vec3                                   GetPos() const { return m_parameters->emitterPosition; };
+	Vec3                                   GetPos() const { return m_parameters->emitterPosition; }
 
 	gpu_physics::CParticleFluidSimulation* CreateFluidSimulation();
 	gpu_physics::CParticleFluidSimulation* GetFluidSimulation() { return m_pFluidSimulation.get(); }

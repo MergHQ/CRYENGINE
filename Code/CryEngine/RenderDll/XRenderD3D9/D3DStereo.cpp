@@ -1027,7 +1027,7 @@ CStereoRenderingScope CD3DStereoRenderer::PrepareRenderingToVrQuadLayer(RenderLa
 	const auto &dc = m_pVrQuadLayerDisplayContexts[id];
 	if (dc.first)
 	{
-		CTexture* pTexture = dc.first->GetCurrentBackBuffer();;
+		CTexture* pTexture = dc.first->GetCurrentBackBuffer();
 		if (pTexture && m_pHmdRenderer)
 		{
 			if (RenderLayer::CProperties* pLayer = m_pHmdRenderer->GetQuadLayerProperties(id))

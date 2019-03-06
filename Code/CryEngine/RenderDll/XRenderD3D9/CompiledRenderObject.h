@@ -12,7 +12,7 @@ struct SSpecialRenderItemArray
 {
 	enum { eCachedItems = 3 };
 public:
-	SSpecialRenderItemArray() : m_size(0), m_capacity(0), m_array(0) {};
+	SSpecialRenderItemArray() : m_size(0), m_capacity(0), m_array(0) {}
 	~SSpecialRenderItemArray()
 	{
 		if (m_array)
@@ -326,7 +326,7 @@ public:
 	bool CheckDynamicInstancing(const SGraphicsPipelinePassContext& RESTRICT_REFERENCE passContext, const CCompiledRenderObject* RESTRICT_POINTER pNextObject) const;
 
 	// Returns cached data used to fill dynamic instancing buffer
-	const SPerInstanceShaderData& GetInstancingData() const { return m_instanceData; };
+	const SPerInstanceShaderData& GetInstancingData() const { return m_instanceData; }
 
 	static CCompiledRenderObject* AllocateFromPool();
 	static void FreeToPool(CCompiledRenderObject* ptr);

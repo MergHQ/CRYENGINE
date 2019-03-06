@@ -105,8 +105,11 @@ bool CGamePlugin::OnClientConnectionReceived(int channelId, bool bIsReset)
 		// Create the player component instance
 		CPlayerComponent* pPlayer = pPlayerEntity->GetOrCreateComponentClass<CPlayerComponent>();
 
-		// Push the component into our map, with the channel id as the key
-		m_players.emplace(std::make_pair(channelId, pPlayerEntity->GetId()));
+		if (pPlayer != nullptr)
+		{
+			// Push the component into our map, with the channel id as the key
+			m_players.emplace(std::make_pair(channelId, pPlayerEntity->GetId()));
+		}
 	}
 
 	return true;

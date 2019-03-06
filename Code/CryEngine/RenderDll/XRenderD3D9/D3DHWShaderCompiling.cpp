@@ -381,7 +381,7 @@ void CHWShader_D3D::mfGatherFXParameters(SHWSInstance* pInst, std::vector<SCGBin
 	{
 		pInst->m_pFXTextures.reserve(FXParams.m_FXTextures.size());
 		for (const auto &t : FXParams.m_FXTextures)
-			pInst->m_pFXTextures.push_back(&t);;
+			pInst->m_pFXTextures.push_back(&t);
 	}
 	else
 	{
