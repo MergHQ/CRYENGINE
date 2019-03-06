@@ -93,8 +93,8 @@ struct lockfree_add_vector
 		}
 		m_freeList.clear();
 	}
-	void Init()                          { CoalesceMemory(); };
-	void SetNoneWorkerThreadID(uint64 t) {};
+	void Init()                          { CoalesceMemory(); }
+	void SetNoneWorkerThreadID(uint64 t) {}
 
 	//////////////////////////////////////////////////////////////////////////
 	// std::vector like interface.
@@ -106,8 +106,8 @@ struct lockfree_add_vector
 	T*       end()                          { return m_pCurrentBuffer + m_lastIndex; }
 	const T* end() const                    { return m_pCurrentBuffer + m_lastIndex; }
 
-	T&       operator[](size_t index)       { return m_pCurrentBuffer[index]; };
-	const T& operator[](size_t index) const { return m_pCurrentBuffer[index]; };
+	T&       operator[](size_t index)       { return m_pCurrentBuffer[index]; }
+	const T& operator[](size_t index) const { return m_pCurrentBuffer[index]; }
 
 	void     clear()                        { m_lastIndex = 0; }
 	bool     empty() const                  { return m_lastIndex == 0; }

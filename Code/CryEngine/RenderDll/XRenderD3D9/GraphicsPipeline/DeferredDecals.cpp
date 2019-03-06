@@ -187,8 +187,8 @@ void CDeferredDecalsStage::SetupDecalPrimitive(const SDeferredDecal& decal, CRen
 		bCameraInVolume = fabs(s) - camNear <= r;  // OBB-Plane via separating axis test, to check if camera near plane intersects decal volume
 
 		assert(decal.rectTexture.w * decal.rectTexture.h > 0.f);
-		constants->textureRect[0] = Vec4(decal.rectTexture.w * texMatrix.m00, decal.rectTexture.h * texMatrix.m10, decal.rectTexture.x * texMatrix.m00 + decal.rectTexture.y * texMatrix.m10 + texMatrix.m30, 0);;
-		constants->textureRect[1] = Vec4(decal.rectTexture.w * texMatrix.m01, decal.rectTexture.h * texMatrix.m11, decal.rectTexture.x * texMatrix.m01 + decal.rectTexture.y * texMatrix.m11 + texMatrix.m31, 0);;
+		constants->textureRect[0] = Vec4(decal.rectTexture.w * texMatrix.m00, decal.rectTexture.h * texMatrix.m10, decal.rectTexture.x * texMatrix.m00 + decal.rectTexture.y * texMatrix.m10 + texMatrix.m30, 0);
+		constants->textureRect[1] = Vec4(decal.rectTexture.w * texMatrix.m01, decal.rectTexture.h * texMatrix.m11, decal.rectTexture.x * texMatrix.m01 + decal.rectTexture.y * texMatrix.m11 + texMatrix.m31, 0);
 
 		constants->diffuseCol = shaderItem.m_pShaderResources->GetColorValue(EFTT_DIFFUSE).toVec4();
 		constants->diffuseCol.w = shaderItem.m_pShaderResources->GetStrengthValue(EFTT_OPACITY) * decal.fAlpha;

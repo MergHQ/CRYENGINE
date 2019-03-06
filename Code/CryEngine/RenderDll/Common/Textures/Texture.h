@@ -1,16 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-/*=============================================================================
-   TexMan.h : Common texture manager declarations.
-
-   Revision history:
-* Created by Khonich Andrey
-   - 19:8:2008   12:14 : * Refactored by Anton Kaplanyan
-
-   =============================================================================*/
-
-#ifndef _TEXTURE_H
-#define _TEXTURE_H
+#pragma once
 
 #include <set>
 #include <atomic>
@@ -974,7 +964,7 @@ public:
 
 	static inline bool IsTextureExist(const CTexture* pTex)          { return pTex && pTex->GetDevTexture(); }
 
-	const bool         IsNoTexture() const                           { return m_bNoTexture; };
+	const bool         IsNoTexture() const                           { return m_bNoTexture; }
 	void               SetNeedRestoring()                            { m_bNeedRestoring = true; }
 	void               SetWasUnload(bool bSet)                       { m_bWasUnloaded = bSet; }
 	const bool         IsPartiallyLoaded() const                     { return m_nMinMipVidUploaded != 0; }
@@ -1048,7 +1038,7 @@ public:
 #endif
 	}
 
-	bool            IsFPFormat() const    { return CImageExtensionHelper::IsRangeless(m_eDstFormat); };
+	bool            IsFPFormat() const    { return CImageExtensionHelper::IsRangeless(m_eDstFormat); }
 
 	CDeviceTexture* GetDevTexture(bool bMultisampled = false) const { return (!bMultisampled ? m_pDevTexture : m_pDevTexture->GetMSAATexture()); }
 	void            RefDevTexture(CDeviceTexture* pDeviceTex);
@@ -1488,12 +1478,12 @@ public:
 		std::shared_ptr<IFlashPlayer>           GetPermPtr(CFlashTextureSourceBase* pSrc)              { return nullptr; }
 
 		void                                    Activate(bool activate, CFlashTextureSourceBase* pSrc) {}
-		void                                    Clear(CFlashTextureSourceBase* pSrc)                   {};
+		void                                    Clear(CFlashTextureSourceBase* pSrc)                   {}
 
 		const char*                             GetSourceFilePath() const                              { return "NULLWRAPPER"; }
 
 		void                                    UpdatePlayer(CFlashTextureSourceBase* pSrc)            {}
-		void                                    Advance(float delta)                                   {};
+		void                                    Advance(float delta)                                   {}
 
 		int                                     GetWidth() const                                       { return 16; }
 		int                                     GetHeight() const                                      { return 16; }
@@ -1531,7 +1521,7 @@ public:
 		std::shared_ptr<IFlashPlayer> GetPermPtr(CFlashTextureSourceBase* pSrc);
 
 		void          Activate(bool activate, CFlashTextureSourceBase* pSrc);
-		void          Clear(CFlashTextureSourceBase* pSrc) {};
+		void          Clear(CFlashTextureSourceBase* pSrc) {}
 
 		const char*   GetSourceFilePath() const;
 
@@ -1573,7 +1563,7 @@ public:
 		const char*   GetSourceFilePath() const;
 
 		void          UpdatePlayer(CFlashTextureSourceBase* pSrc);
-		void          Advance(float delta) {};
+		void          Advance(float delta) {}
 
 		int           GetWidth() const     { return m_width; }
 		int           GetHeight() const    { return m_height; }
@@ -1606,7 +1596,7 @@ public:
 		std::shared_ptr<IFlashPlayer> GetPermPtr(CFlashTextureSourceBase* pSrc);
 
 		void          Activate(bool activate, CFlashTextureSourceBase* pSrc);
-		void          Clear(CFlashTextureSourceBase* pSrc) {};
+		void          Clear(CFlashTextureSourceBase* pSrc) {}
 
 		const char*   GetSourceFilePath() const;
 
@@ -1719,7 +1709,7 @@ protected:
 	virtual int          GetHeight() const override                       { return GetSharedRTHeight(); }
 
 	virtual SDynTexture* GetDynTexture() const override                   { return ms_pDynTexture; }
-	virtual bool         UpdateDynTex(int rtWidth, int rtHeight) override { return ms_pDynTexture->IsValid(); };
+	virtual bool         UpdateDynTex(int rtWidth, int rtHeight) override { return ms_pDynTexture->IsValid(); }
 
 	virtual bool         Update() override;
 
@@ -1749,5 +1739,3 @@ private:
 	typedef std::map<string, std::vector<string>> PerLayerDynSrcMtls;
 	static PerLayerDynSrcMtls s_perLayerDynSrcMtls;
 };
-
-#endif

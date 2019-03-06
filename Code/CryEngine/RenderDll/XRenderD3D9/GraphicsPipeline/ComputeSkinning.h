@@ -57,7 +57,7 @@ public:
 		: m_size(0)
 	{}
 
-	CGpuBuffer& GetBuffer() { return m_buffer; };
+	CGpuBuffer& GetBuffer() { return m_buffer; }
 
 	void        UpdateBufferContent(const T* pData, size_t nSize) // called from multiple threads: always recreate immutable buffer
 	{

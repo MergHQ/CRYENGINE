@@ -1,16 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-// -------------------------------------------------------------------------
-//  File name:   CryNameR.h
-//  Version:     v1.00
-//  Created:     12/04/2010 by Andrey.
-// -------------------------------------------------------------------------
-//  History:
-//
-////////////////////////////////////////////////////////////////////////////
-
-#ifndef __CryNameR_h__
-#define __CryNameR_h__
 #pragma once
 
 #include <CryCore/CryCrc32.h>
@@ -34,8 +23,8 @@ public:
 		//char data[nAllocSize]
 
 		const char* GetStr()         { return (char*)(this + 1); }
-		void        AddRef()         { CryInterlockedIncrement(&nRefCount); };
-		int         Release()        { return CryInterlockedDecrement(&nRefCount); };
+		void        AddRef()         { CryInterlockedIncrement(&nRefCount); }
+		int         Release()        { return CryInterlockedDecrement(&nRefCount); }
 		int         GetMemoryUsage() { return sizeof(SNameEntryR) + strlen(GetStr()); }
 		int         GetLength()      { return nLength; }
 	};
@@ -451,5 +440,3 @@ inline bool operator!=(const char* s, const CCryNameTSCRC& n)
 {
 	return n != s;
 }
-
-#endif //__CryNameTS_h__

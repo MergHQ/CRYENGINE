@@ -347,7 +347,7 @@ void CSceneGBufferStage::ExecuteSceneOpaque()
 	 *     FOB_ALPHATEST set               ...
 	 *                                     ...Num
 	 */
-	CRY_ASSERT_MESSAGE(CRenderer::CV_r_ZPassDepthSorting == 1, "RendItem sorting has been overwritten and are not sorted by ObjFlags, this function can't be used!");;
+	CRY_ASSERT_MESSAGE(CRenderer::CV_r_ZPassDepthSorting == 1, "RendItem sorting has been overwritten and are not sorted by ObjFlags, this function can't be used!");
 
 	static_assert(FOB_SORT_MASK & FOB_HAS_PREVMATRIX, "FOB's HAS_PREVMATRIX must be a sort criteria");
 	static_assert(FOB_SORT_MASK & FOB_ZPREPASS, "FOB's ZPREPASS must be a sort criteria");
