@@ -86,6 +86,13 @@ struct SChildAttachParams
 	#define CRY_DEPRECATED_ENTTIY_LUA
 #endif
 
+enum class EEntitySpawnResult
+{
+	Success, //! Entity was spawned successfully.
+	Error,   //! Entity could not be spawned.
+	Skipped, //! Entity was skipped by user-defined logic.
+};
+
 //! Structure used when spawning new entities to define their initial state
 struct SEntitySpawnParams
 {
@@ -145,6 +152,9 @@ struct SEntitySpawnParams
 	//! This can be used by custom entity classes to deserialize data specified by the host via IEntity::GetSerializableNetworkSpawnInfo.
 	//! Used internally to automatically call IEntityComponent::NetReplicateSerialize.
 	TSerialize* pSpawnSerializer = nullptr;
+
+	//! This value will be set by the entity system, providing more information about the spawn result.
+	EEntitySpawnResult spawnResult = EEntitySpawnResult::Error;
 
 	/*CRY_DEPRECATED_ENTTIY_LUA*/ IScriptTable*           pPropertiesTable = nullptr;
 	/*CRY_DEPRECATED_ENTTIY_LUA*/ IScriptTable*           pPropertiesInstanceTable = nullptr;

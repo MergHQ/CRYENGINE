@@ -508,6 +508,7 @@ IEntity* CEntitySystem::SpawnPreallocatedEntity(CEntity* pPrecreatedEntity, SEnt
 
 	if (!ValidateSpawnParameters(params))
 	{
+		params.spawnResult = EEntitySpawnResult::Error;
 		return nullptr;
 	}
 
@@ -515,6 +516,7 @@ IEntity* CEntitySystem::SpawnPreallocatedEntity(CEntity* pPrecreatedEntity, SEnt
 
 	if (!OnBeforeSpawn(params))
 	{
+		params.spawnResult = EEntitySpawnResult::Skipped;
 		return nullptr;
 	}
 
@@ -535,6 +537,7 @@ IEntity* CEntitySystem::SpawnPreallocatedEntity(CEntity* pPrecreatedEntity, SEnt
 		if (!params.id)
 		{
 			EntityWarning("CEntitySystem::SpawnEntity Failed, Can't spawn entity %s. ID range is full (internal error)", params.sName);
+			params.spawnResult = EEntitySpawnResult::Error;
 			return nullptr;
 		}
 	}
@@ -586,7 +589,8 @@ IEntity* CEntitySystem::SpawnPreallocatedEntity(CEntity* pPrecreatedEntity, SEnt
 		{
 			if (!InitEntity(pEntity, params))   // calls DeleteEntity() on failure
 			{
-				return NULL;
+				params.spawnResult = EEntitySpawnResult::Error;
+				return nullptr;
 			}
 		}
 	}
@@ -596,6 +600,7 @@ IEntity* CEntitySystem::SpawnPreallocatedEntity(CEntity* pPrecreatedEntity, SEnt
 		CryLog("CEntitySystem::SpawnEntity %s %s 0x%x", pEntity ? pEntity->GetClass()->GetName() : "null", pEntity ? pEntity->GetName() : "null", pEntity ? pEntity->GetId() : 0);
 	}
 
+	params.spawnResult = EEntitySpawnResult::Success;
 	return pEntity;
 }
 
