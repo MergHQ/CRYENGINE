@@ -1097,7 +1097,7 @@ void CEntity::UpdateComponentEventListeners(const SEntityComponentRecord& compon
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CEntity::SetTimer(ISimpleEntityEventListener* pListener, EntityId id, const CryGUID& componentInstanceGUID, uint8 timerId, int timeInMilliseconds)
+void CEntity::SetTimer(ISimpleEntityEventListener* pListener, EntityId id, const CryGUID& componentInstanceGUID, uint32 timerId, int timeInMilliseconds)
 {
 	KillTimer(pListener, timerId);
 	SEntityTimerEvent timeEvent;
@@ -1110,7 +1110,7 @@ void CEntity::SetTimer(ISimpleEntityEventListener* pListener, EntityId id, const
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CEntity::KillTimer(ISimpleEntityEventListener* pListener, uint8 timerId)
+void CEntity::KillTimer(ISimpleEntityEventListener* pListener, uint32 timerId)
 {
 	g_pIEntitySystem->RemoveTimerEvent(pListener, timerId);
 }

@@ -695,11 +695,11 @@ public:
 	//! \param componentInstanceGUID Optional instance GUID of the component to which this timer is added. If set, the timer will be serialized to disk and restored with save games.
 	//! \param timerId Timer ID, multiple timers with different IDs are possible.
 	//! \param timeInMilliseconds Timer timeout time in milliseconds.
-	virtual void SetTimer(ISimpleEntityEventListener* pListener, EntityId id, const CryGUID& componentInstanceGUID, uint8 timerId, int timeInMilliseconds) = 0;
+	virtual void SetTimer(ISimpleEntityEventListener* pListener, EntityId id, const CryGUID& componentInstanceGUID, uint32 timerId, int timeInMilliseconds) = 0;
 
 	//! Stops already started entity timer with this id for the specified listener / component
 	//! \param timerId Timer ID of the timer started for this entity.
-	virtual void KillTimer(ISimpleEntityEventListener* pListener, uint8 timerId) = 0;
+	virtual void KillTimer(ISimpleEntityEventListener* pListener, uint32 timerId) = 0;
 
 	//! Stops all the timers for the specified listener / component
 	virtual void KillAllTimers(ISimpleEntityEventListener* pListener) = 0;
@@ -1474,12 +1474,12 @@ inline Matrix34 IEntityComponent::GetWorldTransformMatrix() const
 	return m_pEntity->GetWorldTM() * GetTransformMatrix();
 }
 
-inline void IEntityComponent::SetTimer(uint8 timerId, int timeInMilliseconds)
+inline void IEntityComponent::SetTimer(uint32 timerId, int timeInMilliseconds)
 {
 	m_pEntity->SetTimer(this, GetEntityId(), GetGUID(), timerId, timeInMilliseconds);
 }
 
-inline void IEntityComponent::KillTimer(uint8 timerId)
+inline void IEntityComponent::KillTimer(uint32 timerId)
 {
 	m_pEntity->KillTimer(this, timerId);
 }
