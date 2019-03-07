@@ -404,12 +404,12 @@ void CRopeObject::SerializeProperties(Serialization::IArchive& ar, bool bMultiEd
 {
 	if (ar.openBlock("rope_properties", "Rope Properties"))
 	{
-		ar(Serialization::Range(m_ropeParams.fThickness, 0.0f, 10000.0f), "radius", "Radius");
+		ar(Serialization::Range(m_ropeParams.fThickness, 0.0f, 10000.0f, 0.0f, 0.5f, 0.01f), "radius", "Radius");
 		SerializeBitflag(ar, m_ropeParams.nFlags, IRopeRenderNode::eRope_Smooth, "smooth", "Smooth");
 		SerializeBitflag(ar, m_ropeParams.nFlags, IRopeRenderNode::eRope_UseBones, "boned", "Use Bones");
-		ar(Serialization::Range(m_ropeParams.nNumSegments, 1, 1000), "num_segments", "Num Segments");
-		ar(Serialization::Range(m_ropeParams.nNumSides, 2, 100), "num_sides", "Num Sides");
-		ar(m_ropeParams.sizeChange, "sizeChange", "Radius Change");
+		ar(Serialization::Range(m_ropeParams.nNumSegments, 1, 1000, 1, 100, 1), "num_segments", "Num Segments");
+		ar(Serialization::Range(m_ropeParams.nNumSides, 2, 100, 2, 32, 1), "num_sides", "Num Sides");
+		ar(Serialization::Range(m_ropeParams.sizeChange, -1.0f, 100.0f, -1.0f, 1.0f, 0.1f), "sizeChange", "Radius Change");
 		ar(Serialization::Range(m_ropeParams.boneSmoothIters, 0, 10), "smooth_iters", "Bone Smooth Iters");
 
 		ar(m_ropeParams.fTextureTileU, "tex_u_tile", "Texture U Tiling");
@@ -435,12 +435,12 @@ void CRopeObject::SerializeProperties(Serialization::IArchive& ar, bool bMultiEd
 	if (ar.openBlock("physics", "Physics Properties"))
 	{
 		SerializeBitflag(ar, m_ropeParams.nFlags, IRopeRenderNode::eRope_Subdivide, "subdivide", "Subdivide");
-		ar(Serialization::Range(m_ropeParams.nMaxSubVtx, 1, 100), "max_subd_verts", "Max Subdiv Verts");
+		ar(Serialization::Range(m_ropeParams.nMaxSubVtx, 1, 100, 1, 8, 1), "max_subd_verts", "Max Subdiv Verts");
 		ar(Serialization::Range(m_ropeParams.nPhysSegments, 1, ROPE_PHYS_SEGMENTS_MAX), "phys_segments", "Physical Segments");
-		ar(m_ropeParams.tension, "tension", "Tension");
-		ar(m_ropeParams.friction, "friction", "Friction");
+		ar(Serialization::Range(m_ropeParams.tension, -100.0f, 100.0f, -0.1f, 1.0f, 0.01f), "tension", "Tension");
+		ar(Serialization::Range(m_ropeParams.friction, 0.0f, 1000.0f, 0.0f, 2.0f, 0.1f), "friction", "Friction");
 		ar(m_ropeParams.wind, "wind", "Wind");
-		ar(m_ropeParams.windVariance, "wind_var", "Wind Variation");
+		ar(Serialization::Range(m_ropeParams.windVariance, 0.0f, 100.0f, 0.0f, 1.0f, 0.1f), "wind_var", "Wind Variation");
 		ar(m_ropeParams.airResistance, "air_res", "Air Resistance");
 		ar(m_ropeParams.waterResistance, "water_res", "Water Resistance");
 
@@ -459,16 +459,16 @@ void CRopeObject::SerializeProperties(Serialization::IArchive& ar, bool bMultiEd
 
 	if (ar.openBlock("physics_advanced", "Advanced Physics"))
 	{
-		ar(m_ropeParams.mass, "mass", "Mass");
-		ar(m_ropeParams.frictionPull, "friction_pull", "Friction Pull");
+		ar(Serialization::Range(m_ropeParams.mass, 0.0f, 10000.0f, 0.0f, 100.0f, 0.1f), "mass", "Mass");
+		ar(Serialization::Range(m_ropeParams.frictionPull, 0.0f, 1000.0f, 0.0f, 2.0f, 0.1f), "friction_pull", "Friction Pull");
 		ar(m_ropeParams.maxForce, "max_force", "Max Force");
 		SerializeBitflag(ar, m_ropeParams.nFlags, IRopeRenderNode::eRope_Awake, "awake", "Awake");
-		ar(m_ropeParams.nMaxIters, "solver_iter", "Solver Iterations");
-		ar(m_ropeParams.maxTimeStep, "max_timestep", "Max Timestep");
-		ar(m_ropeParams.stiffness, "stiffness", "Stiffness");
-		ar(m_ropeParams.hardness, "hardness", "Contact Hardness");
-		ar(m_ropeParams.damping, "damping", "Damping");
-		ar(m_ropeParams.sleepSpeed, "sleep_speed", "Sleep Speed");
+		ar(Serialization::Range(m_ropeParams.nMaxIters, 0, 100000, 1, 1000, 100), "solver_iter", "Solver Iterations");
+		ar(Serialization::Range(m_ropeParams.maxTimeStep, 0.001f, 1.0f, 0.001f, 0.1f, 0.01f), "max_timestep", "Max Timestep");
+		ar(Serialization::Range(m_ropeParams.stiffness, 0.0f, 1000.0f, 0.0f, 100.0f, 1.0f), "stiffness", "Stiffness");
+		ar(Serialization::Range(m_ropeParams.hardness, 0.0f, 1000.0f, 0.0f, 100.0f, 1.0f), "hardness", "Contact Hardness");
+		ar(Serialization::Range(m_ropeParams.damping, 0.0f, 100.0f, 0.0f, 10.0f, 0.1f), "damping", "Damping");
+		ar(Serialization::Range(m_ropeParams.sleepSpeed, 0.0f, 100.0f, 0.0f, 0.5f, 0.01f), "sleep_speed", "Sleep Speed");
 
 		ar.closeBlock();
 	}
