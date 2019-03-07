@@ -161,14 +161,18 @@ inline void assertion_failed(char const* const szExpr, char const* const szFunct
 		#define CRY_ASSERT(condition)                           ((void)0)
 	#endif // _RELEASE
 
-template<typename T>
-inline T const& CryVerify(T const& expr, const char* szMessage)
+namespace Cry
 {
-	CRY_ASSERT_MESSAGE(expr, szMessage);
+template<typename T, typename ... Args>
+inline T const& VerifyWithMessage(T const& expr, Args&& ... args)
+{
+	CRY_ASSERT_MESSAGE(expr, std::forward<Args>(args) ...);
 	return expr;
 }
+} // namespace Cry
 
-	#define CRY_VERIFY(expr) CryVerify(expr, # expr)
+	#define CRY_VERIFY(expr)                   Cry::VerifyWithMessage(expr, # expr)
+	#define CRY_VERIFY_WITH_MESSAGE(expr, ...) Cry::VerifyWithMessage(expr, __VA_ARGS__)
 
 #endif   // CRY_ASSERT_H_INCLUDED
 
