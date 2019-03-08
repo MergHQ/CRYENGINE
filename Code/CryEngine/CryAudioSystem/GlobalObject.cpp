@@ -403,71 +403,68 @@ void CGlobalObject::DrawDebugInfo(IRenderAuxGeom& auxGeom, float const posX, flo
 		}
 	}
 
-	if ((g_cvars.m_hideInactiveObjects == 0) || ((g_cvars.m_hideInactiveObjects != 0) && !m_triggerInstances.empty()))
+	if (isTextFilterDisabled || doesTriggerMatchFilter)
 	{
-		if (isTextFilterDisabled || doesTriggerMatchFilter)
+		for (auto const& debugText : triggerInfo)
 		{
-			for (auto const& debugText : triggerInfo)
-			{
-				auxGeom.Draw2dLabel(
-					posX,
-					posY,
-					Debug::g_objectFontSize,
-					Debug::s_objectColorTrigger,
-					false,
-					"%s", debugText.c_str());
+			auxGeom.Draw2dLabel(
+				posX,
+				posY,
+				Debug::g_objectFontSize,
+				Debug::s_objectColorTrigger,
+				false,
+				"%s", debugText.c_str());
 
-				posY += Debug::g_objectLineHeight;
-			}
+			posY += Debug::g_objectLineHeight;
 		}
+	}
 
-		if (isTextFilterDisabled || doesStateSwitchMatchFilter)
+	if (isTextFilterDisabled || doesStateSwitchMatchFilter)
+	{
+		for (auto const& switchStatePair : switchStateInfo)
 		{
-			for (auto const& switchStatePair : switchStateInfo)
-			{
-				auto const pSwitch = switchStatePair.first;
-				auto const pSwitchState = switchStatePair.second;
+			auto const pSwitch = switchStatePair.first;
+			auto const pSwitchState = switchStatePair.second;
 
-				Debug::CStateDrawData& drawData = m_stateDrawInfo.emplace(std::piecewise_construct, std::forward_as_tuple(pSwitch->GetId()), std::forward_as_tuple(pSwitchState->GetId())).first->second;
-				drawData.Update(pSwitchState->GetId());
-				ColorF const switchTextColor = { 0.8f, drawData.m_currentSwitchColor, 0.6f };
+			Debug::CStateDrawData& drawData = m_stateDrawInfo.emplace(std::piecewise_construct, std::forward_as_tuple(pSwitch->GetId()), std::forward_as_tuple(pSwitchState->GetId())).first->second;
+			drawData.Update(pSwitchState->GetId());
+			ColorF const switchTextColor = { 0.8f, drawData.m_currentSwitchColor, 0.6f };
 
-				auxGeom.Draw2dLabel(
-					posX,
-					posY,
-					Debug::g_objectFontSize,
-					switchTextColor,
-					false,
-					"%s: %s\n",
-					pSwitch->GetName(),
-					pSwitchState->GetName());
+			auxGeom.Draw2dLabel(
+				posX,
+				posY,
+				Debug::g_objectFontSize,
+				switchTextColor,
+				false,
+				"%s: %s\n",
+				pSwitch->GetName(),
+				pSwitchState->GetName());
 
-				posY += Debug::g_objectLineHeight;
-			}
+			posY += Debug::g_objectLineHeight;
 		}
+	}
 
-		if (isTextFilterDisabled || doesParameterMatchFilter)
+	if (isTextFilterDisabled || doesParameterMatchFilter)
+	{
+		for (auto const& parameterPair : parameterInfo)
 		{
-			for (auto const& parameterPair : parameterInfo)
-			{
-				auxGeom.Draw2dLabel(
-					posX,
-					posY,
-					Debug::g_objectFontSize,
-					Debug::s_objectColorParameter,
-					false,
-					"%s: %2.2f\n",
-					parameterPair.first,
-					parameterPair.second);
+			auxGeom.Draw2dLabel(
+				posX,
+				posY,
+				Debug::g_objectFontSize,
+				Debug::s_objectColorParameter,
+				false,
+				"%s: %2.2f\n",
+				parameterPair.first,
+				parameterPair.second);
 
-				posY += Debug::g_objectLineHeight;
-			}
+			posY += Debug::g_objectLineHeight;
 		}
+	}
 
-		if ((g_cvars.m_drawDebug & Debug::EDrawFilter::ObjectImplInfo) != 0)
-		{
-			m_pIObject->DrawDebugInfo(auxGeom, posX, posY, (isTextFilterDisabled ? nullptr : lowerCaseSearchString.c_str()));
-		}
+	if ((g_cvars.m_drawDebug & Debug::EDrawFilter::ObjectImplInfo) != 0)
+	{
+		m_pIObject->DrawDebugInfo(auxGeom, posX, posY, (isTextFilterDisabled ? nullptr : lowerCaseSearchString.c_str()));
 	}
 }
 #endif // CRY_AUDIO_USE_DEBUG_CODE
