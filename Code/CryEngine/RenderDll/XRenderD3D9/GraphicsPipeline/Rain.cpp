@@ -28,10 +28,14 @@ CRainStage::CRainStage()
 
 CRainStage::~CRainStage()
 {
+	Destroy();
 }
 
 void CRainStage::Init()
 {
+	if (!CRendererCVars::IsRainEnabled())
+		return;
+
 	CRY_ASSERT(m_pSurfaceFlowTex == nullptr);
 	m_pSurfaceFlowTex = CTexture::ForNamePtr("%ENGINE%/EngineAssets/Textures/Rain/surface_flow_ddn.tif", FT_DONT_STREAM, eTF_Unknown);
 
@@ -140,25 +144,42 @@ void CRainStage::Destroy()
 	if (m_rainVertexBuffer != ~0u)
 	{
 		gRenDev->m_DevBufMan.Destroy(m_rainVertexBuffer);
+		m_rainVertexBuffer = ~0u;
+	}
+
+	m_pSurfaceFlowTex.reset();
+	m_pRainSpatterTex.reset();
+	m_pPuddleMaskTex.reset();
+	m_pHighFreqNoiseTex.reset();
+	m_pRainfallTex.reset();
+	m_pRainfallNormalTex.reset();
+
+	for (auto& pTex : m_pRainRippleTex)
+	{
+		pTex.reset();
 	}
 }
 
 void CRainStage::Update()
 {
-	CD3D9Renderer* const RESTRICT_POINTER rd = gcpRendD3D;
-	const auto shouldApplyOcclusion = rd->m_bDeferredRainOcclusionEnabled;
-
-	// Create/release the occlusion texture on demand
-	if (!shouldApplyOcclusion && CTexture::IsTextureExist(CRendererResources::s_ptexRainOcclusion))
-		CRendererResources::s_ptexRainOcclusion->ReleaseDeviceTexture(false);
-	else if (shouldApplyOcclusion && !CTexture::IsTextureExist(CRendererResources::s_ptexRainOcclusion))
-		CRendererResources::s_ptexRainOcclusion->CreateRenderTarget(eTF_R8, Clr_Neutral);
-
 	if (RenderView()->GetCurrentEye() != CCamera::eEye_Right)
 	{
+		CD3D9Renderer* const RESTRICT_POINTER rd = gcpRendD3D;
 		// TODO: improve this dependency and make it double-buffer.
 		// copy rain info to member variable every frame.
 		m_RainVolParams = rd->m_p3DEngineCommon.m_RainInfo;
+	}
+}
+
+void CRainStage::OnCVarsChanged(const CCVarUpdateRecorder& cvarUpdater)
+{
+	const bool enabled = CRendererCVars::IsRainEnabled();
+	if (enabled != Initialized())
+	{
+		if (enabled)
+			Init();
+		else
+			Destroy();
 	}
 }
 

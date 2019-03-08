@@ -2,6 +2,7 @@
 
 #include "StdAfx.h"
 #include "GraphicsPipeline.h"
+#include "Common/RendererResources.h"
 
 //////////////////////////////////////////////////////////////////////////
 CGraphicsPipeline::CGraphicsPipeline()
@@ -66,7 +67,8 @@ void CGraphicsPipeline::SetCurrentRenderView(CRenderView* pRenderView)
 //////////////////////////////////////////////////////////////////////////
 void CGraphicsPipeline::Update(EShaderRenderingFlags renderingFlags)
 {
-	// Sets the current render view on all the pipeline stages.
+	CRendererResources::Update(renderingFlags);
+
 	for (auto it = m_pipelineStages.begin(); it != m_pipelineStages.end(); ++it)
 	{
 		if (*it && (*it)->IsStageActive(renderingFlags))
@@ -75,8 +77,10 @@ void CGraphicsPipeline::Update(EShaderRenderingFlags renderingFlags)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CGraphicsPipeline::OnCVarsChanged(CCVarUpdateRecorder& rCVarRecs)
+void CGraphicsPipeline::OnCVarsChanged(const CCVarUpdateRecorder& rCVarRecs)
 {
+	CRendererResources::OnCVarsChanged(rCVarRecs);
+
 	for (auto it = m_pipelineStages.begin(); it != m_pipelineStages.end(); ++it)
 	{
 		if (*it)

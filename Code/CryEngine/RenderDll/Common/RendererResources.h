@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include <CryRenderer/IRenderer.h>
 #include <CryRenderer/ITexture.h>
 
 //===================================================================
@@ -11,6 +12,7 @@
 
 class CTexture;
 struct SEnvTexture;
+class CCVarUpdateRecorder;
 
 // Custom Textures IDs
 enum
@@ -98,6 +100,8 @@ enum
 
 class CRendererResources
 {
+	static bool RainOcclusionMapsInitialized() { return s_ptexRainSSOcclusion[0] != nullptr; }
+	static bool RainOcclusionMapsEnabled();
 
 public:
 	void InitResources() {}
@@ -123,6 +127,8 @@ public:
 	static bool CreatePostFXMaps(int resourceWidth, int resourceHeight);
 	static void CreateDeferredMaps(int resourceWidth, int resourceHeight);
 	static void CreateSystemTargets(int resourceWidth, int resourceHeight);
+	static void PrepareRainOcclusionMaps();
+	static void CreateRainOcclusionMaps(int resourceWidth, int resourceHeight);
 
 	static void ResizeSystemTargets(int renderWidth, int renderHeight);
 
@@ -132,13 +138,16 @@ public:
 	static void DestroyPostFXMaps();
 	static void DestroyDeferredMaps();
 	static void DestroySystemTargets();
+	static void DestroyRainOcclusionMaps();
 
 	static void LoadDefaultSystemTextures();
 	static void UnloadDefaultSystemTextures(bool bFinalRelease = false);
 
 	static void Clear();
 	static void ShutDown();
+	static void Update(EShaderRenderingFlags renderingFlags);
 
+	static void OnCVarsChanged(const CCVarUpdateRecorder& rCVarRecs);
 	static void OnRenderResolutionChanged(int renderWidth, int renderHeight);
 	static void OnOutputResolutionChanged(int outputWidth, int outputHeight);
 	static void OnDisplayResolutionChanged(int displayWidth, int displayHeight);

@@ -43,7 +43,7 @@ public:
 	virtual void Resize(int renderWidth, int renderHeight);
 	// Prepare all stages before actual drawing starts
 	virtual void Update(EShaderRenderingFlags renderingFlags);
-	virtual void OnCVarsChanged(CCVarUpdateRecorder& rCVarRecs);
+	virtual void OnCVarsChanged(const CCVarUpdateRecorder& rCVarRecs);
 	// Execute the pipeline and its stages
 	virtual void Execute() = 0;
 

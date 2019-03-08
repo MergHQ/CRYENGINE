@@ -15,19 +15,20 @@ public:
 
 	bool IsStageActive(EShaderRenderingFlags flags) const final
 	{
-		return CRenderer::CV_r_rain && CRenderer::CV_r_PostProcess;
+		return CRendererCVars::IsRainEnabled() && CRendererCVars::CV_r_PostProcess;
 	}
 
 	void Init() final;
-	void Update() final;
 	void Destroy();
+	void Update() final;
+	void OnCVarsChanged(const CCVarUpdateRecorder& cvarUpdater) final;
 
 	void ExecuteRainOcclusion();
 	void ExecuteDeferredRainGBuffer();
 	void Execute();
 
-	bool IsDeferredRainEnabled() const { return CRendererCVars::CV_r_rain && gcpRendD3D->m_bDeferredRainEnabled; }
-	bool IsRainOcclusionEnabled() const { return CRendererCVars::CV_r_rain && gcpRendD3D->m_bDeferredRainOcclusionEnabled; }
+	bool IsDeferredRainEnabled() const { return CRendererCVars::IsRainEnabled() && gcpRendD3D->m_bDeferredRainEnabled; }
+	bool IsRainOcclusionEnabled() const { return CRendererCVars::IsRainEnabled() && gcpRendD3D->m_bDeferredRainOcclusionEnabled; }
 
 private:
 	static const int32  m_slices = 12;
@@ -36,6 +37,7 @@ private:
 
 private:
 	void ExecuteRainOcclusionGen();
+	bool Initialized() const { return m_pSurfaceFlowTex.get() != nullptr; }
 
 private:
 	_smart_ptr<CTexture> m_pSurfaceFlowTex;

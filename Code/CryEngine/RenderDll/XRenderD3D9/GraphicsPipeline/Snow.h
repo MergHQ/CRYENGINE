@@ -15,10 +15,11 @@ public:
 
 	bool IsStageActive(EShaderRenderingFlags flags) const final
 	{
-		return CRenderer::CV_r_snow && CRenderer::CV_r_PostProcess;
+		return CRendererCVars::IsSnowEnabled() && CRenderer::CV_r_PostProcess;
 	}
 
 	void Init() final;
+	void Destroy();
 	void Update() final;
 	void Resize(int renderWidth, int renderHeight) final;
 	void OnCVarsChanged(const CCVarUpdateRecorder& cvarUpdater) final;
@@ -27,8 +28,8 @@ public:
 	void ExecuteDeferredSnowDisplacement();
 	void Execute();
 
-	bool IsDeferredSnowEnabled() const { return CRendererCVars::CV_r_snow && gcpRendD3D->m_bDeferredSnowEnabled; }
-	bool IsDeferredSnowDisplacementEnabled() const { return CRendererCVars::CV_r_snow && CRendererCVars::CV_r_snow_displacement && gcpRendD3D->m_bDeferredSnowEnabled; }
+	bool IsDeferredSnowEnabled() const { return CRendererCVars::IsSnowEnabled() && gcpRendD3D->m_bDeferredSnowEnabled; }
+	bool IsDeferredSnowDisplacementEnabled() const { return CRendererCVars::IsSnowEnabled() && CRendererCVars::CV_r_snow_displacement && gcpRendD3D->m_bDeferredSnowEnabled; }
 
 private:
 	// Snow particle properties
@@ -74,6 +75,8 @@ private:
 	void ExecuteHalfResComposite();
 	void GetScissorRegion(const Vec3& cameraOrigin, const Vec3& vCenter, float fRadius, int32& sX, int32& sY, int32& sWidth, int32& sHeight) const;
 
+	bool Initialized() const { return m_pSnowFlakesTex.get() != nullptr; }
+
 private:
 	_smart_ptr<CTexture>      m_pSnowFlakesTex;
 	_smart_ptr<CTexture>      m_pSnowDerivativesTex;
@@ -105,5 +108,4 @@ private:
 	int32                     m_nAliveClusters = 0;
 	int32                     m_nNumClusters = 0;
 	int32                     m_nFlakesPerCluster = 0;
-
 };
