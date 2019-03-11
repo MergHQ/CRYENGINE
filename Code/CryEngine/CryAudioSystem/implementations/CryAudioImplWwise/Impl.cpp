@@ -876,7 +876,6 @@ void CImpl::SetLibraryData(XmlNodeRef const pNode, ContextId const contextId)
 	}
 	else
 	{
-		SPoolSizes contextPoolSizes;
 		CountPoolSizes(pNode, g_contextPoolSizes[contextId]);
 	}
 }
