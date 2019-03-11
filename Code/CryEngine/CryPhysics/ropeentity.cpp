@@ -3030,9 +3030,7 @@ float CRopeEntity::GetExtent(EGeomForm eForm)	const
 
 void CRopeEntity::GetRandomPoints(Array<PosNorm> points, CRndGen& seed, EGeomForm eForm) const
 {
-
-	CGeomExtent const& ext = m_Extents[GeomForm_Edges];
-	if (eForm != GeomForm_Vertices && !ext.NumParts())
+	if (eForm != GeomForm_Vertices && !m_Extents[GeomForm_Edges].NumParts())
 		return points.fill(ZERO);
 
 	strided_pointer<Vec3> vtx;
@@ -3046,7 +3044,7 @@ void CRopeEntity::GetRandomPoints(Array<PosNorm> points, CRndGen& seed, EGeomFor
 			dir = (vtx[min(i+1,nVerts-1)] - vtx[max(i-1,0)]).normalized();
 		}
 		else {
-			int i = ext.RandomPart(seed);
+			int i = m_Extents[GeomForm_Edges].RandomPart(seed);
 			ran.vPos = vtx[i]+(vtx[i+1]-vtx[i])*seed.GetRandom(0.0f, 1.0f);
 			dir = (vtx[i+1]-vtx[i]).normalized();
 		}

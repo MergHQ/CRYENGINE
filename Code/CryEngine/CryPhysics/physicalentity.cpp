@@ -1436,8 +1436,7 @@ float CPhysicalEntity::GetExtent(EGeomForm eForm) const
 void CPhysicalEntity::GetRandomPoints(Array<PosNorm> points, CRndGen& seed, EGeomForm eForm) const
 {
 	// choose sub-part, get random pos, transform to world
-	const CGeomExtent& ext = m_Extents[eForm];
-	for (auto subPoints : ext.RandomPartsAliasSum(points, seed)) {
+	for (auto subPoints : m_Extents[eForm].RandomPartsAliasSum(points, seed)) {
 		if (subPoints.iPart >= 0 && subPoints.iPart < m_nParts) {
 			geom const& part = m_parts[subPoints.iPart];
 			part.pPhysGeom->pGeom->GetRandomPoints(subPoints.aPoints, seed, eForm);
