@@ -1423,8 +1423,7 @@ void CLog::CreateBackupFile() const
 	};
 	const wstring durangoSrcFilePath = processDurangoPath(adjustedSrcFilePath);
 	const wstring durangosDstFilePath = processDurangoPath(adjustedDstFilePath);
-	HRESULT result = CopyFile2(durangoSrcFilePath, durangosDstFilePath, nullptr);
-	CRY_ASSERT_MESSAGE(result == S_OK, "Error copying log backup file");
+	CRY_VERIFY_WITH_MESSAGE(CopyFile2(durangoSrcFilePath, durangosDstFilePath, nullptr) == S_OK, "Error copying log backup file");
 #else
 	CRY_ASSERT_MESSAGE(adjustedSrcFilePath[0] != '%' && adjustedDstFilePath[0] != '%', "Invalid %ALIAS% in CLog::CreateBackupFile()");
 	CopyFile(adjustedSrcFilePath, adjustedDstFilePath, false);
