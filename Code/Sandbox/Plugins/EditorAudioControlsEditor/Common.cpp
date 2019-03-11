@@ -22,7 +22,6 @@ CMiddlewareDataWidget* g_pMiddlewareDataWidget = nullptr;
 CFileMonitorMiddleware* g_pFileMonitorMiddleware = nullptr;
 CContextWidget* g_pContextWidget = nullptr;
 
-Platforms g_platforms;
 SImplInfo g_implInfo;
 
 ControlIds g_importedItemIds;

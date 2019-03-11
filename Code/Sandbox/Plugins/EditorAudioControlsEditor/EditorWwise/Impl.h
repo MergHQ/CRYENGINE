@@ -28,7 +28,7 @@ public:
 	virtual ~CImpl() override;
 
 	// IImpl
-	virtual void           Initialize(SImplInfo& implInfo, Platforms const& platforms, ExtensionFilterVector& extensionFilters, QStringList& supportedFileTypes) override;
+	virtual void           Initialize(SImplInfo& implInfo, ExtensionFilterVector& extensionFilters, QStringList& supportedFileTypes) override;
 	virtual QWidget*       CreateDataPanel() override;
 	virtual void           DestroyDataPanel() override;
 	virtual void           Reload(SImplInfo& implInfo) override;

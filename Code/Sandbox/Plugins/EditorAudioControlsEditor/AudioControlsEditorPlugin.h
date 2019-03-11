@@ -35,13 +35,12 @@ public:
 	virtual char const* GetPluginDescription() override { return "The Audio Controls Editor enables browsing and configuring audio events exposed from the audio middleware"; }
 	// ~IPlugin
 
-	static void       SaveData();
-	static void       ReloadData(EReloadFlags const flags);
-	static void       ExecuteTrigger(string const& triggerName);
-	static void       ExecuteTriggerEx(string const& triggerName, XmlNodeRef const pNode);
-	static void       StopTriggerExecution();
-	static void       OnAudioCallback(CryAudio::SRequestInfo const* const pRequestInfo);
-	static EErrorCode GetLoadingErrorMask() { return s_loadingErrorMask; }
+	static void SaveData();
+	static void ReloadData(EReloadFlags const flags);
+	static void ExecuteTrigger(string const& triggerName);
+	static void ExecuteTriggerEx(string const& triggerName, XmlNodeRef const pNode);
+	static void StopTriggerExecution();
+	static void OnAudioCallback(CryAudio::SRequestInfo const* const pRequestInfo);
 
 	static CCrySignal<void()> SignalOnBeforeLoad;
 	static CCrySignal<void()> SignalOnAfterLoad;
@@ -58,7 +57,5 @@ private:
 
 	static FileNames           s_currentFilenames;
 	static CryAudio::ControlId s_audioTriggerId;
-
-	static EErrorCode          s_loadingErrorMask;
 };
 } // namespace ACE

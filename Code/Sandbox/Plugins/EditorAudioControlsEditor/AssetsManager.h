@@ -63,8 +63,8 @@ public:
 
 	void             OnBeforeControlModified(CControl* const pControl);
 	void             OnAfterControlModified(CControl* const pControl);
-	void             OnConnectionAdded(CControl* const pControl, Impl::IItem* const pIItem);
-	void             OnConnectionRemoved(CControl* const pControl, Impl::IItem* const pIItem);
+	void             OnConnectionAdded(CControl* const pControl);
+	void             OnConnectionRemoved(CControl* const pControl);
 	void             OnAssetRenamed(CAsset* const pAsset);
 
 	void             UpdateConfigFolderPath();

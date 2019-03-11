@@ -22,24 +22,21 @@ public:
 
 	CFileLoader() = default;
 
-	FileNames  GetLoadedFilenamesList() const { return m_loadedFilenames; }
-	void       CreateInternalControls();
-	void       Load();
-	EErrorCode GetErrorCodeMask() const { return m_errorCodeMask; }
+	FileNames GetLoadedFilenamesList() const { return m_loadedFilenames; }
+	void      CreateInternalControls();
+	void      Load();
 
 private:
 
 	bool      LoadAllLibrariesInFolder(string const& folderPath, string const& contextName);
 	void      LoadControlsLibrary(XmlNodeRef const pRoot, string const& filepath, string const& contextName, string const& fileName, uint8 const version);
 	CControl* LoadControl(XmlNodeRef const pNode, CryAudio::ContextId const contextId, CAsset* const pParentItem);
-	void      LoadPlatformSpecificConnections(XmlNodeRef const pNode, CControl* const pControl);
 
 #if defined (USE_BACKWARDS_COMPATIBILITY)
 	void LoadControlsBW();
 	bool LoadAllLibrariesInFolderBW(string const& folderPath, string const& level);
 #endif //  USE_BACKWARDS_COMPATIBILITY
 
-	FileNames  m_loadedFilenames;
-	EErrorCode m_errorCodeMask = EErrorCode::None;
+	FileNames m_loadedFilenames;
 };
 } // namespace ACE

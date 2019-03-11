@@ -10,7 +10,6 @@ namespace Impl
 namespace Fmod
 {
 ConnectionsByContext g_connections;
-Platforms g_platforms;
 } // namespace Fmod
 } // namespace Impl
 } // namespace ACE

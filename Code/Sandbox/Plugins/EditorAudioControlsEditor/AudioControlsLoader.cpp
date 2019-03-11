@@ -381,28 +381,6 @@ void CAudioControlsLoader::LoadPreloadConnections(XmlNodeRef const pNode, CContr
 			continue;
 		}
 
-		// Get the index for that platform name
-		int platformIndex = -1;
-		bool foundPlatform = false;
-		char const* const szPlatformName = pGroupNode->getAttr("atl_name");
-
-		for (auto const szPlatform : g_platforms)
-		{
-			++platformIndex;
-
-			if (_stricmp(szPlatformName, szPlatform) == 0)
-			{
-				foundPlatform = true;
-				break;
-			}
-		}
-
-		if (!foundPlatform)
-		{
-			m_errorCodeMask |= EErrorCode::UnkownPlatform;
-			pControl->SetModified(true, true);
-		}
-
 		int const numConnections = pGroupNode->getChildCount();
 
 		for (int j = 0; j < numConnections; ++j)
@@ -411,9 +389,11 @@ void CAudioControlsLoader::LoadPreloadConnections(XmlNodeRef const pNode, CContr
 
 			if (pConnectionNode != nullptr)
 			{
-				pControl->LoadConnectionFromXML(pConnectionNode, platformIndex);
+				pControl->LoadConnectionFromXML(pConnectionNode);
 			}
 		}
+
+		pControl->SetModified(true, true);
 	}
 }
 

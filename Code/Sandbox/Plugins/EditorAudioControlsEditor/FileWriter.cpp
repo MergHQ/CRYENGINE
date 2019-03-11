@@ -99,7 +99,7 @@ void CountControls(EAssetType const type, SLibraryScope& libScope)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void WriteConnectionsToXML(XmlNodeRef const pNode, CControl* const pControl, SLibraryScope& libScope, int const platformIndex = -1)
+void WriteConnectionsToXML(XmlNodeRef const pNode, CControl* const pControl, SLibraryScope& libScope)
 {
 	EAssetType const type = pControl->GetType();
 	size_t const numConnections = pControl->GetConnectionCount();
@@ -110,61 +110,58 @@ void WriteConnectionsToXML(XmlNodeRef const pNode, CControl* const pControl, SLi
 
 		if (pIConnection != nullptr)
 		{
-			if (((type != EAssetType::Preload) && (type != EAssetType::Setting)) || (pIConnection->IsPlatformEnabled(static_cast<PlatformIndexType>(platformIndex))))
+			XmlNodeRef const pChild = g_pIImpl->CreateXMLNodeFromConnection(pIConnection, type, pControl->GetContextId());
+
+			if (pChild != nullptr)
 			{
-				XmlNodeRef const pChild = g_pIImpl->CreateXMLNodeFromConnection(pIConnection, type, pControl->GetContextId());
+				// Don't add identical nodes!
+				bool shouldAddNode = true;
+				int const numNodeChilds = pNode->getChildCount();
 
-				if (pChild != nullptr)
+				for (int j = 0; j < numNodeChilds; ++j)
 				{
-					// Don't add identical nodes!
-					bool shouldAddNode = true;
-					int const numNodeChilds = pNode->getChildCount();
+					XmlNodeRef const pTempNode = pNode->getChild(j);
 
-					for (int j = 0; j < numNodeChilds; ++j)
+					if ((pTempNode != nullptr) && (_stricmp(pTempNode->getTag(), pChild->getTag()) == 0))
 					{
-						XmlNodeRef const pTempNode = pNode->getChild(j);
+						int const numAttributes1 = pTempNode->getNumAttributes();
+						int const numAttributes2 = pChild->getNumAttributes();
 
-						if ((pTempNode != nullptr) && (_stricmp(pTempNode->getTag(), pChild->getTag()) == 0))
+						if (numAttributes1 == numAttributes2)
 						{
-							int const numAttributes1 = pTempNode->getNumAttributes();
-							int const numAttributes2 = pChild->getNumAttributes();
+							shouldAddNode = false;
+							char const* key1 = nullptr;
+							char const* val1 = nullptr;
+							char const* key2 = nullptr;
+							char const* val2 = nullptr;
 
-							if (numAttributes1 == numAttributes2)
+							for (int k = 0; k < numAttributes1; ++k)
 							{
-								shouldAddNode = false;
-								char const* key1 = nullptr;
-								char const* val1 = nullptr;
-								char const* key2 = nullptr;
-								char const* val2 = nullptr;
+								pTempNode->getAttributeByIndex(k, &key1, &val1);
+								pChild->getAttributeByIndex(k, &key2, &val2);
 
-								for (int k = 0; k < numAttributes1; ++k)
+								if ((_stricmp(key1, key2) != 0) || (_stricmp(val1, val2) != 0))
 								{
-									pTempNode->getAttributeByIndex(k, &key1, &val1);
-									pChild->getAttributeByIndex(k, &key2, &val2);
-
-									if ((_stricmp(key1, key2) != 0) || (_stricmp(val1, val2) != 0))
-									{
-										shouldAddNode = true;
-										break;
-									}
-								}
-
-								if (!shouldAddNode)
-								{
+									shouldAddNode = true;
 									break;
 								}
 							}
+
+							if (!shouldAddNode)
+							{
+								break;
+							}
 						}
 					}
+				}
 
-					if (shouldAddNode)
+				if (shouldAddNode)
+				{
+					pNode->addChild(pChild);
+
+					if (type == EAssetType::Preload)
 					{
-						pNode->addChild(pChild);
-
-						if (type == EAssetType::Preload)
-						{
-							++libScope.numFiles;
-						}
+						++libScope.numFiles;
 					}
 				}
 			}
@@ -206,19 +203,7 @@ void WriteControlToXML(XmlNodeRef const pNode, CControl* const pControl, string 
 			pChildNode->setAttr(CryAudio::g_szTypeAttribute, CryAudio::g_szDataLoadType);
 		}
 
-		size_t const numPlatforms = g_platforms.size();
-
-		for (size_t i = 0; i < numPlatforms; ++i)
-		{
-			XmlNodeRef const pFileNode = pChildNode->createNode(CryAudio::g_szPlatformTag);
-			pFileNode->setAttr(CryAudio::g_szNameAttribute, g_platforms[i]);
-			WriteConnectionsToXML(pFileNode, pControl, libScope, i);
-
-			if (pFileNode->getChildCount() > 0)
-			{
-				pChildNode->addChild(pFileNode);
-			}
-		}
+		WriteConnectionsToXML(pChildNode, pControl, libScope);
 	}
 	else
 	{

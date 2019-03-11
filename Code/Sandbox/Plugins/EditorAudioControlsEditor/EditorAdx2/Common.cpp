@@ -10,7 +10,6 @@ namespace Impl
 namespace Adx2
 {
 ConnectionsByContext g_connections;
-Platforms g_platforms;
 } // namespace Adx2
 } // namespace Impl
 } // namespace ACE

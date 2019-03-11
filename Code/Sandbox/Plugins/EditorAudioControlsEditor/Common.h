@@ -51,7 +51,6 @@ extern CFileMonitorMiddleware* g_pFileMonitorMiddleware;
 extern CContextWidget* g_pContextWidget;
 
 extern SImplInfo g_implInfo;
-extern Platforms g_platforms;
 
 constexpr uint8 g_currentFileVersion = 5;
 
@@ -64,10 +63,4 @@ constexpr char const* g_szPathAttribute = "path";
 constexpr char const* g_szDescriptionAttribute = "description";
 
 extern ControlIds g_importedItemIds;
-
-enum class EErrorCode : CryAudio::EnumFlagsType
-{
-	None = 0,
-	UnkownPlatform = BIT(0), };
-CRY_CREATE_ENUM_FLAG_OPERATORS(EErrorCode);
 } // namespace ACE

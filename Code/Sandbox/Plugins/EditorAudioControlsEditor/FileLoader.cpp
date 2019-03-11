@@ -112,6 +112,19 @@ void LoadConnections(XmlNodeRef const pRoot, CControl* const pControl)
 }
 
 //////////////////////////////////////////////////////////////////////////
+void SetDataLoadType(XmlNodeRef const pRoot, CControl* const pControl)
+{
+	if (_stricmp(pRoot->getAttr(CryAudio::g_szTypeAttribute), CryAudio::g_szDataLoadType) == 0)
+	{
+		pControl->SetAutoLoad(true);
+	}
+	else
+	{
+		pControl->SetAutoLoad(false);
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
 void LoadLibraryEditorData(XmlNodeRef const pLibraryNode, CAsset& library)
 {
 	string description = "";
@@ -411,6 +424,35 @@ bool CFileLoader::LoadAllLibrariesInFolderBW(string const& folderPath, string co
 
 	return libraryLoaded;
 }
+
+//////////////////////////////////////////////////////////////////////////
+void LoadPlatformSpecificConnectionsBW(XmlNodeRef const pNode, CControl* const pControl)
+{
+	int const numChildren = pNode->getChildCount();
+
+	for (int i = 0; i < numChildren; ++i)
+	{
+		XmlNodeRef const pPlatformNode = pNode->getChild(i);
+
+		if (_stricmp(pPlatformNode->getTag(), CryAudio::g_szPlatformTag) == 0)
+		{
+			int const numConnections = pPlatformNode->getChildCount();
+
+			for (int j = 0; j < numConnections; ++j)
+			{
+				XmlNodeRef const pConnectionNode = pPlatformNode->getChild(j);
+
+				if (pConnectionNode != nullptr)
+				{
+					pControl->LoadConnectionFromXML(pConnectionNode);
+				}
+			}
+
+			pControl->SetModified(true, true);
+			break;
+		}
+	}
+}
 #endif //  USE_BACKWARDS_COMPATIBILITY
 
 //////////////////////////////////////////////////////////////////////////
@@ -502,15 +544,26 @@ CControl* CFileLoader::LoadControl(XmlNodeRef const pNode, CryAudio::ContextId c
 							{
 								LoadControl(pNode->getChild(i), contextId, pControl);
 							}
+
+							break;
 						}
-						break;
-					case EAssetType::Preload:
+					case EAssetType::Preload: // Intentional fall-through.
 					case EAssetType::Setting:
-						LoadPlatformSpecificConnections(pNode, pControl);
-						break;
+						{
+							SetDataLoadType(pNode, pControl);
+							LoadConnections(pNode, pControl);
+
+#if defined (USE_BACKWARDS_COMPATIBILITY)
+							LoadPlatformSpecificConnectionsBW(pNode, pControl);
+#endif          //  USE_BACKWARDS_COMPATIBILITY
+
+							break;
+						}
 					default:
-						LoadConnections(pNode, pControl);
-						break;
+						{
+							LoadConnections(pNode, pControl);
+							break;
+						}
 					}
 
 					pControl->SetContextId(contextId);
@@ -543,64 +596,6 @@ void CFileLoader::CreateInternalControls()
 
 		EAssetFlags const flags = (EAssetFlags::IsDefaultControl | EAssetFlags::IsInternalControl);
 		g_assetsManager.CreateDefaultControl("do_nothing", EAssetType::Trigger, pLibrary, flags, "Used to bypass the default stop behavior of the audio system.");
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CFileLoader::LoadPlatformSpecificConnections(XmlNodeRef const pNode, CControl* const pControl)
-{
-	if (_stricmp(pNode->getAttr(CryAudio::g_szTypeAttribute), CryAudio::g_szDataLoadType) == 0)
-	{
-		pControl->SetAutoLoad(true);
-	}
-	else
-	{
-		pControl->SetAutoLoad(false);
-	}
-
-	int const numChildren = pNode->getChildCount();
-
-	for (int i = 0; i < numChildren; ++i)
-	{
-		// Skip unused data from previous format
-		XmlNodeRef const pPlatformNode = pNode->getChild(i);
-
-		if (_stricmp(pPlatformNode->getTag(), CryAudio::g_szPlatformTag) == 0)
-		{
-			// Get the index for that platform name
-			int platformIndex = -1;
-			bool foundPlatform = false;
-			char const* const szPlatformName = pPlatformNode->getAttr(CryAudio::g_szNameAttribute);
-
-			for (auto const szPlatform : g_platforms)
-			{
-				++platformIndex;
-
-				if (_stricmp(szPlatformName, szPlatform) == 0)
-				{
-					foundPlatform = true;
-					break;
-				}
-			}
-
-			if (!foundPlatform)
-			{
-				m_errorCodeMask |= EErrorCode::UnkownPlatform;
-				pControl->SetModified(true, true);
-			}
-
-			int const numConnections = pPlatformNode->getChildCount();
-
-			for (int j = 0; j < numConnections; ++j)
-			{
-				XmlNodeRef const pConnectionNode = pPlatformNode->getChild(j);
-
-				if (pConnectionNode != nullptr)
-				{
-					pControl->LoadConnectionFromXML(pConnectionNode, platformIndex);
-				}
-			}
-		}
 	}
 }
 } // namespace ACE

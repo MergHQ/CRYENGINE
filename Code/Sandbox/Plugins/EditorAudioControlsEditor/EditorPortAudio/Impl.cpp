@@ -114,7 +114,6 @@ CImpl::~CImpl()
 //////////////////////////////////////////////////////////////////////////
 void CImpl::Initialize(
 	SImplInfo& implInfo,
-	Platforms const& platforms,
 	ExtensionFilterVector& extensionFilters,
 	QStringList& supportedFileTypes)
 {

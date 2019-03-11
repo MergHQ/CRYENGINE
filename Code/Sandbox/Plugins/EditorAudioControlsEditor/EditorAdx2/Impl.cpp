@@ -4,7 +4,6 @@
 #include "Impl.h"
 
 #include "Common.h"
-#include "PlatformConnection.h"
 #include "CueConnection.h"
 #include "GenericConnection.h"
 #include "ParameterConnection.h"
@@ -31,7 +30,6 @@ constexpr uint32 g_itemPoolSize = 8192;
 constexpr uint32 g_cueConnectionPoolSize = 8192;
 constexpr uint32 g_parameterConnectionPoolSize = 512;
 constexpr uint32 g_parameterToStateConnectionPoolSize = 256;
-constexpr uint32 g_platformConnectionPoolSize = 256;
 constexpr uint32 g_snapshotConnectionPoolSize = 128;
 constexpr uint32 g_genericConnectionPoolSize = 512;
 
@@ -320,7 +318,6 @@ CImpl::~CImpl()
 	CCueConnection::FreeMemoryPool();
 	CParameterConnection::FreeMemoryPool();
 	CParameterToStateConnection::FreeMemoryPool();
-	CPlatformConnection::FreeMemoryPool();
 	CSnapshotConnection::FreeMemoryPool();
 	CGenericConnection::FreeMemoryPool();
 }
@@ -328,7 +325,6 @@ CImpl::~CImpl()
 //////////////////////////////////////////////////////////////////////////
 void CImpl::Initialize(
 	SImplInfo& implInfo,
-	Platforms const& platforms,
 	ExtensionFilterVector& extensionFilters,
 	QStringList& supportedFileTypes)
 {
@@ -336,7 +332,6 @@ void CImpl::Initialize(
 	CCueConnection::CreateAllocator(g_cueConnectionPoolSize);
 	CParameterConnection::CreateAllocator(g_parameterConnectionPoolSize);
 	CParameterToStateConnection::CreateAllocator(g_parameterToStateConnectionPoolSize);
-	CPlatformConnection::CreateAllocator(g_platformConnectionPoolSize);
 	CSnapshotConnection::CreateAllocator(g_snapshotConnectionPoolSize);
 	CGenericConnection::CreateAllocator(g_genericConnectionPoolSize);
 
@@ -345,7 +340,6 @@ void CImpl::Initialize(
 	m_implName = systemImplInfo.name.c_str();
 
 	SetImplInfo(implInfo);
-	g_platforms = platforms;
 
 	Serialization::LoadJsonFile(*this, m_szUserSettingsFile);
 }
@@ -580,10 +574,6 @@ IConnection* CImpl::CreateConnectionToControl(EAssetType const assetType, IItem 
 				pIConnection = static_cast<IConnection*>(new CGenericConnection(pItem->GetId()));
 			}
 		}
-		else if ((type == EItemType::Binary) || (type == EItemType::DspBusSetting))
-		{
-			pIConnection = static_cast<IConnection*>(new CPlatformConnection(pItem->GetId()));
-		}
 		else if (type == EItemType::Snapshot)
 		{
 			pIConnection = static_cast<IConnection*>(new CSnapshotConnection(pItem->GetId()));
@@ -708,12 +698,6 @@ IConnection* CImpl::CreateConnectionFromXMLNode(XmlNodeRef pNode, EAssetType con
 
 					break;
 				}
-			case EItemType::Bus:
-				{
-					pIConnection = static_cast<IConnection*>(new CGenericConnection(pItem->GetId()));
-
-					break;
-				}
 			case EItemType::Snapshot:
 				{
 					string const actionType = pNode->getAttr(CryAudio::g_szTypeAttribute);
@@ -728,10 +712,11 @@ IConnection* CImpl::CreateConnectionFromXMLNode(XmlNodeRef pNode, EAssetType con
 
 					break;
 				}
+			case EItemType::Bus:    // Intentional fall-through.
 			case EItemType::Binary: // Intentional fall-through.
 			case EItemType::DspBusSetting:
 				{
-					pIConnection = static_cast<IConnection*>(new CPlatformConnection(pItem->GetId()));
+					pIConnection = static_cast<IConnection*>(new CGenericConnection(pItem->GetId()));
 
 					break;
 				}

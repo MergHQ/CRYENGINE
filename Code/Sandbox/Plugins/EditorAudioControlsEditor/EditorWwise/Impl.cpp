@@ -7,7 +7,6 @@
 #include "GenericConnection.h"
 #include "ParameterConnection.h"
 #include "ParameterToStateConnection.h"
-#include "SoundbankConnection.h"
 #include "ProjectLoader.h"
 #include "DataPanel.h"
 
@@ -26,7 +25,6 @@ constexpr uint32 g_itemPoolSize = 8192;
 constexpr uint32 g_genericConnectionPoolSize = 8192;
 constexpr uint32 g_parameterConnectionPoolSize = 512;
 constexpr uint32 g_parameterToStateConnectionPoolSize = 256;
-constexpr uint32 g_soundbankConnectionPoolSize = 256;
 
 //////////////////////////////////////////////////////////////////////////
 EItemType TagToType(char const* const szTag)
@@ -244,13 +242,11 @@ CImpl::~CImpl()
 	CGenericConnection::FreeMemoryPool();
 	CParameterConnection::FreeMemoryPool();
 	CParameterToStateConnection::FreeMemoryPool();
-	CSoundbankConnection::FreeMemoryPool();
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CImpl::Initialize(
 	SImplInfo& implInfo,
-	Platforms const& platforms,
 	ExtensionFilterVector& extensionFilters,
 	QStringList& supportedFileTypes)
 {
@@ -258,14 +254,12 @@ void CImpl::Initialize(
 	CGenericConnection::CreateAllocator(g_genericConnectionPoolSize);
 	CParameterConnection::CreateAllocator(g_parameterConnectionPoolSize);
 	CParameterToStateConnection::CreateAllocator(g_parameterToStateConnectionPoolSize);
-	CSoundbankConnection::CreateAllocator(g_soundbankConnectionPoolSize);
 
 	CryAudio::SImplInfo systemImplInfo;
 	gEnv->pAudioSystem->GetImplInfo(systemImplInfo);
 	m_implName = systemImplInfo.name.c_str();
 
 	SetImplInfo(implInfo);
-	g_platforms = platforms;
 
 	Serialization::LoadJsonFile(*this, m_szUserSettingsFile);
 }
@@ -456,10 +450,6 @@ IConnection* CImpl::CreateConnectionToControl(EAssetType const assetType, IItem 
 				break;
 			}
 		}
-		else if (itemType == EItemType::SoundBank)
-		{
-			pIConnection = static_cast<IConnection*>(new CSoundbankConnection(pItem->GetId()));
-		}
 		else
 		{
 			pIConnection = static_cast<IConnection*>(new CGenericConnection(pItem->GetId()));
@@ -608,10 +598,6 @@ IConnection* CImpl::CreateConnectionFromXMLNode(XmlNodeRef pNode, EAssetType con
 						pIConnection = static_cast<IConnection*>(new CGenericConnection(pItem->GetId()));
 						break;
 					}
-				}
-				else if (type == EItemType::SoundBank)
-				{
-					pIConnection = static_cast<IConnection*>(new CSoundbankConnection(pItem->GetId()));
 				}
 				else
 				{

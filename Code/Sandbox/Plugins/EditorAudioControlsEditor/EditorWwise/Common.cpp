@@ -10,7 +10,6 @@ namespace Impl
 namespace Wwise
 {
 ConnectionsByContext g_connections;
-Platforms g_platforms;
 } // namespace Wwise
 } // namespace Impl
 } // namespace ACE

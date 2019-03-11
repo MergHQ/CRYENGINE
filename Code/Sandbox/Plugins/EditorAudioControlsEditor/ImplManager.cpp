@@ -79,7 +79,7 @@ bool CImplManager::LoadImpl()
 					ZeroStruct(g_implInfo);
 					g_extensionFilters.clear();
 					g_supportedFileTypes.clear();
-					g_pIImpl->Initialize(g_implInfo, g_platforms, g_extensionFilters, g_supportedFileTypes);
+					g_pIImpl->Initialize(g_implInfo, g_extensionFilters, g_supportedFileTypes);
 					CAudioControlsEditorPlugin::ReloadData(EReloadFlags::ReloadImplData);
 				}
 			}

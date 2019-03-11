@@ -120,7 +120,6 @@ CMainWindow::CMainWindow()
 	if (g_pIImpl != nullptr)
 	{
 		g_assetsManager.UpdateAllConnectionStates();
-		CheckErrorMask();
 	}
 
 	UpdateImplLabel();
@@ -427,7 +426,6 @@ void CMainWindow::Reload(bool const hasImplChanged /*= false*/)
 		if (g_pIImpl != nullptr)
 		{
 			g_assetsManager.UpdateAllConnectionStates();
-			CheckErrorMask();
 		}
 
 		if (!hasImplChanged)
@@ -459,17 +457,6 @@ void CMainWindow::SaveBeforeImplChange()
 	}
 
 	g_assetsManager.ClearDirtyFlags();
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CMainWindow::CheckErrorMask()
-{
-	EErrorCode const errorCodeMask = CAudioControlsEditorPlugin::GetLoadingErrorMask();
-
-	if ((errorCodeMask& EErrorCode::UnkownPlatform) != 0)
-	{
-		CQuestionDialog::SWarning(tr(GetEditorName()), tr("Audio Preloads reference an unknown platform.\nSaving will permanently erase this data."));
-	}
 }
 
 //////////////////////////////////////////////////////////////////////////

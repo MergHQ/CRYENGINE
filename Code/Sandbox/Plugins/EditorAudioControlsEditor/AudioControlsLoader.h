@@ -19,10 +19,9 @@ public:
 
 	CAudioControlsLoader() = default;
 
-	FileNames  GetLoadedFilenamesList();
-	void       LoadAll(bool const loadOnlyDefaultControls = false);
-	void       LoadControls(string const& folderPath);
-	EErrorCode GetErrorCodeMask() const { return m_errorCodeMask; }
+	FileNames GetLoadedFilenamesList();
+	void      LoadAll(bool const loadOnlyDefaultControls = false);
+	void      LoadControls(string const& folderPath);
 
 private:
 
@@ -46,7 +45,6 @@ private:
 	static string const s_controlsLevelsFolder;
 	static string const s_assetsFolderPath;
 	FileNames           m_loadedFilenames;
-	EErrorCode          m_errorCodeMask = EErrorCode::None;
 	bool                m_loadOnlyDefaultControls = false;
 
 	FileNames           m_defaultTriggerNames { CryAudio::g_szGetFocusTriggerName, CryAudio::g_szLoseFocusTriggerName, CryAudio::g_szMuteAllTriggerName, CryAudio::g_szUnmuteAllTriggerName };

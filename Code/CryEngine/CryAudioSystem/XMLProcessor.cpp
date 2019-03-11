@@ -28,29 +28,6 @@
 
 namespace CryAudio
 {
-struct SXMLTags final
-{
-	static char const* const szPlatform;
-};
-
-#if CRY_PLATFORM_WINDOWS
-char const* const SXMLTags::szPlatform = "pc";
-#elif CRY_PLATFORM_DURANGO
-char const* const SXMLTags::szPlatform = "xboxone";
-#elif CRY_PLATFORM_ORBIS
-char const* const SXMLTags::szPlatform = "ps4";
-#elif CRY_PLATFORM_MAC
-char const* const SXMLTags::szPlatform = "mac";
-#elif CRY_PLATFORM_LINUX
-char const* const SXMLTags::szPlatform = "linux";
-#elif CRY_PLATFORM_IOS
-char const* const SXMLTags::szPlatform = "ios";
-#elif CRY_PLATFORM_ANDROID
-char const* const SXMLTags::szPlatform = "linux";
-#else
-	#error "Undefined platform."
-#endif
-
 //////////////////////////////////////////////////////////////////////////
 bool ParseSystemDataFile(char const* const szFolderPath, SPoolSizes& poolSizes, ContextId const contextId)
 {
@@ -632,31 +609,18 @@ void CXMLProcessor::ParsePreloads(XmlNodeRef const pPreloadDataRoot, ContextId c
 
 			if (preloadRequestId != InvalidPreloadRequestId)
 			{
-				XmlNodeRef pFileListParentNode = nullptr;
-				int const platformCount = pPreloadRequestNode->getChildCount();
+				int const numFiles = pPreloadRequestNode->getChildCount();
 
-				for (int j = 0; j < platformCount; ++j)
+				CPreloadRequest::FileIds fileIds;
+				fileIds.reserve(numFiles);
+
+				for (int j = 0; j < numFiles; ++j)
 				{
-					XmlNodeRef const pPlatformNode(pPreloadRequestNode->getChild(j));
+					XmlNodeRef const pFileNode(pPreloadRequestNode->getChild(j));
 
-					if ((pPlatformNode != nullptr) && (_stricmp(pPlatformNode->getAttr(g_szNameAttribute), SXMLTags::szPlatform) == 0))
+					if (pFileNode != nullptr)
 					{
-						pFileListParentNode = pPlatformNode;
-						break;
-					}
-				}
-
-				if (pFileListParentNode != nullptr)
-				{
-					// Found the config group corresponding to the specified platform.
-					int const fileCount = pFileListParentNode->getChildCount();
-
-					CPreloadRequest::FileIds fileIds;
-					fileIds.reserve(fileCount);
-
-					for (int k = 0; k < fileCount; ++k)
-					{
-						FileId const id = g_fileCacheManager.TryAddFileCacheEntry(pFileListParentNode->getChild(k), contextId, isAutoLoad);
+						FileId const id = g_fileCacheManager.TryAddFileCacheEntry(pFileNode, contextId, isAutoLoad);
 
 						if (id != InvalidFileId)
 						{
@@ -665,36 +629,38 @@ void CXMLProcessor::ParsePreloads(XmlNodeRef const pPreloadDataRoot, ContextId c
 #if defined(CRY_AUDIO_USE_DEBUG_CODE)
 						else
 						{
-							Cry::Audio::Log(ELogType::Warning, R"(Preload request "%s" could not create file entry from tag "%s"!)", szPreloadRequestName, pFileListParentNode->getChild(k)->getTag());
+							Cry::Audio::Log(ELogType::Warning, R"(Preload request "%s" could not create file entry from tag "%s"!)", szPreloadRequestName, pFileNode->getTag());
 						}
 #endif        // CRY_AUDIO_USE_DEBUG_CODE
 					}
+				}
 
-					CPreloadRequest* pPreloadRequest = stl::find_in_map(g_preloadRequests, preloadRequestId, nullptr);
+				CPreloadRequest* pPreloadRequest = stl::find_in_map(g_preloadRequests, preloadRequestId, nullptr);
 
-					if (pPreloadRequest == nullptr)
-					{
-						MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioSystem, 0, "CryAudio::CPreloadRequest");
+				if (pPreloadRequest == nullptr)
+				{
+					MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioSystem, 0, "CryAudio::CPreloadRequest");
 #if defined(CRY_AUDIO_USE_DEBUG_CODE)
-						pPreloadRequest = new CPreloadRequest(preloadRequestId, contextId, isAutoLoad, fileIds, szPreloadRequestName);
+					pPreloadRequest = new CPreloadRequest(preloadRequestId, contextId, isAutoLoad, fileIds, szPreloadRequestName);
 #else
-						pPreloadRequest = new CPreloadRequest(preloadRequestId, contextId, isAutoLoad, fileIds);
+					pPreloadRequest = new CPreloadRequest(preloadRequestId, contextId, isAutoLoad, fileIds);
 #endif        // CRY_AUDIO_USE_DEBUG_CODE
 
-						if (pPreloadRequest != nullptr)
-						{
-							g_preloadRequests[preloadRequestId] = pPreloadRequest;
-						}
-						else
-						{
-							CryFatalError("<Audio>: Failed to allocate CPreloadRequest");
-						}
+					if (pPreloadRequest != nullptr)
+					{
+						g_preloadRequests[preloadRequestId] = pPreloadRequest;
 					}
+#if defined(CRY_AUDIO_USE_DEBUG_CODE)
 					else
 					{
-						// Add to existing preload request.
-						pPreloadRequest->m_fileIds.insert(pPreloadRequest->m_fileIds.end(), fileIds.begin(), fileIds.end());
+						Cry::Audio::Log(ELogType::Error, "Failed to allocate CPreloadRequest");
 					}
+#endif        // CRY_AUDIO_USE_DEBUG_CODE
+				}
+				else
+				{
+					// Add to existing preload request.
+					pPreloadRequest->m_fileIds.insert(pPreloadRequest->m_fileIds.end(), fileIds.begin(), fileIds.end());
 				}
 			}
 #if defined(CRY_AUDIO_USE_DEBUG_CODE)
@@ -815,61 +781,45 @@ void CXMLProcessor::ParseSettings(XmlNodeRef const pRoot, ContextId const contex
 
 			if ((settingId != InvalidControlId) && (stl::find_in_map(g_settings, settingId, nullptr) == nullptr))
 			{
-				XmlNodeRef pSettingImplParentNode = nullptr;
-				int const numPlatforms = pSettingNode->getChildCount();
+				int const numConnections = pSettingNode->getChildCount();
 
-				for (int j = 0; j < numPlatforms; ++j)
+				SettingConnections connections;
+				connections.reserve(numConnections);
+
+				for (int j = 0; j < numConnections; ++j)
 				{
-					XmlNodeRef const pPlatformNode(pSettingNode->getChild(j));
+					XmlNodeRef const pSettingConnectionNode(pSettingNode->getChild(j));
 
-					if ((pPlatformNode != nullptr) && (_stricmp(pPlatformNode->getAttr(g_szNameAttribute), SXMLTags::szPlatform) == 0))
+					if (pSettingConnectionNode != nullptr)
 					{
-						pSettingImplParentNode = pPlatformNode;
-						break;
+						Impl::ISettingConnection* const pConnection = g_pIImpl->ConstructSettingConnection(pSettingConnectionNode);
+
+						if (pConnection != nullptr)
+						{
+							connections.push_back(pConnection);
+						}
 					}
 				}
 
-				if (pSettingImplParentNode != nullptr)
+				if (!connections.empty())
 				{
-					bool const isAutoLoad = (_stricmp(pSettingNode->getAttr(g_szTypeAttribute), g_szDataLoadType) == 0);
-
-					int const numConnections = pSettingImplParentNode->getChildCount();
-					SettingConnections connections;
-					connections.reserve(numConnections);
-
-					for (int k = 0; k < numConnections; ++k)
+					if (connections.size() < numConnections)
 					{
-						XmlNodeRef const pSettingImplNode(pSettingImplParentNode->getChild(k));
-
-						if (pSettingImplNode != nullptr)
-						{
-							Impl::ISettingConnection* const pConnection = g_pIImpl->ConstructSettingConnection(pSettingImplNode);
-
-							if (pConnection != nullptr)
-							{
-								connections.push_back(pConnection);
-							}
-						}
+						connections.shrink_to_fit();
 					}
 
-					if (!connections.empty())
-					{
-						if (connections.size() < numConnections)
-						{
-							connections.shrink_to_fit();
-						}
+					bool const isAutoLoad = (_stricmp(pSettingNode->getAttr(g_szTypeAttribute), g_szDataLoadType) == 0);
 
-						MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioSystem, 0, "CryAudio::CSetting");
+					MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioSystem, 0, "CryAudio::CSetting");
 #if defined(CRY_AUDIO_USE_DEBUG_CODE)
-						auto const pNewSetting = new CSetting(settingId, contextId, isAutoLoad, connections, szSettingName);
+					auto const pNewSetting = new CSetting(settingId, contextId, isAutoLoad, connections, szSettingName);
 #else
-						auto const pNewSetting = new CSetting(settingId, contextId, isAutoLoad, connections);
+					auto const pNewSetting = new CSetting(settingId, contextId, isAutoLoad, connections);
 #endif        // CRY_AUDIO_USE_DEBUG_CODE
 
-						if (pNewSetting != nullptr)
-						{
-							g_settings[settingId] = pNewSetting;
-						}
+					if (pNewSetting != nullptr)
+					{
+						g_settings[settingId] = pNewSetting;
 					}
 				}
 			}

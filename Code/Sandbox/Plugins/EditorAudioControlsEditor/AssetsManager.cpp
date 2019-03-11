@@ -280,13 +280,13 @@ void CAssetsManager::OnBeforeControlModified(CControl* const pControl)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAssetsManager::OnConnectionAdded(CControl* const pControl, Impl::IItem* const pIItem)
+void CAssetsManager::OnConnectionAdded(CControl* const pControl)
 {
 	SignalConnectionAdded(pControl);
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAssetsManager::OnConnectionRemoved(CControl* const pControl, Impl::IItem* const pIItem)
+void CAssetsManager::OnConnectionRemoved(CControl* const pControl)
 {
 	SignalConnectionRemoved(pControl);
 }

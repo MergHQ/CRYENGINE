@@ -4,7 +4,6 @@
 #include "Impl.h"
 
 #include "Common.h"
-#include "BankConnection.h"
 #include "EventConnection.h"
 #include "GenericConnection.h"
 #include "KeyConnection.h"
@@ -33,7 +32,6 @@ constexpr uint32 g_eventConnectionPoolSize = 8192;
 constexpr uint32 g_keyConnectionPoolSize = 4096;
 constexpr uint32 g_parameterConnectionPoolSize = 512;
 constexpr uint32 g_parameterToStateConnectionPoolSize = 256;
-constexpr uint32 g_bankConnectionPoolSize = 256;
 constexpr uint32 g_snapshotConnectionPoolSize = 128;
 constexpr uint32 g_genericConnectionPoolSize = 128;
 
@@ -308,7 +306,6 @@ CImpl::~CImpl()
 	CKeyConnection::FreeMemoryPool();
 	CParameterConnection::FreeMemoryPool();
 	CParameterToStateConnection::FreeMemoryPool();
-	CBankConnection::FreeMemoryPool();
 	CSnapshotConnection::FreeMemoryPool();
 	CGenericConnection::FreeMemoryPool();
 }
@@ -316,7 +313,6 @@ CImpl::~CImpl()
 //////////////////////////////////////////////////////////////////////////
 void CImpl::Initialize(
 	SImplInfo& implInfo,
-	Platforms const& platforms,
 	ExtensionFilterVector& extensionFilters,
 	QStringList& supportedFileTypes)
 {
@@ -325,7 +321,6 @@ void CImpl::Initialize(
 	CKeyConnection::CreateAllocator(g_keyConnectionPoolSize);
 	CParameterConnection::CreateAllocator(g_parameterConnectionPoolSize);
 	CParameterToStateConnection::CreateAllocator(g_parameterToStateConnectionPoolSize);
-	CBankConnection::CreateAllocator(g_bankConnectionPoolSize);
 	CSnapshotConnection::CreateAllocator(g_snapshotConnectionPoolSize);
 	CGenericConnection::CreateAllocator(g_genericConnectionPoolSize);
 
@@ -334,7 +329,6 @@ void CImpl::Initialize(
 	m_implName = systemImplInfo.name.c_str();
 
 	SetImplInfo(implInfo);
-	g_platforms = platforms;
 
 	Serialization::LoadJsonFile(*this, m_szUserSettingsFile);
 }
@@ -534,10 +528,6 @@ IConnection* CImpl::CreateConnectionToControl(EAssetType const assetType, IItem 
 				pIConnection = static_cast<IConnection*>(new CGenericConnection(pItem->GetId()));
 			}
 		}
-		else if (type == EItemType::Bank)
-		{
-			pIConnection = static_cast<IConnection*>(new CBankConnection(pItem->GetId()));
-		}
 		else
 		{
 			pIConnection = static_cast<IConnection*>(new CGenericConnection(pItem->GetId()));
@@ -708,11 +698,7 @@ IConnection* CImpl::CreateConnectionFromXMLNode(XmlNodeRef pNode, EAssetType con
 					}
 				}
 				break;
-			case EItemType::Bank:
-				{
-					pIConnection = static_cast<IConnection*>(new CBankConnection(pItem->GetId()));
-				}
-				break;
+			case EItemType::Bank: // Intentional fall-through.
 			case EItemType::Return:
 				{
 					pIConnection = static_cast<IConnection*>(new CGenericConnection(pItem->GetId()));

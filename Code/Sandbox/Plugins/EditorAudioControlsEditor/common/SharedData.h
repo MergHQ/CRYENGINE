@@ -8,6 +8,12 @@
 
 namespace ACE
 {
+using ControlId = CryAudio::ControlId;
+using ControlIds = std::vector<ControlId>;
+
+constexpr ControlId g_invalidControlId = 0;
+constexpr float g_precision = 0.0001f;
+
 enum class EAssetType : CryAudio::EnumFlagsType
 {
 	None,
@@ -37,14 +43,6 @@ enum class EItemFlags : CryAudio::EnumFlagsType
 	IsConnected = BIT(2),
 	IsContainer = BIT(3), };
 CRY_CREATE_ENUM_FLAG_OPERATORS(EItemFlags);
-
-using ControlId = CryAudio::ControlId;
-constexpr ControlId g_invalidControlId = 0;
-
-using ControlIds = std::vector<ControlId>;
-
-using Platforms = std::vector<char const*>;
-using PlatformIndexType = uint16;
 
 enum class EImplInfoFlags : CryAudio::EnumFlagsType
 {

@@ -80,7 +80,6 @@ private:
 	void                   Reload(bool const hasImplChanged = false);
 	void                   Save();
 	void                   SaveBeforeImplChange();
-	void                   CheckErrorMask();
 	void                   ReloadSystemData();
 	void                   RefreshAudioSystem();
 	bool                   TryClose();

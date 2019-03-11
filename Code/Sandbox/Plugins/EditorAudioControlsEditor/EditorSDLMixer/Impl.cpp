@@ -4,7 +4,6 @@
 #include "Impl.h"
 
 #include "Common.h"
-#include "BaseConnection.h"
 #include "EventConnection.h"
 #include "ParameterConnection.h"
 #include "StateConnection.h"
@@ -145,7 +144,6 @@ CImpl::~CImpl()
 //////////////////////////////////////////////////////////////////////////
 void CImpl::Initialize(
 	SImplInfo& implInfo,
-	Platforms const& platforms,
 	ExtensionFilterVector& extensionFilters,
 	QStringList& supportedFileTypes)
 {

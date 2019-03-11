@@ -25,7 +25,6 @@ namespace ACE
 {
 FileNames CAudioControlsEditorPlugin::s_currentFilenames;
 CryAudio::ControlId CAudioControlsEditorPlugin::s_audioTriggerId = CryAudio::InvalidControlId;
-EErrorCode CAudioControlsEditorPlugin::s_loadingErrorMask;
 CCrySignal<void()> CAudioControlsEditorPlugin::SignalOnBeforeLoad;
 CCrySignal<void()> CAudioControlsEditorPlugin::SignalOnAfterLoad;
 CCrySignal<void()> CAudioControlsEditorPlugin::SignalOnBeforeSave;
@@ -34,21 +33,8 @@ CCrySignal<void()> CAudioControlsEditorPlugin::SignalOnAfterSave;
 REGISTER_VIEWPANE_FACTORY(CMainWindow, g_szEditorName, "Tools", true)
 
 //////////////////////////////////////////////////////////////////////////
-void InitPlatforms()
-{
-	g_platforms.clear();
-	std::vector<dll_string> const& platforms = GetIEditor()->GetConfigurationManager()->GetPlatformNames();
-
-	for (auto const& platform : platforms)
-	{
-		g_platforms.push_back(platform.c_str());
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////
 CAudioControlsEditorPlugin::CAudioControlsEditorPlugin()
 {
-	InitPlatforms();
 	InitAssetIcons();
 
 	g_assetsManager.Initialize();
@@ -83,7 +69,6 @@ void CAudioControlsEditorPlugin::SaveData()
 		writer.WriteAll();
 	}
 
-	s_loadingErrorMask = EErrorCode::None;
 	SignalOnAfterSave();
 }
 
@@ -121,7 +106,6 @@ void CAudioControlsEditorPlugin::ReloadData(EReloadFlags const flags)
 
 			loader.Load();
 			s_currentFilenames = loader.GetLoadedFilenamesList();
-			s_loadingErrorMask = loader.GetErrorCodeMask();
 
 #if defined (USE_BACKWARDS_COMPATIBILITY)
 			loaderForBackwardsCompatibility.LoadAll(false);

@@ -36,10 +36,9 @@ struct IImpl
 
 	//! Initializes the middleware implementation.
 	//! \param implInfo - Info struct to be filled by the middleware implementation.
-	//! \param platforms - Platform names of the current project.
 	//! \param extensionFilters - File extension filters used for file import.
 	//! \param supportedFileTypes - Supported file types used for file import.
-	virtual void Initialize(SImplInfo& implInfo, Platforms const& platforms, ExtensionFilterVector& extensionFilters, QStringList& supportedFileTypes) = 0;
+	virtual void Initialize(SImplInfo& implInfo, ExtensionFilterVector& extensionFilters, QStringList& supportedFileTypes) = 0;
 
 	//! Creates a new widget that is used for displaying middleware data in the middleware data panel.
 	//! \return A pointer to the data panel.

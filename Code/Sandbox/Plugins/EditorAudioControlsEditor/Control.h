@@ -60,14 +60,14 @@ public:
 	IConnection*        GetConnection(ControlId const id) const;
 	void                BackupAndClearConnections();
 	void                ReloadConnections();
-	void                LoadConnectionFromXML(XmlNodeRef const xmlNode, int const platformIndex = -1);
+	void                LoadConnectionFromXML(XmlNodeRef const xmlNode);
 
 private:
 
 	void SignalOnBeforeControlModified();
 	void SignalOnAfterControlModified();
-	void SignalConnectionAdded(Impl::IItem* const pIItem);
-	void SignalConnectionRemoved(Impl::IItem* const pIItem);
+	void SignalConnectionAdded();
+	void SignalConnectionRemoved();
 	void SignalConnectionModified();
 
 	ControlId const           m_id;
@@ -75,8 +75,7 @@ private:
 	std::vector<IConnection*> m_connections;
 	bool                      m_isAutoLoad;
 
-	using XMLNodes = std::vector<XmlNodeRef>;
-	std::map<int, XMLNodes> m_rawConnections;
-	ControlIds              m_selectedConnectionIds;
+	std::vector<XmlNodeRef>   m_rawConnections;
+	ControlIds                m_selectedConnectionIds;
 };
 } // namespace ACE
