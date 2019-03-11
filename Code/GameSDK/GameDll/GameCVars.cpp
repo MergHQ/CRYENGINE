@@ -4838,8 +4838,6 @@ void CGame::CmdInspectConnectedStorage(IConsoleCmdArgs* pArgs)
 			dumpToFile = atoi(pArgs->GetArg(4)) != 0;
 		}
 
-		size_t numConverted = 0;
-
 		wstring containerNameW;
 		Unicode::Convert(containerNameW, containerName);
 
