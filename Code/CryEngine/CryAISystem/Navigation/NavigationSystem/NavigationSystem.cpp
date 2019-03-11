@@ -153,7 +153,7 @@ NavigationSystem::NavigationSystem(const char* configName)
 	, m_throughput(0.0f)
 	, m_cacheHitRate(0.0f)
 	, m_free(0)
-	, m_state(Idle)
+	, m_state(EWorkingState::Idle)
 	, m_meshes(256)                 //Same size of meshes, off-mesh and islandConnections elements
 	, m_offMeshNavigationManager(256)
 	, m_islandConnectionsManager()
@@ -202,7 +202,7 @@ NavigationSystem::~NavigationSystem()
 	SAFE_DELETE(m_pNavMeshQueryManager);
 }
 
-NavigationAgentTypeID NavigationSystem::CreateAgentType(const char* name, const CreateAgentTypeParams& params)
+NavigationAgentTypeID NavigationSystem::CreateAgentType(const char* name, const SCreateAgentTypeParams& params)
 {
 	assert(name);
 	AgentTypes::const_iterator it = m_agentTypes.begin();
@@ -317,7 +317,7 @@ void NavigationSystem::GetGlobalFilterFlags(MNM::AreaAnnotation::value_type& inc
 
 #ifdef SW_NAVMESH_USE_GUID
 NavigationMeshID NavigationSystem::CreateMesh(const char* name, NavigationAgentTypeID agentTypeID,
-                                              const CreateMeshParams& params, NavigationMeshGUID guid)
+                                              const SCreateMeshParams& params, NavigationMeshGUID guid)
 {
 	MeshMap::iterator it = m_swMeshes.find(guid);
 	if (it != m_swMeshes.end())
@@ -331,17 +331,17 @@ NavigationMeshID NavigationSystem::CreateMesh(const char* name, NavigationAgentT
 }
 #else
 NavigationMeshID NavigationSystem::CreateMesh(const char* name, NavigationAgentTypeID agentTypeID,
-                                              const CreateMeshParams& params)
+                                              const SCreateMeshParams& params)
 {
 	return CreateMesh(name, agentTypeID, params, NavigationMeshID(0));
 }
 #endif
 #ifdef SW_NAVMESH_USE_GUID
 NavigationMeshID NavigationSystem::CreateMesh(const char* name, NavigationAgentTypeID agentTypeID,
-                                              const CreateMeshParams& params, NavigationMeshID requestedID, NavigationMeshGUID guid)
+                                              const SCreateMeshParams& params, NavigationMeshID requestedID, NavigationMeshGUID guid)
 #else
 NavigationMeshID NavigationSystem::CreateMesh(const char* name, NavigationAgentTypeID agentTypeID,
-                                              const CreateMeshParams& params, NavigationMeshID requestedID)
+                                              const SCreateMeshParams& params, NavigationMeshID requestedID)
 #endif
 {
 	auto NearestFactor = [](size_t n, size_t f)
@@ -401,7 +401,7 @@ NavigationMeshID NavigationSystem::CreateMesh(const char* name, NavigationAgentT
 	return NavigationMeshID();
 }
 
-NavigationMeshID NavigationSystem::CreateMeshForVolumeAndUpdate(const char* name, NavigationAgentTypeID agentTypeID, const CreateMeshParams& params, const NavigationVolumeID volumeID)
+NavigationMeshID NavigationSystem::CreateMeshForVolumeAndUpdate(const char* name, NavigationAgentTypeID agentTypeID, const SCreateMeshParams& params, const NavigationVolumeID volumeID)
 {
 	if (volumeID && m_volumes.validate(volumeID))
 	{
@@ -1078,9 +1078,19 @@ void NavigationSystem::WaitForAllNavigationSystemUsersCompleteTheirReadingAsynch
 	}
 }
 
-INavigationSystem::WorkingState NavigationSystem::GetState() const
+INavigationSystem::EWorkingState NavigationSystem::GetState() const
 {
 	return m_state;
+}
+
+void NavigationSystem::SetStateAndSendEvent(const EWorkingState newState)
+{
+	if (newState != m_state)
+	{
+		UpdateAllListeners(newState == EWorkingState::Idle ? ENavigationEvent::WorkingStateSetToIdle : ENavigationEvent::WorkingStateSetToWorking);
+		
+		m_state = newState;
+	}
 }
 
 void NavigationSystem::UpdateNavigationSystemUsersForSynchronousWritingOperations()
@@ -1130,7 +1140,7 @@ void NavigationSystem::UpdateInternalNavigationSystemData(const bool blocking)
 	}
 #endif
 
-	if (m_state != INavigationSystem::Working)
+	if (m_state != EWorkingState::Working)
 	{
 		UpdatePendingAccessibilityRequests();
 	}
@@ -1141,7 +1151,7 @@ void NavigationSystem::UpdateInternalSubsystems()
 	m_offMeshNavigationManager.ProcessQueuedRequests();
 }
 
-INavigationSystem::WorkingState NavigationSystem::Update(const CTimeValue frameStartTime, const float frameTime, bool blocking)
+INavigationSystem::EWorkingState NavigationSystem::Update(const CTimeValue frameStartTime, const float frameTime, bool blocking)
 {
 	m_frameStartTime = frameStartTime;
 	m_frameDeltaTime = frameTime;
@@ -1194,14 +1204,11 @@ void NavigationSystem::UpdateMeshes(const CTimeValue frameStartTime, const float
 
 	if (!m_updatesManager.HasUpdateRequests() && m_runningTasks.empty())
 	{
-		if (m_state != Idle)
+		if (m_state != EWorkingState::Idle)
 		{
-			// We just finished the processing of the tiles, so before being in Idle
-			// we need to recompute the Islands detection
-			OnMeshesUpdateCompleted(m_recentlyUpdatedMeshIds.data(), m_recentlyUpdatedMeshIds.size());
-			m_recentlyUpdatedMeshIds.clear();
+			OnMeshesUpdateCompleted();
 		}
-		m_state = Idle;
+		SetStateAndSendEvent(INavigationSystem::EWorkingState::Idle);
 		return;
 	}
 
@@ -1266,22 +1273,17 @@ void NavigationSystem::UpdateMeshes(const CTimeValue frameStartTime, const float
 
 		if (!m_updatesManager.HasUpdateRequests() && m_runningTasks.empty())
 		{
-			if (m_state != Idle)
+			if (m_state != EWorkingState::Idle)
 			{
-				// We just finished the processing of the tiles, so before being in Idle
-				// we need to recompute the Islands detection
-				OnMeshesUpdateCompleted(m_recentlyUpdatedMeshIds.data(), m_recentlyUpdatedMeshIds.size());
-				m_recentlyUpdatedMeshIds.clear();
+				OnMeshesUpdateCompleted();
 			}
-
-			m_state = Idle;
-
+			SetStateAndSendEvent(EWorkingState::Idle);
 			return;
 		}
 
 		if (m_updatesManager.HasUpdateRequests())
 		{
-			m_state = Working;
+			SetStateAndSendEvent(EWorkingState::Working);
 
 			CRY_PROFILE_REGION(PROFILE_AI, "Navigation System::UpdateMeshes() - Job Spawning");
 			const size_t idealMinimumTaskCount = 2;
@@ -1349,8 +1351,7 @@ void NavigationSystem::UpdateMeshes(const CTimeValue frameStartTime, const float
 		if (blocking && (m_updatesManager.HasUpdateRequests() || !m_runningTasks.empty()))
 			continue;
 
-		m_state = m_runningTasks.empty() ? Idle : Working;
-
+		SetStateAndSendEvent(m_runningTasks.empty() ? EWorkingState::Idle : EWorkingState::Working);
 		return;
 	}
 
@@ -1497,7 +1498,7 @@ bool NavigationSystem::SpawnJob(TileTaskResult& result, NavigationMeshID meshID,
 
 	++def->refCount;
 
-	MNM::CTileGenerator::Params params;	
+	MNM::CTileGenerator::Params params;
 	SetupGenerator(meshID, paramsGrid, x, y, z, params, *def, bMarkupUpdate);
 	if (bMt)
 	{
@@ -1668,7 +1669,7 @@ void NavigationSystem::ProcessQueuedMeshUpdates()
 	{
 		UpdateMeshesFromEditor(false, gAIEnv.CVars.NavigationSystemMT != 0, false);
 	}
-	while (m_state == INavigationSystem::Working);
+	while (m_state == EWorkingState::Working);
 #endif
 }
 
@@ -1707,16 +1708,19 @@ void NavigationSystem::ComputeAllIslands()
 	}
 }
 
-void NavigationSystem::OnMeshesUpdateCompleted(const NavigationMeshID* pUpdatedMeshes, const size_t count)
+void NavigationSystem::OnMeshesUpdateCompleted()
 {
-	ComputeIslandsForMeshes(pUpdatedMeshes, count);
-	ComputeMeshesAccessibility(pUpdatedMeshes, count);
+	// We just finished the processing of the tiles, so before being in Idle
+	// we need to recompute the Islands detection
+	const size_t meshesCount = m_recentlyUpdatedMeshIds.size();
+	ComputeIslandsForMeshes(m_recentlyUpdatedMeshIds.data(), meshesCount);
+	ComputeMeshesAccessibility(m_recentlyUpdatedMeshIds.data(), meshesCount);
 
-	for (size_t updatedIdx = 0; updatedIdx < count; ++updatedIdx)
+	for (size_t updatedIdx = 0; updatedIdx < meshesCount; ++updatedIdx)
 	{
 		for (auto it = m_accessibilityUpdateRequestForMeshIds.begin(); it != m_accessibilityUpdateRequestForMeshIds.end(); ++it)
 		{
-			if (pUpdatedMeshes[updatedIdx] == *it)
+			if (m_recentlyUpdatedMeshIds[updatedIdx] == *it)
 			{
 				std::iter_swap(it, m_accessibilityUpdateRequestForMeshIds.end() - 1);
 				m_accessibilityUpdateRequestForMeshIds.pop_back();
@@ -1724,6 +1728,7 @@ void NavigationSystem::OnMeshesUpdateCompleted(const NavigationMeshID* pUpdatedM
 			}
 		}
 	}
+	m_recentlyUpdatedMeshIds.clear();
 }
 
 void NavigationSystem::ComputeIslandsForMeshes(const NavigationMeshID* pUpdatedMeshes, const size_t count)
@@ -2378,7 +2383,7 @@ void NavigationSystem::Clear()
 void NavigationSystem::ClearAndNotify()
 {
 	Clear();
-	UpdateAllListener(NavigationCleared);
+	UpdateAllListeners(ENavigationEvent::NavigationCleared);
 
 	//////////////////////////////////////////////////////////////////////////
 	//After the 'clear' we need to re-enable and register smart objects again
@@ -2533,7 +2538,7 @@ bool NavigationSystem::ReloadConfig()
 			}
 
 			const char* name = 0;
-			INavigationSystem::CreateAgentTypeParams params;
+			INavigationSystem::SCreateAgentTypeParams params;
 
 			for (size_t attr = 0; attr < (size_t)agentTypeNode->getNumAttributes(); ++attr)
 			{
@@ -3706,7 +3711,7 @@ bool NavigationSystem::ReadFromFile(const char* fileName, bool bAfterExporting)
 					// If we are full reloading the mnm then we also want to create a new grid with the parameters
 					// written in the file
 
-					CreateMeshParams createParams;
+					SCreateMeshParams createParams;
 					createParams.origin = params.origin;
 					createParams.tileSize = params.tileSize;
 					createParams.tileCount = tilesCount;
@@ -3873,8 +3878,8 @@ bool NavigationSystem::ReadFromFile(const char* fileName, bool bAfterExporting)
 
 	m_volumesManager.ValidateAndSanitizeLoadedAreas(*this);
 
-	ENavigationEvent navigationEvent = (bAfterExporting) ? MeshReloadedAfterExporting : MeshReloaded;
-	UpdateAllListener(navigationEvent);
+	const ENavigationEvent navigationEvent = bAfterExporting ? ENavigationEvent::MeshReloadedAfterExporting : ENavigationEvent::MeshReloaded;
+	UpdateAllListeners(navigationEvent);
 
 	m_offMeshNavigationManager.OnNavigationLoadedComplete();
 
@@ -4385,7 +4390,7 @@ bool NavigationSystem::SaveToFile(const char* fileName) const PREFAST_SUPPRESS_W
 	return true;
 }
 
-void NavigationSystem::UpdateAllListener(const ENavigationEvent event)
+void NavigationSystem::UpdateAllListeners(const ENavigationEvent event)
 {
 	for (NavigationListeners::Notifier notifier(m_listenersList); notifier.IsValid(); notifier.Next())
 	{
@@ -5556,13 +5561,13 @@ void NavigationSystemDebugDraw::DebugDrawNavigationSystemState(NavigationSystem&
 	{
 		switch (navigationSystem.m_state)
 		{
-		case NavigationSystem::Working:
+		case INavigationSystem::EWorkingState::Working:
 			dc->Draw2dLabel(10.0f, 300.0f, 1.6f, Col_Yellow, false, "Navigation System Working");
 			dc->Draw2dLabel(10.0f, 322.0f, 1.2f, Col_White, false, "Processing: %d\nRemaining: %d\nThroughput: %.2f/s\n"
 				"Cache Hits: %.2f/s",
 				navigationSystem.m_runningTasks.size(), navigationSystem.GetWorkingQueueSize(), navigationSystem.m_throughput, navigationSystem.m_cacheHitRate);
 			break;
-		case NavigationSystem::Idle:
+		case INavigationSystem::EWorkingState::Idle:
 			dc->Draw2dLabel(10.0f, 300.0f, 1.6f, Col_ForestGreen, false, "Navigation System Idle");
 			break;
 		default:
@@ -5852,7 +5857,7 @@ void NavigationSystemBackgroundUpdate::Thread::ThreadEntry()
 {
 	while (!m_requestedStop)
 	{
-		if (m_navigationSystem.GetState() == INavigationSystem::Working)
+		if (m_navigationSystem.GetState() == INavigationSystem::EWorkingState::Working)
 		{
 			const CTimeValue startedUpdate = gEnv->pTimer->GetAsyncTime();
 
@@ -5929,7 +5934,7 @@ void NavigationSystemBackgroundUpdate::OnSystemEvent(ESystemEvent event, UINT_PT
 	else if (event == ESYSTEM_EVENT_CHANGE_FOCUS)
 	{
 		// wparam != 0 is focused, wparam == 0 is not focused
-		const bool startBackGroundUpdate = (wparam == 0) && (gAIEnv.CVars.MNMEditorBackgroundUpdate != 0) && (m_navigationSystem.GetState() == INavigationSystem::Working) && !m_paused;
+		const bool startBackGroundUpdate = (wparam == 0) && (gAIEnv.CVars.MNMEditorBackgroundUpdate != 0) && (m_navigationSystem.GetState() == INavigationSystem::EWorkingState::Working) && !m_paused;
 
 		if (startBackGroundUpdate)
 		{

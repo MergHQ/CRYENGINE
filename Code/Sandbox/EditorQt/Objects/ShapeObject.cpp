@@ -4392,20 +4392,24 @@ void CNavigationAreaObject::OnNavigationEvent(const INavigationSystem::ENavigati
 {
 	switch (event)
 	{
-	case INavigationSystem::MeshReloaded:
+	case INavigationSystem::ENavigationEvent::MeshReloaded:
 		ReregisterNavigationAreaAfterReload();
 		RelinkWithMesh(eUpdateGameArea);
 		break;
-	case INavigationSystem::MeshReloadedAfterExporting:
+	case INavigationSystem::ENavigationEvent::MeshReloadedAfterExporting:
 		ReregisterNavigationAreaAfterReload();
 		RelinkWithMesh(eRelinkOnly);
 		break;
-	case INavigationSystem::NavigationCleared:
+	case INavigationSystem::ENavigationEvent::NavigationCleared:
 		ReregisterNavigationAreaAfterReload();
 		RelinkWithMesh(eUpdateGameArea);
 		break;
+	case INavigationSystem::ENavigationEvent::WorkingStateSetToIdle:
+	case INavigationSystem::ENavigationEvent::WorkingStateSetToWorking:
+		// No need to handle these
+		break;
 	default:
-		CRY_ASSERT(0);
+		CRY_ASSERT_MESSAGE(false, "Unhandled ENavigationEvent type");
 		break;
 	}
 }
@@ -4453,7 +4457,7 @@ void CNavigationAreaObject::UpdateMeshes()
 			{
 				NavigationAgentTypeID agentTypeID = aiSystem->GetNavigationSystem()->GetAgentTypeID(i);
 
-				INavigationSystem::CreateMeshParams params; // TODO: expose at least the tile size
+				INavigationSystem::SCreateMeshParams params; // TODO: expose at least the tile size
 				m_meshes[i] = aiSystem->GetNavigationSystem()->CreateMeshForVolumeAndUpdate(GetName().GetString(), agentTypeID, params, m_volume);
 			}
 			else if (!mv_agentTypeVars[i] && meshID)

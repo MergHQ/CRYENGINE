@@ -436,7 +436,7 @@ public:
 	NavigationSystem(const char* configName);
 	~NavigationSystem();
 
-	virtual NavigationAgentTypeID      CreateAgentType(const char* name, const CreateAgentTypeParams& params) override;
+	virtual NavigationAgentTypeID      CreateAgentType(const char* name, const SCreateAgentTypeParams& params) override;
 	virtual NavigationAgentTypeID      GetAgentTypeID(const char* name) const override;
 	virtual NavigationAgentTypeID      GetAgentTypeID(size_t index) const override;
 	virtual const char*                GetAgentTypeName(NavigationAgentTypeID agentTypeID) const override;
@@ -451,13 +451,13 @@ public:
 	const MNM::CAnnotationsLibrary&         GetAnnotations()     { return m_annotationsLibrary; }
 
 #ifdef SW_NAVMESH_USE_GUID
-	virtual NavigationMeshID CreateMesh(const char* name, NavigationAgentTypeID agentTypeID, const CreateMeshParams& params, NavigationMeshGUID guid) override;
-	virtual NavigationMeshID CreateMesh(const char* name, NavigationAgentTypeID agentTypeID, const CreateMeshParams& params, NavigationMeshID requestedId, NavigationMeshGUID guid) override;
+	virtual NavigationMeshID CreateMesh(const char* name, NavigationAgentTypeID agentTypeID, const SCreateMeshParams& params, NavigationMeshGUID guid) override;
+	virtual NavigationMeshID CreateMesh(const char* name, NavigationAgentTypeID agentTypeID, const SCreateMeshParams& params, NavigationMeshID requestedId, NavigationMeshGUID guid) override;
 #else
-	virtual NavigationMeshID CreateMesh(const char* name, NavigationAgentTypeID agentTypeID, const CreateMeshParams& params) override;
-	virtual NavigationMeshID CreateMesh(const char* name, NavigationAgentTypeID agentTypeID, const CreateMeshParams& params, NavigationMeshID requestedId) override;
+	virtual NavigationMeshID CreateMesh(const char* name, NavigationAgentTypeID agentTypeID, const SCreateMeshParams& params) override;
+	virtual NavigationMeshID CreateMesh(const char* name, NavigationAgentTypeID agentTypeID, const SCreateMeshParams& params, NavigationMeshID requestedId) override;
 #endif
-	virtual NavigationMeshID CreateMeshForVolumeAndUpdate(const char* name, NavigationAgentTypeID agentTypeID, const CreateMeshParams& params, const NavigationVolumeID volumeID) override;
+	virtual NavigationMeshID CreateMeshForVolumeAndUpdate(const char* name, NavigationAgentTypeID agentTypeID, const SCreateMeshParams& params, const NavigationVolumeID volumeID) override;
 
 	virtual void             DestroyMesh(NavigationMeshID meshID) override;
 
@@ -497,8 +497,8 @@ public:
 	virtual const char*           GetMeshName(NavigationMeshID meshID) const override;
 	virtual void                  SetMeshName(NavigationMeshID meshID, const char* name) override;
 
-	virtual WorkingState          GetState() const override;
-	virtual WorkingState          Update(const CTimeValue frameStartTime, const float frameTime, bool blocking) override;
+	virtual EWorkingState         GetState() const override;
+	virtual EWorkingState         Update(const CTimeValue frameStartTime, const float frameTime, bool blocking) override;
 	virtual void                  PauseNavigationUpdate() override;
 	virtual void                  RestartNavigationUpdate() override;
 
@@ -585,7 +585,7 @@ public:
 	void                                     ComputeAllIslands();
 	void                                     ComputeIslandsForMeshes(const NavigationMeshID* pUpdatedMeshes, const size_t count);
 	void                                     ComputeMeshesAccessibility(const NavigationMeshID* pUpdatedMeshes, const size_t count);
-	void                                     OnMeshesUpdateCompleted(const NavigationMeshID* pUpdatedMeshes, const size_t count);
+	void                                     OnMeshesUpdateCompleted();
 
 	void                                     AddOffMeshLinkIslandConnectionsBetweenTriangles(const NavigationMeshID& meshID, const MNM::TriangleID startingTriangleID, const MNM::TriangleID endingTriangleID, const MNM::OffMeshLinkID& linkID);
 	void                                     RemoveOffMeshLinkIslandConnection(const MNM::OffMeshLinkID offMeshLinkId);
@@ -729,8 +729,9 @@ private:
 	void ComputeWorldAABB();
 	void SetupTasks();
 	void StopAllTasks();
+	void SetStateAndSendEvent(const EWorkingState newState);
 
-	void UpdateAllListener(const ENavigationEvent event);
+	void UpdateAllListeners(const ENavigationEvent event);
 	void ApplyAnnotationChanges();
 
 	bool IsLocationInMeshVolume(const NavigationMesh& mesh, const Vec3& position, const MNM::SSnappingMetric& snapMetric) const;
@@ -761,7 +762,7 @@ private:
 	typedef stl::aligned_vector<TileTaskResult, alignof(TileTaskResult)> TileTaskResults;
 	TileTaskResults m_results;
 	uint16          m_free;
-	WorkingState    m_state;
+	EWorkingState   m_state;
 
 	typedef id_map<uint32, NavigationMesh> Meshes;
 	Meshes m_meshes;

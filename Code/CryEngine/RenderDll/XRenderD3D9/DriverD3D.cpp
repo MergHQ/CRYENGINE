@@ -3102,7 +3102,7 @@ void CD3D9Renderer::RenderAux_RT()
 		{
 			if (INavigationSystem* pAINavigation = pAISystem->GetNavigationSystem())
 			{
-				if (pAINavigation->GetState() == INavigationSystem::Working)
+				if (pAINavigation->GetState() == INavigationSystem::EWorkingState::Working)
 					IRenderAuxImage::Draw2dImage(nIconSize * nIconIndex + overscanOffset.x, overscanOffset.y, nIconSize, nIconSize, CRendererResources::s_ptexIconNavigationProcessing->GetID(), 0, 1, 1, 0);
 			}
 		}
