@@ -84,6 +84,7 @@ CBaseObject::CBaseObject()
 CBaseObject::~CBaseObject()
 {
 	criAtomExPlayer_Destroy(m_pPlayer);
+	criAtomEx3dSource_Destroy(m_p3dSource);
 }
 
 //////////////////////////////////////////////////////////////////////////

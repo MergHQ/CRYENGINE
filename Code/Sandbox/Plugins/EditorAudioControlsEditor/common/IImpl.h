@@ -103,12 +103,19 @@ struct IImpl
 	//! \param pIConnection - Connection to serialize.
 	//! \param assetType - Type of the audio system control that has this connection.
 	//! \return An XML node with the connection serialized.
-	virtual XmlNodeRef CreateXMLNodeFromConnection(IConnection const* const pIConnection, EAssetType const assetType) = 0;
+	virtual XmlNodeRef CreateXMLNodeFromConnection(IConnection const* const pIConnection, EAssetType const assetType, CryAudio::ContextId const contextId) = 0;
 
 	//! The middleware implementation can provide an XML node that contains the amount of controls of the current library as attributes.
 	//! \param szTag - Tag of the node.
+	//! \param contextId - id of the context of the library that will contain the node.
 	//! \return An XML node that contains the amount of controls. Return nullptr if the node should not get written to the file.
-	virtual XmlNodeRef SetDataNode(char const* const szTag) = 0;
+	virtual XmlNodeRef SetDataNode(char const* const szTag, CryAudio::ContextId const contextId) = 0;
+
+	//! Signal the middleware implemementation that a library file will be written.
+	virtual void OnBeforeWriteLibrary() = 0;
+
+	//! Signal the middleware implemementation that a library file has been written.
+	virtual void OnAfterWriteLibrary() = 0;
 
 	//! Whenever a connection is added to an audio system control this function should be called to keep the system informed of which connections are being used.
 	//! \param pIConnection - Connection that has been enabled.

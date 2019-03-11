@@ -46,7 +46,7 @@ namespace Impl
 namespace Adx2
 {
 SPoolSizes g_poolSizes;
-SPoolSizes g_poolSizesLevelSpecific;
+std::map<ContextId, SPoolSizes> g_contextPoolSizes;
 
 #if defined(CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE)
 SPoolSizes g_debugPoolSizes;
@@ -106,9 +106,9 @@ void CountPoolSizes(XmlNodeRef const pNode, SPoolSizes& poolSizes)
 	pNode->getAttr(g_szDspBusSettingsAttribute, numDspBusSettings);
 	poolSizes.dspBusSettings += numDspBusSettings;
 
-	uint16 numFiles = 0;
-	pNode->getAttr(g_szBinariesAttribute, numFiles);
-	poolSizes.binaries += numFiles;
+	uint16 numBinaries = 0;
+	pNode->getAttr(g_szBinariesAttribute, numBinaries);
+	poolSizes.binaries += numBinaries;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -370,7 +370,7 @@ ERequestStatus CImpl::Init(uint16 const objectPoolSize)
 ///////////////////////////////////////////////////////////////////////////
 void CImpl::ShutDown()
 {
-	criAtomEx_UnregisterAcf();
+	UnregisterAcf();
 	criAtomExDbas_Destroy(m_dbasId);
 	criAtomExVoicePool_FreeAll();
 
@@ -381,8 +381,6 @@ void CImpl::ShutDown()
 #endif  // CRY_PLATFORM_WINDOWS
 
 	criFs_FinalizeLibrary();
-
-	delete[] m_pAcfBuffer;
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -396,30 +394,15 @@ void CImpl::Release()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CImpl::SetLibraryData(XmlNodeRef const pNode, bool const isLevelSpecific)
+void CImpl::SetLibraryData(XmlNodeRef const pNode, ContextId const contextId)
 {
-	if (isLevelSpecific)
+	if (contextId == GlobalContextId)
 	{
-		SPoolSizes levelPoolSizes;
-		CountPoolSizes(pNode, levelPoolSizes);
-
-		g_poolSizesLevelSpecific.cues = std::max(g_poolSizesLevelSpecific.cues, levelPoolSizes.cues);
-		g_poolSizesLevelSpecific.aisacControls = std::max(g_poolSizesLevelSpecific.aisacControls, levelPoolSizes.aisacControls);
-		g_poolSizesLevelSpecific.aisacEnvironments = std::max(g_poolSizesLevelSpecific.aisacEnvironments, levelPoolSizes.aisacEnvironments);
-		g_poolSizesLevelSpecific.aisacStates = std::max(g_poolSizesLevelSpecific.aisacStates, levelPoolSizes.aisacStates);
-		g_poolSizesLevelSpecific.categories = std::max(g_poolSizesLevelSpecific.categories, levelPoolSizes.categories);
-		g_poolSizesLevelSpecific.categoryStates = std::max(g_poolSizesLevelSpecific.categoryStates, levelPoolSizes.categoryStates);
-		g_poolSizesLevelSpecific.gameVariables = std::max(g_poolSizesLevelSpecific.gameVariables, levelPoolSizes.gameVariables);
-		g_poolSizesLevelSpecific.gameVariableStates = std::max(g_poolSizesLevelSpecific.gameVariableStates, levelPoolSizes.gameVariableStates);
-		g_poolSizesLevelSpecific.selectorLabels = std::max(g_poolSizesLevelSpecific.selectorLabels, levelPoolSizes.selectorLabels);
-		g_poolSizesLevelSpecific.dspBuses = std::max(g_poolSizesLevelSpecific.dspBuses, levelPoolSizes.dspBuses);
-		g_poolSizesLevelSpecific.snapshots = std::max(g_poolSizesLevelSpecific.snapshots, levelPoolSizes.snapshots);
-		g_poolSizesLevelSpecific.dspBusSettings = std::max(g_poolSizesLevelSpecific.dspBusSettings, levelPoolSizes.dspBusSettings);
-		g_poolSizesLevelSpecific.binaries = std::max(g_poolSizesLevelSpecific.binaries, levelPoolSizes.binaries);
+		CountPoolSizes(pNode, g_poolSizes);
 	}
 	else
 	{
-		CountPoolSizes(pNode, g_poolSizes);
+		CountPoolSizes(pNode, g_contextPoolSizes[contextId]);
 	}
 }
 
@@ -427,7 +410,7 @@ void CImpl::SetLibraryData(XmlNodeRef const pNode, bool const isLevelSpecific)
 void CImpl::OnBeforeLibraryDataChanged()
 {
 	ZeroStruct(g_poolSizes);
-	ZeroStruct(g_poolSizesLevelSpecific);
+	g_contextPoolSizes.clear();
 
 #if defined(CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE)
 	ZeroStruct(g_debugPoolSizes);
@@ -435,21 +418,69 @@ void CImpl::OnBeforeLibraryDataChanged()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CImpl::OnAfterLibraryDataChanged()
+void CImpl::OnAfterLibraryDataChanged(int const poolAllocationMode)
 {
-	g_poolSizes.cues += g_poolSizesLevelSpecific.cues;
-	g_poolSizes.aisacControls += g_poolSizesLevelSpecific.aisacControls;
-	g_poolSizes.aisacEnvironments += g_poolSizesLevelSpecific.aisacEnvironments;
-	g_poolSizes.aisacStates += g_poolSizesLevelSpecific.aisacStates;
-	g_poolSizes.categories += g_poolSizesLevelSpecific.categories;
-	g_poolSizes.categoryStates += g_poolSizesLevelSpecific.categoryStates;
-	g_poolSizes.gameVariables += g_poolSizesLevelSpecific.gameVariables;
-	g_poolSizes.gameVariableStates += g_poolSizesLevelSpecific.gameVariableStates;
-	g_poolSizes.selectorLabels += g_poolSizesLevelSpecific.selectorLabels;
-	g_poolSizes.dspBuses += g_poolSizesLevelSpecific.dspBuses;
-	g_poolSizes.snapshots += g_poolSizesLevelSpecific.snapshots;
-	g_poolSizes.dspBusSettings += g_poolSizesLevelSpecific.dspBusSettings;
-	g_poolSizes.binaries += g_poolSizesLevelSpecific.binaries;
+	if (!g_contextPoolSizes.empty())
+	{
+		if (poolAllocationMode <= 0)
+		{
+			for (auto const& poolSizePair : g_contextPoolSizes)
+			{
+				SPoolSizes const& iterPoolSizes = g_contextPoolSizes[poolSizePair.first];
+
+				g_poolSizes.cues += iterPoolSizes.cues;
+				g_poolSizes.aisacControls += iterPoolSizes.aisacControls;
+				g_poolSizes.aisacEnvironments += iterPoolSizes.aisacEnvironments;
+				g_poolSizes.aisacStates += iterPoolSizes.aisacStates;
+				g_poolSizes.categories += iterPoolSizes.categories;
+				g_poolSizes.categoryStates += iterPoolSizes.categoryStates;
+				g_poolSizes.gameVariables += iterPoolSizes.gameVariables;
+				g_poolSizes.gameVariableStates += iterPoolSizes.gameVariableStates;
+				g_poolSizes.selectorLabels += iterPoolSizes.selectorLabels;
+				g_poolSizes.dspBuses += iterPoolSizes.dspBuses;
+				g_poolSizes.snapshots += iterPoolSizes.snapshots;
+				g_poolSizes.dspBusSettings += iterPoolSizes.dspBusSettings;
+				g_poolSizes.binaries += iterPoolSizes.binaries;
+			}
+		}
+		else
+		{
+			SPoolSizes maxContextPoolSizes;
+
+			for (auto const& poolSizePair : g_contextPoolSizes)
+			{
+				SPoolSizes const& iterPoolSizes = g_contextPoolSizes[poolSizePair.first];
+
+				maxContextPoolSizes.cues = std::max(maxContextPoolSizes.cues, iterPoolSizes.cues);
+				maxContextPoolSizes.aisacControls = std::max(maxContextPoolSizes.aisacControls, iterPoolSizes.aisacControls);
+				maxContextPoolSizes.aisacEnvironments = std::max(maxContextPoolSizes.aisacEnvironments, iterPoolSizes.aisacEnvironments);
+				maxContextPoolSizes.aisacStates = std::max(maxContextPoolSizes.aisacStates, iterPoolSizes.aisacStates);
+				maxContextPoolSizes.categories = std::max(maxContextPoolSizes.categories, iterPoolSizes.categories);
+				maxContextPoolSizes.categoryStates = std::max(maxContextPoolSizes.categoryStates, iterPoolSizes.categoryStates);
+				maxContextPoolSizes.gameVariables = std::max(maxContextPoolSizes.gameVariables, iterPoolSizes.gameVariables);
+				maxContextPoolSizes.gameVariableStates = std::max(maxContextPoolSizes.gameVariableStates, iterPoolSizes.gameVariableStates);
+				maxContextPoolSizes.selectorLabels = std::max(maxContextPoolSizes.selectorLabels, iterPoolSizes.selectorLabels);
+				maxContextPoolSizes.dspBuses = std::max(maxContextPoolSizes.dspBuses, iterPoolSizes.dspBuses);
+				maxContextPoolSizes.snapshots = std::max(maxContextPoolSizes.snapshots, iterPoolSizes.snapshots);
+				maxContextPoolSizes.dspBusSettings = std::max(maxContextPoolSizes.dspBusSettings, iterPoolSizes.dspBusSettings);
+				maxContextPoolSizes.binaries = std::max(maxContextPoolSizes.binaries, iterPoolSizes.binaries);
+			}
+
+			g_poolSizes.cues += maxContextPoolSizes.cues;
+			g_poolSizes.aisacControls += maxContextPoolSizes.aisacControls;
+			g_poolSizes.aisacEnvironments += maxContextPoolSizes.aisacEnvironments;
+			g_poolSizes.aisacStates += maxContextPoolSizes.aisacStates;
+			g_poolSizes.categories += maxContextPoolSizes.categories;
+			g_poolSizes.categoryStates += maxContextPoolSizes.categoryStates;
+			g_poolSizes.gameVariables += maxContextPoolSizes.gameVariables;
+			g_poolSizes.gameVariableStates += maxContextPoolSizes.gameVariableStates;
+			g_poolSizes.selectorLabels += maxContextPoolSizes.selectorLabels;
+			g_poolSizes.dspBuses += maxContextPoolSizes.dspBuses;
+			g_poolSizes.snapshots += maxContextPoolSizes.snapshots;
+			g_poolSizes.dspBusSettings += maxContextPoolSizes.dspBusSettings;
+			g_poolSizes.binaries += maxContextPoolSizes.binaries;
+		}
+	}
 
 #if defined(CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE)
 	// Used to hide pools without allocations in debug draw.
@@ -1122,7 +1153,7 @@ void CImpl::OnRefresh()
 	LoadAcbInfos(m_localizedSoundBankFolder);
 #endif  // CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE
 
-	criAtomEx_UnregisterAcf();
+	UnregisterAcf();
 	RegisterAcf();
 	g_acbHandles.clear();
 }
@@ -1353,6 +1384,14 @@ bool CImpl::RegisterAcf()
 #endif  // CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE
 
 	return acfRegistered;
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CImpl::UnregisterAcf()
+{
+	criAtomEx_UnregisterAcf();
+	delete[] m_pAcfBuffer;
+	m_pAcfBuffer = nullptr;
 }
 
 //////////////////////////////////////////////////////////////////////////

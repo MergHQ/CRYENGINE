@@ -196,7 +196,7 @@ void CFileImporterDialog::OnCreateFolderSelector()
 //////////////////////////////////////////////////////////////////////////
 void CFileImporterDialog::OnActionChanged(Qt::CheckState const isChecked)
 {
-	auto const& selection = m_pTreeView->selectionModel()->selectedRows(static_cast<int>(CFileImporterModel::EColumns::Import));
+	QModelIndexList const& selection = m_pTreeView->selectionModel()->selectedRows(static_cast<int>(CFileImporterModel::EColumns::Import));
 
 	if (selection.size() > 1)
 	{

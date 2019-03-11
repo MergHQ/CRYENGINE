@@ -9,7 +9,7 @@ namespace Impl
 {
 namespace Wwise
 {
-CryAudio::Impl::Wwise::SPoolSizes g_connections;
+ConnectionsByContext g_connections;
 Platforms g_platforms;
 } // namespace Wwise
 } // namespace Impl

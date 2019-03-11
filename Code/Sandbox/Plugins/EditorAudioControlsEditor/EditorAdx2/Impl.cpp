@@ -152,13 +152,16 @@ char const* TypeToTag(EItemType const type)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CountConnections(EAssetType const assetType, EItemType const itemType)
+void CountConnections(
+	EAssetType const assetType,
+	EItemType const itemType,
+	CryAudio::ContextId const contextId)
 {
 	switch (itemType)
 	{
 	case EItemType::Cue:
 		{
-			++g_connections.cues;
+			++g_connections[contextId].cues;
 			break;
 		}
 	case EItemType::AisacControl:
@@ -167,17 +170,17 @@ void CountConnections(EAssetType const assetType, EItemType const itemType)
 			{
 			case EAssetType::Parameter:
 				{
-					++g_connections.aisacControls;
+					++g_connections[contextId].aisacControls;
 					break;
 				}
 			case EAssetType::State:
 				{
-					++g_connections.aisacStates;
+					++g_connections[contextId].aisacStates;
 					break;
 				}
 			case EAssetType::Environment:
 				{
-					++g_connections.aisacEnvironments;
+					++g_connections[contextId].aisacEnvironments;
 					break;
 				}
 			default:
@@ -194,12 +197,12 @@ void CountConnections(EAssetType const assetType, EItemType const itemType)
 			{
 			case EAssetType::Parameter:
 				{
-					++g_connections.categories;
+					++g_connections[contextId].categories;
 					break;
 				}
 			case EAssetType::State:
 				{
-					++g_connections.categoryStates;
+					++g_connections[contextId].categoryStates;
 					break;
 				}
 			default:
@@ -216,12 +219,12 @@ void CountConnections(EAssetType const assetType, EItemType const itemType)
 			{
 			case EAssetType::Parameter:
 				{
-					++g_connections.gameVariables;
+					++g_connections[contextId].gameVariables;
 					break;
 				}
 			case EAssetType::State:
 				{
-					++g_connections.gameVariableStates;
+					++g_connections[contextId].gameVariableStates;
 					break;
 				}
 			default:
@@ -234,27 +237,27 @@ void CountConnections(EAssetType const assetType, EItemType const itemType)
 		}
 	case EItemType::SelectorLabel:
 		{
-			++g_connections.selectorLabels;
+			++g_connections[contextId].selectorLabels;
 			break;
 		}
 	case EItemType::Bus:
 		{
-			++g_connections.dspBuses;
+			++g_connections[contextId].dspBuses;
 			break;
 		}
 	case EItemType::Snapshot:
 		{
-			++g_connections.snapshots;
+			++g_connections[contextId].snapshots;
 			break;
 		}
 	case EItemType::DspBusSetting:
 		{
-			++g_connections.dspBusSettings;
+			++g_connections[contextId].dspBusSettings;
 			break;
 		}
 	case EItemType::Binary:
 		{
-			++g_connections.binaries;
+			++g_connections[contextId].binaries;
 			break;
 		}
 	default:
@@ -329,25 +332,12 @@ void CImpl::Initialize(
 	ExtensionFilterVector& extensionFilters,
 	QStringList& supportedFileTypes)
 {
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "Adx2 ACE Item Pool");
 	CItem::CreateAllocator(g_itemPoolSize);
-
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "Adx2 ACE Cue Connection Pool");
 	CCueConnection::CreateAllocator(g_cueConnectionPoolSize);
-
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "Adx2 ACE Parameter Connection Pool");
 	CParameterConnection::CreateAllocator(g_parameterConnectionPoolSize);
-
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "Adx2 ACE Parameter To State Connection Pool");
 	CParameterToStateConnection::CreateAllocator(g_parameterToStateConnectionPoolSize);
-
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "Adx2 ACE Platform Connection Pool");
 	CPlatformConnection::CreateAllocator(g_platformConnectionPoolSize);
-
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "Adx2 ACE Snapshot Connection Pool");
 	CSnapshotConnection::CreateAllocator(g_snapshotConnectionPoolSize);
-
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "Adx2 ACE Generic Connection Pool");
 	CGenericConnection::CreateAllocator(g_genericConnectionPoolSize);
 
 	CryAudio::SImplInfo systemImplInfo;
@@ -757,7 +747,10 @@ IConnection* CImpl::CreateConnectionFromXMLNode(XmlNodeRef pNode, EAssetType con
 }
 
 //////////////////////////////////////////////////////////////////////////
-XmlNodeRef CImpl::CreateXMLNodeFromConnection(IConnection const* const pIConnection, EAssetType const assetType)
+XmlNodeRef CImpl::CreateXMLNodeFromConnection(
+	IConnection const* const pIConnection,
+	EAssetType const assetType,
+	CryAudio::ContextId const contextId)
 {
 	XmlNodeRef pNode = nullptr;
 
@@ -888,107 +881,100 @@ XmlNodeRef CImpl::CreateXMLNodeFromConnection(IConnection const* const pIConnect
 			}
 		}
 
-		CountConnections(assetType, type);
+		CountConnections(assetType, type, contextId);
 	}
 
 	return pNode;
 }
 
 //////////////////////////////////////////////////////////////////////////
-XmlNodeRef CImpl::SetDataNode(char const* const szTag)
+XmlNodeRef CImpl::SetDataNode(char const* const szTag, CryAudio::ContextId const contextId)
 {
-	XmlNodeRef pNode = GetISystem()->CreateXmlNode(szTag);
-	bool hasConnections = false;
+	XmlNodeRef pNode = nullptr;
 
-	if (g_connections.cues > 0)
+	if (g_connections.count(contextId) > 0)
 	{
-		pNode->setAttr(CryAudio::Impl::Adx2::g_szCuesAttribute, g_connections.cues);
-		hasConnections = true;
-	}
+		pNode = GetISystem()->CreateXmlNode(szTag);
 
-	if (g_connections.aisacControls > 0)
-	{
-		pNode->setAttr(CryAudio::Impl::Adx2::g_szAisacControlsAttribute, g_connections.aisacControls);
-		hasConnections = true;
-	}
+		if (g_connections[contextId].cues > 0)
+		{
+			pNode->setAttr(CryAudio::Impl::Adx2::g_szCuesAttribute, g_connections[contextId].cues);
+		}
 
-	if (g_connections.aisacEnvironments > 0)
-	{
-		pNode->setAttr(CryAudio::Impl::Adx2::g_szAisacEnvironmentsAttribute, g_connections.aisacEnvironments);
-		hasConnections = true;
-	}
+		if (g_connections[contextId].aisacControls > 0)
+		{
+			pNode->setAttr(CryAudio::Impl::Adx2::g_szAisacControlsAttribute, g_connections[contextId].aisacControls);
+		}
 
-	if (g_connections.aisacStates > 0)
-	{
-		pNode->setAttr(CryAudio::Impl::Adx2::g_szAisacStatesAttribute, g_connections.aisacStates);
-		hasConnections = true;
-	}
+		if (g_connections[contextId].aisacEnvironments > 0)
+		{
+			pNode->setAttr(CryAudio::Impl::Adx2::g_szAisacEnvironmentsAttribute, g_connections[contextId].aisacEnvironments);
+		}
 
-	if (g_connections.categories > 0)
-	{
-		pNode->setAttr(CryAudio::Impl::Adx2::g_szCategoriesAttribute, g_connections.categories);
-		hasConnections = true;
-	}
+		if (g_connections[contextId].aisacStates > 0)
+		{
+			pNode->setAttr(CryAudio::Impl::Adx2::g_szAisacStatesAttribute, g_connections[contextId].aisacStates);
+		}
 
-	if (g_connections.categoryStates > 0)
-	{
-		pNode->setAttr(CryAudio::Impl::Adx2::g_szCategoryStatesAttribute, g_connections.categoryStates);
-		hasConnections = true;
-	}
+		if (g_connections[contextId].categories > 0)
+		{
+			pNode->setAttr(CryAudio::Impl::Adx2::g_szCategoriesAttribute, g_connections[contextId].categories);
+		}
 
-	if (g_connections.gameVariables > 0)
-	{
-		pNode->setAttr(CryAudio::Impl::Adx2::g_szGameVariablesAttribute, g_connections.gameVariables);
-		hasConnections = true;
-	}
+		if (g_connections[contextId].categoryStates > 0)
+		{
+			pNode->setAttr(CryAudio::Impl::Adx2::g_szCategoryStatesAttribute, g_connections[contextId].categoryStates);
+		}
 
-	if (g_connections.gameVariableStates > 0)
-	{
-		pNode->setAttr(CryAudio::Impl::Adx2::g_szGameVariableStatesAttribute, g_connections.gameVariableStates);
-		hasConnections = true;
-	}
+		if (g_connections[contextId].gameVariables > 0)
+		{
+			pNode->setAttr(CryAudio::Impl::Adx2::g_szGameVariablesAttribute, g_connections[contextId].gameVariables);
+		}
 
-	if (g_connections.selectorLabels > 0)
-	{
-		pNode->setAttr(CryAudio::Impl::Adx2::g_szSelectorLabelsAttribute, g_connections.selectorLabels);
-		hasConnections = true;
-	}
+		if (g_connections[contextId].gameVariableStates > 0)
+		{
+			pNode->setAttr(CryAudio::Impl::Adx2::g_szGameVariableStatesAttribute, g_connections[contextId].gameVariableStates);
+		}
 
-	if (g_connections.dspBuses > 0)
-	{
-		pNode->setAttr(CryAudio::Impl::Adx2::g_szDspBusesAttribute, g_connections.dspBuses);
-		hasConnections = true;
-	}
+		if (g_connections[contextId].selectorLabels > 0)
+		{
+			pNode->setAttr(CryAudio::Impl::Adx2::g_szSelectorLabelsAttribute, g_connections[contextId].selectorLabels);
+		}
 
-	if (g_connections.snapshots > 0)
-	{
-		pNode->setAttr(CryAudio::Impl::Adx2::g_szSnapshotsAttribute, g_connections.snapshots);
-		hasConnections = true;
-	}
+		if (g_connections[contextId].dspBuses > 0)
+		{
+			pNode->setAttr(CryAudio::Impl::Adx2::g_szDspBusesAttribute, g_connections[contextId].dspBuses);
+		}
 
-	if (g_connections.dspBusSettings > 0)
-	{
-		pNode->setAttr(CryAudio::Impl::Adx2::g_szDspBusSettingsAttribute, g_connections.dspBusSettings);
-		hasConnections = true;
-	}
+		if (g_connections[contextId].snapshots > 0)
+		{
+			pNode->setAttr(CryAudio::Impl::Adx2::g_szSnapshotsAttribute, g_connections[contextId].snapshots);
+		}
 
-	if (g_connections.binaries > 0)
-	{
-		pNode->setAttr(CryAudio::Impl::Adx2::g_szBinariesAttribute, g_connections.binaries);
-		hasConnections = true;
-	}
+		if (g_connections[contextId].dspBusSettings > 0)
+		{
+			pNode->setAttr(CryAudio::Impl::Adx2::g_szDspBusSettingsAttribute, g_connections[contextId].dspBusSettings);
+		}
 
-	if (hasConnections)
-	{
-		// Reset connection count for next library.
-		ZeroStruct(g_connections);
-	}
-	else
-	{
-		pNode = nullptr;
+		if (g_connections[contextId].binaries > 0)
+		{
+			pNode->setAttr(CryAudio::Impl::Adx2::g_szBinariesAttribute, g_connections[contextId].binaries);
+		}
 	}
 
 	return pNode;
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CImpl::OnBeforeWriteLibrary()
+{
+	g_connections.clear();
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CImpl::OnAfterWriteLibrary()
+{
+	g_connections.clear();
 }
 
 //////////////////////////////////////////////////////////////////////////

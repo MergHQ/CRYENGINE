@@ -19,11 +19,11 @@ public:
 
 #if defined(CRY_AUDIO_USE_DEBUG_CODE)
 	CLoseFocusTrigger()
-		: Control(g_loseFocusTriggerId, EDataScope::Global, g_szLoseFocusTriggerName)
+		: Control(g_loseFocusTriggerId, GlobalContextId, g_szLoseFocusTriggerName)
 	{}
 #else
 	CLoseFocusTrigger()
-		: Control(g_loseFocusTriggerId, EDataScope::Global)
+		: Control(g_loseFocusTriggerId, GlobalContextId)
 	{}
 #endif // CRY_AUDIO_USE_DEBUG_CODE
 

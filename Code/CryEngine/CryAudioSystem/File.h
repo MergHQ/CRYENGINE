@@ -45,7 +45,7 @@ public:
 		, m_useCount(0)
 		, m_memoryBlockAlignment(CRY_MEMORY_ALLOCATION_ALIGNMENT)
 		, m_flags(EFileFlags::NotFound)
-		, m_dataScope(EDataScope::All)
+		, m_contextId(GlobalContextId)
 		, m_streamTaskType(eStreamTaskTypeCount)
 		, m_pMemoryBlock(nullptr)
 		, m_pReadStream(nullptr)
@@ -61,7 +61,7 @@ public:
 	size_t                             m_useCount;
 	size_t                             m_memoryBlockAlignment;
 	EFileFlags                         m_flags;
-	EDataScope                         m_dataScope;
+	ContextId                          m_contextId;
 	EStreamTaskType                    m_streamTaskType;
 	_smart_ptr<ICustomMemoryBlock>     m_pMemoryBlock;
 	IReadStreamPtr                     m_pReadStream;

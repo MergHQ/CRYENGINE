@@ -134,13 +134,16 @@ char const* TypeToTag(EItemType const type)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CountConnections(EAssetType const assetType, EItemType const itemType)
+void CountConnections(
+	EAssetType const assetType,
+	EItemType const itemType,
+	CryAudio::ContextId const contextId)
 {
 	switch (itemType)
 	{
 	case EItemType::Event:
 		{
-			++g_connections.events;
+			++g_connections[contextId].events;
 			break;
 		}
 	case EItemType::Parameter:
@@ -149,17 +152,17 @@ void CountConnections(EAssetType const assetType, EItemType const itemType)
 			{
 			case EAssetType::Parameter:
 				{
-					++g_connections.parameters;
+					++g_connections[contextId].parameters;
 					break;
 				}
 			case EAssetType::State:
 				{
-					++g_connections.parameterStates;
+					++g_connections[contextId].parameterStates;
 					break;
 				}
 			case EAssetType::Environment:
 				{
-					++g_connections.parameterEnvironments;
+					++g_connections[contextId].parameterEnvironments;
 					break;
 				}
 			default:
@@ -170,22 +173,22 @@ void CountConnections(EAssetType const assetType, EItemType const itemType)
 		}
 	case EItemType::State:
 		{
-			++g_connections.states;
+			++g_connections[contextId].states;
 			break;
 		}
 	case EItemType::Switch:
 		{
-			++g_connections.switches;
+			++g_connections[contextId].switches;
 			break;
 		}
 	case EItemType::AuxBus:
 		{
-			++g_connections.auxBuses;
+			++g_connections[contextId].auxBuses;
 			break;
 		}
 	case EItemType::SoundBank:
 		{
-			++g_connections.soundBanks;
+			++g_connections[contextId].soundBanks;
 			break;
 		}
 	default:
@@ -251,19 +254,10 @@ void CImpl::Initialize(
 	ExtensionFilterVector& extensionFilters,
 	QStringList& supportedFileTypes)
 {
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "Wwise ACE Item Pool");
 	CItem::CreateAllocator(g_itemPoolSize);
-
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "Wwise ACE Generic Connection Pool");
 	CGenericConnection::CreateAllocator(g_genericConnectionPoolSize);
-
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "Wwise ACE Parameter Connection Pool");
 	CParameterConnection::CreateAllocator(g_parameterConnectionPoolSize);
-
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "Wwise ACE Parameter to State Connection Pool");
 	CParameterToStateConnection::CreateAllocator(g_parameterToStateConnectionPoolSize);
-
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "Wwise ACE Soundbank Connection Pool");
 	CSoundbankConnection::CreateAllocator(g_soundbankConnectionPoolSize);
 
 	CryAudio::SImplInfo systemImplInfo;
@@ -631,7 +625,10 @@ IConnection* CImpl::CreateConnectionFromXMLNode(XmlNodeRef pNode, EAssetType con
 }
 
 //////////////////////////////////////////////////////////////////////////
-XmlNodeRef CImpl::CreateXMLNodeFromConnection(IConnection const* const pIConnection, EAssetType const assetType)
+XmlNodeRef CImpl::CreateXMLNodeFromConnection(
+	IConnection const* const pIConnection,
+	EAssetType const assetType,
+	CryAudio::ContextId const contextId)
 {
 	XmlNodeRef pNode = nullptr;
 
@@ -721,77 +718,75 @@ XmlNodeRef CImpl::CreateXMLNodeFromConnection(IConnection const* const pIConnect
 			break;
 		}
 
-		CountConnections(assetType, itemType);
+		CountConnections(assetType, itemType, contextId);
 	}
 
 	return pNode;
 }
 
 //////////////////////////////////////////////////////////////////////////
-XmlNodeRef CImpl::SetDataNode(char const* const szTag)
+XmlNodeRef CImpl::SetDataNode(char const* const szTag, CryAudio::ContextId const contextId)
 {
-	XmlNodeRef pNode = GetISystem()->CreateXmlNode(szTag);
-	bool hasConnections = false;
+	XmlNodeRef pNode = nullptr;
 
-	if (g_connections.events > 0)
+	if (g_connections.count(contextId) > 0)
 	{
-		pNode->setAttr(CryAudio::Impl::Wwise::g_szEventsAttribute, g_connections.events);
-		hasConnections = true;
-	}
+		pNode = GetISystem()->CreateXmlNode(szTag);
 
-	if (g_connections.parameters > 0)
-	{
-		pNode->setAttr(CryAudio::Impl::Wwise::g_szParametersAttribute, g_connections.parameters);
-		hasConnections = true;
-	}
+		if (g_connections[contextId].events > 0)
+		{
+			pNode->setAttr(CryAudio::Impl::Wwise::g_szEventsAttribute, g_connections[contextId].events);
+		}
 
-	if (g_connections.parameterEnvironments > 0)
-	{
-		pNode->setAttr(CryAudio::Impl::Wwise::g_szParameterEnvironmentsAttribute, g_connections.parameterEnvironments);
-		hasConnections = true;
-	}
+		if (g_connections[contextId].parameters > 0)
+		{
+			pNode->setAttr(CryAudio::Impl::Wwise::g_szParametersAttribute, g_connections[contextId].parameters);
+		}
 
-	if (g_connections.parameterStates > 0)
-	{
-		pNode->setAttr(CryAudio::Impl::Wwise::g_szParameterEnvironmentsAttribute, g_connections.parameterStates);
-		hasConnections = true;
-	}
+		if (g_connections[contextId].parameterEnvironments > 0)
+		{
+			pNode->setAttr(CryAudio::Impl::Wwise::g_szParameterEnvironmentsAttribute, g_connections[contextId].parameterEnvironments);
+		}
 
-	if (g_connections.states > 0)
-	{
-		pNode->setAttr(CryAudio::Impl::Wwise::g_szStatesAttribute, g_connections.states);
-		hasConnections = true;
-	}
+		if (g_connections[contextId].parameterStates > 0)
+		{
+			pNode->setAttr(CryAudio::Impl::Wwise::g_szParameterStatesAttribute, g_connections[contextId].parameterStates);
+		}
 
-	if (g_connections.switches > 0)
-	{
-		pNode->setAttr(CryAudio::Impl::Wwise::g_szSwitchesAttribute, g_connections.switches);
-		hasConnections = true;
-	}
+		if (g_connections[contextId].states > 0)
+		{
+			pNode->setAttr(CryAudio::Impl::Wwise::g_szStatesAttribute, g_connections[contextId].states);
+		}
 
-	if (g_connections.auxBuses > 0)
-	{
-		pNode->setAttr(CryAudio::Impl::Wwise::g_szAuxBusesAttribute, g_connections.auxBuses);
-		hasConnections = true;
-	}
+		if (g_connections[contextId].switches > 0)
+		{
+			pNode->setAttr(CryAudio::Impl::Wwise::g_szSwitchesAttribute, g_connections[contextId].switches);
+		}
 
-	if (g_connections.soundBanks > 0)
-	{
-		pNode->setAttr(CryAudio::Impl::Wwise::g_szSoundBanksAttribute, g_connections.soundBanks);
-		hasConnections = true;
-	}
+		if (g_connections[contextId].auxBuses > 0)
+		{
+			pNode->setAttr(CryAudio::Impl::Wwise::g_szAuxBusesAttribute, g_connections[contextId].auxBuses);
+		}
 
-	if (hasConnections)
-	{
-		// Reset connection count for next library.
-		ZeroStruct(g_connections);
-	}
-	else
-	{
-		pNode = nullptr;
+		if (g_connections[contextId].soundBanks > 0)
+		{
+			pNode->setAttr(CryAudio::Impl::Wwise::g_szSoundBanksAttribute, g_connections[contextId].soundBanks);
+		}
 	}
 
 	return pNode;
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CImpl::OnBeforeWriteLibrary()
+{
+	g_connections.clear();
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CImpl::OnAfterWriteLibrary()
+{
+	g_connections.clear();
 }
 
 //////////////////////////////////////////////////////////////////////////

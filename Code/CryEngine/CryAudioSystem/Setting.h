@@ -21,21 +21,21 @@ public:
 #if defined(CRY_AUDIO_USE_DEBUG_CODE)
 	explicit CSetting(
 		ControlId const id,
-		EDataScope const dataScope,
+		ContextId const contextId,
 		bool const isAutoLoad,
 		SettingConnections const& connections,
 		char const* const szName)
-		: Control(id, dataScope, szName)
+		: Control(id, contextId, szName)
 		, m_isAutoLoad(isAutoLoad)
 		, m_connections(connections)
 	{}
 #else
 	explicit CSetting(
 		ControlId const id,
-		EDataScope const dataScope,
+		ContextId const contextId,
 		bool const isAutoLoad,
 		SettingConnections const& connections)
-		: Control(id, dataScope)
+		: Control(id, contextId)
 		, m_isAutoLoad(isAutoLoad)
 		, m_connections(connections)
 	{}

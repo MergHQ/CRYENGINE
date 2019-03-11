@@ -5,6 +5,7 @@
 
 #include "SystemSourceModel.h"
 #include "AssetsManager.h"
+#include "ContextManager.h"
 #include "AssetIcons.h"
 #include "AssetUtils.h"
 #include "Common/IItem.h"
@@ -17,11 +18,12 @@
 
 namespace ACE
 {
+constexpr int g_libraryNameColumn = static_cast<int>(CSystemSourceModel::EColumns::Name);
+
 /////////////////////////////////////////////////////////////////////////////////////////
 CSystemLibraryModel::CSystemLibraryModel(CLibrary* const pLibrary, QObject* const pParent)
 	: QAbstractItemModel(pParent)
 	, m_pLibrary(pLibrary)
-	, m_nameColumn(static_cast<int>(CSystemSourceModel::EColumns::Name))
 {
 	CRY_ASSERT_MESSAGE(pLibrary != nullptr, "Library is null pointer during %s", __FUNCTION__);
 	ConnectSignals();
@@ -343,14 +345,14 @@ QVariant CSystemLibraryModel::data(QModelIndex const& index, int role) const
 						}
 					}
 					break;
-				case static_cast<int>(CSystemSourceModel::EColumns::Scope):
+				case static_cast<int>(CSystemSourceModel::EColumns::Context):
 					if ((role == Qt::DisplayRole) && (assetType != EAssetType::Folder))
 					{
 						CControl const* const pControl = static_cast<CControl*>(pAsset);
 
 						if (pControl != nullptr)
 						{
-							variant = QtUtil::ToQString(g_assetsManager.GetScopeInfo(pControl->GetScope()).name);
+							variant = QtUtil::ToQString(g_contextManager.GetContextName(pControl->GetContextId()));
 						}
 					}
 					break;
@@ -406,7 +408,7 @@ bool CSystemLibraryModel::setData(QModelIndex const& index, QVariant const& valu
 {
 	bool wasDataChanged = false;
 
-	if (index.isValid() && (index.column() == m_nameColumn))
+	if (index.isValid() && (index.column() == g_libraryNameColumn))
 	{
 		auto const pAsset = static_cast<CAsset*>(index.internalPointer());
 
@@ -476,7 +478,7 @@ Qt::ItemFlags CSystemLibraryModel::flags(QModelIndex const& index) const
 		{
 			flags = QAbstractItemModel::flags(index) | Qt::ItemIsSelectable;
 		}
-		else if (index.column() == m_nameColumn)
+		else if (index.column() == g_libraryNameColumn)
 		{
 			flags = QAbstractItemModel::flags(index) | Qt::ItemIsDropEnabled | Qt::ItemIsDragEnabled | Qt::ItemIsEditable;
 		}

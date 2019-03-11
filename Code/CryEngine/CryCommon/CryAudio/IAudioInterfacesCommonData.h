@@ -23,6 +23,7 @@ using TriggerInstanceId = IdType;
 using EnumFlagsType = IdType;
 using AuxObjectId = IdType;
 using LibraryId = IdType;
+using ContextId = IdType;
 
 constexpr ControlId InvalidControlId = 0;
 constexpr SwitchStateId InvalidSwitchStateId = 0;
@@ -32,6 +33,7 @@ constexpr FileId InvalidFileId = 0;
 constexpr TriggerInstanceId InvalidTriggerInstanceId = 0;
 constexpr AuxObjectId InvalidAuxObjectId = 0;
 constexpr AuxObjectId DefaultAuxObjectId = 1;
+constexpr ContextId InvalidContextId = 0;
 constexpr uint8 MaxInfoStringLength = 128;
 constexpr uint8 MaxControlNameLength = 128;
 constexpr uint8 MaxFileNameLength = 128;
@@ -87,7 +89,9 @@ constexpr char const* g_szDataLoadType = "autoload";
 
 constexpr char const* g_szConfigFolderName = "ace";
 constexpr char const* g_szAssetsFolderName = "assets";
-constexpr char const* g_szLevelsFolderName = "levels";
+constexpr char const* g_szContextsFolderName = "contexts";
+
+constexpr char const* g_szGlobalContextName = "global";
 
 /**
  * A utility function to convert a string value to an Id.
@@ -101,6 +105,7 @@ constexpr IdType StringToId(char const* const szSource)
 
 constexpr PreloadRequestId GlobalPreloadRequestId = StringToId(g_szGlobalPreloadRequestName);
 constexpr LibraryId DefaultLibraryId = StringToId(g_szDefaultLibraryName);
+constexpr ContextId GlobalContextId = StringToId(g_szGlobalContextName);
 
 /**
  * @enum CryAudio::ERequestFlags

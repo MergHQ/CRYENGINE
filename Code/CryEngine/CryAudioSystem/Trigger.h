@@ -23,20 +23,20 @@ public:
 #if defined(CRY_AUDIO_USE_DEBUG_CODE)
 	explicit CTrigger(
 		ControlId const id,
-		EDataScope const dataScope,
+		ContextId const contextId,
 		TriggerConnections const& connections,
 		float const radius,
 		char const* const szName)
-		: Control(id, dataScope, szName)
+		: Control(id, contextId, szName)
 		, m_connections(connections)
 		, m_radius(radius)
 	{}
 #else
 	explicit CTrigger(
 		ControlId const id,
-		EDataScope const dataScope,
+		ContextId const contextId,
 		TriggerConnections const& connections)
-		: Control(id, dataScope)
+		: Control(id, contextId)
 		, m_connections(connections)
 	{}
 #endif // CRY_AUDIO_USE_DEBUG_CODE

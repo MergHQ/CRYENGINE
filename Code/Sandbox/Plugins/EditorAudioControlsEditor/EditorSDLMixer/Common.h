@@ -14,7 +14,8 @@ namespace Impl
 {
 namespace SDLMixer
 {
-extern CryAudio::Impl::SDL_mixer::SPoolSizes g_connections;
+using ConnectionsByContext = std::map<CryAudio::ContextId, CryAudio::Impl::SDL_mixer::SPoolSizes>;
+extern ConnectionsByContext g_connections;
 
 static CryIcon s_errorIcon;
 static CryIcon s_eventIcon;

@@ -60,7 +60,7 @@ void CImpl::Release()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CImpl::SetLibraryData(XmlNodeRef const pNode, bool const isLevelSpecific)
+void CImpl::SetLibraryData(XmlNodeRef const pNode, ContextId const contextId)
 {
 }
 
@@ -70,7 +70,7 @@ void CImpl::OnBeforeLibraryDataChanged()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CImpl::OnAfterLibraryDataChanged()
+void CImpl::OnAfterLibraryDataChanged(int const poolAllocationMode)
 {
 }
 

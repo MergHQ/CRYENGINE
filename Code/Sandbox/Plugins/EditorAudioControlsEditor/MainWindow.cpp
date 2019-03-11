@@ -10,6 +10,7 @@
 #include "SystemControlsWidget.h"
 #include "PropertiesWidget.h"
 #include "MiddlewareDataWidget.h"
+#include "ContextWidget.h"
 #include "FileMonitorMiddleware.h"
 #include "FileMonitorSystem.h"
 #include "Common/IImpl.h"
@@ -47,6 +48,11 @@ void OnBeforeReload()
 	{
 		g_pPropertiesWidget->OnBeforeReload();
 	}
+
+	if (g_pContextWidget != nullptr)
+	{
+		g_pContextWidget->OnBeforeReload();
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -65,6 +71,11 @@ void OnAfterReload()
 	if (g_pPropertiesWidget != nullptr)
 	{
 		g_pPropertiesWidget->OnAfterReload();
+	}
+
+	if (g_pContextWidget != nullptr)
+	{
+		g_pContextWidget->OnAfterReload();
 	}
 }
 
@@ -133,7 +144,6 @@ CMainWindow::CMainWindow()
 			m_pToolBar->setEnabled(g_pIImpl != nullptr);
 		}, reinterpret_cast<uintptr_t>(this));
 
-	GetIEditor()->RegisterNotifyListener(this);
 	GetISystem()->GetISystemEventDispatcher()->RegisterListener(this, "CAudioControlsEditorMainWindow");
 }
 
@@ -143,7 +153,6 @@ CMainWindow::~CMainWindow()
 	g_implManager.SignalOnBeforeImplChange.DisconnectById(reinterpret_cast<uintptr_t>(this));
 	g_implManager.SignalOnAfterImplChange.DisconnectById(reinterpret_cast<uintptr_t>(this));
 	g_assetsManager.SignalIsDirty.DisconnectById(reinterpret_cast<uintptr_t>(this));
-	GetIEditor()->UnregisterNotifyListener(this);
 	GetISystem()->GetISystemEventDispatcher()->RemoveListener(this);
 	g_pMainWindow = nullptr;
 }
@@ -192,6 +201,7 @@ void CMainWindow::RegisterWidgets()
 
 	RegisterDockableWidget("Audio System Controls", [&]() { return CreateSystemControlsWidget(); }, true, false);
 	RegisterDockableWidget("Properties", [&]() { return CreatePropertiesWidget(); }, true, false);
+	RegisterDockableWidget("Contexts", [&]() { return CreateContextWidget(); }, true, false);
 	RegisterDockableWidget("Middleware Data", [&]() { return CreateMiddlewareDataWidget(); }, true, false);
 }
 
@@ -242,6 +252,21 @@ CMiddlewareDataWidget* CMainWindow::CreateMiddlewareDataWidget()
 }
 
 //////////////////////////////////////////////////////////////////////////
+CContextWidget* CMainWindow::CreateContextWidget()
+{
+	auto pContextWidget = new CContextWidget(this);
+
+	if (g_pContextWidget == nullptr)
+	{
+		g_pContextWidget = pContextWidget;
+	}
+
+	QObject::connect(pContextWidget, &QObject::destroyed, this, &CMainWindow::OnContextWidgetDestruction);
+
+	return pContextWidget;
+}
+
+//////////////////////////////////////////////////////////////////////////
 void CMainWindow::OnSystemControlsWidgetDestruction(QObject* const pObject)
 {
 	auto pWidget = static_cast<CSystemControlsWidget*>(pObject);
@@ -275,14 +300,27 @@ void CMainWindow::OnMiddlewareDataWidgetDestruction(QObject* const pObject)
 }
 
 //////////////////////////////////////////////////////////////////////////
+void CMainWindow::OnContextWidgetDestruction(QObject* const pObject)
+{
+	auto pWidget = static_cast<CContextWidget*>(pObject);
+
+	if (g_pContextWidget == pWidget)
+	{
+		g_pContextWidget = nullptr;
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
 void CMainWindow::CreateDefaultLayout(CDockableContainer* pSender)
 {
 	CRY_ASSERT_MESSAGE(pSender != nullptr, "Dockable container is null pointer during %s", __FUNCTION__);
 
 	pSender->SpawnWidget("Audio System Controls");
-	pSender->SpawnWidget("Properties", QToolWindowAreaReference::VSplitRight);
-	QWidget* pWidget = pSender->SpawnWidget("Middleware Data", QToolWindowAreaReference::VSplitRight);
-	pSender->SetSplitterSizes(pWidget, { 1, 1, 1 });
+	QWidget* pPropertiesWidget = pSender->SpawnWidget("Properties", QToolWindowAreaReference::VSplitRight);
+	QWidget* pMiddlewareWidget = pSender->SpawnWidget("Middleware Data", QToolWindowAreaReference::VSplitRight);
+	pSender->SetSplitterSizes(pMiddlewareWidget, { 1, 1, 1 });
+	QWidget* pContextWidget = pSender->SpawnWidget("Contexts", pPropertiesWidget, QToolWindowAreaReference::HSplitBottom);
+	pSender->SetSplitterSizes(pContextWidget, { 2, 1 });
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -440,7 +478,7 @@ void CMainWindow::Save()
 	QGuiApplication::setOverrideCursor(Qt::WaitCursor);
 	m_pMonitorSystem->Disable();
 	CAudioControlsEditorPlugin::SaveData();
-	UpdateAudioSystemData();
+	gEnv->pAudioSystem->ReloadControlsData();
 	m_pMonitorSystem->EnableDelayed();
 	QGuiApplication::restoreOverrideCursor();
 
@@ -460,42 +498,9 @@ void CMainWindow::Save()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CMainWindow::UpdateAudioSystemData()
-{
-	string levelPath = CryAudio::g_szLevelsFolderName;
-	levelPath += "/";
-	levelPath += GetIEditor()->GetLevelName();
-	gEnv->pAudioSystem->ReloadControlsData(gEnv->pAudioSystem->GetConfigPath(), levelPath.c_str());
-}
-
-//////////////////////////////////////////////////////////////////////////
 void CMainWindow::RefreshAudioSystem()
 {
-	QGuiApplication::setOverrideCursor(Qt::WaitCursor);
-	char const* szLevelName = GetIEditor()->GetLevelName();
-
-	if (_stricmp(szLevelName, "Untitled") == 0)
-	{
-		// Rather pass nullptr to indicate that no level is loaded!
-		szLevelName = nullptr;
-	}
-
-	GetISystem()->GetISystemEventDispatcher()->OnSystemEvent(ESYSTEM_EVENT_AUDIO_REFRESH, reinterpret_cast<UINT_PTR>(szLevelName), 0);
-	QGuiApplication::restoreOverrideCursor();
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CMainWindow::OnEditorNotifyEvent(EEditorNotifyEvent event)
-{
-	if (event == eNotify_OnEndSceneSave)
-	{
-		CAudioControlsEditorPlugin::ReloadData(EReloadFlags::ReloadScopes);
-
-		if (g_pPropertiesWidget != nullptr)
-		{
-			g_pPropertiesWidget->Reset();
-		}
-	}
+	GetISystem()->GetISystemEventDispatcher()->OnSystemEvent(ESYSTEM_EVENT_AUDIO_REFRESH, 0, 0);
 }
 
 //////////////////////////////////////////////////////////////////////////

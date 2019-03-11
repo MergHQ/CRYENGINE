@@ -2,6 +2,7 @@
 
 #include "stdafx.h"
 #include "XMLProcessor.h"
+#include "CVars.h"
 #include "Managers.h"
 #include "FileCacheManager.h"
 #include "LoseFocusTrigger.h"
@@ -51,8 +52,10 @@ char const* const SXMLTags::szPlatform = "linux";
 #endif
 
 //////////////////////////////////////////////////////////////////////////
-void ParseSystemDataFile(char const* const szFolderPath, SPoolSizes& poolSizes, bool const isLevelSpecific)
+bool ParseSystemDataFile(char const* const szFolderPath, SPoolSizes& poolSizes, ContextId const contextId)
 {
+	bool parsedValidLibrary = false;
+
 	CryFixedStringT<MaxFilePathLength> rootFolderPath(szFolderPath);
 	rootFolderPath.TrimRight(R"(/\)");
 	CryFixedStringT<MaxFilePathLength + MaxFileNameLength> search(rootFolderPath + "/*.xml");
@@ -106,13 +109,15 @@ void ParseSystemDataFile(char const* const szFolderPath, SPoolSizes& poolSizes, 
 					uint16 numFiles = 0;
 					pRootNode->getAttr(g_szNumFilesAttribute, numFiles);
 					poolSizes.files += numFiles;
-				}
 
-				XmlNodeRef const pImplDataNode = pRootNode->findChild(g_szImplDataNodeTag);
+					XmlNodeRef const pImplDataNode = pRootNode->findChild(g_szImplDataNodeTag);
 
-				if (pImplDataNode != nullptr)
-				{
-					g_pIImpl->SetLibraryData(pImplDataNode, isLevelSpecific);
+					if (pImplDataNode != nullptr)
+					{
+						g_pIImpl->SetLibraryData(pImplDataNode, contextId);
+					}
+
+					parsedValidLibrary = true;
 				}
 			}
 		}
@@ -120,17 +125,20 @@ void ParseSystemDataFile(char const* const szFolderPath, SPoolSizes& poolSizes, 
 
 		gEnv->pCryPak->FindClose(handle);
 	}
+
+	return parsedValidLibrary;
 }
 
 //////////////////////////////////////////////////////////////////////////
-void ParseLevelSpecificSystemData(char const* const szFolderPath, SPoolSizes& poolSizes)
+void ParseContextSystemData(char const* const szFolderPath, SPoolSizes& poolSizes)
 {
-	CryFixedStringT<MaxFilePathLength> levelsFolderPath(szFolderPath);
-	levelsFolderPath += "levels/";
+	CryFixedStringT<MaxFilePathLength> contextFolderPath(szFolderPath);
+	contextFolderPath += g_szContextsFolderName;
+	contextFolderPath += "/";
 
 	_finddata_t fd;
 	ICryPak* const pCryPak = gEnv->pCryPak;
-	intptr_t const handle = pCryPak->FindFirst(levelsFolderPath + "*", &fd);
+	intptr_t const handle = pCryPak->FindFirst(contextFolderPath + "*", &fd);
 
 	if (handle != -1)
 	{
@@ -142,19 +150,37 @@ void ParseLevelSpecificSystemData(char const* const szFolderPath, SPoolSizes& po
 
 				if ((_stricmp(szName, ".") != 0) && (_stricmp(szName, "..") != 0))
 				{
-					char const* const szSubFolderName = levelsFolderPath + szName;
-					SPoolSizes levelPoolSizes;
+					char const* const szSubFolderName = contextFolderPath + szName;
+					ContextId const contextId = StringToId(szName);
+					SPoolSizes contextPoolSizes;
 
-					ParseSystemDataFile(szSubFolderName, levelPoolSizes, true);
+					if (ParseSystemDataFile(szSubFolderName, contextPoolSizes, contextId))
+					{
+						g_registeredContexts[contextId] = szName;
+					}
 
-					poolSizes.triggers = std::max(poolSizes.triggers, levelPoolSizes.triggers);
-					poolSizes.parameters = std::max(poolSizes.parameters, levelPoolSizes.parameters);
-					poolSizes.switches = std::max(poolSizes.switches, levelPoolSizes.switches);
-					poolSizes.states = std::max(poolSizes.states, levelPoolSizes.states);
-					poolSizes.environments = std::max(poolSizes.environments, levelPoolSizes.environments);
-					poolSizes.preloads = std::max(poolSizes.preloads, levelPoolSizes.preloads);
-					poolSizes.settings = std::max(poolSizes.settings, levelPoolSizes.settings);
-					poolSizes.files = std::max(poolSizes.files, levelPoolSizes.files);
+					if (g_cvars.m_poolAllocationMode <= 0)
+					{
+						poolSizes.triggers += contextPoolSizes.triggers;
+						poolSizes.parameters += contextPoolSizes.parameters;
+						poolSizes.switches += contextPoolSizes.switches;
+						poolSizes.states += contextPoolSizes.states;
+						poolSizes.environments += contextPoolSizes.environments;
+						poolSizes.preloads += contextPoolSizes.preloads;
+						poolSizes.settings += contextPoolSizes.settings;
+						poolSizes.files += contextPoolSizes.files;
+					}
+					else
+					{
+						poolSizes.triggers = std::max(poolSizes.triggers, contextPoolSizes.triggers);
+						poolSizes.parameters = std::max(poolSizes.parameters, contextPoolSizes.parameters);
+						poolSizes.switches = std::max(poolSizes.switches, contextPoolSizes.switches);
+						poolSizes.states = std::max(poolSizes.states, contextPoolSizes.states);
+						poolSizes.environments = std::max(poolSizes.environments, contextPoolSizes.environments);
+						poolSizes.preloads = std::max(poolSizes.preloads, contextPoolSizes.preloads);
+						poolSizes.settings = std::max(poolSizes.settings, contextPoolSizes.settings);
+						poolSizes.files = std::max(poolSizes.files, contextPoolSizes.files);
+					}
 				}
 			}
 		}
@@ -168,27 +194,26 @@ void ParseLevelSpecificSystemData(char const* const szFolderPath, SPoolSizes& po
 void CXMLProcessor::ParseSystemData()
 {
 	ZeroStruct(g_poolSizes);
+	g_registeredContexts.clear();
 
 	g_pIImpl->OnBeforeLibraryDataChanged();
 	g_pIImpl->GetInfo(g_implInfo);
 	g_configPath = CRY_AUDIO_DATA_ROOT "/";
 	g_configPath += (g_implInfo.folderName + "/" + g_szConfigFolderName + "/").c_str();
 
-	ParseSystemDataFile(g_configPath.c_str(), g_poolSizes, false);
+	ParseSystemDataFile(g_configPath.c_str(), g_poolSizes, GlobalContextId);
 
-	// For level specific controls, we take the highest amount of any scope,
-	// to avoid reallocating when the scope changes.
-	SPoolSizes maxLevelPoolSizes;
-	ParseLevelSpecificSystemData(g_configPath.c_str(), maxLevelPoolSizes);
+	SPoolSizes contextPoolSizes;
+	ParseContextSystemData(g_configPath.c_str(), contextPoolSizes);
 
-	g_poolSizes.triggers += maxLevelPoolSizes.triggers;
-	g_poolSizes.parameters += maxLevelPoolSizes.parameters;
-	g_poolSizes.switches += maxLevelPoolSizes.switches;
-	g_poolSizes.states += maxLevelPoolSizes.states;
-	g_poolSizes.environments += maxLevelPoolSizes.environments;
-	g_poolSizes.preloads += maxLevelPoolSizes.preloads;
-	g_poolSizes.settings += maxLevelPoolSizes.settings;
-	g_poolSizes.files += maxLevelPoolSizes.files;
+	g_poolSizes.triggers += contextPoolSizes.triggers;
+	g_poolSizes.parameters += contextPoolSizes.parameters;
+	g_poolSizes.switches += contextPoolSizes.switches;
+	g_poolSizes.states += contextPoolSizes.states;
+	g_poolSizes.environments += contextPoolSizes.environments;
+	g_poolSizes.preloads += contextPoolSizes.preloads;
+	g_poolSizes.settings += contextPoolSizes.settings;
+	g_poolSizes.files += contextPoolSizes.files;
 
 #if defined(CRY_AUDIO_USE_DEBUG_CODE)
 	// Used to hide pools without allocations in debug draw.
@@ -206,12 +231,14 @@ void CXMLProcessor::ParseSystemData()
 	g_poolSizes.settings = std::max<uint16>(1, g_poolSizes.settings);
 	g_poolSizes.files = std::max<uint16>(1, g_poolSizes.files);
 
-	g_pIImpl->OnAfterLibraryDataChanged();
+	g_pIImpl->OnAfterLibraryDataChanged(g_cvars.m_poolAllocationMode);
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CXMLProcessor::ParseControlsData(char const* const szFolderPath, EDataScope const dataScope)
+bool CXMLProcessor::ParseControlsData(char const* const szFolderPath, ContextId const contextId, char const* const szContextName)
 {
+	bool contextExists = false;
+
 	CryFixedStringT<MaxFilePathLength> sRootFolderPath(szFolderPath);
 
 #if defined(CRY_AUDIO_USE_DEBUG_CODE)
@@ -249,8 +276,14 @@ void CXMLProcessor::ParseControlsData(char const* const szFolderPath, EDataScope
 						}
 						else
 						{
-							ParseControlsFile(pRootNode, dataScope);
+							ParseControlsFile(pRootNode, contextId);
 						}
+
+						contextExists = true;
+
+#if defined(CRY_AUDIO_USE_DEBUG_CODE)
+						g_activeContexts[contextId] = szContextName;
+#endif        // CRY_AUDIO_USE_DEBUG_CODE
 					}
 				}
 			}
@@ -261,35 +294,15 @@ void CXMLProcessor::ParseControlsData(char const* const szFolderPath, EDataScope
 	}
 
 #if defined(CRY_AUDIO_USE_DEBUG_CODE)
-	char const* szDataScope = "unknown";
-
-	switch (dataScope)
-	{
-	case EDataScope::Global:
-		{
-			szDataScope = "Global";
-
-			break;
-		}
-	case EDataScope::LevelSpecific:
-		{
-			szDataScope = "Level Specific";
-
-			break;
-		}
-	default:
-		{
-			break;
-		}
-	}
-
 	float const duration = (gEnv->pTimer->GetAsyncTime() - startTime).GetMilliSeconds();
-	Cry::Audio::Log(ELogType::Comment, R"(Parsed controls data in "%s" for data scope "%s" in %.3f ms!)", szFolderPath, szDataScope, duration);
+	Cry::Audio::Log(ELogType::Comment, R"(Parsed controls data in "%s" for context "%s" in %.3f ms!)", szFolderPath, szContextName, duration);
 #endif // CRY_AUDIO_USE_DEBUG_CODE
+
+	return contextExists;
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CXMLProcessor::ParseControlsFile(XmlNodeRef const pRootNode, EDataScope const dataScope)
+void CXMLProcessor::ParseControlsFile(XmlNodeRef const pRootNode, ContextId const contextId)
 {
 	int const rootChildCount = pRootNode->getChildCount();
 
@@ -303,23 +316,23 @@ void CXMLProcessor::ParseControlsFile(XmlNodeRef const pRootNode, EDataScope con
 
 			if (_stricmp(szChildNodeTag, g_szTriggersNodeTag) == 0)
 			{
-				ParseTriggers(pChildNode, dataScope);
+				ParseTriggers(pChildNode, contextId);
 			}
 			else if (_stricmp(szChildNodeTag, g_szParametersNodeTag) == 0)
 			{
-				ParseParameters(pChildNode, dataScope);
+				ParseParameters(pChildNode, contextId);
 			}
 			else if (_stricmp(szChildNodeTag, g_szSwitchesNodeTag) == 0)
 			{
-				ParseSwitches(pChildNode, dataScope);
+				ParseSwitches(pChildNode, contextId);
 			}
 			else if (_stricmp(szChildNodeTag, g_szEnvironmentsNodeTag) == 0)
 			{
-				ParseEnvironments(pChildNode, dataScope);
+				ParseEnvironments(pChildNode, contextId);
 			}
 			else if (_stricmp(szChildNodeTag, g_szSettingsNodeTag) == 0)
 			{
-				ParseSettings(pChildNode, dataScope);
+				ParseSettings(pChildNode, contextId);
 			}
 			else if ((_stricmp(szChildNodeTag, g_szImplDataNodeTag) == 0) ||
 			         (_stricmp(szChildNodeTag, g_szPreloadsNodeTag) == 0) ||
@@ -375,7 +388,7 @@ void CXMLProcessor::ParseDefaultControlsFile(XmlNodeRef const pRootNode)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CXMLProcessor::ParsePreloadsData(char const* const szFolderPath, EDataScope const dataScope)
+void CXMLProcessor::ParsePreloadsData(char const* const szFolderPath, ContextId const contextId)
 {
 	CryFixedStringT<MaxFilePathLength> rootFolderPath(szFolderPath);
 
@@ -426,11 +439,11 @@ void CXMLProcessor::ParsePreloadsData(char const* const szFolderPath, EDataScope
 									if (rootFolderPath.npos != lastSlashIndex)
 									{
 										CryFixedStringT<MaxFilePathLength> const folderName(rootFolderPath.substr(lastSlashIndex + 1, rootFolderPath.size()));
-										ParsePreloads(pChildNode, dataScope, folderName.c_str(), versionNumber);
+										ParsePreloads(pChildNode, contextId, folderName.c_str(), versionNumber);
 									}
 									else
 									{
-										ParsePreloads(pChildNode, dataScope, nullptr, versionNumber);
+										ParsePreloads(pChildNode, contextId, nullptr, versionNumber);
 									}
 								}
 								else if (_stricmp(szChildNodeTag, g_szImplDataNodeTag) == 0 ||
@@ -461,39 +474,18 @@ void CXMLProcessor::ParsePreloadsData(char const* const szFolderPath, EDataScope
 	}
 
 #if defined(CRY_AUDIO_USE_DEBUG_CODE)
-	char const* szDataScope = "unknown";
-
-	switch (dataScope)
-	{
-	case EDataScope::Global:
-		{
-			szDataScope = "Global";
-
-			break;
-		}
-	case EDataScope::LevelSpecific:
-		{
-			szDataScope = "Level Specific";
-
-			break;
-		}
-	default:
-		{
-			break;
-		}
-	}
-
+	char const* const szContextName = stl::find_in_map(g_activeContexts, contextId, "unknown");
 	float const duration = (gEnv->pTimer->GetAsyncTime() - startTime).GetMilliSeconds();
-	Cry::Audio::Log(ELogType::Comment, R"(Parsed preloads data in "%s" for data scope "%s" in %.3f ms!)", szFolderPath, szDataScope, duration);
+	Cry::Audio::Log(ELogType::Comment, R"(Parsed preloads data in "%s" for context "%s" in %.3f ms!)", szFolderPath, szContextName, duration);
 #endif // CRY_AUDIO_USE_DEBUG_CODE
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CXMLProcessor::ClearControlsData(EDataScope const dataScope)
+void CXMLProcessor::ClearControlsData(ContextId const contextId, bool const clearAll)
 {
 	if (g_pIImpl != nullptr)
 	{
-		if (dataScope == EDataScope::All || dataScope == EDataScope::Global)
+		if (clearAll || (contextId == GlobalContextId))
 		{
 			g_loseFocusTrigger.Clear();
 			g_getFocusTrigger.Clear();
@@ -507,6 +499,17 @@ void CXMLProcessor::ClearControlsData(EDataScope const dataScope)
 #endif  // CRY_AUDIO_USE_DEBUG_CODE
 		}
 
+#if defined(CRY_AUDIO_USE_DEBUG_CODE)
+		if (clearAll)
+		{
+			g_activeContexts.clear();
+		}
+		else
+		{
+			g_activeContexts.erase(contextId);
+		}
+#endif  // CRY_AUDIO_USE_DEBUG_CODE
+
 		TriggerLookup::iterator iterTriggers(g_triggers.begin());
 		TriggerLookup::const_iterator iterTriggersEnd(g_triggers.end());
 
@@ -514,7 +517,7 @@ void CXMLProcessor::ClearControlsData(EDataScope const dataScope)
 		{
 			CTrigger const* const pTrigger = iterTriggers->second;
 
-			if ((pTrigger->GetDataScope() == dataScope) || dataScope == EDataScope::All)
+			if (clearAll || (pTrigger->GetContextId() == contextId))
 			{
 				delete pTrigger;
 				iterTriggers = g_triggers.erase(iterTriggers);
@@ -532,7 +535,7 @@ void CXMLProcessor::ClearControlsData(EDataScope const dataScope)
 		{
 			CParameter const* const pParameter = iterParameters->second;
 
-			if ((pParameter->GetDataScope() == dataScope) || dataScope == EDataScope::All)
+			if (clearAll || (pParameter->GetContextId() == contextId))
 			{
 				delete pParameter;
 				iterParameters = g_parameters.erase(iterParameters);
@@ -550,7 +553,7 @@ void CXMLProcessor::ClearControlsData(EDataScope const dataScope)
 		{
 			CSwitch const* const pSwitch = iterSwitches->second;
 
-			if ((pSwitch->GetDataScope() == dataScope) || dataScope == EDataScope::All)
+			if (clearAll || (pSwitch->GetContextId() == contextId))
 			{
 				delete pSwitch;
 				iterSwitches = g_switches.erase(iterSwitches);
@@ -568,7 +571,7 @@ void CXMLProcessor::ClearControlsData(EDataScope const dataScope)
 		{
 			CEnvironment const* const pEnvironment = iterEnvironments->second;
 
-			if ((pEnvironment->GetDataScope() == dataScope) || dataScope == EDataScope::All)
+			if (clearAll || (pEnvironment->GetContextId() == contextId))
 			{
 				delete pEnvironment;
 				iterEnvironments = g_environments.erase(iterEnvironments);
@@ -586,7 +589,7 @@ void CXMLProcessor::ClearControlsData(EDataScope const dataScope)
 		{
 			CSetting const* const pSetting = iterSettings->second;
 
-			if ((pSetting->GetDataScope() == dataScope) || dataScope == EDataScope::All)
+			if (clearAll || (pSetting->GetContextId() == contextId))
 			{
 				delete pSetting;
 				iterSettings = g_settings.erase(iterSettings);
@@ -600,7 +603,7 @@ void CXMLProcessor::ClearControlsData(EDataScope const dataScope)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CXMLProcessor::ParsePreloads(XmlNodeRef const pPreloadDataRoot, EDataScope const dataScope, char const* const szFolderName, uint const version)
+void CXMLProcessor::ParsePreloads(XmlNodeRef const pPreloadDataRoot, ContextId const contextId, char const* const szFolderName, uint const version)
 {
 	LOADING_TIME_PROFILE_SECTION;
 
@@ -621,7 +624,7 @@ void CXMLProcessor::ParsePreloads(XmlNodeRef const pPreloadDataRoot, EDataScope 
 				szPreloadRequestName = pPreloadRequestNode->getAttr(g_szNameAttribute);
 				preloadRequestId = static_cast<PreloadRequestId>(StringToId(szPreloadRequestName));
 			}
-			else if (dataScope == EDataScope::LevelSpecific)
+			else if (contextId != GlobalContextId)
 			{
 				szPreloadRequestName = szFolderName;
 				preloadRequestId = static_cast<PreloadRequestId>(StringToId(szPreloadRequestName));
@@ -653,7 +656,7 @@ void CXMLProcessor::ParsePreloads(XmlNodeRef const pPreloadDataRoot, EDataScope 
 
 					for (int k = 0; k < fileCount; ++k)
 					{
-						FileId const id = g_fileCacheManager.TryAddFileCacheEntry(pFileListParentNode->getChild(k), dataScope, isAutoLoad);
+						FileId const id = g_fileCacheManager.TryAddFileCacheEntry(pFileListParentNode->getChild(k), contextId, isAutoLoad);
 
 						if (id != InvalidFileId)
 						{
@@ -673,9 +676,9 @@ void CXMLProcessor::ParsePreloads(XmlNodeRef const pPreloadDataRoot, EDataScope 
 					{
 						MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioSystem, 0, "CryAudio::CPreloadRequest");
 #if defined(CRY_AUDIO_USE_DEBUG_CODE)
-						pPreloadRequest = new CPreloadRequest(preloadRequestId, dataScope, isAutoLoad, fileIds, szPreloadRequestName);
+						pPreloadRequest = new CPreloadRequest(preloadRequestId, contextId, isAutoLoad, fileIds, szPreloadRequestName);
 #else
-						pPreloadRequest = new CPreloadRequest(preloadRequestId, dataScope, isAutoLoad, fileIds);
+						pPreloadRequest = new CPreloadRequest(preloadRequestId, contextId, isAutoLoad, fileIds);
 #endif        // CRY_AUDIO_USE_DEBUG_CODE
 
 						if (pPreloadRequest != nullptr)
@@ -705,32 +708,32 @@ void CXMLProcessor::ParsePreloads(XmlNodeRef const pPreloadDataRoot, EDataScope 
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CXMLProcessor::ClearPreloadsData(EDataScope const dataScope)
+void CXMLProcessor::ClearPreloadsData(ContextId const contextId, bool const clearAll)
 {
 	if (g_pIImpl != nullptr)
 	{
-		PreloadRequestLookup::iterator iRemover = g_preloadRequests.begin();
-		PreloadRequestLookup::const_iterator const iEnd = g_preloadRequests.end();
+		PreloadRequestLookup::iterator iter = g_preloadRequests.begin();
+		PreloadRequestLookup::const_iterator const iterEnd = g_preloadRequests.end();
 
-		while (iRemover != iEnd)
+		while (iter != iterEnd)
 		{
-			CPreloadRequest const* const pRequest = iRemover->second;
+			CPreloadRequest const* const pRequest = iter->second;
 
-			if ((pRequest->GetDataScope() == dataScope) || dataScope == EDataScope::All)
+			if (clearAll || (pRequest->GetContextId() == contextId))
 			{
 				DeletePreloadRequest(pRequest);
-				g_preloadRequests.erase(iRemover++);
+				g_preloadRequests.erase(iter++);
 			}
 			else
 			{
-				++iRemover;
+				++iter;
 			}
 		}
 	}
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CXMLProcessor::ParseEnvironments(XmlNodeRef const pEnvironmentRoot, EDataScope const dataScope)
+void CXMLProcessor::ParseEnvironments(XmlNodeRef const pEnvironmentRoot, ContextId const contextId)
 {
 	int const numEnvironments = pEnvironmentRoot->getChildCount();
 
@@ -775,9 +778,9 @@ void CXMLProcessor::ParseEnvironments(XmlNodeRef const pEnvironmentRoot, EDataSc
 
 					MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioSystem, 0, "CryAudio::CEnvironment");
 #if defined(CRY_AUDIO_USE_DEBUG_CODE)
-					auto const pNewEnvironment = new CEnvironment(environmentId, dataScope, connections, szEnvironmentName);
+					auto const pNewEnvironment = new CEnvironment(environmentId, contextId, connections, szEnvironmentName);
 #else
-					auto const pNewEnvironment = new CEnvironment(environmentId, dataScope, connections);
+					auto const pNewEnvironment = new CEnvironment(environmentId, contextId, connections);
 #endif      // CRY_AUDIO_USE_DEBUG_CODE
 
 					if (pNewEnvironment != nullptr)
@@ -797,7 +800,7 @@ void CXMLProcessor::ParseEnvironments(XmlNodeRef const pEnvironmentRoot, EDataSc
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CXMLProcessor::ParseSettings(XmlNodeRef const pRoot, EDataScope const dataScope)
+void CXMLProcessor::ParseSettings(XmlNodeRef const pRoot, ContextId const contextId)
 {
 	int const numSettings = pRoot->getChildCount();
 
@@ -858,9 +861,9 @@ void CXMLProcessor::ParseSettings(XmlNodeRef const pRoot, EDataScope const dataS
 
 						MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioSystem, 0, "CryAudio::CSetting");
 #if defined(CRY_AUDIO_USE_DEBUG_CODE)
-						auto const pNewSetting = new CSetting(settingId, dataScope, isAutoLoad, connections, szSettingName);
+						auto const pNewSetting = new CSetting(settingId, contextId, isAutoLoad, connections, szSettingName);
 #else
-						auto const pNewSetting = new CSetting(settingId, dataScope, isAutoLoad, connections);
+						auto const pNewSetting = new CSetting(settingId, contextId, isAutoLoad, connections);
 #endif        // CRY_AUDIO_USE_DEBUG_CODE
 
 						if (pNewSetting != nullptr)
@@ -881,7 +884,7 @@ void CXMLProcessor::ParseSettings(XmlNodeRef const pRoot, EDataScope const dataS
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CXMLProcessor::ParseTriggers(XmlNodeRef const pXMLTriggerRoot, EDataScope const dataScope)
+void CXMLProcessor::ParseTriggers(XmlNodeRef const pXMLTriggerRoot, ContextId const contextId)
 {
 	int const numTriggers = pXMLTriggerRoot->getChildCount();
 
@@ -933,9 +936,9 @@ void CXMLProcessor::ParseTriggers(XmlNodeRef const pXMLTriggerRoot, EDataScope c
 
 					MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioSystem, 0, "CryAudio::CTrigger");
 #if defined(CRY_AUDIO_USE_DEBUG_CODE)
-					auto const pNewTrigger = new CTrigger(triggerId, dataScope, connections, maxRadius, szTriggerName);
+					auto const pNewTrigger = new CTrigger(triggerId, contextId, connections, maxRadius, szTriggerName);
 #else
-					auto const pNewTrigger = new CTrigger(triggerId, dataScope, connections);
+					auto const pNewTrigger = new CTrigger(triggerId, contextId, connections);
 #endif        // CRY_AUDIO_USE_DEBUG_CODE
 
 					if (pNewTrigger != nullptr)
@@ -1038,7 +1041,7 @@ void CXMLProcessor::ParseDefaultTriggers(XmlNodeRef const pXMLTriggerRoot)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CXMLProcessor::ParseSwitches(XmlNodeRef const pXMLSwitchRoot, EDataScope const dataScope)
+void CXMLProcessor::ParseSwitches(XmlNodeRef const pXMLSwitchRoot, ContextId const contextId)
 {
 	int const numSwitches = pXMLSwitchRoot->getChildCount();
 
@@ -1055,9 +1058,9 @@ void CXMLProcessor::ParseSwitches(XmlNodeRef const pXMLSwitchRoot, EDataScope co
 			{
 				MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioSystem, 0, "CryAudio::CSwitch");
 #if defined(CRY_AUDIO_USE_DEBUG_CODE)
-				auto const pNewSwitch = new CSwitch(switchId, dataScope, szSwitchName);
+				auto const pNewSwitch = new CSwitch(switchId, contextId, szSwitchName);
 #else
-				auto const pNewSwitch = new CSwitch(switchId, dataScope);
+				auto const pNewSwitch = new CSwitch(switchId, contextId);
 #endif    // CRY_AUDIO_USE_DEBUG_CODE
 
 				int const numStates = pSwitchNode->getChildCount();
@@ -1125,7 +1128,7 @@ void CXMLProcessor::ParseSwitches(XmlNodeRef const pXMLSwitchRoot, EDataScope co
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CXMLProcessor::ParseParameters(XmlNodeRef const pXMLParameterRoot, EDataScope const dataScope)
+void CXMLProcessor::ParseParameters(XmlNodeRef const pXMLParameterRoot, ContextId const contextId)
 {
 	int const numParameters = pXMLParameterRoot->getChildCount();
 
@@ -1168,9 +1171,9 @@ void CXMLProcessor::ParseParameters(XmlNodeRef const pXMLParameterRoot, EDataSco
 
 					MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioSystem, 0, "CryAudio::CParameter");
 #if defined(CRY_AUDIO_USE_DEBUG_CODE)
-					auto const pParameter = new CParameter(parameterId, dataScope, connections, szParameterName);
+					auto const pParameter = new CParameter(parameterId, contextId, connections, szParameterName);
 #else
-					auto const pParameter = new CParameter(parameterId, dataScope, connections);
+					auto const pParameter = new CParameter(parameterId, contextId, connections);
 #endif        // CRY_AUDIO_USE_DEBUG_CODE
 
 					if (pParameter != nullptr)
@@ -1194,11 +1197,11 @@ void CXMLProcessor::DeletePreloadRequest(CPreloadRequest const* const pPreloadRe
 {
 	if (pPreloadRequest != nullptr)
 	{
-		EDataScope const dataScope = pPreloadRequest->GetDataScope();
+		ContextId const contextId = pPreloadRequest->GetContextId();
 
 		for (auto const fileId : pPreloadRequest->m_fileIds)
 		{
-			g_fileCacheManager.TryRemoveFileCacheEntry(fileId, dataScope);
+			g_fileCacheManager.TryRemoveFileCacheEntry(fileId, contextId);
 		}
 
 		delete pPreloadRequest;

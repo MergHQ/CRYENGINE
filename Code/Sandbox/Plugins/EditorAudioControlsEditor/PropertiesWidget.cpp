@@ -4,6 +4,7 @@
 #include "PropertiesWidget.h"
 
 #include "AssetsManager.h"
+#include "ContextManager.h"
 #include "ImplManager.h"
 #include "ConnectionsWidget.h"
 #include "Common/IImpl.h"
@@ -79,6 +80,30 @@ CPropertiesWidget::CPropertiesWidget(QWidget* const pParent)
 			}
 		}, reinterpret_cast<uintptr_t>(this));
 
+	g_contextManager.SignalOnAfterContextAdded.Connect([this]()
+		{
+			if (!g_assetsManager.IsLoading())
+			{
+			  RevertPropertyTree();
+			}
+		}, reinterpret_cast<uintptr_t>(this));
+
+	g_contextManager.SignalOnAfterContextRemoved.Connect([this]()
+		{
+			if (!g_assetsManager.IsLoading())
+			{
+			  RevertPropertyTree();
+			}
+		}, reinterpret_cast<uintptr_t>(this));
+
+	g_contextManager.SignalContextRenamed.Connect([this]()
+		{
+			if (!g_assetsManager.IsLoading())
+			{
+			  RevertPropertyTree();
+			}
+		}, reinterpret_cast<uintptr_t>(this));
+
 	g_implManager.SignalOnAfterImplChange.Connect([this]()
 		{
 			setEnabled(g_pIImpl != nullptr);
@@ -95,6 +120,9 @@ CPropertiesWidget::~CPropertiesWidget()
 	g_assetsManager.SignalOnAfterAssetRemoved.DisconnectById(reinterpret_cast<uintptr_t>(this));
 	g_assetsManager.SignalControlModified.DisconnectById(reinterpret_cast<uintptr_t>(this));
 	g_assetsManager.SignalAssetRenamed.DisconnectById(reinterpret_cast<uintptr_t>(this));
+	g_contextManager.SignalOnAfterContextAdded.DisconnectById(reinterpret_cast<uintptr_t>(this));
+	g_contextManager.SignalOnAfterContextRemoved.DisconnectById(reinterpret_cast<uintptr_t>(this));
+	g_contextManager.SignalContextRenamed.DisconnectById(reinterpret_cast<uintptr_t>(this));
 	g_implManager.SignalOnAfterImplChange.DisconnectById(reinterpret_cast<uintptr_t>(this));
 }
 

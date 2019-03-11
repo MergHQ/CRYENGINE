@@ -7,18 +7,13 @@
 
 #include <IResourceSelectorHost.h>
 #include <ListSelectionDialog.h>
-#include <CryGame/IGameFramework.h>
 #include <IEditor.h>
 
 namespace ACE
 {
 SResourceSelectionResult ShowSelectDialog(SResourceSelectorContext const& context, char const* szPreviousValue, EAssetType controlType)
 {
-	char* szLevelName;
-	gEnv->pGameFramework->GetEditorLevel(&szLevelName, nullptr);
-	CResourceSelectorDialog dialog(controlType, g_assetsManager.GetScope(szLevelName), context.parentWidget);
-	dialog.setModal(true);
-
+	CResourceSelectorDialog dialog(controlType, context.parentWidget);
 	CResourceSelectorDialog::SResourceSelectionDialogResult dialogResult = dialog.ChooseItem(szPreviousValue);
 	SResourceSelectionResult result{ dialogResult.selectionAccepted, dialogResult.selectedItem.c_str() };
 	return result;

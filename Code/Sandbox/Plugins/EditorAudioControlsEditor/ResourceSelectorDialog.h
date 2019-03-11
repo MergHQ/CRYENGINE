@@ -36,7 +36,7 @@ public:
 	CResourceSelectorDialog& operator=(CResourceSelectorDialog const&) = delete;
 	CResourceSelectorDialog& operator=(CResourceSelectorDialog&&) = delete;
 
-	explicit CResourceSelectorDialog(EAssetType const type, Scope const scope, QWidget* const pParent);
+	explicit CResourceSelectorDialog(EAssetType const type, QWidget* const pParent);
 	virtual ~CResourceSelectorDialog() override;
 
 	//! Returns if the operation was accepted or not. If the operation was accepted the newly selected item is in selectedItem. If the operation was canceled selectedItem will be set to szCurrentValue
@@ -62,7 +62,6 @@ private:
 	// ~QDialog
 
 	EAssetType const                    m_type;
-	Scope const                         m_scope;
 	bool                                m_selectionIsValid = false;
 
 	QSearchBox* const                   m_pSearchBox;

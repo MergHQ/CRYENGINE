@@ -37,13 +37,13 @@ namespace Impl
 namespace Fmod
 {
 SPoolSizes g_poolSizes;
-SPoolSizes g_poolSizesLevelSpecific;
+std::map<ContextId, SPoolSizes> g_contextPoolSizes;
 
 #if defined(CRY_AUDIO_IMPL_FMOD_USE_DEBUG_CODE)
 SPoolSizes g_debugPoolSizes;
 EventInstances g_constructedEventInstances;
 uint16 g_objectPoolSize = 0;
-uint16 g_eventPoolSize = 0;
+uint16 g_eventInstancePoolSize = 0;
 #endif  // CRY_AUDIO_IMPL_FMOD_USE_DEBUG_CODE
 
 constexpr char const* g_szEventPrefix = "event:/";
@@ -66,7 +66,7 @@ void CountPoolSizes(XmlNodeRef const pNode, SPoolSizes& poolSizes)
 
 	uint16 numParameterEnvironments = 0;
 	pNode->getAttr(g_szParameterEnvironmentsAttribute, numParameterEnvironments);
-	poolSizes.parameters += numParameterEnvironments;
+	poolSizes.parameterEnvironments += numParameterEnvironments;
 
 	uint16 numParameterStates = 0;
 	pNode->getAttr(g_szParameterStatesAttribute, numParameterStates);
@@ -74,7 +74,7 @@ void CountPoolSizes(XmlNodeRef const pNode, SPoolSizes& poolSizes)
 
 	uint16 numSnapshots = 0;
 	pNode->getAttr(g_szSnapshotsAttribute, numSnapshots);
-	poolSizes.parameterStates += numSnapshots;
+	poolSizes.snapshots += numSnapshots;
 
 	uint16 numReturns = 0;
 	pNode->getAttr(g_szReturnsAttribute, numReturns);
@@ -88,9 +88,9 @@ void CountPoolSizes(XmlNodeRef const pNode, SPoolSizes& poolSizes)
 	pNode->getAttr(g_szVcaStatesAttribute, numVcaStates);
 	poolSizes.vcaStates += numVcaStates;
 
-	uint16 numFiles = 0;
-	pNode->getAttr(g_szBanksAttribute, numFiles);
-	poolSizes.banks += numFiles;
+	uint16 numBanks = 0;
+	pNode->getAttr(g_szBanksAttribute, numBanks);
+	poolSizes.banks += numBanks;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -188,7 +188,7 @@ ERequestStatus CImpl::Init(uint16 const objectPoolSize)
 	g_constructedEventInstances.reserve(static_cast<size_t>(g_cvars.m_eventPoolSize));
 
 	g_objectPoolSize = objectPoolSize;
-	g_eventPoolSize = static_cast<uint16>(g_cvars.m_eventPoolSize);
+	g_eventInstancePoolSize = static_cast<uint16>(g_cvars.m_eventPoolSize);
 
 	uint32 version = 0;
 	fmodResult = g_pLowLevelSystem->getVersion(&version);
@@ -273,26 +273,15 @@ void CImpl::Release()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CImpl::SetLibraryData(XmlNodeRef const pNode, bool const isLevelSpecific)
+void CImpl::SetLibraryData(XmlNodeRef const pNode, ContextId const contextId)
 {
-	if (isLevelSpecific)
+	if (contextId == GlobalContextId)
 	{
-		SPoolSizes levelPoolSizes;
-		CountPoolSizes(pNode, levelPoolSizes);
-
-		g_poolSizesLevelSpecific.events = std::max(g_poolSizesLevelSpecific.events, levelPoolSizes.events);
-		g_poolSizesLevelSpecific.parameters = std::max(g_poolSizesLevelSpecific.parameters, levelPoolSizes.parameters);
-		g_poolSizesLevelSpecific.parameterEnvironments = std::max(g_poolSizesLevelSpecific.parameterEnvironments, levelPoolSizes.parameterEnvironments);
-		g_poolSizesLevelSpecific.parameterStates = std::max(g_poolSizesLevelSpecific.parameterStates, levelPoolSizes.parameterStates);
-		g_poolSizesLevelSpecific.snapshots = std::max(g_poolSizesLevelSpecific.snapshots, levelPoolSizes.snapshots);
-		g_poolSizesLevelSpecific.returns = std::max(g_poolSizesLevelSpecific.returns, levelPoolSizes.returns);
-		g_poolSizesLevelSpecific.vcas = std::max(g_poolSizesLevelSpecific.vcas, levelPoolSizes.vcas);
-		g_poolSizesLevelSpecific.vcaStates = std::max(g_poolSizesLevelSpecific.vcaStates, levelPoolSizes.vcaStates);
-		g_poolSizesLevelSpecific.banks = std::max(g_poolSizesLevelSpecific.banks, levelPoolSizes.banks);
+		CountPoolSizes(pNode, g_poolSizes);
 	}
 	else
 	{
-		CountPoolSizes(pNode, g_poolSizes);
+		CountPoolSizes(pNode, g_contextPoolSizes[contextId]);
 	}
 }
 
@@ -300,7 +289,7 @@ void CImpl::SetLibraryData(XmlNodeRef const pNode, bool const isLevelSpecific)
 void CImpl::OnBeforeLibraryDataChanged()
 {
 	ZeroStruct(g_poolSizes);
-	ZeroStruct(g_poolSizesLevelSpecific);
+	g_contextPoolSizes.clear();
 
 #if defined(CRY_AUDIO_IMPL_FMOD_USE_DEBUG_CODE)
 	ZeroStruct(g_debugPoolSizes);
@@ -308,17 +297,57 @@ void CImpl::OnBeforeLibraryDataChanged()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CImpl::OnAfterLibraryDataChanged()
+void CImpl::OnAfterLibraryDataChanged(int const poolAllocationMode)
 {
-	g_poolSizes.events += g_poolSizesLevelSpecific.events;
-	g_poolSizes.parameters += g_poolSizesLevelSpecific.parameters;
-	g_poolSizes.parameterEnvironments += g_poolSizesLevelSpecific.parameterEnvironments;
-	g_poolSizes.parameterStates += g_poolSizesLevelSpecific.parameterStates;
-	g_poolSizes.snapshots += g_poolSizesLevelSpecific.snapshots;
-	g_poolSizes.returns += g_poolSizesLevelSpecific.returns;
-	g_poolSizes.vcas += g_poolSizesLevelSpecific.vcas;
-	g_poolSizes.vcaStates += g_poolSizesLevelSpecific.vcaStates;
-	g_poolSizes.banks += g_poolSizesLevelSpecific.banks;
+	if (!g_contextPoolSizes.empty())
+	{
+		if (poolAllocationMode <= 0)
+		{
+			for (auto const& poolSizePair : g_contextPoolSizes)
+			{
+				SPoolSizes const& iterPoolSizes = g_contextPoolSizes[poolSizePair.first];
+
+				g_poolSizes.events += iterPoolSizes.events;
+				g_poolSizes.parameters += iterPoolSizes.parameters;
+				g_poolSizes.parameterEnvironments += iterPoolSizes.parameterEnvironments;
+				g_poolSizes.parameterStates += iterPoolSizes.parameterStates;
+				g_poolSizes.snapshots += iterPoolSizes.snapshots;
+				g_poolSizes.returns += iterPoolSizes.returns;
+				g_poolSizes.vcas += iterPoolSizes.vcas;
+				g_poolSizes.vcaStates += iterPoolSizes.vcaStates;
+				g_poolSizes.banks += iterPoolSizes.banks;
+			}
+		}
+		else
+		{
+			SPoolSizes maxContextPoolSizes;
+
+			for (auto const& poolSizePair : g_contextPoolSizes)
+			{
+				SPoolSizes const& iterPoolSizes = g_contextPoolSizes[poolSizePair.first];
+
+				maxContextPoolSizes.events = std::max(maxContextPoolSizes.events, iterPoolSizes.events);
+				maxContextPoolSizes.parameters = std::max(maxContextPoolSizes.parameters, iterPoolSizes.parameters);
+				maxContextPoolSizes.parameterEnvironments = std::max(maxContextPoolSizes.parameterEnvironments, iterPoolSizes.parameterEnvironments);
+				maxContextPoolSizes.parameterStates = std::max(maxContextPoolSizes.parameterStates, iterPoolSizes.parameterStates);
+				maxContextPoolSizes.snapshots = std::max(maxContextPoolSizes.snapshots, iterPoolSizes.snapshots);
+				maxContextPoolSizes.returns = std::max(maxContextPoolSizes.returns, iterPoolSizes.returns);
+				maxContextPoolSizes.vcas = std::max(maxContextPoolSizes.vcas, iterPoolSizes.vcas);
+				maxContextPoolSizes.vcaStates = std::max(maxContextPoolSizes.vcaStates, iterPoolSizes.vcaStates);
+				maxContextPoolSizes.banks = std::max(maxContextPoolSizes.banks, iterPoolSizes.banks);
+			}
+
+			g_poolSizes.events += maxContextPoolSizes.events;
+			g_poolSizes.parameters += maxContextPoolSizes.parameters;
+			g_poolSizes.parameterEnvironments += maxContextPoolSizes.parameterEnvironments;
+			g_poolSizes.parameterStates += maxContextPoolSizes.parameterStates;
+			g_poolSizes.snapshots += maxContextPoolSizes.snapshots;
+			g_poolSizes.returns += maxContextPoolSizes.returns;
+			g_poolSizes.vcas += maxContextPoolSizes.vcas;
+			g_poolSizes.vcaStates += maxContextPoolSizes.vcaStates;
+			g_poolSizes.banks += maxContextPoolSizes.banks;
+		}
+	}
 
 #if defined(CRY_AUDIO_IMPL_FMOD_USE_DEBUG_CODE)
 	// Used to hide pools without allocations in debug draw.
@@ -1470,7 +1499,7 @@ void CImpl::DrawDebugMemoryInfo(IRenderAuxGeom& auxGeom, float const posX, float
 
 		if (drawDetailedInfo)
 		{
-			Debug::DrawMemoryPoolInfo(auxGeom, posX, posY, memAlloc, allocator.GetCounts(), "Event Instances", g_eventPoolSize);
+			Debug::DrawMemoryPoolInfo(auxGeom, posX, posY, memAlloc, allocator.GetCounts(), "Event Instances", g_eventInstancePoolSize);
 		}
 	}
 

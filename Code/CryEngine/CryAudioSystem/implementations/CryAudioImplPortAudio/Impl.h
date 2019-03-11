@@ -32,9 +32,9 @@ public:
 	virtual void                    ShutDown() override;
 	virtual void                    OnBeforeRelease() override {}
 	virtual void                    Release() override;
-	virtual void                    SetLibraryData(XmlNodeRef const pNode, bool const isLevelSpecific) override;
+	virtual void                    SetLibraryData(XmlNodeRef const pNode, ContextId const contextId) override;
 	virtual void                    OnBeforeLibraryDataChanged() override;
-	virtual void                    OnAfterLibraryDataChanged() override;
+	virtual void                    OnAfterLibraryDataChanged(int const poolAllocationMode) override;
 	virtual void                    OnLoseFocus() override;
 	virtual void                    OnGetFocus() override;
 	virtual void                    MuteAll() override;

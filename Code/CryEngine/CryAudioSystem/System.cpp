@@ -51,14 +51,7 @@
 
 namespace CryAudio
 {
-enum class ELoggingOptions : EnumFlagsType
-{
-	None,
-	Errors   = BIT(6), // a
-	Warnings = BIT(7), // b
-	Comments = BIT(8), // c
-};
-CRY_CREATE_ENUM_FLAG_OPERATORS(ELoggingOptions);
+ContextId g_currentLevelContextId = InvalidContextId;
 
 constexpr uint16 g_systemExecuteTriggerPoolSize = 4;
 constexpr uint16 g_systemExecuteTriggerExPoolSize = 16;
@@ -86,6 +79,15 @@ constexpr uint16 g_callbackReportPhysicalizedObjectPoolSize = 64;
 constexpr uint16 g_callbackReportVirtualizedObjectPoolSize = 64;
 
 #if defined(CRY_AUDIO_USE_DEBUG_CODE)
+enum class ELoggingOptions : EnumFlagsType
+{
+	None,
+	Errors   = BIT(6), // a
+	Warnings = BIT(7), // b
+	Comments = BIT(8), // c
+};
+CRY_CREATE_ENUM_FLAG_OPERATORS(ELoggingOptions);
+
 struct SRequestCount final
 {
 	uint16 requests = 0;
@@ -595,29 +597,31 @@ void CSystem::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lparam
 	case ESYSTEM_EVENT_LEVEL_LOAD_START:
 		{
 			// This event is issued in Editor and Game mode.
-			string const levelNameOnly = PathUtil::GetFileName(reinterpret_cast<const char*>(wparam));
+			string const contextName = PathUtil::GetFileName(reinterpret_cast<const char*>(wparam));
 
-			if (!levelNameOnly.empty() && levelNameOnly.compareNoCase("Untitled") != 0)
+			if (!contextName.empty() && (contextName.compareNoCase("Untitled") != 0))
 			{
-				CryFixedStringT<MaxFilePathLength> levelPath(g_configPath);
-				levelPath += g_szLevelsFolderName;
-				levelPath += "/";
-				levelPath += levelNameOnly;
+				g_currentLevelContextId = StringToId(contextName.c_str());
 
-				SSystemRequestData<ESystemRequestType::ParseControlsData> const requestData1(levelPath, EDataScope::LevelSpecific);
+				CryFixedStringT<MaxFilePathLength> contextPath(g_configPath);
+				contextPath += g_szContextsFolderName;
+				contextPath += "/";
+				contextPath += contextName;
+
+				SSystemRequestData<ESystemRequestType::ParseControlsData> const requestData1(contextPath.c_str(), contextName.c_str(), g_currentLevelContextId);
 				CRequest const request1(&requestData1);
 				PushRequest(request1);
 
-				SSystemRequestData<ESystemRequestType::ParsePreloadsData> const requestData2(levelPath, EDataScope::LevelSpecific);
+				SSystemRequestData<ESystemRequestType::ParsePreloadsData> const requestData2(contextPath.c_str(), g_currentLevelContextId);
 				CRequest const request2(&requestData2);
 				PushRequest(request2);
 
-				PreloadRequestId const preloadRequestId = StringToId(levelNameOnly.c_str());
+				auto const preloadRequestId = static_cast<PreloadRequestId>(g_currentLevelContextId);
 				SSystemRequestData<ESystemRequestType::PreloadSingleRequest> const requestData3(preloadRequestId, true);
 				CRequest const request3(&requestData3);
 				PushRequest(request3);
 
-				SSystemRequestData<ESystemRequestType::AutoLoadSetting> const requestData4(EDataScope::LevelSpecific);
+				SSystemRequestData<ESystemRequestType::AutoLoadSetting> const requestData4(g_currentLevelContextId);
 				CRequest const request4(&requestData4);
 				PushRequest(request4);
 
@@ -639,15 +643,15 @@ void CSystem::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lparam
 			CRequest const request1(&requestData1);
 			PushRequest(request1);
 
-			SSystemRequestData<ESystemRequestType::UnloadAFCMDataByScope> const requestData2(EDataScope::LevelSpecific);
+			SSystemRequestData<ESystemRequestType::UnloadAFCMDataByContext> const requestData2(g_currentLevelContextId);
 			CRequest const request2(&requestData2);
 			PushRequest(request2);
 
-			SSystemRequestData<ESystemRequestType::ClearControlsData> const requestData3(EDataScope::LevelSpecific);
+			SSystemRequestData<ESystemRequestType::ClearControlsData> const requestData3(g_currentLevelContextId);
 			CRequest const request3(&requestData3);
 			PushRequest(request3);
 
-			SSystemRequestData<ESystemRequestType::ClearPreloadsData> const requestData4(EDataScope::LevelSpecific);
+			SSystemRequestData<ESystemRequestType::ClearPreloadsData> const requestData4(g_currentLevelContextId);
 			CRequest const request4(&requestData4);
 			PushRequest(request4);
 
@@ -755,8 +759,7 @@ void CSystem::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lparam
 #if defined(CRY_AUDIO_USE_DEBUG_CODE)
 	case ESYSTEM_EVENT_AUDIO_REFRESH:
 		{
-			auto const szLevelName = reinterpret_cast<const char*>(wparam);
-			SSystemRequestData<ESystemRequestType::RefreshSystem> const requestData(szLevelName);
+			SSystemRequestData<ESystemRequestType::RefreshSystem> const requestData;
 			CRequest const request(&requestData, ERequestFlags::ExecuteBlocking);
 			PushRequest(request);
 
@@ -1180,10 +1183,11 @@ void CSystem::StopAllSounds(SRequestUserData const& userData /* = SAudioRequestU
 //////////////////////////////////////////////////////////////////////////
 void CSystem::ParseControlsData(
 	char const* const szFolderPath,
-	EDataScope const dataScope,
+	char const* const szContextName,
+	ContextId const contextId,
 	SRequestUserData const& userData /* = SAudioRequestUserData::GetEmptyObject() */)
 {
-	SSystemRequestData<ESystemRequestType::ParseControlsData> const requestData(szFolderPath, dataScope);
+	SSystemRequestData<ESystemRequestType::ParseControlsData> const requestData(szFolderPath, szContextName, contextId);
 	CRequest const request(&requestData, userData);
 	PushRequest(request);
 }
@@ -1191,10 +1195,10 @@ void CSystem::ParseControlsData(
 //////////////////////////////////////////////////////////////////////////
 void CSystem::ParsePreloadsData(
 	char const* const szFolderPath,
-	EDataScope const dataScope,
+	ContextId const contextId,
 	SRequestUserData const& userData /* = SAudioRequestUserData::GetEmptyObject() */)
 {
-	SSystemRequestData<ESystemRequestType::ParsePreloadsData> const requestData(szFolderPath, dataScope);
+	SSystemRequestData<ESystemRequestType::ParsePreloadsData> const requestData(szFolderPath, contextId);
 	CRequest const request(&requestData, userData);
 	PushRequest(request);
 }
@@ -1216,9 +1220,57 @@ void CSystem::UnloadSingleRequest(PreloadRequestId const id, SRequestUserData co
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CSystem::AutoLoadSetting(EDataScope const dataScope, SRequestUserData const& userData /*= SRequestUserData::GetEmptyObject()*/)
+void CSystem::ActivateContext(ContextId const contextId)
 {
-	SSystemRequestData<ESystemRequestType::AutoLoadSetting> const requestData(dataScope);
+	if ((contextId != InvalidContextId) && (contextId != GlobalContextId))
+	{
+		SSystemRequestData<ESystemRequestType::ActivateContext> const requestData(contextId);
+		CRequest const request(&requestData);
+		PushRequest(request);
+	}
+#if defined(CRY_AUDIO_USE_DEBUG_CODE)
+	else
+	{
+		if (contextId == InvalidContextId)
+		{
+			Cry::Audio::Log(ELogType::Warning, "Invalid context id passed in %s", __FUNCTION__);
+		}
+		else
+		{
+			Cry::Audio::Log(ELogType::Warning, "The global context cannot get activated manually.");
+		}
+	}
+#endif  // CRY_AUDIO_USE_DEBUG_CODE
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CSystem::DeactivateContext(ContextId const contextId)
+{
+	if ((contextId != InvalidContextId) && (contextId != GlobalContextId))
+	{
+		SSystemRequestData<ESystemRequestType::DeactivateContext> const requestData(contextId);
+		CRequest const request(&requestData);
+		PushRequest(request);
+	}
+#if defined(CRY_AUDIO_USE_DEBUG_CODE)
+	else
+	{
+		if (contextId == InvalidContextId)
+		{
+			Cry::Audio::Log(ELogType::Warning, "Invalid context id passed in %s", __FUNCTION__);
+		}
+		else
+		{
+			Cry::Audio::Log(ELogType::Warning, "The global context cannot get deactivated manually.");
+		}
+	}
+#endif  // CRY_AUDIO_USE_DEBUG_CODE
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CSystem::AutoLoadSetting(ContextId const contextId, SRequestUserData const& userData /*= SRequestUserData::GetEmptyObject()*/)
+{
+	SSystemRequestData<ESystemRequestType::AutoLoadSetting> const requestData(contextId);
 	CRequest const request(&requestData, userData);
 	PushRequest(request);
 }
@@ -1250,13 +1302,10 @@ void CSystem::RetriggerControls(SRequestUserData const& userData /* = SAudioRequ
 #endif  // CRY_AUDIO_USE_DEBUG_CODE
 
 //////////////////////////////////////////////////////////////////////////
-void CSystem::ReloadControlsData(
-	char const* const szFolderPath,
-	char const* const szLevelName,
-	SRequestUserData const& userData /* = SAudioRequestUserData::GetEmptyObject() */)
+void CSystem::ReloadControlsData(SRequestUserData const& userData /* = SAudioRequestUserData::GetEmptyObject() */)
 {
 #if defined(CRY_AUDIO_USE_DEBUG_CODE)
-	SSystemRequestData<ESystemRequestType::ReloadControlsData> const requestData(szFolderPath, szLevelName);
+	SSystemRequestData<ESystemRequestType::ReloadControlsData> const requestData;
 	CRequest const request(&requestData, userData);
 	PushRequest(request);
 #endif  // CRY_AUDIO_USE_DEBUG_CODE
@@ -1351,8 +1400,10 @@ void CSystem::ReleaseImpl()
 	ResetRequestCount();
 #endif // CRY_AUDIO_USE_DEBUG_CODE
 
-	g_xmlProcessor.ClearPreloadsData(EDataScope::All);
-	g_xmlProcessor.ClearControlsData(EDataScope::All);
+	g_xmlProcessor.ClearPreloadsData(GlobalContextId, true);
+	g_xmlProcessor.ClearControlsData(GlobalContextId, true);
+
+	ReportContextDeactivated(GlobalContextId);
 
 	g_pIImpl->ShutDown();
 	g_pIImpl->Release();
@@ -1726,7 +1777,12 @@ ERequestStatus CSystem::ProcessSystemRequest(CRequest const& request)
 	case ESystemRequestType::ParseControlsData:
 		{
 			auto const pRequestData = static_cast<SSystemRequestData<ESystemRequestType::ParseControlsData> const*>(request.GetData());
-			g_xmlProcessor.ParseControlsData(pRequestData->folderPath.c_str(), pRequestData->dataScope);
+			g_xmlProcessor.ParseControlsData(pRequestData->folderPath.c_str(), pRequestData->contextId, pRequestData->contextName.c_str());
+
+			if (pRequestData->contextId != GlobalContextId)
+			{
+				ReportContextActivated(pRequestData->contextId);
+			}
 
 			result = ERequestStatus::Success;
 
@@ -1735,7 +1791,7 @@ ERequestStatus CSystem::ProcessSystemRequest(CRequest const& request)
 	case ESystemRequestType::ParsePreloadsData:
 		{
 			auto const pRequestData = static_cast<SSystemRequestData<ESystemRequestType::ParsePreloadsData> const*>(request.GetData());
-			g_xmlProcessor.ParsePreloadsData(pRequestData->folderPath.c_str(), pRequestData->dataScope);
+			g_xmlProcessor.ParsePreloadsData(pRequestData->folderPath.c_str(), pRequestData->contextId);
 
 			result = ERequestStatus::Success;
 
@@ -1744,7 +1800,14 @@ ERequestStatus CSystem::ProcessSystemRequest(CRequest const& request)
 	case ESystemRequestType::ClearControlsData:
 		{
 			auto const pRequestData = static_cast<SSystemRequestData<ESystemRequestType::ClearControlsData> const*>(request.GetData());
-			g_xmlProcessor.ClearControlsData(pRequestData->dataScope);
+			g_xmlProcessor.ClearControlsData(pRequestData->contextId, false);
+
+			ContextId const id = pRequestData->contextId;
+
+			if ((id != GlobalContextId) && (id != InvalidContextId))
+			{
+				ReportContextDeactivated(id);
+			}
 
 			result = ERequestStatus::Success;
 
@@ -1753,7 +1816,7 @@ ERequestStatus CSystem::ProcessSystemRequest(CRequest const& request)
 	case ESystemRequestType::ClearPreloadsData:
 		{
 			auto const pRequestData = static_cast<SSystemRequestData<ESystemRequestType::ClearPreloadsData> const*>(request.GetData());
-			g_xmlProcessor.ClearPreloadsData(pRequestData->dataScope);
+			g_xmlProcessor.ClearPreloadsData(pRequestData->contextId, false);
 
 			result = ERequestStatus::Success;
 
@@ -1770,6 +1833,24 @@ ERequestStatus CSystem::ProcessSystemRequest(CRequest const& request)
 		{
 			auto const pRequestData = static_cast<SSystemRequestData<ESystemRequestType::UnloadSingleRequest> const*>(request.GetData());
 			result = g_fileCacheManager.TryUnloadRequest(pRequestData->preloadRequestId);
+
+			break;
+		}
+	case ESystemRequestType::ActivateContext:
+		{
+			auto const pRequestData = static_cast<SSystemRequestData<ESystemRequestType::ActivateContext> const*>(request.GetData());
+
+			HandleActivateContext(pRequestData->contextId);
+			result = ERequestStatus::Success;
+
+			break;
+		}
+	case ESystemRequestType::DeactivateContext:
+		{
+			auto const pRequestData = static_cast<SSystemRequestData<ESystemRequestType::DeactivateContext> const*>(request.GetData());
+
+			HandleDeactivateContext(pRequestData->contextId);
+			result = ERequestStatus::Success;
 
 			break;
 		}
@@ -1857,7 +1938,7 @@ ERequestStatus CSystem::ProcessSystemRequest(CRequest const& request)
 			{
 				CSetting const* const pSetting = settingPair.second;
 
-				if (pSetting->IsAutoLoad() && (pSetting->GetDataScope() == pRequestData->scope))
+				if (pSetting->IsAutoLoad() && (pSetting->GetContextId() == pRequestData->contextId))
 				{
 					pSetting->Load();
 					break;
@@ -1896,10 +1977,10 @@ ERequestStatus CSystem::ProcessSystemRequest(CRequest const& request)
 
 			break;
 		}
-	case ESystemRequestType::UnloadAFCMDataByScope:
+	case ESystemRequestType::UnloadAFCMDataByContext:
 		{
-			auto const pRequestData = static_cast<SSystemRequestData<ESystemRequestType::UnloadAFCMDataByScope> const*>(request.GetData());
-			result = g_fileCacheManager.UnloadDataByScope(pRequestData->dataScope);
+			auto const pRequestData = static_cast<SSystemRequestData<ESystemRequestType::UnloadAFCMDataByContext> const*>(request.GetData());
+			result = g_fileCacheManager.UnloadDataByContext(pRequestData->contextId);
 
 			break;
 		}
@@ -2010,8 +2091,7 @@ ERequestStatus CSystem::ProcessSystemRequest(CRequest const& request)
 #if defined(CRY_AUDIO_USE_DEBUG_CODE)
 	case ESystemRequestType::RefreshSystem:
 		{
-			auto const pRequestData = static_cast<SSystemRequestData<ESystemRequestType::RefreshSystem> const*>(request.GetData());
-			HandleRefresh(pRequestData->levelName);
+			HandleRefresh();
 			HandleRetriggerControls();
 			result = ERequestStatus::Success;
 
@@ -2073,9 +2153,6 @@ ERequestStatus CSystem::ProcessSystemRequest(CRequest const& request)
 		}
 	case ESystemRequestType::ReloadControlsData:
 		{
-
-			auto const pRequestData = static_cast<SSystemRequestData<ESystemRequestType::ReloadControlsData> const*>(request.GetData());
-
 			for (auto const pObject : g_activeObjects)
 			{
 				pObject->StopAllTriggers();
@@ -2084,13 +2161,30 @@ ERequestStatus CSystem::ProcessSystemRequest(CRequest const& request)
 			g_object.StopAllTriggers();
 			g_previewObject.StopAllTriggers();
 
-			g_xmlProcessor.ClearControlsData(EDataScope::All);
-			g_xmlProcessor.ParseSystemData();
-			g_xmlProcessor.ParseControlsData(pRequestData->folderPath, EDataScope::Global);
+			// Store active contexts for reloading after they have been unloaded which empties the map.
+			ContextLookup const tempContexts = g_activeContexts;
 
-			if (strcmp(pRequestData->levelName, "") != 0)
+			g_xmlProcessor.ClearControlsData(GlobalContextId, true);
+			ReportContextDeactivated(GlobalContextId);
+
+			g_xmlProcessor.ParseSystemData();
+			g_xmlProcessor.ParseControlsData(g_configPath.c_str(), GlobalContextId, g_szGlobalContextName);
+
+			for (auto const& contextPair : tempContexts)
 			{
-				g_xmlProcessor.ParseControlsData(pRequestData->folderPath + pRequestData->levelName, EDataScope::LevelSpecific);
+				if (contextPair.first != GlobalContextId)
+				{
+					char const* const szContextName = contextPair.second.c_str();
+
+					CryFixedStringT<MaxFilePathLength> contextPath = g_configPath;
+					contextPath += g_szContextsFolderName;
+					contextPath += "/";
+					contextPath += szContextName;
+
+					g_xmlProcessor.ParseControlsData(contextPath.c_str(), contextPair.first, szContextName);
+
+					ReportContextActivated(contextPair.first);
+				}
 			}
 
 			HandleRetriggerControls();
@@ -2250,6 +2344,8 @@ ERequestStatus CSystem::ProcessCallbackRequest(CRequest& request)
 			break;
 		}
 	case ECallbackRequestType::ReportFinishedTriggerInstance: // Intentional fall-through.
+	case ECallbackRequestType::ReportContextActivated:        // Intentional fall-through.
+	case ECallbackRequestType::ReportContextDeactivated:      // Intentional fall-through.
 	case ECallbackRequestType::None:
 		{
 			result = ERequestStatus::Success;
@@ -2608,6 +2704,18 @@ void CSystem::NotifyListener(CRequest const& request)
 
 					break;
 				}
+			case ECallbackRequestType::ReportContextActivated:
+				{
+					systemEvent = ESystemEvents::ContextActivated;
+
+					break;
+				}
+			case ECallbackRequestType::ReportContextDeactivated:
+				{
+					systemEvent = ESystemEvents::ContextDeactivated;
+
+					break;
+				}
 			default:
 				{
 					break;
@@ -2784,6 +2892,79 @@ void CSystem::SetImplLanguage()
 }
 
 //////////////////////////////////////////////////////////////////////////
+void CSystem::HandleActivateContext(ContextId const contextId)
+{
+	CryFixedStringT<MaxFileNameLength> const contextName = stl::find_in_map(g_registeredContexts, contextId, "");
+
+	if (!contextName.empty())
+	{
+		CryFixedStringT<MaxFilePathLength> contextPath = g_configPath;
+		contextPath += g_szContextsFolderName;
+		contextPath += "/";
+		contextPath += contextName.c_str();
+
+		if (g_xmlProcessor.ParseControlsData(contextPath.c_str(), contextId, contextName.c_str()))
+		{
+			g_xmlProcessor.ParsePreloadsData(contextPath.c_str(), contextId);
+
+			for (auto const& preloadPair : g_preloadRequests)
+			{
+				if (preloadPair.second->GetContextId() == contextId)
+				{
+					g_fileCacheManager.TryLoadRequest(preloadPair.second->GetId(), true, true);
+				}
+			}
+
+			AutoLoadSetting(contextId);
+			ReportContextActivated(contextId);
+		}
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CSystem::HandleDeactivateContext(ContextId const contextId)
+{
+	g_xmlProcessor.ClearControlsData(contextId, false);
+	g_xmlProcessor.ClearPreloadsData(contextId, false);
+
+	for (auto const& preloadPair : g_preloadRequests)
+	{
+		if (preloadPair.second->GetContextId() == contextId)
+		{
+			g_fileCacheManager.TryUnloadRequest(preloadPair.second->GetId());
+		}
+	}
+
+	ReportContextDeactivated(contextId);
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CSystem::ReportContextActivated(ContextId const id)
+{
+	SCallbackRequestData<ECallbackRequestType::ReportContextActivated> const requestData;
+	CRequest const request(
+		&requestData,
+		ERequestFlags::CallbackOnExternalOrCallingThread,
+		nullptr,
+		reinterpret_cast<void*>(static_cast<uintptr_t>(id)));
+	PushRequest(request);
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CSystem::ReportContextDeactivated(ContextId const id)
+{
+	// Use GlobalContextId when all contexts have been deactivated.
+
+	SCallbackRequestData<ECallbackRequestType::ReportContextDeactivated> const requestData;
+	CRequest const request(
+		&requestData,
+		ERequestFlags::CallbackOnExternalOrCallingThread,
+		nullptr,
+		reinterpret_cast<void*>(static_cast<uintptr_t>(id)));
+	PushRequest(request);
+}
+
+//////////////////////////////////////////////////////////////////////////
 void CSystem::SetCurrentEnvironmentsOnObject(CObject* const pObject, EntityId const entityToIgnore)
 {
 	IAreaManager* const pIAreaManager = gEnv->pEntitySystem->GetAreaManager();
@@ -2897,53 +3078,66 @@ void CSystem::GetImplInfo(SImplInfo& implInfo)
 
 #if defined(CRY_AUDIO_USE_DEBUG_CODE)
 //////////////////////////////////////////////////////////////////////////
-void CSystem::HandleRefresh(char const* const szLevelName)
+void CSystem::HandleRefresh()
 {
 	Cry::Audio::Log(ELogType::Warning, "Beginning to refresh the AudioSystem!");
 
 	ERequestStatus result = g_pIImpl->StopAllSounds();
 	CRY_ASSERT(result == ERequestStatus::Success);
 
-	result = g_fileCacheManager.UnloadDataByScope(EDataScope::LevelSpecific);
+	for (auto const& contextPair : g_activeContexts)
+	{
+		result = g_fileCacheManager.UnloadDataByContext(contextPair.first);
+		CRY_ASSERT(result == ERequestStatus::Success);
+	}
+
+	result = g_fileCacheManager.UnloadDataByContext(GlobalContextId);
 	CRY_ASSERT(result == ERequestStatus::Success);
 
-	result = g_fileCacheManager.UnloadDataByScope(EDataScope::Global);
-	CRY_ASSERT(result == ERequestStatus::Success);
+	// Store active contexts for reloading after they have been unloaded which empties the map.
+	ContextLookup const tempContexts = g_activeContexts;
 
-	g_xmlProcessor.ClearPreloadsData(EDataScope::All);
-	g_xmlProcessor.ClearControlsData(EDataScope::All);
-
+	g_xmlProcessor.ClearPreloadsData(GlobalContextId, true);
+	g_xmlProcessor.ClearControlsData(GlobalContextId, true);
+	ReportContextDeactivated(GlobalContextId);
 	ResetRequestCount();
 
 	g_pIImpl->OnRefresh();
 
 	g_xmlProcessor.ParseSystemData();
-	g_xmlProcessor.ParseControlsData(g_configPath.c_str(), EDataScope::Global);
-	g_xmlProcessor.ParsePreloadsData(g_configPath.c_str(), EDataScope::Global);
+	g_xmlProcessor.ParseControlsData(g_configPath.c_str(), GlobalContextId, g_szGlobalContextName);
+	g_xmlProcessor.ParsePreloadsData(g_configPath.c_str(), GlobalContextId);
 
 	// The global preload might not exist if no preloads have been created, for that reason we don't check the result of this call
 	g_fileCacheManager.TryLoadRequest(GlobalPreloadRequestId, true, true);
 
-	AutoLoadSetting(EDataScope::Global);
+	AutoLoadSetting(GlobalContextId);
 
-	if (szLevelName != nullptr && szLevelName[0] != '\0')
+	for (auto const& contextPair : tempContexts)
 	{
-		CryFixedStringT<MaxFilePathLength> levelPath = g_configPath;
-		levelPath += g_szLevelsFolderName;
-		levelPath += "/";
-		levelPath += szLevelName;
-		g_xmlProcessor.ParseControlsData(levelPath.c_str(), EDataScope::LevelSpecific);
-		g_xmlProcessor.ParsePreloadsData(levelPath.c_str(), EDataScope::LevelSpecific);
-
-		PreloadRequestId const preloadRequestId = StringToId(szLevelName);
-		result = g_fileCacheManager.TryLoadRequest(preloadRequestId, true, true);
-
-		if (result != ERequestStatus::Success)
+		if (contextPair.first != GlobalContextId)
 		{
-			Cry::Audio::Log(ELogType::Warning, R"(No preload request found for level - "%s"!)", szLevelName);
-		}
+			char const* const szContextName = contextPair.second.c_str();
 
-		AutoLoadSetting(EDataScope::LevelSpecific);
+			CryFixedStringT<MaxFilePathLength> contextPath = g_configPath;
+			contextPath += g_szContextsFolderName;
+			contextPath += "/";
+			contextPath += szContextName;
+
+			g_xmlProcessor.ParseControlsData(contextPath.c_str(), contextPair.first, szContextName);
+			g_xmlProcessor.ParsePreloadsData(contextPath.c_str(), contextPair.first);
+
+			auto const preloadRequestId = static_cast<PreloadRequestId>(contextPair.first);
+			result = g_fileCacheManager.TryLoadRequest(preloadRequestId, true, true);
+
+			if (result != ERequestStatus::Success)
+			{
+				Cry::Audio::Log(ELogType::Warning, R"(No preload request found for context - "%s"!)", contextPair.second.c_str());
+			}
+
+			AutoLoadSetting(contextPair.first);
+			ReportContextActivated(contextPair.first);
+		}
 	}
 
 	Cry::Audio::Log(ELogType::Warning, "Done refreshing the AudioSystem!");
@@ -3136,10 +3330,13 @@ void DrawObjectInfo(
 				debugText.Format("%s [To Be Released]", szObjectName);
 			}
 
-			auxGeom.Draw2dLabel(posX, posY, Debug::g_listFontSize,
-			                    !hasActiveData ? Debug::s_globalColorInactive : (isVirtual ? Debug::s_globalColorVirtual : Debug::s_listColorItemActive),
-			                    false,
-			                    "%s", debugText.c_str());
+			auxGeom.Draw2dLabel(
+				posX,
+				posY,
+				Debug::g_listFontSize,
+				!hasActiveData ? Debug::s_globalColorInactive : (isVirtual ? Debug::s_globalColorVirtual : Debug::s_listColorItemActive),
+				false,
+				"%s", debugText.c_str());
 
 			posY += Debug::g_listLineHeight;
 			++numObjects;
@@ -3178,6 +3375,46 @@ void DrawPerActiveObjectDebugInfo(IRenderAuxGeom& auxGeom)
 	for (auto const pObject : g_activeObjects)
 	{
 		pObject->DrawDebugInfo(auxGeom, isTextFilterDisabled, lowerCaseSearchString);
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void DrawActiveContexts(IRenderAuxGeom& auxGeom, float const posX, float posY)
+{
+	CryFixedStringT<MaxControlNameLength> lowerCaseSearchString(g_cvars.m_pDebugFilter->GetString());
+	lowerCaseSearchString.MakeLower();
+
+	std::vector<CryFixedStringT<MaxFileNameLength>> contextNamesSorted; // For sorting context names alphabetically.
+	contextNamesSorted.reserve(g_activeContexts.size());
+
+	for (auto const& contextName : g_activeContexts)
+	{
+		char const* const szContextName = contextName.second.c_str();
+		CryFixedStringT<MaxControlNameLength> lowerCaseContextName(szContextName);
+		lowerCaseContextName.MakeLower();
+
+		if ((lowerCaseSearchString.empty() || (lowerCaseSearchString == "0")) || (lowerCaseContextName.find(lowerCaseSearchString) != CryFixedStringT<MaxControlNameLength>::npos))
+		{
+			contextNamesSorted.emplace_back(szContextName);
+		}
+	}
+
+	std::sort(contextNamesSorted.begin(), contextNamesSorted.end());
+
+	auxGeom.Draw2dLabel(posX, posY, Debug::g_listHeaderFontSize, Debug::s_globalColorHeader, false, "Active Contexts [%" PRISIZE_T "]", g_activeContexts.size());
+	posY += Debug::g_listHeaderLineHeight;
+
+	for (auto const& contextName : contextNamesSorted)
+	{
+		auxGeom.Draw2dLabel(
+			posX,
+			posY,
+			Debug::g_listFontSize,
+			Debug::s_listColorItemActive,
+			false,
+			"%s", contextName.c_str());
+
+		posY += Debug::g_listLineHeight;
 	}
 }
 
@@ -3479,6 +3716,11 @@ void CSystem::HandleDrawDebug()
 			debugDraw += "Object Middleware Info, ";
 		}
 
+		if ((g_cvars.m_drawDebug & Debug::EDrawFilter::Contexts) != 0)
+		{
+			debugDraw += "Active Contexts, ";
+		}
+
 		if ((g_cvars.m_drawDebug & Debug::EDrawFilter::ImplList) != 0)
 		{
 			debugDraw += "Implementation List, ";
@@ -3519,6 +3761,12 @@ void CSystem::HandleDrawDebug()
 		{
 			g_object.DrawDebugInfo(*pAuxGeom, posX, posY);
 			posX += 400.0f;
+		}
+
+		if ((g_cvars.m_drawDebug & Debug::EDrawFilter::Contexts) != 0)
+		{
+			DrawActiveContexts(*pAuxGeom, posX, posY);
+			posX += 200.0f;
 		}
 
 		if ((g_cvars.m_drawDebug & Debug::EDrawFilter::ActiveObjects) != 0)

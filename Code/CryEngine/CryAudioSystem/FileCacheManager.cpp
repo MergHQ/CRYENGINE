@@ -24,10 +24,10 @@ namespace CryAudio
 #if defined(CRY_AUDIO_USE_DEBUG_CODE)
 enum class EFileCacheManagerDebugFilter : EnumFlagsType
 {
-	All            = 0,
-	Globals        = BIT(6), // a
-	LevelSpecifics = BIT(7), // b
-	UseCounted     = BIT(8), // c
+	All         = 0,
+	Globals     = BIT(6), // a
+	UserDefined = BIT(7), // b
+	UseCounted  = BIT(8), // c
 };
 CRY_CREATE_ENUM_FLAG_OPERATORS(EFileCacheManagerDebugFilter);
 #endif // CRY_AUDIO_USE_DEBUG_CODE
@@ -56,7 +56,7 @@ void CFileCacheManager::Initialize()
 }
 
 //////////////////////////////////////////////////////////////////////////
-FileId CFileCacheManager::TryAddFileCacheEntry(XmlNodeRef const pFileNode, EDataScope const dataScope, bool const bAutoLoad)
+FileId CFileCacheManager::TryAddFileCacheEntry(XmlNodeRef const pFileNode, ContextId const contextId, bool const bAutoLoad)
 {
 	FileId fileId = InvalidFileId;
 	Impl::SFileInfo fileInfo;
@@ -89,7 +89,7 @@ FileId CFileCacheManager::TryAddFileCacheEntry(XmlNodeRef const pFileNode, EData
 					pFile->m_flags |= EFileFlags::UseCounted;
 				}
 
-				pFile->m_dataScope = dataScope;
+				pFile->m_contextId = contextId;
 				pFile->m_path.MakeLower();
 				size_t const fileSize = gEnv->pCryPak->FGetSize(pFile->m_path.c_str());
 
@@ -131,7 +131,7 @@ FileId CFileCacheManager::TryAddFileCacheEntry(XmlNodeRef const pFileNode, EData
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool CFileCacheManager::TryRemoveFileCacheEntry(FileId const id, EDataScope const dataScope)
+bool CFileCacheManager::TryRemoveFileCacheEntry(FileId const id, ContextId const contextId)
 {
 	bool bSuccess = false;
 	Files::iterator const iter(m_files.find(id));
@@ -140,14 +140,14 @@ bool CFileCacheManager::TryRemoveFileCacheEntry(FileId const id, EDataScope cons
 	{
 		CFile* const pFile = iter->second;
 
-		if (pFile->m_dataScope == dataScope)
+		if (pFile->m_contextId == contextId)
 		{
 			UncacheFileCacheEntryInternal(pFile, true, true);
 			g_pIImpl->DestructFile(pFile->m_pImplData);
 			delete pFile;
 			m_files.erase(iter);
 		}
-		else if ((dataScope == EDataScope::LevelSpecific) && ((pFile->m_flags & EFileFlags::NeedsResetToManualLoading) != 0))
+		else if ((contextId != GlobalContextId) && ((pFile->m_flags & EFileFlags::NeedsResetToManualLoading) != 0))
 		{
 			pFile->m_flags = (pFile->m_flags | EFileFlags::UseCounted) & ~EFileFlags::NeedsResetToManualLoading;
 
@@ -242,7 +242,7 @@ ERequestStatus CFileCacheManager::TryUnloadRequest(PreloadRequestId const preloa
 }
 
 //////////////////////////////////////////////////////////////////////////
-ERequestStatus CFileCacheManager::UnloadDataByScope(EDataScope const dataScope)
+ERequestStatus CFileCacheManager::UnloadDataByContext(ContextId const contextId)
 {
 	Files::iterator iter(m_files.begin());
 	Files::const_iterator iterEnd(m_files.end());
@@ -251,7 +251,7 @@ ERequestStatus CFileCacheManager::UnloadDataByScope(EDataScope const dataScope)
 	{
 		CFile* const pFile = iter->second;
 
-		if (pFile != nullptr && pFile->m_dataScope == dataScope)
+		if ((pFile != nullptr) && (pFile->m_contextId == contextId))
 		{
 			if (UncacheFileCacheEntryInternal(pFile, true, true))
 			{
@@ -353,7 +353,7 @@ void CFileCacheManager::DrawDebugInfo(IRenderAuxGeom& auxGeom, float const posX,
 		bool const drawAll = (g_cvars.m_fileCacheManagerDebugFilter == EFileCacheManagerDebugFilter::All);
 		bool const drawUseCounted = ((g_cvars.m_fileCacheManagerDebugFilter & EFileCacheManagerDebugFilter::UseCounted) != 0);
 		bool const drawGlobals = (g_cvars.m_fileCacheManagerDebugFilter & EFileCacheManagerDebugFilter::Globals) != 0;
-		bool const drawLevelSpecifics = (g_cvars.m_fileCacheManagerDebugFilter & EFileCacheManagerDebugFilter::LevelSpecifics) != 0;
+		bool const drawUserDefined = (g_cvars.m_fileCacheManagerDebugFilter & EFileCacheManagerDebugFilter::UserDefined) != 0;
 
 		std::vector<CryFixedStringT<MaxFilePathLength>> fileNamesSorted; // Create list to sort file names alphabetically.
 		fileNamesSorted.reserve(m_files.size());
@@ -382,15 +382,15 @@ void CFileCacheManager::DrawDebugInfo(IRenderAuxGeom& auxGeom, float const posX,
 						bool draw = false;
 						ColorF color;
 
-						if (pFile->m_dataScope == EDataScope::Global)
+						if (pFile->m_contextId == GlobalContextId)
 						{
 							draw = (drawAll || drawGlobals) || (drawUseCounted && ((pFile->m_flags & EFileFlags::UseCounted) != 0));
-							color = Debug::s_afcmColorScopeGlobal;
+							color = Debug::s_afcmColorContextGlobal;
 						}
-						else if (pFile->m_dataScope == EDataScope::LevelSpecific)
+						else
 						{
-							draw = (drawAll || drawLevelSpecifics) || (drawUseCounted && (pFile->m_flags & EFileFlags::UseCounted) != 0);
-							color = Debug::s_afcmColorScopeLevelSpecific;
+							draw = (drawAll || drawUserDefined) || (drawUseCounted && (pFile->m_flags & EFileFlags::UseCounted) != 0);
+							color = Debug::s_afcmColorContextUserDefined;
 						}
 
 						if (draw)

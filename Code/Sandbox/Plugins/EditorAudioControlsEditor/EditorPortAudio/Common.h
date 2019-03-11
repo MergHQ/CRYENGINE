@@ -13,7 +13,8 @@ namespace Impl
 {
 namespace PortAudio
 {
-extern uint32 g_triggerConnections;
+using ConnectionsByContext = std::map<CryAudio::ContextId, uint32>;
+extern ConnectionsByContext g_connections;
 
 static CryIcon s_errorIcon;
 static CryIcon s_eventIcon;

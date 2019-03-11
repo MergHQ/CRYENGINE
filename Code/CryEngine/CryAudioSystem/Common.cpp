@@ -29,6 +29,7 @@ EnvironmentLookup g_environments;
 SettingLookup g_settings;
 TriggerInstanceIdLookup g_triggerInstanceIdToObject;
 TriggerInstanceIdLookupGlobal g_triggerInstanceIdToGlobalObject;
+ContextLookup g_registeredContexts;
 
 CLoseFocusTrigger g_loseFocusTrigger;
 CGetFocusTrigger g_getFocusTrigger;
@@ -51,6 +52,7 @@ CGlobalObject g_object("Global Object");
 CGlobalObject g_previewObject("Preview Object");
 CPreviewTrigger g_previewTrigger;
 SPoolSizes g_debugPoolSizes;
+ContextLookup g_activeContexts;
 #else
 CGlobalObject g_object;
 #endif // CRY_AUDIO_USE_DEBUG_CODE

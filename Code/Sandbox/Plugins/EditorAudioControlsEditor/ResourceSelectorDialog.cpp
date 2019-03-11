@@ -27,17 +27,17 @@ string CResourceSelectorDialog::s_previousControlName = "";
 EAssetType CResourceSelectorDialog::s_previousControlType = EAssetType::None;
 
 //////////////////////////////////////////////////////////////////////////
-CResourceSelectorDialog::CResourceSelectorDialog(EAssetType const type, Scope const scope, QWidget* const pParent)
+CResourceSelectorDialog::CResourceSelectorDialog(EAssetType const type, QWidget* const pParent)
 	: CEditorDialog("AudioControlsResourceSelectorDialog", pParent)
 	, m_type(type)
-	, m_scope(scope)
-	, m_pFilterProxyModel(new CResourceFilterProxyModel(m_type, m_scope, this))
+	, m_pFilterProxyModel(new CResourceFilterProxyModel(m_type, this))
 	, m_pSourceModel(new CResourceSourceModel(this))
 	, m_pTreeView(new CTreeView(this, QAdvancedTreeView::Behavior::None))
 	, m_pSearchBox(new QSearchBox(this))
 	, m_pDialogButtons(new QDialogButtonBox(this))
 {
 	setWindowTitle("Select Audio System Control");
+	setModal(true);
 
 	m_pMountingProxyModel = new CMountingProxyModel(WrapMemberFunction(this, &CResourceSelectorDialog::CreateLibraryModelFromIndex), this);
 	m_pMountingProxyModel->SetHeaderDataCallbacks(1, &CResourceSourceModel::GetHeaderData);
@@ -199,9 +199,10 @@ QModelIndex CResourceSelectorDialog::FindItem(string const& sControlName)
 
 			if (pControl != nullptr)
 			{
-				Scope const scope = pControl->GetScope();
+				CryAudio::ContextId const contextId = pControl->GetContextId();
 
-				if (scope == g_globalScopeId || scope == m_scope)
+				if (contextId == CryAudio::GlobalContextId ||
+				    std::find(g_activeUserDefinedContexts.begin(), g_activeUserDefinedContexts.end(), contextId) != g_activeUserDefinedContexts.end())
 				{
 					modelIndex = matches[0];
 				}

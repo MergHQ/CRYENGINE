@@ -33,6 +33,7 @@ enum class EDrawFilter : EnumFlagsType
 	FilterAllObjectInfo       = BIT(23), // r
 	DetailedMemoryInfo        = BIT(24), // s
 
+	Contexts                  = BIT(26), // u
 	ImplList                  = BIT(27), // v
 	ActiveObjects             = BIT(28), // w
 	FileCacheManagerInfo      = BIT(29), // x
@@ -70,8 +71,8 @@ static ColorF const s_rayColorObstructed = Col_Red;
 static ColorF const s_rayColorFree = Col_LimeGreen;
 
 // Debug draw style for file cache manager.
-static ColorF const s_afcmColorScopeGlobal = Col_LimeGreen;
-static ColorF const s_afcmColorScopeLevelSpecific = Col_Yellow;
+static ColorF const s_afcmColorContextGlobal = Col_LimeGreen;
+static ColorF const s_afcmColorContextUserDefined = Col_Yellow;
 static ColorF const s_afcmColorFileLoading = Col_OrangeRed;
 static ColorF const s_afcmColorFileMemAllocFail = Col_VioletRed;
 static ColorF const s_afcmColorFileRemovable = Col_Cyan;

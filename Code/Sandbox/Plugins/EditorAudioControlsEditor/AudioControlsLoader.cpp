@@ -4,6 +4,7 @@
 #include "AudioControlsLoader.h"
 
 #include "AssetsManager.h"
+#include "ContextManager.h"
 
 #include <CrySystem/File/CryFile.h>
 #include <CrySystem/ISystem.h>
@@ -11,7 +12,8 @@
 
 #include <QRegularExpression>
 
-// This file is deprecated and only used for backwards compatibility. It will be removed before March 2019.
+#if defined (USE_BACKWARDS_COMPATIBILITY)
+// This file is deprecated and only used for backwards compatibility. It will be removed with CE 5.7.
 namespace ACE
 {
 string const CAudioControlsLoader::s_controlsLevelsFolder = "levels/";
@@ -58,7 +60,6 @@ EAssetType TagToType_BackwardsComp(char const* const szTag)
 void CAudioControlsLoader::LoadAll(bool const loadOnlyDefaultControls /*= false*/)
 {
 	m_loadOnlyDefaultControls = loadOnlyDefaultControls;
-	LoadScopes();
 	LoadControls(s_assetsFolderPath);
 	LoadControls(g_assetsManager.GetConfigFolderPath());
 }
@@ -84,14 +85,9 @@ void CAudioControlsLoader::LoadControls(string const& folderPath)
 
 				if ((name != ".") && (name != ".."))
 				{
-					LoadAllLibrariesInFolder(folderPath, name);
-
-					if (!g_assetsManager.ScopeExists(fd.name))
+					if (LoadAllLibrariesInFolder(folderPath, name))
 					{
-						// if the control doesn't exist it
-						// means it is not a real level in the
-						// project so it is flagged as LocalOnly
-						g_assetsManager.AddScope(fd.name, true);
+						g_contextManager.TryCreateContext(fd.name, true);
 					}
 				}
 			}
@@ -103,8 +99,9 @@ void CAudioControlsLoader::LoadControls(string const& folderPath)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAudioControlsLoader::LoadAllLibrariesInFolder(string const& folderPath, string const& level)
+bool CAudioControlsLoader::LoadAllLibrariesInFolder(string const& folderPath, string const& level)
 {
+	bool libraryLoaded = false;
 	string path = folderPath;
 
 	if (!level.empty())
@@ -143,6 +140,8 @@ void CAudioControlsLoader::LoadAllLibrariesInFolder(string const& folderPath, st
 						root->getAttr("atl_version", atlVersion);
 						PathUtil::RemoveExtension(file);
 						LoadControlsLibrary(root, folderPath, level, file, static_cast<uint8>(atlVersion));
+
+						libraryLoaded = true;
 					}
 				}
 				else
@@ -155,6 +154,8 @@ void CAudioControlsLoader::LoadAllLibrariesInFolder(string const& folderPath, st
 
 		pCryPak->FindClose(handle);
 	}
+
+	return libraryLoaded;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -202,18 +203,18 @@ void CAudioControlsLoader::LoadControlsLibrary(XmlNodeRef const pRoot, string co
 				}
 				else
 				{
-					Scope const scope = level.empty() ? g_globalScopeId : g_assetsManager.GetScope(level);
+					CryAudio::ContextId const contextId = level.empty() ? CryAudio::GlobalContextId : g_contextManager.GenerateContextId(level);
 					int const numControls = pNode->getChildCount();
 
 					for (int j = 0; j < numControls; ++j)
 					{
 						if (m_loadOnlyDefaultControls)
 						{
-							LoadDefaultControl(pNode->getChild(j), scope, pLibrary);
+							LoadDefaultControl(pNode->getChild(j), contextId, pLibrary);
 						}
 						else
 						{
-							LoadControl(pNode->getChild(j), scope, version, pLibrary);
+							LoadControl(pNode->getChild(j), contextId, version, pLibrary);
 						}
 					}
 				}
@@ -228,7 +229,7 @@ void CAudioControlsLoader::LoadControlsLibrary(XmlNodeRef const pRoot, string co
 }
 
 //////////////////////////////////////////////////////////////////////////
-CControl* CAudioControlsLoader::LoadControl(XmlNodeRef const pNode, Scope const scope, uint8 const version, CAsset* const pParentItem)
+CControl* CAudioControlsLoader::LoadControl(XmlNodeRef const pNode, CryAudio::ContextId const contextId, uint8 const version, CAsset* const pParentItem)
 {
 	CControl* pControl = nullptr;
 
@@ -274,7 +275,7 @@ CControl* CAudioControlsLoader::LoadControl(XmlNodeRef const pNode, Scope const 
 
 								for (int i = 0; i < stateCount; ++i)
 								{
-									LoadControl(pNode->getChild(i), scope, version, pControl);
+									LoadControl(pNode->getChild(i), contextId, version, pControl);
 								}
 							}
 							break;
@@ -286,7 +287,7 @@ CControl* CAudioControlsLoader::LoadControl(XmlNodeRef const pNode, Scope const 
 							break;
 						}
 
-						pControl->SetScope(scope);
+						pControl->SetContextId(contextId);
 						pControl->SetModified(true, true);
 					}
 				}
@@ -309,7 +310,7 @@ CControl* CAudioControlsLoader::LoadControl(XmlNodeRef const pNode, Scope const 
 }
 
 //////////////////////////////////////////////////////////////////////////
-CControl* CAudioControlsLoader::LoadDefaultControl(XmlNodeRef const pNode, Scope const scope, CAsset* const pParentItem)
+CControl* CAudioControlsLoader::LoadDefaultControl(XmlNodeRef const pNode, CryAudio::ContextId const contextId, CAsset* const pParentItem)
 {
 	CControl* pControl = nullptr;
 
@@ -336,49 +337,6 @@ CControl* CAudioControlsLoader::LoadDefaultControl(XmlNodeRef const pNode, Scope
 	}
 
 	return pControl;
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CAudioControlsLoader::LoadScopes()
-{
-	LoadScopesImpl(s_controlsLevelsFolder);
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CAudioControlsLoader::LoadScopesImpl(string const& sLevelsFolder)
-{
-	// TODO: consider moving the file enumeration to a background thread to speed up the editor startup time.
-
-	_finddata_t fd;
-	ICryPak* const pCryPak = gEnv->pCryPak;
-	intptr_t const handle = pCryPak->FindFirst(sLevelsFolder + "/*.*", &fd);
-
-	if (handle != -1)
-	{
-		do
-		{
-			string name = fd.name;
-
-			if ((name != ".") && (name != "..") && !name.empty())
-			{
-				if (fd.attrib & _A_SUBDIR)
-				{
-					LoadScopesImpl(sLevelsFolder + "/" + name);
-				}
-				else
-				{
-					if (_stricmp(PathUtil::GetExt(name), "level") == 0)
-					{
-						PathUtil::RemoveExtension(name);
-						g_assetsManager.AddScope(name);
-					}
-				}
-			}
-		}
-		while (pCryPak->FindNext(handle, &fd) >= 0);
-
-		pCryPak->FindClose(handle);
-	}
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -567,4 +525,5 @@ void CAudioControlsLoader::LoadControlsEditorData(XmlNodeRef const pParentNode)
 		}
 	}
 }
-} // namespace ACE
+}      // namespace ACE
+#endif //  USE_BACKWARDS_COMPATIBILITY

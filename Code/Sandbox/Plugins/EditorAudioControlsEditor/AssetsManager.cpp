@@ -16,16 +16,15 @@ namespace ACE
 {
 ControlId CAssetsManager::m_nextId = 1;
 
-constexpr uint32 g_controlPoolSize = 8192;
-constexpr uint32 g_folderPoolSize = 1024;
-constexpr uint32 g_libraryPoolSize = 256;
+constexpr uint16 g_controlPoolSize = 8192;
+constexpr uint16 g_folderPoolSize = 1024;
+constexpr uint16 g_libraryPoolSize = 256;
 
 //////////////////////////////////////////////////////////////////////////
 CAssetsManager::CAssetsManager()
 {
 	ClearDirtyFlags();
-	m_scopes[g_globalScopeId] = SScopeInfo(g_szGlobalScopeName, false);
-	m_controls.reserve(8192);
+	m_controls.reserve(static_cast<size_t>(g_controlPoolSize));
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -45,13 +44,8 @@ CAssetsManager::~CAssetsManager()
 //////////////////////////////////////////////////////////////////////////
 void CAssetsManager::Initialize()
 {
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioSystem, 0, "ACE Control Pool");
 	CControl::CreateAllocator(g_controlPoolSize);
-
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioSystem, 0, "ACE Folder Pool");
 	CFolder::CreateAllocator(g_folderPoolSize);
-
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioSystem, 0, "ACE Library Pool");
 	CLibrary::CreateAllocator(g_libraryPoolSize);
 
 	g_implManager.SignalOnBeforeImplChange.Connect([this]()
@@ -97,7 +91,6 @@ CControl* CAssetsManager::CreateControl(string const& name, EAssetType const typ
 				SignalOnBeforeAssetAdded(pParent);
 
 				auto const pNewControl = new CControl(name, GenerateUniqueId(), type);
-
 				m_controls.push_back(pNewControl);
 
 				pNewControl->SetParent(pParent);
@@ -169,51 +162,12 @@ CControl* CAssetsManager::CreateDefaultControl(string const& name, EAssetType co
 
 	if (pControl != nullptr)
 	{
-		pControl->SetScope(g_globalScopeId);
+		pControl->SetContextId(CryAudio::GlobalContextId);
 		pControl->SetDescription(description);
 		pControl->SetFlags(pControl->GetFlags() | flags);
 	}
 
 	return pControl;
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CAssetsManager::ClearScopes()
-{
-	m_scopes.clear();
-
-	// The global scope must always exist
-	m_scopes[g_globalScopeId] = SScopeInfo(g_szGlobalScopeName, false);
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CAssetsManager::AddScope(string const& name, bool const isLocalOnly /*= false*/)
-{
-	m_scopes[CryAudio::StringToId(name.c_str())] = SScopeInfo(name, isLocalOnly);
-}
-
-//////////////////////////////////////////////////////////////////////////
-bool CAssetsManager::ScopeExists(string const& name) const
-{
-	return m_scopes.find(CryAudio::StringToId(name.c_str())) != m_scopes.end();
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CAssetsManager::GetScopeInfos(ScopeInfos& scopeInfos) const
-{
-	stl::map_to_vector(m_scopes, scopeInfos);
-}
-
-//////////////////////////////////////////////////////////////////////////
-Scope CAssetsManager::GetScope(string const& name) const
-{
-	return CryAudio::StringToId(name.c_str());
-}
-
-//////////////////////////////////////////////////////////////////////////
-SScopeInfo CAssetsManager::GetScopeInfo(Scope const id) const
-{
-	return stl::find_in_map(m_scopes, id, SScopeInfo());
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -228,7 +182,6 @@ void CAssetsManager::Clear()
 
 	CRY_ASSERT_MESSAGE(m_controls.empty(), "m_controls is not empty during %s", __FUNCTION__);
 	CRY_ASSERT_MESSAGE(m_libraries.empty(), "m_systemLibraries is not empty during %s", __FUNCTION__);
-	ClearScopes();
 	ClearDirtyFlags();
 }
 
@@ -773,5 +726,17 @@ CAsset* CAssetsManager::CreateAndConnectImplItemsRecursively(Impl::IItem* const 
 	}
 
 	return pAsset;
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CAssetsManager::ChangeContext(CryAudio::ContextId const oldContextId, CryAudio::ContextId const newContextId)
+{
+	for (auto const pControl : m_controls)
+	{
+		if (pControl->GetContextId() == oldContextId)
+		{
+			pControl->SetContextId(newContextId);
+		}
+	}
 }
 } // namespace ACE

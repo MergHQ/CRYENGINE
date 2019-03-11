@@ -180,20 +180,23 @@ string TypeToEditorFolderName(EItemType const type)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CountConnections(EAssetType const assetType, EItemType const itemType)
+void CountConnections(
+	EAssetType const assetType,
+	EItemType const itemType,
+	CryAudio::ContextId const contextId)
 {
 	switch (itemType)
 	{
 	case EItemType::Event: // Intentional fall-through.
 	case EItemType::Key:
 		{
-			++g_connections.events;
+			++g_connections[contextId].events;
 			break;
 		}
 
 	case EItemType::Snapshot:
 		{
-			++g_connections.snapshots;
+			++g_connections[contextId].snapshots;
 			break;
 		}
 	case EItemType::Parameter:
@@ -202,17 +205,17 @@ void CountConnections(EAssetType const assetType, EItemType const itemType)
 			{
 			case EAssetType::Parameter:
 				{
-					++g_connections.parameters;
+					++g_connections[contextId].parameters;
 					break;
 				}
 			case EAssetType::State:
 				{
-					++g_connections.parameterStates;
+					++g_connections[contextId].parameterStates;
 					break;
 				}
 			case EAssetType::Environment:
 				{
-					++g_connections.parameterEnvironments;
+					++g_connections[contextId].parameterEnvironments;
 					break;
 				}
 			default:
@@ -227,12 +230,12 @@ void CountConnections(EAssetType const assetType, EItemType const itemType)
 			{
 			case EAssetType::Parameter:
 				{
-					++g_connections.vcas;
+					++g_connections[contextId].vcas;
 					break;
 				}
 			case EAssetType::State:
 				{
-					++g_connections.vcaStates;
+					++g_connections[contextId].vcaStates;
 					break;
 				}
 			default:
@@ -243,12 +246,12 @@ void CountConnections(EAssetType const assetType, EItemType const itemType)
 		}
 	case EItemType::Return:
 		{
-			++g_connections.returns;
+			++g_connections[contextId].returns;
 			break;
 		}
 	case EItemType::Bank:
 		{
-			++g_connections.banks;
+			++g_connections[contextId].banks;
 			break;
 		}
 	default:
@@ -317,28 +320,13 @@ void CImpl::Initialize(
 	ExtensionFilterVector& extensionFilters,
 	QStringList& supportedFileTypes)
 {
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "Fmod Studio ACE Item Pool");
 	CItem::CreateAllocator(g_itemPoolSize);
-
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "Fmod Studio ACE Event Connection Pool");
 	CEventConnection::CreateAllocator(g_eventConnectionPoolSize);
-
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "Fmod Studio ACE Key Connection Pool");
 	CKeyConnection::CreateAllocator(g_keyConnectionPoolSize);
-
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "Fmod Studio ACE Parameter Connection Pool");
 	CParameterConnection::CreateAllocator(g_parameterConnectionPoolSize);
-
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "Fmod Studio ACE Parameter To State Connection Pool");
 	CParameterToStateConnection::CreateAllocator(g_parameterToStateConnectionPoolSize);
-
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "Fmod Studio ACE Bank Connection Pool");
 	CBankConnection::CreateAllocator(g_bankConnectionPoolSize);
-
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "Fmod Studio ACE Snapshot Connection Pool");
 	CSnapshotConnection::CreateAllocator(g_snapshotConnectionPoolSize);
-
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "Fmod Studio ACE Generic Connection Pool");
 	CGenericConnection::CreateAllocator(g_genericConnectionPoolSize);
 
 	CryAudio::SImplInfo systemImplInfo;
@@ -738,7 +726,10 @@ IConnection* CImpl::CreateConnectionFromXMLNode(XmlNodeRef pNode, EAssetType con
 }
 
 //////////////////////////////////////////////////////////////////////////
-XmlNodeRef CImpl::CreateXMLNodeFromConnection(IConnection const* const pIConnection, EAssetType const assetType)
+XmlNodeRef CImpl::CreateXMLNodeFromConnection(
+	IConnection const* const pIConnection,
+	EAssetType const assetType,
+	CryAudio::ContextId const contextId)
 {
 	XmlNodeRef pNode = nullptr;
 
@@ -844,83 +835,80 @@ XmlNodeRef CImpl::CreateXMLNodeFromConnection(IConnection const* const pIConnect
 			break;
 		}
 
-		CountConnections(assetType, type);
+		CountConnections(assetType, type, contextId);
 	}
 
 	return pNode;
 }
 
 //////////////////////////////////////////////////////////////////////////
-XmlNodeRef CImpl::SetDataNode(char const* const szTag)
+XmlNodeRef CImpl::SetDataNode(char const* const szTag, CryAudio::ContextId const contextId)
 {
-	XmlNodeRef pNode = GetISystem()->CreateXmlNode(szTag);
-	bool hasConnections = false;
+	XmlNodeRef pNode = nullptr;
 
-	if (g_connections.events > 0)
+	if (g_connections.count(contextId) > 0)
 	{
-		pNode->setAttr(CryAudio::Impl::Fmod::g_szEventsAttribute, g_connections.events);
-		hasConnections = true;
-	}
+		pNode = GetISystem()->CreateXmlNode(szTag);
 
-	if (g_connections.parameters > 0)
-	{
-		pNode->setAttr(CryAudio::Impl::Fmod::g_szParametersAttribute, g_connections.parameters);
-		hasConnections = true;
-	}
+		if (g_connections[contextId].events > 0)
+		{
+			pNode->setAttr(CryAudio::Impl::Fmod::g_szEventsAttribute, g_connections[contextId].events);
+		}
 
-	if (g_connections.parameterEnvironments > 0)
-	{
-		pNode->setAttr(CryAudio::Impl::Fmod::g_szParameterEnvironmentsAttribute, g_connections.parameterEnvironments);
-		hasConnections = true;
-	}
+		if (g_connections[contextId].parameters > 0)
+		{
+			pNode->setAttr(CryAudio::Impl::Fmod::g_szParametersAttribute, g_connections[contextId].parameters);
+		}
 
-	if (g_connections.parameterStates > 0)
-	{
-		pNode->setAttr(CryAudio::Impl::Fmod::g_szParameterStatesAttribute, g_connections.parameterStates);
-		hasConnections = true;
-	}
+		if (g_connections[contextId].parameterEnvironments > 0)
+		{
+			pNode->setAttr(CryAudio::Impl::Fmod::g_szParameterEnvironmentsAttribute, g_connections[contextId].parameterEnvironments);
+		}
 
-	if (g_connections.snapshots > 0)
-	{
-		pNode->setAttr(CryAudio::Impl::Fmod::g_szSnapshotsAttribute, g_connections.snapshots);
-		hasConnections = true;
-	}
+		if (g_connections[contextId].parameterStates > 0)
+		{
+			pNode->setAttr(CryAudio::Impl::Fmod::g_szParameterStatesAttribute, g_connections[contextId].parameterStates);
+		}
 
-	if (g_connections.returns > 0)
-	{
-		pNode->setAttr(CryAudio::Impl::Fmod::g_szReturnsAttribute, g_connections.returns);
-		hasConnections = true;
-	}
+		if (g_connections[contextId].snapshots > 0)
+		{
+			pNode->setAttr(CryAudio::Impl::Fmod::g_szSnapshotsAttribute, g_connections[contextId].snapshots);
+		}
 
-	if (g_connections.vcas > 0)
-	{
-		pNode->setAttr(CryAudio::Impl::Fmod::g_szVcasAttribute, g_connections.vcas);
-		hasConnections = true;
-	}
+		if (g_connections[contextId].returns > 0)
+		{
+			pNode->setAttr(CryAudio::Impl::Fmod::g_szReturnsAttribute, g_connections[contextId].returns);
+		}
 
-	if (g_connections.vcaStates > 0)
-	{
-		pNode->setAttr(CryAudio::Impl::Fmod::g_szVcaStatesAttribute, g_connections.vcaStates);
-		hasConnections = true;
-	}
+		if (g_connections[contextId].vcas > 0)
+		{
+			pNode->setAttr(CryAudio::Impl::Fmod::g_szVcasAttribute, g_connections[contextId].vcas);
+		}
 
-	if (g_connections.banks > 0)
-	{
-		pNode->setAttr(CryAudio::Impl::Fmod::g_szBanksAttribute, g_connections.banks);
-		hasConnections = true;
-	}
+		if (g_connections[contextId].vcaStates > 0)
+		{
+			pNode->setAttr(CryAudio::Impl::Fmod::g_szVcaStatesAttribute, g_connections[contextId].vcaStates);
+		}
 
-	if (!hasConnections)
-	{
-		pNode = nullptr;
-	}
-	else
-	{
-		// Reset connection count for next library.
-		ZeroStruct(g_connections);
+		if (g_connections[contextId].banks > 0)
+		{
+			pNode->setAttr(CryAudio::Impl::Fmod::g_szBanksAttribute, g_connections[contextId].banks);
+		}
 	}
 
 	return pNode;
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CImpl::OnBeforeWriteLibrary()
+{
+	g_connections.clear();
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CImpl::OnAfterWriteLibrary()
+{
+	g_connections.clear();
 }
 
 //////////////////////////////////////////////////////////////////////////

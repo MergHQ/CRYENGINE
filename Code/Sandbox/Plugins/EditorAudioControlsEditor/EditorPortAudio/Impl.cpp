@@ -118,10 +118,7 @@ void CImpl::Initialize(
 	ExtensionFilterVector& extensionFilters,
 	QStringList& supportedFileTypes)
 {
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "Port Audio ACE Item Pool");
 	CItem::CreateAllocator(g_itemPoolSize);
-
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "Port Audio ACE Event Connection Pool");
 	CEventConnection::CreateAllocator(g_eventConnectionPoolSize);
 
 	CryAudio::SImplInfo systemImplInfo;
@@ -332,7 +329,10 @@ IConnection* CImpl::CreateConnectionFromXMLNode(XmlNodeRef pNode, EAssetType con
 }
 
 //////////////////////////////////////////////////////////////////////////
-XmlNodeRef CImpl::CreateXMLNodeFromConnection(IConnection const* const pIConnection, EAssetType const assetType)
+XmlNodeRef CImpl::CreateXMLNodeFromConnection(
+	IConnection const* const pIConnection,
+	EAssetType const assetType,
+	CryAudio::ContextId const contextId)
 {
 	XmlNodeRef pNode = nullptr;
 
@@ -374,27 +374,39 @@ XmlNodeRef CImpl::CreateXMLNodeFromConnection(IConnection const* const pIConnect
 			pNode->setAttr(CryAudio::Impl::PortAudio::g_szLocalizedAttribute, CryAudio::Impl::PortAudio::g_szTrueValue);
 		}
 
-		++g_triggerConnections;
+		++g_connections[contextId];
 	}
 
 	return pNode;
 }
 
 //////////////////////////////////////////////////////////////////////////
-XmlNodeRef CImpl::SetDataNode(char const* const szTag)
+XmlNodeRef CImpl::SetDataNode(char const* const szTag, CryAudio::ContextId const contextId)
 {
 	XmlNodeRef pNode = nullptr;
 
-	if (g_triggerConnections > 0)
+	if (g_connections.count(contextId) > 0)
 	{
-		pNode = GetISystem()->CreateXmlNode(szTag);
-		pNode->setAttr(CryAudio::Impl::PortAudio::g_szEventsAttribute, g_triggerConnections);
-
-		// Reset connection count for next library.
-		g_triggerConnections = 0;
+		if (g_connections[contextId] > 0)
+		{
+			pNode = GetISystem()->CreateXmlNode(szTag);
+			pNode->setAttr(CryAudio::Impl::PortAudio::g_szEventsAttribute, g_connections[contextId]);
+		}
 	}
 
 	return pNode;
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CImpl::OnBeforeWriteLibrary()
+{
+	g_connections.clear();
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CImpl::OnAfterWriteLibrary()
+{
+	g_connections.clear();
 }
 
 //////////////////////////////////////////////////////////////////////////

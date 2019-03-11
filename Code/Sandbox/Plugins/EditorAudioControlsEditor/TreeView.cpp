@@ -3,17 +3,19 @@
 #include "StdAfx.h"
 #include "TreeView.h"
 
+#include "Common/ModelUtils.h"
 #include <CryAudio/IAudioSystem.h>
 
 #include <QHeaderView>
 
 namespace ACE
 {
+constexpr int g_nameRole = static_cast<int>(ModelUtils::ERoles::Name);
+constexpr int g_typeRole = static_cast<int>(ModelUtils::ERoles::SortPriority);
+
 //////////////////////////////////////////////////////////////////////////
 CTreeView::CTreeView(QWidget* pParent, QAdvancedTreeView::BehaviorFlags flags /*= QAdvancedTreeView::BehaviorFlags(UseItemModelAttribute)*/)
 	: QAdvancedTreeView(QAdvancedTreeView::BehaviorFlags(flags), pParent)
-	, m_nameRole(0)
-	, m_typeRole(0)
 	, m_nameColumn(0)
 {
 	QObject::connect(header(), &QHeaderView::sortIndicatorChanged, [this]() { scrollTo(currentIndex()); });
@@ -84,12 +86,12 @@ uint32 CTreeView::GetItemId(QModelIndex const& index) const
 
 		if (itemIndex.isValid())
 		{
-			QString itemName = itemIndex.data(m_typeRole).toString() + "/" + itemIndex.data(m_nameRole).toString();
+			QString itemName = itemIndex.data(g_typeRole).toString() + "/" + itemIndex.data(g_nameRole).toString();
 			QModelIndex parent = itemIndex.parent();
 
 			while (parent.isValid())
 			{
-				itemName.append("/" + (parent.data(m_nameRole).toString()));
+				itemName.append("/" + (parent.data(g_nameRole).toString()));
 				parent = parent.parent();
 			}
 

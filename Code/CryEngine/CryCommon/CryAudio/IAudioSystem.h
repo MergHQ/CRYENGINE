@@ -47,33 +47,21 @@ struct ITriggerInfo;
  * @var CryAudio::ESystemEvents::ImplSet
  * @var CryAudio::ESystemEvents::TriggerExecuted
  * @var CryAudio::ESystemEvents::TriggerFinished
+ * @var CryAudio::ESystemEvents::ContextActivated
+ * @var CryAudio::ESystemEvents::ContextDeactivated
  * @var CryAudio::ESystemEvents::All
  */
 enum class ESystemEvents : EnumFlagsType
 {
-	None            = 0,          /**< Used to initialize variables of this type and to determine whether the variable was properly handled. */
-	ImplSet         = BIT(0),     /**< Invoked once the audio middleware implementation has been set. */
-	TriggerExecuted = BIT(1),     /**< Invoked once a trigger finished starting all of its event connections. */
-	TriggerFinished = BIT(2),     /**< Invoked once all of the spawned event instances finished playing. */
-	All             = 0xFFFFFFFF, /**< Listen to all supported audio system events. */
+	None               = 0,          /**< Used to initialize variables of this type and to determine whether the variable was properly handled. */
+	ImplSet            = BIT(0),     /**< Invoked once the audio middleware implementation has been set. */
+	TriggerExecuted    = BIT(1),     /**< Invoked once a trigger finished starting all of its event connections. */
+	TriggerFinished    = BIT(2),     /**< Invoked once all of the spawned event instances finished playing. */
+	ContextActivated   = BIT(3),     /**< Invoked once a context got activated. */
+	ContextDeactivated = BIT(4),     /**< Invoked once a context got deactivated. */
+	All                = 0xFFFFFFFF, /**< Listen to all supported audio system events. */
 };
 CRY_CREATE_ENUM_FLAG_OPERATORS(ESystemEvents);
-
-/**
- * @enum CryAudio::EDataScope
- * @brief A strongly typed enum class representing different audio specific data scopes. This is used on data such as the audio controls for example to limit their presence to a specific time frame of the program.
- * @var CryAudio::EDataScope::None
- * @var CryAudio::EDataScope::Global
- * @var CryAudio::EDataScope::LevelSpecific
- * @var CryAudio::EDataScope::All
- */
-enum class EDataScope : EnumFlagsType
-{
-	None,          /**< Used to initialize variables of this type and to determine whether the variable was properly handled. */
-	Global,        /**< Data exists globally. */
-	LevelSpecific, /**< Data exists only while the corresponding level is loaded. */
-	All,           /**< Used when the data scope is of no significance for the executing code. */
-};
 
 /**
  * @enum CryAudio::ELogType
@@ -351,6 +339,24 @@ struct IAudioSystem
 	virtual void UnloadSingleRequest(PreloadRequestId const id, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) = 0;
 
 	/**
+	 * Activates the given context. Loads all meta data and auto-loaded preload requests that belong to that context.
+	 * This should only get called during loading the game or a level!
+	 * @param contextId - id of the context to activate.
+	 * @return void
+	 * @see DeactivateContext
+	 */
+	virtual void ActivateContext(ContextId const contextId) = 0;
+
+	/**
+	 * Deactivates the given context. unloads all meta data and preload requests that belong to that context.
+	 * This should only get called during loading the game or a level!
+	 * @param contextId - id of the context to deactivate.
+	 * @return void
+	 * @see ActivateContext
+	 */
+	virtual void DeactivateContext(ContextId const contextId) = 0;
+
+	/**
 	 * Loads a setting.
 	 * @param id - ID of the setting in question.
 	 * @param userData - optional struct used to pass additional data to the internal request.
@@ -370,12 +376,10 @@ struct IAudioSystem
 
 	/**
 	 * Reloads all of the audio controls and their connections.
-	 * @param szFolderPath - path to where the audio controls data has been stored.
-	 * @param szLevelName - name of the currently loaded level to also reload level specific data.
 	 * @param userData - optional struct used to pass additional data to the internal request.
 	 * @return void
 	 */
-	virtual void ReloadControlsData(char const* const szFolderPath, char const* const szLevelName, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) = 0;
+	virtual void ReloadControlsData(SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) = 0;
 
 	/**
 	 * Used to register a callback function that is called whenever a given event occurred.

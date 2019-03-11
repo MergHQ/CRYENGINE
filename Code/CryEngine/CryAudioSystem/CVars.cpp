@@ -12,7 +12,6 @@
 
 #if defined(CRY_AUDIO_USE_DEBUG_CODE)
 	#include "Common/Logger.h"
-	#include <CryGame/IGameFramework.h>
 #endif // CRY_AUDIO_USE_DEBUG_CODE
 
 namespace CryAudio
@@ -201,6 +200,38 @@ void CmdUnloadSetting(IConsoleCmdArgs* pCmdArgs)
 }
 
 //////////////////////////////////////////////////////////////////////////
+void CmdActivateContext(IConsoleCmdArgs* pCmdArgs)
+{
+	int const numArgs = pCmdArgs->GetArgCount();
+
+	if (numArgs == 2)
+	{
+		ContextId const id = StringToId(pCmdArgs->GetArg(1));
+		gEnv->pAudioSystem->ActivateContext(id);
+	}
+	else
+	{
+		Cry::Audio::Log(ELogType::Error, "Usage: s_ActivateContext [ContextName]");
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CmdDeactivateContext(IConsoleCmdArgs* pCmdArgs)
+{
+	int const numArgs = pCmdArgs->GetArgCount();
+
+	if (numArgs == 2)
+	{
+		ContextId const id = StringToId(pCmdArgs->GetArg(1));
+		gEnv->pAudioSystem->DeactivateContext(id);
+	}
+	else
+	{
+		Cry::Audio::Log(ELogType::Error, "Usage: s_DeactivateContext [ContextName]");
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
 void CmdResetRequestCount(IConsoleCmdArgs* pCmdArgs)
 {
 	g_system.ResetRequestCount();
@@ -209,7 +240,7 @@ void CmdResetRequestCount(IConsoleCmdArgs* pCmdArgs)
 //////////////////////////////////////////////////////////////////////////
 void CmdRefresh(IConsoleCmdArgs* pCmdArgs)
 {
-	GetISystem()->GetISystemEventDispatcher()->OnSystemEvent(ESYSTEM_EVENT_AUDIO_REFRESH, reinterpret_cast<UINT_PTR>(gEnv->pGameFramework->GetLevelName()), 0);
+	GetISystem()->GetISystemEventDispatcher()->OnSystemEvent(ESYSTEM_EVENT_AUDIO_REFRESH, 0, 0);
 }
 #endif // CRY_AUDIO_USE_DEBUG_CODE
 
@@ -233,10 +264,18 @@ void CCVars::RegisterVariables()
 	               "Usage: s_TriggerInstancePoolSize [0/...]\n"
 	               "Default: 512\n");
 
-	REGISTER_CVAR2("s_IgnoreWindowFocus", &m_ignoreWindowFocus, 0, VF_NULL,
+	REGISTER_CVAR2("s_IgnoreWindowFocus", &m_ignoreWindowFocus, m_ignoreWindowFocus, VF_NULL,
 	               "If set to 1, the audio system will not execute the \"lose_focus\" and \"get_focus\" triggers when the application window focus changes.\n"
 	               "Usage: s_IgnoreWindowFocus [0/1]\n"
 	               "Default: 0 (off)\n");
+
+	REGISTER_CVAR2("s_PoolAllocationMode", &m_poolAllocationMode, m_poolAllocationMode, VF_REQUIRE_APP_RESTART,
+	               "Defines how pool sizes for audio controls are accumulated. The pool sizes are determined by the amount of controls that exist in a context.\n"
+	               "Usage: s_PoolAllocationMode [0/...]\n"
+	               "Default: 0\n"
+	               "0: Accumulate pool sizes of all contexts.\n"
+	               "1: Accumulate pool sizes of the global context and the largest pool size for each control in any other context.\n"
+	               "This option may be used if maximum one other context besides the global context will be active at any time.\n");
 
 #if defined(CRY_AUDIO_USE_OCCLUSION)
 	REGISTER_CVAR2("s_OcclusionMaxDistance", &m_occlusionMaxDistance, m_occlusionMaxDistance, VF_CHEAT | VF_CHEAT_NOCHECK,
@@ -331,7 +370,7 @@ void CCVars::RegisterVariables()
 	               "b: Warnings\n"
 	               "c: Comments\n");
 
-	REGISTER_CVAR2("s_DrawDebug", &m_drawDebug, 0, VF_CHEAT | VF_CHEAT_NOCHECK | VF_BITFIELD,
+	REGISTER_CVAR2("s_DrawDebug", &m_drawDebug, m_drawDebug, VF_CHEAT | VF_CHEAT_NOCHECK | VF_BITFIELD,
 	               "Draws AudioTranslationLayer related debug data to the screen.\n"
 	               "Usage: s_DrawDebug [0ab...] (flags can be combined)\n"
 	               "0: No audio debug info on the screen.\n"
@@ -352,20 +391,21 @@ void CCVars::RegisterVariables()
 	               "q: Hide audio system memory info.\n"
 	               "r: Apply filter also to inactive object debug info.\n"
 	               "s: Draw detailed memory pool debug info.\n"
+	               "u: List active contexts.\n"
 	               "v: List implementation specific info.\n"
 	               "w: List active audio objects.\n"
 	               "x: Draw FileCache Manager debug info.\n"
 	               "y: Draw Request debug info.\n");
 
-	REGISTER_CVAR2("s_FileCacheManagerDebugFilter", &m_fileCacheManagerDebugFilter, 0, VF_CHEAT | VF_CHEAT_NOCHECK | VF_BITFIELD,
-	               "Allows for filtered display of the different AFCM entries such as Globals, Level Specifics, Game Hints and so on.\n"
+	REGISTER_CVAR2("s_FileCacheManagerDebugFilter", &m_fileCacheManagerDebugFilter, m_fileCacheManagerDebugFilter, VF_CHEAT | VF_CHEAT_NOCHECK | VF_BITFIELD,
+	               "Allows for filtered display of the different AFCM entries by context such as Globals, User Defined, Game Hints and so on.\n"
 	               "Usage: s_FileCacheManagerDebugFilter [0ab...] (flags can be combined)\n"
 	               "Default: 0 (all)\n"
 	               "a: Globals\n"
-	               "b: Level Specifics\n"
-	               "c: Game Hints\n");
+	               "b: User Defined\n"
+	               "c: Non-Autoloaded\n");
 
-	REGISTER_CVAR2("s_HideInactiveObjects", &m_hideInactiveObjects, 1, VF_DEV_ONLY,
+	REGISTER_CVAR2("s_HideInactiveObjects", &m_hideInactiveObjects, m_hideInactiveObjects, VF_DEV_ONLY,
 	               "When drawing audio object names on the screen this cvar can be used to choose between all registered audio objects or only those that reference active audio triggers.\n"
 	               "Usage: s_HideInactiveObjects [0/1]\n"
 	               "Default: 1 (active only)\n");
@@ -430,6 +470,16 @@ void CCVars::RegisterVariables()
 	                 "The argument is the name of the setting to unload.\n"
 	                 "Usage: s_UnloadSetting main_menu\n");
 
+	REGISTER_COMMAND("s_ActivateContext", CmdActivateContext, VF_CHEAT,
+	                 "Activates a context and loads the meta data and auto-loaded preload requests of that context.\n"
+	                 "The argument is the name of the context to activate.\n"
+	                 "Usage: s_ActivateContext intro\n");
+
+	REGISTER_COMMAND("s_DeactivateContext", CmdDeactivateContext, VF_CHEAT,
+	                 "Deactivates a context and unloads the meta data and preload requests of that context.\n"
+	                 "The argument is the name of the context to deactivate.\n"
+	                 "Usage: s_DeactivateContext intro\n");
+
 	REGISTER_COMMAND("s_ResetRequestCount", CmdResetRequestCount, VF_CHEAT,
 	                 "Resets the request counts shown in s_DrawDebug y.\n"
 	                 "Usage: s_ResetRequestCount\n");
@@ -454,6 +504,7 @@ void CCVars::UnregisterVariables()
 		pConsole->UnregisterVariable("s_ObjectPoolSize");
 		pConsole->UnregisterVariable("s_TriggerInstancePoolSize");
 		pConsole->UnregisterVariable("s_IgnoreWindowFocus");
+		pConsole->UnregisterVariable("s_PoolAllocationMode");
 
 #if defined(CRY_AUDIO_USE_OCCLUSION)
 		pConsole->UnregisterVariable("s_OcclusionMaxDistance");
@@ -488,6 +539,8 @@ void CCVars::UnregisterVariables()
 		pConsole->UnregisterVariable("s_UnloadRequest");
 		pConsole->UnregisterVariable("s_LoadSetting");
 		pConsole->UnregisterVariable("s_UnloadSetting");
+		pConsole->UnregisterVariable("s_ActivateContext");
+		pConsole->UnregisterVariable("s_DeactivateContext");
 		pConsole->UnregisterVariable("s_ResetRequestCount");
 		pConsole->UnregisterVariable("s_Refresh");
 #endif // CRY_AUDIO_USE_DEBUG_CODE

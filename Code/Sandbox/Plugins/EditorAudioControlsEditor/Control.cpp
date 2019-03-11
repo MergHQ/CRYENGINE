@@ -4,7 +4,9 @@
 #include "Control.h"
 
 #include "AssetsManager.h"
+#include "ContextManager.h"
 #include "AssetUtils.h"
+#include "Context.h"
 #include "Common/IConnection.h"
 #include "Common/IImpl.h"
 #include "Common/IItem.h"
@@ -82,25 +84,23 @@ void CControl::Serialize(Serialization::IArchive& ar)
 
 	ar.doc(description);
 
-	// Scope
-	Scope scope = m_scope;
+	// Context
+	CryAudio::ContextId contextId = m_contextId;
 
 	if (((m_flags& EAssetFlags::IsDefaultControl) == 0) && (m_type != EAssetType::State))
 	{
-		Serialization::StringList scopeList;
-		ScopeInfos scopeInfos;
-		g_assetsManager.GetScopeInfos(scopeInfos);
+		Serialization::StringList contextList;
 
-		for (auto const& scopeInfo : scopeInfos)
+		for (auto const pContext : g_contexts)
 		{
-			scopeList.emplace_back(scopeInfo.name);
+			contextList.emplace_back(pContext->GetName());
 		}
 
-		std::sort(scopeList.begin(), scopeList.end());
+		std::sort(contextList.begin(), contextList.end());
 
-		Serialization::StringListValue const selectedScope(scopeList, g_assetsManager.GetScopeInfo(m_scope).name);
-		ar(selectedScope, "scope", "Scope");
-		scope = g_assetsManager.GetScope(scopeList[selectedScope.index()]);
+		Serialization::StringListValue const selectedContext(contextList, g_contextManager.GetContextName(m_contextId));
+		ar(selectedContext, "context", "Context");
+		contextId = g_contextManager.GenerateContextId(contextList[selectedContext.index()]);
 	}
 
 	// Auto Load
@@ -115,18 +115,18 @@ void CControl::Serialize(Serialization::IArchive& ar)
 	{
 		SetName(name);
 		SetDescription(description);
-		SetScope(scope);
+		SetContextId(contextId);
 		SetAutoLoad(isAutoLoad);
 	}
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CControl::SetScope(Scope const scope)
+void CControl::SetContextId(CryAudio::ContextId const contextId)
 {
-	if (m_scope != scope)
+	if (m_contextId != contextId)
 	{
 		SignalOnBeforeControlModified();
-		m_scope = scope;
+		m_contextId = contextId;
 		SignalOnAfterControlModified();
 	}
 }
@@ -256,7 +256,7 @@ void CControl::BackupAndClearConnections()
 	{
 		for (auto const pIConnection : m_connections)
 		{
-			XmlNodeRef const pRawConnection = g_pIImpl->CreateXMLNodeFromConnection(pIConnection, m_type);
+			XmlNodeRef const pRawConnection = g_pIImpl->CreateXMLNodeFromConnection(pIConnection, m_type, m_contextId);
 
 			if (pRawConnection != nullptr)
 			{
@@ -270,7 +270,7 @@ void CControl::BackupAndClearConnections()
 
 		for (auto const pIConnection : m_connections)
 		{
-			XmlNodeRef const pRawConnection = g_pIImpl->CreateXMLNodeFromConnection(pIConnection, m_type);
+			XmlNodeRef const pRawConnection = g_pIImpl->CreateXMLNodeFromConnection(pIConnection, m_type, m_contextId);
 
 			if (pRawConnection != nullptr)
 			{

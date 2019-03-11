@@ -24,17 +24,20 @@ public:
 
 	FileNames  GetLoadedFilenamesList() const { return m_loadedFilenames; }
 	void       CreateInternalControls();
-	void       LoadAll();
-	void       LoadScopes();
+	void       Load();
 	EErrorCode GetErrorCodeMask() const { return m_errorCodeMask; }
 
 private:
 
-	void      LoadControls();
-	void      LoadAllLibrariesInFolder(string const& folderPath, string const& level);
-	void      LoadControlsLibrary(XmlNodeRef const pRoot, string const& filepath, string const& level, string const& filename, uint8 const version);
-	CControl* LoadControl(XmlNodeRef const pNode, Scope const scope, CAsset* const pParentItem);
+	bool      LoadAllLibrariesInFolder(string const& folderPath, string const& contextName);
+	void      LoadControlsLibrary(XmlNodeRef const pRoot, string const& filepath, string const& contextName, string const& fileName, uint8 const version);
+	CControl* LoadControl(XmlNodeRef const pNode, CryAudio::ContextId const contextId, CAsset* const pParentItem);
 	void      LoadPlatformSpecificConnections(XmlNodeRef const pNode, CControl* const pControl);
+
+#if defined (USE_BACKWARDS_COMPATIBILITY)
+	void LoadControlsBW();
+	bool LoadAllLibrariesInFolderBW(string const& folderPath, string const& level);
+#endif //  USE_BACKWARDS_COMPATIBILITY
 
 	FileNames  m_loadedFilenames;
 	EErrorCode m_errorCodeMask = EErrorCode::None;

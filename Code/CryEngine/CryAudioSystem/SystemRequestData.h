@@ -27,6 +27,8 @@ enum class ESystemRequestType : EnumFlagsType
 	ClearPreloadsData,
 	PreloadSingleRequest,
 	UnloadSingleRequest,
+	ActivateContext,
+	DeactivateContext,
 	SetParameter,
 	SetParameterGlobally,
 	SetSwitchState,
@@ -34,7 +36,7 @@ enum class ESystemRequestType : EnumFlagsType
 	AutoLoadSetting,
 	LoadSetting,
 	UnloadSetting,
-	UnloadAFCMDataByScope,
+	UnloadAFCMDataByContext,
 	AddRequestListener,
 	RemoveRequestListener,
 	ChangeLanguage,
@@ -163,82 +165,85 @@ struct SSystemRequestData<ESystemRequestType::RemoveRequestListener> final : pub
 template<>
 struct SSystemRequestData<ESystemRequestType::ParseControlsData> final : public SSystemRequestDataBase
 {
-	explicit SSystemRequestData(char const* const szFolderPath_, EDataScope const dataScope_)
+	explicit SSystemRequestData(char const* const szFolderPath, char const* const szContextName, ContextId const contextId_)
 		: SSystemRequestDataBase(ESystemRequestType::ParseControlsData)
-		, folderPath(szFolderPath_)
-		, dataScope(dataScope_)
+		, folderPath(szFolderPath)
+		, contextName(szContextName)
+		, contextId(contextId_)
 	{}
 
 	explicit SSystemRequestData(SSystemRequestData<ESystemRequestType::ParseControlsData> const* const pSRData)
 		: SSystemRequestDataBase(ESystemRequestType::ParseControlsData)
 		, folderPath(pSRData->folderPath)
-		, dataScope(pSRData->dataScope)
+		, contextName(pSRData->contextName)
+		, contextId(pSRData->contextId)
 	{}
 
 	virtual ~SSystemRequestData() override = default;
 
 	CryFixedStringT<MaxFilePathLength> const folderPath;
-	EDataScope const                         dataScope;
+	CryFixedStringT<MaxFilePathLength> const contextName;
+	ContextId const                          contextId;
 };
 
 //////////////////////////////////////////////////////////////////////////
 template<>
 struct SSystemRequestData<ESystemRequestType::ParsePreloadsData> final : public SSystemRequestDataBase
 {
-	explicit SSystemRequestData(char const* const szFolderPath_, EDataScope const dataScope_)
+	explicit SSystemRequestData(char const* const szFolderPath, ContextId const contextId_)
 		: SSystemRequestDataBase(ESystemRequestType::ParsePreloadsData)
-		, folderPath(szFolderPath_)
-		, dataScope(dataScope_)
+		, folderPath(szFolderPath)
+		, contextId(contextId_)
 	{}
 
 	explicit SSystemRequestData(SSystemRequestData<ESystemRequestType::ParsePreloadsData> const* const pSRData)
 		: SSystemRequestDataBase(ESystemRequestType::ParsePreloadsData)
 		, folderPath(pSRData->folderPath)
-		, dataScope(pSRData->dataScope)
+		, contextId(pSRData->contextId)
 	{}
 
 	virtual ~SSystemRequestData() override = default;
 
 	CryFixedStringT<MaxFilePathLength> const folderPath;
-	EDataScope const                         dataScope;
+	ContextId const                          contextId;
 };
 
 //////////////////////////////////////////////////////////////////////////
 template<>
 struct SSystemRequestData<ESystemRequestType::ClearControlsData> final : public SSystemRequestDataBase
 {
-	explicit SSystemRequestData(EDataScope const dataScope_)
+	explicit SSystemRequestData(ContextId const contextId_)
 		: SSystemRequestDataBase(ESystemRequestType::ClearControlsData)
-		, dataScope(dataScope_)
+		, contextId(contextId_)
 	{}
 
 	explicit SSystemRequestData(SSystemRequestData<ESystemRequestType::ClearControlsData> const* const pSRData)
 		: SSystemRequestDataBase(ESystemRequestType::ClearControlsData)
-		, dataScope(pSRData->dataScope)
+		, contextId(pSRData->contextId)
 	{}
 
 	virtual ~SSystemRequestData() override = default;
 
-	EDataScope const dataScope;
+	ContextId const contextId;
 };
 
 //////////////////////////////////////////////////////////////////////////
 template<>
 struct SSystemRequestData<ESystemRequestType::ClearPreloadsData> final : public SSystemRequestDataBase
 {
-	explicit SSystemRequestData(EDataScope const dataScope_)
+	explicit SSystemRequestData(ContextId const contextId_)
 		: SSystemRequestDataBase(ESystemRequestType::ClearPreloadsData)
-		, dataScope(dataScope_)
+		, contextId(contextId_)
 	{}
 
 	explicit SSystemRequestData(SSystemRequestData<ESystemRequestType::ClearPreloadsData> const* const pSRData)
 		: SSystemRequestDataBase(ESystemRequestType::ClearPreloadsData)
-		, dataScope(pSRData->dataScope)
+		, contextId(pSRData->contextId)
 	{}
 
 	virtual ~SSystemRequestData() override = default;
 
-	EDataScope const dataScope;
+	ContextId const contextId;
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -280,6 +285,44 @@ struct SSystemRequestData<ESystemRequestType::UnloadSingleRequest> final : publi
 	virtual ~SSystemRequestData() override = default;
 
 	PreloadRequestId const preloadRequestId;
+};
+
+//////////////////////////////////////////////////////////////////////////
+template<>
+struct SSystemRequestData<ESystemRequestType::ActivateContext> final : public SSystemRequestDataBase
+{
+	explicit SSystemRequestData(ContextId const contextId_)
+		: SSystemRequestDataBase(ESystemRequestType::ActivateContext)
+		, contextId(contextId_)
+	{}
+
+	explicit SSystemRequestData(SSystemRequestData<ESystemRequestType::ActivateContext> const* const pSRData)
+		: SSystemRequestDataBase(ESystemRequestType::ActivateContext)
+		, contextId(pSRData->contextId)
+	{}
+
+	virtual ~SSystemRequestData() override = default;
+
+	ContextId const contextId;
+};
+
+//////////////////////////////////////////////////////////////////////////
+template<>
+struct SSystemRequestData<ESystemRequestType::DeactivateContext> final : public SSystemRequestDataBase
+{
+	explicit SSystemRequestData(ContextId const contextId_)
+		: SSystemRequestDataBase(ESystemRequestType::DeactivateContext)
+		, contextId(contextId_)
+	{}
+
+	explicit SSystemRequestData(SSystemRequestData<ESystemRequestType::DeactivateContext> const* const pSRData)
+		: SSystemRequestDataBase(ESystemRequestType::DeactivateContext)
+		, contextId(pSRData->contextId)
+	{}
+
+	virtual ~SSystemRequestData() override = default;
+
+	ContextId const contextId;
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -374,19 +417,19 @@ struct SSystemRequestData<ESystemRequestType::SetSwitchStateGlobally> final : pu
 template<>
 struct SSystemRequestData<ESystemRequestType::AutoLoadSetting> final : public SSystemRequestDataBase
 {
-	explicit SSystemRequestData(EDataScope const scope_)
+	explicit SSystemRequestData(ContextId const contextId_)
 		: SSystemRequestDataBase(ESystemRequestType::AutoLoadSetting)
-		, scope(scope_)
+		, contextId(contextId_)
 	{}
 
 	explicit SSystemRequestData(SSystemRequestData<ESystemRequestType::AutoLoadSetting> const* const pSRData)
 		: SSystemRequestDataBase(ESystemRequestType::AutoLoadSetting)
-		, scope(pSRData->scope)
+		, contextId(pSRData->contextId)
 	{}
 
 	virtual ~SSystemRequestData() override = default;
 
-	EDataScope const scope;
+	ContextId const contextId;
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -429,21 +472,21 @@ struct SSystemRequestData<ESystemRequestType::UnloadSetting> final : public SSys
 
 //////////////////////////////////////////////////////////////////////////
 template<>
-struct SSystemRequestData<ESystemRequestType::UnloadAFCMDataByScope> final : public SSystemRequestDataBase
+struct SSystemRequestData<ESystemRequestType::UnloadAFCMDataByContext> final : public SSystemRequestDataBase
 {
-	explicit SSystemRequestData(EDataScope const dataScope_)
-		: SSystemRequestDataBase(ESystemRequestType::UnloadAFCMDataByScope)
-		, dataScope(dataScope_)
+	explicit SSystemRequestData(ContextId const contextId_)
+		: SSystemRequestDataBase(ESystemRequestType::UnloadAFCMDataByContext)
+		, contextId(contextId_)
 	{}
 
-	explicit SSystemRequestData(SSystemRequestData<ESystemRequestType::UnloadAFCMDataByScope> const* const pSRData)
-		: SSystemRequestDataBase(ESystemRequestType::UnloadAFCMDataByScope)
-		, dataScope(pSRData->dataScope)
+	explicit SSystemRequestData(SSystemRequestData<ESystemRequestType::UnloadAFCMDataByContext> const* const pSRData)
+		: SSystemRequestDataBase(ESystemRequestType::UnloadAFCMDataByContext)
+		, contextId(pSRData->contextId)
 	{}
 
 	virtual ~SSystemRequestData() override = default;
 
-	EDataScope const dataScope;
+	ContextId const contextId;
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -653,47 +696,6 @@ struct SSystemRequestData<ESystemRequestType::StopTrigger> final : public SSyste
 };
 
 #if defined(CRY_AUDIO_USE_DEBUG_CODE)
-//////////////////////////////////////////////////////////////////////////
-template<>
-struct SSystemRequestData<ESystemRequestType::RefreshSystem> final : public SSystemRequestDataBase
-{
-	explicit SSystemRequestData(char const* const szLevelName)
-		: SSystemRequestDataBase(ESystemRequestType::RefreshSystem)
-		, levelName(szLevelName)
-	{}
-
-	explicit SSystemRequestData(SSystemRequestData<ESystemRequestType::RefreshSystem> const* const pSRData)
-		: SSystemRequestDataBase(ESystemRequestType::RefreshSystem)
-		, levelName(pSRData->levelName)
-	{}
-
-	virtual ~SSystemRequestData() override = default;
-
-	CryFixedStringT<MaxFileNameLength> const levelName;
-};
-
-//////////////////////////////////////////////////////////////////////////
-template<>
-struct SSystemRequestData<ESystemRequestType::ReloadControlsData> final : public SSystemRequestDataBase
-{
-	explicit SSystemRequestData(char const* const szFolderPath, char const* const szLevelName)
-		: SSystemRequestDataBase(ESystemRequestType::ReloadControlsData)
-		, folderPath(szFolderPath)
-		, levelName(szLevelName)
-	{}
-
-	explicit SSystemRequestData(SSystemRequestData<ESystemRequestType::ReloadControlsData> const* const pSRData)
-		: SSystemRequestDataBase(ESystemRequestType::ReloadControlsData)
-		, folderPath(pSRData->folderPath)
-		, levelName(pSRData->levelName)
-	{}
-
-	virtual ~SSystemRequestData() override = default;
-
-	CryFixedStringT<MaxFilePathLength> const folderPath;
-	CryFixedStringT<MaxFilePathLength> const levelName;
-};
-
 //////////////////////////////////////////////////////////////////////////
 template<>
 struct SSystemRequestData<ESystemRequestType::ExecutePreviewTrigger> final : public SSystemRequestDataBase

@@ -21,18 +21,18 @@ public:
 #if defined(CRY_AUDIO_USE_DEBUG_CODE)
 	explicit CEnvironment(
 		EnvironmentId const id,
-		EDataScope const dataScope,
+		ContextId const contextId,
 		EnvironmentConnections const& connections,
 		char const* const szName)
-		: CEntity<EnvironmentId>(id, dataScope, szName)
+		: CEntity<EnvironmentId>(id, contextId, szName)
 		, m_connections(connections)
 	{}
 #else
 	explicit CEnvironment(
 		EnvironmentId const id,
-		EDataScope const dataScope,
+		ContextId const contextId,
 		EnvironmentConnections const& connections)
-		: CEntity<EnvironmentId>(id, dataScope)
+		: CEntity<EnvironmentId>(id, contextId)
 		, m_connections(connections)
 	{}
 #endif // CRY_AUDIO_USE_DEBUG_CODE

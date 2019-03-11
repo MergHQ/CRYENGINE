@@ -18,6 +18,9 @@ string      GenerateUniqueControlName(string const& name, EAssetType const type)
 CAsset*     GetParentLibrary(CAsset* const pAsset);
 char const* GetTypeName(EAssetType const type);
 void        SelectTopLevelAncestors(Assets const& source, Assets& dest);
-void        TryConstructTriggerConnectionNode(XmlNodeRef const pTriggerNode, IConnection const* const pIConnection);
+void        TryConstructTriggerConnectionNode(
+	XmlNodeRef const pTriggerNode,
+	IConnection const* const pIConnection,
+	CryAudio::ContextId const contextId);
 } // namespace AssetUtils
 } // namespace ACE

@@ -157,13 +157,13 @@ CAuxThread g_auxAudioThread;
 std::map<AkUniqueID, float> g_maxAttenuations;
 
 SPoolSizes g_poolSizes;
-SPoolSizes g_poolSizesLevelSpecific;
+std::map<ContextId, SPoolSizes> g_contextPoolSizes;
 
 #if defined(CRY_AUDIO_IMPL_WWISE_USE_DEBUG_CODE)
 SPoolSizes g_debugPoolSizes;
 EventInstances g_constructedEventInstances;
 uint16 g_objectPoolSize = 0;
-uint16 g_eventPoolSize = 0;
+uint16 g_eventInstancePoolSize = 0;
 #endif  // CRY_AUDIO_IMPL_WWISE_USE_DEBUG_CODE
 
 //////////////////////////////////////////////////////////////////////////
@@ -178,7 +178,7 @@ void CountPoolSizes(XmlNodeRef const pNode, SPoolSizes& poolSizes)
 	poolSizes.parameters += numParameters;
 
 	uint16 numParameterEnvironments = 0;
-	pNode->getAttr(g_szParametersAttribute, numParameterEnvironments);
+	pNode->getAttr(g_szParameterEnvironmentsAttribute, numParameterEnvironments);
 	poolSizes.parameterEnvironments += numParameterEnvironments;
 
 	uint16 numParameterStates = 0;
@@ -440,7 +440,7 @@ ERequestStatus CImpl::Init(uint16 const objectPoolSize)
 #if defined(CRY_AUDIO_IMPL_WWISE_USE_DEBUG_CODE)
 	g_constructedEventInstances.reserve(static_cast<size_t>(g_cvars.m_eventPoolSize));
 	g_objectPoolSize = objectPoolSize;
-	g_eventPoolSize = static_cast<uint16>(g_cvars.m_eventPoolSize);
+	g_eventInstancePoolSize = static_cast<uint16>(g_cvars.m_eventPoolSize);
 #endif  // CRY_AUDIO_IMPL_WWISE_USE_DEBUG_CODE
 
 	AllocateMemoryPools(objectPoolSize, static_cast<uint16>(g_cvars.m_eventPoolSize));
@@ -868,25 +868,16 @@ void CImpl::Release()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CImpl::SetLibraryData(XmlNodeRef const pNode, bool const isLevelSpecific)
+void CImpl::SetLibraryData(XmlNodeRef const pNode, ContextId const contextId)
 {
-	if (isLevelSpecific)
+	if (contextId == GlobalContextId)
 	{
-		SPoolSizes levelPoolSizes;
-		CountPoolSizes(pNode, levelPoolSizes);
-
-		g_poolSizesLevelSpecific.events = std::max(g_poolSizesLevelSpecific.events, levelPoolSizes.events);
-		g_poolSizesLevelSpecific.parameters = std::max(g_poolSizesLevelSpecific.parameters, levelPoolSizes.parameters);
-		g_poolSizesLevelSpecific.parameterEnvironments = std::max(g_poolSizesLevelSpecific.parameterEnvironments, levelPoolSizes.parameterEnvironments);
-		g_poolSizesLevelSpecific.parameterStates = std::max(g_poolSizesLevelSpecific.parameterStates, levelPoolSizes.parameterStates);
-		g_poolSizesLevelSpecific.states = std::max(g_poolSizesLevelSpecific.states, levelPoolSizes.states);
-		g_poolSizesLevelSpecific.switches = std::max(g_poolSizesLevelSpecific.switches, levelPoolSizes.switches);
-		g_poolSizesLevelSpecific.auxBuses = std::max(g_poolSizesLevelSpecific.auxBuses, levelPoolSizes.auxBuses);
-		g_poolSizesLevelSpecific.soundBanks = std::max(g_poolSizesLevelSpecific.soundBanks, levelPoolSizes.soundBanks);
+		CountPoolSizes(pNode, g_poolSizes);
 	}
 	else
 	{
-		CountPoolSizes(pNode, g_poolSizes);
+		SPoolSizes contextPoolSizes;
+		CountPoolSizes(pNode, g_contextPoolSizes[contextId]);
 	}
 }
 
@@ -894,7 +885,7 @@ void CImpl::SetLibraryData(XmlNodeRef const pNode, bool const isLevelSpecific)
 void CImpl::OnBeforeLibraryDataChanged()
 {
 	ZeroStruct(g_poolSizes);
-	ZeroStruct(g_poolSizesLevelSpecific);
+	g_contextPoolSizes.clear();
 
 #if defined(CRY_AUDIO_IMPL_WWISE_USE_DEBUG_CODE)
 	ZeroStruct(g_debugPoolSizes);
@@ -902,16 +893,54 @@ void CImpl::OnBeforeLibraryDataChanged()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CImpl::OnAfterLibraryDataChanged()
+void CImpl::OnAfterLibraryDataChanged(int const poolAllocationMode)
 {
-	g_poolSizes.events += g_poolSizesLevelSpecific.events;
-	g_poolSizes.parameters += g_poolSizesLevelSpecific.parameters;
-	g_poolSizes.parameterEnvironments += g_poolSizesLevelSpecific.parameterEnvironments;
-	g_poolSizes.parameterStates += g_poolSizesLevelSpecific.parameterStates;
-	g_poolSizes.states += g_poolSizesLevelSpecific.states;
-	g_poolSizes.switches += g_poolSizesLevelSpecific.switches;
-	g_poolSizes.auxBuses += g_poolSizesLevelSpecific.auxBuses;
-	g_poolSizes.soundBanks += g_poolSizesLevelSpecific.soundBanks;
+	if (!g_contextPoolSizes.empty())
+	{
+		if (poolAllocationMode <= 0)
+		{
+			for (auto const& poolSizePair : g_contextPoolSizes)
+			{
+				SPoolSizes const& iterPoolSizes = g_contextPoolSizes[poolSizePair.first];
+
+				g_poolSizes.events += iterPoolSizes.events;
+				g_poolSizes.parameters += iterPoolSizes.parameters;
+				g_poolSizes.parameterEnvironments += iterPoolSizes.parameterEnvironments;
+				g_poolSizes.parameterStates += iterPoolSizes.parameterStates;
+				g_poolSizes.states += iterPoolSizes.states;
+				g_poolSizes.switches += iterPoolSizes.switches;
+				g_poolSizes.auxBuses += iterPoolSizes.auxBuses;
+				g_poolSizes.soundBanks += iterPoolSizes.soundBanks;
+			}
+		}
+		else
+		{
+			SPoolSizes maxContextPoolSizes;
+
+			for (auto const& poolSizePair : g_contextPoolSizes)
+			{
+				SPoolSizes const& iterPoolSizes = g_contextPoolSizes[poolSizePair.first];
+
+				maxContextPoolSizes.events = std::max(maxContextPoolSizes.events, iterPoolSizes.events);
+				maxContextPoolSizes.parameters = std::max(maxContextPoolSizes.parameters, iterPoolSizes.parameters);
+				maxContextPoolSizes.parameterEnvironments = std::max(maxContextPoolSizes.parameterEnvironments, iterPoolSizes.parameterEnvironments);
+				maxContextPoolSizes.parameterStates = std::max(maxContextPoolSizes.parameterStates, iterPoolSizes.parameterStates);
+				maxContextPoolSizes.states = std::max(maxContextPoolSizes.states, iterPoolSizes.states);
+				maxContextPoolSizes.switches = std::max(maxContextPoolSizes.switches, iterPoolSizes.switches);
+				maxContextPoolSizes.auxBuses = std::max(maxContextPoolSizes.auxBuses, iterPoolSizes.auxBuses);
+				maxContextPoolSizes.soundBanks = std::max(maxContextPoolSizes.soundBanks, iterPoolSizes.soundBanks);
+			}
+
+			g_poolSizes.events += maxContextPoolSizes.events;
+			g_poolSizes.parameters += maxContextPoolSizes.parameters;
+			g_poolSizes.parameterEnvironments += maxContextPoolSizes.parameterEnvironments;
+			g_poolSizes.parameterStates += maxContextPoolSizes.parameterStates;
+			g_poolSizes.states += maxContextPoolSizes.states;
+			g_poolSizes.switches += maxContextPoolSizes.switches;
+			g_poolSizes.auxBuses += maxContextPoolSizes.auxBuses;
+			g_poolSizes.soundBanks += maxContextPoolSizes.soundBanks;
+		}
+	}
 
 #if defined(CRY_AUDIO_IMPL_WWISE_USE_DEBUG_CODE)
 	// Used to hide pools without allocations in debug draw.
@@ -1755,7 +1784,7 @@ void CImpl::DrawDebugMemoryInfo(IRenderAuxGeom& auxGeom, float const posX, float
 
 		if (drawDetailedInfo)
 		{
-			Debug::DrawMemoryPoolInfo(auxGeom, posX, posY, memAlloc, allocator.GetCounts(), "Event Instances", g_eventPoolSize);
+			Debug::DrawMemoryPoolInfo(auxGeom, posX, posY, memAlloc, allocator.GetCounts(), "Event Instances", g_eventInstancePoolSize);
 		}
 	}
 

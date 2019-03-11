@@ -23,7 +23,7 @@ public:
 	CPreviewTrigger& operator=(CPreviewTrigger&&) = delete;
 
 	CPreviewTrigger()
-		: Control(g_previewTriggerId, EDataScope::Global, g_szPreviewTriggerName)
+		: Control(g_previewTriggerId, GlobalContextId, g_szPreviewTriggerName)
 	{}
 
 	~CPreviewTrigger();
