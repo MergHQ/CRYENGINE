@@ -480,6 +480,11 @@ void CEditorToolBarService::QToolBarDesc::RemoveItem(int idx)
 	items.remove(idx);
 }
 
+QString CEditorToolBarService::QToolBarDesc::GetNameFromFileInfo(const QFileInfo& fileInfo)
+{
+	return fileInfo.baseName();
+}
+
 void CEditorToolBarService::QToolBarDesc::SetName(const QString& name)
 {
 	// First, check path and fix if necessary
@@ -615,12 +620,12 @@ std::vector<string> CEditorToolBarService::GetToolBarDirectories(const char* szR
 	std::vector<string> result;
 	string editorToolbarPath = PathUtil::Make(Private_ToolbarManager::s_defaultPath, szRelativePath);
 
-	// Engine defaults
-	result.push_back(PathUtil::Make(PathUtil::GetEnginePath().c_str(), editorToolbarPath));
-	// Game project specific tool-bars
-	result.push_back(PathUtil::Make(GetIEditor()->GetProjectManager()->GetCurrentProjectDirectoryAbsolute(), editorToolbarPath));
 	// User tool-bars
 	result.push_back(PathUtil::Make(UserDataUtil::GetUserPath(Private_ToolbarManager::szUserToolbarsPath).c_str(), szRelativePath));
+	// Game project specific tool-bars
+	result.push_back(PathUtil::Make(GetIEditor()->GetProjectManager()->GetCurrentProjectDirectoryAbsolute(), editorToolbarPath));
+	// Engine defaults
+	result.push_back(PathUtil::Make(PathUtil::GetEnginePath().c_str(), editorToolbarPath));
 
 	return result;
 }
@@ -723,7 +728,7 @@ std::shared_ptr<CEditorToolBarService::QToolBarDesc> CEditorToolBarService::Load
 		QVariantMap toolBarVariant = variantMap["toolBar"].toMap();
 		std::shared_ptr<QToolBarDesc> pToolBarDesc = std::make_shared<QToolBarDesc>();
 		pToolBarDesc->Initialize(toolBarVariant["Commands"].toList(), loadedVersion);
-		pToolBarDesc->SetName(fileInfo.baseName());
+		pToolBarDesc->SetName(QToolBarDesc::GetNameFromFileInfo(fileInfo));
 		pToolBarDesc->SetPath(toolBarRelativePath.c_str());
 		return pToolBarDesc;
 	}
@@ -731,7 +736,7 @@ std::shared_ptr<CEditorToolBarService::QToolBarDesc> CEditorToolBarService::Load
 	QVariantList toolBarVariant = variantMap["toolBar"].toList();
 	std::shared_ptr<QToolBarDesc> pToolBarDesc = std::make_shared<QToolBarDesc>();
 	pToolBarDesc->Initialize(toolBarVariant, loadedVersion);
-	pToolBarDesc->SetName(fileInfo.baseName());
+	pToolBarDesc->SetName(QToolBarDesc::GetNameFromFileInfo(fileInfo));
 	pToolBarDesc->SetPath(toolBarRelativePath.c_str());
 
 	return pToolBarDesc;
@@ -741,11 +746,18 @@ void CEditorToolBarService::LoadToolBarsFromDir(const string& dirPath, std::map<
 {
 	FindToolBarsInDirAndExecute(dirPath, [this, &outToolBarDescriptors](const QFileInfo& fileInfo)
 	{
+		// If toolbar has already been loaded by a higher prio location, then just return. Loading order should be as follows:
+		// User created/modified -> Project defaults -> Engine defaults
+		string toolBarName = QtUtil::ToString(QToolBarDesc::GetNameFromFileInfo(fileInfo));
+		auto ite = outToolBarDescriptors.find(toolBarName);
+		if (ite != outToolBarDescriptors.end())
+			return;
+
 		std::shared_ptr<QToolBarDesc> pToolBarDesc = LoadToolBar(QtUtil::ToString(fileInfo.absoluteFilePath()));
 		if (!pToolBarDesc)
 			return;
 
-		outToolBarDescriptors.insert({ QtUtil::ToString(pToolBarDesc->GetName()), pToolBarDesc });
+		outToolBarDescriptors.insert({ toolBarName, pToolBarDesc });
 	});
 }
 

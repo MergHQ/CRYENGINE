@@ -118,6 +118,8 @@ public:
 	class EDITOR_COMMON_API QToolBarDesc
 	{
 	public:
+		static QString GetNameFromFileInfo(const QFileInfo& fileInfo);
+
 		QToolBarDesc() : updated(false) {}
 
 		void                                 Initialize(const QVariantList& commandList, int version);
@@ -188,7 +190,7 @@ private:
 	std::set<string>              GetToolBarNames(const char* szRelativePath) const;
 	std::vector<QToolBar*>        LoadToolBars(const char* szRelativePath) const;
 	std::shared_ptr<QToolBarDesc> GetToolBarDesc(const char* szRelativePath) const;
-	// returns full path of directories that can host toolbars. Engine, project, user directory in that specified order
+	// returns full path of directories that can host toolbars. Loading order should be as follows: User created/modified -> Project defaults -> Engine defaults
 	std::vector<string>           GetToolBarDirectories(const char* szRelativePath) const;
 
 	void                          FindToolBarsInDirAndExecute(const string& dirPath, std::function<void(const QFileInfo&)> callback) const;
