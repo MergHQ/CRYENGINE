@@ -3196,6 +3196,10 @@ bool CObjectManager::SetObjectSelected(CBaseObject* pObject, bool bSelect, bool 
 
 	CRY_ASSERT(pObject);
 
+	// Make sure the object cannot be selected if it's locked
+	if (pObject->IsFrozen() && bSelect)
+		return false;
+
 	// Only select/unselect once. And only select objects types that are selectable (not masked)
 	if (pObject->IsSelected() == bSelect || (bSelect && (pObject->GetType() & ~gViewportSelectionPreferences.objectSelectMask)))
 		return false;
