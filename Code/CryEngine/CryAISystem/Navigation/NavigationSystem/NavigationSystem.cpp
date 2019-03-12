@@ -1949,7 +1949,7 @@ void NavigationSystem::CalculateAccessibility()
 	{
 		for (const AgentType::MeshInfo& meshInfo : agentType.meshes)
 		{
-			ComputeMeshesAccessibility(&meshInfo.id, 1);
+			RequestUpdateMeshAccessibility(meshInfo.id);
 		}
 	}
 }
