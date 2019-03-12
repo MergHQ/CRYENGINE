@@ -575,10 +575,6 @@ void CRendererResources::LoadDefaultSystemTextures()
 		// Assign ESRAM offsets
 		if (CRenderer::CV_r_useESRAM)
 		{
-			uint32 sizeHDRTarget0 = CDeviceTexture::TextureDataSize(gRenDev->GetWidth(), gRenDev->GetHeight(), 1, 1, 1, eTF_R8G8B8A8     , eTM_Optimal, CDeviceObjectFactory::BIND_SHADER_RESOURCE | CDeviceObjectFactory::BIND_RENDER_TARGET);
-			uint32 sizeHDRTarget1 = CDeviceTexture::TextureDataSize(gRenDev->GetWidth(), gRenDev->GetHeight(), 1, 1, 1, eTF_R11G11B10F   , eTM_Optimal, CDeviceObjectFactory::BIND_SHADER_RESOURCE | CDeviceObjectFactory::BIND_RENDER_TARGET);
-			uint32 sizeHDRTarget2 = CDeviceTexture::TextureDataSize(gRenDev->GetWidth(), gRenDev->GetHeight(), 1, 1, 1, eTF_R16G16B16A16F, eTM_Optimal, CDeviceObjectFactory::BIND_SHADER_RESOURCE | CDeviceObjectFactory::BIND_RENDER_TARGET);
-
 			// Precomputed offsets, using xg library and aligned to 4k
 			//     1600x900 RGBA16F:  11894784
 			//     1600x900 RGBA8:     5955584

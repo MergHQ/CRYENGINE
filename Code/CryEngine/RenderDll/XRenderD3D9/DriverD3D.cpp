@@ -3273,7 +3273,7 @@ void CD3D9Renderer::RT_EndFrame()
 			WaitForAsynchronousDevice();
 	#endif
 			DWORD syncInterval = swapDC->ComputePresentInterval(m_VSync ? 1 : 0);
-			HRESULT hReturn = swapDC->GetSwapChain().Present(syncInterval, 0);
+			swapDC->GetSwapChain().Present(syncInterval, 0);
 	#if DURANGO_ENABLE_ASYNC_DIPS
 			WaitForAsynchronousDevice();
 	#endif

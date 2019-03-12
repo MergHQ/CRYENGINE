@@ -192,7 +192,7 @@ CSwapChain CSwapChain::CreateSwapChain(IDXGIFactory2ToCall* pDXGIFactory, ID3D11
 		HRESULT hr = pDXGIFactory->CreateSwapChainForCoreWindow(pD3D11Device, (IUnknown*)gEnv->pWindow, &swapChainDesc, nullptr, &pSwapChain);
 #endif
 
-		CRY_ASSERT(SUCCEEDED(hr) && pSwapChain != nullptr);
+		CRY_VERIFY(SUCCEEDED(hr) && pSwapChain != nullptr);
 	}
 
 	CSwapChain sc = { pSwapChain, nullptr };

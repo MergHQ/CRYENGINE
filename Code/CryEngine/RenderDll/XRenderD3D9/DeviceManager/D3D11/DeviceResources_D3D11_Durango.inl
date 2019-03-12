@@ -14,7 +14,7 @@ bool CTexture::StreamPrepare_Platform()
 	const SPixFormat* pPF;
 	ETEX_TileMode srcTileMode = m_eSrcTileMode;
 	bool isBlockCompressed = IsBlockCompressed(m_eSrcFormat);
-	ETEX_Format eSrcFormat = CTexture::GetClosestFormatSupported(m_eSrcFormat, pPF);
+	CTexture::GetClosestFormatSupported(m_eSrcFormat, pPF);
 
 	if (srcTileMode == eTM_Optimal)
 	{
@@ -166,19 +166,17 @@ void CTexture::StreamUploadMip_Durango(const void* pSrcBaseAddress,
 	FUNCTION_PROFILER_RENDERER();
 
 	CDeviceTexture* pDeviceTexture = pNewPoolItem->m_pDevTexture;
-	bool bStreamInPlace = mipState.m_bStreamInPlace;
 
 	// Determine optimal layout, and size/alignment for texture
 	const D3D11_TEXTURE2D_DESC& Desc = pDeviceTexture->GetTDesc()->d3dDesc;
 	const XG_RESOURCE_LAYOUT* pLayout = &pDeviceTexture->GetTDesc()->layout;
-	XG_TILE_MODE dstNativeTileMode = pLayout->Plane[0].MipLayout[0].TileMode;
 
 	if (pDeviceTexture->IsInPool())
 	{
 		const SPixFormat* pPF;
 		ETEX_TileMode srcTileMode = m_eSrcTileMode;
 		bool isBlockCompressed = IsBlockCompressed(m_eSrcFormat);
-		ETEX_Format eSrcFormat = CTexture::GetClosestFormatSupported(m_eSrcFormat, pPF);
+		CTexture::GetClosestFormatSupported(m_eSrcFormat, pPF);
 
 		// If any of the sub resources are in a linear general format, we'll need a computer to tile on the CPU.
 		bool bNeedsComputer = (srcTileMode == eTM_None) || (srcTileMode == eTM_LinearPadded && isBlockCompressed);
@@ -361,7 +359,7 @@ void CTexture::StreamUploadMips_Durango(int8 nBaseMip, int8 nMipCount, STexPoolI
 		const SPixFormat* pPF;
 		ETEX_TileMode srcTileMode = m_eSrcTileMode;
 		bool isBlockCompressed = IsBlockCompressed(m_eSrcFormat);
-		ETEX_Format eSrcFormat = CTexture::GetClosestFormatSupported(m_eSrcFormat, pPF);
+		CTexture::GetClosestFormatSupported(m_eSrcFormat, pPF);
 
 		// If any of the sub resources are in a linear general format, we'll need a computer to tile on the CPU.
 		bool bNeedsComputer = (srcTileMode == eTM_None) || (srcTileMode == eTM_LinearPadded && isBlockCompressed);
@@ -429,7 +427,6 @@ void CTexture::StreamUploadMips_Durango(int8 nBaseMip, int8 nMipCount, STexPoolI
 						if (mipState.m_bStreamInPlace)
 						{
 							void* pSrcDataAddress = pDstBaseAddress + pDeviceTexture->GetSurfaceOffset(nDstMip, nSide);
-							size_t nSubResourceSize = pDeviceTexture->GetSurfaceSize(nDstMip);
 
 #if defined(TEXTURES_IN_CACHED_MEM)
 							D3DFlushCpuCache((void*)pSrcDataAddress, nSubResourceSize);
@@ -495,12 +492,14 @@ void CDeviceTexture::InitD3DTexture()
 
 		CDeviceTexturePin pin(this);
 
+#ifndef _RELEASE
 		HRESULT hr = gcpRendD3D->GetPerformanceDevice().CreatePlacementTexture2D(&m_pLayout->d3dDesc, tileMode, 0, pin.GetBaseAddress(), (ID3D11Texture2D**)&m_pNativeResource);
-	#ifndef _RELEASE
 		if (FAILED(hr))
 		{
 			__debugbreak();
 		}
+#else
+		gcpRendD3D->GetPerformanceDevice().CreatePlacementTexture2D(&m_pLayout->d3dDesc, tileMode, 0, pin.GetBaseAddress(), (ID3D11Texture2D**)&m_pNativeResource);
 #endif
 
 	//	m_pRenderTargetData = pRenderTargetData;
