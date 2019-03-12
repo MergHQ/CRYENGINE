@@ -116,6 +116,7 @@ public:
 		: QToolBar(title)
 		, m_pSelectedWidget(nullptr)
 		, m_bShowDropTarget(false)
+		, m_WasToolButtonCheckable(false)
 	{
 
 	}
@@ -152,9 +153,20 @@ public:
 		SetShowDropTarget(true);
 	}
 
-	void SelectWidget(QWidget* pWidget)
+	void SelectWidget(QToolButton* pWidget)
 	{
+		if (m_pSelectedWidget)
+		{
+			m_pSelectedWidget->setCheckable(m_WasToolButtonCheckable);
+			m_pSelectedWidget->setChecked(false);
+		}
+
 		m_pSelectedWidget = pWidget;
+
+		// Use checked state to simulate selection during toolbar customization
+		m_WasToolButtonCheckable = m_pSelectedWidget->isCheckable();
+		m_pSelectedWidget->setCheckable(true);
+		m_pSelectedWidget->setChecked(true);
 		update();
 	}
 
@@ -194,16 +206,6 @@ protected:
 		QPainter painter(this);
 		painter.save();
 
-		if (m_pSelectedWidget)
-		{
-			painter.setRenderHint(QPainter::Antialiasing);
-			painter.setPen(QPen(QColor(166, 166, 166, 255)));
-
-			QSize widgetSize = m_pSelectedWidget->size();
-			widgetSize.setHeight(widgetSize.height() - 1);
-			painter.drawRoundedRect(QRect(m_pSelectedWidget->pos(), widgetSize), 2, 2);
-		}
-
 		if (m_bShowDropTarget)
 		{
 			QPixmap pixmap(":toolbar-drop-target.png");
@@ -218,10 +220,11 @@ protected:
 	}
 
 protected:
-	QWidget* m_pSelectedWidget;
+	QToolButton* m_pSelectedWidget;
 	QPoint   m_DragStartPosition;
 	QPoint   m_DropTargetPos;
 	bool     m_bShowDropTarget;
+	bool     m_WasToolButtonCheckable;
 };
 
 CToolBarCustomizeDialog::QDropContainer::QDropContainer(CToolBarCustomizeDialog* pParent)
@@ -431,15 +434,15 @@ bool CToolBarCustomizeDialog::QDropContainer::eventFilter(QObject* pObject, QEve
 		QMouseEvent* pMouseEvent = static_cast<QMouseEvent*>(pEvent);
 		if (pMouseEvent->button() == Qt::LeftButton)
 		{
-			QWidget* pWidget = qobject_cast<QWidget*>(pObject);
-			if (!pWidget)
+			QToolButton* pToolButton = qobject_cast<QToolButton*>(pObject);
+			if (!pToolButton)
 			{
 				m_pSelectedItem = nullptr;
 				selectedItemChanged(nullptr);
 				return false;
 			}
 
-			m_pCurrentToolBar->SelectWidget(pWidget);
+			m_pCurrentToolBar->SelectWidget(pToolButton);
 			m_DragStartPosition = pMouseEvent->globalPos();
 			m_bDragStarted = true;
 			QList<QAction*> actions = m_pCurrentToolBar->actions();
@@ -564,20 +567,25 @@ CToolBarCustomizeDialog::CToolBarCustomizeDialog(QWidget* pParent, const char* s
 	}
 
 	QVBoxLayout* pLayout = new QVBoxLayout();
+	pLayout->setMargin(0);
+	pLayout->setSpacing(0);
+
 	QHBoxLayout* pInnerLayout = new QHBoxLayout();
+	pInnerLayout->setMargin(0);
+	pInnerLayout->setSpacing(0);
 
 	QToolButton* pAddToolBar = new QToolButton();
-	pAddToolBar->setIcon(CryIcon("icons:General/Element_Add.ico"));
+	pAddToolBar->setIcon(CryIcon("icons:General/Plus.ico"));
 	pAddToolBar->setToolTip("Create new Toolbar");
 	connect(pAddToolBar, &QToolButton::clicked, this, &CToolBarCustomizeDialog::OnAddToolBar);
 
 	QToolButton* pRemoveToolBar = new QToolButton();
-	pRemoveToolBar->setIcon(CryIcon("icons:General/Element_Remove.ico"));
+	pRemoveToolBar->setIcon(CryIcon("icons:General/Folder_Remove.ico"));
 	pRemoveToolBar->setToolTip("Remove Toolbar");
 	connect(pRemoveToolBar, &QToolButton::clicked, this, &CToolBarCustomizeDialog::OnRemoveToolBar);
 
 	QToolButton* pRenameToolBar = new QToolButton();
-	pRenameToolBar->setIcon(CryIcon("icons:General/Edit.ico"));
+	pRenameToolBar->setIcon(CryIcon("icons:General/editable_true.ico"));
 	pRenameToolBar->setToolTip("Rename Toolbar");
 	connect(pRenameToolBar, &QToolButton::clicked, [this]()
 	{
@@ -586,10 +594,9 @@ CToolBarCustomizeDialog::CToolBarCustomizeDialog(QWidget* pParent, const char* s
 			m_pToolbarSelect->OnBeginEditing();
 	});
 
-	pInnerLayout->addWidget(new QLabel("Toolbar"));
 	pInnerLayout->addWidget(m_pToolbarSelect);
-	pInnerLayout->addWidget(pRenameToolBar);
 	pInnerLayout->addWidget(pAddToolBar);
+	pInnerLayout->addWidget(pRenameToolBar);
 	pInnerLayout->addWidget(pRemoveToolBar);
 
 	m_pTreeView = new QAdvancedTreeView();
@@ -601,9 +608,16 @@ CToolBarCustomizeDialog::CToolBarCustomizeDialog(QWidget* pParent, const char* s
 	m_pProxyModel = new QDeepFilterProxyModel();
 	m_pProxyModel->setSourceModel(m_pItemModel);
 
+	QWidget* pSearchBoxContainer = new QWidget();
+	QHBoxLayout* pSearchBoxLayout = new QHBoxLayout();
 	QSearchBox* pSearchBox = new QSearchBox();
 	pSearchBox->EnableContinuousSearch(true);
 	pSearchBox->SetModel(m_pProxyModel);
+	pSearchBoxLayout->setSpacing(0);
+	pSearchBoxLayout->setMargin(0);
+	pSearchBoxLayout->addWidget(pSearchBox);
+	pSearchBoxContainer->setObjectName("SearchBoxContainer");
+	pSearchBoxContainer->setLayout(pSearchBoxLayout);
 
 	m_pTreeView->setModel(m_pProxyModel);
 	m_pTreeView->setDragEnabled(true);
@@ -743,15 +757,29 @@ CToolBarCustomizeDialog::CToolBarCustomizeDialog(QWidget* pParent, const char* s
 	m_cvarWidgets.push_back(m_pIconInput);
 	m_cvarWidgets.push_back(m_pIconBrowserButton);
 
-	pLayout->addWidget(pSearchBox);
+	// Create a container widget for styling purposes
+	QWidget* pInnerContainer = new QWidget();
+	pInnerContainer->setLayout(pInnerLayout);
+	pInnerContainer->setObjectName("ToolbarComboBoxContainer");
+	// Create a container widget for styling purposes
+	QVBoxLayout* pCommandDetailsLayout = new QVBoxLayout();
+	pCommandDetailsLayout->setSpacing(0);
+	pCommandDetailsLayout->setMargin(0);
+	pCommandDetailsLayout->addLayout(pNameLayout);
+	pCommandDetailsLayout->addLayout(pCommandLayout);
+	pCommandDetailsLayout->addLayout(pCVarLayout);
+	pCommandDetailsLayout->addLayout(pCVarValueLayout);
+	pCommandDetailsLayout->addLayout(pIconLayout);
+
+	QWidget* pCommandDetails = new QWidget();
+	pCommandDetails->setLayout(pCommandDetailsLayout);
+	pCommandDetails->setObjectName("ToolbarPropertiesContainer");
+
+	pLayout->addWidget(pSearchBoxContainer);
 	pLayout->addWidget(m_pTreeView);
-	pLayout->addLayout(pInnerLayout);
+	pLayout->addWidget(pInnerContainer);
 	pLayout->addWidget(m_pDropContainer);
-	pLayout->addLayout(pNameLayout);
-	pLayout->addLayout(pCommandLayout);
-	pLayout->addLayout(pCVarLayout);
-	pLayout->addLayout(pCVarValueLayout);
-	pLayout->addLayout(pIconLayout);
+	pLayout->addWidget(pCommandDetails);
 
 	m_pDropContainer->selectedItemChanged.Connect(this, &CToolBarCustomizeDialog::OnSelectedItemChanged);
 
