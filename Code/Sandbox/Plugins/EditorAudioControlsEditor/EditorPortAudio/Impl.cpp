@@ -384,7 +384,7 @@ XmlNodeRef CImpl::SetDataNode(char const* const szTag, CryAudio::ContextId const
 {
 	XmlNodeRef pNode = nullptr;
 
-	if (g_connections.count(contextId) > 0)
+	if (g_connections.find(contextId) != g_connections.end())
 	{
 		if (g_connections[contextId] > 0)
 		{

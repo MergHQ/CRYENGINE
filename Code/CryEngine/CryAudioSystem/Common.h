@@ -139,6 +139,25 @@ using SwitchStateIds = std::map<ControlId, SwitchStateId>;
 using ParameterValues = std::map<ControlId, float>;
 using EnvironmentValues = std::map<EnvironmentId, float>;
 
-extern ContextLookup g_activeContexts;
+struct SContextInfo final
+{
+	SContextInfo() = delete;
+
+	explicit SContextInfo(
+		ContextId const contextId_,
+		bool isRegistered_,
+		bool isActive_)
+		: contextId(contextId_)
+		, isRegistered(isRegistered_)
+		, isActive(isActive_)
+	{}
+
+	ContextId const contextId;
+	bool            isRegistered;
+	bool            isActive;
+};
+
+using ContextInfo = std::map<CryFixedStringT<MaxFileNameLength>, SContextInfo>;
+extern ContextInfo g_contextInfo;
 #endif // CRY_AUDIO_USE_DEBUG_CODE
 }      // namespace CryAudio

@@ -134,6 +134,22 @@ void ParseContextSystemData(char const* const szFolderPath, SPoolSizes& poolSize
 					if (ParseSystemDataFile(szSubFolderName, contextPoolSizes, contextId))
 					{
 						g_registeredContexts[contextId] = szName;
+
+#if defined(CRY_AUDIO_USE_DEBUG_CODE)
+						auto contextInfo = g_contextInfo.find(szName);
+
+						if (contextInfo != g_contextInfo.cend())
+						{
+							contextInfo->second.isRegistered = true;
+						}
+						else
+						{
+							g_contextInfo.emplace(
+								std::piecewise_construct,
+								std::forward_as_tuple(szName),
+								std::forward_as_tuple(SContextInfo(contextId, true, false)));
+						}
+#endif        // CRY_AUDIO_USE_DEBUG_CODE
 					}
 
 					if (g_cvars.m_poolAllocationMode <= 0)
@@ -172,6 +188,16 @@ void CXMLProcessor::ParseSystemData()
 {
 	ZeroStruct(g_poolSizes);
 	g_registeredContexts.clear();
+
+#if defined(CRY_AUDIO_USE_DEBUG_CODE)
+	for (auto& contextPair : g_contextInfo)
+	{
+		if (contextPair.second.contextId != GlobalContextId)
+		{
+			contextPair.second.isRegistered = false;
+		}
+	}
+#endif // CRY_AUDIO_USE_DEBUG_CODE
 
 	g_pIImpl->OnBeforeLibraryDataChanged();
 	g_pIImpl->GetInfo(g_implInfo);
@@ -259,7 +285,14 @@ bool CXMLProcessor::ParseControlsData(char const* const szFolderPath, ContextId 
 						contextExists = true;
 
 #if defined(CRY_AUDIO_USE_DEBUG_CODE)
-						g_activeContexts[contextId] = szContextName;
+						for (auto& contextPair : g_contextInfo)
+						{
+							if (contextPair.second.contextId == contextId)
+							{
+								contextPair.second.isActive = true;
+								break;
+							}
+						}
 #endif        // CRY_AUDIO_USE_DEBUG_CODE
 					}
 				}
@@ -451,7 +484,7 @@ void CXMLProcessor::ParsePreloadsData(char const* const szFolderPath, ContextId 
 	}
 
 #if defined(CRY_AUDIO_USE_DEBUG_CODE)
-	char const* const szContextName = stl::find_in_map(g_activeContexts, contextId, "unknown");
+	char const* const szContextName = stl::find_in_map(g_registeredContexts, contextId, "unknown");
 	float const duration = (gEnv->pTimer->GetAsyncTime() - startTime).GetMilliSeconds();
 	Cry::Audio::Log(ELogType::Comment, R"(Parsed preloads data in "%s" for context "%s" in %.3f ms!)", szFolderPath, szContextName, duration);
 #endif // CRY_AUDIO_USE_DEBUG_CODE
@@ -479,11 +512,21 @@ void CXMLProcessor::ClearControlsData(ContextId const contextId, bool const clea
 #if defined(CRY_AUDIO_USE_DEBUG_CODE)
 		if (clearAll)
 		{
-			g_activeContexts.clear();
+			for (auto& contextPair : g_contextInfo)
+			{
+				contextPair.second.isActive = false;
+			}
 		}
 		else
 		{
-			g_activeContexts.erase(contextId);
+			for (auto& contextPair : g_contextInfo)
+			{
+				if (contextPair.second.contextId == contextId)
+				{
+					contextPair.second.isActive = false;
+					break;
+				}
+			}
 		}
 #endif  // CRY_AUDIO_USE_DEBUG_CODE
 

@@ -888,6 +888,11 @@ bool CSystem::Initialize()
 
 #if defined(CRY_AUDIO_USE_DEBUG_CODE)
 		g_constructedObjects.reserve(static_cast<size_t>(m_objectPoolSize));
+
+		g_contextInfo.emplace(
+			std::piecewise_construct,
+			std::forward_as_tuple(g_szGlobalContextName),
+			std::forward_as_tuple(SContextInfo(GlobalContextId, true, true)));
 #endif // CRY_AUDIO_USE_DEBUG_CODE
 
 		g_fileCacheManager.Initialize();
@@ -2162,7 +2167,7 @@ ERequestStatus CSystem::ProcessSystemRequest(CRequest const& request)
 			g_previewObject.StopAllTriggers();
 
 			// Store active contexts for reloading after they have been unloaded which empties the map.
-			ContextLookup const tempContexts = g_activeContexts;
+			ContextInfo const tempContextInfo = g_contextInfo;
 
 			g_xmlProcessor.ClearControlsData(GlobalContextId, true);
 			ReportContextDeactivated(GlobalContextId);
@@ -2170,20 +2175,22 @@ ERequestStatus CSystem::ProcessSystemRequest(CRequest const& request)
 			g_xmlProcessor.ParseSystemData();
 			g_xmlProcessor.ParseControlsData(g_configPath.c_str(), GlobalContextId, g_szGlobalContextName);
 
-			for (auto const& contextPair : tempContexts)
+			for (auto const& contextPair : tempContextInfo)
 			{
-				if (contextPair.first != GlobalContextId)
+				ContextId const contextId = contextPair.second.contextId;
+
+				if (contextPair.second.isRegistered && contextPair.second.isActive && (contextId != GlobalContextId))
 				{
-					char const* const szContextName = contextPair.second.c_str();
+					char const* const szContextName = contextPair.first.c_str();
 
 					CryFixedStringT<MaxFilePathLength> contextPath = g_configPath;
 					contextPath += g_szContextsFolderName;
 					contextPath += "/";
 					contextPath += szContextName;
 
-					g_xmlProcessor.ParseControlsData(contextPath.c_str(), contextPair.first, szContextName);
+					g_xmlProcessor.ParseControlsData(contextPath.c_str(), contextId, szContextName);
 
-					ReportContextActivated(contextPair.first);
+					ReportContextActivated(contextId);
 				}
 			}
 
@@ -2801,10 +2808,19 @@ ERequestStatus CSystem::HandleSetImpl(Impl::IImpl* const pIImpl)
 {
 	ERequestStatus result = ERequestStatus::Failure;
 
-	if (g_pIImpl != nullptr && pIImpl != g_pIImpl)
+#if defined(CRY_AUDIO_USE_DEBUG_CODE)
+	ContextInfo const tempContextInfo = g_contextInfo;
+#endif // CRY_AUDIO_USE_DEBUG_CODE
+
+	if ((g_pIImpl != nullptr) && (pIImpl != g_pIImpl))
 	{
 		ReleaseImpl();
 	}
+
+#if defined(CRY_AUDIO_USE_DEBUG_CODE)
+	g_contextInfo.clear();
+	g_contextInfo.insert(tempContextInfo.begin(), tempContextInfo.end());
+#endif // CRY_AUDIO_USE_DEBUG_CODE
 
 	g_pIImpl = pIImpl;
 
@@ -2872,6 +2888,35 @@ ERequestStatus CSystem::HandleSetImpl(Impl::IImpl* const pIImpl)
 		CRY_ASSERT_MESSAGE(pObject->GetImplDataPtr() == nullptr, "<Audio> The object's impl-data must be nullptr during %s", __FUNCTION__);
 
 		pObject->SetImplDataPtr(g_pIImpl->ConstructObject(pObject->GetTransformation(), pObject->GetName()));
+	}
+
+	for (auto const& contextPair : g_contextInfo)
+	{
+		ContextId const contextId = contextPair.second.contextId;
+
+		if (contextPair.second.isRegistered && contextPair.second.isActive && (contextId != GlobalContextId))
+		{
+			char const* const szContextName = contextPair.first.c_str();
+
+			CryFixedStringT<MaxFilePathLength> contextPath = g_configPath;
+			contextPath += g_szContextsFolderName;
+			contextPath += "/";
+			contextPath += szContextName;
+
+			g_xmlProcessor.ParseControlsData(contextPath.c_str(), contextId, szContextName);
+			g_xmlProcessor.ParsePreloadsData(contextPath.c_str(), contextId);
+
+			auto const preloadRequestId = static_cast<PreloadRequestId>(contextId);
+			result = g_fileCacheManager.TryLoadRequest(preloadRequestId, true, true);
+
+			if (result != ERequestStatus::Success)
+			{
+				Cry::Audio::Log(ELogType::Warning, R"(No preload request found for context - "%s"!)", szContextName);
+			}
+
+			AutoLoadSetting(contextId);
+			ReportContextActivated(contextId);
+		}
 	}
 
 #endif // CRY_AUDIO_USE_DEBUG_CODE
@@ -3085,17 +3130,20 @@ void CSystem::HandleRefresh()
 	ERequestStatus result = g_pIImpl->StopAllSounds();
 	CRY_ASSERT(result == ERequestStatus::Success);
 
-	for (auto const& contextPair : g_activeContexts)
+	for (auto const& contextPair : g_contextInfo)
 	{
-		result = g_fileCacheManager.UnloadDataByContext(contextPair.first);
-		CRY_ASSERT(result == ERequestStatus::Success);
+		if (contextPair.second.isRegistered && contextPair.second.isActive)
+		{
+			result = g_fileCacheManager.UnloadDataByContext(contextPair.second.contextId);
+			CRY_ASSERT(result == ERequestStatus::Success);
+		}
 	}
 
 	result = g_fileCacheManager.UnloadDataByContext(GlobalContextId);
 	CRY_ASSERT(result == ERequestStatus::Success);
 
 	// Store active contexts for reloading after they have been unloaded which empties the map.
-	ContextLookup const tempContexts = g_activeContexts;
+	ContextInfo const tempContextInfo = g_contextInfo;
 
 	g_xmlProcessor.ClearPreloadsData(GlobalContextId, true);
 	g_xmlProcessor.ClearControlsData(GlobalContextId, true);
@@ -3113,30 +3161,32 @@ void CSystem::HandleRefresh()
 
 	AutoLoadSetting(GlobalContextId);
 
-	for (auto const& contextPair : tempContexts)
+	for (auto const& contextPair : tempContextInfo)
 	{
-		if (contextPair.first != GlobalContextId)
+		ContextId const contextId = contextPair.second.contextId;
+
+		if (contextPair.second.isRegistered && contextPair.second.isActive && (contextId != GlobalContextId))
 		{
-			char const* const szContextName = contextPair.second.c_str();
+			char const* const szContextName = contextPair.first.c_str();
 
 			CryFixedStringT<MaxFilePathLength> contextPath = g_configPath;
 			contextPath += g_szContextsFolderName;
 			contextPath += "/";
 			contextPath += szContextName;
 
-			g_xmlProcessor.ParseControlsData(contextPath.c_str(), contextPair.first, szContextName);
-			g_xmlProcessor.ParsePreloadsData(contextPath.c_str(), contextPair.first);
+			g_xmlProcessor.ParseControlsData(contextPath.c_str(), contextId, szContextName);
+			g_xmlProcessor.ParsePreloadsData(contextPath.c_str(), contextId);
 
-			auto const preloadRequestId = static_cast<PreloadRequestId>(contextPair.first);
+			auto const preloadRequestId = static_cast<PreloadRequestId>(contextId);
 			result = g_fileCacheManager.TryLoadRequest(preloadRequestId, true, true);
 
 			if (result != ERequestStatus::Success)
 			{
-				Cry::Audio::Log(ELogType::Warning, R"(No preload request found for context - "%s"!)", contextPair.second.c_str());
+				Cry::Audio::Log(ELogType::Warning, R"(No preload request found for context - "%s"!)", szContextName);
 			}
 
-			AutoLoadSetting(contextPair.first);
-			ReportContextActivated(contextPair.first);
+			AutoLoadSetting(contextId);
+			ReportContextActivated(contextId);
 		}
 	}
 
@@ -3379,42 +3429,35 @@ void DrawPerActiveObjectDebugInfo(IRenderAuxGeom& auxGeom)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void DrawActiveContexts(IRenderAuxGeom& auxGeom, float const posX, float posY)
+void DrawContextDebugInfo(IRenderAuxGeom& auxGeom, float const posX, float posY)
 {
 	CryFixedStringT<MaxControlNameLength> lowerCaseSearchString(g_cvars.m_pDebugFilter->GetString());
 	lowerCaseSearchString.MakeLower();
 
-	std::vector<CryFixedStringT<MaxFileNameLength>> contextNamesSorted; // For sorting context names alphabetically.
-	contextNamesSorted.reserve(g_activeContexts.size());
-
-	for (auto const& contextName : g_activeContexts)
-	{
-		char const* const szContextName = contextName.second.c_str();
-		CryFixedStringT<MaxControlNameLength> lowerCaseContextName(szContextName);
-		lowerCaseContextName.MakeLower();
-
-		if ((lowerCaseSearchString.empty() || (lowerCaseSearchString == "0")) || (lowerCaseContextName.find(lowerCaseSearchString) != CryFixedStringT<MaxControlNameLength>::npos))
-		{
-			contextNamesSorted.emplace_back(szContextName);
-		}
-	}
-
-	std::sort(contextNamesSorted.begin(), contextNamesSorted.end());
-
-	auxGeom.Draw2dLabel(posX, posY, Debug::g_listHeaderFontSize, Debug::s_globalColorHeader, false, "Active Contexts [%" PRISIZE_T "]", g_activeContexts.size());
+	auxGeom.Draw2dLabel(posX, posY, Debug::g_listHeaderFontSize, Debug::s_globalColorHeader, false, "Contexts [%" PRISIZE_T "]", g_contextInfo.size());
 	posY += Debug::g_listHeaderLineHeight;
 
-	for (auto const& contextName : contextNamesSorted)
+	for (auto const& contextPair : g_contextInfo)
 	{
-		auxGeom.Draw2dLabel(
-			posX,
-			posY,
-			Debug::g_listFontSize,
-			Debug::s_listColorItemActive,
-			false,
-			"%s", contextName.c_str());
+		if (contextPair.second.isRegistered)
+		{
+			char const* const szContextName = contextPair.first.c_str();
+			CryFixedStringT<MaxControlNameLength> lowerCaseContextName(szContextName);
+			lowerCaseContextName.MakeLower();
 
-		posY += Debug::g_listLineHeight;
+			if ((lowerCaseSearchString.empty() || (lowerCaseSearchString == "0")) || (lowerCaseContextName.find(lowerCaseSearchString) != CryFixedStringT<MaxControlNameLength>::npos))
+			{
+				auxGeom.Draw2dLabel(
+					posX,
+					posY,
+					Debug::g_listFontSize,
+					contextPair.second.isActive ? Debug::s_listColorItemActive : Debug::s_globalColorInactive,
+					false,
+					"%s", szContextName);
+
+				posY += Debug::g_listLineHeight;
+			}
+		}
 	}
 }
 
@@ -3765,7 +3808,7 @@ void CSystem::HandleDrawDebug()
 
 		if ((g_cvars.m_drawDebug & Debug::EDrawFilter::Contexts) != 0)
 		{
-			DrawActiveContexts(*pAuxGeom, posX, posY);
+			DrawContextDebugInfo(*pAuxGeom, posX, posY);
 			posX += 200.0f;
 		}
 

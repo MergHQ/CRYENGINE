@@ -47,13 +47,6 @@ void CContextManager::ClearAll()
 
 	for (auto const pContext : g_contexts)
 	{
-		CryAudio::ContextId const contextId = pContext->GetId();
-
-		if (pContext->IsActive() && (contextId != CryAudio::GlobalContextId))
-		{
-			gEnv->pAudioSystem->DeactivateContext(contextId);
-		}
-
 		delete pContext;
 	}
 
@@ -75,11 +68,12 @@ void CContextManager::AddGlobalContext()
 //////////////////////////////////////////////////////////////////////////
 void CContextManager::TryCreateContext(string const& name, bool const isRegistered)
 {
-	CryAudio::ContextId const id = GenerateContextId(name);
+	CryAudio::ContextId const contextId = GenerateContextId(name);
 
-	if (!ContextExists(id))
+	if (!ContextExists(contextId))
 	{
-		auto const pContext = new CContext(id, name, false, isRegistered);
+		bool const isActive = std::find(g_activeUserDefinedContexts.begin(), g_activeUserDefinedContexts.end(), contextId) != g_activeUserDefinedContexts.end();
+		auto const pContext = new CContext(contextId, name, isActive, isRegistered);
 
 		SignalOnBeforeContextAdded(pContext);
 		g_contexts.push_back(pContext);

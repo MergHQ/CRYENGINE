@@ -391,7 +391,7 @@ void CCVars::RegisterVariables()
 	               "q: Hide audio system memory info.\n"
 	               "r: Apply filter also to inactive object debug info.\n"
 	               "s: Draw detailed memory pool debug info.\n"
-	               "u: List active contexts.\n"
+	               "u: List contexts.\n"
 	               "v: List implementation specific info.\n"
 	               "w: List active audio objects.\n"
 	               "x: Draw FileCache Manager debug info.\n"
