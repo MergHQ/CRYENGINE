@@ -136,7 +136,7 @@ CResourceSelectorDialog::SResourceSelectionDialogResult CResourceSelectorDialog:
 {
 	SResourceSelectionDialogResult result{ false, szCurrentValue };
 
-	if (std::strcmp(szCurrentValue, "") != 0)
+	if (strcmp(szCurrentValue, "") != 0)
 	{
 		s_previousControlName = szCurrentValue;
 	}
