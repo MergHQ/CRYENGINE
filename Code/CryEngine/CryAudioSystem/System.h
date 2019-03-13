@@ -129,12 +129,14 @@ public:
 	void RetriggerControls(SRequestUserData const& userData = SRequestUserData::GetEmptyObject());
 	void ResetRequestCount();
 	void ScheduleIRenderAuxGeomForRendering(IRenderAuxGeom* pRenderAuxGeom);
+	void UpdateDebugInfo();
 
 private:
 
 	void SubmitLastIRenderAuxGeomForRendering();
 	void DrawDebug();
 	void HandleDrawDebug();
+	void HandleUpdateDebugInfo();
 	void HandleRetriggerControls();
 	void HandleRefresh();
 

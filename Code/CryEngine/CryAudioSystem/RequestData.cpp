@@ -74,6 +74,7 @@ std::shared_ptr<SRequestData> AllocateRequestData(SRequestData const* const pReq
 				CRY_AUDIO_SYSTEM_REQUEST_BLOCK(ESystemRequestType::ReloadControlsData)
 				CRY_AUDIO_SYSTEM_REQUEST_BLOCK(ESystemRequestType::RetriggerControls)
 				CRY_AUDIO_SYSTEM_REQUEST_BLOCK(ESystemRequestType::DrawDebugInfo)
+				CRY_AUDIO_SYSTEM_REQUEST_BLOCK(ESystemRequestType::UpdateDebugInfo)
 				CRY_AUDIO_SYSTEM_REQUEST_BLOCK(ESystemRequestType::ExecutePreviewTrigger)
 				CRY_AUDIO_SYSTEM_REQUEST_BLOCK(ESystemRequestType::ExecutePreviewTriggerEx)
 				CRY_AUDIO_SYSTEM_REQUEST_BLOCK(ESystemRequestType::ExecutePreviewTriggerExNode)

@@ -39,7 +39,7 @@ void CmdExecuteTrigger(IConsoleCmdArgs* pCmdArgs)
 	if (numArgs == 2)
 	{
 		ControlId const triggerId = StringToId(pCmdArgs->GetArg(1));
-		gEnv->pAudioSystem->ExecuteTrigger(triggerId);
+		g_system.ExecuteTrigger(triggerId);
 	}
 	else
 	{
@@ -54,12 +54,12 @@ void CmdStopTrigger(IConsoleCmdArgs* pCmdArgs)
 
 	if (numArgs == 1)
 	{
-		gEnv->pAudioSystem->StopTrigger(InvalidControlId);
+		g_system.StopTrigger(InvalidControlId);
 	}
 	else if (numArgs == 2)
 	{
 		ControlId const triggerId = StringToId(pCmdArgs->GetArg(1));
-		gEnv->pAudioSystem->StopTrigger(triggerId);
+		g_system.StopTrigger(triggerId);
 	}
 	else
 	{
@@ -76,7 +76,7 @@ void CmdSetParameter(IConsoleCmdArgs* pCmdArgs)
 	{
 		ControlId const parameterId = StringToId(pCmdArgs->GetArg(1));
 		double const value = atof(pCmdArgs->GetArg(2));
-		gEnv->pAudioSystem->SetParameter(parameterId, static_cast<float>(value));
+		g_system.SetParameter(parameterId, static_cast<float>(value));
 	}
 	else
 	{
@@ -93,7 +93,7 @@ void CmdSetParameterGlobally(IConsoleCmdArgs* pCmdArgs)
 	{
 		ControlId const parameterId = StringToId(pCmdArgs->GetArg(1));
 		double const value = atof(pCmdArgs->GetArg(2));
-		gEnv->pAudioSystem->SetParameterGlobally(parameterId, static_cast<float>(value));
+		g_system.SetParameterGlobally(parameterId, static_cast<float>(value));
 	}
 	else
 	{
@@ -110,7 +110,7 @@ void CmdSetSwitchState(IConsoleCmdArgs* pCmdArgs)
 	{
 		ControlId const switchId = StringToId(pCmdArgs->GetArg(1));
 		SwitchStateId const switchStateId = StringToId(pCmdArgs->GetArg(2));
-		gEnv->pAudioSystem->SetSwitchState(switchId, switchStateId);
+		g_system.SetSwitchState(switchId, switchStateId);
 	}
 	else
 	{
@@ -127,7 +127,7 @@ void CmdSetSwitchStateGlobally(IConsoleCmdArgs* pCmdArgs)
 	{
 		ControlId const switchId = StringToId(pCmdArgs->GetArg(1));
 		SwitchStateId const switchStateId = StringToId(pCmdArgs->GetArg(2));
-		gEnv->pAudioSystem->SetSwitchStateGlobally(switchId, switchStateId);
+		g_system.SetSwitchStateGlobally(switchId, switchStateId);
 	}
 	else
 	{
@@ -143,7 +143,7 @@ void CmdLoadRequest(IConsoleCmdArgs* pCmdArgs)
 	if (numArgs == 2)
 	{
 		ControlId const id = StringToId(pCmdArgs->GetArg(1));
-		gEnv->pAudioSystem->PreloadSingleRequest(id, false);
+		g_system.PreloadSingleRequest(id, false);
 	}
 	else
 	{
@@ -159,7 +159,7 @@ void CmdUnloadRequest(IConsoleCmdArgs* pCmdArgs)
 	if (numArgs == 2)
 	{
 		ControlId const id = StringToId(pCmdArgs->GetArg(1));
-		gEnv->pAudioSystem->UnloadSingleRequest(id);
+		g_system.UnloadSingleRequest(id);
 	}
 	else
 	{
@@ -175,7 +175,7 @@ void CmdLoadSetting(IConsoleCmdArgs* pCmdArgs)
 	if (numArgs == 2)
 	{
 		ControlId const id = StringToId(pCmdArgs->GetArg(1));
-		gEnv->pAudioSystem->LoadSetting(id);
+		g_system.LoadSetting(id);
 	}
 	else
 	{
@@ -191,7 +191,7 @@ void CmdUnloadSetting(IConsoleCmdArgs* pCmdArgs)
 	if (numArgs == 2)
 	{
 		ControlId const id = StringToId(pCmdArgs->GetArg(1));
-		gEnv->pAudioSystem->UnloadSetting(id);
+		g_system.UnloadSetting(id);
 	}
 	else
 	{
@@ -207,7 +207,7 @@ void CmdActivateContext(IConsoleCmdArgs* pCmdArgs)
 	if (numArgs == 2)
 	{
 		ContextId const id = StringToId(pCmdArgs->GetArg(1));
-		gEnv->pAudioSystem->ActivateContext(id);
+		g_system.ActivateContext(id);
 	}
 	else
 	{
@@ -223,7 +223,7 @@ void CmdDeactivateContext(IConsoleCmdArgs* pCmdArgs)
 	if (numArgs == 2)
 	{
 		ContextId const id = StringToId(pCmdArgs->GetArg(1));
-		gEnv->pAudioSystem->DeactivateContext(id);
+		g_system.DeactivateContext(id);
 	}
 	else
 	{
@@ -241,6 +241,12 @@ void CmdResetRequestCount(IConsoleCmdArgs* pCmdArgs)
 void CmdRefresh(IConsoleCmdArgs* pCmdArgs)
 {
 	GetISystem()->GetISystemEventDispatcher()->OnSystemEvent(ESYSTEM_EVENT_AUDIO_REFRESH, 0, 0);
+}
+
+//////////////////////////////////////////////////////////////////////////
+void OnDebugDrawChanged(ICVar* const pCvar)
+{
+	g_system.UpdateDebugInfo();
 }
 #endif // CRY_AUDIO_USE_DEBUG_CODE
 
@@ -303,7 +309,7 @@ void CCVars::RegisterVariables()
 	               "Usage: s_OcclusionMediumDistance [0/...]\n"
 	               "Default: 80 m\n");
 
-	REGISTER_CVAR2_CB("s_OcclusionListenerPlaneSize", &m_occlusionListenerPlaneSize, 1.0f, VF_CHEAT | VF_CHEAT_NOCHECK,
+	REGISTER_CVAR2_CB("s_OcclusionListenerPlaneSize", &m_occlusionListenerPlaneSize, m_occlusionListenerPlaneSize, VF_CHEAT | VF_CHEAT_NOCHECK,
 	                  "Sets the size of the plane at listener position against which occlusion is calculated.\n"
 	                  "Usage: s_OcclusionListenerPlaneSize [0/...]\n"
 	                  "Default: 1.0 (100 cm)\n",
@@ -370,32 +376,33 @@ void CCVars::RegisterVariables()
 	               "b: Warnings\n"
 	               "c: Comments\n");
 
-	REGISTER_CVAR2("s_DrawDebug", &m_drawDebug, m_drawDebug, VF_CHEAT | VF_CHEAT_NOCHECK | VF_BITFIELD,
-	               "Draws AudioTranslationLayer related debug data to the screen.\n"
-	               "Usage: s_DrawDebug [0ab...] (flags can be combined)\n"
-	               "0: No audio debug info on the screen.\n"
-	               "a: Draw spheres around active audio objects.\n"
-	               "b: Draw text labels for active audio objects.\n"
-	               "c: Draw trigger names for active audio objects.\n"
-	               "d: Draw current states for active audio objects.\n"
-	               "e: Draw Parameter values for active audio objects.\n"
-	               "f: Draw Environment amounts for active audio objects.\n"
-	               "g: Draw distance to listener for active audio objects.\n"
-	               "h: Draw occlusion ray labels.\n"
-	               "i: Draw occlusion rays.\n"
-	               "j: Draw spheres with occlusion ray offset radius around active audio objects.\n"
-	               "k: Draw occlusion listener plane.\n"
-	               "l: Draw occlusion collision spheres.\n"
-	               "m: Draw global object info.\n"
-	               "n: Draw middleware specific info for active audio objects.\n"
-	               "q: Hide audio system memory info.\n"
-	               "r: Apply filter also to inactive object debug info.\n"
-	               "s: Draw detailed memory pool debug info.\n"
-	               "u: List contexts.\n"
-	               "v: List implementation specific info.\n"
-	               "w: List active audio objects.\n"
-	               "x: Draw FileCache Manager debug info.\n"
-	               "y: Draw Request debug info.\n");
+	REGISTER_CVAR2_CB("s_DrawDebug", &m_drawDebug, m_drawDebug, VF_CHEAT | VF_CHEAT_NOCHECK | VF_BITFIELD,
+	                  "Draws AudioTranslationLayer related debug data to the screen.\n"
+	                  "Usage: s_DrawDebug [0ab...] (flags can be combined)\n"
+	                  "0: No audio debug info on the screen.\n"
+	                  "a: Draw spheres around active audio objects.\n"
+	                  "b: Draw text labels for active audio objects.\n"
+	                  "c: Draw trigger names for active audio objects.\n"
+	                  "d: Draw current states for active audio objects.\n"
+	                  "e: Draw Parameter values for active audio objects.\n"
+	                  "f: Draw Environment amounts for active audio objects.\n"
+	                  "g: Draw distance to listener for active audio objects.\n"
+	                  "h: Draw occlusion ray labels.\n"
+	                  "i: Draw occlusion rays.\n"
+	                  "j: Draw spheres with occlusion ray offset radius around active audio objects.\n"
+	                  "k: Draw occlusion listener plane.\n"
+	                  "l: Draw occlusion collision spheres.\n"
+	                  "m: Draw global object info.\n"
+	                  "n: Draw middleware specific info for active audio objects.\n"
+	                  "q: Hide audio system memory info.\n"
+	                  "r: Apply filter also to inactive object debug info.\n"
+	                  "s: Draw detailed memory pool debug info.\n"
+	                  "u: List contexts.\n"
+	                  "v: List implementation specific info.\n"
+	                  "w: List active audio objects.\n"
+	                  "x: Draw FileCache Manager debug info.\n"
+	                  "y: Draw Request debug info.\n",
+	                  OnDebugDrawChanged);
 
 	REGISTER_CVAR2("s_FileCacheManagerDebugFilter", &m_fileCacheManagerDebugFilter, m_fileCacheManagerDebugFilter, VF_CHEAT | VF_CHEAT_NOCHECK | VF_BITFIELD,
 	               "Allows for filtered display of the different AFCM entries by context such as Globals, User Defined, Game Hints and so on.\n"
@@ -410,10 +417,11 @@ void CCVars::RegisterVariables()
 	               "Usage: s_HideInactiveObjects [0/1]\n"
 	               "Default: 1 (active only)\n");
 
-	m_pDebugFilter = REGISTER_STRING("s_DebugFilter", "", 0,
-	                                 "Allows for filtered display of audio debug info by a search string.\n"
-	                                 "Usage: s_DebugFilter spaceship\n"
-	                                 "Default: " " (all)\n");
+	m_pDebugFilter = REGISTER_STRING_CB("s_DebugFilter", "", 0,
+	                                    "Allows for filtered display of audio debug info by a search string.\n"
+	                                    "Usage: s_DebugFilter spaceship\n"
+	                                    "Default: " " (all)\n",
+	                                    OnDebugDrawChanged);
 
 	REGISTER_COMMAND("s_ExecuteTrigger", CmdExecuteTrigger, VF_CHEAT,
 	                 "Execute an Audio Trigger.\n"

@@ -56,6 +56,7 @@ enum class ESystemRequestType : EnumFlagsType
 	ReloadControlsData,
 	RetriggerControls,
 	DrawDebugInfo,
+	UpdateDebugInfo,
 	ExecutePreviewTrigger,
 	ExecutePreviewTriggerEx,
 	ExecutePreviewTriggerExNode,

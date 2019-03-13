@@ -40,7 +40,7 @@ public:
 	float m_occlusionMaxSyncDistance = 10.0f;
 	float m_occlusionHighDistance = 10.0f;
 	float m_occlusionMediumDistance = 80.0f;
-	float m_occlusionListenerPlaneSize = 0.0f;
+	float m_occlusionListenerPlaneSize = 1.0f;
 	#if defined(CRY_AUDIO_USE_DEBUG_CODE)
 	int   m_occlusionGlobalType = 0;
 	#endif // CRY_AUDIO_USE_DEBUG_CODE

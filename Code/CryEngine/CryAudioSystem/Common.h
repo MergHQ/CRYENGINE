@@ -159,5 +159,8 @@ struct SContextInfo final
 
 using ContextInfo = std::map<CryFixedStringT<MaxFileNameLength>, SContextInfo>;
 extern ContextInfo g_contextInfo;
+
+using ContextDebugInfo = std::map<CryFixedStringT<MaxFileNameLength>, bool>;
+extern ContextDebugInfo g_contextDebugInfo;
 #endif // CRY_AUDIO_USE_DEBUG_CODE
 }      // namespace CryAudio

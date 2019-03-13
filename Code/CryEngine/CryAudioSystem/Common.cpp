@@ -53,6 +53,7 @@ CGlobalObject g_previewObject("Preview Object");
 CPreviewTrigger g_previewTrigger;
 SPoolSizes g_debugPoolSizes;
 ContextInfo g_contextInfo;
+ContextDebugInfo g_contextDebugInfo;
 #else
 CGlobalObject g_object;
 #endif // CRY_AUDIO_USE_DEBUG_CODE

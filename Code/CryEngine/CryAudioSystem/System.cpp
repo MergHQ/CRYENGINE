@@ -1798,6 +1798,10 @@ ERequestStatus CSystem::ProcessSystemRequest(CRequest const& request)
 			auto const pRequestData = static_cast<SSystemRequestData<ESystemRequestType::ParsePreloadsData> const*>(request.GetData());
 			g_xmlProcessor.ParsePreloadsData(pRequestData->folderPath.c_str(), pRequestData->contextId);
 
+#if defined(CRY_AUDIO_USE_DEBUG_CODE)
+			HandleUpdateDebugInfo();
+#endif  // CRY_AUDIO_USE_DEBUG_CODE
+
 			result = ERequestStatus::Success;
 
 			break;
@@ -1822,6 +1826,10 @@ ERequestStatus CSystem::ProcessSystemRequest(CRequest const& request)
 		{
 			auto const pRequestData = static_cast<SSystemRequestData<ESystemRequestType::ClearPreloadsData> const*>(request.GetData());
 			g_xmlProcessor.ClearPreloadsData(pRequestData->contextId, false);
+
+#if defined(CRY_AUDIO_USE_DEBUG_CODE)
+			HandleUpdateDebugInfo();
+#endif  // CRY_AUDIO_USE_DEBUG_CODE
 
 			result = ERequestStatus::Success;
 
@@ -2204,6 +2212,13 @@ ERequestStatus CSystem::ProcessSystemRequest(CRequest const& request)
 		{
 			HandleDrawDebug();
 			m_canDraw = true;
+			result = ERequestStatus::Success;
+
+			break;
+		}
+	case ESystemRequestType::UpdateDebugInfo:
+		{
+			HandleUpdateDebugInfo();
 			result = ERequestStatus::Success;
 
 			break;
@@ -2919,6 +2934,8 @@ ERequestStatus CSystem::HandleSetImpl(Impl::IImpl* const pIImpl)
 		}
 	}
 
+	HandleUpdateDebugInfo();
+
 #endif // CRY_AUDIO_USE_DEBUG_CODE
 	g_listenerManager.OnAfterImplChanged();
 
@@ -2963,6 +2980,10 @@ void CSystem::HandleActivateContext(ContextId const contextId)
 			AutoLoadSetting(contextId);
 			ReportContextActivated(contextId);
 		}
+
+#if defined(CRY_AUDIO_USE_DEBUG_CODE)
+		HandleUpdateDebugInfo();
+#endif // CRY_AUDIO_USE_DEBUG_CODE
 	}
 }
 
@@ -2981,6 +3002,10 @@ void CSystem::HandleDeactivateContext(ContextId const contextId)
 	}
 
 	ReportContextDeactivated(contextId);
+
+#if defined(CRY_AUDIO_USE_DEBUG_CODE)
+	HandleUpdateDebugInfo();
+#endif // CRY_AUDIO_USE_DEBUG_CODE
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -3190,6 +3215,8 @@ void CSystem::HandleRefresh()
 		}
 	}
 
+	HandleUpdateDebugInfo();
+
 	Cry::Audio::Log(ELogType::Warning, "Done refreshing the AudioSystem!");
 }
 
@@ -3243,6 +3270,38 @@ void CSystem::DrawDebug()
 			SSystemRequestData<ESystemRequestType::DrawDebugInfo> const requestData;
 			CRequest const request(&requestData);
 			PushRequest(request);
+		}
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CSystem::UpdateDebugInfo()
+{
+	SSystemRequestData<ESystemRequestType::UpdateDebugInfo> const requestData;
+	CRequest const request(&requestData);
+	PushRequest(request);
+}
+
+//////////////////////////////////////////////////////////////////////////
+void UpdateContextDebugInfo(char const* const szDebugFilter)
+{
+	g_contextDebugInfo.clear();
+
+	CryFixedStringT<MaxControlNameLength> lowerCaseSearchString(szDebugFilter);
+	lowerCaseSearchString.MakeLower();
+
+	for (auto const& contextPair : g_contextInfo)
+	{
+		if (contextPair.second.isRegistered)
+		{
+			char const* const szContextName = contextPair.first.c_str();
+			CryFixedStringT<MaxControlNameLength> lowerCaseContextName(szContextName);
+			lowerCaseContextName.MakeLower();
+
+			if ((lowerCaseSearchString.empty() || (lowerCaseSearchString == "0")) || (lowerCaseContextName.find(lowerCaseSearchString) != CryFixedStringT<MaxControlNameLength>::npos))
+			{
+				g_contextDebugInfo.emplace(std::piecewise_construct, std::forward_as_tuple(szContextName), std::forward_as_tuple(contextPair.second.isActive));
+			}
 		}
 	}
 }
@@ -3431,33 +3490,36 @@ void DrawPerActiveObjectDebugInfo(IRenderAuxGeom& auxGeom)
 //////////////////////////////////////////////////////////////////////////
 void DrawContextDebugInfo(IRenderAuxGeom& auxGeom, float const posX, float posY)
 {
-	CryFixedStringT<MaxControlNameLength> lowerCaseSearchString(g_cvars.m_pDebugFilter->GetString());
-	lowerCaseSearchString.MakeLower();
-
-	auxGeom.Draw2dLabel(posX, posY, Debug::g_listHeaderFontSize, Debug::s_globalColorHeader, false, "Contexts [%" PRISIZE_T "]", g_contextInfo.size());
+	auxGeom.Draw2dLabel(posX, posY, Debug::g_listHeaderFontSize, Debug::s_globalColorHeader, false, "Contexts [%" PRISIZE_T "]", g_registeredContexts.size() + 1);
 	posY += Debug::g_listHeaderLineHeight;
 
-	for (auto const& contextPair : g_contextInfo)
+	for (auto const& contextPair : g_contextDebugInfo)
 	{
-		if (contextPair.second.isRegistered)
-		{
-			char const* const szContextName = contextPair.first.c_str();
-			CryFixedStringT<MaxControlNameLength> lowerCaseContextName(szContextName);
-			lowerCaseContextName.MakeLower();
+		auxGeom.Draw2dLabel(
+			posX,
+			posY,
+			Debug::g_listFontSize,
+			contextPair.second ? Debug::s_listColorItemActive : Debug::s_globalColorInactive,
+			false,
+			"%s", contextPair.first.c_str());
 
-			if ((lowerCaseSearchString.empty() || (lowerCaseSearchString == "0")) || (lowerCaseContextName.find(lowerCaseSearchString) != CryFixedStringT<MaxControlNameLength>::npos))
-			{
-				auxGeom.Draw2dLabel(
-					posX,
-					posY,
-					Debug::g_listFontSize,
-					contextPair.second.isActive ? Debug::s_listColorItemActive : Debug::s_globalColorInactive,
-					false,
-					"%s", szContextName);
+		posY += Debug::g_listLineHeight;
+	}
+}
 
-				posY += Debug::g_listLineHeight;
-			}
-		}
+//////////////////////////////////////////////////////////////////////////
+void CSystem::HandleUpdateDebugInfo()
+{
+	char const* const szDebugFilter = g_cvars.m_pDebugFilter->GetString();
+
+	if ((g_cvars.m_drawDebug & Debug::EDrawFilter::FileCacheManagerInfo) != 0)
+	{
+		g_fileCacheManager.UpdateDebugInfo(szDebugFilter);
+	}
+
+	if ((g_cvars.m_drawDebug & Debug::EDrawFilter::Contexts) != 0)
+	{
+		UpdateContextDebugInfo(szDebugFilter);
 	}
 }
 

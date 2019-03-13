@@ -37,6 +37,7 @@ public:
 	ERequestStatus UnloadDataByContext(ContextId const contextId);
 
 #if defined(CRY_AUDIO_USE_DEBUG_CODE)
+	void   UpdateDebugInfo(char const* const szDebugFilter);
 	void   DrawDebugInfo(IRenderAuxGeom& auxGeom, float const posX, float posY);
 	size_t GetTotalCachedFileSize() const { return m_currentByteTotal; }
 #endif // CRY_AUDIO_USE_DEBUG_CODE
