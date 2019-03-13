@@ -707,8 +707,6 @@ protected:
 
 	int FindMatchingNodeInScene(const std::vector<string>& path) const
 	{
-		int foundNode = -1;
-
 		std::vector<string> candidatePath;
 		for (int i = 0, n = m_pScene->GetNodeCount(); i < n; ++i)
 		{
@@ -932,8 +930,6 @@ private:
 		const std::vector<int>& mapSceneNodesToBoneId,
 		ESceneType sceneType) const
 	{
-		size_t rootNodesCount = 0;
-
 		const bool bIgnoreMeshes = (sceneType == ESceneType::Skeleton);
 
 		// We enforce identity transform for root node If is the only root node in the .cgf (then the root index == 0).
@@ -1200,7 +1196,8 @@ private:
 		}
 
 		pp.m_arrMaterials.reserve(mesh.m_faceMatIds.size());
-		for (const auto& id : mesh.m_faceMatIds)
+		for (size_t num = mesh.m_faceMatIds.size(), i = 0; i < num; ++i)
+		//for (const auto& id : mesh.m_faceMatIds)
 		{
 			// pp.m_arrMaterials.push_back(id);
 			pp.m_arrMaterials.push_back(0);
