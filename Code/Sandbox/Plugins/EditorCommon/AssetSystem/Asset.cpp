@@ -229,6 +229,8 @@ void CAsset::Edit(CAssetEditor* pEditor)
 	}
 	else if (pEditor != nullptr)
 	{
+		pEditor->Raise();
+		pEditor->Highlight();
 		pEditor->OpenAsset(this);
 	}
 	else
