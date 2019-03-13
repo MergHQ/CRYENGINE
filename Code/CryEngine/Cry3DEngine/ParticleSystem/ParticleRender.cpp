@@ -52,7 +52,7 @@ void CParticleRenderBase::Render(CParticleComponentRuntime& runtime, const SRend
 		objFlags &= ~FOB_LIGHTVOLUME;
 
 	const auto emitterUnderWater = emitter.GetPhysicsEnv().m_tUnderWater;
-	const bool cameraUnderWater = renderContext.m_passInfo.IsCameraUnderWater();;
+	const bool cameraUnderWater = renderContext.m_passInfo.IsCameraUnderWater();
 	const auto waterVisibility = params.m_visibility.m_waterVisibility;
 	const bool renderBelowWater = waterVisibility != EWaterVisibility::AboveWaterOnly && emitterUnderWater != ETrinary::If_False;
 	const bool renderAboveWater = waterVisibility != EWaterVisibility::BelowWaterOnly && emitterUnderWater != ETrinary::If_True;

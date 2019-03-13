@@ -1,7 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __CCULLTHREAD__
-#define __CCULLTHREAD__
+#pragma once
 
 #include <CryThreading/IJobManager.h>
 
@@ -101,10 +100,8 @@ public:
 
 	void SetActive(bool bActive);
 
-	Vec3 GetViewDir()            { return m_ViewDir; };
+	Vec3 GetViewDir()            { return m_ViewDir; }
 
 };
 
 }
-
-#endif

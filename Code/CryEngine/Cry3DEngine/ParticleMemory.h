@@ -58,13 +58,13 @@ struct ParticleAllocator
 	ILINE static void* Allocate(T*&p, size_t count)
 	{
 		return p = (T*)Heap().Allocate(Lock(), sizeof(T) * count, alignof(T));
-	};
+	}
 
 	template<class T>
 	ILINE static bool Deallocate(T* p, size_t count)
 	{
 		return !p || Heap().Deallocate(Lock(), p, sizeof(T) * count, alignof(T));
-	};
+	}
 
 	static bool FreeMemory()
 	{

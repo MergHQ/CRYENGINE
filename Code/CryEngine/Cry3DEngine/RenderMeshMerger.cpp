@@ -795,7 +795,7 @@ void CRenderMeshMerger::TryMergingChunks(SMergeInfo& info)
 	lstChunksMerged.clear();
 	lstChunksMerged.reserve(m_lstChunks.size());
 
-	InputLayoutHandle nCurrVertFormat = InputLayoutHandle::Unspecified;;
+	InputLayoutHandle nCurrVertFormat = InputLayoutHandle::Unspecified;
 	for (int nChunkId = 0; nChunkId < m_lstChunks.Count(); nChunkId++)
 	{
 		SMergedChunk& mergChunk = m_lstChunks[nChunkId];

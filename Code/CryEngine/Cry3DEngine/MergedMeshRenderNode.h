@@ -503,16 +503,16 @@ public:
 	// Inherited from IRenderNode
 	//////////////////////////////////////////////////////////////////////
 	const char*             GetName() const             override { return "Runtime MergedMesh";  }
-	const char*             GetEntityClassName() const  override { return "Runtime MergedMesh"; };
+	const char*             GetEntityClassName() const  override { return "Runtime MergedMesh"; }
 	Vec3                    GetPos(bool bWorldOnly = true) const override;
-	const AABB              GetBBox() const             override { return m_visibleAABB; };
-	void                    SetBBox(const AABB& WSBBox) override {};
+	const AABB              GetBBox() const             override { return m_visibleAABB; }
+	void                    SetBBox(const AABB& WSBBox) override {}
 	void                    FillBBox(AABB& aabb) const  override { aabb = GetBBox(); }
 	void                    OffsetPosition(const Vec3& delta) override;
 	void                    Render(const struct SRendParams& EntDrawParams, const SRenderingPassInfo& passInfo) override;
 
-	struct IPhysicalEntity* GetPhysics() const                 override { return NULL; };
-	void                    SetPhysics(IPhysicalEntity* pPhys) override {};
+	struct IPhysicalEntity* GetPhysics() const                 override { return NULL; }
+	void                    SetPhysics(IPhysicalEntity* pPhys) override {}
 	void                    SetMaterial(IMaterial* pMat)       override {}
 	IMaterial*              GetMaterial(Vec3* pHitPos = NULL) const override;
 	IMaterial*              GetMaterialOverride() const override { return NULL; }

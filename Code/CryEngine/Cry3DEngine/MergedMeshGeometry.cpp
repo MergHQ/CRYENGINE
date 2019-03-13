@@ -3535,7 +3535,6 @@ static void MergeInstanceList(SMMRMInstanceContext& context)
 											{
 												Vec3 centre = (its[0] + its[1]) * 0.5f;
 												Vec3 normal = (centre - sph.center);
-												;
 												normal *= (float)isqrt_tpl(max(normal.len2(), sqr(FLT_EPSILON)));
 												float dist = -((sph.center + normal * sph.r) * normal);
 
@@ -4076,7 +4075,6 @@ static inline void MergeInstanceListDeform(SMMRMInstanceContext& context)
 						}
 						break;
 					}
-					;
 				}
 				for (i = 0; i < (int)deform->nvertices; ++i)
 				{

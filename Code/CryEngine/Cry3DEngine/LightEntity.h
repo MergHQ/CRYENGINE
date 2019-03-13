@@ -1,7 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef LIGHT_ENTITY_H
-#define LIGHT_ENTITY_H
+#pragma once
 
 const float LIGHT_PROJECTOR_MAX_FOV = 175.f;
 
@@ -36,8 +35,8 @@ public:
 	virtual IMaterial*                   GetMaterialOverride()             const override { return m_pMaterial; }
 	virtual float                        GetMaxViewDist() const override;
 	virtual void                         SetLightProperties(const SRenderLight& light) override;
-	virtual SRenderLight&                GetLightProperties()       override { return m_light; };
-	virtual const SRenderLight&          GetLightProperties() const override { return m_light; };
+	virtual SRenderLight&                GetLightProperties()       override { return m_light; }
+	virtual const SRenderLight&          GetLightProperties() const override { return m_light; }
 	virtual void                         SetMatrix(const Matrix34& mat) override;
 	virtual const Matrix34&              GetMatrix() const override { return m_Matrix; }
 	virtual struct ShadowMapFrustum*     GetShadowFrustum(int nId = 0) const override;
@@ -103,4 +102,3 @@ private:
 
 	static std::vector<std::pair<ShadowMapFrustum*, const CLightEntity*>>* s_pShadowFrustumsCollector;
 };
-#endif

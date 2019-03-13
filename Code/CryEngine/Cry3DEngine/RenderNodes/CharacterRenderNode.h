@@ -20,7 +20,7 @@ public:
 	virtual EERType     GetRenderNodeType() const override { return eERType_Character; }
 	//! Debug info about object.
 	virtual const char* GetName() const override;
-	virtual const char* GetEntityClassName() const override          { return "CharacterRenderNode"; };
+	virtual const char* GetEntityClassName() const override          { return "CharacterRenderNode"; }
 	virtual string      GetDebugString(char type = 0) const override { return GetName(); }
 
 	//! Sets render node transformation matrix.
@@ -29,7 +29,7 @@ public:
 	//! Gets local bounds of the render node.
 	virtual void       GetLocalBounds(AABB& bbox) const override;
 
-	virtual Vec3       GetPos(bool bWorldOnly = true) const override { return m_matrix.GetTranslation(); };
+	virtual Vec3       GetPos(bool bWorldOnly = true) const override { return m_matrix.GetTranslation(); }
 	virtual const AABB GetBBox() const override;
 	virtual void       FillBBox(AABB& aabb) const override           { aabb = GetBBox(); }
 	virtual void       SetBBox(const AABB& WSBBox) override          {}
@@ -43,12 +43,12 @@ public:
 	virtual ICharacterInstance* GetEntityCharacter(Matrix34A* pMatrix = NULL, bool bReturnOnlyVisible = false) override {  if(pMatrix) *pMatrix = m_matrix; return m_pCharacterInstance; }
 
 	//! Get physical entity.
-	virtual struct IPhysicalEntity* GetPhysics() const override                 { return m_pPhysicsEntity; };
-	virtual void                    SetPhysics(IPhysicalEntity* pPhys) override { m_pPhysicsEntity = pPhys; };
+	virtual struct IPhysicalEntity* GetPhysics() const override                 { return m_pPhysicsEntity; }
+	virtual void                    SetPhysics(IPhysicalEntity* pPhys) override { m_pPhysicsEntity = pPhys; }
 	virtual void                    Physicalize(bool bInstant = false) override;
 
 	//! Set override material for this instance.
-	virtual void SetMaterial(IMaterial* pMat) override { m_pMaterial = pMat; };
+	virtual void SetMaterial(IMaterial* pMat) override { m_pMaterial = pMat; }
 
 	//! Queries override material of this instance.
 	virtual IMaterial* GetMaterial(Vec3* pHitPos = NULL) const override;
@@ -61,7 +61,7 @@ public:
 
 	virtual void       SetCameraSpacePos(Vec3* pCameraSpacePos) override;
 
-	virtual void       GetMemoryUsage(ICrySizer* pSizer) const override {};
+	virtual void       GetMemoryUsage(ICrySizer* pSizer) const override {}
 
 	virtual void       SetOwnerEntity(IEntity* pEntity) override  { m_pOwnerEntity = pEntity; }
 	virtual IEntity*   GetOwnerEntity() const override            { return m_pOwnerEntity; }
