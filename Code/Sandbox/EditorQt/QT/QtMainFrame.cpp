@@ -1414,15 +1414,6 @@ void CEditorMainFrame::InitLayout()
 		SetDefaultLayout();
 }
 
-bool CEditorMainFrame::focusNextPrevChild(bool next)
-{
-	CEditTool* pTool = GetIEditorImpl()->GetLevelEditorSharedState()->GetEditTool();
-	if (pTool && pTool->IsAllowTabKey())
-		return false;
-
-	return QMainWindow::focusNextPrevChild(next);
-}
-
 void CEditorMainFrame::contextMenuEvent(QContextMenuEvent* pEvent)
 {
 	QWidget* pChild = childAt(pEvent->pos());

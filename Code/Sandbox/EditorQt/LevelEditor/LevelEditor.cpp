@@ -914,29 +914,14 @@ bool CLevelEditor::OnPaste()
 		return false;
 	}
 
-	IObjectManager* objManager = GetIEditorImpl()->GetObjectManager();
+	IObjectManager* pObjectManager = GetIEditorImpl()->GetObjectManager();
 
-	CObjectArchive archive(objManager, copyNode, true);
+	CObjectArchive archive(pObjectManager, copyNode, true);
 
 	CRandomUniqueGuidProvider guidProvider;
 	archive.SetGuidProvider(&guidProvider);
 	archive.LoadInCurrentLayer(true);
-	{
-		CUndo undo("Paste Objects");
-
-		objManager->ClearSelection();
-		// instantiate the new objects
-		objManager->LoadObjects(archive, true);
-
-		//Make sure the new objects have unique names
-		const CSelectionGroup* selGroup = objManager->GetSelection();
-
-		for (int i = 0, nObj = selGroup->GetCount(); i < nObj; ++i)
-		{
-			CBaseObject* pObj = selGroup->GetObject(i);
-			pObj->SetName(objManager->GenUniqObjectName(pObj->GetName()));
-		}
-	}
+	pObjectManager->CreateAndSelectObjects(archive);
 
 	return true;
 }

@@ -51,7 +51,6 @@ private:
 	void OnToolBarRemoved(const char* szToolBarName);
 	void UpdateWindowTitle(const QString& levelPath = "");
 
-	bool focusNextPrevChild(bool next) override;
 	void contextMenuEvent(QContextMenuEvent* pEvent);
 
 	void SetDefaultLayout();

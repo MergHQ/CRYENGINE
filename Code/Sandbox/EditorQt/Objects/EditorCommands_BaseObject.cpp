@@ -790,7 +790,7 @@ void LoadObjectsFromGrpFile()
 	}
 
 	ar.LoadInCurrentLayer(true);
-	pObjectManager->LoadObjects(ar, true);
+	pObjectManager->CreateAndSelectObjects(ar);
 	GetIEditorImpl()->SetModifiedFlag();
 }
 }

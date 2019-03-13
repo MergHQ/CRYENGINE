@@ -350,12 +350,7 @@ void CRenderViewport::ProcessMouse()
 
 		ypr.y = CLAMP(ypr.y, -1.5f, 1.5f);    // to keep rotation in reasonable range
 		// In the recording mode of a custom camera, the z rotation is allowed.
-
-		//		bool bExclusiveMode = GetIEditor()->GetLevelEditorSharedState()->GetEditTool() && GetIEditor()->GetLevelEditorSharedState()->GetEditTool()->IsExclusiveMode();
-		//		if( GetCameraObject() == NULL || (!GetIEditor()->GetAnimation()->IsRecordMode() && !bExclusiveMode) )
-		{
-			ypr.z = 0;    // to have camera always upward
-		}
+		ypr.z = 0;    // to have camera always upward
 
 		camtm = Matrix34(CCamera::CreateOrientationYPR(ypr), camtm.GetTranslation());
 		SetViewTM(camtm);
@@ -1102,8 +1097,7 @@ void CRenderViewport::SetViewTM(const Matrix34& viewTM, bool bMoveOnly)
 			return;
 		}
 
-		const bool bExclusiveMode = GetIEditor()->GetLevelEditorSharedState()->GetEditTool() && GetIEditor()->GetLevelEditorSharedState()->GetEditTool()->IsExclusiveMode();
-		const bool bPushUndo = !bExclusiveMode && (m_eCameraMoveState == ECameraMoveState::MovingWithoutUndoPushed);
+		const bool bPushUndo = m_eCameraMoveState == ECameraMoveState::MovingWithoutUndoPushed;
 		if (bPushUndo)
 		{
 			GetIEditor()->GetIUndoManager()->Begin();

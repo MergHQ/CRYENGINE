@@ -3003,7 +3003,7 @@ void CObjectManager::Serialize(XmlNodeRef& xmlNode, bool bLoading, int flags)
 		if (root)
 		{
 			ar.node = root;
-			LoadObjects(ar, false);
+			LoadObjects(ar);
 		}
 		EndObjectsLoading();
 	}
@@ -3019,7 +3019,33 @@ void CObjectManager::Serialize(XmlNodeRef& xmlNode, bool bLoading, int flags)
 	}
 }
 
-void CObjectManager::LoadObjects(CObjectArchive& objectArchive, bool bSelect)
+void CObjectManager::CreateAndSelectObjects(CObjectArchive& objectArchive)
+{
+	LOADING_TIME_PROFILE_SECTION
+	CUndo undo("Create and Select Objects");
+	ClearSelection();
+
+	LoadObjects(objectArchive);
+	auto loadedObjectCount = objectArchive.GetLoadedObjectsCount();
+
+	// Add all newly created objects to selection
+	std::vector<CBaseObject*> objectsToSelect;
+	objectsToSelect.reserve(loadedObjectCount);
+
+	// Generate unique names and track objects to select
+	for (auto i = 0; i < loadedObjectCount; ++i)
+	{
+		CBaseObject* pObject = objectArchive.GetLoadedObject(i);
+		// Make sure the new objects have unique names
+		pObject->SetName(GenUniqObjectName(pObject->GetName()));
+		// Also add them to the list of objects to be selected
+		objectsToSelect.push_back(pObject);
+	}
+
+	SelectObjects(objectsToSelect);
+}
+
+void CObjectManager::LoadObjects(CObjectArchive& objectArchive)
 {
 	LOADING_TIME_PROFILE_SECTION;
 	m_bLoadingObjects = true;
@@ -3027,21 +3053,8 @@ void CObjectManager::LoadObjects(CObjectArchive& objectArchive, bool bSelect)
 	// Prevent the prefab manager from updating prefab instances
 	CPrefabManager::SkipPrefabUpdate skipUpdates;
 
-	XmlNodeRef objectsNode = objectArchive.node;
-	int numObjects = objectsNode->getChildCount();
-	std::vector<CBaseObject*> objects;
-	objects.reserve(numObjects);
-	for (int i = 0; i < numObjects; i++)
-	{
-		CBaseObject* obj = objectArchive.LoadObject(objectsNode->getChild(i));
-		if (obj && bSelect)
-		{
-			objects.push_back(obj);
-		}
-	}
-	CBatchProcessDispatcher batchProcessDispatcher;
-	batchProcessDispatcher.Start(objects, true);
-	AddObjectsToSelection(objects);
+	objectArchive.LoadObjects(objectArchive.node);
+
 	EndObjectsLoading(); // End progress bar, here, Resolve objects have his own.
 	objectArchive.ResolveObjects(true);
 
