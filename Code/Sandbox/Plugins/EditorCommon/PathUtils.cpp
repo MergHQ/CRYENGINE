@@ -190,6 +190,22 @@ string GetGameProjectAssetsRelativePath()
 	return gEnv->pSystem->GetIProjectManager()->GetCurrentAssetDirectoryRelative();
 }
 
+string GetEditorCachePath()
+{
+	return Make(GetProjectFolder(), GetEditorCacheRelativePath());
+}
+
+string GetEditorCacheRelativePath()
+{
+	const ICVar* pCacheFolderVar = gEnv->pConsole->GetCVar("sys_resource_cache_folder");
+	return ToUnixPath(pCacheFolderVar->GetString());
+}
+
+string GetCurrentProjectDirectoryAbsolute()
+{
+	return gEnv->pSystem->GetIProjectManager()->GetCurrentProjectDirectoryAbsolute();
+}
+
 string GetCurrentPlatformFolder()
 {
 #ifdef CRY_PLATFORM_WINDOWS
