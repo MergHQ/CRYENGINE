@@ -111,7 +111,7 @@ std::vector<CAsset*> CAssetImporterImage::ImportAssets(const std::vector<string>
 		MakeFileWritable(absOutputSourceFilePath);
 	}
 
-	TextureHelpers::CreateCryTif(absOutputSourceFilePath);
+	TextureHelpers::CreateCryTif(PathUtil::AdjustCasing(absOutputSourceFilePath));
 
 	// there is no need to call RC here for tif file and then to load the asset from cryasset file since
 	// file monitor will detect the changes and trigger it anyway.
