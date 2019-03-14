@@ -1022,6 +1022,9 @@ void CGameEngine::SetGameMode(bool bInGame)
 		SwitchToInEditor();
 	}
 
+	if (QAction *pAction = GetIEditorImpl()->GetICommandManager()->GetAction("game.toggle_game_mode"))
+		pAction->setChecked(bInGame);
+
 	GetIEditorImpl()->GetObjectManager()->SendEvent(EVENT_PHYSICS_APPLYSTATE);
 
 	// Enables engine to know about that.
@@ -1152,12 +1155,12 @@ void CGameEngine::SetSimulationMode(bool enabled, bool bOnlyPhysics)
 			m_pISystem->GetAISystem()->Reset(IAISystem::RESET_EXIT_GAME);
 	}
 
-	GetIEditorImpl()->GetObjectManager()->SendEvent(EVENT_PHYSICS_APPLYSTATE);
-
 	if (!bOnlyPhysics)
 	{
 		gEnv->pEntitySystem->OnEditorSimulationModeChanged(enabled ? IEntitySystem::EEditorSimulationMode::Simulation : IEntitySystem::EEditorSimulationMode::Editing);
 	}
+
+	GetIEditorImpl()->GetObjectManager()->SendEvent(EVENT_PHYSICS_APPLYSTATE);
 
 	if (gEnv->pGameFramework)
 	{
