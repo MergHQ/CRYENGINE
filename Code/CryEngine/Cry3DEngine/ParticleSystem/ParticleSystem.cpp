@@ -142,12 +142,22 @@ void CParticleSystem::Update()
 	const ESystemConfigSpec sysSpec = gEnv->pSystem->GetConfigSpec();
 	if (m_lastSysSpec != END_CONFIG_SPEC_ENUM && m_lastSysSpec != sysSpec)
 	{
-		m_lastSysSpec = sysSpec;
+		if (GetCVars()->e_ParticlesPrecacheAssets)
+		{
+			for (auto& elem : m_effects)
+			{
+				if (auto& pEffect = elem.second)
+				{
+					pEffect->LoadResources();
+				}
+			}
+		}
 		for (auto& pEmitter : m_emitters)
 		{
-			pEmitter->ResetRenderObjects();
+			pEmitter->UpdateRuntimes();
 		}
 	}
+	m_lastSysSpec = sysSpec;
 
 	// Check for edited effects
 	if (gEnv->IsEditing())
@@ -290,6 +300,7 @@ void CParticleSystem::DisplayStats(Vec2& location, float lineHeight)
 
 void CParticleSystem::ClearRenderResources()
 {
+	CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
 #if !defined(_RELEASE)
 	// All external references need to be released before this point to prevent leaks
 	for (const auto& pEmitter : m_emitters)
@@ -320,11 +331,12 @@ void CParticleSystem::ClearRenderResources()
 				it = m_effects.erase(it);
 				continue;
 			}
-			for (auto& comp : pEffect->GetComponents())
-				comp->LoadResources(*comp, false);
+			pEffect->UnloadResources();
 		}
 		++it;
 	}
+
+	m_materials.clear();
 
 	m_numFrames = 0;
 	m_numLevelLoads ++;
@@ -349,14 +361,64 @@ float CParticleSystem::GetMaxAngularDensity(const CCamera& camera)
 	return camera.GetAngularResolution() / max(GetCVars()->e_ParticlesMinDrawPixels, 0.125f) * 2.0f;
 }
 
-IMaterial* CParticleSystem::GetFlareMaterial()
+IMaterial* CParticleSystem::GetTextureMaterial(cstr textureName, bool gpu, gpu_pfx2::EFacingMode facing)
 {
-	if (!m_pFlareMaterial)
+	CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
+
+	if (!gEnv->pRenderer)
+		return nullptr;
+
+	enum EGpuParticlesVertexShaderFlags
 	{
-		const char* flareMaterialName = "%ENGINE%/EngineAssets/Materials/lens_optics";
-		m_pFlareMaterial = gEnv->p3DEngine->GetMaterialManager()->FindMaterial(flareMaterialName);
+		FacingVelocity = 0x2000
+	};
+
+	string materialName = string(textureName);
+	cstr shaderName = "Particles";
+	uint32 shaderMask = 0;
+	if (gpu)
+	{
+		materialName += ":GPU";
+		shaderName = "Particles.ParticlesGpu";
+		if (facing == gpu_pfx2::EFacingMode::Velocity)
+		{
+			materialName += ":FacingVelocity";
+			shaderMask |= EGpuParticlesVertexShaderFlags::FacingVelocity;
+		}
 	}
-	return m_pFlareMaterial;
+
+	IMaterial* pMaterial = m_materials[materialName];
+	if (pMaterial)
+		return pMaterial;
+
+	pMaterial = gEnv->p3DEngine->GetMaterialManager()->CreateMaterial(materialName);
+	static uint32 preload = !!GetCVars()->e_ParticlesPrecacheAssets;
+	static uint32 textureLoadFlags = FT_DONT_STREAM * preload;
+	ITexture* pTexture = nullptr;
+	if (GetPSystem()->IsRuntime())
+		pTexture = gEnv->pRenderer->EF_GetTextureByName(textureName, textureLoadFlags);
+	if (!pTexture)
+	{
+		GetPSystem()->CheckFileAccess(textureName);
+		pTexture = gEnv->pRenderer->EF_LoadTexture(textureName, textureLoadFlags);
+	}
+	if (pTexture->GetTextureID() <= 0)
+		CryWarning(VALIDATOR_MODULE_3DENGINE, VALIDATOR_WARNING, "Particle effect texture %s not found", textureName);
+
+	SInputShaderResourcesPtr pResources = gEnv->pRenderer->EF_CreateInputShaderResource();
+	pResources->m_Textures[EFTT_DIFFUSE].m_Name = textureName;
+	SShaderItem shaderItem = gEnv->pRenderer->EF_LoadShaderItem(shaderName, false, EF_PRECACHESHADER * preload, pResources, shaderMask);
+	assert(shaderItem.m_pShader);
+	pMaterial->AssignShaderItem(shaderItem);
+
+	Vec3 white = Vec3(1.0f, 1.0f, 1.0f);
+	float defaultOpacity = 1.0f;
+	pMaterial->SetGetMaterialParamVec3("diffuse", white, false);
+	pMaterial->SetGetMaterialParamFloat("opacity", defaultOpacity, false);
+
+	m_materials[materialName] = pMaterial;
+
+	return pMaterial;
 }
 
 uint CParticleSystem::GetParticleSpec() const
@@ -377,11 +439,7 @@ void CParticleSystem::Reset()
 	{
 		if (auto& pEffect = elem.second)
 		{
-			for (auto& comp : pEffect->GetComponents())
-			{
-				comp->LoadResources(*comp, true);
-				comp->MakeMaterial();
-			}
+			pEffect->LoadResources();
 		}
 	}
 }
@@ -392,6 +450,7 @@ void CParticleSystem::Serialize(TSerialize ser)
 
 PParticleEffect CParticleSystem::LoadEffect(cstr effectName)
 {
+	CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
 	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "pfx2::LoadEffect");
 	MEMSTAT_CONTEXT_FMT(EMemStatContextTypes::MSC_ParticleLibrary, 0, "Particle effect (%s)", effectName);
 

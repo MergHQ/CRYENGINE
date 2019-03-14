@@ -58,7 +58,7 @@ public:
 	virtual void              AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams) {}
 	virtual EFeatureType      GetFeatureType()                                                          { return EFT_Generic; }
 	virtual bool              CanMakeRuntime(CParticleEmitter* pEmitter) const                          { return true; }
-	virtual void              LoadResources(CParticleComponent& component, bool load)                   {}
+	virtual void              LoadResources(CParticleComponent& component)                              {}
 
 	// Runtime and spawner initialization
 	virtual void OnEdit(CParticleComponentRuntime& runtime) {}

@@ -105,17 +105,15 @@ public:
 	virtual void AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams) override
 	{
 		pComponent->LoadResources.add(this);
-		LoadResources(*pComponent, true);
+		LoadResources(*pComponent);
 		MakeGpuInterface(pComponent, gpu_pfx2::eGpuFeatureType_Dummy);
 	}
 
-	virtual void LoadResources(CParticleComponent& component, bool load) override
+	virtual void LoadResources(CParticleComponent& component) override
 	{
 		SComponentParams& params = component.ComponentParams();
-		if (load)
+		if (!params.m_pMaterial)
 		{
-			if (params.m_pMaterial)
-				return;
 			if (!m_materialName.empty())
 			{
 				if (GetPSystem()->IsRuntime())
@@ -125,18 +123,25 @@ public:
 					GetPSystem()->CheckFileAccess(m_materialName);
 					params.m_pMaterial = gEnv->p3DEngine->GetMaterialManager()->LoadMaterial(m_materialName);
 				}
-				if (params.m_pMaterial && GetCVars()->e_ParticlesPrecacheAssets)
+				if (params.m_pMaterial)
 				{
-					params.m_pMaterial->PrecacheMaterial(0.0f, nullptr, true, true);
+					IShader* pShader = params.m_pMaterial->GetShaderItem().m_pShader;
+					if (!pShader)
+						params.m_pMaterial = nullptr;
+					else if (params.m_requiredShaderType != eST_All)
+					{
+						if (pShader->GetFlags() & EF_LOADED && pShader->GetShaderType() != params.m_requiredShaderType)
+							params.m_pMaterial = nullptr;
+					}
 				}
 			}
-			if (!m_textureName.empty())
-				params.m_diffuseMap = m_textureName;
+			if (!params.m_pMaterial && !m_textureName.empty())
+				params.m_pMaterial = GetPSystem()->GetTextureMaterial(m_textureName, 
+					params.m_usesGPU, component.GPUComponentParams().facingMode);
 		}
-		else
+		if (params.m_pMaterial && GetCVars()->e_ParticlesPrecacheAssets)
 		{
-			params.m_pMaterial = nullptr;
-			params.m_diffuseMap = "";
+			params.m_pMaterial->PrecacheMaterial(0.0f, nullptr, true, true);
 		}
 	}
 

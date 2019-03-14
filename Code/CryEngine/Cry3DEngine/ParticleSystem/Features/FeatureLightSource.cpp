@@ -29,7 +29,7 @@ public:
 	{
 		pComponent->RenderDeferred.add(this);
 		pComponent->AddParticleData(EPVF_Position);
-		if (GetPSystem()->GetFlareMaterial() && !m_flare.empty())
+		if (!m_flare.empty() && GetFlareMaterial())
 			m_hasFlareOptics = gEnv->pOpticsManager->Load(m_flare.c_str(), m_lensOpticsId);
 	}
 
@@ -70,7 +70,7 @@ public:
 			light.m_sName = "Wavicle";
 			IOpticsElementBase* pOptics = gEnv->pOpticsManager->GetOptics(m_lensOpticsId);
 			light.SetLensOpticsElement(pOptics);
-			light.m_Shader = GetPSystem()->GetFlareMaterial()->GetShaderItem();
+			light.m_Shader = GetFlareMaterial()->GetShaderItem();
 		}
 
 		UCol defaultColor;
@@ -118,6 +118,12 @@ private:
 
 	bool             m_hasFlareOptics      = false;
 	int              m_lensOpticsId;
+
+	static IMaterial* GetFlareMaterial()
+	{
+		static cstr flareMaterialName = "%ENGINE%/EngineAssets/Materials/lens_optics";
+		return gEnv->p3DEngine->GetMaterialManager()->FindMaterial(flareMaterialName);
+	}
 };
 
 CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureLightSource, "Light", "Light", colorLight);
