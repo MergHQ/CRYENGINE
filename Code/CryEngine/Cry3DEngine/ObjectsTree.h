@@ -1,8 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __INCLUDE_CRY3DENGINE_OBJECTTREE_H
-#define __INCLUDE_CRY3DENGINE_OBJECTTREE_H
-
 #pragma once
 
 #define OCTREENODE_RENDER_FLAG_OBJECTS               1
@@ -536,5 +533,3 @@ public:
 	volatile int                  m_updateStaticInstancingLock;
 	uint32                        m_onePassTraversalFrameId = 0; // Used to request visiting of the node during one-pass traversal
 };
-
-#endif

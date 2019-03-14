@@ -1,7 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __CCULLRENDERER__
-#define __CCULLRENDERER__
+#pragma once
 
 #include "VMath.hpp"
 
@@ -1558,4 +1557,3 @@ public:
 
 template<uint32 SIZEX, uint32 SIZEY>
 CRY_ALIGN(128) float NAsyncCull::CCullRenderer<SIZEX, SIZEY>::m_ZBufferMainMemory[SIZEX * SIZEY];
-#endif

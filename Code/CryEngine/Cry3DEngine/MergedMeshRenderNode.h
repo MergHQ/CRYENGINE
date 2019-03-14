@@ -139,8 +139,6 @@
 	#define mmrm_assert(x) (void)0
 #endif
 
-////////////////////////////////////////////////////////////////////////////////
-// Forward declarations
 struct SMMRMGroupHeader;
 struct SMMRM;
 struct SSampleDensity;

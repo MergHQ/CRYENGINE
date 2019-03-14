@@ -7,10 +7,6 @@
 
 static const float fMIN_PULSE_PERIOD = 0.1f;
 
-//////////////////////////////////////////////////////////////////////////
-// CParticleSubEmitter implementation.
-//////////////////////////////////////////////////////////////////////////
-
 CParticleSubEmitter::CParticleSubEmitter(CParticleSource* pSource, CParticleContainer* pCont)
 	: m_ChaosKey(0U)
 	, m_nEmitIndex(0)
