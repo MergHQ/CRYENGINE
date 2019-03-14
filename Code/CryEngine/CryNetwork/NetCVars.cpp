@@ -112,6 +112,7 @@ CNetCVars::CNetCVars()
 
 #if CRY_PLATFORM_DURANGO
 	REGISTER_CVAR2_DEV_ONLY("net_threadAffinity", &networkThreadAffinity, 5, VF_DUMPTODISK, "Xbox network thread affinity");
+	REGISTER_CVAR(net_xboxAssociationTemplateName, "CryNetworkTraffic", VF_REQUIRE_APP_RESTART, _HELP("Xbox secure device association template set in the application manifest"));
 #endif
 
 #if LOCK_NETWORK_FREQUENCY == 0
