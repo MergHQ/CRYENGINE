@@ -998,12 +998,46 @@ void CKeybindEditor::SaveUserKeybinds()
 	UserDataUtil::Save(Private_KeybindEditor::szKeybindsPath, doc.toJson());
 }
 
+std::vector<string> CKeybindEditor::GetKeyBindDirectories(const char* szRelativePath)
+{
+	std::vector<string> result;
+
+	string editorToolbarPath = PathUtil::Make("Editor", szRelativePath);
+
+	// Engine defaults
+	result.push_back(PathUtil::Make(PathUtil::GetEnginePath().c_str(), editorToolbarPath));
+	// Game project specific tool-bars
+	result.push_back(PathUtil::Make(GetIEditor()->GetProjectManager()->GetCurrentProjectDirectoryAbsolute(), editorToolbarPath));
+	// User tool-bars
+	result.push_back(UserDataUtil::GetUserPath(szRelativePath));
+
+	return result;
+}
+
 void CKeybindEditor::LoadUserKeybinds()
 {
-	QVariant keybindsVariant = UserDataUtil::Load(Private_KeybindEditor::szKeybindsPath);
-	if (keybindsVariant.isValid())
+	std::vector<string> keyBindDirectories = GetKeyBindDirectories(Private_KeybindEditor::szKeybindsPath);
+	bool keyBindsUpdated = false;
+
+	// Load all keybinds in the order of Engine -> Project -> User defined
+	for (const string& keyBindDirectory : keyBindDirectories)
 	{
-		SetState(keybindsVariant);
+		QFile file(keyBindDirectory.c_str());
+		if (!file.open(QIODevice::ReadOnly))
+			continue;
+
+		QJsonDocument doc(QJsonDocument::fromJson(file.readAll()));
+		QVariant keybindsVariant = doc.toVariant();
+
+		if (keybindsVariant.isValid())
+		{
+			SetState(keybindsVariant);
+			keyBindsUpdated = true;
+		}
+	}
+
+	if (keyBindsUpdated)
+	{
 		GetIEditorImpl()->GetCommandManager()->signalChanged();
 	}
 }
