@@ -22,12 +22,7 @@ static uint32 GetTexReqStreamSizePreClamped(const SPlanningTextureOrderKey& key,
 		const SStreamFormatCode& code = CTexture::s_formatCodes[nFormatCode];
 
 		int8 nCodeMip = reqMip + (SStreamFormatCode::MaxMips - key.nMips);
-		uint32 nSlices = key.nSlicesMinus1 + 1;
-		uint32 nPoTSlices = key.nSlicesPotMinus1 + 1;
-
-		uint32 n1SliceSize = code.sizes[nCodeMip].size;
-		uint32 nFormatSlices = code.sizes[nCodeMip].alignSlices ? nPoTSlices : nSlices;
-		nTotalSize = n1SliceSize * nFormatSlices;
+		nTotalSize = code.sizes[key.nSlicesMinus1][nCodeMip];
 
 #if defined(PLAN_TEXSTRM_DEBUG)
 		uint32 nTotalSizeTest = key.pTexture->StreamComputeSysDataSize(reqMip);
