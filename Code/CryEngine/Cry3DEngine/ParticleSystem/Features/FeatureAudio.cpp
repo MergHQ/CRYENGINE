@@ -260,7 +260,7 @@ public:
 	void Serialize(Serialization::IArchive& ar) override
 	{
 		CParticleFeature::Serialize(ar);
-		ar(Serialization::AudioRTPC(m_parameterName), "Name", "Name");
+		ar(Serialization::AudioParameter(m_parameterName), "Name", "Name");
 		ar(m_value, "Value", "Value");
 	}
 

@@ -287,7 +287,7 @@ void CAudioAreaRandom::SerializeProperties(Serialization::IArchive& archive)
 
 	archive(m_occlusionType, "OcclusionType", "Occlusion Type");
 
-	archive(Serialization::AudioRTPC(m_parameterName), "Rtpc", "Rtpc");
+	archive(Serialization::AudioParameter(m_parameterName), "Rtpc", "Rtpc");
 	archive(m_parameterDistance, "RTPCDistance", "RTPC Distance");
 	archive(m_radius, "RadiusRandom", "Radius Random");
 

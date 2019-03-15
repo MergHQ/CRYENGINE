@@ -172,7 +172,7 @@ public:
 
 	virtual void           Serialize(Serialization::IArchive& ar) override
 	{
-		ar(Serialization::AudioRTPC(m_audioParameterName), "AudioParameterName", "Parameter Name");
+		ar(Serialization::AudioParameter(m_audioParameterName), "AudioParameterName", "Parameter Name");
 
 		if (ar.isInput())
 		{

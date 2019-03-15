@@ -477,7 +477,7 @@ void CRopeObject::SerializeProperties(Serialization::IArchive& ar, bool bMultiEd
 	{
 		ar(Serialization::AudioTrigger(m_ropeAudioData.startTriggerName), "start_trigger_name", "Start Trigger");
 		ar(Serialization::AudioTrigger(m_ropeAudioData.stopTriggerName), "stop_trigger_name", "Stop Trigger");
-		ar(Serialization::AudioRTPC(m_ropeAudioData.angleParameterName), "angle_parameter_name", "Angle Parameter");
+		ar(Serialization::AudioParameter(m_ropeAudioData.angleParameterName), "angle_parameter_name", "Angle Parameter");
 		ar(m_ropeAudioData.occlusionType, "OcclusionType", "Occlusion Type");
 		ar(Serialization::Range(m_ropeAudioData.segementToAttachTo, 1, m_ropeParams.nPhysSegments), "segment", "Segment");
 		ar(Serialization::Range(m_ropeAudioData.offset, 0.0f, 1.0f), "pos_offset", "Position Offset");

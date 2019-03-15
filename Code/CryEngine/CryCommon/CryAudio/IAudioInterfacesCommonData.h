@@ -93,6 +93,8 @@ constexpr char const* g_szContextsFolderName = "contexts";
 
 constexpr char const* g_szGlobalContextName = "global";
 
+constexpr char const* g_szSwitchStateSeparator = "/";
+
 /**
  * A utility function to convert a string value to an Id.
  * @param szSource - string to convert

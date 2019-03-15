@@ -25,11 +25,21 @@ namespace ACE
 {
 string CResourceSelectorDialog::s_previousControlName = "";
 EAssetType CResourceSelectorDialog::s_previousControlType = EAssetType::None;
+bool CResourceSelectorDialog::s_isSwitchAndState = false;
 
 //////////////////////////////////////////////////////////////////////////
-CResourceSelectorDialog::CResourceSelectorDialog(EAssetType const type, QWidget* const pParent)
+void SplitSwitchStateName(string const& switchStateName, string& switchName, string& stateName)
+{
+	int start = 0;
+	switchName = switchStateName.Tokenize(CryAudio::g_szSwitchStateSeparator, start);
+	stateName = switchStateName.Tokenize(CryAudio::g_szSwitchStateSeparator, start);
+}
+
+//////////////////////////////////////////////////////////////////////////
+CResourceSelectorDialog::CResourceSelectorDialog(EAssetType const type, bool const isSwitchAndState, QWidget* const pParent)
 	: CEditorDialog("AudioControlsResourceSelectorDialog", pParent)
 	, m_type(type)
+	, m_selectionIsValid(false)
 	, m_pFilterProxyModel(new CResourceFilterProxyModel(m_type, this))
 	, m_pSourceModel(new CResourceSourceModel(this))
 	, m_pTreeView(new CTreeView(this, QAdvancedTreeView::Behavior::None))
@@ -86,6 +96,12 @@ CResourceSelectorDialog::CResourceSelectorDialog(EAssetType const type, QWidget*
 		s_previousControlName.clear();
 		s_previousControlType = type;
 	}
+	else if ((type == EAssetType::State) && (isSwitchAndState != s_isSwitchAndState))
+	{
+		s_previousControlName.clear();
+	}
+
+	s_isSwitchAndState = isSwitchAndState;
 
 	OnUpdateSelectedControl();
 }
@@ -134,7 +150,7 @@ QAbstractItemModel* CResourceSelectorDialog::CreateLibraryModelFromIndex(QModelI
 //////////////////////////////////////////////////////////////////////////
 CResourceSelectorDialog::SResourceSelectionDialogResult CResourceSelectorDialog::ChooseItem(char const* szCurrentValue)
 {
-	SResourceSelectionDialogResult result{ false, szCurrentValue };
+	SResourceSelectionDialogResult result{ szCurrentValue, false };
 
 	if (strcmp(szCurrentValue, "") != 0)
 	{
@@ -157,7 +173,15 @@ CResourceSelectorDialog::SResourceSelectionDialogResult CResourceSelectorDialog:
 
 	if (accepted)
 	{
-		result.selectedItem = s_previousControlName.c_str();
+		if (s_isSwitchAndState)
+		{
+			result.selectedItem = GetSwitchStateNameFromState(s_previousControlName);
+		}
+		else
+		{
+			result.selectedItem = s_previousControlName.c_str();
+		}
+
 	}
 
 	return result;
@@ -175,7 +199,19 @@ void CResourceSelectorDialog::OnUpdateSelectedControl()
 
 		if (m_selectionIsValid)
 		{
-			s_previousControlName = pAsset->GetName();
+			if (s_isSwitchAndState)
+			{
+				CAsset const* const pSwitch = pAsset->GetParent();
+
+				if (pSwitch != nullptr)
+				{
+					s_previousControlName = pSwitch->GetName() + CryAudio::g_szSwitchStateSeparator + pAsset->GetName();
+				}
+			}
+			else
+			{
+				s_previousControlName = pAsset->GetName();
+			}
 		}
 
 		m_pDialogButtons->button(QDialogButtonBox::Ok)->setEnabled(m_selectionIsValid);
@@ -183,28 +219,62 @@ void CResourceSelectorDialog::OnUpdateSelectedControl()
 }
 
 //////////////////////////////////////////////////////////////////////////
-QModelIndex CResourceSelectorDialog::FindItem(string const& sControlName)
+QModelIndex CResourceSelectorDialog::FindItem(string const& controlName)
 {
 	QModelIndex modelIndex = QModelIndex();
 
-	auto const& matches = m_pFilterProxyModel->match(m_pFilterProxyModel->index(0, 0, QModelIndex()), Qt::DisplayRole, QtUtil::ToQString(sControlName), 1, Qt::MatchRecursive);
-
-	if (!matches.empty())
+	if (s_isSwitchAndState)
 	{
-		CAsset* const pAsset = CSystemSourceModel::GetAssetFromIndex(matches[0], 0);
+		string switchName = "";
+		string stateName = "";
 
-		if (pAsset != nullptr)
+		SplitSwitchStateName(controlName, switchName, stateName);
+
+		auto const& matches = m_pFilterProxyModel->match(m_pFilterProxyModel->index(0, 0, QModelIndex()), Qt::DisplayRole, QtUtil::ToQString(stateName), -1, Qt::MatchRecursive);
+
+		if (!matches.empty())
 		{
-			CControl const* const pControl = static_cast<CControl*>(pAsset);
-
-			if (pControl != nullptr)
+			for (auto const& index : matches)
 			{
-				CryAudio::ContextId const contextId = pControl->GetContextId();
+				CAsset* const pState = CSystemSourceModel::GetAssetFromIndex(index, 0);
 
-				if (contextId == CryAudio::GlobalContextId ||
-				    std::find(g_activeUserDefinedContexts.begin(), g_activeUserDefinedContexts.end(), contextId) != g_activeUserDefinedContexts.end())
+				if (pState != nullptr)
 				{
-					modelIndex = matches[0];
+					CAsset const* const pSwitch = pState->GetParent();
+
+					if (pSwitch != nullptr)
+					{
+						if (switchName.compareNoCase(pSwitch->GetName()) == 0)
+						{
+							modelIndex = index;
+							break;
+						}
+					}
+				}
+			}
+		}
+	}
+	else
+	{
+		auto const& matches = m_pFilterProxyModel->match(m_pFilterProxyModel->index(0, 0, QModelIndex()), Qt::DisplayRole, QtUtil::ToQString(controlName), 1, Qt::MatchRecursive);
+
+		if (!matches.empty())
+		{
+			CAsset* const pAsset = CSystemSourceModel::GetAssetFromIndex(matches[0], 0);
+
+			if (pAsset != nullptr)
+			{
+				CControl const* const pControl = static_cast<CControl*>(pAsset);
+
+				if (pControl != nullptr)
+				{
+					CryAudio::ContextId const contextId = pControl->GetContextId();
+
+					if (contextId == CryAudio::GlobalContextId ||
+					    std::find(g_activeUserDefinedContexts.begin(), g_activeUserDefinedContexts.end(), contextId) != g_activeUserDefinedContexts.end())
+					{
+						modelIndex = matches[0];
+					}
 				}
 			}
 		}
@@ -262,7 +332,20 @@ void CResourceSelectorDialog::OnItemDoubleClicked(QModelIndex const& modelIndex)
 
 		if ((pAsset != nullptr) && (pAsset->GetType() == m_type))
 		{
-			s_previousControlName = pAsset->GetName();
+			if (s_isSwitchAndState)
+			{
+				CAsset const* const pSwitch = pAsset->GetParent();
+
+				if (pSwitch != nullptr)
+				{
+					s_previousControlName = pSwitch->GetName() + CryAudio::g_szSwitchStateSeparator + pAsset->GetName();
+				}
+			}
+			else
+			{
+				s_previousControlName = pAsset->GetName();
+			}
+
 			accept();
 		}
 	}
@@ -313,5 +396,25 @@ void CResourceSelectorDialog::DeleteModels()
 	}
 
 	m_libraryModels.clear();
+}
+
+//////////////////////////////////////////////////////////////////////////
+string CResourceSelectorDialog::GetSwitchStateNameFromState(string const& stateName)
+{
+	string switchStateName = "";
+
+	CAsset const* const pState = CSystemSourceModel::GetAssetFromIndex(m_pTreeView->currentIndex(), 0);
+
+	if (pState != nullptr)
+	{
+		CAsset const* const pSwitch = pState->GetParent();
+
+		if (pSwitch != nullptr)
+		{
+			switchStateName = pSwitch->GetName() + CryAudio::g_szSwitchStateSeparator + pState->GetName();
+		}
+	}
+
+	return switchStateName;
 }
 } // namespace ACE

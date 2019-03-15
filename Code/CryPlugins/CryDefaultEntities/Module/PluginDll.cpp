@@ -12,7 +12,7 @@
 #include "DefaultComponents/Audio/ParameterComponent.h"
 #include "DefaultComponents/Audio/PreloadComponent.h"
 #include "DefaultComponents/Audio/SettingComponent.h"
-#include "DefaultComponents/Audio/SwitchComponent.h"
+#include "DefaultComponents/Audio/SwitchStateComponent.h"
 #include "DefaultComponents/Audio/TriggerComponent.h"
 #include "DefaultComponents/Audio/VelocityComponent.h"
 #include "DefaultComponents/Cameras/CameraComponent.h"
@@ -120,8 +120,8 @@ void CPlugin_CryDefaultEntities::RegisterComponents(Schematyc::IEnvRegistrar& re
 			Cry::Audio::DefaultComponents::CPreloadComponent::Register(componentScope);
 		}
 		{
-			Schematyc::CEnvRegistrationScope componentScope = scope.Register(SCHEMATYC_MAKE_ENV_COMPONENT(Cry::Audio::DefaultComponents::CSwitchComponent));
-			Cry::Audio::DefaultComponents::CSwitchComponent::Register(componentScope);
+			Schematyc::CEnvRegistrationScope componentScope = scope.Register(SCHEMATYC_MAKE_ENV_COMPONENT(Cry::Audio::DefaultComponents::CSwitchStateComponent));
+			Cry::Audio::DefaultComponents::CSwitchStateComponent::Register(componentScope);
 		}
 		{
 			Schematyc::CEnvRegistrationScope componentScope = scope.Register(SCHEMATYC_MAKE_ENV_COMPONENT(Cry::Audio::DefaultComponents::CSettingComponent));
