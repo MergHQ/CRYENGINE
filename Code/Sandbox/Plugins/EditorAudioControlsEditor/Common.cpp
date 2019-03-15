@@ -5,6 +5,7 @@
 #include "AssetsManager.h"
 #include "ContextManager.h"
 #include "ImplManager.h"
+#include "NameValidator.h"
 
 namespace ACE
 {
@@ -21,6 +22,7 @@ CPropertiesWidget* g_pPropertiesWidget = nullptr;
 CMiddlewareDataWidget* g_pMiddlewareDataWidget = nullptr;
 CFileMonitorMiddleware* g_pFileMonitorMiddleware = nullptr;
 CContextWidget* g_pContextWidget = nullptr;
+CNameValidator g_nameValidator(s_regexInvalidFileName);
 
 SImplInfo g_implInfo;
 

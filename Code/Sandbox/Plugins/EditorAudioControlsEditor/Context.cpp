@@ -5,13 +5,20 @@
 
 #include "Common.h"
 #include "ContextManager.h"
+#include "NameValidator.h"
 
 namespace ACE
 {
 //////////////////////////////////////////////////////////////////////////
 void CContext::SetName(string const& name)
 {
-	m_name = name;
-	m_id = g_contextManager.GenerateContextId(name);
+	string fixedName = name;
+	g_nameValidator.FixupString(fixedName);
+
+	if ((!fixedName.IsEmpty()) && (fixedName != m_name) && g_nameValidator.IsValid(fixedName))
+	{
+		m_name = fixedName;
+		m_id = g_contextManager.GenerateContextId(m_name);
+	}
 }
 } // namespace ACE

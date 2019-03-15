@@ -7,6 +7,7 @@
 #include "ContextManager.h"
 #include "AssetUtils.h"
 #include "Context.h"
+#include "NameValidator.h"
 #include "Common/IConnection.h"
 #include "Common/IImpl.h"
 #include "Common/IItem.h"
@@ -24,17 +25,20 @@ CControl::~CControl()
 //////////////////////////////////////////////////////////////////////////
 void CControl::SetName(string const& name)
 {
-	if ((!name.IsEmpty()) && (name != m_name) && ((m_flags& EAssetFlags::IsDefaultControl) == 0))
+	string fixedName = name;
+	g_nameValidator.FixupString(fixedName);
+
+	if ((!fixedName.IsEmpty()) && (fixedName != m_name) && ((m_flags& EAssetFlags::IsDefaultControl) == 0) && g_nameValidator.IsValid(fixedName))
 	{
 		SignalOnBeforeControlModified();
 
 		if (m_type != EAssetType::State)
 		{
-			m_name = AssetUtils::GenerateUniqueControlName(name, m_type);
+			m_name = AssetUtils::GenerateUniqueControlName(fixedName, m_type);
 		}
 		else
 		{
-			m_name = AssetUtils::GenerateUniqueName(name, m_type, m_pParent);
+			m_name = AssetUtils::GenerateUniqueName(fixedName, m_type, m_pParent);
 		}
 
 		SignalOnAfterControlModified();

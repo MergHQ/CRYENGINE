@@ -25,6 +25,7 @@ class CPropertiesWidget;
 class CMiddlewareDataWidget;
 class CFileMonitorMiddleware;
 class CContextWidget;
+class CNameValidator;
 
 using Assets = std::vector<CAsset*>;
 using Controls = std::vector<CControl*>;
@@ -49,6 +50,7 @@ extern CPropertiesWidget* g_pPropertiesWidget;
 extern CMiddlewareDataWidget* g_pMiddlewareDataWidget;
 extern CFileMonitorMiddleware* g_pFileMonitorMiddleware;
 extern CContextWidget* g_pContextWidget;
+extern CNameValidator g_nameValidator;
 
 extern SImplInfo g_implInfo;
 

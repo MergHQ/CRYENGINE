@@ -20,6 +20,7 @@ public:
 	CNameValidator& operator=(CNameValidator&&) = delete;
 
 	explicit CNameValidator(QRegularExpression const& regex, QWidget* pParent);
+	explicit CNameValidator(QRegularExpression const& regex);
 	virtual ~CNameValidator() override = default;
 
 	// QRegularExpressionValidator
@@ -27,7 +28,12 @@ public:
 	virtual void              fixup(QString& input) const override;
 	// ~QRegularExpressionValidator
 
+	bool IsValid(string const& input) const;
+	void FixupString(string& input) const;
+
 private:
+
+	void SetToolTip(QRegularExpression const& regex);
 
 	QWidget* const m_pParent;
 	QString        m_toolTipText;
