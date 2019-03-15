@@ -1242,6 +1242,7 @@ static const FlowGraphVariables::MapEntry prefix_dataType_table[] =
 	{ "audioTrigger_",          IVariable::DT_AUDIO_TRIGGER,           0                                                                      },
 	{ "audioSwitch_",           IVariable::DT_AUDIO_SWITCH,            0                                                                      },
 	{ "audioSwitchState_",      IVariable::DT_AUDIO_STATE,             0                                                                      },
+	{ "audioSwitchAndState_",   IVariable::DT_AUDIO_SWITCH_STATE,      0                                                                      },
 	{ "audioRTPC_",             IVariable::DT_AUDIO_PARAMETER,         0                                                                      },
 	{ "audioEnvironment_",      IVariable::DT_AUDIO_ENVIRONMENT,       0                                                                      },
 	{ "audioPreloadRequest_",   IVariable::DT_AUDIO_PRELOAD_REQUEST,   0                                                                      },
