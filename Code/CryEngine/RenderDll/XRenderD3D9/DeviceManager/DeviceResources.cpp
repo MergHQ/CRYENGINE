@@ -105,7 +105,7 @@ int32 CDeviceResource::Cleanup()
 	// Gracefully deal with NULL-resources which are nullptr
 	int32 nRef = m_resourceElements ? -1 : 0; // -!!bool
 
-	if (m_pNativeResource)
+	if (m_pNativeResource && m_resourceElements)
 	{
 		// Figure out current ref-count
 		nRef = m_pNativeResource->AddRef();
@@ -118,7 +118,7 @@ int32 CDeviceResource::Cleanup()
 			GetDeviceObjectFactory().ReleaseResource(m_pNativeResource);
 
 		// NOTE: CDeviceResource might be shared, take care the texture-pointer stays valid for the other aliases
-		if (nRef == 1)
+		if (nRef > 0)
 		{
 			nRef = 0;
 
