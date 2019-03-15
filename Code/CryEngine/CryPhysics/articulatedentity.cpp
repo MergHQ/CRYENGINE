@@ -220,8 +220,10 @@ int CArticulatedEntity::AddGeometry(phys_geometry *pgeom, pe_geomparams* _params
 		}	else
 			m_joints[i].quat = m_joints[i].body.q*m_joints[i].body.qfb;
 		m_joints[i].I = Matrix33(m_joints[i].body.q)*m_joints[i].body.Ibody*Matrix33(!m_joints[i].body.q);
-	}	else if (m_joints[i].nParts==1)
+	}	else if (m_joints[i].nParts==1) {
 		m_joints[i].body.pos = bodypos;
+		m_joints[i].quat = qrot*m_parts[idx].q;
+	}
 	m_infos[idx].iJoint = i;
 	m_infos[idx].idbody = params->idbody;
 	m_infos[idx].q0 = !m_joints[i].quat*(qrot*m_parts[idx].q);
@@ -1559,9 +1561,10 @@ int CArticulatedEntity::SyncWithHost(int bRecalcJoints, float time_interval)
 		pp.q = m_pHost->m_qrot*m_qHostPivot;
 		pp.pGridRefEnt = m_pHost;
 		pp.bRecalcBounds = 0;
-		if (!m_bAwake || m_body.M<=0 || m_flags & aef_recorded_physics)
+		if (!m_bAwake || m_body.M<=0 || m_flags & aef_recorded_physics) {
 			SetParams(&pp,1);
-		else if (m_nJoints)	{
+			m_bUpdateBodies = bRecalcJoints = 0;
+		} else if (m_nJoints)	{
 			m_joints[0].quat0 = pp.q;
 			m_posPivot = pp.pos;
 		}
