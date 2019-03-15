@@ -772,7 +772,7 @@ void CEntity::OnRellocate(EntityTransformationFlagsMask transformReasons)
 	//////////////////////////////////////////////////////////////////////////
 	// Reposition entity in the partition grid.
 	//////////////////////////////////////////////////////////////////////////
-	if ((m_flags & ENTITY_FLAG_NO_PROXIMITY) == 0 && (!IsHidden() || (transformReasons & ENTITY_XFORM_EDITOR)) && !IsGarbage())
+	if (CVar::es_UseProximityTriggerSystem && (m_flags & ENTITY_FLAG_NO_PROXIMITY) == 0 && (!IsHidden() || (transformReasons & ENTITY_XFORM_EDITOR)) && !IsGarbage())
 	{
 		if (transformReasons & ENTITY_XFORM_POS)
 		{
