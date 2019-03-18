@@ -49,7 +49,8 @@ void CGamePlugin::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lp
 			// Don't need to load the map in editor
 			if (!gEnv->IsEditor())
 			{
-				gEnv->pConsole->ExecuteString("map example", false, true);
+				// Load the example map in client server mode
+				gEnv->pConsole->ExecuteString("map example s", false, true);
 			}
 		}
 		break;
@@ -77,6 +78,12 @@ void CGamePlugin::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lp
 			}
 		}
 		break;
+		
+		case ESYSTEM_EVENT_LEVEL_POST_UNLOAD:
+		{
+			m_players.clear();
+		}
+		break;
 	}
 }
 
@@ -85,7 +92,10 @@ bool CGamePlugin::OnClientConnectionReceived(int channelId, bool bIsReset)
 	// Connection received from a client, create a player entity and component
 	SEntitySpawnParams spawnParams;
 	spawnParams.pClass = gEnv->pEntitySystem->GetClassRegistry()->GetDefaultClass();
-	spawnParams.sName = "Player";
+	
+	// Set a unique name for the player entity
+	const string playerName = string().Format("Player%" PRISIZE_T, m_players.size());
+	spawnParams.sName = playerName;
 	
 	// Set local player details
 	if (m_players.empty() && !gEnv->IsDedicated())
@@ -99,7 +109,6 @@ bool CGamePlugin::OnClientConnectionReceived(int channelId, bool bIsReset)
 	{
 		// Set the local player entity channel id, and bind it to the network so that it can support Multiplayer contexts
 		pPlayerEntity->GetNetEntity()->SetChannelId(channelId);
-		pPlayerEntity->GetNetEntity()->BindToNetwork();
 
 		// Create the player component instance
 		CPlayerComponent* pPlayer = pPlayerEntity->GetOrCreateComponentClass<CPlayerComponent>();
@@ -124,7 +133,7 @@ bool CGamePlugin::OnClientReadyForGameplay(int channelId, bool bIsReset)
 		{
 			if (CPlayerComponent* pPlayer = pPlayerEntity->GetComponent<CPlayerComponent>())
 			{
-				pPlayer->Revive();
+				pPlayer->OnReadyForGameplayOnServer();
 			}
 		}
 	}
@@ -141,6 +150,20 @@ void CGamePlugin::OnClientDisconnected(int channelId, EDisconnectionCause cause,
 		gEnv->pEntitySystem->RemoveEntity(it->second);
 
 		m_players.erase(it);
+	}
+}
+
+void CGamePlugin::IterateOverPlayers(std::function<void(CPlayerComponent& player)> func) const
+{
+	for (const std::pair<int, EntityId>& playerPair : m_players)
+	{
+		if (IEntity* pPlayerEntity = gEnv->pEntitySystem->GetEntity(playerPair.second))
+		{
+			if (CPlayerComponent* pPlayer = pPlayerEntity->GetComponent<CPlayerComponent>())
+			{
+				func(*pPlayer);
+			}
+		}
 	}
 }
 
