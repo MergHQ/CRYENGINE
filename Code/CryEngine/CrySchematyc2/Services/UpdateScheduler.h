@@ -130,6 +130,7 @@ namespace Schematyc2
 
 #if DEBUG_RELEVANCE_GRID
 		void DebugDrawStatic(CUpdateRelevanceContext* pRelevanceContext);
+		void DebugLogStaticMemoryStats();
 #endif
 
 	private:

@@ -222,6 +222,15 @@ namespace Schematyc2
 	}
 
 	//////////////////////////////////////////////////////////////////////////
+	void CLibStateMachine::CompactMemory()
+	{
+		m_listeners.shrink_to_fit();
+		m_variables.shrink_to_fit();
+		m_containers.shrink_to_fit();
+	}
+
+
+	//////////////////////////////////////////////////////////////////////////
 	CLibState::CLibState(const SGUID& guid, const char* szName)
 		: m_guid(guid)
 		, m_name(szName)
@@ -420,6 +429,19 @@ namespace Schematyc2
 	void CLibState::AddTransition(size_t iTransition)
 	{
 		m_transitions.push_back(iTransition);
+	}
+
+	//////////////////////////////////////////////////////////////////////////
+	void CLibState::CompactMemory()
+	{
+		m_variables.shrink_to_fit();
+		m_containers.shrink_to_fit();
+		m_timers.shrink_to_fit();
+		m_actionInstances.shrink_to_fit();
+		m_constructors.shrink_to_fit();
+		m_destructors.shrink_to_fit();
+		m_signalReceivers.shrink_to_fit();
+		m_transitions.shrink_to_fit();
 	}
 
 	//////////////////////////////////////////////////////////////////////////
@@ -1154,6 +1176,25 @@ namespace Schematyc2
 	}
 
 	//////////////////////////////////////////////////////////////////////////
+	void CLibFunction::CompactMemory()
+	{
+		if (m_size < m_capacity)
+		{
+			m_pBegin = static_cast<uint8*>(realloc(m_pBegin, m_size));
+			m_capacity = m_size;
+		}
+
+		m_inputs.shrink_to_fit();
+		m_variantInputs.shrink_to_fit();
+		m_outputs.shrink_to_fit();
+		m_variantOutputs.shrink_to_fit();
+		m_variantConsts.shrink_to_fit();
+		m_globalFunctionTable.shrink_to_fit();
+		m_componentMemberFunctionTable.shrink_to_fit();
+		m_actionMemberFunctionTable.shrink_to_fit();
+	}
+
+	//////////////////////////////////////////////////////////////////////////
 	CLibFunction::SParam::SParam(const char* _name, const char* _textDesc)
 		: name(_name)
 		, textDesc(_textDesc)
@@ -1577,7 +1618,7 @@ namespace Schematyc2
 	const SGUID CLibClass::GetFunctionGUID(const LibFunctionId& functionId) const
 	{
 		TFunctionMap::const_iterator	iFunction = m_functions.find(functionId);
-		return iFunction != m_functions.end() ? iFunction->second.graphGUID : SGUID();
+		return iFunction != m_functions.end() ? iFunction->second.function.GetGUID() : SGUID();
 	}
 
 	//////////////////////////////////////////////////////////////////////////
@@ -1592,7 +1633,7 @@ namespace Schematyc2
 		for(TFunctionMap::const_iterator iFunction = m_functions.begin(), iEndFunction = m_functions.end(); iFunction != iEndFunction; ++ iFunction)
 		{
 			const SFunction&	function = iFunction->second;
-			if(function.graphGUID == graphGUID)
+			if(function.function.GetGUID() == graphGUID)
 			{
 				PreviewFunction(function.function, stringStreamOutCallback);
 			}
@@ -1899,7 +1940,7 @@ namespace Schematyc2
 	LibFunctionId CLibClass::AddFunction(const SGUID& graphGUID)
 	{
 		LibFunctionId functionId = m_nextFunctionId ++;
-		m_functions.insert(TFunctionMap::value_type(functionId, SFunction(functionId, graphGUID)));
+		m_functions.insert(TFunctionMap::value_type(functionId, SFunction(graphGUID)));
 		return functionId;
 	}
 
@@ -1932,6 +1973,51 @@ namespace Schematyc2
 	}
 
 	//////////////////////////////////////////////////////////////////////////
+	void CLibClass::CompactMemory()
+	{
+		for (TFunctionMap::value_type& functionPair : m_functions)
+		{
+			functionPair.second.function.CompactMemory();
+		}
+
+		m_stateMachines.shrink_to_fit();
+		for (CLibStateMachine& stateMachine : m_stateMachines)
+		{
+			stateMachine.CompactMemory();
+		}
+
+		m_states.shrink_to_fit();
+		for (CLibState& state : m_states)
+		{
+			state.CompactMemory();
+		}
+
+		m_variables.shrink_to_fit();
+		m_containers.shrink_to_fit();
+		m_variants.shrink_to_fit();
+		m_timers.shrink_to_fit();
+		m_persistentTimers.shrink_to_fit();
+		m_abstractInterfaceImplementations.shrink_to_fit();
+		m_componentInstances.shrink_to_fit();
+		m_actionInstances.shrink_to_fit();
+		m_persistentActionInstances.shrink_to_fit();
+		m_constructors.shrink_to_fit();
+		m_persistentConstructors.shrink_to_fit();
+		m_destructors.shrink_to_fit();
+		m_persistentDestructors.shrink_to_fit();
+		m_signalReceivers.shrink_to_fit();
+		m_persistentSignalReceivers.shrink_to_fit();
+		m_transitions.shrink_to_fit();
+		m_functions_New.shrink_to_fit();
+		for (CRuntimeFunctionPtr& pFunction : m_functions_New)
+		{
+			pFunction->CompactMemory();
+		}
+
+		m_resourcesToPrecache.shrink_to_fit();
+	}
+
+	//////////////////////////////////////////////////////////////////////////
 	void CLibClass::AddPrecacheResource(IAnyConstPtr resource)
 	{
 		m_resourcesToPrecache.emplace_back(resource);
@@ -1950,10 +2036,10 @@ namespace Schematyc2
 	}
 
 	//////////////////////////////////////////////////////////////////////////
-	CLibClass::SFunction::SFunction(const LibFunctionId& _functionId, const SGUID& _graphGUID)
-		: functionId(_functionId)
-		, graphGUID(_graphGUID)
-	{}
+	CLibClass::SFunction::SFunction(const SGUID& _graphGUID)
+	{
+		function.SetGUID(_graphGUID);
+	}
 
 	//////////////////////////////////////////////////////////////////////////
 	void CLibClass::PreviewFunction(const CLibFunction& function, StringStreamOutCallback stringStreamOutCallback) const
@@ -2595,5 +2681,14 @@ namespace Schematyc2
 	{
 		TClassMap::iterator	iClass = m_classes.find(guid);
 		return iClass != m_classes.end() ? iClass->second : CLibClassPtr();
+	}
+
+	//////////////////////////////////////////////////////////////////////////
+	void CLib::CompactMemory()
+	{
+		for (TClassMap::value_type& classPair : m_classes)
+		{
+			classPair.second->CompactMemory();
+		}
 	}
 }
