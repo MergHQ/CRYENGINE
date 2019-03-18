@@ -113,6 +113,7 @@ public:
 	CHeap() : CGpuHeap(VK_MAX_MEMORY_TYPES) {}
 	CHeap(const CHeap&) = delete;
 	CHeap(CHeap&&) = delete;
+	~CHeap() { Release(); }
 
 	// Initialize the heap for a given physical device.
 	// This sets up preference information for heap types.
