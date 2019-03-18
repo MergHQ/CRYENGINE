@@ -1604,6 +1604,8 @@ bool CSystem::InitPhysicsRenderer(const SSystemInitParams& startupParams)
 		               "Culling distance for physics helpers rendering");
 		REGISTER_CVAR2("p_wireframe_distance", &m_pPhysRenderer->m_wireframeDist, m_pPhysRenderer->m_wireframeDist, 0,
 		               "Maximum distance at which wireframe is drawn on physics helpers");
+		REGISTER_CVAR2("p_meridian_distance", &m_pPhysRenderer->m_meridianDist, m_pPhysRenderer->m_meridianDist, 0,
+		               "Maximum distance at which meridians/parallels are drawn on physics helpers for primitives with round parts");
 		REGISTER_CVAR2("p_ray_fadeout", &m_pPhysRenderer->m_timeRayFadein, m_pPhysRenderer->m_timeRayFadein, 0,
 		               "Fade-out time for ray physics helpers");
 		REGISTER_CVAR2("p_ray_peak_time", &m_pPhysRenderer->m_rayPeakTime, m_pPhysRenderer->m_rayPeakTime, 0,
