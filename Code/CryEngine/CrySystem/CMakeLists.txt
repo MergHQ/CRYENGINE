@@ -495,6 +495,8 @@ add_sources("CrySystem_uber_1.cpp"
 add_sources("CrySystem_uber_7.cpp"
 	PROJECTS CrySystem
 	SOURCE_GROUP "PlatformOS"
+		"PlatformOS/PlatformOSUserManager_Durango.h"
+		"PlatformOS/PlatformOSUserManager_Durango.cpp"
 		"PlatformOS/StreamingInstall_Durango.h"
 		"PlatformOS/StreamingInstall_Durango.cpp"
 		"PlatformOS/SaveReaderWriter_Durango.h"
