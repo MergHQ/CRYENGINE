@@ -182,6 +182,28 @@ void CCharInstance::CopyPoseFrom(const ICharacterInstance& rICharInstance)
 	}
 }
 
+void CCharInstance::SetParentRenderNode(const ICharacterRenderNode* pRenderNode)
+{
+	if (m_pParentRenderNode != pRenderNode)
+	{
+		m_pParentRenderNode = pRenderNode;
+
+		// This is a temporary workaround to make sure that reassignment of a render node
+		// propagates properties of the new render node through the attachment hierarchy.
+		SmallFunction<void(CCharInstance*)> recursivelyUpdateAttachedObjects = [&](CCharInstance* pCharacter)
+		{
+			pCharacter->m_AttachmentManager.UpdateAttachedObjects();
+
+			for (CCharInstance* pDependentCharacter : pCharacter->m_AttachmentManager.GetAttachedCharacterInstances())
+			{
+				recursivelyUpdateAttachedObjects(pDependentCharacter);
+			}
+		};
+
+		recursivelyUpdateAttachedObjects(this);
+	}
+}
+
 //////////////////////////////////////////////////////////////////////////
 // TODO: Should be part of CSkeletonPhysics!
 void CCharInstance::UpdatePhysicsCGA(Skeleton::CPoseData& poseData, float fScale, const QuatTS& rAnimLocationNext)

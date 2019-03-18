@@ -93,7 +93,7 @@ public:
 
 	//! Updates objects attached to sockets.
 	//! This part of attachment update is performed in the main thread and lets IAttachmentObject implementations consume results of UpdateAttachments().
-	void           UpdateAttachedObjects(Skeleton::CPoseData& pPoseData);
+	void           UpdateAttachedObjects();
 
 	void           DrawAttachments(SRendParams& rRendParams, const Matrix34& m, const SRenderingPassInfo& passInfo, const f32 fZoomFactor, const f32 fZoomDistanceSq);
 

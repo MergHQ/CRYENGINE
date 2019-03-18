@@ -89,7 +89,7 @@ void CSkeletonPose::SkeletonPostProcess(Skeleton::CPoseData& poseData)
 		g_pCharacterManager->m_arrVisible.push_back(m_bInstanceVisible);
 	}
 
-	m_pInstance->m_AttachmentManager.UpdateAttachedObjects(poseData);
+	m_pInstance->m_AttachmentManager.UpdateAttachedObjects();
 	if (m_pInstance->IsCharacterVisible() || m_bFullSkeletonUpdate)
 		UpdateBBox();
 

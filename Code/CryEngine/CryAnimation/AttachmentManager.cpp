@@ -1638,7 +1638,7 @@ void CAttachmentManager::UpdateSockets(Skeleton::CPoseData& rPoseData)
 	}
 }
 
-void CAttachmentManager::UpdateAttachedObjects(Skeleton::CPoseData& rPoseData)
+void CAttachmentManager::UpdateAttachedObjects()
 {
 	if (m_TypeSortingRequired)
 	{
@@ -2411,7 +2411,18 @@ void CAttachmentManager::ProcessAttachment(IAttachment* pSocket)
 		const bool auxiliaryViewport = (m_pSkelInstance->m_CharEditMode & CA_CharacterTool);
 		pRenderNode->SetRndFlags(ERF_NO_3DENGINE_REGISTRATION, auxiliaryViewport);
 
-		pRenderNode->SetMatrix(Matrix34{ pSocket->GetAttWorldAbsolute() * pSocket->GetAdditionalTransformation() });
+		// This check prevents attachments from being added to the scene graph when the parent character isn't.
+		if (auxiliaryViewport || (m_pSkelInstance->GetParentRenderNode() && m_pSkelInstance->GetParentRenderNode()->m_pOcNode))
+		{
+			pRenderNode->SetMatrix(Matrix34{ pSocket->GetAttWorldAbsolute() * pSocket->GetAdditionalTransformation() });
+		}
+		else
+		{
+			if (pRenderNode->m_pOcNode)
+			{
+				gEnv->p3DEngine->UnRegisterEntityAsJob(pRenderNode);
+			}
+		}
 	}
 }
 
