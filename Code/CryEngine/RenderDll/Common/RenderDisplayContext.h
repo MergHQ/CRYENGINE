@@ -83,7 +83,7 @@ public:
 	std::string          GetName() const { return m_name; }
 	uint32_t             GetID() const { return m_uniqueId; }
 
-	OutputSmartPtr       GetRenderOutput() const { return m_pRenderOutput; };
+	OutputSmartPtr       GetRenderOutput() const { return m_pRenderOutput; }
 	Vec2_tpl<uint32_t>   GetDisplayResolution() const { return Vec2_tpl<uint32_t>(m_DisplayWidth, m_DisplayHeight); }
 	const SRenderViewport& GetViewport() const { return m_viewport; }
 	float                GetAspectRatio() const { return m_aspectRatio; }

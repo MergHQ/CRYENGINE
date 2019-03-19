@@ -339,7 +339,7 @@ public:
 	// Preprocess technique
 	virtual bool Preprocess(const SRenderViewInfo& viewInfo)      { return IsActive(); }
 	// Some effects might require updating data/parameters, etc
-	virtual void Update()          {};
+	virtual void Update()          {}
 	// Render technique
 	virtual void Render() = 0;
 	// Reset technique state to default

@@ -18,7 +18,7 @@ struct SCompiledRenderPrimitive : private NoCopy
 		eType_RenderPrimitive,
 	};
 
-	SCompiledRenderPrimitive(SCompiledRenderPrimitive::EType type = eType_Base) : m_type(type) {};
+	SCompiledRenderPrimitive(SCompiledRenderPrimitive::EType type = eType_Base) : m_type(type) {}
 	SCompiledRenderPrimitive(SCompiledRenderPrimitive&& other);
 
 	void Reset();

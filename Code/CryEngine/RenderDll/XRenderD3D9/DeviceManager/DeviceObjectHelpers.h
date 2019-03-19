@@ -460,7 +460,7 @@ struct SDeviceObjectHelpers
 	public:
 		CShaderConstantManager();
 		CShaderConstantManager(CShaderConstantManager&& other);
-		~CShaderConstantManager() {};
+		~CShaderConstantManager() {}
 
 		void Reset();
 

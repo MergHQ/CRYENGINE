@@ -249,11 +249,6 @@ private:
 	virtual void            RestoreGamma(void) override;
 	void                    SetGamma(float fGamma, float fBrigtness, float fContrast, bool bForce);
 
-	int                     FindTextureInRegistry(const char* filename, int* tex_type);
-	int                     RegisterTextureInRegistry(const char* filename, int tex_type, int tid, int low_tid);
-	unsigned int            MakeTextureREAL(const char* filename, int* tex_type, unsigned int load_low_res);
-	unsigned int            CheckTexturePlus(const char* filename, const char* postfix);
-
 	static HRESULT CALLBACK OnD3D11CreateDevice(D3DDevice* pd3dDevice);
 
 	void                    PostDeviceReset();
@@ -499,7 +494,7 @@ public:
 	virtual bool ReadFrameBuffer(uint32* pDstRGBA8, int destinationWidth, int destinationHeight, bool readPresentedBackBuffer = true, EReadTextureFormat format = EReadTextureFormat::RGB8) override;
 
 	//misc
-	void         UnloadOldTextures() {};
+	void         UnloadOldTextures() {}
 
 	virtual void Set2DMode(bool enable, int ortox, int ortoy, float znear = -1e10f, float zfar = 1e10f) override;
 

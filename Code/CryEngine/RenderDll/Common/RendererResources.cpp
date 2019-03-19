@@ -5,12 +5,12 @@
 #include "RendererResources.h"
 #include "RendererCVars.h"
 #include "Renderer.h"
-#include "Textures/Texture.h"                           // CTexture
+#include "Textures/Texture.h"
 
-#include "../XRenderD3D9/D3DDeferredShading.h"          // CDeferredShading
-#include "../XRenderD3D9/D3DPostProcess.h"              // SD3DPostEffectsUtils
+#include "../XRenderD3D9/D3DDeferredShading.h"
+#include "../XRenderD3D9/D3DPostProcess.h"
 
-#include "RendElements/FlareSoftOcclusionQuery.h"       // CFlareSoftOcclusionQuery
+#include "RendElements/FlareSoftOcclusionQuery.h"
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -19,7 +19,7 @@
 struct SRenderTargetInfo
 {
 	SRenderTargetInfo() : nWidth(0), nHeight(0), cClearColor(Clr_Empty), Format(eTF_Unknown), nFlags(0), lplpStorage(0), nPitch(0), fPriority(0.0f), nCustomID(0)
-	{};
+	{}
 
 	uint32      nWidth;
 	uint32      nHeight;

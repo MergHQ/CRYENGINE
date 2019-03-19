@@ -28,7 +28,7 @@ struct SRenderThreadLocalStorage
 {
 	int currentCommandBuffer;
 
-	SRenderThreadLocalStorage() : currentCommandBuffer(0) {};
+	SRenderThreadLocalStorage() : currentCommandBuffer(0) {}
 };
 
 
