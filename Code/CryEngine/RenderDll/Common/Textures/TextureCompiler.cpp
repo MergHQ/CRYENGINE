@@ -484,7 +484,7 @@ private:
 	}
 
 	// Returns list of asset filenames without paths.
-	static std::vector<string> GetAssetFiles(const string& srcFile)
+	static std::vector<string> GetAssetFiles(const string& srcFile, bool onlyMentionedFile = false)
 	{
 		const CryPathString path = PathUtil::Make(PathUtil::GetPathWithoutFilename(srcFile.c_str()).c_str(), "*");
 		std::vector<string> files;
@@ -505,7 +505,8 @@ private:
 					continue;
 				}
 
-				files.emplace_back(fd.name);
+				if(!onlyMentionedFile || strstr(srcFile, fd.name))
+					files.emplace_back(fd.name);
 			} while (pPack->FindNext(handle, &fd) >= 0);
 			pPack->FindClose(handle);
 		}
@@ -527,7 +528,7 @@ private:
 
 		const string srcPath = PathUtil::GetPathWithoutFilename(srcFile);
 		const string dstPath = PathUtil::GetPathWithoutFilename(dstFile);
-		const auto files = GetAssetFiles(srcFile);
+		const auto files = GetAssetFiles(srcFile, true);
 		for (const string& file : files)
 		{
 			const string srcFile = srcPath + file;
