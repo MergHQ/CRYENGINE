@@ -1671,13 +1671,19 @@ void CAnimEntityNode::OnReset()
 	m_lookPose = "";
 	StopAudio();
 	ReleaseAllAnims();
-	UpdateDynamicParams();
 
 	m_baseAnimState.m_layerPlaysAnimation[0] = m_baseAnimState.m_layerPlaysAnimation[1] = m_baseAnimState.m_layerPlaysAnimation[2] = false;
 
 	if (m_pOwner)
 	{
-		m_pOwner->OnNodeReset(this);
+		if (m_pOwner->OnNodeReset(this))
+		{
+			UpdateDynamicParams();
+		}
+	}
+	else
+	{
+		UpdateDynamicParams();
 	}
 }
 
