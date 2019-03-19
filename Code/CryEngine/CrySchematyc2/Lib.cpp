@@ -1136,10 +1136,18 @@ namespace Schematyc2
 	//////////////////////////////////////////////////////////////////////////
 	size_t CLibFunction::AddOp(const SVMOp& op)
 	{
-		if(op.size > (m_capacity - m_size))
+		if (op.size > (m_capacity - m_size))
 		{
-			m_capacity	= /*std::*/max(m_capacity * GROWTH_FACTOR, /*std::*/max(op.size, MIN_CAPACITY));
-			m_pBegin		= static_cast<uint8*>(realloc(m_pBegin, m_capacity));
+			const size_t capacity = /*std::*/max(m_capacity * GROWTH_FACTOR, /*std::*/max(op.size, MIN_CAPACITY));
+			if (uint8* pBegin = static_cast<uint8*>(realloc(m_pBegin, capacity)))
+			{
+				m_capacity = capacity;
+				m_pBegin = pBegin;
+			}
+			else
+			{
+				SCHEMATYC2_COMPILER_FATAL_ERROR("Unable to add operation");
+			}
 		}
 		memcpy(m_pBegin + m_size, &op, op.size);
 		m_lastOpPos = m_size;
@@ -1180,8 +1188,11 @@ namespace Schematyc2
 	{
 		if (m_size < m_capacity)
 		{
-			m_pBegin = static_cast<uint8*>(realloc(m_pBegin, m_size));
-			m_capacity = m_size;
+			if (uint8* pBegin = static_cast<uint8*>(realloc(m_pBegin, m_size)))
+			{
+				m_pBegin = pBegin;
+				m_capacity = m_size;
+			}
 		}
 
 		m_inputs.shrink_to_fit();
