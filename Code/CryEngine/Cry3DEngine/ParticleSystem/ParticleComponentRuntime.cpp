@@ -104,30 +104,25 @@ void CParticleComponentRuntime::Clear()
 	m_deltaTime = -1.0f;
 }
 
-void CParticleComponentRuntime::PreRun()
+void CParticleComponentRuntime::RunParticles(uint count, float deltaTime)
 {
-	if (GetGpuRuntime())
-		return;
-
-	// Save and reset all particle data
-	TSaveRestore<CParticleContainer> saveContainerP(m_containers[EDD_Particle], m_pComponent->GetUseData(), EDD_Particle);
-
-	m_deltaTime = ComponentParams().m_stableTime;
+	m_deltaTime = deltaTime;
 	m_isPreRunning = true;
-
+	
 	Container().BeginSpawn();
-	GetComponent()->SpawnParticles(*this);
+	SSpawnEntry entry = {};
+	entry.m_count = count;
+	entry.m_ageBegin = deltaTime;
+	AddParticles({&entry, 1});
 	InitParticles();
 	Container().EndSpawn();
 
 	CalculateBounds();
 	m_pEmitter->UpdatePhysEnv();
-
+	m_deltaTime = deltaTime;
 	UpdateParticles();
 	CalculateBounds();
 	m_isPreRunning = false;
-
-	m_pComponent->OnPreRun(*this);
 
 	m_deltaTime = -1.0f;
 }
@@ -277,10 +272,6 @@ void CParticleComponentRuntime::UpdateSpawners()
 	container.EndSpawn();
 
 	DebugStabilityCheck();
-
-	// If this is the first creation of spawners, perform special PreRun step
-	if (m_pComponent->OnPreRun.size() && container.TotalSpawned() == container.Size())
-		PreRun();
 }
 
 void CParticleComponentRuntime::AddSpawners(TVarArray<SSpawnerDesc> spawners, bool cull)
@@ -316,10 +307,9 @@ void CParticleComponentRuntime::AddParticles(TConstArray<SSpawnEntry> spawnEntri
 		return;
 	}
 
-	const uint MaxSpawn = m_isPreRunning ? 16 : ~0;
 	uint newCount = 0;
 	for (const auto& spawnEntry : spawnEntries)
-		newCount += min(spawnEntry.m_count, MaxSpawn);
+		newCount += spawnEntry.m_count;
 	if (newCount == 0)
 		return;
 
@@ -335,8 +325,7 @@ void CParticleComponentRuntime::AddParticles(TConstArray<SSpawnEntry> spawnEntri
 	SUpdateRange range = Container().SpawnedRange();
 	for (const auto& spawnEntry : spawnEntries)
 	{
-		uint entryCount = min(spawnEntry.m_count, MaxSpawn);
-		range.m_end = CRY_PFX2_GROUP_ALIGN(range.m_begin + entryCount);
+		range.m_end = CRY_PFX2_GROUP_ALIGN(range.m_begin + spawnEntry.m_count);
 
 		if (parentIds.IsValid())
 		{
@@ -367,7 +356,7 @@ void CParticleComponentRuntime::AddParticles(TConstArray<SSpawnEntry> spawnEntri
 			}
 		}
 
-		range.m_begin += entryCount;
+		range.m_begin += spawnEntry.m_count;
 	}
 }
 
@@ -534,12 +523,12 @@ void CParticleComponentRuntime::InitParticles()
 	// feature post init particles
 	GetComponent()->PostInitParticles(*this);
 
-	if (!m_isPreRunning)
-		m_deltaTime = max(GetEmitter()->GetDeltaTime(), ComponentParams().m_maxParticleLife);
 	if (ComponentParams().m_isPreAged)
+	{
+		m_deltaTime = max(GetEmitter()->GetDeltaTime(), ComponentParams().m_maxParticleLife);
 		GetComponent()->PastUpdateParticles(*this);
-	if (!m_isPreRunning)
 		m_deltaTime = -1.0f;
+	}
 }
 
 void CParticleComponentRuntime::CalculateBounds()

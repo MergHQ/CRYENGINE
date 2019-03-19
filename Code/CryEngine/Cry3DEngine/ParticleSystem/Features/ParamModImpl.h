@@ -101,7 +101,7 @@ void CParamMod<Domain, T>::Update(CParticleComponentRuntime& runtime, ThisDataTy
 }
 
 template<EDataDomain Domain, typename T>
-void CParamMod<Domain, T>::ModifyInit(const CParticleComponentRuntime& runtime, TIOStream<TType>& stream, SUpdateRange range) const
+void CParamMod<Domain, T>::ModifyInit(const CParticleComponentRuntime& runtime, TIOStream<TType> stream, SUpdateRange range) const
 {
 	stream.Fill(range, m_baseValue);
 
@@ -113,7 +113,7 @@ void CParamMod<Domain, T>::ModifyInit(const CParticleComponentRuntime& runtime, 
 }
 
 template<EDataDomain Domain, typename T>
-void CParamMod<Domain, T>::ModifyUpdate(const CParticleComponentRuntime& runtime, TIOStream<TType>& stream, SUpdateRange range) const
+void CParamMod<Domain, T>::ModifyUpdate(const CParticleComponentRuntime& runtime, TIOStream<TType> stream, SUpdateRange range) const
 {
 	for (uint16 mask = m_updateMask, index = 0; mask; mask >>= 1, index++)
 	{

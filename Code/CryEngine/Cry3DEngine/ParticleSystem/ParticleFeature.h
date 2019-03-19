@@ -63,8 +63,6 @@ public:
 	// Runtime and spawner initialization
 	virtual void OnEdit(CParticleComponentRuntime& runtime) {}
 
-	virtual void OnPreRun(CParticleComponentRuntime& runtime) {}
-
 	virtual void GetDynamicData(const CParticleComponentRuntime& runtime, EParticleDataType type, void* data, EDataDomain domain, SUpdateRange range) {}
 
 	virtual void MainPreUpdate(CParticleComponentRuntime& runtime) {}
@@ -122,7 +120,6 @@ struct SFeatureDispatchers
 {
 	FEATURE_DISPATCHER(LoadResources);
 	FEATURE_DISPATCHER(OnEdit);
-	FEATURE_DISPATCHER(OnPreRun);
 	FEATURE_DISPATCHER(MainPreUpdate);
 	FEATURE_DISPATCHER(GetDynamicData);
 

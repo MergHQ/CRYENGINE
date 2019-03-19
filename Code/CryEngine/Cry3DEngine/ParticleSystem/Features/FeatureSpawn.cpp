@@ -324,11 +324,14 @@ public:
 
 	virtual float DefaultDuration() const override { return 0.0f; }
 
+	virtual void AdjustAmounts(const CParticleComponentRuntime& runtime, TIOStream<float> amounts) const {}
+
 	virtual void GetDynamicData(const CParticleComponentRuntime& runtime, EParticleDataType type, void* data, EDataDomain domain, SUpdateRange range) override
 	{
 		if (auto counts = ESDT_ParticleCounts.Cast(type, data, range))
 		{
-			SSpawnerUpdateBuffer<float> amounts(runtime, m_amount, domain);
+			SSpawnerUpdateBuffer<float> amounts(runtime, m_amount, domain, true);
+			AdjustAmounts(runtime, amounts.RawStream());
 			SSpawnerUpdateBuffer<float> durations(runtime, m_duration, domain);
 			const float scale = CountScale(runtime);
 			for (auto i : range)
@@ -346,7 +349,8 @@ public:
 
 	void GetSpawnCounts(CParticleComponentRuntime& runtime, TVarArray<float> counts) const override
 	{
-		auto amounts = runtime.IStream(ESDT_Amount);
+		STempUpdateBuffer<float> amounts(runtime, m_amount, runtime.FullRange(EDD_Spawner), true);
+		AdjustAmounts(runtime, amounts.RawStream());
 		auto ages = runtime.IStream(ESDT_Age);
 		auto lifetimes = runtime.IStream(ESDT_LifeTime);
 		auto spawned = runtime.IStream(ESDT_Spawned);
@@ -509,39 +513,18 @@ class CFeatureSpawnDensity : public CFeatureSpawnCount
 public:
 	CRY_PFX2_DECLARE_FEATURE
 
-	virtual void Serialize(Serialization::IArchive& ar) override
-	{
-		CParticleFeatureSpawnBase::Serialize(ar);
-	}
-
 	static float ApplyExtents(float amount, Vec4 const& extents)
 	{
 		return extents[0] + amount * extents[1] + sqr(amount) * extents[2] + cube(amount) * extents[3];
 	}
 
-	virtual void GetDynamicData(const CParticleComponentRuntime& runtime, EParticleDataType type, void* data, EDataDomain domain, SUpdateRange range) override
+	virtual void AdjustAmounts(const CParticleComponentRuntime& runtime, TIOStream<float> amounts) const override
 	{
-		if (auto counts = ESDT_ParticleCounts.Cast(type, data, range))
-		{
-			SDynamicData<SMaxParticleCounts> baseCounts(runtime, type, domain, range);
-			SDynamicData<Vec4> extents(runtime, ESDT_SpatialExtents, domain, range);
-
-			for (auto i : range)
-			{
-				counts[i].rate += ApplyExtents(baseCounts[i].rate, extents[i]);
-				counts[i].burst += int_ceil(ApplyExtents((float)baseCounts[i].burst, extents[i]));
-			}
-		}
-	}
-
-	void GetSpawnCounts(CParticleComponentRuntime& runtime, TVarArray<float> counts) const override
-	{
-		CFeatureSpawnCount::GetSpawnCounts(runtime, counts);
-		SUpdateRange range(0, counts.size());
+		auto range = runtime.FullRange(EDD_Spawner);
 		SDynamicData<Vec4> extents(runtime, ESDT_SpatialExtents, EDD_Spawner, range);
 		for (auto i : range)
 		{
-			counts[i] = ApplyExtents(counts[i], extents[i]);
+			amounts[i] = ApplyExtents(amounts[i], extents[i]);
 		}
 	}
 };

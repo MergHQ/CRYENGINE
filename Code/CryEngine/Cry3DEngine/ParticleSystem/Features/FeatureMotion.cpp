@@ -320,8 +320,8 @@ void CFeatureMotionPhysics::Integrate(CParticleComponentRuntime& runtime)
 
 	IOVec3Stream positions = container.GetIOVec3Stream(EPVF_Position);
 	IOVec3Stream velocities = container.GetIOVec3Stream(EPVF_Velocity);
-	IVec3Stream velocityField = container.GetIVec3Stream(EPVF_VelocityField);
-	IVec3Stream accelerations = container.GetIVec3Stream(EPVF_Acceleration);
+	IOVec3Stream velocityField = container.GetIOVec3Stream(EPVF_VelocityField);
+	IOVec3Stream accelerations = container.GetIOVec3Stream(EPVF_Acceleration);
 	IFStream gravities = container.GetIFStream(EPDT_Gravity, 0.0f);
 	IFStream drags = container.GetIFStream(EPDT_Drag);
 	IFStream normAges = container.GetIFStream(EPDT_NormalAge);
