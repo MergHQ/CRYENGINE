@@ -48,6 +48,9 @@ struct CRY_ALIGN(128) Console
 #ifndef _RELEASE
 	int32 ca_DebugAnimUsageOnFileAccess;
 	int32 ca_AttachmentTextureMemoryBudget;
+
+	int32 ca_debug_attachmentManager_maxUsedMemSize;
+	int32 ca_debug_attachmentManager_maxUsedOffsetSize;
 #endif
 
 	DeclareConstIntCVar(ca_SnapToVGrid, 0);
@@ -127,6 +130,8 @@ struct CRY_ALIGN(128) Console
 	DeclareConstIntCVar(ca_DisableAnimationUnloading, 0);
 	DeclareConstIntCVar(ca_PreloadAllCAFs, 0);
 	DeclareConstIntCVar(ca_SampleQuatHemisphereFromCurrentPose, 0);
+	DeclareConstIntCVar(ca_MinAttachmentMemorySize, 4096);
+	DeclareConstIntCVar(ca_MinAttachmentOffsetSize, 4096);
 
 #if USE_FACIAL_ANIMATION_FRAMERATE_LIMITING
 	DeclareConstIntCVar(ca_FacialAnimationFramerate, 20);

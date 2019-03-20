@@ -207,9 +207,6 @@ private:
 	class CModificationCommandBuffer
 	{
 	public:
-		static const uint32 kMaxOffsets = 4096;
-		static const uint32 kMaxMemory = 4096;
-
 		CModificationCommandBuffer() { Clear(); }
 		~CModificationCommandBuffer();
 		void  Execute();

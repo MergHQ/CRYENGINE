@@ -2540,6 +2540,13 @@ void* CAttachmentManager::CModificationCommandBuffer::Alloc(size_t size, size_t 
 	// and adjust to actual padding afterwards
 	m_memory.resize(m_memory.size() - align + padding);
 	m_commandOffsets.push_back(currentOffset + padding);
+#ifndef _RELEASE
+	if (m_memory.size() > Console::GetInst().ca_debug_attachmentManager_maxUsedMemSize)
+		Console::GetInst().ca_debug_attachmentManager_maxUsedMemSize = m_memory.size();
+
+	if (m_commandOffsets.size() > Console::GetInst().ca_debug_attachmentManager_maxUsedOffsetSize)
+		Console::GetInst().ca_debug_attachmentManager_maxUsedOffsetSize = m_commandOffsets.size();
+#endif
 	return &m_memory[m_commandOffsets[m_commandOffsets.size() - 1]];
 }
 
@@ -2547,8 +2554,8 @@ void CAttachmentManager::CModificationCommandBuffer::Clear()
 {
 	m_memory.resize(0);
 	m_commandOffsets.resize(0);
-	m_memory.reserve(kMaxMemory);
-	m_commandOffsets.reserve(kMaxOffsets);
+	m_memory.reserve(Console::GetInst().ca_MinAttachmentMemorySize);
+	m_commandOffsets.reserve(Console::GetInst().ca_MinAttachmentOffsetSize);
 }
 
 CAttachmentManager::CModificationCommandBuffer::~CModificationCommandBuffer()
