@@ -791,7 +791,7 @@ bool CBaseObject::SetPos(const Vec3& pos, int flags)
 		InvalidateTM(flags | eObjectUpdateFlags_PositionChanged);
 	}
 
-	SetModified(true, false);
+	SetModified(true, true);
 
 	return true;
 }
@@ -843,7 +843,7 @@ bool CBaseObject::SetRotation(const Quat& rotate, int flags)
 		InvalidateTM(flags | eObjectUpdateFlags_RotationChanged);
 	}
 
-	SetModified(true, false);
+	SetModified(true, true);
 
 	return true;
 }
