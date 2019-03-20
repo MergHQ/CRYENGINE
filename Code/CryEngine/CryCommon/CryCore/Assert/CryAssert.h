@@ -98,6 +98,12 @@ bool CryAssertHandler(SAssertData const& data, SAssertCond& cond, char const* co
 
 //! Use the platform's default assert.
 			#include <assert.h>
+			#undef CRY_WAS_USE_ASSERT_SET
+			#define CRY_WAS_USE_ASSERT_SET 0
+			#undef USE_CRY_ASSERT
+			#undef CRY_ASSERT_TRACE
+			#undef CRY_ASSERT_MESSAGE
+			#undef CRY_ASSERT
 			#define CRY_ASSERT_TRACE(condition, parenthese_message) assert(condition)
 			#define CRY_ASSERT_MESSAGE(condition, ...)              assert(condition)
 			#define CRY_ASSERT(condition)                           assert(condition)
@@ -159,6 +165,11 @@ inline void assertion_failed(char const* const szExpr, char const* const szFunct
 		#define CRY_ASSERT_TRACE(condition, parenthese_message) ((void)0)
 		#define CRY_ASSERT_MESSAGE(condition, ...)              ((void)0)
 		#define CRY_ASSERT(condition)                           ((void)0)
+
+		#if defined(FORCE_STANDARD_ASSERT)
+// This empty assert is needed by RC in Release configuration.
+			#define assert(expression) ((void)0)
+		#endif
 	#endif // _RELEASE
 
 namespace Cry
@@ -188,5 +199,10 @@ inline T const& VerifyWithMessage(T const& expr, Args&& ... args)
 	#endif
 #endif
 
-#undef assert
-#define assert CRY_ASSERT
+// This is for every code base that wants to use CRY_ASSERT instead of standard assert.
+// Other tools such as RC define FORCE_STANDARD_ASSERT to use the standard assert in non-release configuration.
+// In Release configuration they'll have to define an empty assert.
+#if !defined(FORCE_STANDARD_ASSERT)
+	#undef assert
+	#define assert CRY_ASSERT
+#endif
