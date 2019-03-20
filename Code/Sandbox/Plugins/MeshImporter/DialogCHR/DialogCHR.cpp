@@ -450,7 +450,10 @@ void CDialogCHR::UpdateCharacter()
 	}
 
 	m_pCharacter->m_pCharInstance = CreateTemporaryCharacter(skeletonFilePath, skinFilePath, QString());
-	m_pCharacter->m_pCharInstance->SetCharEditMode(m_pCharacter->m_pCharInstance->GetCharEditMode() | CA_CharacterTool);
+	if (m_pCharacter->m_pCharInstance)
+	{
+		m_pCharacter->m_pCharInstance->SetCharEditMode(m_pCharacter->m_pCharInstance->GetCharEditMode() | CA_CharacterAuxEditor);
+	}
 
 	m_pCharacter->m_pPoseModifier = CSkeletonPoseModifier::CreateClassInstance();
 

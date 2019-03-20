@@ -849,7 +849,7 @@ void CMannequinModelViewport::UpdateCharacter(IEntity* pEntity, ICharacterInstan
 	ISkeletonAnim& skeletonAnimation = *pInstance->GetISkeletonAnim();
 	ISkeletonPose& skeletonPose = *pInstance->GetISkeletonPose();
 
-	pInstance->SetCharEditMode(CA_CharacterTool);
+	pInstance->SetCharEditMode(CA_CharacterAuxEditor);
 	skeletonPose.SetForceSkeletonUpdate(1);
 
 	//int AnimEventCallback(ICharacterInstance* pInstance,void* pPlayer);

@@ -70,10 +70,10 @@ enum EReloadCAFResult
 
 enum CharacterToolFlags
 {
-	CA_CharacterTool      = 0x01,
+	CA_CharacterAuxEditor = 0x01, //!< Set from any auxiliary editor or viewport, i.e. Character Tool, Mannequin and Mesh Importer
 	CA_DrawSocketLocation = 0x02,
 	CA_BindPose           = 0x04,
-	CA_AllowRedirection   = 0x08,  //!< Allow redirection in bindpose.
+	CA_AllowRedirection   = 0x08, //!< Allow redirection in bindpose.
 };
 
 #define CHR            (0x11223344)

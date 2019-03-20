@@ -775,12 +775,12 @@ void CharacterDocument::LoadCharacter(const char* filename)
 
 	if (m_uncompressedCharacter)
 	{
-		m_uncompressedCharacter->SetCharEditMode(m_uncompressedCharacter->GetCharEditMode() | CA_CharacterTool);
+		m_uncompressedCharacter->SetCharEditMode(m_uncompressedCharacter->GetCharEditMode() | CA_CharacterAuxEditor);
 	}
 
 	if (m_compressedCharacter)
 	{
-		m_compressedCharacter->SetCharEditMode(m_compressedCharacter->GetCharEditMode() | CA_CharacterTool);
+		m_compressedCharacter->SetCharEditMode(m_compressedCharacter->GetCharEditMode() | CA_CharacterAuxEditor);
 		m_compressedCharacter->GetISkeletonAnim()->SetEventCallback(AnimationEventCallback, this);
 
 		m_PhysicalLocation.SetIdentity();

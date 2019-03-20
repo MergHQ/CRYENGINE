@@ -422,7 +422,7 @@ ICharacterInstance* CharacterManager::CreateSKELInstance(const char* strFilePath
 
 	if (nLoadingFlags & CA_CharEditModel)
 	{
-		pNewCharacter->m_CharEditMode |= CA_CharacterTool;
+		pNewCharacter->m_CharEditMode |= CA_CharacterAuxEditor;
 	}
 
 	return pNewCharacter;

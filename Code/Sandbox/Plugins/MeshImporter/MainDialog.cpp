@@ -1263,6 +1263,11 @@ void CMainDialog::CreateSkinFromFile(const string& filePath)
 		QtUtil::ToQString(filePath),
 		QtUtil::ToQString(filePath),
 		QtUtil::ToQString(materialFilename));
+
+	if (m_pCharacterInstance)
+	{
+		m_pCharacterInstance->SetCharEditMode(m_pCharacterInstance->GetCharEditMode() | CA_CharacterAuxEditor);
+	}
 }
 
 void CMainDialog::UpdateResources()

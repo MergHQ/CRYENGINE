@@ -783,7 +783,7 @@ void CAttachmentSKIN::RenderAttachment(SRendParams& RendParams, const SRendering
 				}
 			}
 
-			if ((Console::GetInst().ca_DebugSWSkinning > 0) || (pMaster->m_CharEditMode & CA_CharacterTool))
+			if ((Console::GetInst().ca_DebugSWSkinning > 0) || (pMaster->m_CharEditMode & CA_CharacterAuxEditor))
 			{
 				m_vertexAnimation.DrawVertexDebug(pRenderMesh, QuatT(RenderMat34), pVertexAnimation);
 			}
@@ -809,7 +809,7 @@ void CAttachmentSKIN::RenderAttachment(SRendParams& RendParams, const SRendering
 #if EDITOR_PCDEBUGCODE
 		// Draw debug for vertex/compute skinning shaders.
 		// CPU skinning is handled natively by CVertexAnimation::DrawVertexDebug().
-		if (!bUseCPUDeformation && (pMaster->m_CharEditMode & CA_CharacterTool))
+		if (!bUseCPUDeformation && (pMaster->m_CharEditMode & CA_CharacterAuxEditor))
 		{
 			const Console& rConsole = Console::GetInst();
 

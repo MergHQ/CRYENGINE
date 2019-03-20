@@ -1747,7 +1747,7 @@ void CAttachmentManager::DrawAttachments(SRendParams& rParams, const Matrix34& r
 
 	if (passInfo.IsAuxWindow())
 	{
-		assert(m_pSkelInstance->m_CharEditMode & CA_CharacterTool);
+		assert(m_pSkelInstance->m_CharEditMode & CA_CharacterAuxEditor);
 
 		for (const IAttachment* pSocket : m_arrAttachments)
 		{
@@ -2408,7 +2408,7 @@ void CAttachmentManager::ProcessAttachment(IAttachment* pSocket)
 		}
 
 		// Attachments belonging to characters in auxiliary viewports should not be registered in the 3DEngine scene graph.
-		const bool auxiliaryViewport = (m_pSkelInstance->m_CharEditMode & CA_CharacterTool);
+		const bool auxiliaryViewport = (m_pSkelInstance->m_CharEditMode & CA_CharacterAuxEditor);
 		pRenderNode->SetRndFlags(ERF_NO_3DENGINE_REGISTRATION, auxiliaryViewport);
 
 		// This check prevents attachments from being added to the scene graph when the parent character isn't.

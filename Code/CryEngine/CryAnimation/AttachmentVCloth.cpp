@@ -533,7 +533,7 @@ void CAttachmentVCLOTH::RenderAttachment(SRendParams& RendParams, const SRenderi
 
 	DEFINE_PROFILER_FUNCTION();
 
-	bool bNeedSWskinning = (m_pAttachmentManager->m_pSkelInstance->m_CharEditMode&CA_CharacterTool); // in character tool always use software skinning
+	bool bNeedSWskinning = (m_pAttachmentManager->m_pSkelInstance->m_CharEditMode&CA_CharacterAuxEditor); // in character tool always use software skinning
 	if (!bNeedSWskinning)
 	{
 		m_clothPiece.GetSimulator().HandleCameraDistance();
@@ -836,7 +836,7 @@ void CAttachmentVCLOTH::RenderAttachment(SRendParams& RendParams, const SRenderi
 				}
 			}
 
-			if ((Console::GetInst().ca_DebugSWSkinning > 0) || (pMaster->m_CharEditMode & CA_CharacterTool))
+			if ((Console::GetInst().ca_DebugSWSkinning > 0) || (pMaster->m_CharEditMode & CA_CharacterAuxEditor))
 			{
 				m_vertexAnimation.DrawVertexDebug(pRenderMesh, QuatT(RenderMat34), pVertexAnimation);
 			}
@@ -2922,7 +2922,7 @@ void CClothPiece::UpdateSimulation(const DualQuat* pTransformations, const uint 
 		dt = dt ? dt : g_AverageFrameTime;
 
 		// don't handle camera distance in character tool
-		if (!(m_pCharInstance->m_CharEditMode & CA_CharacterTool))
+		if (!(m_pCharInstance->m_CharEditMode & CA_CharacterAuxEditor))
 		{
 			m_simulator.HandleCameraDistance();
 		}
