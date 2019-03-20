@@ -113,6 +113,11 @@ bool Remove(const char* szPath)
 
 bool MoveFileAllowOverwrite(const char* szOldFilePath, const char* szNewFilePath)
 {
+	if (QFileInfo::exists(szNewFilePath) && QFileInfo(szOldFilePath) == QFileInfo(szNewFilePath))
+	{
+		return true;
+	}
+
 	if (QFile::rename(szOldFilePath, szNewFilePath))
 	{
 		return true;
@@ -124,6 +129,16 @@ bool MoveFileAllowOverwrite(const char* szOldFilePath, const char* szNewFilePath
 
 bool CopyFileAllowOverwrite(const char* szSourceFilePath, const char* szDestinationFilePath)
 {
+	if (QFileInfo::exists(szDestinationFilePath) && QFileInfo(szSourceFilePath) == QFileInfo(szDestinationFilePath))
+	{
+		return true;
+	}
+
+	if (Pak::CompareFiles(szSourceFilePath, szDestinationFilePath))
+	{
+		return true; // Files are identical and copy operation is considered to be successful.
+	}
+
 	GetISystem()->GetIPak()->MakeDir(PathUtil::GetDirectory(szDestinationFilePath));
 
 	if (QFile::copy(szSourceFilePath, szDestinationFilePath))
