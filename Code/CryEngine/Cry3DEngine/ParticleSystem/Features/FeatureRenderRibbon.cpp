@@ -237,13 +237,21 @@ void CFeatureRenderRibbon::MakeRibbons(const CParticleComponentRuntime& runtime,
 	}
 }
 
-inline void NormalizeSafe(Vec3& v, const Vec3& safe, float size)
+static const float minParticleSize = 1e-6f;
+
+ILINE float NormalizeSafe(Vec3& out, const Vec3& v, float size)
 {
 	float lensqr = v.len2();
-	if (lensqr > FLT_EPSILON)
-		v *= rsqrt(lensqr) * size;
+	if (lensqr > sqr(FLT_EPSILON))
+	{
+		out = v * (rsqrt(lensqr) * size);
+		return size;
+	}
 	else
-		v = safe * size;
+	{
+		out.zero();
+		return 0.0f;
+	}
 }
 
 class CRibbonAxesCamera
@@ -253,16 +261,12 @@ public:
 		: m_sizes(container.GetIFStream(EPDT_Size))
 		, m_cameraPosition(camera.GetPosition()) {}
 
-	ILINE SParticleAxes Sample(TParticleId particleId, Vec3 movingPositions[3]) const
+	ILINE bool Sample(SParticleAxes& axes, TParticleId particleId, Vec3 movingPositions[3]) const
 	{
-		SParticleAxes axes;
-		const float size = m_sizes.Load(particleId);
+		const float size = max(m_sizes.Load(particleId), minParticleSize);
 		const Vec3 front = movingPositions[1] - m_cameraPosition;
-		axes.xAxis = (movingPositions[0] - movingPositions[2]) ^ front;
-		NormalizeSafe(axes.xAxis, Vec3(0, 0, 1), size);
-		axes.yAxis = axes.xAxis ^ front;
-		axes.yAxis *= size * axes.yAxis.GetInvLength();
-		return axes;
+		NormalizeSafe(axes.xAxis, (movingPositions[0] - movingPositions[2]) ^ front, size);
+		return NormalizeSafe(axes.yAxis, axes.xAxis ^ front, size) > minParticleSize;
 	}
 
 private:
@@ -277,15 +281,12 @@ public:
 		: m_orientations(container.GetIQuatStream(EPQF_Orientation))
 		, m_sizes(container.GetIFStream(EPDT_Size)) {}
 
-	ILINE SParticleAxes Sample(TParticleId particleId, Vec3 movingPositions[3]) const
+	ILINE bool Sample(SParticleAxes& axes, TParticleId particleId, Vec3 movingPositions[3]) const
 	{
-		SParticleAxes axes;
-		const float size = m_sizes.Load(particleId);
+		const float size = max(m_sizes.Load(particleId), minParticleSize);
 		const Quat orientation = m_orientations.Load(particleId);
 		axes.xAxis = orientation.GetColumn0() * -size;
-		axes.yAxis = movingPositions[0] - movingPositions[2];
-		NormalizeSafe(axes.yAxis, Vec3(0, 0, 1), size);
-		return axes;
+		return NormalizeSafe(axes.yAxis, movingPositions[0] - movingPositions[2], size) > minParticleSize;
 	}
 
 private:
@@ -396,6 +397,7 @@ void CFeatureRenderRibbon::WriteToGPUMem(const CParticleComponentRuntime& runtim
 		Vec3 position;
 		SParticleAxes axes;
 		SParticleColorST colorST;
+		bool validAxes = false;
 
 		for (uint i = ribbon.m_firstIdx; i < ribbon.m_lastIdx; ++i)
 		{
@@ -403,19 +405,22 @@ void CFeatureRenderRibbon::WriteToGPUMem(const CParticleComponentRuntime& runtim
 
 			position = movingPositions[1];
 
-			const float alpha = alphas.SafeLoad(particleId) * ribbonAlphas[ribbonId];
-			axes = axesSampler.Sample(particleId, movingPositions);
-			colorST = colorSTsSampler.Sample(particleId, frameId, animPos, alpha);
-
-			if (hasOffset)
+			validAxes = axesSampler.Sample(axes, particleId, movingPositions);
+			if (validAxes)
 			{
-				const Vec3 zAxis = axes.xAxis.Cross(axes.yAxis).GetNormalized();
-				position -= zAxis * m_offset;
-			}
+				const float alpha = alphas.SafeLoad(particleId) * ribbonAlphas[ribbonId];
+				colorST = colorSTsSampler.Sample(particleId, frameId, animPos, alpha);
 
-			localPositions.Array().push_back(position);
-			localAxes.Array().push_back(axes);
-			localColorSTs.Array().push_back(colorST);
+				if (hasOffset)
+				{
+					const Vec3 zAxis = axes.xAxis.Cross(axes.yAxis).GetNormalized();
+					position -= zAxis * m_offset;
+				}
+
+				localPositions.Array().push_back(position);
+				localAxes.Array().push_back(axes);
+				localColorSTs.Array().push_back(colorST);
+			}
 
 			movingPositions[0] = movingPositions[1];
 			movingPositions[1] = movingPositions[2];
@@ -423,21 +428,25 @@ void CFeatureRenderRibbon::WriteToGPUMem(const CParticleComponentRuntime& runtim
 				movingPositions[2] = positions.Load(sortEntries[i + 2]);
 		}
 
-		if (m_connectToOrigin)
+		if (validAxes)
 		{
-			if (ribbonParentId != gInvalidId)
-				position = parentPositions.Load(ribbonParentId);
-			colorST.st.y = 0;
-			colorST.st.w = 0;
+			if (m_connectToOrigin)
+			{
+				if (ribbonParentId != gInvalidId)
+					position = parentPositions.Load(ribbonParentId);
+				colorST.st.y = 0;
+				colorST.st.w = 0;
+				localPositions.Array().push_back(position);
+				localAxes.Array().push_back(axes);
+				localColorSTs.Array().push_back(colorST);
+			}
+
+			colorST.st.x = 255;
 			localPositions.Array().push_back(position);
 			localAxes.Array().push_back(axes);
 			localColorSTs.Array().push_back(colorST);
 		}
 
-		colorST.st.x = 255;
-		localPositions.Array().push_back(position);
-		localAxes.Array().push_back(axes);
-		localColorSTs.Array().push_back(colorST);
 		totalRenderedParticles += numVertices;
 	}
 

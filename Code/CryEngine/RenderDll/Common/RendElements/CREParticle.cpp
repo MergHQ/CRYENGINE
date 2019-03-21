@@ -205,6 +205,7 @@ CREParticle::CREParticle()
 	, m_nFirstVertex(0)
 	, m_nFirstIndex(0)
 	, m_addedToView(0)
+	, m_bIncomplete(true)
 {
 	mfSetType(eDATA_Particle);
 	mfUpdateFlags(FCEF_KEEP_DISTANCE);
@@ -353,8 +354,6 @@ void CRenderer::PrepareParticleRenderObjects(Array<const SAddParticlesToSceneJob
 	for (auto& job : aJobs)
 	{
 		// Generate the RenderItem for this particle container
-		ERenderListID nList;
-		uint32 nBatchFlags;
 		SShaderItem shaderItem = *job.pShaderItem;
 		CRenderObject* pRenderObject = job.pRenderObject;
 
@@ -379,16 +378,17 @@ void CRenderer::PrepareParticleRenderObjects(Array<const SAddParticlesToSceneJob
 			aabb = AABB{ .0f };
 		if (pRenderObject->m_pCompiledObject)
 			pRenderObject->m_pCompiledObject->m_aabb = aabb;
+		pRE->SetBBox(aabb);
 
 		// generate the RenderItem entries for this Particle Element
 		assert(pRenderObject->m_bPermanent);
-		EF_GetParticleListAndBatchFlags(
-			nBatchFlags, nList, pRenderObject,
-			shaderItem, passInfo);
 		if (!pRE->AddedToView())
 		{
-			// Update particle AABB
-			pRE->SetBBox(aabb);
+			ERenderListID nList;
+			uint32 nBatchFlags;
+			EF_GetParticleListAndBatchFlags(
+				nBatchFlags, nList, pRenderObject,
+				shaderItem, passInfo);
 
 			passInfo.GetRenderView()->AddRenderItem(
 				pRE, pRenderObject, shaderItem, nList, nBatchFlags,
@@ -511,7 +511,7 @@ void CRenderer::EF_GetParticleListAndBatchFlags(uint32& nBatchFlags, ERenderList
 
 bool CREParticle::Compile(CRenderObject* pRenderObject, uint64 objFlags, ERenderElementFlags elmFlags, const AABB& localAABB, CRenderView* pRenderView, bool updateInstanceDataOnly)
 {
-	if (updateInstanceDataOnly)
+	if (!m_bIncomplete && updateInstanceDataOnly)
 	{
 		// Fast path
 		PrepareDataToRender(pRenderView, pRenderObject);
@@ -676,9 +676,6 @@ bool CREParticle::Compile(CRenderObject* pRenderObject, uint64 objFlags, ERender
 	m_pCompiledParticle->m_pGraphicsPSOs[uint(EParticlePSOMode::Mobile)] = pGraphicsPSO;
 #endif
 
-	if (!bCompiled)
-		return false;
-
 	if (bVolumeFog)
 	{
 		stateDesc.objectRuntimeMask &= ~(g_HWSR_MaskBit[HWSR_LIGHTVOLUME0] | g_HWSR_MaskBit[HWSR_DEBUG0]); // remove unneeded flags.
@@ -688,6 +685,10 @@ bool CREParticle::Compile(CRenderObject* pRenderObject, uint64 objFlags, ERender
 		bCompiled &= pGraphicsPipeline->GetStage<CVolumetricFogStage>()->CreatePipelineState(stateDesc, pGraphicsPSO);
 		m_pCompiledParticle->m_pGraphicsPSOs[uint(EParticlePSOMode::VolumetricFog)] = pGraphicsPSO;
 	}
+
+	m_bIncomplete = !bCompiled;
+	if (!bCompiled)
+		return false;
 
 	const ColorF glowParam = pShaderResources->GetFinalEmittance();
 	const SRenderObjData& objectData = *pRenderObject->GetObjData();
@@ -727,8 +728,22 @@ bool CREParticle::Compile(CRenderObject* pRenderObject, uint64 objFlags, ERender
 
 void CREParticle::DrawToCommandList(CRenderObject* pRenderObject, const struct SGraphicsPipelinePassContext& context, CDeviceCommandList* commandList)
 {
+	const SShaderItem& shaderItem = pRenderObject->m_pCurrMaterial->GetShaderItem();
+	const CShaderResources* pShaderResources = static_cast<CShaderResources*>(shaderItem.m_pShaderResources);
+
+	const bool bIncompleteResourceSets =
+		!pShaderResources->m_pCompiledResourceSet || !pShaderResources->m_pCompiledResourceSet->IsValid() ||
+		!m_pCompiledParticle->m_pPerDrawExtraRS || !m_pCompiledParticle->m_pPerDrawExtraRS->IsValid();
+
+#if defined(ENABLE_PROFILING_CODE)
+	if (m_bIncomplete || bIncompleteResourceSets)
+	{
+		CryInterlockedIncrement(&SRenderStatistics::Write().m_nIncompleteCompiledObjects);
+	}
+#endif
+
 	auto pGraphicsPSO = GetGraphicsPSO(pRenderObject, context);
-	if (!pGraphicsPSO || !pGraphicsPSO->IsValid() || !pRenderObject->m_bAllCompiledValid)
+	if (!pGraphicsPSO || !pGraphicsPSO->IsValid() || bIncompleteResourceSets)
 		return;
 
 	gRenDev->m_FillRateManager.AddPixelCount(m_RenderVerts.fPixels);
