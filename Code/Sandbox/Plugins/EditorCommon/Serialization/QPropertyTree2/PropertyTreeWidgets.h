@@ -199,26 +199,21 @@ public:
 	virtual void SetMultiEditValue() final;
 
 private:
+	void OnValueChanged(double value);
+	void OnValueSubmitted(double value);
+
 	double m_previousValue;
 };
 
 template<typename T>
 CNumberWidget<T>::CNumberWidget()
 {
-	connect(this, &CNumberWidget::valueChanged, [this](double value)
-		{
-			if (m_previousValue != value)
-			{
-			  OnContinuousChanged();
-			}
-		});
-	connect(this, &CNumberWidget::valueSubmitted, [this](double value)
-		{
-			if (m_previousValue != value)
-			{
-			  OnChanged();
-			}
-		});
+	//avoid sending change signal when we are setting up this widget, they will register invalid undos
+	RECURSION_GUARD(m_ignoreChangeSignals);
+
+	//We register change events handlers here to avoid invalid event being sent on setup
+	connect(this, &CNumberWidget::valueChanged, this, &CNumberWidget::OnValueChanged);
+	connect(this, &CNumberWidget::valueSubmitted, this, &CNumberWidget::OnValueSubmitted);
 
 	if (std::is_integral<T>::value)
 	{
@@ -226,6 +221,7 @@ CNumberWidget<T>::CNumberWidget()
 	}
 	else
 	{
+		//this will actually call set value and emit an invalid undo if change signals are enabled
 		setPrecision(3);
 	}
 }
@@ -300,6 +296,29 @@ void CNumberWidget<T >::Serialize(Serialization::IArchive& ar)
 			setValue(widgetValue);
 			OnChanged();
 		}
+	}
+}
+
+template<typename T>
+void PropertyTree2::CNumberWidget<T>::OnValueSubmitted(double value)
+{
+	if (m_previousValue != value)
+	{
+		OnChanged();
+	}
+	else
+	{
+		//If we are setting back to previous value discard all the changes that might have happened in valueChanged/continuous change
+		OnDiscarded();
+	}
+}
+
+template<typename T>
+void PropertyTree2::CNumberWidget<T>::OnValueChanged(double value)
+{
+	if (m_previousValue != value)
+	{
+		OnContinuousChanged();
 	}
 }
 }

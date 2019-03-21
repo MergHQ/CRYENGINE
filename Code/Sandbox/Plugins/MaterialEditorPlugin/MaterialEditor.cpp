@@ -421,8 +421,8 @@ void CMaterialEditor::BroadcastPopulateInspector()
 		{
 			PopulateInspectorEvent event([this](CInspector& inspector)
 			  {
-				inspector.AddWidget(m_pMaterialSerializer->CreatePropertyTree());
-			  }, title);
+			     inspector.AddPropertyTree(m_pMaterialSerializer->CreatePropertyTree());
+				}, title);
 			event.Broadcast(this);
 		}
 	}

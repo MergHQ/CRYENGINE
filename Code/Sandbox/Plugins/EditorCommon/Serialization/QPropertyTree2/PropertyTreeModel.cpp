@@ -58,7 +58,7 @@ CRowModel::~CRowModel()
 {
 	if (m_pWidget)
 	{
-		m_pFactory->AddToPool(m_pWidget);
+		m_pFactory->Release(m_pWidget);
 	}
 }
 
