@@ -280,6 +280,7 @@ void CToolBarCustomizeDialog::QDropContainer::BuildPreview()
 	if (m_pCurrentToolBar)
 	{
 		selectedItemChanged(nullptr);
+		m_pSelectedItem = nullptr;
 		m_pPreviewLayout->removeWidget(m_pCurrentToolBar);
 		m_pCurrentToolBar->deleteLater();
 		m_pCurrentToolBar = nullptr;
@@ -450,17 +451,15 @@ void CToolBarCustomizeDialog::QDropContainer::dropEvent(QDropEvent* pEvent)
 
 		int oldIdx = m_pCurrentToolBarDesc->IndexOfItem(m_pSelectedItem);
 		int newIdx = GetIndexFromMouseCoord(mapToGlobal(pEvent->pos()));
-		if (oldIdx == newIdx)
+		if (oldIdx < 0 || oldIdx == newIdx)
 			return;
 
 		AddItem(itemVariant, newIdx);
 
-		if (oldIdx >= 0)
-		{
-			if (oldIdx > newIdx)
-				++oldIdx;
-			RemoveItemAt(oldIdx);
-		}
+		if (oldIdx > newIdx)
+			++oldIdx;
+
+		RemoveItemAt(oldIdx);
 	}
 	if (pDragDropData->HasCustomData(CCommandModel::GetCommandMimeType()))
 	{

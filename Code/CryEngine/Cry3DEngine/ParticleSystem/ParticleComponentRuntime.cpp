@@ -203,7 +203,6 @@ void CParticleComponentRuntime::ComputeVertices(const SCameraInfo& camInfo, CREP
 void CParticleComponentRuntime::RemoveAllSpawners()
 {
 	Container(EDD_Spawner).Clear();
-	Container().FillData(EPDT_ParentId, gInvalidId, FullRange());
 	DebugStabilityCheck();
 }
 
