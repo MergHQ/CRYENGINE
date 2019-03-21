@@ -432,7 +432,6 @@ CRenderMesh::CRenderMesh (const char *szType, const char *szSourceName, bool bLo
 
   m_nFlags = 0;
   m_fGeometricMeanFaceArea = 0.f;
-  m_nLod = 0;
 
 #if defined(USE_VBIB_PUSH_DOWN)
 	m_VBIBFramePushID = 0;
