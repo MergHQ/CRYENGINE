@@ -335,6 +335,7 @@ bool CSceneForwardStage::CreatePipelineState(const SGraphicsPipelineStateDescrip
 		const bool bAfterHDRPostProcess = (shaderFlags2 & EF2_AFTERHDRPOSTPROCESS) != 0;
 		const bool bAfterLDRPostProcess = (shaderFlags2 & EF2_AFTERPOSTPROCESS) != 0;
 		const bool bEmissive = (desc.shaderItem.m_pShaderResources && desc.shaderItem.m_pShaderResources->IsEmissive());
+		const bool bZ = !!(desc.shaderItem.m_nPreprocessFlags & FB_Z);
 
 #if !RENDERER_ENABLE_FULL_PIPELINE
 		// HACK: only opaque forward is supported on mobile currently
@@ -358,6 +359,9 @@ bool CSceneForwardStage::CreatePipelineState(const SGraphicsPipelineStateDescrip
 			// Disable alpha testing/depth writes if object renders using a z-prepass and requested technique is not z prepass
 			if (passId == ePass_ForwardPrepassed)
 			{
+				if (CRenderer::CV_r_DeferredShadingTiled > CTiledShadingStage::eDeferredMode_Off)
+					psoDesc.m_ShaderFlags_RT |= g_HWSR_MaskBit[HWSR_TILED_SHADING];
+
 				psoDesc.m_RenderState &= ~(GS_STENCIL | GS_DEPTHWRITE | GS_DEPTHFUNC_MASK | GS_ALPHATEST);
 				psoDesc.m_RenderState |= GS_DEPTHFUNC_EQUAL;
 				psoDesc.m_ShaderFlags_RT &= ~(g_HWSR_MaskBit[HWSR_ALPHATEST] | g_HWSR_MaskBit[HWSR_DISSOLVE]);
@@ -424,7 +428,7 @@ bool CSceneForwardStage::CreatePipelineState(const SGraphicsPipelineStateDescrip
 
 			pSceneRenderPass = &m_forwardTransparentBWPass;
 		}
-		else if (bAlphaBlended || bOverlay || bEmissive)
+		else if (bAlphaBlended || bOverlay || (bEmissive && bZ))
 		{
 			if (!bAlphaBlended && bEmissive)
 			{

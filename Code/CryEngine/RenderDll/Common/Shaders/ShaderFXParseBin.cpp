@@ -258,7 +258,7 @@ SShaderBin* CShaderManBin::SaveBinShader(
 			pBin->m_Tokens.push_back(0);
 		}
 	}
-	if (!pBin->m_Tokens[0])
+	if (!pBin->m_Tokens.size() || !pBin->m_Tokens[0])
 		pBin->m_Tokens.push_back(eT_skip);
 
 	pBin->SetCRC(pBin->ComputeCRC());

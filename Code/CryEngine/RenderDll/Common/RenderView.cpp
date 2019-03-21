@@ -1654,14 +1654,14 @@ inline void CRenderView::AddRenderItemToRenderLists(const SRendItem& ri, uint64 
 		const bool isEmissive   = shaderItem.IsEmissive();
 		const bool isVegetation = shaderItem.IsVegetation();
 		const bool isTesselated = shaderItem.IsTesselated();
-		const bool skipPrepass   =
+		const bool skipPrepass  =
 			(CRenderer::CV_r_UseZPass <= CSceneGBufferStage::eZPassMode_GBufferOnly) ||
 			(CRenderer::CV_r_UseZPass <= CSceneGBufferStage::eZPassMode_PartialZPrePass && (isDissolved && !isVegetation)) ||
 			(CRenderer::CV_r_UseZPass <= CSceneGBufferStage::eZPassMode_PartialZPrePass && (isAlphaTested && !isVegetation)) ||
 			(CRenderer::CV_r_UseZPass <= CSceneGBufferStage::eZPassMode_DiscardingZPrePass && (isTesselated)) ||
 			(CRenderer::CV_r_UseZPass <= CSceneGBufferStage::eZPassMode_DiscardingZPrePass && (objDistance > CRenderer::CV_r_ZPrepassMaxDist));
 
-		if (skipPrepass)
+		if (skipPrepass && hasDeferredOpaqueFlags)
 			nBatchFlags &= ~FB_ZPREPASS;
 
 		// These lists are traversed by the GBuffer-pass by default (see CSceneGBufferStage::ExecuteSceneOpaque)
