@@ -3318,8 +3318,8 @@ bool CGame::OnInputEvent(const SInputEvent& inputEvent)
 	if (isGamePadController)
 	{
 		// Store device index of controller providing input
-		bool isConnectionChangeEvent = ((inputEvent.keyId == eKI_SYS_ConnectDevice) || (inputEvent.keyId == eKI_SYS_DisconnectDevice) ||
-		                                (inputEvent.keyId == eKI_XI_Connect) || (inputEvent.keyId == eKI_XI_Disconnect));
+		bool isConnectionChangeEvent = ((inputEvent.keyId == eKI_SYS_ConnectDevice) || (inputEvent.keyId == eKI_SYS_DisconnectDevice));
+
 		if (isConnectionChangeEvent == false) // Only want to set device index when real input comes through, not device changes
 		{
 			m_previousInputControllerDeviceIndex = inputEvent.deviceIndex;
@@ -5400,7 +5400,7 @@ void CGame::InviteAcceptedCallback(UCryLobbyEventData eventData, void* arg)
 	// we should always accept the invite if we have no exclusive controller
 	if (pGame->m_hasExclusiveController)
 	{
-		// can't possibly be in a squad if we're not multiplayer, i hope
+		// Should not be in a squad if not in multiplayer
 		if (gEnv->bMultiplayer && inviteData->m_error == eCLE_Success)
 		{
 			bool alreadyInSession = false;
