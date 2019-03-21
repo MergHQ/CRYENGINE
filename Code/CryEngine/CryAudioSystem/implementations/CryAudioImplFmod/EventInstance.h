@@ -11,12 +11,6 @@ namespace FMOD
 {
 class ChannelGroup;
 class DSP;
-
-namespace Studio
-{
-class EventInstance;
-class ParameterInstance;
-} // namespace Studio
 } // namespace FMOD
 
 namespace CryAudio
@@ -57,8 +51,6 @@ public:
 		, m_pInstance(nullptr)
 		, m_pMasterTrack(nullptr)
 		, m_pLowpass(nullptr)
-		, m_pOcclusionParameter(nullptr)
-		, m_pAbsoluteVelocityParameter(nullptr)
 		, m_toBeRemoved(false)
 		, m_isFadingOut(false)
 		, m_baseObject(baseObject)
@@ -73,8 +65,6 @@ public:
 		, m_pInstance(nullptr)
 		, m_pMasterTrack(nullptr)
 		, m_pLowpass(nullptr)
-		, m_pOcclusionParameter(nullptr)
-		, m_pAbsoluteVelocityParameter(nullptr)
 		, m_toBeRemoved(false)
 	{}
 #endif  // CRY_AUDIO_IMPL_FMOD_USE_DEBUG_CODE
@@ -88,14 +78,10 @@ public:
 	FMOD::Studio::EventInstance* GetFmodEventInstance() const                                       { return m_pInstance; }
 	void                         SetFmodEventInstance(FMOD::Studio::EventInstance* const pInstance) { m_pInstance = pInstance; }
 
-	bool                         HasAbsoluteVelocityParameter() const                               { return m_pAbsoluteVelocityParameter != nullptr; }
-
-	void                         SetInternalParameters();
 	bool                         PrepareForOcclusion();
 	void                         SetOcclusion(float const occlusion);
 	void                         SetReturnSend(CReturn const* const pReturn, float const value);
 	void                         UpdateVirtualState();
-	void                         SetAbsoluteVelocity(float const value);
 	void                         StopAllowFadeOut();
 	void                         StopImmediate();
 
@@ -109,21 +95,19 @@ public:
 
 private:
 
-	TriggerInstanceId const          m_triggerInstanceId;
-	CEvent&                          m_event;
+	TriggerInstanceId const      m_triggerInstanceId;
+	CEvent&                      m_event;
 
-	EEventState                      m_state;
+	EEventState                  m_state;
 
-	float                            m_lowpassFrequencyMax;
-	float                            m_lowpassFrequencyMin;
+	float                        m_lowpassFrequencyMax;
+	float                        m_lowpassFrequencyMin;
 
-	FMOD::Studio::EventInstance*     m_pInstance;
-	FMOD::ChannelGroup*              m_pMasterTrack;
-	FMOD::DSP*                       m_pLowpass;
-	FMOD::Studio::ParameterInstance* m_pOcclusionParameter;
-	FMOD::Studio::ParameterInstance* m_pAbsoluteVelocityParameter;
+	FMOD::Studio::EventInstance* m_pInstance;
+	FMOD::ChannelGroup*          m_pMasterTrack;
+	FMOD::DSP*                   m_pLowpass;
 
-	std::atomic_bool                 m_toBeRemoved;
+	std::atomic_bool             m_toBeRemoved;
 
 #if defined(CRY_AUDIO_IMPL_FMOD_USE_DEBUG_CODE)
 	bool               m_isFadingOut;

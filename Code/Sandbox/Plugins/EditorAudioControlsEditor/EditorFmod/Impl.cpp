@@ -258,34 +258,6 @@ void CountConnections(
 }
 
 //////////////////////////////////////////////////////////////////////////
-CItem* SearchForItem(CItem* const pItem, string const& name, EItemType const type)
-{
-	CItem* pSearchedItem = nullptr;
-
-	if ((pItem->GetName().compareNoCase(name) == 0) && (pItem->GetType() == type))
-	{
-		pSearchedItem = pItem;
-	}
-	else
-	{
-		size_t const numChildren = pItem->GetNumChildren();
-
-		for (size_t i = 0; i < numChildren; ++i)
-		{
-			CItem* const pFoundItem = SearchForItem(static_cast<CItem* const>(pItem->GetChildAt(i)), name, type);
-
-			if (pFoundItem != nullptr)
-			{
-				pSearchedItem = pFoundItem;
-				break;
-			}
-		}
-	}
-
-	return pSearchedItem;
-}
-
-//////////////////////////////////////////////////////////////////////////
 CImpl::CImpl()
 	: m_pDataPanel(nullptr)
 	, m_projectPath(CRY_AUDIO_DATA_ROOT "/fmod_project")
@@ -557,16 +529,7 @@ IConnection* CImpl::CreateConnectionFromXMLNode(XmlNodeRef pNode, EAssetType con
 			}
 #endif      // USE_BACKWARDS_COMPATIBILITY
 
-			CItem* pItem = nullptr;
-
-			if (type != EItemType::Parameter)
-			{
-				pItem = GetItemFromPath(TypeToEditorFolderName(type) + name);
-			}
-			else
-			{
-				pItem = SearchForItem(&m_rootItem, name, type);
-			}
+			CItem* pItem = GetItemFromPath(TypeToEditorFolderName(type) + name);
 
 			if ((pItem == nullptr) || (type != pItem->GetType()))
 			{
@@ -754,7 +717,7 @@ XmlNodeRef CImpl::CreateXMLNodeFromConnection(
 			break;
 		case EItemType::Key:
 			{
-				pNode->setAttr(CryAudio::g_szNameAttribute, pItem->GetName());
+				pNode->setAttr(CryAudio::g_szNameAttribute, Utils::GetPathName(pItem, m_rootItem));
 				auto const pKeyConnection = static_cast<CKeyConnection const*>(pIConnection);
 
 				if (pKeyConnection != nullptr)
@@ -779,7 +742,36 @@ XmlNodeRef CImpl::CreateXMLNodeFromConnection(
 				pNode->setAttr(CryAudio::g_szNameAttribute, Utils::GetPathName(pItem, m_rootItem));
 			}
 			break;
-		case EItemType::Parameter: // Intentional fall-through.
+		case EItemType::Parameter:
+			{
+				pNode->setAttr(CryAudio::g_szNameAttribute, Utils::GetPathName(pItem, m_rootItem));
+
+				if (assetType == EAssetType::State)
+				{
+					auto const pStateConnection = static_cast<CParameterToStateConnection const*>(pIConnection);
+
+					if (pStateConnection != nullptr)
+					{
+						pNode->setAttr(CryAudio::Impl::Fmod::g_szValueAttribute, pStateConnection->GetValue());
+					}
+				}
+				else if ((assetType == EAssetType::Parameter) || (assetType == EAssetType::Environment))
+				{
+					auto const pParamConnection = static_cast<CParameterConnection const*>(pIConnection);
+
+					if (pParamConnection->GetMultiplier() != CryAudio::Impl::Fmod::g_defaultParamMultiplier)
+					{
+						pNode->setAttr(CryAudio::Impl::Fmod::g_szMutiplierAttribute, pParamConnection->GetMultiplier());
+					}
+
+					if (pParamConnection->GetShift() != CryAudio::Impl::Fmod::g_defaultParamShift)
+					{
+						pNode->setAttr(CryAudio::Impl::Fmod::g_szShiftAttribute, pParamConnection->GetShift());
+					}
+				}
+
+				break;
+			}
 		case EItemType::VCA:
 			{
 				pNode->setAttr(CryAudio::g_szNameAttribute, pItem->GetName());
@@ -793,7 +785,7 @@ XmlNodeRef CImpl::CreateXMLNodeFromConnection(
 						pNode->setAttr(CryAudio::Impl::Fmod::g_szValueAttribute, pStateConnection->GetValue());
 					}
 				}
-				else if ((assetType == EAssetType::Parameter) || (assetType == EAssetType::Environment))
+				else if (assetType == EAssetType::Parameter)
 				{
 					auto const pParamConnection = static_cast<CParameterConnection const*>(pIConnection);
 
@@ -1000,13 +992,13 @@ void CImpl::SetLocalizedAssetsPath()
 {
 	if (ICVar const* const pCVar = gEnv->pConsole->GetCVar("g_languageAudio"))
 	{
-		char const* const szLanguage = pCVar->GetString();
+		g_language = pCVar->GetString();
 
-		if (szLanguage != nullptr)
+		if (!g_language.empty())
 		{
 			m_localizedAssetsPath = PathUtil::GetLocalizationFolder().c_str();
 			m_localizedAssetsPath += "/";
-			m_localizedAssetsPath += szLanguage;
+			m_localizedAssetsPath += g_language;
 			m_localizedAssetsPath += "/";
 			m_localizedAssetsPath += CRY_AUDIO_DATA_ROOT;
 			m_localizedAssetsPath += "/";

@@ -83,6 +83,8 @@ void CObject::SetTransformation(CTransformation const& transformation)
 //////////////////////////////////////////////////////////////////////////
 void CObject::SetOcclusion(float const occlusion)
 {
+	SetParameter(g_occlusionParameterInfo, occlusion);
+
 	for (auto const pEventInstance : m_eventInstances)
 	{
 		pEventInstance->SetOcclusion(occlusion);
@@ -236,20 +238,10 @@ void CObject::UpdateVelocities(float const deltaTime)
 		if (absoluteVelocity == 0.0f || fabs(absoluteVelocity - m_previousAbsoluteVelocity) > g_cvars.m_velocityTrackingThreshold)
 		{
 			m_previousAbsoluteVelocity = absoluteVelocity;
-			SetAbsoluteVelocity(absoluteVelocity);
+			SetParameter(g_absoluteVelocityParameterInfo, absoluteVelocity);
+			m_absoluteVelocity = absoluteVelocity;
 		}
 	}
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CObject::SetAbsoluteVelocity(float const velocity)
-{
-	for (auto const pEventInstance : m_eventInstances)
-	{
-		pEventInstance->SetAbsoluteVelocity(velocity);
-	}
-
-	m_absoluteVelocity = velocity;
 }
 } // namespace Fmod
 } // namespace Impl

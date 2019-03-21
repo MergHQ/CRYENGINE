@@ -52,12 +52,12 @@ FMOD_RESULT F_CALLBACK ProgrammerSoundCallback(FMOD_STUDIO_EVENT_CALLBACK_TYPE t
 				char const* const szKey = pEventInstance->GetEvent().GetKey().c_str();
 
 				FMOD_STUDIO_SOUND_INFO soundInfo;
-				fmodResult = g_pSystem->getSoundInfo(szKey, &soundInfo);
+				fmodResult = g_pStudioSystem->getSoundInfo(szKey, &soundInfo);
 				CRY_AUDIO_IMPL_FMOD_ASSERT_OK;
 
 				FMOD::Sound* pSound = nullptr;
 				FMOD_MODE const mode = FMOD_CREATECOMPRESSEDSAMPLE | FMOD_NONBLOCKING | FMOD_3D | soundInfo.mode;
-				fmodResult = g_pLowLevelSystem->createSound(soundInfo.name_or_data, mode, &soundInfo.exinfo, &pSound);
+				fmodResult = g_pCoreSystem->createSound(soundInfo.name_or_data, mode, &soundInfo.exinfo, &pSound);
 				CRY_AUDIO_IMPL_FMOD_ASSERT_OK;
 
 				pInOutProperties->sound = reinterpret_cast<FMOD_SOUND*>(pSound);
@@ -111,7 +111,7 @@ ETriggerResult CEvent::Execute(IObject* const pIObject, TriggerInstanceId const 
 
 			if (m_pEventDescription == nullptr)
 			{
-				fmodResult = g_pSystem->getEventByID(&m_guid, &m_pEventDescription);
+				fmodResult = g_pStudioSystem->getEventByID(&m_guid, &m_pEventDescription);
 				CRY_AUDIO_IMPL_FMOD_ASSERT_OK;
 			}
 
@@ -123,9 +123,36 @@ ETriggerResult CEvent::Execute(IObject* const pIObject, TriggerInstanceId const 
 				fmodResult = m_pEventDescription->createInstance(&pFmodEventInstance);
 				CRY_AUDIO_IMPL_FMOD_ASSERT_OK;
 				pEventInstance->SetFmodEventInstance(pFmodEventInstance);
-				pEventInstance->SetInternalParameters();
 
-				if (m_hasProgrammerSound)
+				if ((m_flags& EEventFlags::CheckedParameters) == 0)
+				{
+					int count = 0;
+					m_pEventDescription->getParameterDescriptionCount(&count);
+
+					if (count > 0)
+					{
+						for (int i = 0; i < count; ++i)
+						{
+							FMOD_STUDIO_PARAMETER_DESCRIPTION parameterDescription;
+							m_pEventDescription->getParameterDescriptionByIndex(i, &parameterDescription);
+
+							if (_stricmp(parameterDescription.name, g_szAbsoluteVelocityParameterName) == 0)
+							{
+								g_absoluteVelocityParameterInfo.SetId(parameterDescription.id);
+								m_flags |= EEventFlags::HasAbsoluteVelocityParameter;
+							}
+							else if (_stricmp(parameterDescription.name, g_szOcclusionParameterName) == 0)
+							{
+								g_occlusionParameterInfo.SetId(parameterDescription.id);
+								m_flags |= EEventFlags::HasOcclusionParameter;
+							}
+						}
+					}
+
+					m_flags |= EEventFlags::CheckedParameters;
+				}
+
+				if ((m_flags& EEventFlags::HasProgrammerSound) != 0)
 				{
 					fmodResult = pEventInstance->GetFmodEventInstance()->setCallback(ProgrammerSoundCallback);
 				}
@@ -175,7 +202,7 @@ ETriggerResult CEvent::Execute(IObject* const pIObject, TriggerInstanceId const 
 				{
 					if (m_pEventDescription == nullptr)
 					{
-						fmodResult = g_pSystem->getEventByID(&m_guid, &m_pEventDescription);
+						fmodResult = g_pStudioSystem->getEventByID(&m_guid, &m_pEventDescription);
 						CRY_AUDIO_IMPL_FMOD_ASSERT_OK;
 					}
 

@@ -9,6 +9,7 @@ namespace Impl
 {
 namespace Fmod
 {
+string g_language = "";
 ConnectionsByContext g_connections;
 } // namespace Fmod
 } // namespace Impl

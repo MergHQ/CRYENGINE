@@ -3,6 +3,7 @@
 #pragma once
 
 #include "Item.h"
+#include "AudioTableInfo.h"
 
 class XmlNodeRef;
 
@@ -63,6 +64,7 @@ private:
 	void   LoadVca(XmlNodeRef const pNode, CItem& parent, EPakStatus const pakStatus);
 	void   LoadAudioTable(XmlNodeRef const pNode);
 	void   LoadKeys(CItem& parent);
+	void   LoadKeysFromFiles(CItem& parent, string const& filePath);
 
 	using ItemIds = std::map<string, CItem*>;
 
@@ -73,7 +75,7 @@ private:
 	ItemIds             m_snapshotGroupItems;
 	std::vector<CItem*> m_emptyMixerGroups;
 	string const        m_projectPath;
-	std::set<string>    m_audioTableDirectories;
+	AudioTableInfos     m_audioTableInfos;
 };
 } // namespace Fmod
 } // namespace Impl

@@ -3,6 +3,7 @@
 #include "StdAfx.h"
 #include "ProjectLoader.h"
 
+#include "Common.h"
 #include "Impl.h"
 #include "Utils.h"
 
@@ -18,16 +19,16 @@ namespace Impl
 namespace Fmod
 {
 // Paths
-string const g_eventFoldersPath = "/metadata/eventfolder/";
-string const g_parametersFoldersPath = "/metadata/parameterpresetfolder/";
-string const g_snapshotGroupsPath = "/metadata/snapshotgroup/";
-string const g_mixerGroupsPath = "/metadata/group/";
-string const g_eventsPath = "/metadata/event/";
-string const g_parametersPath = "/metadata/parameterpreset/";
-string const g_snapshotsPath = "/metadata/snapshot/";
-string const g_returnsPath = "/metadata/return/";
-string const g_vcasPath = "/metadata/vca/";
-string const g_bankPath = "/metadata/bank/";
+constexpr char const* g_szEventFoldersPath = "/metadata/eventfolder/";
+constexpr char const* g_szParametersFoldersPath = "/metadata/parameterpresetfolder/";
+constexpr char const* g_szSnapshotGroupsPath = "/metadata/snapshotgroup/";
+constexpr char const* g_szMixerGroupsPath = "/metadata/group/";
+constexpr char const* g_szEventsPath = "/metadata/event/";
+constexpr char const* g_szParametersPath = "/metadata/parameterpreset/";
+constexpr char const* g_szSnapshotsPath = "/metadata/snapshot/";
+constexpr char const* g_szReturnsPath = "/metadata/return/";
+constexpr char const* g_szVcasPath = "/metadata/vca/";
+constexpr char const* g_szBankPath = "/metadata/bank/";
 
 using ItemNames = std::vector<string>;
 
@@ -65,18 +66,18 @@ CProjectLoader::CProjectLoader(
 	CItem* const pReturnsFolder = CreateItem(s_returnsFolderName, EItemType::EditorFolder, &m_rootItem, EItemFlags::IsContainer);
 	CItem* const pVcasFolder = CreateItem(s_vcasFolderName, EItemType::EditorFolder, &m_rootItem, EItemFlags::IsContainer);
 
-	ParseFolder(projectPath + g_eventFoldersPath, *pEventsFolder, rootItem);          // Event folders
-	ParseFolder(projectPath + g_parametersFoldersPath, *pParametersFolder, rootItem); // Parameter folders
-	ParseFolder(projectPath + g_snapshotGroupsPath, *pSnapshotsFolder, rootItem);     // Snapshot groups
-	ParseFolder(projectPath + g_mixerGroupsPath, *pReturnsFolder, rootItem);          // Mixer groups
-	ParseFolder(projectPath + g_eventsPath, *pEventsFolder, rootItem);                // Events
-	ParseFolder(projectPath + g_parametersPath, *pParametersFolder, rootItem);        // Parameters
-	ParseFolder(projectPath + g_snapshotsPath, *pSnapshotsFolder, rootItem);          // Snapshots
-	ParseFolder(projectPath + g_returnsPath, *pReturnsFolder, rootItem);              // Returns
-	ParseFolder(projectPath + g_vcasPath, *pVcasFolder, rootItem);                    // VCAs
-	ParseFolder(projectPath + g_bankPath, rootItem, rootItem);                        // Audio tables of banks
+	ParseFolder(projectPath + g_szEventFoldersPath, *pEventsFolder, rootItem);          // Event folders
+	ParseFolder(projectPath + g_szParametersFoldersPath, *pParametersFolder, rootItem); // Parameter folders
+	ParseFolder(projectPath + g_szSnapshotGroupsPath, *pSnapshotsFolder, rootItem);     // Snapshot groups
+	ParseFolder(projectPath + g_szMixerGroupsPath, *pReturnsFolder, rootItem);          // Mixer groups
+	ParseFolder(projectPath + g_szEventsPath, *pEventsFolder, rootItem);                // Events
+	ParseFolder(projectPath + g_szParametersPath, *pParametersFolder, rootItem);        // Parameters
+	ParseFolder(projectPath + g_szSnapshotsPath, *pSnapshotsFolder, rootItem);          // Snapshots
+	ParseFolder(projectPath + g_szReturnsPath, *pReturnsFolder, rootItem);              // Returns
+	ParseFolder(projectPath + g_szVcasPath, *pVcasFolder, rootItem);                    // VCAs
+	ParseFolder(projectPath + g_szBankPath, rootItem, rootItem);                        // Audio tables of banks
 
-	if (!m_audioTableDirectories.empty())
+	if (!m_audioTableInfos.empty())
 	{
 		CItem* const pKeysFolder = CreateItem(s_keysFolderName, EItemType::EditorFolder, &m_rootItem, EItemFlags::IsContainer);
 		LoadKeys(*pKeysFolder);
@@ -108,7 +109,7 @@ void CProjectLoader::LoadBanks(string const& folderPath, bool const isLocalized,
 		// for the file that ends with "strings.bank" as it is guaranteed
 		// to have the same name as the Master Bank and there should be unique
 		ItemNames banks;
-		string masterBankName = "";
+		ItemNames masterBankNames;
 
 		do
 		{
@@ -126,7 +127,7 @@ void CProjectLoader::LoadBanks(string const& folderPath, bool const isLocalized,
 
 					if (pos != string::npos)
 					{
-						masterBankName = fileName.substr(0, pos);
+						masterBankNames.emplace_back(fileName.substr(0, pos));
 					}
 					else
 					{
@@ -139,7 +140,23 @@ void CProjectLoader::LoadBanks(string const& folderPath, bool const isLocalized,
 
 		for (string const& bankName : banks)
 		{
-			if (isLocalized || (bankName.compareNoCase(0, masterBankName.length(), masterBankName) != 0))
+			bool canCreateItem = isLocalized;
+
+			if (!canCreateItem)
+			{
+				canCreateItem = true;
+
+				for (auto const& masterBankName : masterBankNames)
+				{
+					if ((bankName.compareNoCase(0, masterBankName.length(), masterBankName) == 0))
+					{
+						canCreateItem = false;
+						break;
+					}
+				}
+			}
+
+			if (canCreateItem)
 			{
 				string const filePath = folderPath + "/" + bankName;
 				EPakStatus const pakStatus = pCryPak->IsFileExist(filePath.c_str(), ICryPak::eFileLocation_OnDisk) ? EPakStatus::OnDisk : EPakStatus::None;
@@ -296,12 +313,12 @@ CItem* CProjectLoader::GetContainer(string const& id, EItemType const type, CIte
 		// If folder not found parse the file corresponding to it and try looking for it again
 		if (type == EItemType::Folder)
 		{
-			ParseFile(m_projectPath + g_eventFoldersPath + id + ".xml", parent, pakStatus);
-			ParseFile(m_projectPath + g_parametersFoldersPath + id + ".xml", parent, pakStatus);
+			ParseFile(m_projectPath + g_szEventFoldersPath + id + ".xml", parent, pakStatus);
+			ParseFile(m_projectPath + g_szParametersFoldersPath + id + ".xml", parent, pakStatus);
 		}
 		else if (type == EItemType::MixerGroup)
 		{
-			ParseFile(m_projectPath + g_mixerGroupsPath + id + ".xml", parent, pakStatus);
+			ParseFile(m_projectPath + g_szMixerGroupsPath + id + ".xml", parent, pakStatus);
 		}
 
 		folder = m_containerIds.find(id);
@@ -528,6 +545,10 @@ void CProjectLoader::LoadVca(XmlNodeRef const pNode, CItem& parent, EPakStatus c
 //////////////////////////////////////////////////////////////////////////
 void CProjectLoader::LoadAudioTable(XmlNodeRef const pNode)
 {
+	string name = "";
+	bool isLocalized = false;
+	bool includeSubdirs = false;
+
 	int const numChildren = pNode->getChildCount();
 
 	for (int i = 0; i < numChildren; ++i)
@@ -548,23 +569,43 @@ void CProjectLoader::LoadAudioTable(XmlNodeRef const pNode)
 
 					if (pValue != nullptr)
 					{
-						m_audioTableDirectories.emplace(m_projectPath + "/" + pValue->getContent());
-						break;
+						name = m_projectPath + "/" + pValue->getContent();
+					}
+				}
+				else if (paramName == "isLocalized")
+				{
+					XmlNodeRef const pValue = pChild->getChild(0);
+
+					if ((pValue != nullptr) && (_stricmp(pValue->getContent(), "true") == 0))
+					{
+						isLocalized = true;
+					}
+				}
+				else if (paramName == "includeSubDirectories")
+				{
+					XmlNodeRef const pValue = pChild->getChild(0);
+
+					if ((pValue != nullptr) && (_stricmp(pValue->getContent(), "true") == 0))
+					{
+						includeSubdirs = true;
 					}
 				}
 			}
 		}
+	}
+
+	if (!name.empty())
+	{
+		m_audioTableInfos.emplace(SAudioTableInfo(name, isLocalized, includeSubdirs));
 	}
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CProjectLoader::LoadKeys(CItem& parent)
 {
-	for (auto const& tableDir : m_audioTableDirectories)
+	for (auto const& tableInfo : m_audioTableInfos)
 	{
-		string const keysFilePath = tableDir + "/keys.txt";
-
-		_finddata_t fd;
+		string const keysFilePath = tableInfo.isLocalized ? (tableInfo.name + "/" + g_language + "/keys.txt") : (tableInfo.name + "/keys.txt");
 		ICryPak* const pCryPak = gEnv->pCryPak;
 
 		if (pCryPak->IsFileExist(keysFilePath.c_str()))
@@ -573,41 +614,63 @@ void CProjectLoader::LoadKeys(CItem& parent)
 		}
 		else
 		{
-			intptr_t const handle = pCryPak->FindFirst(tableDir + "/*.*", &fd);
+			string const filePath = tableInfo.isLocalized ? (tableInfo.name + "/" + g_language) : (tableInfo.name);
+			LoadKeysFromFiles(parent, filePath);
+		}
+	}
+}
 
-			if (handle != -1)
+//////////////////////////////////////////////////////////////////////////
+void CProjectLoader::LoadKeysFromFiles(CItem& parent, string const& filePath)
+{
+	ICryPak* const pCryPak = gEnv->pCryPak;
+	_finddata_t fd;
+	intptr_t const handle = pCryPak->FindFirst(filePath + "/*.*", &fd);
+
+	if (handle != -1)
+	{
+		do
+		{
+			if (fd.attrib & _A_SUBDIR)
 			{
-				do
+				string const subFolderName = fd.name;
+
+				if ((subFolderName != ".") && (subFolderName != ".."))
 				{
-					string fileName = fd.name;
+					CItem* const pFolderItem = CreateItem(subFolderName, EItemType::Folder, &parent, EItemFlags::IsContainer);
+					string const subFolderPath = filePath + "/" + fd.name;
 
-					if ((fileName != ".") && (fileName != "..") && !fileName.empty())
+					LoadKeysFromFiles(*pFolderItem, subFolderPath);
+				}
+			}
+			else
+			{
+				string const fileName = fd.name;
+
+				if ((fileName != ".") && (fileName != "..") && !fileName.empty())
+				{
+					string::size_type const posExtension = fileName.rfind('.');
+
+					if (posExtension != string::npos)
 					{
-						string::size_type const posExtension = fileName.rfind('.');
+						string const fileExtension = fileName.data() + posExtension;
 
-						if (posExtension != string::npos)
+						if ((_stricmp(fileExtension, ".mp3") == 0) ||
+						    (_stricmp(fileExtension, ".ogg") == 0) ||
+						    (_stricmp(fileExtension, ".wav") == 0) ||
+						    (_stricmp(fileExtension, ".mp2") == 0) ||
+						    (_stricmp(fileExtension, ".flac") == 0) ||
+						    (_stricmp(fileExtension, ".aiff") == 0))
 						{
-							string const fileExtension = fileName.data() + posExtension;
-
-							// TODO: Add all supported file formats.
-							if ((_stricmp(fileExtension, ".mp3") == 0) ||
-							    (_stricmp(fileExtension, ".ogg") == 0) ||
-							    (_stricmp(fileExtension, ".wav") == 0) ||
-							    (_stricmp(fileExtension, ".mp2") == 0) ||
-							    (_stricmp(fileExtension, ".flac") == 0) ||
-							    (_stricmp(fileExtension, ".aiff") == 0))
-							{
-								PathUtil::RemoveExtension(fileName);
-								CreateItem(fileName, EItemType::Key, &parent, EItemFlags::None);
-							}
+							CreateItem(PathUtil::RemoveExtension(fileName), EItemType::Key, &parent, EItemFlags::None);
 						}
 					}
 				}
-				while (pCryPak->FindNext(handle, &fd) >= 0);
-
-				pCryPak->FindClose(handle);
 			}
 		}
+		while (pCryPak->FindNext(handle, &fd) >= 0);
+
+		pCryPak->FindClose(handle);
 	}
 }
 

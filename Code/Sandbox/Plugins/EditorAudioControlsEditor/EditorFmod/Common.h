@@ -15,6 +15,8 @@ namespace Fmod
 using ConnectionsByContext = std::map<CryAudio::ContextId, CryAudio::Impl::Fmod::SPoolSizes>;
 extern ConnectionsByContext g_connections;
 
+extern string g_language;
+
 static CryIcon s_errorIcon;
 static CryIcon s_bankIcon;
 static CryIcon s_editorFolderIcon;

@@ -92,23 +92,10 @@ private:
 
 	CryFixedStringT<MaxFilePathLength>    m_regularSoundBankFolder;
 	CryFixedStringT<MaxFilePathLength>    m_localizedSoundBankFolder;
-
-	CryFixedStringT<MaxFilePathLength>    m_masterBankPath;
-	CryFixedStringT<MaxFilePathLength>    m_masterAssetsBankPath;
-	CryFixedStringT<MaxFilePathLength>    m_masterStreamsBankPath;
-	CryFixedStringT<MaxFilePathLength>    m_masterStringsBankPath;
-
-	FMOD::Studio::Bank*                   m_pMasterBank;
-	FMOD::Studio::Bank*                   m_pMasterAssetsBank;
-	FMOD::Studio::Bank*                   m_pMasterStreamsBank;
-	FMOD::Studio::Bank*                   m_pMasterStringsBank;
 	CryFixedStringT<MaxControlNameLength> m_language;
 
 #if defined(CRY_AUDIO_IMPL_FMOD_USE_DEBUG_CODE)
 	CryFixedStringT<MaxInfoStringLength> m_name;
-	size_t                               m_masterBankSize = 0;
-	size_t                               m_masterAssetsBankSize = 0;
-	size_t                               m_masterStringsBankSize = 0;
 #endif  // CRY_AUDIO_IMPL_FMOD_USE_DEBUG_CODE
 };
 } // namespace Fmod
