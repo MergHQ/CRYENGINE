@@ -120,7 +120,7 @@ public:
 	}
 
 	//! Retrieves the length of the file.
-	size_t GetLength();
+	size_t GetLength() const;
 
 	//! Moves the current file pointer to the specified position.
 	size_t Seek(size_t seek, int mode);
@@ -132,10 +132,10 @@ public:
 	size_t SeekToEnd();
 
 	//! Retrieves the current file pointer.
-	size_t GetPosition();
+	size_t GetPosition() const;
 
 	//! Tests for end-of-file on a selected file.
-	bool IsEof();
+	bool IsEof() const;
 
 	//! Flushes any data yet to be written.
 	void Flush();
@@ -252,7 +252,7 @@ inline size_t CCryFile::ReadRaw(void* lpBuf, size_t nSize)
 }
 
 //////////////////////////////////////////////////////////////////////////
-inline size_t CCryFile::GetLength()
+inline size_t CCryFile::GetLength() const
 {
 	assert(m_file);
 	if (m_pIPak)
@@ -295,14 +295,14 @@ inline size_t CCryFile::SeekToEnd()
 }
 
 //////////////////////////////////////////////////////////////////////////
-inline size_t CCryFile::GetPosition()
+inline size_t CCryFile::GetPosition() const
 {
 	assert(m_file);
 	return IfPak(FTell, ftell, (m_file));
 }
 
 //////////////////////////////////////////////////////////////////////////
-inline bool CCryFile::IsEof()
+inline bool CCryFile::IsEof() const
 {
 	assert(m_file);
 	return IfPak(FEof, feof, (m_file)) != 0;

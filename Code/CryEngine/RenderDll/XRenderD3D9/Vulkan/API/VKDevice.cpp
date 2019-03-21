@@ -69,9 +69,8 @@ _smart_ptr<CDevice> CDevice::Create(const SPhysicalDeviceInfo* pDeviceInfo, VkAl
 
 //---------------------------------------------------------------------------------------------------------------------
 CDevice::CDevice(const SPhysicalDeviceInfo* pDeviceInfo, VkAllocationCallbacks* hostAllocator, VkDevice Device)
-	: m_pDeviceInfo(pDeviceInfo)
-	, m_Allocator(*hostAllocator)
-	, m_device(Device)
+	: CDeviceHolder(Device, hostAllocator)
+	, m_pDeviceInfo(pDeviceInfo)
 	, m_pipelineCache(VK_NULL_HANDLE)
 	// Must be constructed last as it relies on functionality from the heaps
 	, m_Scheduler(this)
@@ -144,11 +143,6 @@ CDevice::~CDevice()
 	for (uint32_t i = 0; i < kDeferTicks; ++i)
 	{
 		TickDestruction();
-	}
-
-	if (m_device != VK_NULL_HANDLE)
-	{
-		vkDestroyDevice(m_device, &m_Allocator);
 	}
 }
 

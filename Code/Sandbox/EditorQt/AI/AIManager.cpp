@@ -964,7 +964,7 @@ bool CAIManager::IsReadyToGameExport(unsigned int& adjustedExportFlags) const
 bool CAIManager::IsNavigationFullyGenerated() const
 {
 	if (m_pAISystem)
-		return (m_pAISystem->GetNavigationSystem()->GetState() == INavigationSystem::Idle);
+		return (m_pAISystem->GetNavigationSystem()->GetState() == INavigationSystem::EWorkingState::Idle);
 
 	return true;
 }

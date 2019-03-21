@@ -52,7 +52,7 @@ void ExecuteDefaultTriggerConnections(Control const* const pControl, TriggerConn
 		if ((result == ETriggerResult::Playing) || (result == ETriggerResult::Virtual) || (result == ETriggerResult::Pending))
 		{
 #if defined(CRY_AUDIO_USE_DEBUG_CODE)
-			CRY_ASSERT_MESSAGE(pControl->GetDataScope() == EDataScope::Global, "Default controls must always have global data scope! (%s) during %s", pControl->GetName(), __FUNCTION__);
+			CRY_ASSERT_MESSAGE(pControl->GetContextId() == GlobalContextId, "Default controls must always have global context! (%s) during %s", pControl->GetName(), __FUNCTION__);
 #endif    // CRY_AUDIO_USE_DEBUG_CODE
 
 			if (result != ETriggerResult::Pending)

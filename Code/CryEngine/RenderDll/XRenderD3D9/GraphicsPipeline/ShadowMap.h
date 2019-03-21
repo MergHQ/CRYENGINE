@@ -36,12 +36,14 @@ class CShadowMapStage : public CGraphicsPipelineStage
 	};
 
 public:
-	CShadowMapStage();
+	static const EGraphicsPipelineStage StageID = eStage_ShadowMap;
 
-	bool IsStageActive(EShaderRenderingFlags flags) const final { return IsStageActive(); }
-	
-	void Init()   final;
-	void Update() final;
+	CShadowMapStage(CGraphicsPipeline& graphicsPipeline);
+
+	bool  IsStageActive(EShaderRenderingFlags flags) const final { return IsStageActive(); }
+
+	void  Init()   final;
+	void  Update() final;
 
 	void Execute();
 
@@ -180,4 +182,7 @@ private:
 	CDeviceResourceSetDesc   m_perPassResources;
 
 	int                      m_shadowsLocalLightsLinearizeDepth;
+
+public:
+	_smart_ptr<CTexture> m_pTexRT_ShadowPool;
 };

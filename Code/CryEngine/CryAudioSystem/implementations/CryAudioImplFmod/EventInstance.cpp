@@ -29,20 +29,13 @@ CEventInstance::~CEventInstance()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CEventInstance::SetInternalParameters()
-{
-	m_pInstance->getParameter(g_szOcclusionParameterName, &m_pOcclusionParameter);
-	m_pInstance->getParameter(g_szAbsoluteVelocityParameterName, &m_pAbsoluteVelocityParameter);
-}
-
-//////////////////////////////////////////////////////////////////////////
 bool CEventInstance::PrepareForOcclusion()
 {
 	m_pMasterTrack = nullptr;
 	FMOD_RESULT const fmodResult = m_pInstance->getChannelGroup(&m_pMasterTrack);
 	CRY_AUDIO_IMPL_FMOD_ASSERT_OK_OR_NOT_LOADED;
 
-	if ((m_pMasterTrack != nullptr) && (m_pOcclusionParameter == nullptr))
+	if ((m_pMasterTrack != nullptr) && ((m_event.GetFlags() & EEventFlags::HasOcclusionParameter) == 0))
 	{
 		m_pLowpass = nullptr;
 		int numDSPs = 0;
@@ -80,11 +73,7 @@ bool CEventInstance::PrepareForOcclusion()
 //////////////////////////////////////////////////////////////////////////
 void CEventInstance::SetOcclusion(float const occlusion)
 {
-	if (m_pOcclusionParameter != nullptr)
-	{
-		CRY_VERIFY(m_pOcclusionParameter->setValue(occlusion) == FMOD_OK);
-	}
-	else if (m_pLowpass != nullptr)
+	if (((m_event.GetFlags() & EEventFlags::HasOcclusionParameter) == 0) && (m_pLowpass != nullptr))
 	{
 		float const range = m_lowpassFrequencyMax - std::max(m_lowpassFrequencyMin, g_cvars.m_lowpassMinCutoffFrequency);
 		float const value = m_lowpassFrequencyMax - (occlusion * range);
@@ -161,15 +150,6 @@ void CEventInstance::UpdateVirtualState()
 	else
 	{
 		m_state = EEventState::None;
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CEventInstance::SetAbsoluteVelocity(float const velocity)
-{
-	if (m_pAbsoluteVelocityParameter != nullptr)
-	{
-		CRY_VERIFY(m_pAbsoluteVelocityParameter->setValue(velocity) == FMOD_OK);
 	}
 }
 

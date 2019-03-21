@@ -923,7 +923,6 @@ static void BuildSphereSet(
 		base[min_axis] = centre[min_axis];
 		base[plane_axis[0]] = centre[plane_axis[0]] - size[plane_axis[0]] + size[plane_axis[0]] * 0.5f;
 		base[plane_axis[1]] = centre[plane_axis[1]] - size[plane_axis[1]] + size[plane_axis[1]] * 0.5f;
-		;
 		float radius = size[min_axis] * 1.5f;
 
 		Vec3 sphcent = pos + q * centre;

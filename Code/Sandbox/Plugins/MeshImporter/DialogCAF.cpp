@@ -633,6 +633,11 @@ void CDialogCAF::UpdateCharacter()
 			QtUtil::ToQString(m_pScene->m_material));
 	}
 
+	if (m_pScene->m_pCharInstance)
+	{
+		m_pScene->m_pCharInstance->SetCharEditMode(m_pScene->m_pCharInstance->GetCharEditMode() | CA_CharacterAuxEditor);
+	}
+
 	ReloadAnimationSet();
 
 	UpdateCurrentAnimation();

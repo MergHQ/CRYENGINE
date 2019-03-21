@@ -486,7 +486,7 @@ CShadowUtils::SShadowsSetupInfo CD3D9Renderer::ConfigShadowTexgen(CRenderView* p
 	if (bScreenToLocalBasis && CRenderer::CV_r_FogShadowsMode == 1)
 	{
 		Vec4r vWBasisX, vWBasisY, vWBasisZ, vCamPos;
-		const SRenderViewport& viewport = gcpRendD3D.GetGraphicsPipeline().GetCurrentRenderView()->GetViewport();
+		const SRenderViewport& viewport = pRenderView->GetGraphicsPipeline()->GetCurrentRenderView()->GetViewport();
 
 		CCamera Cam = pRenderView->GetCamera(CCamera::eEye_Left);
 		if (pFr->m_eFrustumType == ShadowMapFrustum::e_Nearest && m_drawNearFov > 1.0f && m_drawNearFov < 179.0f)

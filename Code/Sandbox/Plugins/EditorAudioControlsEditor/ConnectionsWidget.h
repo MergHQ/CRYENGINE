@@ -59,6 +59,5 @@ private:
 	QAttributeFilterProxyModel* const m_pAttributeFilterProxyModel;
 	CConnectionsModel* const          m_pConnectionModel;
 	CTreeView* const                  m_pTreeView;
-	int const                         m_nameColumn;
 };
 } // namespace ACE

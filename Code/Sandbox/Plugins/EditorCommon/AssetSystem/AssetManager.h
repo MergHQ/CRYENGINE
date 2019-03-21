@@ -93,7 +93,7 @@ public:
 	//! Moves existing assets to the specified folder, including all assets files.
 	//! \param assets A collection of assets to be moved.
 	//! \param szDestinationFolder The destination folder. The path must be relative to the assets root directory.
-	void MoveAssets(const std::vector<CAsset*>& assets, const char* szDestinationFolder) const;
+	void MoveAssets(const std::vector<CAsset*>& assets, const char* szDestinationFolder);
 
 	//! Renames an existing asset.
 	//! \param pAsset The asset to be renamed.

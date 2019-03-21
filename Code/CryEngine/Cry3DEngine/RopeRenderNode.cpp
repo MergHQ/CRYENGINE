@@ -55,7 +55,7 @@ public:
 
 	//////////////////////////////////////////////////////////////////////////
 	// tessellation support
-	int  Index(int iS, int iM) { return iS + (m_iSliceSamples + 1) * iM; };
+	int  Index(int iS, int iM) { return iS + (m_iSliceSamples + 1) * iM; }
 	void ComputeSinCos();
 	void ComputeVertices(Vec3* akVertex);
 	void ComputeNormals();
@@ -684,7 +684,7 @@ public:
 public:
 	TubeSurface tubeSurface;
 
-	CRopeSurfaceCache() {};
+	CRopeSurfaceCache() {}
 	~CRopeSurfaceCache() {}
 
 private:

@@ -5,7 +5,6 @@
 #include "Control.h"
 #include "Folder.h"
 #include "Library.h"
-#include "ScopeInfo.h"
 
 #include <CrySandbox/CrySignal.h>
 
@@ -44,13 +43,6 @@ public:
 
 	Controls const&  GetControls() const { return m_controls; }
 
-	void             ClearScopes();
-	void             AddScope(string const& name, bool const isLocalOnly = false);
-	bool             ScopeExists(string const& name) const;
-	Scope            GetScope(string const& name) const;
-	SScopeInfo       GetScopeInfo(Scope const id) const;
-	void             GetScopeInfos(ScopeInfos& scopeInfos) const;
-
 	void             ClearAllConnections();
 	void             BackupAndClearAllConnections();
 	void             ReloadAllConnections();
@@ -67,10 +59,12 @@ public:
 
 	void             UpdateAllConnectionStates();
 
+	void             ChangeContext(CryAudio::ContextId const oldContextId, CryAudio::ContextId const newContextId);
+
 	void             OnBeforeControlModified(CControl* const pControl);
 	void             OnAfterControlModified(CControl* const pControl);
-	void             OnConnectionAdded(CControl* const pControl, Impl::IItem* const pIItem);
-	void             OnConnectionRemoved(CControl* const pControl, Impl::IItem* const pIItem);
+	void             OnConnectionAdded(CControl* const pControl);
+	void             OnConnectionRemoved(CControl* const pControl);
 	void             OnAssetRenamed(CAsset* const pAsset);
 
 	void             UpdateConfigFolderPath();
@@ -102,13 +96,11 @@ private:
 	void      UpdateLibraryConnectionStates(CAsset* const pAsset);
 	void      UpdateAssetConnectionStates(CAsset* const pAsset);
 
-	using ScopesInfo = std::map<Scope, SScopeInfo>;
 	using ModifiedSystemTypes = std::set<EAssetType>;
 
 	Libraries           m_libraries;
 	static ControlId    m_nextId;
 	Controls            m_controls;
-	ScopesInfo          m_scopes;
 	ModifiedSystemTypes m_modifiedTypes;
 	FileNames           m_modifiedLibraryNames;
 	bool                m_isLoading = false;

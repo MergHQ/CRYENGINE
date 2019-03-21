@@ -1638,7 +1638,7 @@ void CAttachmentManager::UpdateSockets(Skeleton::CPoseData& rPoseData)
 	}
 }
 
-void CAttachmentManager::UpdateAttachedObjects(Skeleton::CPoseData& rPoseData)
+void CAttachmentManager::UpdateAttachedObjects()
 {
 	if (m_TypeSortingRequired)
 	{
@@ -1747,7 +1747,7 @@ void CAttachmentManager::DrawAttachments(SRendParams& rParams, const Matrix34& r
 
 	if (passInfo.IsAuxWindow())
 	{
-		assert(m_pSkelInstance->m_CharEditMode & CA_CharacterTool);
+		assert(m_pSkelInstance->m_CharEditMode & CA_CharacterAuxEditor);
 
 		for (const IAttachment* pSocket : m_arrAttachments)
 		{
@@ -2408,10 +2408,21 @@ void CAttachmentManager::ProcessAttachment(IAttachment* pSocket)
 		}
 
 		// Attachments belonging to characters in auxiliary viewports should not be registered in the 3DEngine scene graph.
-		const bool auxiliaryViewport = (m_pSkelInstance->m_CharEditMode & CA_CharacterTool);
+		const bool auxiliaryViewport = (m_pSkelInstance->m_CharEditMode & CA_CharacterAuxEditor);
 		pRenderNode->SetRndFlags(ERF_NO_3DENGINE_REGISTRATION, auxiliaryViewport);
 
-		pRenderNode->SetMatrix(Matrix34{ pSocket->GetAttWorldAbsolute() * pSocket->GetAdditionalTransformation() });
+		// This check prevents attachments from being added to the scene graph when the parent character isn't.
+		if (auxiliaryViewport || (m_pSkelInstance->GetParentRenderNode() && m_pSkelInstance->GetParentRenderNode()->m_pOcNode))
+		{
+			pRenderNode->SetMatrix(Matrix34{ pSocket->GetAttWorldAbsolute() * pSocket->GetAdditionalTransformation() });
+		}
+		else
+		{
+			if (pRenderNode->m_pOcNode)
+			{
+				gEnv->p3DEngine->UnRegisterEntityAsJob(pRenderNode);
+			}
+		}
 	}
 }
 
@@ -2529,6 +2540,13 @@ void* CAttachmentManager::CModificationCommandBuffer::Alloc(size_t size, size_t 
 	// and adjust to actual padding afterwards
 	m_memory.resize(m_memory.size() - align + padding);
 	m_commandOffsets.push_back(currentOffset + padding);
+#ifndef _RELEASE
+	if (m_memory.size() > Console::GetInst().ca_debug_attachmentManager_maxUsedMemSize)
+		Console::GetInst().ca_debug_attachmentManager_maxUsedMemSize = m_memory.size();
+
+	if (m_commandOffsets.size() > Console::GetInst().ca_debug_attachmentManager_maxUsedOffsetSize)
+		Console::GetInst().ca_debug_attachmentManager_maxUsedOffsetSize = m_commandOffsets.size();
+#endif
 	return &m_memory[m_commandOffsets[m_commandOffsets.size() - 1]];
 }
 
@@ -2536,8 +2554,8 @@ void CAttachmentManager::CModificationCommandBuffer::Clear()
 {
 	m_memory.resize(0);
 	m_commandOffsets.resize(0);
-	m_memory.reserve(kMaxMemory);
-	m_commandOffsets.reserve(kMaxOffsets);
+	m_memory.reserve(Console::GetInst().ca_MinAttachmentMemorySize);
+	m_commandOffsets.reserve(Console::GetInst().ca_MinAttachmentOffsetSize);
 }
 
 CAttachmentManager::CModificationCommandBuffer::~CModificationCommandBuffer()

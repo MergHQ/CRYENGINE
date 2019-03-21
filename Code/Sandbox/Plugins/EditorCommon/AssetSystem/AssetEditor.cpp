@@ -6,6 +6,7 @@
 #include "AssetManager.h"
 #include "AssetType.h"
 #include "Browser/AssetBrowserDialog.h"
+#include "Commands/QCommandAction.h"
 #include "Controls/QuestionDialog.h"
 #include "Controls/SingleSelectionDialog.h"
 #include "CryExtension/CryGUID.h"

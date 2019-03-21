@@ -45,14 +45,11 @@ struct SPostEffectsUtils
 	static void ShSetParamPS(const CCryNameR& pParamName, const Vec4& pParam);
 
 	static void GetFullScreenTri(SVF_P3F_C4B_T2F pResult[3], int nTexWidth, int nTexHeight, float z = 0, const RECT* pSrcRegion = NULL);
-	static void GetFullScreenTriWPOS(SVF_P3F_T2F_T3F pResult[3], int nTexWidth, int nTexHeight, float z = 0, const RECT* pSrcRegion = NULL);
 
 	static void GetFullScreenQuad(SVF_P3F_C4B_T2F pResult[4], int nTexWidth, int nTexHeight, float z = 0, const RECT* pSrcRegion = NULL);
-	static void GetFullScreenQuadWPOS(SVF_P3F_T2F_T3F pResult[4], int nTexWidth, int nTexHeight, float z = 0, const RECT* pSrcRegion = NULL);
 
 	// Draws fullscreen aligned triangle
 	static void DrawFullScreenTri(int nTexWidth, int nTexHeight, float z = 0, const RECT* pSrcRegion = NULL);
-	static void DrawFullScreenTriWPOS(int nTexWidth, int nTexHeight, float z = 0, const RECT* pSrcRegion = NULL);
 
 	// Deprecated - use DrawQuadFS. Draws screen aligned quad
 	static void DrawScreenQuad(int nTexWidth, int nTexHeight, float x0 = 0, float y0 = 0, float x1 = 1, float y1 = 1);
@@ -76,7 +73,7 @@ struct SPostEffectsUtils
 
 	static void GetFrustumCorners(Vec3& vRT, Vec3& vLT, Vec3& vLB, Vec3& vRB, const CCamera& camera, bool bMirrorCull);
 
-	static void UpdateFrustumCorners();
+	static void UpdateFrustumCorners(const CGraphicsPipeline& graphicsPipeline);
 	static void UpdateOverscanBorderAspectRatio();
 
 	// Log utility

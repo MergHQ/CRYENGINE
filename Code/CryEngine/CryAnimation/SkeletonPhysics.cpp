@@ -1669,7 +1669,7 @@ void CSkeletonPhysics::SynchronizeWithPhysicalEntity(IPhysicalEntity* pent, cons
 
 	SetLocation(IDENTITY);
 	uint mode = m_pInstance->m_CharEditMode;
-	m_pInstance->m_CharEditMode |= CA_CharacterTool; // force synchronization
+	m_pInstance->m_CharEditMode |= CA_CharacterAuxEditor; // force synchronization
 	Job_SynchronizeWithPhysicsPrepare(*CharacterInstanceProcessing::GetMemoryPool());
 	if (pent)
 		SynchronizeWithPhysicalEntity(poseDataWriteable, pent, posMaster, qMaster, QuatT(IDENTITY));

@@ -257,19 +257,22 @@ public:
 	///////////////////////////////////////////////////////////////////////////
 	//! @name ISystem implementation
 	//@{
-	virtual SSystemGlobalEnvironment*   GetGlobalEnvironment() override { return &m_env; }
+	virtual SSystemGlobalEnvironment* GetGlobalEnvironment() override { return &m_env; }
 
-	const char*                         GetRootFolder() const override  { return m_root.c_str(); }
+	const char*                       GetRootFolder() const override  { return m_root.c_str(); }
 
-	virtual bool                        DoFrame(const SDisplayContextKey& displayContextKey = SDisplayContextKey{}, CEnumFlags<ESystemUpdateFlags> updateFlags = CEnumFlags<ESystemUpdateFlags>()) override;
+	virtual bool                      DoFrame(const SDisplayContextKey& displayContextKey = SDisplayContextKey{},
+	                                          const SGraphicsPipelineKey& graphicsPipelineKey = SGraphicsPipelineKey::BaseGraphicsPipelineKey,
+	                                          CEnumFlags<ESystemUpdateFlags> updateFlags = CEnumFlags<ESystemUpdateFlags>()) override;
+
 	virtual IManualFrameStepController* GetManualFrameStepController() const override;
 
 	virtual bool                        UpdateLoadtime() override;
 
 	//! Begin rendering frame.
-	virtual void RenderBegin(const SDisplayContextKey& displayContextKey) override;
+	virtual void RenderBegin(const SDisplayContextKey& displayContextKey, const SGraphicsPipelineKey& graphicsPipelineKey) override;
 	//! Render subsystems.
-	void         Render();
+	void         Render(const SGraphicsPipelineKey& graphicsPipelineKey);
 	//! End rendering frame and swap back buffer.
 	virtual void RenderEnd(bool bRenderStats = true) override;
 
@@ -857,7 +860,7 @@ private: // ------------------------------------------------------
 
 	CRY_HWND m_hWnd = nullptr;
 	CRY_HWND m_hWndActive = nullptr;
-	bool m_throttleFPS = false;
+	bool     m_throttleFPS = false;
 
 	// this is the memory statistics that is retained in memory between frames
 	// in which it's not gathered

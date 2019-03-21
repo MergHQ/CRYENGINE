@@ -173,8 +173,11 @@ CEntitySystem::CEntitySystem(ISystem* pSystem)
 
 	m_pEntityLoadManager = new CEntityLoadManager();
 
-	m_pPartitionGrid = new CPartitionGrid;
-	m_pProximityTriggerSystem = new CProximityTriggerSystem;
+	if (CVar::es_UseProximityTriggerSystem)
+	{
+		m_pPartitionGrid = new CPartitionGrid;
+		m_pProximityTriggerSystem = new CProximityTriggerSystem;
+	}
 
 #if defined(USE_GEOM_CACHES)
 	m_pGeomCacheAttachmentManager = new CGeomCacheAttachmentManager;
@@ -248,9 +251,12 @@ bool CEntitySystem::Init(ISystem* pSystem)
 	if (pSystem->GetIPhysicalWorld())
 		m_pPhysicsEventListener = new CPhysicsEventListener(pSystem->GetIPhysicalWorld());
 
-	//////////////////////////////////////////////////////////////////////////
-	// Should reallocate grid if level size change.
-	m_pPartitionGrid->AllocateGrid(4096, 4096);
+	if (CVar::es_UseProximityTriggerSystem)
+	{
+		//////////////////////////////////////////////////////////////////////////
+		// Should reallocate grid if level size change.
+		m_pPartitionGrid->AllocateGrid(4096, 4096);
+	}
 
 	m_bLocked = false;
 
@@ -330,8 +336,11 @@ void CEntitySystem::Reset()
 {
 	LOADING_TIME_PROFILE_SECTION;
 
-	m_pPartitionGrid->BeginReset();
-	m_pProximityTriggerSystem->BeginReset();
+	if (CVar::es_UseProximityTriggerSystem)
+	{
+		m_pPartitionGrid->BeginReset();
+		m_pProximityTriggerSystem->BeginReset();
+	}
 
 	// Flush the physics linetest and events queue
 	if (gEnv->pPhysicalWorld)
@@ -394,8 +403,11 @@ void CEntitySystem::Reset()
 
 	m_timersMap.clear();
 
-	m_pProximityTriggerSystem->Reset();
-	m_pPartitionGrid->Reset();
+	if (CVar::es_UseProximityTriggerSystem)
+	{
+		m_pProximityTriggerSystem->Reset();
+		m_pPartitionGrid->Reset();
+	}
 
 	m_pEntityLoadManager->Reset();
 }
@@ -508,6 +520,7 @@ IEntity* CEntitySystem::SpawnPreallocatedEntity(CEntity* pPrecreatedEntity, SEnt
 
 	if (!ValidateSpawnParameters(params))
 	{
+		params.spawnResult = EEntitySpawnResult::Error;
 		return nullptr;
 	}
 
@@ -515,6 +528,7 @@ IEntity* CEntitySystem::SpawnPreallocatedEntity(CEntity* pPrecreatedEntity, SEnt
 
 	if (!OnBeforeSpawn(params))
 	{
+		params.spawnResult = EEntitySpawnResult::Skipped;
 		return nullptr;
 	}
 
@@ -535,6 +549,7 @@ IEntity* CEntitySystem::SpawnPreallocatedEntity(CEntity* pPrecreatedEntity, SEnt
 		if (!params.id)
 		{
 			EntityWarning("CEntitySystem::SpawnEntity Failed, Can't spawn entity %s. ID range is full (internal error)", params.sName);
+			params.spawnResult = EEntitySpawnResult::Error;
 			return nullptr;
 		}
 	}
@@ -586,7 +601,8 @@ IEntity* CEntitySystem::SpawnPreallocatedEntity(CEntity* pPrecreatedEntity, SEnt
 		{
 			if (!InitEntity(pEntity, params))   // calls DeleteEntity() on failure
 			{
-				return NULL;
+				params.spawnResult = EEntitySpawnResult::Error;
+				return nullptr;
 			}
 		}
 	}
@@ -596,6 +612,7 @@ IEntity* CEntitySystem::SpawnPreallocatedEntity(CEntity* pPrecreatedEntity, SEnt
 		CryLog("CEntitySystem::SpawnEntity %s %s 0x%x", pEntity ? pEntity->GetClass()->GetName() : "null", pEntity ? pEntity->GetName() : "null", pEntity ? pEntity->GetId() : 0);
 	}
 
+	params.spawnResult = EEntitySpawnResult::Success;
 	return pEntity;
 }
 
@@ -927,16 +944,19 @@ int CEntitySystem::GetPhysicalEntitiesInBox(const Vec3& origin, float radius, IP
 //////////////////////////////////////////////////////////////////////////
 int CEntitySystem::QueryProximity(SEntityProximityQuery& query)
 {
-	SPartitionGridQuery q;
-	q.aabb = query.box;
-	q.nEntityFlags = query.nEntityFlags;
-	q.pEntityClass = query.pEntityClass;
-	m_pPartitionGrid->GetEntitiesInBox(q);
-	query.pEntities = 0;
-	query.nCount = (int)q.pEntities->size();
-	if (q.pEntities && query.nCount > 0)
+	if (CVar::es_UseProximityTriggerSystem)
 	{
-		query.pEntities = q.pEntities->data();
+		SPartitionGridQuery q;
+		q.aabb = query.box;
+		q.nEntityFlags = query.nEntityFlags;
+		q.pEntityClass = query.pEntityClass;
+		m_pPartitionGrid->GetEntitiesInBox(q);
+		query.pEntities = 0;
+		query.nCount = (int)q.pEntities->size();
+		if (q.pEntities && query.nCount > 0)
+		{
+			query.pEntities = q.pEntities->data();
+		}
 	}
 	return query.nCount;
 }
@@ -1012,8 +1032,11 @@ void CEntitySystem::Update()
 
 		UpdateEntityComponents(fFrameTime);
 
-		// Update info on proximity triggers.
-		m_pProximityTriggerSystem->Update();
+		if (CVar::es_UseProximityTriggerSystem)
+		{
+			// Update info on proximity triggers.
+			m_pProximityTriggerSystem->Update();
+		}
 
 		// Now update area manager to send enter/leave events from areas.
 		m_pAreaManager->Update();

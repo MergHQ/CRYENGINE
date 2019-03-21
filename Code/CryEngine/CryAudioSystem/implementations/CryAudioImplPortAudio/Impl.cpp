@@ -36,7 +36,7 @@ std::vector<CObject*> g_constructedObjects;
 std::vector<CEvent*> g_events;
 
 uint16 g_eventsPoolSize = 0;
-uint16 g_eventPoolSizeLevelSpecific = 0;
+std::map<ContextId, uint16> g_contextEventPoolSizes;
 
 #if defined(CRY_AUDIO_IMPL_PORTAUDIO_USE_DEBUG_CODE)
 uint16 g_debugEventrPoolSize = 0;
@@ -215,18 +215,15 @@ void CImpl::Release()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CImpl::SetLibraryData(XmlNodeRef const pNode, bool const isLevelSpecific)
+void CImpl::SetLibraryData(XmlNodeRef const pNode, ContextId const contextId)
 {
-	if (isLevelSpecific)
+	if (contextId == GlobalContextId)
 	{
-		uint16 eventLevelPoolSize;
-		CountPoolSizes(pNode, eventLevelPoolSize);
-
-		g_eventPoolSizeLevelSpecific = std::max(g_eventPoolSizeLevelSpecific, eventLevelPoolSize);
+		CountPoolSizes(pNode, g_eventsPoolSize);
 	}
 	else
 	{
-		CountPoolSizes(pNode, g_eventsPoolSize);
+		CountPoolSizes(pNode, g_contextEventPoolSizes[contextId]);
 	}
 }
 
@@ -234,7 +231,7 @@ void CImpl::SetLibraryData(XmlNodeRef const pNode, bool const isLevelSpecific)
 void CImpl::OnBeforeLibraryDataChanged()
 {
 	g_eventsPoolSize = 0;
-	g_eventPoolSizeLevelSpecific = 0;
+	g_contextEventPoolSizes.clear();
 
 #if defined(CRY_AUDIO_IMPL_PORTAUDIO_USE_DEBUG_CODE)
 	g_debugEventrPoolSize = 0;
@@ -242,9 +239,29 @@ void CImpl::OnBeforeLibraryDataChanged()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CImpl::OnAfterLibraryDataChanged()
+void CImpl::OnAfterLibraryDataChanged(int const poolAllocationMode)
 {
-	g_eventsPoolSize += g_eventPoolSizeLevelSpecific;
+	if (!g_contextEventPoolSizes.empty())
+	{
+		if (poolAllocationMode <= 0)
+		{
+			for (auto const& poolSizePair : g_contextEventPoolSizes)
+			{
+				g_eventsPoolSize += poolSizePair.second;
+			}
+		}
+		else
+		{
+			uint16 maxContextPoolsize = 0;
+
+			for (auto const& poolSizePair : g_contextEventPoolSizes)
+			{
+				maxContextPoolsize = std::max(maxContextPoolsize, poolSizePair.second);
+			}
+
+			g_eventsPoolSize += maxContextPoolsize;
+		}
+	}
 
 #if defined(CRY_AUDIO_IMPL_PORTAUDIO_USE_DEBUG_CODE)
 	// Used to hide pools without allocations in debug draw.

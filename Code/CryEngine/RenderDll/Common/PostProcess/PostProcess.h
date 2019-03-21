@@ -321,7 +321,7 @@ enum EPostProcessRenderFlag
 class CPostEffect
 {
 public:
-	CPostEffect() : m_nRenderFlags(PSP_UPDATE_BACKBUFFER), m_pActive(0) /*, m_nID(ePFX_DefaultID),*/ 
+	CPostEffect() : m_nRenderFlags(PSP_UPDATE_BACKBUFFER), m_pActive(0) /*, m_nID(ePFX_DefaultID),*/
 	{
 	}
 
@@ -331,17 +331,17 @@ public:
 	}
 
 	// Initialize post processing technique - device access allowed (queries, ...)
-	virtual int  Initialize()      { return 1; }
+	virtual int  Initialize()                                                                                             { return 1; }
 	// Create all the resources for the pp effects which don't require the device (such as textures)
-	virtual int  CreateResources() { return 1; }
+	virtual int  CreateResources()                                                                                        { return 1; }
 	// Free resources used
-	virtual void Release()         {}
+	virtual void Release()                                                                                                {}
 	// Preprocess technique
-	virtual bool Preprocess(const SRenderViewInfo& viewInfo)      { return IsActive(); }
+	virtual bool Preprocess(const SRenderViewInfo& viewInfo, const std::shared_ptr<CGraphicsPipeline>& pGraphicsPipeline) { return IsActive(); }
 	// Some effects might require updating data/parameters, etc
-	virtual void Update()          {};
+	virtual void Update()                                                                                                 {}
 	// Render technique
-	virtual void Render() = 0;
+	virtual void Render(const std::shared_ptr<CGraphicsPipeline>& pGraphicsPipeline) = 0;
 	// Reset technique state to default
 	virtual void Reset(bool bOnSpecChange = false) = 0;
 	// release resources when required
@@ -350,7 +350,7 @@ public:
 	// Add render element/object to post process (use for custom geometry)
 	virtual void AddRE(const CRenderElement* pRE, const SShaderItem* pShaderItem, CRenderObject* pObj, const SRenderingPassInfo& passInfo) {}
 	// release resources when required
-	virtual void OnBeginFrame(const SRenderingPassInfo& passInfo)                                                                            {}
+	virtual void OnBeginFrame(const SRenderingPassInfo& passInfo)                                                                          {}
 
 	// Get technique render flags
 	int GetRenderFlags() const
@@ -377,7 +377,7 @@ public:
 	}
 
 public:
-	CPostEffectContext* GetCurrentContext() { return m_pCurrentContext; }
+	CPostEffectContext* GetCurrentContext()                      { return m_pCurrentContext; }
 	void                SetCurrentContext(CPostEffectContext* p) { m_pCurrentContext = p; }
 
 protected:

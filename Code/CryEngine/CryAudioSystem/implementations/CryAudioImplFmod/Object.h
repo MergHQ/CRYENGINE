@@ -39,7 +39,6 @@ private:
 
 	void Set3DAttributes();
 	void UpdateVelocities(float const deltaTime);
-	void SetAbsoluteVelocity(float const velocity);
 
 	CTransformation m_transformation;
 	float           m_previousAbsoluteVelocity;

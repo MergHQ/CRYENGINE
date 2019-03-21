@@ -12,8 +12,10 @@ namespace Impl
 {
 namespace Fmod
 {
-extern CryAudio::Impl::Fmod::SPoolSizes g_connections;
-extern Platforms g_platforms;
+using ConnectionsByContext = std::map<CryAudio::ContextId, CryAudio::Impl::Fmod::SPoolSizes>;
+extern ConnectionsByContext g_connections;
+
+extern string g_language;
 
 static CryIcon s_errorIcon;
 static CryIcon s_bankIcon;

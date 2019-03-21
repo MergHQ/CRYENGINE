@@ -51,11 +51,13 @@ struct IExtension;
 
 struct INavigationSystem
 {
-	enum ENavigationEvent
+	enum class ENavigationEvent
 	{
-		MeshReloaded = 0,
-		MeshReloadedAfterExporting,
-		NavigationCleared,
+		MeshReloaded,               // Sent after the NavMeshes are loaded
+		MeshReloadedAfterExporting, // Sent after the NavMeshes are loaded when exporting the level
+		NavigationCleared,          // Sent after Navigation System is reset and cleared
+		WorkingStateSetToIdle,      // Sent after NavMesh updating is finished
+		WorkingStateSetToWorking,   // Sent before NavMesh updating starts
 	};
 
 	struct INavigationSystemListener
@@ -66,15 +68,15 @@ struct INavigationSystem
 		// </interfuscator:shuffle>
 	};
 
-	enum WorkingState
+	enum class EWorkingState
 	{
-		Idle = 0,
-		Working,
+		Idle,    // Navigation system doesn't have NavMesh update jobs running and there are no active update requests
+		Working, // NavMesh update jobs are running
 	};
 
-	struct CreateAgentTypeParams
+	struct SCreateAgentTypeParams
 	{
-		CreateAgentTypeParams(const Vec3& _voxelSize = Vec3(0.1f), uint16 _radiusVoxelCount = 4,
+		SCreateAgentTypeParams(const Vec3& _voxelSize = Vec3(0.1f), uint16 _radiusVoxelCount = 4,
 		                      uint16 _climbableVoxelCount = 4, uint16 _heightVoxelCount = 18,
 		                      uint16 _maxWaterDepthVoxelCount = 6)
 			: voxelSize(_voxelSize)
@@ -98,9 +100,9 @@ struct INavigationSystem
 		uint16 maxWaterDepthVoxelCount;
 	};
 
-	struct CreateMeshParams
+	struct SCreateMeshParams
 	{
-		CreateMeshParams(const Vec3& _origin = Vec3(ZERO), const Vec3i& _tileSize = Vec3i(8), const uint32 _tileCount = 1024)
+		SCreateMeshParams(const Vec3& _origin = Vec3(ZERO), const Vec3i& _tileSize = Vec3i(8), const uint32 _tileCount = 1024)
 			: origin(_origin)
 			, tileSize(_tileSize)
 			, tileCount(_tileCount)
@@ -137,7 +139,7 @@ struct INavigationSystem
 
 	// <interfuscator:shuffle>
 	virtual ~INavigationSystem() {}
-	virtual NavigationAgentTypeID           CreateAgentType(const char* name, const CreateAgentTypeParams& params) = 0;
+	virtual NavigationAgentTypeID           CreateAgentType(const char* name, const SCreateAgentTypeParams& params) = 0;
 	virtual NavigationAgentTypeID           GetAgentTypeID(const char* name) const = 0;
 	virtual NavigationAgentTypeID           GetAgentTypeID(size_t index) const = 0;
 	virtual const char*                     GetAgentTypeName(NavigationAgentTypeID agentTypeID) const = 0;
@@ -161,13 +163,13 @@ struct INavigationSystem
 	virtual MNM::INavMeshQueryManager*      GetNavMeshQueryManager() = 0;
 
 #ifdef SW_NAVMESH_USE_GUID
-	virtual NavigationMeshID CreateMesh(const char* name, NavigationAgentTypeID agentTypeID, const CreateMeshParams& params, NavigationMeshGUID guid) = 0;
-	virtual NavigationMeshID CreateMesh(const char* name, NavigationAgentTypeID agentTypeID, const CreateMeshParams& params, NavigationMeshID requestedID, NavigationMeshGUID guid) = 0;
+	virtual NavigationMeshID CreateMesh(const char* name, NavigationAgentTypeID agentTypeID, const SCreateMeshParams& params, NavigationMeshGUID guid) = 0;
+	virtual NavigationMeshID CreateMesh(const char* name, NavigationAgentTypeID agentTypeID, const SCreateMeshParams& params, NavigationMeshID requestedID, NavigationMeshGUID guid) = 0;
 #else
-	virtual NavigationMeshID CreateMesh(const char* name, NavigationAgentTypeID agentTypeID, const CreateMeshParams& params) = 0;
-	virtual NavigationMeshID CreateMesh(const char* name, NavigationAgentTypeID agentTypeID, const CreateMeshParams& params, NavigationMeshID requestedID) = 0;
+	virtual NavigationMeshID CreateMesh(const char* name, NavigationAgentTypeID agentTypeID, const SCreateMeshParams& params) = 0;
+	virtual NavigationMeshID CreateMesh(const char* name, NavigationAgentTypeID agentTypeID, const SCreateMeshParams& params, NavigationMeshID requestedID) = 0;
 #endif
-	virtual NavigationMeshID CreateMeshForVolumeAndUpdate(const char* name, NavigationAgentTypeID agentTypeID, const CreateMeshParams& params, const NavigationVolumeID volumeID) = 0;
+	virtual NavigationMeshID CreateMeshForVolumeAndUpdate(const char* name, NavigationAgentTypeID agentTypeID, const SCreateMeshParams& params, const NavigationVolumeID volumeID) = 0;
 
 	virtual void DestroyMesh(NavigationMeshID meshID) = 0;
 
@@ -209,12 +211,12 @@ struct INavigationSystem
 	virtual const char*  GetMeshName(NavigationMeshID meshID) const = 0;
 	virtual void         SetMeshName(NavigationMeshID meshID, const char* name) = 0;
 
-	virtual WorkingState GetState() const = 0;
+	virtual EWorkingState GetState() const = 0;
 
 	// MNM regeneration tasks are queued up, but not executed
 	virtual void         PauseNavigationUpdate() = 0;
 	virtual void         RestartNavigationUpdate() = 0;
-	virtual WorkingState Update(const CTimeValue frameStartTime, const float frameTime, bool blocking = false) = 0;
+	virtual EWorkingState Update(const CTimeValue frameStartTime, const float frameTime, bool blocking = false) = 0;
 	virtual uint32       GetWorkingQueueSize() const = 0;
 
 	virtual void         ProcessQueuedMeshUpdates() = 0;

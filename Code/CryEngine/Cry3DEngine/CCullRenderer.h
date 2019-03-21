@@ -1,7 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef __CCULLRENDERER__
-#define __CCULLRENDERER__
+#pragma once
 
 #include "VMath.hpp"
 
@@ -94,14 +93,16 @@ private:
 	tdZexel m_ZBufferOrig[SIZEX * SIZEY];
 #endif
 
-	uint32 m_DrawCall;
-	uint32 m_PolyCount;
+	uint32               m_DrawCall;
+	uint32               m_PolyCount;
+
+	SGraphicsPipelineKey m_cullGraphicsContextKey;
 
 	template<bool WRITE, bool CULL, bool CULL_BACKFACES>
 	inline bool Triangle(
-	  const NVMath::vec4& rV0,
-	  const NVMath::vec4& rV1,
-	  const NVMath::vec4& rV2)
+		const NVMath::vec4& rV0,
+		const NVMath::vec4& rV1,
+		const NVMath::vec4& rV2)
 	{
 		using namespace NVMath;
 
@@ -204,7 +205,7 @@ private:
 	}
 
 	template<bool WRITE, bool CULL, bool PROJECT, bool CULL_BACKFACES>
-	inline bool Triangle2D(NVMath::vec4 rV0, NVMath::vec4 rV1, NVMath::vec4 rV2, uint32 MinX = 0, uint32 MinY = 0, uint32 MaxX = 0, uint32 MaxY = 0, NVMath::vec4 VMinMax = NVMath::Vec4Zero (), NVMath::vec4 V210 = NVMath::Vec4Zero ())
+	inline bool Triangle2D(NVMath::vec4 rV0, NVMath::vec4 rV1, NVMath::vec4 rV2, uint32 MinX = 0, uint32 MinY = 0, uint32 MaxX = 0, uint32 MaxY = 0, NVMath::vec4 VMinMax = NVMath::Vec4Zero(), NVMath::vec4 V210 = NVMath::Vec4Zero())
 	{
 		using namespace NVMath;
 
@@ -454,8 +455,10 @@ public:
 		delete[] m_ZBufferSwap;
 	}
 
-	void Prepare()
+	void Prepare(const SGraphicsPipelineKey& cullGraphicsContextKey)
 	{
+		m_cullGraphicsContextKey = cullGraphicsContextKey;
+
 		if (m_nNumWorker)
 		{
 			return;
@@ -484,7 +487,7 @@ public:
 	{
 		m_VMaxXY = NVMath::int32Tofloat(NVMath::Vec4(SIZEX, SIZEY, SIZEX, SIZEY));
 
-		tdZexel* pPinned = gEnv->pRenderer->PinOcclusionBuffer(m_Reproject);
+		tdZexel* pPinned = gEnv->pRenderer->PinOcclusionBuffer(m_Reproject, m_cullGraphicsContextKey);
 		if (!pPinned)
 		{
 			m_ZInput = m_ZBufferMainMemory;
@@ -505,7 +508,7 @@ public:
 	{
 		if (m_ZInput != m_ZBufferMainMemory)
 		{
-			gEnv->pRenderer->UnpinOcclusionBuffer();
+			gEnv->pRenderer->UnpinOcclusionBuffer(m_cullGraphicsContextKey);
 			m_ZInput = m_ZBufferMainMemory;
 		}
 	}
@@ -1386,8 +1389,8 @@ public:
 	}
 	template<bool WRITE>
 	inline bool Rasterize(const NVMath::vec4* pViewProj, tdVertexCacheArg vertexCache,
-	                            const tdIndex* __restrict pIndices, const uint32 ICount,
-	                            const uint8* __restrict pVertices, const uint32 VertexSize, const uint32 VCount)
+	                      const tdIndex* __restrict pIndices, const uint32 ICount,
+	                      const uint8* __restrict pVertices, const uint32 VertexSize, const uint32 VCount)
 	{
 		using namespace NVMath;
 		if (!VCount || !ICount)
@@ -1558,4 +1561,3 @@ public:
 
 template<uint32 SIZEX, uint32 SIZEY>
 CRY_ALIGN(128) float NAsyncCull::CCullRenderer<SIZEX, SIZEY>::m_ZBufferMainMemory[SIZEX * SIZEY];
-#endif

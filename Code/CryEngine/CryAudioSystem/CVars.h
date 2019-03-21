@@ -28,6 +28,7 @@ public:
 	int m_objectPoolSize = 256;
 	int m_triggerInstancePoolSize = 512;
 	int m_ignoreWindowFocus = 0;
+	int m_poolAllocationMode = 0;
 
 #if defined(CRY_AUDIO_USE_OCCLUSION)
 	int   m_occlusionCollisionTypes = 0;
@@ -39,7 +40,7 @@ public:
 	float m_occlusionMaxSyncDistance = 10.0f;
 	float m_occlusionHighDistance = 10.0f;
 	float m_occlusionMediumDistance = 80.0f;
-	float m_occlusionListenerPlaneSize = 0.0f;
+	float m_occlusionListenerPlaneSize = 1.0f;
 	#if defined(CRY_AUDIO_USE_DEBUG_CODE)
 	int   m_occlusionGlobalType = 0;
 	#endif // CRY_AUDIO_USE_DEBUG_CODE
@@ -50,7 +51,7 @@ public:
 	int    m_loggingOptions = 0;
 	int    m_drawDebug = 0;
 	int    m_fileCacheManagerDebugFilter = 0;
-	int    m_hideInactiveObjects = 0;
+	int    m_hideInactiveObjects = 1;
 	ICVar* m_pDebugFilter = nullptr;
 #endif // CRY_AUDIO_USE_DEBUG_CODE
 };

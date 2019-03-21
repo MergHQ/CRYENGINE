@@ -12,8 +12,8 @@ namespace Impl
 {
 namespace Adx2
 {
-extern CryAudio::Impl::Adx2::SPoolSizes g_connections;
-extern Platforms g_platforms;
+using ConnectionsByContext = std::map<CryAudio::ContextId, CryAudio::Impl::Adx2::SPoolSizes>;
+extern ConnectionsByContext g_connections;
 
 static CryIcon s_errorIcon;
 static CryIcon s_aisacControlIcon;

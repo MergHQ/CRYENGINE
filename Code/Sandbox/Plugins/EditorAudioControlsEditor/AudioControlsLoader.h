@@ -4,9 +4,10 @@
 
 #include "Control.h"
 
+#if defined (USE_BACKWARDS_COMPATIBILITY)
 namespace ACE
 {
-// This file is deprecated and only used for backwards compatibility. It will be removed before March 2019.
+// This file is deprecated and only used for backwards compatibility. It will be removed with CE 5.7.
 class CAudioControlsLoader final
 {
 public:
@@ -18,23 +19,19 @@ public:
 
 	CAudioControlsLoader() = default;
 
-	FileNames  GetLoadedFilenamesList();
-	void       LoadAll(bool const loadOnlyDefaultControls = false);
-	void       LoadControls(string const& folderPath);
-	void       LoadScopes();
-	EErrorCode GetErrorCodeMask() const { return m_errorCodeMask; }
+	FileNames GetLoadedFilenamesList();
+	void      LoadAll(bool const loadOnlyDefaultControls = false);
+	void      LoadControls(string const& folderPath);
 
 private:
 
-	void      LoadAllLibrariesInFolder(string const& folderPath, string const& level);
+	bool      LoadAllLibrariesInFolder(string const& folderPath, string const& level);
 	void      LoadControlsLibrary(XmlNodeRef const pRoot, string const& filepath, string const& level, string const& filename, uint8 const version);
-	CControl* LoadControl(XmlNodeRef const pNode, Scope const scope, uint8 const version, CAsset* const pParentItem);
-	CControl* LoadDefaultControl(XmlNodeRef const pNode, Scope const scope, CAsset* const pParentItem);
+	CControl* LoadControl(XmlNodeRef const pNode, CryAudio::ContextId const contextId, uint8 const version, CAsset* const pParentItem);
+	CControl* LoadDefaultControl(XmlNodeRef const pNode, CryAudio::ContextId const contextId, CAsset* const pParentItem);
 
 	void      LoadPreloadConnections(XmlNodeRef const pNode, CControl* const pControl, uint8 const version);
 	void      LoadConnections(XmlNodeRef const root, CControl* const pControl);
-
-	void      LoadScopesImpl(string const& path);
 
 	void      LoadEditorData(XmlNodeRef const pEditorDataNode, CAsset& library);
 	void      LoadLibraryEditorData(XmlNodeRef const pLibraryNode, CAsset& library);
@@ -48,10 +45,10 @@ private:
 	static string const s_controlsLevelsFolder;
 	static string const s_assetsFolderPath;
 	FileNames           m_loadedFilenames;
-	EErrorCode          m_errorCodeMask = EErrorCode::None;
 	bool                m_loadOnlyDefaultControls = false;
 
 	FileNames           m_defaultTriggerNames { CryAudio::g_szGetFocusTriggerName, CryAudio::g_szLoseFocusTriggerName, CryAudio::g_szMuteAllTriggerName, CryAudio::g_szUnmuteAllTriggerName };
 	FileNames           m_defaultParameterNames { "absolute_velocity", "object_speed", "relative_velocity", "object_doppler" };
 };
-} // namespace ACE
+}      // namespace ACE
+#endif //  USE_BACKWARDS_COMPATIBILITY

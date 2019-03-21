@@ -9,6 +9,18 @@
 class CScreenSpaceObscuranceStage : public CGraphicsPipelineStage
 {
 public:
+	static const EGraphicsPipelineStage StageID = eStage_ScreenSpaceObscurance;
+
+	CScreenSpaceObscuranceStage(CGraphicsPipeline& graphicsPipeline)
+		: CGraphicsPipelineStage(graphicsPipeline)
+		, m_passCopyFromESRAM(&graphicsPipeline)
+		, m_passObscurance(&graphicsPipeline)
+		, m_passFilter(&graphicsPipeline)
+		, m_passAlbedoDownsample0(&graphicsPipeline)
+		, m_passAlbedoDownsample1(&graphicsPipeline)
+		, m_passAlbedoDownsample2(&graphicsPipeline)
+		, m_passAlbedoBlur(&graphicsPipeline) {}
+
 	bool IsStageActive(EShaderRenderingFlags flags) const final
 	{
 		return !CRendererCVars::CV_r_DeferredShadingDebugGBuffer;

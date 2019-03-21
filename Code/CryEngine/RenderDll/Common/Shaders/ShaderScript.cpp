@@ -520,7 +520,7 @@ bool CShaderMan::mfModifyGenFlags(CShader* efGen, const CShaderResources* pRes, 
 				}
 
 				PREFAST_SUPPRESS_WARNING(6326)
-				const bool useSilhouettePOM = CRenderer::CV_r_SilhouettePOM != 0 && !CVrProjectionManager::IsMultiResEnabledStatic();
+				const bool useSilhouettePOM = CRenderer::CV_r_SilhouettePOM != 0 && !gcpRendD3D->GetVrProjectionManager()->IsMultiResEnabledStatic();
 				if (pBit->m_nDependencySet & SHGD_HW_SILHOUETTE_POM)
 				{
 					nAndMaskHW &= ~pBit->m_Mask;
@@ -762,10 +762,10 @@ CShader* CShaderMan::mfForName(const char* nameSh, int flags, const CShaderResou
 	cry_sprintf(nameNew, "%sCryFX/%s.cfx", m_ShadersPath, nameEf);
 	ef->m_NameFile = nameNew;
 	ef->m_Flags |= flags;
-	
+
 	_smart_ptr<CShader> pShader(ef);
-	_smart_ptr<CShaderResources> pResources( const_cast<CShaderResources*>(Res) );
-	gRenDev->ExecuteRenderThreadCommand([=] 
+	_smart_ptr<CShaderResources> pResources(const_cast<CShaderResources*>(Res));
+	gRenDev->ExecuteRenderThreadCommand([=]
 		{
 			RT_ParseShader(pShader, nMaskGen | nMaskGenHW, flags, pResources);
 		}

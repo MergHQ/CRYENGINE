@@ -175,7 +175,7 @@ void CMaterialEditor::InitMenuBar()
 
 	// Enable instant editing if possible
 	CAbstractMenu* const pEditMenu = GetMenu(CEditor::MenuItems::EditMenu);
-	pEditMenu->AddAction(m_pLockAction);
+	pEditMenu->AddCommandAction(m_pLockAction);
 }
 
 void CMaterialEditor::OnEditorNotifyEvent(EEditorNotifyEvent event)
@@ -421,8 +421,8 @@ void CMaterialEditor::BroadcastPopulateInspector()
 		{
 			PopulateInspectorEvent event([this](CInspector& inspector)
 			  {
-				inspector.AddWidget(m_pMaterialSerializer->CreatePropertyTree());
-			  }, title);
+			     inspector.AddPropertyTree(m_pMaterialSerializer->CreatePropertyTree());
+				}, title);
 			event.Broadcast(this);
 		}
 	}

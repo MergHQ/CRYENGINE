@@ -1,23 +1,9 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-// -------------------------------------------------------------------------
-//  File name:   RenderMeshUtils.h
-//  Created:     14/11/2006 by Timur.
-//  Description:
-// -------------------------------------------------------------------------
-//  History:
-//
-////////////////////////////////////////////////////////////////////////////
-
-#ifndef __RenderMeshUtils_h__
-#define __RenderMeshUtils_h__
 #pragma once
 
 struct SIntersectionData;
 
-//////////////////////////////////////////////////////////////////////////
-// RenderMesh utilities.
-//////////////////////////////////////////////////////////////////////////
 class CRenderMeshUtils : public Cry3DEngineBase
 {
 public:
@@ -82,5 +68,3 @@ struct SIntersectionData
 	float        fDecalPlacementTestMaxSize; // decal will look acceptable in this place
 	bool         bNeedFallback;
 };
-
-#endif // __RenderMeshUtils_h__

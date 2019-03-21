@@ -137,8 +137,7 @@ inline void CDeviceObjectFactory::ExtractBasePointer(D3DBuffer* buffer, D3D11_MA
 		// layer for Durango is available
 		void* data;
 		unsigned size = sizeof(data);
-		HRESULT hr = buffer->GetPrivateData(BufferPointerGuid, &size, &data);
-		assert(hr == S_OK);
+		CRY_VERIFY(buffer->GetPrivateData(BufferPointerGuid, &size, &data) == S_OK);
 		base_ptr = reinterpret_cast<uint8*>(data);
 	#elif (CRY_RENDERER_DIRECT3D >= 120)
 		base_ptr = CDeviceObjectFactory::Map(buffer, 0, 0, 0, mode /* MAP_DISCARD could affect the ptr */);

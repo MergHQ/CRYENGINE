@@ -30,7 +30,7 @@ bool CD3D9Renderer::RT_CreateDevice()
 	return CreateDevice();
 }
 
-void CD3D9Renderer::RT_FlashRenderInternal(std::shared_ptr<IFlashPlayer> &&pPlayer)
+void CD3D9Renderer::RT_FlashRenderInternal(std::shared_ptr<IFlashPlayer>&& pPlayer)
 {
 	FUNCTION_PROFILER_RENDERER();
 
@@ -59,7 +59,7 @@ void CD3D9Renderer::RT_FlashRenderInternal(std::shared_ptr<IFlashPlayer> &&pPlay
 		GetDeviceObjectFactory().FlushToGPU();
 }
 
-void CD3D9Renderer::RT_FlashRenderInternal(std::shared_ptr<IFlashPlayer_RenderProxy> &&pPlayer, bool bDoRealRender)
+void CD3D9Renderer::RT_FlashRenderInternal(std::shared_ptr<IFlashPlayer_RenderProxy>&& pPlayer, bool bDoRealRender)
 {
 	FUNCTION_PROFILER_RENDERER();
 
@@ -108,7 +108,7 @@ void CD3D9Renderer::RT_FlashRenderInternal(std::shared_ptr<IFlashPlayer_RenderPr
 		GetDeviceObjectFactory().FlushToGPU();
 }
 
-void CD3D9Renderer::RT_FlashRenderPlaybackLocklessInternal(std::shared_ptr<IFlashPlayer_RenderProxy> &&pPlayer, int cbIdx, bool bFinalPlayback, bool bDoRealRender)
+void CD3D9Renderer::RT_FlashRenderPlaybackLocklessInternal(std::shared_ptr<IFlashPlayer_RenderProxy>&& pPlayer, int cbIdx, bool bFinalPlayback, bool bDoRealRender)
 {
 	if (bDoRealRender)
 	{
@@ -193,7 +193,7 @@ void CD3D9Renderer::RT_ReleaseRenderResources(uint32 nFlags)
 	{
 		// 1) Make sure all high level objects (CRenderMesh, CRenderElement,..) are gone
 		RT_DelayedDeleteResources(true);
-		
+
 		CREBreakableGlassBuffer::RT_ReleaseInstance();
 
 		CRenderMesh::Tick(MAX_RELEASED_MESH_FRAMES);
@@ -208,11 +208,27 @@ void CD3D9Renderer::RT_ReleaseRenderResources(uint32 nFlags)
 		if (gRenDev->GetIStereoRenderer())
 			gRenDev->GetIStereoRenderer()->ReleaseRenderResources();
 
-		RT_GraphicsPipelineShutdown();
+		CREParticle::ResetPool();
+
+		if (m_pStereoRenderer)
+			m_pStereoRenderer->ReleaseBuffers();
+
+#if defined(ENABLE_RENDER_AUX_GEOM)
+		if (m_pRenderAuxGeomD3D)
+			m_pRenderAuxGeomD3D->ReleaseResources();
+#endif //ENABLE_RENDER_AUX_GEOM
+
+		m_graphicsPipelines.clear();
+
+#if defined(FEATURE_SVO_GI)
+		// TODO: GraphicsPipeline-Stage shutdown with ShutDown()
+		if (auto pSvoRenderer = CSvoRenderer::GetInstance(false))
+			pSvoRenderer->Release();
+#endif
 
 		// 3) At this point all device objects should be gone and we can safely reset PSOs, ResourceLayouts,..
 		CDeviceObjectFactory::ResetInstance();
-		
+
 		// 4) Now release textures and shaders
 		m_cEF.mfReleaseSystemShaders();
 		m_cEF.m_Bin.InvalidateCache();
@@ -250,6 +266,21 @@ void CD3D9Renderer::RT_CreateRenderResources()
 
 	CRendererResources::LoadDefaultSystemTextures();
 	CRendererResources::CreateSystemTargets(0, 0);
+
+	// Create BaseGraphicsPipeline
+	if (!m_pBaseGraphicsPipeline)
+	{
+		SGraphicsPipelineDescription pipelineDesc;
+		pipelineDesc.type = (CRenderer::CV_r_GraphicsPipelineMobile) ? EGraphicsPipelineType::Mobile : EGraphicsPipelineType::Standard;
+		pipelineDesc.shaderFlags = SHDF_ZPASS | SHDF_ALLOWHDR | SHDF_ALLOWPOSTPROCESS | SHDF_ALLOW_WATER | SHDF_ALLOW_AO | SHDF_ALLOW_SKY | SHDF_ALLOW_RENDER_DEBUG;
+
+		SGraphicsPipelineKey key = RT_CreateGraphicsPipeline(pipelineDesc);
+		m_pBaseGraphicsPipeline = m_graphicsPipelines[key];
+		m_pActiveGraphicsPipeline = m_pBaseGraphicsPipeline;
+
+		CRY_ASSERT(m_pBaseGraphicsPipeline);
+	}
+
 	EF_Init();
 
 	if (m_pPostProcessMgr)
@@ -257,7 +288,11 @@ void CD3D9Renderer::RT_CreateRenderResources()
 		m_pPostProcessMgr->CreateResources();
 	}
 
-	RT_GraphicsPipelineBootup();
+#if defined(FEATURE_SVO_GI)
+	// TODO: GraphicsPipeline-Stage bootstrapped with Init()
+	CSvoRenderer::GetInstance(true);
+#endif
+
 #if RENDERER_SUPPORT_SCALEFORM
 	SF_CreateResources();
 #endif
@@ -340,7 +375,7 @@ void CD3D9Renderer::StopLoadtimeFlashPlayback()
 
 		m_pRT->m_pLoadtimeCallback = 0;
 
-		m_pRT->RC_BeginFrame({});
+		m_pRT->RC_BeginFrame({}, SGraphicsPipelineKey::BaseGraphicsPipelineKey);
 		FillFrame(Col_Black);
 
 #if !defined(STRIP_RENDER_THREAD)
@@ -355,4 +390,3 @@ void CD3D9Renderer::StopLoadtimeFlashPlayback()
 #endif // !defined(STRIP_RENDER_THREAD)
 	}
 }
-

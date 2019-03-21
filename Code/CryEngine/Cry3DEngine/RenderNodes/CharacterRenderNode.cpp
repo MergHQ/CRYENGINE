@@ -36,6 +36,11 @@ CCharacterRenderNode::CCharacterRenderNode()
 //////////////////////////////////////////////////////////////////////////
 CCharacterRenderNode::~CCharacterRenderNode()
 {
+	if (m_pCharacterInstance)
+	{
+		m_pCharacterInstance->SetParentRenderNode(nullptr);
+	}
+
 	Dephysicalize();
 	Get3DEngine()->FreeRenderNodeState(this);
 
@@ -289,6 +294,11 @@ void CCharacterRenderNode::SetCharacter(ICharacterInstance* pCharacter)
 {
 	if (m_pCharacterInstance != pCharacter)
 	{
+		if (m_pCharacterInstance)
+		{
+			m_pCharacterInstance->SetParentRenderNode(nullptr);
+		}
+
 		m_pCharacterInstance = pCharacter;
 		m_pCharacterInstance->SetParentRenderNode(this);
 

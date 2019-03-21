@@ -151,7 +151,7 @@ string CActionSetAudioSwitch::GetVerboseInfo() const
 void CActionSetAudioSwitch::Serialize(Serialization::IArchive& ar)
 {
 	ar(Serialization::AudioSwitch(m_switchName), "switch", "^ Switch");
-	ar(Serialization::AudioSwitchState(m_stateName), "switchState", "^ SwitchState");
+	ar(Serialization::AudioState(m_stateName), "switchState", "^ SwitchState");
 }
 
 //--------------------------------------------------------------------------------------------------
@@ -181,6 +181,6 @@ string CActionSetAudioParameter::GetVerboseInfo() const
 //--------------------------------------------------------------------------------------------------
 void CActionSetAudioParameter::Serialize(Serialization::IArchive& ar)
 {
-	ar(Serialization::AudioRTPC(m_audioParameter), "audioParameter", "^ AudioParameter");
+	ar(Serialization::AudioParameter(m_audioParameter), "audioParameter", "^ AudioParameter");
 	ar(m_valueToSet, "value", "^ Value");
 }

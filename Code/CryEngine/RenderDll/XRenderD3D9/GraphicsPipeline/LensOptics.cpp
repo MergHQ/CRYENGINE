@@ -36,8 +36,7 @@ void CLensOpticsStage::Execute()
 		viewport.MaxDepth = 1.0f;
 
 		SRenderViewInfo viewInfo[CCamera::eEye_eCount];
-		//size_t viewInfoCount = GetGraphicsPipeline().GenerateViewInfo(viewInfo, &viewport);
-		size_t viewInfoCount = GetGraphicsPipeline().GenerateViewInfo(viewInfo);
+		size_t viewInfoCount = m_graphicsPipeline.GenerateViewInfo(viewInfo);
 		assert(viewport.Width == viewInfo[0].viewport.width && viewport.Height == viewInfo[0].viewport.height);
 
 		const int  frameID          = pRenderView->GetFrameId();
@@ -153,7 +152,7 @@ void CLensOpticsStage::UpdateOcclusionQueries(SRenderViewInfo* pViewInfo, int vi
 
 	CFlareSoftOcclusionQuery::BatchReadResults(); // copy to system memory previous frame
 
-	m_softOcclusionManager.Update(pViewInfo, viewInfoCount);
+	m_softOcclusionManager.Update(pViewInfo, viewInfoCount, m_graphicsPipeline.GetCurrentRenderView());
 
 	CFlareSoftOcclusionQuery::ReadbackSoftOcclQuery(); // update current frame to staging buffer
 	for (int i = 0, iSize(m_softOcclusionManager.GetSize()); i < iSize; ++i)

@@ -579,10 +579,6 @@ void CParticleEmitter::SetTarget(const ParticleTarget& target)
 
 void CParticleEmitter::UpdateStreamingPriority(const SUpdateStreamingPriorityContext& context)
 {
-	if (GetCVars()->e_ParticlesPrecacheAssets)
-		// Already cached at maximum priority
-		return;
-
 	FUNCTION_PROFILER_3DENGINE;
 
 	for (auto& pRuntime : m_componentRuntimes)
@@ -631,8 +627,11 @@ void CParticleEmitter::SetSpawnParams(const SpawnParams& spawnParams)
 {
 	if (spawnParams.bIgnoreVisAreas != m_spawnParams.bIgnoreVisAreas || spawnParams.bRegisterByBBox != m_spawnParams.bRegisterByBBox)
 		Unregister();
-	m_spawnParams = spawnParams;	
+	bool update = spawnParams.eSpec != m_spawnParams.eSpec;
+	m_spawnParams = spawnParams;
 	SetChanged();
+	if (update)
+		m_componentRuntimesFor.clear();
 }
 
 uint CParticleEmitter::GetAttachedEntityId()

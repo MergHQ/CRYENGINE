@@ -55,7 +55,7 @@ class CParticleFluidSimulation : public ISimulationInstance
 public:
 	enum { simulationType = eSimulationType_ParticleFluid };
 
-	CParticleFluidSimulation(const int maxBodies);
+	CParticleFluidSimulation(CGraphicsPipeline* pGraphicsPipeline, const int maxBodies);
 	~CParticleFluidSimulation();
 
 	// most of the simulation runs in the render thread

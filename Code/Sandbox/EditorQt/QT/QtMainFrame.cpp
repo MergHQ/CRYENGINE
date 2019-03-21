@@ -354,6 +354,7 @@ public:
 		menuEdit->AddCommand("general.redo");
 		menuEdit->addSeparator();
 		menuEdit->AddCommand("general.delete");
+		menuEdit->AddCommand("general.rename");
 		menuEdit->AddCommand("general.duplicate");
 		menuEdit->AddCommand("general.copy");
 		menuEdit->AddCommand("general.cut");
@@ -405,14 +406,14 @@ public:
 			//Intentionally using new menu syntax instead of mimicking generated code
 			CAbstractMenu builder;
 
-			builder.AddCommandAction("layer.hide_all");
-			builder.AddCommandAction("layer.show_all");
+			builder.CreateCommandAction("layer.hide_all");
+			builder.CreateCommandAction("layer.show_all");
 
 			const int sec = builder.GetNextEmptySection();
 
-			builder.AddCommandAction("layer.make_all_uneditable", sec);
-			builder.AddCommandAction("layer.make_all_editable", sec);
-			builder.AddCommandAction("layer.make_read_only_layers_uneditable", sec);
+			builder.CreateCommandAction("layer.lock_all", sec);
+			builder.CreateCommandAction("layer.unlock_all", sec);
+			builder.CreateCommandAction("layer.lock_read_only_layers", sec);
 
 			QMenu* menuLayers = menuLevel->addMenu(QObject::tr("Layers"));
 			builder.Build(MenuWidgetBuilders::CMenuBuilder(menuLayers));
@@ -467,8 +468,8 @@ public:
 		menuSelection->AddCommand("selection.hide_objects");
 		menuSelection->AddCommand("object.show_all");
 		menuSelection->addSeparator();
-		menuSelection->AddCommand("selection.make_objects_uneditable");
-		menuSelection->AddCommand("object.make_all_editable");
+		menuSelection->AddCommand("selection.lock_objects");
+		menuSelection->AddCommand("object.unlock_all");
 		menuMaterial->AddCommand("material.assign_current_to_selection");
 		menuMaterial->AddCommand("material.reset_selection");
 		menuMaterial->AddCommand("material.set_current_from_object");
@@ -656,6 +657,8 @@ CEditorMainFrame::CEditorMainFrame(QWidget* parent)
 {
 	LOADING_TIME_PROFILE_SECTION;
 
+	m_levelEditor->Initialize();
+
 	// Make the level editor the fallback handler for all unhandled events
 	m_loopHandler.SetDefaultHandler(m_levelEditor.get());
 	m_pInstance = this;
@@ -728,23 +731,9 @@ CEditorMainFrame::CEditorMainFrame(QWidget* parent)
 	setWindowIcon(QIcon("icons:editor_icon.ico"));
 	qApp->setWindowIcon(windowIcon());
 
-	//QWidget* w = QCustomWindowFrame::wrapWidget(this);
 	QWidget* w = QSandboxWindow::wrapWidget(this, m_toolManager);
 	w->setObjectName("mainWindow");
 	w->show();
-
-	ICommandManager* pCommandManager = GetIEditorImpl()->GetICommandManager();
-
-	// Workaround for having CEditorMainframe handle shortcuts for all registered commands
-	pCommandManager->signalCommandAdded.Connect(this, &CEditorMainFrame::AddCommand);
-
-	// Any commands added before creation of CEditorMainFrame must also be added
-	std::vector<CCommand*> commands;
-	pCommandManager->GetCommandList(commands);
-	for (CCommand* pCommand : commands)
-	{
-		AddCommand(pCommand);
-	}
 
 	GetIEditorImpl()->GetLevelEditorSharedState()->signalEditToolChanged.Connect(this, &CEditorMainFrame::OnEditToolChanged);
 
@@ -1379,25 +1368,6 @@ void CEditorMainFrame::InitActions()
 		}
 	}
 
-	//Register actions from the command manager to the main frame if they have been created before
-	std::vector<CCommand*> commands;
-	commandMgr->GetCommandList(commands);
-	for (CCommand* cmd : commands)
-	{
-		if (cmd->CanBeUICommand())
-		{
-			QCommandAction* action = commandMgr->GetCommandAction(cmd->GetCommandString());
-
-			// Make sure shortcuts are callable from other windows as well (we might need to specialize this a bit more in the future)
-			action->setShortcutContext(Qt::WindowShortcut);
-
-			if (action->parent() == nullptr)
-			{
-				addAction(action);
-			}
-		}
-	}
-
 	//Must be called after actions declared in the .ui file are registered to the command manager
 	CKeybindEditor::LoadUserKeybinds();
 }
@@ -1412,15 +1382,6 @@ void CEditorMainFrame::InitLayout()
 
 	if (!bLayoutLoaded)
 		SetDefaultLayout();
-}
-
-bool CEditorMainFrame::focusNextPrevChild(bool next)
-{
-	CEditTool* pTool = GetIEditorImpl()->GetLevelEditorSharedState()->GetEditTool();
-	if (pTool && pTool->IsAllowTabKey())
-		return false;
-
-	return QMainWindow::focusNextPrevChild(next);
 }
 
 void CEditorMainFrame::contextMenuEvent(QContextMenuEvent* pEvent)
@@ -1476,8 +1437,9 @@ void CEditorMainFrame::OnCustomizeToolBar()
 
 	connect(pToolBarCustomizeDialog, &QWidget::destroyed, [this, pToolBarCustomizeDialog]()
 	{
-		pToolBarCustomizeDialog->signalToolBarModified.DisconnectObject(this);
 		pToolBarCustomizeDialog->signalToolBarRemoved.DisconnectObject(this);
+		pToolBarCustomizeDialog->signalToolBarModified.DisconnectObject(this);
+		pToolBarCustomizeDialog->signalToolBarAdded.DisconnectObject(this);
 	});
 
 	pToolBarCustomizeDialog->show();
@@ -1715,18 +1677,6 @@ bool CEditorMainFrame::OnNativeEvent(void* message, long* result)
 	}
 #endif
 	return false;
-}
-
-void CEditorMainFrame::AddCommand(CCommand* pCommand)
-{
-	QAction* pAction = GetIEditor()->GetICommandManager()->GetAction(pCommand->GetCommandString().c_str());
-
-	// This is a valid case because there might be for example, a user created command that has an error in it.
-	// We don't generate an action in this case
-	if (!pAction)
-		return;
-
-	addAction(pAction);
 }
 
 void CEditorMainFrame::OnIdleCallback()

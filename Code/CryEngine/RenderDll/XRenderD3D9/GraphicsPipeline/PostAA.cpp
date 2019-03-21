@@ -4,7 +4,7 @@
 #include "PostAA.h"
 #include "D3DPostProcess.h"
 #include "GraphicsPipeline/LensOptics.h"
-#include "ColorGrading.h"
+#include "GraphicsPipeline/ColorGrading.h"
 
 #include <Common/RenderDisplayContext.h>
 
@@ -141,21 +141,21 @@ void CPostAAStage::CalculateJitterOffsets(int renderWidth, int renderHeight, CRe
 			break;
 		case 9:
 			vCurrSubSample = Vec2(SPostEffectsUtils::HaltonSequence(SPostEffectsUtils::m_iFrameCounter % 8, 2) - 0.5f,
-				SPostEffectsUtils::HaltonSequence(SPostEffectsUtils::m_iFrameCounter % 8, 3) - 0.5f);
+			                      SPostEffectsUtils::HaltonSequence(SPostEffectsUtils::m_iFrameCounter % 8, 3) - 0.5f);
 			break;
 		case 10:
 			vCurrSubSample = Vec2(SPostEffectsUtils::HaltonSequence(SPostEffectsUtils::m_iFrameCounter % 16, 2) - 0.5f,
-				SPostEffectsUtils::HaltonSequence(SPostEffectsUtils::m_iFrameCounter % 16, 3) - 0.5f);
+			                      SPostEffectsUtils::HaltonSequence(SPostEffectsUtils::m_iFrameCounter % 16, 3) - 0.5f);
 			break;
 		case 11:
 			vCurrSubSample = Vec2(SPostEffectsUtils::HaltonSequence(SPostEffectsUtils::m_iFrameCounter % 1024, 2) - 0.5f,
-				SPostEffectsUtils::HaltonSequence(SPostEffectsUtils::m_iFrameCounter % 1024, 3) - 0.5f);
+			                      SPostEffectsUtils::HaltonSequence(SPostEffectsUtils::m_iFrameCounter % 1024, 3) - 0.5f);
 			break;
 		}
 
 		const auto& downscaleFactor = gRenDev->GetRenderQuality().downscaleFactor;
 
-		pRenderView->m_vProjMatrixSubPixoffset.x = (vCurrSubSample.x * 2.0f / (float)renderWidth ) / downscaleFactor.x;
+		pRenderView->m_vProjMatrixSubPixoffset.x = (vCurrSubSample.x * 2.0f / (float)renderWidth)  / downscaleFactor.x;
 		pRenderView->m_vProjMatrixSubPixoffset.y = (vCurrSubSample.y * 2.0f / (float)renderHeight) / downscaleFactor.y;
 	}
 }
@@ -219,11 +219,11 @@ void CPostAAStage::ApplySMAA(CTexture*& pCurrRT)
 		{
 			m_passSMAAEdgeDetection.SetState(GS_NODEPTHTEST | GS_STENCIL);
 			m_passSMAAEdgeDetection.SetStencilState(
-			  STENC_FUNC(FSS_STENCFUNC_ALWAYS) |
-			  STENCOP_FAIL(FSS_STENCOP_REPLACE) |
-			  STENCOP_ZFAIL(FSS_STENCOP_REPLACE) |
-			  STENCOP_PASS(FSS_STENCOP_REPLACE),
-			  (uint8)stencilRef);
+				STENC_FUNC(FSS_STENCFUNC_ALWAYS) |
+				STENCOP_FAIL(FSS_STENCOP_REPLACE) |
+				STENCOP_ZFAIL(FSS_STENCOP_REPLACE) |
+				STENCOP_PASS(FSS_STENCOP_REPLACE),
+				(uint8)stencilRef);
 		}
 		m_passSMAAEdgeDetection.BeginConstantUpdate();
 		m_passSMAAEdgeDetection.Execute();
@@ -251,11 +251,11 @@ void CPostAAStage::ApplySMAA(CTexture*& pCurrRT)
 		{
 			m_passSMAABlendWeights.SetState(GS_NODEPTHTEST | GS_STENCIL);
 			m_passSMAABlendWeights.SetStencilState(
-			  STENC_FUNC(FSS_STENCFUNC_EQUAL) |
-			  STENCOP_FAIL(FSS_STENCOP_KEEP) |
-			  STENCOP_ZFAIL(FSS_STENCOP_KEEP) |
-			  STENCOP_PASS(FSS_STENCOP_KEEP),
-			  (uint8)stencilRef);
+				STENC_FUNC(FSS_STENCFUNC_EQUAL) |
+				STENCOP_FAIL(FSS_STENCOP_KEEP) |
+				STENCOP_ZFAIL(FSS_STENCOP_KEEP) |
+				STENCOP_PASS(FSS_STENCOP_KEEP),
+				(uint8)stencilRef);
 		}
 		m_passSMAABlendWeights.BeginConstantUpdate();
 		m_passSMAABlendWeights.Execute();
@@ -294,7 +294,7 @@ void CPostAAStage::ApplyTemporalAA(CTexture*& pCurrRT, CTexture*& pMgpuRT, uint3
 {
 	CShader* pShader = CShaderMan::s_shPostAA;
 	CTexture* pDestRT = GetAARenderTarget(RenderView(), true);
-	CTexture* pPrevRT = ((SPostEffectsUtils::m_iFrameCounter - m_lastFrameID) < 10) ? GetAARenderTarget(RenderView(),false) : pCurrRT;
+	CTexture* pPrevRT = ((SPostEffectsUtils::m_iFrameCounter - m_lastFrameID) < 10) ? GetAARenderTarget(RenderView(), false) : pCurrRT;
 
 	CRY_ASSERT_MESSAGE(pDestRT && pPrevRT, "PostAA rendertargets do not exist!");
 	CRY_ASSERT_MESSAGE(pCurrRT->GetFlags() & FT_USAGE_ALLOWREADSRGB, "PostAA: Expected sRGB target.");
@@ -334,14 +334,14 @@ void CPostAAStage::ApplyTemporalAA(CTexture*& pCurrRT, CTexture*& pMgpuRT, uint3
 
 	{
 		size_t viewInfoCount = RenderView()->GetViewInfoCount();
-	
+
 		auto constants = m_passTemporalAA.BeginTypedConstantUpdate<PostAAConstants>(eConstantBufferShaderSlot_PerPrimitive, EShaderStage_Pixel);
-		
+
 		auto screenResolution = Vec2i(CRendererResources::s_renderWidth, CRendererResources::s_renderHeight);
 		const float rcpWidth = 1.0f / (float)screenResolution.x;
 		const float rcpHeight = 1.0f / (float)screenResolution.y;
 		constants->screenSize = Vec4((float)screenResolution.x, (float)screenResolution.y, rcpWidth, rcpHeight);
-		
+
 		constants->params = Vec4(max(CRenderer::CV_r_AntialiasingTAASharpening + 1.0f, 1.0f), 0.0f, CRenderer::CV_r_AntialiasingTAAFalloffLowFreq + 1e-6f, CRenderer::CV_r_AntialiasingTAAFalloffHiFreq + 1e-6f);
 		if (aaMode & eAT_TSAA_MASK)
 			constants->params = Vec4(CRenderer::CV_r_AntialiasingTSAASubpixelDetection, CRenderer::CV_r_AntialiasingTSAASmoothness, 0, 0);
@@ -388,7 +388,8 @@ void CPostAAStage::DoFinalComposition(CTexture*& pCurrRT, CTexture* pDestRT, uin
 	if (grainAmount && CRenderer::CV_r_GrainEnableExposureThreshold) // enable legacy grain/exposure interaction
 		rtMask |= g_HWSR_MaskBit[HWSR_SAMPLE0];
 
-	if (GetStdGraphicsPipeline().GetLensOpticsStage()->HasContent())
+	auto* pLensOpticStage = m_graphicsPipeline.GetStage<CLensOpticsStage>();
+	if (pLensOpticStage->HasContent())
 	{
 		rtMask |= g_HWSR_MaskBit[HWSR_SAMPLE1];
 		if (CRenderer::CV_r_FlaresChromaShift > 0.5f / (float)CRendererResources::s_renderWidth)  // Only relevant if bigger than half pixel
@@ -398,7 +399,7 @@ void CPostAAStage::DoFinalComposition(CTexture*& pCurrRT, CTexture* pDestRT, uin
 	CTexture* pColorChartTex = CRendererResources::s_ptexBlack;
 	if (CRenderer::CV_r_FlaresEnableColorGrading)
 	{
-		CColorGradingStage* pColorGradingStage = (CColorGradingStage*)GetStdGraphicsPipeline().GetStage(eStage_ColorGrading);
+		auto* pColorGradingStage = m_graphicsPipeline.GetStage<CColorGradingStage>();
 		if (CTexture* pColorChartTexTentative = pColorGradingStage->GetColorChart())
 		{
 			pColorChartTex = pColorChartTexTentative;
@@ -509,13 +510,17 @@ void CPostAAStage::Resize(int renderWidth, int renderHeight)
 			SAFE_RELEASE(m_pPrevBackBuffersRightEye[1]);
 		}
 
-		m_pPrevBackBuffersLeftEye[0] = CTexture::GetOrCreateRenderTarget("$PrevBackBuffer0", renderWidth, renderHeight, Clr_Unknown, eTT_2D, renderTargetFlags, accumulatorFormat);
-		m_pPrevBackBuffersLeftEye[1] = CTexture::GetOrCreateRenderTarget("$PrevBackBuffer1", renderWidth, renderHeight, Clr_Unknown, eTT_2D, renderTargetFlags, accumulatorFormat);
+		std::string prevBackBuffer0texName = "$PrevBackBuffer0" + m_graphicsPipeline.GetUniqueIdentifierName();
+		std::string prevBackBuffer1texName = "$PrevBackBuffer1" + m_graphicsPipeline.GetUniqueIdentifierName();
+		m_pPrevBackBuffersLeftEye[0] = CTexture::GetOrCreateRenderTarget(prevBackBuffer0texName.c_str(), renderWidth, renderHeight, Clr_Unknown, eTT_2D, renderTargetFlags, accumulatorFormat);
+		m_pPrevBackBuffersLeftEye[1] = CTexture::GetOrCreateRenderTarget(prevBackBuffer1texName.c_str(), renderWidth, renderHeight, Clr_Unknown, eTT_2D, renderTargetFlags, accumulatorFormat);
 
 		if (gRenDev->IsStereoEnabled())
 		{
-			m_pPrevBackBuffersRightEye[0] = CTexture::GetOrCreateRenderTarget("$PrevBackBuffer0_R", renderWidth, renderHeight, Clr_Unknown, eTT_2D, renderTargetFlags, accumulatorFormat);
-			m_pPrevBackBuffersRightEye[1] = CTexture::GetOrCreateRenderTarget("$PrevBackBuffer1_R", renderWidth, renderHeight, Clr_Unknown, eTT_2D, renderTargetFlags, accumulatorFormat);
+			prevBackBuffer0texName = "$PrevBackBuffer0_R" + m_graphicsPipeline.GetUniqueIdentifierName();
+			prevBackBuffer1texName = "$PrevBackBuffer1_R" + m_graphicsPipeline.GetUniqueIdentifierName();
+			m_pPrevBackBuffersRightEye[0] = CTexture::GetOrCreateRenderTarget(prevBackBuffer0texName.c_str(), renderWidth, renderHeight, Clr_Unknown, eTT_2D, renderTargetFlags, accumulatorFormat);
+			m_pPrevBackBuffersRightEye[1] = CTexture::GetOrCreateRenderTarget(prevBackBuffer1texName.c_str(), renderWidth, renderHeight, Clr_Unknown, eTT_2D, renderTargetFlags, accumulatorFormat);
 		}
 		else
 		{

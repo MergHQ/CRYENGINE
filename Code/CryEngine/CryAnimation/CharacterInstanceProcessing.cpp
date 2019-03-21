@@ -169,7 +169,7 @@ SContext::EState SFinishAnimationComputations::operator()(const SContext& ctx)
 			ctx.pInstance->m_SkeletonPose.m_physics.m_timeStandingUp +=
 			  static_cast<float>(__fsel(ctx.pInstance->m_SkeletonPose.m_physics.m_timeStandingUp,
 			                            ctx.pInstance->m_fOriginalDeltaTime, 0.0f));
-			ctx.pInstance->m_AttachmentManager.UpdateAttachedObjects(ctx.pInstance->m_SkeletonPose.GetPoseDataExplicitWriteable());
+			ctx.pInstance->m_AttachmentManager.UpdateAttachedObjects();
 			ctx.pInstance->m_SkeletonAnim.PoseModifiersSwapBuffersAndClearActive();
 		}
 	}

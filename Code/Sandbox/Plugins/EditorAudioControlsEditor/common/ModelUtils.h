@@ -22,6 +22,8 @@ static CryIcon s_pakFileFolderIcon;
 static CryIcon s_pakFileIcon;
 static CryIcon s_pakFolderIcon;
 
+static CryIcon s_contextActiveIcon;
+
 enum class ERoles : CryAudio::EnumFlagsType
 {
 	Id = Qt::UserRole + 1,
@@ -53,6 +55,8 @@ inline void InitIcons()
 	s_pakFileFolderIcon = CryIcon("icons:General/Pakfile_Folder.ico");
 	s_pakFileIcon = CryIcon("icons:General/Pakfile.ico");
 	s_pakFolderIcon = CryIcon("icons:General/Folder.ico");
+
+	s_contextActiveIcon = CryIcon("icons:General/colour_green.ico");
 }
 
 //////////////////////////////////////////////////////////////////////////

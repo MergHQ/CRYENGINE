@@ -630,7 +630,7 @@ public:
 	}
 
 	void         UpdateRenderingCamera(const char* szCallerName, const SRenderingPassInfo& passInfo);
-	virtual void PrepareOcclusion(const CCamera& rCamera);
+	virtual void PrepareOcclusion(const CCamera& rCamera, const SGraphicsPipelineKey& cullGraphicsContextKey);
 	virtual void EndOcclusion();
 #ifndef _RELEASE
 	void         ProcessStreamingLatencyTest(const CCamera& camIn, CCamera& camOut, const SRenderingPassInfo& passInfo);

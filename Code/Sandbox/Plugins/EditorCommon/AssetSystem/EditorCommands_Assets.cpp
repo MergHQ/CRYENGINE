@@ -13,11 +13,6 @@
 
 namespace Private_EditorCommands
 {
-//Asset browser is not a unique pane but this one has a unique behavior. It is toggled on F2
-void ToggleAssetBrowser()
-{
-	CommandEvent("asset.toggle_asset_browser").SendToKeyboardFocus();
-}
 
 void ShowInAssetBrowser(const char* path)
 {
@@ -79,16 +74,12 @@ void PyImportFiles(const char* filePath)
 	ImportFiles({ string(filePath) });
 }
 
-void ToggleInstantEditing()
-{
-	CommandEvent("asset.toggle_instant_editing").SendToKeyboardFocus();
-}
 }
 
 DECLARE_PYTHON_MODULE(asset);
 
-REGISTER_PYTHON_COMMAND(Private_EditorCommands::ToggleAssetBrowser, asset, toggle_browser, "Show/Hide the main Asset Browser");
-REGISTER_EDITOR_UI_COMMAND_DESC(asset, toggle_browser, "Quick Asset Browser", "F2; Alt+B", "icons:Tools/tools_asset-browser.ico", false);
+REGISTER_EDITOR_AND_SCRIPT_KEYBOARD_FOCUS_COMMAND(asset, toggle_browser, CCommandDescription("Show/Hide the main Asset Browser"));
+REGISTER_EDITOR_UI_COMMAND_DESC(asset, toggle_browser, "Quick Asset Browser", "Alt+B", "icons:Tools/tools_asset-browser.ico", false);
 
 REGISTER_EDITOR_AND_SCRIPT_COMMAND(Private_EditorCommands::ShowInAssetBrowser, asset, show_in_browser, 
 	CCommandDescription("Show asset in asset browser").Param("path", "The path to the asset to be shown"));
@@ -97,7 +88,7 @@ REGISTER_EDITOR_AND_SCRIPT_COMMAND(Private_EditorCommands::ShowInNewAssetBrowser
 	CCommandDescription("Show asset in a new instance of asset browser").Param("path", "The path to the asset to be shown"));
 
 REGISTER_EDITOR_AND_SCRIPT_COMMAND(Private_EditorCommands::EditAsset, asset, edit,
-	CCommandDescription("Open asset for edititng").Param("path", "The path to the asset to be edited"));
+	CCommandDescription("Open asset for editing").Param("path", "The path to the asset to be edited"));
 
 REGISTER_PYTHON_COMMAND(Private_EditorCommands::ShowNewAssetBrowser, asset, open_browser, "Opens a new Asset Browser");
 REGISTER_EDITOR_COMMAND_SHORTCUT(asset, open_browser, "Alt+F2; Ctrl+Alt+B");
@@ -106,6 +97,34 @@ REGISTER_PYTHON_COMMAND(Private_EditorCommands::PyImportFiles, asset, import, "I
 REGISTER_PYTHON_COMMAND(Private_EditorCommands::PyImportDialog, asset, import_dialog, "Imports assets");
 REGISTER_EDITOR_COMMAND_TEXT(asset, import_dialog, "Import");
 
-REGISTER_EDITOR_AND_SCRIPT_COMMAND(Private_EditorCommands::ToggleInstantEditing, asset, toggle_instant_editing,
-                                   CCommandDescription("Toggles instant editing for focused asset editor"))
+REGISTER_EDITOR_AND_SCRIPT_KEYBOARD_FOCUS_COMMAND(asset, toggle_instant_editing,
+	CCommandDescription("Toggles instant editing for focused asset editor"));
 REGISTER_EDITOR_UI_COMMAND_DESC(asset, toggle_instant_editing, "Instant Editing", "", "icons:General/Instant_Editing.ico", true);
+
+REGISTER_EDITOR_AND_SCRIPT_KEYBOARD_FOCUS_COMMAND(asset, generate_thumbnails, CCommandDescription("Generate All Thumbnails"));
+
+REGISTER_EDITOR_AND_SCRIPT_KEYBOARD_FOCUS_COMMAND(asset, save_all, CCommandDescription("Save all"));
+
+REGISTER_EDITOR_AND_SCRIPT_KEYBOARD_FOCUS_COMMAND(asset, view_details, CCommandDescription("Details"));
+REGISTER_EDITOR_AND_SCRIPT_KEYBOARD_FOCUS_COMMAND(asset, view_thumbnails, CCommandDescription("Thumbnails"));
+REGISTER_EDITOR_AND_SCRIPT_KEYBOARD_FOCUS_COMMAND(asset, view_split_horizontally, CCommandDescription("Split Horizontally"));
+REGISTER_EDITOR_AND_SCRIPT_KEYBOARD_FOCUS_COMMAND(asset, view_split_vertically, CCommandDescription("Split Vertically"));
+
+REGISTER_EDITOR_AND_SCRIPT_KEYBOARD_FOCUS_COMMAND(asset, view_folder_tree, CCommandDescription("Show Folder Tree"));
+REGISTER_EDITOR_UI_COMMAND_DESC(asset, view_folder_tree, "", "", "icons:common/general_view_folder_tree.ico", true)
+
+REGISTER_EDITOR_AND_SCRIPT_KEYBOARD_FOCUS_COMMAND(asset, view_recursive_view, CCommandDescription("Recursive View"));
+REGISTER_EDITOR_UI_COMMAND_DESC(asset, view_recursive_view, "", "", "icons:common/general_view_recursive_view.ico", true)
+
+REGISTER_EDITOR_AND_SCRIPT_KEYBOARD_FOCUS_COMMAND(asset, manage_work_files, CCommandDescription("Manage Work Files..."));
+
+REGISTER_EDITOR_AND_SCRIPT_KEYBOARD_FOCUS_COMMAND(asset, generate_and_repair_all_metadata, CCommandDescription("Generate/Repair All Metadata"));
+
+REGISTER_EDITOR_AND_SCRIPT_KEYBOARD_FOCUS_COMMAND(asset, reimport, CCommandDescription("Reimport"));
+
+REGISTER_EDITOR_AND_SCRIPT_KEYBOARD_FOCUS_COMMAND(asset, discard_changes, CCommandDescription("Discard Changes"));
+
+#if ASSET_BROWSER_USE_PREVIEW_WIDGET
+REGISTER_EDITOR_AND_SCRIPT_KEYBOARD_FOCUS_COMMAND(asset, show_preview, CCommandDescription("Show Preview"));
+REGISTER_EDITOR_UI_COMMAND_DESC(asset, show_preview, "", "", "", true)
+#endif

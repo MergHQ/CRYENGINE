@@ -21,21 +21,16 @@ struct SSnowClusterCB
 };
 }
 
-CSnowStage::CSnowStage()
-{
-
-}
-
 CSnowStage::~CSnowStage()
 {
-	if (m_snowFlakeVertexBuffer != ~0u)
-	{
-		gRenDev->m_DevBufMan.Destroy(m_snowFlakeVertexBuffer);
-	}
+	Destroy();
 }
 
 void CSnowStage::Init()
 {
+	if (!CRendererCVars::IsSnowEnabled())
+		return;
+
 	CRY_ASSERT(m_pSnowFlakesTex == nullptr);
 	m_pSnowFlakesTex = CTexture::ForNamePtr("%ENGINE%/EngineAssets/Textures/snowflakes.tif", FT_DONT_STREAM, eTF_Unknown);
 
@@ -50,6 +45,21 @@ void CSnowStage::Init()
 
 	CRY_ASSERT(m_pSnowFrostBumpTex == nullptr);
 	m_pSnowFrostBumpTex = CTexture::ForNamePtr("%ENGINE%/EngineAssets/Textures/Frozen/frost_noise3.dds", FT_DONT_STREAM, eTF_Unknown);
+}
+
+void CSnowStage::Destroy()
+{
+	if (m_snowFlakeVertexBuffer != ~0u)
+	{
+		gRenDev->m_DevBufMan.Destroy(m_snowFlakeVertexBuffer);
+		m_snowFlakeVertexBuffer = ~0u;
+	}
+
+	m_pSnowFlakesTex.reset();
+	m_pSnowDerivativesTex.reset();
+	m_pSnowSpatterTex.reset();
+	m_pFrostBubblesBumpTex.reset();
+	m_pSnowFrostBumpTex.reset();
 }
 
 void CSnowStage::Update()
@@ -71,12 +81,15 @@ void CSnowStage::Update()
 
 void CSnowStage::ResizeResource(int resourceWidth, int resourceHeight)
 {
+	if (!Initialized())
+		return;
+
 	const uint32 flags = FT_NOMIPS | FT_DONT_STREAM | FT_USAGE_RENDERTARGET;
 
 	m_pSnowDisplacementTex = CTexture::GetOrCreateTextureObjectPtr("$SnowDisplacement", resourceWidth, resourceHeight, 1, eTT_2D, flags, eTF_R8);
 	if (m_pSnowDisplacementTex)
 	{
-		const bool shouldApplyDisplacement = (CRenderer::CV_r_snow > 0) && (CRenderer::CV_r_snow_displacement > 0);
+		const bool shouldApplyDisplacement = (CRenderer::CV_r_snow) && (CRenderer::CV_r_snow_displacement);
 
 		// Create/release the displacement texture on demand
 		if (!shouldApplyDisplacement && CTexture::IsTextureExist(m_pSnowDisplacementTex))
@@ -97,6 +110,15 @@ void CSnowStage::OnCVarsChanged(const CCVarUpdateRecorder& cvarUpdater)
 	auto pVar2 = cvarUpdater.GetCVar("r_snow_displacement");
 	if (pVar1 || pVar2)
 	{
+		const bool enabled = CRendererCVars::IsSnowEnabled();
+		if (enabled != Initialized())
+		{
+			if (enabled)
+				Init();
+			else
+				Destroy();
+		}
+
 		const CRenderView* pRenderView = RenderView();
 		const int32 renderWidth  = pRenderView->GetRenderResolution()[0];
 		const int32 renderHeight = pRenderView->GetRenderResolution()[1];
@@ -156,9 +178,10 @@ void CSnowStage::ExecuteDeferredSnowGBuffer()
 		pass.SetTechnique(CShaderMan::s_ShaderDeferredSnow, techName, rtMask);
 
 		const int32 stencilState = STENC_FUNC(FSS_STENCFUNC_EQUAL) |
-			STENCOP_FAIL(FSS_STENCOP_KEEP) |
-			STENCOP_ZFAIL(FSS_STENCOP_KEEP) |
-			STENCOP_PASS(FSS_STENCOP_KEEP);
+		                           STENCOP_FAIL(FSS_STENCOP_KEEP)  |
+		                           STENCOP_ZFAIL(FSS_STENCOP_KEEP) |
+		                           STENCOP_PASS(FSS_STENCOP_KEEP);
+
 		const uint8 stencilRef = BIT_STENCIL_RESERVED;
 		const uint8 stencilReadMask = BIT_STENCIL_RESERVED;
 		pass.SetStencilState(stencilState, stencilRef, stencilReadMask, 0xFF);
@@ -732,10 +755,10 @@ void CSnowStage::RenderSnowClusters()
 	pass.SetViewport(viewport);
 	pass.BeginAddingPrimitives();
 
-	auto pPerViewCB = GetStdGraphicsPipeline().GetMainViewConstantBuffer();
+	auto pPerViewCB = m_graphicsPipeline.GetMainViewConstantBuffer();
 
-	CTexture* pOcclusionTex = (rainVolParams.bApplyOcclusion && CTexture::IsTextureExist(CRendererResources::s_ptexRainOcclusion)) ? 
-		CRendererResources::s_ptexRainOcclusion : CRendererResources::s_ptexBlack;
+	CTexture* pOcclusionTex = (rainVolParams.bApplyOcclusion && CTexture::IsTextureExist(CRendererResources::s_ptexRainOcclusion)) ?
+	                          CRendererResources::s_ptexRainOcclusion : CRendererResources::s_ptexBlack;
 
 	uint64 rtMask = 0;
 	if (rainVolParams.bApplyOcclusion)
@@ -857,7 +880,7 @@ void CSnowStage::GetScissorRegion(const Vec3& cameraOrigin, const Vec3& vCenter,
 		return;
 	}
 
-	const auto& viewInfo = GetStdGraphicsPipeline().GetCurrentViewInfo(CCamera::eEye_Left);
+	const auto& viewInfo = m_graphicsPipeline.GetCurrentViewInfo(CCamera::eEye_Left);
 	Matrix44 mView = viewInfo.viewMatrix;
 	Matrix44 mProj = viewInfo.projMatrix;
 

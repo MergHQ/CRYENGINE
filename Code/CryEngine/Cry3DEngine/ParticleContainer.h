@@ -1,18 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-// -------------------------------------------------------------------------
-//  File name:   ParticleContainer.h
-//  Version:     v1.00
-//  Created:     11/03/2010 by Corey (split out from other files).
-//  Compilers:   Visual Studio.NET
-//  Description:
-// -------------------------------------------------------------------------
-//  History:
-//
-////////////////////////////////////////////////////////////////////////////
-
-#ifndef __particlecontainer_h__
-#define __particlecontainer_h__
 #pragma once
 
 #include "ParticleEffect.h"
@@ -323,9 +310,6 @@ private:
 	float GetMaxParticleScale() const;
 	int   GetMaxParticleCount(const SParticleUpdateContext& context) const;
 	void  UpdateParticleStates(SParticleUpdateContext& context);
-	void  SetScreenBounds(const CCamera& cam, TRect_tpl<uint16> &bounds);
 
 	CRenderObject* CreateRenderObject(uint64 nObjFlags, const SRenderingPassInfo& passInfo);
 };
-
-#endif // __particlecontainer_h__

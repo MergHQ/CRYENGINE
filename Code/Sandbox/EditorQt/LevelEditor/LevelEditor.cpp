@@ -10,7 +10,6 @@
 #include "TagLocations.h"
 
 // EditorQt
-#include "Commands/QCommandAction.h"
 #include "EditMode/VertexSnappingModeTool.h"
 #include "QT/QtMainFrame.h"
 #include "QT/QToolTabManager.h"
@@ -31,6 +30,7 @@
 #include <AssetSystem/Browser/AssetBrowser.h>
 #include <AssetSystem/Browser/AssetBrowserDialog.h>
 #include <AssetSystem/EditableAsset.h>
+#include <Commands/QCommandAction.h>
 #include <Controls/DockableDialog.h>
 #include <Controls/QuestionDialog.h>
 #include <EditorFramework/InspectorLegacy.h>
@@ -914,29 +914,14 @@ bool CLevelEditor::OnPaste()
 		return false;
 	}
 
-	IObjectManager* objManager = GetIEditorImpl()->GetObjectManager();
+	IObjectManager* pObjectManager = GetIEditorImpl()->GetObjectManager();
 
-	CObjectArchive archive(objManager, copyNode, true);
+	CObjectArchive archive(pObjectManager, copyNode, true);
 
 	CRandomUniqueGuidProvider guidProvider;
 	archive.SetGuidProvider(&guidProvider);
 	archive.LoadInCurrentLayer(true);
-	{
-		CUndo undo("Paste Objects");
-
-		objManager->ClearSelection();
-		// instantiate the new objects
-		objManager->LoadObjects(archive, true);
-
-		//Make sure the new objects have unique names
-		const CSelectionGroup* selGroup = objManager->GetSelection();
-
-		for (int i = 0, nObj = selGroup->GetCount(); i < nObj; ++i)
-		{
-			CBaseObject* pObj = selGroup->GetObject(i);
-			pObj->SetName(objManager->GenUniqObjectName(pObj->GetName()));
-		}
-	}
+	pObjectManager->CreateAndSelectObjects(archive);
 
 	return true;
 }

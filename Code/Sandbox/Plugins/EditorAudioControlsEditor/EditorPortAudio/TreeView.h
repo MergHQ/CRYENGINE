@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "ItemModel.h"
 #include "../Common/SharedData.h"
 #include <QAdvancedTreeView.h>
 
@@ -11,6 +12,8 @@ namespace Impl
 {
 namespace PortAudio
 {
+constexpr int g_nameColumn = static_cast<int>(CItemModel::EColumns::Name);
+
 class CTreeView final : public QAdvancedTreeView
 {
 public:
@@ -33,9 +36,6 @@ public:
 	void BackupSelection();
 	void RestoreSelection();
 
-	void SetNameRole(int const nameRole)     { m_nameRole = nameRole; }
-	void SetNameColumn(int const nameColumn) { m_nameColumn = nameColumn; }
-
 private:
 
 	ControlId GetItemId(QModelIndex const& index) const;
@@ -47,8 +47,6 @@ private:
 	void      RestoreExpandedRecursively(QModelIndex const& index);
 	void      RestoreSelectionRecursively(QModelIndex const& index);
 
-	int             m_nameRole;
-	int             m_nameColumn;
 	QSet<ControlId> m_expandedBackup;
 	QSet<ControlId> m_selectionBackup;
 };

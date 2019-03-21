@@ -9,7 +9,7 @@ namespace NCryVulkan
 {
 
 CInstance::CInstance()
-	: m_instanceHandle(VK_NULL_HANDLE)
+	: CInstanceHolder()
 	, m_debugLayerCallbackHandle(VK_NULL_HANDLE)
 {
 	
@@ -24,11 +24,6 @@ CInstance::~CInstance()
 		{
 			pDestroyCallback(m_instanceHandle, m_debugLayerCallbackHandle, nullptr);
 		}
-	}
-
-	if (m_instanceHandle != VK_NULL_HANDLE)
-	{
-		vkDestroyInstance(m_instanceHandle, NULL);
 	}
 }
 

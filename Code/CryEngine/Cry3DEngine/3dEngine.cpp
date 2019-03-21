@@ -744,28 +744,28 @@ void C3DEngine::ProcessCVarsChange()
 	}
 
 	float fNewCVarsSumm =
-	  GetCVars()->e_ShadowsCastViewDistRatio +
-	  GetCVars()->e_LodTransitionSpriteDistRatio +
-	  GetCVars()->e_LodTransitionSpriteMinDist +
-	  GetCVars()->e_VegetationUseTerrainColor +
-	  GetCVars()->e_TerrainDetailMaterials +
-	  GetCVars()->e_ObjectsTreeNodeMinSize +
-	  GetCVars()->e_ObjectsTreeNodeSizeRatio +
-	  GetCVars()->e_ViewDistRatio +
-	  GetCVars()->e_ViewDistMin +
-	  GetCVars()->e_ViewDistRatioDetail +
-	  GetCVars()->e_ViewDistRatioVegetation +
-	  GetCVars()->e_ViewDistRatioLights +
-	  GetCVars()->e_DefaultMaterial +
-	  GetCVars()->e_VegetationSpritesDistanceRatio +
-	  GetCVars()->e_VegetationSpritesDistanceCustomRatioMin +
-	  GetCVars()->e_VegetationSpritesMinDistance +
-	  GetGeomDetailScreenRes() +
-	  GetCVars()->e_Portals +
-	  GetCVars()->e_DebugDraw +
-	  GetFloatCVar(e_ViewDistCompMaxSize) +
-	  GetCVars()->e_DecalsDeferredStatic +
-	  GetCVars()->e_TerrainBlendingDebug + 
+		GetCVars()->e_ShadowsCastViewDistRatio +
+		GetCVars()->e_LodTransitionSpriteDistRatio +
+		GetCVars()->e_LodTransitionSpriteMinDist +
+		GetCVars()->e_VegetationUseTerrainColor +
+		GetCVars()->e_TerrainDetailMaterials +
+		GetCVars()->e_ObjectsTreeNodeMinSize +
+		GetCVars()->e_ObjectsTreeNodeSizeRatio +
+		GetCVars()->e_ViewDistRatio +
+		GetCVars()->e_ViewDistMin +
+		GetCVars()->e_ViewDistRatioDetail +
+		GetCVars()->e_ViewDistRatioVegetation +
+		GetCVars()->e_ViewDistRatioLights +
+		GetCVars()->e_DefaultMaterial +
+		GetCVars()->e_VegetationSpritesDistanceRatio +
+		GetCVars()->e_VegetationSpritesDistanceCustomRatioMin +
+		GetCVars()->e_VegetationSpritesMinDistance +
+		GetGeomDetailScreenRes() +
+		GetCVars()->e_Portals +
+		GetCVars()->e_DebugDraw +
+		GetFloatCVar(e_ViewDistCompMaxSize) +
+		GetCVars()->e_DecalsDeferredStatic +
+		GetCVars()->e_TerrainBlendingDebug +
 		GetCVars()->e_TerrainDetailMaterialsWeightedBlending;
 
 	if (m_fRefreshSceneDataCVarsSumm != -1 && m_fRefreshSceneDataCVarsSumm != fNewCVarsSumm)
@@ -1236,9 +1236,20 @@ void C3DEngine::UpdateRenderingCamera(const char* szCallerName, const SRendering
 	if (passInfo.IsGeneralPass() && IsStatObjBufferRenderTasksAllowed())
 	{
 		if (gEnv->IsEditor())
-			GetObjManager()->PrepareCullbufferAsync(passInfo.GetCamera());
+		{
+			if (gEnv->IsEditorGameMode())
+			{
+				GetObjManager()->PrepareCullbufferAsync(passInfo.GetCamera(), SGraphicsPipelineKey::BaseGraphicsPipelineKey);
+			}
+			else
+			{
+				GetObjManager()->PrepareCullbufferAsync(passInfo.GetCamera(), passInfo.GetGraphicsPipelineKey());
+			}
+		}
 		else
+		{
 			assert(IsEquivalent(passInfo.GetCamera().GetViewdir(), GetObjManager()->m_CullThread.GetViewDir())); // early set camera differs from current main camera - will cause occlusion errors
+		}
 	}
 
 	/////////////////////////////////////////////////////////////////////////////
@@ -1273,7 +1284,7 @@ void C3DEngine::UpdateRenderingCamera(const char* szCallerName, const SRendering
 		gEnv->pRenderer->UpdateAuxDefaultCamera(m_RenderingCamera);
 }
 
-void C3DEngine::PrepareOcclusion(const CCamera& rCamera)
+void C3DEngine::PrepareOcclusion(const CCamera& rCamera, const SGraphicsPipelineKey& cullGraphicsContextKey)
 {
 	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "C3DEngine::PrepareOcclusion");
 
@@ -1283,7 +1294,7 @@ void C3DEngine::PrepareOcclusion(const CCamera& rCamera)
 	const bool bCameraAtZero = IsEquivalent(rCamera.GetPosition(), Vec3(0, 0, 0), VEC_EPSILON);
 	const bool bPost3dEnabled = GetRenderer() && GetRenderer()->IsPost3DRendererEnabled();
 	if (!bInEditor && bStatObjBufferRenderTasks && !bIsFMVPlaying && (!bCameraAtZero || bPost3dEnabled))
-		GetObjManager()->PrepareCullbufferAsync(rCamera);
+		GetObjManager()->PrepareCullbufferAsync(rCamera, cullGraphicsContextKey);
 }
 
 void C3DEngine::EndOcclusion()
@@ -2376,7 +2387,7 @@ void C3DEngine::AddWaterRipple(const Vec3& vPos, float scale, float strength)
 bool C3DEngine::IsUnderWater(const Vec3& vPos) const
 {
 	bool bUnderWater = false;
-	for (IPhysicalEntity* pArea = 0; pArea = GetPhysicalWorld()->GetNextArea(pArea); )
+	for (IPhysicalEntity* pArea = 0; pArea = GetPhysicalWorld()->GetNextArea(pArea);)
 	{
 		if (bUnderWater)
 			// Must finish iteration to unlock areas.
@@ -2985,7 +2996,7 @@ void C3DEngine::DeleteRenderNode(IRenderNode* pRenderNode)
 		pRenderNode->ReleaseNode(true);
 	}
 	else
-	{	
+	{
 		pRenderNode->SetRndFlags(ERF_PENDING_DELETE, true);
 		m_renderNodesToDelete[m_renderNodesToDeleteID].push_back(pRenderNode);
 	}
@@ -2998,7 +3009,7 @@ void C3DEngine::TickDelayedRenderNodeDeletion()
 	while (m_renderNodesToDelete[m_renderNodesToDeleteID].size())
 	{
 		auto snapshot = std::move(m_renderNodesToDelete[m_renderNodesToDeleteID]);
-		m_renderNodesToDelete[m_renderNodesToDeleteID] = std::vector<IRenderNode*>{};
+		m_renderNodesToDelete[m_renderNodesToDeleteID] = std::vector<IRenderNode*> {};
 
 		for (auto pRenderNode : snapshot)
 		{
@@ -3111,13 +3122,13 @@ bool C3DEngine::SampleWind(Vec3* pSamples, int nSamples, const AABB& volume, boo
 		int px = (int)pos.x;
 		int py = (int)pos.y;
 		// Iterate all areas, looking for wind areas. Skip first (global) area, and global wind.
-		for (const auto& windArea : * pWindAreas)
+		for (const auto& windArea : *pWindAreas)
 		{
 			if (
-			  px >= windArea.x0 &&
-			  px <= windArea.x1 &&
-			  py >= windArea.y0 &&
-			  py <= windArea.y1)
+				px >= windArea.x0 &&
+				px <= windArea.x1 &&
+				py >= windArea.y0 &&
+				py <= windArea.y1)
 			{
 				// TODO: Interpolate wind position between corner points.
 				//float u, v, w;
@@ -3192,7 +3203,7 @@ static inline __m128i float_to_half_SSE2(__m128 f, __m128i& s)
 
 static inline __m128i approx_float_to_half_SSE2(__m128 f, __m128i& s)
 {
-    #if defined(CRY_COMPILER_GCC) || defined(CRY_COMPILER_CLANG)
+	#if defined(CRY_COMPILER_GCC) || defined(CRY_COMPILER_CLANG)
 		#define DECL_CONST4(name, val) static const uint __attribute__((aligned(16))) name[4] = { (val), (val), (val), (val) }
 	#else
 		#define DECL_CONST4(name, val) static const __declspec(align(16)) uint name[4] = { (val), (val), (val), (val) }
@@ -3267,7 +3278,7 @@ void C3DEngine::UpdateWindGridJobEntry(Vec3 vPos)
 {
 	FUNCTION_PROFILER_3DENGINE
 
-		bool bIndoors = false;
+	bool bIndoors = false;
 
 	auto* pWindAreas = &m_outdoorWindAreas[m_nCurrentWindAreaList];
 	if (bIndoors)
@@ -3387,15 +3398,15 @@ void C3DEngine::RasterGlobalWind(const Vec3& vGlobalWind, float fElapsedTime, bo
 
 		__m128 vBends = _mm_set_ps(vBend.y, vBend.x, vBend.y, vBend.x);
 
-#if CRY_PLATFORM_F16C
+	#if CRY_PLATFORM_F16C
 		__m128i hData = _mm_cvtps_ph(vBends, 0);
 		hData = _mm_unpacklo_epi64(hData, hData);
-#else
+	#else
 		__m128i hSign, hData = approx_float_to_half_SSE2(vBends, hSign);
 		hSign = _mm_packs_epi32(hSign, hSign);
 		hData = _mm_packs_epi32(hData, hData);
 		hData = _mm_or_si128(hSign, hData);
-#endif
+	#endif
 
 		__m128i nFrames = _mm_set1_epi32(nFrame);
 		__m128 vWindCurs = _mm_set_ps(vWindCur.y, vWindCur.x, vWindCur.y, vWindCur.x);
@@ -3470,25 +3481,25 @@ void C3DEngine::RasterGlobalWind(const Vec3& vGlobalWind, float fElapsedTime, bo
 			__m128 loFieldLength = _mm_mul_ps(loField, loField);
 			__m128 hiFieldLength = _mm_mul_ps(hiField, hiField);
 
-#if CRY_PLATFORM_SSE4
+	#if CRY_PLATFORM_SSE4
 			loFieldLength = _mm_add_ps(_mm_sqrt_ps(_mm_hadd_ps(hiFieldLength, loFieldLength)), fBendMax);
 
 			loField = _mm_div_ps(_mm_mul_ps(loField, fBendMax), _mm_unpacklo_ps(loFieldLength, loFieldLength));
 			hiField = _mm_div_ps(_mm_mul_ps(hiField, fBendMax), _mm_unpackhi_ps(loFieldLength, loFieldLength));
-#else
+	#else
 			loFieldLength = _mm_sqrt_ps(_mm_add_ps(loFieldLength, _mm_shuffle_ps(loFieldLength, loFieldLength, _MM_SHUFFLE(2, 3, 0, 1))));
 			hiFieldLength = _mm_sqrt_ps(_mm_add_ps(hiFieldLength, _mm_shuffle_ps(hiFieldLength, hiFieldLength, _MM_SHUFFLE(2, 3, 0, 1))));
 
 			loField = _mm_div_ps(_mm_mul_ps(loField, fBendMax), _mm_add_ps(loFieldLength, fBendMax));
 			hiField = _mm_div_ps(_mm_mul_ps(hiField, fBendMax), _mm_add_ps(hiFieldLength, fBendMax));
-#endif
+	#endif
 
-#if CRY_PLATFORM_F16C
+	#if CRY_PLATFORM_F16C
 			__m128i loData = _mm_cvtps_ph(loField, 0);
 			__m128i hiData = _mm_cvtps_ph(hiField, 0);
 
 			_mm_storeu_si128(pData + x, _mm_unpacklo_epi64(loData, hiData));
-#else
+	#else
 			__m128i loSign, loData = approx_float_to_half_SSE2(loField, loSign);
 			__m128i hiSign, hiData = approx_float_to_half_SSE2(hiField, hiSign);
 
@@ -3496,8 +3507,8 @@ void C3DEngine::RasterGlobalWind(const Vec3& vGlobalWind, float fElapsedTime, bo
 			loData = _mm_packs_epi32(loData, hiData);
 
 			_mm_storeu_si128(pData + x, _mm_or_si128(loSign, loData));
-#endif
-	}
+	#endif
+		}
 	}
 #else
 	CryHalf2* pData = &rWindGrid.m_pData[0];
@@ -3823,8 +3834,8 @@ bool C3DEngine::IsVisAreasConnected(IVisArea* pArea1, IVisArea* pArea2, int nMax
 		return (true);  // includes the case when both pArea1 & pArea2 are NULL (totally outside)
 	                  // not considered by the other checks
 	if (!pArea1 || !pArea2)
-		return (false); // avoid a crash - better to put this check only
-	                  // here in one place than in all the places where this function is called
+		return (false);  // avoid a crash - better to put this check only
+	                   // here in one place than in all the places where this function is called
 
 	nMaxRecursion *= 2; // include portals since portals are the areas
 
@@ -4245,9 +4256,9 @@ ChunkFile::IChunkFileWriter* C3DEngine::CreateChunkFileWriter(EChunkFileFormat e
 	}
 
 	const ChunkFile::MemorylessChunkFileWriter::EChunkFileFormat fmt =
-	  (eFormat == I3DEngine::eChunkFileFormat_0x745)
-	  ? ChunkFile::MemorylessChunkFileWriter::eChunkFileFormat_0x745
-	  : ChunkFile::MemorylessChunkFileWriter::eChunkFileFormat_0x746;
+		(eFormat == I3DEngine::eChunkFileFormat_0x745)
+		? ChunkFile::MemorylessChunkFileWriter::eChunkFileFormat_0x745
+		: ChunkFile::MemorylessChunkFileWriter::eChunkFileFormat_0x746;
 
 	return new ChunkFile::MemorylessChunkFileWriter(fmt, p);
 }
@@ -5361,7 +5372,7 @@ void C3DEngine::PrecacheRenderNode(IRenderNode* pObj, float fEntDistanceReal)
 		auto dwOldRndFlags = pObj->m_dwRndFlags;
 		pObj->m_dwRndFlags &= ~ERF_HIDDEN;
 
-		SRenderingPassInfo passInfo = SRenderingPassInfo::CreateGeneralPassRenderingInfo(gEnv->pSystem->GetViewCamera());
+		SRenderingPassInfo passInfo = SRenderingPassInfo::CreateGeneralPassRenderingInfo(SGraphicsPipelineKey::BaseGraphicsPipelineKey, gEnv->pSystem->GetViewCamera());
 		m_pObjManager->UpdateRenderNodeStreamingPriority(pObj, fEntDistanceReal, 1.0f, fEntDistanceReal < GetFloatCVar(e_StreamCgfFastUpdateMaxDistance), passInfo, true);
 
 		pObj->m_dwRndFlags = dwOldRndFlags;
@@ -5747,13 +5758,13 @@ void C3DEngine::SaveInternalState(struct IDataWriteStream& writer, const AABB& f
 			std::vector<struct IStatInstGroup*>* pTempVegGroupTable = NULL;
 
 			pTerrain->GetCompiledData(
-			  &outputData[0],
-			  terrainCompiledDataSize,
-			  &pTempBrushTable,
-			  &pTempMatsTable,
-			  &pTempVegGroupTable,
-			  eLittleEndian,
-			  &info);
+				&outputData[0],
+				terrainCompiledDataSize,
+				&pTempBrushTable,
+				&pTempMatsTable,
+				&pTempVegGroupTable,
+				eLittleEndian,
+				&info);
 
 			if (pTempBrushTable && pTempMatsTable && (objectMask != 0))
 			{
@@ -5764,13 +5775,13 @@ void C3DEngine::SaveInternalState(struct IDataWriteStream& writer, const AABB& f
 					outputData.resize(objectCompiledDataSize + terrainCompiledDataSize);
 
 					pVisAreaManager->GetCompiledData(
-					  &outputData[terrainCompiledDataSize],
-					  objectCompiledDataSize,
-					  &pTempBrushTable,
-					  &pTempMatsTable,
-					  &pTempVegGroupTable,
-					  eLittleEndian,
-					  &info);
+						&outputData[terrainCompiledDataSize],
+						objectCompiledDataSize,
+						&pTempBrushTable,
+						&pTempMatsTable,
+						&pTempVegGroupTable,
+						eLittleEndian,
+						&info);
 				}
 			}
 
@@ -5828,11 +5839,11 @@ void C3DEngine::LoadInternalState(struct IDataReadStream& reader, const uint8* p
 		pMatTable = NULL;
 
 		pTerrain->SetCompiledData(
-		  &binaryData[0],
-		  terrainDataSize,
-		  &pStatObjTable, &pMatTable,
-		  true,
-		  &info);
+			&binaryData[0],
+			terrainDataSize,
+			&pStatObjTable, &pMatTable,
+			true,
+			&info);
 	}
 
 	if (objectDataSize > 0)
@@ -5841,12 +5852,12 @@ void C3DEngine::LoadInternalState(struct IDataReadStream& reader, const uint8* p
 		if (NULL != pVisAreaManager)
 		{
 			pVisAreaManager->SetCompiledData(
-			  &binaryData[terrainDataSize], // object data is stored after terrain data
-			  objectDataSize,
-			  &pStatObjTable,
-			  &pMatTable,
-			  true,
-			  &info);
+				&binaryData[terrainDataSize], // object data is stored after terrain data
+				objectDataSize,
+				&pStatObjTable,
+				&pMatTable,
+				true,
+				&info);
 		}
 	}
 

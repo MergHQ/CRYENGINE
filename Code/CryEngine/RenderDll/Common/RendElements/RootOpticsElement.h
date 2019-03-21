@@ -51,7 +51,7 @@ private:
 
 	static const float        kExtendedFlareRadiusRatio;
 
-	void RT_RenderPreview(const Vec3& vPos);
+	void RT_RenderPreview(const Vec3& vPos, const std::shared_ptr<CGraphicsPipeline>& pGraphicsPipeline);
 
 public:
 
@@ -155,7 +155,7 @@ public:
 	bool      IsAffectedByLightFOV() const     { return m_bAffectedByLightFOV; }
 	void      SetAffectedByLightFOV(bool b)    { m_bAffectedByLightFOV = b; }
 
-	bool      IsMultiplyColor() const          { return m_bMultiplyColor;  }
+	bool      IsMultiplyColor() const          { return m_bMultiplyColor; }
 	void      SetMultiplyColor(bool b)         { m_bMultiplyColor = b; }
 
 	bool      IsInvertFade() const             { return m_bEnableInvertFade; }

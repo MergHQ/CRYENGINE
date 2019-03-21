@@ -1153,7 +1153,9 @@ string CShaderMan::mfGetShaderCompileFlags(EHWShaderClass eClass, UPipelineState
 #define W_COMPATIBLE_MODE	" /Gec"
 #define L_STRICT_MODE		" -Ges"
 	// NOTE: when updating remote compiler folders, please ensure folders path is matching
+#if CRY_PLATFORM_ORBIS || (!CRY_PLATFORM_DURANGO && !CRY_RENDERER_OPENGLES && !CRY_RENDERER_OPENGL && !DXGL_INPUT_GLSL)
 	const char* pCompilerOrbis   = "ORBIS/V034/DXOrbisShaderCompiler.exe %s %s %s %s";
+#endif
 	const char* pCompilerDurango = "Durango/March2017/fxc.exe /nologo /E %s /T %s /Zpr" W_COMPATIBLE_MODE "" W_STRICT_MODE " /Fo %s %s";
 	const char* pCompilerD3D11   = "PCD3D11/v007/fxc.exe /nologo /E %s /T %s /Zpr" W_COMPATIBLE_MODE "" W_STRICT_MODE " /Fo %s %s";
 	const char* pCompilerD3D12   = "SPIRV/V003/dxc/dxc.exe -nologo -E %s -T %s -Zpr" L_STRICT_MODE " -Fo %s %s";

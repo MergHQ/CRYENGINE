@@ -19,11 +19,11 @@ public:
 
 #if defined(CRY_AUDIO_USE_DEBUG_CODE)
 	CUnmuteAllTrigger()
-		: Control(g_unmuteAllTriggerId, EDataScope::Global, g_szUnmuteAllTriggerName)
+		: Control(g_unmuteAllTriggerId, GlobalContextId, g_szUnmuteAllTriggerName)
 	{}
 #else
 	CUnmuteAllTrigger()
-		: Control(g_unmuteAllTriggerId, EDataScope::Global)
+		: Control(g_unmuteAllTriggerId, GlobalContextId)
 	{}
 #endif // CRY_AUDIO_USE_DEBUG_CODE
 

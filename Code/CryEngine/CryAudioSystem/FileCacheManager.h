@@ -29,14 +29,15 @@ public:
 
 	// Public methods
 	void           Initialize();
-	FileId         TryAddFileCacheEntry(XmlNodeRef const pFileNode, EDataScope const dataScope, bool const bAutoLoad);
-	bool           TryRemoveFileCacheEntry(FileId const id, EDataScope const dataScope);
+	FileId         TryAddFileCacheEntry(XmlNodeRef const pFileNode, ContextId const contextId, bool const bAutoLoad);
+	bool           TryRemoveFileCacheEntry(FileId const id, ContextId const contextId);
 	void           UpdateLocalizedFileCacheEntries();
 	ERequestStatus TryLoadRequest(PreloadRequestId const preloadRequestId, bool const bLoadSynchronously, bool const bAutoLoadOnly);
 	ERequestStatus TryUnloadRequest(PreloadRequestId const preloadRequestId);
-	ERequestStatus UnloadDataByScope(EDataScope const dataScope);
+	ERequestStatus UnloadDataByContext(ContextId const contextId);
 
 #if defined(CRY_AUDIO_USE_DEBUG_CODE)
+	void   UpdateDebugInfo(char const* const szDebugFilter);
 	void   DrawDebugInfo(IRenderAuxGeom& auxGeom, float const posX, float posY);
 	size_t GetTotalCachedFileSize() const { return m_currentByteTotal; }
 #endif // CRY_AUDIO_USE_DEBUG_CODE

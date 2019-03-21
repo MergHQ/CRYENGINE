@@ -570,7 +570,7 @@ struct IAnimNodeOwner
 	virtual ~IAnimNodeOwner() {}
 	virtual void OnNodeAnimated(IAnimNode* pNode) = 0;
 	virtual void OnNodeVisibilityChanged(IAnimNode* pNode, const bool bHidden) = 0;
-	virtual void OnNodeReset(IAnimNode* pNode) {}
+	virtual bool OnNodeReset(IAnimNode* pNode) { return true; }
 	// </interfuscator:shuffle>
 };
 

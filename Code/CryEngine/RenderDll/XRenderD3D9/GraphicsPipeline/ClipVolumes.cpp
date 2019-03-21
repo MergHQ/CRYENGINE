@@ -18,8 +18,10 @@ struct SPrimitiveVolFogConstants
 	uint32   sliceIndex[4];
 };
 
-CClipVolumesStage::CClipVolumesStage()
-	: m_nShaderParamCount(0)
+CClipVolumesStage::CClipVolumesStage(CGraphicsPipeline& graphicsPipeline)
+	: CGraphicsPipelineStage(graphicsPipeline)
+	, m_stencilResolvePass(&graphicsPipeline)
+	, m_nShaderParamCount(0)
 	, m_pBlendValuesRT(nullptr)
 	, m_pDepthTarget(nullptr)
 	, m_pClipVolumeStencilVolumeTex(nullptr)
@@ -103,9 +105,9 @@ void CClipVolumesStage::Init()
 	const uint32 flags = FT_NOMIPS | FT_DONT_STREAM | FT_USAGE_RENDERTARGET;
 #endif
 	CRY_ASSERT(m_pClipVolumeStencilVolumeTex == nullptr);
-	m_pClipVolumeStencilVolumeTex = CTexture::GetOrCreateTextureObject("$VolFogClipVolumeStencil", 0, 0, 0, eTT_2D, flags, eTF_Unknown);
+	std::string texName = "$VolFogClipVolumeStencil" + m_graphicsPipeline.GetUniqueIdentifierName();
+	m_pClipVolumeStencilVolumeTex = CTexture::GetOrCreateTextureObject(texName.c_str(), 0, 0, 0, eTT_2D, flags, eTF_Unknown);
 }
-
 
 void CClipVolumesStage::ResizeResource(int volumeWidth, int volumeHeight, int volumeDepth)
 {
@@ -115,6 +117,10 @@ void CClipVolumesStage::ResizeResource(int volumeWidth, int volumeHeight, int vo
 	viewport.Height = static_cast<float>(volumeHeight);
 	viewport.MinDepth = 0.0f;
 	viewport.MaxDepth = 1.0f;
+
+	// need to clear depth buffer.
+	const int32 safeMargin = 2; // workaround: shader isn't activated in initial several frames.
+	m_filledVolumetricFogDepth = gcpRendD3D->GetActiveGPUCount() + safeMargin;
 
 #ifdef FEATURE_RENDER_CLIPVOLUME_GEOMETRY_SHADER
 	m_volumetricStencilPass.SetViewport(viewport);
@@ -130,7 +136,7 @@ void CClipVolumesStage::ResizeResource(int volumeWidth, int volumeHeight, int vo
 
 		for (int32 i = 0; i < volumeDepth; ++i)
 		{
-			m_jitteredDepthPassArray[i] = stl::make_unique<CFullscreenPass>();
+			m_jitteredDepthPassArray[i] = stl::make_unique<CFullscreenPass>(&m_graphicsPipeline);
 			m_jitteredDepthPassArray[i]->SetFlags(CPrimitiveRenderPass::ePassFlags_None);
 		}
 	}
@@ -144,7 +150,9 @@ void CClipVolumesStage::ResizeResource(int volumeWidth, int volumeHeight, int vo
 	const int32 h = volumeHeight;
 	const int32 d = volumeDepth;
 	const ETEX_Format format = CRendererResources::s_hwTexFormatSupport.GetClosestFormatSupported(eTF_D24S8);
-	CTexture* pTex = CTexture::GetOrCreateTextureArray("$VolFogClipVolumeStencil", w, h, d, 1, eTT_2DArray, dsFlags, format);
+
+	std::string texName = "$VolFogClipVolumeStencil" + m_graphicsPipeline.GetUniqueIdentifierName();
+	CTexture* pTex = CTexture::GetOrCreateTextureArray(texName.c_str(), w, h, d, 1, eTT_2DArray, dsFlags, format);
 
 	if (pTex == nullptr
 		|| m_pClipVolumeStencilVolumeTex != pTex // texture name must exactly match the name when creating texture object.
@@ -231,7 +239,8 @@ void CClipVolumesStage::ResizeResource(int volumeWidth, int volumeHeight, int vo
 		const uint32 rtFlags = commonFlags | FT_USAGE_RENDERTARGET;
 		ETEX_Format format = eTF_R8;
 
-		CTexture* pTex = CTexture::GetOrCreateTextureArray("$VolFogClipVolumeStencil", w, h, d, 1, eTT_2DArray, rtFlags, format);
+		std::string texName = "$VolFogClipVolumeStencil" + m_graphicsPipeline.GetUniqueIdentifierName();
+		CTexture* pTex = CTexture::GetOrCreateTextureArray(texName.c_str(), w, h, d, 1, eTT_2DArray, rtFlags, format);
 
 		if (pTex == nullptr
 			|| m_pClipVolumeStencilVolumeTex != pTex // texture name must exactly match the name when creating texture object.
@@ -281,38 +290,40 @@ void CClipVolumesStage::ResizeResource(int volumeWidth, int volumeHeight, int vo
 		}
 	}
 #endif
-
-	// need to clear depth buffer.
-	const int32 safeMargin = 2; // workaround: shader isn't activated in initial several frames.
-	m_filledVolumetricFogDepth = gcpRendD3D->GetActiveGPUCount() + safeMargin;
 }
 
 void CClipVolumesStage::Rescale(int resolutionScale, int depthScale)
 {
-	const CRenderView* pRenderView = RenderView();
-	const int32 renderWidth  = pRenderView->GetRenderResolution()[0];
-	const int32 renderHeight = pRenderView->GetRenderResolution()[1];
+	if (m_graphicsPipeline.GetStage<CVolumetricFogStage>())
+	{
+		const CRenderView* pRenderView = RenderView();
+		const int32 renderWidth = pRenderView->GetRenderResolution()[0];
+		const int32 renderHeight = pRenderView->GetRenderResolution()[1];
 
-	// size for view frustum aligned volume texture.
-	const int32 volumeWidth  = CVolumetricFogStage::GetVolumeTextureSize(renderWidth , resolutionScale);
-	const int32 volumeHeight = CVolumetricFogStage::GetVolumeTextureSize(renderHeight, resolutionScale);
-	const int32 volumeDepth  = CVolumetricFogStage::GetVolumeTextureDepthSize(depthScale);
+		// size for view frustum aligned volume texture.
+		const int32 volumeWidth = CVolumetricFogStage::GetVolumeTextureSize(renderWidth, resolutionScale);
+		const int32 volumeHeight = CVolumetricFogStage::GetVolumeTextureSize(renderHeight, resolutionScale);
+		const int32 volumeDepth = CVolumetricFogStage::GetVolumeTextureDepthSize(depthScale);
 
-	ResizeResource(volumeWidth, volumeHeight, volumeDepth);
+		ResizeResource(volumeWidth, volumeHeight, volumeDepth);
+	}
 }
 
 void CClipVolumesStage::Resize(int renderWidth, int renderHeight)
 {
-	// Recreate render targets if quality was changed
-	const int32 resolutionScale = CRendererCVars::CV_r_VolumetricFogTexScale;
-	const int32 depthScale      = CRendererCVars::CV_r_VolumetricFogTexDepth;
+	if (m_graphicsPipeline.GetStage<CVolumetricFogStage>())
+	{
+		// Recreate render targets if quality was changed
+		const int32 resolutionScale = CRendererCVars::CV_r_VolumetricFogTexScale;
+		const int32 depthScale = CRendererCVars::CV_r_VolumetricFogTexDepth;
 
-	// size for view frustum aligned volume texture.
-	const int32 volumeWidth  = CVolumetricFogStage::GetVolumeTextureSize(renderWidth , resolutionScale);
-	const int32 volumeHeight = CVolumetricFogStage::GetVolumeTextureSize(renderHeight, resolutionScale);
-	const int32 volumeDepth  = CVolumetricFogStage::GetVolumeTextureDepthSize(depthScale);
+		// size for view frustum aligned volume texture.
+		const int32 volumeWidth = CVolumetricFogStage::GetVolumeTextureSize(renderWidth, resolutionScale);
+		const int32 volumeHeight = CVolumetricFogStage::GetVolumeTextureSize(renderHeight, resolutionScale);
+		const int32 volumeDepth = CVolumetricFogStage::GetVolumeTextureDepthSize(depthScale);
 
-	ResizeResource(volumeWidth, volumeHeight, volumeDepth);
+		ResizeResource(volumeWidth, volumeHeight, volumeDepth);
+	}
 }
 
 void CClipVolumesStage::OnCVarsChanged(const CCVarUpdateRecorder& cvarUpdater)
@@ -390,7 +401,6 @@ void CClipVolumesStage::Update()
 	}
 }
 
-
 void CClipVolumesStage::GenerateClipVolumeInfo()
 {
 	FUNCTION_PROFILER_RENDERER();
@@ -399,7 +409,7 @@ void CClipVolumesStage::GenerateClipVolumeInfo()
 	const auto& clipVolumes = pRenderView->GetClipVolumes();
 
 	m_nShaderParamCount = 0;
-	
+
 	// Outdoor
 	{
 		uint32 nFlags = IClipVolume::eClipVolumeConnectedToOutdoor | IClipVolume::eClipVolumeAffectedBySun;
@@ -487,7 +497,7 @@ void CClipVolumesStage::Prepare()
 	CRenderView* pRenderView = RenderView();
 	const auto& clipVolumes = pRenderView->GetClipVolumes();
 	SRenderViewInfo viewInfo[2];
-	size_t viewInfoCount = GetGraphicsPipeline().GenerateViewInfo(viewInfo);
+	size_t viewInfoCount = m_graphicsPipeline.GenerateViewInfo(viewInfo);
 
 	const bool bReverseDepth = (viewInfo[0].flags & SRenderViewInfo::eFlags_ReverseDepth) != 0;
 
@@ -655,7 +665,7 @@ void CClipVolumesStage::Prepare()
 				const int stencilTestRef = BIT_STENCIL_INSIDE_CLIPVOLUME | volume.nStencilRef;
 
 				CRenderPrimitive& primBlend = m_blendPrimitives[i];
-				primBlend.SetTechnique(CShaderMan::s_shDeferredShading, techPortalBlend, CVrProjectionManager::Instance()->GetRTFlags());
+				primBlend.SetTechnique(CShaderMan::s_shDeferredShading, techPortalBlend, m_graphicsPipeline.GetVrProjectionManager()->GetRTFlags());
 				primBlend.SetRenderState(GS_STENCIL | GS_NODEPTHTEST | GS_NOCOLMASK_RBA);
 				primBlend.SetTexture(3, CRendererResources::s_ptexLinearDepth);
 				primBlend.SetCullMode(eCULL_Front);
@@ -882,7 +892,7 @@ void CClipVolumesStage::ExecuteVolumetricFog()
 
 			CTexture* const pTex = m_pClipVolumeStencilVolumeTexArray[i];
 			auto stencilOnlyView = SResourceView::ShaderResourceView(DeviceFormats::ConvertFromTexFormat(pTex->GetDstFormat()),
-				0, -1, 0, -1, false, false, SResourceView::eSRV_StencilOnly);
+			                                                         0, -1, 0, -1, false, false, SResourceView::eSRV_StencilOnly);
 			ResourceViewHandle srvHandle = pTex->GetDevTexture()->GetOrCreateResourceViewHandle(stencilOnlyView);
 
 			pPass->SetPrimitiveFlags(CRenderPrimitive::eFlags_None);

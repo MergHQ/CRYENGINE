@@ -78,10 +78,10 @@ struct IImpl
 	 * Pass an implementation specific XML node that contains information about the current parsed library.
 	 * Is called for each library that contains the node, before calling Init.
 	 * @param pNode - an XML node containing information about the current parsed library
-	 * @param isLevelSpecific - false: the library is global. true: the library is level specific.
+	 * @param contextId - context id of the library.
 	 * @return void
 	 */
-	virtual void SetLibraryData(XmlNodeRef const pNode, bool const isLevelSpecific) = 0;
+	virtual void SetLibraryData(XmlNodeRef const pNode, ContextId const contextId) = 0;
 
 	/**
 	 * Called before parsing all libraries for impl data.
@@ -92,10 +92,11 @@ struct IImpl
 
 	/**
 	 * Called when parsing all libraries for impl data is finished.
+	 * @param poolAllocationMode - if 0: Accumulate pool sizes of all contexts. If 1: Accumulate pool sizes of the global context and the largest pool size for each control in any other context.
 	 * @see OnBeforeLibraryDataChanged, SetLibraryData
 	 * @return void
 	 */
-	virtual void OnAfterLibraryDataChanged() = 0;
+	virtual void OnAfterLibraryDataChanged(int const poolAllocationMode) = 0;
 
 	/**
 	 * This method is called every time the main Game (or Editor) window loses focus.

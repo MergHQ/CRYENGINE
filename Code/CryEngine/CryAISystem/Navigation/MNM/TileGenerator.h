@@ -516,7 +516,6 @@ protected:
 	inline bool IsBoundaryVertexV(size_t z) const
 	{
 		const size_t borderV = BorderSizeV(m_params);
-
 		return (z == borderV) || (z == Top(m_params) + borderV);
 	}
 
@@ -526,19 +525,26 @@ protected:
 	struct SFilterWalkableParams;
 	struct SSpanClearance;
 	struct SNonWalkableNeighbourReason;
+	struct SWalkableProbeCheckParams;
 
 	bool        GenerateFromVoxelizedVolume(const AABB& aabb, const bool fullyContained);
 
 	void        FilterWalkable(const AABB& aabb, bool fullyContained = true);
-	bool        FilterWalkableSpan(CompactSpanGrid::Span& span, const SSpanCoord& spanCoord, const CompactSpanGrid::Cell& cell, const SFilterWalkableParams& filterParams);
-	static bool FilterWalkable_CheckSpanBackface(const CompactSpanGrid::Span& span);
-	static bool FilterWalkable_CheckSpanWaterDepth(const CompactSpanGrid::Span& span, const Params& params);
-	static bool FilterWalkable_CheckNeighbours(const SSpanCoord& spanCoord, const SSpanClearance& spanClearance, const SFilterWalkableParams& filterParams, SNonWalkableNeighbourReason* pOutReason);
-	void        FilterWalkable_CheckBoundaries(const AABB& aabb, const size_t gridWidth, const size_t gridHeight);
+	size_t      FilterWalkable_CheckBackfaceDepthAndClearance(const SFilterWalkableParams& filterParams);
+	size_t      FilterWalkable_CheckNeighboursAndInclination(const SFilterWalkableParams& filterParams);
+	bool        FilterWalkableSpanAndSetClearance(CompactSpanGrid::Span& span, const SSpanCoord& spanCoord, const CompactSpanGrid::Cell& cell, const SFilterWalkableParams& filterParams);
+	static bool FilterWalkableSpan_CheckBackface(const CompactSpanGrid::Span& span);
+	static bool FilterWalkableSpan_CheckWaterDepth(const CompactSpanGrid::Span& span, const Params& params);
+	static bool FilterWalkableSpan_CheckNeighbours(const SSpanCoord& spanCoord, const size_t originTop, const size_t originNextBottom, const SFilterWalkableParams& filterParams, SNonWalkableNeighbourReason* pOutReason);
+	
+	static bool CheckWalkableProbeStep(const SWalkableProbeCheckParams& params);
+	static bool CheckWalkableProbeIncline(const SWalkableProbeCheckParams& params, float* probeInclinationVars);
+
+	
+	size_t      FilterWalkable_CheckBoundaries(const AABB& aabb, const size_t gridWidth, const size_t gridHeight);
 
 	void        ComputeDistanceTransform();
 	void        ExpandAreaForPaint(const uint16 paint);
-	void        BlurDistanceTransform();
 
 	void        LabelBorders();
 
@@ -583,7 +589,7 @@ protected:
 		}
 	};
 
-	void AssessNeighbour(NeighbourInfo& info, size_t erosion, size_t climbableVoxelCount);
+	void AssessNeighbour(NeighbourInfo& info, const size_t climbableVoxelCount);
 
 	enum TracerDir
 	{
@@ -621,7 +627,7 @@ protected:
 		int     turns;
 	};
 
-	void   TraceContour(CTileGenerator::TracerPath& path, const Tracer& start, size_t erosion, size_t climbableVoxelCount, const NeighbourInfoRequirements& contourReq);
+	void   TraceContour(CTileGenerator::TracerPath& path, const Tracer& start, const size_t climbableVoxelCount, const NeighbourInfoRequirements& contourReq);
 	int    LabelTracerPath(const CTileGenerator::TracerPath& path, size_t climbableVoxelCount, Region& region, Contour& contour, const uint16 internalLabel, const uint16 internalLabelFlags, const uint16 externalLabel, const bool bIsHole);
 
 	void   TidyUpContourEnd(Contour& contour);
@@ -788,15 +794,17 @@ protected:
 
 #endif // DEBUG_MNM_GATHER_NONWALKABLE_REASONS
 
-	inline void DebugAddNonWalkableReason(const SSpanCoord& spanCoord, const char* szReason)
-	{
 #if DEBUG_MNM_GATHER_NONWALKABLE_REASONS
+	inline void DebugAddNonWalkableReason(const SSpanCoord& spanCoord, SNonWalkableReason&& reason)
+	{
 		IF_UNLIKELY (m_params.flags & Params::DebugInfo)
 		{
-			m_debugNonWalkableReasonMap[spanCoord] = SNonWalkableReason(szReason);
+			m_debugNonWalkableReasonMap[spanCoord] = reason;
 		}
-#endif // DEBUG_MNM_GATHER_NONWALKABLE_REASONS
 	}
+#else 
+	#define DebugAddNonWalkableReason(spanCoord, reason)
+#endif // DEBUG_MNM_GATHER_NONWALKABLE_REASONS
 
 	friend class CContourRenderer;
 #if DEBUG_MNM_GATHER_EXTRA_CONTOUR_VERTEX_INFO

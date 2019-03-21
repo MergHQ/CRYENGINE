@@ -157,12 +157,12 @@ CTerrainUpdateDispatcher::CTerrainUpdateDispatcher()
 
 CTerrainUpdateDispatcher::~CTerrainUpdateDispatcher()
 {
-	SyncAllJobs(true, SRenderingPassInfo::CreateGeneralPassRenderingInfo(gEnv->p3DEngine->GetRenderingCamera()));
+	SyncAllJobs(true, SRenderingPassInfo::CreateGeneralPassRenderingInfo(SGraphicsPipelineKey::BaseGraphicsPipelineKey, gEnv->p3DEngine->GetRenderingCamera()));
 	if (m_queuedJobs.size() || m_arrRunningJobs.size())
 	{
 		CryFatalError(
-		  "CTerrainUpdateDispatcher::~CTerrainUpdateDispatcher(): instance still has jobs "
-		  "queued while being destructed!\n");
+			"CTerrainUpdateDispatcher::~CTerrainUpdateDispatcher(): instance still has jobs "
+			"queued while being destructed!\n");
 	}
 
 	m_pHeap = NULL;
@@ -600,10 +600,10 @@ void CTerrainNode::UpdateRenderMesh(CStripsInfo* pArrayInfo)
 	gEnv->pRenderer->EF_Query(EFQ_MultiGPUEnabled, bMultiGPU);
 
 	pRenderMesh = GetRenderer()->CreateRenderMeshInitialized(
-	  m_pUpdateTerrainTempData->m_lstTmpVertArray.GetElements(), m_pUpdateTerrainTempData->m_lstTmpVertArray.Count(), EDefaultInputLayouts::P2S_N4B_C4B_T1F,
-	  pArrayInfo->idx_array.GetElements(), pArrayInfo->idx_array.Count(),
-	  prtTriangleList, "TerrainSector", "TerrainSector", eRMType, 1,
-	  m_nTexSet.nTex0, NULL, NULL, false, true, lstTangents.Count() ? lstTangents.GetElements() : NULL);
+		m_pUpdateTerrainTempData->m_lstTmpVertArray.GetElements(), m_pUpdateTerrainTempData->m_lstTmpVertArray.Count(), EDefaultInputLayouts::P2S_N4B_C4B_T1F,
+		pArrayInfo->idx_array.GetElements(), pArrayInfo->idx_array.Count(),
+		prtTriangleList, "TerrainSector", "TerrainSector", eRMType, 1,
+		m_nTexSet.nTex0, NULL, NULL, false, true, lstTangents.Count() ? lstTangents.GetElements() : NULL);
 	AABB boxWS = GetBBox();
 	pRenderMesh->SetBBox(boxWS.min, boxWS.max);
 
@@ -783,9 +783,9 @@ bool CTerrainNode::RenderSector(const SRenderingPassInfo& passInfo)
 	for (int i = 0; i < m_lstSurfaceTypeInfo.Count() && !bDetailLayersReady; ++i)
 	{
 		bDetailLayersReady =
-		  m_lstSurfaceTypeInfo[i].HasRM() ||
-		  m_lstSurfaceTypeInfo[i].pSurfaceType ||
-		  !m_lstSurfaceTypeInfo[i].pSurfaceType->HasMaterial();
+			m_lstSurfaceTypeInfo[i].HasRM() ||
+			m_lstSurfaceTypeInfo[i].pSurfaceType ||
+			!m_lstSurfaceTypeInfo[i].pSurfaceType->HasMaterial();
 	}
 
 	// just draw if everything is up to date already
@@ -1169,8 +1169,8 @@ void CTerrainNode::UpdateSurfaceRenderMeshes(const _smart_ptr<IRenderMesh> pSrcR
 			eRMType = eRMT_Dynamic;
 
 		pMatRM = GetRenderer()->CreateRenderMeshInitialized(
-		  NULL, 0, EDefaultInputLayouts::P2S_N4B_C4B_T1F, NULL, 0,
-		  prtTriangleList, szComment, szComment, eRMType, 1, 0, NULL, NULL, false, false);
+			NULL, 0, EDefaultInputLayouts::P2S_N4B_C4B_T1F, NULL, 0,
+			prtTriangleList, szComment, szComment, eRMType, 1, 0, NULL, NULL, false, false);
 	}
 
 	uint8 szProj[] = "XYZ";
@@ -1309,14 +1309,14 @@ _smart_ptr<IRenderMesh> CTerrainNode::GetSharedRenderMesh()
 	}
 
 	m_pTerrain->m_pSharedRenderMesh = GetRenderer()->CreateRenderMeshInitialized(
-	  arrVertices.GetElements(),
-	  arrVertices.Count(),
-	  EDefaultInputLayouts::P2S_N4B_C4B_T1F,
-	  arrIndices.GetElements(),
-	  arrIndices.Count(),
-	  prtTriangleList,
-	  "TerrainSectorSharedRenderMesh", "TerrainSectorSharedRenderMesh",
-	  eRMT_Static);
+		arrVertices.GetElements(),
+		arrVertices.Count(),
+		EDefaultInputLayouts::P2S_N4B_C4B_T1F,
+		arrIndices.GetElements(),
+		arrIndices.Count(),
+		prtTriangleList,
+		"TerrainSectorSharedRenderMesh", "TerrainSectorSharedRenderMesh",
+		eRMT_Static);
 
 	m_pTerrain->m_pSharedRenderMesh->SetChunk(NULL, 0, arrVertices.Count(), 0, arrIndices.Count(), 1.0f, 0);
 

@@ -115,8 +115,8 @@ namespace VkSpvHelper
 				if (!instructionReader.good())
 					return false;
 
-				if (std::strcmp(extensionInstruction->GetName(), SpvExtGoogleDecorateString) == 0 ||
-					std::strcmp(extensionInstruction->GetName(), SpvExtGoogleHLSLFunctionality1) == 0)
+				if (strcmp(extensionInstruction->GetName(), SpvExtGoogleDecorateString) == 0 ||
+					strcmp(extensionInstruction->GetName(), SpvExtGoogleHLSLFunctionality1) == 0)
 				{
 					continue;
 				}

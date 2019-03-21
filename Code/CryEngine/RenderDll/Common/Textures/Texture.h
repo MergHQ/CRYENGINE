@@ -666,16 +666,15 @@ struct SStreamFormatCodeKey
 	}
 };
 
-struct SStreamFormatSize
-{
-	uint32 size        : 31;
-	uint32 alignSlices : 1;
-};
-
 struct SStreamFormatCode
 {
-	enum { MaxMips = 14, MaxDim = 1 << (MaxMips - 1) };
-	SStreamFormatSize sizes[MaxMips];
+	enum
+	{
+		MaxMips = 14,
+		MaxDim = 1 << (MaxMips - 1),
+		MaxSlices = 32
+	};
+	uint32 sizes[MaxSlices][MaxMips];
 };
 
 //////////////////////////////////////////////////////////////////////////

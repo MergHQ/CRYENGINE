@@ -433,7 +433,7 @@ static void CmdDumpCvars(IConsoleCmdArgs* pArgs)
 		{
 		}
 
-		void OnElementFound(ICVar *pCVar)
+		void OnElementFound(ICVar* pCVar)
 		{
 			if (!pCVar)
 			{
@@ -454,12 +454,12 @@ static void CmdDumpCvars(IConsoleCmdArgs* pArgs)
 				return;
 			}
 
-			std::sort(m_cvars.begin(), m_cvars.end(), [](const std::pair<const char*, const char*> & rA, const std::pair<const char*, const char*>& rB) -> bool { return strcmp(rA.first, rB.first) < 0; });
+			std::sort(m_cvars.begin(), m_cvars.end(), [](const std::pair<const char*, const char*>& rA, const std::pair<const char*, const char*>& rB) -> bool { return strcmp(rA.first, rB.first) < 0; });
 
 #if !defined(_RELEASE) || defined(RELEASE_LOGGING)
 			for (const auto& cvar : m_cvars)
 			{
-				fprintf(pFile, "%s=%s\n", cvar.first,cvar.second);
+				fprintf(pFile, "%s=%s\n", cvar.first, cvar.second);
 			}
 #endif
 
@@ -477,12 +477,12 @@ static void CmdDumpCvars(IConsoleCmdArgs* pArgs)
 			fclose(pFile);
 		}
 
-		std::vector<std::pair<const char*, const char* > > m_cvars;
+		std::vector<std::pair<const char*, const char*>> m_cvars;
 	};
 
 	if (gEnv && gEnv->pConsole)
 	{
-		
+
 		CCVarSink sink;
 		gEnv->pConsole->DumpCVars(&sink);
 		sink.LogToFile();
@@ -1066,7 +1066,7 @@ bool CSystem::OpenRenderLibrary(const SSystemInitParams& startupParams, int type
 		CryFatalError("No renderer specified!");
 		return false;
 	}
-	
+
 	MEMSTAT_CONTEXT_FMT(EMemStatContextTypes::MSC_Other, 0, "Init %s", libname);
 	if (!InitializeEngineModule(startupParams, libname, cryiidof<IRendererEngineModule>(), true))
 	{
@@ -1269,7 +1269,7 @@ bool CSystem::InitUDR(const SSystemInitParams& startupParams)
 	}
 
 	return true;
-}																		  
+}
 
 //////////////////////////////////////////////////////////////////////////
 void CSystem::InitGameFramework(SSystemInitParams& startupParams)
@@ -1396,9 +1396,9 @@ bool CSystem::InitRenderer(SSystemInitParams& startupParams)
 		}
 
 		m_hWnd = m_env.pRenderer->Init(
-		  0, 0, width, height,
-		  m_rColorBits->GetIVal(), m_rDepthBits->GetIVal(), m_rStencilBits->GetIVal(),
-		  hwnd, false, startupParams.bShaderCacheGen);
+			0, 0, width, height,
+			m_rColorBits->GetIVal(), m_rDepthBits->GetIVal(), m_rStencilBits->GetIVal(),
+			hwnd, false, startupParams.bShaderCacheGen);
 
 		startupParams.hWnd = m_hWnd;
 
@@ -1408,11 +1408,11 @@ bool CSystem::InitRenderer(SSystemInitParams& startupParams)
 		if (m_env.pHardwareMouse)
 			m_env.pHardwareMouse->OnPostInitRenderer();
 
-	#if CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID || CRY_PLATFORM_APPLE || CRY_PLATFORM_ORBIS
+#if CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID || CRY_PLATFORM_APPLE || CRY_PLATFORM_ORBIS
 		return true;
-	#else
+#else
 		return (startupParams.bUnattendedMode || startupParams.bShaderCacheGen || m_hWnd != 0);
-	#endif
+#endif
 	}
 	return true;
 }
@@ -1537,7 +1537,6 @@ bool CSystem::InitPhysics(const SSystemInitParams& startupParams)
 {
 	LOADING_TIME_PROFILE_SECTION(GetISystem());
 	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Physics, 0, "Init Physics");
-	
 
 #if defined(_LIB) && CRY_PLATFORM_DURANGO
 	m_env.pPhysicalWorld = CreatePhysicalWorld(this);
@@ -1604,6 +1603,8 @@ bool CSystem::InitPhysicsRenderer(const SSystemInitParams& startupParams)
 		               "Culling distance for physics helpers rendering");
 		REGISTER_CVAR2("p_wireframe_distance", &m_pPhysRenderer->m_wireframeDist, m_pPhysRenderer->m_wireframeDist, 0,
 		               "Maximum distance at which wireframe is drawn on physics helpers");
+		REGISTER_CVAR2("p_meridian_distance", &m_pPhysRenderer->m_meridianDist, m_pPhysRenderer->m_meridianDist, 0,
+		               "Maximum distance at which meridians/parallels are drawn on physics helpers for primitives with round parts");
 		REGISTER_CVAR2("p_ray_fadeout", &m_pPhysRenderer->m_timeRayFadein, m_pPhysRenderer->m_timeRayFadein, 0,
 		               "Fade-out time for ray physics helpers");
 		REGISTER_CVAR2("p_ray_peak_time", &m_pPhysRenderer->m_rayPeakTime, m_pPhysRenderer->m_rayPeakTime, 0,
@@ -1644,7 +1645,7 @@ bool CSystem::InitMovieSystem(const SSystemInitParams& startupParams)
 /////////////////////////////////////////////////////////////////////////////////
 bool CSystem::InitAISystem(const SSystemInitParams& startupParams)
 {
-	LOADING_TIME_PROFILE_SECTION(GetISystem());	
+	LOADING_TIME_PROFILE_SECTION(GetISystem());
 	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Init AISystem ");
 
 	const char* sDLLName = m_sys_dll_ai->GetString();
@@ -1661,7 +1662,7 @@ bool CSystem::InitAISystem(const SSystemInitParams& startupParams)
 /////////////////////////////////////////////////////////////////////////////////
 bool CSystem::InitScriptSystem(const SSystemInitParams& startupParams)
 {
-	LOADING_TIME_PROFILE_SECTION(GetISystem());	
+	LOADING_TIME_PROFILE_SECTION(GetISystem());
 	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_LUA, 0, "Init Script System");
 
 	if (!InitializeEngineModule(startupParams, DLL_SCRIPTSYSTEM, cryiidof<IScriptSystemEngineModule>(), true))
@@ -2050,7 +2051,7 @@ void CSystem::InitResourceCacheFolder()
 		auto slashPos = cacheFolder.rfind('/');
 		if (slashPos != string::npos)
 		{
-			cacheFolderParentFolder = cacheFolder.substr(0,slashPos);
+			cacheFolderParentFolder = cacheFolder.substr(0, slashPos);
 		}
 		if (!cacheFolderParentFolder.empty())
 		{
@@ -2066,7 +2067,6 @@ void CSystem::InitResourceCacheFolder()
 
 #endif // !defined(_RELEASE)
 }
-
 
 //////////////////////////////////////////////////////////////////////////
 bool CSystem::InitStreamEngine()
@@ -2085,7 +2085,7 @@ bool CSystem::InitStreamEngine()
 /////////////////////////////////////////////////////////////////////////////////
 bool CSystem::InitFont(const SSystemInitParams& startupParams)
 {
-	LOADING_TIME_PROFILE_SECTION(GetISystem());	
+	LOADING_TIME_PROFILE_SECTION(GetISystem());
 	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Init Font");
 
 	if (!InitializeEngineModule(startupParams, DLL_FONT, cryiidof<IFontEngineModule>(), true))
@@ -2148,7 +2148,7 @@ bool CSystem::Init3DEngine(const SSystemInitParams& startupParams)
 
 //////////////////////////////////////////////////////////////////////////
 bool CSystem::InitAnimationSystem(const SSystemInitParams& startupParams)
-{	
+{
 	LOADING_TIME_PROFILE_SECTION(GetISystem());
 	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Init Animation System");
 
@@ -2491,7 +2491,7 @@ bool CSystem::Initialize(SSystemInitParams& startupParams)
 	m_hWnd = (CRY_HWND)startupParams.hWnd;
 
 	m_binariesDir = startupParams.szBinariesDir;
-	
+
 #if CRY_PLATFORM_DESKTOP && !defined(_RELEASE)
 	m_env.SetIsEditor(startupParams.bEditor);
 	m_env.SetIsEditorGameMode(false);
@@ -2692,7 +2692,7 @@ bool CSystem::Initialize(SSystemInitParams& startupParams)
 		//////////////////////////////////////////////////////////////////////////
 		// File system, must be very early
 		//////////////////////////////////////////////////////////////////////////
-		InitFileSystem(startupParams);		
+		InitFileSystem(startupParams);
 
 		//////////////////////////////////////////////////////////////////////////
 		InlineInitializationProcessing("CSystem::Init InitFileSystem");
@@ -2894,7 +2894,7 @@ bool CSystem::Initialize(SSystemInitParams& startupParams)
 
 #if CRY_PLATFORM_DURANGO
 		// OnSysSpecChange Triggers loading of durango.cfg
-		OnSysSpecChange(m_sys_spec); 
+		OnSysSpecChange(m_sys_spec);
 #elif CRY_PLATFORM_ORBIS
 		LoadConfiguration("orbis.cfg", 0, eLoadConfigSystemSpec);
 #elif CRY_PLATFORM_MOBILE
@@ -3168,7 +3168,7 @@ bool CSystem::Initialize(SSystemInitParams& startupParams)
 		                                  && m_env.pRenderer;
 
 		if (g_cvars.sys_intromoviesduringinit && bStartScreensAllowed)
-		{			
+		{
 			m_env.pRenderer->InitSystemResources(FRR_SYSTEM_RESOURCES);
 			m_env.pRenderer->StartRenderIntroMovies();
 		}
@@ -3199,7 +3199,7 @@ bool CSystem::Initialize(SSystemInitParams& startupParams)
 					// make sure it's rendered in full screen mode when triple buffering is enabled as well
 					for (size_t n = 0; n < 3; n++)
 					{
-						m_env.pRenderer->BeginFrame({});
+						m_env.pRenderer->BeginFrame({}, SGraphicsPipelineKey::BaseGraphicsPipelineKey);
 						IRenderAuxImage::Draw2dImage(x, y, w, h, pTex->GetTextureID(), 0.0f, 1.0f, 1.0f, 0.0f);
 						m_env.pRenderer->EndFrame();
 					}
@@ -3802,7 +3802,7 @@ static void CreateDirectoryPath(const char* szPath)
 
 	string sFolder;
 
-	for (;; )
+	for (;;)
 	{
 		if (*p == '/' || *p == '\\' || *p == 0)
 		{
@@ -4091,7 +4091,7 @@ public:
 
 		char* szFile = szFilePath, * p = szFilePath;
 
-		for (;; )
+		for (;;)
 		{
 			if (*p == '/' || *p == '\\' || *p == 0)
 			{
@@ -4929,7 +4929,7 @@ void CSystem::CreateSystemVars()
 	                                           "Set to 0 to create as many threads as cores are available");
 
 	m_sys_job_system_worker_boost_enabled = REGISTER_INT("sys_job_system_worker_boost_enabled", 1, 0,
-                                                        "Kicks off anadditional worker thread when the Main/Render-Thread have to wait on a job state");
+	                                                     "Kicks off anadditional worker thread when the Main/Render-Thread have to wait on a job state");
 
 	REGISTER_COMMAND("sys_job_system_dump_job_list", CmdDumpJobManagerJobList, VF_CHEAT, "Show a list of all registered job in the console");
 	REGISTER_COMMAND("sys_dump_cvars", CmdDumpCvars, VF_CHEAT, "Dump all cvars to file");
@@ -5042,7 +5042,6 @@ void CSystem::CreateSystemVars()
 	               "sets the base port for the simple http server to run on, defaults to 1880");
 #endif
 
-
 	REGISTER_CVAR2("sys_dump_aux_threads", &g_cvars.sys_dump_aux_threads, 1, VF_NULL, "Dumps callstacks of other threads in case of a crash");
 	REGISTER_CVAR2("sys_keyboard_break", &g_cvars.sys_keyboard_break, 0, VF_NULL, "Enables keyboard break handler");
 
@@ -5061,10 +5060,10 @@ void CSystem::CreateSystemVars()
 
 	REGISTER_CVAR2("sys_force_installtohdd_mode", &g_cvars.sys_force_installtohdd_mode, 0, VF_NULL, "Forces install to HDD mode even when doing DVD emulation");
 
-	m_sys_use_Mono = REGISTER_INT("sys_use_mono", 1, 0, 
-								  "Use Mono Framework\n"
-								  "0 = off\n"
-								  "1 = on");
+	m_sys_use_Mono = REGISTER_INT("sys_use_mono", 1, 0,
+	                              "Use Mono Framework\n"
+	                              "0 = off\n"
+	                              "1 = on");
 
 #define CRASH_CMD_HELP                      \
   " 0=off\n"                                \
@@ -5181,10 +5180,10 @@ void CSystem::CreateSystemVars()
 	REGISTER_COMMAND("memReplayPause", &ReplayPause, 0, "Pause collection of mem replay data");
 	REGISTER_COMMAND("memReplayResume", &ReplayResume, 0, "Resume collection of mem replay data (use with -memReplayPaused cmdline)");
 	REGISTER_CVAR2_CB("memReplayRecordCallstacks", &g_cvars.memReplayRecordCallstacks, 1, 0,
-		"Turn the logging of callstacks by memreplay on(1) or off(0).\n"
-		"Saves a lot of memory on the log, but it will obviously contain less information. "
-		"Can be toggled during recording sessions to only add detail to specific sections of the recording."
-		, MemReplayRecordCallstacksChanged);
+	                  "Turn the logging of callstacks by memreplay on(1) or off(0).\n"
+	                  "Saves a lot of memory on the log, but it will obviously contain less information. "
+	                  "Can be toggled during recording sessions to only add detail to specific sections of the recording."
+	                  , MemReplayRecordCallstacksChanged);
 	REGISTER_COMMAND("memResetAllocs", &ResetAllocs, 0, "clears memHierarchy tree");
 	REGISTER_COMMAND("memReplayLabel", &AddReplayLabel, 0, "record a label in the mem replay log");
 	REGISTER_COMMAND("memReplayInfo", &ReplayInfo, 0, "output some info about the replay log");
@@ -5207,9 +5206,9 @@ void CSystem::CreateSystemVars()
 #else
 	static const int default_sys_usePlatformSavingAPI = 1;
 
-#ifndef _RELEASE
+	#ifndef _RELEASE
 	static const int default_sys_usePlatformSavingAPIDefault = 1;
-#endif
+	#endif
 #endif
 
 	REGISTER_CVAR2("sys_usePlatformSavingAPI", &g_cvars.sys_usePlatformSavingAPI, default_sys_usePlatformSavingAPI, VF_REQUIRE_APP_RESTART, "Use the platform APIs for saving and loading (complies with TRCs, but allocates lots of memory)");

@@ -1470,7 +1470,7 @@ void CVegetationMap::SetAIRadius(IStatObj* pObj, float radius)
 	if (!pObj)
 		return;
 	pObj->SetAIVegetationRadius(radius);
-	for (unsigned i = m_objects.size(); i-- != 0; )
+	for (unsigned i = m_objects.size(); i-- != 0;)
 	{
 		CVegetationObject* object = m_objects[i];
 		IStatObj* pSO = object->GetObject();
@@ -2277,7 +2277,7 @@ int CVegetationMap::ExportObject(CVegetationObject* object, XmlNodeRef& node, CR
 				{
 					if (saveRect)
 					{
-						if (pInst->pos.x < saveRect->left || pInst->pos.x > saveRect->right || pInst->pos.y <  saveRect->top || pInst->pos.y > saveRect->bottom)
+						if (pInst->pos.x < saveRect->left || pInst->pos.x > saveRect->right || pInst->pos.y < saveRect->top || pInst->pos.y > saveRect->bottom)
 							continue;
 					}
 					numSaved++;
@@ -2576,7 +2576,6 @@ void CVegetationMap::RepositionArea(const AABB& box, const Vec3& offset, int nRo
 						newPos.z = GetIEditorImpl()->Get3DEngine()->GetTerrainElevation(newPos.x, newPos.y);
 					}
 
-
 					if (isCopy)
 					{
 						// Keep this instance in same position in tempArea
@@ -2825,11 +2824,14 @@ void CVegetationMap::GenerateBillboards(IConsoleCmdArgs*)
 			tmpCam.SetMatrix(Matrix34(matRot, Vec3(0, 0, 0)));
 			tmpCam.SetFrustum(nSpriteResInt, nSpriteResInt, fFOV, max(0.1f, fDrawDist - fRadiusHors), fDrawDist + fRadiusHors);
 
-			SRenderingPassInfo passInfo = SRenderingPassInfo::CreateBillBoardGenPassRenderingInfo(tmpCam, nRenderingFlags);
+			IRenderer::SGraphicsPipelineDescription pipelineDesc;
+			pipelineDesc.type = EGraphicsPipelineType::Standard;
+			pipelineDesc.shaderFlags = nRenderingFlags;
+
+			SRenderingPassInfo passInfo = SRenderingPassInfo::CreateBillBoardGenPassRenderingInfo(passInfo.GetGraphicsPipelineKey(), tmpCam, nRenderingFlags);
 			IRenderView* pView = passInfo.GetIRenderView();
 			pView->SetCameras(&tmpCam, 1);
 
-			passInfo.GetIRenderView()->SetShaderRenderingFlags(nRenderingFlags | SHDF_NOASYNC | SHDF_BILLBOARDS);
 			gEnv->pRenderer->EF_StartEf(passInfo);
 
 			Matrix34A matTrans;
@@ -2853,14 +2855,16 @@ void CVegetationMap::GenerateBillboards(IConsoleCmdArgs*)
 
 			pView->SwitchUsageMode(IRenderView::eUsageModeWritingDone);
 
-			gEnv->pRenderer->EF_EndEf3D(0, 0, passInfo);
+			gEnv->pRenderer->EF_EndEf3D(0, 0, passInfo, nRenderingFlags);
 
 			RectI rcDst;
 			rcDst.x = (j % nLine) * nSpriteResFinal;
 			rcDst.y = (j / nLine) * nSpriteResFinal;
 			rcDst.w = nSpriteResFinal;
 			rcDst.h = nSpriteResFinal;
-			if (!gEnv->pRenderer->StoreGBufferToAtlas(rcDst, nSpriteResInt, nSpriteResInt, nSpriteResFinal, nSpriteResFinal, pAtlasD, pAtlasN))
+
+			std::shared_ptr<CGraphicsPipeline> pGraphicsPipeline = gEnv->pRenderer->FindGraphicsPipeline(passInfo.GetGraphicsPipelineKey());
+			if (!gEnv->pRenderer->StoreGBufferToAtlas(rcDst, nSpriteResInt, nSpriteResInt, nSpriteResFinal, nSpriteResFinal, pAtlasD, pAtlasN, pGraphicsPipeline.get()))
 			{
 				assert(0);
 			}

@@ -17,8 +17,9 @@ EShaderStage SDeviceObjectHelpers::GetShaderInstanceInfo(THwShaderInfo& result, 
 		if (pShaderTechnique->m_Passes.empty())
 			return EShaderStage_None;
 
+		CVrProjectionManager* pVRProjectionManager = gcpRendD3D->GetVrProjectionManager();
 		SShaderPass& shaderPass = pShaderTechnique->m_Passes[0];
-		
+
 		// Shader pointers are consecutive
 		CHWShader** pHWShaders = &shaderPass.m_VShader;
 
@@ -44,7 +45,7 @@ EShaderStage SDeviceObjectHelpers::GetShaderInstanceInfo(THwShaderInfo& result, 
 			result[shaderStage].technique = technique;
 
 			// Special case for nvidia multires shading: auto geometry shader requires vertex shader instance
-			if (CVrProjectionManager::IsMultiResEnabledStatic())
+			if (pVRProjectionManager->IsMultiResEnabledStatic())
 			{
 				if (shaderStage == eHWSC_Geometry && pHWShaderD3D)
 				{
@@ -87,7 +88,7 @@ EShaderStage SDeviceObjectHelpers::GetShaderInstanceInfo(THwShaderInfo& result, 
 						isShaderValid = true;
 					}
 				}
-				
+
 				if (!isShaderValid)
 				{
 					return EShaderStage_None;
@@ -171,7 +172,7 @@ bool SDeviceObjectHelpers::CShaderConstantManager::AllocateShaderReflection(::CS
 #if defined(USE_CRY_ASSERT)
 			SShaderPass& shaderPass = pShaderTechnique->m_Passes[0];
 			CHWShader** pHWShaders = &shaderPass.m_VShader;
-			
+
 			// Compile time evaluable, should produce no code
 			CRY_ASSERT(eHWSC_Vertex   == (&shaderPass.m_VShader - &shaderPass.m_VShader));
 			CRY_ASSERT(eHWSC_Pixel    == (&shaderPass.m_PShader - &shaderPass.m_VShader));
@@ -190,7 +191,7 @@ bool SDeviceObjectHelpers::CShaderConstantManager::AllocateShaderReflection(::CS
 					CRY_ASSERT(pHWShaders[shaderClass]);
 					CRY_ASSERT_MESSAGE(m_pShaderReflection->bufferCount < MaxReflectedBuffers, "Maximum reflected buffer count exceeded. Feel free to increase if necessary");
 
-				#ifndef RELEASE
+#ifndef RELEASE
 					// check for overlap with another CB
 					for (auto& cb : m_constantBuffers)
 					{
@@ -200,8 +201,8 @@ bool SDeviceObjectHelpers::CShaderConstantManager::AllocateShaderReflection(::CS
 							                          "to 'ReflectedBufferShaderSlot' when shader reflection is used.");
 						}
 					}
-				#endif
-					
+#endif
+
 					SConstantBufferBindInfo bindInfo;
 					bindInfo.shaderSlot = ReflectedBufferShaderSlot;
 					bindInfo.shaderStages = SHADERSTAGE_FROM_SHADERCLASS(shaderClass);
@@ -242,7 +243,7 @@ void SDeviceObjectHelpers::CShaderConstantManager::InitShaderReflection(CDeviceG
 		auto& updateContext = m_pShaderReflection->bufferUpdateContexts[i];
 		CRY_ASSERT(updateContext.bufferIndex >= 0);
 		CRY_ASSERT(pipelineState.m_pHwShaderInstances[updateContext.shaderClass]);
-		
+
 		CHWShader_D3D::SHWSInstance* pInstance = reinterpret_cast<CHWShader_D3D::SHWSInstance*>(pipelineState.m_pHwShaderInstances[updateContext.shaderClass]);
 		CRY_ASSERT(pInstance->m_nMaxVecs[eConstantBufferShaderSlot_PerDraw] > 0);           // No per batch shader constants. Shader reflection not required.
 
@@ -376,7 +377,7 @@ void SDeviceObjectHelpers::CShaderConstantManager::BeginNamedConstantUpdate()
 	}
 }
 
-void SDeviceObjectHelpers::CShaderConstantManager::EndNamedConstantUpdate(const D3DViewPort* pVP)
+void SDeviceObjectHelpers::CShaderConstantManager::EndNamedConstantUpdate(const D3DViewPort* pVP, CRenderView* pRenderView)
 {
 	CRY_ASSERT(m_pShaderReflection);
 
@@ -394,7 +395,7 @@ void SDeviceObjectHelpers::CShaderConstantManager::EndNamedConstantUpdate(const 
 			if (pShaderInstance->m_nParams[0] >= 0)
 			{
 				SCGParamsGroup& Group = CGParamManager::s_Groups[pShaderInstance->m_nParams[0]];
-				CHWShader_D3D::mfSetParameters(Group.pParams, Group.nParams, eHWSC_Num, -1, (Vec4*)updateContext.pMappedData, cb.pBuffer->m_size, pVP);
+				CHWShader_D3D::mfSetParameters(Group.pParams, Group.nParams, eHWSC_Num, -1, (Vec4*)updateContext.pMappedData, cb.pBuffer->m_size, pVP, pRenderView);
 			}
 
 			cb.pBuffer->EndWrite();
@@ -443,9 +444,9 @@ bool SDeviceObjectHelpers::CShaderConstantManager::SetNamedConstantArray(const C
 
 	static_assert(MaxReflectedBuffers == 2, "Fixme: the following statement works for MaxReflectedBuffers==2");
 
-	auto& updateContext = m_pShaderReflection->bufferUpdateContexts[0].shaderClass == shaderClass 
-		? m_pShaderReflection->bufferUpdateContexts[0] 
-		: m_pShaderReflection->bufferUpdateContexts[1];
+	auto& updateContext = m_pShaderReflection->bufferUpdateContexts[0].shaderClass == shaderClass
+	                      ? m_pShaderReflection->bufferUpdateContexts[0]
+	                      : m_pShaderReflection->bufferUpdateContexts[1];
 
 	CRY_ASSERT(updateContext.pMappedData != nullptr);
 

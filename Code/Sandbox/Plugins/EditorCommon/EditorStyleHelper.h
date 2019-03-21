@@ -101,10 +101,7 @@ public:
 	STYLE_PROP(QColor, disabledToolTipBaseColor, setDisabledToolTipBaseColor);
 	STYLE_PROP(QColor, toolTipTextColor, setToolTipTextColor);
 	STYLE_PROP(QColor, disabledToolTipTextColor, setDisabledToolTipTextColor);
-	STYLE_PROP(int, toolTipMarginTop, setToolTipMarginTop);
-	STYLE_PROP(int, toolTipMarginLeft, setToolTipMarginLeft);
-	STYLE_PROP(int, toolTipMarginRight, setToolTipMarginRight);
-	STYLE_PROP(int, toolTipMarginBottom, setToolTipMarginBottom);
+	STYLE_PROP(int, toolTipIconMargin, setToolTipIconMargin);
 	STYLE_PROP(QColor, textColor, setTextColor);
 	STYLE_PROP(QColor, disabledTextColor, setDisabledTextColor);
 	STYLE_PROP(QColor, buttonColor, setButtonColor);

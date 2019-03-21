@@ -334,11 +334,11 @@ bool CEditorCommandManager::IsRegistered(const char* cmdLine_) const
 }
 
 // get any registered command actions. cmdFullName can also include arguments
-QCommandAction* CEditorCommandManager::GetCommandAction(string command, const char* text) const
+QCommandAction* CEditorCommandManager::GetCommandAction(const char* command, const char* text) const
 {
 	string cmd(command);
 	// we need to get first substring
-	size_t delim_pos = command.find_first_of(' ');
+	size_t delim_pos = cmd.find_first_of(' ');
 	// if we have substrings, then we have arguments
 	bool bNoArguments = (delim_pos == string::npos);
 
@@ -346,7 +346,7 @@ QCommandAction* CEditorCommandManager::GetCommandAction(string command, const ch
 
 	if (!bNoArguments)
 	{
-		cmd = command.substr(0, delim_pos);
+		cmd = cmd.substr(0, delim_pos);
 		it = m_commands.find(cmd);
 	}
 	else
@@ -362,7 +362,7 @@ QCommandAction* CEditorCommandManager::GetCommandAction(string command, const ch
 		}
 		else
 		{
-			return new QCommandAction(text ? text : "No Label - Replace Me!", command.c_str(), nullptr);
+			return new QCommandAction(text ? text : "No Label - Replace Me!", command, nullptr);
 		}
 	}
 
@@ -376,16 +376,16 @@ QCommandAction* CEditorCommandManager::GetCommandAction(string command, const ch
 		}
 		else
 		{
-			return new QCommandAction(text ? text : "No Label - Replace Me!", cmd.c_str(), nullptr);
+			return new QCommandAction(text ? text : "No Label - Replace Me!", cmd, nullptr);
 		}
 	}
 
-	CryLog("Command not found: %s", command.c_str());
+	CryLog("Command not found: %s", command);
 
 	return nullptr;
 }
 
-QAction* CEditorCommandManager::CreateNewAction(const char* cmdFullName) const
+QCommandAction* CEditorCommandManager::CreateNewAction(const char* cmdFullName) const
 {
 	QCommandAction* pCommandAction = GetCommandAction(cmdFullName);
 	if (!pCommandAction)

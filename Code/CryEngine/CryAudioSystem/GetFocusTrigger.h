@@ -19,11 +19,11 @@ public:
 
 #if defined(CRY_AUDIO_USE_DEBUG_CODE)
 	CGetFocusTrigger()
-		: Control(g_getFocusTriggerId, EDataScope::Global, g_szGetFocusTriggerName)
+		: Control(g_getFocusTriggerId, GlobalContextId, g_szGetFocusTriggerName)
 	{}
 #else
 	CGetFocusTrigger()
-		: Control(g_getFocusTriggerId, EDataScope::Global)
+		: Control(g_getFocusTriggerId, GlobalContextId)
 	{}
 #endif // CRY_AUDIO_USE_DEBUG_CODE
 

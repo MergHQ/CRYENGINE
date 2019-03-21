@@ -1421,7 +1421,7 @@ public:
 		uint32 nCurrentSeqTag = UnseqBytes[normBytes[1]];
 
 		nCurrent = (inputSeq & ~SequenceNumberMask) | nCurrentSeqTag;
-		if (inputSeq >= SequenceNumberRadius && nCurrent < SSeqNumber(inputSeq.value - SequenceNumberRadius))
+		if (nCurrent < SSeqNumber(inputSeq.value - SequenceNumberRadius))
 			nCurrent.value += SequenceNumberDiameter;
 		else if (nCurrent > inputSeq + SequenceNumberRadius)
 			nCurrent.value -= SequenceNumberDiameter;

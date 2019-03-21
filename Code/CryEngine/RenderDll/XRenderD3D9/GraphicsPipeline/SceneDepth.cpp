@@ -18,6 +18,18 @@
 
 void CSceneDepthStage::Init()
 {
+	for (int i = 0; i < 4; ++i)
+	{
+		std::string name = "$ZTargetReadBack" + std::to_string(i) + "_" + m_graphicsPipeline.GetUniqueIdentifierName();
+		m_pTexLinearDepthReadBack[i] = CTexture::GetOrCreateTextureObject(name.c_str(), 0, 0, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM, eTF_Unknown);
+	}
+
+	for (int i = 0; i < 4; ++i)
+	{
+		std::string name = "$ZTargetDownSample" + std::to_string(i) + "_" + m_graphicsPipeline.GetUniqueIdentifierName();
+		m_pTexLinearDepthDownSample[i] = CTexture::GetOrCreateTextureObject(name.c_str(), 0, 0, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM, eTF_Unknown);
+	}
+
 	if (!IsReadbackRequired())
 	{
 		return;
@@ -39,11 +51,11 @@ void CSceneDepthStage::Update()
 	CTexture* pZTexture = RenderView()->GetDepthTarget();
 
 	// Clear depth (stencil initialized to STENCIL_VALUE_OUTDOORS)
-	if (CVrProjectionManager::Instance()->GetProjectionType() == CVrProjectionManager::eVrProjection_LensMatched)
+	if (m_graphicsPipeline.GetVrProjectionManager()->GetProjectionType() == CVrProjectionManager::eVrProjection_LensMatched)
 	{
 		// use inverse depth here
 		CClearSurfacePass::Execute(pZTexture, CLEAR_ZBUFFER | CLEAR_STENCIL, 1.0f - Clr_FarPlane_Rev.r, STENCIL_VALUE_OUTDOORS);
-		CVrProjectionManager::Instance()->ExecuteLensMatchedOctagon(pZTexture);
+		m_graphicsPipeline.GetVrProjectionManager()->ExecuteLensMatchedOctagon(pZTexture);
 	}
 	else
 	{
@@ -76,18 +88,18 @@ void CSceneDepthStage::ExecuteLinearization()
 #endif
 
 		m_DownSamplePasses[0].Execute(pLTexture,
-			CRendererResources::s_ptexLinearDepthScaled[0],
-			CRendererResources::s_ptexSceneDepthScaled [0], (pLTexture == pZTexture), true);
+		                              CRendererResources::s_ptexLinearDepthScaled[0],
+		                              CRendererResources::s_ptexSceneDepthScaled[0], (pLTexture == pZTexture), true);
 
 		for (int res = 1; res < 3; ++res)
 			m_DownSamplePasses[res].Execute(
 				CRendererResources::s_ptexLinearDepthScaled[res - 1],
 				CRendererResources::s_ptexLinearDepthScaled[res],
-				CRendererResources::s_ptexSceneDepthScaled [res], false, false);
+				CRendererResources::s_ptexSceneDepthScaled[res], false, false);
 	}
 
-	if (CVrProjectionManager::IsMultiResEnabledStatic())
-		CVrProjectionManager::Instance()->ExecuteFlattenDepth(pLTexture, CVrProjectionManager::Instance()->GetZTargetFlattened());
+	if (m_graphicsPipeline.GetVrProjectionManager()->IsMultiResEnabledStatic())
+		m_graphicsPipeline.GetVrProjectionManager()->ExecuteFlattenDepth(pLTexture, m_graphicsPipeline.GetVrProjectionManager()->GetZTargetFlattened());
 
 	// Issue transition barriers for pZTexture
 	CTexture* pTextures[] = {
@@ -173,7 +185,7 @@ bool CSceneDepthStage::IsReadbackRequired()
 CTexture* CSceneDepthStage::GetInputTexture(EConfigurationFlags& flags)
 {
 	const auto pRenderView = RenderView();
-	const bool bMultiResEnabled = CVrProjectionManager::IsMultiResEnabledStatic();
+	const bool bMultiResEnabled = m_graphicsPipeline.GetVrProjectionManager()->IsMultiResEnabledStatic();
 	const bool bUseNativeDepth = pRenderView && CRenderer::CV_r_CBufferUseNativeDepth && !bMultiResEnabled && !gEnv->IsEditor();
 	const bool bReverseDepth = true;
 	const bool bMSAA = bUseNativeDepth && gRenDev->IsMSAAEnabled();
@@ -186,7 +198,7 @@ CTexture* CSceneDepthStage::GetInputTexture(EConfigurationFlags& flags)
 
 	return
 	  bUseNativeDepth ? pRenderView->GetDepthTarget()
-	  : bMultiResEnabled ? CVrProjectionManager::Instance()->GetZTargetFlattened()
+	  : bMultiResEnabled ? m_graphicsPipeline.GetVrProjectionManager()->GetZTargetFlattened()
 	  : CRendererResources::s_ptexLinearDepth;
 }
 
@@ -206,7 +218,7 @@ bool CSceneDepthStage::CreateResources(uint32 sourceWidth, uint32 sourceHeight)
 	for (uint32 i = 0; i < m_downsamplePassCount && !bFailed; ++i)
 	{
 		const uint32 downsampleIndex = i + (kMaxDownsamplePasses - m_downsamplePassCount);
-		CTexture* const pTarget = CRendererResources::s_ptexLinearDepthDownSample[downsampleIndex];
+		CTexture* const pTarget = m_pTexLinearDepthDownSample[downsampleIndex];
 		CRY_ASSERT_MESSAGE(pTarget, "Z Downsample target should already exist");
 
 		// Ensure the intermediate textures are never larger than the source image
@@ -230,7 +242,7 @@ bool CSceneDepthStage::CreateResources(uint32 sourceWidth, uint32 sourceHeight)
 	for (uint32 i = m_downsamplePassCount; i < kMaxDownsamplePasses; ++i)
 	{
 		const uint32 downsampleIndex = i - m_downsamplePassCount;
-		CTexture* const pTarget = CRendererResources::s_ptexLinearDepthDownSample[downsampleIndex];
+		CTexture* const pTarget = m_pTexLinearDepthDownSample[downsampleIndex];
 		CRY_ASSERT_MESSAGE(pTarget, "Z Downsample target should already exist");
 
 		if (pTarget->GetDevTexture())
@@ -246,7 +258,7 @@ bool CSceneDepthStage::CreateResources(uint32 sourceWidth, uint32 sourceHeight)
 	for (uint32 i = 0; i < kMaxReadbackPasses && !bFailed; ++i)
 	{
 		const uint32 readbackIndex = i;
-		CTexture* const pTarget = CRendererResources::s_ptexLinearDepthReadBack[readbackIndex];
+		CTexture* const pTarget = m_pTexLinearDepthReadBack[readbackIndex];
 		CRY_ASSERT_MESSAGE(pTarget, "Z Readback target should already exist");
 
 		if (pTarget->GetDevTexture())
@@ -293,12 +305,12 @@ void CSceneDepthStage::ReleaseResources()
 {
 	if (m_resourceWidth != 0 || m_resourceHeight != 0)
 	{
-		for (auto* pTexReadback : CRendererResources::s_ptexLinearDepthReadBack)
+		for (auto* pTexReadback : m_pTexLinearDepthReadBack)
 		{
 			pTexReadback->ReleaseDeviceTexture(false);
 		}
 
-		for (auto* pTexDownsample : CRendererResources::s_ptexLinearDepthDownSample)
+		for (auto* pTexDownsample : m_pTexLinearDepthDownSample)
 		{
 			pTexDownsample->ReleaseDeviceTexture(false);
 		}
@@ -343,15 +355,15 @@ void CSceneDepthStage::ConfigurePasses(CTexture* pSource, EConfigurationFlags fl
 	};
 
 	const SPostEffectsUtils::EDepthDownsample downsampleMode =
-	  ((flags & kNativeDepth) && (flags & kReverseDepth))
-	  ? SPostEffectsUtils::eDepthDownsample_Min
-	  : SPostEffectsUtils::eDepthDownsample_Max;
+		((flags & kNativeDepth) && (flags & kReverseDepth))
+		? SPostEffectsUtils::eDepthDownsample_Min
+		: SPostEffectsUtils::eDepthDownsample_Max;
 
 	bool bInitial = true;
 	uint64 rtFlags =
-	  g_HWSR_MaskBit[HWSR_SAMPLE4] |
-	  (flags & kMSAA ? g_HWSR_MaskBit[HWSR_SAMPLE0] : 0) |
-	  (downsampleMode == SPostEffectsUtils::eDepthDownsample_Min ? g_HWSR_MaskBit[HWSR_REVERSE_DEPTH] : 0);
+		g_HWSR_MaskBit[HWSR_SAMPLE4] |
+		(flags & kMSAA ? g_HWSR_MaskBit[HWSR_SAMPLE0] : 0) |
+		(downsampleMode == SPostEffectsUtils::eDepthDownsample_Min ? g_HWSR_MaskBit[HWSR_REVERSE_DEPTH] : 0);
 
 	// TODO: Find out why the FullscreenPrimitive crashes when doubling resolution
 	for (uint32 i = 0; i < kMaxDownsamplePasses; ++i)
@@ -360,7 +372,7 @@ void CSceneDepthStage::ConfigurePasses(CTexture* pSource, EConfigurationFlags fl
 	for (uint32 i = kMaxDownsamplePasses - m_downsamplePassCount; i < kMaxDownsamplePasses; ++i)
 	{
 		CFullscreenPass& pass = m_downsamplePass[i];
-		CTexture* const pTarget = CRendererResources::s_ptexLinearDepthDownSample[i];
+		CTexture* const pTarget = m_pTexLinearDepthDownSample[i];
 
 		configurePass(pass, pSource, pTarget, bInitial, rtFlags);
 
@@ -375,7 +387,7 @@ void CSceneDepthStage::ConfigurePasses(CTexture* pSource, EConfigurationFlags fl
 	for (uint32 i = 0; i < kMaxReadbackPasses; ++i)
 	{
 		CFullscreenPass& pass = m_readback[i].pass;
-		CTexture* const pTarget = CRendererResources::s_ptexLinearDepthReadBack[i];
+		CTexture* const pTarget = m_pTexLinearDepthReadBack[i];
 
 		configurePass(pass, pSource, pTarget, bInitial, rtFlags);
 	}
@@ -422,7 +434,7 @@ void CSceneDepthStage::ExecutePasses(float sourceWidth, float sourceHeight, floa
 	for (uint32 i = kMaxDownsamplePasses - m_downsamplePassCount; i < kMaxDownsamplePasses; ++i)
 	{
 		CFullscreenPass& pass = m_downsamplePass[i];
-		CTexture* const pTarget = CRendererResources::s_ptexLinearDepthDownSample[i];
+		CTexture* const pTarget = m_pTexLinearDepthDownSample[i];
 
 		// If a pass is invalid, stop the downsample.
 		// This avoids reading-back invalid depth data.
@@ -437,7 +449,7 @@ void CSceneDepthStage::ExecutePasses(float sourceWidth, float sourceHeight, floa
 	// Issue readback
 	const uint32 readbackIndex = m_readbackIndex % kMaxReadbackPasses;
 	++m_readbackIndex;
-	CTexture* const pTarget = CRendererResources::s_ptexLinearDepthReadBack[readbackIndex];
+	CTexture* const pTarget = m_pTexLinearDepthReadBack[readbackIndex];
 	SReadback& readback = m_readback[readbackIndex];
 	CFullscreenPass& pass = readback.pass;
 	if (!executePass(pass, bInitial, sourceWidth, sourceHeight))
@@ -446,7 +458,7 @@ void CSceneDepthStage::ExecutePasses(float sourceWidth, float sourceHeight, floa
 	readback.bIssued = true; pTarget->GetDevTexture()->DownloadToStagingResource(0);
 	readback.bCompleted =    pTarget->GetDevTexture()->AccessCurrStagingResource(0, false);
 	readback.bReceived = false;
-	
+
 	const auto& viewInfo = GetCurrentViewInfo();
 	// Associate the information of this frame with the readback.
 	Matrix44 modelView = viewInfo.viewMatrix;
@@ -473,7 +485,7 @@ void CSceneDepthStage::ReadbackLatestData()
 	{
 		const uint32 readbackIndex = (oldestReadback - i - 1) % kMaxReadbackPasses;
 		const bool bOldest = oldestReadback == readbackIndex;
-		CTexture* const pTarget = CRendererResources::s_ptexLinearDepthReadBack[readbackIndex];
+		CTexture* const pTarget = m_pTexLinearDepthReadBack[readbackIndex];
 		SReadback& readback = m_readback[readbackIndex];
 
 		if (readback.bIssued && !readback.bCompleted)
@@ -482,7 +494,8 @@ void CSceneDepthStage::ReadbackLatestData()
 		}
 		if ((readback.bCompleted || (readback.bIssued && bOldest)) && !readback.bReceived)
 		{
-			receivableIndex = readbackIndex; break;
+			receivableIndex = readbackIndex;
+			break;
 		}
 		if (readback.bReceived)
 		{
@@ -499,7 +512,7 @@ void CSceneDepthStage::ReadbackLatestData()
 		m_lastResult = kMaxResults;
 		return;
 	}
-	
+
 	// Currently, we only have 2 result slots, this requires us to hold the lock for the duration of the readback.
 	// - Lock to reserve an index that is not "pinned" (m_lastPinned)
 	// - Perform readback into "reserved" while still holding the lock (to prevent partially finished data from being accessed)
@@ -516,7 +529,7 @@ void CSceneDepthStage::ReadbackLatestData()
 
 	SResult& result = m_result[reservedIndex];
 	SReadback& readback = m_readback[receivableIndex];
-	CDeviceTexture* const pReadback = CRendererResources::s_ptexLinearDepthReadBack[receivableIndex]->GetDevTexture();
+	CDeviceTexture* const pReadback = m_pTexLinearDepthReadBack[receivableIndex]->GetDevTexture();
 	CRY_ASSERT(readback.bIssued == true);
 
 	const auto readbackData = [&readback, &result](void* pData, uint32 rowPitch, uint32 slicePitch) -> bool

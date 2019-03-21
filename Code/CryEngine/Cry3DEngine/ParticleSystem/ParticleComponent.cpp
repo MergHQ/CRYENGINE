@@ -64,9 +64,7 @@ void STextureAnimation::Update()
 }
 
 //////////////////////////////////////////////////////////////////////////
-// SModuleParams
-
-string SComponentParams::s_defaultDiffuseMap = "%ENGINE%/EngineAssets/Textures/white.dds";
+// SComponentParams
 
 void SComponentParams::Serialize(Serialization::IArchive& ar)
 {
@@ -249,7 +247,7 @@ void CParticleComponent::UpdateTimings()
 		float maxChildEq = 0.0f, maxChildLife = 0.0f;
 		for (auto& pChild : m_children)
 		{
-			if (!pChild->CanMakeRuntime())
+			if (!pChild->IsActive())
 				continue;
 			pChild->UpdateTimings();
 			const STimingParams& timingsChild = pChild->ComponentParams();
@@ -388,70 +386,13 @@ void CParticleComponent::Compile()
 
 void CParticleComponent::FinalizeCompile()
 {
-	MakeMaterial();
+	if (IsActive() && !m_params.m_pMaterial)
+	{
+		static cstr s_defaultDiffuseMap = "%ENGINE%/EngineAssets/Textures/white.dds";
+		m_params.m_pMaterial = GetPSystem()->GetTextureMaterial(s_defaultDiffuseMap, 
+			m_params.m_usesGPU, m_GPUParams.facingMode);
+	}
 	m_dirty = false;
-}
-
-IMaterial* CParticleComponent::MakeMaterial()
-{
-	CRY_PFX2_PROFILE_DETAIL;
-
-	enum EGpuParticlesVertexShaderFlags
-	{
-		eGpuParticlesVertexShaderFlags_None           = 0x0,
-		eGpuParticlesVertexShaderFlags_FacingVelocity = 0x2000
-	};
-
-	IMaterial* pMaterial = m_params.m_pMaterial;
-	if (pMaterial)
-	{
-		IShader* pShader = pMaterial->GetShaderItem().m_pShader;
-		if (!pShader)
-			pMaterial = nullptr;
-		else if (m_params.m_requiredShaderType != eST_All)
-		{
-			if (pShader->GetFlags() & EF_LOADED && pShader->GetShaderType() != m_params.m_requiredShaderType)
-				pMaterial = nullptr;
-		}
-	}
-
-	if (pMaterial)
-		return pMaterial;
-
-	string materialName = string(GetEffect()->GetName()) + ":" + GetName();
-	pMaterial = gEnv->p3DEngine->GetMaterialManager()->CreateMaterial(materialName);
-	if (gEnv->pRenderer)
-	{
-		const char* shaderName = UsesGPU() ? "Particles.ParticlesGpu" : "Particles";
-		const string& diffuseMap = m_params.m_diffuseMap;
-		static uint32 preload = !!GetCVars()->e_ParticlesPrecacheAssets;
-		static uint32 textureLoadFlags = FT_DONT_STREAM * preload;
-		ITexture* pTexture = nullptr;
-		if (GetPSystem()->IsRuntime())
-			pTexture = gEnv->pRenderer->EF_GetTextureByName(diffuseMap.c_str(), textureLoadFlags);
-		if (!pTexture)
-		{
-			GetPSystem()->CheckFileAccess(diffuseMap.c_str());
-			pTexture = gEnv->pRenderer->EF_LoadTexture(diffuseMap.c_str(), textureLoadFlags);
-		}
-		if (pTexture->GetTextureID() <= 0)
-			CryWarning(VALIDATOR_MODULE_3DENGINE, VALIDATOR_WARNING, "Particle effect texture %s not found", diffuseMap.c_str());
-
-		SInputShaderResourcesPtr pResources = gEnv->pRenderer->EF_CreateInputShaderResource();
-		pResources->m_Textures[EFTT_DIFFUSE].m_Name = diffuseMap;
-		uint32 mask = eGpuParticlesVertexShaderFlags_None;
-		if (GPUComponentParams().facingMode == gpu_pfx2::EFacingMode::Velocity)
-			mask |= eGpuParticlesVertexShaderFlags_FacingVelocity;
-		SShaderItem shaderItem = gEnv->pRenderer->EF_LoadShaderItem(shaderName, false, EF_PRECACHESHADER * preload, pResources, mask);
-		assert(shaderItem.m_pShader);
-		pMaterial->AssignShaderItem(shaderItem);
-	}
-	Vec3 white = Vec3(1.0f, 1.0f, 1.0f);
-	float defaultOpacity = 1.0f;
-	pMaterial->SetGetMaterialParamVec3("diffuse", white, false);
-	pMaterial->SetGetMaterialParamFloat("opacity", defaultOpacity, false);
-
-	return m_params.m_pMaterial = pMaterial;
 }
 
 void CParticleComponent::Serialize(Serialization::IArchive& ar)
@@ -511,6 +452,11 @@ void CParticleComponent::SetName(const char* name)
 		m_name = name;
 	else
 		m_name = m_pEffect->MakeUniqueName(this, name);
+}
+
+string CParticleComponent::GetFullName() const
+{
+	return m_pEffect->GetShortName() + "." + m_name;
 }
 
 SERIALIZATION_CLASS_NAME(CParticleComponent, CParticleComponent, "Component", "Component");

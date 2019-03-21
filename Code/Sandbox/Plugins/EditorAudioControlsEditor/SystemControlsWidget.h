@@ -94,6 +94,5 @@ private:
 	bool                              m_isReloading;
 	bool                              m_isCreatedFromMenu;
 	bool                              m_suppressRenaming;
-	int const                         m_nameColumn;
 };
 } // namespace ACE

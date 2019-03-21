@@ -103,7 +103,6 @@ private:
 
 CPerforceTrayWidget::CPerforceTrayWidget(QWidget* pParent /*= nullptr*/)
 {
-	CMyClientApi& clientApi = g_pPerforceControl->GetClientApi();
 	m_pPopUpMenu = new QPopupWidget("PerforceSettingsPopUp", QtUtil::MakeScrollable(new PerforceSettings()), QSize(340, 150), true);
 	m_pPopUpMenu->SetFocusShareWidget(this);
 	connect(this, &QToolButton::clicked, this, &CPerforceTrayWidget::OnClicked);

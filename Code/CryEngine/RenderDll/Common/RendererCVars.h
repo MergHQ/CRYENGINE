@@ -43,6 +43,9 @@ public:
 		return clampedHeight; // If multiple of 8: std::min(Align(clampedHeight, 8), customHeight);
 	}
 
+	static bool IsRainEnabled() { return CV_r_rain > 0; }
+	static bool IsSnowEnabled() { return CV_r_snow > 0; }
+
 protected:
 
 	// Helper methods.

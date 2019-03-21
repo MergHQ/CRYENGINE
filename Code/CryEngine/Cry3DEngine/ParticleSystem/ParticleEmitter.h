@@ -94,6 +94,7 @@ public:
 	void                      Register();
 	void                      Unregister();
 	void                      Clear();
+	void                      UpdateRuntimes();
 	void                      ResetRenderObjects();
 	void                      UpdateEmitGeomFromEntity();
 	const SVisEnviron&        GetVisEnv() const            { return m_visEnviron; }
@@ -131,7 +132,6 @@ public:
 
 private:
 	void     UpdateBounds();
-	void     UpdateRuntimes();
 	void     UpdateFromEntity();
 	IEntity* GetEmitGeometryEntity() const;
 

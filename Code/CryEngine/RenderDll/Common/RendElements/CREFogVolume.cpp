@@ -158,7 +158,7 @@ CREFogVolume::~CREFogVolume()
 	}
 }
 
-bool CREFogVolume::Compile(CRenderObject* pObj, uint64 objFlags, ERenderElementFlags elmFlags, const AABB &localAABB,CRenderView *pRenderView, bool updateInstanceDataOnly)
+bool CREFogVolume::Compile(CRenderObject* pObj, uint64 objFlags, ERenderElementFlags elmFlags, const AABB& localAABB, CRenderView* pRenderView, bool updateInstanceDataOnly)
 {
 	if (!m_pCompiledObject)
 	{
@@ -168,8 +168,7 @@ bool CREFogVolume::Compile(CRenderObject* pObj, uint64 objFlags, ERenderElementF
 	auto& compiledObj = *(m_pCompiledObject);
 	compiledObj.m_bValid = false;
 
-	CD3D9Renderer* const RESTRICT_POINTER rd = gcpRendD3D;
-	auto* pForwardStage = rd->GetGraphicsPipeline().GetSceneForwardStage();
+	auto* pForwardStage = pRenderView->GetGraphicsPipeline()->GetStage<CSceneForwardStage>();
 
 	if (!pObj
 	    || !pObj->m_pCurrMaterial
@@ -193,15 +192,15 @@ bool CREFogVolume::Compile(CRenderObject* pObj, uint64 objFlags, ERenderElementF
 
 	// create PSOs which match to specific material.
 	SGraphicsPipelineStateDescription psoDescription(
-	  pObj,
-	  objFlags,
-	  elmFlags,
-	  shaderItem,
-	  TTYPE_GENERAL, // set as default, this may be overwritten in CreatePipelineStates().
-	  vertexFormat,
-	  VSM_NONE /*geomInfo.CalcStreamMask()*/,
-	  eptTriangleList
-	  );
+		pObj,
+		objFlags,
+		elmFlags,
+		shaderItem,
+		TTYPE_GENERAL, // set as default, this may be overwritten in CreatePipelineStates().
+		vertexFormat,
+		VSM_NONE /*geomInfo.CalcStreamMask()*/,
+		eptTriangleList
+		);
 
 	compiledObj.m_bViewerInsideVolume = m_viewerInsideVolume ? true : false;
 	compiledObj.m_bNearCutoff = m_nearCutoff ? true : false;
@@ -229,15 +228,15 @@ bool CREFogVolume::Compile(CRenderObject* pObj, uint64 objFlags, ERenderElementF
 		if (!compiledObj.m_pMaterialResourceSet)
 		{
 			CDeviceResourceSetDesc materialResources;
-			for (const auto& res : rd->GetGraphicsPipeline().GetDefaultMaterialBindPoints().GetResources())
+			for (const auto& res : pRenderView->GetGraphicsPipeline()->GetDefaultMaterialBindPoints().GetResources())
 			{
 				const SResourceBindPoint& bindPoint = res.first;
-				const SResourceBinding&   binding   = res.second;
+				const SResourceBinding& binding = res.second;
 
 				switch (binding.type)
 				{
 				case SResourceBinding::EResourceType::ConstantBuffer:
-					materialResources.SetConstantBuffer(bindPoint.slotNumber, rd->m_DevBufMan.GetNullConstantBuffer(), bindPoint.stages);
+					materialResources.SetConstantBuffer(bindPoint.slotNumber, gcpRendD3D->m_DevBufMan.GetNullConstantBuffer(), bindPoint.stages);
 					break;
 				case SResourceBinding::EResourceType::Texture:
 					materialResources.SetTexture(bindPoint.slotNumber, CRendererResources::s_ptexBlack, binding.view, bindPoint.stages);
@@ -253,7 +252,7 @@ bool CREFogVolume::Compile(CRenderObject* pObj, uint64 objFlags, ERenderElementF
 
 		if (!compiledObj.m_pPerDrawRS)
 		{
-			compiledObj.m_pPerDrawRS = rd->GetGraphicsPipeline().GetDefaulDrawExtraResourceSet();
+			compiledObj.m_pPerDrawRS = pRenderView->GetGraphicsPipeline()->GetDefaulDrawExtraResourceSet();
 		}
 	}
 

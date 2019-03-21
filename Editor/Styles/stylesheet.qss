@@ -13,8 +13,6 @@ green color					rgb(125,198,83)
 yellow						rgb(233,233,117)
 *******************************************************************/
 
-
-
 QWidget {
 	background-color: rgb(66,66,66);
 	font-family:"Arial";
@@ -103,9 +101,9 @@ QToolBar {
 }
 
 QMainWindow > QToolBar {
-	min-height:35px;
+	min-height:32px;
 
-    background-color: rgb(77,77,77);
+    background-color: rgb(89,89,89);
     border: 2px solid rgb(35,35,35);
     border-radius: 6px;
     padding:0px 0px 0px 2px;
@@ -114,8 +112,10 @@ QMainWindow > QToolBar {
 }
 
 QMainWindow > QToolBar > QToolButton{
-	min-width: 25;
-	height: 25;
+	min-width: 24;
+	max-width:24px;
+	max-height:24px;
+	height: 24;
 }
 
 QToolButton {
@@ -123,11 +123,11 @@ QToolButton {
 	background-color: transparent;
 	margin-right: 2px;
 	margin-left: 2px;
-	icon-size:25px;
+	icon-size:24px;
 }
 
 QToolButton::hover {
-	background-color: rgb(100,100,100);
+	background-color: rgb(66,66,66);
     border-radius: 2px;
 }
 
@@ -671,11 +671,13 @@ QScrollBar:vertical {
 	background:transparent;
 	width: 12px;
 	margin: 0px 0px 0px 0px;
+	padding:2;
 }
 
 QScrollBar:horizontal {
 	background:transparent;
 	height: 12px;
+	padding:2;
 	margin: 0px 0px 0px 0px;
 }
 
@@ -700,7 +702,6 @@ QScrollBar::down-arrow, QScrollBar::up-arrow {
 QScrollBar::handle:vertical {
 	background-color:rgb(110,110,110);
 	border-radius:2px;
-	margin-left:2px;
 	margin-right:0px;
 	min-height:20px;
 }
@@ -708,7 +709,6 @@ QScrollBar::handle:vertical {
 QScrollBar::handle:horizontal {
 	background-color:rgb(110,110,110);
 	border-radius:2px;
-	margin-top:2px;
 	margin-bottom:0px;
 	min-width:20px;
 }
@@ -939,7 +939,7 @@ QToolBar::handle {
 	width:12px;
 	height:12px;
 	padding-left:0px;
-	image: url(icons:Window/Handle_Round.ico);
+	image: url(icons:General/Drag_Handle.ico);
 }
 
 QCustomWindowFrame > QWidget, QToolWindowCustomWrapper QSplitter, QToolWindowCustomWrapper > QWidget {
@@ -1109,8 +1109,7 @@ QTreeView QHeaderView::up-arrow {
 
 QTreeView QScrollBar:vertical {
 	background-color:transparent;
-	margin-left:0px;
-	margin-right:0px;
+	margin:0;
 }
 
 QTreeView QScrollBar:horizontal {
@@ -1299,65 +1298,6 @@ CTimeline QScrollBar:vertical{
 	padding-right:2px;
 }
 
-QTrackingTooltip {
-	border: 1px solid rgb(166,166,166);
-	color:rgb(166,166,166);
-	background-color:rgb(35,35,35);
-}
-
-QToolWindowArea > QTabBar > QPushButton, QToolWindowArea > QTabBar > QPushButton::hover, CVersionControlMainWindow > QTabBar > QPushButton, CVersionControlMainWindow > QTabBar > QPushButton::hover {
-    background: transparent;
-    border:solid;
-    border:0px;
-    border-radius:0px;
-    margin:0px;
-    padding:0px;
-    qproperty-iconSize: 16px;
-    width:16px;
-    height:16px;
-    padding-top:-1px;                       /* its the X for tabs and its a hack but it works for now */
-    padding-left:5px;
-}
-
-CToolBarCustomizeDialog QToolBar {
-	padding-top: 3px;
-	padding-bottom: 3px;
-	min-height: 36px;
-}
-
-CToolBarCustomizeDialog QToolButton#open-cvar
-{
-	width: 16px;
-	height: 16px;
-}
-
-CToolBarCustomizeDialog QToolButton#open-icon
-{
-	width: 16px;
-	height: 16px;
-}
-
-CToolBarCustomizeDialog QToolBar QToolButton{
-	margin:2px;
-}
-
-CToolBarCustomizeDialog QToolBar QToolButton::hover {
-	background-color: rgba(255,255,255,20);
-}
-
-CToolBarCustomizeDialog QToolBar QToolButton:pressed {
-	border: 0px solid rgb(97,172,236);
-}
-
-CToolBarCustomizeDialog QToolBar QToolButton:checked {
-	border: 0px solid rgb(97,172,236);
-}
-
-CToolBarCustomizeDialog > QLabel {
-	min-width: 80px;
-	max-width: 80px;
-}
-
 QTableView {
 	selection-background-color: qlineargradient(x1: 0, y1: 0, x2: 0.5, y2: 0.5,
 								stop: 0 #FF92BB, stop: 1 white);
@@ -1491,10 +1431,7 @@ EditorStyleHelper {
 	qproperty-linkVisitedColor: rgb(255, 0, 255);
 	qproperty-toolTipBaseColor: rgb(35, 35, 35);
 	qproperty-toolTipTextColor: rgb(192, 192, 192);
-	qproperty-toolTipMarginTop: 4;
-	qproperty-toolTipMarginLeft: 4;
-	qproperty-toolTipMarginRight: 4;
-	qproperty-toolTipMarginBottom: 4;
+	qproperty-toolTipIconMargin: 2;
 	qproperty-alternateBaseColor: rgb(128, 128, 128);
 	qproperty-disabledWindowTextColor: rgb(192, 192, 192);
 	qproperty-disabledButtonColor: rgb(66, 66, 66);
@@ -2180,4 +2117,181 @@ QToolWindowCustomWrapper, QCustomWindowFrame
 {
     /*Do not modify: proper minimize/maximize windows*/
     border: 0px;
+}
+
+/* CToolBarCustomizeDialog Window Background */
+CToolBarCustomizeDialog > QWidget
+{
+	background-color: rgb(35, 35, 35);
+}
+
+/* Action Search Box */
+CToolBarCustomizeDialog QWidget#SearchBoxContainer
+{
+	border-radius:3 3 3 3;
+	background-color: rgb(89, 89, 89);
+	min-height:20px;
+	margin:0;
+	padding:4;
+}
+
+CToolBarCustomizeDialog > QWidget > QWidget > QSearchBox
+{
+	min-height: 8px;
+	background-color: rgb(35, 35, 35);
+	margin:4;
+	padding:1;
+	padding-left:3px;
+}
+
+CToolBarCustomizeDialog > QWidget > QWidget > QSearchBox:focus 
+{
+	padding:0;
+	padding-left:2px;
+	border: 1px solid rgb(97,172,236) outset;
+}
+
+/* CToolBarCustomizeDialog Action Library */
+CToolBarCustomizeDialog > QWidget > QTreeView
+{
+	border-radius:3 3 3 3;
+	padding:0;
+	margin:4 0 4 0;
+	border:0;
+}
+
+CToolBarCustomizeDialog > QWidget > QTreeView QHeaderView::section:first
+{ 
+	border-top-left-radius:3;
+}
+
+CToolBarCustomizeDialog > QWidget > QTreeView QHeaderView::section:last
+{ 
+	border-top-right-radius:3;
+}
+
+/* CToolBarCustomizeDialog Toolbar Selection Dropdown */
+CToolBarCustomizeDialog QWidget#ToolbarComboBoxContainer 
+{
+	border-radius:3 3 3 3;
+	background-color: rgb(89, 89, 89);
+	min-height:32px;
+	margin:0;
+	
+}
+
+CToolBarCustomizeDialog QEditableComboBox QMenuComboBox
+{
+	min-height:24px;
+	margin-left:4px;
+	margin-right:4px;
+	padding-left:4px;
+}
+
+CToolBarCustomizeDialog QEditableComboBox QLineEdit
+{
+	color:white;
+	padding-left:4px;
+	min-height:24px;
+	margin-left:4px;
+	margin-right:4px;
+	background-color:rgb(128,128,128);
+}
+
+/* CToolBarCustomizeDialog Toolbar Preview */
+CToolBarCustomizeDialog QToolBar
+{
+	border-radius:3 3 3 3;
+	min-height:32px;
+	margin:4 0 4 0;
+	padding:0;
+	background-color: rgb(89, 89, 89);
+}
+
+CToolBarCustomizeDialog QToolButton
+{
+	max-height:24px;
+	/*QToolButton's SizeHint adds 3px on width and height we have to account for. 
+	  This needs to be removed if the issue is ever fixed in Qt source	*/
+	padding-right:-2px; 
+	padding-left:-1px; 
+	margin:0;
+	margin-right:4px;
+	border:none;
+	outline:0;
+}
+
+CToolBarCustomizeDialog QToolBar QToolButton::hover
+{
+	background-color: rgb(66,66,66);
+}
+
+CToolBarCustomizeDialog QToolBar QToolButton::checked
+{
+	background-color: rgb(35,35,35); 
+}
+
+CToolBarCustomizeDialog QToolButton#open-icon
+{
+	width: 16px;
+	height: 16px;
+	margin-right:8px;
+}
+
+/* Toolbar Properties */
+CToolBarCustomizeDialog QWidget#ToolbarPropertiesContainer
+{
+	border-radius:3 3 3 3;
+	background-color:rgb(89,89,89);
+	min-height:80px;
+	padding:0px;
+	margin:0;
+}
+
+#ToolbarPropertiesContainer > QLabel
+{
+	min-width:70px;
+	padding-left:4px
+}
+
+#ToolbarPropertiesContainer  > QLineEdit
+{
+	margin-right:4px;
+	padding:0;
+	background-color: rgb(35, 35, 35);
+	color:white;
+}
+
+#ToolbarPropertiesContainer  > QLineEdit:disabled
+{
+	background-color: rgb(66, 66, 66);
+	color:rgb(153,153,153);
+}
+
+CEditorToolBarArea
+{
+	background-color: rgb(35, 35, 35);
+}
+
+CEditorToolBarArea > QToolBar
+{
+	background-color: rgb(89, 89, 89);
+	border-radius: 3;
+	margin: 2;
+	padding: 2;
+}
+
+QTrackingTooltip
+{
+	border: 1px solid rgb(166,166,166);
+	color:rgb(166,166,166);
+	background-color:rgb(35,35,35);
+	margin: 0;
+	padding: 0;
+}
+
+QTrackingTooltip QLabel
+{
+	margin: 4;
+	padding: 0;
 }

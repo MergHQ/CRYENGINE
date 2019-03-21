@@ -336,7 +336,7 @@ QVariant CConnectionsModel::headerData(int section, Qt::Orientation orientation,
 				}
 				break;
 			case Qt::DisplayRole:
-				// The notification column header uses an icons instead of text.
+				// The notification column header uses an icon instead of text.
 				if (section != static_cast<int>(EColumns::Notification))
 				{
 					variant = pAttribute->GetName();

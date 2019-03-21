@@ -118,6 +118,8 @@ public:
 	class EDITOR_COMMON_API QToolBarDesc
 	{
 	public:
+		static QString GetNameFromFileInfo(const QFileInfo& fileInfo);
+
 		QToolBarDesc() : updated(false) {}
 
 		void                                 Initialize(const QVariantList& commandList, int version);
@@ -168,14 +170,14 @@ public:
 	~CEditorToolBarService();
 
 	std::shared_ptr<QToolBarDesc> CreateToolBarDesc(const CEditor* pEditor, const char* szName) const;
-	void                          SaveToolBar(const std::shared_ptr<QToolBarDesc>& pToolBarDesc) const;
+	bool                          SaveToolBar(const std::shared_ptr<QToolBarDesc>& pToolBarDesc) const;
 	void                          RemoveToolBar(const std::shared_ptr<QToolBarDesc>& pToolBarDesc) const;
 
 	std::set<string>              GetToolBarNames(const CEditor* pEditor) const;
 	std::shared_ptr<QToolBarDesc> GetToolBarDesc(const CEditor* pEditor, const char* name) const;
 
 	QVariantMap                   ToVariant(const CCommand* pCommand) const;
-	void                          CreateToolBar(const std::shared_ptr<QToolBarDesc>& pToolBarDesc, QToolBar* pToolBar) const;
+	void                          CreateToolBar(const std::shared_ptr<QToolBarDesc>& pToolBarDesc, QToolBar* pToolBar, const CEditor* pEditor = nullptr) const;
 
 	std::vector<QToolBar*>        LoadToolBars(const CEditor* pEditor) const;
 
@@ -186,9 +188,9 @@ private:
 	void                          MigrateToolBars(const char* szSourceDirectory, const char* szDestinationDirectory) const;
 	std::shared_ptr<QToolBarDesc> CreateToolBarDesc(const char* szEditorName, const char* szToolBarName) const;
 	std::set<string>              GetToolBarNames(const char* szRelativePath) const;
-	std::vector<QToolBar*>        LoadToolBars(const char* szRelativePath) const;
+	std::vector<QToolBar*>        LoadToolBars(const char* szRelativePath, const CEditor* pEditor = nullptr) const;
 	std::shared_ptr<QToolBarDesc> GetToolBarDesc(const char* szRelativePath) const;
-	// returns full path of directories that can host toolbars. Engine, project, user directory in that specified order
+	// returns full path of directories that can host toolbars. Loading order should be as follows: User created/modified -> Project defaults -> Engine defaults
 	std::vector<string>           GetToolBarDirectories(const char* szRelativePath) const;
 
 	void                          FindToolBarsInDirAndExecute(const string& dirPath, std::function<void(const QFileInfo&)> callback) const;
@@ -197,8 +199,8 @@ private:
 	std::shared_ptr<QToolBarDesc> LoadToolBar(const string& absolutePath) const;
 
 	// Ideally we would pass in a CEditor* instead of a QWidget*. We'll need to keep it this way until we manage to unlink Level Editing from the QtMainFrame.
-	std::vector<QToolBar*> CreateEditorToolBars(const std::map<string, std::shared_ptr<QToolBarDesc>>& toolBarDescriptors) const;
-	QToolBar*              CreateEditorToolBar(const std::shared_ptr<QToolBarDesc> toolBarDesc) const;
+	std::vector<QToolBar*> CreateEditorToolBars(const std::map<string, std::shared_ptr<QToolBarDesc>>& toolBarDescriptors, const CEditor* pEditor = nullptr) const;
+	QToolBar*              CreateEditorToolBar(const std::shared_ptr<QToolBarDesc>& toolBarDesc, const CEditor* pEditor = nullptr) const;
 
 private:
 	Private_ToolbarManager::CVarActionMapper* m_pCVarActionMapper;

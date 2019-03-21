@@ -1,18 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-// -------------------------------------------------------------------------
-//  File name:   cvars.h
-//  Version:     v1.00
-//  Created:     28/5/2001 by Vladimir Kajalin
-//  Compilers:   Visual Studio.NET
-//  Description:
-// -------------------------------------------------------------------------
-//  History:
-//
-////////////////////////////////////////////////////////////////////////////
-
-#ifndef _3DENGINE_CVARS_H_
-#define _3DENGINE_CVARS_H_
+#pragma once
 
 #if defined(CONSOLE_CONST_CVAR_MODE)
 	#define GetFloatCVar(name) name ## Default
@@ -546,5 +534,3 @@ struct CVars : public Cry3DEngineBase
 	#include "SVO/SceneTreeCVars.inl" // include SVO related variables
 #endif
 };
-
-#endif // _3DENGINE_CVARS_H_

@@ -139,11 +139,12 @@ void QToolWindowArea::addToolWindows(const QList<QWidget*>& toolWindows, int ind
 			tabBar()->setTabButton(newIndex, QTabBar::ButtonPosition::RightSide, createCloseButton());
 		}
 
-		connect(toolWindow, &QWidget::windowTitleChanged, this, [this, newIndex, toolWindow](const QString& title)
+		connect(toolWindow, &QWidget::windowTitleChanged, this, [this, toolWindow](const QString& title)
 		{
-			if (indexOf(toolWindow) >= 0)
+			int index = indexOf(toolWindow);
+			if (index >= 0)
 			{
-			  setTabText(newIndex, title);
+			  setTabText(index, title);
 			}
 			if (count() == 1)
 			{

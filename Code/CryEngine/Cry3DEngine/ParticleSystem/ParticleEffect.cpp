@@ -63,7 +63,7 @@ void CParticleEffect::Compile()
 	for (auto& component : m_components)
 	{
 		component->m_componentId = id++;
-		if (!component->CanMakeRuntime())
+		if (!component->IsActive())
 			continue;
 		component->Compile();
 		if (component->MainPreUpdate.size())
@@ -80,7 +80,7 @@ void CParticleEffect::Compile()
 		if (!component->GetParentComponent())
 		{
 			m_topComponents.push_back(component);
-			if (!component->CanMakeRuntime())
+			if (!component->IsActive())
 				continue;
 			component->UpdateTimings();
 			const STimingParams& timings = component->ComponentParams();
@@ -288,6 +288,28 @@ void CParticleEffect::SetChanged()
 	if (!m_dirty)
 		++m_editVersion;
 	m_dirty = true;
+}
+
+bool CParticleEffect::LoadResources()
+{
+	for (auto& comp : m_components)
+	{
+		if (!comp->IsActive())
+			continue;
+		comp->LoadResources(*comp);
+		comp->FinalizeCompile();
+	}
+	return true;
+}
+
+void CParticleEffect::UnloadResources()
+{
+	for (auto& comp : m_components)
+	{
+		auto& params = comp->ComponentParams();
+		params.m_pMaterial = nullptr;
+		params.m_pMesh = nullptr;
+	}
 }
 
 Serialization::SStruct CParticleEffect::GetEffectOptionsSerializer() const

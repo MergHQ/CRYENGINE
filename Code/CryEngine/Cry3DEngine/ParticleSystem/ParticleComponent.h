@@ -118,8 +118,6 @@ struct SComponentParams: STimingParams
 	SParticleShaderData       m_shaderData;
 	_smart_ptr<IMaterial>     m_pMaterial;
 	EShaderType               m_requiredShaderType   = eST_All;
-	static string             s_defaultDiffuseMap;
-	string                    m_diffuseMap           = s_defaultDiffuseMap;
 	ERenderObjectFlags        m_renderObjectFlags;
 	int                       m_renderStateFlags     = OS_ALPHA_BLEND;
 	uint8                     m_particleObjFlags     = 0;
@@ -171,7 +169,6 @@ public:
 	void                                  ResolveDependencies();
 	void                                  Compile();
 	void                                  FinalizeCompile();
-	IMaterial*                            MakeMaterial();
 
 	uint                                  GetComponentId() const                { return m_componentId; }
 	CParticleEffect*                      GetEffect() const                     { return m_pEffect; }
@@ -184,6 +181,7 @@ public:
 	void                                  AddGPUFeature(gpu_pfx2::IParticleFeature* gpuInterface) { if (gpuInterface) m_gpuFeatures.push_back(gpuInterface); }
 	TConstArray<gpu_pfx2::IParticleFeature*> GetGpuFeatures() const             { return TConstArray<gpu_pfx2::IParticleFeature*>(m_gpuFeatures.data(), m_gpuFeatures.size()); }
 
+	string                  GetFullName() const;
 	const SComponentParams& GetComponentParams() const                          { return m_params; }
 	SComponentParams&       ComponentParams()                                   { return m_params; }
 	bool                    UseParticleData(EParticleDataType type) const       { return m_pUseData->Used(type); }
@@ -193,6 +191,7 @@ public:
 	const TComponents&      GetChildComponents() const                          { return m_children; }
 	void                    ClearChildren()                                     { m_children.resize(0); }
 
+	bool                    IsActive() const                                    { return m_enabled && (!m_parent || m_parent->IsActive()); }
 	bool                    CanMakeRuntime(CParticleEmitter* pEmitter = nullptr) const;
 
 private:
@@ -216,9 +215,9 @@ private:
 	std::vector<gpu_pfx2::IParticleFeature*> m_gpuFeatures;
 
 	const TComponents& GetParentChildren() const;
-	TComponents& GetParentChildren();
+	TComponents&       GetParentChildren();
 
-	void                    UpdateTimings();
+	void               UpdateTimings();
 };
 
 typedef TSmartArray<CParticleComponent> TComponents;

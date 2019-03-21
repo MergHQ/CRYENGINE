@@ -55,6 +55,8 @@ struct IPane : public IStateSerializable
 public:
 	virtual ~IPane() {}
 
+	virtual void Initialize() { }
+
 	virtual QWidget* GetWidget() = 0;
 
 	// Return preferable initial docking position for pane.

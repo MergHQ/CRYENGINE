@@ -37,7 +37,8 @@ protected:
 	bool operator()(yasli::CallbackInterface& callback, const char* name, const char* label) override;
 	bool operator()(yasli::Object& obj, const char* name, const char* label) override;
 	using yasli::Archive::operator();
-
+	//!This checks if a row model with "name" exists, if it does it is used as the scope for the following serialization ops
+	//!Note that you are not supposed to create a new block with an input archive (you are basically serializing invalid data), new blocks are created when serializing Object -> UI with an OArchive
 	bool openBlock(const char* name, const char* label, const char* icon = 0) override;
 	void closeBlock() override;
 

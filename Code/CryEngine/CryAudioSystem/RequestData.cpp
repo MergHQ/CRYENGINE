@@ -45,6 +45,8 @@ std::shared_ptr<SRequestData> AllocateRequestData(SRequestData const* const pReq
 				CRY_AUDIO_SYSTEM_REQUEST_BLOCK(ESystemRequestType::ClearPreloadsData)
 				CRY_AUDIO_SYSTEM_REQUEST_BLOCK(ESystemRequestType::PreloadSingleRequest)
 				CRY_AUDIO_SYSTEM_REQUEST_BLOCK(ESystemRequestType::UnloadSingleRequest)
+				CRY_AUDIO_SYSTEM_REQUEST_BLOCK(ESystemRequestType::ActivateContext)
+				CRY_AUDIO_SYSTEM_REQUEST_BLOCK(ESystemRequestType::DeactivateContext)
 				CRY_AUDIO_SYSTEM_REQUEST_BLOCK(ESystemRequestType::SetParameter)
 				CRY_AUDIO_SYSTEM_REQUEST_BLOCK(ESystemRequestType::SetParameterGlobally)
 				CRY_AUDIO_SYSTEM_REQUEST_BLOCK(ESystemRequestType::SetSwitchState)
@@ -52,7 +54,7 @@ std::shared_ptr<SRequestData> AllocateRequestData(SRequestData const* const pReq
 				CRY_AUDIO_SYSTEM_REQUEST_BLOCK(ESystemRequestType::AutoLoadSetting)
 				CRY_AUDIO_SYSTEM_REQUEST_BLOCK(ESystemRequestType::LoadSetting)
 				CRY_AUDIO_SYSTEM_REQUEST_BLOCK(ESystemRequestType::UnloadSetting)
-				CRY_AUDIO_SYSTEM_REQUEST_BLOCK(ESystemRequestType::UnloadAFCMDataByScope)
+				CRY_AUDIO_SYSTEM_REQUEST_BLOCK(ESystemRequestType::UnloadAFCMDataByContext)
 				CRY_AUDIO_SYSTEM_REQUEST_BLOCK(ESystemRequestType::AddRequestListener)
 				CRY_AUDIO_SYSTEM_REQUEST_BLOCK(ESystemRequestType::RemoveRequestListener)
 				CRY_AUDIO_SYSTEM_REQUEST_BLOCK(ESystemRequestType::ChangeLanguage)
@@ -72,6 +74,7 @@ std::shared_ptr<SRequestData> AllocateRequestData(SRequestData const* const pReq
 				CRY_AUDIO_SYSTEM_REQUEST_BLOCK(ESystemRequestType::ReloadControlsData)
 				CRY_AUDIO_SYSTEM_REQUEST_BLOCK(ESystemRequestType::RetriggerControls)
 				CRY_AUDIO_SYSTEM_REQUEST_BLOCK(ESystemRequestType::DrawDebugInfo)
+				CRY_AUDIO_SYSTEM_REQUEST_BLOCK(ESystemRequestType::UpdateDebugInfo)
 				CRY_AUDIO_SYSTEM_REQUEST_BLOCK(ESystemRequestType::ExecutePreviewTrigger)
 				CRY_AUDIO_SYSTEM_REQUEST_BLOCK(ESystemRequestType::ExecutePreviewTriggerEx)
 				CRY_AUDIO_SYSTEM_REQUEST_BLOCK(ESystemRequestType::ExecutePreviewTriggerExNode)
@@ -152,6 +155,8 @@ std::shared_ptr<SRequestData> AllocateRequestData(SRequestData const* const pReq
 				CRY_AUDIO_CALLBACK_REQUEST_BLOCK(ECallbackRequestType::ReportFinishedTriggerInstance)
 				CRY_AUDIO_CALLBACK_REQUEST_BLOCK(ECallbackRequestType::ReportPhysicalizedObject)
 				CRY_AUDIO_CALLBACK_REQUEST_BLOCK(ECallbackRequestType::ReportVirtualizedObject)
+				CRY_AUDIO_CALLBACK_REQUEST_BLOCK(ECallbackRequestType::ReportContextActivated)
+				CRY_AUDIO_CALLBACK_REQUEST_BLOCK(ECallbackRequestType::ReportContextDeactivated)
 			default:
 				{
 					CRY_ASSERT_MESSAGE(false, "Unknown callback request type (%u) during %s", pBase->callbackRequestType, __FUNCTION__);

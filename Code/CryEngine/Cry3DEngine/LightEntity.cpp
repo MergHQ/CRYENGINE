@@ -648,7 +648,6 @@ void CLightEntity::InitShadowFrustum_SUN_Conserv(ShadowMapFrustum* pFr, int dwAl
 
 	//if(pFr->isUpdateRequested(-1))
 	pFr->vProjTranslation = passInfo.GetCamera().GetPosition() + fDistance * vViewDir;
-	;
 
 	// local jitter amount depends on frustum size
 	pFr->fFrustrumSize = 1.0f / (fGSMBoxSize * (float)Get3DEngine()->m_fGsmRange);
@@ -1303,7 +1302,6 @@ bool CLightEntity::CheckFrustumsIntersect(CLightEntity* lightEnt)
 		{
 			CCamera shadowFrust1 = pFr1->FrustumPlanes[nS1];
 			CCamera shadowFrust2 = pFr2->FrustumPlanes[nS2];
-			;
 
 			if (FrustumIntersection(shadowFrust1, shadowFrust2))
 			{

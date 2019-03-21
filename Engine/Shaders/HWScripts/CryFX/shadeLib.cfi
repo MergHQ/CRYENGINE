@@ -48,12 +48,27 @@ struct ForwardShadingAttribs
 	CustomForwardShadingAttribs  custom;
 };
 
+struct STiledLightShadeInfo
+{
+	uint      lightType;
+	uint      resIndex;
+	uint      shadowMaskIndex;
+	uint      stencilID;
+	float4    posRad;
+	float2    attenuationParams;
+	float2    shadowParams;
+	float4    color;
+	float4x4  projectorMatrix;
+	float4x4  shadowMatrix;
+};
 struct ForwardLightParams
 {
 	int     type;
 	float3  lightVec;
 	float3  illuminance;
 };
+
+#define TILED_SHADING_SPECPROBE_MAXMIP  6
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 

@@ -82,8 +82,8 @@ void OnWindowStateChanged(ICVar* pCVar)
 void CSystem::CreateRendererVars(const SSystemInitParams& startupParams)
 {
 	m_rIntialWindowSizeRatio = REGISTER_FLOAT("r_InitialWindowSizeRatio", 0.666f, VF_DUMPTODISK,
-		"Sets the size ratio of the initial application window in relation to the primary monitor resolution.\n"
-		"Usage: r_InitialWindowSizeRatio [1.0/0.666/..]");
+	                                          "Sets the size ratio of the initial application window in relation to the primary monitor resolution.\n"
+	                                          "Usage: r_InitialWindowSizeRatio [1.0/0.666/..]");
 
 	int iFullScreenDefault  = 1;
 	int iDisplayInfoDefault = 1;
@@ -133,7 +133,7 @@ void CSystem::CreateRendererVars(const SSystemInitParams& startupParams)
 #if CRY_PLATFORM_ANDROID
 	const char* p_r_DriverDef = STR_VK_RENDERER;
 #elif CRY_PLATFORM_LINUX || CRY_PLATFORM_APPLE
-		const char* p_r_DriverDef = STR_GL_RENDERER;
+	const char* p_r_DriverDef = STR_GL_RENDERER;
 #elif CRY_PLATFORM_DURANGO
 	const char* p_r_DriverDef = STR_DX11_RENDERER;
 #elif CRY_PLATFORM_ORBIS
@@ -180,7 +180,7 @@ void CSystem::CreateRendererVars(const SSystemInitParams& startupParams)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CSystem::RenderBegin(const SDisplayContextKey& displayContextKey)
+void CSystem::RenderBegin(const SDisplayContextKey& displayContextKey, const SGraphicsPipelineKey& graphicsPipelineKey)
 {
 	if (m_bIgnoreUpdates)
 		return;
@@ -188,14 +188,14 @@ void CSystem::RenderBegin(const SDisplayContextKey& displayContextKey)
 	CRY_PROFILE_FUNCTION(PROFILE_SYSTEM);
 	CRY_PROFILE_MARKER("CSystem::RenderBegin");
 	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "CSystem::RenderBegin");
-	
+
 	bool rndAvail = m_env.pRenderer != 0;
 
 	//////////////////////////////////////////////////////////////////////
 	//start the rendering pipeline
 	if (rndAvail)
 	{
-		m_env.pRenderer->BeginFrame(displayContextKey);
+		m_env.pRenderer->BeginFrame(displayContextKey, graphicsPipelineKey);
 		gEnv->nMainFrameID = m_env.pRenderer->GetFrameID(false);
 	}
 	else
@@ -250,9 +250,9 @@ void CSystem::RenderEnd(bool bRenderStats)
 		return;
 	}
 	/*
-	if(m_env.pMovieSystem)
-		m_env.pMovieSystem->Render();
-	*/
+	   if(m_env.pMovieSystem)
+	   m_env.pMovieSystem->Render();
+	 */
 
 	GetPlatformOS()->RenderEnd();
 
@@ -337,7 +337,7 @@ void CSystem::RenderPhysicsStatistics(IPhysicalWorld* pWorld)
 
 		if (pVars->bProfileGroups)
 		{
-			int j           = 0, mask, nGroups = pWorld->GetGroupProfileInfo(pInfos);
+			int j = 0, mask, nGroups = pWorld->GetGroupProfileInfo(pInfos);
 			float fColor[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
 			if (!pVars->bProfileEntities)
 				j = 12;
@@ -353,8 +353,8 @@ void CSystem::RenderPhysicsStatistics(IPhysicalWorld* pWorld)
 				float timeNorm = time * (1.0f / 32);
 				fColor[1] = fColor[2] = 1.0f - (max(0.7f, min(1.0f, timeNorm)) - 0.7f) * (1.0f / 0.3f);
 				IRenderAuxText::Draw2dLabel(renderMarginX, renderMarginY + i * lineSize, fontSize, fColor, false,
-				  "%s %.2fms/%d (peak %.2fms/%d)", pInfos[j].pName, time, pInfos[j].nCallsLast,
-				  gEnv->pTimer->TicksToSeconds(pInfos[j].nTicksPeak) * 1000.0f, pInfos[j].nCallsPeak);
+				                            "%s %.2fms/%d (peak %.2fms/%d)", pInfos[j].pName, time, pInfos[j].nCallsLast,
+				                            gEnv->pTimer->TicksToSeconds(pInfos[j].nTicksPeak) * 1000.0f, pInfos[j].nCallsPeak);
 				pInfos[j].peakAge = pInfos[j].peakAge + 1 & ~mask;
 				if (j == nGroups - 3) ++i;
 			}
@@ -370,8 +370,8 @@ void CSystem::RenderPhysicsStatistics(IPhysicalWorld* pWorld)
 				pInfos[j].nTicksPeak += pInfos[j].nTicks - pInfos[j].nTicksPeak & mask;
 				pInfos[j].nCallsPeak += pInfos[j].nCalls - pInfos[j].nCallsPeak & mask;
 				IRenderAuxText::Draw2dLabel(renderMarginX, renderMarginY + i * lineSize, fontSize, fColor, false,
-				  "%s %.2fms/%d (peak %.2fms/%d)", pInfos[j].pName, gEnv->pTimer->TicksToSeconds(pInfos[j].nTicks) * 1000.0f, pInfos[j].nCalls,
-				  gEnv->pTimer->TicksToSeconds(pInfos[j].nTicksPeak) * 1000.0f, pInfos[j].nCallsPeak);
+				                            "%s %.2fms/%d (peak %.2fms/%d)", pInfos[j].pName, gEnv->pTimer->TicksToSeconds(pInfos[j].nTicks) * 1000.0f, pInfos[j].nCalls,
+				                            gEnv->pTimer->TicksToSeconds(pInfos[j].nTicksPeak) * 1000.0f, pInfos[j].nCallsPeak);
 				pInfos[j].peakAge = pInfos[j].peakAge + 1 & ~mask;
 				pInfos[j].nCalls  = pInfos[j].nTicks = 0;
 			}
@@ -417,7 +417,7 @@ void CSystem::RenderPhysicsStatistics(IPhysicalWorld* pWorld)
 							pInfos[j - 1] = pInfos[j];
 							pInfos[j]     = ppi;
 						}
-					}
+			}
 			for (i = 0; i < nEnts; i++)
 			{
 				mask                  = (pInfos[i].nTicksPeak - pInfos[i].nTicksLast) >> 31;
@@ -426,9 +426,9 @@ void CSystem::RenderPhysicsStatistics(IPhysicalWorld* pWorld)
 				pInfos[i].nTicksPeak += pInfos[i].nTicksLast - pInfos[i].nTicksPeak & mask;
 				pInfos[i].nCallsPeak += pInfos[i].nCallsLast - pInfos[i].nCallsPeak & mask;
 				cry_sprintf(msgbuf, "%.2fms/%.1f (peak %.2fms/%d) %s (id %d)",
-				  dt = gEnv->pTimer->TicksToSeconds(pInfos[i].nTicksAvg) * 1000.0f, pInfos[i].nCallsAvg,
-				  gEnv->pTimer->TicksToSeconds(pInfos[i].nTicksPeak) * 1000.0f, pInfos[i].nCallsPeak,
-				  pInfos[i].pName ? pInfos[i].pName : "", pInfos[i].id);
+				            dt = gEnv->pTimer->TicksToSeconds(pInfos[i].nTicksAvg) * 1000.0f, pInfos[i].nCallsAvg,
+				            gEnv->pTimer->TicksToSeconds(pInfos[i].nTicksPeak) * 1000.0f, pInfos[i].nCallsPeak,
+				            pInfos[i].pName ? pInfos[i].pName : "", pInfos[i].id);
 				IRenderAuxText::Draw2dLabel(renderMarginX, renderMarginY + (i + line0) * lineSize, fontSize, fColor, false, "%s", msgbuf);
 				if (pTMC) pTMC->PutText(0, i, msgbuf);
 				IPhysicalEntity* pent = pWorld->GetPhysicalEntityById(pInfos[i].id);
@@ -488,7 +488,7 @@ void CSystem::RenderJobStats()
 #if defined(ENABLE_PROFILING_CODE)
 	if (m_FrameProfileSystem.IsEnabled())
 	{
-#if defined(JOBMANAGER_SUPPORT_FRAMEPROFILER)
+	#if defined(JOBMANAGER_SUPPORT_FRAMEPROFILER)
 
 		JobManager::IBackend* const __restrict pThreadBackEnd = gEnv->GetJobManager()->GetBackEnd(JobManager::eBET_Thread);
 		JobManager::IBackend* const __restrict pBlockingBackEnd = gEnv->GetJobManager()->GetBackEnd(JobManager::eBET_Blocking);
@@ -516,7 +516,7 @@ void CSystem::RenderJobStats()
 				pWorkerProfiler->GetFrameStats(*m_FrameProfileSystem.m_BlockingFrameStats, m_FrameProfileSystem.m_BlockingJobFrameStats, JobManager::IWorkerBackEndProfiler::eJobSortOrder_Lexical);
 			}
 		}
-#endif
+	#endif
 	}
 #endif
 }
@@ -574,12 +574,12 @@ void CSystem::UpdateLoadingScreen()
 		return;
 	}
 #if defined(CHECK_UPDATE_TIMES)
-#if CRY_PLATFORM_DURANGO
+	#if CRY_PLATFORM_DURANGO
 	else if (timeDelta > 1.0f)
 	{
 		CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_WARNING, "CSystem::UpdateLoadingScreen %f seconds since last tick: this is a long delay and a serious risk for failing XBOX ONE TCR - XR-004-01 \n", timeDelta);
 	}
-#endif
+	#endif
 #endif
 	t0 = t;
 
@@ -608,9 +608,9 @@ void CSystem::UpdateLoadingScreen()
 //////////////////////////////////////////////////////////////////////////
 
 void CSystem::DisplayErrorMessage(const char* acMessage,
-  float                                       fTime,
-  const float*                                pfColor,
-  bool                                        bHardError)
+                                  float fTime,
+                                  const float* pfColor,
+                                  bool bHardError)
 {
 	SErrorMessage message;
 	message.m_Message = acMessage;
@@ -641,10 +641,10 @@ void CSystem::RenderStatistics()
 	// Render profile info.
 	m_FrameProfileSystem.Render();
 
-#if defined(USE_DISK_PROFILER)
+	#if defined(USE_DISK_PROFILER)
 	if (m_pDiskProfiler)
 		m_pDiskProfiler->Update();
-#endif
+	#endif
 
 	RenderMemStats();
 
@@ -669,7 +669,7 @@ void CSystem::RenderStatistics()
 }
 
 //////////////////////////////////////////////////////////////////////
-void CSystem::Render()
+void CSystem::Render(const SGraphicsPipelineKey& graphicsPipelineKey)
 {
 	if (m_bIgnoreUpdates)
 		return;
@@ -686,6 +686,8 @@ void CSystem::Render()
 	//draw
 	m_env.p3DEngine->PreWorldStreamUpdate(m_ViewCamera);
 
+	const int nRenderingFlags = SHDF_ZPASS | SHDF_ALLOWHDR | SHDF_ALLOWPOSTPROCESS | SHDF_ALLOW_WATER | SHDF_ALLOW_AO | SHDF_ALLOW_SKY;
+
 	if (m_env.pRenderer)
 	{
 		if (m_pProcess->GetFlags() & PROC_3DENGINE)
@@ -695,9 +697,9 @@ void CSystem::Render()
 				if (m_env.p3DEngine && !m_env.IsFMVPlaying())
 				{
 					if ((!IsEquivalent(m_ViewCamera.GetPosition(), Vec3(0, 0, 0), VEC_EPSILON) && (!IsLoading())) || // never pass undefined camera to p3DEngine->RenderWorld()
-						m_env.IsDedicated() || m_env.pRenderer->IsPost3DRendererEnabled())
+					    m_env.IsDedicated() || m_env.pRenderer->IsPost3DRendererEnabled())
 					{
-						m_env.p3DEngine->RenderWorld(SHDF_ALLOW_WATER | SHDF_ALLOWPOSTPROCESS | SHDF_ALLOWHDR | SHDF_ZPASS | SHDF_ALLOW_AO, SRenderingPassInfo::CreateGeneralPassRenderingInfo(m_ViewCamera), __FUNCTION__);
+						m_env.p3DEngine->RenderWorld(nRenderingFlags, SRenderingPassInfo::CreateGeneralPassRenderingInfo(graphicsPipelineKey, m_ViewCamera), __FUNCTION__);
 					}
 					else
 					{
@@ -719,7 +721,7 @@ void CSystem::Render()
 		}
 		else
 		{
-			m_pProcess->RenderWorld(SHDF_ALLOW_WATER | SHDF_ALLOWPOSTPROCESS | SHDF_ALLOWHDR | SHDF_ZPASS | SHDF_ALLOW_AO, SRenderingPassInfo::CreateGeneralPassRenderingInfo(m_ViewCamera), __FUNCTION__);
+			m_pProcess->RenderWorld(nRenderingFlags, SRenderingPassInfo::CreateGeneralPassRenderingInfo(graphicsPipelineKey, m_ViewCamera), __FUNCTION__);
 		}
 	}
 
@@ -742,11 +744,11 @@ void CSystem::RenderMemStats()
 
 	TickMemStats();
 
-	assert (m_pMemStats);
+	assert(m_pMemStats);
 	m_pMemStats->updateKeys();
 	// render the statistics
 	{
-		CrySizerStatsRenderer StatsRenderer (this, m_pMemStats, m_cvMemStatsMaxDepth->GetIVal(), m_cvMemStatsThreshold->GetIVal());
+		CrySizerStatsRenderer StatsRenderer(this, m_pMemStats, m_cvMemStatsMaxDepth->GetIVal(), m_cvMemStatsThreshold->GetIVal());
 		StatsRenderer.render((m_env.pRenderer->GetFrameID(false) + 2) % m_cvMemStats->GetIVal() <= 1);
 	}
 #endif
@@ -762,7 +764,7 @@ void CSystem::RenderStats()
 	}
 
 #if defined(ENABLE_PROFILING_CODE)
-#ifndef _RELEASE
+	#ifndef _RELEASE
 	// if we rendered an error message on screen during the last frame, then sleep now
 	// to force hard stall for 3sec
 	if (m_bHasRenderedErrorMessage && !gEnv->IsEditor() && !IsLoading())
@@ -773,7 +775,7 @@ void CSystem::RenderStats()
 		CrySleep(3000);
 		m_bHasRenderedErrorMessage = false;
 	}
-#endif
+	#endif
 
 	// render info messages on screen
 	float fTextPosX  = 5.0f;
@@ -863,11 +865,11 @@ void CSystem::RenderOverscanBorders()
 
 			//m_env.pRenderer->SetState(GS_BLSRC_SRCALPHA | GS_BLDST_ONEMINUSSRCALPHA | GS_NODEPTHTEST);
 			IRenderAuxImage::Draw2dImage(xPos, yPos,
-			  width, height,
-			  whiteTextureId,
-			  uv, uv, uv, uv,
-			  rot,
-			  r, g, b, a);
+			                             width, height,
+			                             whiteTextureId,
+			                             uv, uv, uv, uv,
+			                             rot,
+			                             r, g, b, a);
 		}
 	}
 #endif

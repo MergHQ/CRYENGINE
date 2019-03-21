@@ -13,20 +13,22 @@ void CMobileCompositionStage::Init()
 
 void CMobileCompositionStage::ExecuteDeferredLighting()
 {
-	auto* tiledLights = GetStdGraphicsPipeline().GetTiledLightVolumesStage();
+	auto* tiledLights = m_graphicsPipeline.GetStage<CTiledLightVolumesStage>();
+	if (!tiledLights)
+		return;
 
 	CTexture* pBestProbeDiffuse  = CRendererResources::s_ptexDefaultProbeCM;
 	CTexture* pBestProbeSpecular = CRendererResources::s_ptexDefaultProbeCM;
 	CTexture* pZTexture = RenderView()->GetDepthTarget();
-		
+
 	// Find largest probe
 	{
-		auto& envProbes = gcpRendD3D->GetGraphicsPipeline().GetCurrentRenderView()->GetLightsArray(eDLT_DeferredCubemap);
+		auto& envProbes = m_graphicsPipeline.GetCurrentRenderView()->GetLightsArray(eDLT_DeferredCubemap);
 		float bestRadius = 0;
 
 		auto stp = envProbes.end();
 		auto itr = envProbes.begin();
-	
+
 		while (itr != stp)
 		{
 			float currRadius = itr->m_fRadius;
@@ -41,13 +43,13 @@ void CMobileCompositionStage::ExecuteDeferredLighting()
 		}
 	}
 
-	m_passDepthDownsample2.Execute(pZTexture, CRendererResources::s_ptexLinearDepthScaled[0], nullptr, true , true);
+	m_passDepthDownsample2.Execute(pZTexture, CRendererResources::s_ptexLinearDepthScaled[0], nullptr, true, true);
 	m_passDepthDownsample4.Execute(CRendererResources::s_ptexLinearDepthScaled[0], CRendererResources::s_ptexLinearDepthScaled[1], nullptr, false, false);
 	m_passDepthDownsample8.Execute(CRendererResources::s_ptexLinearDepthScaled[1], CRendererResources::s_ptexLinearDepthScaled[2], nullptr, false, false);
 
 	{
 		PROFILE_LABEL_SCOPE("MOBILE_LIGHTING");
-	
+
 		static CCryNameTSCRC tech("LightingMobile");
 
 		uint64 rtMask = (CRenderer::CV_r_GraphicsPipelineMobile == 1) ? g_HWSR_MaskBit[HWSR_SAMPLE0] : 0;
@@ -60,7 +62,7 @@ void CMobileCompositionStage::ExecuteDeferredLighting()
 		m_passLighting.SetRequirePerViewConstantBuffer(true);
 
 		m_passLighting.SetSampler(0, EDefaultSamplerStates::TrilinearClamp);
-		
+
 		m_passLighting.SetTexture(0, pZTexture);
 		m_passLighting.SetTexture(1, CRendererResources::s_ptexSceneNormalsMap);
 		m_passLighting.SetTexture(2, CRendererResources::s_ptexSceneDiffuse);
@@ -71,7 +73,7 @@ void CMobileCompositionStage::ExecuteDeferredLighting()
 		m_passLighting.SetBuffer(16, tiledLights->GetTiledOpaqueLightMaskBuffer());
 		m_passLighting.SetBuffer(17, tiledLights->GetLightShadeInfoBuffer());
 		m_passLighting.SetTexture(18, tiledLights->GetProjectedLightAtlas());
-	
+
 		m_passLighting.Execute();
 	}
 }

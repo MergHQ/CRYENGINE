@@ -2,13 +2,12 @@
 #pragma once
 
 #include "EditorCommonAPI.h"
-
-#include <QWidget>
-
 #include "EditorFramework/Editor.h"
 #include "ProxyModels/ItemModelAttribute.h"
-#include <CrySandbox/CrySignal.h>
+#include "CrySandbox/CrySignal.h"
 #include "AssetSystem/AssetType.h"
+
+#include <QWidget>
 
 class CAssetDropHandler;
 class CAssetFolderFilterModel;
@@ -20,6 +19,7 @@ class QAdvancedTreeView;
 class QAttributeFilterProxyModel;
 class QBoxLayout;
 class QButtonGroup;
+class QCommandAction;
 class QFilteringPanel;
 class QItemSelectionModel;
 class QMenu;
@@ -136,6 +136,11 @@ private:
 	//extract actual content from the selection for further processing
 	void ProcessSelection(std::vector<CAsset*>& assets, std::vector<string>& folders) const;
 
+	void OnSelectionChanged();
+
+	void UpdateSelectionDependantActions();
+	void UpdatePasteActionState();
+
 	void OnContextMenu();
 	void AppendFilterDependenciesActions(CAbstractMenu* pAbstractMenu, const CAsset* pAsset);
 	void OnFolderViewContextMenu();
@@ -146,18 +151,17 @@ private:
 	void BuildContextMenuForFolders(const std::vector<string>& folders, CAbstractMenu& abstractMenu);
 	void BuildContextMenuForAssets(const std::vector<CAsset*>& assets, const std::vector<string>& folders, CAbstractMenu& abstractMenu);
 
-	void AddWorkFilesMenu(CAbstractMenu& abstractMenu, CAsset* pAsset);
+	void AddWorkFilesMenu(CAbstractMenu& abstractMenu);
+
+	bool HasSelectedModifiedAsset() const;
 
 	void OnFolderSelectionChanged(const QStringList& selectedFolders);
 	void OnActivated(const QModelIndex& index);
 	void OnCurrentChanged(const QModelIndex& current, const QModelIndex& previous);
-	void OnImport();
-	void OnReimport(const std::vector<CAsset*>& assets);
 	void OnDelete(const std::vector<CAsset*>& assets);
 
 	void OnRenameAsset(CAsset& asset);
 	void OnRenameFolder(const QString& folder);
-	void OnCreateFolder(const QString& parentFolder);
 	void OnOpenInExplorer(const QString& folder);
 	void OnNavBack();
 	void OnNavForward();
@@ -172,6 +176,20 @@ private:
 
 	void EditNewAsset();
 
+	bool OnDiscardChanges();
+	bool OnShowInFileExplorer();
+	bool OnGenerateThumbmails();
+	bool OnSaveAll();
+	bool OnRecursiveView();
+	bool OnFolderTreeView();
+	bool OnManageWorkFiles();
+	bool OnDetailsView();
+	bool OnThumbnailsView();
+	bool OnSplitHorizontalView();
+	bool OnSplitVerticalView();
+	bool OnGenerateRepairAllMetadata();
+	bool OnReimport();
+
 	// CEditor impl
 	virtual bool OnFind() override;
 	virtual bool OnDelete() override;
@@ -179,14 +197,28 @@ private:
 	virtual bool OnCopy() override;
 	virtual bool OnPaste() override;
 	virtual bool OnDuplicate() override;
+	virtual bool OnImport() override;
+	virtual bool OnNewFolder() override;
+	virtual bool OnRename() override;
+	virtual bool OnSave() override;
 
 	void         Paste(bool pasteNextToOriginal);
 
 	//ui components
 	CAssetFoldersView*                          m_pFoldersView = nullptr;
 	CBreadcrumbsBar*                            m_pBreadcrumbs = nullptr;
-	QAction*                                    m_pActionRecursiveView = nullptr;
-	QAction*                                    m_pActionShowFoldersView = nullptr;
+	QCommandAction*                             m_pActionRecursiveView = nullptr;
+	QCommandAction*                             m_pActionShowFoldersView = nullptr;
+	QCommandAction*                             m_pActionManageWorkFiles = nullptr;
+	QCommandAction*                             m_pActionShowInFileExplorer = nullptr;
+	QCommandAction*                             m_pActionDelete = nullptr;
+	QCommandAction*                             m_pActionRename = nullptr;
+	QCommandAction*                             m_pActionCopy = nullptr;
+	QCommandAction*                             m_pActionDuplicate = nullptr;
+	QCommandAction*                             m_pActionSave = nullptr;
+	QCommandAction*                             m_pActionPaste = nullptr;
+	QCommandAction*                             m_pActionReimport = nullptr;
+	QCommandAction*                             m_pActionDiscardChanges = nullptr;
 	QAdvancedTreeView*                          m_pDetailsView = nullptr;
 	QBoxLayout*                                 m_pAssetsViewLayout = nullptr;
 	QBoxLayout*                                 m_pShortcutBarLayout = nullptr;
@@ -219,6 +251,7 @@ private:
 	int                  m_buttonGroupsSpacing = 24;
 
 #if ASSET_BROWSER_USE_PREVIEW_WIDGET
+	bool OnShowPreview();
 	QContainer* m_previewWidget = nullptr;
 #endif
 };

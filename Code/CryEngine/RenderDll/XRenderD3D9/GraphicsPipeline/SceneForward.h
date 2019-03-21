@@ -12,6 +12,8 @@
 class CSceneForwardStage : public CGraphicsPipelineStage
 {
 public:
+	static const EGraphicsPipelineStage StageID = eStage_SceneForward;
+
 	struct SCloudShadingParams
 	{
 		Vec4 CloudShadingColorSun;
@@ -41,7 +43,7 @@ public:
 	};
 
 public:
-	CSceneForwardStage();
+	CSceneForwardStage(CGraphicsPipeline& graphicsPipeline);
 
 	void Init() final;
 	void Update() final;
@@ -50,7 +52,7 @@ public:
 	bool         CreatePipelineState(const SGraphicsPipelineStateDescription& desc,
 	                                 CDeviceGraphicsPSOPtr& outPSO,
 	                                 EPass passId = ePass_Forward,
-	                                 const std::function<void(CDeviceGraphicsPSODesc& psoDesc, const SGraphicsPipelineStateDescription& desc)> &customState = nullptr);
+	                                 const std::function<void(CDeviceGraphicsPSODesc& psoDesc, const SGraphicsPipelineStateDescription& desc)>&customState = nullptr);
 
 	void         ExecuteOpaque();
 	void         ExecuteTransparentBelowWater();
@@ -62,7 +64,7 @@ public:
 	void         ExecuteMobile();
 	void         ExecuteMinimum(CTexture* pColorTex, CTexture* pDepthTex);
 
-	bool IsTransparentLoResEnabled() const { return CRendererCVars::CV_r_ParticlesHalfRes > 0; }
+	bool IsTransparentLoResEnabled()      const { return CRendererCVars::CV_r_ParticlesHalfRes > 0; }
 	bool IsTransparentDepthFixupEnabled() const { return CRendererCVars::CV_r_TranspDepthFixup > 0; }
 
 	void FillCloudShadingParams(SCloudShadingParams& cloudParams, bool enable = true) const;

@@ -151,7 +151,7 @@ PropertiesPanel::PropertiesPanel(QWidget* parent, System* system)
 			m_followActions[FOLLOW_SOURCE_ASSET]->setData(int(FOLLOW_SOURCE_ASSET));
 		}
 		m_followMenu->addSeparator();
-		m_followActions[FOLLOW_LOCK] = m_followMenu->addAction(CryIcon("icons:General/Lock_True.ico"), "Lock", this, SLOT(OnFollowMenu()));
+		m_followActions[FOLLOW_LOCK] = m_followMenu->addAction(CryIcon("icons:general_lock_true.ico"), "Lock", this, SLOT(OnFollowMenu()));
 		m_followActions[FOLLOW_LOCK]->setData(int(FOLLOW_LOCK));
 
 		m_followButton = new QToolButton();
@@ -568,7 +568,7 @@ void PropertiesPanel::UpdateLocationBar()
 		followIcon = "icons:common/animation_source_asset.ico";
 		break;
 	case FOLLOW_LOCK:
-		followIcon = "icons:General/Lock_True.ico";
+		followIcon = "icons:general_lock_true.ico";
 		break;
 	}
 	m_followButton->setIcon(CryIcon(followIcon));

@@ -8,8 +8,9 @@
 
 const ETEX_Format COLORCHART_FORMAT = eTF_R8G8B8A8;
 
-CColorGradingStage::CColorGradingStage()
-	: m_slicesVertexBuffer(~0u)
+CColorGradingStage::CColorGradingStage(CGraphicsPipeline& graphicsPipeline)
+	: CGraphicsPipelineStage(graphicsPipeline)
+	, m_slicesVertexBuffer(~0u)
 	, m_colorGradingPrimitive(CRenderPrimitive::eFlags_ReflectShaderConstants)
 {
 	// Preallocate 2 merge primitives (i.e. up to 8 blending layers)
@@ -168,7 +169,7 @@ void CColorGradingStage::PreparePrimitives(const SColorGradingMergeParams& merge
 				Vec4 layerSize((float)m_pMergedLayer->GetWidth(), (float)m_pMergedLayer->GetHeight(), 0, 0);
 				prim.GetConstantManager().SetNamedConstant(nameLayerSize, layerSize, eHWSC_Pixel);
 
-				prim.GetConstantManager().EndNamedConstantUpdate(&m_mergeChartsPass.GetViewport());
+				prim.GetConstantManager().EndNamedConstantUpdate(&m_mergeChartsPass.GetViewport(), m_graphicsPipeline.GetCurrentRenderView());
 
 				m_mergeChartsPass.AddPrimitive(&prim);
 				++numMergePasses;
@@ -212,7 +213,7 @@ void CColorGradingStage::PreparePrimitives(const SColorGradingMergeParams& merge
 		constantManager.SetNamedConstant(pParamName4, mergeParams.pSelectiveColor[1], eHWSC_Pixel);
 		constantManager.SetNamedConstantArray(pParamMatrix, mergeParams.pColorMatrix, 3, eHWSC_Pixel);
 
-		constantManager.EndNamedConstantUpdate(&m_colorGradingPass.GetViewport());
+		constantManager.EndNamedConstantUpdate(&m_colorGradingPass.GetViewport(), m_graphicsPipeline.GetCurrentRenderView());
 
 		m_colorGradingPass.AddPrimitive(&m_colorGradingPrimitive);
 

@@ -61,6 +61,7 @@ using EnvironmentLookup = std::map<EnvironmentId, CEnvironment const*>;
 using SettingLookup = std::map<ControlId, CSetting const*>;
 using TriggerInstanceIdLookup = std::map<TriggerInstanceId, CObject*>;
 using TriggerInstanceIdLookupGlobal = std::map<TriggerInstanceId, CGlobalObject*>;
+using ContextLookup = std::map<ContextId, CryFixedStringT<MaxFileNameLength>>;
 
 using TriggerConnections = std::vector<Impl::ITriggerConnection*>;
 using ParameterConnections = std::vector<Impl::IParameterConnection*>;
@@ -80,6 +81,7 @@ extern EnvironmentLookup g_environments;
 extern SettingLookup g_settings;
 extern TriggerInstanceIdLookup g_triggerInstanceIdToObject;
 extern TriggerInstanceIdLookupGlobal g_triggerInstanceIdToGlobalObject;
+extern ContextLookup g_registeredContexts;
 extern CGlobalObject g_object;
 extern CLoseFocusTrigger g_loseFocusTrigger;
 extern CGetFocusTrigger g_getFocusTrigger;
@@ -136,5 +138,29 @@ extern SPoolSizes g_debugPoolSizes;
 using SwitchStateIds = std::map<ControlId, SwitchStateId>;
 using ParameterValues = std::map<ControlId, float>;
 using EnvironmentValues = std::map<EnvironmentId, float>;
+
+struct SContextInfo final
+{
+	SContextInfo() = delete;
+
+	explicit SContextInfo(
+		ContextId const contextId_,
+		bool isRegistered_,
+		bool isActive_)
+		: contextId(contextId_)
+		, isRegistered(isRegistered_)
+		, isActive(isActive_)
+	{}
+
+	ContextId const contextId;
+	bool            isRegistered;
+	bool            isActive;
+};
+
+using ContextInfo = std::map<CryFixedStringT<MaxFileNameLength>, SContextInfo>;
+extern ContextInfo g_contextInfo;
+
+using ContextDebugInfo = std::map<CryFixedStringT<MaxFileNameLength>, bool>;
+extern ContextDebugInfo g_contextDebugInfo;
 #endif // CRY_AUDIO_USE_DEBUG_CODE
 }      // namespace CryAudio

@@ -19,8 +19,6 @@
 #define TILED_SHADING_TILE_SIZE_X       8
 #define TILED_SHADING_TILE_SIZE_Y       8
 
-#define TILED_SHADING_SPECPROBE_MAXMIP  6
-
 #define TILED_THREAD_GROUP_SIZE		TILED_SHADING_TILE_SIZE_X * TILED_SHADING_TILE_SIZE_Y
 
 struct STiledLightCullInfo
@@ -47,20 +45,6 @@ struct STiledLightVolumeInfo
 	float4    volumeParams1;
 	float4    volumeParams2;
 	float4    volumeParams3;
-};
-
-struct STiledLightShadeInfo
-{
-	uint      lightType;
-	uint      resIndex;
-	uint      shadowMaskIndex;
-	uint      stencilID;
-	float4    posRad;
-	float2    attenuationParams;
-	float2    shadowParams;
-	float4    color;
-	float4x4  projectorMatrix;
-	float4x4  shadowMatrix;
 };
 
 struct STiledClipVolumeInfo
@@ -178,11 +162,12 @@ void TiledForwardShading(in ForwardShadingAttribs attribs, inout float3 diffuseA
 	envFresnel = lerp(envBRDF.xxx, envBRDF.yyy, attribs.reflectance);
 
 	float2 occlusion = float2(1, 1);
+    float occlSpec = 1;
 	if (bOpaque)
 	{
 		float aoAmount = Fwd_RandomRotations[attribs.screenUV * CV_ScreenSize.xy].w;
 		float occlDiff = saturate(1 - aoAmount * 1.0);
-		float occlSpec = saturate(1 - aoAmount * 1.5);
+		occlSpec = saturate(1 - aoAmount * 1.5);
 		occlusion.x = occlDiff * occlDiff;
 		occlusion.y = DeriveSpecularOcclusion(NdotV, max(occlSpec * occlSpec, 0.3), attribs.smoothness);
 	}
@@ -227,12 +212,13 @@ void TiledForwardShading(in ForwardShadingAttribs attribs, inout float3 diffuseA
 					float4 lightColor = Fwd_TiledLightsShadeInfo[lightShadeInfoIdx].color;
 
 					float attenuation = GetAttenuation( tmpLightVec, 1, true, Fwd_TiledLightsShadeInfo[lightShadeInfoIdx].attenuationParams.y ) * Fwd_TiledLightsShadeInfo[lightShadeInfoIdx].attenuationParams.x;
-					uint4 resIndexClamps = GetResourceIndexAndMipClamps(Fwd_TiledLightsShadeInfo[lightShadeInfoIdx].resIndex);
+                    uint4 resIndexClamps = GetResourceIndexAndMipClamps(Fwd_TiledLightsShadeInfo[lightShadeInfoIdx].resIndex);
+                    float probeWeight = (1 - probeWeightSum) * attenuation;
 				
+#ifndef TILED_SHADING_USER_DEFINED_PROBE_CALLBACK
 					// Diffuse
 					float4 diffuseProbe = Fwd_DiffuseCubeArray.SampleLevel( ssTrilinearClamp, float4( attribs.normal, resIndexClamps.x ), resIndexClamps.y );
 					diffuseProbe.rgb = DecodeHDRCubemap( diffuseProbe );
-					float probeWeight = (1 - probeWeightSum) * attenuation;
 					diffuseAcc += diffuseProbe.rgb * (lightColor.rgb * probeWeight) * occlusion.x;
 			
 					if (!bSkipSpecularProbes)
@@ -245,6 +231,11 @@ void TiledForwardShading(in ForwardShadingAttribs attribs, inout float3 diffuseA
 						specularProbe.rgb = DecodeHDRCubemap( specularProbe ) * envFresnel;
 						specularAcc += specularProbe.rgb * (lightColor.rgb * probeWeight) * occlusion.y * lightColor.a;
 					}	
+#else
+                    Callback_ShadingProbe(attribs, Fwd_TiledLightsShadeInfo[lightShadeInfoIdx], lightVec,
+                           probeWeight, NdotV, occlusion, occlSpec, resIndexClamps, ssTrilinearClamp,
+                           diffuseAcc, specularAcc);
+#endif
 					
 					probeWeightSum += probeWeight;
 				}

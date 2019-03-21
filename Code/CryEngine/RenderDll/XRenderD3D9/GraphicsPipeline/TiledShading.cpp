@@ -10,8 +10,10 @@
 #include "GraphicsPipeline/OmniCamera.h"
 #include "GraphicsPipeline/ClipVolumes.h"
 
-CTiledShadingStage::CTiledShadingStage()
-	: m_passCullingShading(CComputeRenderPass::eFlags_ReflectConstantBuffersFromShader)
+CTiledShadingStage::CTiledShadingStage(CGraphicsPipeline& graphicsPipeline)
+	: CGraphicsPipelineStage(graphicsPipeline)
+	, m_passCullingShading(&graphicsPipeline, CComputeRenderPass::eFlags_ReflectConstantBuffersFromShader)
+	, m_passCopyDepth(&graphicsPipeline)
 {
 }
 
@@ -19,13 +21,11 @@ CTiledShadingStage::~CTiledShadingStage()
 {
 }
 
-
 void CTiledShadingStage::Init()
 {
 	m_pPerViewConstantBuffer = gcpRendD3D->m_DevBufMan.CreateConstantBuffer(sizeof(HLSL_PerViewGlobalConstantBuffer));
 	if (m_pPerViewConstantBuffer) m_pPerViewConstantBuffer->SetDebugName("TiledShadingStage Per-View CB");
 }
-
 
 void CTiledShadingStage::Execute()
 {
@@ -34,8 +34,8 @@ void CTiledShadingStage::Execute()
 
 	CD3D9Renderer* const __restrict rd = gcpRendD3D;
 
-	auto* clipVolumes = GetStdGraphicsPipeline().GetClipVolumesStage();
-	auto* tiledLights = GetStdGraphicsPipeline().GetTiledLightVolumesStage();
+	auto* clipVolumes = m_graphicsPipeline.GetStage<CClipVolumesStage>();
+	auto* tiledLights = m_graphicsPipeline.GetStage<CTiledLightVolumesStage>();
 
 #if (CRY_RENDERER_DIRECT3D >= 110) && (CRY_RENDERER_DIRECT3D < 120)
 	// on dx11, some input resources might still be bound as render targets.
@@ -49,14 +49,14 @@ void CTiledShadingStage::Execute()
 	int gridWidth = screenWidth;
 	int gridHeight = screenHeight;
 
-	if (CVrProjectionManager::IsMultiResEnabledStatic())
-		CVrProjectionManager::Instance()->GetProjectionSize(screenWidth, screenHeight, gridWidth, gridHeight);
-	
+	if (m_graphicsPipeline.GetVrProjectionManager()->IsMultiResEnabledStatic())
+		m_graphicsPipeline.GetVrProjectionManager()->GetProjectionSize(screenWidth, screenHeight, gridWidth, gridHeight);
+
 	bool bSeparateCullingPass = tiledLights->IsSeparateVolumeListGen();
-	
+
 	if (CRenderer::CV_r_DeferredShadingTiled == eDeferredMode_Disabled || CRenderer::CV_r_GraphicsPipelineMobile)
 		return;
-	
+
 	uint64 rtFlags = 0;
 	if (CRenderer::CV_r_DeferredShadingTiled > 1)   // Tiled deferred
 		rtFlags |= g_HWSR_MaskBit[HWSR_SAMPLE0];
@@ -82,7 +82,7 @@ void CTiledShadingStage::Execute()
 			// AO modulates diffuse and specular
 			rtFlags |= g_HWSR_MaskBit[HWSR_CUBEMAP0];
 		}
-		else 
+		else
 		{
 			// GI replaces diffuse
 			rtFlags |= g_HWSR_MaskBit[HWSR_DECAL_TEXGEN_2D];
@@ -94,7 +94,7 @@ void CTiledShadingStage::Execute()
 	}
 #endif
 
-	rtFlags |= CVrProjectionManager::Instance()->GetRTFlags();
+	rtFlags |= m_graphicsPipeline.GetVrProjectionManager()->GetRTFlags();
 
 	CTexture* texClipVolumeIndex = CRendererResources::s_ptexClipVolumes;
 	CTexture* pTexCaustics = tiledLights->IsCausticsVisible() ? CRendererResources::s_ptexSceneTargetR11G11B10F[1] : CRendererResources::s_ptexBlack;
@@ -147,15 +147,15 @@ void CTiledShadingStage::Execute()
 		m_pTexGiSpec = pTexGiSpec;
 	}
 
-	SRenderViewport viewport( 0, 0, screenWidth, screenHeight );
+	SRenderViewport viewport(0, 0, screenWidth, screenHeight);
 	SRenderViewInfo viewInfo[2];
-	size_t viewInfoCount = GetGraphicsPipeline().GenerateViewInfo(viewInfo);
-	GetStdGraphicsPipeline().GeneratePerViewConstantBuffer(viewInfo, viewInfoCount, m_pPerViewConstantBuffer,&viewport);
+	size_t viewInfoCount = m_graphicsPipeline.GenerateViewInfo(viewInfo);
+	m_graphicsPipeline.GeneratePerViewConstantBuffer(viewInfo, viewInfoCount, m_pPerViewConstantBuffer, &viewport);
 	m_passCullingShading.SetInlineConstantBuffer(eConstantBufferShaderSlot_PerView, m_pPerViewConstantBuffer);
 
 	m_passCullingShading.BeginConstantUpdate();
 	{
-		const auto &projMatrix = viewInfo[0].projMatrix;
+		const auto& projMatrix = viewInfo[0].projMatrix;
 		static CCryNameR projParamsName("ProjParams");
 		Vec4 projParams(projMatrix.m00, projMatrix.m11, projMatrix.m20, projMatrix.m21);
 		m_passCullingShading.SetConstant(projParamsName, projParams);
@@ -170,7 +170,7 @@ void CTiledShadingStage::Execute()
 		Vec4 worldViewPosParam(viewInfo[0].cameraOrigin, 0);
 		m_passCullingShading.SetConstant(worldViewPosName, worldViewPosParam);
 
-		SD3DPostEffectsUtils::UpdateFrustumCorners();
+		SD3DPostEffectsUtils::UpdateFrustumCorners(m_graphicsPipeline);
 		static CCryNameR frustumTLName("FrustumTL");
 		Vec4 frustumTL(SD3DPostEffectsUtils::m_vLT.x, SD3DPostEffectsUtils::m_vLT.y, SD3DPostEffectsUtils::m_vLT.z, 0);
 		m_passCullingShading.SetConstant(frustumTLName, frustumTL);
@@ -202,9 +202,9 @@ void CTiledShadingStage::Execute()
 		m_passCullingShading.SetConstant(ssdoParamsName, CRenderer::CV_r_ssdo ? ssdoParams : ssdoNullParams);
 	}
 
-	if (CVrProjectionManager::IsMultiResEnabledStatic())
+	if (m_graphicsPipeline.GetVrProjectionManager()->IsMultiResEnabledStatic())
 	{
-		auto constantBuffer = CVrProjectionManager::Instance()->GetProjectionConstantBuffer(screenWidth, screenHeight);
+		auto constantBuffer = m_graphicsPipeline.GetVrProjectionManager()->GetProjectionConstantBuffer(screenWidth, screenHeight);
 		m_passCullingShading.SetInlineConstantBuffer(eConstantBufferShaderSlot_VrProjection, constantBuffer);
 	}
 
@@ -214,7 +214,7 @@ void CTiledShadingStage::Execute()
 		1);
 
 	{
-		PROFILE_LABEL_SCOPE("SHADING");		
+		PROFILE_LABEL_SCOPE("SHADING");
 		// Prepare buffers and textures which have been used in the z-pass and post-processes for use in the compute queue
 		// Reduce resource state switching by requesting the most inclusive resource state
 		m_passCullingShading.PrepareResourcesForUse(GetDeviceObjectFactory().GetCoreCommandList());

@@ -3,7 +3,6 @@
 #include "StdAfx.h"
 #include "RenderView.h"
 
-
 #include "GraphicsPipeline/ShadowMap.h"
 #include "GraphicsPipeline/ClipVolumes.h"
 #include "GraphicsPipeline/SceneGBuffer.h"
@@ -22,7 +21,6 @@ CRenderView::CRenderView(const char* name, EViewType type, CRenderView* pParentV
 	, m_viewType(type)
 	, m_name(name)
 	, m_skipRenderingFlags(0)
-	, m_shaderRenderingFlags(0)
 	, m_frameId(0)
 	, m_pParentView(pParentView)
 	, m_numUsedClientPolygons(0)
@@ -41,7 +39,7 @@ CRenderView::CRenderView(const char* name, EViewType type, CRenderView* pParentV
 		m_renderItems[i].Init();
 		m_renderItems[i].SetNoneWorkerThreadID(gEnv->mMainThreadId);
 	}
-	
+
 	// Init Thread Safe Worker Containers
 	m_tempRenderObjects.tempObjects.Init();
 	m_tempRenderObjects.tempObjects.SetNoneWorkerThreadID(gEnv->mMainThreadId);
@@ -111,7 +109,7 @@ CRenderView::~CRenderView()
 	CRenderObject* pObjPoolEnd = &m_tempRenderObjects.pRenderObjectsPool[m_tempRenderObjects.numObjectsInPool];
 
 	// Delete all items that have not been allocated from the object pool
-	m_tempRenderObjects.tempObjects.clear(SDeleteNonePoolRenderObjs({pObjPoolStart, pObjPoolEnd}));
+	m_tempRenderObjects.tempObjects.clear(SDeleteNonePoolRenderObjs({ pObjPoolStart, pObjPoolEnd }));
 	if (m_tempRenderObjects.pRenderObjectsPool)
 	{
 		CryModuleMemalignFree(m_tempRenderObjects.pRenderObjectsPool);
@@ -138,7 +136,7 @@ void CRenderView::Clear()
 	FUNCTION_PROFILER_RENDERER();
 
 	CRY_ASSERT(m_usageMode == IRenderView::eUsageModeReadingDone ||
-	           m_usageMode == IRenderView::eUsageModeWritingDone || 
+	           m_usageMode == IRenderView::eUsageModeWritingDone ||
 	           m_usageMode == IRenderView::eUsageModeUndefined);
 
 	if (m_usageMode == IRenderView::eUsageModeWritingDone)
@@ -222,7 +220,6 @@ void CRenderView::Clear()
 
 	ZeroStruct(m_shaderConstants);
 
-	m_shaderRenderingFlags = 0;
 	m_skipRenderingFlags = 0;
 
 	m_tempRenderObjects.tempObjects.resize(0);
@@ -304,7 +301,7 @@ void CRenderView::CalculateViewInfo()
 {
 	SRenderViewInfo::EFlags viewFlags = m_viewFlags;
 	viewFlags |= SRenderViewInfo::eFlags_ReverseDepth;
-	
+
 	//if (!(m_viewFlags & SRenderViewInfo::eFlags_DrawToTexure) && !(gRenDev->m_RP.m_PersFlags2 & RBPF2_NOPOSTAA))
 	if (!(m_viewFlags & SRenderViewInfo::eFlags_DrawToTexure))
 	{
@@ -312,45 +309,27 @@ void CRenderView::CalculateViewInfo()
 	}
 
 	viewFlags |= m_viewFlags;
-	
+
 	CRenderView* pRenderView = this;
 	size_t viewInfoCount = 0;
-	for (CCamera::EEye eye = CCamera::eEye_Left; eye != CCamera::eEye_eCount; eye = CCamera::EEye(eye + 1))
+	for (CCamera::EEye eye = CCamera::eEye_Left; eye != (gcpRendD3D->IsStereoEnabled() ? CCamera::eEye_Both : CCamera::eEye_Right); eye = CCamera::EEye(eye + 1))
 	{
-		uint32 renderingFlags = m_shaderRenderingFlags;
-		if ((renderingFlags & (SHDF_STEREO_LEFT_EYE | SHDF_STEREO_RIGHT_EYE)) == 0) // non-stereo case
-			renderingFlags |= SHDF_STEREO_LEFT_EYE;
+		const CCamera& cam = pRenderView->GetCamera(eye);
+		const CCamera& previousCam = pRenderView->GetPreviousCamera(eye);
 
-		uint32 currentEyeFlag = eye == CCamera::eEye_Left ? SHDF_STEREO_LEFT_EYE : SHDF_STEREO_RIGHT_EYE;
+		m_viewInfo[viewInfoCount].flags = viewFlags;
+		m_viewInfo[viewInfoCount].SetCamera(cam, previousCam, m_vProjMatrixSubPixoffset,
+		                                    gRenDev->GetDrawNearestFOV(), CRendererCVars::CV_r_DrawNearFarPlane);
+		m_viewInfo[viewInfoCount].viewport = pRenderView->GetViewport();
+		auto& downscaleFactor = gRenDev->GetRenderQuality().downscaleFactor;
+		m_viewInfo[viewInfoCount].downscaleFactor = Vec4(downscaleFactor.x, downscaleFactor.y, gRenDev->m_PrevViewportScale.x, gRenDev->m_PrevViewportScale.y);
 
-		if (renderingFlags & currentEyeFlag)
-		{
-			const CCamera& cam = pRenderView->GetCamera(eye);
-			const CCamera& previousCam = pRenderView->GetPreviousCamera(eye);
-
-			m_viewInfo[viewInfoCount].flags = viewFlags;
-			m_viewInfo[viewInfoCount].SetCamera(cam, previousCam, m_vProjMatrixSubPixoffset,
-				gRenDev->GetDrawNearestFOV(), CRendererCVars::CV_r_DrawNearFarPlane);
-			m_viewInfo[viewInfoCount].viewport = pRenderView->GetViewport();
-			auto& downscaleFactor = gRenDev->GetRenderQuality().downscaleFactor;
-			m_viewInfo[viewInfoCount].downscaleFactor = Vec4(downscaleFactor.x, downscaleFactor.y, gRenDev->m_PrevViewportScale.x, gRenDev->m_PrevViewportScale.y);
-
-			++viewInfoCount;
-		}
+		++viewInfoCount;
 	}
 	m_viewInfoCount = viewInfoCount;
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool CRenderView::AllowsHDRRendering() const
-{ 
-	return (m_shaderRenderingFlags & SHDF_ALLOWHDR);
-}
-
-bool CRenderView::IsPostProcessingEnabled() const
-{
-	return (m_shaderRenderingFlags & SHDF_ALLOWPOSTPROCESS) && !IsRecursive() && gcpRendD3D->IsPostProcessingEnabled();
-}
 
 void CRenderView::SwitchUsageMode(EUsageMode mode)
 {
@@ -606,7 +585,7 @@ RenderLightIndex CRenderView::AddLight(eDeferredLightType lightType, const SRend
 //////////////////////////////////////////////////////////////////////////
 SRenderLight* CRenderView::AddLightAtIndex(eDeferredLightType lightType, const SRenderLight& light, RenderLightIndex nLightId /*=-1*/)
 {
-	CRY_ASSERT(nLightId == -1 || nLightId <  GetLightsCount(lightType));
+	CRY_ASSERT(nLightId == -1 || nLightId < GetLightsCount(lightType));
 
 	SRenderLight* pLight = nullptr;
 	if (nLightId < 0)
@@ -889,13 +868,6 @@ void CRenderView::AddPolygon(const SRenderPolygonDescription& poly, const SRende
 }
 
 //////////////////////////////////////////////////////////////////////////
-CCamera::EEye CRenderView::GetCurrentEye() const
-{
-	const bool bIsRightEye = (m_shaderRenderingFlags & (SHDF_STEREO_LEFT_EYE | SHDF_STEREO_RIGHT_EYE)) == SHDF_STEREO_RIGHT_EYE;
-	return (bIsRightEye) ? CCamera::eEye_Right : CCamera::eEye_Left;
-}
-
-//////////////////////////////////////////////////////////////////////////
 CTexture* CRenderView::GetColorTarget() const
 {
 	// Toggle back-buffer on first use
@@ -926,9 +898,11 @@ void CRenderView::InspectRenderOutput()
 	if (CRenderOutput* pRenderOutput = m_pRenderOutput.get())
 	{
 		SRenderViewport vp = pRenderOutput->GetViewport();
-		
-		int outputWidth  = (vp.width  - vp.x); CRY_ASSERT(pRenderOutput->GetOutputResolution()[0] == outputWidth);
-		int outputHeight = (vp.height - vp.y); CRY_ASSERT(pRenderOutput->GetOutputResolution()[1] == outputHeight);
+
+		int outputWidth = (vp.width - vp.x);
+		CRY_ASSERT(pRenderOutput->GetOutputResolution()[0] == outputWidth);
+		int outputHeight = (vp.height - vp.y);
+		CRY_ASSERT(pRenderOutput->GetOutputResolution()[1] == outputHeight);
 
 		// Calculate the rendering resolution based on inputs ///////////////////////////////////////////////////////////
 		int renderWidth  = outputWidth;
@@ -960,7 +934,7 @@ void CRenderView::ChangeRenderResolution(uint32_t renderWidth, uint32_t renderHe
 	// No changes do not need to resize
 	if (m_RenderWidth  == renderWidth &&
 	    m_RenderHeight == renderHeight && !bForce)
-	{ 
+	{
 		CRY_ASSERT(m_pDepthTarget->GetWidth() >= renderWidth && m_pDepthTarget->GetHeight() >= renderHeight);
 		CRY_ASSERT(m_pColorTarget->GetWidth() >= renderWidth && m_pColorTarget->GetHeight() >= renderHeight);
 		return;
@@ -999,15 +973,15 @@ void CRenderView::UnsetRenderOutput()
 void CRenderView::AddPermanentObjectImpl(CPermanentRenderObject* pObject, const SRenderingPassInfo& passInfo)
 {
 	const int passId = IsShadowGenView() ? 1 : 0;
-	
+
 	SPermanentObjectRecord rec;
 	rec.pRenderObject = pObject;
 	rec.itemSorter = passInfo.GetRendItemSorter().GetValue();
 	rec.shadowFrustumSide = passInfo.ShadowFrustumSide();
 	rec.requiresInstanceDataUpdate = pObject->m_bInstanceDataDirty[passId];
-		
+
 	m_permanentObjects.push_back(rec);
-	
+
 	if (IsShadowGenView())
 	{
 		for (CPermanentRenderObject* pCurObj = pObject; pCurObj; pCurObj = pCurObj->m_pNextPermanent)
@@ -1054,7 +1028,7 @@ CRenderObject* CRenderView::AllocateTemporaryRenderObject()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CRenderView::SetViewport(const SRenderViewport &viewport)
+void CRenderView::SetViewport(const SRenderViewport& viewport)
 {
 	m_viewport = viewport;
 
@@ -1079,7 +1053,7 @@ static inline uint32 CalculateRenderItemBatchFlags(SShaderItem& shaderItem, CRen
 	CShader* const __restrict pShader = (CShader*)shaderItem.m_pShader;
 
 	//float fAlpha = pObj->m_fAlpha;
-	uint32 uTransparent = 0; //(bool)(fAlpha < 1.0f); Not supported in new rendering pipeline 
+	uint32 uTransparent = 0; //(bool)(fAlpha < 1.0f); Not supported in new rendering pipeline
 	const ERenderObjectFlags ObjFlags = pObj->m_ObjFlags;
 
 	if (!passInfo.IsRecursivePass() && pTech)
@@ -1322,7 +1296,7 @@ static inline ERenderListID CalculateRenderItemList(const SShaderItem& shaderIte
 		|| passInfo.IsRecursivePass() /* account for recursive scene traversal done in forward fashion*/)
 	{
 		SRenderObjData* pOD = pObj->GetObjData();
-		if (pOD && pOD->m_FogVolumeContribIdx == (uint16)-1)
+		if (pOD && pOD->m_FogVolumeContribIdx == (uint16) - 1)
 		{
 			I3DEngine* pEng = gEnv->p3DEngine;
 			ColorF newContrib;
@@ -1373,7 +1347,6 @@ static inline ERenderListID CalculateRenderItemList(const SShaderItem& shaderIte
 	{
 		AddEf_HandleForceFlags(nList, nAboveWater, nBatchFlags, nShaderFlags, nShaderFlags2, pObj);
 	}
-
 
 	// Always force cloaked geometry to render after water
 	//if (obj->m_nMaterialLayers & MTL_LAYER_BLEND_CLOAK) nAW = 1;   -> branchless
@@ -1564,13 +1537,13 @@ void CRenderView::AddRenderItem(CRenderElement* pElem, CRenderObject* RESTRICT_P
 		pPermanentRendObj->PrepareForUse(pElem, renderPassType);
 		return;
 	}
-	
+
 	if (m_bTrackUncompiledItems)
 	{
 		// This item will need a temporary compiled object
 		EDataType reType = pElem ? pElem->mfGetType() : eDATA_Unknown;
 
-		const bool meshCompatibleRenderElement = 
+		const bool meshCompatibleRenderElement =
 			reType == eDATA_Mesh ||
 			reType == eDATA_Terrain ||
 			reType == eDATA_GeomCache ||
@@ -1654,14 +1627,14 @@ inline void CRenderView::AddRenderItemToRenderLists(const SRendItem& ri, uint64 
 		const bool isEmissive   = shaderItem.IsEmissive();
 		const bool isVegetation = shaderItem.IsVegetation();
 		const bool isTesselated = shaderItem.IsTesselated();
-		const bool skipPrepass   =
+		const bool skipPrepass  =
 			(CRenderer::CV_r_UseZPass <= CSceneGBufferStage::eZPassMode_GBufferOnly) ||
 			(CRenderer::CV_r_UseZPass <= CSceneGBufferStage::eZPassMode_PartialZPrePass && (isDissolved && !isVegetation)) ||
 			(CRenderer::CV_r_UseZPass <= CSceneGBufferStage::eZPassMode_PartialZPrePass && (isAlphaTested && !isVegetation)) ||
 			(CRenderer::CV_r_UseZPass <= CSceneGBufferStage::eZPassMode_DiscardingZPrePass && (isTesselated)) ||
 			(CRenderer::CV_r_UseZPass <= CSceneGBufferStage::eZPassMode_DiscardingZPrePass && (objDistance > CRenderer::CV_r_ZPrepassMaxDist));
 
-		if (skipPrepass)
+		if (skipPrepass && hasDeferredOpaqueFlags)
 			nBatchFlags &= ~FB_ZPREPASS;
 
 		// These lists are traversed by the GBuffer-pass by default (see CSceneGBufferStage::ExecuteSceneOpaque)
@@ -1674,14 +1647,14 @@ inline void CRenderView::AddRenderItemToRenderLists(const SRendItem& ri, uint64 
 		if ((nBatchFlags & FB_ZPREPASS))
 		{
 			const ERenderListID targetRenderList = isNearest ? EFSLIST_ZPREPASS_NEAREST : EFSLIST_ZPREPASS;
-			m_renderItems[targetRenderList].push_back(PrepareRenderItemForRenderList(ri, nBatchFlags, objFlags, pObj, objDistance, targetRenderList));
+			m_renderItems[targetRenderList].push_back(PrepareRenderItemForRenderList(ri, nBatchFlags, objFlags, pObj, objDistance, targetRenderList, shaderItem));
 			UpdateRenderListBatchFlags<isConcurrent>(m_batchFlags[targetRenderList], nBatchFlags);
 		}
 
 		// Add unconventional objects that are supported in the GBuffer-pass to the GENERAL list (in addition to the original list)
 		if ((hasDeferredOpaqueFlags) && !(isGeneralList))
 		{
-			m_renderItems[EFSLIST_GENERAL].push_back(PrepareRenderItemForRenderList(ri, nBatchFlags, objFlags, pObj, objDistance, EFSLIST_GENERAL));
+			m_renderItems[EFSLIST_GENERAL].push_back(PrepareRenderItemForRenderList(ri, nBatchFlags, objFlags, pObj, objDistance, EFSLIST_GENERAL, shaderItem));
 			UpdateRenderListBatchFlags<isConcurrent>(m_batchFlags[EFSLIST_GENERAL], nBatchFlags);
 		}
 
@@ -1689,7 +1662,7 @@ inline void CRenderView::AddRenderItemToRenderLists(const SRendItem& ri, uint64 
 		if (!isTransparent && (isEmissive || (hasForwardOpaqueFlags && !(isForwardOpaque | hasDeferredOpaqueFlags))))
 		{
 			const ERenderListID targetRenderList = isNearest ? EFSLIST_FORWARD_OPAQUE_NEAREST : EFSLIST_FORWARD_OPAQUE;
-			m_renderItems[targetRenderList].push_back(PrepareRenderItemForRenderList(ri, nBatchFlags, objFlags, pObj, objDistance, targetRenderList));
+			m_renderItems[targetRenderList].push_back(PrepareRenderItemForRenderList(ri, nBatchFlags, objFlags, pObj, objDistance, targetRenderList, shaderItem));
 			UpdateRenderListBatchFlags<isConcurrent>(m_batchFlags[targetRenderList], nBatchFlags);
 		}
 
@@ -1699,25 +1672,25 @@ inline void CRenderView::AddRenderItemToRenderLists(const SRendItem& ri, uint64 
 			EShaderType shaderType = reinterpret_cast<CShader*>(shaderItem.m_pShader)->m_eShaderType;
 			if (shaderType != eST_Water || (shaderType == eST_Water && renderList == EFSLIST_WATER))
 			{
-				m_renderItems[EFSLIST_PREPROCESS].push_back(PrepareRenderItemForRenderList(ri, nBatchFlags, objFlags, pObj, objDistance, EFSLIST_PREPROCESS));
+				m_renderItems[EFSLIST_PREPROCESS].push_back(PrepareRenderItemForRenderList(ri, nBatchFlags, objFlags, pObj, objDistance, EFSLIST_PREPROCESS, shaderItem));
 				UpdateRenderListBatchFlags<isConcurrent>(m_batchFlags[EFSLIST_PREPROCESS], nBatchFlags);
 			}
 		}
 
 		if (nBatchFlags & FB_CUSTOM_RENDER)
 		{
-			m_renderItems[EFSLIST_CUSTOM].push_back(PrepareRenderItemForRenderList(ri, nBatchFlags, objFlags, pObj, objDistance, EFSLIST_CUSTOM));
+			m_renderItems[EFSLIST_CUSTOM].push_back(PrepareRenderItemForRenderList(ri, nBatchFlags, objFlags, pObj, objDistance, EFSLIST_CUSTOM, shaderItem));
 			UpdateRenderListBatchFlags<isConcurrent>(m_batchFlags[EFSLIST_CUSTOM], nBatchFlags);
 		}
 
 		if (isSelectable)
 		{
-			m_renderItems[EFSLIST_HIGHLIGHT].push_back(PrepareRenderItemForRenderList(ri, nBatchFlags, objFlags, pObj, objDistance, EFSLIST_HIGHLIGHT));
+			m_renderItems[EFSLIST_HIGHLIGHT].push_back(PrepareRenderItemForRenderList(ri, nBatchFlags, objFlags, pObj, objDistance, EFSLIST_HIGHLIGHT, shaderItem));
 			UpdateRenderListBatchFlags<isConcurrent>(m_batchFlags[EFSLIST_HIGHLIGHT], nBatchFlags);
 		}
 	}
 
-	m_renderItems[renderList].push_back(PrepareRenderItemForRenderList(ri, nBatchFlags, objFlags, pObj, objDistance, renderList));
+	m_renderItems[renderList].push_back(PrepareRenderItemForRenderList(ri, nBatchFlags, objFlags, pObj, objDistance, renderList, shaderItem));
 	UpdateRenderListBatchFlags<isConcurrent>(m_batchFlags[renderList], nBatchFlags);
 }
 
@@ -1767,7 +1740,7 @@ void CRenderView::ExpandPermanentRenderObjects()
 
 				needsCompilation =
 					((pRenderObject->m_passReadyMask & passMask) != (pRenderObject->m_compiledReadyMask & passMask) &&
-					 (pRenderObject->m_passReadyMask & passMask) ) ||
+					 (pRenderObject->m_passReadyMask & passMask)) ||
 					!pRenderObject->m_bAllCompiledValid;
 
 				auto& permanent_items = pRenderObject->m_permanentRenderItems[renderPassType];
@@ -1838,7 +1811,7 @@ void CRenderView::ExpandPermanentRenderObjects()
 						if (!record.requiresInstanceDataUpdate)
 							compilationOptions &= ~eObjCompilationOption_PerInstanceConstantBuffer;
 
-						if(pri.m_ElmFlags & FCEF_SKINNED)
+						if (pri.m_ElmFlags & FCEF_SKINNED)
 							compilationOptions |= eObjCompilationOption_PerInstanceExtraResources;
 					}
 				}
@@ -1848,9 +1821,9 @@ void CRenderView::ExpandPermanentRenderObjects()
 			const auto needsInstanceDataUpdateOnly = !needsCompilation && record.requiresInstanceDataUpdate;
 			if (needsInstanceDataUpdateOnly)
 			{
-				compilationOptions |= 
+				compilationOptions |=
 					(eObjCompilationOption_PerInstanceConstantBuffer | eObjCompilationOption_PerInstanceExtraResources);
-				compilationOptions &= 
+				compilationOptions &=
 					(~eObjCompilationOption_InputStreams & ~eObjCompilationOption_PipelineState);
 				needsCompilation = true;
 			}
@@ -1906,7 +1879,9 @@ void CRenderView::CompileModifiedRenderObjects()
 
 	const auto nFrameId = gEnv->pRenderer->GetFrameID(false);
 
-	for (const auto &compilationData : m_permanentRenderObjectsToCompile)
+	auto* pShadowStage = m_pGraphicsPipeline->GetStage<CShadowMapStage>();
+
+	for (const auto& compilationData : m_permanentRenderObjectsToCompile)
 	{
 		auto* pRenderObject = compilationData.pObject;
 		auto compilationFlags = compilationData.compilationFlags;
@@ -1936,9 +1911,9 @@ void CRenderView::CompileModifiedRenderObjects()
 		bool bAllCompiled = true;
 
 		// compile items
-		auto& items = (passId == 0) ? 
-			pRenderObject->m_permanentRenderItems[CPermanentRenderObject::eRenderPass_General] : 
-			pRenderObject->m_permanentRenderItems[CPermanentRenderObject::eRenderPass_Shadows];
+		auto& items = (passId == 0) ?
+		              pRenderObject->m_permanentRenderItems[CPermanentRenderObject::eRenderPass_General] :
+		              pRenderObject->m_permanentRenderItems[CPermanentRenderObject::eRenderPass_Shadows];
 
 		bool allCachedShadowPsosAreValid = true;
 		for (int i = 0, num = items.size(); i < num; i++)
@@ -1947,7 +1922,7 @@ void CRenderView::CompileModifiedRenderObjects()
 			if (!pri.m_pCompiledObject || !pri.m_pCompiledObject->Compile(compilationFlags, pri.m_ObjFlags, pri.m_ElmFlags, pri.m_aabb, this))
 				bAllCompiled = false;
 
-			allCachedShadowPsosAreValid &= gcpRendD3D->GetGraphicsPipeline().GetShadowStage()->CanRenderCachedShadows(pri.m_pCompiledObject);
+			allCachedShadowPsosAreValid &= pShadowStage->CanRenderCachedShadows(pri.m_pCompiledObject);
 		}
 
 		if (bAllCompiled)
@@ -1971,10 +1946,10 @@ void CRenderView::CompileModifiedRenderObjects()
 #if defined(ENABLE_PROFILING_CODE)
 	int numTempObjects = m_temporaryCompiledObjects.size();
 #endif
-	for (const auto &t : m_temporaryCompiledObjects)
+	for (const auto& t : m_temporaryCompiledObjects)
 	{
 		t.pObject->Compile(eObjCompilationOption_All, t.objFlags, t.elmFlags, t.localAABB, this);
-		const bool cachedShadowPsosAreValid = gcpRendD3D->GetGraphicsPipeline().GetShadowStage()->CanRenderCachedShadows(t.pObject);
+		const bool cachedShadowPsosAreValid = pShadowStage->CanRenderCachedShadows(t.pObject);
 
 		if (!cachedShadowPsosAreValid && IsShadowGenView())
 		{
@@ -1989,10 +1964,11 @@ void CRenderView::CompileModifiedRenderObjects()
 	CryInterlockedAdd(&SRenderStatistics::Write().m_nModifiedCompiledObjects, numObjects);
 	CryInterlockedAdd(&SRenderStatistics::Write().m_nTempCompiledObjects, numTempObjects);
 #endif
-	
+
 	for (auto& fr : m_shadows.m_renderFrustums)
 	{
 		CRenderView* pShadowView = (CRenderView*)fr.pShadowsView.get();
+		pShadowView->SetGraphicsPipeline(m_pGraphicsPipeline);
 		pShadowView->CompileModifiedRenderObjects();
 	}
 }
@@ -2012,7 +1988,7 @@ void CRenderView::UpdateModifiedShaderItems()
 	}
 
 	m_shaderItemsToUpdate.CoalesceMemory();
-	 
+
 	for (auto& item : m_shaderItemsToUpdate)
 	{
 		auto pShaderResources = item.first;
@@ -2088,7 +2064,7 @@ void CRenderView::ClearTemporaryCompiledObjects()
 
 	/////////////////////////////////////////////////////////////////////////////
 	// Clean up non permanent compiled objects
-	for (const auto &t : m_temporaryCompiledObjects)
+	for (const auto& t : m_temporaryCompiledObjects)
 		CCompiledRenderObject::FreeToPool(t.pObject);
 	m_temporaryCompiledObjects.clear();
 	/////////////////////////////////////////////////////////////////////////////
@@ -2216,38 +2192,36 @@ void DebugPrintRenderlists(CRenderView* pRenderView)
 
 			// SCompareRendItemZPrePass
 			if (renderList == EFSLIST_ZPREPASS_NEAREST ||
-				renderList == EFSLIST_ZPREPASS)
-
+			    renderList == EFSLIST_ZPREPASS)
 				CryLogAlways("%6d: %c %2d 0x%04x 0x%016zx 0x%04x", i,
-					((renderItems[i].ObjSort & (FOB_SORT_MASK & FOB_ALPHATEST))) ? 'a' : 'o',
-					(renderItems[i].ObjSort >> 10) & 0x3F,
-					renderItems[i].SortVal,
-					renderItems[i].pElem,
-					renderItems[i].ObjSort & 0xFFFF
-				);
+				             ((renderItems[i].ObjSort & (FOB_SORT_MASK & FOB_ALPHATEST))) ? 'a' : 'o',
+				             (renderItems[i].ObjSort >> 10) & 0x3F,
+				             renderItems[i].SortVal,
+				             renderItems[i].pElem,
+				             renderItems[i].ObjSort & 0xFFFF
+				             );
 
 			// SCompareRendItemZPass
 			if (renderList == EFSLIST_NEAREST_OBJECTS ||
-				renderList == EFSLIST_GENERAL ||
-				renderList == EFSLIST_SKIN)
-
+			    renderList == EFSLIST_GENERAL ||
+			    renderList == EFSLIST_SKIN)
 				CryLogAlways("%6d: %c %2d 0x%04x 0x%016zx 0x%04x", i,
-					((renderItems[i].ObjSort & (FOB_SORT_MASK & ~FOB_DISCARD_MASK)) >> 30) + 'A',
-					!(renderItems[i].ObjSort & FOB_ZPREPASS) ? (renderItems[i].ObjSort >> 10) & 0x3F : 0x3F,
-					renderItems[i].SortVal,
-					renderItems[i].pElem,
-					renderItems[i].ObjSort & 0xFFFF
-				);
+				             ((renderItems[i].ObjSort & (FOB_SORT_MASK & ~FOB_DISCARD_MASK)) >> 30) + 'A',
+				             !(renderItems[i].ObjSort & FOB_ZPREPASS) ? (renderItems[i].ObjSort >> 10) & 0x3F : 0x3F,
+				             renderItems[i].SortVal,
+				             renderItems[i].pElem,
+				             renderItems[i].ObjSort & 0xFFFF
+				             );
 
 			// SCompareDist
 			if (renderList == EFSLIST_WATER_VOLUMES ||
-				renderList == EFSLIST_TRANSP_BW ||
-				renderList == EFSLIST_TRANSP_AW ||
-				renderList == EFSLIST_TRANSP_NEAREST ||
-				renderList == EFSLIST_WATER ||
-				renderList == EFSLIST_HALFRES_PARTICLES ||
-				renderList == EFSLIST_LENSOPTICS ||
-				renderList == EFSLIST_EYE_OVERLAY) int a = 0;
+			    renderList == EFSLIST_TRANSP_BW ||
+			    renderList == EFSLIST_TRANSP_AW ||
+			    renderList == EFSLIST_TRANSP_NEAREST ||
+			    renderList == EFSLIST_WATER ||
+			    renderList == EFSLIST_HALFRES_PARTICLES ||
+			    renderList == EFSLIST_LENSOPTICS ||
+			    renderList == EFSLIST_EYE_OVERLAY) int a = 0;
 
 			// SCompareItem_Decal
 			if (renderList == EFSLIST_DECAL) int a = 0;
@@ -2257,16 +2231,15 @@ void DebugPrintRenderlists(CRenderView* pRenderView)
 
 			// SCompareRendItemZPrePass
 			if (renderList == EFSLIST_FORWARD_OPAQUE_NEAREST ||
-				renderList == EFSLIST_FORWARD_OPAQUE ||
-				IsShadowGenView())
-
+			    renderList == EFSLIST_FORWARD_OPAQUE ||
+			    IsShadowGenView())
 				CryLogAlways("%6d: %c %2d 0x%08x 0x%016zx 0x%04x", i,
-					((renderItems[i].ObjSort & (FOB_SORT_MASK & FOB_ALPHATEST))) ? 'a' : 'o',
-					(renderItems[i].ObjSort >> 10) & 0x3F,
-					renderItems[i].SortVal,
-					renderItems[i].pElem,
-					renderItems[i].ObjSort & 0xFFFF
-				);
+				             ((renderItems[i].ObjSort & (FOB_SORT_MASK & FOB_ALPHATEST))) ? 'a' : 'o',
+				             (renderItems[i].ObjSort >> 10) & 0x3F,
+				             renderItems[i].SortVal,
+				             renderItems[i].pElem,
+				             renderItems[i].ObjSort & 0xFFFF
+				             );
 
 			renderItems[i].nBatchFlags;
 		}
@@ -2274,7 +2247,7 @@ void DebugPrintRenderlists(CRenderView* pRenderView)
 }
 #endif
 
-SRendItem CRenderView::PrepareRenderItemForRenderList(const SRendItem& ri_templ, uint32 nBatchFlags, uint64 objFlags, CRenderObject* pObj, float objDistance, ERenderListID renderList)
+SRendItem CRenderView::PrepareRenderItemForRenderList(const SRendItem& ri_templ, uint32 nBatchFlags, uint64 objFlags, CRenderObject* pObj, float objDistance, ERenderListID renderList, const SShaderItem& shaderItem)
 {
 	SRendItem ri = ri_templ;
 
@@ -2312,7 +2285,7 @@ SRendItem CRenderView::PrepareRenderItemForRenderList(const SRendItem& ri_templ,
 		if (!(nBatchFlags & FB_ZPREPASS))
 			ri.ObjSort &= ~FOB_ZPREPASS;
 		else
-			ri.ObjSort |=  FOB_ZPREPASS;
+			ri.ObjSort |= FOB_ZPREPASS;
 
 		break;
 	case EFSLIST_CUSTOM:
@@ -2527,7 +2500,7 @@ void CRenderView::PrepareShadowViews()
 {
 	FUNCTION_PROFILER_RENDERER();
 
-	for (auto & fr : m_shadows.m_renderFrustums)
+	for (auto& fr : m_shadows.m_renderFrustums)
 	{
 		if (fr.pFrustum->m_eFrustumType != ShadowMapFrustum::e_Nearest)
 		{
@@ -2563,7 +2536,6 @@ void CRenderView::CheckAndScheduleForUpdate(const SShaderItem& shaderItem) threa
 	}
 }
 
-
 //////////////////////////////////////////////////////////////////////////
 uint16 CRenderView::PushFogVolumeContribution(const ColorF& fogVolumeContrib, const SRenderingPassInfo& passInfo) threadsafe
 {
@@ -2571,11 +2543,11 @@ uint16 CRenderView::PushFogVolumeContribution(const ColorF& fogVolumeContrib, co
 	size_t numElems(m_fogVolumeContributions.size());
 	assert(numElems < maxElems);
 	if (numElems >= maxElems)
-		return (uint16)-1;
+		return (uint16) - 1;
 
 	size_t nIndex = ~0;
 	nIndex = m_fogVolumeContributions.lockfree_push_back(fogVolumeContrib);
-	assert(nIndex <= (uint16)-1); // Beware! Casting from uint32 to uint16 may loose top bits
+	assert(nIndex <= (uint16) - 1); // Beware! Casting from uint32 to uint16 may loose top bits
 	return static_cast<uint16>(nIndex);
 }
 
@@ -2593,7 +2565,7 @@ void CRenderView::GetFogVolumeContribution(uint16 idx, ColorF& rColor) const
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CRenderView::SetTargetClearColor(const ColorF &color, bool bEnableClear)
+void CRenderView::SetTargetClearColor(const ColorF& color, bool bEnableClear)
 {
 	m_targetClearColor = color;
 	m_bClearTarget = bEnableClear;
@@ -2974,7 +2946,7 @@ Matrix44 SRenderViewInfo::GetReprojection() const
 	const Matrix44A& matView = viewMatrix;
 
 	CRY_ASSERT(gcpRendD3D->GetS3DRend().GetStereoMode() == EStereoMode::STEREO_MODE_DUAL_RENDERING
-		|| (matProj.m20 == 0 && matProj.m21 == 0)); // Ensure jittering is removed from projection matrix
+	           || (matProj.m20 == 0 && matProj.m21 == 0)); // Ensure jittering is removed from projection matrix
 
 	Matrix44_tpl<f64> matViewInv, matProjInv;
 	mathMatrixLookAtInverse(&matViewInv, &matView);
@@ -3030,7 +3002,7 @@ Matrix44 SRenderViewInfo::GetNearestProjection(float nearestFOV, float farPlane,
 	return result;
 }
 
-TRect_tpl<uint16> CRenderView::ComputeResolveViewport(const AABB &aabb, bool forceFullscreenUpdate) const
+TRect_tpl<uint16> CRenderView::ComputeResolveViewport(const AABB& aabb, bool forceFullscreenUpdate) const
 {
 	// TODO: Re-evaluate camera selection for multiviewport rendering
 	const auto& camera = GetCamera(GetCurrentEye());

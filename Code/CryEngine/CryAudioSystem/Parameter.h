@@ -21,18 +21,18 @@ public:
 #if defined(CRY_AUDIO_USE_DEBUG_CODE)
 	explicit CParameter(
 		ControlId const id,
-		EDataScope const dataScope,
+		ContextId const contextId,
 		ParameterConnections const& connections,
 		char const* const szName)
-		: Control(id, dataScope, szName)
+		: Control(id, contextId, szName)
 		, m_connections(connections)
 	{}
 #else
 	explicit CParameter(
 		ControlId const id,
-		EDataScope const dataScope,
+		ContextId const contextId,
 		ParameterConnections const& connections)
-		: Control(id, dataScope)
+		: Control(id, contextId)
 		, m_connections(connections)
 	{}
 #endif // CRY_AUDIO_USE_DEBUG_CODE

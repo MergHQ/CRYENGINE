@@ -47,16 +47,16 @@ public:
 	void SetupPasses(CRenderView* pRenderView);
 	void SetupGlobalConsts(CRenderView* pRenderView);
 
-	void        Release();
+	void Release();
 
-	void        AddGIClipVolume(IRenderMesh* pClipVolume, const Matrix34& mxTransform);
+	void AddGIClipVolume(IRenderMesh* pClipVolume, const Matrix34& mxTransform);
 
 	// called in between levels to free up memory
-	void          ReleaseData();
+	void        ReleaseData(std::shared_ptr<CGraphicsPipeline> pGraphicsPipeline);
 
-	void          GetClipVolumeParams(const Vec4*& pParams);
-	CTexture*     GetResolvedStencilRT() { return m_pResolvedStencilRT; }
-	void          GetLightRenderSettings(const CRenderView* pRenderView, const SRenderLight* const __restrict pDL, bool& bStencilMask, bool& bUseLightVolumes, EShapeMeshType& meshType);
+	void        GetClipVolumeParams(const Vec4*& pParams);
+	CTexture*   GetResolvedStencilRT() { return m_pResolvedStencilRT; }
+	void        GetLightRenderSettings(const CRenderView* pRenderView, const SRenderLight* const __restrict pDL, bool& bStencilMask, bool& bUseLightVolumes, EShapeMeshType& meshType);
 
 	inline Vec4 GetLightDepthBounds(const SRenderLight* pDL, bool bReverseDepth) const
 	{
@@ -107,11 +107,11 @@ public:
 		return Vec4(fMinZ, max(fMinW, 0.000001f), fMaxZ, max(fMaxW, 0.000001f));
 	}
 
-	const Matrix44A& GetCameraProjMatrix() const { return m_mViewProj; }
+	const Matrix44A&                GetCameraProjMatrix() const    { return m_mViewProj; }
 
-	CPowerOf2BlockPacker&           GetBlockPacker() { return m_blockPack; }
-	const CPowerOf2BlockPacker&     GetBlockPacker() const { return m_blockPack; }
-	TArray<SShadowAllocData>&       GetShadowPoolAllocator() { return m_shadowPoolAlloc; }
+	CPowerOf2BlockPacker&           GetBlockPacker()               { return m_blockPack; }
+	const CPowerOf2BlockPacker&     GetBlockPacker() const         { return m_blockPack; }
+	TArray<SShadowAllocData>&       GetShadowPoolAllocator()       { return m_shadowPoolAlloc; }
 	const TArray<SShadowAllocData>& GetShadowPoolAllocator() const { return m_shadowPoolAlloc; }
 
 private:

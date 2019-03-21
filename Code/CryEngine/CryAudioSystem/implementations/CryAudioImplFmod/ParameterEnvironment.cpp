@@ -16,7 +16,7 @@ CParameterEnvironment::~CParameterEnvironment()
 {
 	for (auto const pBaseObject : g_constructedObjects)
 	{
-		pBaseObject->RemoveParameter(m_id);
+		pBaseObject->RemoveParameter(m_parameterInfo);
 	}
 }
 
@@ -24,7 +24,7 @@ CParameterEnvironment::~CParameterEnvironment()
 void CParameterEnvironment::Set(IObject* const pIObject, float const amount)
 {
 	auto const pBaseObject = static_cast<CBaseObject*>(pIObject);
-	pBaseObject->SetParameter(m_id, m_multiplier * amount + m_shift);
+	pBaseObject->SetParameter(m_parameterInfo, m_multiplier * amount + m_shift);
 }
 } // namespace Fmod
 } // namespace Impl

@@ -9,6 +9,7 @@
 #include <CrySandbox/CrySignal.h>
 
 class CEditor;
+class CCommandModel;
 
 class QAdvancedTreeView;
 class QDeepFilterProxyModel;
@@ -16,6 +17,7 @@ class QEditableComboBox;
 class QHBoxLayout;
 class QLineEdit;
 class QListView;
+class QSearchBox;
 class QToolBar;
 class QToolButton;
 
@@ -25,7 +27,6 @@ class EDITOR_COMMON_API CToolBarCustomizeDialog : public CEditorDialog
 private:
 	class QDropContainer;
 	class QCustomToolBar;
-	class DropCommandModel;
 
 	// Only needed because CEditorMainFrame is able to host toolbars. We'll need to keep it this way until we manage to unlink Level Editing from the QtMainFrame.
 	friend class CEditorMainFrame;
@@ -69,7 +70,7 @@ private:
 	QDropContainer* m_pDropContainer;
 	QEditableComboBox*                                m_pToolbarSelect;
 	QAdvancedTreeView*                                m_pTreeView;
-	DropCommandModel* m_pItemModel;
+	CCommandModel* m_pItemModel;
 	QDeepFilterProxyModel*                            m_pProxyModel;
 	QListView*        m_pPreview;
 	QLineEdit*        m_pNameInput;
@@ -79,6 +80,7 @@ private:
 	QLineEdit*        m_pCVarValueInput;
 	QToolButton*      m_pIconBrowserButton;
 	QToolButton*      m_pCVarBrowserButton;
+	QSearchBox*       m_pSearchBox;
 
 	const CEditor*    m_pEditor;
 	string            m_editorName;
@@ -121,6 +123,8 @@ public:
 
 	void                                                 ShowContextMenu(const QPoint& position);
 
+	static const char*                                   GetToolBarItemMimeType() { return s_toolBarItemMimeType; }
+
 	CCrySignal<void(std::shared_ptr<CEditorToolBarService::QItemDesc> )>    selectedItemChanged;
 	CCrySignal<void(std::shared_ptr<CEditorToolBarService::QToolBarDesc> )> signalToolBarModified;
 
@@ -134,9 +138,9 @@ private:
 	std::shared_ptr<CEditorToolBarService::QItemDesc> m_pSelectedItem;
 	QPoint m_DragStartPosition;
 	CToolBarCustomizeDialog*                          m_pToolBarCreator;
-	QHBoxLayout*    m_pPreviewLayout;
-	QCustomToolBar* m_pCurrentToolBar;
+	QHBoxLayout*       m_pPreviewLayout;
+	QCustomToolBar*    m_pCurrentToolBar;
 	std::shared_ptr<CEditorToolBarService::QToolBarDesc> m_pCurrentToolBarDesc;
-
-	bool m_bDragStarted;
+	static const char* s_toolBarItemMimeType;
+	bool               m_bDragStarted;
 };

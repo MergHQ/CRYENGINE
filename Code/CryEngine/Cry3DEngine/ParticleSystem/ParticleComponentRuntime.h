@@ -43,6 +43,7 @@ public:
 	void                          Reparent(TConstArray<TParticleId> swapIds);
 	void                          AddSpawners(TVarArray<SSpawnerDesc> descs, bool cull = true);
 	void                          RemoveAllSpawners();
+	void                          RunParticles(uint count, float deltaTime);
 	void                          RenderAll(const SRenderContext& renderContext);
 
 	void                          ComputeVertices(const SCameraInfo& camInfo, CREParticle* pRE, uint64 uRenderFlags, float fMaxPixels) override;
@@ -99,7 +100,6 @@ public:
 	const CParticleContainer& GetContainer() const       { return Container(); }
 
 private:
-	void PreRun();
 	void AddRemoveParticles();
 	void UpdateSpawners();
 	void RemoveParticles();

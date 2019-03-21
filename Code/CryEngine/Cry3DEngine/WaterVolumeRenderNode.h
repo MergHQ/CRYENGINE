@@ -1,8 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef _WATERVOLUME_RENDERNODE_
-#define _WATERVOLUME_RENDERNODE_
-
 #pragma once
 
 #include <CryRenderer/VertexFormats.h>
@@ -227,5 +224,3 @@ private:
 	float                      m_causticHeight;
 	pe_params_area             m_auxPhysParams;
 };
-
-#endif // #ifndef _DECAL_RENDERNODE_

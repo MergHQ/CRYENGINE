@@ -83,7 +83,8 @@ void CResourcePicker::OnValueChanged(const char* newValue)
 		//Run validation check
 		SResourceValidationResult validatedPath = m_pSelector->ValidateValue(m_context, newValue, m_previousValue.toStdString().c_str());
 
-		if (validatedPath.isValid)
+		//An empty validatedResource is not valid, but a set to an empty state needs to be allowed 
+		if (!validatedPath.isValid && !validatedPath.validatedResource.empty())
 		{
 			CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_WARNING, "Invalid %s: %s", m_context.typeName, newValue);
 			m_pLineEdit->setText(m_previousValue);

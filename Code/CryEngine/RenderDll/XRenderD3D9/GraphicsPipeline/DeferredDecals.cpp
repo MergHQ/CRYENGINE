@@ -15,7 +15,7 @@ struct SDecalConstants
 	Vec4     specularCol;
 	Vec4     mipLevels;
 	Vec4     generalParams;
-	Vec4	 opacityParams;
+	Vec4     opacityParams;
 };
 
 
@@ -32,15 +32,6 @@ struct DecalSortComparison
 		return decal0.nSortOrder < decal1.nSortOrder;
 	}
 };
-
-
-CDeferredDecalsStage::CDeferredDecalsStage()
-{
-}
-
-CDeferredDecalsStage::~CDeferredDecalsStage()
-{
-}
 
 void CDeferredDecalsStage::Init()
 {
@@ -131,7 +122,7 @@ void CDeferredDecalsStage::SetupDecalPrimitive(const SDeferredDecal& decal, CRen
 	static CCryNameTSCRC techDefDecalVolume = "DeferredDecalVolumeMerged";
 	primitive.SetTechnique(CShaderMan::s_shDeferredShading, techDefDecalVolume, rtFlags);
 	primitive.SetPrimitiveType(CRenderPrimitive::ePrim_UnitBox);
-	primitive.SetInlineConstantBuffer(eConstantBufferShaderSlot_PerView, gcpRendD3D->GetGraphicsPipeline().GetMainViewConstantBuffer(), EShaderStage_Pixel | EShaderStage_Vertex);
+	primitive.SetInlineConstantBuffer(eConstantBufferShaderSlot_PerView, m_graphicsPipeline.GetMainViewConstantBuffer(), EShaderStage_Pixel | EShaderStage_Vertex);
 
 	ITexture* pDiffuseMap = TextureHelpers::LookupTexDefault(EFTT_DIFFUSE);
 	Matrix44 texMatrix(IDENTITY);
@@ -172,7 +163,7 @@ void CDeferredDecalsStage::SetupDecalPrimitive(const SDeferredDecal& decal, CRen
 		auto constants = constantManager.BeginTypedConstantUpdate<SDecalConstants>(eConstantBufferShaderSlot_PerPrimitive, EShaderStage_Pixel | EShaderStage_Vertex);
 
 		SRenderViewInfo viewInfo[2];
-		GetGraphicsPipeline().GenerateViewInfo(viewInfo);
+		m_graphicsPipeline.GenerateViewInfo(viewInfo);
 
 		const Vec3 vBasisX = decal.projMatrix.GetColumn0();
 		const Vec3 vBasisY = decal.projMatrix.GetColumn1();
@@ -181,7 +172,7 @@ void CDeferredDecalsStage::SetupDecalPrimitive(const SDeferredDecal& decal, CRen
 		Vec3  camFront = viewInfo[0].cameraVZ.normalized();
 		Vec3  camPos   = viewInfo[0].cameraOrigin;
 		float camNear  = viewInfo[0].nearClipPlane;
-	
+
 		const float r = fabs(vBasisX.dot(camFront)) + fabs(vBasisY.dot(camFront)) + fabs(vBasisZ.dot(camFront));
 		const float s = camFront.dot(decal.projMatrix.GetTranslation() - camPos);
 		bCameraInVolume = fabs(s) - camNear <= r;  // OBB-Plane via separating axis test, to check if camera near plane intersects decal volume
@@ -217,7 +208,7 @@ void CDeferredDecalsStage::SetupDecalPrimitive(const SDeferredDecal& decal, CRen
 		}
 		constants->generalParams = decalParams;
 		constants->opacityParams = decalOpacityParams;
-		
+
 		const float zNear = -0.3f;
 		const float zFar = 0.5f;
 		const Matrix44A matTextureAndDepth(
@@ -284,7 +275,7 @@ void CDeferredDecalsStage::SetupDecalPrimitive(const SDeferredDecal& decal, CRen
 		STENCOP_FAIL(FSS_STENCOP_KEEP)  |
 		STENCOP_ZFAIL(FSS_STENCOP_KEEP) |
 		STENCOP_PASS(FSS_STENCOP_KEEP),
-		BIT_STENCIL_RESERVED | BIT_STENCIL_ALLOW_DECALBLEND, 
+		BIT_STENCIL_RESERVED | BIT_STENCIL_ALLOW_DECALBLEND,
 		BIT_STENCIL_RESERVED | BIT_STENCIL_ALLOW_DECALBLEND, 0xFF);
 
 	primitive.Compile(m_decalPass);
@@ -310,7 +301,7 @@ void CDeferredDecalsStage::Execute()
 
 	// Create temporary copy to enable reads from normal target
 	GetDeviceObjectFactory().GetCoreCommandList().GetCopyInterface()->Copy(CRendererResources::s_ptexSceneNormalsMap->GetDevTexture(), CRendererResources::s_ptexSceneNormalsBent->GetDevTexture());
-	
+
 	// Sort decals
 	std::stable_sort(deferredDecals.begin(), deferredDecals.end(), DecalSortComparison());
 
@@ -323,11 +314,11 @@ void CDeferredDecalsStage::Execute()
 	m_decalPass.SetRenderTarget(1, CRendererResources::s_ptexSceneDiffuse);
 	m_decalPass.SetRenderTarget(2, pSceneSpecular);
 	m_decalPass.SetDepthTarget(RenderView()->GetDepthTarget());
-	
+
 	m_decalPass.SetViewport(RenderView()->GetViewport());
-		
+
 	m_decalPass.BeginAddingPrimitives();
-		
+
 	for (uint32 i = 0, count = deferredDecals.size(); i < count; i++)
 	{
 		SetupDecalPrimitive(deferredDecals[i], m_decalPrimitives[i], m_decalShaderResources[i]);

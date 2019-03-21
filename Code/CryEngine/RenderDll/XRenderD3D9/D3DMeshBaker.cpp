@@ -53,7 +53,7 @@ public:
 
 	virtual bool               mfUpdate(InputLayoutHandle eVertFormat, EStreamMasks StreamMask, bool bTessellation = false)
 	{
-		bool bRet = m_pSrc->mfUpdate(eVertFormat, StreamMask, bTessellation); 
+		bool bRet = m_pSrc->mfUpdate(eVertFormat, StreamMask, bTessellation);
 		return bRet;
 	}
 
@@ -743,8 +743,6 @@ bool CD3D9Renderer::BakeMesh(const SMeshBakingInputParams* pInputParams, SMeshBa
 		}
 
 		PROFILE_LABEL_SCOPE("BakeMesh");
-
-		SRenderingPassInfo passInfo = SRenderingPassInfo::CreateGeneralPassRenderingInfo(gEnv->p3DEngine->GetRenderingCamera());
 
 		bool bAlphaCutout = false;
 		for (int i = 0; i < pInputParams->numMaterialParams; i++)

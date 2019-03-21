@@ -21,12 +21,12 @@ public:
 	CSwitch& operator=(CSwitch&&) = delete;
 
 #if defined(CRY_AUDIO_USE_DEBUG_CODE)
-	explicit CSwitch(ControlId const id, EDataScope const dataScope, char const* const szName)
-		: Control(id, dataScope, szName)
+	explicit CSwitch(ControlId const id, ContextId const contextId, char const* const szName)
+		: Control(id, contextId, szName)
 	{}
 #else
-	explicit CSwitch(ControlId const id, EDataScope const dataScope)
-		: Control(id, dataScope)
+	explicit CSwitch(ControlId const id, ContextId const contextId)
+		: Control(id, contextId)
 	{}
 #endif // CRY_AUDIO_USE_DEBUG_CODE
 

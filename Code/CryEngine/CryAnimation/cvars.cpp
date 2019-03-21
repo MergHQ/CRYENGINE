@@ -115,6 +115,9 @@ void Console::Init()
 #ifndef _RELEASE
 	REGISTER_CVAR(ca_DebugAnimUsageOnFileAccess, 0, 0, "shows what animation assets are used in the level, triggered by key fileAccess events");
 	REGISTER_CVAR(ca_AttachmentTextureMemoryBudget, 100, 0, "texture budget for e_debugdraw 20 - in megabytes");
+	
+	REGISTER_CVAR(ca_debug_attachmentManager_maxUsedMemSize, 0, VF_NULL, "shows how many elements the memory vector of the AttachmentManager held at most");
+	REGISTER_CVAR(ca_debug_attachmentManager_maxUsedOffsetSize, 0, VF_NULL, "shows how many elements the offsets vector of the AttachmentManager held at most");
 #endif
 
 	ca_CharEditModel = "objects/characters/human/sdk_player/sdk_player.cdf";
@@ -238,6 +241,9 @@ void Console::Init()
 	DefineConstIntCVar(ca_DisableAnimationUnloading, 0, VF_NULL, "Disable Animation Unloading.");
 
 	DefineConstIntCVar(ca_PreloadAllCAFs, 0, VF_NULL, "Preload all CAFs during level preloading.");
+
+	DefineConstIntCVar(ca_MinAttachmentMemorySize, 4096, VF_NULL, "Default reservation size of the memory vector in the AttachmentManager");
+	DefineConstIntCVar(ca_MinAttachmentOffsetSize, 4096, VF_NULL, "Default reservation size of the offsets vector in the AttachmentManager");
 
 	// vars in console .cfgs
 	REGISTER_CVAR(ca_DrawVEGInfo, 0.0f, VF_CHEAT, "if set to 1, the VEG debug info is drawn");

@@ -12,6 +12,33 @@
 
 DECLARE_JOB("AsyncResourceCompiler", TAsyncResourceCompilerJob, CTextureCompiler::ConsumeQueuedResourceCompiler);
 
+namespace Private_TextureCompiler
+{
+
+void AddResourceCachePrefix(char path[])
+{
+	const ICVar* pCacheFolderVar = gEnv->pConsole->GetCVar("sys_resource_cache_folder");
+	const auto cacheFolder = pCacheFolderVar->GetString();
+	const auto cacheFolderLen = strlen(cacheFolder);
+	memmove(path + cacheFolderLen + 1, path, strlen(path) + 1);
+	memcpy(path, cacheFolder, cacheFolderLen);
+	path[cacheFolderLen] = '/';
+	for (int i = 0; i < cacheFolderLen; ++i)
+	{
+		if (path[i] == '\\')
+		{
+			path[i] = '/';
+		}
+	}
+}
+
+bool IsAlias(const char* szFilename)
+{
+	return *szFilename == '%';
+}
+
+}
+
 //////////////////////////////////////////////////////////////////////////
 CTextureCompiler::CTextureCompiler()
 {
@@ -457,7 +484,7 @@ private:
 	}
 
 	// Returns list of asset filenames without paths.
-	static std::vector<string> GetAssetFiles(const string& srcFile)
+	static std::vector<string> GetAssetFiles(const string& srcFile, bool onlyMentionedFile = false)
 	{
 		const CryPathString path = PathUtil::Make(PathUtil::GetPathWithoutFilename(srcFile.c_str()).c_str(), "*");
 		std::vector<string> files;
@@ -478,7 +505,8 @@ private:
 					continue;
 				}
 
-				files.emplace_back(fd.name);
+				if(!onlyMentionedFile || strstr(srcFile, fd.name))
+					files.emplace_back(fd.name);
 			} while (pPack->FindNext(handle, &fd) >= 0);
 			pPack->FindClose(handle);
 		}
@@ -500,7 +528,7 @@ private:
 
 		const string srcPath = PathUtil::GetPathWithoutFilename(srcFile);
 		const string dstPath = PathUtil::GetPathWithoutFilename(dstFile);
-		const auto files = GetAssetFiles(srcFile);
+		const auto files = GetAssetFiles(srcFile, true);
 		for (const string& file : files)
 		{
 			const string srcFile = srcPath + file;
@@ -752,10 +780,17 @@ void CTextureCompiler::NotifyCompilationQueueDepleted()
 
 void CTextureCompiler::NotifyCompilationFinished(TProcItem* item)
 {
+	NotifyCompilationFinished(item->src.c_str(), item->dst.c_str(), item->returnval);
+}
+
+void CTextureCompiler::NotifyCompilationFinished(const char* szSourceFile, const char* szDestFile, ERcExitCode eReturnCode)
+{
+	const auto& source = PathUtil::MakeProjectPath(szSourceFile);
+	const auto& dest = PathUtil::MakeProjectPath(szDestFile);
 	CryAutoReadLock<CryRWLock> lock(m_rwLockNotify);
 	for (IAsyncTextureCompileListener* notify : m_sNotifyList)
 	{
-		notify->OnCompilationFinished(item->src.c_str(), item->dst.c_str(), item->returnval);
+		notify->OnCompilationFinished(source.c_str(), dest.c_str(), eReturnCode);
 	};
 }
 
@@ -777,21 +812,28 @@ void CTextureCompiler::NotifyCompilationQueueTriggered(int pending)
 	};
 }
 
+
 //////////////////////////////////////////////////////////////////////////
 CTextureCompiler::EResult CTextureCompiler::ProcessTextureIfNeeded(
-  const char* originalFilename,
+  const char* szOriginalFilename,
   char* processedFilename,
   size_t processedFilenameSizeInBytes,
   bool immediate)
 {
-	// allocates 1k upto 4k on the stack
+	using namespace Private_TextureCompiler;
+	// allocates 1k up to 4k on the stack
 	char sSrcFile[MAX_PATH];
 	char sDestFile[MAX_PATH];
 
 	char sFullSrcFilename[MAX_PATH];
 	char sFullDestFilename[MAX_PATH];
 
-	GetOutputFilename(originalFilename, sDestFile, sizeof(sDestFile));
+	GetOutputFilename(szOriginalFilename, sDestFile, sizeof(sDestFile));
+
+	if (!IsAlias(szOriginalFilename))
+	{
+		Private_TextureCompiler::AddResourceCachePrefix(sDestFile);
+	}
 
 	// Adjust filename so that it is global.
 	gEnv->pCryPak->AdjustFileName(sDestFile, sFullDestFilename, 0);
@@ -800,7 +842,7 @@ CTextureCompiler::EResult CTextureCompiler::ProcessTextureIfNeeded(
 
 	for (uint32 dwIndex = 0;; ++dwIndex)    // check for all input files
 	{
-		GetInputFilename(originalFilename, dwIndex, sSrcFile, sizeof(sSrcFile));
+		GetInputFilename(szOriginalFilename, dwIndex, sSrcFile, sizeof(sSrcFile));
 
 		if (sSrcFile[0] == 0)
 		{
@@ -850,14 +892,14 @@ CTextureCompiler::EResult CTextureCompiler::ProcessTextureIfNeeded(
 			sourceFile.Close();
 		}
 
+		bool isSkipped = false;
 		// is there no destination file?
 		if (sourceFile.GetHandle() != nullptr && destinationFile.GetHandle() == nullptr)
 		{
 			bInvokeResourceCompiler = true;
 		}
-
 		// if both files exist, is the source file newer?
-		if (sourceFile.GetHandle() != nullptr && destinationFile.GetHandle() != nullptr && !IsFileReadOnly(sFullDestFilename))
+		else if (sourceFile.GetHandle() != nullptr && destinationFile.GetHandle() != nullptr && !IsFileReadOnly(sFullDestFilename))
 		{
 			ICryPak::FileTime timeSrc = gEnv->pCryPak->GetModificationTime(sourceFile.GetHandle());
 			ICryPak::FileTime timeDest = gEnv->pCryPak->GetModificationTime(destinationFile.GetHandle());
@@ -883,6 +925,7 @@ CTextureCompiler::EResult CTextureCompiler::ProcessTextureIfNeeded(
 			{
 				bInvokeResourceCompiler = (timeDest != timeSrc);
 			}
+			isSkipped = !bInvokeResourceCompiler;
 		}
 
 		destinationFile.Close();
@@ -923,11 +966,15 @@ CTextureCompiler::EResult CTextureCompiler::ProcessTextureIfNeeded(
 
 			if(!processed)
 			{
-				cry_strcpy(processedFilename, processedFilenameSizeInBytes, originalFilename);
+				cry_strcpy(processedFilename, processedFilenameSizeInBytes, szOriginalFilename);
 
 				// rc failed
 				return EResult::Failed;
 			}
+		}
+		else if (isSkipped && !IsAlias(szOriginalFilename))
+		{
+			NotifyCompilationFinished(sFullSrcFilename, sFullDestFilename, eRcExitCode_Skipped);
 		}
 
 		break;

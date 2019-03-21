@@ -3,13 +3,14 @@
 #include "StdAfx.h"
 #include <CryRenderer/IFlares.h>
 #include "RendererResources.h"
+#include "RendererCVars.h"
 #include "Renderer.h"
-#include "Textures/Texture.h"                           // CTexture
+#include "Textures/Texture.h"
 
-#include "../XRenderD3D9/D3DDeferredShading.h"          // CDeferredShading
-#include "../XRenderD3D9/D3DPostProcess.h"              // SD3DPostEffectsUtils
+#include "../XRenderD3D9/D3DDeferredShading.h"
+#include "../XRenderD3D9/D3DPostProcess.h"
 
-#include "RendElements/FlareSoftOcclusionQuery.h"       // CFlareSoftOcclusionQuery
+#include "RendElements/FlareSoftOcclusionQuery.h"
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -18,7 +19,7 @@
 struct SRenderTargetInfo
 {
 	SRenderTargetInfo() : nWidth(0), nHeight(0), cClearColor(Clr_Empty), Format(eTF_Unknown), nFlags(0), lplpStorage(0), nPitch(0), fPriority(0.0f), nCustomID(0)
-	{};
+	{}
 
 	uint32      nWidth;
 	uint32      nHeight;
@@ -194,7 +195,6 @@ CTexture* CRendererResources::s_ptexWaterVolumeRefl[2] = { NULL };
 CTexture* CRendererResources::s_ptexRainOcclusion;
 CTexture* CRendererResources::s_ptexRainSSOcclusion[2];
 
-CTexture* CRendererResources::s_ptexRT_ShadowPool;
 CTexture* CRendererResources::s_ptexFarPlane;
 CTexture* CRendererResources::s_ptexCloudsLM;
 
@@ -204,8 +204,6 @@ CTexture* CRendererResources::s_ptexSceneDiffuseTmp;
 CTexture* CRendererResources::s_ptexSceneSpecularTmp;
 CTexture* CRendererResources::s_ptexSceneDepthScaled[3];
 CTexture* CRendererResources::s_ptexLinearDepth;
-CTexture* CRendererResources::s_ptexLinearDepthReadBack[4];
-CTexture* CRendererResources::s_ptexLinearDepthDownSample[4];
 CTexture* CRendererResources::s_ptexLinearDepthScaled[3];
 CTexture* CRendererResources::s_ptexLinearDepthFixup;
 ResourceViewHandle CRendererResources::s_ptexLinearDepthFixupUAV;
@@ -234,11 +232,6 @@ CTexture* CRendererResources::s_ptexFlaresGather = NULL;
 CTexture* CRendererResources::s_pTexNULL = 0;
 
 CTexture* CRendererResources::s_ptexVolumetricFog = NULL;
-CTexture* CRendererResources::s_ptexVolCloudShadow = NULL;
-
-#if defined(VOLUMETRIC_FOG_SHADOWS)
-CTexture* CRendererResources::s_ptexVolFogShadowBuf[2] = { 0 };
-#endif
 
 SEnvTexture CRendererResources::s_EnvTexts[MAX_ENVTEXTURES];
 
@@ -297,7 +290,6 @@ void CRendererResources::UnloadDefaultSystemTextures(bool bFinalRelease)
 	//SAFE_RELEASE_FORCE(s_ptexHitAreaRT[1]);
 
 	SAFE_RELEASE_FORCE(s_ptexVolumetricFog);
-	SAFE_RELEASE_FORCE(s_ptexVolCloudShadow);
 
 	uint32 i;
 	for (i = 0; i < 8; i++)
@@ -326,7 +318,6 @@ void CRendererResources::UnloadDefaultSystemTextures(bool bFinalRelease)
 
 	SAFE_RELEASE_FORCE(s_ptexMipColors_Diffuse);
 	SAFE_RELEASE_FORCE(s_ptexMipColors_Bump);
-	SAFE_RELEASE_FORCE(s_ptexRT_ShadowPool);
 	SAFE_RELEASE_FORCE(s_ptexFarPlane);
 
 	s_CustomRT_2D.Free();
@@ -436,9 +427,8 @@ void CRendererResources::LoadDefaultSystemTextures()
 
 		s_ptexRT_2D = CTexture::GetOrCreateTextureObject("$RT_2D", 0, 0, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_RENDERTARGET, eTF_Unknown, TO_RT_2D);
 
-		s_ptexRainOcclusion = CTexture::GetOrCreateTextureObject("$RainOcclusion", RAIN_OCC_MAP_SIZE, RAIN_OCC_MAP_SIZE, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_RENDERTARGET, eTF_R8G8B8A8);
-		s_ptexRainSSOcclusion[0] = CTexture::GetOrCreateTextureObject("$RainSSOcclusion0", 0, 0, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_RENDERTARGET, eTF_Unknown);
-		s_ptexRainSSOcclusion[1] = CTexture::GetOrCreateTextureObject("$RainSSOcclusion1", 0, 0, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_RENDERTARGET, eTF_Unknown);
+		if (RainOcclusionMapsEnabled())
+			PrepareRainOcclusionMaps();
 
 		//s_ptexHitAreaRT[0] = CTexture::CreateTextureObject("$HitEffectAccumBuffRT_0", 128, 128, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_RENDERTARGET, eTF_Unknown);
 		//s_ptexHitAreaRT[1] = CTexture::CreateTextureObject("$HitEffectAccumBuffRT_1", 128, 128, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_RENDERTARGET, eTF_Unknown);
@@ -449,23 +439,12 @@ void CRendererResources::LoadDefaultSystemTextures()
 			s_ptexWindGrid->Create2DTexture(256, 256, 1, FT_DONT_RELEASE | FT_DONT_STREAM, nullptr, eTF_R16G16F);
 		}
 
-		s_ptexLinearDepthReadBack[0] = CTexture::GetOrCreateTextureObject("$ZTargetReadBack0", 0, 0, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM, eTF_Unknown);
-		s_ptexLinearDepthReadBack[1] = CTexture::GetOrCreateTextureObject("$ZTargetReadBack1", 0, 0, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM, eTF_Unknown);
-		s_ptexLinearDepthReadBack[2] = CTexture::GetOrCreateTextureObject("$ZTargetReadBack2", 0, 0, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM, eTF_Unknown);
-		s_ptexLinearDepthReadBack[3] = CTexture::GetOrCreateTextureObject("$ZTargetReadBack3", 0, 0, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM, eTF_Unknown);
-
-		s_ptexLinearDepthDownSample[0] = CTexture::GetOrCreateTextureObject("$ZTargetDownSample0", 0, 0, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM, eTF_Unknown);
-		s_ptexLinearDepthDownSample[1] = CTexture::GetOrCreateTextureObject("$ZTargetDownSample1", 0, 0, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM, eTF_Unknown);
-		s_ptexLinearDepthDownSample[2] = CTexture::GetOrCreateTextureObject("$ZTargetDownSample2", 0, 0, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM, eTF_Unknown);
-		s_ptexLinearDepthDownSample[3] = CTexture::GetOrCreateTextureObject("$ZTargetDownSample3", 0, 0, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM, eTF_Unknown);
-
-		s_ptexRT_ShadowPool = CTexture::GetOrCreateTextureObject("$RT_ShadowPool", 0, 0, 1, eTT_2D, FT_DONT_STREAM | FT_USAGE_DEPTHSTENCIL, eTF_Unknown);
 		s_ptexFarPlane = CTexture::GetOrCreateTextureObject("$FarPlane", 8, 8, 1, eTT_2D, FT_DONT_STREAM | FT_USAGE_DEPTHSTENCIL, eTF_Unknown);
 
 		if (!s_ptexModelHudBuffer)
 			s_ptexModelHudBuffer = CTexture::GetOrCreateTextureObject("$ModelHud", 0, 0, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_RENDERTARGET, eTF_Unknown, TO_MODELHUD);
 
-	//	if (!s_ptexBackBuffer)
+		//	if (!s_ptexBackBuffer)
 		{
 			s_ptexSceneTarget = CTexture::GetOrCreateTextureObject("$SceneTarget", 0, 0, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_RENDERTARGET, eTF_Unknown, TO_SCENE_TARGET);
 
@@ -480,17 +459,17 @@ void CRendererResources::LoadDefaultSystemTextures()
 			// Only used for VR, but we need to support runtime switching
 			s_ptexVelocityObjects[1] = CTexture::GetOrCreateTextureObject("$VelocityObjects_R", 0, 0, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_RENDERTARGET | FT_USAGE_UNORDERED_ACCESS, eTF_Unknown, -1);
 
-			s_ptexDisplayTargetSrc           = CTexture::GetOrCreateTextureObject("$DisplayTarget", 0, 0, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_RENDERTARGET, eTF_Unknown, TO_BACKBUFFERMAP);
-			s_ptexDisplayTargetDst           = CTexture::GetOrCreateTextureObject("$DisplayTargetAlt", 0, 0, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_RENDERTARGET, eTF_Unknown);
+			s_ptexDisplayTargetSrc = CTexture::GetOrCreateTextureObject("$DisplayTarget", 0, 0, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_RENDERTARGET, eTF_Unknown, TO_BACKBUFFERMAP);
+			s_ptexDisplayTargetDst = CTexture::GetOrCreateTextureObject("$DisplayTargetAlt", 0, 0, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_RENDERTARGET, eTF_Unknown);
 
-			s_ptexDisplayTargetScaled[0]     = CTexture::GetOrCreateTextureObject("$DisplayTarget 1/2a", 0, 0, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_RENDERTARGET, eTF_Unknown, TO_BACKBUFFERSCALED_D2);
-			s_ptexDisplayTargetScaled[1]     = CTexture::GetOrCreateTextureObject("$DisplayTarget 1/4a", 0, 0, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_RENDERTARGET, eTF_Unknown, TO_BACKBUFFERSCALED_D4);
-			s_ptexDisplayTargetScaled[2]     = CTexture::GetOrCreateTextureObject("$DisplayTarget 1/8" , 0, 0, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_RENDERTARGET, eTF_Unknown, TO_BACKBUFFERSCALED_D8);
+			s_ptexDisplayTargetScaled[0] = CTexture::GetOrCreateTextureObject("$DisplayTarget 1/2a", 0, 0, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_RENDERTARGET, eTF_Unknown, TO_BACKBUFFERSCALED_D2);
+			s_ptexDisplayTargetScaled[1] = CTexture::GetOrCreateTextureObject("$DisplayTarget 1/4a", 0, 0, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_RENDERTARGET, eTF_Unknown, TO_BACKBUFFERSCALED_D4);
+			s_ptexDisplayTargetScaled[2] = CTexture::GetOrCreateTextureObject("$DisplayTarget 1/8", 0, 0, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_RENDERTARGET, eTF_Unknown, TO_BACKBUFFERSCALED_D8);
 
 			s_ptexDisplayTargetScaledTemp[0] = CTexture::GetOrCreateTextureObject("$DisplayTarget 1/2b", 0, 0, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_RENDERTARGET, eTF_Unknown, -1);
 			s_ptexDisplayTargetScaledTemp[1] = CTexture::GetOrCreateTextureObject("$DisplayTarget 1/4b", 0, 0, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_RENDERTARGET, eTF_Unknown, -1);
 
-			s_ptexDisplayTargetScaledPrev    = CTexture::GetOrCreateTextureObject("$DisplayTarget 1 / 2p", 0, 0, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_RENDERTARGET, eTF_Unknown);
+			s_ptexDisplayTargetScaledPrev = CTexture::GetOrCreateTextureObject("$DisplayTarget 1 / 2p", 0, 0, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_RENDERTARGET, eTF_Unknown);
 
 			s_ptexSceneNormalsMap = CTexture::GetOrCreateTextureObject("$SceneNormalsMap", 0, 0, 1, eTT_2D, nRTFlags, eTF_R8G8B8A8, TO_SCENE_NORMALMAP);
 			s_ptexSceneNormalsBent = CTexture::GetOrCreateTextureObject("$SceneNormalsBent", 0, 0, 1, eTT_2D, nRTFlags, eTF_R8G8B8A8);
@@ -524,11 +503,11 @@ void CRendererResources::LoadDefaultSystemTextures()
 			s_ptexSceneDepthScaled[1] = CTexture::GetOrCreateTextureObject("$SceneDepthScaled2", 0, 0, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_DEPTHSTENCIL, eTF_Unknown);
 			s_ptexSceneDepthScaled[2] = CTexture::GetOrCreateTextureObject("$SceneDepthScaled3", 0, 0, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_DEPTHSTENCIL, eTF_Unknown);
 
-			s_ptexLinearDepth          = CTexture::GetOrCreateTextureObject("$ZTarget", 0, 0, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_RENDERTARGET, eTF_Unknown);
+			s_ptexLinearDepth = CTexture::GetOrCreateTextureObject("$ZTarget", 0, 0, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_RENDERTARGET, eTF_Unknown);
 			s_ptexLinearDepthScaled[0] = CTexture::GetOrCreateTextureObject("$ZTargetScaled", 0, 0, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_RENDERTARGET, eTF_Unknown, TO_DOWNSCALED_ZTARGET_FOR_AO);
 			s_ptexLinearDepthScaled[1] = CTexture::GetOrCreateTextureObject("$ZTargetScaled2", 0, 0, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_RENDERTARGET, eTF_Unknown, TO_QUARTER_ZTARGET_FOR_AO);
 			s_ptexLinearDepthScaled[2] = CTexture::GetOrCreateTextureObject("$ZTargetScaled3", 0, 0, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_RENDERTARGET, eTF_Unknown);
-			s_ptexLinearDepthFixup     = CTexture::GetOrCreateTextureObject("$ZTargetFixup", 0, 0, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_RENDERTARGET, eTF_Unknown);
+			s_ptexLinearDepthFixup = CTexture::GetOrCreateTextureObject("$ZTargetFixup", 0, 0, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_RENDERTARGET, eTF_Unknown);
 		}
 
 		s_ptexSceneSelectionIDs = CTexture::GetOrCreateTextureObject("$SceneSelectionIDs", 0, 0, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_RENDERTARGET, eTF_R32F);
@@ -569,16 +548,11 @@ void CRendererResources::LoadDefaultSystemTextures()
 		s_ShaderTemplatesInitialized = true;
 
 		s_ptexVolumetricFog = CTexture::GetOrCreateTextureObject("$VolFogInscattering", 0, 0, 0, eTT_3D, FT_NOMIPS | FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_UNORDERED_ACCESS, eTF_Unknown);
-		s_ptexVolCloudShadow = CTexture::GetOrCreateTextureObject("$VolCloudShadows", 0, 0, 0, eTT_3D, FT_NOMIPS | FT_USAGE_UNORDERED_ACCESS, eTF_Unknown);
 
 #if CRY_PLATFORM_DURANGO && DURANGO_USE_ESRAM
 		// Assign ESRAM offsets
 		if (CRenderer::CV_r_useESRAM)
 		{
-			uint32 sizeHDRTarget0 = CDeviceTexture::TextureDataSize(gRenDev->GetWidth(), gRenDev->GetHeight(), 1, 1, 1, eTF_R8G8B8A8     , eTM_Optimal, CDeviceObjectFactory::BIND_SHADER_RESOURCE | CDeviceObjectFactory::BIND_RENDER_TARGET);
-			uint32 sizeHDRTarget1 = CDeviceTexture::TextureDataSize(gRenDev->GetWidth(), gRenDev->GetHeight(), 1, 1, 1, eTF_R11G11B10F   , eTM_Optimal, CDeviceObjectFactory::BIND_SHADER_RESOURCE | CDeviceObjectFactory::BIND_RENDER_TARGET);
-			uint32 sizeHDRTarget2 = CDeviceTexture::TextureDataSize(gRenDev->GetWidth(), gRenDev->GetHeight(), 1, 1, 1, eTF_R16G16B16A16F, eTM_Optimal, CDeviceObjectFactory::BIND_SHADER_RESOURCE | CDeviceObjectFactory::BIND_RENDER_TARGET);
-
 			// Precomputed offsets, using xg library and aligned to 4k
 			//     1600x900 RGBA16F:  11894784
 			//     1600x900 RGBA8:     5955584
@@ -901,13 +875,6 @@ void CRendererResources::CreateDeferredMaps(int resourceWidth, int resourceHeigh
 		static ICVar* p_e_ShadowsPoolSize = iConsole->GetCVar("e_ShadowsPoolSize");
 		gcpRendD3D->m_nShadowPoolHeight = p_e_ShadowsPoolSize->GetIVal();
 		gcpRendD3D->m_nShadowPoolWidth = gcpRendD3D->m_nShadowPoolHeight; //square atlas
-
-		ETEX_Format eShadTF = gcpRendD3D->CV_r_shadowtexformat == 1 ? eTF_D16 : eTF_D32F;
-		s_ptexRT_ShadowPool->Invalidate(gcpRendD3D->m_nShadowPoolWidth, gcpRendD3D->m_nShadowPoolHeight, eShadTF);
-		if (!CTexture::IsTextureExist(s_ptexRT_ShadowPool))
-		{
-			s_ptexRT_ShadowPool->CreateDepthStencil(eTF_Unknown, ColorF(1.0f, 5, 0.f, 0.f));
-		}
 	}
 
 	// shadow mask
@@ -944,9 +911,7 @@ void CRendererResources::DestroyDeferredMaps()
 	SAFE_RELEASE(s_ptexSceneDepthScaled[1]);
 	SAFE_RELEASE(s_ptexSceneDepthScaled[2]);
 
-	// shadow pool
 	// shadow mask
-	SAFE_RELEASE(s_ptexRT_ShadowPool);
 	SAFE_RELEASE(s_ptexShadowMask);
 	SAFE_RELEASE(s_ptexClipVolumes);
 }
@@ -1096,6 +1061,10 @@ void CRendererResources::DestroyHDRMaps()
 bool CRendererResources::CreatePostFXMaps(int resourceWidth, int resourceHeight)
 {
 #if RENDERER_ENABLE_FULL_PIPELINE
+
+	if (RainOcclusionMapsEnabled())
+		CreateRainOcclusionMaps(resourceWidth, resourceHeight);
+
 	const int width  = resourceWidth , width_r2  = (width  + 1) / 2, width_r4  = (width_r2  + 1) / 2, width_r8  = (width_r4  + 1) / 2;
 	const int height = resourceHeight, height_r2 = (height + 1) / 2, height_r4 = (height_r2 + 1) / 2, height_r8 = (height_r4 + 1) / 2;
 	
@@ -1135,15 +1104,6 @@ bool CRendererResources::CreatePostFXMaps(int resourceWidth, int resourceHeight)
 		//	s_ptexWaterVolumeRefl[0]->DisableMgpuSync();
 		//	s_ptexWaterVolumeRefl[1]->DisableMgpuSync();
 
-		SPostEffectsUtils::GetOrCreateRenderTarget("$RainSSOcclusion0", s_ptexRainSSOcclusion[0], width_r8, height_r8, Clr_Unknown, 1, false, eTF_R8);
-		SPostEffectsUtils::GetOrCreateRenderTarget("$RainSSOcclusion1", s_ptexRainSSOcclusion[1], width_r8, height_r8, Clr_Unknown, 1, false, eTF_R8);
-		
-#if defined(VOLUMETRIC_FOG_SHADOWS)
-		int fogShadowBufDiv = (CRenderer::CV_r_FogShadows == 2) ? 4 : 2;
-		SPostEffectsUtils::GetOrCreateRenderTarget("$VolFogShadowBuf0", s_ptexVolFogShadowBuf[0], width / fogShadowBufDiv, height / fogShadowBufDiv, Clr_Unknown, 1, 0, eTF_R8G8, TO_VOLFOGSHADOW_BUF);
-		SPostEffectsUtils::GetOrCreateRenderTarget("$VolFogShadowBuf1", s_ptexVolFogShadowBuf[1], width / fogShadowBufDiv, height / fogShadowBufDiv, Clr_Unknown, 1, 0, eTF_R8G8);
-#endif
-
 		// TODO: Only create necessary RTs for minimal ring?
 		char str[256];
 		for (int i = 0, end = gcpRendD3D->GetActiveGPUCount() * MAX_FRAMES_IN_FLIGHT; i < end; i++)
@@ -1159,9 +1119,6 @@ bool CRendererResources::CreatePostFXMaps(int resourceWidth, int resourceHeight)
 	 *	The following textures do not need to be recreated on resize
 	 */
 
-	if (!CTexture::IsTextureExist(s_ptexRainOcclusion))
-		SPostEffectsUtils::GetOrCreateRenderTarget("$RainOcclusion", s_ptexRainOcclusion, RAIN_OCC_MAP_SIZE, RAIN_OCC_MAP_SIZE, Clr_Neutral, false, false, eTF_R8, -1, FT_DONT_RELEASE);
-
 	if (!CTexture::IsTextureExist(s_ptexWaterVolumeDDN))
 	{
 		SPostEffectsUtils::GetOrCreateRenderTarget("$WaterVolumeDDN", s_ptexWaterVolumeDDN, 64, 64, Clr_Unknown, 1, true, eTF_R16G16B16A16F, TO_WATERVOLUMEMAP);
@@ -1174,6 +1131,8 @@ bool CRendererResources::CreatePostFXMaps(int resourceWidth, int resourceHeight)
 
 void CRendererResources::DestroyPostFXMaps()
 {
+	DestroyRainOcclusionMaps();
+
 	SAFE_RELEASE_FORCE(s_ptexDisplayTargetSrc);
 	SAFE_RELEASE_FORCE(s_ptexDisplayTargetDst);
 	SAFE_RELEASE_FORCE(s_ptexDisplayTargetScaled[0]);
@@ -1190,19 +1149,63 @@ void CRendererResources::DestroyPostFXMaps()
 	SAFE_RELEASE_FORCE(s_ptexCached3DHud);
 	SAFE_RELEASE_FORCE(s_ptexCached3DHudScaled);
 
-	SAFE_RELEASE(s_ptexRainSSOcclusion[0]);
-	SAFE_RELEASE(s_ptexRainSSOcclusion[1]);
-	SAFE_RELEASE_FORCE(s_ptexRainOcclusion);
-
-#if defined(VOLUMETRIC_FOG_SHADOWS)
-	SAFE_RELEASE(s_ptexVolFogShadowBuf[0]);
-	SAFE_RELEASE(s_ptexVolFogShadowBuf[1]);
-#endif
-
 	for (int i = 0; i < MAX_OCCLUSION_READBACK_TEXTURES; i++)
 		SAFE_RELEASE_FORCE(s_ptexFlaresOcclusionRing[i]);
 
 	SAFE_RELEASE_FORCE(s_ptexFlaresGather);
+}
+
+void CRendererResources::PrepareRainOcclusionMaps()
+{
+	if (!s_ptexRainOcclusion)
+	{
+		s_ptexRainOcclusion = CTexture::GetOrCreateTextureObject("$RainOcclusion", RAIN_OCC_MAP_SIZE, RAIN_OCC_MAP_SIZE, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_RENDERTARGET, eTF_R8G8B8A8);
+		s_ptexRainSSOcclusion[0] = CTexture::GetOrCreateTextureObject("$RainSSOcclusion0", 0, 0, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_RENDERTARGET, eTF_Unknown);
+		s_ptexRainSSOcclusion[1] = CTexture::GetOrCreateTextureObject("$RainSSOcclusion1", 0, 0, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_RENDERTARGET, eTF_Unknown);
+	}
+}
+
+void CRendererResources::CreateRainOcclusionMaps(int resourceWidth, int resourceHeight)
+{
+	PrepareRainOcclusionMaps();
+
+	if (!CTexture::IsTextureExist(s_ptexRainOcclusion))
+		SPostEffectsUtils::GetOrCreateRenderTarget("$RainOcclusion", s_ptexRainOcclusion, RAIN_OCC_MAP_SIZE, RAIN_OCC_MAP_SIZE, Clr_Neutral, false, false, eTF_R8, -1, FT_DONT_RELEASE);
+
+	const int width_r8 = (resourceWidth + 7) / 8;
+	const int height_r8 = (resourceHeight + 7) / 8;
+
+	if (!s_ptexRainSSOcclusion[0] ||
+		s_ptexRainSSOcclusion[0]->GetWidth() != width_r8 ||
+		s_ptexRainSSOcclusion[0]->GetHeight() != height_r8)
+	{
+		SPostEffectsUtils::GetOrCreateRenderTarget("$RainSSOcclusion0", s_ptexRainSSOcclusion[0], width_r8, height_r8, Clr_Unknown, 1, false, eTF_R8);
+		SPostEffectsUtils::GetOrCreateRenderTarget("$RainSSOcclusion1", s_ptexRainSSOcclusion[1], width_r8, height_r8, Clr_Unknown, 1, false, eTF_R8);
+	}
+}
+
+void CRendererResources::DestroyRainOcclusionMaps()
+{
+	SAFE_RELEASE_FORCE(s_ptexRainOcclusion);
+	SAFE_RELEASE(s_ptexRainSSOcclusion[0]);
+	SAFE_RELEASE(s_ptexRainSSOcclusion[1]);
+}
+
+void CRendererResources::OnCVarsChanged(const CCVarUpdateRecorder& rCVarRecs)
+{
+	const bool enabled = RainOcclusionMapsEnabled();
+	if (enabled != RainOcclusionMapsInitialized())
+	{
+		if (enabled)
+			CreateRainOcclusionMaps(s_resourceWidth, s_resourceHeight);
+		else
+			DestroyRainOcclusionMaps();
+	}
+}
+
+bool CRendererResources::RainOcclusionMapsEnabled()
+{
+	return CRendererCVars::IsRainEnabled() || CRendererCVars::IsSnowEnabled();
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1319,6 +1322,18 @@ void CRendererResources::ShutDown()
 	SAFE_DELETE(s_pTexNULL);
 }
 
+void CRendererResources::Update(EShaderRenderingFlags renderingFlags)
+{
+	CD3D9Renderer* const RESTRICT_POINTER rd = gcpRendD3D;
+	const auto shouldApplyOcclusion = rd->m_bDeferredRainOcclusionEnabled && CRendererCVars::IsRainEnabled();
+
+	// Create/release the occlusion texture on demand
+	if (!shouldApplyOcclusion && CTexture::IsTextureExist(s_ptexRainOcclusion))
+		s_ptexRainOcclusion->ReleaseDeviceTexture(false);
+	else if (shouldApplyOcclusion && !CTexture::IsTextureExist(s_ptexRainOcclusion))
+		s_ptexRainOcclusion->CreateRenderTarget(eTF_R8, Clr_Neutral);
+}
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -1328,14 +1343,16 @@ size_t CRendererResources::m_DTallocs = 0;
 CTexture* CRendererResources::CreateDepthTarget(int nWidth, int nHeight, const ColorF& cClear, ETEX_Format eTF)
 {
 	char pName[128]; // Create unique names for every allocation, otherwise name-matches would occur in GetOrCreateDepthStencil()
-	cry_sprintf(pName, "$DynDepthStencil_%8_x%d", m_DTallocs + 1, m_DTallocs + 2); ++m_DTallocs;
+	cry_sprintf(pName, "$DynDepthStencil_%8_x%d", m_DTallocs + 1, m_DTallocs + 2);
+	++m_DTallocs;
 	return CTexture::GetOrCreateDepthStencil(pName, nWidth, nHeight, cClear, eTT_2D, FT_USAGE_TEMPORARY | FT_NOMIPS, eTF == eTF_Unknown ? GetDepthFormat() : eTF);
 }
 
 CTexture* CRendererResources::CreateRenderTarget(int nWidth, int nHeight, const ColorF& cClear, ETEX_Format eTF)
 {
 	char pName[128]; // Create unique names for every allocation, otherwise name-matches would occur in GetOrCreateRenderTarget()
-	cry_sprintf(pName, "$DynRenderTarget_%8_x%d", m_RTallocs + 1, m_RTallocs + 2); ++m_RTallocs;
+	cry_sprintf(pName, "$DynRenderTarget_%8_x%d", m_RTallocs + 1, m_RTallocs + 2);
+	++m_RTallocs;
 	return CTexture::GetOrCreateRenderTarget(pName, nWidth, nHeight, cClear, eTT_2D, FT_USAGE_TEMPORARY | FT_NOMIPS, eTF);
 }
 

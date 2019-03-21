@@ -488,8 +488,9 @@ void CAssetManager::DeleteAssetsOnlyFromData(std::vector<CAsset*> assets)
 	signalAfterAssetsRemoved();
 }
 
-void CAssetManager::MoveAssets(const std::vector<CAsset*>& assets, const char* szDestinationFolder) const
+void CAssetManager::MoveAssets(const std::vector<CAsset*>& assets, const char* szDestinationFolder) 
 {
+	using namespace Private_AssetManager;
 	for (CAsset* pAsset : assets)
 	{
 		if (!pAsset)
@@ -506,7 +507,10 @@ void CAssetManager::MoveAssets(const std::vector<CAsset*>& assets, const char* s
 
 		// Make a new copy of the source file if it is shared between several assets, move it to the new location otherwise.
 		const bool bMoveSourceFile = !HasSharedSourceFile(*pAsset);
+		DeleteAssetFilesFromMap(m_fileToAssetMap, pAsset);
 		pAsset->GetType()->MoveAsset(pAsset, szDestinationFolder, bMoveSourceFile);
+		AddAssetFilesToMap(m_fileToAssetMap, pAsset);
+		m_orderedByGUID = false;
 	}
 }
 

@@ -33,7 +33,7 @@ bool CanMove(const std::vector<CAsset*>& assets, const string& folder)
 
 void OnMove(const std::vector<CAsset*>& assets, const QString& destinationFolder)
 {
-	const CAssetManager* const pAssetManager = CAssetManager::GetInstance();
+	CAssetManager* const pAssetManager = CAssetManager::GetInstance();
 
 	const QString question = QObject::tr("There is a possibility of undetected dependencies which can be violated after performing the operation.\n"
 		"\n"

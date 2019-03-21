@@ -22,12 +22,14 @@
 namespace CryAudio
 {
 #if defined(CRY_AUDIO_USE_DEBUG_CODE)
+std::map<CryFixedStringT<MaxMiscStringLength>, CFile*> g_afcmDebugInfo;
+
 enum class EFileCacheManagerDebugFilter : EnumFlagsType
 {
-	All            = 0,
-	Globals        = BIT(6), // a
-	LevelSpecifics = BIT(7), // b
-	UseCounted     = BIT(8), // c
+	All         = 0,
+	Globals     = BIT(6), // a
+	UserDefined = BIT(7), // b
+	UseCounted  = BIT(8), // c
 };
 CRY_CREATE_ENUM_FLAG_OPERATORS(EFileCacheManagerDebugFilter);
 #endif // CRY_AUDIO_USE_DEBUG_CODE
@@ -56,7 +58,7 @@ void CFileCacheManager::Initialize()
 }
 
 //////////////////////////////////////////////////////////////////////////
-FileId CFileCacheManager::TryAddFileCacheEntry(XmlNodeRef const pFileNode, EDataScope const dataScope, bool const bAutoLoad)
+FileId CFileCacheManager::TryAddFileCacheEntry(XmlNodeRef const pFileNode, ContextId const contextId, bool const bAutoLoad)
 {
 	FileId fileId = InvalidFileId;
 	Impl::SFileInfo fileInfo;
@@ -89,7 +91,7 @@ FileId CFileCacheManager::TryAddFileCacheEntry(XmlNodeRef const pFileNode, EData
 					pFile->m_flags |= EFileFlags::UseCounted;
 				}
 
-				pFile->m_dataScope = dataScope;
+				pFile->m_contextId = contextId;
 				pFile->m_path.MakeLower();
 				size_t const fileSize = gEnv->pCryPak->FGetSize(pFile->m_path.c_str());
 
@@ -131,7 +133,7 @@ FileId CFileCacheManager::TryAddFileCacheEntry(XmlNodeRef const pFileNode, EData
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool CFileCacheManager::TryRemoveFileCacheEntry(FileId const id, EDataScope const dataScope)
+bool CFileCacheManager::TryRemoveFileCacheEntry(FileId const id, ContextId const contextId)
 {
 	bool bSuccess = false;
 	Files::iterator const iter(m_files.find(id));
@@ -140,14 +142,14 @@ bool CFileCacheManager::TryRemoveFileCacheEntry(FileId const id, EDataScope cons
 	{
 		CFile* const pFile = iter->second;
 
-		if (pFile->m_dataScope == dataScope)
+		if (pFile->m_contextId == contextId)
 		{
 			UncacheFileCacheEntryInternal(pFile, true, true);
 			g_pIImpl->DestructFile(pFile->m_pImplData);
 			delete pFile;
 			m_files.erase(iter);
 		}
-		else if ((dataScope == EDataScope::LevelSpecific) && ((pFile->m_flags & EFileFlags::NeedsResetToManualLoading) != 0))
+		else if ((contextId != GlobalContextId) && ((pFile->m_flags & EFileFlags::NeedsResetToManualLoading) != 0))
 		{
 			pFile->m_flags = (pFile->m_flags | EFileFlags::UseCounted) & ~EFileFlags::NeedsResetToManualLoading;
 
@@ -242,7 +244,7 @@ ERequestStatus CFileCacheManager::TryUnloadRequest(PreloadRequestId const preloa
 }
 
 //////////////////////////////////////////////////////////////////////////
-ERequestStatus CFileCacheManager::UnloadDataByScope(EDataScope const dataScope)
+ERequestStatus CFileCacheManager::UnloadDataByContext(ContextId const contextId)
 {
 	Files::iterator iter(m_files.begin());
 	Files::const_iterator iterEnd(m_files.end());
@@ -251,7 +253,7 @@ ERequestStatus CFileCacheManager::UnloadDataByScope(EDataScope const dataScope)
 	{
 		CFile* const pFile = iter->second;
 
-		if (pFile != nullptr && pFile->m_dataScope == dataScope)
+		if ((pFile != nullptr) && (pFile->m_contextId == contextId))
 		{
 			if (UncacheFileCacheEntryInternal(pFile, true, true))
 			{
@@ -333,6 +335,61 @@ void CFileCacheManager::StreamAsyncOnComplete(IReadStream* pStream, unsigned int
 
 #if defined(CRY_AUDIO_USE_DEBUG_CODE)
 //////////////////////////////////////////////////////////////////////////
+void CFileCacheManager::UpdateDebugInfo(char const* const szDebugFilter)
+{
+	g_afcmDebugInfo.clear();
+
+	if (!m_files.empty())
+	{
+		bool const drawAll = (g_cvars.m_fileCacheManagerDebugFilter == EFileCacheManagerDebugFilter::All);
+		bool const drawUseCounted = ((g_cvars.m_fileCacheManagerDebugFilter & EFileCacheManagerDebugFilter::UseCounted) != 0);
+		bool const drawGlobals = (g_cvars.m_fileCacheManagerDebugFilter & EFileCacheManagerDebugFilter::Globals) != 0;
+		bool const drawUserDefined = (g_cvars.m_fileCacheManagerDebugFilter & EFileCacheManagerDebugFilter::UserDefined) != 0;
+
+		CryFixedStringT<MaxControlNameLength> lowerCaseSearchString(szDebugFilter);
+		lowerCaseSearchString.MakeLower();
+
+		for (auto const& filePair : m_files)
+		{
+			CFile* const pFile = filePair.second;
+			char const* const szFileName = PathUtil::GetFileName(pFile->m_path);
+			CryFixedStringT<MaxControlNameLength> lowerCaseFileName(szFileName);
+			lowerCaseFileName.MakeLower();
+
+			if ((lowerCaseSearchString.empty() || (lowerCaseSearchString == "0")) || (lowerCaseFileName.find(lowerCaseSearchString) != CryFixedStringT<MaxControlNameLength>::npos))
+			{
+				bool canEmplace = false;
+
+				if (pFile->m_contextId == GlobalContextId)
+				{
+					canEmplace = (drawAll || drawGlobals) || (drawUseCounted && ((pFile->m_flags & EFileFlags::UseCounted) != 0));
+				}
+				else
+				{
+					canEmplace = (drawAll || drawUserDefined) || (drawUseCounted && (pFile->m_flags & EFileFlags::UseCounted) != 0);
+				}
+
+				if (canEmplace)
+				{
+					CryFixedStringT<MaxMiscStringLength> debugText;
+
+					if (pFile->m_size < 1024)
+					{
+						debugText.Format(debugText + "%s (%" PRISIZE_T " Byte)", pFile->m_path.c_str(), pFile->m_size);
+					}
+					else
+					{
+						debugText.Format(debugText + "%s (%" PRISIZE_T " KiB)", pFile->m_path.c_str(), pFile->m_size >> 10);
+					}
+
+					g_afcmDebugInfo.emplace(std::piecewise_construct, std::forward_as_tuple(debugText), std::forward_as_tuple(pFile));
+				}
+			}
+		}
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
 void CFileCacheManager::DrawDebugInfo(IRenderAuxGeom& auxGeom, float const posX, float posY)
 {
 	#if CRY_PLATFORM_DURANGO
@@ -343,119 +400,55 @@ void CFileCacheManager::DrawDebugInfo(IRenderAuxGeom& auxGeom, float const posX,
 
 	posY += Debug::g_listHeaderLineHeight;
 
-	if (!m_files.empty())
+	if (!g_afcmDebugInfo.empty())
 	{
 		float const frameTime = gEnv->pTimer->GetAsyncTime().GetSeconds();
 
-		CryFixedStringT<MaxControlNameLength> lowerCaseSearchString(g_cvars.m_pDebugFilter->GetString());
-		lowerCaseSearchString.MakeLower();
-
-		bool const drawAll = (g_cvars.m_fileCacheManagerDebugFilter == EFileCacheManagerDebugFilter::All);
-		bool const drawUseCounted = ((g_cvars.m_fileCacheManagerDebugFilter & EFileCacheManagerDebugFilter::UseCounted) != 0);
-		bool const drawGlobals = (g_cvars.m_fileCacheManagerDebugFilter & EFileCacheManagerDebugFilter::Globals) != 0;
-		bool const drawLevelSpecifics = (g_cvars.m_fileCacheManagerDebugFilter & EFileCacheManagerDebugFilter::LevelSpecifics) != 0;
-
-		std::vector<CryFixedStringT<MaxFilePathLength>> fileNamesSorted; // Create list to sort file names alphabetically.
-		fileNamesSorted.reserve(m_files.size());
-
-		for (auto const& file : m_files)
+		for (auto const& infoPair : g_afcmDebugInfo)
 		{
-			fileNamesSorted.emplace_back(file.second->m_path.c_str());
-		}
+			CFile* const pFile = infoPair.second;
+			ColorF color = (pFile->m_contextId == GlobalContextId) ? Debug::s_afcmColorContextGlobal : Debug::s_afcmColorContextUserDefined;
 
-		std::sort(fileNamesSorted.begin(), fileNamesSorted.end());
-
-		for (auto const& fileName : fileNamesSorted)
-		{
-			for (auto const& filePair : m_files)
+			if ((pFile->m_flags & EFileFlags::Loading) != 0)
 			{
-				if (filePair.second->m_path == fileName)
-				{
-					CFile* const pFile = filePair.second;
-
-					char const* const szFileName = PathUtil::GetFileName(pFile->m_path);
-					CryFixedStringT<MaxControlNameLength> lowerCaseFileName(szFileName);
-					lowerCaseFileName.MakeLower();
-
-					if ((lowerCaseSearchString.empty() || (lowerCaseSearchString == "0")) || (lowerCaseFileName.find(lowerCaseSearchString) != CryFixedStringT<MaxControlNameLength>::npos))
-					{
-						bool draw = false;
-						ColorF color;
-
-						if (pFile->m_dataScope == EDataScope::Global)
-						{
-							draw = (drawAll || drawGlobals) || (drawUseCounted && ((pFile->m_flags & EFileFlags::UseCounted) != 0));
-							color = Debug::s_afcmColorScopeGlobal;
-						}
-						else if (pFile->m_dataScope == EDataScope::LevelSpecific)
-						{
-							draw = (drawAll || drawLevelSpecifics) || (drawUseCounted && (pFile->m_flags & EFileFlags::UseCounted) != 0);
-							color = Debug::s_afcmColorScopeLevelSpecific;
-						}
-
-						if (draw)
-						{
-							if ((pFile->m_flags & EFileFlags::Loading) != 0)
-							{
-								color = Debug::s_afcmColorFileLoading;
-							}
-							else if ((pFile->m_flags & EFileFlags::MemAllocFail) != 0)
-							{
-								color = Debug::s_afcmColorFileMemAllocFail;
-							}
-							else if ((pFile->m_flags & EFileFlags::Removable) != 0)
-							{
-								color = Debug::s_afcmColorFileRemovable;
-							}
-							else if ((pFile->m_flags & EFileFlags::NotCached) != 0)
-							{
-								color = Debug::s_afcmColorFileNotCached;
-							}
-							else if ((pFile->m_flags & EFileFlags::NotFound) != 0)
-							{
-								color = Debug::s_afcmColorFileNotFound;
-							}
-
-							float const ratio = (frameTime - pFile->m_timeCached) / 2.0f;
-
-							if (ratio <= 1.0f)
-							{
-								color[0] *= clamp_tpl(ratio, 0.0f, color[0]);
-								color[1] *= clamp_tpl(ratio, 0.0f, color[1]);
-								color[2] *= clamp_tpl(ratio, 0.0f, color[2]);
-							}
-
-							CryFixedStringT<MaxMiscStringLength> debugText;
-
-							if ((pFile->m_flags & EFileFlags::UseCounted) != 0)
-							{
-								if (pFile->m_size < 1024)
-								{
-									debugText.Format(debugText + "%s (%" PRISIZE_T " Byte) [%" PRISIZE_T "]", pFile->m_path.c_str(), pFile->m_size, pFile->m_useCount);
-								}
-								else
-								{
-									debugText.Format(debugText + "%s (%" PRISIZE_T " KiB) [%" PRISIZE_T "]", pFile->m_path.c_str(), pFile->m_size >> 10, pFile->m_useCount);
-								}
-							}
-							else
-							{
-								if (pFile->m_size < 1024)
-								{
-									debugText.Format(debugText + "%s (%" PRISIZE_T " Byte)", pFile->m_path.c_str(), pFile->m_size);
-								}
-								else
-								{
-									debugText.Format(debugText + "%s (%" PRISIZE_T " KiB)", pFile->m_path.c_str(), pFile->m_size >> 10);
-								}
-							}
-
-							auxGeom.Draw2dLabel(posX, posY, Debug::g_listFontSize, color, false, "%s", debugText.c_str());
-							posY += Debug::g_listLineHeight;
-						}
-					}
-				}
+				color = Debug::s_afcmColorFileLoading;
 			}
+			else if ((pFile->m_flags & EFileFlags::MemAllocFail) != 0)
+			{
+				color = Debug::s_afcmColorFileMemAllocFail;
+			}
+			else if ((pFile->m_flags & EFileFlags::Removable) != 0)
+			{
+				color = Debug::s_afcmColorFileRemovable;
+			}
+			else if ((pFile->m_flags & EFileFlags::NotCached) != 0)
+			{
+				color = Debug::s_afcmColorFileNotCached;
+			}
+			else if ((pFile->m_flags & EFileFlags::NotFound) != 0)
+			{
+				color = Debug::s_afcmColorFileNotFound;
+			}
+
+			float const ratio = (frameTime - pFile->m_timeCached) / 2.0f;
+
+			if (ratio <= 1.0f)
+			{
+				color[0] *= clamp_tpl(ratio, 0.0f, color[0]);
+				color[1] *= clamp_tpl(ratio, 0.0f, color[1]);
+				color[2] *= clamp_tpl(ratio, 0.0f, color[2]);
+			}
+
+			if ((pFile->m_flags & EFileFlags::UseCounted) != 0)
+			{
+				auxGeom.Draw2dLabel(posX, posY, Debug::g_listFontSize, color, false, "%s [%" PRISIZE_T "]", infoPair.first.c_str(), pFile->m_useCount);
+			}
+			else
+			{
+				auxGeom.Draw2dLabel(posX, posY, Debug::g_listFontSize, color, false, "%s", infoPair.first.c_str());
+			}
+
+			posY += Debug::g_listLineHeight;
 		}
 	}
 }

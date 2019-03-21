@@ -631,9 +631,30 @@ void CStringListWidget::Serialize(Serialization::IArchive& ar)
 {
 	string listValue = GetText().toStdString().c_str();
 	ar(listValue, "value", "Value");
+
+	//Called when we are receiving data from a serializable wrapper (aka copy paste data)
 	if (ar.isInput())
 	{
-		SetText(QString(listValue));
+		//If all the items have been loaded in the widget we can just SetText as the value will be available
+		if (m_loadComplete)
+		{
+			SetText(QString(listValue));
+		}
+		else  //let's see if a valid value is being set, clear the previously set one, replace it and finally serialize to out archive
+		{
+			for (int i = 0; i < m_values.size(); i++)
+			{
+				if (listValue == m_values[i])
+				{
+					Clear();
+					m_selected = i;
+					//this will automatically call SetChecked and consequently pt2 OnChange code that will cause serialization to archive
+					//we need to have all info that will be serialized into archive ready by this point, aka m_selected needs to be set to correct index
+					AddItem(QString(listValue));
+					break;
+				}
+			}
+		}
 	}
 }
 
@@ -683,6 +704,8 @@ void CStringListWidget::ShowPopup()
 template<typename List>
 void PropertyTree2::CStringListWidget::SetupCombo(const List& list)
 {
+	//NOTE: serialization to archive is disabled from now on
+	//This means that all the operations happening into this scope will not generate property tree events and consequently will not trigger serialization into/from archives
 	signalCurrentIndexChanged.DisconnectObject(this);
 
 	bool shouldInit = false;
@@ -720,11 +743,21 @@ void PropertyTree2::CStringListWidget::SetupCombo(const List& list)
 	}
 	else if (m_selected != list.index()) //The list is the same size with the same items but the selected value has changed (for example this happens if we are undoing)
 	{
-		SetChecked(list.index());
+		//values are already loaded into combo box, we just need to check them
+		if (m_loadComplete)
+		{
+			SetChecked(list.index());
+		}
+		else //we need to reset the value shown in the combo box, this requires reload
+		{
+			Clear();
+			AddItem(m_values[list.index()]);
+		}
 	}
 
 	m_selected = list.index();
 
+	//NOTE: serialization to archive is reenabled here
 	signalCurrentIndexChanged.Connect(this, &CStringListWidget::OnChanged);
 }
 

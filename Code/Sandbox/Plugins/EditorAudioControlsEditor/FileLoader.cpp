@@ -4,6 +4,7 @@
 #include "FileLoader.h"
 
 #include "AssetsManager.h"
+#include "ContextManager.h"
 
 #include <CrySystem/File/CryFile.h>
 #include <QtUtil.h>
@@ -107,6 +108,19 @@ void LoadConnections(XmlNodeRef const pRoot, CControl* const pControl)
 	{
 		XmlNodeRef const pNode = pRoot->getChild(i);
 		pControl->LoadConnectionFromXML(pNode);
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void SetDataLoadType(XmlNodeRef const pRoot, CControl* const pControl)
+{
+	if (_stricmp(pRoot->getAttr(CryAudio::g_szTypeAttribute), CryAudio::g_szDataLoadType) == 0)
+	{
+		pControl->SetAutoLoad(true);
+	}
+	else
+	{
+		pControl->SetAutoLoad(false);
 	}
 }
 
@@ -219,22 +233,15 @@ void LoadEditorData(XmlNodeRef const pEditorDataNode, CAsset& library)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CFileLoader::LoadAll()
+void CFileLoader::Load()
 {
-	LoadScopes();
-	LoadControls();
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CFileLoader::LoadControls()
-{
-	// load the global controls
+	// Load the global controls.
 	LoadAllLibrariesInFolder(g_assetsManager.GetConfigFolderPath(), "");
 
-	// load the level specific controls
+	// Load the user context controls.
 	_finddata_t fd;
 	ICryPak* pCryPak = gEnv->pCryPak;
-	intptr_t handle = pCryPak->FindFirst(g_assetsManager.GetConfigFolderPath() + CryAudio::g_szLevelsFolderName + "/*.*", &fd);
+	intptr_t handle = pCryPak->FindFirst(g_assetsManager.GetConfigFolderPath() + CryAudio::g_szContextsFolderName + "/*.*", &fd);
 
 	if (handle != -1)
 	{
@@ -246,14 +253,9 @@ void CFileLoader::LoadControls()
 
 				if ((name != ".") && (name != ".."))
 				{
-					LoadAllLibrariesInFolder(g_assetsManager.GetConfigFolderPath(), name);
-
-					if (!g_assetsManager.ScopeExists(fd.name))
+					if (LoadAllLibrariesInFolder(g_assetsManager.GetConfigFolderPath(), name))
 					{
-						// if the control doesn't exist it
-						// means it is not a real level in the
-						// project so it is flagged as LocalOnly
-						g_assetsManager.AddScope(fd.name, true);
+						g_contextManager.TryCreateContext(fd.name, true);
 					}
 				}
 			}
@@ -263,17 +265,22 @@ void CFileLoader::LoadControls()
 		pCryPak->FindClose(handle);
 	}
 
+#if defined (USE_BACKWARDS_COMPATIBILITY)
+	LoadControlsBW();
+#endif // USE_BACKWARDS_COMPATIBILITY
+
 	CreateDefaultControls();
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CFileLoader::LoadAllLibrariesInFolder(string const& folderPath, string const& level)
+bool CFileLoader::LoadAllLibrariesInFolder(string const& folderPath, string const& contextName)
 {
+	bool libraryLoaded = false;
 	string path = folderPath;
 
-	if (!level.empty())
+	if (!contextName.empty())
 	{
-		path = path + CryAudio::g_szLevelsFolderName + "/" + level + "/";
+		path = path + CryAudio::g_szContextsFolderName + "/" + contextName + "/";
 	}
 
 	string const searchPath = path + "*.xml";
@@ -306,7 +313,9 @@ void CFileLoader::LoadAllLibrariesInFolder(string const& folderPath, string cons
 						int version = 1;
 						root->getAttr(CryAudio::g_szVersionAttribute, version);
 						PathUtil::RemoveExtension(file);
-						LoadControlsLibrary(root, fileName, level, file, static_cast<uint8>(version));
+						LoadControlsLibrary(root, fileName, contextName, file, static_cast<uint8>(version));
+
+						libraryLoaded = true;
 					}
 				}
 				else
@@ -319,16 +328,143 @@ void CFileLoader::LoadAllLibrariesInFolder(string const& folderPath, string cons
 
 		pCryPak->FindClose(handle);
 	}
+
+	return libraryLoaded;
+}
+
+#if defined (USE_BACKWARDS_COMPATIBILITY)
+constexpr char const* g_szLevelsFolderName = "levels";
+
+//////////////////////////////////////////////////////////////////////////
+void CFileLoader::LoadControlsBW()
+{
+	// Load obsolete level specific controls. They will be saved as contexts.
+	_finddata_t fd;
+	ICryPak* pCryPak = gEnv->pCryPak;
+	intptr_t handle = pCryPak->FindFirst(g_assetsManager.GetConfigFolderPath() + g_szLevelsFolderName + "/*.*", &fd);
+
+	if (handle != -1)
+	{
+		do
+		{
+			if (fd.attrib & _A_SUBDIR)
+			{
+				string name = fd.name;
+
+				if ((name != ".") && (name != ".."))
+				{
+					if (LoadAllLibrariesInFolderBW(g_assetsManager.GetConfigFolderPath(), name))
+					{
+						g_contextManager.TryCreateContext(fd.name, false);
+					}
+				}
+			}
+		}
+		while (pCryPak->FindNext(handle, &fd) >= 0);
+
+		pCryPak->FindClose(handle);
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CFileLoader::LoadControlsLibrary(XmlNodeRef const pRoot, string const& filepath, string const& level, string const& filename, uint8 const version)
+bool CFileLoader::LoadAllLibrariesInFolderBW(string const& folderPath, string const& level)
+{
+	bool libraryLoaded = false;
+	string path = folderPath;
+
+	if (!level.empty())
+	{
+		path = path + g_szLevelsFolderName + "/" + level + "/";
+	}
+
+	string const searchPath = path + "*.xml";
+	ICryPak* const pCryPak = gEnv->pCryPak;
+	_finddata_t fd;
+	intptr_t const handle = pCryPak->FindFirst(searchPath.c_str(), &fd);
+
+	if (handle != -1)
+	{
+		do
+		{
+			string fileName = path + fd.name;
+
+			if (_stricmp(PathUtil::GetExt(fileName), "xml") == 0)
+			{
+				XmlNodeRef const root = GetISystem()->LoadXmlFromFile(fileName);
+
+				if (root != nullptr)
+				{
+					if (_stricmp(root->getTag(), CryAudio::g_szRootNodeTag) == 0)
+					{
+						m_loadedFilenames.insert(fileName.MakeLower());
+						string file = fd.name;
+
+						if (root->haveAttr(CryAudio::g_szNameAttribute))
+						{
+							file = root->getAttr(CryAudio::g_szNameAttribute);
+						}
+
+						PathUtil::RemoveExtension(file);
+						uint8 const version = g_currentFileVersion - 1; // Forces library to be modified to get saved in the new contexts folder.
+						LoadControlsLibrary(root, fileName, level, file, version);
+
+						libraryLoaded = true;
+					}
+				}
+				else
+				{
+					CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_ERROR, "[Audio Controls Editor] Failed parsing audio system data file %s", fileName);
+				}
+			}
+		}
+		while (pCryPak->FindNext(handle, &fd) >= 0);
+
+		pCryPak->FindClose(handle);
+	}
+
+	return libraryLoaded;
+}
+
+//////////////////////////////////////////////////////////////////////////
+void LoadPlatformSpecificConnectionsBW(XmlNodeRef const pNode, CControl* const pControl)
+{
+	int const numChildren = pNode->getChildCount();
+
+	for (int i = 0; i < numChildren; ++i)
+	{
+		XmlNodeRef const pPlatformNode = pNode->getChild(i);
+
+		if (_stricmp(pPlatformNode->getTag(), CryAudio::g_szPlatformTag) == 0)
+		{
+			int const numConnections = pPlatformNode->getChildCount();
+
+			for (int j = 0; j < numConnections; ++j)
+			{
+				XmlNodeRef const pConnectionNode = pPlatformNode->getChild(j);
+
+				if (pConnectionNode != nullptr)
+				{
+					pControl->LoadConnectionFromXML(pConnectionNode);
+				}
+			}
+
+			pControl->SetModified(true, true);
+			break;
+		}
+	}
+}
+#endif //  USE_BACKWARDS_COMPATIBILITY
+
+//////////////////////////////////////////////////////////////////////////
+void CFileLoader::LoadControlsLibrary(XmlNodeRef const pRoot, string const& filepath, string const& contextName, string const& fileName, uint8 const version)
 {
 	// Always create a library file, even if no proper formatting is present.
-	CLibrary* const pLibrary = g_assetsManager.CreateLibrary(filename);
+	CLibrary* const pLibrary = g_assetsManager.CreateLibrary(fileName);
 
 	if (pLibrary != nullptr)
 	{
+		bool forceSetModified = version < g_currentFileVersion;
+
 		pLibrary->SetPakStatus(EPakStatus::InPak, gEnv->pCryPak->IsFileExist(filepath.c_str(), ICryPak::eFileLocation_InPak));
 		pLibrary->SetPakStatus(EPakStatus::OnDisk, gEnv->pCryPak->IsFileExist(filepath.c_str(), ICryPak::eFileLocation_OnDisk));
 
@@ -346,18 +482,24 @@ void CFileLoader::LoadControlsLibrary(XmlNodeRef const pRoot, string const& file
 				}
 				else
 				{
-					Scope const scope = level.empty() ? g_globalScopeId : g_assetsManager.GetScope(level);
+					CryAudio::ContextId const contextId = contextName.empty() ? CryAudio::GlobalContextId : g_contextManager.GenerateContextId(contextName);
 					int const numControls = pNode->getChildCount();
+
+					if ((contextId == CryAudio::GlobalContextId) && !contextName.empty())
+					{
+						// User has a "context/global" folder. Move its content to root.
+						forceSetModified = true;
+					}
 
 					for (int j = 0; j < numControls; ++j)
 					{
-						LoadControl(pNode->getChild(j), scope, pLibrary);
+						LoadControl(pNode->getChild(j), contextId, pLibrary);
 					}
 				}
 			}
 		}
 
-		if (version < g_currentFileVersion)
+		if (forceSetModified)
 		{
 			pLibrary->SetModified(true, true);
 		}
@@ -365,7 +507,7 @@ void CFileLoader::LoadControlsLibrary(XmlNodeRef const pRoot, string const& file
 }
 
 //////////////////////////////////////////////////////////////////////////
-CControl* CFileLoader::LoadControl(XmlNodeRef const pNode, Scope const scope, CAsset* const pParentItem)
+CControl* CFileLoader::LoadControl(XmlNodeRef const pNode, CryAudio::ContextId const contextId, CAsset* const pParentItem)
 {
 	CControl* pControl = nullptr;
 
@@ -400,20 +542,31 @@ CControl* CFileLoader::LoadControl(XmlNodeRef const pNode, Scope const scope, CA
 
 							for (int i = 0; i < stateCount; ++i)
 							{
-								LoadControl(pNode->getChild(i), scope, pControl);
+								LoadControl(pNode->getChild(i), contextId, pControl);
 							}
+
+							break;
 						}
-						break;
-					case EAssetType::Preload:
+					case EAssetType::Preload: // Intentional fall-through.
 					case EAssetType::Setting:
-						LoadPlatformSpecificConnections(pNode, pControl);
-						break;
+						{
+							SetDataLoadType(pNode, pControl);
+							LoadConnections(pNode, pControl);
+
+#if defined (USE_BACKWARDS_COMPATIBILITY)
+							LoadPlatformSpecificConnectionsBW(pNode, pControl);
+#endif          //  USE_BACKWARDS_COMPATIBILITY
+
+							break;
+						}
 					default:
-						LoadConnections(pNode, pControl);
-						break;
+						{
+							LoadConnections(pNode, pControl);
+							break;
+						}
 					}
 
-					pControl->SetScope(scope);
+					pControl->SetContextId(contextId);
 				}
 			}
 			else
@@ -425,23 +578,6 @@ CControl* CFileLoader::LoadControl(XmlNodeRef const pNode, Scope const scope, CA
 	}
 
 	return pControl;
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CFileLoader::LoadScopes()
-{
-	ILevelSystem* const pLevelSystem = gEnv->pGameFramework->GetILevelSystem();
-
-	if (pLevelSystem != nullptr)
-	{
-		int const levelCount = pLevelSystem->GetLevelCount();
-
-		for (int i = 0; i < levelCount; ++i)
-		{
-			string const& name = pLevelSystem->GetLevelInfo(i)->GetName();
-			g_assetsManager.AddScope(name);
-		}
-	}
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -460,64 +596,6 @@ void CFileLoader::CreateInternalControls()
 
 		EAssetFlags const flags = (EAssetFlags::IsDefaultControl | EAssetFlags::IsInternalControl);
 		g_assetsManager.CreateDefaultControl("do_nothing", EAssetType::Trigger, pLibrary, flags, "Used to bypass the default stop behavior of the audio system.");
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CFileLoader::LoadPlatformSpecificConnections(XmlNodeRef const pNode, CControl* const pControl)
-{
-	if (_stricmp(pNode->getAttr(CryAudio::g_szTypeAttribute), CryAudio::g_szDataLoadType) == 0)
-	{
-		pControl->SetAutoLoad(true);
-	}
-	else
-	{
-		pControl->SetAutoLoad(false);
-	}
-
-	int const numChildren = pNode->getChildCount();
-
-	for (int i = 0; i < numChildren; ++i)
-	{
-		// Skip unused data from previous format
-		XmlNodeRef const pPlatformNode = pNode->getChild(i);
-
-		if (_stricmp(pPlatformNode->getTag(), CryAudio::g_szPlatformTag) == 0)
-		{
-			// Get the index for that platform name
-			int platformIndex = -1;
-			bool foundPlatform = false;
-			char const* const szPlatformName = pPlatformNode->getAttr(CryAudio::g_szNameAttribute);
-
-			for (auto const szPlatform : g_platforms)
-			{
-				++platformIndex;
-
-				if (_stricmp(szPlatformName, szPlatform) == 0)
-				{
-					foundPlatform = true;
-					break;
-				}
-			}
-
-			if (!foundPlatform)
-			{
-				m_errorCodeMask |= EErrorCode::UnkownPlatform;
-				pControl->SetModified(true, true);
-			}
-
-			int const numConnections = pPlatformNode->getChildCount();
-
-			for (int j = 0; j < numConnections; ++j)
-			{
-				XmlNodeRef const pConnectionNode = pPlatformNode->getChild(j);
-
-				if (pConnectionNode != nullptr)
-				{
-					pControl->LoadConnectionFromXML(pConnectionNode, platformIndex);
-				}
-			}
-		}
 	}
 }
 } // namespace ACE

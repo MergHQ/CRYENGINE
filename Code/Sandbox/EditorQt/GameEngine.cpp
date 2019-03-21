@@ -937,7 +937,7 @@ void CGameEngine::SwitchToInEditor()
 
 	// this has to be done before the RemoveSink() call, or else some entities may not be removed
 	gEnv->p3DEngine->GetDeferredPhysicsEventManager()->ClearDeferredEvents();
-	
+
 	// Enable accelerators.
 	GetIEditorImpl()->EnableAcceleratos(true);
 	// Reset mission script.
@@ -1021,6 +1021,9 @@ void CGameEngine::SetGameMode(bool bInGame)
 	{
 		SwitchToInEditor();
 	}
+
+	if (QAction *pAction = GetIEditorImpl()->GetICommandManager()->GetAction("game.toggle_game_mode"))
+		pAction->setChecked(bInGame);
 
 	GetIEditorImpl()->GetObjectManager()->SendEvent(EVENT_PHYSICS_APPLYSTATE);
 
@@ -1152,12 +1155,12 @@ void CGameEngine::SetSimulationMode(bool enabled, bool bOnlyPhysics)
 			m_pISystem->GetAISystem()->Reset(IAISystem::RESET_EXIT_GAME);
 	}
 
-	GetIEditorImpl()->GetObjectManager()->SendEvent(EVENT_PHYSICS_APPLYSTATE);
-
 	if (!bOnlyPhysics)
 	{
 		gEnv->pEntitySystem->OnEditorSimulationModeChanged(enabled ? IEntitySystem::EEditorSimulationMode::Simulation : IEntitySystem::EEditorSimulationMode::Editing);
 	}
+
+	GetIEditorImpl()->GetObjectManager()->SendEvent(EVENT_PHYSICS_APPLYSTATE);
 
 	if (gEnv->pGameFramework)
 	{
@@ -1330,12 +1333,12 @@ void CGameEngine::GenerateAICoverSurfaces()
 }
 
 void CGameEngine::ExportAiData(
-  const char* navFileName,
-  const char* areasFileName,
-  const char* roadsFileName,
-  const char* vertsFileName,
-  const char* volumeFileName,
-  const char* flightFileName)
+	const char* navFileName,
+	const char* areasFileName,
+	const char* roadsFileName,
+	const char* vertsFileName,
+	const char* volumeFileName,
+	const char* flightFileName)
 {
 	m_pNavigation->ExportData(
 	  navFileName,
@@ -1464,8 +1467,7 @@ void CGameEngine::Update()
 
 		bool bReadOnlyConsole = pRenderViewport ? pFocusWidget != pRenderViewport->GetViewWidget() : true;
 		gEnv->pConsole->SetReadOnly(bReadOnlyConsole);
-
-		gEnv->pSystem->DoFrame((static_cast<CRenderViewport*>(pRenderViewport))->GetDisplayContextKey());
+		gEnv->pSystem->DoFrame((static_cast<CRenderViewport*>(pRenderViewport))->GetDisplayContextKey(), SGraphicsPipelineKey::BaseGraphicsPipelineKey);
 
 		// TODO: still necessary after AVI recording removal?
 		if (pRenderViewport)
@@ -1517,7 +1519,7 @@ void CGameEngine::Update()
 			}
 			const CRenderViewport* gameViewport = static_cast<CRenderViewport*>(GetIEditorImpl()->GetViewManager()->GetGameViewport());
 			CRY_ASSERT(gameViewport);
-			gEnv->pSystem->DoFrame(gameViewport->GetDisplayContextKey(), updateFlags);
+			gEnv->pSystem->DoFrame(gameViewport->GetDisplayContextKey(), SGraphicsPipelineKey::BaseGraphicsPipelineKey, updateFlags);
 		}
 
 		pPluginManager->UpdateAfterSystem();

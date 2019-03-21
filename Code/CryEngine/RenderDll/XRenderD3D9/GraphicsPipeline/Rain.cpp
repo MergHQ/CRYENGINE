@@ -21,17 +21,28 @@ struct SSceneRainCB
 };
 }
 
-CRainStage::CRainStage()
+CRainStage::CRainStage(CGraphicsPipeline& graphicsPipeline)
+	: CGraphicsPipelineStage(graphicsPipeline)
+	, m_passCopyGBufferNormal(&graphicsPipeline)
+	, m_passCopyGBufferSpecular(&graphicsPipeline)
+	, m_passCopyGBufferDiffuse(&graphicsPipeline)
+	, m_passDeferredRainGBuffer(&graphicsPipeline)
+	, m_passRainOcclusionAccumulation(&graphicsPipeline)
+	, m_passRainOcclusionBlur(&graphicsPipeline)
 {
 	std::fill(std::begin(m_pRainRippleTex), std::end(m_pRainRippleTex), nullptr);
 }
 
 CRainStage::~CRainStage()
 {
+	Destroy();
 }
 
 void CRainStage::Init()
 {
+	if (!CRendererCVars::IsRainEnabled())
+		return;
+
 	CRY_ASSERT(m_pSurfaceFlowTex == nullptr);
 	m_pSurfaceFlowTex = CTexture::ForNamePtr("%ENGINE%/EngineAssets/Textures/Rain/surface_flow_ddn.tif", FT_DONT_STREAM, eTF_Unknown);
 
@@ -140,25 +151,42 @@ void CRainStage::Destroy()
 	if (m_rainVertexBuffer != ~0u)
 	{
 		gRenDev->m_DevBufMan.Destroy(m_rainVertexBuffer);
+		m_rainVertexBuffer = ~0u;
+	}
+
+	m_pSurfaceFlowTex.reset();
+	m_pRainSpatterTex.reset();
+	m_pPuddleMaskTex.reset();
+	m_pHighFreqNoiseTex.reset();
+	m_pRainfallTex.reset();
+	m_pRainfallNormalTex.reset();
+
+	for (auto& pTex : m_pRainRippleTex)
+	{
+		pTex.reset();
 	}
 }
 
 void CRainStage::Update()
 {
-	CD3D9Renderer* const RESTRICT_POINTER rd = gcpRendD3D;
-	const auto shouldApplyOcclusion = rd->m_bDeferredRainOcclusionEnabled;
-
-	// Create/release the occlusion texture on demand
-	if (!shouldApplyOcclusion && CTexture::IsTextureExist(CRendererResources::s_ptexRainOcclusion))
-		CRendererResources::s_ptexRainOcclusion->ReleaseDeviceTexture(false);
-	else if (shouldApplyOcclusion && !CTexture::IsTextureExist(CRendererResources::s_ptexRainOcclusion))
-		CRendererResources::s_ptexRainOcclusion->CreateRenderTarget(eTF_R8, Clr_Neutral);
-
 	if (RenderView()->GetCurrentEye() != CCamera::eEye_Right)
 	{
+		CD3D9Renderer* const RESTRICT_POINTER rd = gcpRendD3D;
 		// TODO: improve this dependency and make it double-buffer.
 		// copy rain info to member variable every frame.
 		m_RainVolParams = rd->m_p3DEngineCommon.m_RainInfo;
+	}
+}
+
+void CRainStage::OnCVarsChanged(const CCVarUpdateRecorder& cvarUpdater)
+{
+	const bool enabled = CRendererCVars::IsRainEnabled();
+	if (enabled != Initialized())
+	{
+		if (enabled)
+			Init();
+		else
+			Destroy();
 	}
 }
 
@@ -234,7 +262,7 @@ void CRainStage::ExecuteDeferredRainGBuffer()
 	if (!rd->m_bPauseTimer)
 	{
 		// flip rain ripple texture
-		const float elapsedTime = GetGraphicsPipeline().GetAnimationTime().GetSeconds();
+		const float elapsedTime = m_graphicsPipeline.GetAnimationTime().GetSeconds();
 		CRY_ASSERT(elapsedTime >= 0.0f);
 		const float AnimTexFlipTime = 0.05f;
 		m_rainRippleTexIndex = (uint32)(elapsedTime / AnimTexFlipTime) % m_pRainRippleTex.size();
@@ -254,7 +282,7 @@ void CRainStage::ExecuteDeferredRainGBuffer()
 	Vec3 windVec = gEnv->p3DEngine->GetGlobalWind(false);
 
 	// Animated puddles
-	const float fTime = GetGraphicsPipeline().GetAnimationTime().GetSeconds() * 0.333f;
+	const float fTime = m_graphicsPipeline.GetAnimationTime().GetSeconds() * 0.333f;
 	const float puddleWindScale = -0.15f;
 	const float puddleOffsX = fTime * puddleWindScale * windVec.x;
 	const float puddleOffsY = fTime * puddleWindScale * windVec.y;
@@ -411,7 +439,7 @@ void CRainStage::Execute()
 	uint64 rtMask = 0;
 	rtMask |= shouldApplyOcclusion ? g_HWSR_MaskBit[HWSR_SAMPLE0] : 0;
 
-	auto pPerViewCB = rd->GetGraphicsPipeline().GetMainViewConstantBuffer();
+	auto pPerViewCB = m_graphicsPipeline.GetMainViewConstantBuffer();
 
 	for (int32 nCurLayer = 0; nCurLayer < nLayers; ++nCurLayer)
 	{
@@ -479,7 +507,7 @@ void CRainStage::ExecuteRainOcclusion()
 		return;
 
 	const auto& arrOccluders = rd->m_p3DEngineCommon.m_RainOccluders.m_arrCurrOccluders[gRenDev->GetRenderThreadID()];
-	if (arrOccluders.empty()) 
+	if (arrOccluders.empty())
 		return;
 
 	ExecuteRainOcclusionGen();
@@ -540,7 +568,7 @@ void CRainStage::ExecuteRainOcclusionGen()
 
 			if (pRenderMesh)
 			{
-				pRenderMesh->RT_CheckUpdate(pRenderMesh->_GetVertexContainer(),pRenderMesh->_GetVertexFormat(), 0);
+				pRenderMesh->RT_CheckUpdate(pRenderMesh->_GetVertexContainer(), pRenderMesh->_GetVertexFormat(), 0);
 				buffer_handle_t hVertexStream = pRenderMesh->_GetVBStream(VSF_GENERAL);
 				buffer_handle_t hIndexStream = pRenderMesh->_GetIBStream();
 

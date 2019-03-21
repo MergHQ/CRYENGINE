@@ -818,12 +818,13 @@ IPane* CTabPaneManager::CreatePaneContents(QTabPane* pTool)
 	}
 
 	IViewPaneClass* pViewPaneClass = (IViewPaneClass*)pClassDesc;
-	IPane* pWidget = pViewPaneClass->CreatePane();
-	if (pWidget)
+	IPane* pPane = pViewPaneClass->CreatePane();
+	if (pPane)
 	{
-		QWidget* const pContentWidget = pWidget->GetWidget();
+		QWidget* const pContentWidget = pPane->GetWidget();
 		pTool->layout()->addWidget(pContentWidget);
-		pTool->m_pane = pWidget;
+		pTool->m_pane = pPane;
+		pPane->Initialize();
 
 		QObject::connect(pContentWidget, &QWidget::windowTitleChanged, pTool, &QWidget::setWindowTitle);
 		QObject::connect(pContentWidget, &QWidget::windowIconChanged, pTool, &QWidget::setWindowIcon);
@@ -845,7 +846,7 @@ IPane* CTabPaneManager::CreatePaneContents(QTabPane* pTool)
 			mfcHostWidget->setWindow(pTool->m_MfcWnd->GetSafeHwnd());
 		}
 	}
-	return pWidget;
+	return pPane;
 }
 
 QToolWindowManager* CTabPaneManager::GetToolManager() const

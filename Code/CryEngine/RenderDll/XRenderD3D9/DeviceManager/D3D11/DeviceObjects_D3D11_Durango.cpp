@@ -25,8 +25,7 @@ void CDeviceObjectFactory::FreeBackingStorage(void* base_ptr)
 {
 	CRY_PROFILE_FUNCTION(PROFILE_RENDERER);
 #if BUFFER_ENABLE_DIRECT_ACCESS
-	HRESULT hr = D3DFreeGraphicsMemory(base_ptr);
-	assert(hr == S_OK);
+	CRY_VERIFY(D3DFreeGraphicsMemory(base_ptr) == S_OK);
 #endif
 }
 
@@ -975,10 +974,13 @@ void CDurangoGPUMemoryManager::Relocate_Int(CDeviceTexture* pDevTex, char* pOldT
 #endif
 
 	ID3D11Texture2D* pD3DTex = NULL;
-	HRESULT hr = gcpRendD3D->GetPerformanceDevice().CreatePlacementTexture2D(&pDesc->d3dDesc, pDesc->xgTileMode, 0, pTexBase, &pD3DTex);
+
 #ifndef _RELEASE
+	HRESULT hr = gcpRendD3D->GetPerformanceDevice().CreatePlacementTexture2D(&pDesc->d3dDesc, pDesc->xgTileMode, 0, pTexBase, &pD3DTex);
 	if (FAILED(hr))
 		__debugbreak();
+#else
+	gcpRendD3D->GetPerformanceDevice().CreatePlacementTexture2D(&pDesc->d3dDesc, pDesc->xgTileMode, 0, pTexBase, &pD3DTex);
 #endif
 
 	pDevTex->ReplaceTexture(pD3DTex);
@@ -1311,7 +1313,6 @@ HRESULT CDeviceObjectFactory::BeginTileFromLinear2D(CDeviceTexture* pDst, const 
 		const void* pLinSurfaceSrc = pSubresources[nSRI].pLinSurfaceSrc;
 
 		int nDstMip = nDstSubResource % dstDesc.MipLevels;
-		int nDstSlice = nDstSubResource / dstDesc.MipLevels;
 
 		D3D11_TEXTURE2D_DESC subResDesc;
 		ZeroStruct(subResDesc);

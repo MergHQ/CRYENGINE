@@ -14,6 +14,8 @@
 #include <CryString/StringUtils.h>                // stristr()
 #include <CrySystem/Scaleform/IFlashUI.h>
 #include "../Common/Textures/TextureHelpers.h"
+#include "../XRenderD3D9/GraphicsPipeline/ShadowMap.h"
+#include "../XRenderD3D9/GraphicsPipeline/VolumetricClouds.h"
 
 #if CRY_PLATFORM_WINDOWS
 	#include <direct.h>
@@ -211,7 +213,7 @@ EEfResTextures CShaderMan::mfCheckTextureSlotName(const char* mapname)
 {
 	EEfResTextures slot = EFTT_UNKNOWN;
 
-	if (!stricmp(mapname, "$Diffuse"))            slot = EFTT_DIFFUSE;
+	if (!stricmp(mapname, "$Diffuse")) slot = EFTT_DIFFUSE;
 	else if (!strnicmp(mapname, "$Normals", 7))
 		slot = EFTT_NORMALS;
 	else if (!stricmp(mapname, "$Specular"))
@@ -270,9 +272,11 @@ CTexture* CShaderMan::mfCheckTemplateTexName(const char* mapname, ETEX_Type eTT)
 		if (slot != EFTT_MAX)
 			return &CRendererResources::s_ShaderTemplates[slot];
 	}
+	auto* pShadowMapStage = gcpRendD3D->GetActiveGraphicsPipeline()->GetStage<CShadowMapStage>();
+	auto* pVolumetricCloudStage = gcpRendD3D->GetActiveGraphicsPipeline()->GetStage<CVolumetricCloudsStage>();
 
 	if (!stricmp(mapname, "$ShadowPoolAtlas"))
-		TexPic = CRendererResources::s_ptexRT_ShadowPool;
+		TexPic = pShadowMapStage->m_pTexRT_ShadowPool;
 	else if (!strnicmp(mapname, "$ShadowID", 9))
 	{
 		int n = atoi(&mapname[9]);
@@ -351,7 +355,7 @@ CTexture* CShaderMan::mfCheckTemplateTexName(const char* mapname, ETEX_Type eTT)
 	else if (!stricmp(mapname, "$SceneNormalsBent"))
 		TexPic = CRendererResources::s_ptexSceneNormalsBent;
 	else if (!stricmp(mapname, "$VolCloudShadows"))
-		TexPic = CRendererResources::s_ptexVolCloudShadow;
+		TexPic = pVolumetricCloudStage->m_pTexVolCloudShadow;
 
 	return TexPic;
 }
@@ -555,7 +559,7 @@ void CShaderMan::mfSetResourceTexState(SEfResTexture* Tex)
 	if (Tex)
 	{
 		SSamplerState ST;
-		
+
 		ST.SetFilterMode(Tex->m_Filter);
 		ST.SetClampMode(Tex->m_bUTile ? eSamplerAddressMode_Wrap : eSamplerAddressMode_Clamp, Tex->m_bVTile ? eSamplerAddressMode_Wrap : eSamplerAddressMode_Clamp, Tex->m_bUTile ? eSamplerAddressMode_Wrap : eSamplerAddressMode_Clamp);
 

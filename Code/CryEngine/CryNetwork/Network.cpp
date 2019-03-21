@@ -58,6 +58,10 @@
 #include <CryLobby/CommonICryMatchMaking.h>
 #include <CryThreading/IThreadManager.h>
 
+#if CRY_PLATFORM_DURANGO
+#include "Socket/DurangoAssociationTemplate.h"
+#endif
+
 static const int MIN_LOBBY_TICK_FREQUENCY = 4;
 
 static const int OCCASIONAL_TICKS = 50;
@@ -607,6 +611,10 @@ bool CNetwork::Init(int ncpu)
 	#endif
 		return false;
 	}
+#endif
+
+#if CRY_PLATFORM_DURANGO
+	m_pAssociationTemplate = stl::make_unique<CDurangoAssociationTemplate>();
 #endif
 
 	int n = 0;

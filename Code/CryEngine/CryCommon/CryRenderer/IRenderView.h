@@ -11,6 +11,7 @@ namespace JobManager { struct SJobState; }
 typedef JobManager::SJobState CryJobState;
 
 struct SRenderViewport;
+class CGraphicsPipeline;
 
 // Defines an output target for the Render View
 // It could be an offscreen target or a back buffer
@@ -160,7 +161,7 @@ struct IRenderView : public CMultiThreadRefCount
 
 	//////////////////////////////////////////////////////////////////////////
 	virtual const SRendererData& GetRendererData() const = 0;
-	virtual SRendererData& GetRendererData() = 0;
+	virtual SRendererData&       GetRendererData() = 0;
 
 	//////////////////////////////////////////////////////////////////////////
 	// Interface for 3d engine
@@ -206,6 +207,9 @@ struct IRenderView : public CMultiThreadRefCount
 
 	virtual void                                                  InjectAuxiliaryStatObject(SRendParams rp, IStatObj* pStatObj) = 0;
 	virtual const std::vector<std::pair<SRendParams, IStatObj*>>& GetAuxiliaryStatObjects() const = 0;
+
+	virtual void                                                  SetGraphicsPipeline(std::shared_ptr<CGraphicsPipeline> pipeline) = 0;
+	virtual const std::shared_ptr<CGraphicsPipeline>&             GetGraphicsPipeline() const = 0;
 };
 
 typedef _smart_ptr<IRenderView> IRenderViewPtr;

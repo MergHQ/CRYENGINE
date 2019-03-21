@@ -10,17 +10,18 @@
 
 namespace MNM
 {
-//Code relies on the ordering (specifically we must list l/r/u/d cyclically before corners)
+//Code relies on the ordering (specifically we must list u/r/d/l cyclically before corners)
 static const int NeighbourOffset_TileGenerator[8][2] =
 {
-	{ 0,  1  },
-	{ -1, 0  },
-	{ 1,  0  },
-	{ 0,  -1 },
-	{ -1, -1 },
-	{ 1,  -1 },
-	{ 1,  1  },
-	{ -1, 1  }, };
+	{ 0, -1 },
+	{ 1,  0 },
+	{ 0,  1 },
+	{-1,  0 },
+	{-1, -1 },
+	{ 1, -1 },
+	{ 1,  1 },
+	{-1,  1 },
+};
 
 /*
    Expanded s_CornerTable, easier to read
@@ -551,6 +552,37 @@ void CTileGenerator::FilterWalkable(const AABB& aabb, bool fullyContained)
 
 	size_t nonWalkableCount = 0;
 
+	// First pass - clearance is set here
+	nonWalkableCount += FilterWalkable_CheckBackfaceDepthAndClearance(filterParams);
+
+	// Second pass - clearance is used when checking neighbouring spans
+	nonWalkableCount += FilterWalkable_CheckNeighboursAndInclination(filterParams);
+
+	// Apply navigation area and exclude area boundaries
+	if (!fullyContained)
+	{
+		nonWalkableCount += FilterWalkable_CheckBoundaries(aabb, filterParams.gridWidth, filterParams.gridHeight);
+	}
+
+	CompactSpanGrid compact;
+	compact.CompactExcluding(m_spanGrid, NotWalkable, m_spanGrid.GetSpanCount() - nonWalkableCount);
+
+	m_profiler.AddMemory(CompactSpanGridMemory, compact.GetMemoryUsage());
+
+	compact.Swap(m_spanGrid);
+
+	m_profiler.StopTimer(Filter);
+
+	if (m_params.flags & Params::DebugInfo)
+		m_spanGridFlagged.Swap(compact);
+	else
+		m_profiler.FreeMemory(CompactSpanGridMemory, compact.GetMemoryUsage());
+}
+
+size_t CTileGenerator::FilterWalkable_CheckBackfaceDepthAndClearance(const SFilterWalkableParams& filterParams)
+{
+	size_t nonWalkableCount = 0;
+	
 	for (size_t y = 0; y < filterParams.gridHeight; ++y)
 	{
 		const size_t ymult = y * filterParams.gridWidth;
@@ -571,50 +603,76 @@ void CTileGenerator::FilterWalkable(const AABB& aabb, bool fullyContained)
 
 					span.flags |= boundaryFlag;
 
-					if (!FilterWalkableSpan(span, spanCoord, cell, filterParams))
+					if (!FilterWalkableSpanAndSetClearance(span, spanCoord, cell, filterParams))
 					{
 						span.flags |= NotWalkable;
 						++nonWalkableCount;
 					}
 				} // for s
-			}   // if cell
-		}     // for x
-	}       // for y
+			} // if cell
+		} // for x
+	}// for y
 
-	// apply boundaries
-	if (!fullyContained)
-	{
-		FilterWalkable_CheckBoundaries(aabb, filterParams.gridWidth, filterParams.gridHeight);
-	}
-
-	// TODO pavloi 2016.03.10: CheckBoundaries is not adding to nonWalkableCount, so new compact grid will
-	// reserve more spans than required.
-	CompactSpanGrid compact;
-	compact.CompactExcluding(m_spanGrid, NotWalkable, m_spanGrid.GetSpanCount() - nonWalkableCount);
-
-	m_profiler.AddMemory(CompactSpanGridMemory, compact.GetMemoryUsage());
-
-	// TODO pavloi 2016.03.10: m_spanGrid is used to visualize "Raw voxels", but actually contains
-	// only walkable voxels after this point. m_spanGridFlagged contains all (but already flagged) voxels.
-	compact.Swap(m_spanGrid);
-
-	m_profiler.StopTimer(Filter);
-
-	if (m_params.flags & Params::DebugInfo)
-		m_spanGridFlagged.Swap(compact);
-	else
-		m_profiler.FreeMemory(CompactSpanGridMemory, compact.GetMemoryUsage());
+	return nonWalkableCount;
 }
 
-bool CTileGenerator::FilterWalkableSpan(CompactSpanGrid::Span& span, const SSpanCoord& spanCoord, const CompactSpanGrid::Cell& cell, const SFilterWalkableParams& filterParams)
+size_t CTileGenerator::FilterWalkable_CheckNeighboursAndInclination(const SFilterWalkableParams& filterParams)
 {
-	if (FilterWalkable_CheckSpanBackface(span))
+	size_t nonWalkableCount = 0;
+	
+	for (size_t y = 0; y < filterParams.gridHeight; ++y)
+	{
+		const size_t ymult = y * filterParams.gridWidth;
+
+		for (size_t x = 0; x < filterParams.gridWidth; ++x)
+		{
+			if (const CompactSpanGrid::Cell cell = m_spanGrid[x + ymult])
+			{
+				const size_t count = cell.count;
+
+				for (size_t s = 0; s < count; ++s)
+				{
+					CompactSpanGrid::Span& span = m_spanGrid.GetSpan(cell.index + s);
+					if (span.flags & NotWalkable)
+						continue;
+
+					const SSpanCoord spanCoord(x, y, s, cell.index + s);
+
+					SNonWalkableNeighbourReason* pNeighbourReason = nullptr;
+#if DEBUG_MNM_GATHER_NONWALKABLE_REASONS
+					SNonWalkableNeighbourReason neighbourReason;
+					IF_UNLIKELY(m_params.flags & Params::DebugInfo)
+					{
+						pNeighbourReason = &neighbourReason;
+					}
+#endif
+
+					const size_t spanTop = span.bottom + span.height;
+					if (FilterWalkableSpan_CheckNeighbours(spanCoord, spanTop, spanTop + span.clearance, filterParams, pNeighbourReason))
+					{
+						if (pNeighbourReason)
+							DebugAddNonWalkableReason(spanCoord, SNonWalkableReason("neighbour", *pNeighbourReason));
+
+						span.flags |= NotWalkable;
+						++nonWalkableCount;
+					}
+				} // for s
+			} // if cell
+		} // for x
+	} // for y
+
+	return nonWalkableCount;
+}
+
+bool CTileGenerator::FilterWalkableSpanAndSetClearance(CompactSpanGrid::Span& span, const SSpanCoord& spanCoord, const CompactSpanGrid::Cell& cell, const SFilterWalkableParams& filterParams)
+{
+	if (FilterWalkableSpan_CheckBackface(span))
 	{
 		DebugAddNonWalkableReason(spanCoord, "backface");
 		return false;
 	}
 
-	if (FilterWalkable_CheckSpanWaterDepth(span, m_params))
+	if (FilterWalkableSpan_CheckWaterDepth(span, m_params))
 	{
 		DebugAddNonWalkableReason(spanCoord, "water");
 		return false;
@@ -622,12 +680,12 @@ bool CTileGenerator::FilterWalkableSpan(CompactSpanGrid::Span& span, const SSpan
 
 	const SSpanClearance spanClearance(spanCoord, span, cell, filterParams, m_spanGrid);
 	const size_t clearanceValue = spanClearance.Clearance();
+	span.clearance = clearanceValue;
 	if (clearanceValue < filterParams.heightVoxelCount)
 	{
 		if (clearanceValue >= filterParams.minValidHeightVoxelCount)
 		{
 			span.flags |= LessThanAgentHeight;
-			span.clearance = clearanceValue;
 		}
 		else
 		{
@@ -635,51 +693,207 @@ bool CTileGenerator::FilterWalkableSpan(CompactSpanGrid::Span& span, const SSpan
 			return false;
 		}
 	}
+	return true;
+}
 
-	SNonWalkableNeighbourReason* pNeighbourReason = nullptr;
-#if DEBUG_MNM_GATHER_NONWALKABLE_REASONS
-	SNonWalkableNeighbourReason neighbourReason;
-	IF_UNLIKELY (m_params.flags & Params::DebugInfo)
-	{
-		pNeighbourReason = &neighbourReason;
-	}
-#endif
+/*static*/ bool CTileGenerator::FilterWalkableSpan_CheckBackface(const CompactSpanGrid::Span& span)
+{
+	return span.backface;
+}
 
-	if (FilterWalkable_CheckNeighbours(spanCoord, spanClearance, filterParams, pNeighbourReason))
+/*static*/ bool CTileGenerator::FilterWalkableSpan_CheckWaterDepth(const CompactSpanGrid::Span& span, const Params& params)
+{
+	return span.depth > params.agent.maxWaterDepth;
+}
+
+struct CTileGenerator::SWalkableProbeCheckParams
+{
+	SWalkableProbeCheckParams(const SSpanCoord& spanCoord, const SFilterWalkableParams& filterParams, const size_t originTop, SNonWalkableNeighbourReason* pOutReason)
+		: spanCoord(spanCoord)
+		, filterParams(filterParams)
+		, originTop(originTop)
+		, pOutReason(pOutReason)
+	{}
+	
+	const SSpanCoord& spanCoord;
+	const SFilterWalkableParams& filterParams;
+	const size_t originTop;
+	SNonWalkableNeighbourReason* pOutReason;
+	size_t dir;
+	size_t firstProbeSpanTop;
+	size_t firstProbeSpanNextBottom;
+	size_t firstSpanTopDiffAbsolute;
+	int firstSpanTopDiffSigned;
+};
+
+/*static*/ bool CTileGenerator::CheckWalkableProbeStep(const SWalkableProbeCheckParams& params)
+{
+	const size_t stepTestCount = size_t(ceil(params.firstSpanTopDiffAbsolute * params.filterParams.climbableStepRatio));
+	const size_t stepTestTolerance = size_t(ceil(stepTestCount * params.filterParams.climbableStepRatio)) - 1;
+
+	bool failedStepTest = false;
+
+	size_t probeSpansTopDiffMax = params.firstSpanTopDiffAbsolute;
+	size_t lastSpanTop = params.firstProbeSpanTop;
+	size_t lastSpanNextBottom = params.firstProbeSpanNextBottom;
+
+	// The first neighbour to the starting span is checked already, start with the next one
+	for (size_t probeIdx = 2; probeIdx <= stepTestCount; ++probeIdx)
 	{
-#if DEBUG_MNM_GATHER_NONWALKABLE_REASONS
-		if (pNeighbourReason)
+		const size_t px = params.spanCoord.cellX + NeighbourOffset_TileGenerator[params.dir][0] * probeIdx;
+		const size_t py = params.spanCoord.cellY + NeighbourOffset_TileGenerator[params.dir][1] * probeIdx;
+
+		const CompactSpanGrid::Cell pcell = params.filterParams.spanGrid.GetCell(px, py);
+
+		if (!pcell)
+			break; //Empty neighbour - stop probe (but no fail)
+
+		const size_t pcount = pcell.count;
+		const size_t pindex = pcell.index;
+
+		bool isCellValid = false;
+
+		for (size_t ps = 0; ps < pcount; ++ps)
 		{
-			m_debugNonWalkableReasonMap[spanCoord] = SNonWalkableReason("neighbour", *pNeighbourReason);
+			const size_t psindex = pindex + ps;
+			const CompactSpanGrid::Span& probeSpan = params.filterParams.spanGrid.GetSpan(psindex);
+
+			const size_t probeSpanTop = probeSpan.bottom + probeSpan.height;
+			const size_t probeSpanNextBottom = probeSpanTop + probeSpan.clearance;
+
+			const int probeSpanTopDiffSigned = probeSpanTop - lastSpanTop;
+			const size_t probeSpanTopDiffAbsolute = abs(probeSpanTopDiffSigned);
+
+			//Test validity
+			if (probeSpanTopDiffAbsolute <= params.filterParams.climbableVoxelCount
+				&& min(lastSpanNextBottom, probeSpanNextBottom) >= max(lastSpanTop, probeSpanTop) + params.filterParams.minValidHeightVoxelCount)
+			{
+				const size_t pTopOffs = abs(int(probeSpanTop - params.originTop));
+				probeSpansTopDiffMax = max(probeSpansTopDiffMax, pTopOffs);
+
+				lastSpanTop = probeSpanTop;
+				lastSpanNextBottom = probeSpanNextBottom;
+
+				isCellValid = true;
+
+				break;
+			}
 		}
-#endif
+
+		if (!isCellValid)
+			break;
+
+		if (probeSpansTopDiffMax > stepTestTolerance + params.firstSpanTopDiffAbsolute)
+		{
+			failedStepTest = true;
+		}
+	} // for all probes in the direction
+
+	if (failedStepTest && (probeSpansTopDiffMax > params.filterParams.climbableVoxelCount))
+	{
 		return false;
 	}
 	return true;
 }
 
-/*static*/ bool CTileGenerator::FilterWalkable_CheckSpanBackface(const CompactSpanGrid::Span& span)
+/*static*/ bool CTileGenerator::CheckWalkableProbeIncline(const SWalkableProbeCheckParams& params, float* probeInclinationVars)
 {
-	return span.backface;
+	const size_t probeTestCount = params.filterParams.inclineTestCount;
+
+	size_t probeSpansTopMin = params.firstProbeSpanTop;
+	size_t probeSpansTopMax = params.firstProbeSpanTop;
+	size_t lastSpanTop = params.firstProbeSpanTop;
+	size_t lastSpanNextBottom = params.firstProbeSpanNextBottom;
+
+	// The first neighbour to the starting span is checked already, start with the next one
+	size_t probeIdx = 2;
+	for (; probeIdx <= probeTestCount; ++probeIdx)
+	{
+		const size_t px = params.spanCoord.cellX + NeighbourOffset_TileGenerator[params.dir][0] * probeIdx;
+		const size_t py = params.spanCoord.cellY + NeighbourOffset_TileGenerator[params.dir][1] * probeIdx;
+
+		const CompactSpanGrid::Cell probeCell = params.filterParams.spanGrid.GetCell(px, py);
+
+		if (!probeCell)
+			break; //Empty neighbour - stop probe (but no fail)
+
+		bool isCellValid = false;
+		int lastSpanTopDiffSigned;
+
+		const size_t pcount = probeCell.count;
+		const size_t pindex = probeCell.index;
+
+		for (size_t ps = 0; ps < pcount; ++ps)
+		{
+			const size_t psindex = pindex + ps;
+			const CompactSpanGrid::Span& probeSpan = params.filterParams.spanGrid.GetSpan(psindex);
+
+			const size_t probeSpanTop = probeSpan.bottom + probeSpan.height;
+			const size_t probeSpanNextBottom = probeSpanTop + probeSpan.clearance;
+
+			const int probeSpanTopDiffSigned = probeSpanTop - lastSpanTop;
+			const size_t probeSpanTopDiffAbsolute = abs(probeSpanTopDiffSigned);
+
+			//Test validity
+			if (probeSpanTopDiffAbsolute <= params.filterParams.climbableVoxelCount
+				&& min(lastSpanNextBottom, probeSpanNextBottom) >= max(lastSpanTop, probeSpanTop) + params.filterParams.minValidHeightVoxelCount)
+			{
+				// Track range of tops in probe
+				probeSpansTopMin = min(probeSpansTopMin, probeSpanTop);
+				probeSpansTopMax = max(probeSpansTopMax, probeSpanTop);
+
+				lastSpanTopDiffSigned = probeSpanTopDiffSigned;
+
+				lastSpanTop = probeSpanTop;
+				lastSpanNextBottom = probeSpanNextBottom;
+
+				isCellValid = true;
+
+				break;
+			}
+		}
+
+		if (!isCellValid)
+			break;
+
+		if (lastSpanTopDiffSigned > params.firstSpanTopDiffSigned + 1 || lastSpanTopDiffSigned < params.firstSpanTopDiffSigned - 1)
+		{
+			// stop probe (but no fail)
+			break;
+		}
+	} // for all probes in the direction
+
+	const size_t checkedProbesDist = probeIdx - 2;
+	if (checkedProbesDist > 0)
+	{
+		const float inclinationValue = float(probeSpansTopMax - probeSpansTopMin) / checkedProbesDist;
+		if (inclinationValue > params.filterParams.climbableInclineGradient)
+			return false;
+
+		probeInclinationVars[params.dir] = inclinationValue;
+	}
+	return true;
 }
 
-/*static*/ bool CTileGenerator::FilterWalkable_CheckSpanWaterDepth(const CompactSpanGrid::Span& span, const Params& params)
-{
-	return span.depth > params.agent.maxWaterDepth;
-}
+#if DEBUG_MNM_GATHER_NONWALKABLE_REASONS
+#define MNM_SET_NONWALKABLE_FAIL_REASON(pOutReason, szReasonName) \
+IF_UNLIKELY(pOutReason) { pOutReason->szReason = szReasonName; }
+#else
+#define MNM_SET_NONWALKABLE_FAIL_REASON 
+#endif
 
-/*static*/ bool CTileGenerator::FilterWalkable_CheckNeighbours(const SSpanCoord& spanCoord, const SSpanClearance& spanClearance, const SFilterWalkableParams& filterParams, SNonWalkableNeighbourReason* pOutReason)
+/*static*/ bool CTileGenerator::FilterWalkableSpan_CheckNeighbours(const SSpanCoord& spanCoord, const size_t originTop, const size_t originNextBottom, const SFilterWalkableParams& filterParams, SNonWalkableNeighbourReason* pOutReason)
 {
 	const size_t axisNeighbourCount = 4;
 
-	bool neighbourTest(true);
+	SWalkableProbeCheckParams probesParams(spanCoord, filterParams, originTop, pOutReason);
 
 	float probeInclinationVars[axisNeighbourCount] = { 0.0f };
 
-	for (size_t n = 0; n < axisNeighbourCount; ++n)
+	for (size_t dir = 0; dir < axisNeighbourCount; ++dir)
 	{
-		const size_t nx = spanCoord.cellX + NeighbourOffset_TileGenerator[n][0];
-		const size_t ny = spanCoord.cellY + NeighbourOffset_TileGenerator[n][1];
+		const size_t nx = spanCoord.cellX + NeighbourOffset_TileGenerator[dir][0];
+		const size_t ny = spanCoord.cellY + NeighbourOffset_TileGenerator[dir][1];
 
 		// Neighbour off grid - pass
 		// NOTE: (0 - 1) will underflow to size_t::max, which is also > gridWidth.
@@ -691,218 +905,92 @@ bool CTileGenerator::FilterWalkableSpan(CompactSpanGrid::Span& span, const SSpan
 		if (!ncell)
 		{
 			//Empty neighbour on grid - fail
-			neighbourTest = false;
-#if DEBUG_MNM_GATHER_NONWALKABLE_REASONS
-			IF_UNLIKELY (pOutReason)
-			{
-				pOutReason->szReason = "empty";
-			}
-#endif
-			break;
+			MNM_SET_NONWALKABLE_FAIL_REASON(pOutReason, "empty");
+			return true;
 		}
 
 		const size_t ncount = ncell.count;
 		const size_t nindex = ncell.index;
 
-		size_t ptopLast;
-		size_t pnextBottomLast;
-		size_t dpTopFirst;
-		size_t dpTopLast;
-
-		int sdpTopFirst;
-		int sdpTopLast;
-
-		// Assume this neighbour cell is not valid. Succeed when we find just one valid adjacent span
-		bool nCellValid(false);
+		// Assume this neighbour cell is not valid. Succeed when we find just one valid adjacent span.
+		bool isCellValid = false;
 
 		for (size_t ns = 0; ns < ncount; ++ns)
 		{
 			const size_t nsindex = nindex + ns;
 			const CompactSpanGrid::Span& nspan = filterParams.spanGrid.GetSpan(nsindex);
 
-			const SSpanCoord neighbourCoord(nx, ny, ns, nsindex);
-			const SSpanClearance neighbourClearance(neighbourCoord, nspan, ncell, filterParams, filterParams.spanGrid);
+			const size_t nSpanTop = nspan.bottom + nspan.height;
+			const size_t nSpanNextBottom = nSpanTop + nspan.clearance;
 
-			const size_t dTop = (size_t)abs((int)(neighbourClearance.top - spanClearance.top));
+			const int sdTop = nSpanTop - originTop;
+			const size_t dTop = abs(sdTop);
 
-			//Test validity
+			// Test validity of neighbour span.
 			if (dTop <= filterParams.climbableVoxelCount
-			    && min(spanClearance.nextBottom, neighbourClearance.nextBottom) >= max(spanClearance.top, neighbourClearance.top) + filterParams.minValidHeightVoxelCount)
+			    && min(originNextBottom, nSpanNextBottom) >= max(originTop, nSpanTop) + filterParams.minValidHeightVoxelCount)
 			{
-				ptopLast = neighbourClearance.top;
-				pnextBottomLast = neighbourClearance.nextBottom;
-				dpTopFirst = dpTopLast = dTop;
-
-				sdpTopFirst = sdpTopLast = int(neighbourClearance.top) - int(spanClearance.top);
-
-				nCellValid = true;
-
+				probesParams.firstProbeSpanTop = nSpanTop;
+				probesParams.firstProbeSpanNextBottom = nSpanNextBottom;
+				probesParams.firstSpanTopDiffAbsolute = dTop;
+				probesParams.firstSpanTopDiffSigned = sdTop;
+				probesParams.dir = dir;
+				isCellValid = true;
 				break;
 			}
 		}
 
-		if (!nCellValid)
+		if (!isCellValid)
 		{
-			neighbourTest = false;
-#if DEBUG_MNM_GATHER_NONWALKABLE_REASONS
-			IF_UNLIKELY (pOutReason)
-			{
-				pOutReason->szReason = "clearance";
-			}
-#endif
-			break;
+			// It's not possible to move to neighbour span in this direction.
+			MNM_SET_NONWALKABLE_FAIL_REASON(pOutReason, "clearance");
+			return true;
 		}
 
-		if (dpTopFirst > 0)
+		// Skip this direction if the neighbouring span is in the same level
+		// TODO: this doesn't work well with lower inclineGradient (less than 1.0) and when spans of a slope don't raise so quickly.
+		if(probesParams.firstSpanTopDiffAbsolute <= 0)
+			continue;
+
+		const bool isStep = probesParams.firstSpanTopDiffAbsolute > (filterParams.climbableInclineGradientLowerBound + 1);
+		if (isStep)
 		{
-			size_t const stepTestCount((size_t)ceil(dpTopFirst* filterParams.climbableStepRatio));
-			size_t const stepTestTolerance(stepTestCount - 1);
-			bool const isStep(dpTopFirst > (filterParams.climbableInclineGradientLowerBound + 1));
-			bool stepTest(true);
-
-			AIAssert(stepTestCount <= filterParams.inclineTestCount);
-
-			size_t ptopMin(ptopLast);
-			size_t ptopMax(ptopLast);
-
-			size_t pTopOffsMax(dpTopFirst);
-
-			size_t pc(2);
-
-			for (; pc <= filterParams.inclineTestCount; ++pc)
+			// The change in the levels is too big - a step up/down needs to be done in order to move to neighbour span
+			// Check whether the steepness of the surface after the step isn't bigger than 'climbableStepRatio'.
+			if (!CheckWalkableProbeStep(probesParams))
 			{
-				size_t px = spanCoord.cellX + NeighbourOffset_TileGenerator[n][0] * pc;
-				size_t py = spanCoord.cellY + NeighbourOffset_TileGenerator[n][1] * pc;
-
-				const CompactSpanGrid::Cell pcell = filterParams.spanGrid.GetCell(px, py);
-
-				if (!pcell)
-				{
-					//Empty neighbour - stop probe (but no fail)
-					break;
-				}
-
-				const size_t pcount = pcell.count;
-				const size_t pindex = pcell.index;
-
-				for (size_t ps = 0; ps < pcount; ++ps)
-				{
-					const size_t psindex = pindex + ps;
-					const CompactSpanGrid::Span& pspan = filterParams.spanGrid.GetSpan(psindex);
-
-					const SSpanCoord probeCoord(px, py, ps, psindex);
-					const SSpanClearance probeClearance(probeCoord, pspan, pcell, filterParams, filterParams.spanGrid);
-
-					const size_t dpTop = (size_t)abs((int)(probeClearance.top - ptopLast));
-
-					//Test validity
-					if (dpTop <= filterParams.climbableVoxelCount
-					    && min(pnextBottomLast, probeClearance.nextBottom) >= max(ptopLast, probeClearance.top) + filterParams.minValidHeightVoxelCount)
-					{
-						// Track range of tops in probe
-						ptopMin = min(ptopMin, probeClearance.top);
-						ptopMax = max(ptopMax, probeClearance.top);
-
-						const size_t pTopOffs = (size_t)abs(int(probeClearance.top) - int(spanClearance.top));
-						pTopOffsMax = max(pTopOffsMax, pTopOffs);
-
-						sdpTopLast = (int)(probeClearance.top - ptopLast);
-
-						ptopLast = probeClearance.top;
-						pnextBottomLast = probeClearance.nextBottom;
-						dpTopLast = dpTop;
-
-						nCellValid = true;
-
-						break;
-					}
-				}
-
-				if (!nCellValid)
-				{
-					break;
-				}
-
-				if (isStep)
-				{
-					if (pc <= stepTestCount
-					    && pTopOffsMax > stepTestTolerance + dpTopFirst)
-					{
-						stepTest = false;
-					}
-				}
-				else
-				{
-					if (sdpTopLast > sdpTopFirst + 1
-					    || sdpTopLast < sdpTopFirst - 1)
-					{
-						// stop probe (but no fail)
-						break;
-					}
-
-					probeInclinationVars[n] = (float)(ptopMax - ptopMin);
-				}
-			}
-
-			if (isStep
-			    && !stepTest
-			    && (pTopOffsMax > filterParams.climbableVoxelCount))
-			{
-				neighbourTest = false;
-
-#if DEBUG_MNM_GATHER_NONWALKABLE_REASONS
-				IF_UNLIKELY (pOutReason)
-				{
-					pOutReason->szReason = "step test";
-				}
-#endif
-			}
-			else
-			{
-				probeInclinationVars[n] /= pc - 1;
+				MNM_SET_NONWALKABLE_FAIL_REASON(pOutReason, "step test");
+				return true;
 			}
 		}
-	}
+		else
+		{
+			// Check the steepness of the surface and whether it isn't bigger than 'climbableInclineGradient'.
+			if (!CheckWalkableProbeIncline(probesParams, probeInclinationVars))
+			{
+				MNM_SET_NONWALKABLE_FAIL_REASON(pOutReason, "inclination");
+				return true;
+			}
+		}
 
-	if (neighbourTest)
+	} // for all directions
+
 	{
-		float previousProbeGainSquared(probeInclinationVars[axisNeighbourCount - 1] * probeInclinationVars[axisNeighbourCount - 1]);
-
-		// Test for probe pairs at 90degrees giving a net incline above tolerance
-
-		// TODO pavloi 2016.03.10: I do not fully understand the meaning of the metric we have here, but
-		// I think, there may be an error. Neighbours in the NeighbourOffset_TileGenerator are listed in order y, -x, x, -y,
-		// so the compared probe pairs are (y, -y), (-x, y), (x, -x), (-y, x).
-		// I think, expected order is something like (x, y), (y, -x), (-x, -y), (-y, x), so there are never cases,
-		// when we compare (y, -y) and (x, -x).
-		// I don't see any other piece of code, which depends on the order of first four elements of NeighbourOffset_TileGenerator, so
-		// should be save to reorder them.
-		// But still, a comment before NeighbourOffset_TileGenerator states, that this order is really expected. Who to belive?
-
-		// TODO pavloi 2016.03.11: if we perform stepTest for neighbours, then all probeInclinationVars will stay 0 and condition in this loop
-		// will never be true, so neighbourTest will also stay true. This whole loop is not required then.
-		for (size_t n = 0; n < axisNeighbourCount; ++n)
+		// Compute average gradients from partial gradients.
+		const float gradientX = 0.5f * (probeInclinationVars[0] + probeInclinationVars[2]);
+		const float gradientY = 0.5f * (probeInclinationVars[1] + probeInclinationVars[3]);
+		
+		const Vec2 gradient(gradientX, gradientY);
+		if (gradient.GetLengthSquared() > filterParams.climbableInclineGradientSquared)
 		{
-			float thisProbeGainSquared(probeInclinationVars[n] * probeInclinationVars[n]);
-			if ((float)(thisProbeGainSquared + previousProbeGainSquared) > filterParams.climbableInclineGradientSquared)
-			{
-				neighbourTest = false;
-#if DEBUG_MNM_GATHER_NONWALKABLE_REASONS
-				IF_UNLIKELY (pOutReason)
-				{
-					pOutReason->szReason = "inclination";
-				}
-#endif
-				break;
-			}
-			previousProbeGainSquared = thisProbeGainSquared;
+			MNM_SET_NONWALKABLE_FAIL_REASON(pOutReason, "inclination");
+			return true;
 		}
 	}
-
-	return !neighbourTest;
+	return false;
 }
 
-void CTileGenerator::FilterWalkable_CheckBoundaries(const AABB& aabb, const size_t gridWidth, const size_t gridHeight)
+size_t CTileGenerator::FilterWalkable_CheckBoundaries(const AABB& aabb, const size_t gridWidth, const size_t gridHeight)
 {
 	const float convX = 1.0f / m_params.voxelSize.x;
 	const float convY = 1.0f / m_params.voxelSize.y;
@@ -912,6 +1000,8 @@ void CTileGenerator::FilterWalkable_CheckBoundaries(const AABB& aabb, const size
 	const Vec3 halfVoxel = m_params.voxelSize * 0.5f;
 
 	const Vec3 bmax = aabb.max - aabb.min;
+
+	size_t nonWalkableCount = 0;
 
 	for (size_t e = 0; e < m_params.exclusionCount; ++e)
 	{
@@ -954,13 +1044,10 @@ void CTileGenerator::FilterWalkable_CheckBoundaries(const AABB& aabb, const size
 
 								if (exclusion.Contains(point))
 								{
+									++nonWalkableCount;
 									span.flags |= NotWalkable;
-#if DEBUG_MNM_GATHER_NONWALKABLE_REASONS
-									IF_UNLIKELY (m_params.flags & Params::DebugInfo)
-									{
-										m_debugNonWalkableReasonMap[SSpanCoord(x, y, s, cell.index + s)] = SNonWalkableReason("exclusion");
-									}
-#endif
+
+									DebugAddNonWalkableReason(SSpanCoord(x, y, s, cell.index + s), "exclusion");
 								}
 							}
 						}
@@ -997,19 +1084,17 @@ void CTileGenerator::FilterWalkable_CheckBoundaries(const AABB& aabb, const size
 
 						if (!boundary.Contains(point))
 						{
+							++nonWalkableCount;
 							span.flags |= NotWalkable;
-#if DEBUG_MNM_GATHER_NONWALKABLE_REASONS
-							IF_UNLIKELY (m_params.flags & Params::DebugInfo)
-							{
-								m_debugNonWalkableReasonMap[SSpanCoord(x, y, s, cell.index + s)] = SNonWalkableReason("boundary");
-							}
-#endif
+							DebugAddNonWalkableReason(SSpanCoord(x, y, s, cell.index + s), "boundary");
 						}
 					}
 				}
 			}
 		}
 	}
+
+	return nonWalkableCount;
 }
 
 inline bool IsBorderLabel(uint16 label)
@@ -1664,9 +1749,8 @@ void CTileGenerator::DetermineContourVertex(const Vec2i& vertex, const Vec2i& di
 	contourVertex.flags = static_cast<uint16>(flags);
 }
 
-void CTileGenerator::AssessNeighbour(NeighbourInfo& info, size_t erosion, size_t climbableVoxelCount)
+void CTileGenerator::AssessNeighbour(NeighbourInfo& info, const size_t climbableVoxelCount)
 {
-	// TODO pavloi 2016.03.15: erosion is not used.
 	if (info.isValid = m_spanGrid.GetSpanAt(info.pos.x, info.pos.y, info.top, climbableVoxelCount, info.index))
 	{
 		const CompactSpanGrid::Span& span = m_spanGrid.GetSpan(info.index);
@@ -1676,10 +1760,8 @@ void CTileGenerator::AssessNeighbour(NeighbourInfo& info, size_t erosion, size_t
 	}
 }
 
-void CTileGenerator::TraceContour(CTileGenerator::TracerPath& path, const Tracer& start, size_t erosion, size_t climbableVoxelCount, const NeighbourInfoRequirements& contourReq)
+void CTileGenerator::TraceContour(CTileGenerator::TracerPath& path, const Tracer& start, const size_t climbableVoxelCount, const NeighbourInfoRequirements& contourReq)
 {
-	// TODO pavloi 2016.03.15: erosion is not used in AssessNeighbour and so is not used here.
-
 	Tracer tracer = start;
 	path.steps.clear();
 	path.steps.reserve(2048);
@@ -1694,9 +1776,9 @@ void CTileGenerator::TraceContour(CTileGenerator::TracerPath& path, const Tracer
 		NeighbourInfo frontLeft(tracer.GetFrontLeft());
 		NeighbourInfo front(tracer.GetFront());
 
-		AssessNeighbour(left, erosion, climbableVoxelCount);
-		AssessNeighbour(frontLeft, erosion, climbableVoxelCount);
-		AssessNeighbour(front, erosion, climbableVoxelCount);
+		AssessNeighbour(left, climbableVoxelCount);
+		AssessNeighbour(frontLeft, climbableVoxelCount);
+		AssessNeighbour(front, climbableVoxelCount);
 
 		if (left.Check(contourReq))
 		{
@@ -2366,10 +2448,6 @@ size_t CTileGenerator::ExtractContours(const AABB& aabb)
 
 	TracerPath path;
 
-	// TODO pavloi 2016.03.15: same erosion calculated in CalcPaintValues. And it's not even required here - see
-	// comments in AssessNeighbour and TraceContour.
-	// Or it is required, in LabelTracerPath() - DetermineContourVertex(), where it's calcluated again.
-	const size_t erosion = m_params.flags & Params::NoErosion ? 0 : m_params.agent.radius << 1;
 	const size_t climbableVoxelCount = m_params.agent.climbableHeight;
 
 	for (size_t y = borderH; y < gridHeight - borderH; ++y)
@@ -2398,7 +2476,7 @@ size_t CTileGenerator::ExtractContours(const AABB& aabb)
 				const size_t top = span.bottom + span.height;
 
 				NeighbourInfo prev(Vec2i(x - 1, y), top);
-				AssessNeighbour(*&prev, erosion, climbableVoxelCount);
+				AssessNeighbour(*&prev, climbableVoxelCount);
 
 				const uint16 prevLabelSafe = (prev.label & NoLabel);
 
@@ -2432,7 +2510,7 @@ size_t CTileGenerator::ExtractContours(const AABB& aabb)
 						NeighbourInfoRequirements contourReq;
 						contourReq.paint = paint;
 
-						TraceContour(path, startTracer, erosion, climbableVoxelCount, contourReq);
+						TraceContour(path, startTracer, climbableVoxelCount, contourReq);
 						if (path.turns > 0)
 						{
 							// Store for Debugging.
@@ -2459,7 +2537,7 @@ size_t CTileGenerator::ExtractContours(const AABB& aabb)
 									NeighbourInfoRequirements holeReq;
 									holeReq.notPaint = prev.paint;
 
-									TraceContour(path, startTracer, erosion, climbableVoxelCount, holeReq);
+									TraceContour(path, startTracer, climbableVoxelCount, holeReq);
 									LabelTracerPath(path, climbableVoxelCount, holeRegion, holeRegion.holes.back(), NoLabel, InternalContour, prev.label, true);
 
 									// Store for Debugging.
@@ -2485,7 +2563,7 @@ size_t CTileGenerator::ExtractContours(const AABB& aabb)
 					// Trace the new region
 					NeighbourInfoRequirements contourReq;
 					contourReq.paint = paint;
-					TraceContour(path, startTracer, erosion, climbableVoxelCount, contourReq);
+					TraceContour(path, startTracer, climbableVoxelCount, contourReq);
 
 					if (path.turns > 0)
 					{
@@ -2522,7 +2600,7 @@ size_t CTileGenerator::ExtractContours(const AABB& aabb)
 							NeighbourInfoRequirements holeReq;
 							holeReq.notPaint = prev.paint;
 
-							TraceContour(path, startTracer, erosion, climbableVoxelCount, holeReq);
+							TraceContour(path, startTracer, climbableVoxelCount, holeReq);
 							LabelTracerPath(path, climbableVoxelCount, holeRegion, holeRegion.holes.back(), NoLabel, InternalContour, prev.label, true);
 
 							// Store for Debugging.

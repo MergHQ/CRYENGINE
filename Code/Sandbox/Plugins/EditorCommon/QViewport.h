@@ -126,6 +126,7 @@ private:
 	std::vector<SPreviousContext>            m_previousContexts;
 	std::unique_ptr<CCamera>                 m_camera;
 	SDisplayContextKey                       m_displayContextKey;
+	SGraphicsPipelineKey                     m_graphicsPipelineKey;
 
 	int                                      m_width;
 	int                                      m_height;
@@ -162,4 +163,5 @@ private:
 
 	std::unique_ptr<CDisplayViewportAdapter> m_pViewportAdapter;
 	CGizmoManager                            m_gizmoManager;
+	IRenderer::SGraphicsPipelineDescription  m_graphicsPipelineDesc;
 };

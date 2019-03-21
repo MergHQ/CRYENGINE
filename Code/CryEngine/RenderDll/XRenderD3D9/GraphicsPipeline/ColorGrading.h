@@ -12,7 +12,9 @@ struct SColorGradingMergeParams;
 class CColorGradingStage : public CGraphicsPipelineStage
 {
 public:
-	CColorGradingStage();
+	static const EGraphicsPipelineStage StageID = eStage_ColorGrading;
+
+	CColorGradingStage(CGraphicsPipeline& graphicsPipeline);
 
 	bool IsStageActive(EShaderRenderingFlags flags) const final
 	{

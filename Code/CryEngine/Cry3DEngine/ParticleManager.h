@@ -154,7 +154,7 @@ public:
 	void Serialize(TSerialize ser);
 	void PostSerialize(bool bReading);
 
-	void SetTimer(ITimer* pTimer) { g_pParticleTimer = pTimer; };
+	void SetTimer(ITimer* pTimer) { g_pParticleTimer = pTimer; }
 
 	// Stats
 	void GetMemoryUsage(ICrySizer* pSizer) const;

@@ -1923,9 +1923,9 @@ void CObjectManager::ToggleHideAllBut(CBaseObject* pObject)
 	GetObjects(objects, (CObjectLayer*)pObject->GetLayer());
 
 	bool hideAll = false;
-	for (CBaseObject* pObject : objects)
+	for (CBaseObject* pOtherObject : objects)
 	{
-		if (pObject->IsVisible())
+		if (pOtherObject != pObject && pOtherObject->IsVisible())
 		{
 			hideAll = true;
 			break;
@@ -1986,9 +1986,9 @@ void CObjectManager::ToggleFreezeAllBut(CBaseObject* pObject)
 	GetObjects(objects, (CObjectLayer*)pObject->GetLayer());
 
 	bool freezeAll = false;
-	for (CBaseObject* pObject : objects)
+	for (CBaseObject* pOtherObject : objects)
 	{
-		if (!pObject->IsFrozen())
+		if (pObject != pOtherObject && !pOtherObject->IsFrozen())
 		{
 			freezeAll = true;
 			break;
@@ -3003,7 +3003,7 @@ void CObjectManager::Serialize(XmlNodeRef& xmlNode, bool bLoading, int flags)
 		if (root)
 		{
 			ar.node = root;
-			LoadObjects(ar, false);
+			LoadObjects(ar);
 		}
 		EndObjectsLoading();
 	}
@@ -3019,7 +3019,33 @@ void CObjectManager::Serialize(XmlNodeRef& xmlNode, bool bLoading, int flags)
 	}
 }
 
-void CObjectManager::LoadObjects(CObjectArchive& objectArchive, bool bSelect)
+void CObjectManager::CreateAndSelectObjects(CObjectArchive& objectArchive)
+{
+	LOADING_TIME_PROFILE_SECTION
+	CUndo undo("Create and Select Objects");
+	ClearSelection();
+
+	LoadObjects(objectArchive);
+	auto loadedObjectCount = objectArchive.GetLoadedObjectsCount();
+
+	// Add all newly created objects to selection
+	std::vector<CBaseObject*> objectsToSelect;
+	objectsToSelect.reserve(loadedObjectCount);
+
+	// Generate unique names and track objects to select
+	for (auto i = 0; i < loadedObjectCount; ++i)
+	{
+		CBaseObject* pObject = objectArchive.GetLoadedObject(i);
+		// Make sure the new objects have unique names
+		pObject->SetName(GenUniqObjectName(pObject->GetName()));
+		// Also add them to the list of objects to be selected
+		objectsToSelect.push_back(pObject);
+	}
+
+	SelectObjects(objectsToSelect);
+}
+
+void CObjectManager::LoadObjects(CObjectArchive& objectArchive)
 {
 	LOADING_TIME_PROFILE_SECTION;
 	m_bLoadingObjects = true;
@@ -3027,21 +3053,8 @@ void CObjectManager::LoadObjects(CObjectArchive& objectArchive, bool bSelect)
 	// Prevent the prefab manager from updating prefab instances
 	CPrefabManager::SkipPrefabUpdate skipUpdates;
 
-	XmlNodeRef objectsNode = objectArchive.node;
-	int numObjects = objectsNode->getChildCount();
-	std::vector<CBaseObject*> objects;
-	objects.reserve(numObjects);
-	for (int i = 0; i < numObjects; i++)
-	{
-		CBaseObject* obj = objectArchive.LoadObject(objectsNode->getChild(i));
-		if (obj && bSelect)
-		{
-			objects.push_back(obj);
-		}
-	}
-	CBatchProcessDispatcher batchProcessDispatcher;
-	batchProcessDispatcher.Start(objects, true);
-	AddObjectsToSelection(objects);
+	objectArchive.LoadObjects(objectArchive.node);
+
 	EndObjectsLoading(); // End progress bar, here, Resolve objects have his own.
 	objectArchive.ResolveObjects(true);
 
@@ -3195,6 +3208,10 @@ bool CObjectManager::SetObjectSelected(CBaseObject* pObject, bool bSelect, bool 
 	CRY_PROFILE_FUNCTION(PROFILE_EDITOR);
 
 	CRY_ASSERT(pObject);
+
+	// Make sure the object cannot be selected if it's locked
+	if (pObject->IsFrozen() && bSelect)
+		return false;
 
 	// Only select/unselect once. And only select objects types that are selectable (not masked)
 	if (pObject->IsSelected() == bSelect || (bSelect && (pObject->GetType() & ~gViewportSelectionPreferences.objectSelectMask)))

@@ -1,7 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef _CVegetation_H_
-#define _CVegetation_H_
+#pragma once
 
 class CDeformableNode;
 
@@ -110,7 +109,6 @@ public:
 	void         ShutDown();
 	void         OnRenderNodeBecomeVisibleAsync(SRenderNodeTempData* pTempData, const SRenderingPassInfo& passInfo) override;
 	void         UpdateSpriteInfo(SVegetationSpriteInfo& properties, float fSpriteAmount, SSectorTextureSet* pTerrainTexInfo, const SRenderingPassInfo& passInfo) const;
-	void         UpdateBending();
 	static void  InitVegDecomprTable();
 	virtual bool GetLodDistances(const SFrameLodInfo& frameLodInfo, float* distances) const override;
 
@@ -166,5 +164,3 @@ public:
 	static void  operator delete(void* pToFree);
 	static void  GetStaticMemoryUsage(ICrySizer* pSizer);
 };
-
-#endif // _CVegetation_H_

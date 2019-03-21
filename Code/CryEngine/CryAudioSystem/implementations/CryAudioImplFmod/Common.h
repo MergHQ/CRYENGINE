@@ -30,15 +30,14 @@ namespace Fmod
 class CImpl;
 class CBaseObject;
 class CEventInstance;
-class CParameter;
-class CParameterState;
 class CReturn;
 class CListener;
 class CEvent;
 class CGlobalObject;
+class CParameterInfo;
 
-extern FMOD::System* g_pLowLevelSystem;
-extern FMOD::Studio::System* g_pSystem;
+extern FMOD::System* g_pCoreSystem;
+extern FMOD::Studio::System* g_pStudioSystem;
 
 extern CImpl* g_pImpl;
 extern CGlobalObject* g_pObject;
@@ -48,9 +47,12 @@ extern uint32 g_numObjectsWithDoppler;
 constexpr char const* g_szOcclusionParameterName = "occlusion";
 constexpr char const* g_szAbsoluteVelocityParameterName = "absolute_velocity";
 
+extern CParameterInfo g_occlusionParameterInfo;
+extern CParameterInfo g_absoluteVelocityParameterInfo;
+
 using Objects = std::vector<CBaseObject*>;
 using EventInstances = std::vector<CEventInstance*>;
-using Parameters = std::map<uint32, float>;
+
 using Returns = std::map<CReturn const*, float>;
 using SnapshotEventInstances = std::map<uint32, FMOD::Studio::EventInstance*>;
 

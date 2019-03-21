@@ -1,16 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-// -------------------------------------------------------------------------
-//  File name:   particleeffect.cpp
-//  Version:     v1.00
-//  Created:     10/7/2003 by Timur.
-//  Compilers:   Visual Studio.NET
-//  Description:
-// -------------------------------------------------------------------------
-//  History:
-//
-////////////////////////////////////////////////////////////////////////////
-
 #include "StdAfx.h"
 #include "ParticleEffect.h"
 #include "ParticleEmitter.h"
@@ -19,7 +8,7 @@
 #include <CryAudio/IAudioSystem.h>
 
 //////////////////////////////////////////////////////////////////////////
-// TypeInfo XML serialisation code
+// TypeInfo XML serialization code
 #include <CryParticleSystem/ParticleParams_TypeInfo.h>
 #include <CryCore/TypeInfo_impl.h>
 
@@ -1176,7 +1165,6 @@ void CompatibilityParticleParams::Correct(CParticleEffect* pEffect)
 	case 27:
 		fEmissiveLighting = fEmissiveLighting * 10.0f;
 	}
-	;
 
 	// Universal corrections.
 	if (!fTailLength)

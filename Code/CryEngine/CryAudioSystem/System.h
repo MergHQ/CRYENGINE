@@ -40,9 +40,11 @@ public:
 	virtual void        StopAllSounds(SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override;
 	virtual void        PreloadSingleRequest(PreloadRequestId const id, bool const bAutoLoadOnly, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override;
 	virtual void        UnloadSingleRequest(PreloadRequestId const id, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override;
+	virtual void        ActivateContext(ContextId const contextId) override;
+	virtual void        DeactivateContext(ContextId const contextId) override;
 	virtual void        LoadSetting(ControlId const id, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override;
 	virtual void        UnloadSetting(ControlId const id, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override;
-	virtual void        ReloadControlsData(char const* const szFolderPath, char const* const szLevelName, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override;
+	virtual void        ReloadControlsData(SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override;
 	virtual void        AddRequestListener(void (*func)(SRequestInfo const* const), void* const pObjectToListenTo, ESystemEvents const eventMask) override;
 	virtual void        RemoveRequestListener(void (*func)(SRequestInfo const* const), void* const pObjectToListenTo) override;
 	virtual void        ExternalUpdate() override;
@@ -72,9 +74,9 @@ public:
 
 	bool Initialize();
 	void PushRequest(CRequest const& request);
-	void ParseControlsData(char const* const szFolderPath, EDataScope const dataScope, SRequestUserData const& userData = SRequestUserData::GetEmptyObject());
-	void ParsePreloadsData(char const* const szFolderPath, EDataScope const dataScope, SRequestUserData const& userData = SRequestUserData::GetEmptyObject());
-	void AutoLoadSetting(EDataScope const dataScope, SRequestUserData const& userData = SRequestUserData::GetEmptyObject());
+	void ParseControlsData(char const* const szFolderPath, char const* const szContextName, ContextId const contextId, SRequestUserData const& userData = SRequestUserData::GetEmptyObject());
+	void ParsePreloadsData(char const* const szFolderPath, ContextId const contextId, SRequestUserData const& userData = SRequestUserData::GetEmptyObject());
+	void AutoLoadSetting(ContextId const contextId, SRequestUserData const& userData = SRequestUserData::GetEmptyObject());
 
 	void InternalUpdate();
 
@@ -94,6 +96,10 @@ private:
 	void           NotifyListener(CRequest const& request);
 	ERequestStatus HandleSetImpl(Impl::IImpl* const pIImpl);
 	void           SetImplLanguage();
+	void           HandleActivateContext(ContextId const contextId);
+	void           HandleDeactivateContext(ContextId const contextId);
+	void           ReportContextActivated(ContextId const id);
+	void           ReportContextDeactivated(ContextId const id);
 	void           SetCurrentEnvironmentsOnObject(CObject* const pObject, EntityId const entityToIgnore);
 #if defined(CRY_AUDIO_USE_OCCLUSION)
 	void           SetOcclusionType(CObject& object, EOcclusionType const occlusionType) const;
@@ -123,14 +129,16 @@ public:
 	void RetriggerControls(SRequestUserData const& userData = SRequestUserData::GetEmptyObject());
 	void ResetRequestCount();
 	void ScheduleIRenderAuxGeomForRendering(IRenderAuxGeom* pRenderAuxGeom);
+	void UpdateDebugInfo();
 
 private:
 
 	void SubmitLastIRenderAuxGeomForRendering();
 	void DrawDebug();
 	void HandleDrawDebug();
+	void HandleUpdateDebugInfo();
 	void HandleRetriggerControls();
-	void HandleRefresh(char const* const szLevelName);
+	void HandleRefresh();
 
 	std::atomic<IRenderAuxGeom*> m_currentRenderAuxGeom{ nullptr };
 	std::atomic<IRenderAuxGeom*> m_lastRenderAuxGeom{ nullptr };

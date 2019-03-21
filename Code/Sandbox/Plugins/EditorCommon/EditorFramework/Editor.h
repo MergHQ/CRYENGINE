@@ -5,13 +5,15 @@
 #include "DockingSystem/DockableContainer.h"
 #include "Menu/MenuDesc.h"
 #include "QtViewPane.h"
+
 #include <QVariant>
 #include <QWidget>
 
 class BroadcastEvent;
 class CAbstractMenu;
-class CMenuUpdater;
 class CBroadcastManager;
+class CEditorToolBarArea;
+class CMenuUpdater;
 class QEvent;
 
 //! Base class for Editor(s) which means this should be the base class
@@ -25,18 +27,25 @@ public:
 	CEditor(QWidget* pParent = nullptr, bool bIsOnlyBackend = false);
 	virtual ~CEditor();
 
-	virtual void        customEvent(QEvent* event) override;
-	virtual const char* GetEditorName() const = 0;
+	virtual void                  Initialize();
 
-	CBroadcastManager&  GetBroadcastManager();
+	virtual const char*           GetEditorName() const = 0;
+
+	CBroadcastManager&            GetBroadcastManager();
+
+	QCommandAction*               FindRegisteredCommandAction(const char* szCommand) const;
+	const std::vector<CCommand*>& GetCommands() const { return m_commands; }
 
 	// Serialized in the layout
 	virtual void        SetLayout(const QVariantMap& state);
 	virtual QVariantMap GetLayout() const;
 
 protected:
-	void        AddRecentFile(const QString& filePath);
-	QStringList GetRecentFiles();
+
+	virtual void customEvent(QEvent* event) override;
+
+	void         AddRecentFile(const QString& filePath);
+	QStringList  GetRecentFiles();
 
 	// Serialized in personalization
 	//Properties that can be shared between all projects
@@ -76,8 +85,12 @@ protected:
 
 	//File menu methods
 	virtual bool OnNew()                         { return false; }
+	virtual bool OnNewFolder()                   { return false; }
 	virtual bool OnOpen()                        { return false; }
 	virtual bool OnOpenFile(const QString& path) { CRY_ASSERT(0); return false; }
+	virtual bool OnImport()                      { return false; }
+	virtual bool OnRefresh()                     { return false; }
+	virtual bool OnReload()                      { return false; }
 	virtual bool OnClose()                       { return false; }
 	virtual bool OnSave()                        { return false; }
 	virtual bool OnSaveAs()                      { return false; }
@@ -95,8 +108,33 @@ protected:
 	virtual bool OnFindPrevious() { return OnFind(); }
 	virtual bool OnFindNext()     { return OnFind(); }
 	virtual bool OnDuplicate()    { return false; }
-	virtual bool OnSelectAll()    { return false; }
 	virtual bool OnHelp();
+
+	// Context sensitive item operations
+	virtual bool OnSelectAll()         { return false; }
+	virtual bool OnRename()            { return false; }
+	// Locking
+	virtual bool OnLock()              { return false; }
+	virtual bool OnUnlock()            { return false; }
+	virtual bool OnToggleLock()        { return false; }
+	virtual bool OnIsolateLocked()     { return false; }
+	// Visibility
+	virtual bool OnHide()              { return false; }
+	virtual bool OnUnhide()            { return false; }
+	virtual bool OnToggleHide()        { return false; }
+	virtual bool OnIsolateVisibility() { return false; }
+
+	// Context sensitive hierarchical operations
+	virtual bool OnCollapseAll()        { return false; }
+	virtual bool OnExpandAll()          { return false; }
+	// Locking
+	virtual bool OnLockChildren()       { return false; }
+	virtual bool OnUnlockChildren()     { return false; }
+	virtual bool OnToggleLockChildren() { return false; }
+	// Visibility
+	virtual bool OnHideChildren()       { return false; }
+	virtual bool OnUnhideChildren()     { return false; }
+	virtual bool OnToggleHideChildren() { return false; }
 
 	//View menu methods
 	virtual bool OnZoomIn()  { return false; }
@@ -110,9 +148,11 @@ protected:
 		ViewMenu,
 		WindowMenu,
 		HelpMenu,
+		ToolBarMenu,
 
 		//File menu contents
 		New,
+		New_Folder,
 		Open,
 		Close,
 		Save,
@@ -125,6 +165,7 @@ protected:
 		Copy,
 		Cut,
 		Paste,
+		Rename,
 		Delete,
 		Find,
 		FindPrevious,
@@ -158,7 +199,10 @@ protected:
 	void AddToMenu(const char* menuName, const char* command);
 
 	//! Returns the default action for a command
-	QAction* GetAction(const char* command);
+	QCommandAction* GetAction(const char* command);
+
+	//! Returns the default action for a command from editor's menu.
+	QCommandAction* GetMenuAction(MenuItems item);
 
 	//Only use this for menus that are not handled generically by CEditor
 
@@ -186,27 +230,29 @@ protected:
 	//! React on docking layout change
 	virtual void OnLayoutChange(const QVariantMap& state);
 
-protected:
-	void ForceRebuildMenu();
+	void         ForceRebuildMenu();
 
 private:
-	void PopulateRecentFilesMenu(CAbstractMenu* menu);
-	void OnMainFrameAboutToClose(BroadcastEvent& event);
+	QCommandAction* CreateCommandAction(const char* command);
 
-	void InitMenuDesc();
+	void            PopulateRecentFilesMenu(CAbstractMenu* menu);
+	void            OnMainFrameAboutToClose(BroadcastEvent& event);
+
+	void            InitMenuDesc();
 
 protected:
 	CBroadcastManager* m_broadcastManager;
-	bool m_bIsOnlybackend;
-	QMenu* m_pPaneMenu;
+	bool               m_bIsOnlybackend;
+	QMenu*             m_pPaneMenu;
 
 private:
-	CDockableContainer* m_dockingRegistry;
-	QObject* m_pBroadcastManagerFilter;
+	CDockableContainer*                         m_dockingRegistry;
+	QObject*                                    m_pBroadcastManagerFilter;
 	std::unique_ptr<MenuDesc::CDesc<MenuItems>> m_pMenuDesc;
-	std::unique_ptr<CAbstractMenu> m_pMenu;
-	std::unique_ptr<CMenuUpdater> m_pMenuUpdater;
-
+	std::unique_ptr<CAbstractMenu>              m_pMenu;
+	std::unique_ptr<CMenuUpdater>               m_pMenuUpdater;
+	std::vector<CCommand*>                      m_commands;
+	std::vector<QCommandAction*>                m_commandActions;
 };
 
 //! Inherit from this class to create a dockable editor
@@ -218,6 +264,7 @@ public:
 	CDockableEditor(QWidget* pParent = nullptr);
 	virtual ~CDockableEditor();
 
+	virtual void        Initialize() override                    { CEditor::Initialize(); }
 	virtual QWidget*    GetWidget() final                        { return this; }
 	virtual QMenu*      GetPaneMenu() const override;
 	virtual const char* GetPaneTitle() const final               { return GetEditorName(); }

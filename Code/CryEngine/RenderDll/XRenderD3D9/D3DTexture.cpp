@@ -259,7 +259,8 @@ void CTexture::CreateDeviceTexture(SSubresourceData&& pData)
 	const uint8** pSRP = pData.m_subresourcePointers;
 
 	this->AddRef();
-	gRenDev->ExecuteRenderThreadCommand([=] {
+	gRenDev->ExecuteRenderThreadCommand([=]
+	{
 		// Compensate for no move-capturing
 		SSubresourceData pLocalData(pSRP, bAsync);
 
@@ -315,7 +316,7 @@ bool CTexture::RT_CreateDeviceTexture(const SSubresourceData& pData)
 		volatile size_t* pTexMem = &CTexture::s_nStatsCurManagedNonStreamedTexMem;
 		if (IsDynamic())
 			pTexMem = &CTexture::s_nStatsCurDynamicTexMem;
-		
+
 		CryInterlockedAdd(pTexMem, m_nDevTextureSize);
 	}
 
@@ -336,7 +337,8 @@ bool CTexture::RT_CreateDeviceTexture(const SSubresourceData& pData)
 void CTexture::ReleaseDeviceTexture(bool bKeepLastMips, bool bFromUnload) threadsafe
 {
 	this->AddRef();
-	gRenDev->ExecuteRenderThreadCommand([=] {
+	gRenDev->ExecuteRenderThreadCommand([=]
+	{
 		this->RT_ReleaseDeviceTexture(bKeepLastMips, bFromUnload);
 		this->Release();
 
@@ -539,7 +541,7 @@ void CTexture::UpdateTextureRegion(const byte* pSrcData, int nX, int nY, int nZ,
 {
 	if (gRenDev->m_pRT->IsRenderThread())
 	{
-		RT_UpdateTextureRegion(pSrcData,nX,nY,nZ,USize,VSize,ZSize,eSrcFormat);
+		RT_UpdateTextureRegion(pSrcData, nX, nY, nZ, USize, VSize, ZSize, eSrcFormat);
 	}
 	else
 	{
@@ -553,10 +555,10 @@ void CTexture::UpdateTextureRegion(const byte* pSrcData, int nX, int nY, int nZ,
 
 		gRenDev->ExecuteRenderThreadCommand(
 			[=]
-			{
-				uint8 *pTempBuffer = tempData->data();
-				pSelf->RT_UpdateTextureRegion(pTempBuffer,nX,nY,nZ,USize,VSize,ZSize,eSrcFormat);
-			},
+		{
+			uint8* pTempBuffer = tempData->data();
+			pSelf->RT_UpdateTextureRegion(pTempBuffer, nX, nY, nZ, USize, VSize, ZSize, eSrcFormat);
+		},
 			flags
 		);
 	}
@@ -669,7 +671,7 @@ void SEnvTexture::Release()
 	SAFE_DELETE(m_pTex);
 }
 
-void SEnvTexture::SetMatrix( const CCamera &camera )
+void SEnvTexture::SetMatrix(const CCamera& camera)
 {
 	camera.CalculateRenderMatrices();
 	Matrix44A matView = camera.GetRenderViewMatrix();
@@ -697,7 +699,7 @@ void SEnvTexture::ReleaseDeviceObjects()
 
 //////////////////////////////////////////////////////////////////////////
 
-static void DrawSceneToCubeSide(CRenderOutputPtr pRenderOutput, const Vec3& Pos, int tex_size, int side)
+static void DrawSceneToCubeSide(CRenderOutputPtr pRenderOutput, const Vec3& Pos, int tex_size, int side, uint32 shaderRenderflags, const SGraphicsPipelineKey& graphicsPipelineKey)
 {
 	CRY_ASSERT(gRenDev->m_pRT->IsMainThread());
 	if (!iSystem)
@@ -706,11 +708,11 @@ static void DrawSceneToCubeSide(CRenderOutputPtr pRenderOutput, const Vec3& Pos,
 	const float sCubeVector[6][7] =
 	{
 		{ 1,  0,  0,  0, 0, 1,  -90 }, //posx
-		{ -1, 0,  0,  0, 0, 1,  90 }, //negx
-		{ 0,  1,  0,  0, 0, -1, 0 }, //posy
-		{ 0,  -1, 0,  0, 0, 1,  0 }, //negy
-		{ 0,  0,  1,  0, 1, 0,  0 }, //posz
-		{ 0,  0,  -1, 0, 1, 0,  0 }, //negz
+		{ -1, 0,  0,  0, 0, 1,  90  }, //negx
+		{ 0,  1,  0,  0, 0, -1, 0   }, //posy
+		{ 0,  -1, 0,  0, 0, 1,  0   }, //negy
+		{ 0,  0,  1,  0, 1, 0,  0   }, //posz
+		{ 0,  0,  -1, 0, 1, 0,  0   }, //negz
 	};
 
 #ifdef DO_RENDERLOG
@@ -737,11 +739,10 @@ static void DrawSceneToCubeSide(CRenderOutputPtr pRenderOutput, const Vec3& Pos,
 
 	gEnv->pSystem->SetViewCamera(tmpCamera);
 
-	int nRFlags = SHDF_CUBEMAPGEN | SHDF_ALLOWPOSTPROCESS | SHDF_ALLOWHDR | SHDF_ZPASS | SHDF_NOASYNC | SHDF_ALLOW_AO;
 	uint32 nRenderPassFlags = SRenderingPassInfo::DEFAULT_FLAGS | SRenderingPassInfo::CUBEMAP_GEN;
-	
+
 	// TODO: Try to run cube-map generation as recursive pass
-	auto generalPassInfo = SRenderingPassInfo::CreateGeneralPassRenderingInfo(tmpCamera, nRenderPassFlags);
+	auto generalPassInfo = SRenderingPassInfo::CreateGeneralPassRenderingInfo(graphicsPipelineKey, tmpCamera, nRenderPassFlags, false, {});
 	CRenderView* pRenderView = generalPassInfo.GetRenderView();
 	pRenderView->AssignRenderOutput(pRenderOutput);
 	pRenderView->SetSkinningDataPools(gcpRendD3D->GetSkinningDataPools());
@@ -750,7 +751,7 @@ static void DrawSceneToCubeSide(CRenderOutputPtr pRenderOutput, const Vec3& Pos,
 	pRenderView->SetCameras(&cam, 1);
 	pRenderView->SetPreviousFrameCameras(&cam, 1);
 
-	pEngine->RenderWorld(nRFlags, generalPassInfo, __FUNCTION__);
+	pEngine->RenderWorld(shaderRenderflags, generalPassInfo, __FUNCTION__);
 
 	gEnv->pSystem->SetViewCamera(prevCamera);
 
@@ -856,23 +857,32 @@ DynArray<std::uint16_t> CTexture::RenderEnvironmentCMHDR(std::size_t size, const
 	// TODO: allow cube-map super-sampling
 	CRenderOutputPtr pRenderOutput = std::make_shared<CRenderOutput>(ptexGenEnvironmentCM, FRT_CLEAR, Clr_Transparent, 1.0f);
 
-	gcpRendD3D->ExecuteRenderThreadCommand([=] {
+	IRenderer::SGraphicsPipelineDescription pipelineDesc;
+	pipelineDesc.type = EGraphicsPipelineType::Standard;
+	pipelineDesc.shaderFlags = SHDF_CUBEMAPGEN | SHDF_ALLOWPOSTPROCESS | SHDF_ALLOWHDR | SHDF_ZPASS | SHDF_NOASYNC | SHDF_ALLOW_AO;
+	SGraphicsPipelineKey pipelineKey = gcpRendD3D->CreateGraphicsPipeline(pipelineDesc);
+
+	gcpRendD3D->ExecuteRenderThreadCommand(
+		[=]
+	{
 		gcpRendD3D->OnRenderResolutionChanged(size, size);
-		gcpRendD3D->GetGraphicsPipeline().Resize(size, size);
-	}, ERenderCommandFlags::None);
+		std::shared_ptr<CGraphicsPipeline> pipeline = gcpRendD3D->FindGraphicsPipeline(pipelineKey);
+		pipeline->Resize(size, size);
+	}, ERenderCommandFlags::None
+		);
 
 	vecData.reserve(size * size * 6 * 4);
 	for (int nSide = 0; nSide < 6; nSide++)
 	{
 		int32 waitFrames = max(0, CRendererCVars::CV_r_CubemapGenerationTimeout);
-		while (waitFrames-->0)
+		while (waitFrames-- > 0)
 		{
 #if defined(FEATURE_SVO_GI)
 			const bool is_svo_ready_pre_draw = gEnv->p3DEngine->IsSvoReady(true);
 #endif
 
 			gEnv->nMainFrameID++;
-			DrawSceneToCubeSide(pRenderOutput, Pos, size, nSide);
+			DrawSceneToCubeSide(pRenderOutput, Pos, size, nSide, pipelineDesc.shaderFlags, pipelineKey);
 
 			SStreamEngineOpenStats streamStats;
 			gEnv->pSystem->GetStreamEngine()->GetStreamingOpenStatistics(streamStats);
@@ -891,16 +901,17 @@ DynArray<std::uint16_t> CTexture::RenderEnvironmentCMHDR(std::size_t size, const
 			gEnv->pSystem->GetStreamEngine()->Update(eStreamTaskTypeTerrain | eStreamTaskTypeTexture | eStreamTaskTypeGeometry);
 
 			// Flush and garbage collect
-			gcpRendD3D->ExecuteRenderThreadCommand([&] {
+			gcpRendD3D->ExecuteRenderThreadCommand([&]
+			{
 				GetDeviceObjectFactory().FlushToGPU(false, true);
 			}, ERenderCommandFlags::FlushAndWait);
 		}
 
-		if (waitFrames<0)
+		if (waitFrames < 0)
 		{
-			CryWarning(VALIDATOR_MODULE_RENDERER, VALIDATOR_WARNING, 
-			    "Cubemap generation timeout: some outstanding tasks didn't finish on time, generated cubemap might be incorrect.\n" \
-			    "Consider increasing r_CubemapGenerationTimeout");
+			CryWarning(VALIDATOR_MODULE_RENDERER, VALIDATOR_WARNING,
+			           "Cubemap generation timeout: some outstanding tasks didn't finish on time, generated cubemap might be incorrect.\n" \
+			           "Consider increasing r_CubemapGenerationTimeout");
 		}
 
 		bool success = false;
@@ -937,6 +948,14 @@ DynArray<std::uint16_t> CTexture::RenderEnvironmentCMHDR(std::size_t size, const
 			return DynArray<std::uint16_t>{};
 	}
 
+	gcpRendD3D->ExecuteRenderThreadCommand(
+		[=]
+	{
+		gcpRendD3D->DeleteGraphicsPipeline(pipelineKey);
+
+	}, ERenderCommandFlags::None
+		);
+
 	SAFE_RELEASE(ptexGenEnvironmentCM);
 
 	for (auto& cvarOverride : cvarOverrides)
@@ -972,7 +991,7 @@ bool CTexture::GenerateMipMaps(bool bSetOrthoProj, bool bUseHW, bool bNormalMap)
 	if (GetDevTexture()->IsWritable())
 	{
 		//	gcpRendD3D->GetDeviceContext().GenerateMips(m_pDeviceShaderResource);
-		CMipmapGenPass().Execute(this);
+		CMipmapGenPass(gcpRendD3D->FindGraphicsPipeline(SGraphicsPipelineKey::BaseGraphicsPipelineKey).get()).Execute(this);
 	}
 
 	return true;
@@ -1012,7 +1031,7 @@ void CD3D9Renderer::DrawAllDynTextures(const char* szFilter, const bool bLogName
 	float y = 0;
 
 	GetIRenderAuxGeom()->SetOrthographicProjection(true, 0.0f, width, height, 0.0f);
-	
+
 	if (name[0] == '*' && !name[1])
 	{
 		SResourceContainer* pRL = CBaseResource::GetResourcesForClass(CTexture::mfGetClassName());
@@ -1203,7 +1222,7 @@ bool CFlashTextureSourceBase::Update()
 	pFlashPlayer->SetViewport(0, 0, m_width, m_height, m_aspectRatio);
 	pFlashPlayer->SetScissorRect(0, 0, m_width, m_height);
 	pFlashPlayer->SetBackgroundAlpha(Clr_Transparent.a);
-	
+
 	m_lastVisibleFrameID = gRenDev->GetRenderFrameID();
 	m_lastVisible = gEnv->pTimer->GetAsyncTime();
 
@@ -1223,7 +1242,7 @@ bool CFlashTextureSource::Update()
 	if (!CFlashTextureSourceBase::Update())
 		return false;
 	if (!m_pMipMapper)
-		m_pMipMapper = new CMipmapGenPass();
+		m_pMipMapper = new CMipmapGenPass(gcpRendD3D->FindGraphicsPipeline(SGraphicsPipelineKey::BaseGraphicsPipelineKey).get());
 
 	// calculate mip-maps after update, if mip-maps have been allocated
 	{
@@ -1246,7 +1265,7 @@ bool CFlashTextureSourceSharedRT::Update()
 	if (!CFlashTextureSourceBase::Update())
 		return false;
 	if (!ms_pMipMapper)
-		ms_pMipMapper = new CMipmapGenPass();
+		ms_pMipMapper = new CMipmapGenPass(gcpRendD3D->FindGraphicsPipeline(SGraphicsPipelineKey::BaseGraphicsPipelineKey).get());
 
 	// calculate mip-maps after update, if mip-maps have been allocated
 	{
@@ -1267,7 +1286,7 @@ void CTexture::CopySliceChain(CDeviceTexture* const pDstDevTex, int8 nDstNumMips
 #if CRY_PLATFORM_DURANGO && (CRY_RENDERER_DIRECT3D >= 110) && (CRY_RENDERER_DIRECT3D < 120)
 	pDstDevTex->InitD3DTexture();
 #endif
-#if !defined(_RELEASE) || (CRY_PLATFORM_DURANGO && (CRY_RENDERER_DIRECT3D >= 110) && (CRY_RENDERER_DIRECT3D < 120)  && defined(DEVICE_SUPPORTS_PERFORMANCE_DEVICE))
+#if !defined(_RELEASE) || (CRY_PLATFORM_DURANGO && (CRY_RENDERER_DIRECT3D >= 110) && (CRY_RENDERER_DIRECT3D < 120) && defined(DEVICE_SUPPORTS_PERFORMANCE_DEVICE))
 	D3DBaseTexture* pDstResource = pDstDevTex->GetBaseTexture();
 	D3DBaseTexture* pSrcResource = pSrcDevTex->GetBaseTexture();
 #endif
@@ -1280,7 +1299,7 @@ void CTexture::CopySliceChain(CDeviceTexture* const pDstDevTex, int8 nDstNumMips
 	if (0)
 	{
 	}
-#if CRY_PLATFORM_DURANGO && (CRY_RENDERER_DIRECT3D >= 110) && (CRY_RENDERER_DIRECT3D < 120)  && defined(DEVICE_SUPPORTS_PERFORMANCE_DEVICE)
+#if CRY_PLATFORM_DURANGO && (CRY_RENDERER_DIRECT3D >= 110) && (CRY_RENDERER_DIRECT3D < 120) && defined(DEVICE_SUPPORTS_PERFORMANCE_DEVICE)
 	else if (!gcpRendD3D->m_pRT->IsRenderThread(true))
 	{
 		// We can use the move engine!
@@ -1291,13 +1310,13 @@ void CTexture::CopySliceChain(CDeviceTexture* const pDstDevTex, int8 nDstNumMips
 		for (int8 nMip = 0; nMip < nNumMips; ++nMip)
 		{
 			pDMA->CopySubresourceRegion(
-			  pDstResource,
-			  D3D11CalcSubresource(nDstMipOffset + nMip, nDstSliceOffset, nDstNumMips),
-			  0, 0, 0,
-			  pSrcResource,
-			  D3D11CalcSubresource(nSrcMipOffset + nMip, nSrcSliceOffset, nSrcNumMips),
-			  NULL,
-			  D3D11_COPY_NO_OVERWRITE);
+				pDstResource,
+				D3D11CalcSubresource(nDstMipOffset + nMip, nDstSliceOffset, nDstNumMips),
+				0, 0, 0,
+				pSrcResource,
+				D3D11CalcSubresource(nSrcMipOffset + nMip, nSrcSliceOffset, nSrcNumMips),
+				NULL,
+				D3D11_COPY_NO_OVERWRITE);
 		}
 
 		UINT64 fence = pDMA->InsertFence(D3D11_INSERT_FENCE_NO_KICKOFF);

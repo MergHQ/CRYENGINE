@@ -42,7 +42,7 @@ float sfrand()
 	return cry_random(-1.0f, 1.0f);
 }
 
-};
+} // unnamed namespace
 
 //////////////////////////////////////////////////////////////////////////
 CWaterWaveRenderNode::CWaterWaveRenderNode() :
@@ -373,15 +373,12 @@ void CWaterWaveRenderNode::OffsetPosition(const Vec3& delta)
 //////////////////////////////////////////////////////////////////////////
 CWaterWaveManager::CWaterWaveManager()
 {
-
 }
 
 //////////////////////////////////////////////////////////////////////////
 CWaterWaveManager::~CWaterWaveManager()
 {
-
 	Release();
-
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -617,7 +614,7 @@ void CWaterWaveManager::Unregister(CWaterWaveRenderNode* pWave)
 		GlobalWavesMapIt pEnd(m_pWaves.end());
 		uint32 nInstances(0);
 
-		// todo: this is unneficient, find better solution
+		// todo: this is inefficient, find better solution
 		for (; _pItor != pEnd; ++_pItor)
 		{
 			f32 fWaveKey = _pItor->second->GetWaveKey();
@@ -674,7 +671,6 @@ void CWaterWaveManager::Update(const SRenderingPassInfo& passInfo)
 			pCurr->Update(sqrt_tpl(fDistanceSqr));
 		}
 	}
-
 }
 
 ///////////////////////////////////////////////////////////////////////////////

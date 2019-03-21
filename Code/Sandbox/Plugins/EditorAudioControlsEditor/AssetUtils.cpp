@@ -173,9 +173,13 @@ void SelectTopLevelAncestors(Assets const& source, Assets& dest)
 	}
 }
 
-void TryConstructTriggerConnectionNode(XmlNodeRef const pTriggerNode, IConnection const* const pIConnection)
+//////////////////////////////////////////////////////////////////////////
+void TryConstructTriggerConnectionNode(
+	XmlNodeRef const pTriggerNode,
+	IConnection const* const pIConnection,
+	CryAudio::ContextId const contextId)
 {
-	XmlNodeRef const pConnectionNode = g_pIImpl->CreateXMLNodeFromConnection(pIConnection, EAssetType::Trigger);
+	XmlNodeRef const pConnectionNode = g_pIImpl->CreateXMLNodeFromConnection(pIConnection, EAssetType::Trigger, contextId);
 
 	if (pConnectionNode != nullptr)
 	{

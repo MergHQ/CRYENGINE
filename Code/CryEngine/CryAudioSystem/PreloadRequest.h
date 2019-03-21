@@ -17,21 +17,21 @@ public:
 #if defined(CRY_AUDIO_USE_DEBUG_CODE)
 	explicit CPreloadRequest(
 		PreloadRequestId const id,
-		EDataScope const dataScope,
+		ContextId const contextId,
 		bool const bAutoLoad,
 		FileIds const& fileIds,
 		char const* const szName)
-		: CEntity<PreloadRequestId>(id, dataScope, szName)
+		: CEntity<PreloadRequestId>(id, contextId, szName)
 		, m_bAutoLoad(bAutoLoad)
 		, m_fileIds(fileIds)
 	{}
 #else
 	explicit CPreloadRequest(
 		PreloadRequestId const id,
-		EDataScope const dataScope,
+		ContextId const contextId,
 		bool const bAutoLoad,
 		FileIds const& fileIds)
-		: CEntity<PreloadRequestId>(id, dataScope)
+		: CEntity<PreloadRequestId>(id, contextId)
 		, m_bAutoLoad(bAutoLoad)
 		, m_fileIds(fileIds)
 	{}

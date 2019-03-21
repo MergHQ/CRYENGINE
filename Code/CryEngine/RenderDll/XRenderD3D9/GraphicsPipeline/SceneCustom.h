@@ -25,8 +25,10 @@ class CSceneCustomStage : public CGraphicsPipelineStage
 
 		ePerPassTexture_PaletteTexelsPerMeter = 33,
 	};
-	
+
 public:
+	static const EGraphicsPipelineStage StageID = eStage_SceneCustom;
+
 	enum EPass
 	{
 		ePass_DebugViewSolid = 0,
@@ -37,7 +39,7 @@ public:
 	};
 
 public:
-	CSceneCustomStage();
+	CSceneCustomStage(CGraphicsPipeline& graphicsPipeline);
 
 	static bool DoDebugRendering();
 
@@ -64,7 +66,7 @@ public:
 	bool CreatePipelineState(const SGraphicsPipelineStateDescription& desc, EPass passID, CDeviceGraphicsPSOPtr& outPSO);
 
 	bool IsSelectionHighlightEnabled() const { return gEnv->IsEditor() && !gEnv->IsEditorGameMode(); }
-	bool IsDebugOverlayEnabled() const { return CRenderer::CV_e_DebugDraw > 0; }
+	bool IsDebugOverlayEnabled()       const { return CRenderer::CV_e_DebugDraw > 0; }
 
 private:
 	bool SetAndBuildPerPassResources(bool bOnInit);
@@ -74,7 +76,7 @@ private:
 	CDeviceResourceSetPtr    m_pPerPassResourceSet;
 	CDeviceResourceLayoutPtr m_pResourceLayout;
 	CConstantBufferPtr       m_pPerPassConstantBuffer;
-	
+
 	CSceneRenderPass         m_debugViewPass;
 	CSceneRenderPass         m_selectionIDPass;
 	CFullscreenPass          m_highlightPass;

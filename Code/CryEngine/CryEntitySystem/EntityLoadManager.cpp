@@ -207,8 +207,11 @@ bool CEntityLoadManager::ParseEntities(XmlNodeRef& entitiesNode, bool bIsLoading
 		EntityId usingId = INVALID_ENTITYID;
 		if (!CreateEntity(reinterpret_cast<CEntity*>(pBuffer), entityLoadParams, usingId, bIsLoadingLevelFile))
 		{
-			string sName = entityLoadParams.spawnParams.entityNode->getAttr("Name");
-			EntityWarning("CEntityLoadManager::ParseEntities : Failed when parsing entity \'%s\'", sName.empty() ? "Unknown" : sName.c_str());
+			if (entityLoadParams.spawnParams.spawnResult == EEntitySpawnResult::Error)
+			{
+				string sName = entityLoadParams.spawnParams.entityNode->getAttr("Name");
+				EntityWarning("CEntityLoadManager::ParseEntities : Failed when parsing entity \'%s\'", sName.empty() ? "Unknown" : sName.c_str());
+			}
 		}
 
 		pBuffer += entityLoadParams.allocationSize;
@@ -630,8 +633,12 @@ bool CEntityLoadManager::CreateEntity(CEntity* pPreallocatedEntity, SEntityLoadP
 		outUsingId = pSpawnedEntity->GetId();
 		return true;
 	}
+	
+	if (spawnParams.spawnResult == EEntitySpawnResult::Error)
+	{
+		EntityWarning("[CEntityLoadManager::CreateEntity] Entity Load Failed: %s (%s)", spawnParams.sName, spawnParams.pClass->GetName());
+	}
 
-	EntityWarning("[CEntityLoadManager::CreateEntity] Entity Load Failed: %s (%s)", spawnParams.sName, spawnParams.pClass->GetName());
 	return false;
 }
 

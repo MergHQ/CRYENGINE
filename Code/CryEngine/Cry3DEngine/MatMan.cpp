@@ -471,7 +471,7 @@ IMaterial* CMatMan::MakeMaterialFromXml(const char* sMtlName, const char* sMtlFi
 			}
 			else
 			{
-				// version doens't has string gen mask yet ? Remap flags if needed
+				// version doesn't has string gen mask yet ? Remap flags if needed
 				nShaderGenMask = GetRenderer()->EF_GetRemapedShaderMaskGen((const char*)shaderName, nShaderGenMask, ((mtlFlags & MTL_64BIT_SHADERGENMASK) != 0));
 			}
 		}
@@ -835,7 +835,7 @@ void CMatMan::ParsePublicParams(SInputShaderResources& sr, XmlNodeRef paramsNode
 ISurfaceType* CMatMan::GetSurfaceTypeByName(const char* sSurfaceTypeName, const char* sWhy)
 {
 	return m_pSurfaceTypeManager->GetSurfaceTypeByName(sSurfaceTypeName, sWhy);
-};
+}
 
 //////////////////////////////////////////////////////////////////////////
 int CMatMan::GetSurfaceTypeIdByName(const char* sSurfaceTypeName, const char* sWhy)
@@ -844,7 +844,7 @@ int CMatMan::GetSurfaceTypeIdByName(const char* sSurfaceTypeName, const char* sW
 	if (pSurfaceType)
 		return pSurfaceType->GetId();
 	return 0;
-};
+}
 
 //////////////////////////////////////////////////////////////////////////
 IMaterial* CMatMan::GetDefaultLayersMaterial()
@@ -1093,7 +1093,7 @@ static bool IsPureChild(IMaterial* pMtl)
 static bool IsMultiSubMaterial(IMaterial* pMtl)
 {
 	return (pMtl->GetFlags() & MTL_FLAG_MULTI_SUBMTL) ? true : false;
-};
+}
 }
 
 //////////////////////////////////////////////////////////////////////////

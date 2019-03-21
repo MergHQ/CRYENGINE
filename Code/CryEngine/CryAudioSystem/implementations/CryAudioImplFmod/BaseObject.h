@@ -3,6 +3,7 @@
 #pragma once
 
 #include "Common.h"
+#include "ParameterInfo.h"
 #include <IObject.h>
 #include <PoolObject.h>
 
@@ -53,8 +54,8 @@ public:
 
 	void                  StopEventInstance(uint32 const id);
 
-	void                  SetParameter(uint32 const id, float const value);
-	void                  RemoveParameter(uint32 const id);
+	void                  SetParameter(CParameterInfo& parameterInfo, float const value);
+	void                  RemoveParameter(CParameterInfo const& parameterInfo);
 
 	void                  SetReturn(CReturn const* const pReturn, float const amount);
 	void                  RemoveReturn(CReturn const* const pReturn);
@@ -77,8 +78,8 @@ protected:
 	Returns            m_returns;
 
 	FMOD_3D_ATTRIBUTES m_attributes;
-	float              m_occlusion = 0.0f;
-	float              m_absoluteVelocity = 0.0f;
+	float              m_occlusion;
+	float              m_absoluteVelocity;
 
 #if defined(CRY_AUDIO_IMPL_FMOD_USE_DEBUG_CODE)
 	CryFixedStringT<MaxObjectNameLength> m_name;

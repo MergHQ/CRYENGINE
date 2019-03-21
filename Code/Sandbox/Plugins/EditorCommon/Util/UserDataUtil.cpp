@@ -72,7 +72,7 @@ QVariant Load(const char* szRelativeFilePath)
 	return doc.toVariant();
 }
 
-void Save(const char* szRelativeFilePath, const char* data)
+bool Save(const char* szRelativeFilePath, const char* data)
 {
 	const string filePath(GetUserPath(szRelativeFilePath));
 	// Remove filename from path
@@ -84,10 +84,10 @@ void Save(const char* szRelativeFilePath, const char* data)
 	if (!file.open(QIODevice::WriteOnly))
 	{
 		CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_ERROR, "Failed to open path: %s", filePath.c_str());
-		return;
+		return false;
 	}
 
-	file.write(data);
+	return file.write(data) > 0;
 }
 } // namespace UserDataUtil
 

@@ -4,7 +4,6 @@
 #include "Impl.h"
 
 #include "Common.h"
-#include "BaseConnection.h"
 #include "EventConnection.h"
 #include "ParameterConnection.h"
 #include "StateConnection.h"
@@ -32,23 +31,23 @@ constexpr uint32 g_parameterConnectionPoolSize = 256;
 constexpr uint32 g_stateConnectionPoolSize = 256;
 
 //////////////////////////////////////////////////////////////////////////
-void CountConnections(EAssetType const assetType)
+void CountConnections(EAssetType const assetType, CryAudio::ContextId const contextId)
 {
 	switch (assetType)
 	{
 	case EAssetType::Trigger:
 		{
-			++g_connections.events;
+			++g_connections[contextId].events;
 			break;
 		}
 	case EAssetType::Parameter:
 		{
-			++g_connections.parameters;
+			++g_connections[contextId].parameters;
 			break;
 		}
 	case EAssetType::State:
 		{
-			++g_connections.switchStates;
+			++g_connections[contextId].switchStates;
 			break;
 		}
 	default:
@@ -145,20 +144,12 @@ CImpl::~CImpl()
 //////////////////////////////////////////////////////////////////////////
 void CImpl::Initialize(
 	SImplInfo& implInfo,
-	Platforms const& platforms,
 	ExtensionFilterVector& extensionFilters,
 	QStringList& supportedFileTypes)
 {
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "SDL Mixer ACE Item Pool");
 	CItem::CreateAllocator(g_itemPoolSize);
-
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "SDL Mixer ACE Event Connection Pool");
 	CEventConnection::CreateAllocator(g_eventConnectionPoolSize);
-
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "SDL Mixer ACE Parameter Connection Pool");
 	CParameterConnection::CreateAllocator(g_parameterConnectionPoolSize);
-
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "SDL Mixer ACE State Connection Pool");
 	CStateConnection::CreateAllocator(g_stateConnectionPoolSize);
 
 	CryAudio::SImplInfo systemImplInfo;
@@ -460,7 +451,10 @@ IConnection* CImpl::CreateConnectionFromXMLNode(XmlNodeRef pNode, EAssetType con
 }
 
 //////////////////////////////////////////////////////////////////////////
-XmlNodeRef CImpl::CreateXMLNodeFromConnection(IConnection const* const pIConnection, EAssetType const assetType)
+XmlNodeRef CImpl::CreateXMLNodeFromConnection(
+	IConnection const* const pIConnection,
+	EAssetType const assetType,
+	CryAudio::ContextId const contextId)
 {
 	XmlNodeRef pNode = nullptr;
 
@@ -604,47 +598,51 @@ XmlNodeRef CImpl::CreateXMLNodeFromConnection(IConnection const* const pIConnect
 			}
 			break;
 		}
-		CountConnections(assetType);
+
+		CountConnections(assetType, contextId);
 	}
 
 	return pNode;
 }
 
 //////////////////////////////////////////////////////////////////////////
-XmlNodeRef CImpl::SetDataNode(char const* const szTag)
+XmlNodeRef CImpl::SetDataNode(char const* const szTag, CryAudio::ContextId const contextId)
 {
-	XmlNodeRef pNode = GetISystem()->CreateXmlNode(szTag);
-	bool hasConnections = false;
+	XmlNodeRef pNode = nullptr;
 
-	if (g_connections.events > 0)
+	if (g_connections.find(contextId) != g_connections.end())
 	{
-		pNode->setAttr(CryAudio::Impl::SDL_mixer::g_szEventsAttribute, g_connections.events);
-		hasConnections = true;
-	}
+		pNode = GetISystem()->CreateXmlNode(szTag);
 
-	if (g_connections.parameters > 0)
-	{
-		pNode->setAttr(CryAudio::Impl::SDL_mixer::g_szParametersAttribute, g_connections.parameters);
-		hasConnections = true;
-	}
+		if (g_connections[contextId].events > 0)
+		{
+			pNode->setAttr(CryAudio::Impl::SDL_mixer::g_szEventsAttribute, g_connections[contextId].events);
+		}
 
-	if (g_connections.switchStates > 0)
-	{
-		pNode->setAttr(CryAudio::Impl::SDL_mixer::g_szSwitchStatesAttribute, g_connections.switchStates);
-		hasConnections = true;
-	}
+		if (g_connections[contextId].parameters > 0)
+		{
+			pNode->setAttr(CryAudio::Impl::SDL_mixer::g_szParametersAttribute, g_connections[contextId].parameters);
+		}
 
-	if (hasConnections)
-	{
-		// Reset connection count for next library.
-		ZeroStruct(g_connections);
-	}
-	else
-	{
-		pNode = nullptr;
+		if (g_connections[contextId].switchStates > 0)
+		{
+			pNode->setAttr(CryAudio::Impl::SDL_mixer::g_szSwitchStatesAttribute, g_connections[contextId].switchStates);
+		}
 	}
 
 	return pNode;
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CImpl::OnBeforeWriteLibrary()
+{
+	g_connections.clear();
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CImpl::OnAfterWriteLibrary()
+{
+	g_connections.clear();
 }
 
 //////////////////////////////////////////////////////////////////////////

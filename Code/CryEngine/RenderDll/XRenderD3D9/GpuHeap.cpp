@@ -876,48 +876,6 @@ CGpuHeap::CGpuHeap(uint32_t numMemoryTypes, bool bCommitRegions)
 
 CGpuHeap::~CGpuHeap()
 {
-	// When using committed regions, we must free all the blocks separately, since we have to reconstruct the large-block frees accurately.
-	const bool bFreeAllHandles = HEAP_MEMREPLAY || HEAP_CHECK || m_bCommitRegions;
-	if (bFreeAllHandles)
-	{
-		const auto pfnFree = [](void* pContext, THandle handle, uint32_t memoryType, TBlockHandle blockHandle, uint32_t blockOffset, uint32_t allocationSize, void* pMappedAddress)
-		{
-			CGpuHeap* const pThis = static_cast<CGpuHeap*>(pContext);
-			pThis->DeallocateInternal(handle);
-		};
-		Walk(this, nullptr, pfnFree);
-	}
-	else
-	{
-		for (uint32_t i = 0; i < m_numHeaps; ++i)
-		{
-			m_pHeaps[i].hugeBlocks.Walk(m_pPages, [this, i](SHugePage& page) -> bool
-			{
-				if (page.mapped)
-				{
-				  void* const pAddress = page.GetAddress();
-				  if (pAddress)
-				  {
-				    UnmapBlock(i, page.GetHandle(), pAddress);
-				  }
-				}
-				DeallocateBlock(i, page.GetHandle(), page.size * kRegionSize);
-				return true;
-			});
-		}
-	}
-
-#if !HEAP_STATIC_STORAGE
-	delete[] m_pHeaps;
-	delete[] m_pPages;
-#else
-	::memset(m_pHeaps, 0, sizeof(SSubHeap) * m_numHeaps);
-	::memset(m_pPages, 0, sizeof(UPage) * kMaxPages);
-#endif
-
-#if HEAP_CHECK
-	gpHeapPages = nullptr;
-#endif
 }
 
 CGpuHeap::THandle CGpuHeap::Allocate(uint32_t memoryType, uint32_t bytes, uint32_t align)
@@ -1012,6 +970,52 @@ void CGpuHeap::DeallocateInternal(THandle handle)
 		DeallocateHuge(internalHandle.memoryType, internalHandle.pageIndex, true);
 		break;
 	}
+}
+
+void CGpuHeap::Release()
+{
+	// When using committed regions, we must free all the blocks separately, since we have to reconstruct the large-block frees accurately.
+	const bool bFreeAllHandles = HEAP_MEMREPLAY || HEAP_CHECK || m_bCommitRegions;
+	if (bFreeAllHandles)
+	{
+		const auto pfnFree = [](void* pContext, THandle handle, uint32_t memoryType, TBlockHandle blockHandle, uint32_t blockOffset, uint32_t allocationSize, void* pMappedAddress)
+		{
+			CGpuHeap* const pThis = static_cast<CGpuHeap*>(pContext);
+			pThis->DeallocateInternal(handle);
+		};
+		Walk(this, nullptr, pfnFree);
+	}
+	else
+	{
+		for (uint32_t i = 0; i < m_numHeaps; ++i)
+		{
+			m_pHeaps[i].hugeBlocks.Walk(m_pPages, [this, i](SHugePage& page) -> bool
+			{
+				if (page.mapped)
+				{
+					void* const pAddress = page.GetAddress();
+					if (pAddress)
+					{
+						UnmapBlock(i, page.GetHandle(), pAddress);
+					}
+				}
+				DeallocateBlock(i, page.GetHandle(), page.size * kRegionSize);
+				return true;
+			});
+		}
+	}
+
+#if !HEAP_STATIC_STORAGE
+	delete[] m_pHeaps;
+	delete[] m_pPages;
+#else
+	::memset(m_pHeaps, 0, sizeof(SSubHeap) * m_numHeaps);
+	::memset(m_pPages, 0, sizeof(UPage) * kMaxPages);
+#endif
+
+#if HEAP_CHECK
+	gpHeapPages = nullptr;
+#endif
 }
 
 CGpuHeap::THandle CGpuHeap::AllocateTiny(uint32_t memoryType, uint32_t bin)

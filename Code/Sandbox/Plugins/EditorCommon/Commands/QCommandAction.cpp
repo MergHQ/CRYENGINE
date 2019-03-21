@@ -14,6 +14,7 @@
 QCommandAction::QCommandAction(const QString& actionName, const QString& actionText, QObject* parent, const char* command /*=0*/)
 	: QAction(actionName, parent)
 {
+	setShortcutContext(Qt::WidgetWithChildrenShortcut);
 	setText(actionText);
 	if (command)
 	{
@@ -25,6 +26,7 @@ QCommandAction::QCommandAction(const QString& actionName, const QString& actionT
 QCommandAction::QCommandAction(const QString& actionName, const char* command, QObject* parent)
 	: QAction(actionName, parent)
 {
+	setShortcutContext(Qt::WidgetWithChildrenShortcut);
 	setObjectName(actionName);
 	if (command)
 	{
@@ -37,6 +39,7 @@ QCommandAction::QCommandAction(const QCommandAction& action)
 	: QAction(action.text(), nullptr)
 	, UiInfo(action.UiInfo::buttonText, action.UiInfo::icon, action.key, action.UiInfo::isCheckable)
 {
+	setShortcutContext(Qt::WidgetWithChildrenShortcut);
 	setIcon(action.QAction::icon());
 	setCheckable(action.QAction::isCheckable());
 	setObjectName(action.objectName());
@@ -49,15 +52,16 @@ QCommandAction::QCommandAction(const QCommandAction& action)
 QCommandAction::QCommandAction(const CUiCommand& cmd)
 	: QAction(cmd.GetDescription().c_str(), nullptr)
 {
+	setShortcutContext(Qt::WidgetWithChildrenShortcut);
 	setObjectName(cmd.GetName().c_str());
 	setProperty("QCommandAction", QVariant(QString(cmd.GetCommandString())));
 	connect(this, &QCommandAction::triggered, this, &QCommandAction::OnTriggered);
-	setShortcutContext(Qt::ApplicationShortcut);
 }
 
 QCommandAction::QCommandAction(const CCustomCommand& cmd)
 	: QAction(cmd.GetName().c_str(), nullptr)
 {
+	setShortcutContext(Qt::WidgetWithChildrenShortcut);
 	setObjectName(tr("Custom Command"));
 	setProperty("QCommandAction", QVariant(QString(cmd.GetCommandString())));
 	connect(this, &QCommandAction::triggered, [&]()
@@ -70,6 +74,7 @@ QCommandAction::QCommandAction(const CCustomCommand& cmd)
 QCommandAction::QCommandAction(const CPolledKeyCommand& cmd)
 	: QAction(cmd.GetDescription().c_str(), 0)
 {
+	setShortcutContext(Qt::WidgetWithChildrenShortcut);
 	setObjectName(tr("Polled Key Command"));
 	//triggered() is intentionally not connected
 }

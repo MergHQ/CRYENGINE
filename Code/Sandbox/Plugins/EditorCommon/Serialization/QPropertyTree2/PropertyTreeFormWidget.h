@@ -103,15 +103,15 @@ private:
 
 	void  RecursiveInstallEventFilter(QWidget* pWidget);
 
-	struct FormRow
+	struct SFormRow
 	{
-		FormRow(const CRowModel* pRowModel);
-		FormRow(FormRow&& other);
-		FormRow(const FormRow& other) = delete;
-		~FormRow();
+		SFormRow(const CRowModel* pRowModel);
+		SFormRow(SFormRow&& other);
+		SFormRow(const SFormRow& other) = delete;
+		~SFormRow();
 
-		FormRow& operator=(FormRow&& other);
-		FormRow& operator=(const FormRow& other) = delete;
+		SFormRow& operator=(SFormRow&& other);
+		SFormRow& operator=(const SFormRow& other) = delete;
 
 		_smart_ptr<const CRowModel> m_pModel;
 		CFormWidget*                m_pChildContainer;
@@ -126,31 +126,29 @@ private:
 		bool                 HasChildren() const;
 	};
 
-	int      GetSplitterPosition() const;
-	FormRow* ModelToFormRow(const CRowModel* pRow);
-	FormRow* RowAtPos(const QPoint& position);
-	int      InsertionIndexAtPos(const QPoint& position, int tolerancePx = 5);
-	int      RowIndex(const FormRow* pRow);
+	int       GetSplitterPosition() const;
+	SFormRow* ModelToFormRow(const CRowModel* pRow);
+	SFormRow* RowAtPos(const QPoint& position);
+	int       InsertionIndexAtPos(const QPoint& position, int tolerancePx = 5);
+	int       RowIndex(const SFormRow* pRow);
 
-	void     UpdateActiveRow(const QPoint& cursorPos);
-	void     SetActiveRow(FormRow* pRow);
-	QRect    GetExpandIconRect(const FormRow& row) const;
-	QRect    GetDragHandleIconRect(const FormRow& row) const;
+	void      UpdateActiveRow(const QPoint& cursorPos);
+	void      SetActiveRow(SFormRow* pRow);
+	QRect     GetExpandIconRect(const SFormRow& row) const;
+	QRect     GetDragHandleIconRect(const SFormRow& row) const;
 
-	void     ToggleExpand(FormRow& row, bool skipLayout = false);
+	void      ToggleExpand(SFormRow& row, bool skipLayout = false);
 
-	//Invariants
 	_smart_ptr<const CRowModel> m_pRowModel;
 	QPropertyTree2*             m_pParentTree;
 	const int                   m_nesting;
 
-	//Internals
-	std::vector<FormRow> m_rows;
-	FormRow*             m_pActiveRow;
-	QPoint               m_lastCursorPos; //Last position tested for hovering. Used to avoid unnecessary computing.
-	QPoint               m_mouseDownPos;
-	bool                 m_allowReorderChildren;
-	int                  m_dragInsertIndex; //-2 = not dragging at all, -1 = dragging but invalid index, >0 = valid index
+	std::vector<SFormRow>       m_rows;
+	SFormRow*                   m_pActiveRow;
+	QPoint                      m_lastCursorPos; //Last position tested for hovering. Used to avoid unnecessary computing.
+	QPoint                      m_mouseDownPos;
+	bool                        m_allowReorderChildren;
+	int                         m_dragInsertIndex; //-2 = not dragging at all, -1 = dragging but invalid index, >0 = valid index
 
 	//Style props
 	int    m_spacing;
@@ -169,5 +167,8 @@ public:
 
 	void AddWidget(QWidget* pWidget, QPropertyTree2* pPropertyTree);
 	void ReleaseWidgets(QPropertyTree2* pPropertyTree);
+
+private:
+	QHBoxLayout * m_pHBoxLayout;
 };
 }

@@ -21,19 +21,19 @@
 namespace PropertyTree2
 {
 
-CFormWidget::FormRow::FormRow(const CRowModel* pRowModel)
+CFormWidget::SFormRow::SFormRow(const CRowModel* pRowModel)
 	: m_pModel(pRowModel)
 	, m_pChildContainer(nullptr)
 	, m_pWidget(nullptr)
 {
 }
 
-CFormWidget::FormRow::FormRow(FormRow&& other)
+CFormWidget::SFormRow::SFormRow(SFormRow&& other)
 {
 	*this = std::move(other);
 }
 
-CFormWidget::FormRow& CFormWidget::FormRow::operator=(FormRow&& other)
+CFormWidget::SFormRow& CFormWidget::SFormRow::operator=(SFormRow&& other)
 {
 	m_pModel = other.m_pModel;
 	m_pChildContainer = other.m_pChildContainer;
@@ -43,7 +43,7 @@ CFormWidget::FormRow& CFormWidget::FormRow::operator=(FormRow&& other)
 	return *this;
 }
 
-CFormWidget::FormRow::~FormRow()
+CFormWidget::SFormRow::~SFormRow()
 {
 	if (m_pChildContainer)
 	{
@@ -52,23 +52,23 @@ CFormWidget::FormRow::~FormRow()
 	}
 }
 
-bool CFormWidget::FormRow::IsExpanded() const
+bool CFormWidget::SFormRow::IsExpanded() const
 {
 	//We rely on "local" visible flag for expansion status. isVisible() is not enough as it needs all parents to also be visible
 	return m_pChildContainer && m_pChildContainer->isVisibleTo(qobject_cast<QWidget*>(m_pChildContainer->parent()));
 }
 
-QWidget* CFormWidget::FormRow::GetQWidget()
+QWidget* CFormWidget::SFormRow::GetQWidget()
 {
 	return m_pWidget;
 }
 
-IPropertyTreeWidget* CFormWidget::FormRow::GetPropertyTreeWidget()
+IPropertyTreeWidget* CFormWidget::SFormRow::GetPropertyTreeWidget()
 {
 	return qobject_cast<IPropertyTreeWidget*>(m_pWidget);
 }
 
-bool CFormWidget::FormRow::HasChildren() const
+bool CFormWidget::SFormRow::HasChildren() const
 {
 	//If all the children are hidden then the form row doesn't have children
 	return m_pModel->HasVisibleChildren();
@@ -117,7 +117,7 @@ void CFormWidget::OnSplitterPosChanged()
 	DoLayout(size());
 
 	//Recurse to all children
-	for (FormRow& formRow : m_rows)
+	for (SFormRow& formRow : m_rows)
 	{
 		if (formRow.IsExpanded())
 		{
@@ -144,7 +144,7 @@ void CFormWidget::SetupWidgets()
 	}
 
 	//Cleanup old rows
-	auto rowsIterator = std::remove_if(m_rows.begin(), m_rows.end(), [](const FormRow& row)
+	auto rowsIterator = std::remove_if(m_rows.begin(), m_rows.end(), [](const SFormRow& row)
 		{
 			return row.m_pModel->IsRoot() || row.m_pModel->IsHidden();
 		});
@@ -153,6 +153,8 @@ void CFormWidget::SetupWidgets()
 	const int count = m_pRowModel->GetChildren().size();
 	m_rows.reserve(count);
 
+	//The list of all the models we are using for the row widgets, we use this to remove unused rows when widget setup is over
+	std::vector<const CRowModel*> usedModels;
 	//Sets up the widgets, parenting relationship, signal/slot mechanism, etc...
 	for (int i = 0; i < count; i++)
 	{
@@ -164,21 +166,25 @@ void CFormWidget::SetupWidgets()
 			continue;
 		}
 
-		FormRow* pFormRow = nullptr;
-		if (m_rows.size() <= i)
+		SFormRow* pFormRow = nullptr;
+		//If we have a row with this model use it. If not create a new one
+		auto foundRow = std::find_if(m_rows.begin(), m_rows.end(), [pChild](SFormRow& pFormRow)
+			{
+				return pFormRow.m_pModel.get() == pChild.get();
+			});
+
+		if (foundRow == m_rows.end())
 		{
 			m_rows.emplace_back(pChild);
 			pFormRow = &m_rows.back();
 		}
-		else if (m_rows[i].m_pModel != pChild)
-		{
-			m_rows.emplace(m_rows.begin() + i, pChild);
-			pFormRow = &m_rows[i];
-		}
 		else
 		{
-			pFormRow = &m_rows[i];
+			pFormRow = &(*foundRow);
 		}
+
+		//We add the model that we are using to the list of used model (inside this scope is safe to use raw pointers)
+		usedModels.push_back(pFormRow->m_pModel.get());
 
 		if (pChild->IsWidgetSet())
 		{
@@ -209,6 +215,8 @@ void CFormWidget::SetupWidgets()
 			{
 				CInlineWidgetBox* pInlineWidgetBox = new CInlineWidgetBox(this);
 				pFormRow->m_pWidget = pInlineWidgetBox;
+				//in some instances widgets are hidden after spawning, this makes sure they are visible
+				pInlineWidgetBox->setVisible(true);
 
 				int index = 0;
 				const int count = pChild->GetChildren().size();
@@ -241,6 +249,16 @@ void CFormWidget::SetupWidgets()
 
 		pChild->MarkClean();
 	}
+
+	//Now we need to clean up rows that are not used anymore (aka this widget rows changed and we need to remove the old ones)
+	auto rowsToErase = std::remove_if(m_rows.begin(), m_rows.end(), [&usedModels](const SFormRow& row)
+		{
+			//check if this row has a matching model in use
+			auto rowForModel = std::find(usedModels.begin(), usedModels.end(), row.m_pModel.get());
+			return rowForModel == usedModels.end();
+		});
+
+	m_rows.erase(rowsToErase, m_rows.end());
 }
 
 void CFormWidget::RecursiveInstallEventFilter(QWidget* pWidget)
@@ -259,7 +277,7 @@ void CFormWidget::ReleaseWidgets()
 	//The widgets in the property tree do not follow by the regular Qt model of hierarchy.
 	//As they are created by the row model we only transfer temporary ownership to the formWidget or parents for display, but return them afterwards.
 	//CRowModel is responsible for their lifetime
-	for (FormRow& pRow : m_rows)
+	for (SFormRow& pRow : m_rows)
 	{
 		QWidget* pWidget = pRow.m_pWidget;
 
@@ -352,7 +370,7 @@ CFormWidget* CFormWidget::ExpandRow(const CRowModel* pRow, bool expand)
 {
 	CRY_ASSERT(pRow && pRow->GetParent() == m_pRowModel && pRow->HasVisibleChildren());
 
-	FormRow* pFormRow = ModelToFormRow(pRow);
+	SFormRow* pFormRow = ModelToFormRow(pRow);
 	CRY_ASSERT(pFormRow);
 
 	if (pFormRow->IsExpanded() != expand)
@@ -382,7 +400,7 @@ CFormWidget* CFormWidget::ExpandToRow(const CRowModel* pRow)
 
 void CFormWidget::ScrollToRow(const CRowModel* pRow)
 {
-	const FormRow* pFormRow = ModelToFormRow(pRow);
+	const SFormRow* pFormRow = ModelToFormRow(pRow);
 	if (!pFormRow)
 	{
 		return;
@@ -409,7 +427,7 @@ void CFormWidget::UpdateTree()
 
 	if (m_pRowModel->HasDirtyChildren())
 	{
-		for (FormRow& pRow : m_rows)
+		for (SFormRow& pRow : m_rows)
 		{
 			if (pRow.m_pChildContainer)
 			{
@@ -516,7 +534,7 @@ void CFormWidget::paintEvent(QPaintEvent* pEvent)
 	const int count = m_rows.size();
 	for (int i = 0; i < count; i++)
 	{
-		const FormRow& row = m_rows[i];
+		const SFormRow& row = m_rows[i];
 		const _smart_ptr<const CRowModel>& rowModel = row.m_pModel;
 
 		//Draw group frame
@@ -574,7 +592,7 @@ void CFormWidget::paintEvent(QPaintEvent* pEvent)
 	QWidget::paintEvent(pEvent);
 }
 
-QRect CFormWidget::GetExpandIconRect(const FormRow& row) const
+QRect CFormWidget::GetExpandIconRect(const SFormRow& row) const
 {
 	QRect iconRect = row.rowRect;
 	if (m_groupBorderWidth > 0 && row.HasChildren())
@@ -587,7 +605,7 @@ QRect CFormWidget::GetExpandIconRect(const FormRow& row) const
 	return iconRect;
 }
 
-QRect CFormWidget::GetDragHandleIconRect(const FormRow& row) const
+QRect CFormWidget::GetDragHandleIconRect(const SFormRow& row) const
 {
 	QRect iconRect = row.rowRect;
 	if (m_groupBorderWidth > 0 && row.HasChildren())
@@ -600,7 +618,7 @@ QRect CFormWidget::GetDragHandleIconRect(const FormRow& row) const
 	return iconRect;
 }
 
-void CFormWidget::ToggleExpand(FormRow& row, bool skipLayout /* = false*/)
+void CFormWidget::ToggleExpand(SFormRow& row, bool skipLayout /* = false*/)
 {
 	if (row.IsExpanded())
 	{
@@ -680,7 +698,17 @@ void CFormWidget::contextMenuEvent(QContextMenuEvent* pEvent)
 	pAction = pMenu->addAction(tr("Paste"));
 	connect(pAction, &QAction::triggered, this, &CFormWidget::OnPaste);
 
-	pMenu->popup(pEvent->globalPos());
+	if (pEvent->reason() == QContextMenuEvent::Reason::Mouse)
+	{
+		//Spawned by the mouse, place at mouse position
+		pMenu->popup(pEvent->globalPos());
+	}
+	else
+	{
+		//If this is not spawned by the mouse we move the menu to a position from top left that corresponds to half the height on both x and y
+		int offset = static_cast<int>(m_pActiveRow->rowRect.height() / 2);
+		pMenu->popup(mapToGlobal(QPoint(m_pActiveRow->rowRect.topLeft().x() + offset, m_pActiveRow->rowRect.topLeft().y() + offset)));
+	}
 }
 
 void CFormWidget::mousePressEvent(QMouseEvent* pEvent)
@@ -696,8 +724,8 @@ void CFormWidget::mousePressEvent(QMouseEvent* pEvent)
 	{
 		if (m_pActiveRow->m_pModel->HasVisibleChildren())
 		{
-			QRect iconRect = GetExpandIconRect(*m_pActiveRow);
-			if (iconRect.marginsAdded(QMargins(2, 0, 2, 0)).contains(pEvent->pos()))
+			//Use the whole row rect as a target for Expand/Collapse
+			if (m_pActiveRow->rowRect.marginsAdded(QMargins(2, 0, 2, 0)).contains(pEvent->pos()))
 			{
 				ToggleExpand(*m_pActiveRow);
 			}
@@ -741,7 +769,7 @@ void CFormWidget::mouseMoveEvent(QMouseEvent* pEvent)
 		{
 			setCursor(QCursor(Qt::SplitHCursor));
 		}
-		else if (m_pActiveRow && GetDragHandleIconRect(*m_pActiveRow).contains(pEvent->pos()))
+		else if (m_pActiveRow && m_allowReorderChildren && GetDragHandleIconRect(*m_pActiveRow).contains(pEvent->pos())) //we need to check if children can be dragged before enabling dragging
 		{
 			setCursor(QCursor(Qt::OpenHandCursor));
 		}
@@ -754,7 +782,7 @@ void CFormWidget::mouseMoveEvent(QMouseEvent* pEvent)
 		{
 			if (m_allowReorderChildren && (m_mouseDownPos - pEvent->pos()).manhattanLength() > QApplication::startDragDistance())
 			{
-				PropertyTree2::CFormWidget::FormRow* pDraggedRow = RowAtPos(m_mouseDownPos);
+				PropertyTree2::CFormWidget::SFormRow* pDraggedRow = RowAtPos(m_mouseDownPos);
 				if (pDraggedRow)
 				{
 					CDragDropData* pDragData = new CDragDropData();
@@ -886,7 +914,6 @@ void CFormWidget::keyPressEvent(QKeyEvent* pEvent)
 			{
 				CFormWidget* pForm = ExpandToRow(pRow);
 				CRY_ASSERT(pForm != this);
-				pForm->setFocus();
 
 				//Don't use qapp::sendEvent because it will lead back here and recurse until stack overflow
 				pForm->event(pEvent);
@@ -905,7 +932,7 @@ void CFormWidget::keyPressEvent(QKeyEvent* pEvent)
 
 			if (index > 0)
 			{
-				FormRow* pRow = &m_rows[index - 1];
+				SFormRow* pRow = &m_rows[index - 1];
 				CFormWidget* pForm = this;
 				while (pRow->IsExpanded())
 				{
@@ -943,7 +970,7 @@ void CFormWidget::keyPressEvent(QKeyEvent* pEvent)
 			}
 			else
 			{
-				FormRow* pFormRow = m_pActiveRow;
+				SFormRow* pFormRow = m_pActiveRow;
 				CFormWidget* pFormWidget = this;
 
 				while (pFormWidget && pFormRow)
@@ -1141,7 +1168,7 @@ void CFormWidget::UpdateMinimumSize()
 
 	for (int i = 0; i < childCount; i++)
 	{
-		const FormRow& row = m_rows[i];
+		const SFormRow& row = m_rows[i];
 		const int groupPadding = row.HasChildren() ? m_groupBorderWidth * 2 : 0;
 
 		height += groupPadding;
@@ -1203,7 +1230,7 @@ void CFormWidget::DoLayout(const QSize& size)
 	const int childCount = m_rows.size();
 	for (int i = 0; i < childCount; i++)
 	{
-		FormRow& row = m_rows[i];
+		SFormRow& row = m_rows[i];
 		const bool isGroup = row.HasChildren();
 
 		int groupPadding = 0;
@@ -1329,7 +1356,7 @@ int CFormWidget::GetSplitterPosition() const
 	return mapFrom(m_pParentTree, QPoint(splitterPos, 0)).x();
 }
 
-PropertyTree2::CFormWidget::FormRow* CFormWidget::ModelToFormRow(const CRowModel* pRow)
+PropertyTree2::CFormWidget::SFormRow* CFormWidget::ModelToFormRow(const CRowModel* pRow)
 {
 	CRY_ASSERT(pRow && pRow->GetParent() == m_pRowModel && !pRow->IsHidden());
 
@@ -1337,7 +1364,7 @@ PropertyTree2::CFormWidget::FormRow* CFormWidget::ModelToFormRow(const CRowModel
 
 	//Because of hidden rows, the index of the form row is either at the index or before. Start at index and work our way back to 0.
 	auto beginIt = index > m_rows.size() ? m_rows.rbegin() : m_rows.rbegin() + (m_rows.size() - index - 1);
-	auto rowsIterator = std::find_if(beginIt, m_rows.rend(), [&](const FormRow& formRow) { return formRow.m_pModel == pRow; });
+	auto rowsIterator = std::find_if(beginIt, m_rows.rend(), [&](const SFormRow& formRow) { return formRow.m_pModel == pRow; });
 	if (rowsIterator != m_rows.rend())
 	{
 		return &(*rowsIterator);
@@ -1348,7 +1375,7 @@ PropertyTree2::CFormWidget::FormRow* CFormWidget::ModelToFormRow(const CRowModel
 	}
 }
 
-PropertyTree2::CFormWidget::FormRow* CFormWidget::RowAtPos(const QPoint& position)
+PropertyTree2::CFormWidget::SFormRow* CFormWidget::RowAtPos(const QPoint& position)
 {
 	//Binary search through the rows, using only vertical position
 	int low = 0;
@@ -1357,7 +1384,7 @@ PropertyTree2::CFormWidget::FormRow* CFormWidget::RowAtPos(const QPoint& positio
 	while (low <= high)
 	{
 		int mid = (low + high) / 2;
-		FormRow& row = m_rows[mid];
+		SFormRow& row = m_rows[mid];
 
 		if (position.y() < row.rowRect.top())
 		{
@@ -1389,7 +1416,7 @@ int CFormWidget::InsertionIndexAtPos(const QPoint& position, int tolerancePx)
 
 	int index = -1;
 
-	FormRow* pRow = RowAtPos(position);
+	SFormRow* pRow = RowAtPos(position);
 	if (pRow)
 	{
 		if (!pRow->rowRect.contains(QPoint(position.x(), position.y() - tolerancePx)))
@@ -1405,14 +1432,14 @@ int CFormWidget::InsertionIndexAtPos(const QPoint& position, int tolerancePx)
 	}
 	else   //Current position is in between rows
 	{
-		FormRow* pRowAbove = RowAtPos(QPoint(position.x(), position.y() - m_spacing));
+		SFormRow* pRowAbove = RowAtPos(QPoint(position.x(), position.y() - m_spacing));
 		if (pRowAbove)
 		{
 			index = RowIndex(pRowAbove) + 1;
 		}
 		else
 		{
-			FormRow* pRowBelow = RowAtPos(QPoint(position.x(), position.y() + m_spacing));
+			SFormRow* pRowBelow = RowAtPos(QPoint(position.x(), position.y() + m_spacing));
 			if (pRowBelow)
 			{
 				index = RowIndex(pRowBelow);
@@ -1445,7 +1472,7 @@ int CFormWidget::InsertionIndexAtPos(const QPoint& position, int tolerancePx)
 	return index;
 }
 
-int CFormWidget::RowIndex(const FormRow* pRow)
+int CFormWidget::RowIndex(const SFormRow* pRow)
 {
 	return int(pRow - &(*m_rows.begin()));
 }
@@ -1469,7 +1496,7 @@ void CFormWidget::OnActiveRowChanged(const CRowModel* pNewActiveRow)
 	}
 
 	//Recurse to all children
-	for (FormRow& formRow : m_rows)
+	for (SFormRow& formRow : m_rows)
 	{
 		if (formRow.IsExpanded())
 		{
@@ -1500,7 +1527,7 @@ void CFormWidget::UpdateActiveRow(const QPoint& cursorPos)
 		return;
 	}
 
-	FormRow* pFormRow = RowAtPos(cursorPos);
+	SFormRow* pFormRow = RowAtPos(cursorPos);
 	SetActiveRow(pFormRow);
 	if (pFormRow)
 	{
@@ -1512,7 +1539,7 @@ void CFormWidget::UpdateActiveRow(const QPoint& cursorPos)
 	}
 }
 
-void CFormWidget::SetActiveRow(FormRow* pRow)
+void CFormWidget::SetActiveRow(SFormRow* pRow)
 {
 	if (pRow != m_pActiveRow)
 	{
@@ -1526,18 +1553,18 @@ void CFormWidget::SetActiveRow(FormRow* pRow)
 CInlineWidgetBox::CInlineWidgetBox(CFormWidget* pParent)
 	: QWidget(pParent)
 {
-	QHBoxLayout* pHBoxLayout = new QHBoxLayout();
-	pHBoxLayout->setMargin(0);
-	pHBoxLayout->setSpacing(pParent->GetSpacing());
-	setLayout(pHBoxLayout);
+	m_pHBoxLayout = new QHBoxLayout();
+	m_pHBoxLayout->setMargin(0);
+	m_pHBoxLayout->setSpacing(pParent->GetSpacing());
+	setLayout(m_pHBoxLayout);
 	setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
 }
 
 void CInlineWidgetBox::AddWidget(QWidget* pWidget, QPropertyTree2* pPropertyTree)
 {
 	pWidget->setParent(this);
-	qobject_cast<QHBoxLayout*>(layout())->addWidget(pWidget);
 	pWidget->setVisible(true);
+	m_pHBoxLayout->addWidget(pWidget);
 
 	IPropertyTreeWidget* pPropertyTreeWidget = qobject_cast<IPropertyTreeWidget*>(pWidget);
 	if (pPropertyTreeWidget)
@@ -1551,9 +1578,9 @@ void CInlineWidgetBox::AddWidget(QWidget* pWidget, QPropertyTree2* pPropertyTree
 
 void CInlineWidgetBox::ReleaseWidgets(QPropertyTree2* pPropertyTree)
 {
-	while (layout()->count() > 0)
+	while (m_pHBoxLayout->count() > 0)
 	{
-		QLayoutItem* pItem = layout()->takeAt(layout()->count() - 1);
+		QLayoutItem* pItem = m_pHBoxLayout->takeAt(layout()->count() - 1);
 		QWidget* pItemWidget = pItem->widget();
 		if (pItemWidget)
 		{

@@ -445,6 +445,7 @@ void CPhysPullTool::SyncRagdollConstraintsMask(IPhysicalEntity *pent)
 
 void CPhysPullTool::SyncCharacterToRagdoll(IPhysicalEntity *pentPhys)
 {
+	CRY_DISABLE_WARN_UNUSED_VARIABLES();
 	IEntity *pent = (IEntity*)pentPhys->GetForeignData(PHYS_FOREIGN_ID_ENTITY);
 	for(int i = 0; i < pent->GetSlotCount(); i++)	if (pent->GetCharacter(i))
 	{
@@ -455,6 +456,7 @@ void CPhysPullTool::SyncCharacterToRagdoll(IPhysicalEntity *pentPhys)
 			break;
 		}
 	}
+	CRY_RESTORE_WARN_UNUSED_VARIABLES();
 }
 
 void CPhysPullTool::Display(SDisplayContext& dc)

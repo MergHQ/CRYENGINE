@@ -70,6 +70,7 @@ public:
 	virtual string GetDisplayName() const override { return "Edit Shape"; }
 	// Overrides from CEditTool
 	bool           MouseCallback(CViewport* view, EMouseEvent event, CPoint& point, int flags);
+	bool           SnapSelectedPointToTerrainOrGeometry(CViewport* pView, CPoint& point);
 
 	virtual void   SetUserData(const char* key, void* userData);
 
@@ -254,10 +255,15 @@ void CEditShapeTool::OnShapePropertyChange(const CBaseObject* pObject, const COb
 	}
 }
 
-bool CEditShapeTool::MouseCallback(CViewport* view, EMouseEvent event, CPoint& point, int flags)
+bool CEditShapeTool::MouseCallback(CViewport* pView, EMouseEvent event, CPoint& point, int flags)
 {
 	if (!m_shape)
 		return false;
+
+	if ((event == eMouseLDown) && (flags & MK_CONTROL) && (flags & MK_SHIFT))
+	{
+		return SnapSelectedPointToTerrainOrGeometry(pView, point);
+	}
 
 	if (event == eMouseLDown)
 	{
@@ -268,37 +274,24 @@ bool CEditShapeTool::MouseCallback(CViewport* view, EMouseEvent event, CPoint& p
 	{
 		const Matrix34& shapeTM = m_shape->GetWorldTM();
 
-		/*
-		   float fShapeCloseDistance = SHAPE_CLOSE_DISTANCE;
-		   Vec3 pos = view->ViewToWorld( point );
-		   if (pos.x == 0 && pos.y == 0 && pos.z == 0)
-		   {
-		   // Find closest point on the shape.
-		   fShapeCloseDistance = SHAPE_CLOSE_DISTANCE * view->GetScreenScaleFactor(pos) * 0.01f;
-		   }
-		   else
-		   fShapeCloseDistance = SHAPE_CLOSE_DISTANCE * view->GetScreenScaleFactor(pos) * 0.01f;
-		 */
-
-		float dist;
-
 		Vec3 raySrc, rayDir;
-		view->ViewToWorldRay(point, raySrc, rayDir);
+		pView->ViewToWorldRay(point, raySrc, rayDir);
 
 		// Find closest point on the shape.
 		int p1, p2;
+		float dist;
 		Vec3 intPnt;
 		m_shape->GetNearestEdge(raySrc, rayDir, p1, p2, dist, intPnt);
 
-		float fShapeCloseDistance = SHAPE_CLOSE_DISTANCE * view->GetScreenScaleFactor(intPnt) * 0.01f;
+		float fShapeCloseDistance = SHAPE_CLOSE_DISTANCE * pView->GetScreenScaleFactor(intPnt) * 0.01f;
 
 		if ((flags & MK_CONTROL) && !m_modifying)
 		{
 			// If control we are editing edges..
-			if (p1 >= 0 && p2 >= 0 && dist < fShapeCloseDistance + view->GetSelectionTolerance())
+			if (p1 >= 0 && p2 >= 0 && dist < fShapeCloseDistance + pView->GetSelectionTolerance())
 			{
 				// Cursor near one of edited shape edges.
-				view->ResetCursor();
+				pView->ResetCursor();
 				if (event == eMouseLDown)
 				{
 					m_modifying = true;
@@ -323,14 +316,14 @@ bool CEditShapeTool::MouseCallback(CViewport* view, EMouseEvent event, CPoint& p
 					Matrix34 tm;
 					tm.SetIdentity();
 					tm.SetTranslation(m_pointPos);
-					view->SetConstructionMatrix(tm);
+					pView->SetConstructionMatrix(tm);
 				}
 			}
 			return true;
 		}
 
 		int index = m_shape->GetNearestPoint(raySrc, rayDir, dist);
-		if (dist > fShapeCloseDistance + view->GetSelectionTolerance())
+		if (dist > fShapeCloseDistance + pView->GetSelectionTolerance())
 			index = -1;
 		bool hitPoint(index != -1);
 
@@ -350,12 +343,12 @@ bool CEditShapeTool::MouseCallback(CViewport* view, EMouseEvent event, CPoint& p
 					if (GetIEditorImpl()->GetIUndoManager()->IsUndoRecording())
 						m_shape->StoreUndo("Move Point");
 
-					// Set construction plance for view.
+					// Set construction plane for view.
 					m_pointPos = shapeTM.TransformPoint(m_shape->GetPoint(index));
 					Matrix34 tm;
 					tm.SetIdentity();
 					tm.SetTranslation(m_pointPos);
-					view->SetConstructionMatrix(tm);
+					pView->SetConstructionMatrix(tm);
 				}
 			}
 
@@ -380,7 +373,7 @@ bool CEditShapeTool::MouseCallback(CViewport* view, EMouseEvent event, CPoint& p
 			}
 
 			if (hitPoint)
-				view->SetCurrentCursor(STD_CURSOR_HIT);
+				pView->SetCurrentCursor(STD_CURSOR_HIT);
 		}
 		else
 		{
@@ -389,7 +382,7 @@ bool CEditShapeTool::MouseCallback(CViewport* view, EMouseEvent event, CPoint& p
 				// Missed a point, deselect all.
 				m_shape->SelectPoint(-1);
 			}
-			view->ResetCursor();
+			pView->ResetCursor();
 		}
 
 		if (m_modifying && event == eMouseLUp)
@@ -406,9 +399,9 @@ bool CEditShapeTool::MouseCallback(CViewport* view, EMouseEvent event, CPoint& p
 		if (m_modifying && event == eMouseMove)
 		{
 			// Move selected point point.
-			Vec3 p1 = view->MapViewToCP(m_mouseDownPos);
-			Vec3 p2 = view->MapViewToCP(point);
-			Vec3 v = view->GetCPVector(p1, p2);
+			Vec3 p1 = pView->MapViewToCP(m_mouseDownPos);
+			Vec3 p2 = pView->MapViewToCP(point);
+			Vec3 v = pView->GetCPVector(p1, p2);
 
 			if (m_shape->GetSelectedPoint() >= 0)
 			{
@@ -417,7 +410,7 @@ bool CEditShapeTool::MouseCallback(CViewport* view, EMouseEvent event, CPoint& p
 				if (gSnappingPreferences.IsSnapToTerrainEnabled())
 				{
 					// Keep height.
-					newp = view->MapViewToCP(point);
+					newp = pView->MapViewToCP(point);
 					//float z = wp.z - GetIEditorImpl()->GetTerrainElevation(wp.x,wp.y);
 					//newp.z = GetIEditorImpl()->GetTerrainElevation(newp.x,newp.y) + z;
 					//newp.z = GetIEditorImpl()->GetTerrainElevation(newp.x,newp.y) + SHAPE_Z_OFFSET;
@@ -426,7 +419,7 @@ bool CEditShapeTool::MouseCallback(CViewport* view, EMouseEvent event, CPoint& p
 
 				if (newp.x != 0 && newp.y != 0 && newp.z != 0)
 				{
-					newp = view->SnapToGrid(newp);
+					newp = pView->SnapToGrid(newp);
 
 					// Put newp into local space of shape.
 					Matrix34 invShapeTM = shapeTM;
@@ -437,18 +430,43 @@ bool CEditShapeTool::MouseCallback(CViewport* view, EMouseEvent event, CPoint& p
 					m_shape->UpdatePrefab();
 				}
 
-				view->SetCurrentCursor(STD_CURSOR_MOVE);
+				pView->SetCurrentCursor(STD_CURSOR_MOVE);
 			}
 		}
-
-		/*
-		   Vec3 raySrc,rayDir;
-		   view->ViewToWorldRay( point,raySrc,rayDir );
-		   CBaseObject *hitObj = GetIEditorImpl()->GetObjectManager()->HitTest( raySrc,rayDir,view->GetSelectionTolerance() );
-		 */
 		return true;
 	}
 	return false;
+}
+
+bool CEditShapeTool::SnapSelectedPointToTerrainOrGeometry(CViewport* pView, CPoint& point)
+{
+	CRY_ASSERT(m_shape);
+
+	const int pointIndex = m_shape->GetSelectedPoint();
+	if (pointIndex == -1)
+	{
+		return false;
+	}
+
+	Vec3 raySrc, rayDir;
+	pView->ViewToWorldRay(point, raySrc, rayDir);
+
+	IPhysicalWorld* pWorld = GetIEditor()->GetSystem()->GetIPhysicalWorld();
+	CRY_ASSERT(pWorld);
+
+	ray_hit hit{};
+	// rwi_stop_at_pierceable flag makes sure that all ray hits are treated as solid regardless of surface type pierceability settings
+	int col = pWorld->RayWorldIntersection(raySrc, rayDir * 1000.0f, ent_all, rwi_stop_at_pierceable, &hit, 1);
+	if (col == 0)
+	{
+		return false;
+	}
+
+	CUndo undo("Snap selected Point");
+	m_shape->StoreUndo("Snap selected Point");
+	m_shape->SetPoint(pointIndex, hit.pt - m_shape->GetWorldPos());
+
+	return true;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -4392,20 +4410,24 @@ void CNavigationAreaObject::OnNavigationEvent(const INavigationSystem::ENavigati
 {
 	switch (event)
 	{
-	case INavigationSystem::MeshReloaded:
+	case INavigationSystem::ENavigationEvent::MeshReloaded:
 		ReregisterNavigationAreaAfterReload();
 		RelinkWithMesh(eUpdateGameArea);
 		break;
-	case INavigationSystem::MeshReloadedAfterExporting:
+	case INavigationSystem::ENavigationEvent::MeshReloadedAfterExporting:
 		ReregisterNavigationAreaAfterReload();
 		RelinkWithMesh(eRelinkOnly);
 		break;
-	case INavigationSystem::NavigationCleared:
+	case INavigationSystem::ENavigationEvent::NavigationCleared:
 		ReregisterNavigationAreaAfterReload();
 		RelinkWithMesh(eUpdateGameArea);
 		break;
+	case INavigationSystem::ENavigationEvent::WorkingStateSetToIdle:
+	case INavigationSystem::ENavigationEvent::WorkingStateSetToWorking:
+		// No need to handle these
+		break;
 	default:
-		CRY_ASSERT(0);
+		CRY_ASSERT_MESSAGE(false, "Unhandled ENavigationEvent type");
 		break;
 	}
 }
@@ -4453,7 +4475,7 @@ void CNavigationAreaObject::UpdateMeshes()
 			{
 				NavigationAgentTypeID agentTypeID = aiSystem->GetNavigationSystem()->GetAgentTypeID(i);
 
-				INavigationSystem::CreateMeshParams params; // TODO: expose at least the tile size
+				INavigationSystem::SCreateMeshParams params; // TODO: expose at least the tile size
 				m_meshes[i] = aiSystem->GetNavigationSystem()->CreateMeshForVolumeAndUpdate(GetName().GetString(), agentTypeID, params, m_volume);
 			}
 			else if (!mv_agentTypeVars[i] && meshID)

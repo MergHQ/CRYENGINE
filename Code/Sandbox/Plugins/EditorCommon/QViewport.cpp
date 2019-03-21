@@ -317,6 +317,11 @@ bool QViewport::CreateRenderContext()
 
 		m_displayContextKey = gEnv->pRenderer->CreateSwapChainBackedContext(desc);
 
+		m_graphicsPipelineDesc.type = EGraphicsPipelineType::Minimum;
+		m_graphicsPipelineDesc.shaderFlags = SHDF_SECONDARY_VIEWPORT | SHDF_ALLOW_SKY | SHDF_ALLOWHDR | SHDF_FORWARD_MINIMAL;
+
+		m_graphicsPipelineKey = gEnv->pRenderer->CreateGraphicsPipeline(m_graphicsPipelineDesc);
+
 		m_renderContextCreated = true;
 		m_creatingRenderContext = false;
 
@@ -333,9 +338,8 @@ void QViewport::DestroyRenderContext()
 	// Destroy render context.
 	if (m_env->pRenderer && m_renderContextCreated)
 	{
-		// Do not delete primary context.
-		if (m_displayContextKey != static_cast<HWND>(m_env->pRenderer->GetHWND()))
-			m_env->pRenderer->DeleteContext(m_displayContextKey);
+		m_env->pRenderer->DeleteContext(m_displayContextKey);
+		m_env->pRenderer->DeleteGraphicsPipeline(m_graphicsPipelineKey);
 
 		m_renderContextCreated = false;
 	}
@@ -783,7 +787,7 @@ void QViewport::Render(SDisplayContext& context)
 	// wireframe mode
 	CScopedWireFrameMode scopedWireFrame(m_env->pRenderer, m_settings->rendering.wireframe ? R_WIREFRAME_MODE : R_SOLID_MODE);
 
-	SRenderingPassInfo passInfo = SRenderingPassInfo::CreateGeneralPassRenderingInfo(*m_camera, SRenderingPassInfo::DEFAULT_FLAGS, true, context.GetDisplayContextKey());
+	SRenderingPassInfo passInfo = SRenderingPassInfo::CreateGeneralPassRenderingInfo(m_graphicsPipelineKey, *m_camera, SRenderingPassInfo::DEFAULT_FLAGS, true, context.GetDisplayContextKey());
 
 	if (m_settings->background.useGradient)
 	{
@@ -809,7 +813,7 @@ void QViewport::Render(SDisplayContext& context)
 		aux->DrawTriangle(lb, bottomColor, rb, bottomColor, lt, topColor);
 	}
 
-	passInfo.GetIRenderView()->SetShaderRenderingFlags(SHDF_ALLOWHDR | SHDF_SECONDARY_VIEWPORT);
+	// In EF_StartEf(), usage mode is switched to CRenderView::eUsageModeWriting. Thus, render item lists are added below.
 	m_env->pRenderer->EF_StartEf(passInfo);
 
 	SRendParams rp;
@@ -875,7 +879,12 @@ void QViewport::Render(SDisplayContext& context)
 	m_gizmoManager.Display(context);
 
 	m_env->pSystem->GetIPhysicsDebugRenderer()->Flush(m_lastFrameTime);
-	m_env->pRenderer->EF_EndEf3D(-1, -1, passInfo);
+
+	for (size_t i = 0; i < m_consumers.size(); ++i)
+		m_consumers[i]->OnViewportRender(rc);
+
+	// In EF_EndEf3D(), usage mode is switched to CRenderView::eUsageModeWritingDone - indicating the end of adding render item lists.
+	m_env->pRenderer->EF_EndEf3D(-1, -1, passInfo, m_graphicsPipelineDesc.shaderFlags);
 
 	if (m_settings->grid.showGrid)
 	{
@@ -896,9 +905,6 @@ void QViewport::Render(SDisplayContext& context)
 		DrawOrigin(50, m_height - 50, 20.0f, m_camera->GetMatrix());
 		aux->SetOrthographicProjection(false);
 	}
-
-	for (size_t i = 0; i < m_consumers.size(); ++i)
-		m_consumers[i]->OnViewportRender(rc);
 
 	aux->Submit();
 	aux->SetRenderFlags(oldFlags);
@@ -931,10 +937,10 @@ void QViewport::RenderInternal()
 		CCamera camera = *m_camera;
 		m_pAuxGeom = gEnv->pRenderer->GetOrCreateIRenderAuxGeom(&camera);
 
-		m_env->pSystem->RenderBegin(context.GetDisplayContextKey());
+		m_env->pSystem->RenderBegin(m_displayContextKey, m_graphicsPipelineKey);
 
 		// Sets the current viewport's aux geometry display context
-		m_pAuxGeom->SetCurrentDisplayContext(context.GetDisplayContextKey());
+		m_pAuxGeom->SetCurrentDisplayContext(m_displayContextKey);
 
 		// Do the pre-rendering. This call updates the member camera (applying transformation to the camera).
 		PreRender();
@@ -1151,7 +1157,7 @@ void QViewport::resizeEvent(QResizeEvent* ev)
 	m_height = cy;
 
 	m_env->pSystem->GetISystemEventDispatcher()->OnSystemEvent(ESYSTEM_EVENT_RESIZE, cx, cy);
-	gEnv->pRenderer->ResizeContext(m_displayContextKey, m_width, m_height);
+	gEnv->pRenderer->ResizePipelineAndContext(m_graphicsPipelineKey, m_displayContextKey, m_width, m_height);
 
 	SignalUpdate();
 }

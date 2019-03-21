@@ -7,7 +7,9 @@
 class CSkyStage : public CGraphicsPipelineStage
 {
 public:
-	CSkyStage();
+	static const EGraphicsPipelineStage StageID = eStage_Sky;
+
+	CSkyStage(CGraphicsPipeline& graphicsPipeline);
 
 	void Init() final;
 	void Update() final;

@@ -307,7 +307,7 @@ struct SAudioSwitchKey : public STrackKey
 		STrackKey::Serialize(ar);
 
 		ar(Serialization::AudioSwitch(m_audioSwitchName), "switchName", "Switch Name");
-		ar(Serialization::AudioSwitchState(m_audioSwitchStateName), "switchState", "Switch State");
+		ar(Serialization::AudioState(m_audioSwitchStateName), "switchState", "Switch State");
 
 		if (ar.isInput())
 		{

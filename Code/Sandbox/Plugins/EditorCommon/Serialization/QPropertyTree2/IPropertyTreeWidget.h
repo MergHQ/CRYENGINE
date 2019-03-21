@@ -1,5 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 #pragma once
+#include "RecursionLoopGuard.h"
 
 #include <CryCore/smartptr.h>
 #include <CrySerialization/yasli/Serializer.h>
@@ -85,6 +86,11 @@ protected:
 	//!Signals the property tree that the row's value has changed, triggers serialization and update
 	void OnChanged()
 	{
+		if (m_ignoreChangeSignals)
+		{
+			return;
+		}
+
 		if (m_isContinuousChange)
 		{
 			//this is when a continuous change is confirmed, this mean that the pre event was already called
@@ -103,6 +109,11 @@ protected:
 	//!Signals the property tree that the row's value change has been discarded, triggers serialization and update
 	void OnDiscarded()
 	{
+		if (m_ignoreChangeSignals)
+		{
+			return;
+		}
+
 		//this is when a continuous change is cancelled
 		signalDiscarded(m_rowModel);
 		m_isContinuousChange = false;
@@ -112,6 +123,11 @@ protected:
 	//!This is useful for i.e. dragging operations. Once the change is complete OnChanged() should be called
 	void OnContinuousChanged()
 	{
+		if (m_ignoreChangeSignals)
+		{
+			return;
+		}
+
 		if (m_isContinuousChange)
 		{
 			signalContinuousChanged(m_rowModel);
@@ -130,6 +146,10 @@ protected:
 
 	PropertyTree2::CRowModel* m_rowModel;
 
+protected:
+	//!Ignore change signals received by the widget
+	bool m_ignoreChangeSignals = false;
+
 private:
 	bool m_isContinuousChange = false;
 };
@@ -146,7 +166,7 @@ public:
 	{
 		virtual Product* Create() = 0;
 
-		virtual void     AddToPool(Product* pProduct) = 0;
+		virtual void     Release(Product* pProduct) = 0;
 	};
 
 	template<typename T>
@@ -169,7 +189,7 @@ public:
 			return new T();
 		}
 
-		virtual void AddToPool(Product* pProduct) override
+		virtual void Release(Product* pProduct) override
 		{
 			pProduct->setParent(nullptr);
 			m_productPool.push(pProduct);

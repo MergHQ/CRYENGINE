@@ -7,11 +7,11 @@
 #include "DialogCAF.h"
 #include "ImporterUtil.h"
 
-// REMOVEME
 #include <CryAnimation/ICryAnimation.h>
 
 // EditorCommon
 #include <AssetSystem/AssetManager.h>
+#include <Commands/QCommandAction.h>
 #include <EditorFramework/Events.h>
 #include <QtViewPane.h>
 

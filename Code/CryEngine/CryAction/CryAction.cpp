@@ -3518,12 +3518,12 @@ ELoadGameResult CCryAction::LoadGame(const char* path, bool quick, bool ignoreDe
 IGameFramework::TSaveGameName CCryAction::CreateSaveGameName()
 {
 	//design wants to have different, more readable names for the savegames generated
-	int id = 0;
 
 	TSaveGameName saveGameName;
 #if CRY_PLATFORM_DURANGO
 	saveGameName = CRY_SAVEGAME_FILENAME;
 #else
+	int id = 0;
 	//saves a running savegame id which is displayed with the savegame name
 	if (IPlayerProfileManager* m_pPlayerProfileManager = gEnv->pGameFramework->GetIPlayerProfileManager())
 	{

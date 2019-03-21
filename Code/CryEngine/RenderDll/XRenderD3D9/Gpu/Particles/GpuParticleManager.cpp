@@ -32,7 +32,7 @@ IParticleComponentRuntime* CManager::CreateParticleContainer(const SComponentPar
 
 void CManager::RenderThreadUpdate(CRenderView* pRenderView)
 {
-	const bool bAsynchronousCompute = CRenderer::CV_r_D3D12AsynchronousCompute & BIT((eStage_ComputeParticles - eStage_FIRST_ASYNC_COMPUTE)) ? true : false;
+	const bool bAsynchronousCompute = CRenderer::CV_r_D3D12AsynchronousCompute& BIT((eStage_ComputeParticles - eStage_FIRST_ASYNC_COMPUTE)) ? true : false;
 	const bool bReadbackBoundingBox = CRenderer::CV_r_GpuParticlesConstantRadiusBoundingBoxes ? false : true;
 
 	if (!CRenderer::CV_r_GpuParticles)
@@ -74,7 +74,7 @@ void CManager::RenderThreadUpdate(CRenderView* pRenderView)
 		{
 			for (auto& pRuntime : GetReadRuntimes())
 			{
-				pRuntime->Initialize();
+				pRuntime->Initialize(pRenderView->GetGraphicsPipeline().get());
 			}
 		}
 
@@ -168,10 +168,10 @@ void CManager::RenderThreadPostUpdate(CRenderView* pRenderView)
 	}
 }
 
-gpu::CBitonicSort* CManager::GetBitonicSort()
+gpu::CBitonicSort* CManager::GetBitonicSort(CGraphicsPipeline* pGraphicsPipeline)
 {
 	if (!m_pBitonicSort)
-		m_pBitonicSort = std::unique_ptr<gpu::CBitonicSort>(new gpu::CBitonicSort());
+		m_pBitonicSort = std::unique_ptr<gpu::CBitonicSort>(new gpu::CBitonicSort(pGraphicsPipeline));
 	return m_pBitonicSort.get();
 }
 

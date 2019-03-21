@@ -4,7 +4,6 @@
 
 #include "Common.h"
 #include <EditorFramework/Editor.h>
-#include <IEditor.h>
 #include <CrySystem/ISystem.h>
 
 class QAction;
@@ -17,12 +16,13 @@ namespace ACE
 class CSystemControlsWidget;
 class CPropertiesWidget;
 class CMiddlewareDataWidget;
+class CContextWidget;
 class CAsset;
 class CControl;
 class CFileMonitorSystem;
 class CFileMonitorMiddleware;
 
-class CMainWindow final : public CDockableEditor, public IEditorNotifyListener, public ISystemEventListener
+class CMainWindow final : public CDockableEditor, public ISystemEventListener
 {
 	Q_OBJECT
 
@@ -37,12 +37,8 @@ public:
 	virtual ~CMainWindow() override;
 
 	// CDockableEditor
-	virtual char const* GetEditorName() const override { return "Audio Controls Editor"; }
+	virtual char const* GetEditorName() const override { return g_szEditorName; }
 	// ~CDockableEditor
-
-	// IEditorNotifyListener
-	virtual void OnEditorNotifyEvent(EEditorNotifyEvent event) override;
-	// ~IEditorNotifyListener
 
 	// IPane
 	virtual IViewPaneClass::EDockingDirection GetDockingDirection() const override { return IViewPaneClass::DOCK_FLOAT; }
@@ -55,6 +51,7 @@ protected slots:
 	void OnSystemControlsWidgetDestruction(QObject* const pObject);
 	void OnPropertiesWidgetDestruction(QObject* const pObject);
 	void OnMiddlewareDataWidgetDestruction(QObject* const pObject);
+	void OnContextWidgetDestruction(QObject* const pObject);
 
 private slots:
 
@@ -83,8 +80,6 @@ private:
 	void                   Reload(bool const hasImplChanged = false);
 	void                   Save();
 	void                   SaveBeforeImplChange();
-	void                   CheckErrorMask();
-	void                   UpdateAudioSystemData();
 	void                   ReloadSystemData();
 	void                   RefreshAudioSystem();
 	bool                   TryClose();
@@ -94,6 +89,7 @@ private:
 	CSystemControlsWidget* CreateSystemControlsWidget();
 	CPropertiesWidget*     CreatePropertiesWidget();
 	CMiddlewareDataWidget* CreateMiddlewareDataWidget();
+	CContextWidget*        CreateContextWidget();
 
 	QToolBar*                 m_pToolBar;
 	QAction*                  m_pSaveAction;

@@ -20,6 +20,7 @@ public:
 		eZPassMode_DiscardingZPrePass = 3,
 		eZPassMode_FullZPrePass       = 4
 	};
+	static const EGraphicsPipelineStage StageID = eStage_SceneGBuffer;
 
 	enum EPerPassTexture
 	{
@@ -42,7 +43,7 @@ public:
 		ePass_MicroGBufferFill = 3,
 	};
 
-	CSceneGBufferStage();
+	CSceneGBufferStage(CGraphicsPipeline& graphicsPipeline);
 
 	void Init() final;
 	void Update() final;

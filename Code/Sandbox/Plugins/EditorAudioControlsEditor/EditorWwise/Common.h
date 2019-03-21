@@ -12,8 +12,8 @@ namespace Impl
 {
 namespace Wwise
 {
-extern CryAudio::Impl::Wwise::SPoolSizes g_connections;
-extern Platforms g_platforms;
+using ConnectionsByContext = std::map<CryAudio::ContextId, CryAudio::Impl::Wwise::SPoolSizes>;
+extern ConnectionsByContext g_connections;
 
 static CryIcon s_errorIcon;
 static CryIcon s_auxBusIcon;

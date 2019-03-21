@@ -1033,8 +1033,8 @@ public:
 
 	virtual void AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams) override
 	{
-		pComponent->OnPreRun.add(this);
 		pComponent->CullSpawners.add(this);
+		pComponent->InitSpawners.add(this);
 		pComponent->GetDynamicData.add(this);
 		pComponent->KillParticles.add(this);
 		pComponent->SpawnParticles.add(this);
@@ -1073,15 +1073,28 @@ public:
 	#endif
 	}
 
-	virtual void OnPreRun(CParticleComponentRuntime& runtime) override
+	virtual void CullSpawners(CParticleComponentRuntime& runtime, TVarArray<SSpawnerDesc>& spawners) override
 	{
-		CParticleContainer& container = runtime.GetContainer();
+		// Allow only one spawner per component
+		uint numAllowed = 1 - runtime.Container(EDD_Spawner).Size();
+		if (numAllowed < spawners.size())
+			spawners.resize(numAllowed);
+	}
+
+	virtual void InitSpawners(CParticleComponentRuntime& runtime) override
+	{
+		// Need to compute average final velocity and travel for particles.
+		// Run particles for full lifetime in a temporary runtime
+		CParticleComponentRuntime runtimeTemp(runtime.GetEmitter(), runtime.GetComponent());
+		runtimeTemp.RunParticles(32, runtime.ComponentParams().m_maxParticleLife);
+
+		CParticleContainer& container = runtimeTemp.GetContainer();
 		auto positions = container.IStream(EPVF_Position);
 		auto positionsPrev = container.IStream(EPVF_PositionPrev, runtime.GetEmitter()->GetLocation().t);
 		auto velocities = container.IStream(EPVF_Velocity);
 
 		Vec3 velocityFinal(0), travel(0);
-		for (auto particleId : runtime.FullRange())
+		for (auto particleId : runtimeTemp.FullRange())
 		{
 			velocityFinal += velocities.Load(particleId);
 			travel += positions.Load(particleId) - positionsPrev.SafeLoad(particleId);
@@ -1089,17 +1102,8 @@ public:
 		velocityFinal /= (float)container.GetNumParticles();
 		travel /= (float)container.GetNumParticles();
 
-		CRY_ASSERT(runtime.Container(EDD_Spawner).Size() == 1);
-		runtime.IOStream(ESVF_VelocityFinal).Store(0, velocityFinal);
-		runtime.IOStream(ESVF_Travel).Store(0, travel);
-	}
-
-	virtual void CullSpawners(CParticleComponentRuntime& runtime, TVarArray<SSpawnerDesc>& spawners) override
-	{
-		// Allow only one spawner
-		uint numAllowed = 1 - runtime.Container(EDD_Spawner).Size();
-		if (numAllowed < spawners.size())
-			spawners.resize(numAllowed);
+		runtime.FillData(ESVF_VelocityFinal, velocityFinal, runtime.SpawnedRange(EDD_Spawner));
+		runtime.FillData(ESVF_Travel, travel, runtime.SpawnedRange(EDD_Spawner));
 	}
 
 	virtual void GetDynamicData(const CParticleComponentRuntime& runtime, EParticleDataType type, void* data, EDataDomain domain, SUpdateRange range) override
@@ -1161,15 +1165,15 @@ public:
 		Matrix34v toPrev = m_camData.fromWorldPrev * Matrix34::CreateTranslationMat(-travelPrev) * m_camData.toWorld;
 		Matrix34v toWorld = m_camData.toWorld;
 
-		// Determine normal particle count from number previously spawned
 		CParticleContainer& container = runtime.GetContainer();
-		uint numSpawned = container.NumSpawned();
-		uint numParticles = uint(numSpawned * runtime.ComponentParams().m_maxParticleLife / runtime.DeltaTime());
+		float deltaTime = runtime.DeltaTime();
+		int particlesTotal, particlesPerFrame;
+		runtime.GetMaxParticleCounts(particlesTotal, particlesPerFrame, rcp(deltaTime), rcp(deltaTime));
 
 		// Randomly generate positions in current sector; only those not in previous sector spawn as particles
 		THeapArray<Vec3> newPositions(runtime.MemHeap());
-		newPositions.reserve(numParticles);
-		for (uint i = CRY_PFX2_GROUP_ALIGN(numParticles); i > 0; i -= CRY_PFX2_GROUP_STRIDE)
+		newPositions.reserve(particlesTotal);
+		for (uint i = CRY_PFX2_GROUP_ALIGN(particlesTotal); i > 0; i -= CRY_PFX2_GROUP_STRIDE)
 		{
 			Vec3v posCam = RandomSector<floatv>(runtime.ChaosV());
 			Vec3v posCamPrev = toPrev * posCam;
@@ -1184,7 +1188,7 @@ public:
 		if (newPositions.size())
 		{
 			const float life = runtime.ComponentParams().m_maxParticleLife;
-			float fracNewSpawned = runtime.DeltaTime() / life;
+			float fracNewSpawned = deltaTime / life;
 			SSpawnEntry spawn = {};
 			spawn.m_count = uint(newPositions.size() * (1.0f - fracNewSpawned));
 			spawn.m_ageBegin = 0.0f;
@@ -1214,6 +1218,8 @@ public:
 	{
 		CRY_PFX2_PROFILE_DETAIL;
 
+		if (runtime.Container(EDD_Spawner).Size() == 0)
+			return;
 		if (runtime.IsPreRunning())
 			return;
 
@@ -1230,7 +1236,6 @@ public:
 		auto velocities = container.IOStream(EPVF_Velocity);
 		auto normAges = container.IOStream(EPDT_NormalAge);
 
-		CRY_ASSERT(runtime.Container(EDD_Spawner).Size() == 1);
 		const Vec3 travel = runtime.IStream(ESVF_Travel).Load(0);
 		const Vec3v travelV = ToVec3v(travel);
 		const Vec3v velocityFinalV = ToVec3v(runtime.IStream(ESVF_VelocityFinal).Load(0));

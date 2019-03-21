@@ -192,8 +192,8 @@ public:
 
 	//////////////////////////////////////////////////////////////////////////
 
-	virtual void SetTimer(ISimpleEntityEventListener* pListener, EntityId id, const CryGUID& componentInstanceGUID, uint8 timerId, int timeInMilliseconds) final;
-	virtual void KillTimer(ISimpleEntityEventListener* pListener, uint8 timerId) final;
+	virtual void SetTimer(ISimpleEntityEventListener* pListener, EntityId id, const CryGUID& componentInstanceGUID, uint32 timerId, int timeInMilliseconds) final;
+	virtual void KillTimer(ISimpleEntityEventListener* pListener, uint32 timerId) final;
 	virtual void KillAllTimers(ISimpleEntityEventListener* pListener) final;
 
 	virtual void  Hide(bool bHide, EEntityHideFlags hideFlags = ENTITY_HIDE_NO_FLAG) final;

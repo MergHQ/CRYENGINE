@@ -488,10 +488,10 @@ public:
 	//! The timer will automatically be serialized to disk and restored for save games, assuming that a component with the same instance GUID exists at deserialization time.
 	//! \param timerId Timer ID, multiple timers with different IDs are possible.
 	//! \param timeInMilliseconds Timer timeout time in milliseconds.
-	void SetTimer(uint8 timerId, int timeInMilliseconds);
+	void SetTimer(uint32 timerId, int timeInMilliseconds);
 	//! Stops the specified timer for this component instance
 	//! \see ENTITY_EVENT_TIMER
-	void KillTimer(uint8 timerId);
+	void KillTimer(uint32 timerId);
 	//! Stops all timers for this component instance
 	//! \see ENTITY_EVENT_TIMER
 	void KillAllTimers();

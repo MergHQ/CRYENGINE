@@ -48,13 +48,14 @@ void CScreenSpaceObscuranceStage::Execute()
 
 	CShader* pShader = CShaderMan::s_shDeferredShading;
 
-	auto* heightMapAO = GetStdGraphicsPipeline().GetHeightMapAOStage();
+	auto* heightMapAO = m_graphicsPipeline.GetStage<CHeightMapAOStage>();
+	const bool bHMAOEnabled = (heightMapAO != nullptr) && (CRendererCVars::CV_r_HeightMapAO > 0);
 
 	// Obscurance generation
 	{
 		uint64 rtMask = 0;
 		rtMask |= CRenderer::CV_r_ssdoHalfRes ? g_HWSR_MaskBit[HWSR_SAMPLE0] : 0;
-		rtMask |= heightMapAO->GetHeightMapFrustum() ? g_HWSR_MaskBit[HWSR_SAMPLE1] : 0;
+		rtMask |= bHMAOEnabled ? g_HWSR_MaskBit[HWSR_SAMPLE1] : 0;
 		rtMask |= CRenderer::CV_r_DeferredShadingTiled == CTiledShadingStage::eDeferredMode_Disabled ? g_HWSR_MaskBit[HWSR_SAMPLE2] : 0;
 
 		// Extreme magnification as happening with small FOVs will cause banding issues with half-res depth
@@ -75,8 +76,11 @@ void CScreenSpaceObscuranceStage::Execute()
 		m_passObscurance.SetTexture(0, CRendererResources::s_ptexSceneNormalsMap);
 		m_passObscurance.SetTexture(1, CRendererResources::s_ptexLinearDepth);
 		m_passObscurance.SetTexture(5, CRendererResources::s_ptexLinearDepthScaled[bLowResOutput]);
-		m_passObscurance.SetTexture(11, heightMapAO->GetHeightMapAOScreenDepthTex());
-		m_passObscurance.SetTexture(12, heightMapAO->GetHeightMapAOTex());
+		if (bHMAOEnabled)
+		{
+			m_passObscurance.SetTexture(11, heightMapAO->GetHeightMapAOScreenDepthTex());
+			m_passObscurance.SetTexture(12, heightMapAO->GetHeightMapAOTex());
+		}
 		m_passObscurance.SetSampler(0, EDefaultSamplerStates::PointClamp);
 
 		m_passObscurance.SetTexture(3, CRendererResources::s_ptexAOVOJitter);
@@ -84,7 +88,7 @@ void CScreenSpaceObscuranceStage::Execute()
 
 		{
 			SRenderViewInfo viewInfo[CCamera::eEye_eCount];
-			size_t viewInfoCount = GetGraphicsPipeline().GenerateViewInfo(viewInfo);
+			size_t viewInfoCount = m_graphicsPipeline.GenerateViewInfo(viewInfo);
 
 			Vec4 viewSpaceParams[CCamera::eEye_eCount];
 			for (uint32 i = 0; i < viewInfoCount; i++)
@@ -93,23 +97,23 @@ void CScreenSpaceObscuranceStage::Execute()
 				float stereoShift = projMat.m20 * 2.0f;
 				viewSpaceParams[i] = Vec4(2.0f / projMat.m00, 2.0f / projMat.m11, (-1.0f + stereoShift) / projMat.m00, -1.0f / projMat.m11);
 			}
-			
+
 			auto constants = m_passObscurance.BeginTypedConstantUpdate<ObscuranceConstants>(eConstantBufferShaderSlot_PerPrimitive, EShaderStage_Pixel);
 
 			constants->screenSize = Vec4((float)CRendererResources::s_ptexLinearDepth->GetWidth(), (float)CRendererResources::s_ptexLinearDepth->GetHeight(), 1.0f / (float)CRendererResources__s_ptexSceneSpecular->GetWidth(), 1.0f / (float)CRendererResources__s_ptexSceneSpecular->GetHeight());
 			constants->nearFarClipDist = Vec4(viewInfo[0].nearClipPlane, viewInfo[0].farClipPlane, 0, 0);
-		
+
 			float radius = CRenderer::CV_r_ssdoRadius / viewInfo[0].farClipPlane;
-	#if defined(FEATURE_SVO_GI)
+#if defined(FEATURE_SVO_GI)
 			if (CSvoRenderer::GetInstance()->IsActive())
 				radius *= CSvoRenderer::GetInstance()->GetSsaoAmount();
-	#endif
+#endif
 			constants->ssdoParams = Vec4(radius * 0.5f * viewInfo[0].projMatrix.m00, radius * 0.5f * viewInfo[0].projMatrix.m11,
-																	 CRenderer::CV_r_ssdoRadiusMin, CRenderer::CV_r_ssdoRadiusMax);
+			                             CRenderer::CV_r_ssdoRadiusMin, CRenderer::CV_r_ssdoRadiusMax);
 
 			constants->viewSpaceParams = viewSpaceParams[0];
 
-			if (heightMapAO->GetHeightMapFrustum())
+			if (bHMAOEnabled)
 			{
 				assert(heightMapAO->GetHeightMapAOTex() && heightMapAO->GetHeightMapAOScreenDepthTex());
 				assert(heightMapAO->GetHeightMapAOTex()->GetWidth() == heightMapAO->GetHeightMapAOScreenDepthTex()->GetWidth() && heightMapAO->GetHeightMapAOTex()->GetHeight() == heightMapAO->GetHeightMapAOScreenDepthTex()->GetHeight());
@@ -126,7 +130,7 @@ void CScreenSpaceObscuranceStage::Execute()
 				constants.BeginStereoOverride(true);
 				constants->viewSpaceParams = viewSpaceParams[1];
 			}
-		
+
 			m_passObscurance.EndTypedConstantUpdate(constants);
 		}
 
