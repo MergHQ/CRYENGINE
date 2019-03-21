@@ -181,7 +181,6 @@ private:
 	ERenderPrimitiveType m_nPrimetiveType;
 	ERenderMeshType m_eType;
 	uint16 m_nFlags														: 8;          // FRM_
-  int16  m_nLod                             : 4;          // used for LOD debug visualization
   bool m_keepSysMesh                        : 1;
   bool m_nFlagsCachePos                     : 1;          // only checked for FSL_WRITE, which can be represented as a single bit
 	bool m_nFlagsCacheUVs											: 1;
@@ -483,8 +482,6 @@ public:
 	virtual void UnKeepSysMesh() final;
 	virtual void LockForThreadAccess() final;
 	virtual void UnLockForThreadAccess() final;
-
-	virtual void SetMeshLod(int nLod) final { m_nLod = nLod; }
 
 	virtual volatile int* SetAsyncUpdateState() final;
 	void CreateRemappedBoneIndicesPair(const uint pairGuid, const TRenderChunkArray& Chunks);

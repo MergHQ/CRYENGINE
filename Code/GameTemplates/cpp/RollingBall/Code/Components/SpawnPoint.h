@@ -1,6 +1,7 @@
+// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
+
 #pragma once
-#include <CryEntitySystem/IEntityComponent.h>
-#include <CryEntitySystem/IEntity.h>
+
 #include <CryEntitySystem/IEntitySystem.h>
 
 ////////////////////////////////////////////////////////

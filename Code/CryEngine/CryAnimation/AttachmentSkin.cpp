@@ -414,8 +414,6 @@ _smart_ptr<IRenderMesh> CAttachmentSKIN::CreateVertexAnimationRenderMesh(uint lo
 		, m_sSoftwareMeshName.c_str()
 		, eRMT_Transient);
 
-	m_pRenderMeshsSW[id]->SetMeshLod(lod);
-
 	TRenderChunkArray& chunks = pIStaticRenderMesh->GetChunks();
 	TRenderChunkArray  nchunks;
 	nchunks.resize(chunks.size());

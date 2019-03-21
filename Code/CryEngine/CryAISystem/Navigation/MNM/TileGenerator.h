@@ -803,7 +803,7 @@ protected:
 		}
 	}
 #else 
-	#define DebugAddNonWalkableReason(spanCoord, reason)
+	#define DebugAddNonWalkableReason(spanCoord, reason) {}
 #endif // DEBUG_MNM_GATHER_NONWALKABLE_REASONS
 
 	friend class CContourRenderer;
