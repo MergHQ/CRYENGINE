@@ -139,5 +139,6 @@ private:
 	uint32                               m_allocId;
 	uint16                               m_nThreadId;
 	uint8                                m_addedToView;
+	bool                                 m_bIncomplete;
 	AABB                                 m_bbWorld;
 };
