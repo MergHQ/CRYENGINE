@@ -20,7 +20,7 @@
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void CHudSilhouettes::Render()
+void CHudSilhouettes::Render(const std::shared_ptr<CGraphicsPipeline>& pGraphicsPipeline)
 {
 	ASSERT_LEGACY_PIPELINE
 }
@@ -169,7 +169,7 @@ void CHudSilhouettes::RenderDeferredSilhouettesOptimised(float fBlendParam, floa
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void CAlienInterference::Render()
+void CAlienInterference::Render(const std::shared_ptr<CGraphicsPipeline>& pGraphicsPipeline)
 {
 	ASSERT_LEGACY_PIPELINE
 /*
@@ -204,7 +204,7 @@ void CAlienInterference::Render()
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void CScreenFrost::Render()
+void CScreenFrost::Render(const std::shared_ptr<CGraphicsPipeline>& pGraphicsPipeline)
 {
 	ASSERT_LEGACY_PIPELINE
 /*
@@ -249,7 +249,7 @@ const char* CRainDrops::GetName() const
 	return "RainDrops";
 }
 
-bool CRainDrops::Preprocess(const SRenderViewInfo& viewInfo)
+bool CRainDrops::Preprocess(const SRenderViewInfo& viewInfo, const std::shared_ptr<CGraphicsPipeline>& pGraphicsPipeline)
 {
 	bool bQualityCheck = CPostEffectsMgr::CheckPostProcessQuality(eRQ_Medium, eSQ_Medium);
 	if (!bQualityCheck)
@@ -441,7 +441,7 @@ Matrix44 CRainDrops::ComputeCurrentView(int iViewportWidth, int iViewportHeight)
 */
 }
 
-void CRainDrops::Render()
+void CRainDrops::Render(const std::shared_ptr<CGraphicsPipeline>& pGraphicsPipeline)
 {
 	PROFILE_LABEL_SCOPE("RAIN_DROPS");
 
@@ -641,11 +641,12 @@ void CRainDrops::DrawFinal(CTexture*& rptexCurrRT)
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-bool CFlashBang::Preprocess(const SRenderViewInfo& viewInfo)
+bool CFlashBang::Preprocess(const SRenderViewInfo& viewInfo, const std::shared_ptr<CGraphicsPipeline>& pGraphicsPipeline)
 {
 
 	float fActive = m_pActive->GetParam();
-	if (fActive || m_fSpawnTime)	{
+	if (fActive || m_fSpawnTime)
+	{
 		if (fActive)
 			m_fSpawnTime = 0.0f;
 
@@ -657,7 +658,7 @@ bool CFlashBang::Preprocess(const SRenderViewInfo& viewInfo)
 	return false;
 }
 
-void CFlashBang::Render()
+void CFlashBang::Render(const std::shared_ptr<CGraphicsPipeline>& pGraphicsPipeline)
 {
 	ASSERT_LEGACY_PIPELINE
 /*
@@ -733,7 +734,7 @@ void CFlashBang::Render()
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void CFilterKillCamera::Render()
+void CFilterKillCamera::Render(const std::shared_ptr<CGraphicsPipeline>& pGraphicsPipeline)
 {
 	ASSERT_LEGACY_PIPELINE
 /*
@@ -832,7 +833,7 @@ enum ENanoGlassDebugView
 	eNANO_GLASS_DEBUG_VIEW_WireFrame
 };
 
-void CNanoGlass::Render()
+void CNanoGlass::Render(const std::shared_ptr<CGraphicsPipeline>& pGraphicsPipeline)
 {
 	ASSERT_LEGACY_PIPELINE
 /*
@@ -1194,7 +1195,7 @@ void CNanoGlass::RenderPass(bool bDebugPass, bool bIsHudRendering)
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void CScreenBlood::Render()
+void CScreenBlood::Render(const std::shared_ptr<CGraphicsPipeline>& pGraphicsPipeline)
 {
 	ASSERT_LEGACY_PIPELINE
 /*
@@ -1231,7 +1232,7 @@ void CScreenBlood::Render()
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void CScreenFader::Render()
+void CScreenFader::Render(const std::shared_ptr<CGraphicsPipeline>& pGraphicsPipeline)
 {
 	ASSERT_LEGACY_PIPELINE
 }

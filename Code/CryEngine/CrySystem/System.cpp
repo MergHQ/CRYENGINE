@@ -223,7 +223,7 @@ CSystem::CSystem(const SSystemInitParams& startupParams)
 	m_pSystemEventDispatcher->RegisterListener(this, "CSystem");
 
 	//////////////////////////////////////////////////////////////////////////
-		// Clear environment.
+	// Clear environment.
 	//////////////////////////////////////////////////////////////////////////
 	memset(&m_env, 0, sizeof(m_env));
 
@@ -1487,7 +1487,7 @@ void CSystem::RunMainLoop()
 }
 
 //////////////////////////////////////////////////////////////////////
-bool CSystem::DoFrame(const SDisplayContextKey& displayContextKey, CEnumFlags<ESystemUpdateFlags> updateFlags)
+bool CSystem::DoFrame(const SDisplayContextKey& displayContextKey, const SGraphicsPipelineKey& graphicsPipelineKey, CEnumFlags<ESystemUpdateFlags> updateFlags)
 {
 	// The frame profile system already creates an "overhead" profile label
 	// in StartFrame(). Hence we have to set the FRAMESTART before.
@@ -1532,7 +1532,7 @@ bool CSystem::DoFrame(const SDisplayContextKey& displayContextKey, CEnumFlags<ES
 	}
 
 	if (!m_env.IsEditing())  // Editor calls its own rendering update
-		RenderBegin(displayContextKey);
+		RenderBegin(displayContextKey, graphicsPipelineKey);
 
 	bool continueRunning = true;
 
@@ -1595,7 +1595,7 @@ bool CSystem::DoFrame(const SDisplayContextKey& displayContextKey, CEnumFlags<ES
 	const bool isCameraFrozen = pCameraFreeze && pCameraFreeze->GetIVal() != 0;
 
 	const CCamera& rCameraToSet = isCameraFrozen ? m_env.p3DEngine->GetRenderingCamera() : m_ViewCamera;
-	m_env.p3DEngine->PrepareOcclusion(rCameraToSet);
+	m_env.p3DEngine->PrepareOcclusion(rCameraToSet, SGraphicsPipelineKey::BaseGraphicsPipelineKey);
 
 	if (m_env.pGameFramework != nullptr)
 	{
@@ -1607,7 +1607,7 @@ bool CSystem::DoFrame(const SDisplayContextKey& displayContextKey, CEnumFlags<ES
 		m_pPluginManager->UpdateBeforeRender();
 	}
 
-	Render();
+	Render(graphicsPipelineKey);
 
 	if (m_env.pGameFramework != nullptr)
 	{

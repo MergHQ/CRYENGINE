@@ -3,12 +3,14 @@
 #include "StdAfx.h"
 #include "Sky.h"
 
-CSkyStage::CSkyStage()
-	: m_skyDomeTextureLastTimeStamp(-1)
+CSkyStage::CSkyStage(CGraphicsPipeline& graphicsPipeline)
+	: CGraphicsPipelineStage(graphicsPipeline)
+	, m_skyDomeTextureLastTimeStamp(-1)
 	, m_pSkyDomeTextureMie(NULL)
 	, m_pSkyDomeTextureRayleigh(NULL)
 	, m_numStars(0)
 	, m_pStarMesh(NULL)
+	, m_skyPass(&graphicsPipeline)
 {}
 
 void CSkyStage::Init()
@@ -33,8 +35,10 @@ void CSkyStage::CreateSkyDomeTextures(int32 width, int32 height)
 
 	const uint32 creationFlags = FT_STATE_CLAMP | FT_NOMIPS | FT_DONT_STREAM;
 
-	m_pSkyDomeTextureMie = CTexture::GetOrCreateTextureObject("$SkyDomeTextureMie", width, height, 1, eTT_2D, creationFlags, eTF_R16G16B16A16F);
-	m_pSkyDomeTextureRayleigh = CTexture::GetOrCreateTextureObject("$SkyDomeTextureRayleigh", width, height, 1, eTT_2D, creationFlags, eTF_R16G16B16A16F);
+	std::string mieTextureName = "$SkyDomeTextureMie" + m_graphicsPipeline.GetUniqueIdentifierName();
+	std::string rayleighTextureName = "$SkyDomeTextureRayleigh" + m_graphicsPipeline.GetUniqueIdentifierName();
+	m_pSkyDomeTextureMie = CTexture::GetOrCreateTextureObject(mieTextureName.c_str(), width, height, 1, eTT_2D, creationFlags, eTF_R16G16B16A16F);
+	m_pSkyDomeTextureRayleigh = CTexture::GetOrCreateTextureObject(rayleighTextureName.c_str(), width, height, 1, eTT_2D, creationFlags, eTF_R16G16B16A16F);
 
 	m_pSkyDomeTextureMie->Create2DTexture(width, height, 1, creationFlags, nullptr, eTF_R16G16B16A16F);
 	m_pSkyDomeTextureRayleigh->Create2DTexture(width, height, 1, creationFlags, nullptr, eTF_R16G16B16A16F);
@@ -280,7 +284,7 @@ void CSkyStage::Execute(CTexture* pColorTex, CTexture* pDepthTex)
 	const eSkyType skyType = gEnv->p3DEngine->GetSkyType();
 
 	CRenderView* const pRenderView = RenderView();
-	const bool applyFog = pRenderView->IsGlobalFogEnabled() && !(GetGraphicsPipeline().IsPipelineFlag(CGraphicsPipeline::EPipelineFlags::NO_SHADER_FOG));
+	const bool applyFog = pRenderView->IsGlobalFogEnabled() && !(m_graphicsPipeline.IsPipelineFlag(CGraphicsPipeline::EPipelineFlags::NO_SHADER_FOG));
 	bool isProcedualSky = false;
 
 	CTexture* pSkyDomeTextureMie = CRendererResources::s_ptexBlack;
@@ -386,7 +390,7 @@ void CSkyStage::Execute(CTexture* pColorTex, CTexture* pDepthTex)
 
 			m_starsPrimitive.SetCustomVertexStream(hVertexStream, pStarMesh->_GetVertexFormat(), pStarMesh->GetStreamStride(VSF_GENERAL));
 			m_starsPrimitive.SetDrawInfo(eptTriangleList, 0, 0, 6 * m_numStars);
-			m_starsPrimitive.SetInlineConstantBuffer(eConstantBufferShaderSlot_PerView, gcpRendD3D->GetGraphicsPipeline().GetMainViewConstantBuffer(), EShaderStage_Vertex);
+			m_starsPrimitive.SetInlineConstantBuffer(eConstantBufferShaderSlot_PerView, m_graphicsPipeline.GetMainViewConstantBuffer(), EShaderStage_Vertex);
 			m_starsPrimitive.Compile(m_starsPass);
 
 			{
@@ -409,7 +413,7 @@ void CSkyStage::Execute(CTexture* pColorTex, CTexture* pDepthTex)
 				Vec4 paramStarIntensity(starIntensity* min(1.0f, size), 0, 0, 0);
 				m_starsPrimitive.GetConstantManager().SetNamedConstant(nameStarIntensity, paramStarIntensity, eHWSC_Pixel);
 
-				m_starsPrimitive.GetConstantManager().EndNamedConstantUpdate(&m_starsPass.GetViewport());
+				m_starsPrimitive.GetConstantManager().EndNamedConstantUpdate(&m_starsPass.GetViewport(), pRenderView);
 
 				m_starsPass.AddPrimitive(&m_starsPrimitive);
 				m_starsPass.Execute();

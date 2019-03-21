@@ -176,8 +176,11 @@ public:
 	CRenderOutput*       GetRenderOutput()       { return m_pRenderOutput.get(); }
 
 	//! Retrieve rendering viewport for this Render View
-	virtual void                   SetViewport(const SRenderViewport& viewport) final;
-	virtual const SRenderViewport& GetViewport() const final;
+	virtual void                                      SetViewport(const SRenderViewport& viewport) final;
+	virtual const SRenderViewport&                    GetViewport() const final;
+
+	virtual void                                      SetGraphicsPipeline(std::shared_ptr<CGraphicsPipeline> pipeline) final { m_pGraphicsPipeline = pipeline; }
+	virtual const std::shared_ptr<CGraphicsPipeline>& GetGraphicsPipeline() const final                                      { return m_pGraphicsPipeline; }
 
 	//! Get resolution of the render target surface(s)
 	//! Note that Viewport can be smaller then this.
@@ -209,7 +212,8 @@ public:
 	const CCamera& GetCamera(CCamera::EEye eye)         const { CRY_ASSERT(eye == CCamera::eEye_Left || eye == CCamera::eEye_Right); return m_camera[eye]; }
 	const CCamera& GetPreviousCamera(CCamera::EEye eye) const { CRY_ASSERT(eye == CCamera::eEye_Left || eye == CCamera::eEye_Right); return m_previousCamera[eye]; }
 
-	CCamera::EEye  GetCurrentEye() const;
+	CCamera::EEye  GetCurrentEye() const                      { return m_currentEye; }
+	void           SetCurrentEye(CCamera::EEye eye)           { m_currentEye = eye; }
 
 	RenderItems&   GetRenderItems(ERenderListID renderList)
 	{
@@ -240,8 +244,6 @@ public:
 	void       PrepareForRendering();
 	void       PrepareForWriting();
 
-	bool       AllowsHDRRendering() const;
-	bool       IsPostProcessingEnabled() const;
 	bool       IsRecursive() const        { return m_viewType == eViewType_Recursive; }
 	bool       IsShadowGenView() const    { return m_viewType == eViewType_Shadow; }
 	bool       IsBillboardGenView() const { return m_viewType == eViewType_BillboardGen; }
@@ -291,7 +293,7 @@ public:
 	RenderLightsList&     GetLightsArray(eDeferredLightType lightType);
 	SRenderLight*         AddLightAtIndex(eDeferredLightType lightType, const SRenderLight& light, RenderLightIndex index = -1);
 
-	bool                  HaveSunLight() { return GetSunLight() != nullptr; }
+	bool                  HasSunLight() { return GetSunLight() != nullptr; }
 	const SRenderLight*   GetSunLight() const;
 	//////////////////////////////////////////////////////////////////////////
 
@@ -382,7 +384,7 @@ private:
 
 	void                   Job_PostWrite();
 	void                   Job_SortRenderItemsInList(ERenderListID list);
-	SRendItem              PrepareRenderItemForRenderList(const SRendItem& ri, uint32 nBatchFlags, uint64 objFlags, CRenderObject* pObj, float objDistance, ERenderListID list);
+	SRendItem              PrepareRenderItemForRenderList(const SRendItem& ri, uint32 nBatchFlags, uint64 objFlags, CRenderObject* pObj, float objDistance, ERenderListID list, const SShaderItem& shaderItem);
 	void                   SortLights();
 	void                   ExpandPermanentRenderObjects();
 	void                   UpdateModifiedShaderItems();
@@ -408,7 +410,6 @@ private:
 	string          m_name;
 	/// @See SRenderingPassInfo::ESkipRenderingFlags
 	uint32          m_skipRenderingFlags;
-	/// @see EShaderRenderingFlags
 	uint32          m_shaderRenderingFlags;
 	float           m_zFactor = 1.0f;
 
@@ -485,19 +486,21 @@ private:
 	SSkinningDataPoolInfo m_SkinningData;
 	//////////////////////////////////////////////////////////////////////////
 
-	uint32           m_RenderWidth = -1;
-	uint32           m_RenderHeight = -1;
+	std::shared_ptr<CGraphicsPipeline> m_pGraphicsPipeline;
 
-	CRenderOutputPtr m_pRenderOutput; // Output render target (currently used for recursive pass and secondary viewport)
-	TexSmartPtr      m_pColorTarget = nullptr;
-	TexSmartPtr      m_pDepthTarget = nullptr;
+	uint32                             m_RenderWidth = -1;
+	uint32                             m_RenderHeight = -1;
 
-	SRenderViewport  m_viewport;
+	CRenderOutputPtr                   m_pRenderOutput; // Output render target (currently used for recursive pass and secondary viewport)
+	TexSmartPtr                        m_pColorTarget = nullptr;
+	TexSmartPtr                        m_pDepthTarget = nullptr;
 
-	bool             m_bTrackUncompiledItems;
-	bool             m_bAddingClientPolys;
+	SRenderViewport                    m_viewport;
 
-	uint32           m_skinningPoolIndex = 0;
+	bool                               m_bTrackUncompiledItems;
+	bool                               m_bAddingClientPolys;
+
+	uint32                             m_skinningPoolIndex = 0;
 
 	// Render objects modified by this view.
 	struct SPermanentRenderObjectCompilationData
@@ -531,6 +534,8 @@ private:
 	lockfree_add_vector<SPermanentObjectRecord> m_permanentObjects;
 
 	//////////////////////////////////////////////////////////////////////////
+	CCamera::EEye m_currentEye = CCamera::eEye_Left;
+
 	// Camera and view information required to render this RenderView
 	CCamera         m_camera[CCamera::eEye_eCount];           // Current camera
 	CCamera         m_previousCamera[CCamera::eEye_eCount];   // Previous frame render camera

@@ -526,7 +526,7 @@ void CRenderViewport::Update()
 		SDisplayContext displayContext = InitDisplayContext(m_displayContextKey);
 
 		// 3D engine stats
-		GetIEditor()->GetSystem()->RenderBegin(m_displayContextKey);
+		GetIEditor()->GetSystem()->RenderBegin(m_displayContextKey, m_graphicsPipelineKey);
 
 		bool bRenderStats = m_bRenderStats;
 
@@ -1627,6 +1627,19 @@ bool CRenderViewport::CreateRenderContext(CRY_HWND hWnd, IRenderer::EViewportTyp
 		desc.screenResolution.y = m_currentResolution.height;
 
 		m_displayContextKey = m_renderer->CreateSwapChainBackedContext(desc);
+
+		if (viewportType == IRenderer::eViewportType_Default)
+		{
+			m_graphicsPipelineDesc.type = EGraphicsPipelineType::Standard;
+			m_graphicsPipelineDesc.shaderFlags = SHDF_ZPASS | SHDF_ALLOWHDR | SHDF_ALLOWPOSTPROCESS | SHDF_ALLOW_WATER | SHDF_ALLOW_AO | SHDF_ALLOW_SKY | SHDF_ALLOW_RENDER_DEBUG;
+		}
+		else
+		{
+			m_graphicsPipelineDesc.type = EGraphicsPipelineType::Minimum;
+			m_graphicsPipelineDesc.shaderFlags = SHDF_SECONDARY_VIEWPORT | SHDF_ALLOWHDR | SHDF_FORWARD_MINIMAL;
+		}
+		m_graphicsPipelineKey = m_renderer->CreateGraphicsPipeline(m_graphicsPipelineDesc);
+
 		m_bRenderContextCreated = true;
 
 		// Make main context current.
@@ -1645,6 +1658,9 @@ void CRenderViewport::DestroyRenderContext()
 		// Do not delete primary context.
 		if (m_displayContextKey != static_cast<HWND>(m_renderer->GetHWND()))
 			m_renderer->DeleteContext(m_displayContextKey);
+
+		m_renderer->ResetActiveGraphicsPipeline();
+		m_renderer->DeleteGraphicsPipeline(m_graphicsPipelineKey);
 
 		m_bRenderContextCreated = false;
 	}

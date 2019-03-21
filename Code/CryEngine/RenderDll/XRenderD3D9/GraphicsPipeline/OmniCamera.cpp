@@ -4,7 +4,6 @@
 #include "OmniCamera.h"
 
 #include "SunShafts.h"
-#include "ColorGrading.h"
 #include "D3DPostProcess.h"
 
 void COmniCameraStage::Execute()
@@ -18,7 +17,7 @@ void COmniCameraStage::Execute()
 	int cubeSize = 1;
 	while (cubeSize * cubeSize * 6 < totalPixel)
 		cubeSize *= 2;
-		
+
 	if (m_pOmniCameraTexture == nullptr || m_pOmniCameraTexture->GetWidth() != cubeSize)
 	{
 		const uint32 nFlags = FT_DONT_STREAM | FT_USAGE_RENDERTARGET;

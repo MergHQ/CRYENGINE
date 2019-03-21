@@ -21,10 +21,12 @@ void CHeightMapAOStage::ResizeScreenResources(bool shouldApplyHMAO, int resource
 {
 	ETEX_Format texFormat = eTF_R8G8;
 
+	std::string heightMapAOTex0Name = "$HeightMapAO_0" + m_graphicsPipeline.GetUniqueIdentifierName();
+	std::string heightMapAOTex1Name = "$HeightMapAO_1" + m_graphicsPipeline.GetUniqueIdentifierName();
 	if (!m_pHeightMapAOMask[0])
 	{
-		m_pHeightMapAOMask[0] = CTexture::GetOrCreateRenderTarget("$HeightMapAO_0", resourceWidth, resourceHeight, Clr_Neutral, eTT_2D, FT_DONT_STREAM, eTF_Unknown);
-		m_pHeightMapAOMask[1] = CTexture::GetOrCreateRenderTarget("$HeightMapAO_1", resourceWidth, resourceHeight, Clr_Neutral, eTT_2D, FT_DONT_STREAM, eTF_Unknown);
+		m_pHeightMapAOMask[0] = CTexture::GetOrCreateRenderTarget(heightMapAOTex0Name.c_str(), resourceWidth, resourceHeight, Clr_Neutral, eTT_2D, FT_DONT_STREAM, eTF_Unknown);
+		m_pHeightMapAOMask[1] = CTexture::GetOrCreateRenderTarget(heightMapAOTex1Name.c_str(), resourceWidth, resourceHeight, Clr_Neutral, eTT_2D, FT_DONT_STREAM, eTF_Unknown);
 	}
 
 	if (!shouldApplyHMAO)
@@ -47,10 +49,12 @@ void CHeightMapAOStage::ResizeDepthResources(bool shouldApplyHMAO, int resourceW
 {
 	ETEX_Format texFormatMips = CRendererResources::s_hwTexFormatSupport.GetLessPreciseFormatSupported(texFormatDepth == eTF_D32F ? eTF_R32F : eTF_R16);
 
+	std::string heightMapAODepth0Name = "$HeightMapAO_Depth" + m_graphicsPipeline.GetUniqueIdentifierName();
+	std::string heightMapAODepth1Name = "$HeightMapAO_Pyramid" + m_graphicsPipeline.GetUniqueIdentifierName();
 	if (!m_pHeightMapAODepth[0])
 	{
-		m_pHeightMapAODepth[0] = CTexture::GetOrCreateDepthStencil("$HeightMapAO_Depth", resourceWidth, resourceHeight, Clr_FarPlane, eTT_2D, FT_DONT_STREAM, eTF_Unknown);
-		m_pHeightMapAODepth[1] = CTexture::GetOrCreateRenderTarget("$HeightMapAO_Pyramid", resourceWidth, resourceHeight, Clr_FarPlane, eTT_2D, FT_DONT_STREAM | FT_FORCE_MIPS, eTF_Unknown);
+		m_pHeightMapAODepth[0] = CTexture::GetOrCreateDepthStencil(heightMapAODepth0Name.c_str(), resourceWidth, resourceHeight, Clr_FarPlane, eTT_2D, FT_DONT_STREAM, eTF_Unknown);
+		m_pHeightMapAODepth[1] = CTexture::GetOrCreateRenderTarget(heightMapAODepth1Name.c_str(), resourceWidth, resourceHeight, Clr_FarPlane, eTT_2D, FT_DONT_STREAM | FT_FORCE_MIPS, eTF_Unknown);
 	}
 
 	if (!shouldApplyHMAO)
@@ -64,7 +68,7 @@ void CHeightMapAOStage::ResizeDepthResources(bool shouldApplyHMAO, int resourceW
 	{
 		if (m_pHeightMapAODepth[0]->Invalidate(resourceWidth, resourceHeight, texFormatDepth) || !CTexture::IsTextureExist(m_pHeightMapAODepth[0]))
 			m_pHeightMapAODepth[0]->CreateDepthStencil(texFormatDepth, Clr_FarPlane);
-		if (m_pHeightMapAODepth[1]->Invalidate(resourceWidth, resourceHeight, texFormatMips ) || !CTexture::IsTextureExist(m_pHeightMapAODepth[1]))
+		if (m_pHeightMapAODepth[1]->Invalidate(resourceWidth, resourceHeight, texFormatMips) || !CTexture::IsTextureExist(m_pHeightMapAODepth[1]))
 			m_pHeightMapAODepth[1]->CreateRenderTarget(texFormatMips, Clr_FarPlane);
 	}
 }
@@ -293,7 +297,7 @@ void CHeightMapAOStage::Execute()
 
 			m_passSmoothing.BeginConstantUpdate();
 
-			m_passSmoothing.SetConstant(namePixelOffset, Vec4 (0, 0, (float)pDestRT->GetWidth(), (float)pDestRT->GetHeight()), eHWSC_Vertex);
+			m_passSmoothing.SetConstant(namePixelOffset, Vec4(0, 0, (float)pDestRT->GetWidth(), (float)pDestRT->GetHeight()), eHWSC_Vertex);
 			m_passSmoothing.SetConstantArray(nameClipVolumeData, pClipVolumeParams, CClipVolumesStage::MaxDeferredClipVolumes);
 			m_passSmoothing.Execute();
 		}

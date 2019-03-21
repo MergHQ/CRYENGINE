@@ -12,6 +12,7 @@
 #include "GraphicsPipeline/TiledLightVolumes.h"
 #include "GraphicsPipeline/ClipVolumes.h"
 #include "GraphicsPipeline/TiledShading.h"
+#include "GraphicsPipeline/ShadowMap.h"
 
 struct SPerPassConstantBuffer
 {
@@ -24,10 +25,16 @@ struct SPerPassConstantBuffer
 #endif
 };
 
-CSceneForwardStage::CSceneForwardStage()
-	: m_opaquePassResources()
+CSceneForwardStage::CSceneForwardStage(CGraphicsPipeline& graphicsPipeline)
+	: CGraphicsPipelineStage(graphicsPipeline)
+	, m_opaquePassResources()
 	, m_transparentPassResources()
 	, m_eyeOverlayPassResources()
+	, m_copySceneTargetBWPass(&graphicsPipeline)
+	, m_copySceneTargetAWPass(&graphicsPipeline)
+	, m_depthFixupPass(&graphicsPipeline)
+	, m_depthCopyPass(&graphicsPipeline)
+	, m_depthUpscalePass(&graphicsPipeline)
 {}
 
 void CSceneForwardStage::Init()
@@ -49,9 +56,9 @@ void CSceneForwardStage::Init()
 
 #if RENDERER_ENABLE_FULL_PIPELINE
 	// Create resource layout
-	m_pOpaqueResourceLayout      = gcpRendD3D->GetGraphicsPipeline().CreateScenePassLayout(m_opaquePassResources);
-	m_pTransparentResourceLayout = gcpRendD3D->GetGraphicsPipeline().CreateScenePassLayout(m_transparentPassResources);
-	m_pEyeOverlayResourceLayout  = gcpRendD3D->GetGraphicsPipeline().CreateScenePassLayout(m_eyeOverlayPassResources);
+	m_pOpaqueResourceLayout      = m_graphicsPipeline.CreateScenePassLayout(m_opaquePassResources);
+	m_pTransparentResourceLayout = m_graphicsPipeline.CreateScenePassLayout(m_transparentPassResources);
+	m_pEyeOverlayResourceLayout  = m_graphicsPipeline.CreateScenePassLayout(m_eyeOverlayPassResources);
 
 	// Freeze resource-set layout (assert  will fire when violating the constraint)
 	m_opaquePassResources     .AcceptChangedBindPoints();
@@ -61,33 +68,54 @@ void CSceneForwardStage::Init()
 
 #if RENDERER_ENABLE_MOBILE_PIPELINE
 	// Opaque mobile forward scene pass
-	m_pOpaqueResourceLayoutMobile      = gcpRendD3D->GetGraphicsPipeline().CreateScenePassLayout(m_opaquePassResourcesMobile);
-	m_pTransparentResourceLayoutMobile = gcpRendD3D->GetGraphicsPipeline().CreateScenePassLayout(m_transparentPassResourcesMobile);
+	m_pOpaqueResourceLayoutMobile      = m_graphicsPipeline.CreateScenePassLayout(m_opaquePassResourcesMobile);
+	m_pTransparentResourceLayoutMobile = m_graphicsPipeline.CreateScenePassLayout(m_transparentPassResourcesMobile);
 
 	// Freeze resource-set layout (assert  will fire when violating the constraint)
 	m_opaquePassResourcesMobile.     AcceptChangedBindPoints();
 	m_transparentPassResourcesMobile.AcceptChangedBindPoints();
 #endif
 
+	_smart_ptr<CTexture> pDummyDepthTexture;
+	pDummyDepthTexture = CTexture::GetOrCreateTextureObject("SCENE_FORWARD_Z_DUMMY", 0, 0, 1,
+	                                                        eTT_2D, 0, CRendererResources::GetDepthFormat());
+
+	_smart_ptr<CTexture> pDummyColorTexture;
+	pDummyColorTexture = CTexture::GetOrCreateTextureObject("SCENE_FORWARD_COLOR_DUMMY", 0, 0, 1,
+	                                                        eTT_2D, 0, eTF_R8G8B8A8);
+
+	_smart_ptr<CTexture> pDummyHDRTexture;
+	pDummyHDRTexture = CTexture::GetOrCreateTextureObject("SCENE_FORWARD_HDR_DUMMY", 0, 0, 1,
+	                                                      eTT_2D, 0, eTF_R11G11B10F);
+
+	_smart_ptr<CTexture> pDummyDisplayTargetDestTexture;
+	pDummyDisplayTargetDestTexture = CTexture::GetOrCreateTextureObject("SCENE_FORWARD_DISPLAY_DEST_DUMMY", 0, 0, 1,
+	                                                                    eTT_2D, 0, CRendererResources::GetLDRFormat(true));
+
 	m_forwardOpaquePass.SetLabel("OPAQUE");
 	m_forwardOpaquePass.SetFlags(CSceneRenderPass::ePassFlags_ReverseDepth | CSceneRenderPass::ePassFlags_VrProjectionPass | CSceneRenderPass::ePassFlags_RenderNearest);
 	m_forwardOpaquePass.SetPassResources(m_pOpaqueResourceLayout, m_pOpaquePassResourceSet);
+	m_forwardOpaquePass.SetRenderTargets(pDummyDepthTexture, pDummyHDRTexture);
 
 	m_forwardEyeOverlayPass.SetLabel("OVERLAYS");
 	m_forwardEyeOverlayPass.SetFlags(CSceneRenderPass::ePassFlags_ReverseDepth);
 	m_forwardEyeOverlayPass.SetPassResources(m_pEyeOverlayResourceLayout, m_pEyeOverlayPassResourceSet);
+	m_forwardEyeOverlayPass.SetRenderTargets(pDummyDepthTexture, pDummyColorTexture);
 
 	m_forwardOverlayPass.SetLabel("OVERLAYS");
 	m_forwardOverlayPass.SetFlags(CSceneRenderPass::ePassFlags_ReverseDepth);
 	m_forwardOverlayPass.SetPassResources(m_pOpaqueResourceLayout, m_pOpaquePassResourceSet);
+	m_forwardOverlayPass.SetRenderTargets(pDummyDepthTexture, pDummyHDRTexture);
 
 	m_forwardTransparentBWPass.SetLabel("TRANSPARENT_BW");
 	m_forwardTransparentBWPass.SetFlags(CSceneRenderPass::ePassFlags_ReverseDepth);
 	m_forwardTransparentBWPass.SetPassResources(m_pTransparentResourceLayout, m_pTransparentPassResourceSet);
+	m_forwardTransparentBWPass.SetRenderTargets(pDummyDepthTexture, pDummyHDRTexture);
 
 	m_forwardTransparentAWPass.SetLabel("TRANSPARENT_AW");
 	m_forwardTransparentAWPass.SetFlags(CSceneRenderPass::ePassFlags_ReverseDepth | CSceneRenderPass::ePassFlags_RenderNearest);
 	m_forwardTransparentAWPass.SetPassResources(m_pTransparentResourceLayout, m_pTransparentPassResourceSet);
+	m_forwardTransparentAWPass.SetRenderTargets(pDummyDepthTexture, pDummyHDRTexture);
 
 	m_forwardTransparentLoResPass.SetLabel("TRANSPARENT_SUBRES");
 	m_forwardTransparentLoResPass.SetFlags(CSceneRenderPass::ePassFlags_ReverseDepth);
@@ -96,54 +124,61 @@ void CSceneForwardStage::Init()
 	m_forwardHDRPass.SetLabel("FORWARD_AFTER_POSTFX_HDR");
 	m_forwardHDRPass.SetFlags(CSceneRenderPass::ePassFlags_None);
 	m_forwardHDRPass.SetPassResources(m_pTransparentResourceLayout, m_pTransparentPassResourceSet);
+	m_forwardHDRPass.SetRenderTargets(pDummyDepthTexture, pDummyDisplayTargetDestTexture);
 
 	m_forwardLDRPass.SetLabel("FORWARD_AFTER_POSTFX_LDR");
 	m_forwardLDRPass.SetFlags(CSceneRenderPass::ePassFlags_None);
 	m_forwardLDRPass.SetPassResources(m_pTransparentResourceLayout, m_pTransparentPassResourceSet);
+	m_forwardLDRPass.SetRenderTargets(pDummyDepthTexture, pDummyDepthTexture);
 
 #if RENDERER_ENABLE_MOBILE_PIPELINE
 	m_forwardOpaquePassMobile.SetLabel("OPAQUE");
 	m_forwardOpaquePassMobile.SetFlags(CSceneRenderPass::ePassFlags_ReverseDepth | CSceneRenderPass::ePassFlags_VrProjectionPass | CSceneRenderPass::ePassFlags_RenderNearest);
 	m_forwardOpaquePassMobile.SetPassResources(m_pOpaqueResourceLayoutMobile, m_pOpaquePassResourceSetMobile);
+	m_forwardOpaquePassMobile.SetRenderTargets(pDummyDepthTexture, pDummyHDRTexture);
 
 	m_forwardOverlayPassMobile.SetLabel("OVERLAYS");
 	m_forwardOverlayPassMobile.SetFlags(CSceneRenderPass::ePassFlags_ReverseDepth | CSceneRenderPass::ePassFlags_VrProjectionPass | CSceneRenderPass::ePassFlags_RenderNearest);
 	m_forwardOverlayPassMobile.SetPassResources(m_pOpaqueResourceLayoutMobile, m_pOpaquePassResourceSetMobile);
+	m_forwardOverlayPassMobile.SetRenderTargets(pDummyDepthTexture, pDummyHDRTexture);
 
 	m_forwardTransparentPassMobile.SetLabel("TRANSPARENT");
 	m_forwardTransparentPassMobile.SetFlags(CSceneRenderPass::ePassFlags_ReverseDepth | CSceneRenderPass::ePassFlags_RenderNearest);
 	m_forwardTransparentPassMobile.SetPassResources(m_pTransparentResourceLayoutMobile, m_pTransparentPassResourceSetMobile);
+	m_forwardTransparentPassMobile.SetRenderTargets(pDummyDepthTexture, pDummyHDRTexture);
 #endif
 
 #if RENDERER_ENABLE_FULL_PIPELINE
 	m_forwardOpaqueRecursivePass.SetLabel("OPAQUE_RECURSIVE");
 	m_forwardOpaqueRecursivePass.SetFlags(CSceneRenderPass::ePassFlags_ReverseDepth);
 	m_forwardOpaqueRecursivePass.SetPassResources(m_pOpaqueResourceLayout, m_pOpaquePassResourceSet);
+	m_forwardOpaqueRecursivePass.SetRenderTargets(pDummyDepthTexture, pDummyHDRTexture);
 
 	m_forwardOverlayRecursivePass.SetLabel("OVERLAY_RECURSIVE");
 	m_forwardOverlayRecursivePass.SetFlags(CSceneRenderPass::ePassFlags_ReverseDepth);
 	m_forwardOverlayRecursivePass.SetPassResources(m_pOpaqueResourceLayout, m_pOpaquePassResourceSet);
+	m_forwardOverlayRecursivePass.SetRenderTargets(pDummyDepthTexture, pDummyHDRTexture);
 
 	m_forwardTransparentRecursivePass.SetLabel("TRANSPARENT_RECURSIVE");
 	m_forwardTransparentRecursivePass.SetFlags(CSceneRenderPass::ePassFlags_ReverseDepth);
 	m_forwardTransparentRecursivePass.SetPassResources(m_pTransparentResourceLayout, m_pTransparentPassResourceSet);
+	m_forwardTransparentRecursivePass.SetRenderTargets(pDummyDepthTexture, pDummyHDRTexture);
 #endif
 }
 
 void CSceneForwardStage::Update()
 {
-	const CRenderView*   pRenderView = RenderView();
+	const CRenderView* pRenderView = RenderView();
 	const SRenderViewport& viewport = pRenderView->GetViewport();
 
-	CStandardGraphicsPipeline* p = static_cast<CStandardGraphicsPipeline*>(&GetGraphicsPipeline());
-	EShaderRenderingFlags flags = (EShaderRenderingFlags)p->GetRenderFlags();
+	EShaderRenderingFlags flags = (EShaderRenderingFlags)m_graphicsPipeline.GetRenderFlags();
 	const bool isForwardMinimal = (flags & SHDF_FORWARD_MINIMAL) != 0;
 
 	if (!isForwardMinimal)
 	{
 #if RENDERER_ENABLE_FULL_PIPELINE
 		const CRenderOutput* pRenderOutput = pRenderView->GetRenderOutput();
-		
+
 		CTexture* pCTextureOut = pRenderOutput->GetColorTarget();
 		CTexture* pZTextureOut = pRenderOutput->GetDepthTarget();
 		CTexture* pDepthTexture = pRenderView->GetDepthTarget();
@@ -155,7 +190,7 @@ void CSceneForwardStage::Update()
 			pDepthTexture,
 			// Color 0
 			CRendererResources::s_ptexHDRTarget
-		);
+			);
 
 		// Overlay forward scene pass
 		m_forwardEyeOverlayPass.SetViewport(viewport);
@@ -163,8 +198,8 @@ void CSceneForwardStage::Update()
 			// Depth
 			pDepthTexture,
 			// Color 0
-			CRendererResources::s_ptexSceneDiffuse 
-		);
+			CRendererResources::s_ptexSceneDiffuse
+			);
 
 		m_forwardOverlayPass.SetViewport(viewport);
 		m_forwardOverlayPass.SetRenderTargets(
@@ -172,7 +207,7 @@ void CSceneForwardStage::Update()
 			pDepthTexture,
 			// Color 0
 			CRendererResources::s_ptexHDRTarget
-		);
+			);
 
 		// Transparent forward scene passes
 		m_forwardTransparentBWPass.SetViewport(viewport);
@@ -181,7 +216,7 @@ void CSceneForwardStage::Update()
 			pDepthTexture,
 			// Color 0
 			CRendererResources::s_ptexHDRTarget
-		);
+			);
 
 		m_forwardTransparentAWPass.SetViewport(viewport);
 		m_forwardTransparentAWPass.SetRenderTargets(
@@ -189,7 +224,7 @@ void CSceneForwardStage::Update()
 			pDepthTexture,
 			// Color 0
 			CRendererResources::s_ptexHDRTarget
-		);
+			);
 
 		m_forwardTransparentLoResPass.SetViewport(viewport);
 		m_forwardTransparentLoResPass.SetRenderTargets(
@@ -197,7 +232,7 @@ void CSceneForwardStage::Update()
 			CRendererResources::s_ptexSceneDepthScaled[0],//[1]//[2]
 			// Color 0
 			CRendererResources::s_ptexHDRTargetScaled[0][0]//[1][0]//[2][0]
-		);
+			);
 
 		m_forwardHDRPass.SetViewport(viewport);
 		m_forwardHDRPass.SetRenderTargets(
@@ -206,7 +241,7 @@ void CSceneForwardStage::Update()
 			// Color 0
 			// TODO: CPostEffectContext::GetDstBackBufferTexture() pre-EnableAltBackBuffer()
 			CRendererResources::s_ptexDisplayTargetDst
-		);
+			);
 
 		m_forwardLDRPass.SetViewport(viewport);
 		m_forwardLDRPass.SetRenderTargets(
@@ -215,7 +250,7 @@ void CSceneForwardStage::Update()
 			// Color 0
 			// TODO: CPostEffectContext::GetDstBackBufferTexture() post-EnableAltBackBuffer()
 			pCTextureOut
-		);
+			);
 #endif
 
 #if RENDERER_ENABLE_MOBILE_PIPELINE
@@ -225,7 +260,7 @@ void CSceneForwardStage::Update()
 			pRenderView->GetDepthTarget(),
 			// Color 0
 			CRendererResources::s_ptexHDRTarget
-		);
+			);
 
 		m_forwardOverlayPassMobile.SetViewport(viewport);
 		m_forwardOverlayPassMobile.SetRenderTargets(
@@ -233,15 +268,15 @@ void CSceneForwardStage::Update()
 			pRenderView->GetDepthTarget(),
 			// Color 0
 			CRendererResources::s_ptexHDRTarget
-		);
-		
+			);
+
 		m_forwardTransparentPassMobile.SetViewport(viewport);
 		m_forwardTransparentPassMobile.SetRenderTargets(
 			// Depth
 			pRenderView->GetDepthTarget(),
 			// Color 0
 			CRendererResources::s_ptexHDRTarget
-		);
+			);
 #endif
 	}
 
@@ -258,7 +293,7 @@ void CSceneForwardStage::Update()
 			pDepthTexture,
 			// Color 0
 			pColorTexture
-		);
+			);
 
 		// Overlay forward recursive scene pass
 		m_forwardOverlayRecursivePass.SetViewport(viewport);
@@ -267,7 +302,7 @@ void CSceneForwardStage::Update()
 			pDepthTexture,
 			// Color 0
 			pColorTexture
-		);
+			);
 
 		m_forwardTransparentRecursivePass.SetViewport(viewport);
 		m_forwardTransparentRecursivePass.SetRenderTargets(
@@ -275,7 +310,7 @@ void CSceneForwardStage::Update()
 			pDepthTexture,
 			// Color 0
 			pColorTexture
-		);
+			);
 	}
 #endif
 
@@ -291,7 +326,7 @@ void CSceneForwardStage::Update()
 bool CSceneForwardStage::CreatePipelineState(const SGraphicsPipelineStateDescription& desc,
                                              CDeviceGraphicsPSOPtr& outPSO,
                                              EPass passId,
-                                             const std::function<void(CDeviceGraphicsPSODesc& psoDesc, const SGraphicsPipelineStateDescription& desc)> &customState)
+                                             const std::function<void(CDeviceGraphicsPSODesc& psoDesc, const SGraphicsPipelineStateDescription& desc)>& customState)
 {
 	CD3D9Renderer* pRenderer = gcpRendD3D;
 
@@ -307,7 +342,7 @@ bool CSceneForwardStage::CreatePipelineState(const SGraphicsPipelineStateDescrip
 			          &m_forwardTransparentBWPass);
 
 	CDeviceGraphicsPSODesc psoDesc(nullptr, desc);
-	
+
 	if (bRecursive)
 		psoDesc.m_ShaderFlags_RT |= g_HWSR_MaskBit[HWSR_SECONDARY_VIEW];
 
@@ -343,7 +378,7 @@ bool CSceneForwardStage::CreatePipelineState(const SGraphicsPipelineStateDescrip
 			return true;
 #endif
 
-		if (!GetStdGraphicsPipeline().FillCommonScenePassStates(desc, psoDesc))
+		if (!m_graphicsPipeline.FillCommonScenePassStates(desc, psoDesc))
 			return true;
 
 		if (bRecursive)
@@ -402,7 +437,7 @@ bool CSceneForwardStage::CreatePipelineState(const SGraphicsPipelineStateDescrip
 		}
 		else if (bHair)
 		{
-			psoDesc.m_ShaderFlags_RT &= ~(g_HWSR_MaskBit[HWSR_TILED_SHADING] |g_HWSR_MaskBit[HWSR_QUALITY1]);
+			psoDesc.m_ShaderFlags_RT &= ~(g_HWSR_MaskBit[HWSR_TILED_SHADING] | g_HWSR_MaskBit[HWSR_QUALITY1]);
 			if (CRenderer::CV_r_DeferredShadingTiled > CTiledShadingStage::eDeferredMode_Off &&
 				CRenderer::CV_r_DeferredShadingTiledHairQuality > 0)
 			{
@@ -510,7 +545,7 @@ bool CSceneForwardStage::CreatePipelineState(const SGraphicsPipelineStateDescrip
 
 bool CSceneForwardStage::CreatePipelineStates(DevicePipelineStatesArray* pStateArray, const SGraphicsPipelineStateDescription& stateDesc, CGraphicsPipelineStateLocalCache* pStateCache)
 {
-	DevicePipelineStatesArray& stageStates = pStateArray[m_stageID];
+	DevicePipelineStatesArray& stageStates = pStateArray[StageID];
 
 	if (pStateCache->Find(stateDesc, stageStates))
 		return true;
@@ -521,13 +556,13 @@ bool CSceneForwardStage::CreatePipelineStates(DevicePipelineStatesArray* pStateA
 
 	_stateDesc.technique = TTYPE_GENERAL;
 #if RENDERER_ENABLE_FULL_PIPELINE
-	bFullyCompiled &= CreatePipelineState(_stateDesc, stageStates[ePass_Forward         ], ePass_Forward         );
+	bFullyCompiled &= CreatePipelineState(_stateDesc, stageStates[ePass_Forward], ePass_Forward);
 	bFullyCompiled &= CreatePipelineState(_stateDesc, stageStates[ePass_ForwardPrepassed], ePass_ForwardPrepassed);
 	bFullyCompiled &= CreatePipelineState(_stateDesc, stageStates[ePass_ForwardRecursive], ePass_ForwardRecursive);
 #endif
 
 #if RENDERER_ENABLE_MOBILE_PIPELINE
-	bFullyCompiled &= CreatePipelineState(_stateDesc, stageStates[ePass_ForwardMobile   ], ePass_ForwardMobile   );
+	bFullyCompiled &= CreatePipelineState(_stateDesc, stageStates[ePass_ForwardMobile], ePass_ForwardMobile);
 #endif
 
 	if (bFullyCompiled)
@@ -542,10 +577,11 @@ bool CSceneForwardStage::PreparePerPassResources(bool bOnInit, bool bShadowMask,
 {
 	CRenderView* pRenderView = RenderView();
 
-	auto* pClipVolumes = GetStdGraphicsPipeline().GetClipVolumesStage();
-	auto* pTiledLights = GetStdGraphicsPipeline().GetTiledLightVolumesStage();
-	auto* pFogStage    = GetStdGraphicsPipeline().GetFogStage();
-	auto* pVolFogStage = GetStdGraphicsPipeline().GetVolumetricFogStage();
+	auto* pClipVolumes    = m_graphicsPipeline.GetStage<CClipVolumesStage>();
+	auto* pTiledLights    = m_graphicsPipeline.GetStage<CTiledLightVolumesStage>();
+	auto* pFogStage       = m_graphicsPipeline.GetStage<CFogStage>();
+	auto* pVolFogStage    = m_graphicsPipeline.GetStage<CVolumetricFogStage>();
+	auto* pShadowMapStage = m_graphicsPipeline.GetStage<CShadowMapStage>();
 
 	CTexture* pShadowMask = bShadowMask ? CRendererResources::s_ptexShadowMask : CRendererResources::s_ptexBlack;
 
@@ -614,15 +650,15 @@ bool CSceneForwardStage::PreparePerPassResources(bool bOnInit, bool bShadowMask,
 
 		// Samplers
 		{
-			auto materialSamplers = gcpRendD3D->GetGraphicsPipeline().GetDefaultMaterialSamplers();
+			auto materialSamplers = m_graphicsPipeline.GetDefaultMaterialSamplers();
 			for (int i = 0; i < materialSamplers.size(); ++i)
 			{
 				resources.SetSampler(EEfResSamplers(i), materialSamplers[i], EShaderStage_AllWithoutCompute);
 			}
-			
+
 			resources.SetSampler(8, EDefaultSamplerStates::PointWrap, EShaderStage_AllWithoutCompute);
 			resources.SetSampler(9, EDefaultSamplerStates::PointClamp, EShaderStage_AllWithoutCompute);
-			
+
 			// Custom for pass
 			resources.SetSampler(10, EDefaultSamplerStates::BilinearWrap, EShaderStage_AllWithoutCompute);
 			resources.SetSampler(11, EDefaultSamplerStates::LinearCompare, EShaderStage_AllWithoutCompute);
@@ -652,7 +688,7 @@ bool CSceneForwardStage::PreparePerPassResources(bool bOnInit, bool bShadowMask,
 				resources.SetTexture(2, CRendererResources::s_ptexVelocityObjects[0], EDefaultResourceViews::UnorderedAccess, EShaderStage_Pixel);
 				if (!CRendererCVars::CV_r_HDRTexFormat)
 					resources.SetTexture(3, CRendererResources::s_ptexLinearDepthFixup, CRendererResources::s_ptexLinearDepthFixupUAV, EShaderStage_Pixel);
-			}			
+			}
 		}
 
 		// Particle resources
@@ -684,8 +720,8 @@ bool CSceneForwardStage::PreparePerPassResources(bool bOnInit, bool bShadowMask,
 			}
 			else
 			{
-				const CLightVolumeBuffer& lightVolumes = GetStdGraphicsPipeline().GetLightVolumeBuffer();
-				const CParticleBufferSet& particleBuffer = GetStdGraphicsPipeline().GetParticleBufferSet();
+				const CLightVolumeBuffer& lightVolumes   = m_graphicsPipeline.GetLightVolumeBuffer();
+				const CParticleBufferSet& particleBuffer = gcpRendD3D.GetParticleBufferSet();
 
 				resources.SetBuffer(
 					EReservedTextureSlot_LightvolumeInfos,
@@ -697,8 +733,8 @@ bool CSceneForwardStage::PreparePerPassResources(bool bOnInit, bool bShadowMask,
 					EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
 
 				const auto positionStream = particleBuffer.GetPositionStream(RenderView()->GetFrameId());
-				const auto axesStream     = particleBuffer.GetAxesStream(RenderView()->GetFrameId());
-				const auto colorStream    = particleBuffer.GetColorSTsStream(RenderView()->GetFrameId());
+				const auto axesStream  = particleBuffer.GetAxesStream(RenderView()->GetFrameId());
+				const auto colorStream = particleBuffer.GetColorSTsStream(RenderView()->GetFrameId());
 				if (positionStream && axesStream && colorStream)
 				{
 					resources.SetBuffer(
@@ -761,7 +797,7 @@ bool CSceneForwardStage::PreparePerPassResources(bool bOnInit, bool bShadowMask,
 			}
 #endif
 
-			resources.SetTexture(23, CRendererResources::s_ptexRT_ShadowPool, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
+			resources.SetTexture(23, pShadowMapStage->m_pTexRT_ShadowPool, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
 			resources.SetTexture(24, CRendererResources::s_ptexSceneNormalsBent, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
 			resources.SetTexture(41, CRendererResources::s_ptexSceneDiffuse, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);  //  Eye AO overlay
 
@@ -826,7 +862,7 @@ bool CSceneForwardStage::PreparePerPassResources(bool bOnInit, bool bShadowMask,
 			else
 			{
 				pPerPassCB = m_pPerPassCB;
-				pPerViewCB = GetStdGraphicsPipeline().GetMainViewConstantBuffer();
+				pPerViewCB = m_graphicsPipeline.GetMainViewConstantBuffer();
 			}
 
 			resources.SetConstantBuffer(eConstantBufferShaderSlot_PerPass, pPerPassCB, EShaderStage_AllWithoutCompute);
@@ -871,7 +907,7 @@ void CSceneForwardStage::ExecuteOpaque()
 
 	int generalFNum    = pRenderView->GetRenderItems(EFSLIST_FORWARD_OPAQUE).size();
 	int generalFNoZPre = pRenderView->FindRenderListSplit(zpPredicate, EFSLIST_FORWARD_OPAQUE, 0, generalFNum);
-	
+
 	int nearestGNum    = pRenderView->GetRenderItems(EFSLIST_NEAREST_OBJECTS).size();
 	int nearestGNoZPre = pRenderView->FindRenderListSplit(zpPredicate, EFSLIST_NEAREST_OBJECTS, 0, nearestGNum);
 
@@ -881,13 +917,13 @@ void CSceneForwardStage::ExecuteOpaque()
 	{
 		renderItemDrawer.InitDrawSubmission();
 
-		m_forwardEyeOverlayPass.BeginExecution();
-		m_forwardEyeOverlayPass.SetupDrawContext(m_stageID, ePass_Forward, TTYPE_GENERAL, FB_GENERAL);
+		m_forwardEyeOverlayPass.BeginExecution(m_graphicsPipeline);
+		m_forwardEyeOverlayPass.SetupDrawContext(StageID, ePass_Forward, TTYPE_GENERAL, FB_GENERAL);
 		m_forwardEyeOverlayPass.DrawRenderItems(pRenderView, EFSLIST_EYE_OVERLAY);
 		m_forwardEyeOverlayPass.EndExecution();
 
-		m_forwardOpaquePass.BeginExecution();
-		m_forwardOpaquePass.SetupDrawContext(m_stageID, ePass_Forward, TTYPE_GENERAL, FB_GENERAL | FB_TILED_FORWARD, FB_ZPREPASS);
+		m_forwardOpaquePass.BeginExecution(m_graphicsPipeline);
+		m_forwardOpaquePass.SetupDrawContext(StageID, ePass_Forward, TTYPE_GENERAL, FB_GENERAL | FB_TILED_FORWARD, FB_ZPREPASS);
 		m_forwardOpaquePass.DrawRenderItems(pRenderView, EFSLIST_FORWARD_OPAQUE_NEAREST, 0, nearestFNoZPre);
 		if (CRenderer::CV_r_DeferredShadingTiled == CTiledShadingStage::eDeferredMode_Disabled)
 			m_forwardOpaquePass.DrawRenderItems(pRenderView, EFSLIST_NEAREST_OBJECTS, 0, nearestGNoZPre);
@@ -896,8 +932,8 @@ void CSceneForwardStage::ExecuteOpaque()
 			m_forwardOpaquePass.DrawRenderItems(pRenderView, EFSLIST_GENERAL, 0, generalGNoZPre);
 		m_forwardOpaquePass.EndExecution();
 
-		m_forwardOpaquePass.BeginExecution();
-		m_forwardOpaquePass.SetupDrawContext(m_stageID, ePass_ForwardPrepassed, TTYPE_GENERAL, FB_GENERAL | FB_TILED_FORWARD | FB_ZPREPASS);
+		m_forwardOpaquePass.BeginExecution(m_graphicsPipeline);
+		m_forwardOpaquePass.SetupDrawContext(StageID, ePass_ForwardPrepassed, TTYPE_GENERAL, FB_GENERAL | FB_TILED_FORWARD | FB_ZPREPASS);
 		m_forwardOpaquePass.DrawRenderItems(pRenderView, EFSLIST_FORWARD_OPAQUE_NEAREST, nearestFNoZPre, nearestFNum);
 		if (CRenderer::CV_r_DeferredShadingTiled == CTiledShadingStage::eDeferredMode_Disabled)
 			m_forwardOpaquePass.DrawRenderItems(pRenderView, EFSLIST_NEAREST_OBJECTS, nearestGNoZPre, nearestGNum);
@@ -906,16 +942,16 @@ void CSceneForwardStage::ExecuteOpaque()
 			m_forwardOpaquePass.DrawRenderItems(pRenderView, EFSLIST_GENERAL, generalGNoZPre, generalGNum);
 		m_forwardOpaquePass.EndExecution();
 
-		m_forwardOverlayPass.BeginExecution();
-		m_forwardOverlayPass.SetupDrawContext(m_stageID, ePass_ForwardPrepassed, TTYPE_GENERAL, FB_GENERAL | FB_TILED_FORWARD, bForwardFilter);
+		m_forwardOverlayPass.BeginExecution(m_graphicsPipeline);
+		m_forwardOverlayPass.SetupDrawContext(StageID, ePass_ForwardPrepassed, TTYPE_GENERAL, FB_GENERAL | FB_TILED_FORWARD, bForwardFilter);
 		m_forwardOverlayPass.DrawRenderItems(pRenderView, EFSLIST_TERRAINLAYER);
 		m_forwardOverlayPass.DrawRenderItems(pRenderView, EFSLIST_DECAL);
 		m_forwardOverlayPass.EndExecution();
 
 		if (CRenderer::CV_e_Clouds && gEnv->p3DEngine->IsSkyVisible())
 		{
-			m_forwardOverlayPass.BeginExecution();
-			m_forwardOverlayPass.SetupDrawContext(m_stageID, ePass_Forward, TTYPE_GENERAL, FB_GENERAL);
+			m_forwardOverlayPass.BeginExecution(m_graphicsPipeline);
+			m_forwardOverlayPass.SetupDrawContext(StageID, ePass_Forward, TTYPE_GENERAL, FB_GENERAL);
 			m_forwardOverlayPass.DrawRenderItems(pRenderView, EFSLIST_SKY);
 			m_forwardOverlayPass.EndExecution();
 		}
@@ -940,8 +976,8 @@ void CSceneForwardStage::ExecuteTransparent(bool bBelowWater)
 	auto& renderItemDrawer = pRenderView->GetDrawer();
 	renderItemDrawer.InitDrawSubmission();
 
-	scenePass.BeginExecution();
-	scenePass.SetupDrawContext(m_stageID, ePass_Forward, TTYPE_GENERAL, FB_GENERAL);
+	scenePass.BeginExecution(m_graphicsPipeline);
+	scenePass.SetupDrawContext(StageID, ePass_Forward, TTYPE_GENERAL, FB_GENERAL);
 	scenePass.DrawRenderItems(pRenderView, bBelowWater ? EFSLIST_TRANSP_BW : EFSLIST_TRANSP_AW);
 	if (!bBelowWater)
 	{
@@ -1046,8 +1082,8 @@ void CSceneForwardStage::ExecuteTransparentLoRes(int subRes)
 	auto& renderItemDrawer = pRenderView->GetDrawer();
 	renderItemDrawer.InitDrawSubmission();
 
-	scenePass.BeginExecution();
-	scenePass.SetupDrawContext(m_stageID, ePass_Forward, TTYPE_GENERAL, FB_GENERAL);
+	scenePass.BeginExecution(m_graphicsPipeline);
+	scenePass.SetupDrawContext(StageID, ePass_Forward, TTYPE_GENERAL, FB_GENERAL);
 	scenePass.DrawRenderItems(pRenderView, EFSLIST_HALFRES_PARTICLES);
 	scenePass.EndExecution();
 
@@ -1060,7 +1096,7 @@ void CSceneForwardStage::ExecuteTransparentLoRes(int subRes)
 		pSourceDS,
 		CRendererResources::s_ptexHDRTarget, // TODO: Scaled[subRes - 1]
 		CRendererCVars::CV_r_ParticlesHalfResBlendMode == 0
-	);
+		);
 }
 
 void CSceneForwardStage::ExecuteAfterPostProcessHDR()
@@ -1086,8 +1122,8 @@ void CSceneForwardStage::ExecuteAfterPostProcessHDR()
 	auto& renderItemDrawer = pRenderView->GetDrawer();
 	renderItemDrawer.InitDrawSubmission();
 
-	scenePass.BeginExecution();
-	scenePass.SetupDrawContext(m_stageID, ePass_Forward, TTYPE_GENERAL, FB_GENERAL);
+	scenePass.BeginExecution(m_graphicsPipeline);
+	scenePass.SetupDrawContext(StageID, ePass_Forward, TTYPE_GENERAL, FB_GENERAL);
 	scenePass.DrawRenderItems(pRenderView, EFSLIST_AFTER_HDRPOSTPROCESS);
 	scenePass.EndExecution();
 
@@ -1118,8 +1154,8 @@ void CSceneForwardStage::ExecuteAfterPostProcessLDR()
 	auto& renderItemDrawer = pRenderView->GetDrawer();
 	renderItemDrawer.InitDrawSubmission();
 
-	scenePass.BeginExecution();
-	scenePass.SetupDrawContext(m_stageID, ePass_Forward, TTYPE_GENERAL, FB_GENERAL);
+	scenePass.BeginExecution(m_graphicsPipeline);
+	scenePass.SetupDrawContext(StageID, ePass_Forward, TTYPE_GENERAL, FB_GENERAL);
 	scenePass.DrawRenderItems(pRenderView, EFSLIST_AFTER_POSTPROCESS);
 	scenePass.EndExecution();
 
@@ -1145,8 +1181,8 @@ void CSceneForwardStage::ExecuteMobile()
 	{
 		renderItemDrawer.InitDrawSubmission();
 
-		m_forwardOpaquePassMobile.BeginExecution();
-		m_forwardOpaquePassMobile.SetupDrawContext(m_stageID, ePass_ForwardMobile, TTYPE_GENERAL, FB_TILED_FORWARD);
+		m_forwardOpaquePassMobile.BeginExecution(m_graphicsPipeline);
+		m_forwardOpaquePassMobile.SetupDrawContext(StageID, ePass_ForwardMobile, TTYPE_GENERAL, FB_TILED_FORWARD);
 		m_forwardOpaquePassMobile.DrawRenderItems(pRenderView, EFSLIST_FORWARD_OPAQUE_NEAREST);
 		if (CRenderer::CV_r_DeferredShadingTiled == CTiledShadingStage::eDeferredMode_Disabled)
 			m_forwardOpaquePassMobile.DrawRenderItems(pRenderView, EFSLIST_NEAREST_OBJECTS);
@@ -1155,15 +1191,15 @@ void CSceneForwardStage::ExecuteMobile()
 			m_forwardOpaquePassMobile.DrawRenderItems(pRenderView, EFSLIST_GENERAL);
 		m_forwardOpaquePassMobile.EndExecution();
 
-		m_forwardOverlayPassMobile.BeginExecution();
-		m_forwardOverlayPassMobile.SetupDrawContext(m_stageID, ePass_ForwardMobile, TTYPE_GENERAL, FB_GENERAL);
+		m_forwardOverlayPassMobile.BeginExecution(m_graphicsPipeline);
+		m_forwardOverlayPassMobile.SetupDrawContext(StageID, ePass_ForwardMobile, TTYPE_GENERAL, FB_GENERAL);
 		m_forwardOverlayPassMobile.DrawRenderItems(pRenderView, EFSLIST_TERRAINLAYER);
 		m_forwardOverlayPassMobile.DrawRenderItems(pRenderView, EFSLIST_DECAL);
 		m_forwardOverlayPassMobile.DrawRenderItems(pRenderView, EFSLIST_SKY);
 		m_forwardOverlayPassMobile.EndExecution();
 
-		m_forwardTransparentPassMobile.BeginExecution();
-		m_forwardTransparentPassMobile.SetupDrawContext(m_stageID, ePass_ForwardMobile, TTYPE_GENERAL, FB_GENERAL);
+		m_forwardTransparentPassMobile.BeginExecution(m_graphicsPipeline);
+		m_forwardTransparentPassMobile.SetupDrawContext(StageID, ePass_ForwardMobile, TTYPE_GENERAL, FB_GENERAL);
 		m_forwardTransparentPassMobile.DrawRenderItems(pRenderView, EFSLIST_TRANSP_AW);
 		m_forwardTransparentPassMobile.DrawRenderItems(pRenderView, EFSLIST_TRANSP_NEAREST);
 		m_forwardTransparentPassMobile.EndExecution();
@@ -1210,21 +1246,21 @@ void CSceneForwardStage::ExecuteMinimum(CTexture* pColorTex, CTexture* pDepthTex
 	{
 		renderItemDrawer.InitDrawSubmission();
 
-		m_forwardOpaqueRecursivePass.BeginExecution();
-		m_forwardOpaqueRecursivePass.SetupDrawContext(m_stageID, ePass_ForwardRecursive, TTYPE_GENERAL, FB_GENERAL);
+		m_forwardOpaqueRecursivePass.BeginExecution(m_graphicsPipeline);
+		m_forwardOpaqueRecursivePass.SetupDrawContext(StageID, ePass_ForwardRecursive, TTYPE_GENERAL, FB_GENERAL);
 		m_forwardOpaqueRecursivePass.DrawRenderItems(pRenderView, EFSLIST_FORWARD_OPAQUE_NEAREST);
 		m_forwardOpaqueRecursivePass.DrawRenderItems(pRenderView, EFSLIST_FORWARD_OPAQUE);
 		m_forwardOpaqueRecursivePass.EndExecution();
 
-		m_forwardOverlayRecursivePass.BeginExecution();
-		m_forwardOverlayRecursivePass.SetupDrawContext(m_stageID, ePass_ForwardRecursive, TTYPE_GENERAL, FB_GENERAL);
+		m_forwardOverlayRecursivePass.BeginExecution(m_graphicsPipeline);
+		m_forwardOverlayRecursivePass.SetupDrawContext(StageID, ePass_ForwardRecursive, TTYPE_GENERAL, FB_GENERAL);
 		m_forwardOverlayRecursivePass.DrawRenderItems(pRenderView, EFSLIST_TERRAINLAYER);
 		m_forwardOverlayRecursivePass.DrawRenderItems(pRenderView, EFSLIST_DECAL);
 		m_forwardOverlayRecursivePass.DrawRenderItems(pRenderView, EFSLIST_SKY);
 		m_forwardOverlayRecursivePass.EndExecution();
 
-		m_forwardTransparentRecursivePass.BeginExecution();
-		m_forwardTransparentRecursivePass.SetupDrawContext(m_stageID, ePass_ForwardRecursive, TTYPE_GENERAL, FB_GENERAL);
+		m_forwardTransparentRecursivePass.BeginExecution(m_graphicsPipeline);
+		m_forwardTransparentRecursivePass.SetupDrawContext(StageID, ePass_ForwardRecursive, TTYPE_GENERAL, FB_GENERAL);
 		m_forwardTransparentRecursivePass.DrawRenderItems(pRenderView, EFSLIST_TRANSP_BW);
 		m_forwardTransparentRecursivePass.DrawRenderItems(pRenderView, EFSLIST_TRANSP_AW);
 		m_forwardTransparentRecursivePass.DrawRenderItems(pRenderView, EFSLIST_TRANSP_NEAREST);

@@ -104,6 +104,7 @@ struct IXmlUtils;
 struct IZLibCompressor;
 struct IZLibDecompressor;
 struct SDisplayContextKey;
+struct SGraphicsPipelineKey;
 struct SFileVersion;
 
 namespace CryAudio
@@ -1201,9 +1202,9 @@ struct ISystem
 
 	//! Starts a new frame, updates engine systems, game logic and finally renders.
 	//! \return Returns true if the engine should continue running, false to quit.
-	virtual bool DoFrame(const SDisplayContextKey& displayContextKey, CEnumFlags<ESystemUpdateFlags> updateFlags = CEnumFlags<ESystemUpdateFlags>()) = 0;
+	virtual bool DoFrame(const SDisplayContextKey& displayContextKey, const SGraphicsPipelineKey& graphicsPipelineKey, CEnumFlags<ESystemUpdateFlags> updateFlags = CEnumFlags<ESystemUpdateFlags>()) = 0;
 
-	virtual void RenderBegin(const SDisplayContextKey& displayContextKey) = 0;
+	virtual void RenderBegin(const SDisplayContextKey& displayContextKey, const SGraphicsPipelineKey& graphicsPipelineKey) = 0;
 	virtual void RenderEnd(bool bRenderStats = true) = 0;
 
 	//! Updates the engine's systems without creating a rendered frame

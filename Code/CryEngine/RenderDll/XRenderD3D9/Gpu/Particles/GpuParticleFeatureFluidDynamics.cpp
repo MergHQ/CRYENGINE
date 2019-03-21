@@ -12,7 +12,7 @@ void CFeatureMotionFluidDynamics::Update(const gpu_pfx2::SUpdateContext& context
 	CParticleComponentRuntime* pRuntime = (CParticleComponentRuntime*)(context.pRuntime);
 	gpu_physics::CParticleFluidSimulation* pFluidSim = pRuntime->GetFluidSimulation();
 	if (!pFluidSim)
-		pFluidSim = pRuntime->CreateFluidSimulation();
+		pFluidSim = pRuntime->CreateFluidSimulation(context);
 
 	Vec3 emitterPos = pRuntime->GetPos();
 	auto& p = GetParameters();

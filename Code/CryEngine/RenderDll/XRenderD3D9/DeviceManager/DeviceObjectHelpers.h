@@ -472,7 +472,7 @@ struct SDeviceObjectHelpers
 		void ReleaseShaderReflection();
 
 		void BeginNamedConstantUpdate();
-		void EndNamedConstantUpdate(const D3DViewPort* pVP);
+		void EndNamedConstantUpdate(const D3DViewPort* pVP, CRenderView* pRenderView);
 
 		bool SetNamedConstant(const CCryNameR& paramName, const Vec4 param, EHWShaderClass shaderClass = eHWSC_Pixel);
 		bool SetNamedConstantArray(const CCryNameR& paramName, const Vec4 params[], uint32 numParams, EHWShaderClass shaderClass = eHWSC_Pixel);

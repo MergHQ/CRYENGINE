@@ -48,7 +48,7 @@ void CD3D9Renderer::EF_Init()
 
 	if (CV_r_logTexStreaming && !m_LogFileStr)
 	{
-		m_LogFileStr = fxopen ("Direct3DLogStreaming.txt", "w");
+		m_LogFileStr = fxopen("Direct3DLogStreaming.txt", "w");
 		if (m_LogFileStr)
 		{
 			iLog->Log("Direct3D texture streaming log file '%s' opened", "Direct3DLogStreaming.txt");
@@ -83,6 +83,15 @@ void CD3D9Renderer::EF_Init()
 		m_pPostProcessMgr = new CPostEffectsMgr;
 		m_pPostProcessMgr->Init();
 	}
+
+	if (!m_pComputeSkinningStorage)
+		m_pComputeSkinningStorage = new compute_skinning::CStorage;
+
+	// preallocate video memory buffer for particles when using the job system
+	m_particleBuffer.Create(CRendererCVars::CV_r_ParticleVerticePoolSize, CRendererCVars::CV_r_ParticleMaxVerticePoolSize);
+
+	if (!m_pGpuParticleManager)
+		m_pGpuParticleManager = new gpu_pfx2::CManager;
 
 	if (!m_pWaterSimMgr)
 		m_pWaterSimMgr = new CWater;
@@ -127,6 +136,7 @@ void CD3D9Renderer::EF_Exit(bool bFastShutdown)
 
 	SAFE_DELETE(m_pWaterSimMgr);
 	SAFE_DELETE(m_pPostProcessMgr);
+	SAFE_DELETE(m_pComputeSkinningStorage);
 
 	m_tempRenderObjects.m_renderObjectsPools.reset();
 
@@ -134,96 +144,17 @@ void CD3D9Renderer::EF_Exit(bool bFastShutdown)
 		CHWShader_D3D::ShutDown();
 }
 
-void CD3D9Renderer::RT_GraphicsPipelineBootup()
-{
-#if defined(FEATURE_SVO_GI)
-	// TODO: GraphicsPipeline-Stage bootstrapped with Init()
-	CSvoRenderer::GetInstance(true);
-#endif
-
-	if (!m_pGraphicsPipeline)
-		m_pGraphicsPipeline.reset(new CStandardGraphicsPipeline);
-	if (!m_pGraphicsPipeline->IsInitialized())
-		m_pGraphicsPipeline->Init();
-
-	m_pGraphicsPipeline->Resize(CRendererResources::s_renderWidth, CRendererResources::s_renderHeight);
-
-#if defined(ENABLE_RENDER_AUX_GEOM)
-//	if (m_pRenderAuxGeomD3D)
-//		m_pRenderAuxGeomD3D->CreateResources();
-#endif //ENABLE_RENDER_AUX_GEOM
-
-//	if (m_pStereoRenderer)
-//		m_pStereoRenderer->CreateBuffers();
-
-//	CREParticle::CreatePool();
-}
-
-void CD3D9Renderer::RT_GraphicsPipelineShutdown()
-{
-	CREParticle::ResetPool();
-
-	if (m_pStereoRenderer)
-		m_pStereoRenderer->ReleaseBuffers();
-
-#if defined(ENABLE_RENDER_AUX_GEOM)
-	if (m_pRenderAuxGeomD3D)
-		m_pRenderAuxGeomD3D->ReleaseResources();
-#endif //ENABLE_RENDER_AUX_GEOM
-
-	if (m_pGraphicsPipeline->IsInitialized())
-		m_pGraphicsPipeline->ShutDown();
-
-	m_pGraphicsPipeline.reset(nullptr);
-
-#if defined(FEATURE_SVO_GI)
-	// TODO: GraphicsPipeline-Stage shutdown with ShutDown()
-	if (auto pSvoRenderer = CSvoRenderer::GetInstance(false))
-		pSvoRenderer->Release();
-#endif
-}
-
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-
-bool CD3D9Renderer::FX_HDRScene(CRenderView *pRenderView, bool bClear)
-{
-	if (pRenderView->AllowsHDRRendering())
-	{
-		if (m_LogFile)
-			Logv(" +++ Start HDR scene +++ \n");
-
-		const int shaderRenderingFlags = pRenderView->GetShaderRenderingFlags();
-		const bool bDeferredShading = (shaderRenderingFlags & SHDF_ZPASS) != 0;
-		if (!bDeferredShading || CV_r_measureoverdraw || (shaderRenderingFlags & SHDF_BILLBOARDS))
-		{
-			// HDR output isn't used.
-			return false;
-		}
-
-		if (bClear || pRenderView->IsViewFlag(SRenderViewInfo::eFlags_MirrorCamera) || (pRenderView->GetShaderRenderingFlags() & SHDF_CUBEMAPGEN))
-		{
-			CClearSurfacePass::Execute(CRendererResources::s_ptexHDRTarget, Clr_Empty);
-			CClearSurfacePass::Execute(pRenderView->GetDepthTarget(), CLEAR_ZBUFFER | CLEAR_STENCIL, 0.0f, 0);
-		}
-	}
-	else
-	{
-		if (m_LogFile)
-			Logv(" +++ End HDR scene +++ \n");
-	}
-
-	return true;
-}
 
 struct SPreprocess
 {
-	int m_nPreprocess;
-	int m_Num;
-	CRenderObject* m_pObject;
-	int m_nTech;
-	CShader* m_Shader;
+	int               m_nPreprocess;
+	int               m_Num;
+	CRenderObject*    m_pObject;
+	int               m_nTech;
+	CShader*          m_Shader;
 	CShaderResources* m_pRes;
-	CRenderElement* m_RE;
+	CRenderElement*   m_RE;
 };
 
 struct Compare2
@@ -295,8 +226,6 @@ int CD3D9Renderer::EF_Preprocess(SRendItem* ri, uint32 nums, uint32 nume, const 
 		return 0;
 	std::sort(&Procs[0], &Procs[nProcs], Compare2());
 
-	bool bDrawToTexture = (passInfo.GetRenderView()->GetShaderRenderingFlags() & SRenderViewInfo::eFlags_DrawToTexure) != 0;
-
 	bool bRes = true;
 	for (i = 0; i < nProcs; i++)
 	{
@@ -307,7 +236,6 @@ int CD3D9Renderer::EF_Preprocess(SRendItem* ri, uint32 nums, uint32 nume, const 
 		{
 		case SPRID_SCANTEX:
 		case SPRID_SCANTEXWATER:
-			if (!bDrawToTexture)
 			{
 				bool bTryPreprocess = false;
 				CRenderObject* pObj = pr->m_pObject;
@@ -334,7 +262,7 @@ int CD3D9Renderer::EF_Preprocess(SRendItem* ri, uint32 nums, uint32 nume, const 
 						if (pTarg->m_eOrder == eRO_PreProcess)
 						{
 							bTryPreprocess = true;
-							bRes &= FX_DrawToRenderTarget(pr->m_Shader, pRes, pObj, pTech, pTarg, pr->m_nPreprocess, pr->m_RE,passInfo);
+							bRes &= FX_DrawToRenderTarget(pr->m_Shader, pRes, pObj, pTech, pTarg, pr->m_nPreprocess, pr->m_RE, passInfo);
 						}
 					}
 				}
@@ -347,7 +275,7 @@ int CD3D9Renderer::EF_Preprocess(SRendItem* ri, uint32 nums, uint32 nume, const 
 				{
 					CREWaterOcean* pOcean = static_cast<CREWaterOcean*>(pr->m_RE);
 					SHRenderTarget* pTarg = pOcean->GetReflectionRenderTarget();
-					bRes &= FX_DrawToRenderTarget(pr->m_Shader, pRes, pObj, pTech, pTarg, pr->m_nPreprocess, pr->m_RE,passInfo);
+					bRes &= FX_DrawToRenderTarget(pr->m_Shader, pRes, pObj, pTech, pTarg, pr->m_nPreprocess, pr->m_RE, passInfo);
 
 #if !defined(RELEASE) && defined(_DEBUG)
 					static string ENVIRONMENT_MAP_NAME("%ENVIRONMENT_MAP");
@@ -379,7 +307,6 @@ int CD3D9Renderer::EF_Preprocess(SRendItem* ri, uint32 nums, uint32 nume, const 
 			break;
 
 		case SPRID_CUSTOMTEXTURE:
-			if (!bDrawToTexture)
 			{
 				CRenderObject* pObj = pr->m_pObject;
 				int nT              = pr->m_nTech;
@@ -391,7 +318,7 @@ int CD3D9Renderer::EF_Preprocess(SRendItem* ri, uint32 nums, uint32 nume, const 
 				{
 					SHRenderTarget* pTarg = pRes->m_RTargets[j];
 					if (pTarg->m_eOrder == eRO_PreProcess)
-						bRes &= FX_DrawToRenderTarget(pr->m_Shader, pRes, pObj, pTech, pTarg, pr->m_nPreprocess, pr->m_RE,passInfo);
+						bRes &= FX_DrawToRenderTarget(pr->m_Shader, pRes, pObj, pTech, pTarg, pr->m_nPreprocess, pr->m_RE, passInfo);
 				}
 			}
 			break;
@@ -414,21 +341,29 @@ void CD3D9Renderer::EF_EndEf2D(const bool bSort)
 }
 
 //==============================================================================================
-float* CD3D9Renderer::PinOcclusionBuffer(Matrix44A &camera)
+float* CD3D9Renderer::PinOcclusionBuffer(Matrix44A& camera, const SGraphicsPipelineKey& graphicsPipelineKey)
 {
-	if (auto pSceneDepthStage = m_pGraphicsPipeline->GetSceneDepthStage())
+	std::shared_ptr<CGraphicsPipeline> pGP = FindGraphicsPipeline(graphicsPipelineKey);
+	if (pGP)
 	{
-		return pSceneDepthStage->PinOcclusionBuffer(camera);
+		if (auto pSceneDepthStage = pGP->GetStage<CSceneDepthStage>())
+		{
+			return pSceneDepthStage->PinOcclusionBuffer(camera);
+		}
 	}
 
 	return nullptr;
 }
 
-void CD3D9Renderer::UnpinOcclusionBuffer()
+void CD3D9Renderer::UnpinOcclusionBuffer(const SGraphicsPipelineKey& graphicsPipelineKey)
 {
-	if (auto pSceneDepthStage = m_pGraphicsPipeline->GetSceneDepthStage())
+	std::shared_ptr<CGraphicsPipeline> pGP = FindGraphicsPipeline(graphicsPipelineKey);
+	if (pGP)
 	{
-		pSceneDepthStage->UnpinOcclusionBuffer();
+		if (auto pSceneDepthStage = pGP->GetStage<CSceneDepthStage>())
+		{
+			pSceneDepthStage->UnpinOcclusionBuffer();
+		}
 	}
 }
 
@@ -438,7 +373,7 @@ void CD3D9Renderer::RT_UpdateSkinningConstantBuffers(CRenderView* pRenderView)
 	unsigned poolId = pRenderView->GetSkinningDataPools().poolIndex % CRY_ARRAY_COUNT(m_SkinningDataPool);
 	for (util::list<SCharacterInstanceCB>* iter = m_CharCBActiveList[poolId].next; iter != &m_CharCBActiveList[poolId]; iter = iter->next)
 	{
-		SCharacterInstanceCB* cb = iter->item<& SCharacterInstanceCB::list>();
+		SCharacterInstanceCB* cb = iter->item<&SCharacterInstanceCB::list>();
 		if (cb->updated)
 			continue;
 		SSkinningData* pSkinningData = cb->m_pSD;
@@ -469,7 +404,7 @@ void CD3D9Renderer::RT_UpdateSkinningConstantBuffers(CRenderView* pRenderView)
 		WriteLock _lock(m_lockCharCB);
 		if (totalRequested * 4 > committed * 3 && m_CharCBFreeList.empty() == false)
 		{
-			delete m_CharCBFreeList.prev->item<& SCharacterInstanceCB::list>();
+			delete m_CharCBFreeList.prev->item<&SCharacterInstanceCB::list>();
 			CryInterlockedDecrement(&m_CharCBAllocated);
 		}
 	}
@@ -483,14 +418,14 @@ void* CD3D9Renderer::FX_AllocateCharInstCB(SSkinningData* pSkinningData, uint32 
 		WriteLock _lock(m_lockCharCB);
 		if (m_CharCBFreeList.empty() == false)
 		{
-			cb = m_CharCBFreeList.next->item<& SCharacterInstanceCB::list>();
+			cb = m_CharCBFreeList.next->item<&SCharacterInstanceCB::list>();
 			cb->list.erase();
 		}
 	}
 	if (cb == NULL)
 	{
-		cb           = new SCharacterInstanceCB();
-		cb->boneTransformsBuffer = gcpRendD3D->m_DevBufMan.CreateConstantBuffer(768*sizeof(DualQuat), true, true);
+		cb = new SCharacterInstanceCB();
+		cb->boneTransformsBuffer = gcpRendD3D->m_DevBufMan.CreateConstantBuffer(768 * sizeof(DualQuat), true, true);
 		cb->activeMorphsBuffer.Create(768, sizeof(compute_skinning::SActiveMorphs), DXGI_FORMAT_UNKNOWN, CDeviceObjectFactory::USAGE_CPU_WRITE | CDeviceObjectFactory::USAGE_STRUCTURED | CDeviceObjectFactory::BIND_SHADER_RESOURCE, NULL);
 		CryInterlockedIncrement(&m_CharCBAllocated);
 	}
@@ -515,14 +450,20 @@ void CD3D9Renderer::FX_ClearCharInstCB(uint32 frameId)
 
 void CD3D9Renderer::RT_PreRenderScene(CRenderView* pRenderView)
 {
-	GetGraphicsPipeline().SetCurrentRenderView(pRenderView);
+	std::shared_ptr<CGraphicsPipeline> pActiveGraphicsPipeline = pRenderView->GetGraphicsPipeline();
+	const uint32 shaderRenderingFlags = pActiveGraphicsPipeline->GetRenderFlags();
+	pActiveGraphicsPipeline->SetCurrentRenderView(pRenderView);
 
-	const uint32 shaderRenderingFlags = pRenderView->GetShaderRenderingFlags();
+	//if (pRenderView->GetCurrentEye() != CCamera::eEye_Right)
+	//{
+	//	m_pGpuParticleManager->RenderThreadPreUpdate();
+	//}
+
 	const bool bRecurse = pRenderView->IsRecursive();
-	const bool bAllowPostProcess = pRenderView->IsPostProcessingEnabled();
+	const bool bAllowPostProcess = pActiveGraphicsPipeline->IsPostProcessingEnabled();
 	const bool bAllowPostAA = bAllowPostProcess
-		&& (GetWireframeMode() == R_SOLID_MODE)
-		&& (CRenderer::CV_r_DeferredShadingDebugGBuffer == 0);
+	                          && (GetWireframeMode() == R_SOLID_MODE)
+	                          && (CRenderer::CV_r_DeferredShadingDebugGBuffer == 0);
 
 	// Update the character CBs (only active on D3D11 style platforms)
 	// Needs to be done before objects are compiled
@@ -539,13 +480,19 @@ void CD3D9Renderer::RT_PreRenderScene(CRenderView* pRenderView)
 		{
 			const auto* eye = GetS3DRend().GetEyeDisplayContext(CCamera::eEye_Left).first;
 			if (eye)
-				GetGraphicsPipeline().GetPostAAStage()->CalculateJitterOffsets(eye->GetCurrentBackBuffer()->GetWidth(), eye->GetCurrentBackBuffer()->GetHeight(), pRenderView);
+			{
+				auto* pStage = pActiveGraphicsPipeline->GetStage<CPostAAStage>();
+				pStage->CalculateJitterOffsets(eye->GetCurrentBackBuffer()->GetWidth(), eye->GetCurrentBackBuffer()->GetHeight(), pRenderView);
+			}
 		}
 		else
 		{
 			const auto& ro = GetActiveDisplayContext()->GetRenderOutput();
 			if (ro)
-				GetGraphicsPipeline().GetPostAAStage()->CalculateJitterOffsets(ro->GetOutputResolution().x, ro->GetOutputResolution().y, pRenderView);
+			{
+				auto* pStage = pActiveGraphicsPipeline->GetStage<CPostAAStage>();
+				pStage->CalculateJitterOffsets(ro->GetOutputResolution().x, ro->GetOutputResolution().y, pRenderView);
+			}
 		}
 	}
 
@@ -557,7 +504,7 @@ void CD3D9Renderer::RT_PreRenderScene(CRenderView* pRenderView)
 			if (pShaderResources && pShaderResources->HasChanges())
 			{
 				// NOTE: unconditionally clear dirty flag here, as there is no point in trying to update the resource set again
-				// in case of failure. any change to the resources will set the dirty flag again. 
+				// in case of failure. any change to the resources will set the dirty flag again.
 				pShaderResources->RT_UpdateResourceSet();
 			}
 		}
@@ -573,7 +520,7 @@ void CD3D9Renderer::RT_PreRenderScene(CRenderView* pRenderView)
 		(shaderRenderingFlags & SHDF_ALLOWPOSTPROCESS) != 0;
 	if (updateLightVolumes)
 	{
-		GetGraphicsPipeline().GetLightVolumeBuffer().UpdateContent();
+		pActiveGraphicsPipeline->GetLightVolumeBuffer().UpdateContent();
 		lightVolumeOldFrameID = newFrameID;
 	}
 }
@@ -595,7 +542,7 @@ void CD3D9Renderer::RT_PostRenderScene(CRenderView* pRenderView)
 		gRenDev->GetIRenderAuxGeom()->Submit();
 	}
 
-	GetGraphicsPipeline().SetCurrentRenderView(nullptr);
+	pRenderView->GetGraphicsPipeline()->SetCurrentRenderView(nullptr);
 }
 
 // Render thread only scene rendering
@@ -611,14 +558,7 @@ void CD3D9Renderer::RT_RenderScene(CRenderView* pRenderView)
 		pRenderView->SwitchUsageMode(CRenderView::eUsageModeReading);
 	}
 
-	uint32 shaderRenderingFlags = pRenderView->GetShaderRenderingFlags();
-
-	const bool bRecurse = pRenderView->IsRecursive();
-	const bool bSecondaryViewport = (shaderRenderingFlags & SHDF_SECONDARY_VIEWPORT) != 0;
-	const bool bFullRendering = (shaderRenderingFlags & SHDF_ZPASS) && (shaderRenderingFlags & SHDF_ALLOWPOSTPROCESS);
 	const CTimeValue Time = iTimer->GetAsyncTime();
-
-	shaderRenderingFlags |= (!bFullRendering || bRecurse || bSecondaryViewport) * SHDF_FORWARD_MINIMAL;
 
 	// Only Billboard rendering doesn't use CRenderOutput
 	if (!pRenderView->GetRenderOutput() && !pRenderView->IsBillboardGenView())
@@ -627,14 +567,15 @@ void CD3D9Renderer::RT_RenderScene(CRenderView* pRenderView)
 		pRenderView->GetRenderOutput()->BeginRendering(pRenderView);
 	}
 
+	std::shared_ptr<CGraphicsPipeline> pActiveGraphicsPipeline = pRenderView->GetGraphicsPipeline();
+	uint32 shaderRenderingFlags = pActiveGraphicsPipeline->GetRenderFlags();
+
 	CFlashTextureSourceSharedRT::SetupSharedRenderTargetRT();
 
-	if (!bRecurse)
+	if (!pRenderView->IsRecursive())
 	{
 		D3D11_VIEWPORT viewport = RenderViewportToD3D11Viewport(pRenderView->GetViewport());
-
-		const bool bRightEye = (shaderRenderingFlags & SHDF_STEREO_RIGHT_EYE) != 0;
-		CVrProjectionManager::Instance()->Configure(viewport, bRightEye);
+		pActiveGraphicsPipeline->GetVrProjectionManager()->Configure(viewport, pRenderView->GetCurrentEye() == CCamera::eEye_Right);
 	}
 
 	int nSaveDrawNear     = CV_r_nodrawnear;
@@ -649,13 +590,11 @@ void CD3D9Renderer::RT_RenderScene(CRenderView* pRenderView)
 	m_vSceneLuminanceInfo = Vec4(1.0f, 1.0f, 1.0f, 1.0f);
 	m_fAdaptedSceneScale  = m_fAdaptedSceneScaleLBuffer = m_fScotopicSceneScale = 1.0f;
 
-	FX_HDRScene(pRenderView, false);
-
 	// This scope is the only one allowed to utilize the graphics pipeline
 	{
 		CRY_ASSERT(shaderRenderingFlags & SHDF_ALLOWHDR);
 
-		GetGraphicsPipeline().Update(EShaderRenderingFlags(shaderRenderingFlags));
+		pActiveGraphicsPipeline->Update(EShaderRenderingFlags(shaderRenderingFlags));
 
 		{
 			PROFILE_FRAME(WaitForParticleRendItems);
@@ -668,29 +607,10 @@ void CD3D9Renderer::RT_RenderScene(CRenderView* pRenderView)
 		pRenderView->CompileModifiedRenderObjects();
 
 		// Sort transparent lists that might have refractive items that will require resolve passes.
-		// This is done after the CompileModifiedRenderObjects we need to project render itemss AABB.
+		// This is done after the CompileModifiedRenderObjects we need to project render items AABB.
 		pRenderView->StartOptimizeTransparentRenderItemsResolvesJob();
 
-		if (pRenderView->IsBillboardGenView())
-		{
-			GetGraphicsPipeline().ExecuteBillboards();
-		}
-		else if (shaderRenderingFlags & SHDF_FORWARD_MINIMAL)
-		{
-			GetGraphicsPipeline().ExecuteMinimumForwardShading();
-		}
-		else if (CSceneCustomStage::DoDebugRendering())
-		{
-			GetGraphicsPipeline().ExecuteDebugger();
-		}
-		else if (CRenderer::CV_r_GraphicsPipelineMobile > 0)
-		{
-			GetGraphicsPipeline().ExecuteMobilePipeline();
-		}
-		else
-		{
-			GetGraphicsPipeline().Execute();
-		}
+		pActiveGraphicsPipeline->Execute();
 
 		//////////////////////////////////////////////////////////////////////////
 		// Normally it does this:
@@ -703,13 +623,13 @@ void CD3D9Renderer::RT_RenderScene(CRenderView* pRenderView)
 		//  [HDR,  renderResolution] BackBuffer
 		//
 		// This would happen if the back-buffer is HDR and matches the rendering resolution
-		ResolveSupersampledRendering();
-		ResolveSubsampledOutput();
-		ResolveHighDynamicRangeDisplay();
+		ResolveSupersampledRendering(pActiveGraphicsPipeline);
+		ResolveSubsampledOutput(pActiveGraphicsPipeline);
+		ResolveHighDynamicRangeDisplay(pActiveGraphicsPipeline);
 		// Everything after this location will render directly into the display buffer/resolution
 		//////////////////////////////////////////////////////////////////////////
 
-		GetGraphicsPipeline().ClearState();
+		pActiveGraphicsPipeline->ClearState();
 	}
 
 	////////////////////////////////////////////////
@@ -776,7 +696,6 @@ void CD3D9Renderer::SubmitRenderViewForRendering(int nFlags, const SRenderingPas
 			}
 			else
 			{
-				pRenderView->SetShaderRenderingFlags(nFlags);
 				pRenderView->SetZoomFactor(passInfo.GetZoomFactor());
 				RT_RenderScene(pRenderView);
 			}
@@ -800,12 +719,9 @@ void CD3D9Renderer::SubmitRenderViewForRendering(int nFlags, const SRenderingPas
 }
 
 // Process all render item lists
-void CD3D9Renderer::EF_EndEf3D(const int nPrecacheUpdateIdSlow, const int nPrecacheUpdateIdFast, const SRenderingPassInfo& passInfo)
+void CD3D9Renderer::EF_EndEf3D(const int nPrecacheUpdateIdSlow, const int nPrecacheUpdateIdFast, const SRenderingPassInfo& passInfo, const int nRenderFlags)
 {
 	ASSERT_IS_MAIN_THREAD(m_pRT)
-
-	const int nFlags = passInfo.GetIRenderView()->GetShaderRenderingFlags();
-
 	m_beginFrameCount--;
 
 	if (m_beginFrameCount < 0)
@@ -824,7 +740,7 @@ void CD3D9Renderer::EF_EndEf3D(const int nPrecacheUpdateIdSlow, const int nPreca
 		return;
 	}
 
-	const bool bSecondaryViewport = (nFlags & SHDF_SECONDARY_VIEWPORT) != 0;
+	const bool bSecondaryViewport = (nRenderFlags & SHDF_SECONDARY_VIEWPORT) != 0;
 	if (bSecondaryViewport)
 	{
 		CRenderView* pRenderView = passInfo.GetRenderView();
@@ -836,16 +752,16 @@ void CD3D9Renderer::EF_EndEf3D(const int nPrecacheUpdateIdSlow, const int nPreca
 	}
 
 	int nAsyncShaders = CV_r_shadersasynccompiling;
-	if (nFlags & SHDF_NOASYNC)
+	if (nRenderFlags & SHDF_NOASYNC)
 		CV_r_shadersasynccompiling = 0;
 
 	if (GetS3DRend().IsStereoEnabled())
 	{
-		GetS3DRend().ProcessScene(nFlags, passInfo);
+		GetS3DRend().ProcessScene(nRenderFlags, passInfo);
 	}
 	else
 	{
-		RenderFrame(nFlags, passInfo);
+		RenderFrame(nRenderFlags, passInfo);
 	}
 
 	CV_r_shadersasynccompiling = nAsyncShaders;
@@ -864,9 +780,8 @@ void CD3D9Renderer::EF_InvokeShadowMapRenderJobs(const SRenderingPassInfo& passI
 void CD3D9Renderer::RenderFrame(int nSceneRenderingFlags, const SRenderingPassInfo& passInfo)
 {
 	ASSERT_IS_MAIN_THREAD(m_pRT)
-	
-	const bool bIsRightEye = (nSceneRenderingFlags & (SHDF_STEREO_LEFT_EYE | SHDF_STEREO_RIGHT_EYE)) == SHDF_STEREO_RIGHT_EYE;
-	if (!passInfo.IsRecursivePass() && !bIsRightEye && !CV_r_measureoverdraw)
+
+	if (!passInfo.IsRecursivePass() && (passInfo.GetRenderView()->GetCurrentEye() != CCamera::eEye_Right) && !CV_r_measureoverdraw)
 	{
 		bool bAllowDeferred = (nSceneRenderingFlags & SHDF_ZPASS) != 0;
 		if (bAllowDeferred)
@@ -901,22 +816,29 @@ void CD3D9Renderer::RenderFrame(int nSceneRenderingFlags, const SRenderingPassIn
 	}
 }
 
-bool CD3D9Renderer::StoreGBufferToAtlas(const RectI& rcDst, int nSrcWidth, int nSrcHeight, int nDstWidth, int nDstHeight, ITexture *pDataD, ITexture *pDataN)
+bool CD3D9Renderer::StoreGBufferToAtlas(const RectI& rcDst, int nSrcWidth, int nSrcHeight, int nDstWidth, int nDstHeight,
+                                        ITexture* pDataD, ITexture* pDataN, CGraphicsPipeline* pGraphicsPipeline)
 {
 	bool bRes = true;
 
-	CTexture *pGBuffD = CRendererResources::s_ptexSceneDiffuse;
-	CTexture *pGBuffN = CRendererResources::s_ptexSceneNormalsMap;
+	CTexture* pGBuffD = CRendererResources::s_ptexSceneDiffuse;
+	CTexture* pGBuffN = CRendererResources::s_ptexSceneNormalsMap;
 
-	CTexture *pDstD = (CTexture *)pDataD;
-	CTexture *pDstN = (CTexture *)pDataN;
+	CTexture* pDstD = (CTexture*)pDataD;
+	CTexture* pDstN = (CTexture*)pDataN;
 
 	RECT SrcBox, DstBox;
-	SrcBox.left = 0; SrcBox.top = 0; SrcBox.right = nSrcWidth; SrcBox.bottom = nSrcHeight;
-	DstBox.left = rcDst.x; DstBox.top = rcDst.y; DstBox.right = rcDst.x + nDstWidth; DstBox.bottom = rcDst.y + nDstHeight;
+	SrcBox.left = 0;
+	SrcBox.top = 0;
+	SrcBox.right = nSrcWidth;
+	SrcBox.bottom = nSrcHeight;
+	DstBox.left = rcDst.x;
+	DstBox.top = rcDst.y;
+	DstBox.right = rcDst.x + nDstWidth;
+	DstBox.bottom = rcDst.y + nDstHeight;
 
-	CStretchRegionPass().Execute(pGBuffD, pDstD, &SrcBox, &DstBox);
-	CStretchRegionPass().Execute(pGBuffN, pDstN, &SrcBox, &DstBox);
+	CStretchRegionPass(pGraphicsPipeline).Execute(pGBuffD, pDstD, &SrcBox, &DstBox);
+	CStretchRegionPass(pGraphicsPipeline).Execute(pGBuffN, pDstN, &SrcBox, &DstBox);
 
 	return bRes;
 }
@@ -985,8 +907,8 @@ void CD3D9Renderer::LogShaderImportMiss(const CShader* pShader)
 void CD3D9Renderer::WaitForParticleBuffer(int frameId)
 {
 	CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
-	
-	gcpRendD3D.GetGraphicsPipeline().GetParticleBufferSet().WaitForFence(frameId);
+
+	gcpRendD3D.GetParticleBufferSet().WaitForFence(frameId);
 }
 //========================================================================================================
 

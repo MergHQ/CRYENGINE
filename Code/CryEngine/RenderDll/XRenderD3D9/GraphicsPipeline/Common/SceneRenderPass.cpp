@@ -54,7 +54,7 @@ void CSceneRenderPass::SetRenderTargets(CTexture* pDepthTarget, CTexture* pColor
 		(!pColorTarget2 || !pColorTarget3 || pColorTarget2->GetWidth() == pColorTarget3->GetWidth()),
 		"Color targets are of different size!");
 	CRY_ASSERT_MESSAGE(
-		(!pDepthTarget  || !pColorTarget0 || pDepthTarget ->GetWidth() >= pColorTarget0->GetWidth()),
+		(!pDepthTarget || !pColorTarget0 || pDepthTarget->GetWidth() >= pColorTarget0->GetWidth()),
 		"Depth target is smaller than the color target(s)!");
 
 	// TODO: refactor, shouldn't need to update the renderpass here but PSOs are compiled before CSceneRenderPass::Prepare is called
@@ -63,8 +63,7 @@ void CSceneRenderPass::SetRenderTargets(CTexture* pDepthTarget, CTexture* pColor
 
 void CSceneRenderPass::SetViewport(const D3DViewPort& viewport)
 {
-	m_viewPort[0] =
-	m_viewPort[1] = viewport;
+	m_viewPort[0] = m_viewPort[1] = viewport;
 
 	if (m_passFlags & CSceneRenderPass::ePassFlags_RenderNearest)
 	{
@@ -91,10 +90,10 @@ void CSceneRenderPass::SetViewport(const SRenderViewport& viewport)
 }
 
 void CSceneRenderPass::SetDepthBias(float constBias, float slopeBias, float biasClamp)
-{ 
-	m_depthConstBias = constBias; 
-	m_depthSlopeBias = slopeBias; 
-	m_depthBiasClamp = biasClamp; 
+{
+	m_depthConstBias = constBias;
+	m_depthSlopeBias = slopeBias;
+	m_depthBiasClamp = biasClamp;
 }
 
 void CSceneRenderPass::ExchangeRenderTarget(uint32 slot, CTexture* pNewColorTarget, ResourceViewHandle hRenderTargetView)
@@ -119,11 +118,11 @@ void CSceneRenderPass::PrepareRenderPassForUse(CDeviceCommandListRef RESTRICT_RE
 
 	if (m_passFlags & ePassFlags_VrProjectionPass)
 	{
-		if (CVrProjectionManager::IsMultiResEnabledStatic())
+		if (gcpRendD3D.GetVrProjectionManager()->IsMultiResEnabledStatic())
 		{
 			// we don't know the bNearest flag here, so just prepare for both cases
-			CVrProjectionManager::Instance()->PrepareProjectionParameters(commandList, GetViewport(false));
-			CVrProjectionManager::Instance()->PrepareProjectionParameters(commandList, GetViewport(true));
+			gcpRendD3D.GetVrProjectionManager()->PrepareProjectionParameters(commandList, GetViewport(false));
+			gcpRendD3D.GetVrProjectionManager()->PrepareProjectionParameters(commandList, GetViewport(true));
 		}
 	}
 }
@@ -133,7 +132,7 @@ void CSceneRenderPass::ResolvePass(CDeviceCommandListRef RESTRICT_REFERENCE comm
 	const auto textureWidth = CRendererResources::s_ptexHDRTarget->GetWidth();
 	const auto textureHeight = CRendererResources::s_ptexHDRTarget->GetHeight();
 
-	for (const auto &bounds : screenBounds)
+	for (const auto& bounds : screenBounds)
 	{
 		const auto x = bounds.Min.x;
 		const auto y = bounds.Min.y;
@@ -162,7 +161,6 @@ void CSceneRenderPass::BeginRenderPass(CDeviceCommandListRef RESTRICT_REFERENCE 
 {
 	// Note: Function has to be threadsafe since it can be called from several worker threads
 
-
 	D3D11_VIEWPORT viewport = GetViewport(bNearest);
 	bool bViewportSet = false;
 
@@ -171,10 +169,10 @@ void CSceneRenderPass::BeginRenderPass(CDeviceCommandListRef RESTRICT_REFERENCE 
 
 	if (m_passFlags & ePassFlags_VrProjectionPass)
 	{
-		bViewportSet = CVrProjectionManager::Instance()->SetRenderingState(commandList, viewport,
-			(m_passFlags & ePassFlags_UseVrProjectionState) != 0, (m_passFlags & ePassFlags_RequireVrProjectionConstants) != 0);
+		bViewportSet = gcpRendD3D.GetVrProjectionManager()->SetRenderingState(commandList, viewport,
+		                                                                      (m_passFlags & ePassFlags_UseVrProjectionState) != 0, (m_passFlags & ePassFlags_RequireVrProjectionConstants) != 0);
 	}
-	
+
 	if (!bViewportSet)
 	{
 		pCommandInterface->SetViewports(1, &viewport);
@@ -202,19 +200,19 @@ void CSceneRenderPass::EndRenderPass(CDeviceCommandListRef RESTRICT_REFERENCE co
 
 	if (m_passFlags & ePassFlags_UseVrProjectionState)
 	{
-		CVrProjectionManager::Instance()->RestoreState(commandList);
+		gcpRendD3D.GetVrProjectionManager()->RestoreState(commandList);
 	}
 }
 
-void CSceneRenderPass::BeginExecution()
+void CSceneRenderPass::BeginExecution(CGraphicsPipeline& activeGraphicsPipeline)
 {
 	assert(s_recursionCounter == 0);
 	s_recursionCounter += 1;
-	
+
 	m_numRenderItemGroups = 0;
 
-	if (gcpRendD3D->GetGraphicsPipeline().GetRenderPassScheduler().IsActive())
-		gcpRendD3D->GetGraphicsPipeline().GetRenderPassScheduler().AddPass(this);
+	if (activeGraphicsPipeline.GetRenderPassScheduler().IsActive())
+		activeGraphicsPipeline.GetRenderPassScheduler().AddPass(this);
 }
 
 void CSceneRenderPass::EndExecution()
@@ -222,42 +220,42 @@ void CSceneRenderPass::EndExecution()
 	s_recursionCounter -= 1;
 }
 
-inline void DebugDrawRenderResolve(const std::vector<TRect_tpl<uint16>> &ns, const std::size_t count)
+inline void DebugDrawRenderResolve(const std::vector<TRect_tpl<uint16>>& ns, const std::size_t count)
 {
 	// Color table for debug draw
 	const auto a = 64;
 	ColorB colors[] = {
-		ColorB(255, 0, 0, a)    , // Red
-		ColorB(0, 255, 0, a)    , // Green
-		ColorB(0, 0, 255, a)    , // Blue
-		ColorB(255, 255, 0, a)  , // Yellow
-		ColorB(255, 0, 255, a)  , // Magenta
-		ColorB(0, 255, 255, a)  , // Cyan
-		ColorB(128, 0, 0, a)	,
-		ColorB(0, 128, 0, a)	,
-		ColorB(0, 0, 128, a)	,
-		ColorB(128, 128, 0, a)	,
-		ColorB(128, 0, 128, a)	,
-		ColorB(0, 128, 128, a)	,
+		ColorB(255, 0,   0,   a), // Red
+		ColorB(0,   255, 0,   a), // Green
+		ColorB(0,   0,   255, a), // Blue
+		ColorB(255, 255, 0,   a), // Yellow
+		ColorB(255, 0,   255, a), // Magenta
+		ColorB(0,   255, 255, a), // Cyan
+		ColorB(128, 0,   0,   a),
+		ColorB(0,   128, 0,   a),
+		ColorB(0,   0,   128, a),
+		ColorB(128, 128, 0,   a),
+		ColorB(128, 0,   128, a),
+		ColorB(0,   128, 128, a),
 		ColorB(192, 192, 192, a),
 		ColorB(128, 128, 128, a),
 		ColorB(153, 153, 255, a),
-		ColorB(153, 51, 102, a)	,
+		ColorB(153, 51,  102, a),
 		ColorB(255, 255, 204, a),
 		ColorB(204, 255, 255, a),
-		ColorB(102, 0, 102, a)	,
+		ColorB(102, 0,   102, a),
 		ColorB(255, 128, 128, a),
-		ColorB(0, 102, 204, a)	,
+		ColorB(0,   102, 204, a),
 		ColorB(204, 204, 255, a),
-		ColorB(0, 0, 128, a)	,
-		ColorB(255, 0, 255, a)	,
-		ColorB(255, 255, 0, a)	,
-		ColorB(0, 255, 255, a)	,
-		ColorB(128, 0, 128, a)	,
-		ColorB(128, 0, 0, a)	,
-		ColorB(0, 128, 128, a)	,
-		ColorB(0, 0, 255, a)	,
-		ColorB(0, 204, 255, a)	,
+		ColorB(0,   0,   128, a),
+		ColorB(255, 0,   255, a),
+		ColorB(255, 255, 0,   a),
+		ColorB(0,   255, 255, a),
+		ColorB(128, 0,   128, a),
+		ColorB(128, 0,   0,   a),
+		ColorB(0,   128, 128, a),
+		ColorB(0,   0,   255, a),
+		ColorB(0,   204, 255, a),
 		ColorB(204, 255, 255, a),
 		ColorB(204, 255, 204, a),
 		ColorB(255, 255, 153, a),
@@ -265,25 +263,24 @@ inline void DebugDrawRenderResolve(const std::vector<TRect_tpl<uint16>> &ns, con
 		ColorB(255, 153, 204, a),
 		ColorB(204, 153, 255, a),
 		ColorB(255, 204, 153, a),
-		ColorB(51, 102, 255, a)	,
-		ColorB(51, 204, 204, a)	,
-		ColorB(153, 204, 0, a)	,
-		ColorB(255, 204, 0, a)	,
-		ColorB(255, 153, 0, a)	,
-		ColorB(255, 102, 0, a)	,
+		ColorB(51,  102, 255, a),
+		ColorB(51,  204, 204, a),
+		ColorB(153, 204, 0,   a),
+		ColorB(255, 204, 0,   a),
+		ColorB(255, 153, 0,   a),
+		ColorB(255, 102, 0,   a),
 		ColorB(102, 102, 153, a),
 		ColorB(150, 150, 150, a),
-		ColorB(0, 51, 102, a)	,
-		ColorB(51, 153, 102, a)	,
-		ColorB(0, 51, 0, a)		,
-		ColorB(51, 51, 0, a)	,
-		ColorB(153, 51, 0, a)	,
-		ColorB(153, 51, 102, a)	,
-		ColorB(51, 51, 153, a)	,
-		ColorB(51, 51, 51, a)	,
-		ColorB(0, 0, 0, a)		,
-		ColorB(255, 255, 255, a),
-	};
+		ColorB(0,   51,  102, a),
+		ColorB(51,  153, 102, a),
+		ColorB(0,   51,  0,   a),
+		ColorB(51,  51,  0,   a),
+		ColorB(153, 51,  0,   a),
+		ColorB(153, 51,  102, a),
+		ColorB(51,  51,  153, a),
+		ColorB(51,  51,  51,  a),
+		ColorB(0,   0,   0,   a),
+		ColorB(255, 255, 255, a), };
 
 	if (CRendererCVars::CV_r_RefractionPartialResolvesDebug == 2)
 	{
@@ -388,9 +385,9 @@ void CSceneRenderPass::DrawRenderItems(CRenderView* pRenderView, ERenderListID r
 #endif
 #if defined(DO_RENDERSTATS)
 	if (gcpRendD3D->CV_r_stats == 6 || gcpRendD3D->m_pDebugRenderNode || gcpRendD3D->m_bCollectDrawCallsInfoPerNode)
-		passContext.pDrawCallInfoPerNode = gcpRendD3D->GetGraphicsPipeline().GetDrawCallInfoPerNode();
+		passContext.pDrawCallInfoPerNode = gcpRendD3D->GetDrawCallInfoPerNode();
 	if (gcpRendD3D->m_bCollectDrawCallsInfo)
-		passContext.pDrawCallInfoPerMesh = gcpRendD3D->GetGraphicsPipeline().GetDrawCallInfoPerMesh();
+		passContext.pDrawCallInfoPerMesh = gcpRendD3D->GetDrawCallInfoPerMesh();
 #endif
 
 	passContext.groupLabel = label;
@@ -410,7 +407,7 @@ void CSceneRenderPass::DrawOpaqueRenderItems(SGraphicsPipelinePassContext& passC
 {
 	passContext.rendItems = { listStart, listEnd };
 
-	if (gcpRendD3D->GetGraphicsPipeline().GetRenderPassScheduler().IsActive())
+	if (pRenderView->GetGraphicsPipeline()->GetRenderPassScheduler().IsActive())
 	{
 		m_passContexts.emplace_back(std::move(passContext));
 		return;
@@ -440,7 +437,7 @@ void CSceneRenderPass::DrawTransparentRenderItems(SGraphicsPipelinePassContext& 
 			// Fast static mode
 			// Single fullscreen Resolve the full screen once, before submitting transparent items.
 
-			const auto &vp = pRenderView->GetViewport();
+			const auto& vp = pRenderView->GetViewport();
 
 			SGraphicsPipelinePassContext resolvePass = { GraphicsPipelinePassType::resolve, pRenderView, this };
 			resolvePass.stageID    = passContext.stageID;
@@ -466,7 +463,7 @@ void CSceneRenderPass::DrawTransparentRenderItems(SGraphicsPipelinePassContext& 
 			const auto& segments = static_cast<const CRenderView*>(pRenderView)->GetTransparentSegments(renderList);
 
 			std::size_t count = 0;
-			for (const auto &s : segments)
+			for (const auto& s : segments)
 			{
 				if (s.rendItems.IsEmpty())
 					continue;
@@ -497,7 +494,7 @@ void CSceneRenderPass::DrawTransparentRenderItems(SGraphicsPipelinePassContext& 
 		}
 	}
 
-	if (gcpRendD3D->GetGraphicsPipeline().GetRenderPassScheduler().IsActive())
+	if (pRenderView->GetGraphicsPipeline()->GetRenderPassScheduler().IsActive())
 	{
 		m_passContexts.reserve(m_passContexts.size() + passes.size());
 		std::copy(passes.begin(), passes.end(), std::back_inserter(m_passContexts));
@@ -507,7 +504,7 @@ void CSceneRenderPass::DrawTransparentRenderItems(SGraphicsPipelinePassContext& 
 
 	if (!CRenderer::CV_r_NoDraw)
 	{
-		for (const auto &pass : passes)
+		for (const auto& pass : passes)
 			pRenderView->DrawCompiledRenderItems(pass);
 	}
 }

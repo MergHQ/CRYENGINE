@@ -32,7 +32,7 @@ CConstantBufferPtr CRenderObjectsPools::AllocatePerDrawConstantBuffer()
 	{
 		CConstantBufferPtr ptr = std::move(m_freeConstantBuffers.back());
 		m_freeConstantBuffers.pop_back();
-		
+
 		CRY_ASSERT_MESSAGE(!ptr || (ptr->m_nRefCount == 1), "Someones hold a ref-count, can't reuse ConstantBuffer!");
 		CRY_ASSERT_MESSAGE(ptr && !ptr->IsNullBuffer(), "Invalid cached pointer");
 		return ptr;
@@ -166,7 +166,7 @@ void CCompiledRenderObject::CompilePerDrawCB(CRenderObject* pRenderObject, uint6
 		m_rootConstants = pRootCompiled->m_rootConstants;
 		return;
 	}
-	
+
 	m_bDynamicInstancingPossible = CRendererCVars::CV_r_geominstancing != 0;
 	if (!pRenderObject->m_Instances.empty())
 		m_bDynamicInstancingPossible = false;
@@ -186,10 +186,10 @@ void CCompiledRenderObject::CompilePerDrawCB(CRenderObject* pRenderObject, uint6
 	// silhouette color
 	const uint32 params = pRenderObject->m_data.m_nHUDSilhouetteParams;
 	const Vec4 silhouetteColor(
-	  float((params & 0xff000000) >> 24) * (1.0f / 255.0f),
-	  float((params & 0x00ff0000) >> 16) * (1.0f / 255.0f),
-	  float((params & 0x0000ff00) >> 8) * (1.0f / 255.0f),
-	  float((params & 0x000000ff)) * (1.0f / 255.0f));
+		float((params & 0xff000000) >> 24) * (1.0f / 255.0f),
+		float((params & 0x00ff0000) >> 16) * (1.0f / 255.0f),
+		float((params & 0x0000ff00) >> 8) * (1.0f / 255.0f),
+		float((params & 0x000000ff)) * (1.0f / 255.0f));
 
 	Matrix44A objPrevMatr;
 	bool bMotionBlurMatrix = CMotionBlur::GetPrevObjToWorldMat(pRenderObject, objFlags, objPrevMatr);
@@ -245,7 +245,7 @@ void CCompiledRenderObject::CompilePerDrawCB(CRenderObject* pRenderObject, uint6
 		{
 			if (pOD->m_pTerrainSectorTextureInfo)
 				TerrainSectorTextureInfo = *pOD->m_pTerrainSectorTextureInfo;
-			
+
 			RenderObjMaxViewDistance = pOD->m_fMaxViewDistance; // Obj view max distance
 		}
 		cb->CD_BlendTerrainColInfo[0] = TerrainSectorTextureInfo.fTexOffsetX;
@@ -385,19 +385,19 @@ void CCompiledRenderObject::CompilePerInstanceCB(CRenderObject* pRenderObject, b
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CCompiledRenderObject::CompilePerDrawExtraResources(CRenderObject* pRenderObject)
+void CCompiledRenderObject::CompilePerDrawExtraResources(CRenderObject* pRenderObject, CRenderView* pRenderView)
 {
-	auto& pGraphicsPipeline = gcpRendD3D->GetGraphicsPipeline();
+	CGraphicsPipeline* pGraphicsPipeline = pRenderView->GetGraphicsPipeline().get();
 
 	if (!m_bHasTessellation && !pRenderObject->m_data.m_pSkinningData) // only needed for skinning and tessellation at the moment
 	{
-		m_perDrawExtraResources = pGraphicsPipeline.GetDefaulDrawExtraResourceSet();
+		m_perDrawExtraResources = pGraphicsPipeline->GetDefaulDrawExtraResourceSet();
 		CRY_ASSERT_MESSAGE(m_perDrawExtraResources && m_perDrawExtraResources->IsValid(), "Bad shared default resources");
 		CryInterlockedExchangeOr((volatile LONG*)&m_compiledFlags, eObjCompilationOption_PerInstanceExtraResources);
 		return;
 	}
 
-	CDeviceResourceSetDesc perInstanceExtraResources(pGraphicsPipeline.GetDefaultDrawExtraResourceLayout(), nullptr, nullptr);
+	CDeviceResourceSetDesc perInstanceExtraResources(pGraphicsPipeline->GetDefaultDrawExtraResourceLayout(), nullptr, nullptr);
 
 	if (SSkinningData* pSkinningData = pRenderObject->m_data.m_pSkinningData)
 	{
@@ -406,7 +406,7 @@ void CCompiledRenderObject::CompilePerDrawExtraResources(CRenderObject* pRenderO
 		bool bDoComputeDeformation = (pSkinningData->nHWSkinningFlags & eHWS_DC_deformation_Skinning ? true : false);
 		if (bDoComputeDeformation)
 		{
-			CGpuBuffer* pBuffer = pGraphicsPipeline.GetComputeSkinningStage()->GetStorage().GetOutputVertices(pSkinningData->pCustomTag);
+			CGpuBuffer* pBuffer = gcpRendD3D->GetComputeSkinningStorage()->GetOutputVertices(pSkinningData->pCustomTag);
 
 			if (pBuffer)
 			{
@@ -460,7 +460,7 @@ void CCompiledRenderObject::TrackStats(const SGraphicsPipelinePassContext& RESTR
 				{
 					auto& drawCallsInfoPerNode = *passContext.pDrawCallInfoPerNode;
 					auto pItor = drawCallsInfoPerNode.find(pRenderNode);
-					
+
 					if (pItor != drawCallsInfoPerNode.end())
 					{
 						CRenderer::SDrawCallCountInfo& pInfoDP = pItor->second;
@@ -499,7 +499,7 @@ void CCompiledRenderObject::TrackStats(const SGraphicsPipelinePassContext& RESTR
 #endif
 
 //////////////////////////////////////////////////////////////////////////
-bool CCompiledRenderObject::Compile(const EObjectCompilationOptions& compilationOptions, uint64 objFlags, ERenderElementFlags elmFlags, const AABB &localAABB, CRenderView *pRenderView)
+bool CCompiledRenderObject::Compile(const EObjectCompilationOptions& compilationOptions, uint64 objFlags, ERenderElementFlags elmFlags, const AABB& localAABB, CRenderView* pRenderView)
 {
 	CRY_PROFILE_FUNCTION(PROFILE_RENDERER);
 
@@ -578,7 +578,7 @@ bool CCompiledRenderObject::Compile(const EObjectCompilationOptions& compilation
 		CompilePerInstanceCB(pRenderObject, m_bDynamicInstancingPossible);
 
 	if (compilationOptions & eObjCompilationOption_PerInstanceExtraResources)
-		CompilePerDrawExtraResources(pRenderObject);
+		CompilePerDrawExtraResources(pRenderObject, pRenderView);
 
 	// Data may come in later
 	if (!m_perDrawCB || !m_perDrawExtraResources || !m_perDrawExtraResources->IsValid())
@@ -632,12 +632,12 @@ bool CCompiledRenderObject::Compile(const EObjectCompilationOptions& compilation
 	uint8 stencilRef = 0; // @TODO: get from CRNTmpData::SRNUserData::m_pClipVolume::GetStencilRef
 	m_StencilRef = CRenderer::CV_r_VisAreaClipLightsPerPixel ? 0 : (stencilRef | BIT_STENCIL_INSIDE_CLIPVOLUME);
 	m_StencilRef |= !(objFlags & FOB_DYNAMIC_OBJECT) ? BIT_STENCIL_RESERVED : 0;
-	const bool bAllowTerrainLayerBlending = CRendererCVars::CV_e_TerrainBlendingDebug == 2 || 
-		                                   (CRendererCVars::CV_e_TerrainBlendingDebug == 0 && (objFlags & FOB_ALLOW_TERRAIN_LAYER_BLEND));
+	const bool bAllowTerrainLayerBlending = CRendererCVars::CV_e_TerrainBlendingDebug == 2 ||
+	                                        (CRendererCVars::CV_e_TerrainBlendingDebug == 0 && (objFlags & FOB_ALLOW_TERRAIN_LAYER_BLEND));
 	const bool bTerrain = pRenderObject->m_data.m_pTerrainSectorTextureInfo != nullptr;
 	m_StencilRef |= (bAllowTerrainLayerBlending || bTerrain) ? BIT_STENCIL_ALLOW_TERRAINLAYERBLEND : 0;
 	m_StencilRef |= (objFlags & FOB_ALLOW_DECAL_BLEND) ? BIT_STENCIL_ALLOW_DECALBLEND : 0;
-	
+
 	if (m_shaderItem.m_pShader)
 	{
 		// Helps sort compiling order of the shaders.
@@ -661,7 +661,7 @@ bool CCompiledRenderObject::Compile(const EObjectCompilationOptions& compilation
 			psoDescription.objectRuntimeMask |= g_HWSR_MaskBit[HWSR_SPRITE];      // Enable flag to output alpha in G-Buffer shader
 		}
 
-		if (!gcpRendD3D->GetGraphicsPipeline().CreatePipelineStates(m_pso, psoDescription, pResources->m_pipelineStateCache.get()))
+		if (!pRenderView->GetGraphicsPipeline()->CreatePipelineStates(m_pso, psoDescription, pResources->m_pipelineStateCache.get()))
 		{
 			m_bIncomplete = true;
 
@@ -698,8 +698,8 @@ void CCompiledRenderObject::PrepareForUse(CDeviceCommandListRef RESTRICT_REFEREN
 	pCommandInterface->PrepareResourcesForUse(EResourceLayoutSlot_PerDrawExtraRS, m_perDrawExtraResources.get());
 
 	EShaderStage peDrawInlineShaderStages = m_bHasTessellation
-		? EShaderStage_Vertex | EShaderStage_Pixel | EShaderStage_Hull
-		: EShaderStage_Vertex | EShaderStage_Pixel;
+	                                        ? EShaderStage_Vertex | EShaderStage_Pixel | EShaderStage_Hull
+	                                        : EShaderStage_Vertex | EShaderStage_Pixel;
 
 	pCommandInterface->PrepareInlineConstantBufferForUse(EResourceLayoutSlot_PerDrawCB, m_perDrawCB, eConstantBufferShaderSlot_PerDraw, peDrawInlineShaderStages);
 
@@ -725,8 +725,8 @@ void CCompiledRenderObject::PrepareForUse(CDeviceCommandListRef RESTRICT_REFEREN
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CCompiledRenderObject::DrawToCommandList(const SGraphicsPipelinePassContext& RESTRICT_REFERENCE passContext, 
-	                                          CDeviceCommandList* commandList,
+void CCompiledRenderObject::DrawToCommandList(const SGraphicsPipelinePassContext& RESTRICT_REFERENCE passContext,
+                                              CDeviceCommandList* commandList,
                                               CConstantBuffer* pDynamicInstancingBuffer,
                                               uint32 dynamicInstancingCount) const
 {
@@ -753,7 +753,7 @@ void CCompiledRenderObject::DrawToCommandList(const SGraphicsPipelinePassContext
 #endif
 
 	const CDeviceGraphicsPSO* pPso = m_pso[passContext.stageID][passContext.passID].get();
-	if (!pPso || !pPso->IsValid() || bIncompleteResourceSets)
+	if (!pPso || !pPso->IsValid() || m_bIncomplete || bIncompleteResourceSets)
 		return;
 
 	// Set states
@@ -765,8 +765,8 @@ void CCompiledRenderObject::DrawToCommandList(const SGraphicsPipelinePassContext
 	auto perDrawCB = bEnabledInstancing ? pDynamicInstancingBuffer : m_perDrawCB.get();
 
 	const EShaderStage perDrawInlineShaderStages = m_bHasTessellation
-		? EShaderStage_Vertex | EShaderStage_Pixel | EShaderStage_Hull
-		: EShaderStage_Vertex | EShaderStage_Pixel;
+	                                               ? EShaderStage_Vertex | EShaderStage_Pixel | EShaderStage_Hull
+	                                               : EShaderStage_Vertex | EShaderStage_Pixel;
 
 	{
 		const SDrawParams& drawParams = m_drawParams[passContext.stageID != eStage_ShadowMap ? eDrawParam_General : eDrawParam_Shadow];
@@ -784,9 +784,9 @@ void CCompiledRenderObject::DrawToCommandList(const SGraphicsPipelinePassContext
 		CD3D9Renderer* pRenderer = gcpRendD3D;
 
 		if (pRenderer->CV_r_stats == 6 ||
-			pRenderer->m_pDebugRenderNode ||
-			pRenderer->m_bCollectDrawCallsInfoPerNode ||
-			pRenderer->m_bCollectDrawCallsInfo)
+		    pRenderer->m_pDebugRenderNode ||
+		    pRenderer->m_bCollectDrawCallsInfoPerNode ||
+		    pRenderer->m_bCollectDrawCallsInfo)
 		{
 			TrackStats(passContext, m_pRO);
 		}

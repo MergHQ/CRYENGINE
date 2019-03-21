@@ -27,14 +27,14 @@
 	//#define RENDERER_ENABLE_LEGACY_PIPELINE
 #endif
 
-/* Choice of rendering pipeline: 
+/* Choice of rendering pipeline:
  * RENDERER_ENABLE_FULL_PIPELINE   - full rendering pipeline with all bells and whistles
  * RENDERER_ENABLE_MOBILE_PIPELINE - reduced rendering pipeline with limited features for mobile
  * Note that both pipelines can be enabled simultaneously and runtime-switched via r_GraphicsPipelineMobile cvar
 */
 
 #if !CRY_PLATFORM_MOBILE
-	#define RENDERER_ENABLE_FULL_PIPELINE 1
+	#define RENDERER_ENABLE_FULL_PIPELINE   1
 #else
 	#define RENDERER_ENABLE_MOBILE_PIPELINE 1
 #endif
@@ -259,10 +259,9 @@ typedef void (*RenderFunc)(void);
 	#endif
 #endif
 
-
 // SF implementation enabled
 #define RENDERER_SUPPORT_SCALEFORM 1
- 
+
 // windows desktop API available for usage
 #if CRY_PLATFORM_WINDOWS
 	#define WINDOWS_DESKTOP_API
@@ -316,8 +315,8 @@ typedef void (*RenderFunc)(void);
 		#include <d3d11shader.h>
 		#include <d3dcompiler.h>
 
-		#define VIRTUALGFX virtual
-		#define FINALGFX final
+		#define VIRTUALGFX   virtual
+		#define FINALGFX     final
 		#define IID_GFX_ARGS IID_PPV_ARGS
 	#endif
 
@@ -326,11 +325,11 @@ typedef void (*RenderFunc)(void);
 	#endif
 
 	#if BUFFER_USE_STAGED_UPDATES == 0
-		namespace detail
-		{
-			template<typename T> inline void safe_release(T*& ptr) { SAFE_RELEASE(ptr); }
-			template<> inline void safe_release<ID3D11Buffer>(ID3D11Buffer*& ptr);
-		}
+namespace detail
+{
+template<typename T> inline void safe_release(T*& ptr) { SAFE_RELEASE(ptr); }
+template<> inline void           safe_release<ID3D11Buffer>(ID3D11Buffer*& ptr);
+}
 
 		// Call custom release-code for ID3D11Buffer on Durango by replacing SAFE_RELEASE()
 		#undef SAFE_RELEASE
@@ -416,31 +415,31 @@ typedef void (*RenderFunc)(void);
 //#define Direct3D IDXGIAdapter
 
 #if (CRY_RENDERER_DIRECT3D >= 120)
-#define	D3DReflection                     D3DReflectDXILorDXBC
-#define	IID_D3DShaderReflection           IID_ID3D12ShaderReflection
-#define	D3DShaderReflection               ID3D12ShaderReflection
-#define	D3DShaderReflectionConstantBuffer ID3D12ShaderReflectionConstantBuffer
-#define	D3DShaderReflectionVariable		  ID3D12ShaderReflectionVariable
-#define	D3DShaderReflectionType			  ID3D12ShaderReflectionType
-#define	D3D_SHADER_DESC					  D3D12_SHADER_DESC
-#define	D3D_SHADER_TYPE_DESC			  D3D12_SHADER_TYPE_DESC
-#define	D3D_SHADER_BUFFER_DESC			  D3D12_SHADER_BUFFER_DESC
-#define	D3D_SHADER_VARIABLE_DESC		  D3D12_SHADER_VARIABLE_DESC
-#define	D3D_SHADER_INPUT_BIND_DESC		  D3D12_SHADER_INPUT_BIND_DESC
-#define	D3D_SIGNATURE_PARAMETER_DESC	  D3D12_SIGNATURE_PARAMETER_DESC
+	#define D3DReflection                     D3DReflectDXILorDXBC
+	#define IID_D3DShaderReflection           IID_ID3D12ShaderReflection
+	#define D3DShaderReflection               ID3D12ShaderReflection
+	#define D3DShaderReflectionConstantBuffer ID3D12ShaderReflectionConstantBuffer
+	#define D3DShaderReflectionVariable       ID3D12ShaderReflectionVariable
+	#define D3DShaderReflectionType           ID3D12ShaderReflectionType
+	#define D3D_SHADER_DESC                   D3D12_SHADER_DESC
+	#define D3D_SHADER_TYPE_DESC              D3D12_SHADER_TYPE_DESC
+	#define D3D_SHADER_BUFFER_DESC            D3D12_SHADER_BUFFER_DESC
+	#define D3D_SHADER_VARIABLE_DESC          D3D12_SHADER_VARIABLE_DESC
+	#define D3D_SHADER_INPUT_BIND_DESC        D3D12_SHADER_INPUT_BIND_DESC
+	#define D3D_SIGNATURE_PARAMETER_DESC      D3D12_SIGNATURE_PARAMETER_DESC
 #else
-#define	D3DReflection                     D3DReflect
-#define	IID_D3DShaderReflection           IID_ID3D11ShaderReflection
-#define	D3DShaderReflection               ID3D11ShaderReflection
-#define	D3DShaderReflectionConstantBuffer ID3D11ShaderReflectionConstantBuffer
-#define	D3DShaderReflectionVariable		  ID3D11ShaderReflectionVariable
-#define	D3DShaderReflectionType			  ID3D11ShaderReflectionType
-#define	D3D_SHADER_DESC					  D3D11_SHADER_DESC
-#define	D3D_SHADER_TYPE_DESC			  D3D11_SHADER_TYPE_DESC
-#define	D3D_SHADER_BUFFER_DESC			  D3D11_SHADER_BUFFER_DESC
-#define	D3D_SHADER_VARIABLE_DESC		  D3D11_SHADER_VARIABLE_DESC
-#define	D3D_SHADER_INPUT_BIND_DESC		  D3D11_SHADER_INPUT_BIND_DESC
-#define	D3D_SIGNATURE_PARAMETER_DESC	  D3D11_SIGNATURE_PARAMETER_DESC
+	#define D3DReflection                     D3DReflect
+	#define IID_D3DShaderReflection           IID_ID3D11ShaderReflection
+	#define D3DShaderReflection               ID3D11ShaderReflection
+	#define D3DShaderReflectionConstantBuffer ID3D11ShaderReflectionConstantBuffer
+	#define D3DShaderReflectionVariable       ID3D11ShaderReflectionVariable
+	#define D3DShaderReflectionType           ID3D11ShaderReflectionType
+	#define D3D_SHADER_DESC                   D3D11_SHADER_DESC
+	#define D3D_SHADER_TYPE_DESC              D3D11_SHADER_TYPE_DESC
+	#define D3D_SHADER_BUFFER_DESC            D3D11_SHADER_BUFFER_DESC
+	#define D3D_SHADER_VARIABLE_DESC          D3D11_SHADER_VARIABLE_DESC
+	#define D3D_SHADER_INPUT_BIND_DESC        D3D11_SHADER_INPUT_BIND_DESC
+	#define D3D_SIGNATURE_PARAMETER_DESC      D3D11_SIGNATURE_PARAMETER_DESC
 #endif
 
 #if (CRY_RENDERER_DIRECT3D >= 120)
@@ -688,11 +687,11 @@ typedef void (*RenderFunc)(void);
 	#define     IDXGISwapChain                       CCryVKSwapChain
 	#define     IDXGIOutput                          CCryVKGIOutput
 	#define     IDXGIFactory1                        CCryVKGIFactory
-	
+
 	#define     ID3D11Resource                       NCryVulkan::CMemoryResource
 	#define     ID3D11Device                         NCryVulkan::CDevice
 	#define     ID3D11DeviceContext                  NCryVulkan::CRefCounted /* unused */
-	
+
 	#define     ID3D11DeviceChild                    NCryVulkan::CDeviceObject
 	#define     ID3D11View                           NCryVulkan::CResourceView
 	#define     ID3D11BaseTexture                    NCryVulkan::CImageResource
@@ -836,7 +835,6 @@ typedef D3DBaseView     CDeviceResourceView;
 #endif
 
 #include <Cry3DEngine/I3DEngine.h>
-
 
 #if (CRY_RENDERER_DIRECT3D >= 120) || CRY_RENDERER_VULKAN || CRY_RENDERER_GNM
 // ConstantBuffer/ShaderResource/UnorderedAccess need markers,
@@ -1000,9 +998,9 @@ const int32 g_nD3D10MaxSupportedSubres = (6 * 8 * 64);
 #include "Common/CryNameR.h"
 
 #if defined(CRY_PLATFORM_ORBIS)
-#define MAX_TMU   32
+	#define MAX_TMU 32
 #else
-#define MAX_TMU   64
+	#define MAX_TMU 64
 #endif
 
 //! Include main interfaces.
@@ -1222,14 +1220,13 @@ unsigned sizeOfMapS(Map& map)
 #endif
 
 #define DEVRES_USE_STAGING_POOL 1
-#define DEVRES_TRACK_LATENCY 0
+#define DEVRES_TRACK_LATENCY    0
 
 #ifdef WIN32
-	#define ASSERT_LEGACY_PIPELINE CRY_ASSERT_MESSAGE(0,__func__);
+	#define ASSERT_LEGACY_PIPELINE CRY_ASSERT_MESSAGE(0, __func__);
 #else
 	#define ASSERT_LEGACY_PIPELINE assert(0);
 #endif
-
 
 #include <CryMath/Cry_Math.h>
 #include <CryMath/Cry_Geo.h>
@@ -1271,6 +1268,9 @@ unsigned sizeOfMapS(Map& map)
 #include "Common/PostProcess/PostProcess.h"
 
 #include "GraphicsPipeline/StandardGraphicsPipeline.h"
+#include "GraphicsPipeline/MinimumGraphicsPipeline.h"
+#include "GraphicsPipeline/BillboardGraphicsPipeline.h"
+#include "GraphicsPipeline/MobileGraphicsPipeline.h"
 
 /*-----------------------------------------------------------------------------
    Vector transformations.
@@ -1473,16 +1473,15 @@ inline void _SetVar(const char* szVarName, int nVal)
 	}
 }
 
-inline D3DViewPort RenderViewportToD3D11Viewport(const SRenderViewport &vp)
+inline D3DViewPort RenderViewportToD3D11Viewport(const SRenderViewport& vp)
 {
-	D3DViewPort viewport = { 
+	D3DViewPort viewport = {
 		float(vp.x),
 		float(vp.y),
 		float(vp.width),
 		float(vp.height),
 		vp.zmin,
-		vp.zmax
-	};
+		vp.zmax };
 	return viewport;
 }
 

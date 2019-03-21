@@ -38,28 +38,28 @@ public:
 	void ExchangeRenderTarget(uint32 slot, CTexture* pNewColorTarget, ResourceViewHandle hRenderTargetView = EDefaultResourceViews::RenderTarget);
 	void ExchangeDepthTarget(CTexture* pNewDepthTarget, ResourceViewHandle hDepthStencilView = EDefaultResourceViews::DepthStencil);
 
-	void BeginExecution();
+	void BeginExecution(CGraphicsPipeline& activeGraphicsPipeline);
 	void EndExecution();
 	void Execute();
 
 	void DrawRenderItems(CRenderView* pRenderView, ERenderListID list, int listStart = 0, int listEnd = 0x7FFFFFFF);
 
 	// Called from rendering backend (has to be threadsafe)
-	void                PrepareRenderPassForUse(CDeviceCommandListRef RESTRICT_REFERENCE commandList);
-	void                BeginRenderPass(CDeviceCommandListRef RESTRICT_REFERENCE commandList, bool bNearest) const;
-	void                EndRenderPass(CDeviceCommandListRef RESTRICT_REFERENCE commandList, bool bNearest) const;
+	void                       PrepareRenderPassForUse(CDeviceCommandListRef RESTRICT_REFERENCE commandList);
+	void                       BeginRenderPass(CDeviceCommandListRef RESTRICT_REFERENCE commandList, bool bNearest) const;
+	void                       EndRenderPass(CDeviceCommandListRef RESTRICT_REFERENCE commandList, bool bNearest) const;
 
-	void                ResolvePass(CDeviceCommandListRef RESTRICT_REFERENCE commandList, const std::vector<TRect_tpl<uint16>>& screenBounds) const;
+	void                       ResolvePass(CDeviceCommandListRef RESTRICT_REFERENCE commandList, const std::vector<TRect_tpl<uint16>>& screenBounds) const;
 
-	uint32              GetStageID()             const { return m_stageID; }
-	uint32              GetPassID()              const { return m_passID; }
-	uint32              GetNumRenderItemGroups() const { return m_numRenderItemGroups; }
-	EPassFlags          GetFlags()               const { return m_passFlags; }
-	const D3DViewPort&  GetViewport(bool n)      const { return m_viewPort[n]; }
-	const D3DRectangle& GetScissorRect()         const { return m_scissorRect; }
-	
-	CDeviceResourceLayoutPtr   GetResourceLayout() const { return m_pResourceLayout; }
-	const CDeviceRenderPassPtr GetRenderPass()     const { return m_pRenderPass; }
+	uint32                     GetStageID()             const { return m_stageID; }
+	uint32                     GetPassID()              const { return m_passID; }
+	uint32                     GetNumRenderItemGroups() const { return m_numRenderItemGroups; }
+	EPassFlags                 GetFlags()               const { return m_passFlags; }
+	const D3DViewPort&         GetViewport(bool n)      const { return m_viewPort[n]; }
+	const D3DRectangle&        GetScissorRect()         const { return m_scissorRect; }
+
+	CDeviceResourceLayoutPtr   GetResourceLayout() const      { return m_pResourceLayout; }
+	const CDeviceRenderPassPtr GetRenderPass()     const      { return m_pRenderPass; }
 
 protected:
 	static bool OnResourceInvalidated(void* pThis, SResourceBindPoint bindPoint, UResourceReference pResource, uint32 flags) threadsafe;
@@ -69,30 +69,30 @@ private:
 	void DrawTransparentRenderItems(SGraphicsPipelinePassContext& passContext, CRenderView* pRenderView, ERenderListID list, int listStart, int listEnd);
 
 protected:
-	CDeviceRenderPassDesc    m_renderPassDesc;
-	CDeviceRenderPassPtr     m_pRenderPass;
-	D3DViewPort              m_viewPort[2];
-	D3DRectangle             m_scissorRect;
-	CDeviceResourceLayoutPtr m_pResourceLayout;
-	CDeviceResourceSetPtr    m_pPerPassResourceSet;
+	CDeviceRenderPassDesc                     m_renderPassDesc;
+	CDeviceRenderPassPtr                      m_pRenderPass;
+	D3DViewPort                               m_viewPort[2];
+	D3DRectangle                              m_scissorRect;
+	CDeviceResourceLayoutPtr                  m_pResourceLayout;
+	CDeviceResourceSetPtr                     m_pPerPassResourceSet;
 
-	EShaderTechniqueID       m_technique;
-	uint32                   m_stageID : 16;
-	uint32                   m_passID  : 16;
-	uint32                   m_batchIncludeFilter;
-	uint32                   m_batchExcludeFilter;
-	EPassFlags               m_passFlags;
+	EShaderTechniqueID                        m_technique;
+	uint32                                    m_stageID : 16;
+	uint32                                    m_passID  : 16;
+	uint32                                    m_batchIncludeFilter;
+	uint32                                    m_batchExcludeFilter;
+	EPassFlags                                m_passFlags;
 
-	uint32                   m_numRenderItemGroups;
+	uint32                                    m_numRenderItemGroups;
 
-	float                    m_depthConstBias = 0.0f;
-	float                    m_depthSlopeBias = 0.0f;
-	float                    m_depthBiasClamp = 0.0f;
+	float                                     m_depthConstBias = 0.0f;
+	float                                     m_depthSlopeBias = 0.0f;
+	float                                     m_depthBiasClamp = 0.0f;
 
 	std::vector<SGraphicsPipelinePassContext> m_passContexts;
 
 protected:
-	static int               s_recursionCounter;  // For asserting Begin/EndExecution get called on pass
+	static int s_recursionCounter;                // For asserting Begin/EndExecution get called on pass
 };
 
 DEFINE_ENUM_FLAG_OPERATORS(CSceneRenderPass::EPassFlags)

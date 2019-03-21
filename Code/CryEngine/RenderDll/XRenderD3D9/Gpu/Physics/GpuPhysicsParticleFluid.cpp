@@ -17,8 +17,21 @@ void SetupAdjacency(int* adjescency, int resX, int resY)
 				adjescency[cell++] = (z * resY + y) * resX + x;
 }
 
-CParticleFluidSimulation::CParticleFluidSimulation(const int maxBodies)
+CParticleFluidSimulation::CParticleFluidSimulation(CGraphicsPipeline* pGraphicsPipeline, const int maxBodies)
 	: m_maxBodies(maxBodies)
+	, m_passCalcLambda(pGraphicsPipeline)
+	, m_passPredictDensity(pGraphicsPipeline)
+	, m_passCorrectDensityError(pGraphicsPipeline)
+	, m_passCorrectDivergenceError(pGraphicsPipeline)
+	, m_passPositionUpdate(pGraphicsPipeline)
+	, m_passBodiesInject(pGraphicsPipeline)
+	, m_passClearGrid(pGraphicsPipeline)
+	, m_passAssignAndCount(pGraphicsPipeline)
+	, m_passPrefixSumBlocks(pGraphicsPipeline)
+	, m_passBuildGridIndices(pGraphicsPipeline)
+	, m_passRearrangeParticles(pGraphicsPipeline)
+	, m_passEvolveExternalParticles(pGraphicsPipeline)
+	, m_passCollisionsScreenSpace(pGraphicsPipeline)
 {
 	assert(maxBodies % kThreadsInBlock == 0);
 	m_points.resize(maxBodies);

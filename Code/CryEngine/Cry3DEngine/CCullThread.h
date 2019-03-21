@@ -8,36 +8,36 @@ struct SCheckOcclusionJobData;
 
 namespace NAsyncCull
 {
-class  CCullThread: public Cry3DEngineBase
+class CCullThread : public Cry3DEngineBase
 {
 	bool m_Enabled;
 	bool m_Active;                                      // used to verify that the cull job is running and no new jobs are added after the job has finished
 
 public:
 	enum PrepareStateT { IDLE, PREPARE_STARTED, PREPARE_DONE, CHECK_REQUESTED, CHECK_STARTED };
-	PrepareStateT m_nPrepareState;
-	CryCriticalSection m_FollowUpLock;
-	SRenderingPassInfo m_passInfoForCheckOcclusion;
-	uint32 m_nRunningReprojJobs;
-	uint32 m_nRunningReprojJobsAfterMerge;
-	int m_bCheckOcclusionRequested;
+	PrepareStateT         m_nPrepareState;
+	CryCriticalSection    m_FollowUpLock;
+	SRenderingPassInfo    m_passInfoForCheckOcclusion;
+	uint32                m_nRunningReprojJobs;
+	uint32                m_nRunningReprojJobsAfterMerge;
+	int                   m_bCheckOcclusionRequested;
 private:
 	JobManager::SJobState m_JobStatePrepareOcclusionBuffer;
 	JobManager::SJobState m_PrepareBufferSync;
 	JobManager::SJobState m_checkOcclusion;
-	Matrix44A m_MatScreenViewProj;
-	Matrix44A m_MatScreenViewProjTransposed;
-	Vec3 m_ViewDir;
-	Vec3 m_Position;
-	float m_NearPlane;
-	float m_FarPlane;
-	float m_NearestMax;
+	Matrix44A             m_MatScreenViewProj;
+	Matrix44A             m_MatScreenViewProjTransposed;
+	Vec3                  m_ViewDir;
+	Vec3                  m_Position;
+	float                 m_NearPlane;
+	float                 m_FarPlane;
+	float                 m_NearestMax;
 
-	PodArray<uint8> m_OCMBuffer;
-	uint8* m_pOCMBufferAligned;
-	uint32 m_OCMMeshCount;
-	uint32 m_OCMInstCount;
-	uint32 m_OCMOffsetInstances;
+	PodArray<uint8>       m_OCMBuffer;
+	uint8*                m_pOCMBufferAligned;
+	uint32                m_OCMMeshCount;
+	uint32                m_OCMInstCount;
+	uint32                m_OCMOffsetInstances;
 
 	template<class T>
 	T Swap(T& rData)
@@ -82,8 +82,8 @@ public:
 	bool LoadLevel(const char* pFolderName);
 	void UnloadLevel();
 
-	bool TestAABB(const AABB &rAABB, float fEntDistance, float fVerticalExpand = 0.0f);
-	bool TestQuad(const Vec3 &vCenter, const Vec3 &vAxisX, const Vec3 &vAxisY);
+	bool TestAABB(const AABB& rAABB, float fEntDistance, float fVerticalExpand = 0.0f);
+	bool TestQuad(const Vec3& vCenter, const Vec3& vAxisX, const Vec3& vAxisY);
 
 	void WaitOnCheckOcclusionJobs();
 
@@ -94,13 +94,13 @@ public:
 	void CoverageBufferDebugDraw();
 #endif
 
-	void PrepareCullbufferAsync(const CCamera &rCamera);
-	void CullStart(const SRenderingPassInfo &passInfo);
+	void PrepareCullbufferAsync(const CCamera& rCamera, const SGraphicsPipelineKey& cullGraphicsContextKey);
+	void CullStart(const SRenderingPassInfo& passInfo);
 	void CullEnd();
 
 	void SetActive(bool bActive);
 
-	Vec3 GetViewDir()            { return m_ViewDir; }
+	Vec3 GetViewDir() { return m_ViewDir; }
 
 };
 

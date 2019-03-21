@@ -100,7 +100,7 @@ void CMotionBlur::FreeData()
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-bool CMotionBlur::Preprocess(const SRenderViewInfo& viewInfo)
+bool CMotionBlur::Preprocess(const SRenderViewInfo& viewInfo, const std::shared_ptr<CGraphicsPipeline>& pGraphicsPipeline)
 {
 	// skip LDR processing, this is done during HDR
 	return false;
@@ -130,7 +130,7 @@ float ComputeMotionScale()
 	return exposureTime / timeStep;
 }
 
-void CMotionBlur::Render()
+void CMotionBlur::Render(const std::shared_ptr<CGraphicsPipeline>& pGraphicsPipeline)
 {
 	// OLD PIPELINE
 	ASSERT_LEGACY_PIPELINE

@@ -8,11 +8,14 @@
 
 #include "D3DStereo.h"
 #include "D3DPostProcess.h"
+#include "D3D_SVO.h"
 #include "D3DREBreakableGlassBuffer.h"
 #include "NullD3D11Device.h"
 #include "PipelineProfiler.h"
 #include <CryInput/IHardwareMouse.h>
 #include <Common/RenderDisplayContext.h>
+#include <Gpu/Particles/GpuParticleManager.h>
+#include <GraphicsPipeline/ComputeSkinning.h>
 
 #if CRY_PLATFORM_WINDOWS
 	#if defined(USE_AMD_API)
@@ -81,206 +84,6 @@ void CD3D9Renderer::DisplaySplash()
 		DeleteDC(hDCBitmap);
 	}
 #endif
-}
-
-//////////////////////////////////////////////////////////////////////////
-
-static CryCriticalSection gs_contextLock;
-
-CRenderDisplayContext* CD3D9Renderer::FindDisplayContext(const SDisplayContextKey& key) threadsafe const
-{
-	if (key == SDisplayContextKey{})
-		return GetBaseDisplayContext();
-
-	AUTO_LOCK(gs_contextLock); // Not thread safe without this
-
-	auto it = m_displayContexts.find(key);
-	if (it != m_displayContexts.end())
-		return it->second.get();
-
-	return nullptr;
-}
-
-std::pair<bool, SDisplayContextKey> CD3D9Renderer::SetCurrentContext(const SDisplayContextKey &key) threadsafe
-{
-	const auto prevKey = m_activeContextKey;
-
-	if (key == SDisplayContextKey{})
-	{
-		UpdateActiveContext(m_pBaseDisplayContext, {});
-		return { true, prevKey };
-	}
-
-	AUTO_LOCK(gs_contextLock); // Not thread safe without this
-
-	auto it = m_displayContexts.find(key);
-	if (it == m_displayContexts.end())
-		return { false, prevKey };
-
-	UpdateActiveContext(it->second, key);
-	return { true, prevKey };
-}
-
-SDisplayContextKey CD3D9Renderer::AddCustomContext(const CRenderDisplayContextPtr &context) threadsafe
-{
-	SDisplayContextKey key;
-	key.key.emplace<uint32_t>(context->m_uniqueId);
-
-	{
-		AUTO_LOCK(gs_contextLock); // Not thread safe without this
-		m_displayContexts.emplace(std::make_pair(key, context));
-	}
-
-	return key;
-}
-
-SDisplayContextKey CD3D9Renderer::CreateSwapChainBackedContext(const SDisplayContextDescription& desc) threadsafe
-{
-	LOADING_TIME_PROFILE_SECTION;
-
-	const int width = desc.screenResolution.x;
-	const int height = desc.screenResolution.y;
-	const std::string name = desc.type == IRenderer::eViewportType_Default ? "MainView-SwapChain" : "SecView-SwapChain";
-
-	auto pDC = std::make_shared<CSwapChainBackedRenderDisplayContext>(desc, name, m_uniqueDisplayContextId++);
-
-	pDC->m_bMainViewport = desc.type == IRenderer::eViewportType_Default;
-	pDC->m_desc.renderFlags |= pDC->m_bMainViewport ? FRT_OVERLAY_DEPTH | FRT_OVERLAY_STENCIL : 0;
-	pDC->m_desc.superSamplingFactor.x = std::max<int>(1, desc.superSamplingFactor.x);
-	pDC->m_desc.superSamplingFactor.y = std::max<int>(1, desc.superSamplingFactor.y);
-	pDC->m_desc.screenResolution.x = 0;
-	pDC->m_desc.screenResolution.y = 0;
-
-	pDC->m_nSSSamplesX = pDC->m_desc.superSamplingFactor.x;
-	pDC->m_nSSSamplesY = pDC->m_desc.superSamplingFactor.y;
-
-	pDC->CreateSwapChain(desc.handle, IsFullscreen(), desc.vsync);
-
-	SDisplayContextKey key;
-	if (desc.handle)
-		key.key.emplace<CRY_HWND>(desc.handle);
-	else
-		key.key.emplace<uint32_t>(pDC->m_uniqueId);
-
-	if (width * height)
-	{
-		gRenDev->ExecuteRenderThreadCommand([=]
-		{
-			pDC->ChangeDisplayResolution(width, height);
-		}, ERenderCommandFlags::None );
-	}
-
-	{
-		AUTO_LOCK(gs_contextLock); // Not thread safe without this
-		m_displayContexts.emplace(std::make_pair(key, std::move(pDC)));
-	}
-
-	return key;
-}
-
-void CD3D9Renderer::ResizeContext(CRenderDisplayContext *pDC, int width, int height) threadsafe
-{
-	if (pDC->m_desc.screenResolution.x != width ||
-		pDC->m_desc.screenResolution.y != height)
-	{
-		pDC->m_desc.screenResolution.x = width;
-		pDC->m_desc.screenResolution.y = height;
-
-		ChangeViewport(pDC, 0, 0, width, height);
-
-		// Must be deferred to Render Thread
-		gRenDev->ExecuteRenderThreadCommand([=] { EF_DisableTemporalEffects(); }, 
-			ERenderCommandFlags::None
-		);
-	}
-}
-
-void CD3D9Renderer::ResizeContext(const SDisplayContextKey& key, int width, int height) threadsafe
-{
-	CRenderDisplayContext* pDC = FindDisplayContext(key);
-	if (pDC)
-		ResizeContext(pDC, width, height);
-}
-
-bool CD3D9Renderer::DeleteContext(const SDisplayContextKey& key) threadsafe
-{
-	// Make sure there are no outstanding render commands which use the current viewport
-	FlushRTCommands(true, true, true);
-
-	AUTO_LOCK(gs_contextLock); // Not thread safe without this
-
-	auto it = m_displayContexts.find(key);
-	if (it == m_displayContexts.end())
-		return false;
-
-	auto deletedContext = std::move(it->second);
-	m_displayContexts.erase(it);
-
-	// If deleting active context, set active context to some other context
-	if (m_pActiveContext == deletedContext)
-	{
-		const auto *pair = m_displayContexts.size() ? &*m_displayContexts.begin() : nullptr;
-		UpdateActiveContext(pair->second, pair->first);
-	}
-
-	return true;
-}
-
-void CD3D9Renderer::UpdateActiveContext(const std::shared_ptr<CRenderDisplayContext> &ctx, const SDisplayContextKey &key)
-{
-	m_pActiveContext = ctx;
-	m_activeContextKey = key;
-}
-
-CRenderDisplayContext* CD3D9Renderer::GetActiveDisplayContext() const
-{
-	return m_pActiveContext ? m_pActiveContext.get() : m_pBaseDisplayContext.get();
-}
-
-CSwapChainBackedRenderDisplayContext* CD3D9Renderer::GetBaseDisplayContext() const
-{
-	return m_pBaseDisplayContext.get();
-}
-
-CRY_HWND CD3D9Renderer::GetCurrentContextHWND()
-{
-	return m_pActiveContext && m_pActiveContext->IsSwapChainBacked() ? 
-		static_cast<CSwapChainBackedRenderDisplayContext*>(m_pActiveContext.get())->GetWindowHandle() : 
-		m_hWnd;
-}
-
-#ifdef CRY_PLATFORM_WINDOWS
-RectI CD3D9Renderer::GetDefaultContextWindowCoordinates()
-{
-	HWND hWnd = (HWND)m_pBaseDisplayContext->GetWindowHandle();
-	{
-		AUTO_LOCK(gs_contextLock); // Not thread safe without this
-
-		for (const auto& pair : m_displayContexts)
-		{
-			if (pair.second->IsMainViewport() && stl::holds_alternative<CRY_HWND>(pair.first.key))
-				hWnd = (HWND)stl::get<CRY_HWND>(pair.first.key);
-		}
-	}
-
-	RECT rcClient;
-	::GetClientRect(hWnd, &rcClient);
-	::ClientToScreen(hWnd, (LPPOINT)&rcClient.left);
-	::ClientToScreen(hWnd, (LPPOINT)&rcClient.right);
-
-	return RectI
-	{
-		rcClient.left,
-		rcClient.top,
-		static_cast<int>(m_pBaseDisplayContext->GetDisplayResolution().x),
-		static_cast<int>(m_pBaseDisplayContext->GetDisplayResolution().y)
-	};
-}
-#endif
-
-bool CD3D9Renderer::IsCurrentContextMainVP()
-{
-	return m_pActiveContext ? m_pActiveContext->IsMainViewport() : true;
 }
 
 bool CD3D9Renderer::ChangeRenderResolution(int nNewRenderWidth, int nNewRenderHeight, CRenderView* pRenderView)
@@ -388,8 +191,6 @@ bool CD3D9Renderer::ChangeDisplayResolution(int nNewDisplayWidth, int nNewDispla
 			static_cast<CSwapChainBackedRenderDisplayContext*>(pDC)->SetFullscreenState(isFullscreen);
 	}
 
-	CRendererResources::OnDisplayResolutionChanged(nNewDisplayWidth, nNewDisplayHeight);
-
 	PostDeviceReset();
 
 	m_isChangingResolution = false;
@@ -459,7 +260,7 @@ HRESULT CD3D9Renderer::ChangeWindowProperties(const int displayWidth, const int 
 			constexpr auto fullscreenStyle = WS_POPUP | WS_VISIBLE;
 			SetWindowLongPtrW(hwnd, GWL_STYLE, fullscreenStyle);
 		}
-			
+
 		SetWindowPos(hwnd, HWND_TOPMOST, 0, 0, displayWidth, displayHeight, SWP_SHOWWINDOW);
 	}
 	else if (m_currWindowState == EWindowState::BorderlessWindow || m_currWindowState == EWindowState::BorderlessFullscreen)
@@ -771,7 +572,7 @@ bool CD3D9Renderer::SetGammaDelta(const float fGamma)
 
 void CD3D9Renderer::ShutDownFast()
 {
-	CVrProjectionManager::Reset();
+	SAFE_DELETE(m_pVRProjectionManager);
 
 	// Flush RT command buffer
 	ForceFlushRTCommands();
@@ -790,13 +591,19 @@ void CD3D9Renderer::ShutDownFast()
 #endif
 }
 
+static CryCriticalSection gs_contextLock;
+
 void CD3D9Renderer::RT_ShutDown(uint32 nFlags)
 {
-	CVrProjectionManager::Reset();
+	if (m_pGpuParticleManager)
+		static_cast<gpu_pfx2::CManager*>(m_pGpuParticleManager)->CleanupResources();
 
 	CREBreakableGlassBuffer::RT_ReleaseInstance();
+	SAFE_DELETE(m_pVRProjectionManager);
 	SAFE_DELETE(m_pPostProcessMgr);
 	SAFE_DELETE(m_pWaterSimMgr);
+	SAFE_DELETE(m_pGpuParticleManager);
+	SAFE_DELETE(m_pComputeSkinningStorage);
 	SAFE_DELETE(m_pStereoRenderer);
 	SAFE_DELETE(m_pPipelineProfiler);
 #if defined(ENABLE_RENDER_AUX_GEOM)
@@ -805,9 +612,9 @@ void CD3D9Renderer::RT_ShutDown(uint32 nFlags)
 
 	for (size_t i = 0; i < 3; ++i)
 		while (m_CharCBActiveList[i].next != &m_CharCBActiveList[i])
-			delete m_CharCBActiveList[i].next->item<& SCharacterInstanceCB::list>();
+			delete m_CharCBActiveList[i].next->item<&SCharacterInstanceCB::list>();
 	while (m_CharCBFreeList.next != &m_CharCBFreeList)
-		delete m_CharCBFreeList.next->item<& SCharacterInstanceCB::list>();
+		delete m_CharCBFreeList.next->item<&SCharacterInstanceCB::list>();
 
 	CHWShader::mfFlushPendedShadersWait(-1);
 	if (!IsShaderCacheGenMode())
@@ -819,7 +626,24 @@ void CD3D9Renderer::RT_ShutDown(uint32 nFlags)
 	}
 	else
 	{
-		RT_GraphicsPipelineShutdown();
+		CREParticle::ResetPool();
+
+		if (m_pStereoRenderer)
+			m_pStereoRenderer->ReleaseBuffers();
+
+#if defined(ENABLE_RENDER_AUX_GEOM)
+		if (m_pRenderAuxGeomD3D)
+			m_pRenderAuxGeomD3D->ReleaseResources();
+#endif //ENABLE_RENDER_AUX_GEOM
+
+		m_graphicsPipelines.clear();
+
+#if defined(FEATURE_SVO_GI)
+		// TODO: GraphicsPipeline-Stage shutdown with ShutDown()
+		if (auto pSvoRenderer = CSvoRenderer::GetInstance(false))
+			pSvoRenderer->Release();
+#endif
+
 		EF_Exit();
 
 		ForceFlushRTCommands();
@@ -844,7 +668,7 @@ void CD3D9Renderer::RT_ShutDown(uint32 nFlags)
 	// Shut Down all contexts.
 	{
 		AUTO_LOCK(gs_contextLock); // Not thread safe without this
-		for (auto &pDisplayContext : m_displayContexts)
+		for (auto& pDisplayContext : m_displayContexts)
 			pDisplayContext.second->ReleaseResources();
 	}
 
@@ -863,7 +687,7 @@ void CD3D9Renderer::ShutDown(bool bReInit)
 	m_bInShutdown = true;
 
 	// Force Flush RT command buffer
-	ForceFlushRTCommands();	
+	ForceFlushRTCommands();
 	PreShutDown();
 
 	DeleteAuxGeomCollectors();
@@ -871,7 +695,7 @@ void CD3D9Renderer::ShutDown(bool bReInit)
 
 	if (m_pRT)
 	{
-		ExecuteRenderThreadCommand( [=]{ this->RT_ShutDown(bReInit ? 0 : FRR_SHUTDOWN); }, ERenderCommandFlags::FlushAndWait);
+		ExecuteRenderThreadCommand([=] { this->RT_ShutDown(bReInit ? 0 : FRR_SHUTDOWN); }, ERenderCommandFlags::FlushAndWait);
 	}
 
 	//CBaseResource::ShutDown();
@@ -887,7 +711,7 @@ void CD3D9Renderer::ShutDown(bool bReInit)
 
 	// Release Display Contexts, freeing Swap Channels.
 	m_pBaseDisplayContext = nullptr;
-	UpdateActiveContext(nullptr, {});
+	SetActiveContext(nullptr, {});
 
 	{
 		AUTO_LOCK(gs_contextLock); // Not thread safe without this
@@ -914,7 +738,7 @@ void CD3D9Renderer::ShutDown(bool bReInit)
 		iTimer = NULL;
 		iSystem = NULL;
 	}
-	
+
 	PostShutDown();
 }
 
@@ -1309,8 +1133,8 @@ CRY_HWND CD3D9Renderer::Init(int x, int y, int width, int height, unsigned int c
 
 #if CRY_PLATFORM_WINDOWS
 	REGISTER_STRING_CB("r_WindowIconTexture", "%ENGINE%/EngineAssets/Textures/default_icon.dds", VF_CHEAT | VF_CHEAT_NOCHECK,
-		"Sets the image (dds file) to be displayed as the window and taskbar icon",
-		SetWindowIconCVar);
+	                   "Sets the image (dds file) to be displayed as the window and taskbar icon",
+	                   SetWindowIconCVar);
 #endif
 
 	m_currWindowState = CalculateWindowState();
@@ -1482,8 +1306,8 @@ CRY_HWND CD3D9Renderer::Init(int x, int y, int width, int height, unsigned int c
 			assert(0);
 		iLog->Log(" Shader model usage: '%s'", str);
 
-		// Needs to happen post D3D device creation
-		CVrProjectionManager::Instance()->Init(this);
+		m_pVRProjectionManager = new CVrProjectionManager(this);
+		m_pVRProjectionManager->Init();
 
 		CRendererResources::OnDisplayResolutionChanged(displayWidth, displayHeight);
 		CRendererResources::OnOutputResolutionChanged(outputWidth, outputHeight);
@@ -1588,6 +1412,7 @@ iLog->Log(" %s shader quality: %s", # name, sGetSQuality("q_Shader" # name)); } 
 		m_pPipelineProfiler->Init();
 	}
 #endif
+
 	m_bInitialized = true;
 
 	//  Cry_memcheck();
@@ -1607,7 +1432,7 @@ void CD3D9Renderer::InitAMDAPI()
 		m_bVendorLibInitialized = status == AGS_SUCCESS;
 		if (!m_bVendorLibInitialized)
 			break;
-		
+
 		iLog->Log("AGS: Catalyst Version: %s  Driver Version: %s", g_gpuInfo.radeonSoftwareVersion, g_gpuInfo.driverVersion);
 
 		m_nGPUs = 1;
@@ -1623,7 +1448,7 @@ void CD3D9Renderer::InitAMDAPI()
 			m_nGPUs = numGPUs;
 			iLog->Log("AGS: Multi GPU count = %d", numGPUs);
 		}
-		
+
 		m_bDeviceSupports_AMDExt = g_extensionsSupported;
 	}
 	while (0);
@@ -2002,7 +1827,7 @@ bool CD3D9Renderer::CreateDevice()
 
 	m_pStereoRenderer->InitDeviceAfterD3D();
 
-	UpdateActiveContext(m_pBaseDisplayContext, {});
+	SetActiveContext(m_pBaseDisplayContext, {});
 
 	return true;
 }

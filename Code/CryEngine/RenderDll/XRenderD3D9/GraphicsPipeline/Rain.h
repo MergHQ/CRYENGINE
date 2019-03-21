@@ -10,7 +10,9 @@
 class CRainStage : public CGraphicsPipelineStage
 {
 public:
-	CRainStage();
+	static const EGraphicsPipelineStage StageID = eStage_Rain;
+
+	CRainStage(CGraphicsPipeline& graphicsPipeline);
 	virtual ~CRainStage();
 
 	bool IsStageActive(EShaderRenderingFlags flags) const final
@@ -27,7 +29,7 @@ public:
 	void ExecuteDeferredRainGBuffer();
 	void Execute();
 
-	bool IsDeferredRainEnabled() const { return CRendererCVars::IsRainEnabled() && gcpRendD3D->m_bDeferredRainEnabled; }
+	bool IsDeferredRainEnabled() const  { return CRendererCVars::IsRainEnabled() && gcpRendD3D->m_bDeferredRainEnabled; }
 	bool IsRainOcclusionEnabled() const { return CRendererCVars::IsRainEnabled() && gcpRendD3D->m_bDeferredRainOcclusionEnabled; }
 
 private:

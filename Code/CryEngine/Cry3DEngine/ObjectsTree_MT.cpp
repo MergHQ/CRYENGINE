@@ -12,11 +12,11 @@
 #include "LightEntity.h"
 
 //////////////////////////////////////////////////////////////////////////
-void CObjManager::PrepareCullbufferAsync(const CCamera& rCamera)
+void CObjManager::PrepareCullbufferAsync(const CCamera& rCamera, const SGraphicsPipelineKey& cullGraphicsContextKey)
 {
 	if (gEnv->pRenderer)
 	{
-		m_CullThread.PrepareCullbufferAsync(rCamera);
+		m_CullThread.PrepareCullbufferAsync(rCamera, cullGraphicsContextKey);
 	}
 }
 

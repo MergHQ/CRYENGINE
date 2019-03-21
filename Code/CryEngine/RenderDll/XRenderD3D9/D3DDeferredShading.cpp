@@ -254,10 +254,10 @@ void CDeferredShading::GetClipVolumeParams(const Vec4*& pParams)
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void CDeferredShading::ReleaseData()
+void CDeferredShading::ReleaseData(std::shared_ptr<CGraphicsPipeline> pGraphicsPipeline)
 {
-	auto* tiledLights = gcpRendD3D.GetGraphicsPipeline().GetTiledLightVolumesStage();
-
+	CRY_ASSERT(pGraphicsPipeline);
+	auto* tiledLights = pGraphicsPipeline->GetStage<CTiledLightVolumesStage>();
 	tiledLights->Clear();
 
 	for (uint32 iThread = 0; iThread < 2; ++iThread)
@@ -299,7 +299,6 @@ void CDeferredShading::SetupPasses(CRenderView* pRenderView)
 	m_pSpecularRT = CRendererResources::s_ptexSceneSpecular;
 
 	const auto& viewInfo = pRenderView->GetViewInfo(CCamera::eEye_Left);
-
 
 	m_pCamFront = viewInfo.cameraVZ;
 	m_pCamFront.Normalize();
@@ -522,7 +521,7 @@ void CDeferredShading::Release()
 void CRenderer::EF_ReleaseDeferredData()
 {
 	if (CDeferredShading::IsValid())
-		CDeferredShading::Instance().ReleaseData();
+		CDeferredShading::Instance().ReleaseData(m_pActiveGraphicsPipeline);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

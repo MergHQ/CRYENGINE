@@ -88,6 +88,11 @@ void CGraphicsPipelineStateLocalCache::Put(const SGraphicsPipelineStateDescripti
 }
 
 //////////////////////////////////////////////////////////////////////////
+CGraphicsPipelineStage::CGraphicsPipelineStage(CGraphicsPipeline& graphicsPipeline) : m_graphicsPipeline(graphicsPipeline)
+{
+}
+
+//////////////////////////////////////////////////////////////////////////
 const SRenderViewport& CGraphicsPipelineStage::GetViewport() const
 {
 	return m_pRenderView->GetViewport();

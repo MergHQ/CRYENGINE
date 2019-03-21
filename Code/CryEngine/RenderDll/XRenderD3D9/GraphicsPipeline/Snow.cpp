@@ -21,11 +21,6 @@ struct SSnowClusterCB
 };
 }
 
-CSnowStage::CSnowStage()
-{
-
-}
-
 CSnowStage::~CSnowStage()
 {
 	Destroy();
@@ -183,9 +178,10 @@ void CSnowStage::ExecuteDeferredSnowGBuffer()
 		pass.SetTechnique(CShaderMan::s_ShaderDeferredSnow, techName, rtMask);
 
 		const int32 stencilState = STENC_FUNC(FSS_STENCFUNC_EQUAL) |
-			STENCOP_FAIL(FSS_STENCOP_KEEP) |
-			STENCOP_ZFAIL(FSS_STENCOP_KEEP) |
-			STENCOP_PASS(FSS_STENCOP_KEEP);
+		                           STENCOP_FAIL(FSS_STENCOP_KEEP)  |
+		                           STENCOP_ZFAIL(FSS_STENCOP_KEEP) |
+		                           STENCOP_PASS(FSS_STENCOP_KEEP);
+
 		const uint8 stencilRef = BIT_STENCIL_RESERVED;
 		const uint8 stencilReadMask = BIT_STENCIL_RESERVED;
 		pass.SetStencilState(stencilState, stencilRef, stencilReadMask, 0xFF);
@@ -759,10 +755,10 @@ void CSnowStage::RenderSnowClusters()
 	pass.SetViewport(viewport);
 	pass.BeginAddingPrimitives();
 
-	auto pPerViewCB = GetStdGraphicsPipeline().GetMainViewConstantBuffer();
+	auto pPerViewCB = m_graphicsPipeline.GetMainViewConstantBuffer();
 
-	CTexture* pOcclusionTex = (rainVolParams.bApplyOcclusion && CTexture::IsTextureExist(CRendererResources::s_ptexRainOcclusion)) ? 
-		CRendererResources::s_ptexRainOcclusion : CRendererResources::s_ptexBlack;
+	CTexture* pOcclusionTex = (rainVolParams.bApplyOcclusion && CTexture::IsTextureExist(CRendererResources::s_ptexRainOcclusion)) ?
+	                          CRendererResources::s_ptexRainOcclusion : CRendererResources::s_ptexBlack;
 
 	uint64 rtMask = 0;
 	if (rainVolParams.bApplyOcclusion)
@@ -884,7 +880,7 @@ void CSnowStage::GetScissorRegion(const Vec3& cameraOrigin, const Vec3& vCenter,
 		return;
 	}
 
-	const auto& viewInfo = GetStdGraphicsPipeline().GetCurrentViewInfo(CCamera::eEye_Left);
+	const auto& viewInfo = m_graphicsPipeline.GetCurrentViewInfo(CCamera::eEye_Left);
 	Matrix44 mView = viewInfo.viewMatrix;
 	Matrix44 mProj = viewInfo.projMatrix;
 

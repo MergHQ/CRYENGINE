@@ -31,11 +31,10 @@ struct SRenderThreadLocalStorage
 	SRenderThreadLocalStorage() : currentCommandBuffer(0) {}
 };
 
-
 #if CRY_PLATFORM_WINDOWS
-HWND SRenderThread::GetRenderWindowHandle()
+CRY_HWND SRenderThread::GetRenderWindowHandle()
 {
-	return (HWND)gRenDev->GetCurrentContextHWND();
+	return (CRY_HWND)gRenDev->GetCurrentContextHWND();
 }
 #endif
 
@@ -248,25 +247,25 @@ void SRenderThread::RC_ResumeDevice()
 }
 #endif
 
-void SRenderThread::RC_BeginFrame(const SDisplayContextKey& displayContextKey)
+void SRenderThread::RC_BeginFrame(const SDisplayContextKey& displayContextKey, const SGraphicsPipelineKey& graphicsPipelineKey)
 {
 	if (IsRenderThread())
 	{
 		// NOTE: bypasses time measurement!
-		gcpRendD3D->RT_BeginFrame(displayContextKey);
+		gcpRendD3D->RT_BeginFrame(displayContextKey, graphicsPipelineKey);
 		return;
 	}
 
-	byte* p = AddCommand(eRC_BeginFrame, sizeof(displayContextKey));
-	if (sizeof(displayContextKey) == 8)
-		AddQWORD(p, *reinterpret_cast<const uint64*>(&displayContextKey));
-	else if (sizeof(displayContextKey) == 16)
-	{
-		AddQWORD(p, *reinterpret_cast<const uint64*>(&displayContextKey));
-		AddQWORD(p, *(reinterpret_cast<const uint64*>(&displayContextKey) + 1));
-	}
-	else
-		__debugbreak();
+	byte* p = AddCommand(eRC_BeginFrame, sizeof(displayContextKey) + sizeof(graphicsPipelineKey));
+
+	static_assert(sizeof(displayContextKey) % sizeof(uint64) == 0, "displayContextKey is not properly aligned!");
+	for (size_t frags = 0; frags < (sizeof(displayContextKey) / sizeof(uint64)); ++frags)
+		AddQWORD(p, reinterpret_cast<const uint64*>(&displayContextKey)[frags]);
+
+	static_assert(sizeof(graphicsPipelineKey) % sizeof(uint32) == 0, "graphicsPipelineKey is not properly aligned!");
+	for (size_t frags = 0; frags < (sizeof(graphicsPipelineKey) / sizeof(uint32)); ++frags)
+		AddDWORD(p, reinterpret_cast<const uint32*>(&graphicsPipelineKey)[frags]);
+
 	EndCommand(p);
 }
 
@@ -284,7 +283,7 @@ void SRenderThread::RC_EndFrame(bool bWait)
 
 	if (m_eVideoThreadMode == eVTM_Disabled)
 	{
-		AUTO_LOCK_T(CryCriticalSectionNonRecursive, m_CommandsLoadingLock); 
+		AUTO_LOCK_T(CryCriticalSectionNonRecursive, m_CommandsLoadingLock);
 
 		if (const unsigned int size = m_CommandsLoading.size())
 		{
@@ -330,17 +329,17 @@ void SRenderThread::RC_TryFlush()
 		return;
 
 	gRenDev->GetIRenderAuxGeom()->Submit(); // need to be submitted in main thread's aux cb before EndFrame (otherwise it is processed after p3dDev->EndScene())
-	
+
 	FlushAndWait();
 }
 
-void SRenderThread::RC_FlashRenderPlayer(std::shared_ptr<IFlashPlayer> &&pPlayer)
+void SRenderThread::RC_FlashRenderPlayer(std::shared_ptr<IFlashPlayer>&& pPlayer)
 {
 	assert(IsRenderThread());
 	gcpRendD3D->RT_FlashRenderInternal(std::move(pPlayer));
 }
 
-void SRenderThread::RC_FlashRender(std::shared_ptr<IFlashPlayer_RenderProxy> &&pPlayer)
+void SRenderThread::RC_FlashRender(std::shared_ptr<IFlashPlayer_RenderProxy>&& pPlayer)
 {
 	if (IsRenderThread())
 	{
@@ -359,7 +358,7 @@ void SRenderThread::RC_FlashRender(std::shared_ptr<IFlashPlayer_RenderProxy> &&p
 	EndCommand(p);
 }
 
-void SRenderThread::RC_FlashRenderPlaybackLockless(std::shared_ptr<IFlashPlayer_RenderProxy> &&pPlayer, int cbIdx, bool finalPlayback)
+void SRenderThread::RC_FlashRenderPlaybackLockless(std::shared_ptr<IFlashPlayer_RenderProxy>&& pPlayer, int cbIdx, bool finalPlayback)
 {
 	if (IsRenderThread())
 	{
@@ -383,7 +382,7 @@ void SRenderThread::RC_FlashRenderPlaybackLockless(std::shared_ptr<IFlashPlayer_
 void SRenderThread::RC_StartVideoThread()
 {
 	byte* p = AddCommandTo(eRC_LambdaCall, sizeof(void*), m_Commands[m_nCurThreadFill]);
-	void* pCallbackPtr = ::new(m_lambdaCallbacksPool.Allocate()) SRenderThreadLambdaCallback{ [=] { this->m_eVideoThreadMode = eVTM_RequestStart; } , ERenderCommandFlags::None };
+	void* pCallbackPtr = ::new(m_lambdaCallbacksPool.Allocate()) SRenderThreadLambdaCallback{[=] { this->m_eVideoThreadMode = eVTM_RequestStart; }, ERenderCommandFlags::None };
 	AddPointer(p, pCallbackPtr);
 	EndCommandTo(p, m_Commands[m_nCurThreadFill]);
 }
@@ -391,7 +390,7 @@ void SRenderThread::RC_StartVideoThread()
 void SRenderThread::RC_StopVideoThread()
 {
 	byte* p = AddCommandTo(eRC_LambdaCall, sizeof(void*), m_Commands[m_nCurThreadFill]);
-	void* pCallbackPtr = ::new(m_lambdaCallbacksPool.Allocate()) SRenderThreadLambdaCallback{ [=] { this->m_eVideoThreadMode = eVTM_RequestStop; } , ERenderCommandFlags::None };
+	void* pCallbackPtr = ::new(m_lambdaCallbacksPool.Allocate()) SRenderThreadLambdaCallback{[=] { this->m_eVideoThreadMode = eVTM_RequestStop; }, ERenderCommandFlags::None };
 	AddPointer(p, pCallbackPtr);
 	EndCommandTo(p, m_Commands[m_nCurThreadFill]);
 }
@@ -400,7 +399,7 @@ void SRenderThread::RC_StopVideoThread()
 
 #ifdef DO_RENDERSTATS
 	#define START_PROFILE_RT_SCOPE() CTimeValue Time = iTimer->GetAsyncTime();
-	#define START_PROFILE_RT() Time = iTimer->GetAsyncTime();
+	#define START_PROFILE_RT()       Time = iTimer->GetAsyncTime();
 	#define END_PROFILE_PLUS_RT(Dst) Dst += iTimer->GetAsyncTime().GetDifferenceInSeconds(Time);
 	#define END_PROFILE_RT(Dst)      Dst = iTimer->GetAsyncTime().GetDifferenceInSeconds(Time);
 #else
@@ -467,91 +466,92 @@ void SRenderThread::ProcessCommands()
 		switch (nC)
 		{
 		case eRC_CreateDevice:
-		{
-			CRY_PROFILE_REGION(PROFILE_RENDERER, "SRenderThread: eRC_CreateDevice");
-			MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "eRC_CreateDevice");
-			START_PROFILE_RT();
-			m_bSuccessful &= gcpRendD3D->RT_CreateDevice();
-			END_PROFILE_PLUS_RT(SRenderStatistics::Write().m_Summary.miscTime);
-		}
+			{
+				CRY_PROFILE_REGION(PROFILE_RENDERER, "SRenderThread: eRC_CreateDevice");
+				MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "eRC_CreateDevice");
+				START_PROFILE_RT();
+				m_bSuccessful &= gcpRendD3D->RT_CreateDevice();
+				END_PROFILE_PLUS_RT(SRenderStatistics::Write().m_Summary.miscTime);
+			}
 			break;
 		case eRC_ResetDevice:
-		{
-			CRY_PROFILE_REGION(PROFILE_RENDERER, "SRenderThread: eRC_ResetDevice");
-			MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "eRC_ResetDevice");
-			START_PROFILE_RT();
-			if (m_eVideoThreadMode == eVTM_Disabled)
-				gcpRendD3D->RT_Reset();
-			END_PROFILE_PLUS_RT(SRenderStatistics::Write().m_Summary.miscTime);
-		}
+			{
+				CRY_PROFILE_REGION(PROFILE_RENDERER, "SRenderThread: eRC_ResetDevice");
+				MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "eRC_ResetDevice");
+				START_PROFILE_RT();
+				if (m_eVideoThreadMode == eVTM_Disabled)
+					gcpRendD3D->RT_Reset();
+				END_PROFILE_PLUS_RT(SRenderStatistics::Write().m_Summary.miscTime);
+			}
 			break;
 	#if CRY_PLATFORM_DURANGO
 		case eRC_SuspendDevice:
-		{
-			CRY_PROFILE_REGION(PROFILE_RENDERER, "SRenderThread: eRC_SuspendDevice");
-			MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "eRC_SuspendDevice");
-			START_PROFILE_RT();
-			if (m_eVideoThreadMode == eVTM_Disabled)
-				gcpRendD3D->RT_SuspendDevice();
-			END_PROFILE_PLUS_RT(SRenderStatistics::Write().m_Summary.miscTime);
-		}
+			{
+				CRY_PROFILE_REGION(PROFILE_RENDERER, "SRenderThread: eRC_SuspendDevice");
+				MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "eRC_SuspendDevice");
+				START_PROFILE_RT();
+				if (m_eVideoThreadMode == eVTM_Disabled)
+					gcpRendD3D->RT_SuspendDevice();
+				END_PROFILE_PLUS_RT(SRenderStatistics::Write().m_Summary.miscTime);
+			}
 			break;
 		case eRC_ResumeDevice:
-		{
-			CRY_PROFILE_REGION(PROFILE_RENDERER, "SRenderThread: eRC_ResumeDevice");
-			MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "eRC_ResumeDevice");
-			START_PROFILE_RT();
-			if (m_eVideoThreadMode == eVTM_Disabled)
 			{
-				gcpRendD3D->RT_ResumeDevice();
-				//Now we really want to resume the device
-				bSuspendDevice = false;
-		}
-			END_PROFILE_PLUS_RT(SRenderStatistics::Write().m_Summary.miscTime);
-		}
+				CRY_PROFILE_REGION(PROFILE_RENDERER, "SRenderThread: eRC_ResumeDevice");
+				MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "eRC_ResumeDevice");
+				START_PROFILE_RT();
+				if (m_eVideoThreadMode == eVTM_Disabled)
+				{
+					gcpRendD3D->RT_ResumeDevice();
+					//Now we really want to resume the device
+					bSuspendDevice = false;
+				}
+				END_PROFILE_PLUS_RT(SRenderStatistics::Write().m_Summary.miscTime);
+			}
 			break;
 	#endif
 
 		case eRC_BeginFrame:
-		{
-			CRY_PROFILE_REGION(PROFILE_RENDERER, "SRenderThread: eRC_BeginFrame");
-			MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "eRC_BeginFrame");
-			START_PROFILE_RT();
-			m_displayContextKey = ReadCommand<SDisplayContextKey>(n);
-			if (m_eVideoThreadMode == eVTM_Disabled)
 			{
-				gcpRendD3D->RT_BeginFrame(m_displayContextKey);
-				m_bBeginFrameCalled = false;
+				CRY_PROFILE_REGION(PROFILE_RENDERER, "SRenderThread: eRC_BeginFrame");
+				MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "eRC_BeginFrame");
+				START_PROFILE_RT();
+				m_displayContextKey = ReadCommand<SDisplayContextKey>(n);
+				m_graphicsPipelineKey = ReadCommand<SGraphicsPipelineKey>(n);
+				if (m_eVideoThreadMode == eVTM_Disabled)
+				{
+					gcpRendD3D->RT_BeginFrame(m_displayContextKey, m_graphicsPipelineKey);
+					m_bBeginFrameCalled = false;
+				}
+				else
+				{
+					m_bBeginFrameCalled = true;
+				}
+				END_PROFILE_PLUS_RT(SRenderStatistics::Write().m_Summary.renderTime);
 			}
-			else
-			{
-				m_bBeginFrameCalled = true;
-			}
-			END_PROFILE_PLUS_RT(SRenderStatistics::Write().m_Summary.renderTime);
-		}
 			break;
 		case eRC_EndFrame:
-		{
-			CRY_PROFILE_REGION(PROFILE_RENDERER, "SRenderThread: eRC_EndFrame");
-			MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "eRC_EndFrame");
-			START_PROFILE_RT();
-			if (m_eVideoThreadMode == eVTM_Disabled)
 			{
-				gcpRendD3D->RT_EndFrame();
-				m_bEndFrameCalled = false;
-			}
-			else
-			{
-				// RLT handles precache commands - so all texture streaming prioritisation
-				// needs to happen here. Scheduling and device texture management will happen
-				// on the RT later.
-				CTexture::RLT_LoadingUpdate();
+				CRY_PROFILE_REGION(PROFILE_RENDERER, "SRenderThread: eRC_EndFrame");
+				MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "eRC_EndFrame");
+				START_PROFILE_RT();
+				if (m_eVideoThreadMode == eVTM_Disabled)
+				{
+					gcpRendD3D->RT_EndFrame();
+					m_bEndFrameCalled = false;
+				}
+				else
+				{
+					// RLT handles precache commands - so all texture streaming prioritisation
+					// needs to happen here. Scheduling and device texture management will happen
+					// on the RT later.
+					CTexture::RLT_LoadingUpdate();
 
-				m_bEndFrameCalled = true;
-				gcpRendD3D->m_nFrameSwapID++;
+					m_bEndFrameCalled = true;
+					gcpRendD3D->m_nFrameSwapID++;
+				}
+				END_PROFILE_PLUS_RT(SRenderStatistics::Write().m_Summary.renderTime);
 			}
-			END_PROFILE_PLUS_RT(SRenderStatistics::Write().m_Summary.renderTime);
-		}
 			break;
 
 		case eRC_FlashRender:
@@ -572,25 +572,25 @@ void SRenderThread::ProcessCommands()
 				bool finalPlayback = ReadCommand<int>(n) != 0;
 				gcpRendD3D->RT_FlashRenderPlaybackLocklessInternal(std::move(pPlayer), cbIdx, finalPlayback, m_eVideoThreadMode == eVTM_Disabled);
 				END_PROFILE_PLUS_RT(SRenderStatistics::Write().m_Summary.flashTime);
-		}
+			}
 			break;
 
 		case eRC_LambdaCall:
-		{
-			CRY_PROFILE_REGION(PROFILE_RENDERER, "SRenderThread: eRC_LambdaCall");
-			MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "eRC_LambdaCall");
-			START_PROFILE_RT();
-			SRenderThreadLambdaCallback* pRTCallback = ReadCommand<SRenderThreadLambdaCallback*>(n);
-			bool bSkipCommand = (m_eVideoThreadMode != eVTM_Disabled) && (uint32(pRTCallback->flags & ERenderCommandFlags::SkipDuringLoading) != 0);
-			// Execute lambda callback on a render thread
-			if (!bSkipCommand)
 			{
-				pRTCallback->callback();
-			}
+				CRY_PROFILE_REGION(PROFILE_RENDERER, "SRenderThread: eRC_LambdaCall");
+				MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "eRC_LambdaCall");
+				START_PROFILE_RT();
+				SRenderThreadLambdaCallback* pRTCallback = ReadCommand<SRenderThreadLambdaCallback*>(n);
+				bool bSkipCommand = (m_eVideoThreadMode != eVTM_Disabled) && (uint32(pRTCallback->flags & ERenderCommandFlags::SkipDuringLoading) != 0);
+				// Execute lambda callback on a render thread
+				if (!bSkipCommand)
+				{
+					pRTCallback->callback();
+				}
 
-			m_lambdaCallbacksPool.Delete(pRTCallback);
-			END_PROFILE_PLUS_RT(SRenderStatistics::Write().m_Summary.renderTime);
-		}
+				m_lambdaCallbacksPool.Delete(pRTCallback);
+				END_PROFILE_PLUS_RT(SRenderStatistics::Write().m_Summary.renderTime);
+			}
 			break;
 
 		default:
@@ -719,7 +719,7 @@ void SRenderThread::Process()
 			if (m_bBeginFrameCalled)
 			{
 				m_bBeginFrameCalled = false;
-				gcpRendD3D->RT_BeginFrame(m_displayContextKey);
+				gcpRendD3D->RT_BeginFrame(m_displayContextKey, m_graphicsPipelineKey);
 			}
 			if (m_bEndFrameCalled)
 			{
@@ -762,7 +762,7 @@ void SRenderThread::ProcessLoading()
 			SignalFlushFinishedCond();
 			break;//put it here to safely shut down
 		}
-		
+
 		{
 			float fTimeAfterWait = iTimer->GetAsyncCurTime();
 			if (gRenDev->m_bStartLevelLoading)
@@ -977,7 +977,7 @@ void SRenderThread::WaitFlushFinishedCond()
 
 		// If the RenderThread issues messages (rare occasion, e.g. setting window-styles)
 #if CRY_PLATFORM_WINDOWS
-		const HWND hWnd = GetRenderWindowHandle();
+		const CRY_HWND hWnd = GetRenderWindowHandle();
 		if (hWnd)
 		{
 			gEnv->pSystem->PumpWindowMessage(true, hWnd);
@@ -987,14 +987,14 @@ void SRenderThread::WaitFlushFinishedCond()
 #else
 	while (m_nFlush.load())
 	{
-	#if CRY_PLATFORM_WINDOWS
-		const HWND hWnd = GetRenderWindowHandle();
+#if CRY_PLATFORM_WINDOWS
+		const CRY_HWND hWnd = GetRenderWindowHandle();
 		if (hWnd)
 		{
 			gEnv->pSystem->PumpWindowMessage(true, hWnd);
 		}
 		CryMT::CryYieldThread();
-	#endif
+#endif
 	}
 #endif
 

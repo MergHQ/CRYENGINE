@@ -79,7 +79,7 @@ void CSunShaftsStage::Execute()
 
 			m_passShaftsMask.SetTexture(0, CRendererResources::s_ptexLinearDepthScaled[downscaledSourceIndex]);
 			m_passShaftsMask.SetTexture(1, CRendererResources::s_ptexHDRTargetScaled[downscaledSourceIndex][0]);
-			m_passShaftsMask.SetSampler(0, EDefaultSamplerStates::PointClamp);  
+			m_passShaftsMask.SetSampler(0, EDefaultSamplerStates::PointClamp);
 		}
 
 		m_passShaftsMask.BeginConstantUpdate();
@@ -89,7 +89,7 @@ void CSunShaftsStage::Execute()
 	// Apply local radial blur to mask
 	{
 		SRenderViewInfo viewInfo[2];
-		int viewInfoCount = GetGraphicsPipeline().GenerateViewInfo(viewInfo);
+		int viewInfoCount = m_graphicsPipeline.GenerateViewInfo(viewInfo);
 
 		Vec4 sunPosScreen[2];
 		Vec3 sunPos = gEnv->p3DEngine->GetSunDir() * 1000.0f;
@@ -119,7 +119,7 @@ void CSunShaftsStage::Execute()
 			auto constants = m_passShaftsGen0.BeginTypedConstantUpdate<SSunShaftConstants>(eConstantBufferShaderSlot_PerPrimitive);
 			constants->sunPos = sunPosScreen[0];
 			constants->params = Vec4(0.1f, rayAttenuation, 0, 0);
-			
+
 			if (viewInfoCount > 1)
 			{
 				constants.BeginStereoOverride();

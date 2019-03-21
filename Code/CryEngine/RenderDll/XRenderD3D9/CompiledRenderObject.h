@@ -170,13 +170,13 @@ enum EObjectCompilationOptions : uint8
 	eObjCompilationOption_PerInstanceExtraResources = BIT(2),
 	eObjCompilationOption_InputStreams              = BIT(3), // e.g. geometry streams (vertex, index buffers)
 
-	eObjCompilationOption_None                = 0,
-	eObjCompilationOption_PerIntanceDataOnly  = eObjCompilationOption_PerInstanceConstantBuffer |
-	                                            eObjCompilationOption_PerInstanceExtraResources,
-	eObjCompilationOption_All                 = eObjCompilationOption_PipelineState             | 
-	                                            eObjCompilationOption_PerInstanceConstantBuffer | 
-	                                            eObjCompilationOption_PerInstanceExtraResources | 
-	                                            eObjCompilationOption_InputStreams
+	eObjCompilationOption_None                      = 0,
+	eObjCompilationOption_PerIntanceDataOnly        = eObjCompilationOption_PerInstanceConstantBuffer |
+	                                                  eObjCompilationOption_PerInstanceExtraResources,
+	eObjCompilationOption_All                       = eObjCompilationOption_PipelineState |
+	                                                  eObjCompilationOption_PerInstanceConstantBuffer |
+	                                                  eObjCompilationOption_PerInstanceExtraResources |
+	                                                  eObjCompilationOption_InputStreams
 };
 DEFINE_ENUM_FLAG_OPERATORS(EObjectCompilationOptions);
 
@@ -224,13 +224,13 @@ public:
 public:
 	/////////////////////////////////////////////////////////////////////////////
 	// Packed parameters
-	uint32 m_StencilRef           : 8; //!< Stencil ref value
-	uint32 m_nNumVertexStreams  : 8; //!< Number of vertex streams specified
-	uint32 m_nLastVertexStreamSlot  : 8; //!< Highest vertex stream slot
-	uint32 m_bOwnPerInstanceCB    : 1; //!< True if object owns its own per instance constant buffer, and is not sharing it with other compiled object
-	uint32 m_bIncomplete          : 1; //!< True if compilation failed
-	uint32 m_bHasTessellation     : 1; //!< True if tessellation is enabled
-	uint32 m_bSharedWithShadow    : 1; //!< True if objects is shared between shadow and general pass
+	uint32 m_StencilRef                 : 8; //!< Stencil ref value
+	uint32 m_nNumVertexStreams          : 8; //!< Number of vertex streams specified
+	uint32 m_nLastVertexStreamSlot      : 8; //!< Highest vertex stream slot
+	uint32 m_bOwnPerInstanceCB          : 1; //!< True if object owns its own per instance constant buffer, and is not sharing it with other compiled object
+	uint32 m_bIncomplete                : 1; //!< True if compilation failed
+	uint32 m_bHasTessellation           : 1; //!< True if tessellation is enabled
+	uint32 m_bSharedWithShadow          : 1; //!< True if objects is shared between shadow and general pass
 	uint32 m_bDynamicInstancingPossible : 1; //!< True if this render object can be dynamically instanced with other compiled render object
 	uint32 m_bCustomRenderElement       : 1; //!< When dealing with not known render element, will cause Draw be redirected to the RenderElement itself
 	/////////////////////////////////////////////////////////////////////////////
@@ -255,8 +255,8 @@ public:
 	const CDeviceInputStream* m_vertexStreamSet;
 	const CDeviceInputStream* m_indexStreamSet;
 
-	uint32                m_perDrawInstances;
-	CConstantBufferPtr    m_pInstancingConstBuffer;    //!< Constant Buffer with all instances
+	uint32                    m_perDrawInstances;
+	CConstantBufferPtr        m_pInstancingConstBuffer; //!< Constant Buffer with all instances
 
 	// DrawCall parameters, store separate values for merged shadow-gen draw calls
 	SDrawParams m_drawParams[eDrawParam_Count];
@@ -314,7 +314,7 @@ public:
 
 	// Compile(): Returns true if the compilation is fully finished, false if compilation should be retriggered later
 
-	bool Compile(const EObjectCompilationOptions& compilationOptions, uint64 objFlags, ERenderElementFlags elmFlags, const AABB &localAABB, CRenderView *pRenderView);
+	bool Compile(const EObjectCompilationOptions& compilationOptions, uint64 objFlags, ERenderElementFlags elmFlags, const AABB& localAABB, CRenderView* pRenderView);
 	void PrepareForUse(CDeviceCommandListRef RESTRICT_REFERENCE commandList, bool bInstanceOnly) const;
 
 	void DrawToCommandList(const SGraphicsPipelinePassContext& RESTRICT_REFERENCE passContext, CDeviceCommandList* commandList, CConstantBuffer* pDynamicInstancingBuffer = nullptr, uint32 dynamicInstancingCount = 1) const;
@@ -329,13 +329,13 @@ public:
 	const SPerInstanceShaderData& GetInstancingData() const { return m_instanceData; }
 
 	static CCompiledRenderObject* AllocateFromPool();
-	static void FreeToPool(CCompiledRenderObject* ptr);
-	static void SetStaticPools(CRenderObjectsPools* pools) { s_pPools = pools; }
+	static void                   FreeToPool(CCompiledRenderObject* ptr);
+	static void                   SetStaticPools(CRenderObjectsPools* pools) { s_pPools = pools; }
 
 private:
 	void CompilePerDrawCB(CRenderObject* pRenderObject, uint64 objFlags);
 	void CompilePerInstanceCB(CRenderObject* pRenderObject, bool bForce);
-	void CompilePerDrawExtraResources(CRenderObject* pRenderObject);
+	void CompilePerDrawExtraResources(CRenderObject* pRenderObject, CRenderView* pRenderView);
 
 	void UpdatePerDrawCB(void* pData, size_t size);
 
@@ -344,6 +344,6 @@ private:
 #endif
 
 private:
-	static CRenderObjectsPools* s_pPools;
+	static CRenderObjectsPools*           s_pPools;
 	static CryCriticalSectionNonRecursive m_drawCallInfoLock;
 };

@@ -571,7 +571,7 @@ void CFlashUI::OnLoadingProgress(ILevelInfo* pLevel, int progressAmount)
 			const bool bStandAlone = (nRecursionLevel <= 0);
 			if (bStandAlone)
 			{
-				gEnv->pSystem->RenderBegin(SDisplayContextKey{});
+				gEnv->pSystem->RenderBegin(SDisplayContextKey{}, SGraphicsPipelineKey::BaseGraphicsPipelineKey);
 			}
 
 			const float currTime = gEnv->pTimer->GetAsyncCurTime();
@@ -626,7 +626,7 @@ void CFlashUI::LoadtimeRender()
 		if (stereoRenderer->GetStereoEnabled())
 			stereoRenderer->PrepareFrame();
 
-		for (auto &pFlashPlayer : m_loadtimePlayerList)
+		for (auto& pFlashPlayer : m_loadtimePlayerList)
 		{
 			auto p = pFlashPlayer;
 			p->SetClearFlags(FRT_CLEAR_COLOR, Clr_Transparent);
@@ -1094,7 +1094,7 @@ void CFlashUI::CreateNodes()
 	// Do nodes registration with flow graph system
 	for (auto pNodeFactory : m_UINodes)
 	{
-		gEnv->pFlowSystem->RegisterType(pNodeFactory->GetNodeTypeName(),pNodeFactory);
+		gEnv->pFlowSystem->RegisterType(pNodeFactory->GetNodeTypeName(), pNodeFactory);
 	}
 }
 

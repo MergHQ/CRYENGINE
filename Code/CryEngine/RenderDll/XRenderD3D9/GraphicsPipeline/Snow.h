@@ -10,7 +10,23 @@
 class CSnowStage : public CGraphicsPipelineStage
 {
 public:
-	CSnowStage();
+	static const EGraphicsPipelineStage StageID = eStage_Snow;
+
+	CSnowStage(CGraphicsPipeline& graphicsPipeline)
+		: CGraphicsPipelineStage(graphicsPipeline)
+		, m_passCopyGBufferNormal(&graphicsPipeline)
+		, m_passCopyGBufferSpecular(&graphicsPipeline)
+		, m_passCopyGBufferDiffuse(&graphicsPipeline)
+		, m_passDeferredSnowGBuffer(&graphicsPipeline)
+		, m_passParallaxSnowHeightMapGen(&graphicsPipeline)
+		, m_passParallaxSnowMin(&graphicsPipeline)
+		, m_passCopySceneToParallaxSnowSrc(&graphicsPipeline)
+		, m_passCopySceneTargetTexture(&graphicsPipeline)
+		, m_passSnowHalfResCompisite(&graphicsPipeline)
+	{
+		for (auto& pass : m_passParallaxSnow)
+			pass.SetGraphicsPipeline(&graphicsPipeline);
+	}
 	virtual ~CSnowStage();
 
 	bool IsStageActive(EShaderRenderingFlags flags) const final
@@ -28,7 +44,7 @@ public:
 	void ExecuteDeferredSnowDisplacement();
 	void Execute();
 
-	bool IsDeferredSnowEnabled() const { return CRendererCVars::IsSnowEnabled() && gcpRendD3D->m_bDeferredSnowEnabled; }
+	bool IsDeferredSnowEnabled() const             { return CRendererCVars::IsSnowEnabled() && gcpRendD3D->m_bDeferredSnowEnabled; }
 	bool IsDeferredSnowDisplacementEnabled() const { return CRendererCVars::IsSnowEnabled() && CRendererCVars::CV_r_snow_displacement && gcpRendD3D->m_bDeferredSnowEnabled; }
 
 private:

@@ -70,7 +70,7 @@ CTexture* CPostEffectContext::GetDstBackBufferTexture() const
 {
 	if (!m_bUseAltBackBuffer)
 		return GetRenderView()->GetColorTarget();
-	
+
 	return CRendererResources::s_ptexDisplayTargetDst;
 }
 
@@ -93,47 +93,37 @@ const CEffectParam* CPostEffectContext::GetEffectParamByName(const char* pszPara
 
 //////////////////////////////////////////////////////////////////////////
 
-CPostEffectStage::CPostEffectStage()
-{
-
-}
-
-CPostEffectStage::~CPostEffectStage()
-{
-
-}
-
 void CPostEffectStage::Init()
 {
 	// TODO: all commented ones
-//	m_postEffectArray[EPostEffectID::SunShafts           ] = stl::make_unique<CSunShaftsPass           >();
-//	m_postEffectArray[EPostEffectID::MotionBlur          ] = stl::make_unique<CMotionBlurPass          >();
-//	m_postEffectArray[EPostEffectID::ColorGrading        ] = stl::make_unique<CColorGradingPass        >();
-//	m_postEffectArray[EPostEffectID::DepthOfField        ] = stl::make_unique<CDepthOfFieldPass        >();
-	m_postEffectArray[EPostEffectID::HUDSilhouettes      ] = stl::make_unique<CHudSilhouettesPass      >();
-//	m_postEffectArray[EPostEffectID::PostAA              ] = stl::make_unique<CPostAAPass              >();
-	m_postEffectArray[EPostEffectID::UnderwaterGodRays   ] = stl::make_unique<CUnderwaterGodRaysPass   >();
-//	m_postEffectArray[EPostEffectID::VolumetricScattering] = stl::make_unique<CVolumetricScatteringPass>();
-	m_postEffectArray[EPostEffectID::Sharpening          ] = stl::make_unique<CSharpeningPass          >();
-	m_postEffectArray[EPostEffectID::Blurring            ] = stl::make_unique<CBlurringPass            >();
-	m_postEffectArray[EPostEffectID::UberGamePostProcess ] = stl::make_unique<CUberGamePostEffectPass  >();
-//	m_postEffectArray[EPostEffectID::NightVision         ] = stl::make_unique<CNightVisionPass         >();
-//	m_postEffectArray[EPostEffectID::SonarVision         ] = stl::make_unique<CSonarVisionPass         >();
-//	m_postEffectArray[EPostEffectID::ThermalVision       ] = stl::make_unique<CThermalVisionPass       >();
-	m_postEffectArray[EPostEffectID::FlashBang           ] = stl::make_unique<CFlashBangPass           >();
-//	m_postEffectArray[EPostEffectID::ImageGhosting       ] = stl::make_unique<CImageGhostingPass       >();
-//	m_postEffectArray[EPostEffectID::NanoGlass           ] = stl::make_unique<CNanoGlassPass           >();
-//	m_postEffectArray[EPostEffectID::RainDrops           ] = stl::make_unique<CRainDropsPass           >();
-	m_postEffectArray[EPostEffectID::WaterDroplets       ] = stl::make_unique<CWaterDropletsPass       >();
-	m_postEffectArray[EPostEffectID::WaterFlow           ] = stl::make_unique<CWaterFlowPass           >();
-	m_postEffectArray[EPostEffectID::ScreenBlood         ] = stl::make_unique<CScreenBloodPass         >();
-//	m_postEffectArray[EPostEffectID::ScreenFrost         ] = stl::make_unique<CScreenFrostPass         >();
-	m_postEffectArray[EPostEffectID::KillCamera          ] = stl::make_unique<CKillCameraPass          >();
-//	m_postEffectArray[EPostEffectID::AlienInterference   ] = stl::make_unique<CAlienInterferencePass   >();
-	m_postEffectArray[EPostEffectID::PostStereo          ] = stl::make_unique<CPostStereoPass          >();
-	m_postEffectArray[EPostEffectID::HUD3D               ] = stl::make_unique<CHud3DPass               >();
-	m_postEffectArray[EPostEffectID::ScreenFader         ] = stl::make_unique<CScreenFaderPass         >();
-//	m_postEffectArray[EPostEffectID::Post3DRenderer      ] = stl::make_unique<CPost3DRendererPass      >();
+	//	m_postEffectArray[EPostEffectID::SunShafts           ] = stl::make_unique<CSunShaftsPass           >();
+	//	m_postEffectArray[EPostEffectID::MotionBlur          ] = stl::make_unique<CMotionBlurPass          >();
+	//	m_postEffectArray[EPostEffectID::ColorGrading        ] = stl::make_unique<CColorGradingPass        >();
+	//	m_postEffectArray[EPostEffectID::DepthOfField        ] = stl::make_unique<CDepthOfFieldPass        >();
+	    m_postEffectArray[EPostEffectID::HUDSilhouettes      ] = stl::make_unique<CHudSilhouettesPass      >(&m_graphicsPipeline);
+	//	m_postEffectArray[EPostEffectID::PostAA              ] = stl::make_unique<CPostAAPass              >();
+	    m_postEffectArray[EPostEffectID::UnderwaterGodRays   ] = stl::make_unique<CUnderwaterGodRaysPass   >(&m_graphicsPipeline);
+	//	m_postEffectArray[EPostEffectID::VolumetricScattering] = stl::make_unique<CVolumetricScatteringPass>();
+	    m_postEffectArray[EPostEffectID::Sharpening          ] = stl::make_unique<CSharpeningPass          >(&m_graphicsPipeline);
+	    m_postEffectArray[EPostEffectID::Blurring            ] = stl::make_unique<CBlurringPass            >(&m_graphicsPipeline);
+	    m_postEffectArray[EPostEffectID::UberGamePostProcess ] = stl::make_unique<CUberGamePostEffectPass  >(&m_graphicsPipeline);
+	//	m_postEffectArray[EPostEffectID::NightVision         ] = stl::make_unique<CNightVisionPass         >();
+	//	m_postEffectArray[EPostEffectID::SonarVision         ] = stl::make_unique<CSonarVisionPass         >();
+	//	m_postEffectArray[EPostEffectID::ThermalVision       ] = stl::make_unique<CThermalVisionPass       >();
+	    m_postEffectArray[EPostEffectID::FlashBang           ] = stl::make_unique<CFlashBangPass           >(&m_graphicsPipeline);
+	//	m_postEffectArray[EPostEffectID::ImageGhosting       ] = stl::make_unique<CImageGhostingPass       >();
+	//	m_postEffectArray[EPostEffectID::NanoGlass           ] = stl::make_unique<CNanoGlassPass           >();
+	//	m_postEffectArray[EPostEffectID::RainDrops           ] = stl::make_unique<CRainDropsPass           >();
+	    m_postEffectArray[EPostEffectID::WaterDroplets       ] = stl::make_unique<CWaterDropletsPass       >(&m_graphicsPipeline);
+	    m_postEffectArray[EPostEffectID::WaterFlow           ] = stl::make_unique<CWaterFlowPass           >(&m_graphicsPipeline);
+	    m_postEffectArray[EPostEffectID::ScreenBlood         ] = stl::make_unique<CScreenBloodPass         >(&m_graphicsPipeline);
+	//	m_postEffectArray[EPostEffectID::ScreenFrost         ] = stl::make_unique<CScreenFrostPass         >();
+	    m_postEffectArray[EPostEffectID::KillCamera          ] = stl::make_unique<CKillCameraPass          >(&m_graphicsPipeline);
+	//	m_postEffectArray[EPostEffectID::AlienInterference   ] = stl::make_unique<CAlienInterferencePass   >();
+	    m_postEffectArray[EPostEffectID::PostStereo          ] = stl::make_unique<CPostStereoPass          >(&m_graphicsPipeline);
+	    m_postEffectArray[EPostEffectID::HUD3D               ] = stl::make_unique<CHud3DPass               >(&m_graphicsPipeline);
+	    m_postEffectArray[EPostEffectID::ScreenFader         ] = stl::make_unique<CScreenFaderPass         >(&m_graphicsPipeline);
+	//	m_postEffectArray[EPostEffectID::Post3DRenderer      ] = stl::make_unique<CPost3DRendererPass      >();
 
 	for (auto& pPostEffect : m_postEffectArray)
 	{
@@ -178,10 +168,12 @@ bool CPostEffectStage::Execute()
 		return false;
 	}
 
+	std::shared_ptr<CGraphicsPipeline> pGP = RenderView()->GetGraphicsPipeline();
+
 	// Skip hdr/post processing when rendering different camera views
 	if ((RenderView()->IsViewFlag(SRenderViewInfo::eFlags_MirrorCull))
-	    || (RenderView()->GetShaderRenderingFlags() & SHDF_CUBEMAPGEN)
-	    || (RenderView()->GetShaderRenderingFlags() & SHDF_ALLOWPOSTPROCESS) == 0)
+	    || (pGP->GetRenderFlags() & SHDF_CUBEMAPGEN)
+	    || (pGP->GetRenderFlags() & SHDF_ALLOWPOSTPROCESS) == 0)
 	{
 		return false;
 	}
@@ -233,7 +225,7 @@ bool CPostEffectStage::Execute()
 	{
 		CPostEffect* pCurrEffect = (*pItor);
 		pCurrEffect->SetCurrentContext(&m_context);
-		if (pCurrEffect->Preprocess(viewInfo))
+		if (pCurrEffect->Preprocess(viewInfo, pGP))
 		{
 			pCurrEffect->SetCurrentContext(nullptr);
 			const auto id = pCurrEffect->GetID();
@@ -275,7 +267,7 @@ bool CPostEffectStage::Execute()
 			}
 			else
 			{
-				pCurrEffect->Render();
+				pCurrEffect->Render(pGP);
 			}
 		}
 
@@ -396,10 +388,11 @@ void CPostEffectStage::Execute3DHudFlashUpdate()
 	const auto& viewInfo = RenderView()->GetViewInfo(CCamera::eEye_Left);
 	const auto& context = m_context;
 	auto* p3DHUD = context.GetPostEffect(EPostEffectID::HUD3D);
+	std::shared_ptr<CGraphicsPipeline> pActivePipeline = RenderView()->GetGraphicsPipeline();
 
 	// If HUD enabled, pre-process flash updates first.
 	// post effects of EPostEffectID::NanoGlass and EPostEffectID::PostStereo depend on this HUD update.
-	if (p3DHUD && p3DHUD->Preprocess(viewInfo))
+	if (p3DHUD && p3DHUD->Preprocess(viewInfo, pActivePipeline))
 	{
 		auto& pPostEffect = m_postEffectArray[EPostEffectID::HUD3D];
 		if (pPostEffect)
@@ -413,10 +406,6 @@ void CPostEffectStage::Execute3DHudFlashUpdate()
 }
 
 //////////////////////////////////////////////////////////////////////////
-CUnderwaterGodRaysPass::CUnderwaterGodRaysPass()
-{
-
-}
 
 CUnderwaterGodRaysPass::~CUnderwaterGodRaysPass()
 {
@@ -535,11 +524,6 @@ void CUnderwaterGodRaysPass::Execute(const CPostEffectContext& context)
 
 //////////////////////////////////////////////////////////////////////////
 
-CWaterDropletsPass::CWaterDropletsPass()
-{
-
-}
-
 CWaterDropletsPass::~CWaterDropletsPass()
 {
 	SAFE_RELEASE(m_pWaterDropletsBumpTex);
@@ -596,11 +580,6 @@ void CWaterDropletsPass::Execute(const CPostEffectContext& context)
 }
 
 //////////////////////////////////////////////////////////////////////////
-
-CWaterFlowPass::CWaterFlowPass()
-{
-
-}
 
 CWaterFlowPass::~CWaterFlowPass()
 {
@@ -974,14 +953,14 @@ void CPostStereoPass::Execute(const CPostEffectContext& context)
 {
 	CD3D9Renderer* const RESTRICT_POINTER rd = gcpRendD3D;
 	CD3DStereoRenderer* const RESTRICT_POINTER rendS3D = &(gcpRendD3D.GetS3DRend());
-	
- 	if (!rendS3D->IsPostStereoEnabled())
+
+	if (!rendS3D->IsPostStereoEnabled())
 	{
 		return;
 	}
 
 	PROFILE_LABEL_SCOPE("POST_STEREO");
-	
+
 	CTexture* pSrcBackBufferTexture = context.GetSrcBackBufferTexture();
 
 	// Mask near geometry (weapon)
@@ -1026,8 +1005,8 @@ void CPostStereoPass::Execute(const CPostEffectContext& context)
 	{
 		auto& pass = m_passPostStereo;
 
-		auto *leftDc = rendS3D->GetEyeDisplayContext(CCamera::eEye_Left).first;
-		auto *rightDc = rendS3D->GetEyeDisplayContext(CCamera::eEye_Right).first;
+		auto* leftDc  = rendS3D->GetEyeDisplayContext(CCamera::eEye_Left).first;
+		auto* rightDc = rendS3D->GetEyeDisplayContext(CCamera::eEye_Right).first;
 		if (!leftDc || !rightDc)
 			return;
 
@@ -1079,11 +1058,6 @@ void CPostStereoPass::Execute(const CPostEffectContext& context)
 }
 
 //////////////////////////////////////////////////////////////////////////
-
-CKillCameraPass::CKillCameraPass()
-{
-
-}
 
 CKillCameraPass::~CKillCameraPass()
 {
@@ -1179,7 +1153,7 @@ void CKillCameraPass::Execute(const CPostEffectContext& context)
 			int height = 0;
 			if (context.GetRenderView())
 			{
-				const SRenderViewport &viewport = context.GetRenderView()->GetViewport();
+				const SRenderViewport& viewport = context.GetRenderView()->GetViewport();
 				width = viewport.width;
 				height = viewport.height;
 			}
@@ -1218,11 +1192,6 @@ void CKillCameraPass::Execute(const CPostEffectContext& context)
 }
 
 //////////////////////////////////////////////////////////////////////////
-
-CScreenBloodPass::CScreenBloodPass()
-{
-
-}
 
 CScreenBloodPass::~CScreenBloodPass()
 {
@@ -1314,7 +1283,7 @@ void CScreenFaderPass::Execute(const CPostEffectContext& context)
 	PROFILE_LABEL_SCOPE("SCREEN FADER");
 
 	auto& pass = m_passScreenFader;
-	const Vec4 &color = pColor->GetParamVec4();
+	const Vec4& color = pColor->GetParamVec4();
 
 	CTexture* pDstTex = context.GetDstBackBufferTexture();
 
@@ -1372,8 +1341,7 @@ void CHudSilhouettesPass::Execute(const CPostEffectContext& context)
 	if (CRenderer::CV_r_customvisions == 1
 	    || CRenderer::CV_r_customvisions == 3)
 	{
-		CD3D9Renderer* const RESTRICT_POINTER rd = gcpRendD3D;
-		auto* pSceneCustom = rd->GetGraphicsPipeline().GetSceneCustomStage();
+		auto* pSceneCustom = context.GetRenderView()->GetGraphicsPipeline()->GetStage<CSceneCustomStage>();
 		if (pSceneCustom)
 		{
 			pSceneCustom->ExecuteSilhouettePass();
@@ -1467,11 +1435,6 @@ void CHudSilhouettesPass::ExecuteDeferredSilhouettesOptimised(const CPostEffectC
 }
 
 //////////////////////////////////////////////////////////////////////////
-
-CHud3DPass::CHud3DPass()
-{
-
-}
 
 CHud3DPass::~CHud3DPass()
 {
@@ -1627,7 +1590,6 @@ void CHud3DPass::ExecuteDownsampleHud4x4(const CPostEffectContext& context, clas
 {
 	PROFILE_LABEL_SCOPE("3D HUD DOWNSAMPLE 4X4");
 
-	CD3D9Renderer* const RESTRICT_POINTER rd = gcpRendD3D;
 	const uint32 nThreadID = gRenDev->GetRenderThreadID();
 
 	// temporary clear/fix - try avoiding this
@@ -1654,7 +1616,7 @@ void CHud3DPass::ExecuteDownsampleHud4x4(const CPostEffectContext& context, clas
 		uint32 nRECount = renderDataArray.size();
 		uint32 index = 0;
 
-		CConstantBufferPtr pPerViewCB = rd->GetGraphicsPipeline().GetMainViewConstantBuffer();
+		CConstantBufferPtr pPerViewCB = context.GetRenderView()->GetGraphicsPipeline()->GetMainViewConstantBuffer();
 
 		auto& primArray = m_downsamplePrimitiveArray;
 		if (primArray.size() > nRECount)
@@ -1716,9 +1678,9 @@ void CHud3DPass::ExecuteDownsampleHud4x4(const CPostEffectContext& context, clas
 					auto& cm = prim.GetConstantManager();
 					cm.BeginNamedConstantUpdate();
 
-					SetShaderParams(context,EShaderStage_Vertex | EShaderStage_Pixel, cm, pData, hud3d);
+					SetShaderParams(context, EShaderStage_Vertex | EShaderStage_Pixel, cm, pData, hud3d);
 
-					cm.EndNamedConstantUpdate(&viewport); // Unmap constant buffers and mark as bound
+					cm.EndNamedConstantUpdate(&viewport, context.GetRenderView()); // Unmap constant buffers and mark as bound
 				}
 
 				pass.AddPrimitive(&prim);
@@ -1735,11 +1697,13 @@ void CHud3DPass::ExecuteBloomTexUpdate(const CPostEffectContext& context, class 
 {
 	PROFILE_LABEL_SCOPE("UPDATE BLOOM TEX");
 
-	CD3D9Renderer* const RESTRICT_POINTER rd = gcpRendD3D;
 	const auto nThreadID = gRenDev->GetRenderThreadID();
 
+	std::shared_ptr<CGraphicsPipeline> pActivePipeline = context.GetRenderView()->GetGraphicsPipeline();
+	CRY_ASSERT(pActivePipeline);
+
 	// Calculate HUD's projection matrix using fixed FOV.
-	hud3d.CalculateProjMatrix();
+	hud3d.CalculateProjMatrix(pActivePipeline);
 
 	CTexture* pOutputRT = CRendererResources::s_ptexDisplayTargetScaled[1];
 
@@ -1766,7 +1730,7 @@ void CHud3DPass::ExecuteBloomTexUpdate(const CPostEffectContext& context, class 
 		uint32 nRECount = renderDataArray.size();
 		uint32 index = 0;
 
-		CConstantBufferPtr pPerViewCB = rd->GetGraphicsPipeline().GetMainViewConstantBuffer();
+		CConstantBufferPtr pPerViewCB = context.GetRenderView()->GetGraphicsPipeline()->GetMainViewConstantBuffer();
 
 		auto& primArray = m_bloomPrimitiveArray;
 		if (primArray.size() > nRECount)
@@ -1821,9 +1785,9 @@ void CHud3DPass::ExecuteBloomTexUpdate(const CPostEffectContext& context, class 
 					auto& cm = prim.GetConstantManager();
 					cm.BeginNamedConstantUpdate();
 
-					SetShaderParams(context,EShaderStage_Vertex, cm, pData, hud3d);
+					SetShaderParams(context, EShaderStage_Vertex, cm, pData, hud3d);
 
-					cm.EndNamedConstantUpdate(&viewport); // Unmap constant buffers and mark as bound
+					cm.EndNamedConstantUpdate(&viewport, context.GetRenderView()); // Unmap constant buffers and mark as bound
 				}
 
 				pass.AddPrimitive(&prim);
@@ -1846,11 +1810,13 @@ void CHud3DPass::ExecuteFinalPass(const CPostEffectContext& context, CTexture* p
 {
 	PROFILE_LABEL_SCOPE("3D HUD FINAL PASS");
 
-	CD3D9Renderer* const RESTRICT_POINTER rd = gcpRendD3D;
 	const auto nThreadID = gRenDev->GetRenderThreadID();
 
+	std::shared_ptr<CGraphicsPipeline> pActivePipeline = context.GetRenderView()->GetGraphicsPipeline();
+	CRY_ASSERT(pActivePipeline);
+
 	// Calculate HUD's projection matrix using fixed FOV.
-	hud3d.CalculateProjMatrix();
+	hud3d.CalculateProjMatrix(pActivePipeline);
 
 	bool bInterferenceApplied = false;
 	uint32 hudEffectParamCount = 1; // Default to only pass 1 vecs
@@ -1950,7 +1916,7 @@ void CHud3DPass::ExecuteFinalPass(const CPostEffectContext& context, CTexture* p
 		uint32 nRECount = renderDataArray.size();
 		uint32 index = 0;
 
-		CConstantBufferPtr pPerViewCB = rd->GetGraphicsPipeline().GetMainViewConstantBuffer();
+		CConstantBufferPtr pPerViewCB = context.GetRenderView()->GetGraphicsPipeline()->GetMainViewConstantBuffer();
 
 		auto& primArray = m_hudPrimitiveArray;
 		if (primArray.size() > nRECount)
@@ -2021,7 +1987,7 @@ void CHud3DPass::ExecuteFinalPass(const CPostEffectContext& context, CTexture* p
 					auto& cm = prim.GetConstantManager();
 					cm.BeginNamedConstantUpdate();
 
-					SetShaderParams(context,EShaderStage_Vertex | EShaderStage_Pixel, cm, pData, hud3d);
+					SetShaderParams(context, EShaderStage_Vertex | EShaderStage_Pixel, cm, pData, hud3d);
 
 					// Set additional parameters
 					vHudEffectParams[0].x = fCurrentDofBlend;
@@ -2049,7 +2015,7 @@ void CHud3DPass::ExecuteFinalPass(const CPostEffectContext& context, CTexture* p
 
 					if (bInterferenceApplied)
 					{
-						float vTCScaleX = (float)SHudData::s_nFlashWidthMax /  (float)hud3d.m_pHUD_RT->GetWidth () * 2.0f;
+						float vTCScaleX = (float)SHudData::s_nFlashWidthMax  / (float)hud3d.m_pHUD_RT->GetWidth()  * 2.0f;
 						float vTCScaleY = (float)SHudData::s_nFlashHeightMax / (float)hud3d.m_pHUD_RT->GetHeight() * 2.0f;
 
 						vHudEffectParams[1].x = hud3d.m_interferenceRandNums.x * vTCScaleX;
@@ -2061,7 +2027,7 @@ void CHud3DPass::ExecuteFinalPass(const CPostEffectContext& context, CTexture* p
 					cm.SetNamedConstantArray(hud3d.m_pHudEffectsParamName, vHudEffectParams, hudEffectParamCount, eHWSC_Pixel);
 					cm.SetNamedConstant(hud3d.m_pHudOverrideColorMultParamName, vOverrideColorParams, eHWSC_Pixel);
 
-					cm.EndNamedConstantUpdate(&viewport); // Unmap constant buffers and mark as bound
+					cm.EndNamedConstantUpdate(&viewport, context.GetRenderView()); // Unmap constant buffers and mark as bound
 				}
 
 				pass.AddPrimitive(&prim);
@@ -2106,11 +2072,11 @@ bool CHud3DPass::SetVertex(CRenderPrimitive& prim, struct SHudData& pData) const
 }
 
 void CHud3DPass::SetShaderParams(
-	const CPostEffectContext &context,
-  EShaderStage shaderStages,
-  CRenderPrimitive::ConstantManager& constantManager,
-  const struct SHudData& data,
-  const class CHud3D& hud3d) const
+	const CPostEffectContext& context,
+	EShaderStage shaderStages,
+	CRenderPrimitive::ConstantManager& constantManager,
+	const struct SHudData& data,
+	const class CHud3D& hud3d) const
 {
 	CShaderResources* pShaderResources = (CShaderResources*)data.pShaderResources;
 	float fOpacity = pShaderResources->GetStrengthValue(EFTT_OPACITY) * hud3d.m_pOpacityMul->GetParam();

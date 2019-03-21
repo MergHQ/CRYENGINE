@@ -87,7 +87,7 @@ void CHud3D::Release()
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-bool CHud3D::Preprocess(const SRenderViewInfo& viewInfo)
+bool CHud3D::Preprocess(const SRenderViewInfo& viewInfo, const std::shared_ptr<CGraphicsPipeline>& pGraphicsPipeline)
 {
 	// Warning: This function could get called twice per frame (NanoGlass will call it if its active)
 	//					So don't do any updating here, do it in Update()
@@ -179,11 +179,11 @@ void CHud3D::Reset(bool bOnSpecChange)
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void CHud3D::CalculateProjMatrix()
+void CHud3D::CalculateProjMatrix(const std::shared_ptr<CGraphicsPipeline>& pGraphicsPipeline)
 {
 	const float fHUDFov = clamp_tpl<float>(m_pFOV->GetParam(), 1.0f, 180.0f);
 
-	const auto& viewInfo = gcpRendD3D.GetGraphicsPipeline().GetCurrentViewInfo(CCamera::eEye_Left);
+	const auto& viewInfo = pGraphicsPipeline->GetCurrentViewInfo(CCamera::eEye_Left);
 	// Patch projection matrix to have HUD FOV
 	m_mProj = viewInfo.unjitteredProjMatrix;
 
@@ -804,7 +804,7 @@ void CHud3D::FinalPass()
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void CHud3D::Render()
+void CHud3D::Render(const std::shared_ptr<CGraphicsPipeline>& pGraphicsPipeline)
 {
 	ASSERT_LEGACY_PIPELINE
 /*

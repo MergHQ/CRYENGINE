@@ -23,7 +23,7 @@
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-bool CNightVision::Preprocess(const SRenderViewInfo& viewInfo)
+bool CNightVision::Preprocess(const SRenderViewInfo& viewInfo, const std::shared_ptr<CGraphicsPipeline>& pGraphicsPipeline)
 {
 	if (gRenDev->IsCustomRenderModeEnabled(eRMF_NIGHTVISION))
 		return false;
@@ -36,7 +36,7 @@ bool CNightVision::Preprocess(const SRenderViewInfo& viewInfo)
 	return false;
 }
 
-void CNightVision::Render()
+void CNightVision::Render(const std::shared_ptr<CGraphicsPipeline>& pGraphicsPipeline)
 {
 	ASSERT_LEGACY_PIPELINE
 /*
@@ -192,7 +192,7 @@ REINST(Implement a ISoundSystemEventListener)
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-bool CSonarVision::Preprocess(const SRenderViewInfo& viewInfo)
+bool CSonarVision::Preprocess(const SRenderViewInfo& viewInfo, const std::shared_ptr<CGraphicsPipeline>& pGraphicsPipeline)
 {
 	CTexture* pPrevFrame = CRendererResources::s_ptexDisplayTargetScaledPrev;
 	if (!pPrevFrame)
@@ -381,7 +381,7 @@ void CSonarVision::FinalComposePass()
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void CSonarVision::Render()
+void CSonarVision::Render(const std::shared_ptr<CGraphicsPipeline>& pGraphicsPipeline)
 {
 	gRenDev->m_cEF.mfRefreshSystemShader("PostEffectsRenderModes", CShaderMan::s_shPostEffectsRenderModes);
 
@@ -401,7 +401,7 @@ void CSonarVision::Render()
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-bool CThermalVision::Preprocess(const SRenderViewInfo& viewInfo)
+bool CThermalVision::Preprocess(const SRenderViewInfo& viewInfo, const std::shared_ptr<CGraphicsPipeline>& pGraphicsPipeline)
 {
 	// Not implemented
 	/*
@@ -584,7 +584,7 @@ void CThermalVision::FinalComposePass()
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void CThermalVision::Render()
+void CThermalVision::Render(const std::shared_ptr<CGraphicsPipeline>& pGraphicsPipeline)
 {
 	ASSERT_LEGACY_PIPELINE
 }

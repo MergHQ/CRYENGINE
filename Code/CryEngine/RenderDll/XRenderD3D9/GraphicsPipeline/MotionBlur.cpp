@@ -26,7 +26,7 @@ void CMotionBlurStage::Execute()
 
 	SRenderViewport viewport = RenderView()->GetViewport();
 
-	int vpWidth=viewport.width, vpHeight=viewport.height;
+	int vpWidth = viewport.width, vpHeight = viewport.height;
 
 	// Check if DOF is enabled
 	CDepthOfField* pDofRenderTech = (CDepthOfField*)PostEffectMgr()->GetEffect(EPostEffectID::DepthOfField);
@@ -35,9 +35,9 @@ void CMotionBlurStage::Execute()
 	const bool bGatherDofEnabled = CRenderer::CV_r_dof > 0 && CRenderer::CV_r_DofMode == 1 && dofParams.vFocus.w > 0.0001f;
 
 	SRenderViewInfo viewInfo[2];
-	GetGraphicsPipeline().GenerateViewInfo(viewInfo);
+	m_graphicsPipeline.GenerateViewInfo(viewInfo);
 
-	Matrix44A mViewProjPrev =  viewInfo[0].prevCameraMatrix;
+	Matrix44A mViewProjPrev = viewInfo[0].prevCameraMatrix;
 	mViewProjPrev = mViewProjPrev * GetUtils().m_pProj * GetUtils().m_pScaleBias;
 	mViewProjPrev.Transpose();
 
@@ -83,7 +83,7 @@ void CMotionBlurStage::Execute()
 		m_passPacking.SetConstant(dirBlurName, dirBlurParam, eHWSC_Pixel);
 		m_passPacking.SetConstant(radBlurName, radBlurParam, eHWSC_Pixel);
 		m_passPacking.SetConstant(motionBlurParamName,
-			Vec4(ComputeMotionScale(), 1.0f / tileCountX, 1.0f / tileCountX * CRenderer::CV_r_MotionBlurCameraMotionScale, 0), eHWSC_Pixel);
+		                          Vec4(ComputeMotionScale(), 1.0f / tileCountX, 1.0f / tileCountX * CRenderer::CV_r_MotionBlurCameraMotionScale, 0), eHWSC_Pixel);
 
 		m_passPacking.Execute();
 	}
