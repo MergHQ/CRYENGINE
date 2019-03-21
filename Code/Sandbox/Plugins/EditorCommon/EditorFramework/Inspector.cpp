@@ -169,12 +169,12 @@ void CInspector::Lock()
 {
 	m_isLocked = true;
 	m_pLockButton->setToolTip("Unlock Inspector");
-	m_pLockButton->setIcon(CryIcon("icons:General/Lock_True.ico"));
+	m_pLockButton->setIcon(CryIcon("icons:general_lock_true.ico"));
 }
 
 void CInspector::Unlock()
 {
 	m_isLocked = false;
 	m_pLockButton->setToolTip("Lock Inspector");
-	m_pLockButton->setIcon(CryIcon("icons:General/Lock_False.ico"));
+	m_pLockButton->setIcon(CryIcon("icons:general_lock_false.ico"));
 }

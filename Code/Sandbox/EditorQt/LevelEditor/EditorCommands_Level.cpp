@@ -141,16 +141,6 @@ void PyDisplayInfoHigh()
 	GetIEditorImpl()->GetLevelEditorSharedState()->SetDisplayInfoLevel(CLevelEditorSharedState::eDisplayInfoLevel_High);
 }
 
-void IsolateEditability()
-{
-	CommandEvent("level.isolate_editability").SendToKeyboardFocus();
-}
-
-void IsolateVisibility()
-{
-	CommandEvent("level.isolate_visibility").SendToKeyboardFocus();
-}
-
 void ReloadAllScripts()
 {
 	GetIEditorImpl()->GetICommandManager()->Execute("entity.reload_all_scripts");
@@ -423,14 +413,6 @@ REGISTER_EDITOR_UI_COMMAND_DESC(level, display_info_medium, "Verbosity Level Med
 
 REGISTER_EDITOR_AND_SCRIPT_COMMAND(Private_LevelCommands::PyDisplayInfoHigh, level, display_info_high, CCommandDescription("Verbosity level high"));
 REGISTER_EDITOR_UI_COMMAND_DESC(level, display_info_high, "Verbosity Level High", "", "", true)
-
-REGISTER_EDITOR_AND_SCRIPT_COMMAND(Private_LevelCommands::IsolateEditability, level, isolate_editability, CCommandDescription("Isolate editability of objects or layers"))
-REGISTER_EDITOR_UI_COMMAND_DESC(level, isolate_editability, "Isolate Editability", "Ctrl+Shift+F", "", false)
-REGISTER_COMMAND_REMAPPING(level, toggle_freeze_all_other_layers, level, isolate_editability)
-
-REGISTER_EDITOR_AND_SCRIPT_COMMAND(Private_LevelCommands::IsolateVisibility, level, isolate_visibility, CCommandDescription("Isolate visibility of objects or layers"))
-REGISTER_EDITOR_UI_COMMAND_DESC(level, isolate_visibility, "Isolate Visibility", "Ctrl+Shift+H", "", false)
-REGISTER_COMMAND_REMAPPING(level, toggle_hide_all_other_layers, level, isolate_visibility)
 
 REGISTER_EDITOR_AND_SCRIPT_COMMAND(Private_LevelCommands::ReloadAllScripts, level, reload_all_scripts, CCommandDescription("Reloads all scripts"))
 REGISTER_EDITOR_UI_COMMAND_DESC(level, reload_all_scripts, "Reload All Scripts", "", "", false)

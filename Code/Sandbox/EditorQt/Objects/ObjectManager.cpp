@@ -1923,9 +1923,9 @@ void CObjectManager::ToggleHideAllBut(CBaseObject* pObject)
 	GetObjects(objects, (CObjectLayer*)pObject->GetLayer());
 
 	bool hideAll = false;
-	for (CBaseObject* pObject : objects)
+	for (CBaseObject* pOtherObject : objects)
 	{
-		if (pObject->IsVisible())
+		if (pOtherObject != pObject && pOtherObject->IsVisible())
 		{
 			hideAll = true;
 			break;
@@ -1986,9 +1986,9 @@ void CObjectManager::ToggleFreezeAllBut(CBaseObject* pObject)
 	GetObjects(objects, (CObjectLayer*)pObject->GetLayer());
 
 	bool freezeAll = false;
-	for (CBaseObject* pObject : objects)
+	for (CBaseObject* pOtherObject : objects)
 	{
-		if (!pObject->IsFrozen())
+		if (pObject != pOtherObject && !pOtherObject->IsFrozen())
 		{
 			freezeAll = true;
 			break;

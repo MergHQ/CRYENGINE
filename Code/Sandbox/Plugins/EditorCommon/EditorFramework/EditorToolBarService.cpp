@@ -220,6 +220,7 @@ CEditorToolBarService::QCommandDesc::QCommandDesc(const QVariantMap& variantMap,
 }
 
 CEditorToolBarService::QCommandDesc::QCommandDesc(const CCommand* pCommand)
+	: m_IsDeprecated(false)
 {
 	InitFromCommand(pCommand);
 }
@@ -244,7 +245,7 @@ QVariant CEditorToolBarService::QCommandDesc::ToVariant() const
 	ADD_TO_VARIANT_MAP(command, map);
 
 	// Don't serialize icon path unless it's an icon override chosen by the user
-	if (pAction && pAction->UiInfo::icon != QtUtil::ToString(iconPath))
+	if (pAction && (m_IsCustom || pAction->UiInfo::icon != QtUtil::ToString(iconPath)))
 	{
 		ADD_TO_VARIANT_MAP(iconPath, map);
 	}
@@ -560,7 +561,7 @@ std::shared_ptr<CEditorToolBarService::QToolBarDesc> CEditorToolBarService::Crea
 	return pToolBarDesc;
 }
 
-void CEditorToolBarService::SaveToolBar(const std::shared_ptr<QToolBarDesc>& pToolBarDesc) const
+bool CEditorToolBarService::SaveToolBar(const std::shared_ptr<QToolBarDesc>& pToolBarDesc) const
 {
 	QVariantMap toDisk;
 	toDisk["version"] = Private_ToolbarManager::s_version;
@@ -569,7 +570,7 @@ void CEditorToolBarService::SaveToolBar(const std::shared_ptr<QToolBarDesc>& pTo
 	QJsonDocument doc(QJsonDocument::fromVariant(toDisk));
 
 	string toolBarPath = QtUtil::ToString(pToolBarDesc->GetPath());
-	UserDataUtil::Save(PathUtil::Make(Private_ToolbarManager::szUserToolbarsPath, toolBarPath.c_str()).c_str(), doc.toJson());
+	return UserDataUtil::Save(PathUtil::Make(Private_ToolbarManager::szUserToolbarsPath, toolBarPath.c_str()).c_str(), doc.toJson());
 }
 
 void CEditorToolBarService::RemoveToolBar(const std::shared_ptr<QToolBarDesc>& pToolBarDesc) const
@@ -612,7 +613,7 @@ std::shared_ptr<CEditorToolBarService::QToolBarDesc> CEditorToolBarService::GetT
 
 std::vector<QToolBar*> CEditorToolBarService::LoadToolBars(const CEditor* pEditor) const
 {
-	return LoadToolBars(pEditor->GetEditorName());
+	return LoadToolBars(pEditor->GetEditorName(), pEditor);
 }
 
 std::vector<string> CEditorToolBarService::GetToolBarDirectories(const char* szRelativePath) const
@@ -630,7 +631,7 @@ std::vector<string> CEditorToolBarService::GetToolBarDirectories(const char* szR
 	return result;
 }
 
-std::vector<QToolBar*> CEditorToolBarService::LoadToolBars(const char* szRelativePath) const
+std::vector<QToolBar*> CEditorToolBarService::LoadToolBars(const char* szRelativePath, const CEditor* pEditor /* = nullptr*/) const
 {
 	std::map<string, std::shared_ptr<QToolBarDesc>> toolBarDescriptors;
 	std::vector<string> toolBarDirectories = GetToolBarDirectories(szRelativePath);
@@ -640,7 +641,7 @@ std::vector<QToolBar*> CEditorToolBarService::LoadToolBars(const char* szRelativ
 		LoadToolBarsFromDir(toolBarDir, toolBarDescriptors);
 	}
 
-	return CreateEditorToolBars(toolBarDescriptors);
+	return CreateEditorToolBars(toolBarDescriptors, pEditor);
 }
 
 std::set<string> CEditorToolBarService::GetToolBarNames(const char* szRelativePath) const
@@ -656,25 +657,25 @@ std::set<string> CEditorToolBarService::GetToolBarNames(const char* szRelativePa
 	return result;
 }
 
-std::vector<QToolBar*> CEditorToolBarService::CreateEditorToolBars(const std::map<string, std::shared_ptr<QToolBarDesc>>& toolBarDescriptors) const
+std::vector<QToolBar*> CEditorToolBarService::CreateEditorToolBars(const std::map<string, std::shared_ptr<QToolBarDesc>>& toolBarDescriptors, const CEditor* pEditor /* = nullptr*/) const
 {
 	std::vector<QToolBar*> toolBars;
 	for (const std::pair<string, std::shared_ptr<QToolBarDesc>>& toolBarPair : toolBarDescriptors)
 	{
-		toolBars.push_back(CreateEditorToolBar(toolBarPair.second));
+		toolBars.push_back(CreateEditorToolBar(toolBarPair.second, pEditor));
 	}
 
 	return toolBars;
 }
 
-QToolBar* CEditorToolBarService::CreateEditorToolBar(const std::shared_ptr<QToolBarDesc> pToolBarDesc) const
+QToolBar* CEditorToolBarService::CreateEditorToolBar(const std::shared_ptr<QToolBarDesc>& pToolBarDesc, const CEditor* pEditor /* = nullptr*/) const
 {
 	// Create the toolbar if the mainframe doesn't have one already
 	QToolBar* pToolBar = new QToolBar();
 	pToolBar->setWindowTitle(pToolBarDesc->GetName());
 	pToolBar->setObjectName(pToolBarDesc->GetObjectName());
 
-	CreateToolBar(pToolBarDesc, pToolBar);
+	CreateToolBar(pToolBarDesc, pToolBar, pEditor);
 
 	// If this toolbar has been modified, then save it to disk
 	if (pToolBarDesc->RequiresUpdate())
@@ -769,7 +770,7 @@ void CEditorToolBarService::GetToolBarNamesFromDir(const string& dirPath, std::s
 	});
 }
 
-void CEditorToolBarService::CreateToolBar(const std::shared_ptr<QToolBarDesc>& pToolBarDesc, QToolBar* pToolBar) const
+void CEditorToolBarService::CreateToolBar(const std::shared_ptr<QToolBarDesc>& pToolBarDesc, QToolBar* pToolBar, const CEditor* pEditor /* = nullptr*/) const
 {
 	for (std::shared_ptr<QItemDesc> pItemDesc : pToolBarDesc->GetItems())
 	{
@@ -778,10 +779,19 @@ void CEditorToolBarService::CreateToolBar(const std::shared_ptr<QToolBarDesc>& p
 		case QItemDesc::Command:
 			{
 				std::shared_ptr<QCommandDesc> pCommandDesc = std::static_pointer_cast<QCommandDesc>(pItemDesc);
-				QCommandAction* pAction = pCommandDesc->ToQCommandAction();
+				QCommandAction* pAction = nullptr;
+				if (pEditor)
+				{
+					pAction = pEditor->FindRegisteredCommandAction(QtUtil::ToString(pCommandDesc->GetCommand()).c_str());
+				}
+				else
+				{
+					pAction = pCommandDesc->ToQCommandAction();
+				}
+
 				if (!pAction)
 				{
-					CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_ERROR, "Couldn't create tool bar button for command: %s", pCommandDesc->GetCommand().toStdString().c_str());
+					CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_ERROR, "Failed to create tool bar action for command: %s", pCommandDesc->GetCommand().toStdString().c_str());
 					continue;
 				}
 

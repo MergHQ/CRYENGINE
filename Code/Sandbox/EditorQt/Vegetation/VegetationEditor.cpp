@@ -327,9 +327,9 @@ struct CVegetationEditor::SImplementation : public IEditorNotifyListener
 
 		void SetupToolsMenu(CAbstractMenu* pToolsMenu, CVegetationEditor* pParentEditor)
 		{
-			pToolsMenu->AddAction(pParentEditor->GetAction("vegetation.paint"));
-			pToolsMenu->AddAction(pParentEditor->GetAction("vegetation.erase"));
-			pToolsMenu->AddAction(pParentEditor->GetAction("vegetation.select"));
+			pToolsMenu->AddCommandAction(pParentEditor->GetAction("vegetation.paint"));
+			pToolsMenu->AddCommandAction(pParentEditor->GetAction("vegetation.erase"));
+			pToolsMenu->AddCommandAction(pParentEditor->GetAction("vegetation.select"));
 
 			const int section = pToolsMenu->GetNextEmptySection();
 

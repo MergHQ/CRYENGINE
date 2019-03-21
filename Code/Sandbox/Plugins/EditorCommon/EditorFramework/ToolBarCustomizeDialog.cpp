@@ -11,6 +11,7 @@
 #include "Controls/QEditableComboBox.h"
 #include "Controls/QResourceBrowserDialog.h"
 #include "CryIcon.h"
+#include "DragDrop.h"
 #include "Editor.h"
 #include "PathUtils.h"
 #include "ProxyModels/DeepFilterProxyModel.h"
@@ -33,79 +34,7 @@
 #include <QToolButton>
 #include <QHeaderView>
 
-static const char* s_dragType = "CEToolBarItem";
-static const char* s_dragListType = "CECommandListItem";
-
-//////////////////////////////////////////////////////////////////////////
-
-class CToolBarCustomizeDialog::DropCommandModel : public CommandModel
-{
-	friend CommandModelFactory;
-public:
-	//QAbstractItemModel implementation begin
-	virtual Qt::DropActions supportedDropActions() const override;
-	virtual Qt::ItemFlags   flags(const QModelIndex& index) const override;
-	virtual QMimeData*      mimeData(const QModelIndexList& indexes) const override;
-	//QAbstractItemModel implementation end
-
-protected:
-	DropCommandModel();
-};
-
-CToolBarCustomizeDialog::DropCommandModel::DropCommandModel()
-{
-
-}
-
-Qt::DropActions CToolBarCustomizeDialog::DropCommandModel::supportedDropActions() const
-{
-	return Qt::CopyAction;
-}
-
-Qt::ItemFlags CToolBarCustomizeDialog::DropCommandModel::flags(const QModelIndex& index) const
-{
-	Qt::ItemFlags flags = CommandModel::flags(index);
-
-	CCommand* pCommand = nullptr;
-	QVariant commandVar = index.model()->data(index, (int)CommandModel::Roles::CommandPointerRole);
-	if (commandVar.isValid())
-	{
-		pCommand = commandVar.value<CCommand*>();
-	}
-
-	if (index.isValid() && pCommand)
-		return flags | Qt::ItemIsDragEnabled | Qt::ItemIsDropEnabled;
-	else
-		return flags;
-}
-
-QMimeData* CToolBarCustomizeDialog::DropCommandModel::mimeData(const QModelIndexList& indexes) const
-{
-	QMimeData* pMimeData = new QMimeData();
-
-	CCommand* pCommand = nullptr;
-
-	for (const QModelIndex& index : indexes)
-	{
-		if (index.isValid())
-		{
-			QVariant commandVar = index.model()->data(index, (int)CommandModel::Roles::CommandPointerRole);
-			if (commandVar.isValid())
-			{
-				pCommand = commandVar.value<CCommand*>();
-			}
-		}
-	}
-
-	if (pCommand)
-	{
-		CEditorToolBarService::QCommandDesc commandDesc(pCommand);
-		QJsonDocument doc = QJsonDocument::fromVariant(commandDesc.ToVariant());
-		pMimeData->setData(s_dragListType, doc.toBinaryData());
-	}
-
-	return pMimeData;
-}
+const char* CToolBarCustomizeDialog::QDropContainer::s_toolBarItemMimeType = QT_TR_NOOP("ToolBarItem");
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -221,10 +150,10 @@ protected:
 
 protected:
 	QToolButton* m_pSelectedWidget;
-	QPoint   m_DragStartPosition;
-	QPoint   m_DropTargetPos;
-	bool     m_bShowDropTarget;
-	bool     m_WasToolButtonCheckable;
+	QPoint       m_DragStartPosition;
+	QPoint       m_DropTargetPos;
+	bool         m_bShowDropTarget;
+	bool         m_WasToolButtonCheckable;
 };
 
 CToolBarCustomizeDialog::QDropContainer::QDropContainer(CToolBarCustomizeDialog* pParent)
@@ -392,17 +321,17 @@ void CToolBarCustomizeDialog::QDropContainer::ShowContextMenu(const QPoint& posi
 	});
 }
 
-void CToolBarCustomizeDialog::QDropContainer::SetSelectedActionIcon(const char* szPath)
+void CToolBarCustomizeDialog::QDropContainer::SetSelectedActionIcon(const char* szIconPath)
 {
-	int idx = m_pCurrentToolBarDesc->IndexOfItem(m_pSelectedItem);
-	if (idx < 0)
-		return;
-
-	QList<QAction*> toolBarActions = m_pCurrentToolBar->actions();
-	if (idx >= toolBarActions.size())
-		return;
-
-	toolBarActions[idx]->setIcon(CryIcon(szPath));
+	if (m_pSelectedItem->GetType() == CEditorToolBarService::QItemDesc::Command)
+	{
+		std::static_pointer_cast<CEditorToolBarService::QCommandDesc>(m_pSelectedItem)->SetIcon(szIconPath);
+	}
+	else if (m_pSelectedItem->GetType() == CEditorToolBarService::QItemDesc::CVar)
+	{
+		std::static_pointer_cast<CEditorToolBarService::QCVarDesc>(m_pSelectedItem)->SetIcon(szIconPath);
+	}
+	UpdateToolBar();
 }
 
 CToolBarCustomizeDialog::QCustomToolBar* CToolBarCustomizeDialog::QDropContainer::CreateToolBar(const QString& title, const std::shared_ptr<CEditorToolBarService::QToolBarDesc>& pToolBarDesc)
@@ -470,12 +399,12 @@ void CToolBarCustomizeDialog::QDropContainer::mouseMoveEvent(QMouseEvent* pEvent
 	{
 		m_pCurrentToolBar->SetShowDropTarget(false);
 	});
-	QMimeData* pMimeData = new QMimeData();
+	CDragDropData* pDragDropData = new CDragDropData();
 
 	QJsonDocument doc = QJsonDocument::fromVariant(m_pSelectedItem->ToVariant());
-	pMimeData->setData(s_dragType, doc.toBinaryData());
+	pDragDropData->SetCustomData(GetToolBarItemMimeType(), doc.toBinaryData());
 
-	pDrag->setMimeData(pMimeData);
+	pDrag->setMimeData(pDragDropData);
 	m_pCurrentToolBar->SetDragStartPosition(m_DragStartPosition);
 	pDrag->exec(Qt::CopyAction | Qt::MoveAction);
 	m_pCurrentToolBar->DrawDropTarget(pEvent->globalPos());
@@ -483,8 +412,9 @@ void CToolBarCustomizeDialog::QDropContainer::mouseMoveEvent(QMouseEvent* pEvent
 
 void CToolBarCustomizeDialog::QDropContainer::dragEnterEvent(QDragEnterEvent* pEvent)
 {
-	const QMimeData* pMimeData = pEvent->mimeData();
-	if (pMimeData->hasFormat(s_dragType) || pMimeData->hasFormat(s_dragListType))
+	const CDragDropData* pDragDropData = CDragDropData::FromMimeData(pEvent->mimeData());
+
+	if (pDragDropData->HasCustomData(GetToolBarItemMimeType()) || pDragDropData->HasCustomData(CCommandModel::GetCommandMimeType()))
 	{
 		pEvent->acceptProposedAction();
 		m_pCurrentToolBar->DrawDropTarget(mapToGlobal(pEvent->pos()));
@@ -493,8 +423,9 @@ void CToolBarCustomizeDialog::QDropContainer::dragEnterEvent(QDragEnterEvent* pE
 
 void CToolBarCustomizeDialog::QDropContainer::dragMoveEvent(QDragMoveEvent* pEvent)
 {
-	const QMimeData* pMimeData = pEvent->mimeData();
-	if (pMimeData->hasFormat(s_dragType) || pMimeData->hasFormat(s_dragListType))
+	const CDragDropData* pDragDropData = CDragDropData::FromMimeData(pEvent->mimeData());
+
+	if (pDragDropData->HasCustomData(GetToolBarItemMimeType()) || pDragDropData->HasCustomData(CCommandModel::GetCommandMimeType()))
 	{
 		pEvent->acceptProposedAction();
 		m_pCurrentToolBar->DrawDropTarget(mapToGlobal(pEvent->pos()));
@@ -510,9 +441,11 @@ void CToolBarCustomizeDialog::QDropContainer::dropEvent(QDropEvent* pEvent)
 {
 	m_pCurrentToolBar->SetShowDropTarget(false);
 
-	if (pEvent->mimeData()->hasFormat(s_dragType))
+	const CDragDropData* pDragDropData = CDragDropData::FromMimeData(pEvent->mimeData());
+
+	if (pDragDropData->HasCustomData(GetToolBarItemMimeType()))
 	{
-		QJsonDocument doc = QJsonDocument::fromBinaryData(pEvent->mimeData()->data(s_dragType));
+		QJsonDocument doc = QJsonDocument::fromBinaryData(pDragDropData->GetCustomData(GetToolBarItemMimeType()));
 		QVariant itemVariant = doc.toVariant();
 
 		int oldIdx = m_pCurrentToolBarDesc->IndexOfItem(m_pSelectedItem);
@@ -529,9 +462,9 @@ void CToolBarCustomizeDialog::QDropContainer::dropEvent(QDropEvent* pEvent)
 			RemoveItemAt(oldIdx);
 		}
 	}
-	if (pEvent->mimeData()->hasFormat(s_dragListType))
+	if (pDragDropData->HasCustomData(CCommandModel::GetCommandMimeType()))
 	{
-		QJsonDocument doc = QJsonDocument::fromBinaryData(pEvent->mimeData()->data(s_dragListType));
+		QJsonDocument doc = QJsonDocument::fromBinaryData(pDragDropData->GetCustomData(CCommandModel::GetCommandMimeType()));
 		QVariantMap itemMap = doc.toVariant().toMap();
 
 		const string command = QtUtil::ToString(itemMap["command"].toString());
@@ -556,6 +489,8 @@ CToolBarCustomizeDialog::CToolBarCustomizeDialog(QWidget* pParent, const char* s
 	, m_pEditor(nullptr)
 	, m_editorName(szEditorName)
 {
+	setAttribute(Qt::WA_DeleteOnClose);
+
 	m_pToolbarSelect = new QEditableComboBox();
 	connect(m_pToolbarSelect, &QEditableComboBox::ItemRenamed, this, &CToolBarCustomizeDialog::RenameToolBar);
 
@@ -603,19 +538,20 @@ CToolBarCustomizeDialog::CToolBarCustomizeDialog(QWidget* pParent, const char* s
 	m_pTreeView->setContextMenuPolicy(Qt::CustomContextMenu);
 	connect(m_pTreeView, &QTreeView::customContextMenuRequested, this, &CToolBarCustomizeDialog::OnContextMenu);
 
-	m_pItemModel = CommandModelFactory::Create<DropCommandModel>();
+	m_pItemModel = new CCommandModel();
+	m_pItemModel->EnableDragAndDropSupport(true);
 
 	m_pProxyModel = new QDeepFilterProxyModel();
 	m_pProxyModel->setSourceModel(m_pItemModel);
 
 	QWidget* pSearchBoxContainer = new QWidget();
 	QHBoxLayout* pSearchBoxLayout = new QHBoxLayout();
-	QSearchBox* pSearchBox = new QSearchBox();
-	pSearchBox->EnableContinuousSearch(true);
-	pSearchBox->SetModel(m_pProxyModel);
+	m_pSearchBox = new QSearchBox();
+	m_pSearchBox->EnableContinuousSearch(true);
+	m_pSearchBox->SetModel(m_pProxyModel);
 	pSearchBoxLayout->setSpacing(0);
 	pSearchBoxLayout->setMargin(0);
-	pSearchBoxLayout->addWidget(pSearchBox);
+	pSearchBoxLayout->addWidget(m_pSearchBox);
 	pSearchBoxContainer->setObjectName("SearchBoxContainer");
 	pSearchBoxContainer->setLayout(pSearchBoxLayout);
 
@@ -628,7 +564,7 @@ CToolBarCustomizeDialog::CToolBarCustomizeDialog(QWidget* pParent, const char* s
 	m_pTreeView->header()->setStretchLastSection(true);
 	m_pTreeView->header()->setDefaultSectionSize(300);
 
-	pSearchBox->SetAutoExpandOnSearch(m_pTreeView);
+	m_pSearchBox->SetAutoExpandOnSearch(m_pTreeView);
 
 	m_pDropContainer = new QDropContainer(this);
 	m_pDropContainer->setObjectName("DropContainer");
@@ -794,6 +730,16 @@ CToolBarCustomizeDialog::CToolBarCustomizeDialog(CEditor* pEditor)
 	: CToolBarCustomizeDialog(pEditor, pEditor->GetEditorName())
 {
 	m_pEditor = pEditor;
+
+	m_pItemModel->deleteLater();
+	m_pItemModel = new CCommandModel(m_pEditor->GetCommands());
+	m_pItemModel->EnableDragAndDropSupport(true);
+
+	m_pProxyModel = new QDeepFilterProxyModel();
+	m_pProxyModel->setSourceModel(m_pItemModel);
+
+	m_pSearchBox->SetModel(m_pProxyModel);
+	m_pTreeView->setModel(m_pProxyModel);
 }
 
 void CToolBarCustomizeDialog::IconSelected(const char* szIconPath)
@@ -892,15 +838,7 @@ void CToolBarCustomizeDialog::SetCommandName(const char* commandName)
 
 void CToolBarCustomizeDialog::SetIconPath(const char* szIconPath)
 {
-	if (m_pSelectedItem->GetType() == CEditorToolBarService::QItemDesc::Command)
-	{
-		std::static_pointer_cast<CEditorToolBarService::QCommandDesc>(m_pSelectedItem)->SetIcon(szIconPath);
-	}
-	else if (m_pSelectedItem->GetType() == CEditorToolBarService::QItemDesc::CVar)
-	{
-		m_pDropContainer->SetSelectedActionIcon(szIconPath);
-		std::static_pointer_cast<CEditorToolBarService::QCVarDesc>(m_pSelectedItem)->SetIcon(szIconPath);
-	}
+	m_pDropContainer->SetSelectedActionIcon(szIconPath);
 }
 
 void CToolBarCustomizeDialog::OnSelectedItemChanged(std::shared_ptr<CEditorToolBarService::QItemDesc> selectedItem)
@@ -923,6 +861,11 @@ void CToolBarCustomizeDialog::OnSelectedItemChanged(std::shared_ptr<CEditorToolB
 		m_pCVarInput->blockSignals(true);
 		m_pCVarInput->setEnabled(false);
 		m_pCVarInput->blockSignals(false);
+
+		m_pCVarValueInput->blockSignals(true);
+		m_pCVarValueInput->setEnabled(false);
+		m_pCVarValueInput->blockSignals(false);
+
 		m_pCVarBrowserButton->setEnabled(false);
 		return;
 	}
@@ -1010,18 +953,23 @@ void CToolBarCustomizeDialog::CurrentItemChanged()
 	CEditorToolBarService* pToolBarService = GetIEditor()->GetEditorToolBarService();
 	std::shared_ptr<CEditorToolBarService::QToolBarDesc> pToolBarDesc;
 
+	string currentToolBarName = QtUtil::ToString(m_pToolbarSelect->GetCurrentText());
+	if (currentToolBarName.empty())
+	{
+		m_pDropContainer->SetCurrentToolBarDesc(pToolBarDesc);
+		return;
+	}
+
 	if (m_pEditor)
 	{
-		string currentToolBarName = QtUtil::ToString(m_pToolbarSelect->GetCurrentText());
 		pToolBarDesc = pToolBarService->GetToolBarDesc(m_pEditor, currentToolBarName.c_str());
 	}
 	else
 	{
 		// Legacy way of getting a toolbar descriptor. This will be deprecated as soon as the mainframe is unable to host
 		// toolbars
-		string name = QtUtil::ToString(m_pToolbarSelect->GetCurrentText());
 		pToolBarDesc = pToolBarService->GetToolBarDesc(PathUtil::Make(m_editorName.c_str(),
-		                                                              name.c_str(),
+		                                                              currentToolBarName.c_str(),
 		                                                              ".json"));
 	}
 
@@ -1054,7 +1002,7 @@ void CToolBarCustomizeDialog::OnAddToolBar()
 	}
 
 	pToolBarService->SaveToolBar(pToolBarDesc);
-	signalToolBarAdded(pToolBarService->CreateEditorToolBar(pToolBarDesc));
+	signalToolBarAdded(pToolBarService->CreateEditorToolBar(pToolBarDesc, m_pEditor));
 
 	m_pToolbarSelect->AddItem(name.c_str());
 	m_pToolbarSelect->SetCurrentItem(name.c_str());
@@ -1066,6 +1014,10 @@ void CToolBarCustomizeDialog::OnRemoveToolBar()
 	m_pToolbarSelect->OnEditingCancelled();
 
 	std::shared_ptr<CEditorToolBarService::QToolBarDesc> pCurrentToolBarDesc = m_pDropContainer->GetCurrentToolBarDesc();
+	// Just return if there is no current toolbar being edited
+	if (!pCurrentToolBarDesc)
+		return;
+
 	GetIEditor()->GetEditorToolBarService()->RemoveToolBar(pCurrentToolBarDesc);
 
 	string toolBarObjectName = QtUtil::ToString(pCurrentToolBarDesc->GetObjectName());
@@ -1076,11 +1028,14 @@ void CToolBarCustomizeDialog::OnRemoveToolBar()
 
 void CToolBarCustomizeDialog::OnToolBarModified(std::shared_ptr<CEditorToolBarService::QToolBarDesc> pToolBarDesc)
 {
-	signalToolBarModified(GetIEditor()->GetEditorToolBarService()->CreateEditorToolBar(pToolBarDesc));
+	signalToolBarModified(GetIEditor()->GetEditorToolBarService()->CreateEditorToolBar(pToolBarDesc, m_pEditor));
 }
 
 void CToolBarCustomizeDialog::RenameToolBar(const QString& before, const QString& after)
 {
+	if (before.isEmpty() || after.isEmpty())
+		return;
+
 	CEditorToolBarService* pToolBarService = GetIEditor()->GetEditorToolBarService();
 	std::shared_ptr<CEditorToolBarService::QToolBarDesc> pToolBarDesc;
 	string toolBarName = QtUtil::ToString(before);
@@ -1098,14 +1053,19 @@ void CToolBarCustomizeDialog::RenameToolBar(const QString& before, const QString
 		                                                              ".json"));
 	}
 
-	pToolBarService->RemoveToolBar(pToolBarDesc);
-	string toolBarObjectName = QtUtil::ToString(pToolBarDesc->GetObjectName());
-	signalToolBarRemoved(toolBarObjectName.c_str());
-
+	// attempt to save tool bar with new name
 	pToolBarDesc->SetName(after);
-	pToolBarService->SaveToolBar(pToolBarDesc);
-	signalToolBarAdded(pToolBarService->CreateEditorToolBar(pToolBarDesc));
-	m_pDropContainer->SetCurrentToolBarDesc(pToolBarDesc);
+	if (pToolBarService->SaveToolBar(pToolBarDesc))
+	{
+		pToolBarDesc->SetName(before);
+		pToolBarService->RemoveToolBar(pToolBarDesc);
+		string toolBarObjectName = QtUtil::ToString(pToolBarDesc->GetObjectName());
+		signalToolBarRemoved(toolBarObjectName.c_str());
+
+		pToolBarDesc->SetName(after);
+		signalToolBarAdded(pToolBarService->CreateEditorToolBar(pToolBarDesc, m_pEditor));
+		m_pDropContainer->SetCurrentToolBarDesc(pToolBarDesc);
+	}
 }
 
 QString CToolBarCustomizeDialog::GetCurrentToolBarText()
@@ -1115,7 +1075,9 @@ QString CToolBarCustomizeDialog::GetCurrentToolBarText()
 
 void CToolBarCustomizeDialog::dragEnterEvent(QDragEnterEvent* pEvent)
 {
-	if (pEvent->mimeData()->hasFormat(s_dragType))
+	const CDragDropData* pDragDropData = CDragDropData::FromMimeData(pEvent->mimeData());
+
+	if (pDragDropData->HasCustomData(QDropContainer::GetToolBarItemMimeType()))
 	{
 		pEvent->acceptProposedAction();
 	}
@@ -1123,7 +1085,9 @@ void CToolBarCustomizeDialog::dragEnterEvent(QDragEnterEvent* pEvent)
 
 void CToolBarCustomizeDialog::dropEvent(QDropEvent* pEvent)
 {
-	if (pEvent->mimeData()->hasFormat(s_dragType))
+	const CDragDropData* pDragDropData = CDragDropData::FromMimeData(pEvent->mimeData());
+
+	if (pDragDropData->HasCustomData(QDropContainer::GetToolBarItemMimeType()))
 	{
 		m_pDropContainer->RemoveItem(m_pSelectedItem);
 	}
@@ -1137,7 +1101,7 @@ void CToolBarCustomizeDialog::OnContextMenu(const QPoint& position) const
 		return;
 
 	CCommand* pCommand = nullptr;
-	QVariant commandVar = index.model()->data(index, (int)CommandModel::Roles::CommandPointerRole);
+	QVariant commandVar = index.model()->data(index, (int)CCommandModel::Roles::CommandPointerRole);
 	if (commandVar.isValid())
 		pCommand = commandVar.value<CCommand*>();
 

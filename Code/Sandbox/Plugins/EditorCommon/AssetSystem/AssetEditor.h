@@ -9,6 +9,7 @@
 #include <CrySandbox/CrySignal.h>
 
 class QAction;
+class QCommandAction;
 class QToolButton;
 
 //! Base class for editors integrated with the asset system.
@@ -126,7 +127,7 @@ protected:
 	QWidget*     CreateInstantEditorToolbar();
 	void         InitInstantEditing();
 
-	QAction* m_pLockAction;
+	QCommandAction* m_pLockAction;
 
 private:
 	void Init();

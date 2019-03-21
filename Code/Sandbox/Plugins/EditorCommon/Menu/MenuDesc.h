@@ -9,7 +9,7 @@
 #include <memory>
 #include <vector>
 
-class QAction;
+class QCommandAction;
 
 namespace MenuDesc
 {
@@ -70,7 +70,7 @@ struct SItem
 template<typename K>
 struct SActionItem : SItem<K>
 {
-	SActionItem(QAction* pAction, int priority, int section, const K& key)
+	SActionItem(QCommandAction* pAction, int priority, int section, const K& key)
 		: SItem<K>(priority, section, key)
 		, m_pAction(pAction)
 	{
@@ -84,7 +84,7 @@ struct SActionItem : SItem<K>
 		}
 	}
 
-	QAction* const m_pAction;
+	QCommandAction* const m_pAction;
 };
 
 template<typename K>
@@ -128,15 +128,15 @@ struct SMenuItem : SItem<K>
 };
 
 template<typename K>
-std::unique_ptr<SActionItem<K>> AddAction(const K& key, int section, int priority, QAction* pAction)
+std::unique_ptr<SActionItem<K>> AddAction(const K& key, int section, int priority, QCommandAction* pAction)
 {
-	return std::unique_ptr<SActionItem<K>>(new SActionItem<K>(pAction, priority, section, key));
+	return std::make_unique<SActionItem<K>>(pAction, priority, section, key);
 }
 
 template<typename K, typename ... ARGS>
 std::unique_ptr<SMenuItem<K>> AddMenu(const K& key, int section, int priority, const char* szName, ARGS ... args)
 {
-	return std::unique_ptr<SMenuItem<K>>(new SMenuItem<K>(szName, priority, section, key, std::forward<ARGS>(args) ...));
+	return std::make_unique<SMenuItem<K>>(szName, priority, section, key, std::forward<ARGS>(args) ...);
 }
 
 template<typename K>
@@ -185,6 +185,20 @@ struct SGetMenuNameVisitor : SItemVisitor<K>
 };
 
 template<typename K>
+struct SGetMenuActionVisitor : SItemVisitor<K>
+{
+	virtual void Visit(const SItem<K>&) override {}
+	virtual void Visit(const SActionItem<K>& menuItem) override 
+	{
+		m_pAction = menuItem.m_pAction;
+	}
+
+	virtual void Visit(const SMenuItem<K>&) override {}
+
+	QCommandAction* m_pAction{ nullptr };
+};
+
+template<typename K>
 class CDesc
 {
 public:
@@ -210,6 +224,13 @@ public:
 		SGetMenuNameVisitor<K> v;
 		Accept(v, key);
 		return v.m_name.c_str();
+	}
+
+	QCommandAction* GetAction(const K& key) const
+	{
+		SGetMenuActionVisitor<K> v;
+		Accept(v, key);
+		return v.m_pAction;
 	}
 
 private:

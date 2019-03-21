@@ -175,7 +175,7 @@ void CMaterialEditor::InitMenuBar()
 
 	// Enable instant editing if possible
 	CAbstractMenu* const pEditMenu = GetMenu(CEditor::MenuItems::EditMenu);
-	pEditMenu->AddAction(m_pLockAction);
+	pEditMenu->AddCommandAction(m_pLockAction);
 }
 
 void CMaterialEditor::OnEditorNotifyEvent(EEditorNotifyEvent event)

@@ -4,9 +4,14 @@
 
 #include <QWidget>
 
-#include "EditorFramework/Editor.h"
+// Sandbox
+#include "Objects/ObjectLayer.h"
+
+// EditorCommon
+#include <EditorFramework/Editor.h>
 
 class QAction;
+class QCommandAction;
 class QAdvancedTreeView;
 class QFilteringPanel;
 class QAttributeFilterProxyModel;
@@ -57,47 +62,73 @@ public:
 	void GrabFocusSearchBar() { OnFind(); }
 
 private:
-	QToolButton* CreateToolButton(QAction* pAction);
-	void         InitMenuBar();
+	QToolButton*  CreateToolButton(QCommandAction* pAction);
+	void          InitMenuBar();
+	CObjectLayer* GetParentLayerForIndexList(const QModelIndexList& indexList) const;
+	CObjectLayer* CreateLayer(EObjectLayerType layerType);
 
-	virtual void OnContextMenu(const QPoint& pos) const;
+	virtual void  OnContextMenu(const QPoint& pos) const;
 
-	void         CreateContextMenuForLayers(CAbstractMenu& abstractMenu, const std::vector<CObjectLayer*>& layers) const;
-	void         CreateContextForSingleFolderLayer(CAbstractMenu& abstractMenu, const std::vector<CObjectLayer*>& layerFolders) const;
-	void         OnContextMenuForSingleLayer(CAbstractMenu& menu, CObjectLayer* layer) const;
-	void         OnClick(const QModelIndex& index);
-	void         OnDoubleClick(const QModelIndex& index);
+	void          CreateContextMenuForLayers(CAbstractMenu& abstractMenu, const std::vector<CObjectLayer*>& layers) const;
+	void          PopulateExistingSectionsForLayers(CAbstractMenu& abstractMenu) const;
 
-	//////////////////////////////////////////////////////////////////////////
-	// CEditor impl
+	void          OnClick(const QModelIndex& index);
+	void          OnDoubleClick(const QModelIndex& index);
+
+	void          SetActionsEnabled(bool areEnabled);
+	void          UpdateSelectionActionState();
+
+	virtual bool OnNew() override;
+	virtual bool OnNewFolder() override;
+	virtual bool OnImport() override;
+	virtual bool OnReload() override;
+
 	virtual bool OnFind() override;
 	virtual bool OnDelete() override;
-	//////////////////////////////////////////////////////////////////////////
+
+	virtual bool OnRename() override;
+	virtual bool OnLock() override;
+	virtual bool OnUnlock() override;
+	virtual bool OnToggleLock() override;
+	virtual bool OnIsolateLocked() override;
+	virtual bool OnHide() override;
+	virtual bool OnUnhide() override;
+	virtual bool OnToggleHide() override;
+	virtual bool OnIsolateVisibility() override;
+
+	// Context sensitive hierarchical operations
+	virtual bool OnCollapseAll() override;
+	virtual bool OnExpandAll() override;
+	virtual bool OnLockChildren() override;
+	virtual bool OnUnlockChildren() override;
+	virtual bool OnToggleLockChildren() override;
+	virtual bool OnHideChildren() override;
+	virtual bool OnUnhideChildren() override;
+	virtual bool OnToggleHideChildren() override;
+
+	bool        IsFirstChildLocked(const std::vector<CObjectLayer*>& layers) const;
+	bool        DoChildrenMatchLockedState(const std::vector<CObjectLayer*>& layers, bool isLocked) const;
+	bool        IsFirstChildHidden(const std::vector<CObjectLayer*>& layers) const;
+	bool        DoChildrenMatchHiddenState(const std::vector<CObjectLayer*>& layers, bool isHidden) const;
+
+	bool        IsolateLocked(const QModelIndex& index);
+	bool        IsolateVisibility(const QModelIndex& index);
 
 	void        OnLayerChange(const CLayerChangeEvent& event);
 	void        OnObjectsChanged(const std::vector<CBaseObject*>& objects, const CObjectEvent& event);
 	void        OnViewportSelectionChanged(const std::vector<CBaseObject*>& selected, const std::vector<CBaseObject*>& deselected);
 	void        OnLayerModelsUpdated();
 	void        OnModelDestroyed();
-	void        OnNewLayer(CObjectLayer* parent) const;
-	void        OnNewFolder(CObjectLayer* parent) const;
-	void        OnReloadLayers(const std::vector<CObjectLayer*>& layers) const;
 	void        OnDeleteLayers(const std::vector<CObjectLayer*>& layers) const;
-	void        OnImportLayer(CObjectLayer* pTargetLayer = nullptr) const;
-	void        IsolateEditability(const QModelIndex& index) const;
-	void        IsolateVisibility(const QModelIndex& index) const;
-	void        OnFreezeAllInLayer(CObjectLayer* layer) const;
-	void        OnUnfreezeAllInLayer(CObjectLayer* layer) const;
+	void        OnUnlockAllInLayer(CObjectLayer* layer) const;
+	void        OnLockAllInLayer(CObjectLayer* layer) const;
 	void        OnHideAllInLayer(CObjectLayer* layer) const;
 	void        OnUnhideAllInLayer(CObjectLayer* layer) const;
 	bool        AllFrozenInLayer(CObjectLayer* layer) const;
 	bool        AllHiddenInLayer(CObjectLayer* layer) const;
-	void        OnExpandAllLayers() const;
-	void        OnCollapseAllLayers() const;
 	void        OnSelectColor(const std::vector<CObjectLayer*>& layers) const;
 	void        OnHeaderSectionCountChanged();
 	void        OnSelectionChanged(const QItemSelection& selected, const QItemSelection& deselected);
-	void        OnRename(const QModelIndex& index) const;
 	//Register to any Reset event being called on a CLevelLayerModel
 	void        OnLayerModelResetBegin();
 	void        OnLayerModelResetEnd();
@@ -122,11 +153,33 @@ private:
 	QBoxLayout*                 m_pMainLayout;
 	QBoxLayout*                 m_pShortcutBarLayout;
 
-	QAction*                    m_pShowActiveLayer;
-	QAction*                    m_pShowAllObjects;
-	QAction*                    m_pShowFullHierarchy;
-	QAction*                    m_pShowLayers;
-	QAction*                    m_pSyncSelection;
+	QCommandAction*             m_pShowActiveLayer;
+	QCommandAction*             m_pShowAllObjects;
+	QCommandAction*             m_pShowFullHierarchy;
+	QCommandAction*             m_pShowLayers;
+	QCommandAction*             m_pSyncSelection;
+
+	QCommandAction*             m_pNewLayer;
+
+	QCommandAction*             m_pRename;
+	QCommandAction*             m_pDelete;
+
+	QCommandAction*             m_pToggleVisibility;
+	QCommandAction*             m_pToggleChildrenVisibility;
+	QCommandAction*             m_pIsolateVisibility;
+
+	QCommandAction*             m_pToggleLocking;
+	QCommandAction*             m_pToggleChildrenLocking;
+	QCommandAction*             m_pIsolateLocked;
+
+	QCommandAction*             m_pToggleExportable;
+	QCommandAction*             m_pToggleExportableToPak;
+	QCommandAction*             m_pToggleAutoLoaded;
+	QCommandAction*             m_pTogglePhysics;
+
+	QCommandAction*             m_pTogglePC;
+	QCommandAction*             m_pToggleXBoxOne;
+	QCommandAction*             m_pTogglePS4;
 
 	bool                        m_syncSelection;
 	bool                        m_ignoreSelectionEvents;

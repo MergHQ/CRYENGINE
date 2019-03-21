@@ -4,6 +4,7 @@
 
 #include "BroadcastManager.h"
 #include "Commands/ICommandManager.h"
+#include "Commands/QCommandAction.h"
 #include "Controls/SaveChangesDialog.h"
 #include "Events.h"
 #include "Menu/AbstractMenu.h"
@@ -12,6 +13,7 @@
 #include "PathUtils.h"
 #include "PersonalizationManager.h"
 #include "QtUtil.h"
+#include "ToolBarCustomizeDialog.h"
 
 #include <IEditor.h>
 
@@ -113,6 +115,40 @@ CEditor::CEditor(QWidget* pParent /*= nullptr*/, bool bIsOnlyBackend /* = false 
 	InitMenuDesc();
 
 	m_pMenu.reset(new CAbstractMenu());
+	m_pMenu->signalDescendantModified.Connect([this](CAbstractMenu::CActionAddedEvent& menuEvent)
+	{
+		if (menuEvent.GetType() != CAbstractMenu::CDescendantModifiedEvent::Type::ActionAdded)
+			return;
+
+		CAbstractMenu::CActionAddedEvent& actionAddedEvent = static_cast<CAbstractMenu::CActionAddedEvent&>(menuEvent);
+		QCommandAction* pCommandAction = qobject_cast<QCommandAction*>(actionAddedEvent.GetAction());
+
+		// We only care about command actions that are added to the menu, so we can track them
+		if (!pCommandAction)
+			return;
+
+		m_commandActions.push_back(pCommandAction);
+
+		string command = QtUtil::ToString(pCommandAction->GetCommand());
+		auto ite = std::find_if(m_commands.cbegin(), m_commands.cend(), [command](const CCommand* pCommand)
+		{
+			return pCommand->GetCommandString() == command;
+		});
+
+		// Only track unique commands. Many actions can point to the same command
+		if (ite == m_commands.cend())
+		{
+			CCommand* pCommand = GetIEditor()->GetICommandManager()->GetCommand(command.c_str());
+			if (pCommand)
+			{
+				m_commands.push_back(pCommand);
+			}
+		}
+
+		// Make sure to add every registered action to the editor. In this way the action can be executed
+		// when using shortcuts since command actions get created with a shortcut context of WidgetWithChildrenShortcut
+		addAction(pCommandAction);
+	});
 	m_pMenuUpdater.reset(new CMenuUpdater(m_pMenu.get(), m_pPaneMenu));
 
 	//Help Menu is enabled by default
@@ -135,45 +171,44 @@ CEditor::~CEditor()
 	}
 }
 
+void CEditor::Initialize()
+{
+
+}
+
 void CEditor::InitMenuDesc()
 {
 	using namespace MenuDesc;
-	// #TODO: Make this static?
 	m_pMenuDesc.reset(new CDesc<MenuItems>());
 	m_pMenuDesc->Init(
 		MenuDesc::AddMenu(MenuItems::FileMenu, 0, 0, "File",
-		                  AddAction(MenuItems::New, 0, 0, GetAction("general.new")),
-		                  AddAction(MenuItems::Open, 0, 1, GetAction("general.open")),
-		                  AddAction(MenuItems::Close, 0, 2, GetAction("general.close")),
-		                  AddAction(MenuItems::Save, 0, 3, GetAction("general.save")),
-		                  AddAction(MenuItems::SaveAs, 0, 4, GetAction("general.save_as")),
-		                  AddMenu(MenuItems::RecentFiles, 0, 5, "Recent Files")
-		                  ),
+		                  AddAction(MenuItems::New, 0, 0, CreateCommandAction("general.new")),
+		                  AddAction(MenuItems::New_Folder, 0, 1, CreateCommandAction("general.new_folder")),
+		                  AddAction(MenuItems::Open, 0, 2, CreateCommandAction("general.open")),
+		                  AddAction(MenuItems::Close, 0, 3, CreateCommandAction("general.close")),
+		                  AddAction(MenuItems::Save, 0, 4, CreateCommandAction("general.save")),
+		                  AddAction(MenuItems::SaveAs, 0, 5, CreateCommandAction("general.save_as")),
+		                  AddMenu(MenuItems::RecentFiles, 0, 6, "Recent Files")),
 		MenuDesc::AddMenu(MenuItems::EditMenu, 0, 1, "Edit",
-		                  AddAction(MenuItems::Undo, 0, 0, GetAction("general.undo")),
-		                  AddAction(MenuItems::Redo, 0, 1, GetAction("general.redo")),
-
-		                  AddAction(MenuItems::Copy, 1, 0, GetAction("general.copy")),
-		                  AddAction(MenuItems::Cut, 1, 1, GetAction("general.cut")),
-		                  AddAction(MenuItems::Paste, 1, 2, GetAction("general.paste")),
-		                  AddAction(MenuItems::Delete, 1, 3, GetAction("general.delete")),
-
-		                  AddAction(MenuItems::Find, 2, 0, GetAction("general.find")),
-		                  AddAction(MenuItems::FindPrevious, 2, 1, GetAction("general.find_previous")),
-		                  AddAction(MenuItems::FindNext, 2, 2, GetAction("general.find_next")),
-		                  AddAction(MenuItems::SelectAll, 2, 3, GetAction("general.select_all")),
-
-		                  AddAction(MenuItems::Duplicate, 3, 0, GetAction("general.duplicate"))
-		                  ),
+		                  AddAction(MenuItems::Undo, 0, 0, CreateCommandAction("general.undo")),
+		                  AddAction(MenuItems::Redo, 0, 1, CreateCommandAction("general.redo")),
+		                  AddAction(MenuItems::Copy, 1, 0, CreateCommandAction("general.copy")),
+		                  AddAction(MenuItems::Cut, 1, 1, CreateCommandAction("general.cut")),
+		                  AddAction(MenuItems::Paste, 1, 2, CreateCommandAction("general.paste")),
+		                  AddAction(MenuItems::Rename, 1, 3, CreateCommandAction("general.rename")),
+		                  AddAction(MenuItems::Delete, 1, 4, CreateCommandAction("general.delete")),
+		                  AddAction(MenuItems::Find, 2, 0, CreateCommandAction("general.find")),
+		                  AddAction(MenuItems::FindPrevious, 2, 1, CreateCommandAction("general.find_previous")),
+		                  AddAction(MenuItems::FindNext, 2, 2, CreateCommandAction("general.find_next")),
+		                  AddAction(MenuItems::SelectAll, 2, 3, CreateCommandAction("general.select_all")),
+		                  AddAction(MenuItems::Duplicate, 3, 0, CreateCommandAction("general.duplicate"))),
 		MenuDesc::AddMenu(MenuItems::ViewMenu, 0, 2, "View",
-		                  AddAction(MenuItems::ZoomIn, 0, 0, GetAction("general.zoom_in")),
-		                  AddAction(MenuItems::ZoomOut, 0, 1, GetAction("general.zoom_out"))
-		                  ),
-		MenuDesc::AddMenu(MenuItems::WindowMenu, 0, 20, "Window"
-		                  ),
+		                  AddAction(MenuItems::ZoomIn, 0, 0, CreateCommandAction("general.zoom_in")),
+		                  AddAction(MenuItems::ZoomOut, 0, 1, CreateCommandAction("general.zoom_out"))),
+		MenuDesc::AddMenu(MenuItems::ToolBarMenu, 0, 10, "Toolbars"),
+		MenuDesc::AddMenu(MenuItems::WindowMenu, 0, 20, "Window"),
 		MenuDesc::AddMenu(MenuItems::HelpMenu, 1, CAbstractMenu::EPriorities::ePriorities_Append, "Help",
-		                  AddAction(MenuItems::Help, 0, 0, GetAction("general.help"))
-		                  )
+		                  AddAction(MenuItems::Help, 0, 0, CreateCommandAction("general.help")))
 		);
 
 }
@@ -209,14 +244,24 @@ void CEditor::AddToMenu(CAbstractMenu* pMenu, const char* command)
 		pMenu->AddAction(action, 0, 0);
 }
 
-QAction* CEditor::GetAction(const char* command)
+QCommandAction* CEditor::CreateCommandAction(const char* command)
 {
-	QAction* pAction = GetIEditor()->GetICommandManager()->GetAction(command);
+	return GetIEditor()->GetICommandManager()->CreateNewAction(command);
+}
+
+QCommandAction* CEditor::GetAction(const char* command)
+{
+	QCommandAction* pAction = GetIEditor()->GetICommandManager()->GetCommandAction(command);
 
 	if (!pAction)
 		CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_ERROR_DBGBRK, "Command not found");
 
 	return pAction;
+}
+
+QCommandAction* CEditor::GetMenuAction(MenuItems item)
+{
+	return m_pMenuDesc->GetAction(item);
 }
 
 bool CEditor::OnHelp()
@@ -313,13 +358,13 @@ void CEditor::RegisterDockableWidget(QString name, std::function<QWidget* ()> fa
 	//This filter is needed because the widget may not alway be in the child hierarchy of this broadcast manager
 	QPointer<QObject> pFilter(m_pBroadcastManagerFilter);
 	auto wrapperFactory = [name, factory, pFilter]() -> QWidget*
-	{
-		QWidget* const pWidget = factory();
-		CRY_ASSERT(pWidget);
-		pWidget->setWindowTitle(name);
-		pWidget->installEventFilter(pFilter.data());
-		return pWidget;
-	};
+												{
+													QWidget* const pWidget = factory();
+													CRY_ASSERT(pWidget);
+													pWidget->setWindowTitle(name);
+													pWidget->installEventFilter(pFilter.data());
+													return pWidget;
+												};
 
 	m_dockingRegistry->Register(name, wrapperFactory, isUnique, isInternal);
 }
@@ -440,12 +485,20 @@ void CEditor::customEvent(QEvent* event)
 		const string& command = commandEvent->GetCommand();
 		if (command == "general.new")
 			event->setAccepted(OnNew());
+		else if (command == "general.new_folder")
+			event->setAccepted(OnNewFolder());
 		else if (command == "general.save")
 			event->setAccepted(OnSave());
 		else if (command == "general.save_as")
 			event->setAccepted(OnSaveAs());
 		else if (command == "general.open")
 			event->setAccepted(OnOpen());
+		else if (command == "general.import")
+			event->setAccepted(OnImport());
+		else if (command == "general.refresh")
+			event->setAccepted(OnRefresh());
+		else if (command == "general.reload")
+			event->setAccepted(OnReload());
 		else if (command == "general.close")
 			event->setAccepted(OnClose());
 		else if (command == "general.copy")
@@ -456,6 +509,8 @@ void CEditor::customEvent(QEvent* event)
 			event->setAccepted(OnPaste());
 		else if (command == "general.delete")
 			event->setAccepted(OnDelete());
+		else if (command == "general.rename")
+			event->setAccepted(OnRename());
 		else if (command == "general.find")
 			event->setAccepted(OnFind());
 		else if (command == "general.find_previous")
@@ -466,6 +521,40 @@ void CEditor::customEvent(QEvent* event)
 			event->setAccepted(OnDuplicate());
 		else if (command == "general.select_all")
 			event->setAccepted(OnSelectAll());
+		else if (command == "general.rename")
+			event->setAccepted(OnRename());
+		else if (command == "general.lock")
+			event->setAccepted(OnLock());
+		else if (command == "general.unlock")
+			event->setAccepted(OnUnlock());
+		else if (command == "general.toggle_lock")
+			event->setAccepted(OnToggleLock());
+		else if (command == "general.isolate_locked")
+			event->setAccepted(OnIsolateLocked());
+		else if (command == "general.hide")
+			event->setAccepted(OnHide());
+		else if (command == "general.unhide")
+			event->setAccepted(OnUnhide());
+		else if (command == "general.toggle_visibility")
+			event->setAccepted(OnToggleHide());
+		else if (command == "general.isolate_visibility")
+			event->setAccepted(OnIsolateVisibility());
+		else if (command == "general.collapse_all")
+			event->setAccepted(OnCollapseAll());
+		else if (command == "general.expand_all")
+			event->setAccepted(OnExpandAll());
+		else if (command == "general.lock_children")
+			event->setAccepted(OnLockChildren());
+		else if (command == "general.unlock_children")
+			event->setAccepted(OnUnlockChildren());
+		else if (command == "general.toggle_children_locking")
+			event->setAccepted(OnToggleLockChildren());
+		else if (command == "general.hide_children")
+			event->setAccepted(OnHideChildren());
+		else if (command == "general.unhide_children")
+			event->setAccepted(OnUnhideChildren());
+		else if (command == "general.toggle_children_visibility")
+			event->setAccepted(OnToggleHideChildren());
 		else if (command == "general.help")
 			event->setAccepted(OnHelp());
 		else if (command == "general.zoom_in")
@@ -482,6 +571,19 @@ void CEditor::customEvent(QEvent* event)
 	{
 		QWidget::customEvent(event);
 	}
+}
+
+QCommandAction* CEditor::FindRegisteredCommandAction(const char* szCommand) const
+{
+	for (QCommandAction* pCommandAction : m_commandActions)
+	{
+		if (pCommandAction->GetCommand() == szCommand)
+		{
+			return pCommandAction;
+		}
+	}
+
+	return nullptr;
 }
 
 CBroadcastManager& CEditor::GetBroadcastManager()

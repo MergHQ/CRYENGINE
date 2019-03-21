@@ -142,7 +142,7 @@ QVariant CLevelLayerModel::GetHeaderData(int section, Qt::Orientation orientatio
 		if (section == eObjectColumns_Visible)
 			return CryIcon("icons:General/Visibility_True.ico");
 		if (section == eObjectColumns_Frozen)
-			return CryIcon("icons:General/editable.ico");
+			return CryIcon("icons:general_lock_true.ico");
 		if (section == eObjectColumns_VCS)
 			return CryIcon("icons:VersionControl/icon.ico");
 	}
@@ -426,9 +426,9 @@ QVariant CLevelLayerModel::data(const QModelIndex& index, int role) const
 					return CryIcon("icons:General/Visibility_False.ico");
 			case eObjectColumns_Frozen:
 				if (pObject->IsFrozen())
-					return CryIcon("icons:General/editable_false.ico");
+					return CryIcon("icons:levelexplorer_lock_true.ico");
 				else
-					return CryIcon("icons:General/editable_true.ico");
+					return CryIcon("icons:general_lock_false.ico");
 			default:
 				break;
 			}

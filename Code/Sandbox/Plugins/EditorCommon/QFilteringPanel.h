@@ -44,11 +44,9 @@ public:
 
 	bool                HasActiveFilters() const;
 
-	//! Fills the provided menu with the names of the saved filters,
-	//! when user clicks on an element, the selected filter is applied.
-	//! \param pMenu An instance of menu to be filled in.
-	//! \param submenuName If not an empty string, the function will put all elements in a new submenu.
-	void FillMenu(CAbstractMenu* pMenu, const QString& submenuName = QString());
+	//! Creates and fills the filter menu and attaches to the provided parent menu,
+	//! \param pParentMenu The menu where the filter menu will be placed.
+	void CreateMenu(CAbstractMenu* pParentMenu);
 
 	//! Adds a new filter with the provided parameters.
 	//! \sa CItemModelAttribute 
@@ -65,6 +63,9 @@ private:
 	class CFilterWidget;
 	class CSavedFiltersWidget;
 	class CSavedFiltersModel;
+
+	// Fills the provided menu with all the existing filters
+	void FillMenu(CAbstractMenu* pMenu);
 
 	CFilterWidget*                           AddFilter();
 

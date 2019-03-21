@@ -13,8 +13,6 @@ green color					rgb(125,198,83)
 yellow						rgb(233,233,117)
 *******************************************************************/
 
-
-
 QWidget {
 	background-color: rgb(66,66,66);
 	font-family:"Arial";
@@ -1300,12 +1298,6 @@ CTimeline QScrollBar:vertical{
 	padding-right:2px;
 }
 
-QTrackingTooltip {
-	border: 1px solid rgb(166,166,166);
-	color:rgb(166,166,166);
-	background-color:rgb(35,35,35);
-}
-
 QTableView {
 	selection-background-color: qlineargradient(x1: 0, y1: 0, x2: 0.5, y2: 0.5,
 								stop: 0 #FF92BB, stop: 1 white);
@@ -1439,10 +1431,7 @@ EditorStyleHelper {
 	qproperty-linkVisitedColor: rgb(255, 0, 255);
 	qproperty-toolTipBaseColor: rgb(35, 35, 35);
 	qproperty-toolTipTextColor: rgb(192, 192, 192);
-	qproperty-toolTipMarginTop: 4;
-	qproperty-toolTipMarginLeft: 4;
-	qproperty-toolTipMarginRight: 4;
-	qproperty-toolTipMarginBottom: 4;
+	qproperty-toolTipIconMargin: 2;
 	qproperty-alternateBaseColor: rgb(128, 128, 128);
 	qproperty-disabledWindowTextColor: rgb(192, 192, 192);
 	qproperty-disabledButtonColor: rgb(66, 66, 66);
@@ -2277,4 +2266,32 @@ CToolBarCustomizeDialog QWidget#ToolbarPropertiesContainer
 {
 	background-color: rgb(66, 66, 66);
 	color:rgb(153,153,153);
+}
+
+CEditorToolBarArea
+{
+	background-color: rgb(35, 35, 35);
+}
+
+CEditorToolBarArea > QToolBar
+{
+	background-color: rgb(89, 89, 89);
+	border-radius: 3;
+	margin: 2;
+	padding: 2;
+}
+
+QTrackingTooltip
+{
+	border: 1px solid rgb(166,166,166);
+	color:rgb(166,166,166);
+	background-color:rgb(35,35,35);
+	margin: 0;
+	padding: 0;
+}
+
+QTrackingTooltip QLabel
+{
+	margin: 4;
+	padding: 0;
 }

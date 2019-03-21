@@ -324,13 +324,15 @@
         <file alias="General/LegacyResourceSelectorPicker.ico">icons/general_LegacyResourceSelectorPicker.ico</file>
         <file alias="General/Link_Classic.ico">icons/general_Link_Classic.ico</file>
         <file alias="General/Load_From_Disc.ico">icons/general_disc_load_from.ico</file>
-        <file alias="General/Lock_False.ico">icons/general_Lock_False.ico</file>
+		
+        <file alias="general_lock_false.ico">icons/general_lock_false.ico</file>
         <file alias="General/Lock_False_Tinted.ico">icons/general_Lock_False_Tinted.ico</file>
-        <file alias="General/Lock_True.ico">icons/general_Lock_True.ico</file>
+        <file alias="general_lock_true.ico">icons/general_lock_true.ico</file>
         <file alias="General/Lock_True_Tinted.ico">icons/general_Lock_True_Tinted.ico</file>
         <file alias="General/editable.ico">icons/general_editable.ico</file>
-        <file alias="General/editable_true.ico">icons/general_editable_true.ico</file>
-        <file alias="General/editable_false.ico">icons/general_editable_false.ico</file>
+        <file alias="general_lock_true.ico">icons/general_lock_true.ico</file>
+        <file alias="levelexplorer_lock_true.ico">icons/levelexplorer_lock_true.ico</file>
+		<file alias="General/editable_true.ico">icons/general_editable_true.ico</file>
         <file alias="General/Mannequin.ico">icons/general_Mannequin.ico</file>
         <file alias="General/Negative.ico">icons/general_Negative.ico</file>
         <file alias="General/Options.ico">icons/general_Options.ico</file>

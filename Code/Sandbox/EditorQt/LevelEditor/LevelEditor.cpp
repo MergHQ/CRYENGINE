@@ -10,7 +10,6 @@
 #include "TagLocations.h"
 
 // EditorQt
-#include "Commands/QCommandAction.h"
 #include "EditMode/VertexSnappingModeTool.h"
 #include "QT/QtMainFrame.h"
 #include "QT/QToolTabManager.h"
@@ -31,6 +30,7 @@
 #include <AssetSystem/Browser/AssetBrowser.h>
 #include <AssetSystem/Browser/AssetBrowserDialog.h>
 #include <AssetSystem/EditableAsset.h>
+#include <Commands/QCommandAction.h>
 #include <Controls/DockableDialog.h>
 #include <Controls/QuestionDialog.h>
 #include <EditorFramework/InspectorLegacy.h>

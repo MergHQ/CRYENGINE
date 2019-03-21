@@ -20,5 +20,5 @@ string EDITOR_COMMON_API GetUserPath(const char* relativeFilePath);
 QVariant EDITOR_COMMON_API Load(const char* relativeFilePath);
 
 // Save user data. Path should be relative to user data folder
-void EDITOR_COMMON_API Save(const char* relativeFilePath, const char* data);
+bool EDITOR_COMMON_API Save(const char* relativeFilePath, const char* data);
 } // namespace UserDataUtil

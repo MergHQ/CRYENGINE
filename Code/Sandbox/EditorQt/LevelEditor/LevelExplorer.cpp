@@ -6,6 +6,7 @@
 #include "IEditorImpl.h"
 
 #include "LevelEditor/LevelEditorViewport.h"
+#include "LevelEditor/LevelExplorerCommandHelper.h"
 #include "LevelEditor/LevelLayerModel.h"
 #include "LevelEditor/LevelModel.h"
 #include "LevelEditor/LevelModelsManager.h"
@@ -19,6 +20,7 @@
 #include "VersionControl/VersionControlEventHandler.h"
 
 #include <EditorFramework/Events.h>
+#include <Commands/QCommandAction.h>
 #include <Controls/DynamicPopupMenu.h>
 #include <Controls/QMenuComboBox.h>
 #include <Controls/QuestionDialog.h>
@@ -280,7 +282,7 @@ CLevelExplorer::~CLevelExplorer()
 	CLevelModelsManager::GetInstance().signalLayerModelsUpdated.DisconnectObject(this);
 }
 
-QToolButton* CLevelExplorer::CreateToolButton(QAction* pAction)
+QToolButton* CLevelExplorer::CreateToolButton(QCommandAction* pAction)
 {
 	QToolButton* pToolButton = new QToolButton(this);
 	pToolButton->setDefaultAction(pAction);
@@ -289,87 +291,115 @@ QToolButton* CLevelExplorer::CreateToolButton(QAction* pAction)
 
 void CLevelExplorer::InitMenuBar()
 {
-
 	//File
-	AddToMenu(CEditor::MenuItems::FileMenu);
+	AddToMenu({ CEditor::MenuItems::FileMenu, MenuItems::New, MenuItems::New_Folder });
 	CAbstractMenu* const fileMenu = GetMenu(CEditor::MenuItems::FileMenu);
 
-	//TODO : this could use the default new action to inherit the shortcut (and icon)
-	auto action = fileMenu->CreateAction(CryIcon("icons:General/File_New.ico"), tr("New Layer"));
-	connect(action, &QAction::triggered, [&]()
-	{
-		OnNewLayer(nullptr);
-	});
+	// Get 'new' action so we can provide additional information relevant to current context
+	m_pNewLayer = GetMenuAction(MenuItems::New);
+	m_pNewLayer->setText("New Layer");
 
-	action = fileMenu->CreateAction(CryIcon("icons:General/Folder_Add.ico"), tr("New Folder"));
-	connect(action, &QAction::triggered, [&]()
-	{
-		OnNewFolder(nullptr);
-	});
+	int section = fileMenu->GetNextEmptySection();
 
-	int sec = fileMenu->GetNextEmptySection();
-
-	action = fileMenu->CreateAction(tr("Import Layer"), sec);
-	connect(action, &QAction::triggered, this, [this]()
-	{
-		OnImportLayer();
-	});
+	fileMenu->CreateCommandAction("general.import", section);
 
 	//Edit
 	AddToMenu({ CEditor::MenuItems::EditMenu, CEditor::MenuItems::Delete, CEditor::MenuItems::Find });
-	CAbstractMenu* editMenu = GetMenu(CEditor::MenuItems::EditMenu);
+	CAbstractMenu* pEditMenu = GetMenu(CEditor::MenuItems::EditMenu);
 
-	sec = editMenu->GetNextEmptySection();
+	// Get 'delete' action so we can change it's state based on selection changes
+	m_pDelete = GetMenuAction(CEditor::MenuItems::Delete);
 
-	editMenu->AddCommandAction("layer.hide_all", sec);
-	editMenu->AddCommandAction("layer.show_all", sec);
+	m_pRename = pEditMenu->CreateCommandAction("general.rename");
 
-	sec = editMenu->GetNextEmptySection();
+	section = pEditMenu->GetNextEmptySection();
+	m_pToggleVisibility = pEditMenu->CreateCommandAction("general.toggle_visibility", section);
+	m_pIsolateVisibility = pEditMenu->CreateCommandAction("general.isolate_visibility", section);
 
-	editMenu->AddCommandAction("layer.make_all_uneditable", sec);
-	editMenu->AddCommandAction("layer.make_all_editable", sec);
+	CAbstractMenu* pMoreVisibility = pEditMenu->CreateMenu("More", section);
+	section = pMoreVisibility->GetNextEmptySection();
+	pMoreVisibility->CreateCommandAction("general.hide_all", section);
+	pMoreVisibility->CreateCommandAction("general.unhide_all", section);
 
-	editMenu->AddCommandAction("layer.make_read_only_layers_uneditable", sec);
+	section = pMoreVisibility->GetNextEmptySection();
+	m_pToggleChildrenVisibility = pMoreVisibility->CreateCommandAction("general.toggle_children_visibility", section);
+	pMoreVisibility->CreateCommandAction("general.hide_children", section);
+	pMoreVisibility->CreateCommandAction("general.unhide_children", section);
+
+	section = pEditMenu->GetNextEmptySection();
+	m_pToggleLocking = pEditMenu->CreateCommandAction("general.toggle_lock", section);
+	m_pIsolateLocked = pEditMenu->CreateCommandAction("general.isolate_locked", section);
+
+	CAbstractMenu* pMoreLock = pEditMenu->CreateMenu("More", section);
+	section = pMoreLock->GetNextEmptySection();
+	pMoreLock->CreateCommandAction("general.lock_all", section);
+	pMoreLock->CreateCommandAction("general.unlock_all", section);
+
+	section = pMoreLock->GetNextEmptySection();
+	m_pToggleChildrenLocking = pMoreLock->CreateCommandAction("general.toggle_children_locking", section);
+	pMoreLock->CreateCommandAction("general.lock_children", section);
+	pMoreLock->CreateCommandAction("general.unlock_children", section);
+
+	section = pEditMenu->GetNextEmptySection();
+	pEditMenu->CreateCommandAction("path_utils.show_in_file_explorer", section);
+	pEditMenu->CreateCommandAction("path_utils.copy_name", section);
+	pEditMenu->CreateCommandAction("path_utils.copy_path", section);
+
+	// Layer
+	CAbstractMenu* pLayerMenu =  GetRootMenu()->CreateMenu("Layer");
+	pLayerMenu->CreateCommandAction("layer.make_active");
+	pLayerMenu->CreateCommandAction("layer.lock_read_only_layers");
+
+	CAbstractMenu* pMoreMenu = pLayerMenu->CreateMenu("More");
+	pMoreMenu->CreateCommandAction("general.reload");
+
+	section = pMoreMenu->GetNextEmptySection();
+	pMoreMenu->SetSectionName(section, "Exportable");
+	m_pToggleExportable = pMoreMenu->CreateCommandAction("layer.toggle_exportable", section);
+	m_pToggleExportableToPak = pMoreMenu->CreateCommandAction("layer.toggle_exportable_to_pak", section);
+
+	section = pMoreMenu->GetNextEmptySection();
+	pMoreMenu->SetSectionName(section, "Auto-Load");
+	m_pToggleAutoLoaded = pMoreMenu->CreateCommandAction("layer.toggle_auto_load", section);
+
+	section = pMoreMenu->GetNextEmptySection();
+	pMoreMenu->SetSectionName(section, "Physics");
+	m_pTogglePhysics = pMoreMenu->CreateCommandAction("layer.toggle_physics", section);
+
+	section = pMoreMenu->GetNextEmptySection();
+	pMoreMenu->SetSectionName(section, "Platforms");
+	m_pTogglePC = pMoreMenu->CreateCommandAction("layer.toggle_pc", section);
+	m_pToggleXBoxOne = pMoreMenu->CreateCommandAction("layer.toggle_xbox_one", section);
+	m_pTogglePS4 = pMoreMenu->CreateCommandAction("layer.toggle_ps4", section);
 
 	//View
 	AddToMenu(CEditor::MenuItems::ViewMenu);
 	CAbstractMenu* const menuView = GetMenu(CEditor::MenuItems::ViewMenu);
-	menuView->signalAboutToShow.Connect([menuView, this]()
+
+	section = menuView->GetNextEmptySection();
+
+	menuView->AddAction(m_pShowFullHierarchy, section);
+	menuView->AddAction(m_pShowLayers, section);
+	menuView->AddAction(m_pShowAllObjects, section);
+	menuView->AddAction(m_pShowActiveLayer, section);
+
+	section = menuView->GetNextEmptySection();
+
+	menuView->CreateCommandAction("general.expand_all", section);
+	menuView->CreateCommandAction("general.collapse_all", section);
+
+	section = menuView->GetNextEmptySection();
+
+	menuView->AddAction(m_pSyncSelection, section);
+
+	if (m_filterPanel)
 	{
-		menuView->Clear();
+		m_filterPanel->CreateMenu(menuView);
+	}
 
-		int sec = menuView->GetNextEmptySection();
+	GetRootMenu()->CreateCommandAction("level_explorer.focus_on_active_layer", 0);
 
-		menuView->AddAction(m_pShowFullHierarchy, sec);
-		menuView->AddAction(m_pShowLayers, sec);
-		menuView->AddAction(m_pShowAllObjects, sec);
-		menuView->AddAction(m_pShowActiveLayer, sec);
-
-		sec = menuView->GetNextEmptySection();
-
-		auto action = menuView->CreateAction(tr("Expand All"), sec);
-		connect(action, &QAction::triggered, this, [&]()
-		{
-			OnExpandAllLayers();
-		});
-
-		action = menuView->CreateAction(tr("Collapse All"), sec);
-		connect(action, &QAction::triggered, this, [&]()
-		{
-			OnCollapseAllLayers();
-		});
-
-		sec = menuView->GetNextEmptySection();
-
-		menuView->AddAction(m_pSyncSelection, sec);
-
-		if (m_filterPanel)
-		{
-		  m_filterPanel->FillMenu(menuView, tr("Apply Filter"));
-		}
-	});
-
-	GetRootMenu()->AddCommandAction("level_explorer.focus_on_active_layer", 0);
+	SetActionsEnabled(false);
 }
 
 void CLevelExplorer::SetLayout(const QVariantMap& state)
@@ -411,17 +441,18 @@ QVariantMap CLevelExplorer::GetLayout() const
 	return state;
 }
 
-void CLevelExplorer::customEvent(QEvent* event)
+void CLevelExplorer::customEvent(QEvent* pEvent)
 {
 	using namespace Private_LevelExplorer;
 
-	if (event->type() != SandboxEvent::Command)
+	CDockableEditor::customEvent(pEvent);
+
+	if (pEvent->isAccepted() || pEvent->type() != SandboxEvent::Command)
 	{
-		CDockableEditor::customEvent(event);
 		return;
 	}
 
-	QStringList params = QtUtil::ToQString(static_cast<CommandEvent*>(event)->GetCommand()).split(' ');
+	QStringList params = QtUtil::ToQString(static_cast<CommandEvent*>(pEvent)->GetCommand()).split(' ');
 
 	if (params.empty())
 		return;
@@ -433,25 +464,24 @@ void CLevelExplorer::customEvent(QEvent* event)
 	QString module = fullCommand[0];
 	command = fullCommand[1];
 
+	std::vector<CBaseObject*> objects;
+	std::vector<CObjectLayer*> layers;
+	std::vector<CObjectLayer*> layerFolders;
+
+	QModelIndexList selection = m_treeView->selectionModel()->selectedRows();
+
+	LevelModelsUtil::GetObjectsAndLayersForIndexList(selection, objects, layers, layerFolders);
+
+	std::vector<CObjectLayer*> allLayers;
+	allLayers.reserve(layers.size() + layerFolders.size());
+	allLayers.insert(allLayers.end(), layers.cbegin(), layers.cend());
+	allLayers.insert(allLayers.end(), layerFolders.cbegin(), layerFolders.cend());
+
 	if (module == "level_explorer")
 	{
-		if (command == "isolate_editability")
-		{
-			QModelIndex index = m_treeView->currentIndex();
-			if (index.isValid())
-			{
-				IsolateEditability(index);
-			}
-		}
-		else if (command == "isolate_visibility")
-		{
-			QModelIndex index = m_treeView->currentIndex();
-			if (index.isValid())
-			{
-				IsolateVisibility(index);
-			}
-		}
-		else if (command == "focus_on_active_layer")
+		pEvent->setAccepted(true);
+
+		if (command == "focus_on_active_layer")
 		{
 			FocusActiveLayer();
 		}
@@ -475,19 +505,96 @@ void CLevelExplorer::customEvent(QEvent* event)
 		{
 			SetSyncSelection(!m_syncSelection);
 		}
+		else
+		{
+			pEvent->setAccepted(false);
+		}
 	}
 	else if (module == "version_control_system")
 	{
-		std::vector<CBaseObject*> objects;
-		std::vector<CObjectLayer*> layers;
-		std::vector<CObjectLayer*> layerFolders;
-		auto selection = m_treeView->selectionModel()->selectedRows();
-		LevelModelsUtil::ProcessIndexList(selection, objects, layers, layerFolders);
 		VersionControlEventHandler::HandleOnLevelExplorer(command, ToIObjectLayers(layers), ToIObjectLayers(layerFolders));
+	}
+	else if (module == "layer")
+	{
+		pEvent->setAccepted(true);
+
+		if (command == "make_active")
+		{
+			if (!layers.empty())
+			{
+				GetIEditorImpl()->GetObjectManager()->GetLayersManager()->SetCurrentLayer(layers.back());
+			}
+		}
+		else if (command == "toggle_exportable")
+		{
+			LevelExplorerCommandHelper::ToggleExportable(layers);
+		}
+		else if (command == "toggle_exportable_to_pak")
+		{
+			LevelExplorerCommandHelper::ToggleExportableToPak(layers);
+		}
+		else if (command == "toggle_auto_load")
+		{
+			LevelExplorerCommandHelper::ToggleAutoLoad(layers);
+		}
+		else if (command == "toggle_physics")
+		{
+			LevelExplorerCommandHelper::TogglePhysics(layers);
+		}
+		else if (command == "toggle_pc")
+		{
+			LevelExplorerCommandHelper::TogglePlatformSpecs(layers, eSpecType_PC);
+		}
+		else if (command == "toggle_xbox_one")
+		{
+			LevelExplorerCommandHelper::TogglePlatformSpecs(layers, eSpecType_XBoxOne);
+		}
+		else if (command == "toggle_ps4")
+		{
+			LevelExplorerCommandHelper::TogglePlatformSpecs(layers, eSpecType_PS4);
+		}
+		else
+		{
+			pEvent->setAccepted(false);
+		}
+	}
+	else if (module == "path_utils")
+	{
+		pEvent->setAccepted(true);
+
+		if (command == "copy_name")
+		{
+			string clipBoardText;
+			for (const CObjectLayer* pLayer : layers)
+			{
+				clipBoardText.Format("%s%s%s", clipBoardText, PathUtil::GetFile(pLayer->GetLayerFilepath().c_str()), "\n");
+			}
+			QApplication::clipboard()->setText(clipBoardText.c_str());
+		}
+		else if (command == "copy_path")
+		{
+			string clipBoardText;
+			for (const CObjectLayer* pLayer : layers)
+			{
+				clipBoardText.Format("%s%s%s", clipBoardText, pLayer->GetLayerFilepath(), "\n");
+			}
+			QApplication::clipboard()->setText(clipBoardText.c_str());
+		}
+		else if (command == "show_in_file_explorer")
+		{
+			for (const CObjectLayer* pLayer : layers)
+			{
+				QtUtil::OpenInExplorer(pLayer->GetLayerFilepath().c_str());
+			}
+		}
+		else
+		{
+			pEvent->setAccepted(false);
+		}
 	}
 	else
 	{
-		CDockableEditor::customEvent(event);
+		CDockableEditor::customEvent(pEvent);
 	}
 }
 
@@ -508,11 +615,24 @@ void CLevelExplorer::OnContextMenu(const QPoint& pos) const
 
 	auto selection = m_treeView->selectionModel()->selectedRows();
 
-	LevelModelsUtil::ProcessIndexList(selection, objects, layers, layerFolders);
+	LevelModelsUtil::GetObjectsAndLayersForIndexList(selection, objects, layers, layerFolders);
+	int section = 0;
 
-	if (layerFolders.size() == 1)
+	if (IsModelTypeShowingLayers())
 	{
-		CreateContextForSingleFolderLayer(abstractMenu, layerFolders);
+		section = abstractMenu.GetNextEmptySection();
+		abstractMenu.SetSectionName(section, "Create");
+		abstractMenu.AddCommandAction(m_pNewLayer, section);
+		abstractMenu.CreateCommandAction("general.new_folder", section);
+		abstractMenu.CreateCommandAction("general.import", section);
+	}
+
+	if (!selection.isEmpty())
+	{
+		section = abstractMenu.GetNextEmptySection();
+		abstractMenu.SetSectionName(section, "Edit");
+		abstractMenu.CreateCommandAction("general.rename", section);
+		abstractMenu.CreateCommandAction("general.delete", section);
 	}
 
 	const bool hasNormalLayers = layers.size() > 1 || (layers.size() == 1 && layers[0]->GetLayerType() != eObjectLayerType_Terrain);
@@ -522,74 +642,30 @@ void CLevelExplorer::OnContextMenu(const QPoint& pos) const
 		CreateContextMenuForLayers(abstractMenu, layers);
 	}
 
-	if (selection.isEmpty())
+	if (!selection.isEmpty())
 	{
-		if (IsModelTypeShowingLayers())
-		{
-			int actionsSection = abstractMenu.GetNextEmptySection();
-			abstractMenu.SetSectionName(actionsSection, "Actions");
+		section = abstractMenu.GetNextEmptySection();
+		abstractMenu.SetSectionName(section, "Visibility");
+		abstractMenu.AddCommandAction(m_pToggleVisibility, section);
+		abstractMenu.CreateCommandAction("general.isolate_visibility", section);
 
-			auto action = abstractMenu.CreateAction(CryIcon("icons:General/File_New.ico"), tr("New Layer"), actionsSection);
-			connect(action, &QAction::triggered, [&]()
-			{
-				OnNewLayer(nullptr);
-			});
-
-			action = abstractMenu.CreateAction(CryIcon("icons:General/Folder_Add.ico"), tr("New Folder"), actionsSection);
-			connect(action, &QAction::triggered, [&]()
-			{
-				OnNewFolder(nullptr);
-			});
-
-			int importSection = abstractMenu.GetNextEmptySection();
-
-			action = abstractMenu.CreateAction(tr("Import Layer"), importSection);
-			connect(action, &QAction::triggered, this, [this, layerFolders]()
-			{
-				OnImportLayer();
-			});
-
-			int expandSection = abstractMenu.GetNextEmptySection();
-
-			action = abstractMenu.CreateAction(tr("Expand all"), expandSection);
-			connect(action, &QAction::triggered, [this]()
-			{
-				OnExpandAllLayers();
-			});
-
-			action = abstractMenu.CreateAction(tr("Collapse all"), expandSection);
-			connect(action, &QAction::triggered, [this]()
-			{
-				OnCollapseAllLayers();
-			});
-		}
-	}
-	else if (selection.count() == 1)
-	{
-		int actionsSection = abstractMenu.GetNextEmptySection();
-		abstractMenu.SetSectionName(actionsSection, "Actions");
-
-		QModelIndex index = selection.first();
-		auto action = abstractMenu.CreateAction(tr("Rename"), actionsSection);
-		connect(action, &QAction::triggered, [index, this]()
-		{
-			OnRename(index);
-		});
+		section = abstractMenu.GetNextEmptySection();
+		abstractMenu.SetSectionName(section, "Lock");
+		abstractMenu.AddCommandAction(m_pToggleLocking, section);
+		abstractMenu.CreateCommandAction("general.isolate_locked", section);
 	}
 
-	if (hasNormalLayers || !layerFolders.empty())
+	if (layers.size() || layerFolders.size())
 	{
-		int actionsSection = abstractMenu.FindOrCreateSectionByName("Actions");
+		PopulateExistingSectionsForLayers(abstractMenu);
 
-		auto action = abstractMenu.CreateAction(tr("Delete"), actionsSection);
-		std::vector<CObjectLayer*> allLayers;
-		allLayers.reserve(layers.size() + layerFolders.size());
-		allLayers.insert(allLayers.end(), layers.cbegin(), layers.cend());
-		allLayers.insert(allLayers.end(), layerFolders.cbegin(), layerFolders.cend());
-		connect(action, &QAction::triggered, [layers = std::move(allLayers), this]()
-		{
-			OnDeleteLayers(layers);
-		});
+		AddColorSubMenuForLayers(abstractMenu, layers);
+
+		section = abstractMenu.GetNextEmptySection();
+		abstractMenu.SetSectionName(section, "Path Utils");
+		abstractMenu.CreateCommandAction("path_utils.show_in_file_explorer", section);
+		abstractMenu.CreateCommandAction("path_utils.copy_name", section);
+		abstractMenu.CreateCommandAction("path_utils.copy_path", section);
 	}
 
 	std::vector<IObjectLayer*> iLayers;
@@ -599,6 +675,23 @@ void CLevelExplorer::OnContextMenu(const QPoint& pos) const
 	std::move(layers.begin(), layers.end(), std::back_inserter(iLayers));
 	std::move(layerFolders.begin(), layerFolders.end(), std::back_inserter(iLayerFolders));
 	GetIEditor()->GetObjectManager()->GetIObjectLayerManager()->signalContextMenuRequested(abstractMenu, objects, iLayers, iLayerFolders);
+
+	section = abstractMenu.GetNextEmptySection();
+	abstractMenu.SetSectionName(section, "View");
+	abstractMenu.CreateCommandAction("general.expand_all", section);
+	abstractMenu.CreateCommandAction("general.collapse_all", section);
+
+	if (selection.isEmpty())
+	{
+		section = abstractMenu.GetNextEmptySection();
+		abstractMenu.AddAction(m_pShowFullHierarchy, section);
+		abstractMenu.AddAction(m_pShowLayers, section);
+		abstractMenu.AddAction(m_pShowAllObjects, section);
+		abstractMenu.AddAction(m_pShowActiveLayer, section);
+		section = abstractMenu.GetNextEmptySection();
+		abstractMenu.AddAction(m_pSyncSelection, section);
+	}
+
 
 	QMenu menu;
 	abstractMenu.Build(MenuWidgetBuilders::CMenuBuilder(&menu));
@@ -640,238 +733,64 @@ void CLevelExplorer::OnContextMenu(const QPoint& pos) const
 	menu.exec(m_treeView->mapToGlobal(pos));
 }
 
+void CLevelExplorer::PopulateExistingSectionsForLayers(CAbstractMenu& abstractMenu) const
+{
+	// Visibility
+	int section = abstractMenu.FindSectionByName("Visibility");
+	CAbstractMenu* pMoreVisibility = abstractMenu.CreateMenu("More", section);
+	section = pMoreVisibility->GetNextEmptySection();
+	pMoreVisibility->CreateCommandAction("general.hide_all", section);
+	pMoreVisibility->CreateCommandAction("general.unhide_all", section);
+
+	section = pMoreVisibility->GetNextEmptySection();
+	pMoreVisibility->CreateCommandAction("general.toggle_children_visibility", section);
+	pMoreVisibility->CreateCommandAction("general.hide_children", section);
+	pMoreVisibility->CreateCommandAction("general.unhide_children", section);
+
+	// Lock
+	section = abstractMenu.FindSectionByName("Lock");
+	CAbstractMenu* pMoreLock = abstractMenu.CreateMenu("More", section);
+	section = pMoreLock->GetNextEmptySection();
+	pMoreLock->CreateCommandAction("general.lock_all", section);
+	pMoreLock->CreateCommandAction("general.unlock_all", section);
+	pMoreLock->CreateCommandAction("layer.lock_read_only_layers", section);
+
+	section = pMoreLock->GetNextEmptySection();
+	pMoreLock->CreateCommandAction("general.toggle_children_locking", section);
+	pMoreLock->CreateCommandAction("general.lock_children", section);
+	pMoreLock->CreateCommandAction("general.unlock_children", section);
+}
+
 void CLevelExplorer::CreateContextMenuForLayers(CAbstractMenu& abstractMenu, const std::vector<CObjectLayer*>& layers) const
 {
 	using namespace Private_LevelExplorer;
-	int layersSection = abstractMenu.GetNextEmptySection();
-	abstractMenu.SetSectionName(layersSection, "Layers");
+	int section = abstractMenu.GetNextEmptySection();
+	abstractMenu.SetSectionName(section, "Layer");
 
-	if (layers.size() == 1)
-	{
-		CObjectLayer* layer = layers[0];
-		auto action = abstractMenu.CreateAction(tr("Set As Active Layer"), layersSection);
-		connect(action, &QAction::triggered, [layer]()
-		{
-			GetIEditorImpl()->GetObjectManager()->GetLayersManager()->SetCurrentLayer(layer);
-		});
-	}
+	abstractMenu.CreateCommandAction("layer.make_active", section);
+	abstractMenu.CreateCommandAction("layer.lock_read_only_layers", section);
 
-	auto action = abstractMenu.CreateAction(tr("Reload"), layersSection);
-	connect(action, &QAction::triggered, [&]() { OnReloadLayers(layers); });
+	CAbstractMenu* pMoreMenu = abstractMenu.CreateMenu("More");
+	pMoreMenu->CreateCommandAction("general.reload");
 
-	int importLayerSection = abstractMenu.GetNextEmptySection();
+	section = pMoreMenu->GetNextEmptySection();
+	pMoreMenu->SetSectionName(section, "Exportable");
+	pMoreMenu->AddCommandAction(m_pToggleExportable, section);
+	pMoreMenu->AddCommandAction(m_pToggleExportableToPak, section);
 
-	abstractMenu.AddAction(GetIEditor()->GetICommandManager()->GetAction("layer.make_read_only_layers_uneditable"), importLayerSection);
+	section = pMoreMenu->GetNextEmptySection();
+	pMoreMenu->SetSectionName(section, "Auto-Load");
+	pMoreMenu->AddCommandAction(m_pToggleAutoLoaded, section);
 
-	if (layers.size() == 1)
-	{
-		OnContextMenuForSingleLayer(abstractMenu, layers[0]);
-	}
-	else
-	{
-		// Visibility
-		abstractMenu.AddAction(GetIEditor()->GetICommandManager()->GetAction("layer.show_all"));
-		abstractMenu.AddAction(GetIEditor()->GetICommandManager()->GetAction("layer.hide_all"));
+	section = pMoreMenu->GetNextEmptySection();
+	pMoreMenu->SetSectionName(section, "Physics");
+	pMoreMenu->AddCommandAction(m_pTogglePhysics, section);
 
-		// Editability
-		abstractMenu.AddAction(GetIEditor()->GetICommandManager()->GetAction("layer.make_all_editable"));
-		abstractMenu.AddAction(GetIEditor()->GetICommandManager()->GetAction("layer.make_all_uneditable"));
-	}
-
-	AddColorSubMenuForLayers(abstractMenu, layers);
-
-	//Another thing if only one layer selected
-	if (layers.size() == 1)
-	{
-		//capture layer by copy or layers by reference
-		CObjectLayer* pLayer = layers[0];
-
-		int miscLayerSection = abstractMenu.GetNextEmptySection();
-
-		action = abstractMenu.CreateAction(tr("Open Containing Folder"), miscLayerSection);
-		connect(action, &QAction::triggered, [pLayer]()
-		{
-			QtUtil::OpenInExplorer((const char*)pLayer->GetLayerFilepath());
-		});
-
-		action = abstractMenu.CreateAction(tr("Copy Filename"), miscLayerSection);
-		connect(action, &QAction::triggered, [pLayer]()
-		{
-			QApplication::clipboard()->setText(PathUtil::GetFile(pLayer->GetLayerFilepath()).GetString());
-		});
-
-		action = abstractMenu.CreateAction(tr("Copy Full Path"), miscLayerSection);
-		connect(action, &QAction::triggered, [pLayer]()
-		{
-			QApplication::clipboard()->setText(pLayer->GetLayerFilepath().GetString());
-		});
-	}
-
-	std::vector<string> selectedFilenames;
-	for (auto& layer : layers)
-	{
-		selectedFilenames.push_back(layer->GetLayerFilepath());
-	}
-}
-
-void CLevelExplorer::CreateContextForSingleFolderLayer(CAbstractMenu& abstractMenu, const std::vector<CObjectLayer*>& layerFolders) const
-{
-	int folderSection = abstractMenu.GetNextEmptySection();
-	abstractMenu.SetSectionName(folderSection, "Folder");
-
-	auto action = abstractMenu.CreateAction(CryIcon("icons:General/File_New.ico"), tr("New Layer"), folderSection);
-	connect(action, &QAction::triggered, [&]() { OnNewLayer(layerFolders[0]); });
-
-	action = abstractMenu.CreateAction(CryIcon("icons:General/Folder_Add.ico"), tr("New Folder"), folderSection);
-	connect(action, &QAction::triggered, [&]() { OnNewFolder(layerFolders[0]); });
-
-	int emptySection = abstractMenu.GetNextEmptySection();
-
-	action = abstractMenu.CreateAction(tr("Import Layer"), emptySection);
-	connect(action, &QAction::triggered, this, [this, layerFolders]() { OnImportLayer(layerFolders[0]); });
-
-	OnContextMenuForSingleLayer(abstractMenu, layerFolders[0]);
-}
-
-void CLevelExplorer::OnContextMenuForSingleLayer(CAbstractMenu& menu, CObjectLayer* layer) const
-{
-	int toggleSection = menu.GetNextEmptySection();
-	menu.AddAction(GetIEditor()->GetICommandManager()->GetAction("level.isolate_editability"), toggleSection);
-	menu.AddAction(GetIEditor()->GetICommandManager()->GetAction("level.isolate_visibility"), toggleSection);
-
-	int collapseSection = menu.GetNextEmptySection();
-
-	auto action = menu.CreateAction(tr("Expand all"), collapseSection);
-	connect(action, &QAction::triggered, this, [&]()
-	{
-		OnExpandAllLayers();
-	});
-
-	action = menu.CreateAction(tr("Collapse all"), collapseSection);
-	connect(action, &QAction::triggered, [this]()
-	{
-		OnCollapseAllLayers();
-	});
-
-	int hideFreezeObjectsSection = menu.GetNextEmptySection();
-
-	if (AllFrozenInLayer(layer))
-	{
-		action = menu.CreateAction(tr("Unfreeze objects in layer"), hideFreezeObjectsSection);
-		connect(action, &QAction::triggered, [layer, this]()
-		{
-			OnUnfreezeAllInLayer(layer);
-		});
-	}
-	else
-	{
-		action = menu.CreateAction(tr("Freeze objects in layer"), hideFreezeObjectsSection);
-		connect(action, &QAction::triggered, [layer, this]()
-		{
-			OnFreezeAllInLayer(layer);
-		});
-	}
-
-	if (AllHiddenInLayer(layer))
-	{
-		action = menu.CreateAction(tr("Unhide objects in layer"), hideFreezeObjectsSection);
-		connect(action, &QAction::triggered, [layer, this]()
-		{
-			OnUnhideAllInLayer(layer);
-		});
-	}
-	else
-	{
-		action = menu.CreateAction(tr("Hide objects in layer"), hideFreezeObjectsSection);
-		connect(action, &QAction::triggered, [layer, this]()
-		{
-			OnHideAllInLayer(layer);
-		});
-	}
-
-	int hideFreezeSection = menu.GetNextEmptySection();
-
-	action = menu.CreateAction(tr("Visible"), hideFreezeSection);
-	action->setCheckable(true);
-	action->setChecked(layer->IsVisible(false));
-	connect(action, &QAction::toggled, [layer](bool bChecked)
-	{
-		layer->SetVisible(bChecked);
-	});
-
-	action = menu.CreateAction(tr("Frozen"), hideFreezeSection);
-	action->setCheckable(true);
-	action->setChecked(layer->IsFrozen(false));
-	connect(action, &QAction::toggled, [layer](bool bChecked)
-	{
-		layer->SetFrozen(bChecked);
-	});
-
-	int advancedSection = menu.GetNextEmptySection();
-	auto pAdvancedMenu = menu.CreateMenu(tr("Advanced"), advancedSection);
-
-	int miscSection = pAdvancedMenu->GetNextEmptySection();
-
-	action = pAdvancedMenu->CreateAction(tr("Exportable"), miscSection);
-	action->setCheckable(true);
-	action->setChecked(layer->IsExportable());
-	connect(action, &QAction::toggled, [layer](bool bChecked)
-	{
-		layer->SetExportable(bChecked);
-	});
-
-	action = pAdvancedMenu->CreateAction(tr("Exportable to Pak"), miscSection);
-	action->setCheckable(true);
-	action->setChecked(layer->IsExporLayerPak());
-	connect(action, &QAction::toggled, [layer](bool bChecked)
-	{
-		layer->SetExportLayerPak(bChecked);
-	});
-
-	action = pAdvancedMenu->CreateAction(tr("Loaded in Game"), miscSection);
-	action->setCheckable(true);
-	action->setChecked(layer->IsDefaultLoaded());
-	connect(action, &QAction::toggled, [layer](bool bChecked)
-	{
-		layer->SetDefaultLoaded(bChecked);
-	});
-
-	action = pAdvancedMenu->CreateAction(tr("Has Physics"), miscSection);
-	action->setCheckable(true);
-	action->setChecked(layer->HasPhysics());
-	connect(action, &QAction::toggled, [layer](bool bChecked)
-	{
-		layer->SetHavePhysics(bChecked);
-	});
-
-	// Platforms
-	//TODO : this should use enum serialization
-	{
-		auto pPlatformMenu = pAdvancedMenu->CreateMenu(tr("Platforms"), miscSection);
-		action = pPlatformMenu->CreateAction(tr("PC"));
-		action->setCheckable(true);
-		action->setChecked(layer->GetSpecs() & eSpecType_PC);
-		connect(action, &QAction::toggled, [layer](bool bChecked)
-		{
-			layer->SetSpecs(layer->GetSpecs() ^ eSpecType_PC);
-		});
-
-		action = pPlatformMenu->CreateAction(tr("Xbox One"));
-		action->setCheckable(true);
-		action->setChecked(layer->GetSpecs() & eSpecType_XBoxOne);
-		connect(action, &QAction::toggled, [layer](bool bChecked)
-		{
-			layer->SetSpecs(layer->GetSpecs() ^ eSpecType_XBoxOne);
-		});
-
-		action = pPlatformMenu->CreateAction(tr("PS4"));
-		action->setCheckable(true);
-		action->setChecked(layer->GetSpecs() & eSpecType_PS4);
-		connect(action, &QAction::toggled, [&](bool bChecked)
-		{
-			layer->SetSpecs(layer->GetSpecs() ^ eSpecType_PS4);
-		});
-	}
+	section = pMoreMenu->GetNextEmptySection();
+	pMoreMenu->SetSectionName(section, "Platforms");
+	pMoreMenu->AddCommandAction(m_pTogglePC, section);
+	pMoreMenu->AddCommandAction(m_pToggleXBoxOne, section);
+	pMoreMenu->AddCommandAction(m_pTogglePS4, section);
 }
 
 void CLevelExplorer::OnClick(const QModelIndex& index)
@@ -895,7 +814,7 @@ void CLevelExplorer::OnClick(const QModelIndex& index)
 						}
 						else if (index.column() == ELayerColumns::eLayerColumns_Frozen) // freezing
 						{
-							OnUnfreezeAllInLayer(pLayer);
+							OnUnlockAllInLayer(pLayer);
 						}
 						m_treeView->update(); // push an update/redraw here
 					}
@@ -910,7 +829,7 @@ void CLevelExplorer::OnClick(const QModelIndex& index)
 				}
 				else if (index.column() == ELayerColumns::eLayerColumns_Frozen) // freezing
 				{
-					IsolateEditability(index);
+					IsolateLocked(index);
 				}
 				break;
 			}
@@ -961,6 +880,114 @@ void CLevelExplorer::OnDoubleClick(const QModelIndex& index)
 	}
 }
 
+CObjectLayer* CLevelExplorer::GetParentLayerForIndexList(const QModelIndexList& indexList) const
+{
+	if (indexList.isEmpty())
+		return nullptr;
+
+	QModelIndex lastSelectedItem = indexList.last();
+	QVariant type = indexList.last().data(static_cast<int>(CLevelModel::Roles::TypeCheckRole));
+
+	if (type.toInt() != ELevelElementType::eLevelElement_Layer)
+		return nullptr;
+
+	CObjectLayer* pLayer = static_cast<CObjectLayer*>(lastSelectedItem.internalPointer());
+	if (pLayer->GetLayerType() == eObjectLayerType_Folder)
+	{
+		return pLayer;
+	}
+
+	return nullptr;
+}
+
+CObjectLayer* CLevelExplorer::CreateLayer(EObjectLayerType layerType)
+{
+	CUndo undo(layerType == eObjectLayerType_Layer ? "Create Layer" : "Create Folder");
+
+	CObjectLayerManager* pLayerManager = GetIEditorImpl()->GetObjectManager()->GetLayersManager();
+	CObjectLayer* pLayer = pLayerManager->CreateLayer(layerType, GetParentLayerForIndexList(m_treeView->selectionModel()->selectedRows()));
+
+	if (!pLayer)
+	{
+		undo.Cancel();
+		return pLayer;
+	}
+
+	EditLayer(pLayer);
+
+	return pLayer;
+}
+
+bool CLevelExplorer::OnNew()
+{
+	return CreateLayer(eObjectLayerType_Layer) != nullptr;
+}
+
+bool CLevelExplorer::OnNewFolder()
+{
+	return CreateLayer(eObjectLayerType_Folder) != nullptr;
+}
+
+bool CLevelExplorer::OnImport()
+{
+	CObjectLayerManager* pLayerManager = GetIEditorImpl()->GetObjectManager()->GetLayersManager();
+	CObjectLayer* pTargetLayer = GetParentLayerForIndexList(m_treeView->selectionModel()->selectedRows());
+
+	CSystemFileDialog::OpenParams openParams(CSystemFileDialog::OpenMultipleFiles);
+	openParams.title = QObject::tr("Import Layer");
+	openParams.extensionFilters << CExtensionFilter(QObject::tr("Layer Files (lyr)"), "lyr");
+
+	CSystemFileDialog dialog(openParams, const_cast<CLevelExplorer*>(this));
+	if (!dialog.Execute())
+		return false;
+
+	std::vector<QString> files = dialog.GetSelectedFiles();
+	if (files.size() > 0)
+	{
+		for (auto& file : files)
+		{
+			auto pNewLayer = pLayerManager->ImportLayerFromFile(QtUtil::ToString(file));
+			if (pTargetLayer && pNewLayer)
+				pTargetLayer->AddChild(pNewLayer);
+		}
+	}
+
+	return true;
+}
+
+bool CLevelExplorer::OnReload()
+{
+	std::vector<CObjectLayer*> layers;
+	LevelModelsUtil::GetObjectLayersForIndexList(m_treeView->selectionModel()->selectedRows(), layers);
+
+	bool isModified = false;
+	for (const CObjectLayer* pLayer : layers)
+	{
+		if (pLayer->IsModified())
+		{
+			isModified = true;
+			break;
+		}
+	}
+
+	if (isModified)
+	{
+		QString message = tr("Some of the selected layers have been modified. Your changes will be lost. Reload selected layers anyway?");
+		if (QDialogButtonBox::StandardButton::Yes != CQuestionDialog::SQuestion(tr("Reload layers"), message))
+		{
+			// Even if we didn't import, we technically completed the action. So make sure to return true
+			return true;
+		}
+	}
+
+	for (CObjectLayer* pLayer : layers)
+	{
+		GetIEditorImpl()->GetObjectManager()->GetLayersManager()->ReloadLayer(pLayer);
+	}
+
+	return true;
+}
+
 bool CLevelExplorer::OnFind()
 {
 	m_filterPanel->GetSearchBox()->setFocus();
@@ -989,7 +1016,9 @@ bool CLevelExplorer::OnDelete()
 			}
 			break;
 		case ELevelElementType::eLevelElement_Object:
-			objects.push_back(reinterpret_cast<CBaseObject*>(internalPtrVar.value<intptr_t>()));
+			{
+				objects.push_back(reinterpret_cast<CBaseObject*>(internalPtrVar.value<intptr_t>()));
+			}
 			break;
 		default:
 			break;
@@ -1017,6 +1046,394 @@ bool CLevelExplorer::OnDelete()
 
 		GetIEditorImpl()->GetIUndoManager()->Accept("Delete Selection");
 	}
+	return true;
+}
+
+bool CLevelExplorer::OnRename()
+{
+	QModelIndexList selection = m_treeView->selectionModel()->selectedRows();
+
+	if (selection.isEmpty())
+		return false;
+
+	// If there's at least one selected item, then rename the current index (last selected)
+	QModelIndex index = m_treeView->selectionModel()->currentIndex();
+	m_treeView->edit(index.sibling(index.row(), (int)eLayerColumns_Name));
+
+	return true;
+}
+
+bool CLevelExplorer::OnLock()
+{
+	std::vector<CObjectLayer*> allLayers;
+	LevelModelsUtil::GetAllLayersForIndexList(m_treeView->selectionModel()->selectedRows(), allLayers);
+
+	for (CObjectLayer* pLayer : allLayers)
+	{
+		pLayer->SetFrozen(true);
+	}
+
+	return true;
+}
+
+bool CLevelExplorer::OnUnlock()
+{
+	std::vector<CObjectLayer*> allLayers;
+	LevelModelsUtil::GetAllLayersForIndexList(m_treeView->selectionModel()->selectedRows(), allLayers);
+
+	for (CObjectLayer* pLayer : allLayers)
+	{
+		pLayer->SetFrozen(false);
+	}
+
+	return true;
+}
+
+bool CLevelExplorer::OnToggleLock()
+{
+	std::vector<CObjectLayer*> allLayers;
+	std::vector<CBaseObject*> objects;
+
+	LevelModelsUtil::GetAllLayersForIndexList(m_treeView->selectionModel()->selectedRows(), allLayers);
+	LevelModelsUtil::GetObjectsForIndexList(m_treeView->selectionModel()->selectedRows(), objects);
+
+	if (allLayers.empty() && objects.empty())
+		return false;
+
+	LevelExplorerCommandHelper::ToggleLocked(allLayers, objects);
+
+	return true;
+}
+
+bool CLevelExplorer::OnIsolateLocked()
+{
+	return IsolateLocked(m_treeView->currentIndex());
+}
+
+bool CLevelExplorer::OnHide()
+{
+	std::vector<CObjectLayer*> allLayers;
+	LevelModelsUtil::GetAllLayersForIndexList(m_treeView->selectionModel()->selectedRows(), allLayers);
+
+	for (CObjectLayer* pLayer : allLayers)
+	{
+		pLayer->SetVisible(false);
+	}
+
+	return true;
+}
+
+bool CLevelExplorer::OnUnhide()
+{
+	std::vector<CObjectLayer*> allLayers;
+	LevelModelsUtil::GetAllLayersForIndexList(m_treeView->selectionModel()->selectedRows(), allLayers);
+
+	for (CObjectLayer* pLayer : allLayers)
+	{
+		pLayer->SetVisible(true);
+	}
+
+	return true;
+}
+
+bool CLevelExplorer::OnToggleHide()
+{
+	std::vector<CObjectLayer*> allLayers;
+	std::vector<CBaseObject*> objects;
+
+	LevelModelsUtil::GetAllLayersForIndexList(m_treeView->selectionModel()->selectedRows(), allLayers);
+	LevelModelsUtil::GetObjectsForIndexList(m_treeView->selectionModel()->selectedRows(), objects);
+
+	if (allLayers.empty() && objects.empty())
+		return false;
+
+	LevelExplorerCommandHelper::ToggleVisibility(allLayers, objects);
+
+	return true;
+}
+
+bool CLevelExplorer::OnIsolateVisibility()
+{
+	return IsolateVisibility(m_treeView->currentIndex());
+}
+
+bool CLevelExplorer::OnCollapseAll()
+{
+	m_treeView->collapseAll();
+	return true;
+}
+
+bool CLevelExplorer::OnExpandAll()
+{
+	m_treeView->expandAll();
+	return true;
+}
+
+bool CLevelExplorer::OnLockChildren()
+{
+	std::vector<CObjectLayer*> allLayers;
+	LevelModelsUtil::GetAllLayersForIndexList(m_treeView->selectionModel()->selectedRows(), allLayers);
+
+	if (allLayers.empty())
+		return false;
+
+	for (CObjectLayer* pLayer : allLayers)
+	{
+		OnLockAllInLayer(pLayer);
+	}
+
+	return true;
+}
+
+bool CLevelExplorer::OnUnlockChildren()
+{
+	std::vector<CObjectLayer*> allLayers;
+	LevelModelsUtil::GetAllLayersForIndexList(m_treeView->selectionModel()->selectedRows(), allLayers);
+
+	if (allLayers.empty())
+		return false;
+
+	for (CObjectLayer* pLayer : allLayers)
+	{
+		OnUnlockAllInLayer(pLayer);
+	}
+
+	return true;
+}
+
+bool CLevelExplorer::OnToggleLockChildren()
+{
+	std::vector<CObjectLayer*> allLayers;
+	LevelModelsUtil::GetAllLayersForIndexList(m_treeView->selectionModel()->selectedRows(), allLayers);
+
+	if (allLayers.empty())
+		return false;
+
+	// First check if all layers have the same lock state
+	bool isFirstObjectLocked = IsFirstChildLocked(allLayers);
+	bool hasMultipleState = DoChildrenMatchLockedState(allLayers, isFirstObjectLocked);
+
+	for (CObjectLayer* pLayer : allLayers)
+	{
+		// If layers don't have the same lock state, then make them all unlocked. If not, then toggle their lock state
+		if (hasMultipleState || isFirstObjectLocked)
+		{
+			OnUnlockAllInLayer(pLayer);
+		}
+		else
+		{
+			OnLockAllInLayer(pLayer);
+		}
+	}
+
+	return true;
+}
+
+bool CLevelExplorer::OnHideChildren()
+{
+	std::vector<CObjectLayer*> allLayers;
+	LevelModelsUtil::GetAllLayersForIndexList(m_treeView->selectionModel()->selectedRows(), allLayers);
+
+	if (allLayers.empty())
+		return false;
+
+	for (CObjectLayer* pLayer : allLayers)
+	{
+		OnHideAllInLayer(pLayer);
+	}
+
+	return true;
+}
+
+bool CLevelExplorer::OnUnhideChildren()
+{
+	std::vector<CObjectLayer*> allLayers;
+	LevelModelsUtil::GetAllLayersForIndexList(m_treeView->selectionModel()->selectedRows(), allLayers);
+
+	if (allLayers.empty())
+		return false;
+
+	for (CObjectLayer* pLayer : allLayers)
+	{
+		OnUnlockAllInLayer(pLayer);
+	}
+
+	return true;
+}
+
+bool CLevelExplorer::OnToggleHideChildren()
+{
+	std::vector<CObjectLayer*> allLayers;
+	LevelModelsUtil::GetAllLayersForIndexList(m_treeView->selectionModel()->selectedRows(), allLayers);
+
+	if (allLayers.empty())
+		return false;
+
+	// First check if all layers have the same lock state
+	bool isFirstObjectHidden = IsFirstChildHidden(allLayers);
+	bool hasMultipleState = DoChildrenMatchHiddenState(allLayers, isFirstObjectHidden);
+
+	for (CObjectLayer* pLayer : allLayers)
+	{
+		// If layers don't have the same lock state, then make them all unlocked. If not, then toggle their lock state
+		if (hasMultipleState || isFirstObjectHidden)
+		{
+			OnUnhideAllInLayer(pLayer);
+		}
+		else
+		{
+			OnHideAllInLayer(pLayer);
+		}
+	}
+
+	return true;
+}
+
+bool CLevelExplorer::IsFirstChildLocked(const std::vector<CObjectLayer*>& layers) const
+{
+	for (const CObjectLayer* pLayer : layers)
+	{
+		CBaseObjectsArray objects;
+		GetIEditorImpl()->GetObjectManager()->GetObjects(objects, pLayer);
+
+		for (const CBaseObject* pObject : objects)
+		{
+			return pObject->IsFrozen();
+		}
+	}
+
+	return false;
+}
+
+bool CLevelExplorer::DoChildrenMatchLockedState(const std::vector<CObjectLayer*>& layers, bool isLocked) const
+{
+	for (const CObjectLayer* pLayer : layers)
+	{
+		CBaseObjectsArray objects;
+		GetIEditorImpl()->GetObjectManager()->GetObjects(objects, pLayer);
+
+		for (const CBaseObject* pObject : objects)
+		{
+			if (isLocked != pObject->IsFrozen())
+				return false;
+		}
+
+		std::vector<CObjectLayer*> childLayers;
+		childLayers.reserve(pLayer->GetChildCount());
+		for (int i = 0; i < pLayer->GetChildCount(); i++)
+		{
+			childLayers.push_back(pLayer->GetChild(i));
+		}
+
+		if (!DoChildrenMatchLockedState(childLayers, isLocked))
+			return false;
+	}
+
+	return true;
+}
+
+bool CLevelExplorer::IsFirstChildHidden(const std::vector<CObjectLayer*>& layers) const
+{
+	for (const CObjectLayer* pLayer : layers)
+	{
+		CBaseObjectsArray objects;
+		GetIEditorImpl()->GetObjectManager()->GetObjects(objects, pLayer);
+
+		for (const CBaseObject* pObject : objects)
+		{
+			return pObject->IsHidden();
+		}
+	}
+
+	return false;
+}
+
+bool CLevelExplorer::DoChildrenMatchHiddenState(const std::vector<CObjectLayer*>& layers, bool isHidden) const
+{
+	for (const CObjectLayer* pLayer : layers)
+	{
+		CBaseObjectsArray objects;
+		GetIEditorImpl()->GetObjectManager()->GetObjects(objects, pLayer);
+
+		for (const CBaseObject* pObject : objects)
+		{
+			if (isHidden != pObject->IsFrozen())
+				return false;
+		}
+
+		std::vector<CObjectLayer*> childLayers;
+		childLayers.reserve(pLayer->GetChildCount());
+		for (int i = 0; i < pLayer->GetChildCount(); i++)
+		{
+			childLayers.push_back(pLayer->GetChild(i));
+		}
+
+		if (!DoChildrenMatchHiddenState(childLayers, isHidden))
+			return false;
+	}
+
+	return true;
+}
+
+bool CLevelExplorer::IsolateLocked(const QModelIndex& index)
+{
+	if (!index.isValid())
+		return false;
+
+	auto type = index.data((int)CLevelModel::Roles::TypeCheckRole);
+
+	if (type.toInt() == ELevelElementType::eLevelElement_Layer)
+	{
+		CObjectLayer* pLayer = reinterpret_cast<CObjectLayer*>(index.data((int)CLevelLayerModel::Roles::InternalPointerRole).value<intptr_t>());
+		CObjectLayerManager* pLayerManager = GetIEditorImpl()->GetObjectManager()->GetLayersManager();
+
+		if (!pLayerManager || !pLayer)
+			return false;
+
+		pLayerManager->ToggleFreezeAllBut(pLayer);
+	}
+	if (type.toInt() == ELevelElementType::eLevelElement_Object)
+	{
+		CBaseObject* pObject = reinterpret_cast<CBaseObject*>(index.data((int)CLevelLayerModel::Roles::InternalPointerRole).value<intptr_t>());
+		IObjectManager* pObjectManager = GetIEditorImpl()->GetObjectManager();
+
+		if (!pObjectManager || !pObject)
+			return false;
+
+		pObjectManager->ToggleFreezeAllBut(pObject);
+	}
+
+	return true;
+}
+
+bool CLevelExplorer::IsolateVisibility(const QModelIndex& index)
+{
+	if (!index.isValid())
+		return false;
+
+	auto type = index.data((int)CLevelModel::Roles::TypeCheckRole);
+
+	if (type.toInt() == ELevelElementType::eLevelElement_Layer)
+	{
+		CObjectLayer* pLayer = reinterpret_cast<CObjectLayer*>(index.data((int)CLevelLayerModel::Roles::InternalPointerRole).value<intptr_t>());
+		CObjectLayerManager* pLayerManager = GetIEditorImpl()->GetObjectManager()->GetLayersManager();
+
+		if (!pLayerManager || !pLayer)
+			return false;
+
+		pLayerManager->ToggleHideAllBut(pLayer);
+	}
+	if (type.toInt() == ELevelElementType::eLevelElement_Object)
+	{
+		CBaseObject* pObject = reinterpret_cast<CBaseObject*>(index.data((int)CLevelLayerModel::Roles::InternalPointerRole).value<intptr_t>());
+		IObjectManager* pObjectManager = GetIEditorImpl()->GetObjectManager();
+
+		if (!pObjectManager || !pObject)
+			return false;
+
+		pObjectManager->ToggleHideAllBut(pObject);
+	}
+
 	return true;
 }
 
@@ -1352,7 +1769,7 @@ void CLevelExplorer::OnSelectionChanged(const QItemSelection& selected, const QI
 		std::vector<CObjectLayer*> layers;
 		std::vector<CObjectLayer*> layerFolders;
 
-		LevelModelsUtil::ProcessIndexList(LevelModelsUtil::FilterByColumn(selected.indexes()), objects, layers, layerFolders);
+		LevelModelsUtil::GetObjectsAndLayersForIndexList(LevelModelsUtil::FilterByColumn(selected.indexes()), objects, layers, layerFolders);
 
 		objectsToSelect.reserve(objects.size());
 
@@ -1375,7 +1792,7 @@ void CLevelExplorer::OnSelectionChanged(const QItemSelection& selected, const QI
 		std::vector<CObjectLayer*> layers;
 		std::vector<CObjectLayer*> layerFolders;
 
-		LevelModelsUtil::ProcessIndexList(LevelModelsUtil::FilterByColumn(deselected.indexes()), objects, layers, layerFolders);
+		LevelModelsUtil::GetObjectsAndLayersForIndexList(LevelModelsUtil::FilterByColumn(deselected.indexes()), objects, layers, layerFolders);
 
 		objectsToDeselect.insert(objectsToDeselect.end(), objects.begin(), objects.end());
 	}
@@ -1398,7 +1815,7 @@ void CLevelExplorer::OnSelectionChanged(const QItemSelection& selected, const QI
 		std::vector<CObjectLayer*> layers;
 		std::vector<CObjectLayer*> layerFolders;
 
-		LevelModelsUtil::ProcessIndexList(selection, objects, layers, layerFolders);
+		LevelModelsUtil::GetObjectsAndLayersForIndexList(selection, objects, layers, layerFolders);
 		const int objManSelectionCount = objManSelection->GetCount();
 
 		if (objManSelectionCount != objects.size())
@@ -1413,12 +1830,63 @@ void CLevelExplorer::OnSelectionChanged(const QItemSelection& selected, const QI
 		}
 	}
 
+	UpdateSelectionActionState();
+
 	m_ignoreSelectionEvents = false;
 }
 
-void CLevelExplorer::OnRename(const QModelIndex& index) const
+void CLevelExplorer::SetActionsEnabled(bool areEnabled)
 {
-	m_treeView->edit(index.sibling(index.row(), (int)eLayerColumns_Name));
+	m_pRename->setEnabled(areEnabled);
+	m_pDelete->setEnabled(areEnabled);
+
+	m_pToggleVisibility->setEnabled(areEnabled);
+	m_pToggleChildrenVisibility->setEnabled(areEnabled);
+	m_pIsolateVisibility->setEnabled(areEnabled);
+
+	m_pToggleLocking->setEnabled(areEnabled);
+	m_pToggleChildrenLocking->setEnabled(areEnabled);
+	m_pIsolateLocked->setEnabled(areEnabled);
+}
+
+void CLevelExplorer::UpdateSelectionActionState()
+{
+	QModelIndexList selection = m_treeView->selectionModel()->selectedRows();
+
+	SetActionsEnabled(false);
+
+	if (selection.isEmpty())
+		return;
+
+	std::vector<CBaseObject*> objects;
+	std::vector<CObjectLayer*> layers;
+	std::vector<CObjectLayer*> layerFolders;
+	LevelModelsUtil::GetObjectsAndLayersForIndexList(m_treeView->selectionModel()->selectedRows(), objects, layers, layerFolders);
+
+	std::vector<CObjectLayer*> allLayers;
+	allLayers.reserve(layers.size() + layerFolders.size());
+	allLayers.insert(allLayers.end(), layers.cbegin(), layers.cend());
+	allLayers.insert(allLayers.end(), layerFolders.cbegin(), layerFolders.cend());
+	
+	if (!objects.empty() || !allLayers.empty())
+	{
+		SetActionsEnabled(true);
+
+		m_pToggleVisibility->setChecked(LevelExplorerCommandHelper::AreVisible(allLayers, objects));
+		m_pToggleLocking->setChecked(LevelExplorerCommandHelper::AreLocked(allLayers, objects));
+	}
+
+	if (!allLayers.empty())
+	{
+		m_pTogglePC->setChecked(LevelExplorerCommandHelper::HasPlatformSpecs(layers, eSpecType_PC));
+		m_pToggleXBoxOne->setChecked(LevelExplorerCommandHelper::HasPlatformSpecs(layers, eSpecType_XBoxOne));
+		m_pTogglePS4->setChecked(LevelExplorerCommandHelper::HasPlatformSpecs(layers, eSpecType_PS4));
+
+		m_pToggleExportable->setChecked(LevelExplorerCommandHelper::AreExportable(layers));
+		m_pToggleExportableToPak->setChecked(LevelExplorerCommandHelper::AreExportableToPak(layers));
+		m_pToggleAutoLoaded->setChecked(LevelExplorerCommandHelper::AreAutoLoaded(layers));
+		m_pTogglePhysics->setChecked(LevelExplorerCommandHelper::HavePhysics(layers));
+	}
 }
 
 void CLevelExplorer::OnLayerModelResetBegin()
@@ -1463,30 +1931,6 @@ void CLevelExplorer::OnModelDestroyed()
 	m_pAttributeFilterProxyModel->setSourceModel(nullptr);
 }
 
-void CLevelExplorer::OnNewLayer(CObjectLayer* parent) const
-{
-	CObjectLayerManager* pLayerManager = GetIEditorImpl()->GetObjectManager()->GetLayersManager();
-	CRY_ASSERT(pLayerManager);
-
-	CUndo undo("Create Layer");
-	auto pLayer = pLayerManager->CreateLayer(eObjectLayerType_Layer, parent);
-	EditLayer(pLayer);
-	if (!pLayer)
-		undo.Cancel();
-}
-
-void CLevelExplorer::OnNewFolder(CObjectLayer* parent) const
-{
-	CObjectLayerManager* pLayerManager = GetIEditorImpl()->GetObjectManager()->GetLayersManager();
-	CRY_ASSERT(pLayerManager);
-
-	CUndo undo("Create Folder");
-	auto pFolder = pLayerManager->CreateLayer(eObjectLayerType_Folder, parent);
-	EditLayer(pFolder);
-	if (!pFolder)
-		undo.Cancel();
-}
-
 void CLevelExplorer::EditLayer(CObjectLayer* pLayer) const
 {
 	if (!pLayer)
@@ -1500,33 +1944,6 @@ void CLevelExplorer::EditLayer(CObjectLayer* pLayer) const
 		m_treeView->scrollTo(index);
 		m_treeView->selectionModel()->setCurrentIndex(index, QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows);
 		m_treeView->edit(index.sibling(index.row(), (int)eLayerColumns_Name));
-	}
-}
-
-void CLevelExplorer::OnReloadLayers(const std::vector<CObjectLayer*>& layers) const
-{
-	bool modified = false;
-	for (auto& layer : layers)
-	{
-		if (layer->IsModified())
-		{
-			modified = true;
-			break;
-		}
-	}
-
-	if (modified)
-	{
-		QString message = tr("Some of the selected layers have been modified. Your changes will be lost. Reload selected layers anyway?");
-		if (QDialogButtonBox::StandardButton::Yes != CQuestionDialog::SQuestion(tr("Reload layers"), message))
-		{
-			return;
-		}
-	}
-
-	for (auto& layer : layers)
-	{
-		GetIEditorImpl()->GetObjectManager()->GetLayersManager()->ReloadLayer(layer);
 	}
 }
 
@@ -1544,91 +1961,7 @@ void CLevelExplorer::OnDeleteLayers(const std::vector<CObjectLayer*>& layers) co
 	GetIEditorImpl()->GetIUndoManager()->Accept("Delete Layers");
 }
 
-void CLevelExplorer::OnImportLayer(CObjectLayer* pTargetLayer) const
-{
-	CObjectLayerManager* pLayerManager = GetIEditorImpl()->GetObjectManager()->GetLayersManager();
-	if (pLayerManager)
-	{
-		CSystemFileDialog::OpenParams openParams(CSystemFileDialog::OpenMultipleFiles);
-		openParams.title = QObject::tr("Import Layer");
-		openParams.extensionFilters << CExtensionFilter(QObject::tr("Layer Files (lyr)"), "lyr");
-
-		CSystemFileDialog dialog(openParams, const_cast<CLevelExplorer*>(this));
-		if (dialog.Execute())
-		{
-			auto files = dialog.GetSelectedFiles();
-			if (files.size() > 0)
-			{
-				for (auto& file : files)
-				{
-					auto pNewLayer = pLayerManager->ImportLayerFromFile(file.toStdString().c_str());
-					if (pTargetLayer && pNewLayer)
-						pTargetLayer->AddChild(pNewLayer);
-				}
-			}
-		}
-	}
-}
-
-void CLevelExplorer::IsolateEditability(const QModelIndex& index) const
-{
-	auto type = index.data((int)CLevelModel::Roles::TypeCheckRole);
-
-	if (type.toInt() == ELevelElementType::eLevelElement_Layer)
-	{
-		CObjectLayer* pLayer = reinterpret_cast<CObjectLayer*>(index.data((int)CLevelLayerModel::Roles::InternalPointerRole).value<intptr_t>());
-		CObjectLayerManager* pLayerManager = GetIEditorImpl()->GetObjectManager()->GetLayersManager();
-
-		if (!pLayerManager || !pLayer)
-			return;
-
-		pLayerManager->ToggleFreezeAllBut(pLayer);
-	}
-	if (type.toInt() == ELevelElementType::eLevelElement_Object)
-	{
-		CBaseObject* pObject = reinterpret_cast<CBaseObject*>(index.data((int)CLevelLayerModel::Roles::InternalPointerRole).value<intptr_t>());
-		IObjectManager* pObjectManager = GetIEditorImpl()->GetObjectManager();
-
-		if (!pObjectManager || !pObject)
-			return;
-
-		pObjectManager->ToggleFreezeAllBut(pObject);
-	}
-
-	// TODO: check if necessary
-	//m_treeView->update(); // push an update/redraw here
-}
-
-void CLevelExplorer::IsolateVisibility(const QModelIndex& index) const
-{
-	auto type = index.data((int)CLevelModel::Roles::TypeCheckRole);
-
-	if (type.toInt() == ELevelElementType::eLevelElement_Layer)
-	{
-		CObjectLayer* pLayer = reinterpret_cast<CObjectLayer*>(index.data((int)CLevelLayerModel::Roles::InternalPointerRole).value<intptr_t>());
-		CObjectLayerManager* pLayerManager = GetIEditorImpl()->GetObjectManager()->GetLayersManager();
-
-		if (!pLayerManager || !pLayer)
-			return;
-
-		pLayerManager->ToggleHideAllBut(pLayer);
-	}
-	if (type.toInt() == ELevelElementType::eLevelElement_Object)
-	{
-		CBaseObject* pObject = reinterpret_cast<CBaseObject*>(index.data((int)CLevelLayerModel::Roles::InternalPointerRole).value<intptr_t>());
-		IObjectManager* pObjectManager = GetIEditorImpl()->GetObjectManager();
-
-		if (!pObjectManager || !pObject)
-			return;
-
-		pObjectManager->ToggleHideAllBut(pObject);
-	}
-
-	// TODO: check if necessary
-	//m_treeView->update(); // push an update/redraw here
-}
-
-void CLevelExplorer::OnFreezeAllInLayer(CObjectLayer* layer) const
+void CLevelExplorer::OnLockAllInLayer(CObjectLayer* layer) const
 {
 	CBaseObjectsArray objects;
 	GetIEditorImpl()->GetObjectManager()->GetObjects(objects, layer);
@@ -1638,7 +1971,7 @@ void CLevelExplorer::OnFreezeAllInLayer(CObjectLayer* layer) const
 	}
 }
 
-void CLevelExplorer::OnUnfreezeAllInLayer(CObjectLayer* layer) const
+void CLevelExplorer::OnUnlockAllInLayer(CObjectLayer* layer) const
 {
 	CBaseObjectsArray objects;
 	GetIEditorImpl()->GetObjectManager()->GetObjects(objects, layer);
@@ -1651,7 +1984,7 @@ void CLevelExplorer::OnUnfreezeAllInLayer(CObjectLayer* layer) const
 	// Do the same for all child layers
 	for (int i = 0; i < layer->GetChildCount(); i++)
 	{
-		OnUnfreezeAllInLayer(layer->GetChild(i));
+		OnUnlockAllInLayer(layer->GetChild(i));
 	}
 }
 
@@ -1704,16 +2037,6 @@ bool CLevelExplorer::AllHiddenInLayer(CObjectLayer* layer) const
 			return false;
 	}
 	return true;
-}
-
-void CLevelExplorer::OnExpandAllLayers() const
-{
-	m_treeView->expandAll();
-}
-
-void CLevelExplorer::OnCollapseAllLayers() const
-{
-	m_treeView->collapseAll();
 }
 
 void CLevelExplorer::OnSelectColor(const std::vector<CObjectLayer*>& layers) const

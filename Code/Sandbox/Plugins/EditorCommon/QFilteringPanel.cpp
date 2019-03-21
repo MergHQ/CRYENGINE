@@ -656,20 +656,35 @@ bool QFilteringPanel::HasActiveFilters() const
 	return false;
 }
 
-void QFilteringPanel::FillMenu(CAbstractMenu* pMenu, const QString& submenuName)
+void QFilteringPanel::CreateMenu(CAbstractMenu* pParentMenu)
+{
+	const QString filterMenuName(tr("Apply Filter"));
+
+	// Make sure a menu with this name doesn't already exist, if so clear it
+	string menuName = QtUtil::ToString(filterMenuName);
+	CAbstractMenu* pFilterMenu = pParentMenu->FindMenu(menuName);
+
+	if (!pFilterMenu)
+	{
+		pFilterMenu = pParentMenu->CreateMenu(menuName);
+	}
+
+	pFilterMenu->signalAboutToShow.Connect(this, &QFilteringPanel::FillMenu);
+}
+
+void QFilteringPanel::FillMenu(CAbstractMenu* pMenu)
 {
 	if (!pMenu)
 	{
 		return;
 	}
 
-	pMenu = submenuName.isEmpty() ? pMenu : pMenu->CreateMenu(submenuName);
-	int section = pMenu->IsEmpty() ? CAbstractMenu::eSections_Default : pMenu->GetNextEmptySection();
+	pMenu->Clear();
 
 	const QVector<QString> filters = GetSavedFilters();
 	for (QString filterName : filters)
 	{
-		QAction* const pAction = pMenu->CreateAction(filterName, section);
+		QAction* const pAction = pMenu->CreateAction(filterName);
 		pAction->setCheckable(true);
 		pAction->setChecked(IsFilterSet(filterName));
 		connect(pAction, &QAction::triggered, [this, filterName](bool checked)
@@ -688,11 +703,11 @@ void QFilteringPanel::FillMenu(CAbstractMenu* pMenu, const QString& submenuName)
 	// If there are filters then add a section for clearing the current criteria
 	if (filters.empty())
 	{
-		QAction* const pAction = pMenu->CreateAction(tr("No Saved Filters"), section);
+		QAction* const pAction = pMenu->CreateAction(tr("No Saved Filters"));
 		pAction->setEnabled(false);
 	}
 
-	section = pMenu->GetNextEmptySection();
+	int section = pMenu->GetNextEmptySection();
 
 	QAction* pClearCriteria = pMenu->CreateAction("Clear Criteria", section);
 	pClearCriteria->setIcon(CryIcon("icons:General/Element_Clear.ico"));

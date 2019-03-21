@@ -13,7 +13,6 @@
 #include "Objects/ParticleEffectObject.h"
 #include "Particles/ParticleManager.h"
 #include "Particles/ParticleItem.h"
-
 #include "ParticleAssetType.h"
 
 #include "ViewManager.h"
@@ -23,6 +22,7 @@
 #include <AssetSystem/Asset.h>
 #include <AssetSystem/AssetManager.h>
 #include <AssetSystem/EditableAsset.h>
+#include <Commands/QCommandAction.h>
 #include <Controls/CurveEditorPanel.h>
 #include <Controls/QuestionDialog.h>
 #include <Controls/CurveEditorPanel.h>
@@ -139,7 +139,7 @@ void CParticleEditor::InitMenu()
 
 	// Enable instant editing if possible
 	CAbstractMenu* const pEditMenu = GetMenu(CEditor::MenuItems::EditMenu);
-	pEditMenu->AddAction(m_pLockAction);
+	pEditMenu->AddCommandAction(m_pLockAction);
 }
 
 void CParticleEditor::InitToolbar(QVBoxLayout* pWindowLayout)

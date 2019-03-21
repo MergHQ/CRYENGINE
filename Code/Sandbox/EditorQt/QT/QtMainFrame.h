@@ -35,8 +35,6 @@ public:
 	CLevelEditor* GetLevelEditor() { return m_levelEditor.get(); }
 
 private:
-	void AddCommand(CCommand* pCommand);
-
 	void OnIdleCallback();
 	bool OnNativeEvent(void* message, long* result);
 	void OnBackgroundUpdateTimer();
