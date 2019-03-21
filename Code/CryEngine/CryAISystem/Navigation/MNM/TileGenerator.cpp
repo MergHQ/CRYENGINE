@@ -651,7 +651,9 @@ size_t CTileGenerator::FilterWalkable_CheckNeighboursAndInclination(const SFilte
 					if (FilterWalkableSpan_CheckNeighbours(spanCoord, spanTop, spanTop + span.clearance, filterParams, pNeighbourReason))
 					{
 						if (pNeighbourReason)
+						{
 							DebugAddNonWalkableReason(spanCoord, SNonWalkableReason("neighbour", *pNeighbourReason));
+						}
 
 						span.flags |= NotWalkable;
 						++nonWalkableCount;
@@ -713,6 +715,7 @@ struct CTileGenerator::SWalkableProbeCheckParams
 		, filterParams(filterParams)
 		, originTop(originTop)
 		, pOutReason(pOutReason)
+		, dir(0), firstProbeSpanTop(0), firstProbeSpanNextBottom(0), firstSpanTopDiffAbsolute(0), firstSpanTopDiffSigned(0)
 	{}
 	
 	const SSpanCoord& spanCoord;
