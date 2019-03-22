@@ -41,6 +41,11 @@ SContext::EState SStartAnimationProcessing::operator()(const SContext& ctx)
 
 	ctx.pInstance->m_SkeletonAnim.ProcessAnimations(location);
 
+	if (!ctx.pInstance->m_SkeletonPose.m_bFullSkeletonUpdate)
+	{
+		return SContext::EState::JobSkipped;
+	}
+
 	if (!GetMemoryPool())
 		return SContext::EState::Failure;
 

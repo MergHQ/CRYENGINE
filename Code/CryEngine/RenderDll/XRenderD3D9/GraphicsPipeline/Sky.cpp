@@ -3,6 +3,8 @@
 #include "StdAfx.h"
 #include "Sky.h"
 
+#include <CrySystem/File/CryBufferedFileReader.h>
+
 CSkyStage::CSkyStage(CGraphicsPipeline& graphicsPipeline)
 	: CGraphicsPipelineStage(graphicsPipeline)
 	, m_skyDomeTextureLastTimeStamp(-1)
@@ -49,85 +51,73 @@ bool CSkyStage::LoadStarsData()
 	const uint32 c_fileTag(0x52415453);       // "STAR"
 	const uint32 c_fileVersion(0x00010001);
 	const char c_fileName[] = "%ENGINE%/engineassets/sky/stars.dat";
-
-	ICryPak* pPak(gEnv->pCryPak);
-	if (pPak)
+	
+	CCryBufferedFileReader file;
+	if (file.Open(c_fileName, "rb"))
 	{
-		CInMemoryFileLoader file(pPak);
-		if (file.FOpen(c_fileName, "rb"))
+		// read and validate header
+		size_t itemsRead(0);
+		uint32 fileTag(0);
+		itemsRead = file.ReadType(&fileTag);
+		if (itemsRead != 1 || fileTag != c_fileTag)
 		{
-			// read and validate header
-			size_t itemsRead(0);
-			uint32 fileTag(0);
-			itemsRead = file.FRead(&fileTag, 1);
-			if (itemsRead != 1 || fileTag != c_fileTag)
-			{
-				file.FClose();
-				return false;
-			}
-
-			uint32 fileVersion(0);
-			itemsRead = file.FRead(&fileVersion, 1);
-			if (itemsRead != 1 || fileVersion != c_fileVersion)
-			{
-				file.FClose();
-				return false;
-			}
-
-			// read in stars
-			file.FRead(&m_numStars, 1);
-
-			SVF_P3S_C4B_T2S* pData(new SVF_P3S_C4B_T2S[6 * m_numStars]);
-
-			for (unsigned int i(0); i < m_numStars; ++i)
-			{
-				float ra(0);
-				file.FRead(&ra, 1);
-
-				float dec(0);
-				file.FRead(&dec, 1);
-
-				uint8 r(0);
-				file.FRead(&r, 1);
-
-				uint8 g(0);
-				file.FRead(&g, 1);
-
-				uint8 b(0);
-				file.FRead(&b, 1);
-
-				uint8 mag(0);
-				file.FRead(&mag, 1);
-
-				Vec3 v;
-				v.x = -cosf(DEG2RAD(dec)) * sinf(DEG2RAD(ra * 15.0f));
-				v.y = cosf(DEG2RAD(dec)) * cosf(DEG2RAD(ra * 15.0f));
-				v.z = sinf(DEG2RAD(dec));
-
-				for (int k = 0; k < 6; k++)
-				{
-					pData[6 * i + k].xyz = v;
-					pData[6 * i + k].color.dcolor = (mag << 24) + (b << 16) + (g << 8) + r;
-				}
-			}
-
-			m_pStarMesh = gRenDev->CreateRenderMeshInitialized(pData, 6 * m_numStars, EDefaultInputLayouts::P3S_C4B_T2S, 0, 0, prtTriangleList, "Stars", "Stars");
-
-			delete[] pData;
-
-			// check if we read entire file
-			long curPos(file.FTell());
-			file.FSeek(0, SEEK_END);
-			long endPos(file.FTell());
-			if (curPos != endPos)
-			{
-				file.FClose();
-				return false;
-			}
-
-			file.FClose();
-			return true;
+			return false;
 		}
+
+		uint32 fileVersion(0);
+		itemsRead = file.ReadType(&fileVersion);
+		if (itemsRead != 1 || fileVersion != c_fileVersion)
+		{
+			return false;
+		}
+
+		// read in stars
+		file.ReadType(&m_numStars);
+
+		SVF_P3S_C4B_T2S* pData(new SVF_P3S_C4B_T2S[6 * m_numStars]);
+
+		for (unsigned int i(0); i < m_numStars; ++i)
+		{
+			float ra(0);
+			file.ReadType(&ra);
+
+			float dec(0);
+			file.ReadType(&dec);
+
+			uint8 r(0);
+			file.ReadType(&r);
+
+			uint8 g(0);
+			file.ReadType(&g);
+
+			uint8 b(0);
+			file.ReadType(&b);
+
+			uint8 mag(0);
+			file.ReadType(&mag);
+
+			Vec3 v;
+			v.x = -cosf(DEG2RAD(dec)) * sinf(DEG2RAD(ra * 15.0f));
+			v.y = cosf(DEG2RAD(dec)) * cosf(DEG2RAD(ra * 15.0f));
+			v.z = sinf(DEG2RAD(dec));
+
+			for (int k = 0; k < 6; k++)
+			{
+				pData[6 * i + k].xyz = v;
+				pData[6 * i + k].color.dcolor = (mag << 24) + (b << 16) + (g << 8) + r;
+			}
+		}
+
+		m_pStarMesh = gRenDev->CreateRenderMeshInitialized(pData, 6 * m_numStars, EDefaultInputLayouts::P3S_C4B_T2S, 0, 0, prtTriangleList, "Stars", "Stars");
+
+		delete[] pData;
+
+		// check if we read entire file
+		const size_t curPos(file.GetPosition());
+		file.Seek(0, SEEK_END);
+		const size_t endPos(file.GetPosition());
+		
+		return (curPos == endPos);
 	}
 	return false;
 }

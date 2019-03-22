@@ -154,12 +154,15 @@ void CCharInstance::StartAnimationProcessing(const SAnimationProcessParams& para
 
 	bool bImmediate = (Console::GetInst().ca_thread == 0);
 
-	WaitForSkinningJob();
-	ctx.job.Begin(bImmediate);
-
-	if (bImmediate)
+	if (ctx.state == CharacterInstanceProcessing::SContext::EState::StartAnimationProcessed)
 	{
-		m_SkeletonAnim.FinishAnimationComputations();
+		WaitForSkinningJob();
+		ctx.job.Begin(bImmediate);
+
+		if (bImmediate)
+		{
+			m_SkeletonAnim.FinishAnimationComputations();
+		}
 	}
 }
 
