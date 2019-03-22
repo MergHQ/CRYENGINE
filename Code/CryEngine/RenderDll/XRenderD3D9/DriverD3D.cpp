@@ -3827,7 +3827,8 @@ bool CD3D9Renderer::CaptureFrameBufferFast(unsigned char* pDstRGBA8, int destina
 
 #if defined(ENABLE_PROFILING_CODE)
 	//In case this routine is called without the init function being called
-	if (m_pSaveTexture[0] == NULL || m_pSaveTexture[1] == NULL || !GetDevice().IsValid()) return bStatus;
+	if (!CTexture::IsTextureExist(m_pSaveTexture[0]) || !CTexture::IsTextureExist(m_pSaveTexture[1]) || !GetDevice().IsValid()) 
+		return false;
 
 	CTexture* pSourceTexture = GetActiveDisplayContext()->GetPresentedBackBuffer();
 	if (pSourceTexture)
