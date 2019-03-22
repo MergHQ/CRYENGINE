@@ -111,7 +111,7 @@ public:
 	{
 		if (!m_pPasses || m_pPasses->currentKey != pGraphicsPipeline->GetKey())
 		{
-			m_pPasses = std::make_unique<SSvoPrimitivePasses>(pGraphicsPipeline);
+			m_pPasses = stl::make_unique<SSvoPrimitivePasses>(pGraphicsPipeline);
 		}
 	}
 

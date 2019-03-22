@@ -1045,7 +1045,6 @@ bool CWaterStage::SetAndBuildPerPassResources(bool bOnInit, EPass passId)
 	auto* pTiledLights = m_graphicsPipeline.GetStage<CTiledLightVolumesStage>();
 	auto* pVolFogStage = m_graphicsPipeline.GetStage<CVolumetricFogStage>();
 	auto* pRippleStage = m_graphicsPipeline.GetStage<CWaterRipplesStage>();
-	auto* pFogStage    = m_graphicsPipeline.GetStage<CFogStage>();
 
 	auto& resources    = m_perPassResources    [passId];
 	auto& pResourceSet = m_pPerPassResourceSets[passId];
@@ -1077,6 +1076,7 @@ bool CWaterStage::SetAndBuildPerPassResources(bool bOnInit, EPass passId)
 #if defined(VOLUMETRIC_FOG_SHADOWS)
 	if (gcpRendD3D->m_bVolFogShadowsEnabled)
 	{
+		auto* pFogStage = m_graphicsPipeline.GetStage<CFogStage>();
 		pVolFogShadowTex = pFogStage->m_pTexVolFogShadowBuf[0];
 	}
 #endif

@@ -1222,7 +1222,6 @@ void CVolumetricCloudsStage::ExecuteRenderClouds(const VCCloudRenderContext& con
 
 	const int32 currentRenderEye = static_cast<int32>(RenderView()->GetCurrentEye());
 	auto* pVolFogStage = m_graphicsPipeline.GetStage<CVolumetricFogStage>();
-	auto* pFogStage = m_graphicsPipeline.GetStage<CFogStage>();
 
 	CShader* pShader = CShaderMan::s_ShaderClouds;
 
@@ -1281,6 +1280,7 @@ void CVolumetricCloudsStage::ExecuteRenderClouds(const VCCloudRenderContext& con
 #if defined(VOLUMETRIC_FOG_SHADOWS)
 		else if (context.renderFogShadow)
 		{
+			auto* pFogStage = m_graphicsPipeline.GetStage<CFogStage>();
 			pass.SetTexture(8, pFogStage->m_pTexVolFogShadowBuf[0]);
 			pass.SetSampler(3, EDefaultSamplerStates::PointClamp);
 		}

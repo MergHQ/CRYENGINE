@@ -57,7 +57,7 @@ void CVrProjectionManager::BeginFrame(CGraphicsPipeline* pGraphicsPipeline)
 {
 	if (!m_passes || m_passes->currentKey != pGraphicsPipeline->GetKey())
 	{
-		m_passes = std::make_unique<SVRProjectionPasses>(pGraphicsPipeline);
+		m_passes = stl::make_unique<SVRProjectionPasses>(pGraphicsPipeline);
 	}
 }
 
