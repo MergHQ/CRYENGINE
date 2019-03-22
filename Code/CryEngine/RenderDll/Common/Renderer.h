@@ -78,6 +78,7 @@ class CManager;
 
 namespace compute_skinning {
 class CStorage;
+struct IComputeSkinningStorage;
 }
 
 typedef int (* pDrawModelFunc)(void);
