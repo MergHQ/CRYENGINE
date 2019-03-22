@@ -368,7 +368,7 @@ bool CGameEngine::Init(bool bPreviewMode, bool bTestMode, bool bShaderCacheGen, 
 			string projPath = FindProjectInFolder(engineFolder);
 			if (projPath.empty())
 			{
-				projPath = AskUserToSpecifyProject(SplashScreen::GetSplashScreen(), true);
+				projPath = AskUserToSpecifyProject(SplashScreen::GetSplashScreen(), true, CSelectProjectDialog::Tab::Open);
 			}
 
 			if (projPath.empty())

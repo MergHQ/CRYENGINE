@@ -148,6 +148,8 @@ public:
 	QWidget*  centralwidget;
 	QMenuBar* menubar;
 	CMenu*    menuFile;
+	CMenu*    menuFileNew;
+	CMenu*    menuFileOpen;
 	QMenu*    menuRecent_Files;
 	CMenu*    menuEdit;
 	CMenu*    menuEditing_Mode;
@@ -336,8 +338,21 @@ public:
 		menubar->addAction(menuTools->menuAction());
 		menubar->addAction(menuLayout->menuAction());
 		menubar->addAction(menuHelp->menuAction());
-		menuFile->AddCommand("general.new");
-		menuFile->AddCommand("general.open");
+
+		menuFileNew = new CMenu(menuFile);
+		menuFileNew->AddCommand("project.new");
+		QCommandAction* pCommandAciton = GetIEditor()->GetICommandManager()->CreateNewAction("general.new");
+		pCommandAciton->setText("Level...");
+		menuFileNew->addAction(pCommandAciton);
+		menuFile->addAction(menuFileNew->menuAction());
+
+		menuFileOpen = new CMenu(menuFile);
+		menuFileOpen->AddCommand("project.open");
+		pCommandAciton = GetIEditor()->GetICommandManager()->CreateNewAction("general.open");
+		pCommandAciton->setText("Level...");
+		menuFileOpen->addAction(pCommandAciton);
+		menuFile->addAction(menuFileOpen->menuAction());
+
 		menuFile->AddCommand("general.save");
 		menuFile->AddCommand("general.save_as");
 		menuFile->addSeparator();
@@ -607,6 +622,8 @@ public:
 		actionStop_All_Sounds->setText(QApplication::translate("MainWindow", "Stop All Sounds", 0));
 		actionRefresh_Audio->setText(QApplication::translate("MainWindow", "Refresh Audio", 0));
 		menuFile->setTitle(QApplication::translate("MainWindow", "&File", 0));
+		menuFileNew->setTitle(QApplication::translate("MainWindow", "New", 0));
+		menuFileOpen->setTitle(QApplication::translate("MainWindow", "Open", 0));
 		menuRecent_Files->setTitle(QApplication::translate("MainWindow", "Recent Files", 0));
 		menuEdit->setTitle(QApplication::translate("MainWindow", "Edit", 0));
 		menuEditing_Mode->setTitle(QApplication::translate("MainWindow", "Editing Mode", 0));

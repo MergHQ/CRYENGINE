@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "ProjectManagement/UI/SelectProjectDialog.h"
 #include <CrySerialization/Forward.h>
 
 class CryIcon;
@@ -18,7 +19,7 @@ bool IsProjectSpecifiedInSystemConfig(const string& engineFolder);
 string FindProjectInFolder(const string& folder);
 
 // Ask user to select a project
-string AskUserToSpecifyProject(QWidget* pParent, bool runOnSandboxInit);
+string AskUserToSpecifyProject(QWidget* pParent, bool runOnSandboxInit, CSelectProjectDialog::Tab tabToShow);
 
 // Engine version description, taken from "cryengine.cryengine"
 struct SCryEngineVersion

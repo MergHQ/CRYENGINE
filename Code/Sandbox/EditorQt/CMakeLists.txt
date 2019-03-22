@@ -994,6 +994,7 @@ add_sources("Editor_Uber_ProjectManagement.cpp"
 		"ProjectManagement/UI/SelectProjectDialog.cpp"
 		"ProjectManagement/UI/SelectProjectDialog.h"
 	SOURCE_GROUP "ProjectManagement"
+		"ProjectManagement/EditorCommands_Project.cpp"
 		"ProjectManagement/Utils.cpp"
 		"ProjectManagement/Utils.h"
 )
