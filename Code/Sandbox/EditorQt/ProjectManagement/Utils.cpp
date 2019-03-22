@@ -3,8 +3,6 @@
 #include "StdAfx.h"
 #include "Utils.h"
 
-#include "ProjectManagement/UI/SelectProjectDialog.h"
-
 #include <CryIcon.h>
 #include <FileUtils.h>
 #include <PathUtils.h>
@@ -77,9 +75,18 @@ string FindProjectInFolder(const string& folder)
 	return QtUtil::ToString(iterator.fileInfo().absoluteFilePath());
 }
 
-string AskUserToSpecifyProject(QWidget* pParent, bool runOnSandboxInit)
+string AskUserToSpecifyProject(QWidget* pParent, bool runOnSandboxInit, CSelectProjectDialog::Tab tabToShow)
 {
-	CSelectProjectDialog dlg(pParent, runOnSandboxInit);
+	CSelectProjectDialog dlg(pParent, runOnSandboxInit, tabToShow);
+	if (runOnSandboxInit)
+	{
+		const string startupProject = dlg.GetProjectManager().GetStartupProject();
+		if (!startupProject.empty())
+		{
+			return startupProject;
+		}
+	}
+
 	if (dlg.exec() != QDialog::Accepted)
 	{
 		return "";

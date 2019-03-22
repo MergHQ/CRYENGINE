@@ -40,6 +40,8 @@ private:
 
 	void OnLoadProjectPressed();
 
+	virtual void keyPressEvent(QKeyEvent* pEvent) override;
+
 	CSelectProjectDialog*   m_pParent;
 
 	CProjectsModel*         m_pModel;

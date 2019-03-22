@@ -366,6 +366,7 @@
         <file alias="General/Project_Language_CSharp.ico">icons/general_project_language_subicon_csharp.ico</file>
         <file alias="General/Project_Language_Unknown.ico">icons/general_project_language_subicon_unknown.ico</file>
         <file alias="General/Project_Language_VisualScripting.ico">icons/general_project_language_subicon_visualscripting.ico</file>
+		<file alias="General/Project_Browser_startup_project_badge.ico">icons/project_browser_startup_project_badge.ico</file>
         <file alias="General/Python.ico">icons/general_Python.ico</file>
         <file alias="General/Redo_Classic.ico">icons/general_Redo_Classic.ico</file>
         <file alias="General/Reload.ico">icons/general_Reload.ico</file>
@@ -384,6 +385,7 @@
         <file alias="General/Show_Statistics_rDisplayinfo.ico">icons/general_Show_Statistics_rDisplayinfo.ico</file>
         <file alias="General/Simulate_Physics.ico">icons/general_Simulate_Physics.ico</file>
         <file alias="General/Start_Physics.ico">icons/general_Start_Physics.ico</file>
+        <file alias="General/Startup_Project.ico">icons/general_startup_project.ico</file>
         <file alias="General/Sun.ico">icons/general_Sun.ico</file>
         <file alias="General/SymLink.ico">icons/general_SymLink.ico</file>
         <file alias="General/Sync_Square.ico">icons/general_Sync_Square.ico</file>

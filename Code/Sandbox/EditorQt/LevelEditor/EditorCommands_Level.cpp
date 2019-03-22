@@ -1,18 +1,19 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
-#include <StdAfx.h>
+#include "StdAfx.h"
 
 // Sandbox
 #include "CryEditDoc.h"
-#include "IEditorImpl.h"
-#include "Objects/ObjectManager.h"
-#include "Objects/ObjectLayerManager.h"
-#include "Vegetation/VegetationMap.h"
 #include "Geometry/EdMesh.h"
-#include "ViewManager.h"
+#include "IEditorImpl.h"
+#include "LogFile.h"
+#include "Material/MaterialManager.h"
+#include "Objects/ObjectLayerManager.h"
+#include "Objects/ObjectManager.h"
+#include "QT/QtMainFrame.h"
 #include "Terrain/Heightmap.h"
 #include "Terrain/TerrainManager.h"
-#include "Material/MaterialManager.h"
-#include "LogFile.h"
+#include "Vegetation/VegetationMap.h"
+#include "ViewManager.h"
 
 // EditorCommon
 #include <Commands/ICommandManager.h>
@@ -25,13 +26,14 @@
 
 // CryCommon
 #include <CryGame/IGameFramework.h>
-#include <IItemSystem.h>
 #include <CrySystem/ICryLink.h>
+#include <IItemSystem.h>
 
 namespace
 {
 namespace Private_LevelCommands
 {
+
 void PySnapToGrid(const bool bEnable)
 {
 	char buffer[31];
