@@ -2643,6 +2643,7 @@ bool CSystem::Initialize(SSystemInitParams& startupParams)
 				headerName.append(getProductVersion());
 				pConsole->SetHeader(headerName.c_str());
 			}
+#if !defined(RELEASE) || defined(ENABLE_DEVELOPER_CONSOLE_IN_RELEASE)
 			else if (m_pCmdLine->FindArg(eCLAT_Pre, "console"))
 			{
 				m_pUserCallback = pConsole;
@@ -2651,6 +2652,7 @@ bool CSystem::Initialize(SSystemInitParams& startupParams)
 				headerName.append(getProductVersion());
 				pConsole->SetHeader(headerName.c_str());
 			}
+#endif
 		}
 	}
 		#if !defined(_RELEASE)
