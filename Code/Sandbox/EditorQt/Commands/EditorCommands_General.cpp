@@ -74,7 +74,7 @@ REGISTER_EDITOR_AND_SCRIPT_KEYBOARD_FOCUS_COMMAND(general, refresh, CCommandDesc
 REGISTER_EDITOR_UI_COMMAND_DESC(general, refresh, "Refresh", "", "", false)
 
 REGISTER_EDITOR_AND_SCRIPT_KEYBOARD_FOCUS_COMMAND(general, close, CCommandDescription("Context driven 'close' command"))
-REGISTER_EDITOR_COMMAND_SHORTCUT(general, close, CKeyboardShortcut::StandardKey::Close)
+REGISTER_EDITOR_UI_COMMAND_DESC(general, close, "Close", CKeyboardShortcut::StandardKey::Close, "", false)
 
 REGISTER_EDITOR_AND_SCRIPT_KEYBOARD_FOCUS_COMMAND(general, save, CCommandDescription("Context driven 'save' command"))
 REGISTER_EDITOR_UI_COMMAND_DESC(general, save, "&Save", CKeyboardShortcut::StandardKey::Save, "icons:General/File_Save.ico", false)
@@ -110,7 +110,7 @@ REGISTER_EDITOR_AND_SCRIPT_KEYBOARD_FOCUS_COMMAND(general, find_next, CCommandDe
 REGISTER_EDITOR_UI_COMMAND_DESC(general, find_next, "Find Next", CKeyboardShortcut::StandardKey::FindNext, "icons:General/Arrow_Right.ico", false)
 
 REGISTER_EDITOR_AND_SCRIPT_KEYBOARD_FOCUS_COMMAND(general, select_all, CCommandDescription("Context driven 'select all' command"))
-REGISTER_EDITOR_COMMAND_SHORTCUT(general, select_all, CKeyboardShortcut::StandardKey::SelectAll)
+REGISTER_EDITOR_UI_COMMAND_DESC(general, select_all, "Select All", CKeyboardShortcut::StandardKey::SelectAll, "", false)
 
 REGISTER_EDITOR_AND_SCRIPT_KEYBOARD_FOCUS_COMMAND(general, help, CCommandDescription("Go to documentation..."))
 REGISTER_EDITOR_UI_COMMAND_DESC(general, help, "", CKeyboardShortcut::StandardKey::HelpWiki, "icons:Tools/Go_To_Documentation.ico", false)
