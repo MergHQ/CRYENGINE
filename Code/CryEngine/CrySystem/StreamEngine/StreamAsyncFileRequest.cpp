@@ -586,13 +586,10 @@ uint32 CAsyncIOFileRequest::OpenFile(CCryFile& file)
 	ICryPak* pIPak = gEnv ? gEnv->pCryPak : NULL;
 	PREFAST_ASSUME(pIPak);
 
-	CryStackStringT<char, MAX_PATH> fileName(m_strFileName.c_str());
+	CryPathString fileName(m_strFileName.c_str());
 	if (m_pReadStream && m_pReadStream->GetParams().nFlags & IStreamEngine::FLAGS_FILE_ON_DISK)
 	{
-		const int g_nMaxPath = 0x800;
-		char szFullPathBuf[g_nMaxPath];
-		fileName = pIPak->AdjustFileName(m_strFileName.c_str(), szFullPathBuf, ICryPak::FOPEN_HINT_QUIET);
-
+		pIPak->AdjustFileName(m_strFileName.c_str(), fileName, ICryPak::FOPEN_HINT_QUIET);
 		pIPak = 0;
 	}
 
@@ -914,9 +911,8 @@ void CAsyncIOFileRequest::ComputeSortKey(uint64 nCurrentKeyInProgress)
 		return;
 	}
 
-	const int g_nMaxPath = 0x800;
-	char szFullPathBuf[g_nMaxPath];
-	const char* szFullPath = gEnv->pCryPak->AdjustFileName(m_strFileName.c_str(), szFullPathBuf, ICryPak::FOPEN_HINT_QUIET);
+	CryPathString fullPath;
+	gEnv->pCryPak->AdjustFileName(m_strFileName.c_str(), fullPath, ICryPak::FOPEN_HINT_QUIET);
 
 	CCryPak* pCryPak = static_cast<CCryPak*>(gEnv->pCryPak);
 
@@ -924,8 +920,8 @@ void CAsyncIOFileRequest::ComputeSortKey(uint64 nCurrentKeyInProgress)
 	unsigned int archFlags = 0;
 	ZipDir::FileEntry* pFileEntry = NULL;
 
-	if (pCryPak->WillOpenFromPak(szFullPath))
-		pFileEntry = pCryPak->FindPakFileEntry(szFullPath, archFlags, &pZip, false);
+	if (pCryPak->WillOpenFromPak(fullPath))
+		pFileEntry = pCryPak->FindPakFileEntry(fullPath, archFlags, &pZip, false);
 
 	EStreamSourceMediaType ssmt = pCryPak->GetMediaType(pZip, archFlags);
 

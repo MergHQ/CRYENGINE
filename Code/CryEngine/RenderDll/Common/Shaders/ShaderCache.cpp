@@ -289,11 +289,9 @@ void CShaderMan::mfInitShadersCacheMissLog()
 	// create valid path (also for xbox dvd emu)
 	gEnv->pCryPak->MakeDir(g_szTestResults);
 
-	char path[ICryPak::g_nMaxPath];
-	path[sizeof(path) - 1] = 0;
+	CryPathString path;
 	gEnv->pCryPak->AdjustFileName("%USER%\\Shaders\\ShaderCacheMisses.txt",
 	                              path, ICryPak::FLAGS_PATH_REAL | ICryPak::FLAGS_FOR_WRITING);
-
 	m_ShaderCacheMissPath = string(path);
 
 	// load data which is already stored
@@ -337,7 +335,6 @@ void CShaderMan::mfInitShadersCache(byte bForLevel, FXShaderCacheCombinations* C
 {
 	static_assert(SHADER_LIST_VER != SHADER_SERIALISE_VER, "Version mismatch!");
 
-	char str[2048];
 	bool bFromFile = (Combinations == NULL);
 	stack_string nameComb;
 	m_ShaderCacheExportCombinations.clear();
@@ -352,12 +349,13 @@ void CShaderMan::mfInitShadersCache(byte bForLevel, FXShaderCacheCombinations* C
 			fp = gEnv->pCryPak->FOpen(nameComb.c_str(), "w+");
 		if (!fp)
 		{
-			gEnv->pCryPak->AdjustFileName(nameComb.c_str(), str, 0);
-			FILE* statusdst = fopen(str, "rb");
+			CryPathString filePath;
+			gEnv->pCryPak->AdjustFileName(nameComb.c_str(), filePath, 0);
+			FILE* statusdst = fopen(filePath, "rb");
 			if (statusdst)
 			{
 				fclose(statusdst);
-				CrySetFileAttributes(str, FILE_ATTRIBUTE_ARCHIVE);
+				CrySetFileAttributes(filePath, FILE_ATTRIBUTE_ARCHIVE);
 				fp = gEnv->pCryPak->FOpen(nameComb.c_str(), "r+");
 			}
 		}
@@ -365,6 +363,7 @@ void CShaderMan::mfInitShadersCache(byte bForLevel, FXShaderCacheCombinations* C
 		Combinations = &m_ShaderCacheCombinations[nType];
 	}
 
+	char str[2048];
 	int nLine = 0;
 	char* pPtr = (char*)pCombinations;
 	char* ss;

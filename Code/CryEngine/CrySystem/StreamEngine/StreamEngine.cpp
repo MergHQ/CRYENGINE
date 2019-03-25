@@ -1094,16 +1094,13 @@ void WriteToStreamingLog(const char* str)
 		// ignore invalid file access when logging streaming data
 		SCOPED_ALLOW_FILE_ACCESS_FROM_THIS_THREAD();
 
-		static string sFileName;
+		static CryPathString s_fileName;
 		static bool bFirstTime = true;
 		if (bFirstTime)
 		{
-			char path[ICryPak::g_nMaxPath];
-			path[sizeof(path) - 1] = 0;
-			gEnv->pCryPak->AdjustFileName("%USER%/TestResults/StreamingLog.txt", path, ICryPak::FLAGS_PATH_REAL | ICryPak::FLAGS_FOR_WRITING);
-			sFileName = path;
+			gEnv->pCryPak->AdjustFileName("%USER%/TestResults/StreamingLog.txt", s_fileName, ICryPak::FLAGS_PATH_REAL | ICryPak::FLAGS_FOR_WRITING);
 		}
-		FILE* file = fxopen(sFileName, (bFirstTime) ? "wt" : "at");
+		FILE* file = fxopen(s_fileName, (bFirstTime) ? "wt" : "at");
 		bFirstTime = false;
 		if (file)
 		{

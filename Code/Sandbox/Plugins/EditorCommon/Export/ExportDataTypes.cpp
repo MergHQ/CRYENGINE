@@ -13,9 +13,9 @@ static void SetTexture(Export::TPath& outName, const IRenderShaderResources* pRe
 	if (pTex)
 	{
 		ICryPak* const pPak = GetISystem()->GetIPak();
-		char path[ICryPak::g_nMaxPath] = {};
-		const char* szPath = pPak->AdjustFileName(pTex->m_Name.c_str(), path, ICryPak::FLAGS_PATH_REAL | ICryPak::FLAGS_FOR_WRITING);
-		cry_strcat(outName, szPath);
+		CryPathString path;
+		pPak->AdjustFileName(pTex->m_Name.c_str(), path, ICryPak::FLAGS_PATH_REAL | ICryPak::FLAGS_FOR_WRITING);
+		cry_strcat(outName, path.c_str());
 	}
 }
 

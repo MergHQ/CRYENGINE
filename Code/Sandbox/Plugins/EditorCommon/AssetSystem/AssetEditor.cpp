@@ -41,7 +41,7 @@ public:
 			return;
 		}
 
-		static const string tempPrefix = GetTemporaryDirectoryPath();
+		static const CryPathString tempPrefix(GetTemporaryDirectoryPath());
 
 		m_files.reserve(files.size());
 
@@ -86,10 +86,11 @@ public:
 		}
 	}
 private:
-	static string GetTemporaryDirectoryPath()
+	static CryPathString GetTemporaryDirectoryPath()
 	{
-		char path[ICryPak::g_nMaxPath] = {};
-		return GetISystem()->GetIPak()->AdjustFileName("%USER%/temp", path, ICryPak::FLAGS_PATH_REAL | ICryPak::FLAGS_FOR_WRITING | ICryPak::FLAGS_ADD_TRAILING_SLASH);
+		CryPathString path;
+		GetISystem()->GetIPak()->AdjustFileName("%USER%/temp", path, ICryPak::FLAGS_PATH_REAL | ICryPak::FLAGS_FOR_WRITING | ICryPak::FLAGS_ADD_TRAILING_SLASH);
+		return path;
 	}
 
 private:

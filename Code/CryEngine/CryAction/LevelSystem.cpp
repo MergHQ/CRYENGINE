@@ -2119,7 +2119,7 @@ bool CLevelInfo::OpenLevelPak()
 	//////////////////////////////////////////////////////////////////////////
 
 	string levelpak = m_levelPath + string("/level.pak");
-	CryFixedStringT<ICryPak::g_nMaxPath> fullLevelPakPath;
+	CryPathString fullLevelPakPath;
 	bool bOk = gEnv->pCryPak->OpenPack(levelpak, (unsigned)0, NULL, &fullLevelPakPath);
 	m_levelPakFullPath.assign(fullLevelPakPath.c_str());
 	if (bOk)

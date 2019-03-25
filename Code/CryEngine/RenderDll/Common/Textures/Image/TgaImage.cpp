@@ -18,7 +18,7 @@ string OutputPath(const char* filename)
 	if (strstr(filename, ":\\") == NULL)
 	{
 		// construct path with current folder - otherwise path would start at mastercd/game
-		char szCurrDir[ICryPak::g_nMaxPath];
+		char szCurrDir[MAX_PATH];
 		CryGetCurrentDirectory(sizeof(szCurrDir), szCurrDir);
 
 		fullPath = string(szCurrDir) + "/" + filename;

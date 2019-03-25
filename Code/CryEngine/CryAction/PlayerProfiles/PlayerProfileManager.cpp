@@ -2419,8 +2419,8 @@ void CPlayerProfileManager::DbgTestOnlineAttributes(IConsoleCmdArgs* args)
 #if CRY_PLATFORM_WINDOWS
 bool CPlayerProfileManager::MoveFileHelper(const char* existingFileName, const char* newFileName)
 {
-	char oldPath[ICryPak::g_nMaxPath];
-	char newPath[ICryPak::g_nMaxPath];
+	CryPathString oldPath;
+	CryPathString newPath;
 	// need to adjust aliases and paths (use FLAGS_FOR_WRITING)
 	gEnv->pCryPak->AdjustFileName(existingFileName, oldPath, ICryPak::FLAGS_FOR_WRITING);
 	gEnv->pCryPak->AdjustFileName(newFileName, newPath, ICryPak::FLAGS_FOR_WRITING);
@@ -2430,10 +2430,10 @@ bool CPlayerProfileManager::MoveFileHelper(const char* existingFileName, const c
 // on all other platforms, just a warning
 bool CPlayerProfileManager::MoveFileHelper(const char* existingFileName, const char* newFileName)
 {
-	char oldPath[ICryPak::g_nMaxPath];
+	CryPathString oldPath;
 	gEnv->pCryPak->AdjustFileName(existingFileName, oldPath, ICryPak::FLAGS_FOR_WRITING);
 	string msg;
-	msg.Format("CPlayerProfileManager::MoveFileHelper for this Platform not implemented yet.\nOriginal '%s' will be lost!", oldPath);
+	msg.Format("CPlayerProfileManager::MoveFileHelper for this Platform not implemented yet.\nOriginal '%s' will be lost!", oldPath.c_str());
 	CRY_ASSERT_MESSAGE(0, msg.c_str());
 	GameWarning("%s", msg.c_str());
 	return false;

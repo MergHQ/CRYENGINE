@@ -88,28 +88,28 @@ string GetAudioLocalizationFolder()
 
 string GetUserSandboxFolder()
 {
-	string outPath;
-	char path[ICryPak::g_nMaxPath];
-	path[sizeof(path) - 1] = '\0';
+	CryPathString path;
 	gEnv->pCryPak->AdjustFileName("%USER%/Sandbox", path, ICryPak::FLAGS_PATH_REAL | ICryPak::FLAGS_FOR_WRITING | ICryPak::FLAGS_ADD_TRAILING_SLASH);
-	const size_t len = strlen(path);
+	
+	const size_t len = path.length();
 	if (len == 0 || (path[len - 1] != '\\' && path[len - 1] != '/'))
 	{
-		cry_strcat(path, "\\");
+		path += '\\';
 	}
+	
 	if (strstr(path, ":\\") == nullptr)
 	{
-		string fullPath("\\");
+		char buffer[MAX_PATH];
+		CryGetCurrentDirectory(sizeof(buffer), buffer);
+		CryPathString fullPath(buffer);
+		fullPath += '\\';
 		fullPath += path;
-		CryGetCurrentDirectory(sizeof(path), path);
-		outPath = path;
-		outPath += fullPath;
+		return fullPath.c_str();
 	}
 	else
 	{
-		outPath = path;
+		return path.c_str();
 	}
-	return outPath;
 }
 
 std::vector<string> SplitIntoSegments(const string& path)
@@ -380,10 +380,10 @@ string GamePathToCryPakPath(const string& path, bool bForWriting /*= false*/)
 {
 	CRY_ASSERT(gEnv && gEnv->pCryPak);
 
-	char szAdjustedFile[ICryPak::g_nMaxPath];
-	gEnv->pCryPak->AdjustFileName(path.c_str(), szAdjustedFile, bForWriting ? ICryPak::FLAGS_FOR_WRITING : 0);
+	CryPathString adjustedFile;
+	gEnv->pCryPak->AdjustFileName(path.c_str(), adjustedFile, bForWriting ? ICryPak::FLAGS_FOR_WRITING : 0);
 
-	return szAdjustedFile;
+	return adjustedFile.c_str();
 }
 
 QString ToGamePath(const QString& path)
@@ -450,9 +450,9 @@ typename std::enable_if<detail::IsValidStringType<TString>::value, TString>::typ
 inline /*TString*/ AdjustCasingImpl(const char* szPath)
 {
 	ICryPak* const pPak = GetIEditor()->GetSystem()->GetIPak();
-	char szAdjustedPath[ICryPak::g_nMaxPath];
-	pPak->AdjustFileName(szPath, szAdjustedPath, ICryPak::FLAGS_FOR_WRITING | ICryPak::FLAGS_PATH_REAL);
-	return PathUtil::ToUnixPath(TString(szAdjustedPath));
+	CryPathString adjustedPath;
+	pPak->AdjustFileName(szPath, adjustedPath, ICryPak::FLAGS_FOR_WRITING | ICryPak::FLAGS_PATH_REAL);
+	return PathUtil::ToUnixPath(TString(adjustedPath.c_str()));
 }
 
 string AdjustCasing(const string& path)

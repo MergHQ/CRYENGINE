@@ -755,14 +755,14 @@ static void SaveProfileSessionToChromeTraceJson(const float funcMinTimeThreshold
 
 static void SaveProfileSessionToXML(CBootProfilerSession* pSession, const float funcMinTimeThreshold)
 {
-	static const char* szTestResults = "%USER%/TestResults";
-	stack_string filePath;
-	filePath.Format("%s\\bp_%s.xml", szTestResults, pSession->GetName());
-	char path[ICryPak::g_nMaxPath] = "";
-	gEnv->pCryPak->AdjustFileName(filePath.c_str(), path, ICryPak::FLAGS_PATH_REAL | ICryPak::FLAGS_FOR_WRITING);
+	static const char* const szTestResults = "%USER%/TestResults";
 	gEnv->pCryPak->MakeDir(szTestResults);
+	CryPathString filePath;
+	filePath.Format("%s\\bp_%s.xml", szTestResults, pSession->GetName());
+	CryPathString adjustedFilePath;
+	gEnv->pCryPak->AdjustFileName(filePath.c_str(), adjustedFilePath, ICryPak::FLAGS_PATH_REAL | ICryPak::FLAGS_FOR_WRITING);
 
-	FILE* pFile = ::fopen(path, "wb");
+	FILE* pFile = ::fopen(adjustedFilePath, "wb");
 	if (!pFile)
 	{
 		return; //TODO: use accessible path when punning from package on durango

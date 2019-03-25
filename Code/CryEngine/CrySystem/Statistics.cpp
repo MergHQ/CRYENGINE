@@ -2010,17 +2010,13 @@ void CStatsToExcelExporter::SetCellFlags(XmlNodeRef cell, int flags)
 
 static FILE* HandleFileExport(const char* filename)
 {
-	FILE* file = NULL;
+	CryPathString directory;
+	gEnv->pCryPak->AdjustFileName(g_szTestResults, directory, ICryPak::FLAGS_PATH_REAL | ICryPak::FLAGS_FOR_WRITING | ICryPak::FLAGS_ADD_TRAILING_SLASH);
+	gEnv->pCryPak->MakeDir(directory);
+	CryPathString path;
+	gEnv->pCryPak->AdjustFileName(directory + filename, path, ICryPak::FLAGS_PATH_REAL | ICryPak::FLAGS_FOR_WRITING);
 
-	string temp = g_szTestResults;
-	char path[ICryPak::g_nMaxPath];
-	path[sizeof(path) - 1] = 0;
-	gEnv->pCryPak->AdjustFileName(temp, path, ICryPak::FLAGS_PATH_REAL | ICryPak::FLAGS_FOR_WRITING);
-	gEnv->pCryPak->MakeDir(path);
-	gEnv->pCryPak->AdjustFileName(string(path) + "/" + filename, path, ICryPak::FLAGS_PATH_REAL | ICryPak::FLAGS_FOR_WRITING);
-	file = fopen(path, "wb");
-
-	return file;
+	return fopen(path, "wb");
 }
 
 //////////////////////////////////////////////////////////////////////////

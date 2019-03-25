@@ -453,13 +453,14 @@ public:
 			key.m_captureFormat = SCaptureFormatInfo::GetCaptureFormatByExtension(desc);
 
 			desc = keyNode->getAttr("folder");
-			cry_strcpy(key.m_folder, desc);
-			keyNode->getAttr("once", key.m_bOnce);
-			desc = keyNode->getAttr("prefix");
+			key.m_folder = desc;
 
+			keyNode->getAttr("once", key.m_bOnce);
+
+			desc = keyNode->getAttr("prefix");
 			if (desc)
 			{
-				cry_strcpy(key.m_prefix, desc);
+				key.m_prefix = desc;
 			}
 
 			keyNode->getAttr("bufferToCapture", reinterpret_cast<int&>(key.m_bufferToCapture));

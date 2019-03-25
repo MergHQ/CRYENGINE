@@ -465,12 +465,10 @@ static void CmdDumpCvars(IConsoleCmdArgs* pArgs)
 
 			if (gEnv && gEnv->pCryPak)
 			{
-				char path[_MAX_PATH];
 #if !defined(EXCLUDE_NORMAL_LOG)
-				const char* szAdjustedPath = gEnv->pCryPak->AdjustFileName(file_path, path, 0);
-				CryLogAlways("\n=================\n CVars dumped to file: \"%s\" \n=================\n", szAdjustedPath);
-#else
+				CryPathString path;
 				gEnv->pCryPak->AdjustFileName(file_path, path, 0);
+				CryLogAlways("\n=================\n CVars dumped to file: \"%s\" \n=================\n", path.c_str());
 #endif
 			}
 
@@ -482,7 +480,6 @@ static void CmdDumpCvars(IConsoleCmdArgs* pArgs)
 
 	if (gEnv && gEnv->pConsole)
 	{
-
 		CCVarSink sink;
 		gEnv->pConsole->DumpCVars(&sink);
 		sink.LogToFile();
@@ -3736,12 +3733,9 @@ static void _LvlRes_export_IResourceList(FILE* hFile, const ICryPak::ERecordFile
 
 	for (const char* filename = pResList->GetFirst(); filename; filename = pResList->GetNext())
 	{
-		enum {nMaxPath = 0x800};
-		char szAbsPathBuf[nMaxPath];
-
-		const char* szAbsPath = gEnv->pCryPak->AdjustFileName(filename, szAbsPathBuf, 0);
-
-		gEnv->pCryPak->FPrintf(hFile, "%s\n", szAbsPath);
+		CryPathString absPath;
+		gEnv->pCryPak->AdjustFileName(filename, absPath, 0);
+		gEnv->pCryPak->FPrintf(hFile, "%s\n", absPath.c_str());
 	}
 }
 
@@ -4040,17 +4034,12 @@ public:
 			return;
 		}
 
-		enum {nMaxPath = 0x800};
-		char szAbsPathBuf[nMaxPath];
+		CryPathString absPath;
+		gEnv->pCryPak->AdjustFileName(sPak, absPath, 0);
 
-		const char* szAbsPath = gEnv->pCryPak->AdjustFileName(sPak, szAbsPathBuf, 0);
+		CryLog("RegisterPak '%s'", absPath.c_str());
 
-		//		string sAbsPath = PathUtil::RemoveSlash(PathUtil::GetPath(szAbsPath));
-
-		// debug
-		CryLog("RegisterPak '%s'", szAbsPath);
-
-		m_RegisteredPakFiles.insert(string(szAbsPath));
+		m_RegisteredPakFiles.insert(string(absPath.c_str()));
 
 		OnFileEntry(sPak);    // include pak as file entry
 	}
@@ -4284,14 +4273,13 @@ static void _LvlRes_findunused_recursive(CLvlRes_findunused& sink, const string&
 			 */
 
 			string sFilePath = CryStringUtils::toLower(ConcatPath(sPath, fd.name));
-			enum {nMaxPath = 0x800};
-			char szAbsPathBuf[nMaxPath];
+			
+			CryPathString absPath;
+			gEnv->pCryPak->AdjustFileName(sFilePath.c_str(), absPath, 0);
 
-			gEnv->pCryPak->AdjustFileName(sFilePath.c_str(), szAbsPathBuf, 0);
-
-			if (!sink.IsFileKnown(szAbsPathBuf))
+			if (!sink.IsFileKnown(absPath))
 			{
-				gEnv->pLog->LogWithType(IMiniLog::eAlways, "%d, %s", (uint32)fd.size, szAbsPathBuf);
+				gEnv->pLog->LogWithType(IMiniLog::eAlways, "%d, %s", (uint32)fd.size, absPath.c_str());
 				++dwUnused;
 			}
 			++dwAll;
@@ -4531,8 +4519,8 @@ static void ScreenshotCmd(IConsoleCmdArgs* pParams)
 		const char* szPrefix = "Screenshot";
 		uint32 dwPrefixSize = strlen(szPrefix);
 
-		char path[ICryPak::g_nMaxPath];
-		path[sizeof(path) - 1] = 0;
+		
+		CryPathString path;
 		gEnv->pCryPak->AdjustFileName("%USER%/ScreenShots", path, ICryPak::FLAGS_PATH_REAL | ICryPak::FLAGS_FOR_WRITING);
 
 		if (iScreenshotNumber == -1)   // first time - find max number to start
@@ -4540,7 +4528,7 @@ static void ScreenshotCmd(IConsoleCmdArgs* pParams)
 			ICryPak* pCryPak = gEnv->pCryPak;
 			_finddata_t fd;
 
-			intptr_t handle = pCryPak->FindFirst((string(path) + "/*.*").c_str(), &fd);   // mastercd folder
+			intptr_t handle = pCryPak->FindFirst((path + "/*.*"), &fd);   // mastercd folder
 			if (handle != -1)
 			{
 				int res = 0;
@@ -4565,22 +4553,19 @@ static void ScreenshotCmd(IConsoleCmdArgs* pParams)
 
 		++iScreenshotNumber;
 
-		char szNumber[16];
-		cry_sprintf(szNumber, "%.4d ", iScreenshotNumber);
-
-		string sScreenshotName = string(szPrefix) + szNumber;
+		CryPathString sScreenshotName;
+		sScreenshotName.Format("%s%.4d ", szPrefix, iScreenshotNumber);
 
 		for (uint32 dwI = 1; dwI < dwCnt; ++dwI)
 		{
 			if (dwI > 1)
-				sScreenshotName += "_";
+				sScreenshotName += '_';
 
 			sScreenshotName += pParams->GetArg(dwI);
 		}
-
-		sScreenshotName.replace("\\", "_");
-		sScreenshotName.replace("/", "_");
-		sScreenshotName.replace(":", "_");
+		sScreenshotName.replace('\\', '_');
+		sScreenshotName.replace('/',  '_');
+		sScreenshotName.replace(':',  '_');
 
 		const char* pExtension = PathUtil::GetExt(sScreenshotName);
 
@@ -4592,7 +4577,7 @@ static void ScreenshotCmd(IConsoleCmdArgs* pParams)
 		gEnv->pConsole->ShowConsole(false);
 
 		CSystem* pCSystem = (CSystem*)(gEnv->pSystem);
-		pCSystem->GetDelayedScreeenshot() = string(path) + "/" + sScreenshotName;// to delay a screenshot call for a frame
+		pCSystem->GetDelayedScreeenshot() = (path + '/' + sScreenshotName).c_str();// to delay a screenshot call for a frame
 	}
 }
 

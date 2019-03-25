@@ -550,8 +550,8 @@ int CResFile::mfOpen(int type, CResFileLookupDataMan* pMan, SResStreamInfo* pStr
 	{
 		if (type & (RA_WRITE | RA_CREATE))
 		{
-			char name[256];
-			gEnv->pCryPak->AdjustFileName(m_name.c_str(), name, 0);
+			CryPathString name;
+			gEnv->pCryPak->AdjustFileName(m_name, name, 0);
 			FILE* statusdst = fopen(name, "rb");
 			if (statusdst)
 			{

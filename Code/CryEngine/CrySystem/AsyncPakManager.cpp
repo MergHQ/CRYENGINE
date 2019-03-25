@@ -228,20 +228,20 @@ bool CAsyncPakManager::LoadPakToMemAsync(const char* pPath, bool bLevelLoadOnly)
 	}
 	else
 	{
-		char szFullPathBuf[ICryPak::g_nMaxPath];
-		const char* szFullPath = gEnv->pCryPak->AdjustFileName(pPath, szFullPathBuf, ICryPak::FOPEN_HINT_QUIET | ICryPak::FLAGS_PATH_REAL);
+		CryPathString fullPath;
+		gEnv->pCryPak->AdjustFileName(pPath, fullPath, ICryPak::FOPEN_HINT_QUIET | ICryPak::FLAGS_PATH_REAL);
 
 		// Check if the pak file actually exists before trying to load
-		if (!gEnv->pCryPak->IsFileExist(szFullPath, ICryPak::eFileLocation_Any))
+		if (!gEnv->pCryPak->IsFileExist(fullPath, ICryPak::eFileLocation_Any))
 		{
 			// Cached file does not exist
-			CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_WARNING, "Level cache pak file %s does not exist", szFullPath);
+			CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_WARNING, "Level cache pak file %s does not exist", fullPath.c_str());
 			return false;
 		}
 
 		SAsyncPak layerPak;
 		layerPak.layername = pPath;
-		layerPak.filename = szFullPathBuf;
+		layerPak.filename = fullPath.c_str();
 		layerPak.nSize = 0;
 		layerPak.eLifeTime = bLevelLoadOnly ? SAsyncPak::LIFETIME_LOAD_ONLY : SAsyncPak::LIFETIME_LEVEL_COMPLETE;
 

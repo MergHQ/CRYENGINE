@@ -4860,18 +4860,18 @@ void CGame::CmdInspectConnectedStorage(IConsoleCmdArgs* pArgs)
 		{
 			if (dumpToFile)
 			{
-				char path[ICryPak::g_nMaxPath] = "";
+				CryPathString path;
 				gEnv->pCryPak->AdjustFileName(string("%USER%\\ConnectedStorageDump\\") + containerName + "\\", path, ICryPak::FLAGS_PATH_REAL | ICryPak::FLAGS_FOR_WRITING);
 				if (gEnv->pCryPak->MakeDir(path))
 				{
-					cry_strcat(path, blobName);
+					path += blobName;
 
 					if (FILE* pFile = gEnv->pCryPak->FOpen(path, "wt"))
 					{
 						gEnv->pCryPak->FWrite(block[0].pDataBlock, 1, block[0].dataBlockSize, pFile);
 						gEnv->pCryPak->FClose(pFile);
 
-						CryLogAlways("CmdInspectConnectedStorage: Container:%s blob:%s dump to:%s", containerName, blobName, path);
+						CryLogAlways("CmdInspectConnectedStorage: Container:%s blob:%s dump to:%s", containerName, blobName, path.c_str());
 					}
 				}
 			}

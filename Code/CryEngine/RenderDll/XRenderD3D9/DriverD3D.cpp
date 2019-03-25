@@ -1213,19 +1213,18 @@ void CD3D9Renderer::CaptureFrameBuffer()
 	int frameNum(CV_capture_frames->GetIVal());
 	if (frameNum > 0)
 	{
-		char path[ICryPak::g_nMaxPath];
-		path[0] = '\0';
-
+		CryPathString path;
 		const char* capture_file_name = CV_capture_file_name->GetString();
 		if (capture_file_name && capture_file_name[0])
 		{
 			gEnv->pCryPak->AdjustFileName(capture_file_name, path, ICryPak::FLAGS_PATH_REAL | ICryPak::FLAGS_FOR_WRITING);
 		}
 
-		if (path[0] == '\0')
+		if (path.empty())
 		{
-			gEnv->pCryPak->AdjustFileName(CV_capture_folder->GetString(), path, ICryPak::FLAGS_PATH_REAL | ICryPak::FLAGS_FOR_WRITING);
-			gEnv->pCryPak->MakeDir(path);
+			CryPathString directory;
+			gEnv->pCryPak->AdjustFileName(CV_capture_folder->GetString(), directory, ICryPak::FLAGS_PATH_REAL | ICryPak::FLAGS_FOR_WRITING);
+			gEnv->pCryPak->MakeDir(directory);
 
 			char prefix[64] = "Frame";
 			const char* capture_file_prefix = CV_capture_file_prefix->GetString();
@@ -1234,8 +1233,7 @@ void CD3D9Renderer::CaptureFrameBuffer()
 				cry_strcpy(prefix, capture_file_prefix);
 			}
 
-			const size_t pathLen = strlen(path);
-			cry_sprintf(&path[pathLen], sizeof(path) - pathLen, "\\%s%06d.%s", prefix, frameNum - 1, CV_capture_file_format->GetString());
+			path.Format("%s\\%s%06d.%s", directory.c_str(), prefix, frameNum - 1, CV_capture_file_format->GetString());
 		}
 
 		if (CV_capture_frame_once->GetIVal())
@@ -3557,14 +3555,14 @@ bool CD3D9Renderer::RT_ScreenShot(const char* filename, CRenderDisplayContext* p
 		return false;
 	}
 
-	char path[ICryPak::g_nMaxPath];
-
-	path[sizeof(path) - 1] = 0;
-	gEnv->pCryPak->AdjustFileName(filename != 0 ? filename : "%USER%/ScreenShots", path, ICryPak::FLAGS_PATH_REAL | ICryPak::FLAGS_FOR_WRITING);
+	CryPathString adjustedPath;
+	gEnv->pCryPak->AdjustFileName(filename != 0 ? filename : "%USER%/ScreenShots", adjustedPath, ICryPak::FLAGS_PATH_REAL | ICryPak::FLAGS_FOR_WRITING);
+	char path[MAX_PATH];
+	cry_strcpy(path, adjustedPath);
 
 	if (!filename)
 	{
-		size_t pathLen = strlen(path);
+		const size_t pathLen = strlen(path);
 		const char* pSlash = (!pathLen || path[pathLen - 1] == '/' || path[pathLen - 1] == '\\') ? "" : "/";
 
 		int i = 0;

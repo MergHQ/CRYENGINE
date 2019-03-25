@@ -478,12 +478,12 @@ EDITOR_COMMON_API bool Pak::CopyFileAllowOverwrite(const char* szSourceFilePath,
 		return false;
 	}
 
-	char szAdjustedPath[ICryPak::g_nMaxPath];
+	CryPathString szAdjustedPath;
 	pPak->AdjustFileName(szDestinationFilePath, szAdjustedPath, ICryPak::FLAGS_FOR_WRITING);
 
 	GetISystem()->GetIPak()->MakeDir(PathUtil::GetDirectory(szAdjustedPath));
 
-	QFile destFile(QtUtil::ToQString(szAdjustedPath));
+	QFile destFile(QtUtil::ToQString(szAdjustedPath.c_str()));
 	if (!destFile.open(QIODevice::WriteOnly | QIODevice::Truncate))
 	{
 		return false;
