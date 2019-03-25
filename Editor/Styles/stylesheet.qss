@@ -2039,6 +2039,21 @@ QThumbnailsView > QToolButton{
 	icon-size: 17px;
 }
 
+QThumbnailsView > QListView
+{
+	selection-background-color:rgb(41,41,41);
+}
+
+QThumbnailsView > QListView::item:selected
+{
+	background-color: rgb(41,41,41);
+}
+
+QThumbnailsView > QListView::item:hover
+{
+	background-color: rgb(86,86,86);
+}
+
 CAssetBrowser CBreadcrumbsBar
 {
     max-height: 22px;

@@ -2,7 +2,14 @@
 #include <StdAfx.h>
 #include "QThumbnailView.h"
 
-#include <qevent.h> // contains sub events
+#include "DragDrop.h"
+#include "EditorFramework/Events.h"
+#include "EditorFramework/PersonalizationManager.h"
+#include "Menu/AbstractMenu.h"
+#include "QtUtil.h"
+
+#include <CryIcon.h>
+
 #include <QAbstractButton>
 #include <QAction>
 #include <QApplication>
@@ -10,16 +17,11 @@
 #include <QButtonGroup>
 #include <QDateTime>
 #include <QDrag>
+#include <QFontMetrics>
 #include <QListView>
 #include <QStyledItemDelegate>
+#include <QTextLayout>
 #include <QToolButton>
-
-#include "QtUtil.h"
-#include "EditorFramework/Events.h"
-#include "EditorFramework/PersonalizationManager.h"
-#include "DragDrop.h"
-#include "Menu/AbstractMenu.h"
-#include <CryIcon.h>
 
 namespace Private_QThumbnailView
 {
@@ -95,44 +97,140 @@ public:
 	}
 
 protected:
+
 	void DrawThumbnail(const QStyleOptionViewItem& option, const QModelIndex& index, QPainter* painter, const QVariant& v) const
 	{
-		const QWidget* widget = option.widget;
-		QStyle* style = widget ? widget->style() : QApplication::style();
-
 		QStyleOptionViewItem viewOpt(option);
 		initStyleOption(&viewOpt, index);
+		viewOpt.icon = qvariant_cast<QIcon>(v);
 
-		const QRect& iconRect = style->subElementRect(QStyle::SE_ItemViewItemDecoration, &viewOpt, widget);
+		const QWidget* pWidget = option.widget;
+		QStyle* pStyle = pWidget ? pWidget->style() : QApplication::style();
+
+		// Draw selection and hover effects
+		pStyle->drawPrimitive(QStyle::PE_PanelItemViewItem, &viewOpt, painter, pWidget);
+
+		// Draw the focus rect
+		if (option.state & QStyle::State_HasFocus)
+		{
+			QStyleOptionFocusRect styleOptionFocusRect;
+			styleOptionFocusRect.QStyleOption::operator=(option);
+			styleOptionFocusRect.rect = option.rect;
+			styleOptionFocusRect.state |= QStyle::State_KeyboardFocusChange;
+			styleOptionFocusRect.state |= QStyle::State_Item;
+			const QPalette::ColorGroup colorGroup = (option.state & QStyle::State_Enabled) ? QPalette::Normal : QPalette::Disabled;
+			styleOptionFocusRect.backgroundColor = option.palette.color(colorGroup, (option.state & QStyle::State_Selected) ? QPalette::Highlight : QPalette::Window);
+			pStyle->drawPrimitive(QStyle::PE_FrameFocusRect, &styleOptionFocusRect, painter, pWidget);
+		}
+
+		const int horizontalMargin = pStyle->pixelMetric(QStyle::PM_FocusFrameHMargin, &option, pWidget) + 1;
+		const int verticalMargin = pStyle->pixelMetric(QStyle::PM_FocusFrameVMargin, &option, pWidget) + 1;
+		const QRect iconRect = QRect(QPoint(viewOpt.rect.x() + horizontalMargin, viewOpt.rect.y() + verticalMargin), viewOpt.decorationSize);
 
 		DrawThumbnailBackground(index, painter, iconRect);
 
-		viewOpt.icon = qvariant_cast<QIcon>(v);
-		style->drawControl(QStyle::CE_ItemViewItem, &viewOpt, painter, widget);
-		
+		DrawIcon(viewOpt, painter, iconRect);
 		DrawThumbnailColorBar(index, painter, iconRect);
 		DrawThumbmailAdditionalIcons(index, iconRect, painter);
+
+		if (!viewOpt.text.isEmpty())
+		{
+			DrawThumbnailText(viewOpt, painter);
+		}
+	}
+
+	void DrawIcon(QStyleOptionViewItem &viewOpt, QPainter* painter, const QRect iconRect) const
+	{
+		QIcon::Mode mode = QIcon::Normal;
+		if (!(viewOpt.state & QStyle::State_Enabled))
+		{
+			mode = QIcon::Disabled;
+		}
+		QIcon::State state = viewOpt.state & QStyle::State_Open ? QIcon::On : QIcon::Off;
+		viewOpt.icon.paint(painter, iconRect, viewOpt.decorationAlignment, mode, state);
+	}
+
+	// Draws text in two lines. Draws the text elided if it does not fit to the rect.
+	void DrawThumbnailText(const QStyleOptionViewItem& option, QPainter* pPainter) const
+	{
+		// The only expected options, since the implementation does not support other cases properly.
+		CRY_ASSERT(option.textElideMode == Qt::ElideRight);
+
+		const QWidget* pWidget = option.widget;
+		QStyle* pStyle = pWidget ? pWidget->style() : QApplication::style();
+
+		const int textHeight = option.fontMetrics.height();
+		const int textMargin = pStyle->pixelMetric(QStyle::PM_FocusFrameHMargin, 0, option.widget) + 1;
+
+		QRect textRect = pStyle->subElementRect(QStyle::SE_ItemViewItemText, &option, pWidget);
+		textRect.setHeight(textHeight * 2);
+		textRect.adjust(textMargin, 0, -textMargin, 0); // remove width padding
+
+		const bool wrapText = option.features & QStyleOptionViewItem::WrapText;
+
+		QTextOption textOption;
+		textOption.setWrapMode(wrapText ? QTextOption::WrapAnywhere : QTextOption::ManualWrap);
+		textOption.setTextDirection(option.direction);
+		textOption.setAlignment(QStyle::visualAlignment(option.direction, Qt::AlignTop | Qt::AlignLeft));
+
+		QTextLayout textLayout(option.text, option.font);
+		textLayout.setTextOption(textOption);
+		textLayout.beginLayout();
+		while (true) 
+		{
+			QTextLine line = textLayout.createLine();
+			if (!line.isValid())
+			{
+				break;
+			}
+			line.setLineWidth(textRect.width());
+		}
+		textLayout.endLayout();
+
+		const int lineCount = textLayout.lineCount();
+		const int textAscent = option.fontMetrics.ascent();
+		for (int i = 0; i < std::min(lineCount, 2); ++i) 
+		{
+			const QTextLine line = textLayout.lineAt(i);
+			const int start = line.textStart();
+			const int length = line.textLength();
+			const bool drawElided = i && (lineCount > 2);
+
+			QString text = textLayout.text().mid(start, length);
+			if (drawElided)
+			{
+				const QChar horizontalEllipsis(0x2026);
+				text = pPainter->fontMetrics().elidedText(text + horizontalEllipsis, option.textElideMode, textRect.width());
+			}
+
+			const QRect rect(textRect.x(), textRect.y() + textHeight * i, textRect.width(), textHeight);
+
+			pPainter->save();
+			pPainter->setFont(option.font);
+			pPainter->drawText(rect, text, option.displayAlignment);
+			pPainter->restore();
+		}
 	}
 
 	void DrawThumbnailBackground(const QModelIndex &index, QPainter* painter, const QRect& iconRect) const
 	{
-		QVariant vc = index.data(QThumbnailsView::s_ThumbnailBackgroundColorRole);
-		DrawRect(vc, painter, iconRect);
+		QVariant v = index.data(QThumbnailsView::s_ThumbnailBackgroundColorRole);
+		if (v.isValid() && v.type() == QVariant::Color)
+		{
+			const QColor color = v.value<QColor>();
+			painter->fillRect(iconRect, color);
+		}
 	}
 
 	void DrawThumbnailColorBar(const QModelIndex &index, QPainter* painter, const QRect &iconRect) const
 	{
-		// Draw vertical box left to the item icon.
-		QVariant vc = index.data(QThumbnailsView::s_ThumbnailColorRole);
-		DrawRect(vc, painter, QRect(iconRect.x(), iconRect.y(), 4, iconRect.height()));
-
-	}
-
-	void DrawRect(QVariant &v, QPainter* painter, const QRect &rect) const
-	{
+		const QVariant v = index.data(QThumbnailsView::s_ThumbnailColorRole);
 		if (v.isValid() && v.type() == QVariant::Color)
 		{
 			const QColor color = v.value<QColor>();
+
+			// Draw vertical box left to the item icon.
+			QRect rect(iconRect.x(), iconRect.y(), 4, iconRect.height());
 			painter->fillRect(rect, color);
 		}
 	}
@@ -219,14 +317,14 @@ protected:
 
 	void DrawLoadingIcon(const QStyleOptionViewItem& option, const QModelIndex & index, QPainter* painter) const
 	{
-		const QWidget* widget = option.widget;
-		QStyle* style = widget ? widget->style() : QApplication::style();
+		const QWidget* pWidget = option.widget;
+		QStyle* pStyle = pWidget ? pWidget->style() : QApplication::style();
 
 		QStyleOptionViewItem viewOpt(option);
 		initStyleOption(&viewOpt, index);
 
 		viewOpt.icon = m_rotatedLoading;
-		style->drawControl(QStyle::CE_ItemViewItem, &viewOpt, painter, widget);
+		pStyle->drawControl(QStyle::CE_ItemViewItem, &viewOpt, painter, pWidget);
 
 		m_view->StartUpdateTimer();
 	}
@@ -237,6 +335,28 @@ protected:
 
 		//always force to use the decoration size that we want, even if the icon doesn't support it
 		option->decorationSize = m_view->GetItemSize();
+		
+		//force the selection span the entire size of the item
+		option->showDecorationSelected = true;
+
+		option->textElideMode = Qt::ElideRight;
+	}
+
+	virtual QSize sizeHint(const QStyleOptionViewItem &option, const QModelIndex &index) const override
+	{
+		const QWidget* pWidget = option.widget;
+		QStyle* pStyle = pWidget ? pWidget->style() : QApplication::style();
+
+		const int horizontalMargin = pStyle->pixelMetric(QStyle::PM_FocusFrameHMargin, &option, pWidget) + 1;
+		const int verticalMargin = pStyle->pixelMetric(QStyle::PM_FocusFrameVMargin, &option, pWidget) + 1;
+		const int textHeight = option.fontMetrics.height();
+		const QSize thumbnailSize = option.decorationSize;
+		return QSize(thumbnailSize.width() + horizontalMargin * 2, thumbnailSize.height() + textHeight * 2 + verticalMargin * 2);
+	}
+
+	virtual void updateEditorGeometry(QWidget *pEditor, const QStyleOptionViewItem &option, const QModelIndex &index) const override
+	{
+		return  QStyledItemDelegate::updateEditorGeometry(pEditor, option, index);
 	}
 
 private:
