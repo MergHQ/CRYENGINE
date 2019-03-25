@@ -3,26 +3,26 @@
 #include "StdAfx.h"
 #include <CryFlowGraph/IFlowBaseNode.h>
 
-class CFlowNode_AudioRtpc final : public CFlowBaseNode<eNCT_Instanced>
+class CFlowNode_AudioParameter final : public CFlowBaseNode<eNCT_Instanced>
 {
 public:
 
-	explicit CFlowNode_AudioRtpc(SActivationInfo* pActInfo)
+	explicit CFlowNode_AudioParameter(SActivationInfo* pActInfo)
 		: m_parameterId(CryAudio::InvalidControlId)
 		, m_value(0.0f)
 	{}
 
-	virtual ~CFlowNode_AudioRtpc() override = default;
+	virtual ~CFlowNode_AudioParameter() override = default;
 
-	CFlowNode_AudioRtpc(CFlowNode_AudioRtpc const&) = delete;
-	CFlowNode_AudioRtpc(CFlowNode_AudioRtpc&&) = delete;
-	CFlowNode_AudioRtpc& operator=(CFlowNode_AudioRtpc const&) = delete;
-	CFlowNode_AudioRtpc& operator=(CFlowNode_AudioRtpc&&) = delete;
+	CFlowNode_AudioParameter(CFlowNode_AudioParameter const&) = delete;
+	CFlowNode_AudioParameter(CFlowNode_AudioParameter&&) = delete;
+	CFlowNode_AudioParameter& operator=(CFlowNode_AudioParameter const&) = delete;
+	CFlowNode_AudioParameter& operator=(CFlowNode_AudioParameter&&) = delete;
 
 	//////////////////////////////////////////////////////////////////////////
 	virtual IFlowNodePtr Clone(SActivationInfo* pActInfo) override
 	{
-		return new CFlowNode_AudioRtpc(pActInfo);
+		return new CFlowNode_AudioParameter(pActInfo);
 	}
 
 	//////////////////////////////////////////////////////////////////////////
@@ -40,8 +40,8 @@ public:
 	{
 		static const SInputPortConfig inputs[] =
 		{
-			InputPortConfig<string>("audioRTPC_Name", _HELP("Parameter name"),  "Name"),
-			InputPortConfig<float>("value",           _HELP("Parameter value"), "Value"),
+			InputPortConfig<string>("audioParameter_Name", _HELP("Parameter name"),  "Name"),
+			InputPortConfig<float>("value",                _HELP("Parameter value"), "Value"),
 			{ 0 } };
 
 		static const SOutputPortConfig outputs[] =
@@ -52,14 +52,14 @@ public:
 		config.pOutputPorts = outputs;
 		config.sDescription = _HELP("This node sets parameter values.");
 		config.nFlags |= EFLN_TARGET_ENTITY;
-		config.SetCategory(EFLN_OBSOLETE);
+		config.SetCategory(EFLN_APPROVED);
 	}
 
 	//////////////////////////////////////////////////////////////////////////
 	virtual void Serialize(SActivationInfo* pActInfo, TSerialize ser) override
 	{
 		float fValue = m_value;
-		ser.BeginGroup("FlowAudioRtpcNode");
+		ser.BeginGroup("FlowAudioParameterNode");
 		ser.Value("value", fValue);
 		ser.EndGroup();
 
@@ -156,4 +156,4 @@ private:
 	float               m_value;
 };
 
-REGISTER_FLOW_NODE("Audio:Rtpc", CFlowNode_AudioRtpc);
+REGISTER_FLOW_NODE("Audio:Parameter", CFlowNode_AudioParameter);
