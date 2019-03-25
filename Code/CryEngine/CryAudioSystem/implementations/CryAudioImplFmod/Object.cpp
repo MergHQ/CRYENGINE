@@ -140,7 +140,9 @@ void CObject::ToggleFunctionality(EObjectFunctionality const type, bool const en
 			break;
 		}
 	default:
-		break;
+		{
+			break;
+		}
 	}
 }
 

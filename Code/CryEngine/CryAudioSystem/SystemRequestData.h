@@ -739,19 +739,19 @@ struct SSystemRequestData<ESystemRequestType::ExecutePreviewTriggerEx> final : p
 template<>
 struct SSystemRequestData<ESystemRequestType::ExecutePreviewTriggerExNode> final : public SSystemRequestDataBase
 {
-	explicit SSystemRequestData(XmlNodeRef const pNode_)
+	explicit SSystemRequestData(XmlNodeRef const& node_)
 		: SSystemRequestDataBase(ESystemRequestType::ExecutePreviewTriggerExNode)
-		, pNode(pNode_)
+		, node(node_)
 	{}
 
 	explicit SSystemRequestData(SSystemRequestData<ESystemRequestType::ExecutePreviewTriggerExNode> const* const pSRData)
 		: SSystemRequestDataBase(ESystemRequestType::ExecutePreviewTriggerExNode)
-		, pNode(pSRData->pNode)
+		, node(pSRData->node)
 	{}
 
 	virtual ~SSystemRequestData() override = default;
 
-	XmlNodeRef const pNode;
+	XmlNodeRef const node;
 };
 #endif // CRY_AUDIO_USE_DEBUG_CODE
 }      // namespace CryAudio

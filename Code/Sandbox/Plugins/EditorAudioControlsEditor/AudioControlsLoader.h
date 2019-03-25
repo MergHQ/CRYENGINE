@@ -26,19 +26,19 @@ public:
 private:
 
 	bool      LoadAllLibrariesInFolder(string const& folderPath, string const& level);
-	void      LoadControlsLibrary(XmlNodeRef const pRoot, string const& filepath, string const& level, string const& filename, uint8 const version);
-	CControl* LoadControl(XmlNodeRef const pNode, CryAudio::ContextId const contextId, uint8 const version, CAsset* const pParentItem);
-	CControl* LoadDefaultControl(XmlNodeRef const pNode, CryAudio::ContextId const contextId, CAsset* const pParentItem);
+	void      LoadControlsLibrary(XmlNodeRef const& rootNode, string const& filepath, string const& level, string const& filename, uint8 const version);
+	CControl* LoadControl(XmlNodeRef const& node, CryAudio::ContextId const contextId, uint8 const version, CAsset* const pParentItem);
+	CControl* LoadDefaultControl(XmlNodeRef const& node, CryAudio::ContextId const contextId, CAsset* const pParentItem);
 
-	void      LoadPreloadConnections(XmlNodeRef const pNode, CControl* const pControl, uint8 const version);
-	void      LoadConnections(XmlNodeRef const root, CControl* const pControl);
+	void      LoadPreloadConnections(XmlNodeRef const& node, CControl* const pControl, uint8 const version);
+	void      LoadConnections(XmlNodeRef const& rootNode, CControl* const pControl);
 
-	void      LoadEditorData(XmlNodeRef const pEditorDataNode, CAsset& library);
-	void      LoadLibraryEditorData(XmlNodeRef const pLibraryNode, CAsset& library);
-	void      LoadAllFolders(XmlNodeRef const pFoldersNode, CAsset& library);
-	void      LoadFolderData(XmlNodeRef const pFolderNode, CAsset& parentAsset);
-	void      LoadAllControlsEditorData(XmlNodeRef const pControlsNode);
-	void      LoadControlsEditorData(XmlNodeRef const pParentNode);
+	void      LoadEditorData(XmlNodeRef const& node, CAsset& library);
+	void      LoadLibraryEditorData(XmlNodeRef const& node, CAsset& library);
+	void      LoadAllFolders(XmlNodeRef const& node, CAsset& library);
+	void      LoadFolderData(XmlNodeRef const& node, CAsset& parentAsset);
+	void      LoadAllControlsEditorData(XmlNodeRef const& node);
+	void      LoadControlsEditorData(XmlNodeRef const& node);
 
 	CAsset*   AddUniqueFolderPath(CAsset* pParent, QString const& path);
 

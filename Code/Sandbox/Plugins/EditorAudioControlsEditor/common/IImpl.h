@@ -92,10 +92,10 @@ struct IImpl
 	//! The format of the XML node should be in sync with the CreateXMLNodeFromConnection function which is in charge of writing the node during serialization.
 	//! If the XML node is unknown to the system NULL should be returned.
 	//! If the middleware control referenced in the XML node does not exist it should be created and marked as "placeholder".
-	//! \param pNode - XML node where the connection is defined.
+	//! \param node - XML node where the connection is defined.
 	//! \param assetType - The type of the audio system control you are connecting to.
 	//! \return A pointer to the newly created connection.
-	virtual IConnection* CreateConnectionFromXMLNode(XmlNodeRef pNode, EAssetType const assetType) = 0;
+	virtual IConnection* CreateConnectionFromXMLNode(XmlNodeRef const& node, EAssetType const assetType) = 0;
 
 	//! When serializing connections between controls this function will be called once per connection to serialize its properties.
 	//! This function should be in sync with CreateConnectionToControl as whatever it's written here will have to be read there.

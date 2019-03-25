@@ -58,12 +58,12 @@ void CFileCacheManager::Initialize()
 }
 
 //////////////////////////////////////////////////////////////////////////
-FileId CFileCacheManager::TryAddFileCacheEntry(XmlNodeRef const pFileNode, ContextId const contextId, bool const bAutoLoad)
+FileId CFileCacheManager::TryAddFileCacheEntry(XmlNodeRef const& fileNode, ContextId const contextId, bool const bAutoLoad)
 {
 	FileId fileId = InvalidFileId;
 	Impl::SFileInfo fileInfo;
 
-	if (g_pIImpl->ConstructFile(pFileNode, &fileInfo) == ERequestStatus::Success)
+	if (g_pIImpl->ConstructFile(fileNode, &fileInfo) == ERequestStatus::Success)
 	{
 		CryFixedStringT<MaxFilePathLength> fullPath(g_pIImpl->GetFileLocation(&fileInfo));
 		fullPath += "/";

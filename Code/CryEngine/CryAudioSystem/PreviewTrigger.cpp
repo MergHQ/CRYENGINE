@@ -35,20 +35,20 @@ void CPreviewTrigger::Execute(Impl::ITriggerInfo const& triggerInfo)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CPreviewTrigger::Execute(XmlNodeRef const pNode)
+void CPreviewTrigger::Execute(XmlNodeRef const& node)
 {
 	Clear();
 
-	int const numConnections = pNode->getChildCount();
+	int const numConnections = node->getChildCount();
 
 	for (int i = 0; i < numConnections; ++i)
 	{
-		XmlNodeRef const pTriggerImplNode(pNode->getChild(i));
+		XmlNodeRef const triggerImplNode(node->getChild(i));
 
-		if (pTriggerImplNode)
+		if (triggerImplNode.isValid())
 		{
 			float radius = 0.0f;
-			Impl::ITriggerConnection* const pConnection = g_pIImpl->ConstructTriggerConnection(pTriggerImplNode, radius);
+			Impl::ITriggerConnection* const pConnection = g_pIImpl->ConstructTriggerConnection(triggerImplNode, radius);
 
 			if (pConnection != nullptr)
 			{

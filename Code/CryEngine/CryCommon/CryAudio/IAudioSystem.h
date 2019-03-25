@@ -495,11 +495,11 @@ struct IAudioSystem
 
 	/**
 	 * Constructs a trigger from the given XML node and executes it on the preview object.
-	 * @param pNode - XML node to construct a trigger.
+	 * @param node - XML node to construct a trigger.
 	 * @return void
 	 * @see StopPreviewTrigger
 	 */
-	virtual void ExecutePreviewTriggerEx(XmlNodeRef const pNode) = 0;
+	virtual void ExecutePreviewTriggerEx(XmlNodeRef const& node) = 0;
 
 	/**
 	 * Stops the active trigger on the preview object.

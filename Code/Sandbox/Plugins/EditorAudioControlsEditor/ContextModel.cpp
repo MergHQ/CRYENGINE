@@ -169,6 +169,10 @@ QVariant CContextModel::data(QModelIndex const& index, int role) const
 
 								break;
 							}
+						default:
+							{
+								break;
+							}
 						}
 
 						break;
@@ -192,6 +196,10 @@ QVariant CContextModel::data(QModelIndex const& index, int role) const
 						case static_cast<int>(ModelUtils::ERoles::IsDefaultControl):
 							{
 								variant = pContext->GetId() == CryAudio::GlobalContextId;
+								break;
+							}
+						default:
+							{
 								break;
 							}
 						}

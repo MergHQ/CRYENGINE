@@ -38,7 +38,7 @@ public:
 	static void SaveData();
 	static void ReloadData(EReloadFlags const flags);
 	static void ExecuteTrigger(string const& triggerName);
-	static void ExecuteTriggerEx(string const& triggerName, XmlNodeRef const pNode);
+	static void ExecuteTriggerEx(string const& triggerName, XmlNodeRef const& node);
 	static void StopTriggerExecution();
 	static void OnAudioCallback(CryAudio::SRequestInfo const* const pRequestInfo);
 

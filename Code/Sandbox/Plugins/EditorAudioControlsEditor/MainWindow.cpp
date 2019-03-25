@@ -496,8 +496,14 @@ void CMainWindow::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lp
 	switch (event)
 	{
 	case ESYSTEM_EVENT_AUDIO_LANGUAGE_CHANGED:
-		ReloadMiddlewareData();
-		break;
+		{
+			ReloadMiddlewareData();
+			break;
+		}
+	default:
+		{
+			break;
+		}
 	}
 }
 
@@ -597,15 +603,21 @@ bool CMainWindow::TryClose()
 			switch (button)
 			{
 			case QDialogButtonBox::Save:
-				Save();
-				break;
+				{
+					Save();
+					break;
+				}
 			case QDialogButtonBox::Discard:
-				CAudioControlsEditorPlugin::ReloadData(EReloadFlags::ReloadSystemControls | EReloadFlags::SendSignals);
-				break;
+				{
+					CAudioControlsEditorPlugin::ReloadData(EReloadFlags::ReloadSystemControls | EReloadFlags::SendSignals);
+					break;
+				}
 			case QDialogButtonBox::Cancel: // Intentional fall-through.
 			default:
-				canClose = false;
-				break;
+				{
+					canClose = false;
+					break;
+				}
 			}
 		}
 	}

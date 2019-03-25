@@ -46,18 +46,18 @@ EventInstances g_constructedEventInstances;
 #endif  // CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE
 
 //////////////////////////////////////////////////////////////////////////
-void CountPoolSizes(XmlNodeRef const pNode, SPoolSizes& poolSizes)
+void CountPoolSizes(XmlNodeRef const& node, SPoolSizes& poolSizes)
 {
 	uint16 numEvents = 0;
-	pNode->getAttr(g_szEventsAttribute, numEvents);
+	node->getAttr(g_szEventsAttribute, numEvents);
 	poolSizes.events += numEvents;
 
 	uint16 numParameters = 0;
-	pNode->getAttr(g_szParametersAttribute, numParameters);
+	node->getAttr(g_szParametersAttribute, numParameters);
 	poolSizes.parameters += numParameters;
 
 	uint16 numSwitchStates = 0;
-	pNode->getAttr(g_szSwitchStatesAttribute, numSwitchStates);
+	node->getAttr(g_szSwitchStatesAttribute, numSwitchStates);
 	poolSizes.switchStates += numSwitchStates;
 }
 
@@ -187,15 +187,15 @@ void CImpl::OnRefresh()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CImpl::SetLibraryData(XmlNodeRef const pNode, ContextId const contextId)
+void CImpl::SetLibraryData(XmlNodeRef const& node, ContextId const contextId)
 {
 	if (contextId == GlobalContextId)
 	{
-		CountPoolSizes(pNode, g_poolSizes);
+		CountPoolSizes(node, g_poolSizes);
 	}
 	else
 	{
-		CountPoolSizes(pNode, g_contextPoolSizes[contextId]);
+		CountPoolSizes(node, g_contextPoolSizes[contextId]);
 	}
 }
 
@@ -309,7 +309,7 @@ void CImpl::UnregisterInMemoryFile(SFileInfo* const pFileInfo)
 }
 
 ///////////////////////////////////////////////////////////////////////////
-ERequestStatus CImpl::ConstructFile(XmlNodeRef const pRootNode, SFileInfo* const pFileInfo)
+ERequestStatus CImpl::ConstructFile(XmlNodeRef const& rootNode, SFileInfo* const pFileInfo)
 {
 	return ERequestStatus::Failure;
 }
@@ -345,47 +345,47 @@ void CImpl::GetInfo(SImplInfo& implInfo) const
 }
 
 ///////////////////////////////////////////////////////////////////////////
-ITriggerConnection* CImpl::ConstructTriggerConnection(XmlNodeRef const pRootNode, float& radius)
+ITriggerConnection* CImpl::ConstructTriggerConnection(XmlNodeRef const& rootNode, float& radius)
 {
 	ITriggerConnection* pITriggerConnection = nullptr;
 
-	if (_stricmp(pRootNode->getTag(), g_szEventTag) == 0)
+	if (_stricmp(rootNode->getTag(), g_szEventTag) == 0)
 	{
-		char const* const szFileName = pRootNode->getAttr(g_szNameAttribute);
-		char const* const szPath = pRootNode->getAttr(g_szPathAttribute);
+		char const* const szFileName = rootNode->getAttr(g_szNameAttribute);
+		char const* const szPath = rootNode->getAttr(g_szPathAttribute);
 		string const fullFilePath = GetFullFilePath(szFileName, szPath);
 
-		char const* const szLocalized = pRootNode->getAttr(g_szLocalizedAttribute);
+		char const* const szLocalized = rootNode->getAttr(g_szLocalizedAttribute);
 		bool const isLocalized = (szLocalized != nullptr) && (_stricmp(szLocalized, g_szTrueValue) == 0);
 
 		SampleId const sampleId = SoundEngine::LoadSample(fullFilePath, true, isLocalized);
 		CEvent::EActionType type = CEvent::EActionType::Start;
 
-		if (_stricmp(pRootNode->getAttr(g_szTypeAttribute), g_szStopValue) == 0)
+		if (_stricmp(rootNode->getAttr(g_szTypeAttribute), g_szStopValue) == 0)
 		{
 			type = CEvent::EActionType::Stop;
 		}
-		else if (_stricmp(pRootNode->getAttr(g_szTypeAttribute), g_szPauseValue) == 0)
+		else if (_stricmp(rootNode->getAttr(g_szTypeAttribute), g_szPauseValue) == 0)
 		{
 			type = CEvent::EActionType::Pause;
 		}
-		else if (_stricmp(pRootNode->getAttr(g_szTypeAttribute), g_szResumeValue) == 0)
+		else if (_stricmp(rootNode->getAttr(g_szTypeAttribute), g_szResumeValue) == 0)
 		{
 			type = CEvent::EActionType::Resume;
 		}
 
 		if (type == CEvent::EActionType::Start)
 		{
-			bool const isPanningEnabled = (_stricmp(pRootNode->getAttr(g_szPanningEnabledAttribute), g_szTrueValue) == 0);
-			bool const isAttenuationEnabled = (_stricmp(pRootNode->getAttr(g_szAttenuationEnabledAttribute), g_szTrueValue) == 0);
+			bool const isPanningEnabled = (_stricmp(rootNode->getAttr(g_szPanningEnabledAttribute), g_szTrueValue) == 0);
+			bool const isAttenuationEnabled = (_stricmp(rootNode->getAttr(g_szAttenuationEnabledAttribute), g_szTrueValue) == 0);
 
 			float minDistance = -1.0f;
 			float maxDistance = -1.0f;
 
 			if (isAttenuationEnabled)
 			{
-				pRootNode->getAttr(g_szAttenuationMinDistanceAttribute, minDistance);
-				pRootNode->getAttr(g_szAttenuationMaxDistanceAttribute, maxDistance);
+				rootNode->getAttr(g_szAttenuationMinDistanceAttribute, minDistance);
+				rootNode->getAttr(g_szAttenuationMaxDistanceAttribute, maxDistance);
 
 				minDistance = std::max(0.0f, minDistance);
 				maxDistance = std::max(0.0f, maxDistance);
@@ -407,22 +407,22 @@ ITriggerConnection* CImpl::ConstructTriggerConnection(XmlNodeRef const pRootNode
 			// Translate decibel to normalized value.
 			static const int maxVolume = 128;
 			float volume = 0.0f;
-			pRootNode->getAttr(g_szVolumeAttribute, volume);
+			rootNode->getAttr(g_szVolumeAttribute, volume);
 			auto const normalizedVolume = static_cast<int>(pow_tpl(10.0f, volume / 20.0f) * maxVolume);
 
 			int numLoops = 0;
-			pRootNode->getAttr(g_szLoopCountAttribute, numLoops);
+			rootNode->getAttr(g_szLoopCountAttribute, numLoops);
 			// --numLoops because -1: play infinite, 0: play once, 1: play twice, etc...
 			--numLoops;
 			// Max to -1 to stay backwards compatible.
 			numLoops = std::max(-1, numLoops);
 
 			float fadeInTimeSec = g_defaultFadeInTime;
-			pRootNode->getAttr(g_szFadeInTimeAttribute, fadeInTimeSec);
+			rootNode->getAttr(g_szFadeInTimeAttribute, fadeInTimeSec);
 			auto const fadeInTimeMs = static_cast<int>(fadeInTimeSec * 1000.0f);
 
 			float fadeOutTimeSec = g_defaultFadeOutTime;
-			pRootNode->getAttr(g_szFadeOutTimeAttribute, fadeOutTimeSec);
+			rootNode->getAttr(g_szFadeOutTimeAttribute, fadeOutTimeSec);
 			auto const fadeOutTimeMs = static_cast<int>(fadeOutTimeSec * 1000.0f);
 
 			MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::SDL_mixer::CEvent");
@@ -471,7 +471,7 @@ ITriggerConnection* CImpl::ConstructTriggerConnection(XmlNodeRef const pRootNode
 #if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE)
 	else
 	{
-		Cry::Audio::Log(ELogType::Warning, "Unknown SDL Mixer tag: %s", pRootNode->getTag());
+		Cry::Audio::Log(ELogType::Warning, "Unknown SDL Mixer tag: %s", rootNode->getTag());
 	}
 #endif  // CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE
 
@@ -525,26 +525,26 @@ void CImpl::DestructTriggerConnection(ITriggerConnection const* const pITriggerC
 }
 
 ///////////////////////////////////////////////////////////////////////////
-IParameterConnection* CImpl::ConstructParameterConnection(XmlNodeRef const pRootNode)
+IParameterConnection* CImpl::ConstructParameterConnection(XmlNodeRef const& rootNode)
 {
 	IParameterConnection* pIParameterConnection = nullptr;
 
-	if (_stricmp(pRootNode->getTag(), g_szEventTag) == 0)
+	if (_stricmp(rootNode->getTag(), g_szEventTag) == 0)
 	{
-		char const* const szFileName = pRootNode->getAttr(g_szNameAttribute);
-		char const* const szPath = pRootNode->getAttr(g_szPathAttribute);
+		char const* const szFileName = rootNode->getAttr(g_szNameAttribute);
+		char const* const szPath = rootNode->getAttr(g_szPathAttribute);
 		string const fullFilePath = GetFullFilePath(szFileName, szPath);
 
-		char const* const szLocalized = pRootNode->getAttr(g_szLocalizedAttribute);
+		char const* const szLocalized = rootNode->getAttr(g_szLocalizedAttribute);
 		bool const isLocalized = (szLocalized != nullptr) && (_stricmp(szLocalized, g_szTrueValue) == 0);
 
 		SampleId const sampleId = SoundEngine::LoadSample(fullFilePath, true, isLocalized);
 
 		float multiplier = g_defaultParamMultiplier;
 		float shift = g_defaultParamShift;
-		pRootNode->getAttr(g_szMutiplierAttribute, multiplier);
+		rootNode->getAttr(g_szMutiplierAttribute, multiplier);
 		multiplier = std::max(0.0f, multiplier);
-		pRootNode->getAttr(g_szShiftAttribute, shift);
+		rootNode->getAttr(g_szShiftAttribute, shift);
 
 		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::SDL_mixer::CParameter");
 
@@ -565,23 +565,23 @@ void CImpl::DestructParameterConnection(IParameterConnection const* const pIPara
 }
 
 ///////////////////////////////////////////////////////////////////////////
-ISwitchStateConnection* CImpl::ConstructSwitchStateConnection(XmlNodeRef const pRootNode)
+ISwitchStateConnection* CImpl::ConstructSwitchStateConnection(XmlNodeRef const& rootNode)
 {
 	ISwitchStateConnection* pISwitchStateConnection = nullptr;
 
-	if (_stricmp(pRootNode->getTag(), g_szEventTag) == 0)
+	if (_stricmp(rootNode->getTag(), g_szEventTag) == 0)
 	{
-		char const* const szFileName = pRootNode->getAttr(g_szNameAttribute);
-		char const* const szPath = pRootNode->getAttr(g_szPathAttribute);
+		char const* const szFileName = rootNode->getAttr(g_szNameAttribute);
+		char const* const szPath = rootNode->getAttr(g_szPathAttribute);
 		string const fullFilePath = GetFullFilePath(szFileName, szPath);
 
-		char const* const szLocalized = pRootNode->getAttr(g_szLocalizedAttribute);
+		char const* const szLocalized = rootNode->getAttr(g_szLocalizedAttribute);
 		bool const isLocalized = (szLocalized != nullptr) && (_stricmp(szLocalized, g_szTrueValue) == 0);
 
 		SampleId const sampleId = SoundEngine::LoadSample(fullFilePath, true, isLocalized);
 
 		float value = g_defaultStateValue;
-		pRootNode->getAttr(g_szValueAttribute, value);
+		rootNode->getAttr(g_szValueAttribute, value);
 		value = crymath::clamp(value, 0.0f, 1.0f);
 
 		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::SDL_mixer::CSwitchState");
@@ -603,7 +603,7 @@ void CImpl::DestructSwitchStateConnection(ISwitchStateConnection const* const pI
 }
 
 ///////////////////////////////////////////////////////////////////////////
-IEnvironmentConnection* CImpl::ConstructEnvironmentConnection(XmlNodeRef const pRootNode)
+IEnvironmentConnection* CImpl::ConstructEnvironmentConnection(XmlNodeRef const& rootNode)
 {
 	return nullptr;
 }
@@ -615,7 +615,7 @@ void CImpl::DestructEnvironmentConnection(IEnvironmentConnection const* const pI
 }
 
 //////////////////////////////////////////////////////////////////////////
-ISettingConnection* CImpl::ConstructSettingConnection(XmlNodeRef const pRootNode)
+ISettingConnection* CImpl::ConstructSettingConnection(XmlNodeRef const& rootNode)
 {
 	return nullptr;
 }

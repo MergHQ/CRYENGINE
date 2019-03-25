@@ -100,21 +100,21 @@ void CreateDefaultControls()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void LoadConnections(XmlNodeRef const pRoot, CControl* const pControl)
+void LoadConnections(XmlNodeRef const& rootNode, CControl* const pControl)
 {
-	int const numChildren = pRoot->getChildCount();
+	int const numChildren = rootNode->getChildCount();
 
 	for (int i = 0; i < numChildren; ++i)
 	{
-		XmlNodeRef const pNode = pRoot->getChild(i);
-		pControl->LoadConnectionFromXML(pNode);
+		XmlNodeRef const node = rootNode->getChild(i);
+		pControl->LoadConnectionFromXML(node);
 	}
 }
 
 //////////////////////////////////////////////////////////////////////////
-void SetDataLoadType(XmlNodeRef const pRoot, CControl* const pControl)
+void SetDataLoadType(XmlNodeRef const& node, CControl* const pControl)
 {
-	if (_stricmp(pRoot->getAttr(CryAudio::g_szTypeAttribute), CryAudio::g_szDataLoadType) == 0)
+	if (_stricmp(node->getAttr(CryAudio::g_szTypeAttribute), CryAudio::g_szDataLoadType) == 0)
 	{
 		pControl->SetAutoLoad(true);
 	}
@@ -125,10 +125,10 @@ void SetDataLoadType(XmlNodeRef const pRoot, CControl* const pControl)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void LoadLibraryEditorData(XmlNodeRef const pLibraryNode, CAsset& library)
+void LoadLibraryEditorData(XmlNodeRef const& node, CAsset& library)
 {
 	string description = "";
-	pLibraryNode->getAttr(g_szDescriptionAttribute, description);
+	node->getAttr(g_szDescriptionAttribute, description);
 
 	if (!description.IsEmpty())
 	{
@@ -137,55 +137,58 @@ void LoadLibraryEditorData(XmlNodeRef const pLibraryNode, CAsset& library)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void LoadFolderData(XmlNodeRef const pFolderNode, CAsset& parentAsset)
+void LoadFolderData(XmlNodeRef const& node, CAsset& parentAsset)
 {
-	CAsset* const pAsset = AddUniqueFolderPath(&parentAsset, pFolderNode->getAttr(CryAudio::g_szNameAttribute));
-
-	if (pAsset != nullptr)
+	if (node.isValid())
 	{
-		string description = "";
-		pFolderNode->getAttr(g_szDescriptionAttribute, description);
+		CAsset* const pAsset = AddUniqueFolderPath(&parentAsset, node->getAttr(CryAudio::g_szNameAttribute));
 
-		if (!description.IsEmpty())
+		if (pAsset != nullptr)
 		{
-			pAsset->SetDescription(description);
-		}
+			string description = "";
+			node->getAttr(g_szDescriptionAttribute, description);
 
-		int const numChildren = pFolderNode->getChildCount();
+			if (!description.IsEmpty())
+			{
+				pAsset->SetDescription(description);
+			}
 
-		for (int i = 0; i < numChildren; ++i)
-		{
-			LoadFolderData(pFolderNode->getChild(i), *pAsset);
-		}
-	}
-}
+			int const numChildren = node->getChildCount();
 
-//////////////////////////////////////////////////////////////////////////
-void LoadAllFolders(XmlNodeRef const pFoldersNode, CAsset& library)
-{
-	if (pFoldersNode != nullptr)
-	{
-		int const numChildren = pFoldersNode->getChildCount();
-
-		for (int i = 0; i < numChildren; ++i)
-		{
-			LoadFolderData(pFoldersNode->getChild(i), library);
+			for (int i = 0; i < numChildren; ++i)
+			{
+				LoadFolderData(node->getChild(i), *pAsset);
+			}
 		}
 	}
 }
 
 //////////////////////////////////////////////////////////////////////////
-void LoadControlsEditorData(XmlNodeRef const pParentNode)
+void LoadAllFolders(XmlNodeRef const& node, CAsset& library)
 {
-	if (pParentNode != nullptr)
+	if (node.isValid())
 	{
-		EAssetType const controlType = TagToType(pParentNode->getTag());
+		int const numChildren = node->getChildCount();
+
+		for (int i = 0; i < numChildren; ++i)
+		{
+			LoadFolderData(node->getChild(i), library);
+		}
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void LoadControlsEditorData(XmlNodeRef const& node)
+{
+	if (node.isValid())
+	{
+		EAssetType const controlType = TagToType(node->getTag());
 		string description = "";
-		pParentNode->getAttr(g_szDescriptionAttribute, description);
+		node->getAttr(g_szDescriptionAttribute, description);
 
 		if ((controlType != EAssetType::None) && !description.IsEmpty())
 		{
-			CControl* const pControl = g_assetsManager.FindControl(pParentNode->getAttr(CryAudio::g_szNameAttribute), controlType);
+			CControl* const pControl = g_assetsManager.FindControl(node->getAttr(CryAudio::g_szNameAttribute), controlType);
 
 			if (pControl != nullptr)
 			{
@@ -195,39 +198,39 @@ void LoadControlsEditorData(XmlNodeRef const pParentNode)
 	}
 }
 //////////////////////////////////////////////////////////////////////////
-void LoadAllControlsEditorData(XmlNodeRef const pControlsNode)
+void LoadAllControlsEditorData(XmlNodeRef const& node)
 {
-	if (pControlsNode != nullptr)
+	if (node.isValid())
 	{
-		int const numChildren = pControlsNode->getChildCount();
+		int const numChildren = node->getChildCount();
 
 		for (int i = 0; i < numChildren; ++i)
 		{
-			LoadControlsEditorData(pControlsNode->getChild(i));
+			LoadControlsEditorData(node->getChild(i));
 		}
 	}
 }
 
 //////////////////////////////////////////////////////////////////////////
-void LoadEditorData(XmlNodeRef const pEditorDataNode, CAsset& library)
+void LoadEditorData(XmlNodeRef const& node, CAsset& library)
 {
-	int const numChildren = pEditorDataNode->getChildCount();
+	int const numChildren = node->getChildCount();
 
 	for (int i = 0; i < numChildren; ++i)
 	{
-		XmlNodeRef const pChild = pEditorDataNode->getChild(i);
+		XmlNodeRef const childNode = node->getChild(i);
 
-		if (pChild->isTag(g_szLibraryNodeTag))
+		if (childNode->isTag(g_szLibraryNodeTag))
 		{
-			LoadLibraryEditorData(pChild, library);
+			LoadLibraryEditorData(childNode, library);
 		}
-		else if (pChild->isTag(g_szFoldersNodeTag))
+		else if (childNode->isTag(g_szFoldersNodeTag))
 		{
-			LoadAllFolders(pChild, library);
+			LoadAllFolders(childNode, library);
 		}
-		else if (pChild->isTag(g_szControlsNodeTag))
+		else if (childNode->isTag(g_szControlsNodeTag))
 		{
-			LoadAllControlsEditorData(pChild);
+			LoadAllControlsEditorData(childNode);
 		}
 	}
 }
@@ -296,24 +299,24 @@ bool CFileLoader::LoadAllLibrariesInFolder(string const& folderPath, string cons
 
 			if (_stricmp(PathUtil::GetExt(fileName), "xml") == 0)
 			{
-				XmlNodeRef const root = GetISystem()->LoadXmlFromFile(fileName);
+				XmlNodeRef const rootNode = GetISystem()->LoadXmlFromFile(fileName);
 
-				if (root != nullptr)
+				if (rootNode.isValid())
 				{
-					if (_stricmp(root->getTag(), CryAudio::g_szRootNodeTag) == 0)
+					if (_stricmp(rootNode->getTag(), CryAudio::g_szRootNodeTag) == 0)
 					{
 						m_loadedFilenames.insert(fileName.MakeLower());
 						string file = fd.name;
 
-						if (root->haveAttr(CryAudio::g_szNameAttribute))
+						if (rootNode->haveAttr(CryAudio::g_szNameAttribute))
 						{
-							file = root->getAttr(CryAudio::g_szNameAttribute);
+							file = rootNode->getAttr(CryAudio::g_szNameAttribute);
 						}
 
 						int version = 1;
-						root->getAttr(CryAudio::g_szVersionAttribute, version);
+						rootNode->getAttr(CryAudio::g_szVersionAttribute, version);
 						PathUtil::RemoveExtension(file);
-						LoadControlsLibrary(root, fileName, contextName, file, static_cast<uint8>(version));
+						LoadControlsLibrary(rootNode, fileName, contextName, file, static_cast<uint8>(version));
 
 						libraryLoaded = true;
 					}
@@ -426,25 +429,25 @@ bool CFileLoader::LoadAllLibrariesInFolderBW(string const& folderPath, string co
 }
 
 //////////////////////////////////////////////////////////////////////////
-void LoadPlatformSpecificConnectionsBW(XmlNodeRef const pNode, CControl* const pControl)
+void LoadPlatformSpecificConnectionsBW(XmlNodeRef const& node, CControl* const pControl)
 {
-	int const numChildren = pNode->getChildCount();
+	int const numChildren = node->getChildCount();
 
 	for (int i = 0; i < numChildren; ++i)
 	{
-		XmlNodeRef const pPlatformNode = pNode->getChild(i);
+		XmlNodeRef const platformNode = node->getChild(i);
 
-		if (_stricmp(pPlatformNode->getTag(), CryAudio::g_szPlatformTag) == 0)
+		if (_stricmp(platformNode->getTag(), CryAudio::g_szPlatformTag) == 0)
 		{
-			int const numConnections = pPlatformNode->getChildCount();
+			int const numConnections = platformNode->getChildCount();
 
 			for (int j = 0; j < numConnections; ++j)
 			{
-				XmlNodeRef const pConnectionNode = pPlatformNode->getChild(j);
+				XmlNodeRef const connectionNode = platformNode->getChild(j);
 
-				if (pConnectionNode != nullptr)
+				if (connectionNode.isValid())
 				{
-					pControl->LoadConnectionFromXML(pConnectionNode);
+					pControl->LoadConnectionFromXML(connectionNode);
 				}
 			}
 
@@ -456,7 +459,7 @@ void LoadPlatformSpecificConnectionsBW(XmlNodeRef const pNode, CControl* const p
 #endif //  USE_BACKWARDS_COMPATIBILITY
 
 //////////////////////////////////////////////////////////////////////////
-void CFileLoader::LoadControlsLibrary(XmlNodeRef const pRoot, string const& filepath, string const& contextName, string const& fileName, uint8 const version)
+void CFileLoader::LoadControlsLibrary(XmlNodeRef const& rootNode, string const& filepath, string const& contextName, string const& fileName, uint8 const version)
 {
 	// Always create a library file, even if no proper formatting is present.
 	CLibrary* const pLibrary = g_assetsManager.CreateLibrary(fileName);
@@ -468,22 +471,22 @@ void CFileLoader::LoadControlsLibrary(XmlNodeRef const pRoot, string const& file
 		pLibrary->SetPakStatus(EPakStatus::InPak, gEnv->pCryPak->IsFileExist(filepath.c_str(), ICryPak::eFileLocation_InPak));
 		pLibrary->SetPakStatus(EPakStatus::OnDisk, gEnv->pCryPak->IsFileExist(filepath.c_str(), ICryPak::eFileLocation_OnDisk));
 
-		int const controlTypeCount = pRoot->getChildCount();
+		int const controlTypeCount = rootNode->getChildCount();
 
 		for (int i = 0; i < controlTypeCount; ++i)
 		{
-			XmlNodeRef const pNode = pRoot->getChild(i);
+			XmlNodeRef const node = rootNode->getChild(i);
 
-			if (pNode != nullptr)
+			if (node.isValid())
 			{
-				if (pNode->isTag(CryAudio::g_szEditorDataTag))
+				if (node->isTag(CryAudio::g_szEditorDataTag))
 				{
-					LoadEditorData(pNode, *pLibrary);
+					LoadEditorData(node, *pLibrary);
 				}
 				else
 				{
 					CryAudio::ContextId const contextId = contextName.empty() ? CryAudio::GlobalContextId : g_contextManager.GenerateContextId(contextName);
-					int const numControls = pNode->getChildCount();
+					int const numControls = node->getChildCount();
 
 					if ((contextId == CryAudio::GlobalContextId) && !contextName.empty())
 					{
@@ -493,7 +496,7 @@ void CFileLoader::LoadControlsLibrary(XmlNodeRef const pRoot, string const& file
 
 					for (int j = 0; j < numControls; ++j)
 					{
-						LoadControl(pNode->getChild(j), contextId, pLibrary);
+						LoadControl(node->getChild(j), contextId, pLibrary);
 					}
 				}
 			}
@@ -507,18 +510,18 @@ void CFileLoader::LoadControlsLibrary(XmlNodeRef const pRoot, string const& file
 }
 
 //////////////////////////////////////////////////////////////////////////
-CControl* CFileLoader::LoadControl(XmlNodeRef const pNode, CryAudio::ContextId const contextId, CAsset* const pParentItem)
+CControl* CFileLoader::LoadControl(XmlNodeRef const& node, CryAudio::ContextId const contextId, CAsset* const pParentItem)
 {
 	CControl* pControl = nullptr;
 
-	if (pNode != nullptr)
+	if (node.isValid())
 	{
-		CAsset* const pFolderItem = AddUniqueFolderPath(pParentItem, QtUtil::ToQString(pNode->getAttr(g_szPathAttribute)));
+		CAsset* const pFolderItem = AddUniqueFolderPath(pParentItem, QtUtil::ToQString(node->getAttr(g_szPathAttribute)));
 
 		if (pFolderItem != nullptr)
 		{
-			string const name = pNode->getAttr(CryAudio::g_szNameAttribute);
-			EAssetType const controlType = TagToType(pNode->getTag());
+			string const name = node->getAttr(CryAudio::g_szNameAttribute);
+			EAssetType const controlType = TagToType(node->getTag());
 
 			if (controlType != EAssetType::None)
 			{
@@ -538,11 +541,11 @@ CControl* CFileLoader::LoadControl(XmlNodeRef const pNode, CryAudio::ContextId c
 					{
 					case EAssetType::Switch:
 						{
-							int const stateCount = pNode->getChildCount();
+							int const stateCount = node->getChildCount();
 
 							for (int i = 0; i < stateCount; ++i)
 							{
-								LoadControl(pNode->getChild(i), contextId, pControl);
+								LoadControl(node->getChild(i), contextId, pControl);
 							}
 
 							break;
@@ -550,18 +553,18 @@ CControl* CFileLoader::LoadControl(XmlNodeRef const pNode, CryAudio::ContextId c
 					case EAssetType::Preload: // Intentional fall-through.
 					case EAssetType::Setting:
 						{
-							SetDataLoadType(pNode, pControl);
-							LoadConnections(pNode, pControl);
+							SetDataLoadType(node, pControl);
+							LoadConnections(node, pControl);
 
 #if defined (USE_BACKWARDS_COMPATIBILITY)
-							LoadPlatformSpecificConnectionsBW(pNode, pControl);
+							LoadPlatformSpecificConnectionsBW(node, pControl);
 #endif          //  USE_BACKWARDS_COMPATIBILITY
 
 							break;
 						}
 					default:
 						{
-							LoadConnections(pNode, pControl);
+							LoadConnections(node, pControl);
 							break;
 						}
 					}
@@ -572,7 +575,7 @@ CControl* CFileLoader::LoadControl(XmlNodeRef const pNode, CryAudio::ContextId c
 			else
 			{
 				CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_ERROR, R"([Audio Controls Editor] Invalid XML tag "%s" in audio system data file "%s".)",
-				           pNode->getTag(), pFolderItem->GetName().c_str());
+				           node->getTag(), pFolderItem->GetName().c_str());
 			}
 		}
 	}

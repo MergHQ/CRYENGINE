@@ -19,7 +19,7 @@ CAsset*     GetParentLibrary(CAsset* const pAsset);
 char const* GetTypeName(EAssetType const type);
 void        SelectTopLevelAncestors(Assets const& source, Assets& dest);
 void        TryConstructTriggerConnectionNode(
-	XmlNodeRef const pTriggerNode,
+	XmlNodeRef const& triggerNode,
 	IConnection const* const pIConnection,
 	CryAudio::ContextId const contextId);
 } // namespace AssetUtils

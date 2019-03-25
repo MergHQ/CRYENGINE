@@ -62,29 +62,45 @@ CItemModelAttribute* GetAttributeForColumn(CItemModel::EColumns const column)
 	switch (column)
 	{
 	case CItemModel::EColumns::Notification:
-		pAttribute = &ModelUtils::s_notificationAttribute;
-		break;
+		{
+			pAttribute = &ModelUtils::s_notificationAttribute;
+			break;
+		}
 	case CItemModel::EColumns::Connected:
-		pAttribute = &ModelUtils::s_connectedAttribute;
-		break;
+		{
+			pAttribute = &ModelUtils::s_connectedAttribute;
+			break;
+		}
 	case CItemModel::EColumns::PakStatus:
-		pAttribute = &ModelUtils::s_pakStatus;
-		break;
+		{
+			pAttribute = &ModelUtils::s_pakStatus;
+			break;
+		}
 	case CItemModel::EColumns::InPak:
-		pAttribute = &ModelUtils::s_inPakAttribute;
-		break;
+		{
+			pAttribute = &ModelUtils::s_inPakAttribute;
+			break;
+		}
 	case CItemModel::EColumns::OnDisk:
-		pAttribute = &ModelUtils::s_onDiskAttribute;
-		break;
+		{
+			pAttribute = &ModelUtils::s_onDiskAttribute;
+			break;
+		}
 	case CItemModel::EColumns::Localized:
-		pAttribute = &ModelUtils::s_localizedAttribute;
-		break;
+		{
+			pAttribute = &ModelUtils::s_localizedAttribute;
+			break;
+		}
 	case CItemModel::EColumns::Name:
-		pAttribute = &Attributes::s_nameAttribute;
-		break;
+		{
+			pAttribute = &Attributes::s_nameAttribute;
+			break;
+		}
 	default:
-		pAttribute = nullptr;
-		break;
+		{
+			pAttribute = nullptr;
+			break;
+		}
 	}
 
 	return pAttribute;
@@ -196,39 +212,53 @@ QVariant CItemModel::data(QModelIndex const& index, int role) const
 						switch (role)
 						{
 						case Qt::DecorationRole:
-							if ((flags & (EItemFlags::IsConnected | EItemFlags::IsContainer)) == 0)
 							{
-								variant = ModelUtils::GetItemNotificationIcon(ModelUtils::EItemStatus::NoConnection);
+								if ((flags & (EItemFlags::IsConnected | EItemFlags::IsContainer)) == 0)
+								{
+									variant = ModelUtils::GetItemNotificationIcon(ModelUtils::EItemStatus::NoConnection);
+								}
+								else if ((flags& EItemFlags::IsLocalized) != 0)
+								{
+									variant = ModelUtils::GetItemNotificationIcon(ModelUtils::EItemStatus::Localized);
+								}
+
+								break;
 							}
-							else if ((flags& EItemFlags::IsLocalized) != 0)
-							{
-								variant = ModelUtils::GetItemNotificationIcon(ModelUtils::EItemStatus::Localized);
-							}
-							break;
 						case Qt::ToolTipRole:
-							if ((flags & (EItemFlags::IsConnected | EItemFlags::IsContainer)) == 0)
 							{
-								variant = TypeToString(pItem->GetType()) + tr(" is not connected to any audio system control");
+								if ((flags & (EItemFlags::IsConnected | EItemFlags::IsContainer)) == 0)
+								{
+									variant = TypeToString(pItem->GetType()) + tr(" is not connected to any audio system control");
+								}
+								else if ((flags& EItemFlags::IsLocalized) != 0)
+								{
+									variant = TypeToString(pItem->GetType()) + tr(" is localized");
+								}
+
+								break;
 							}
-							else if ((flags& EItemFlags::IsLocalized) != 0)
-							{
-								variant = TypeToString(pItem->GetType()) + tr(" is localized");
-							}
-							break;
 						case static_cast<int>(ModelUtils::ERoles::Id):
-							variant = pItem->GetId();
-							break;
+							{
+								variant = pItem->GetId();
+								break;
+							}
 						default:
-							break;
+							{
+								break;
+							}
 						}
+
+						break;
 					}
-					break;
 				case static_cast<int>(EColumns::Connected):
-					if ((role == Qt::CheckStateRole) && ((flags& EItemFlags::IsContainer) == 0))
 					{
-						variant = ((flags& EItemFlags::IsConnected) != 0) ? Qt::Checked : Qt::Unchecked;
+						if ((role == Qt::CheckStateRole) && ((flags& EItemFlags::IsContainer) == 0))
+						{
+							variant = ((flags& EItemFlags::IsConnected) != 0) ? Qt::Checked : Qt::Unchecked;
+						}
+
+						break;
 					}
-					break;
 				case static_cast<int>(EColumns::PakStatus):
 					{
 						switch (role)
@@ -241,8 +271,9 @@ QVariant CItemModel::data(QModelIndex const& index, int role) const
 								{
 									variant = ModelUtils::GetPakStatusIcon(pItem->GetPakStatus());
 								}
+
+								break;
 							}
-							break;
 						case Qt::ToolTipRole:
 							{
 								EPakStatus const pakStatus = pItem->GetPakStatus();
@@ -259,61 +290,87 @@ QVariant CItemModel::data(QModelIndex const& index, int role) const
 								{
 									variant = TypeToString(pItem->GetType()) + tr(" is only on disk");
 								}
+
+								break;
 							}
-							break;
 						}
+
+						break;
 					}
-					break;
 				case static_cast<int>(EColumns::InPak):
 					{
 						if (role == Qt::CheckStateRole)
 						{
 							variant = ((pItem->GetPakStatus() & EPakStatus::InPak) != 0) ? Qt::Checked : Qt::Unchecked;
 						}
+
+						break;
 					}
-					break;
 				case static_cast<int>(EColumns::OnDisk):
 					{
 						if (role == Qt::CheckStateRole)
 						{
 							variant = ((pItem->GetPakStatus() & EPakStatus::OnDisk) != 0) ? Qt::Checked : Qt::Unchecked;
 						}
+
+						break;
 					}
-					break;
 				case static_cast<int>(EColumns::Localized):
-					if (role == Qt::CheckStateRole)
 					{
-						variant = ((flags& EItemFlags::IsLocalized) != 0) ? Qt::Checked : Qt::Unchecked;
+						if (role == Qt::CheckStateRole)
+						{
+							variant = ((flags& EItemFlags::IsLocalized) != 0) ? Qt::Checked : Qt::Unchecked;
+						}
+
+						break;
 					}
-					break;
 				case static_cast<int>(EColumns::Name):
 					{
 						switch (role)
 						{
 						case Qt::DecorationRole:
-							variant = GetTypeIcon(pItem->GetType());
-							break;
-						case Qt::DisplayRole:
+							{
+								variant = GetTypeIcon(pItem->GetType());
+								break;
+							}
+						case Qt::DisplayRole: // Intentional fall-through.
 						case Qt::ToolTipRole:
-							variant = QtUtil::ToQString(pItem->GetName());
-							break;
+							{
+								variant = QtUtil::ToQString(pItem->GetName());
+								break;
+							}
 						case static_cast<int>(ModelUtils::ERoles::Id):
-							variant = pItem->GetId();
-							break;
+							{
+								variant = pItem->GetId();
+								break;
+							}
 						case static_cast<int>(ModelUtils::ERoles::SortPriority):
-							variant = static_cast<int>(pItem->GetType());
-							break;
+							{
+								variant = static_cast<int>(pItem->GetType());
+								break;
+							}
 						case static_cast<int>(ModelUtils::ERoles::IsPlaceholder):
-							variant = (flags& EItemFlags::IsPlaceHolder) != 0;
-							break;
+							{
+								variant = (flags& EItemFlags::IsPlaceHolder) != 0;
+								break;
+							}
 						case static_cast<int>(ModelUtils::ERoles::InternalPointer):
-							variant = reinterpret_cast<intptr_t>(pItem);
-							break;
+							{
+								variant = reinterpret_cast<intptr_t>(pItem);
+								break;
+							}
 						default:
-							break;
+							{
+								break;
+							}
 						}
+
+						break;
 					}
-					break;
+				default:
+					{
+						break;
+					}
 				}
 			}
 		}
@@ -336,26 +393,39 @@ QVariant CItemModel::headerData(int section, Qt::Orientation orientation, int ro
 			switch (role)
 			{
 			case Qt::DecorationRole:
-				if (section == static_cast<int>(EColumns::Notification))
 				{
-					variant = ModelUtils::GetItemNotificationIcon(ModelUtils::EItemStatus::NotificationHeader);
+					if (section == static_cast<int>(EColumns::Notification))
+					{
+						variant = ModelUtils::GetItemNotificationIcon(ModelUtils::EItemStatus::NotificationHeader);
+					}
+
+					break;
 				}
-				break;
+
 			case Qt::DisplayRole:
-				// For the notification header an icon is used instead of text.
-				if (section != static_cast<int>(EColumns::Notification))
+				{
+					// For the notification header an icon is used instead of text.
+					if (section != static_cast<int>(EColumns::Notification))
+					{
+						variant = pAttribute->GetName();
+					}
+
+					break;
+				}
+			case Qt::ToolTipRole:
 				{
 					variant = pAttribute->GetName();
+					break;
 				}
-				break;
-			case Qt::ToolTipRole:
-				variant = pAttribute->GetName();
-				break;
 			case Attributes::s_getAttributeRole:
-				variant = QVariant::fromValue(pAttribute);
-				break;
+				{
+					variant = QVariant::fromValue(pAttribute);
+					break;
+				}
 			default:
-				break;
+				{
+					break;
+				}
 			}
 		}
 	}

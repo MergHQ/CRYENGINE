@@ -32,7 +32,7 @@ public:
 	virtual void                    ShutDown() override;
 	virtual void                    OnBeforeRelease() override {}
 	virtual void                    Release() override;
-	virtual void                    SetLibraryData(XmlNodeRef const pNode, ContextId const contextId) override;
+	virtual void                    SetLibraryData(XmlNodeRef const& node, ContextId const contextId) override;
 	virtual void                    OnBeforeLibraryDataChanged() override;
 	virtual void                    OnAfterLibraryDataChanged(int const poolAllocationMode) override;
 	virtual void                    OnLoseFocus() override;
@@ -44,20 +44,20 @@ public:
 	virtual ERequestStatus          StopAllSounds() override;
 	virtual void                    RegisterInMemoryFile(SFileInfo* const pFileInfo) override;
 	virtual void                    UnregisterInMemoryFile(SFileInfo* const pFileInfo) override;
-	virtual ERequestStatus          ConstructFile(XmlNodeRef const pRootNode, SFileInfo* const pFileInfo) override;
+	virtual ERequestStatus          ConstructFile(XmlNodeRef const& rootNode, SFileInfo* const pFileInfo) override;
 	virtual void                    DestructFile(IFile* const pIFile) override;
 	virtual char const* const       GetFileLocation(SFileInfo* const pFileInfo) override;
 	virtual void                    GetInfo(SImplInfo& implInfo) const override;
-	virtual ITriggerConnection*     ConstructTriggerConnection(XmlNodeRef const pRootNode, float& radius) override;
+	virtual ITriggerConnection*     ConstructTriggerConnection(XmlNodeRef const& rootNode, float& radius) override;
 	virtual ITriggerConnection*     ConstructTriggerConnection(ITriggerInfo const* const pITriggerInfo) override;
 	virtual void                    DestructTriggerConnection(ITriggerConnection const* const pITriggerConnection) override;
-	virtual IParameterConnection*   ConstructParameterConnection(XmlNodeRef const pRootNode) override;
+	virtual IParameterConnection*   ConstructParameterConnection(XmlNodeRef const& rootNode) override;
 	virtual void                    DestructParameterConnection(IParameterConnection const* const pIParameterConnection) override;
-	virtual ISwitchStateConnection* ConstructSwitchStateConnection(XmlNodeRef const pRootNode) override;
+	virtual ISwitchStateConnection* ConstructSwitchStateConnection(XmlNodeRef const& rootNode) override;
 	virtual void                    DestructSwitchStateConnection(ISwitchStateConnection const* const pISwitchStateConnection) override;
-	virtual IEnvironmentConnection* ConstructEnvironmentConnection(XmlNodeRef const pRootNode) override;
+	virtual IEnvironmentConnection* ConstructEnvironmentConnection(XmlNodeRef const& rootNode) override;
 	virtual void                    DestructEnvironmentConnection(IEnvironmentConnection const* const pIEnvironmentConnection) override;
-	virtual ISettingConnection*     ConstructSettingConnection(XmlNodeRef const pRootNode) override;
+	virtual ISettingConnection*     ConstructSettingConnection(XmlNodeRef const& rootNode) override;
 	virtual void                    DestructSettingConnection(ISettingConnection const* const pISettingConnection) override;
 	virtual IObject*                ConstructGlobalObject() override;
 	virtual IObject*                ConstructObject(CTransformation const& transformation, char const* const szName = nullptr) override;

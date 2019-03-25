@@ -60,7 +60,7 @@ public:
 	IConnection*        GetConnection(ControlId const id) const;
 	void                BackupAndClearConnections();
 	void                ReloadConnections();
-	void                LoadConnectionFromXML(XmlNodeRef const xmlNode);
+	void                LoadConnectionFromXML(XmlNodeRef const& node);
 
 private:
 

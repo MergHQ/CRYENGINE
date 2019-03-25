@@ -29,7 +29,7 @@ public:
 	~CPreviewTrigger();
 
 	void Execute(Impl::ITriggerInfo const& triggerInfo);
-	void Execute(XmlNodeRef const pNode);
+	void Execute(XmlNodeRef const& node);
 	void Clear();
 
 private:

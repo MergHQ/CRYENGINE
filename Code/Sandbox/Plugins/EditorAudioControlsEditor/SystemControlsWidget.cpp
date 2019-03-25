@@ -58,7 +58,6 @@ void GetAssetsFromIndexesSeparated(
 					outLibraries.push_back(reinterpret_cast<CLibrary*>(internalPtr.value<intptr_t>()));
 					break;
 				}
-
 			case static_cast<int>(EAssetType::Folder):
 				{
 					outFolders.push_back(reinterpret_cast<CFolder*>(internalPtr.value<intptr_t>()));
@@ -92,11 +91,11 @@ void GetAssetsFromIndexesCombined(QModelIndexList const& indexes, Assets& outAss
 //////////////////////////////////////////////////////////////////////////
 XmlNodeRef ConstructTemporaryTrigger(CControl const* const pControl)
 {
-	XmlNodeRef const pNode = GetISystem()->CreateXmlNode(CryAudio::g_szTriggerTag);
+	XmlNodeRef const node = GetISystem()->CreateXmlNode(CryAudio::g_szTriggerTag);
 
-	if (pNode != nullptr)
+	if (node.isValid())
 	{
-		pNode->setAttr(CryAudio::g_szNameAttribute, pControl->GetName());
+		node->setAttr(CryAudio::g_szNameAttribute, pControl->GetName());
 		size_t const numConnections = pControl->GetConnectionCount();
 
 		for (size_t i = 0; i < numConnections; ++i)
@@ -105,12 +104,12 @@ XmlNodeRef ConstructTemporaryTrigger(CControl const* const pControl)
 
 			if (pIConnection != nullptr)
 			{
-				AssetUtils::TryConstructTriggerConnectionNode(pNode, pIConnection, pControl->GetContextId());
+				AssetUtils::TryConstructTriggerConnectionNode(node, pIConnection, pControl->GetContextId());
 			}
 		}
 	}
 
-	return pNode;
+	return node;
 }
 
 //////////////////////////////////////////////////////////////////////////

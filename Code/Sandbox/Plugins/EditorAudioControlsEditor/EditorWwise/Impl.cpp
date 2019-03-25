@@ -100,32 +100,50 @@ char const* TypeToTag(EItemType const type)
 	switch (type)
 	{
 	case EItemType::Event:
-		szTag = CryAudio::Impl::Wwise::g_szEventTag;
-		break;
+		{
+			szTag = CryAudio::Impl::Wwise::g_szEventTag;
+			break;
+		}
 	case EItemType::Parameter:
-		szTag = CryAudio::Impl::Wwise::g_szParameterTag;
-		break;
+		{
+			szTag = CryAudio::Impl::Wwise::g_szParameterTag;
+			break;
+		}
 	case EItemType::Switch:
-		szTag = CryAudio::Impl::Wwise::g_szValueTag;
-		break;
+		{
+			szTag = CryAudio::Impl::Wwise::g_szValueTag;
+			break;
+		}
 	case EItemType::AuxBus:
-		szTag = CryAudio::Impl::Wwise::g_szAuxBusTag;
-		break;
+		{
+			szTag = CryAudio::Impl::Wwise::g_szAuxBusTag;
+			break;
+		}
 	case EItemType::SoundBank:
-		szTag = CryAudio::Impl::Wwise::g_szFileTag;
-		break;
+		{
+			szTag = CryAudio::Impl::Wwise::g_szFileTag;
+			break;
+		}
 	case EItemType::State:
-		szTag = CryAudio::Impl::Wwise::g_szValueTag;
-		break;
+		{
+			szTag = CryAudio::Impl::Wwise::g_szValueTag;
+			break;
+		}
 	case EItemType::SwitchGroup:
-		szTag = CryAudio::Impl::Wwise::g_szSwitchGroupTag;
-		break;
+		{
+			szTag = CryAudio::Impl::Wwise::g_szSwitchGroupTag;
+			break;
+		}
 	case EItemType::StateGroup:
-		szTag = CryAudio::Impl::Wwise::g_szStateGroupTag;
-		break;
+		{
+			szTag = CryAudio::Impl::Wwise::g_szStateGroupTag;
+			break;
+		}
 	default:
-		szTag = nullptr;
-		break;
+		{
+			szTag = nullptr;
+			break;
+		}
 	}
 
 	return szTag;
@@ -164,7 +182,9 @@ void CountConnections(
 					break;
 				}
 			default:
-				break;
+				{
+					break;
+				}
 			}
 
 			break;
@@ -190,7 +210,9 @@ void CountConnections(
 			break;
 		}
 	default:
-		break;
+		{
+			break;
+		}
 	}
 }
 
@@ -354,28 +376,39 @@ void CImpl::Serialize(Serialization::IArchive& ar)
 bool CImpl::IsTypeCompatible(EAssetType const assetType, IItem const* const pIItem) const
 {
 	bool isCompatible = false;
+
 	auto const pItem = static_cast<CItem const* const>(pIItem);
+	EItemType const implType = pItem->GetType();
 
-	if (pItem != nullptr)
+	switch (assetType)
 	{
-		EItemType const implType = pItem->GetType();
-
-		switch (assetType)
+	case EAssetType::Trigger:
 		{
-		case EAssetType::Trigger:
 			isCompatible = (implType == EItemType::Event);
 			break;
-		case EAssetType::Parameter:
+		}
+	case EAssetType::Parameter:
+		{
 			isCompatible = (implType == EItemType::Parameter);
 			break;
-		case EAssetType::State:
+		}
+	case EAssetType::State:
+		{
 			isCompatible = (implType == EItemType::Switch) || (implType == EItemType::State) || (implType == EItemType::Parameter);
 			break;
-		case EAssetType::Environment:
+		}
+	case EAssetType::Environment:
+		{
 			isCompatible = (implType == EItemType::AuxBus) || (implType == EItemType::Parameter);
 			break;
-		case EAssetType::Preload:
+		}
+	case EAssetType::Preload:
+		{
 			isCompatible = (implType == EItemType::SoundBank);
+			break;
+		}
+	default:
+		{
 			break;
 		}
 	}
@@ -389,33 +422,42 @@ EAssetType CImpl::ImplTypeToAssetType(IItem const* const pIItem) const
 	EAssetType assetType = EAssetType::None;
 	auto const pItem = static_cast<CItem const* const>(pIItem);
 
-	if (pItem != nullptr)
+	switch (pItem->GetType())
 	{
-		EItemType const implType = pItem->GetType();
-
-		switch (implType)
+	case EItemType::Event:
 		{
-		case EItemType::Event:
 			assetType = EAssetType::Trigger;
 			break;
-		case EItemType::Parameter:
+		}
+	case EItemType::Parameter:
+		{
 			assetType = EAssetType::Parameter;
 			break;
-		case EItemType::Switch: // Intentional fall-through.
-		case EItemType::State:
+		}
+	case EItemType::Switch: // Intentional fall-through.
+	case EItemType::State:
+		{
 			assetType = EAssetType::State;
 			break;
-		case EItemType::AuxBus:
+		}
+	case EItemType::AuxBus:
+		{
 			assetType = EAssetType::Environment;
 			break;
-		case EItemType::SoundBank:
+		}
+	case EItemType::SoundBank:
+		{
 			assetType = EAssetType::Preload;
 			break;
-		case EItemType::StateGroup: // Intentional fall-through.
-		case EItemType::SwitchGroup:
+		}
+	case EItemType::StateGroup: // Intentional fall-through.
+	case EItemType::SwitchGroup:
+		{
 			assetType = EAssetType::Switch;
 			break;
-		default:
+		}
+	default:
+		{
 			assetType = EAssetType::None;
 			break;
 		}
@@ -430,58 +472,58 @@ IConnection* CImpl::CreateConnectionToControl(EAssetType const assetType, IItem 
 	IConnection* pIConnection = nullptr;
 	auto const pItem = static_cast<CItem const* const>(pIItem);
 
-	if (pItem != nullptr)
+	if (pItem->GetType() == EItemType::Parameter)
 	{
-		EItemType itemType = pItem->GetType();
-
-		if (itemType == EItemType::Parameter)
+		switch (assetType)
 		{
-			switch (assetType)
+		case EAssetType::Parameter: // Intentional fall-through.
+		case EAssetType::Environment:
 			{
-			case EAssetType::Parameter: // Intentional fall-through.
-			case EAssetType::Environment:
 				pIConnection = static_cast<IConnection*>(new CParameterConnection(pItem->GetId()));
 				break;
-			case EAssetType::State:
+			}
+		case EAssetType::State:
+			{
 				pIConnection = static_cast<IConnection*>(new CParameterToStateConnection(pItem->GetId()));
 				break;
-			default:
+			}
+		default:
+			{
 				pIConnection = static_cast<IConnection*>(new CGenericConnection(pItem->GetId()));
 				break;
 			}
 		}
-		else
-		{
-			pIConnection = static_cast<IConnection*>(new CGenericConnection(pItem->GetId()));
-		}
-
+	}
+	else
+	{
+		pIConnection = static_cast<IConnection*>(new CGenericConnection(pItem->GetId()));
 	}
 
 	return pIConnection;
 }
 
 //////////////////////////////////////////////////////////////////////////
-IConnection* CImpl::CreateConnectionFromXMLNode(XmlNodeRef pNode, EAssetType const assetType)
+IConnection* CImpl::CreateConnectionFromXMLNode(XmlNodeRef const& node, EAssetType const assetType)
 {
 	IConnection* pIConnection = nullptr;
 
-	if (pNode != nullptr)
+	if (node.isValid())
 	{
-		EItemType const type = TagToType(pNode->getTag());
+		EItemType const type = TagToType(node->getTag());
 
 		if (type != EItemType::None)
 		{
-			string name = pNode->getAttr(CryAudio::g_szNameAttribute);
-			string localizedAttribute = pNode->getAttr(CryAudio::Impl::Wwise::g_szLocalizedAttribute);
+			string name = node->getAttr(CryAudio::g_szNameAttribute);
+			string localizedAttribute = node->getAttr(CryAudio::Impl::Wwise::g_szLocalizedAttribute);
 #if defined (USE_BACKWARDS_COMPATIBILITY)
-			if (name.IsEmpty() && pNode->haveAttr("wwise_name"))
+			if (name.IsEmpty() && node->haveAttr("wwise_name"))
 			{
-				name = pNode->getAttr("wwise_name");
+				name = node->getAttr("wwise_name");
 			}
 
-			if (localizedAttribute.IsEmpty() && pNode->haveAttr("wwise_localised"))
+			if (localizedAttribute.IsEmpty() && node->haveAttr("wwise_localised"))
 			{
-				localizedAttribute = pNode->getAttr("wwise_localised");
+				localizedAttribute = node->getAttr("wwise_localised");
 			}
 #endif      // USE_BACKWARDS_COMPATIBILITY
 			bool const isLocalized = (localizedAttribute.compareNoCase(CryAudio::Impl::Wwise::g_szTrueValue) == 0);
@@ -504,18 +546,18 @@ IConnection* CImpl::CreateConnectionFromXMLNode(XmlNodeRef pNode, EAssetType con
 			// If it's a switch we actually connect to one of the states within the switch
 			if ((type == EItemType::SwitchGroup) || (type == EItemType::StateGroup))
 			{
-				if (pNode->getChildCount() == 1)
+				if (node->getChildCount() == 1)
 				{
-					pNode = pNode->getChild(0);
+					XmlNodeRef const childNode = node->getChild(0);
 
-					if (pNode != nullptr)
+					if (childNode.isValid())
 					{
-						string childName = pNode->getAttr(CryAudio::g_szNameAttribute);
+						string childName = childNode->getAttr(CryAudio::g_szNameAttribute);
 
 #if defined (USE_BACKWARDS_COMPATIBILITY)
-						if (childName.IsEmpty() && pNode->haveAttr("wwise_name"))
+						if (childName.IsEmpty() && childNode->haveAttr("wwise_name"))
 						{
-							childName = pNode->getAttr("wwise_name");
+							childName = childNode->getAttr("wwise_name");
 						}
 #endif            // USE_BACKWARDS_COMPATIBILITY
 
@@ -563,40 +605,44 @@ IConnection* CImpl::CreateConnectionFromXMLNode(XmlNodeRef pNode, EAssetType con
 							float mult = CryAudio::Impl::Wwise::g_defaultParamMultiplier;
 							float shift = CryAudio::Impl::Wwise::g_defaultParamShift;
 
-							pNode->getAttr(CryAudio::Impl::Wwise::g_szMutiplierAttribute, mult);
-							pNode->getAttr(CryAudio::Impl::Wwise::g_szShiftAttribute, shift);
+							node->getAttr(CryAudio::Impl::Wwise::g_szMutiplierAttribute, mult);
+							node->getAttr(CryAudio::Impl::Wwise::g_szShiftAttribute, shift);
 #if defined (USE_BACKWARDS_COMPATIBILITY)
-							if (pNode->haveAttr("wwise_value_multiplier"))
+							if (node->haveAttr("wwise_value_multiplier"))
 							{
-								pNode->getAttr("wwise_value_multiplier", mult);
+								node->getAttr("wwise_value_multiplier", mult);
 							}
-							if (pNode->haveAttr("wwise_value_shift"))
+							if (node->haveAttr("wwise_value_shift"))
 							{
-								pNode->getAttr("wwise_value_shift", shift);
+								node->getAttr("wwise_value_shift", shift);
 							}
 #endif              // USE_BACKWARDS_COMPATIBILITY
 
 							pIConnection = static_cast<IConnection*>(new CParameterConnection(pItem->GetId(), mult, shift));
+
+							break;
 						}
-						break;
 					case EAssetType::State:
 						{
 							float value = CryAudio::Impl::Wwise::g_defaultStateValue;
 
-							pNode->getAttr(CryAudio::Impl::Wwise::g_szValueAttribute, value);
+							node->getAttr(CryAudio::Impl::Wwise::g_szValueAttribute, value);
 #if defined (USE_BACKWARDS_COMPATIBILITY)
-							if (pNode->haveAttr("wwise_value"))
+							if (node->haveAttr("wwise_value"))
 							{
-								pNode->getAttr("wwise_value", value);
+								node->getAttr("wwise_value", value);
 							}
 #endif              // USE_BACKWARDS_COMPATIBILITY
 
 							pIConnection = static_cast<IConnection*>(new CParameterToStateConnection(pItem->GetId(), value));
+
+							break;
 						}
-						break;
 					default:
-						pIConnection = static_cast<IConnection*>(new CGenericConnection(pItem->GetId()));
-						break;
+						{
+							pIConnection = static_cast<IConnection*>(new CGenericConnection(pItem->GetId()));
+							break;
+						}
 					}
 				}
 				else
@@ -616,7 +662,7 @@ XmlNodeRef CImpl::CreateXMLNodeFromConnection(
 	EAssetType const assetType,
 	CryAudio::ContextId const contextId)
 {
-	XmlNodeRef pNode = nullptr;
+	XmlNodeRef node;
 
 	auto const pItem = static_cast<CItem const*>(GetItem(pIConnection->GetID()));
 
@@ -635,22 +681,23 @@ XmlNodeRef CImpl::CreateXMLNodeFromConnection(
 
 				if (pParent != nullptr)
 				{
-					XmlNodeRef const pSwitchNode = GetISystem()->CreateXmlNode(TypeToTag(pParent->GetType()));
-					pSwitchNode->setAttr(CryAudio::g_szNameAttribute, pParent->GetName());
+					XmlNodeRef const switchNode = GetISystem()->CreateXmlNode(TypeToTag(pParent->GetType()));
+					switchNode->setAttr(CryAudio::g_szNameAttribute, pParent->GetName());
 
-					XmlNodeRef const pStateNode = pSwitchNode->createNode(CryAudio::Impl::Wwise::g_szValueTag);
-					pStateNode->setAttr(CryAudio::g_szNameAttribute, pItem->GetName());
-					pSwitchNode->addChild(pStateNode);
+					XmlNodeRef const stateNode = switchNode->createNode(CryAudio::Impl::Wwise::g_szValueTag);
+					stateNode->setAttr(CryAudio::g_szNameAttribute, pItem->GetName());
+					switchNode->addChild(stateNode);
 
-					pNode = pSwitchNode;
+					node = switchNode;
 				}
+
+				break;
 			}
-			break;
 		case EItemType::Parameter:
 			{
-				XmlNodeRef pConnectionNode;
-				pConnectionNode = GetISystem()->CreateXmlNode(TypeToTag(itemType));
-				pConnectionNode->setAttr(CryAudio::g_szNameAttribute, pItem->GetName());
+				XmlNodeRef connectionNode;
+				connectionNode = GetISystem()->CreateXmlNode(TypeToTag(itemType));
+				connectionNode->setAttr(CryAudio::g_szNameAttribute, pItem->GetName());
 
 				if ((assetType == EAssetType::Parameter) || (assetType == EAssetType::Environment))
 				{
@@ -660,107 +707,114 @@ XmlNodeRef CImpl::CreateXMLNodeFromConnection(
 
 					if (mult != CryAudio::Impl::Wwise::g_defaultParamMultiplier)
 					{
-						pConnectionNode->setAttr(CryAudio::Impl::Wwise::g_szMutiplierAttribute, mult);
+						connectionNode->setAttr(CryAudio::Impl::Wwise::g_szMutiplierAttribute, mult);
 					}
 
 					float const shift = pParameterConnection->GetShift();
 
 					if (shift != CryAudio::Impl::Wwise::g_defaultParamShift)
 					{
-						pConnectionNode->setAttr(CryAudio::Impl::Wwise::g_szShiftAttribute, shift);
+						connectionNode->setAttr(CryAudio::Impl::Wwise::g_szShiftAttribute, shift);
 					}
 
 				}
 				else if (assetType == EAssetType::State)
 				{
 					auto const pStateConnection = static_cast<CParameterToStateConnection const*>(pIConnection);
-					pConnectionNode->setAttr(CryAudio::Impl::Wwise::g_szValueAttribute, pStateConnection->GetValue());
+					connectionNode->setAttr(CryAudio::Impl::Wwise::g_szValueAttribute, pStateConnection->GetValue());
 				}
 
-				pNode = pConnectionNode;
+				node = connectionNode;
+
+				break;
 			}
-			break;
 		case EItemType::Event: // Intentional fall-through.
 		case EItemType::AuxBus:
 			{
-				XmlNodeRef pConnectionNode;
-				pConnectionNode = GetISystem()->CreateXmlNode(TypeToTag(itemType));
-				pConnectionNode->setAttr(CryAudio::g_szNameAttribute, pItem->GetName());
-				pNode = pConnectionNode;
+				XmlNodeRef connectionNode;
+				connectionNode = GetISystem()->CreateXmlNode(TypeToTag(itemType));
+				connectionNode->setAttr(CryAudio::g_szNameAttribute, pItem->GetName());
+				node = connectionNode;
+
+				break;
 			}
-			break;
 		case EItemType::SoundBank:
 			{
-				XmlNodeRef pConnectionNode = GetISystem()->CreateXmlNode(TypeToTag(itemType));
-				pConnectionNode->setAttr(CryAudio::g_szNameAttribute, pItem->GetName());
+				XmlNodeRef connectionNode = GetISystem()->CreateXmlNode(TypeToTag(itemType));
+				connectionNode->setAttr(CryAudio::g_szNameAttribute, pItem->GetName());
 
 				if ((pItem->GetFlags() & EItemFlags::IsLocalized) != 0)
 				{
-					pConnectionNode->setAttr(CryAudio::Impl::Wwise::g_szLocalizedAttribute, CryAudio::Impl::Wwise::g_szTrueValue);
+					connectionNode->setAttr(CryAudio::Impl::Wwise::g_szLocalizedAttribute, CryAudio::Impl::Wwise::g_szTrueValue);
 				}
 
-				pNode = pConnectionNode;
+				node = connectionNode;
+
+				break;
 			}
-			break;
+		default:
+			{
+				break;
+			}
 		}
 
 		CountConnections(assetType, itemType, contextId);
 	}
 
-	return pNode;
+	return node;
 }
 
 //////////////////////////////////////////////////////////////////////////
 XmlNodeRef CImpl::SetDataNode(char const* const szTag, CryAudio::ContextId const contextId)
 {
-	XmlNodeRef pNode = nullptr;
+	XmlNodeRef node;
 
 	if (g_connections.find(contextId) != g_connections.end())
 	{
-		pNode = GetISystem()->CreateXmlNode(szTag);
+		node = GetISystem()->CreateXmlNode(szTag);
 
 		if (g_connections[contextId].events > 0)
 		{
-			pNode->setAttr(CryAudio::Impl::Wwise::g_szEventsAttribute, g_connections[contextId].events);
+			node->setAttr(CryAudio::Impl::Wwise::g_szEventsAttribute, g_connections[contextId].events);
 		}
 
 		if (g_connections[contextId].parameters > 0)
 		{
-			pNode->setAttr(CryAudio::Impl::Wwise::g_szParametersAttribute, g_connections[contextId].parameters);
+			node->setAttr(CryAudio::Impl::Wwise::g_szParametersAttribute, g_connections[contextId].parameters);
 		}
 
 		if (g_connections[contextId].parameterEnvironments > 0)
 		{
-			pNode->setAttr(CryAudio::Impl::Wwise::g_szParameterEnvironmentsAttribute, g_connections[contextId].parameterEnvironments);
+			node->setAttr(CryAudio::Impl::Wwise::g_szParameterEnvironmentsAttribute, g_connections[contextId].parameterEnvironments);
 		}
 
 		if (g_connections[contextId].parameterStates > 0)
 		{
-			pNode->setAttr(CryAudio::Impl::Wwise::g_szParameterStatesAttribute, g_connections[contextId].parameterStates);
+			node->setAttr(CryAudio::Impl::Wwise::g_szParameterStatesAttribute, g_connections[contextId].parameterStates);
 		}
 
 		if (g_connections[contextId].states > 0)
 		{
-			pNode->setAttr(CryAudio::Impl::Wwise::g_szStatesAttribute, g_connections[contextId].states);
+			node->setAttr(CryAudio::Impl::Wwise::g_szStatesAttribute, g_connections[contextId].states);
 		}
 
 		if (g_connections[contextId].switches > 0)
 		{
-			pNode->setAttr(CryAudio::Impl::Wwise::g_szSwitchesAttribute, g_connections[contextId].switches);
+			node->setAttr(CryAudio::Impl::Wwise::g_szSwitchesAttribute, g_connections[contextId].switches);
 		}
 
 		if (g_connections[contextId].auxBuses > 0)
 		{
-			pNode->setAttr(CryAudio::Impl::Wwise::g_szAuxBusesAttribute, g_connections[contextId].auxBuses);
+			node->setAttr(CryAudio::Impl::Wwise::g_szAuxBusesAttribute, g_connections[contextId].auxBuses);
 		}
 
 		if (g_connections[contextId].soundBanks > 0)
 		{
-			pNode->setAttr(CryAudio::Impl::Wwise::g_szSoundBanksAttribute, g_connections[contextId].soundBanks);
+			node->setAttr(CryAudio::Impl::Wwise::g_szSoundBanksAttribute, g_connections[contextId].soundBanks);
 		}
 	}
 
-	return pNode;
+	return node;
 }
 
 //////////////////////////////////////////////////////////////////////////

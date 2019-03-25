@@ -53,14 +53,20 @@ bool IsParentValid(EAssetType const parentType, EAssetType const assetType)
 	{
 	case EAssetType::Folder: // Intentional fall-through.
 	case EAssetType::Library:
-		isValid = (assetType != EAssetType::State);
-		break;
+		{
+			isValid = (assetType != EAssetType::State);
+			break;
+		}
 	case EAssetType::Switch:
-		isValid = (assetType == EAssetType::State) || (assetType == EAssetType::Parameter);
-		break;
+		{
+			isValid = (assetType == EAssetType::State) || (assetType == EAssetType::Parameter);
+			break;
+		}
 	default:
-		isValid = false;
-		break;
+		{
+			isValid = false;
+			break;
+		}
 	}
 
 	return isValid;
@@ -333,38 +339,60 @@ CItemModelAttribute* CSystemSourceModel::GetAttributeForColumn(EColumns const co
 	switch (column)
 	{
 	case EColumns::Notification:
-		pAttribute = &ModelUtils::s_notificationAttribute;
-		break;
+		{
+			pAttribute = &ModelUtils::s_notificationAttribute;
+			break;
+		}
 	case EColumns::Type:
-		pAttribute = &s_typeAttribute;
-		break;
+		{
+			pAttribute = &s_typeAttribute;
+			break;
+		}
 	case EColumns::Placeholder:
-		pAttribute = &ModelUtils::s_placeholderAttribute;
-		break;
+		{
+			pAttribute = &ModelUtils::s_placeholderAttribute;
+			break;
+		}
 	case EColumns::NoConnection:
-		pAttribute = &ModelUtils::s_connectedAttribute;
-		break;
+		{
+			pAttribute = &ModelUtils::s_connectedAttribute;
+			break;
+		}
 	case EColumns::NoControl:
-		pAttribute = &ModelUtils::s_noControlAttribute;
-		break;
+		{
+			pAttribute = &ModelUtils::s_noControlAttribute;
+			break;
+		}
 	case EColumns::PakStatus:
-		pAttribute = &ModelUtils::s_pakStatus;
-		break;
+		{
+			pAttribute = &ModelUtils::s_pakStatus;
+			break;
+		}
 	case EColumns::InPak:
-		pAttribute = &ModelUtils::s_inPakAttribute;
-		break;
+		{
+			pAttribute = &ModelUtils::s_inPakAttribute;
+			break;
+		}
 	case EColumns::OnDisk:
-		pAttribute = &ModelUtils::s_onDiskAttribute;
-		break;
+		{
+			pAttribute = &ModelUtils::s_onDiskAttribute;
+			break;
+		}
 	case EColumns::Context:
-		pAttribute = &s_contextAttribute;
-		break;
+		{
+			pAttribute = &s_contextAttribute;
+			break;
+		}
 	case EColumns::Name:
-		pAttribute = &Attributes::s_nameAttribute;
-		break;
+		{
+			pAttribute = &Attributes::s_nameAttribute;
+			break;
+		}
 	default:
-		pAttribute = nullptr;
-		break;
+		{
+			pAttribute = nullptr;
+			break;
+		}
 	}
 
 	return pAttribute;
@@ -384,26 +412,38 @@ QVariant CSystemSourceModel::GetHeaderData(int const section, Qt::Orientation co
 			switch (role)
 			{
 			case Qt::DecorationRole:
-				if (section == static_cast<int>(EColumns::Notification))
 				{
-					variant = ModelUtils::GetItemNotificationIcon(ModelUtils::EItemStatus::NotificationHeader);
+					if (section == static_cast<int>(EColumns::Notification))
+					{
+						variant = ModelUtils::GetItemNotificationIcon(ModelUtils::EItemStatus::NotificationHeader);
+					}
+
+					break;
 				}
-				break;
 			case Qt::DisplayRole:
-				// The notification column header uses an icon instead of text.
-				if (section != static_cast<int>(EColumns::Notification))
+				{
+					// The notification column header uses an icon instead of text.
+					if (section != static_cast<int>(EColumns::Notification))
+					{
+						variant = pAttribute->GetName();
+					}
+
+					break;
+				}
+			case Qt::ToolTipRole:
 				{
 					variant = pAttribute->GetName();
+					break;
 				}
-				break;
-			case Qt::ToolTipRole:
-				variant = pAttribute->GetName();
-				break;
 			case Attributes::s_getAttributeRole:
-				variant = QVariant::fromValue(pAttribute);
-				break;
+				{
+					variant = QVariant::fromValue(pAttribute);
+					break;
+				}
 			default:
-				break;
+				{
+					break;
+				}
 			}
 		}
 	}
@@ -498,67 +538,83 @@ QVariant CSystemSourceModel::data(QModelIndex const& index, int role) const
 					switch (role)
 					{
 					case Qt::DecorationRole:
-						if ((flags& EAssetFlags::HasPlaceholderConnection) != 0)
 						{
-							variant = ModelUtils::GetItemNotificationIcon(ModelUtils::EItemStatus::Placeholder);
+							if ((flags& EAssetFlags::HasPlaceholderConnection) != 0)
+							{
+								variant = ModelUtils::GetItemNotificationIcon(ModelUtils::EItemStatus::Placeholder);
+							}
+							else if ((flags& EAssetFlags::HasConnection) == 0)
+							{
+								variant = ModelUtils::GetItemNotificationIcon(ModelUtils::EItemStatus::NoConnection);
+							}
+							else if ((flags& EAssetFlags::HasControl) == 0)
+							{
+								variant = ModelUtils::GetItemNotificationIcon(ModelUtils::EItemStatus::NoControl);
+							}
+
+							break;
 						}
-						else if ((flags& EAssetFlags::HasConnection) == 0)
-						{
-							variant = ModelUtils::GetItemNotificationIcon(ModelUtils::EItemStatus::NoConnection);
-						}
-						else if ((flags& EAssetFlags::HasControl) == 0)
-						{
-							variant = ModelUtils::GetItemNotificationIcon(ModelUtils::EItemStatus::NoControl);
-						}
-						break;
 					case Qt::ToolTipRole:
-						if ((flags& EAssetFlags::HasPlaceholderConnection) != 0)
 						{
-							variant = tr("Contains item whose connection was not found in middleware project");
+							if ((flags& EAssetFlags::HasPlaceholderConnection) != 0)
+							{
+								variant = tr("Contains item whose connection was not found in middleware project");
+							}
+							else if ((flags& EAssetFlags::HasConnection) == 0)
+							{
+								variant = tr("Contains item that is not connected to any middleware control");
+							}
+							else if ((flags& EAssetFlags::HasControl) == 0)
+							{
+								variant = tr("Contains no audio control");
+							}
+
+							break;
 						}
-						else if ((flags& EAssetFlags::HasConnection) == 0)
+					default:
 						{
-							variant = tr("Contains item that is not connected to any middleware control");
+							break;
 						}
-						else if ((flags& EAssetFlags::HasControl) == 0)
-						{
-							variant = tr("Contains no audio control");
-						}
-						break;
 					}
+
+					break;
 				}
-				break;
 			case static_cast<int>(EColumns::Placeholder):
 				{
 					if (role == Qt::CheckStateRole)
 					{
 						variant = ((flags& EAssetFlags::HasPlaceholderConnection) == 0) ? Qt::Checked : Qt::Unchecked;
 					}
+
+					break;
 				}
-				break;
 			case static_cast<int>(EColumns::NoConnection):
 				{
 					if (role == Qt::CheckStateRole)
 					{
 						variant = ((flags& EAssetFlags::HasConnection) != 0) ? Qt::Checked : Qt::Unchecked;
 					}
+
+					break;
 				}
-				break;
 			case static_cast<int>(EColumns::NoControl):
 				{
 					if (role == Qt::CheckStateRole)
 					{
 						variant = ((flags& EAssetFlags::HasControl) == 0) ? Qt::Checked : Qt::Unchecked;
 					}
+
+					break;
 				}
-				break;
 			case static_cast<int>(EColumns::PakStatus):
 				{
 					switch (role)
 					{
 					case Qt::DecorationRole:
-						variant = ModelUtils::GetPakStatusIcon(pLibrary->GetPakStatus());
-						break;
+						{
+							variant = ModelUtils::GetPakStatusIcon(pLibrary->GetPakStatus());
+							break;
+						}
 					case Qt::ToolTipRole:
 						{
 							EPakStatus const pakStatus = pLibrary->GetPakStatus();
@@ -579,48 +635,62 @@ QVariant CSystemSourceModel::data(QModelIndex const& index, int role) const
 							{
 								variant = tr("Library does not exist on disk. Save to write file.");
 							}
+
+							break;
 						}
-						break;
+					default:
+						{
+							break;
+						}
 					}
+
+					break;
 				}
-				break;
 			case static_cast<int>(EColumns::InPak):
 				{
 					if (role == Qt::CheckStateRole)
 					{
 						variant = ((pLibrary->GetPakStatus() & EPakStatus::InPak) != 0) ? Qt::Checked : Qt::Unchecked;
 					}
+
+					break;
 				}
-				break;
 			case static_cast<int>(EColumns::OnDisk):
 				{
 					if (role == Qt::CheckStateRole)
 					{
 						variant = ((pLibrary->GetPakStatus() & EPakStatus::OnDisk) != 0) ? Qt::Checked : Qt::Unchecked;
 					}
+
+					break;
 				}
-				break;
 			case static_cast<int>(EColumns::Name):
 				{
 					switch (role)
 					{
 					case Qt::DecorationRole:
-						variant = GetAssetIcon(EAssetType::Library);
-						break;
-					case Qt::DisplayRole:
-
-						if ((pLibrary->GetFlags() & EAssetFlags::IsModified) != 0)
 						{
-							variant = QtUtil::ToQString(pLibrary->GetName() + " *");
+							variant = GetAssetIcon(EAssetType::Library);
+							break;
 						}
-						else
+					case Qt::DisplayRole:
+						{
+							if ((pLibrary->GetFlags() & EAssetFlags::IsModified) != 0)
+							{
+								variant = QtUtil::ToQString(pLibrary->GetName() + " *");
+							}
+							else
+							{
+								variant = QtUtil::ToQString(pLibrary->GetName());
+							}
+
+							break;
+						}
+					case Qt::EditRole:
 						{
 							variant = QtUtil::ToQString(pLibrary->GetName());
+							break;
 						}
-						break;
-					case Qt::EditRole:
-						variant = QtUtil::ToQString(pLibrary->GetName());
-						break;
 					case Qt::ToolTipRole:
 						{
 							if (!pLibrary->GetDescription().IsEmpty())
@@ -631,20 +701,36 @@ QVariant CSystemSourceModel::data(QModelIndex const& index, int role) const
 							{
 								variant = QtUtil::ToQString(pLibrary->GetName());
 							}
+
+							break;
 						}
-						break;
 					case static_cast<int>(ModelUtils::ERoles::SortPriority):
-						variant = static_cast<int>(EAssetType::Library);
-						break;
+						{
+							variant = static_cast<int>(EAssetType::Library);
+							break;
+						}
 					case static_cast<int>(ModelUtils::ERoles::Name):
-						variant = QtUtil::ToQString(pLibrary->GetName());
-						break;
+						{
+							variant = QtUtil::ToQString(pLibrary->GetName());
+							break;
+						}
 					case static_cast<int>(ModelUtils::ERoles::InternalPointer):
-						variant = reinterpret_cast<intptr_t>(pLibrary);
-						break;
+						{
+							variant = reinterpret_cast<intptr_t>(pLibrary);
+							break;
+						}
+					default:
+						{
+							break;
+						}
 					}
+
+					break;
 				}
-				break;
+			default:
+				{
+					break;
+				}
 			}
 		}
 	}
@@ -679,11 +765,14 @@ bool CSystemSourceModel::setData(QModelIndex const& index, QVariant const& value
 
 						wasDataChanged = true;
 					}
+
+					break;
 				}
-				break;
 			default:
-				CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_ERROR, R"([Audio Controls Editor] The role '%d' is not handled!)", role);
-				break;
+				{
+					CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_ERROR, R"([Audio Controls Editor] The role '%d' is not handled!)", role);
+					break;
+				}
 			}
 		}
 	}

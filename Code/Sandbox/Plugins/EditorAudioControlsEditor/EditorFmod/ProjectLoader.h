@@ -51,18 +51,18 @@ private:
 	void   RemoveEmptyEditorFolders(CItem* const pEditorFolder);
 
 	CItem* GetContainer(string const& id, EItemType const type, CItem& parent, EPakStatus const pakStatus);
-	void   LoadContainer(XmlNodeRef const pNode, EItemType const type, string const& relationshipParamName, CItem& parent, EPakStatus const pakStatus);
-	void   LoadSnapshotGroup(XmlNodeRef const pNode, CItem& parent, EPakStatus const pakStatus);
-	void   LoadFolder(XmlNodeRef const pNode, CItem& parent, EPakStatus const pakStatus);
-	void   LoadMixerGroup(XmlNodeRef const pNode, CItem& parent, EPakStatus const pakStatus);
+	void   LoadContainer(XmlNodeRef const& node, EItemType const type, string const& relationshipParamName, CItem& parent, EPakStatus const pakStatus);
+	void   LoadSnapshotGroup(XmlNodeRef const& node, CItem& parent, EPakStatus const pakStatus);
+	void   LoadFolder(XmlNodeRef const& node, CItem& parent, EPakStatus const pakStatus);
+	void   LoadMixerGroup(XmlNodeRef const& node, CItem& parent, EPakStatus const pakStatus);
 
-	CItem* LoadItem(XmlNodeRef const pNode, EItemType const type, CItem& parent, EPakStatus const pakStatus);
-	CItem* LoadEvent(XmlNodeRef const pNode, CItem& parent, EPakStatus const pakStatus);
-	void   LoadSnapshot(XmlNodeRef const pNode, CItem& parent, EPakStatus const pakStatus);
-	void   LoadReturn(XmlNodeRef const pNode, CItem& parent, EPakStatus const pakStatus);
-	void   LoadParameter(XmlNodeRef const pNode, CItem& parent, EPakStatus const pakStatus);
-	void   LoadVca(XmlNodeRef const pNode, CItem& parent, EPakStatus const pakStatus);
-	void   LoadAudioTable(XmlNodeRef const pNode);
+	CItem* LoadItem(XmlNodeRef const& node, EItemType const type, CItem& parent, EPakStatus const pakStatus);
+	CItem* LoadEvent(XmlNodeRef const& node, CItem& parent, EPakStatus const pakStatus);
+	void   LoadSnapshot(XmlNodeRef const& node, CItem& parent, EPakStatus const pakStatus);
+	void   LoadReturn(XmlNodeRef const& node, CItem& parent, EPakStatus const pakStatus);
+	void   LoadParameter(XmlNodeRef const& node, CItem& parent, EPakStatus const pakStatus);
+	void   LoadVca(XmlNodeRef const& node, CItem& parent, EPakStatus const pakStatus);
+	void   LoadAudioTable(XmlNodeRef const& node);
 	void   LoadKeys(CItem& parent);
 	void   LoadKeysFromFiles(CItem& parent, string const& filePath);
 

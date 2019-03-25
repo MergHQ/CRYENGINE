@@ -167,13 +167,13 @@ void CAudioControlsEditorPlugin::ExecuteTrigger(string const& triggerName)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAudioControlsEditorPlugin::ExecuteTriggerEx(string const& triggerName, XmlNodeRef const pNode)
+void CAudioControlsEditorPlugin::ExecuteTriggerEx(string const& triggerName, XmlNodeRef const& node)
 {
-	if (pNode != nullptr)
+	if (node.isValid())
 	{
 		StopTriggerExecution();
 		s_audioTriggerId = CryAudio::StringToId(triggerName.c_str());
-		gEnv->pAudioSystem->ExecutePreviewTriggerEx(pNode);
+		gEnv->pAudioSystem->ExecutePreviewTriggerEx(node);
 	}
 }
 
