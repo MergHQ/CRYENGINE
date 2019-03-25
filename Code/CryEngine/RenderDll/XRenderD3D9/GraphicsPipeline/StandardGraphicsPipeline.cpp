@@ -552,12 +552,13 @@ void CStandardGraphicsPipeline::Execute()
 	{
 		PROFILE_LABEL_SCOPE("FORWARD Z");
 
+		GetStage<CSceneForwardStage>()->ExecuteOpaque();
+
 		// Opaque forward passes
 		if (GetStage<CSkyStage>())
 		{
 			GetStage<CSkyStage>()->Execute(CRendererResources::s_ptexHDRTarget, pZTexture);
 		}
-		GetStage<CSceneForwardStage>()->ExecuteOpaque();
 	}
 
 	// Deferred ocean caustics

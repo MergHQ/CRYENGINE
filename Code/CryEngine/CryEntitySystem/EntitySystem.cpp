@@ -149,6 +149,8 @@ void SEntityLoadParams::RemoveRef()
 
 //////////////////////////////////////////////////////////////////////
 CEntitySystem::CEntitySystem(ISystem* pSystem)
+	: m_pPartitionGrid(nullptr)
+	, m_pProximityTriggerSystem(nullptr)
 {
 	// Assign allocators.
 	g_Alloc_EntitySlot = new stl::PoolAllocatorNoMT<sizeof(CEntitySlot), 16>(stl::FHeap().FreeWhenEmpty(true));
