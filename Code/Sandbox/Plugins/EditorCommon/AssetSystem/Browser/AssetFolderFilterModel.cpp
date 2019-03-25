@@ -97,6 +97,7 @@ public:
 
 		//TODO: Do incremental updates instead of recomputing all folders for better performance.
 		m_connections.push_back(connect(sourceModel, &CAssetFoldersModel::rowsInserted, [this](const QModelIndex&, int, int) { UpdateFolders(); }));
+		m_connections.push_back(connect(sourceModel, &CAssetFoldersModel::rowsRemoved, [this](const QModelIndex&, int, int) { UpdateFolders(); }));
 	}
 
 	virtual ~FoldersModel()
