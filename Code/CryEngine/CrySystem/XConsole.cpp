@@ -412,13 +412,13 @@ bool CXConsole::ParseCVarOverridesFile(const char* szSysCVarOverridesPathConfigF
 	
 	string sys_cvar_overrides_path;
 	{
-		char path[_MAX_PATH];
-		const char* szAdjustedPath = gEnv->pCryPak->AdjustFileName(szSysCVarOverridesPathConfigFile, path, 0);
+		CryPathString path;
+		gEnv->pCryPak->AdjustFileName(szSysCVarOverridesPathConfigFile, path, 0);
 		std::ifstream inFile;
-		inFile.open(szAdjustedPath);
+		inFile.open(path);
 		if (!inFile.is_open())
 		{
-			CRY_ASSERT_MESSAGE(false, "Failed to open the system.cfg file containing sys_cvar_overrides_path: %s", szAdjustedPath);
+			CRY_ASSERT_MESSAGE(false, "Failed to open the system.cfg file containing sys_cvar_overrides_path: %s", path.c_str());
 			return false;
 		}
 		std::stringstream strStream;
@@ -437,7 +437,7 @@ bool CXConsole::ParseCVarOverridesFile(const char* szSysCVarOverridesPathConfigF
 		}
 		else
 		{
-			CRY_ASSERT_MESSAGE(false, "Failed to find/parse sys_cvar_overrides_path in system.cfg: %s", szAdjustedPath);
+			CRY_ASSERT_MESSAGE(false, "Failed to find/parse sys_cvar_overrides_path in system.cfg: %s", path.c_str());
 			return false;
 		}
 	}

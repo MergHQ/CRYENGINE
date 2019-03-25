@@ -1348,9 +1348,9 @@ CRY_TEST(EditorCreateLevelTest, editor = true, game = false, timeout = 60.f)
 {
 	auto KillLevel = []
 	{
-		char szFullPathBuf[ICryPak::g_nMaxPath];
-		const char* szFullPath = gEnv->pCryPak->AdjustFileName("examplelevel", szFullPathBuf, ICryPak::FOPEN_ONDISK);
-		FileUtils::RemoveDirectory(szFullPath);
+		CryPathString fullPath;
+		gEnv->pCryPak->AdjustFileName("examplelevel", fullPath, ICryPak::FOPEN_ONDISK);
+		FileUtils::RemoveDirectory(fullPath);
 
 		gEnv->pCryPak->RemoveFile("examplelevel.level.cryasset");
 	};

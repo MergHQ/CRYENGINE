@@ -271,10 +271,7 @@ struct ICryPak
 		RFOM_Level,                 //!< During level loading till export2game -> resourcelist.txt, used to generate the list for level2level loading.
 		RFOM_NextLevel              //!< Used for level2level loading.
 	};
-
-	//! The size of the buffer that receives the full path to the file.
-	enum {g_nMaxPath = 0x800};
-
+	
 	//! File location enum used in isFileExist to control where the pak system looks for the file.
 	enum EFileSearchLocation
 	{
@@ -318,8 +315,7 @@ struct ICryPak
 	virtual ~ICryPak(){}
 
 	//! Given the source relative path, constructs the full path to the file according to the flags.
-	//! \return Pointer to the constructed path (can be either szSourcePath, or szDestPath, or NULL in case of error.
-	virtual const char* AdjustFileName(const char* src, char dst[g_nMaxPath], unsigned nFlags) = 0;
+	virtual void        AdjustFileName(const char* src, CryPathString& dst, unsigned nFlags) = 0;
 
 	virtual bool        Init(const char* szBasePath) = 0;
 	virtual void        Release() = 0;
@@ -330,19 +326,19 @@ struct ICryPak
 
 	//! After this call, the pak file will be searched for files when they aren't on the OS file system.
 	//! \param pName Must not be 0.
-	virtual bool OpenPack(const char* pName, unsigned nFlags = FLAGS_PATH_REAL, IMemoryBlock* pData = 0, CryFixedStringT<ICryPak::g_nMaxPath>* pFullPath = 0) = 0;
+	virtual bool OpenPack(const char* pName, unsigned nFlags = FLAGS_PATH_REAL, IMemoryBlock* pData = 0, CryPathString* pFullPath = 0) = 0;
 
 	//! After this call, the pak file will be searched for files when they aren't on the OS file system.
-	virtual bool OpenPack(const char* pBindingRoot, const char* pName, unsigned nFlags = FLAGS_PATH_REAL, IMemoryBlock* pData = 0, CryFixedStringT<ICryPak::g_nMaxPath>* pFullPath = 0) = 0;
+	virtual bool OpenPack(const char* pBindingRoot, const char* pName, unsigned nFlags = FLAGS_PATH_REAL, IMemoryBlock* pData = 0, CryPathString* pFullPath = 0) = 0;
 
 	//! After this call, the file will be unlocked and closed, and its contents won't be used to search for files.
 	virtual bool ClosePack(const char* pName, unsigned nFlags = FLAGS_PATH_REAL) = 0;
 
 	//! Opens pack files by the path and wildcard.
-	virtual bool OpenPacks(const char* pWildcard, unsigned nFlags = FLAGS_PATH_REAL, std::vector<CryFixedStringT<ICryPak::g_nMaxPath>>* pFullPaths = NULL) = 0;
+	virtual bool OpenPacks(const char* pWildcard, unsigned nFlags = FLAGS_PATH_REAL, std::vector<CryPathString>* pFullPaths = NULL) = 0;
 
 	//! Opens pack files by the path and wildcard.
-	virtual bool OpenPacks(const char* pBindingRoot, const char* pWildcard, unsigned nFlags = FLAGS_PATH_REAL, std::vector<CryFixedStringT<ICryPak::g_nMaxPath>>* pFullPaths = NULL) = 0;
+	virtual bool OpenPacks(const char* pBindingRoot, const char* pWildcard, unsigned nFlags = FLAGS_PATH_REAL, std::vector<CryPathString>* pFullPaths = NULL) = 0;
 
 	//! Closes pack files by the path and wildcard.
 	virtual bool ClosePacks(const char* pWildcard, unsigned nFlags = FLAGS_PATH_REAL) = 0;
@@ -692,14 +688,15 @@ inline FILE* fxopen(const char* file, const char* mode, bool bGameRelativePath =
 		{
 			nAdjustFlags |= ICryPak::FLAGS_FOR_WRITING;
 		}
-		char path[_MAX_PATH];
-		const char* szAdjustedPath = gEnv->pCryPak->AdjustFileName(file, path, nAdjustFlags);
+		
+		CryPathString adjustedPath;
+		gEnv->pCryPak->AdjustFileName(file, adjustedPath, nAdjustFlags);
 
 #if !CRY_PLATFORM_LINUX && !CRY_PLATFORM_ANDROID && !CRY_PLATFORM_APPLE
 		if (hasWriteAccess)
 		{
 			// Make sure folder is created.
-			gEnv->pCryPak->MakeDir(PathUtil::GetParentDirectory(szAdjustedPath).c_str());
+			gEnv->pCryPak->MakeDir(PathUtil::GetParentDirectory(adjustedPath).c_str());
 		}
 #endif
 
@@ -739,7 +736,7 @@ inline FILE* fxopen(const char* file, const char* mode, bool bGameRelativePath =
 			cOpenFlags |= O_APPEND;
 		}
 
-		HANDLE winFile = CreateFile(szAdjustedPath, winAccessFlags, FILE_SHARE_READ, 0, winCreationMode, FILE_ATTRIBUTE_NORMAL, 0);
+		HANDLE winFile = CreateFile(adjustedPath, winAccessFlags, FILE_SHARE_READ, 0, winCreationMode, FILE_ATTRIBUTE_NORMAL, 0);
 		if (winFile == INVALID_HANDLE_VALUE)
 		{
 			return 0;
@@ -752,7 +749,7 @@ inline FILE* fxopen(const char* file, const char* mode, bool bGameRelativePath =
 		}
 		return _fdopen(cHandle, mode);
 #else
-		return fopen(szAdjustedPath, mode);
+		return fopen(adjustedPath, mode);
 #endif
 	}
 	else

@@ -428,10 +428,11 @@ private:
 		}
 	}
 
-	static string GetTemporaryDirectoryPath()
+	static CryPathString GetTemporaryDirectoryPath()
 	{
-		char path[ICryPak::g_nMaxPath] = {};
-		return gEnv->pCryPak->AdjustFileName("%USER%/TextureCompiler", path, ICryPak::FLAGS_PATH_REAL | ICryPak::FLAGS_FOR_WRITING | ICryPak::FLAGS_ADD_TRAILING_SLASH);
+		CryPathString path;
+		gEnv->pCryPak->AdjustFileName("%USER%/TextureCompiler", path, ICryPak::FLAGS_PATH_REAL | ICryPak::FLAGS_FOR_WRITING | ICryPak::FLAGS_ADD_TRAILING_SLASH);
+		return path;
 	}
 
 	// Create a temp directory to store texture asset during processing.
@@ -825,8 +826,8 @@ CTextureCompiler::EResult CTextureCompiler::ProcessTextureIfNeeded(
 	char sSrcFile[MAX_PATH];
 	char sDestFile[MAX_PATH];
 
-	char sFullSrcFilename[MAX_PATH];
-	char sFullDestFilename[MAX_PATH];
+	CryPathString sFullSrcFilename;
+	CryPathString sFullDestFilename;
 
 	GetOutputFilename(szOriginalFilename, sDestFile, sizeof(sDestFile));
 

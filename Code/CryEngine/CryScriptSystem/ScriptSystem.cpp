@@ -1052,10 +1052,10 @@ bool CScriptSystem::_ExecuteFile(const char* sFileName, bool bRaiseError, IScrip
 		return false;
 
 	// Translate pak alias filenames
-	char translatedBuf[_MAX_PATH + 1];
-	const char* translated = gEnv->pCryPak->AdjustFileName(sFileName, translatedBuf, ICryPak::FLAGS_NO_FULL_PATH);
+	CryPathString translated;
+	gEnv->pCryPak->AdjustFileName(sFileName, translated, ICryPak::FLAGS_NO_FULL_PATH);
 
-	stack_string fileName("@");
+	CryPathString fileName("@");
 	fileName.append(translated);
 	fileName.replace('\\', '/');
 

@@ -408,27 +408,27 @@ void LoadPresetFromOldFormatXML(CEnvironmentPreset& preset, XmlNodeRef node)
 static const char* sPresetsLibsPath = "libs/environmentpresets/";
 static const char* sPresetXMLRootNodeName = "EnvironmentPreset";
 
-string GetPresetXMLFilenamefromName(const string& presetName, const bool bForWriting)
+CryPathString GetPresetXMLFilenamefromName(const string& presetName, const bool bForWriting)
 {
-	char szAdjustedFile[ICryPak::g_nMaxPath];
-	gEnv->pCryPak->AdjustFileName(presetName.c_str(), szAdjustedFile, bForWriting ? ICryPak::FLAGS_FOR_WRITING : 0);
+	CryPathString adjustedName;
+	gEnv->pCryPak->AdjustFileName(presetName.c_str(), adjustedName, bForWriting ? ICryPak::FLAGS_FOR_WRITING : 0);
 
 	// Backward compatibility with old xml file extension.
-	if (!bForWriting && !GetISystem()->GetIPak()->IsFileExist(szAdjustedFile))
+	if (!bForWriting && !GetISystem()->GetIPak()->IsFileExist(adjustedName))
 	{
-		string filePathXml = PathUtil::ReplaceExtension(szAdjustedFile, "xml");
+		string filePathXml = PathUtil::ReplaceExtension(adjustedName, "xml");
 		if (GetISystem()->GetIPak()->IsFileExist(filePathXml))
 		{
 			return filePathXml;
 		}
 	}
 
-	return szAdjustedFile;
+	return adjustedName;
 }
 
 bool SavePresetToXML(const CEnvironmentPreset& preset, const string& presetName)
 {
-	const string filename = GetPresetXMLFilenamefromName(presetName, false);
+	const CryPathString filename(GetPresetXMLFilenamefromName(presetName, false));
 
 	if (!Serialization::SaveXmlFile(filename.c_str(), preset, sPresetXMLRootNodeName))
 	{
@@ -441,7 +441,7 @@ bool SavePresetToXML(const CEnvironmentPreset& preset, const string& presetName)
 
 bool LoadPresetFromXML(CEnvironmentPreset& pPreset, const string& presetName)
 {
-	const string filename = GetPresetXMLFilenamefromName(presetName, false);
+	const CryPathString filename(GetPresetXMLFilenamefromName(presetName, false));
 	const bool bFileExist = gEnv->pCryPak->IsFileExist(filename.c_str());
 	if (!bFileExist)
 	{

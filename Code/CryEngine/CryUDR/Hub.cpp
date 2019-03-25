@@ -80,9 +80,9 @@ namespace Cry
 						return;
 					}
 
-					char adjustedFilePath[ICryPak::g_nMaxPath] = "";
-
-					if (!gEnv->pCryPak->AdjustFileName(unadjustedFilePath.c_str(), adjustedFilePath, ICryPak::FLAGS_FOR_WRITING))
+					CryPathString adjustedFilePath;
+					gEnv->pCryPak->AdjustFileName(unadjustedFilePath.c_str(), adjustedFilePath, ICryPak::FLAGS_FOR_WRITING);
+					if (adjustedFilePath.empty())
 					{
 						CryWarning(VALIDATOR_MODULE_GAME, VALIDATOR_ERROR, "%s: Could not adjust the desired file path '%s' for writing", pArgs->GetArg(0), unadjustedFilePath.c_str());
 						return;
@@ -95,7 +95,7 @@ namespace Cry
 						return;
 					}
 
-					CryLogAlways("Successfully dumped all recordings to '%s'", adjustedFilePath);
+					CryLogAlways("Successfully dumped all recordings to '%s'", adjustedFilePath.c_str());
 				}
 			}
 		}

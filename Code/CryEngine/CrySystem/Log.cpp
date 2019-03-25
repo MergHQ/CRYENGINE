@@ -1407,9 +1407,10 @@ void CLog::CreateBackupFile() const
 	const string dstFileExt = PathUtil::GetExt(dstFileStr);
 	const string dstFilePath = PathUtil::Make(dstFileDir, dstFileName, dstFileExt);
 	
-	char adjusted[_MAX_PATH];
-	const string adjustedSrcFilePath = gEnv->pCryPak->AdjustFileName(m_filePath, adjusted, ICryPak::FLAGS_FOR_WRITING | ICryPak::FLAGS_PATH_REAL);
-	const string adjustedDstFilePath = gEnv->pCryPak->AdjustFileName(dstFilePath, adjusted, ICryPak::FLAGS_FOR_WRITING | ICryPak::FLAGS_PATH_REAL);
+	CryPathString adjustedSrcFilePath;
+	gEnv->pCryPak->AdjustFileName(m_filePath, adjustedSrcFilePath, ICryPak::FLAGS_FOR_WRITING | ICryPak::FLAGS_PATH_REAL);
+	CryPathString adjustedDstFilePath;
+	gEnv->pCryPak->AdjustFileName(dstFilePath, adjustedDstFilePath, ICryPak::FLAGS_FOR_WRITING | ICryPak::FLAGS_PATH_REAL);
 
 #if CRY_PLATFORM_DURANGO
 	// Xbox has some limitation in file names. No spaces in file name are allowed. The full path is limited by MAX_PATH, etc.

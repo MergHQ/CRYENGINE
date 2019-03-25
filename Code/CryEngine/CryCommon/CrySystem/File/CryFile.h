@@ -338,18 +338,14 @@ inline const char* CCryFile::GetPakPath() const
 //////////////////////////////////////////////////////////////////////////
 inline const char* CCryFile::GetAdjustedFilename() const
 {
-	static char szAdjustedFile[ICryPak::g_nMaxPath];
 	assert(m_pIPak);
 	if (!m_pIPak)
 		return "";
 
 	//! Gets mod path to file.
-	const char* gameUrl = m_pIPak->AdjustFileName(m_filename, szAdjustedFile, 0);
-
-	//! Returns standard path otherwise.
-	if (gameUrl != &szAdjustedFile[0])
-		cry_strcpy(szAdjustedFile, gameUrl);
-	return szAdjustedFile;
+	static CryPathString adjustedFileName;
+	m_pIPak->AdjustFileName(m_filename, adjustedFileName, 0);
+	return adjustedFileName;
 }
 
 //! \endcond

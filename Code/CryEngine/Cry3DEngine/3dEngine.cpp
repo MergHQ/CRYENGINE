@@ -1086,10 +1086,9 @@ void C3DEngine::ProcessStreamingLatencyTest(const CCamera& camIn, CCamera& camOu
 
 				if (GetCVars()->e_SQTestCount == 0)
 				{
-					const char* szTestResults = "%USER%/TestResults";
-					char path[ICryPak::g_nMaxPath] = "";
-					gEnv->pCryPak->AdjustFileName(string(string(szTestResults) + "\\" + "Streaming_Latency_Test.xml").c_str(), path, ICryPak::FLAGS_PATH_REAL | ICryPak::FLAGS_FOR_WRITING);
-					gEnv->pCryPak->MakeDir(szTestResults);
+					gEnv->pCryPak->MakeDir("%USER%/TestResults");
+					CryPathString path;
+					gEnv->pCryPak->AdjustFileName("%USER%/TestResults/Streaming_Latency_Test.xml", path, ICryPak::FLAGS_PATH_REAL | ICryPak::FLAGS_FOR_WRITING);
 
 					if (FILE* f = ::fopen(path, "wb"))
 					{

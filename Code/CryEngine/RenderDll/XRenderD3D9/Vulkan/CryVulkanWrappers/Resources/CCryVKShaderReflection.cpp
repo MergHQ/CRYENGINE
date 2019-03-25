@@ -168,24 +168,22 @@ HRESULT D3DCompile(_In_reads_bytes_(SrcDataSize) LPCVOID pSrcData, _In_ SIZE_T S
                    _In_opt_ ID3DInclude* pInclude, _In_opt_ LPCSTR pEntrypoint, _In_ LPCSTR pTarget, _In_ UINT Flags1, _In_ UINT Flags2, _Out_ ID3DBlob** ppCode,
                    _Always_(_Outptr_opt_result_maybenull_) ID3DBlob** ppErrorMsgs)
 {
-	static const std::string tmpShaderPath = "%USER%/shaders/temp/";
-	if (!CryDirectoryExists(tmpShaderPath.c_str()))
+	static const char* const szTmpShaderPath = "%USER%/shaders/temp/";
+	if (!CryDirectoryExists(szTmpShaderPath))
 	{
-		gEnv->pCryPak->MakeDir(tmpShaderPath.c_str());
+		gEnv->pCryPak->MakeDir(szTmpShaderPath);
 	}
-	static char tmpShaderPathAbsloutePath[2048];
-	gEnv->pCryPak->AdjustFileName(tmpShaderPath.c_str(), tmpShaderPathAbsloutePath, ICryPak::FLAGS_FOR_WRITING);
-	
-	std::string shaderFileLocationWithoutFormat = tmpShaderPathAbsloutePath;
-	shaderFileLocationWithoutFormat += pSourceName;
-	shaderFileLocationWithoutFormat += "_";
-	shaderFileLocationWithoutFormat += pEntrypoint;
+	CryPathString shaderPathWithoutFormat;
+	gEnv->pCryPak->AdjustFileName(szTmpShaderPath, shaderPathWithoutFormat, ICryPak::FLAGS_FOR_WRITING);
+	shaderPathWithoutFormat += pSourceName;
+	shaderPathWithoutFormat += '_';
+	shaderPathWithoutFormat += pEntrypoint;
 
 	std::ofstream shaderFile;
-	shaderFile.open(shaderFileLocationWithoutFormat + INPUT_HLSL_FORMAT);
+	shaderFile.open(shaderPathWithoutFormat + INPUT_HLSL_FORMAT);
 	if (!shaderFile.good())
 	{
-		CRY_ASSERT_MESSAGE(shaderFile.good(), ("Cannot create " + shaderFileLocationWithoutFormat + INPUT_HLSL_FORMAT + " shader file.").c_str());
+		CRY_ASSERT_MESSAGE(shaderFile.good(), ("Cannot create " + shaderPathWithoutFormat + INPUT_HLSL_FORMAT + " shader file.").c_str());
 		return E_FAIL;
 	}
 
@@ -199,8 +197,8 @@ HRESULT D3DCompile(_In_reads_bytes_(SrcDataSize) LPCVOID pSrcData, _In_ SIZE_T S
 		cry_sprintf(params, "%s %s \"%s%s\" \"%s%s\"",
 			pEntrypoint,
 			pTarget,
-			shaderFileLocationWithoutFormat.c_str(), OUTPUT_SPIRV_FORMAT,
-			shaderFileLocationWithoutFormat.c_str(), INPUT_HLSL_FORMAT
+			shaderPathWithoutFormat.c_str(), OUTPUT_SPIRV_FORMAT,
+			shaderPathWithoutFormat.c_str(), INPUT_HLSL_FORMAT
 			);
 
 		ShellExecute("%ENGINE%\\..\\Tools\\RemoteShaderCompiler\\Compiler\\SPIRV\\V002\\HLSL2SPIRV.exe", params, "%ENGINE%\\..\\Tools\\RemoteShaderCompiler\\Compiler\\SPIRV\\V002");
@@ -211,9 +209,9 @@ HRESULT D3DCompile(_In_reads_bytes_(SrcDataSize) LPCVOID pSrcData, _In_ SIZE_T S
 		
 		char params[1001];
 		cry_sprintf(params, " -spirv -O3 -Zpr \"%s%s\" -Fo \"%s%s\" -Fc \"%s%s\" -T %s -E \"%s\" %s %s",
-			shaderFileLocationWithoutFormat.c_str(), INPUT_HLSL_FORMAT,
-			shaderFileLocationWithoutFormat.c_str(), OUTPUT_SPIRV_FORMAT,
-			shaderFileLocationWithoutFormat.c_str(), OUTPUT_HUMAN_READABLE_SPIRV_FORMAT,
+			shaderPathWithoutFormat.c_str(), INPUT_HLSL_FORMAT,
+			shaderPathWithoutFormat.c_str(), OUTPUT_SPIRV_FORMAT,
+			shaderPathWithoutFormat.c_str(), OUTPUT_HUMAN_READABLE_SPIRV_FORMAT,
 			pTarget,
 			pEntrypoint,
 			strncmp(pTarget, "vs", 2) == 0 ? "-fvk-invert-y" : "",
@@ -227,8 +225,8 @@ HRESULT D3DCompile(_In_reads_bytes_(SrcDataSize) LPCVOID pSrcData, _In_ SIZE_T S
 		
 		char params[1001];
 		cry_sprintf(params, " -D -fhlsl_functionality1 \"%s%s\" -o \"%s%s\" --target-env %s -S %s -e %s -V100 %s",
-			shaderFileLocationWithoutFormat.c_str(), INPUT_HLSL_FORMAT,
-			shaderFileLocationWithoutFormat.c_str(), OUTPUT_SPIRV_FORMAT,
+			shaderPathWithoutFormat.c_str(), INPUT_HLSL_FORMAT,
+			shaderPathWithoutFormat.c_str(), OUTPUT_SPIRV_FORMAT,
 			targetEnv.c_str(),
 			GetGLSLANGTargetName(pTarget),
 			pEntrypoint,
@@ -237,10 +235,10 @@ HRESULT D3DCompile(_In_reads_bytes_(SrcDataSize) LPCVOID pSrcData, _In_ SIZE_T S
 		ShellExecute("%ENGINE%\\..\\Tools\\RemoteShaderCompiler\\Compiler\\SPIRV\\V003\\glslang\\glslangValidator.exe", params);
 	}
 
-	std::ifstream spirvShaderFile(shaderFileLocationWithoutFormat + OUTPUT_SPIRV_FORMAT, std::ios::binary);
+	std::ifstream spirvShaderFile(shaderPathWithoutFormat + OUTPUT_SPIRV_FORMAT, std::ios::binary);
 	if (!spirvShaderFile.good())
 	{
-		CRY_ASSERT_MESSAGE(false, (shaderFileLocationWithoutFormat + OUTPUT_SPIRV_FORMAT + " cannot be opened").c_str());
+		CRY_ASSERT_MESSAGE(false, (shaderPathWithoutFormat + OUTPUT_SPIRV_FORMAT + " cannot be opened").c_str());
 		return E_FAIL;
 	}
 

@@ -16,6 +16,7 @@
 #include <CrySerialization/Enum.h>
 #include <CrySerialization/Color.h>
 #include <CrySerialization/Math.h>
+#include <CrySerialization/CryStrings.h>
 #include <CrySerialization/Decorators/Resources.h>
 #include <CrySerialization/Decorators/ResourceFolderPath.h>
 #include <CrySerialization/Decorators/ResourceFilePath.h>
@@ -721,9 +722,6 @@ struct SCaptureKey : public STrackDurationKey
 		, m_bufferToCapture(SCaptureFormatInfo::eCaptureBuffer_Color)
 		, m_captureFormat(SCaptureFormatInfo::eCaptureFormat_TGA)
 	{
-		memset(m_folder, 0, sizeof(m_folder));
-		memset(m_prefix, 0, sizeof(m_prefix));
-
 		if (m_frameRate > 0)
 		{
 			m_timeStep = 1.0f / m_frameRate;
@@ -732,13 +730,13 @@ struct SCaptureKey : public STrackDurationKey
 		ICVar* pCaptureFolderCVar = gEnv->pConsole->GetCVar("capture_folder");
 		if (pCaptureFolderCVar && pCaptureFolderCVar->GetString())
 		{
-			cry_strcpy(m_folder, pCaptureFolderCVar->GetString());
+			m_folder = pCaptureFolderCVar->GetString();
 		}
 
 		ICVar* pCaptureFilePrefixCVar = gEnv->pConsole->GetCVar("capture_file_prefix");
 		if (pCaptureFilePrefixCVar && pCaptureFilePrefixCVar->GetString())
 		{
-			cry_strcpy(m_prefix, pCaptureFilePrefixCVar->GetString());
+			m_prefix = pCaptureFilePrefixCVar->GetString();
 		}
 
 		ICVar* pCaptureFileFormatCVar = gEnv->pConsole->GetCVar("capture_file_format");
@@ -753,11 +751,11 @@ struct SCaptureKey : public STrackDurationKey
 		, m_bOnce(other.m_bOnce)
 		, m_timeStep(other.m_timeStep)
 		, m_frameRate(other.m_frameRate)
+		, m_folder(other.m_folder)
+		, m_prefix(other.m_prefix)
 		, m_bufferToCapture(other.m_bufferToCapture)
 		, m_captureFormat(other.m_captureFormat)
 	{
-		cry_strcpy(m_folder, other.m_folder);
-		cry_strcpy(m_prefix, other.m_prefix);
 	}
 
 	int                GetDurationInFrames() const  { return m_duration.GetTicks() / (SAnimTime::numTicksPerSecond / (m_frameRate > 0 ? m_frameRate : 1)); }
@@ -775,28 +773,30 @@ struct SCaptureKey : public STrackDurationKey
 			m_timeStep = (1.0f / m_frameRate);
 		}
 
-		string tempFolder = m_folder;
-		size_t pathLength = tempFolder.find(PathUtil::GetGameFolder());
-		string captureFolder = (pathLength == string::npos) ? PathUtil::GetGameFolder() + CRY_NATIVE_PATH_SEPSTR + m_folder : m_folder;
-
+		const size_t pathLength = m_folder.find(PathUtil::GetGameFolder());
+		string captureFolder;
+		if (pathLength == CryPathString::npos)
+		{
+			captureFolder = PathUtil::GetGameFolder() + CRY_NATIVE_PATH_SEPSTR + m_folder.c_str();
+		}
+		else
+		{
+			captureFolder = m_folder.c_str();
+		}
 		ar(Serialization::ResourceFolderPath(captureFolder, ""), "folder", "Folder");
-		cry_strcpy(m_folder, captureFolder.c_str(), captureFolder.length());
+		m_folder = captureFolder;
 
 		ar(m_captureFormat, "format", "Format");
 		ar(m_bOnce, "once", "Once");
-
-		string prefix(m_prefix);
-		ar(prefix, "prefix", "Prefix");
-		cry_strcpy(m_prefix, prefix.c_str(), prefix.length());
-
+		::Serialize(ar, m_prefix, "prefix", "Prefix");
 		ar(m_bufferToCapture, "bufferToCapture", "Buffer to Capture");
 	}
 
 	bool                                   m_bOnce;
 	float                                  m_timeStep;
 	uint                                   m_frameRate;
-	char                                   m_folder[ICryPak::g_nMaxPath];
-	char                                   m_prefix[ICryPak::g_nMaxPath / 4];
+	CryPathString                          m_folder;
+	CryPathString                          m_prefix;
 	SCaptureFormatInfo::ECaptureBuffer     m_bufferToCapture;
 	SCaptureFormatInfo::ECaptureFileFormat m_captureFormat;
 };

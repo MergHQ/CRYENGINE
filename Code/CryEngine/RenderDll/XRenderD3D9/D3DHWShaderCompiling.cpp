@@ -2980,7 +2980,7 @@ int CHWShader_D3D::mfAsyncCompileReady(SHWSInstance* pInst)
 	D3DBlob* pShader = NULL;
 	D3DBlob* pErrorMsgs = NULL;
 	string strErr;
-	char nmDst[256], nameSrc[256];
+	char nmDst[256];
 	bool bResult = true;
 	int nRefCount;
 
@@ -2998,14 +2998,19 @@ int CHWShader_D3D::mfAsyncCompileReady(SHWSInstance* pInst)
 
 		mfPrintCompileInfo(pInst);
 
-		mfGetDstFileName(pInst, nmDst, 256, 3);
-		gEnv->pCryPak->AdjustFileName(nmDst, nameSrc, 0);
+		CryPathString adjustedName;
+		if (CRenderer::CV_r_logShaders)
+		{
+			mfGetDstFileName(pInst, nmDst, 256, 3);
+			gEnv->pCryPak->AdjustFileName(nmDst, adjustedName, 0);
+		}
+		
 		if (pAsync->m_pFXShader && pAsync->m_pFXShader->m_HWTechniques.Num())
 			pTech = pAsync->m_pFXShader->m_HWTechniques[0];
 		if ((pAsync->m_pErrors && !pAsync->m_Errors.empty()) || !pAsync->m_pDevShader)
 		{
 			if (CRenderer::CV_r_logShaders)
-				gcpRendD3D->LogShv("Async %d: **Failed to compile 0x%x '%s' shader\n", GetCurrentFrameID(), pInst, nameSrc);
+				gcpRendD3D->LogShv("Async %d: **Failed to compile 0x%x '%s' shader\n", GetCurrentFrameID(), pInst, adjustedName.c_str());
 			string Errors = pAsync->m_Errors;
 			string Text = pAsync->m_Text;
 			CShader* pFXShader = pAsync->m_pFXShader;
@@ -3026,7 +3031,7 @@ int CHWShader_D3D::mfAsyncCompileReady(SHWSInstance* pInst)
 			bResult = false;
 		}
 		else if (CRenderer::CV_r_logShaders)
-			gcpRendD3D->LogShv("Async %d: Finished compiling 0x%x '%s' shader\n", GetCurrentFrameID(), pInst, nameSrc);
+			gcpRendD3D->LogShv("Async %d: Finished compiling 0x%x '%s' shader\n", GetCurrentFrameID(), pInst, adjustedName.c_str());
 		pShader = pAsync->m_pDevShader;
 		pErrorMsgs = pAsync->m_pErrors;
 		strErr = pAsync->m_Errors;
@@ -3082,10 +3087,6 @@ int CHWShader_D3D::mfAsyncCompileReady(SHWSInstance* pInst)
 bool CHWShader_D3D::mfRequestAsync(CShader* pSH, SHWSInstance* pInst, std::vector<SCGBind>& InstBindVars, const char* prog_text, const char* szProfile, const char* szEntry)
 {
 #ifdef SHADER_ASYNC_COMPILATION
-	char nameSrc[256], nmDst[256];
-	mfGetDstFileName(pInst, nmDst, 256, 3);
-	gEnv->pCryPak->AdjustFileName(nmDst, nameSrc, 0);
-
 	if (!SShaderAsyncInfo::PendingList().m_Next)
 	{
 		SShaderAsyncInfo::PendingList().m_Next = &SShaderAsyncInfo::PendingList();
@@ -3137,7 +3138,13 @@ bool CHWShader_D3D::mfRequestAsync(CShader* pSH, SHWSInstance* pInst, std::vecto
 	CAsyncShaderTask::InsertPendingShader(pInst->m_pAsync);
 
 	if (CRenderer::CV_r_logShaders)
-		gcpRendD3D->LogShv("Async %d: Requested compiling 0x%x '%s' shader\n", GetCurrentFrameID(), pInst, nameSrc);
+	{
+		char nameRaw[256];
+		mfGetDstFileName(pInst, nameRaw, sizeof(nameRaw), 3);
+		CryPathString nameAdjusted;
+		gEnv->pCryPak->AdjustFileName(nameRaw, nameAdjusted, 0);
+		gcpRendD3D->LogShv("Async %d: Requested compiling 0x%x '%s' shader\n", GetCurrentFrameID(), pInst, nameAdjusted.c_str());
+	}
 #endif
 	return false;
 }

@@ -1145,10 +1145,9 @@ void C3DEngine::WorldStreamUpdate()
 
 				if (GetCVars()->e_StreamSaveStartupResultsIntoXML)
 				{
-					const char* szTestResults = "%USER%/TestResults";
-					char path[ICryPak::g_nMaxPath] = "";
-					gEnv->pCryPak->AdjustFileName(string(string(szTestResults) + "\\" + "Streaming_Level_Start_Throughput.xml").c_str(), path, ICryPak::FLAGS_PATH_REAL | ICryPak::FLAGS_FOR_WRITING);
-					gEnv->pCryPak->MakeDir(szTestResults);
+					gEnv->pCryPak->MakeDir("%USER%/TestResults");
+					CryPathString path;
+					gEnv->pCryPak->AdjustFileName("%USER%/TestResults/Streaming_Level_Start_Throughput.xml", path, ICryPak::FLAGS_PATH_REAL | ICryPak::FLAGS_FOR_WRITING);
 
 					if (FILE* f = ::fopen(path, "wb"))
 					{
