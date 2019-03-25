@@ -77,11 +77,11 @@ struct IImpl
 	/**
 	 * Pass an implementation specific XML node that contains information about the current parsed library.
 	 * Is called for each library that contains the node, before calling Init.
-	 * @param pNode - an XML node containing information about the current parsed library
+	 * @param node - an XML node containing information about the current parsed library
 	 * @param contextId - context id of the library.
 	 * @return void
 	 */
-	virtual void SetLibraryData(XmlNodeRef const pNode, ContextId const contextId) = 0;
+	virtual void SetLibraryData(XmlNodeRef const& node, ContextId const contextId) = 0;
 
 	/**
 	 * Called before parsing all libraries for impl data.
@@ -167,12 +167,12 @@ struct IImpl
 	 * Parse the implementation-specific XML node that represents an audio file, fill the fields of the struct
 	 * referenced by pFileInfo with the data necessary to correctly access and store the file's contents in memory.
 	 * Create an object implementing IFile to hold implementation-specific data about the file and store a pointer to it in a member of pFileInfo
-	 * @param pRootNode - an XML node containing the necessary information about the file
+	 * @param rootNode - an XML node containing the necessary information about the file
 	 * @param pFileInfo - a pointer to the struct containing the data used by the audio system to load the file into memory
 	 * @return ERequestStatus::Success if the XML node was parsed successfully, ERequestStatus::Failure otherwise
 	 * @see DestructFile
 	 */
-	virtual ERequestStatus ConstructFile(XmlNodeRef const pRootNode, SFileInfo* const pFileInfo) = 0;
+	virtual ERequestStatus ConstructFile(XmlNodeRef const& rootNode, SFileInfo* const pFileInfo) = 0;
 
 	/**
 	 * Free the memory and potentially other resources used by the supplied IFile instance.
@@ -193,13 +193,13 @@ struct IImpl
 	/**
 	 * Parse the implementation-specific XML node that represents an ITriggerConnection, return a pointer to the data needed for identifying
 	 * and using this trigger connection instance inside the AudioImplementation
-	 * @param pRootNode - an XML node corresponding to the new ITriggerConnection to be created
+	 * @param rootNode - an XML node corresponding to the new ITriggerConnection to be created
 	 * @param radius - the max attenuation radius of the trigger. Set to 0.0f for 2D sounds. Used for debug draw.
 	 * @return ITrigger pointer to the audio implementation-specific data needed by the audio middleware and the
 	 * @return AudioImplementation code to use the corresponding ITriggerConnection; nullptr if the new AudioTriggerImplData instance was not created
 	 * @see DestructTrigger
 	 */
-	virtual ITriggerConnection* ConstructTriggerConnection(XmlNodeRef const pRootNode, float& radius) = 0;
+	virtual ITriggerConnection* ConstructTriggerConnection(XmlNodeRef const& rootNode, float& radius) = 0;
 
 	/**
 	 * Construct a trigger with the given info struct, return a pointer to the data needed for identifying
@@ -222,12 +222,12 @@ struct IImpl
 	/**
 	 * Parse the implementation-specific XML node that represents an IParameterConnection, return a pointer to the data needed for identifying
 	 * and using this IParameterConnection instance inside the AudioImplementation
-	 * @param pRootNode - an XML node corresponding to the new IParameterConnection to be created
+	 * @param rootNode - an XML node corresponding to the new IParameterConnection to be created
 	 * @return IParameter pointer to the audio implementation-specific data needed by the audio middleware and the
 	 * @return AudioImplementation code to use the corresponding IParameterConnection; nullptr if the new IParameterConnection instance was not created
 	 * @see DestructParameter
 	 */
-	virtual IParameterConnection* ConstructParameterConnection(XmlNodeRef const pRootNode) = 0;
+	virtual IParameterConnection* ConstructParameterConnection(XmlNodeRef const& rootNode) = 0;
 
 	/**
 	 * Free the memory and potentially other resources used by the supplied IParameterConnection instance
@@ -240,12 +240,12 @@ struct IImpl
 	/**
 	 * Parse the implementation-specific XML node that represents an ISwitchStateConnection, return a pointer to the data needed for identifying
 	 * and using this ISwitchStateConnection instance inside the AudioImplementation
-	 * @param pRootNode - an XML node corresponding to the new ISwitchStateConnection to be created
+	 * @param rootNode - an XML node corresponding to the new ISwitchStateConnection to be created
 	 * @return ISwitchState pointer to the audio implementation-specific data needed by the audio middleware and the
 	 * @return AudioImplementation code to use the corresponding ISwitchStateConnection; nullptr if the new ISwitchStateConnection instance was not created
 	 * @see DestructSwitchState
 	 */
-	virtual ISwitchStateConnection* ConstructSwitchStateConnection(XmlNodeRef const pRootNode) = 0;
+	virtual ISwitchStateConnection* ConstructSwitchStateConnection(XmlNodeRef const& rootNode) = 0;
 
 	/**
 	 * Free the memory and potentially other resources used by the supplied ISwitchStateConnection instance
@@ -258,12 +258,12 @@ struct IImpl
 	/**
 	 * Parse the implementation-specific XML node that represents an IEnvironmentConnection, return a pointer to the data needed for identifying
 	 * and using this IEnvironmentConnection instance inside the AudioImplementation
-	 * @param pRootNode - an XML node corresponding to the new IEnvironmentConnection to be created
+	 * @param rootNode - an XML node corresponding to the new IEnvironmentConnection to be created
 	 * @return IEnvironment pointer to the audio implementation-specific data needed by the audio middleware and the
 	 * @return AudioImplementation code to use the corresponding IEnvironmentConnection; nullptr if the new IEnvironmentConnection instance was not created
 	 * @see DestructEnvironment
 	 */
-	virtual IEnvironmentConnection* ConstructEnvironmentConnection(XmlNodeRef const pRootNode) = 0;
+	virtual IEnvironmentConnection* ConstructEnvironmentConnection(XmlNodeRef const& rootNode) = 0;
 
 	/**
 	 * Free the memory and potentially other resources used by the supplied IEnvironmentConnection instance
@@ -276,12 +276,12 @@ struct IImpl
 	/**
 	 * Parse the implementation-specific XML node that represents an ISettingConnection, return a pointer to the data needed for identifying
 	 * and using this ISettingConnection instance inside the AudioImplementation
-	 * @param pRootNode - an XML node corresponding to the new ISettingConnection to be created
+	 * @param rootNode - an XML node corresponding to the new ISettingConnection to be created
 	 * @return ISetting pointer to the audio implementation-specific data needed by the audio middleware and the
 	 * @return AudioImplementation code to use the corresponding ISettingConnection; nullptr if the new ISettingConnection instance was not created
 	 * @see DestructSetting
 	 */
-	virtual ISettingConnection* ConstructSettingConnection(XmlNodeRef const pRootNode) = 0;
+	virtual ISettingConnection* ConstructSettingConnection(XmlNodeRef const& rootNode) = 0;
 
 	/**
 	 * Free the memory and potentially other resources used by the supplied ISettingConnection instance

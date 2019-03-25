@@ -52,8 +52,9 @@ static int StreamCallback(
 						*pStreamData++ = static_cast<short*>(pEventInstance->GetData())[i * numChannels + j];
 					}
 				}
+
+				break;
 			}
-			break;
 		case paInt32:
 			{
 				auto pStreamData = static_cast<int*>(pOutputBuffer);
@@ -67,8 +68,9 @@ static int StreamCallback(
 						*pStreamData++ = static_cast<int*>(pEventInstance->GetData())[i * numChannels + j];
 					}
 				}
+
+				break;
 			}
-			break;
 		case paFloat32:
 			{
 				auto pStreamData = static_cast<float*>(pOutputBuffer);
@@ -82,10 +84,13 @@ static int StreamCallback(
 						*pStreamData++ = static_cast<float*>(pEventInstance->GetData())[i * numChannels + j];
 					}
 				}
+
+				break;
 			}
-			break;
 		default:
-			break;
+			{
+				break;
+			}
 		}
 
 		if (numFramesRead != framesPerBuffer)
@@ -146,22 +151,27 @@ bool CEventInstance::Execute(
 				{
 					m_pData = CryModuleMalloc(sizeof(short) * numEntries);
 					std::fill(static_cast<short*>(m_pData), static_cast<short*>(m_pData) + numEntries, 0);
+
+					break;
 				}
-				break;
 			case paInt32:
 				{
 					m_pData = CryModuleMalloc(sizeof(int) * numEntries);
 					std::fill(static_cast<int*>(m_pData), static_cast<int*>(m_pData) + numEntries, 0);
+
+					break;
 				}
-				break;
 			case paFloat32:
 				{
 					m_pData = CryModuleMalloc(sizeof(float) * numEntries);
 					std::fill(static_cast<float*>(m_pData), static_cast<float*>(m_pData) + numEntries, 0.0f);
+
+					break;
 				}
-				break;
 			default:
-				break;
+				{
+					break;
+				}
 			}
 
 			err = Pa_StartStream(m_pStream);

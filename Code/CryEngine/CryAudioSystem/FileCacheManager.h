@@ -29,7 +29,7 @@ public:
 
 	// Public methods
 	void           Initialize();
-	FileId         TryAddFileCacheEntry(XmlNodeRef const pFileNode, ContextId const contextId, bool const bAutoLoad);
+	FileId         TryAddFileCacheEntry(XmlNodeRef const& fileNode, ContextId const contextId, bool const bAutoLoad);
 	bool           TryRemoveFileCacheEntry(FileId const id, ContextId const contextId);
 	void           UpdateLocalizedFileCacheEntries();
 	ERequestStatus TryLoadRequest(PreloadRequestId const preloadRequestId, bool const bLoadSynchronously, bool const bAutoLoadOnly);

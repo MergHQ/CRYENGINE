@@ -56,58 +56,58 @@ uint16 g_cueInstancePoolSize = 0;
 #endif  // CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE
 
 //////////////////////////////////////////////////////////////////////////
-void CountPoolSizes(XmlNodeRef const pNode, SPoolSizes& poolSizes)
+void CountPoolSizes(XmlNodeRef const& node, SPoolSizes& poolSizes)
 {
 	uint16 numCues = 0;
-	pNode->getAttr(g_szCuesAttribute, numCues);
+	node->getAttr(g_szCuesAttribute, numCues);
 	poolSizes.cues += numCues;
 
 	uint16 numAisacControls = 0;
-	pNode->getAttr(g_szAisacControlsAttribute, numAisacControls);
+	node->getAttr(g_szAisacControlsAttribute, numAisacControls);
 	poolSizes.aisacControls += numAisacControls;
 
 	uint16 numAisacEnvironments = 0;
-	pNode->getAttr(g_szAisacEnvironmentsAttribute, numAisacEnvironments);
+	node->getAttr(g_szAisacEnvironmentsAttribute, numAisacEnvironments);
 	poolSizes.aisacEnvironments += numAisacEnvironments;
 
 	uint16 numAisacStates = 0;
-	pNode->getAttr(g_szAisacStatesAttribute, numAisacStates);
+	node->getAttr(g_szAisacStatesAttribute, numAisacStates);
 	poolSizes.aisacStates += numAisacStates;
 
 	uint16 numCategories = 0;
-	pNode->getAttr(g_szCategoriesAttribute, numCategories);
+	node->getAttr(g_szCategoriesAttribute, numCategories);
 	poolSizes.categories += numCategories;
 
 	uint16 numCategoryStates = 0;
-	pNode->getAttr(g_szCategoryStatesAttribute, numCategoryStates);
+	node->getAttr(g_szCategoryStatesAttribute, numCategoryStates);
 	poolSizes.categoryStates += numCategoryStates;
 
 	uint16 numGameVariables = 0;
-	pNode->getAttr(g_szGameVariablesAttribute, numGameVariables);
+	node->getAttr(g_szGameVariablesAttribute, numGameVariables);
 	poolSizes.gameVariables += numGameVariables;
 
 	uint16 numGameVariableStates = 0;
-	pNode->getAttr(g_szGameVariableStatesAttribute, numGameVariableStates);
+	node->getAttr(g_szGameVariableStatesAttribute, numGameVariableStates);
 	poolSizes.gameVariableStates += numGameVariableStates;
 
 	uint16 numSelectorLabels = 0;
-	pNode->getAttr(g_szSelectorLabelsAttribute, numSelectorLabels);
+	node->getAttr(g_szSelectorLabelsAttribute, numSelectorLabels);
 	poolSizes.selectorLabels += numSelectorLabels;
 
 	uint16 numBuses = 0;
-	pNode->getAttr(g_szDspBusesAttribute, numBuses);
+	node->getAttr(g_szDspBusesAttribute, numBuses);
 	poolSizes.dspBuses += numBuses;
 
 	uint16 numSnapshots = 0;
-	pNode->getAttr(g_szSnapshotsAttribute, numSnapshots);
+	node->getAttr(g_szSnapshotsAttribute, numSnapshots);
 	poolSizes.snapshots += numSnapshots;
 
 	uint16 numDspBusSettings = 0;
-	pNode->getAttr(g_szDspBusSettingsAttribute, numDspBusSettings);
+	node->getAttr(g_szDspBusSettingsAttribute, numDspBusSettings);
 	poolSizes.dspBusSettings += numDspBusSettings;
 
 	uint16 numBinaries = 0;
-	pNode->getAttr(g_szBinariesAttribute, numBinaries);
+	node->getAttr(g_szBinariesAttribute, numBinaries);
 	poolSizes.binaries += numBinaries;
 }
 
@@ -157,49 +157,49 @@ CueInfo g_cueRadiusInfo;
 CueInfo g_cueFadeOutTimes;
 
 //////////////////////////////////////////////////////////////////////////
-void ParseAcbInfoFile(XmlNodeRef const pRoot, uint32 const acbId)
+void ParseAcbInfoFile(XmlNodeRef const& rootNode, uint32 const acbId)
 {
-	int const numCueNodes = pRoot->getChildCount();
+	int const numCueNodes = rootNode->getChildCount();
 
 	for (int i = 0; i < numCueNodes; ++i)
 	{
-		XmlNodeRef const pCueNode = pRoot->getChild(i);
+		XmlNodeRef const cueNode = rootNode->getChild(i);
 
-		if (pCueNode != nullptr)
+		if (cueNode.isValid())
 		{
-			char const* const typeAttrib = pCueNode->getAttr("OrcaType");
+			char const* const typeAttrib = cueNode->getAttr("OrcaType");
 
 			if (_stricmp(typeAttrib, "CriMw.CriAtomCraft.AcCore.AcOoCueSynthCue") == 0)
 			{
-				uint32 const cueId = StringToId(pCueNode->getAttr("OrcaName"));
+				uint32 const cueId = StringToId(cueNode->getAttr("OrcaName"));
 
-				if (pCueNode->haveAttr("Pos3dDistanceMax"))
+				if (cueNode->haveAttr("Pos3dDistanceMax"))
 				{
 					float distanceMax = 0.0f;
-					pCueNode->getAttr("Pos3dDistanceMax", distanceMax);
+					cueNode->getAttr("Pos3dDistanceMax", distanceMax);
 
 					g_cueRadiusInfo[cueId].emplace_back(acbId, distanceMax);
 				}
 
-				int const numTrackNodes = pCueNode->getChildCount();
+				int const numTrackNodes = cueNode->getChildCount();
 				float cueFadeOutTime = 0.0f;
 
 				for (int j = 0; j < numTrackNodes; ++j)
 				{
-					XmlNodeRef const pTrackNode = pCueNode->getChild(j);
+					XmlNodeRef const trackNode = cueNode->getChild(j);
 
-					if (pTrackNode != nullptr)
+					if (trackNode.isValid())
 					{
-						int const numWaveNodes = pTrackNode->getChildCount();
+						int const numWaveNodes = trackNode->getChildCount();
 
 						for (int k = 0; k < numWaveNodes; ++k)
 						{
-							XmlNodeRef const pWaveNode = pTrackNode->getChild(k);
+							XmlNodeRef const waveNode = trackNode->getChild(k);
 
-							if (pWaveNode->haveAttr("EgReleaseTimeMs"))
+							if (waveNode->haveAttr("EgReleaseTimeMs"))
 							{
 								float trackFadeOutTime = 0.0f;
-								pWaveNode->getAttr("EgReleaseTimeMs", trackFadeOutTime);
+								waveNode->getAttr("EgReleaseTimeMs", trackFadeOutTime);
 								cueFadeOutTime = std::max(cueFadeOutTime, trackFadeOutTime);
 							}
 						}
@@ -214,7 +214,7 @@ void ParseAcbInfoFile(XmlNodeRef const pRoot, uint32 const acbId)
 			else if ((_stricmp(typeAttrib, "CriMw.CriAtomCraft.AcCore.AcOoCueFolder") == 0) ||
 			         (_stricmp(typeAttrib, "CriMw.CriAtomCraft.AcCore.AcOoCueFolderPrivate") == 0))
 			{
-				ParseAcbInfoFile(pCueNode, acbId);
+				ParseAcbInfoFile(cueNode, acbId);
 			}
 		}
 	}
@@ -232,23 +232,23 @@ void LoadAcbInfos(string const& folderPath)
 		do
 		{
 			string fileName = fd.name;
-			XmlNodeRef const pRoot = GetISystem()->LoadXmlFromFile(folderPath + "/" + fileName);
+			XmlNodeRef const rootNode = GetISystem()->LoadXmlFromFile(folderPath + "/" + fileName);
 
-			if (pRoot != nullptr)
+			if (rootNode.isValid())
 			{
-				XmlNodeRef const pInfoNode = pRoot->getChild(0);
+				XmlNodeRef const infoNode = rootNode->getChild(0);
 
-				if (pInfoNode != nullptr)
+				if (infoNode.isValid())
 				{
-					XmlNodeRef const pInfoRootNode = pInfoNode->getChild(0);
+					XmlNodeRef const infoRootNode = infoNode->getChild(0);
 
-					if (pInfoRootNode != nullptr)
+					if (infoRootNode.isValid())
 					{
-						XmlNodeRef const pAcbNode = pInfoRootNode->getChild(0);
+						XmlNodeRef const acbNode = infoRootNode->getChild(0);
 
-						if ((pAcbNode != nullptr) && pAcbNode->haveAttr("AwbHash"))
+						if ((acbNode.isValid()) && acbNode->haveAttr("AwbHash"))
 						{
-							ParseAcbInfoFile(pAcbNode, StringToId(pAcbNode->getAttr("OrcaName")));
+							ParseAcbInfoFile(acbNode, StringToId(acbNode->getAttr("OrcaName")));
 						}
 					}
 				}
@@ -394,15 +394,15 @@ void CImpl::Release()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CImpl::SetLibraryData(XmlNodeRef const pNode, ContextId const contextId)
+void CImpl::SetLibraryData(XmlNodeRef const& node, ContextId const contextId)
 {
 	if (contextId == GlobalContextId)
 	{
-		CountPoolSizes(pNode, g_poolSizes);
+		CountPoolSizes(node, g_poolSizes);
 	}
 	else
 	{
-		CountPoolSizes(pNode, g_contextPoolSizes[contextId]);
+		CountPoolSizes(node, g_contextPoolSizes[contextId]);
 	}
 }
 
@@ -605,17 +605,17 @@ void CImpl::UnregisterInMemoryFile(SFileInfo* const pFileInfo)
 }
 
 //////////////////////////////////////////////////////////////////////////
-ERequestStatus CImpl::ConstructFile(XmlNodeRef const pRootNode, SFileInfo* const pFileInfo)
+ERequestStatus CImpl::ConstructFile(XmlNodeRef const& rootNode, SFileInfo* const pFileInfo)
 {
 	ERequestStatus result = ERequestStatus::Failure;
 
-	if ((_stricmp(pRootNode->getTag(), g_szBinaryTag) == 0) && (pFileInfo != nullptr))
+	if ((_stricmp(rootNode->getTag(), g_szBinaryTag) == 0) && (pFileInfo != nullptr))
 	{
-		char const* const szFileName = pRootNode->getAttr(g_szNameAttribute);
+		char const* const szFileName = rootNode->getAttr(g_szNameAttribute);
 
 		if (szFileName != nullptr && szFileName[0] != '\0')
 		{
-			char const* const szLocalized = pRootNode->getAttr(g_szLocalizedAttribute);
+			char const* const szLocalized = rootNode->getAttr(g_szLocalizedAttribute);
 			pFileInfo->bLocalized = (szLocalized != nullptr) && (_stricmp(szLocalized, g_szTrueValue) == 0);
 			pFileInfo->szFileName = szFileName;
 
@@ -763,18 +763,18 @@ void CImpl::GamepadDisconnected(DeviceId const deviceUniqueID)
 }
 
 ///////////////////////////////////////////////////////////////////////////
-ITriggerConnection* CImpl::ConstructTriggerConnection(XmlNodeRef const pRootNode, float& radius)
+ITriggerConnection* CImpl::ConstructTriggerConnection(XmlNodeRef const& rootNode, float& radius)
 {
 	ITriggerConnection* pITriggerConnection = nullptr;
 
-	if (_stricmp(pRootNode->getTag(), g_szCueTag) == 0)
+	if (_stricmp(rootNode->getTag(), g_szCueTag) == 0)
 	{
-		char const* const szName = pRootNode->getAttr(g_szNameAttribute);
-		char const* const szCueSheetName = pRootNode->getAttr(g_szCueSheetAttribute);
+		char const* const szName = rootNode->getAttr(g_szNameAttribute);
+		char const* const szCueSheetName = rootNode->getAttr(g_szCueSheetAttribute);
 		uint32 const cueId = StringToId(szName);
 
 		CCue::EActionType type = CCue::EActionType::Start;
-		char const* const szType = pRootNode->getAttr(g_szTypeAttribute);
+		char const* const szType = rootNode->getAttr(g_szTypeAttribute);
 
 		if ((szType != nullptr) && (szType[0] != '\0'))
 		{
@@ -834,16 +834,16 @@ ITriggerConnection* CImpl::ConstructTriggerConnection(XmlNodeRef const pRootNode
 		pITriggerConnection = static_cast<ITriggerConnection*>(new CCue(cueId, szName, StringToId(szCueSheetName), type));
 #endif    // CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE
 	}
-	else if (_stricmp(pRootNode->getTag(), g_szSnapshotTag) == 0)
+	else if (_stricmp(rootNode->getTag(), g_szSnapshotTag) == 0)
 	{
-		char const* const szName = pRootNode->getAttr(g_szNameAttribute);
+		char const* const szName = rootNode->getAttr(g_szNameAttribute);
 
-		char const* const szType = pRootNode->getAttr(g_szTypeAttribute);
+		char const* const szType = rootNode->getAttr(g_szTypeAttribute);
 		CSnapshot::EActionType const type =
 			((szType != nullptr) && (szType[0] != '\0') && (_stricmp(szType, g_szStopValue) == 0)) ? CSnapshot::EActionType::Stop : CSnapshot::EActionType::Start;
 
 		int changeoverTime = g_defaultChangeoverTime;
-		pRootNode->getAttr(g_szTimeAttribute, changeoverTime);
+		rootNode->getAttr(g_szTimeAttribute, changeoverTime);
 
 		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Adx2::CSnapshot");
 		pITriggerConnection = static_cast<ITriggerConnection*>(new CSnapshot(szName, type, static_cast<CriSint32>(changeoverTime)));
@@ -851,7 +851,7 @@ ITriggerConnection* CImpl::ConstructTriggerConnection(XmlNodeRef const pRootNode
 #if defined(CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE)
 	else
 	{
-		Cry::Audio::Log(ELogType::Warning, "Unknown Adx2 tag: %s", pRootNode->getTag());
+		Cry::Audio::Log(ELogType::Warning, "Unknown Adx2 tag: %s", rootNode->getTag());
 	}
 #endif    // CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE
 
@@ -920,41 +920,41 @@ void CImpl::DestructTriggerConnection(ITriggerConnection const* const pITriggerC
 }
 
 ///////////////////////////////////////////////////////////////////////////
-IParameterConnection* CImpl::ConstructParameterConnection(XmlNodeRef const pRootNode)
+IParameterConnection* CImpl::ConstructParameterConnection(XmlNodeRef const& rootNode)
 {
 	IParameterConnection* pIParameterConnection = nullptr;
 
-	char const* const szTag = pRootNode->getTag();
+	char const* const szTag = rootNode->getTag();
 
 	if (_stricmp(szTag, g_szAisacControlTag) == 0)
 	{
-		char const* const szName = pRootNode->getAttr(g_szNameAttribute);
+		char const* const szName = rootNode->getAttr(g_szNameAttribute);
 		float multiplier = g_defaultParamMultiplier;
 		float shift = g_defaultParamShift;
-		pRootNode->getAttr(g_szMutiplierAttribute, multiplier);
-		pRootNode->getAttr(g_szShiftAttribute, shift);
+		rootNode->getAttr(g_szMutiplierAttribute, multiplier);
+		rootNode->getAttr(g_szShiftAttribute, shift);
 
 		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Adx2::CAisacControl");
 		pIParameterConnection = static_cast<IParameterConnection*>(new CAisacControl(szName, multiplier, shift));
 	}
 	else if (_stricmp(szTag, g_szSCategoryTag) == 0)
 	{
-		char const* const szName = pRootNode->getAttr(g_szNameAttribute);
+		char const* const szName = rootNode->getAttr(g_szNameAttribute);
 		float multiplier = g_defaultParamMultiplier;
 		float shift = g_defaultParamShift;
-		pRootNode->getAttr(g_szMutiplierAttribute, multiplier);
-		pRootNode->getAttr(g_szShiftAttribute, shift);
+		rootNode->getAttr(g_szMutiplierAttribute, multiplier);
+		rootNode->getAttr(g_szShiftAttribute, shift);
 
 		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Adx2::CCategory");
 		pIParameterConnection = static_cast<IParameterConnection*>(new CCategory(szName, multiplier, shift));
 	}
 	else if (_stricmp(szTag, g_szGameVariableTag) == 0)
 	{
-		char const* const szName = pRootNode->getAttr(g_szNameAttribute);
+		char const* const szName = rootNode->getAttr(g_szNameAttribute);
 		float multiplier = g_defaultParamMultiplier;
 		float shift = g_defaultParamShift;
-		pRootNode->getAttr(g_szMutiplierAttribute, multiplier);
-		pRootNode->getAttr(g_szShiftAttribute, shift);
+		rootNode->getAttr(g_szMutiplierAttribute, multiplier);
+		rootNode->getAttr(g_szShiftAttribute, shift);
 
 		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Adx2::CGameVariable");
 		pIParameterConnection = static_cast<IParameterConnection*>(new CGameVariable(szName, multiplier, shift));
@@ -976,19 +976,19 @@ void CImpl::DestructParameterConnection(IParameterConnection const* const pIPara
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool ParseSelectorNode(XmlNodeRef const pNode, string& selectorName, string& selectorLabelName)
+bool ParseSelectorNode(XmlNodeRef const& node, string& selectorName, string& selectorLabelName)
 {
 	bool foundAttributes = false;
 
-	char const* const szSelectorName = pNode->getAttr(g_szNameAttribute);
+	char const* const szSelectorName = node->getAttr(g_szNameAttribute);
 
-	if ((szSelectorName != nullptr) && (szSelectorName[0] != 0) && (pNode->getChildCount() == 1))
+	if ((szSelectorName != nullptr) && (szSelectorName[0] != 0) && (node->getChildCount() == 1))
 	{
-		XmlNodeRef const pLabelNode(pNode->getChild(0));
+		XmlNodeRef const labelNode(node->getChild(0));
 
-		if (pLabelNode && _stricmp(pLabelNode->getTag(), g_szSelectorLabelTag) == 0)
+		if (labelNode.isValid() && _stricmp(labelNode->getTag(), g_szSelectorLabelTag) == 0)
 		{
-			char const* const szSelectorLabelName = pLabelNode->getAttr(g_szNameAttribute);
+			char const* const szSelectorLabelName = labelNode->getAttr(g_szNameAttribute);
 
 			if ((szSelectorLabelName != nullptr) && (szSelectorLabelName[0] != 0))
 			{
@@ -1009,18 +1009,18 @@ bool ParseSelectorNode(XmlNodeRef const pNode, string& selectorName, string& sel
 }
 
 ///////////////////////////////////////////////////////////////////////////
-ISwitchStateConnection* CImpl::ConstructSwitchStateConnection(XmlNodeRef const pRootNode)
+ISwitchStateConnection* CImpl::ConstructSwitchStateConnection(XmlNodeRef const& rootNode)
 {
 	ISwitchStateConnection* pISwitchStateConnection = nullptr;
 
-	char const* const szTag = pRootNode->getTag();
+	char const* const szTag = rootNode->getTag();
 
 	if (_stricmp(szTag, g_szSelectorTag) == 0)
 	{
 		string szSelectorName;
 		string szSelectorLabelName;
 
-		if (ParseSelectorNode(pRootNode, szSelectorName, szSelectorLabelName))
+		if (ParseSelectorNode(rootNode, szSelectorName, szSelectorLabelName))
 		{
 			MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Adx2::CSelectorLabel");
 			pISwitchStateConnection = static_cast<ISwitchStateConnection*>(new CSelectorLabel(szSelectorName, szSelectorLabelName));
@@ -1028,9 +1028,9 @@ ISwitchStateConnection* CImpl::ConstructSwitchStateConnection(XmlNodeRef const p
 	}
 	else if (_stricmp(szTag, g_szAisacControlTag) == 0)
 	{
-		char const* const szName = pRootNode->getAttr(g_szNameAttribute);
+		char const* const szName = rootNode->getAttr(g_szNameAttribute);
 		float value = g_defaultStateValue;
-		pRootNode->getAttr(g_szValueAttribute, value);
+		rootNode->getAttr(g_szValueAttribute, value);
 
 		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Adx2::CAisacState");
 		pISwitchStateConnection = static_cast<ISwitchStateConnection*>(new CAisacState(szName, static_cast<CriFloat32>(value)));
@@ -1038,18 +1038,18 @@ ISwitchStateConnection* CImpl::ConstructSwitchStateConnection(XmlNodeRef const p
 	}
 	else if (_stricmp(szTag, g_szGameVariableTag) == 0)
 	{
-		char const* const szName = pRootNode->getAttr(g_szNameAttribute);
+		char const* const szName = rootNode->getAttr(g_szNameAttribute);
 		float value = g_defaultStateValue;
-		pRootNode->getAttr(g_szValueAttribute, value);
+		rootNode->getAttr(g_szValueAttribute, value);
 
 		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Adx2::CGameVariableState");
 		pISwitchStateConnection = static_cast<ISwitchStateConnection*>(new CGameVariableState(szName, static_cast<CriFloat32>(value)));
 	}
 	else if (_stricmp(szTag, g_szSCategoryTag) == 0)
 	{
-		char const* const szName = pRootNode->getAttr(g_szNameAttribute);
+		char const* const szName = rootNode->getAttr(g_szNameAttribute);
 		float value = g_defaultStateValue;
-		pRootNode->getAttr(g_szValueAttribute, value);
+		rootNode->getAttr(g_szValueAttribute, value);
 
 		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Adx2::CCategoryState");
 		pISwitchStateConnection = static_cast<ISwitchStateConnection*>(new CCategoryState(szName, static_cast<CriFloat32>(value)));
@@ -1071,26 +1071,26 @@ void CImpl::DestructSwitchStateConnection(ISwitchStateConnection const* const pI
 }
 
 ///////////////////////////////////////////////////////////////////////////
-IEnvironmentConnection* CImpl::ConstructEnvironmentConnection(XmlNodeRef const pRootNode)
+IEnvironmentConnection* CImpl::ConstructEnvironmentConnection(XmlNodeRef const& rootNode)
 {
 	IEnvironmentConnection* pEnvironmentConnection = nullptr;
 
-	char const* const szTag = pRootNode->getTag();
+	char const* const szTag = rootNode->getTag();
 
 	if (_stricmp(szTag, g_szDspBusTag) == 0)
 	{
-		char const* const szName = pRootNode->getAttr(g_szNameAttribute);
+		char const* const szName = rootNode->getAttr(g_szNameAttribute);
 
 		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Adx2::CDspBus");
 		pEnvironmentConnection = static_cast<IEnvironmentConnection*>(new CDspBus(szName));
 	}
 	else if (_stricmp(szTag, g_szAisacControlTag) == 0)
 	{
-		char const* const szName = pRootNode->getAttr(g_szNameAttribute);
+		char const* const szName = rootNode->getAttr(g_szNameAttribute);
 		float multiplier = g_defaultParamMultiplier;
 		float shift = g_defaultParamShift;
-		pRootNode->getAttr(g_szMutiplierAttribute, multiplier);
-		pRootNode->getAttr(g_szShiftAttribute, shift);
+		rootNode->getAttr(g_szMutiplierAttribute, multiplier);
+		rootNode->getAttr(g_szShiftAttribute, shift);
 
 		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Adx2::CAisacEnvironment");
 		pEnvironmentConnection = static_cast<IEnvironmentConnection*>(new CAisacEnvironment(szName, multiplier, shift));
@@ -1112,15 +1112,15 @@ void CImpl::DestructEnvironmentConnection(IEnvironmentConnection const* const pI
 }
 
 //////////////////////////////////////////////////////////////////////////
-ISettingConnection* CImpl::ConstructSettingConnection(XmlNodeRef const pRootNode)
+ISettingConnection* CImpl::ConstructSettingConnection(XmlNodeRef const& rootNode)
 {
 	ISettingConnection* pISettingConnection = nullptr;
 
-	char const* const szTag = pRootNode->getTag();
+	char const* const szTag = rootNode->getTag();
 
 	if (_stricmp(szTag, g_szDspBusSettingTag) == 0)
 	{
-		char const* const szName = pRootNode->getAttr(g_szNameAttribute);
+		char const* const szName = rootNode->getAttr(g_szNameAttribute);
 
 		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Adx2::CDspBusSetting");
 		pISettingConnection = static_cast<ISettingConnection*>(new CDspBusSetting(szName));

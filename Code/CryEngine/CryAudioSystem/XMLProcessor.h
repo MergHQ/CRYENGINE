@@ -28,18 +28,18 @@ public:
 	void           ClearControlsData(ContextId const contextId, bool const clearAll);
 	void           ParsePreloadsData(char const* const szFolderPath, ContextId const contextId);
 	void           ClearPreloadsData(ContextId const contextId, bool const clearAll);
-	void           ParseControlsFile(XmlNodeRef const pRootNode, ContextId const contextId);
-	void           ParseDefaultControlsFile(XmlNodeRef const pRootNode);
+	void           ParseControlsFile(XmlNodeRef const& rootNode, ContextId const contextId);
+	void           ParseDefaultControlsFile(XmlNodeRef const& rootNode);
 
 private:
 
-	void ParseTriggers(XmlNodeRef const pXMLTriggerRoot, ContextId const contextId);
-	void ParseDefaultTriggers(XmlNodeRef const pXMLTriggerRoot);
-	void ParseSwitches(XmlNodeRef const pXMLSwitchRoot, ContextId const contextId);
-	void ParseParameters(XmlNodeRef const pXMLParameterRoot, ContextId const contextId);
-	void ParsePreloads(XmlNodeRef const pPreloadDataRoot, ContextId const contextId, char const* const szFolderName, uint const version);
-	void ParseEnvironments(XmlNodeRef const pEnvironmentRoot, ContextId const contextId);
-	void ParseSettings(XmlNodeRef const pRoot, ContextId const contextId);
+	void ParseTriggers(XmlNodeRef const& rootNode, ContextId const contextId);
+	void ParseDefaultTriggers(XmlNodeRef const& rootNode);
+	void ParseSwitches(XmlNodeRef const& rootNode, ContextId const contextId);
+	void ParseParameters(XmlNodeRef const& rootNode, ContextId const contextId);
+	void ParsePreloads(XmlNodeRef const& rootNode, ContextId const contextId, char const* const szFolderName, uint const version);
+	void ParseEnvironments(XmlNodeRef const& rootNode, ContextId const contextId);
+	void ParseSettings(XmlNodeRef const& rootNode, ContextId const contextId);
 
 	void DeletePreloadRequest(CPreloadRequest const* const pPreloadRequest);
 };

@@ -720,31 +720,48 @@ void CPropagationProcessor::RunObstructionQuery()
 				switch (m_occlusionTypeWhenAdaptive)
 				{
 				case EOcclusionType::Low:
-					ProcessLow(up, side, bSynch);
-					break;
+					{
+						ProcessLow(up, side, bSynch);
+						break;
+					}
 				case EOcclusionType::Medium:
-					ProcessMedium(up, side, bSynch);
-					break;
+					{
+						ProcessMedium(up, side, bSynch);
+						break;
+					}
 				case EOcclusionType::High:
-					ProcessHigh(up, side, bSynch);
-					break;
+					{
+						ProcessHigh(up, side, bSynch);
+						break;
+					}
 				default:
-					CRY_ASSERT_MESSAGE(false, "Calculated Adaptive Occlusion Type invalid during %s", __FUNCTION__);
-					break;
+					{
+						CRY_ASSERT_MESSAGE(false, "Calculated Adaptive Occlusion Type invalid during %s", __FUNCTION__);
+						break;
+					}
 				}
+
+				break;
 			}
-			break;
 		case EOcclusionType::Low:
-			ProcessLow(up, side, bSynch);
-			break;
+			{
+				ProcessLow(up, side, bSynch);
+				break;
+			}
 		case EOcclusionType::Medium:
-			ProcessMedium(up, side, bSynch);
-			break;
+			{
+				ProcessMedium(up, side, bSynch);
+				break;
+			}
 		case EOcclusionType::High:
-			ProcessHigh(up, side, bSynch);
-			break;
+			{
+				ProcessHigh(up, side, bSynch);
+				break;
+			}
 		default:
-			break;
+			{
+				break;
+			}
 		}
 	}
 }
@@ -818,31 +835,48 @@ uint8 CPropagationProcessor::GetNumConcurrentRays() const
 			switch (m_occlusionTypeWhenAdaptive)
 			{
 			case EOcclusionType::Low:
-				numConcurrentRays = g_numConcurrentRaysLow;
-				break;
+				{
+					numConcurrentRays = g_numConcurrentRaysLow;
+					break;
+				}
 			case EOcclusionType::Medium:
-				numConcurrentRays = g_numConcurrentRaysMedium;
-				break;
+				{
+					numConcurrentRays = g_numConcurrentRaysMedium;
+					break;
+				}
 			case EOcclusionType::High:
-				numConcurrentRays = g_numConcurrentRaysHigh;
-				break;
+				{
+					numConcurrentRays = g_numConcurrentRaysHigh;
+					break;
+				}
 			default:
-				CRY_ASSERT_MESSAGE(false, "Calculated Adaptive Occlusion Type invalid during %s", __FUNCTION__);
-				break;
+				{
+					CRY_ASSERT_MESSAGE(false, "Calculated Adaptive Occlusion Type invalid during %s", __FUNCTION__);
+					break;
+				}
 			}
+
+			break;
 		}
-		break;
 	case EOcclusionType::Low:
-		numConcurrentRays = g_numConcurrentRaysLow;
-		break;
+		{
+			numConcurrentRays = g_numConcurrentRaysLow;
+			break;
+		}
 	case EOcclusionType::Medium:
-		numConcurrentRays = g_numConcurrentRaysMedium;
-		break;
+		{
+			numConcurrentRays = g_numConcurrentRaysMedium;
+			break;
+		}
 	case EOcclusionType::High:
-		numConcurrentRays = g_numConcurrentRaysHigh;
-		break;
+		{
+			numConcurrentRays = g_numConcurrentRaysHigh;
+			break;
+		}
 	default:
-		break;
+		{
+			break;
+		}
 	}
 
 	return numConcurrentRays;
@@ -860,31 +894,48 @@ uint8 CPropagationProcessor::GetNumSamplePositions() const
 			switch (m_occlusionTypeWhenAdaptive)
 			{
 			case EOcclusionType::Low:
-				numSamplePositions = g_numRaySamplePositionsLow;
-				break;
+				{
+					numSamplePositions = g_numRaySamplePositionsLow;
+					break;
+				}
 			case EOcclusionType::Medium:
-				numSamplePositions = g_numRaySamplePositionsMedium;
-				break;
+				{
+					numSamplePositions = g_numRaySamplePositionsMedium;
+					break;
+				}
 			case EOcclusionType::High:
-				numSamplePositions = g_numRaySamplePositionsHigh;
-				break;
+				{
+					numSamplePositions = g_numRaySamplePositionsHigh;
+					break;
+				}
 			default:
-				CRY_ASSERT_MESSAGE(false, "Calculated Adaptive Occlusion Type invalid during %s", __FUNCTION__);
-				break;
+				{
+					CRY_ASSERT_MESSAGE(false, "Calculated Adaptive Occlusion Type invalid during %s", __FUNCTION__);
+					break;
+				}
 			}
+
+			break;
 		}
-		break;
 	case EOcclusionType::Low:
-		numSamplePositions = g_numRaySamplePositionsLow;
-		break;
+		{
+			numSamplePositions = g_numRaySamplePositionsLow;
+			break;
+		}
 	case EOcclusionType::Medium:
-		numSamplePositions = g_numRaySamplePositionsMedium;
-		break;
+		{
+			numSamplePositions = g_numRaySamplePositionsMedium;
+			break;
+		}
 	case EOcclusionType::High:
-		numSamplePositions = g_numRaySamplePositionsHigh;
-		break;
+		{
+			numSamplePositions = g_numRaySamplePositionsHigh;
+			break;
+		}
 	default:
-		break;
+		{
+			break;
+		}
 	}
 
 	return numSamplePositions;

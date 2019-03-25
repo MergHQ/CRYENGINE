@@ -29,8 +29,8 @@ public:
 private:
 
 	bool      LoadAllLibrariesInFolder(string const& folderPath, string const& contextName);
-	void      LoadControlsLibrary(XmlNodeRef const pRoot, string const& filepath, string const& contextName, string const& fileName, uint8 const version);
-	CControl* LoadControl(XmlNodeRef const pNode, CryAudio::ContextId const contextId, CAsset* const pParentItem);
+	void      LoadControlsLibrary(XmlNodeRef const& rootNode, string const& filepath, string const& contextName, string const& fileName, uint8 const version);
+	CControl* LoadControl(XmlNodeRef const& node, CryAudio::ContextId const contextId, CAsset* const pParentItem);
 
 #if defined (USE_BACKWARDS_COMPATIBILITY)
 	void LoadControlsBW();

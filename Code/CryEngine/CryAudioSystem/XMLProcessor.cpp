@@ -49,49 +49,49 @@ bool ParseSystemDataFile(char const* const szFolderPath, SPoolSizes& poolSizes, 
 			fileName += "/";
 			fileName += fd.name;
 
-			XmlNodeRef const pRootNode(GetISystem()->LoadXmlFromFile(fileName));
+			XmlNodeRef const rootNode(GetISystem()->LoadXmlFromFile(fileName));
 
-			if (pRootNode != nullptr)
+			if (rootNode.isValid())
 			{
-				if (_stricmp(pRootNode->getTag(), g_szRootNodeTag) == 0)
+				if (_stricmp(rootNode->getTag(), g_szRootNodeTag) == 0)
 				{
 					uint16 numTriggers = 0;
-					pRootNode->getAttr(g_szNumTriggersAttribute, numTriggers);
+					rootNode->getAttr(g_szNumTriggersAttribute, numTriggers);
 					poolSizes.triggers += numTriggers;
 
 					uint16 numParameters = 0;
-					pRootNode->getAttr(g_szNumParametersAttribute, numParameters);
+					rootNode->getAttr(g_szNumParametersAttribute, numParameters);
 					poolSizes.parameters += numParameters;
 
 					uint16 numSwitches = 0;
-					pRootNode->getAttr(g_szNumSwitchesAttribute, numSwitches);
+					rootNode->getAttr(g_szNumSwitchesAttribute, numSwitches);
 					poolSizes.switches += numSwitches;
 
 					uint16 numStates = 0;
-					pRootNode->getAttr(g_szNumStatesAttribute, numStates);
+					rootNode->getAttr(g_szNumStatesAttribute, numStates);
 					poolSizes.states += numStates;
 
 					uint16 numEnvironments = 0;
-					pRootNode->getAttr(g_szNumEnvironmentsAttribute, numEnvironments);
+					rootNode->getAttr(g_szNumEnvironmentsAttribute, numEnvironments);
 					poolSizes.environments += numEnvironments;
 
 					uint16 numPreloads = 0;
-					pRootNode->getAttr(g_szNumPreloadsAttribute, numPreloads);
+					rootNode->getAttr(g_szNumPreloadsAttribute, numPreloads);
 					poolSizes.preloads += numPreloads;
 
 					uint16 numSettings = 0;
-					pRootNode->getAttr(g_szNumSettingsAttribute, numSettings);
+					rootNode->getAttr(g_szNumSettingsAttribute, numSettings);
 					poolSizes.settings += numSettings;
 
 					uint16 numFiles = 0;
-					pRootNode->getAttr(g_szNumFilesAttribute, numFiles);
+					rootNode->getAttr(g_szNumFilesAttribute, numFiles);
 					poolSizes.files += numFiles;
 
-					XmlNodeRef const pImplDataNode = pRootNode->findChild(g_szImplDataNodeTag);
+					XmlNodeRef const implDataNode = rootNode->findChild(g_szImplDataNodeTag);
 
-					if (pImplDataNode != nullptr)
+					if (implDataNode.isValid())
 					{
-						g_pIImpl->SetLibraryData(pImplDataNode, contextId);
+						g_pIImpl->SetLibraryData(implDataNode, contextId);
 					}
 
 					parsedValidLibrary = true;
@@ -265,21 +265,21 @@ bool CXMLProcessor::ParseControlsData(char const* const szFolderPath, ContextId 
 				sFileName += "/";
 				sFileName += fd.name;
 
-				XmlNodeRef const pRootNode(GetISystem()->LoadXmlFromFile(sFileName));
+				XmlNodeRef const rootNode(GetISystem()->LoadXmlFromFile(sFileName));
 
-				if (pRootNode)
+				if (rootNode.isValid())
 				{
-					if (_stricmp(pRootNode->getTag(), g_szRootNodeTag) == 0)
+					if (_stricmp(rootNode->getTag(), g_szRootNodeTag) == 0)
 					{
-						LibraryId const libraryId = StringToId(pRootNode->getAttr(g_szNameAttribute));
+						LibraryId const libraryId = StringToId(rootNode->getAttr(g_szNameAttribute));
 
 						if (libraryId == DefaultLibraryId)
 						{
-							ParseDefaultControlsFile(pRootNode);
+							ParseDefaultControlsFile(rootNode);
 						}
 						else
 						{
-							ParseControlsFile(pRootNode, contextId);
+							ParseControlsFile(rootNode, contextId);
 						}
 
 						contextExists = true;
@@ -312,37 +312,37 @@ bool CXMLProcessor::ParseControlsData(char const* const szFolderPath, ContextId 
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CXMLProcessor::ParseControlsFile(XmlNodeRef const pRootNode, ContextId const contextId)
+void CXMLProcessor::ParseControlsFile(XmlNodeRef const& rootNode, ContextId const contextId)
 {
-	int const rootChildCount = pRootNode->getChildCount();
+	int const rootChildCount = rootNode->getChildCount();
 
 	for (int i = 0; i < rootChildCount; ++i)
 	{
-		XmlNodeRef const pChildNode(pRootNode->getChild(i));
+		XmlNodeRef const childNode(rootNode->getChild(i));
 
-		if (pChildNode != nullptr)
+		if (childNode.isValid())
 		{
-			char const* const szChildNodeTag = pChildNode->getTag();
+			char const* const szChildNodeTag = childNode->getTag();
 
 			if (_stricmp(szChildNodeTag, g_szTriggersNodeTag) == 0)
 			{
-				ParseTriggers(pChildNode, contextId);
+				ParseTriggers(childNode, contextId);
 			}
 			else if (_stricmp(szChildNodeTag, g_szParametersNodeTag) == 0)
 			{
-				ParseParameters(pChildNode, contextId);
+				ParseParameters(childNode, contextId);
 			}
 			else if (_stricmp(szChildNodeTag, g_szSwitchesNodeTag) == 0)
 			{
-				ParseSwitches(pChildNode, contextId);
+				ParseSwitches(childNode, contextId);
 			}
 			else if (_stricmp(szChildNodeTag, g_szEnvironmentsNodeTag) == 0)
 			{
-				ParseEnvironments(pChildNode, contextId);
+				ParseEnvironments(childNode, contextId);
 			}
 			else if (_stricmp(szChildNodeTag, g_szSettingsNodeTag) == 0)
 			{
-				ParseSettings(pChildNode, contextId);
+				ParseSettings(childNode, contextId);
 			}
 			else if ((_stricmp(szChildNodeTag, g_szImplDataNodeTag) == 0) ||
 			         (_stricmp(szChildNodeTag, g_szPreloadsNodeTag) == 0) ||
@@ -361,21 +361,21 @@ void CXMLProcessor::ParseControlsFile(XmlNodeRef const pRootNode, ContextId cons
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CXMLProcessor::ParseDefaultControlsFile(XmlNodeRef const pRootNode)
+void CXMLProcessor::ParseDefaultControlsFile(XmlNodeRef const& rootNode)
 {
-	int const rootChildCount = pRootNode->getChildCount();
+	int const rootChildCount = rootNode->getChildCount();
 
 	for (int i = 0; i < rootChildCount; ++i)
 	{
-		XmlNodeRef const pChildNode(pRootNode->getChild(i));
+		XmlNodeRef const childNode(rootNode->getChild(i));
 
-		if (pChildNode != nullptr)
+		if (childNode.isValid())
 		{
-			char const* const childNodeTag = pChildNode->getTag();
+			char const* const childNodeTag = childNode->getTag();
 
 			if (_stricmp(childNodeTag, g_szTriggersNodeTag) == 0)
 			{
-				ParseDefaultTriggers(pChildNode);
+				ParseDefaultTriggers(childNode);
 			}
 			else if ((_stricmp(childNodeTag, g_szImplDataNodeTag) == 0) ||
 			         (_stricmp(childNodeTag, g_szParametersNodeTag) == 0) ||
@@ -423,24 +423,24 @@ void CXMLProcessor::ParsePreloadsData(char const* const szFolderPath, ContextId 
 				fileName += "/";
 				fileName += fd.name;
 
-				XmlNodeRef const pRootNode(GetISystem()->LoadXmlFromFile(fileName));
+				XmlNodeRef const rootNode(GetISystem()->LoadXmlFromFile(fileName));
 
-				if (pRootNode != nullptr)
+				if (rootNode.isValid())
 				{
-					if (_stricmp(pRootNode->getTag(), g_szRootNodeTag) == 0)
+					if (_stricmp(rootNode->getTag(), g_szRootNodeTag) == 0)
 					{
 
 						uint versionNumber = 1;
-						pRootNode->getAttr(g_szVersionAttribute, versionNumber);
-						int const numChildren = pRootNode->getChildCount();
+						rootNode->getAttr(g_szVersionAttribute, versionNumber);
+						int const numChildren = rootNode->getChildCount();
 
 						for (int i = 0; i < numChildren; ++i)
 						{
-							XmlNodeRef const pChildNode(pRootNode->getChild(i));
+							XmlNodeRef const childNode(rootNode->getChild(i));
 
-							if (pChildNode != nullptr)
+							if (childNode.isValid())
 							{
-								char const* const szChildNodeTag = pChildNode->getTag();
+								char const* const szChildNodeTag = childNode->getTag();
 
 								if (_stricmp(szChildNodeTag, g_szPreloadsNodeTag) == 0)
 								{
@@ -449,11 +449,11 @@ void CXMLProcessor::ParsePreloadsData(char const* const szFolderPath, ContextId 
 									if (rootFolderPath.npos != lastSlashIndex)
 									{
 										CryFixedStringT<MaxFilePathLength> const folderName(rootFolderPath.substr(lastSlashIndex + 1, rootFolderPath.size()));
-										ParsePreloads(pChildNode, contextId, folderName.c_str(), versionNumber);
+										ParsePreloads(childNode, contextId, folderName.c_str(), versionNumber);
 									}
 									else
 									{
-										ParsePreloads(pChildNode, contextId, nullptr, versionNumber);
+										ParsePreloads(childNode, contextId, nullptr, versionNumber);
 									}
 								}
 								else if (_stricmp(szChildNodeTag, g_szImplDataNodeTag) == 0 ||
@@ -623,25 +623,25 @@ void CXMLProcessor::ClearControlsData(ContextId const contextId, bool const clea
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CXMLProcessor::ParsePreloads(XmlNodeRef const pPreloadDataRoot, ContextId const contextId, char const* const szFolderName, uint const version)
+void CXMLProcessor::ParsePreloads(XmlNodeRef const& rootNode, ContextId const contextId, char const* const szFolderName, uint const version)
 {
 	LOADING_TIME_PROFILE_SECTION;
 
-	int const numPreloadRequests = pPreloadDataRoot->getChildCount();
+	int const numPreloadRequests = rootNode->getChildCount();
 
 	for (int i = 0; i < numPreloadRequests; ++i)
 	{
-		XmlNodeRef const pPreloadRequestNode(pPreloadDataRoot->getChild(i));
+		XmlNodeRef const preloadRequestNode(rootNode->getChild(i));
 
-		if (pPreloadRequestNode && _stricmp(pPreloadRequestNode->getTag(), g_szPreloadRequestTag) == 0)
+		if (preloadRequestNode.isValid() && (_stricmp(preloadRequestNode->getTag(), g_szPreloadRequestTag) == 0))
 		{
 			PreloadRequestId preloadRequestId = GlobalPreloadRequestId;
 			char const* szPreloadRequestName = g_szGlobalPreloadRequestName;
-			bool const isAutoLoad = (_stricmp(pPreloadRequestNode->getAttr(g_szTypeAttribute), g_szDataLoadType) == 0);
+			bool const isAutoLoad = (_stricmp(preloadRequestNode->getAttr(g_szTypeAttribute), g_szDataLoadType) == 0);
 
 			if (!isAutoLoad)
 			{
-				szPreloadRequestName = pPreloadRequestNode->getAttr(g_szNameAttribute);
+				szPreloadRequestName = preloadRequestNode->getAttr(g_szNameAttribute);
 				preloadRequestId = static_cast<PreloadRequestId>(StringToId(szPreloadRequestName));
 			}
 			else if (contextId != GlobalContextId)
@@ -652,18 +652,18 @@ void CXMLProcessor::ParsePreloads(XmlNodeRef const pPreloadDataRoot, ContextId c
 
 			if (preloadRequestId != InvalidPreloadRequestId)
 			{
-				int const numFiles = pPreloadRequestNode->getChildCount();
+				int const numFiles = preloadRequestNode->getChildCount();
 
 				CPreloadRequest::FileIds fileIds;
 				fileIds.reserve(numFiles);
 
 				for (int j = 0; j < numFiles; ++j)
 				{
-					XmlNodeRef const pFileNode(pPreloadRequestNode->getChild(j));
+					XmlNodeRef const fileNode(preloadRequestNode->getChild(j));
 
-					if (pFileNode != nullptr)
+					if (fileNode.isValid())
 					{
-						FileId const id = g_fileCacheManager.TryAddFileCacheEntry(pFileNode, contextId, isAutoLoad);
+						FileId const id = g_fileCacheManager.TryAddFileCacheEntry(fileNode, contextId, isAutoLoad);
 
 						if (id != InvalidFileId)
 						{
@@ -672,7 +672,7 @@ void CXMLProcessor::ParsePreloads(XmlNodeRef const pPreloadDataRoot, ContextId c
 #if defined(CRY_AUDIO_USE_DEBUG_CODE)
 						else
 						{
-							Cry::Audio::Log(ELogType::Warning, R"(Preload request "%s" could not create file entry from tag "%s"!)", szPreloadRequestName, pFileNode->getTag());
+							Cry::Audio::Log(ELogType::Warning, R"(Preload request "%s" could not create file entry from tag "%s"!)", szPreloadRequestName, fileNode->getTag());
 						}
 #endif        // CRY_AUDIO_USE_DEBUG_CODE
 					}
@@ -742,34 +742,34 @@ void CXMLProcessor::ClearPreloadsData(ContextId const contextId, bool const clea
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CXMLProcessor::ParseEnvironments(XmlNodeRef const pEnvironmentRoot, ContextId const contextId)
+void CXMLProcessor::ParseEnvironments(XmlNodeRef const& rootNode, ContextId const contextId)
 {
-	int const numEnvironments = pEnvironmentRoot->getChildCount();
+	int const numEnvironments = rootNode->getChildCount();
 
 	for (int i = 0; i < numEnvironments; ++i)
 	{
-		XmlNodeRef const pEnvironmentNode(pEnvironmentRoot->getChild(i));
+		XmlNodeRef const environmentNode(rootNode->getChild(i));
 
-		if ((pEnvironmentNode != nullptr) && (_stricmp(pEnvironmentNode->getTag(), g_szEnvironmentTag) == 0))
+		if (environmentNode.isValid() && (_stricmp(environmentNode->getTag(), g_szEnvironmentTag) == 0))
 		{
-			char const* const szEnvironmentName = pEnvironmentNode->getAttr(g_szNameAttribute);
+			char const* const szEnvironmentName = environmentNode->getAttr(g_szNameAttribute);
 			auto const environmentId = static_cast<EnvironmentId const>(StringToId(szEnvironmentName));
 
 			if ((environmentId != InvalidControlId) && (stl::find_in_map(g_environments, environmentId, nullptr) == nullptr))
 			{
 				//there is no entry yet with this ID in the container
-				int const numConnections = pEnvironmentNode->getChildCount();
+				int const numConnections = environmentNode->getChildCount();
 
 				EnvironmentConnections connections;
 				connections.reserve(numConnections);
 
 				for (int j = 0; j < numConnections; ++j)
 				{
-					XmlNodeRef const pEnvironmentImplNode(pEnvironmentNode->getChild(j));
+					XmlNodeRef const environmentConnectionNode(environmentNode->getChild(j));
 
-					if (pEnvironmentImplNode != nullptr)
+					if (environmentConnectionNode.isValid())
 					{
-						Impl::IEnvironmentConnection* const pConnection = g_pIImpl->ConstructEnvironmentConnection(pEnvironmentImplNode);
+						Impl::IEnvironmentConnection* const pConnection = g_pIImpl->ConstructEnvironmentConnection(environmentConnectionNode);
 
 						if (pConnection != nullptr)
 						{
@@ -809,33 +809,33 @@ void CXMLProcessor::ParseEnvironments(XmlNodeRef const pEnvironmentRoot, Context
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CXMLProcessor::ParseSettings(XmlNodeRef const pRoot, ContextId const contextId)
+void CXMLProcessor::ParseSettings(XmlNodeRef const& rootNode, ContextId const contextId)
 {
-	int const numSettings = pRoot->getChildCount();
+	int const numSettings = rootNode->getChildCount();
 
 	for (int i = 0; i < numSettings; ++i)
 	{
-		XmlNodeRef const pSettingNode(pRoot->getChild(i));
+		XmlNodeRef const settingNode(rootNode->getChild(i));
 
-		if (pSettingNode && _stricmp(pSettingNode->getTag(), g_szSettingTag) == 0)
+		if (settingNode.isValid() && (_stricmp(settingNode->getTag(), g_szSettingTag) == 0))
 		{
-			char const* const szSettingName = pSettingNode->getAttr(g_szNameAttribute);
+			char const* const szSettingName = settingNode->getAttr(g_szNameAttribute);
 			auto const settingId = static_cast<ControlId>(StringToId(szSettingName));
 
 			if ((settingId != InvalidControlId) && (stl::find_in_map(g_settings, settingId, nullptr) == nullptr))
 			{
-				int const numConnections = pSettingNode->getChildCount();
+				int const numConnections = settingNode->getChildCount();
 
 				SettingConnections connections;
 				connections.reserve(numConnections);
 
 				for (int j = 0; j < numConnections; ++j)
 				{
-					XmlNodeRef const pSettingConnectionNode(pSettingNode->getChild(j));
+					XmlNodeRef const settingConnectionNode(settingNode->getChild(j));
 
-					if (pSettingConnectionNode != nullptr)
+					if (settingConnectionNode.isValid())
 					{
-						Impl::ISettingConnection* const pConnection = g_pIImpl->ConstructSettingConnection(pSettingConnectionNode);
+						Impl::ISettingConnection* const pConnection = g_pIImpl->ConstructSettingConnection(settingConnectionNode);
 
 						if (pConnection != nullptr)
 						{
@@ -851,7 +851,7 @@ void CXMLProcessor::ParseSettings(XmlNodeRef const pRoot, ContextId const contex
 						connections.shrink_to_fit();
 					}
 
-					bool const isAutoLoad = (_stricmp(pSettingNode->getAttr(g_szTypeAttribute), g_szDataLoadType) == 0);
+					bool const isAutoLoad = (_stricmp(settingNode->getAttr(g_szTypeAttribute), g_szDataLoadType) == 0);
 
 					MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioSystem, 0, "CryAudio::CSetting");
 #if defined(CRY_AUDIO_USE_DEBUG_CODE)
@@ -877,22 +877,22 @@ void CXMLProcessor::ParseSettings(XmlNodeRef const pRoot, ContextId const contex
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CXMLProcessor::ParseTriggers(XmlNodeRef const pXMLTriggerRoot, ContextId const contextId)
+void CXMLProcessor::ParseTriggers(XmlNodeRef const& rootNode, ContextId const contextId)
 {
-	int const numTriggers = pXMLTriggerRoot->getChildCount();
+	int const numTriggers = rootNode->getChildCount();
 
 	for (int i = 0; i < numTriggers; ++i)
 	{
-		XmlNodeRef const pTriggerNode(pXMLTriggerRoot->getChild(i));
+		XmlNodeRef const triggerNode(rootNode->getChild(i));
 
-		if (pTriggerNode && _stricmp(pTriggerNode->getTag(), g_szTriggerTag) == 0)
+		if (triggerNode.isValid() && (_stricmp(triggerNode->getTag(), g_szTriggerTag) == 0))
 		{
-			char const* const szTriggerName = pTriggerNode->getAttr(g_szNameAttribute);
+			char const* const szTriggerName = triggerNode->getAttr(g_szNameAttribute);
 			auto const triggerId = static_cast<ControlId const>(StringToId(szTriggerName));
 
 			if ((triggerId != InvalidControlId) && (stl::find_in_map(g_triggers, triggerId, nullptr) == nullptr))
 			{
-				int const numConnections = pTriggerNode->getChildCount();
+				int const numConnections = triggerNode->getChildCount();
 				TriggerConnections connections;
 				connections.reserve(numConnections);
 
@@ -902,12 +902,12 @@ void CXMLProcessor::ParseTriggers(XmlNodeRef const pXMLTriggerRoot, ContextId co
 
 				for (int m = 0; m < numConnections; ++m)
 				{
-					XmlNodeRef const pTriggerImplNode(pTriggerNode->getChild(m));
+					XmlNodeRef const triggerConnectionNode(triggerNode->getChild(m));
 
-					if (pTriggerImplNode)
+					if (triggerConnectionNode.isValid())
 					{
 						float radius = 0.0f;
-						Impl::ITriggerConnection* const pConnection = g_pIImpl->ConstructTriggerConnection(pTriggerImplNode, radius);
+						Impl::ITriggerConnection* const pConnection = g_pIImpl->ConstructTriggerConnection(triggerConnectionNode, radius);
 
 						if (pConnection != nullptr)
 						{
@@ -951,30 +951,30 @@ void CXMLProcessor::ParseTriggers(XmlNodeRef const pXMLTriggerRoot, ContextId co
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CXMLProcessor::ParseDefaultTriggers(XmlNodeRef const pXMLTriggerRoot)
+void CXMLProcessor::ParseDefaultTriggers(XmlNodeRef const& rootNode)
 {
-	int const numTriggers = pXMLTriggerRoot->getChildCount();
+	int const numTriggers = rootNode->getChildCount();
 
 	for (int i = 0; i < numTriggers; ++i)
 	{
-		XmlNodeRef const pTriggerNode(pXMLTriggerRoot->getChild(i));
+		XmlNodeRef const triggerNode(rootNode->getChild(i));
 
-		if (pTriggerNode && _stricmp(pTriggerNode->getTag(), g_szTriggerTag) == 0)
+		if (triggerNode.isValid() && (_stricmp(triggerNode->getTag(), g_szTriggerTag) == 0))
 		{
-			char const* const szTriggerName = pTriggerNode->getAttr(g_szNameAttribute);
+			char const* const szTriggerName = triggerNode->getAttr(g_szNameAttribute);
 			auto const triggerId = static_cast<ControlId const>(StringToId(szTriggerName));
-			int const numConnections = pTriggerNode->getChildCount();
+			int const numConnections = triggerNode->getChildCount();
 			TriggerConnections connections;
 			connections.reserve(numConnections);
 
 			for (int j = 0; j < numConnections; ++j)
 			{
-				XmlNodeRef const pConnectionNode(pTriggerNode->getChild(j));
+				XmlNodeRef const connectionNode(triggerNode->getChild(j));
 
-				if (pConnectionNode != nullptr)
+				if (connectionNode.isValid())
 				{
 					float radius = 0.0f;
-					Impl::ITriggerConnection* const pConnection = g_pIImpl->ConstructTriggerConnection(pConnectionNode, radius);
+					Impl::ITriggerConnection* const pConnection = g_pIImpl->ConstructTriggerConnection(connectionNode, radius);
 
 					if (pConnection != nullptr)
 					{
@@ -1034,17 +1034,17 @@ void CXMLProcessor::ParseDefaultTriggers(XmlNodeRef const pXMLTriggerRoot)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CXMLProcessor::ParseSwitches(XmlNodeRef const pXMLSwitchRoot, ContextId const contextId)
+void CXMLProcessor::ParseSwitches(XmlNodeRef const& rootNode, ContextId const contextId)
 {
-	int const numSwitches = pXMLSwitchRoot->getChildCount();
+	int const numSwitches = rootNode->getChildCount();
 
 	for (int i = 0; i < numSwitches; ++i)
 	{
-		XmlNodeRef const pSwitchNode(pXMLSwitchRoot->getChild(i));
+		XmlNodeRef const switchNode(rootNode->getChild(i));
 
-		if (pSwitchNode && _stricmp(pSwitchNode->getTag(), g_szSwitchTag) == 0)
+		if (switchNode.isValid() && (_stricmp(switchNode->getTag(), g_szSwitchTag) == 0))
 		{
-			char const* const szSwitchName = pSwitchNode->getAttr(g_szNameAttribute);
+			char const* const szSwitchName = switchNode->getAttr(g_szNameAttribute);
 			auto const switchId = static_cast<ControlId const>(StringToId(szSwitchName));
 
 			if ((switchId != InvalidControlId) && (stl::find_in_map(g_switches, switchId, nullptr) == nullptr))
@@ -1056,30 +1056,30 @@ void CXMLProcessor::ParseSwitches(XmlNodeRef const pXMLSwitchRoot, ContextId con
 				auto const pNewSwitch = new CSwitch(switchId, contextId);
 #endif    // CRY_AUDIO_USE_DEBUG_CODE
 
-				int const numStates = pSwitchNode->getChildCount();
+				int const numStates = switchNode->getChildCount();
 
 				for (int j = 0; j < numStates; ++j)
 				{
-					XmlNodeRef const pSwitchStateNode(pSwitchNode->getChild(j));
+					XmlNodeRef const switchStateNode(switchNode->getChild(j));
 
-					if (pSwitchStateNode && _stricmp(pSwitchStateNode->getTag(), g_szStateTag) == 0)
+					if (switchStateNode.isValid() && (_stricmp(switchStateNode->getTag(), g_szStateTag) == 0))
 					{
-						char const* const szSwitchStateName = pSwitchStateNode->getAttr(g_szNameAttribute);
+						char const* const szSwitchStateName = switchStateNode->getAttr(g_szNameAttribute);
 						auto const switchStateId = static_cast<SwitchStateId const>(StringToId(szSwitchStateName));
 
 						if (switchStateId != InvalidSwitchStateId)
 						{
-							int const numConnections = pSwitchStateNode->getChildCount();
+							int const numConnections = switchStateNode->getChildCount();
 							SwitchStateConnections connections;
 							connections.reserve(numConnections);
 
 							for (int k = 0; k < numConnections; ++k)
 							{
-								XmlNodeRef const pStateImplNode(pSwitchStateNode->getChild(k));
+								XmlNodeRef const stateConnectionNode(switchStateNode->getChild(k));
 
-								if (pStateImplNode != nullptr)
+								if (stateConnectionNode.isValid())
 								{
-									Impl::ISwitchStateConnection* const pConnection = g_pIImpl->ConstructSwitchStateConnection(pStateImplNode);
+									Impl::ISwitchStateConnection* const pConnection = g_pIImpl->ConstructSwitchStateConnection(stateConnectionNode);
 
 									if (pConnection != nullptr)
 									{
@@ -1121,32 +1121,32 @@ void CXMLProcessor::ParseSwitches(XmlNodeRef const pXMLSwitchRoot, ContextId con
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CXMLProcessor::ParseParameters(XmlNodeRef const pXMLParameterRoot, ContextId const contextId)
+void CXMLProcessor::ParseParameters(XmlNodeRef const& rootNode, ContextId const contextId)
 {
-	int const numParameters = pXMLParameterRoot->getChildCount();
+	int const numParameters = rootNode->getChildCount();
 
 	for (int i = 0; i < numParameters; ++i)
 	{
-		XmlNodeRef const pParameterNode(pXMLParameterRoot->getChild(i));
+		XmlNodeRef const parameterNode(rootNode->getChild(i));
 
-		if (pParameterNode && _stricmp(pParameterNode->getTag(), g_szParameterTag) == 0)
+		if (parameterNode.isValid() && (_stricmp(parameterNode->getTag(), g_szParameterTag) == 0))
 		{
-			char const* const szParameterName = pParameterNode->getAttr(g_szNameAttribute);
+			char const* const szParameterName = parameterNode->getAttr(g_szNameAttribute);
 			auto const parameterId = static_cast<ControlId const>(StringToId(szParameterName));
 
 			if ((parameterId != InvalidControlId) && (stl::find_in_map(g_parameters, parameterId, nullptr) == nullptr))
 			{
-				int const numConnections = pParameterNode->getChildCount();
+				int const numConnections = parameterNode->getChildCount();
 				ParameterConnections connections;
 				connections.reserve(numConnections);
 
 				for (int j = 0; j < numConnections; ++j)
 				{
-					XmlNodeRef const pParameterImplNode(pParameterNode->getChild(j));
+					XmlNodeRef const parameterConnectionNode(parameterNode->getChild(j));
 
-					if (pParameterImplNode != nullptr)
+					if (parameterConnectionNode.isValid())
 					{
-						Impl::IParameterConnection* const pConnection = g_pIImpl->ConstructParameterConnection(pParameterImplNode);
+						Impl::IParameterConnection* const pConnection = g_pIImpl->ConstructParameterConnection(parameterConnectionNode);
 
 						if (pConnection != nullptr)
 						{

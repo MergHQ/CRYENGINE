@@ -580,16 +580,24 @@ ETriggerResult SoundEngine::ExecuteEvent(CObject* const pObject, CEvent* const p
 				switch (type)
 				{
 				case CEvent::EActionType::Stop:
-					pEventInstance->Stop();
-					break;
+					{
+						pEventInstance->Stop();
+						break;
+					}
 				case CEvent::EActionType::Pause:
-					pEventInstance->Pause();
-					break;
+					{
+						pEventInstance->Pause();
+						break;
+					}
 				case CEvent::EActionType::Resume:
-					pEventInstance->Resume();
-					break;
+					{
+						pEventInstance->Resume();
+						break;
+					}
 				default:
-					break;
+					{
+						break;
+					}
 				}
 			}
 		}

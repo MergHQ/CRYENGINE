@@ -1116,10 +1116,10 @@ void CSystem::ExecutePreviewTriggerEx(Impl::ITriggerInfo const& triggerInfo)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CSystem::ExecutePreviewTriggerEx(XmlNodeRef const pNode)
+void CSystem::ExecutePreviewTriggerEx(XmlNodeRef const& node)
 {
 #if defined(CRY_AUDIO_USE_DEBUG_CODE)
-	SSystemRequestData<ESystemRequestType::ExecutePreviewTriggerExNode> const requestData(pNode);
+	SSystemRequestData<ESystemRequestType::ExecutePreviewTriggerExNode> const requestData(node);
 	CRequest const request(&requestData);
 	PushRequest(request);
 #endif  // CRY_AUDIO_USE_DEBUG_CODE
@@ -1768,7 +1768,9 @@ ERequestStatus CSystem::ProcessSystemRequest(CRequest const& request)
 					break;
 				}
 			default:
-				break;
+				{
+					break;
+				}
 			}
 
 			break;
@@ -2137,7 +2139,7 @@ ERequestStatus CSystem::ProcessSystemRequest(CRequest const& request)
 		{
 			auto const pRequestData = static_cast<SSystemRequestData<ESystemRequestType::ExecutePreviewTriggerExNode> const*>(request.GetData());
 
-			g_previewTrigger.Execute(pRequestData->pNode);
+			g_previewTrigger.Execute(pRequestData->node);
 			result = ERequestStatus::Success;
 
 			break;
@@ -2792,7 +2794,7 @@ void CSystem::NotifyListener(CRequest const& request)
 			result = ERequestResult::Success;
 			break;
 		}
-	case ERequestStatus::Failure:
+	case ERequestStatus::Failure: // Intentional fall-through.
 	case ERequestStatus::PartialSuccess:
 		{
 			result = ERequestResult::Failure;

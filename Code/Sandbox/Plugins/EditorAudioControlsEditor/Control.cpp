@@ -250,7 +250,7 @@ void CControl::BackupAndClearConnections()
 	{
 		XmlNodeRef const rawConnection = g_pIImpl->CreateXMLNodeFromConnection(pIConnection, m_type, m_contextId);
 
-		if (rawConnection != nullptr)
+		if (rawConnection.isValid())
 		{
 			m_rawConnections.push_back(rawConnection);
 		}
@@ -311,9 +311,9 @@ void CControl::SignalConnectionModified()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CControl::LoadConnectionFromXML(XmlNodeRef const xmlNode)
+void CControl::LoadConnectionFromXML(XmlNodeRef const& node)
 {
-	IConnection* pConnection = g_pIImpl->CreateConnectionFromXMLNode(xmlNode, m_type);
+	IConnection* pConnection = g_pIImpl->CreateConnectionFromXMLNode(node, m_type);
 
 	if (pConnection != nullptr)
 	{

@@ -46,10 +46,10 @@ EventInstances g_constructedEventInstances;
 #endif  // CRY_AUDIO_IMPL_PORTAUDIO_USE_DEBUG_CODE
 
 //////////////////////////////////////////////////////////////////////////
-void CountPoolSizes(XmlNodeRef const pNode, uint16& poolSizes)
+void CountPoolSizes(XmlNodeRef const& node, uint16& poolSizes)
 {
 	uint16 numEvents = 0;
-	pNode->getAttr(g_szEventsAttribute, numEvents);
+	node->getAttr(g_szEventsAttribute, numEvents);
 	poolSizes += numEvents;
 }
 
@@ -89,17 +89,25 @@ bool GetSoundInfo(char const* const szPath, SF_INFO& sfInfo, PaStreamParameters&
 		{
 		case SF_FORMAT_PCM_16: // Intentional fall-through.
 		case SF_FORMAT_PCM_24:
-			streamParameters.sampleFormat = paInt16;
-			break;
+			{
+				streamParameters.sampleFormat = paInt16;
+				break;
+			}
 		case SF_FORMAT_PCM_32:
-			streamParameters.sampleFormat = paInt32;
-			break;
+			{
+				streamParameters.sampleFormat = paInt32;
+				break;
+			}
 		case SF_FORMAT_FLOAT: // Intentional fall-through.
 		case SF_FORMAT_VORBIS:
-			streamParameters.sampleFormat = paFloat32;
-			break;
+			{
+				streamParameters.sampleFormat = paFloat32;
+				break;
+			}
 		default:
-			break;
+			{
+				break;
+			}
 		}
 
 #if defined(CRY_AUDIO_IMPL_PORTAUDIO_USE_DEBUG_CODE)
@@ -215,15 +223,15 @@ void CImpl::Release()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CImpl::SetLibraryData(XmlNodeRef const pNode, ContextId const contextId)
+void CImpl::SetLibraryData(XmlNodeRef const& node, ContextId const contextId)
 {
 	if (contextId == GlobalContextId)
 	{
-		CountPoolSizes(pNode, g_eventsPoolSize);
+		CountPoolSizes(node, g_eventsPoolSize);
 	}
 	else
 	{
-		CountPoolSizes(pNode, g_contextEventPoolSizes[contextId]);
+		CountPoolSizes(node, g_contextEventPoolSizes[contextId]);
 	}
 }
 
@@ -323,7 +331,7 @@ void CImpl::UnregisterInMemoryFile(SFileInfo* const pFileInfo)
 }
 
 //////////////////////////////////////////////////////////////////////////
-ERequestStatus CImpl::ConstructFile(XmlNodeRef const pRootNode, SFileInfo* const pFileInfo)
+ERequestStatus CImpl::ConstructFile(XmlNodeRef const& rootNode, SFileInfo* const pFileInfo)
 {
 	return ERequestStatus::Failure;
 }
@@ -428,20 +436,20 @@ void CImpl::GamepadDisconnected(DeviceId const deviceUniqueID)
 }
 
 ///////////////////////////////////////////////////////////////////////////
-ITriggerConnection* CImpl::ConstructTriggerConnection(XmlNodeRef const pRootNode, float& radius)
+ITriggerConnection* CImpl::ConstructTriggerConnection(XmlNodeRef const& rootNode, float& radius)
 {
 	ITriggerConnection* pITriggerConnection = nullptr;
 
-	char const* const szTag = pRootNode->getTag();
+	char const* const szTag = rootNode->getTag();
 
 	if (_stricmp(szTag, g_szEventTag) == 0)
 	{
-		char const* const szLocalized = pRootNode->getAttr(g_szLocalizedAttribute);
+		char const* const szLocalized = rootNode->getAttr(g_szLocalizedAttribute);
 		bool const isLocalized = (szLocalized != nullptr) && (_stricmp(szLocalized, g_szTrueValue) == 0);
 
 		stack_string path = (isLocalized ? m_localizedSoundBankFolder.c_str() : m_regularSoundBankFolder.c_str());
 		path += "/";
-		stack_string const folderName = pRootNode->getAttr(g_szPathAttribute);
+		stack_string const folderName = rootNode->getAttr(g_szPathAttribute);
 
 		if (!folderName.empty())
 		{
@@ -449,7 +457,7 @@ ITriggerConnection* CImpl::ConstructTriggerConnection(XmlNodeRef const pRootNode
 			path += "/";
 		}
 
-		stack_string const name = pRootNode->getAttr(g_szNameAttribute);
+		stack_string const name = rootNode->getAttr(g_szNameAttribute);
 		path += name.c_str();
 
 		SF_INFO sfInfo;
@@ -457,11 +465,11 @@ ITriggerConnection* CImpl::ConstructTriggerConnection(XmlNodeRef const pRootNode
 
 		if (GetSoundInfo(path.c_str(), sfInfo, streamParameters))
 		{
-			CryFixedStringT<16> const eventTypeString(pRootNode->getAttr(g_szTypeAttribute));
+			CryFixedStringT<16> const eventTypeString(rootNode->getAttr(g_szTypeAttribute));
 			CEvent::EActionType const actionType = eventTypeString.compareNoCase(g_szStartValue) == 0 ? CEvent::EActionType::Start : CEvent::EActionType::Stop;
 
 			int numLoops = 0;
-			pRootNode->getAttr(g_szLoopCountAttribute, numLoops);
+			rootNode->getAttr(g_szLoopCountAttribute, numLoops);
 			// --numLoops because -1: play infinite, 0: play once, 1: play twice, etc...
 			--numLoops;
 			// Max to -1 to stay backwards compatible.
@@ -555,7 +563,7 @@ void CImpl::DestructTriggerConnection(ITriggerConnection const* const pITriggerC
 }
 
 ///////////////////////////////////////////////////////////////////////////
-IParameterConnection* CImpl::ConstructParameterConnection(XmlNodeRef const pRootNode)
+IParameterConnection* CImpl::ConstructParameterConnection(XmlNodeRef const& rootNode)
 {
 	return nullptr;
 }
@@ -567,7 +575,7 @@ void CImpl::DestructParameterConnection(IParameterConnection const* const pIPara
 }
 
 ///////////////////////////////////////////////////////////////////////////
-ISwitchStateConnection* CImpl::ConstructSwitchStateConnection(XmlNodeRef const pRootNode)
+ISwitchStateConnection* CImpl::ConstructSwitchStateConnection(XmlNodeRef const& rootNode)
 {
 	return nullptr;
 }
@@ -579,7 +587,7 @@ void CImpl::DestructSwitchStateConnection(ISwitchStateConnection const* const pI
 }
 
 ///////////////////////////////////////////////////////////////////////////
-IEnvironmentConnection* CImpl::ConstructEnvironmentConnection(XmlNodeRef const pRootNode)
+IEnvironmentConnection* CImpl::ConstructEnvironmentConnection(XmlNodeRef const& rootNode)
 {
 	return nullptr;
 }
@@ -591,7 +599,7 @@ void CImpl::DestructEnvironmentConnection(IEnvironmentConnection const* const pI
 }
 
 //////////////////////////////////////////////////////////////////////////
-ISettingConnection* CImpl::ConstructSettingConnection(XmlNodeRef const pRootNode)
+ISettingConnection* CImpl::ConstructSettingConnection(XmlNodeRef const& rootNode)
 {
 	return nullptr;
 }

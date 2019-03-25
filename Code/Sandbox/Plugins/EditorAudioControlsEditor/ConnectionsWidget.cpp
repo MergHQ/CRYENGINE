@@ -280,11 +280,11 @@ void CConnectionsWidget::ExecuteConnection()
 //////////////////////////////////////////////////////////////////////////
 XmlNodeRef CConnectionsWidget::ConstructTemporaryTriggerConnections(CControl const* const pControl)
 {
-	XmlNodeRef const pNode = GetISystem()->CreateXmlNode(CryAudio::g_szTriggerTag);
+	XmlNodeRef const node = GetISystem()->CreateXmlNode(CryAudio::g_szTriggerTag);
 
-	if (pNode != nullptr)
+	if (node.isValid())
 	{
-		pNode->setAttr(CryAudio::g_szNameAttribute, pControl->GetName());
+		node->setAttr(CryAudio::g_szNameAttribute, pControl->GetName());
 		QModelIndexList const& selectedIndexes = m_pTreeView->selectionModel()->selectedRows(g_connectionsNameColumn);
 
 		for (auto const& index : selectedIndexes)
@@ -296,13 +296,13 @@ XmlNodeRef CConnectionsWidget::ConstructTemporaryTriggerConnections(CControl con
 
 				if (pIConnection != nullptr)
 				{
-					AssetUtils::TryConstructTriggerConnectionNode(pNode, pIConnection, pControl->GetContextId());
+					AssetUtils::TryConstructTriggerConnectionNode(node, pIConnection, pControl->GetContextId());
 				}
 			}
 		}
 	}
 
-	return pNode;
+	return node;
 }
 
 //////////////////////////////////////////////////////////////////////////

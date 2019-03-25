@@ -39,7 +39,7 @@ public:
 	virtual bool           IsTypeCompatible(EAssetType const assetType, IItem const* const pIItem) const override;
 	virtual EAssetType     ImplTypeToAssetType(IItem const* const pIItem) const override;
 	virtual IConnection*   CreateConnectionToControl(EAssetType const assetType, IItem const* const pIItem) override;
-	virtual IConnection*   CreateConnectionFromXMLNode(XmlNodeRef pNode, EAssetType const assetType) override;
+	virtual IConnection*   CreateConnectionFromXMLNode(XmlNodeRef const& node, EAssetType const assetType) override;
 	virtual XmlNodeRef     CreateXMLNodeFromConnection(IConnection const* const pIConnection, EAssetType const assetType, CryAudio::ContextId const contextId) override;
 	virtual XmlNodeRef     SetDataNode(char const* const szTag, CryAudio::ContextId const contextId) override;
 	virtual void           OnBeforeWriteLibrary() override;

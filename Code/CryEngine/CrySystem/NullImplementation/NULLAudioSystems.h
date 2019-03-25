@@ -75,7 +75,7 @@ public:
 	virtual void        Log(ELogType const type, char const* const szFormat, ...) override                                                                                                                              {}
 	virtual void        ExecutePreviewTrigger(ControlId const triggerId) override                                                                                                                                       {}
 	virtual void        ExecutePreviewTriggerEx(Impl::ITriggerInfo const& triggerInfo) override                                                                                                                         {}
-	virtual void        ExecutePreviewTriggerEx(XmlNodeRef const pNode) override                                                                                                                                        {}
+	virtual void        ExecutePreviewTriggerEx(XmlNodeRef const& node) override                                                                                                                                        {}
 	virtual void        StopPreviewTrigger() override                                                                                                                                                                   {}
 
 private:

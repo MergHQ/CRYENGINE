@@ -21,32 +21,32 @@ static string const s_nameAttrib = "OrcaName";
 static string const s_typeAttrib = "OrcaType";
 
 //////////////////////////////////////////////////////////////////////////
-XmlNodeRef FindNodeByAttributeValue(XmlNodeRef const pRoot, string const attributeValue)
+XmlNodeRef FindNodeByAttributeValue(XmlNodeRef const& rootNode, string const attributeValue)
 {
-	XmlNodeRef pNode = nullptr;
+	XmlNodeRef node;
 
-	if (pRoot != nullptr)
+	if (rootNode.isValid())
 	{
-		int const numChildren = pRoot->getChildCount();
+		int const numChildren = rootNode->getChildCount();
 
 		for (int i = 0; i < numChildren; ++i)
 		{
-			XmlNodeRef const pChild = pRoot->getChild(i);
+			XmlNodeRef const childNode = rootNode->getChild(i);
 
-			if (pChild != nullptr)
+			if (childNode.isValid())
 			{
-				string const nameValue = pChild->getAttr(s_nameAttrib);
+				string const nameValue = childNode->getAttr(s_nameAttrib);
 
 				if (nameValue.compareNoCase(attributeValue) == 0)
 				{
-					pNode = pChild;
+					node = childNode;
 					break;
 				}
-				else if (pChild->getChildCount() > 0)
+				else if (childNode->getChildCount() > 0)
 				{
-					pNode = FindNodeByAttributeValue(pChild, attributeValue);
+					node = FindNodeByAttributeValue(childNode, attributeValue);
 
-					if (pNode != nullptr)
+					if (node.isValid())
 					{
 						break;
 					}
@@ -55,7 +55,7 @@ XmlNodeRef FindNodeByAttributeValue(XmlNodeRef const pRoot, string const attribu
 		}
 	}
 
-	return pNode;
+	return node;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -135,44 +135,44 @@ void CProjectLoader::LoadGlobalSettings(string const& folderPath, CItem& parent)
 		do
 		{
 			string const fileName = fd.name;
-			XmlNodeRef const pRoot = GetISystem()->LoadXmlFromFile(folderPath + "/" + fileName);
+			XmlNodeRef const rootNode = GetISystem()->LoadXmlFromFile(folderPath + "/" + fileName);
 
-			if (pRoot != nullptr)
+			if (rootNode.isValid())
 			{
-				XmlNodeRef const pGlobalSettingsNode = FindNodeByAttributeValue(pRoot, "GlobalSettings");
+				XmlNodeRef const globalSettingsNode = FindNodeByAttributeValue(rootNode, "GlobalSettings");
 
-				if (pGlobalSettingsNode != nullptr)
+				if (globalSettingsNode.isValid())
 				{
 					CItem* const pGlobalSettingsFolder = CreateItem(s_globalSettingsFolderName, EItemType::FolderGlobal, &m_rootItem, EItemFlags::IsContainer);
-					int const numChildren = pGlobalSettingsNode->getChildCount();
+					int const numChildren = globalSettingsNode->getChildCount();
 
 					for (int i = 0; i < numChildren; ++i)
 					{
-						XmlNodeRef const pChild = pGlobalSettingsNode->getChild(i);
+						XmlNodeRef const childNode = globalSettingsNode->getChild(i);
 
-						if ((pChild != nullptr) && (pChild->getChildCount() > 0))
+						if (childNode.isValid() && (childNode->getChildCount() > 0))
 						{
-							char const* const szNameValue = pChild->getAttr(s_nameAttrib);
+							char const* const szNameValue = childNode->getAttr(s_nameAttrib);
 
 							if (_stricmp(szNameValue, "AISAC-Controls") == 0)
 							{
 								CItem* const pFolder = CreateItem(s_aisacControlsFolderName, EItemType::FolderGlobal, pGlobalSettingsFolder, EItemFlags::IsContainer);
-								ParseGlobalSettingsFile(pChild, *pFolder, EItemType::AisacControl);
+								ParseGlobalSettingsFile(childNode, *pFolder, EItemType::AisacControl);
 							}
 							else if (_stricmp(szNameValue, "GameVariables") == 0)
 							{
 								CItem* const pFolder = CreateItem(s_gameVariablesFolderName, EItemType::FolderGlobal, pGlobalSettingsFolder, EItemFlags::IsContainer);
-								ParseGlobalSettingsFile(pChild, *pFolder, EItemType::GameVariable);
+								ParseGlobalSettingsFile(childNode, *pFolder, EItemType::GameVariable);
 							}
 							else if (_stricmp(szNameValue, "SelectorFolder") == 0)
 							{
 								CItem* const pFolder = CreateItem(s_selectorsFolderName, EItemType::FolderGlobal, pGlobalSettingsFolder, EItemFlags::IsContainer);
-								ParseGlobalSettingsFile(pChild, *pFolder, EItemType::Selector);
+								ParseGlobalSettingsFile(childNode, *pFolder, EItemType::Selector);
 							}
 							else if (_stricmp(szNameValue, "Categories") == 0)
 							{
 								CItem* const pFolder = CreateItem(s_categoriesFolderName, EItemType::FolderGlobal, pGlobalSettingsFolder, EItemFlags::IsContainer);
-								ParseGlobalSettingsFile(pChild, *pFolder, EItemType::CategoryGroup);
+								ParseGlobalSettingsFile(childNode, *pFolder, EItemType::CategoryGroup);
 							}
 							else if (_stricmp(szNameValue, "DspBusSettings") == 0)
 							{
@@ -180,7 +180,7 @@ void CProjectLoader::LoadGlobalSettings(string const& folderPath, CItem& parent)
 								m_pSnapShotsFolder = CreateItem(s_snapshotsFolderName, EItemType::FolderGlobal, pGlobalSettingsFolder, EItemFlags::IsContainer);
 
 								CItem* const pFolder = CreateItem(s_dspBusSettingsFolderName, EItemType::FolderGlobal, pGlobalSettingsFolder, EItemFlags::IsContainer);
-								ParseBusSettings(pChild, *pFolder);
+								ParseBusSettings(childNode, *pFolder);
 							}
 						}
 					}
@@ -196,72 +196,83 @@ void CProjectLoader::LoadGlobalSettings(string const& folderPath, CItem& parent)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CProjectLoader::ParseGlobalSettingsFile(XmlNodeRef const pNode, CItem& parent, EItemType const type)
+void CProjectLoader::ParseGlobalSettingsFile(XmlNodeRef const& node, CItem& parent, EItemType const type)
 {
-	int const numChildren = pNode->getChildCount();
+	int const numChildren = node->getChildCount();
 
 	for (int i = 0; i < numChildren; ++i)
 	{
-		XmlNodeRef const pChild = pNode->getChild(i);
+		XmlNodeRef const childNode = node->getChild(i);
 
-		if (pChild != nullptr)
+		if (childNode.isValid())
 		{
-			char const* const szNameValue = pChild->getAttr(s_nameAttrib);
+			char const* const szNameValue = childNode->getAttr(s_nameAttrib);
 			CItem* const pItem = CreateItem(szNameValue, type, &parent, EItemFlags::None);
 
-			if (type == EItemType::Selector)
+			switch (type)
 			{
-				pItem->SetFlags(pItem->GetFlags() | EItemFlags::IsContainer);
-				ParseGlobalSettingsFile(pChild, *pItem, EItemType::SelectorLabel);
-			}
-			else if (type == EItemType::CategoryGroup)
-			{
-				pItem->SetFlags(pItem->GetFlags() | EItemFlags::IsContainer);
-				ParseGlobalSettingsFile(pChild, *pItem, EItemType::Category);
+			case EItemType::Selector:
+				{
+					pItem->SetFlags(pItem->GetFlags() | EItemFlags::IsContainer);
+					ParseGlobalSettingsFile(childNode, *pItem, EItemType::SelectorLabel);
+
+					break;
+				}
+			case EItemType::CategoryGroup:
+				{
+					pItem->SetFlags(pItem->GetFlags() | EItemFlags::IsContainer);
+					ParseGlobalSettingsFile(childNode, *pItem, EItemType::Category);
+
+					break;
+				}
+			default:
+				{
+					break;
+				}
 			}
 		}
 	}
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CProjectLoader::ParseBusSettings(XmlNodeRef const pNode, CItem& parent)
+void CProjectLoader::ParseBusSettings(XmlNodeRef const& node, CItem& parent)
 {
-	int const numChildren = pNode->getChildCount();
+	int const numChildren = node->getChildCount();
 
 	for (int i = 0; i < numChildren; ++i)
 	{
-		XmlNodeRef const pChild = pNode->getChild(i);
+		XmlNodeRef const childNode = node->getChild(i);
 
-		if (pChild != nullptr)
+		if (childNode.isValid())
 		{
-			char const* const szNameValue = pChild->getAttr(s_nameAttrib);
+			char const* const szNameValue = childNode->getAttr(s_nameAttrib);
 			CreateItem(szNameValue, EItemType::DspBusSetting, &parent, EItemFlags::None);
-			ParseBusesAndSnapshots(pChild);
+			ParseBusesAndSnapshots(childNode);
 		}
 	}
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CProjectLoader::ParseBusesAndSnapshots(XmlNodeRef const pNode)
+void CProjectLoader::ParseBusesAndSnapshots(XmlNodeRef const& node)
 {
-	int const numChildren = pNode->getChildCount();
+	int const numChildren = node->getChildCount();
 
 	for (int i = 0; i < numChildren; ++i)
 	{
-		XmlNodeRef const pChild = pNode->getChild(i);
+		XmlNodeRef const childNode = node->getChild(i);
 
-		if (pChild != nullptr)
+		if (childNode.isValid())
 		{
-			char const* const typeAttrib = pChild->getAttr(s_typeAttrib);
+			char const* const typeAttrib = childNode->getAttr(s_typeAttrib);
 
 			if (_stricmp(typeAttrib, "CriMw.CriAtomCraft.AcCore.AcOoDspBus") == 0)
 			{
-				char const* const szNameValue = pChild->getAttr(s_nameAttrib);
+				char const* const szNameValue = childNode->getAttr(s_nameAttrib);
 				CreateItem(szNameValue, EItemType::Bus, m_pBusesFolder, EItemFlags::None);
 			}
 			else if (_stricmp(typeAttrib, "CriMw.CriAtomCraft.AcCore.AcOoDspSettingSnapshot") == 0)
 			{
-				char const* const szNameValue = pChild->getAttr(s_nameAttrib);
+				char const* const szNameValue = childNode->getAttr(s_nameAttrib);
 				CreateItem(szNameValue, EItemType::Snapshot, m_pSnapShotsFolder, EItemFlags::None);
 			}
 		}
@@ -306,22 +317,22 @@ void CProjectLoader::LoadWorkUnitFile(string const& folderPath, CItem& parent)
 		do
 		{
 			string fileName = fd.name;
-			XmlNodeRef const pRoot = GetISystem()->LoadXmlFromFile(folderPath + "/" + fileName);
+			XmlNodeRef const rootNode = GetISystem()->LoadXmlFromFile(folderPath + "/" + fileName);
 
-			if (pRoot != nullptr)
+			if (rootNode.isValid())
 			{
 				PathUtil::RemoveExtension(fileName);
-				XmlNodeRef const pWorkUnitNode = FindNodeByAttributeValue(pRoot, fileName);
+				XmlNodeRef const workUnitNode = FindNodeByAttributeValue(rootNode, fileName);
 
-				if (pWorkUnitNode != nullptr)
+				if (workUnitNode.isValid())
 				{
 					CItem* const pWorkUnit = CreateItem(fileName, EItemType::WorkUnit, &parent, EItemFlags::IsContainer);
-					XmlNodeRef const pCueSheetFolderNode = FindNodeByAttributeValue(pRoot, "CueSheetFolder");
+					XmlNodeRef const cueSheetFolderNode = FindNodeByAttributeValue(rootNode, "CueSheetFolder");
 
-					if (pCueSheetFolderNode != nullptr)
+					if (cueSheetFolderNode.isValid())
 					{
 						CItem* const pCueSheetFolder = CreateItem("CueSheetFolder", EItemType::FolderCueSheet, pWorkUnit, EItemFlags::IsContainer);
-						ParseWorkUnitFile(pCueSheetFolderNode, *pCueSheetFolder);
+						ParseWorkUnitFile(cueSheetFolderNode, *pCueSheetFolder);
 					}
 				}
 			}
@@ -335,36 +346,36 @@ void CProjectLoader::LoadWorkUnitFile(string const& folderPath, CItem& parent)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CProjectLoader::ParseWorkUnitFile(XmlNodeRef const pRoot, CItem& parent)
+void CProjectLoader::ParseWorkUnitFile(XmlNodeRef const& node, CItem& parent)
 {
-	int const numChildren = pRoot->getChildCount();
+	int const numChildren = node->getChildCount();
 
 	for (int i = 0; i < numChildren; ++i)
 	{
-		XmlNodeRef const pChild = pRoot->getChild(i);
+		XmlNodeRef const childNode = node->getChild(i);
 
-		if (pChild != nullptr)
+		if (childNode.isValid())
 		{
-			char const* const szNameValue = pChild->getAttr(s_nameAttrib);
+			char const* const szNameValue = childNode->getAttr(s_nameAttrib);
 
-			if (pChild->haveAttr("CueID"))
+			if (childNode->haveAttr("CueID"))
 			{
 				CreateItem(szNameValue, EItemType::Cue, &parent, EItemFlags::None);
 			}
-			else if (pChild->haveAttr("AwbHash"))
+			else if (childNode->haveAttr("AwbHash"))
 			{
 				CItem* const pItem = CreateItem(szNameValue, EItemType::CueSheet, &parent, EItemFlags::IsContainer);
-				ParseWorkUnitFile(pChild, *pItem);
+				ParseWorkUnitFile(childNode, *pItem);
 			}
-			else if (_stricmp(pChild->getAttr(s_typeAttrib), "CriMw.CriAtomCraft.AcCore.AcOoCueSheetSubFolder") == 0)
+			else if (_stricmp(childNode->getAttr(s_typeAttrib), "CriMw.CriAtomCraft.AcCore.AcOoCueSheetSubFolder") == 0)
 			{
 				CItem* const pItem = CreateItem(szNameValue, EItemType::FolderCueSheet, &parent, EItemFlags::IsContainer);
-				ParseWorkUnitFile(pChild, *pItem);
+				ParseWorkUnitFile(childNode, *pItem);
 			}
-			else if (_stricmp(pChild->getAttr(s_typeAttrib), "CriMw.CriAtomCraft.AcCore.AcOoCueFolder") == 0)
+			else if (_stricmp(childNode->getAttr(s_typeAttrib), "CriMw.CriAtomCraft.AcCore.AcOoCueFolder") == 0)
 			{
 				CItem* const pItem = CreateItem(szNameValue, EItemType::FolderCue, &parent, EItemFlags::IsContainer);
-				ParseWorkUnitFile(pChild, *pItem);
+				ParseWorkUnitFile(childNode, *pItem);
 			}
 		}
 	}

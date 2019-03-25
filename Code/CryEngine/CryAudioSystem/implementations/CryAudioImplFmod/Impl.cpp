@@ -59,42 +59,42 @@ constexpr char const* g_szVcaPrefix = "vca:/";
 constexpr size_t g_maxFileSize = size_t(1) << size_t(31);
 
 //////////////////////////////////////////////////////////////////////////
-void CountPoolSizes(XmlNodeRef const pNode, SPoolSizes& poolSizes)
+void CountPoolSizes(XmlNodeRef const& node, SPoolSizes& poolSizes)
 {
 	uint16 numEvents = 0;
-	pNode->getAttr(g_szEventsAttribute, numEvents);
+	node->getAttr(g_szEventsAttribute, numEvents);
 	poolSizes.events += numEvents;
 
 	uint16 numParameters = 0;
-	pNode->getAttr(g_szParametersAttribute, numParameters);
+	node->getAttr(g_szParametersAttribute, numParameters);
 	poolSizes.parameters += numParameters;
 
 	uint16 numParameterEnvironments = 0;
-	pNode->getAttr(g_szParameterEnvironmentsAttribute, numParameterEnvironments);
+	node->getAttr(g_szParameterEnvironmentsAttribute, numParameterEnvironments);
 	poolSizes.parameterEnvironments += numParameterEnvironments;
 
 	uint16 numParameterStates = 0;
-	pNode->getAttr(g_szParameterStatesAttribute, numParameterStates);
+	node->getAttr(g_szParameterStatesAttribute, numParameterStates);
 	poolSizes.parameterStates += numParameterStates;
 
 	uint16 numSnapshots = 0;
-	pNode->getAttr(g_szSnapshotsAttribute, numSnapshots);
+	node->getAttr(g_szSnapshotsAttribute, numSnapshots);
 	poolSizes.snapshots += numSnapshots;
 
 	uint16 numReturns = 0;
-	pNode->getAttr(g_szReturnsAttribute, numReturns);
+	node->getAttr(g_szReturnsAttribute, numReturns);
 	poolSizes.returns += numReturns;
 
 	uint16 numVcas = 0;
-	pNode->getAttr(g_szVcasAttribute, numVcas);
+	node->getAttr(g_szVcasAttribute, numVcas);
 	poolSizes.vcas += numVcas;
 
 	uint16 numVcaStates = 0;
-	pNode->getAttr(g_szVcaStatesAttribute, numVcaStates);
+	node->getAttr(g_szVcaStatesAttribute, numVcaStates);
 	poolSizes.vcaStates += numVcaStates;
 
 	uint16 numBanks = 0;
-	pNode->getAttr(g_szBanksAttribute, numBanks);
+	node->getAttr(g_szBanksAttribute, numBanks);
 	poolSizes.banks += numBanks;
 }
 
@@ -274,15 +274,15 @@ void CImpl::Release()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CImpl::SetLibraryData(XmlNodeRef const pNode, ContextId const contextId)
+void CImpl::SetLibraryData(XmlNodeRef const& node, ContextId const contextId)
 {
 	if (contextId == GlobalContextId)
 	{
-		CountPoolSizes(pNode, g_poolSizes);
+		CountPoolSizes(node, g_poolSizes);
 	}
 	else
 	{
-		CountPoolSizes(pNode, g_contextPoolSizes[contextId]);
+		CountPoolSizes(node, g_contextPoolSizes[contextId]);
 	}
 }
 
@@ -515,17 +515,17 @@ void CImpl::UnregisterInMemoryFile(SFileInfo* const pFileInfo)
 }
 
 //////////////////////////////////////////////////////////////////////////
-ERequestStatus CImpl::ConstructFile(XmlNodeRef const pRootNode, SFileInfo* const pFileInfo)
+ERequestStatus CImpl::ConstructFile(XmlNodeRef const& rootNode, SFileInfo* const pFileInfo)
 {
 	ERequestStatus result = ERequestStatus::Failure;
 
-	if ((_stricmp(pRootNode->getTag(), g_szFileTag) == 0) && (pFileInfo != nullptr))
+	if ((_stricmp(rootNode->getTag(), g_szFileTag) == 0) && (pFileInfo != nullptr))
 	{
-		char const* const szFileName = pRootNode->getAttr(g_szNameAttribute);
+		char const* const szFileName = rootNode->getAttr(g_szNameAttribute);
 
 		if (szFileName != nullptr && szFileName[0] != '\0')
 		{
-			char const* const szLocalized = pRootNode->getAttr(g_szLocalizedAttribute);
+			char const* const szLocalized = rootNode->getAttr(g_szLocalizedAttribute);
 			pFileInfo->bLocalized = (szLocalized != nullptr) && (_stricmp(szLocalized, g_szTrueValue) == 0);
 			pFileInfo->szFileName = szFileName;
 
@@ -669,16 +669,16 @@ void CImpl::GamepadDisconnected(DeviceId const deviceUniqueID)
 }
 
 ///////////////////////////////////////////////////////////////////////////
-ITriggerConnection* CImpl::ConstructTriggerConnection(XmlNodeRef const pRootNode, float& radius)
+ITriggerConnection* CImpl::ConstructTriggerConnection(XmlNodeRef const& rootNode, float& radius)
 {
 	ITriggerConnection* pITriggerConnection = nullptr;
 
-	char const* const szTag = pRootNode->getTag();
+	char const* const szTag = rootNode->getTag();
 
 	if (_stricmp(szTag, g_szEventTag) == 0)
 	{
 		stack_string fullName(g_szEventPrefix);
-		char const* const szName = pRootNode->getAttr(g_szNameAttribute);
+		char const* const szName = rootNode->getAttr(g_szNameAttribute);
 		fullName += szName;
 		FMOD_GUID guid = { 0 };
 
@@ -688,7 +688,7 @@ ITriggerConnection* CImpl::ConstructTriggerConnection(XmlNodeRef const pRootNode
 			g_pStudioSystem->getEventByID(&guid, &pEventDescription);
 
 			CEvent::EActionType actionType = CEvent::EActionType::Start;
-			char const* const szEventType = pRootNode->getAttr(g_szTypeAttribute);
+			char const* const szEventType = rootNode->getAttr(g_szTypeAttribute);
 
 			if ((szEventType != nullptr) && (szEventType[0] != '\0'))
 			{
@@ -724,13 +724,13 @@ ITriggerConnection* CImpl::ConstructTriggerConnection(XmlNodeRef const pRootNode
 	else if (_stricmp(szTag, g_szKeyTag) == 0)
 	{
 		stack_string fullName(g_szEventPrefix);
-		char const* const szEventName = pRootNode->getAttr(g_szEventAttribute);
+		char const* const szEventName = rootNode->getAttr(g_szEventAttribute);
 		fullName += szEventName;
 		FMOD_GUID guid = { 0 };
 
 		if (g_pStudioSystem->lookupID(fullName.c_str(), &guid) == FMOD_OK)
 		{
-			char const* const szKey = pRootNode->getAttr(g_szNameAttribute);
+			char const* const szKey = rootNode->getAttr(g_szNameAttribute);
 
 			FMOD::Studio::EventDescription* pEventDescription = nullptr;
 			g_pStudioSystem->getEventByID(&guid, &pEventDescription);
@@ -753,14 +753,14 @@ ITriggerConnection* CImpl::ConstructTriggerConnection(XmlNodeRef const pRootNode
 	else if (_stricmp(szTag, g_szSnapshotTag) == 0)
 	{
 		stack_string fullName(g_szSnapshotPrefix);
-		char const* const szName = pRootNode->getAttr(g_szNameAttribute);
+		char const* const szName = rootNode->getAttr(g_szNameAttribute);
 		fullName += szName;
 		FMOD_GUID guid = { 0 };
 
 		if (g_pStudioSystem->lookupID(fullName.c_str(), &guid) == FMOD_OK)
 		{
 			CSnapshot::EActionType actionType = CSnapshot::EActionType::Start;
-			char const* const szActionType = pRootNode->getAttr(g_szTypeAttribute);
+			char const* const szActionType = rootNode->getAttr(g_szTypeAttribute);
 
 			if ((szActionType != nullptr) && (szActionType[0] != '\0') && (_stricmp(szActionType, g_szStopValue) == 0))
 			{
@@ -849,16 +849,16 @@ void CImpl::DestructTriggerConnection(ITriggerConnection const* const pITriggerC
 }
 
 ///////////////////////////////////////////////////////////////////////////
-IParameterConnection* CImpl::ConstructParameterConnection(XmlNodeRef const pRootNode)
+IParameterConnection* CImpl::ConstructParameterConnection(XmlNodeRef const& rootNode)
 {
 	IParameterConnection* pIParameterConnection = nullptr;
 
-	char const* const szTag = pRootNode->getTag();
+	char const* const szTag = rootNode->getTag();
 
 	if (_stricmp(szTag, g_szParameterTag) == 0)
 	{
 		stack_string fullName(g_szParameterPrefix);
-		char const* const szName = pRootNode->getAttr(g_szNameAttribute);
+		char const* const szName = rootNode->getAttr(g_szNameAttribute);
 		fullName += szName;
 		FMOD_GUID guid = { 0 };
 
@@ -871,8 +871,8 @@ IParameterConnection* CImpl::ConstructParameterConnection(XmlNodeRef const pRoot
 
 			float multiplier = g_defaultParamMultiplier;
 			float shift = g_defaultParamShift;
-			pRootNode->getAttr(g_szMutiplierAttribute, multiplier);
-			pRootNode->getAttr(g_szShiftAttribute, shift);
+			rootNode->getAttr(g_szMutiplierAttribute, multiplier);
+			rootNode->getAttr(g_szShiftAttribute, shift);
 
 			MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Fmod::CParameter");
 			pIParameterConnection = static_cast<IParameterConnection*>(new CParameter(parameterInfo, multiplier, shift));
@@ -888,7 +888,7 @@ IParameterConnection* CImpl::ConstructParameterConnection(XmlNodeRef const pRoot
 	else if (_stricmp(szTag, g_szVcaTag) == 0)
 	{
 		stack_string fullName(g_szVcaPrefix);
-		char const* const szName = pRootNode->getAttr(g_szNameAttribute);
+		char const* const szName = rootNode->getAttr(g_szNameAttribute);
 		fullName += szName;
 		FMOD_GUID guid = { 0 };
 
@@ -899,8 +899,8 @@ IParameterConnection* CImpl::ConstructParameterConnection(XmlNodeRef const pRoot
 
 			float multiplier = g_defaultParamMultiplier;
 			float shift = g_defaultParamShift;
-			pRootNode->getAttr(g_szMutiplierAttribute, multiplier);
-			pRootNode->getAttr(g_szShiftAttribute, shift);
+			rootNode->getAttr(g_szMutiplierAttribute, multiplier);
+			rootNode->getAttr(g_szShiftAttribute, shift);
 
 			MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Fmod::CVca");
 
@@ -934,22 +934,22 @@ void CImpl::DestructParameterConnection(IParameterConnection const* const pIPara
 }
 
 ///////////////////////////////////////////////////////////////////////////
-ISwitchStateConnection* CImpl::ConstructSwitchStateConnection(XmlNodeRef const pRootNode)
+ISwitchStateConnection* CImpl::ConstructSwitchStateConnection(XmlNodeRef const& rootNode)
 {
 	ISwitchStateConnection* pISwitchStateConnection = nullptr;
 
-	char const* const szTag = pRootNode->getTag();
+	char const* const szTag = rootNode->getTag();
 
 	if (_stricmp(szTag, g_szParameterTag) == 0)
 	{
 		stack_string fullName(g_szParameterPrefix);
-		char const* const szName = pRootNode->getAttr(g_szNameAttribute);
+		char const* const szName = rootNode->getAttr(g_szNameAttribute);
 		fullName += szName;
 		FMOD_GUID guid = { 0 };
 
 		if (g_pStudioSystem->lookupID(fullName.c_str(), &guid) == FMOD_OK)
 		{
-			char const* const szValue = pRootNode->getAttr(g_szValueAttribute);
+			char const* const szValue = rootNode->getAttr(g_szValueAttribute);
 			auto const value = static_cast<float>(atof(szValue));
 
 			FMOD_STUDIO_PARAMETER_DESCRIPTION parameterDescription;
@@ -970,7 +970,7 @@ ISwitchStateConnection* CImpl::ConstructSwitchStateConnection(XmlNodeRef const p
 	else if (_stricmp(szTag, g_szVcaTag) == 0)
 	{
 		stack_string fullName(g_szVcaPrefix);
-		char const* const szName = pRootNode->getAttr(g_szNameAttribute);
+		char const* const szName = rootNode->getAttr(g_szNameAttribute);
 		fullName += szName;
 		FMOD_GUID guid = { 0 };
 
@@ -979,7 +979,7 @@ ISwitchStateConnection* CImpl::ConstructSwitchStateConnection(XmlNodeRef const p
 			FMOD::Studio::VCA* pVca = nullptr;
 			CRY_VERIFY(g_pStudioSystem->getVCAByID(&guid, &pVca) == FMOD_OK);
 
-			char const* const szValue = pRootNode->getAttr(g_szValueAttribute);
+			char const* const szValue = rootNode->getAttr(g_szValueAttribute);
 			auto const value = static_cast<float>(atof(szValue));
 
 			MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Fmod::CVcaState");
@@ -1014,16 +1014,16 @@ void CImpl::DestructSwitchStateConnection(ISwitchStateConnection const* const pI
 }
 
 ///////////////////////////////////////////////////////////////////////////
-IEnvironmentConnection* CImpl::ConstructEnvironmentConnection(XmlNodeRef const pRootNode)
+IEnvironmentConnection* CImpl::ConstructEnvironmentConnection(XmlNodeRef const& rootNode)
 {
 	IEnvironmentConnection* pIEnvironmentConnection = nullptr;
 
-	char const* const szTag = pRootNode->getTag();
+	char const* const szTag = rootNode->getTag();
 
 	if (_stricmp(szTag, g_szBusTag) == 0)
 	{
 		stack_string fullName(g_szBusPrefix);
-		char const* const szName = pRootNode->getAttr(g_szNameAttribute);
+		char const* const szName = rootNode->getAttr(g_szNameAttribute);
 		fullName += szName;
 		FMOD_GUID guid = { 0 };
 
@@ -1050,7 +1050,7 @@ IEnvironmentConnection* CImpl::ConstructEnvironmentConnection(XmlNodeRef const p
 	else if (_stricmp(szTag, g_szParameterTag) == 0)
 	{
 		stack_string fullName(g_szParameterPrefix);
-		char const* const szName = pRootNode->getAttr(g_szNameAttribute);
+		char const* const szName = rootNode->getAttr(g_szNameAttribute);
 		fullName += szName;
 		FMOD_GUID guid = { 0 };
 
@@ -1060,8 +1060,8 @@ IEnvironmentConnection* CImpl::ConstructEnvironmentConnection(XmlNodeRef const p
 
 			float multiplier = g_defaultParamMultiplier;
 			float shift = g_defaultParamShift;
-			pRootNode->getAttr(g_szMutiplierAttribute, multiplier);
-			pRootNode->getAttr(g_szShiftAttribute, shift);
+			rootNode->getAttr(g_szMutiplierAttribute, multiplier);
+			rootNode->getAttr(g_szShiftAttribute, shift);
 
 			MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Fmod::CParameterEnvironment");
 			pIEnvironmentConnection = static_cast<IEnvironmentConnection*>(new CParameterEnvironment(parameterInfo, multiplier, shift));
@@ -1090,7 +1090,7 @@ void CImpl::DestructEnvironmentConnection(IEnvironmentConnection const* const pI
 }
 
 //////////////////////////////////////////////////////////////////////////
-ISettingConnection* CImpl::ConstructSettingConnection(XmlNodeRef const pRootNode)
+ISettingConnection* CImpl::ConstructSettingConnection(XmlNodeRef const& rootNode)
 {
 	return nullptr;
 }

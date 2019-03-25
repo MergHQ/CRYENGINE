@@ -157,17 +157,25 @@ CItemModelAttribute* GetAttributeForColumn(CConnectionsModel::EColumns const col
 	switch (column)
 	{
 	case CConnectionsModel::EColumns::Notification:
-		pAttribute = &ModelUtils::s_notificationAttribute;
-		break;
+		{
+			pAttribute = &ModelUtils::s_notificationAttribute;
+			break;
+		}
 	case CConnectionsModel::EColumns::Name:
-		pAttribute = &Attributes::s_nameAttribute;
-		break;
+		{
+			pAttribute = &Attributes::s_nameAttribute;
+			break;
+		}
 	case CConnectionsModel::EColumns::Path:
-		pAttribute = &ModelUtils::s_pathAttribute;
-		break;
+		{
+			pAttribute = &ModelUtils::s_pathAttribute;
+			break;
+		}
 	default:
-		pAttribute = nullptr;
-		break;
+		{
+			pAttribute = nullptr;
+			break;
+		}
 	}
 
 	return pAttribute;
@@ -225,45 +233,68 @@ QVariant CConnectionsModel::data(QModelIndex const& index, int role) const
 							switch (role)
 							{
 							case Qt::DecorationRole:
-								if ((flags& EItemFlags::IsPlaceHolder) != 0)
 								{
-									variant = ModelUtils::GetItemNotificationIcon(ModelUtils::EItemStatus::Placeholder);
+									if ((flags& EItemFlags::IsPlaceHolder) != 0)
+									{
+										variant = ModelUtils::GetItemNotificationIcon(ModelUtils::EItemStatus::Placeholder);
+									}
+									else if ((flags& EItemFlags::IsLocalized) != 0)
+									{
+										variant = ModelUtils::GetItemNotificationIcon(ModelUtils::EItemStatus::Localized);
+									}
+
+									break;
 								}
-								else if ((flags& EItemFlags::IsLocalized) != 0)
-								{
-									variant = ModelUtils::GetItemNotificationIcon(ModelUtils::EItemStatus::Localized);
-								}
-								break;
 							case Qt::ToolTipRole:
-								if ((flags& EItemFlags::IsPlaceHolder) != 0)
 								{
-									variant = g_pIImpl->GetItemTypeName(pIItem) + tr(" not found in middleware project");
+									if ((flags& EItemFlags::IsPlaceHolder) != 0)
+									{
+										variant = g_pIImpl->GetItemTypeName(pIItem) + tr(" not found in middleware project");
+									}
+									else if ((flags& EItemFlags::IsLocalized) != 0)
+									{
+										variant = g_pIImpl->GetItemTypeName(pIItem) + tr(" is localized");
+									}
+
+									break;
 								}
-								else if ((flags& EItemFlags::IsLocalized) != 0)
-								{
-									variant = g_pIImpl->GetItemTypeName(pIItem) + tr(" is localized");
-								}
-								break;
 							case static_cast<int>(ModelUtils::ERoles::Id):
-								variant = pIItem->GetId();
-								break;
+								{
+									variant = pIItem->GetId();
+									break;
+								}
+							default:
+								{
+									break;
+								}
 							}
+
+							break;
 						}
-						break;
 					case static_cast<int>(EColumns::Name):
 						{
 							switch (role)
 							{
 							case Qt::DecorationRole:
-								variant = g_pIImpl->GetItemIcon(pIItem);
-								break;
+								{
+									variant = g_pIImpl->GetItemIcon(pIItem);
+									break;
+								}
 							case Qt::DisplayRole: // Intentional fall-through.
 							case Qt::ToolTipRole:
-								variant = QtUtil::ToQString(pIItem->GetName());
-								break;
+								{
+									variant = QtUtil::ToQString(pIItem->GetName());
+									break;
+								}
 							case static_cast<int>(ModelUtils::ERoles::Id):
-								variant = pIItem->GetId();
-								break;
+								{
+									variant = pIItem->GetId();
+									break;
+								}
+							default:
+								{
+									break;
+								}
 							}
 						}
 						break;
@@ -296,11 +327,20 @@ QVariant CConnectionsModel::data(QModelIndex const& index, int role) const
 									}
 
 									variant = path;
+									break;
 								}
-								break;
+							default:
+								{
+									break;
+								}
 							}
+
+							break;
 						}
-						break;
+					default:
+						{
+							break;
+						}
 					}
 				}
 			}
@@ -330,26 +370,38 @@ QVariant CConnectionsModel::headerData(int section, Qt::Orientation orientation,
 			switch (role)
 			{
 			case Qt::DecorationRole:
-				if (section == static_cast<int>(EColumns::Notification))
 				{
-					variant = ModelUtils::GetItemNotificationIcon(ModelUtils::EItemStatus::NotificationHeader);
+					if (section == static_cast<int>(EColumns::Notification))
+					{
+						variant = ModelUtils::GetItemNotificationIcon(ModelUtils::EItemStatus::NotificationHeader);
+					}
+
+					break;
 				}
-				break;
 			case Qt::DisplayRole:
-				// The notification column header uses an icon instead of text.
-				if (section != static_cast<int>(EColumns::Notification))
+				{
+					// The notification column header uses an icon instead of text.
+					if (section != static_cast<int>(EColumns::Notification))
+					{
+						variant = pAttribute->GetName();
+					}
+
+					break;
+				}
+			case Qt::ToolTipRole:
 				{
 					variant = pAttribute->GetName();
+					break;
 				}
-				break;
-			case Qt::ToolTipRole:
-				variant = pAttribute->GetName();
-				break;
 			case Attributes::s_getAttributeRole:
-				variant = QVariant::fromValue(pAttribute);
-				break;
+				{
+					variant = QVariant::fromValue(pAttribute);
+					break;
+				}
 			default:
-				break;
+				{
+					break;
+				}
 			}
 		}
 	}

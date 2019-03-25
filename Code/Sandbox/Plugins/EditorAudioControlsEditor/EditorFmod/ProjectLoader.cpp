@@ -107,7 +107,7 @@ void CProjectLoader::LoadBanks(string const& folderPath, bool const isLocalized,
 
 		// We have to exclude the Master Bank, for this we look
 		// for the file that ends with "strings.bank" as it is guaranteed
-		// to have the same name as the Master Bank and there should be unique
+		// to have the same name as the Master Bank and there should be unique.
 		ItemNames banks;
 		ItemNames masterBankNames;
 
@@ -201,56 +201,56 @@ void CProjectLoader::ParseFile(string const& filepath, CItem& parent, EPakStatus
 {
 	if (GetISystem()->GetIPak()->IsFileExist(filepath))
 	{
-		XmlNodeRef const pRoot = GetISystem()->LoadXmlFromFile(filepath);
+		XmlNodeRef const rootNode = GetISystem()->LoadXmlFromFile(filepath);
 
-		if (pRoot != nullptr)
+		if (rootNode.isValid())
 		{
 			CItem* pItem = nullptr;
-			int const numChildren = pRoot->getChildCount();
+			int const numChildren = rootNode->getChildCount();
 
 			for (int i = 0; i < numChildren; ++i)
 			{
-				XmlNodeRef const pChild = pRoot->getChild(i);
+				XmlNodeRef const childNode = rootNode->getChild(i);
 
-				if (pChild != nullptr)
+				if (childNode.isValid())
 				{
-					char const* const szClassName = pChild->getAttr("class");
+					char const* const szClassName = childNode->getAttr("class");
 
 					if ((_stricmp(szClassName, "EventFolder") == 0) || (_stricmp(szClassName, "ParameterPresetFolder") == 0))
 					{
-						LoadFolder(pChild, parent, pakStatus);
+						LoadFolder(childNode, parent, pakStatus);
 					}
 					else if (_stricmp(szClassName, "SnapshotGroup") == 0)
 					{
-						LoadSnapshotGroup(pChild, parent, pakStatus);
+						LoadSnapshotGroup(childNode, parent, pakStatus);
 					}
 					else if (_stricmp(szClassName, "Event") == 0)
 					{
-						pItem = LoadEvent(pChild, parent, pakStatus);
+						pItem = LoadEvent(childNode, parent, pakStatus);
 					}
 					else if (_stricmp(szClassName, "Snapshot") == 0)
 					{
-						LoadSnapshot(pChild, parent, pakStatus);
+						LoadSnapshot(childNode, parent, pakStatus);
 					}
 					else if (_stricmp(szClassName, "ParameterPreset") == 0)
 					{
-						LoadParameter(pChild, parent, pakStatus);
+						LoadParameter(childNode, parent, pakStatus);
 					}
 					else if (_stricmp(szClassName, "MixerReturn") == 0)
 					{
-						LoadReturn(pChild, parent, pakStatus);
+						LoadReturn(childNode, parent, pakStatus);
 					}
 					else if (_stricmp(szClassName, "MixerGroup") == 0)
 					{
-						LoadMixerGroup(pChild, parent, pakStatus);
+						LoadMixerGroup(childNode, parent, pakStatus);
 					}
 					else if (_stricmp(szClassName, "MixerVCA") == 0)
 					{
-						LoadVca(pChild, parent, pakStatus);
+						LoadVca(childNode, parent, pakStatus);
 					}
 					else if (_stricmp(szClassName, "AudioTable") == 0)
 					{
-						LoadAudioTable(pChild);
+						LoadAudioTable(childNode);
 					}
 					else if (_stricmp(szClassName, "ProgrammerSound") == 0)
 					{
@@ -310,15 +310,24 @@ CItem* CProjectLoader::GetContainer(string const& id, EItemType const type, CIte
 	}
 	else
 	{
-		// If folder not found parse the file corresponding to it and try looking for it again
-		if (type == EItemType::Folder)
+		// If folder not found parse the file corresponding to it and try looking for it again.
+		switch (type)
 		{
-			ParseFile(m_projectPath + g_szEventFoldersPath + id + ".xml", parent, pakStatus);
-			ParseFile(m_projectPath + g_szParametersFoldersPath + id + ".xml", parent, pakStatus);
-		}
-		else if (type == EItemType::MixerGroup)
-		{
-			ParseFile(m_projectPath + g_szMixerGroupsPath + id + ".xml", parent, pakStatus);
+		case EItemType::Folder:
+			{
+				ParseFile(m_projectPath + g_szEventFoldersPath + id + ".xml", parent, pakStatus);
+				ParseFile(m_projectPath + g_szParametersFoldersPath + id + ".xml", parent, pakStatus);
+				break;
+			}
+		case EItemType::MixerGroup:
+			{
+				ParseFile(m_projectPath + g_szMixerGroupsPath + id + ".xml", parent, pakStatus);
+				break;
+			}
+		default:
+			{
+				break;
+			}
 		}
 
 		folder = m_containerIds.find(id);
@@ -333,74 +342,74 @@ CItem* CProjectLoader::GetContainer(string const& id, EItemType const type, CIte
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CProjectLoader::LoadContainer(XmlNodeRef const pNode, EItemType const type, string const& relationshipParamName, CItem& parent, EPakStatus const pakStatus)
+void CProjectLoader::LoadContainer(XmlNodeRef const& node, EItemType const type, string const& relationshipParamName, CItem& parent, EPakStatus const pakStatus)
 {
 	string name = "";
 	CItem* pParent = &parent;
-	int const numChildren = pNode->getChildCount();
+	int const numChildren = node->getChildCount();
 
 	for (int i = 0; i < numChildren; ++i)
 	{
-		XmlNodeRef const pChild = pNode->getChild(i);
-		string const attribName = pChild->getAttr("name");
+		XmlNodeRef const childNode = node->getChild(i);
+		string const attribName = childNode->getAttr("name");
 
 		if (attribName.compareNoCase("name") == 0)
 		{
-			// Get the container name
-			XmlNodeRef const pNameNode = pChild->getChild(0);
+			// Get the container name.
+			XmlNodeRef const nameNode = childNode->getChild(0);
 
-			if (pNameNode != nullptr)
+			if (nameNode.isValid())
 			{
-				name = pNameNode->getContent();
+				name = nameNode->getContent();
 			}
 		}
 		else if (attribName.compareNoCase(relationshipParamName) == 0)
 		{
-			// Get the container parent
-			XmlNodeRef const pParentContainerNode = pChild->getChild(0);
+			// Get the container parent.
+			XmlNodeRef const parentContainerNode = childNode->getChild(0);
 
-			if (pParentContainerNode != nullptr)
+			if (parentContainerNode.isValid())
 			{
-				string const parentContainerId = pParentContainerNode->getContent();
+				string const parentContainerId = parentContainerNode->getContent();
 				pParent = GetContainer(parentContainerId, type, parent, pakStatus);
 			}
 		}
 	}
 
 	CItem* const pContainer = CreateItem(name, type, pParent, EItemFlags::IsContainer, pakStatus);
-	m_containerIds[pNode->getAttr("id")] = pContainer;
+	m_containerIds[node->getAttr("id")] = pContainer;
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CProjectLoader::LoadSnapshotGroup(XmlNodeRef const pNode, CItem& parent, EPakStatus const pakStatus)
+void CProjectLoader::LoadSnapshotGroup(XmlNodeRef const& node, CItem& parent, EPakStatus const pakStatus)
 {
 	string name = "";
 	ItemNames snapshotsItems;
-	int const numChildren = pNode->getChildCount();
+	int const numChildren = node->getChildCount();
 
 	for (int i = 0; i < numChildren; ++i)
 	{
-		XmlNodeRef const pChild = pNode->getChild(i);
-		char const* const szAttribName = pChild->getAttr("name");
+		XmlNodeRef const childNode = node->getChild(i);
+		char const* const szAttribName = childNode->getAttr("name");
 
 		if (_stricmp(szAttribName, "name") == 0)
 		{
-			XmlNodeRef const pNameNode = pChild->getChild(0);
+			XmlNodeRef const nameNode = childNode->getChild(0);
 
-			if (pNameNode != nullptr)
+			if (nameNode.isValid())
 			{
-				name = pNameNode->getContent();
+				name = nameNode->getContent();
 			}
 		}
 		else if (_stricmp(szAttribName, "items") == 0)
 		{
-			int const itemCount = pChild->getChildCount();
+			int const itemCount = childNode->getChildCount();
 
 			for (int j = 0; j < itemCount; ++j)
 			{
-				XmlNodeRef const itemNode = pChild->getChild(j);
+				XmlNodeRef const itemNode = childNode->getChild(j);
 
-				if (itemNode != nullptr)
+				if (itemNode.isValid())
 				{
 					snapshotsItems.emplace_back(itemNode->getContent());
 				}
@@ -420,58 +429,58 @@ void CProjectLoader::LoadSnapshotGroup(XmlNodeRef const pNode, CItem& parent, EP
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CProjectLoader::LoadFolder(XmlNodeRef const pNode, CItem& parent, EPakStatus const pakStatus)
+void CProjectLoader::LoadFolder(XmlNodeRef const& node, CItem& parent, EPakStatus const pakStatus)
 {
-	LoadContainer(pNode, EItemType::Folder, "folder", parent, pakStatus);
+	LoadContainer(node, EItemType::Folder, "folder", parent, pakStatus);
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CProjectLoader::LoadMixerGroup(XmlNodeRef const pNode, CItem& parent, EPakStatus const pakStatus)
+void CProjectLoader::LoadMixerGroup(XmlNodeRef const& node, CItem& parent, EPakStatus const pakStatus)
 {
-	LoadContainer(pNode, EItemType::MixerGroup, "output", parent, pakStatus);
+	LoadContainer(node, EItemType::MixerGroup, "output", parent, pakStatus);
 }
 
 //////////////////////////////////////////////////////////////////////////
-CItem* CProjectLoader::LoadItem(XmlNodeRef const pNode, EItemType const type, CItem& parent, EPakStatus const pakStatus)
+CItem* CProjectLoader::LoadItem(XmlNodeRef const& node, EItemType const type, CItem& parent, EPakStatus const pakStatus)
 {
 	CItem* pItem = nullptr;
 	string itemName = "";
 	CItem* pParent = &parent;
-	int const numChildren = pNode->getChildCount();
+	int const numChildren = node->getChildCount();
 
 	for (int i = 0; i < numChildren; ++i)
 	{
-		XmlNodeRef const pChild = pNode->getChild(i);
+		XmlNodeRef const childNode = node->getChild(i);
 
-		if (pChild != nullptr)
+		if (childNode.isValid())
 		{
-			char const* const szTag = pChild->getTag();
+			char const* const szTag = childNode->getTag();
 
 			if (_stricmp(szTag, "property") == 0)
 			{
-				string const paramName = pChild->getAttr("name");
+				string const paramName = childNode->getAttr("name");
 
 				if (paramName == "name")
 				{
-					XmlNodeRef const pValue = pChild->getChild(0);
+					XmlNodeRef const valueNode = childNode->getChild(0);
 
-					if (pValue != nullptr)
+					if (valueNode.isValid())
 					{
-						itemName = pValue->getContent();
+						itemName = valueNode->getContent();
 					}
 				}
 			}
 			else if (_stricmp(szTag, "relationship") == 0)
 			{
-				char const* const relationshipName = pChild->getAttr("name");
+				char const* const relationshipName = childNode->getAttr("name");
 
 				if ((_stricmp(relationshipName, "folder") == 0) || (_stricmp(relationshipName, "output") == 0))
 				{
-					XmlNodeRef const pValue = pChild->getChild(0);
+					XmlNodeRef const valueNode = childNode->getChild(0);
 
-					if (pValue != nullptr)
+					if (valueNode.isValid())
 					{
-						string const parentContainerId = pValue->getContent();
+						string const parentContainerId = valueNode->getContent();
 						auto const folder = m_containerIds.find(parentContainerId);
 
 						if (folder != m_containerIds.end())
@@ -486,7 +495,7 @@ CItem* CProjectLoader::LoadItem(XmlNodeRef const pNode, EItemType const type, CI
 
 	if (type == EItemType::Snapshot)
 	{
-		string const id = pNode->getAttr("id");
+		string const id = node->getAttr("id");
 
 		auto const snapshotGroupPair = m_snapshotGroupItems.find(id);
 
@@ -502,21 +511,21 @@ CItem* CProjectLoader::LoadItem(XmlNodeRef const pNode, EItemType const type, CI
 }
 
 //////////////////////////////////////////////////////////////////////////
-CItem* CProjectLoader::LoadEvent(XmlNodeRef const pNode, CItem& parent, EPakStatus const pakStatus)
+CItem* CProjectLoader::LoadEvent(XmlNodeRef const& node, CItem& parent, EPakStatus const pakStatus)
 {
-	return LoadItem(pNode, EItemType::Event, parent, pakStatus);
+	return LoadItem(node, EItemType::Event, parent, pakStatus);
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CProjectLoader::LoadSnapshot(XmlNodeRef const pNode, CItem& parent, EPakStatus const pakStatus)
+void CProjectLoader::LoadSnapshot(XmlNodeRef const& node, CItem& parent, EPakStatus const pakStatus)
 {
-	LoadItem(pNode, EItemType::Snapshot, parent, pakStatus);
+	LoadItem(node, EItemType::Snapshot, parent, pakStatus);
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CProjectLoader::LoadReturn(XmlNodeRef const pNode, CItem& parent, EPakStatus const pakStatus)
+void CProjectLoader::LoadReturn(XmlNodeRef const& node, CItem& parent, EPakStatus const pakStatus)
 {
-	CItem* const pReturn = LoadItem(pNode, EItemType::Return, parent, pakStatus);
+	CItem* const pReturn = LoadItem(node, EItemType::Return, parent, pakStatus);
 
 	if (pReturn != nullptr)
 	{
@@ -531,61 +540,61 @@ void CProjectLoader::LoadReturn(XmlNodeRef const pNode, CItem& parent, EPakStatu
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CProjectLoader::LoadParameter(XmlNodeRef const pNode, CItem& parent, EPakStatus const pakStatus)
+void CProjectLoader::LoadParameter(XmlNodeRef const& node, CItem& parent, EPakStatus const pakStatus)
 {
-	LoadItem(pNode, EItemType::Parameter, parent, pakStatus);
+	LoadItem(node, EItemType::Parameter, parent, pakStatus);
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CProjectLoader::LoadVca(XmlNodeRef const pNode, CItem& parent, EPakStatus const pakStatus)
+void CProjectLoader::LoadVca(XmlNodeRef const& node, CItem& parent, EPakStatus const pakStatus)
 {
-	LoadItem(pNode, EItemType::VCA, parent, pakStatus);
+	LoadItem(node, EItemType::VCA, parent, pakStatus);
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CProjectLoader::LoadAudioTable(XmlNodeRef const pNode)
+void CProjectLoader::LoadAudioTable(XmlNodeRef const& node)
 {
 	string name = "";
 	bool isLocalized = false;
 	bool includeSubdirs = false;
 
-	int const numChildren = pNode->getChildCount();
+	int const numChildren = node->getChildCount();
 
 	for (int i = 0; i < numChildren; ++i)
 	{
-		XmlNodeRef const pChild = pNode->getChild(i);
+		XmlNodeRef const childNode = node->getChild(i);
 
-		if (pChild != nullptr)
+		if (childNode.isValid())
 		{
-			char const* const szTag = pChild->getTag();
+			char const* const szTag = childNode->getTag();
 
 			if (_stricmp(szTag, "property") == 0)
 			{
-				string const paramName = pChild->getAttr("name");
+				string const paramName = childNode->getAttr("name");
 
 				if (paramName == "sourceDirectory")
 				{
-					XmlNodeRef const pValue = pChild->getChild(0);
+					XmlNodeRef const valueNode = childNode->getChild(0);
 
-					if (pValue != nullptr)
+					if (valueNode.isValid())
 					{
-						name = m_projectPath + "/" + pValue->getContent();
+						name = m_projectPath + "/" + valueNode->getContent();
 					}
 				}
 				else if (paramName == "isLocalized")
 				{
-					XmlNodeRef const pValue = pChild->getChild(0);
+					XmlNodeRef const valueNode = childNode->getChild(0);
 
-					if ((pValue != nullptr) && (_stricmp(pValue->getContent(), "true") == 0))
+					if ((valueNode.isValid()) && (_stricmp(valueNode->getContent(), "true") == 0))
 					{
 						isLocalized = true;
 					}
 				}
 				else if (paramName == "includeSubDirectories")
 				{
-					XmlNodeRef const pValue = pChild->getChild(0);
+					XmlNodeRef const valueNode = childNode->getChild(0);
 
-					if ((pValue != nullptr) && (_stricmp(pValue->getContent(), "true") == 0))
+					if ((valueNode.isValid()) && (_stricmp(valueNode->getContent(), "true") == 0))
 					{
 						includeSubdirs = true;
 					}

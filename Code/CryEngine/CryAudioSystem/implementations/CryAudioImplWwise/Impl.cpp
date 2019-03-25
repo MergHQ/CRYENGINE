@@ -167,38 +167,38 @@ uint16 g_eventInstancePoolSize = 0;
 #endif  // CRY_AUDIO_IMPL_WWISE_USE_DEBUG_CODE
 
 //////////////////////////////////////////////////////////////////////////
-void CountPoolSizes(XmlNodeRef const pNode, SPoolSizes& poolSizes)
+void CountPoolSizes(XmlNodeRef const& node, SPoolSizes& poolSizes)
 {
 	uint16 numEvents = 0;
-	pNode->getAttr(g_szEventsAttribute, numEvents);
+	node->getAttr(g_szEventsAttribute, numEvents);
 	poolSizes.events += numEvents;
 
 	uint16 numParameters = 0;
-	pNode->getAttr(g_szParametersAttribute, numParameters);
+	node->getAttr(g_szParametersAttribute, numParameters);
 	poolSizes.parameters += numParameters;
 
 	uint16 numParameterEnvironments = 0;
-	pNode->getAttr(g_szParameterEnvironmentsAttribute, numParameterEnvironments);
+	node->getAttr(g_szParameterEnvironmentsAttribute, numParameterEnvironments);
 	poolSizes.parameterEnvironments += numParameterEnvironments;
 
 	uint16 numParameterStates = 0;
-	pNode->getAttr(g_szParameterStatesAttribute, numParameterStates);
+	node->getAttr(g_szParameterStatesAttribute, numParameterStates);
 	poolSizes.parameterStates += numParameterStates;
 
 	uint16 numStates = 0;
-	pNode->getAttr(g_szStatesAttribute, numStates);
+	node->getAttr(g_szStatesAttribute, numStates);
 	poolSizes.states += numStates;
 
 	uint16 numSwitches = 0;
-	pNode->getAttr(g_szSwitchesAttribute, numSwitches);
+	node->getAttr(g_szSwitchesAttribute, numSwitches);
 	poolSizes.switches += numSwitches;
 
 	uint16 numAuxBuses = 0;
-	pNode->getAttr(g_szAuxBusesAttribute, numAuxBuses);
+	node->getAttr(g_szAuxBusesAttribute, numAuxBuses);
 	poolSizes.auxBuses += numAuxBuses;
 
 	uint16 numSoundBanks = 0;
-	pNode->getAttr(g_szSoundBanksAttribute, numSoundBanks);
+	node->getAttr(g_szSoundBanksAttribute, numSoundBanks);
 	poolSizes.soundBanks += numSoundBanks;
 }
 
@@ -237,39 +237,39 @@ void LoadEventsMaxAttenuations(const string& soundbanksPath)
 {
 	g_maxAttenuations.clear();
 	string const bankInfoPath = soundbanksPath + "/SoundbanksInfo.xml";
-	XmlNodeRef const pRootNode = GetISystem()->LoadXmlFromFile(bankInfoPath.c_str());
+	XmlNodeRef const rootNode = GetISystem()->LoadXmlFromFile(bankInfoPath.c_str());
 
-	if (pRootNode != nullptr)
+	if (rootNode.isValid())
 	{
-		XmlNodeRef const pSoundBanksNode = pRootNode->findChild("SoundBanks");
+		XmlNodeRef const soundBanksNode = rootNode->findChild("SoundBanks");
 
-		if (pSoundBanksNode != nullptr)
+		if (soundBanksNode.isValid())
 		{
-			int const numSoundBankNodes = pSoundBanksNode->getChildCount();
+			int const numSoundBankNodes = soundBanksNode->getChildCount();
 
 			for (int i = 0; i < numSoundBankNodes; ++i)
 			{
-				XmlNodeRef const pSoundBankNode = pSoundBanksNode->getChild(i);
+				XmlNodeRef const soundBankNode = soundBanksNode->getChild(i);
 
-				if (pSoundBankNode != nullptr)
+				if (soundBankNode.isValid())
 				{
-					XmlNodeRef const pIncludedEventsNode = pSoundBankNode->findChild("IncludedEvents");
+					XmlNodeRef const includedEventsNode = soundBankNode->findChild("IncludedEvents");
 
-					if (pIncludedEventsNode != nullptr)
+					if (includedEventsNode.isValid())
 					{
-						int const numEventNodes = pIncludedEventsNode->getChildCount();
+						int const numEventNodes = includedEventsNode->getChildCount();
 
 						for (int j = 0; j < numEventNodes; ++j)
 						{
-							XmlNodeRef const pEventNode = pIncludedEventsNode->getChild(j);
+							XmlNodeRef const eventNode = includedEventsNode->getChild(j);
 
-							if ((pEventNode != nullptr) && pEventNode->haveAttr("MaxAttenuation"))
+							if (eventNode.isValid() && eventNode->haveAttr("MaxAttenuation"))
 							{
 								float maxAttenuation = 0.0f;
-								pEventNode->getAttr("MaxAttenuation", maxAttenuation);
+								eventNode->getAttr("MaxAttenuation", maxAttenuation);
 
 								uint32 id = 0;
-								pEventNode->getAttr("Id", id);
+								eventNode->getAttr("Id", id);
 
 								g_maxAttenuations[static_cast<AkUniqueID>(id)] = maxAttenuation;
 							}
@@ -868,15 +868,15 @@ void CImpl::Release()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CImpl::SetLibraryData(XmlNodeRef const pNode, ContextId const contextId)
+void CImpl::SetLibraryData(XmlNodeRef const& node, ContextId const contextId)
 {
 	if (contextId == GlobalContextId)
 	{
-		CountPoolSizes(pNode, g_poolSizes);
+		CountPoolSizes(node, g_poolSizes);
 	}
 	else
 	{
-		CountPoolSizes(pNode, g_contextPoolSizes[contextId]);
+		CountPoolSizes(node, g_contextPoolSizes[contextId]);
 	}
 }
 
@@ -1065,17 +1065,17 @@ void CImpl::UnregisterInMemoryFile(SFileInfo* const pFileInfo)
 }
 
 //////////////////////////////////////////////////////////////////////////
-ERequestStatus CImpl::ConstructFile(XmlNodeRef const pRootNode, SFileInfo* const pFileInfo)
+ERequestStatus CImpl::ConstructFile(XmlNodeRef const& rootNode, SFileInfo* const pFileInfo)
 {
 	ERequestStatus result = ERequestStatus::Failure;
 
-	if ((_stricmp(pRootNode->getTag(), g_szFileTag) == 0) && (pFileInfo != nullptr))
+	if ((_stricmp(rootNode->getTag(), g_szFileTag) == 0) && (pFileInfo != nullptr))
 	{
-		char const* const szFileName = pRootNode->getAttr(g_szNameAttribute);
+		char const* const szFileName = rootNode->getAttr(g_szNameAttribute);
 
-		if (szFileName != nullptr && szFileName[0] != '\0')
+		if ((szFileName != nullptr) && (szFileName[0] != '\0'))
 		{
-			char const* const szLocalized = pRootNode->getAttr(g_szLocalizedAttribute);
+			char const* const szLocalized = rootNode->getAttr(g_szLocalizedAttribute);
 			pFileInfo->bLocalized = (szLocalized != nullptr) && (_stricmp(szLocalized, g_szTrueValue) == 0);
 			pFileInfo->szFileName = szFileName;
 			pFileInfo->memoryBlockAlignment = AK_BANK_PLATFORM_DATA_ALIGNMENT;
@@ -1263,13 +1263,13 @@ void CImpl::GamepadDisconnected(DeviceId const deviceUniqueID)
 }
 
 ///////////////////////////////////////////////////////////////////////////
-ITriggerConnection* CImpl::ConstructTriggerConnection(XmlNodeRef const pRootNode, float& radius)
+ITriggerConnection* CImpl::ConstructTriggerConnection(XmlNodeRef const& rootNode, float& radius)
 {
 	ITriggerConnection* pITriggerConnection = nullptr;
 
-	if (_stricmp(pRootNode->getTag(), g_szEventTag) == 0)
+	if (_stricmp(rootNode->getTag(), g_szEventTag) == 0)
 	{
-		char const* const szName = pRootNode->getAttr(g_szNameAttribute);
+		char const* const szName = rootNode->getAttr(g_szNameAttribute);
 		AkUniqueID const uniqueId = AK::SoundEngine::GetIDFromString(szName); // Does not check if the string represents an event!
 
 		if (uniqueId != AK_INVALID_UNIQUE_ID)
@@ -1300,7 +1300,7 @@ ITriggerConnection* CImpl::ConstructTriggerConnection(XmlNodeRef const pRootNode
 #if defined(CRY_AUDIO_IMPL_WWISE_USE_DEBUG_CODE)
 	else
 	{
-		Cry::Audio::Log(ELogType::Warning, "Unknown Wwise tag: %s", pRootNode->getTag());
+		Cry::Audio::Log(ELogType::Warning, "Unknown Wwise tag: %s", rootNode->getTag());
 	}
 #endif      // CRY_AUDIO_IMPL_WWISE_USE_DEBUG_CODE
 
@@ -1342,13 +1342,13 @@ void CImpl::DestructTriggerConnection(ITriggerConnection const* const pITriggerC
 }
 
 ///////////////////////////////////////////////////////////////////////////
-IParameterConnection* CImpl::ConstructParameterConnection(XmlNodeRef const pRootNode)
+IParameterConnection* CImpl::ConstructParameterConnection(XmlNodeRef const& rootNode)
 {
 	IParameterConnection* pIParameterConnection = nullptr;
 
-	if (_stricmp(pRootNode->getTag(), g_szParameterTag) == 0)
+	if (_stricmp(rootNode->getTag(), g_szParameterTag) == 0)
 	{
-		char const* const szName = pRootNode->getAttr(g_szNameAttribute);
+		char const* const szName = rootNode->getAttr(g_szNameAttribute);
 		auto const rtpcId = static_cast<AkRtpcID>(AK::SoundEngine::GetIDFromString(szName));
 
 		if (rtpcId != AK_INVALID_RTPC_ID)
@@ -1356,8 +1356,8 @@ IParameterConnection* CImpl::ConstructParameterConnection(XmlNodeRef const pRoot
 			float multiplier = g_defaultParamMultiplier;
 			float shift = g_defaultParamShift;
 
-			pRootNode->getAttr(g_szMutiplierAttribute, multiplier);
-			pRootNode->getAttr(g_szShiftAttribute, shift);
+			rootNode->getAttr(g_szMutiplierAttribute, multiplier);
+			rootNode->getAttr(g_szShiftAttribute, shift);
 
 			MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Wwise::CParameter");
 
@@ -1377,7 +1377,7 @@ IParameterConnection* CImpl::ConstructParameterConnection(XmlNodeRef const pRoot
 #if defined(CRY_AUDIO_IMPL_WWISE_USE_DEBUG_CODE)
 	else
 	{
-		Cry::Audio::Log(ELogType::Warning, "Unknown Wwise tag %s", pRootNode->getTag());
+		Cry::Audio::Log(ELogType::Warning, "Unknown Wwise tag %s", rootNode->getTag());
 	}
 #endif      // CRY_AUDIO_IMPL_WWISE_USE_DEBUG_CODE
 
@@ -1391,23 +1391,23 @@ void CImpl::DestructParameterConnection(IParameterConnection const* const pIPara
 }
 
 ///////////////////////////////////////////////////////////////////////////
-ISwitchStateConnection* CImpl::ConstructSwitchStateConnection(XmlNodeRef const pRootNode)
+ISwitchStateConnection* CImpl::ConstructSwitchStateConnection(XmlNodeRef const& rootNode)
 {
 	ISwitchStateConnection* pISwitchStateConnection = nullptr;
 
-	char const* const szTag = pRootNode->getTag();
+	char const* const szTag = rootNode->getTag();
 
 	if (_stricmp(szTag, g_szStateGroupTag) == 0)
 	{
-		char const* const szStateGroupName = pRootNode->getAttr(g_szNameAttribute);
+		char const* const szStateGroupName = rootNode->getAttr(g_szNameAttribute);
 
-		if ((szStateGroupName != nullptr) && (szStateGroupName[0] != 0) && (pRootNode->getChildCount() == 1))
+		if ((szStateGroupName != nullptr) && (szStateGroupName[0] != 0) && (rootNode->getChildCount() == 1))
 		{
-			XmlNodeRef const pValueNode(pRootNode->getChild(0));
+			XmlNodeRef const valueNode(rootNode->getChild(0));
 
-			if (pValueNode && _stricmp(pValueNode->getTag(), g_szValueTag) == 0)
+			if (valueNode.isValid() && (_stricmp(valueNode->getTag(), g_szValueTag) == 0))
 			{
-				char const* const szStateName = pValueNode->getAttr(g_szNameAttribute);
+				char const* const szStateName = valueNode->getAttr(g_szNameAttribute);
 
 				if ((szStateName != nullptr) && (szStateName[0] != 0))
 				{
@@ -1436,15 +1436,15 @@ ISwitchStateConnection* CImpl::ConstructSwitchStateConnection(XmlNodeRef const p
 	}
 	else if (_stricmp(szTag, g_szSwitchGroupTag) == 0)
 	{
-		char const* const szSwitchGroupName = pRootNode->getAttr(g_szNameAttribute);
+		char const* const szSwitchGroupName = rootNode->getAttr(g_szNameAttribute);
 
-		if ((szSwitchGroupName != nullptr) && (szSwitchGroupName[0] != 0) && (pRootNode->getChildCount() == 1))
+		if ((szSwitchGroupName != nullptr) && (szSwitchGroupName[0] != 0) && (rootNode->getChildCount() == 1))
 		{
-			XmlNodeRef const pValueNode(pRootNode->getChild(0));
+			XmlNodeRef const valueNode(rootNode->getChild(0));
 
-			if (pValueNode && _stricmp(pValueNode->getTag(), g_szValueTag) == 0)
+			if (valueNode.isValid() && (_stricmp(valueNode->getTag(), g_szValueTag) == 0))
 			{
-				char const* const szSwitchName = pValueNode->getAttr(g_szNameAttribute);
+				char const* const szSwitchName = valueNode->getAttr(g_szNameAttribute);
 
 				if ((szSwitchName != nullptr) && (szSwitchName[0] != 0))
 				{
@@ -1473,13 +1473,13 @@ ISwitchStateConnection* CImpl::ConstructSwitchStateConnection(XmlNodeRef const p
 	}
 	else if (_stricmp(szTag, g_szParameterTag) == 0)
 	{
-		char const* const szName = pRootNode->getAttr(g_szNameAttribute);
+		char const* const szName = rootNode->getAttr(g_szNameAttribute);
 		auto const rtpcId = static_cast<AkRtpcID>(AK::SoundEngine::GetIDFromString(szName));
 
 		if (rtpcId != AK_INVALID_RTPC_ID)
 		{
 			float value = g_defaultStateValue;
-			pRootNode->getAttr(g_szValueAttribute, value);
+			rootNode->getAttr(g_szValueAttribute, value);
 
 			MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Wwise::CParameterState");
 
@@ -1513,15 +1513,15 @@ void CImpl::DestructSwitchStateConnection(ISwitchStateConnection const* const pI
 }
 
 ///////////////////////////////////////////////////////////////////////////
-IEnvironmentConnection* CImpl::ConstructEnvironmentConnection(XmlNodeRef const pRootNode)
+IEnvironmentConnection* CImpl::ConstructEnvironmentConnection(XmlNodeRef const& rootNode)
 {
 	IEnvironmentConnection* pIEnvironmentConnection = nullptr;
 
-	char const* const szTag = pRootNode->getTag();
+	char const* const szTag = rootNode->getTag();
 
 	if (_stricmp(szTag, g_szAuxBusTag) == 0)
 	{
-		char const* const szName = pRootNode->getAttr(g_szNameAttribute);
+		char const* const szName = rootNode->getAttr(g_szNameAttribute);
 		AkUniqueID const busId = AK::SoundEngine::GetIDFromString(szName);
 
 		if (busId != AK_INVALID_AUX_ID)
@@ -1541,7 +1541,7 @@ IEnvironmentConnection* CImpl::ConstructEnvironmentConnection(XmlNodeRef const p
 	}
 	else if (_stricmp(szTag, g_szParameterTag) == 0)
 	{
-		char const* const szName = pRootNode->getAttr(g_szNameAttribute);
+		char const* const szName = rootNode->getAttr(g_szNameAttribute);
 		auto const rtpcId = static_cast<AkRtpcID>(AK::SoundEngine::GetIDFromString(szName));
 
 		if (rtpcId != AK_INVALID_RTPC_ID)
@@ -1549,8 +1549,8 @@ IEnvironmentConnection* CImpl::ConstructEnvironmentConnection(XmlNodeRef const p
 			float multiplier = g_defaultParamMultiplier;
 			float shift = g_defaultParamShift;
 
-			pRootNode->getAttr(g_szMutiplierAttribute, multiplier);
-			pRootNode->getAttr(g_szShiftAttribute, shift);
+			rootNode->getAttr(g_szMutiplierAttribute, multiplier);
+			rootNode->getAttr(g_szShiftAttribute, shift);
 
 			MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Wwise::CParameterEnvironment");
 
@@ -1584,7 +1584,7 @@ void CImpl::DestructEnvironmentConnection(IEnvironmentConnection const* const pI
 }
 
 //////////////////////////////////////////////////////////////////////////
-ISettingConnection* CImpl::ConstructSettingConnection(XmlNodeRef const pRootNode)
+ISettingConnection* CImpl::ConstructSettingConnection(XmlNodeRef const& rootNode)
 {
 	return nullptr;
 }
