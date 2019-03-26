@@ -1,16 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-/*=============================================================================
-   RenderPipeline.h : Shaders pipeline declarations.
-
-   Revision history:
-* Created by Honich Andrey
-
-   =============================================================================*/
-
-#ifndef __RENDERPIPELINE_H__
-#define __RENDERPIPELINE_H__
-
 #pragma  once
 
 #include <CryThreading/CryThreadSafeRendererContainer.h>
@@ -20,9 +9,8 @@
 #include "LightVolumeBuffer.h"
 #include "ParticleBuffer.h"
 
-#include "Common/Shaders/CShader.h"         // CShaderMan
-#include "Common/Shaders/ShaderResources.h" // CShaderResources
-//====================================================================
+#include "Common/Shaders/CShader.h"
+#include "Common/Shaders/ShaderResources.h"
 
 class CRenderView;
 struct IRenderNode;
@@ -272,5 +260,3 @@ enum EShapeMeshType
 	SHAPE_BOX,
 	SHAPE_MAX,
 };
-
-#endif  // __RENDERPIPELINE_H__

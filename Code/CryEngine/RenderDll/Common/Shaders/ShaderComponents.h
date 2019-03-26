@@ -1,15 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-/*=============================================================================
-   ShaderComponents.h : FX Shaders semantic components declarations.
-
-   Revision history:
-* Created by Honich Andrey
-
-   =============================================================================*/
-
-#ifndef __SHADERCOMPONENTS_H__
-#define __SHADERCOMPONENTS_H__
+#pragma once
 
 #include "../Defs.h"
 
@@ -592,5 +583,3 @@ struct SCGTexture : SCGBind
 	{
 	}
 };
-
-#endif

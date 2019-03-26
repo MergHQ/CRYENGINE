@@ -1,24 +1,17 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef _DeviceManagerInline_H_
-#define _DeviceManagerInline_H_
+#pragma once
 
-#include "../Common/DevBuffer.h" // CConstantBuffer
+#include "../Common/DevBuffer.h"
 
 #if DEVICE_MANAGER_IMMEDIATE_STATE_WRITE
 	#include "../../DriverD3D.h"
 	#include "DeviceWrapper_D3D11.h" // CCryDeviceContextWrapper
 #endif
 
-//===============================================================================================================
-//
-//  Inline implementation for CDeviceManager
-//
-//===============================================================================================================
-
 namespace DevManUtil
 {
-#if CRY_PLATFORM_ORBIS || CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID || CRY_PLATFORM_APPLE // BitScanReverse/BitScanForward are not avilable on orbis
+#if CRY_PLATFORM_ORBIS || CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID || CRY_PLATFORM_APPLE // BitScanReverse/BitScanForward are not available on Orbis
 static inline uint32 bsr(uint32 input)
 {
 	signed mask = iszero((signed)input) - 1;
@@ -552,7 +545,3 @@ inline CSubmissionQueue_DX11::~CSubmissionQueue_DX11()
 }
 
 #endif
-
-//====================================================================================================
-
-#endif  // _DeviceManager_H_

@@ -1,8 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef _GRENDERER_XRENDER_H_
-#define _GRENDERER_XRENDER_H_
-
 #pragma once
 #include <CryRenderer/IScaleform.h>
 
@@ -865,5 +862,3 @@ void SF_Playback(T* pRenderer, GRendererCommandBufferReadOnly* pBuffer)
 	Unlock(pLastVertexStore);
 	Unlock(pLastIndexStore);
 };
-
-#endif // #ifndef _GRENDERER_XRENDER_H_

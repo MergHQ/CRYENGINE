@@ -1,7 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef _BASERESOURCE_H_
-#define _BASERESOURCE_H_
+#pragma once
 
 #include <CryMath/Cry_Math.h>
 
@@ -12,7 +11,7 @@
 
 #include <CryMemory/STLGlobalAllocator.h>
 
-#include "XRenderD3D9/DeviceManager/DeviceFormats.h" // SPixFormat
+#include "XRenderD3D9/DeviceManager/DeviceFormats.h"
 
 #define VSCONST_INSTDATA                0
 #define VSCONST_SKINMATRIX              0
@@ -920,5 +919,3 @@ public:
 
 	virtual void               GetMemoryUsage(ICrySizer* pSizer) const = 0;
 };
-
-#endif

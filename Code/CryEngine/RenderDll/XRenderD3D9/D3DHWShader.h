@@ -1,18 +1,9 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-/*=============================================================================
-   D3DCGPShader.h : Direct3D9 CG pixel shaders interface declaration.
+#pragma once
 
-   Revision history:
-* Created by Honitch Andrey
-
-   =============================================================================*/
-
-#ifndef __D3DHWSHADER_H__
-#define __D3DHWSHADER_H__
-
-#include "Common/Shaders/ShaderComponents.h"                 // SCGBind, SCGParam, etc.
-#include "DeviceManager/D3D11/DeviceSubmissionQueue_D3D11.h" // CSubmissionQueue_DX11
+#include "Common/Shaders/ShaderComponents.h"
+#include "DeviceManager/D3D11/DeviceSubmissionQueue_D3D11.h"
 
 #if CRY_PLATFORM_ORBIS && defined(USE_SCUE)
 //#define USE_PER_FRAME_CONSTANT_BUFFER_UPDATES // TODO: Restore this
@@ -52,8 +43,6 @@ union CRY_ALIGN (16) UFloat4
 class CConstantBuffer;
 
 //==============================================================================
-
-int D3DXGetSHParamHandle(void* pSH, SCGBind* pParam);
 
 struct SParamsGroup
 {
@@ -754,5 +743,3 @@ public:
 	static int                          s_nDevicePSDataSize;
 	static int                          s_nDeviceVSDataSize;
 };
-
-#endif  // __D3DHWSHADER_H__

@@ -1,16 +1,10 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-/*=============================================================================
-   DeferredShading.h : Deferred shading pipeline
+#pragma once
 
-   =============================================================================*/
-
-#ifndef _DEFERREDSHADING_H_
-#define _DEFERREDSHADING_H_
-
-#include "Common/RenderPipeline.h" // EShapeMeshType
-#include "Common/Textures/Texture.h" // CTexture
-#include "Common/Textures/PowerOf2BlockPacker.h" // CPowerOf2BlockPacker
+#include "Common/RenderPipeline.h"
+#include "Common/Textures/Texture.h"
+#include "Common/Textures/PowerOf2BlockPacker.h"
 #include "Common/Shadow_Renderer.h"
 
 struct IVisArea;
@@ -305,5 +299,3 @@ public:
 	float _GetDebugUsage() const;
 #endif
 };
-
-#endif
