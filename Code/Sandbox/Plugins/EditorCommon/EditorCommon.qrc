@@ -704,7 +704,9 @@
         <file alias="Trackview/trackview_keys-delete.ico">icons/trackview_keys-delete.ico</file>
         <file alias="Trackview/trackview_keys-move.ico">icons/trackview_keys-move.ico</file>
         <file alias="Trackview/trackview_keys-scale.ico">icons/trackview_keys-scale.ico</file>
-        <file alias="Trackview/trackview_keys-slide.ico">icons/trackview_keys-slide.ico</file>
+        <file alias="Trackview/trackview_keys-slide_both.ico">icons/trackview_keys-slide_left_right.ico</file>
+        <file alias="Trackview/trackview_keys-slide_left.ico">icons/trackview_keys-slide_left.ico</file>
+        <file alias="Trackview/trackview_keys-slide_right.ico">icons/trackview_keys-slide_right.ico</file>
         <file alias="Trackview/trackview_search.ico">icons/trackview_search.ico</file>
         <file alias="Trackview/trackview_snapping-frame.ico">icons/trackview_snapping-frame.ico</file>
         <file alias="Trackview/trackview_time_end.ico">icons/trackview_time_end.ico</file>
