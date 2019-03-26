@@ -948,14 +948,7 @@ DynArray<std::uint16_t> CTexture::RenderEnvironmentCMHDR(std::size_t size, const
 			return DynArray<std::uint16_t>{};
 	}
 
-	gcpRendD3D->ExecuteRenderThreadCommand(
-		[=]
-	{
-		gcpRendD3D->DeleteGraphicsPipeline(pipelineKey);
-
-	}, ERenderCommandFlags::None
-		);
-
+	gcpRendD3D->DeleteGraphicsPipeline(pipelineKey);
 	SAFE_RELEASE(ptexGenEnvironmentCM);
 
 	for (auto& cvarOverride : cvarOverrides)
