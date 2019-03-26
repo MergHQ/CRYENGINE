@@ -198,118 +198,125 @@ bool CFBXExporter::ExportToFile(const char* filename, const SExportData* pData)
 FbxMesh* CFBXExporter::CreateFBXMesh(const SExportObject* pObj)
 {
 	if (!m_pFBXManager)
-		return 0;
+		return nullptr;
 
-	int numVertices = pObj->GetVertexCount();
-	const Export::Vector3D* pVerts = pObj->GetVertexBuffer();
+	const int vertexCount = pObj->GetVertexCount();
+	const Export::Vector3D* const pVerts = pObj->GetVertexBuffer();
 
-	int numMeshes = pObj->GetMeshCount();
+	const int meshCount = pObj->GetMeshCount();
 
 	int numAllFaces = 0;
-	for (int j = 0; j < numMeshes; ++j)
+	for (int meshIndex = 0; meshIndex < meshCount; ++meshIndex)
 	{
-		const SExportMesh* pMesh = pObj->GetMesh(j);
-		int numFaces = pMesh->GetFaceCount();
+		const SExportMesh* pMesh = pObj->GetMesh(meshIndex);
+		const int numFaces = pMesh->GetFaceCount();
 		numAllFaces += numFaces;
 	}
 
-	if (numVertices == 0 || numAllFaces == 0)
-		return 0;
+	if (vertexCount == 0 || numAllFaces == 0)
+		return nullptr;
 
-	FbxMesh* pFBXMesh = FbxMesh::Create(m_pFBXManager, pObj->name);
-
-	pFBXMesh->InitControlPoints(numVertices);
+	FbxMesh* const pFBXMesh = FbxMesh::Create(m_pFBXManager, pObj->name);
+	pFBXMesh->ReservePolygonCount(numAllFaces);
+	pFBXMesh->ReservePolygonVertexCount(numAllFaces * 3);
+	pFBXMesh->InitControlPoints(vertexCount);
 	FbxVector4* pControlPoints = pFBXMesh->GetControlPoints();
 
-	for (int i = 0; i < numVertices; ++i)
+	for (int i = 0; i < vertexCount; ++i)
 	{
 		const Export::Vector3D& vertex = pVerts[i];
 		pControlPoints[i] = FbxVector4(vertex.x, vertex.y, vertex.z);
 	}
 
-	int numNormals = pObj->GetNormalCount();
-	const Export::Vector3D* pNormals = pObj->GetNormalBuffer();
-	if (numNormals)
+	const int normalCount = pObj->GetNormalCount();
+	FbxGeometryElementNormal* pElementNormal = nullptr;
+	if (normalCount)
 	{
-		FbxGeometryElementNormal* pElementNormal = pFBXMesh->CreateElementNormal();
-		FBX_ASSERT(pElementNormal != NULL);
+		const Export::Vector3D* const pNormals = pObj->GetNormalBuffer();
 
-		pElementNormal->SetMappingMode(FbxGeometryElement::eByControlPoint);
-		pElementNormal->SetReferenceMode(FbxGeometryElement::eDirect);
+		pElementNormal = pFBXMesh->CreateElementNormal();
+		pElementNormal->SetMappingMode(FbxGeometryElement::eByPolygonVertex);
+		pElementNormal->SetReferenceMode(FbxGeometryElement::eIndexToDirect);
+		pElementNormal->GetDirectArray().SetCount(normalCount);
 
-		for (int i = 0; i < numNormals; ++i)
+		for (int i = 0; i < normalCount; ++i)
 		{
 			const Export::Vector3D& normal = pNormals[i];
-			pElementNormal->GetDirectArray().Add(FbxVector4(normal.x, normal.y, normal.z));
+			pElementNormal->GetDirectArray().SetAt(i, FbxVector4(normal.x, normal.y, normal.z));
 		}
 	}
 
-	int numTexCoords = pObj->GetTexCoordCount();
-	const Export::UV* pTextCoords = pObj->GetTexCoordBuffer();
-	if (numTexCoords)
+	const int texCoordCount = pObj->GetTexCoordCount();
+	if (texCoordCount)
 	{
+		const Export::UV* const pTextCoords = pObj->GetTexCoordBuffer();
+
 		// Create UV for Diffuse channel.
 		FbxGeometryElementUV* pFBXDiffuseUV = pFBXMesh->CreateElementUV("DiffuseUV");
-		FBX_ASSERT(pFBXDiffuseUV != NULL);
+		pFBXDiffuseUV->SetMappingMode(FbxGeometryElement::eByPolygonVertex);
+		pFBXDiffuseUV->SetReferenceMode(FbxGeometryElement::eIndexToDirect);
+		pFBXDiffuseUV->GetDirectArray().SetCount(texCoordCount);
 
-		pFBXDiffuseUV->SetMappingMode(FbxGeometryElement::eByControlPoint);
-		pFBXDiffuseUV->SetReferenceMode(FbxGeometryElement::eDirect);
-
-		for (int i = 0; i < numTexCoords; ++i)
+		for (int i = 0; i < texCoordCount; ++i)
 		{
 			const Export::UV& textCoord = pTextCoords[i];
-			pFBXDiffuseUV->GetDirectArray().Add(FbxVector2(textCoord.u, textCoord.v));
+			pFBXDiffuseUV->GetDirectArray().SetAt(i, FbxVector2(textCoord.u, textCoord.v));
 		}
 	}
 
-	int numColors = pObj->GetColorCount();
-	const Export::Color* pColors = pObj->GetColorBuffer();
-	if (numColors)
+	const int colorCount = pObj->GetColorCount();
+	FbxGeometryElementVertexColor* pElementVertexColor = nullptr;
+	if (colorCount)
 	{
-		FbxGeometryElementVertexColor* pElementVertexColor = pFBXMesh->CreateElementVertexColor();
-		pElementVertexColor->SetMappingMode(FbxGeometryElement::eByControlPoint);
-		pElementVertexColor->SetReferenceMode(FbxGeometryElement::eDirect);
-		pElementVertexColor->GetDirectArray().SetCount(numColors);
+		const Export::Color* const pColors = pObj->GetColorBuffer();
 
-		for (int i = 0; i < numColors; ++i)
+		pElementVertexColor = pFBXMesh->CreateElementVertexColor();
+		pElementVertexColor->SetMappingMode(FbxGeometryElement::eByPolygonVertex);
+		pElementVertexColor->SetReferenceMode(FbxGeometryElement::eIndexToDirect);
+		pElementVertexColor->GetDirectArray().SetCount(colorCount);
+
+		for (int i = 0; i < colorCount; ++i)
+		{
 			pElementVertexColor->GetDirectArray().SetAt(i, FbxColor(pColors[i].r, pColors[i].g, pColors[i].b, pColors[i].a));
+		}
 	}
-
-	pFBXMesh->ReservePolygonCount(numAllFaces);
-	pFBXMesh->ReservePolygonVertexCount(numAllFaces * 3);
 
 	// Set material mapping.
 	FbxGeometryElementMaterial* pMaterialElement = pFBXMesh->CreateElementMaterial();
 	pMaterialElement->SetMappingMode(FbxGeometryElement::eByPolygon);
 	pMaterialElement->SetReferenceMode(FbxGeometryElement::eIndexToDirect);
+	pMaterialElement->GetIndexArray().SetCount(numAllFaces);
 
-	for (int j = 0; j < numMeshes; ++j)
+	for (int meshIndex = 0; meshIndex < meshCount; ++meshIndex)
 	{
-		const SExportMesh* pMesh = pObj->GetMesh(j);
+		const SExportMesh* const pMesh = pObj->GetMesh(meshIndex);
+		const int numFaces = pMesh->GetFaceCount();
+		const Export::Face* const pFaces = pMesh->GetFaceBuffer();
+		const int firstFaceIndex = pFBXMesh->GetPolygonCount();
+		const int materialIndex = m_meshMaterialIndices[pMesh];
 
-		// Write all faces, convert the indices to one based indices
-		int numFaces = pMesh->GetFaceCount();
-
-		int polygonCount = pFBXMesh->GetPolygonCount();
-		pMaterialElement->GetIndexArray().SetCount(polygonCount + numFaces);
-		int materialIndex = m_meshMaterialIndices[pMesh];
-
-		const Export::Face* pFaces = pMesh->GetFaceBuffer();
-		for (int i = 0; i < numFaces; ++i)
+		for (int faceIndex = 0; faceIndex < numFaces; ++faceIndex)
 		{
-			const Export::Face& face = pFaces[i];
-			pFBXMesh->BeginPolygon(-1, -1, -1, false);
+			const Export::Face& face = pFaces[faceIndex];
 
-			pFBXMesh->AddPolygon(face.idx[0], face.idx[0]);
-			pFBXMesh->AddPolygon(face.idx[1], face.idx[1]);
-			pFBXMesh->AddPolygon(face.idx[2], face.idx[2]);
+			pFBXMesh->BeginPolygon(materialIndex, -1, -1, false);
+			for (size_t i = 0; i < 3; ++i)
+			{
+				pFBXMesh->AddPolygon(face.vertex[i], face.texCoord[i]);
 
-			//pFBXDiffuseUV->GetIndexArray().SetAt(face.idx[0], face.idx[0]);
+				const size_t polygonVertexIndex = (firstFaceIndex + faceIndex) * 3 + i;
 
+				if (pElementNormal)
+				{
+					pElementNormal->GetIndexArray().SetAt(polygonVertexIndex, face.normal[i]);
+				}
+
+				if (pElementVertexColor)
+				{
+					pElementVertexColor->GetIndexArray().SetAt(polygonVertexIndex, face.color[i]);
+				}
+			}
 			pFBXMesh->EndPolygon();
-			//pPolygonGroupElement->GetIndexArray().Add(j);
-
-			pMaterialElement->GetIndexArray().SetAt(polygonCount + i, materialIndex);
 		}
 	}
 
