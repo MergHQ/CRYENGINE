@@ -349,9 +349,16 @@ void CTexture::StreamCopyMipsTexToMem(int8 nStartMip, int8 nEndMip, bool bToDevi
 					CryInterlockedAdd(&CTexture::s_nTexturesDataBytesUploaded, mh[nLod].m_SideSize);					
 #endif
 					// TODO: batch upload (instead of loop)
+					const SResourceMemoryAlignment sourceAlignment =
+					{
+						CTexture::TextureDataSize(1, 1, 1, 1, 1, m_eSrcFormat, m_eSrcTileMode),
+						CTexture::TextureDataSize(nMipW, 1, 1, 1, 1, m_eSrcFormat, m_eSrcTileMode),
+						CTexture::TextureDataSize(nMipW, nMipH, 1, 1, 1, m_eSrcFormat, m_eSrcTileMode),
+						CTexture::TextureDataSize(nMipW, nMipH, 1, 1, 1, m_eSrcFormat, m_eSrcTileMode)
+					};
 					const SResourceMemoryMapping mapping =
 					{
-						pDevTexture->GetAlignment(nDevTexMip),                          // src alignment == hardware alignment
+						sourceAlignment,
 						{ 0, 0, 0, D3D11CalcSubresource(nDevTexMip, iSide, nTexMips) }, // dst position
 						{ static_cast<UINT>(nMipW), static_cast<UINT>(nMipH), 1, 1 }    // dst size
 					};
