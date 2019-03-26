@@ -382,14 +382,13 @@ void CRenderer::PrepareParticleRenderObjects(Array<const SAddParticlesToSceneJob
 
 		// generate the RenderItem entries for this Particle Element
 		assert(pRenderObject->m_bPermanent);
+		ERenderListID nList;
+		uint32 nBatchFlags;
+		EF_GetParticleListAndBatchFlags(
+			nBatchFlags, nList, pRenderObject,
+			shaderItem, passInfo);
 		if (!pRE->AddedToView())
 		{
-			ERenderListID nList;
-			uint32 nBatchFlags;
-			EF_GetParticleListAndBatchFlags(
-				nBatchFlags, nList, pRenderObject,
-				shaderItem, passInfo);
-
 			passInfo.GetRenderView()->AddRenderItem(
 				pRE, pRenderObject, shaderItem, nList, nBatchFlags,
 				passInfo, passInfo.GetRendItemSorter());
