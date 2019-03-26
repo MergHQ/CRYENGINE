@@ -1,16 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-/*=============================================================================
-   PostProcessUtils.h : Post processing common utilities
-
-   Revision history:
-* 18/06/2005: Re-organized (to minimize code dependencies/less annoying compiling times)
-* Created by Tiago Sousa
-
-   =============================================================================*/
-
-#ifndef _POSTPROCESSUTILS_H_
-#define _POSTPROCESSUTILS_H_
+#pragma once
 
 class CShader;
 
@@ -96,20 +86,20 @@ struct SPostEffectsUtils
 	static float InterpolateLinear(float p1, float p2, float t)
 	{
 		return p1 + (p2 - p1) * t;
-	};
+	}
 
 	// Cubic interpolation
 	static float InterpolateCubic(float p1, float p2, float p3, float p4, float t)
 	{
 		float t2 = t * t;
 		return (((-p1 * 2.0f) + (p2 * 5.0f) - (p3 * 4.0f) + p4) / 6.0f) * t2 * t + (p1 + p3 - (2.0f * p2)) * t2 + (((-4.0f * p1) + p2 + (p3 * 4.0f) - p4) / 6.0f) * t + p2;
-	};
+	}
 
 	// Sine interpolation
 	static float InterpolateSine(float p1, float p2, float p3, float p4, float t)
 	{
 		return p2 + (t * (p3 - p2)) + (sinf(t * PI) * ((p2 + p2) - p1 - p3 + (t * (p1 - (p2 + p2 + p2) + (p3 + p3 + p3) - p4))) / 8.0f);
-	};
+	}
 
 	// Return normalized random number
 	static float randf()
@@ -199,7 +189,7 @@ public:
 	static Matrix44       m_pScaleBias;
 	static float          m_fWaterLevel;
 
-	// frustrum corners
+	// frustum corners
 	static Vec3          m_vRT, m_vLT, m_vLB, m_vRB;
 	static int64         m_nFrustrumFrameID;
 	static CCamera       m_cachedRenderCamera;
@@ -230,5 +220,3 @@ protected:
 	static float m_fOverscanBorderAspectRatio;
 
 };
-
-#endif

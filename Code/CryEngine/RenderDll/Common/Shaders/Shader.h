@@ -1,15 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-/*=============================================================================
-   Shader.h : Shaders declarations.
-
-   Revision history:
-* Created by Honich Andrey
-
-   =============================================================================*/
-
-#ifndef __SHADER_H__
-#define __SHADER_H__
+#pragma once
 
 #include "../Defs.h"
 
@@ -1437,7 +1428,3 @@ inline SShaderTechnique* SShaderItem::GetTechnique() const
 	}
 	return NULL;
 }
-
-//////////////////////////////////////////////////////////////////////////
-
-#endif

@@ -1,7 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef _SIMPLE_FRAME_PROFILER_
-#define _SIMPLE_FRAME_PROFILER_
+#pragma once
 
 #include <CrySystem/Profilers/FrameProfiler/FrameProfiler.h>
 
@@ -93,6 +92,4 @@
 	#define FUNCTION_PROFILER_RENDER_FLAT CRY_PROFILE_FUNCTION(PROFILE_RENDERER)
 #else
 	#define FUNCTION_PROFILER_RENDER_FLAT
-#endif
-
 #endif
