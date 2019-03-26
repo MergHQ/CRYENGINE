@@ -802,7 +802,11 @@ void CVisionMap::QueueRay(const ObserverInfo& observerInfo, PVSEntry& pvsEntry)
 
 void CVisionMap::DeletePendingRay(PVSEntry& pvsEntry)
 {
-	CRY_PROFILE_FUNCTION(PROFILE_AI);
+#if ALLOW_DEEP_PROFILING
+	stack_string string;
+	string.Format("Pending rays: %lu", m_pendingRays.size());
+	CRY_PROFILE_FUNCTION_ARG(PROFILE_AI, string.c_str());
+#endif
 
 	if (!pvsEntry.pendingRayID)
 		return;
