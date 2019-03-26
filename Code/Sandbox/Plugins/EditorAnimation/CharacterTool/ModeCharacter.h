@@ -85,6 +85,7 @@ private:
 	string                      m_curBoneName;
 	Vec2                        m_posMouse;
 	bool                        m_isCurBoneFree;
+	bool                        m_editProxies = false, m_tempProxyRender = false;
 };
 
 }
