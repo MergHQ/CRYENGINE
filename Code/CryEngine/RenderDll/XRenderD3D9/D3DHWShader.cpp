@@ -328,7 +328,7 @@ CHWShader* CHWShader::mfForName(const char* name, const char* nameSource, uint32
 	}
 	pSH->m_pCache = static_cast<SHWShaderCache*>(hwSharedCache);
 
-	if (CParserBin::m_bEditable || (pVRProjectionManager->IsMultiResEnabledStatic() && eClass == eHWSC_Vertex))
+	if (CParserBin::m_bEditable || ((!pVRProjectionManager || pVRProjectionManager->IsMultiResEnabledStatic()) && eClass == eHWSC_Vertex))
 	{
 		pSH->m_TokenTable = Table;
 		pSH->m_TokenData = SHData;
@@ -343,7 +343,7 @@ CHWShader* CHWShader::mfForName(const char* name, const char* nameSource, uint32
 	// Check for auto MultiRes-Geom shader
 	if (eClass == eHWSC_Geometry && szEntryFunc[0] == '$')
 	{
-		if (!pVRProjectionManager->IsMultiResEnabledStatic())
+		if (pVRProjectionManager && !pVRProjectionManager->IsMultiResEnabledStatic())
 		{
 			pSH->Release();
 			return NULL;
