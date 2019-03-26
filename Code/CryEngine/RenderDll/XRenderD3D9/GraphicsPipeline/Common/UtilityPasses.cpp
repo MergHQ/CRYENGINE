@@ -220,7 +220,7 @@ bool CStretchRegionPass::PreparePrimitive(CRenderPrimitive& prim, CPrimitiveRend
 		constantManager.SetNamedConstant(param2Name, params2, eHWSC_Pixel);
 		constantManager.SetNamedConstant(paramTCName, paramsTC, eHWSC_Vertex);
 
-		CRY_ASSERT(m_pGraphicsPipeline && m_pGraphicsPipeline->GetCurrentRenderView());
+		CRY_ASSERT(m_pGraphicsPipeline);
 		constantManager.EndNamedConstantUpdate(&targetPass.GetViewport(), m_pGraphicsPipeline->GetCurrentRenderView());
 
 		return true;
@@ -961,7 +961,7 @@ bool CClearRegionPass::PreparePrimitive(CRenderPrimitive& prim, int renderState,
 		if (numRTVs > 0)
 			constantManager.SetNamedConstant(paramClearColor, cClear.toVec4(), eHWSC_Pixel);
 
-		CRY_ASSERT(m_pGraphicsPipeline && m_pGraphicsPipeline->GetCurrentRenderView());
+		CRY_ASSERT(m_pGraphicsPipeline);
 		constantManager.EndNamedConstantUpdate(&m_clearPass.GetViewport(), m_pGraphicsPipeline->GetCurrentRenderView());
 
 		return true;

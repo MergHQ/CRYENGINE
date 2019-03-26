@@ -1737,6 +1737,8 @@ void CHWShader_D3D::mfSetParameters(SCGParam* pParams, const int nINParams, EHWS
 	const SCGParam* ParamBind = pParams;
 	int nParams;
 
+	CRY_ASSERT(pRenderView);
+
 	if (!pParams)
 		return;
 

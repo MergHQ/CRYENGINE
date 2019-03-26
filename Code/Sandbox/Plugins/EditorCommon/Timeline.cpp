@@ -702,29 +702,31 @@ void SetSelectedElementTimes(STimelineTrack& track, const std::vector<SAnimTime>
 		});
 }
 
-float FindNearestKeyTime(std::vector<SAnimTime>& vec, SAnimTime value, SAnimTime selectedValue, bool forwardSearch)
+float FindNearestKeyTime(std::vector<SAnimTime>& keyVector, SAnimTime value, SAnimTime selectedValue, bool forwardSearch)
 {
+	if (keyVector.size() == 0)
+	{
+		return value;
+	}
+
 	if (forwardSearch)
 	{
-		auto const it = std::upper_bound(vec.begin(), vec.end(), value);
-
-		if (it == vec.end() && selectedValue > vec.back())
+		auto const it = std::upper_bound(keyVector.begin(), keyVector.end(), value);
+		if (it == keyVector.end() && selectedValue > keyVector.back())
 		{
-			return vec.back();
+			return keyVector.back();
 		}
 
 		return *it;
-
 	}
 	else
 	{
-		auto it = std::lower_bound(vec.begin(), vec.end(), value);
-
-		if (it == vec.end() && selectedValue > vec.back())
+		auto it = std::lower_bound(keyVector.begin(), keyVector.end(), value);
+		if (it == keyVector.end() && selectedValue > keyVector.back())
 		{
-			return vec.back();
+			return keyVector.back();
 		}
-		else if (it != vec.begin() && *it > selectedValue)
+		else if (it != keyVector.begin() && *it > selectedValue)
 		{
 			--it;
 		}
@@ -740,16 +742,24 @@ std::vector<SAnimTime> GetSelectedElementTimes(STimelineTrack& track)
 	return times;
 }
 
-std::vector<SAnimTime> GetAllElementTimes(STimelineTrack& track)
+std::vector<SAnimTime> GetAllElementTimes(STimelineTrack& track, bool checkSelected = true)
 {
 	std::vector<SAnimTime> times;
-	ForEachElement(track, [&](STimelineTrack& track, STimelineElement& element) { if (!track.disabled && !element.selected && !element.deleted) times.push_back(element.start); });
+
+	if (checkSelected)
+	{
+		ForEachElement(track, [&](STimelineTrack& track, STimelineElement& element) { if (!track.disabled && !element.selected && !element.deleted) times.push_back(element.start); });
+	}
+	else
+	{
+		ForEachElement(track, [&](STimelineTrack& track, STimelineElement& element) { if (!track.disabled && !element.deleted) times.push_back(element.start); });
+	}
 
 	for (size_t i = 0; i < track.tracks.size(); ++i)
 	{
 		if (track.tracks[i]->elements.size() > 0)
 		{
-			std::vector<SAnimTime> subItems = GetAllElementTimes((STimelineTrack&)track.tracks[i]);
+			std::vector<SAnimTime> subItems = GetAllElementTimes((STimelineTrack&)track.tracks[i], checkSelected);
 
 			times.insert(times.end(), subItems.begin(), subItems.end());
 		}
@@ -823,6 +833,66 @@ void MoveSelectedElements(STimelineTrack& track, SAnimTime delta)
 					element.end += delta;
 			}
 		});
+
+	if (track.caps & track.CAP_CLIP_TRUNCATED_BY_NEXT_KEY)
+		UpdateTruncatedDurations(&track);
+}
+
+void SlideSelectedElements(STimelineTrack& track, SAnimTime delta, CTimeline::EKeysSlideMode mode = CTimeline::eKeysSlideMode_Both)
+{
+	// find min selected element time
+	SAnimTime refTime;
+
+	std::function<bool(const SAnimTime&, const SAnimTime&)> compareFunc;
+	switch (mode)
+	{
+		case CTimeline::eKeysSlideMode_Both:
+		{
+			refTime = SAnimTime();
+			compareFunc = [](const SAnimTime& t0, const SAnimTime& t1) { return false; };
+
+			break;
+		}
+		case CTimeline::eKeysSlideMode_Left:
+		{
+			refTime = SAnimTime::Min();
+			compareFunc = [](const SAnimTime& t0, const SAnimTime& t1) { return t0 < t1; };
+
+			break;
+		}
+		case CTimeline::eKeysSlideMode_Right:
+		{
+			refTime = SAnimTime::Max();
+			compareFunc = [](const SAnimTime& t0, const SAnimTime& t1) { return t0 > t1; };
+
+			break;
+		}
+		default:
+		{
+			CRY_ASSERT_MESSAGE(0, "Wrong value of mode.");
+		}
+	}
+
+	ForEachElement(track, [&refTime, compareFunc](STimelineTrack& track, STimelineElement& element)
+	{
+		if (element.selected)
+		{
+			track.modified = true;
+
+			if (compareFunc(refTime, element.start))
+				refTime = element.start;
+		}
+	});
+
+	ForEachElement(track, [refTime, delta, compareFunc](STimelineTrack& track, STimelineElement& element)
+	{
+		if (!compareFunc(refTime, element.start) && track.modified)
+		{
+			element.start += delta;
+			if (element.end != SAnimTime::Max())
+				element.end += delta;
+		}
+	});
 
 	if (track.caps & track.CAP_CLIP_TRUNCATED_BY_NEXT_KEY)
 		UpdateTruncatedDurations(&track);
@@ -1123,6 +1193,30 @@ void UpdateTracksRenderCache(STracksRenderCache& renderCache, QPainter& painter,
 					{
 						renderCache.descTrackBGRects.emplace_back(backgroundRect);
 					}
+					else if ((track.pTimelineTrack->caps & STimelineTrack::CAP_FOLDER_TRACK) != 0)
+					{
+						renderCache.folderTrackBGRects.emplace_back(backgroundRect);
+					}
+					else if ((track.pTimelineTrack->caps & STimelineTrack::CAP_NODE_TRACK) != 0)
+					{
+						renderCache.nodeTrackBGRects.emplace_back(backgroundRect);
+					}
+					else if ((track.pTimelineTrack->caps & STimelineTrack::CAP_X_SUBTRACK) != 0)
+					{
+						renderCache.xSubTrackBGRects.emplace_back(backgroundRect);
+					}
+					else if ((track.pTimelineTrack->caps & STimelineTrack::CAP_Y_SUBTRACK) != 0)
+					{
+						renderCache.ySubTrackBGRects.emplace_back(backgroundRect);
+					}
+					else if ((track.pTimelineTrack->caps & STimelineTrack::CAP_Z_SUBTRACK) != 0)
+					{
+						renderCache.zSubTrackBGRects.emplace_back(backgroundRect);
+					}
+					else if ((track.pTimelineTrack->caps & STimelineTrack::CAP_SUBTRACK) != 0)
+					{
+						renderCache.subTrackBGRects.emplace_back(backgroundRect);
+					}
 					else
 					{
 						renderCache.compTrackBGRects.emplace_back(backgroundRect);
@@ -1136,7 +1230,10 @@ void UpdateTracksRenderCache(STracksRenderCache& renderCache, QPainter& painter,
 					const int32 lineY = track.rect.bottom() + 1;
 					renderCache.bottomLines.emplace_back(QLine(QPoint(backgroundRect.left(), lineY), QPoint(backgroundRect.right(), lineY)));
 
-					if (drawMarkers && (track.pTimelineTrack->caps & STimelineTrack::CAP_DESCRIPTION_TRACK) == 0)
+					if (drawMarkers && 
+						(((track.pTimelineTrack->caps & STimelineTrack::CAP_NODE_TRACK) == 0) ||
+						 ((track.pTimelineTrack->caps & STimelineTrack::CAP_FOLDER_TRACK) == 0) ||
+						 ((track.pTimelineTrack->caps & STimelineTrack::CAP_DESCRIPTION_TRACK) == 0)))
 					{
 						QRect rect = markersRect;
 						rect.setTop(track.rect.top());
@@ -1183,6 +1280,41 @@ void UpdateTracksRenderCache(STracksRenderCache& renderCache, QPainter& painter,
 							toggleRect.setRight((i == numElements) ? (-viewState.scrollPixels.x() + trackRect.width()) : sortedElements[i].rect.left());
 
 							renderCache.toggleRects.emplace_back(toggleRect);
+						}
+					}
+
+					if ((track.pTimelineTrack->caps & STimelineTrack::CAP_CAM_TRACK) != 0)
+					{
+						QRect camRect = track.rect;
+
+						camRect.setTop(camRect.top() + 2);
+						camRect.setBottom(camRect.bottom() - 2);
+
+						int curLeft = 0;
+						int curRight = 0;
+
+						for (uint32 i = 0; i < numElements; ++i)
+						{
+							SElementLayout& elementLayout = sortedElements[i];
+
+							bool elementCam = elementLayout.description.size() > 0;
+							if (elementCam)
+							{
+								curLeft = curLeft > 0 ? curLeft : elementLayout.rect.right();
+								curRight = (i + 1) < numElements ? sortedElements[i + 1].rect.left() : (-viewState.scrollPixels.x() + trackRect.width());
+							}
+							
+							int curWidth = curRight - curLeft;
+							if((curWidth > 0) && (!elementCam || (i == (numElements - 1))))
+							{
+								camRect.setLeft(curLeft);
+								camRect.setRight(curRight);
+
+								renderCache.camRects.emplace_back(camRect);
+
+								curLeft = 0;
+								curRight = 0;
+							}
 						}
 					}
 				}
@@ -1325,6 +1457,30 @@ void UpdateTreeRenderCache(STreeRenderCache& renderCache, const QRect& treeRect,
 		{
 			renderCache.descTrackBGRects.emplace_back(backgroundRect);
 		}
+		else if ((track.pTimelineTrack->caps & STimelineTrack::CAP_FOLDER_TRACK) != 0)
+		{
+			renderCache.folderTrackBGRects.emplace_back(backgroundRect);
+		}
+		else if ((track.pTimelineTrack->caps & STimelineTrack::CAP_NODE_TRACK) != 0)
+		{
+			renderCache.nodeTrackBGRects.emplace_back(backgroundRect);
+		}
+		else if ((track.pTimelineTrack->caps & STimelineTrack::CAP_X_SUBTRACK) != 0)
+		{
+			renderCache.xSubTrackBGRects.emplace_back(backgroundRect);
+		}
+		else if ((track.pTimelineTrack->caps & STimelineTrack::CAP_Y_SUBTRACK) != 0)
+		{
+			renderCache.ySubTrackBGRects.emplace_back(backgroundRect);
+		}
+		else if ((track.pTimelineTrack->caps & STimelineTrack::CAP_Z_SUBTRACK) != 0)
+		{
+			renderCache.zSubTrackBGRects.emplace_back(backgroundRect);
+		}
+		else if ((track.pTimelineTrack->caps & STimelineTrack::CAP_SUBTRACK) != 0)
+		{
+			renderCache.subTrackBGRects.emplace_back(backgroundRect);
+		}
 		else
 		{
 			renderCache.compTrackBGRects.emplace_back(backgroundRect);
@@ -1358,7 +1514,34 @@ void UpdateTreeRenderCache(STreeRenderCache& renderCache, const QRect& treeRect,
 			alias = alias + " (Detached)";
 		}
 
-		renderCache.text.emplace_back(QRenderText(textRect, alias));
+		if ((track.pTimelineTrack->caps & STimelineTrack::CAP_FOLDER_TRACK) != 0)
+		{
+			renderCache.folderTrackText.emplace_back(QRenderText(textRect, alias));
+		}
+		else if ((track.pTimelineTrack->caps & STimelineTrack::CAP_NODE_TRACK) != 0)
+		{
+			renderCache.nodeTrackText.emplace_back(QRenderText(textRect, alias));
+		}
+		else if ((track.pTimelineTrack->caps & STimelineTrack::CAP_X_SUBTRACK) != 0)
+		{
+			renderCache.xSubTrackText.emplace_back(QRenderText(textRect, alias));
+		}
+		else if ((track.pTimelineTrack->caps & STimelineTrack::CAP_Y_SUBTRACK) != 0)
+		{
+			renderCache.ySubTrackText.emplace_back(QRenderText(textRect, alias));
+		}
+		else if ((track.pTimelineTrack->caps & STimelineTrack::CAP_Z_SUBTRACK) != 0)
+		{
+			renderCache.zSubTrackText.emplace_back(QRenderText(textRect, alias));
+		}
+		else if((track.pTimelineTrack->caps & STimelineTrack::CAP_COMPOUND_TRACK))
+		{
+			renderCache.compoundTrackText.emplace_back(QRenderText(textRect, alias));			
+		}
+		else
+		{
+			renderCache.text.emplace_back(QRenderText(textRect, alias));
+		}
 
 		if (track.pTimelineTrack->HasIcon())
 		{
@@ -1496,6 +1679,7 @@ struct CTimeline::SMoveHandler : SMouseHandler
 	bool                    m_cycleSelection;
 	SAnimTime               m_startTime;
 	SAnimTime               m_clickTime;
+	SAnimTime               m_clipOfsTime;
 	std::vector<SAnimTime>  m_elementTimes;
 
 	SMoveHandler(CTimeline* timeline, bool cycleSelection)
@@ -1542,6 +1726,11 @@ struct CTimeline::SMoveHandler : SMouseHandler
 		{
 			m_elementTimes = GetSelectedElementTimes(m_timeline->m_pContent->track);
 		}
+
+		if (m_pClickedElement && m_pClickedElement->type == STimelineElement::CLIP)
+		{
+			m_clipOfsTime = m_pClickedElement->start - m_startTime;
+		}
 	}
 
 	void mouseMoveEvent(QMouseEvent* ev) override
@@ -1565,6 +1754,8 @@ struct CTimeline::SMoveHandler : SMouseHandler
 		SAnimTime currentTime = m_timeline->m_viewState.LayoutToTime(m_timeline->m_viewState.LocalToLayout(currentPos).x());
 
 		bool bNeedMoveElements = false;
+		bool bInvalidateContent = false;
+		
 		SAnimTime moveElementsDeltaTime;
 
 		if (m_pClickedElement && (m_timeline->m_snapKeys || m_timeline->m_snapTime || bToggleSelected))
@@ -1574,18 +1765,32 @@ struct CTimeline::SMoveHandler : SMouseHandler
 
 			if (m_timeline->m_snapKeys)
 			{
-				if (deltaTime > SAnimTime(0.0f))
+				SAnimTime nearestKeyTimeRight = FindNearestKeyTime(m_elementTimes, currentTime, currentTime, true);
+				SAnimTime nearestKeyTimeLeft = FindNearestKeyTime(m_elementTimes, currentTime, currentTime, false);
+
+				SAnimTime rightDelta = nearestKeyTimeRight - currentTime;
+				SAnimTime leftDelta = currentTime - nearestKeyTimeLeft;
+
+				if (std::abs(rightDelta.GetTicks()) > std::abs(leftDelta.GetTicks()))
 				{
-					nearestKeyTime = FindNearestKeyTime(m_elementTimes, startElementTime, currentTime, true);
+					nearestKeyTime = nearestKeyTimeLeft;
 				}
-				else if (deltaTime < SAnimTime(0.0f))
+				else
 				{
-					nearestKeyTime = FindNearestKeyTime(m_elementTimes, startElementTime, currentTime, false);
+					nearestKeyTime = nearestKeyTimeRight;
 				}
 			}
 			else if (m_timeline->m_snapTime)
 			{
-				nearestKeyTime = currentTime.SnapToNearest(m_timeline->m_frameRate);
+				if (m_pClickedElement && m_pClickedElement->type == STimelineElement::CLIP)
+				{
+					SAnimTime clipCurrentTime = currentTime + m_clipOfsTime;
+					nearestKeyTime = clipCurrentTime.SnapToNearest(m_timeline->m_frameRate);
+				}
+				else
+				{
+					nearestKeyTime = currentTime.SnapToNearest(m_timeline->m_frameRate);
+				}
 			}
 			// User drags keys when SHIFT key is pressed.  It snaps selected keys to Timeline ruler markings.
 			else if (bToggleSelected)
@@ -1604,9 +1809,10 @@ struct CTimeline::SMoveHandler : SMouseHandler
 			{
 				bNeedMoveElements = true;
 				moveElementsDeltaTime.SetTime(nearestKeyTime - startElementTime);
+
 				m_startTime = nearestKeyTime;
 				m_startPoint.setX(m_timeline->m_viewState.LocalToLayout(currentPos).x());
-				m_timeline->ContentChanged(true);
+				bInvalidateContent = true;
 			}
 		}
 		// No snapping
@@ -1616,7 +1822,7 @@ struct CTimeline::SMoveHandler : SMouseHandler
 			moveElementsDeltaTime.SetTime(deltaTime);
 			m_startTime = currentTime;
 			m_startPoint.setX(m_timeline->m_viewState.LocalToLayout(currentPos).x());
-			m_timeline->ContentChanged(true);
+			bInvalidateContent = true;
 		}
 
 		if (!m_timeline->m_allowOutOfRangeKeys && bNeedMoveElements)
@@ -1632,7 +1838,7 @@ struct CTimeline::SMoveHandler : SMouseHandler
 					bAtLeastOneSelectedElementIsOutOfRange = true;
 					break;
 				}
-				if ((element.type == element.CLIP ? element.end : element.start) + deltaTime > track.endTime)
+				if ((element.type == STimelineElement::CLIP ? element.end : element.start) + deltaTime > track.endTime)
 				{
 					bAtLeastOneSelectedElementIsOutOfRange = true;
 					break;
@@ -1652,15 +1858,20 @@ struct CTimeline::SMoveHandler : SMouseHandler
 			m_timeline->UpdateLayout();
 		}
 
+		if (bInvalidateContent)
+		{
+			m_timeline->InvalidateContent(true);
+		}
+
 		m_timeline->setCursor(Qt::SizeHorCursor);
 		m_cycleSelection = false;
 	}
 
 	virtual void MoveElements(STimelineTrack& track, SAnimTime delta) = 0;
 
-	void         focusOutEvent(QFocusEvent* ev)
+	void focusOutEvent(QFocusEvent* ev)
 	{
-		SetSelectedElementTimes(m_timeline->m_pContent->track, m_elementTimes);
+		//SetSelectedElementTimes(m_timeline->m_pContent->track, m_elementTimes);
 		m_timeline->UpdateLayout();
 	}
 
@@ -1710,6 +1921,20 @@ struct CTimeline::SShiftHandler : public CTimeline::SMoveHandler
 		MoveSelectedElements(m_timeline->m_pContent->track, delta);
 	}
 };
+
+struct CTimeline::SSlideHandler : public CTimeline::SMoveHandler
+{
+	SSlideHandler(CTimeline* timeline, bool cycleSelection, EKeysSlideMode keysSlideMode) : SMoveHandler(timeline, cycleSelection), m_keysSlideMode(keysSlideMode) {}
+
+	virtual void MoveElements(STimelineTrack& track, SAnimTime delta) override
+	{
+		SlideSelectedElements(m_timeline->m_pContent->track, delta, m_keysSlideMode);
+	}
+
+private:
+	EKeysSlideMode m_keysSlideMode;
+};
+
 
 struct CTimeline::SScaleHandler : public CTimeline::SMoveHandler
 {
@@ -1772,12 +1997,79 @@ struct CTimeline::SPanHandler : SMouseHandler
 	}
 };
 
+struct CTimeline::SPasteHandler : SShiftHandler
+{
+	SPasteHandler(CTimeline* pTimeline) : SShiftHandler(pTimeline, false)
+	{
+		const int scroll = m_timeline->m_scrollBar ? m_timeline->m_scrollBar->value() : 0;
+		const QPoint currentPos = QPoint(QCursor::pos().x(), QCursor::pos().y() + scroll);
+
+		m_startPoint = m_timeline->m_viewState.LocalToLayout(QPoint(currentPos));
+		
+		m_clickTime = SAnimTime(float(m_startPoint.x()) / m_timeline->m_viewState.widthPixels * m_timeline->m_viewState.visibleDistance);
+		m_startTime = m_clickTime;
+
+		m_elementTimes = GetSelectedElementTimes(m_timeline->m_pContent->track);
+		m_timeline->ContentChanged(true);
+
+		CryLog("m_startPoint.x = %i", m_startPoint.x());
+	}
+
+	void mousePressEvent(QMouseEvent* ev) override
+	{
+	}
+
+	void mouseMoveEvent(QMouseEvent* ev) override
+	{
+		const int scroll = m_timeline->m_scrollBar ? m_timeline->m_scrollBar->value() : 0;
+		
+		const QPoint currentPos = QPoint(QCursor::pos().x(), QCursor::pos().y() + scroll);
+		const QPoint currentPoint = m_timeline->m_viewState.LocalToLayout(currentPos);
+		
+		const int delta = currentPoint.x() - m_startPoint.x();
+
+		SAnimTime deltaTime = SAnimTime(float(delta) / m_timeline->m_viewState.widthPixels * m_timeline->m_viewState.visibleDistance);
+		SAnimTime currentTime = m_timeline->m_viewState.LayoutToTime(currentPoint.x());
+
+		SAnimTime moveElementsDeltaTime;
+		moveElementsDeltaTime.SetTime(deltaTime);
+
+		m_startTime = currentTime;
+		m_startPoint.setX(currentPoint.x());
+
+		ForEachElement(m_timeline->m_pContent->track, [](STimelineTrack& track, STimelineElement& element)
+		{
+			if (element.selected)
+			{
+				element.added = true;
+			}
+		});
+		m_timeline->ContentChanged(true);
+
+		MoveElements(m_timeline->m_pContent->track, moveElementsDeltaTime);
+	}
+
+	void mouseReleaseEvent(QMouseEvent* ev) override
+	{
+		ForEachElement(m_timeline->m_pContent->track, [](STimelineTrack& track, STimelineElement& element)
+		{
+			if (element.selected)
+			{
+				element.added = false;
+			}
+		});
+
+	}
+};
+
 struct CTimeline::SScrubHandler : SMouseHandler
 {
-	CTimeline* m_timeline;
+	CTimeline*             m_timeline;
+	SAnimTime              m_startThumbPosition;
+	QPoint                 m_startPoint;
+	std::vector<SAnimTime> m_elementTimes;
+
 	SScrubHandler(CTimeline* timeline) : m_timeline(timeline) {}
-	SAnimTime  m_startThumbPosition;
-	QPoint     m_startPoint;
 
 	void SetThumbPositionX(int positionX)
 	{
@@ -1786,9 +2078,9 @@ struct CTimeline::SScrubHandler : SMouseHandler
 		m_timeline->ClampAndSetTime(time, false);
 	}
 
-	void mousePressEvent(QMouseEvent* ev) override
+	void mousePressEvent(QMouseEvent* pEvent) override
 	{
-		QPoint point = QPoint(ev->pos().x(), ev->pos().y());
+		QPoint point = QPoint(pEvent->pos().x(), pEvent->pos().y());
 
 		QPoint posInLayout = m_timeline->m_viewState.LocalToLayout(point);
 
@@ -1802,33 +2094,82 @@ struct CTimeline::SScrubHandler : SMouseHandler
 
 		m_startThumbPosition = m_timeline->m_time;
 		m_startPoint = point;
+
+		if (m_timeline->m_snapKeys)
+		{
+			// Get all not selected elements from non-disabled tracks
+			m_elementTimes = GetAllElementTimes(m_timeline->m_pContent->track, false);
+
+			std::sort(m_elementTimes.begin(), m_elementTimes.end());
+
+			// Remove exact time duplicates
+			m_elementTimes.erase(unique(m_elementTimes.begin(), m_elementTimes.end()), m_elementTimes.end());
+		}
 	}
 
 	void Apply(QMouseEvent* ev, bool continuous)
 	{
 		QPoint point = QPoint(ev->pos().x(), ev->pos().y());
 
+		bool alt = ev->modifiers().testFlag(Qt::AltModifier);
 		bool shift = ev->modifiers().testFlag(Qt::ShiftModifier);
 		bool control = ev->modifiers().testFlag(Qt::ControlModifier);
-
-		float delta = 0.0f;
-
-		if (m_timeline->m_viewState.widthPixels != 0)
+		
+		if ((alt && !m_timeline->m_invertScrubberSnapping) || (!alt && m_timeline->m_invertScrubberSnapping))
 		{
-			delta = (point.x() - m_startPoint.x()) * m_timeline->m_viewState.visibleDistance / m_timeline->m_viewState.widthPixels;
-		}
+			SAnimTime startElementTime = m_startThumbPosition;
+			SAnimTime nearestKeyTime(startElementTime);
 
-		if (shift)
+			const int scroll = m_timeline->m_scrollBar ? m_timeline->m_scrollBar->value() : 0;
+			const QPoint currentPos(ev->pos().x(), ev->pos().y() + scroll);
+
+			SAnimTime currentTime = m_timeline->m_viewState.LayoutToTime(m_timeline->m_viewState.LocalToLayout(currentPos).x());
+
+			if (m_timeline->m_snapKeys)
+			{
+				SAnimTime nearestKeyTimeRight = FindNearestKeyTime(m_elementTimes, currentTime, currentTime, true);
+				SAnimTime nearestKeyTimeLeft = FindNearestKeyTime(m_elementTimes, currentTime, currentTime, false);
+
+				SAnimTime rightDelta = nearestKeyTimeRight - currentTime;
+				SAnimTime leftDelta = currentTime - nearestKeyTimeLeft;
+
+				if (std::abs(rightDelta.GetTicks()) > std::abs(leftDelta.GetTicks()))
+				{
+					nearestKeyTime = nearestKeyTimeLeft;
+				}
+				else
+				{
+					nearestKeyTime = nearestKeyTimeRight;
+				}
+			}
+			else
+			{
+				nearestKeyTime = currentTime.SnapToNearest(m_timeline->m_frameRate);
+			}
+
+			m_timeline->ClampAndSetTime(nearestKeyTime, true);
+		}
+		else
 		{
-			delta *= 0.01f;
-		}
+			float delta = 0.0f;
 
-		if (control)
-		{
-			delta *= 0.1f;
-		}
+			if (m_timeline->m_viewState.widthPixels != 0)
+			{
+				delta = (point.x() - m_startPoint.x()) * m_timeline->m_viewState.visibleDistance / m_timeline->m_viewState.widthPixels;
+			}
 
-		m_timeline->ClampAndSetTime(m_startThumbPosition + SAnimTime(delta), true);
+			if (shift)
+			{
+				delta *= 0.01f;
+			}
+
+			if (control)
+			{
+				delta *= 0.1f;
+			}
+
+			m_timeline->ClampAndSetTime(m_startThumbPosition + SAnimTime(delta), true);
+		}
 	}
 
 	void mouseMoveEvent(QMouseEvent* ev) override
@@ -2056,7 +2397,7 @@ CTimeline::CTimeline(QWidget* parent)
 	, m_sizeToContent(false)
 	, m_snapTime(false)
 	, m_snapKeys(false)
-	, m_scaleKeys(false)
+	, m_invertScrubberSnapping(false)
 	, m_treeVisible(false)
 	, m_selIndicators(false)
 	, m_verticalScrollbarVisible(false)
@@ -2084,6 +2425,8 @@ CTimeline::CTimeline(QWidget* parent)
 	, m_searchWidget(nullptr)
 	, m_updateTracksRenderCache(ERenderCacheUpdate::Once)
 	, m_updateTreeRenderCache(ERenderCacheUpdate::Once)
+	, m_keysMoveMode(eKeysMoveMode_Move)
+	, m_keysSlideMode(eKeysSlideMode_Both)
 {
 	setMinimumWidth(MIN_WIDTH_TREE + MIN_WIDTH_SEQ);
 	// TODO: We should force the parent to have a min width as well.
@@ -2269,10 +2612,18 @@ void CTimeline::paintEvent(QPaintEvent* ev)
 	}
 
 	const QColor trackColor = GetStyleHelper()->timelineTrackColor();
+	const QColor camTrackColor = GetStyleHelper()->timelineCamTrackColor();
 	const QColor detachedTrackColor = GetStyleHelper()->timelineDetachedColor();
 	const QColor descriptionTrackColor = GetStyleHelper()->timelineDescriptionTrackColor();
 	const QColor compositeTrackColor = GetStyleHelper()->timelineCompositeTrackColor();
 	const QColor selectionColor = GetStyleHelper()->timelineSelectionColor();
+	const QColor folderTrackColor = GetStyleHelper()->timelineFolderTrackColor();
+	const QColor nodeTrackColor = GetStyleHelper()->timelineNodeTrackColor();
+	const QColor subtrackColor = GetStyleHelper()->timelineSubtrackColor();
+	const QColor xSubtrackColor = GetStyleHelper()->timelineXSubtrackColor();
+	const QColor ySubtrackColor = GetStyleHelper()->timelineYSubtrackColor();
+	const QColor zSubtrackColor = GetStyleHelper()->timelineZSubtrackColor();
+
 	const QPen descriptionTextPen = QPen(GetStyleHelper()->timelineDescriptionTextColor());
 
 	{
@@ -2307,6 +2658,66 @@ void CTimeline::paintEvent(QPaintEvent* ev)
 			PaintRenderCacheLines(painter, m_tracksRenderCache.innerTickLines);
 		}
 
+		if (m_tracksRenderCache.folderTrackBGRects.size())
+		{
+			LOADING_TIME_PROFILE_SECTION_NAMED("Folder tree tracks")
+
+			const QBrush brush = QBrush(folderTrackColor);
+			painter.setPen(Qt::NoPen);
+			painter.setBrush(brush);
+			PaintRenderCacheRects(painter, m_tracksRenderCache.folderTrackBGRects);
+		}
+
+		if (m_tracksRenderCache.nodeTrackBGRects.size())
+		{
+			LOADING_TIME_PROFILE_SECTION_NAMED("Node tree tracks")
+
+			const QBrush brush = QBrush(nodeTrackColor);
+			painter.setPen(Qt::NoPen);
+			painter.setBrush(brush);
+			PaintRenderCacheRects(painter, m_tracksRenderCache.nodeTrackBGRects);
+		}
+
+		if (m_tracksRenderCache.xSubTrackBGRects.size())
+		{
+			LOADING_TIME_PROFILE_SECTION_NAMED("Tree X subtracks")
+
+			const QBrush brush = QBrush(xSubtrackColor);
+			painter.setPen(Qt::NoPen);
+			painter.setBrush(brush);
+			PaintRenderCacheRects(painter, m_tracksRenderCache.xSubTrackBGRects);
+		}
+
+		if (m_tracksRenderCache.ySubTrackBGRects.size())
+		{
+			LOADING_TIME_PROFILE_SECTION_NAMED("Tree Y subtracks")
+
+			const QBrush brush = QBrush(ySubtrackColor);
+			painter.setPen(Qt::NoPen);
+			painter.setBrush(brush);
+			PaintRenderCacheRects(painter, m_tracksRenderCache.ySubTrackBGRects);
+		}
+
+		if (m_tracksRenderCache.zSubTrackBGRects.size())
+		{
+			LOADING_TIME_PROFILE_SECTION_NAMED("Tree Z subtracks")
+
+			const QBrush brush = QBrush(zSubtrackColor);
+			painter.setPen(Qt::NoPen);
+			painter.setBrush(brush);
+			PaintRenderCacheRects(painter, m_tracksRenderCache.zSubTrackBGRects);
+		}
+
+		if (m_tracksRenderCache.subTrackBGRects.size())
+		{
+			LOADING_TIME_PROFILE_SECTION_NAMED("Tree subtracks")
+
+			const QBrush brush = QBrush(subtrackColor);
+			painter.setPen(Qt::NoPen);
+			painter.setBrush(brush);
+			PaintRenderCacheRects(painter, m_tracksRenderCache.subTrackBGRects);
+		}
+
 		if (m_tracksRenderCache.outsideTrackBGRects.size())
 		{
 			LOADING_TIME_PROFILE_SECTION_NAMED("Background Track Area")
@@ -2324,6 +2735,14 @@ void CTimeline::paintEvent(QPaintEvent* ev)
 			painter.setPen(QPen(GetStyleHelper()->timelineBottomLines()));
 			painter.setBrush(Qt::NoBrush);
 			PaintRenderCacheLines(painter, m_tracksRenderCache.bottomLines);
+		}
+
+		if (m_tracksRenderCache.camRects.size())
+		{
+			LOADING_TIME_PROFILE_SECTION_NAMED("Camera rects")
+
+			painter.setBrush(QBrush(GetStyleHelper()->timelineCamTrackColor()));
+			PaintRenderCacheRects(painter, m_tracksRenderCache.camRects);
 		}
 
 		if (m_tracksRenderCache.seleTrackBGRects.size())
@@ -2579,6 +2998,66 @@ void CTimeline::paintEvent(QPaintEvent* ev)
 				PaintRenderCacheRects(painter, m_treeRenderCache.descTrackBGRects);
 			}
 
+			if (m_treeRenderCache.folderTrackBGRects.size())
+			{
+				LOADING_TIME_PROFILE_SECTION_NAMED("Folder tree tracks")
+
+				const QBrush brush = QBrush(folderTrackColor);
+				painter.setPen(Qt::NoPen);
+				painter.setBrush(brush);
+				PaintRenderCacheRects(painter, m_treeRenderCache.folderTrackBGRects);
+			}
+
+			if (m_treeRenderCache.nodeTrackBGRects.size())
+			{
+				LOADING_TIME_PROFILE_SECTION_NAMED("Node tree tracks")
+
+				const QBrush brush = QBrush(nodeTrackColor);
+				painter.setPen(Qt::NoPen);
+				painter.setBrush(brush);
+				PaintRenderCacheRects(painter, m_treeRenderCache.nodeTrackBGRects);
+			}
+
+			if (m_treeRenderCache.xSubTrackBGRects.size())
+			{
+				LOADING_TIME_PROFILE_SECTION_NAMED("Tree X subtracks")
+
+				const QBrush brush = QBrush(zSubtrackColor);
+				painter.setPen(Qt::NoPen);
+				painter.setBrush(brush);
+				PaintRenderCacheRects(painter, m_treeRenderCache.xSubTrackBGRects);
+			}
+
+			if (m_treeRenderCache.ySubTrackBGRects.size())
+			{
+				LOADING_TIME_PROFILE_SECTION_NAMED("Tree Y subtracks")
+
+				const QBrush brush = QBrush(ySubtrackColor);
+				painter.setPen(Qt::NoPen);
+				painter.setBrush(brush);
+				PaintRenderCacheRects(painter, m_treeRenderCache.ySubTrackBGRects);
+			}
+
+			if (m_treeRenderCache.zSubTrackBGRects.size())
+			{
+				LOADING_TIME_PROFILE_SECTION_NAMED("Tree Z subtracks")
+
+				const QBrush brush = QBrush(zSubtrackColor);
+				painter.setPen(Qt::NoPen);
+				painter.setBrush(brush);
+				PaintRenderCacheRects(painter, m_treeRenderCache.zSubTrackBGRects);
+			}
+
+			if (m_treeRenderCache.subTrackBGRects.size())
+			{
+				LOADING_TIME_PROFILE_SECTION_NAMED("Tree Any subtracks")
+
+				const QBrush brush = QBrush(subtrackColor);
+				painter.setPen(Qt::NoPen);
+				painter.setBrush(brush);
+				PaintRenderCacheRects(painter, m_treeRenderCache.subTrackBGRects);
+			}
+
 			if (m_treeRenderCache.compTrackBGRects.size())
 			{
 				LOADING_TIME_PROFILE_SECTION_NAMED("Compound tree tracks")
@@ -2623,6 +3102,72 @@ void CTimeline::paintEvent(QPaintEvent* ev)
 				painter.setPen(QPen(GetStyleHelper()->timelineTreeText()));
 
 				for (const QRenderText& txt : m_treeRenderCache.text)
+				{
+					painter.drawStaticText(QPoint(txt.rect.x(), txt.rect.y() + (txt.rect.height() - fontMetrics().height()) / 2), txt.text);
+				}
+			}
+
+			if (m_treeRenderCache.xSubTrackText.size())
+			{
+				LOADING_TIME_PROFILE_SECTION_NAMED("Sub track X text")
+				painter.setPen(QPen(GetStyleHelper()->timelineTreeXSubtrackText()));
+
+				for (const QRenderText& txt : m_treeRenderCache.xSubTrackText)
+				{
+					painter.drawStaticText(QPoint(txt.rect.x(), txt.rect.y() + (txt.rect.height() - fontMetrics().height()) / 2), txt.text);
+				}
+			}
+
+			if (m_treeRenderCache.ySubTrackText.size())
+			{
+				LOADING_TIME_PROFILE_SECTION_NAMED("Sub track Y text")
+				painter.setPen(QPen(GetStyleHelper()->timelineTreeYSubtrackText()));
+
+				for (const QRenderText& txt : m_treeRenderCache.ySubTrackText)
+				{
+					painter.drawStaticText(QPoint(txt.rect.x(), txt.rect.y() + (txt.rect.height() - fontMetrics().height()) / 2), txt.text);
+				}
+			}
+
+			if (m_treeRenderCache.xSubTrackText.size())
+			{
+				LOADING_TIME_PROFILE_SECTION_NAMED("Sub track Z text")
+				painter.setPen(QPen(GetStyleHelper()->timelineTreeZSubtrackText()));
+
+				for (const QRenderText& txt : m_treeRenderCache.zSubTrackText)
+				{
+					painter.drawStaticText(QPoint(txt.rect.x(), txt.rect.y() + (txt.rect.height() - fontMetrics().height()) / 2), txt.text);
+				}
+			}
+
+			if (m_treeRenderCache.nodeTrackText.size())
+			{
+				LOADING_TIME_PROFILE_SECTION_NAMED("Node track text")
+				painter.setPen(QPen(GetStyleHelper()->timelineTreeNodeTrackText()));
+
+				for (const QRenderText& txt : m_treeRenderCache.nodeTrackText)
+				{
+					painter.drawStaticText(QPoint(txt.rect.x(), txt.rect.y() + (txt.rect.height() - fontMetrics().height()) / 2), txt.text);
+				}
+			}
+
+			if (m_treeRenderCache.compoundTrackText.size())
+			{
+				LOADING_TIME_PROFILE_SECTION_NAMED("Compound track text")
+				painter.setPen(QPen(GetStyleHelper()->timelineTreeCompoundTrackText()));
+
+				for (const QRenderText& txt : m_treeRenderCache.compoundTrackText)
+				{
+					painter.drawStaticText(QPoint(txt.rect.x(), txt.rect.y() + (txt.rect.height() - fontMetrics().height()) / 2), txt.text);
+				}
+			}
+
+			if (m_treeRenderCache.folderTrackText.size())
+			{
+				LOADING_TIME_PROFILE_SECTION_NAMED("Folder track text")
+				painter.setPen(QPen(GetStyleHelper()->timelineTreeFolderTrackText()));
+
+				for (const QRenderText& txt : m_treeRenderCache.folderTrackText)
 				{
 					painter.drawStaticText(QPoint(txt.rect.x(), txt.rect.y() + (txt.rect.height() - fontMetrics().height()) / 2), txt.text);
 				}
@@ -2895,6 +3440,8 @@ void CTimeline::mousePressEvent(QMouseEvent* ev)
 						hitElements.back()->SetSelected(false);
 					}
 
+					SignalSelectionChanged(false);
+
 					m_mouseHandler.reset(new SShiftHandler(this, false));
 					m_mouseHandler->mousePressEvent(ev);
 					update();
@@ -2929,12 +3476,23 @@ void CTimeline::mousePressEvent(QMouseEvent* ev)
 					}
 
 					bool cycleSelection = useExistingSelection;
-					if ((ev->modifiers() & Qt::AltModifier) || m_scaleKeys)
+					if ((ev->modifiers() & Qt::AltModifier) || (m_keysMoveMode == eKeysMoveMode_Scale))
+					{
 						m_mouseHandler.reset(new SScaleHandler(this, cycleSelection));
-					else
+					}
+					else if (m_keysMoveMode == eKeysMoveMode_Move)
+					{
 						m_mouseHandler.reset(new SShiftHandler(this, cycleSelection));
+					}
+					else if (m_keysMoveMode == eKeysMoveMode_Slide)
+					{
+						m_mouseHandler.reset(new SSlideHandler(this, cycleSelection, m_keysSlideMode));
+					}
 
-					m_mouseHandler->mousePressEvent(ev);
+					if (m_mouseHandler)
+					{
+						m_mouseHandler->mousePressEvent(ev);
+					}
 					update();
 				}
 				else
@@ -3022,7 +3580,9 @@ void CTimeline::mouseDoubleClickEvent(QMouseEvent* ev)
 						AddKeyToTrack(subTrack, SAnimTime(time));
 					}
 				}
-				else if ((timelineTrack.caps & STimelineTrack::CAP_DESCRIPTION_TRACK) == 0)
+				else if (((timelineTrack.caps & STimelineTrack::CAP_NODE_TRACK) == 0) &&
+					     ((timelineTrack.caps & STimelineTrack::CAP_FOLDER_TRACK) == 0) &&
+					     ((timelineTrack.caps & STimelineTrack::CAP_DESCRIPTION_TRACK) == 0))
 				{
 					AddKeyToTrack(timelineTrack, SAnimTime(time));
 				}
@@ -3499,6 +4059,25 @@ void CTimeline::ContentChanged(bool continuous)
 	update();
 }
 
+void CTimeline::InvalidateContent(bool continuous)
+{
+	InvalidateTree();
+	InvalidateTracks();
+	InvalidateTracksTimeMarkers();
+
+	if (!continuous)
+	{
+		ForEachElement(m_pContent->track, [](STimelineTrack& track, STimelineElement& element)
+		{
+			track.modified = false;
+			element.added = false;
+		});
+	}
+
+	UpdateLayout();
+	update();
+}
+
 void CTimeline::OnMenuSelectionToCursor()
 {
 	TSelectedElements elements = GetSelectedElements(m_pContent->track);
@@ -3932,4 +4511,12 @@ void CTimeline::OnLayoutChange()
 	update();
 
 	SignalLayoutChanged();
+}
+
+void CTimeline::OnPasteKeys()
+{
+	if (!m_mouseHandler)
+	{
+		m_mouseHandler.reset(new SPasteHandler(this));
+	}
 }

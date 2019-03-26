@@ -1361,10 +1361,17 @@ EditorStyleHelper {
 
 	/* Timeline colors */
 	qproperty-timelineTrackColor: rgb(68, 68, 68);
-	qproperty-timelineDetachedColor: rgb(105, 57, 57);
+	qproperty-timelineDetachedColor: rgb(105, 57, 57);	
+	qproperty-timelineCamTrackColor: rgb(105, 57, 57);
+	qproperty-timelineNodeTrackColor: rgb(77, 77, 77);
+	qproperty-timelineSubtrackColor: rgb(77, 77, 77);
+	qproperty-timelineXSubtrackColor: rgb(51, 51, 51);
+	qproperty-timelineYSubtrackColor: rgb(51, 51, 51);
+	qproperty-timelineZSubtrackColor: rgb(51, 51, 51);	
+	qproperty-timelineFolderTrackColor: rgb(102, 102, 102);	
 	qproperty-timelineOutsideTrackColor: rgba(60, 60, 60,120);
 	qproperty-timelineDescriptionTrackColor: rgb(91, 91, 91);
-	qproperty-timelineCompositeTrackColor: rgb(81, 81, 81);
+	qproperty-timelineCompositeTrackColor: rgb(77, 77, 77);
 	qproperty-timelineSelectionColor: rgb(97, 172, 236);
 	qproperty-timelineDescriptionTextColor: rgb(149, 149, 149);
 	qproperty-timelineInnerTickLines: rgb(50, 50, 50);
@@ -1377,7 +1384,13 @@ EditorStyleHelper {
 	qproperty-timelineSelectedClip: rgb(0, 0, 0);
 	qproperty-timelineSelectedClipFocused: rgb(0, 161, 222);
 	qproperty-timelineTreeLines: rgb(33, 33, 33);
-	qproperty-timelineTreeText: rgb(255, 255, 255);
+	qproperty-timelineTreeText: rgb(255, 255, 255);	
+	qproperty-timelineTreeXSubtrackText: rgb(226, 79, 67);
+	qproperty-timelineTreeYSubtrackText: rgb(126, 211, 33);
+	qproperty-timelineTreeZSubtrackText: rgb(95, 185, 237);
+	qproperty-timelineTreeNodeTrackText: rgb(255, 0, 0);	
+	qproperty-timelineTreeFolderTrackText: rgb(255, 255, 255);
+	qproperty-timelineTreeCompoundTrackText: rgb(255, 255, 255);
 	qproperty-timelineSplitterNormal: rgb(55, 55, 55);
 	qproperty-timelineSplitterSelected: rgb(55, 55, 55);
 	qproperty-timelineSplitterMoving: rgb(0, 161, 222);
