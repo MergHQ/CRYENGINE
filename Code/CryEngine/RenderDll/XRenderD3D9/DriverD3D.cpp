@@ -1150,8 +1150,6 @@ void CD3D9Renderer::RT_BeginFrame(const SDisplayContextKey& displayContextKey, c
 	//////////////////////////////////////////////////////////////////////
 	ChangeLog();
 
-	m_nStencilMaskRef = STENCIL_VALUE_OUTDOORS + 1;
-
 #if defined(ENABLE_SIMPLE_GPU_TIMERS)
 	m_pPipelineProfiler->EndSection("BEGIN");
 #endif

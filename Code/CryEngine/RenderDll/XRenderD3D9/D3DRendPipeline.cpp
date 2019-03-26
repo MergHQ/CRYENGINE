@@ -523,6 +523,8 @@ void CD3D9Renderer::RT_PreRenderScene(CRenderView* pRenderView)
 		pActiveGraphicsPipeline->GetLightVolumeBuffer().UpdateContent();
 		lightVolumeOldFrameID = newFrameID;
 	}
+
+	m_nStencilMaskRef = STENCIL_VALUE_OUTDOORS + 1;
 }
 
 void CD3D9Renderer::RT_PostRenderScene(CRenderView* pRenderView)
