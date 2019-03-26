@@ -1157,7 +1157,7 @@ __solver_step++;
 		if (maxLevel>=pss->massDecayMinLevel && iter>1) {
 			float M0=0, M1=0, massDecayInv=1/pss->massDecay, Mscale[100], MscaleInv[100];
 			for(i=1,Mscale[0]=MscaleInv[0]=1; i<=maxLevel; i++)
-				Mscale[i]=Mscale[i-1]*pss->massDecay, MscaleInv[i]=MscaleInv[i-1]*massDecayInv;
+				Mscale[i]=max(1e-5f,Mscale[i-1]*pss->massDecay), MscaleInv[i]=min_safe(1e5f,MscaleInv[i-1]*massDecayInv);
 			for(i=0;i<nBodies;i++) {
 				M0 += g_Bodies[i].M;
 				M1 += g_Bodies[i].M*Mscale[g_infos[i].iLevel];
