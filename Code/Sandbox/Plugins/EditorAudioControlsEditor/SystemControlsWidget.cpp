@@ -542,7 +542,9 @@ void CSystemControlsWidget::OnContextMenu(QPoint const& pos)
 					}
 					else if (controlType == EAssetType::Preload)
 					{
-						if (!pControl->IsAutoLoad())
+						if (!pControl->IsAutoLoad() &&
+						    ((pControl->GetContextId() == CryAudio::GlobalContextId) ||
+						     (std::find(g_activeUserDefinedContexts.begin(), g_activeUserDefinedContexts.end(), pControl->GetContextId()) != g_activeUserDefinedContexts.end())))
 						{
 							QAction* const pLoadAction = new QAction(tr("Load Preload Request"), pContextMenu);
 							QAction* const pUnloadAction = new QAction(tr("Unload Preload Request"), pContextMenu);
@@ -567,27 +569,29 @@ void CSystemControlsWidget::OnContextMenu(QPoint const& pos)
 			}
 			else if (controls.size() > 1)
 			{
-				bool hasOnlyGlobalPreloads = false;
+				bool hasOnlyPreloadsInActiveContext = false;
 
 				for (auto const pControl : controls)
 				{
-					if ((pControl->GetType() == EAssetType::Preload) && (pControl->GetContextId() == CryAudio::GlobalContextId) && !pControl->IsAutoLoad())
+					if ((pControl->GetType() == EAssetType::Preload) &&
+					    !pControl->IsAutoLoad() &&
+					    ((pControl->GetContextId() == CryAudio::GlobalContextId) ||
+					     (std::find(g_activeUserDefinedContexts.begin(), g_activeUserDefinedContexts.end(), pControl->GetContextId()) != g_activeUserDefinedContexts.end())))
 					{
-						hasOnlyGlobalPreloads = true;
+						hasOnlyPreloadsInActiveContext = true;
 					}
 					else
 					{
-						hasOnlyGlobalPreloads = false;
+						hasOnlyPreloadsInActiveContext = false;
 						break;
 					}
 				}
 
-				if (hasOnlyGlobalPreloads)
+				if (hasOnlyPreloadsInActiveContext)
 				{
-
-					QAction* const pLoadAction = new QAction(tr("Load Global Preload Requests"), pContextMenu);
-					QAction* const pUnloadAction = new QAction(tr("Unload Global Preload Requests"), pContextMenu);
-					QObject::connect(pLoadAction, &QAction::triggered, [&]()
+					QAction* const pLoadAction = new QAction(tr("Load reload Requests"), pContextMenu);
+					QAction* const pUnloadAction = new QAction(tr("Unload Preload Requests"), pContextMenu);
+					QObject::connect(pLoadAction, &QAction::triggered, [=]()
 						{
 							for (auto const pControl : controls)
 							{
@@ -595,7 +599,7 @@ void CSystemControlsWidget::OnContextMenu(QPoint const& pos)
 							}
 						});
 
-					QObject::connect(pUnloadAction, &QAction::triggered, [&]()
+					QObject::connect(pUnloadAction, &QAction::triggered, [=]()
 						{
 							for (auto const pControl : controls)
 							{
