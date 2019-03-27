@@ -60,8 +60,9 @@ void ImageSpaceShafts::Load(IXmlNode* pNode)
 		{
 			if (pGoboTexName && pGoboTexName[0])
 			{
-				ITexture* pTexture = std::move(gEnv->pRenderer->EF_LoadTexture(pGoboTexName));
-				SetGoboTex((CTexture*)pTexture);
+				ITexture* pTexture = gEnv->pRenderer->EF_LoadTexture(pGoboTexName);
+				m_pGoboTex.reset();
+				m_pGoboTex.Assign_NoAddRef(static_cast<CTexture*>(pTexture));
 			}
 		}
 		else
