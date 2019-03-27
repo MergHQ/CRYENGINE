@@ -437,7 +437,7 @@ bool CDialogActorContext::Update(float dt)
 						UpdateAuxProxyPosition();
 
 						CryAudio::SRequestUserData const userData(CryAudio::ERequestFlags::DoneCallbackOnExternalThread, nullptr, (void*)CDialogActorContext::GetClassIdentifier(), reinterpret_cast<void*>(static_cast<intptr_t>(m_ContextID)));
-						if (!pActorAudioProxy->ExecuteTrigger(m_pCurLine->m_audioID, m_SpeechAuxObject, userData))
+						if (!pActorAudioProxy->ExecuteTrigger(m_pCurLine->m_audioID, m_SpeechAuxObject, INVALID_ENTITYID, userData))
 						{
 							m_bSoundStarted = false;
 							m_bHasScheduled = false;

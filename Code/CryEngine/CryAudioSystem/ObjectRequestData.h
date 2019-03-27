@@ -68,19 +68,22 @@ struct SObjectRequestData final : public SObjectRequestDataBase
 template<>
 struct SObjectRequestData<EObjectRequestType::ExecuteTrigger> final : public SObjectRequestDataBase, public CPoolObject<SObjectRequestData<EObjectRequestType::ExecuteTrigger>, stl::PSyncMultiThread>
 {
-	explicit SObjectRequestData(CObject* const pObject_, ControlId const triggerId_)
+	explicit SObjectRequestData(CObject* const pObject_, ControlId const triggerId_, EntityId const entityId_)
 		: SObjectRequestDataBase(EObjectRequestType::ExecuteTrigger, pObject_)
 		, triggerId(triggerId_)
+		, entityId(entityId_)
 	{}
 
 	explicit SObjectRequestData(SObjectRequestData<EObjectRequestType::ExecuteTrigger> const* const pORData)
 		: SObjectRequestDataBase(EObjectRequestType::ExecuteTrigger, pORData->pObject)
 		, triggerId(pORData->triggerId)
+		, entityId(pORData->entityId)
 	{}
 
 	virtual ~SObjectRequestData() override = default;
 
 	ControlId const triggerId;
+	EntityId const  entityId;
 };
 
 //////////////////////////////////////////////////////////////////////////

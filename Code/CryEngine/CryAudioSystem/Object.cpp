@@ -71,6 +71,7 @@ void CObject::SetActive()
 //////////////////////////////////////////////////////////////////////////
 void CObject::ConstructTriggerInstance(
 	ControlId const triggerId,
+	EntityId const entityId,
 	uint16 const numPlayingConnectionInstances,
 	uint16 const numPendingConnectionInstances,
 	ERequestFlags const flags,
@@ -84,7 +85,7 @@ void CObject::ConstructTriggerInstance(
 	m_triggerInstances.emplace(
 		std::piecewise_construct,
 		std::forward_as_tuple(g_triggerInstanceIdCounter),
-		std::forward_as_tuple(new CTriggerInstance(triggerId, numPlayingConnectionInstances, numPendingConnectionInstances, flags, pOwner, pUserData, pUserDataOwner, radius)));
+		std::forward_as_tuple(new CTriggerInstance(triggerId, entityId, numPlayingConnectionInstances, numPendingConnectionInstances, flags, pOwner, pUserData, pUserDataOwner, radius)));
 
 	IncrementTriggerInstanceIdCounter();
 	UpdateMaxRadius(radius);
@@ -93,6 +94,7 @@ void CObject::ConstructTriggerInstance(
 //////////////////////////////////////////////////////////////////////////
 void CObject::ConstructTriggerInstance(
 	ControlId const triggerId,
+	EntityId const entityId,
 	uint16 const numPlayingConnectionInstances,
 	uint16 const numPendingConnectionInstances,
 	ERequestFlags const flags,
@@ -105,7 +107,7 @@ void CObject::ConstructTriggerInstance(
 	m_triggerInstances.emplace(
 		std::piecewise_construct,
 		std::forward_as_tuple(g_triggerInstanceIdCounter),
-		std::forward_as_tuple(new CTriggerInstance(triggerId, numPlayingConnectionInstances, numPendingConnectionInstances, flags, pOwner, pUserData, pUserDataOwner)));
+		std::forward_as_tuple(new CTriggerInstance(triggerId, entityId, numPlayingConnectionInstances, numPendingConnectionInstances, flags, pOwner, pUserData, pUserDataOwner)));
 
 	IncrementTriggerInstanceIdCounter();
 }
@@ -144,7 +146,7 @@ void CObject::ReportFinishedTriggerInstance(TriggerInstanceId const triggerInsta
 			if (pTriggerInstance->IsPlayingInstanceFinished())
 			{
 				g_triggerInstanceIdToObject.erase(triggerInstanceId);
-				pTriggerInstance->SendFinishedRequest(m_entityId);
+				pTriggerInstance->SendFinishedRequest();
 
 				m_triggerInstances.erase(iter);
 				delete pTriggerInstance;
@@ -155,7 +157,7 @@ void CObject::ReportFinishedTriggerInstance(TriggerInstanceId const triggerInsta
 			if (pTriggerInstance->IsPendingInstanceFinished())
 			{
 				g_triggerInstanceIdToObject.erase(triggerInstanceId);
-				pTriggerInstance->SendFinishedRequest(m_entityId);
+				pTriggerInstance->SendFinishedRequest();
 
 				m_triggerInstances.erase(iter);
 				delete pTriggerInstance;
@@ -257,9 +259,8 @@ void CObject::ReleasePendingRays()
 #endif // CRY_AUDIO_USE_OCCLUSION
 
 //////////////////////////////////////////////////////////////////////////
-void CObject::Init(Impl::IObject* const pIObject, EntityId const entityId)
+void CObject::Init(Impl::IObject* const pIObject)
 {
-	m_entityId = entityId;
 	m_pIObject = pIObject;
 
 #if defined(CRY_AUDIO_USE_DEBUG_CODE)
@@ -834,9 +835,12 @@ void CObject::UpdateMaxRadius(float const radius)
 #endif // CRY_AUDIO_USE_DEBUG_CODE
 
 //////////////////////////////////////////////////////////////////////////
-void CObject::ExecuteTrigger(ControlId const triggerId, SRequestUserData const& userData /* = SAudioRequestUserData::GetEmptyObject() */)
+void CObject::ExecuteTrigger(
+	ControlId const triggerId,
+	EntityId const entityId /*= INVALID_ENTITYID*/,
+	SRequestUserData const& userData /* = SAudioRequestUserData::GetEmptyObject() */)
 {
-	SObjectRequestData<EObjectRequestType::ExecuteTrigger> requestData(this, triggerId);
+	SObjectRequestData<EObjectRequestType::ExecuteTrigger> requestData(this, triggerId, entityId);
 	PushRequest(requestData, userData);
 }
 

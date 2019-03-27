@@ -24,8 +24,9 @@ ERequestStatus CEventListenerManager::AddRequestListener(SSystemRequestData<ESys
 
 	for (auto const& listener : m_listeners)
 	{
-		if (listener.OnEvent == pRequestData->func && listener.pObjectToListenTo == pRequestData->pObjectToListenTo
-		    && listener.eventMask == pRequestData->eventMask)
+		if ((listener.OnEvent == pRequestData->func) &&
+		    (listener.pObjectToListenTo == pRequestData->pObjectToListenTo) &&
+		    (listener.eventMask == pRequestData->eventMask))
 		{
 			result = ERequestStatus::Success;
 			break;
@@ -54,9 +55,9 @@ ERequestStatus CEventListenerManager::RemoveRequestListener(void (*func)(SReques
 
 	for (; Iter != IterEnd; ++Iter)
 	{
-		if ((Iter->OnEvent == func || func == nullptr) && Iter->pObjectToListenTo == pObjectToListenTo)
+		if (((Iter->OnEvent == func) || (func == nullptr)) && (Iter->pObjectToListenTo == pObjectToListenTo))
 		{
-			if (Iter != IterEnd - 1)
+			if (Iter != (IterEnd - 1))
 			{
 				(*Iter) = m_listeners.back();
 			}
@@ -85,8 +86,8 @@ void CEventListenerManager::NotifyListener(SRequestInfo const* const pResultInfo
 
 	for (auto const& listener : m_listeners)
 	{
-		if (((listener.eventMask & pResultInfo->systemEvent) > 0)                                            //check: is the listener interested in this specific event?
-		    && (listener.pObjectToListenTo == nullptr || listener.pObjectToListenTo == pResultInfo->pOwner)) //check: is the listener interested in events from this sender
+		if (((listener.eventMask & pResultInfo->systemEvent) != 0)                                               //check: is the listener interested in this specific event?
+		    && ((listener.pObjectToListenTo == nullptr) || (listener.pObjectToListenTo == pResultInfo->pOwner))) //check: is the listener interested in events from this sender
 		{
 			listener.OnEvent(pResultInfo);
 		}

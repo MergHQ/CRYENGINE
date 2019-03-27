@@ -625,7 +625,7 @@ void CParticleSubEmitter::UpdateAudio()
 
 				if (m_startAudioTriggerId != CryAudio::InvalidControlId || m_stopAudioTriggerId != CryAudio::InvalidControlId)
 				{
-					CryAudio::SCreateObjectData const objectData("ParticleSubEmitter", spawnParams.occlusionType, GetEmitTM(), INVALID_ENTITYID, true);
+					CryAudio::SCreateObjectData const objectData("ParticleSubEmitter", spawnParams.occlusionType, GetEmitTM(), true);
 					m_pIAudioObject = gEnv->pAudioSystem->CreateObject(objectData);
 					m_currentAudioOcclusionType = spawnParams.occlusionType;
 

@@ -29,7 +29,7 @@ DRS::IResponseActionInstanceUniquePtr CActionExecuteAudioTrigger::Execute(DRS::I
 			DRS::IResponseActionInstanceUniquePtr pActionInstance(new CActionExecuteAudioTriggerInstance(pResponseInstance->GetCurrentActor(), startTriggerId));
 			CryAudio::SRequestUserData const userData(CryAudio::ERequestFlags::DoneCallbackOnExternalThread, (void* const)pActionInstance.get(), (void* const)ActionPlaySoundId, (void* const)pActionInstance.get());
 
-			if (pEntityAudioProxy->ExecuteTrigger(startTriggerId, auxObjectId, userData))
+			if (pEntityAudioProxy->ExecuteTrigger(startTriggerId, auxObjectId, INVALID_ENTITYID, userData))
 			{
 				return pActionInstance;
 			}

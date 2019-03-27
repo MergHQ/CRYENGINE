@@ -21,6 +21,7 @@ public:
 #if defined(CRY_AUDIO_USE_DEBUG_CODE)
 	explicit CTriggerInstance(
 		ControlId const triggerId,
+		EntityId const entityId,
 		uint16 const numPlayingConnectionInstances,
 		uint16 const numPendingConnectionInstances,
 		ERequestFlags const flags,
@@ -29,6 +30,7 @@ public:
 		void* const pUserDataOwner,
 		float const radius)
 		: m_triggerId(triggerId)
+		, m_entityId(entityId)
 		, m_numPlayingConnectionInstances(numPlayingConnectionInstances)
 		, m_numPendingConnectionInstances(numPendingConnectionInstances)
 		, m_flags(flags)
@@ -40,6 +42,7 @@ public:
 #else
 	explicit CTriggerInstance(
 		ControlId const triggerId,
+		EntityId const entityId,
 		uint16 const numPlayingConnectionInstances,
 		uint16 const numPendingConnectionInstances,
 		ERequestFlags const flags,
@@ -47,6 +50,7 @@ public:
 		void* const pUserData,
 		void* const pUserDataOwner)
 		: m_triggerId(triggerId)
+		, m_entityId(entityId)
 		, m_numPlayingConnectionInstances(numPlayingConnectionInstances)
 		, m_numPendingConnectionInstances(numPendingConnectionInstances)
 		, m_flags(flags)
@@ -65,7 +69,7 @@ public:
 	bool      IsPendingInstanceFinished();
 
 	void      SetPendingToPlaying();
-	void      SendFinishedRequest(EntityId const entityId);
+	void      SendFinishedRequest();
 	void      Release();
 
 #if defined(CRY_AUDIO_USE_DEBUG_CODE)
@@ -76,6 +80,7 @@ public:
 private:
 
 	ControlId const     m_triggerId;
+	EntityId const      m_entityId;
 	uint16              m_numPlayingConnectionInstances;
 	uint16              m_numPendingConnectionInstances;
 	ERequestFlags const m_flags;

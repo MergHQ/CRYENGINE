@@ -48,7 +48,8 @@ public:
 		void* const pOwner = nullptr,
 		void* const pUserData = nullptr,
 		void* const pUserDataOwner = nullptr,
-		ERequestFlags const flags = ERequestFlags::None) const;
+		ERequestFlags const flags = ERequestFlags::None,
+		EntityId const entityId = INVALID_ENTITYID) const;
 
 	void Execute(
 		CGlobalObject& globalObject,

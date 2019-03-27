@@ -215,7 +215,7 @@ void CAudioAreaRandom::Play()
 			pIEntityAudioComponent->SetAudioAuxObjectOffset(Matrix34(IDENTITY, GenerateOffset()));
 
 			CryAudio::SRequestUserData const userData(CryAudio::ERequestFlags::None, this);
-			pIEntityAudioComponent->ExecuteTrigger(m_playTriggerId, CryAudio::DefaultAuxObjectId, userData);
+			pIEntityAudioComponent->ExecuteTrigger(m_playTriggerId, CryAudio::DefaultAuxObjectId, INVALID_ENTITYID, userData);
 		}
 
 		m_currentlyPlayingTriggerId = m_playTriggerId;

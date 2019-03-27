@@ -562,7 +562,6 @@ struct SSystemRequestData<ESystemRequestType::RegisterObject> final : public SSy
 		, name(data.szName)
 		, occlusionType(data.occlusionType)
 		, transformation(data.transformation)
-		, entityId(data.entityId)
 		, setCurrentEnvironments(data.setCurrentEnvironments)
 	{}
 
@@ -572,7 +571,6 @@ struct SSystemRequestData<ESystemRequestType::RegisterObject> final : public SSy
 		, name(pSRData->name)
 		, occlusionType(pSRData->occlusionType)
 		, transformation(pSRData->transformation)
-		, entityId(pSRData->entityId)
 		, setCurrentEnvironments(pSRData->setCurrentEnvironments)
 	{}
 
@@ -582,7 +580,6 @@ struct SSystemRequestData<ESystemRequestType::RegisterObject> final : public SSy
 	CryFixedStringT<MaxObjectNameLength> const name;
 	EOcclusionType const                       occlusionType;
 	CTransformation const                      transformation;
-	EntityId const                             entityId;
 	bool const setCurrentEnvironments;
 };
 

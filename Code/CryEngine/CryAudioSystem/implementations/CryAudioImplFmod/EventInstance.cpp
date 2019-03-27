@@ -84,7 +84,7 @@ void CEventInstance::SetOcclusion(float const occlusion)
 //////////////////////////////////////////////////////////////////////////
 void CEventInstance::SetReturnSend(CReturn const* const pReturn, float const value)
 {
-	if ((m_pInstance != nullptr) && (m_pMasterTrack != nullptr))
+	if (m_pMasterTrack != nullptr)
 	{
 		FMOD::ChannelGroup* pChannelGroup = nullptr;
 		CRY_VERIFY(pReturn->GetBus()->getChannelGroup(&pChannelGroup) == FMOD_OK);
@@ -128,12 +128,6 @@ void CEventInstance::SetReturnSend(CReturn const* const pReturn, float const val
 			}
 		}
 	}
-#if defined(CRY_AUDIO_IMPL_FMOD_USE_DEBUG_CODE)
-	else
-	{
-		Cry::Audio::Log(ELogType::Error, "Event instance or master track of %s does not exist during %s", m_event.GetName(), __FUNCTION__);
-	}
-#endif  // CRY_AUDIO_IMPL_FMOD_USE_DEBUG_CODE
 }
 
 //////////////////////////////////////////////////////////////////////////

@@ -26,11 +26,12 @@ struct IObject
 	/**
 	 * Executes the passed trigger ID on this audio object.
 	 * @param triggerId - ID of the trigger to execute.
+	 * @param entityId - ID of the entity that will receive the started/stopped callback depending on what it registered to.
 	 * @param userData - optional struct used to pass additional data to the internal request.
 	 * @return void
 	 * @see StopTrigger
 	 */
-	virtual void ExecuteTrigger(ControlId const triggerId, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) = 0;
+	virtual void ExecuteTrigger(ControlId const triggerId, EntityId const entityId = INVALID_ENTITYID, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) = 0;
 
 	/**
 	 * Stops all instances of the passed trigger ID or all instances of all active triggers if CryAudio::InvalidControlId (default) is passed on this audio object.
@@ -108,12 +109,6 @@ struct IObject
 	 * @return void
 	 */
 	virtual void SetName(char const* const szName, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) = 0;
-
-	/**
-	 * Gets the entityId linked with this object (or INVALID_ENTITYID if not linked to an entity)
-	 * @return EntityId
-	 */
-	virtual EntityId GetEntityId() const = 0;
 
 	/**
 	 * Toggles whether this audio object should track and update its absolute velocity.

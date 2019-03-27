@@ -47,7 +47,6 @@ public:
 		: m_pIObject(nullptr)
 		, m_flags(EObjectFlags::InUse)
 		, m_transformation(transformation)
-		, m_entityId(INVALID_ENTITYID)
 		, m_numPendingSyncCallbacks(0)
 	#if defined(CRY_AUDIO_USE_OCCLUSION)
 		, m_propagationProcessor(*this)
@@ -60,7 +59,6 @@ public:
 		: m_pIObject(nullptr)
 		, m_flags(EObjectFlags::InUse)
 		, m_transformation(transformation)
-		, m_entityId(INVALID_ENTITYID)
 		, m_numPendingSyncCallbacks(0)
 	#if defined(CRY_AUDIO_USE_OCCLUSION)
 		, m_propagationProcessor(*this)
@@ -68,13 +66,9 @@ public:
 	{}
 #endif // CRY_AUDIO_USE_DEBUG_CODE
 
-	// CryAudio::IObject
-	virtual EntityId GetEntityId() const override { return m_entityId; }
-	// ~CryAudio::IObject
-
 	void HandleSetTransformation(CTransformation const& transformation);
 
-	void Init(Impl::IObject* const pIObject, EntityId const entityId);
+	void Init(Impl::IObject* const pIObject);
 	void Destruct();
 
 	void StopAllTriggers();
@@ -105,6 +99,7 @@ public:
 #if defined(CRY_AUDIO_USE_DEBUG_CODE)
 	void ConstructTriggerInstance(
 		ControlId const triggerId,
+		EntityId const entityId,
 		uint16 const numPlayingConnectionInstances,
 		uint16 const numPendingConnectionInstances,
 		ERequestFlags const flags,
@@ -115,6 +110,7 @@ public:
 #else
 	void ConstructTriggerInstance(
 		ControlId const triggerId,
+		EntityId const entityId,
 		uint16 const numPlayingConnectionInstances,
 		uint16 const numPendingConnectionInstances,
 		ERequestFlags const flags,
@@ -129,13 +125,13 @@ public:
 private:
 
 	// CryAudio::IObject
-	virtual void ExecuteTrigger(ControlId const triggerId, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override;
+	virtual void ExecuteTrigger(ControlId const triggerId, EntityId const entityId = INVALID_ENTITYID, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override;
 	virtual void StopTrigger(ControlId const triggerId = InvalidControlId, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override;
 	virtual void SetTransformation(CTransformation const& transformation, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override;
 	virtual void SetParameter(ControlId const parameterId, float const value, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override;
 	virtual void SetSwitchState(ControlId const switchId, SwitchStateId const switchStateId, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override;
 	virtual void SetEnvironment(EnvironmentId const environmentId, float const amount, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override;
-	virtual void SetCurrentEnvironments(EntityId const entityToIgnore = 0, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override;
+	virtual void SetCurrentEnvironments(EntityId const entityToIgnore = INVALID_ENTITYID, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override;
 	virtual void SetOcclusionType(EOcclusionType const occlusionType, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override;
 	virtual void SetOcclusionRayOffset(float const offset, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override;
 	virtual void SetName(char const* const szName, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override;
@@ -149,7 +145,6 @@ private:
 	Impl::IObject*   m_pIObject;
 	EObjectFlags     m_flags;
 	CTransformation  m_transformation;
-	EntityId         m_entityId;
 	volatile int     m_numPendingSyncCallbacks;
 
 #if defined(CRY_AUDIO_USE_OCCLUSION)
