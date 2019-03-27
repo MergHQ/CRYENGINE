@@ -807,6 +807,8 @@ private: // ------------------------------------------------------
 	ICVar* m_rDriver;
 	ICVar* m_pPhysicsLibrary;
 	ICVar* m_rDisplayInfo;
+	ICVar* m_rDisplayInfoTargetPolygons;
+	ICVar* m_rDisplayInfoTargetDrawCalls;
 	ICVar* m_rDisplayInfoTargetFPS;
 	ICVar* m_rOverscanBordersDrawDebugView;
 	ICVar* m_sysNoUpdate;

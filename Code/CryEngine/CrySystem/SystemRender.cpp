@@ -170,6 +170,14 @@ void CSystem::CreateRendererVars(const SSystemInitParams& startupParams)
 		"Toggles debugging information display.\n"
 		"Usage: r_DisplayInfo [0=off/1=show/2=enhanced/3=minimal/4=fps bar/5=heartbeat]");
 
+	m_rDisplayInfoTargetPolygons = REGISTER_INT("r_DisplayInfoTargetPolygons", 0, VF_RESTRICTEDMODE | VF_DUMPTODISK,
+		"Specifies the max polygon count where display info will highlight a warning\n"
+		"0 disables the warning");
+
+	m_rDisplayInfoTargetDrawCalls = REGISTER_INT("r_DisplayInfoTargetDrawCalls", 0, VF_RESTRICTEDMODE | VF_DUMPTODISK,
+		"Specifies the max draw call count where display info will highlight a warning\n"
+		"0 disables the warning");
+
 	m_rDisplayInfoTargetFPS = REGISTER_FLOAT("r_displayinfoTargetFPS", 30.0f, VF_RESTRICTEDMODE | VF_DUMPTODISK,
 		"Specifies the aimed number of FPS that is considered ideal for the game.\n"
 		"The value must be positive and is used to display budgeting information with r_DisplayInfo=3");
