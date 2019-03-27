@@ -41,6 +41,10 @@ namespace Cry
 			virtual IUser* GetUserById(const AccountIdentifier& accountId) const override;
 
 			virtual const DynArray<IUser*>& GetFriends() const override;
+#if CRY_GAMEPLATFORM_EXPERIMENTAL
+			virtual const DynArray<IUser*>& GetBlockedUsers() const override;
+			virtual const DynArray<IUser*>& GetMutedUsers() const override;
+#endif // CRY_GAMEPLATFORM_EXPERIMENTAL
 
 			virtual IServer* CreateServer(bool bLocal) override;
 			virtual IServer* GetLocalServer() const override;
@@ -107,6 +111,10 @@ namespace Cry
 			// Index '0' is reserved for local user
 			mutable std::vector<std::unique_ptr<CUser>> m_users;
 			mutable DynArray<IUser*> m_friends;
+#if CRY_GAMEPLATFORM_EXPERIMENTAL
+			mutable DynArray<IUser*> m_blockedUsers;
+			mutable DynArray<IUser*> m_mutedUsers;
+#endif // CRY_GAMEPLATFORM_EXPERIMENTAL
 		};
 	}
 }

@@ -156,7 +156,7 @@ namespace Cry
 		namespace Detail
 		{
 			using NumericIdentifierValue = uint64;
-			using StringIdentifierValue = CryFixedStringT<32>;
+			using StringIdentifierValue = CryFixedStringT<48>;
 
 			struct STraitsBase
 			{

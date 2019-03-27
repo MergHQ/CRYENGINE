@@ -155,6 +155,22 @@ namespace Cry
 				return m_friends;
 			}
 
+#if CRY_GAMEPLATFORM_EXPERIMENTAL
+			const DynArray<IAccount*>& CService::GetBlockedAccounts() const
+			{
+				CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_ERROR, "[Discord][Service] GetBlockedAccounts() is not implemented yet");
+
+				return m_blockedAccounts;
+			}
+
+			const DynArray<IAccount*>& CService::GetMutedAccounts() const
+			{
+				CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_ERROR, "[Discord][Service] GetMutedAccounts() is not implemented yet");
+
+				return m_mutedAccounts;
+			}
+#endif // CRY_GAMEPLATFORM_EXPERIMENTAL
+
 			CAccount* CService::GetAccountById(const AccountIdentifier& accountId) const
 			{
 				if (m_localAccount && m_localAccount->GetIdentifier() == accountId)

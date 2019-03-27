@@ -671,6 +671,7 @@ struct SSystemInitParams
 
 #if CRY_PLATFORM_DURANGO
 	const EPLM_Event* pLastPLMEvent;
+	Windows::ApplicationModel::Activation::IActivatedEventArgs^ pFirstActivatedEventArgs;
 #endif
 
 	ISystem* pSystem;                     //!< Pointer to existing ISystem interface, it will be reused if not NULL.
