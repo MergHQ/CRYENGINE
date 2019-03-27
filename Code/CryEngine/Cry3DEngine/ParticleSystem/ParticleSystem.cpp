@@ -394,13 +394,13 @@ IMaterial* CParticleSystem::GetTextureMaterial(cstr textureName, bool gpu, gpu_p
 	pMaterial = gEnv->p3DEngine->GetMaterialManager()->CreateMaterial(materialName);
 	static uint32 preload = !!GetCVars()->e_ParticlesPrecacheAssets;
 	static uint32 textureLoadFlags = FT_DONT_STREAM * preload;
-	ITexture* pTexture = nullptr;
+	_smart_ptr<ITexture> pTexture;
 	if (GetPSystem()->IsRuntime())
 		pTexture = gEnv->pRenderer->EF_GetTextureByName(textureName, textureLoadFlags);
-	if (!pTexture)
+	if (!pTexture.get())
 	{
 		GetPSystem()->CheckFileAccess(textureName);
-		pTexture = gEnv->pRenderer->EF_LoadTexture(textureName, textureLoadFlags);
+		pTexture.Assign_NoAddRef(gEnv->pRenderer->EF_LoadTexture(textureName, textureLoadFlags));
 	}
 	if (pTexture->GetTextureID() <= 0)
 		CryWarning(VALIDATOR_MODULE_3DENGINE, VALIDATOR_WARNING, "Particle effect texture %s not found", textureName);

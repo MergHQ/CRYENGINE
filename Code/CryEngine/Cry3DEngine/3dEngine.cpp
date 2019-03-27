@@ -381,8 +381,6 @@ C3DEngine::C3DEngine(ISystem* pSystem)
 	m_bInUnload = false;
 	m_bInLoad = false;
 
-	m_nCloudShadowTexId = 0;
-
 	m_pDeferredPhysicsEventManager = new CDeferredPhysicsEventManager();
 
 #if defined(USE_GEOM_CACHES)

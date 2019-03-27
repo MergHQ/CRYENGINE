@@ -449,13 +449,9 @@ void C3DEngine::UnloadLevel()
 	for (int skyTypeIdx = 0; skyTypeIdx < eSkyType_NumSkyTypes; ++skyTypeIdx)
 		SAFE_RELEASE(m_pSkyMat[skyTypeIdx]);
 
-	if (m_nCloudShadowTexId)
+	if (m_pCloudShadowTex.get())
 	{
-		ITexture* tex = GetRenderer()->EF_GetTextureByID(m_nCloudShadowTexId);
-		if (tex)
-			tex->Release();
-
-		m_nCloudShadowTexId = 0;
+		m_pCloudShadowTex.reset();
 		GetRenderer()->SetCloudShadowsParams(0, Vec3(0, 0, 0), 1, false, 1);
 		SetGlobalParameter(E3DPARAM_VOLFOG_SHADOW_ENABLE, Vec3(0, 0, 0));
 	}
@@ -1576,18 +1572,17 @@ void C3DEngine::UpdateWindParams()
 
 void C3DEngine::UpdateCloudShadows()
 {
-	// load cloud shadow parameters
-	const auto& cloudParams = GetTimeOfDay()->GetCloudShadowsParams();
-
-	ITexture* pTex = 0;
-	if (cloudParams.texture[0] != '\0' && GetRenderer())
-		pTex = GetRenderer()->EF_LoadTexture(cloudParams.texture, FT_DONT_STREAM);
-
-	m_nCloudShadowTexId = pTex ? pTex->GetTextureID() : 0;
-
 	if (GetRenderer())
 	{
-		GetRenderer()->SetCloudShadowsParams(m_nCloudShadowTexId, cloudParams.speed, cloudParams.tiling, cloudParams.invert, cloudParams.brightness);
+		const auto& cloudParams = GetTimeOfDay()->GetCloudShadowsParams();
+
+		if (!m_pCloudShadowTex.get() && !cloudParams.texture.empty())
+		{
+			m_pCloudShadowTex.Assign_NoAddRef(GetRenderer()->EF_LoadTexture(cloudParams.texture.c_str(), FT_DONT_STREAM));
+		}
+
+		const int textureId = m_pCloudShadowTex.get() ? m_pCloudShadowTex->GetTextureID() : 0;
+		GetRenderer()->SetCloudShadowsParams(textureId, cloudParams.speed, cloudParams.tiling, cloudParams.invert, cloudParams.brightness);
 	}
 }
 

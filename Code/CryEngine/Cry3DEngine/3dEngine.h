@@ -823,7 +823,7 @@ public:
 	bool                  m_bSunShadows;
 	bool                  m_bSunShadowsFromTerrain;
 
-	int                   m_nCloudShadowTexId;
+	_smart_ptr<ITexture>  m_pCloudShadowTex;
 
 	float                 m_fGsmRange;
 	float                 m_fGsmRangeStep;

@@ -197,6 +197,7 @@ void CFogVolumeRenderNode::SetFogVolumeProperties(const SFogVolumeProperties& pr
 		m_localBounds.min = Vec3(-1, -1, -1).CompMul(m_scale);
 		m_localBounds.max = -m_localBounds.min;
 		UpdateWorldSpaceBBox();
+		UpdateFogVolumeMatrices();
 	}
 
 	m_volumeType = clamp_tpl<int32>(properties.m_volumeType,

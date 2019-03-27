@@ -2440,22 +2440,25 @@ void C3DEngine::DisplayInfo(float& fTextPosX, float& fTextPosY, float& fTextStep
 		sumPolys += nPolygons;
 		sumShadowPolys += nShadowPolygons;
 	}
-	//
 
-	int nMaxDrawCalls = GetCVars()->e_MaxDrawCalls <= 0 ? 2000 : GetCVars()->e_MaxDrawCalls;
-	bool bInRed = (nDrawCalls + nShadowGenDrawCalls) > nMaxDrawCalls;
+	{
+		static const ICVar* const pVar = gEnv->pConsole->GetCVar("r_DisplayInfoTargetDrawCalls");
+		const int nMaxDrawCalls = pVar ? pVar->GetIVal() : 0;
+		const bool bInRed = (nMaxDrawCalls > 0) && ((nDrawCalls + nShadowGenDrawCalls) > nMaxDrawCalls);
 
-	DrawTextRightAligned(fTextPosX, fTextPosY += fTextStepY, DISPLAY_INFO_SCALE, bInRed ? Col_Red : Col_White, "DP: %04d (%04d) ShadowGen:%04d (%04d) - Total: %04d Instanced: %04d",
-	                     nDrawCalls, lastDrawCalls, nShadowGenDrawCalls, lastShadowGenDrawCalls, nDrawCalls + nShadowGenDrawCalls, nDrawCalls + nShadowGenDrawCalls - nGeomInstances + nGeomInstanceDrawCalls);
-	#if CRY_PLATFORM_MOBILE
-	bInRed = nPolygons > 500000;
-	#else
-	bInRed = nPolygons > 1500000;
-	#endif
+		DrawTextRightAligned(fTextPosX, fTextPosY += fTextStepY, DISPLAY_INFO_SCALE, bInRed ? Col_Red : Col_White, "DP: %04d (%04d) ShadowGen:%04d (%04d) - Total: %04d Instanced: %04d",
+			nDrawCalls, lastDrawCalls, nShadowGenDrawCalls, lastShadowGenDrawCalls, nDrawCalls + nShadowGenDrawCalls, nDrawCalls + nShadowGenDrawCalls - nGeomInstances + nGeomInstanceDrawCalls);
+	}
+	
+	{
+		static const ICVar* const pVar = gEnv->pConsole->GetCVar("r_DisplayInfoTargetPolygons");
+		const int nMaxPolygons = pVar ? pVar->GetIVal() : 0;
+		const bool bInRed = (nMaxPolygons > 0) && (nPolygons > nMaxPolygons);
 
-	DrawTextRightAligned(fTextPosX, fTextPosY += fTextStepY, DISPLAY_INFO_SCALE, bInRed ? Col_Red : Col_White, "Polys: %03d,%03d (%03d,%03d) Shadow:%03d,%03d (%03d,%03d)",
-	                     nPolygons / 1000, nPolygons % 1000, avgPolys / 1000, avgPolys % 1000,
-	                     nShadowPolygons / 1000, nShadowPolygons % 1000, avgShadowPolys / 1000, avgShadowPolys % 1000);
+		DrawTextRightAligned(fTextPosX, fTextPosY += fTextStepY, DISPLAY_INFO_SCALE, bInRed ? Col_Red : Col_White, "Polys: %03d,%03d (%03d,%03d) Shadow:%03d,%03d (%03d,%03d)",
+			nPolygons / 1000, nPolygons % 1000, avgPolys / 1000, avgPolys % 1000,
+			nShadowPolygons / 1000, nShadowPolygons % 1000, avgShadowPolys / 1000, avgShadowPolys % 1000);
+	}
 
 	{
 		SShaderCacheStatistics stats;
