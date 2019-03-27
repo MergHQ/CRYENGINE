@@ -1673,11 +1673,11 @@ ERequestStatus CSystem::ProcessSystemRequest(CRequest const& request)
 
 #if defined(CRY_AUDIO_USE_DEBUG_CODE)
 				auto const pNewObject = new CObject(pRequestData->transformation, pRequestData->name.c_str());
-				pNewObject->Init(g_pIImpl->ConstructObject(pRequestData->transformation, pNewObject->GetName()), pRequestData->entityId);
+				pNewObject->Init(g_pIImpl->ConstructObject(pRequestData->transformation, pNewObject->GetName()));
 				g_constructedObjects.push_back(pNewObject);
 #else
 				auto const pNewObject = new CObject(pRequestData->transformation);
-				pNewObject->Init(g_pIImpl->ConstructObject(pRequestData->transformation), pRequestData->entityId);
+				pNewObject->Init(g_pIImpl->ConstructObject(pRequestData->transformation));
 #endif      // CRY_AUDIO_USE_DEBUG_CODE
 
 				if (pRequestData->setCurrentEnvironments)
@@ -1688,7 +1688,7 @@ ERequestStatus CSystem::ProcessSystemRequest(CRequest const& request)
 #if defined(CRY_AUDIO_USE_OCCLUSION)
 				SetOcclusionType(*pNewObject, pRequestData->occlusionType);
 #endif    // CRY_AUDIO_USE_OCCLUSION
-				pTrigger->Execute(*pNewObject, request.pOwner, request.pUserData, request.pUserDataOwner, request.flags);
+				pTrigger->Execute(*pNewObject, request.pOwner, request.pUserData, request.pUserDataOwner, request.flags, pRequestData->entityId);
 				pNewObject->RemoveFlag(EObjectFlags::InUse);
 
 				if ((pNewObject->GetFlags() & EObjectFlags::Active) == 0)
@@ -2062,11 +2062,11 @@ ERequestStatus CSystem::ProcessSystemRequest(CRequest const& request)
 
 #if defined(CRY_AUDIO_USE_DEBUG_CODE)
 			auto const pNewObject = new CObject(pRequestData->transformation, pRequestData->name.c_str());
-			pNewObject->Init(g_pIImpl->ConstructObject(pRequestData->transformation, pNewObject->GetName()), pRequestData->entityId);
+			pNewObject->Init(g_pIImpl->ConstructObject(pRequestData->transformation, pNewObject->GetName()));
 			g_constructedObjects.push_back(pNewObject);
 #else
 			auto const pNewObject = new CObject(pRequestData->transformation);
-			pNewObject->Init(g_pIImpl->ConstructObject(pRequestData->transformation), pRequestData->entityId);
+			pNewObject->Init(g_pIImpl->ConstructObject(pRequestData->transformation));
 #endif    // CRY_AUDIO_USE_DEBUG_CODE
 
 			if (pRequestData->setCurrentEnvironments)
@@ -2407,7 +2407,7 @@ ERequestStatus CSystem::ProcessObjectRequest(CRequest const& request)
 
 			if (pTrigger != nullptr)
 			{
-				pTrigger->Execute(*pObject, request.pOwner, request.pUserData, request.pUserDataOwner, request.flags);
+				pTrigger->Execute(*pObject, request.pOwner, request.pUserData, request.pUserDataOwner, request.flags, pRequestData->entityId);
 				result = ERequestStatus::Success;
 			}
 
@@ -2751,7 +2751,6 @@ void CSystem::NotifyListener(CRequest const& request)
 	case ERequestType::ObjectRequest:
 		{
 			auto const pBase = static_cast<SObjectRequestDataBase const*>(request.GetData());
-			entityId = pBase->pObject->GetEntityId();
 
 			switch (pBase->objectRequestType)
 			{
@@ -2759,6 +2758,7 @@ void CSystem::NotifyListener(CRequest const& request)
 				{
 					auto const pRequestData = static_cast<SObjectRequestData<EObjectRequestType::ExecuteTrigger> const*>(pBase);
 					controlID = pRequestData->triggerId;
+					entityId = pRequestData->entityId;
 					systemEvent = ESystemEvents::TriggerExecuted;
 
 					break;

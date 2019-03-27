@@ -142,12 +142,10 @@ struct SCreateObjectData
 		char const* const szName_ = nullptr,
 		EOcclusionType const occlusionType_ = EOcclusionType::Ignore,
 		CTransformation const& transformation_ = CTransformation::GetEmptyObject(),
-		EntityId const entityId_ = INVALID_ENTITYID,
 		bool const setCurrentEnvironments_ = false)
 		: szName(szName_)
 		, occlusionType(occlusionType_)
 		, transformation(transformation_)
-		, entityId(entityId_)
 		, setCurrentEnvironments(setCurrentEnvironments_)
 	{}
 
@@ -162,7 +160,6 @@ struct SCreateObjectData
 	// as the temporary gets destroyed before this request gets passed to the AudioSystem where it gets ultimately copied for internal processing.
 	CTransformation const transformation;
 
-	EntityId const        entityId;
 	bool const            setCurrentEnvironments;
 };
 
@@ -175,11 +172,13 @@ struct SExecuteTriggerData : public SCreateObjectData
 		CTransformation const& transformation_ = CTransformation::GetEmptyObject(),
 		EntityId const entityId_ = INVALID_ENTITYID,
 		bool const setCurrentEnvironments_ = false)
-		: SCreateObjectData(szName_, occlusionType_, transformation_, entityId_, setCurrentEnvironments_),
-		triggerId(triggerId_)
+		: SCreateObjectData(szName_, occlusionType_, transformation_, setCurrentEnvironments_)
+		, triggerId(triggerId_)
+		, entityId(entityId_)
 	{}
 
 	ControlId const triggerId;
+	EntityId const  entityId;
 };
 
 struct ISystemModule : public Cry::IDefaultModule

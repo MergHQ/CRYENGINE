@@ -197,7 +197,7 @@ private:
 
 	CryAudio::IObject* MakeAudioObject(const Vec3& position)
 	{
-		const CryAudio::SCreateObjectData data(m_proxyName, m_occlusionType, position, INVALID_ENTITYID, true);
+		const CryAudio::SCreateObjectData data(m_proxyName, m_occlusionType, position, true);
 		return gEnv->pAudioSystem->CreateObject(data);
 	}
 

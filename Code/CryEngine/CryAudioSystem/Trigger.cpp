@@ -34,7 +34,8 @@ void CTrigger::Execute(
 	void* const pOwner /* = nullptr */,
 	void* const pUserData /* = nullptr */,
 	void* const pUserDataOwner /* = nullptr */,
-	ERequestFlags const flags /* = ERequestFlags::None */) const
+	ERequestFlags const flags /* = ERequestFlags::None */,
+	EntityId const entityId /*= INVALID_ENTITYID*/) const
 {
 	Impl::IObject* const pIObject = object.GetImplDataPtr();
 
@@ -83,15 +84,15 @@ void CTrigger::Execute(
 		}
 
 #if defined(CRY_AUDIO_USE_DEBUG_CODE)
-		object.ConstructTriggerInstance(m_id, numPlayingInstances, numPendingInstances, flags, pOwner, pUserData, pUserDataOwner, m_radius);
+		object.ConstructTriggerInstance(m_id, entityId, numPlayingInstances, numPendingInstances, flags, pOwner, pUserData, pUserDataOwner, m_radius);
 #else
-		object.ConstructTriggerInstance(m_id, numPlayingInstances, numPendingInstances, flags, pOwner, pUserData, pUserDataOwner);
+		object.ConstructTriggerInstance(m_id, entityId, numPlayingInstances, numPendingInstances, flags, pOwner, pUserData, pUserDataOwner);
 #endif    // CRY_AUDIO_USE_DEBUG_CODE
 	}
 	else
 	{
 		// All of the events have either finished before we got here or never started, immediately inform the user that the trigger has finished.
-		SendFinishedTriggerInstanceRequest(m_id, object.GetEntityId(), flags, pOwner, pUserData, pUserDataOwner);
+		SendFinishedTriggerInstanceRequest(m_id, entityId, flags, pOwner, pUserData, pUserDataOwner);
 	}
 
 #if defined(CRY_AUDIO_USE_DEBUG_CODE)

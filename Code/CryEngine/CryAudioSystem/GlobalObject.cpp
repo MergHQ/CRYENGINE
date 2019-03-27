@@ -59,12 +59,12 @@ void CGlobalObject::ConstructTriggerInstance(
 	m_triggerInstances.emplace(
 		std::piecewise_construct,
 		std::forward_as_tuple(g_triggerInstanceIdCounter),
-		std::forward_as_tuple(new CTriggerInstance(triggerId, numPlayingConnectionInstances, numPendingConnectionInstances, flags, pOwner, pUserData, pUserDataOwner, 0.0f)));
+		std::forward_as_tuple(new CTriggerInstance(triggerId, INVALID_ENTITYID, numPlayingConnectionInstances, numPendingConnectionInstances, flags, pOwner, pUserData, pUserDataOwner, 0.0f)));
 #else
 	m_triggerInstances.emplace(
 		std::piecewise_construct,
 		std::forward_as_tuple(g_triggerInstanceIdCounter),
-		std::forward_as_tuple(new CTriggerInstance(triggerId, numPlayingConnectionInstances, numPendingConnectionInstances, flags, pOwner, pUserData, pUserDataOwner)));
+		std::forward_as_tuple(new CTriggerInstance(triggerId, INVALID_ENTITYID, numPlayingConnectionInstances, numPendingConnectionInstances, flags, pOwner, pUserData, pUserDataOwner)));
 #endif // CRY_AUDIO_USE_DEBUG_CODE
 
 	g_triggerInstanceIdToGlobalObject[g_triggerInstanceIdCounter] = this;
@@ -96,7 +96,7 @@ void CGlobalObject::ReportFinishedTriggerInstance(TriggerInstanceId const trigge
 			if (pTriggerInstance->IsPlayingInstanceFinished())
 			{
 				g_triggerInstanceIdToGlobalObject.erase(triggerInstanceId);
-				pTriggerInstance->SendFinishedRequest(INVALID_ENTITYID);
+				pTriggerInstance->SendFinishedRequest();
 
 				m_triggerInstances.erase(iter);
 				delete pTriggerInstance;
@@ -107,7 +107,7 @@ void CGlobalObject::ReportFinishedTriggerInstance(TriggerInstanceId const trigge
 			if (pTriggerInstance->IsPendingInstanceFinished())
 			{
 				g_triggerInstanceIdToGlobalObject.erase(triggerInstanceId);
-				pTriggerInstance->SendFinishedRequest(INVALID_ENTITYID);
+				pTriggerInstance->SendFinishedRequest();
 
 				m_triggerInstances.erase(iter);
 				delete pTriggerInstance;

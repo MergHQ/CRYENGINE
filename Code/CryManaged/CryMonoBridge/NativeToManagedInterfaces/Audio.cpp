@@ -130,17 +130,17 @@ static void ReleaseAudioObject(CryAudio::IObject* pAudioObject)
 	gEnv->pAudioSystem->ReleaseObject(pAudioObject);
 }
 
-static void ExecuteAudioObjectTrigger(CryAudio::IObject* pAudioObject, uint triggerId, bool bExecuteSync)
+static void ExecuteAudioObjectTrigger(CryAudio::IObject* pAudioObject, uint triggerId, bool bExecuteSync, EntityId entityId = INVALID_ENTITYID)
 {
 	if (bExecuteSync)
 	{
 		const CryAudio::SRequestUserData data(CryAudio::ERequestFlags::ExecuteBlocking | CryAudio::ERequestFlags::CallbackOnExternalOrCallingThread | CryAudio::ERequestFlags::DoneCallbackOnExternalThread);
-		pAudioObject->ExecuteTrigger(triggerId, data);
+		pAudioObject->ExecuteTrigger(triggerId, entityId, data);
 	}
 	else
 	{
 		const CryAudio::SRequestUserData data(CryAudio::ERequestFlags::CallbackOnExternalOrCallingThread | CryAudio::ERequestFlags::DoneCallbackOnExternalThread);
-		pAudioObject->ExecuteTrigger(triggerId, data);
+		pAudioObject->ExecuteTrigger(triggerId, entityId, data);
 	}
 
 }
