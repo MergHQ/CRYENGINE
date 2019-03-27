@@ -2068,7 +2068,7 @@ bool CCryAction::InitGame(SSystemInitParams& startupParams)
 
 			if (!hGameDll)
 			{
-				CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_WARNING, "Failed to load the Game DLL! %s", gameDLLName.c_str());
+				CryMessageBox("Failed to load specified Game DLL!", gameDLLName.c_str(), eMB_Error);
 				return false;
 			}
 		}
@@ -2076,7 +2076,7 @@ bool CCryAction::InitGame(SSystemInitParams& startupParams)
 		CreateGameStartup = (IGameStartup::TEntryFunction)CryGetProcAddress(hGameDll, "CreateGameStartup");
 		if (!CreateGameStartup)
 		{
-			CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_WARNING, "Failed to find the GameStartup Interface in %s!", gameDLLName.c_str());
+			CryMessageBox("Failed to find the GameStartup Interface!", gameDLLName.c_str(), eMB_Error);
 			CryFreeLibrary(hGameDll);
 			return false;
 		}
@@ -2087,7 +2087,7 @@ bool CCryAction::InitGame(SSystemInitParams& startupParams)
 	IGameStartup* pGameStartup = CreateGameStartup();
 	if (!pGameStartup)
 	{
-		CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_WARNING, "Failed to find the GameStartup Interface in %s!", gameDLLName.c_str());
+		CryMessageBox("Failed to find the GameStartup Interface!", gameDLLName.c_str(), eMB_Error);
 		CryFreeLibrary(hGameDll);
 		return false;
 	}
