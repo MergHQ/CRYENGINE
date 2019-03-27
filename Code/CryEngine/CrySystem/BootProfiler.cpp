@@ -101,6 +101,7 @@ int CBootProfiler::CV_sys_bp_frames_sample_period_rnd = 0;
 float CBootProfiler::CV_sys_bp_frames_threshold = 0.0f;
 float CBootProfiler::CV_sys_bp_time_threshold = 0.0f;
 EBootProfilerFormat CBootProfiler::CV_sys_bp_output_formats = EBootProfilerFormat::XML;
+ICVar* CBootProfiler::CV_sys_bp_frames_required_label = nullptr;
 
 class CProfileBlockTimes
 {
@@ -408,6 +409,16 @@ public:
 		m_name = name;
 	}
 
+	void SetRequiredLabel(bool set)
+	{
+		m_hasRequiredLabel = set;
+	}
+
+	bool HasRequiredLabel() const
+	{
+		return m_hasRequiredLabel;
+	}
+
 	struct CRY_ALIGN(CACHE_LINE_SIZE_BP_INTERNAL) SThreadEntry
 	{
 		union
@@ -430,18 +441,17 @@ public:
 	const SThreadEntry* GetThreadEntries() const { return m_threadEntry; }
 
 private:
-
 	SThreadEntry        m_threadEntry[eMAX_THREADS_TO_PROFILE];
-
 	CryFixedStringT<32> m_name;
-
 	LARGE_INTEGER       m_frequency;
+	bool                m_hasRequiredLabel;
 };
 
 //////////////////////////////////////////////////////////////////////////
 
 CBootProfilerSession::CBootProfilerSession(const char* szName)
 	: m_name(szName)
+	, m_hasRequiredLabel(false)
 {
 	memset(m_threadEntry, 0, sizeof(m_threadEntry));
 
@@ -930,6 +940,12 @@ CBootProfilerRecord* CBootProfiler::StartBlock(const char* name, const char* arg
 {
 	if (CBootProfilerSession* pSession = m_pCurrentSession)
 	{
+		const char* szReqLabel = CV_sys_bp_frames_required_label->GetString();
+		if (szReqLabel[0] && strcmp(szReqLabel, name) == 0)
+		{
+			pSession->SetRequiredLabel(true);
+		}
+
 		const threadID curThread = CryGetCurrentThreadId();
 		const unsigned int threadIndex = gThreadsInterface.GetThreadIndexByID(curThread);
 		return pSession->StartBlock(name, args, threadIndex, type);
@@ -1034,6 +1050,9 @@ void CBootProfiler::StopFrame()
 
 		m_pCurrentSession->Stop();
 
+		const char* szReqLabel = CV_sys_bp_frames_required_label->GetString();
+		const bool hasRequiredLabel = !szReqLabel[0] || m_pCurrentSession->HasRequiredLabel();
+
 		--m_countdownToNextSaveSesssion;
 		const bool bShouldCollectResults = m_countdownToNextSaveSesssion < 0;
 
@@ -1043,7 +1062,7 @@ void CBootProfiler::StopFrame()
 			m_countdownToNextSaveSesssion = crymath::clamp(CV_sys_bp_frames_sample_period + nextOffset, 0, std::numeric_limits<int>::max());
 		}
 
-		if ((m_pCurrentSession->GetTotalTime() >= CV_sys_bp_frames_threshold) && !bDisablingThresholdMode && bShouldCollectResults)
+		if ((m_pCurrentSession->GetTotalTime() >= CV_sys_bp_frames_threshold) && !bDisablingThresholdMode && bShouldCollectResults && hasRequiredLabel)
 		{
 			CBootProfilerSession* pSession = m_pCurrentSession;
 			m_pCurrentSession = nullptr;
@@ -1061,11 +1080,11 @@ void CBootProfiler::StopFrame()
 			m_sessionsToDelete.push_back(m_pCurrentSession);
 			m_pCurrentSession = nullptr;
 		}
+	}
 
-		if (bDisablingThresholdMode)
-		{
-			gEnv->bBootProfilerEnabledFrames = false;
-		}
+	if (bDisablingThresholdMode)
+	{
+		gEnv->bBootProfilerEnabledFrames = false;
 	}
 
 	prev_CV_sys_bp_frames_threshold = CV_sys_bp_frames_threshold;
@@ -1137,6 +1156,7 @@ void CBootProfiler::RegisterCVars()
 	REGISTER_CVAR2("sys_bp_frames_threshold", &CV_sys_bp_frames_threshold, 0, VF_DEV_ONLY, "Starts frame profiling but gathers the results for frames that frame time exceeded the threshold");
 	REGISTER_CVAR2("sys_bp_time_threshold", &CV_sys_bp_time_threshold, 0.1f, VF_DEV_ONLY, "If greater than 0 don't write blocks that took less time (default 0.1 ms)");
 	REGISTER_CVAR2("sys_bp_format", &CV_sys_bp_output_formats, EBootProfilerFormat::XML, VF_DEV_ONLY, "Determines the output format for the boot profiler.\n0 = XML\n1 = Chrome Trace JSON");
+	CV_sys_bp_frames_required_label = REGISTER_STRING("sys_bp_frames_required_label", "", VF_DEV_ONLY, "Specify a record label that must be present in a record session in order to be saved on disk");
 
 	if (CV_sys_bp_frames_worker_thread)
 	{

@@ -79,6 +79,12 @@ namespace Cry
 			virtual IAccount* GetLocalAccount() const = 0;
 			//! Gets local user's friend accounts
 			virtual const DynArray<IAccount*>& GetFriendAccounts() const = 0;
+#if CRY_GAMEPLATFORM_EXPERIMENTAL
+			//! Gets local user's blocked accounts
+			virtual const DynArray<IAccount*>& GetBlockedAccounts() const = 0;
+			//! Gets local user's muted accounts
+			virtual const DynArray<IAccount*>& GetMutedAccounts() const = 0;
+#endif // CRY_GAMEPLATFORM_EXPERIMENTAL
 			//! Gets an IAccount representation of another user by account id
 			virtual IAccount* GetAccountById(const AccountIdentifier& accountId) const = 0;
 

@@ -52,6 +52,10 @@ namespace Cry
 				virtual CAccount* GetLocalAccount() const override;
 
 				virtual const DynArray<IAccount*>& GetFriendAccounts() const override;
+#if CRY_GAMEPLATFORM_EXPERIMENTAL
+				virtual const DynArray<IAccount*>& GetBlockedAccounts() const override;
+				virtual const DynArray<IAccount*>& GetMutedAccounts() const override;
+#endif // CRY_GAMEPLATFORM_EXPERIMENTAL
 				virtual CAccount* GetAccountById(const AccountIdentifier& accountId) const override;
 				virtual bool IsFriendWith(const AccountIdentifier& accountId) const override;
 				virtual EFriendRelationship GetFriendRelationship(const AccountIdentifier& accountId) const override;
@@ -116,6 +120,10 @@ namespace Cry
 
 				mutable std::vector<std::unique_ptr<CAccount>> m_accounts;
 				mutable DynArray<IAccount*> m_friends;
+#if CRY_GAMEPLATFORM_EXPERIMENTAL
+				DynArray<IAccount*> m_blockedAccounts;
+				DynArray<IAccount*> m_mutedAccounts;
+#endif // CRY_GAMEPLATFORM_EXPERIMENTAL
 
 				std::vector<IListener*> m_listeners;
 

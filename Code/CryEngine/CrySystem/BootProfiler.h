@@ -9,6 +9,7 @@
 #include <CrySystem/IConsole.h>
 #include <CryThreading/MultiThread_Containers.h>
 
+struct ICVar;
 class CBootProfilerRecord;
 class CBootProfilerSession;
 
@@ -24,8 +25,8 @@ class CBootProfiler : public ISystemEventListener, public IThread
 {
 	friend class CBootProfileBLock;
 	friend class CBootProfilerSession;
-public:
 
+public:
 	struct SSaveSessionInfo
 	{
 		float                 functionMinTimeThreshold;
@@ -90,8 +91,9 @@ private:
 	static int                 CV_sys_bp_frames_sample_period_rnd;
 	static float               CV_sys_bp_frames_threshold;
 	static float               CV_sys_bp_time_threshold;
-	CBootProfilerRecord*       m_pMainThreadFrameRecord;
+	static ICVar*              CV_sys_bp_frames_required_label;
 
+	CBootProfilerRecord*       m_pMainThreadFrameRecord;
 	int                        m_numFramesToLog;
 	int                        m_levelLoadAdditionalFrames;
 	int                        m_countdownToNextSaveSesssion;
