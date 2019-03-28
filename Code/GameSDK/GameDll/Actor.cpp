@@ -683,7 +683,12 @@ void CActor::Revive( EReasonForRevive reasonForRevive )
 	if (m_pAnimatedCharacter)
 		m_pAnimatedCharacter->ResetState();
 
-	bool hasChangedModel = SetActorModel(); // set the model before physicalizing
+	const bool hasChangedModel = SetActorModel(); // set the model before physicalizing
+	if (hasChangedModel)
+	{
+		// If the model has changed, it was dephysicalized
+		m_currentPhysProfile = eAP_NotPhysicalized;
+	}
 
 	if(!gEnv->bMultiplayer || hasChangedModel)
 	{

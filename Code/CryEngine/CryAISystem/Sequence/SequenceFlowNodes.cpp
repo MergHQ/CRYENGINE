@@ -82,6 +82,7 @@ void CFlowNode_AISequenceStart::ProcessEvent(EFlowEvent event, SActivationInfo* 
 	case eFE_Initialize:
 		{
 			m_actInfo = *pActInfo;
+			m_waitingForTheForwardingEntityToBeSetOnAllTheNodes = false;
 		}
 		break;
 	case eFE_Activate:
@@ -327,6 +328,9 @@ void CFlowNode_AISequenceActionMove::ProcessEvent(EFlowEvent event, SActivationI
 	case eFE_Activate:
 	{
 		m_actInfo = *pActInfo;
+
+		CRY_ASSERT(m_movementRequestID.IsInvalid());
+
 		m_movementRequestID = 0;
 		m_stopRadiusSqr = 0.0f;
 
@@ -350,20 +354,28 @@ void CFlowNode_AISequenceActionMove::HandleSequenceEvent(SequenceEvent sequenceE
 	switch (sequenceEvent)
 	{
 	case StartAction:
+	{
+		GetPositionAndDirectionForDestination(m_destPosition, m_destDirection);
+
+		m_stopRadiusSqr = sqr(GetPortFloat(&m_actInfo, InputPort_EndDistance));
+
+		MovementRequest movementRequest;
+		movementRequest.entityID = GetAssignedEntityId();
+		movementRequest.destination = m_destPosition;
+		movementRequest.callback = functor(*this, &CFlowNode_AISequenceActionMove::MovementRequestCallback);
+		movementRequest.style.SetSpeed((MovementStyle::Speed)GetPortInt(&m_actInfo, InputPort_Speed));
+		movementRequest.style.SetStance((MovementStyle::Stance)GetPortInt(&m_actInfo, InputPort_Stance));
+		movementRequest.dangersFlags = eMNMDangers_None;
+
+		m_movementRequestID = gEnv->pAISystem->GetMovementSystem()->QueueRequest(movementRequest);
+
+		break;
+	}
+	case SequenceStopped:
+		if (!m_movementRequestID.IsInvalid())
 		{
-			GetPositionAndDirectionForDestination(m_destPosition, m_destDirection);
-
-			m_stopRadiusSqr = sqr(GetPortFloat(&m_actInfo, InputPort_EndDistance));
-
-			MovementRequest movementRequest;
-			movementRequest.entityID = GetAssignedEntityId();
-			movementRequest.destination = m_destPosition;
-			movementRequest.callback = functor(*this, &CFlowNode_AISequenceActionMove::MovementRequestCallback);
-			movementRequest.style.SetSpeed((MovementStyle::Speed)GetPortInt(&m_actInfo, InputPort_Speed));
-			movementRequest.style.SetStance((MovementStyle::Stance)GetPortInt(&m_actInfo, InputPort_Stance));
-			movementRequest.dangersFlags = eMNMDangers_None;
-
-			m_movementRequestID = gEnv->pAISystem->GetMovementSystem()->QueueRequest(movementRequest);
+			gEnv->pAISystem->GetMovementSystem()->UnsuscribeFromRequestCallback(m_movementRequestID);
+			m_movementRequestID = 0;
 		}
 		break;
 	}
@@ -447,25 +459,24 @@ void CFlowNode_AISequenceActionMoveAlongPath::ProcessEvent(EFlowEvent event, SAc
 	switch (event)
 	{
 	case eFE_Initialize:
-		{
-			m_actInfo = *pActInfo;
-		}
+		m_actInfo = *pActInfo;
 		break;
-
 	case eFE_Activate:
-		{
-			m_actInfo = *pActInfo;
-			m_movementRequestID = 0;
+	{
+		m_actInfo = *pActInfo;
 
-			if (const SequenceId assignedSequenceId = GetAssignedSequenceId())
+		CRY_ASSERT(m_movementRequestID.IsInvalid());
+		m_movementRequestID = 0;
+
+		if (const SequenceId assignedSequenceId = GetAssignedSequenceId())
+		{
+			if (IsPortActive(pActInfo, InputPort_Start))
 			{
-				if (IsPortActive(pActInfo, InputPort_Start))
-				{
-					GetAISystem()->GetSequenceManager()->RequestActionStart(assignedSequenceId, m_actInfo.myID);
-				}
+				GetAISystem()->GetSequenceManager()->RequestActionStart(assignedSequenceId, m_actInfo.myID);
 			}
 		}
 		break;
+	}
 	}
 }
 
@@ -495,6 +506,13 @@ void CFlowNode_AISequenceActionMoveAlongPath::HandleSequenceEvent(SequenceEvent 
 
 				m_movementRequestID = gEnv->pAISystem->GetMovementSystem()->QueueRequest(movementRequest);
 			}
+		}
+		break;
+	case SequenceStopped:
+		if (!m_movementRequestID.IsInvalid())
+		{
+			gEnv->pAISystem->GetMovementSystem()->UnsuscribeFromRequestCallback(m_movementRequestID);
+			m_movementRequestID = 0;
 		}
 		break;
 	}
@@ -724,6 +742,12 @@ void CFlowNode_AISequenceActionAnimation::HandleSequenceEvent(SequenceEvent sequ
 		{
 			ClearAnimation(true);
 			m_running = false;
+
+			if (!m_movementRequestID.IsInvalid())
+			{
+				gEnv->pAISystem->GetMovementSystem()->UnsuscribeFromRequestCallback(m_movementRequestID);
+				m_movementRequestID = 0;
+			}
 		}
 		break;
 	}
@@ -1138,7 +1162,7 @@ void CFlowNode_AISequenceJoinFormation::ProcessEvent(EFlowEvent event, SActivati
 void CFlowNode_AISequenceJoinFormation::SendSignal(IAIActor* pIAIActor, const char* signalName, IEntity* pSender)
 {
 	AISignals::IAISignalExtraData* pData = gEnv->pAISystem->CreateSignalExtraData();
-	const int goalPipeId = gEnv->pAISystem->AllocGoalPipeId();
+	const int goalPipeId = GetAISystem()->AllocGoalPipeId();
 	pData->iValue = goalPipeId;
 	pIAIActor->SetSignal(GetAISystem()->GetSignalManager()->CreateSignal_DEPRECATED(AISIGNAL_DEFAULT, signalName, pSender ? pSender->GetAIObjectID() : 0, pData));
 }
