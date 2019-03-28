@@ -10,6 +10,7 @@
 #include "FileWriter.h"
 #include "FileLoader.h"
 #include "ImplManager.h"
+#include "NameValidator.h"
 #include "AssetIcons.h"
 #include "Common/IImpl.h"
 
@@ -37,6 +38,7 @@ CAudioControlsEditorPlugin::CAudioControlsEditorPlugin()
 {
 	InitAssetIcons();
 
+	g_nameValidator.Initialize(s_regexInvalidFileName);
 	g_assetsManager.Initialize();
 	g_contextManager.Initialize();
 	g_implManager.LoadImpl();

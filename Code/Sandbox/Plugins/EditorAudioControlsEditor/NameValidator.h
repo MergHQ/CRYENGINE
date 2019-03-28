@@ -13,14 +13,13 @@ class CNameValidator final : public QRegularExpressionValidator
 {
 public:
 
-	CNameValidator() = delete;
 	CNameValidator(CNameValidator const&) = delete;
 	CNameValidator(CNameValidator&&) = delete;
 	CNameValidator& operator=(CNameValidator const&) = delete;
 	CNameValidator& operator=(CNameValidator&&) = delete;
 
-	explicit CNameValidator(QRegularExpression const& regex, QWidget* pParent);
-	explicit CNameValidator(QRegularExpression const& regex);
+	CNameValidator();
+	explicit CNameValidator(QWidget* pParent);
 	virtual ~CNameValidator() override = default;
 
 	// QRegularExpressionValidator
@@ -28,12 +27,11 @@ public:
 	virtual void              fixup(QString& input) const override;
 	// ~QRegularExpressionValidator
 
+	void Initialize(QRegularExpression const& regex);
 	bool IsValid(string const& input) const;
 	void FixupString(string& input) const;
 
 private:
-
-	void SetToolTip(QRegularExpression const& regex);
 
 	QWidget* const m_pParent;
 	QString        m_toolTipText;

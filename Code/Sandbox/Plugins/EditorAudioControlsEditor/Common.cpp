@@ -22,7 +22,7 @@ CPropertiesWidget* g_pPropertiesWidget = nullptr;
 CMiddlewareDataWidget* g_pMiddlewareDataWidget = nullptr;
 CFileMonitorMiddleware* g_pFileMonitorMiddleware = nullptr;
 CContextWidget* g_pContextWidget = nullptr;
-CNameValidator g_nameValidator(s_regexInvalidFileName);
+CNameValidator g_nameValidator;
 
 SImplInfo g_implInfo;
 

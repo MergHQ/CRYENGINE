@@ -45,7 +45,8 @@ CPreferencesDialog::CPreferencesDialog(QWidget* const pParent)
 	pLabelLayout->addWidget(new QLabel(tr("Project Path") + ":"), 2, 0, labelAlignment);
 
 	auto const pLineEdit = new QLineEdit(m_projectPath, this);
-	auto const pValidator = new CNameValidator(s_regexInvalidFilePath, pLineEdit);
+	auto const pValidator = new CNameValidator(pLineEdit);
+	pValidator->Initialize(s_regexInvalidFilePath);
 	pLineEdit->setValidator(pValidator);
 	pLineEdit->setMinimumWidth(300);
 	pLineEdit->setToolTip(m_projectPath);
