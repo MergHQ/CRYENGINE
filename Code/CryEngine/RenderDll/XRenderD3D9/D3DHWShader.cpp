@@ -714,6 +714,8 @@ SDeviceShaderEntry CHWShader_D3D::mfShaderEntryFromCache(CShader* pFX, const CDi
 		if (pShaderReflection)
 			mfCreateBinds(bindVars, pShaderReflection, (std::size_t)nSize);
 
+		SAFE_RELEASE(pShaderReflection);
+
 		// Vertex shenanigans
 		if (instance.m_eClass == EHWShaderClass::eHWSC_Vertex)
 		{
