@@ -1669,7 +1669,7 @@ ERequestStatus CSystem::ProcessSystemRequest(CRequest const& request)
 
 			if (pTrigger != nullptr)
 			{
-				MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioSystem, 0, "CryAudio::CObject");
+				MEMSTAT_CONTEXT(EMemStatContextType::AudioSystem, "CryAudio::CObject");
 
 #if defined(CRY_AUDIO_USE_DEBUG_CODE)
 				auto const pNewObject = new CObject(pRequestData->transformation, pRequestData->name.c_str());
@@ -2058,7 +2058,7 @@ ERequestStatus CSystem::ProcessSystemRequest(CRequest const& request)
 		{
 			auto const pRequestData = static_cast<SSystemRequestData<ESystemRequestType::RegisterObject> const*>(request.GetData());
 
-			MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioSystem, 0, "CryAudio::CObject");
+			MEMSTAT_CONTEXT(EMemStatContextType::AudioSystem, "CryAudio::CObject");
 
 #if defined(CRY_AUDIO_USE_DEBUG_CODE)
 			auto const pNewObject = new CObject(pRequestData->transformation, pRequestData->name.c_str());
@@ -2847,7 +2847,7 @@ ERequestStatus CSystem::HandleSetImpl(Impl::IImpl* const pIImpl)
 		Cry::Audio::Log(ELogType::Warning, "nullptr passed to SetImpl, will run with the null implementation");
 #endif // CRY_AUDIO_USE_DEBUG_CODE
 
-		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioSystem, 0, "CryAudio::Impl::Null::CImpl");
+		MEMSTAT_CONTEXT(EMemStatContextType::AudioSystem, "CryAudio::Impl::Null::CImpl");
 		auto const pImpl = new Impl::Null::CImpl();
 		CRY_ASSERT(pImpl != nullptr);
 		g_pIImpl = static_cast<Impl::IImpl*>(pImpl);
@@ -2887,7 +2887,7 @@ ERequestStatus CSystem::HandleSetImpl(Impl::IImpl* const pIImpl)
 
 		g_pIImpl->Release(); // Release the engine specific data.
 
-		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioSystem, 0, "CryAudio::Impl::Null::CImpl");
+		MEMSTAT_CONTEXT(EMemStatContextType::AudioSystem, "CryAudio::Impl::Null::CImpl");
 		auto const pImpl = new Impl::Null::CImpl();
 		CRY_ASSERT(pImpl != nullptr);
 		g_pIImpl = static_cast<Impl::IImpl*>(pImpl);

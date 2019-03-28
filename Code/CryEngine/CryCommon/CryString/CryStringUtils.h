@@ -459,3 +459,57 @@ inline int cry_strnicmp(const char* string1, const char* string2, size_t count)
 	return strnicmp(string1, string2, count);
 #endif
 }
+
+//! CRY_IS_STRING_LITERAL(some_var) -> cry_is_string_literal_impl( "some_var" )
+//! CRY_IS_STRING_LITERAL("string literal") -> cry_is_string_literal_impl( "\"string literal\"" )
+//! so we detect string literals by opening and closing quotes
+#define CRY_IS_STRING_LITERAL(STR) cry_is_string_literal_impl( #STR )
+
+//c++11 allows only return statements in constexpr, so we need to split the code into recursive function calls
+//  constexpr bool cry_is_string_literal_impl(const char* szStr)
+//  {
+// 	if (szStr[0] != '"') // could also detect L and R strings, when needed
+// 		return false;
+// 
+// 	bool insideQuotes = true;
+// 	for (size_t strIndex = 1; szStr[strIndex] != 0; ++strIndex)
+// 	{
+// 		if (insideQuotes)
+// 		{
+// 			if (szStr[strIndex] == '\\')
+// 				++strIndex;
+// 			else if (szStr[strIndex] == '"')
+// 				insideQuotes = false;
+// 		}
+// 		else
+// 		{ // only allow spaces between strings. Technically comments would be possible too ...
+// 			if (szStr[strIndex] == '"')
+// 				insideQuotes = true;
+// 			else if (!isspace(szStr[strIndex]))
+// 				return false;
+// 		}
+// 	}
+// 	return !insideQuotes;
+
+constexpr bool cry_is_string_literal_impl_outside_quotes(const char* szStr);
+
+constexpr bool cry_is_string_literal_impl_in_quotes(const char* szStr)
+{
+	return szStr[0] == '\\'
+		? cry_is_string_literal_impl_in_quotes(szStr + 2)
+		: (szStr[0] == '"'
+			? cry_is_string_literal_impl_outside_quotes(szStr + 1)
+			: cry_is_string_literal_impl_in_quotes(szStr + 1));
+}
+
+constexpr bool cry_is_string_literal_impl_outside_quotes(const char* szStr)
+{
+	return szStr[0] == 0
+		|| (isspace(szStr[0]) && cry_is_string_literal_impl_outside_quotes(szStr + 1))
+		|| (szStr[0] == '"' && cry_is_string_literal_impl_in_quotes(szStr + 1));
+}
+
+constexpr bool cry_is_string_literal_impl(const char* szStr)
+{
+	return szStr[0] == '"' && cry_is_string_literal_impl_in_quotes(szStr + 1);
+}

@@ -5523,7 +5523,7 @@ void CPlayer::NetSerialize_Ladder(TSerialize ser, bool bReading)
 
 void CPlayer::FullSerialize(TSerialize ser)
 {
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Player serialization");
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, "Player serialization");
 
 	if (IsClient())
 	{
@@ -9805,8 +9805,8 @@ void CPlayer::InitHitDeathReactions()
 {
 	if (!m_pHitDeathReactions && !IsPoolEntity())
 	{
-		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "HitDeathReactions_Instances");
-		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, GetEntity()->GetName());
+		MEMSTAT_CONTEXT(EMemStatContextType::Other, "HitDeathReactions_Instances");
+		MEMSTAT_CONTEXT(EMemStatContextType::Other, GetEntity()->GetName());
 
 		m_pHitDeathReactions.reset(new CHitDeathReactions(*this));
 		CRY_ASSERT(m_pHitDeathReactions.get());

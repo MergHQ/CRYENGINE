@@ -129,7 +129,7 @@ bool CGeomCache::LoadGeomCache()
 	CRY_DEFINE_ASSET_SCOPE("GeomCache", m_fileName);
 
 	#if INCLUDE_MEMSTAT_CONTEXTS
-	MEMSTAT_CONTEXT_FMT(EMemStatContextTypes::MSC_GeomCache, EMemStatContextFlags::MSF_Instance, "%s", m_fileName.c_str());
+	MEMSTAT_CONTEXT_FMT(EMemStatContextType::GeomCache, "%s", m_fileName.c_str());
 	#endif
 
 	CScopedFileHandle geomCacheFileHandle(m_fileName, "rb");

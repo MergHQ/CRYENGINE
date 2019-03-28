@@ -606,7 +606,7 @@ CTexture* CTexture::GetOrCreateTextureObject(const char* name, uint32 nWidth, ui
 
 	bool bFound = false;
 
-	MEMSTAT_CONTEXT_FMT(EMemStatContextTypes::MSC_Texture, 0, "%s", name);
+	MEMSTAT_CONTEXT(EMemStatContextType::Texture, name);
 
 	CTexture* pTex = FindOrRegisterTextureObject(name, nFlags, eFormat, bFound);
 	if (bFound)
@@ -794,8 +794,8 @@ CTexture* CTexture::ForName(const char* name, uint32 nFlags, ETEX_Format eFormat
 
 	bool bFound = false;
 
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Textures");
-	MEMSTAT_CONTEXT_FMT(EMemStatContextTypes::MSC_Texture, 0, "%s", name);
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, "Textures");
+	MEMSTAT_CONTEXT(EMemStatContextType::Texture, name);
 
 	CRY_DEFINE_ASSET_SCOPE("Texture", name);
 

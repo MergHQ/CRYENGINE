@@ -220,7 +220,7 @@ extern "C"
 #if USE_RAW_LUA_ALLOCS
 		return _LuaRealloc(ptr, nsize);
 #else
-		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_LUA, 0, "Lua");
+		MEMSTAT_CONTEXT(EMemStatContextType::LUA, "Lua");
 
 		if (g_dumpStackOnAlloc)
 			DumpCallStack(g_LStack);
@@ -1270,8 +1270,8 @@ bool CScriptSystem::ExecuteBuffer(const char* sBuffer, size_t nSize, const char*
 {
 	int status;
 
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Lua LoadScript");
-	MEMSTAT_CONTEXT_FMT(EMemStatContextTypes::MSC_ScriptCall, 0, "%s", sBufferDescription);
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, "Lua LoadScript");
+	MEMSTAT_CONTEXT(EMemStatContextType::ScriptCall, sBufferDescription);
 
 	{
 		status = luaL_loadbuffer(L, sBuffer, nSize, sBufferDescription);
@@ -2138,7 +2138,7 @@ void CScriptSystem::ShowDebugger(const char* pszSourceFile, int iLine, const cha
 void CScriptSystem::Update()
 {
 	CRY_PROFILE_REGION(PROFILE_SCRIPT, "ScriptSystem: Update");
-	MEMSTAT_FUNCTION_CONTEXT(EMemStatContextTypes::MSC_Other);
+	MEMSTAT_FUNCTION_CONTEXT(EMemStatContextType::Other);
 	
 	ITimer* pTimer = gEnv->pTimer;
 	CTimeValue nCurTime = pTimer->GetFrameStartTime();

@@ -179,7 +179,7 @@ static inline void InlineInitializationProcessing(const char *sDescription)
 
 IGameRef CGameStartup::Init(SSystemInitParams &startupParams)
 {
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Game startup initialisation");
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, "Game startup initialisation");
 
 	IGameRef pOut = Reset(startupParams.pSystem);
 	CRY_ASSERT(gEnv && GetISystem());

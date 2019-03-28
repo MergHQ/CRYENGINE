@@ -217,7 +217,7 @@ CSystem::CSystem(const SSystemInitParams& startupParams)
 	: m_gameLibrary(nullptr)
 #endif
 {
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "CSystem Constructor");
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, "CSystem Constructor");
 
 	m_pSystemEventDispatcher = new CSystemEventDispatcher(); // Must be first.
 	m_pSystemEventDispatcher->RegisterListener(this, "CSystem");
@@ -1450,7 +1450,7 @@ void CSystem::PrePhysicsUpdate()
 
 void CSystem::RunMainLoop()
 {
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "CSystem::MainLoop");
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, "CSystem::MainLoop");
 
 	if (m_bShaderCacheGenMode)
 	{
@@ -1667,7 +1667,7 @@ bool CSystem::Update(CEnumFlags<ESystemUpdateFlags> updateFlags, int nPauseMode)
 {
 	CRY_PROFILE_REGION(PROFILE_SYSTEM, "System: Update");
 	CRY_PROFILE_FUNCTION(PROFILE_SYSTEM)
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "CSystem::Update");
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, "CSystem::Update");
 
 #ifndef EXCLUDE_UPDATE_ON_CONSOLE
 	// do the dedicated sleep earlier than the frame profiler to avoid having it counted
@@ -1754,7 +1754,7 @@ bool CSystem::Update(CEnumFlags<ESystemUpdateFlags> updateFlags, int nPauseMode)
 
 	if (m_env.pLog)
 	{
-		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Log::Update");
+		MEMSTAT_CONTEXT(EMemStatContextType::Other, "Log::Update");
 		m_env.pLog->Update();
 	}
 

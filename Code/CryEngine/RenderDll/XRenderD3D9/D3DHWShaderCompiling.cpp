@@ -2544,7 +2544,7 @@ bool CHWShader_D3D::mfUploadHW(SHWSInstance* pInst, const byte* pBuf, uint32 nSi
 	const char* sHwShaderName = _HELP("Vertex Shader");
 	if (m_eSHClass == eHWSC_Pixel)
 		sHwShaderName = _HELP("Pixel Shader");
-	MEMSTAT_CONTEXT_FMT(EMemStatContextTypes::MSC_D3D, 0, "D3D HW %s", sHwShaderName);
+	MEMSTAT_CONTEXT_FMT(EMemStatContextType::D3D, "D3D HW %s", sHwShaderName);
 
 	HRESULT hr = S_OK;
 	if (!pInst->m_Handle.m_pShader)

@@ -92,7 +92,7 @@ namespace Schematyc2
 
 	IScriptFile* CScriptRegistry::LoadFile(const char* szFileName)
 	{
-		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Schematyc: Load Script Registry File");
+		MEMSTAT_CONTEXT(EMemStatContextType::Other, "Schematyc: Load Script Registry File");
 		SCHEMATYC2_SYSTEM_ASSERT(szFileName);
 		if(szFileName)
 		{
@@ -397,11 +397,11 @@ namespace Schematyc2
 
 	bool CScriptRegistry::Load()
 	{
-		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Schematyc: Load Script Registry");
+		MEMSTAT_CONTEXT(EMemStatContextType::Other, "Schematyc: Load Script Registry");
 		LOADING_TIME_PROFILE_SECTION;
 		// Load old script files.
 		{
-			MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Schematyc: Load Old Script Files");
+			MEMSTAT_CONTEXT(EMemStatContextType::Other, "Schematyc: Load Old Script Files");
 
 			stack_string extension = "*.";
 			extension.append(gEnv->pSchematyc2->GetOldScriptExtension());
@@ -413,13 +413,13 @@ namespace Schematyc2
 			FileUtils::EnumFilesInFolder(gEnv->pSchematyc2->GetOldScriptsFolder(), extension.c_str(), FileUtils::FileEnumCallback::FromMemberFunction<CScriptRegistry, &CScriptRegistry::EnumFile>(*this), fileEnumFlags);
 			for(FilesByCRC::iterator itFile = m_filesByCRC.begin(), itEndFile = m_filesByCRC.end(); itFile != itEndFile; ++ itFile)
 			{
-				MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Schematyc: Refresh Script Files");
+				MEMSTAT_CONTEXT(EMemStatContextType::Other, "Schematyc: Refresh Script Files");
 				itFile->second->Refresh(SScriptRefreshParams(EScriptRefreshReason::Load));
 			}
 		}
 
 		{
-			MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Schematyc: Load New Script Files");
+			MEMSTAT_CONTEXT(EMemStatContextType::Other, "Schematyc: Load New Script Files");
 
 			// Load new script files.
 			// #SchematycTODO : How do we avoid loading files twice?
@@ -427,7 +427,7 @@ namespace Schematyc2
 			if(gEnv->pSchematyc2->IsExperimentalFeatureEnabled("QtEditor"))
 			{
 				{
-					MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Schematyc: Enumerate Files");
+					MEMSTAT_CONTEXT(EMemStatContextType::Other, "Schematyc: Enumerate Files");
 					// Configure file enumeration flags.
 					FileUtils::EFileEnumFlags fileEnumFlags = FileUtils::EFileEnumFlags::Recursive;
 					if(CVars::sc_IgnoreUnderscoredFolders)
@@ -476,7 +476,7 @@ namespace Schematyc2
 					FileUtils::EnumFilesInFolder(szScriptFolder, "*.xml", FileUtils::FileEnumCallback::FromLambdaFunction(loadXmlFile), fileEnumFlags);
 					// #SchematycTODO : Create ProcessInputBlocks() function!
 					{
-						MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Schematyc: Pre-load Elements");
+						MEMSTAT_CONTEXT(EMemStatContextType::Other, "Schematyc: Pre-load Elements");
 						// Unroll element blocks.
 						ScriptInputElementPtrs elements;
 						elements.reserve(100);

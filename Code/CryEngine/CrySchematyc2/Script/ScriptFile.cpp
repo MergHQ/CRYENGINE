@@ -1587,23 +1587,23 @@ namespace Schematyc2
 				inputBlock.SortElementsByDependency();
 
 				{
-					MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Schematyc: Load And Insert Elements");
+					MEMSTAT_CONTEXT(EMemStatContextType::Other, "Schematyc: Load And Insert Elements");
 
 					// Copy elements to file.
 					for(DocSerializationUtils::CInputBlock::SElement& element : elements)
 					{
-						MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Schematyc: Insert Elements");
+						MEMSTAT_CONTEXT(EMemStatContextType::Other, "Schematyc: Insert Elements");
 						Serialization::LoadBlackBox(element, element.blackBox);
 						m_elements.insert(Elements::value_type(element.ptr->GetGUID(), element.ptr));
 					}
 					for(DocSerializationUtils::CInputBlock::SElement& element : elements)
 					{
-						MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Schematyc: Load Elements");
+						MEMSTAT_CONTEXT(EMemStatContextType::Other, "Schematyc: Load Elements");
 						Serialization::LoadBlackBox(element, element.blackBox);
 					}
 					
 					{
-						MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Schematyc: Validate Elements");
+						MEMSTAT_CONTEXT(EMemStatContextType::Other, "Schematyc: Validate Elements");
 
 						// Validate elements.
 						CValidatorArchive     validatorArchive(EValidatorArchiveFlags::ForwardWarningsToLog | EValidatorArchiveFlags::ForwardErrorsToLog);

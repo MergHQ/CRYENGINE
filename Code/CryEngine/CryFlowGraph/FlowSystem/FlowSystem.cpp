@@ -589,7 +589,7 @@ void CFlowSystem::Update()
 //////////////////////////////////////////////////////////////////////////
 void CFlowSystem::UpdateGraphs()
 {
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "CFlowSystem::UpdateGraphs");
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, "CFlowSystem::UpdateGraphs");
 
 	// Determine if graphs should be updated (Debug control)
 	bool bUpdateGraphs = true;

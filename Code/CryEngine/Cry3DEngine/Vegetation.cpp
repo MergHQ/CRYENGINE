@@ -538,7 +538,7 @@ void CVegetation::Physicalize(bool bInstant)
 {
 	FUNCTION_PROFILER_3DENGINE;
 
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Physics, 0, "Vegetation physicalization");
+	MEMSTAT_CONTEXT(EMemStatContextType::Physics, "Vegetation physicalization");
 
 	StatInstGroup& vegetGroup = GetStatObjGroup();
 

@@ -154,7 +154,7 @@ CRYMEMORYMANAGER_API void* CryMalloc(size_t size, size_t& allocated, size_t alig
 		gEnv->pSystem->debug_LogCallStack();
 	}
 
-	MEMREPLAY_SCOPE(EMemReplayAllocClass::C_UserPointer, EMemReplayUserPointerClass::C_CryMalloc);
+	MEMREPLAY_SCOPE(EMemReplayAllocClass::UserPointer, EMemReplayUserPointerClass::CryMalloc);
 
 	uint8* p;
 	size_t sizePlus = size;
@@ -261,7 +261,7 @@ CRYMEMORYMANAGER_API void* CryRealloc(void* memblock, size_t size, size_t& alloc
 	}
 	else
 	{
-		MEMREPLAY_SCOPE(EMemReplayAllocClass::C_UserPointer, EMemReplayUserPointerClass::C_CrtMalloc);
+		MEMREPLAY_SCOPE(EMemReplayAllocClass::UserPointer, EMemReplayUserPointerClass::CrtMalloc);
 
 #ifdef DANGLING_POINTER_DETECTOR
 		memblock = DanglingPointerDetectorTransformFree(memblock);
@@ -334,7 +334,7 @@ size_t CryFree(void* p, size_t alignment)
 
 		if (p != NULL)
 		{
-			MEMREPLAY_SCOPE(EMemReplayAllocClass::C_UserPointer, EMemReplayUserPointerClass::C_CryMalloc);
+			MEMREPLAY_SCOPE(EMemReplayAllocClass::UserPointer, EMemReplayUserPointerClass::CryMalloc);
 
 			if (g_GlobPageBucketAllocator.IsInAddressRange(p))
 			{
@@ -376,7 +376,7 @@ size_t CryFree(void* p, size_t alignment)
 
 	if (p != NULL)
 	{
-		MEMREPLAY_SCOPE(EMemReplayAllocClass::C_UserPointer, EMemReplayUserPointerClass::C_CryMalloc);
+		MEMREPLAY_SCOPE(EMemReplayAllocClass::UserPointer, EMemReplayUserPointerClass::CryMalloc);
 
 		if (g_GlobPageBucketAllocator.IsInAddressRange(p))
 		{

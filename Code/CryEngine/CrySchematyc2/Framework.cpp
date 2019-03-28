@@ -371,14 +371,14 @@ void CFramework::SetEnvRegistryBridge(IEnvRegistry* pEnvRegistry)
 	//////////////////////////////////////////////////////////////////////////
 	void CFramework::PrePhysicsUpdate()
 	{
-		MEMSTAT_FUNCTION_CONTEXT(EMemStatContextTypes::MSC_Other);
+		MEMSTAT_FUNCTION_CONTEXT(EMemStatContextType::Other);
 		m_pBaseEnv->PrePhysicsUpdate();
 	}
 
 	//////////////////////////////////////////////////////////////////////////
 	void CFramework::Update()
 	{
-		MEMSTAT_FUNCTION_CONTEXT(EMemStatContextTypes::MSC_Other);
+		MEMSTAT_FUNCTION_CONTEXT(EMemStatContextType::Other);
 		m_pBaseEnv->Update(&m_updateRelevanceContext);
 	}
 

@@ -289,8 +289,8 @@ bool CCryPluginManager::LoadPluginBinary(EType type, const char* szBinaryPath, b
 	{
 	case EType::Native:
 		{
-			MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "LoadPlugin");
-			MEMSTAT_CONTEXT_FMT(EMemStatContextTypes::MSC_Other, 0, "%s", binaryName.c_str());
+			MEMSTAT_CONTEXT(EMemStatContextType::Other, "LoadPlugin");
+			MEMSTAT_CONTEXT(EMemStatContextType::Other, binaryName.c_str());
 
 			WIN_HMODULE hModule = static_cast<CSystem*>(gEnv->pSystem)->LoadDynamicLibrary(szBinaryPath, false);
 			if (hModule == nullptr)

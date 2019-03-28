@@ -195,7 +195,7 @@ void CSystem::RenderBegin(const SDisplayContextKey& displayContextKey, const SGr
 
 	CRY_PROFILE_FUNCTION(PROFILE_SYSTEM);
 	CRY_PROFILE_MARKER("CSystem::RenderBegin");
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "CSystem::RenderBegin");
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, "CSystem::RenderBegin");
 
 	bool rndAvail = m_env.pRenderer != 0;
 
@@ -237,7 +237,7 @@ void CSystem::RenderEnd(bool bRenderStats)
 
 	CRY_PROFILE_FUNCTION(PROFILE_SYSTEM);
 	CRY_PROFILE_MARKER("CSystem::RenderEnd");
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "CSystem::RenderEnd");
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, "CSystem::RenderEnd");
 
 	if (!m_env.pRenderer)
 	{
@@ -688,7 +688,7 @@ void CSystem::Render(const SGraphicsPipelineKey& graphicsPipelineKey)
 
 	CRY_PROFILE_FUNCTION(PROFILE_SYSTEM);
 	CRY_PROFILE_MARKER("CSystem::Render");
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "CSystem::Render");
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, "CSystem::Render");
 
 	//////////////////////////////////////////////////////////////////////
 	//draw

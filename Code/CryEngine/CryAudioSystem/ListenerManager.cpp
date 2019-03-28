@@ -83,7 +83,7 @@ CListener* CListenerManager::CreateListener(CTransformation const& transformatio
 		return pListener;
 	}
 
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioSystem, 0, "CryAudio::CListener");
+	MEMSTAT_CONTEXT(EMemStatContextType::AudioSystem, "CryAudio::CListener");
 	auto const pListener = new CListener(g_pIImpl->ConstructListener(transformation, szName));
 
 #if defined(CRY_AUDIO_USE_DEBUG_CODE)

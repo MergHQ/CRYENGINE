@@ -233,7 +233,7 @@ CEntitySystem::~CEntitySystem()
 //////////////////////////////////////////////////////////////////////
 bool CEntitySystem::Init(ISystem* pSystem)
 {
-	MEMSTAT_FUNCTION_CONTEXT(EMemStatContextTypes::MSC_Other);
+	MEMSTAT_FUNCTION_CONTEXT(EMemStatContextType::Other);
 	if (!pSystem)
 		return false;
 
@@ -305,7 +305,7 @@ void CEntitySystem::UnregisterPhysicCallbacks()
 //////////////////////////////////////////////////////////////////////
 void CEntitySystem::Unload()
 {
-	MEMSTAT_FUNCTION_CONTEXT(EMemStatContextTypes::MSC_Other);
+	MEMSTAT_FUNCTION_CONTEXT(EMemStatContextType::Other);
 	if (gEnv->p3DEngine)
 	{
 		IDeferredPhysicsEventManager* pDeferredPhysicsEventManager = gEnv->p3DEngine->GetDeferredPhysicsEventManager();
@@ -526,7 +526,7 @@ IEntity* CEntitySystem::SpawnPreallocatedEntity(CEntity* pPrecreatedEntity, SEnt
 		return nullptr;
 	}
 
-	MEMSTAT_CONTEXT_FMT(EMemStatContextTypes::MSC_Other, EMemStatContextFlags::MSF_Instance, "SpawnEntity %s", params.pClass->GetName());
+	MEMSTAT_CONTEXT_FMT(EMemStatContextType::Other, "SpawnEntity %s", params.pClass->GetName());
 
 	if (!OnBeforeSpawn(params))
 	{
@@ -967,7 +967,7 @@ int CEntitySystem::QueryProximity(SEntityProximityQuery& query)
 void CEntitySystem::PrePhysicsUpdate()
 {
 	CRY_PROFILE_REGION(PROFILE_ENTITY, "EntitySystem::PrePhysicsUpdate");
-	MEMSTAT_FUNCTION_CONTEXT(EMemStatContextTypes::MSC_Other);
+	MEMSTAT_FUNCTION_CONTEXT(EMemStatContextType::Other);
 
 	SEntityEvent event(ENTITY_EVENT_PREPHYSICSUPDATE);
 	event.fParam[0] = gEnv->pTimer->GetFrameTime();
@@ -1020,7 +1020,7 @@ void CEntitySystem::PrePhysicsUpdate()
 void CEntitySystem::Update()
 {
 	CRY_PROFILE_REGION(PROFILE_ENTITY, "EntitySystem::Update");
-	MEMSTAT_FUNCTION_CONTEXT(EMemStatContextTypes::MSC_Other);
+	MEMSTAT_FUNCTION_CONTEXT(EMemStatContextType::Other);
 
 	const float fFrameTime = gEnv->pTimer->GetFrameTime();
 	if (fFrameTime > FLT_EPSILON)
@@ -1801,7 +1801,7 @@ bool CEntitySystem::OnLoadLevel(const char* szLevelPath)
 void CEntitySystem::LoadEntities(XmlNodeRef& objectsNode, bool bIsLoadingLevelFile)
 {
 	LOADING_TIME_PROFILE_SECTION;
-	MEMSTAT_FUNCTION_CONTEXT(EMemStatContextTypes::MSC_Other);
+	MEMSTAT_FUNCTION_CONTEXT(EMemStatContextType::Other);
 
 	//Update loading screen and important tick functions
 	SYNCHRONOUS_LOADING_TICK();

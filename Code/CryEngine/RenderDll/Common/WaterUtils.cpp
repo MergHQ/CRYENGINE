@@ -633,7 +633,7 @@ void WaterAsyncUpdate(CWaterSim* pWaterSim, int nFrameID, float fTime, bool bOnl
 
 void CWater::Create(float fA, float fWind, float fWorldSizeX, float fWorldSizeY)
 {
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Water Sim");
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, "Water Sim");
 	Release();
 	m_pWaterSim = CryAlignedNew<CWaterSim>(); //::GetInstance();
 	m_pWaterSim->Create(fA, fWind, fWorldSizeX, fWorldSizeY);

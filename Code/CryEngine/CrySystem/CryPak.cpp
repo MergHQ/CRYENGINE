@@ -2358,7 +2358,7 @@ int CCryPak::FindClose(intptr_t handle)
 bool CCryPak::LoadPakToMemory(const char* pName, ICryPak::EInMemoryPakLocation nLoadPakToMemory, IMemoryBlock* pMemoryBlock)
 {
 	LOADING_TIME_PROFILE_SECTION_ARGS(pName);
-	MEMSTAT_CONTEXT_FMT(EMemStatContextTypes::MSC_Other, 0, "Load Pak To Memory: %s", pName);
+	MEMSTAT_CONTEXT_FMT(EMemStatContextType::Other, "Load Pak To Memory: %s", pName);
 
 	CryPathString pakFile = pName;
 	pakFile.MakeLower();
@@ -2387,7 +2387,7 @@ bool CCryPak::LoadPakToMemory(const char* pName, ICryPak::EInMemoryPakLocation n
 void CCryPak::LoadPaksToMemory(int nMaxPakSize, bool bLoadToMemory)
 {
 	LOADING_TIME_PROFILE_SECTION;
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Load Paks To Memory");
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, "Load Paks To Memory");
 	AUTO_MODIFYLOCK(m_csZips);
 	for (ZipArray::reverse_iterator itZip = m_arrZips.rbegin(); itZip != m_arrZips.rend(); ++itZip)
 	{
@@ -3621,7 +3621,7 @@ ICryArchive* CCryPak::OpenArchive(
 {
 	LOADING_TIME_PROFILE_SECTION_ARGS(szPath);
 	PROFILE_DISK_OPEN;
-	MEMSTAT_CONTEXT_FMT(EMemStatContextTypes::MSC_Other, 0, "CryPak (%s)", szPath);
+	MEMSTAT_CONTEXT_FMT(EMemStatContextType::Other, "CryPak (%s)", szPath);
 
 	CryPathString fullPath;
 	AdjustFileName(szPath, fullPath, FLAGS_PATH_REAL);

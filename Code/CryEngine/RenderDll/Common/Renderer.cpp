@@ -354,7 +354,7 @@ void CRenderer::PostInit()
 void CRenderer::StartRenderIntroMovies()
 {
 	LOADING_TIME_PROFILE_SECTION;
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Staer Render Intro Movie");
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, "Staer Render Intro Movie");
 	assert(m_pIntroMovieRenderer == 0);
 
 #if USE_INTRO_MOVIES
@@ -1032,7 +1032,7 @@ bool CRenderer::IsCurrentContextMainVP()
 void CRenderer::InitSystemResources(int nFlags)
 {
 	LOADING_TIME_PROFILE_SECTION;
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Init System Resources");
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, "Init System Resources");
 
 	if (!m_bSystemResourcesInit)
 	{
@@ -2663,8 +2663,8 @@ _smart_ptr<IRenderMesh> CRenderer::CreateRenderMesh(const char* szType, const ch
 		                                   pInitParams->eType, pInitParams->nRenderChunkCount, pInitParams->nClientTextureBindID, 0, 0, pInitParams->bOnlyVideoBuffer, pInitParams->bPrecache, pInitParams->pTangents, pInitParams->bLockForThreadAccess, pInitParams->pNormals);
 	}
 
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_RenderMeshType, 0, szType);
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_RenderMesh, 0, szSourceName);
+	MEMSTAT_CONTEXT(EMemStatContextType::RenderMeshType, szType);
+	MEMSTAT_CONTEXT(EMemStatContextType::RenderMesh, szSourceName);
 
 	// make material table with clean elements
 	_smart_ptr<CRenderMesh> pRenderMesh = new CRenderMesh(szType, szSourceName);
@@ -2688,8 +2688,8 @@ _smart_ptr<IRenderMesh> CRenderer::CreateRenderMeshInitialized(
 {
 	FUNCTION_PROFILER_RENDERER();
 
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_RenderMeshType, 0, szType);
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_RenderMesh, 0, szSourceName);
+	MEMSTAT_CONTEXT(EMemStatContextType::RenderMeshType, szType);
+	MEMSTAT_CONTEXT(EMemStatContextType::RenderMesh, szSourceName);
 
 	_smart_ptr<CRenderMesh> pRenderMesh = new CRenderMesh(szType, szSourceName, bLockForThreadAcc);
 	pRenderMesh->_SetRenderMeshType(eBufType);

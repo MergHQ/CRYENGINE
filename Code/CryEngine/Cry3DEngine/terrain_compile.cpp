@@ -563,7 +563,7 @@ bool CTerrain::Load_T(T*& f, int& nDataSize, STerrainChunkHeader* pTerrainChunkH
 
 		{
 			// get vegetation objects count
-			MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Terrain, 0, "Vegetation");
+			MEMSTAT_CONTEXT(EMemStatContextType::Terrain, "Vegetation");
 			LOADING_TIME_PROFILE_SECTION_NAMED("Vegetation");
 
 			int nObjectsCount = 0;
@@ -598,7 +598,7 @@ bool CTerrain::Load_T(T*& f, int& nDataSize, STerrainChunkHeader* pTerrainChunkH
 
 		{
 			// get brush objects count
-			MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Terrain, 0, "Brushes");
+			MEMSTAT_CONTEXT(EMemStatContextType::Terrain, "Brushes");
 			LOADING_TIME_PROFILE_SECTION_NAMED("Brushes");
 
 			int nObjectsCount = 0;
@@ -778,7 +778,7 @@ bool CTerrain::SetCompiledData(byte* pData, int nDataSize, std::vector<struct IS
 
 bool CTerrain::Load(FILE* f, int nDataSize, STerrainChunkHeader* pTerrainChunkHeader, std::vector<struct IStatObj*>** ppStatObjTable, std::vector<IMaterial*>** ppMatTable)
 {
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Terrain, 0, "CTerrain::Load");
+	MEMSTAT_CONTEXT(EMemStatContextType::Terrain, "CTerrain::Load");
 
 	bool bRes;
 

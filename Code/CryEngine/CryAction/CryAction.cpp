@@ -458,7 +458,7 @@ void CCryAction::MapCmd(IConsoleCmdArgs* args)
 	SLICE_SCOPE_DEFINE();
 
 	LOADING_TIME_PROFILE_SECTION;
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "MapCmd");
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, "MapCmd");
 
 	uint32 flags = eGSF_NonBlockingConnect;
 
@@ -1745,7 +1745,7 @@ static inline void InlineInitializationProcessing(const char* sDescription)
 //------------------------------------------------------------------------
 bool CCryAction::Initialize(SSystemInitParams& startupParams)
 {
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "CryAction Init");
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, "CryAction Init");
 
 	gEnv->pGameFramework = this;
 	m_pSystem = startupParams.pSystem;
@@ -2773,7 +2773,7 @@ void CCryAction::PostRender(CEnumFlags<ESystemUpdateFlags> updateFlags)
 void CCryAction::PostRenderSubmit()
 {
 	CRY_PROFILE_REGION(PROFILE_GAME, "CCryAction::PostRenderSubmit");
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "CCryAction::PostRenderSubmit");
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, "CCryAction::PostRenderSubmit");
 
 	if (m_pGame)
 	{
@@ -2903,7 +2903,7 @@ bool CCryAction::IsGameStarted()
 bool CCryAction::StartGameContext(const SGameStartParams* pGameStartParams)
 {
 	LOADING_TIME_PROFILE_SECTION;
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "StartGameContext");
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, "StartGameContext");
 
 	if (gEnv->IsEditor())
 	{
@@ -3258,7 +3258,7 @@ bool CCryAction::SaveGame(const char* path, bool bQuick, bool bForceImmediate, E
 
 	LOADING_TIME_PROFILE_SECTION(gEnv->pSystem);
 
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Saving game");
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, "Saving game");
 
 	if (gEnv->bMultiplayer)
 		return false;
@@ -3414,7 +3414,7 @@ ELoadGameResult CCryAction::LoadGame(const char* path, bool quick, bool ignoreDe
 	CryLog("[LOAD GAME] %s saved game '%s'%s", quick ? "Quick-loading" : "Loading", path, ignoreDelay ? " ignoring delay" : "");
 	INDENT_LOG_DURING_SCOPE();
 
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Loading game");
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, "Loading game");
 
 	if (gEnv->bMultiplayer)
 		return eLGR_Failed;

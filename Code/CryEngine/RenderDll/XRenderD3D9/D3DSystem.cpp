@@ -1123,7 +1123,7 @@ CRY_HWND CD3D9Renderer::Init(int x, int y, int width, int height, unsigned int c
 	// Create and set the current aux collector to capture any aux commands
 	SetCurrentAuxGeomCollector(GetOrCreateAuxGeomCollector(gEnv->pSystem->GetViewCamera()));
 
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Renderer initialisation");
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, "Renderer initialisation");
 
 	if (!iSystem || !iLog)
 		return 0;

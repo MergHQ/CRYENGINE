@@ -391,7 +391,7 @@ void UpdateIOThreadStats(
 void CStreamEngine::Update(uint32 nUpdateTypesBitmask)
 {
 	CRY_PROFILE_FUNCTION(PROFILE_SYSTEM);
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "CStreamEngine::Update");
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, "CStreamEngine::Update");
 
 	// Dispatch completed callbacks.
 	MainThread_FinalizeIOJobs(nUpdateTypesBitmask);

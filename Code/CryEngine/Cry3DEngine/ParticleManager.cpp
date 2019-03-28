@@ -453,8 +453,8 @@ IParticleEffect* CParticleManager::FindEffect(cstr sEffectName, cstr sSource, bo
 		}
 	}
 
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Particles");
-	MEMSTAT_CONTEXT_FMT(EMemStatContextTypes::MSC_ParticleEffect, EMemStatContextFlags::MSF_Instance, "%s", sEffectName);
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, "Particles");
+	MEMSTAT_CONTEXT(EMemStatContextType::ParticleEffect, sEffectName);
 
 	assert(pEffect);
 	if (pEffect->IsEnabled() || pEffect->GetChildCount())
@@ -1106,8 +1106,8 @@ bool CParticleManager::LoadLibrary(cstr sParticlesLibrary, cstr sParticlesLibrar
 
 XmlNodeRef CParticleManager::ReadLibrary(cstr sParticlesLibrary)
 {
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "ParticleLibraries");
-	MEMSTAT_CONTEXT_FMT(EMemStatContextTypes::MSC_ParticleLibrary, 0, "Particle lib (%s)", sParticlesLibrary);
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, "ParticleLibraries");
+	MEMSTAT_CONTEXT(EMemStatContextType::ParticleLibrary, sParticlesLibrary);
 
 	string sLibSubPath = PathUtil::Make(EFFECTS_SUBPATH, sParticlesLibrary, "xml");
 	if (GetCVars()->e_ParticlesUseLevelSpecificLibs)
@@ -1174,8 +1174,8 @@ bool CParticleManager::LoadLibrary(cstr sParticlesLibrary, XmlNodeRef& libNode, 
 	if (!m_bEnabled)
 		return false;
 
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "ParticleLibraries");
-	MEMSTAT_CONTEXT_FMT(EMemStatContextTypes::MSC_ParticleLibrary, 0, "Particle lib (%s)", sParticlesLibrary);
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, "ParticleLibraries");
+	MEMSTAT_CONTEXT(EMemStatContextType::ParticleLibrary, sParticlesLibrary);
 
 	CRY_DEFINE_ASSET_SCOPE("ParticleLibrary", sParticlesLibrary);
 
@@ -1207,7 +1207,7 @@ IParticleEffect* CParticleManager::LoadEffect(cstr sEffectName, XmlNodeRef& effe
 	if (!m_bEnabled)
 		return NULL;
 
-	MEMSTAT_CONTEXT_FMT(EMemStatContextTypes::MSC_ParticleEffect, 0, "%s", sEffectName);
+	MEMSTAT_CONTEXT(EMemStatContextType::ParticleEffect, sEffectName);
 
 	CParticleEffect* pEffect = FindLoadedEffect(sEffectName);
 	if (!pEffect)

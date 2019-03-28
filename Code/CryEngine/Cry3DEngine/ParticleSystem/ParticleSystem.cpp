@@ -57,7 +57,7 @@ PParticleEffect CParticleSystem::FindEffect(cstr name, bool bAllowLoad)
 
 PParticleEmitter CParticleSystem::CreateEmitter(PParticleEffect pEffect)
 {
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "pfx2::ParticleEmitter");
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, "pfx2::ParticleEmitter");
 	CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
 	PARTICLE_LIGHT_PROFILER();
 
@@ -98,7 +98,7 @@ void CParticleSystem::Update()
 {
 	CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
 	PARTICLE_LIGHT_PROFILER();
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_ParticleLibrary, 0, "CParticleSystem::Update");
+	MEMSTAT_CONTEXT(EMemStatContextType::ParticleLibrary, "CParticleSystem::Update");
 
 	if (!GetCVars()->e_Particles)
 		return;
@@ -451,8 +451,8 @@ void CParticleSystem::Serialize(TSerialize ser)
 PParticleEffect CParticleSystem::LoadEffect(cstr effectName)
 {
 	CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "pfx2::LoadEffect");
-	MEMSTAT_CONTEXT_FMT(EMemStatContextTypes::MSC_ParticleLibrary, 0, "Particle effect (%s)", effectName);
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, "pfx2::LoadEffect");
+	MEMSTAT_CONTEXT(EMemStatContextType::ParticleLibrary, effectName);
 
 	if (gEnv->pCryPak->IsFileExist(effectName))
 	{

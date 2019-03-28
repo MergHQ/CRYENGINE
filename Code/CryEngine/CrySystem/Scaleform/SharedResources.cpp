@@ -35,19 +35,19 @@ public:
 
 	void OnAlloc(const GMemoryHeap* heap, UPInt size, UPInt align, unsigned sid, const void* ptr)
 	{
-		MEMREPLAY_SCOPE(EMemReplayAllocClass::C_UserPointer, EMemReplayUserPointerClass::C_CryMalloc);
+		MEMREPLAY_SCOPE(EMemReplayAllocClass::UserPointer, EMemReplayUserPointerClass::CryMalloc);
 		MEMREPLAY_SCOPE_ALLOC(ptr, size, align);
 	}
 
 	void OnRealloc(const GMemoryHeap* heap, const void* oldPtr, UPInt newSize, const void* newPtr)
 	{
-		MEMREPLAY_SCOPE(EMemReplayAllocClass::C_UserPointer, EMemReplayUserPointerClass::C_CryMalloc);
+		MEMREPLAY_SCOPE(EMemReplayAllocClass::UserPointer, EMemReplayUserPointerClass::CryMalloc);
 		MEMREPLAY_SCOPE_REALLOC(oldPtr, newPtr, newSize, 0);
 	}
 
 	void OnFree(const GMemoryHeap* heap, const void* ptr)
 	{
-		MEMREPLAY_SCOPE(EMemReplayAllocClass::C_UserPointer, EMemReplayUserPointerClass::C_CryMalloc);
+		MEMREPLAY_SCOPE(EMemReplayAllocClass::UserPointer, EMemReplayUserPointerClass::CryMalloc);
 		MEMREPLAY_SCOPE_FREE(ptr);
 	}
 };

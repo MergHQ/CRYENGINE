@@ -338,7 +338,7 @@ void CRendererResources::LoadDefaultSystemTextures()
 	char str[256];
 	int i;
 
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Engine textures");
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, "Engine textures");
 
 	if (!m_bLoadedSystem)
 	{

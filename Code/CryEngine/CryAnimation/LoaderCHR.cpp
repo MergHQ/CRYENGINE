@@ -57,7 +57,7 @@ bool CryCHRLoader::BeginLoadCHRRenderMesh(CDefaultSkeleton* pSkel, const DynArra
 
 	static_assert(sizeof(TFace) == 6, "Invalid type size!");
 
-	MEMSTAT_CONTEXT_FMT(EMemStatContextTypes::MSC_CHR, 0, "LoadCharacter %s", szFilePath);
+	MEMSTAT_CONTEXT_FMT(EMemStatContextType::CHR, "LoadCharacter %s", szFilePath);
 
 	CRY_DEFINE_ASSET_SCOPE(CRY_SKEL_FILE_EXT, szFilePath);
 
@@ -144,7 +144,7 @@ void CryCHRLoader::EndStreamSkel(IReadStream* pStream)
 
 void CryCHRLoader::StreamOnComplete(IReadStream* pStream, unsigned nError)
 {
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_CHR, 0, "CryCHRLoader::StreamOnComplete");
+	MEMSTAT_CONTEXT(EMemStatContextType::CHR, "CryCHRLoader::StreamOnComplete");
 
 	if (m_pModelSkel)
 	{
@@ -380,7 +380,7 @@ bool CDefaultSkeleton::LoadNewSKEL(const char* szFilePath, uint32 nLoadingFlags)
 
 	static_assert(sizeof(TFace) == 6, "Invalid type size!");
 
-	MEMSTAT_CONTEXT_FMT(EMemStatContextTypes::MSC_CHR, 0, "LoadCharacter %s", szFilePath);
+	MEMSTAT_CONTEXT_FMT(EMemStatContextType::CHR, "LoadCharacter %s", szFilePath);
 
 	CRY_DEFINE_ASSET_SCOPE(CRY_SKEL_FILE_EXT, szFilePath);
 

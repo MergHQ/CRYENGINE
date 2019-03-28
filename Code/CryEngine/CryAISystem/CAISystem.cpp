@@ -1481,7 +1481,7 @@ void CAISystem::Reset(IAISystem::EResetReason reason)
 		}
 	}
 
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "AI Reset");
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, "AI Reset");
 	LOADING_TIME_PROFILE_SECTION;
 
 	SubSystemCall(Reset(reason));
@@ -2090,7 +2090,7 @@ IAIGroup* CAISystem::GetIAIGroup(int nGroupID)
 //====================================================================
 void CAISystem::ReadAreasFromFile(const char* fileNameAreas)
 {
-	MEMSTAT_CONTEXT_FMT(EMemStatContextTypes::MSC_Navigation, 0, "Areas (%s)", fileNameAreas);
+	MEMSTAT_CONTEXT_FMT(EMemStatContextType::Navigation, "Areas (%s)", fileNameAreas);
 	LOADING_TIME_PROFILE_SECTION
 
 	CCryBufferedFileReader file;
@@ -2163,7 +2163,7 @@ void CAISystem::ReadAreasFromFile(const char* fileNameAreas)
 //-----------------------------------------------------------------------------------------------------------
 void CAISystem::LoadNavigationData(const char* szLevel, const char* szMission, const EAILoadDataFlags loadDataFlags /*= eAILoadDataFlag_AllSystems*/)
 {
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Navigation, 0, "AI Navigation");
+	MEMSTAT_CONTEXT(EMemStatContextType::Navigation, "AI Navigation");
 
 	LOADING_TIME_PROFILE_SECTION(GetISystem());
 
@@ -2213,7 +2213,7 @@ void CAISystem::LoadMNM(const char* szLevel, const char* szMission, bool bAfterE
 
 void CAISystem::LoadCover(const char* szLevel, const char* szMission)
 {
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Navigation, 0, "Cover system");
+	MEMSTAT_CONTEXT(EMemStatContextType::Navigation, "Cover system");
 	LOADING_TIME_PROFILE_SECTION(GetISystem());
 	gAIEnv.pCoverSystem->Clear();
 
@@ -2486,7 +2486,7 @@ void CAISystem::Update(const CTimeValue frameStartTime, const float frameDeltaTi
 {
 	CRY_PROFILE_REGION(PROFILE_AI, "AI System: Update");
 	AISYSTEM_LIGHT_PROFILER();
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "AISystem::Update");
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, "AISystem::Update");
 
 	if (!InitUpdate(frameStartTime, frameDeltaTime))
 		return;
@@ -4036,7 +4036,7 @@ void CAISystem::SerializeObjectIDs(TSerialize ser)
 //====================================================================
 void CAISystem::Serialize(TSerialize ser)
 {
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "AI serialization");
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, "AI serialization");
 
 	DebugOutputObjects("Start of serialize");
 

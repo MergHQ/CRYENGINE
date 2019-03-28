@@ -1001,7 +1001,7 @@ void CStatObj::MergeSubObjectsRenderMeshes(bool bFromStreaming, CStatObj* pLod0,
 	if (m_bUnmergable)
 		return;
 
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Merged StatObj");
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, "Merged StatObj");
 	FUNCTION_PROFILER_3DENGINE;
 
 	m_bMerged = false;

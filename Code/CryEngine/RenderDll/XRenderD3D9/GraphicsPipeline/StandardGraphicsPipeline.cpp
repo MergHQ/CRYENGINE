@@ -59,7 +59,7 @@ CStandardGraphicsPipeline::CStandardGraphicsPipeline(const IRenderer::SGraphicsP
 
 void CStandardGraphicsPipeline::Init()
 {
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "CStandardGraphicsPipeline::Init");
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, "CStandardGraphicsPipeline::Init");
 
 	// default material bind points
 	{

@@ -146,7 +146,7 @@ void CLightVolumesMgr::Update(const SRenderingPassInfo& passInfo)
 		return;
 
 	FUNCTION_PROFILER_3DENGINE;
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "CLightVolumesMgr::Update");
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, "CLightVolumesMgr::Update");
 
 
 	m_pLightVolsInfo.CoalesceMemory();

@@ -174,11 +174,11 @@ extern "C"
 #if CAPTURE_REPLAY_LOG
 		CryGetIMemReplay()->StartOnCommandLine(startupParams.szSystemCmdLine);
 #endif
-		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Mainthread");
+		MEMSTAT_CONTEXT(EMemStatContextType::Other, "Mainthread");
 
 		std::unique_ptr<CSystem> pSystem;
 		{
-			MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "System: Engine Startup");
+			MEMSTAT_CONTEXT(EMemStatContextType::Other, "System: Engine Startup");
 
 #if CRY_PLATFORM_DURANGO && defined(ENABLE_PROFILING_CODE)
 			DurangoDebugCallStack::InstallExceptionHandler();

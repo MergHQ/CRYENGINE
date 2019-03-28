@@ -58,6 +58,581 @@ struct CVDebugInfo
 
 #if CAPTURE_REPLAY_LOG || ENABLE_STATOSCOPE
 
+#pragma pack(push)
+#pragma pack(1)
+
+struct MemReplayFrameStartEvent
+{
+	static const int EventId = MemReplayEventIds::RE_FrameStart;
+
+	uint32           frameId;
+
+	MemReplayFrameStartEvent(uint32 frameId)
+		: frameId(frameId)
+	{}
+} __PACKED;
+
+struct MemReplayLabelEvent
+{
+	static const int EventId = MemReplayEventIds::RE_Label;
+
+	char             label[1];
+
+	MemReplayLabelEvent(const char* label)
+	{
+		// Assume there is room beyond this instance.
+		strcpy(this->label, label); // we're intentionally writing beyond the end of this array, so don't use cry_strcpy()
+	}
+} __PACKED;
+
+struct MemReplayAddFixedContextEvent
+{
+	static const int EventId = MemReplayEventIds::RE_AddFixedContext;
+
+	uint64 threadId;
+	uint32 contextType;
+	uint32 fixedContextId;
+	char   name[1];
+
+	MemReplayAddFixedContextEvent(uint64 threadId, const char* name, EMemStatContextType type, IMemReplay::FixedContextID ctxId)
+	{
+		this->threadId = threadId;
+		this->contextType = static_cast<uint32>(type);
+		this->fixedContextId = ctxId;
+		// We're going to assume that there actually is enough space to store the name directly in the struct.
+		strcpy(this->name, name); // we're intentionally writing beyond the end of this array, so don't use cry_strcpy()
+	}
+} __PACKED;
+
+struct MemReplayPushFixedContextEvent
+{
+	static const int EventId = MemReplayEventIds::RE_PushFixedContext;
+
+	uint64 threadId;
+	IMemReplay::FixedContextID contextId;
+
+	MemReplayPushFixedContextEvent(uint64 threadId, IMemReplay::FixedContextID contextId)
+	{
+		this->threadId = threadId;
+		this->contextId = contextId;
+	}
+} __PACKED;
+
+struct MemReplayPushContextEvent
+{
+	static const int EventId = MemReplayEventIds::RE_PushContext3;
+
+	uint64           threadId;
+	uint32           contextType;
+
+	// This field must be the last in the structure, and enough memory should be allocated
+	// for the structure to hold the required name.
+	char name[1];
+
+	MemReplayPushContextEvent(uint64 threadId, const char* name, EMemStatContextType type)
+	{
+		// We're going to assume that there actually is enough space to store the name directly in the struct.
+
+		this->threadId = threadId;
+		this->contextType = static_cast<uint32>(type);
+		strcpy(this->name, name); // we're intentionally writing beyond the end of this array, so don't use cry_strcpy()
+	}
+} __PACKED;
+
+struct MemReplayPopContextEvent
+{
+	static const int EventId = MemReplayEventIds::RE_PopContext;
+
+	uint64 threadId;
+
+	explicit MemReplayPopContextEvent(uint64 threadId)
+	{
+		this->threadId = threadId;
+	}
+} __PACKED;
+
+struct MemReplayModuleRefEvent
+{
+	static const int EventId = MemReplayEventIds::RE_ModuleRef;
+
+	char             name[256];
+	char             path[256];
+	char             sig[512];
+	UINT_PTR         address;
+	UINT_PTR         size;
+
+	MemReplayModuleRefEvent(const char* name, const char* path, const UINT_PTR address, UINT_PTR size, const char* sig)
+	{
+		cry_strcpy(this->name, name);
+		cry_strcpy(this->path, path);
+		cry_strcpy(this->sig, sig);
+		this->address = address;
+		this->size = size;
+	}
+} __PACKED;
+
+struct MemReplayModuleUnRefEvent
+{
+	static const int EventId = MemReplayEventIds::RE_ModuleUnRef;
+
+	UINT_PTR         address;
+
+	MemReplayModuleUnRefEvent(UINT_PTR address)
+		: address(address) {}
+} __PACKED;
+
+struct MemReplayModuleRefShortEvent
+{
+	static const int EventId = MemReplayEventIds::RE_ModuleShortRef;
+
+	char             name[256];
+
+	MemReplayModuleRefShortEvent(const char* name)
+	{
+		cry_strcpy(this->name, name);
+	}
+} __PACKED;
+
+struct MemReplayAllocEvent
+{
+	static const int EventId = MemReplayEventIds::RE_Alloc6;
+
+	uint64           threadId;
+	UINT_PTR         id;
+	uint32           alignment;
+	uint32           sizeRequested;
+	uint32           sizeConsumed;
+	int32            sizeGlobal; //  Inferred from changes in global memory status
+
+	uint16           moduleId;
+	uint16           allocClass;
+	uint16           allocSubClass;
+	uint16           callstackLength;
+	UINT_PTR         callstack[1]; // Must be last.
+
+	MemReplayAllocEvent(uint64 threadId, uint16 moduleId, uint16 allocClass, uint16 allocSubClass, UINT_PTR id, uint32 alignment, uint32 sizeReq, uint32 sizeCon, int32 sizeGlobal)
+		: threadId(threadId)
+		, id(id)
+		, alignment(alignment)
+		, sizeRequested(sizeReq)
+		, sizeConsumed(sizeCon)
+		, sizeGlobal(sizeGlobal)
+		, moduleId(moduleId)
+		, allocClass(allocClass)
+		, allocSubClass(allocSubClass)
+		, callstackLength(0)
+	{
+	}
+} __PACKED;
+
+struct MemReplayFreeEvent
+{
+	static const int EventId = MemReplayEventIds::RE_Free6;
+
+	uint64           threadId;
+	UINT_PTR         id;
+	int32            sizeGlobal; //  Inferred from changes in global memory status
+
+	uint16           moduleId;
+	uint16           allocClass;
+	uint16           allocSubClass;
+
+	uint16           callstackLength;
+	UINT_PTR         callstack[1]; // Must be last.
+
+	MemReplayFreeEvent(uint64 threadId, uint16 moduleId, uint16 allocClass, uint16 allocSubClass, UINT_PTR id, int32 sizeGlobal)
+		: threadId(threadId)
+		, id(id)
+		, sizeGlobal(sizeGlobal)
+		, moduleId(moduleId)
+		, allocClass(allocClass)
+		, allocSubClass(allocSubClass)
+		, callstackLength(0)
+	{
+	}
+} __PACKED;
+
+struct MemReplayInfoEvent
+{
+	static const int EventId = MemReplayEventIds::RE_Info3;
+
+	uint32           executableSize;
+	uint32           initialGlobalSize;
+	uint32           bucketsFree;
+
+	MemReplayInfoEvent(uint32 executableSize, uint32 initialGlobalSize, uint32 bucketsFree)
+		: executableSize(executableSize)
+		, initialGlobalSize(initialGlobalSize)
+		, bucketsFree(bucketsFree)
+	{
+	}
+} __PACKED;
+
+struct MemReplayAddressProfileEvent
+{
+	static const int EventId = MemReplayEventIds::RE_AddressProfile2;
+
+	UINT_PTR         rsxStart;
+	uint32           rsxLength;
+
+	MemReplayAddressProfileEvent(UINT_PTR rsxStart, uint32 rsxLength)
+		: rsxStart(rsxStart)
+		, rsxLength(rsxLength)
+	{
+	}
+} __PACKED;
+
+struct MemReplayAllocUsageEvent
+{
+	static const int EventId = MemReplayEventIds::RE_AllocUsage2;
+
+	uint32           allocClass;
+	UINT_PTR         id;
+	uint32           used;
+
+	MemReplayAllocUsageEvent(uint16 allocClass, UINT_PTR id, uint32 used)
+		: allocClass(allocClass)
+		, id(id)
+		, used(used)
+	{
+	}
+} __PACKED;
+
+struct MemReplayScreenshotEvent
+{
+	static const int EventId = MemReplayEventIds::RE_Screenshot;
+
+	uint8            bmp[1];
+
+	MemReplayScreenshotEvent()
+	{
+	}
+} __PACKED;
+
+struct MemReplaySizerPushEvent
+{
+	static const int EventId = MemReplayEventIds::RE_SizerPush;
+
+	char             name[1];
+
+	MemReplaySizerPushEvent(const char* name)
+	{
+		strcpy(this->name, name);
+	}
+} __PACKED;
+
+struct MemReplaySizerPopEvent
+{
+	static const int EventId = MemReplayEventIds::RE_SizerPop;
+} __PACKED;
+
+struct MemReplaySizerAddRangeEvent
+{
+	static const int EventId = MemReplayEventIds::RE_SizerAddRange;
+
+	UINT_PTR         address;
+	uint32           size;
+	int32            count;
+
+	MemReplaySizerAddRangeEvent(const UINT_PTR address, uint32 size, int32 count)
+		: address(address)
+		, size(size)
+		, count(count)
+	{}
+
+} __PACKED;
+
+struct MemReplayBucketMarkEvent
+{
+	static const int EventId = MemReplayEventIds::RE_BucketMark2;
+
+	UINT_PTR         address;
+	uint32           length;
+	int32            index;
+	uint32           alignment;
+
+	MemReplayBucketMarkEvent(UINT_PTR address, uint32 length, int32 index, uint32 alignment)
+		: address(address)
+		, length(length)
+		, index(index)
+		, alignment(alignment)
+	{}
+
+} __PACKED;
+
+struct MemReplayBucketUnMarkEvent
+{
+	static const int EventId = MemReplayEventIds::RE_BucketUnMark2;
+
+	UINT_PTR         address;
+	int32            index;
+
+	MemReplayBucketUnMarkEvent(UINT_PTR address, int32 index)
+		: address(address)
+		, index(index)
+	{}
+} __PACKED;
+
+struct MemReplayAddAllocReferenceEvent
+{
+	static const int EventId = MemReplayEventIds::RE_AddAllocReference;
+
+	UINT_PTR         address;
+	UINT_PTR         referenceId;
+	uint32           callstackLength;
+	UINT_PTR         callstack[1];
+
+	MemReplayAddAllocReferenceEvent(UINT_PTR address, UINT_PTR referenceId)
+		: address(address)
+		, referenceId(referenceId)
+		, callstackLength(0)
+	{
+	}
+} __PACKED;
+
+struct MemReplayRemoveAllocReferenceEvent
+{
+	static const int EventId = MemReplayEventIds::RE_RemoveAllocReference;
+
+	UINT_PTR         referenceId;
+
+	MemReplayRemoveAllocReferenceEvent(UINT_PTR referenceId)
+		: referenceId(referenceId)
+	{
+	}
+} __PACKED;
+
+struct MemReplayPoolMarkEvent
+{
+	static const int EventId = MemReplayEventIds::RE_PoolMark2;
+
+	UINT_PTR         address;
+	uint32           length;
+	int32            index;
+	uint32           alignment;
+	char             name[1];
+
+	MemReplayPoolMarkEvent(UINT_PTR address, uint32 length, int32 index, uint32 alignment, const char* name)
+		: address(address)
+		, length(length)
+		, index(index)
+		, alignment(alignment)
+	{
+		strcpy(this->name, name);
+	}
+
+} __PACKED;
+
+struct MemReplayPoolUnMarkEvent
+{
+	static const int EventId = MemReplayEventIds::RE_PoolUnMark;
+
+	UINT_PTR         address;
+	int32            index;
+
+	MemReplayPoolUnMarkEvent(UINT_PTR address, int32 index)
+		: address(address)
+		, index(index)
+	{}
+} __PACKED;
+
+struct MemReplayTextureAllocContextEvent
+{
+	static const int EventId = MemReplayEventIds::RE_TextureAllocContext2;
+
+	UINT_PTR         address;
+	uint32           mip;
+	uint32           width;
+	uint32           height;
+	uint32           flags;
+	char             name[1];
+
+	MemReplayTextureAllocContextEvent(UINT_PTR ptr, uint32 mip, uint32 width, uint32 height, uint32 flags, const char* name)
+		: address(ptr)
+		, mip(mip)
+		, width(width)
+		, height(height)
+		, flags(flags)
+	{
+		strcpy(this->name, name);
+	}
+} __PACKED;
+
+struct MemReplayBucketCleanupEnabledEvent
+{
+	static const int EventId = MemReplayEventIds::RE_BucketCleanupEnabled;
+
+	UINT_PTR         allocatorBaseAddress;
+	uint32           cleanupsEnabled;
+
+	MemReplayBucketCleanupEnabledEvent(UINT_PTR allocatorBaseAddress, bool cleanupsEnabled)
+		: allocatorBaseAddress(allocatorBaseAddress)
+		, cleanupsEnabled(cleanupsEnabled ? 1 : 0)
+	{
+	}
+} __PACKED;
+
+struct MemReplayReallocEvent
+{
+	static const int EventId = MemReplayEventIds::RE_Realloc3;
+
+	uint64           threadId;
+	UINT_PTR         oldId;
+	UINT_PTR         newId;
+	uint32           alignment;
+	uint32           newSizeRequested;
+	uint32           newSizeConsumed;
+	int32            sizeGlobal; //  Inferred from changes in global memory status
+
+	uint16           moduleId;
+	uint16           allocClass;
+	uint16           allocSubClass;
+
+	uint16           callstackLength;
+	UINT_PTR         callstack[1]; // Must be last.
+
+	MemReplayReallocEvent(uint64 threadId, uint16 moduleId, uint16 allocClass, uint16 allocSubClass, UINT_PTR oldId, UINT_PTR newId, uint32 alignment, uint32 newSizeReq, uint32 newSizeCon, int32 sizeGlobal)
+		: threadId(threadId)
+		, oldId(oldId)
+		, newId(newId)
+		, alignment(alignment)
+		, newSizeRequested(newSizeReq)
+		, newSizeConsumed(newSizeCon)
+		, sizeGlobal(sizeGlobal)
+		, moduleId(moduleId)
+		, allocClass(allocClass)
+		, allocSubClass(allocSubClass)
+		, callstackLength(0)
+	{
+	}
+} __PACKED;
+
+struct MemReplayRegisterContainerEvent
+{
+	static const int EventId = MemReplayEventIds::RE_RegisterContainer;
+
+	UINT_PTR         key;
+	uint32           type;
+
+	uint32           callstackLength;
+	UINT_PTR         callstack[1]; // Must be last
+
+	MemReplayRegisterContainerEvent(UINT_PTR key, uint32 type)
+		: key(key)
+		, type(type)
+		, callstackLength(0)
+	{
+	}
+
+} __PACKED;
+
+struct MemReplayUnregisterContainerEvent
+{
+	static const int EventId = MemReplayEventIds::RE_UnregisterContainer;
+
+	UINT_PTR         key;
+
+	explicit MemReplayUnregisterContainerEvent(UINT_PTR key)
+		: key(key)
+	{
+	}
+
+} __PACKED;
+
+struct MemReplayBindToContainerEvent
+{
+	static const int EventId = MemReplayEventIds::RE_BindToContainer;
+
+	UINT_PTR         key;
+	UINT_PTR         ptr;
+
+	MemReplayBindToContainerEvent(UINT_PTR key, UINT_PTR ptr)
+		: key(key)
+		, ptr(ptr)
+	{
+	}
+
+} __PACKED;
+
+struct MemReplayUnbindFromContainerEvent
+{
+	static const int EventId = MemReplayEventIds::RE_UnbindFromContainer;
+
+	UINT_PTR         key;
+	UINT_PTR         ptr;
+
+	MemReplayUnbindFromContainerEvent(UINT_PTR key, UINT_PTR ptr)
+		: key(key)
+		, ptr(ptr)
+	{
+	}
+
+} __PACKED;
+
+struct MemReplayRegisterFixedAddressRangeEvent
+{
+	static const int EventId = MemReplayEventIds::RE_RegisterFixedAddressRange;
+
+	UINT_PTR         address;
+	uint32           length;
+
+	char             name[1];
+
+	MemReplayRegisterFixedAddressRangeEvent(UINT_PTR address, uint32 length, const char* name)
+		: address(address)
+		, length(length)
+	{
+		strcpy(this->name, name);
+	}
+} __PACKED;
+
+struct MemReplaySwapContainersEvent
+{
+	static const int EventId = MemReplayEventIds::RE_SwapContainers;
+
+	UINT_PTR         keyA;
+	UINT_PTR         keyB;
+
+	MemReplaySwapContainersEvent(UINT_PTR keyA, UINT_PTR keyB)
+		: keyA(keyA)
+		, keyB(keyB)
+	{
+	}
+} __PACKED;
+
+struct MemReplayMapPageEvent
+{
+	static const int EventId = MemReplayEventIds::RE_MapPage2;
+
+	UINT_PTR         address;
+	uint32           length;
+	uint32           callstackLength;
+	UINT_PTR         callstack[1];
+
+	MemReplayMapPageEvent(UINT_PTR address, uint32 length)
+		: address(address)
+		, length(length)
+		, callstackLength(0)
+	{
+	}
+} __PACKED;
+
+struct MemReplayUnMapPageEvent
+{
+	static const int EventId = MemReplayEventIds::RE_UnMapPage;
+
+	UINT_PTR         address;
+	uint32           length;
+
+	MemReplayUnMapPageEvent(UINT_PTR address, uint32 length)
+		: address(address)
+		, length(length)
+	{
+	}
+} __PACKED;
+
+#pragma pack(pop)
+
 ReplayDiskWriter::ReplayDiskWriter(const char* pSuffix)
 	: m_fp(NULL)
 	, m_written(0)
@@ -806,7 +1381,7 @@ bool ReplayLogStream::Open(const char* openString)
 		m_bufferEnd = &m_buffer[0];
 
 		// Write stream header.
-		const uint8 version = 4;
+		const uint8 version = 5;
 		uint32 platform = MemReplayPlatformIds::PI_Unknown;
 
 	#if CRY_PLATFORM_ORBIS
@@ -1207,8 +1782,8 @@ CMemReplay* CMemReplay::GetInstance()
 CMemReplay::CMemReplay()
 	: m_allocReference(0)
 	, m_scopeDepth(0)
-	, m_scopeClass((EMemReplayAllocClass::Class)0)
-	, m_scopeSubClass(0)
+	, m_scopeClass(EMemReplayAllocClass::UserPointer)
+	, m_scopeSubClass(EMemReplayUserPointerClass::Unknown)
 	, m_scopeModuleId(0)
 {
 }
@@ -1339,7 +1914,7 @@ void CMemReplay::Stop()
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool CMemReplay::EnterScope(EMemReplayAllocClass::Class cls, uint16 subCls, int moduleId)
+bool CMemReplay::EnterScope(EMemReplayAllocClass cls, EMemReplayUserPointerClass subCls, int moduleId)
 {
 	if (m_stream.IsOpen())
 	{
@@ -1451,22 +2026,6 @@ void CMemReplay::ExitScope()
 	m_scope.Unlock();
 }
 
-bool CMemReplay::EnterLockScope()
-{
-	if (m_stream.IsOpen())
-	{
-		m_scope.Lock();
-		return true;
-	}
-
-	return false;
-}
-
-void CMemReplay::LeaveLockScope()
-{
-	m_scope.Unlock();
-}
-
 //////////////////////////////////////////////////////////////////////////
 void CMemReplay::AddLabel(const char* label)
 {
@@ -1537,7 +2096,7 @@ void CMemReplay::GetInfo(CryReplayInfo& infoOut)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CMemReplay::AllocUsage(EMemReplayAllocClass::Class allocClass, UINT_PTR id, UINT_PTR used)
+void CMemReplay::AllocUsage(EMemReplayAllocClass allocClass, UINT_PTR id, UINT_PTR used)
 {
 	#if REPLAY_RECORD_USAGE_CHANGES
 	if (!ptr)
@@ -1583,7 +2142,38 @@ void CMemReplay::RemoveAllocReference(void* ref)
 	}
 }
 
-void CMemReplay::AddContext(int type, uint32 flags, const char* str)
+IMemReplay::FixedContextID CMemReplay::AddFixedContext(EMemStatContextType type, const char* str)
+{
+	const threadID threadId = CryGetCurrentThreadId();
+	if (m_stream.IsOpen() && threadId != s_recordThreadId && !g_memReplayPaused)
+	{
+		CryAutoLock<CryCriticalSection> lock(GetLogMutex());
+		static IMemReplay::FixedContextID s_fixedContextCounter = 0;
+		if (m_stream.IsOpen())
+		{
+			FixedContextID id = s_fixedContextCounter++;
+			new(m_stream.AllocateRawEvent<MemReplayAddFixedContextEvent>(strlen(str)))
+				MemReplayAddFixedContextEvent(threadId, str, type, id);
+			return id;
+		}
+	}
+	return -1;
+}
+
+void CMemReplay::PushFixedContext(FixedContextID id)
+{
+	const threadID threadId = CryGetCurrentThreadId();
+	if (m_stream.IsOpen() && threadId != s_recordThreadId && !g_memReplayPaused)
+	{
+		CryAutoLock<CryCriticalSection> lock(GetLogMutex());
+		if (m_stream.IsOpen())
+		{
+			m_stream.WriteEvent(MemReplayPushFixedContextEvent(threadId, id));
+		}
+	}
+}
+
+void CMemReplay::PushContext(EMemStatContextType type, const char* str)
 {
 	if (m_stream.IsOpen() && ThreadIsNotFlushing())
 	{
@@ -1592,12 +2182,12 @@ void CMemReplay::AddContext(int type, uint32 flags, const char* str)
 		if (m_stream.IsOpen())
 		{
 			new(m_stream.AllocateRawEvent<MemReplayPushContextEvent>(strlen(str)))
-			MemReplayPushContextEvent(CryGetCurrentThreadId(), str, (EMemStatContextTypes::Type) type, flags);
+			MemReplayPushContextEvent(CryGetCurrentThreadId(), str, type);
 		}
 	}
 }
 
-void CMemReplay::AddContextV(int type, uint32 flags, const char* format, va_list args)
+void CMemReplay::PushContextV(EMemStatContextType type, const char* format, va_list args)
 {
 	if (m_stream.IsOpen() && ThreadIsNotFlushing())
 	{
@@ -1606,7 +2196,7 @@ void CMemReplay::AddContextV(int type, uint32 flags, const char* format, va_list
 		if (m_stream.IsOpen())
 		{
 			MemReplayPushContextEvent* ev = m_stream.BeginAllocateRawEvent<MemReplayPushContextEvent>(511);
-			new(ev) MemReplayPushContextEvent(CryGetCurrentThreadId(), "", (EMemStatContextTypes::Type) type, flags);
+			new(ev) MemReplayPushContextEvent(CryGetCurrentThreadId(), "", type);
 
 			cry_vsprintf(ev->name, 512, format, args);
 
@@ -1616,7 +2206,7 @@ void CMemReplay::AddContextV(int type, uint32 flags, const char* format, va_list
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CMemReplay::RemoveContext()
+void CMemReplay::PopContext()
 {
 	if (m_stream.IsOpen() && ThreadIsNotFlushing())
 	{
@@ -1886,25 +2476,24 @@ void CMemReplay::RecordModuleLoad(void* pSelf, const CReplayModules::ModuleLoadD
 	CMemReplay* pMR = reinterpret_cast<CMemReplay*>(pSelf);
 
 	const char* baseName = strrchr(mld.name, '\\');
-	if (!baseName) baseName = mld.name;
-	size_t baseNameLen = strlen(baseName);
+	if (!baseName)
+		baseName = mld.name;
 
 	pMR->m_stream.WriteEvent(MemReplayModuleRefEvent(mld.name, mld.path, mld.address, mld.size, mld.sig));
 
 	const uint32 threadId = CryGetCurrentThreadId();
 
-	new(pMR->m_stream.BeginAllocateRawEvent<MemReplayPushContextEvent>(baseNameLen))MemReplayPushContextEvent(threadId, baseName, EMemStatContextTypes::MSC_Other, 0);
-	pMR->m_stream.EndAllocateRawEvent<MemReplayPushContextEvent>(baseNameLen);
+	pMR->PushContext(EMemStatContextType::Other, baseName);
 
 	pMR->RecordAlloc(
-	  EMemReplayAllocClass::C_UserPointer, EMemReplayUserPointerClass::C_CryMalloc, eCryModule,
+	  EMemReplayAllocClass::UserPointer, EMemReplayUserPointerClass::CryMalloc, eCryModule,
 	  (UINT_PTR)mld.address,
 	  4096,
 	  mld.size,
 	  mld.size,
 	  0);
 
-	pMR->m_stream.WriteEvent(MemReplayPopContextEvent(threadId));
+	pMR->PopContext();
 }
 
 void CMemReplay::RecordModuleUnload(void* pSelf, const CReplayModules::ModuleUnloadDesc& mld)
@@ -1912,11 +2501,11 @@ void CMemReplay::RecordModuleUnload(void* pSelf, const CReplayModules::ModuleUnl
 	CMemReplay* pMR = reinterpret_cast<CMemReplay*>(pSelf);
 
 	PREFAST_SUPPRESS_WARNING(6326)
-	pMR->RecordFree(EMemReplayAllocClass::C_UserPointer, EMemReplayUserPointerClass::C_CryMalloc, eCryModule, mld.address, 0);
+	pMR->RecordFree(EMemReplayAllocClass::UserPointer, EMemReplayUserPointerClass::CryMalloc, eCryModule, mld.address, 0);
 	pMR->m_stream.WriteEvent(MemReplayModuleUnRefEvent(mld.address));
 }
 
-void CMemReplay::RecordAlloc(EMemReplayAllocClass::Class cls, uint16 subCls, int moduleId, UINT_PTR p, UINT_PTR alignment, UINT_PTR sizeRequested, UINT_PTR sizeConsumed, INT_PTR sizeGlobal)
+void CMemReplay::RecordAlloc(EMemReplayAllocClass cls, EMemReplayUserPointerClass subCls, int moduleId, UINT_PTR p, UINT_PTR alignment, UINT_PTR sizeRequested, UINT_PTR sizeConsumed, INT_PTR sizeGlobal)
 {
 	MemReplayAllocEvent* ev = m_stream.BeginAllocateRawEvent<MemReplayAllocEvent>(
 	  k_maxCallStackDepth * sizeof(void*) - SIZEOF_MEMBER(MemReplayAllocEvent, callstack));
@@ -1936,7 +2525,7 @@ void CMemReplay::RecordAlloc(EMemReplayAllocClass::Class cls, uint16 subCls, int
 	m_stream.EndAllocateRawEvent<MemReplayAllocEvent>(sizeof(ev->callstack[0]) * ev->callstackLength - sizeof(ev->callstack));
 }
 
-void CMemReplay::RecordRealloc(EMemReplayAllocClass::Class cls, uint16 subCls, int moduleId, UINT_PTR originalId, UINT_PTR newId, UINT_PTR alignment, UINT_PTR sizeRequested, UINT_PTR sizeConsumed, INT_PTR sizeGlobal)
+void CMemReplay::RecordRealloc(EMemReplayAllocClass cls, EMemReplayUserPointerClass subCls, int moduleId, UINT_PTR originalId, UINT_PTR newId, UINT_PTR alignment, UINT_PTR sizeRequested, UINT_PTR sizeConsumed, INT_PTR sizeGlobal)
 {
 	MemReplayReallocEvent* ev = new(m_stream.BeginAllocateRawEvent<MemReplayReallocEvent>(
 	                                  k_maxCallStackDepth * SIZEOF_MEMBER(MemReplayReallocEvent, callstack[0]) - SIZEOF_MEMBER(MemReplayReallocEvent, callstack)))
@@ -1956,7 +2545,7 @@ void CMemReplay::RecordRealloc(EMemReplayAllocClass::Class cls, uint16 subCls, i
 	m_stream.EndAllocateRawEvent<MemReplayReallocEvent>(ev->callstackLength * sizeof(ev->callstack[0]) - sizeof(ev->callstack));
 }
 
-void CMemReplay::RecordFree(EMemReplayAllocClass::Class cls, uint16 subCls, int moduleId, UINT_PTR id, INT_PTR sizeGlobal)
+void CMemReplay::RecordFree(EMemReplayAllocClass cls, EMemReplayUserPointerClass subCls, int moduleId, UINT_PTR id, INT_PTR sizeGlobal)
 {
 	MemReplayFreeEvent* ev =
 	  new(m_stream.BeginAllocateRawEvent<MemReplayFreeEvent>(SIZEOF_MEMBER(MemReplayFreeEvent, callstack[0]) * k_maxCallStackDepth - SIZEOF_MEMBER(MemReplayFreeEvent, callstack)))
@@ -1975,7 +2564,7 @@ void CMemReplay::RecordFree(EMemReplayAllocClass::Class cls, uint16 subCls, int 
 
 void CMemReplay::RecordModules()
 {
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "DLL Image Size (incl. Data Segment)");
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, "DLL Image Size (incl. Data Segment)");
 	m_modules.RefreshModules(RecordModuleLoad, RecordModuleUnload, this);
 }
 
@@ -2013,7 +2602,7 @@ MemReplayCrySizer::~MemReplayCrySizer()
 	Pop();
 
 	{
-		MEMREPLAY_SCOPE(EMemReplayAllocClass::C_UserPointer, 0);
+		MEMREPLAY_SCOPE(EMemReplayAllocClass::UserPointer, EMemReplayUserPointerClass::Unknown);
 		CryAutoLock<CryCriticalSection> lock(GetLogMutex());
 
 		if (m_stream->IsOpen())
@@ -2047,7 +2636,7 @@ bool MemReplayCrySizer::AddObject(const void* pIdentifier, size_t nSizeBytes, in
 
 	if (m_stream->IsOpen())
 	{
-		MEMREPLAY_SCOPE(EMemReplayAllocClass::C_UserPointer, 0);
+		MEMREPLAY_SCOPE(EMemReplayAllocClass::UserPointer, EMemReplayUserPointerClass::Unknown);
 		CryAutoLock<CryCriticalSection> lock(GetLogMutex());
 
 		if (m_stream->IsOpen())
@@ -2108,7 +2697,5 @@ void MemReplayCrySizer::Pop()
 		}
 	}
 }
-
-#else // CAPTURE_REPLAY_LOG
 
 #endif //CAPTURE_REPLAY_LOG

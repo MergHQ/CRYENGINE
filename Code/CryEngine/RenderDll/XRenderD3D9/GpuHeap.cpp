@@ -805,7 +805,7 @@ void MakeMemReplayEvent(const SHugePage& page, uint32_t offset, bool bAllocate, 
 #if CAPTURE_REPLAY_LOG
 		const size_t address = reinterpret_cast<size_t>(pPersistent) + offset;
 #endif
-		MEMREPLAY_SCOPE(EMemReplayAllocClass::C_UserPointer, EMemReplayUserPointerClass::C_CryMalloc);
+		MEMREPLAY_SCOPE(EMemReplayAllocClass::UserPointer, EMemReplayUserPointerClass::CryMalloc);
 		if (bAllocate)
 		{
 			MEMREPLAY_SCOPE_ALLOC(address, bytes, align);
@@ -826,7 +826,7 @@ void MakeMemReplayEvent(const SHugePage& page, uint32_t offset, bool bAllocate, 
 	const size_t address = (result & fictionalMask) | fictionalBase;
 #endif
 	// Fictional event
-	MEMREPLAY_SCOPE(EMemReplayAllocClass::C_UserPointer, EMemReplayUserPointerClass::C_CryMalloc);
+	MEMREPLAY_SCOPE(EMemReplayAllocClass::UserPointer, EMemReplayUserPointerClass::CryMalloc);
 	if (bAllocate)
 	{
 		MEMREPLAY_SCOPE_ALLOC(address, bytes, align);
@@ -1248,7 +1248,7 @@ CGpuHeap::THandle CGpuHeap::AllocateLarge(uint32_t memoryType, uint32_t bin, uin
 
 CGpuHeap::THandle CGpuHeap::AllocateHuge(uint32_t memoryType, uint32_t bytes, uint32_t align, bool bCommit)
 {
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, " GPU Heap");
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, "GPU Heap");
 	SHugePage* const pPage = AllocatePage<SHugePage>(m_pPages);
 	if (!pPage)
 	{

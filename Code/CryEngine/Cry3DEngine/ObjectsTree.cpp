@@ -174,7 +174,7 @@ void COctreeNode::CheckManageVegetationSprites(float fNodeDistance, int nMaxFram
 void COctreeNode::Render_Object_Nodes(bool bNodeCompletelyInFrustum, int nRenderMask, const Vec3& vAmbColor, uint32 passCullMask, const SRenderingPassInfo& passInfo)
 {
 	FUNCTION_PROFILER_3DENGINE;
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "COctreeNode::Render_Object_Nodes");
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, "COctreeNode::Render_Object_Nodes");
 
 	assert(nRenderMask & OCTREENODE_RENDER_FLAG_OBJECTS);
 
@@ -1958,7 +1958,7 @@ void COctreeNode::BuildLoadingDatas(PodArray<SOctreeLoadObjectsData>* pQueue, by
 		{
 			if (!m_arrChilds[nChildId])
 			{
-				MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Terrain, EMemStatContextFlags::MSF_Instance, "Octree node");
+				MEMSTAT_CONTEXT(EMemStatContextType::Terrain, "Octree node");
 				m_arrChilds[nChildId] = new COctreeNode(GetChildBBox(nChildId), m_pVisArea, this);
 			}
 
@@ -2500,7 +2500,7 @@ COctreeNode::COctreeNode(const AABB& box, CVisArea* pVisArea, COctreeNode* pPare
 //////////////////////////////////////////////////////////////////////////
 COctreeNode* COctreeNode::Create(const AABB& box, struct CVisArea* pVisArea, COctreeNode* pParent)
 {
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Terrain, EMemStatContextFlags::MSF_Instance, "Octree node");
+	MEMSTAT_CONTEXT(EMemStatContextType::Terrain, "Octree node");
 
 	return new COctreeNode(box, pVisArea, pParent);
 }

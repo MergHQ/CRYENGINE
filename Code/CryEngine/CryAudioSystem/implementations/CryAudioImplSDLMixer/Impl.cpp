@@ -425,7 +425,7 @@ ITriggerConnection* CImpl::ConstructTriggerConnection(XmlNodeRef const& rootNode
 			rootNode->getAttr(g_szFadeOutTimeAttribute, fadeOutTimeSec);
 			auto const fadeOutTimeMs = static_cast<int>(fadeOutTimeSec * 1000.0f);
 
-			MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::SDL_mixer::CEvent");
+			MEMSTAT_CONTEXT(EMemStatContextType::AudioImpl, "CryAudio::Impl::SDL_mixer::CEvent");
 
 #if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE)
 			pITriggerConnection = static_cast<ITriggerConnection*>(
@@ -458,7 +458,7 @@ ITriggerConnection* CImpl::ConstructTriggerConnection(XmlNodeRef const& rootNode
 		}
 		else
 		{
-			MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::SDL_mixer::CEvent");
+			MEMSTAT_CONTEXT(EMemStatContextType::AudioImpl, "CryAudio::Impl::SDL_mixer::CEvent");
 
 #if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE)
 			pITriggerConnection = static_cast<ITriggerConnection*>(new CEvent(fullFilePath.c_str(), StringToId(fullFilePath.c_str()), type, sampleId));
@@ -490,7 +490,7 @@ ITriggerConnection* CImpl::ConstructTriggerConnection(ITriggerInfo const* const 
 		string const fullFilePath = GetFullFilePath(pTriggerInfo->name.c_str(), pTriggerInfo->path.c_str());
 		SampleId const sampleId = SoundEngine::LoadSample(fullFilePath, true, pTriggerInfo->isLocalized);
 
-		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::SDL_mixer::CEvent");
+		MEMSTAT_CONTEXT(EMemStatContextType::AudioImpl, "CryAudio::Impl::SDL_mixer::CEvent");
 		pITriggerConnection = static_cast<ITriggerConnection*>(
 			new CEvent(
 				fullFilePath.c_str(),
@@ -546,7 +546,7 @@ IParameterConnection* CImpl::ConstructParameterConnection(XmlNodeRef const& root
 		multiplier = std::max(0.0f, multiplier);
 		rootNode->getAttr(g_szShiftAttribute, shift);
 
-		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::SDL_mixer::CParameter");
+		MEMSTAT_CONTEXT(EMemStatContextType::AudioImpl, "CryAudio::Impl::SDL_mixer::CParameter");
 
 #if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE)
 		pIParameterConnection = static_cast<IParameterConnection*>(new CVolumeParameter(sampleId, multiplier, shift, szFileName));
@@ -584,7 +584,7 @@ ISwitchStateConnection* CImpl::ConstructSwitchStateConnection(XmlNodeRef const& 
 		rootNode->getAttr(g_szValueAttribute, value);
 		value = crymath::clamp(value, 0.0f, 1.0f);
 
-		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::SDL_mixer::CSwitchState");
+		MEMSTAT_CONTEXT(EMemStatContextType::AudioImpl, "CryAudio::Impl::SDL_mixer::CSwitchState");
 
 #if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE)
 		pISwitchStateConnection = static_cast<ISwitchStateConnection*>(new CVolumeState(sampleId, value, szFileName));
@@ -629,7 +629,7 @@ void CImpl::DestructSettingConnection(ISettingConnection const* const pISettingC
 ///////////////////////////////////////////////////////////////////////////
 IObject* CImpl::ConstructGlobalObject()
 {
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::SDL_mixer::CObject");
+	MEMSTAT_CONTEXT(EMemStatContextType::AudioImpl, "CryAudio::Impl::SDL_mixer::CObject");
 	g_pObject = new CObject(CTransformation::GetEmptyObject(), 0);
 
 #if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE)
@@ -645,7 +645,7 @@ IObject* CImpl::ConstructObject(CTransformation const& transformation, char cons
 {
 	static uint32 id = 1;
 
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::SDL_mixer::CObject");
+	MEMSTAT_CONTEXT(EMemStatContextType::AudioImpl, "CryAudio::Impl::SDL_mixer::CObject");
 	auto const pObject = new CObject(transformation, id++);
 
 #if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE)
@@ -684,7 +684,7 @@ IListener* CImpl::ConstructListener(CTransformation const& transformation, char 
 {
 	static ListenerId id = 0;
 
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::SDL_mixer::CListener");
+	MEMSTAT_CONTEXT(EMemStatContextType::AudioImpl, "CryAudio::Impl::SDL_mixer::CListener");
 	g_pListener = new CListener(transformation, id++);
 
 #if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE)
@@ -741,8 +741,8 @@ void CImpl::SetLanguage(char const* const szLanguage)
 CEventInstance* CImpl::ConstructEventInstance(TriggerInstanceId const triggerInstanceId, CEvent& event, CObject const& object)
 {
 	event.IncrementNumInstances();
+	MEMSTAT_CONTEXT(EMemStatContextType::AudioImpl, "CryAudio::Impl::SDL_mixer::CEventInstance");
 
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::SDL_mixer::CEventInstance");
 	auto const pEventInstance = new CEventInstance(triggerInstanceId, event, object);
 	g_constructedEventInstances.push_back(pEventInstance);
 
@@ -754,7 +754,7 @@ CEventInstance* CImpl::ConstructEventInstance(TriggerInstanceId const triggerIns
 {
 	event.IncrementNumInstances();
 
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::SDL_mixer::CEventInstance");
+	MEMSTAT_CONTEXT(EMemStatContextType::AudioImpl, "CryAudio::Impl::SDL_mixer::CEventInstance");
 	return new CEventInstance(triggerInstanceId, event);
 }
 #endif  // CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE

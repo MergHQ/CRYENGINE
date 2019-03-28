@@ -369,7 +369,7 @@ void CImpl::GetInfo(SImplInfo& implInfo) const
 ///////////////////////////////////////////////////////////////////////////
 IObject* CImpl::ConstructGlobalObject()
 {
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::PortAudio::CObject");
+	MEMSTAT_CONTEXT(EMemStatContextType::AudioImpl, "CryAudio::Impl::PortAudio::CObject");
 	auto pObject = new CObject();
 
 #if defined(CRY_AUDIO_IMPL_PORTAUDIO_USE_DEBUG_CODE)
@@ -384,7 +384,7 @@ IObject* CImpl::ConstructGlobalObject()
 ///////////////////////////////////////////////////////////////////////////
 IObject* CImpl::ConstructObject(CTransformation const& transformation, char const* const szName /*= nullptr*/)
 {
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::PortAudio::CObject");
+	MEMSTAT_CONTEXT(EMemStatContextType::AudioImpl, "CryAudio::Impl::PortAudio::CObject");
 	auto const pObject = new CObject();
 
 #if defined(CRY_AUDIO_IMPL_PORTAUDIO_USE_DEBUG_CODE)
@@ -407,7 +407,7 @@ void CImpl::DestructObject(IObject const* const pIObject)
 ///////////////////////////////////////////////////////////////////////////
 IListener* CImpl::ConstructListener(CTransformation const& transformation, char const* const szName /*= nullptr*/)
 {
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::PortAudio::CListener");
+	MEMSTAT_CONTEXT(EMemStatContextType::AudioImpl, "CryAudio::Impl::PortAudio::CListener");
 	g_pListener = new CListener(transformation);
 
 #if defined(CRY_AUDIO_IMPL_PORTAUDIO_USE_DEBUG_CODE)
@@ -475,7 +475,7 @@ ITriggerConnection* CImpl::ConstructTriggerConnection(XmlNodeRef const& rootNode
 			// Max to -1 to stay backwards compatible.
 			numLoops = std::max(-1, numLoops);
 
-			MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::PortAudio::CEvent");
+			MEMSTAT_CONTEXT(EMemStatContextType::AudioImpl, "CryAudio::Impl::PortAudio::CEvent");
 			auto const pEvent = new CEvent(
 				StringToId(path.c_str()),
 				numLoops,
@@ -529,7 +529,7 @@ ITriggerConnection* CImpl::ConstructTriggerConnection(ITriggerInfo const* const 
 
 		if (GetSoundInfo(path.c_str(), sfInfo, streamParameters))
 		{
-			MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::PortAudio::CEvent");
+			MEMSTAT_CONTEXT(EMemStatContextType::AudioImpl, "CryAudio::Impl::PortAudio::CEvent");
 			pITriggerConnection = static_cast<ITriggerConnection*>(
 				new CEvent(
 					StringToId(path.c_str()),
@@ -678,8 +678,8 @@ void CImpl::UpdateLocalizedEvents()
 CEventInstance* CImpl::ConstructEventInstance(TriggerInstanceId const triggerInstanceId, CEvent& event, CObject const& object)
 {
 	event.IncrementNumInstances();
+	MEMSTAT_CONTEXT(EMemStatContextType::AudioImpl, "CryAudio::Impl::PortAudio::CEventInstance");
 
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::PortAudio::CEventInstance");
 	auto const pEventInstance = new CEventInstance(triggerInstanceId, event, object);
 	g_constructedEventInstances.push_back(pEventInstance);
 
@@ -691,7 +691,7 @@ CEventInstance* CImpl::ConstructEventInstance(TriggerInstanceId const triggerIns
 {
 	event.IncrementNumInstances();
 
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::PortAudio::CEventInstance");
+	MEMSTAT_CONTEXT(EMemStatContextType::AudioImpl, "CryAudio::Impl::PortAudio::CEventInstance");
 	return new CEventInstance(triggerInstanceId, event);
 }
 #endif  // CRY_AUDIO_IMPL_PORTAUDIO_USE_DEBUG_CODE

@@ -1719,7 +1719,7 @@ void CCTPEndpoint::ProcessPacket(CTimeValue nTime, CAutoFreeHandle& hdl, bool bQ
 
 	ASSERT_GLOBAL_LOCK;
 	CRY_PROFILE_REGION(PROFILE_NETWORK, "CCTPEndpoint:ProcessPacket");
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "CCTPEndpoint:ProcessPacket");
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, "CCTPEndpoint:ProcessPacket");
 
 #if ENABLE_CORRUPT_PACKET_DUMP
 	CAutoSetCorruptPacketDumpData autoSetCorruptPacketDumpData(m_corruptPacketDumpData, hdl.Peek(), inSync);

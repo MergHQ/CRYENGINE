@@ -405,7 +405,7 @@ void CActionGame::BackupGameStartParams(const SGameStartParams* pGameStartParams
 
 bool CActionGame::Init(const SGameStartParams* pGameStartParams)
 {
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "ActionGame::Init");
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, "ActionGame::Init");
 
 	if (!pGameStartParams)
 	{
@@ -969,8 +969,8 @@ CActionGame::eInitTaskState CActionGame::NonBlockingConnect(BlockingConditionFun
 
 bool CActionGame::BlockingConnect(BlockingConditionFunction condition, bool requireClientChannel, const char* conditionText)
 {
-	LOADING_TIME_PROFILE_SECTION
-	  MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "BlockingConnect");
+	LOADING_TIME_PROFILE_SECTION;
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, "BlockingConnect");
 
 	bool ok = false;
 

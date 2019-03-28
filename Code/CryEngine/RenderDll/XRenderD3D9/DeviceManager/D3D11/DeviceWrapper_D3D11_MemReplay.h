@@ -17,7 +17,7 @@
 	#define MEMREPLAY_INSTRUMENT_TEXTUREPOOL
 
 	#if defined(MEMREPLAY_WRAP_XBOX_PERFORMANCE_DEVICE)
-		#define MEMREPLAY_HIDE_BANKALLOC() MEMREPLAY_SCOPE(EMemReplayAllocClass::C_UserPointer, EMemReplayUserPointerClass::C_CryMalloc)
+		#define MEMREPLAY_HIDE_BANKALLOC() MEMREPLAY_SCOPE(EMemReplayAllocClass::UserPointer, EMemReplayUserPointerClass::CryMalloc)
 	#else
 		#define MEMREPLAY_HIDE_BANKALLOC() 
 	#endif

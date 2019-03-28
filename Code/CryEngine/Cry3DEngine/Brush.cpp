@@ -307,7 +307,7 @@ void CBrush::Physicalize(bool bInstant)
 
 void CBrush::PhysicalizeOnHeap(IGeneralMemoryHeap* pHeap, bool bInstant)
 {
-	MEMSTAT_CONTEXT_FMT(EMemStatContextTypes::MSC_Physics, 0, "Brush: %s", m_pStatObj ? m_pStatObj->GetFilePath() : "(unknown)");
+	MEMSTAT_CONTEXT_FMT(EMemStatContextType::Physics, "Brush: %s", m_pStatObj ? m_pStatObj->GetFilePath() : "(unknown)");
 
 	if (m_pStatObj && (m_pStatObj->GetBreakableByGame() || m_pStatObj->GetIDMatBreakable() != -1))
 	{

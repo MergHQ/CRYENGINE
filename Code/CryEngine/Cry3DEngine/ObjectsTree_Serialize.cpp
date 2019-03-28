@@ -791,7 +791,7 @@ void COctreeNode::LoadSingleObject(byte*& pPtr, std::vector<IStatObj*>* pStatObj
 	// For these structures, our Endian swapping is built in to the member copy.
 	if (eType == eERType_Brush)
 	{
-		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Terrain, 0, "Brush object");
+		MEMSTAT_CONTEXT(EMemStatContextType::Terrain, "Brush object");
 
 		SBrushChunk* pChunk = StepData<SBrushChunk>(pPtr, eEndian);
 
@@ -841,7 +841,7 @@ void COctreeNode::LoadSingleObject(byte*& pPtr, std::vector<IStatObj*>* pStatObj
 	}
 	else if (eType == eERType_Vegetation)
 	{
-		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Terrain, 0, "Vegetation object");
+		MEMSTAT_CONTEXT(EMemStatContextType::Terrain, "Vegetation object");
 
 		SVegetationChunk* pChunk = StepData<SVegetationChunk>(pPtr, eEndian);
 
@@ -877,7 +877,7 @@ void COctreeNode::LoadSingleObject(byte*& pPtr, std::vector<IStatObj*>* pStatObj
 	}
 	else if (eType == eERType_MergedMesh)
 	{
-		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Terrain, 0, "Merged Mesh Object");
+		MEMSTAT_CONTEXT(EMemStatContextType::Terrain, "Merged Mesh Object");
 		SMergedMeshChunk* pChunk = StepData<SMergedMeshChunk>(pPtr, eEndian);
 
 		if (CheckSkipLoadObject(eType, pChunk->m_dwRndFlags, eLoadMode))
