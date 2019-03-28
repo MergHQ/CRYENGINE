@@ -9,19 +9,32 @@
 namespace ACE
 {
 //////////////////////////////////////////////////////////////////////////
-CNameValidator::CNameValidator(QRegularExpression const& regex, QWidget* pParent)
-	: QRegularExpressionValidator(regex, pParent)
-	, m_pParent(pParent)
+CNameValidator::CNameValidator()
+	: QRegularExpressionValidator(nullptr)
+	, m_pParent(nullptr)
 {
-	SetToolTip(regex);
 }
 
 //////////////////////////////////////////////////////////////////////////
-CNameValidator::CNameValidator(QRegularExpression const& regex)
-	: QRegularExpressionValidator(regex, nullptr)
-	, m_pParent(nullptr)
+CNameValidator::CNameValidator(QWidget* pParent)
+	: QRegularExpressionValidator(pParent)
+	, m_pParent(pParent)
 {
-	SetToolTip(regex);
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CNameValidator::Initialize(QRegularExpression const& regex)
+{
+	setRegularExpression(regex);
+
+	if (regex == s_regexInvalidFilePath)
+	{
+		m_toolTipText = "A path can't contain any of the following characters:\n: ; , * ? \" < > |";
+	}
+	else
+	{
+		m_toolTipText = "A name can't contain any of the following characters:\n\\ / : ; , * ? \" < > |";
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -66,18 +79,5 @@ void CNameValidator::FixupString(string& input) const
 	QString qString = QtUtil::ToQString(input);
 	fixup(qString);
 	input = QtUtil::ToString(qString);
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CNameValidator::SetToolTip(QRegularExpression const& regex)
-{
-	if (regex == s_regexInvalidFilePath)
-	{
-		m_toolTipText = "A path can't contain any of the following characters:\n: ; , * ? \" < > |";
-	}
-	else
-	{
-		m_toolTipText = "A name can't contain any of the following characters:\n\\ / : ; , * ? \" < > |";
-	}
 }
 } // namespace ACE
