@@ -956,15 +956,15 @@ int CArticulatedEntity::GetStatus(pe_status* _status) const
 	if (_status->type==pe_status_joint::type_id) {
 		pe_status_joint *status = (pe_status_joint*)_status;
 		int i; 
-		if (!is_unused(status->partid)) {
-			for(i=0;i<m_nParts && m_parts[i].id!=status->partid;i++);
-			if (i>=m_nParts) return 0;
-			status->idChildBody = m_joints[i = m_infos[i].iJoint].idbody;
-		} else if (!is_unused(status->idChildBody)) {
+		if (!is_unused(status->idChildBody)) {
 			for(i=0;i<m_nJoints && m_joints[i].idbody!=status->idChildBody;i++);
 			if (i>=m_nJoints) return 0;
 			status->partid = m_parts[m_joints[i].iStartPart].id;
-		}	else
+		}	else if (!is_unused(status->partid)) {
+			for(i=0;i<m_nParts && m_parts[i].id!=status->partid;i++);
+			if (i>=m_nParts) return 0;
+			status->idChildBody = m_joints[i = m_infos[i].iJoint].idbody;
+		} else
 			return 0;
 		ReadLock lock(m_lockJoints);
 		status->flags = m_joints[i].flags;
