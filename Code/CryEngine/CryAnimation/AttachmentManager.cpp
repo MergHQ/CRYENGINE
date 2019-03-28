@@ -1191,11 +1191,39 @@ int32 CAttachmentManager::RemoveAttachmentByNameCRC(uint32 nameCRC, uint32 loadi
 	return 1;
 };
 
+void CAttachmentManager::sAttachedCharactersCache::Push(CCharInstance* character, IAttachment* attachment)
+{
+	m_attachmentsToIdx[attachment] = m_attachments.size();
+	m_attachments.push_back(attachment);
+	m_characters.push_back(character);
+}
+
+void CAttachmentManager::sAttachedCharactersCache::Clear()
+{
+	m_characters.clear();
+	m_attachments.clear();
+	m_attachmentsToIdx.clear();
+}
+
+void CAttachmentManager::sAttachedCharactersCache::Erase(IAttachment* attachment)
+{
+	if (m_attachmentsToIdx.find(attachment)!=m_attachmentsToIdx.end())
+	{
+		int idx = m_attachmentsToIdx[attachment];
+		m_attachmentsToIdx.erase(attachment);
+		m_attachments.erase(m_attachments.begin() + idx);
+		m_characters.erase(m_characters.begin() + idx);
+	}
+}
+
 void CAttachmentManager::RemoveAttachmentByIndex(uint32 index, uint32 loadingFlags)
 {
 	IAttachment* const pAttachment = GetInterfaceByIndex(index);
 	assert(pAttachment);
 	assert(pAttachment->GetType() == CA_BONE || pAttachment->GetType() == CA_FACE || pAttachment->GetType() == CA_SKIN || pAttachment->GetType() == CA_PROW || pAttachment->GetType() == CA_VCLOTH);
+
+	// Erase also in cache
+	m_attachedCharactersCache.Erase(pAttachment);
 
 	if (pAttachment->GetIAttachmentObject())
 	{
@@ -1511,10 +1539,9 @@ void CAttachmentManager::CreateCommands(Command::CBuffer& buffer)
 
 void CAttachmentManager::RebuildAttachedCharactersCache()
 {
-	if (m_attachedCharactersCache.frameId != g_pCharacterManager->m_nUpdateCounter)
+	if (m_attachedCharactersCache.FrameId() != g_pCharacterManager->m_nUpdateCounter)
 	{
-		m_attachedCharactersCache.attachments.clear();
-		m_attachedCharactersCache.characters.clear();
+		m_attachedCharactersCache.Clear();
 
 		if (m_TypeSortingRequired)
 		{
@@ -1533,8 +1560,7 @@ void CAttachmentManager::RebuildAttachedCharactersCache()
 				{
 					if (CCharInstance* pChildInstance = static_cast<CCharInstance*>(attachmentObject.GetICharacterInstance()))
 					{
-						m_attachedCharactersCache.attachments.push_back(&attachment);
-						m_attachedCharactersCache.characters.push_back(pChildInstance);
+						m_attachedCharactersCache.Push(pChildInstance, &attachment);
 					}
 				}
 
@@ -1547,8 +1573,7 @@ void CAttachmentManager::RebuildAttachedCharactersCache()
 						{
 							if (CCharInstance* pChildInstance = static_cast<CCharInstance*>(pEntity->GetCharacter(i)))
 							{
-								m_attachedCharactersCache.attachments.push_back(&attachment);
-								m_attachedCharactersCache.characters.push_back(pChildInstance);
+								m_attachedCharactersCache.Push(pChildInstance, &attachment);
 							}
 						}
 					}
@@ -1581,14 +1606,14 @@ void CAttachmentManager::RebuildAttachedCharactersCache()
 			registerAttachedCharacters(*pIAttachment);
 		}
 
-		m_attachedCharactersCache.frameId = g_pCharacterManager->m_nUpdateCounter;
+		m_attachedCharactersCache.SetFrameId( g_pCharacterManager->m_nUpdateCounter );
 	}
 }
 
 const std::vector<CCharInstance*>& CAttachmentManager::GetAttachedCharacterInstances()
 {
 	RebuildAttachedCharactersCache();
-	return m_attachedCharactersCache.characters;
+	return m_attachedCharactersCache.Characters();
 }
 
 int CAttachmentManager::GenerateAttachedCharactersContexts()
@@ -1597,11 +1622,11 @@ int CAttachmentManager::GenerateAttachedCharactersContexts()
 
 	int generatedContextsCount = 0;
 
-	assert(m_attachedCharactersCache.attachments.size() == m_attachedCharactersCache.characters.size());
-	for (size_t i = 0, limit = m_attachedCharactersCache.characters.size(); i < limit; ++i)
+	assert(m_attachedCharactersCache.Attachments().size() == m_attachedCharactersCache.Characters().size());
+	for (size_t i = 0, limit = m_attachedCharactersCache.Characters().size(); i < limit; ++i)
 	{
-		IAttachment* pAttachment = m_attachedCharactersCache.attachments[i];
-		CCharInstance* pCharacter = m_attachedCharactersCache.characters[i];
+		IAttachment* pAttachment = m_attachedCharactersCache.Attachment(i);
+		CCharInstance* pCharacter = m_attachedCharactersCache.Characters(i);
 
 		assert(!pCharacter->GetProcessingContext());
 

@@ -118,8 +118,12 @@ SContext::EState SFinishAnimationComputations::operator()(const SContext& ctx)
 
 	if (ctx.pParent)
 	{
-		CRY_ASSERT(ctx.pAttachment != nullptr);
-		ctx.pInstance->m_location = ctx.pAttachment->GetAttWorldAbsolute();
+		const IAttachment* pAttachment = ctx.pParent->m_AttachmentManager.GetInterfaceByNameCRC(ctx.attachmentNameCRC);
+
+		if (pAttachment)
+		{
+			ctx.pInstance->m_location = pAttachment->GetAttWorldAbsolute();
+		}
 	}
 
 	// make sure that the job has been run or has been skipped
@@ -189,7 +193,7 @@ SContext::EState SFinishAnimationComputations::operator()(const SContext& ctx)
 void SContext::Initialize(CCharInstance* _pInst, const IAttachment* _pAttachment, const CCharInstance* _pParent, int _numChildren)
 {
 	pInstance = _pInst;
-	pAttachment = _pAttachment;
+	attachmentNameCRC = _pAttachment ? _pAttachment->GetNameCRC() : 0;
 	pParent = _pParent;
 	numChildren = _numChildren;
 	pCommandBuffer = (Command::CBuffer*)CharacterInstanceProcessing::GetMemoryPool()->Allocate(sizeof(Command::CBuffer));
@@ -217,7 +221,7 @@ void CContextQueue::ClearContexts()
 	{
 		auto& ctx = m_contexts[i];
 		ctx.pInstance.reset();
-		ctx.pAttachment = nullptr;
+		ctx.attachmentNameCRC = 0;
 		ctx.pParent = nullptr;
 		ctx.numChildren = 0;
 		ctx.pCommandBuffer = nullptr;
