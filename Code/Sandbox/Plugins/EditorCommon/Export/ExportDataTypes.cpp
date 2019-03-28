@@ -158,30 +158,36 @@ void SExportObject::Weld()
 					++vertexCount;
 				}
 
-				const Export::Vector3D n = m_normals[face.normal[i]];
-				const auto normalIt = normals.find(n);
-				if (normalIt != normals.end())
+				if (!m_normals.empty())
 				{
-					face.normal[i] = normalIt->second;
-				}
-				else
-				{
-					face.normal[i] = normalCount;
-					normals.emplace(n, normalCount);
-					++normalCount;
+					const Export::Vector3D n = m_normals[face.normal[i]];
+					const auto normalIt = normals.find(n);
+					if (normalIt != normals.end())
+					{
+						face.normal[i] = normalIt->second;
+					}
+					else
+					{
+						face.normal[i] = normalCount;
+						normals.emplace(n, normalCount);
+						++normalCount;
+					}
 				}
 
-				const Export::UV uv = m_texCoords[face.texCoord[i]];
-				const auto texCoordIt = texCoords.find(uv);
-				if (texCoordIt != texCoords.end())
+				if (!m_texCoords.empty())
 				{
-					face.texCoord[i] = texCoordIt->second;
-				}
-				else
-				{
-					face.texCoord[i] = texCoordCount;
-					texCoords.emplace(uv, texCoordCount);
-					++texCoordCount;
+					const Export::UV uv = m_texCoords[face.texCoord[i]];
+					const auto texCoordIt = texCoords.find(uv);
+					if (texCoordIt != texCoords.end())
+					{
+						face.texCoord[i] = texCoordIt->second;
+					}
+					else
+					{
+						face.texCoord[i] = texCoordCount;
+						texCoords.emplace(uv, texCoordCount);
+						++texCoordCount;
+					}
 				}
 			}
 		}
