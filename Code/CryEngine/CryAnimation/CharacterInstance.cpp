@@ -16,7 +16,7 @@ DECLARE_JOB("SkinningTransformationsComputation", TSkinningTransformationsComput
 CCharInstance::CCharInstance(const string& strFileName, CDefaultSkeleton* pDefaultSkeleton) : m_skinningTransformationsCount(0), m_skinningTransformationsMovement(0)
 {
 	LOADING_TIME_PROFILE_SECTION(g_pISystem);
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Character Instance");
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, "Character Instance");
 
 	g_pCharacterManager->RegisterInstanceSkel(pDefaultSkeleton, this);
 	m_pDefaultSkeleton = pDefaultSkeleton;
@@ -136,7 +136,7 @@ void CCharInstance::StartAnimationProcessing(const SAnimationProcessParams& para
 {
 	DEFINE_PROFILER_FUNCTION();
 	ANIMATION_LIGHT_PROFILER();
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Animation, 0, "CCharInstance::StartAnimationProcessing");
+	MEMSTAT_CONTEXT(EMemStatContextType::Animation, "CCharInstance::StartAnimationProcessing");
 
 	// execute only if start animation processing has not been started for this character
 	if (GetProcessingContext())
@@ -538,7 +538,7 @@ void CCharInstance::Serialize(TSerialize ser)
 {
 	if (ser.GetSerializationTarget() != eST_Network)
 	{
-		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Character instance serialization");
+		MEMSTAT_CONTEXT(EMemStatContextType::Other, "Character instance serialization");
 
 		ser.BeginGroup("CCharInstance");
 		ser.Value("fPlaybackScale", (float&)(m_fPlaybackScale));

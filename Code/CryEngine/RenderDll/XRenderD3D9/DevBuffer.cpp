@@ -1731,7 +1731,7 @@ struct CBufferPoolImpl final
 		CDeviceBuffer* buffer;
 		SBufferPoolBank* bank = NULL;
 		{
-			DB_MEMREPLAY_SCOPE(EMemReplayAllocClass::C_UserPointer, EMemReplayUserPointerClass::C_CryMalloc);
+			DB_MEMREPLAY_SCOPE(EMemReplayAllocClass::UserPointer, EMemReplayUserPointerClass::CryMalloc);
 
 			const SBufferLayout Layout =
 			{
@@ -1788,7 +1788,7 @@ struct CBufferPoolImpl final
 	{
 		FUNCTION_PROFILER_RENDERER();
 		{
-			DB_MEMREPLAY_SCOPE(EMemReplayAllocClass::C_UserPointer, EMemReplayUserPointerClass::C_CryMalloc);
+			DB_MEMREPLAY_SCOPE(EMemReplayAllocClass::UserPointer, EMemReplayUserPointerClass::CryMalloc);
 
 			const SBufferLayout Layout =
 			{
@@ -1825,7 +1825,7 @@ struct CBufferPoolImpl final
 			SBufferPoolBank& bank = m_bank_table[m_banks[i]];
 			IF (bank.m_capacity != bank.m_free_space, 1)
 				continue;
-			DB_MEMREPLAY_SCOPE(EMemReplayAllocClass::C_UserPointer, EMemReplayUserPointerClass::C_CryMalloc);
+			DB_MEMREPLAY_SCOPE(EMemReplayAllocClass::UserPointer, EMemReplayUserPointerClass::CryMalloc);
 #if !BUFFER_USE_STAGED_UPDATES
 			if (bank.m_buffer)
 				CDeviceObjectFactory::ReleaseBasePointer(bank.m_buffer->GetBuffer());
@@ -1845,7 +1845,7 @@ struct CBufferPoolImpl final
 			SBufferPoolBank& bank = m_bank_table[m_banks[item->m_bank]];
 			bank.m_free_space += item->m_size;
 			{
-				DB_MEMREPLAY_SCOPE(EMemReplayAllocClass::C_UserPointer, EMemReplayUserPointerClass::C_CryMalloc);
+				DB_MEMREPLAY_SCOPE(EMemReplayAllocClass::UserPointer, EMemReplayUserPointerClass::CryMalloc);
 				DB_MEMREPLAY_SCOPE_FREE(bank.m_base_ptr + item->m_offset);
 			}
 			m_allocator.Free(item);
@@ -1970,7 +1970,7 @@ struct CBufferPoolImpl final
 		move.m_relocating = true;
 		move.m_relocated = true;
 
-		DB_MEMREPLAY_SCOPE(EMemReplayAllocClass::C_UserPointer, EMemReplayUserPointerClass::C_CryMalloc);
+		DB_MEMREPLAY_SCOPE(EMemReplayAllocClass::UserPointer, EMemReplayUserPointerClass::CryMalloc);
 		DB_MEMREPLAY_SCOPE_REALLOC(old_offset, bank->m_base_ptr + item.m_offset, item.m_size, ALIGNMENT);
 	}
 	void CancelCopy(uint32 userMoveId, void* pContext, bool bSync) final
@@ -2081,7 +2081,7 @@ retry:
 					return ~0u;
 				}
 			}
-			DB_MEMREPLAY_SCOPE(EMemReplayAllocClass::C_UserPointer, EMemReplayUserPointerClass::C_CryMalloc);
+			DB_MEMREPLAY_SCOPE(EMemReplayAllocClass::UserPointer, EMemReplayUserPointerClass::CryMalloc);
 			DB_MEMREPLAY_SCOPE_ALLOC(bank->m_base_ptr + item->m_offset, size, ALIGNMENT);
 			item->m_buffer = bank->m_buffer;
 			bank->m_free_space -= size;
@@ -3476,7 +3476,7 @@ void CDeviceBufferManager::UnlockDevMan()
 bool CDeviceBufferManager::Init()
 {
 	LOADING_TIME_PROFILE_SECTION;
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Init Device Buffer Manager");
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, "Init Device Buffer Manager");
 
 	MEMORY_SCOPE_CHECK_HEAP();
 	SREC_AUTO_LOCK(s_PoolManager.m_lock);

@@ -530,7 +530,7 @@ static void FreeThunks(pe_gridthunk* thunks)
 //////////////////////////////////////////////////////////////////////////
 void CPhysicalWorld::AllocGThunksPool( int nNewSize )
 {
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Physics, 0, "Physical Grid Pool");
+	MEMSTAT_CONTEXT(EMemStatContextType::Physics, "Physical Grid Pool");
 
 	if (nNewSize==m_thunkPoolSz)
 		return;
@@ -1193,10 +1193,10 @@ int CPhysicalWorld::GetSurfaceParameters(int surface_idx, float &bounciness,floa
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
 IPhysicalEntity* CPhysicalWorld::CreatePhysicalEntity(pe_type type, float lifeTime, pe_params* params, void *pForeignData,int iForeignData,
-																											int id, IPhysicalEntity *pHostPlaceholder, IGeneralMemoryHeap* pHeap)
+													int id, IPhysicalEntity *pHostPlaceholder, IGeneralMemoryHeap* pHeap)
 {
 	CRY_PROFILE_FUNCTION(PROFILE_PHYSICS );
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other,0,"CreatePhysicalEntity");
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, "CreatePhysicalEntity");
 
 	CPhysicalEntity *res=0;
 	CPhysicalPlaceholder *pEntityHost = (CPhysicalPlaceholder*)pHostPlaceholder;
@@ -2402,7 +2402,7 @@ int __curstep = 0; // debug
 void CPhysicalWorld::TimeStep(float time_interval, int flags)
 {
 	CRY_PROFILE_FUNCTION(PROFILE_PHYSICS );
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "CPhysicalWorld::TimeStep");
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, "CPhysicalWorld::TimeStep");
 
 	float m,/*m_groupTimeStep,*/time_interval_org = time_interval;
 	CPhysicalEntity *pent,*phead,*ptail,**pentlist,*pent_next,*pent1,*pentmax;
@@ -4804,7 +4804,7 @@ uint32 CPhysicalWorld::GetPumpLoggedEventsTicks()
 void CPhysicalWorld::PumpLoggedEvents()
 {
 	CRY_PROFILE_FUNCTION(PROFILE_PHYSICS );
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Physics, 0, "CPhysicalWorld::PumpLoggedEvents");
+	MEMSTAT_CONTEXT(EMemStatContextType::Physics, "CPhysicalWorld::PumpLoggedEvents");
 
 #ifdef ENABLE_LW_PROFILERS
 	//simple timer shown in r_DisplayInfo=3

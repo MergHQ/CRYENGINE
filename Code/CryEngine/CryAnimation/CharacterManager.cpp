@@ -98,7 +98,7 @@ CharacterManager::~CharacterManager()
 void CharacterManager::PreloadLevelModels()
 {
 	LOADING_TIME_PROFILE_SECTION;
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Preload Characters");
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, "Preload Characters");
 
 	//bool bCdfCacheExist = GetISystem()->GetIResourceManager()->LoadLevelCachePak( CDF_LEVEL_CACHE_PAK,"" ); // Keep it open until level end.
 
@@ -127,7 +127,7 @@ void CharacterManager::PreloadLevelModels()
 void CharacterManager::PreloadModelsCHR()
 {
 	LOADING_TIME_PROFILE_SECTION;
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Preload CHR");
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, "Preload CHR");
 
 	CryLog("===== Preloading Characters ====");
 
@@ -224,7 +224,7 @@ void CharacterManager::PreloadModelsCHR()
 void CharacterManager::PreloadModelsCGA()
 {
 	LOADING_TIME_PROFILE_SECTION;
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Preload CGA");
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, "Preload CGA");
 
 	CryLog("===== Preloading CGAs ====");
 
@@ -306,7 +306,7 @@ void CharacterManager::PreloadModelsCGA()
 void CharacterManager::PreloadModelsCDF()
 {
 	LOADING_TIME_PROFILE_SECTION;
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Preload CDF");
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, "Preload CDF");
 
 	CryLog("===== Preloading CDFs ====");
 
@@ -354,7 +354,7 @@ void CharacterManager::PreloadModelsCDF()
 // or returns an existing object.
 ICharacterInstance* CharacterManager::CreateInstance(const char* szFilePath, uint32 nLoadingFlags)
 {
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Characters");
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, "Characters");
 	if (szFilePath == 0)
 		return (NULL);                                                      // to prevent a crash in the frequent case the designers will mess
 
@@ -432,7 +432,7 @@ ICharacterInstance* CharacterManager::CreateSKELInstance(const char* strFilePath
 
 ISkin* CharacterManager::LoadModelSKIN(const char* szFilePath, uint32 nLoadingFlags)
 {
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Characters");
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, "Characters");
 	if (szFilePath == 0)
 		return 0;                                                                           //to prevent a crash in the frequent case the designers will mess bad filenames
 
@@ -461,7 +461,7 @@ ISkin* CharacterManager::LoadModelSKIN(const char* szFilePath, uint32 nLoadingFl
 
 IDefaultSkeleton* CharacterManager::LoadModelSKEL(const char* szFilePath, uint32 nLoadingFlags)
 {
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Characters");
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, "Characters");
 	if (szFilePath == 0)
 		return 0;                                                                           //to prevent a crash in the frequent case the designers will mess bad filenames
 
@@ -670,7 +670,7 @@ CSkin* CharacterManager::FetchModelSKIN(const char* szFilePath, uint32 nLoadingF
 
 bool CharacterManager::LoadAndLockResources(const char* szFilePath, uint32 nLoadingFlags)
 {
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Characters");
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, "Characters");
 	if (szFilePath == 0)
 		return false;
 
@@ -1667,7 +1667,7 @@ void CharacterManager::Update(bool bPaused)
 {
 	s_bPaused = bPaused;
 	CRY_PROFILE_REGION(PROFILE_ANIMATION, "CharacterManager::Update");
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "CharacterManager::Update");
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, "CharacterManager::Update");
 	ANIMATION_LIGHT_PROFILER();
 
 	CAnimationContext::Instance().Update();
@@ -1805,7 +1805,7 @@ void CharacterManager::Update(bool bPaused)
 void CharacterManager::UpdateStreaming(int nFullUpdateRoundId, int nFastUpdateRoundId)
 {
 	CRY_PROFILE_FUNCTION(PROFILE_ANIMATION)
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "CharacterManager::UpdateStreaming");
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, "CharacterManager::UpdateStreaming");
 
 	if (nFastUpdateRoundId >= 0)
 		m_nStreamUpdateRoundId[0] = static_cast<uint32>(nFastUpdateRoundId);
@@ -2831,7 +2831,7 @@ int32 CharacterManager::LoadCDFFromXML(XmlNodeRef root, const char* pathname)
 {
 	LOADING_TIME_PROFILE_SECTION(g_pISystem);
 
-	MEMSTAT_CONTEXT_FMT(EMemStatContextTypes::MSC_CDF, EMemStatContextFlags::MSF_Instance, "%s", pathname);
+	MEMSTAT_CONTEXT(EMemStatContextType::CDF, pathname);
 
 	CRY_DEFINE_ASSET_SCOPE("CDF", pathname);
 
@@ -3382,7 +3382,7 @@ void CharacterManager::SyncAllAnimations()
 {
 	CRY_PROFILE_REGION(PROFILE_ANIMATION, "CharacterManager::SyncAllAnimations");
 	ANIMATION_LIGHT_PROFILER();
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "CharacterManager::SyncAllAnimations");
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, "CharacterManager::SyncAllAnimations");
 
 	m_ContextSyncQueue.ExecuteForAll(
 	  [](CharacterInstanceProcessing::SContext& ctx)

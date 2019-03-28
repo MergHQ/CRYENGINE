@@ -423,7 +423,7 @@ void CDecal::AddDecalToRenderView(float fDistance,
                                   const SRenderingPassInfo& passInfo)
 {
 	FUNCTION_PROFILER_3DENGINE;
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "AddDecalToRenderer");
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, "AddDecalToRenderer");
 
 	CRenderObject* pRenderObject(GetIdentityCRenderObject(passInfo));
 	if (!pRenderObject)

@@ -69,7 +69,7 @@ namespace AK
 {
 void* AllocHook(size_t in_size)
 {
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "AK::AllocHook");
+	MEMSTAT_CONTEXT(EMemStatContextType::AudioImpl, "AK::AllocHook");
 	return CryModuleMalloc(in_size);
 }
 
@@ -1080,7 +1080,7 @@ ERequestStatus CImpl::ConstructFile(XmlNodeRef const& rootNode, SFileInfo* const
 			pFileInfo->szFileName = szFileName;
 			pFileInfo->memoryBlockAlignment = AK_BANK_PLATFORM_DATA_ALIGNMENT;
 
-			MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Wwise::CSoundBank");
+			MEMSTAT_CONTEXT(EMemStatContextType::AudioImpl, "CryAudio::Impl::Wwise::CSoundBank");
 			pFileInfo->pImplData = new CSoundBank();
 			result = ERequestStatus::Success;
 		}
@@ -1134,7 +1134,7 @@ IObject* CImpl::ConstructGlobalObject()
 	char const* const szName = "GlobalObject";
 	AK::SoundEngine::RegisterGameObj(g_globalObjectId, szName);
 
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Wwise::CGlobalObject");
+	MEMSTAT_CONTEXT(EMemStatContextType::AudioImpl, "CryAudio::Impl::Wwise::CGlobalObject");
 	g_pObject = new CGlobalObject(g_globalObjectId, szName);
 
 	{
@@ -1144,7 +1144,7 @@ IObject* CImpl::ConstructGlobalObject()
 #else
 	AK::SoundEngine::RegisterGameObj(g_globalObjectId);
 
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Wwise::CGlobalObject");
+	MEMSTAT_CONTEXT(EMemStatContextType::AudioImpl, "CryAudio::Impl::Wwise::CGlobalObject");
 	g_pObject = new CGlobalObject(g_globalObjectId);
 #endif  // CRY_AUDIO_IMPL_WWISE_USE_DEBUG_CODE
 
@@ -1160,7 +1160,7 @@ IObject* CImpl::ConstructObject(CTransformation const& transformation, char cons
 	AK::SoundEngine::RegisterGameObj(m_gameObjectId);
 #endif  // CRY_AUDIO_IMPL_WWISE_USE_DEBUG_CODE
 
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Wwise::CObject");
+	MEMSTAT_CONTEXT(EMemStatContextType::AudioImpl, "CryAudio::Impl::Wwise::CObject");
 	auto const pObject = new CObject(m_gameObjectId++, transformation, szName);
 
 #if defined(CRY_AUDIO_IMPL_WWISE_USE_DEBUG_CODE)
@@ -1203,7 +1203,7 @@ IListener* CImpl::ConstructListener(CTransformation const& transformation, char 
 	AK::SoundEngine::RegisterGameObj(m_gameObjectId);
 	AK::SoundEngine::SetDefaultListeners(&m_gameObjectId, 1);
 
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Wwise::CListener");
+	MEMSTAT_CONTEXT(EMemStatContextType::AudioImpl, "CryAudio::Impl::Wwise::CListener");
 	g_pListener = new CListener(transformation, m_gameObjectId);
 
 #if defined(CRY_AUDIO_IMPL_WWISE_USE_DEBUG_CODE)
@@ -1282,7 +1282,7 @@ ITriggerConnection* CImpl::ConstructTriggerConnection(XmlNodeRef const& rootNode
 				maxAttenuation = attenuationPair->second;
 			}
 
-			MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Wwise::CEvent");
+			MEMSTAT_CONTEXT(EMemStatContextType::AudioImpl, "CryAudio::Impl::Wwise::CEvent");
 #if defined(CRY_AUDIO_IMPL_WWISE_USE_DEBUG_CODE)
 			pITriggerConnection = static_cast<ITriggerConnection*>(new CEvent(uniqueId, maxAttenuation, szName));
 			radius = maxAttenuation;
@@ -1319,7 +1319,7 @@ ITriggerConnection* CImpl::ConstructTriggerConnection(ITriggerInfo const* const 
 		char const* const szName = pTriggerInfo->name.c_str();
 		AkUniqueID const uniqueId = AK::SoundEngine::GetIDFromString(szName);
 
-		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Wwise::CEvent");
+		MEMSTAT_CONTEXT(EMemStatContextType::AudioImpl, "CryAudio::Impl::Wwise::CEvent");
 		pITriggerConnection = static_cast<ITriggerConnection*>(new CEvent(uniqueId, 0.0f, szName));
 	}
 
@@ -1359,7 +1359,7 @@ IParameterConnection* CImpl::ConstructParameterConnection(XmlNodeRef const& root
 			rootNode->getAttr(g_szMutiplierAttribute, multiplier);
 			rootNode->getAttr(g_szShiftAttribute, shift);
 
-			MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Wwise::CParameter");
+			MEMSTAT_CONTEXT(EMemStatContextType::AudioImpl, "CryAudio::Impl::Wwise::CParameter");
 
 #if defined(CRY_AUDIO_IMPL_WWISE_USE_DEBUG_CODE)
 			pIParameterConnection = static_cast<IParameterConnection*>(new CParameter(rtpcId, multiplier, shift, szName));
@@ -1414,7 +1414,7 @@ ISwitchStateConnection* CImpl::ConstructSwitchStateConnection(XmlNodeRef const& 
 					AkUInt32 const stateGroupId = AK::SoundEngine::GetIDFromString(szStateGroupName);
 					AkUInt32 const stateId = AK::SoundEngine::GetIDFromString(szStateName);
 
-					MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Wwise::CState");
+					MEMSTAT_CONTEXT(EMemStatContextType::AudioImpl, "CryAudio::Impl::Wwise::CState");
 
 #if defined(CRY_AUDIO_IMPL_WWISE_USE_DEBUG_CODE)
 					pISwitchStateConnection = static_cast<ISwitchStateConnection*>(new CState(stateGroupId, stateId, szStateGroupName, szStateName));
@@ -1451,7 +1451,7 @@ ISwitchStateConnection* CImpl::ConstructSwitchStateConnection(XmlNodeRef const& 
 					AkUInt32 const switchGroupId = AK::SoundEngine::GetIDFromString(szSwitchGroupName);
 					AkUInt32 const switchId = AK::SoundEngine::GetIDFromString(szSwitchName);
 
-					MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Wwise::CSwitch");
+					MEMSTAT_CONTEXT(EMemStatContextType::AudioImpl, "CryAudio::Impl::Wwise::CSwitch");
 
 #if defined(CRY_AUDIO_IMPL_WWISE_USE_DEBUG_CODE)
 					pISwitchStateConnection = static_cast<ISwitchStateConnection*>(new CSwitch(switchGroupId, switchId, szSwitchGroupName, szSwitchName));
@@ -1481,7 +1481,7 @@ ISwitchStateConnection* CImpl::ConstructSwitchStateConnection(XmlNodeRef const& 
 			float value = g_defaultStateValue;
 			rootNode->getAttr(g_szValueAttribute, value);
 
-			MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Wwise::CParameterState");
+			MEMSTAT_CONTEXT(EMemStatContextType::AudioImpl, "CryAudio::Impl::Wwise::CParameterState");
 
 #if defined(CRY_AUDIO_IMPL_WWISE_USE_DEBUG_CODE)
 			pISwitchStateConnection = static_cast<ISwitchStateConnection*>(new CParameterState(rtpcId, value, szName));
@@ -1526,7 +1526,7 @@ IEnvironmentConnection* CImpl::ConstructEnvironmentConnection(XmlNodeRef const& 
 
 		if (busId != AK_INVALID_AUX_ID)
 		{
-			MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Wwise::CAuxBus");
+			MEMSTAT_CONTEXT(EMemStatContextType::AudioImpl, "CryAudio::Impl::Wwise::CAuxBus");
 
 #if defined(CRY_AUDIO_IMPL_WWISE_USE_DEBUG_CODE)
 			pIEnvironmentConnection = static_cast<IEnvironmentConnection*>(new CAuxBus(static_cast<AkAuxBusID>(busId), szName));
@@ -1552,7 +1552,7 @@ IEnvironmentConnection* CImpl::ConstructEnvironmentConnection(XmlNodeRef const& 
 			rootNode->getAttr(g_szMutiplierAttribute, multiplier);
 			rootNode->getAttr(g_szShiftAttribute, shift);
 
-			MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Wwise::CParameterEnvironment");
+			MEMSTAT_CONTEXT(EMemStatContextType::AudioImpl, "CryAudio::Impl::Wwise::CParameterEnvironment");
 
 #if defined(CRY_AUDIO_IMPL_WWISE_USE_DEBUG_CODE)
 			pIEnvironmentConnection = static_cast<IEnvironmentConnection*>(new CParameterEnvironment(rtpcId, multiplier, shift, szName));
@@ -1683,8 +1683,8 @@ void CImpl::SetLanguage(char const* const szLanguage)
 CEventInstance* CImpl::ConstructEventInstance(TriggerInstanceId const triggerInstanceId, CEvent& event, CBaseObject const& baseObject)
 {
 	event.IncrementNumInstances();
+	MEMSTAT_CONTEXT(EMemStatContextType::AudioImpl, "CryAudio::Impl::Wwise::CEventInstance");
 
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Wwise::CEventInstance");
 	auto const pEventInstance = new CEventInstance(triggerInstanceId, event, baseObject);
 	g_constructedEventInstances.push_back(pEventInstance);
 
@@ -1696,7 +1696,7 @@ CEventInstance* CImpl::ConstructEventInstance(TriggerInstanceId const triggerIns
 {
 	event.IncrementNumInstances();
 
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Wwise::CEventInstance");
+	MEMSTAT_CONTEXT(EMemStatContextType::AudioImpl, "CryAudio::Impl::Wwise::CEventInstance");
 	return new CEventInstance(triggerInstanceId, event);
 }
 #endif  // CRY_AUDIO_IMPL_WWISE_USE_DEBUG_CODE

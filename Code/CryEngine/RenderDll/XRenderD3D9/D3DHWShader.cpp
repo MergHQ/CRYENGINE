@@ -246,7 +246,7 @@ CHWShader* CHWShader::mfForName(const char* name, const char* nameSource, uint32
 
 	CVrProjectionManager* pVRProjectionManager = gcpRendD3D->GetVrProjectionManager();
 
-	MEMSTAT_CONTEXT_FMT(EMemStatContextTypes::MSC_Shader, 0, "%s", name);
+	MEMSTAT_CONTEXT(EMemStatContextType::Shader, name);
 
 	CHWShader_D3D* pSH = nullptr;
 	stack_string strName = name;

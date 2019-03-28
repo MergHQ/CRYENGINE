@@ -150,7 +150,7 @@ BehaviorTreeInstancePtr BehaviorTreeManager::CreateBehaviorTreeInstanceFromXml(c
 
 BehaviorTreeInstancePtr BehaviorTreeManager::LoadFromCache(const char* behaviorTreeName)
 {
-	MEMSTAT_CONTEXT_FMT(EMemStatContextTypes::MSC_Other, 0, "Load Modular Behavior Tree From Cache: %s", behaviorTreeName);
+	MEMSTAT_CONTEXT_FMT(EMemStatContextType::Other, "Load Modular Behavior Tree From Cache: %s", behaviorTreeName);
 
 	BehaviorTreeCache::iterator findResult = m_behaviorTreeCache.find(behaviorTreeName);
 	if (findResult != m_behaviorTreeCache.end())
@@ -178,7 +178,7 @@ bool BehaviorTreeManager::LoadBehaviorTreeTemplate(const char* behaviorTreeName,
 
 	if (XmlNodeRef metaExtensionsXml = behaviorTreeXmlNode->findChild("MetaExtensions"))
 	{
-		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "MetaExtensions");
+		MEMSTAT_CONTEXT(EMemStatContextType::Other, "MetaExtensions");
 		if (!behaviorTreeTemplate.metaExtensionTable.LoadFromXml(metaExtensionsXml))
 		{
 			return false;
@@ -187,7 +187,7 @@ bool BehaviorTreeManager::LoadBehaviorTreeTemplate(const char* behaviorTreeName,
 
 	if (XmlNodeRef variablesXml = behaviorTreeXmlNode->findChild("Variables"))
 	{
-		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Variables");
+		MEMSTAT_CONTEXT(EMemStatContextType::Other, "Variables");
 		if (!behaviorTreeTemplate.variableDeclarations.LoadFromXML(variablesXml, behaviorTreeName))
 		{
 			return false;
@@ -196,7 +196,7 @@ bool BehaviorTreeManager::LoadBehaviorTreeTemplate(const char* behaviorTreeName,
 
 	if (XmlNodeRef eventsXml = behaviorTreeXmlNode->findChild("Events"))
 	{
-		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Events");
+		MEMSTAT_CONTEXT(EMemStatContextType::Other, "Events");
 		if (!behaviorTreeTemplate.eventsDeclaration.LoadFromXML(eventsXml, behaviorTreeName))
 		{
 			return false;
@@ -205,7 +205,7 @@ bool BehaviorTreeManager::LoadBehaviorTreeTemplate(const char* behaviorTreeName,
 
 	if (XmlNodeRef signalsXml = behaviorTreeXmlNode->findChild("SignalVariables"))
 	{
-		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Signals");
+		MEMSTAT_CONTEXT(EMemStatContextType::Other, "Signals");
 		if (!behaviorTreeTemplate.signalHandler.LoadFromXML(behaviorTreeTemplate.variableDeclarations, behaviorTreeTemplate.eventsDeclaration, signalsXml, behaviorTreeName, isLoadingFromEditor))
 		{
 			return false;
@@ -214,7 +214,7 @@ bool BehaviorTreeManager::LoadBehaviorTreeTemplate(const char* behaviorTreeName,
 
 	if (XmlNodeRef timestampsXml = behaviorTreeXmlNode->findChild("Timestamps"))
 	{
-		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Timestamps");
+		MEMSTAT_CONTEXT(EMemStatContextType::Other, "Timestamps");
 		if (!behaviorTreeTemplate.defaultTimestampCollection.LoadFromXml(behaviorTreeTemplate.eventsDeclaration, timestampsXml, behaviorTreeName, isLoadingFromEditor))
 		{
 			return false;
@@ -254,7 +254,7 @@ void BehaviorTreeManager::LoadFromDiskIntoCache(const char* behaviorTreeName)
 	if (findResult != m_behaviorTreeCache.end())
 		return;
 
-	MEMSTAT_CONTEXT_FMT(EMemStatContextTypes::MSC_Other, 0, "Load Modular Behavior Tree From Disk: %s", behaviorTreeName);
+	MEMSTAT_CONTEXT_FMT(EMemStatContextType::Other, "Load Modular Behavior Tree From Disk: %s", behaviorTreeName);
 
 	XmlNodeRef behaviorTreeXmlNode = XmlLoader().LoadBehaviorTreeXmlFile("Scripts/AI/BehaviorTrees/", behaviorTreeName);
 

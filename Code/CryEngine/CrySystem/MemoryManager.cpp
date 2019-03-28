@@ -259,7 +259,7 @@ void* CCryMemoryManager::AllocPages(size_t size)
 	}
 	
 	void* ret = NULL;
-	MEMREPLAY_SCOPE(EMemReplayAllocClass::C_UserPointer, EMemReplayUserPointerClass::C_CryMalloc);
+	MEMREPLAY_SCOPE(EMemReplayAllocClass::UserPointer, EMemReplayUserPointerClass::CryMalloc);
 
 #if CRY_PLATFORM_ORBIS
 
@@ -286,7 +286,7 @@ void CCryMemoryManager::FreePages(void* p, size_t size)
 #if CAPTURE_REPLAY_LOG
 	UINT_PTR id = (UINT_PTR)p;
 #endif
-	MEMREPLAY_SCOPE(EMemReplayAllocClass::C_UserPointer, EMemReplayUserPointerClass::C_CryMalloc);
+	MEMREPLAY_SCOPE(EMemReplayAllocClass::UserPointer, EMemReplayUserPointerClass::CryMalloc);
 
 #if CRY_PLATFORM_ORBIS
 

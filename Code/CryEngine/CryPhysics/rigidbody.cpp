@@ -406,7 +406,7 @@ real ComputeRc(RigidBody *body0, entity_contact **pContacts, int nAngContacts,in
 
 void InitContactSolver(float time_interval)
 {
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Physics, 0, "Physics Contact Solver");
+	MEMSTAT_CONTEXT(EMemStatContextType::Physics, "Physics Contact Solver");
 
 	int iCaller = get_iCaller_int();
 	iCaller &= iCaller-MAX_PHYS_THREADS >> 31;

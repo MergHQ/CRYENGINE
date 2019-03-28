@@ -253,7 +253,7 @@ class CryGFxVideoPlayer : public GFxVideoPlayer
 	virtual void Decode()
 	{
 		#if defined ENABLE_FLASH_INFO
-		MEMSTAT_CONTEXT_FMT(EMemStatContextTypes::MSC_Other, 0, "Video Decode %s", m_videoFilePath.ToCStr());
+		MEMSTAT_CONTEXT_FMT(EMemStatContextType::Other, "Video Decode %s", m_videoFilePath.ToCStr());
 		#endif
 		m_pPlayer->Decode();
 	}

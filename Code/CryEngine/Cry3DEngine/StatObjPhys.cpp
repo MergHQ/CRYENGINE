@@ -25,7 +25,7 @@ void CStatObj::PhysicalizeCompiled(CNodeCGF* pNode, int bAppend)
 {
 	FUNCTION_PROFILER_3DENGINE;
 
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Physics, 0, "Physics");
+	MEMSTAT_CONTEXT(EMemStatContextType::Physics, "Physics");
 
 	if (!GetPhysicalWorld())
 		return;

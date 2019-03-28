@@ -591,7 +591,7 @@ void CVisAreaManager::DephysicalizeInBox(const AABB& bbox)
 void CVisAreaManager::CheckVis(const SRenderingPassInfo& passInfo)
 {
 	FUNCTION_PROFILER_3DENGINE;
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "CVisAreaManager::CheckVis");
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, "CVisAreaManager::CheckVis");
 
 	if (passInfo.IsGeneralPass())
 	{

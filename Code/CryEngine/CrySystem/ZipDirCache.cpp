@@ -69,7 +69,7 @@ void ZipDir::Cache::Delete()
 
 void ZipDir::Cache::PreloadToMemory(IMemoryBlock* pMemoryBlock)
 {
-	MEMSTAT_CONTEXT_FMT(EMemStatContextTypes::MSC_Other, 0, "In-Memory Pak %s", GetFilePath());
+	MEMSTAT_CONTEXT_FMT(EMemStatContextType::Other, "In-Memory Pak %s", GetFilePath());
 
 	// Make sure that fseek/fread by LoadToMemory is atomic (and reads from other threads don't conflict)
 	CryAutoCriticalSection lock(m_pCacheData->m_csCacheIOLock);

@@ -1315,7 +1315,7 @@ void CGame::InitGameType(bool multiplayer, bool fromInit /*= false*/)
 	}
 #endif
 
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "CGame::InitGameType");
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, "CGame::InitGameType");
 
 	SAFE_DELETE(m_pDataPatchDownloader);
 
@@ -1535,7 +1535,7 @@ void CGame::InitGameType(bool multiplayer, bool fromInit /*= false*/)
 #endif
 
 			CRY_ASSERT(!m_telemetryCollector);
-			MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, EMemStatContextFlags::MSF_None, "CTelemetryCollector");
+			MEMSTAT_CONTEXT(EMemStatContextType::Other, "CTelemetryCollector");
 			m_telemetryCollector = new CTelemetryCollector;
 
 			m_pPlaylistActivityTracker = new CPlaylistActivityTracker;
@@ -1543,13 +1543,13 @@ void CGame::InitGameType(bool multiplayer, bool fromInit /*= false*/)
 
 			if (g_pGameCVars->g_telemetry_gameplay_enabled)
 			{
-				MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, EMemStatContextFlags::MSF_None, "CStatsRecordingMgr");
+				MEMSTAT_CONTEXT(EMemStatContextType::Other, "CStatsRecordingMgr");
 				m_statsRecorder = new CStatsRecordingMgr;
 			}
 
 #if USE_TELEMETRY_BUFFERS
 			{
-				MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, EMemStatContextFlags::MSF_None, "Perf Telemetry Buffers");
+				MEMSTAT_CONTEXT(EMemStatContextType::Other, "Perf Telemetry Buffers");
 				if (g_pGameCVars->g_telemetrySampleRatePerformance > 0.0f)
 				{
 					m_performanceBuffer = new CTelemetryBuffer(60 * 1024, m_telemetryCollector, sizeof(SPerformanceTelemetry));
@@ -4920,7 +4920,7 @@ void CGame::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lparam)
 
 			if (gEnv->bMultiplayer && !m_pRecordingSystem)
 			{
-				MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, EMemStatContextFlags::MSF_None, "RecordingSystem");
+				MEMSTAT_CONTEXT(EMemStatContextType::Other, "RecordingSystem");
 				m_pRecordingSystem = new CRecordingSystem();
 			}
 

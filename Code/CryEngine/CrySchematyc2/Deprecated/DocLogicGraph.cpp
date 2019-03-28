@@ -353,7 +353,7 @@ namespace Schematyc2
 	//////////////////////////////////////////////////////////////////////////
 	IScriptGraphNodePtr CDocLogicGraph::CreateNode(const SGUID& guid, EScriptGraphNodeType type, const SGUID& contextGUID, const SGUID& refGUID, Vec2 pos)
 	{
-		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Schematyc: Create Node(Doc Logic Graph)");
+		MEMSTAT_CONTEXT(EMemStatContextType::Other, "Schematyc: Create Node(Doc Logic Graph)");
 		switch(type)
 		{
 		case EScriptGraphNodeType::Begin:

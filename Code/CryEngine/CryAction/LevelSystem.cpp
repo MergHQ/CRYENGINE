@@ -1618,7 +1618,7 @@ ILevelInfo* CLevelSystem::LoadLevel(const char* _levelName)
 	CLiveCreateLevelLoadingBracket liveCreateLoadingBracket;
 #endif
 
-	MEMSTAT_CONTEXT_FMT(EMemStatContextTypes::MSC_Other, 0, "Level load (%s)", _levelName);
+	MEMSTAT_CONTEXT_FMT(EMemStatContextType::Other, "Level load (%s)", _levelName);
 	INDENT_LOG_DURING_SCOPE();
 
 	LOADING_TIME_PROFILE_SECTION;
@@ -1660,7 +1660,7 @@ CLevelSystem::ELevelLoadStatus CLevelSystem::UpdateLoadLevelStatus()
 		return ELevelLoadStatus::Failed;
 	}
 
-	MEMSTAT_CONTEXT_FMT(EMemStatContextTypes::MSC_Other, 0, "Level load (%s)", m_pLevelLoadTimeslicer->GetLevelName());
+	MEMSTAT_CONTEXT_FMT(EMemStatContextType::Other, "Level load (%s)", m_pLevelLoadTimeslicer->GetLevelName());
 	INDENT_LOG_DURING_SCOPE();
 	LOADING_TIME_PROFILE_SECTION;
 

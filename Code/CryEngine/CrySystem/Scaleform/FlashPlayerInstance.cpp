@@ -2751,7 +2751,7 @@ bool CFlashPlayer::Load(const char* pFilePath, unsigned int options, unsigned in
 
 	CRY_PROFILE_FUNCTION(PROFILE_SYSTEM);
 
-	MEMSTAT_CONTEXT_FMT(EMemStatContextTypes::MSC_Other, 0, "FlashPlayer::Load(%s)", pFilePath);
+	MEMSTAT_CONTEXT_FMT(EMemStatContextType::Other, "FlashPlayer::Load(%s)", pFilePath);
 
 	SET_LOG_CONTEXT_CSTR(pFilePath);
 
@@ -2849,7 +2849,7 @@ bool CFlashPlayer::Bootstrap(GFxMovieDef* pMovieDef, unsigned int options, unsig
 
 	const char* pFilePath = pMovieDef->GetFileURL();
 
-	MEMSTAT_CONTEXT_FMT(EMemStatContextTypes::MSC_Other, 0, "FlashPlayer::Bootstrap(%s)", pFilePath);
+	MEMSTAT_CONTEXT_FMT(EMemStatContextType::Other, "FlashPlayer::Bootstrap(%s)", pFilePath);
 
 	SET_LOG_CONTEXT_CSTR(pFilePath);
 
@@ -3172,7 +3172,7 @@ void CFlashPlayer::Advance(float deltaTime)
 	CRY_PROFILE_FUNCTION(PROFILE_SYSTEM);
 	FLASH_PROFILE_FUNC_1ARG(eFncAdvance, VOID_RETURN, "Advance", deltaTime);
 	SET_LOG_CONTEXT(m_filePath);
-	MEMSTAT_CONTEXT_FMT(EMemStatContextTypes::MSC_Other, 0, "Flash Advance %s", m_filePath->c_str());
+	MEMSTAT_CONTEXT_FMT(EMemStatContextType::Other, "Flash Advance %s", m_filePath->c_str());
 
 	if (m_pMovieView)
 	{
@@ -3200,7 +3200,7 @@ void CFlashPlayer::RenderCallback(EFrameType ft)
 {
 	FLASH_PROFILER_LIGHT;
 
-	MEMSTAT_CONTEXT_FMT(EMemStatContextTypes::MSC_Other, 0, "Flash RenderCallback %s", m_filePath->c_str());
+	MEMSTAT_CONTEXT_FMT(EMemStatContextType::Other, "Flash RenderCallback %s", m_filePath->c_str());
 
 	{
 		SYNC_THREADS;
@@ -3248,7 +3248,7 @@ void CFlashPlayer::RenderPlaybackLocklessCallback(int cbIdx, EFrameType ft, bool
 {
 	FLASH_PROFILER_LIGHT;
 
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Flash RenderPlaybackLocklessCallback");
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, "Flash RenderPlaybackLocklessCallback");
 
 	{
 		//#if defined(ENABLE_FLASH_INFO)

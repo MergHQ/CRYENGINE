@@ -307,7 +307,7 @@ void CEntity::RemoveSimpleEventListener(EEntityEvent event, ISimpleEntityEventLi
 /////////////////////////////////////////////////////////////////////////
 bool CEntity::Init(SEntitySpawnParams& params)
 {
-	MEMSTAT_CONTEXT_FMT(EMemStatContextTypes::MSC_Entity, 0, "Init: %s", params.sName ? params.sName : "(noname)");
+	MEMSTAT_CONTEXT_FMT(EMemStatContextType::Entity, "Init: %s", params.sName ? params.sName : "(noname)");
 
 	bool bIsPreview = (params.nFlagsExtended & ENTITY_FLAG_EXTENDED_PREVIEW) != 0;
 
@@ -2016,8 +2016,8 @@ void CEntity::VisitComponents(const ComponentsVisitor& visitor)
 //////////////////////////////////////////////////////////////////////////
 void CEntity::Serialize(TSerialize ser, int nFlags)
 {
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Entity serialization");
-	MEMSTAT_CONTEXT_FMT(EMemStatContextTypes::MSC_Other, 0, "%s", GetClass() ? GetClass()->GetName() : "<UNKNOWN>");
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, "Entity serialization");
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, GetClass() ? GetClass()->GetName() : "<UNKNOWN>");
 	if (nFlags & ENTITY_SERIALIZE_POSITION)
 	{
 		ser.Value("position", m_position, 'wrld');

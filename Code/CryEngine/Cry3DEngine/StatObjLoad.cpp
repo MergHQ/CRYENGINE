@@ -411,32 +411,10 @@ void TransformMesh(CMesh& mesh, Matrix34 tm)
 	}
 }
 
-#if INCLUDE_MEMSTAT_CONTEXTS
-static string FindCGFSourceFilename(const char* filename)
-{
-	CChunkFile infoChunkFile;
-	if (!infoChunkFile.Read(filename))
-	{
-		return string();
-	}
-
-	for (int i = 0, n = infoChunkFile.NumChunks(); i < n; ++i)
-	{
-		const IChunkFile::ChunkDesc* const pChunkDesc = infoChunkFile.GetChunk(i);
-		if (pChunkDesc->chunkType == ChunkType_SourceInfo)
-		{
-			return (const char*)pChunkDesc->data;
-		}
-	}
-
-	return string();
-}
-#endif //INCLUDE_MEMSTAT_CONTEXTS
-
 //////////////////////////////////////////////////////////////////////////
 bool CStatObj::LoadStreamRenderMeshes(bool bLod, const void* pData, const int nDataSize)
 {
-	MEMSTAT_CONTEXT_FMT(EMemStatContextTypes::MSC_CGF, EMemStatContextFlags::MSF_Instance, "%s", m_szFileName.c_str());
+	MEMSTAT_CONTEXT(EMemStatContextType::CGF, m_szFileName.c_str());
 	LOADING_TIME_PROFILE_SECTION;
 
 	CLoaderCGF cgfLoader(util::pool_allocate, util::pool_free, GetCVars()->e_StatObjTessellationMode != 2 || bLod);
@@ -620,9 +598,7 @@ bool CStatObj::LoadCGF(const char* filename, uint32 loadingFlags)
 
 	FUNCTION_PROFILER_3DENGINE;
 	CRY_DEFINE_ASSET_SCOPE("CGF", filename);
-#if INCLUDE_MEMSTAT_CONTEXTS
-	MEMSTAT_CONTEXT_FMT(EMemStatContextTypes::MSC_CGF, EMemStatContextFlags::MSF_Instance, "%s", filename);
-#endif
+	MEMSTAT_CONTEXT(EMemStatContextType::CGF, filename);
 
 	LoadCGF_Prepare(filename, false);
 	CReadOnlyChunkFile chunkFile(false, false);
@@ -700,9 +676,7 @@ void CStatObj::LoadCGFAsync(const char* filename, uint32 loadingFlags, IStatObjL
 	
 	FUNCTION_PROFILER_3DENGINE;
 	CRY_DEFINE_ASSET_SCOPE("CGF", filename);
-#if INCLUDE_MEMSTAT_CONTEXTS
-	MEMSTAT_CONTEXT_FMT(EMemStatContextTypes::MSC_CGF, EMemStatContextFlags::MSF_Instance, "%s", filename);
-#endif
+	MEMSTAT_CONTEXT(EMemStatContextType::CGF, filename);
 
 	LoadCGF_Prepare(filename, false);
 	new CStatObjAsyncCGFLoader(this, filename, loadingFlags, pCallback);

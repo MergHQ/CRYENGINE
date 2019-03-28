@@ -196,7 +196,7 @@ D3DSurface* CTexture::GetSurface(int nCMSide, int nLevel)
 
 	SCOPED_RENDERER_ALLOCATION_NAME_HINT(GetSourceName());
 
-	MEMSTAT_CONTEXT_FMT(EMemStatContextTypes::MSC_Texture, 0, "Create Render Target: %s", GetSourceName());
+	MEMSTAT_CONTEXT_FMT(EMemStatContextType::Texture, "Create Render Target: %s", GetSourceName());
 
 	const int nMipLevel = (m_eFlags & FT_FORCE_MIPS) ? min((int)(m_nMips - 1), nLevel) : 0;
 	const int nSlice = (m_eTT == eTT_Cube || m_eTT == eTT_CubeArray ? nCMSide : 0);
@@ -212,7 +212,7 @@ D3DSurface* CTexture::GetSurface(int nCMSide, int nLevel) const
 
 	SCOPED_RENDERER_ALLOCATION_NAME_HINT(GetSourceName());
 
-	MEMSTAT_CONTEXT_FMT(EMemStatContextTypes::MSC_Texture, 0, "Create Render Target: %s", GetSourceName());
+	MEMSTAT_CONTEXT_FMT(EMemStatContextType::Texture, "Create Render Target: %s", GetSourceName());
 
 	const int nMipLevel = (m_eFlags & FT_FORCE_MIPS) ? min((int)(m_nMips - 1), nLevel) : 0;
 	const int nSlice = (m_eTT == eTT_Cube || m_eTT == eTT_CubeArray ? nCMSide : 0);
@@ -281,8 +281,8 @@ void CTexture::CreateDeviceTexture(SSubresourceData&& pData)
 bool CTexture::RT_CreateDeviceTexture(const SSubresourceData& pData)
 {
 	CRY_PROFILE_REGION(PROFILE_RENDERER, "CTexture::RT_CreateDeviceTexture");
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Texture, 0, "Creating Texture");
-	MEMSTAT_CONTEXT_FMT(EMemStatContextTypes::MSC_Texture, 0, "%s %ix%ix%i %08x", m_SrcName.c_str(), m_nWidth, m_nHeight, m_nMips, m_eFlags);
+	MEMSTAT_CONTEXT(EMemStatContextType::Texture, "Creating Texture");
+	MEMSTAT_CONTEXT_FMT(EMemStatContextType::Texture, "%s %ix%ix%i %08x", m_SrcName.c_str(), m_nWidth, m_nHeight, m_nMips, m_eFlags);
 	SCOPED_RENDERER_ALLOCATION_NAME_HINT(GetSourceName());
 
 	if (m_eFlags & FT_USAGE_MSAA)

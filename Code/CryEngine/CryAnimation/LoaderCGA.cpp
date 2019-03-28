@@ -18,7 +18,7 @@
 CDefaultSkeleton* CryCGALoader::LoadNewCGA(const char* OriginalGeomName, CharacterManager* pManager, uint32 nLoadingFlags)
 {
 	CRY_DEFINE_ASSET_SCOPE("CGA", OriginalGeomName);
-	MEMSTAT_CONTEXT_FMT(EMemStatContextTypes::MSC_CGA, 0, "%s", OriginalGeomName);
+	MEMSTAT_CONTEXT(EMemStatContextType::CGA, OriginalGeomName);
 
 	Reset();
 	//return 0;

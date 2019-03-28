@@ -281,8 +281,8 @@ IMaterial* CMatMan::LoadMaterial(const char* sMtlName, bool bMakeIfNotFound, boo
 	const char* name = UnifyName(sMtlName);
 	IMaterial* pMtl = 0;
 
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Materials");
-	MEMSTAT_CONTEXT_FMT(EMemStatContextTypes::MSC_MTL, EMemStatContextFlags::MSF_Instance, "%s", name);
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, "Materials");
+	MEMSTAT_CONTEXT(EMemStatContextType::MTL, name);
 	LOADING_TIME_PROFILE_SECTION_ARGS(sMtlName); // Only profile actually loading of the material.
 
 	CRY_DEFINE_ASSET_SCOPE("Material", sMtlName);

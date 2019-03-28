@@ -3365,7 +3365,7 @@ bool NavigationSystem::GetTriangleVertices(const NavigationMeshID meshID, const 
 
 bool NavigationSystem::ReadFromFile(const char* fileName, bool bAfterExporting)
 {
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Navigation Meshes (Read File)");
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, "Navigation Meshes (Read File)");
 
 	bool fileLoaded = false;
 

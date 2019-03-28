@@ -691,8 +691,8 @@ WIN_HMODULE CSystem::LoadDynamicLibrary(const char* szModulePath, bool bQuitIfNo
 	stack_string modulePath = szModulePath;
 	modulePath = CrySharedLibraryPrefix + PathUtil::ReplaceExtension(modulePath, CrySharedLibraryExtension);
 
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "LoadDLL");
-	MEMSTAT_CONTEXT_FMT(EMemStatContextTypes::MSC_Other, 0, "%s", modulePath.c_str());
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, "LoadDLL");
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, modulePath.c_str());
 
 	stack_string msg;
 	msg = "Loading Module ";
@@ -867,8 +867,8 @@ ICryFactory* CSystem::LoadModuleWithFactory(const char* dllName, const CryInterf
 //////////////////////////////////////////////////////////////////////////
 bool CSystem::InitializeEngineModule(const SSystemInitParams& startupParams, const char* dllName, const CryInterfaceID& moduleInterfaceId, bool bQuitIfNotFound)
 {
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Init Engine Module");
-	MEMSTAT_CONTEXT_FMT(EMemStatContextTypes::MSC_Other, 0, " %s", dllName);
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, "Init Engine Module");
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, dllName);
 	IMemoryManager::SProcessMemInfo memStart, memEnd;
 	if (GetIMemoryManager())
 		GetIMemoryManager()->GetProcessMemInfo(memStart);
@@ -892,7 +892,7 @@ bool CSystem::InitializeEngineModule(const SSystemInitParams& startupParams, con
 		return false;
 	}
 
-	MEMSTAT_CONTEXT_FMT(EMemStatContextTypes::MSC_Other, 0, "Initialize module: %s", pModule->GetFactory()->GetName());
+	MEMSTAT_CONTEXT_FMT(EMemStatContextType::Other, "Initialize module: %s", pModule->GetFactory()->GetName());
 	if (!pModule->Initialize(m_env, startupParams))
 	{
 		if (loadedLibrary)
@@ -1016,7 +1016,7 @@ static wstring GetErrorStringUnsupportedGPU(const char* gpuName, unsigned int gp
 bool CSystem::OpenRenderLibrary(const SSystemInitParams& startupParams, int type)
 {
 	LOADING_TIME_PROFILE_SECTION;
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Init Render Library");
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, "Init Render Library");
 
 	if (gEnv->IsDedicated())
 		return true;
@@ -1064,7 +1064,7 @@ bool CSystem::OpenRenderLibrary(const SSystemInitParams& startupParams, int type
 		return false;
 	}
 
-	MEMSTAT_CONTEXT_FMT(EMemStatContextTypes::MSC_Other, 0, "Init %s", libname);
+	MEMSTAT_CONTEXT_FMT(EMemStatContextType::Other, "Init %s", libname);
 	if (!InitializeEngineModule(startupParams, libname, cryiidof<IRendererEngineModule>(), true))
 	{
 		return false;
@@ -1083,7 +1083,7 @@ bool CSystem::OpenRenderLibrary(const SSystemInitParams& startupParams, int type
 bool CSystem::InitNetwork(const SSystemInitParams& startupParams)
 {
 	LOADING_TIME_PROFILE_SECTION(GetISystem());
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Init Network");
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, "Init Network");
 
 	if (!InitializeEngineModule(startupParams, DLL_NETWORK, cryiidof<INetworkEngineModule>(), true))
 		return false;
@@ -1150,7 +1150,7 @@ bool CSystem::InitSchematyc(const SSystemInitParams& startupParams)
 bool CSystem::InitEntitySystem(const SSystemInitParams& startupParams)
 {
 	LOADING_TIME_PROFILE_SECTION(GetISystem());
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Init Entity System");
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, "Init Entity System");
 
 	if (!InitializeEngineModule(startupParams, DLL_ENTITYSYSTEM, cryiidof<IEntitySystemEngineModule>(), true))
 		return false;
@@ -1168,7 +1168,7 @@ bool CSystem::InitEntitySystem(const SSystemInitParams& startupParams)
 bool CSystem::InitDynamicResponseSystem(const SSystemInitParams& startupParams)
 {
 	LOADING_TIME_PROFILE_SECTION(GetISystem());
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Init Dynamic Responese System");
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, "Init Dynamic Responese System");
 
 	const char* sDLLName = m_sys_dll_response_system->GetString();
 
@@ -1194,7 +1194,7 @@ bool CSystem::InitDynamicResponseSystem(const SSystemInitParams& startupParams)
 bool CSystem::InitLiveCreate(const SSystemInitParams& startupParams)
 {
 	LOADING_TIME_PROFILE_SECTION(GetISystem());
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Init Live Create");
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, "Init Live Create");
 	bool bSkip = startupParams.bSkipLiveCreate;
 
 #ifdef NO_LIVECREATE
@@ -1242,7 +1242,7 @@ bool CSystem::InitLiveCreate(const SSystemInitParams& startupParams)
 bool CSystem::InitMonoBridge(const SSystemInitParams& startupParams)
 {
 	LOADING_TIME_PROFILE_SECTION(GetISystem());
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Init C#");
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, "Init C#");
 
 	if (!InitializeEngineModule(startupParams, DLL_MONO_BRIDGE, cryiidof<IMonoEngineModule>(), false))
 	{
@@ -1272,7 +1272,7 @@ bool CSystem::InitUDR(const SSystemInitParams& startupParams)
 void CSystem::InitGameFramework(SSystemInitParams& startupParams)
 {
 	LOADING_TIME_PROFILE_SECTION(GetISystem());
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Init Game Framework");
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, "Init Game Framework");
 
 	if (!InitializeEngineModule(startupParams, "CryAction", cryiidof<IGameFrameworkEngineModule>(), false))
 	{
@@ -1290,7 +1290,7 @@ void CSystem::InitGameFramework(SSystemInitParams& startupParams)
 bool CSystem::InitInput(const SSystemInitParams& startupParams)
 {
 	LOADING_TIME_PROFILE_SECTION(GetISystem());
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Init Input");
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, "Init Input");
 
 	if (startupParams.bSkipInput)
 	{
@@ -1357,7 +1357,7 @@ ICVar* CSystem::attachVariable(const char* szVarName, int* pContainer, const cha
 bool CSystem::InitRenderer(SSystemInitParams& startupParams)
 {
 	LOADING_TIME_PROFILE_SECTION(GetISystem());
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Init Renderer");
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, "Init Renderer");
 
 	if (m_pUserCallback)
 		m_pUserCallback->OnInitProgress("Initializing Renderer...");
@@ -1533,7 +1533,7 @@ void OnDrawHelpersStrChange(ICVar* pVar)
 bool CSystem::InitPhysics(const SSystemInitParams& startupParams)
 {
 	LOADING_TIME_PROFILE_SECTION(GetISystem());
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Physics, 0, "Init Physics");
+	MEMSTAT_CONTEXT(EMemStatContextType::Physics, "Init Physics");
 
 #if defined(_LIB) && CRY_PLATFORM_DURANGO
 	m_env.pPhysicalWorld = CreatePhysicalWorld(this);
@@ -1563,7 +1563,7 @@ bool CSystem::InitPhysics(const SSystemInitParams& startupParams)
 bool CSystem::InitPhysicsRenderer(const SSystemInitParams& startupParams)
 {
 	LOADING_TIME_PROFILE_SECTION;
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Physics, 0, "Init Physics Renderer");
+	MEMSTAT_CONTEXT(EMemStatContextType::Physics, "Init Physics Renderer");
 	//////////////////////////////////////////////////////////////////////////
 	// Physics Renderer (for debug helpers)
 	//////////////////////////////////////////////////////////////////////////
@@ -1625,7 +1625,7 @@ bool CSystem::InitPhysicsRenderer(const SSystemInitParams& startupParams)
 bool CSystem::InitMovieSystem(const SSystemInitParams& startupParams)
 {
 	LOADING_TIME_PROFILE_SECTION(GetISystem());
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Init Movie System");
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, "Init Movie System");
 
 	if (!InitializeEngineModule(startupParams, DLL_MOVIE, cryiidof<IMovieEngineModule>(), true))
 		return false;
@@ -1643,7 +1643,7 @@ bool CSystem::InitMovieSystem(const SSystemInitParams& startupParams)
 bool CSystem::InitAISystem(const SSystemInitParams& startupParams)
 {
 	LOADING_TIME_PROFILE_SECTION(GetISystem());
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Init AISystem ");
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, "Init AISystem ");
 
 	const char* sDLLName = m_sys_dll_ai->GetString();
 	if (!InitializeEngineModule(startupParams, sDLLName, cryiidof<IAIEngineModule>(), false))
@@ -1660,7 +1660,7 @@ bool CSystem::InitAISystem(const SSystemInitParams& startupParams)
 bool CSystem::InitScriptSystem(const SSystemInitParams& startupParams)
 {
 	LOADING_TIME_PROFILE_SECTION(GetISystem());
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_LUA, 0, "Init Script System");
+	MEMSTAT_CONTEXT(EMemStatContextType::LUA, "Init Script System");
 
 	if (!InitializeEngineModule(startupParams, DLL_SCRIPTSYSTEM, cryiidof<IScriptSystemEngineModule>(), true))
 		return false;
@@ -1684,7 +1684,7 @@ bool CSystem::InitScriptSystem(const SSystemInitParams& startupParams)
 bool CSystem::InitFileSystem(const SSystemInitParams& startupParams)
 {
 	LOADING_TIME_PROFILE_SECTION;
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_LUA, 0, "Init File System");
+	MEMSTAT_CONTEXT(EMemStatContextType::LUA, "Init File System");
 
 	if (m_pUserCallback)
 		m_pUserCallback->OnInitProgress("Initializing File System...");
@@ -1842,7 +1842,7 @@ bool CSystem::InitFileSystem(const SSystemInitParams& startupParams)
 
 void CSystem::InitLog(const SSystemInitParams& startupParams)
 {
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_LUA, 0, "Init Log");
+	MEMSTAT_CONTEXT(EMemStatContextType::LUA, "Init Log");
 	if (startupParams.pLog == nullptr)
 	{
 		m_env.pLog = new CLog(this);
@@ -1920,7 +1920,7 @@ void CSystem::LoadPatchPaks()
 
 bool CSystem::InitFileSystem_LoadEngineFolders()
 {
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Init Engine Folders");
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, "Init Engine Folders");
 	LOADING_TIME_PROFILE_SECTION;
 
 	if (g_cvars.pakVars.nPriority == ePakPriorityPakOnly)
@@ -2069,7 +2069,7 @@ void CSystem::InitResourceCacheFolder()
 bool CSystem::InitStreamEngine()
 {
 	LOADING_TIME_PROFILE_SECTION(GetISystem());
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Init Stream Engine");
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, "Init Stream Engine");
 
 	if (m_pUserCallback)
 		m_pUserCallback->OnInitProgress("Initializing Stream Engine...");
@@ -2083,7 +2083,7 @@ bool CSystem::InitStreamEngine()
 bool CSystem::InitFont(const SSystemInitParams& startupParams)
 {
 	LOADING_TIME_PROFILE_SECTION(GetISystem());
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Init Font");
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, "Init Font");
 
 	if (!InitializeEngineModule(startupParams, DLL_FONT, cryiidof<IFontEngineModule>(), true))
 		return false;
@@ -2121,7 +2121,7 @@ bool CSystem::InitFont(const SSystemInitParams& startupParams)
 bool CSystem::Init3DEngine(const SSystemInitParams& startupParams)
 {
 	LOADING_TIME_PROFILE_SECTION(GetISystem());
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Init 3D Engine");
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, "Init 3D Engine");
 
 	if (!InitializeEngineModule(startupParams, DLL_3DENGINE, cryiidof<I3DEngineModule>(), true))
 		return false;
@@ -2147,7 +2147,7 @@ bool CSystem::Init3DEngine(const SSystemInitParams& startupParams)
 bool CSystem::InitAnimationSystem(const SSystemInitParams& startupParams)
 {
 	LOADING_TIME_PROFILE_SECTION(GetISystem());
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Init Animation System");
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, "Init Animation System");
 
 	if (!InitializeEngineModule(startupParams, DLL_ANIMATION, cryiidof<IAnimationEngineModule>(), true))
 		return false;
@@ -2159,7 +2159,7 @@ bool CSystem::InitAnimationSystem(const SSystemInitParams& startupParams)
 void CSystem::InitLocalization()
 {
 	LOADING_TIME_PROFILE_SECTION(GetISystem());
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Open Localization Pak");
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, "Open Localization Pak");
 
 	// Set the localization folder
 	ICVar* pCVar = (m_env.pConsole != nullptr) ? m_env.pConsole->GetCVar("sys_localization_folder") : nullptr;
@@ -2221,7 +2221,7 @@ void CSystem::OpenBasicPaks(bool bLoadGamePaks)
 	static bool s_bGamePaksLoaded = false;
 
 	LOADING_TIME_PROFILE_SECTION;
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Open Pak Files");
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, "Open Pak Files");
 
 	string buildFolder = PathUtil::AddSlash(g_cvars.sys_build_folder->GetString());
 
@@ -2418,7 +2418,7 @@ static bool CheckCPURequirements(CCpuFeatures* pCpu, CSystem* pSystem)
 /////////////////////////////////////////////////////////////////////////////////
 bool CSystem::Initialize(SSystemInitParams& startupParams)
 {
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "CSystem: Init");
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, "CSystem: Init");
 
 	// Fix to improve wait() time within third-party APIs
 #if CRY_PLATFORM_WINDOWS
@@ -3238,7 +3238,7 @@ bool CSystem::Initialize(SSystemInitParams& startupParams)
 		//////////////////////////////////////////////////////////////////////////
 		if (m_env.pRenderer)
 		{
-			MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Init Post Renderer");
+			MEMSTAT_CONTEXT(EMemStatContextType::Other, "Init Post Renderer");
 			if (m_pUserCallback != nullptr)
 			{
 				m_pUserCallback->OnInitProgress("Initializing Renderer...");
@@ -3368,7 +3368,7 @@ bool CSystem::Initialize(SSystemInitParams& startupParams)
 		InlineInitializationProcessing("CSystem::Init Init3DEngine");
 		if (m_env.pCharacterManager)
 		{
-			MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Post Init Character Manager");
+			MEMSTAT_CONTEXT(EMemStatContextType::Other, "Post Init Character Manager");
 			m_env.pCharacterManager->PostInit();
 		}
 
@@ -3520,7 +3520,7 @@ bool CSystem::Initialize(SSystemInitParams& startupParams)
 		// AI System needs to be initialized after entity system
 		if (!startupParams.bPreview && !m_bUIFrameworkMode && m_env.pAISystem)
 		{
-			MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Initialize AI System");
+			MEMSTAT_CONTEXT(EMemStatContextType::Other, "Initialize AI System");
 
 			if (m_pUserCallback)
 				m_pUserCallback->OnInitProgress("Initializing AI System...");
@@ -3551,7 +3551,7 @@ bool CSystem::Initialize(SSystemInitParams& startupParams)
 		//////////////////////////////////////////////////////////////////////////
 
 #if defined(USE_PERFHUD)
-		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Init PerfHUD");
+		MEMSTAT_CONTEXT(EMemStatContextType::Other, "Init PerfHUD");
 		//Create late in Init so that associated CVars have already been created
 		ICryPerfHUDPtr pPerfHUD;
 		if (CryCreateClassInstanceForInterface(cryiidof<ICryPerfHUD>(), pPerfHUD))
@@ -4736,7 +4736,7 @@ void CSystem::WatchDogTimeOutChanged(ICVar* pCVar)
 //////////////////////////////////////////////////////////////////////////
 void CSystem::CreateSystemVars()
 {
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Create System CVars");
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, "Create System CVars");
 
 	assert(gEnv);
 	assert(gEnv->pConsole);

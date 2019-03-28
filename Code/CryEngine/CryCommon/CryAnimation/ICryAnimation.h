@@ -76,8 +76,8 @@ enum CharacterToolFlags
 	CA_AllowRedirection   = 0x08, //!< Allow redirection in bindpose.
 };
 
-#define CHR            (0x11223344)
-#define CGA            (0x55aa55aa)
+static constexpr uint32 CHR = (0x11223344);
+static constexpr uint32 CGA = (0x55aa55aa);
 
 #define NULL_ANIM      "null"
 #define NULL_ANIM_FILE "null"

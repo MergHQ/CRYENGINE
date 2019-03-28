@@ -507,7 +507,7 @@ bool C3DEngine::Init()
 	CRY_ASSERT_MESSAGE(tempPoolSize != 0, "C3DEngine::Init() temp pool size is set to 0");
 
 	{
-		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "3Engine Temp Pool");
+		MEMSTAT_CONTEXT(EMemStatContextType::Other, "3Engine Temp Pool");
 
 		if (!CTemporaryPool::Initialize(tempPoolSize))
 		{
@@ -568,7 +568,7 @@ bool C3DEngine::IsCameraAnd3DEngineInvalid(const SRenderingPassInfo& passInfo, c
 void C3DEngine::OnFrameStart()
 {
 	FUNCTION_PROFILER_3DENGINE;
-	MEMSTAT_FUNCTION_CONTEXT(EMemStatContextTypes::MSC_Other);
+	MEMSTAT_FUNCTION_CONTEXT(EMemStatContextType::Other);
 
 	if (m_pPartManager)
 		m_pPartManager->OnFrameStart();
@@ -614,7 +614,7 @@ unsigned char GetOceanSurfTypeCallback(int ix, int iy)
 
 void C3DEngine::Update()
 {
-	MEMSTAT_FUNCTION_CONTEXT(EMemStatContextTypes::MSC_Other);
+	MEMSTAT_FUNCTION_CONTEXT(EMemStatContextType::Other);
 	m_bProfilerEnabled = gEnv->pFrameProfileSystem->IsProfiling();
 
 	FUNCTION_PROFILER_3DENGINE;
@@ -711,7 +711,7 @@ void C3DEngine::Update()
 
 void C3DEngine::Tick()
 {
-	MEMSTAT_FUNCTION_CONTEXT(EMemStatContextTypes::MSC_Other);
+	MEMSTAT_FUNCTION_CONTEXT(EMemStatContextType::Other);
 	threadID nThreadID = 0;
 
 	if (GetRenderer())
@@ -1283,7 +1283,7 @@ void C3DEngine::UpdateRenderingCamera(const char* szCallerName, const SRendering
 
 void C3DEngine::PrepareOcclusion(const CCamera& rCamera, const SGraphicsPipelineKey& cullGraphicsContextKey)
 {
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "C3DEngine::PrepareOcclusion");
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, "C3DEngine::PrepareOcclusion");
 
 	const bool bInEditor = gEnv->IsEditor();
 	const bool bStatObjBufferRenderTasks = IsStatObjBufferRenderTasksAllowed() != 0;
@@ -3719,7 +3719,7 @@ void C3DEngine::StartWindGridJob(const Vec3& vPos)
 		m_bWindJobRun = false;
 		return;
 	}
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Start Wind Grid Job");
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, "Start Wind Grid Job");
 
 	SWindGrid& rWindGrid = m_WindGrid[m_nCurWind];
 	if (!rWindGrid.m_pData)

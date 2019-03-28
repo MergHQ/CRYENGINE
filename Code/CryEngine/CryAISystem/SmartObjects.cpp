@@ -4125,7 +4125,7 @@ bool CSmartObjectManager::LoadSmartObjectsLibrary()
 	char szPath[512];
 	cry_sprintf(szPath, "%s", SMART_OBJECTS_XML);
 
-	MEMSTAT_CONTEXT_FMT(EMemStatContextTypes::MSC_Navigation, 0, "Smart objects library (%s)", szPath);
+	MEMSTAT_CONTEXT_FMT(EMemStatContextType::Navigation, "Smart objects library (%s)", szPath);
 
 	XmlNodeRef root = GetISystem()->LoadXmlFromFile(szPath);
 	if (!root)

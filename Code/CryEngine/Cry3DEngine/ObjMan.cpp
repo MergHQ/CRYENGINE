@@ -613,7 +613,7 @@ IStreamEngine* CStatObjAsyncLoader::s_pStreamEngine = nullptr;
 void CObjManager::LoadStatObjAsync(const char* szFileName, const char* szGeomName, bool useStreaming, uint32 loadingFlags, IStatObjFoundCallback* pCallback)
 {
 	LOADING_TIME_PROFILE_SECTION_ARGS(szFileName);
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Static Geometry");
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, "Static Geometry");
 
 	SLoadPrepareState prepState = LoadStatObj_Prepare(szFileName, szGeomName, nullptr, loadingFlags);
 	CStatObj* pObject = prepState.pObject;
@@ -659,7 +659,7 @@ CStatObj* CObjManager::LoadStatObj(const char* szFileName
                                    , bool useStreaming, uint32 loadingFlags)
 {
 	LOADING_TIME_PROFILE_SECTION_ARGS(szFileName);
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Static Geometry");
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, "Static Geometry");
 	
 	SLoadPrepareState prepState = LoadStatObj_Prepare(szFileName, szGeomName, ppSubObject, loadingFlags);
 	CStatObj* pObject = prepState.pObject;

@@ -314,7 +314,7 @@ void CAIActor::ResetModularBehaviorTree(EObjectResetType type)
 
 					if (properties->GetValue("esModularBehaviorTree", behaviorTreeName) && behaviorTreeName && behaviorTreeName[0])
 					{
-						MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Modular Behavior Tree Runtime");
+						MEMSTAT_CONTEXT(EMemStatContextType::Other, "Modular Behavior Tree Runtime");
 
 						StartBehaviorTree(behaviorTreeName);
 					}

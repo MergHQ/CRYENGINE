@@ -2570,7 +2570,7 @@ bool CVehicle::NetSerialize(TSerialize ser, EEntityAspects aspect, uint8 profile
 //------------------------------------------------------------------------
 void CVehicle::FullSerialize(TSerialize ser)
 {
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Vehicle serialization");
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, "Vehicle serialization");
 	ser.Value("indestructible", m_indestructible);
 	bool isDestroyed = IsDestroyed();
 	ser.Value("isDestroyed", isDestroyed, 'bool');

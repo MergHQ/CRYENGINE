@@ -221,7 +221,7 @@ bool C3DEngine::InitLevelForEditor(const char* szFolderName, const char* szMissi
 bool C3DEngine::LoadTerrain(XmlNodeRef pDoc, std::vector<struct IStatObj*>** ppStatObjTable, std::vector<IMaterial*>** ppMatTable)
 {
 	LOADING_TIME_PROFILE_SECTION;
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "C3DEngine::LoadTerrain");
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, "C3DEngine::LoadTerrain");
 
 	PrintMessage("===== Loading %s =====", COMPILED_HEIGHT_MAP_FILE_NAME);
 
@@ -250,7 +250,7 @@ bool C3DEngine::LoadTerrain(XmlNodeRef pDoc, std::vector<struct IStatObj*>** ppS
 
 	if (header.nChunkSize)
 	{
-		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Terrain, 0, "Terrain");
+		MEMSTAT_CONTEXT(EMemStatContextType::Terrain, "Terrain");
 
 		if (!m_pTerrain)
 			m_pTerrain = (CTerrain*)CreateTerrain(header.TerrainInfo);
@@ -628,7 +628,7 @@ void C3DEngine::UnloadLevel()
 //////////////////////////////////////////////////////////////////////////
 void C3DEngine::LoadFlaresData()
 {
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Flare data");
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, "Flare data");
 
 	string flareExportListPath = gEnv->p3DEngine->GetLevelFilePath(FLARE_EXPORT_FILE);
 	XmlNodeRef pFlareRootNode = gEnv->pSystem->LoadXmlFromFile(flareExportListPath);
@@ -1689,7 +1689,7 @@ bool C3DEngine::LoadUsedShadersList()
 {
 	LOADING_TIME_PROFILE_SECTION;
 
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "LoadUsedShadersList");
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, "LoadUsedShadersList");
 
 	GetRenderer()->EF_Query(EFQ_SetShaderCombinations);
 
@@ -1700,7 +1700,7 @@ bool C3DEngine::LoadUsedShadersList()
 bool C3DEngine::PrecreateDecals()
 {
 	LOADING_TIME_PROFILE_SECTION;
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "PrecreateDecals");
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, "PrecreateDecals");
 
 	CObjManager::DecalsToPrecreate& decals(GetObjManager()->m_decalsToPrecreate);
 	// pre-create ...
@@ -1732,7 +1732,7 @@ bool C3DEngine::PrecreateDecals()
 //////////////////////////////////////////////////////////////////////////
 void C3DEngine::PostLoadLevel()
 {
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "PostLoadLevel");
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, "PostLoadLevel");
 	LOADING_TIME_PROFILE_SECTION;
 
 	//////////////////////////////////////////////////////////////////////////

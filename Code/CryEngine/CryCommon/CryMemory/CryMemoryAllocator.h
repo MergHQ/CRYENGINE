@@ -678,7 +678,7 @@ public:
 	/* __n must be > 0      */
 	static void* allocate(size_t __n)
 	{
-		MEMREPLAY_SCOPE(EMemReplayAllocClass::C_UserPointer, EMemReplayUserPointerClass::C_CryMalloc);
+		MEMREPLAY_SCOPE(EMemReplayAllocClass::UserPointer, EMemReplayUserPointerClass::CryMalloc);
 
 		void* ret;
 
@@ -790,7 +790,7 @@ public:
 	/* __p may not be 0 */
 	static size_t deallocate(void* __p) //, size_t __n)
 	{
-		MEMREPLAY_SCOPE(EMemReplayAllocClass::C_UserPointer, EMemReplayUserPointerClass::C_CryMalloc);
+		MEMREPLAY_SCOPE(EMemReplayAllocClass::UserPointer, EMemReplayUserPointerClass::CryMalloc);
 
 		size_t ret;
 
@@ -816,7 +816,7 @@ public:
 
 	static size_t deallocate(void* __p, size_t __n)
 	{
-		MEMREPLAY_SCOPE(EMemReplayAllocClass::C_UserPointer, EMemReplayUserPointerClass::C_CryMalloc);
+		MEMREPLAY_SCOPE(EMemReplayAllocClass::UserPointer, EMemReplayUserPointerClass::CryMalloc);
 
 		size_t ret;
 

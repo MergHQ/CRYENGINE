@@ -700,7 +700,7 @@ HRESULT CDeviceObjectFactory::CreateBuffer(
 	, const void* pData)
 {
 	CRY_PROFILE_FUNCTION(PROFILE_RENDERER);
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "CreateBuffer");
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, "CreateBuffer");
 	HRESULT hr = S_OK;
 
 #ifndef _RELEASE

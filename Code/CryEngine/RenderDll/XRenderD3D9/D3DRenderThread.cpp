@@ -20,7 +20,7 @@
 bool CD3D9Renderer::RT_CreateDevice()
 {
 	LOADING_TIME_PROFILE_SECTION;
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_D3D, 0, "Renderer CreateDevice");
+	MEMSTAT_CONTEXT(EMemStatContextType::D3D, "Renderer CreateDevice");
 
 #if CRY_PLATFORM_WINDOWS && !defined(SUPPORT_DEVICE_INFO)
 	if (!m_bShaderCacheGen && !SetWindow(m_width, m_height))

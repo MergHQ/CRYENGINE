@@ -215,7 +215,7 @@ bool CEntityScript::LoadScript(bool bForceReload)
 	if (m_pEntityTable && !bForceReload)
 		return true;
 
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Entity Scripts");
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, "Entity Scripts");
 
 	Clear();
 

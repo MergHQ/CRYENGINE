@@ -1145,7 +1145,7 @@ byte* CResFile::mfFileReadCompressed(CDirEntry* de, uint32& nSizeDecomp, uint32&
 	if (!mfActivate(false))
 		return nullptr;
 
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Shader, 0, "Shaders File Read Compressed");
+	MEMSTAT_CONTEXT(EMemStatContextType::Shader, "Shaders File Read Compressed");
 
 	if (!m_handle)
 	{

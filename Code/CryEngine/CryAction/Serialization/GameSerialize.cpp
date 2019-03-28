@@ -1034,7 +1034,7 @@ void CGameSerialize::SaveEngineSystems(SSaveEnvironment& savEnv)
 	savEnv.m_checkpoint.Check("3DEngine");
 	{
 		// game tokens
-		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Game token serialization");
+		MEMSTAT_CONTEXT(EMemStatContextType::Other, "Game token serialization");
 		savEnv.m_pCryAction->GetIGameTokenSystem()->Serialize(savEnv.m_pSaveGame->AddSection(SAVEGAME_GAMETOKEN_SECTION));
 		savEnv.m_checkpoint.Check("GameToken");
 	}
@@ -1079,7 +1079,7 @@ bool CGameSerialize::SaveEntities(SSaveEnvironment& savEnv)
 	entities.reserve(gEnv->pEntitySystem->GetNumEntities());
 
 	{
-		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Basic entity data serialization");
+		MEMSTAT_CONTEXT(EMemStatContextType::Other, "Basic entity data serialization");
 
 		gameState.BeginGroup("BasicEntityData");
 		int nSavedEntityCount = 0;
@@ -1095,7 +1095,7 @@ bool CGameSerialize::SaveEntities(SSaveEnvironment& savEnv)
 			}
 
 			{
-				MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Basic entity data serialization");
+				MEMSTAT_CONTEXT(EMemStatContextType::Other, "Basic entity data serialization");
 
 				// basic entity data
 				SBasicEntityData bed;

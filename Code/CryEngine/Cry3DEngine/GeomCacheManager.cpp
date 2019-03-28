@@ -42,7 +42,7 @@ CGeomCacheManager::CGeomCacheManager()
 	, m_numReadStreamAborts(0)
 	, m_numFailedAllocs(0)
 {
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_GeomCache, 0, "Geometry cache streaming pool");
+	MEMSTAT_CONTEXT(EMemStatContextType::GeomCache, "Geometry cache streaming pool");
 
 	ChangeBufferSize(GetCVars()->e_GeomCacheBufferSize);
 
@@ -101,7 +101,7 @@ CGeomCache* CGeomCacheManager::FindGeomCacheByFilename(const char* filename)
 CGeomCache* CGeomCacheManager::LoadGeomCache(const char* szFileName)
 {
 	LOADING_TIME_PROFILE_SECTION;
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Geometry Caches");
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, "Geometry Caches");
 
 	// Normalize file name
 	char sFilename[_MAX_PATH];

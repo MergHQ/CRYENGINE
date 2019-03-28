@@ -572,7 +572,7 @@ bool CShaderMan::mfUpdateTechnik(SShaderItem& SI, CCryNameTSCRC& Name)
 
 SShaderItem CShaderMan::mfShaderItemForName(const char* nameEf, bool bShare, int flags, SInputShaderResources* Res, uint64 nMaskGen, const IRenderer::SLoadShaderItemArgs* pArgs)
 {
-	MEMSTAT_CONTEXT_FMT(EMemStatContextTypes::MSC_Shader, 0, "ShaderItem (%s)", nameEf);
+	MEMSTAT_CONTEXT_FMT(EMemStatContextType::Shader, "ShaderItem (%s)", nameEf);
 
 	SShaderItem SI;
 
@@ -826,7 +826,7 @@ void CShaderMan::CreateShaderMaskGenString(const CShader* pSH, stack_string& fla
 
 void CShaderMan::RT_ParseShader(CShader* pSH, uint64 nMaskGen, uint32 flags, CShaderResources* pRes)
 {
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "ParseShader");
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, "ParseShader");
 
 	SCOPED_ALLOW_FILE_ACCESS_FROM_THIS_THREAD();
 

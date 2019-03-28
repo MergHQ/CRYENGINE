@@ -262,3 +262,31 @@ TEST(CryStringUtilsTest, ComputeLengthFormatted)
 	test(512, c);
 	test(4095, c);
 }
+
+TEST(CryStringUtilsTest, DetectLiterals)
+{
+	REQUIRE(CRY_IS_STRING_LITERAL(""));
+	REQUIRE(CRY_IS_STRING_LITERAL("\""));
+	REQUIRE(CRY_IS_STRING_LITERAL("sdf sdf sd"));
+	REQUIRE(CRY_IS_STRING_LITERAL("sd,;f "  "sd"));
+	REQUIRE(CRY_IS_STRING_LITERAL("sdf\n "	 "sd"));
+	REQUIRE(CRY_IS_STRING_LITERAL("sdf "	
+		"sd"));
+
+	REQUIRE(!CRY_IS_STRING_LITERAL("sdf\n "	 asdasd "sd"));
+	REQUIRE(!CRY_IS_STRING_LITERAL("sdf\n "	 asdasd "sd" asd));
+
+	static const char* const szStatConst = "afasdfghj";
+	REQUIRE(!CRY_IS_STRING_LITERAL(szStatConst));
+	const char* const szConst = "345j		";
+	REQUIRE(!CRY_IS_STRING_LITERAL(szConst));
+	const char* szStr = "09sdfsd";
+	REQUIRE(!CRY_IS_STRING_LITERAL(szStr));
+	string str = "dspimlkn";
+	REQUIRE(!CRY_IS_STRING_LITERAL(str.c_str()));
+
+	// avoid unused warnings
+	(void) szConst;
+	(void) szStr;
+}
+

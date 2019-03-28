@@ -489,8 +489,8 @@ void CItemSystem::Scan(const char* folderName)
 //------------------------------------------------------------------------
 bool CItemSystem::ScanXML(XmlNodeRef& root, const char* xmlFile)
 {
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "ItemSystem");
-	MEMSTAT_CONTEXT_FMT(EMemStatContextTypes::MSC_Other, 0, "Item XML (%s)", xmlFile);
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, "ItemSystem");
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, xmlFile);
 
 	if (strcmpi(root->getTag(), "item"))
 	{

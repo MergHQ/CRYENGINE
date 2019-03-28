@@ -1133,7 +1133,7 @@ namespace Schematyc2
 			}
 
 			{
-				MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Schematyc: Collect And Compile Abstract Interfaces");
+				MEMSTAT_CONTEXT(EMemStatContextType::Other, "Schematyc: Collect And Compile Abstract Interfaces");
 
 				// Collect and compile abstract interfaces.
 				TScriptAbstractInterfaceConstVector scriptAbstractInterfaces;
@@ -1162,12 +1162,12 @@ namespace Schematyc2
 				}
 
 				{
-					MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Schematyc: Pre-compile Graph Sequences");
+					MEMSTAT_CONTEXT(EMemStatContextType::Other, "Schematyc: Pre-compile Graph Sequences");
 
 					// Pre-compile graph sequences.
 					for(TDocGraphSequenceVector::iterator iDocGraphSequence = docGraphSequences.begin(), iEndDocGraphSequence = docGraphSequences.end(); iDocGraphSequence != iEndDocGraphSequence; ++ iDocGraphSequence)
 					{
-						MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Schematyc: Precompile Sequence");
+						MEMSTAT_CONTEXT(EMemStatContextType::Other, "Schematyc: Precompile Sequence");
 
 						SDocGraphSequence&	docGraphSequence = *iDocGraphSequence;
 						docGraphSequence.libFunctionId	= docGraphSequence.pLibClass->AddFunction(docGraphSequence.pDocGraph->GetGUID());
@@ -1186,7 +1186,7 @@ namespace Schematyc2
 					}
 
 					{
-						MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Schematyc: Compile Graph Sequences And Link");
+						MEMSTAT_CONTEXT(EMemStatContextType::Other, "Schematyc: Compile Graph Sequences And Link");
 
 						// Compile graph sequences.
 						for(TDocGraphSequenceVector::const_iterator iDocGraphSequence = docGraphSequences.begin(), iEndDocGraphSequence = docGraphSequences.end(); iDocGraphSequence != iEndDocGraphSequence; ++ iDocGraphSequence)
@@ -1229,7 +1229,7 @@ namespace Schematyc2
 	//////////////////////////////////////////////////////////////////////////
 	void CCompiler::CompileAll()
 	{
-		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Schematyc: Compile All");
+		MEMSTAT_CONTEXT(EMemStatContextType::Other, "Schematyc: Compile All");
 		LOADING_TIME_PROFILE_SECTION;
 
 		gEnv->pSchematyc2->GetScriptRegistry().VisitFiles(ScriptFileVisitor::FromMemberFunction<CCompiler, &CCompiler::VisitAndCompileScriptFile>(*this));
@@ -1249,7 +1249,7 @@ namespace Schematyc2
 	//////////////////////////////////////////////////////////////////////////
 	EVisitStatus CCompiler::VisitAndCompileScriptFile(IScriptFile& scriptFile)
 	{
-		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Schematyc: Compile Script File");
+		MEMSTAT_CONTEXT(EMemStatContextType::Other, "Schematyc: Compile Script File");
 		if(ILibPtr pLib = Compile(scriptFile))
 		{
 			gEnv->pSchematyc2->GetLibRegistry().RegisterLib(pLib);
@@ -1260,7 +1260,7 @@ namespace Schematyc2
 	//////////////////////////////////////////////////////////////////////////
 	void CCompiler::CompileSignal(const IScriptFile& scriptFile, const IScriptSignal& scriptSignal, CLib& lib)
 	{
-		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Schematyc: Compile Signal");
+		MEMSTAT_CONTEXT(EMemStatContextType::Other, "Schematyc: Compile Signal");
 		// Add signal to library.
 		CSignalPtr	pSignal = lib.AddSignal(scriptSignal.GetGUID(), SGUID(), scriptSignal.GetName());
 		SCHEMATYC2_COMPILER_ASSERT(pSignal);
@@ -1281,7 +1281,7 @@ namespace Schematyc2
 	//////////////////////////////////////////////////////////////////////////
 	void CCompiler::CompileAbstractInterface(const IScriptFile& scriptFile, const IScriptAbstractInterface& scriptAbstractInterface, CLib& lib)
 	{
-		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Schematyc: Compile Abstract Interface");
+		MEMSTAT_CONTEXT(EMemStatContextType::Other, "Schematyc: Compile Abstract Interface");
 		// Add abstract interface to library.
 		lib.AddAbstractInterface(scriptAbstractInterface.GetGUID(), scriptAbstractInterface.GetName());
 	}
@@ -1289,7 +1289,7 @@ namespace Schematyc2
 	//////////////////////////////////////////////////////////////////////////
 	void CCompiler::CompileAbstractInterfaceFunction(const IScriptFile& scriptFile, const IScriptAbstractInterfaceFunction& scriptAbstractInterfaceFunction, CLib& lib)
 	{
-		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Schematyc: Compile Abstract Interface Function");
+		MEMSTAT_CONTEXT(EMemStatContextType::Other, "Schematyc: Compile Abstract Interface Function");
 		// Add abstract interface function to library.
 		CLibAbstractInterfaceFunctionPtr	pAbstracInterfaceFunction = lib.AddAbstractInterfaceFunction(scriptAbstractInterfaceFunction.GetGUID(), scriptAbstractInterfaceFunction.GetName());
 		SCHEMATYC2_COMPILER_ASSERT(pAbstracInterfaceFunction);
@@ -1319,7 +1319,7 @@ namespace Schematyc2
 	//////////////////////////////////////////////////////////////////////////
 	void CCompiler::CompileClass(const IScriptFile& scriptFile, const IScriptClass& scriptClass, CLib& lib, TDocGraphSequenceVector& docGraphSequences)
 	{
-		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Schematyc: Compile Class");
+		MEMSTAT_CONTEXT(EMemStatContextType::Other, "Schematyc: Compile Class");
 		const SGUID classGUID = scriptClass.GetGUID();
 		SGUID       foundationGUID = scriptClass.GetFoundationGUID();
 		// Get foundation and base class.
@@ -1378,7 +1378,7 @@ namespace Schematyc2
 	//////////////////////////////////////////////////////////////////////////
 	void CCompiler::CompileClass(const IScriptFile& scriptFile, const IScriptClass& scriptClass, CLib& lib, CLibClass& libClass, TDocGraphSequenceVector& docGraphSequences)
 	{
-		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Schematyc: Compile Class");
+		MEMSTAT_CONTEXT(EMemStatContextType::Other, "Schematyc: Compile Class");
 		LOADING_TIME_PROFILE_SECTION_ARGS(scriptClass.GetName());
 
 		struct SPendingGraph // #SchematycTODO : Move this outside of the function!!!

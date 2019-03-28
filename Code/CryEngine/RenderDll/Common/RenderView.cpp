@@ -30,7 +30,7 @@ CRenderView::CRenderView(const char* name, EViewType type, CRenderView* pParentV
 	, m_viewInfoCount(1)
 	, m_bPostWriteExecuted(false)
 {
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_D3D, 0, "CRenderView::CRenderView");
+	MEMSTAT_CONTEXT(EMemStatContextType::D3D, "CRenderView::CRenderView");
 
 	for (int i = 0; i < EFSLIST_NUM; i++)
 	{
@@ -59,7 +59,7 @@ CRenderView::CRenderView(const char* name, EViewType type, CRenderView* pParentV
 	ZeroStruct(m_shaderConstants);
 
 	{
-		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_D3D, 0, "Renderer TempObjects");
+		MEMSTAT_CONTEXT(EMemStatContextType::D3D, "Renderer TempObjects");
 
 		if (m_tempRenderObjects.pRenderObjectsPool)
 		{
@@ -1859,7 +1859,7 @@ void CRenderView::ExpandPermanentRenderObjects()
 void CRenderView::CompileModifiedRenderObjects()
 {
 	CRY_PROFILE_FUNCTION_ARG(PROFILE_RENDERER, m_name.c_str())
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "CRenderView::CompileModifiedRenderObjects");
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, "CRenderView::CompileModifiedRenderObjects");
 
 	assert(gRenDev->m_pRT->IsRenderThread());
 

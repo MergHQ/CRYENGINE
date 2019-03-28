@@ -135,7 +135,7 @@ void CGameAudio::Reset()
 
 void CGameAudio::LoadSignalsFromXMLNode( const char* xmlFilename, const XmlNodeRef& xmlNode, SAudioSignalsData& data  )
 {
-	MEMSTAT_CONTEXT_FMT(EMemStatContextTypes::MSC_Other, 0, "Audio Signals XML (%s)", xmlFilename);
+	MEMSTAT_CONTEXT_FMT(EMemStatContextType::Other, "Audio Signals XML (%s)", xmlFilename);
 
 	const uint32 signalCount = xmlNode->getChildCount();
 

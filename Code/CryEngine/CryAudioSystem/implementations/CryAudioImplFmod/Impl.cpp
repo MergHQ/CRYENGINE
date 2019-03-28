@@ -532,7 +532,7 @@ ERequestStatus CImpl::ConstructFile(XmlNodeRef const& rootNode, SFileInfo* const
 			// FMOD Studio always uses 32 byte alignment for preloaded banks regardless of the platform.
 			pFileInfo->memoryBlockAlignment = 32;
 
-			MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Fmod::CFile");
+			MEMSTAT_CONTEXT(EMemStatContextType::AudioImpl, "CryAudio::Impl::Fmod::CFile");
 			pFileInfo->pImplData = new CBank();
 
 			result = ERequestStatus::Success;
@@ -581,7 +581,7 @@ void CImpl::GetInfo(SImplInfo& implInfo) const
 ///////////////////////////////////////////////////////////////////////////
 IObject* CImpl::ConstructGlobalObject()
 {
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Fmod::CGlobalObject");
+	MEMSTAT_CONTEXT(EMemStatContextType::AudioImpl, "CryAudio::Impl::Fmod::CGlobalObject");
 	new CGlobalObject;
 
 	if (!stl::push_back_unique(g_constructedObjects, static_cast<CBaseObject*>(g_pObject)))
@@ -597,7 +597,7 @@ IObject* CImpl::ConstructGlobalObject()
 ///////////////////////////////////////////////////////////////////////////
 IObject* CImpl::ConstructObject(CTransformation const& transformation, char const* const szName /*= nullptr*/)
 {
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Fmod::CObject");
+	MEMSTAT_CONTEXT(EMemStatContextType::AudioImpl, "CryAudio::Impl::Fmod::CObject");
 	CBaseObject* const pObject = new CObject(transformation);
 
 #if defined(CRY_AUDIO_IMPL_FMOD_USE_DEBUG_CODE)
@@ -637,7 +637,7 @@ IListener* CImpl::ConstructListener(CTransformation const& transformation, char 
 {
 	static int id = 0;
 
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Fmod::CListener");
+	MEMSTAT_CONTEXT(EMemStatContextType::AudioImpl, "CryAudio::Impl::Fmod::CListener");
 	g_pListener = new CListener(transformation, id++);
 
 #if defined(CRY_AUDIO_IMPL_FMOD_USE_DEBUG_CODE)
@@ -706,7 +706,7 @@ ITriggerConnection* CImpl::ConstructTriggerConnection(XmlNodeRef const& rootNode
 				}
 			}
 
-			MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Fmod::CEvent");
+			MEMSTAT_CONTEXT(EMemStatContextType::AudioImpl, "CryAudio::Impl::Fmod::CEvent");
 
 #if defined(CRY_AUDIO_IMPL_FMOD_USE_DEBUG_CODE)
 			pITriggerConnection = static_cast<ITriggerConnection*>(new CEvent(StringToId(fullName.c_str()), actionType, guid, szName));
@@ -735,7 +735,7 @@ ITriggerConnection* CImpl::ConstructTriggerConnection(XmlNodeRef const& rootNode
 			FMOD::Studio::EventDescription* pEventDescription = nullptr;
 			g_pStudioSystem->getEventByID(&guid, &pEventDescription);
 
-			MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Fmod::CEvent");
+			MEMSTAT_CONTEXT(EMemStatContextType::AudioImpl, "CryAudio::Impl::Fmod::CEvent");
 
 #if defined(CRY_AUDIO_IMPL_FMOD_USE_DEBUG_CODE)
 			pITriggerConnection = static_cast<ITriggerConnection*>(new CEvent(StringToId(fullName.c_str()), guid, szKey, szEventName));
@@ -770,7 +770,7 @@ ITriggerConnection* CImpl::ConstructTriggerConnection(XmlNodeRef const& rootNode
 			FMOD::Studio::EventDescription* pEventDescription = nullptr;
 			g_pStudioSystem->getEventByID(&guid, &pEventDescription);
 
-			MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Fmod::CSnapshot");
+			MEMSTAT_CONTEXT(EMemStatContextType::AudioImpl, "CryAudio::Impl::Fmod::CSnapshot");
 
 #if defined(CRY_AUDIO_IMPL_FMOD_USE_DEBUG_CODE)
 			pITriggerConnection = static_cast<ITriggerConnection*>(new CSnapshot(StringToId(fullName.c_str()), actionType, pEventDescription, szName));
@@ -812,7 +812,7 @@ ITriggerConnection* CImpl::ConstructTriggerConnection(ITriggerInfo const* const 
 
 		if (g_pStudioSystem->lookupID(fullName.c_str(), &guid) == FMOD_OK)
 		{
-			MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Fmod::CEvent");
+			MEMSTAT_CONTEXT(EMemStatContextType::AudioImpl, "CryAudio::Impl::Fmod::CEvent");
 			pITriggerConnection = static_cast<ITriggerConnection*>(new CEvent(StringToId(fullName.c_str()), CEvent::EActionType::Start, guid, szName));
 		}
 		else
@@ -874,7 +874,7 @@ IParameterConnection* CImpl::ConstructParameterConnection(XmlNodeRef const& root
 			rootNode->getAttr(g_szMutiplierAttribute, multiplier);
 			rootNode->getAttr(g_szShiftAttribute, shift);
 
-			MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Fmod::CParameter");
+			MEMSTAT_CONTEXT(EMemStatContextType::AudioImpl, "CryAudio::Impl::Fmod::CParameter");
 			pIParameterConnection = static_cast<IParameterConnection*>(new CParameter(parameterInfo, multiplier, shift));
 		}
 #if defined(CRY_AUDIO_IMPL_FMOD_USE_DEBUG_CODE)
@@ -902,7 +902,7 @@ IParameterConnection* CImpl::ConstructParameterConnection(XmlNodeRef const& root
 			rootNode->getAttr(g_szMutiplierAttribute, multiplier);
 			rootNode->getAttr(g_szShiftAttribute, shift);
 
-			MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Fmod::CVca");
+			MEMSTAT_CONTEXT(EMemStatContextType::AudioImpl, "CryAudio::Impl::Fmod::CVca");
 
 #if defined(CRY_AUDIO_IMPL_FMOD_USE_DEBUG_CODE)
 			pIParameterConnection = static_cast<IParameterConnection*>(new CVca(pVca, multiplier, shift, szName));
@@ -957,7 +957,7 @@ ISwitchStateConnection* CImpl::ConstructSwitchStateConnection(XmlNodeRef const& 
 
 			CParameterInfo const parameterInfo(parameterDescription.id, isGlobal, fullName.c_str());
 
-			MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Fmod::CParameterState");
+			MEMSTAT_CONTEXT(EMemStatContextType::AudioImpl, "CryAudio::Impl::Fmod::CParameterState");
 			pISwitchStateConnection = static_cast<ISwitchStateConnection*>(new CParameterState(parameterInfo, value));
 		}
 #if defined(CRY_AUDIO_IMPL_FMOD_USE_DEBUG_CODE)
@@ -982,7 +982,7 @@ ISwitchStateConnection* CImpl::ConstructSwitchStateConnection(XmlNodeRef const& 
 			char const* const szValue = rootNode->getAttr(g_szValueAttribute);
 			auto const value = static_cast<float>(atof(szValue));
 
-			MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Fmod::CVcaState");
+			MEMSTAT_CONTEXT(EMemStatContextType::AudioImpl, "CryAudio::Impl::Fmod::CVcaState");
 
 #if defined(CRY_AUDIO_IMPL_FMOD_USE_DEBUG_CODE)
 			pISwitchStateConnection = static_cast<ISwitchStateConnection*>(new CVcaState(pVca, value, szName));
@@ -1032,7 +1032,7 @@ IEnvironmentConnection* CImpl::ConstructEnvironmentConnection(XmlNodeRef const& 
 			FMOD::Studio::Bus* pBus = nullptr;
 			CRY_VERIFY(g_pStudioSystem->getBusByID(&guid, &pBus) == FMOD_OK);
 
-			MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Fmod::CReturn");
+			MEMSTAT_CONTEXT(EMemStatContextType::AudioImpl, "CryAudio::Impl::Fmod::CReturn");
 
 #if defined(CRY_AUDIO_IMPL_FMOD_USE_DEBUG_CODE)
 			pIEnvironmentConnection = static_cast<IEnvironmentConnection*>(new CReturn(pBus, szName));
@@ -1063,7 +1063,7 @@ IEnvironmentConnection* CImpl::ConstructEnvironmentConnection(XmlNodeRef const& 
 			rootNode->getAttr(g_szMutiplierAttribute, multiplier);
 			rootNode->getAttr(g_szShiftAttribute, shift);
 
-			MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Fmod::CParameterEnvironment");
+			MEMSTAT_CONTEXT(EMemStatContextType::AudioImpl, "CryAudio::Impl::Fmod::CParameterEnvironment");
 			pIEnvironmentConnection = static_cast<IEnvironmentConnection*>(new CParameterEnvironment(parameterInfo, multiplier, shift));
 		}
 #if defined(CRY_AUDIO_IMPL_FMOD_USE_DEBUG_CODE)
@@ -1325,7 +1325,7 @@ void CImpl::LoadMasterBanks()
 
 						if (numBuses > 0)
 						{
-							MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "FMOD::Studio::Bus*[]");
+							MEMSTAT_CONTEXT(EMemStatContextType::AudioImpl, "FMOD::Studio::Bus*[]");
 							FMOD::Studio::Bus** pBuses = new FMOD::Studio::Bus*[numBuses];
 							int numRetrievedBuses = 0;
 							CRY_VERIFY(masterBank.pBank->getBusList(pBuses, numBuses, &numRetrievedBuses) == FMOD_OK);
@@ -1472,8 +1472,8 @@ void CImpl::PauseMasterBus(bool const shouldPause)
 CEventInstance* CImpl::ConstructEventInstance(TriggerInstanceId const triggerInstanceId, CEvent& event, CBaseObject const& baseObject)
 {
 	event.IncrementNumInstances();
+	MEMSTAT_CONTEXT(EMemStatContextType::AudioImpl, "CryAudio::Impl::Fmod::CEventInstance");
 
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Fmod::CEventInstance");
 	auto const pEventInstance = new CEventInstance(triggerInstanceId, event, baseObject);
 	g_constructedEventInstances.push_back(pEventInstance);
 
@@ -1485,7 +1485,7 @@ CEventInstance* CImpl::ConstructEventInstance(TriggerInstanceId const triggerIns
 {
 	event.IncrementNumInstances();
 
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Fmod::CEventInstance");
+	MEMSTAT_CONTEXT(EMemStatContextType::AudioImpl, "CryAudio::Impl::Fmod::CEventInstance");
 	return new CEventInstance(triggerInstanceId, event);
 }
 #endif  // CRY_AUDIO_IMPL_FMOD_USE_DEBUG_CODE

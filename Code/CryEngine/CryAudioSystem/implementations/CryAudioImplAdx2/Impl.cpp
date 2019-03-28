@@ -285,7 +285,7 @@ CriError selectIoFunc(CriChar8 const* szPath, CriFsDeviceId* pDeviceId, CriFsIoI
 //////////////////////////////////////////////////////////////////////////
 void* userMalloc(void* const pObj, CriUint32 const size)
 {
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Adx2::userMalloc");
+	MEMSTAT_CONTEXT(EMemStatContextType::AudioImpl, "CryAudio::Impl::Adx2::userMalloc");
 	void* const pMem = CryModuleMalloc(static_cast<size_t>(size));
 	return pMem;
 }
@@ -623,7 +623,7 @@ ERequestStatus CImpl::ConstructFile(XmlNodeRef const& rootNode, SFileInfo* const
 			// The first address of the data must be aligned at a 4-byte boundary.
 			pFileInfo->memoryBlockAlignment = 32;
 
-			MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Adx2::CBinary");
+			MEMSTAT_CONTEXT(EMemStatContextType::AudioImpl, "CryAudio::Impl::Adx2::CBinary");
 			pFileInfo->pImplData = new CBinary();
 
 			result = ERequestStatus::Success;
@@ -672,7 +672,7 @@ void CImpl::GetInfo(SImplInfo& implInfo) const
 ///////////////////////////////////////////////////////////////////////////
 IObject* CImpl::ConstructGlobalObject()
 {
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Adx2::CGlobalObject");
+	MEMSTAT_CONTEXT(EMemStatContextType::AudioImpl, "CryAudio::Impl::Adx2::CGlobalObject");
 	new CGlobalObject;
 
 	if (!stl::push_back_unique(g_constructedObjects, static_cast<CBaseObject*>(g_pObject)))
@@ -688,7 +688,7 @@ IObject* CImpl::ConstructGlobalObject()
 ///////////////////////////////////////////////////////////////////////////
 IObject* CImpl::ConstructObject(CTransformation const& transformation, char const* const szName /*= nullptr*/)
 {
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Adx2::CObject");
+	MEMSTAT_CONTEXT(EMemStatContextType::AudioImpl, "CryAudio::Impl::Adx2::CObject");
 	auto const pObject = new CObject(transformation);
 
 #if defined(CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE)
@@ -730,7 +730,7 @@ IListener* CImpl::ConstructListener(CTransformation const& transformation, char 
 
 	if (pHandle != nullptr)
 	{
-		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Adx2::CListener");
+		MEMSTAT_CONTEXT(EMemStatContextType::AudioImpl, "CryAudio::Impl::Adx2::CListener");
 		g_pListener = new CListener(transformation, id++, pHandle);
 
 #if defined(CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE)
@@ -827,10 +827,10 @@ ITriggerConnection* CImpl::ConstructTriggerConnection(XmlNodeRef const& rootNode
 			}
 		}
 
-		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Adx2::CCue");
+		MEMSTAT_CONTEXT(EMemStatContextType::AudioImpl, "CryAudio::Impl::Adx2::CCue");
 		pITriggerConnection = static_cast<ITriggerConnection*>(new CCue(cueId, szName, StringToId(szCueSheetName), type, szCueSheetName, fadeOutTime));
 #else
-		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Adx2::CCue");
+		MEMSTAT_CONTEXT(EMemStatContextType::AudioImpl, "CryAudio::Impl::Adx2::CCue");
 		pITriggerConnection = static_cast<ITriggerConnection*>(new CCue(cueId, szName, StringToId(szCueSheetName), type));
 #endif    // CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE
 	}
@@ -845,7 +845,7 @@ ITriggerConnection* CImpl::ConstructTriggerConnection(XmlNodeRef const& rootNode
 		int changeoverTime = g_defaultChangeoverTime;
 		rootNode->getAttr(g_szTimeAttribute, changeoverTime);
 
-		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Adx2::CSnapshot");
+		MEMSTAT_CONTEXT(EMemStatContextType::AudioImpl, "CryAudio::Impl::Adx2::CSnapshot");
 		pITriggerConnection = static_cast<ITriggerConnection*>(new CSnapshot(szName, type, static_cast<CriSint32>(changeoverTime)));
 	}
 #if defined(CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE)
@@ -888,7 +888,7 @@ ITriggerConnection* CImpl::ConstructTriggerConnection(ITriggerInfo const* const 
 			}
 		}
 
-		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Adx2::CCue");
+		MEMSTAT_CONTEXT(EMemStatContextType::AudioImpl, "CryAudio::Impl::Adx2::CCue");
 		pITriggerConnection = static_cast<ITriggerConnection*>(new CCue(cueId, szName, StringToId(szCueSheetName), CCue::EActionType::Start, szCueSheetName, fadeOutTime));
 	}
 
@@ -934,7 +934,7 @@ IParameterConnection* CImpl::ConstructParameterConnection(XmlNodeRef const& root
 		rootNode->getAttr(g_szMutiplierAttribute, multiplier);
 		rootNode->getAttr(g_szShiftAttribute, shift);
 
-		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Adx2::CAisacControl");
+		MEMSTAT_CONTEXT(EMemStatContextType::AudioImpl, "CryAudio::Impl::Adx2::CAisacControl");
 		pIParameterConnection = static_cast<IParameterConnection*>(new CAisacControl(szName, multiplier, shift));
 	}
 	else if (_stricmp(szTag, g_szSCategoryTag) == 0)
@@ -945,7 +945,7 @@ IParameterConnection* CImpl::ConstructParameterConnection(XmlNodeRef const& root
 		rootNode->getAttr(g_szMutiplierAttribute, multiplier);
 		rootNode->getAttr(g_szShiftAttribute, shift);
 
-		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Adx2::CCategory");
+		MEMSTAT_CONTEXT(EMemStatContextType::AudioImpl, "CryAudio::Impl::Adx2::CCategory");
 		pIParameterConnection = static_cast<IParameterConnection*>(new CCategory(szName, multiplier, shift));
 	}
 	else if (_stricmp(szTag, g_szGameVariableTag) == 0)
@@ -956,7 +956,7 @@ IParameterConnection* CImpl::ConstructParameterConnection(XmlNodeRef const& root
 		rootNode->getAttr(g_szMutiplierAttribute, multiplier);
 		rootNode->getAttr(g_szShiftAttribute, shift);
 
-		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Adx2::CGameVariable");
+		MEMSTAT_CONTEXT(EMemStatContextType::AudioImpl, "CryAudio::Impl::Adx2::CGameVariable");
 		pIParameterConnection = static_cast<IParameterConnection*>(new CGameVariable(szName, multiplier, shift));
 	}
 #if defined(CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE)
@@ -1022,7 +1022,7 @@ ISwitchStateConnection* CImpl::ConstructSwitchStateConnection(XmlNodeRef const& 
 
 		if (ParseSelectorNode(rootNode, szSelectorName, szSelectorLabelName))
 		{
-			MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Adx2::CSelectorLabel");
+			MEMSTAT_CONTEXT(EMemStatContextType::AudioImpl, "CryAudio::Impl::Adx2::CSelectorLabel");
 			pISwitchStateConnection = static_cast<ISwitchStateConnection*>(new CSelectorLabel(szSelectorName, szSelectorLabelName));
 		}
 	}
@@ -1032,7 +1032,7 @@ ISwitchStateConnection* CImpl::ConstructSwitchStateConnection(XmlNodeRef const& 
 		float value = g_defaultStateValue;
 		rootNode->getAttr(g_szValueAttribute, value);
 
-		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Adx2::CAisacState");
+		MEMSTAT_CONTEXT(EMemStatContextType::AudioImpl, "CryAudio::Impl::Adx2::CAisacState");
 		pISwitchStateConnection = static_cast<ISwitchStateConnection*>(new CAisacState(szName, static_cast<CriFloat32>(value)));
 
 	}
@@ -1042,7 +1042,7 @@ ISwitchStateConnection* CImpl::ConstructSwitchStateConnection(XmlNodeRef const& 
 		float value = g_defaultStateValue;
 		rootNode->getAttr(g_szValueAttribute, value);
 
-		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Adx2::CGameVariableState");
+		MEMSTAT_CONTEXT(EMemStatContextType::AudioImpl, "CryAudio::Impl::Adx2::CGameVariableState");
 		pISwitchStateConnection = static_cast<ISwitchStateConnection*>(new CGameVariableState(szName, static_cast<CriFloat32>(value)));
 	}
 	else if (_stricmp(szTag, g_szSCategoryTag) == 0)
@@ -1051,7 +1051,7 @@ ISwitchStateConnection* CImpl::ConstructSwitchStateConnection(XmlNodeRef const& 
 		float value = g_defaultStateValue;
 		rootNode->getAttr(g_szValueAttribute, value);
 
-		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Adx2::CCategoryState");
+		MEMSTAT_CONTEXT(EMemStatContextType::AudioImpl, "CryAudio::Impl::Adx2::CCategoryState");
 		pISwitchStateConnection = static_cast<ISwitchStateConnection*>(new CCategoryState(szName, static_cast<CriFloat32>(value)));
 	}
 #if defined(CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE)
@@ -1081,7 +1081,7 @@ IEnvironmentConnection* CImpl::ConstructEnvironmentConnection(XmlNodeRef const& 
 	{
 		char const* const szName = rootNode->getAttr(g_szNameAttribute);
 
-		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Adx2::CDspBus");
+		MEMSTAT_CONTEXT(EMemStatContextType::AudioImpl, "CryAudio::Impl::Adx2::CDspBus");
 		pEnvironmentConnection = static_cast<IEnvironmentConnection*>(new CDspBus(szName));
 	}
 	else if (_stricmp(szTag, g_szAisacControlTag) == 0)
@@ -1092,7 +1092,7 @@ IEnvironmentConnection* CImpl::ConstructEnvironmentConnection(XmlNodeRef const& 
 		rootNode->getAttr(g_szMutiplierAttribute, multiplier);
 		rootNode->getAttr(g_szShiftAttribute, shift);
 
-		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Adx2::CAisacEnvironment");
+		MEMSTAT_CONTEXT(EMemStatContextType::AudioImpl, "CryAudio::Impl::Adx2::CAisacEnvironment");
 		pEnvironmentConnection = static_cast<IEnvironmentConnection*>(new CAisacEnvironment(szName, multiplier, shift));
 	}
 #if defined(CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE)
@@ -1122,7 +1122,7 @@ ISettingConnection* CImpl::ConstructSettingConnection(XmlNodeRef const& rootNode
 	{
 		char const* const szName = rootNode->getAttr(g_szNameAttribute);
 
-		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Adx2::CDspBusSetting");
+		MEMSTAT_CONTEXT(EMemStatContextType::AudioImpl, "CryAudio::Impl::Adx2::CDspBusSetting");
 		pISettingConnection = static_cast<ISettingConnection*>(new CDspBusSetting(szName));
 	}
 #if defined(CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE)
@@ -1182,7 +1182,6 @@ CCueInstance* CImpl::ConstructCueInstance(TriggerInstanceId const triggerInstanc
 {
 	cue.IncrementNumInstances();
 
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Adx2::CCueInstance");
 	auto const pCueInstance = new CCueInstance(triggerInstanceId, playbackId, cue, baseObject);
 	g_constructedCueInstances.push_back(pCueInstance);
 
@@ -1194,7 +1193,7 @@ CCueInstance* CImpl::ConstructCueInstance(TriggerInstanceId const triggerInstanc
 {
 	cue.IncrementNumInstances();
 
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Adx2::CCueInstance");
+	MEMSTAT_CONTEXT(EMemStatContextType::AudioImpl, "CryAudio::Impl::Adx2::CCueInstance");
 	return new CCueInstance(triggerInstanceId, playbackId, cue);
 }
 #endif  // CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE
@@ -1351,7 +1350,7 @@ bool CImpl::RegisterAcf()
 		FILE* const pAcfFile = gEnv->pCryPak->FOpen(acfPath.c_str(), "rbx");
 		size_t const acfFileSize = gEnv->pCryPak->FGetSize(acfPath.c_str());
 
-		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_AudioImpl, 0, "CryAudio::Impl::Adx2::CImpl::m_pAcfBuffer");
+		MEMSTAT_CONTEXT(EMemStatContextType::AudioImpl, "CryAudio::Impl::Adx2::CImpl::m_pAcfBuffer");
 		m_pAcfBuffer = new uint8[acfFileSize];
 		gEnv->pCryPak->FRead(m_pAcfBuffer, acfFileSize, pAcfFile);
 		gEnv->pCryPak->FClose(pAcfFile);

@@ -12,7 +12,7 @@
 
 void CGlobalHeaderDBA::CreateDatabaseDBA(const char* filename)
 {
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_DBA, 0, filename);
+	MEMSTAT_CONTEXT(EMemStatContextType::DBA, filename);
 	stack_string strPath = filename;
 	PathUtil::UnifyFilePath(strPath);
 	m_strFilePathDBA = strPath.c_str();
@@ -22,7 +22,7 @@ void CGlobalHeaderDBA::CreateDatabaseDBA(const char* filename)
 
 void CGlobalHeaderDBA::LoadDatabaseDBA(const char* sForCharacter)
 {
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_DBA, 0, m_strFilePathDBA.c_str());
+	MEMSTAT_CONTEXT(EMemStatContextType::DBA, m_strFilePathDBA.c_str());
 	m_nLastUsedTimeDelta = 0;
 	if (m_pStream || m_pDatabaseInfo)
 		return;
@@ -143,7 +143,7 @@ void CInternalDatabaseInfo::StreamOnComplete(IReadStream* pStream, unsigned nErr
 
 void* CInternalDatabaseInfo::StreamOnNeedStorage(IReadStream* pStream, unsigned nSize, bool& bAbortOnFailToAlloc)
 {
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_DBA, 0, m_strFilePath.c_str());
+	MEMSTAT_CONTEXT(EMemStatContextType::DBA, m_strFilePath.c_str());
 
 	char* pData = NULL;
 
@@ -161,7 +161,7 @@ void CInternalDatabaseInfo::StreamAsyncOnComplete(IReadStream* pStream, unsigned
 {
 	DEFINE_PROFILER_FUNCTION();
 	//LOADING_TIME_PROFILE_SECTION(g_pISystem);
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_DBA, 0, m_strFilePath.c_str());
+	MEMSTAT_CONTEXT(EMemStatContextType::DBA, m_strFilePath.c_str());
 
 	if (pStream->IsError())
 	{

@@ -201,7 +201,7 @@ CResourceManager::CResourceManager()
 //////////////////////////////////////////////////////////////////////////
 void CResourceManager::PrepareLevel(const char* sLevelFolder, const char* sLevelName)
 {
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Preload Level pak files");
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, "Preload Level pak files");
 	LOADING_TIME_PROFILE_SECTION;
 
 	m_sLevelFolder = sLevelFolder;
@@ -293,7 +293,7 @@ bool CResourceManager::LoadFastLoadPaks(bool bToMemory)
 	else
 	//if (g_cvars.pakVars.nLoadCache)
 	{
-		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Paks Fast Load Cache");
+		MEMSTAT_CONTEXT(EMemStatContextType::Other, "Paks Fast Load Cache");
 		LOADING_TIME_PROFILE_SECTION;
 
 		// Load a special _fastload paks
@@ -360,7 +360,7 @@ IResourceList* CResourceManager::GetLevelResourceList()
 bool CResourceManager::LoadLevelCachePak(const char* sPakName, const char* sBindRoot, bool bOnlyDuringLevelLoading)
 {
 	LOADING_TIME_PROFILE_SECTION;
-	MEMSTAT_CONTEXT_FMT(EMemStatContextTypes::MSC_Other, 0, "LoadLevelCachePak %s", sPakName);
+	MEMSTAT_CONTEXT_FMT(EMemStatContextType::Other, "LoadLevelCachePak %s", sPakName);
 
 	CryPathString pakPath = GetCurrentLevelCacheFolder() + "/" + sPakName;
 

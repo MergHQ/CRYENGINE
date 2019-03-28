@@ -104,7 +104,7 @@ namespace
 
 	static void* AllocateMeshDataUnpooled(buffer_size_t nSize, buffer_size_t nAlign = MESH_DATA_DEFAULT_ALIGN)
 	{
-		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "RenderMesh::AllocateMeshDataUnpooled");
+		MEMSTAT_CONTEXT(EMemStatContextType::Other, "RenderMesh::AllocateMeshDataUnpooled");
 		return CryModuleMemalign(nSize, std::min(nAlign, CDeviceBufferManager::GetBufferAlignmentForStreaming()));
 	}
 
@@ -194,7 +194,7 @@ namespace
 
 	static bool InitializePool()
 	{
-		MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "RenderMesh::InitializePool");
+		MEMSTAT_CONTEXT(EMemStatContextType::Other, "RenderMesh::InitializePool");
 		if (gRenDev->CV_r_meshpoolsize > 0)
 		{
 			if (s_MeshPool.m_MeshDataPool || s_MeshPool.m_MeshDataMemory)
@@ -261,7 +261,7 @@ namespace
 
   static void* AllocateMeshInstanceData(size_t size, size_t align)
   {
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "RenderMesh::AllocateMeshInstanceData");
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, "RenderMesh::AllocateMeshInstanceData");
     if (s_MeshPool.m_MeshInstancePool)
     {
       if (void* ptr = s_MeshPool.m_MeshInstancePool->Memalign(align, size, "rendermesh instance data"))
@@ -601,8 +601,8 @@ void *CRenderMesh::LockVB(int nStream, uint32 nFlags, int nOffset, int nVerts, i
 	FUNCTION_PROFILER_RENDERER();
 
 	MEMORY_SCOPE_CHECK_HEAP();
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_RenderMeshType, 0, this->GetTypeName());
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_RenderMesh, 0, this->GetSourceName());
+	MEMSTAT_CONTEXT(EMemStatContextType::RenderMeshType, this->GetTypeName());
+	MEMSTAT_CONTEXT(EMemStatContextType::RenderMesh, this->GetSourceName());
 # if !defined(_RELEASE)
 	CRY_ASSERT_MESSAGE(m_nThreadAccessCounter, "rendermesh must be locked via LockForThreadAccess() before LockIB/VB is called");
 #endif
@@ -1055,8 +1055,8 @@ size_t CRenderMesh::SetMesh_Int(CMesh &mesh, int nSecColorsSetOffset, uint32 fla
 {
   LOADING_TIME_PROFILE_SECTION;
   MEMORY_SCOPE_CHECK_HEAP();
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_RenderMeshType, 0, this->GetTypeName());
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_RenderMesh, 0, this->GetSourceName());
+	MEMSTAT_CONTEXT(EMemStatContextType::RenderMeshType, this->GetTypeName());
+	MEMSTAT_CONTEXT(EMemStatContextType::RenderMesh, this->GetSourceName());
 
   char *pVBuff = NULL;	
   SPipTangents *pTBuff = NULL;
@@ -1344,8 +1344,8 @@ size_t CRenderMesh::SetMesh(CMesh &mesh, int nSecColorsSetOffset, uint32 flags, 
 
 void CRenderMesh::SetSkinningDataVegetation(struct SMeshBoneMapping_uint8 *pBoneMapping)
 {
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_RenderMeshType, 0, this->GetTypeName());
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_RenderMesh, 0, this->GetSourceName());
+	MEMSTAT_CONTEXT(EMemStatContextType::RenderMeshType, this->GetTypeName());
+	MEMSTAT_CONTEXT(EMemStatContextType::RenderMesh, this->GetSourceName());
 	MEMORY_SCOPE_CHECK_HEAP();
 	SScopedMeshDataLock _lock(this);
 	SVF_W4B_I4S *pSkinBuff = (SVF_W4B_I4S *)LockVB(VSF_HWSKIN_INFO, FSL_VIDEO_CREATE);
@@ -1477,8 +1477,8 @@ void CRenderMesh::CreateExtraBoneMappingBuffers(struct SMeshBoneMapping_uint16 *
 void CRenderMesh::SetSkinningDataCharacter(CMesh& mesh, uint32 flags, struct SMeshBoneMapping_uint16 *pBoneMapping, struct SMeshBoneMapping_uint16 *pExtraBoneMapping)
 {
 	MEMORY_SCOPE_CHECK_HEAP();
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_RenderMeshType, 0, this->GetTypeName());
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_RenderMesh, 0, this->GetSourceName());
+	MEMSTAT_CONTEXT(EMemStatContextType::RenderMeshType, this->GetTypeName());
+	MEMSTAT_CONTEXT(EMemStatContextType::RenderMesh, this->GetSourceName());
 	SVF_W4B_I4S *pSkinBuff = (SVF_W4B_I4S *)LockVB(VSF_HWSKIN_INFO, FSL_VIDEO_CREATE);
 
 	// stop initializing if allocation failed
@@ -1802,8 +1802,8 @@ void CRenderMesh::GenerateQTangents()
 void CRenderMesh::CreateChunksSkinned()
 {
   MEMORY_SCOPE_CHECK_HEAP();
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_RenderMeshType, 0, this->GetTypeName());
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_RenderMesh, 0, this->GetSourceName());
+	MEMSTAT_CONTEXT(EMemStatContextType::RenderMeshType, this->GetTypeName());
+	MEMSTAT_CONTEXT(EMemStatContextType::RenderMesh, this->GetSourceName());
 
   ReleaseRenderChunks(&m_ChunksSkinned);
 
@@ -1963,8 +1963,8 @@ void CRenderMesh::SetCustomTexID( int nCustomTID )
 
 void CRenderMesh::SetChunk(int nIndex, CRenderChunk &inChunk)
 {
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_RenderMeshType, 0, this->GetTypeName());
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_RenderMesh, 0, this->GetSourceName());
+	MEMSTAT_CONTEXT(EMemStatContextType::RenderMeshType, this->GetTypeName());
+	MEMSTAT_CONTEXT(EMemStatContextType::RenderMesh, this->GetSourceName());
 
   if (!inChunk.nNumIndices || !inChunk.nNumVerts)
     return;
@@ -2529,8 +2529,8 @@ bool CRenderMesh::RT_CheckUpdate(CRenderMesh *pVContainer, InputLayoutHandle eVF
 
 	int nFrame = gRenDev->GetRenderFrameID();
 	
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_RenderMeshType, 0, this->GetTypeName());
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_RenderMesh, 0, this->GetSourceName());
+	MEMSTAT_CONTEXT(EMemStatContextType::RenderMeshType, this->GetTypeName());
+	MEMSTAT_CONTEXT(EMemStatContextType::RenderMesh, this->GetSourceName());
 	PrefetchLine(&m_IBStream, 0);
 
 	m_nFlags &= ~FRM_SKINNEDNEXTDRAW;
@@ -2768,8 +2768,8 @@ bool CRenderMesh::UpdateIndices_Int(
 	, int nOffsInd
 	, uint32 copyFlags)
 {
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_RenderMeshType, 0, this->GetTypeName());
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_RenderMesh, 0, this->GetSourceName());
+	MEMSTAT_CONTEXT(EMemStatContextType::RenderMeshType, this->GetTypeName());
+	MEMSTAT_CONTEXT(EMemStatContextType::RenderMesh, this->GetSourceName());
 
 	//LockVB operates now on a per mesh lock, any thread may access
 	//ASSERT_IS_MAIN_THREAD(gRenDev->m_pRT)
@@ -2912,8 +2912,8 @@ bool CRenderMesh::UpdateIndices(
 
 bool CRenderMesh::UpdateVidIndices(SMeshStream& IBStream, bool stall)
 {
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_RenderMeshType, 0, this->GetTypeName());
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_RenderMesh, 0, this->GetSourceName());
+	MEMSTAT_CONTEXT(EMemStatContextType::RenderMeshType, this->GetTypeName());
+	MEMSTAT_CONTEXT(EMemStatContextType::RenderMesh, this->GetSourceName());
 	SCOPED_RENDERER_ALLOCATION_NAME_HINT( GetSourceName() );
 
 	assert(gRenDev->m_pRT->IsRenderThread());
@@ -2959,8 +2959,8 @@ bool CRenderMesh::UpdateVidIndices(SMeshStream& IBStream, bool stall)
 
 bool CRenderMesh::CreateVidVertices(int nVerts, InputLayoutHandle eVF, int nStream)
 {
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_RenderMeshType, 0, this->GetTypeName());
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_RenderMesh, 0, this->GetSourceName());
+	MEMSTAT_CONTEXT(EMemStatContextType::RenderMeshType, this->GetTypeName());
+	MEMSTAT_CONTEXT(EMemStatContextType::RenderMesh, this->GetSourceName());
 	SCOPED_RENDERER_ALLOCATION_NAME_HINT( GetSourceName() );
 
 	SREC_AUTO_LOCK(m_sResLock);
@@ -2982,8 +2982,8 @@ bool CRenderMesh::CreateVidVertices(int nVerts, InputLayoutHandle eVF, int nStre
 
 bool CRenderMesh::UpdateVidVertices(int nStream)
 {
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_RenderMeshType, 0, this->GetTypeName());
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_RenderMesh, 0, this->GetSourceName());
+	MEMSTAT_CONTEXT(EMemStatContextType::RenderMeshType, this->GetTypeName());
+	MEMSTAT_CONTEXT(EMemStatContextType::RenderMesh, this->GetSourceName());
 
 	assert(gRenDev->m_pRT->IsRenderThread());
 
@@ -3024,8 +3024,8 @@ bool CRenderMesh::UpdateVidVertices(int nStream)
 #ifdef MESH_TESSELLATION_RENDERER
 template<class VertexFormat, class VecPos, class VecUV> bool CRenderMesh::UpdateUVCoordsAdjacency(SMeshStream& IBStream)
 {
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_RenderMeshType, 0, this->GetTypeName());
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_RenderMesh, 0, this->GetSourceName());
+	MEMSTAT_CONTEXT(EMemStatContextType::RenderMeshType, this->GetTypeName());
+	MEMSTAT_CONTEXT(EMemStatContextType::RenderMesh, this->GetSourceName());
 	SCOPED_RENDERER_ALLOCATION_NAME_HINT( GetSourceName() );
 
 	assert(gRenDev->m_pRT->IsRenderThread());
@@ -4369,8 +4369,8 @@ void CRenderMesh::UnKeepSysMesh()
 //////////////////////////////////////////////////////////////////////////
 void CRenderMesh::SetVertexContainer( IRenderMesh *pBuf )
 {
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_RenderMeshType, 0, this->GetTypeName());
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_RenderMesh, 0, this->GetSourceName());
+	MEMSTAT_CONTEXT(EMemStatContextType::RenderMeshType, this->GetTypeName());
+	MEMSTAT_CONTEXT(EMemStatContextType::RenderMesh, this->GetSourceName());
 
 	if (m_pVertexContainer)
 		((CRenderMesh *)m_pVertexContainer)->m_lstVertexContainerUsers.Delete(this);

@@ -171,7 +171,7 @@ unsigned __stdcall CThreadManager::RunThread(void* thisPtr)
 	SThreadMetaData* pThreadData = reinterpret_cast<SThreadMetaData*>(thisPtr);
 	pThreadData->m_threadId = CryThreadUtil::CryGetCurrentThreadId();
 
-	MEMSTAT_CONTEXT_FMT(EMemStatContextTypes::MSC_Other, 0, "Thread \"%s\" (%" PRI_THREADID ")", pThreadData->m_threadName.c_str(), pThreadData->m_threadId);
+	MEMSTAT_CONTEXT_FMT(EMemStatContextType::Other, "Thread \"%s\" (%" PRI_THREADID ")", pThreadData->m_threadName.c_str(), pThreadData->m_threadId);
 
 	// Apply config
 	const SThreadConfig* pThreadConfig = pThreadConfigMngr->GetThreadConfig(pThreadData->m_threadName.c_str());

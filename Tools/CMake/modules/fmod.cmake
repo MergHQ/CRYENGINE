@@ -51,7 +51,6 @@ elseif(ANDROID)
 endif()
 
 if(AUDIO_FMOD AND FMOD_DLL)
-	set_target_properties(fmod PROPERTIES INTERFACE_COMPILE_DEFINITIONS FMOD_FOR_$<UPPER_CASE:$<CONFIG>>)
 	deploy_runtime_files("${FMOD_DLL}")
 	deploy_runtime_files("${FMODSTUDIO_DLL}")
 endif()

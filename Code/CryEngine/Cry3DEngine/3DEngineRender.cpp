@@ -804,7 +804,7 @@ void C3DEngine::DebugDraw_UpdateDebugNode()
 void C3DEngine::RenderWorld(const int nRenderFlags, const SRenderingPassInfo& passInfo, const char* szDebugName)
 {
 	CRY_PROFILE_REGION(PROFILE_3DENGINE, "3DEngine: RenderWorld");
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "C3DEngine::RenderWorld");
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, "C3DEngine::RenderWorld");
 
 #if defined(FEATURE_SVO_GI)
 	if (passInfo.IsGeneralPass() && (nRenderFlags & SHDF_ALLOW_AO))
@@ -1958,7 +1958,7 @@ bool C3DEngine::IsSkyVisible()
 void C3DEngine::UpdateSky(const SRenderingPassInfo& passInfo)
 {
 	FUNCTION_PROFILER_3DENGINE;
-	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "C3DEngine::UpdateSky");
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, "C3DEngine::UpdateSky");
 
 	const eSkyType skyType = GetSkyType();
 
@@ -3435,9 +3435,9 @@ void C3DEngine::ScreenShotHighRes(CStitchedImage* pStitchedImage, const int nRen
 
 	GetRenderer()->EnableSwapBuffers(false);
 
-	GetRenderer()->ResizePipelineAndContext({}, passInfo.GetDisplayContextKey(), pStitchedImage->GetWidth(), pStitchedImage->GetHeight());
+	GetRenderer()->ResizePipelineAndContext(passInfo.GetGraphicsPipelineKey(), passInfo.GetDisplayContextKey(), pStitchedImage->GetWidth(), pStitchedImage->GetHeight());
 
-	GetRenderer()->BeginFrame(passInfo.GetDisplayContextKey(), SGraphicsPipelineKey::BaseGraphicsPipelineKey);
+	GetRenderer()->BeginFrame(passInfo.GetDisplayContextKey(), passInfo.GetGraphicsPipelineKey());
 
 	SRenderingPassInfo screenShotPassInfo = SRenderingPassInfo::CreateGeneralPassRenderingInfo(passInfo.GetGraphicsPipelineKey(), passInfo.GetCamera());
 	UpdateRenderingCamera("ScreenShotHighRes", screenShotPassInfo);
@@ -3450,12 +3450,12 @@ void C3DEngine::ScreenShotHighRes(CStitchedImage* pStitchedImage, const int nRen
 	EReadTextureFormat dstFormat = (stricmp(szExtension, "tga") == 0) ? EReadTextureFormat::BGR8 : EReadTextureFormat::RGB8;
 
 	GetRenderer()->ReadFrameBuffer((uint32*)pStitchedImage->GetBuffer(), pStitchedImage->GetWidth(), pStitchedImage->GetHeight(), false, dstFormat);
-	GetRenderer()->ResizePipelineAndContext({}, passInfo.GetDisplayContextKey(), prevScreenWidth, prevScreenHeight);
+	GetRenderer()->ResizePipelineAndContext(passInfo.GetGraphicsPipelineKey(), passInfo.GetDisplayContextKey(), prevScreenWidth, prevScreenHeight);
 
 	GetRenderer()->EnableSwapBuffers(true);
 
 	// Re-start frame so system can safely finish it
-	GetRenderer()->BeginFrame(passInfo.GetDisplayContextKey(), SGraphicsPipelineKey::BaseGraphicsPipelineKey);
+	GetRenderer()->BeginFrame(passInfo.GetDisplayContextKey(), passInfo.GetGraphicsPipelineKey());
 
 	if (!m_bEditor)
 	{
@@ -3558,7 +3558,7 @@ bool C3DEngine::ScreenShotPanorama(CStitchedImage* pStitchedImage, const int nRe
 
 	GetRenderer()->EnableSwapBuffers(false);
 
-	GetRenderer()->ResizePipelineAndContext({}, passInfo.GetDisplayContextKey(), ImageWidth, ImageHeight);
+	GetRenderer()->ResizePipelineAndContext(passInfo.GetGraphicsPipelineKey(), passInfo.GetDisplayContextKey(), ImageWidth, ImageHeight);
 
 	for (int i = 0; i < 1; i++)
 	{
@@ -3567,7 +3567,7 @@ bool C3DEngine::ScreenShotPanorama(CStitchedImage* pStitchedImage, const int nRe
 		newCamera.SetFrustum(ImageWidth, ImageHeight, DEG2RAD(90), newCamera.GetNearPlane(), newCamera.GetFarPlane(), 1.0f);
 
 		// render scene
-		GetRenderer()->BeginFrame(passInfo.GetDisplayContextKey(), SGraphicsPipelineKey::BaseGraphicsPipelineKey);
+		GetRenderer()->BeginFrame(passInfo.GetDisplayContextKey(), passInfo.GetGraphicsPipelineKey());
 
 		SRenderingPassInfo screenShotPassInfo = SRenderingPassInfo::CreateGeneralPassRenderingInfo(passInfo.GetGraphicsPipelineKey(), newCamera);
 		UpdateRenderingCamera("ScreenShotPanorama", screenShotPassInfo);
@@ -3577,17 +3577,17 @@ bool C3DEngine::ScreenShotPanorama(CStitchedImage* pStitchedImage, const int nRe
 	}
 
 	GetRenderer()->ReadFrameBuffer((uint32*)pStitchedImage->GetBuffer(), ImageWidth, ImageHeight, false);
-	GetRenderer()->ResizePipelineAndContext({}, passInfo.GetDisplayContextKey(), prevScreenWidth, prevScreenHeight);
+	GetRenderer()->ResizePipelineAndContext(passInfo.GetGraphicsPipelineKey(), passInfo.GetDisplayContextKey(), prevScreenWidth, prevScreenHeight);
 
 	GetRenderer()->EnableSwapBuffers(true);
 
 	// Re-start frame so system can safely finish it
-	GetRenderer()->BeginFrame(passInfo.GetDisplayContextKey(), SGraphicsPipelineKey::BaseGraphicsPipelineKey);
+	GetRenderer()->BeginFrame(passInfo.GetDisplayContextKey(), passInfo.GetGraphicsPipelineKey());
 
 	if (!m_bEditor)
 	{
 		// Making sure we don't run into trouble with the culling thread in pure-game mode
-		m_pObjManager->PrepareCullbufferAsync(passInfo.GetCamera(), SGraphicsPipelineKey::BaseGraphicsPipelineKey);
+		m_pObjManager->PrepareCullbufferAsync(passInfo.GetCamera(), passInfo.GetGraphicsPipelineKey());
 	}
 
 	return true;

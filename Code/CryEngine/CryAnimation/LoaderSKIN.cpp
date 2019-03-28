@@ -61,7 +61,7 @@ bool CryCHRLoader::BeginLoadSkinRenderMesh(CSkin* pSkin, int nRenderLod, EStream
 	static_assert(sizeof(TFace) == 6, "Invalid type size!");
 
 	const char* szFilePath = pSkin->GetModelFilePath();
-	MEMSTAT_CONTEXT_FMT(EMemStatContextTypes::MSC_CHR, 0, "LoadCharacter %s", szFilePath);
+	MEMSTAT_CONTEXT_FMT(EMemStatContextType::CHR, "LoadCharacter %s", szFilePath);
 
 	const char* szExt = PathUtil::GetExt(szFilePath);
 	m_strGeomFileNameNoExt.assign(szFilePath, *szExt ? szExt - 1 : szExt);
@@ -451,7 +451,7 @@ bool CSkin::LoadNewSKIN(const char* szFilePath, uint32 nLoadingFlags)
 
 	static_assert(sizeof(TFace) == 6, "Invalid type size!");
 
-	MEMSTAT_CONTEXT_FMT(EMemStatContextTypes::MSC_CHR, 0, "LoadCharacter %s", szFilePath);
+	MEMSTAT_CONTEXT_FMT(EMemStatContextType::CHR, "LoadCharacter %s", szFilePath);
 
 	CRY_DEFINE_ASSET_SCOPE(CRY_SKEL_FILE_EXT, szFilePath);
 
