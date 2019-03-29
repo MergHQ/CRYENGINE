@@ -262,7 +262,7 @@ bool CDurangoGPUMemoryManager::Init(size_t maximumSize, size_t bankSize, size_t 
 
 #if CAPTURE_REPLAY_LOG
 	#if defined(MEMREPLAY_INSTRUMENT_TEXTUREPOOL)
-		MEMREPLAY_SCOPE(EMemReplayAllocClass::C_UserPointer, EMemReplayUserPointerClass::C_CryMalloc);
+		MEMREPLAY_SCOPE(EMemReplayAllocClass::UserPointer, EMemReplayUserPointerClass::CryMalloc);
 	#else
 		MEMREPLAY_HIDE_BANKALLOC();
 	#endif
@@ -318,7 +318,7 @@ void CDurangoGPUMemoryManager::DeInit()
 	{
 #if CAPTURE_REPLAY_LOG
 	#if defined(MEMREPLAY_INSTRUMENT_TEXTUREPOOL)
-		MEMREPLAY_SCOPE(EMemReplayAllocClass::C_UserPointer, EMemReplayUserPointerClass::C_CryMalloc);
+		MEMREPLAY_SCOPE(EMemReplayAllocClass::UserPointer, EMemReplayUserPointerClass::CryMalloc);
 	#else
 		MEMREPLAY_HIDE_BANKALLOC();
 	#endif
@@ -409,7 +409,7 @@ CDurangoGPUMemoryManager::AllocateResult CDurangoGPUMemoryManager::AllocatePinne
 	AllocateResult ret;
 
 #if defined(MEMREPLAY_INSTRUMENT_TEXTUREPOOL)
-	MEMREPLAY_SCOPE(EMemReplayAllocClass::C_UserPointer, EMemReplayUserPointerClass::C_CryMalloc);
+	MEMREPLAY_SCOPE(EMemReplayAllocClass::UserPointer, EMemReplayUserPointerClass::CryMalloc);
 #endif
 
 	IDefragAllocator::AllocatePinnedResult apr = m_pAllocator->AllocateAlignedPinned(amount, align, "");
@@ -517,7 +517,7 @@ void CDurangoGPUMemoryManager::FreeUnused(SGPUMemHdl hdl)
 	CryAutoLock<CryCriticalSectionNonRecursive> lock(m_lock);
 
 #if defined(MEMREPLAY_INSTRUMENT_TEXTUREPOOL)
-	MEMREPLAY_SCOPE(EMemReplayAllocClass::C_UserPointer, EMemReplayUserPointerClass::C_CryMalloc);
+	MEMREPLAY_SCOPE(EMemReplayAllocClass::UserPointer, EMemReplayUserPointerClass::CryMalloc);
 #endif
 
 	void* pBaseAddress = NULL;
@@ -726,7 +726,7 @@ void CDurangoGPUMemoryManager::TickFrees_Locked()
 		if (pf.fence != ~0ull && !gcpRendD3D->GetPerformanceDevice().IsFencePending(pf.fence))
 		{
 #if defined(MEMREPLAY_INSTRUMENT_TEXTUREPOOL)
-			MEMREPLAY_SCOPE(EMemReplayAllocClass::C_UserPointer, EMemReplayUserPointerClass::C_CryMalloc);
+			MEMREPLAY_SCOPE(EMemReplayAllocClass::UserPointer, EMemReplayUserPointerClass::CryMalloc);
 #endif
 
 			void* pBaseAddress = NULL;
@@ -986,7 +986,7 @@ void CDurangoGPUMemoryManager::Relocate_Int(CDeviceTexture* pDevTex, char* pOldT
 	pDevTex->ReplaceTexture(pD3DTex);
 
 #if defined(MEMREPLAY_INSTRUMENT_TEXTUREPOOL)
-	MEMREPLAY_SCOPE(EMemReplayAllocClass::C_UserPointer, EMemReplayUserPointerClass::C_CryMalloc);
+	MEMREPLAY_SCOPE(EMemReplayAllocClass::UserPointer, EMemReplayUserPointerClass::CryMalloc);
 	MEMREPLAY_SCOPE_REALLOC(pOldTexBase, pTexBase, size, AllocAlign);
 #endif
 }

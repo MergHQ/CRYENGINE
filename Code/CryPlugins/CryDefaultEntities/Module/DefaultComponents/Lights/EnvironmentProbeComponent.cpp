@@ -89,6 +89,8 @@ void CEnvironmentProbeComponent::Render(const IEntity& entity, const IEntityComp
 		if (m_generation.pSelectionObject != nullptr)
 		{
 			SRenderingPassInfo passInfo = SRenderingPassInfo::CreateGeneralPassRenderingInfo(context.pPassInfo->GetGraphicsPipelineKey(), gEnv->p3DEngine->GetRenderingCamera());
+			
+			gEnv->pRenderer->EF_StartEf(passInfo);
 
 			SRendParams rp;
 			rp.AmbientColor = ColorF(0.0f, 0.0f, 0.0f, 1);
@@ -98,6 +100,10 @@ void CEnvironmentProbeComponent::Render(const IEntity& entity, const IEntityComp
 			rp.pMatrix = &slotTransform;
 			rp.pMaterial = m_generation.pSelectionObject->GetMaterial();
 			m_generation.pSelectionObject->Render(rp, passInfo);
+
+			passInfo.GetIRenderView()->SwitchUsageMode(IRenderView::eUsageModeWritingDone);
+
+			gEnv->pRenderer->EF_EndEf3D(0, 0, passInfo, passInfo.GetIRenderView()->GetShaderRenderingFlags());
 		}
 	}
 }

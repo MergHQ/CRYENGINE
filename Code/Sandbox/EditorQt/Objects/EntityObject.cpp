@@ -2725,6 +2725,8 @@ void CEntityObject::Display(CObjectRenderHelper& objRenderHelper)
 		preview.bNoRenderNodes = true;
 		preview.bSelected = IsSelected();
 		preview.bRenderSlots = false;
+		preview.pPassInfo = &objRenderHelper.GetPassInfo();
+
 		m_pEntity->PreviewRender(preview);
 	}
 
