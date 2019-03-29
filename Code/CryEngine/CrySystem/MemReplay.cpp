@@ -2481,8 +2481,6 @@ void CMemReplay::RecordModuleLoad(void* pSelf, const CReplayModules::ModuleLoadD
 
 	pMR->m_stream.WriteEvent(MemReplayModuleRefEvent(mld.name, mld.path, mld.address, mld.size, mld.sig));
 
-	const uint32 threadId = CryGetCurrentThreadId();
-
 	pMR->PushContext(EMemStatContextType::Other, baseName);
 
 	pMR->RecordAlloc(

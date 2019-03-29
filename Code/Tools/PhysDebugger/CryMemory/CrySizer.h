@@ -25,7 +25,8 @@ public:
 	virtual bool AddObjectRaw(void* ptr, size_t size, bool hasVMT=false, bool mapPtrs=true) = 0;
 	virtual int  GetMode() const = 0;
 };
-namespace EMemStatContextTypes { enum Type { MSC_Other, MSC_Physics }; }
+
+namespace EMemStatContextType { enum Type { Other, Physics }; }
 #define SIZER_COMPONENT_NAME
 #define MEMSTAT_USAGE
 #define MEMSTAT_CONTEXT
