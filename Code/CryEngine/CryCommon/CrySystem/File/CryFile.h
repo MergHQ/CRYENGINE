@@ -28,8 +28,6 @@
 #define CRY_CHARACTER_PARAM_FILE_EXT         "chrparams"
 #define CRY_GEOM_CACHE_FILE_EXT              "cax"
 //////////////////////////////////////////////////////////////////////////
-#define CRYFILE_MAX_PATH                     260
-//////////////////////////////////////////////////////////////////////////
 
 inline const char* CryGetExt(const char* filepath)
 {
@@ -159,9 +157,9 @@ public:
 	const char* GetPakPath() const;
 
 private:
-	char     m_filename[CRYFILE_MAX_PATH];
-	FILE*    m_file;
-	ICryPak* m_pIPak;
+	CryPathString m_filename;
+	FILE*         m_file;
+	ICryPak*      m_pIPak;
 };
 
 #define IfPak(PakFunc, stdfunc, args) (m_pIPak ? m_pIPak->PakFunc args : stdfunc args)
@@ -197,8 +195,7 @@ inline CCryFile::~CCryFile()
 //! \note For nOpenFlagsEx see ICryPak::EFOpenFlags.
 inline bool CCryFile::Open(const char* filename, const char* mode, int nOpenFlagsEx)
 {
-	char tempfilename[CRYFILE_MAX_PATH] = "";
-	cry_strcpy(tempfilename, filename);
+	CryPathString tempfilename = filename;
 
 #if !defined (_RELEASE)
 	if (gEnv && gEnv->IsEditor())
@@ -209,9 +206,7 @@ inline bool CCryFile::Open(const char* filename, const char* mode, int nOpenFlag
 			const int lowercasePaths = pCvar->GetIVal();
 			if (lowercasePaths)
 			{
-				string lowerString = tempfilename;
-				lowerString.MakeLower();
-				cry_strcpy(tempfilename, lowerString.c_str());
+				tempfilename.MakeLower();
 			}
 		}
 	}
@@ -220,7 +215,7 @@ inline bool CCryFile::Open(const char* filename, const char* mode, int nOpenFlag
 	{
 		Close();
 	}
-	cry_strcpy(m_filename, tempfilename);
+	m_filename = tempfilename;
 
 	m_file = m_pIPak ? m_pIPak->FOpen(tempfilename, mode, nOpenFlagsEx) : fopen(tempfilename, mode);
 	return m_file != NULL;
@@ -233,7 +228,7 @@ inline void CCryFile::Close()
 	{
 		IfPak(FClose, fclose, (m_file));
 		m_file = 0;
-		m_filename[0] = 0;
+		m_filename.clear();
 	}
 }
 
