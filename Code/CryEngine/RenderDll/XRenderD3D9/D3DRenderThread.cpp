@@ -218,6 +218,8 @@ void CD3D9Renderer::RT_ReleaseRenderResources(uint32 nFlags)
 			m_pRenderAuxGeomD3D->ReleaseResources();
 #endif //ENABLE_RENDER_AUX_GEOM
 
+		m_pBaseGraphicsPipeline.reset();
+		m_pActiveGraphicsPipeline.reset();
 		m_graphicsPipelines.clear();
 
 #if defined(FEATURE_SVO_GI)
