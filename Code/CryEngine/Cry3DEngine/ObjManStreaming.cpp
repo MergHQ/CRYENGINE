@@ -848,6 +848,8 @@ void CObjManager::ProcessObjectsStreaming_Finish()
 			SStreamAbleObject stramAbleObject(pStatObj);
 			m_arrStreamableObjects.Delete(stramAbleObject);
 
+			pStatObj->ReleaseStreamableContent();
+
 #ifdef OBJMAN_STREAM_STATS
 			if (m_pStreamListener)
 				m_pStreamListener->OnDestroyedStreamedObject(pStatObj);
