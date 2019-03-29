@@ -32,9 +32,7 @@ CClipVolumesStage::CClipVolumesStage(CGraphicsPipeline& graphicsPipeline)
 	, m_bOutdoorVisible(false)
 {
 	ZeroArray(m_clipVolumeShaderParams);
-#ifdef FEATURE_RENDER_CLIPVOLUME_GEOMETRY_SHADER
 	memset(&m_depthTargetVolFog, 0, sizeof(m_depthTargetVolFog));
-#endif
 }
 
 CClipVolumesStage::~CClipVolumesStage()
@@ -42,12 +40,6 @@ CClipVolumesStage::~CClipVolumesStage()
 	m_clipVolumeInfoBuf.Release();
 
 	SAFE_RELEASE(m_pClipVolumeStencilVolumeTex);
-#ifndef FEATURE_RENDER_CLIPVOLUME_GEOMETRY_SHADER
-	for (auto& pTex : m_pClipVolumeStencilVolumeTexArray)
-	{
-		SAFE_RELEASE(pTex);
-	}
-#endif
 }
 
 void CClipVolumesStage::Init()
@@ -56,9 +48,7 @@ void CClipVolumesStage::Init()
 	m_blendValuesPass.SetFlags(CPrimitiveRenderPass::ePassFlags_VrProjectionPass);
 	m_stencilResolvePass.SetFlags(CPrimitiveRenderPass::ePassFlags_VrProjectionPass);
 
-#ifdef FEATURE_RENDER_CLIPVOLUME_GEOMETRY_SHADER
 	m_volumetricStencilPass.SetFlags(CPrimitiveRenderPass::ePassFlags_None);
-#endif
 
 	for (int i = 0; i < MaxDeferredClipVolumes; ++i)
 	{
@@ -72,13 +62,11 @@ void CClipVolumesStage::Init()
 			m_stencilPrimitives[2 * i + 0].SetInlineConstantBuffer(eConstantBufferShaderSlot_PerPrimitive, pCB, EShaderStage_Vertex);
 			m_stencilPrimitives[2 * i + 1].SetInlineConstantBuffer(eConstantBufferShaderSlot_PerPrimitive, pCB, EShaderStage_Vertex);
 
-#ifdef FEATURE_RENDER_CLIPVOLUME_GEOMETRY_SHADER
 			pCB = gcpRendD3D->m_DevBufMan.CreateConstantBuffer(sizeof(SPrimitiveVolFogConstants));
 			if (pCB) pCB->SetDebugName("ClipVolumes Stencil-Fog Per-Primitive CB");
 
 			m_stencilPrimitivesVolFog[2 * i + 0].SetInlineConstantBuffer(eConstantBufferShaderSlot_PerPrimitive, pCB, EShaderStage_Geometry | EShaderStage_Vertex);
 			m_stencilPrimitivesVolFog[2 * i + 1].SetInlineConstantBuffer(eConstantBufferShaderSlot_PerPrimitive, pCB, EShaderStage_Geometry | EShaderStage_Vertex);
-#endif
 		}
 
 		// Blend values pass: one primitive per clip volume, shared CB for vertex and pixel shader
@@ -99,11 +87,7 @@ void CClipVolumesStage::Init()
 	}
 
 	// TODO: move this texture to intra-view-shared data structure after removing old graphics pipeline.
-#ifdef FEATURE_RENDER_CLIPVOLUME_GEOMETRY_SHADER
 	const uint32 flags = FT_NOMIPS | FT_DONT_STREAM | FT_USAGE_DEPTHSTENCIL;
-#else
-	const uint32 flags = FT_NOMIPS | FT_DONT_STREAM | FT_USAGE_RENDERTARGET;
-#endif
 	CRY_ASSERT(m_pClipVolumeStencilVolumeTex == nullptr);
 	std::string texName = "$VolFogClipVolumeStencil" + m_graphicsPipeline.GetUniqueIdentifierName();
 	m_pClipVolumeStencilVolumeTex = CTexture::GetOrCreateTextureObject(texName.c_str(), 0, 0, 0, eTT_2D, flags, eTF_Unknown);
@@ -122,7 +106,6 @@ void CClipVolumesStage::ResizeResource(int volumeWidth, int volumeHeight, int vo
 	const int32 safeMargin = 2; // workaround: shader isn't activated in initial several frames.
 	m_filledVolumetricFogDepth = gcpRendD3D->GetActiveGPUCount() + safeMargin;
 
-#ifdef FEATURE_RENDER_CLIPVOLUME_GEOMETRY_SHADER
 	m_volumetricStencilPass.SetViewport(viewport);
 
 	// create jittered depth passes
@@ -179,117 +162,6 @@ void CClipVolumesStage::ResizeResource(int volumeWidth, int volumeHeight, int vo
 		// this buffer is managed explicitly on multi GPU.
 		m_pClipVolumeStencilVolumeTex->DisableMgpuSync();
 	}
-#else
-	// create volume stencil passes
-	{
-		for (int32 i = 0; i < m_volumetricStencilPassArray.size(); ++i)
-		{
-			m_volumetricStencilPassArray[i].reset();
-		}
-
-		m_volumetricStencilPassArray.resize(volumeDepth);
-
-		for (int32 i = 0; i < volumeDepth; ++i)
-		{
-			m_volumetricStencilPassArray[i] = stl::make_unique<CFullscreenPass>();
-			m_volumetricStencilPassArray[i]->SetViewport(viewport);
-			m_volumetricStencilPassArray[i]->SetFlags(CPrimitiveRenderPass::ePassFlags_None);
-		}
-	}
-
-	// create stencil resolve passes
-	{
-		for (int32 i = 0; i < m_resolveVolumetricStencilPassArray.size(); ++i)
-		{
-			m_resolveVolumetricStencilPassArray[i].reset();
-		}
-
-		m_resolveVolumetricStencilPassArray.resize(volumeDepth);
-
-		for (int32 i = 0; i < volumeDepth; ++i)
-		{
-			m_resolveVolumetricStencilPassArray[i] = stl::make_unique<CFullscreenPass>();
-			m_resolveVolumetricStencilPassArray[i]->SetFlags(CPrimitiveRenderPass::ePassFlags_None);
-		}
-	}
-
-	// create jittered depth passes
-	{
-		for (int32 i = 0; i < m_jitteredDepthPassArray.size(); ++i)
-		{
-			m_jitteredDepthPassArray[i].reset();
-		}
-
-		m_jitteredDepthPassArray.resize(volumeDepth);
-
-		for (int32 i = 0; i < volumeDepth; ++i)
-		{
-			m_jitteredDepthPassArray[i] = stl::make_unique<CFullscreenPass>();
-			m_jitteredDepthPassArray[i]->SetFlags(CPrimitiveRenderPass::ePassFlags_None);
-		}
-	}
-
-	const int32 w = volumeWidth;
-	const int32 h = volumeHeight;
-	const int32 d = volumeDepth;
-
-	// create depth stencil textures
-	{
-		const uint32 commonFlags = FT_NOMIPS | FT_DONT_STREAM | FT_DONT_RELEASE;
-		const uint32 rtFlags = commonFlags | FT_USAGE_RENDERTARGET;
-		ETEX_Format format = eTF_R8;
-
-		std::string texName = "$VolFogClipVolumeStencil" + m_graphicsPipeline.GetUniqueIdentifierName();
-		CTexture* pTex = CTexture::GetOrCreateTextureArray(texName.c_str(), w, h, d, 1, eTT_2DArray, rtFlags, format);
-
-		if (pTex == nullptr
-			|| m_pClipVolumeStencilVolumeTex != pTex // texture name must exactly match the name when creating texture object.
-			|| pTex->GetFlags() & FT_FAILED)
-		{
-			CryFatalError("Couldn't allocate texture.");
-		}
-
-		size_t size = m_pClipVolumeStencilVolumeTexArray.size();
-
-		for (uint32 i = 0; i < size; ++i)
-		{
-			SAFE_RELEASE(m_pClipVolumeStencilVolumeTexArray[i]);
-		}
-
-		m_pClipVolumeStencilVolumeTexArray.resize(volumeDepth);
-
-		const uint32 dsFlags = commonFlags | FT_USAGE_DEPTHSTENCIL;
-		const ETEX_Format depthFormat = CRendererResources::s_hwTexFormatSupport.GetClosestFormatSupported(eTF_D24S8);
-
-		for (uint32 i = 0; i < volumeDepth; ++i)
-		{
-			CTexture* pTex = CTexture::GetOrCreateDepthStencil("", w, h, Clr_Empty, eTT_2D, dsFlags, depthFormat);
-			if (!pTex || !pTex->IsValid())
-			{
-				CryFatalError("Couldn't allocate texture.");
-			}
-
-			m_pClipVolumeStencilVolumeTexArray[i] = pTex;
-		}
-	}
-
-	// create depth targets
-	{
-		m_depthTargetArrayVolFog.clear();
-		m_depthTargetArrayVolFog.resize(volumeDepth);
-
-		for (int32 i = 0; i < m_depthTargetArrayVolFog.size(); ++i)
-		{
-			CTexture* pTex = m_pClipVolumeStencilVolumeTexArray[i];
-
-			// this buffer is managed explicitly on multi GPU.
-			pTex->DisableMgpuSync();
-
-			// set depth target before AddPrimitive() is called.
-			m_volumetricStencilPassArray[i]->SetDepthTarget(pTex);
-		}
-	}
-#endif
 }
 
 void CClipVolumesStage::Rescale(int resolutionScale, int depthScale)
@@ -378,26 +250,11 @@ void CClipVolumesStage::Update()
 
 	if (gcpRendD3D->m_bVolumetricFogEnabled && RenderView()->IsGlobalFogEnabled())
 	{
-#ifdef FEATURE_RENDER_CLIPVOLUME_GEOMETRY_SHADER
 		// Faster to clear the whole resource than to clear the individual slices one by one
 		if (m_filledVolumetricFogDepth > 0)
 			CClearSurfacePass::Execute(m_depthTargetVolFog, CLEAR_ZBUFFER | CLEAR_STENCIL, Clr_Empty.r, Val_Stencil);
 		else
 			CClearSurfacePass::Execute(m_depthTargetVolFog, CLEAR_STENCIL, Clr_Unused.r, Val_Stencil);
-#else
-		auto maxDSVCount = m_depthTargetArrayVolFog.size();
-
-		if (m_filledVolumetricFogDepth > 0)
-		{
-			for (int32 i = 0; i < maxDSVCount; ++i)
-				CClearSurfacePass::Execute(m_pClipVolumeStencilVolumeTexArray[i], CLEAR_ZBUFFER | CLEAR_STENCIL, Clr_Empty.r, Val_Stencil);
-		}
-		else
-		{
-			for (int32 i = 0; i < maxDSVCount; ++i)
-				CClearSurfacePass::Execute(m_pClipVolumeStencilVolumeTexArray[i], CLEAR_STENCIL, Clr_Unused.r, Val_Stencil);
-		}
-#endif
 	}
 }
 
@@ -459,12 +316,7 @@ void CClipVolumesStage::Prepare()
 
 	if (gcpRendD3D->m_bVolumetricFogEnabled && RenderView()->IsGlobalFogEnabled())
 	{
-#ifdef FEATURE_RENDER_CLIPVOLUME_GEOMETRY_SHADER
 		m_volumetricStencilPass.BeginAddingPrimitives();
-#else
-		for (auto& pass : m_volumetricStencilPassArray)
-			pass->BeginAddingPrimitives();
-#endif
 	}
 
 	const uint32 StencilStateInitialMarkup =
@@ -507,7 +359,6 @@ void CClipVolumesStage::Prepare()
 	projRatio.x = bReverseDepth ? zn / (zn - zf) : zf / (zf - zn);
 	projRatio.y = bReverseDepth ? zn / (zf - zn) : zn / (zn - zf);
 
-#ifdef FEATURE_RENDER_CLIPVOLUME_GEOMETRY_SHADER
 	static CCryNameTSCRC techStencilVolFog = "ClipVolumeStencilVolFog";
 	SRenderViewShaderConstants& PF = pRenderView->GetShaderConstants();
 	const float raymarchStart = PF.pVolumetricFogSamplingParams.x;
@@ -515,7 +366,6 @@ void CClipVolumesStage::Prepare()
 	const int32 volumeDepth = CVolumetricFogStage::GetVolumeTextureDepthSize(CRendererCVars::CV_r_VolumetricFogTexDepth);
 	const float fVolFogDepthNum = static_cast<float>(volumeDepth);
 	const int32 maxDepthSliceNum = 64; // this must exactly match to ClipVolumeVolFogGS shader's limitation.
-#endif
 
 	// Create stencil and blend pass primitives
 	for (int i = clipVolumes.size() - 1; i >= 0; --i)
@@ -581,7 +431,6 @@ void CClipVolumesStage::Prepare()
 
 					if (gcpRendD3D->m_bVolumetricFogEnabled && RenderView()->IsGlobalFogEnabled())
 					{
-#ifdef FEATURE_RENDER_CLIPVOLUME_GEOMETRY_SHADER
 						// calculate min depth index of volumetric fog coordinate.
 						const float radius = volume.mAABB.GetRadius();
 						const float distToCenter = -viewInfo[0].WorldToCameraZ(volume.mAABB.GetCenter());
@@ -648,13 +497,6 @@ void CClipVolumesStage::Prepare()
 							m_volumetricStencilPass.AddPrimitive(&primInit);
 							m_volumetricStencilPass.AddPrimitive(&primMarkup);
 						}
-#else
-						for (auto& pass : m_volumetricStencilPassArray)
-						{
-							pass->AddPrimitive(&primInit);
-							pass->AddPrimitive(&primMarkup);
-						}
-#endif
 					}
 				}
 			}
@@ -783,7 +625,6 @@ void CClipVolumesStage::FillVolumetricFogDepth()
 	const float factor1 = fNear * -factor0;
 	bool valid = true;
 
-#ifdef FEATURE_RENDER_CLIPVOLUME_GEOMETRY_SHADER
 	if (m_filledVolumetricFogDepth > 0)
 	{
 		// write jittering depth.
@@ -814,38 +655,6 @@ void CClipVolumesStage::FillVolumetricFogDepth()
 			valid = valid && success;
 		}
 	}
-#else
-	if (m_filledVolumetricFogDepth > 0)
-	{
-		for (int32 i = 0; i < maxDSVCount; ++i)
-		{
-			auto& pass = m_jitteredDepthPassArray[i];
-			if (pass->IsDirty())
-			{
-				CTexture* const pTex = m_pClipVolumeStencilVolumeTexArray[i];
-				auto& depthTarget = m_depthTargetArrayVolFog[i];
-
-				// write jittering depth.
-				static CCryNameTSCRC shaderName("StoreJitteringDepthToClipVolumeDepth");
-				pass->SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_PS);
-				pass->SetPrimitiveType(CRenderPrimitive::ePrim_ProceduralTriangle);
-				pass->SetTechnique(CShaderMan::s_shDeferredShading, shaderName, 0);
-				pass->SetState(GS_DEPTHWRITE | GS_DEPTHFUNC_NOTEQUAL);
-				pass->SetDepthTarget(pTex, depthTarget);
-			}
-
-			pass->BeginConstantUpdate();
-
-			static CCryNameR paramDepth("ParamDepth");
-			const Vec4 vParamDepth(static_cast<float>(i), factor1, factor0, Clr_FarPlane.r);
-			pass->SetConstant(paramDepth, vParamDepth, eHWSC_Pixel);
-
-			bool success = pass->Execute();
-
-			valid = valid && success;
-		}
-	}
-#endif
 
 	if (valid)
 	{
@@ -859,52 +668,6 @@ void CClipVolumesStage::ExecuteVolumetricFog()
 
 	FillVolumetricFogDepth();
 
-#ifdef FEATURE_RENDER_CLIPVOLUME_GEOMETRY_SHADER
 	// Render clip volumes to single DSV for depth stencil texture array.
 	m_volumetricStencilPass.Execute();
-#else
-	auto maxDSVCount = m_depthTargetArrayVolFog.size();
-
-	// Render clip volumes.
-	for (int32 i = 0; i < maxDSVCount; ++i)
-	{
-		auto& pass = m_volumetricStencilPassArray[i];
-		if (pass->IsDirty())
-		{
-			CTexture* const pTex = m_pClipVolumeStencilVolumeTexArray[i];
-			auto& depthTarget = m_depthTargetArrayVolFog[i];
-
-			pass->SetDepthTarget(pTex, depthTarget);
-		}
-
-		pass->Execute();
-	}
-
-	// Resolve stencil
-	static CCryNameTSCRC techResolveStencil("ResolveStencilVolFog");
-	for (int32 i = 0; i < maxDSVCount; ++i)
-	{
-		auto& pPass = m_resolveVolumetricStencilPassArray[i];
-		if (pPass->IsDirty())
-		{
-			auto renderTargetView = SResourceView::RenderTargetView(DeviceFormats::ConvertFromTexFormat(m_pClipVolumeStencilVolumeTex->GetDstFormat()), i, 1, 0, false);
-			ResourceViewHandle rtvHandle = m_pClipVolumeStencilVolumeTex->GetDevTexture()->GetOrCreateResourceViewHandle(renderTargetView);
-
-			CTexture* const pTex = m_pClipVolumeStencilVolumeTexArray[i];
-			auto stencilOnlyView = SResourceView::ShaderResourceView(DeviceFormats::ConvertFromTexFormat(pTex->GetDstFormat()),
-			                                                         0, -1, 0, -1, false, false, SResourceView::eSRV_StencilOnly);
-			ResourceViewHandle srvHandle = pTex->GetDevTexture()->GetOrCreateResourceViewHandle(stencilOnlyView);
-
-			pPass->SetPrimitiveFlags(CRenderPrimitive::eFlags_None);
-			pPass->SetPrimitiveType(CRenderPrimitive::ePrim_ProceduralTriangle);
-			pPass->SetTechnique(CShaderMan::s_shDeferredShading, techResolveStencil, 0);
-			pPass->SetRenderTarget(0, m_pClipVolumeStencilVolumeTex, rtvHandle);
-			pPass->SetState(GS_NODEPTHTEST);
-			pPass->SetTexture(4, pTex, srvHandle);
-		}
-
-		pPass->BeginConstantUpdate();
-		pPass->Execute();
-	}
-#endif
 }
