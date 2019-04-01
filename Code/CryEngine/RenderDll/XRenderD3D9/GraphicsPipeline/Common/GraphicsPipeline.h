@@ -167,6 +167,8 @@ public:
 
 	CLightVolumeBuffer&                            GetLightVolumeBuffer()                     { return m_lightVolumeBuffer; }
 
+	void                                           SetParticleBuffers(bool bOnInit, CDeviceResourceSetDesc& resources, ResourceViewHandle hView, EShaderStage shaderStages) const;
+
 	// Partial pipeline functions, will be removed once the entire pipeline is implemented in Execute()
 	void                                           ExecutePostAA();
 	void                                           ExecuteAnisotropicVerticalBlur(CTexture* pTex, int nAmount, float fScale, float fDistribution, bool bAlphaOnly);

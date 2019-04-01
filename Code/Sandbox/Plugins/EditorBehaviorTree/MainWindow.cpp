@@ -1,490 +1,371 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
+
 #include "MainWindow.h"
-
 #include "TreePanel.h"
-
-#include <IEditor.h>
-
-#include <CrySerialization/IArchive.h>
-#include <CrySerialization/IArchiveHost.h>
-#include <CrySystem/File/ICryPak.h>
-#include <Serialization/Qt.h>
 
 #include <QAction>
 #include <QCloseEvent>
 #include <QDockWidget>
-#include <QFileDialog>
 #include <QMenuBar>
 
-#define APPLICATION_USER_DIRECTORY                   "/behavior_tree_editor/"
-#define APPLICATION_USER_STATE_FILEPATH              APPLICATION_USER_DIRECTORY "editor_state.json"
+REGISTER_VIEWPANE_FACTORY(CMainWindow, "Behavior Tree Editor", "Tools", false);
 
-#define APPLICATION_MAX_FILES_IN_RECENT_FILE_HISTORY (10)
-
-MainWindow::MainWindow()
-	: m_treePanel(nullptr)
-	, m_pRecentFilesMenu()
-	, m_pShowXmlLineNumberMenuAction()
-	, m_pShowCommentsMenuAction()
-	, m_pEnableCryEngineSignalsMenuAction()
-	, m_pEnableGameSDKSignalsMenuAction()
-	, m_pEnableDeprecatedSignalsMenuAction()
-	, m_recentFileNamesHistory()
+CMainWindow::CMainWindow(QWidget* pParent)
+	: CDockableEditor(pParent)
+	, m_pTreePanel(nullptr)
 {
-	// CVar callbacks
-	m_modularBehaviorTreeDebugTreeCvarHandle = gEnv->pConsole->GetCVar(k_modularBehaviorTreeDebugTreeCvar)->AddOnChange(std::bind(&MainWindow::OnChanged_ShowVariablesDebugger, this));
-	m_modularBehaviorTreeDebugVariablesCvarHandle = gEnv->pConsole->GetCVar(k_modularBehaviorTreeDebugVariablesCvar)->AddOnChange(std::bind(&MainWindow::OnChanged_ShowVariablesDebugger, this));
-	m_modularBehaviorTreeDebugTimestampsCvarHandle = gEnv->pConsole->GetCVar(k_modularBehaviorTreeDebugTimestampsCvar)->AddOnChange(std::bind(&MainWindow::OnChanged_ShowTimestampsDebugger, this));
-	m_modularBehaviorTreeDebugEventsCvarHandle = gEnv->pConsole->GetCVar(k_modularBehaviorTreeDebugEventsCvar)->AddOnChange(std::bind(&MainWindow::OnChanged_ShowEventsDebugger, this));
-	m_modularBehaviorTreeDebugLogCvarHandle = gEnv->pConsole->GetCVar(k_modularBehaviorTreeDebugLogCvar)->AddOnChange(std::bind(&MainWindow::OnChanged_ShowLogDebugger, this));
-	m_modularBehaviorTreeStatisticsCvarHandle = gEnv->pConsole->GetCVar(k_modularBehaviorTreeStatisticsCvar)->AddOnChange(std::bind(&MainWindow::OnChanged_ShowStatistics, this));
-	m_modularBehaviorTreeDebugExecutionLogCvarHandle = gEnv->pConsole->GetCVar(k_modularBehaviorTreeDebugExecutionLogCvar)->AddOnChange(std::bind(&MainWindow::OnChanged_ExecutionHistoryLog, this));
-	
-	// Qt
 
-	setWindowFlags(Qt::Widget);
+	m_pTreePanel = new TreePanel(this);
 
-	QMenuBar* menu = new QMenuBar(this);
+	m_pMainLayout = new QBoxLayout(QBoxLayout::TopToBottom, this);
+	m_pMainLayout->addWidget(m_pTreePanel);
+	m_pMainLayout->setMargin(0);
+	m_pMainLayout->setSpacing(0);
 
-	// File menu
+	SetContent(m_pMainLayout);
 
-	QMenu* fileMenu = menu->addMenu("&File");
-	connect(fileMenu->addAction("&New"), &QAction::triggered, this, &MainWindow::OnMenuActionNew);
-	fileMenu->addSeparator();
-	connect(fileMenu->addAction("&Open"), &QAction::triggered, this, &MainWindow::OnMenuActionOpen);
-	connect(fileMenu->addAction("&Save"), &QAction::triggered, this, &MainWindow::OnMenuActionSave);
-	connect(fileMenu->addAction("Save &as..."), &QAction::triggered, this, &MainWindow::OnMenuActionSaveToFile);
-	fileMenu->addSeparator();
-	m_pRecentFilesMenu.reset(fileMenu->addMenu("&Recent Files"));
+	InitMenuBar();
+	InitCVarsCallbacks();
+}
 
-	// View menu
+void CMainWindow::InitCVarsCallbacks()
+{
+	m_modularBehaviorTreeDebugTreeCvarHandle = gEnv->pConsole->GetCVar(k_modularBehaviorTreeDebugTreeCvar)->AddOnChange(std::bind(&CMainWindow::OnChanged_ShowVariablesDebugger, this));
+	m_modularBehaviorTreeDebugVariablesCvarHandle = gEnv->pConsole->GetCVar(k_modularBehaviorTreeDebugVariablesCvar)->AddOnChange(std::bind(&CMainWindow::OnChanged_ShowVariablesDebugger, this));
+	m_modularBehaviorTreeDebugTimestampsCvarHandle = gEnv->pConsole->GetCVar(k_modularBehaviorTreeDebugTimestampsCvar)->AddOnChange(std::bind(&CMainWindow::OnChanged_ShowTimestampsDebugger, this));
+	m_modularBehaviorTreeDebugEventsCvarHandle = gEnv->pConsole->GetCVar(k_modularBehaviorTreeDebugEventsCvar)->AddOnChange(std::bind(&CMainWindow::OnChanged_ShowEventsDebugger, this));
+	m_modularBehaviorTreeDebugLogCvarHandle = gEnv->pConsole->GetCVar(k_modularBehaviorTreeDebugLogCvar)->AddOnChange(std::bind(&CMainWindow::OnChanged_ShowLogDebugger, this));
+	m_modularBehaviorTreeStatisticsCvarHandle = gEnv->pConsole->GetCVar(k_modularBehaviorTreeStatisticsCvar)->AddOnChange(std::bind(&CMainWindow::OnChanged_ShowStatistics, this));
+	m_modularBehaviorTreeDebugExecutionLogCvarHandle = gEnv->pConsole->GetCVar(k_modularBehaviorTreeDebugExecutionLogCvar)->AddOnChange(std::bind(&CMainWindow::OnChanged_ExecutionHistoryLog, this));
+}
 
-	QMenu* viewMenu = menu->addMenu("&View");
-	m_pShowXmlLineNumberMenuAction.reset(viewMenu->addAction("&Show XML line numbers"));
+void CMainWindow::InitMenuBar()
+{
+	//File
+	AddToMenu({ CEditor::MenuItems::FileMenu, MenuItems::New, MenuItems::Open, MenuItems::Save, MenuItems::SaveAs, MenuItems::RecentFiles });
+
+	CAbstractMenu* const pFileMenu = GetMenu(CEditor::MenuItems::FileMenu);
+	int section = pFileMenu->GetNextEmptySection();
+	pFileMenu->CreateCommandAction("general.reload", section);
+
+	//View
+	AddToMenu(CEditor::MenuItems::ViewMenu);
+	CAbstractMenu* const pMenuView = GetMenu(CEditor::MenuItems::ViewMenu);
+
+	section = pMenuView->GetNextEmptySection();
+	m_pShowXmlLineNumberMenuAction = pMenuView->CreateAction("Show XML line numbers", section);
 	m_pShowXmlLineNumberMenuAction->setCheckable(true);
-	connect(m_pShowXmlLineNumberMenuAction.data(), &QAction::triggered, this, &MainWindow::OnMenuActionShowXmlLineNumbers);
+	QObject::connect(m_pShowXmlLineNumberMenuAction, &QAction::triggered, [this]()
+		{
+			m_pTreePanel->OnWindowEvent_ShowXmlLineNumbers(GetShowXmlLineNumbers());
+		});
 
-	m_pShowCommentsMenuAction.reset(viewMenu->addAction("Show &comments"));
+	m_pShowCommentsMenuAction = pMenuView->CreateAction("Show comments", section);
 	m_pShowCommentsMenuAction->setCheckable(true);
-	connect(m_pShowCommentsMenuAction.data(), &QAction::triggered, this, &MainWindow::OnMenuActionShowComments);
+	QObject::connect(m_pShowCommentsMenuAction, &QAction::triggered, [this]()
+		{
+			m_pTreePanel->OnWindowEvent_ShowComments(GetShowComments());
+		});
 
-	viewMenu->addSeparator();
-	QMenu* signalsMenu = viewMenu->addMenu("&Built-in Events");
+	CAbstractMenu* pMenuEvents = pMenuView->CreateMenu("Built-in Events", section);
+	section = pMenuEvents->GetNextEmptySection();
 
-	m_pEnableCryEngineSignalsMenuAction.reset(signalsMenu->addAction("Enable Cry&Engine events"));
-	m_pEnableCryEngineSignalsMenuAction->setCheckable(true);
-	connect(m_pEnableCryEngineSignalsMenuAction.data(), &QAction::triggered, this, &MainWindow::OnMenuActionShowCryEngineSignals);
-	
-	m_pEnableGameSDKSignalsMenuAction.reset(signalsMenu->addAction("Enable &GameSDK events"));
-	m_pEnableGameSDKSignalsMenuAction->setCheckable(true);
-	connect(m_pEnableGameSDKSignalsMenuAction.data(), &QAction::triggered, this, &MainWindow::OnMenuActionShowGameSDKSignals);
+	m_pEnableCryEngineEventsMenuAction = pMenuEvents->CreateAction("Enable CryEngine events", section);
+	m_pEnableCryEngineEventsMenuAction->setCheckable(true);
+	QObject::connect(m_pEnableCryEngineEventsMenuAction, &QAction::triggered, [this]()
+		{
+			m_pTreePanel->OnWindowEvent_ShowCryEngineSignals(GetEnableCryEngineEvents());
+		});
 
-	m_pEnableDeprecatedSignalsMenuAction.reset(signalsMenu->addAction("Enable &Deprecated events"));
-	m_pEnableDeprecatedSignalsMenuAction->setCheckable(true);
-	connect(m_pEnableDeprecatedSignalsMenuAction.data(), &QAction::triggered, this, &MainWindow::OnMenuActionShowDeprecatedSignals);
-	
-	// Debug menu
-	QMenu* debugMenu = menu->addMenu("&Debug");
+	m_pEnableGameSDKEventsMenuAction = pMenuEvents->CreateAction("Enable GameSDK events", section);
+	m_pEnableGameSDKEventsMenuAction->setCheckable(true);
+	QObject::connect(m_pEnableGameSDKEventsMenuAction, &QAction::triggered, [this]()
+		{
+			m_pTreePanel->OnWindowEvent_ShowDeprecatedSignals(GetEnableCryEngineEvents());
+		});
 
-	m_pEnableTreeDebuggerMenuAction.reset(debugMenu->addAction("Show &Tree"));
-	m_pEnableTreeDebuggerMenuAction->setCheckable(true);
-	m_pEnableTreeDebuggerMenuAction->setChecked(GetShowTreeDebuggerCvar());
-	connect(m_pEnableTreeDebuggerMenuAction.data(), &QAction::triggered, this, &MainWindow::OnMenuActionShowTreeDebugger);
-
-	m_pEnableVariablesDebuggerMenuAction.reset(debugMenu->addAction("Show &Variables"));
-	m_pEnableVariablesDebuggerMenuAction->setCheckable(true);
-	m_pEnableVariablesDebuggerMenuAction->setChecked(GetShowVariablesDebuggerCvar());
-	connect(m_pEnableVariablesDebuggerMenuAction.data(), &QAction::triggered, this, &MainWindow::OnMenuActionShowVariablesDebugger);
-
-	m_pEnableTimestampsDebuggerMenuAction.reset(debugMenu->addAction("Show &Timestamps"));
-	m_pEnableTimestampsDebuggerMenuAction->setCheckable(true);
-	m_pEnableTimestampsDebuggerMenuAction->setChecked(GetShowTimestampsDebuggerCvar());
-	connect(m_pEnableTimestampsDebuggerMenuAction.data(), &QAction::triggered, this, &MainWindow::OnMenuActionShowTimestampsDebugger);
-
-	m_pEnableEventsDebuggerMenuAction.reset(debugMenu->addAction("Show &Events"));
-	m_pEnableEventsDebuggerMenuAction->setCheckable(true);
-	m_pEnableEventsDebuggerMenuAction->setChecked(GetShowEventsDebuggerCvar());
-	connect(m_pEnableEventsDebuggerMenuAction.data(), &QAction::triggered, this, &MainWindow::OnMenuActionShowEventsDebugger);
-
-	m_pEnableLogDebuggerMenuAction.reset(debugMenu->addAction("Show &Log"));
-	m_pEnableLogDebuggerMenuAction->setCheckable(true);
-	m_pEnableLogDebuggerMenuAction->setChecked(GetShowLogDebuggerCvar());
-	connect(m_pEnableLogDebuggerMenuAction.data(), &QAction::triggered, this, &MainWindow::OnMenuActionShowLogDebugger);
-
-	debugMenu->addSeparator();
-
-	m_pEnableAllDebuggerMenuAction.reset(debugMenu->addAction("Show &All"));
-	m_pEnableAllDebuggerMenuAction->setCheckable(true);
-	m_pEnableAllDebuggerMenuAction->setChecked(GetShowAllDebugger());
-	connect(m_pEnableAllDebuggerMenuAction.data(), &QAction::triggered, this, &MainWindow::OnMenuActionShowAllDebugger);
-
-	debugMenu->addSeparator();
-
-	m_pEnableStatisticsMenuAction.reset(debugMenu->addAction("Show &Statistics"));
-	m_pEnableStatisticsMenuAction->setCheckable(true);
-	m_pEnableStatisticsMenuAction->setChecked(GetShowStatisticsCvar());
-	connect(m_pEnableStatisticsMenuAction.data(), &QAction::triggered, this, &MainWindow::OnMenuActionShowStatistics);
-
-	debugMenu->addSeparator();
-
-	// Log menu
-	QMenu* executionHistoryLogMenu = debugMenu->addMenu("Execution History");
-
-	m_pEnableExecutionHistoryLogCurrentEntityMenuAction.reset(executionHistoryLogMenu->addAction("Log execution for &current agent"));
-	m_pEnableExecutionHistoryLogCurrentEntityMenuAction->setCheckable(true);
-	m_pEnableExecutionHistoryLogCurrentEntityMenuAction->setChecked(GetEnableExecutionHistoryLogCvar() == 1);
-	connect(m_pEnableExecutionHistoryLogCurrentEntityMenuAction.data(), &QAction::triggered, this, &MainWindow::OnMenuActionEnableExecutionHistoryLogForCurrentEntity);
-
-	m_pEnableExecutionHistoryLogAllEntitiesMenuAction.reset(executionHistoryLogMenu->addAction("Log execution for &all agents"));
-	m_pEnableExecutionHistoryLogAllEntitiesMenuAction->setCheckable(true);
-	m_pEnableExecutionHistoryLogAllEntitiesMenuAction->setChecked(GetEnableExecutionHistoryLogCvar() == 2);
-	connect(m_pEnableExecutionHistoryLogAllEntitiesMenuAction.data(), &QAction::triggered, this, &MainWindow::OnMenuActionEnableExecutionHistoryLogForAllEntities);
-
-	setMenuBar(menu);
-
-	GetIEditor()->RegisterNotifyListener(this);
-
-	m_treePanel = new TreePanel	(this);
-	setCentralWidget(m_treePanel);
-
-	LoadState();
-}
-
-MainWindow::~MainWindow()
-{
-	GetIEditor()->UnregisterNotifyListener(this);
-
-	// CVar callbacks remove
-	gEnv->pConsole->GetCVar(k_modularBehaviorTreeDebugTreeCvar)->RemoveOnChangeFunctor(m_modularBehaviorTreeDebugTreeCvarHandle);
-	gEnv->pConsole->GetCVar(k_modularBehaviorTreeDebugVariablesCvar)->RemoveOnChangeFunctor(m_modularBehaviorTreeDebugVariablesCvarHandle);
-	gEnv->pConsole->GetCVar(k_modularBehaviorTreeDebugTimestampsCvar)->RemoveOnChangeFunctor(m_modularBehaviorTreeDebugTimestampsCvarHandle);
-	gEnv->pConsole->GetCVar(k_modularBehaviorTreeDebugEventsCvar)->RemoveOnChangeFunctor(m_modularBehaviorTreeDebugEventsCvarHandle);
-	gEnv->pConsole->GetCVar(k_modularBehaviorTreeDebugLogCvar)->RemoveOnChangeFunctor(m_modularBehaviorTreeDebugLogCvarHandle);
-	gEnv->pConsole->GetCVar(k_modularBehaviorTreeStatisticsCvar)->RemoveOnChangeFunctor(m_modularBehaviorTreeStatisticsCvarHandle);
-	gEnv->pConsole->GetCVar(k_modularBehaviorTreeDebugExecutionLogCvar)->RemoveOnChangeFunctor(m_modularBehaviorTreeDebugExecutionLogCvarHandle);
-}
-
-const char* MainWindow::GetPaneTitle() const
-{
-	return "Behavior Tree Editor";
-}
-
-void MainWindow::OnEditorNotifyEvent(EEditorNotifyEvent editorNotifyEvent)
-{
-	if (editorNotifyEvent == eNotify_OnQuit)
-	{
-		SaveState();
-	}
-}
-
-void MainWindow::Serialize(Serialization::IArchive& archive)
-{
-	int windowStateVersion = 1;
-
-	QByteArray windowState;
-	if (archive.isOutput())
-	{
-		windowState = saveState(windowStateVersion);
-	}
-	archive(windowState, "windowState");
-	if (archive.isInput() && !windowState.isEmpty())
-	{
-		restoreState(windowState, windowStateVersion);
-	}
-
-	archive(m_recentFileNamesHistory, "recentFileNamesHistory");
-	RebuildRecentFilesMenu();
-
-	bool showXmlLineNumbers = GetShowXmlLineNumbers();
-	archive(showXmlLineNumbers, "showXmlLineNumbers");
-	SetShowXmlLineNumbers(showXmlLineNumbers);
-
-	bool showComments = GetShowComments();
-	archive(showComments, "showComments");
-	SetShowComments(showComments);
-	
-	// Events
-
-	bool enableCryEngineSignals = GetEnableCryEngineSignals();
-	archive(enableCryEngineSignals, "enableCryEngineSignals");
-	SetEnableCryEngineSignals(enableCryEngineSignals);
-
-	bool enableGameSDKSignals = GetEnableGameSDKSignals();
-	archive(enableGameSDKSignals, "enableGameSDKSignals");
-	SetEnableGameSDKSignals(enableGameSDKSignals);
-
-	bool enableDeprecatedSignals = GetEnableDeprecatedSignals();
-	archive(enableDeprecatedSignals, "enableDeprecatedSignals");
-	SetEnableDeprecatedSignals(enableDeprecatedSignals);
+	m_pEnableDeprecatedEventsMenuAction = pMenuEvents->CreateAction("Enable Deprecated events", section);
+	m_pEnableDeprecatedEventsMenuAction->setCheckable(true);
+	QObject::connect(m_pEnableDeprecatedEventsMenuAction, &QAction::triggered, [this]()
+		{
+			m_pTreePanel->OnWindowEvent_ShowDeprecatedSignals(GetEnableCryEngineEvents());
+		});
 
 	// Debug
-	bool showTreeDebugger = GetShowTreeDebuggerCvar();
-	archive(showTreeDebugger);
+	CAbstractMenu* pMenuDebug = GetRootMenu()->CreateMenu("Debug", section);
+	section = pMenuEvents->GetNextEmptySection();
 
-	bool showVariablesDebugger = GetShowVariablesDebuggerCvar();
-	archive(showVariablesDebugger);
+	m_pEnableTreeDebuggerMenuAction = pMenuDebug->CreateAction("Show Tree", section);
+	m_pEnableTreeDebuggerMenuAction->setCheckable(true);
+	QObject::connect(m_pEnableTreeDebuggerMenuAction, &QAction::triggered, [this]()
+		{
+			SetShowTreeDebugger(!GetShowTreeDebuggerCvar());
+		});
 
-	bool showTimestampsDebugger = GetShowTimestampsDebuggerCvar();
-	archive(showTimestampsDebugger);
+	m_pEnableVariablesDebuggerMenuAction = pMenuDebug->CreateAction("Show Variables", section);
+	m_pEnableVariablesDebuggerMenuAction->setCheckable(true);
+	QObject::connect(m_pEnableVariablesDebuggerMenuAction, &QAction::triggered, [this]()
+		{
+			SetShowVariablesDebugger(!GetShowVariablesDebuggerCvar());
+		});
 
-	bool showEventsDebugger = GetShowEventsDebuggerCvar();
-	archive(showEventsDebugger);
+	m_pEnableTimestampsDebuggerMenuAction = pMenuDebug->CreateAction("Show Timestamps", section);
+	m_pEnableTimestampsDebuggerMenuAction->setCheckable(true);
+	QObject::connect(m_pEnableTimestampsDebuggerMenuAction, &QAction::triggered, [this]()
+		{
+			SetShowTimestampsDebugger(!GetShowTimestampsDebuggerCvar());
+		});
 
-	bool showLogDebugger = GetShowLogDebuggerCvar();
-	archive(showLogDebugger);
-
-	bool showAllDebugger = GetShowAllDebugger();
-	archive(showAllDebugger);
-
-	bool showStatistics = GetShowStatisticsCvar();
-	archive(showStatistics);
-
-	int enableExecutionHistoryLog = GetEnableExecutionHistoryLogCvar();
-	bool enableExecutionHistoryLogCurrentEntity = enableExecutionHistoryLog == 1;
-	bool enableExecutionHistoryLogAllEntities = enableExecutionHistoryLog == 2;
-
-	archive(enableExecutionHistoryLogCurrentEntity);
-	archive(enableExecutionHistoryLogAllEntities);
-
-	if (archive.isOutput())
+	m_pEnableEventsDebuggerMenuAction = pMenuDebug->CreateAction("Show Events", section);
+	m_pEnableEventsDebuggerMenuAction->setCheckable(true);
+	QObject::connect(m_pEnableEventsDebuggerMenuAction, &QAction::triggered, [this]()
 	{
-		SetShowTreeDebugger(showTreeDebugger);
-		SetShowVariablesDebugger(showVariablesDebugger);
-		SetShowTimestampsDebugger(showTimestampsDebugger);
-		SetShowEventsDebugger(showEventsDebugger);
-		SetShowLogDebugger(showTimestampsDebugger);
-		SetShowAllDebugger(showAllDebugger);
-		SetShowStatisticsCvar(showStatistics);
+		SetShowEventsDebugger(!GetShowEventsDebuggerCvar());
+	});
 
-		if (enableExecutionHistoryLogCurrentEntity)
+	m_pEnableLogDebuggerMenuAction = pMenuDebug->CreateAction("Show Log", section);
+	m_pEnableLogDebuggerMenuAction->setCheckable(true);
+	QObject::connect(m_pEnableLogDebuggerMenuAction, &QAction::triggered, [this]()
 		{
-			SetEnableExecutionHistoryLog(1);
-		}
-		else if (enableExecutionHistoryLogAllEntities)
+			SetShowLogDebugger(!GetShowLogDebuggerCvar());
+		});
+
+	m_pEnableAllDebuggerMenuAction = pMenuDebug->CreateAction("Show All", section);
+	m_pEnableAllDebuggerMenuAction->setCheckable(true);
+	QObject::connect(m_pEnableAllDebuggerMenuAction, &QAction::triggered, [this]()
 		{
-			SetEnableExecutionHistoryLog(2);
-		}
-		else
+			const bool isEnabled = GetShowAllDebugger();
+
+			if (isEnabled)
+			{
+				SetShowTreeDebugger(true);
+				SetShowVariablesDebugger(true);
+				SetShowTimestampsDebugger(true);
+				SetShowEventsDebugger(true);
+				SetShowLogDebugger(true);
+			}
+			else if (GetShowTreeDebuggerCvar()
+				&& GetShowVariablesDebuggerCvar()
+				&& GetShowTimestampsDebuggerCvar()
+				&& GetShowEventsDebuggerCvar()
+				&& GetShowLogDebuggerCvar())
+			{
+				SetShowTreeDebugger(false);
+				SetShowVariablesDebugger(false);
+				SetShowTimestampsDebugger(false);
+				SetShowEventsDebugger(false);
+				SetShowLogDebugger(false);
+			}
+		});
+
+	section = pMenuDebug->GetNextEmptySection();
+	m_pEnableStatisticsMenuAction = pMenuDebug->CreateAction("Show Statistics", section);
+	m_pEnableStatisticsMenuAction->setCheckable(true);
+	QObject::connect(m_pEnableStatisticsMenuAction, &QAction::triggered, [this]()
 		{
-			SetEnableExecutionHistoryLog(0);
-		}
+			SetShowStatisticsCvar(!GetShowStatisticsCvar());
+		});
+
+	CAbstractMenu* pMenuExecutionHistory = pMenuDebug->CreateMenu("Execution History", section);
+	m_pEnableExecutionHistoryLogCurrentEntityMenuAction = pMenuExecutionHistory->CreateAction("Log execution for current agent", section);
+	m_pEnableExecutionHistoryLogCurrentEntityMenuAction->setCheckable(true);
+	QObject::connect(m_pEnableExecutionHistoryLogCurrentEntityMenuAction, &QAction::triggered, [this]()
+		{
+			const int previousValue = GetEnableExecutionHistoryLogCvar();
+
+			if (previousValue == 0 || previousValue == 2)
+			{
+				SetEnableExecutionHistoryLog(1);
+			}
+			else if (previousValue == 1)
+			{
+				SetEnableExecutionHistoryLog(0);
+			}
+		});
+
+	m_pEnableExecutionHistoryLogAllEntitiesMenuAction = pMenuExecutionHistory->CreateAction("Log execution for all agents", section);
+	m_pEnableExecutionHistoryLogAllEntitiesMenuAction->setCheckable(true);
+	QObject::connect(m_pEnableExecutionHistoryLogAllEntitiesMenuAction, &QAction::triggered, [this]()
+		{
+			const int previousValue = GetEnableExecutionHistoryLogCvar();
+
+			if (previousValue == 0 || previousValue == 1)
+			{
+				SetEnableExecutionHistoryLog(2);
+			}
+			else if (previousValue == 2)
+			{
+				SetEnableExecutionHistoryLog(0);
+			}
+		});
+}
+
+void CMainWindow::SetLayout(const QVariantMap& state)
+{
+	CDockableEditor::SetLayout(state);
+
+	QVariant showXmlLineNumbers = state.value("showXmlLineNumbers");
+	if (showXmlLineNumbers.isValid())
+	{
+		SetShowXmlLineNumbers(showXmlLineNumbers.toBool());
+	}
+
+	QVariant showComments = state.value("showComments");
+	if (showComments.isValid())
+	{
+		SetShowComments(showComments.toBool());
+	}
+
+	QVariant enableCryEngineEvents = state.value("enableCryEngineEvents");
+	if (enableCryEngineEvents.isValid())
+	{
+		SetEnableCryEngineEvents(enableCryEngineEvents.toBool());
+	}
+
+	QVariant enableGameSDKEvents = state.value("enableGameSDKEvents");
+	if (enableGameSDKEvents.isValid())
+	{
+		SetEnableGameSDKEvents(enableGameSDKEvents.toBool());
+	}
+
+	QVariant enableDeprecatedEvents = state.value("enableDeprecatedEvents");
+	if (enableDeprecatedEvents.isValid())
+	{
+		SetEnableDeprecatedEvents(enableDeprecatedEvents.toBool());
+	}
+
+	QVariant showDebugTree = state.value("showDebugTree");
+	if (showDebugTree.isValid())
+	{
+		SetShowTreeDebugger(showDebugTree.toBool());
+	}
+
+	QVariant showDebugVariables = state.value("showDebugVariables");
+	if (showDebugVariables.isValid())
+	{
+		SetShowVariablesDebugger(showDebugVariables.toBool());
+	}
+
+	QVariant showDebugTimestamps = state.value("showDebugTimestamps");
+	if (showDebugTimestamps.isValid())
+	{
+		SetShowTimestampsDebugger(showDebugTimestamps.toBool());
+	}
+
+	QVariant showDebugEvents = state.value("showDebugEvents");
+	if (showDebugEvents.isValid())
+	{
+		SetShowEventsDebugger(showDebugEvents.toBool());
+	}
+
+	QVariant showDebugLog = state.value("showDebugLog");
+	if (showDebugLog.isValid())
+	{
+		SetShowLogDebugger(showDebugLog.toBool());
+	}
+
+	QVariant showDebugAll = state.value("showDebugAll");
+	if (showDebugAll.isValid())
+	{
+		SetShowAllDebugger(showDebugAll.toBool());
+	}
+
+	QVariant showStatistics = state.value("showStatistics");
+	if (showStatistics.isValid())
+	{
+		SetShowStatisticsCvar(showStatistics.toBool());
+	}
+
+	QVariant enableExecutionHistory = state.value("enableExecutionHistory");
+	if (enableExecutionHistory.isValid())
+	{
+		SetEnableExecutionHistoryLog(enableExecutionHistory.toInt());
 	}
 }
 
-void MainWindow::PromoteFileInRecentFileHistory(const char* szFileName)
+QVariantMap CMainWindow::GetLayout() const
 {
-	stl::find_and_erase_all(m_recentFileNamesHistory, szFileName);
+	QVariantMap state = CDockableEditor::GetLayout();
 
-	std::vector<string> newFileNameHistory;
-	newFileNameHistory.reserve(m_recentFileNamesHistory.size() + 1);
-	newFileNameHistory.push_back(szFileName);
-	newFileNameHistory.insert(newFileNameHistory.end(), m_recentFileNamesHistory.begin(), m_recentFileNamesHistory.end());
+	state.insert("showXmlLineNumbers", GetShowXmlLineNumbers());
+	state.insert("showComments", GetShowComments());
 
-	if (newFileNameHistory.size() > APPLICATION_MAX_FILES_IN_RECENT_FILE_HISTORY)
-	{
-		newFileNameHistory.resize(APPLICATION_MAX_FILES_IN_RECENT_FILE_HISTORY);
-	}
+	state.insert("enableCryEngineEvents", GetEnableCryEngineEvents());
+	state.insert("enableGameSDKEvents", GetEnableGameSDKEvents());
+	state.insert("enableDeprecatedEvents", GetEnableDeprecatedEvents());
 
-	m_recentFileNamesHistory = newFileNameHistory;
+	state.insert("showDebugTree", GetShowTreeDebuggerCvar());
+	state.insert("showDebugVariables", GetShowVariablesDebuggerCvar());
+	state.insert("showDebugTimestamps", GetShowTimestampsDebuggerCvar());
+	state.insert("showDebugEvents", GetShowEventsDebuggerCvar());
+	state.insert("showDebugLog", GetShowLogDebuggerCvar());
+	state.insert("showDebugAll", GetShowAllDebugger());
 
-	RebuildRecentFilesMenu();
+	state.insert("showStatistics", GetShowStatisticsCvar());
+	state.insert("enableExecutionHistory", GetEnableExecutionHistoryLogCvar());
+
+	return state;
 }
 
-void MainWindow::closeEvent(QCloseEvent* closeEvent)
+void CMainWindow::AddRecentFile(const QString& fileName)
 {
-	SaveState();
+	CDockableEditor::AddRecentFile(fileName);
+}
 
-	if (!m_treePanel->HandleCloseEvent())
+void CMainWindow::closeEvent(QCloseEvent* closeEvent)
+{
+	SaveLayoutPersonalization();
+
+	if (!m_pTreePanel->HandleCloseEvent())
 	{
 		closeEvent->ignore();
 		return;
 	}
 
-	QMainWindow::closeEvent(closeEvent);
+	QWidget::closeEvent(closeEvent);
 }
 
-void MainWindow::OnMenuActionNew()
+bool CMainWindow::OnNew()
 {
-	m_treePanel->OnWindowEvent_NewFile();
+	m_pTreePanel->OnWindowEvent_NewFile();
+	return true;
 }
 
-void MainWindow::OnMenuActionOpen()
+bool CMainWindow::OnOpen()
 {
-	m_treePanel->OnWindowEvent_OpenFile();
+	m_pTreePanel->OnWindowEvent_OpenFile();
+	return true;
 }
 
-void MainWindow::OnMenuActionSave()
+bool CMainWindow::OnOpenFile(const QString& path)
 {
-	m_treePanel->OnWindowEvent_Save();
+	m_pTreePanel->OnWindowEvent_OpenFile(path);
+	return true;
 }
 
-void MainWindow::OnMenuActionSaveToFile()
+bool CMainWindow::OnSave()
 {
-	m_treePanel->OnWindowEvent_SaveToFile();
+	m_pTreePanel->OnWindowEvent_Save();
+	SaveLayoutPersonalization();
+	return true;
 }
 
-void MainWindow::OnMenuActionRecentFile()
+bool CMainWindow::OnSaveAs()
 {
-	QObject* pSenderObject = QObject::sender();
-	if (pSenderObject == nullptr)
-	{
-		return;
-	}
-	QAction* pSenderAction = qobject_cast<QAction*>(pSenderObject);
-	if (pSenderAction == nullptr)
-	{
-		return;
-	}
-
-	m_treePanel->OnWindowEvent_OpenRecentFile(pSenderAction->data().toString());
+	m_pTreePanel->OnWindowEvent_SaveToFile();
+	SaveLayoutPersonalization();
+	return true;
 }
 
-void MainWindow::OnMenuActionShowXmlLineNumbers()
+bool CMainWindow::OnReload()
 {
-	m_treePanel->OnWindowEvent_ShowXmlLineNumbers(GetShowXmlLineNumbers());
+	m_pTreePanel->OnWindowEvent_Reload();
+	return true;
 }
 
-void MainWindow::OnMenuActionShowComments()
-{
-	m_treePanel->OnWindowEvent_ShowComments(GetShowComments());
-}
-
-void MainWindow::OnMenuActionShowCryEngineSignals()
-{
-	m_treePanel->OnWindowEvent_EnableCryEngineSignals(GetEnableCryEngineSignals());
-}
-
-void MainWindow::OnMenuActionShowGameSDKSignals()
-{
-	m_treePanel->OnWindowEvent_EnableGameSDKSignals(GetEnableGameSDKSignals());
-}
-
-void MainWindow::OnMenuActionShowDeprecatedSignals()
-{
-	m_treePanel->OnWindowEvent_EnableDeprecatedSignals(GetEnableDeprecatedSignals());
-}
-
-void MainWindow::OnMenuActionShowTreeDebugger()
-{
-	SetShowTreeDebugger(!GetShowTreeDebuggerCvar());
-}
-
-void MainWindow::OnMenuActionShowVariablesDebugger()
-{
-	SetShowVariablesDebugger(!GetShowVariablesDebuggerCvar());
-}
-
-void MainWindow::OnMenuActionShowTimestampsDebugger()
-{
-	SetShowTimestampsDebugger(!GetShowTimestampsDebuggerCvar());
-}
-
-void MainWindow::OnMenuActionShowEventsDebugger()
-{
-	SetShowEventsDebugger(!GetShowEventsDebuggerCvar());
-}
-
-void MainWindow::OnMenuActionShowLogDebugger()
-{
-	SetShowLogDebugger(!GetShowLogDebuggerCvar());
-}
-
-void MainWindow::OnMenuActionShowAllDebugger()
-{
-	const bool isEnabled = GetShowAllDebugger();
-
-	if (isEnabled)
-	{
-		SetShowTreeDebugger(true);
-		SetShowVariablesDebugger(true);
-		SetShowTimestampsDebugger(true);
-		SetShowEventsDebugger(true);
-		SetShowLogDebugger(true);
-	}
-	else if (GetShowTreeDebuggerCvar()
-		&& GetShowVariablesDebuggerCvar()
-		&& GetShowTimestampsDebuggerCvar()
-		&& GetShowEventsDebuggerCvar()
-		&& GetShowLogDebuggerCvar())
-	{
-		SetShowTreeDebugger(false);
-		SetShowVariablesDebugger(false);
-		SetShowTimestampsDebugger(false);
-		SetShowEventsDebugger(false);
-		SetShowLogDebugger(false);
-	}
-}
-
-void MainWindow::OnMenuActionShowStatistics()
-{
-	SetShowStatisticsCvar(!GetShowStatisticsCvar());
-}
-
-void MainWindow::OnMenuActionEnableExecutionHistoryLogForCurrentEntity()
-{
-	const int previousValue = GetEnableExecutionHistoryLogCvar();
-
-	if (previousValue == 0 || previousValue == 2)
-	{
-		SetEnableExecutionHistoryLog(1);
-	}
-	else if (previousValue == 1)
-	{
-		SetEnableExecutionHistoryLog(0);
-	}
-}
-
-void MainWindow::OnMenuActionEnableExecutionHistoryLogForAllEntities()
-{
-	const int previousValue = GetEnableExecutionHistoryLogCvar();
-
-	if (previousValue == 0 || previousValue == 1)
-	{
-		SetEnableExecutionHistoryLog(2);
-	}
-	else if (previousValue == 2)
-	{
-		SetEnableExecutionHistoryLog(0);
-	}
-}
-
-void MainWindow::LoadState()
-{
-	const stack_string loadFilePath = stack_string().Format("%s%s", GetIEditor()->GetUserFolder(), APPLICATION_USER_STATE_FILEPATH).c_str();
-
-	Serialization::LoadJsonFile(*this, loadFilePath.c_str());
-}
-
-void MainWindow::SaveState()
-{
-	const stack_string saveFilePath = stack_string().Format("%s%s", GetIEditor()->GetUserFolder(), APPLICATION_USER_STATE_FILEPATH).c_str();
-
-	// Create directory first in case it does not exist.
-	QDir().mkdir(stack_string().Format("%s%s", GetIEditor()->GetUserFolder(), APPLICATION_USER_DIRECTORY).c_str());
-
-	Serialization::SaveJsonFile(saveFilePath.c_str(), *this);
-}
-
-void MainWindow::RebuildRecentFilesMenu()
-{
-	if (!m_pRecentFilesMenu)
-	{
-		return;
-	}
-
-	m_pRecentFilesMenu->clear();
-	for (auto fileName : m_recentFileNamesHistory)
-	{
-		QAction* pAction = m_pRecentFilesMenu->addAction(fileName.c_str());
-		pAction->setData(QVariant(fileName.c_str()));
-
-		connect(pAction, &QAction::triggered, this, &MainWindow::OnMenuActionRecentFile);
-	}
-}
-
-bool MainWindow::GetShowXmlLineNumbers() const
+bool CMainWindow::GetShowXmlLineNumbers() const
 {
 	if (!m_pShowXmlLineNumberMenuAction)
 	{
@@ -494,7 +375,7 @@ bool MainWindow::GetShowXmlLineNumbers() const
 	return m_pShowXmlLineNumberMenuAction->isChecked();
 }
 
-void MainWindow::SetShowXmlLineNumbers(const bool showFlag)
+void CMainWindow::SetShowXmlLineNumbers(const bool showFlag)
 {
 	if (!m_pShowXmlLineNumberMenuAction)
 	{
@@ -503,10 +384,10 @@ void MainWindow::SetShowXmlLineNumbers(const bool showFlag)
 
 	m_pShowXmlLineNumberMenuAction->setChecked(showFlag);
 
-	m_treePanel->ShowXmlLineNumbers(showFlag);
+	m_pTreePanel->ShowXmlLineNumbers(showFlag);
 }
 
-bool MainWindow::GetShowComments() const
+bool CMainWindow::GetShowComments() const
 {
 	if (!m_pShowCommentsMenuAction)
 	{
@@ -516,7 +397,7 @@ bool MainWindow::GetShowComments() const
 	return m_pShowCommentsMenuAction->isChecked();
 }
 
-void MainWindow::SetShowComments(const bool showFlag)
+void CMainWindow::SetShowComments(const bool showFlag)
 {
 	if (!m_pShowCommentsMenuAction)
 	{
@@ -525,76 +406,76 @@ void MainWindow::SetShowComments(const bool showFlag)
 
 	m_pShowCommentsMenuAction->setChecked(showFlag);
 
-	m_treePanel->ShowComments(showFlag);
+	m_pTreePanel->ShowComments(showFlag);
 }
 
-bool MainWindow::GetEnableCryEngineSignals() const
+bool CMainWindow::GetEnableCryEngineEvents() const
 {
-	if (!m_pEnableCryEngineSignalsMenuAction)
+	if (!m_pEnableCryEngineEventsMenuAction)
 	{
 		return false;
 	}
 
-	return m_pEnableCryEngineSignalsMenuAction->isChecked();
+	return m_pEnableCryEngineEventsMenuAction->isChecked();
 }
 
-void MainWindow::SetEnableCryEngineSignals(const bool enable)
+void CMainWindow::SetEnableCryEngineEvents(const bool enable)
 {
-	if (!m_pEnableCryEngineSignalsMenuAction)
+	if (!m_pEnableCryEngineEventsMenuAction)
 	{
 		return;
 	}
 
-	m_pEnableCryEngineSignalsMenuAction->setChecked(enable);
+	m_pEnableCryEngineEventsMenuAction->setChecked(enable);
 
-	m_treePanel->EnableCryEngineSignals(enable);
+	m_pTreePanel->ShowCryEngineSignals(enable);
 }
 
-bool MainWindow::GetEnableGameSDKSignals() const
+bool CMainWindow::GetEnableGameSDKEvents() const
 {
-	if (!m_pEnableGameSDKSignalsMenuAction)
+	if (!m_pEnableGameSDKEventsMenuAction)
 	{
 		return false;
 	}
 
-	return m_pEnableGameSDKSignalsMenuAction->isChecked();
+	return m_pEnableGameSDKEventsMenuAction->isChecked();
 }
 
-void MainWindow::SetEnableGameSDKSignals(const bool enable)
+void CMainWindow::SetEnableGameSDKEvents(const bool enable)
 {
-	if (!m_pEnableGameSDKSignalsMenuAction)
+	if (!m_pEnableGameSDKEventsMenuAction)
 	{
 		return;
 	}
 
-	m_pEnableGameSDKSignalsMenuAction->setChecked(enable);
+	m_pEnableGameSDKEventsMenuAction->setChecked(enable);
 
-	m_treePanel->EnableGameSDKSignals(enable);
+	m_pTreePanel->ShowGameSDKSignals(enable);
 }
 
-bool MainWindow::GetEnableDeprecatedSignals() const
+bool CMainWindow::GetEnableDeprecatedEvents() const
 {
-	if (!m_pEnableDeprecatedSignalsMenuAction)
+	if (!m_pEnableDeprecatedEventsMenuAction)
 	{
 		return false;
 	}
 
-	return m_pEnableDeprecatedSignalsMenuAction->isChecked();
+	return m_pEnableDeprecatedEventsMenuAction->isChecked();
 }
 
-void MainWindow::SetEnableDeprecatedSignals(const bool enableFlag)
+void CMainWindow::SetEnableDeprecatedEvents(const bool enableFlag)
 {
-	if (!m_pEnableDeprecatedSignalsMenuAction)
+	if (!m_pEnableDeprecatedEventsMenuAction)
 	{
 		return;
 	}
 
-	m_pEnableDeprecatedSignalsMenuAction->setChecked(enableFlag);
+	m_pEnableDeprecatedEventsMenuAction->setChecked(enableFlag);
 
-	m_treePanel->EnableDeprecatedSignals(enableFlag);
+	m_pTreePanel->ShowDeprecatedSignals(enableFlag);
 }
 
-bool MainWindow::GetShowTreeDebuggerCvar() const
+bool CMainWindow::GetShowTreeDebuggerCvar() const
 {
 	if (!m_pEnableTreeDebuggerMenuAction)
 	{
@@ -605,7 +486,7 @@ bool MainWindow::GetShowTreeDebuggerCvar() const
 	return pDebugTree->GetIVal();
 }
 
-void MainWindow::SetShowTreeDebugger(const bool enableFlag)
+void CMainWindow::SetShowTreeDebugger(const bool enableFlag)
 {
 	if (!m_pEnableTreeDebuggerMenuAction)
 	{
@@ -623,7 +504,7 @@ void MainWindow::SetShowTreeDebugger(const bool enableFlag)
 	}
 }
 
-void MainWindow::OnChanged_ShowTreeDebugger()
+void CMainWindow::OnChanged_ShowTreeDebugger()
 {
 	const ICVar* pDebugTree = gEnv->pConsole->GetCVar(k_modularBehaviorTreeDebugTreeCvar);
 	const bool debugTreeEnabled = pDebugTree->GetIVal();
@@ -634,7 +515,7 @@ void MainWindow::OnChanged_ShowTreeDebugger()
 	}
 }
 
-bool MainWindow::GetShowVariablesDebuggerCvar() const
+bool CMainWindow::GetShowVariablesDebuggerCvar() const
 {
 	if (!m_pEnableVariablesDebuggerMenuAction)
 	{
@@ -645,7 +526,7 @@ bool MainWindow::GetShowVariablesDebuggerCvar() const
 	return pDebugVariables->GetIVal();
 }
 
-void MainWindow::SetShowVariablesDebugger(const bool enableFlag)
+void CMainWindow::SetShowVariablesDebugger(const bool enableFlag)
 {
 	if (!m_pEnableVariablesDebuggerMenuAction)
 	{
@@ -663,10 +544,10 @@ void MainWindow::SetShowVariablesDebugger(const bool enableFlag)
 	}
 }
 
-void MainWindow::OnChanged_ShowVariablesDebugger()
+void CMainWindow::OnChanged_ShowVariablesDebugger()
 {
 	const ICVar* pDebugVariables = gEnv->pConsole->GetCVar(k_modularBehaviorTreeDebugVariablesCvar);
-	const bool debugVariablesEnabled= pDebugVariables->GetIVal();
+	const bool debugVariablesEnabled = pDebugVariables->GetIVal();
 
 	if (debugVariablesEnabled != m_pEnableVariablesDebuggerMenuAction->isChecked())
 	{
@@ -674,7 +555,7 @@ void MainWindow::OnChanged_ShowVariablesDebugger()
 	}
 }
 
-bool MainWindow::GetShowTimestampsDebuggerCvar() const
+bool CMainWindow::GetShowTimestampsDebuggerCvar() const
 {
 	if (!m_pEnableTimestampsDebuggerMenuAction)
 	{
@@ -685,7 +566,7 @@ bool MainWindow::GetShowTimestampsDebuggerCvar() const
 	return pDebugTimestamps->GetIVal();
 }
 
-void MainWindow::SetShowTimestampsDebugger(const bool enableFlag)
+void CMainWindow::SetShowTimestampsDebugger(const bool enableFlag)
 {
 	if (!m_pEnableTimestampsDebuggerMenuAction)
 	{
@@ -703,7 +584,7 @@ void MainWindow::SetShowTimestampsDebugger(const bool enableFlag)
 	}
 }
 
-void MainWindow::OnChanged_ShowTimestampsDebugger()
+void CMainWindow::OnChanged_ShowTimestampsDebugger()
 {
 	const ICVar* pDebugTimestamps = gEnv->pConsole->GetCVar(k_modularBehaviorTreeDebugTimestampsCvar);
 	const bool debugTimestampsEnabled = pDebugTimestamps->GetIVal();
@@ -714,7 +595,7 @@ void MainWindow::OnChanged_ShowTimestampsDebugger()
 	}
 }
 
-bool MainWindow::GetShowEventsDebuggerCvar() const
+bool CMainWindow::GetShowEventsDebuggerCvar() const
 {
 	if (!m_pEnableEventsDebuggerMenuAction)
 	{
@@ -725,7 +606,7 @@ bool MainWindow::GetShowEventsDebuggerCvar() const
 	return pDebugEvents->GetIVal();
 }
 
-void MainWindow::SetShowEventsDebugger(const bool enableFlag)
+void CMainWindow::SetShowEventsDebugger(const bool enableFlag)
 {
 	if (!m_pEnableEventsDebuggerMenuAction)
 	{
@@ -743,7 +624,7 @@ void MainWindow::SetShowEventsDebugger(const bool enableFlag)
 	}
 }
 
-void MainWindow::OnChanged_ShowEventsDebugger()
+void CMainWindow::OnChanged_ShowEventsDebugger()
 {
 	const ICVar* pDebugEvents = gEnv->pConsole->GetCVar(k_modularBehaviorTreeDebugEventsCvar);
 	const bool debugEventsEnabled = pDebugEvents->GetIVal();
@@ -754,7 +635,7 @@ void MainWindow::OnChanged_ShowEventsDebugger()
 	}
 }
 
-bool MainWindow::GetShowLogDebuggerCvar() const
+bool CMainWindow::GetShowLogDebuggerCvar() const
 {
 	if (!m_pEnableLogDebuggerMenuAction)
 	{
@@ -765,7 +646,7 @@ bool MainWindow::GetShowLogDebuggerCvar() const
 	return pDebugLog->GetIVal();
 }
 
-void MainWindow::SetShowLogDebugger(const bool enableFlag)
+void CMainWindow::SetShowLogDebugger(const bool enableFlag)
 {
 	if (!m_pEnableLogDebuggerMenuAction)
 	{
@@ -783,7 +664,7 @@ void MainWindow::SetShowLogDebugger(const bool enableFlag)
 	}
 }
 
-void MainWindow::OnChanged_ShowLogDebugger()
+void CMainWindow::OnChanged_ShowLogDebugger()
 {
 	const ICVar* pDebugLog = gEnv->pConsole->GetCVar(k_modularBehaviorTreeDebugLogCvar);
 	const bool debugLogEnabled = pDebugLog->GetIVal();
@@ -794,7 +675,7 @@ void MainWindow::OnChanged_ShowLogDebugger()
 	}
 }
 
-bool MainWindow::GetShowAllDebugger() const
+bool CMainWindow::GetShowAllDebugger() const
 {
 	if (!m_pEnableAllDebuggerMenuAction)
 	{
@@ -804,7 +685,7 @@ bool MainWindow::GetShowAllDebugger() const
 	return m_pEnableAllDebuggerMenuAction->isChecked();
 }
 
-void MainWindow::SetShowAllDebugger(const bool enableFlag)
+void CMainWindow::SetShowAllDebugger(const bool enableFlag)
 {
 	if (!m_pEnableStatisticsMenuAction)
 	{
@@ -814,7 +695,7 @@ void MainWindow::SetShowAllDebugger(const bool enableFlag)
 	m_pEnableStatisticsMenuAction->setChecked(enableFlag);
 }
 
-bool MainWindow::GetShowStatisticsCvar() const
+bool CMainWindow::GetShowStatisticsCvar() const
 {
 	if (!m_pEnableStatisticsMenuAction)
 	{
@@ -825,7 +706,7 @@ bool MainWindow::GetShowStatisticsCvar() const
 	return pDebugStatistics->GetIVal();
 }
 
-void MainWindow::SetShowStatisticsCvar(const bool enableFlag)
+void CMainWindow::SetShowStatisticsCvar(const bool enableFlag)
 {
 	if (!m_pEnableStatisticsMenuAction)
 	{
@@ -838,7 +719,7 @@ void MainWindow::SetShowStatisticsCvar(const bool enableFlag)
 	pDebugStatistics->Set(enableFlag);
 }
 
-void MainWindow::OnChanged_ShowStatistics()
+void CMainWindow::OnChanged_ShowStatistics()
 {
 	const ICVar* pDebugStatistics = gEnv->pConsole->GetCVar(k_modularBehaviorTreeStatisticsCvar);
 	const bool debugStatisticsEnabled = pDebugStatistics->GetIVal();
@@ -849,7 +730,7 @@ void MainWindow::OnChanged_ShowStatistics()
 	}
 }
 
-int MainWindow::GetEnableExecutionHistoryLogCvar() const
+int CMainWindow::GetEnableExecutionHistoryLogCvar() const
 {
 	if (!m_pEnableExecutionHistoryLogCurrentEntityMenuAction)
 	{
@@ -860,7 +741,7 @@ int MainWindow::GetEnableExecutionHistoryLogCvar() const
 	return pExecutionLog->GetIVal();
 }
 
-void MainWindow::SetEnableExecutionHistoryLog(const int enableFlag)
+void CMainWindow::SetEnableExecutionHistoryLog(const int enableFlag)
 {
 	if (!m_pEnableExecutionHistoryLogCurrentEntityMenuAction || !m_pEnableExecutionHistoryLogAllEntitiesMenuAction)
 	{
@@ -874,10 +755,10 @@ void MainWindow::SetEnableExecutionHistoryLog(const int enableFlag)
 	pExecutionLog->Set(enableFlag);
 }
 
-void MainWindow::OnChanged_ExecutionHistoryLog()
+void CMainWindow::OnChanged_ExecutionHistoryLog()
 {
 	const ICVar* pDebugExecutionLog = gEnv->pConsole->GetCVar(k_modularBehaviorTreeDebugExecutionLogCvar);
-	
+
 	switch (pDebugExecutionLog->GetIVal())
 	{
 	case 0:
@@ -893,7 +774,7 @@ void MainWindow::OnChanged_ExecutionHistoryLog()
 		m_pEnableExecutionHistoryLogAllEntitiesMenuAction->setChecked(true);
 		break;
 	default:
-		CRY_ASSERT_MESSAGE(false, "Unknown value for Cvar");
+		CRY_ASSERT_MESSAGE(false, "Unknown value for Cvar.");
 		break;
 	}
 }

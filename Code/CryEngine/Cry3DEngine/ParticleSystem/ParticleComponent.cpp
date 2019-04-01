@@ -339,12 +339,13 @@ void CParticleComponent::Compile()
 	AddParticleData(EPDT_InvLifeTime);
 	AddParticleData(EPDT_LifeTime);
 
+	// Validate feature requirements and exclusivity.
 	uint featureMask = 0;
+	int maxPriority = 0;
 	for (auto& it : m_features)
 	{
 		if (it->IsEnabled())
 		{
-			// Validate feature requirements and exclusivity.
 			EFeatureType type = it->GetFeatureType();
 			if (type & (EFT_Life | EFT_Motion | EFT_Render))
 				if (featureMask & type)
@@ -353,7 +354,21 @@ void CParticleComponent::Compile()
 					continue;
 				}
 			featureMask |= type;
-			it->AddToComponent(this, &m_params);
+			SetMax(maxPriority, it->Priority());
+		}
+	}
+
+	// Init features in priority order
+	for (int pass = 0; pass <= maxPriority; pass++)
+	{
+		for (auto& it : m_features)
+		{
+			if (it->IsEnabled())
+			{
+				int priority = it->Priority();
+				if (priority == pass)
+					it->AddToComponent(this, &m_params);
+			}
 		}
 	}
 
@@ -457,6 +472,16 @@ void CParticleComponent::SetName(const char* name)
 string CParticleComponent::GetFullName() const
 {
 	return m_pEffect->GetShortName() + "." + m_name;
+}
+
+pfx2::CParticleFeature* CParticleComponent::FindFeature(const SParticleFeatureParams& params, const CParticleFeature* pSkip /*= nullptr*/) const
+{
+	for (const auto& pFeature : m_features)
+	{
+		if (pFeature && pFeature != pSkip && &pFeature->GetFeatureParams() == &params)
+			return pFeature;
+	}
+	return nullptr;
 }
 
 SERIALIZATION_CLASS_NAME(CParticleComponent, CParticleComponent, "Component", "Component");

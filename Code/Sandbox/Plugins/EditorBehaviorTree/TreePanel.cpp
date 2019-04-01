@@ -10,9 +10,8 @@
 #include <QFileInfo>
 #include <QFileDialog>
 #include <QMessageBox>
-#include <CryAISystem/BehaviorTree/IBehaviorTree.h>
 
-TreePanel::TreePanel(MainWindow* pMainWindow)
+TreePanel::TreePanel(CMainWindow* pMainWindow)
 	: m_pMainWindow(pMainWindow)
 	, m_propertiesAttachedToDocument(false)
 	, m_contextList()
@@ -73,7 +72,7 @@ void TreePanel::OnWindowEvent_OpenFile()
 	TryOpenFileDirectly(absoluteFilePath);
 }
 
-void TreePanel::OnWindowEvent_OpenRecentFile(const QString& absoluteFilePath)
+void TreePanel::OnWindowEvent_OpenFile(const QString& absoluteFilePath)
 {
 	if (!CheckForUnsavedDataAndSave())
 		return;
@@ -111,7 +110,7 @@ void TreePanel::OnWindowEvent_SaveToFile()
 	if (absoluteFilePath.isEmpty())
 		return;
 
-	m_pMainWindow->PromoteFileInRecentFileHistory(absoluteFilePath.toStdString().c_str());
+	m_pMainWindow->AddRecentFile(absoluteFilePath);
 
 	QFileInfo fileInfo(absoluteFilePath);
 
@@ -123,6 +122,14 @@ void TreePanel::OnWindowEvent_SaveToFile()
 	{
 		ReserializeDocumentIntoPropertyTree();
 	}
+}
+
+void TreePanel::OnWindowEvent_Reload()
+{
+	if (!CheckForUnsavedDataAndSave())
+		return;
+
+	ReserializeDocumentIntoPropertyTree();
 }
 
 void TreePanel::OnWindowEvent_ShowXmlLineNumbers(const bool showFlag)
@@ -145,21 +152,21 @@ void TreePanel::OnWindowEvent_ShowComments(const bool showFlag)
 	ForceAttachDocumentToPropertyTree();
 }
 
-void TreePanel::OnWindowEvent_EnableCryEngineSignals(const bool enable)
+void TreePanel::OnWindowEvent_ShowCryEngineSignals(const bool enable)
 {
-	EnableCryEngineSignals(enable);
+	ShowCryEngineSignals(enable);
 	ForceAttachDocumentToPropertyTree();
 }
 
-void TreePanel::OnWindowEvent_EnableGameSDKSignals(const bool enable)
+void TreePanel::OnWindowEvent_ShowDeprecatedSignals(const bool enable)
 {
-	EnableGameSDKSignals(enable);
+	ShowGameSDKSignals(enable);
 	ForceAttachDocumentToPropertyTree();
 }
 
-void TreePanel::OnWindowEvent_EnableDeprecatedSignals(const bool enable)
+void TreePanel::OnWindowEvent_ShowGameSDKSignals(const bool enable)
 {
-	EnableDeprecatedSignals(enable);
+	ShowDeprecatedSignals(enable);
 	ForceAttachDocumentToPropertyTree();
 }
 
@@ -183,7 +190,7 @@ void TreePanel::ShowComments(const bool showFlag)
 	m_behaviorTreeNodeSerializationHints.showComments = showFlag;
 }
 
-void TreePanel::EnableCryEngineSignals(const bool enableFlag)
+void TreePanel::ShowCryEngineSignals(const bool enableFlag)
 {
 	if (enableFlag)
 	{
@@ -195,7 +202,7 @@ void TreePanel::EnableCryEngineSignals(const bool enableFlag)
 	}
 }
 
-void TreePanel::EnableGameSDKSignals(const bool enableFlag)
+void TreePanel::ShowGameSDKSignals(const bool enableFlag)
 {
 	if (enableFlag)
 	{
@@ -207,7 +214,7 @@ void TreePanel::EnableGameSDKSignals(const bool enableFlag)
 	}
 }
 
-void TreePanel::EnableDeprecatedSignals(const bool enableFlag)
+void TreePanel::ShowDeprecatedSignals(const bool enableFlag)
 {
 	if (enableFlag)
 	{
@@ -272,7 +279,7 @@ void TreePanel::TryOpenFileDirectly(const QString& absoluteFilePath)
 	if (absoluteFilePath.isEmpty())
 		return;
 
-	m_pMainWindow->PromoteFileInRecentFileHistory(absoluteFilePath.toStdString().c_str());
+	m_pMainWindow->AddRecentFile(absoluteFilePath);
 
 	Reset();
 

@@ -27,8 +27,8 @@ struct OutputVS
 	#endif
 #endif
 
-	half4 vNormal  : TEXCOORDN;
-	half4 cColor : TEXCOORDN;
+	half4 vNormal    : TEXCOORDN;
+	half4 cColor     : TEXCOORDN;
 	half4 lightData0 : TEXCOORDN;
 	half4 lightData1 : TEXCOORDN;
 };
@@ -822,9 +822,21 @@ float4 GetScreenCoords( float4 WPos )
 	return tcScreen;
 }
 
-#if !ORBIS
-[earlydepthstencil]
-#endif
+// Z prepass for opaque particles only, no alpha blending
+// Todo: flag for alpha testing
+void ParticleZPrePassPS(OutputVS IN)
+{
+    float4 tcScreen = GetScreenCoords(IN.HPosition);
+
+    ApplyTexCoordsDeformation(IN, tcScreen);
+
+    half4 cDiffuseMap = GetDiffuseMap(IN);
+
+	// Early-out alpha clipping and scaling
+    cDiffuseMap.a -= IN.alphaClip.y;
+    if (cDiffuseMap.a <= 0.004)
+        discard;
+}
 
 #if %DEPTH_FIXUP // Shader-System disallows RT-flag masking of function signatures, so we have to eat up the export here
 pixoutParticle ParticlePS(OutputVS IN, out float4 outBlendFactors : SV_Target1)
@@ -842,7 +854,6 @@ pixoutParticle ParticlePS(OutputVS IN)
 	ApplyTexCoordsDeformation( IN, tcScreen );
 
 	half4 cDiffuseMap = GetDiffuseMap(IN);
-	half4 cGlowMap = GetGlowMap(IN);
 
 	// Early-out alpha clipping and scaling
 	cDiffuseMap.a -= IN.alphaClip.y;
@@ -863,10 +874,10 @@ pixoutParticle ParticlePS(OutputVS IN)
 	half3 vNormal;
 
 	#if USE_MATERIAL
-	const half3x3 mTangentToWS = half3x3(IN.vTangent.xyz, float3(IN.vNormal.w, IN.vTangent.w, IN.vWorldPos.w), IN.vNormal.xyz);
-	vNormal = mul(cNormalMap, mTangentToWS);
+		const half3x3 mTangentToWS = half3x3(IN.vTangent.xyz, float3(IN.vNormal.w, IN.vTangent.w, IN.vWorldPos.w), IN.vNormal.xyz);
+		vNormal = mul(cNormalMap, mTangentToWS);
 	#else
-	vNormal = IN.vNormal.xyz;
+		vNormal = IN.vNormal.xyz;
 	#endif
 
 	vNormal = normalize(vNormal);
@@ -948,6 +959,7 @@ pixoutParticle ParticlePS(OutputVS IN)
 #endif
 
 	// Add particle glow
+	half4 cGlowMap = GetGlowMap(IN);
 	cFinal.rgb += cDiffuseMap.a * cDiffuseMap.rgb * cGlowMap.rgb * particleInstance.glowParams.rgb;
 
 	// add particle color
@@ -976,11 +988,11 @@ pixoutParticle ParticlePS(OutputVS IN)
 	const float fZ = tcScreen.w * CV_NearFarClipDist.w;
 	const float fD = cFinal.a > DepthFixupThreshold ? -fZ : -0.0f;
 
-#if !%_RT_SAMPLE1
-	OUT.Color.a = fD; outBlendFactors = cFinal.a;
-#else
-	InterlockedMax(depthObjTex[floor(IN.HPosition.xy)], asuint(fD));
-#endif
+	#if !%_RT_SAMPLE1
+		OUT.Color.a = fD; outBlendFactors = cFinal.a;
+	#else
+		InterlockedMax(depthObjTex[floor(IN.HPosition.xy)], asuint(fD));
+	#endif
 #endif
 
 	return OUT;
@@ -1273,13 +1285,11 @@ pixoutParticleVolumeFogPS ParticleVolumeFogPS(OutputParticleVolumeFogGS IN)
 // technique
 // Needs to match the technique numbers in CRenderer::EF_GetParticleListAndBatchFlags function.
 
-technique ParticlesTessellated
+technique Particles
 {
 	pass p0
 	{
-		VertexShader = ParticleTessVS();
-		HullShader   = ParticleHS();
-		DomainShader = ParticleDS();
+ 		VertexShader = ParticleVS() ParticleVS;
 		GeometryShader = $AutoGS_MultiRes();
 		PixelShader  = ParticlePS();
 
@@ -1289,11 +1299,13 @@ technique ParticlesTessellated
 	}
 }
 
-technique Particles
+technique ParticlesTessellated
 {
 	pass p0
 	{
- 		VertexShader = ParticleVS() ParticleVS;
+		VertexShader = ParticleTessVS();
+		HullShader   = ParticleHS();
+		DomainShader = ParticleDS();
 		GeometryShader = $AutoGS_MultiRes();
 		PixelShader  = ParticlePS();
 
@@ -1347,5 +1359,19 @@ technique ParticlesVolumeFog
 		DestBlend = ONE;
 		AlphaBlendEnable = true;
 	}
+}
+
+technique ParticlesZPrePass
+{
+    pass p0
+    {
+        VertexShader = PulledParticleVS() ZVS;
+        GeometryShader = $AutoGS_MultiRes();
+        PixelShader = ParticleZPrePassPS() ZPS;
+
+        ZEnable = true;
+        ZWriteEnable = true;
+        CullMode = None;
+    }
 }
 

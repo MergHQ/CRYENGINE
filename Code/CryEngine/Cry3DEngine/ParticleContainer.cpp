@@ -837,15 +837,16 @@ CRenderObject* CParticleContainer::CreateRenderObject(uint64 nObjFlags, const SR
 	pRenderObject->m_pCurrMaterial = pParams->pMaterial;
 	pOD->m_pParticleShaderData = &GetEffect()->GetParams().ShaderData;
 
-	IF(!!pParams->fHeatScale, 0)
+	if (pParams->fHeatScale)
 	{
 		pOD->m_nVisionScale = MAX_HEATSCALE;
 		uint32 nHeatAmount = pParams->fHeatScale.GetStore();
 		pOD->m_nVisionParams = (nHeatAmount << 24) | (nHeatAmount << 16) | (nHeatAmount << 8) | (0);
 	}
-
-	pRenderObject->m_ParticleObjFlags = (pParams->bHalfRes ? CREParticle::ePOF_HALF_RES : 0)
-		| (pParams->bVolumeFog ? CREParticle::ePOF_VOLUME_FOG : 0);
+	if (pParams->bHalfRes)
+		pRenderObject->m_ObjFlags |= FOB_HALF_RES;
+	if (pParams->bVolumeFog)
+		pRenderObject->m_ObjFlags |= FOB_VOLUME_FOG;
 
 	return pRenderObject;
 }

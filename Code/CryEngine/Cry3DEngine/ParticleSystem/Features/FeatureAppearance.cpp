@@ -7,6 +7,119 @@
 namespace pfx2
 {
 
+//////////////////////////////////////////////////////////////////////////
+// Feature Appearance Opacity
+
+MakeDataType(EPDT_Alpha, float, EDD_ParticleUpdate);
+
+SERIALIZATION_DECLARE_ENUM(EBlendMode,
+	Opaque         = 0,
+	Alpha          = OS_ALPHA_BLEND,
+	Additive       = OS_ADD_BLEND,
+	Multiplicative = OS_MULTIPLY_BLEND
+)
+
+class CFeatureAppearanceOpacity : public CParticleFeature
+{
+public:
+	CRY_PFX2_DECLARE_FEATURE;
+
+	// Initialize after Material feature
+	virtual int Priority() const override { return 1; }
+
+	virtual void AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams) override
+	{
+		m_opacity.AddToComponent(pComponent, this, EPDT_Alpha);
+
+		pParams->m_renderStateFlags = (pParams->m_renderStateFlags & ~OS_TRANSPARENT) | (int)m_blendMode;
+
+		if (m_blendMode == EBlendMode::Opaque)
+		{
+			// Force alpha-test params to pure alpha-test, with no feathering
+			pParams->m_shaderData.m_alphaTest[0][0] = 1;
+			pParams->m_shaderData.m_alphaTest[1][0] = 0;
+			pParams->m_shaderData.m_alphaTest[0][1] = 1;
+			pParams->m_shaderData.m_alphaTest[1][1] = -1;
+			pParams->m_shaderData.m_alphaTest[0][2] = 0;
+			pParams->m_shaderData.m_alphaTest[1][2] = 0;
+
+			Range alpha = m_opacity.GetValueRange();
+			if (alpha.start < 1.0f)
+				pParams->m_renderObjectFlags |= FOB_ALPHATEST;
+		}
+		else
+		{
+			pParams->m_shaderData.m_alphaTest[0][0] = m_alphaScale.start;
+			pParams->m_shaderData.m_alphaTest[1][0] = m_alphaScale.Length();
+			pParams->m_shaderData.m_alphaTest[0][1] = m_clipLow.start;
+			pParams->m_shaderData.m_alphaTest[1][1] = m_clipLow.Length();
+			pParams->m_shaderData.m_alphaTest[0][2] = m_clipRange.start;
+			pParams->m_shaderData.m_alphaTest[1][2] = m_clipRange.Length();
+
+			if (m_softIntersect > 0.f)
+			{
+				pParams->m_renderObjectFlags |= FOB_SOFT_PARTICLE;
+				pParams->m_shaderData.m_softnessMultiplier = m_softIntersect;
+			}
+		}
+
+		if (auto pInt = MakeGpuInterface(pComponent, gpu_pfx2::eGpuFeatureType_FieldOpacity))
+		{
+			const uint numSamples = gpu_pfx2::kNumModifierSamples;
+			float samples[numSamples];
+			m_opacity.Sample({samples, numSamples});
+			gpu_pfx2::SFeatureParametersOpacity parameters;
+			parameters.samples = samples;
+			parameters.numSamples = numSamples;
+			parameters.alphaScale = m_alphaScale;
+			parameters.clipLow = m_clipLow;
+			parameters.clipRange = m_clipRange;
+			pInt->SetParameters(parameters);
+		}
+		pComponent->UpdateParticles.add(this);
+	}
+
+	virtual void Serialize(Serialization::IArchive& ar) override
+	{
+		CParticleFeature::Serialize(ar);
+		ar(m_opacity, "value", "Value");
+		ar(m_blendMode, "BlendMode", "Blend Mode");
+		if (m_blendMode != EBlendMode::Opaque)
+		{
+			ar(m_softIntersect, "Softness", "Soft Intersect");
+			ar(m_alphaScale, "AlphaScale", "Alpha Scale");
+			ar(m_clipLow, "ClipLow", "Clip Low");
+			ar(m_clipRange, "ClipRange", "Clip Range");
+		}
+	}
+
+	virtual void InitParticles(CParticleComponentRuntime& runtime) override
+	{
+		CRY_PFX2_PROFILE_DETAIL;
+		m_opacity.Init(runtime, EPDT_Alpha);
+	}
+
+	virtual void UpdateParticles(CParticleComponentRuntime& runtime) override
+	{
+		CRY_PFX2_PROFILE_DETAIL;
+		m_opacity.Update(runtime, EPDT_Alpha);
+	}
+
+protected:
+	CParamMod<EDD_ParticleUpdate, UUnitFloat> m_opacity;
+	EBlendMode                                m_blendMode     = EBlendMode::Alpha;
+	UFloat                                    m_softIntersect = 0.0f;
+	Range                                     m_alphaScale    {0, 1};
+	Range                                     m_clipLow       {0, 0};
+	Range                                     m_clipRange     {1, 1};
+};
+
+CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureAppearanceOpacity, "Appearance", "Opacity", colorAppearance);
+CRY_PFX2_LEGACY_FEATURE(CFeatureAppearanceOpacity, "Field", "Opacity");
+
+//////////////////////////////////////////////////////////////////////////
+// Feature Appearance TextureTiling
+
 MakeDataType(EPDT_Tile, uint8);
 
 class CFeatureAppearanceTextureTiling : public CParticleFeature
@@ -97,6 +210,9 @@ private:
 
 CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureAppearanceTextureTiling, "Appearance", "Texture Tiling", colorAppearance);
 
+//////////////////////////////////////////////////////////////////////////
+// Feature Appearance Material
+
 class CFeatureAppearanceMaterial : public CParticleFeature
 {
 public:
@@ -172,6 +288,9 @@ private:
 
 CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureAppearanceMaterial, "Appearance", "Material", colorAppearance);
 
+//////////////////////////////////////////////////////////////////////////
+// Feature Appearance Lighting
+
 static const float kiloScale = 1000.0f;
 static const float toLightUnitScale = kiloScale / RENDERER_LIGHT_UNIT_SCALE;
 
@@ -212,7 +331,7 @@ public:
 		if (!m_affectedByFog)
 			pParams->m_renderObjectFlags |= FOB_NO_FOG;
 		if (m_volumeFog)
-			pParams->m_particleObjFlags |= CREParticle::ePOF_VOLUME_FOG;
+			pParams->m_renderObjectFlags |= FOB_VOLUME_FOG;
 		MakeGpuInterface(pComponent, gpu_pfx2::eGpuFeatureType_Dummy);
 	}
 
@@ -258,62 +377,50 @@ private:
 
 CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureAppearanceLighting, "Appearance", "Lighting", colorAppearance);
 
-SERIALIZATION_DECLARE_ENUM(EBlendMode,
-                           Opaque = 0,
-                           Alpha = OS_ALPHA_BLEND,
-                           Additive = OS_ADD_BLEND,
-                           Multiplicative = OS_MULTIPLY_BLEND
-                           )
+//////////////////////////////////////////////////////////////////////////
+// Legacy feature Appearance Blending, now included in Opacity
 
-class CFeatureAppearanceBlending : public CParticleFeature
+class CFeatureAppearanceBlending : public CFeatureAppearanceOpacity
 {
 public:
-	CRY_PFX2_DECLARE_FEATURE
-
-	virtual void AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams) override
+	virtual CParticleFeature* ResolveDependency(CParticleComponent* pComponent) override
 	{
-		pParams->m_renderStateFlags = (pParams->m_renderStateFlags & ~OS_TRANSPARENT) | (int)m_blendMode;
-		MakeGpuInterface(pComponent, gpu_pfx2::eGpuFeatureType_Dummy);
-	}
-
-	virtual void Serialize(Serialization::IArchive& ar) override
-	{
-		CParticleFeature::Serialize(ar);
-		ar(m_blendMode, "BlendMode", "Blend Mode");
-	}
-
-private:
-	EBlendMode m_blendMode = EBlendMode::Alpha;
-};
-
-CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureAppearanceBlending, "Appearance", "Blending", colorAppearance);
-
-class CFeatureAppearanceSoftIntersect : public CParticleFeature
-{
-public:
-	CRY_PFX2_DECLARE_FEATURE
-
-	virtual void AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams) override
-	{
-		if (m_softNess > 0.f)
+		// If Opacity feature exists, use it, and set the Blending param.
+		// Otherwise, keep this feature
+		if (auto pFeature = pComponent->FindDuplicateFeature(this))
 		{
-			pParams->m_renderObjectFlags |= FOB_SOFT_PARTICLE;
-			pParams->m_shaderData.m_softnessMultiplier = m_softNess;
+			pFeature->m_blendMode = m_blendMode;
+			return nullptr;
 		}
-		MakeGpuInterface(pComponent, gpu_pfx2::eGpuFeatureType_Dummy);
+		return this;
 	}
-
-	virtual void Serialize(Serialization::IArchive& ar) override
-	{
-		CParticleFeature::Serialize(ar);
-		ar(m_softNess, "Softness", "Softness");
-	}
-
-private:
-	UFloat m_softNess = 1.0f;
 };
 
-CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureAppearanceSoftIntersect, "Appearance", "SoftIntersect", colorAppearance);
+CRY_PFX2_LEGACY_FEATURE(CFeatureAppearanceBlending, "Appearance", "Blending");
+
+//////////////////////////////////////////////////////////////////////////
+// Legacy feature Appearance SoftIntersect, now included in Opacity
+
+class CFeatureAppearanceSoftIntersect : public CFeatureAppearanceOpacity
+{
+public:
+	virtual CParticleFeature* ResolveDependency(CParticleComponent* pComponent) override
+	{
+		// If Opacity feature exists, use it, and set the Blending param.
+		// Otherwise, keep this feature
+		if (auto pFeature = pComponent->FindDuplicateFeature(this))
+		{
+			pFeature->m_softIntersect = m_softIntersect;
+			return nullptr;
+		}
+		return this;
+	}
+};
+
+CRY_PFX2_LEGACY_FEATURE(CFeatureAppearanceSoftIntersect, "Appearance", "SoftIntersect");
+
+//////////////////////////////////////////////////////////////////////////
+// Feature Appearance Visibility
 
 class CFeatureAppearanceVisibility : public CParticleFeature, SVisibilityParams
 {

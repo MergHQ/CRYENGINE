@@ -149,15 +149,9 @@ public:
 	{
 		// If another LifeTime feature exists, use it, and set the Kill param.
 		// Otherwise, use this feature, with default LifeTime param.
-		uint num = pComponent->GetNumFeatures();
-		for (uint i = 0; i < num; ++i)
+		if (auto pFeature = pComponent->FindDuplicateFeature(this))
 		{
-			CFeatureKillOnParentDeath* feature = static_cast<CFeatureKillOnParentDeath*>(pComponent->GetFeature(i));
-			if (feature && feature != this && feature->GetFeatureType() == EFT_Life)
-			{
-				feature->m_killOnParentDeath = true;
-				return nullptr;
-			}
+			pFeature->m_killOnParentDeath = true;
 		}
 		return nullptr;
 	}

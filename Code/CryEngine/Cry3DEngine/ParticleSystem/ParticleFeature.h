@@ -52,8 +52,13 @@ public:
 	// Parameters
 	static bool HasConnector()   { return false; }
 	static uint DefaultForType() { return 0; }
+	const SParticleFeatureParams& GetFeatureParams() const override
+	{
+		static SParticleFeatureParams s_params; return s_params;
+	}
 
 	// Initialization
+	virtual int               Priority() const                                                          { return 0; }
 	virtual CParticleFeature* ResolveDependency(CParticleComponent* pComponent)                         { return this; }
 	virtual void              AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams) {}
 	virtual EFeatureType      GetFeatureType()                                                          { return EFT_Generic; }

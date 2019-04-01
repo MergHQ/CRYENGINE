@@ -13,21 +13,16 @@ struct CRY_ALIGN(CRY_PFX2_PARTICLES_ALIGNMENT) SCachedRenderObject
 {
 };
 
-EFeatureType CParticleRenderBase::GetFeatureType()
-{
-	return EFT_Render;
-}
-
 void CParticleRenderBase::AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams)
 {
 	CParticleEffect* pEffect = pComponent->GetEffect();
 	pComponent->Render.add(this);
 	pComponent->ComputeVertices.add(this);
-	m_waterCulling = SupportsWaterCulling();
 	if (m_waterCulling)
 		m_renderObjectBeforeWaterId = pEffect->AddRenderObjectId();
 	m_renderObjectAfterWaterId = pEffect->AddRenderObjectId();
 	pParams->m_requiredShaderType = eST_Particle;
+	pParams->m_renderObjectFlags |= FOB_VERTEX_PULL_MODEL;
 }
 
 void CParticleRenderBase::Render(CParticleComponentRuntime& runtime, const SRenderContext& renderContext)
@@ -52,18 +47,26 @@ void CParticleRenderBase::Render(CParticleComponentRuntime& runtime, const SRend
 		objFlags &= ~FOB_LIGHTVOLUME;
 
 	const auto emitterUnderWater = emitter.GetPhysicsEnv().m_tUnderWater;
-	const bool cameraUnderWater = renderContext.m_passInfo.IsCameraUnderWater();
-	const auto waterVisibility = params.m_visibility.m_waterVisibility;
-	const bool renderBelowWater = waterVisibility != EWaterVisibility::AboveWaterOnly && emitterUnderWater != ETrinary::If_False;
-	const bool renderAboveWater = waterVisibility != EWaterVisibility::BelowWaterOnly && emitterUnderWater != ETrinary::If_True;
+	const bool cameraUnderWater  = renderContext.m_passInfo.IsCameraUnderWater();
+	const auto waterVisibility   = params.m_visibility.m_waterVisibility;
+	const bool renderBelowWater  = waterVisibility != EWaterVisibility::AboveWaterOnly && emitterUnderWater != ETrinary::If_False;
+	const bool renderAboveWater  = waterVisibility != EWaterVisibility::BelowWaterOnly && emitterUnderWater != ETrinary::If_True;
 
-	if (m_waterCulling && ((cameraUnderWater && renderAboveWater) || (!cameraUnderWater && renderBelowWater)))
-		AddRenderObject(runtime, renderContext, m_renderObjectBeforeWaterId, threadId, objFlags);
-	if ((cameraUnderWater && renderBelowWater) || (!cameraUnderWater && renderAboveWater))
-		AddRenderObject(runtime, renderContext, m_renderObjectAfterWaterId, threadId, objFlags | FOB_AFTER_WATER);
+	if (params.m_renderStateFlags & OS_TRANSPARENT)
+	{
+		if (m_waterCulling && (cameraUnderWater ? renderAboveWater : renderBelowWater))
+			AddRenderObject(runtime, renderContext, m_renderObjectBeforeWaterId, threadId, objFlags);
+		if (cameraUnderWater ? renderBelowWater : renderAboveWater)
+			AddRenderObject(runtime, renderContext, m_renderObjectAfterWaterId, threadId, objFlags | FOB_AFTER_WATER);
+	}
+	else
+	{
+		if (renderAboveWater || renderBelowWater)
+			AddRenderObject(runtime, renderContext, m_renderObjectAfterWaterId, threadId, objFlags);
+	}
 }
 
-void CParticleRenderBase::PrepareRenderObject(const CParticleComponentRuntime& runtime, uint renderObjectId, uint threadId, ERenderObjectFlags objFlags)
+void CParticleRenderBase::PrepareRenderObject(const CParticleComponentRuntime& runtime, uint renderObjectId, uint threadId)
 {
 	CRY_PFX2_PROFILE_DETAIL;
 	const SComponentParams& params = runtime.ComponentParams();
@@ -74,9 +77,9 @@ void CParticleRenderBase::PrepareRenderObject(const CParticleComponentRuntime& r
 	pRenderObject->m_fAlpha = 1.0f;
 	pRenderObject->m_pCurrMaterial = particleMaterial;
 	pRenderObject->m_pRenderNode = runtime.GetEmitter();
+	pRenderObject->m_ObjFlags = params.m_renderObjectFlags;
 	pRenderObject->m_RState = params.m_renderStateFlags;
 	pRenderObject->m_fSort = 0;
-	pRenderObject->m_ParticleObjFlags = params.m_particleObjFlags;
 	pRenderObject->m_pRE = gEnv->pRenderer->EF_CreateRE(eDATA_Particle);
 
 	SRenderObjData* pObjData = pRenderObject->GetObjData();
@@ -88,18 +91,18 @@ void CParticleRenderBase::PrepareRenderObject(const CParticleComponentRuntime& r
 void CParticleRenderBase::AddRenderObject(CParticleComponentRuntime& runtime, const SRenderContext& renderContext, uint renderObjectId, uint threadId, ERenderObjectFlags objFlags)
 {
 	CRY_PFX2_PROFILE_DETAIL;
-	const SComponentParams& params = runtime.ComponentParams();
 	CParticleEmitter& emitter = *runtime.GetEmitter();
 	CRenderObject* pRenderObject = emitter.GetRenderObject(threadId, renderObjectId);
 	if (!pRenderObject)
 	{
-		PrepareRenderObject(runtime, renderObjectId, threadId, params.m_renderObjectFlags);
+		PrepareRenderObject(runtime, renderObjectId, threadId);
 		pRenderObject = emitter.GetRenderObject(threadId, renderObjectId);
 	}
 	SRenderObjData* pObjData = pRenderObject->GetObjData();
 
 	const float sortBiasSize = 1.0f / 1024.0f;
-	const float sortBias = (float) runtime.GetComponent()->GetComponentId() + params.m_renderObjectSortBias;
+	const float numComponents = (float) runtime.GetEffect()->GetNumComponents();
+	const float sortBias = (float) runtime.GetComponent()->GetComponentId() / numComponents + m_sortBias;
 
 	pRenderObject->m_ObjFlags = objFlags;
 	pRenderObject->m_fDistance = renderContext.m_distance;
