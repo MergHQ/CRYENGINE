@@ -27,8 +27,7 @@ public:
 	CControl& operator=(CControl&&) = delete;
 
 	explicit CControl(string const& name, ControlId const id, EAssetType const type)
-		: CAsset(name, type)
-		, m_id(id)
+		: CAsset(name, id, type)
 		, m_contextId(CryAudio::GlobalContextId)
 		, m_isAutoLoad(true)
 	{}
@@ -40,8 +39,6 @@ public:
 	virtual void SetDescription(string const& description) override;
 	virtual void Serialize(Serialization::IArchive& ar) override;
 	// ~CAsset
-
-	ControlId           GetId() const        { return m_id; }
 
 	CryAudio::ContextId GetContextId() const { return m_contextId; }
 	void                SetContextId(CryAudio::ContextId const contextId);
@@ -70,7 +67,6 @@ private:
 	void SignalConnectionRemoved();
 	void SignalConnectionModified();
 
-	ControlId const           m_id;
 	CryAudio::ContextId       m_contextId;
 	std::vector<IConnection*> m_connections;
 	bool                      m_isAutoLoad;

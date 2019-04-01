@@ -197,184 +197,181 @@ QVariant CItemModel::data(QModelIndex const& index, int role) const
 
 		if (pItem != nullptr)
 		{
-			if (role == static_cast<int>(ModelUtils::ERoles::Name))
+			switch (index.column())
 			{
-				variant = QtUtil::ToQString(pItem->GetName());
-			}
-			else
-			{
-				EItemFlags const flags = pItem->GetFlags();
-
-				switch (index.column())
+			case static_cast<int>(EColumns::Notification):
 				{
-				case static_cast<int>(EColumns::Notification):
+					switch (role)
 					{
-						switch (role)
+					case Qt::DecorationRole:
 						{
-						case Qt::DecorationRole:
-							{
-								if ((flags & (EItemFlags::IsConnected | EItemFlags::IsContainer)) == 0)
-								{
-									variant = ModelUtils::GetItemNotificationIcon(ModelUtils::EItemStatus::NoConnection);
-								}
-								else if ((flags& EItemFlags::IsLocalized) != 0)
-								{
-									variant = ModelUtils::GetItemNotificationIcon(ModelUtils::EItemStatus::Localized);
-								}
+							EItemFlags const flags = pItem->GetFlags();
 
-								break;
-							}
-						case Qt::ToolTipRole:
+							if ((flags & (EItemFlags::IsConnected | EItemFlags::IsContainer)) == 0)
 							{
-								if ((flags & (EItemFlags::IsConnected | EItemFlags::IsContainer)) == 0)
-								{
-									variant = TypeToString(pItem->GetType()) + tr(" is not connected to any audio system control");
-								}
-								else if ((flags& EItemFlags::IsLocalized) != 0)
-								{
-									variant = TypeToString(pItem->GetType()) + tr(" is localized");
-								}
+								variant = ModelUtils::GetItemNotificationIcon(ModelUtils::EItemStatus::NoConnection);
+							}
+							else if ((flags& EItemFlags::IsLocalized) != 0)
+							{
+								variant = ModelUtils::GetItemNotificationIcon(ModelUtils::EItemStatus::Localized);
+							}
 
-								break;
-							}
-						case static_cast<int>(ModelUtils::ERoles::Id):
-							{
-								variant = pItem->GetId();
-								break;
-							}
-						default:
-							{
-								break;
-							}
+							break;
 						}
-
-						break;
-					}
-				case static_cast<int>(EColumns::Connected):
-					{
-						if ((role == Qt::CheckStateRole) && ((flags& EItemFlags::IsContainer) == 0))
+					case Qt::ToolTipRole:
 						{
-							variant = ((flags& EItemFlags::IsConnected) != 0) ? Qt::Checked : Qt::Unchecked;
-						}
+							EItemFlags const flags = pItem->GetFlags();
 
-						break;
-					}
-				case static_cast<int>(EColumns::PakStatus):
-					{
-						switch (role)
+							if ((flags & (EItemFlags::IsConnected | EItemFlags::IsContainer)) == 0)
+							{
+								variant = TypeToString(pItem->GetType()) + tr(" is not connected to any audio system control");
+							}
+							else if ((flags& EItemFlags::IsLocalized) != 0)
+							{
+								variant = TypeToString(pItem->GetType()) + tr(" is localized");
+							}
+
+							break;
+						}
+					case static_cast<int>(ModelUtils::ERoles::Id):
 						{
-						case Qt::DecorationRole:
-							{
-								EPakStatus const pakStatus = pItem->GetPakStatus();
-
-								if (pakStatus != EPakStatus::None)
-								{
-									variant = ModelUtils::GetPakStatusIcon(pItem->GetPakStatus());
-								}
-
-								break;
-							}
-						case Qt::ToolTipRole:
-							{
-								EPakStatus const pakStatus = pItem->GetPakStatus();
-
-								if (pakStatus == (EPakStatus::InPak | EPakStatus::OnDisk))
-								{
-									variant = TypeToString(pItem->GetType()) + tr(" is in pak and on disk");
-								}
-								else if ((pakStatus& EPakStatus::InPak) != 0)
-								{
-									variant = TypeToString(pItem->GetType()) + tr(" is only in pak file");
-								}
-								else if ((pakStatus& EPakStatus::OnDisk) != 0)
-								{
-									variant = TypeToString(pItem->GetType()) + tr(" is only on disk");
-								}
-
-								break;
-							}
-						default:
-							{
-								break;
-							}
+							variant = pItem->GetId();
+							break;
 						}
-
-						break;
-					}
-				case static_cast<int>(EColumns::InPak):
-					{
-						if (role == Qt::CheckStateRole)
+					default:
 						{
-							variant = ((pItem->GetPakStatus() & EPakStatus::InPak) != 0) ? Qt::Checked : Qt::Unchecked;
+							break;
 						}
-
-						break;
 					}
-				case static_cast<int>(EColumns::OnDisk):
+
+					break;
+				}
+			case static_cast<int>(EColumns::Connected):
+				{
+					EItemFlags const flags = pItem->GetFlags();
+
+					if ((role == Qt::CheckStateRole) && ((flags& EItemFlags::IsContainer) == 0))
 					{
-						if (role == Qt::CheckStateRole)
+						variant = ((flags& EItemFlags::IsConnected) != 0) ? Qt::Checked : Qt::Unchecked;
+					}
+
+					break;
+				}
+			case static_cast<int>(EColumns::PakStatus):
+				{
+					switch (role)
+					{
+					case Qt::DecorationRole:
 						{
-							variant = ((pItem->GetPakStatus() & EPakStatus::OnDisk) != 0) ? Qt::Checked : Qt::Unchecked;
-						}
+							EPakStatus const pakStatus = pItem->GetPakStatus();
 
-						break;
-					}
-				case static_cast<int>(EColumns::Localized):
-					{
-						if (role == Qt::CheckStateRole)
+							if (pakStatus != EPakStatus::None)
+							{
+								variant = ModelUtils::GetPakStatusIcon(pItem->GetPakStatus());
+							}
+
+							break;
+						}
+					case Qt::ToolTipRole:
 						{
-							variant = ((flags& EItemFlags::IsLocalized) != 0) ? Qt::Checked : Qt::Unchecked;
-						}
+							EPakStatus const pakStatus = pItem->GetPakStatus();
 
-						break;
-					}
-				case static_cast<int>(EColumns::Name):
-					{
-						switch (role)
+							if (pakStatus == (EPakStatus::InPak | EPakStatus::OnDisk))
+							{
+								variant = TypeToString(pItem->GetType()) + tr(" is in pak and on disk");
+							}
+							else if ((pakStatus& EPakStatus::InPak) != 0)
+							{
+								variant = TypeToString(pItem->GetType()) + tr(" is only in pak file");
+							}
+							else if ((pakStatus& EPakStatus::OnDisk) != 0)
+							{
+								variant = TypeToString(pItem->GetType()) + tr(" is only on disk");
+							}
+
+							break;
+						}
+					default:
 						{
-						case Qt::DecorationRole:
-							{
-								variant = GetTypeIcon(pItem->GetType());
-								break;
-							}
-						case Qt::DisplayRole: // Intentional fall-through.
-						case Qt::ToolTipRole:
-							{
-								variant = QtUtil::ToQString(pItem->GetName());
-								break;
-							}
-						case static_cast<int>(ModelUtils::ERoles::Id):
-							{
-								variant = pItem->GetId();
-								break;
-							}
-						case static_cast<int>(ModelUtils::ERoles::SortPriority):
-							{
-								variant = static_cast<int>(pItem->GetType());
-								break;
-							}
-						case static_cast<int>(ModelUtils::ERoles::IsPlaceholder):
-							{
-								variant = (flags& EItemFlags::IsPlaceHolder) != 0;
-								break;
-							}
-						case static_cast<int>(ModelUtils::ERoles::InternalPointer):
-							{
-								variant = reinterpret_cast<intptr_t>(pItem);
-								break;
-							}
-						default:
-							{
-								break;
-							}
+							break;
 						}
+					}
 
-						break;
-					}
-				default:
+					break;
+				}
+			case static_cast<int>(EColumns::InPak):
+				{
+					if (role == Qt::CheckStateRole)
 					{
-						break;
+						variant = ((pItem->GetPakStatus() & EPakStatus::InPak) != 0) ? Qt::Checked : Qt::Unchecked;
 					}
+
+					break;
+				}
+			case static_cast<int>(EColumns::OnDisk):
+				{
+					if (role == Qt::CheckStateRole)
+					{
+						variant = ((pItem->GetPakStatus() & EPakStatus::OnDisk) != 0) ? Qt::Checked : Qt::Unchecked;
+					}
+
+					break;
+				}
+			case static_cast<int>(EColumns::Localized):
+				{
+					if (role == Qt::CheckStateRole)
+					{
+						variant = ((pItem->GetFlags() & EItemFlags::IsLocalized) != 0) ? Qt::Checked : Qt::Unchecked;
+					}
+
+					break;
+				}
+			case static_cast<int>(EColumns::Name):
+				{
+					switch (role)
+					{
+					case Qt::DecorationRole:
+						{
+							variant = GetTypeIcon(pItem->GetType());
+							break;
+						}
+					case Qt::DisplayRole: // Intentional fall-through.
+					case Qt::ToolTipRole:
+						{
+							variant = QtUtil::ToQString(pItem->GetName());
+							break;
+						}
+					case static_cast<int>(ModelUtils::ERoles::Id):
+						{
+							variant = pItem->GetId();
+							break;
+						}
+					case static_cast<int>(ModelUtils::ERoles::SortPriority):
+						{
+							variant = static_cast<int>(pItem->GetType());
+							break;
+						}
+					case static_cast<int>(ModelUtils::ERoles::IsPlaceholder):
+						{
+							variant = (pItem->GetFlags() & EItemFlags::IsPlaceHolder) != 0;
+							break;
+						}
+					case static_cast<int>(ModelUtils::ERoles::InternalPointer):
+						{
+							variant = reinterpret_cast<intptr_t>(pItem);
+							break;
+						}
+					default:
+						{
+							break;
+						}
+					}
+
+					break;
+				}
+			default:
+				{
+					break;
 				}
 			}
 		}

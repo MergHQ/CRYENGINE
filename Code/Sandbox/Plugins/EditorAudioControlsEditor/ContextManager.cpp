@@ -235,7 +235,7 @@ void CContextManager::DeleteContext(CContext const* const pContext)
 		gEnv->pAudioSystem->DeactivateContext(pContext->GetId());
 	}
 
-	SignalOnbeforeContextRemoved(pContext);
+	SignalOnBeforeContextRemoved(pContext);
 	g_contexts.erase(std::remove(g_contexts.begin(), g_contexts.end(), pContext), g_contexts.end());
 
 	delete pContext;

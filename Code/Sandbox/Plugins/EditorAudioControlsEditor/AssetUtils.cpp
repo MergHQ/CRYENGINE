@@ -79,6 +79,24 @@ string GenerateUniqueControlName(string const& name, EAssetType const type)
 }
 
 //////////////////////////////////////////////////////////////////////////
+ControlId GenerateUniqueAssetId(string const& name, EAssetType const type)
+{
+	return CryAudio::StringToId((name + "/" + GetTypeName(type)).c_str());
+}
+
+//////////////////////////////////////////////////////////////////////////
+ControlId GenerateUniqueStateId(string const& switchName, string const& stateName)
+{
+	return CryAudio::StringToId((switchName + "/" + stateName + "/" + GetTypeName(EAssetType::State)).c_str());
+}
+
+//////////////////////////////////////////////////////////////////////////
+ControlId GenerateUniqueFolderId(string const& name, CAsset* const pParent)
+{
+	return CryAudio::StringToId((pParent->GetFullHierarchyName() + "/" + name + "/" + GetTypeName(EAssetType::Folder)).c_str());
+}
+
+//////////////////////////////////////////////////////////////////////////
 CAsset* GetParentLibrary(CAsset* const pAsset)
 {
 	CAsset* pParent = pAsset;

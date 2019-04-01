@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "Common/SharedData.h"
 #include <QAdvancedTreeView.h>
 
 namespace ACE
@@ -18,7 +19,8 @@ public:
 	CTreeView& operator=(CTreeView const&) = delete;
 	CTreeView& operator=(CTreeView&&) = delete;
 
-	explicit CTreeView(QWidget* pParent, QAdvancedTreeView::BehaviorFlags flags = QAdvancedTreeView::BehaviorFlags(UseItemModelAttribute));
+	explicit CTreeView(QWidget* pParent);
+	explicit CTreeView(QWidget* pParent, QAdvancedTreeView::BehaviorFlags flags);
 	virtual ~CTreeView() override = default;
 
 	bool IsEditing() const { return state() == QAbstractItemView::EditingState; }
@@ -36,17 +38,17 @@ public:
 
 private:
 
-	uint32 GetItemId(QModelIndex const& index) const;
+	ControlId GetItemId(QModelIndex const& index) const;
 
-	void   ExpandSelectionRecursively(QModelIndexList const& indexList);
-	void   CollapseSelectionRecursively(QModelIndexList const& indexList);
+	void      ExpandSelectionRecursively(QModelIndexList const& indexList);
+	void      CollapseSelectionRecursively(QModelIndexList const& indexList);
 
-	void   BackupExpandedRecursively(QModelIndex const& index);
-	void   RestoreExpandedRecursively(QModelIndex const& index);
-	void   RestoreSelectionRecursively(QModelIndex const& index);
+	void      BackupExpandedRecursively(QModelIndex const& index);
+	void      RestoreExpandedRecursively(QModelIndex const& index);
+	void      RestoreSelectionRecursively(QModelIndex const& index);
 
-	int          m_nameColumn;
-	QSet<uint32> m_expandedBackup;
-	QSet<uint32> m_selectionBackup;
+	int             m_nameColumn;
+	QSet<ControlId> m_expandedBackup;
+	QSet<ControlId> m_selectionBackup;
 };
 } // namespace ACE

@@ -34,8 +34,8 @@ public:
 	CLibrary*        GetLibrary(size_t const index) const { return m_libraries[index]; }
 	size_t           GetLibraryCount() const              { return m_libraries.size(); }
 
-	CAsset*          CreateFolder(string const& name, CAsset* const pParent = nullptr);
-	CControl*        CreateControl(string const& name, EAssetType const type, CAsset* const pParent = nullptr);
+	CAsset*          CreateFolder(string const& name, CAsset* const pParent);
+	CControl*        CreateControl(string const& name, EAssetType const type, CAsset* const pParent);
 	CControl*        CreateDefaultControl(string const& name, EAssetType const type, CAsset* const pParent, EAssetFlags const flags, string const& description);
 
 	CControl*        FindControl(string const& name, EAssetType const type, CAsset* const pParent = nullptr) const;
@@ -88,18 +88,16 @@ public:
 
 private:
 
-	CAsset*   CreateAndConnectImplItemsRecursively(Impl::IItem* const pIItem, CAsset* const pParent);
-	ControlId GenerateUniqueId() { return m_nextId++; }
+	CAsset* CreateAndConnectImplItemsRecursively(Impl::IItem* const pIItem, CAsset* const pParent);
 
-	void      SetTypeModified(EAssetType const type, bool const isModified);
+	void    SetTypeModified(EAssetType const type, bool const isModified);
 
-	void      UpdateLibraryConnectionStates(CAsset* const pAsset);
-	void      UpdateAssetConnectionStates(CAsset* const pAsset);
+	void    UpdateLibraryConnectionStates(CAsset* const pAsset);
+	void    UpdateAssetConnectionStates(CAsset* const pAsset);
 
 	using ModifiedSystemTypes = std::set<EAssetType>;
 
 	Libraries           m_libraries;
-	static ControlId    m_nextId;
 	Controls            m_controls;
 	ModifiedSystemTypes m_modifiedTypes;
 	FileNames           m_modifiedLibraryNames;

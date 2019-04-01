@@ -40,7 +40,7 @@ public:
 
 	CCrySignal<void(CContext*)>       SignalOnBeforeContextAdded;
 	CCrySignal<void(CContext*)>       SignalOnAfterContextAdded;
-	CCrySignal<void(CContext const*)> SignalOnbeforeContextRemoved;
+	CCrySignal<void(CContext const*)> SignalOnBeforeContextRemoved;
 	CCrySignal<void()>                SignalOnAfterContextRemoved;
 	CCrySignal<void()>                SignalContextRenamed;
 	CCrySignal<void()>                SignalOnBeforeClear;
