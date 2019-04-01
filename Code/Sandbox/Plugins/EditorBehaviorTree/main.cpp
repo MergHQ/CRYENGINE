@@ -2,14 +2,10 @@
 
 #include "StdAfx.h"
 
-#include "MainWindow.h"
-
 #include <IPlugin.h>
 
 #include <CryCore/Platform/platform.h>
 #include <CryCore/Platform/platform_impl.inl>
-
-REGISTER_VIEWPANE_FACTORY(MainWindow, "Behavior Tree Editor", "Tools", false);
 
 class BehaviorTreeEditorPlugin : public IPlugin
 {
