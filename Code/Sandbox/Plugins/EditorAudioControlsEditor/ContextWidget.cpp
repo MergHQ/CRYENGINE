@@ -7,6 +7,7 @@
 #include "Context.h"
 #include "ContextManager.h"
 #include "AssetsManager.h"
+#include "ImplManager.h"
 #include "SystemControlsWidget.h"
 #include "TreeView.h"
 
@@ -73,6 +74,11 @@ CContextWidget::CContextWidget(QWidget* const pParent)
 	pMainLayout->addWidget(m_pSearchBox);
 	pMainLayout->addWidget(m_pTreeView);
 
+	if (g_pIImpl == nullptr)
+	{
+		setEnabled(false);
+	}
+
 	g_contextManager.SignalOnAfterContextRemoved.Connect([this]()
 		{
 			if (!g_assetsManager.IsLoading())
@@ -80,12 +86,18 @@ CContextWidget::CContextWidget(QWidget* const pParent)
 			  m_pTreeView->selectionModel()->clear();
 			}
 		}, reinterpret_cast<uintptr_t>(this));
+
+	g_implManager.SignalOnAfterImplChange.Connect([this]()
+		{
+			setEnabled(g_pIImpl != nullptr);
+		}, reinterpret_cast<uintptr_t>(this));
 }
 
 //////////////////////////////////////////////////////////////////////////
 CContextWidget::~CContextWidget()
 {
 	g_contextManager.SignalOnAfterContextRemoved.DisconnectById(reinterpret_cast<uintptr_t>(this));
+	g_implManager.SignalOnAfterImplChange.DisconnectById(reinterpret_cast<uintptr_t>(this));
 
 	m_pContextModel->DisconnectSignals();
 	m_pContextModel->deleteLater();
@@ -127,7 +139,6 @@ void CContextWidget::OnContextMenu(QPoint const& pos)
 				pContextMenu->addAction(tr("Delete"), [&]() { DeleteContext(pContext); });
 			}
 		}
-
 	}
 	else if (numSelections > 1)
 	{
