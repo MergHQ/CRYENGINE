@@ -1,42 +1,13 @@
-#Configures CRYENGINE CMake settings
-
-cmake_minimum_required(VERSION 3.6.2)
-
-set_property(GLOBAL PROPERTY DEBUG_CONFIGURATIONS Debug Profile)
-
-# Turn on the ability to create folders to organize projects (.vcproj)
-# It creates "CMakePredefinedTargets" folder by default and adds CMake
-# defined projects like INSTALL.vcproj and ZERO_CHECK.vcproj
-set_property(GLOBAL PROPERTY USE_FOLDERS ON)
-
-if (NOT DEFINED CRYENGINE_DIR)
-	set (CRYENGINE_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
+if(DURANGO OR ORBIS OR ANDROID OR LINUX)
+	unset(WIN32)
+	unset(WINDOWS)
+elseif(WIN32) # Either Win32 or Win64
+	include("${CMAKE_CURRENT_LIST_DIR}/toolchain/windows/WindowsPC-MSVC.cmake")
 endif()
-
-if (NOT DEFINED PROJECT_DIR)
-	set ( PROJECT_DIR "${CMAKE_SOURCE_DIR}" )
-endif()
-	
-set( TOOLS_CMAKE_DIR "${CMAKE_CURRENT_LIST_DIR}" )
-	
-#Fix slashes on paths
-string(REPLACE "\\" "/" CRYENGINE_DIR "${CRYENGINE_DIR}")
-string(REPLACE "\\" "/" TOOLS_CMAKE_DIR "${TOOLS_CMAKE_DIR}")
-
-set(CMAKE_MODULE_PATH "${TOOLS_CMAKE_DIR}/modules")
 
 # C/C++ languages required.
 enable_language(C)
 enable_language(CXX)
-
-if (DURANGO OR ORBIS OR ANDROID OR LINUX)
-	unset(WIN32)
-	unset(WINDOWS)
-endif ()
-
-if (WIN32)  # Either Win32 or Win64
-	include("${TOOLS_CMAKE_DIR}/toolchain/windows/WindowsPC-MSVC.cmake")
-endif(WIN32)
 
 if(NOT ${CMAKE_GENERATOR} MATCHES "Visual Studio")
 	set(valid_configs Debug Profile Release)
@@ -300,3 +271,5 @@ if(WINDOWS)
 	string(REPLACE . , METADATA_VERSION_COMMA ${METADATA_VERSION})
 	set(METADATA_VERSION_COMMA ${METADATA_VERSION_COMMA} CACHE INTERNAL "" FORCE)
 endif(WINDOWS)
+
+include("${TOOLS_CMAKE_DIR}/Build.cmake")
