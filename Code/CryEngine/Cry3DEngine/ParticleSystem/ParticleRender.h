@@ -36,25 +36,23 @@ private:
 class CParticleRenderBase : public CParticleFeature, public Cry3DEngineBase
 {
 public:
-	virtual EFeatureType GetFeatureType() override;
+	virtual EFeatureType GetFeatureType() override { return EFT_Render; }
+	virtual int          Priority() const override { return 2; } // Initialize after Material and Opacity features
 	virtual void         AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams) override;
 	virtual void         Render(CParticleComponentRuntime& runtime, const SRenderContext& renderContext) override;
 
 protected:
-	ILINE C3DEngine* Get3DEngine() const          { return static_cast<C3DEngine*>(gEnv->p3DEngine); }
-	virtual bool     SupportsWaterCulling() const { return false; }
-	void             PrepareRenderObject(const CParticleComponentRuntime& runtime, uint renderObjectId, uint threadId, ERenderObjectFlags objFlags);
+	void             PrepareRenderObject(const CParticleComponentRuntime& runtime, uint renderObjectId, uint threadId);
 	void             AddRenderObject(CParticleComponentRuntime& runtime, const SRenderContext& renderContext, uint renderObjectId, uint threadId, ERenderObjectFlags objFlags);
 
 	static float CullArea(float area, float areaLimit, TParticleIdArray& ids, TVarArray<float> alphas, TConstArray<float> areas);
 
 protected:
-	UFloat m_fillCost = 1;
-
-private:
+	UFloat m_fillCost                = 1;
+	SFloat m_sortBias                = 0;
 	uint m_renderObjectBeforeWaterId = -1;
 	uint m_renderObjectAfterWaterId  = -1;
-	bool m_waterCulling              = false;
+	bool   m_waterCulling            = false;
 };
 
 // Frustum culling support

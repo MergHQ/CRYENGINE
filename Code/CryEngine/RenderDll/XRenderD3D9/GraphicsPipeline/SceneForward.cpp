@@ -694,6 +694,7 @@ bool CSceneForwardStage::PreparePerPassResources(bool bOnInit, bool bShadowMask,
 		// Particle resources
 		if (resourceSubset & EResourcesSubset::eResSubset_Particles)
 		{
+			m_graphicsPipeline.SetParticleBuffers(bOnInit, resources, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
 			if (bOnInit)
 			{
 				resources.SetBuffer(
@@ -704,25 +705,10 @@ bool CSceneForwardStage::PreparePerPassResources(bool bOnInit, bool bShadowMask,
 					EReservedTextureSlot_LightVolumeRanges,
 					CDeviceBufferManager::GetNullBufferStructured(),
 					EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
-
-				resources.SetBuffer(
-					EReservedTextureSlot_ParticlePositionStream,
-					CDeviceBufferManager::GetNullBufferStructured(),
-					EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
-				resources.SetBuffer(
-					EReservedTextureSlot_ParticleAxesStream,
-					CDeviceBufferManager::GetNullBufferStructured(),
-					EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
-				resources.SetBuffer(
-					EReservedTextureSlot_ParticleColorSTStream,
-					CDeviceBufferManager::GetNullBufferStructured(),
-					EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
 			}
 			else
 			{
 				const CLightVolumeBuffer& lightVolumes   = m_graphicsPipeline.GetLightVolumeBuffer();
-				const CParticleBufferSet& particleBuffer = gcpRendD3D.GetParticleBufferSet();
-
 				resources.SetBuffer(
 					EReservedTextureSlot_LightvolumeInfos,
 					const_cast<CGpuBuffer*>(&lightVolumes.GetLightInfosBuffer()),
@@ -731,25 +717,6 @@ bool CSceneForwardStage::PreparePerPassResources(bool bOnInit, bool bShadowMask,
 					EReservedTextureSlot_LightVolumeRanges,
 					const_cast<CGpuBuffer*>(&lightVolumes.GetLightRangesBuffer()),
 					EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
-
-				const auto positionStream = particleBuffer.GetPositionStream(RenderView()->GetFrameId());
-				const auto axesStream  = particleBuffer.GetAxesStream(RenderView()->GetFrameId());
-				const auto colorStream = particleBuffer.GetColorSTsStream(RenderView()->GetFrameId());
-				if (positionStream && axesStream && colorStream)
-				{
-					resources.SetBuffer(
-						EReservedTextureSlot_ParticlePositionStream,
-						const_cast<CGpuBuffer*>(positionStream),
-						EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
-					resources.SetBuffer(
-						EReservedTextureSlot_ParticleAxesStream,
-						const_cast<CGpuBuffer*>(axesStream),
-						EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
-					resources.SetBuffer(
-						EReservedTextureSlot_ParticleColorSTStream,
-						const_cast<CGpuBuffer*>(colorStream),
-						EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
-				}
 			}
 		}
 
@@ -825,9 +792,8 @@ bool CSceneForwardStage::PreparePerPassResources(bool bOnInit, bool bShadowMask,
 				resources.SetTexture(31, CRendererResources::s_ptexShadowJitterMap, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
 			}
 
-			if (includeTransparentPassResources)
 			{
-				// volumetric fog supports only general pass currently so only transparent pass needs those textures.
+				// volumetric fog is needed for both transparent and forward opaque passes
 				if (bOnInit || !pVolFogStage || !bFog)
 				{
 					resources.SetTexture(42, CRendererResources::s_ptexBlack, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
@@ -841,7 +807,7 @@ bool CSceneForwardStage::PreparePerPassResources(bool bOnInit, bool bShadowMask,
 					resources.SetTexture(44, pVolFogStage->GetGlobalEnvProbeTex1(), EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
 				}
 			}
-			else if (includeEyeOverlayPassResources)
+			if (includeEyeOverlayPassResources)
 			{
 				// Eye AO overlay pass resource must not contain eye AO overlay texture.
 				resources.SetTexture(41, CRendererResources::s_ptexBlack, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);

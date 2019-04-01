@@ -73,7 +73,6 @@ private:
 
 	SParticleColorST VertexColorST(const CParticleComponentRuntime& runtime, TParticleId particleId, uint frameId, float animPos);
 
-	SFloat              m_sortBias;
 	ERibbonMode         m_ribbonMode;
 	ERibbonStreamSource m_streamSource;
 	UFloat10            m_frequency;
@@ -88,7 +87,6 @@ CFeatureRenderRibbon::CFeatureRenderRibbon()
 	, m_streamSource(ERibbonStreamSource::Age)
 	, m_connectToOrigin(false)
 	, m_frequency(1.0f)
-	, m_sortBias(0.0f)
 	, m_offset(0.0f)
 {
 }
@@ -106,8 +104,6 @@ void CFeatureRenderRibbon::AddToComponent(CParticleComponent* pComponent, SCompo
 	pComponent->AddParticleData(EPDT_Size);
 	pComponent->AddParticleData(EPDT_NormalAge);
 	pParams->m_shaderData.m_expansion[1] = 0.0f;
-	pParams->m_particleObjFlags |= CREParticle::ePOF_USE_VERTEX_PULL_MODEL;
-	pParams->m_renderObjectSortBias = m_sortBias;
 	if (m_ribbonMode == ERibbonMode::Free)
 		pComponent->AddParticleData(EPQF_Orientation);
 	pComponent->AddParticleData(DataType(m_streamSource));

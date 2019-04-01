@@ -72,13 +72,6 @@ class CREParticle : public CRenderElement
 public:
 	static const uint numBuffers = 3;
 
-	enum EParticleObjFlags
-	{
-		ePOF_HALF_RES              = BIT(0),
-		ePOF_VOLUME_FOG            = BIT(1),
-		ePOF_USE_VERTEX_PULL_MODEL = BIT(2),
-	};
-
 public:
 	CREParticle();
 

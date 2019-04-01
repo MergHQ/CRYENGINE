@@ -241,6 +241,9 @@ bool CSceneGBufferStage::SetAndBuildPerPassResources(bool bOnInit)
 		m_perPassResources.SetConstantBuffer(eConstantBufferShaderSlot_PerView, pPerViewCB, EShaderStage_AllWithoutCompute);
 	}
 
+	// particle resources
+	m_graphicsPipeline.SetParticleBuffers(bOnInit, m_perPassResources, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
+
 	if (bOnInit)
 		return true;
 

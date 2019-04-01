@@ -596,13 +596,13 @@ void CD3D9Renderer::RT_RenderScene(CRenderView* pRenderView)
 	{
 		CRY_ASSERT(shaderRenderingFlags & SHDF_ALLOWHDR);
 
-		pActiveGraphicsPipeline->Update(EShaderRenderingFlags(shaderRenderingFlags));
-
 		{
 			PROFILE_FRAME(WaitForParticleRendItems);
 			SyncComputeVerticesJobs();
 			UnLockParticleVideoMemory(GetRenderFrameID());
 		}
+
+		pActiveGraphicsPipeline->Update(EShaderRenderingFlags(shaderRenderingFlags));
 
 		// Creating CompiledRenederObjects should happen after Update() call of the GraphicsPipeline, as it requires access to initialized Render Targets
 		// If some pipeline stage manages/retires resources used in compiled objects, they should also be handled in Update()

@@ -172,6 +172,30 @@ const SRenderViewInfo& CGraphicsPipeline::GetCurrentViewInfo(CCamera::EEye eye) 
 	return viewInfo;
 }
 
+void CGraphicsPipeline::SetParticleBuffers(bool bOnInit, CDeviceResourceSetDesc& resources, ResourceViewHandle hView, EShaderStage shaderStages) const
+{
+	if (!bOnInit && m_pCurrentRenderView)
+	{
+		int frameId = m_pCurrentRenderView->GetFrameId();
+		const CParticleBufferSet& particleBuffer = gcpRendD3D.GetParticleBufferSet();
+		const auto positionStream = particleBuffer.GetPositionStream(frameId);
+		const auto axesStream     = particleBuffer.GetAxesStream(frameId);
+		const auto colorStream    = particleBuffer.GetColorSTsStream(frameId);
+		if (positionStream && axesStream && colorStream)
+		{
+			resources.SetBuffer(EReservedTextureSlot_ParticlePositionStream, const_cast<CGpuBuffer*>(positionStream), hView, shaderStages);
+			resources.SetBuffer(EReservedTextureSlot_ParticleAxesStream,     const_cast<CGpuBuffer*>(axesStream),     hView, shaderStages);
+			resources.SetBuffer(EReservedTextureSlot_ParticleColorSTStream,  const_cast<CGpuBuffer*>(colorStream),    hView, shaderStages);
+			return;
+		}
+	}
+
+	auto nullBuffer = CDeviceBufferManager::GetNullBufferStructured();
+	resources.SetBuffer(EReservedTextureSlot_ParticlePositionStream, nullBuffer, hView, shaderStages);
+	resources.SetBuffer(EReservedTextureSlot_ParticleAxesStream,     nullBuffer, hView, shaderStages);
+	resources.SetBuffer(EReservedTextureSlot_ParticleColorSTStream,  nullBuffer, hView, shaderStages);
+}
+
 //////////////////////////////////////////////////////////////////////////
 void CGraphicsPipeline::ExecutePostAA()
 {

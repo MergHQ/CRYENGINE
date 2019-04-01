@@ -120,8 +120,6 @@ struct SComponentParams: STimingParams
 	EShaderType               m_requiredShaderType   = eST_All;
 	ERenderObjectFlags        m_renderObjectFlags;
 	int                       m_renderStateFlags     = OS_ALPHA_BLEND;
-	uint8                     m_particleObjFlags     = 0;
-	float                     m_renderObjectSortBias = 0;
 	_smart_ptr<IMeshObj>      m_pMesh;
 	bool                      m_meshCentered         = false;
 	STextureAnimation         m_textureAnimation;
@@ -165,6 +163,7 @@ public:
 	void                                  ClearFeatures()                       { m_features.clear(); }
 	void                                  AddFeature(uint placeIdx, CParticleFeature* pFeature);
 	void                                  AddFeature(CParticleFeature* pFeature);
+
 	void                                  PreCompile();
 	void                                  ResolveDependencies();
 	void                                  Compile();
@@ -193,6 +192,13 @@ public:
 
 	bool                    IsActive() const                                    { return m_enabled && (!m_parent || m_parent->IsActive()); }
 	bool                    CanMakeRuntime(CParticleEmitter* pEmitter = nullptr) const;
+
+	CParticleFeature*       FindFeature(const SParticleFeatureParams& params, const CParticleFeature* pSkip = nullptr) const;
+
+	template<typename Feature> Feature* FindDuplicateFeature(const Feature* pFeature) const
+	{
+		return static_cast<Feature*>(FindFeature(pFeature->GetFeatureParams(), pFeature));
+	}
 
 private:
 	friend class CParticleEffect;

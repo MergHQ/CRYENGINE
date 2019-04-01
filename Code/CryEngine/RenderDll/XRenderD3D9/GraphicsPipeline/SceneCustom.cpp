@@ -199,42 +199,7 @@ bool CSceneCustomStage::SetAndBuildPerPassResources(bool bOnInit)
 	}
 
 	// particle resources
-	{
-		if (bOnInit)
-		{
-			m_perPassResources.SetBuffer(
-				EReservedTextureSlot_ParticlePositionStream, CDeviceBufferManager::GetNullBufferStructured(),
-				EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
-			m_perPassResources.SetBuffer(
-				EReservedTextureSlot_ParticleAxesStream, CDeviceBufferManager::GetNullBufferStructured(),
-				EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
-			m_perPassResources.SetBuffer(
-				EReservedTextureSlot_ParticleColorSTStream, CDeviceBufferManager::GetNullBufferStructured(),
-				EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
-		}
-		else
-		{
-			const CParticleBufferSet& particleBuffer = gcpRendD3D.GetParticleBufferSet();
-			const auto positionStream = particleBuffer.GetPositionStream(RenderView()->GetFrameId());
-			const auto axesStream = particleBuffer.GetAxesStream(RenderView()->GetFrameId());
-			const auto colorStream = particleBuffer.GetColorSTsStream(RenderView()->GetFrameId());
-			if (positionStream && axesStream && colorStream)
-			{
-				m_perPassResources.SetBuffer(
-					EReservedTextureSlot_ParticlePositionStream,
-					const_cast<CGpuBuffer*>(positionStream),
-					EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
-				m_perPassResources.SetBuffer(
-					EReservedTextureSlot_ParticleAxesStream,
-					const_cast<CGpuBuffer*>(axesStream),
-					EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
-				m_perPassResources.SetBuffer(
-					EReservedTextureSlot_ParticleColorSTStream,
-					const_cast<CGpuBuffer*>(colorStream),
-					EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
-			}
-		}
-	}
+	m_graphicsPipeline.SetParticleBuffers(bOnInit, m_perPassResources, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
 
 	// Constant buffers
 	{

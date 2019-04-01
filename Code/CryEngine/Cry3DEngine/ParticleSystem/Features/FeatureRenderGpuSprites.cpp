@@ -52,14 +52,12 @@ private:
 	gpu_pfx2::ESortMode   m_sortMode     = gpu_pfx2::ESortMode::None;
 	gpu_pfx2::EFacingMode m_facingMode   = gpu_pfx2::EFacingMode::Screen;
 	UFloat10              m_axisScale    = 1.0f;
-	SFloat                m_sortBias     = 0.0f;
 };
 
 void CFeatureRenderGpuSprites::AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams)
 {
 	CParticleRenderBase::AddToComponent(pComponent, pParams);
 	pParams->m_renderObjectFlags |= FOB_POINT_SPRITE;
-	pParams->m_renderObjectSortBias = m_sortBias;
 	pParams->m_shaderData.m_axisScale = m_axisScale;
 }
 

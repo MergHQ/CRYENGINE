@@ -62,11 +62,15 @@ enum ERenderObjectFlags : uint64
 	FOB_ALLOW_TERRAIN_LAYER_BLEND   = BIT64(34),
 	FOB_ALLOW_DECAL_BLEND           = BIT64(35),
 
+	FOB_HALF_RES                    = BIT64(36),
+	FOB_VOLUME_FOG                  = BIT64(37),
+	FOB_VERTEX_PULL_MODEL           = BIT64(38),
+
 	FOB_SORT_MASK                   = (0x00000000FFFF0000ULL & (FOB_ZPREPASS | FOB_DISSOLVE | FOB_ALPHATEST | FOB_HAS_PREVMATRIX)),
 	FOB_DISCARD_MASK                = (FOB_ALPHATEST | FOB_DISSOLVE),
 	FOB_TRANS_MASK                  = (FOB_TRANS_ROTATE | FOB_TRANS_SCALE | FOB_TRANS_TRANSLATE),
 	FOB_DECAL_MASK                  = (FOB_DECAL | FOB_DECAL_TEXGEN_2D),
-	FOB_PARTICLE_MASK               = (FOB_SOFT_PARTICLE | FOB_NO_FOG | FOB_INSHADOW | FOB_NEAREST | FOB_MOTION_BLUR | FOB_LIGHTVOLUME | FOB_ALLOW_TESSELLATION | FOB_IN_DOORS | FOB_AFTER_WATER),
+	FOB_PARTICLE_MASK               = (FOB_SOFT_PARTICLE | FOB_NO_FOG | FOB_INSHADOW | FOB_NEAREST | FOB_MOTION_BLUR | FOB_LIGHTVOLUME | FOB_ALLOW_TESSELLATION | FOB_IN_DOORS | FOB_AFTER_WATER | FOB_HALF_RES | FOB_VERTEX_PULL_MODEL | FOB_VOLUME_FOG),
 
 	// WARNING: FOB_MASK_AFFECTS_MERGING must start from 0x10000/bit 16 (important for instancing).
 	FOB_MASK_AFFECTS_MERGING_GEOM = (FOB_ZPREPASS | FOB_SKINNED | FOB_BENDED | FOB_DYNAMIC_OBJECT | FOB_ALLOW_TESSELLATION | FOB_NEAREST),
@@ -330,11 +334,7 @@ public:
 	uint16 m_nRenderQuality;           //!< 65535 - full quality, 0 - lowest quality, used by CStatObj
 	int16 m_nTextureID;                //!< Custom texture id.
 
-	union
-	{
-		uint8 m_breakableGlassSubFragIndex;
-		uint8 m_ParticleObjFlags;
-	};
+	uint8 m_breakableGlassSubFragIndex;
 	uint8 m_nClipVolumeStencilRef;     //!< Per instance vis area stencil reference ID
 	uint8 m_DissolveRef;               //!< Dissolve value
 	uint8 m_RState;                    //!< Render state used for object

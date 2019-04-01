@@ -80,8 +80,6 @@ public:
 	virtual void ComputeVertices(const CParticleComponentRuntime& runtime, const SCameraInfo& camInfo, CREParticle* pRE, uint64 uRenderFlags, float fMaxPixels) override;
 	virtual void Serialize(Serialization::IArchive& ar) override;
 
-protected:
-	bool SupportsWaterCulling() const override { return true; }
 
 private:
 	void CullParticles(SSpritesContext& spritesContext);
@@ -96,7 +94,6 @@ private:
 	UFloat10    m_axisScale;
 	Vec2        m_offset;
 	UUnitFloat  m_sphericalProjection;
-	SFloat      m_sortBias;
 	SFloat      m_cameraOffset;
 	bool        m_flipU, m_flipV;
 };
@@ -112,18 +109,17 @@ CFeatureRenderSprites::CFeatureRenderSprites()
 	, m_axisScale(0.0f)
 	, m_offset(ZERO)
 	, m_sphericalProjection(0.0f)
-	, m_sortBias(0.0f)
 	, m_cameraOffset(0.0f)
 	, m_flipU(false)
 	, m_flipV(false)
 {
+	m_waterCulling = true;
 }
 
 void CFeatureRenderSprites::AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams)
 {
 	BaseClass::AddToComponent(pComponent, pParams);
 	pParams->m_renderObjectFlags |= FOB_POINT_SPRITE;
-	pParams->m_particleObjFlags |= CREParticle::ePOF_USE_VERTEX_PULL_MODEL;
 	if (m_facingMode == EFacingMode::Velocity)
 		pComponent->AddParticleData(EPVF_Velocity);
 	else if (m_facingMode == EFacingMode::Free)
@@ -133,7 +129,6 @@ void CFeatureRenderSprites::AddToComponent(CParticleComponent* pComponent, SComp
 	else
 		pParams->m_shaderData.m_sphericalApproximation = 0.0f;
 	pParams->m_scaleParticleSize *= max(+m_aspectRatio, 1.0f);
-	pParams->m_renderObjectSortBias = m_sortBias;
 }
 
 void CFeatureRenderSprites::Serialize(Serialization::IArchive& ar)
@@ -323,27 +318,45 @@ void CFeatureRenderSprites::CullParticles(SSpritesContext& spritesContext)
 	{
 		CRY_PROFILE_SECTION(PROFILE_PARTICLE, "pfx2::CullParticles:Water");
 		CRY_PFX2_ASSERT(container.HasData(EPDT_Size));
-		const bool isAfterWater = (spritesContext.m_renderFlags & FOB_AFTER_WATER) != 0;
-		const bool cameraUnderWater = spritesContext.m_camInfo.bCameraUnderwater;
+		float waterSign = 0.0f;
 
-		Plane waterPlane;
-		const float waterSign = (cameraUnderWater == isAfterWater) ? -1.002f : 1.002f; // Slightly above one to fix rcp_fast inaccuracy
-
-		numParticles = 0;
-		for (auto particleId : particleIds)
+		const auto& params = runtime.ComponentParams();
+		if (params.m_renderStateFlags & OS_TRANSPARENT)
 		{
-			const float radius = fullSizes[particleId];
-			const Vec3 position = positions.Load(particleId);
-			const float waterDist = spritesContext.m_physEnviron.GetWaterPlane(waterPlane, position, radius);
-			const float distRel = waterDist * rcp_fast(radius);
-			const float waterAlpha = saturate((distRel + 1.0f) * waterSign);
-			spriteAlphas[particleId] *= waterAlpha;
-
-			if (waterAlpha > 0.0f)
-				particleIds[numParticles++] = particleId;
+			// Transparent particles always clipped to water volume
+			const bool isAfterWater = (spritesContext.m_renderFlags & FOB_AFTER_WATER) != 0;
+			const bool cameraUnderWater = spritesContext.m_camInfo.bCameraUnderwater;
+			waterSign = (cameraUnderWater == isAfterWater) ? -1.0f : 1.0f;
 		}
+		else
+		{
+			// Opaque particles clipped only if specified
+			if (params.m_visibility.m_waterVisibility == EWaterVisibility::AboveWaterOnly)
+				waterSign = 1.0f;
+			else if (params.m_visibility.m_waterVisibility == EWaterVisibility::BelowWaterOnly)
+				waterSign = -1.0f;
+		}
+		if (waterSign != 0.0f)
+		{
+			waterSign *= 1.002f;  // Expand to fix rcp_fast inaccuracy
 
-		particleIds.resize(numParticles);
+			Plane waterPlane;
+			numParticles = 0;
+			for (auto particleId : particleIds)
+			{
+				const float radius = fullSizes[particleId];
+				const Vec3 position = positions.Load(particleId);
+				const float waterDist = spritesContext.m_physEnviron.GetWaterPlane(waterPlane, position, radius);
+				const float distRel = waterDist * rcp_fast(radius);
+				const float waterAlpha = saturate((distRel + 1.0f) * waterSign);
+				spriteAlphas[particleId] *= waterAlpha;
+
+				if (waterAlpha > 0.0f)
+					particleIds[numParticles++] = particleId;
+			}
+
+			particleIds.resize(numParticles);
+		}
 	}
 
 	if (sumArea)
@@ -363,7 +376,8 @@ void CFeatureRenderSprites::SortSprites(SSpritesContext& spritesContext)
 {
 	CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
 
-	if (m_sortMode == ESortMode::None || GetCVars()->e_ParticlesSortQuality == 0)
+	const uint renderState = spritesContext.m_runtime.ComponentParams().m_renderStateFlags;
+	if (m_sortMode == ESortMode::None || !(renderState & OS_ALPHA_BLEND) || GetCVars()->e_ParticlesSortQuality == 0)
 		return;
 
 	auto& memHeap = GetPSystem()->GetThreadData().memHeap;
@@ -472,7 +486,9 @@ public:
 	CSpriteFacingModeCamera(const CParticleContainer& container, const CCamera& camera)
 		: m_positions(container.GetIVec3Stream(EPVF_Position))
 		, m_sizes(container.GetIFStream(EPDT_Size))
-		, m_cameraPosition(camera.GetPosition()) {}
+		, m_cameraPosition(camera.GetPosition())
+		, m_cameraXAxis(camera.GetMatrix().GetColumn0())
+	{}
 
 	ILINE SParticleAxes Sample(TParticleId particleId) const
 	{
@@ -480,10 +496,9 @@ public:
 		const Vec3 particlePosition = m_positions.Load(particleId);
 		const float size = m_sizes.Load(particleId);
 
-		const Vec3 up = Vec3(0.0f, 0.0f, 1.0f);
-		const Vec3 normal = particlePosition - m_cameraPosition;
-		axes.xAxis = -up.Cross(normal).GetNormalized() * size;
-		axes.yAxis = -axes.xAxis.Cross(normal).GetNormalized() * size;
+		const Vec3 posView = particlePosition - m_cameraPosition;
+		axes.xAxis = Vec3(posView.y, -posView.x, 0.0f).GetNormalizedSafe(m_cameraXAxis) * size;
+		axes.yAxis = (posView ^ axes.xAxis).GetNormalized(size);
 
 		return axes;
 	}
@@ -492,6 +507,7 @@ private:
 	const IVec3Stream m_positions;
 	const IFStream    m_sizes;
 	Vec3              m_cameraPosition;
+	Vec3              m_cameraXAxis;
 };
 
 class CSpriteFacingModeVelocity
@@ -503,7 +519,8 @@ public:
 		, m_sizes(container.GetIFStream(EPDT_Size))
 		, m_cameraPosition(camera.GetPosition())
 		, m_cameraXAxis(camera.GetMatrix().GetColumn0())
-		, m_axisScale(axisScale) {}
+		, m_axisScale(axisScale)
+	{}
 
 	ILINE SParticleAxes Sample(TParticleId particleId) const
 	{
@@ -516,7 +533,7 @@ public:
 		const Vec3 normal = (particlePosition - m_cameraPosition).GetNormalized();
 		const float axisSize = max(size, particleVelocity.GetLength() * m_axisScale);
 		axes.xAxis = moveDirection * axisSize;
-		axes.yAxis = -moveDirection.Cross(normal) * size;
+		axes.yAxis = (normal ^ moveDirection) * size;
 
 		return axes;
 	}
@@ -535,7 +552,8 @@ class CSpriteFacingModeFree
 public:
 	CSpriteFacingModeFree(const CParticleContainer& container)
 		: m_orientations(container.GetIQuatStream(EPQF_Orientation))
-		, m_sizes(container.GetIFStream(EPDT_Size)) {}
+		, m_sizes(container.GetIFStream(EPDT_Size))
+	{}
 
 	ILINE SParticleAxes Sample(TParticleId particleId) const
 	{
@@ -593,7 +611,7 @@ void CFeatureRenderSprites::WriteToGPUMem(const SSpritesContext& spritesContext,
 	const TIStream<uint8> tiles = container.IStream(EPDT_Tile);
 	const Vec3 camPos = spritesContext.m_camInfo.pCamera->GetPosition();
 	const Vec3 emitterPosition = spritesContext.m_runtime.GetEmitter()->GetPos();
-	const Vec3 cameraOffset = (emitterPosition - camPos).GetNormalized() * m_cameraOffset;
+	const Vec3 cameraOffset = (emitterPosition - camPos).GetNormalized(m_cameraOffset);
 	const auto& particleIds = spritesContext.m_particleIds;
 	const auto& spriteAlphas = spritesContext.m_spriteAlphas;
 	const uint numSprites = spritesContext.m_particleIds.size();
