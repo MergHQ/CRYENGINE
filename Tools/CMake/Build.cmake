@@ -1,19 +1,3 @@
-cmake_minimum_required(VERSION 3.6.2)
-
-set(TOOLS_CMAKE_DIR "${CMAKE_CURRENT_LIST_DIR}")
-
-# Bootstrap support
-if(EXISTS "${TOOLS_CMAKE_DIR}/Bootstrap.cmake")
-	include("${TOOLS_CMAKE_DIR}/Bootstrap.cmake")
-	if(OPTION_AUTO_BOOTSTRAP)
-		set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "bootstrap.dat")
-	endif()
-elseif(EXISTS "${TOOLS_CMAKE_DIR}/DownloadSDKs.cmake")
-	include("${TOOLS_CMAKE_DIR}/DownloadSDKs.cmake")
-endif()
-
-include("${TOOLS_CMAKE_DIR}/Configure.cmake")
-
 if(OPTION_ENGINE OR OPTION_SHADERCACHEGEN OR OPTION_SCALEFORMHELPER OR OPTION_SANDBOX OR OPTION_PAKTOOLS OR OPTION_DOXYGEN_EXAMPLES)
 	# Add custom project with just listing of cmake files
 	add_subdirectory("${TOOLS_CMAKE_DIR}")
