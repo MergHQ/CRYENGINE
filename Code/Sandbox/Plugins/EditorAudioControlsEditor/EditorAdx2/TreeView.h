@@ -24,7 +24,7 @@ public:
 	CTreeView& operator=(CTreeView const&) = delete;
 	CTreeView& operator=(CTreeView&&) = delete;
 
-	explicit CTreeView(QWidget* const pParent, QAdvancedTreeView::BehaviorFlags const flags = QAdvancedTreeView::BehaviorFlags(UseItemModelAttribute));
+	explicit CTreeView(QWidget* const pParent);
 	virtual ~CTreeView() override = default;
 
 	void ExpandSelection();

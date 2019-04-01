@@ -35,10 +35,12 @@ void CControl::SetName(string const& name)
 		if (m_type != EAssetType::State)
 		{
 			m_name = AssetUtils::GenerateUniqueControlName(fixedName, m_type);
+			m_id = AssetUtils::GenerateUniqueAssetId(m_name, m_type);
 		}
 		else
 		{
 			m_name = AssetUtils::GenerateUniqueName(fixedName, m_type, m_pParent);
+			m_id = AssetUtils::GenerateUniqueStateId(m_pParent->GetName(), m_name);
 		}
 
 		SignalOnAfterControlModified();

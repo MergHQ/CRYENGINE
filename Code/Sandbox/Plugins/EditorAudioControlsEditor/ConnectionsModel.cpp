@@ -218,129 +218,122 @@ QVariant CConnectionsModel::data(QModelIndex const& index, int role) const
 
 			if (pIItem != nullptr)
 			{
-				if (role == static_cast<int>(ModelUtils::ERoles::Name))
+				switch (index.column())
 				{
-					variant = QtUtil::ToQString(pIItem->GetName());
-				}
-				else
-				{
-					switch (index.column())
+				case static_cast<int>(EColumns::Notification):
 					{
-					case static_cast<int>(EColumns::Notification):
+						EItemFlags const flags = pIItem->GetFlags();
+
+						switch (role)
 						{
-							EItemFlags const flags = pIItem->GetFlags();
-
-							switch (role)
+						case Qt::DecorationRole:
 							{
-							case Qt::DecorationRole:
+								if ((flags& EItemFlags::IsPlaceHolder) != 0)
 								{
-									if ((flags& EItemFlags::IsPlaceHolder) != 0)
-									{
-										variant = ModelUtils::GetItemNotificationIcon(ModelUtils::EItemStatus::Placeholder);
-									}
-									else if ((flags& EItemFlags::IsLocalized) != 0)
-									{
-										variant = ModelUtils::GetItemNotificationIcon(ModelUtils::EItemStatus::Localized);
-									}
+									variant = ModelUtils::GetItemNotificationIcon(ModelUtils::EItemStatus::Placeholder);
+								}
+								else if ((flags& EItemFlags::IsLocalized) != 0)
+								{
+									variant = ModelUtils::GetItemNotificationIcon(ModelUtils::EItemStatus::Localized);
+								}
 
-									break;
-								}
-							case Qt::ToolTipRole:
-								{
-									if ((flags& EItemFlags::IsPlaceHolder) != 0)
-									{
-										variant = g_pIImpl->GetItemTypeName(pIItem) + tr(" not found in middleware project");
-									}
-									else if ((flags& EItemFlags::IsLocalized) != 0)
-									{
-										variant = g_pIImpl->GetItemTypeName(pIItem) + tr(" is localized");
-									}
-
-									break;
-								}
-							case static_cast<int>(ModelUtils::ERoles::Id):
-								{
-									variant = pIItem->GetId();
-									break;
-								}
-							default:
-								{
-									break;
-								}
+								break;
 							}
-
-							break;
-						}
-					case static_cast<int>(EColumns::Name):
-						{
-							switch (role)
+						case Qt::ToolTipRole:
 							{
-							case Qt::DecorationRole:
+								if ((flags& EItemFlags::IsPlaceHolder) != 0)
 								{
-									variant = g_pIImpl->GetItemIcon(pIItem);
-									break;
+									variant = g_pIImpl->GetItemTypeName(pIItem) + tr(" not found in middleware project");
 								}
-							case Qt::DisplayRole: // Intentional fall-through.
-							case Qt::ToolTipRole:
+								else if ((flags& EItemFlags::IsLocalized) != 0)
 								{
-									variant = QtUtil::ToQString(pIItem->GetName());
-									break;
+									variant = g_pIImpl->GetItemTypeName(pIItem) + tr(" is localized");
 								}
-							case static_cast<int>(ModelUtils::ERoles::Id):
-								{
-									variant = pIItem->GetId();
-									break;
-								}
-							default:
-								{
-									break;
-								}
+
+								break;
+							}
+						case static_cast<int>(ModelUtils::ERoles::Id):
+							{
+								variant = pIItem->GetId();
+								break;
+							}
+						default:
+							{
+								break;
 							}
 						}
+
 						break;
-					case static_cast<int>(EColumns::Path):
+					}
+				case static_cast<int>(EColumns::Name):
+					{
+						switch (role)
 						{
-							switch (role)
+						case Qt::DecorationRole:
 							{
-							case Qt::DisplayRole: // Intentional fall-through.
-							case Qt::ToolTipRole:
-								{
-									QString path;
-									Impl::IItem const* pIItemParent = pIItem->GetParent();
-
-									while (pIItemParent != nullptr)
-									{
-										QString parentName = QtUtil::ToQString(pIItemParent->GetName());
-
-										if (!parentName.isEmpty())
-										{
-											if (path.isEmpty())
-											{
-												path = parentName;
-											}
-											else
-											{
-												path = parentName + "/" + path;
-											}
-										}
-										pIItemParent = pIItemParent->GetParent();
-									}
-
-									variant = path;
-									break;
-								}
-							default:
-								{
-									break;
-								}
+								variant = g_pIImpl->GetItemIcon(pIItem);
+								break;
 							}
-
-							break;
+						case Qt::DisplayRole: // Intentional fall-through.
+						case Qt::ToolTipRole:
+							{
+								variant = QtUtil::ToQString(pIItem->GetName());
+								break;
+							}
+						case static_cast<int>(ModelUtils::ERoles::Id):
+							{
+								variant = pIItem->GetId();
+								break;
+							}
+						default:
+							{
+								break;
+							}
 						}
-					default:
+					}
+					break;
+				case static_cast<int>(EColumns::Path):
+					{
+						switch (role)
 						{
-							break;
+						case Qt::DisplayRole: // Intentional fall-through.
+						case Qt::ToolTipRole:
+							{
+								QString path;
+								Impl::IItem const* pIItemParent = pIItem->GetParent();
+
+								while (pIItemParent != nullptr)
+								{
+									QString parentName = QtUtil::ToQString(pIItemParent->GetName());
+
+									if (!parentName.isEmpty())
+									{
+										if (path.isEmpty())
+										{
+											path = parentName;
+										}
+										else
+										{
+											path = parentName + "/" + path;
+										}
+									}
+									pIItemParent = pIItemParent->GetParent();
+								}
+
+								variant = path;
+								break;
+							}
+						default:
+							{
+								break;
+							}
 						}
+
+						break;
+					}
+				default:
+					{
+						break;
 					}
 				}
 			}

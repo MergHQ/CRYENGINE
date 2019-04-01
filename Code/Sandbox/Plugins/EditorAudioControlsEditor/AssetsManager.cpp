@@ -14,8 +14,6 @@
 
 namespace ACE
 {
-ControlId CAssetsManager::m_nextId = 1;
-
 constexpr uint16 g_controlPoolSize = 8192;
 constexpr uint16 g_folderPoolSize = 1024;
 constexpr uint16 g_libraryPoolSize = 256;
@@ -70,7 +68,7 @@ void CAssetsManager::Initialize()
 }
 
 //////////////////////////////////////////////////////////////////////////
-CControl* CAssetsManager::CreateControl(string const& name, EAssetType const type, CAsset* const pParent /*= nullptr*/)
+CControl* CAssetsManager::CreateControl(string const& name, EAssetType const type, CAsset* const pParent)
 {
 	CControl* pControl = nullptr;
 
@@ -90,7 +88,8 @@ CControl* CAssetsManager::CreateControl(string const& name, EAssetType const typ
 			{
 				SignalOnBeforeAssetAdded(pParent);
 
-				auto const pNewControl = new CControl(name, GenerateUniqueId(), type);
+				ControlId const controlId = (type != EAssetType::State) ? AssetUtils::GenerateUniqueAssetId(name, type) : AssetUtils::GenerateUniqueStateId(pParent->GetName(), name);
+				auto const pNewControl = new CControl(name, controlId, type);
 				m_controls.push_back(pNewControl);
 
 				pNewControl->SetParent(pParent);
@@ -210,7 +209,7 @@ CLibrary* CAssetsManager::CreateLibrary(string const& name)
 		if (!foundLibrary)
 		{
 			SignalOnBeforeLibraryAdded();
-			auto const pLibrary = new CLibrary(name);
+			auto const pLibrary = new CLibrary(name, AssetUtils::GenerateUniqueAssetId(name, EAssetType::Library));
 			m_libraries.push_back(pLibrary);
 			SignalOnAfterLibraryAdded(pLibrary);
 			pLibrary->SetModified(true);
@@ -222,7 +221,7 @@ CLibrary* CAssetsManager::CreateLibrary(string const& name)
 }
 
 //////////////////////////////////////////////////////////////////////////
-CAsset* CAssetsManager::CreateFolder(string const& name, CAsset* const pParent /*= nullptr*/)
+CAsset* CAssetsManager::CreateFolder(string const& name, CAsset* const pParent)
 {
 	CAsset* pAsset = nullptr;
 	bool foundFolder = false;
@@ -247,7 +246,7 @@ CAsset* CAssetsManager::CreateFolder(string const& name, CAsset* const pParent /
 
 			if (!foundFolder)
 			{
-				auto const pFolder = new CFolder(name);
+				auto const pFolder = new CFolder(name, AssetUtils::GenerateUniqueFolderId(name, pParent));
 
 				if (pFolder != nullptr)
 				{
@@ -622,38 +621,40 @@ void CAssetsManager::DeleteAsset(CAsset* const pAsset)
 //////////////////////////////////////////////////////////////////////////
 void CAssetsManager::MoveAssets(CAsset* const pParent, Assets const& assets)
 {
-	if (pParent != nullptr)
+	for (auto const pAsset : assets)
 	{
-		for (auto const pAsset : assets)
+		CAsset* const pPreviousParent = pAsset->GetParent();
+
+		if (pPreviousParent != nullptr)
 		{
-			if (pAsset != nullptr)
+			SignalOnBeforeAssetRemoved(pAsset);
+			pPreviousParent->RemoveChild(pAsset);
+			pAsset->SetParent(nullptr);
+			SignalOnAfterAssetRemoved(pPreviousParent, pAsset);
+			pPreviousParent->SetModified(true);
+		}
+
+		SignalOnBeforeAssetAdded(pParent);
+
+		switch (pAsset->GetType())
+		{
+		case EAssetType::State: // Intentional fall-through.
+		case EAssetType::Folder:
 			{
-				CAsset* const pPreviousParent = pAsset->GetParent();
-
-				if (pPreviousParent != nullptr)
-				{
-					SignalOnBeforeAssetRemoved(pAsset);
-					pPreviousParent->RemoveChild(pAsset);
-					pAsset->SetParent(nullptr);
-					SignalOnAfterAssetRemoved(pPreviousParent, pAsset);
-					pPreviousParent->SetModified(true);
-				}
-
-				SignalOnBeforeAssetAdded(pParent);
-				EAssetType const type = pAsset->GetType();
-
-				if ((type == EAssetType::State) || (type == EAssetType::Folder))
-				{
-					// To prevent duplicated names of states and folders.
-					pAsset->UpdateNameOnMove(pParent);
-				}
-
-				pParent->AddChild(pAsset);
-				pAsset->SetParent(pParent);
-				SignalOnAfterAssetAdded(pAsset);
-				pAsset->SetModified(true);
+				// To prevent duplicated names of states and folders.
+				pAsset->UpdateNameOnMove(pParent);
+				break;
+			}
+		default:
+			{
+				break;
 			}
 		}
+
+		pParent->AddChild(pAsset);
+		pAsset->SetParent(pParent);
+		SignalOnAfterAssetAdded(pAsset);
+		pAsset->SetModified(true);
 	}
 }
 
@@ -661,7 +662,7 @@ void CAssetsManager::MoveAssets(CAsset* const pParent, Assets const& assets)
 void CAssetsManager::CreateAndConnectImplItems(Impl::IItem* const pIItem, CAsset* const pParent)
 {
 	SignalOnBeforeAssetAdded(pParent);
-	CAsset* pAsset = CreateAndConnectImplItemsRecursively(pIItem, pParent);
+	CAsset* const pAsset = CreateAndConnectImplItemsRecursively(pIItem, pParent);
 	SignalOnAfterAssetAdded(pAsset);
 }
 
@@ -693,7 +694,8 @@ CAsset* CAssetsManager::CreateAndConnectImplItemsRecursively(Impl::IItem* const 
 			name = AssetUtils::GenerateUniqueName(name, type, pParent);
 		}
 
-		auto const pControl = new CControl(name, GenerateUniqueId(), type);
+		ControlId const controlId = (type != EAssetType::State) ? AssetUtils::GenerateUniqueAssetId(name, type) : AssetUtils::GenerateUniqueStateId(pParent->GetName(), name);
+		auto const pControl = new CControl(name, controlId, type);
 		pControl->SetParent(pParent);
 		pParent->AddChild(pControl);
 		m_controls.push_back(pControl);
@@ -711,7 +713,7 @@ CAsset* CAssetsManager::CreateAndConnectImplItemsRecursively(Impl::IItem* const 
 	{
 		// If the type of the control is invalid then it must be a folder or container
 		name = AssetUtils::GenerateUniqueName(name, EAssetType::Folder, pParent);
-		auto const pFolder = new CFolder(name);
+		auto const pFolder = new CFolder(name, AssetUtils::GenerateUniqueFolderId(name, pParent));
 		pParent->AddChild(pFolder);
 		pFolder->SetParent(pParent);
 

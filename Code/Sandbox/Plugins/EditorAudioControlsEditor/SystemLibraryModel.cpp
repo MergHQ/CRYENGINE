@@ -187,10 +187,6 @@ QVariant CSystemLibraryModel::data(QModelIndex const& index, int role) const
 			{
 				variant = (pAsset->GetFlags() & EAssetFlags::IsDefaultControl) != 0;
 			}
-			else if (role == static_cast<int>(ModelUtils::ERoles::Name))
-			{
-				variant = QtUtil::ToQString(pAsset->GetName());
-			}
 			else
 			{
 				EAssetType const assetType = pAsset->GetType();
@@ -422,6 +418,11 @@ QVariant CSystemLibraryModel::data(QModelIndex const& index, int role) const
 									variant = QtUtil::ToQString(pAsset->GetName());
 								}
 
+								break;
+							}
+						case static_cast<int>(ModelUtils::ERoles::Id):
+							{
+								variant = pAsset->GetId();
 								break;
 							}
 						case static_cast<int>(ModelUtils::ERoles::SortPriority):

@@ -15,8 +15,8 @@ namespace Impl
 namespace Fmod
 {
 //////////////////////////////////////////////////////////////////////////
-CTreeView::CTreeView(QWidget* const pParent, QAdvancedTreeView::BehaviorFlags const flags /*= QAdvancedTreeView::BehaviorFlags(UseItemModelAttribute)*/)
-	: QAdvancedTreeView(QAdvancedTreeView::BehaviorFlags(flags), pParent)
+CTreeView::CTreeView(QWidget* const pParent)
+	: QAdvancedTreeView(QAdvancedTreeView::BehaviorFlags(UseItemModelAttribute), pParent)
 {
 	QObject::connect(header(), &QHeaderView::sortIndicatorChanged, [this]() { scrollTo(currentIndex()); });
 }

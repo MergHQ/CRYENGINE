@@ -67,7 +67,7 @@ void CContextModel::ConnectSignals()
 			endInsertRows();
 		}, reinterpret_cast<uintptr_t>(this));
 
-	g_contextManager.SignalOnbeforeContextRemoved.Connect([this](CContext const* const pContext)
+	g_contextManager.SignalOnBeforeContextRemoved.Connect([this](CContext const* const pContext)
 		{
 			size_t const numContexts = g_contexts.size();
 
@@ -103,7 +103,7 @@ void CContextModel::DisconnectSignals()
 {
 	g_contextManager.SignalOnBeforeContextAdded.DisconnectById(reinterpret_cast<uintptr_t>(this));
 	g_contextManager.SignalOnAfterContextAdded.DisconnectById(reinterpret_cast<uintptr_t>(this));
-	g_contextManager.SignalOnbeforeContextRemoved.DisconnectById(reinterpret_cast<uintptr_t>(this));
+	g_contextManager.SignalOnBeforeContextRemoved.DisconnectById(reinterpret_cast<uintptr_t>(this));
 	g_contextManager.SignalOnAfterContextRemoved.DisconnectById(reinterpret_cast<uintptr_t>(this));
 	g_contextManager.SignalOnBeforeClear.DisconnectById(reinterpret_cast<uintptr_t>(this));
 	g_contextManager.SignalOnAfterClear.DisconnectById(reinterpret_cast<uintptr_t>(this));
@@ -139,81 +139,78 @@ QVariant CContextModel::data(QModelIndex const& index, int role) const
 
 		if (pContext != nullptr)
 		{
-			if (role == static_cast<int>(ModelUtils::ERoles::Name))
+			switch (index.column())
 			{
-				variant = QtUtil::ToQString(pContext->GetName());
-			}
-			else
-			{
-				switch (index.column())
+			case static_cast<int>(EColumns::Notification):
 				{
-				case static_cast<int>(EColumns::Notification):
+					switch (role)
 					{
-						switch (role)
+					case Qt::DecorationRole:
 						{
-						case Qt::DecorationRole:
+							if (pContext->IsActive())
 							{
-								if (pContext->IsActive())
-								{
-									variant = ModelUtils::s_contextActiveIcon;
-								}
+								variant = ModelUtils::s_contextActiveIcon;
+							}
 
-								break;
-							}
-						case Qt::ToolTipRole:
-							{
-								if (pContext->IsActive())
-								{
-									variant = "Context is active";
-								}
-
-								break;
-							}
-						default:
-							{
-								break;
-							}
+							break;
 						}
-
-						break;
-					}
-				case static_cast<int>(EColumns::Name):
-					{
-						switch (role)
+					case Qt::ToolTipRole:
 						{
-						case Qt::DisplayRole: // Intentional fall-through.
-						case Qt::ToolTipRole: // Intentional fall-through.
-						case Qt::EditRole:
+							if (pContext->IsActive())
 							{
-								variant = QtUtil::ToQString(pContext->GetName());
-								break;
+								variant = "Context is active";
 							}
-						case static_cast<int>(ModelUtils::ERoles::InternalPointer):
-							{
-								variant = reinterpret_cast<intptr_t>(g_contexts[static_cast<size_t>(index.row())]);
-								break;
-							}
-						case static_cast<int>(ModelUtils::ERoles::IsDefaultControl):
-							{
-								variant = pContext->GetId() == CryAudio::GlobalContextId;
-								break;
-							}
-						default:
-							{
-								break;
-							}
-						}
 
-						break;
+							break;
+						}
+					default:
+						{
+							break;
+						}
 					}
-				default:
+
+					break;
+				}
+			case static_cast<int>(EColumns::Name):
+				{
+					switch (role)
 					{
-						break;
+					case Qt::DisplayRole: // Intentional fall-through.
+					case Qt::ToolTipRole: // Intentional fall-through.
+					case Qt::EditRole:
+						{
+							variant = QtUtil::ToQString(pContext->GetName());
+							break;
+						}
+					case static_cast<int>(ModelUtils::ERoles::Id):
+						{
+							variant = pContext->GetId();
+							break;
+						}
+					case static_cast<int>(ModelUtils::ERoles::InternalPointer):
+						{
+							variant = reinterpret_cast<intptr_t>(g_contexts[static_cast<size_t>(index.row())]);
+							break;
+						}
+					case static_cast<int>(ModelUtils::ERoles::IsDefaultControl):
+						{
+							variant = pContext->GetId() == CryAudio::GlobalContextId;
+							break;
+						}
+					default:
+						{
+							break;
+						}
 					}
+
+					break;
+				}
+			default:
+				{
+					break;
 				}
 			}
 		}
-
 	}
 
 	return variant;

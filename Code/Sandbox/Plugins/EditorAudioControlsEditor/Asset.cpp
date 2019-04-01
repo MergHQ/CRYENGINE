@@ -56,12 +56,14 @@ void CAsset::SetName(string const& name)
 		if (m_type == EAssetType::Library)
 		{
 			m_name = AssetUtils::GenerateUniqueLibraryName(fixedName);
+			m_id = AssetUtils::GenerateUniqueAssetId(m_name, m_type);
 			SetModified(true);
 			g_assetsManager.OnAssetRenamed(this);
 		}
 		else if (m_type == EAssetType::Folder)
 		{
 			m_name = AssetUtils::GenerateUniqueName(fixedName, m_type, m_pParent);
+			m_id = AssetUtils::GenerateUniqueFolderId(m_name, m_pParent);
 			SetModified(true);
 			g_assetsManager.OnAssetRenamed(this);
 		}
@@ -72,6 +74,24 @@ void CAsset::SetName(string const& name)
 void CAsset::UpdateNameOnMove(CAsset* const pParent)
 {
 	m_name = AssetUtils::GenerateUniqueName(m_name, m_type, pParent);
+
+	switch (m_type)
+	{
+	case EAssetType::State:
+		{
+			m_id = AssetUtils::GenerateUniqueStateId(pParent->GetName(), m_name);
+			break;
+		}
+	case EAssetType::Folder:
+		{
+			m_id = AssetUtils::GenerateUniqueFolderId(m_name, pParent);
+			break;
+		}
+	default:
+		{
+			break;
+		}
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////
