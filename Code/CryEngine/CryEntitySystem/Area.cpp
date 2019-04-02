@@ -2491,7 +2491,11 @@ void CArea::ResolveEntityIds()
 	{
 		for (std::pair<EntityId, EntityGUID>& identifierPair : m_entityIdentifiers)
 		{
-			identifierPair.first = g_pIEntitySystem->FindEntityByGuid(identifierPair.second);
+			if (identifierPair.first == INVALID_ENTITYID)
+			{
+				identifierPair.first = g_pIEntitySystem->FindEntityByGuid(identifierPair.second);
+				AddEntity(identifierPair.first);
+			}
 		}
 
 		m_state |= Cry::AreaManager::EAreaState::EntityIdsResolved;
