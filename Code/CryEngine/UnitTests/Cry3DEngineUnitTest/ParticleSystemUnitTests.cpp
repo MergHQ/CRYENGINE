@@ -76,6 +76,9 @@ void ParticleContainerRemoveTest(size_t containerSz, TParticleId* toRemove, size
 
 TEST(CParticleContainerTest, Remove)
 {
+	gEnv->startProfilingSection = [](SProfilingSection*) { return false; };
+	gEnv->recordProfilingMarker = [](SProfilingMarker*) {};
+
 	{
 		TParticleId toRemove[] = { 3, 4 };
 		ParticleContainerRemoveTest(5, toRemove, arraysize(toRemove));

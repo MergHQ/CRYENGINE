@@ -5,7 +5,7 @@
 #include "Area.h"
 #include "Entity.h"
 #include <CryRenderer/IRenderAuxGeom.h>
-
+#include <CrySystem/Profilers/SamplesHistory.h>
 
 #if 0
 #define PROFILE_AREA_FUNC_ARG(arg) CRY_PROFILE_FUNCTION_ARG(PROFILE_ENTITY, arg)
@@ -135,8 +135,8 @@ struct SUpdateEntityAreaDebug
 class CUpdateAreaProfileHistory
 {
 public:
-	typedef CFrameProfilerSamplesHistory<size_t, PROFILE_HISTORY_COUNT> TSamplesHistoryCount;
-	typedef CFrameProfilerSamplesHistory<float, PROFILE_HISTORY_COUNT> TSamplesHistoryTime;
+	typedef CSamplesHistory<size_t, 64> TSamplesHistoryCount;
+	typedef CSamplesHistory<float, 64> TSamplesHistoryTime;
 
 	struct SAreaHistory
 	{

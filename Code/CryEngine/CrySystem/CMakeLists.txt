@@ -79,6 +79,12 @@ add_sources("CrySystem_uber_1.cpp"
 		"OrbisDebugCallStack.cpp"
 )
 
+add_sources("CrySystem_uber_4.cpp"
+	PROJECTS CrySystem
+	SOURCE_GROUP "Profiler"
+		"Profiling/PlatformProfiler_orbis.cpp"
+)
+
 add_sources("CrySystem_uber_7.cpp"
 	PROJECTS CrySystem
 	SOURCE_GROUP "PlatformOS"
@@ -300,11 +306,17 @@ add_sources("CrySystem_uber_4.cpp"
 		"DiskProfiler.cpp"
 		"DiskProfilerWindowsSpecific.cpp"
 		"DiskProfilerWindowsSpecific.h"
-		"FrameProfileRender.cpp"
-		"FrameProfileSystem.cpp"
+		"Profiling/CryProfilingSystem.cpp"
+		"Profiling/ProfilingRenderer.cpp"
+		"Profiling/CryBrofiler.cpp"
+		"Profiling/CryProfilingSystemSharedImpl.cpp"
 		"PerfHUD.cpp"
 		"DiskProfiler.h"
-		"FrameProfileSystem.h"
+		"Profiling/ProfilingRenderer.h"
+		"Profiling/CryProfilingSystem.h"
+		"Profiling/CryBrofiler.h"
+		"Profiling/PlatformProfiler.h"
+		"Profiling/CryProfilingSystemSharedImpl.h"
 		"PerfHUD.h"
 		"Watchdog.h"
 		"Watchdog.cpp"
@@ -492,6 +504,12 @@ add_sources("CrySystem_uber_1.cpp"
 		"DurangoDebugCallstack.cpp"
 )
 
+add_sources("CrySystem_uber_4.cpp"
+	PROJECTS CrySystem
+	SOURCE_GROUP "Profiler"
+		"Profiling/PlatformProfiler_durango.cpp"
+)
+
 add_sources("CrySystem_uber_7.cpp"
 	PROJECTS CrySystem
 	SOURCE_GROUP "PlatformOS"
@@ -503,6 +521,13 @@ add_sources("CrySystem_uber_7.cpp"
 		"PlatformOS/SaveReaderWriter_Durango.cpp"
 		"PlatformOS/PlatformOS_Durango.cpp"
 		"PlatformOS/PlatformOS_Durango.h"
+)
+
+sources_platform(WINDOWS)
+add_sources("CrySystem_uber_4.cpp"
+	PROJECTS CrySystem
+	SOURCE_GROUP "Profiler"
+		"Profiling/PlatformProfiler_win.cpp"
 )
 
 # -- platformos.waf_files --
@@ -544,6 +569,12 @@ MACRO(setup_crysystem)
 	if (OPTION_ENABLE_CRASHRPT)
 		target_compile_definitions(${THIS_PROJECT} PRIVATE CRY_USE_CRASHRPT=1)
 		target_link_libraries( ${THIS_PROJECT} PRIVATE crashrpt )
+	endif()
+
+	if (OPTION_ENABLE_BROFILER AND OPTION_ENGINE)
+		target_compile_definitions(${THIS_PROJECT} PRIVATE USE_BROFILER)
+		target_include_directories( ${THIS_PROJECT} PRIVATE "${SDK_DIR}/Brofiler")
+		target_link_libraries( ${THIS_PROJECT} PRIVATE "${SDK_DIR}/Brofiler/ProfilerCore64.lib")
 	endif()
 
 	if (ORBIS OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")

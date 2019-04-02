@@ -682,12 +682,9 @@ uint32 CAsyncIOFileRequest::ReadFileResume(CStreamingIOThread* pIOThread)
 
 uint32 CAsyncIOFileRequest::ReadFileInPages(CStreamingIOThread* pIOThread, CCryFile& file)
 {
-#if !defined(_RELEASE) || defined(PERFORMANCE_BUILD)
+#if defined(ENABLE_PROFILING_CODE)
 	const char* pFileNameShort = PathUtil::GetFile(m_strFileName.c_str());
-	char eventName[128] = { 0 };
-	cry_sprintf(eventName, "ReadFileInPages %s", pFileNameShort);
-	CRY_PROFILE_REGION(PROFILE_SYSTEM, "ReadFileInPages");
-	CRYPROFILE_SCOPE_PLATFORM_MARKER(eventName);
+	CRY_PROFILE_REGION_ARG(PROFILE_SYSTEM, "ReadFileInPages", pFileNameShort);
 #endif
 
 	CCryPak* pCryPak = static_cast<CCryPak*>(gEnv->pCryPak);

@@ -12,8 +12,6 @@
 
 #include <Cry3DEngine/I3DEngine.h>
 
-#include <CrySystem/Profilers/FrameProfiler/FrameProfiler.h>
-
 #include <QToolBar>
 #include <QVBoxLayout>
 

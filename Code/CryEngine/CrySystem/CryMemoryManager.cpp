@@ -110,8 +110,8 @@ static void DeadListPush(void* p, size_t sz)
 //////////////////////////////////////////////////////////////////////////
 // Some globals for fast profiling.
 //////////////////////////////////////////////////////////////////////////
-LONG g_TotalAllocatedMemory = 0;
-thread_local LONG tls_ThreadAllocatedMemory = 0;
+int64 g_TotalAllocatedMemory = 0;
+thread_local int64 tls_allocatedMemory = 0;
 
 #ifndef CRYMEMORYMANAGER_API
 	#define CRYMEMORYMANAGER_API
@@ -216,8 +216,8 @@ CRYMEMORYMANAGER_API void* CryMalloc(size_t size, size_t& allocated, size_t alig
 		return 0;   // don't crash - allow caller to react
 	}
 
-	CryInterlockedExchangeAdd(&g_TotalAllocatedMemory, sizePlus);
-	tls_ThreadAllocatedMemory += sizePlus;
+	CryInterlockedAdd(&g_TotalAllocatedMemory, int64(sizePlus));
+	tls_allocatedMemory += sizePlus;
 	allocated = sizePlus;
 
 	MEMREPLAY_SCOPE_ALLOC(p, sizePlus, 0);
@@ -357,9 +357,9 @@ size_t CryFree(void* p, size_t alignment)
 				}
 			}
 
-			LONG lsize = size;
-			CryInterlockedExchangeAdd(&g_TotalAllocatedMemory, -lsize);
-			tls_ThreadAllocatedMemory -= lsize;
+			int64 lsize = size;
+			CryInterlockedAdd(&g_TotalAllocatedMemory, -lsize);
+			tls_allocatedMemory -= lsize;
 
 			MEMREPLAY_SCOPE_FREE(pid);
 		}
@@ -396,9 +396,9 @@ size_t CryFree(void* p, size_t alignment)
 			}
 		}
 
-		LONG lsize = size;
-		CryInterlockedExchangeAdd(&g_TotalAllocatedMemory, -lsize);
-		tls_ThreadAllocatedMemory -= lsize;
+		int64 lsize = size;
+		CryInterlockedAdd(&g_TotalAllocatedMemory, -lsize);
+		tls_allocatedMemory -= lsize;
 
 		MEMREPLAY_SCOPE_FREE(pid);
 	}
@@ -409,7 +409,7 @@ size_t CryFree(void* p, size_t alignment)
 CRYMEMORYMANAGER_API void CryFlushAll()  // releases/resets ALL memory... this is useful for restarting the game
 {
 	g_TotalAllocatedMemory = 0;
-	tls_ThreadAllocatedMemory = 0;
+	tls_allocatedMemory = 0;
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -417,13 +417,12 @@ CRYMEMORYMANAGER_API void CryFlushAll()  // releases/resets ALL memory... this i
 //////////////////////////////////////////////////////////////////////////
 CRYMEMORYMANAGER_API int CryMemoryGetAllocatedSize()
 {
-	return g_TotalAllocatedMemory;
+	return int(g_TotalAllocatedMemory);
 }
 
-//////////////////////////////////////////////////////////////////////////
-CRYMEMORYMANAGER_API int CryMemoryGetThreadAllocatedSize()
+int64 CryMemoryGetThreadAllocatedSize()
 {
-	return tls_ThreadAllocatedMemory;
+	return tls_allocatedMemory;
 }
 
 //////////////////////////////////////////////////////////////////////////

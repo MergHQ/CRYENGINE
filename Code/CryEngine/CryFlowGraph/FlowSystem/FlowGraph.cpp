@@ -352,7 +352,7 @@ CFlowGraphBase::~CFlowGraphBase()
 
 const char* CFlowGraphBase::GetDebugName() const
 {
-#if !defined(_RELEASE)
+#if defined(ENABLE_PROFILING_CODE)
 	return m_debugName.c_str();
 #else
 	return "";
@@ -361,14 +361,14 @@ const char* CFlowGraphBase::GetDebugName() const
 
 void CFlowGraphBase::SetDebugName(const char* sName)
 {
-#if !defined(_RELEASE)
+#if defined(ENABLE_PROFILING_CODE)
 	m_debugName = sName;
 #endif
 }
 
 void CFlowGraphBase::CreateDebugName()
 {
-#if !defined(_RELEASE)
+#if defined(ENABLE_PROFILING_CODE)
 	const char* sType;
 	stack_string sExtra = "";
 
@@ -548,7 +548,7 @@ void CFlowGraphBase::CloneInner(CFlowGraphBase* pClone)
 	pClone->m_Type = m_Type;
 	// pClone->m_bActive = m_bActive;
 	// pClone->m_bSuspended = m_bSuspended;
-#if !defined (_RELEASE)
+#if defined(ENABLE_PROFILING_CODE)
 	// copy the name as is. something else should overwrite it (such as the module manager or changing the graph's entity)
 	pClone->m_debugName = m_debugName;
 #endif

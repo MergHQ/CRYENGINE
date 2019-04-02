@@ -2,8 +2,6 @@
 
 #pragma once
 
-#include <CrySystem/Profilers/FrameProfiler/FrameProfiler.h>
-
 #define PP_CONCAT2(A, B) A ## B
 #define PP_CONCAT(A, B)  PP_CONCAT2(A, B)
 
@@ -61,13 +59,14 @@
 	#define PROFILE_LABEL(X)      do { CRY_PROFILE_MARKER(X); PROFILE_LABEL_GPU(X); } while (0)
 
 	#define PROFILE_LABEL_PUSH(X) \
-		do { CRY_PROFILE_PUSH_MARKER(X); PROFILE_LABEL_PUSH_GPU(X); if (gcpRendD3D->m_pPipelineProfiler) gcpRendD3D->m_pPipelineProfiler->BeginSection(X); } while (0)
+		do { PROFILE_LABEL_PUSH_GPU(X); if (gcpRendD3D->m_pPipelineProfiler) gcpRendD3D->m_pPipelineProfiler->BeginSection(X); } while (0)
 	
 	#define PROFILE_LABEL_POP(X)\
-		do { CRY_PROFILE_POP_MARKER(X);  PROFILE_LABEL_POP_GPU(X);  if (gcpRendD3D->m_pPipelineProfiler) gcpRendD3D->m_pPipelineProfiler->EndSection(X); } while (0)
+		do { PROFILE_LABEL_POP_GPU(X);  if (gcpRendD3D->m_pPipelineProfiler) gcpRendD3D->m_pPipelineProfiler->EndSection(X); } while (0)
 
 	// scope util class for GPU profiling Marker
 	#define PROFILE_LABEL_SCOPE(X)                             \
+	  CRY_PROFILE_SECTION(PROFILE_RENDERER, X);                \
 	  class CProfileLabelScope                                 \
 	  {                                                        \
 	    const char* m_label;                                   \
@@ -86,10 +85,4 @@
 	#define PROFILE_LABEL_SCOPE(X)
 #endif
 
-#define PROFILE_LABEL_SHADER(X) PROFILE_LABEL(X)
-
-#if defined(ENABLE_FRAME_PROFILER) && !defined(_RELEASE)
-	#define FUNCTION_PROFILER_RENDER_FLAT CRY_PROFILE_FUNCTION(PROFILE_RENDERER)
-#else
-	#define FUNCTION_PROFILER_RENDER_FLAT
-#endif
+#define FUNCTION_PROFILER_RENDER_FLAT CRY_PROFILE_FUNCTION(PROFILE_RENDERER)

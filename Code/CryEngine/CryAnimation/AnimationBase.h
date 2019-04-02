@@ -63,7 +63,6 @@ extern IRenderer* g_pIRenderer;
 extern IPhysicalWorld* g_pIPhysicalWorld;
 extern I3DEngine* g_pI3DEngine;
 
-extern bool g_bProfilerOn;
 extern f32 g_fCurrTime;
 extern f32 g_AverageFrameTime;
 extern CAnimation g_DefaultAnim;

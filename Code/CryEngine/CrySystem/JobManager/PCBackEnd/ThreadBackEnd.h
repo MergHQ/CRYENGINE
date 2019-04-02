@@ -278,7 +278,7 @@ public:
 	// returns the index to use for the frame profiler
 	uint32 GetCurrentFrameBufferIndex() const;
 
-#if defined(JOBMANAGER_SUPPORT_FRAMEPROFILER)
+#if defined(JOBMANAGER_SUPPORT_STATOSCOPE)
 	JobManager::IWorkerBackEndProfiler* GetBackEndWorkerProfiler() const { return m_pBackEndWorkerProfiler; }
 #endif
 
@@ -291,7 +291,7 @@ private:
 	uint8 m_nNumWorkerThreads;                                        // number of worker threads
 
 	// members required for profiling jobs in the frame profiler
-#if defined(JOBMANAGER_SUPPORT_FRAMEPROFILER)
+#if defined(JOBMANAGER_SUPPORT_STATOSCOPE)
 	JobManager::IWorkerBackEndProfiler* m_pBackEndWorkerProfiler;
 #endif
 };

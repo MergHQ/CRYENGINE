@@ -43,12 +43,6 @@ add_sources("NoUberFile"
 		"CryCore/Platform/OrbisSpecific.h"
 		"CryCore/Platform/Orbis_Win32Wrapper.h"
 		"CryCore/Platform/platform_impl_posix.inl"
-	SOURCE_GROUP "CrySystem"
-		
-	SOURCE_GROUP "CrySystem\\\\Profilers"
-		
-	SOURCE_GROUP "CrySystem\\\\Profilers\\\\FrameProfiler"
-		"CrySystem/Profilers/FrameProfiler/FrameProfiler_impl.orbis.h"
 )
 
 # -- 3rdParty/fasthash/fasthash.waf_files --
@@ -72,12 +66,6 @@ add_sources("NoUberFile"
 		"CryCore/Platform/CryPlatform.Durango.h"
 		"CryCore/Platform/DurangoSpecific.h"
 		"CryCore/Platform/Durango_Win32Legacy.h"
-	SOURCE_GROUP "CrySystem"
-		
-	SOURCE_GROUP "CrySystem\\\\Profilers"
-		
-	SOURCE_GROUP "CrySystem\\\\Profilers\\\\FrameProfiler"
-		"CrySystem/Profilers/FrameProfiler/FrameProfiler_impl.durango.h"
 )
 
 # -- crycommon_android.waf_files --
@@ -155,12 +143,6 @@ add_sources("NoUberFile"
 		"CryCore/Platform/CryPlatform.Win64.h"
 		"CryCore/Platform/WindowsSpecific.h"
 		"CryCore/Platform/platform_impl_winapi.inl"
-	SOURCE_GROUP "CrySystem"
-		
-	SOURCE_GROUP "CrySystem\\\\Profilers"
-		
-	SOURCE_GROUP "CrySystem\\\\Profilers\\\\FrameProfiler"
-		"CrySystem/Profilers/FrameProfiler/FrameProfiler_impl.pc.h"
 )
 
 sources_platform(ALL)
@@ -827,13 +809,10 @@ add_sources("NoUberFile"
 		"CrySystem/Profilers/CryMemReplayTrackedPtr.h"
 		"CrySystem/Profilers/IPerfHud.h"
 		"CrySystem/Profilers/IStatoscope.h"
-	SOURCE_GROUP "CrySystem\\\\Profilers\\\\FrameProfiler"
-		"CrySystem/Profilers/FrameProfiler/FrameProfiler.h"
-		"CrySystem/Profilers/FrameProfiler/FrameProfiler_Brofiler.h"
-		"CrySystem/Profilers/FrameProfiler/FrameProfiler_Platform.h"
-		"CrySystem/Profilers/FrameProfiler/FrameProfiler_Internal.h"
-		"CrySystem/Profilers/FrameProfiler/FrameProfiler_Shared.h"
-		"CrySystem/Profilers/FrameProfiler/FrameProfiler_impl.h"
+		"CrySystem/Profilers/SamplerStats.h"
+		"CrySystem/Profilers/ICryProfilingSystem.h"
+		"CrySystem/Profilers/ILegacyProfiler.h"
+		"CrySystem/Profilers/SamplesHistory.h"
 	SOURCE_GROUP "CrySystem\\\\Scaleform"
 		"CrySystem/Scaleform/IFlashPlayer.h"
 		"CrySystem/Scaleform/IFlashUI.h"

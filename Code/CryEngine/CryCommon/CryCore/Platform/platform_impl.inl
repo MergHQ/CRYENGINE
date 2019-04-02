@@ -486,9 +486,6 @@ CAutoRegFlowNodeBase* CAutoRegFlowNodeBase::s_pFirst = nullptr;
 CAutoRegFlowNodeBase* CAutoRegFlowNodeBase::s_pLast = nullptr;
 bool                  CAutoRegFlowNodeBase::s_bNodesRegistered = false;
 
-// load implementation of platform profile marker
-#include <CrySystem/Profilers/FrameProfiler/FrameProfiler_impl.h>
-
 CRY_ALIGN(64) uint32 BoxSides[0x40 * 8] = {
 	0, 0, 0, 0, 0, 0, 0, 0, //00
 	0, 4, 6, 2, 0, 0, 0, 4, //01

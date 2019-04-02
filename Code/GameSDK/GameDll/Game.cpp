@@ -179,7 +179,6 @@
 #include "DynamicResponseSystem/ActionExecuteAudioTrigger.h"
 #include <CrySerialization/ClassFactory.h>
 
-#include <CrySystem/Profilers/FrameProfiler/FrameProfiler.h>
 #include <CrySystem/Testing/CryTest.h>
 
 #include <IPerceptionManager.h>
@@ -2407,8 +2406,6 @@ void CGame::UpdateSaveIcon()
 //warning 6262 needs an investigation
 int CGame::Update(bool haveFocus, unsigned int updateFlags) PREFAST_SUPPRESS_WARNING(6262)
 {
-	CryProfile::ProfilerFrameStart(gEnv->nMainFrameID);
-
 #if defined(USER_timf)
 	if (m_needMultiplayerFrontEndAssets)
 	{
@@ -3023,8 +3020,6 @@ int CGame::Update(bool haveFocus, unsigned int updateFlags) PREFAST_SUPPRESS_WAR
 #ifndef NO_LIVECREATE
 	LiveCreateUpdate();
 #endif
-
-	CryProfile::ProfilerFrameEnd(gEnv->nMainFrameID);
 
 	if ((updateFlags & ESYSUPDATE_EDITOR_ONLY) == 0 &&  (updateFlags & ESYSUPDATE_EDITOR_AI_PHYSICS)!= 0 && !gEnv->bMultiplayer)
 	{

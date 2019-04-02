@@ -557,7 +557,6 @@ void CLog::LogV(const ELogType type, int flags, const char* szFormat, va_list ar
 	}
 
 	CRY_PROFILE_FUNCTION(PROFILE_SYSTEM);
-	//LOADING_TIME_PROFILE_SECTION(GetISystem());
 
 	bool bfile = false, bconsole = false;
 	const char* szCommand = szFormat;

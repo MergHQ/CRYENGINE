@@ -1,13 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-// -------------------------------------------------------------------------
-//  File name:   ThreadBackEnd.h
-//  Version:     v1.00
-//  Created:     07/05/2011 by Christopher Bolte
-//  Compilers:   Visual Studio.NET
-// -------------------------------------------------------------------------
-//  History:
-////////////////////////////////////////////////////////////////////////////
 #include "StdAfx.h"
 #include "ThreadBackEnd.h"
 #include "../JobManager.h"
@@ -22,7 +14,7 @@ JobManager::ThreadBackEnd::CThreadBackEnd::CThreadBackEnd()
 {
 	m_JobQueue.Init();
 
-#if defined(JOBMANAGER_SUPPORT_FRAMEPROFILER)
+#if defined(JOBMANAGER_SUPPORT_STATOSCOPE)
 	m_pBackEndWorkerProfiler = 0;
 #endif
 }
@@ -77,7 +69,7 @@ bool JobManager::ThreadBackEnd::CThreadBackEnd::Init(uint32 nSysMaxWorker)
 			CryFatalError("Error spawning \"JobSystem_%s_%u\" thread.", name, i);
 		}
 	}
-#if defined(JOBMANAGER_SUPPORT_FRAMEPROFILER)
+#if defined(JOBMANAGER_SUPPORT_STATOSCOPE)
 	m_pBackEndWorkerProfiler = new JobManager::CWorkerBackEndProfiler;
 	m_pBackEndWorkerProfiler->Init(m_nNumWorkerThreads);
 #endif
@@ -114,7 +106,7 @@ bool JobManager::ThreadBackEnd::CThreadBackEnd::ShutDown()
 		}
 	}
 
-#if defined(JOBMANAGER_SUPPORT_FRAMEPROFILER)
+#if defined(JOBMANAGER_SUPPORT_STATOSCOPE)
 	SAFE_DELETE(m_pBackEndWorkerProfiler);
 #endif
 
@@ -160,7 +152,7 @@ void JobManager::ThreadBackEnd::CThreadBackEnd::AddJob(JobManager::CJobDelegator
 	const uint32 cJobId = cJobHandle->jobId;
 	rJobInfoBlock.jobId = (unsigned char)cJobId;
 
-#if defined(JOBMANAGER_SUPPORT_FRAMEPROFILER)
+#if defined(JOBMANAGER_SUPPORT_STATOSCOPE)
 	assert(cJobId < JobManager::detail::eJOB_FRAME_STATS_MAX_SUPP_JOBS);
 	m_pBackEndWorkerProfiler->RegisterJob(cJobId, pJobManager->GetJobName(rInfoBlock.jobInvoker));
 	rJobInfoBlock.frameProfIndex = (unsigned char)m_pBackEndWorkerProfiler->GetProfileIndex();
@@ -219,13 +211,13 @@ void JobManager::ThreadBackEnd::CThreadBackEndWorkerThread::SignalStopWork()
 	}
 }
 
-inline CFrameProfiler* GetFrameProfilerForName(const char* name)
+inline const SProfilingSectionDescription* GetTrackerForName(const char* name)
 {
-	static std::vector<std::pair<const char*, CFrameProfiler*>> s_profilers;
+	static std::vector<std::pair<const char*, const SProfilingSectionDescription*>> s_jobEvents;
 	static CryRWLock s_profilersLock;
 
 	s_profilersLock.RLock();
-	for (auto& p : s_profilers)
+	for (auto& p : s_jobEvents)
 	{
 		if (p.first == name) // compare pointer address. not content.
 		{
@@ -236,7 +228,7 @@ inline CFrameProfiler* GetFrameProfilerForName(const char* name)
 	s_profilersLock.RUnlock();
 
 	s_profilersLock.WLock();
-	for (auto& p : s_profilers)
+	for (auto& p : s_jobEvents) //check again, might have been added while waiting for lock
 	{
 		if (p.first == name) // compare pointer address. not content.
 		{
@@ -244,12 +236,13 @@ inline CFrameProfiler* GetFrameProfilerForName(const char* name)
 			return p.second;
 		}
 	}
-	CFrameProfiler* pNewProfiler = new CFrameProfiler(PROFILE_SYSTEM, EProfileDescription::REGION, name, "", 0);
-	s_profilers.reserve(256);
-	s_profilers.push_back(std::make_pair(name, pNewProfiler));
+
+	SProfilingSectionDescription* pDescription = new SProfilingSectionDescription(__FILE__, name, __LINE__, false, EProfiledSubsystem::PROFILE_SYSTEM);
+	s_jobEvents.reserve(256);
+	s_jobEvents.emplace_back(name, pDescription);
 	s_profilersLock.WUnlock();
 
-	return pNewProfiler;
+	return pDescription;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -402,32 +395,22 @@ void JobManager::ThreadBackEnd::CThreadBackEndWorkerThread::ThreadEntry()
 		pJobProfilingData->nWorkerThread = GetWorkerThreadId();
 #endif
 
-#if defined(JOBMANAGER_SUPPORT_FRAMEPROFILER)
+#if defined(JOBMANAGER_SUPPORT_STATOSCOPE)
 		const uint64 nStartTime = JobManager::IWorkerBackEndProfiler::GetTimeSample();
 #endif
 
 		{
-			// call delegator function to invoke job entry
-#if !defined(_RELEASE) || defined(PERFORMANCE_BUILD)
-			const char* jobName = pJobManager->GetJobName(infoBlock.jobInvoker);
-
-			char job_info[128];
-			CFrameProfiler* pProfiler = GetFrameProfilerForName(jobName);
-			CFrameProfilerSection frameProfilerSection2(pProfiler, jobName, jobName, EProfileDescription::SECTION);
-			BROFILER_SECTION(jobName)
-
-			cry_sprintf(job_info, "%s (Prio %u)", jobName, nPriorityLevel);
-
-			CRYPROFILE_SCOPE_PLATFORM_MARKER(job_info);
+#if defined(ENABLE_PROFILING_CODE)
+			SProfilingSection profSection(GetTrackerForName(pJobManager->GetJobName(infoBlock.jobInvoker)), nullptr);
 #endif
 			uint64 nJobStartTicks = CryGetTicks();
-			
+			// call delegator function to invoke job entry
 			(*infoBlock.jobInvoker)(infoBlock.GetParamAddress());
 			
 			nTicksInJobExecution += CryGetTicks() - nJobStartTicks;
 		}
 
-#if defined(JOBMANAGER_SUPPORT_FRAMEPROFILER)
+#if defined(JOBMANAGER_SUPPORT_STATOSCOPE)
 		JobManager::IWorkerBackEndProfiler* workerProfiler = m_pThreadBackend->GetBackEndWorkerProfiler();
 		const uint64 nEndTime = JobManager::IWorkerBackEndProfiler::GetTimeSample();
 		workerProfiler->RecordJob(infoBlock.frameProfIndex, m_nId, static_cast<const uint32>(infoBlock.jobId), static_cast<const uint32>(nEndTime - nStartTime));

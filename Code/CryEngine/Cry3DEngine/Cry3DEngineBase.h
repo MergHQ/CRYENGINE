@@ -74,7 +74,6 @@ struct Cry3DEngineBase
 	static CGeomCacheManager*       m_pGeomCacheManager;
 #endif
 
-	static bool              m_bProfilerEnabled;
 	static threadID          m_nMainThreadId;
 	static bool              m_bLevelLoadingInProgress;
 	static bool              m_bIsInRenderScene;

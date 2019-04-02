@@ -4,7 +4,6 @@
 #include <CrySchematyc/Utils/EnumFlags.h>
 #include <CryExtension/ICryFactory.h>
 #include <CryExtension/ICryUnknown.h>
-#include "Profilers/FrameProfiler/FrameProfiler_Shared.h"
 #include "IValidator.h"
 #include "ILog.h"
 #include <memory>
@@ -16,9 +15,7 @@
 	#define CRYSYSTEM_API DLL_IMPORT
 #endif
 
-class CBootProfilerRecord;
 class CCamera;
-class CFrameProfilerSection;
 class CPNoise3;
 class CRndGen;
 class ICmdLine;
@@ -29,7 +26,6 @@ class IXMLBinarySerializer;
 class XmlNodeRef;
 
 struct CryGUID;
-struct FrameProfiler;
 struct I3DEngine;
 struct IAISystem;
 struct IAVI_Reader;
@@ -53,7 +49,6 @@ struct IFlashPlayer;
 struct IFlashPlayerBootStrapper;
 struct IFlashUI;
 struct IFlowSystem;
-struct IFrameProfileSystem;
 struct IGameFramework;
 struct IGameStartup;
 struct IHardwareMouse;
@@ -106,6 +101,8 @@ struct IZLibDecompressor;
 struct SDisplayContextKey;
 struct SGraphicsPipelineKey;
 struct SFileVersion;
+struct ICryProfilingSystem;
+struct ILegacyProfiler;
 
 namespace CryAudio
 {
@@ -734,9 +731,6 @@ struct SSystemInitParams
 	}
 };
 
-//! Typedef for frame profile callback function.
-typedef void (* FrameProfilerSectionCallback)(class CFrameProfilerSection* pSection);
-
 //! \cond INTERNAL
 //! \note Can be used for LoadConfiguration().
 struct ILoadConfigurationEntrySink
@@ -856,7 +850,6 @@ struct SSystemGlobalEnvironment
 	IFileChangeMonitor*            pFileChangeMonitor;
 	IParticleManager*              pParticleManager;
 	IOpticsManager*                pOpticsManager;
-	IFrameProfileSystem*           pFrameProfileSystem;
 	ITimer*                        pTimer;
 	ICryFont*                      pCryFont;
 	IGameFramework*                pGameFramework;
@@ -925,12 +918,13 @@ struct SSystemGlobalEnvironment
 #endif
 
 	//////////////////////////////////////////////////////////////////////////
-	// Used by frame profiler.
-	int                          bFrameProfilerActive;
-	int                          bDeepProfiling;
-	bool                         bBootProfilerEnabledFrames;
-	FrameProfilerSectionCallback callbackStartSection;
-	FrameProfilerSectionCallback callbackEndSection;
+	//! Profiling callback functions.
+	typedef bool(*TProfilerSectionStartCallback)(struct SProfilingSection*);
+	typedef void(*TProfilerSectionEndCallback)  (struct SProfilingSection*);
+	typedef void(*TProfilerMarkerCallback)      (struct SProfilingMarker*);
+	TProfilerSectionStartCallback startProfilingSection;
+	TProfilerSectionEndCallback   endProfilingSection;
+	TProfilerMarkerCallback       recordProfilingMarker;
 	//////////////////////////////////////////////////////////////////////////
 
 #if defined(USE_CRY_ASSERT)
@@ -1141,22 +1135,6 @@ public:
 	#undef GetUserName
 #endif
 
-struct IProfilingSystem
-{
-	// <interfuscator:shuffle>
-	virtual ~IProfilingSystem(){}
-	//////////////////////////////////////////////////////////////////////////
-	// VTune Profiling interface.
-
-	//! Resumes vtune data collection.
-	virtual void VTuneResume() = 0;
-
-	//! Pauses vtune data collection.
-	virtual void VTunePause() = 0;
-	//////////////////////////////////////////////////////////////////////////
-	// </interfuscator:shuffle>
-};
-
 //! Main Engine Interface.
 //! Initialize and dispatch all engine's subsystems.
 struct ISystem
@@ -1307,7 +1285,8 @@ struct ISystem
 	virtual IBudgetingSystem*       GetIBudgetingSystem() = 0;
 	virtual INameTable*             GetINameTable() = 0;
 	virtual IDiskProfiler*          GetIDiskProfiler() = 0;
-	virtual IFrameProfileSystem*    GetIProfileSystem() = 0;
+	virtual ICryProfilingSystem*    GetProfilingSystem() = 0;
+	virtual ILegacyProfiler*        GetLegacyProfilerInterface() = 0;
 	virtual IValidator*             GetIValidator() = 0;
 	virtual IPhysicsDebugRenderer*  GetIPhysicsDebugRenderer() = 0;
 	virtual IPhysRenderer*          GetIPhysRenderer() = 0;
@@ -1334,7 +1313,6 @@ struct ISystem
 	//! \return Can be NULL, because it only exists when running through the editor, not in pure game mode.
 	virtual IResourceManager*                  GetIResourceManager() = 0;
 
-	virtual IProfilingSystem*                  GetIProfilingSystem() = 0;
 	virtual ISystemEventDispatcher*            GetISystemEventDispatcher() = 0;
 	virtual IFileChangeMonitor*                GetIFileChangeMonitor() = 0;
 
@@ -1422,30 +1400,10 @@ struct ISystem
 	//! \return Pointer to the current active process.
 	virtual IProcess* GetIProcess() = 0;
 
-	//! Frame profiler functions.
-	virtual void SetFrameProfiler(bool on, bool display, char* prefix) = 0;
-
-	//////////////////////////////////////////////////////////////////////////
-	// Loading time profiling
-	//! Starts function profiling with bootprofiler (session must be started).
-	virtual CBootProfilerRecord* StartBootSectionProfiler(const char* name, const char* args, EProfileDescription type) = 0;
-
-	//! Ends function profiling with bootprofiler.
-	virtual void StopBootSectionProfiler(CBootProfilerRecord* record) = 0;
-
-	// Summary:
-	//	 Starts bootprofiler session.
+	//! Start recording a new session in the Bootprofiler (best use via LOADING_TIME_PROFILE_AUTO_SESSION)
 	virtual void StartBootProfilerSession(const char* szName) = 0;
-
-	// Summary:
-	//	 Stops bootprofiler session.
-	virtual void StopBootProfilerSession(const char* szName) = 0;
-
-	//! game dll should call this on frame start
-	virtual void OnFrameStart(const char* szName) = 0;
-
-	//! game dll should call this on frame end
-	virtual void OnFrameEnd() = 0;
+	//! End recording the current session in the Bootprofiler (best use via LOADING_TIME_PROFILE_AUTO_SESSION)
+	virtual void EndBootProfilerSession() = 0;
 
 	//////////////////////////////////////////////////////////////////////////
 	// File version.
@@ -1833,8 +1791,6 @@ CRY_ASYNC_MEMCPY_API void cryAsyncMemcpy(
 	, volatile int* sync);
 #endif
 
-#include <CrySystem/Profilers/FrameProfiler/FrameProfiler.h>
-
 inline CryGUID CryGUID::Create()
 {
 	CryGUID guid;
@@ -1842,3 +1798,7 @@ inline CryGUID CryGUID::Create()
 	MEMORY_RW_REORDERING_BARRIER;
 	return guid;
 }
+
+// brings CRY_PROFILE_X macros everywhere
+// included at the end as we need gEnv first
+#include <CrySystem/Profilers/ICryProfilingSystem.h>

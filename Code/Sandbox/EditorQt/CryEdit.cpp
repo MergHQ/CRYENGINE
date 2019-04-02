@@ -948,7 +948,7 @@ bool CCryEditApp::IdleProcessing(bool bBackgroundUpdate)
 	if (bActive || (bBackgroundUpdate && !bIsAppWindow))
 	{
 		// Start profiling frame.
-		GetIEditorImpl()->GetSystem()->GetIProfileSystem()->StartFrame();
+		GetIEditorImpl()->GetSystem()->GetProfilingSystem()->StartFrame();
 
 		if (GetIEditorImpl()->IsInGameMode())
 		{
@@ -981,7 +981,7 @@ bool CCryEditApp::IdleProcessing(bool bBackgroundUpdate)
 			GetIEditorImpl()->Notify(eNotify_OnIdleUpdate);
 		}
 
-		GetIEditorImpl()->GetSystem()->GetIProfileSystem()->EndFrame();
+		GetIEditorImpl()->GetSystem()->GetProfilingSystem()->EndFrame();
 	}
 	else if (GetIEditorImpl()->GetSystem() && GetIEditorImpl()->GetSystem()->GetILog())
 		GetIEditorImpl()->GetSystem()->GetILog()->Update(); // print messages from other threads

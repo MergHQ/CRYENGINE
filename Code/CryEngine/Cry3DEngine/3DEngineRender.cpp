@@ -39,6 +39,7 @@
 #include <CryAISystem/IAISystem.h>
 #include <CryCore/Platform/IPlatformOS.h>
 #include <CryGame/IGame.h>
+#include <CrySystem/Profilers/ILegacyProfiler.h>
 #include "WaterRippleManager.h"
 
 #if defined(FEATURE_SVO_GI)
@@ -1379,8 +1380,6 @@ void C3DEngine::DebugDrawStreaming(const SRenderingPassInfo& passInfo)
 
 void C3DEngine::RenderInternal(const int nRenderFlags, const SRenderingPassInfo& passInfo, const char* szDebugName)
 {
-	m_bProfilerEnabled = gEnv->pFrameProfileSystem->IsProfiling();
-
 	//Cache for later use
 	if (m_pObjManager)
 		m_pObjManager->SetCurrentTime(gEnv->pTimer->GetCurrTime());
@@ -3018,22 +3017,18 @@ void C3DEngine::DisplayInfo(float& fTextPosX, float& fTextPosY, float& fTextStep
 
 			float fTimeMS = 0.0f;
 
-			IFrameProfileSystem* const pProfiler = gEnv->pSystem->GetIProfileSystem();
-
+			auto pProfiler = gEnv->pSystem->GetLegacyProfilerInterface();
 			if (pProfiler != NULL)
 			{
-				//pProfiler->
-				uint32 const nProfilerCount = pProfiler->GetProfilerCount();
-
-				for (uint32 i = 0; i < nProfilerCount; ++i)
+				pProfiler->AcquireReadAccess();
+				for(auto pTracker : *pProfiler->GetActiveTrackers())
 				{
-					CFrameProfiler* const pFrameProfiler = pProfiler->GetProfiler(i);
-
-					if (pFrameProfiler != NULL && pFrameProfiler->m_subsystem == PROFILE_AUDIO)
+					if (pTracker->pDescription->subsystem == PROFILE_AUDIO)
 					{
-						fTimeMS += pFrameProfiler->m_selfTime.Average();
+						fTimeMS += pTracker->selfValue.Average();
 					}
 				}
+				pProfiler->ReleaseReadAccess();
 			}
 
 			DrawTextRightAligned(fTextPosX, fTextPosY += (fTextStepY - STEP_SMALL_DIFF),

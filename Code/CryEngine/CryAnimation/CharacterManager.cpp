@@ -1679,7 +1679,6 @@ void CharacterManager::Update(bool bPaused)
 	g_pIRenderer = g_pISystem->GetIRenderer();
 	g_pIPhysicalWorld = g_pISystem->GetIPhysicalWorld();
 	g_pI3DEngine = g_pISystem->GetI3DEngine();
-	g_bProfilerOn = g_pISystem->GetIProfileSystem()->IsProfiling();
 
 	bool bIsMultithreadedRenderer = false;
 	if (g_pIRenderer)

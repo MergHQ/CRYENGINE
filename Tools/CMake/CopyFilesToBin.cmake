@@ -40,7 +40,6 @@ macro(add_optional_runtime_files)
 
 	if (OPTION_ENABLE_BROFILER)
 		set (BinaryFileList_Win64 ${BinaryFileList_Win64} "${SDK_DIR}/Brofiler/ProfilerCore64.dll")
-		set (BinaryFileList_Win32 ${BinaryFileList_Win32} "${SDK_DIR}/Brofiler/ProfilerCore32.dll")
 	endif()
 
 	if(OPTION_ENABLE_CRASHRPT)

@@ -178,7 +178,6 @@
 #include <CryExtension/RegFactoryNode.h>
 
 #include <CryThreading/CryThreadSafeRendererContainer.h>
-#include <CryThreading/IJobManager.h> //TODO ideally don't include it, but it defines flags such as JOBMANAGER_SUPPORT_FRAMEPROFILER
 
 #include <CryRenderer/IScaleform.h> // expensive header
 #include <CryRenderer/IRenderer.h> // expensive header
