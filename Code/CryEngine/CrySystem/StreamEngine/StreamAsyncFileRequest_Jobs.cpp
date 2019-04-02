@@ -189,15 +189,13 @@ void CAsyncIOFileRequest::DecompressBlockEntry(SStreamJobEngineState engineState
 	if (!bFailed)
 	{
 #if defined(STREAMENGINE_ENABLE_TIMING)
-
 		LARGE_INTEGER liStart;
 		QueryPerformanceCounter(&liStart);
 
 		const char* pFileNameShort = PathUtil::GetFile(m_strFileName.c_str());
-		char eventName[128] = { 0 };
-		cry_sprintf(eventName, "DcmpBlck %u : %s", m_pZlibStream ? m_pZlibStream->avail_in : 0, pFileNameShort);
-		CRY_PROFILE_REGION(PROFILE_SYSTEM, "DcmpBlck");
-		CRYPROFILE_SCOPE_PLATFORM_MARKER(eventName);
+		char args[128] = { 0 };
+		cry_sprintf(args, "%u : %s", m_pZlibStream ? m_pZlibStream->avail_in : 0, pFileNameShort);
+		CRY_PROFILE_REGION_ARG(PROFILE_SYSTEM, "DcmpBlck", args);
 #endif
 
 		//printf("Inflate: %s Avail in: %d, Avail Out: %d, Next In: 0x%p, Next Out: 0x%p\n", m_strFileName.c_str(), m_pZlibStream->avail_in, m_pZlibStream->avail_out, m_pZlibStream->next_in, m_pZlibStream->next_out);

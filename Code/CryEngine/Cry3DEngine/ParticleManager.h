@@ -380,13 +380,12 @@ private:
 
 #ifdef bEVENT_TIMINGS
 
-class CEventProfilerSection : public CFrameProfilerSection, public Cry3DEngineBase
+class CEventProfilerSection : public Cry3DEngineBase
 {
 public:
-	CEventProfilerSection(CFrameProfiler* pProfiler, const CParticleContainer* pCont = 0)
-		: CFrameProfilerSection(pProfiler)
+	CEventProfilerSection(const char* szName, const CParticleContainer* pCont = 0)
 	{
-		m_iEvent = m_pPartManager->StartEventTiming(pProfiler->m_name, pCont);
+		m_iEvent = m_pPartManager->StartEventTiming(szName, pCont);
 	}
 	~CEventProfilerSection()
 	{
@@ -396,9 +395,9 @@ protected:
 	int m_iEvent;
 };
 
-	#define FUNCTION_PROFILER_CONTAINER(pCont)                                                               \
-	  static CFrameProfiler staticFrameProfiler(PROFILE_PARTICLE, EProfileDescription::UNDEFINED, __FUNC__); \
-	  CEventProfilerSection eventProfilerSection(&staticFrameProfiler, pCont);
+	#define FUNCTION_PROFILER_CONTAINER(pCont) \
+	  CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);  \
+	  CEventProfilerSection eventProfilerSection(__FUNC__, pCont);
 
 #else
 

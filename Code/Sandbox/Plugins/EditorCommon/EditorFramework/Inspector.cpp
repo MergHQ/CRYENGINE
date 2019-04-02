@@ -3,7 +3,6 @@
 #include "Inspector.h"
 
 #include "CryIcon.h"
-#include "CrySystem/Profilers/FrameProfiler/FrameProfiler.h"
 #include "EditorFramework/BroadcastManager.h"
 #include "EditorFramework/Editor.h"
 #include "EditorFramework/Events.h"

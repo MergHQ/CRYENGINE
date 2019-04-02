@@ -85,6 +85,13 @@
 #include "RemoteConsole/RemoteConsole.h"
 #include "ImeManager.h"
 #include "BootProfiler.h"
+#if ALLOW_BROFILER
+#	include <Cry_Brofiler.h>
+#	include "Profiling/CryBrofiler.h"
+#endif
+#include "Profiling/PlatformProfiler.h"
+#include "Profiling/ProfilingRenderer.h"
+#include "Profiling/CryProfilingSystem.h"
 #include "Watchdog.h"
 #include "NullImplementation/NULLAudioSystems.h"
 #include "NullImplementation/NULLRenderAuxGeom.h"
@@ -237,15 +244,12 @@ CSystem::CSystem(const SSystemInitParams& startupParams)
 	m_env.pSystem = this;
 	m_env.pTimer = &m_Time;
 	m_env.pNameTable = &m_nameTable;
-	m_env.pFrameProfileSystem = &m_FrameProfileSystem;
 	m_env.bServer = false;
 	m_env.bMultiplayer = false;
 	m_env.bHostMigrating = false;
-	m_env.bFrameProfilerActive = 0;
-	m_env.bDeepProfiling = 0;
-	m_env.bBootProfilerEnabledFrames = false;
-	m_env.callbackStartSection = 0;
-	m_env.callbackEndSection = 0;
+	m_env.startProfilingSection = CCryProfilingSystemImpl::StartSectionStaticDummy;
+	m_env.endProfilingSection = CCryProfilingSystemImpl::EndSectionStaticDummy;
+	m_env.recordProfilingMarker = CCryProfilingSystemImpl::RecordMarkerStaticDummy;
 
 	m_env.bUnattendedMode = false;
 	m_env.bTesting = false;
@@ -396,10 +400,64 @@ CSystem::CSystem(const SSystemInitParams& startupParams)
 	m_pDiskProfiler = nullptr;
 	m_ttMemStatSS = 0;
 
-#if defined(ENABLE_LOADING_PROFILER)
-	if (!startupParams.bShaderCacheGen)
+	m_pLegacyProfiler = nullptr;
+	m_pProfilingSystem = nullptr;
+	m_pProfileRenderer = nullptr;
+
+#ifdef ENABLE_PROFILING_CODE
+	const bool enableBootProfiler = (strstr(startupParams.szSystemCmdLine, "-bootprofiler") != nullptr);
+	const bool enableBrofiler = (strstr(startupParams.szSystemCmdLine, "-brofiler") != nullptr);
+	const bool enablePlatformProfiler = (strstr(startupParams.szSystemCmdLine, "-platformprofiler") != nullptr);
+	
+	const char* szVerbosity = strstr(startupParams.szSystemCmdLine, "-profile_verbosity=");
+	if (szVerbosity != nullptr)
 	{
-		CBootProfiler::GetInstance().Init(this, startupParams.szSystemCmdLine);
+		szVerbosity += sizeof("-profile_verbosity=") - 1;
+		int verbosity = atoi(szVerbosity);
+		if (verbosity > 0)
+			CCryProfilingSystem::s_verbosity = verbosity;
+	}
+
+#ifndef RELEASE
+	if (enableBootProfiler + enableBrofiler + enablePlatformProfiler > 1)
+		__debugbreak(); // may only choose one
+#endif
+
+#if ALLOW_BROFILER
+	if (enableBrofiler)
+	{
+		m_pProfilingSystem = new CBrofiler;
+		m_env.startProfilingSection = CBrofiler::StartSectionStatic;
+		m_env.endProfilingSection = CBrofiler::EndSectionStatic;
+		// no markers on Brofiler
+	}
+	else
+#endif
+#if USE_PLATFORM_PROFILER 
+	if (enablePlatformProfiler)
+	{
+		m_pProfilingSystem = new CPlatformProfiler;
+		m_env.startProfilingSection = CPlatformProfiler::StartSectionStatic;
+		m_env.endProfilingSection = CPlatformProfiler::EndSectionStatic;
+		m_env.recordProfilingMarker = CPlatformProfiler::RecordMarkerStatic;
+	}
+	else
+#endif
+	{
+		m_pLegacyProfiler = new CCryProfilingSystem;
+		m_pProfilingSystem = m_pLegacyProfiler;
+		m_env.startProfilingSection = CCryProfilingSystem::StartSectionStatic;
+		m_env.endProfilingSection = CCryProfilingSystem::EndSectionStatic;
+		m_env.recordProfilingMarker = CCryProfilingSystem::RecordMarkerStatic;
+
+#if defined(ENABLE_LOADING_PROFILER)
+		if (!startupParams.bShaderCacheGen)
+		{
+			CBootProfiler::GetInstance().Init(this, startupParams.szSystemCmdLine);
+		}
+		m_pLegacyProfiler->SetBootProfiler(&CBootProfiler::GetInstance());
+#endif
+		m_pProfileRenderer = new CProfilingRenderer;
 	}
 #endif
 
@@ -438,6 +496,9 @@ CSystem::CSystem(const SSystemInitParams& startupParams)
 	m_env.pConsole = new CXConsole(*this);
 	if (startupParams.pPrintSync)
 		m_env.pConsole->AddOutputPrintSink(startupParams.pPrintSync);
+
+	if(m_pProfilingSystem)
+		m_pProfilingSystem->RegisterCVars();
 
 	m_pPluginManager = new CCryPluginManager(startupParams);
 
@@ -488,14 +549,16 @@ CSystem::~CSystem()
 
 	SAFE_DELETE(g_pPakHeap);
 
+	m_env.startProfilingSection = CCryProfilingSystemImpl::StartSectionStaticDummy;
+	m_env.endProfilingSection = CCryProfilingSystemImpl::EndSectionStaticDummy;
+	m_env.recordProfilingMarker = CCryProfilingSystemImpl::RecordMarkerStaticDummy;
+	SAFE_DELETE(m_pProfilingSystem);
+
 	m_env.pSystem = nullptr;
 #if !defined(SYS_ENV_AS_STRUCT)
 	gEnv = 0;
 #endif
-
-	// The FrameProfileSystem should clean up as late as possible as some modules create profilers during shutdown!
-	m_FrameProfileSystem.Done();
-
+	
 #if CRY_PLATFORM_WINDOWS
 	((DebugCallStack*)IDebugCallStack::instance())->uninstallErrorHandler();
 #endif
@@ -552,8 +615,6 @@ void CSystem::ShutDown()
 	CryLogAlways("System Shutdown");
 
 	SAFE_DELETE(m_pManualFrameStepController);
-
-	m_FrameProfileSystem.Enable(false, false);
 
 	if (m_pSystemEventDispatcher)
 	{
@@ -1000,6 +1061,20 @@ void CSystem::SetIProcess(IProcess* process)
 	m_pProcess = process;
 	//if (m_pProcess)
 	//m_pProcess->SetPMessage("");
+}
+
+void CSystem::StartBootProfilerSession(const char* szName)
+{
+#ifdef ENABLE_LOADING_PROFILER
+	CBootProfiler::GetInstance().StartSession(szName);
+#endif
+}
+
+void CSystem::EndBootProfilerSession()
+{
+#ifdef ENABLE_LOADING_PROFILER
+	CBootProfiler::GetInstance().StopSession();
+#endif
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1489,9 +1564,11 @@ void CSystem::RunMainLoop()
 //////////////////////////////////////////////////////////////////////
 bool CSystem::DoFrame(const SDisplayContextKey& displayContextKey, const SGraphicsPipelineKey& graphicsPipelineKey, CEnumFlags<ESystemUpdateFlags> updateFlags)
 {
-	// The frame profile system already creates an "overhead" profile label
-	// in StartFrame(). Hence we have to set the FRAMESTART before.
-	CRY_PROFILE_FRAMESTART("Main");
+	if(m_pProfilingSystem && !updateFlags.Check(ESYSUPDATE_EDITOR))
+		m_pProfilingSystem->StartFrame();
+#if ALLOW_BROFILER
+	BROFILER_FRAME("Main");
+#endif
 
 	if (m_pManualFrameStepController != nullptr && m_pManualFrameStepController->Update() == EManualFrameStepResult::Block)
 	{
@@ -1499,16 +1576,10 @@ bool CSystem::DoFrame(const SDisplayContextKey& displayContextKey, const SGraphi
 		return true;
 	}
 
+	CRY_PROFILE_REGION(PROFILE_SYSTEM, __FUNC__);
 #if defined(JOBMANAGER_SUPPORT_PROFILING)
 	m_env.GetJobManager()->SetFrameStartTime(m_env.pTimer->GetAsyncTime());
 #endif
-
-	if (!updateFlags.Check(ESYSUPDATE_EDITOR))
-	{
-		m_env.pFrameProfileSystem->StartFrame();
-	}
-
-	CRY_PROFILE_REGION(PROFILE_SYSTEM, __FUNC__);
 
 	if (m_env.pGameFramework != nullptr)
 	{
@@ -1574,7 +1645,7 @@ bool CSystem::DoFrame(const SDisplayContextKey& displayContextKey, const SGraphi
 		m_pPluginManager->UpdateAfterSystem();
 	}
 
-	// Synchronize all animations so ensure that their computation have finished
+	// Synchronize all animations to ensure that their computation has finished
 	// Has to be done before view update, in case camera depends on a joint
 	if (m_env.pCharacterManager && !IsLoading())
 	{
@@ -1654,11 +1725,11 @@ bool CSystem::DoFrame(const SDisplayContextKey& displayContextKey, const SGraphi
 
 		m_env.p3DEngine->SyncProcessStreamingUpdate();
 
-		m_env.pFrameProfileSystem->EndFrame();
+		if(m_pProfilingSystem)
+			m_pProfilingSystem->EndFrame();
 	}
 
 	SleepIfNeeded();
-
 	return continueRunning;
 }
 
@@ -1800,31 +1871,6 @@ bool CSystem::Update(CEnumFlags<ESystemUpdateFlags> updateFlags, int nPauseMode)
 		m_bPaused = true;
 	else
 		m_bPaused = false;
-
-#if CRY_PLATFORM_WINDOWS
-	if (m_bInDevMode && g_cvars.sys_vtune != 0)
-	{
-		static bool bVtunePaused = true;
-
-		bool bPaused = false;
-
-		if (GetISystem()->GetIInput())
-		{
-			bPaused = !(GetKeyState(VK_SCROLL) & 1);
-		}
-		{
-			if (bVtunePaused && !bPaused)
-			{
-				GetIProfilingSystem()->VTuneResume();
-			}
-			if (!bVtunePaused && bPaused)
-			{
-				GetIProfilingSystem()->VTunePause();
-			}
-			bVtunePaused = bPaused;
-		}
-	}
-#endif
 
 	if (m_pStreamEngine)
 	{
@@ -2967,20 +3013,6 @@ CPNoise3* CSystem::GetNoiseGen()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CProfilingSystem::VTuneResume()
-{
-	CryLogAlways("Profiler Resume");
-	CryProfile::ProfilerResume();
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CProfilingSystem::VTunePause()
-{
-	CryProfile::ProfilerPause();
-	CryLogAlways("Profiler Pause");
-}
-
-//////////////////////////////////////////////////////////////////////////
 sUpdateTimes& CSystem::GetCurrentUpdateTimeStats()
 {
 	return m_UpdateTimes[m_UpdateTimesIdx];
@@ -3043,6 +3075,16 @@ IPhysicsDebugRenderer* CSystem::GetIPhysicsDebugRenderer()
 IPhysRenderer* CSystem::GetIPhysRenderer()
 {
 	return m_pPhysRenderer;
+}
+
+ICryProfilingSystem* CSystem::GetProfilingSystem()
+{
+	return m_pProfilingSystem;
+}
+
+ILegacyProfiler* CSystem::GetLegacyProfilerInterface()
+{
+	return m_pLegacyProfiler;
 }
 
 #ifndef _RELEASE

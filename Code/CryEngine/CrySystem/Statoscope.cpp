@@ -8,7 +8,6 @@
 
 #include "StdAfx.h"
 #include "Statoscope.h"
-#include "FrameProfileSystem.h"
 #include <CryGame/IGameFramework.h>
 #include <CryRenderer/IRenderer.h>
 #include <CryAnimation/ICryAnimation.h>
@@ -26,64 +25,52 @@
 
 #if ENABLE_STATOSCOPE
 
-namespace
+static void GetProfileTrackerPath(CryFixedStringT<128>& rName, const SProfilingSectionTracker* pTracker, ILegacyProfiler* pProfilingSystem)
 {
-class CCompareFrameProfilersSelfTime
-{
-public:
-	bool operator()(const std::pair<CFrameProfiler*, int64>& p1, const std::pair<CFrameProfiler*, int64>& p2)
+	CRY_ASSERT(pTracker);
+	const char* sThreadName = gEnv->pThreadManager->GetThreadName(pTracker->threadId);
+	char sThreadNameBuf[11]; // 0x 12345678 \0 => 2+8+1=11
+	if (CRY_PROFILER_COMBINE_JOB_TRACKERS && pTracker->threadId == CRY_PROFILER_JOB_THREAD_ID)
 	{
-		return p1.second > p2.second;
+		sThreadName = "JobSystem_Merged";
 	}
-};
-}
-
-static string GetFrameProfilerPath(CFrameProfiler* pProfiler)
-{
-	if (pProfiler)
+	else if (!sThreadName || !sThreadName[0])
 	{
-		const char* sThreadName = gEnv->pThreadManager->GetThreadName(pProfiler->m_threadId);
-		char sThreadNameBuf[11]; // 0x 12345678 \0 => 2+8+1=11
-		if (!sThreadName || !sThreadName[0])
-		{
-			cry_sprintf(sThreadNameBuf, "%" PRI_THREADID, (pProfiler->m_threadId));
-		}
-		if (strstr(sThreadName, "JobSystem_Worker_") == sThreadName)
-		{
-			sThreadName = "JobSystem_Merged";
-		}
+		cry_sprintf(sThreadNameBuf, "%" PRI_THREADID, (pTracker->threadId));
+	}
+	else if (strstr(sThreadName, "JobSystem_Worker_") == sThreadName)
+	{
+		sThreadName = "JobSystem_Merged";
+	}
 
-		char sNameBuffer[256];
-		cry_strcpy(sNameBuffer, pProfiler->m_name);
+#if CRY_FUNC_HAS_SIGNATURE // __FUNCTION__ only contains classname on MSVC, for other function we have __PRETTY_FUNCTION__, so we need to strip return / argument types
+	char sNameBuffer[256];
+	cry_strcpy(sNameBuffer, pTracker->pDescription->szEventname);
 
-	#if CRY_FUNC_HAS_SIGNATURE // __FUNCTION__ only contains classname on MSVC, for other function we have __PRETTY_FUNCTION__, so we need to strip return / argument types
+	{
+		char* pEnd = (char*)strchr(sNameBuffer, '(');
+		if (pEnd)
 		{
-			char* pEnd = (char*)strchr(sNameBuffer, '(');
-			if (pEnd)
+			*pEnd = 0;
+			while (*(pEnd) != ' ' && *(pEnd) != '*' && pEnd != (sNameBuffer - 1))
 			{
-				*pEnd = 0;
-				while (*(pEnd) != ' ' && *(pEnd) != '*' && pEnd != (sNameBuffer - 1))
-				{
-					--pEnd;
-				}
-				memmove(sNameBuffer, pEnd + 1, &sNameBuffer[sizeof(sNameBuffer)] - (pEnd + 1));
+				--pEnd;
 			}
+			memmove(sNameBuffer, pEnd + 1, &sNameBuffer[sizeof(sNameBuffer)] - (pEnd + 1));
 		}
-	#endif
-
-		string path = sThreadName ? sThreadName : sThreadNameBuf;
-		path += "/";
-		path += gEnv->pFrameProfileSystem->GetModuleName(pProfiler);
-		path += "/";
-		path += sNameBuffer;
-		path += "/";
-
-		return path;
 	}
-	else
-	{
-		return string("SmallFunctions/SmallFunction/");
-	}
+#endif
+
+	rName = sThreadName ? sThreadName : sThreadNameBuf;
+	rName += "/";
+	rName += pProfilingSystem->GetModuleName(pTracker);
+	rName += "/";
+#if CRY_FUNC_HAS_SIGNATURE
+	rName += sNameBuffer;
+#else
+	rName += pTracker->pDescription->szEventname;
+#endif
+	rName += "/";
 }
 
 CStatoscopeDataClass::CStatoscopeDataClass(const char* format)
@@ -270,10 +257,11 @@ struct SFrameLengthDG : public IStatoscopeDataGroup
 
 	virtual void Write(IStatoscopeFrameRecord& fr)
 	{
-		IFrameProfileSystem* pFrameProfileSystem = gEnv->pSystem->GetIProfileSystem();
+		ICryProfilingSystem* pProfiler = gEnv->pSystem->GetProfilingSystem();
+		const float profilingCost = pProfiler ? pProfiler->GetProfilingTimeCost() : -1.f;
 
 		fr.AddValue(gEnv->pTimer->GetRealFrameTime() * 1000.0f);
-		fr.AddValue(pFrameProfileSystem ? pFrameProfileSystem->GetLostFrameTimeMS() : -1.f);
+		fr.AddValue(profilingCost);
 	}
 };
 
@@ -389,7 +377,7 @@ struct SThreadsDG : public IStatoscopeDataGroup
 	}
 };
 
-	#if defined(JOBMANAGER_SUPPORT_FRAMEPROFILER)
+	#if defined(JOBMANAGER_SUPPORT_STATOSCOPE)
 
 struct SWorkerInfoSummarizedDG : public IStatoscopeDataGroup
 {
@@ -410,7 +398,7 @@ struct SWorkerInfoSummarizedDG : public IStatoscopeDataGroup
 
 		const SBackendPair pBackends[] =
 		{
-			{ gEnv->GetJobManager()->GetBackEnd(JobManager::eBET_Thread),   "NoneBlocking" },
+			{ gEnv->GetJobManager()->GetBackEnd(JobManager::eBET_Thread),   "NonBlocking" },
 			{ gEnv->GetJobManager()->GetBackEnd(JobManager::eBET_Blocking), "Blocking"     },
 		};
 
@@ -477,7 +465,7 @@ struct SJobsInfoSummarizedDG : public IStatoscopeDataGroup
 
 		const SBackendPair pBackendPairs[] =
 		{
-			{ gEnv->GetJobManager()->GetBackEnd(JobManager::eBET_Thread),   "NoneBlocking" },
+			{ gEnv->GetJobManager()->GetBackEnd(JobManager::eBET_Thread),   "NonBlocking" },
 			{ gEnv->GetJobManager()->GetBackEnd(JobManager::eBET_Blocking), "Blocking"     },
 		};
 
@@ -553,7 +541,7 @@ public:
 
 		const SFrameStatsPair pFrameStatsPairs[] =
 		{
-			{ m_pThreadFrameStats,   "NoneBlocking" },
+			{ m_pThreadFrameStats,   "NonBlocking" },
 			{ m_pBlockingFrameStats, "Blocking"     },
 		};
 
@@ -667,7 +655,7 @@ public:
 
 		const SFrameStatsPair pFrameStatsPairs[] =
 		{
-			{ &m_ThreadJobFrameStats,   "NoneBlocking" },
+			{ &m_ThreadJobFrameStats,   "NonBlocking" },
 			{ &m_BlockingJobFrameStats, "Blocking"     },
 		};
 
@@ -1186,50 +1174,33 @@ struct SPhysEntityProfilersDG : public IStatoscopeDataGroup
 	std::vector<SPhysInfo> m_physInfos;
 };
 
-struct SFrameProfilersDG : public IStatoscopeDataGroup
+struct SCryProfilerDG : public IStatoscopeDataGroup
 {
 	virtual SDescription GetDescription() const
 	{
 		return SDescription('r', "frame profilers", "['/Threads/$' (int count) (float selfTimeInMS) (float peak)]");
 	}
 
-	virtual void Enable()
-	{
-		IStatoscopeDataGroup::Enable();
-		ICVar* pCV_profile = gEnv->pConsole->GetCVar("profile");
-		if (pCV_profile)
-			pCV_profile->Set(-1);
-	}
-
-	virtual void Disable()
-	{
-		IStatoscopeDataGroup::Disable();
-		ICVar* pCV_profile = gEnv->pConsole->GetCVar("profile");
-		if (pCV_profile)
-			pCV_profile->Set(0);
-	}
-
 	virtual void Write(IStatoscopeFrameRecord& fr)
 	{
-		for (uint32 i = 0; i < m_frameProfilerRecords.size(); i++)
+		for (uint32 i = 0; i < m_profilerRecords.size(); i++)
 		{
-			SPerfStatFrameProfilerRecord& fpr = m_frameProfilerRecords[i];
-			string fpPath = GetFrameProfilerPath(fpr.m_pProfiler);
-			fr.AddValue(fpPath.c_str());
+			SPerfStatProfilerRecord& fpr = m_profilerRecords[i];
+			fr.AddValue(fpr.m_name);
 			fr.AddValue(fpr.m_count);
 			fr.AddValue(fpr.m_selfTime);
 			fr.AddValue(fpr.m_peak);
 		}
 
-		m_frameProfilerRecords.clear();
+		m_profilerRecords.clear();
 	}
 
 	virtual uint32 PrepareToWrite()
 	{
-		return m_frameProfilerRecords.size();
+		return m_profilerRecords.size();
 	}
 
-	std::vector<SPerfStatFrameProfilerRecord> m_frameProfilerRecords; // the most recent frame's profiler data
+	std::vector<SPerfStatProfilerRecord> m_profilerRecords; // the most recent frame's profiler data
 };
 
 struct SPerfCountersDG : public IStatoscopeDataGroup
@@ -1698,6 +1669,7 @@ CStatoscope::CStatoscope()
 
 	RegisterBuiltInDataGroups();
 	RegisterBuiltInIvDataGroups();
+	isRegisteredAsFrameListener = false;
 
 	m_pStatoscopeEnabledCVar = REGISTER_INT("e_StatoscopeEnabled", 0, VF_NULL, "Controls whether all statoscope is enabled.");
 	m_pStatoscopeDumpAllCVar = REGISTER_INT("e_StatoscopeDumpAll", 0, VF_NULL, "Controls whether all functions are dumped in a profile log.");
@@ -1847,6 +1819,7 @@ void CStatoscope::Tick()
 		if (m_pDataWriter && m_pDataWriter->Open())
 		{
 			SetIsRunning(true);
+			UpdateFrameListenerRegistration();
 
 			uint64 currentActiveDataGroupMask = (uint64)m_pStatoscopeDataGroupsCVar->GetI64Val();
 			uint64 differentDGs = currentActiveDataGroupMask ^ m_activeDataGroupMask;
@@ -1884,86 +1857,87 @@ void CStatoscope::Tick()
 		m_eventWriter.Reset();
 
 		SetIsRunning(false);
+		UpdateFrameListenerRegistration();
 	}
 }
 
-void CStatoscope::SetCurrentProfilerRecords(const std::vector<CFrameProfiler*>* profilers)
+void CStatoscope::OnFrameEnd(TTime, ILegacyProfiler* pProfSystem)
 {
-	if (m_pFrameProfilers)
+	if (m_pStatoscopeEnabledCVar->GetIVal() == 0)
+		return;
+
+	if (m_pProfilerDG && m_pProfilerDG->IsEnabled())
 	{
-		// we want to avoid reallocation of m_perfStatDumpProfilers
-		// even if numProfilers is quite large (in the thousands), it'll only be tens of KB
-		uint32 numProfilers = profilers->size();
-		m_perfStatDumpProfilers.clear();
-		m_perfStatDumpProfilers.reserve(std::max((size_t)numProfilers, m_perfStatDumpProfilers.size()));		
+		auto pTrackersList = pProfSystem->GetActiveTrackers();
+		if (pTrackersList == nullptr)
+			return;
+		const auto& trackers = *pTrackersList;
+
+		// we want to avoid reallocation of m_perfStatDumpTrackers
+		// even if numTrackers is quite large (in the thousands), it'll only be tens of KB
+		uint32 numTrackers = trackers.size();
+		m_perfStatDumpTrackers.clear();
+		m_perfStatDumpTrackers.reserve(std::max((size_t)numTrackers, m_perfStatDumpTrackers.size()));		
 
 		float minFuncTime = m_pStatoscopeMinFuncLengthMsCVar->GetFVal();
 
-		int64 smallFuncs = 0;
+		float smallFuncsSum = 0;
 		uint32 smallFuncsCount = 0;
 
-		for (uint32 i = 0; i < numProfilers; i++)
+		for(auto pTracker : trackers)
 		{
-			CFrameProfiler* pProfiler = (*profilers)[i];
-
 			// ignore really quick functions or ones what weren't called
-			if (1000.f * gEnv->pTimer->TicksToSeconds(pProfiler->m_selfTime) > minFuncTime)
+			if (pTracker->selfValue.Latest() > minFuncTime)
 			{
-				m_perfStatDumpProfilers.push_back(std::make_pair(pProfiler, pProfiler->m_selfTime));
+				m_perfStatDumpTrackers.push_back(std::make_pair(pTracker, pTracker->selfValue.Latest()));
 			}
 			else
 			{
-				smallFuncs += pProfiler->m_selfTime;
-				smallFuncsCount++;
+				smallFuncsSum += pTracker->selfValue.Latest();
+				++smallFuncsCount;
 			}
 		}
 
-		std::sort(m_perfStatDumpProfilers.begin(), m_perfStatDumpProfilers.end(), CCompareFrameProfilersSelfTime());
+		std::sort(m_perfStatDumpTrackers.begin(), m_perfStatDumpTrackers.end(), 
+			[] (const std::pair<const SProfilingSectionTracker*, float>& p1, const std::pair<const SProfilingSectionTracker*, float>& p2)
+				{return p1.second > p2.second; }
+		);
 
-		bool bDumpAll = false;
-
-		if (m_pStatoscopeDumpAllCVar->GetIVal())
-		{
-			bDumpAll = true;
-		}
+		const bool bDumpAll = (m_pStatoscopeDumpAllCVar->GetIVal() != 0);
 
 		if (!bDumpAll)
 		{
 			uint32 maxNumFuncs = (uint32)m_pStatoscopeMaxNumFuncsPerFrameCVar->GetIVal();
 			// limit the number being recorded
-			m_perfStatDumpProfilers.resize(std::min(m_perfStatDumpProfilers.size(), (size_t)maxNumFuncs));
+			m_perfStatDumpTrackers.resize(std::min(m_perfStatDumpTrackers.size(), (size_t)maxNumFuncs));
 		}
 
-		uint32 numDumpProfilers = m_perfStatDumpProfilers.size();
-		std::vector<SPerfStatFrameProfilerRecord>& records = m_pFrameProfilers->m_frameProfilerRecords;
+		uint32 numDumpProfilers = m_perfStatDumpTrackers.size();
+		std::vector<SPerfStatProfilerRecord>& records = m_pProfilerDG->m_profilerRecords;
 
 		records.reserve(numDumpProfilers);
 		records.resize(0);
 
 		for (uint32 i = 0; i < numDumpProfilers; i++)
 		{
-			CFrameProfiler* pProfiler = m_perfStatDumpProfilers[i].first;
-			int64 selfTime = m_perfStatDumpProfilers[i].second;
-			SPerfStatFrameProfilerRecord profilerRecord;
-
-			profilerRecord.m_pProfiler = pProfiler;
-			profilerRecord.m_count = pProfiler->m_count;
-			profilerRecord.m_selfTime = 1000.f * gEnv->pTimer->TicksToSeconds(selfTime);
-			profilerRecord.m_variance = pProfiler->m_variance;
-			profilerRecord.m_peak = 1000.f * gEnv->pTimer->TicksToSeconds(pProfiler->m_peak);
-
+			const SProfilingSectionTracker* pTracker = m_perfStatDumpTrackers[i].first;
+			
+			SPerfStatProfilerRecord profilerRecord;
+			GetProfileTrackerPath(profilerRecord.m_name, pTracker, pProfSystem);
+			profilerRecord.m_count = (int)pTracker->count.Latest();
+			profilerRecord.m_selfTime = pTracker->selfValue.Latest();
+			profilerRecord.m_variance = pTracker->selfValue.Variance();
+			profilerRecord.m_peak = pTracker->peakSelfValue;
 			records.push_back(profilerRecord);
 		}
 
 		if (bDumpAll)
 		{
-			SPerfStatFrameProfilerRecord profilerRecord;
-
-			profilerRecord.m_pProfiler = NULL;
+			SPerfStatProfilerRecord profilerRecord;
+			profilerRecord.m_name = "SmallFunctions/SmallFunction/";
 			profilerRecord.m_count = smallFuncsCount;
-			profilerRecord.m_selfTime = 1000.f * gEnv->pTimer->TicksToSeconds(smallFuncs);
+			profilerRecord.m_selfTime = smallFuncsSum;
 			profilerRecord.m_variance = 0;
-
 			records.push_back(profilerRecord);
 		}
 	}
@@ -2425,6 +2399,7 @@ void CStatoscope::SetDataGroups(uint64 enabledDGs, uint64 disabledDGs)
 			dataGroup.GetCallback()->Enable();
 		}
 	}
+	UpdateFrameListenerRegistration();
 }
 
 void CStatoscope::OutputLoadedModuleInformation(CDataWriter* pDataWriter)
@@ -2694,7 +2669,7 @@ void CStatoscope::RegisterBuiltInDataGroups()
 {
 	m_pParticleProfilers = new SParticleProfilersDG();
 	m_pPhysEntityProfilers = new SPhysEntityProfilersDG();
-	m_pFrameProfilers = new SFrameProfilersDG();
+	m_pProfilerDG = new SCryProfilerDG();
 	m_pUserMarkers = new SUserMarkerDG();
 	m_pCallstacks = new SCallstacksDG();
 
@@ -2704,7 +2679,7 @@ void CStatoscope::RegisterBuiltInDataGroups()
 	RegisterDataGroup(new SStreamingAudioDG());
 	RegisterDataGroup(new SStreamingObjectsDG());
 	RegisterDataGroup(new SThreadsDG());
-	#if defined(JOBMANAGER_SUPPORT_FRAMEPROFILER)
+	#if defined(JOBMANAGER_SUPPORT_STATOSCOPE)
 	RegisterDataGroup(new CWorkerInfoIndividualDG());
 	RegisterDataGroup(new SWorkerInfoSummarizedDG());
 	RegisterDataGroup(new CJobsInfoIndividualDG());
@@ -2718,7 +2693,7 @@ void CStatoscope::RegisterBuiltInDataGroups()
 	RegisterDataGroup(new SPerCGFGPUProfilersDG());
 	RegisterDataGroup(m_pParticleProfilers);
 	RegisterDataGroup(m_pPhysEntityProfilers);
-	RegisterDataGroup(m_pFrameProfilers);
+	RegisterDataGroup(m_pProfilerDG);
 	RegisterDataGroup(new SPerfCountersDG());
 	RegisterDataGroup(m_pUserMarkers);
 	RegisterDataGroup(m_pCallstacks);
@@ -2773,6 +2748,32 @@ void CStatoscope::WriteIntervalClassEvents()
 		m_eventWriter.EndEvent();
 	}
 }
+
+void CStatoscope::UpdateFrameListenerRegistration()
+{
+	if (m_pProfilerDG && m_pProfilerDG->IsEnabled() && IsRunning())
+	{
+		if (!isRegisteredAsFrameListener)
+		{
+			if (auto pProf = GetISystem()->GetLegacyProfilerInterface())
+			{
+				pProf->AddFrameListener(this);
+				isRegisteredAsFrameListener = true;
+			}
+			else
+				CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_WARNING, "Statoscope: Profiler data group ('r') is enabled, but not supported by the current profiling system!");
+		}
+	}
+	else if (isRegisteredAsFrameListener)
+	{
+		if (auto pProf = GetISystem()->GetLegacyProfilerInterface())
+		{
+			pProf->RemoveFrameListener(this);
+			isRegisteredAsFrameListener = false;
+		}
+	}
+}
+
 
 CStatoscopeServer::CStatoscopeServer(CStatoscope* pStatoscope)
 	: m_socket(CRY_INVALID_SOCKET),

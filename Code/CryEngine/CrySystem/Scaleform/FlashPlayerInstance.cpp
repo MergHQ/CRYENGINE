@@ -6,6 +6,8 @@
 #include "FlashPlayerInstance.h"
 #include "../System.h"
 #include <CrySystem/IConsole.h>
+#include <CryInput/IInput.h>
+#include <CryCore/AlignmentTools.h>
 
 // flash player implementation via Scaleform's GFx
 #ifdef INCLUDE_SCALEFORM_SDK
@@ -1077,7 +1079,9 @@ public:
 	CFlashFunctionProfilerLight()
 		: m_startTick(FlashTimer::GetTicks())
 	{
-		CRY_PROFILE_PUSH_MARKER("Flash");
+		if(flashEvent == nullptr)
+			flashEvent = new SProfilingSectionDescription(__FILE__, "Flash", 0, false, EProfiledSubsystem::PROFILE_RENDERER);
+		new (&flashSectionStorage) SProfilingSection(flashEvent, nullptr);
 	}
 
 	~CFlashFunctionProfilerLight()
@@ -1094,7 +1098,8 @@ public:
 		#else
 		ms_deltaTicksAccum += delta;
 		#endif
-		CRY_PROFILE_POP_MARKER("Flash");
+
+		((SProfilingSection*)&flashSectionStorage)->~SProfilingSection();
 	}
 
 	static void Update()
@@ -1124,6 +1129,9 @@ public:
 	}
 
 private:
+	static SProfilingSectionDescription* flashEvent;
+	SAlignedStorage<sizeof(SProfilingSection), alignof(SProfilingSection)>::type flashSectionStorage;
+
 	static volatile uint32 ms_deltaTicksAccum;
 	static const uint32    HIST_SIZE = 32;
 	static uint32          ms_histIdx;
@@ -1133,6 +1141,7 @@ private:
 	uint64 m_startTick;
 };
 
+SProfilingSectionDescription* CFlashFunctionProfilerLight::flashEvent = nullptr;
 volatile uint32 CFlashFunctionProfilerLight::ms_deltaTicksAccum = 0;
 uint32 CFlashFunctionProfilerLight::ms_histIdx = 0;
 float CFlashFunctionProfilerLight::ms_hist[HIST_SIZE] = { 0 };

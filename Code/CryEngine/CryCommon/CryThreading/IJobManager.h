@@ -18,20 +18,16 @@
 #include <CryCore/smartptr.h>
 #include <CryThreading/CryThread.h>
 
-// Job manager settings
+#if defined(ENABLE_PROFILING_CODE) && !CRY_PLATFORM_MOBILE
+	//! Enable to obtain stats of job usage each frame. (Statoscope)
+	#if ENABLE_STATOSCOPE
+		#define JOBMANAGER_SUPPORT_STATOSCOPE
+	#endif
 
-//! Enable to obtain stats of spu usage each frame.
-#define JOBMANAGER_SUPPORT_FRAMEPROFILER
-
-#if !defined(DEDICATED_SERVER)
-//! Collect per-job informations about dispatch, start, stop and sync times.
-	#define JOBMANAGER_SUPPORT_PROFILING
-#endif
-
-// Disable features which cost performance.
-#if !defined(USE_FRAME_PROFILER) || CRY_PLATFORM_MOBILE
-	#undef JOBMANAGER_SUPPORT_FRAMEPROFILER
-	#undef JOBMANAGER_SUPPORT_PROFILING
+	#if !defined(DEDICATED_SERVER)
+		//! Collect per-job informations about dispatch, start, stop and sync times. (sys_job_system_profiler)
+		#define JOBMANAGER_SUPPORT_PROFILING
+	#endif
 #endif
 
 struct ILog;
@@ -225,10 +221,8 @@ bool SJobStringHandle::operator<(const SJobStringHandle& crOther) const
 //! Struct to collect profiling informations about job invocations and sync times.
 struct CRY_ALIGN(16) SJobProfilingData
 {
-	typedef CTimeValue TimeValueT;
-
-	TimeValueT startTime;
-	TimeValueT endTime;
+	CTimeValue startTime;
+	CTimeValue endTime;
 
 	TJobHandle jobHandle;
 	threadID nThreadId;
@@ -873,7 +867,7 @@ struct IBackend
 	virtual bool StopTempWorker() = 0;
 	// </interfuscator:shuffle>
 
-#if defined(JOBMANAGER_SUPPORT_FRAMEPROFILER)
+#if defined(JOBMANAGER_SUPPORT_STATOSCOPE)
 	virtual IWorkerBackEndProfiler* GetBackEndWorkerProfiler() const = 0;
 #endif
 };

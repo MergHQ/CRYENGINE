@@ -118,7 +118,7 @@ void CSystemScheduler::SliceAndSleep(const char* sliceName, int line)
 				CryLogAlways("[SliceAndSleep]: Interval between slice [%s:%i] and [%s:%i] was [%f] out of budget [%f]", m_pLastSliceName, m_lastSliceLine, sliceName, line, diff, sliceBudget);
 		}
 
-		gEnv->pFrameProfileSystem->OnSliceAndSleep();
+		gEnv->pSystem->GetProfilingSystem()->OnSliceAndSleep();
 		gEnv->pStatoscope->Tick();
 
 		m_pSystem->SleepIfNeeded();

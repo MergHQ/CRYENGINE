@@ -14,10 +14,9 @@
 void InitJobManager()
 {
 	gEnv->pJobManager = GetJobManagerInterface();
-
-	auto pseudoProfilerCallback = [](class CFrameProfilerSection* pSection) {};
-	gEnv->callbackStartSection = pseudoProfilerCallback;
-	gEnv->callbackEndSection = pseudoProfilerCallback;
+	
+	gEnv->startProfilingSection = [](SProfilingSection*) { return false; };
+	gEnv->recordProfilingMarker = [](SProfilingMarker*) {};
 	gEnv->pJobManager->Init(8);
 }
 

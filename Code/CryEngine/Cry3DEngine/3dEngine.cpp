@@ -95,7 +95,6 @@ IStreamedObjectListener* Cry3DEngineBase::m_pStreamListener = 0;
 CGeomCacheManager* Cry3DEngineBase::m_pGeomCacheManager = 0;
 #endif
 
-bool Cry3DEngineBase::m_bProfilerEnabled = false;
 bool Cry3DEngineBase::m_bLevelLoadingInProgress = false;
 bool Cry3DEngineBase::m_bIsInRenderScene = false;
 int Cry3DEngineBase::m_mergedMeshesPoolSize = 0;
@@ -106,8 +105,6 @@ bool Cry3DEngineBase::m_bEditor = false;
 ESystemConfigSpec Cry3DEngineBase::m_LightConfigSpec = CONFIG_VERYHIGH_SPEC;
 int Cry3DEngineBase::m_arrInstancesCounter[eERType_TypesNum];
 IEditorHeightmap* C3DEngine::m_pEditorHeightmap = 0;
-
-#define LAST_POTENTIALLY_VISIBLE_TIME 2
 
 // The only direct particle function needed by 3DEngine, implemented in the same DLL.
 extern IParticleManager* CreateParticleManager(bool bEnable);
@@ -615,8 +612,6 @@ unsigned char GetOceanSurfTypeCallback(int ix, int iy)
 void C3DEngine::Update()
 {
 	MEMSTAT_FUNCTION_CONTEXT(EMemStatContextType::Other);
-	m_bProfilerEnabled = gEnv->pFrameProfileSystem->IsProfiling();
-
 	FUNCTION_PROFILER_3DENGINE;
 
 	m_LightConfigSpec = (ESystemConfigSpec)GetCurrentLightSpec();

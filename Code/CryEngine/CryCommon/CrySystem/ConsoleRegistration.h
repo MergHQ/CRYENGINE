@@ -305,6 +305,9 @@ struct SDummyCVar : ICVar
 //! Preferred way to register an int64 CVar
 #define REGISTER_INT64(_name, _def_val, _flags, _comment) ConsoleRegistrationHelper::RegisterInt64(_name, (_def_val), (_flags), CVARHELP(_comment))
 
+//! Preferred way to register an int64 CVar with a callback
+#define REGISTER_INT64_CB(_name, _def_val, _flags, _comment, _onchangefunction) ConsoleRegistrationHelper::RegisterInt64(_name, (_def_val), (_flags), CVARHELP(_comment), _onchangefunction)
+
 //! Preferred way to register a float CVar
 #define REGISTER_FLOAT(_name, _def_val, _flags, _comment) ConsoleRegistrationHelper::RegisterFloat(_name, (_def_val), (_flags), CVARHELP(_comment))
 

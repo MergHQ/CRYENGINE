@@ -20,7 +20,7 @@ extern SSystemCVars g_cvars;
 // FIXME DbgHelp broken on Durango currently
 #if CRY_PLATFORM_WINDOWS //|| CRY_PLATFORM_DURANGO
 	#include "DebugCallStack.h"
-	#include "Psapi.h"
+	#include <Psapi.h>
 	#include "DbgHelp.h"
 
 namespace
@@ -1569,75 +1569,90 @@ void CReplayModules::RefreshModules(FModuleLoad onLoad, FModuleUnload onUnload, 
 	{
 		if (SymInitialize(hProcess, NULL, TRUE))
 		{
-			if (EnumProcessModules(hProcess, hMods, sizeof(hMods), &cbNeeded))
+			decltype(&EnumProcessModules) pfEnumProcessModules;
+			decltype(&GetModuleFileNameEx) pfGetModuleFileNameEx;
+			decltype(&GetModuleInformation) pfGetModuleInformation;
+
+			HMODULE hPsapiModule = ::LoadLibraryA("psapi.dll");
+			if (hPsapiModule)
 			{
-				for (i = 0; i < (cbNeeded / sizeof(HMODULE)); i++)
+				pfEnumProcessModules = (decltype(pfEnumProcessModules)) GetProcAddress(hPsapiModule, "EnumProcessModules");
+				pfGetModuleFileNameEx = (decltype(pfGetModuleFileNameEx)) GetProcAddress(hPsapiModule, "GetModuleFileNameEx");
+				pfGetModuleInformation = (decltype(pfGetModuleInformation)) GetProcAddress(hPsapiModule, "GetModuleInformation");
+			}
+
+			if(pfEnumProcessModules && pfGetModuleFileNameEx && pfGetModuleInformation)
+			{
+				if (pfEnumProcessModules(hProcess, hMods, sizeof(hMods), &cbNeeded))
 				{
-					TCHAR szModName[MAX_PATH];
-					// Get the full path to the module's file.
-					if (GetModuleFileNameEx(hProcess, hMods[i], szModName, sizeof(szModName) / sizeof(TCHAR)))
+					for (i = 0; i < (cbNeeded / sizeof(HMODULE)); i++)
 					{
-						char pdbPath[1024];
-						cry_strcpy(pdbPath, szModName);
-						char* pPdbPathExt = strrchr(pdbPath, '.');
-						if (pPdbPathExt)
-							strcpy(pPdbPathExt, ".pdb");
-						else
-							cry_strcat(pdbPath, ".pdb");
-
-						MODULEINFO modInfo;
-						GetModuleInformation(hProcess, hMods[i], &modInfo, sizeof(modInfo));
-
-						IMAGEHLP_MODULE64 ihModInfo;
-						memset(&ihModInfo, 0, sizeof(ihModInfo));
-						ihModInfo.SizeOfStruct = sizeof(ihModInfo);
-						if (SymGetModuleInfo64(hProcess, (DWORD64)modInfo.lpBaseOfDll, &ihModInfo))
+						TCHAR szModName[MAX_PATH];
+						// Get the full path to the module's file.
+						if (pfGetModuleFileNameEx(hProcess, hMods[i], szModName, sizeof(szModName) / sizeof(TCHAR)))
 						{
-							cry_strcpy(pdbPath, ihModInfo.CVData);
+							char pdbPath[1024];
+							cry_strcpy(pdbPath, szModName);
+							char* pPdbPathExt = strrchr(pdbPath, '.');
+							if (pPdbPathExt)
+								strcpy(pPdbPathExt, ".pdb");
+							else
+								cry_strcat(pdbPath, ".pdb");
 
-							if (ihModInfo.PdbSig70.Data1 == 0)
+							MODULEINFO modInfo;
+							pfGetModuleInformation(hProcess, hMods[i], &modInfo, sizeof(modInfo));
+
+							IMAGEHLP_MODULE64 ihModInfo;
+							memset(&ihModInfo, 0, sizeof(ihModInfo));
+							ihModInfo.SizeOfStruct = sizeof(ihModInfo);
+							if (SymGetModuleInfo64(hProcess, (DWORD64)modInfo.lpBaseOfDll, &ihModInfo))
 							{
-								DWORD debugEntrySize;
-								IMAGE_DEBUG_DIRECTORY* pDebugDirectory = (IMAGE_DEBUG_DIRECTORY*)ImageDirectoryEntryToDataEx(modInfo.lpBaseOfDll, TRUE, IMAGE_DIRECTORY_ENTRY_DEBUG, &debugEntrySize, NULL);
-								if (pDebugDirectory)
+								cry_strcpy(pdbPath, ihModInfo.CVData);
+
+								if (ihModInfo.PdbSig70.Data1 == 0)
 								{
-									size_t numDirectories = debugEntrySize / sizeof(IMAGE_DEBUG_DIRECTORY);
-									for (size_t dirIdx = 0; dirIdx != numDirectories; ++dirIdx)
+									DWORD debugEntrySize;
+									IMAGE_DEBUG_DIRECTORY* pDebugDirectory = (IMAGE_DEBUG_DIRECTORY*)ImageDirectoryEntryToDataEx(modInfo.lpBaseOfDll, TRUE, IMAGE_DIRECTORY_ENTRY_DEBUG, &debugEntrySize, NULL);
+									if (pDebugDirectory)
 									{
-										IMAGE_DEBUG_DIRECTORY& dir = pDebugDirectory[dirIdx];
-										if (dir.Type == 2)
+										size_t numDirectories = debugEntrySize / sizeof(IMAGE_DEBUG_DIRECTORY);
+										for (size_t dirIdx = 0; dirIdx != numDirectories; ++dirIdx)
 										{
-											CVDebugInfo* pCVInfo = (CVDebugInfo*)((char*)modInfo.lpBaseOfDll + dir.AddressOfRawData);
-											ihModInfo.PdbSig70 = pCVInfo->pdbSig;
-											ihModInfo.PdbAge = pCVInfo->age;
-											cry_strcpy(pdbPath, pCVInfo->pdbName);
-											break;
+											IMAGE_DEBUG_DIRECTORY& dir = pDebugDirectory[dirIdx];
+											if (dir.Type == 2)
+											{
+												CVDebugInfo* pCVInfo = (CVDebugInfo*)((char*)modInfo.lpBaseOfDll + dir.AddressOfRawData);
+												ihModInfo.PdbSig70 = pCVInfo->pdbSig;
+												ihModInfo.PdbAge = pCVInfo->age;
+												cry_strcpy(pdbPath, pCVInfo->pdbName);
+												break;
+											}
 										}
 									}
 								}
+
+								ModuleLoadDesc mld;
+								cry_sprintf(mld.sig, "%p, %08X, %08X, {%08X-%04X-%04X-%02X %02X-%02X %02X %02X %02X %02X %02X}, %d\n",
+									modInfo.lpBaseOfDll, modInfo.SizeOfImage, ihModInfo.TimeDateStamp,
+									ihModInfo.PdbSig70.Data1, ihModInfo.PdbSig70.Data2, ihModInfo.PdbSig70.Data3,
+									ihModInfo.PdbSig70.Data4[0], ihModInfo.PdbSig70.Data4[1],
+									ihModInfo.PdbSig70.Data4[2], ihModInfo.PdbSig70.Data4[3],
+									ihModInfo.PdbSig70.Data4[4], ihModInfo.PdbSig70.Data4[5],
+									ihModInfo.PdbSig70.Data4[6], ihModInfo.PdbSig70.Data4[7],
+									ihModInfo.PdbAge);
+
+								cry_strcpy(mld.name, szModName);
+								cry_strcpy(mld.path, pdbPath);
+								mld.address = (UINT_PTR)modInfo.lpBaseOfDll;
+								mld.size = modInfo.SizeOfImage;
+								onLoad(pUser, mld);
 							}
-
-							ModuleLoadDesc mld;
-							cry_sprintf(mld.sig, "%p, %08X, %08X, {%08X-%04X-%04X-%02X %02X-%02X %02X %02X %02X %02X %02X}, %d\n",
-							            modInfo.lpBaseOfDll, modInfo.SizeOfImage, ihModInfo.TimeDateStamp,
-							            ihModInfo.PdbSig70.Data1, ihModInfo.PdbSig70.Data2, ihModInfo.PdbSig70.Data3,
-							            ihModInfo.PdbSig70.Data4[0], ihModInfo.PdbSig70.Data4[1],
-							            ihModInfo.PdbSig70.Data4[2], ihModInfo.PdbSig70.Data4[3],
-							            ihModInfo.PdbSig70.Data4[4], ihModInfo.PdbSig70.Data4[5],
-							            ihModInfo.PdbSig70.Data4[6], ihModInfo.PdbSig70.Data4[7],
-							            ihModInfo.PdbAge);
-
-							cry_strcpy(mld.name, szModName);
-							cry_strcpy(mld.path, pdbPath);
-							mld.address = (UINT_PTR)modInfo.lpBaseOfDll;
-							mld.size = modInfo.SizeOfImage;
-							onLoad(pUser, mld);
 						}
 					}
 				}
-			}
 
-			SymCleanup(hProcess);
+				SymCleanup(hProcess);
+			}
 		}
 		CloseHandle(hProcess);
 	}

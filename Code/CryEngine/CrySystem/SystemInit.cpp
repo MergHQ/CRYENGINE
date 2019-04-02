@@ -72,6 +72,8 @@
 #include "AutoDetectSpec.h"
 #include "ResourceManager.h"
 #include "BootProfiler.h"
+#include "Profiling/ProfilingRenderer.h"
+#include "Profiling/CryProfilingSystem.h"
 #include "DiskProfiler.h"
 #include "Watchdog.h"
 #include "Statoscope.h"
@@ -2686,8 +2688,6 @@ bool CSystem::Initialize(SSystemInitParams& startupParams)
 	InlineInitializationProcessing("CSystem::Init PlatformOS");
 
 	{
-		m_FrameProfileSystem.Init();
-
 		//////////////////////////////////////////////////////////////////////////
 		// File system, must be very early
 		//////////////////////////////////////////////////////////////////////////
@@ -2832,6 +2832,8 @@ bool CSystem::Initialize(SSystemInitParams& startupParams)
 #ifdef ENABLE_LOADING_PROFILER
 		CBootProfiler::GetInstance().RegisterCVars();
 #endif
+		if (m_pProfileRenderer)
+			m_pProfileRenderer->RegisterCVars();
 
 		// Register Audio-related system CVars
 		CreateAudioVars();
@@ -3319,6 +3321,14 @@ bool CSystem::Initialize(SSystemInitParams& startupParams)
 				m_env.pHardwareMouse->OnPostInitInput();
 		}
 
+		if(gEnv->pInput)
+		{
+			if(m_pProfilingSystem)
+				gEnv->pInput->AddEventListener(m_pProfilingSystem);
+			if (m_pProfileRenderer)
+				gEnv->pInput->AddEventListener(m_pProfileRenderer);
+		}
+
 		InlineInitializationProcessing("CSystem::Init InitInput");
 
 		//////////////////////////////////////////////////////////////////////////
@@ -3376,10 +3386,6 @@ bool CSystem::Initialize(SSystemInitParams& startupParams)
 		m_pDownloadManager = new CDownloadManager;
 		m_pDownloadManager->Create(this);
 #endif //DOWNLOAD_MANAGER
-
-		//#ifndef MEM_STD
-		//  REGISTER_COMMAND("MemStats",::DumpAllocs,"");
-		//#endif
 
 		//////////////////////////////////////////////////////////////////////////
 		// SCRIPT SYSTEM
@@ -4921,6 +4927,8 @@ void CSystem::CreateSystemVars()
 	REGISTER_COMMAND("sys_job_system_dump_job_list", CmdDumpJobManagerJobList, VF_CHEAT, "Show a list of all registered job in the console");
 	REGISTER_COMMAND("sys_dump_cvars", CmdDumpCvars, VF_CHEAT, "Dump all cvars to file");
 
+	REGISTER_CVAR2("MemInfo", &profile_meminfo, 0, 0, "Display memory information by modules\n1=on, 0=off");
+
 	m_sys_spec = REGISTER_INT_CB("sys_spec", CONFIG_CUSTOM, VF_ALWAYSONCHANGE,    // starts with CONFIG_CUSTOM so callback is called when setting initial value
 	                             "Tells the system cfg spec. (0=custom, 1=low, 2=med, 3=high, 4=very high, 5=XBoxOne, 6=PS4)",
 	                             OnSysSpecChange);
@@ -4954,7 +4962,6 @@ void CSystem::CreateSystemVars()
 	m_sys_memory_debug = REGISTER_INT("sys_memory_debug", 0, VF_CHEAT,
 	                                  "Enables to activate low memory situation is specific places in the code (argument defines which place), 0=off");
 
-	REGISTER_CVAR2("sys_vtune", &g_cvars.sys_vtune, 0, VF_NULL, "");
 	REGISTER_CVAR2("sys_streaming_memory_budget", &g_cvars.sys_streaming_memory_budget, 10 * 1024, VF_NULL, "Temp memory streaming system can use in KB");
 	REGISTER_CVAR2("sys_streaming_max_finalize_per_frame", &g_cvars.sys_streaming_max_finalize_per_frame, 0, VF_NULL,
 	               "Maximum stream finalizing calls per frame to reduce the CPU impact on main thread (0 to disable)");
@@ -5313,56 +5320,6 @@ void CSystem::AddCVarGroupDirectory(const string& sPath)
 	while (gEnv->pCryPak->FindNext(handle, &fd) >= 0);
 
 	gEnv->pCryPak->FindClose(handle);
-}
-
-CBootProfilerRecord* CSystem::StartBootSectionProfiler(const char* name, const char* args, EProfileDescription type)
-{
-#if defined(ENABLE_LOADING_PROFILER)
-	CBootProfiler& profiler = CBootProfiler::GetInstance();
-	return profiler.StartBlock(name, args, type);
-#else
-	return NULL;
-#endif
-}
-
-void CSystem::StopBootSectionProfiler(CBootProfilerRecord* record)
-{
-#if defined(ENABLE_LOADING_PROFILER)
-	CBootProfiler& profiler = CBootProfiler::GetInstance();
-	profiler.StopBlock(record);
-#endif
-}
-
-void CSystem::StartBootProfilerSession(const char* szName)
-{
-#if defined(ENABLE_LOADING_PROFILER)
-	CBootProfiler& profiler = CBootProfiler::GetInstance();
-	profiler.StartSession(szName);
-#endif
-}
-
-void CSystem::StopBootProfilerSession(const char* szName)
-{
-#if defined(ENABLE_LOADING_PROFILER)
-	CBootProfiler& profiler = CBootProfiler::GetInstance();
-	profiler.StopSession();
-#endif
-}
-
-void CSystem::OnFrameStart(const char* szName)
-{
-#if defined(ENABLE_LOADING_PROFILER)
-	CBootProfiler& profiler = CBootProfiler::GetInstance();
-	profiler.StartFrame(szName);
-#endif
-}
-
-void CSystem::OnFrameEnd()
-{
-#if defined(ENABLE_LOADING_PROFILER)
-	CBootProfiler& profiler = CBootProfiler::GetInstance();
-	profiler.StopFrame();
-#endif
 }
 
 bool CSystem::RegisterErrorObserver(IErrorObserver* errorObserver)

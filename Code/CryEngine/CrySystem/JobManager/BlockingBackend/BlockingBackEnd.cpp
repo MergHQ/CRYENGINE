@@ -27,7 +27,7 @@ JobManager::BlockingBackEnd::CBlockingBackEnd::CBlockingBackEnd(JobManager::SInf
 {
 	m_JobQueue.Init();
 
-#if defined(JOBMANAGER_SUPPORT_FRAMEPROFILER)
+#if defined(JOBMANAGER_SUPPORT_STATOSCOPE)
 	m_pBackEndWorkerProfiler = 0;
 #endif
 }
@@ -55,7 +55,7 @@ bool JobManager::BlockingBackEnd::CBlockingBackEnd::Init(uint32 nSysMaxWorker)
 
 	m_nNumWorker = nSysMaxWorker;
 
-#if defined(JOBMANAGER_SUPPORT_FRAMEPROFILER)
+#if defined(JOBMANAGER_SUPPORT_STATOSCOPE)
 	m_pBackEndWorkerProfiler = new JobManager::CWorkerBackEndProfiler;
 	m_pBackEndWorkerProfiler->Init(m_nNumWorker);
 #endif
@@ -90,7 +90,7 @@ bool JobManager::BlockingBackEnd::CBlockingBackEnd::ShutDown()
 	m_pWorkerThreads = NULL;
 	m_nNumWorker = 0;
 
-#if defined(JOBMANAGER_SUPPORT_FRAMEPROFILER)
+#if defined(JOBMANAGER_SUPPORT_STATOSCOPE)
 	SAFE_DELETE(m_pBackEndWorkerProfiler);
 #endif
 
@@ -133,7 +133,7 @@ void JobManager::BlockingBackEnd::CBlockingBackEnd::AddJob(JobManager::CJobDeleg
 	const uint32 cJobId = cJobHandle->jobId;
 	rJobInfoBlock.jobId = (unsigned char)cJobId;
 
-#if defined(JOBMANAGER_SUPPORT_FRAMEPROFILER)
+#if defined(JOBMANAGER_SUPPORT_STATOSCOPE)
 	assert(cJobId < JobManager::detail::eJOB_FRAME_STATS_MAX_SUPP_JOBS);
 	m_pBackEndWorkerProfiler->RegisterJob(cJobId, CJobManager::Instance()->GetJobName(rInfoBlock.jobInvoker));
 	rJobInfoBlock.frameProfIndex = (unsigned char)m_pBackEndWorkerProfiler->GetProfileIndex();
@@ -293,18 +293,17 @@ void JobManager::BlockingBackEnd::CBlockingBackEndWorkerThread::ThreadEntry()
 		pJobProfilingData->nWorkerThread = GetWorkerThreadId();
 #endif
 
-#if defined(JOBMANAGER_SUPPORT_FRAMEPROFILER)
+#if defined(JOBMANAGER_SUPPORT_STATOSCOPE)
 		const uint64 nStartTime = JobManager::IWorkerBackEndProfiler::GetTimeSample();
 #endif
 
 		// call delegator function to invoke job entry
 #if !defined(_RELEASE) || defined(PERFORMANCE_BUILD)
 		CRY_PROFILE_REGION(PROFILE_SYSTEM, "Job");
-		CRYPROFILE_SCOPE_PLATFORM_MARKER(CJobManager::Instance()->GetJobName(infoBlock.jobInvoker));
 #endif
 		(*infoBlock.jobInvoker)(infoBlock.GetParamAddress());
 
-#if defined(JOBMANAGER_SUPPORT_FRAMEPROFILER)
+#if defined(JOBMANAGER_SUPPORT_STATOSCOPE)
 		JobManager::IWorkerBackEndProfiler* workerProfiler = m_pBlockingBackend->GetBackEndWorkerProfiler();
 		const uint64 nEndTime = JobManager::IWorkerBackEndProfiler::GetTimeSample();
 		workerProfiler->RecordJob(infoBlock.frameProfIndex, m_nId, static_cast<const uint32>(infoBlock.jobId), static_cast<const uint32>(nEndTime - nStartTime));

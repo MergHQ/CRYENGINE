@@ -14,6 +14,7 @@
 #include "StdAfx.h"
 #include "DebugCallStack.h"
 #include <CryThreading/IThreadManager.h>
+#include <CryInput/IInput.h>
 
 #include <mutex>
 #include <condition_variable>

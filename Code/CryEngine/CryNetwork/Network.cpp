@@ -51,10 +51,6 @@
 	#include <Winxnet.h>
 #endif
 
-#if ENABLE_OBJECT_COUNTING
-	#include "PsApi.h"
-#endif
-
 #include <CryLobby/CommonICryMatchMaking.h>
 #include <CryThreading/IThreadManager.h>
 
@@ -1052,7 +1048,6 @@ void CNetwork::SyncWithGame(ENetworkGameSync type)
 		char profileLabel[32];
 		cry_sprintf(profileLabel, "SyncWithGame() lock %d", type);
 		CRY_PROFILE_REGION(PROFILE_NETWORK, "SyncWithGame() lock unknown");
-		CRYPROFILE_SCOPE_PLATFORM_MARKER(profileLabel);
 #endif
 		CTimeValue startTime = gEnv->pTimer->GetAsyncTime();
 

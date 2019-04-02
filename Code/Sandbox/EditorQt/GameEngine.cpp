@@ -66,6 +66,7 @@
 #include <CrySystem/File/ICryPak.h>
 #include <CrySystem/ICryPluginManager.h>
 #include <CrySystem/ITimer.h>
+#include <CryThreading/IJobManager.h>
 #include <IGameRulesSystem.h>
 #include <ILevelSystem.h>
 

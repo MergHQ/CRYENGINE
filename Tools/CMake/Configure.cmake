@@ -196,13 +196,6 @@ if (OPTION_RELEASE_LOGGING)
 endif()
 
 
-if (WINDOWS AND OPTION_ENABLE_BROFILER AND OPTION_ENGINE)
-	list(APPEND global_defines USE_BROFILER)
-	list(APPEND global_includes "${SDK_DIR}/Brofiler" )
-	list(APPEND global_links "${SDK_DIR}/Brofiler" )
-	set(COMMON_LIBS ${COMMON_LIBS} ProfilerCore64)
-endif()
-
 if (OPTION_ENGINE)
 	if(NOT TARGET SDL2)
 		include("${TOOLS_CMAKE_DIR}/modules/SDL2.cmake")

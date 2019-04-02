@@ -21,8 +21,8 @@
 	#include <sys/types.h> // required by mman.h
 	#include <sys/mman.h>  //mmap - virtual memory manager
 #endif
-extern LONG g_TotalAllocatedMemory;
-extern thread_local LONG tls_ThreadAllocatedMemory;
+extern int64 g_TotalAllocatedMemory;
+extern thread_local int64 tls_allocatedMemory;
 
 #ifdef MEMMAN_STATIC
 CCryMemoryManager g_memoryManager;
@@ -168,8 +168,8 @@ bool CCryMemoryManager::GetProcessMemInfo(SProcessMemInfo& minfo)
 //////////////////////////////////////////////////////////////////////////
 void CCryMemoryManager::FakeAllocation(long size)
 {
-	CryInterlockedExchangeAdd((LONG volatile*)&g_TotalAllocatedMemory, (LONG)size);
-	tls_ThreadAllocatedMemory += size;
+	CryInterlockedAdd(&g_TotalAllocatedMemory, (int64) size);
+	tls_allocatedMemory += size;
 }
 
 //////////////////////////////////////////////////////////////////////////

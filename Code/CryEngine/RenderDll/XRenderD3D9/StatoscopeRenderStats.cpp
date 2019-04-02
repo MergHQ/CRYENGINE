@@ -302,7 +302,8 @@ IStatoscopeDataGroup::SDescription CPerformanceOverviewDG::GetDescription() cons
 
 void CPerformanceOverviewDG::Write(IStatoscopeFrameRecord& fr)
 {
-	IFrameProfileSystem* pFrameProfileSystem = gEnv->pSystem->GetIProfileSystem();
+	auto pProfileSystem = gEnv->pSystem->GetProfilingSystem();
+	const float profilingCostMs = pProfileSystem ? pProfileSystem->GetProfilingTimeCost() : 0.f;
 	const float frameLengthSec = gEnv->pTimer->GetRealFrameTime();
 	const float frameLengthMs = frameLengthSec * 1000.0f;
 
@@ -319,8 +320,8 @@ void CPerformanceOverviewDG::Write(IStatoscopeFrameRecord& fr)
 	gEnv->pRenderer->GetCurrentNumberOfDrawCalls(numDrawCalls, numShadowDrawCalls);
 
 	fr.AddValue(frameLengthMs);
-	fr.AddValue(pFrameProfileSystem ? pFrameProfileSystem->GetLostFrameTimeMS() : -1.f);
-	fr.AddValue(frameLengthMs - (pFrameProfileSystem ? pFrameProfileSystem->GetLostFrameTimeMS() : 0.f));
+	fr.AddValue(profilingCostMs);
+	fr.AddValue(frameLengthMs - profilingCostMs);
 	fr.AddValue((frameLengthSec - renderTimes.fWaitForRender) * 1000.0f);
 	fr.AddValue((renderTimes.fTimeProcessedRT - renderTimes.fWaitForGPU) * 1000.f);
 	fr.AddValue(gEnv->pRenderer->GetGPUFrameTime() * 1000.0f);

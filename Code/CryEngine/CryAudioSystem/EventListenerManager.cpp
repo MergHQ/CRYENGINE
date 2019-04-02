@@ -3,7 +3,6 @@
 #include "stdafx.h"
 #include "EventListenerManager.h"
 #include <CryCore/StlUtils.h>
-#include <CrySystem/Profilers/FrameProfiler/FrameProfiler.h>
 
 #if defined(CRY_AUDIO_USE_DEBUG_CODE)
 	#include "Common/Logger.h"

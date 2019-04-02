@@ -26,6 +26,7 @@
 #include <CryCore/Platform/CryWindows.h>
 #include <Cry3DEngine/ITimeOfDay.h>
 #include <CryRenderer/IRenderAuxGeom.h>
+#include <CryCore/RingBuffer.h>
 
 #include <array>
 
@@ -450,8 +451,7 @@ CTimeDemoRecorder::CTimeDemoRecorder()
 	, m_nPolysCounter(0)
 	, m_fpsCounter(0)
 	, m_fileVersion(TIMEDEMO_FILE_VERSION)
-	, m_bEnabledProfiling(false)
-	, m_bVisibleProfiling(false)
+	, m_profilingPaused(false)
 	, m_oldPeakTolerance(0.0f)
 	, m_fixedTimeStep(0)
 	, m_pTimeDemoInfo(nullptr)
@@ -487,6 +487,7 @@ CTimeDemoRecorder::CTimeDemoRecorder()
 //////////////////////////////////////////////////////////////////////////
 CTimeDemoRecorder::~CTimeDemoRecorder()
 {
+	CRY_ASSERT_MESSAGE(s_pTimeDemoRecorder == nullptr, "TimeDemoRecorder was not unregistered.");
 }
 
 void CTimeDemoRecorder::OnRegistered()
@@ -1996,26 +1997,36 @@ void CTimeDemoRecorder::StartSession()
 	// Register to frame profiler.
 
 	// remember old profiling settings
-	m_bEnabledProfiling = gEnv->pFrameProfileSystem->IsEnabled();
-	m_bVisibleProfiling = gEnv->pFrameProfileSystem->IsVisible();
-	m_oldPeakTolerance = GetConsoleVar("profile_peak");
+	auto pProfSystem = GetISystem()->GetProfilingSystem();
+	m_profilingPaused = pProfSystem->IsPaused();
+	m_oldPeakTolerance = GetConsoleVar("profile_peak_tolerance");
 
 	if (m_demo_profile)
 	{
-		gEnv->pFrameProfileSystem->Enable(true, gEnv->pFrameProfileSystem->IsVisible());
-
-		// Profile peaks by registering a listener.
-		// Enable peaks profiling only if "demo_profile == 1".
-		gEnv->pFrameProfileSystem->AddPeaksListener(this);
-		SetConsoleVar("profile_peak", 50);
+		if (pProfSystem->IsStopped())
+		{
+			CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_WARNING, "The profiling system was already stopped, but peak profiling is requested for the time demo.");
+			m_demo_profile = false;
+		}
+		else if (GetISystem()->GetLegacyProfilerInterface() == nullptr)
+		{
+			CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_WARNING, "The used profiling system does not support peak profiling, but it was requested for the time demo.");
+			m_demo_profile = false;
+		}
+		else
+		{
+			// Profile peaks by registering a listener.
+			pProfSystem->PauseRecording(false);
+			GetISystem()->GetLegacyProfilerInterface()->AddFrameListener(this);
+			SetConsoleVar("profile_peak_tolerance", 50);
+		}
 	}
 
 	m_fixedTimeStep = GetConsoleVar("t_FixedStep");
 	if (m_demo_fixed_timestep > 0)
+	{
 		SetConsoleVar("t_FixedStep", 1.0f / (float)m_demo_fixed_timestep);
-
-	if (m_demo_vtune)
-		GetISystem()->GetIProfilingSystem()->VTuneResume();
+	}
 
 	m_lastFrameTime = GetTime();
 }
@@ -2023,11 +2034,6 @@ void CTimeDemoRecorder::StartSession()
 //////////////////////////////////////////////////////////////////////////
 void CTimeDemoRecorder::StopSession()
 {
-	if (m_demo_vtune)
-	{
-		GetISystem()->GetIProfilingSystem()->VTunePause();
-	}
-
 	// Set old time step.
 	SetConsoleVar("t_FixedStep", m_fixedTimeStep);
 
@@ -2045,13 +2051,13 @@ void CTimeDemoRecorder::StopSession()
 
 	gEnv->pGameFramework->GetIGameplayRecorder()->EnableGameStateRecorder(false, this, false);
 	
-	// Revert the profiling CVAR-s and UI.
-	SetConsoleVar("profile_peak", m_oldPeakTolerance);
-	gEnv->pFrameProfileSystem->RemovePeaksListener(this);
-
+	// Revert the profiling CVARs
+	auto pProfSystem = GetISystem()->GetProfilingSystem();
 	if (m_demo_profile)
 	{
-		gEnv->pFrameProfileSystem->Enable(m_bEnabledProfiling, m_bVisibleProfiling);
+		SetConsoleVar("profile_peak_tolerance", m_oldPeakTolerance);
+		GetISystem()->GetLegacyProfilerInterface()->RemoveFrameListener(this);
+		pProfSystem->PauseRecording(m_profilingPaused);
 	}
 
 	m_lastPlayedTotalTime = m_totalDemoTime.GetSeconds();
@@ -2365,11 +2371,22 @@ void CTimeDemoRecorder::OnGameplayEvent(IEntity* pEntity, const GameplayEvent& e
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CTimeDemoRecorder::OnFrameProfilerPeak(CFrameProfiler* pProfiler, float fPeakTime)
+void CTimeDemoRecorder::OnFrameEnd(TTime time, ILegacyProfiler* pProfSystem)
 {
+	const auto frame = gEnv->nMainFrameID;
 	if (m_bPlaying && !m_bPaused)
 	{
-		LogInfo("    -Peak at Frame %d, %.2fms : %s (count: %d)", m_currentFrame, fPeakTime, pProfiler->m_name, pProfiler->m_count);
+		auto pPeaks = pProfSystem->GetPeakRecords();
+		if (pPeaks == nullptr)
+			return;
+
+		const size_t peakCount = pPeaks->size();
+		for(auto i = 0; i < peakCount; ++i)
+		{
+			auto& peak = (*pPeaks)[i];
+			if (peak.frame == frame) // do not log peaks repeatedly
+				LogInfo("    -Peak at Frame %d, %.2fms : %s (count: %d)", m_currentFrame, peak.peakValue, peak.pTracker->pDescription->szEventname, peak.count);
+		}
 	}
 }
 

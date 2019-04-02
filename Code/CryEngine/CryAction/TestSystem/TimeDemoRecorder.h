@@ -17,6 +17,7 @@
 
 #include <CryCore/Containers/CryListenerSet.h>
 #include <CryAction/ITimeDemoRecorder.h>
+#include <CrySystem/Profilers/ILegacyProfiler.h>
 #include "ITestModule.h"
 
 struct SRecordedGameEvent;
@@ -62,7 +63,7 @@ typedef std::vector<STimeDemoGameEvent> TGameEventRecords;
 
 class CTimeDemoRecorder 
 	: public ITimeDemoRecorder
-	, IFrameProfilePeakCallback
+	, public ICryProfilerFrameListener
 	, IInputEventListener
 	, IEntitySystemSink
 	, IGameplayListener
@@ -91,11 +92,9 @@ public:
 	//////////////////////////////////////////////////////////////////////////
 
 private:
-	//////////////////////////////////////////////////////////////////////////
-	// Implements IFrameProfilePeakCallback interface.
-	//////////////////////////////////////////////////////////////////////////
-	virtual void OnFrameProfilerPeak(CFrameProfiler* pProfiler, float fPeakTime) override;
-	//////////////////////////////////////////////////////////////////////////
+	// ICryProfilerFrameListener, for getting the peaks
+	void OnFrameEnd(TTime, ILegacyProfiler*) override;
+	// ~ICryProfilerFrameListener
 
 	//////////////////////////////////////////////////////////////////////////
 	// Implements IInputEventListener interface.
@@ -318,8 +317,7 @@ private:
 
 	int        m_fileVersion;
 
-	bool       m_bEnabledProfiling, m_bVisibleProfiling;
-
+	bool       m_profilingPaused;
 	float      m_oldPeakTolerance;
 	float      m_fixedTimeStep;
 
