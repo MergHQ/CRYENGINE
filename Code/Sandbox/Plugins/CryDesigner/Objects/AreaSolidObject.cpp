@@ -554,6 +554,15 @@ void AreaSolidObject::OnEntityRemoved(IEntity const* const pIEntity)
 	}
 }
 
+void AreaSolidObject::ClearArea()
+{
+	IEntityAreaComponent* const pArea = m_pEntity->GetComponent<IEntityAreaComponent>();
+	if (pArea != nullptr)
+	{
+		pArea->RemoveEntities();
+	}
+}
+
 std::vector<EDesignerTool> AreaSolidObject::GetIncompatibleSubtools()
 {
 	std::vector<EDesignerTool> toolList;

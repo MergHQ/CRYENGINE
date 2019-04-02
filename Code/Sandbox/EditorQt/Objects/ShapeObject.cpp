@@ -2235,6 +2235,13 @@ void CShapeObject::ClearPoints()
 void CShapeObject::PostClone(CBaseObject* pFromObject, CObjectCloneContext& ctx)
 {
 	__super::PostClone(pFromObject, ctx);
+	
+	// Make sure that the area has no entities in it.
+	IEntityAreaComponent* const pAreaProxy = GetAreaProxy();
+	if (pAreaProxy)
+	{
+		pAreaProxy->RemoveEntities();
+	}
 
 	CShapeObject* pFromShape = (CShapeObject*)pFromObject;
 	// Clone event targets.
