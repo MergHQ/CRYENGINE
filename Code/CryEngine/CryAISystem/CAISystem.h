@@ -33,6 +33,7 @@ typedef std::vector<Vec3> ListPositions;
 #include "GlobalPerceptionScaleHandler.h"
 #include "ClusterDetector.h"
 #include "ActorLookUp.h"
+#include "Sequence/SequenceAgentAdapter.h"
 
 #ifdef CRYAISYSTEM_DEBUG
 	#include "AIDbgRecorder.h"
@@ -667,6 +668,8 @@ public:
 	float      m_disabledActorsUpdateError;
 	int        m_disabledActorsHead;
 	bool       m_iteratingActorSet;
+
+	AIActionSequence::SequenceAgentAdapter m_sequenceAgentAdapter;
 
 	struct BeaconStruct
 	{

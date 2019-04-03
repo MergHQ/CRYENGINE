@@ -401,7 +401,7 @@ add_sources("CryAISystem_uber_4.cpp"
 		"Sequence/SequenceFlowNodes.cpp"
 		"Sequence/SequenceManager.cpp"
 		"Sequence/Sequence.h"
-		"Sequence/SequenceAgent.h"
+		"Sequence/SequenceAgentAdapter.h"
 		"Sequence/SequenceFlowNodes.h"
 		"Sequence/SequenceManager.h"
 )
