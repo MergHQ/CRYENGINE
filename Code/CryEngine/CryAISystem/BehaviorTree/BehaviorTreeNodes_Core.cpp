@@ -3104,31 +3104,31 @@ void RegisterBehaviorTreeNodes_Core()
 	
 	REGISTER_BEHAVIOR_TREE_NODE_WITH_SERIALIZATION(manager, Sequence, "Flow\\Sequence", COLOR_FLOW);
 	REGISTER_BEHAVIOR_TREE_NODE_WITH_SERIALIZATION(manager, Selector, "Flow\\Selector", COLOR_FLOW);
-	REGISTER_BEHAVIOR_TREE_NODE_WITH_SERIALIZATION(manager, Priority, "Flow\\Priority selector", COLOR_FLOW);
+	REGISTER_BEHAVIOR_TREE_NODE_WITH_SERIALIZATION(manager, Priority, "Flow\\Priority Case", COLOR_FLOW);
 	REGISTER_BEHAVIOR_TREE_NODE_WITH_SERIALIZATION(manager, Parallel, "Flow\\Parallel", COLOR_FLOW);
 	REGISTER_BEHAVIOR_TREE_NODE_WITH_SERIALIZATION(manager, Loop, "Flow\\Loop", COLOR_FLOW);
-	REGISTER_BEHAVIOR_TREE_NODE_WITH_SERIALIZATION(manager, LoopUntilSuccess, "Flow\\Loop until success", COLOR_FLOW);
-	REGISTER_BEHAVIOR_TREE_NODE_WITH_SERIALIZATION(manager, StateMachine, "Flow\\State Machine\\State machine", COLOR_FLOW);
-	REGISTER_BEHAVIOR_TREE_NODE_WITH_SERIALIZATION(manager, SendTransitionEvent, "Flow\\State Machine\\Send transition event", COLOR_FLOW);
+	REGISTER_BEHAVIOR_TREE_NODE_WITH_SERIALIZATION(manager, LoopUntilSuccess, "Flow\\Loop Until Success", COLOR_FLOW);
+	REGISTER_BEHAVIOR_TREE_NODE_WITH_SERIALIZATION(manager, StateMachine, "Flow\\State Machine\\State Sachine", COLOR_FLOW);
+	REGISTER_BEHAVIOR_TREE_NODE_WITH_SERIALIZATION(manager, SendTransitionEvent, "Flow\\State Machine\\Send Transition Event", COLOR_FLOW);
 
-	REGISTER_BEHAVIOR_TREE_NODE_WITH_SERIALIZATION(manager, IfCondition, "Conditions\\Condition gate", COLOR_CONDITION);
-	REGISTER_BEHAVIOR_TREE_NODE_WITH_SERIALIZATION(manager, AssertCondition, "Conditions\\Check condition", COLOR_CONDITION);
+	REGISTER_BEHAVIOR_TREE_NODE_WITH_SERIALIZATION(manager, IfCondition, "Conditions\\Condition Gate", COLOR_CONDITION);
+	REGISTER_BEHAVIOR_TREE_NODE_WITH_SERIALIZATION(manager, AssertCondition, "Conditions\\Check Condition", COLOR_CONDITION);
 
 	REGISTER_BEHAVIOR_TREE_NODE_WITH_SERIALIZATION(manager, Timeout, "Time\\Timeout", COLOR_FAIL);
-	REGISTER_BEHAVIOR_TREE_NODE_WITH_SERIALIZATION(manager, IfTime, "Time\\Timestamp gate", COLOR_TIME);
+	REGISTER_BEHAVIOR_TREE_NODE_WITH_SERIALIZATION(manager, IfTime, "Time\\Timestamp Gate", COLOR_TIME);
 	REGISTER_BEHAVIOR_TREE_NODE_WITH_SERIALIZATION(manager, Wait, "Time\\Wait", COLOR_TIME);
-	REGISTER_BEHAVIOR_TREE_NODE_WITH_SERIALIZATION(manager, MonitorCondition, "Time\\Wait for condition", COLOR_TIME);
-	REGISTER_BEHAVIOR_TREE_NODE_WITH_SERIALIZATION(manager, WaitForEvent, "Time\\Wait for event", COLOR_TIME);
-	REGISTER_BEHAVIOR_TREE_NODE_WITH_SERIALIZATION(manager, WaitUntilTime, "Time\\Wait for timestamp", COLOR_TIME);
+	REGISTER_BEHAVIOR_TREE_NODE_WITH_SERIALIZATION(manager, MonitorCondition, "Time\\Wait for Condition", COLOR_TIME);
+	REGISTER_BEHAVIOR_TREE_NODE_WITH_SERIALIZATION(manager, WaitForEvent, "Time\\Wait for Event", COLOR_TIME);
+	REGISTER_BEHAVIOR_TREE_NODE_WITH_SERIALIZATION(manager, WaitUntilTime, "Time\\Wait for Timestamp", COLOR_TIME);
 
 	REGISTER_BEHAVIOR_TREE_NODE_WITH_SERIALIZATION(manager, Fail, "Core\\Fail", COLOR_FAIL);
-	REGISTER_BEHAVIOR_TREE_NODE_WITH_SERIALIZATION(manager, RandomGate, "Core\\Random gate", COLOR_CORE);
+	REGISTER_BEHAVIOR_TREE_NODE_WITH_SERIALIZATION(manager, RandomGate, "Core\\Random Gate", COLOR_CORE);
 	REGISTER_BEHAVIOR_TREE_NODE_WITH_SERIALIZATION(manager, SendEvent, "Core\\Send Event", COLOR_CORE);
-	REGISTER_BEHAVIOR_TREE_NODE_WITH_SERIALIZATION(manager, SuppressFailure, "Core\\Suppress failure", COLOR_FAIL);
+	REGISTER_BEHAVIOR_TREE_NODE_WITH_SERIALIZATION(manager, SuppressFailure, "Core\\Suppress Failure", COLOR_FAIL);
 
-	REGISTER_BEHAVIOR_TREE_NODE_WITH_SERIALIZATION(manager, AssertTime, "Debug\\Check timestamp", COLOR_DEBUG);
+	REGISTER_BEHAVIOR_TREE_NODE_WITH_SERIALIZATION(manager, AssertTime, "Debug\\Check Timestamp", COLOR_DEBUG);
 	REGISTER_BEHAVIOR_TREE_NODE_WITH_SERIALIZATION(manager, Halt, "Debug\\Halt", COLOR_DEBUG);
-	REGISTER_BEHAVIOR_TREE_NODE_WITH_SERIALIZATION(manager, Log, "Debug\\Log message", COLOR_DEBUG);
+	REGISTER_BEHAVIOR_TREE_NODE_WITH_SERIALIZATION(manager, Log, "Debug\\Log Message", COLOR_DEBUG);
 
 	REGISTER_BEHAVIOR_TREE_NODE(manager, Breakpoint);
 }
