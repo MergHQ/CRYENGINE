@@ -702,7 +702,8 @@ private:
 		}
 
 		fprintf(pFile, "%s</block>\n", m_indentation.c_str());
-		m_indentation.resize(m_indentation.length() - 1);
+		if (!m_indentation.empty())
+			m_indentation.resize(m_indentation.length() - 1);
 	}
 
 	void XmlEscape(stack_string& str)
