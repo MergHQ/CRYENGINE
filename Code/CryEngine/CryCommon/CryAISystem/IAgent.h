@@ -1898,7 +1898,8 @@ SERIALIZATION_ENUM(EFireMode::FIREMODE_MELEE_FORCED, "melee_forced", "MeleeForce
 SERIALIZATION_ENUM(EFireMode::FIREMODE_BURST_SNIPE, "burst_snipe", "BurstSnipe")
 SERIALIZATION_ENUM(EFireMode::FIREMODE_AIM_SWEEP, "aim_sweep", "AimSweep")
 SERIALIZATION_ENUM(EFireMode::FIREMODE_BURST_ONCE, "burst_once", "BurstOnce")
-SERIALIZATION_ENUM(EFireMode::FIREMODE_VEHICLE, "vehicle", "Vehicle")
+// Commented out or purpose so that it doesn't show up in any yasli editor.
+//SERIALIZATION_ENUM(EFireMode::FIREMODE_VEHICLE, "vehicle", "Vehicle")
 SERIALIZATION_ENUM_END()
 
 SERIALIZATION_ENUM_BEGIN(EBodyOrientationMode, "Body Orientation Mode")
