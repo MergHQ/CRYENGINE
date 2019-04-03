@@ -6,7 +6,7 @@
 
 class QPropertyTree2;
 
-//! Serializable object that is used to translate the CMaterial into a property-tree UI
+//! Serializable object used to expose CMaterial properties into a property-tree UI
 class CMaterialSerializer : public _reference_target_t
 {
 public:
@@ -14,7 +14,6 @@ public:
 
 	void            Serialize(Serialization::IArchive& ar);
 
-	QWidget*        CreateLegacyPropertyTree();
 	QPropertyTree2* CreatePropertyTree();
 
 	//Shader param info
@@ -41,7 +40,6 @@ public:
 
 private:
 
-	class CMaterialLegacyPropertyTree;
 	class CMaterialPropertyTree;
 
 	//////////////////////////////////////////////////////////////////////////

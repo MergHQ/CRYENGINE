@@ -8,7 +8,6 @@
 class QLineEdit;
 class CMaterial;
 class CMaterialSerializer;
-class CInspectorLegacy;
 class CInspector;
 
 //! Material editor integrated with the asset system
@@ -75,6 +74,4 @@ private:
 	_smart_ptr<CMaterial>           m_pMaterial;
 	_smart_ptr<CMaterial>           m_pEditedMaterial;
 	_smart_ptr<CMaterialSerializer> m_pMaterialSerializer;
-
-	const bool                      m_useLegacyPropertyTree;
 };

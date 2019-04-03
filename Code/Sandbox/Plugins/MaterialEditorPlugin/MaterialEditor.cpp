@@ -7,7 +7,6 @@
 #include <PathUtils.h>
 
 #include <EditorFramework/Events.h>
-#include <EditorFramework/InspectorLegacy.h>
 #include <EditorFramework/Inspector.h>
 #include <LevelEditor/LevelEditorSharedState.h>
 
@@ -104,30 +103,16 @@ private:
 CMaterialEditor::CMaterialEditor()
 	: CAssetEditor("Material")
 	, m_pMaterial(nullptr)
-	, m_useLegacyPropertyTree(true)
 {
 	InitMenuBar();
 	CreateToolbar();
 	EnableDockingSystem();
 
-	//Create a legacy or new inspector based on what property tree we want to use
 	RegisterDockableWidget("Properties", [&]()
 	{
-		QWidget* pInspectorToUse = nullptr;
-		if (m_useLegacyPropertyTree)
-		{
-		  CInspectorLegacy* pLegacyInspector = new CInspectorLegacy(this);
-		  pLegacyInspector->SetLockable(false);
-		  pInspectorToUse = pLegacyInspector;
-		}
-		else
-		{
-		  CInspector* pInspector = new CInspector(this);
-		  pInspector->SetLockable(false);
-		  pInspectorToUse = pInspector;
-		}
-
-		return pInspectorToUse;
+		CInspector* pInspector = new CInspector(this);
+		pInspector->SetLockable(false);
+		return pInspector;
 	}, true);
 
 	RegisterDockableWidget("Material", [&]() { return new CSubMaterialView(this); }, true);
@@ -408,36 +393,16 @@ void CMaterialEditor::BroadcastPopulateInspector()
 			title += "]";
 		}
 
-		//Decide which inspector event to use based on the property tree we are supporting in this editor
-		if (m_useLegacyPropertyTree)
+		PopulateInspectorEvent event([this](CInspector& inspector)
 		{
-			PopulateLegacyInspectorEvent event([this](CInspectorLegacy& inspector)
-			  {
-			                                   inspector.AddWidget(m_pMaterialSerializer->CreateLegacyPropertyTree());
-				}, title);
-			event.Broadcast(this);
-		}
-		else
-		{
-			PopulateInspectorEvent event([this](CInspector& inspector)
-			  {
-			     inspector.AddPropertyTree(m_pMaterialSerializer->CreatePropertyTree());
-				}, title);
-			event.Broadcast(this);
-		}
+		  inspector.AddPropertyTree(m_pMaterialSerializer->CreatePropertyTree());
+		}, title);
+		event.Broadcast(this);
 	}
 	else
 	{
 		m_pMaterialSerializer.reset();
-
-		if (m_useLegacyPropertyTree)
-		{
-			ClearLegacyInspectorEvent().Broadcast(this);
-		}
-		else
-		{
-			ClearInspectorEvent().Broadcast(this);
-		}
+		ClearInspectorEvent().Broadcast(this);
 	}
 }
 
