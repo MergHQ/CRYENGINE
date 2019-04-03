@@ -10,6 +10,7 @@ struct SStaticResourceSelectorEntry;
 
 class QHBoxLayout;
 class QLineEdit;
+class CAssetDragDropLineEdit;
 
 namespace Serialization
 {
@@ -49,5 +50,5 @@ private:
 	const SStaticResourceSelectorEntry* m_pSelector;
 	string                              m_type;
 	QHBoxLayout*                        m_pLayout;
-	QLineEdit*                          m_pLineEdit;
+	CAssetDragDropLineEdit*             m_pLineEdit;
 };

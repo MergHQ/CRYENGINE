@@ -2323,3 +2323,55 @@ QTrackingTooltip QLabel
 	margin: 4;
 	padding: 0;
 }
+
+/*
+	CAssetPickerLineEdit has two properties:
+	
+	- dragState of type string
+	   - "none" No drag is in progress
+	   - "valid" Drag is in progress and the asset being dragged can be accepted by this line edit
+	   - "invalid" Drag is in progress and the asset being dragged can NOT be accepted by this line edit
+	
+	- isInDragArea of type boolean
+	   - false dragging is outside the widget area
+	   - true dragging is inside the widget area
+	   
+*/
+
+CAssetDragDropLineEdit[dragState="valid"]
+{
+	border: 1px solid rgb(126,211,33) outset;
+	background: rgb(30,51,8);
+}
+
+CAssetDragDropLineEdit[dragState="none"]
+{
+	border: 1px solid rgb(50,50,50) outset;
+}
+
+CAssetDragDropLineEdit[dragState="invalid"][isInDragArea=true] 
+{
+	border: 1px solid rgb(194,70,70);
+	background-color: rgb(51,18,18);
+}
+
+CAssetDragDropLineEdit[dragState="invalid"][isInDragArea=false] 
+{
+	border: 1px solid rgb(50,50,50) outset;
+}
+
+CAssetDragDropLineEdit[dragState="valid"][isInDragArea=true] 
+{
+	border: 1px solid rgb(213,255,167) outset;
+	background: rgb(51,85,14);
+}
+
+CAssetDragDropLineEdit[dragEnter="none"] 
+{
+	border: 1px solid rgb(97,172,236) outset;
+}
+
+CAssetDragDropLineEdit:focus 
+{
+	border: 1px solid rgb(97,172,236) outset;
+}

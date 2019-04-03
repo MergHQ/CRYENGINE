@@ -1,97 +1,12 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 #include "StdAfx.h"
 #include "MaterialProperties.h"
-#include "QAdvancedPropertyTree.h"
 #include <Cry3DEngine/ISurfaceType.h>
 #include <Serialization/QPropertyTree2/PropertyTree2.h>
 #include <CrySerialization/Decorators/Range.h>
 #include <CrySerialization/Decorators/Resources.h>
 
 #include "IUndoManager.h"
-
-//////////////////////////////////////////////////////////////////////////
-
-//! Property tree displaying the serialized material properties
-class CMaterialSerializer::CMaterialLegacyPropertyTree : public QAdvancedPropertyTree, public IDataBaseManagerListener
-{
-public:
-	CMaterialLegacyPropertyTree(CMaterialSerializer* pMaterialSerializer);
-	~CMaterialLegacyPropertyTree();
-
-	void OnBeginUndo();
-	void OnEndUndo(bool acceptUndo);
-
-private:
-	virtual void OnDataBaseItemEvent(IDataBaseItem* pItem, EDataBaseItemEvent event) override;
-
-	_smart_ptr<CMaterialSerializer> m_serializer;
-};
-
-CMaterialSerializer::CMaterialLegacyPropertyTree::CMaterialLegacyPropertyTree(CMaterialSerializer* pMaterialSerializer)
-	: QAdvancedPropertyTree("MaterialProperties")
-	, m_serializer(pMaterialSerializer)
-{
-	setExpandLevels(2);
-	setValueColumnWidth(0.2f);
-	setAggregateMouseEvents(false);
-	setFullRowContainers(true);
-	setSizeToContent(true);
-	setUndoEnabled(false);
-
-	QObject::connect(this, &CMaterialLegacyPropertyTree::signalBeginUndo, this, &CMaterialLegacyPropertyTree::OnBeginUndo);
-	QObject::connect(this, &CMaterialLegacyPropertyTree::signalEndUndo, this, &CMaterialLegacyPropertyTree::OnEndUndo);
-
-	attach(Serialization::SStruct(*m_serializer.get()));
-
-	GetIEditor()->GetMaterialManager()->AddListener(this);
-
-	setEnabled(!m_serializer->m_bIsReadOnly);
-}
-
-CMaterialSerializer::CMaterialLegacyPropertyTree::~CMaterialLegacyPropertyTree()
-{
-	GetIEditor()->GetMaterialManager()->RemoveListener(this);
-}
-
-void CMaterialSerializer::CMaterialLegacyPropertyTree::OnBeginUndo()
-{
-	GetIEditor()->GetIUndoManager()->Begin();
-	m_serializer->m_pMaterial->RecordUndo("Material Edited", true);
-}
-
-void CMaterialSerializer::CMaterialLegacyPropertyTree::OnEndUndo(bool acceptUndo)
-{
-	if (acceptUndo)
-	{
-		GetIEditor()->GetIUndoManager()->Accept("Material Edited");
-	}
-	else
-	{
-		GetIEditor()->GetIUndoManager()->Cancel();
-	}
-}
-
-void CMaterialSerializer::CMaterialLegacyPropertyTree::OnDataBaseItemEvent(IDataBaseItem* pItem, EDataBaseItemEvent event)
-{
-	if (!pItem || event == EDB_ITEM_EVENT_SELECTED)
-		return;
-
-	if (pItem == (IDataBaseItem*)m_serializer->m_pMaterial.get())
-	{
-		switch (event)
-		{
-		case EDB_ITEM_EVENT_CHANGED:
-		case EDB_ITEM_EVENT_UPDATE_PROPERTIES:
-			if (!m_serializer->m_bIsBeingChanged) //TODO: there should be a better way to identify changes that come from this property tree
-				revert();
-			break;
-		default:
-			break;
-		}
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////
 
 class CMaterialSerializer::CMaterialPropertyTree : public QPropertyTree2, public IDataBaseManagerListener
 {
@@ -1176,11 +1091,6 @@ void CMaterialSerializer::SerializeShaderGenParams(Serialization::IArchive& ar)
 
 	//This ensures that the material data is loaded to render thread and the results are correctly updated into material resources
 	m_pMaterial->SetShaderGenMaskFromUI(shaderGenMask);
-}
-
-QWidget* CMaterialSerializer::CreateLegacyPropertyTree()
-{
-	return new CMaterialSerializer::CMaterialLegacyPropertyTree(this);
 }
 
 QPropertyTree2* CMaterialSerializer::CreatePropertyTree()

@@ -1,6 +1,9 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 #include "StdAfx.h"
 #include "ResourcePicker.h"
+#include "AssetDragDropLineEdit.h"
+#include "AssetSystem/Asset.h"
+#include "AssetSystem/AssetType.h"
 
 #include <CrySerialization/Decorators/Resources.h>
 #include <CrySerialization/Decorators/ResourceSelector.h>
@@ -42,7 +45,7 @@ private:
 CResourcePicker::CResourcePicker()
 	: m_pSelector(nullptr)
 {
-	m_pLineEdit = new QLineEdit();
+	m_pLineEdit = new CAssetDragDropLineEdit();
 
 	m_pLayout = new QHBoxLayout();
 	m_pLayout->addWidget(m_pLineEdit);
@@ -53,6 +56,11 @@ CResourcePicker::CResourcePicker()
 
 	// needs to be lambda because of default param
 	connect(m_pLineEdit, &QLineEdit::editingFinished, [this]() { OnValueChanged(m_pLineEdit->text().toStdString().c_str()); });
+	//Register to asset drop event from line picker
+	m_pLineEdit->signalValidAssetDropped.Connect([this](CAsset& newAsset)
+	{
+		OnValueChanged(newAsset.GetFile(0));
+	});
 }
 
 bool CResourcePicker::event(QEvent* pEvent)
@@ -83,7 +91,7 @@ void CResourcePicker::OnValueChanged(const char* newValue)
 		//Run validation check
 		SResourceValidationResult validatedPath = m_pSelector->ValidateValue(m_context, newValue, m_previousValue.toStdString().c_str());
 
-		//An empty validatedResource is not valid, but a set to an empty state needs to be allowed 
+		//An empty validatedResource is not valid, but a set to an empty state needs to be allowed
 		if (!validatedPath.isValid && !validatedPath.validatedResource.empty())
 		{
 			CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_WARNING, "Invalid %s: %s", m_context.typeName, newValue);
@@ -219,6 +227,8 @@ void CResourcePicker::Init(Serialization::IResourceSelector* pSelector, const ya
 	}
 
 	AddButton("icons:General/Folder.ico", "Open", &CResourcePicker::OnPick);
+
+	m_pLineEdit->SetResourceSelector(m_pSelector);
 }
 
 void CResourcePicker::AddButton(const char* szIconPath, const char* szToolTip, void (CResourcePicker::* pCallback)())

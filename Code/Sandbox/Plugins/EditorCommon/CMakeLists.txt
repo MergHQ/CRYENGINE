@@ -114,6 +114,8 @@ add_sources("Uber_PropertyTree2.cpp"
 		"Serialization/QPropertyTree2/PropertyTreeFormWidget.h"
 		"Serialization/QPropertyTree2/ResourcePicker.cpp"
 		"Serialization/QPropertyTree2/ResourcePicker.h"
+		"Serialization/QPropertyTree2/AssetDragDropLineEdit.cpp"
+		"Serialization/QPropertyTree2/AssetDragDropLineEdit.h"
 )
 add_sources("Uber_AssetSystem.cpp"
 	SOURCE_GROUP "AssetSystem"
