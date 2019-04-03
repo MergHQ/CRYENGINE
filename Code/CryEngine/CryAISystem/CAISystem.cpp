@@ -417,6 +417,8 @@ bool CAISystem::Init()
 	m_AIObjectManager.Init();
 	m_globalPerceptionScale.Reload();
 
+	gEnv->pAISystem->GetSequenceManager()->SetAgentAdapter(&m_sequenceAgentAdapter);
+
 	return true;
 }
 

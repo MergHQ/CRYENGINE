@@ -3,7 +3,6 @@
 #include "StdAfx.h"
 #include "SequenceFlowNodes.h"
 #include "SequenceManager.h"
-#include "SequenceAgent.h"
 #include "GoalPipe.h"
 #include "PipeUser.h"
 #include "Movement/MoveOp.h"
@@ -982,71 +981,76 @@ void CFlowNode_AISequenceActionShoot::HandleSequenceEvent(SequenceEvent sequence
 	switch (sequenceEvent)
 	{
 	case StartAction:
+	{
+		if (m_actInfo.pEntity)
 		{
-			if (m_actInfo.pEntity)
+			CPipeUser* pPipeUser = CastToCPipeUserSafe(m_actInfo.pEntity->GetAI());
+			if (pPipeUser)
 			{
-				CPipeUser* pPipeUser = CastToCPipeUserSafe(m_actInfo.pEntity->GetAI());
-				if (pPipeUser)
+				IAIObject* pRefPoint = pPipeUser->GetRefPoint();
+				if (pRefPoint)
 				{
-					IAIObject* pRefPoint = pPipeUser->GetRefPoint();
-					if (pRefPoint)
+					Vec3 position;
+
+					EntityId targetEntityId = GetPortEntityId(&m_actInfo, InputPort_TargetEntity);
+					if (IEntity* targetEntity = gEnv->pEntitySystem->GetEntity(targetEntityId))
 					{
-						Vec3 position;
-
-						EntityId targetEntityId = GetPortEntityId(&m_actInfo, InputPort_TargetEntity);
-						if (IEntity* targetEntity = gEnv->pEntitySystem->GetEntity(targetEntityId))
-						{
-							if (IAIObject* targetEntityAIObject = targetEntity->GetAI())
-								position = targetEntityAIObject->GetPos();
-							else
-								position = targetEntity->GetWorldPos();
-						}
+						if (IAIObject* targetEntityAIObject = targetEntity->GetAI())
+							position = targetEntityAIObject->GetPos();
 						else
-						{
-							position = GetPortVec3(&m_actInfo, InputPort_TargetPosition);
-						}
+							position = targetEntity->GetWorldPos();
+					}
+					else
+					{
+						position = GetPortVec3(&m_actInfo, InputPort_TargetPosition);
+					}
 
-						// It's not possible to shoot from the relaxed state, so it is necessary to set the stance to combat.
-						if (IAIActor* aiActor = CastToIAIActorSafe(m_actInfo.pEntity->GetAI()))
+					// It's not possible to shoot from the relaxed state, so it is necessary to set the stance to combat.
+					if (IAIActor* aiActor = CastToIAIActorSafe(m_actInfo.pEntity->GetAI()))
+					{
+						if (IAIActorProxy* aiActorProxy = aiActor->GetProxy())
 						{
-							if (IAIActorProxy* aiActorProxy = aiActor->GetProxy())
+							SAIBodyInfo bodyInfo;
+							aiActorProxy->QueryBodyInfo(bodyInfo);
+							if (bodyInfo.stance == STANCE_RELAXED)
 							{
-								SAIBodyInfo bodyInfo;
-								aiActorProxy->QueryBodyInfo(bodyInfo);
-								if (bodyInfo.stance == STANCE_RELAXED)
-								{
-									aiActor->GetState().bodystate = STANCE_STAND;
-								}
+								aiActor->GetState().bodystate = STANCE_STAND;
 							}
 						}
-						
-						pRefPoint->SetPos(position);
-						pRefPoint->SetEntityID(targetEntityId);
-
-						pPipeUser->SetFireMode(FIREMODE_FORCED);
-						pPipeUser->SetFireTarget(GetWeakRef(static_cast<CAIObject*>(pRefPoint)));
-
-						m_startTime = GetAISystem()->GetFrameStartTime();
-						m_fireTimeMS = int(1000.0f * GetPortFloat(&m_actInfo, InputPort_Duration));
-
-						m_actInfo.pGraph->SetRegularlyUpdated(m_actInfo.myID, true);
-						return;
 					}
+
+					pRefPoint->SetPos(position);
+					pRefPoint->SetEntityID(targetEntityId);
+
+					pPipeUser->SetFireMode(FIREMODE_FORCED);
+					pPipeUser->SetFireTarget(GetWeakRef(static_cast<CAIObject*>(pRefPoint)));
+
+					m_startTime = GetAISystem()->GetFrameStartTime();
+					m_fireTimeMS = int(1000.0f * GetPortFloat(&m_actInfo, InputPort_Duration));
+
+					m_actInfo.pGraph->SetRegularlyUpdated(m_actInfo.myID, true);
+					return;
 				}
 			}
-			GetAISystem()->GetSequenceManager()->ActionCompleted(GetAssignedSequenceId());
-			ActivateOutput(&m_actInfo, OutputPort_Done, true);
-			break;
 		}
+		GetAISystem()->GetSequenceManager()->ActionCompleted(GetAssignedSequenceId());
+		ActivateOutput(&m_actInfo, OutputPort_Done, true);
+		break;
+	}
 	case SequenceStopped:
+	{
+		if (IEntity* pEntity = gEnv->pEntitySystem->GetEntity(GetAssignedEntityId()))
 		{
-			SequenceAgent agent(GetAssignedEntityId());
-			if (IPipeUser* pipeUser = agent.GetPipeUser())
+			if (IAIObject* pAIObject = pEntity->GetAI())
 			{
-				pipeUser->SetFireMode(FIREMODE_OFF);
+				if (IPipeUser* pipeUser = pAIObject->CastToIPipeUser())
+				{
+					pipeUser->SetFireMode(FIREMODE_OFF);
+				}
 			}
-			break;
 		}
+		break;
+	}
 	}
 }
 
@@ -1144,14 +1148,25 @@ void CFlowNode_AISequenceJoinFormation::ProcessEvent(EFlowEvent event, SActivati
 			bool isSignalSent = false;
 			if (pActInfo->pEntity && IsPortActive(pActInfo, InputPort_Start))
 			{
-				EntityId entityID = pActInfo->pEntity->GetId();
-				SequenceAgent nodeAgent(entityID);
+				if (IAIObject* pAIObject = pActInfo->pEntity->GetAI())
+				{
+					if (CAIActor* pAIActor = pAIObject->CastToCAIActor())
+					{
+						const EntityId entityIdToFollow = GetPortEntityId(pActInfo, InputPort_LeaderId);
+						IEntity* pEntityToFollow = gEnv->pEntitySystem->GetEntity(entityIdToFollow);
 
-				EntityId entityIdToFollow = GetPortEntityId(pActInfo, InputPort_LeaderId);
-				SequenceAgent agentToFollow(entityIdToFollow);
+						AISignals::IAISignalExtraData* pData = gEnv->pAISystem->CreateSignalExtraData();
+						const int goalPipeId = gEnv->pAISystem->AllocGoalPipeId();
+						pData->iValue = goalPipeId;
+						pAIActor->SetSignal(GetAISystem()->GetSignalManager()->CreateSignal(
+							AISIGNAL_ALLOW_DUPLICATES,
+							gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnActJoinFormation(),
+							pEntityToFollow ? pEntityToFollow->GetAIObjectID() : 0,
+							pData));
 
-				nodeAgent.SendSignal(gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnActJoinFormation(), agentToFollow.GetEntity());
-				isSignalSent = true;
+						isSignalSent = true;
+					}
+				}
 			}
 			ActivateOutput(pActInfo, OutputPort_Done, isSignalSent);
 		}
