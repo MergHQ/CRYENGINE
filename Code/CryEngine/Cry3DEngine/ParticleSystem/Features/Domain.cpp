@@ -54,14 +54,15 @@ void CDomain::Serialize(Serialization::IArchive& ar)
 	}
 
 	// Read or set related parameters
+	if (m_domain == EDomain::Field)
+		ar(m_fieldSource, "Field", "Field");
+	else if (m_domain == EDomain::SpawnId)
+		ar(m_idModulus, "IdModulus", "Id Modulus");
+
 	switch (m_domain)
 	{
 	case EDomain::Field:
-		ar(m_fieldSource, "Field", "Field");
-		// continue
 	case EDomain::SpawnId:
-		ar(m_idModulus, "IdModulus", "Id Modulus");
-		// continue;
 	case EDomain::Age:
 	case EDomain::SpawnFraction:
 	case EDomain::Speed:

@@ -111,16 +111,17 @@ protected:
 	virtual void OnActivated(const QString& folder);
 
 	virtual void UpdatePreview(const QModelIndex& currentIndex);
-private:
 
+private:
+	void               InitActions();
 	void               InitNewNameDelegates();
 	void               InitViews(bool bHideEngineFolder);
 	void               InitMenus();
-	void               InitActions();
 	void               InitAssetsView();
 	void               InitDetailsView();
 	void               InitThumbnailsView();
 	void               AddViewModeButton(ViewMode viewMode, const char* szIconPath, const char* szToolTip, QMenu* pMenu = nullptr);
+	QLayout*           CreateToolBars();
 	QWidget*           CreateAssetsViewSelector();
 
 	void               FillCreateAssetMenu(CAbstractMenu* menu, const QString& folder);
@@ -207,18 +208,6 @@ private:
 	//ui components
 	CAssetFoldersView*                          m_pFoldersView = nullptr;
 	CBreadcrumbsBar*                            m_pBreadcrumbs = nullptr;
-	QCommandAction*                             m_pActionRecursiveView = nullptr;
-	QCommandAction*                             m_pActionShowFoldersView = nullptr;
-	QCommandAction*                             m_pActionManageWorkFiles = nullptr;
-	QCommandAction*                             m_pActionShowInFileExplorer = nullptr;
-	QCommandAction*                             m_pActionDelete = nullptr;
-	QCommandAction*                             m_pActionRename = nullptr;
-	QCommandAction*                             m_pActionCopy = nullptr;
-	QCommandAction*                             m_pActionDuplicate = nullptr;
-	QCommandAction*                             m_pActionSave = nullptr;
-	QCommandAction*                             m_pActionPaste = nullptr;
-	QCommandAction*                             m_pActionReimport = nullptr;
-	QCommandAction*                             m_pActionDiscardChanges = nullptr;
 	QAdvancedTreeView*                          m_pDetailsView = nullptr;
 	QBoxLayout*                                 m_pAssetsViewLayout = nullptr;
 	QBoxLayout*                                 m_pShortcutBarLayout = nullptr;

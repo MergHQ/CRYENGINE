@@ -10,21 +10,19 @@
 // EditorCommon
 #include <EditorFramework/Editor.h>
 
-class QAction;
-class QCommandAction;
 class QAdvancedTreeView;
 class QFilteringPanel;
 class QAttributeFilterProxyModel;
 class QAbstractItemModel;
-class QLabel;
-struct CLayerChangeEvent;
 class CLevelExplorer;
 class QBoxLayout;
 class QItemSelection;
 class CBaseObject;
 class CObjectLayer;
-struct CObjectEvent;
 class QToolButton;
+
+struct CLayerChangeEvent;
+struct CObjectEvent;
 
 class CLevelExplorer final : public CDockableEditor
 {
@@ -61,9 +59,12 @@ public:
 	void FocusActiveLayer();
 	void GrabFocusSearchBar() { OnFind(); }
 
+	std::vector<CObjectLayer*> GetSelectedObjectLayers() const;
+
 private:
 	QToolButton*  CreateToolButton(QCommandAction* pAction);
 	void          InitMenuBar();
+	void          InitActions();
 	CObjectLayer* GetParentLayerForIndexList(const QModelIndexList& indexList) const;
 	CObjectLayer* CreateLayer(EObjectLayerType layerType);
 
@@ -77,6 +78,8 @@ private:
 
 	void          SetActionsEnabled(bool areEnabled);
 	void          UpdateSelectionActionState();
+
+	void          CopySelectedLayersInfo(std::function<string(const CObjectLayer*)> retrieveInfoFunc) const;
 
 	virtual bool OnNew() override;
 	virtual bool OnNewFolder() override;
@@ -106,6 +109,7 @@ private:
 	virtual bool OnUnhideChildren() override;
 	virtual bool OnToggleHideChildren() override;
 
+	bool        OnMakeLayerActive();
 	bool        IsFirstChildLocked(const std::vector<CObjectLayer*>& layers) const;
 	bool        DoChildrenMatchLockedState(const std::vector<CObjectLayer*>& layers, bool isLocked) const;
 	bool        IsFirstChildHidden(const std::vector<CObjectLayer*>& layers) const;
@@ -152,35 +156,6 @@ private:
 	QAttributeFilterProxyModel* m_pAttributeFilterProxyModel;
 	QBoxLayout*                 m_pMainLayout;
 	QBoxLayout*                 m_pShortcutBarLayout;
-
-	QCommandAction*             m_pShowActiveLayer;
-	QCommandAction*             m_pShowAllObjects;
-	QCommandAction*             m_pShowFullHierarchy;
-	QCommandAction*             m_pShowLayers;
-	QCommandAction*             m_pSyncSelection;
-
-	QCommandAction*             m_pNewLayer;
-
-	QCommandAction*             m_pRename;
-	QCommandAction*             m_pDelete;
-
-	QCommandAction*             m_pToggleVisibility;
-	QCommandAction*             m_pToggleChildrenVisibility;
-	QCommandAction*             m_pIsolateVisibility;
-
-	QCommandAction*             m_pToggleLocking;
-	QCommandAction*             m_pToggleChildrenLocking;
-	QCommandAction*             m_pIsolateLocked;
-
-	QCommandAction*             m_pToggleExportable;
-	QCommandAction*             m_pToggleExportableToPak;
-	QCommandAction*             m_pToggleAutoLoaded;
-	QCommandAction*             m_pTogglePhysics;
-
-	QCommandAction*             m_pTogglePC;
-	QCommandAction*             m_pToggleXBoxOne;
-	QCommandAction*             m_pTogglePS4;
-
 	bool                        m_syncSelection;
 	bool                        m_ignoreSelectionEvents;
 };

@@ -312,12 +312,9 @@ void CParticleComponentRuntime::AddParticles(TConstArray<SSpawnEntry> spawnEntri
 	if (newCount == 0)
 		return;
 
-	uint32 spawnId = Container().TotalSpawned();
-
 	Container().AddElements(newCount);
 
 	auto parentIds = Container().IOStream(EPDT_ParentId);
-	auto spawnIds = Container().IOStream(EPDT_SpawnId);
 	auto normAges = Container().IOStream(EPDT_NormalAge);
 	auto fractions = Container().IOStream(EPDT_SpawnFraction);
 
@@ -330,11 +327,6 @@ void CParticleComponentRuntime::AddParticles(TConstArray<SSpawnEntry> spawnEntri
 		{
 			for (auto id : range)
 				parentIds[id] = spawnEntry.m_parentId;
-		}
-		if (spawnIds.IsValid())
-		{
-			for (auto id : range)
-				spawnIds[id] = spawnId++;
 		}
 		if (normAges.IsValid())
 		{
@@ -413,6 +405,29 @@ void CParticleComponentRuntime::InitParticles()
 	if (!Container().NumSpawned())
 		return;
 
+	// Initialize SpawnIds
+	if (Container().HasData(EPDT_SpawnId))
+	{
+		auto spawnIds = Container().IOStream(EPDT_SpawnId);
+		uint32 spawnId = Container().TotalSpawned();
+		for (auto id : SpawnedRange())
+			spawnIds[id] = spawnId++;
+	}
+
+	// Initialize Random
+	if (Container().HasData(EPDT_Random))
+	{
+		IOFStream unormRands = Container().GetIOFStream(EPDT_Random);
+		for (auto particleGroupId : SpawnedRangeV())
+		{
+			const floatv unormRand = ChaosV().RandUNorm();
+			unormRands.Store(particleGroupId, unormRand);
+		}
+	}
+
+	// Zero velocity
+	Container().FillData(EPVF_Velocity, Vec3(0), SpawnedRange());
+
 	GetComponent()->PreInitParticles(*this);
 
 	CParticleContainer& parentContainer = ParentContainer();
@@ -473,20 +488,6 @@ void CParticleComponentRuntime::InitParticles()
 
 			if (Container().HasData(EPQF_ParentOrientation))
 				parentPrevOrientations.Store(particleGroupId, wParentQuat);
-		}
-	}
-
-	// neutral velocity
-	Container().FillData(EPVF_Velocity, Vec3(0), SpawnedRange());
-
-	// initialize random
-	if (Container().HasData(EPDT_Random))
-	{
-		IOFStream unormRands = Container().GetIOFStream(EPDT_Random);
-		for (auto particleGroupId : SpawnedRangeV())
-		{
-			const floatv unormRand = ChaosV().RandUNorm();
-			unormRands.Store(particleGroupId, unormRand);
 		}
 	}
 

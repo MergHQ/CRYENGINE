@@ -228,7 +228,7 @@ struct SDistribution
 	}
 
 	EDistribution m_distribution = EDistribution::Random;
-	PosInt       m_modulus[Dim];
+	PosInt        m_modulus[Dim];
 };
 
 template<uint Dim, typename T = std::array<float, Dim>>
@@ -237,7 +237,7 @@ struct SDistributor
 	SDistributor(const SDistribution<Dim, T>& dist, CParticleComponentRuntime& runtime)
 		: m_distribution(dist.m_distribution)
 		, m_chaos(runtime.Chaos())
-		, m_order(runtime.GetContainer().GetSpawnIdOffset())
+		, m_order(runtime.GetContainer().TotalSpawned() - runtime.GetContainer().NumSpawned())
 	{
 		if (m_distribution == EDistribution::Ordered)
 		{
@@ -264,8 +264,8 @@ struct SDistributor
 
 private:
 	const EDistribution m_distribution;
-	SChaosKeyN<Dim, T> m_chaos;
-	SOrderKeyN<Dim, T> m_order;
+	SChaosKeyN<Dim, T>  m_chaos;
+	SOrderKeyN<Dim, T>  m_order;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
