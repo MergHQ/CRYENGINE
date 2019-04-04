@@ -161,7 +161,7 @@ void CParticleEditor::InitToolbar(QVBoxLayout* pWindowLayout)
 	{
 		QToolBar* pToolBar = new QToolBar("Library");
 
-		pToolBar->addAction(GetAction("general.save"));
+		pToolBar->addAction(GetAction_Deprecated("general.save"));
 
 		pToolBar->addSeparator();
 		ADD_BUTTON(OnLoadFromSelectedEntity, "Load from Selected Entity", 0, "icons:General/Get_From_Selection.ico");

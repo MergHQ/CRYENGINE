@@ -858,6 +858,7 @@ CAssetBrowser::CAssetBrowser(bool bHideEngineFolder /*= false*/, QWidget* pParen
 {
 	setObjectName("Asset Browser");
 
+	InitActions();
 	InitViews(bHideEngineFolder);
 	InitMenus();
 
@@ -972,7 +973,6 @@ void CAssetBrowser::InitViews(bool bHideEngineFolder)
 
 	// TODO: Consider extracting the AssetsView stuff to a new CAssetsView class to encapsulate all the detail/thumbnail related states.
 	InitAssetsView();
-	InitActions();
 
 	QWidget* pAssetsView = CreateAssetsViewSelector();
 
@@ -1057,20 +1057,31 @@ void CAssetBrowser::InitViews(bool bHideEngineFolder)
 
 void CAssetBrowser::InitActions()
 {
-	ICommandManager* pCommandManager = GetIEditor()->GetICommandManager();
-	m_pActionShowFoldersView = pCommandManager->CreateNewAction("asset.view_folder_tree");
-	m_pActionShowFoldersView->setChecked(true);
-	m_pActionShowFoldersView->setIconVisibleInMenu(false);
+	RegisterAction("path_utils.show_in_file_explorer", &CAssetBrowser::OnShowInFileExplorer);
+	RegisterAction("asset.generate_thumbnails", &CAssetBrowser::OnGenerateThumbmails);
+	RegisterAction("asset.save_all", &CAssetBrowser::OnSaveAll);
+	RegisterAction("asset.view_details", &CAssetBrowser::OnDetailsView);
+	RegisterAction("asset.view_thumbnails", &CAssetBrowser::OnThumbnailsView);
+	RegisterAction("asset.view_split_horizontally", &CAssetBrowser::OnSplitHorizontalView);
+	RegisterAction("asset.view_split_vertically", &CAssetBrowser::OnSplitVerticalView);
+	RegisterAction("asset.view_folder_tree", &CAssetBrowser::OnFolderTreeView);
+	RegisterAction("asset.view_recursive_view", &CAssetBrowser::OnRecursiveView);
+	RegisterAction("asset.discard_changes", &CAssetBrowser::OnDiscardChanges);
+	RegisterAction("asset.manage_work_files", &CAssetBrowser::OnManageWorkFiles);
+	RegisterAction("asset.generate_and_repair_all_metadata", &CAssetBrowser::OnGenerateRepairAllMetadata);
+	RegisterAction("asset.reimport", &CAssetBrowser::OnReimport);
 
-	m_pActionRecursiveView = pCommandManager->CreateNewAction("asset.view_recursive_view");
-	m_pActionRecursiveView->setChecked(false);
-	m_pActionRecursiveView->setIconVisibleInMenu(false);
+	auto pAction = RegisterAction("asset.view_folder_tree", &CAssetBrowser::OnFolderTreeView);
+	pAction->setChecked(true);
+	pAction->setIconVisibleInMenu(false);
 
-	m_pActionShowInFileExplorer = pCommandManager->CreateNewAction("path_utils.show_in_file_explorer");
-	m_pActionReimport = pCommandManager->CreateNewAction("asset.reimport");
-	m_pActionSave = pCommandManager->CreateNewAction("general.save");
-	m_pActionDiscardChanges = pCommandManager->CreateNewAction("asset.discard_changes");
-	m_pActionManageWorkFiles = pCommandManager->CreateNewAction("asset.manage_work_files");
+	pAction = RegisterAction("asset.view_recursive_view", &CAssetBrowser::OnRecursiveView);
+	pAction->setChecked(false);
+	pAction->setIconVisibleInMenu(false);
+
+#if ASSET_BROWSER_USE_PREVIEW_WIDGET
+	RegisterAction("asset.show_preview", &CAssetBrowser::OnShowPreview);
+#endif
 }
 
 void CAssetBrowser::InitMenus()
@@ -1087,30 +1098,28 @@ void CAssetBrowser::InitMenus()
 		                       ? folderSelection[0]
 		                       : QString();
 
-		pMenuFile->CreateCommandAction("general.new_folder");
+		pMenuFile->AddCommandAction(GetAction("general.new_folder"));
 		CAbstractMenu* subMenu = pMenuFile->CreateMenu(tr("New Asset"));
 		FillCreateAssetMenu(subMenu, folder);
 
 		const bool bEnableImport = !folder.isNull();
 
 		int section = pMenuFile->GetNextEmptySection();
-		pMenuFile->CreateCommandAction("general.import", section);
+		pMenuFile->AddCommandAction(GetAction("general.import"), section);
 
 		section = pMenuFile->GetNextEmptySection();
-		pMenuFile->CreateCommandAction("asset.save_all", section);
-		pMenuFile->AddCommandAction(m_pActionSave, section);
-
-		pMenuFile->AddCommandAction(m_pActionDiscardChanges, section);
+		pMenuFile->AddCommandAction(GetAction("asset.save_all"), section);
 
 		const bool isModified = HasSelectedModifiedAsset();
-		m_pActionDiscardChanges->setEnabled(isModified);
-		m_pActionSave->setEnabled(isModified);
+
+		pMenuFile->AddCommandAction(SetActionEnabled("general.save", isModified), section);
+		pMenuFile->AddCommandAction(SetActionEnabled("asset.discard_changes", isModified), section);
 
 		section = pMenuFile->GetNextEmptySection();
-		pMenuFile->CreateCommandAction("asset.generate_thumbnails", section);
+		pMenuFile->AddCommandAction(GetAction("asset.generate_thumbnails"), section);
 
-		auto pGenerateMetadataAction = pMenuFile->CreateCommandAction("asset.generate_and_repair_all_metadata", section);
-		pGenerateMetadataAction->setEnabled(!CAssetManager::GetInstance()->IsScanning());
+		pMenuFile->AddCommandAction(SetActionEnabled("asset.generate_and_repair_all_metadata", 
+			!CAssetManager::GetInstance()->IsScanning()), section);
 	});
 
 	// Edit menu
@@ -1124,19 +1133,13 @@ void CAssetBrowser::InitMenus()
 	AddToMenu(CEditor::MenuItems::Rename);
 	AddToMenu(CEditor::MenuItems::Delete);
 
-	m_pActionCopy = GetMenuAction(CEditor::MenuItems::Copy);
-	m_pActionPaste = GetMenuAction(CEditor::MenuItems::Paste);
-	m_pActionDuplicate = GetMenuAction(CEditor::MenuItems::Duplicate);
-	m_pActionRename = GetMenuAction(CEditor::MenuItems::Rename);
-	m_pActionDelete = GetMenuAction(CEditor::MenuItems::Delete);
-
 	int section = pMenuEdit->GetNextEmptySection();
-	pMenuEdit->AddCommandAction(m_pActionReimport, section);
+	pMenuEdit->AddCommandAction(GetAction("asset.reimport"), section);
 
 	AddWorkFilesMenu(*pMenuEdit);
 
 	section = pMenuEdit->GetNextEmptySection();
-	pMenuEdit->AddCommandAction(m_pActionShowInFileExplorer, section);
+	pMenuEdit->AddCommandAction(GetAction("path_utils.show_in_file_explorer"), section);
 
 	pMenuFile->signalAboutToShow.Connect([this]()
 	{
@@ -1152,24 +1155,23 @@ void CAssetBrowser::InitMenus()
 		menuView->Clear();
 
 		int section = menuView->GetNextEmptySection();
-		menuView->CreateCommandAction("asset.view_details", section);
-		menuView->CreateCommandAction("asset.view_thumbnails", section);
-		menuView->CreateCommandAction("asset.view_split_horizontally", section);
-		menuView->CreateCommandAction("asset.view_split_vertically", section);
+		menuView->AddCommandAction(GetAction("asset.view_details"), section);
+		menuView->AddCommandAction(GetAction("asset.view_thumbnails"), section);
+		menuView->AddCommandAction(GetAction("asset.view_split_horizontally"), section);
+		menuView->AddCommandAction(GetAction("asset.view_split_vertically"), section);
 
 		section = menuView->GetNextEmptySection();
-		CRY_ASSERT(m_pActionShowFoldersView);
-		menuView->AddCommandAction(m_pActionShowFoldersView, section);
+		menuView->AddCommandAction(GetAction("asset.view_folder_tree"), section);
 
 #if ASSET_BROWSER_USE_PREVIEW_WIDGET
-		auto action = menuView->CreateCommandAction("asset.show_preview");
-		action->setChecked(m_previewWidget->isVisible());
+		QCommandAction* pAction = GetAction("asset.show_preview");
+		menuView->AddCommandAction(pAction);
+		pAction->setChecked(m_previewWidget->isVisible());
 #endif
 
 		section = menuView->GetNextEmptySection();
 
-		CRY_ASSERT(m_pActionRecursiveView);
-		menuView->AddCommandAction(m_pActionRecursiveView, section);
+		menuView->AddCommandAction(GetAction("asset.view_recursive_view"), section);
 
 		if (m_pFilterPanel)
 		{
@@ -1289,13 +1291,27 @@ QWidget* CAssetBrowser::CreateAssetsViewSelector()
 	MenuWidgetBuilders::CMenuBuilder builder(pThumbnailMenu);
 	m_pThumbnailSizeMenu->Build(builder);
 
-	QToolButton* const pShowFoderButton = CreateToolButtonForAction(m_pActionShowFoldersView);
-	QToolButton* const pRecursiveViewButton = CreateToolButtonForAction(m_pActionRecursiveView);
-
 	AddViewModeButton(ViewMode::VSplit, "icons:common/general_view_vertical.ico", "Split Vertically\nShows both details and thumbnails");
 	AddViewModeButton(ViewMode::HSplit, "icons:common/general_view_horizonal.ico", "Split Horizontally\nShows both details and thumbnails");
 	AddViewModeButton(ViewMode::Details, "icons:common/general_view_list.ico", "Shows Details");
 	AddViewModeButton(ViewMode::Thumbnails, "icons:common/general_view_thumbnail.ico", "Shows Thumbnails", pThumbnailMenu);
+
+	m_pAssetsViewLayout = new QBoxLayout(QBoxLayout::LeftToRight);
+	m_pAssetsViewLayout->setSpacing(0);
+	m_pAssetsViewLayout->setMargin(0);
+	m_pAssetsViewLayout->addWidget(m_pMainViewSplitter);
+	m_pAssetsViewLayout->addLayout(CreateToolBars());
+
+	pAssetsView->setLayout(m_pAssetsViewLayout);
+
+	return pAssetsView;
+}
+
+QLayout* CAssetBrowser::CreateToolBars()
+{
+	using namespace Private_AssetBrowser;
+	QToolButton* const pShowFoderButton = CreateToolButtonForAction(GetAction("asset.view_folder_tree"));
+	QToolButton* const pRecursiveViewButton = CreateToolButtonForAction(GetAction("asset.view_recursive_view"));
 
 	m_pShortcutBarLayout = new QBoxLayout(QBoxLayout::TopToBottom);
 	m_pShortcutBarLayout->setObjectName("viewModeButtonsLayout");
@@ -1314,14 +1330,7 @@ QWidget* CAssetBrowser::CreateAssetsViewSelector()
 		m_pShortcutBarLayout->addWidget(pButton);
 	}
 
-	m_pAssetsViewLayout = new QBoxLayout(QBoxLayout::LeftToRight);
-	m_pAssetsViewLayout->setSpacing(0);
-	m_pAssetsViewLayout->setMargin(0);
-	m_pAssetsViewLayout->addWidget(m_pMainViewSplitter);
-	m_pAssetsViewLayout->addLayout(m_pShortcutBarLayout);
-	pAssetsView->setLayout(m_pAssetsViewLayout);
-
-	return pAssetsView;
+	return m_pShortcutBarLayout;
 }
 
 void CAssetBrowser::SelectAsset(const char* szPath) const
@@ -1644,7 +1653,7 @@ void CAssetBrowser::SetLayout(const QVariantMap& state)
 
 void CAssetBrowser::SetFoldersViewVisible(const bool isVisible)
 {
-	m_pActionShowFoldersView->setChecked(isVisible);
+	SetActionChecked("asset.view_folder_tree", isVisible);
 	m_pFoldersView->setVisible(isVisible);
 }
 
@@ -1705,12 +1714,12 @@ CAsset* CAssetBrowser::GetLastSelectedAsset() const
 
 bool CAssetBrowser::IsRecursiveView() const
 {
-	return m_pActionRecursiveView->isChecked();
+	return GetAction("asset.view_recursive_view")->isChecked();
 }
 
 bool CAssetBrowser::IsFoldersViewVisible() const
 {
-	return m_pActionShowFoldersView->isChecked();
+	return GetAction("asset.view_folder_tree")->isChecked();
 }
 
 void CAssetBrowser::SetViewMode(ViewMode viewMode)
@@ -1750,7 +1759,7 @@ void CAssetBrowser::SetViewMode(ViewMode viewMode)
 
 void CAssetBrowser::SetRecursiveView(bool recursiveView)
 {
-	m_pActionRecursiveView->setChecked(recursiveView);
+	SetActionChecked("asset.view_recursive_view", recursiveView);
 	m_pFolderFilterModel->SetRecursive(recursiveView);
 	m_pFolderFilterModel->SetShowFolders(!recursiveView);
 	m_recursiveSearch = false;
@@ -1891,18 +1900,18 @@ void CAssetBrowser::UpdateSelectionDependantActions()
 	const bool hasAssetsSelected = !assets.empty();
 	const bool hasSelection = hasAssetsSelected || !folders.empty();
 
-	m_pActionManageWorkFiles->setEnabled(hasAssetsSelected);
-	m_pActionDelete->setEnabled(hasAssetsSelected);
-	m_pActionRename->setEnabled(hasAssetsSelected);
-	m_pActionCopy->setEnabled(hasAssetsSelected);
-	m_pActionDuplicate->setEnabled(hasAssetsSelected);
-	m_pActionSave->setEnabled(hasAssetsSelected);
-	m_pActionReimport->setEnabled(hasAssetsSelected);
+	GetAction("asset.manage_work_files")->setEnabled(hasAssetsSelected);
+	GetAction("general.delete")->setEnabled(hasAssetsSelected);
+	GetAction("general.rename")->setEnabled(hasAssetsSelected);
+	GetAction("general.copy")->setEnabled(hasAssetsSelected);
+	GetAction("general.duplicate")->setEnabled(hasAssetsSelected);
+	GetAction("general.save")->setEnabled(hasAssetsSelected);
+	GetAction("asset.reimport")->setEnabled(hasAssetsSelected);
 }
 
 void CAssetBrowser::UpdatePasteActionState()
 {
-	m_pActionPaste->setEnabled(!Private_AssetBrowser::g_clipboard.empty() && !m_pFolderFilterModel->IsRecursive());
+	GetAction("general.paste")->setEnabled(!Private_AssetBrowser::g_clipboard.empty() && !m_pFolderFilterModel->IsRecursive());
 }
 
 void CAssetBrowser::OnFolderViewContextMenu()
@@ -1962,17 +1971,17 @@ void CAssetBrowser::BuildContextMenuForEmptiness(CAbstractMenu& abstractMenu)
 	auto folder = QtUtil::ToQString(selectedFolders[0]);
 	if (selectedFolders.size() == 1 && !pModel->IsReadOnlyFolder(folder))
 	{
-		abstractMenu.CreateCommandAction("general.new_folder");
+		abstractMenu.AddCommandAction(GetAction("general.new_folder"));
 
 		CAbstractMenu* const pCreateAssetMenu = abstractMenu.CreateMenu(tr("New Asset"));
 		FillCreateAssetMenu(pCreateAssetMenu, folder);
 
-		abstractMenu.AddCommandAction(m_pActionPaste, foldersSection);
+		abstractMenu.AddCommandAction(GetAction("general.paste"), foldersSection);
 		UpdatePasteActionState();
 
-		abstractMenu.CreateCommandAction("general.import", foldersSection);
-		abstractMenu.AddCommandAction(m_pActionShowInFileExplorer, foldersSection);
-		abstractMenu.CreateCommandAction("asset.generate_thumbnails", foldersSection);
+		abstractMenu.AddCommandAction(GetAction("general.import"), foldersSection);
+		abstractMenu.AddCommandAction(GetAction("path_utils.show_in_file_explorer"), foldersSection);
+		abstractMenu.AddCommandAction(GetAction("asset.generate_thumbnails"), foldersSection);
 	}
 
 	NotifyContextMenuCreation(abstractMenu, {}, selectedFolders);
@@ -1993,16 +2002,16 @@ void CAssetBrowser::BuildContextMenuForFolders(const std::vector<string>& folder
 	//TODO : move this, just only add the separator if we add more things later
 	int foldersSection = abstractMenu.GetNextEmptySection();
 	abstractMenu.SetSectionName(foldersSection, "Folders");
-	abstractMenu.CreateCommandAction("general.new_folder");
+	abstractMenu.AddCommandAction(GetAction("general.new_folder"));
 
 	if (CAssetFoldersModel::GetInstance()->IsEmptyFolder(folder))
 	{
-		abstractMenu.AddCommandAction(m_pActionDelete);
-		abstractMenu.AddCommandAction(m_pActionRename);
+		abstractMenu.AddCommandAction(GetAction("general.delete"));
+		abstractMenu.AddCommandAction(GetAction("general.rename"));
 	}
 
-	abstractMenu.AddCommandAction(m_pActionShowInFileExplorer);
-	abstractMenu.CreateCommandAction("asset.generate_thumbnails");
+	abstractMenu.AddCommandAction(GetAction("path_utils.show_in_file_explorer"));
+	abstractMenu.AddCommandAction(GetAction("asset.generate_thumbnails"));
 
 	NotifyContextMenuCreation(abstractMenu, {}, folders);
 }
@@ -2036,23 +2045,12 @@ void CAssetBrowser::BuildContextMenuForAssets(const std::vector<CAsset*>& assets
 
 	abstractMenu.FindSectionByName("Assets");
 
-	abstractMenu.AddCommandAction(m_pActionCopy);
-	m_pActionCopy->setEnabled(canCopy);
-
-	abstractMenu.AddCommandAction(m_pActionDuplicate);
-	m_pActionDuplicate->setEnabled(canCopy);
-
-	abstractMenu.AddCommandAction(m_pActionReimport);
-	m_pActionReimport->setEnabled(canReimport);
-
-	abstractMenu.AddCommandAction(m_pActionDelete);
-	m_pActionDelete->setEnabled(!isImmutable);
-
-	abstractMenu.AddCommandAction(m_pActionSave);
-	m_pActionSave->setEnabled(isModified);
-
-	abstractMenu.AddCommandAction(m_pActionDiscardChanges);
-	m_pActionDiscardChanges->setEnabled(isModified);
+	abstractMenu.AddCommandAction(SetActionEnabled("general.copy", canCopy));
+	abstractMenu.AddCommandAction(SetActionEnabled("general.duplicate", canCopy));
+	abstractMenu.AddCommandAction(SetActionEnabled("asset.reimport", canReimport));
+	abstractMenu.AddCommandAction(SetActionEnabled("general.delete", !isImmutable));
+	abstractMenu.AddCommandAction(SetActionEnabled("general.save", isModified));
+	abstractMenu.AddCommandAction(SetActionEnabled("asset.discard_changes", isModified));
 
 	//TODO : source control
 	auto it = assetsByType.begin();
@@ -2075,12 +2073,8 @@ void CAssetBrowser::BuildContextMenuForAssets(const std::vector<CAsset*>& assets
 
 		const bool canBeRenamed = !isImmutable && pAsset->IsWritable(true);
 
-		abstractMenu.AddCommandAction(m_pActionRename);
-		m_pActionRename->setEnabled(canBeRenamed);
-
-		abstractMenu.AddCommandAction(m_pActionShowInFileExplorer);
-		m_pActionShowInFileExplorer->setEnabled(!isImmutable);
-
+		abstractMenu.AddCommandAction(SetActionEnabled("general.rename", canBeRenamed));
+		abstractMenu.AddCommandAction(SetActionEnabled("path_utils.show_in_file_explorer", !isImmutable));
 
 		AppendFilterDependenciesActions(&abstractMenu, assets.front());
 	}
@@ -2123,7 +2117,7 @@ void CAssetBrowser::AddWorkFilesMenu(CAbstractMenu& abstractMenu)
 				});
 			}
 		}
-		pWorkFilesMenu->AddCommandAction(m_pActionManageWorkFiles);
+		pWorkFilesMenu->AddCommandAction(GetAction("asset.manage_work_files"));
 	});
 }
 
@@ -2174,71 +2168,7 @@ void CAssetBrowser::customEvent(QEvent* pEvent)
 	QString module = fullCommand[0];
 	command = fullCommand[1];
 
-	if (module == "path_utils")
-	{
-		if (command == "show_in_file_explorer")
-		{
-			OnShowInFileExplorer();
-		}
-	}
-	else if (module == "asset")
-	{
-		if (command == "generate_thumbnails")
-		{
-			OnGenerateThumbmails();
-		}
-		else if (command == "save_all")
-		{
-			OnSaveAll();
-		}
-		else if (command == "view_details")
-		{
-			OnDetailsView();
-		}
-		else if (command == "view_thumbnails")
-		{
-			OnThumbnailsView();
-		}
-		else if (command == "view_split_horizontally")
-		{
-			OnSplitHorizontalView();
-		}
-		else if (command == "view_split_vertically")
-		{
-			OnSplitVerticalView();
-		}
-		else if (command == "view_folder_tree")
-		{
-			OnFolderTreeView();
-		}
-		else if (command == "view_recursive_view")
-		{
-			OnRecursiveView();
-		}
-		else if (command == "discard_changes")
-		{
-			OnDiscardChanges();
-		}
-		else if (command == "manage_work_files")
-		{
-			OnManageWorkFiles();
-		}
-		else if (command == "generate_and_repair_all_metadata")
-		{
-			OnGenerateRepairAllMetadata();
-		}
-		else if (command == "reimport")
-		{
-			OnReimport();
-		}
-#if ASSET_BROWSER_USE_PREVIEW_WIDGET
-		else if (command == "show_preview")
-		{
-			OnShowPreview();
-		}
-#endif
-	}
-	else if (module == "version_control_system")
+	if (module == "version_control_system")
 	{
 		std::vector<CAsset*> assets;
 		std::vector<string> folders;

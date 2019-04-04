@@ -134,21 +134,21 @@ CEditorAdapter::CEditorAdapter(std::unique_ptr<MeshImporter::CBaseDialog> pDialo
 
 		if (toolButtons & MeshImporter::CBaseDialog::eToolButtonFlags_Import)
 		{
-			QAction* const pAct = GetAction("meshimporter.import");
+			QAction* const pAct = GetAction_Deprecated("meshimporter.import");
 			pAct->setIcon(CryIcon("icons:General/File_Import.ico"));
 			pToolBar->addAction(pAct);
 		}
 
 		if (toolButtons & MeshImporter::CBaseDialog::eToolButtonFlags_Open)
 		{
-			pToolBar->addAction(GetAction("general.open"));
+			pToolBar->addAction(GetAction_Deprecated("general.open"));
 		}
 
 		pToolBar->addSeparator();
 
 		if (toolButtons & MeshImporter::CBaseDialog::eToolButtonFlags_Save)
 		{
-			pToolBar->addAction(GetAction("general.save"));
+			pToolBar->addAction(GetAction_Deprecated("general.save"));
 		}
 	}
 

@@ -782,7 +782,11 @@ void CEditorToolBarService::CreateToolBar(const std::shared_ptr<QToolBarDesc>& p
 				QCommandAction* pAction = nullptr;
 				if (pEditor)
 				{
-					pAction = pEditor->FindRegisteredCommandAction(QtUtil::ToString(pCommandDesc->GetCommand()).c_str());
+					pAction = pEditor->GetAction(QtUtil::ToString(pCommandDesc->GetCommand()));
+					if (!pAction)
+					{
+						pAction = pEditor->GetAction_Deprecated(QtUtil::ToString(pCommandDesc->GetCommand()));
+					}
 				}
 				else
 				{

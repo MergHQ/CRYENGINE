@@ -71,7 +71,7 @@ void CConsoleWindow::InitMenu()
 	AddToMenu(&items[0], CRY_ARRAY_COUNT(items));
 
 	auto pEditMenu = GetMenu(MenuItems::EditMenu);
-	pEditMenu->AddCommandAction(GetAction("general.consoleClearLog"), -1, -1);
+	pEditMenu->AddCommandAction(GetAction_Deprecated("general.consoleClearLog"), -1, -1);
 
 	const CEditor::MenuItems items2[] = {
 		CEditor::MenuItems::Find,

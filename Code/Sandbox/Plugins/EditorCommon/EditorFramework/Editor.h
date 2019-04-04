@@ -2,12 +2,12 @@
 #pragma once
 
 #include "EditorCommonAPI.h"
+#include "EditorWidget.h"
 #include "DockingSystem/DockableContainer.h"
 #include "Menu/MenuDesc.h"
 #include "QtViewPane.h"
 
 #include <QVariant>
-#include <QWidget>
 
 class BroadcastEvent;
 class CAbstractMenu;
@@ -20,7 +20,7 @@ class QEvent;
 //! for most if not all tools that are not simply dialogs
 //! Prefer inheriting from CDockableEditor if this needs to be dockable
 //! Inherit from CAssetEditor if this needs to be integrated with the AssetSystem
-class EDITOR_COMMON_API CEditor : public QWidget
+class EDITOR_COMMON_API CEditor : public CEditorWidget
 {
 	Q_OBJECT
 public:
@@ -33,15 +33,11 @@ public:
 
 	CBroadcastManager&            GetBroadcastManager();
 
-	QCommandAction*               FindRegisteredCommandAction(const char* szCommand) const;
-	const std::vector<CCommand*>& GetCommands() const { return m_commands; }
-
 	// Serialized in the layout
 	virtual void        SetLayout(const QVariantMap& state);
 	virtual QVariantMap GetLayout() const;
 
 protected:
-
 	virtual void customEvent(QEvent* event) override;
 
 	void         AddRecentFile(const QString& filePath);
@@ -198,9 +194,6 @@ protected:
 	//! Add an editor command to the menu
 	void AddToMenu(const char* menuName, const char* command);
 
-	//! Returns the default action for a command
-	QCommandAction* GetAction(const char* command);
-
 	//! Returns the default action for a command from editor's menu.
 	QCommandAction* GetMenuAction(MenuItems item);
 
@@ -233,7 +226,7 @@ protected:
 	void         ForceRebuildMenu();
 
 private:
-	QCommandAction* CreateCommandAction(const char* command);
+	void            InitActions();
 
 	void            PopulateRecentFilesMenu(CAbstractMenu* menu);
 	void            OnMainFrameAboutToClose(BroadcastEvent& event);
@@ -251,8 +244,6 @@ private:
 	std::unique_ptr<MenuDesc::CDesc<MenuItems>> m_pMenuDesc;
 	std::unique_ptr<CAbstractMenu>              m_pMenu;
 	std::unique_ptr<CMenuUpdater>               m_pMenuUpdater;
-	std::vector<CCommand*>                      m_commands;
-	std::vector<QCommandAction*>                m_commandActions;
 };
 
 //! Inherit from this class to create a dockable editor
