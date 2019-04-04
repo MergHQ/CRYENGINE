@@ -460,9 +460,6 @@ void CRenderer::EF_GetParticleListAndBatchFlags(uint32& nBatchFlags, ERenderList
 	if (bUseTessShader)
 		pRenderObject->m_ObjFlags &= ~FOB_OCTAGONAL;
 
-	SShaderTechnique* pTech = shaderItem.GetTechnique();
-	assert(!pTech || (bUseTessShader && pTech->m_Flags & FHF_USE_HULL_SHADER) || !bUseTessShader);
-
 	// Disable vertex instancing on unsupported hardware, or from cvar.
 	const bool useTessellation = (pRenderObject->m_ObjFlags & FOB_ALLOW_TESSELLATION) != 0;
 #if CRY_PLATFORM_ORBIS
@@ -483,9 +480,11 @@ void CRenderer::EF_GetParticleListAndBatchFlags(uint32& nBatchFlags, ERenderList
 		bHalfRes = false;
 	}
 
-	if (pTech)
+	SRenderObjData* pRenderObjectData = pRenderObject->GetObjData();
+	pRenderObject->m_ObjFlags |= (pRenderObjectData && pRenderObjectData->m_LightVolumeId) ? FOB_LIGHTVOLUME : FOB_NONE;
+
+	if (SShaderTechnique* pTech = shaderItem.GetTechnique())
 	{
-		SRenderObjData* pRenderObjectData = pRenderObject->GetObjData();
 		if (pTech->m_nTechnique[TTYPE_CUSTOMRENDERPASS] > 0)
 		{
 			if (m_nThermalVisionMode && pRenderObjectData->m_nVisionParams)
@@ -494,8 +493,6 @@ void CRenderer::EF_GetParticleListAndBatchFlags(uint32& nBatchFlags, ERenderList
 				bHalfRes = false;
 			}
 		}
-
-		pRenderObject->m_ObjFlags |= (pRenderObjectData && pRenderObjectData->m_LightVolumeId) ? FOB_LIGHTVOLUME : FOB_NONE;
 	}
 
 	if (bHalfRes)
@@ -541,40 +538,39 @@ bool CREParticle::Compile(CRenderObject* pRenderObject, uint64 objFlags, ERender
 		Vertex,
 		VertexTess,
 		Pulled,
+		PulledTess,
 		GPU,
 		VolFog,
 		ZPrePass,
+		ZPrePassTess,
 	};
 
 	ETechnique techniqueId = ETechnique::None;
-	if (isGpuParticles)
-		techniqueId = ETechnique::GPU;
-	else if (bUseTessShader)
-		techniqueId = ETechnique::VertexTess;
-	else if (isPulledVertices)
-		techniqueId = ETechnique::Pulled;
-	else
-		techniqueId = ETechnique::Vertex;
-	assert(techniqueId != ETechnique::None);
 
 	SGraphicsPipelineStateDescription stateDesc;
 	stateDesc.shaderItem = shaderItem;
-	stateDesc.shaderItem.m_nTechnique = (int)techniqueId;
 	stateDesc.technique = TTYPE_GENERAL;
 	stateDesc.objectFlags = objFlags;
 	stateDesc.renderState = pRenderObject->m_RState;
+
 	if (isGpuParticles)
 	{
+		techniqueId = ETechnique::GPU;
 		stateDesc.vertexFormat = EDefaultInputLayouts::Empty;
 		stateDesc.primitiveType = eptTriangleList;
 	}
 	else if (isPulledVertices)
 	{
+		techniqueId = ETechnique::Pulled;
 		stateDesc.vertexFormat = EDefaultInputLayouts::Empty;
 		if (isPointSprites)
 		{
 			stateDesc.primitiveType = eptTriangleList;
-			stateDesc.objectRuntimeMask |= g_HWSR_MaskBit[HWSR_SPRITE];
+		}
+		else if (bUseTessShader)
+		{
+			techniqueId = ETechnique::PulledTess;
+			stateDesc.primitiveType = ept4ControlPointPatchList;
 		}
 		else
 		{
@@ -584,19 +580,31 @@ bool CREParticle::Compile(CRenderObject* pRenderObject, uint64 objFlags, ERender
 	else
 	{
 		stateDesc.vertexFormat = EDefaultInputLayouts::P3F_C4B_T4B_N3F2;
-		if (isPointSprites && !bUseTessShader)
-			stateDesc.streamMask |= VSM_INSTANCED;
-		if (bUseTessShader && isPointSprites)
-			stateDesc.primitiveType = ept1ControlPointPatchList;
-		else if (bUseTessShader)
-			stateDesc.primitiveType = ept4ControlPointPatchList;
-		else if (isPointSprites)
-			stateDesc.primitiveType = eptTriangleStrip;
+		if (bUseTessShader)
+		{
+			techniqueId = ETechnique::VertexTess;
+			if (isPointSprites)
+				stateDesc.primitiveType = ept1ControlPointPatchList;
+			else
+				stateDesc.primitiveType = ept4ControlPointPatchList;
+		}
 		else
-			stateDesc.primitiveType = eptTriangleList;
-		if (isPointSprites)
-			stateDesc.objectRuntimeMask |= g_HWSR_MaskBit[HWSR_SPRITE];
+		{
+			techniqueId = ETechnique::Vertex;
+			if (isPointSprites)
+			{
+				stateDesc.primitiveType = eptTriangleStrip;
+				stateDesc.streamMask |= VSM_INSTANCED;
+			}
+			else
+				stateDesc.primitiveType = eptTriangleList;
+		}
 	}
+	assert(techniqueId != ETechnique::None);
+	stateDesc.shaderItem.m_nTechnique = (int)techniqueId;
+
+	if (isPointSprites)
+		stateDesc.objectRuntimeMask |= g_HWSR_MaskBit[HWSR_SPRITE];
 	if (!bUseTessShader)
 		stateDesc.objectRuntimeMask |= g_HWSR_MaskBit[HWSR_NO_TESSELLATION];
 	if (objFlags & FOB_INSHADOW)
@@ -684,7 +692,7 @@ bool CREParticle::Compile(CRenderObject* pRenderObject, uint64 objFlags, ERender
 	const bool isTransparent = (pRenderObject->m_RState & OS_TRANSPARENT) != 0;
 	if (!isTransparent)
 	{
-		stateDesc.shaderItem.m_nTechnique = (int)ETechnique::ZPrePass;
+		stateDesc.shaderItem.m_nTechnique = (int)(bUseTessShader ? ETechnique::ZPrePassTess : ETechnique::ZPrePass);
 		bCompiled &= pGraphicsPipeline->GetStage<CSceneGBufferStage>()->CreatePipelineState(stateDesc, CSceneGBufferStage::ePass_DepthBufferFill, pGraphicsPSO);
 		m_pCompiledParticle->m_pGraphicsPSOs[uint(EParticlePSOMode::ZPrePass)] = pGraphicsPSO;
 	}
@@ -881,6 +889,8 @@ void CREParticle::DrawParticles(CRenderObject* pRenderObject, CDeviceGraphicsCom
 	const auto& particleBuffer = gcpRendD3D.GetParticleBufferSet();
 
 	const bool isPointSprites = (pRenderObject->m_ObjFlags & FOB_POINT_SPRITE) != 0;
+	const bool isVolumeFog = (pRenderObject->m_ObjFlags & FOB_VOLUME_FOG) != 0;
+	const bool isTessellated = !isVolumeFog && (pRenderObject->m_ObjFlags & FOB_ALLOW_TESSELLATION) != 0;
 	const bool isGpuParticles = m_pGpuRuntime != nullptr;
 
 	if (isGpuParticles)
@@ -898,7 +908,13 @@ void CREParticle::DrawParticles(CRenderObject* pRenderObject, CDeviceGraphicsCom
 	else
 	{
 		const uint numVertices = m_RenderVerts.aPositions.size();
-		commandInterface.Draw(numVertices * 2, 1, 0, 0);
+		if (numVertices > 1)
+		{
+			if (isTessellated)
+				commandInterface.Draw((numVertices - 1) * 4, 1, 0, 0);
+			else
+				commandInterface.Draw(numVertices * 2, 1, 0, 0);
+		}
 	}
 }
 

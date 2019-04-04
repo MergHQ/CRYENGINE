@@ -1569,19 +1569,19 @@ void CReplayModules::RefreshModules(FModuleLoad onLoad, FModuleUnload onUnload, 
 	{
 		if (SymInitialize(hProcess, NULL, TRUE))
 		{
-			decltype(&EnumProcessModules) pfEnumProcessModules;
-			decltype(&GetModuleFileNameEx) pfGetModuleFileNameEx;
-			decltype(&GetModuleInformation) pfGetModuleInformation;
+			decltype(&EnumProcessModules) pfEnumProcessModules = nullptr;
+			decltype(&GetModuleFileNameExA) pfGetModuleFileNameExA = nullptr;
+			decltype(&GetModuleInformation) pfGetModuleInformation = nullptr;
 
 			HMODULE hPsapiModule = ::LoadLibraryA("psapi.dll");
 			if (hPsapiModule)
 			{
 				pfEnumProcessModules = (decltype(pfEnumProcessModules)) GetProcAddress(hPsapiModule, "EnumProcessModules");
-				pfGetModuleFileNameEx = (decltype(pfGetModuleFileNameEx)) GetProcAddress(hPsapiModule, "GetModuleFileNameEx");
+				pfGetModuleFileNameExA = (decltype(pfGetModuleFileNameExA)) GetProcAddress(hPsapiModule, "GetModuleFileNameExA");
 				pfGetModuleInformation = (decltype(pfGetModuleInformation)) GetProcAddress(hPsapiModule, "GetModuleInformation");
 			}
 
-			if(pfEnumProcessModules && pfGetModuleFileNameEx && pfGetModuleInformation)
+			if(pfEnumProcessModules && pfGetModuleFileNameExA && pfGetModuleInformation)
 			{
 				if (pfEnumProcessModules(hProcess, hMods, sizeof(hMods), &cbNeeded))
 				{
@@ -1589,7 +1589,7 @@ void CReplayModules::RefreshModules(FModuleLoad onLoad, FModuleUnload onUnload, 
 					{
 						TCHAR szModName[MAX_PATH];
 						// Get the full path to the module's file.
-						if (pfGetModuleFileNameEx(hProcess, hMods[i], szModName, sizeof(szModName) / sizeof(TCHAR)))
+						if (pfGetModuleFileNameExA(hProcess, hMods[i], szModName, sizeof(szModName) / sizeof(TCHAR)))
 						{
 							char pdbPath[1024];
 							cry_strcpy(pdbPath, szModName);
@@ -1650,9 +1650,10 @@ void CReplayModules::RefreshModules(FModuleLoad onLoad, FModuleUnload onUnload, 
 						}
 					}
 				}
-
-				SymCleanup(hProcess);
 			}
+
+			::FreeLibrary(hPsapiModule);
+			SymCleanup(hProcess);
 		}
 		CloseHandle(hProcess);
 	}

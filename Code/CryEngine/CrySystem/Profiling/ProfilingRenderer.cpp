@@ -42,6 +42,9 @@ void CProfilingRenderer::ChangeListenStatusCommand(ICVar*)
 }
 
 CProfilingRenderer::CProfilingRenderer()
+	: m_isCollectionPaused(true)
+	, m_displayQuantity(EDisplayQuantity::SELF_VALUE)
+	, m_selectedRow(0)
 {
 	CRY_ASSERT(s_pRendererInstance == nullptr);
 	s_pRendererInstance = this;
@@ -169,7 +172,7 @@ void CProfilingRenderer::DrawLabel(float col, float row, const float* fColor, fl
 
 	if (ITextModeConsole* pTC = gEnv->pSystem->GetITextModeConsole())
 	{
-		pTC->PutText((int)col, (int)(m_textModeBaseExtra + row), szText);
+		pTC->PutText((int)col, (int)row, szText);
 	}
 }
 

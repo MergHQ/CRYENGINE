@@ -310,8 +310,12 @@ bool CStandardGraphicsPipeline::FillCommonScenePassStates(const SGraphicsPipelin
 
 	if (psoDesc.m_bAllowTesselation)
 	{
-		psoDesc.m_PrimitiveType = ept3ControlPointPatchList;
-		psoDesc.m_ObjectStreamMask |= VSM_NORMALS;
+		// Hard-coded primitive type should not be set here, do it only if tessellation primitive type not already set
+		if (psoDesc.m_PrimitiveType < ept1ControlPointPatchList || psoDesc.m_PrimitiveType > ept4ControlPointPatchList)
+		{
+			psoDesc.m_PrimitiveType = ept3ControlPointPatchList;
+			psoDesc.m_ObjectStreamMask |= VSM_NORMALS;
+		}
 	}
 
 	psoDesc.m_ShaderFlags_RT |= m_pVRProjectionManager->GetRTFlags();
