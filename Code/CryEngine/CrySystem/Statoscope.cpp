@@ -1868,10 +1868,10 @@ void CStatoscope::OnFrameEnd(TTime, ILegacyProfiler* pProfSystem)
 
 	if (m_pProfilerDG && m_pProfilerDG->IsEnabled())
 	{
-		auto pTrackersList = pProfSystem->GetActiveTrackers();
+		const std::vector<SProfilingSectionTracker*>* pTrackersList = pProfSystem->GetActiveTrackers();
 		if (pTrackersList == nullptr)
 			return;
-		const auto& trackers = *pTrackersList;
+		const std::vector<SProfilingSectionTracker*>& trackers = *pTrackersList;
 
 		// we want to avoid reallocation of m_perfStatDumpTrackers
 		// even if numTrackers is quite large (in the thousands), it'll only be tens of KB
@@ -1884,7 +1884,7 @@ void CStatoscope::OnFrameEnd(TTime, ILegacyProfiler* pProfSystem)
 		float smallFuncsSum = 0;
 		uint32 smallFuncsCount = 0;
 
-		for(auto pTracker : trackers)
+		for(const SProfilingSectionTracker* pTracker : trackers)
 		{
 			// ignore really quick functions or ones what weren't called
 			if (pTracker->selfValue.Latest() > minFuncTime)
@@ -2755,7 +2755,7 @@ void CStatoscope::UpdateFrameListenerRegistration()
 	{
 		if (!isRegisteredAsFrameListener)
 		{
-			if (auto pProf = GetISystem()->GetLegacyProfilerInterface())
+			if (ILegacyProfiler* pProf = GetISystem()->GetLegacyProfilerInterface())
 			{
 				pProf->AddFrameListener(this);
 				isRegisteredAsFrameListener = true;
@@ -2766,7 +2766,7 @@ void CStatoscope::UpdateFrameListenerRegistration()
 	}
 	else if (isRegisteredAsFrameListener)
 	{
-		if (auto pProf = GetISystem()->GetLegacyProfilerInterface())
+		if (ILegacyProfiler* pProf = GetISystem()->GetLegacyProfilerInterface())
 		{
 			pProf->RemoveFrameListener(this);
 			isRegisteredAsFrameListener = false;

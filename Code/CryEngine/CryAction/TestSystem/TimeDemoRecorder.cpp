@@ -1997,7 +1997,7 @@ void CTimeDemoRecorder::StartSession()
 	// Register to frame profiler.
 
 	// remember old profiling settings
-	auto pProfSystem = GetISystem()->GetProfilingSystem();
+	ICryProfilingSystem* pProfSystem = GetISystem()->GetProfilingSystem();
 	m_profilingPaused = pProfSystem->IsPaused();
 	m_oldPeakTolerance = GetConsoleVar("profile_peak_tolerance");
 
@@ -2052,7 +2052,7 @@ void CTimeDemoRecorder::StopSession()
 	gEnv->pGameFramework->GetIGameplayRecorder()->EnableGameStateRecorder(false, this, false);
 	
 	// Revert the profiling CVARs
-	auto pProfSystem = GetISystem()->GetProfilingSystem();
+	ICryProfilingSystem* pProfSystem = GetISystem()->GetProfilingSystem();
 	if (m_demo_profile)
 	{
 		SetConsoleVar("profile_peak_tolerance", m_oldPeakTolerance);
@@ -2373,17 +2373,17 @@ void CTimeDemoRecorder::OnGameplayEvent(IEntity* pEntity, const GameplayEvent& e
 //////////////////////////////////////////////////////////////////////////
 void CTimeDemoRecorder::OnFrameEnd(TTime time, ILegacyProfiler* pProfSystem)
 {
-	const auto frame = gEnv->nMainFrameID;
+	const uint32 frame = gEnv->nMainFrameID;
 	if (m_bPlaying && !m_bPaused)
 	{
-		auto pPeaks = pProfSystem->GetPeakRecords();
+		const ILegacyProfiler::PeakList* pPeaks = pProfSystem->GetPeakRecords();
 		if (pPeaks == nullptr)
 			return;
 
 		const size_t peakCount = pPeaks->size();
-		for(auto i = 0; i < peakCount; ++i)
+		for(size_t i = 0; i < peakCount; ++i)
 		{
-			auto& peak = (*pPeaks)[i];
+			const SPeakRecord& peak = (*pPeaks)[i];
 			if (peak.frame == frame) // do not log peaks repeatedly
 				LogInfo("    -Peak at Frame %d, %.2fms : %s (count: %d)", m_currentFrame, peak.peakValue, peak.pTracker->pDescription->szEventname, peak.count);
 		}

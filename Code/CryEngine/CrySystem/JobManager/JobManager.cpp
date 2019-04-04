@@ -1130,7 +1130,7 @@ void JobManager::CJobManager::Update(int nJobSystemProfiler)
 	// draw vertical line every 5ms
 	const int64 tickOf5Ms = CTimeValue(0.005f).GetValue();
 	const int64 markerCount = ((diffTime.GetMilliSecondsAsInt64() - 1) / 5);
-	for(auto i = 1; i <= markerCount; ++i)
+	for(int64 i = 1; i <= markerCount; ++i)
 	{
 		Vec3 markerTop(fInfoBoxSize + fGraphSideOffset + i * tickOf5Ms * pixelPerTime, fTopOffset - fGraphHeight, 0);
 		Vec3 markerBottom(fInfoBoxSize + fGraphSideOffset + i * tickOf5Ms * pixelPerTime, fGraphTopOffset + fGraphHeight, 0);

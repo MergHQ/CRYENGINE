@@ -1541,7 +1541,7 @@ void CEngineStats::CollectVoxels()
 void CEngineStats::CollectProfileStatistics()
 {
 	ISystem* pSystem = GetISystem();
-	auto pProfiler = pSystem->GetLegacyProfilerInterface();
+	ILegacyProfiler* pProfiler = pSystem->GetLegacyProfilerInterface();
 	if (pProfiler == nullptr)
 		return;
 
@@ -1550,7 +1550,7 @@ void CEngineStats::CollectProfileStatistics()
 	m_stats.profilers.clear();
 
 	int need = 0;
-	for (auto pTracker : *pProfiler->GetActiveTrackers())
+	for (const SProfilingSectionTracker* pTracker : *pProfiler->GetActiveTrackers())
 	{
 		if (pTracker->count.Average() > 0 && pTracker->totalValue.Average() > 0.0f)
 			++need;
@@ -1558,7 +1558,7 @@ void CEngineStats::CollectProfileStatistics()
 
 	m_stats.profilers.resize(need);
 	int i = 0;
-	for (auto pTracker : *pProfiler->GetActiveTrackers())
+	for (const SProfilingSectionTracker* pTracker : *pProfiler->GetActiveTrackers())
 	{
 		if (pTracker->count.Average() > 0 && pTracker->totalValue.Average() > 0.0f)
 		{
