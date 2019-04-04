@@ -273,6 +273,7 @@ private:
 	CTimeline*      m_pCurrentSelectionDopeSheet;
 	CCurveEditor*   m_pCurrentSelectionCurveEditor;
 	SelectedKeys    m_currentKeySelection;
+	size_t          m_currentKeySelectionCount;
 
 	QTimer*         m_refreshTimer;
 	SAnimTime       m_time;
