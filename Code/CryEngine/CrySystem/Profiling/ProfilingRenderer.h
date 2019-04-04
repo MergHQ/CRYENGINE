@@ -58,8 +58,7 @@ private:
 	EDisplayQuantity m_displayQuantity;
 
 	// render settings
-	int   m_selectedRow;
-	int   m_textModeBaseExtra;
+	int m_selectedRow;
 
 	// CVars
 	static void ChangeListenStatusCommand(struct ICVar*);
