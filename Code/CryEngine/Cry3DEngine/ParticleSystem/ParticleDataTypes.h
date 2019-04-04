@@ -109,42 +109,43 @@ template<uint Dim, typename T = std::array<float, Dim>>
 struct SOrderKeyN
 {
 	SOrderKeyN(uint key = 0)
-		: m_key(float(key))
+		: m_key(key)
 	{
 		for (uint e = 0; e < Dim; ++e)
-			m_modulusInv[e] = 1.0f;
+			m_modulus[e] = 1;
 	}
 
 	void SetModulus(uint modulus, uint e = 0)
 	{
-		m_modulusInv[e] = 1.0f / float(modulus);
+		modulus = max(modulus, 1u);
+		m_modulus[e] = modulus;
+		m_scale[e] = 1.0f / float(modulus);
 	}
 
 	void SetRange(uint e, Range range, bool isOpen = false)
 	{
 		m_ranges[e] = Slope<float>(range.start, range.end);
-		if (!isOpen && m_modulusInv[e] < 1.0f)
-			m_ranges[e].scale /= (1.0f - m_modulusInv[e]);
+		if (!isOpen && m_modulus[e] > 1)
+			m_ranges[e].scale *= float(m_modulus[e] - 1) / float(m_modulus[e]);
 	}
 
 	T operator()()
 	{
 		T result;
-		float number = m_key;
-		m_key += 1.0f;
+		uint number = m_key++;
 		for (uint e = 0; e < Dim; ++e)
 		{
-			number *= m_modulusInv[e];
-			float fraction = frac(number);
+			float fraction = float(number % m_modulus[e]) * m_scale[e];
 			result[e] = m_ranges[e](fraction);
-			number -= fraction;
+			number = number / m_modulus[e];
 		}
 		return result;
 	}
 
 private:
-	float        m_key;
-	float        m_modulusInv[Dim];
+	uint         m_key;
+	uint         m_modulus[Dim];
+	float        m_scale[Dim];
 	Slope<float> m_ranges[Dim];
 };
 

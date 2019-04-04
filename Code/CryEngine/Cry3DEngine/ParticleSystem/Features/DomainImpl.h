@@ -217,32 +217,71 @@ private:
 	SChaosKeyV& m_chaos;
 };
 
-struct SpawnId
+namespace NSpawnId
 {
+	struct SamplerBase
+	{
+		SamplerBase(uint modulus)
+			: m_modulus(convert<uint32v>(modulus))
+			, m_scale(convert<floatv>(rcp(float(modulus))))
+		{
+		}
+		ILINE floatv Convert(uint32v spawnId) const
+		{
+			const uint32v mod = spawnId % m_modulus;
+			return convert<floatv>(mod) * m_scale;
+		}
+	private:
+		uint32v m_modulus;
+		floatv  m_scale;
+	};
+
 	template<typename Source>
-	struct Sampler: Source
+	struct Sampler: Source, SamplerBase
 	{
 		Sampler(const CParticleComponentRuntime& runtime, uint modulus)
 			: Source(runtime)
-			, m_scale(convert<floatv>(rcp(float(modulus))))
+			, SamplerBase(modulus)
+			, m_spawnIds(Source::Container(runtime).IStream(EPDT_SpawnId))
+		{}
+		ILINE floatv Sample(TParticleGroupId particleId) const
 		{
-			uint32 idOffset = Source::Container(runtime).GetSpawnIdOffset();
-			#ifdef CRY_PFX2_USE_SSE
-				m_idOffsets = convert<uint32v>(idOffset) + convert<uint32v>(0, 1, 2, 3);
-			#else
-				m_idOffsets = idOffset;
-			#endif
+			const TParticleIdv spawnId = m_spawnIds.SafeLoad(Source::Id(particleId));
+			return Convert(spawnId);
+		}
+	private:
+		IPidStream m_spawnIds;
+	};
+
+	template<>
+	struct Sampler<SelfSource>: SelfSource, SamplerBase
+	{
+		Sampler(const CParticleComponentRuntime& runtime, uint modulus)
+			: SelfSource(runtime)
+			, SamplerBase(modulus)
+		{
+			uint32 idOffset = SelfSource::Container(runtime).GetSpawnIdOffset();
+			idOffset %= modulus;
+		#ifdef CRY_PFX2_USE_SSE
+			m_idOffsets = convert<uint32v>(idOffset) + convert<uint32v>(0, 1, 2, 3);
+		#else
+			m_idOffsets = idOffset;
+		#endif
 		}
 		ILINE floatv Sample(TParticleGroupId particleId) const
 		{
-			const TParticleIdv index = convert<uint32v>(+Source::Id(particleId)) + m_idOffsets;
-			const floatv number = convert<floatv>(index) * m_scale;
-			return frac(number);
+			const uint32v spawnId = convert<uint32v>(+SelfSource::Id(particleId)) + m_idOffsets;
+			return Convert(spawnId);
 		}
 	private:
-		uint32v  m_idOffsets;
-		floatv m_scale;
+		uint32v m_idOffsets;
 	};
+};
+
+struct SpawnId
+{
+	// Hack because specializing a struct is not allowed in class scope.
+	template<typename Source> using Sampler = NSpawnId::Sampler<Source>;
 };
 
 

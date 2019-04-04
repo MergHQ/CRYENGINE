@@ -67,7 +67,7 @@ public:
 	SUpdateRange                      SpawnedRange() const            { return SUpdateRange(m_firstSpawnId, m_lastSpawnId); }
 	SUpdateRange                      NonSpawnedRange() const         { return SUpdateRange(0, min(m_lastId, m_firstSpawnId)); }
 	uint32                            TotalSpawned() const            { return m_totalSpawned; }
-	uint32                            GetSpawnIdOffset() const        { return m_totalSpawned - m_lastId; }
+	uint32                            GetSpawnIdOffset() const        { return m_totalSpawned - m_lastSpawnId; }
 
 	void                              BeginSpawn();
 	void                              AddElements(uint count);
