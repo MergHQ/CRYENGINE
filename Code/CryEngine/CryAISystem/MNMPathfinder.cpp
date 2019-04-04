@@ -500,7 +500,7 @@ void CMNMPathfinder::OnNavigationMeshChanged(const NavigationMeshID meshId, cons
 
 			const NavigationMesh& mesh = gAIEnv.pNavigationSystem->GetMesh(meshId);
 			const MNM::vector3_t meshCoordinates = mesh.navMesh.GetTileContainerCoordinates(tileId);
-			for (size_t side = 0; side < MNM::CNavMesh::SideCount; ++side)
+			for (size_t side = 0; side < MNM::NavMesh::SideCount; ++side)
 			{
 				const MNM::TileID neighbourTileId = mesh.navMesh.GetNeighbourTileID(meshCoordinates.x.as_int(), meshCoordinates.y.as_int(), meshCoordinates.z.as_int(), side);
 

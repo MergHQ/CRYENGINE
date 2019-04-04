@@ -62,8 +62,6 @@ public:
 		uint32 tileCount;
 	};
 
-	enum { SideCount = 14, };
-
 	enum EPredictionType
 	{
 		ePredictionType_TriangleCenter = 0,

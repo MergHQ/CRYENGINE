@@ -1713,13 +1713,13 @@ void CTileGenerator::DetermineContourVertex(const Vec2i& vertex, const Vec2i& di
 					flags |= ContourVertex::Unremovable;
 					DebugAddContourVertexUnremovableReason(pDebugInfo, "BndV CornerTbl");
 				}
-				else if ((borderBit == 7) && (borderBitH && borderBitV))
+				else if (borderBitH && borderBit == 7)
 				{
 					flags |= ContourVertex::Unremovable;
 					DebugAddContourVertexUnremovableReason(pDebugInfo, "BndV Border");
 				}
-				// If neighbours are are actually belong to different borders.
-				else if (borderBitH & ((borderBitV << 1) | (borderBitV >> 1)))
+				// If neighbours actually belong to different borders.
+				else if (borderBitH && borderBitH != borderBitV)
 				{
 					flags |= ContourVertex::Unremovable;
 					DebugAddContourVertexUnremovableReason(pDebugInfo, "BndV BorderChange");

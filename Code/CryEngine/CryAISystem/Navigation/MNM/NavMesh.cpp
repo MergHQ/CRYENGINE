@@ -1200,11 +1200,6 @@ void CNavMesh::RemoveOffMeshLinkFromTile(const TileID tileID, const TriangleID t
 	m_profiler.AddStat(LinkCount, tile.linkCount);
 }
 
-inline size_t OppositeSide(size_t side)
-{
-	return (side + 7) % 14;
-}
-
 MNM::ERayCastResult CNavMesh::RayCast(const vector3_t& fromLocalPosition, TriangleID fromTri, const vector3_t& toLocalPosition, TriangleID toTri,
                                            RaycastRequestBase& raycastRequest, const INavMeshQueryFilter* pFilter) const
 {
@@ -1392,7 +1387,7 @@ MNM::ERayCastResult CNavMesh::RayCast_v2(const vector3_t& fromLocalPosition, Tri
 							const Tile::STriangle& opposite = neighbourContainer.tile.triangles[link.triangle];
 
 							const uint16 currentTriangleIndex = ComputeTriangleIndex(currentNode.triangleID);
-							const uint16 currentOppositeSide = static_cast<uint16>(OppositeSide(side));
+							const uint16 currentOppositeSide = NavMesh::GetOppositeSide(side);
 
 							for (size_t reciprocalLinkIndex = 0; reciprocalLinkIndex < opposite.linkCount; ++reciprocalLinkIndex)
 							{
@@ -1605,7 +1600,7 @@ TriangleID CNavMesh::StepOverEdgeToNeighbourTriangle(const vector3_t& rayStart, 
 		if(!filter.PassFilter(neighbourTriangle))
 			continue;
 
-		const uint16 currentOppositeSide = static_cast<uint16>(OppositeSide(side));
+		const uint16 currentOppositeSide = NavMesh::GetOppositeSide(side);
 
 		for (size_t reciprocalLinkIndex = 0; reciprocalLinkIndex < neighbourTriangle.linkCount; ++reciprocalLinkIndex)
 		{
@@ -1811,7 +1806,7 @@ MNM::ERayCastResult CNavMesh::RayCast_v1(const vector3_t& fromLocalPosition, Tri
 							const Tile::STriangle& opposite = neighbourContainer.tile.triangles[link.triangle];
 
 							const uint16 currentTriangleIndex = ComputeTriangleIndex(currentID);
-							const uint16 currentOppositeSide = static_cast<uint16>(OppositeSide(side));
+							const uint16 currentOppositeSide = static_cast<uint16>(NavMesh::GetOppositeSide(side));
 
 							for (size_t rl = 0; rl < opposite.linkCount; ++rl)
 							{
@@ -2098,7 +2093,7 @@ void CNavMesh::ClearTile(TileID tileID, bool clearNetwork)
 
 		if (clearNetwork)
 		{
-			for (size_t side = 0; side < SideCount; ++side)
+			for (size_t side = 0; side < NavMesh::SideCount; ++side)
 			{
 				size_t nx = container.x + NavMesh::GetNeighbourTileOffset(side)[0];
 				size_t ny = container.y + NavMesh::GetNeighbourTileOffset(side)[1];
@@ -2109,7 +2104,7 @@ void CNavMesh::ClearTile(TileID tileID, bool clearNetwork)
 					TileContainer& ncontainer = m_tiles[neighbourID - 1];
 
 					ReComputeAdjacency(ncontainer.x, ncontainer.y, ncontainer.z, kAdjecencyCalculationToleranceSq, ncontainer.tile,
-					                   OppositeSide(side), container.x, container.y, container.z, tileID);
+						NavMesh::GetOppositeSide(side), container.x, container.y, container.z, tileID);
 				}
 			}
 		}
@@ -2147,7 +2142,7 @@ void CNavMesh::ConnectToNetwork(const TileID tileID, const CTileConnectivityData
 
 	ComputeAdjacency(container.x, container.y, container.z, kAdjecencyCalculationToleranceSq, container.tile, pConnectivityData);
 
-	for (size_t side = 0; side < SideCount; ++side)
+	for (size_t side = 0; side < NavMesh::SideCount; ++side)
 	{
 		const size_t nx = container.x + NavMesh::GetNeighbourTileOffset(side)[0];
 		const size_t ny = container.y + NavMesh::GetNeighbourTileOffset(side)[1];
@@ -2158,7 +2153,7 @@ void CNavMesh::ConnectToNetwork(const TileID tileID, const CTileConnectivityData
 			TileContainer& ncontainer = m_tiles[neighbourID - 1];
 
 			ReComputeAdjacency(ncontainer.x, ncontainer.y, ncontainer.z, kAdjecencyCalculationToleranceSq, ncontainer.tile,
-				OppositeSide(side), container.x, container.y, container.z, tileID);
+				NavMesh::GetOppositeSide(side), container.x, container.y, container.z, tileID);
 		}
 	}
 }
@@ -2331,7 +2326,7 @@ size_t CreateEdgeLinksWithNeighbors(const SideTileInfo* pSides, const uint16 sid
 {
 	size_t addedLinks = 0;
 	
-	for (size_t sideIdx = 0; sideIdx < MNM::CNavMesh::SideCount; ++sideIdx)
+	for (size_t sideIdx = 0; sideIdx < NavMesh::SideCount; ++sideIdx)
 	{
 		if((sidesMask & BIT16(sideIdx)) == 0)
 			continue;
@@ -2397,8 +2392,8 @@ void CNavMesh::ComputeAdjacency(size_t x, size_t y, size_t z, const real_t& tole
 	Tile::SLink links[MaxLinkCount];
 	size_t linkCount = 0;
 
-	SideTileInfo sides[SideCount];
-	for (size_t s = 0; s < SideCount; ++s)
+	SideTileInfo sides[NavMesh::SideCount];
+	for (size_t s = 0; s < NavMesh::SideCount; ++s)
 	{
 		SideTileInfo& side = sides[s];
 
