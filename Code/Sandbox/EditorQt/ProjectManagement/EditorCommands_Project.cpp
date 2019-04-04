@@ -18,7 +18,7 @@ void RunProjectManager(CSelectProjectDialog::Tab tabToShow)
 		return;
 	}
 
-	QString cmd = QCoreApplication::applicationDirPath() + "/Sandbox.exe -project " + newProjectPath.c_str();
+	QString cmd = '\"' + QCoreApplication::applicationDirPath() + "/Sandbox.exe\" -project " + newProjectPath.c_str();
 	QProcess::startDetached(cmd);
 }
 
