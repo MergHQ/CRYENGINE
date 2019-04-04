@@ -186,7 +186,7 @@ public:
 	void StoreUndoForTracksWithSelectedKeys();
 
 	// Copy keys to clipboard (in XML form)
-	void CopyKeysToClipboard(const bool bOnlySelectedKeys, const bool bOnlyFromSelectedTracks);
+	void CopyKeysToClipboard(const bool bOnlySelectedKeys, const bool bOnlyFromSelectedTracks, size_t selectedKeysCount = 0);
 
 	// Paste keys from clipboard. Tries to match the given data to the target track first,
 	// then the target anim node and finally the whole sequence. If it doesn't find any

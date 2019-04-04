@@ -258,20 +258,33 @@ void GetAllTracksWithSelection(STimelineTrack& track, TAllTracksWithSelection& t
 	}
 }
 
-void GetSelectedElements(STimelineTrack& track, TSelectedElements& elements)
+// calculate selected elements and corresponding key count; 
+// keyCount means that in the compound track such as "Position" we have keyCount("Position") = max(keyCount("X"),keyCount("Y"),keyCount("Z"))
+size_t GetSelectedElements(STimelineTrack& track, TSelectedElements& elements, size_t& keyCount, size_t depth = 0)
 {
+	size_t elementCount = 0;
 	for (auto iter = track.elements.begin(); iter != track.elements.end(); ++iter)
 	{
 		if (iter->selected && !iter->deleted)
 		{
 			elements.push_back(std::make_pair(&track, &(*iter)));
+			elementCount += 1;
 		}
 	}
 
 	for (auto iter = track.tracks.begin(); iter != track.tracks.end(); ++iter)
 	{
-		GetSelectedElements(**iter, elements);
+		elementCount = max(elementCount, GetSelectedElements(**iter, elements, keyCount, depth + 1));
 	}
+
+	if (depth == 2) // level 2 is hardcoded assuming that actual keys are starting to appear on the 2nd level of the tree of tracks;
+					// for example usually we have structure such as: (Root) -> "Entity-1" -> "Position" -> "X","Y","Z" and we calculating 
+					// keys on the "Position" level such as keyCount("Position") = max(keyCount("X"),keyCount("Y"),keyCount("Z"))
+	{
+		keyCount += elementCount;
+	}
+	
+	return elementCount;
 }
 }
 
@@ -279,6 +292,7 @@ CTrackViewSequenceTabWidget::CTrackViewSequenceTabWidget(CTrackViewCore* pTrackV
 	: CTrackViewCoreComponent(pTrackViewCore, true)
 	, m_pCurrentSelectionDopeSheet(nullptr)
 	, m_pCurrentSelectionCurveEditor(nullptr)
+	, m_currentKeySelectionCount(0)
 	, m_pCurrentSelectedNode(nullptr)
 	, m_bDontUpdateDopeSheet(false)
 	, m_bDontUpdateCurveEditor(false)
@@ -1047,8 +1061,10 @@ size_t CTrackViewSequenceTabWidget::GetSelectedElementsCount(STimelineTrack* pTi
 
 	if (pTimelineTrack != nullptr)
 	{
+		size_t keyCount = 0;
 		TSelectedElements elements;
-		GetSelectedElements(*pTimelineTrack, elements);
+
+		GetSelectedElements(*pTimelineTrack, elements, keyCount);
 		selectedElementCount = elements.size();
 	}
 
@@ -2385,8 +2401,10 @@ void CTrackViewSequenceTabWidget::OnSelectionChanged(bool /*bContinuous*/)
 		m_pCurrentSelectionDopeSheet = pDopeSheet;
 		m_pCurrentSelectionCurveEditor = pCurveEditor;
 
+		m_currentKeySelectionCount = 0;
+
 		TSelectedElements elements;
-		GetSelectedElements(pContent->track, elements);
+		GetSelectedElements(pContent->track, elements, m_currentKeySelectionCount);
 
 		const size_t numElements = elements.size();
 
@@ -2481,8 +2499,10 @@ void CTrackViewSequenceTabWidget::GetKeyProperties(Serialization::SStructs& stru
 		m_pCurrentSelectionDopeSheet = pDopeSheet;
 		m_pCurrentSelectionCurveEditor = pCurveEditor;
 
+		size_t keyCount = 0;
 		TSelectedElements elements;
-		GetSelectedElements(pContent->track, elements);
+
+		GetSelectedElements(pContent->track, elements, keyCount);
 
 		const size_t numElements = elements.size();
 
@@ -2939,7 +2959,7 @@ void CTrackViewSequenceTabWidget::OnDopesheetCopy()
 	const bool bIsKeySelected = (m_currentKeySelection.size() > 0);
 	if (bIsKeySelected)
 	{
-		GetActiveSequence()->CopyKeysToClipboard(true, false);
+		GetActiveSequence()->CopyKeysToClipboard(true, false, m_currentKeySelectionCount);
 	}
 	else
 	{
