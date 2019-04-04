@@ -56,8 +56,6 @@ public:
 public:
 	CRY_PFX2_DECLARE_FEATURE
 
-	CFeatureRenderRibbon();
-
 	virtual void AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams) override;
 	virtual void Serialize(Serialization::IArchive& ar) override;
 	virtual void InitParticles(CParticleComponentRuntime& runtime) override;
@@ -73,23 +71,15 @@ private:
 
 	SParticleColorST VertexColorST(const CParticleComponentRuntime& runtime, TParticleId particleId, uint frameId, float animPos);
 
-	ERibbonMode         m_ribbonMode;
-	ERibbonStreamSource m_streamSource;
-	UFloat10            m_frequency;
-	UFloat10            m_offset;
-	bool                m_connectToOrigin;
+	ERibbonMode         m_ribbonMode       = ERibbonMode::Camera;
+	ERibbonStreamSource m_streamSource     = ERibbonStreamSource::Age;
+	bool                m_connectToOrigin  = false;
+	bool                m_tessellated      = false;
+	UFloat10            m_textureFrequency = 1.0f;
+	UFloat10            m_offset           = 0.0f;
 };
 
 CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureRenderRibbon, "Render", "Ribbon", colorRender);
-
-CFeatureRenderRibbon::CFeatureRenderRibbon()
-	: m_ribbonMode(ERibbonMode::Camera)
-	, m_streamSource(ERibbonStreamSource::Age)
-	, m_connectToOrigin(false)
-	, m_frequency(1.0f)
-	, m_offset(0.0f)
-{
-}
 
 void CFeatureRenderRibbon::AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams)
 {
@@ -107,19 +97,23 @@ void CFeatureRenderRibbon::AddToComponent(CParticleComponent* pComponent, SCompo
 	if (m_ribbonMode == ERibbonMode::Free)
 		pComponent->AddParticleData(EPQF_Orientation);
 	pComponent->AddParticleData(DataType(m_streamSource));
-	pParams->m_shaderData.m_textureFrequency = m_frequency;
+	pParams->m_shaderData.m_textureFrequency = m_textureFrequency;
+	if (m_tessellated)
+		pParams->m_renderObjectFlags |= FOB_ALLOW_TESSELLATION;
 }
 
 void CFeatureRenderRibbon::Serialize(Serialization::IArchive& ar)
 {
 	BaseClass::Serialize(ar);
-	ar(m_ribbonMode, "RibbonMode", "Ribbon Mode");
-	ar(m_streamSource, "StreamSource", "Stream Source");
-	ar(m_sortBias, "SortBias", "Sort Bias");
-	ar(m_connectToOrigin, "ConnectToOrigin", "Connect To Origin");
-	ar(m_frequency, "TextureFrequency", "Texture Frequency");
-	ar(m_offset, "Offset", "Offset");
-	ar(m_fillCost, "FillCost", "Fill Cost");
+	SERIALIZE_VAR(ar, m_ribbonMode);
+	SERIALIZE_VAR(ar, m_streamSource);
+	SERIALIZE_VAR(ar, m_connectToOrigin);
+	SERIALIZE_VAR(ar, m_tessellated);
+	SERIALIZE_VAR(ar, m_textureFrequency);
+	SERIALIZE_VAR(ar, m_offset);
+
+	SERIALIZE_VAR(ar, m_sortBias);
+	SERIALIZE_VAR(ar, m_fillCost);
 }
 
 void CFeatureRenderRibbon::InitParticles(CParticleComponentRuntime& runtime)
@@ -223,9 +217,8 @@ void CFeatureRenderRibbon::MakeRibbons(const CParticleComponentRuntime& runtime,
 		pRibbons->push_back(ribbon);
 
 	*pNumVertices = 0;
-	for (uint ribbonId = 0; ribbonId < uint(pRibbons->size()); ++ribbonId)
+	for (const auto& ribbon: *pRibbons)
 	{
-		const SRibbon ribbon = (*pRibbons)[ribbonId];
 		const uint numSegments = ribbon.m_lastIdx - ribbon.m_firstIdx;
 		*pNumVertices += numSegments + 1;
 		if (m_connectToOrigin)
@@ -259,10 +252,12 @@ public:
 
 	ILINE bool Sample(SParticleAxes& axes, TParticleId particleId, Vec3 movingPositions[3]) const
 	{
+		axes.yAxis = (movingPositions[2] - movingPositions[0]) * 0.5f;
+		if (axes.yAxis.IsZero(minParticleSize))
+			return false;
 		const float size = max(m_sizes.Load(particleId), minParticleSize);
 		const Vec3 front = movingPositions[1] - m_cameraPosition;
-		NormalizeSafe(axes.xAxis, (movingPositions[0] - movingPositions[2]) ^ front, size);
-		return NormalizeSafe(axes.yAxis, axes.xAxis ^ front, size) > minParticleSize;
+		return NormalizeSafe(axes.xAxis, axes.yAxis ^ front, size) > minParticleSize;
 	}
 
 private:
@@ -279,10 +274,13 @@ public:
 
 	ILINE bool Sample(SParticleAxes& axes, TParticleId particleId, Vec3 movingPositions[3]) const
 	{
+		axes.yAxis = (movingPositions[2] - movingPositions[0]) * 0.5f;
+		if (axes.yAxis.IsZero(minParticleSize))
+			return false;
 		const float size = max(m_sizes.Load(particleId), minParticleSize);
 		const Quat orientation = m_orientations.Load(particleId);
 		axes.xAxis = orientation.GetColumn0() * -size;
-		return NormalizeSafe(axes.yAxis, movingPositions[0] - movingPositions[2], size) > minParticleSize;
+		return true;
 	}
 
 private:
@@ -366,7 +364,7 @@ void CFeatureRenderRibbon::WriteToGPUMem(const CParticleComponentRuntime& runtim
 	float pixels = 0.0f, pixelsDrawn = 0.0f;
 	CullRibbonAreas(runtime, camera, fMaxPixels, sortEntries, ribbons, ribbonAlphas, pixels, pixelsDrawn);
 
-	for (uint ribbonId = 0; ribbonId < uint(ribbons.size()); ++ribbonId)
+	for (uint ribbonId = 0; ribbonId < ribbons.size(); ++ribbonId)
 	{
 		if (ribbonAlphas[ribbonId] <= 0.0f)
 			continue;
@@ -437,10 +435,14 @@ void CFeatureRenderRibbon::WriteToGPUMem(const CParticleComponentRuntime& runtim
 				localColorSTs.Array().push_back(colorST);
 			}
 
-			colorST.st.x = 255;
-			localPositions.Array().push_back(position);
-			localAxes.Array().push_back(axes);
-			localColorSTs.Array().push_back(colorST);
+			// Add degenerate vertex between ribbons
+			if (ribbonId < ribbons.size() - 1)
+			{
+				colorST.st.x = 255;
+				localPositions.Array().push_back(position);
+				localAxes.Array().push_back(axes);
+				localColorSTs.Array().push_back(colorST);
+			}
 		}
 
 		totalRenderedParticles += numVertices;
@@ -454,7 +456,7 @@ void CFeatureRenderRibbon::WriteToGPUMem(const CParticleComponentRuntime& runtim
 	stats.particles.rendered += totalRenderedParticles;
 	stats.components.rendered ++;
 
-	GetPSystem()->GetProfiler().AddEntry(runtime, EPS_RendereredParticles, uint(totalRenderedParticles));
+	GetPSystem()->GetProfiler().AddEntry(runtime, EPS_RendereredParticles, totalRenderedParticles);
 }
 
 void CFeatureRenderRibbon::CullRibbonAreas(const CParticleComponentRuntime& runtime, const CCamera& camera, float fMaxPixels, TConstArray<uint> sortEntries, TConstArray<SRibbon> ribbons, TVarArray<float> ribbonAlphas, float& pixels, float &pixelsDrawn)

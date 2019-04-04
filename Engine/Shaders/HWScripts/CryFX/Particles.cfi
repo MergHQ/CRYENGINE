@@ -161,7 +161,8 @@ SParticleVertex ParticleCommonVertexOutput(in float4 vPos, in app2vertParticleGe
 
 	// Compute alpha clipping params from input alpha
 	OUT.alphaClip.xyz = particleParams.alphaTestMin.xyz + particleParams.alphaTestMax.xyz * IN.Color.aaa;
-	OUT.alphaClip.z = clamp(OUT.alphaClip.z, 0.001, 1 - OUT.alphaClip.y);
+    OUT.alphaClip.z = min(OUT.alphaClip.z, 1 - OUT.alphaClip.y);
+    OUT.alphaClip.z = max(OUT.alphaClip.z, 0.001);
 	OUT.alphaClip.x /= OUT.alphaClip.z;
 
 #if FEATURE_PARTICLES_TESSELLATION && !%_RT_NO_TESSELLATION
@@ -332,7 +333,7 @@ float4 UintToFloat4(uint v)
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
-OutputVS PulledParticleVS(uint vertID: SV_VertexID)
+OutputVS ParticlePulledVS(uint vertID : SV_VertexID)
 {
 #if %_RT_SPRITE
 	const uint particleId = (vertID>>2) + particleInstance.vertexOffset;
@@ -351,7 +352,6 @@ OutputVS PulledParticleVS(uint vertID: SV_VertexID)
 	IN.baseTC.y = vertID & 2 ? 1 : 0;
 
 	const float4 debugColor = float4(0.8, 1.0, 0.0, 1.0);
-
 #else
 	const uint vertexId = (vertID>>1) + particleInstance.vertexOffset;
 	const bool isDegen  = colorSTsSRV[vertexId].baseTC & 0x10000;
@@ -370,12 +370,12 @@ OutputVS PulledParticleVS(uint vertID: SV_VertexID)
 	IN.baseTC.x = isDegen != isOdd ? 1 : 0;
 
 	const float4 debugColor = isDegen ? float4(1.0, 0.0, 0.0, 1.0) : float4(0.6, 1.0, 0.2, 1.0);
-
 #endif
 
 	SParticleVertex MID = ParticleCommonVertexOutput(Position, IN, CenterMotion(), debugColor);
 	return UnifyParticleOutputVS(MID);
 }
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 OutputVS GpuParticleVS(uint vertID : SV_VertexID)
@@ -435,6 +435,32 @@ ParticleHSInput ParticleTessVS(float4 Position: POSITION, app2vertParticleGenera
 	OUT.VSIn = IN;
 	ParticleSpriteCommon(OUT.Position, OUT.VSIn);
 	return OUT;
+}
+
+ParticleHSInput ParticlePulledTessVS(uint vertID : SV_VertexID)
+{
+    ParticleHSInput OUT;
+#if !%_RT_SPRITE // only ribbons supported for now
+    const uint segment = vertID >> 2;
+    const uint end = (vertID & 2) >> 1;
+    const uint isOdd = vertID & 1;
+    const uint vertexId = segment + end + particleInstance.vertexOffset;
+    const uint vertexOther = segment + 1 - end + particleInstance.vertexOffset;
+    const bool isDegen = (colorSTsSRV[vertexId].baseTC | colorSTsSRV[vertexOther].baseTC) & 0x10000;
+
+    OUT.Position = float4(positionsSRV[vertexId].position, 1.0);
+    OUT.VSIn.XAxis = axesSRV[vertexId].XAxis;
+    OUT.VSIn.YAxis = axesSRV[vertexId].YAxis;
+    OUT.VSIn.Color = UintToFloat4(colorSTsSRV[vertexId].Color);
+    OUT.VSIn.baseTC = UintToFloat4(colorSTsSRV[vertexId].baseTC);
+
+    ParticleSpriteCommon(OUT.Position, OUT.VSIn);
+
+	OUT.VSIn.baseTC.x = isOdd;
+    OUT.VSIn.Color *= isDegen ? 0 : 1;
+#endif
+
+    return OUT;
 }
 
 struct ControlPointHS
@@ -598,7 +624,7 @@ OutputVS ParticleDS(float2 QuadUV : SV_DomainLocation, const OutputPatch<Control
 	float3 vY0 = lerp(ControlPt[0].vYAxis, ControlPt[1].vYAxis, QuadUV.x);
 	float3 vY1 = lerp(ControlPt[2].vYAxis, ControlPt[3].vYAxis, QuadUV.x);
 	float3 vDP = lerp(ControlPt[2].vWorldPos - ControlPt[0].vWorldPos,
-										ControlPt[3].vWorldPos - ControlPt[1].vWorldPos, QuadUV.x);
+                      ControlPt[3].vWorldPos - ControlPt[1].vWorldPos, QuadUV.x);
 	vWorldPos.xyz += vDP * (utt - uut) + vY0 * uut - vY1 * utt;
 #endif
 
@@ -1319,9 +1345,25 @@ technique ParticlesPulled
 {
 	pass p0
 	{
-		VertexShader = PulledParticleVS() ParticleVS;
+        VertexShader = ParticlePulledVS() ParticleVS;
 		GeometryShader = $AutoGS_MultiRes();
 		PixelShader  = ParticlePS();
+
+		ZEnable = true;
+		ZWriteEnable = false;
+		CullMode = None;
+	}
+}
+
+technique ParticlesPulledTessellated
+{
+	pass p0
+	{
+        VertexShader = ParticlePulledTessVS() ParticleVS;
+		HullShader = ParticleHS();
+		DomainShader = ParticleDS();
+		GeometryShader = $AutoGS_MultiRes();
+		PixelShader = ParticlePS();
 
 		ZEnable = true;
 		ZWriteEnable = false;
@@ -1365,7 +1407,23 @@ technique ParticlesZPrePass
 {
     pass p0
     {
-        VertexShader = PulledParticleVS() ZVS;
+        VertexShader = ParticlePulledVS() ZVS;
+        GeometryShader = $AutoGS_MultiRes();
+        PixelShader = ParticleZPrePassPS() ZPS;
+
+        ZEnable = true;
+        ZWriteEnable = true;
+        CullMode = None;
+    }
+}
+
+technique ParticlesZPrePassTessellated
+{
+    pass p0
+    {
+        VertexShader = ParticlePulledTessVS() ZVS;
+        HullShader = ParticleHS();
+        DomainShader = ParticleDS();
         GeometryShader = $AutoGS_MultiRes();
         PixelShader = ParticleZPrePassPS() ZPS;
 
