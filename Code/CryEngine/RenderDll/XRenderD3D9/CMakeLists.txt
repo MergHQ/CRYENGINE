@@ -1381,7 +1381,7 @@ else()
 	CryFileContainer(CryRenderVulkan SOLUTION_FOLDER "CryEngine")
 endif()
 
-if (EXISTS "${SCE_ORBIS_SDK_DIR}" AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/GNM")
+if (EXISTS "$ENV{SCE_ORBIS_SDK_DIR}" AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/GNM")
 	if (RENDERER_GNM)
 		list(APPEND extra_defines -DGNM_FEATURE_VALIDATION=$<AND:$<NOT:$<CONFIG:Release>>,$<BOOL:RENDERER_GNM>>)
 		CryEngineModule(CryRenderGNM PCH "../StdAfx.cpp" SOLUTION_FOLDER "CryEngine")
