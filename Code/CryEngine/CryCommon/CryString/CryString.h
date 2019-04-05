@@ -5,6 +5,8 @@
 #if !defined(NOT_USE_CRY_STRING)
 
 	#include "CryStringUtils.h" // cry_vsprintf(), CryStringUtils_Internal::compute_length_formatted_va
+	#include "CryThreading/CryAtomics.h"
+
 
 	#include <string.h>
 	#include <wchar.h>
@@ -419,8 +421,8 @@ protected:
 		int             nAllocSize; //!< Size of memory allocated at the end of this class.
 
 		value_type*     GetChars() { return (value_type*)(this + 1); }
-		void            AddRef()   { nRefCount++; /*InterlockedIncrement(&_header()->nRefCount);*/ }
-		int             Release()  { return --nRefCount; }
+		void            AddRef()   { CryInterlockedIncrement(&nRefCount); }
+		int             Release()  { return CryInterlockedDecrement(&nRefCount); }
 	};
 	//! \endcond
 
@@ -727,17 +729,16 @@ inline void CryStringT<T >::_Free()
 template<class T>
 inline void CryStringT<T >::_FreeData(StrHeader* pData)
 {
-	if (pData->nRefCount >= 0) // Not empty string.
+	if (pData->nRefCount != -1) // -1 is the default empty string
 	{
-		CRY_ASSERT(pData->nRefCount != 0);
-		if (pData->Release() <= 0)
+		const int count = pData->Release();
+		CRY_ASSERT_MESSAGE(count > -1, "If this is -1 then most likely a double release happened because of a race condition");
+
+		if (count == 0)
 		{
 			size_t allocLen = sizeof(StrHeader) + (pData->nAllocSize + 1) * sizeof(value_type);
 			_usedMemory(-check_cast<int>(allocLen));   // For statistics.
-
 			CryModuleFree((void*)pData);
-			//int allocLen = sizeof(StrHeader) + (pData->nAllocSize+1)*sizeof(value_type);
-			//string_alloc::deallocate( (value_type*)pData,allocLen );
 		}
 	}
 }
