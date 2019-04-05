@@ -429,6 +429,11 @@ void CEntityPhysics::AwakeOnRender(bool bRender)
 				GetEntity()->SetInternalFlag(CEntity::EInternalFlag::PhysicsAwakeOnRender, false);
 			}
 		}
+		if (GetEntity()->HasInternalFlag(CEntity::EInternalFlag::PhysicsAttachClothOnRender))
+		{
+			OnTimer(0);
+			GetEntity()->SetFlags(GetEntity()->GetFlags() & ~ENTITY_FLAG_SEND_RENDER_EVENT);
+		}
 	}
 }
 
@@ -468,7 +473,7 @@ void CEntityPhysics::OnTimer(int id)
 			return;
 		}
 		// Re-create timer, re-use same id
-		GetEntity()->SetTimer(this, GetEntity()->GetId(), CryGUID(), 0, 50);
+		GetEntity()->SetTimer(this, GetEntity()->GetId(), CryGUID(), 0, 200);
 	}
 }
 
@@ -1465,7 +1470,7 @@ void CEntityPhysics::PhysicalizeSoft(SEntityPhysicalizeParams& params)
 		pf.flagsAND = pef_log_poststep;
 		m_pPhysicalEntity->SetParams(&pf);
 		GetEntity()->SetInternalFlag(CEntity::EInternalFlag::PhysicsAttachClothOnRender, true);
-		GetEntity()->SetTimer(this, GetEntity()->GetId(), CryGUID(), 0, 50);
+		GetEntity()->SetFlags(GetEntity()->GetFlags() | ENTITY_FLAG_SEND_RENDER_EVENT);
 	}
 }
 
