@@ -1307,7 +1307,7 @@ void CEditorMainFrame::InitMenuBar()
 
 void CEditorMainFrame::InitActions()
 {
-	CEditorCommandManager* commandMgr = GetIEditorImpl()->GetCommandManager();
+	CEditorCommandManager* pCommandManager = GetIEditorImpl()->GetCommandManager();
 
 	//For all actions defined in the ui file...
 	QList<QAction*> actions = findChildren<QAction*>();
@@ -1366,7 +1366,7 @@ void CEditorMainFrame::InitActions()
 				}
 
 				action->SetCommand(command);
-				commandMgr->RegisterAction(action, command);
+				pCommandManager->RegisterAction(action, command);
 			}
 
 			// Create ActionGroups from Action properties
@@ -1385,7 +1385,25 @@ void CEditorMainFrame::InitActions()
 		}
 	}
 
-	//Must be called after actions declared in the .ui file are registered to the command manager
+	// Workaround for having CEditorMainframe handle shortcuts for all registered commands
+	pCommandManager->signalCommandAdded.Connect(this, &CEditorMainFrame::AddCommand);
+
+	// Register any existing commands from the command manager as actions of the main frame
+	std::vector<CCommand*> commands;
+	pCommandManager->GetCommandList(commands);
+	for (CCommand* cmd : commands)
+	{
+		if (cmd->CanBeUICommand())
+		{
+			QCommandAction* pCommandAction = pCommandManager->GetCommandAction(cmd->GetCommandString());
+			if (pCommandAction->parent() == nullptr)
+			{
+				addAction(pCommandAction);
+			}
+		}
+	}
+
+	// Must be called after actions declared in the .ui file are registered to the command manager
 	CKeybindEditor::LoadUserKeybinds();
 }
 
@@ -1694,6 +1712,18 @@ bool CEditorMainFrame::OnNativeEvent(void* message, long* result)
 	}
 #endif
 	return false;
+}
+
+void CEditorMainFrame::AddCommand(CCommand* pCommand)
+{
+	QAction* pAction = GetIEditor()->GetICommandManager()->GetAction(pCommand->GetCommandString().c_str());
+
+	// This is a valid case because there might be for example, a user created command that has an error in it.
+	// We don't generate an action in this case
+	if (!pAction)
+		return;
+
+	addAction(pAction);
 }
 
 void CEditorMainFrame::OnIdleCallback()

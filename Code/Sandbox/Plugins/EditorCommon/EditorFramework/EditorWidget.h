@@ -28,7 +28,8 @@ public:
 	QCommandAction* GetAction(const string& actionId) const;
 
 protected:
-	virtual void customEvent(QEvent* event) override;
+	virtual bool event(QEvent* pEvent) override;
+	virtual void customEvent(QEvent* pEvent) override;
 
 	template<class Func>
 	QCommandAction* RegisterAction(const string& actionId, Func f)
