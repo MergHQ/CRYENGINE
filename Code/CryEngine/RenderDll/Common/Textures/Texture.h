@@ -217,14 +217,7 @@ public:
 	static size_t        s_iNumTextureBytesCheckedOut;
 	static size_t        s_iNumTextureBytesCheckedIn;
 
-	static uint32        s_SuggestedDynTexAtlasCloudsMaxsize;
-	static uint32        s_SuggestedDynTexAtlasSpritesMaxsize;
-	static uint32        s_SuggestedTexAtlasSize;
 	static uint32        s_SuggestedDynTexMaxSize;
-
-	static uint32        s_CurDynTexAtlasCloudsMaxsize;
-	static uint32        s_CurDynTexAtlasSpritesMaxsize;
-	static uint32        s_CurTexAtlasSize;
 	static uint32        s_CurDynTexMaxSize;
 
 	CTexture*           CreateDynamicRT();
