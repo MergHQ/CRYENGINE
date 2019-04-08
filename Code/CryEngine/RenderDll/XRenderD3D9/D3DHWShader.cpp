@@ -1931,6 +1931,7 @@ void CHWShader_D3D::mfSetParameters(SCGParam* pParams, const int nINParams, EHWS
 
 					{
 						auto pStage = pActiveGraphicsPipeline->GetStage<CVolumetricFogStage>();
+						CRY_ASSERT(pStage);
 						if (pStage)
 						{
 							param = pStage->GetGlobalEnvProbeShaderParam0();
@@ -1950,7 +1951,10 @@ void CHWShader_D3D::mfSetParameters(SCGParam* pParams, const int nINParams, EHWS
 					{
 						auto pStage = pActiveGraphicsPipeline->GetStage<CVolumetricFogStage>();
 						CRY_ASSERT(pStage);
-						param = pStage->GetGlobalEnvProbeShaderParam1();
+						if (pStage)
+						{
+							param = pStage->GetGlobalEnvProbeShaderParam1();
+						}
 					}
 					sData[0].f[0] = param.x;
 					sData[0].f[1] = param.y;

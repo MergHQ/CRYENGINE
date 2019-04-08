@@ -1079,8 +1079,10 @@ cbuffer CBPerPassVolFogInj : register(b5)
 		float4 vfHeightDensityParams;
 		float4 vfHeightDensityRampParams;
 		float4 vfDistanceParams;
+#if %_RT_VOLUMETRIC_FOG
 		float4 vfGlobalEnvProbeParams0;
 		float4 vfGlobalEnvProbeParams1;
+#endif
 	} cbVolFogInj;
 };
 
@@ -1134,11 +1136,13 @@ SVolumetricFogParams GetVolumetricFogInjParams()
 	params.farDistCenterLeft = cbVolFogInj.vfDistanceParams.z;
 	params.farDistCenter = cbVolFogInj.vfDistanceParams.w;
 
+#if %_RT_VOLUMETRIC_FOG
 	params.globalProbeColor0 = cbVolFogInj.vfGlobalEnvProbeParams0.xyz;
 	params.globalProbeAttenuation0 = cbVolFogInj.vfGlobalEnvProbeParams0.w;
 
 	params.globalProbeColor1 = cbVolFogInj.vfGlobalEnvProbeParams1.xyz;
 	params.globalProbeAttenuation1 = cbVolFogInj.vfGlobalEnvProbeParams1.w;
+#endif
 
 	params.timeParams.x = CV_AnimGenParams.z;
 	params.timeParams.y = CV_AnimGenParams.z * 0.5f;
