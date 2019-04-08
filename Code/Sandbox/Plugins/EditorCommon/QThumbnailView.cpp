@@ -25,24 +25,24 @@
 
 namespace Private_QThumbnailView
 {
-	class CListView : public QListView
+class CListView : public QListView
+{
+public:
+	CListView(QWidget* pParent = nullptr)
+		: QListView(pParent)
 	{
-	public:
-		CListView(QWidget* pParent = nullptr)
-			: QListView(pParent)
-		{
-		}
+	}
 
-	protected:
-		virtual void startDrag(Qt::DropActions supportedActions) override
+protected:
+	virtual void startDrag(Qt::DropActions supportedActions) override
+	{
+		if (model() && selectionModel())
 		{
-			if (model() && selectionModel())
-			{
-				QMimeData* const pMimeData = model()->mimeData(selectionModel()->selectedIndexes());
-				CDragDropData::StartDrag(this, supportedActions, pMimeData);
-			}
+			QMimeData* const pMimeData = model()->mimeData(selectionModel()->selectedIndexes());
+			CDragDropData::StartDrag(this, supportedActions, pMimeData);
 		}
-	};
+	}
+};
 }
 
 class QThumbnailsView::Delegate : public QStyledItemDelegate
@@ -75,13 +75,13 @@ public:
 		m_rotatedLoading = CryIcon(rotatedPixmap);
 	}
 
-	void paint(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const override
+	void paint(QPainter* painter, const QStyleOptionViewItem& option, const QModelIndex& index) const override
 	{
 		QVariant v = index.data(QThumbnailsView::s_ThumbnailRole);
 
 		if (v.isValid())
 		{
-			if(v.type() == QVariant::Bool && !v.toBool())
+			if (v.type() == QVariant::Bool && !v.toBool())
 			{
 				DrawLoadingIcon(option, index, painter);
 				return;
@@ -123,9 +123,7 @@ protected:
 			pStyle->drawPrimitive(QStyle::PE_FrameFocusRect, &styleOptionFocusRect, painter, pWidget);
 		}
 
-		const int horizontalMargin = pStyle->pixelMetric(QStyle::PM_FocusFrameHMargin, &option, pWidget) + 1;
-		const int verticalMargin = pStyle->pixelMetric(QStyle::PM_FocusFrameVMargin, &option, pWidget) + 1;
-		const QRect iconRect = QRect(QPoint(viewOpt.rect.x() + horizontalMargin, viewOpt.rect.y() + verticalMargin), viewOpt.decorationSize);
+		const QRect iconRect = QRect(QPoint(viewOpt.rect.x() + s_focusFrameHMargin, viewOpt.rect.y() + s_focusFrameVMargin), viewOpt.decorationSize);
 
 		DrawThumbnailBackground(index, painter, iconRect);
 
@@ -139,7 +137,7 @@ protected:
 		}
 	}
 
-	void DrawIcon(QStyleOptionViewItem &viewOpt, QPainter* painter, const QRect iconRect) const
+	void DrawIcon(QStyleOptionViewItem& viewOpt, QPainter* painter, const QRect iconRect) const
 	{
 		QIcon::Mode mode = QIcon::Normal;
 		if (!(viewOpt.state & QStyle::State_Enabled))
@@ -160,7 +158,7 @@ protected:
 		QStyle* pStyle = pWidget ? pWidget->style() : QApplication::style();
 
 		const int textHeight = option.fontMetrics.height();
-		const int textMargin = pStyle->pixelMetric(QStyle::PM_FocusFrameHMargin, 0, option.widget) + 1;
+		const int textMargin = s_focusFrameHMargin;
 
 		QRect textRect = pStyle->subElementRect(QStyle::SE_ItemViewItemText, &option, pWidget);
 		textRect.setHeight(textHeight * 2);
@@ -176,7 +174,7 @@ protected:
 		QTextLayout textLayout(option.text, option.font);
 		textLayout.setTextOption(textOption);
 		textLayout.beginLayout();
-		while (true) 
+		while (true)
 		{
 			QTextLine line = textLayout.createLine();
 			if (!line.isValid())
@@ -189,7 +187,7 @@ protected:
 
 		const int lineCount = textLayout.lineCount();
 		const int textAscent = option.fontMetrics.ascent();
-		for (int i = 0; i < std::min(lineCount, 2); ++i) 
+		for (int i = 0; i < std::min(lineCount, 2); ++i)
 		{
 			const QTextLine line = textLayout.lineAt(i);
 			const int start = line.textStart();
@@ -203,7 +201,7 @@ protected:
 				text = pPainter->fontMetrics().elidedText(text + horizontalEllipsis, option.textElideMode, textRect.width());
 			}
 
-			const QRect rect(textRect.x(), textRect.y() + textHeight * i, textRect.width(), textHeight);
+			const QRect rect(textRect.x(), textRect.y() + textHeight* i, textRect.width(), textHeight);
 
 			pPainter->save();
 			pPainter->setFont(option.font);
@@ -212,7 +210,7 @@ protected:
 		}
 	}
 
-	void DrawThumbnailBackground(const QModelIndex &index, QPainter* painter, const QRect& iconRect) const
+	void DrawThumbnailBackground(const QModelIndex& index, QPainter* painter, const QRect& iconRect) const
 	{
 		QVariant v = index.data(QThumbnailsView::s_ThumbnailBackgroundColorRole);
 		if (v.isValid() && v.type() == QVariant::Color)
@@ -222,7 +220,7 @@ protected:
 		}
 	}
 
-	void DrawThumbnailColorBar(const QModelIndex &index, QPainter* painter, const QRect &iconRect) const
+	void DrawThumbnailColorBar(const QModelIndex& index, QPainter* painter, const QRect& iconRect) const
 	{
 		const QVariant v = index.data(QThumbnailsView::s_ThumbnailColorRole);
 		if (v.isValid() && v.type() == QVariant::Color)
@@ -288,13 +286,13 @@ protected:
 				icon = qvariant_cast<QIcon>(vIcon);
 			}
 			else
-			{ 
+			{
 				continue;
 			}
 
-			// Find a free spot starting from the desired corner in CCW direction. 
+			// Find a free spot starting from the desired corner in CCW direction.
 			// The search can turn round corners if there is no space in the current line.
-			for(int i = 0; i <= positionCount; ++i)
+			for (int i = 0; i <= positionCount; ++i)
 			{
 				if (i == positionCount)
 				{
@@ -315,7 +313,7 @@ protected:
 		}
 	}
 
-	void DrawLoadingIcon(const QStyleOptionViewItem& option, const QModelIndex & index, QPainter* painter) const
+	void DrawLoadingIcon(const QStyleOptionViewItem& option, const QModelIndex& index, QPainter* painter) const
 	{
 		const QWidget* pWidget = option.widget;
 		QStyle* pStyle = pWidget ? pWidget->style() : QApplication::style();
@@ -329,44 +327,40 @@ protected:
 		m_view->StartUpdateTimer();
 	}
 
-	virtual void initStyleOption(QStyleOptionViewItem *option, const QModelIndex &index) const override
+	virtual void initStyleOption(QStyleOptionViewItem* option, const QModelIndex& index) const override
 	{
 		QStyledItemDelegate::initStyleOption(option, index);
 
 		//always force to use the decoration size that we want, even if the icon doesn't support it
 		option->decorationSize = m_view->GetItemSize();
-		
+
 		//force the selection span the entire size of the item
 		option->showDecorationSelected = true;
 
 		option->textElideMode = Qt::ElideRight;
 	}
 
-	virtual QSize sizeHint(const QStyleOptionViewItem &option, const QModelIndex &index) const override
+	virtual QSize sizeHint(const QStyleOptionViewItem& option, const QModelIndex& index) const override
 	{
-		const QWidget* pWidget = option.widget;
-		QStyle* pStyle = pWidget ? pWidget->style() : QApplication::style();
-
-		const int horizontalMargin = pStyle->pixelMetric(QStyle::PM_FocusFrameHMargin, &option, pWidget) + 1;
-		const int verticalMargin = pStyle->pixelMetric(QStyle::PM_FocusFrameVMargin, &option, pWidget) + 1;
 		const int textHeight = option.fontMetrics.height();
 		const QSize thumbnailSize = option.decorationSize;
-		return QSize(thumbnailSize.width() + horizontalMargin * 2, thumbnailSize.height() + textHeight * 2 + verticalMargin * 2);
+		return QSize(thumbnailSize.width() + s_focusFrameHMargin * 2, thumbnailSize.height() + textHeight * 2 + s_focusFrameVMargin * 2);
 	}
 
-	virtual void updateEditorGeometry(QWidget *pEditor, const QStyleOptionViewItem &option, const QModelIndex &index) const override
+	virtual void updateEditorGeometry(QWidget* pEditor, const QStyleOptionViewItem& option, const QModelIndex& index) const override
 	{
-		return  QStyledItemDelegate::updateEditorGeometry(pEditor, option, index);
+		return QStyledItemDelegate::updateEditorGeometry(pEditor, option, index);
 	}
 
 private:
 
 	QThumbnailsView* m_view;
-	CryIcon m_loadingIcon;
-	CryIcon m_rotatedLoading;
-	CryIcon m_backgroundIcon;
+	CryIcon          m_loadingIcon;
+	CryIcon          m_rotatedLoading;
+	CryIcon          m_backgroundIcon;
+	static const int s_focusFrameHMargin = 4;
+	static const int s_focusFrameVMargin = 4;
 };
-
 
 //TODO : expose the default, min and max item sizes in the stylesheet
 
@@ -388,9 +382,9 @@ QThumbnailsView::QThumbnailsView(QListView* pListView, bool showSizeButtons /* =
 	m_pDelegate = new Delegate(this);
 	m_listView->setItemDelegate(m_pDelegate);
 
-
 	//Set default values for thumbnails View, optimizes large number of items
 	m_listView->setUniformItemSizes(true);
+	m_listView->setSpacing(4);
 	m_listView->setViewMode(QListView::IconMode);
 	m_listView->setFlow(QListView::LeftToRight);
 	m_listView->setWrapping(true);
@@ -447,8 +441,8 @@ QThumbnailsView::~QThumbnailsView()
 
 bool QThumbnailsView::SetItemSize(const QSize& size)
 {
-	if (size.width() >= m_minItemSize.width() && size.width() <= m_maxItemSize.width() 
-		&& size.height() >= m_minItemSize.height() && size.height() <= m_maxItemSize.height())
+	if (size.width() >= m_minItemSize.width() && size.width() <= m_maxItemSize.width()
+	    && size.height() >= m_minItemSize.height() && size.height() <= m_maxItemSize.height())
 	{
 		m_itemSize = size;
 		m_listView->setIconSize(size);
@@ -468,7 +462,7 @@ bool QThumbnailsView::SetItemSize(const QSize& size)
 		}
 
 		//change scale but try to always keep the zoomed-on item in the center
-		if(m_listView->selectionModel() && m_listView->selectionModel()->currentIndex().isValid())
+		if (m_listView->selectionModel() && m_listView->selectionModel()->currentIndex().isValid())
 			ScrollToRow(m_listView->selectionModel()->currentIndex(), QAbstractItemView::PositionAtCenter);
 
 		//m_listView->scheduleDelayedItemsLayout();
@@ -562,7 +556,7 @@ void QThumbnailsView::SetModel(QAbstractItemModel* model)
 
 void QThumbnailsView::ScrollToRow(const QModelIndex& indexInRow, QAbstractItemView::ScrollHint scrollHint)
 {
-	if(indexInRow.isValid())
+	if (indexInRow.isValid())
 	{
 		CRY_ASSERT(indexInRow.model() == m_listView->model());
 		m_listView->scrollTo(indexInRow.sibling(indexInRow.row(), m_listView->modelColumn()), scrollHint);
@@ -582,8 +576,8 @@ void QThumbnailsView::AppendPreviewSizeActions(CAbstractMenu& menu)
 		QString icon = QString("icons:common/general_preview_size_%1.ico").arg(i);
 		QAction* pAction = menu.CreateAction(CryIcon(icon), QString("%1").arg(size));
 		connect(pAction, &QAction::triggered, [this, size]()
-		{ 
-			OnPreviewSizeButtonClicked(size); 
+		{
+			OnPreviewSizeButtonClicked(size);
 		});
 	}
 }
@@ -593,11 +587,11 @@ bool QThumbnailsView::eventFilter(QObject* pObject, QEvent* pEvent)
 	switch (pEvent->type())
 	{
 	case QEvent::Paint:
-	{
-		m_pDelegate->UpdateLoadingPixmap();
-		m_timerStarted = false;
-		return false;
-	}
+		{
+			m_pDelegate->UpdateLoadingPixmap();
+			m_timerStarted = false;
+			return false;
+		}
 	case QEvent::Wheel:
 		if (QtUtil::IsModifierKeyDown(Qt::ControlModifier))
 		{
@@ -666,7 +660,7 @@ void QThumbnailsView::OnModelReset()
 
 void QThumbnailsView::OnPreviewSizeButtonClicked(int value)
 {
-	SetItemSize(QSize(value,value));
+	SetItemSize(QSize(value, value));
 }
 
 QVariantMap QThumbnailsView::GetState() const
@@ -698,7 +692,6 @@ void QThumbnailsView::StartUpdateTimer()
 		QTimer::singleShot(10, [this]() { m_listView->update(); });
 		m_timerStarted = true;
 	}
-	
 }
 
 void QThumbnailsView::AddSizingButton(int size, int iconNumber)
