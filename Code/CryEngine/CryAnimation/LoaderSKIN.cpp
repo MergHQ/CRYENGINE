@@ -669,6 +669,23 @@ bool CSkin::LoadNewSKIN(const char* szFilePath, uint32 nLoadingFlags)
 
 		string meshFilename = cgfs.m_cgfNames[lod] + 'm';
 		pModelMesh->m_stream.bHasMeshFile = gEnv->pCryPak->IsFileExist(meshFilename.c_str());
+
+		// Store mesh data in cache, if requested
+		if (nLoadingFlags & CA_CacheSkinDataInCpuMemory)
+		{
+			const int nVtx = pMesh->GetVertexCount();
+			const int nIndices = pMesh->GetIndexCount();
+			assert(nVtx == pMesh->GetTexCoordCount());
+
+			CModelMesh::sModelCache& cache = pModelMesh->CreateModelCache();
+			cache.vertices.resize(nVtx);
+			cache.UVs.resize(nVtx);
+			cache.indices.resize(nIndices);
+
+			memcpy(&cache.vertices.front(), pMesh->GetStreamPtr<Vec3>(CMesh::POSITIONS), nVtx * sizeof(Vec3));
+			memcpy(&cache.UVs.front(), pMesh->GetStreamPtr<Vec2>(CMesh::TEXCOORDS), nVtx * sizeof(Vec2));
+			memcpy(&cache.indices.front(), pMesh->GetStreamPtr<vtx_idx>(CMesh::INDICES), nIndices * sizeof(vtx_idx));
+		}
 	} //loop over all LODs
 
 	return 1; //success

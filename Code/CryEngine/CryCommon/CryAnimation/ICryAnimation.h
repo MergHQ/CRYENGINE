@@ -59,6 +59,7 @@ enum CHRLOADINGFLAGS : uint32
 	CA_ExcludeChrProxies           = BIT32(8),
 	CA_ExcludeChrCgfProxies        = BIT32(9),
 	CA_ExcludeChrRagdollCgfProxies = BIT32(10),
+	CA_CacheSkinDataInCpuMemory    = BIT32(11),
 };
 
 enum EReloadCAFResult
