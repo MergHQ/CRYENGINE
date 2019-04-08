@@ -1206,8 +1206,119 @@ static inline void WrapRenderVertexToSimMesh(
 	}
 }
 
+namespace Helper
+{
+	int PruneWeldedVertices(SClothGeometry& clothGeometry, std::vector<Vec3>& unweldedVerts, strided_pointer<const Vec3> const& pVertices)
+	{
+		CRY_PROFILE_REGION(PROFILE_ANIMATION, "CharacterManager::Helper::PruneWeldedVertices");
+
+		// look for welded vertices and prune them
+		int nWelded = 0;
+		unweldedVerts.reserve(clothGeometry.nVtx);
+		if (!clothGeometry.weldMap)
+			clothGeometry.weldMap = new vtx_idx[clothGeometry.nVtx];
+
+		for (int i = 0; i < clothGeometry.nVtx; i++)
+		{
+			int iMap = -1;
+			for (int j = i - 1; j >= 0; j--)
+			{
+				Vec3 delta = pVertices[i] - pVertices[j];
+				if (delta.len() < 0.001f)
+				{
+					iMap = clothGeometry.weldMap[j];
+					nWelded++;
+					break;
+				}
+
+			}
+			if (iMap >= 0)
+			{
+				clothGeometry.weldMap[i] = iMap;
+			}
+			else
+			{
+				clothGeometry.weldMap[i] = unweldedVerts.size();
+				unweldedVerts.push_back(pVertices[i]);
+			}
+		}
+		return nWelded;
+	}
+
+	void CopyIndices(SClothGeometry& clothGeometry, int lod, const vtx_idx* pIndices, int nIndices)
+	{
+		clothGeometry.numIndices[lod] = nIndices;
+		clothGeometry.pIndices[lod] = new vtx_idx[nIndices];
+		memcpy(clothGeometry.pIndices[lod], pIndices, nIndices * sizeof(vtx_idx));
+	}
+
+	template<class T>
+	void WrapVertices(SClothGeometry& clothGeometry, int lod, T pVtx, int nVtx, std::vector<std::vector<int>> const& simAdjTris, mesh_data const& simMesh)
+	{
+		CRY_PROFILE_REGION(PROFILE_ANIMATION, "CharacterManager::Helper::WrapVertices");
+
+		SSkinMapEntry* skinMap = new SSkinMapEntry[nVtx];
+		clothGeometry.skinMap[lod] = skinMap;
+		int numUnmapped = 0;
+		for (int i = 0; i < nVtx; i++)
+		{
+			// init as 'no skinning/triangle-mapping found', this is used below to detect the number of unmapped vertices
+			skinMap[i].iTri = -1;
+
+			// wrap render mesh to sim mesh
+			Vec3 const& renderVtx = pVtx[i];
+			SSkinMapEntry& renderVtxMap = skinMap[i];
+			WrapRenderVertexToSimMesh(simMesh, simAdjTris, renderVtx, renderVtxMap); // determine best wrapping in 'renderVtxMap', i.e. skinMap[i]
+
+			if (skinMap[i].iTri < 0)
+			{
+				numUnmapped++;
+			}
+		}
+		if (numUnmapped)
+			CryLog("[Character cloth] Unmapped vertices: %d", numUnmapped);
+	}
+
+	template<class T0, class T1>
+	void DetermineTangents(SClothGeometry& clothGeometry, int lod, int nTris, const vtx_idx* pIndices, const T0& pVtx, const T1& pUVs)
+	{
+		CRY_PROFILE_REGION(PROFILE_ANIMATION, "CharacterManager::Helper::DetermineTangents");
+
+		// prepare tangent data
+		clothGeometry.tangentData[lod] = new STangentData[nTris];
+		for (int i = 0; i < nTris; i++)
+		{
+			int base = i * 3;
+			int i1 = pIndices[base++];
+			int i2 = pIndices[base++];
+			int i3 = pIndices[base];
+
+			float w1x = pUVs[i1].x;
+			float w1y = pUVs[i1].y;
+			float w2x = pUVs[i2].x;
+			float w2y = pUVs[i2].y;
+			float w3x = pUVs[i3].x;
+			float w3y = pUVs[i3].y;
+
+			float s1 = w2x - w1x;
+			float s2 = w3x - w1x;
+			float t1 = w2y - w1y;
+			float t2 = w3y - w1y;
+
+			const float denom = s1 * t2 - s2 * t1;
+			float r = fabsf(denom) > FLT_EPSILON ? 1.0f / denom : 1.0f;
+
+			clothGeometry.tangentData[lod][i].t1 = t1;
+			clothGeometry.tangentData[lod][i].t2 = t2;
+			clothGeometry.tangentData[lod][i].r = r;
+		}
+	}
+}
+
 SClothGeometry* CharacterManager::LoadVClothGeometry(const CAttachmentVCLOTH& pAttachementVCloth, _smart_ptr<IRenderMesh> pRenderMeshes[])
 {
+	CRY_PROFILE_FUNCTION(PROFILE_ANIMATION)
+
 	assert(pAttachementVCloth.GetClothCacheKey() > 0);
 	SClothGeometry& ret = m_clothGeometries[pAttachementVCloth.GetClothCacheKey()];
 	if (ret.weldMap != NULL)
@@ -1216,47 +1327,21 @@ SClothGeometry* CharacterManager::LoadVClothGeometry(const CAttachmentVCLOTH& pA
 		return &ret;
 	}
 
-	IRenderMesh* pSimRenderMesh = pAttachementVCloth.m_pSimSkin->GetIRenderMesh(0);
-	ret.nVtx = pSimRenderMesh->GetVerticesCount();
-	int nSimIndices = pSimRenderMesh->GetIndicesCount();
+	CModelMesh* pModelMesh = pAttachementVCloth.m_pSimSkin->GetModelMesh(0);
+	const CSoftwareMesh& geometry = pModelMesh->m_softwareMesh;
+	ret.nVtx = geometry.GetVertexCount();
+	int nSimIndices = geometry.GetIndexCount();
 
-	pSimRenderMesh->LockForThreadAccess();
-	strided_pointer<Vec3> pVertices;
-	pVertices.data = (Vec3*)pSimRenderMesh->GetPosPtr(pVertices.iStride, FSL_READ);
-	vtx_idx* pSimIndices = pSimRenderMesh->GetIndexPtr(FSL_READ);
-	strided_pointer<ColorB> pColors(0);
-	pColors.data = (ColorB*)pSimRenderMesh->GetColorPtr(pColors.iStride, FSL_READ);
+	strided_pointer<const Vec3> pVertices = geometry.GetPositions();
+	const ColorB* pColors = (ColorB*)geometry.GetColors().data;
+	const vtx_idx* pSimIndices = geometry.GetIndices();
 
-	// look for welded vertices and prune them
-	int nWelded = 0;
+	// find welded vertices and prune them, to avoid simulation issues due to very short edges
 	std::vector<Vec3> unweldedVerts;
-	unweldedVerts.reserve(ret.nVtx);
-	if (!ret.weldMap)
-		ret.weldMap = new vtx_idx[ret.nVtx];
-	// TODO: faster welded vertices detector - this is O(n^2)
-	for (int i = 0; i < ret.nVtx; i++)
-	{
-		int iMap = -1;
-		for (int j = i - 1; j >= 0; j--)
-		{
-			Vec3 delta = pVertices[i] - pVertices[j];
-			if (delta.len() < 0.001f)
-			{
-				iMap = ret.weldMap[j];
-				nWelded++;
-				break;
-			}
-		}
-		if (iMap >= 0)
-			ret.weldMap[i] = iMap;
-		else
-		{
-			ret.weldMap[i] = unweldedVerts.size();
-			unweldedVerts.push_back(pVertices[i]);
-		}
-	}
+	int nWelded = Helper::PruneWeldedVertices(ret, unweldedVerts, pVertices);
 	if (nWelded)
 		CryLog("[Character Cloth] Found %d welded vertices out of %d in attachment %s", nWelded, ret.nVtx, pAttachementVCloth.GetName());
+
 	// reconstruct indices
 	vtx_idx* unweldedIndices = new vtx_idx[nSimIndices];
 	ret.nUniqueVtx = unweldedVerts.size();
@@ -1280,11 +1365,6 @@ SClothGeometry* CharacterManager::LoadVClothGeometry(const CAttachmentVCLOTH& pA
 		ret.weights[ret.weldMap[i]] = alpha;
 	}
 
-	pSimRenderMesh->UnlockStream(VSF_TANGENTS);
-	pSimRenderMesh->UnlockStream(VSF_HWSKIN_INFO);
-	pSimRenderMesh->UnlockStream(VSF_GENERAL);
-	pSimRenderMesh->UnLockForThreadAccess();
-
 	// build adjacent triangles list
 	mesh_data* md = (mesh_data*)pSimPhysMesh->GetData();
 	std::vector<std::vector<int>> adjTris(md->nVertices);
@@ -1298,82 +1378,66 @@ SClothGeometry* CharacterManager::LoadVClothGeometry(const CAttachmentVCLOTH& pA
 	}
 
 	ret.maxVertices = 0;
+
 	for (int lod = 0; lod < SClothGeometry::MAX_LODS; lod++)
 	{
-		IRenderMesh* pRenderMesh = pRenderMeshes[lod];
-		if (!pRenderMesh)
+		CModelMesh* pModelMesh = pAttachementVCloth.m_pRenderSkin->GetModelMesh(lod);
+
+		if (!pModelMesh)
+		{
 			continue;
+		}
 
-		int nVtx = pRenderMesh->GetVerticesCount();
-		ret.maxVertices = max(ret.maxVertices, nVtx);
-		int nIndices = pRenderMesh->GetIndicesCount();
-		ret.numIndices[lod] = nIndices;
-		int nTris = nIndices / 3;
-
-		pRenderMesh->LockForThreadAccess();
-		vtx_idx* pIndices = pRenderMesh->GetIndexPtr(FSL_READ);
-		ret.pIndices[lod] = new vtx_idx[nIndices];
-		memcpy(ret.pIndices[lod], pIndices, nIndices * sizeof(vtx_idx));
-
-		strided_pointer<Vec3> pVtx;
-		pVtx.data = (Vec3*)pRenderMesh->GetPosPtr(pVtx.iStride, FSL_READ);
-		strided_pointer<Vec2> pUVs;
-		pUVs.data = (Vec2*)pRenderMesh->GetUVPtr(pUVs.iStride, FSL_READ);
-
-		SSkinMapEntry* skinMap = new SSkinMapEntry[nVtx];
-		ret.skinMap[lod] = skinMap;
-		int numUnmapped = 0;
-		for (int i = 0; i < nVtx; i++)
+		if (pModelMesh->HasModelCache())
 		{
-			// init as 'no skinning/triangle-mapping found', this is used below to detect the number of unmapped vertices
-			skinMap[i].iTri = -1;
+			// Use model cache, if available
+			int nVtx = pModelMesh->GetModelCache().vertices.size();
+			int nIndices = pModelMesh->GetModelCache().indices.size();
+			int nTris = nIndices / 3;
 
-			// wrap render mesh to sim mesh
-			mesh_data const& simMesh = *md;
-			std::vector<std::vector<int>> const& simAdjTris = adjTris;
-			Vec3 const& renderVtx = pVtx[i];
-			SSkinMapEntry& renderVtxMap = skinMap[i];
-			WrapRenderVertexToSimMesh(simMesh, simAdjTris, renderVtx, renderVtxMap); // determine best wrapping in 'renderVtxMap', i.e. skinMap[i]
+			const vtx_idx* pIndices = &(pModelMesh->GetModelCache().indices.front());
+			const Vec3* pVtx = &(pModelMesh->GetModelCache().vertices.front());
+			const Vec2* pUVs = &(pModelMesh->GetModelCache().UVs.front());
 
-			if (skinMap[i].iTri < 0)
+			ret.maxVertices = max(ret.maxVertices, nVtx);
+			Helper::CopyIndices(ret, lod, pIndices, nIndices);
+			Helper::WrapVertices<const Vec3*>(ret, lod, pVtx, nVtx, adjTris, *md);
+			Helper::DetermineTangents<const Vec3*, const Vec2*>(ret, lod, nTris, pIndices, pVtx, pUVs);
+		}
+		else
+		{
+			// In case the model cache is not created yet, mesh data is received from RenderMesh. This approach includes a GPU-readback.
+			// This can only happen for skins, which are loaded as non-cloth attachment before used as a cloth attachment.
+			// When later additionally used as a cloth attachment, the cache has not been created yet.
+			// Nevertheless, normally, render skins for cloth simulation attachments are used together with a cloth simulation, hence
+			// the branch above would be used.
+
+			IRenderMesh* pRenderMesh = pRenderMeshes[lod];
+			if (!pRenderMesh)
 			{
-				numUnmapped++;
+				continue;
 			}
-		}
-		if (numUnmapped)
-			CryLog("[Character cloth] Unmapped vertices: %d", numUnmapped);
 
-		// prepare tangent data
-		ret.tangentData[lod] = new STangentData[nTris];
-		for (int i = 0; i < nTris; i++)
-		{
-			int base = i * 3;
-			int i1 = pIndices[base++];
-			int i2 = pIndices[base++];
-			int i3 = pIndices[base];
+			int nVtx = pRenderMesh->GetVerticesCount();
+			int nIndices = pRenderMesh->GetIndicesCount();
+			int nTris = nIndices / 3;
 
-			float w1x = pUVs[i1].x;
-			float w1y = pUVs[i1].y;
-			float w2x = pUVs[i2].x;
-			float w2y = pUVs[i2].y;
-			float w3x = pUVs[i3].x;
-			float w3y = pUVs[i3].y;
+			pRenderMesh->LockForThreadAccess();
+			vtx_idx* pIndices = pRenderMesh->GetIndexPtr(FSL_READ);
+			strided_pointer<Vec3> pVtx;
+			pVtx.data = (Vec3*)pRenderMesh->GetPosPtr(pVtx.iStride, FSL_READ);
+			strided_pointer<Vec2> pUVs;
+			pUVs.data = (Vec2*)pRenderMesh->GetUVPtr(pUVs.iStride, FSL_READ);
 
-			float s1 = w2x - w1x;
-			float s2 = w3x - w1x;
-			float t1 = w2y - w1y;
-			float t2 = w3y - w1y;
+			ret.maxVertices = max(ret.maxVertices, nVtx);
+			Helper::CopyIndices(ret, lod, pIndices, nIndices);
+			Helper::WrapVertices<strided_pointer<Vec3> >(ret, lod, pVtx, nVtx, adjTris, *md);
+			Helper::DetermineTangents<strided_pointer<Vec3>, strided_pointer<Vec2> >(ret, lod, nTris, pIndices, pVtx, pUVs);
 
-			const float denom = s1 * t2 - s2 * t1;
-			float r = fabsf(denom) > FLT_EPSILON ? 1.0f / denom : 1.0f;
-
-			ret.tangentData[lod][i].t1 = t1;
-			ret.tangentData[lod][i].t2 = t2;
-			ret.tangentData[lod][i].r = r;
+			pRenderMesh->UnlockStream(VSF_GENERAL);
+			pRenderMesh->UnLockForThreadAccess();
 		}
 
-		pRenderMesh->UnlockStream(VSF_GENERAL);
-		pRenderMesh->UnLockForThreadAccess();
 	}
 
 	// allocate working buffers

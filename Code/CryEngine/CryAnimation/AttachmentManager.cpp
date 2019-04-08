@@ -868,7 +868,8 @@ IAttachment* CAttachmentManager::CreateVClothAttachment(const SVClothAttachmentP
 
 	if (isRenderMeshSkinFile && isSimMeshSkinFile)
 	{
-		ISkin* pModelSKIN = g_pCharacterManager->LoadModelSKIN(params.vclothParams.renderBinding.c_str(), params.skinLoadingFlags);
+		const int renderMeshLoadingFlags = params.skinLoadingFlags | CA_CacheSkinDataInCpuMemory;
+		ISkin* pModelSKIN = g_pCharacterManager->LoadModelSKIN(params.vclothParams.renderBinding.c_str(), renderMeshLoadingFlags);
 		if (!pModelSKIN && log)
 		{
 			g_pILog->LogError("CryAnimation[VCloth]: skin-attachment not created: CDF: %s  SKIN: %s", pathName, renderMeshSkin);
