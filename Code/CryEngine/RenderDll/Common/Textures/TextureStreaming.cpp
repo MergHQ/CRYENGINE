@@ -1533,14 +1533,8 @@ void CTexture::InitStreaming()
 
 	if (gRenDev->m_MaxTextureMemory <= 256 * 1024 * 1024)
 	{
-		SDynTexture::s_CurDynTexAtlasCloudsMaxsize = min(24u, SDynTexture::s_CurDynTexAtlasCloudsMaxsize);
-		SDynTexture::s_CurDynTexAtlasSpritesMaxsize = min(32u, SDynTexture::s_CurDynTexAtlasSpritesMaxsize);
-		SDynTexture::s_CurTexAtlasSize = min(128u, SDynTexture::s_CurTexAtlasSize);
 		SDynTexture::s_CurDynTexMaxSize = min(128u, SDynTexture::s_CurDynTexMaxSize);
 	}
-
-	iLog->Log("  Video textures: Atlas clouds max size: %u Mb", SDynTexture::s_CurDynTexAtlasCloudsMaxsize);
-	iLog->Log("  Video textures: Atlas sprites max size: %u Mb", SDynTexture::s_CurDynTexAtlasSpritesMaxsize);
 	iLog->Log("  Video textures: Dynamic managed max size: %u Mb", SDynTexture::s_CurDynTexMaxSize);
 
 	// re-init all textures

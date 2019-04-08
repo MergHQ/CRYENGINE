@@ -5,7 +5,10 @@
 #include "Commands/ICommandManager.h"
 #include "Commands/QCommandAction.h"
 #include "Events.h"
+
 #include <IEditor.h>
+
+#include <QKeyEvent>
 
 QCommandAction* CEditorWidget::GetAction_Deprecated(const string& actionId) const
 {
@@ -17,19 +20,59 @@ QCommandAction* CEditorWidget::GetAction_Deprecated(const string& actionId) cons
 	return pAction;
 }
 
-void CEditorWidget::customEvent(QEvent* event)
+bool CEditorWidget::event(QEvent *pEvent)
 {
-	if (event->type() == SandboxEvent::Command)
+	// All editor widgets must handle shortcut override events since Qt doesn't support shortcuts to collide in the widget hierarchy.
+	// The primary cause for shortcuts to be ambiguous is having the same command as separate QActions in more than one place of the widget hierarchy.
+	// For example: if we have "general.new" in both an editor window and one of the editor's sub-panels, both are mapped to Ctrl+N. Qt will fail to
+	// execute the command because both actions are in fact different QActions to be able to track separate state (icon, checked state, disabled, etc).
+	// In turn Qt will not be able to determine that we're referring to the same editor command. If we don't override the shortcut handling, Qt will fail
+	// to handle the shortcut stating that the context is ambiguous
+	if (pEvent->type() == QEvent::ShortcutOverride)
 	{
-		CommandEvent* pCommandEvent = static_cast<CommandEvent*>(event);
-		event->setAccepted(m_commandRegistry.ExecuteCommand(pCommandEvent->GetCommand()));
-		if (event->isAccepted())
+		// Shortcut override events are QKeyEvents
+		QKeyEvent* pKeyEvent = static_cast<QKeyEvent*>(pEvent);
+		const int key = pKeyEvent->key();
+
+		// Make sure the key is valid
+		if (key != Qt::Key_unknown && !(key == Qt::Key_Control || key == Qt::Key_Shift || key == Qt::Key_Alt || key == Qt::Key_Meta))
+		{
+			// Create a key sequence out of key and modifiers
+			QKeySequence keySequence(key | pKeyEvent->modifiers());
+
+			// Try and find if there's any command that maps to this shortcut
+			auto ite = std::find_if(m_actions.cbegin(), m_actions.cend(), [&keySequence](const StringMap<QCommandAction*>::value_type& value)
+			{
+				return value.second->shortcut() == keySequence;
+			});
+
+			// If we found a match for the shortcut, then trigger the action and mark the event as handled
+			if (ite != m_actions.cend())
+			{
+				QCommandAction* pCommandAction = qobject_cast<QCommandAction*>(ite->second);
+				pCommandAction->trigger();
+				pEvent->setAccepted(true);
+				return true;
+			}
+		}
+	}
+
+	return QWidget::event(pEvent);
+}
+
+void CEditorWidget::customEvent(QEvent* pEvent)
+{
+	if (pEvent->type() == SandboxEvent::Command)
+	{
+		CommandEvent* pCommandEvent = static_cast<CommandEvent*>(pEvent);
+		pEvent->setAccepted(m_commandRegistry.ExecuteCommand(pCommandEvent->GetCommand()));
+		if (pEvent->isAccepted())
 		{
 			return;
 		}
 	}
 
-	QWidget::customEvent(event);
+	QWidget::customEvent(pEvent);
 }
 
 QCommandAction* CEditorWidget::RegisterCommandAction(const string& actionId)

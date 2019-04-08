@@ -71,14 +71,7 @@ SDynTexture::TextureSubset SDynTexture::s_checkedOutTexturePoolCube_R10G10B10A2;
 SDynTexture::TextureSet SDynTexture::s_availableTexturePoolCubeCustom_R16G16F;
 SDynTexture::TextureSubset SDynTexture::s_checkedOutTexturePoolCubeCustom_R16G16F;
 
-uint32 SDynTexture::s_SuggestedDynTexAtlasCloudsMaxsize;
-uint32 SDynTexture::s_SuggestedDynTexAtlasSpritesMaxsize;
-uint32 SDynTexture::s_SuggestedTexAtlasSize;
 uint32 SDynTexture::s_SuggestedDynTexMaxSize;
-
-uint32 SDynTexture::s_CurDynTexAtlasCloudsMaxsize;
-uint32 SDynTexture::s_CurDynTexAtlasSpritesMaxsize;
-uint32 SDynTexture::s_CurTexAtlasSize;
 uint32 SDynTexture::s_CurDynTexMaxSize;
 
 //======================================================================
@@ -834,26 +827,15 @@ bool SDynTexture::IsValid()
 
 void SDynTexture::Tick()
 {
-	if (s_SuggestedDynTexMaxSize != CRenderer::CV_r_dyntexmaxsize ||
-	    s_SuggestedDynTexAtlasCloudsMaxsize != CRenderer::CV_r_dyntexatlascloudsmaxsize ||
-	    s_SuggestedDynTexAtlasSpritesMaxsize != CRenderer::CV_r_dyntexatlasspritesmaxsize ||
-	    s_SuggestedTexAtlasSize != CRenderer::CV_r_texatlassize)
+	if (s_SuggestedDynTexMaxSize != CRenderer::CV_r_dyntexmaxsize)
 	{
 		Init();
-		//CTexture::InitStreaming();
 	}
 }
 
 void SDynTexture::Init()
 {
-	s_SuggestedDynTexAtlasCloudsMaxsize = CRenderer::CV_r_dyntexatlascloudsmaxsize;
-	s_SuggestedDynTexAtlasSpritesMaxsize = CRenderer::CV_r_dyntexatlasspritesmaxsize;
-	s_SuggestedTexAtlasSize = CRenderer::CV_r_texatlassize;
 	s_SuggestedDynTexMaxSize = CRenderer::CV_r_dyntexmaxsize;
-
-	s_CurDynTexAtlasCloudsMaxsize = s_SuggestedDynTexAtlasCloudsMaxsize;
-	s_CurDynTexAtlasSpritesMaxsize = s_SuggestedDynTexAtlasSpritesMaxsize;
-	s_CurTexAtlasSize = s_SuggestedTexAtlasSize;
 	s_CurDynTexMaxSize = s_SuggestedDynTexMaxSize;
 }
 

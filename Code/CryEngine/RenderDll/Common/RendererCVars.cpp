@@ -147,14 +147,9 @@ int CRendererCVars::CV_r_buffer_pool_defrag_dynamic;
 int CRendererCVars::CV_r_buffer_pool_defrag_max_moves;
 
 int CRendererCVars::CV_r_dyntexmaxsize;
-int CRendererCVars::CV_r_dyntexatlascloudsmaxsize;
-int CRendererCVars::CV_r_dyntexatlasspritesmaxsize;
-int CRendererCVars::CV_r_dyntexatlasvoxterrainsize;
-int CRendererCVars::CV_r_dyntexatlasdyntexsrcsize;
 
 AllocateConstIntCVar(CRendererCVars, CV_r_texpostponeloading);
 AllocateConstIntCVar(CRendererCVars, CV_r_texpreallocateatlases);
-int CRendererCVars::CV_r_texatlassize;
 int CRendererCVars::CV_r_texminanisotropy;
 int CRendererCVars::CV_r_texmaxanisotropy;
 AllocateConstIntCVar(CRendererCVars, CV_r_texlog);
@@ -2034,13 +2029,8 @@ void CRendererCVars::InitCVars()
 
 	REGISTER_CVAR3("r_DynTexMaxSize", CV_r_dyntexmaxsize, 48, VF_NULL, ""); // 48 Mb
 	DefineConstIntCVar3("r_TexPreallocateAtlases", CV_r_texpreallocateatlases, TEXPREALLOCATLAS_DEFAULT_VAL, VF_NULL, "");
-	REGISTER_CVAR3("r_TexAtlasSize", CV_r_texatlassize, 1024, VF_NULL, ""); // 1024x1024
 
 	DefineConstIntCVar3("r_TexPostponeLoading", CV_r_texpostponeloading, 1, VF_NULL, "");
-	REGISTER_CVAR3("r_DynTexAtlasCloudsMaxSize", CV_r_dyntexatlascloudsmaxsize, 32, VF_NULL, "");       // 32 Mb
-	REGISTER_CVAR3("r_DynTexAtlasSpritesMaxSize", CV_r_dyntexatlasspritesmaxsize, 32, VF_NULL, "");     // 32 Mb
-	REGISTER_CVAR3("r_DynTexAtlasVoxTerrainMaxSize", CV_r_dyntexatlasvoxterrainsize, 250, VF_NULL, ""); // this pool is never preallocated
-	REGISTER_CVAR3("r_DynTexAtlasDynTexSrcSize", CV_r_dyntexatlasdyntexsrcsize, 16, VF_NULL, "");       // this pool is never preallocated
 
 	const int defaultbuffer_bank_size = 4;
 	const int default_transient_bank_size = 4;

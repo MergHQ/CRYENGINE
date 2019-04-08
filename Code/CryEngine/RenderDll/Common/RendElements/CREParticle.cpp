@@ -463,7 +463,7 @@ void CRenderer::EF_GetParticleListAndBatchFlags(uint32& nBatchFlags, ERenderList
 	// Disable vertex instancing on unsupported hardware, or from cvar.
 	const bool useTessellation = (pRenderObject->m_ObjFlags & FOB_ALLOW_TESSELLATION) != 0;
 #if CRY_PLATFORM_ORBIS
-	const bool bPulledVertices = (pRenderObject->m_ParticleObjFlags & CREParticle::ePOF_USE_VERTEX_PULL_MODEL) != 0;
+	const bool bPulledVertices = (pRenderObject->m_ObjFlags & FOB_VERTEX_PULL_MODEL) != 0;
 	const bool canUsePointSprites = useTessellation || bPulledVertices;
 #else
 	const bool canUsePointSprites = useTessellation || CV_r_ParticlesInstanceVertices;

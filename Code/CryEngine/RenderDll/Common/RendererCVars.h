@@ -104,7 +104,6 @@ public:
 	static int   CV_r_MotionBlurGBufferVelocity;
 	static float CV_r_MotionBlurThreshold;
 	static int   CV_r_MaxFrameLatency;
-	static int   CV_r_texatlassize;
 	static int   CV_r_DeferredShadingSortLights;
 #if CRY_PLATFORM_WINDOWS || CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID || CRY_PLATFORM_APPLE || CRY_RENDERER_GNM
 	//HACK: make sure we can only use it for dx11
@@ -134,10 +133,6 @@ public:
 	static int   CV_r_ShowDynTexturesMaxCount;
 	static int   CV_r_ShaderCompilerDontCache;
 	static int   CV_r_dyntexmaxsize;
-	static int   CV_r_dyntexatlascloudsmaxsize;
-	static int   CV_r_dyntexatlasspritesmaxsize;
-	static int   CV_r_dyntexatlasvoxterrainsize;
-	static int   CV_r_dyntexatlasdyntexsrcsize;
 	static int   CV_r_texminanisotropy;
 	static int   CV_r_texmaxanisotropy;
 	static int   CV_r_rendertargetpoolsize;
