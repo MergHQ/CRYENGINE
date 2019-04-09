@@ -113,10 +113,11 @@ inline bool less_CVar(const char* left, const char* right)
 
 void Command_SetWaitSeconds(IConsoleCmdArgs* pCmd)
 {
-	CXConsole* pConsole = static_cast<CXConsole*>(gEnv->pConsole);
-
 	if (pCmd->GetArgCount() > 1)
 	{
+		CXConsole* pConsole = static_cast<CXConsole*>(gEnv->pConsole);
+		if (pConsole->m_waitSeconds.GetValue() != 0)
+			CryWarning(EValidatorModule::VALIDATOR_MODULE_SYSTEM, EValidatorSeverity::VALIDATOR_WARNING, "You are overwriting the current wait seconds!");
 		pConsole->m_waitSeconds.SetSeconds(atof(pCmd->GetArg(1)));
 		pConsole->m_waitSeconds += gEnv->pTimer->GetFrameStartTime();
 	}
@@ -124,10 +125,22 @@ void Command_SetWaitSeconds(IConsoleCmdArgs* pCmd)
 
 void Command_SetWaitFrames(IConsoleCmdArgs* pCmd)
 {
-	CXConsole* pConsole = static_cast<CXConsole*>(gEnv->pConsole);
-
 	if (pCmd->GetArgCount() > 1)
+	{
+		CXConsole* pConsole = static_cast<CXConsole*>(gEnv->pConsole);
+		if (pConsole->m_waitFrames != 0)
+			CryWarning(EValidatorModule::VALIDATOR_MODULE_SYSTEM, EValidatorSeverity::VALIDATOR_WARNING, "You are overwriting the current wait frames!");
 		pConsole->m_waitFrames = max(0, atoi(pCmd->GetArg(1)));
+	}
+}
+
+void Command_Then(IConsoleCmdArgs* pCmd)
+{
+	if (pCmd->GetArgCount() > 1)
+	{
+		const char* szTmpStr = pCmd->GetCommandLine() + sizeof("then");
+		gEnv->pConsole->ExecuteString(szTmpStr, true, true);
+	}
 }
 
 class CNotificationNetworkConsole : public INotificationNetworkListener
@@ -618,10 +631,18 @@ void CXConsole::PreProjectSystemInit()
 	REGISTER_COMMAND("Bind", &Bind, VF_NULL, "");
 	REGISTER_COMMAND("wait_seconds", &Command_SetWaitSeconds, VF_BLOCKFRAME,
 		"Forces the console to wait for a given number of seconds before the next deferred command is processed\n"
-		"Works only in deferred command mode");
+		"Works only in deferred command mode. See the 'then' command.\n"
+		"The current value is replaced, use 'then wait_seconds X' for successive waits.");
 	REGISTER_COMMAND("wait_frames", &Command_SetWaitFrames, VF_BLOCKFRAME,
 		"Forces the console to wait for a given number of frames before the next deferred command is processed\n"
-		"Works only in deferred command mode");
+		"Works only in deferred command mode. See the 'then' command.\n"
+		"The current value is replaced, use 'then wait_frames X' for successive waits.");
+	REGISTER_COMMAND("then", &Command_Then, VF_NULL,
+		"Causes a command to be deferred. That is, it will be executed after the time specified with 'wait_seconds' or 'wait_frames'. E.g:\n"
+		"> wait_seconds 20\n"
+		"> then echo Goodbye world!\n"
+		"> then wait_seconds 5\n"
+		"> then quit");
 
 	CConsoleBatchFile::Init();
 }
@@ -2273,7 +2294,7 @@ void CXConsole::ExecuteDeferredCommands()
 
 	const int blockCounter = m_blockCounter;
 
-	while (!m_deferredCommands.empty())
+	while (m_waitFrames == 0 && m_waitSeconds.GetValue() == 0 && !m_deferredCommands.empty())
 	{
 		auto& deferredCommand = m_deferredCommands.front();
 		ExecuteStringInternal(deferredCommand.command.c_str(), false, deferredCommand.silentMode);
