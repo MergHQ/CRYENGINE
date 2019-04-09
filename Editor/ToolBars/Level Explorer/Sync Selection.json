@@ -1,0 +1,12 @@
+{
+    "toolBar": [
+        {
+            "command": "level_explorer.sync_selection",
+            "iconPath": "",
+            "m_IsCustom": false,
+            "name": "sync_selection",
+            "type": 0
+        }
+    ],
+    "version": 2
+}

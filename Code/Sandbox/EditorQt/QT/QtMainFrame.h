@@ -8,10 +8,10 @@
 #include <QMainWindow>
 
 class CCommand;
-class CEditorToolBarService;
 class CWaitProgress;
 class QLoading;
 class QMenu;
+class CToolBarService;
 class QToolWindowManager;
 
 class CEditorMainFrame : public QMainWindow, public IAutoEditorNotifyListener //TODO : class name doesn't match filename
@@ -47,6 +47,7 @@ private:
 	void OnCustomizeToolBar();
 	void OnToolBarAdded(QToolBar* pToolBar);
 	void OnToolBarModified(QToolBar* pToolBar);
+	void OnToolBarRenamed(const char* szOldToolBarName, QToolBar* pToolBar);
 	void OnToolBarRemoved(const char* szToolBarName);
 	void UpdateWindowTitle(const QString& levelPath = "");
 

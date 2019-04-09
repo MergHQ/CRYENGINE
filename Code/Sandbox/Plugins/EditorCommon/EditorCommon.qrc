@@ -261,7 +261,9 @@
         <file alias="General/Cut.ico">icons/general_file_cut.ico</file>
         <file alias="General/Data_Base_Letters.ico">icons/general_Data_Base_Letters.ico</file>
         <file alias="General/Debug.ico">icons/general_Debug.ico</file>
-        <file alias="General/Drag_Handle.ico">icons/general_drag_handle.ico</file>
+        <file alias="General/Drag_Handle_Horizontal.ico">icons/general_drag_handle_horizontal.ico</file>
+		<file alias="General/Drag_Handle_Vertical.ico">icons/general_drag_handle_vertical.ico</file>
+		<file alias="Spacer/Drag_Handle.ico">icons/spacer_drag_handle.ico</file>
         <file alias="General/Duplicate_Negative.ico">icons/general_Duplicate_Negative.ico</file>
         <file alias="General/Duplicate.ico">icons/general_file_duplicate.ico</file>
         <file alias="General/Delete.ico">icons/general_file_delete.ico</file>
@@ -330,7 +332,6 @@
         <file alias="general_lock_true.ico">icons/general_lock_true.ico</file>
         <file alias="General/Lock_True_Tinted.ico">icons/general_Lock_True_Tinted.ico</file>
         <file alias="General/editable.ico">icons/general_editable.ico</file>
-        <file alias="general_lock_true.ico">icons/general_lock_true.ico</file>
         <file alias="levelexplorer_lock_true.ico">icons/levelexplorer_lock_true.ico</file>
 		<file alias="General/editable_true.ico">icons/general_editable_true.ico</file>
         <file alias="General/Mannequin.ico">icons/general_Mannequin.ico</file>

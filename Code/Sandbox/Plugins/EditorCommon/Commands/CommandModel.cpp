@@ -5,7 +5,7 @@
 
 #include "CustomCommand.h"
 #include "DragDrop.h"
-#include "EditorFramework/EditorToolBarService.h"
+#include "EditorFramework/ToolBar/ToolBarService.h"
 #include "ICommandManager.h"
 #include "QCommandAction.h"
 #include "QtUtil.h"
@@ -114,14 +114,13 @@ QMimeData* CCommandModel::mimeData(const QModelIndexList& indexes) const
 
 	if (pCommand)
 	{
-		CEditorToolBarService::QCommandDesc commandDesc(pCommand);
+		CToolBarService::QCommandDesc commandDesc(pCommand);
 		QJsonDocument doc = QJsonDocument::fromVariant(commandDesc.ToVariant());
 		pDragDropData->SetCustomData(GetCommandMimeType(), doc.toBinaryData());
 	}
 
 	return pDragDropData;
 }
-
 
 QVariant CCommandModel::data(const QModelIndex& index, int role /* = Qt::DisplayRole */) const
 {

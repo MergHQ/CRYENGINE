@@ -2,10 +2,10 @@
 #pragma once
 
 #include "AI/AIManager.h"
-#include "Commands/QCommandAction.h"
 #include "Objects/ObjectManager.h"
 #include "ViewManager.h"
 
+#include <Commands/QCommandAction.h>
 #include <Preferences/SnappingPreferences.h>
 #include <Preferences/ViewportPreferences.h>
 #include <QControls.h>
@@ -294,7 +294,7 @@ protected:
 		}
 
 		addSeparator();
-		
+
 		QAction* pRegenerateAllAction = pCommandManager->GetAction("ai.regenerate_agent_type_all");
 		if (pRegenerateAllAction)
 		{

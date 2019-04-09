@@ -112,6 +112,13 @@ protected:
 
 	virtual void UpdatePreview(const QModelIndex& currentIndex);
 
+	// Adaptive layouts enables editor owners to make better use of space
+	bool            SupportsAdaptiveLayout() const override { return true; }
+	// Triggered on resize for editors that support adaptive layouts
+	void            OnAdaptiveLayoutChanged() override;
+	// Used for determining what layout direction to use if adaptive layout is turned off
+	Qt::Orientation GetDefaultOrientation() const override { return Qt::Horizontal; }
+
 private:
 	void               InitActions();
 	void               InitNewNameDelegates();
@@ -120,7 +127,6 @@ private:
 	void               InitAssetsView();
 	void               InitDetailsView();
 	void               InitThumbnailsView();
-	void               AddViewModeButton(ViewMode viewMode, const char* szIconPath, const char* szToolTip, QMenu* pMenu = nullptr);
 	QLayout*           CreateToolBars();
 	QWidget*           CreateAssetsViewSelector();
 
@@ -132,7 +138,6 @@ private:
 	QAbstractItemView* GetFocusedView() const;
 
 	virtual bool       eventFilter(QObject* object, QEvent* event) override;
-	virtual void       resizeEvent(QResizeEvent* event) override;
 
 	//extract actual content from the selection for further processing
 	void ProcessSelection(std::vector<CAsset*>& assets, std::vector<string>& folders) const;
@@ -206,12 +211,33 @@ private:
 	void         Paste(bool pasteNextToOriginal);
 
 	//ui components
-	CAssetFoldersView*                          m_pFoldersView = nullptr;
-	CBreadcrumbsBar*                            m_pBreadcrumbs = nullptr;
+	CAssetFoldersView* m_pFoldersView = nullptr;
+	CBreadcrumbsBar*   m_pBreadcrumbs = nullptr;
+	QCommandAction*    m_pActionRecursiveView = nullptr;
+	QCommandAction*    m_pActionShowFoldersView = nullptr;
+	QCommandAction*    m_pActionManageWorkFiles = nullptr;
+	QCommandAction*    m_pActionShowInFileExplorer = nullptr;
+	QCommandAction*    m_pActionCopyName = nullptr;
+	QCommandAction*    m_pActionCopyPath = nullptr;
+	QCommandAction*    m_pActionShowThumbnails = nullptr;
+	QCommandAction*    m_pActionShowDetails = nullptr;
+	QCommandAction*    m_pActionShowSplitHorizontally = nullptr;
+	QCommandAction*    m_pActionShowSplitVertically = nullptr;
+	QCommandAction*    m_pActionDelete = nullptr;
+	QCommandAction*    m_pActionRename = nullptr;
+	QCommandAction*    m_pActionCopy = nullptr;
+	QCommandAction*    m_pActionDuplicate = nullptr;
+	QCommandAction*    m_pActionSave = nullptr;
+	QCommandAction*    m_pActionPaste = nullptr;
+	QCommandAction*    m_pActionReimport = nullptr;
+	QCommandAction*    m_pActionDiscardChanges = nullptr;
+	QCommandAction*    m_pActionGenerateRepairMetaData = nullptr;
+#if ASSET_BROWSER_USE_PREVIEW_WIDGET
+	QCommandAction*    m_pActionShowPreview = nullptr;
+#endif
+
 	QAdvancedTreeView*                          m_pDetailsView = nullptr;
 	QBoxLayout*                                 m_pAssetsViewLayout = nullptr;
-	QBoxLayout*                                 m_pShortcutBarLayout = nullptr;
-	QButtonGroup*                               m_pViewModeButtons = nullptr;
 	QFilteringPanel*                            m_pFilterPanel = nullptr;
 	QItemSelectionModel*                        m_pSelection = nullptr;
 	QLabel*                                     m_pMultipleFoldersLabel = nullptr;

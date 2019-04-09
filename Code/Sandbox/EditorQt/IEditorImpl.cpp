@@ -66,9 +66,9 @@
 #include <ConfigurationManager.h>
 #include <EditorCommonInit.h>
 #include <EditorFramework/BroadcastManager.h>
-#include <EditorFramework/EditorToolBarService.h>
 #include <EditorFramework/PersonalizationManager.h>
 #include <EditorFramework/Preferences.h>
+#include <EditorFramework/ToolBar/ToolBarService.h>
 #include <EditorFramework/TrayArea.h>
 #include <Gizmos/GizmoManager.h>
 #include <ISourceControl.h>
@@ -130,7 +130,7 @@ CEditorImpl::CEditorImpl(CGameEngine* ge)
 	m_pGlobalBroadcastManager = new CBroadcastManager;
 	m_pNotificationCenter = new CNotificationCenter;
 	m_pTrayArea = new CTrayArea;
-	m_pEditorToolBarService = new CEditorToolBarService;
+	m_pToolBarService = new CToolBarService;
 	m_pCommandManager = new CEditorCommandManager;
 	m_pPersonalizationManager = new CPersonalizationManager;
 	m_pPreferences = new CPreferences;
@@ -265,7 +265,7 @@ CEditorImpl::~CEditorImpl()
 	SAFE_DELETE(m_pPreferences)
 	SAFE_DELETE(m_pPersonalizationManager)
 	SAFE_DELETE(m_pCommandManager)
-	SAFE_DELETE(m_pEditorToolBarService)
+	SAFE_DELETE(m_pToolBarService)
 	SAFE_DELETE(m_pTrayArea)
 	SAFE_DELETE(m_pNotificationCenter)
 	SAFE_DELETE(m_pPythonManager)

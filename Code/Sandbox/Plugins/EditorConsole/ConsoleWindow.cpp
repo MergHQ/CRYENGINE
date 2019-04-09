@@ -168,8 +168,6 @@ void CConsoleWindow::SetupUI()
 {
 	QWidget* m_pCentralWidget = new QWidget();
 
-	setObjectName(QStringLiteral("ConsoleWindow"));
-	resize(551, 386);
 	m_pCentralWidget->setObjectName(QStringLiteral("m_pCentralWidget"));
 	QVBoxLayout* verticalLayout = new QVBoxLayout(m_pCentralWidget);
 	verticalLayout->setSpacing(2);
@@ -246,10 +244,7 @@ void CConsoleWindow::SetupUI()
 
 	verticalLayout->addWidget(m_pInput, Qt::AlignBottom);
 
-	setLayout(verticalLayout);
-
-	layout()->addWidget(m_pCentralWidget);
-
+	SetContent(verticalLayout);
 } // setupUi
 
 //handle new incoming log lines

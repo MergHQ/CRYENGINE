@@ -6,6 +6,7 @@
 #include "Commands/ICommandManager.h"
 #include "Commands/QCommandAction.h"
 #include "Controls/SaveChangesDialog.h"
+#include "EditorContent.h"
 #include "Events.h"
 #include "Menu/AbstractMenu.h"
 #include "Menu/MenuBarUpdater.h"
@@ -13,7 +14,7 @@
 #include "PathUtils.h"
 #include "PersonalizationManager.h"
 #include "QtUtil.h"
-#include "ToolBarCustomizeDialog.h"
+#include "ToolBar/ToolBarCustomizeDialog.h"
 
 #include <IEditor.h>
 
@@ -23,6 +24,9 @@
 #include <QUrl>
 #include <QVBoxLayout>
 #include <QCloseEvent>
+
+REGISTER_EDITOR_AND_SCRIPT_KEYBOARD_FOCUS_COMMAND(editor, toggle_adaptive_layout, CCommandDescription("Enabled/disables adaptive layout for the focused editor"))
+REGISTER_EDITOR_UI_COMMAND_DESC(editor, toggle_adaptive_layout, "Adaptive Layout", "", "", true)
 
 namespace Private_EditorFramework
 {
@@ -97,6 +101,8 @@ CEditor::CEditor(QWidget* pParent /*= nullptr*/, bool bIsOnlyBackend /* = false 
 	, m_bIsOnlybackend(bIsOnlyBackend)
 	, m_dockingRegistry(nullptr)
 	, m_pBroadcastManagerFilter(nullptr)
+	, m_pActionAdaptiveLayout(nullptr)
+	, m_isAdaptiveLayoutEnabled(true) // enabled by default for all editors who support this feature
 {
 	if (bIsOnlyBackend)
 		return;
@@ -104,7 +110,10 @@ CEditor::CEditor(QWidget* pParent /*= nullptr*/, bool bIsOnlyBackend /* = false 
 	m_pPaneMenu = new QMenu();
 
 	setLayout(new QVBoxLayout());
-	layout()->setContentsMargins(1, 1, 1, 1);
+	layout()->setMargin(0);
+	layout()->setSpacing(0);
+	m_pEditorContent = new CEditorContent(this);
+	layout()->addWidget(m_pEditorContent);
 
 	//Important so the focus is set to the CEditor when clicking on the menu.
 	setFocusPolicy(Qt::StrongFocus);
@@ -140,7 +149,17 @@ CEditor::~CEditor()
 
 void CEditor::Initialize()
 {
+	if (SupportsAdaptiveLayout())
+	{
+		AddToMenu({ MenuItems::ViewMenu });
+		CAbstractMenu* pViewMenu = GetMenu(MenuItems::ViewMenu);
+		int section = pViewMenu->GetNextEmptySection();
+		m_pActionAdaptiveLayout = pViewMenu->CreateCommandAction("editor.toggle_adaptive_layout", section);
+		m_pActionAdaptiveLayout->setChecked(IsAdaptiveLayoutEnabled());
+	}
 
+	m_currentOrientation = GetDefaultOrientation();
+	m_pEditorContent->Initialize();
 }
 
 void CEditor::InitMenuDesc()
@@ -149,32 +168,32 @@ void CEditor::InitMenuDesc()
 	m_pMenuDesc.reset(new CDesc<MenuItems>());
 	m_pMenuDesc->Init(
 		MenuDesc::AddMenu(MenuItems::FileMenu, 0, 0, "File",
-		                  AddAction(MenuItems::New,          0, 0, GetAction("general.new")),
-		                  AddAction(MenuItems::New_Folder,   0, 1, GetAction("general.new_folder")),
-		                  AddAction(MenuItems::Open,         0, 2, GetAction("general.open")),
-		                  AddAction(MenuItems::Close,        0, 3, GetAction("general.close")),
-		                  AddAction(MenuItems::Save,         0, 4, GetAction("general.save")),
-		                  AddAction(MenuItems::SaveAs,       0, 5, GetAction("general.save_as")),
-		                  AddMenu(MenuItems::RecentFiles,    0, 6, "Recent Files")),
-		MenuDesc::AddMenu(MenuItems::EditMenu,               0, 1, "Edit",
-		                  AddAction(MenuItems::Undo,         0, 0, GetAction("general.undo")),
-		                  AddAction(MenuItems::Redo,         0, 1, GetAction("general.redo")),
-		                  AddAction(MenuItems::Copy,         1, 0, GetAction("general.copy")),
-		                  AddAction(MenuItems::Cut,          1, 1, GetAction("general.cut")),
-		                  AddAction(MenuItems::Paste,        1, 2, GetAction("general.paste")),
-		                  AddAction(MenuItems::Rename,       1, 3, GetAction("general.rename")),
-		                  AddAction(MenuItems::Delete,       1, 4, GetAction("general.delete")),
-		                  AddAction(MenuItems::Find,         2, 0, GetAction("general.find")),
+		                  AddAction(MenuItems::New, 0, 0, GetAction("general.new")),
+		                  AddAction(MenuItems::NewFolder, 0, 1, GetAction("general.new_folder")),
+		                  AddAction(MenuItems::Open, 0, 2, GetAction("general.open")),
+		                  AddAction(MenuItems::Close, 0, 3, GetAction("general.close")),
+		                  AddAction(MenuItems::Save, 0, 4, GetAction("general.save")),
+		                  AddAction(MenuItems::SaveAs, 0, 5, GetAction("general.save_as")),
+		                  AddMenu(MenuItems::RecentFiles, 0, 6, "Recent Files")),
+		MenuDesc::AddMenu(MenuItems::EditMenu, 0, 1, "Edit",
+		                  AddAction(MenuItems::Undo, 0, 0, GetAction("general.undo")),
+		                  AddAction(MenuItems::Redo, 0, 1, GetAction("general.redo")),
+		                  AddAction(MenuItems::Copy, 1, 0, GetAction("general.copy")),
+		                  AddAction(MenuItems::Cut, 1, 1, GetAction("general.cut")),
+		                  AddAction(MenuItems::Paste, 1, 2, GetAction("general.paste")),
+		                  AddAction(MenuItems::Rename, 1, 3, GetAction("general.rename")),
+		                  AddAction(MenuItems::Delete, 1, 4, GetAction("general.delete")),
+		                  AddAction(MenuItems::Find, 2, 0, GetAction("general.find")),
 		                  AddAction(MenuItems::FindPrevious, 2, 1, GetAction("general.find_previous")),
-		                  AddAction(MenuItems::FindNext,     2, 2, GetAction("general.find_next")),
-		                  AddAction(MenuItems::SelectAll,    2, 3, GetAction("general.select_all")),
-		                  AddAction(MenuItems::Duplicate,    3, 0, GetAction("general.duplicate"))),
-		MenuDesc::AddMenu(MenuItems::ViewMenu,               0, 2, "View",
-		                  AddAction(MenuItems::ZoomIn,       0, 0, GetAction("general.zoom_in")),
-		                  AddAction(MenuItems::ZoomOut,      0, 1, GetAction("general.zoom_out"))),
-		MenuDesc::AddMenu(MenuItems::ToolBarMenu,            0, 10, "Toolbars"),
-		MenuDesc::AddMenu(MenuItems::WindowMenu,             0, 20, "Window"),
-		MenuDesc::AddMenu(MenuItems::HelpMenu,               1, CAbstractMenu::EPriorities::ePriorities_Append, "Help",
+		                  AddAction(MenuItems::FindNext, 2, 2, GetAction("general.find_next")),
+		                  AddAction(MenuItems::SelectAll, 2, 3, GetAction("general.select_all")),
+		                  AddAction(MenuItems::Duplicate, 3, 0, GetAction("general.duplicate"))),
+		MenuDesc::AddMenu(MenuItems::ViewMenu, 0, 2, "View",
+		                  AddAction(MenuItems::ZoomIn, 0, 0, GetAction("general.zoom_in")),
+		                  AddAction(MenuItems::ZoomOut, 0, 1, GetAction("general.zoom_out"))),
+		MenuDesc::AddMenu(MenuItems::ToolBarMenu, 0, 10, "Toolbars"),
+		MenuDesc::AddMenu(MenuItems::WindowMenu, 0, 20, "Window"),
+		MenuDesc::AddMenu(MenuItems::HelpMenu, 1, CAbstractMenu::EPriorities::ePriorities_Append, "Help",
 		                  AddAction(MenuItems::Help, 0, 0, GetAction("general.help")))
 		);
 
@@ -188,16 +207,13 @@ void CEditor::ForceRebuildMenu()
 void CEditor::SetContent(QWidget* content)
 {
 	//TODO : only one content can be set
-	content->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-	layout()->addWidget(content);
+	m_pEditorContent->SetContent(content);
 }
 
 void CEditor::SetContent(QLayout* content)
 {
 	//TODO : only one content can be set
-	QWidget* w = new QWidget();
-	w->setLayout(content);
-	layout()->addWidget(w);
+	m_pEditorContent->SetContent(content);
 }
 
 void CEditor::InitActions()
@@ -243,6 +259,27 @@ void CEditor::InitActions()
 	RegisterAction("general.zoom_in", &CEditor::OnZoomIn);
 	RegisterAction("general.zoom_out", &CEditor::OnZoomOut);
 	RegisterAction("general.help", &CEditor::OnHelp);
+	RegisterAction("editor.toggle_adaptive_layout", [this]()
+	{
+		SetAdaptiveLayoutEnabled(!IsAdaptiveLayoutEnabled());
+		return true;
+	});
+	RegisterAction("toolbar.customize", [this]()
+	{
+		return m_pEditorContent->CustomizeToolBar();
+	});
+	RegisterAction("toolbar.toggle_lock", [this]()
+	{
+		return m_pEditorContent->ToggleToolBarLock();
+	});
+	RegisterAction("toolbar.insert_expanding_spacer", [this]()
+	{
+		return m_pEditorContent->AddExpandingSpacer();
+	});
+	RegisterAction("toolbar.insert_fixed_spacer", [this]()
+	{
+		return m_pEditorContent->AddFixedSpacer();
+	});
 }
 
 void CEditor::AddToMenu(CAbstractMenu* pMenu, const char* command)
@@ -368,10 +405,17 @@ void CEditor::RegisterDockableWidget(QString name, std::function<QWidget* ()> fa
 
 void CEditor::SetLayout(const QVariantMap& state)
 {
+	if (state.contains("adaptiveLayout"))
+	{
+		SetAdaptiveLayoutEnabled(state["adaptiveLayout"].toBool());
+	}
+
 	if (m_dockingRegistry && state.contains("dockingState"))
 	{
 		m_dockingRegistry->SetState(state["dockingState"].toMap());
 	}
+
+	m_pEditorContent->SetState(state["editorContent"].toMap());
 }
 
 QVariantMap CEditor::GetLayout() const
@@ -381,6 +425,10 @@ QVariantMap CEditor::GetLayout() const
 	{
 		result.insert("dockingState", m_dockingRegistry->GetState());
 	}
+
+	result.insert("editorContent", m_pEditorContent->GetState());
+	result.insert("adaptiveLayout", m_isAdaptiveLayoutEnabled);
+
 	return result;
 }
 
@@ -401,19 +449,6 @@ void CEditor::OnMainFrameAboutToClose(BroadcastEvent& event)
 
 			event.ignore();
 		}
-	}
-}
-
-void CEditor::customEvent(QEvent* event)
-{
-	if (event->type() == SandboxEvent::GetBroadcastManager)
-	{
-		static_cast<GetBroadcastManagerEvent*>(event)->SetManager(&GetBroadcastManager());
-		event->accept();
-	}
-	else
-	{
-		CEditorWidget::customEvent(event);
 	}
 }
 
@@ -482,6 +517,67 @@ void CEditor::SetPersonalizationState(const QVariantMap& state)
 const QVariantMap& CEditor::GetPersonalizationState()
 {
 	return GetIEditor()->GetPersonalizationManager()->GetState(GetEditorName());
+}
+
+void CEditor::UpdateAdaptiveLayout()
+{
+	// If adaptive layout is disabled, set current orientation to default
+	if (!IsAdaptiveLayoutEnabled())
+	{
+		m_currentOrientation = GetDefaultOrientation();
+		return OnAdaptiveLayoutChanged();
+	}
+
+	Qt::Orientation newOrientation;
+	if (width() > height())
+		newOrientation = Qt::Horizontal;
+	else
+		newOrientation = Qt::Vertical;
+
+	if (newOrientation == m_currentOrientation)
+		return;
+
+	m_currentOrientation = newOrientation;
+	OnAdaptiveLayoutChanged();
+}
+
+void CEditor::SetAdaptiveLayoutEnabled(bool enable)
+{
+	if (m_isAdaptiveLayoutEnabled == enable)
+		return;
+
+	m_isAdaptiveLayoutEnabled = enable;
+	m_pActionAdaptiveLayout->setChecked(m_isAdaptiveLayoutEnabled);
+	UpdateAdaptiveLayout();
+}
+
+void CEditor::OnAdaptiveLayoutChanged()
+{
+	signalAdaptiveLayoutChanged(m_currentOrientation);
+}
+
+void CEditor::resizeEvent(QResizeEvent* pEvent)
+{
+	QWidget::resizeEvent(pEvent);
+
+	// Early out if adaptive layout is disabled or this editor doesn't support adaptive layout
+	if (!IsAdaptiveLayoutEnabled())
+		return;
+
+	UpdateAdaptiveLayout();
+}
+
+void CEditor::customEvent(QEvent* pEvent)
+{
+	if (pEvent->type() == SandboxEvent::GetBroadcastManager)
+	{
+		static_cast<GetBroadcastManagerEvent*>(pEvent)->SetManager(&GetBroadcastManager());
+		pEvent->accept();
+	}
+	else
+	{
+		CEditorWidget::customEvent(pEvent);
+	}
 }
 
 CBroadcastManager& CEditor::GetBroadcastManager()

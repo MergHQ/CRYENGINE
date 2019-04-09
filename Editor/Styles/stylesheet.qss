@@ -939,7 +939,7 @@ QToolBar::handle {
 	width:12px;
 	height:12px;
 	padding-left:0px;
-	image: url(icons:General/Drag_Handle.ico);
+	image: url(icons:General/Drag_Handle_Horizontal.ico);
 }
 
 QCustomWindowFrame > QWidget, QToolWindowCustomWrapper QSplitter, QToolWindowCustomWrapper > QWidget {
@@ -2296,19 +2296,6 @@ CToolBarCustomizeDialog QWidget#ToolbarPropertiesContainer
 	color:rgb(153,153,153);
 }
 
-CEditorToolBarArea
-{
-	background-color: rgb(35, 35, 35);
-}
-
-CEditorToolBarArea > QToolBar
-{
-	background-color: rgb(89, 89, 89);
-	border-radius: 3;
-	margin: 2;
-	padding: 2;
-}
-
 QTrackingTooltip
 {
 	border: 1px solid rgb(166,166,166);
@@ -2322,6 +2309,54 @@ QTrackingTooltip QLabel
 {
 	margin: 4;
 	padding: 0;
+}
+
+CToolBarArea
+{
+	background-color: rgb(66, 66, 66);
+	margin: 0;
+	padding: 0;
+}
+
+CToolBarArea[dragAndDropMode=true]
+{
+	background-color: rgb(97, 172, 236, 64);
+	border: 1px solid rgb(97, 172, 236, 128);
+	min-height: 32px;
+	min-width: 32px;
+}
+
+CToolBarArea[dragHover=true]
+{
+	background-color: rgb(97, 172, 236, 128);
+	border: 1px solid rgb(97, 172, 236, 192);
+}
+
+CToolBarArea[dragHover=false]
+{
+	background-color: rgb(97, 172, 236, 64);
+	border: 1px solid rgb(97, 172, 236, 128);
+}
+
+CToolBarArea[dragAndDropMode=false]
+{
+	background-color: rgb(66, 66, 66);
+	border: 0px;
+	margin: 0;
+	padding: 0;
+	min-height: 0px;
+	min-width: 0px;
+}
+
+CSpacerItem[locked=false]
+{
+	border: 2px dotted rgb(102,102,102);
+	border-radius: 3px;
+}
+
+CSpacerItem[locked=true]
+{
+	border: 0px;
 }
 
 /*
@@ -2374,4 +2409,9 @@ CAssetDragDropLineEdit[dragEnter="none"]
 CAssetDragDropLineEdit:focus 
 {
 	border: 1px solid rgb(97,172,236) outset;
+}
+
+CEditorDialog QToolBar
+{
+	background-color: transparent;
 }

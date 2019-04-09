@@ -1,12 +1,19 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 #pragma once
 
+// EditorCommon
 #include "EditorCommonAPI.h"
+
+// CryQt
+#include "CryIcon.h"
+
+// CryCommon
 #include <CryCore/smartptr.h>
 #include <CrySerialization/yasli/Serializer.h>
 #include <CrySerialization/yasli/Object.h>
 #include <CrySerialization/yasli/Archive.h>
-#include <QIcon>
+
+// Qt
 #include <QWidget>
 
 class QScrollArea;
@@ -174,7 +181,7 @@ private:
 	AccumulateChangesStatus m_accumulateChanges;
 
 	//Styling
-	QIcon m_collapsedIcon;
-	QIcon m_expandedIcon;
-	QIcon m_dragHandleIcon;
+	CryIcon m_collapsedIcon;
+	CryIcon m_expandedIcon;
+	CryIcon m_dragHandleIcon;
 };

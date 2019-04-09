@@ -136,6 +136,7 @@ CAssetBrowserDialog::CAssetBrowserDialog(const std::vector<string>& assetTypeNam
 {
 	using namespace Private_AssetBrowserDialog;
 
+	m_pBrowser->Initialize();
 	const QString propertyName = QtUtil::ToQString(std::accumulate(assetTypeNames.begin(), assetTypeNames.end(), "Layout"));
 
 	AddPersonalizedProjectProperty(propertyName, [this]()
