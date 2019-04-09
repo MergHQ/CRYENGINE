@@ -41,11 +41,6 @@ SContext::EState SStartAnimationProcessing::operator()(const SContext& ctx)
 
 	ctx.pInstance->m_SkeletonAnim.ProcessAnimations(location);
 
-	if (!ctx.pInstance->m_SkeletonPose.m_bFullSkeletonUpdate)
-	{
-		return SContext::EState::JobSkipped;
-	}
-
 	if (!GetMemoryPool())
 		return SContext::EState::Failure;
 
@@ -66,6 +61,11 @@ SContext::EState SStartAnimationProcessing::operator()(const SContext& ctx)
 		pSkeletonPose->m_physics.RequestForcedPostSynchronization();
 	}
 
+	if (!ctx.pInstance->m_SkeletonPose.m_bFullSkeletonUpdate)
+	{
+		return SContext::EState::JobSkipped;
+	}
+
 	return SContext::EState::StartAnimationProcessed;
 }
 
@@ -81,8 +81,8 @@ SContext::EState SExecuteJob::operator()(const SContext& ctx)
 	CRY_ASSERT(ctx.pInstance->GetProcessingContext() == &ctx);
 
 	CSkeletonAnim& skelAnim = ctx.pInstance->m_SkeletonAnim;
-	if (!skelAnim.m_pSkeletonPose->m_bFullSkeletonUpdate)
-		return SContext::EState::JobSkipped;
+	CRY_ASSERT_MESSAGE(skelAnim.m_pSkeletonPose->m_bFullSkeletonUpdate,   "The current job should have been skipped!");
+	CRY_ASSERT_MESSAGE(ctx.state != SContext::EState::JobSkipped,         "The current job should have been skipped!");
 
 	CSkeletonPose* pSkeletonPose = skelAnim.m_pSkeletonPose;
 	if (!pSkeletonPose->GetPoseDataWriteable())
