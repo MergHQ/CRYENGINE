@@ -29,7 +29,7 @@ namespace Private_ToolbarManager
 class CVarActionMapper;
 }
 
-class EDITOR_COMMON_API CEditorToolBarService : public CUserData
+class EDITOR_COMMON_API CToolBarService : public CUserData
 {
 public:
 	class EDITOR_COMMON_API QItemDesc
@@ -166,8 +166,8 @@ public:
 		bool                                updated;
 	};
 
-	CEditorToolBarService();
-	~CEditorToolBarService();
+	CToolBarService();
+	~CToolBarService();
 
 	std::shared_ptr<QToolBarDesc> CreateToolBarDesc(const CEditor* pEditor, const char* szName) const;
 	bool                          SaveToolBar(const std::shared_ptr<QToolBarDesc>& pToolBarDesc) const;

@@ -1,11 +1,11 @@
 {
-    "MainWindowGeometry": "AdnQywADAAAAAAAAAAAAAAAAB38AAAQPAAAABwAAABQAAASaAAAD0wAAAAACAAAAB4AAAAAAAAAAAAAAB38AAAQP",
-    "MainWindowState": "AAAA/wAAAAD9AAAAAAAAB4AAAAO2AAAABAAAAAIAAAAIAAAAAvwAAAAGAAAAAAAAAAAAAAAAAAAAAAAAAAIAAAAAAAAAAgAAAAoAAAAeAFMAdABhAG4AZABhAHIAZABUAG8AbwBsAEIAYQByAAAAAAD/////AAAAAAAAAAAAAAAiAEUAZABpAHQAIABNAG8AZABlAHMAVABvAG8AbABCAGEAcgEAAAAA/////wAAAAAAAAAAAAAAJABDAG8AbwByAGQAaQBuAGEAdABlAHMAVABvAG8AbABCAGEAcgEAAACP/////wAAAAAAAAAAAAAAJABDAG8AbgBzAHQAcgBhAGkAbgB0AHMAVABvAG8AbABCAGEAcgAAAAEW/////wAAAAAAAAAAAAAAIABTAGUAbABlAGMAdABpAG8AbgBUAG8AbwBsAEIAYQByAQAAAR7/////AAAAAAAAAAAAAAAcAFAAaAB5AHMAaQBjAHMAVABvAG8AbABCAGEAcgAAAAOM/////wAAAAAAAAAAAAAAFgBHAGEAbQBlAFQAbwBvAGwAQgBhAHIBAAACYP////8AAAAAAAAAAAAAABgAQQB1AGQAaQBvAFQAbwBvAGwAQgBhAHIBAAAC7/////8AAAAAAAAAAAAAABwATABhAHkAbwB1AHQAcwBUAG8AbwBsAEIAYQByAQAAA13/////AAAAAAAAAAAAAAAgAFYAaQBlAHcATQBvAGQAZQBzAFQAbwBvAGwAQgBhAHIAAAAD8AAAAT0AAAAAAAAAAAAAAAIAAAAAAAAAAwAAAAA=",
+    "MainWindowGeometry": "AdnQywADAAAAAAAAAAAAAAAAB0EAAAQ3AAAABwAAABQAAASaAAAD0wAAAAACAAAAB4AAAAAAAAAAAAAAB0EAAAQ3",
+    "MainWindowState": "AAAA/wAAAAD9AAAAAAAAB0IAAAPiAAAABAAAAAIAAAAIAAAAAvwAAAAGAAAAAAAAAAAAAAAAAAAAAAAAAAIAAAAAAAAAAgAAAAoAAAAeAFMAdABhAG4AZABhAHIAZABUAG8AbwBsAEIAYQByAAAAAAD/////AAAAAAAAAAAAAAAiAEUAZABpAHQAIABNAG8AZABlAHMAVABvAG8AbABCAGEAcgEAAAAA/////wAAAAAAAAAAAAAAJABDAG8AbwByAGQAaQBuAGEAdABlAHMAVABvAG8AbABCAGEAcgEAAAB//////wAAAAAAAAAAAAAAJABDAG8AbgBzAHQAcgBhAGkAbgB0AHMAVABvAG8AbABCAGEAcgAAAAEW/////wAAAAAAAAAAAAAAIABTAGUAbABlAGMAdABpAG8AbgBUAG8AbwBsAEIAYQByAQAAAP7/////AAAAAAAAAAAAAAAcAFAAaAB5AHMAaQBjAHMAVABvAG8AbABCAGEAcgAAAAOM/////wAAAAAAAAAAAAAAFgBHAGEAbQBlAFQAbwBvAGwAQgBhAHIBAAACHP////8AAAAAAAAAAAAAABgAQQB1AGQAaQBvAFQAbwBvAGwAQgBhAHIBAAACm/////8AAAAAAAAAAAAAABwATABhAHkAbwB1AHQAcwBUAG8AbwBsAEIAYQByAQAAAv3/////AAAAAAAAAAAAAAAgAFYAaQBlAHcATQBvAGQAZQBzAFQAbwBvAGwAQgBhAHIAAAAD8AAAAT0AAAAAAAAAAAAAAAIAAAAAAAAAAwAAAAA=",
     "ToolsLayout": {
         "floatingWindows": [
         ],
         "mainWrapper": {
-            "geometry": "AdnQywADAAAAAAAAAAAAAAAAB38AAAO1AAAAAAAAAAAAAAd/AAADtQAAAAAAAAAAB4AAAAAAAAAAAAAAB38AAAO1",
+            "geometry": "AdnQywADAAAAAAAAAAAAAAAAB0EAAAPhAAAAAAAAAAAAAAdBAAAD4QAAAAAAAAAAB4AAAAAAAAAAAAAAB0EAAAPh",
             "name": "mainWrapper",
             "splitter": {
                 "items": [
@@ -70,6 +70,7 @@
         "Asset Browser": {
             "class": "Asset Browser",
             "state": {
+                "adaptiveLayout": true,
                 "detailsView": {
                     "columnData": {
                         "Bones count": {
@@ -195,7 +196,7 @@
                         "VC status": {
                             "data": "VC status",
                             "visible": true,
-                            "visualIndex": 20,
+                            "visualIndex": 19,
                             "width": 100
                         },
                         "VCS status": {
@@ -225,7 +226,7 @@
                         "Work File": {
                             "data": "Work File",
                             "visible": false,
-                            "visualIndex": 19,
+                            "visualIndex": 20,
                             "width": 0
                         },
                         "XML Type": {
@@ -283,6 +284,59 @@
                     },
                     "version": 1
                 },
+                "editorContent": {
+                    "isLocked": true,
+                    "toolBarArea": [
+                        {
+                            "items": [
+                            ]
+                        },
+                        {
+                            "items": [
+                            ]
+                        },
+                        {
+                            "items": [
+                            ]
+                        },
+                        {
+                            "items": [
+                                {
+                                    "index": 0,
+                                    "spacerType": 0,
+                                    "type": 1
+                                },
+                                {
+                                    "index": 1,
+                                    "name": "View - AdvancedToolBar",
+                                    "type": 0,
+                                    "visible": true
+                                },
+                                {
+                                    "index": 2,
+                                    "spacerType": 1,
+                                    "type": 1
+                                },
+                                {
+                                    "index": 3,
+                                    "name": "ViewToolBar",
+                                    "type": 0,
+                                    "visible": true
+                                }
+                            ]
+                        }
+                    ],
+                    "toolBars": [
+                        {
+                            "area": 3,
+                            "name": "ViewToolBar"
+                        },
+                        {
+                            "area": 3,
+                            "name": "View - AdvancedToolBar"
+                        }
+                    ]
+                },
                 "filters": {
                     "expanded": true,
                     "favoriteFilter": false
@@ -293,7 +347,7 @@
                         ""
                     ]
                 },
-                "mainViewSplitter": "AAAA/wAAAAEAAAACAAAARAAAAQAB/////wEAAAABAA==",
+                "mainViewSplitter": "AAAA/wAAAAEAAAACAAAATAAAAQAB/////wEAAAABAA==",
                 "recursiveView": false,
                 "showFolders": true,
                 "thumbnailView": {
@@ -308,16 +362,113 @@
         "Console": {
             "class": "Console",
             "state": {
+                "adaptiveLayout": true,
+                "editorContent": {
+                    "isLocked": false,
+                    "toolBarArea": [
+                        {
+                            "items": [
+                            ]
+                        },
+                        {
+                            "items": [
+                            ]
+                        },
+                        {
+                            "items": [
+                            ]
+                        },
+                        {
+                            "items": [
+                            ]
+                        }
+                    ],
+                    "toolBars": [
+                    ]
+                }
             }
         },
         "Create Object": {
             "class": "Create Object",
             "state": {
+                "adaptiveLayout": true,
+                "editorContent": {
+                    "isLocked": false,
+                    "toolBarArea": [
+                        {
+                            "items": [
+                            ]
+                        },
+                        {
+                            "items": [
+                            ]
+                        },
+                        {
+                            "items": [
+                            ]
+                        },
+                        {
+                            "items": [
+                            ]
+                        }
+                    ],
+                    "toolBars": [
+                    ]
+                }
             }
         },
         "Level Explorer": {
             "class": "Level Explorer",
             "state": {
+                "adaptiveLayout": true,
+                "editorContent": {
+                    "isLocked": true,
+                    "toolBarArea": [
+                        {
+                            "items": [
+                            ]
+                        },
+                        {
+                            "items": [
+                                {
+                                    "index": 0,
+                                    "name": "ViewToolBar",
+                                    "type": 0,
+                                    "visible": true
+                                },
+                                {
+                                    "index": 1,
+                                    "spacerType": 0,
+                                    "type": 1
+                                },
+                                {
+                                    "index": 2,
+                                    "name": "Sync SelectionToolBar",
+                                    "type": 0,
+                                    "visible": true
+                                }
+                            ]
+                        },
+                        {
+                            "items": [
+                            ]
+                        },
+                        {
+                            "items": [
+                            ]
+                        }
+                    ],
+                    "toolBars": [
+                        {
+                            "area": 1,
+                            "name": "ViewToolBar"
+                        },
+                        {
+                            "area": 1,
+                            "name": "Sync SelectionToolBar"
+                        }
+                    ]
+                },
                 "filters": {
                     "expanded": false
                 },
@@ -519,32 +670,31 @@
         "Level Settings": {
             "class": "Level Settings",
             "state": {
+                "adaptiveLayout": true,
                 "dockingState": {
-                    "ToolsLayout": {
-                        "floatingWindows": [
-                        ],
-                        "mainWrapper": {
-                            "area": {
-                                "currentIndex": 1,
-                                "objectNames": [
-                                    "Settings",
-                                    "Environment Presets"
-                                ],
-                                "type": "area"
-                            },
-                            "geometry": "AdnQywADAAAAAAAAAAAAAAAAAVgAAAJ6AAAAAAAAAAAAAAFYAAACegAAAAAAAAAAB4AAAAAAAAAAAAAAAVgAAAJ6",
-                            "name": "mainWrapper"
+                },
+                "editorContent": {
+                    "isLocked": false,
+                    "toolBarArea": [
+                        {
+                            "items": [
+                            ]
                         },
-                        "toolWindowManagerStateFormat": 2
-                    },
-                    "Windows": {
-                        "Environment Presets": {
-                            "class": "Environment Presets"
+                        {
+                            "items": [
+                            ]
                         },
-                        "Settings": {
-                            "class": "Settings"
+                        {
+                            "items": [
+                            ]
+                        },
+                        {
+                            "items": [
+                            ]
                         }
-                    }
+                    ],
+                    "toolBars": [
+                    ]
                 }
             }
         },
@@ -581,10 +731,10 @@
                     "showTextLabels": false,
                     "showTriggerBounds": false
                 },
-                "cameraSpeed": 0.04177248105406761,
+                "cameraSpeed": 0.010999999940395355,
                 "resolutionMode": 1,
-                "xViewportRes": 1238,
-                "yViewportRes": 510
+                "xViewportRes": 1198,
+                "yViewportRes": 536
             }
         },
         "Properties": {
@@ -595,6 +745,30 @@
         "Terrain Editor": {
             "class": "Terrain Editor",
             "state": {
+                "adaptiveLayout": true,
+                "editorContent": {
+                    "isLocked": false,
+                    "toolBarArea": [
+                        {
+                            "items": [
+                            ]
+                        },
+                        {
+                            "items": [
+                            ]
+                        },
+                        {
+                            "items": [
+                            ]
+                        },
+                        {
+                            "items": [
+                            ]
+                        }
+                    ],
+                    "toolBars": [
+                    ]
+                },
                 "layerView": {
                     "columnData": {
                         "Filter Color": {

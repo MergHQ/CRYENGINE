@@ -223,20 +223,8 @@ CLevelExplorer::CLevelExplorer(QWidget* pParent)
 	// trigger our own custom sizes for columns
 	OnHeaderSectionCountChanged();
 
-	m_pShortcutBarLayout = new QBoxLayout(QBoxLayout::LeftToRight);
-	m_pShortcutBarLayout->setMargin(0);
-	m_pShortcutBarLayout->setSpacing(4);
-
-	m_pShortcutBarLayout->addWidget(CreateToolButton(GetAction("level_explorer.show_full_hierarchy")));
-	m_pShortcutBarLayout->addWidget(CreateToolButton(GetAction("level_explorer.show_layers")));
-	m_pShortcutBarLayout->addWidget(CreateToolButton(GetAction("level_explorer.show_all_objects")));
-	m_pShortcutBarLayout->addWidget(CreateToolButton(GetAction("level_explorer.show_active_layer_contents")));
-	m_pShortcutBarLayout->addSpacerItem(new QSpacerItem(0, 0, QSizePolicy::Expanding, QSizePolicy::Minimum));
-	m_pShortcutBarLayout->addWidget(CreateToolButton(GetAction("level_explorer.sync_selection")));
-
 	m_pMainLayout = new QBoxLayout(QBoxLayout::TopToBottom);
 	m_pMainLayout->addWidget(m_treeView);
-	m_pMainLayout->addLayout(m_pShortcutBarLayout);
 	m_pMainLayout->setMargin(0);
 	m_pMainLayout->setSpacing(0);
 
@@ -286,7 +274,7 @@ QToolButton* CLevelExplorer::CreateToolButton(QCommandAction* pAction)
 void CLevelExplorer::InitMenuBar()
 {
 	//File
-	AddToMenu({ CEditor::MenuItems::FileMenu, MenuItems::New, MenuItems::New_Folder });
+	AddToMenu({ CEditor::MenuItems::FileMenu, MenuItems::New, MenuItems::NewFolder });
 	CAbstractMenu* const fileMenu = GetMenu(CEditor::MenuItems::FileMenu);
 
 	// Get 'new' action so we can provide additional information relevant to current context
@@ -334,7 +322,7 @@ void CLevelExplorer::InitMenuBar()
 	pEditMenu->AddCommandAction(GetAction("path_utils.copy_path"), section);
 
 	// Layer
-	CAbstractMenu* pLayerMenu =  GetRootMenu()->CreateMenu("Layer");
+	CAbstractMenu* pLayerMenu = GetRootMenu()->CreateMenu("Layer");
 	pLayerMenu->AddCommandAction(GetAction("layer.make_active"));
 	pLayerMenu->AddCommandAction(GetAction("layer.lock_read_only_layers"));
 
@@ -477,14 +465,20 @@ void CLevelExplorer::InitActions()
 	RegisterAction("layer.toggle_pc", [this]() { LevelExplorerCommandHelper::TogglePlatformSpecs(GetSelectedObjectLayers(), eSpecType_PC); });
 	RegisterAction("layer.toggle_xbox_one", [this]() { LevelExplorerCommandHelper::TogglePlatformSpecs(GetSelectedObjectLayers(), eSpecType_XBoxOne); });
 	RegisterAction("layer.toggle_ps4", [this]() { LevelExplorerCommandHelper::TogglePlatformSpecs(GetSelectedObjectLayers(), eSpecType_PS4); });
-	RegisterAction("path_utils.copy_name", [this]() { CopySelectedLayersInfo([](const CObjectLayer* pLayer) 
-		{ 
-			return PathUtil::GetFile(pLayer->GetLayerFilepath()); 
-		}); });
-	RegisterAction("path_utils.copy_path", [this]() { CopySelectedLayersInfo([](const CObjectLayer* pLayer)
+	RegisterAction("path_utils.copy_name", [this]()
 	{
-		return pLayer->GetLayerFilepath();
-	}); });
+		CopySelectedLayersInfo([](const CObjectLayer* pLayer)
+		{
+			return PathUtil::GetFile(pLayer->GetLayerFilepath());
+		});
+	});
+	RegisterAction("path_utils.copy_path", [this]()
+	{
+		CopySelectedLayersInfo([](const CObjectLayer* pLayer)
+		{
+			return pLayer->GetLayerFilepath();
+		});
+	});
 	RegisterAction("path_utils.show_in_file_explorer", [this]()
 	{
 		auto layers = GetSelectedObjectLayers();
@@ -530,12 +524,6 @@ void CLevelExplorer::customEvent(QEvent* pEvent)
 
 		VersionControlEventHandler::HandleOnLevelExplorer(command, ToIObjectLayers(layers), ToIObjectLayers(layerFolders));
 	}
-}
-
-void CLevelExplorer::resizeEvent(QResizeEvent* event)
-{
-	m_pShortcutBarLayout->setDirection(width() > height() ? QBoxLayout::TopToBottom : QBoxLayout::LeftToRight);
-	m_pMainLayout->setDirection(width() > height() ? QBoxLayout::LeftToRight : QBoxLayout::TopToBottom);
 }
 
 void CLevelExplorer::OnContextMenu(const QPoint& pos) const
@@ -625,7 +613,6 @@ void CLevelExplorer::OnContextMenu(const QPoint& pos) const
 		section = abstractMenu.GetNextEmptySection();
 		abstractMenu.AddCommandAction(GetAction("level_explorer.sync_selection"), section);
 	}
-
 
 	QMenu menu;
 	abstractMenu.Build(MenuWidgetBuilders::CMenuBuilder(&menu));
@@ -1801,7 +1788,7 @@ void CLevelExplorer::UpdateSelectionActionState()
 	allLayers.reserve(layers.size() + layerFolders.size());
 	allLayers.insert(allLayers.end(), layers.cbegin(), layers.cend());
 	allLayers.insert(allLayers.end(), layerFolders.cbegin(), layerFolders.cend());
-	
+
 	if (!objects.empty() || !allLayers.empty())
 	{
 		SetActionsEnabled(true);

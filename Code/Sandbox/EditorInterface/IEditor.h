@@ -16,7 +16,6 @@ class CBaseObject;
 class CBroadcastManager;
 class CConfigurationManager;
 class CCryEditDoc;
-class CEditorToolBarService;
 class CFlowGraphManager;
 class CHeightmap;
 class CGameEngine;
@@ -27,6 +26,7 @@ class CPopupMenuItem;
 class CPrefabManager;
 class CPreferences;
 class CRuler;
+class CToolBarService;
 class CTrayArea;
 class CUIEnumsDatabase;
 class CViewManager;
@@ -282,7 +282,7 @@ struct IEditor
 	virtual CTrayArea* GetTrayArea() = 0;
 
 	//! Access to toolbar service for loading and storing editor specific toolbars
-	virtual CEditorToolBarService* GetEditorToolBarService() = 0;
+	virtual CToolBarService* GetToolBarService() = 0;
 
 	//! Retrieve interface to the source control.
 	virtual ISourceControl* GetSourceControl() = 0;

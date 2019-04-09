@@ -1,13 +1,13 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-#include "EditorToolBarService.h"
+#include "ToolBarService.h"
 
 #include "Commands/CustomCommand.h"
 #include "Commands/CommandManager.h"
 #include "Commands/QCommandAction.h"
 #include "CryIcon.h"
-#include "Editor.h"
+#include "EditorFramework/Editor.h"
 #include "FileUtils.h"
 #include "PathUtils.h"
 #include "QtUtil.h"
@@ -47,7 +47,7 @@ public:
 			disconnect(connection);
 	}
 
-	QAction* AddCVar(std::shared_ptr<CEditorToolBarService::QCVarDesc> pCVarDesc)
+	QAction* AddCVar(std::shared_ptr<CToolBarService::QCVarDesc> pCVarDesc)
 	{
 		const QString& iconPath = pCVarDesc->GetIcon();
 		CryIcon icon(iconPath.isEmpty() ? "icons:General/File.ico" : iconPath);
@@ -189,7 +189,7 @@ public:
 };
 }
 
-CEditorToolBarService::QCommandDesc::QCommandDesc(const QVariantMap& variantMap, int version)
+CToolBarService::QCommandDesc::QCommandDesc(const QVariantMap& variantMap, int version)
 	: command(variantMap["command"].toString())
 	, m_IsDeprecated(false)
 {
@@ -219,13 +219,13 @@ CEditorToolBarService::QCommandDesc::QCommandDesc(const QVariantMap& variantMap,
 	}
 }
 
-CEditorToolBarService::QCommandDesc::QCommandDesc(const CCommand* pCommand)
+CToolBarService::QCommandDesc::QCommandDesc(const CCommand* pCommand)
 	: m_IsDeprecated(false)
 {
 	InitFromCommand(pCommand);
 }
 
-void CEditorToolBarService::QCommandDesc::InitFromCommand(const CCommand* pCommand)
+void CToolBarService::QCommandDesc::InitFromCommand(const CCommand* pCommand)
 {
 	const CUiCommand* pUiCommand = static_cast<const CUiCommand*>(pCommand);
 	CUiCommand::UiInfo* pInfo = pUiCommand->GetUiInfo();
@@ -236,7 +236,7 @@ void CEditorToolBarService::QCommandDesc::InitFromCommand(const CCommand* pComma
 	m_IsCustom = pCommand->IsCustomCommand();
 }
 
-QVariant CEditorToolBarService::QCommandDesc::ToVariant() const
+QVariant CToolBarService::QCommandDesc::ToVariant() const
 {
 	QCommandAction* pAction = ToQCommandAction();
 
@@ -255,7 +255,7 @@ QVariant CEditorToolBarService::QCommandDesc::ToVariant() const
 	return map;
 }
 
-QCommandAction* CEditorToolBarService::QCommandDesc::ToQCommandAction() const
+QCommandAction* CToolBarService::QCommandDesc::ToQCommandAction() const
 {
 	CCommand* pCommand = GetIEditor()->GetICommandManager()->GetCommand(QtUtil::ToString(command).c_str());
 	if (!pCommand && IsCustom())
@@ -281,18 +281,18 @@ QCommandAction* CEditorToolBarService::QCommandDesc::ToQCommandAction() const
 	return pAction;
 }
 
-bool CEditorToolBarService::QCommandDesc::IsDeprecated() const
+bool CToolBarService::QCommandDesc::IsDeprecated() const
 {
 	return m_IsDeprecated || GetIEditor()->GetICommandManager()->IsCommandDeprecated(QtUtil::ToString(command).c_str());
 }
 
-void CEditorToolBarService::QCommandDesc::SetName(const QString& n)
+void CToolBarService::QCommandDesc::SetName(const QString& n)
 {
 	name = n;
 	commandChangedSignal();
 }
 
-void CEditorToolBarService::QCommandDesc::SetIcon(const QString& path)
+void CToolBarService::QCommandDesc::SetIcon(const QString& path)
 {
 	iconPath = path;
 	commandChangedSignal();
@@ -300,7 +300,7 @@ void CEditorToolBarService::QCommandDesc::SetIcon(const QString& path)
 
 //////////////////////////////////////////////////////////////////////////
 
-CEditorToolBarService::QCVarDesc::QCVarDesc(const QVariantMap& variantMap, int version)
+CToolBarService::QCVarDesc::QCVarDesc(const QVariantMap& variantMap, int version)
 	: name(variantMap["name"].toString())
 	, iconPath(variantMap["iconPath"].toString())
 	, value(variantMap["value"])
@@ -310,7 +310,7 @@ CEditorToolBarService::QCVarDesc::QCVarDesc(const QVariantMap& variantMap, int v
 		isBitFlag = variantMap["isBitFlag"].toBool();
 }
 
-QVariant CEditorToolBarService::QCVarDesc::ToVariant() const
+QVariant CToolBarService::QCVarDesc::ToVariant() const
 {
 	QVariantMap map;
 	ADD_TO_VARIANT_MAP(name, map);
@@ -321,19 +321,19 @@ QVariant CEditorToolBarService::QCVarDesc::ToVariant() const
 	return map;
 }
 
-void CEditorToolBarService::QCVarDesc::SetCVar(const QString& cvar)
+void CToolBarService::QCVarDesc::SetCVar(const QString& cvar)
 {
 	name = cvar;
 	cvarChangedSignal();
 }
 
-void CEditorToolBarService::QCVarDesc::SetCVarValue(const QVariant& cvarValue)
+void CToolBarService::QCVarDesc::SetCVarValue(const QVariant& cvarValue)
 {
 	value = cvarValue;
 	cvarChangedSignal();
 }
 
-void CEditorToolBarService::QCVarDesc::SetIcon(const QString& path)
+void CToolBarService::QCVarDesc::SetIcon(const QString& path)
 {
 	iconPath = path;
 	cvarChangedSignal();
@@ -341,7 +341,7 @@ void CEditorToolBarService::QCVarDesc::SetIcon(const QString& path)
 
 //////////////////////////////////////////////////////////////////////////
 
-void CEditorToolBarService::QToolBarDesc::Initialize(const QVariantList& commandList, int version)
+void CToolBarService::QToolBarDesc::Initialize(const QVariantList& commandList, int version)
 {
 	for (const QVariant& commandVar : commandList)
 	{
@@ -353,7 +353,7 @@ void CEditorToolBarService::QToolBarDesc::Initialize(const QVariantList& command
 	}
 }
 
-std::shared_ptr<CEditorToolBarService::QItemDesc> CEditorToolBarService::QToolBarDesc::CreateItem(const QVariant& itemVariant, int version)
+std::shared_ptr<CToolBarService::QItemDesc> CToolBarService::QToolBarDesc::CreateItem(const QVariant& itemVariant, int version)
 {
 	if (itemVariant.type() == QVariant::String)
 	{
@@ -380,7 +380,7 @@ std::shared_ptr<CEditorToolBarService::QItemDesc> CEditorToolBarService::QToolBa
 	return nullptr;
 }
 
-QVariant CEditorToolBarService::QToolBarDesc::ToVariant() const
+QVariant CToolBarService::QToolBarDesc::ToVariant() const
 {
 	QVariantList commandsVarList;
 	for (std::shared_ptr<QItemDesc> pItem : items)
@@ -391,12 +391,12 @@ QVariant CEditorToolBarService::QToolBarDesc::ToVariant() const
 	return commandsVarList;
 }
 
-int CEditorToolBarService::QToolBarDesc::IndexOfItem(std::shared_ptr<QItemDesc> pItem)
+int CToolBarService::QToolBarDesc::IndexOfItem(std::shared_ptr<QItemDesc> pItem)
 {
 	return items.indexOf(pItem);
 }
 
-void CEditorToolBarService::QToolBarDesc::MoveItem(int currIdx, int idx)
+void CToolBarService::QToolBarDesc::MoveItem(int currIdx, int idx)
 {
 	if (idx == -1) // Move to the end
 		idx = items.size() - 1;
@@ -409,12 +409,12 @@ void CEditorToolBarService::QToolBarDesc::MoveItem(int currIdx, int idx)
 	items.insert(idx, pItem);
 }
 
-int CEditorToolBarService::QToolBarDesc::IndexOfCommand(const CCommand* pCommand)
+int CToolBarService::QToolBarDesc::IndexOfCommand(const CCommand* pCommand)
 {
 	for (auto i = 0; i < items.size(); ++i)
 	{
 		const std::shared_ptr<QItemDesc> pItem = items[i];
-		if (pItem->GetType() != CEditorToolBarService::QItemDesc::Command)
+		if (pItem->GetType() != CToolBarService::QItemDesc::Command)
 			continue;
 
 		const std::shared_ptr<QCommandDesc> pCommandDesc = std::static_pointer_cast<QCommandDesc>(pItem);
@@ -425,12 +425,12 @@ int CEditorToolBarService::QToolBarDesc::IndexOfCommand(const CCommand* pCommand
 	return -1;
 }
 
-void CEditorToolBarService::QToolBarDesc::InsertItem(const QVariant& itemVariant, int idx)
+void CToolBarService::QToolBarDesc::InsertItem(const QVariant& itemVariant, int idx)
 {
 	InsertItem(CreateItem(itemVariant, Private_ToolbarManager::s_version), idx);
 }
 
-void CEditorToolBarService::QToolBarDesc::InsertItem(std::shared_ptr<QItemDesc> pItem, int idx)
+void CToolBarService::QToolBarDesc::InsertItem(std::shared_ptr<QItemDesc> pItem, int idx)
 {
 	if (idx < 0)
 	{
@@ -441,7 +441,7 @@ void CEditorToolBarService::QToolBarDesc::InsertItem(std::shared_ptr<QItemDesc> 
 	items.insert(idx, pItem);
 }
 
-void CEditorToolBarService::QToolBarDesc::InsertCommand(const CCommand* pCommand, int idx)
+void CToolBarService::QToolBarDesc::InsertCommand(const CCommand* pCommand, int idx)
 {
 	int currIdx = IndexOfCommand(pCommand);
 
@@ -454,7 +454,7 @@ void CEditorToolBarService::QToolBarDesc::InsertCommand(const CCommand* pCommand
 	pCommandDesc->commandChangedSignal.Connect(this, &QToolBarDesc::OnCommandChanged);
 }
 
-void CEditorToolBarService::QToolBarDesc::InsertCVar(const QString& cvarName, int idx)
+void CToolBarService::QToolBarDesc::InsertCVar(const QString& cvarName, int idx)
 {
 	std::shared_ptr<QCVarDesc> pCVar = std::make_shared<QCVarDesc>();
 	pCVar->cvarChangedSignal.Connect(this, &QToolBarDesc::OnCommandChanged);
@@ -462,12 +462,12 @@ void CEditorToolBarService::QToolBarDesc::InsertCVar(const QString& cvarName, in
 	return;
 }
 
-void CEditorToolBarService::QToolBarDesc::InsertSeparator(int idx)
+void CToolBarService::QToolBarDesc::InsertSeparator(int idx)
 {
 	InsertItem(std::make_shared<QSeparatorDesc>(), idx);
 }
 
-void CEditorToolBarService::QToolBarDesc::RemoveItem(std::shared_ptr<QItemDesc> pItem)
+void CToolBarService::QToolBarDesc::RemoveItem(std::shared_ptr<QItemDesc> pItem)
 {
 	int idx = items.indexOf(pItem);
 	if (idx < 0)
@@ -476,17 +476,17 @@ void CEditorToolBarService::QToolBarDesc::RemoveItem(std::shared_ptr<QItemDesc> 
 	items.remove(idx);
 }
 
-void CEditorToolBarService::QToolBarDesc::RemoveItem(int idx)
+void CToolBarService::QToolBarDesc::RemoveItem(int idx)
 {
 	items.remove(idx);
 }
 
-QString CEditorToolBarService::QToolBarDesc::GetNameFromFileInfo(const QFileInfo& fileInfo)
+QString CToolBarService::QToolBarDesc::GetNameFromFileInfo(const QFileInfo& fileInfo)
 {
 	return fileInfo.baseName();
 }
 
-void CEditorToolBarService::QToolBarDesc::SetName(const QString& name)
+void CToolBarService::QToolBarDesc::SetName(const QString& name)
 {
 	// First, check path and fix if necessary
 	int index = m_path.lastIndexOf(m_name);
@@ -498,7 +498,7 @@ void CEditorToolBarService::QToolBarDesc::SetName(const QString& name)
 	m_name = name;
 }
 
-bool CEditorToolBarService::QToolBarDesc::RequiresUpdate() const
+bool CToolBarService::QToolBarDesc::RequiresUpdate() const
 {
 	if (updated)
 	{
@@ -508,7 +508,7 @@ bool CEditorToolBarService::QToolBarDesc::RequiresUpdate() const
 	for (auto i = 0; i < items.size(); ++i)
 	{
 		const std::shared_ptr<QItemDesc> pItem = items[i];
-		if (pItem->GetType() != CEditorToolBarService::QItemDesc::Command)
+		if (pItem->GetType() != CToolBarService::QItemDesc::Command)
 			continue;
 
 		const std::shared_ptr<QCommandDesc> pCommandDesc = std::static_pointer_cast<QCommandDesc>(pItem);
@@ -523,18 +523,18 @@ bool CEditorToolBarService::QToolBarDesc::RequiresUpdate() const
 
 //////////////////////////////////////////////////////////////////////////
 
-CEditorToolBarService::CEditorToolBarService()
+CToolBarService::CToolBarService()
 	: CUserData({ Private_ToolbarManager::szUserToolbarsPath })
 	, m_pCVarActionMapper(new Private_ToolbarManager::CVarActionMapper())
 {
 }
 
-CEditorToolBarService::~CEditorToolBarService()
+CToolBarService::~CToolBarService()
 {
 	m_pCVarActionMapper->deleteLater();
 }
 
-void CEditorToolBarService::MigrateToolBars(const char* szSourceDirectory, const char* szDestinationDirectory) const
+void CToolBarService::MigrateToolBars(const char* szSourceDirectory, const char* szDestinationDirectory) const
 {
 	std::map<string, std::shared_ptr<QToolBarDesc>> toolBarDescriptors;
 	std::vector<string> sourceDirectories = GetToolBarDirectories(szSourceDirectory);
@@ -547,12 +547,12 @@ void CEditorToolBarService::MigrateToolBars(const char* szSourceDirectory, const
 	}
 }
 
-std::shared_ptr<CEditorToolBarService::QToolBarDesc> CEditorToolBarService::CreateToolBarDesc(const CEditor* pEditor, const char* szName) const
+std::shared_ptr<CToolBarService::QToolBarDesc> CToolBarService::CreateToolBarDesc(const CEditor* pEditor, const char* szName) const
 {
 	return CreateToolBarDesc(pEditor->GetEditorName(), szName);
 }
 
-std::shared_ptr<CEditorToolBarService::QToolBarDesc> CEditorToolBarService::CreateToolBarDesc(const char* szEditorName, const char* szToolBarName) const
+std::shared_ptr<CToolBarService::QToolBarDesc> CToolBarService::CreateToolBarDesc(const char* szEditorName, const char* szToolBarName) const
 {
 	std::shared_ptr<QToolBarDesc> pToolBarDesc = std::make_shared<QToolBarDesc>();
 	pToolBarDesc->SetName(szToolBarName);
@@ -561,7 +561,7 @@ std::shared_ptr<CEditorToolBarService::QToolBarDesc> CEditorToolBarService::Crea
 	return pToolBarDesc;
 }
 
-bool CEditorToolBarService::SaveToolBar(const std::shared_ptr<QToolBarDesc>& pToolBarDesc) const
+bool CToolBarService::SaveToolBar(const std::shared_ptr<QToolBarDesc>& pToolBarDesc) const
 {
 	QVariantMap toDisk;
 	toDisk["version"] = Private_ToolbarManager::s_version;
@@ -573,25 +573,25 @@ bool CEditorToolBarService::SaveToolBar(const std::shared_ptr<QToolBarDesc>& pTo
 	return UserDataUtil::Save(PathUtil::Make(Private_ToolbarManager::szUserToolbarsPath, toolBarPath.c_str()).c_str(), doc.toJson());
 }
 
-void CEditorToolBarService::RemoveToolBar(const std::shared_ptr<QToolBarDesc>& pToolBarDesc) const
+void CToolBarService::RemoveToolBar(const std::shared_ptr<QToolBarDesc>& pToolBarDesc) const
 {
 	const string name = QtUtil::ToString(pToolBarDesc->GetPath());
 	const string fullPath = UserDataUtil::GetUserPath(PathUtil::Make(Private_ToolbarManager::szUserToolbarsPath, name.c_str(), ".json").c_str());
 	FileUtils::Remove(fullPath.c_str());
 }
 
-std::set<string> CEditorToolBarService::GetToolBarNames(const CEditor* pEditor) const
+std::set<string> CToolBarService::GetToolBarNames(const CEditor* pEditor) const
 {
 	return GetToolBarNames(pEditor->GetEditorName());
 }
 
-std::shared_ptr<CEditorToolBarService::QToolBarDesc> CEditorToolBarService::GetToolBarDesc(const CEditor* pEditor, const char* szName) const
+std::shared_ptr<CToolBarService::QToolBarDesc> CToolBarService::GetToolBarDesc(const CEditor* pEditor, const char* szName) const
 {
 	// Need editor or editorName
 	return GetToolBarDesc(PathUtil::Make(pEditor->GetEditorName(), szName, ".json"));
 }
 
-std::shared_ptr<CEditorToolBarService::QToolBarDesc> CEditorToolBarService::GetToolBarDesc(const char* szRelativePath) const
+std::shared_ptr<CToolBarService::QToolBarDesc> CToolBarService::GetToolBarDesc(const char* szRelativePath) const
 {
 	std::vector<string> toolBarDirectories = GetToolBarDirectories(szRelativePath);
 	for (const string& toolBarDir : toolBarDirectories)
@@ -611,12 +611,12 @@ std::shared_ptr<CEditorToolBarService::QToolBarDesc> CEditorToolBarService::GetT
 	return nullptr;
 }
 
-std::vector<QToolBar*> CEditorToolBarService::LoadToolBars(const CEditor* pEditor) const
+std::vector<QToolBar*> CToolBarService::LoadToolBars(const CEditor* pEditor) const
 {
 	return LoadToolBars(pEditor->GetEditorName(), pEditor);
 }
 
-std::vector<string> CEditorToolBarService::GetToolBarDirectories(const char* szRelativePath) const
+std::vector<string> CToolBarService::GetToolBarDirectories(const char* szRelativePath) const
 {
 	std::vector<string> result;
 	string editorToolbarPath = PathUtil::Make(Private_ToolbarManager::s_defaultPath, szRelativePath);
@@ -631,7 +631,7 @@ std::vector<string> CEditorToolBarService::GetToolBarDirectories(const char* szR
 	return result;
 }
 
-std::vector<QToolBar*> CEditorToolBarService::LoadToolBars(const char* szRelativePath, const CEditor* pEditor /* = nullptr*/) const
+std::vector<QToolBar*> CToolBarService::LoadToolBars(const char* szRelativePath, const CEditor* pEditor /* = nullptr*/) const
 {
 	std::map<string, std::shared_ptr<QToolBarDesc>> toolBarDescriptors;
 	std::vector<string> toolBarDirectories = GetToolBarDirectories(szRelativePath);
@@ -644,7 +644,7 @@ std::vector<QToolBar*> CEditorToolBarService::LoadToolBars(const char* szRelativ
 	return CreateEditorToolBars(toolBarDescriptors, pEditor);
 }
 
-std::set<string> CEditorToolBarService::GetToolBarNames(const char* szRelativePath) const
+std::set<string> CToolBarService::GetToolBarNames(const char* szRelativePath) const
 {
 	std::set<string> result;
 	std::vector<string> toolBarDirectories = GetToolBarDirectories(szRelativePath);
@@ -657,7 +657,7 @@ std::set<string> CEditorToolBarService::GetToolBarNames(const char* szRelativePa
 	return result;
 }
 
-std::vector<QToolBar*> CEditorToolBarService::CreateEditorToolBars(const std::map<string, std::shared_ptr<QToolBarDesc>>& toolBarDescriptors, const CEditor* pEditor /* = nullptr*/) const
+std::vector<QToolBar*> CToolBarService::CreateEditorToolBars(const std::map<string, std::shared_ptr<QToolBarDesc>>& toolBarDescriptors, const CEditor* pEditor /* = nullptr*/) const
 {
 	std::vector<QToolBar*> toolBars;
 	for (const std::pair<string, std::shared_ptr<QToolBarDesc>>& toolBarPair : toolBarDescriptors)
@@ -668,7 +668,7 @@ std::vector<QToolBar*> CEditorToolBarService::CreateEditorToolBars(const std::ma
 	return toolBars;
 }
 
-QToolBar* CEditorToolBarService::CreateEditorToolBar(const std::shared_ptr<QToolBarDesc>& pToolBarDesc, const CEditor* pEditor /* = nullptr*/) const
+QToolBar* CToolBarService::CreateEditorToolBar(const std::shared_ptr<QToolBarDesc>& pToolBarDesc, const CEditor* pEditor /* = nullptr*/) const
 {
 	// Create the toolbar if the mainframe doesn't have one already
 	QToolBar* pToolBar = new QToolBar();
@@ -687,7 +687,7 @@ QToolBar* CEditorToolBarService::CreateEditorToolBar(const std::shared_ptr<QTool
 	return pToolBar;
 }
 
-void CEditorToolBarService::FindToolBarsInDirAndExecute(const string& dirPath, std::function<void(const QFileInfo& fileInfo)> callback) const
+void CToolBarService::FindToolBarsInDirAndExecute(const string& dirPath, std::function<void(const QFileInfo& fileInfo)> callback) const
 {
 	QDir dir(dirPath.c_str());
 	if (!dir.exists())
@@ -707,7 +707,7 @@ void CEditorToolBarService::FindToolBarsInDirAndExecute(const string& dirPath, s
 	}
 }
 
-std::shared_ptr<CEditorToolBarService::QToolBarDesc> CEditorToolBarService::LoadToolBar(const string& absolutePath) const
+std::shared_ptr<CToolBarService::QToolBarDesc> CToolBarService::LoadToolBar(const string& absolutePath) const
 {
 	QFileInfo fileInfo(absolutePath.c_str());
 	QFile file(absolutePath.c_str());
@@ -743,7 +743,7 @@ std::shared_ptr<CEditorToolBarService::QToolBarDesc> CEditorToolBarService::Load
 	return pToolBarDesc;
 }
 
-void CEditorToolBarService::LoadToolBarsFromDir(const string& dirPath, std::map<string, std::shared_ptr<QToolBarDesc>>& outToolBarDescriptors) const
+void CToolBarService::LoadToolBarsFromDir(const string& dirPath, std::map<string, std::shared_ptr<QToolBarDesc>>& outToolBarDescriptors) const
 {
 	FindToolBarsInDirAndExecute(dirPath, [this, &outToolBarDescriptors](const QFileInfo& fileInfo)
 	{
@@ -762,7 +762,7 @@ void CEditorToolBarService::LoadToolBarsFromDir(const string& dirPath, std::map<
 	});
 }
 
-void CEditorToolBarService::GetToolBarNamesFromDir(const string& dirPath, std::set<string>& outResult) const
+void CToolBarService::GetToolBarNamesFromDir(const string& dirPath, std::set<string>& outResult) const
 {
 	FindToolBarsInDirAndExecute(dirPath, [&outResult](const QFileInfo& fileInfo)
 	{
@@ -770,7 +770,7 @@ void CEditorToolBarService::GetToolBarNamesFromDir(const string& dirPath, std::s
 	});
 }
 
-void CEditorToolBarService::CreateToolBar(const std::shared_ptr<QToolBarDesc>& pToolBarDesc, QToolBar* pToolBar, const CEditor* pEditor /* = nullptr*/) const
+void CToolBarService::CreateToolBar(const std::shared_ptr<QToolBarDesc>& pToolBarDesc, QToolBar* pToolBar, const CEditor* pEditor /* = nullptr*/) const
 {
 	for (std::shared_ptr<QItemDesc> pItemDesc : pToolBarDesc->GetItems())
 	{

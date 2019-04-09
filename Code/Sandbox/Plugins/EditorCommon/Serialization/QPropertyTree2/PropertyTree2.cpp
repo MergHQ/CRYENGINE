@@ -44,6 +44,9 @@ QPropertyTree2::QPropertyTree2(QWidget* pParent /*= nullptr*/)
 	, m_pActiveRow(nullptr)
 	, m_accumulateChanges(AccumulateChangesStatus::None)
 	, m_autoExpandDepth(1)
+	, m_collapsedIcon("icons:General/Pointer_Right.ico")
+	, m_expandedIcon("icons:General/Pointer_Down_Expanded.ico")
+	, m_dragHandleIcon("icons:General/Drag_Handle_Horizontal.ico")
 {
 	m_pScrollArea = new CScrollArea();
 	m_pScrollArea->setWidgetResizable(true);
@@ -92,11 +95,6 @@ QPropertyTree2::QPropertyTree2(QWidget* pParent /*= nullptr*/)
 
 	m_splitterRatio = 0.5;
 	m_isDraggingSplitter = false;
-
-	//Styling
-	m_collapsedIcon = QIcon("icons:General/Pointer_Right.ico");
-	m_expandedIcon = QIcon("icons:General/Pointer_Down_Expanded.ico");
-	m_dragHandleIcon = QIcon("icons:General/Drag_Handle.ico");
 
 	setFocusPolicy(Qt::StrongFocus);
 	setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);

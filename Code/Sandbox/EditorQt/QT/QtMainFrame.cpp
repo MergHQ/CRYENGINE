@@ -24,7 +24,7 @@
 #include <EditorFramework/BroadcastManager.h>
 #include <EditorFramework/Events.h>
 #include <EditorFramework/PersonalizationManager.h>
-#include <EditorFramework/ToolBarCustomizeDialog.h>
+#include <EditorFramework/ToolBar/ToolBarCustomizeDialog.h>
 #include <Menu/MenuWidgetBuilders.h>
 #include <Preferences/GeneralPreferences.h>
 #include <QTrackingTooltip.h>
@@ -67,7 +67,7 @@ REGISTER_PREFERENCES_PAGE_PTR(SPerformancePreferences, &gPerformancePreferences)
 
 //////////////////////////////////////////////////////////////////////////
 
-CEditorMainFrame* CEditorMainFrame::m_pInstance = nullptr;
+CEditorMainFrame * CEditorMainFrame::m_pInstance = nullptr;
 
 namespace
 {
@@ -422,7 +422,7 @@ public:
 			CAbstractMenu builder;
 
 			builder.CreateCommandAction("layer.hide_all");
-			builder.CreateCommandAction("layer.show_all");
+			builder.CreateCommandAction("layer.unhide_all");
 
 			const int sec = builder.GetNextEmptySection();
 
@@ -815,10 +815,10 @@ void CEditorMainFrame::PostLoad()
 
 	// First attempt to migrate any toolbars in the root path to the mainframe folder. This will place any toolbars in the root
 	// in this editor's (MainFrame) specific folder. It will also upgrade toolbars to the latest version
-	GetIEditor()->GetEditorToolBarService()->MigrateToolBars("", "MainFrame");
+	GetIEditor()->GetToolBarService()->MigrateToolBars("", "MainFrame");
 
 	// Hardcoded editor name because mainframe toolbars are just a hack caused by not having a proper standalone level editor
-	std::vector<QToolBar*> toolbars = GetIEditor()->GetEditorToolBarService()->LoadToolBars("MainFrame");
+	std::vector<QToolBar*> toolbars = GetIEditor()->GetToolBarService()->LoadToolBars("MainFrame");
 	for (QToolBar* pToolBar : toolbars)
 	{
 		addToolBar(pToolBar);
@@ -1468,6 +1468,7 @@ void CEditorMainFrame::OnCustomizeToolBar()
 
 	pToolBarCustomizeDialog->signalToolBarAdded.Connect(this, &CEditorMainFrame::OnToolBarAdded);
 	pToolBarCustomizeDialog->signalToolBarModified.Connect(this, &CEditorMainFrame::OnToolBarModified);
+	pToolBarCustomizeDialog->signalToolBarRenamed.Connect(this, &CEditorMainFrame::OnToolBarRenamed);
 	pToolBarCustomizeDialog->signalToolBarRemoved.Connect(this, &CEditorMainFrame::OnToolBarRemoved);
 
 	connect(pToolBarCustomizeDialog, &QWidget::destroyed, [this, pToolBarCustomizeDialog]()
@@ -1509,6 +1510,12 @@ void CEditorMainFrame::OnToolBarModified(QToolBar* pToolBar)
 			pOldToolBar->deleteLater();
 		});
 	}
+}
+
+void CEditorMainFrame::OnToolBarRenamed(const char* szOldToolBarName, QToolBar* pToolBar)
+{
+	OnToolBarRemoved(szOldToolBarName);
+	OnToolBarAdded(pToolBar);
 }
 
 void CEditorMainFrame::OnToolBarRemoved(const char* szToolBarName)

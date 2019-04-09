@@ -397,10 +397,6 @@ struct SimulationParamsSerializer
 					ar(ProxySet(p.m_arrProxyNames, definition), "proxyNames", "Available Collision Proxies");
 				}
 			}
-			else
-			{
-				ar.warning(p.m_useRedirect, "Either Redirection or Geometry should be specified for simulation to function.\n(ignore this warning if you left geometry empty on purpose, e.g. inventory slots)");
-			}
 		}
 
 		if (ct == SimulationParams::SPRING_ELLIPSOID)
@@ -441,10 +437,6 @@ struct SimulationParamsSerializer
 					if (p.m_nProjectionType)
 						ar(ProxySet(p.m_arrProxyNames, definition), "proxyNames", "Available Collision Proxies");
 				}
-			}
-			else
-			{
-				ar.warning(p.m_useRedirect, "Either Redirection or Geometry should be specified for simulation to function.\n(ignore this warning if you left geometry empty on purpose, e.g. inventory slots)");
 			}
 		}
 

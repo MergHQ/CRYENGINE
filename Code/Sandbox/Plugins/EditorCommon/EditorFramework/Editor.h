@@ -1,18 +1,24 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 #pragma once
 
+// EditorCommon
 #include "EditorCommonAPI.h"
 #include "EditorWidget.h"
 #include "DockingSystem/DockableContainer.h"
 #include "Menu/MenuDesc.h"
 #include "QtViewPane.h"
 
+// CryCommon
+#include <CrySandbox/CrySignal.h>
+
+// Qt
 #include <QVariant>
 
 class BroadcastEvent;
 class CAbstractMenu;
 class CBroadcastManager;
-class CEditorToolBarArea;
+class CEditorContent;
+class CToolBarArea;
 class CMenuUpdater;
 class QEvent;
 
@@ -27,21 +33,91 @@ public:
 	CEditor(QWidget* pParent = nullptr, bool bIsOnlyBackend = false);
 	virtual ~CEditor();
 
-	virtual void                  Initialize();
+	virtual void        Initialize();
 
-	virtual const char*           GetEditorName() const = 0;
+	virtual const char* GetEditorName() const = 0;
 
-	CBroadcastManager&            GetBroadcastManager();
+	// Editor orientation when using adaptive layouts
+	Qt::Orientation         GetOrientation() const        { return m_currentOrientation; }
+	// Used for determining what layout direction to use if adaptive layout is turned off
+	virtual Qt::Orientation GetDefaultOrientation() const { return Qt::Horizontal; }
+
+	CBroadcastManager&      GetBroadcastManager();
 
 	// Serialized in the layout
 	virtual void        SetLayout(const QVariantMap& state);
 	virtual QVariantMap GetLayout() const;
 
-protected:
-	virtual void customEvent(QEvent* event) override;
+	enum class MenuItems : uint8
+	{
+		//Top level menus
+		FileMenu,
+		EditMenu,
+		ViewMenu,
+		WindowMenu,
+		HelpMenu,
+		ToolBarMenu,
 
-	void         AddRecentFile(const QString& filePath);
-	QStringList  GetRecentFiles();
+		//File menu contents
+		New,
+		NewFolder,
+		Open,
+		Close,
+		Save,
+		SaveAs,
+		RecentFiles,
+
+		//Edit menu contents
+		Undo,
+		Redo,
+		Copy,
+		Cut,
+		Paste,
+		Rename,
+		Delete,
+		Find,
+		FindPrevious,
+		FindNext,
+		SelectAll,
+		Duplicate,
+
+		//View menu contents
+		ZoomIn,
+		ZoomOut,
+
+		//Help menu contents
+		Help,
+	};
+
+	//! Add one of the predefined menu items to the menu
+	void AddToMenu(MenuItems item);
+	//! Add an array of the predefined menu items to the menu
+	template<int N>
+	void AddToMenu(const MenuItems(&items)[N])
+	{
+		AddToMenu(&items[0], N);
+	}
+	void AddToMenu(const MenuItems* items, int count);
+	//! Add an array of the predefined menu items to the menu
+	void AddToMenu(const std::vector<MenuItems>& items);
+	//! Add an editor command to the menu
+	//TODO : make it possible to change the UI name and icon of the command while keeping shortcut
+	void AddToMenu(CAbstractMenu* pMenu, const char* command);
+	//! Add an editor command to the menu
+	void AddToMenu(const char* menuName, const char* command);
+
+	//! Returns a top menu with name \p menu, if it already exists; or returns a newly created menu, otherwise. (Overload useful for tr() strings)
+	CAbstractMenu* GetMenu(const QString& menuName);
+	//! Returns a top menu with name \p menu, if it already exists; or returns a newly created menu, otherwise.
+	CAbstractMenu* GetMenu(const char* menuName);
+	CAbstractMenu* GetMenu(MenuItems menuItem);
+
+protected:
+	void        customEvent(QEvent* pEvent) override;
+	void        resizeEvent(QResizeEvent* pEvent) override;
+
+	void        AddRecentFile(const QString& filePath);
+	QStringList GetRecentFiles();
 
 	// Serialized in personalization
 	//Properties that can be shared between all projects
@@ -66,8 +142,14 @@ protected:
 	void               SetPersonalizationState(const QVariantMap& state);
 	const QVariantMap& GetPersonalizationState();
 
-	virtual void       SetContent(QWidget* content);
-	virtual void       SetContent(QLayout* content);
+	// Must be overridden to add handling of adaptive layous. Adaptive layouts enables editor owners to make better use of space
+	virtual bool SupportsAdaptiveLayout() const  { return false; }
+	bool         IsAdaptiveLayoutEnabled() const { return SupportsAdaptiveLayout() && m_isAdaptiveLayoutEnabled; }
+	// Triggered on resize for editors that support adaptive layouts
+	virtual void OnAdaptiveLayoutChanged();
+
+	virtual void SetContent(QWidget* content);
+	virtual void SetContent(QLayout* content);
 
 	//! If returning false, this method prevents the Sandbox from closing this editor.
 	//! Note that this might prevent the Sandbox from exiting.
@@ -136,64 +218,6 @@ protected:
 	virtual bool OnZoomIn()  { return false; }
 	virtual bool OnZoomOut() { return false; }
 
-	enum class MenuItems : uint8
-	{
-		//Top level menus
-		FileMenu,
-		EditMenu,
-		ViewMenu,
-		WindowMenu,
-		HelpMenu,
-		ToolBarMenu,
-
-		//File menu contents
-		New,
-		New_Folder,
-		Open,
-		Close,
-		Save,
-		SaveAs,
-		RecentFiles,
-
-		//Edit menu contents
-		Undo,
-		Redo,
-		Copy,
-		Cut,
-		Paste,
-		Rename,
-		Delete,
-		Find,
-		FindPrevious,
-		FindNext,
-		SelectAll,
-		Duplicate,
-
-		//View menu contents
-		ZoomIn,
-		ZoomOut,
-
-		//Help menu contents
-		Help,
-	};
-
-	//! Add one of the predefined menu items to the menu
-	void AddToMenu(MenuItems item);
-	//! Add an array of the predefined menu items to the menu
-	template<int N>
-	void AddToMenu(const MenuItems(&items)[N])
-	{
-		AddToMenu(&items[0], N);
-	}
-	void AddToMenu(const MenuItems* items, int count);
-	//! Add an array of the predefined menu items to the menu
-	void AddToMenu(const std::vector<MenuItems>& items);
-	//! Add an editor command to the menu
-	//TODO : make it possible to change the UI name and icon of the command while keeping shortcut
-	void AddToMenu(CAbstractMenu* pMenu, const char* command);
-	//! Add an editor command to the menu
-	void AddToMenu(const char* menuName, const char* command);
-
 	//! Returns the default action for a command from editor's menu.
 	QCommandAction* GetMenuAction(MenuItems item);
 
@@ -201,12 +225,6 @@ protected:
 
 	//! Returns the abstract menu used to populate the menu bar of this editor
 	CAbstractMenu* GetRootMenu();
-
-	//! Returns a top menu with name \p menu, if it already exists; or returns a newly created menu, otherwise. (Overload useful for tr() strings)
-	CAbstractMenu* GetMenu(const QString& menuName);
-	//! Returns a top menu with name \p menu, if it already exists; or returns a newly created menu, otherwise.
-	CAbstractMenu* GetMenu(const char* menuName);
-	CAbstractMenu* GetMenu(MenuItems menuItem);
 
 	//! Enable the inner docking system for this tool.
 	//! See methods below for configuration and usage
@@ -226,12 +244,18 @@ protected:
 	void         ForceRebuildMenu();
 
 private:
-	void            InitActions();
+	void InitActions();
 
-	void            PopulateRecentFilesMenu(CAbstractMenu* menu);
-	void            OnMainFrameAboutToClose(BroadcastEvent& event);
+	void PopulateRecentFilesMenu(CAbstractMenu* menu);
+	void OnMainFrameAboutToClose(BroadcastEvent& event);
 
-	void            InitMenuDesc();
+	void InitMenuDesc();
+
+	void UpdateAdaptiveLayout();
+	void SetAdaptiveLayoutEnabled(bool enable);
+
+public:
+	CCrySignal<void(Qt::Orientation)> signalAdaptiveLayoutChanged;
 
 protected:
 	CBroadcastManager* m_broadcastManager;
@@ -241,9 +265,14 @@ protected:
 private:
 	CDockableContainer*                         m_dockingRegistry;
 	QObject*                                    m_pBroadcastManagerFilter;
+	CEditorContent*                             m_pEditorContent;
 	std::unique_ptr<MenuDesc::CDesc<MenuItems>> m_pMenuDesc;
 	std::unique_ptr<CAbstractMenu>              m_pMenu;
 	std::unique_ptr<CMenuUpdater>               m_pMenuUpdater;
+
+	QCommandAction*                             m_pActionAdaptiveLayout;
+	Qt::Orientation                             m_currentOrientation;
+	bool m_isAdaptiveLayoutEnabled;
 };
 
 //! Inherit from this class to create a dockable editor
