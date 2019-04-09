@@ -15,6 +15,7 @@ QCommandAction::QCommandAction(const QString& actionName, const QString& actionT
 	: QAction(actionName, parent)
 {
 	setShortcutContext(Qt::WidgetWithChildrenShortcut);
+	setShortcutVisibleInContextMenu(true);
 	setText(actionText);
 	if (command)
 	{
@@ -27,6 +28,7 @@ QCommandAction::QCommandAction(const QString& actionName, const char* command, Q
 	: QAction(actionName, parent)
 {
 	setShortcutContext(Qt::WidgetWithChildrenShortcut);
+	setShortcutVisibleInContextMenu(true);
 	setObjectName(actionName);
 	if (command)
 	{
@@ -40,6 +42,7 @@ QCommandAction::QCommandAction(const QCommandAction& action)
 	, UiInfo(action.UiInfo::buttonText, action.UiInfo::icon, action.key, action.UiInfo::isCheckable)
 {
 	setShortcutContext(Qt::WidgetWithChildrenShortcut);
+	setShortcutVisibleInContextMenu(true);
 	setIcon(action.QAction::icon());
 	setCheckable(action.QAction::isCheckable());
 	setObjectName(action.objectName());
@@ -53,6 +56,7 @@ QCommandAction::QCommandAction(const CUiCommand& cmd)
 	: QAction(cmd.GetDescription().c_str(), nullptr)
 {
 	setShortcutContext(Qt::WidgetWithChildrenShortcut);
+	setShortcutVisibleInContextMenu(true);
 	setObjectName(cmd.GetName().c_str());
 	setProperty("QCommandAction", QVariant(QString(cmd.GetCommandString())));
 	connect(this, &QCommandAction::triggered, this, &QCommandAction::OnTriggered);
@@ -62,6 +66,7 @@ QCommandAction::QCommandAction(const CCustomCommand& cmd)
 	: QAction(cmd.GetName().c_str(), nullptr)
 {
 	setShortcutContext(Qt::WidgetWithChildrenShortcut);
+	setShortcutVisibleInContextMenu(true);
 	setObjectName(tr("Custom Command"));
 	setProperty("QCommandAction", QVariant(QString(cmd.GetCommandString())));
 	connect(this, &QCommandAction::triggered, [&]()
@@ -75,6 +80,7 @@ QCommandAction::QCommandAction(const CPolledKeyCommand& cmd)
 	: QAction(cmd.GetDescription().c_str(), 0)
 {
 	setShortcutContext(Qt::WidgetWithChildrenShortcut);
+	setShortcutVisibleInContextMenu(true);
 	setObjectName(tr("Polled Key Command"));
 	//triggered() is intentionally not connected
 }
