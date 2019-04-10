@@ -1784,6 +1784,9 @@ void C3DEngine::RenderScene(const int nRenderFlags, const SRenderingPassInfo& pa
 		m_pMergedMeshesManager->PostRenderMeshes(passInfo);
 	}
 
+	if (m_pPartManager)
+		m_pPartManager->FinishParticleRenderTasks(passInfo);
+
 	// all shadow casters are submitted, switch render views into eUsageModeWritingDone mode
 	for (const auto& pair : shadowFrustums)
 	{
@@ -1801,9 +1804,6 @@ void C3DEngine::RenderScene(const int nRenderFlags, const SRenderingPassInfo& pa
 	// add sprites render item
 	if (passInfo.RenderFarSprites())
 		m_pObjManager->RenderFarObjects(passInfo);
-
-	if (m_pPartManager)
-		m_pPartManager->FinishParticleRenderTasks(passInfo);
 
 	if (passInfo.IsGeneralPass())
 		m_LightVolumesMgr.Update(passInfo);

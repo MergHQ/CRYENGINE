@@ -56,7 +56,7 @@ void CFeatureMotionPhysics::AddToComponent(CParticleComponent* pComponent, SComp
 		if (m_perParticleForceComputation)
 			pComponent->AddParticleData(EPVF_VelocityField);
 	}
-	pComponent->GetEffect()->AddEnvironFlags(m_environFlags);
+	pComponent->AddEnvironFlags(m_environFlags);
 
 	auto it = std::remove_if(m_localEffectors.begin(), m_localEffectors.end(), [](const PLocalEffector& ptr) { return !ptr; });
 	m_localEffectors.erase(it, m_localEffectors.end());

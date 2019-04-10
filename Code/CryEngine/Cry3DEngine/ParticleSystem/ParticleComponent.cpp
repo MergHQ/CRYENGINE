@@ -484,6 +484,12 @@ pfx2::CParticleFeature* CParticleComponent::FindFeature(const SParticleFeaturePa
 	return nullptr;
 }
 
+void CParticleComponent::AddEnvironFlags(uint flags)
+{
+	m_params.m_environFlags |= flags;
+	m_pEffect->AddEnvironFlags(flags);
+}
+
 SERIALIZATION_CLASS_NAME(CParticleComponent, CParticleComponent, "Component", "Component");
 
 }
