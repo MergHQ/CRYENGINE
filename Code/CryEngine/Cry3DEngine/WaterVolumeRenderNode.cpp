@@ -849,6 +849,8 @@ void CWaterVolumeRenderNode::Physicalize(bool bInstant)
 		m_pPhysArea->GetStatus(&sp);
 
 		pe_params_buoyancy pb;
+		pb.waterDensity = m_density;
+		pb.waterResistance = m_resistance;
 		pb.waterPlane.n = sp.q * Vec3(0, 0, 1);
 		pb.waterPlane.origin = m_pPhysAreaInput->m_contour[0];
 		//pb.waterFlow = sp.q * Vec3( m_streamSpeed, 0, 0 );

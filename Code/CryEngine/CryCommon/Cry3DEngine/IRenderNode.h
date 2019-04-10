@@ -949,6 +949,7 @@ struct IWaterVolumeRenderNode : public IRenderNode
 	virtual void             SetCausticIntensity(float causticIntensity) = 0;
 	virtual void             SetCausticTiling(float causticTiling) = 0;
 	virtual void             SetCausticHeight(float causticHeight) = 0;
+	virtual void             SetPhysParams(float density, float resistance) = 0;
 	virtual void             SetAuxPhysParams(pe_params_area*) = 0;
 
 	virtual void             CreateOcean(uint64 volumeID, /* TBD */ bool keepSerializationParams = false) = 0;

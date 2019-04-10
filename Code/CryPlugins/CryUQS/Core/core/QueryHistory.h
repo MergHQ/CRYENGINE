@@ -121,8 +121,7 @@ namespace UQS
 
 			CDebugRenderWorldPersistent&                        GetDebugRenderWorldPersistent();
 			CDebugMessageCollection&                            GetDebugMessageCollection();
-			void                                                OnQueryCreated(size_t queryCreatedFrame, const CTimeValue& queryCreatedTimestamp);
-			void                                                OnQueryBlueprintInstantiationStarted(const char* szQueryBlueprintName);
+			void                                                OnQueryCreated(size_t queryCreatedFrame, const CTimeValue& queryCreatedTimestamp, const char* szQueryBlueprintName);
 			void                                                OnQueryCanceled(const CQueryBase::SStatistics& finalStatistics);
 			void                                                OnQueryFinished(const CQueryBase::SStatistics& finalStatistics);
 			void                                                OnQueryDestroyed();

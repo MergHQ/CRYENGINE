@@ -37,7 +37,6 @@ namespace UQS
 			: m_bConsistencyChecksDoneAlready(false)
 			, m_bAutomaticUpdateInProgress(false)
 			, m_queryHistoryInGameGUI(m_queryHistoryManager)
-			, m_queryManager(m_queryHistoryManager)
 			, m_pEditorLibraryProvider(nullptr)
 		{
 			CRY_ASSERT(!g_pHub);

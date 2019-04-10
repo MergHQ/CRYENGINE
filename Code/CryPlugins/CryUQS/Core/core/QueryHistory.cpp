@@ -174,19 +174,15 @@ namespace UQS
 			return m_debugMessageCollection;
 		}
 
-		void CHistoricQuery::OnQueryCreated(size_t queryCreatedFrame, const CTimeValue& queryCreatedTimestamp)
+		void CHistoricQuery::OnQueryCreated(size_t queryCreatedFrame, const CTimeValue& queryCreatedTimestamp, const char* szQueryBlueprintName)
 		{
 			m_queryCreatedFrame = queryCreatedFrame;
 			m_queryCreatedTimestamp = queryCreatedTimestamp;
+			m_queryBlueprintName = szQueryBlueprintName;
 			m_queryLifetimeStatus = EQueryLifetimeStatus::QueryIsAlive;
 
 			// notify the top-level query-history-manager that the underlying query has just been created/started
 			m_pOwningHistoryManager->UnderlyingQueryJustGotCreated(m_queryID);
-		}
-
-		void CHistoricQuery::OnQueryBlueprintInstantiationStarted(const char* szQueryBlueprintName)
-		{
-			m_queryBlueprintName = szQueryBlueprintName;
 		}
 
 		void CHistoricQuery::OnQueryCanceled(const CQueryBase::SStatistics& finalStatistics)
@@ -1314,17 +1310,13 @@ namespace UQS
 			{
 				if (m_serializationMutex.TryLock())
 				{
-#if !defined(EXCLUDE_NORMAL_LOG)
 					const CTimeValue timestampBefore = gEnv->pTimer->GetAsyncTime();
-#endif
 					Serialization::IArchiveHost* pArchiveHost = gEnv->pSystem->GetArchiveHost();
 					if (pArchiveHost->SaveXmlFile(xmlFilePath.c_str(), Serialization::SStruct(snapshot), "UQSQueryHistory"))
 					{
-#if !defined(EXCLUDE_NORMAL_LOG)
 						const CTimeValue timestampAfter = gEnv->pTimer->GetAsyncTime();
 						const float elapsedSeconds = (timestampAfter - timestampBefore).GetSeconds();
 						CryLogAlways("[UQS] Successfully dumped query history containing %i queries to '%s' in %.2f seconds", (int)snapshot.historicQueries.size(), xmlFilePath.c_str(), elapsedSeconds);
-#endif
 					}
 					else
 					{
@@ -1344,10 +1336,8 @@ namespace UQS
 
 		void CQueryHistory::PrintStatisticsToConsole(const char* szMessagePrefix) const
 		{
-#if !defined(EXCLUDE_NORMAL_LOG)
 			size_t totalMemoryUsage = GetRoughMemoryUsage();
 			CryLogAlways("%s%i queries in history, %.2fkb (%.2fmb) memory usage", szMessagePrefix, (int)m_historyData.historicQueries.size(), (float)totalMemoryUsage / 1024.0f, (float)totalMemoryUsage / (1024.0f * 1024.0f));
-#endif
 		}
 
 	}
