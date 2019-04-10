@@ -44,7 +44,7 @@ CharacterManager::CharacterManager()
 
 	m_pFacialAnimation = new CFacialAnimation();
 	m_nUpdateCounter = 0;
-	m_InitializedByIMG = 0;
+	m_IMGLoadedFlags = EIMGLoadedFlags::None;
 	m_StartGAH_Iterator = 0;
 
 	m_pStreamingListener = NULL;
@@ -1753,7 +1753,7 @@ void CharacterManager::Update(bool bPaused)
 
 	g_fCurrTime = g_pITimer->GetCurrTime();
 
-	if (m_InitializedByIMG == 0)
+	if (m_IMGLoadedFlags == EIMGLoadedFlags::None)
 	{
 		//This initialization must happen as early as possible. In the ideal case we should do it as soon as we initialize CryAnimation.
 		//Doing it when we fetch the CHR is to late, because it will conflict with manually loaded DBAs (MP can load DBA and lock DBAs without a CHR)
@@ -3519,12 +3519,12 @@ void CharacterManager::LoadAnimationImageFile(const char* filenameCAF, const cha
 {
 	LOADING_TIME_PROFILE_SECTION;
 
-	if (m_InitializedByIMG)
+	if ((m_IMGLoadedFlags & EIMGLoadedFlags::IMGLoaded) == EIMGLoadedFlags::None)
 	{
 		return;
 	}
 
-	m_InitializedByIMG = 1;
+	m_IMGLoadedFlags |= EIMGLoadedFlags::IMGLoaded;
 
 	g_pI3DEngine = g_pISystem->GetI3DEngine();   // TODO: Why is this initialization perfomed here?
 
@@ -3622,7 +3622,7 @@ bool CharacterManager::LoadAnimationImageFileCAF(const char* filenameCAF)
 		rCAF.OnAssetCreated();
 	}
 
-	m_InitializedByIMG |= 2;
+	m_IMGLoadedFlags |= EIMGLoadedFlags::CAFLoaded;
 	return true;
 }
 
@@ -3739,7 +3739,7 @@ bool CharacterManager::LoadAnimationImageFileAIM(const char* filenameAIM)
 		rAIM.OnAssetCreated();
 	}
 
-	m_InitializedByIMG |= 4;        // TODO: Get rid of this hack (there's a special case somewhere around which expects an undocumented 0x02 flag).
+	m_IMGLoadedFlags |= EIMGLoadedFlags::AIMLoaded;
 	return true;
 }
 
