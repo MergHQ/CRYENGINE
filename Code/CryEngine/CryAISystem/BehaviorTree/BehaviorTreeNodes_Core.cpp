@@ -1180,6 +1180,7 @@ struct State
 		Serialization::SContext context(archive, this);
 
 		archive(name, "name", "^State Name");
+		nameCRC32 = CCrc32::ComputeLowercase(name);
 		archive.doc("State name");
 
 		if (name.empty())
@@ -1547,7 +1548,7 @@ public:
 		if (!context.eventsDeclaration.IsDeclared(eventName.c_str(), isLoadingFromEditor))
 		{
 			context.eventsDeclaration.DeclareGameEvent(eventName.c_str());
-			gEnv->pLog->LogWarning("SendEvent(%d) [Tree='%s'] Unknown event '%s' used. Event will be declared automatically.", xml->getLine(), context.treeName, m_eventToSend.GetName());
+			gEnv->pLog->LogWarning("SendEvent(%d) [Tree='%s'] Unknown event '%s' used. Event will be declared automatically.", xml->getLine(), context.treeName, m_eventToSend.GetName().c_str());
 		}
 #endif // STORE_EVENT_NAME && USING_BEHAVIOR_TREE_SERIALIZATION
 
@@ -1559,7 +1560,7 @@ public:
 	{
 		XmlNodeRef xml = BaseClass::CreateXmlDescription();
 		xml->setTag("SendEvent");
-		xml->setAttr("name", m_eventToSend.GetName());
+		xml->setAttr("name", m_eventToSend.GetName().c_str());
 		return xml;
 	}
 #endif
@@ -1573,9 +1574,9 @@ public:
 			return;
 		}
 
-		string eventName = m_eventToSend.GetName();
+		string& eventName = m_eventToSend.GetName();
 		SerializeContainerAsSortedStringList(archive, "event", "^Event", eventsDeclaration->GetEventsWithFlags(), "Event",  eventName);
-		m_eventToSend = Event(eventName);
+		m_eventToSend = Event(eventName.c_str());
 		archive.doc("Event to be sent");
 
 		BaseClass::Serialize(archive);
@@ -1587,9 +1588,9 @@ protected:
 	{
 
 #ifdef STORE_EVENT_NAME
-		if (!context.variables.eventsDeclaration.IsDeclared(m_eventToSend.GetName()))
+		if (!context.variables.eventsDeclaration.IsDeclared(m_eventToSend.GetName().c_str()))
 		{
-			gEnv->pLog->LogError("Event '%s' was not sent. Did you forget to declare it?", m_eventToSend.GetName());
+			gEnv->pLog->LogError("Event '%s' was not sent. Did you forget to declare it?", m_eventToSend.GetName().c_str());
 			return;
 		}
 #endif // #ifdef STORE_EVENT_NAME
@@ -1668,9 +1669,9 @@ public:
 #ifdef STORE_EVENT_NAME
 		else
 		{
-			string eventName = m_eventToSend.GetName();
+			string& eventName = m_eventToSend.GetName();
 			SerializeContainerAsSortedStringList(archive, "event", "^Event", state->transitions, "Transition event", eventName);
-			m_eventToSend = Event(eventName);
+			m_eventToSend = Event(eventName.c_str());
 
 			archive.doc("Transition event to be sent. Must be previously defined in the Transitions section of the State");
 		}
@@ -1684,9 +1685,9 @@ protected:
 	{
 
 #ifdef STORE_EVENT_NAME
-		if (!context.variables.eventsDeclaration.IsDeclared(m_eventToSend.GetName()))
+		if (!context.variables.eventsDeclaration.IsDeclared(m_eventToSend.GetName().c_str()))
 		{
-			gEnv->pLog->LogError("Event '%s' was not sent. Did you forget to declare it?", m_eventToSend.GetName());
+			gEnv->pLog->LogError("Event '%s' was not sent. Did you forget to declare it?", m_eventToSend.GetName().c_str());
 			return;
 		}
 #endif // #ifdef STORE_EVENT_NAME
@@ -2366,7 +2367,7 @@ public:
 	{
 		XmlNodeRef xml = BaseClass::CreateXmlDescription();
 		xml->setTag("WaitForEvent");
-		xml->setAttr("name", m_eventToWaitFor.GetName());
+		xml->setAttr("name", m_eventToWaitFor.GetName().c_str());
 		return xml;
 	}
 #endif
@@ -2380,9 +2381,9 @@ public:
 			return;
 		}
 
-		string eventName = m_eventToWaitFor.GetName();
+		string& eventName = m_eventToWaitFor.GetName();
 		SerializeContainerAsSortedStringList(archive, "event", "^Event", eventsDeclaration->GetEventsWithFlags(), "Event", eventName);
-		m_eventToWaitFor = Event(eventName);
+		m_eventToWaitFor = Event(eventName.c_str());
 
 		archive.doc("Event to wait for");
 
