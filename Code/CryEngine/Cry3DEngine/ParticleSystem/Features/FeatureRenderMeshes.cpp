@@ -40,23 +40,16 @@ class CFeatureRenderMeshes : public CParticleFeature, public Cry3DEngineBase
 public:
 	CRY_PFX2_DECLARE_FEATURE
 
-	CFeatureRenderMeshes()
-		: m_scale(1.0f, 1.0f, 1.0f)
-		, m_sizeMode(ESizeMode::Scale)
-		, m_originMode(EOriginMode::Origin)
-		, m_piecesMode(EPiecesMode::RandomPiece)
-		, m_piecePlacement(EPiecePlacement::Standard)
-	{}
-
 	virtual void Serialize(Serialization::IArchive& ar) override
 	{
 		CParticleFeature::Serialize(ar);
 		ar(Serialization::ModelFilename(m_meshName), "Mesh", "Mesh");
-		ar(m_scale, "Scale", "Scale");
-		ar(m_sizeMode, "SizeMode", "Size Mode");
-		ar(m_originMode, "OriginMode", "Origin Mode");
-		ar(m_piecesMode, "PiecesMode", "Pieces Mode");
-		ar(m_piecePlacement, "PiecePlacement", "Piece Placement");
+		SERIALIZE_VAR(ar, m_scale);
+		SERIALIZE_VAR(ar, m_sizeMode);
+		SERIALIZE_VAR(ar, m_originMode);
+		SERIALIZE_VAR(ar, m_piecesMode);
+		SERIALIZE_VAR(ar, m_piecePlacement);
+		SERIALIZE_VAR(ar, m_castShadows);
 	}
 
 	virtual EFeatureType GetFeatureType() override { return EFT_Render; }
@@ -68,6 +61,8 @@ public:
 		if (pParams->m_pMesh)
 		{
 			pComponent->RenderDeferred.add(this);
+			if (m_castShadows)
+				pComponent->AddEnvironFlags(ENV_CAST_SHADOWS);
 			pComponent->AddParticleData(EPVF_Position);
 			pComponent->AddParticleData(EPQF_Orientation);
 			if (m_aSubObjects.size() > 0)
@@ -292,11 +287,12 @@ public:
 
 private:
 	string                             m_meshName;
-	Vec3                               m_scale;
-	ESizeMode                          m_sizeMode;
-	EOriginMode                        m_originMode;
-	EPiecesMode                        m_piecesMode;
-	EPiecePlacement                    m_piecePlacement;
+	Vec3                               m_scale          {1};
+	ESizeMode                          m_sizeMode       = ESizeMode::Scale;
+	EOriginMode                        m_originMode     = EOriginMode::Origin;
+	EPiecesMode                        m_piecesMode     = EPiecesMode::RandomPiece;
+	EPiecePlacement                    m_piecePlacement = EPiecePlacement::Standard;
+	bool                               m_castShadows    = true;
 
 	std::vector<IStatObj::SSubObject*> m_aSubObjects;
 };

@@ -117,8 +117,24 @@ void CParticleEmitter::Render(const struct SRendParams& rParam, const SRendering
 
 	if (!passInfo.RenderParticles() || passInfo.IsRecursivePass())
 		return;
+
+	SRenderContext renderContext(rParam, passInfo);
+
 	if (passInfo.IsShadowPass())
-		return;
+	{
+		if (!(m_pEffect->GetEnvironFlags() & ENV_CAST_SHADOWS))
+			return;
+	}
+	else
+	{
+		// TODO: make it threadsafe and add it to e_ExecuteRenderAsJobMask
+		CLightVolumesMgr& lightVolumeManager = m_p3DEngine->GetLightVolumeManager();
+		renderContext.m_lightVolumeId = lightVolumeManager.RegisterVolume(GetPos(), GetBBox().GetRadius() * 0.5f, rParam.nClipVolumeStencilRef, passInfo);
+		renderContext.m_distance = GetPos().GetDistance(passInfo.GetCamera().GetPosition());
+		ColorF fogVolumeContrib;
+		CFogVolumeRenderNode::TraceFogVolumes(GetPos(), fogVolumeContrib, passInfo);
+		renderContext.m_fogVolumeId = passInfo.GetIRenderView()->PushFogVolumeContribution(fogVolumeContrib, passInfo);
+	}
 
 	CParticleJobManager& jobManager = GetPSystem()->GetJobManager();
 	if (ThreadMode() >= 4 && !WasRenderedLastFrame())
@@ -126,15 +142,6 @@ void CParticleEmitter::Render(const struct SRendParams& rParam, const SRendering
 		// Not currently scheduled for high priority update
 		jobManager.ScheduleUpdateEmitter(this);
 	}
-
-	// TODO: make it threadsafe and add it to e_ExecuteRenderAsJobMask
-	CLightVolumesMgr& lightVolumeManager = m_p3DEngine->GetLightVolumeManager();
-	SRenderContext renderContext(rParam, passInfo);
-	renderContext.m_lightVolumeId = lightVolumeManager.RegisterVolume(GetPos(), GetBBox().GetRadius() * 0.5f, rParam.nClipVolumeStencilRef, passInfo);
-	renderContext.m_distance = GetPos().GetDistance(passInfo.GetCamera().GetPosition());
-	ColorF fogVolumeContrib;
-	CFogVolumeRenderNode::TraceFogVolumes(GetPos(), fogVolumeContrib, passInfo);
-	renderContext.m_fogVolumeId = passInfo.GetIRenderView()->PushFogVolumeContribution(fogVolumeContrib, passInfo);
 
 	if (m_pEffect->RenderDeferred.size())
 	{
@@ -144,7 +151,10 @@ void CParticleEmitter::Render(const struct SRendParams& rParam, const SRendering
 	for (auto& pRuntime : m_componentRuntimes)
 	{
 		if (pRuntime->GetComponent()->IsVisible())
-			pRuntime->RenderAll(renderContext);
+		{
+			if (!passInfo.IsShadowPass() || pRuntime->ComponentParams().m_environFlags & ENV_CAST_SHADOWS)
+				pRuntime->RenderAll(renderContext);
+		}
 	}
 	
 	m_unrendered = 0;
@@ -351,7 +361,8 @@ void CParticleEmitter::DebugRender(const SRenderingPassInfo& passInfo) const
 				uint numParticles = pRuntime->GetNumParticles();
 				emitterParticles += numParticles;
 				const float volumeRatio = div_min(pRuntime->GetBounds().GetVolume(), m_realBounds.GetVolume(), 1.0f);
-				const ColorB componentColor = ColorF(1, 0.5, 0) * (alphaColor * sqrt(sqrt(volumeRatio)));
+				bool hasShadows = !!(pRuntime->ComponentParams().m_environFlags & ENV_CAST_SHADOWS);
+				const ColorB componentColor = ColorF(!hasShadows, 0.5, 0) * (alphaColor * sqrt(sqrt(volumeRatio)));
 				pRenderAux->DrawAABB(pRuntime->GetBounds(), false, componentColor, eBBD_Faceted);
 				string label = string().Format("%s #%d", pRuntime->GetComponent()->GetName(), numParticles);
 				IRenderAuxText::DrawLabelEx(pRuntime->GetBounds().GetCenter(), 1.5f, componentColor, true, true, label);
@@ -560,6 +571,15 @@ void CParticleEmitter::SetEntity(IEntity* pEntity, int nSlot)
 {
 	m_entityOwner = pEntity;
 	m_entitySlot = nSlot;
+
+	if (pEntity && nSlot >= 0)
+	{
+		uint32 flags0 = pEntity->GetSlotFlags(nSlot);
+		uint32 flags1 = flags0;
+		SetFlags(flags1, ENTITY_SLOT_CAST_SHADOW, !!(m_pEffect->GetEnvironFlags() & ENV_CAST_SHADOWS));
+		if (flags1 != flags0)
+			pEntity->SetSlotFlags(nSlot, flags1);
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -811,9 +831,10 @@ void CParticleEmitter::Register()
 	SetRndFlags(ERF_REGISTER_BY_POSITION, posContained);
 	SetRndFlags(ERF_REGISTER_BY_BBOX, m_spawnParams.bRegisterByBBox);
 	SetRndFlags(ERF_RENDER_ALWAYS, m_spawnParams.bIgnoreVisAreas);
-	SetRndFlags(ERF_CASTSHADOWMAPS, false);
+	SetRndFlags(ERF_CASTSHADOWMAPS | ERF_HAS_CASTSHADOWMAPS, !!(m_pEffect->GetEnvironFlags() & ENV_CAST_SHADOWS));
 	SetRndFlags(ERF_FOB_ALLOW_TERRAIN_LAYER_BLEND, !m_spawnParams.bIgnoreTerrainLayerBlend);
 	SetRndFlags(ERF_FOB_ALLOW_DECAL_BLEND, !m_spawnParams.bIgnoreDecalBlend);
+
 	gEnv->p3DEngine->RegisterEntity(this);
 	m_registered = true;
 

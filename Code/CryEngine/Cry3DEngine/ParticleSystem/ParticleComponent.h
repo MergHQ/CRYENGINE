@@ -120,6 +120,7 @@ struct SComponentParams: STimingParams
 	EShaderType               m_requiredShaderType   = eST_All;
 	ERenderObjectFlags        m_renderObjectFlags;
 	int                       m_renderStateFlags     = OS_ALPHA_BLEND;
+	uint                      m_environFlags         = 0;
 	_smart_ptr<IMeshObj>      m_pMesh;
 	bool                      m_meshCentered         = false;
 	STextureAnimation         m_textureAnimation;
@@ -174,6 +175,7 @@ public:
 	void                                  SetEffect(CParticleEffect* pEffect)   { m_pEffect = pEffect; }
 
 	void                                  AddParticleData(EParticleDataType type);
+	void                                  AddEnvironFlags(uint flags);
 
 	bool                                  UsesGPU() const                       { return m_params.m_usesGPU; }
 	gpu_pfx2::SComponentParams&           GPUComponentParams()                  { return m_GPUParams; };

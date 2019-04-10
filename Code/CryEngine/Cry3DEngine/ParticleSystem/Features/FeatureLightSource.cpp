@@ -73,11 +73,9 @@ public:
 			light.m_Shader = GetFlareMaterial()->GetShaderItem();
 		}
 
-		UCol defaultColor;
-		defaultColor.dcolor = ~0;
 		const CParticleContainer& container = runtime.GetContainer();
 		const IVec3Stream positions = container.GetIVec3Stream(EPVF_Position);
-		const IColorStream colors = container.GetIColorStream(EPDT_Color, defaultColor);
+		const IColorStream colors = container.GetIColorStream(EPDT_Color, UCol{{~0u}});
 		const IFStream alphas = container.GetIFStream(EPDT_Alpha, 1.0f);
 		const IFStream sizes = container.GetIFStream(EPDT_Size);
 
