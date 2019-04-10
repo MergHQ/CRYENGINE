@@ -797,8 +797,6 @@ void CHWShader::mfValidateDirEntries(CResFile* pRF)
 bool CHWShader_D3D::mfStoreCacheTokenMap(const FXShaderToken& Table, const TArray<uint32>& SHData)
 {
 	TArray<byte> Data;
-
-	FXShaderTokenItor itor;
 	uint32 nSize = SHData.size();
 	if (CParserBin::m_bEndians)
 	{
