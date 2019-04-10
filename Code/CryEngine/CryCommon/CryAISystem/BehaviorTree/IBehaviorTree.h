@@ -101,9 +101,14 @@ public:
 	}
 
 #ifdef STORE_EVENT_NAME
-	const char* GetName() const
+	const string& GetName() const
 	{
-		return m_name.c_str();
+		return m_name;
+	}
+
+	string& GetName()
+	{
+		return m_name;
 	}
 #endif
 
