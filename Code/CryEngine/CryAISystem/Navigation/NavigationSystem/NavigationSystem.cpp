@@ -460,6 +460,41 @@ void NavigationSystem::DestroyMesh(NavigationMeshID meshID)
 	}
 }
 
+void NavigationSystem::SetMeshFlags(NavigationMeshID meshID, const CEnumFlags<EMeshFlag> flags)
+{
+	CRY_ASSERT(meshID.IsValid() && m_meshes.validate(meshID));
+
+	if (meshID.IsValid() && m_meshes.validate(meshID))
+	{
+		NavigationMesh& mesh = m_meshes[meshID];
+		mesh.flags.Add(flags);
+	}
+}
+
+void NavigationSystem::RemoveMeshFlags(NavigationMeshID meshID, const CEnumFlags<EMeshFlag> flags)
+{
+	CRY_ASSERT(meshID.IsValid() && m_meshes.validate(meshID));
+
+	if (meshID.IsValid() && m_meshes.validate(meshID))
+	{
+		NavigationMesh& mesh = m_meshes[meshID];
+		mesh.flags.Remove(flags);
+	}
+}
+
+CEnumFlags<INavigationSystem::EMeshFlag> NavigationSystem::GetMeshFlags(NavigationMeshID meshID) const
+{
+	CRY_ASSERT(meshID.IsValid() && m_meshes.validate(meshID));
+
+	CEnumFlags<EMeshFlag> flags;
+	if (meshID.IsValid() && m_meshes.validate(meshID))
+	{
+		const NavigationMesh& mesh = m_meshes[meshID];
+		flags = mesh.flags;
+	}
+	return flags;
+}
+
 void NavigationSystem::SetMeshEntityCallback(NavigationAgentTypeID agentTypeID, const NavigationMeshEntityCallback& callback)
 {
 	if (agentTypeID && (agentTypeID <= m_agentTypes.size()))
@@ -1970,6 +2005,8 @@ void NavigationSystem::RemoveAllTrianglesByFlags(const MNM::AreaAnnotation::valu
 			CRY_ASSERT(m_meshes.validate(meshId));
 
 			NavigationMesh& mesh = m_meshes[meshId];
+			if(!mesh.flags.Check(EMeshFlag::RemoveInaccessibleTriangles))
+				continue;
 
 			// Gather all triangle ids that should be updated after triangles are removed from tiles
 			MNM::CNavMesh::TrianglesSetsByTile trianglesToUpdateByTile;
@@ -3601,6 +3638,15 @@ bool NavigationSystem::ReadFromFile(const char* fileName, bool bAfterExporting)
 					file.ReadType(meshName, meshNameLength);
 					meshName[meshNameLength] = '\0';
 
+					// Reading flags
+					CEnumFlags<EMeshFlag> meshFlags;
+					if (nFileVersion >= NavigationSystem::eBAINavigationFileVersion::MESH_FLAGS)
+					{
+						uint32 flagsValue;
+						file.ReadType(&flagsValue);
+						meshFlags.UnderlyingValue() = flagsValue;
+					}
+
 					// Reading the amount of islands in the mesh
 					MNM::StaticIslandID totalIslands = 0;
 					file.ReadType(&totalIslands);
@@ -3744,6 +3790,7 @@ bool NavigationSystem::ReadFromFile(const char* fileName, bool bAfterExporting)
 #else
 					SetMeshBoundaryVolume(newMeshID, boundaryID);
 #endif
+					mesh.flags = meshFlags;
 					mesh.markups = markups;
 					mesh.exclusions = exclusions;
 					mesh.navMesh.GetIslands().SetTotalIslands(totalIslands);
@@ -4152,6 +4199,10 @@ bool NavigationSystem::SaveToFile(const char* fileName) const PREFAST_SUPPRESS_W
 			meshNameLength = std::min(meshNameLength, (uint32)MAX_NAME_LENGTH - 1);
 			file.Write(&meshNameLength, sizeof(meshNameLength));
 			file.Write(mesh.name.c_str(), sizeof(char) * meshNameLength);
+
+			// Saving flags
+			uint32 meshFlags = mesh.flags.UnderlyingValue();
+			file.WriteType(&meshFlags);
 
 			// Saving total islands
 			uint32 totalIslands = mesh.navMesh.GetIslands().GetTotalIslands();

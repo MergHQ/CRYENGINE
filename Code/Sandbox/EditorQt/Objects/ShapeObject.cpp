@@ -4257,6 +4257,15 @@ void CNavigationAreaObject::CreateInspectorWidgets(CInspectorWidgetCreator& crea
 	{
 		pObject->m_pVarObject->SerializeVariable(&pObject->mv_height, ar);
 		pObject->m_pVarObject->SerializeVariable(&pObject->mv_exclusion, ar);
+
+		bool removeInaccessibleTriangles = pObject->mv_removeInaccessibleTriangles;
+		ar(removeInaccessibleTriangles, pObject->mv_removeInaccessibleTriangles.GetHumanName(), pObject->mv_exclusion ? "!Remove Inaccessible Triangles" : "Remove Inaccessible Triangles");
+		ar.doc("Remove inaccessible triangles from the NavMesh after level is loaded in the launcher.");
+		if (ar.isInput())
+		{
+			pObject->mv_removeInaccessibleTriangles = removeInaccessibleTriangles;
+		}
+
 		pObject->m_pVarObject->SerializeVariable(&pObject->mv_displayFilled, ar);
 
 		for (int i = 0, n = pObject->mv_agentTypes.GetNumVariables(); i < n; ++i)
@@ -4295,7 +4304,16 @@ void CNavigationAreaObject::Display(CObjectRenderHelper& objRenderHelper)
 
 	if (IsSelected() || gAINavigationPreferences.navigationShowAreas())
 	{
-		SetColor(mv_exclusion ? ColorB(200, 0, 0) : ColorB(0, 126, 255));
+		ColorB color(0, 126, 255);
+		if (mv_exclusion)
+		{
+			color = ColorB(200, 0, 0);
+		}
+		else if (mv_removeInaccessibleTriangles)
+		{
+			color = ColorB(0, 64, 150);
+		}		
+		SetColor(color);
 
 		float lineWidth = dc.GetLineWidth();
 		dc.SetLineWidth(8.0f);
@@ -4356,6 +4374,7 @@ void CNavigationAreaObject::InitVariables()
 	mv_height = 16;
 	mv_exclusion = false;
 	mv_displayFilled = false;
+	mv_removeInaccessibleTriangles = true;
 
 	if (m_pVarObject == nullptr)
 	{
@@ -4364,6 +4383,7 @@ void CNavigationAreaObject::InitVariables()
 
 	m_pVarObject->AddVariable(mv_height, "Height", functor(*this, &CNavigationAreaObject::OnSizeChange));
 	m_pVarObject->AddVariable(mv_exclusion, "Exclusion", functor(*this, &CNavigationAreaObject::OnShapeTypeChange));
+	m_pVarObject->AddVariable(mv_removeInaccessibleTriangles, "RemoveInaccessibleTriangles", functor(*this, &CNavigationAreaObject::OnRemoveInaccessibleTrianglesChange));
 	m_pVarObject->AddVariable(mv_displayFilled, "DisplayFilled");
 
 	CAIManager* manager = GetIEditorImpl()->GetAI();
@@ -4380,6 +4400,32 @@ void CNavigationAreaObject::InitVariables()
 			const char* name = manager->GetNavigationAgentTypeName(i);
 			m_pVarObject->AddVariable(mv_agentTypes, mv_agentTypeVars[i], name, name, functor(*this, &CNavigationAreaObject::OnShapeAgentTypeChange));
 			mv_agentTypeVars[i].Set(true);
+		}
+	}
+}
+
+void CNavigationAreaObject::OnRemoveInaccessibleTrianglesChange(IVariable* var)
+{
+	if (m_bIgnoreGameUpdate || !m_bRegistered)
+		return;
+
+	IAISystem* pAISystem = GetIEditorImpl()->GetSystem()->GetAISystem();
+	INavigationSystem* pNavigationSystem = pAISystem ? pAISystem->GetNavigationSystem() : nullptr;
+	if (!pNavigationSystem)
+		return;
+
+	for (const NavigationMeshID meshID : m_meshes)
+	{
+		if (meshID.IsValid())
+		{
+			if (mv_removeInaccessibleTriangles)
+			{
+				pNavigationSystem->SetMeshFlags(meshID, INavigationSystem::EMeshFlag::RemoveInaccessibleTriangles);
+			}
+			else
+			{
+				pNavigationSystem->RemoveMeshFlags(meshID, INavigationSystem::EMeshFlag::RemoveInaccessibleTriangles);
+			}
 		}
 	}
 }
@@ -4483,6 +4529,10 @@ void CNavigationAreaObject::UpdateMeshes()
 				NavigationAgentTypeID agentTypeID = aiSystem->GetNavigationSystem()->GetAgentTypeID(i);
 
 				INavigationSystem::SCreateMeshParams params; // TODO: expose at least the tile size
+				if (mv_removeInaccessibleTriangles)
+				{
+					params.flags.Add(INavigationSystem::EMeshFlag::RemoveInaccessibleTriangles);
+				}
 				m_meshes[i] = aiSystem->GetNavigationSystem()->CreateMeshForVolumeAndUpdate(GetName().GetString(), agentTypeID, params, m_volume);
 			}
 			else if (!mv_agentTypeVars[i] && meshID)
@@ -4559,6 +4609,19 @@ void CNavigationAreaObject::RelinkWithMesh(const ERelinkWithMeshesMode relinkMod
 		{
 			const NavigationAgentTypeID agentTypeID = pAINavigation->GetAgentTypeID(i);
 			m_meshes[i] = pAINavigation->GetMeshID(navigationAreaName, agentTypeID);
+
+			// Reset the flags in case the exported flags don't correspond to the saved ones.
+			if (m_meshes[i].IsValid())
+			{
+				if (mv_removeInaccessibleTriangles)
+				{
+					pAINavigation->SetMeshFlags(m_meshes[i], INavigationSystem::EMeshFlag::RemoveInaccessibleTriangles);
+				}
+				else
+				{
+					pAINavigation->RemoveMeshFlags(m_meshes[i], INavigationSystem::EMeshFlag::RemoveInaccessibleTriangles);
+				}
+			}
 		}
 	}
 	else if (relinkMode & ePostLoad)
