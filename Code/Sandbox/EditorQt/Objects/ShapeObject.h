@@ -148,8 +148,6 @@ protected:
 	void GetSoundObstructionColors(ColorB& obstruction, ColorB& noObstruction, bool fillSelectedShapes);
 	// Helper function to draw sound roof and floor
 	void DisplaySoundRoofAndFloor(SDisplayContext& dc);
-	////! Calculate distance between
-	//float DistanceToShape( const Vec3 &pos );
 	void DrawTerrainLine(SDisplayContext& dc, const Vec3& p1, const Vec3& p2);
 	void AlignToGrid();
 
@@ -227,7 +225,6 @@ protected:
 	int                m_selectedPoint;
 	float              m_lowestHeight;
 	float              m_zOffset;
-	float              m_shapePointMinDistance;
 
 	uint32             m_bAreaModified              : 1;
 	//! Forces shape to be always 2D. (all vertices lie on XY plane).
@@ -475,7 +472,6 @@ protected:
 	bool GetSyncsPivotWithFirstPoint(bool& syncsPivotWithFirstPoint) const;
 	bool GetForce2D(bool& bForce2D) const;
 	bool GetZOffset(float& zOffset) const;
-	bool GetMinPointDistance(float& minDistance) const;
 	bool GetIsClosedShape(bool& isClosed) const;
 	bool GetCanEditClosed(bool& canEditClosed) const;
 	bool NeedExportToGame() const;

@@ -51,8 +51,7 @@ REGISTER_CLASS_DESC(CShapeObjectClassDesc);
 REGISTER_CLASS_DESC(CNavigationAreaObjectDesc);
 REGISTER_CLASS_DESC(CAITerritoryObjectClassDesc);
 
-#define SHAPE_CLOSE_DISTANCE     0.8f
-#define SHAPE_POINT_MIN_DISTANCE 0.1f // Set to 10 cm (this number has been found in cooperation with C2 level designers)
+#define SHAPE_CLOSE_DISTANCE 0.8f
 
 CNavigation* GetNavigation()
 {
@@ -908,7 +907,6 @@ CShapeObject::CShapeObject()
 	m_selectedPoint = -1;
 	m_lowestHeight = 0;
 	m_zOffset = m_defaultZOffset;
-	m_shapePointMinDistance = SHAPE_POINT_MIN_DISTANCE;
 	m_bIgnoreGameUpdate = true;
 	m_bAreaModified = true;
 	m_bDisplayFilledWhenSelected = true;
@@ -2073,7 +2071,7 @@ int CShapeObject::InsertPoint(int index, const Vec3& point, bool const bModifyin
 			float const fDiffY = fabs_tpl(m_points[nIdx].y - point.y);
 			float const fDiffZ = fabs_tpl(m_points[nIdx].z - point.z);
 
-			if (fDiffX < SHAPE_POINT_MIN_DISTANCE && fDiffY < SHAPE_POINT_MIN_DISTANCE && fDiffZ < SHAPE_POINT_MIN_DISTANCE)
+			if (fDiffX < FLT_EPSILON && fDiffY < FLT_EPSILON && fDiffZ < FLT_EPSILON)
 			{
 				CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_WARNING, "The point is too close to another point!");
 				return nIdx;
@@ -2408,7 +2406,7 @@ void CShapeObject::SetPoint(int index, const Vec3& pos)
 				float const fDiffY = fabs_tpl(m_points[nIdx].y - p.y);
 				float const fDiffZ = fabs_tpl(m_points[nIdx].z - p.z);
 
-				if ((m_shapePointMinDistance > FLT_EPSILON) && (fDiffX < m_shapePointMinDistance && fDiffY < m_shapePointMinDistance && fDiffZ < m_shapePointMinDistance))
+				if (fDiffX < FLT_EPSILON && fDiffY < FLT_EPSILON && fDiffZ < FLT_EPSILON)
 				{
 					// Prevent points from being placed too close to each other.
 					return;
@@ -3861,11 +3859,6 @@ bool CGameShapeObject::GetZOffset(float& zOffset) const
 	return GetParameterValue(zOffset, "GetZOffset");
 }
 
-bool CGameShapeObject::GetMinPointDistance(float& minDistance) const
-{
-	return GetParameterValue(minDistance, "GetMinPointDistance");
-}
-
 bool CGameShapeObject::GetIsClosedShape(bool& isClosed) const
 {
 	return GetParameterValue(isClosed, "IsClosed");
@@ -3939,9 +3932,6 @@ void CGameShapeObject::RefreshVariables()
 
 	m_zOffset = m_defaultZOffset;
 	GetZOffset(m_zOffset);
-
-	m_shapePointMinDistance = SHAPE_POINT_MIN_DISTANCE;
-	GetMinPointDistance(m_shapePointMinDistance);
 
 	if (m_pLuaProperties)
 	{
