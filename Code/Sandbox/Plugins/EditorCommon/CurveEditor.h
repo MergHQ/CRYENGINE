@@ -30,6 +30,8 @@ public:
 	SAnimTime            Time() const    { return m_time; }
 	void                 SetTime(const SAnimTime time);
 
+	void                 SelectKeysWidthTimes(const std::set<SAnimTime>& times);
+
 	enum class ELimit : uint
 	{
 		None,    // No range limiting
