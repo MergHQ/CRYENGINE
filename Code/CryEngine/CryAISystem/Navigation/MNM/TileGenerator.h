@@ -202,7 +202,7 @@ public:
 	};
 
 	bool Generate(const Params& params, STile& tile, SMetaData& tileMetaData, uint32* hashValue);
-	void Draw(const EDrawMode mode, const bool bDrawAdditionalInfo) const;
+	void Draw(const EDrawMode mode, const bool bDrawAdditionalInfo, const bool checkerboardizeColor = true) const;
 
 	typedef MNMProfiler<ProfilerMemoryUsers, ProfilerTimers, ProfilerStats> ProfilerType;
 	const ProfilerType& GetProfiler() const;
@@ -714,7 +714,7 @@ protected:
 	void   DrawNavTriangulation() const;
 	void   DrawTracers(const Vec3& origin) const;
 	void   DrawSimplifiedContours(const Vec3& origin) const;
-	void   DrawSegmentation(const Vec3& origin, const bool bDrawAdditionalInfo) const;
+	void   DrawSegmentation(const Vec3& origin, const bool bDrawAdditionalInfo, const bool checkerboardizeColor) const;
 
 	Params         m_params;
 	ProfilerType   m_profiler;
