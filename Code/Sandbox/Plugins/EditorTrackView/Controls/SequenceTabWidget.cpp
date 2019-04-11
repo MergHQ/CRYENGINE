@@ -1177,6 +1177,20 @@ void CTrackViewSequenceTabWidget::UpdateActiveSequence()
 	}
 }
 
+void CTrackViewSequenceTabWidget::UpdateCurveEditorSelection()
+{
+	if (m_pCurrentSelectionCurveEditor)
+	{
+		std::set<SAnimTime> selectedTimes;
+		for (const SSelectedKey& selectedKey : m_currentKeySelection)
+		{
+			selectedTimes.insert(selectedKey.m_key->GetTime());
+		}
+
+		m_pCurrentSelectionCurveEditor->SelectKeysWidthTimes(selectedTimes);
+	}
+}
+
 void CTrackViewSequenceTabWidget::ShowSequenceProperties(CTrackViewSequence* pSequence)
 {
 	if (pSequence)
@@ -1809,8 +1823,6 @@ void CTrackViewSequenceTabWidget::OnCurveEditorContentChanged()
 		CUndo undo("TrackView curve changed");
 
 		CUndo::Record(new CUndoAnimKeySelection(pSequence));
-		CTrackViewKeyBundle bundle = pSequence->GetAllKeys();
-		bundle.SelectKeys(false);
 
 		const size_t numCurves = pCurveEditorContent->m_curves.size();
 		for (size_t i = 0; i < numCurves; ++i)
@@ -2422,6 +2434,8 @@ void CTrackViewSequenceTabWidget::OnSelectionChanged(bool /*bContinuous*/)
 				m_currentKeySelection.push_back(selectedKey);
 			}
 		}
+
+		UpdateCurveEditorSelection();
 
 		TSelectedTracks selectedTracks;
 		GetSelectedTracks(pContent->track, selectedTracks);

@@ -231,6 +231,7 @@ private:
 	void                        UpdateCurveEditor(CTimeline* pDopeSheet, CCurveEditor* pCurveEditor);
 
 	void                        UpdateActiveSequence();
+	void                        UpdateCurveEditorSelection();
 	void                        FillAddNodeMenu(QMenu& addNodeMenu);
 	void                        CreateAddTrackMenu(QMenu& parentMenu, const CTrackViewAnimNode& animNode);
 	void                        CreateAddTrackMenu(QMenu& parentMenu, const std::vector<CTrackViewAnimNode*>& animNodes);
