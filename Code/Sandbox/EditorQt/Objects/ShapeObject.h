@@ -556,6 +556,7 @@ public:
 	//////////////////////////////////////////////////////////////////////////
 	virtual void ChangeColor(COLORREF color);
 
+	void         OnRemoveInaccessibleTrianglesChange(IVariable* var);
 	virtual void OnShapeTypeChange(IVariable* var);
 	virtual void OnShapeAgentTypeChange(IVariable* var);
 
@@ -581,6 +582,7 @@ protected:
 	virtual void UpdateGameArea() override;
 
 	CVariable<bool>               mv_exclusion;
+	CVariable<bool>               mv_removeInaccessibleTriangles;
 	CVariableArray                mv_agentTypes;
 
 	std::vector<CVariable<bool>>  mv_agentTypeVars;

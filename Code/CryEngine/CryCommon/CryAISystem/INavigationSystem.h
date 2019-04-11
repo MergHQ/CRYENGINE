@@ -100,6 +100,11 @@ struct INavigationSystem
 		uint16 maxWaterDepthVoxelCount;
 	};
 
+	enum class EMeshFlag
+	{
+		RemoveInaccessibleTriangles = BIT(0),
+	};
+
 	struct SCreateMeshParams
 	{
 		SCreateMeshParams(const Vec3& _origin = Vec3(ZERO), const Vec3i& _tileSize = Vec3i(8), const uint32 _tileCount = 1024)
@@ -112,6 +117,7 @@ struct INavigationSystem
 		Vec3   origin;
 		Vec3i  tileSize;
 		uint32 tileCount;
+		CEnumFlags<EMeshFlag> flags;
 	};
 
 	//! Helper struct used in GetMeshBorders
@@ -172,6 +178,9 @@ struct INavigationSystem
 	virtual NavigationMeshID CreateMeshForVolumeAndUpdate(const char* name, NavigationAgentTypeID agentTypeID, const SCreateMeshParams& params, const NavigationVolumeID volumeID) = 0;
 
 	virtual void DestroyMesh(NavigationMeshID meshID) = 0;
+	virtual void SetMeshFlags(NavigationMeshID meshID, const CEnumFlags<EMeshFlag> flags) = 0;
+	virtual void RemoveMeshFlags(NavigationMeshID meshID, const CEnumFlags<EMeshFlag> flags) = 0;
+	virtual CEnumFlags<EMeshFlag> GetMeshFlags(NavigationMeshID meshID) const = 0;
 
 	virtual void SetMeshEntityCallback(NavigationAgentTypeID agentTypeID, const NavigationMeshEntityCallback& callback) = 0;
 	virtual void AddMeshChangeCallback(NavigationAgentTypeID agentTypeID, const NavigationMeshChangeCallback& callback) = 0;

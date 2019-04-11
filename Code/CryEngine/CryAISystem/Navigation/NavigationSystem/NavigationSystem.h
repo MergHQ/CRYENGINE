@@ -282,6 +282,7 @@ struct NavigationMesh
 
 	MNM::CNavMesh         navMesh;
 	NavigationVolumeID    boundary;
+	CEnumFlags<INavigationSystem::EMeshFlag> flags;
 
 	typedef std::vector<NavigationVolumeID> Markups;
 	Markups markups;
@@ -427,6 +428,7 @@ public:
 		FIRST_COMPATIBLE,
 		ENTITY_MARKUP_GUIDS,
 		UPDATE_STATE,
+		MESH_FLAGS,
 
 		// Add new versions before NEXT
 		NEXT,
@@ -460,6 +462,9 @@ public:
 	virtual NavigationMeshID CreateMeshForVolumeAndUpdate(const char* name, NavigationAgentTypeID agentTypeID, const SCreateMeshParams& params, const NavigationVolumeID volumeID) override;
 
 	virtual void             DestroyMesh(NavigationMeshID meshID) override;
+	virtual void             SetMeshFlags(NavigationMeshID meshID, const CEnumFlags<EMeshFlag> flags) override;
+	virtual void             RemoveMeshFlags(NavigationMeshID meshID, const CEnumFlags<EMeshFlag> flags) override;
+	virtual CEnumFlags<EMeshFlag> GetMeshFlags(NavigationMeshID meshID) const override;
 
 	virtual void             SetMeshEntityCallback(NavigationAgentTypeID agentTypeID, const NavigationMeshEntityCallback& callback) override;
 	virtual void             AddMeshChangeCallback(NavigationAgentTypeID agentTypeID, const NavigationMeshChangeCallback& callback) override;
