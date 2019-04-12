@@ -657,7 +657,7 @@ void CVars::Init()
 
 	DefineConstIntCVar(e_StreamSaveStartupResultsIntoXML, 0, VF_NULL,
 	                   "Save basic information about streaming performance on level start into XML");
-	REGISTER_CVAR(e_StreamCgfPoolSize, 128, VF_NULL,
+	REGISTER_CVAR(e_StreamCgfPoolSize, 256, VF_NULL,
 	              "Render mesh cache size in MB");
 	REGISTER_CVAR(e_SQTestBegin, 0, VF_NULL,
 	              "If not zero - start streaming latency unit test");
