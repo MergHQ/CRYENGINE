@@ -394,22 +394,22 @@ QVariant CLevelModel::data(const QModelIndex& index, int role) const
 				if (pLayer->GetLayerType() == eObjectLayerType_Layer)
 				{
 					if (GetIEditorImpl()->GetObjectManager()->GetLayersManager()->GetCurrentLayer() == pLayer)
-						return CryIcon("icons:General/layer_active.ico").pixmap(16, 16, QIcon::Normal, QIcon::On);
+						return CryIcon("icons:General/layer_active.ico").pixmap(24, 24, QIcon::Normal, QIcon::On);
 					else
-						return CryIcon("icons:General/layer.ico").pixmap(16, 16);
+						return CryIcon("icons:General/layer.ico");
 				}
 				else if (pLayer->GetLayerType() == eObjectLayerType_Folder)
 				{
 					//IsChildOf also checks for indirect ancestory (if it's a grandchild etc.)
 					CObjectLayer* currentLayer = GetIEditorImpl()->GetObjectManager()->GetLayersManager()->GetCurrentLayer();
 					if (currentLayer && currentLayer->IsChildOf(pLayer))
-						return CryIcon("icons:General/Folder_Tree_Active.ico").pixmap(16, 16);
+						return CryIcon("icons:General/Folder_Tree_Active.ico");
 					else
-						return CryIcon("icons:General/Folder_Tree.ico").pixmap(16, 16);
+						return CryIcon("icons:General/Folder_Tree.ico");
 				}
 				else if (pLayer->GetLayerType() == eObjectLayerType_Terrain)
 				{
-					return CryIcon("icons:Tools/tools_terrain-editor.ico").pixmap(16, 16);
+					return CryIcon("icons:Tools/tools_terrain-editor.ico");
 				}
 				break;
 			}
@@ -428,9 +428,9 @@ QVariant CLevelModel::data(const QModelIndex& index, int role) const
 				}
 			case QAdvancedItemDelegate::s_IconOverrideRole:
 				if (pLayer->IsVisible(false))
-					return CryIcon("icons:General/Visibility_True.ico");
+					return CryIcon("icons:General/Visibility_True.ico").pixmap(16, 16);
 				else
-					return CryIcon("icons:General/Visibility_False.ico");
+					return CryIcon("icons:General/Visibility_False.ico").pixmap(16, 16);
 			default:
 				break;
 			}
@@ -442,9 +442,9 @@ QVariant CLevelModel::data(const QModelIndex& index, int role) const
 				return pLayer->IsFrozen(false) ? Qt::Checked : Qt::Unchecked;
 			case QAdvancedItemDelegate::s_IconOverrideRole:
 				if (pLayer->IsFrozen(false))
-					return CryIcon("icons:levelexplorer_lock_true.ico");
+					return CryIcon("icons:levelexplorer_lock_true.ico").pixmap(16, 16);
 				else
-					return CryIcon("icons:general_lock_false.ico");
+					return CryIcon("icons:general_lock_false.ico").pixmap(16, 16);
 			default:
 				break;
 			}

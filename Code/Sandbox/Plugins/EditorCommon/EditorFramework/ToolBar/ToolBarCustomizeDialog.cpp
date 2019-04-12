@@ -438,6 +438,14 @@ void CToolBarCustomizeDialog::QDropContainer::dragLeaveEvent(QDragLeaveEvent* pE
 	m_pCurrentToolBar->SetShowDropTarget(false);
 }
 
+void CToolBarCustomizeDialog::QDropContainer::paintEvent(QPaintEvent*)
+{
+	QStyleOption styleOption;
+	styleOption.init(this);
+	QPainter painter(this);
+	style()->drawPrimitive(QStyle::PE_Widget, &styleOption, &painter, this);
+}
+
 void CToolBarCustomizeDialog::QDropContainer::dropEvent(QDropEvent* pEvent)
 {
 	m_pCurrentToolBar->SetShowDropTarget(false);
@@ -505,6 +513,7 @@ CToolBarCustomizeDialog::CToolBarCustomizeDialog(QWidget* pParent, const char* s
 	pLayout->setSpacing(0);
 
 	QHBoxLayout* pInnerLayout = new QHBoxLayout();
+	pInnerLayout->setAlignment(Qt::AlignVCenter);
 	pInnerLayout->setMargin(0);
 	pInnerLayout->setSpacing(0);
 
@@ -545,6 +554,7 @@ CToolBarCustomizeDialog::CToolBarCustomizeDialog(QWidget* pParent, const char* s
 
 	QWidget* pSearchBoxContainer = new QWidget();
 	QHBoxLayout* pSearchBoxLayout = new QHBoxLayout();
+	pSearchBoxLayout->setAlignment(Qt::AlignTop);
 	m_pSearchBox = new QSearchBox();
 	m_pSearchBox->EnableContinuousSearch(true);
 	m_pSearchBox->SetModel(m_pProxyModel);
@@ -1117,3 +1127,4 @@ void CToolBarCustomizeDialog::OnContextMenu(const QPoint& position) const
 
 	menu->popup(m_pTreeView->mapToGlobal(position));
 }
+

@@ -329,11 +329,11 @@ QVariant CLevelLayerModel::data(const QModelIndex& index, int role) const
 			CBaseObject* pObject = ObjectFromIndex(index);
 			CBaseObject* pLinkedObject = pObject->GetLinkedTo();
 			if (pLinkedObject)
-				return CryIcon("icons:ObjectTypes/Link.ico").pixmap(16, 16, QIcon::Active, pObject->IsSelected() ? QIcon::On : QIcon::Off);
+				return CryIcon("icons:ObjectTypes/Link.ico").pixmap(24, 24, QIcon::Active, pObject->IsSelected() ? QIcon::On : QIcon::Off);
 
 			CObjectClassDesc* const classDesc = pObject->GetClassDesc();
 			if (classDesc == nullptr)
-				return CryIcon("icons:General/Placeholder.ico").pixmap(16, 16, QIcon::Active, pObject->IsSelected() ? QIcon::On : QIcon::Off);
+				return CryIcon("icons:General/Placeholder.ico").pixmap(24, 24, QIcon::Active, pObject->IsSelected() ? QIcon::On : QIcon::Off);
 
 			QString category = classDesc->Category();
 

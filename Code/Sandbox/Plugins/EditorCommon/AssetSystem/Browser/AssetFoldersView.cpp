@@ -91,18 +91,31 @@ CAssetFoldersView::CAssetFoldersView(bool bHideEngineFolder /*= false*/, QWidget
 	connect(m_treeView->selectionModel(), &QItemSelectionModel::selectionChanged, [this]() { OnSelectionChanged(); });
 	connect(deepFilterProxy, &QAbstractItemModel::dataChanged, this, &CAssetFoldersView::OnDataChanged);
 
-	auto searchBox = new QSearchBox();
-	searchBox->setPlaceholderText(tr("Search Folders"));
-	searchBox->SetModel(deepFilterProxy);
-	searchBox->EnableContinuousSearch(true);
-	searchBox->SetAutoExpandOnSearch(m_treeView);
+	QWidget* pSearchBoxContainer = new QWidget();
+	pSearchBoxContainer->setObjectName("SearchBoxContainer");
 
-	auto layout = new QVBoxLayout();
-	layout->setMargin(0);
-	layout->addWidget(searchBox);
-	layout->addWidget(m_treeView);
+	QHBoxLayout* pSearchBoxLayout = new QHBoxLayout();
+	pSearchBoxLayout->setAlignment(Qt::AlignTop);
+	pSearchBoxLayout->setMargin(0);
+	pSearchBoxLayout->setSpacing(0);
 
-	setLayout(layout);
+	QSearchBox* pSearchBox = new QSearchBox();
+	pSearchBox->setPlaceholderText(tr("Search Folders"));
+	pSearchBox->SetModel(deepFilterProxy);
+	pSearchBox->EnableContinuousSearch(true);
+	pSearchBox->SetAutoExpandOnSearch(m_treeView);
+
+	pSearchBoxLayout->addWidget(pSearchBox);
+	pSearchBoxContainer->setLayout(pSearchBoxLayout);
+
+	QVBoxLayout* pLayout = new QVBoxLayout();
+	pLayout->setMargin(0);
+	pLayout->setSpacing(0);
+	pLayout->addWidget(pSearchBoxContainer);
+	pLayout->addWidget(m_treeView);
+
+
+	setLayout(pLayout);
 
 	ClearSelection();
 }

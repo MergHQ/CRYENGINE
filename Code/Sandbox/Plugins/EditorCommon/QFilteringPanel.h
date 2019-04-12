@@ -20,6 +20,8 @@ class QVBoxLayout;
 
 class EDITOR_COMMON_API QFilteringPanel : public QWidget, public IStateSerializable
 {
+	Q_OBJECT
+
 public:
 	//! module name needs to be unique across the editor to save properly in personalization
 	QFilteringPanel(const char* uniqueName, QAttributeFilterProxyModel* pModel, QWidget* pParent = nullptr);
@@ -57,6 +59,9 @@ public:
 
 	//! Called when the models are updated, after the filters are changed
 	CCrySignal<void()> signalOnFiltered;
+protected:
+
+	void paintEvent(QPaintEvent* pEvent) override;
 
 private:
 

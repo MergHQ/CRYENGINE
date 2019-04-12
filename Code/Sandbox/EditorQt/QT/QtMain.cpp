@@ -16,6 +16,7 @@
 #include <QSettings>
 #include <QFileSystemWatcher>
 #include <QMenuBar>
+#include <QProxyStyle>
 //////////////////////////////////////////////////////////////////////////
 
 #include "Util/BoostPythonHelpers.h"
@@ -112,7 +113,34 @@ void SetVisualStyle()
 	   WindowsVista
 	   Fusion
 	 */
-	qApp->setStyle(QStyleFactory::create("Fusion"));
+
+	class CIconProxyStyle : public QProxyStyle
+	{
+	public:
+		CIconProxyStyle(QStyle* pStyle)
+			: QProxyStyle(pStyle)
+		{
+
+		}
+
+	public:
+		QIcon standardIcon(StandardPixmap standardIcon, const QStyleOption* pOption = nullptr, const QWidget* pWidget = nullptr) const override
+		{
+			// check the standardIcon parameter for the icon type 
+			if (standardIcon == QStyle::SP_ToolBarHorizontalExtensionButton)
+			{
+				return CryIcon("icons:common/general_dropdown_arrow.ico");
+			}
+			else if (standardIcon == QStyle::SP_ToolBarVerticalExtensionButton)
+			{
+				return CryIcon("icons:common/general_dropdown_arrow.ico");
+			}
+			return QProxyStyle::standardIcon(standardIcon, pOption, pWidget);
+		}
+	};
+
+	CIconProxyStyle* pStyle = new CIconProxyStyle(QStyleFactory::create("Fusion"));
+	qApp->setStyle(pStyle);
 
 	LoadStyleSheet();
 

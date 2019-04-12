@@ -541,11 +541,6 @@ void CFormWidget::paintEvent(QPaintEvent* pEvent)
 		if (row.HasChildren() && m_groupBorderWidth > 0)
 		{
 			QRect rowFrame = row.rowRect;
-			if (row.IsExpanded())
-			{
-				rowFrame.setBottom(rowFrame.bottom() + m_groupBorderWidth + row.m_pChildContainer->rect().height());
-			}
-
 			QPainterPath path;
 			path.addRoundedRect(rowFrame, 3, 3);
 

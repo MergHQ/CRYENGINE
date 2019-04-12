@@ -525,7 +525,6 @@ QFilteringPanel::QFilteringPanel(const char* uniqueName, QAttributeFilterProxyMo
 	m_favoritesButton = new QToolButton();
 	m_favoritesButton->setIcon(FavoritesHelper::GetFavoriteIcon(false));
 	m_favoritesButton->setCheckable(true);
-	m_favoritesButton->setMaximumSize(QSize(20, 20));
 	m_favoritesButton->setToolTip(tr("Show favorites"));
 	connect(m_favoritesButton, &QToolButton::toggled, [=](bool checked)
 	{
@@ -537,7 +536,6 @@ QFilteringPanel::QFilteringPanel(const char* uniqueName, QAttributeFilterProxyMo
 	m_optionsButton = new QToolButton();
 	m_optionsButton->setIcon(CryIcon("icons:General/Filter.ico"));
 	m_optionsButton->setCheckable(true);
-	m_optionsButton->setMaximumSize(QSize(20, 20));
 	connect(m_optionsButton, &QToolButton::clicked, [=]()
 	{
 		SetExpanded(!IsExpanded());
@@ -561,6 +559,8 @@ QFilteringPanel::QFilteringPanel(const char* uniqueName, QAttributeFilterProxyMo
 	
 	m_optionsLayout = new QGridLayout();
 	m_optionsLayout->setContentsMargins(0, 0, 0, 0);
+	m_optionsLayout->setMargin(0);
+	m_optionsLayout->setSpacing(0);
 	m_optionsLayout->setAlignment(Qt::AlignTop | Qt::AlignLeft);
 	m_optionsLayout->setSizeConstraint(QLayout::SetMinAndMaxSize);
 	m_optionsLayout->addWidget(m_addFilterButton, 0, 0, Qt::AlignLeft);
@@ -570,17 +570,25 @@ QFilteringPanel::QFilteringPanel(const char* uniqueName, QAttributeFilterProxyMo
 	m_pFiltersLayout = new QVBoxLayout();
 	m_pFiltersLayout->setContentsMargins(0, 0, 0, 0);
 	m_pFiltersLayout->setSpacing(0);
+	m_pFiltersLayout->setMargin(0);
 	m_pFiltersLayout->addLayout(m_optionsLayout);
 	m_pFiltersLayout->addStretch();
 
 	m_pFiltersWidget = QtUtil::MakeScrollable(m_pFiltersLayout);
 	m_pFiltersWidget->setHidden(true);
 
-	QHBoxLayout* topBar = new QHBoxLayout();
-	topBar->setContentsMargins(0, 0, 0, 0);
-	topBar->addWidget(m_favoritesButton);
-	topBar->addWidget(m_pSearchBox);
-	topBar->addWidget(m_optionsButton);
+	QWidget* pTopBarContainer = new QWidget();
+	pTopBarContainer->setObjectName("SearchBoxContainer");
+
+	QHBoxLayout* pTopBarLayout = new QHBoxLayout();
+	pTopBarLayout->setSpacing(0);
+	pTopBarLayout->setMargin(0);
+	pTopBarLayout->setAlignment(Qt::AlignTop);
+	pTopBarLayout->addWidget(m_favoritesButton);
+	pTopBarLayout->addWidget(m_pSearchBox);
+	pTopBarLayout->addWidget(m_optionsButton);
+
+	pTopBarContainer->setLayout(pTopBarLayout);
 
 	m_splitter = new QSplitter();
 	m_splitter->setOrientation(Qt::Vertical);
@@ -588,8 +596,9 @@ QFilteringPanel::QFilteringPanel(const char* uniqueName, QAttributeFilterProxyMo
 	m_splitter->addWidget(m_pFiltersWidget);
 
 	QVBoxLayout* vbox = new QVBoxLayout();
-	vbox->setContentsMargins(0, 0, 0, 0);
-	vbox->addLayout(topBar);
+	vbox->setSpacing(0);
+	vbox->setMargin(0);
+	vbox->addWidget(pTopBarContainer);
 	vbox->addWidget(m_splitter);
 	setLayout(vbox);
 
@@ -1093,4 +1102,12 @@ void QFilteringPanel::OnSearch()
 
 	m_pModel->InvalidateFilter();
 	signalOnFiltered();
+}
+
+void QFilteringPanel::paintEvent(QPaintEvent* pEvent)
+{
+	QStyleOption opt;
+	opt.init(this);
+	QPainter p(this);
+	style()->drawPrimitive(QStyle::PE_Widget, &opt, &p, this);
 }

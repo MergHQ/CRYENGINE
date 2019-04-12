@@ -131,6 +131,7 @@ public:
 
 protected:
 	int GetIndexFromMouseCoord(const QPoint& globalPos);
+	void paintEvent(QPaintEvent *event) override;
 
 private:
 	void UpdateToolBar();
