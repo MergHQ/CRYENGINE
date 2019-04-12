@@ -455,19 +455,26 @@ struct SCharUpdateFeedback
 
 struct SAnimationProcessParams
 {
-	QuatTS locationAnimation;
-	bool   bOnRender;
-	float  zoomAdjustedDistanceFromCamera;
-	float  overrideDeltaTime;
-
-	SAnimationProcessParams() :
-		locationAnimation(IDENTITY),
-		bOnRender(false),
-		zoomAdjustedDistanceFromCamera(0.0f),
-		overrideDeltaTime(-1.0f)
-	{
-	}
+	QuatTS locationAnimation = IDENTITY;
+	float  zoomAdjustedDistanceFromCamera = 0.f;
+	bool   bOnRender = false;
+	float  overrideDeltaTime = -1.f;
 };
+
+namespace Cry
+{
+namespace Anim
+{
+//!< The staticity of this character instance.
+//!< This information may be used for additional optimizations.
+enum class ECharacterStaticity
+{
+	Dynamic, // Default
+	QuasiStaticLooping, // This character instance usually stays in a short looping animation, unless other animations are queued
+	QuasiStaticFixed // This character instance usually stays in a fixed pose, unless other animations are queued
+};
+}
+}
 
 //! Interface to character animation.
 //! This interface contains methods for manipulating and querying an animated character
@@ -594,6 +601,11 @@ struct ICharacterInstance : IMeshObj
 
 	//! Called when the character is detached (if it was an attachment).
 	virtual void OnDetach() = 0;
+
+	//! Sets the staticity level for this character instance.
+	//! See definition of Cry::Anim::ECharacterStaticity
+	virtual Cry::Anim::ECharacterStaticity GetStaticity() const = 0;
+	virtual void SetStaticity(Cry::Anim::ECharacterStaticity staticity) = 0;
 
 	//! Disable rendering of this render this instance.
 	virtual void HideMaster(uint32 h) = 0;

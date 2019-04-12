@@ -602,6 +602,14 @@ CDefaultSkinningReferences* CharacterManager::GetDefaultSkinningReferences(CSkin
 
 }
 
+void CharacterManager::Debug_IncreaseQuasiStaticCullCounter()
+{
+	if (Console::GetInst().ca_DebugQuasiStaticAnimationCulling)
+	{
+		m_nQuasiStaticAnimationUpdateCulls++;
+	}
+}
+
 //////////////////////////////////////////////////////////////////////////
 // Finds a cached or creates a new CDefaultSkeleton instance and returns it
 // returns NULL if the construction failed
@@ -3459,6 +3467,12 @@ void CharacterManager::SyncAllAnimations()
 
 	if (Console::GetInst().ca_MemoryDefragEnabled)
 		g_controllerHeap.Update();
+
+	if (Console::GetInst().ca_DebugQuasiStaticAnimationCulling && m_nQuasiStaticAnimationUpdateCulls > 0)
+	{
+		CryLog("Quasi-static animation updates culled this frame: %d", m_nQuasiStaticAnimationUpdateCulls);
+		m_nQuasiStaticAnimationUpdateCulls = 0;
+	}
 }
 
 void CharacterManager::ClearPoseModifiersFromSynchQueue()

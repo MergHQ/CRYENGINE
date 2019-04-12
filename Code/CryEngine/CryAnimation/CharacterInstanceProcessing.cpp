@@ -28,10 +28,15 @@ SContext::EState SStartAnimationProcessing::operator()(const SContext& ctx)
 	if (ctx.pParent)
 	{
 		ctx.pInstance->SetupThroughParent(ctx.pParent);
-	}
-	else
-	{
-		ctx.pInstance->SetupThroughParams(m_pParams);
+
+		// Anticipated skip for quasi-static objects
+		// This allows to skip the animation update for those objects which just stay in the same pose / animation loop for a long time
+		ctx.pInstance->AdvanceQuasiStaticSleepTimer();
+		if (ctx.pInstance->IsQuasiStaticSleeping())
+		{
+			g_pCharacterManager->Debug_IncreaseQuasiStaticCullCounter();
+			return SContext::EState::Finished;
+		}
 	}
 
 	const uint32 wasAnimPlaying = ctx.pInstance->m_SkeletonAnim.m_IsAnimPlaying;
@@ -39,6 +44,7 @@ SContext::EState SStartAnimationProcessing::operator()(const SContext& ctx)
 	ctx.pInstance->m_SkeletonAnim.m_IsAnimPlaying = false;
 	QuatTS location = ctx.pInstance->m_location;
 
+	// Animation queue update
 	ctx.pInstance->m_SkeletonAnim.ProcessAnimations(location);
 
 	if (!GetMemoryPool())
@@ -61,6 +67,7 @@ SContext::EState SStartAnimationProcessing::operator()(const SContext& ctx)
 		pSkeletonPose->m_physics.RequestForcedPostSynchronization();
 	}
 
+	// Skip rest of the update (pose update) for objects that are not in view
 	if (!ctx.pInstance->m_SkeletonPose.m_bFullSkeletonUpdate)
 	{
 		return SContext::EState::JobSkipped;

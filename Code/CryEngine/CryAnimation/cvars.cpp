@@ -245,6 +245,11 @@ void Console::Init()
 	DefineConstIntCVar(ca_MinAttachmentMemorySize, 4096, VF_NULL, "Default reservation size of the memory vector in the AttachmentManager");
 	DefineConstIntCVar(ca_MinAttachmentOffsetSize, 4096, VF_NULL, "Default reservation size of the offsets vector in the AttachmentManager");
 
+	// Quasi static animation optimization
+	DefineConstIntCVar(ca_CullQuasiStaticAnimationUpdates, 0, VF_NULL, "Drops the animation updates of objects marked as 'quasi-static' when they sleep");
+	DefineConstIntCVar(ca_DebugQuasiStaticAnimationCulling, 0, VF_NULL, "Whether to display debug information about what updates are being culled.");
+	DefineConstIntCVar(ca_QuasiStaticAnimationSleepTimeoutMs, 2500, VF_NULL, "How much to wait (ms) before sleeping on quasi-static objects.");
+
 	// vars in console .cfgs
 	REGISTER_CVAR(ca_DrawVEGInfo, 0.0f, VF_CHEAT, "if set to 1, the VEG debug info is drawn");
 	REGISTER_CVAR(ca_DecalSizeMultiplier, 1.0f, VF_CHEAT, "The multiplier for the decal sizes");

@@ -291,7 +291,7 @@ public:
 	uint32                      GetOrLoadCDFId(const string& pathname);
 	bool                        StreamKeepCDFResident(const char* szFilePath, int nLod, int nRefAdj, bool bUrgent);
 	CDefaultSkinningReferences* GetDefaultSkinningReferences(CSkin* pDefaultSkinning);
-
+	void                        Debug_IncreaseQuasiStaticCullCounter();
 private:
 	void UpdateInstances(bool bPause);
 	
@@ -416,4 +416,6 @@ private:
 	SClothGeometry* LoadVClothGeometry(const CAttachmentVCLOTH& pRendAtt, _smart_ptr<IRenderMesh> pRenderMeshes[]);
 	typedef std::map<uint64, SClothGeometry> TClothGeomCache;
 	TClothGeomCache m_clothGeometries;
+
+	uint32 m_nQuasiStaticAnimationUpdateCulls = 0; //number of quasi static objects culled in the last frame
 };
