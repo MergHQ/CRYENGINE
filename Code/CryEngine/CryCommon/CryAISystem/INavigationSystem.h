@@ -100,7 +100,7 @@ struct INavigationSystem
 		uint16 maxWaterDepthVoxelCount;
 	};
 
-	enum EMeshFlag : uint32
+	enum class EMeshFlag : uint32
 	{
 		RemoveInaccessibleTriangles = BIT32(0),
 	};
