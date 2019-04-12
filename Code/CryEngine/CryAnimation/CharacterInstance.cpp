@@ -142,6 +142,17 @@ void CCharInstance::StartAnimationProcessing(const SAnimationProcessParams& para
 	if (GetProcessingContext())
 		return;
 
+	SetupThroughParams(&params);
+
+	// Anticipated skip for quasi-static objects
+	// This allows to skip the animation update for those objects which just stay in the same pose / animation loop for a long time
+	AdvanceQuasiStaticSleepTimer();
+	if (IsQuasiStaticSleeping())
+	{
+		g_pCharacterManager->Debug_IncreaseQuasiStaticCullCounter();
+		return;
+	}
+
 	CharacterInstanceProcessing::CContextQueue& queue = g_pCharacterManager->GetContextSyncQueue();
 
 	// generate contexts for me and all my attached instances
@@ -163,7 +174,7 @@ void CCharInstance::StartAnimationProcessing(const SAnimationProcessParams& para
 	if (bImmediate)
 	{
 		m_SkeletonAnim.FinishAnimationComputations();
-	}
+	}	
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -832,6 +843,7 @@ void CCharInstance::SetupThroughParent(const CCharInstance* pParent)
 	m_fOriginalDeltaTime = pParent->m_fOriginalDeltaTime;
 	m_fDeltaTime = pParent->m_fDeltaTime;
 	m_nAnimationLOD = pParent->GetAnimationLOD();
+	m_SkeletonPose.m_bVisibleLastFrame = m_SkeletonPose.m_bInstanceVisible;
 	m_SkeletonPose.m_bFullSkeletonUpdate = pParent->m_SkeletonPose.m_bFullSkeletonUpdate;
 	m_SkeletonPose.m_bInstanceVisible = pParent->m_SkeletonPose.m_bInstanceVisible;
 }
@@ -868,6 +880,10 @@ void CCharInstance::SetupThroughParams(const SAnimationProcessParams* pParams)
 	  (float)__fsel(pParams->overrideDeltaTime, pParams->overrideDeltaTime, fNewDeltaTime);
 	m_fOriginalDeltaTime = fNewDeltaTime;
 	m_fDeltaTime = fNewDeltaTime * m_fPlaybackScale;
+
+	//---------------------------------------------------------------------------------
+
+	m_SkeletonPose.m_bVisibleLastFrame = m_SkeletonPose.m_bInstanceVisible;
 
 	//---------------------------------------------------------------------------------
 

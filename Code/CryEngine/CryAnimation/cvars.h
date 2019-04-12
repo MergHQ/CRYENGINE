@@ -132,6 +132,9 @@ struct CRY_ALIGN(128) Console
 	DeclareConstIntCVar(ca_SampleQuatHemisphereFromCurrentPose, 0);
 	DeclareConstIntCVar(ca_MinAttachmentMemorySize, 4096);
 	DeclareConstIntCVar(ca_MinAttachmentOffsetSize, 4096);
+	DeclareConstIntCVar(ca_CullQuasiStaticAnimationUpdates, 0);
+	DeclareConstIntCVar(ca_DebugQuasiStaticAnimationCulling, 0); 
+	DeclareConstIntCVar(ca_QuasiStaticAnimationSleepTimeoutMs, 2500);
 
 #if USE_FACIAL_ANIMATION_FRAMERATE_LIMITING
 	DeclareConstIntCVar(ca_FacialAnimationFramerate, 20);
