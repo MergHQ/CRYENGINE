@@ -160,6 +160,16 @@ inline VecType ClosestPtPointTriangle(const VecType& p, const VecType& a, const 
 	return a + ab * v + ac * w;
 }
 
+inline bool PointInTriangle(const vector2_t& p, const vector2_t& a, const vector2_t& b, const vector2_t& c)
+{
+	// Careful: this function can return that the point p is inside triangle abc also in the case of degenerate triangle.
+	const bool e0 = (p - a).cross(a - b) >= 0;
+	const bool e1 = (p - b).cross(b - c) >= 0;
+	const bool e2 = (p - c).cross(c - a) >= 0;
+
+	return (e0 == e1) && (e0 == e2);
+}
+
 //! Projects point p on triangle abc in vertical direction. 
 //! Returns true when the position is successfully projected to triangle or false in case of degenerate triangle.
 //! The function isn't checking if the position p lies inside the triangle, it is responsibility of the caller to provide correct inputs.
@@ -201,21 +211,11 @@ inline bool ProjectPointOnTriangleVertical(const vector3_t& p, const vector3_t& 
 	const real_t u = (dot11 * dot02 - dot01 * dot12);
 	const real_t v = (dot00 * dot12 - dot01 * dot02);
 
-	CRY_ASSERT_MESSAGE(u >= -tolerance * 10 && v >= -tolerance * 10 && (u + v) <= denom + tolerance * 10, "Projecting point is too far outside of the triangle.");
+	CRY_ASSERT_MESSAGE(PointInTriangle(vector2_t(p), vector2_t(a), vector2_t(b), vector2_t(c)), "Projecting point isn't lying inside the triangle.");
 
 	// Compute only z value of the projected position, x and y stays the same
 	projected.z = a.z + v0.z * u / denom + v1.z * v / denom;
 	return true;
-}
-
-inline bool PointInTriangle(const vector2_t& p, const vector2_t& a, const vector2_t& b, const vector2_t& c)
-{
-	// Careful: this function can return that the point p is inside triangle abc also in the case of degenerate triangle.
-	const bool e0 = (p - a).cross(a - b) >= 0;
-	const bool e1 = (p - b).cross(b - c) >= 0;
-	const bool e2 = (p - c).cross(c - a) >= 0;
-
-	return (e0 == e1) && (e0 == e2);
 }
 
 template<typename VecType>
