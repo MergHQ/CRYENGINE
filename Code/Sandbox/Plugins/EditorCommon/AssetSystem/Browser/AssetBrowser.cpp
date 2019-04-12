@@ -396,6 +396,7 @@ public:
 
 		QHBoxLayout* pLayout = new QHBoxLayout();
 		pLayout->setMargin(0);
+		pLayout->setSpacing(0);
 		pLayout->addWidget(pLineEdit);
 		pLayout->addWidget(pButton);
 		widget->setLayout(pLayout);
@@ -1038,6 +1039,7 @@ void CAssetBrowser::InitViews(bool bHideEngineFolder)
 
 	auto addressBar = new QHBoxLayout();
 	addressBar->setMargin(0);
+	addressBar->setSpacing(0);
 	addressBar->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
 	addressBar->addWidget(m_pBackButton);
 	addressBar->addWidget(m_pForwardButton);
@@ -1050,6 +1052,7 @@ void CAssetBrowser::InitViews(bool bHideEngineFolder)
 	//top level layout
 	auto topLayout = new QVBoxLayout();
 	topLayout->setMargin(0);
+	topLayout->setSpacing(0);
 	topLayout->setAlignment(Qt::AlignTop | Qt::AlignHCenter);
 	topLayout->addLayout(addressBar);
 	topLayout->addWidget(m_pFoldersSplitter);
