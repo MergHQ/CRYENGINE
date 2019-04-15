@@ -281,6 +281,7 @@ void Console::Init()
 	REGISTER_CVAR(ca_MotionBlurMovementThreshold, 0.0f, 0, "\"advanced\" Set motion blur movement threshold for discarding skinned object");
 
 	REGISTER_CVAR(ca_DeathBlendTime, 0.3f, VF_CHEAT, "Specifies the blending time between low-detail dead body skeleton and current skeleton");
+	REGISTER_CVAR(ca_OverrideBlendWeightSimulatedSockets, 1.0f, 0, "Override helper joint value for blending between socket simulation and animation pose\n 0.0 - full animation\n 1.0 - full simulation (override disabled)");
 	REGISTER_CVAR(ca_lipsync_vertex_drag, 1.2f, VF_CHEAT, "Vertex drag coefficient when blending morph targets");
 	REGISTER_CVAR(ca_lipsync_phoneme_strength, 1.0f, 0, "LipSync phoneme strength");
 	REGISTER_CVAR(ca_AttachmentCullingRation, 200.0f, 0, "ration between size of attachment and distance to camera");

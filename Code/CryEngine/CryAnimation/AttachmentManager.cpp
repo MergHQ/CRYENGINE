@@ -213,6 +213,15 @@ uint32 CAttachmentManager::ParseXMLAttachmentList(CharacterAttachment* parrAttac
 			}
 		}
 
+		if (isPendulum == SimulationParams::PENDULUM_CONE || isPendulum == SimulationParams::PENDULUM_HINGE_PLANE || isPendulum == SimulationParams::PENDULUM_HALF_CONE || isSpring)
+		{
+			attach.ap.SetBlendControlJointName( CCryName(nodeAttach->getAttr("A_BlendControlJointName")) );
+			int iAxis = 0;
+			nodeAttach->getAttr("A_BlendControlJointAxis", iAxis);
+			iAxis = clamp_tpl(iAxis, 0, 2);
+			attach.ap.SetBlendControlAxis( static_cast<SimulationParams::EBlendControlJointAxisToUse>(iAxis) );
+		}
+
 		uint32 IsProjection = 0;
 		nodeAttach->getAttr("P_Projection", IsProjection);
 		if (IsProjection)
@@ -2290,8 +2299,6 @@ void CAttachmentManager::SortByType()
 				m_numRedirectionWithAttachment++;
 			if (pb->m_Simulation.m_arrChildren.size())
 				continue;
-			pb->m_Simulation.m_nAnimOverrideJoint =
-			  rDefaultSkeleton.GetJointIDByName("all_blendWeightPendulum");
 			int32 parentid = pb->m_nJointID;
 			if (parentid < 0)
 				continue;
