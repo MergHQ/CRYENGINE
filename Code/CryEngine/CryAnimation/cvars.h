@@ -170,6 +170,7 @@ struct CRY_ALIGN(128) Console
 
 	int32 ca_VClothMode;
 
+	f32 ca_OverrideBlendWeightSimulatedSockets;
 	f32 ca_lipsync_vertex_drag;
 	f32 ca_lipsync_phoneme_strength;
 	f32 ca_DeathBlendTime;
