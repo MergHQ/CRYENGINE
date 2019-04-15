@@ -65,46 +65,50 @@ bool CryAssertHandler(SAssertData const& data, SAssertCond& cond, char const* co
 }
 } // namespace Detail
 
-//! The code to insert when assert is used.
+			//! The code to insert when assert is used.
+			//! There should be no need to use this macro in your code.
+			//! Use CRY_ASSERT[_MESSAGE]  and CRY_VERIFY[_WITH_MESSAGE] instead.
+			#define CRY_ASSERT_MESSAGE_IMPL(condition, szCondition, file, line, ...) \
+				do                                                    \
+				{                                                     \
+					IF_UNLIKELY (!(condition))                        \
+					{                                                 \
+						::Detail::SAssertData const assertData =      \
+						{                                             \
+							szCondition,                              \
+							__func__,                                 \
+							file,                                     \
+							line };                                   \
+						static ::Detail::SAssertCond assertCond =     \
+							{ false, true };                          \
+						if (::Detail::CryAssertHandler(assertData, assertCond, __VA_ARGS__)) \
+							CryDebugBreak();                          \
+					}                                                 \
+					PREFAST_ASSUME(condition);                        \
+				} while (false)	
+
+			#define CRY_ASSERT_MESSAGE(condition, ...) CRY_ASSERT_MESSAGE_IMPL(condition, # condition, __FILE__, __LINE__, __VA_ARGS__)
+
 			#define CRY_AUX_VA_ARGS(...)    __VA_ARGS__
 			#define CRY_AUX_STRIP_PARENS(X) X
-
-			#define CRY_ASSERT_MESSAGE(condition, ...)                           \
-	do                                                                       \
-	{                                                                        \
-		IF_UNLIKELY (!(condition))                                             \
-		{                                                                      \
-			::Detail::SAssertData const assertData =                             \
-			{                                                                    \
-				# condition,                                                       \
-				__func__,                                                          \
-				__FILE__,                                                          \
-				__LINE__ };                                                        \
-			static ::Detail::SAssertCond assertCond =                            \
-			{                                                                    \
-				false, true };                                                     \
-			if (::Detail::CryAssertHandler(assertData, assertCond, __VA_ARGS__)) \
-				CryDebugBreak();                                                   \
-		}                                                                      \
-		PREFAST_ASSUME(condition);                                             \
-	} while (false)
-
 			#define CRY_ASSERT_TRACE(condition, parenthese_message) \
-	CRY_ASSERT_MESSAGE(condition, CRY_AUX_STRIP_PARENS(CRY_AUX_VA_ARGS parenthese_message))
+				CRY_ASSERT_MESSAGE(condition, CRY_AUX_STRIP_PARENS(CRY_AUX_VA_ARGS parenthese_message))
 
 			#define CRY_ASSERT(condition) CRY_ASSERT_MESSAGE(condition, nullptr)
 
 		#else
 
-//! Use the platform's default assert.
+			//! Use the platform's default assert.
 			#include <assert.h>
 			#undef CRY_WAS_USE_ASSERT_SET
 			#define CRY_WAS_USE_ASSERT_SET 0
 			#undef USE_CRY_ASSERT
 			#undef CRY_ASSERT_TRACE
+			#undef CRY_ASSERT_MESSAGE_IMPL
 			#undef CRY_ASSERT_MESSAGE
 			#undef CRY_ASSERT
 			#define CRY_ASSERT_TRACE(condition, parenthese_message) assert(condition)
+			#define CRY_ASSERT_MESSAGE_IMPL(condition, szCondition, file, line, ...) assert(condition)
 			#define CRY_ASSERT_MESSAGE(condition, ...)              assert(condition)
 			#define CRY_ASSERT(condition)                           assert(condition)
 
@@ -113,18 +117,18 @@ bool CryAssertHandler(SAssertData const& data, SAssertCond& cond, char const* co
 		#ifdef IS_EDITOR_BUILD
 			#undef  Q_ASSERT
 			#undef  Q_ASSERT_X
-// Q_ASSERT handler
-// Qt uses expression with chained asserts separated by ',' like: { return Q_ASSERT(n >= 0), Q_ASSERT(n < size()), QChar(m_data[n]); }
+			// Q_ASSERT handler
+			// Qt uses expression with chained asserts separated by ',' like: { return Q_ASSERT(n >= 0), Q_ASSERT(n < size()), QChar(m_data[n]); }
 			#define  CRY_ASSERT_HANDLER_QT(cond, ...)                                        \
-	([&] {                                                                               \
-		const ::Detail::SAssertData assertData = { # cond, __func__, __FILE__, __LINE__ }; \
-		static ::Detail::SAssertCond assertCond = { false, true };                         \
-		if (::Detail::CryAssertHandler(assertData, assertCond, __VA_ARGS__))               \
-		{                                                                                  \
-		  CryDebugBreak();                                                                 \
-		}                                                                                  \
-		return static_cast<void>(0);                                                       \
-	} ())
+				([&] {                                                                               \
+					const ::Detail::SAssertData assertData = { # cond, __func__, __FILE__, __LINE__ }; \
+					static ::Detail::SAssertCond assertCond = { false, true };                         \
+					if (::Detail::CryAssertHandler(assertData, assertCond, __VA_ARGS__))               \
+					{                                                                                  \
+					  CryDebugBreak();                                                                 \
+					}                                                                                  \
+					return static_cast<void>(0);                                                       \
+				} ())
 
 			#define Q_ASSERT(cond, ...)           ((cond) ? static_cast<void>(0) : CRY_ASSERT_HANDLER_QT(cond, "Q_ASSERT"))
 			#define Q_ASSERT_X(cond, where, what) ((cond) ? static_cast<void>(0) : CRY_ASSERT_HANDLER_QT(cond, "Q_ASSERT_X" where what))
@@ -156,18 +160,20 @@ inline void assertion_failed(char const* const szExpr, char const* const szFunct
 }
 } // namespace boost
 	#else
-// Used in release configuration.
+		// Used in release configuration.
 		#define CRY_WAS_USE_ASSERT_SET 0
 		#undef USE_CRY_ASSERT
 		#undef CRY_ASSERT_TRACE
+		#undef CRY_ASSERT_MESSAGE_IMPL
 		#undef CRY_ASSERT_MESSAGE
 		#undef CRY_ASSERT
 		#define CRY_ASSERT_TRACE(condition, parenthese_message) ((void)0)
+		#define CRY_ASSERT_MESSAGE_IMPL(condition, szCondition, file, line, ...) ((void)0)
 		#define CRY_ASSERT_MESSAGE(condition, ...)              ((void)0)
 		#define CRY_ASSERT(condition)                           ((void)0)
 
 		#if defined(FORCE_STANDARD_ASSERT)
-// This empty assert is needed by RC in Release configuration.
+			// This empty assert is needed by RC in Release configuration.
 			#define assert(expression) ((void)0)
 		#endif
 	#endif // _RELEASE
@@ -175,15 +181,15 @@ inline void assertion_failed(char const* const szExpr, char const* const szFunct
 namespace Cry
 {
 template<typename T, typename ... Args>
-inline T const& VerifyWithMessage(T const& expr, Args&& ... args)
+inline T const& VerifyWithMessage(T const& expr, const char* szExpr, const char* szFile, int line, Args&& ... args)
 {
-	CRY_ASSERT_MESSAGE(expr, std::forward<Args>(args) ...);
+	CRY_ASSERT_MESSAGE_IMPL(expr, szExpr, szFile, line, std::forward<Args>(args) ...);
 	return expr;
 }
 } // namespace Cry
 
-	#define CRY_VERIFY(expr)                   Cry::VerifyWithMessage(expr, # expr)
-	#define CRY_VERIFY_WITH_MESSAGE(expr, ...) Cry::VerifyWithMessage(expr, __VA_ARGS__)
+	#define CRY_VERIFY(expr)                   Cry::VerifyWithMessage(expr, # expr, __FILE__, __LINE__, nullptr)
+	#define CRY_VERIFY_WITH_MESSAGE(expr, ...) Cry::VerifyWithMessage(expr, # expr, __FILE__, __LINE__, __VA_ARGS__)
 
 #endif   // CRY_ASSERT_H_INCLUDED
 
