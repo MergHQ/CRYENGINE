@@ -812,6 +812,11 @@ bool CAssetEditor::SaveBackup(const string& backupFolder)
 	return true;
 }
 
+bool CAssetEditor::OnSaveAsset(CEditableAsset& editAsset)
+{
+	return GetAssetBeingEdited()->GetEditingSession()->OnSaveAsset(editAsset);
+}
+
 void CAssetEditor::SetInstantEditingMode(bool isActive)
 {
 	if (isActive)

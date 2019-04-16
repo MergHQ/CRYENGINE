@@ -138,7 +138,6 @@ enum EEditorNotifyEvent
 	eNotify_OnUpdateSequencerKeySelection, // Sent when CryMannequin sequencer view changes selection of keys.
 
 	eNotify_OnInvalidateControls,      // Sent when editor needs to update some of the data that can be cached by controls like combo boxes.
-	eNotify_OnStyleChanged,            // Sent when UI color theme was changed
 
 	// Object events.
 	eNotify_OnSelectionChange,   // Sent when object selection change.
@@ -493,11 +492,11 @@ struct IAutoEditorNotifyListener : public IEditorNotifyListener
 	IAutoEditorNotifyListener()
 		: IEditorNotifyListener()
 	{
-		((IEditor*)GetIEditor())->RegisterNotifyListener(this);
+		GetIEditor()->RegisterNotifyListener(this);
 	}
 
 	~IAutoEditorNotifyListener()
 	{
-		((IEditor*)GetIEditor())->UnregisterNotifyListener(this);
+		GetIEditor()->UnregisterNotifyListener(this);
 	}
 };

@@ -11,12 +11,6 @@
 
 class QToolBar;
 
-namespace CurveEditorHelpers
-{
-// Picks a nice color value for a curve. Wraps around after 4.
-EDITOR_COMMON_API ColorB GetCurveColor(const uint n);
-}
-
 class EDITOR_COMMON_API CCurveEditor : public QWidget
 {
 	Q_OBJECT
