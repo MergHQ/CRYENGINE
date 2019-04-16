@@ -18,6 +18,7 @@
 
 #include <CrySystem/File/CryFile.h>
 #include <CrySystem/ISystem.h>
+#include <Commands/QCommandAction.h>
 #include <QtUtil.h>
 #include <Controls/QuestionDialog.h>
 
@@ -81,8 +82,9 @@ void OnAfterReload()
 
 //////////////////////////////////////////////////////////////////////////
 CMainWindow::CMainWindow()
-	: m_pImplNameLabel(new QLabel(this))
-	, m_pToolBar(new QToolBar("ACE Tools", this))
+	: m_pSaveAction(nullptr)
+	, m_pRefreshAction(nullptr)
+	, m_pReloadAction(nullptr)
 	, m_pMonitorSystem(new CFileMonitorSystem(1000, this))
 	, m_isModified(false)
 	, m_isReloading(false)
@@ -108,22 +110,12 @@ CMainWindow::CMainWindow()
 
 	m_isModified = g_assetsManager.IsDirty();
 
-	auto const pWindowLayout = new QVBoxLayout();
-	pWindowLayout->setContentsMargins(0, 0, 0, 0);
-
-	InitMenuBar();
-
-	InitToolbar(pWindowLayout);
-	SetContent(pWindowLayout);
 	RegisterWidgets();
 
 	if (g_pIImpl != nullptr)
 	{
 		g_assetsManager.UpdateAllConnectionStates();
 	}
-
-	UpdateImplLabel();
-	m_pToolBar->setEnabled(g_pIImpl != nullptr);
 
 	QObject::connect(m_pMonitorSystem, &CFileMonitorSystem::SignalReloadData, this, &CMainWindow::ReloadSystemData);
 	QObject::connect(g_pFileMonitorMiddleware, &CFileMonitorMiddleware::SignalReloadData, this, &CMainWindow::ReloadMiddlewareData);
@@ -137,10 +129,8 @@ CMainWindow::CMainWindow()
 	g_implManager.SignalOnBeforeImplChange.Connect(this, &CMainWindow::SaveBeforeImplChange);
 	g_implManager.SignalOnAfterImplChange.Connect([this]()
 		{
-			UpdateImplLabel();
+			UpdateState();
 			Reload(true);
-
-			m_pToolBar->setEnabled(g_pIImpl != nullptr);
 		}, reinterpret_cast<uintptr_t>(this));
 
 	GetISystem()->GetISystemEventDispatcher()->RegisterListener(this, "CAudioControlsEditorMainWindow");
@@ -157,40 +147,45 @@ CMainWindow::~CMainWindow()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CMainWindow::InitMenuBar()
+void CMainWindow::Initialize()
 {
-	CEditor::MenuItems const items[] = { CEditor::MenuItems::EditMenu };
-	AddToMenu(items, sizeof(items) / sizeof(CEditor::MenuItems));
+	CDockableEditor::Initialize();
 
-	CAbstractMenu* const pMenuEdit = GetMenu(MenuItems::EditMenu);
-	QAction const* const pPreferencesAction = pMenuEdit->CreateAction(tr("Preferences..."));
-	QObject::connect(pPreferencesAction, &QAction::triggered, this, &CMainWindow::OnPreferencesDialog);
+	InitMenu();
+	UpdateState();
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CMainWindow::InitToolbar(QVBoxLayout* const pWindowLayout)
+void CMainWindow::UpdateState()
 {
-	auto const pToolBarsLayout = new QHBoxLayout();
-	pToolBarsLayout->setDirection(QBoxLayout::LeftToRight);
-	pToolBarsLayout->setSizeConstraint(QLayout::SetMaximumSize);
+	bool const middleWareFound = g_pIImpl != nullptr;
 
-	m_pSaveAction = m_pToolBar->addAction(CryIcon("icons:General/File_Save.ico"), QString());
-	m_pSaveAction->setToolTip(tr("Save all changes"));
-	m_pSaveAction->setEnabled(m_isModified);
-	QObject::connect(m_pSaveAction, &QAction::triggered, this, &CMainWindow::Save);
+	m_pSaveAction->setEnabled(middleWareFound);
+	m_pReloadAction->setEnabled(middleWareFound);
+	m_pRefreshAction->setEnabled(middleWareFound);
 
-	QAction* const pReloadAction = m_pToolBar->addAction(CryIcon("icons:General/Reload.ico"), QString());
-	pReloadAction->setToolTip(tr("Reload all ACE and middleware files"));
-	QObject::connect(pReloadAction, &QAction::triggered, this, &CMainWindow::Reload);
+	setWindowTitle(QString("%1 (%2)").arg(g_szEditorName).arg(middleWareFound ? g_implInfo.name.c_str() : "Warning: No middleware implementation!"));
+}
 
-	QAction* const pRefreshAudioSystemAction = m_pToolBar->addAction(CryIcon("icons:Audio/Refresh_Audio.ico"), QString());
-	pRefreshAudioSystemAction->setToolTip(tr("Refresh Audio System"));
-	QObject::connect(pRefreshAudioSystemAction, &QAction::triggered, this, &CMainWindow::RefreshAudioSystem);
+//////////////////////////////////////////////////////////////////////////
+void CMainWindow::InitMenu()
+{
+	AddToMenu({ CEditor::MenuItems::FileMenu, CEditor::MenuItems::Save, CEditor::MenuItems::EditMenu });
+	CAbstractMenu* const pMenuEdit = GetMenu(MenuItems::EditMenu);
+	m_pSaveAction = GetMenuAction(CEditor::MenuItems::Save);
 
-	pToolBarsLayout->addWidget(m_pToolBar, 0, Qt::AlignLeft);
-	pToolBarsLayout->addWidget(m_pImplNameLabel, 0, Qt::AlignRight);
+	m_pReloadAction = GetAction("general.reload");
+	pMenuEdit->AddCommandAction(m_pReloadAction);
+	// Create and get refresh action so we can provide extra context through text and icon
+	// This action will benefit from sharing the general.refresh shortcut
+	m_pRefreshAction = GetAction("general.refresh");
+	pMenuEdit->AddCommandAction(m_pRefreshAction);
+	m_pRefreshAction->setText("Refresh Audio System");
+	m_pRefreshAction->setIcon(CryIcon("icons:Audio/Refresh_Audio.ico"));
 
-	pWindowLayout->addLayout(pToolBarsLayout);
+	int const section = pMenuEdit->GetNextEmptySection();
+	QAction const* const pPreferencesAction = pMenuEdit->CreateAction(tr("Preferences..."), section);
+	QObject::connect(pPreferencesAction, &QAction::triggered, this, &CMainWindow::OnPreferencesDialog);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -342,7 +337,7 @@ void CMainWindow::keyPressEvent(QKeyEvent* pEvent)
 	{
 		if ((pEvent->key() == Qt::Key_S) && (pEvent->modifiers() == Qt::ControlModifier))
 		{
-			Save();
+			OnSave();
 		}
 		else if ((pEvent->key() == Qt::Key_Z) && (pEvent->modifiers() & Qt::ControlModifier))
 		{
@@ -361,16 +356,10 @@ void CMainWindow::keyPressEvent(QKeyEvent* pEvent)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CMainWindow::UpdateImplLabel()
+bool CMainWindow::OnReload()
 {
-	if (g_pIImpl != nullptr)
-	{
-		m_pImplNameLabel->setText(QtUtil::ToQString(g_implInfo.name.c_str()));
-	}
-	else
-	{
-		m_pImplNameLabel->setText(tr("Warning: No middleware implementation!"));
-	}
+	Reload();
+	return true;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -452,7 +441,7 @@ void CMainWindow::SaveBeforeImplChange()
 		if (messageBox->Execute() == QDialogButtonBox::Yes)
 		{
 			g_assetsManager.ClearDirtyFlags();
-			Save();
+			OnSave();
 		}
 	}
 
@@ -460,7 +449,7 @@ void CMainWindow::SaveBeforeImplChange()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CMainWindow::Save()
+bool CMainWindow::OnSave()
 {
 	QGuiApplication::setOverrideCursor(Qt::WaitCursor);
 	m_pMonitorSystem->Disable();
@@ -477,17 +466,20 @@ void CMainWindow::Save()
 
 		if (messageBox->Execute() == QDialogButtonBox::Yes)
 		{
-			RefreshAudioSystem();
+			OnRefresh();
 		}
 	}
 
 	g_assetsManager.ClearDirtyFlags();
+
+	return true;
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CMainWindow::RefreshAudioSystem()
+bool CMainWindow::OnRefresh()
 {
 	GetISystem()->GetISystemEventDispatcher()->OnSystemEvent(ESYSTEM_EVENT_AUDIO_REFRESH, 0, 0);
+	return true;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -604,7 +596,7 @@ bool CMainWindow::TryClose()
 			{
 			case QDialogButtonBox::Save:
 				{
-					Save();
+					OnSave();
 					break;
 				}
 			case QDialogButtonBox::Discard:

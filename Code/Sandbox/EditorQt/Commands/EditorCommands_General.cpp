@@ -65,10 +65,10 @@ REGISTER_EDITOR_AND_SCRIPT_KEYBOARD_FOCUS_COMMAND(general, open, CCommandDescrip
 REGISTER_EDITOR_UI_COMMAND_DESC(general, open, "&Open...", CKeyboardShortcut::StandardKey::Open, "icons:General/Folder_Open.ico", false)
 
 REGISTER_EDITOR_AND_SCRIPT_KEYBOARD_FOCUS_COMMAND(general, import, CCommandDescription("Context driven 'import' command"))
-REGISTER_EDITOR_UI_COMMAND_DESC(general, import, "Import...", "", "", false)
+REGISTER_EDITOR_UI_COMMAND_DESC(general, import, "Import...", "", "icons:General/File_Import.ico", false)
 
 REGISTER_EDITOR_AND_SCRIPT_KEYBOARD_FOCUS_COMMAND(general, reload, CCommandDescription("Context driven 'reload' command"))
-REGISTER_EDITOR_UI_COMMAND_DESC(general, reload, "Reload", "", "", false)
+REGISTER_EDITOR_UI_COMMAND_DESC(general, reload, "Reload", "", "icons:General/Reload.ico", false)
 
 REGISTER_EDITOR_AND_SCRIPT_KEYBOARD_FOCUS_COMMAND(general, refresh, CCommandDescription("Context driven 'refresh' command"))
 REGISTER_EDITOR_UI_COMMAND_DESC(general, refresh, "Refresh", "", "", false)
