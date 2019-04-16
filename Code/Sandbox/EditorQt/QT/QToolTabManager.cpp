@@ -245,6 +245,11 @@ QTabPane* CTabPaneManager::CreateTabPane(const char* paneClassName, const char* 
 		pPane->setWindowTitle(QWidget::tr(title));
 
 		pPane->m_category = pViewPaneClass->Category();
+
+		if (pContentWidget)
+		{
+			pContentWidget->Initialize();
+		}
 	}
 	else
 	{
@@ -824,7 +829,6 @@ IPane* CTabPaneManager::CreatePaneContents(QTabPane* pTool)
 		QWidget* const pContentWidget = pPane->GetWidget();
 		pTool->layout()->addWidget(pContentWidget);
 		pTool->m_pane = pPane;
-		pPane->Initialize();
 
 		QObject::connect(pContentWidget, &QWidget::windowTitleChanged, pTool, &QWidget::setWindowTitle);
 		QObject::connect(pContentWidget, &QWidget::windowIconChanged, pTool, &QWidget::setWindowIcon);

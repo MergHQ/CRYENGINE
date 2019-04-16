@@ -54,8 +54,10 @@ void CEditorContent::Initialize()
 void CEditorContent::SetContent(QWidget* pContent)
 {
 	pContent->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-	m_pContentLayout->replaceWidget(m_pContent, pContent);
+	QLayoutItem* pItem = m_pContentLayout->replaceWidget(m_pContent, pContent);
 	m_pContent->deleteLater();
+	delete pItem;
+
 	m_pContent = pContent;
 }
 
@@ -67,9 +69,11 @@ void CEditorContent::SetContent(QLayout* pContentLayout)
 	pContentLayout->setMargin(0);
 	pContentLayout->setSpacing(0);
 
-	m_pContentLayout->replaceWidget(m_pContent, pContent);
+	QLayoutItem* pItem = m_pContentLayout->replaceWidget(m_pContent, pContent);
 
 	m_pContent->deleteLater();
+	delete pItem;
+
 	m_pContent = pContent;
 }
 
