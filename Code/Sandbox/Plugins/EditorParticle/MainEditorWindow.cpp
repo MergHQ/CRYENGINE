@@ -62,6 +62,16 @@
 #define APPLICATION_USER_DIRECTORY      "/CryEngine"
 #define APPLICATION_USER_STATE_FILENAME "EditorState.json"
 
+REGISTER_EDITOR_AND_SCRIPT_KEYBOARD_FOCUS_COMMAND(particle, show_options, CCommandDescription("Shows effect options"))
+REGISTER_EDITOR_UI_COMMAND_DESC(particle, show_options, "Show Effect Options", "", "icons:General/Options.ico", false)
+
+
+REGISTER_EDITOR_AND_SCRIPT_KEYBOARD_FOCUS_COMMAND(particle, get_from_selection, CCommandDescription("Loads effect from selected entity"))
+REGISTER_EDITOR_UI_COMMAND_DESC(particle, get_from_selection, "Load from Selected Entity", "", "icons:General/Get_From_Selection.ico", false)
+
+REGISTER_EDITOR_AND_SCRIPT_KEYBOARD_FOCUS_COMMAND(particle, assign_to_selection, CCommandDescription("Applies effect to selected entity"))
+REGISTER_EDITOR_UI_COMMAND_DESC(particle, assign_to_selection, "Apply to Selected Entity", "", "icons:General/Assign_To_Selection.ico", false)
+
 namespace CryParticleEditor
 {
 
@@ -90,14 +100,18 @@ CParticleEditor::CParticleEditor()
 	setAttribute(Qt::WA_DeleteOnClose);
 	setObjectName(GetEditorName());
 
-	QVBoxLayout* pMainLayout = new QVBoxLayout();
-	pMainLayout->setContentsMargins(1, 1, 1, 1);
-	SetContent(pMainLayout);
-
-	InitMenu();
-	InitToolbar(pMainLayout);
+	RegisterAction("particle.show_options", &CParticleEditor::OnShowEffectOptions);
+	RegisterAction("particle.get_from_selection", &CParticleEditor::OnLoadFromSelectedEntity);
+	RegisterAction("particle.assign_to_selection", &CParticleEditor::OnApplyToSelectedEntity);
 
 	RegisterDockingWidgets();
+}
+
+void CParticleEditor::Initialize()
+{
+	CDockableEditor::Initialize();
+
+	InitMenu();
 }
 
 void CParticleEditor::InitMenu()
@@ -113,82 +127,26 @@ void CParticleEditor::InitMenu()
 
 		int sec;
 
-		sec = pFileMenu->GetNextEmptySection();
-
-		m_pReloadEffectMenuAction = pFileMenu->CreateAction(CryIcon("icons:General/Reload.ico"), tr("Reload Effect"), sec);
-		connect(m_pReloadEffectMenuAction, &QAction::triggered, this, &CParticleEditor::OnReloadEffect);
+		m_pReloadEffectMenuAction = GetAction("general.reload");
 		m_pReloadEffectMenuAction->setEnabled(false);
-
-		m_pShowEffectOptionsMenuAction = pFileMenu->CreateAction(CryIcon("icons:General/Options.ico"), tr("Show Effect Options"), sec);
-		connect(m_pShowEffectOptionsMenuAction, &QAction::triggered, this, &CParticleEditor::OnShowEffectOptions);
+		m_pShowEffectOptionsMenuAction = GetAction("particle.show_options");
 		m_pShowEffectOptionsMenuAction->setEnabled(false);
 
 		sec = pFileMenu->GetNextEmptySection();
-
-		auto action = pFileMenu->CreateAction(CryIcon("icons:General/Get_From_Selection.ico"), tr("Load from Selected Entity"), sec);
-		connect(action, &QAction::triggered, this, &CParticleEditor::OnLoadFromSelectedEntity);
-
-		action = pFileMenu->CreateAction(CryIcon("icons:General/Assign_To_Selection.ico"), tr("Apply to Selected Entity"), sec);
-		connect(action, &QAction::triggered, this, &CParticleEditor::OnApplyToSelectedEntity);
+		pFileMenu->AddAction(m_pReloadEffectMenuAction, sec);
+		pFileMenu->AddAction(m_pShowEffectOptionsMenuAction, sec);
 
 		sec = pFileMenu->GetNextEmptySection();
+		pFileMenu->AddAction(GetAction("particle.get_from_selection"), sec);
+		pFileMenu->AddAction(GetAction("particle.assign_to_selection"), sec);
 
-		action = pFileMenu->CreateAction(CryIcon("icons:General/File_Import.ico"), tr("Import Selected Pfx1 Effect"), sec);
-		connect(action, &QAction::triggered, this, &CParticleEditor::OnImportPfx1);
+		sec = pFileMenu->GetNextEmptySection();
+		pFileMenu->AddAction(GetAction("general.import"), sec);
 	}
 
 	// Enable instant editing if possible
 	CAbstractMenu* const pEditMenu = GetMenu(CEditor::MenuItems::EditMenu);
 	pEditMenu->AddCommandAction(m_pLockAction);
-}
-
-void CParticleEditor::InitToolbar(QVBoxLayout* pWindowLayout)
-{
-#define ADD_BUTTON(slot, name, shortcut, icon)                           \
-	{ QAction* pAction = pToolBar->addAction(CryIcon(icon), QString());    \
-		pAction->setToolTip(name);                                           \
-		if (shortcut) pAction->setShortcut(tr(shortcut));                    \
-		connect(pAction, &QAction::triggered, this, &CParticleEditor::slot); \
-	}
-
-	// TODO: make this better, the toolbars should behave like the main frame
-	//			 toolbars, where you can move them around in dedicated areas!
-	QHBoxLayout* pToolBarsLayout = new QHBoxLayout();
-	pToolBarsLayout->setDirection(QBoxLayout::LeftToRight);
-	pToolBarsLayout->setSizeConstraint(QLayout::SetMaximumSize);
-
-	// Add Library Toolbar
-	{
-		QToolBar* pToolBar = new QToolBar("Library");
-
-		pToolBar->addAction(GetAction_Deprecated("general.save"));
-
-		pToolBar->addSeparator();
-		ADD_BUTTON(OnLoadFromSelectedEntity, "Load from Selected Entity", 0, "icons:General/Get_From_Selection.ico");
-		ADD_BUTTON(OnApplyToSelectedEntity, "Apply to Selected Entity", 0, "icons:General/Assign_To_Selection.ico");
-		ADD_BUTTON(OnImportPfx1, "Import Selected Pfx1 Effect", 0, "icons:General/File_Import.ico");
-
-		pToolBarsLayout->addWidget(pToolBar, 0, Qt::AlignLeft);
-	}
-
-	// Add Effect Toolbar
-	{
-		QToolBar* pToolBar = new QToolBar("Effect");
-		pToolBar->addSeparator();
-		ADD_BUTTON(OnReloadEffect, "Reload Effect", 0, "icons:General/Reload.ico")
-		ADD_BUTTON(OnShowEffectOptions, "Show Effect Options", 0, "icons:General/Options.ico")
-
-		pToolBarsLayout->addWidget(pToolBar, 0, Qt::AlignLeft);
-		m_pEffectToolBar = pToolBar;
-		m_pEffectToolBar->hide();
-	}
-
-	// Add instant editing button
-	QSpacerItem* pSpacer = new QSpacerItem(20, 0, QSizePolicy::Expanding, QSizePolicy::Minimum);
-	pToolBarsLayout->addSpacerItem(pSpacer);
-	pToolBarsLayout->addWidget(CreateInstantEditorToolbar(), 0, Qt::AlignRight);
-
-	pWindowLayout->addLayout(pToolBarsLayout);
 }
 
 void CParticleEditor::RegisterDockingWidgets()
@@ -240,7 +198,6 @@ bool CParticleEditor::OnOpenAsset(CAsset* pAsset)
 
 	if (m_pEffectAssetModel->OpenAsset(pAsset))
 	{
-		m_pEffectToolBar->show();
 		m_pReloadEffectMenuAction->setEnabled(true);
 		m_pShowEffectOptionsMenuAction->setEnabled(true);
 
@@ -368,15 +325,16 @@ bool CParticleEditor::AssetSaveDialog(string* pOutputName)
 		*pOutputName = filename.toLocal8Bit().data();
 		return true;
 	}
+
 	return false;
 }
 
-void CParticleEditor::OnReloadEffect()
+bool CParticleEditor::OnReload()
 {
 	CAsset* const pAsset = GetAssetBeingEdited();
 	if (!pAsset)
 	{
-		return;
+		return false;
 	}
 
 	const char* szFxFilePath = pAsset->GetFile(0);
@@ -386,9 +344,11 @@ void CParticleEditor::OnReloadEffect()
 	{
 		DiscardAssetChanges();
 	}
+
+	return true;
 }
 
-void CParticleEditor::OnImportPfx1()
+bool CParticleEditor::OnImport()
 {
 	// Find selected Pfx1 effect
 	IDataBaseManager* particleMgr = static_cast<CParticleManager*>(GetIEditor()->GetDBItemManager(EDB_TYPE_PARTICLE));
@@ -424,6 +384,8 @@ void CParticleEditor::OnImportPfx1()
 			CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_WARNING, "No particle selected for import in database view");
 		}
 	}
+
+	return true;
 }
 
 void CParticleEditor::OnLoadFromSelectedEntity()
