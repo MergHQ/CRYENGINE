@@ -70,7 +70,7 @@ public:
 	//! Will be called for the subclass to save the asset. Always save the asset in its original file.
 	//! In a "SaveAs" situation, changes will be discarded and files will be moved/renamed appropriately, so that this method should not have to care.
 	//! Note that editAsset may not have all of its metadata cleared before passing. TODO:improve this!
-	virtual bool OnSaveAsset(CEditableAsset& editAsset) = 0;
+	virtual bool OnSaveAsset(CEditableAsset& editAsset);
 
 	//! Called immediately after the editor has opened an asset.
 	// \sa CAssetEditor::GetAssetBeingEdited()
