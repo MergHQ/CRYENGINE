@@ -45,6 +45,7 @@ public:
 	CParticleEditor();
 
 	// CEditor
+	virtual void        Initialize() override;
 	virtual const char* GetEditorName() const override { return "Particle Editor"; }
 	virtual void        SetLayout(const QVariantMap& state) override;
 	virtual QVariantMap GetLayout() const override;
@@ -78,15 +79,17 @@ protected:
 
 private:
 	void         InitMenu();
-	void         InitToolbar(QVBoxLayout* pWindowLayout);
 	void         RegisterDockingWidgets();
+
+	// CEditor
+	bool OnReload();
+	bool OnImport();
 
 	virtual bool OnUndo() override;
 	virtual bool OnRedo() override;
+	// ~CEditor
 
 protected Q_SLOTS:
-	void OnReloadEffect();
-	void OnImportPfx1();
 	void OnLoadFromSelectedEntity();
 	void OnApplyToSelectedEntity();
 
@@ -98,7 +101,6 @@ private:
 	std::unique_ptr<CEffectAssetModel> m_pEffectAssetModel;
 
 	//
-	QToolBar*         m_pEffectToolBar;
 	CInspectorLegacy* m_pInspector;
 
 	QAction*          m_pReloadEffectMenuAction;
