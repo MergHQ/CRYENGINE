@@ -4,7 +4,7 @@
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
 #include <type_traits>
-#include <string.h>
+#include <cstring>
 #include <CrySTL/type_traits.h>
 
 namespace CryGTestDetails

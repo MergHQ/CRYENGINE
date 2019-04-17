@@ -13,7 +13,7 @@
 
 #pragma warning (error : 4018) //Cannot align catch objects to greater than 16 bytes
 
-#include <string.h>
+#include <cstring>
 #include <stdio.h>
 #include <stdarg.h>
 #include <math.h>

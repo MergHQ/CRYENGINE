@@ -7,7 +7,7 @@
 	#include <CryEntitySystem/IEntitySystem.h>
 #endif
 
-#include <string.h>
+#include <cstring>
 #include <stdio.h>
 #include "ScriptSystem.h"
 #include "ScriptTable.h"
