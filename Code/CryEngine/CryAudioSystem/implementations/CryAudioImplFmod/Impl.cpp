@@ -1464,6 +1464,8 @@ void CImpl::PauseMasterBus(bool const shouldPause)
 #else
 		pMasterBus->setPaused(shouldPause);
 #endif    // CRY_AUDIO_IMPL_FMOD_USE_DEBUG_CODE
+
+		g_masterBusPaused = shouldPause;
 	}
 }
 

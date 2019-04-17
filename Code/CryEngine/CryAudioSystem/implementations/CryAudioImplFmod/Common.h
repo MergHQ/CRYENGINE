@@ -44,6 +44,8 @@ extern CGlobalObject* g_pObject;
 extern CListener* g_pListener;
 extern uint32 g_numObjectsWithDoppler;
 
+extern bool g_masterBusPaused;
+
 constexpr char const* g_szOcclusionParameterName = "occlusion";
 constexpr char const* g_szAbsoluteVelocityParameterName = "absolute_velocity";
 
