@@ -14,9 +14,6 @@
 #include "../../System.h"
 #include "../../CPUDetect.h"
 
-// used to distinguish regular and blocking worker threads
-#define BLOCKING_WORKER_ID_FLAG 0x40000000
-
 ///////////////////////////////////////////////////////////////////////////////
 JobManager::BlockingBackEnd::CBlockingBackEnd::CBlockingBackEnd(JobManager::SInfoBlock** pRegularWorkerFallbacks, uint32 nRegularWorkerThreads) :
 	m_Semaphore(SJobQueue_BlockingBackEnd::eMaxWorkQueueJobsSize),
@@ -42,7 +39,6 @@ bool JobManager::BlockingBackEnd::CBlockingBackEnd::Init(uint32 nSysMaxWorker)
 {
 	m_pWorkerThreads = new CBlockingBackEndWorkerThread*[nSysMaxWorker];
 
-	// create single worker thread for blocking backend
 	for (uint32 i = 0; i < nSysMaxWorker; ++i)
 	{
 		m_pWorkerThreads[i] = new CBlockingBackEndWorkerThread(this, m_Semaphore, m_JobQueue, m_pRegularWorkerFallbacks, m_nRegularWorkerThreads, i);
@@ -163,20 +159,20 @@ void JobManager::BlockingBackEnd::CBlockingBackEndWorkerThread::SignalStopWork()
 
 bool JobManager::BlockingBackEnd::IsBlockingWorkerId(uint32 workerId)
 {
-	return (workerId & BLOCKING_WORKER_ID_FLAG) != 0;
+	return (workerId & JobManager::s_blockingWorkerFlag) != 0;
 }
 
 uint32 JobManager::BlockingBackEnd::GetIndexFromWorkerId(uint32 workerId)
 {
 	CRY_ASSERT(IsBlockingWorkerId(workerId));
-	return workerId & !BLOCKING_WORKER_ID_FLAG;
+	return workerId & ~JobManager::s_blockingWorkerFlag;
 }
 
 //////////////////////////////////////////////////////////////////////////
 void JobManager::BlockingBackEnd::CBlockingBackEndWorkerThread::ThreadEntry()
 {
 	// set up thread id
-	JobManager::detail::SetWorkerThreadId(m_nId | BLOCKING_WORKER_ID_FLAG);
+	JobManager::detail::SetWorkerThreadId(m_nId | JobManager::s_blockingWorkerFlag);
 	do
 	{
 		SInfoBlock infoBlock;

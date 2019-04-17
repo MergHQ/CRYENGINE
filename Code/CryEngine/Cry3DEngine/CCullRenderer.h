@@ -465,6 +465,7 @@ public:
 		}
 
 		m_nNumWorker = gEnv->pJobManager->GetNumWorkerThreads();
+		CRY_ASSERT(m_ZBufferSwap == nullptr);
 		m_ZBufferSwap = new tdZexel*[m_nNumWorker];
 		for (uint32 i = 0; i < m_nNumWorker; ++i)
 		{
@@ -518,8 +519,13 @@ public:
 		//#define USE_W_DEPTH
 		//#define SCALE_DEPTH
 
+		// with disabled job system all work happens on the main thread, then we simply use the first buffer
+		CRY_ASSERT(JobManager::IsWorkerThread() || CryGetCurrentThreadId() == gEnv->mMainThreadId);
 		uint32 nWorkerThreadID = JobManager::GetWorkerThreadId();
-		float* pZBufferSwap = m_ZBufferSwap[nWorkerThreadID];
+		float* pZBufferSwap =
+			nWorkerThreadID == JobManager::s_nonWorkerThreadId
+			? m_ZBufferSwap[0]
+			: m_ZBufferSwap[nWorkerThreadID];
 
 		int sizeX = SIZEX;
 		int sizeY = SIZEY;

@@ -936,23 +936,26 @@ struct IJobManager
 	virtual void                           SetRenderDoneTime(const CTimeValue &) = 0;
 };
 
+static constexpr uint32 s_nonWorkerThreadId(-1);
+static constexpr uint32 s_blockingWorkerFlag(0x40000000);
+
 //! Utility function to get the worker thread id in a job, returns 0xFFFFFFFF otherwise.
 ILINE uint32 GetWorkerThreadId()
 {
 	uint32 nWorkerThreadID = gEnv->GetJobManager()->GetWorkerThreadId();
-	return nWorkerThreadID == ~0 ? ~0 : (nWorkerThreadID & ~0x40000000);
+	return nWorkerThreadID == s_nonWorkerThreadId ? s_nonWorkerThreadId : (nWorkerThreadID & ~s_blockingWorkerFlag);
 }
 
 //! Utility function to find out if a call comes from the mainthread or from a worker thread.
 ILINE bool IsWorkerThread()
 {
-	return gEnv->GetJobManager()->GetWorkerThreadId() != ~0;
+	return gEnv->GetJobManager()->GetWorkerThreadId() != s_nonWorkerThreadId;
 }
 
-//! Utility function to find out if a call comes from the mainthread or from a worker thread.
+//! Utility function to find out if a call comes from the mainthread or from a blocking worker thread.
 ILINE bool IsBlockingWorkerThread()
 {
-	return (gEnv->GetJobManager()->GetWorkerThreadId() != ~0) && ((gEnv->GetJobManager()->GetWorkerThreadId() & 0x40000000) != 0);
+	return IsWorkerThread() && ((gEnv->GetJobManager()->GetWorkerThreadId() & s_blockingWorkerFlag) != 0);
 }
 
 //! Utility function to check if a specific job should really run as job.
