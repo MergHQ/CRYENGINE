@@ -440,7 +440,7 @@ public:
 typedef STexData* STexDataPtr;
 
 //! Texture object interface.
-class ITexture
+struct ITexture
 {
 protected:
 	virtual ~ITexture() {}

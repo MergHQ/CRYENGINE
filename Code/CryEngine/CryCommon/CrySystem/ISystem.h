@@ -21,7 +21,6 @@ class CRndGen;
 class ICmdLine;
 class ICrySizer;
 class IDiskProfiler;
-class IOpticsManager;
 class IXMLBinarySerializer;
 class XmlNodeRef;
 
@@ -69,6 +68,7 @@ struct INameTable;
 struct INetContext;
 struct INetwork;
 struct INotificationNetwork;
+struct IOpticsManager;
 struct IOutputPrintSink;
 struct IOverloadSceneManager;
 struct IParticleManager;

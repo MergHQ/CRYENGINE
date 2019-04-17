@@ -180,9 +180,8 @@ private:
 	volatile int m_nRefCount;
 };
 
-class IOpticsManager
+struct IOpticsManager
 {
-public:
 	// <interfuscator:shuffle>
 	virtual ~IOpticsManager(){}
 	virtual void                Reset() = 0;

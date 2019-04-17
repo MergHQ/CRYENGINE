@@ -16,13 +16,13 @@ class CREMesh;
 class CRenderElement;
 class CRenderObject;
 class CShader;
-class ITexture;
 
 struct IAnimNode;
 struct IClipVolume;
 struct IMaterial;
 struct IRenderMesh;
 struct IShader;
+struct ITexture;
 struct IVisArea;
 struct SParam;
 struct SShaderItem;

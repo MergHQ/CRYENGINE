@@ -53,14 +53,15 @@ constexpr const char* s_pszAAModes[eAT_AAMODES_COUNT] =
 extern uint32 ColorMasks[(GS_NOCOLMASK_COUNT >> GS_COLMASK_SHIFT)][4];
 extern std::array<uint32, (GS_NOCOLMASK_COUNT >> GS_COLMASK_SHIFT)> AvailableColorMasks;
 
-struct ShadowMapFrustum;
+struct IOpticsManager;
 struct IStatObj;
+struct ShadowMapFrustum;
 struct SShaderPass;
+
 class CREParticle;
 class CD3DStereoRenderer;
 class CTextureManager;
 class CIntroMovieRenderer;
-class IOpticsManager;
 class CDeviceResourceSet;
 class CVertexBuffer;
 class CIndexBuffer;
