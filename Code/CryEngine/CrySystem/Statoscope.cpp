@@ -2761,7 +2761,10 @@ void CStatoscope::UpdateFrameListenerRegistration()
 				isRegisteredAsFrameListener = true;
 			}
 			else
+			{
 				CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_WARNING, "Statoscope: Profiler data group ('r') is enabled, but not supported by the current profiling system!");
+				UnregisterDataGroup(m_pProfilerDG);
+			}
 		}
 	}
 	else if (isRegisteredAsFrameListener)
@@ -2773,7 +2776,6 @@ void CStatoscope::UpdateFrameListenerRegistration()
 		}
 	}
 }
-
 
 CStatoscopeServer::CStatoscopeServer(CStatoscope* pStatoscope)
 	: m_socket(CRY_INVALID_SOCKET),
