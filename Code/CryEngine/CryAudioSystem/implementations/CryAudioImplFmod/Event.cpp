@@ -228,6 +228,8 @@ ETriggerResult CEvent::Execute(IObject* const pIObject, TriggerInstanceId const 
 							{
 								fmodResult = pFmodEventInstance->setPaused(m_actionType == EActionType::Pause);
 								CRY_AUDIO_IMPL_FMOD_ASSERT_OK;
+
+								pEventInstance->SetPaused(m_actionType == EActionType::Pause);
 							}
 						}
 

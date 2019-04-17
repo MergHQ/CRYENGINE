@@ -17,6 +17,7 @@ CImpl* g_pImpl = nullptr;
 CGlobalObject* g_pObject = nullptr;
 CListener* g_pListener = nullptr;
 uint32 g_numObjectsWithDoppler = 0;
+bool g_masterBusPaused = false;
 Objects g_constructedObjects;
 EventToParameterIndexes g_eventToParameterIndexes;
 SnapshotEventInstances g_activeSnapshots;

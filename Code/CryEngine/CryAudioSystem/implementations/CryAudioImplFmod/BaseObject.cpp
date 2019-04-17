@@ -137,7 +137,14 @@ void CBaseObject::StopEventInstance(uint32 const id)
 	{
 		if (pEventInstance->GetEvent().GetId() == id)
 		{
-			pEventInstance->StopAllowFadeOut();
+			if (pEventInstance->IsPaused() || g_masterBusPaused)
+			{
+				pEventInstance->StopImmediate();
+			}
+			else
+			{
+				pEventInstance->StopAllowFadeOut();
+			}
 		}
 	}
 }

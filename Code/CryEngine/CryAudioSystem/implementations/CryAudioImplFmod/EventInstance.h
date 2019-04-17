@@ -52,6 +52,7 @@ public:
 		, m_pMasterTrack(nullptr)
 		, m_pLowpass(nullptr)
 		, m_toBeRemoved(false)
+		, m_isPaused(false)
 		, m_isFadingOut(false)
 		, m_baseObject(baseObject)
 	{}
@@ -66,6 +67,7 @@ public:
 		, m_pMasterTrack(nullptr)
 		, m_pLowpass(nullptr)
 		, m_toBeRemoved(false)
+		, m_isPaused(false)
 	{}
 #endif  // CRY_AUDIO_IMPL_FMOD_USE_DEBUG_CODE
 
@@ -85,8 +87,11 @@ public:
 	void                         StopAllowFadeOut();
 	void                         StopImmediate();
 
-	void                         SetToBeRemoved()      { m_toBeRemoved = true; }
-	bool                         IsToBeRemoved() const { return m_toBeRemoved; }
+	void                         SetToBeRemoved()               { m_toBeRemoved = true; }
+	bool                         IsToBeRemoved() const          { return m_toBeRemoved; }
+
+	void                         SetPaused(bool const isPaused) { m_isPaused = isPaused; }
+	bool                         IsPaused() const               { return m_isPaused; }
 
 #if defined(CRY_AUDIO_IMPL_FMOD_USE_DEBUG_CODE)
 	bool               IsFadingOut() const { return m_isFadingOut; }
@@ -108,6 +113,7 @@ private:
 	FMOD::DSP*                   m_pLowpass;
 
 	std::atomic_bool             m_toBeRemoved;
+	bool                         m_isPaused;
 
 #if defined(CRY_AUDIO_IMPL_FMOD_USE_DEBUG_CODE)
 	bool               m_isFadingOut;
