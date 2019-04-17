@@ -7,7 +7,7 @@
 #include "RenderDisplayContext.h"
 #include "RenderOutput.h"
 
-std::string GenerateUniqueTextureName(const std::string prefix, uint32 id, const std::string name)
+std::string GenerateUniqueTextureName(const std::string& prefix, uint32 id, const std::string& name)
 {
 	return prefix + "-" + std::to_string(id) + (name.empty() ? "" : "-" + name);
 }

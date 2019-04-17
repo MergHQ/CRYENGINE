@@ -4,7 +4,7 @@
 #include "RenderOutput.h"
 #include "RenderDisplayContext.h"
 
-std::string GenerateUniqueTextureName(const std::string prefix, uint32 id, const std::string name);
+std::string GenerateUniqueTextureName(const std::string& prefix, uint32 id, const std::string& name);
 
 //////////////////////////////////////////////////////////////////////////
 CRenderOutput::CRenderOutput(CRenderDisplayContext* pDisplayContext)
