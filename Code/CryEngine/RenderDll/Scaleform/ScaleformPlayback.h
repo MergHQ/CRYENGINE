@@ -12,16 +12,16 @@
 
 #define ENABLE_FLASH_FILTERS
 
-struct IRenderer;
-class ITexture;
-class ITexture;
-class CConstantBuffer;
-class CScaleformPlayback;
-struct SSF_GlobalDrawParams;
-struct GRendererCommandBuffer;
-class CD3D9Renderer;
 class CCachedData;
+class CConstantBuffer;
+class CD3D9Renderer;
 class CRenderOutput;
+class CScaleformPlayback;
+
+struct GRendererCommandBuffer;
+struct IRenderer;
+struct ITexture;
+struct SSF_GlobalDrawParams;
 
 //////////////////////////////////////////////////////////////////////
 struct SSF_GlobalDrawParams

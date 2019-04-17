@@ -6,7 +6,7 @@
 #include <vector>
 
 struct IRenderView;
-class ITexture;
+struct ITexture;
 
 class CColorGradingTextureLoader
 {

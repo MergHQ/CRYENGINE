@@ -4,7 +4,6 @@
 #include "EditorCommon.h"
 
 class CAsset;
-class CLevelExplorer;
 struct IObjectLayer;
 
 namespace VersionControlEventHandler
@@ -14,4 +13,4 @@ void EDITOR_COMMON_API HandleOnAssetBrowser(const QString& event, std::vector<CA
 
 void EDITOR_COMMON_API HandleOnLevelExplorer(const QString& event, std::vector<IObjectLayer*> layers, std::vector<IObjectLayer*> layerFolders);
 
-};
+}

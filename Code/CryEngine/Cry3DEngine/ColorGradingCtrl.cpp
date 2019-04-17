@@ -78,13 +78,13 @@ std::vector<CColorGradingTextureLoader::STextureToLoad> CColorGradingTextureLoad
 }
 
 //////////////////////////////////////////////////////////////////////////
-CColorGradingCtrl::SColorChart::SColorChart(int texID, float blendAmount, float timeToFadeInInSeconds, const string& texturePath)
-	: texID(texID)
-	, blendAmount(blendAmount)
-	, timeToFadeInInSeconds(timeToFadeInInSeconds)
+CColorGradingCtrl::SColorChart::SColorChart(int texID_, float blendAmount_, float timeToFadeInInSeconds_, const string& texturePath_)
+	: texID(texID_)
+	, blendAmount(blendAmount_)
+	, timeToFadeInInSeconds(timeToFadeInInSeconds_)
 	, elapsedTime(0.f)
 	, maximumBlendAmount(1.f)
-	, texturePath(texturePath)
+	, texturePath(texturePath_)
 {}
 
 void CColorGradingCtrl::SColorChart::FadeIn(float timeSinceLastFrame)

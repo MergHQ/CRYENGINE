@@ -26,7 +26,6 @@ class CTexMan;
 class CVegetation;
 class CVrProjectionManager;
 class ICrySizer;
-class IOpticsManager;
 
 struct CStatObj;
 struct GRendererCommandBufferReadOnly;
@@ -41,6 +40,7 @@ struct IFlashPlayer_RenderProxy;
 struct IFoliage;
 struct IImageFile;
 struct ILog;
+struct IOpticsManager;
 struct IPhysicalEntity;
 struct IRenderAuxGeom;
 struct IRenderMesh;
@@ -748,9 +748,8 @@ enum {CULL_SIZEX = 256};
 enum {CULL_SIZEY = 128};
 #endif
 
-class ITextureStreamListener
+struct ITextureStreamListener
 {
-public:
 	virtual void OnCreatedStreamedTexture(void* pHandle, const char* name, int8 nMips, int8 nMinMipAvailable) = 0;
 	virtual void OnUploadedStreamedTexture(void* pHandle) = 0;
 	virtual void OnDestroyedStreamedTexture(void* pHandle) = 0;

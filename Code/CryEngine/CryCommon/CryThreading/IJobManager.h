@@ -936,8 +936,8 @@ struct IJobManager
 	virtual void                           SetRenderDoneTime(const CTimeValue &) = 0;
 };
 
-static constexpr uint32 s_nonWorkerThreadId(-1);
-static constexpr uint32 s_blockingWorkerFlag(0x40000000);
+static constexpr uint32 s_nonWorkerThreadId = -1;
+static constexpr uint32 s_blockingWorkerFlag = 0x40000000;
 
 //! Utility function to get the worker thread id in a job, returns 0xFFFFFFFF otherwise.
 ILINE uint32 GetWorkerThreadId()

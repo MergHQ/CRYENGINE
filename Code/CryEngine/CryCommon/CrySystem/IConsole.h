@@ -8,8 +8,8 @@
 #include <initializer_list>
 
 struct ICVar;
+struct ITexture;
 class ICrySizer;
-class ITexture;
 
 enum class ECVarType
 {

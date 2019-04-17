@@ -6,7 +6,7 @@
 #include "CryExtension/CryTypeID.h"
 #include <CrySerialization/CryStringsImpl.h>
 
-class ITexture;
+struct ITexture;
 
 namespace Cry
 {
@@ -252,4 +252,3 @@ namespace Cry
 		using ApplicationIdentifier = Identifier<Detail::SApplicationTraits>;
 	}
 }
-

@@ -17,7 +17,6 @@
 class CContentCGF;
 class CRenderView;
 class ICrySizer;
-class IOpticsManager;
 
 struct bop_meshupdate;
 struct CryEngineDecalInfo;
@@ -27,6 +26,7 @@ struct ICharacterInstance;
 struct IColorGradingCtrl;
 struct IDeferredPhysicsEventManager;
 struct IGeometry;
+struct IOpticsManager;
 struct IParticleManager;
 struct IRenderView;
 struct IShadowCaster;
@@ -2308,11 +2308,11 @@ struct I3DEngine : public IProcess
 
 	struct SLightTI
 	{
-		Vec4            vPosR;
-		Vec4            vDirF;
-		Vec4            vCol;
-		float           fSortVal;
-		class ITexture* pCM;
+		Vec4      vPosR;
+		Vec4      vDirF;
+		Vec4      vCol;
+		float     fSortVal;
+		ITexture* pCM;
 	};
 
 	virtual bool GetSvoStaticTextures(I3DEngine::SSvoStaticTexInfo& svoInfo, PodArray<I3DEngine::SLightTI>* pLightsTI_S, PodArray<I3DEngine::SLightTI>* pLightsTI_D) = 0;
