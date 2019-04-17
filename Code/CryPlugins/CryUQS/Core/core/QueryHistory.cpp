@@ -1310,13 +1310,17 @@ namespace UQS
 			{
 				if (m_serializationMutex.TryLock())
 				{
+#if !defined(EXCLUDE_NORMAL_LOG)
 					const CTimeValue timestampBefore = gEnv->pTimer->GetAsyncTime();
+#endif
 					Serialization::IArchiveHost* pArchiveHost = gEnv->pSystem->GetArchiveHost();
 					if (pArchiveHost->SaveXmlFile(xmlFilePath.c_str(), Serialization::SStruct(snapshot), "UQSQueryHistory"))
 					{
+#if !defined(EXCLUDE_NORMAL_LOG)
 						const CTimeValue timestampAfter = gEnv->pTimer->GetAsyncTime();
 						const float elapsedSeconds = (timestampAfter - timestampBefore).GetSeconds();
 						CryLogAlways("[UQS] Successfully dumped query history containing %i queries to '%s' in %.2f seconds", (int)snapshot.historicQueries.size(), xmlFilePath.c_str(), elapsedSeconds);
+#endif
 					}
 					else
 					{
@@ -1336,8 +1340,10 @@ namespace UQS
 
 		void CQueryHistory::PrintStatisticsToConsole(const char* szMessagePrefix) const
 		{
+#if !defined(EXCLUDE_NORMAL_LOG)
 			size_t totalMemoryUsage = GetRoughMemoryUsage();
 			CryLogAlways("%s%i queries in history, %.2fkb (%.2fmb) memory usage", szMessagePrefix, (int)m_historyData.historicQueries.size(), (float)totalMemoryUsage / 1024.0f, (float)totalMemoryUsage / (1024.0f * 1024.0f));
+#endif
 		}
 
 	}
