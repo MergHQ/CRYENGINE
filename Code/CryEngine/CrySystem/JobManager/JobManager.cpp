@@ -1431,5 +1431,5 @@ void JobManager::detail::SetWorkerThreadId(uint32 nWorkerThreadId)
 ///////////////////////////////////////////////////////////////////////////////
 uint32 JobManager::detail::GetWorkerThreadId()
 {
-	return is_marked_worker_thread_id(tls_workerThreadId) ? unmark_worker_thread_id(tls_workerThreadId) : ~0;
+	return is_marked_worker_thread_id(tls_workerThreadId) ? unmark_worker_thread_id(tls_workerThreadId) : s_nonWorkerThreadId;
 }

@@ -38,9 +38,6 @@ public:
 		{}
 	};
 
-	typedef CryMT::vector<CBootProfilerSession*> TSessions;
-	typedef CryMT::vector<SSaveSessionInfo> TSessionsToSave;
-
 public:
 	CBootProfiler();
 	~CBootProfiler();
@@ -75,6 +72,8 @@ protected:
 	// ~ISystemEventListener
 
 private:
+	typedef CryMT::vector<SSaveSessionInfo> TSessionsToSave;
+
 	static void                StartFrameProfilingCmd(IConsoleCmdArgs* pArgs);
 
 	static void                SaveProfileSessionToDisk(const float funcMinTimeThreshold, CBootProfilerSession* pSession);
@@ -84,7 +83,6 @@ private:
 	bool                       m_quitSaveThread;
 	bool                       m_initialized;
 	CryEvent                   m_saveThreadWakeUpEvent;
-	TSessions                  m_sessionsToDelete;
 	TSessionsToSave            m_sessionsToSave;
 
 	static EBootProfilerFormat CV_sys_bp_output_formats;
