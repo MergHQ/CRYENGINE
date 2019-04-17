@@ -15,7 +15,6 @@
 
 #include "Objects/IObjectLayer.h"
 #include "Objects/IObjectLayerManager.h"
-//#include "Objects/ObjectManager.h"
 #include "PathUtils.h"
 
 #include "Notifications/NotificationCenter.h"
@@ -52,7 +51,7 @@ std::vector<IObjectLayer*> GetTrackedIObjectLayers(const std::vector<IObjectLaye
 	return result;
 }
 
-std::vector<string> ToSelectedFolders(const std::vector<IObjectLayer*> layerFolders, bool hasSelectedLayer)
+std::vector<string> ToSelectedFolders(const std::vector<IObjectLayer*>& layerFolders, bool hasSelectedLayer)
 {
 	std::vector<string> result;
 	result.reserve(layerFolders.size());
