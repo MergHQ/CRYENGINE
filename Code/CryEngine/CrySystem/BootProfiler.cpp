@@ -745,7 +745,7 @@ void CBootProfiler::SaveProfileSessionToDisk(const float funcMinTimeThreshold, C
 {
 	if (!(gEnv && gEnv->pCryPak))
 	{
-		CBootProfiler::GetInstance().QueueSessionToDelete(pSession);
+		delete pSession;
 		return;
 	}
 
@@ -759,7 +759,7 @@ void CBootProfiler::SaveProfileSessionToDisk(const float funcMinTimeThreshold, C
 		SaveProfileSessionToChromeTraceJson(funcMinTimeThreshold, pSession);
 	}
 
-	CBootProfiler::GetInstance().QueueSessionToDelete(pSession);
+	delete pSession;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -852,11 +852,6 @@ void CBootProfiler::StopSaveSessionsThread()
 			gEnv->pThreadManager->JoinThread(this, eJM_Join);
 		}
 	}
-}
-
-void CBootProfiler::QueueSessionToDelete(CBootProfilerSession*pSession)
-{
-	m_sessionsToDelete.push_back(pSession);
 }
 
 void CBootProfiler::QueueSessionToSave(CBootProfilerSession* pSession)
@@ -1080,19 +1075,6 @@ void CBootProfiler::OnFrameEnd()
 		}
 	}
 
-	// Do cleanup on following already saved sessions
-	if (m_sessionsToDelete.size() >= 2)
-	{
-		for (size_t i = 0, count = m_sessionsToDelete.size(); i < count; ++i)
-		{
-			CBootProfilerSession* pSession = m_sessionsToDelete[i];
-			delete pSession;
-			m_sessionsToDelete[i] = nullptr;
-		}
-
-		m_sessionsToDelete.try_remove_and_erase_if([](CBootProfilerSession* pSession) { return pSession == nullptr; });
-	}
-
 	static float prev_CV_sys_bp_frames_threshold = CV_sys_bp_frames_threshold;
 	const bool bDisablingThresholdMode = (prev_CV_sys_bp_frames_threshold > 0.0f && CV_sys_bp_frames_threshold == 0.0f);
 
@@ -1128,8 +1110,7 @@ void CBootProfiler::OnFrameEnd()
 		}
 		else
 		{
-			m_sessionsToDelete.push_back(m_pCurrentSession);
-			m_pCurrentSession = nullptr;
+			SAFE_DELETE(m_pCurrentSession);
 		}
 	}
 
