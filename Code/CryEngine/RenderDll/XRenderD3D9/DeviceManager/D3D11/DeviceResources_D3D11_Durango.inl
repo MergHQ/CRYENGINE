@@ -534,44 +534,35 @@ void CDeviceTexture::ReplaceTexture(ID3D11Texture2D* pReplacement)
 
 void* CDeviceTexture::WeakPin()
 {
+	void* pAddress = nullptr;
+
 	// Can only pin pinnable resources
-	assert(m_gpuHdl.IsValid());
+	CRY_ASSERT(m_gpuHdl.IsValid());
 	if (m_gpuHdl.IsValid())
-	{
-		return GetDeviceObjectFactory().m_texturePool.WeakPin(m_gpuHdl);
-	}
-	else
-		__debugbreak();
-	
-	return NULL;
+		pAddress = GetDeviceObjectFactory().m_texturePool.WeakPin(m_gpuHdl);
+
+	return pAddress;
 }
 
 void* CDeviceTexture::Pin()
 {
+	void* pAddress = nullptr;
 	m_Pinned = true;
 
 	// Can only pin pinnable resources
-	assert(m_gpuHdl.IsValid());
+	CRY_ASSERT(m_gpuHdl.IsValid());
 	if (m_gpuHdl.IsValid())
-	{
-		return GetDeviceObjectFactory().m_texturePool.Pin(m_gpuHdl);
-	}
-	else
-		__debugbreak();
+		pAddress = GetDeviceObjectFactory().m_texturePool.Pin(m_gpuHdl);
 
-	return NULL;
+	return pAddress;
 }
 
 void CDeviceTexture::Unpin()
 {
 	// Can only pin pinnable resources
-	assert(m_gpuHdl.IsValid());
+	CRY_ASSERT(m_gpuHdl.IsValid());
 	if (m_gpuHdl.IsValid())
-	{
 		GetDeviceObjectFactory().m_texturePool.Unpin(m_gpuHdl);
-	}
-	else
-		__debugbreak();
 
 	m_Pinned = false;
 }
@@ -579,37 +570,25 @@ void CDeviceTexture::Unpin()
 void CDeviceTexture::GpuPin()
 {
 	// Can only pin pinnable resources
-	assert(m_gpuHdl.IsValid());
+	CRY_ASSERT(m_gpuHdl.IsValid());
 	if (m_gpuHdl.IsValid())
-	{
 		GetDeviceObjectFactory().m_texturePool.GpuPin(m_gpuHdl);
-	}
-	else
-		__debugbreak();
 }
 
 void CDeviceTexture::GpuUnpin(ID3DXboxPerformanceContext* pCtx)
 {
 	// Can only pin pinnable resources
-	assert(m_gpuHdl.IsValid());
+	CRY_ASSERT(m_gpuHdl.IsValid());
 	if (m_gpuHdl.IsValid())
-	{
 		GetDeviceObjectFactory().m_texturePool.GpuUnpin(m_gpuHdl, pCtx);
-	}
-	else
-		__debugbreak();
 }
 
 void CDeviceTexture::GpuUnpin(ID3D11DmaEngineContextX* pCtx)
 {
 	// Can only pin pinnable resources
-	assert(m_gpuHdl.IsValid());
+	CRY_ASSERT(m_gpuHdl.IsValid());
 	if (m_gpuHdl.IsValid())
-	{
 		GetDeviceObjectFactory().m_texturePool.GpuUnpin(m_gpuHdl, pCtx);
-	}
-	else
-		__debugbreak();
 }
 
 void CDeviceTexture::GPUFlush()

@@ -26,7 +26,7 @@
 	#include <sys/mman.h>
 #endif
 
-#include <string.h>   // memset
+#include <cstring> // memset
 
 //! Don't use _MAX_BYTES as identifier for Max Bytes, STLPORT defines the same enum.
 //! This leads to situation where the wrong enum is choosen in different compilation units,

@@ -9,7 +9,7 @@
 
 #pragma once
 
-#include <string.h>
+#include <cstring>
 #include <CrySerialization/yasli/Assert.h>
 #include <CrySerialization/yasli/Config.h>
 #include <CrySerialization/yasli/TypeID.h>

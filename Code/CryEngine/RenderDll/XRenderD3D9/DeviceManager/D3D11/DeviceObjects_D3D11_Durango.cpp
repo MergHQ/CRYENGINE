@@ -566,7 +566,9 @@ void* CDurangoGPUMemoryManager::WeakPin(SGPUMemHdl hdl)
 		UINT_PTR offset = m_pAllocator->WeakPin(hdl.GetHandle());
 
 		UINT_PTR bankRelOffset = offset & ((1ull << m_bankShift) - 1);
+		CRY_ASSERT((offset >> m_bankShift) < m_banks.size());
 		Bank& bank = m_banks[offset >> m_bankShift];
+		CRY_ASSERT(((char*)bank.pBase + bankRelOffset) != nullptr);
 
 		return (char*)bank.pBase + bankRelOffset;
 	}
@@ -583,7 +585,9 @@ void* CDurangoGPUMemoryManager::Pin(SGPUMemHdl hdl)
 		UINT_PTR offset = m_pAllocator->Pin(hdl.GetHandle());
 
 		UINT_PTR bankRelOffset = offset & ((1ull << m_bankShift) - 1);
+		CRY_ASSERT((offset >> m_bankShift) < m_banks.size());
 		Bank& bank = m_banks[offset >> m_bankShift];
+		CRY_ASSERT(((char*)bank.pBase + bankRelOffset) != nullptr);
 
 		return (char*)bank.pBase + bankRelOffset;
 	}
