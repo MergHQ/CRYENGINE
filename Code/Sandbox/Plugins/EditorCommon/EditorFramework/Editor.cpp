@@ -206,13 +206,13 @@ void CEditor::ForceRebuildMenu()
 
 void CEditor::SetContent(QWidget* content)
 {
-	//TODO : only one content can be set
+	CRY_ASSERT_MESSAGE(!m_dockingRegistry || m_pEditorContent->GetContent() != m_dockingRegistry, "CEditor: Internal docking system for %s will be replaced by content", GetEditorName());
 	m_pEditorContent->SetContent(content);
 }
 
 void CEditor::SetContent(QLayout* content)
 {
-	//TODO : only one content can be set
+	CRY_ASSERT_MESSAGE(!m_dockingRegistry || m_pEditorContent->GetContent() != m_dockingRegistry, "CEditor: Internal docking system for %s will be replaced by content", GetEditorName());
 	m_pEditorContent->SetContent(content);
 }
 

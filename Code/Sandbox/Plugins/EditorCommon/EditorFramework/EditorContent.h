@@ -25,8 +25,11 @@ public:
 	CEditorContent(CEditor* pEditor);
 
 	void Initialize();
+
+	const QWidget* GetContent() const { return m_pContent; }
 	void SetContent(QWidget* pContent);
 	void SetContent(QLayout* pContentLayout);
+
 	bool CustomizeToolBar();
 	bool ToggleToolBarLock();
 

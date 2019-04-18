@@ -12,8 +12,6 @@
 #include <AssetSystem/AssetManager.h>
 #include <CryString/CryPath.h>
 
-#include <QVBoxLayout>
-
 namespace Private_MainWindow
 {
 
@@ -50,10 +48,6 @@ CMainWindow::CMainWindow(QWidget* pParent)
 	setObjectName(GetEditorName());
 	InitMenu();
 	RegisterDockingWidgets();
-
-	QVBoxLayout* pMainLayout = new QVBoxLayout();
-	pMainLayout->setContentsMargins(1, 1, 1, 1);
-	SetContent(pMainLayout);
 }
 
 void CMainWindow::CreateNewWindow(CAsset* asset)
