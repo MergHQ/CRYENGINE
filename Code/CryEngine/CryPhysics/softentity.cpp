@@ -1607,7 +1607,7 @@ int CSoftEntity::Step(float time_interval)
 		if (!m_collTypes && m_nAttachedVtx && (pentHost=m_vtx[m_vtx[0].idx].pContactEnt)) {
 			pentlist=&pentHost; nEnts=1; 
 			if (pentHost->m_flags & pef_parts_traceable)
-				pentHost->m_nUsedParts |= 15ull<<iCaller*4;
+				CryInterlockedAdd((int64*)&pentHost->m_nUsedParts, (15ull<<iCaller*4) - (pentHost->m_nUsedParts & 15ull<<iCaller*4));
 		}	else
 			nEnts = m_pWorld->GetEntitiesAround(m_BBox[0]-Vec3(m_thickness,m_thickness,m_thickness)*2,
 				m_BBox[1]+Vec3(m_thickness,m_thickness,m_thickness)*2, pentlist, 
