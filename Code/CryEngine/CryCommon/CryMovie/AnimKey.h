@@ -381,6 +381,7 @@ struct SCharacterKey : public STimeRangeKey
 		ar(m_bBlendGap, "blendGap", "Blend Gap");
 		ar(m_bUnload, "unload", "Unload");
 		ar(m_bInPlace, "inPlace", "In Place");
+		ar(m_defaultAnimDuration, "defaultAnimDuration", "Default Animation Duration");
 	}
 
 	float GetMaxEndTime() const

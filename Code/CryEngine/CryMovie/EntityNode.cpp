@@ -2375,19 +2375,6 @@ void CAnimEntityNode::AnimateCharacterTrack(class CCharacterTrack* pTrack, SAnim
 
 				animState.m_layerPlaysAnimation[trackIndex] = true;
 
-				// fix duration?
-				int animId = pAnimations->GetAnimIDByName(key.m_animation);
-
-				if (animId >= 0)
-				{
-					float duration = pAnimations->GetDuration_sec(animId);
-
-					if (key.m_defaultAnimDuration != duration)
-					{
-						key.m_defaultAnimDuration = duration;
-						pTrack->SetKey(k, &key);
-					}
-				}
 			}
 		}
 
