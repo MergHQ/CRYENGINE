@@ -1351,7 +1351,7 @@ if (RENDERER_VULKAN)
 			-Wno-invalid-offsetof
 			-Wno-null-conversion
 		)
-    elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+  elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
 		target_compile_options(${THIS_PROJECT} PRIVATE
 			-Wno-unused-function
 			-Wno-unused-value
@@ -1375,8 +1375,9 @@ if (RENDERER_VULKAN)
 			-Wno-address
 			-Wno-format
 			-Wno-switch
+			-Wno-psabi
 		)
-    endif()
+  endif()
 else()
 	CryFileContainer(CryRenderVulkan SOLUTION_FOLDER "CryEngine")
 endif()

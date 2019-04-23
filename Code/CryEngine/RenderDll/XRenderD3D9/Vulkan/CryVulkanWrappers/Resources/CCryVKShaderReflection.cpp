@@ -569,12 +569,12 @@ CCryVKShaderReflectionVariable::CCryVKShaderReflectionVariable(CCryVKShaderRefle
 
 	if (CRendererCVars::CV_r_VkShaderCompiler && strcmp(CRendererCVars::CV_r_VkShaderCompiler->GetString(), STR_VK_SHADER_COMPILER_HLSLCC) == 0)
 	{
-		strncpy(m_name, variableName.c_str() + 1 /* skip ShaderTypePrefix() */, sizeof(m_name));
+		strncpy(m_name, variableName.c_str() + 1 /* skip ShaderTypePrefix() */, sizeof(m_name) - 1);
 		UnformatVariableName(m_name);
 	}
 	else
 	{
-		strncpy(m_name, variableName.c_str(), sizeof(m_name));
+		strncpy(m_name, variableName.c_str(), sizeof(m_name) - 1);
 	}
 }
 
