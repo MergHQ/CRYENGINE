@@ -269,6 +269,13 @@ struct TestStruct
 	TestStruct()
 		: memberInt(123)
 		, memberFloat(456.789)
+		, memberChar('z')
+		, memberInt2(456)
+		, memberBoolLinked1(false)
+		, memberBoolLinked2(true)
+		, memberBoolXOR(false)
+		, showHiddenField(false)
+		, hiddenField(44.55f)
 		, memberString("some string")
 		, memberSharedPtr(std::make_shared<DynCreateDerived>())
 	{

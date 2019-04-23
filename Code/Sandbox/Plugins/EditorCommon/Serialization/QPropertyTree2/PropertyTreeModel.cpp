@@ -1,4 +1,5 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
+
 #include "StdAfx.h"
 #include "PropertyTreeModel.h"
 
@@ -15,6 +16,7 @@ CRowModel::CRowModel(CRowModel* pParent)
 	, m_dirty(DirtyFlag::Clean)
 	, m_flags(0)
 	, m_index(-1)
+	, m_pFactory(nullptr)
 {
 }
 
