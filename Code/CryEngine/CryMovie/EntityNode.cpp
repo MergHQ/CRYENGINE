@@ -2340,10 +2340,6 @@ void CAnimEntityNode::AnimateCharacterTrack(class CCharacterTrack* pTrack, SAnim
 
 			if (key.m_animation[0])
 			{
-				// retrieve the animation collection for the model
-				IAnimationSet* pAnimations = pCharacter->GetIAnimationSet();
-				assert(pAnimations);
-
 				if (key.m_bUnload)
 				{
 					m_setAnimationSinks.insert(TStringSetIt::value_type(key.m_animation));
