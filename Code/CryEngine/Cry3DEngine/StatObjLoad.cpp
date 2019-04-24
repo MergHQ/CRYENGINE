@@ -374,6 +374,7 @@ void CStatObj::MakeLodFileName(uint lod, char (&buffer)[MAX_PATH])
 // Free render resources for unused upper LODs.
 void CStatObj::CleanUnusedLods()
 {
+	_smart_ptr<IRenderMesh> pNullMesh = nullptr;
 	if (m_nLoadedLodsNum > 1)
 	{
 		int nMinLod = GetMinUsableLod();
@@ -386,7 +387,7 @@ void CStatObj::CleanUnusedLods()
 
 			if (pStatObj->m_pRenderMesh)
 			{
-				pStatObj->SetRenderMesh(0);
+				pStatObj->SetRenderMesh(pNullMesh);
 			}
 		}
 	}

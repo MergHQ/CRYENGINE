@@ -177,9 +177,10 @@ void CStatObj::ShutDown()
 		}
 	m_arrPhysGeomInfo.m_array.clear();
 
-	m_pStreamedRenderMesh = 0;
-	m_pMergedRenderMesh = 0;
-	SetRenderMesh(0);
+	_smart_ptr<IRenderMesh> pNullMesh = nullptr;
+	m_pStreamedRenderMesh = pNullMesh;
+	m_pMergedRenderMesh = pNullMesh;
+	SetRenderMesh(pNullMesh);
 
 	//	assert (IsHeapValid());
 
@@ -333,7 +334,8 @@ void CStatObj::MakeRenderMesh()
 
 	FUNCTION_PROFILER_3DENGINE;
 
-	SetRenderMesh(0);
+	_smart_ptr<IRenderMesh> pNullMesh = nullptr;
+	SetRenderMesh(pNullMesh);
 
 	if (!m_pIndexedMesh || m_pIndexedMesh->GetSubSetCount() == 0)
 		return;
@@ -1208,11 +1210,12 @@ bool CStatObj::CanMergeSubObjects()
 //////////////////////////////////////////////////////////////////////////
 void CStatObj::UnMergeSubObjectsRenderMeshes()
 {
+	_smart_ptr<IRenderMesh> pNullMesh = nullptr;
 	if (m_bMerged)
 	{
 		m_bMerged = false;
 		m_pMergedRenderMesh = 0;
-		SetRenderMesh(0);
+		SetRenderMesh(pNullMesh);
 	}
 	if (m_bMergedLODs)
 	{
@@ -1518,11 +1521,11 @@ bool CStatObj::LineSegIntersection(const Lineseg& lineSeg, Vec3& hitPos, int& su
 	return intersects;
 }
 
-void CStatObj::SetRenderMesh(IRenderMesh* pRM)
+void CStatObj::SetRenderMesh(_smart_ptr<IRenderMesh>& pRM)
 {
 	LOADING_TIME_PROFILE_SECTION;
 
-	if (pRM == m_pRenderMesh)
+	if (pRM.get() == m_pRenderMesh.get())
 		return;
 
 	{

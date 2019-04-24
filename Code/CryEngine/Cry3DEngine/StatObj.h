@@ -413,7 +413,7 @@ public:
 	virtual void Refresh(int nFlags) final;
 
 	virtual IRenderMesh* GetRenderMesh() const final { return m_pRenderMesh; }
-	void SetRenderMesh(IRenderMesh * pRM);
+	void SetRenderMesh(_smart_ptr<IRenderMesh>& pRM);
 
 	virtual const char* GetFilePath() final                       { return m_szFileName.c_str(); }
 	virtual void        SetFilePath(const char* szFileName) final { m_szFileName = szFileName; }
