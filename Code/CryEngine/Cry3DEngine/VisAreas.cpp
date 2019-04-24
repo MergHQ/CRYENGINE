@@ -1209,8 +1209,6 @@ IVisArea* CVisAreaManager::GetVisAreaFromPos(const Vec3& vPos) const
 {
 	FUNCTION_PROFILER_3DENGINE;
 
-	CRY_ASSERT(m_pAABBTree);
-
 	return m_pAABBTree ? m_pAABBTree->FindVisarea(vPos) : nullptr;
 }
 
@@ -1463,7 +1461,7 @@ bool CVisAreaManager::SetEntityArea(IRenderNode* pEnt, const AABB& objBox, const
 		}
 	}
 
-	if (!pVisArea && pEnt->m_dwRndFlags & ERF_REGISTER_BY_BBOX)
+	if (!pVisArea && pEnt->GetRndFlags() & ERF_REGISTER_BY_BBOX)
 	{
 		const AABB aabb = pEnt->GetBBox();
 
