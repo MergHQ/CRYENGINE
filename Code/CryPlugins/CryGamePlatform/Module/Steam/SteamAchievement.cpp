@@ -11,36 +11,52 @@ namespace Cry
 	{
 		namespace Steam
 		{
-			CAchievement::CAchievement(CStatistics& steamStats, const char* name, bool bAchieved)
+			CAchievement::CAchievement(CStatistics& steamStats, const char* name, bool achieved)
 				: m_stats(steamStats)
 				, m_name(name)
-				, m_bAchieved(bAchieved)
+				, m_achieved(achieved)
 			{
 
 			}
 
 			bool CAchievement::Reset()
 			{
-				ISteamUserStats* pSteamUserStats = SteamUserStats();
-				if (!pSteamUserStats)
+				bool cleared = false;
+
+				if (m_achieved)
 				{
-					return false;
+					if (ISteamUserStats* pSteamUserStats = SteamUserStats())
+					{
+						cleared = pSteamUserStats->ClearAchievement(m_name);
+						if (cleared)
+						{
+							m_achieved = false;
+							m_stats.Upload();
+						}
+					}
 				}
-				return pSteamUserStats->ClearAchievement(m_name);
+
+				return cleared;
 			}
 
 			bool CAchievement::Achieve()
 			{
-				ISteamUserStats* pSteamUserStats = SteamUserStats();
-				if (!pSteamUserStats)
+				bool achieved = false;
+
+				if (!m_achieved)
 				{
-					return false;
+					if (ISteamUserStats* pSteamUserStats = SteamUserStats())
+					{
+						achieved = pSteamUserStats->SetAchievement(m_name);
+						if (achieved)
+						{
+							m_achieved = true;
+							m_stats.Upload();
+						}
+					}
 				}
-				bool bResult = pSteamUserStats->SetAchievement(m_name);
 
-				m_stats.Upload();
-
-				return bResult;
+				return achieved;
 			}
 		}
 	}

@@ -15,12 +15,12 @@ namespace Cry
 				: public IAchievement
 			{
 			public:
-				CAchievement(CStatistics& steamStats, const char* name, bool bAchieved);
+				CAchievement(CStatistics& steamStats, const char* name, bool achieved);
 				virtual ~CAchievement() = default;
 
 				// IAchievement
 				virtual const char* GetName() const override { return m_name.c_str(); }
-				virtual bool IsCompleted() const override { return m_bAchieved; }
+				virtual bool IsCompleted() const override { return m_achieved; }
 
 				virtual bool Reset() override;
 				virtual bool Achieve() override;
@@ -29,7 +29,7 @@ namespace Cry
 			protected:
 				CStatistics& m_stats;
 				string m_name;
-				bool m_bAchieved;
+				bool m_achieved;
 			};
 		}
 	}
