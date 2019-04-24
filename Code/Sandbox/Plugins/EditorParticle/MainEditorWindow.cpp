@@ -176,17 +176,6 @@ bool CParticleEditor::OnRedo()
 	return true;
 }
 
-void CParticleEditor::SetLayout(const QVariantMap& state)
-{
-	CEditor::SetLayout(state);
-}
-
-QVariantMap CParticleEditor::GetLayout() const
-{
-	QVariantMap state = CEditor::GetLayout();
-	return state;
-}
-
 void CParticleEditor::Serialize(Serialization::IArchive& archive)
 {
 	// TODO: Remove this?

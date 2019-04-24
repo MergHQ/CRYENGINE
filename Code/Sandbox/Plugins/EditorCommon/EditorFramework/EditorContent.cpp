@@ -130,6 +130,9 @@ void CEditorContent::OnAdaptiveLayoutChanged(Qt::Orientation orientation)
 
 void CEditorContent::SetState(const QVariantMap& state)
 {
+	if (state.empty())
+		return;
+
 	m_pToolBarAreaManager->SetState(state);
 }
 

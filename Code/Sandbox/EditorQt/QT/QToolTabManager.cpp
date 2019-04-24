@@ -229,26 +229,29 @@ QTabPane* CTabPaneManager::CreateTabPane(const char* paneClassName, const char* 
 				title = pContentWidget->GetPaneTitle();
 			}
 			dockDir = pContentWidget->GetDockingDirection();
-
-			if (bLoadLayoutPersonalization)
-			{
-				pContentWidget->LoadLayoutPersonalization();
-			}
 		}
 		else if (!title)
 		{
 			title = pViewPaneClass->GetPaneTitle();
 		}
 
+		// Set default title
 		pPane->m_title = title;
 		pPane->setObjectName(CreateObjectName(title));
 		pPane->setWindowTitle(QWidget::tr(title));
 
 		pPane->m_category = pViewPaneClass->Category();
 
+		// Initialize after content has default title
 		if (pContentWidget)
 		{
 			pContentWidget->Initialize();
+
+			// Load personalization after content is actually initialized
+			if (bLoadLayoutPersonalization)
+			{
+				pContentWidget->LoadLayoutPersonalization();
+			}
 		}
 	}
 	else

@@ -9,6 +9,7 @@
 #include "AssetSystem/Loader/AssetLoaderHelpers.h"
 
 #include "Controls/QuestionDialog.h"
+#include "EditorFramework/PersonalizationManager.h"
 #include "FileDialogs/FileNameLineEdit.h"
 #include "PathUtils.h"
 #include "ProxyModels/AttributeFilterProxyModel.h"
@@ -139,6 +140,14 @@ CAssetBrowserDialog::CAssetBrowserDialog(const std::vector<string>& assetTypeNam
 	m_pBrowser->Initialize();
 	const QString propertyName = QtUtil::ToQString(std::accumulate(assetTypeNames.begin(), assetTypeNames.end(), "Layout"));
 
+	// Load generic asset browser layout valid for all asset types. Some things might be later overwritten by asset type specific personalization
+	const QVariantMap& personalization = GetIEditor()->GetPersonalizationManager()->GetState(GetDialogName());
+	QVariant layout = personalization.value("layout");
+	if (layout.isValid())
+	{
+		m_pBrowser->SetLayout(layout.toMap());
+	}
+
 	AddPersonalizedProjectProperty(propertyName, [this]()
 	{
 		return m_pBrowser->GetLayout();
@@ -148,6 +157,8 @@ CAssetBrowserDialog::CAssetBrowserDialog(const std::vector<string>& assetTypeNam
 		{
 			QVariantMap map = variant.value<QVariantMap>();
 			map.remove("filters");
+			// No need to have editor content differing between asset types
+			map.remove("editorContent");
 			m_pBrowser->SetLayout(map);
 		}
 	});

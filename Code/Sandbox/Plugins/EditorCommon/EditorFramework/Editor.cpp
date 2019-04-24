@@ -409,13 +409,14 @@ void CEditor::SetLayout(const QVariantMap& state)
 	{
 		SetAdaptiveLayoutEnabled(state["adaptiveLayout"].toBool());
 	}
-
 	if (m_dockingRegistry && state.contains("dockingState"))
 	{
 		m_dockingRegistry->SetState(state["dockingState"].toMap());
 	}
-
-	m_pEditorContent->SetState(state["editorContent"].toMap());
+	if (state.contains("editorContent"))
+	{
+		m_pEditorContent->SetState(state["editorContent"].toMap());
+	}
 }
 
 QVariantMap CEditor::GetLayout() const

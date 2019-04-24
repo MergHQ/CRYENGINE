@@ -537,10 +537,12 @@ void CToolBarArea::customEvent(QEvent* pEvent)
 		if (command == "toolbar.insert_expanding_spacer")
 		{
 			AddSpacer(CSpacerItem::SpacerType::Expanding, GetPlacementIndexFromPosition(m_actionContextPosition));
+			pEvent->setAccepted(true);
 		}
 		else if (command == "toolbar.insert_fixed_spacer")
 		{
 			AddSpacer(CSpacerItem::SpacerType::Fixed, GetPlacementIndexFromPosition(m_actionContextPosition));
+			pEvent->setAccepted(true);
 		}
 		else if (command == "toolbar.toggle_spacer_type")
 		{
@@ -563,6 +565,7 @@ void CToolBarArea::customEvent(QEvent* pEvent)
 				pSpacerItem->SetSpacerType(CSpacerItem::SpacerType::Expanding);
 				m_pLayout->setAlignment(0);
 			}
+			pEvent->setAccepted(true);
 		}
 		else if (command == "toolbar.remove_spacer")
 		{
@@ -572,6 +575,7 @@ void CToolBarArea::customEvent(QEvent* pEvent)
 
 			RemoveItem(pItem);
 			pItem->deleteLater();
+			pEvent->setAccepted(true);
 		}
 	}
 }
