@@ -408,7 +408,7 @@ CSystem::CSystem(const SSystemInitParams& startupParams)
 	const bool enableBootProfiler = (strstr(startupParams.szSystemCmdLine, "-bootprofiler") != nullptr);
 	const bool enableBrofiler = (strstr(startupParams.szSystemCmdLine, "-brofiler") != nullptr);
 	const bool enablePlatformProfiler = (strstr(startupParams.szSystemCmdLine, "-platformprofiler") != nullptr);
-	
+
 	const char* szVerbosity = strstr(startupParams.szSystemCmdLine, "-profile_verbosity=");
 	if (szVerbosity != nullptr)
 	{
@@ -433,7 +433,7 @@ CSystem::CSystem(const SSystemInitParams& startupParams)
 	}
 	else
 #endif
-#if USE_PLATFORM_PROFILER 
+#if USE_PLATFORM_PROFILER
 	if (enablePlatformProfiler)
 	{
 		m_pProfilingSystem = new CPlatformProfiler;
@@ -558,7 +558,7 @@ CSystem::~CSystem()
 #if !defined(SYS_ENV_AS_STRUCT)
 	gEnv = 0;
 #endif
-	
+
 #if CRY_PLATFORM_WINDOWS
 	((DebugCallStack*)IDebugCallStack::instance())->uninstallErrorHandler();
 #endif
@@ -944,6 +944,9 @@ void CSystem::ShutDown()
 void CSystem::Quit()
 {
 	CryLog("CSystem::Quit invoked from thread %" PRI_THREADID " (main is %" PRI_THREADID ")", GetCurrentThreadId(), gEnv->mMainThreadId);
+
+	if (m_bQuit)
+		return;
 	m_bQuit = true;
 
 	if (m_pUserCallback)
@@ -1848,8 +1851,8 @@ bool CSystem::Update(CEnumFlags<ESystemUpdateFlags> updateFlags, int nPauseMode)
 		const int nNewHeight = gEnv->pRenderer->GetOverlayHeight();
 
 		if ((fNewAspectRatio != rCamera.GetPixelAspectRatio()) ||
-		    (nNewWidth != rCamera.GetViewSurfaceX()) ||
-		    (nNewHeight != rCamera.GetViewSurfaceZ()))
+			(nNewWidth != rCamera.GetViewSurfaceX()) ||
+			(nNewHeight != rCamera.GetViewSurfaceZ()))
 		{
 			rCamera.SetFrustum(
 				nNewWidth,
@@ -2103,8 +2106,8 @@ bool CSystem::Update(CEnumFlags<ESystemUpdateFlags> updateFlags, int nPauseMode)
 						   float fFixedStep = m_env.pGame->GetFixedStep();
 						   for(i=min(20*iStep,m_env.pGame->SnapTime(iCurTime)-m_pGame->SnapTime(iPrevTime)); i>0; i-=iStep)
 						   {
-						    m_env.pGame->ExecuteScheduledEvents();
-						    m_env.pPhysicalWorld->TimeStep(fFixedStep, ent_rigid|ent_skip_flagged);
+							m_env.pGame->ExecuteScheduledEvents();
+							m_env.pPhysicalWorld->TimeStep(fFixedStep, ent_rigid|ent_skip_flagged);
 						   }
 
 						   m_env.pPhysicalWorld->SetiPhysicsTime(iPrevTime);
@@ -2377,17 +2380,17 @@ bool CSystem::UpdateLoadtime()
 	   // during level loading
 	   if (m_env.pInput)
 	   {
-	    //////////////////////////////////////////////////////////////////////
-	    //update input system
+		//////////////////////////////////////////////////////////////////////
+		//update input system
 	 #if !CRY_PLATFORM_WINDOWS
-	    m_env.pInput->Update(true);
+		m_env.pInput->Update(true);
 	 #else
-	    bool bFocus = (GetFocus()==m_hWnd) || m_bEditor;
-	    {
-	      WriteLock lock(g_lockInput);
-	      m_env.pInput->Update(bFocus);
-	      g_BreakListenerTask.m_nBreakIdle = 0;
-	    }
+		bool bFocus = (GetFocus()==m_hWnd) || m_bEditor;
+		{
+		  WriteLock lock(g_lockInput);
+		  m_env.pInput->Update(bFocus);
+		  g_BreakListenerTask.m_nBreakIdle = 0;
+		}
 	 #endif
 	   }
 	 */
@@ -2398,7 +2401,7 @@ bool CSystem::UpdateLoadtime()
 void CSystem::UpdateAudioSystems()
 {
 	const bool isLoadInProgress = m_systemGlobalState > ESYSTEM_GLOBAL_STATE_INIT &&
-	                              m_systemGlobalState <= ESYSTEM_GLOBAL_STATE_LEVEL_LOAD_END;
+								  m_systemGlobalState <= ESYSTEM_GLOBAL_STATE_LEVEL_LOAD_END;
 
 	if (m_env.pAudioSystem != nullptr && !isLoadInProgress)   //do not update pAudioSystem during async level load
 	{
@@ -3312,9 +3315,9 @@ void CSystem::SetSystemGlobalState(const ESystemGlobalState systemGlobalState)
 			const float numSeconds = endTime.GetDifferenceInSeconds(s_startTime);
 #endif
 			CryLog("SetGlobalState %d->%d '%s'->'%s' %3.1f seconds",
-			       m_systemGlobalState, systemGlobalState,
-			       CSystem::GetSystemGlobalStateName(m_systemGlobalState), CSystem::GetSystemGlobalStateName(systemGlobalState),
-			       numSeconds);
+				   m_systemGlobalState, systemGlobalState,
+				   CSystem::GetSystemGlobalStateName(m_systemGlobalState), CSystem::GetSystemGlobalStateName(systemGlobalState),
+				   numSeconds);
 			s_startTime = gEnv->pTimer->GetAsyncTime();
 		}
 	}
@@ -3346,8 +3349,8 @@ int CSystem::PumpWindowMessage(bool bAll, CRY_HWND opaqueHWnd)
 	int count = 0;
 	const HWND hWnd = (HWND)opaqueHWnd;
 	const bool bUnicode = hWnd != NULL ?
-	                      IsWindowUnicode(hWnd) != FALSE :
-	                      !(gEnv && gEnv->IsEditor());
+						  IsWindowUnicode(hWnd) != FALSE :
+						  !(gEnv && gEnv->IsEditor());
 	#if defined(UNICODE) || defined(_UNICODE)
 	// Once we compile as Unicode app on Windows, we should detect non-Unicode windows
 	assert(bUnicode && "The window is not Unicode, this is most likely a bug");
