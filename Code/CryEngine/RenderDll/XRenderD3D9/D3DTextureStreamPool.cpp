@@ -121,8 +121,6 @@ STexPool* CTextureStreamPoolMgr::GetPool(const STextureLayout& pLayout)
 
 STexPoolItem* CTextureStreamPoolMgr::GetItem(const STextureLayout& pLayout, bool bShouldBeCreated, const char* sName, const STexturePayload* pPayload, bool bCanCreate, bool bWaitForIdle)
 {
-	MEMSTAT_CONTEXT_FMT(EMemStatContextType::Texture, "Stream pool item %ix%ix%i", pLayout.m_nWidth, pLayout.m_nHeight, pLayout.m_nMips);
-
 	D3DFormat d3dFmt = DeviceFormats::ConvertFromTexFormat(pLayout.m_eDstFormat);
 	if (pLayout.m_bIsSRGB)
 		d3dFmt = DeviceFormats::ConvertToSRGB(d3dFmt);

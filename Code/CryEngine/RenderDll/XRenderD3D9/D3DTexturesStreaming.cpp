@@ -635,8 +635,8 @@ STexPoolItem* CTexture::StreamGetPoolItem(int8 nStartMip, int8 nMips, bool bShou
 		}
 	}
 
-	MEMSTAT_CONTEXT(EMemStatContextType::Texture, "Creating Texture");
-	MEMSTAT_CONTEXT_FMT(EMemStatContextType::Texture, "%s %ix%ix%i %08x", m_SrcName.c_str(), m_nWidth, m_nHeight, m_nMips, m_eFlags);
+	MEMSTAT_CONTEXT(EMemStatContextType::Texture, "Streaming Texture");
+	MEMSTAT_CONTEXT_FMT(EMemStatContextType::Texture, "%s %ix%ix%i %i %08x", m_SrcName.c_str(), m_nWidth, m_nHeight, m_nDepth * m_nArraySize, m_nMips, m_eFlags);
 
 	STextureLayout pLayout = GetLayout();
 	STexturePayload pPayload;
