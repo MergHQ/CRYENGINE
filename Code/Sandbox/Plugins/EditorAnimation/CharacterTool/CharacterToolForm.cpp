@@ -202,9 +202,15 @@ void CharacterToolForm::UpdatePanesMenu()
 
 void CharacterToolForm::Initialize()
 {
+	if (m_private)
+	{
+		CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_ERROR, "Character Tool is being initialized twice! skipping second initialization.");
+		return;
+	}
+	
 	LOADING_TIME_PROFILE_SECTION;
 	m_private.reset(new SPrivate(this, m_system->document.get()));
-
+ 
 	m_modeCharacter.reset(new ModeCharacter());
 
 	setDockNestingEnabled(true);
