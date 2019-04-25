@@ -51,7 +51,7 @@ private:
 
 	static const float        kExtendedFlareRadiusRatio;
 
-	void RT_RenderPreview(const Vec3& vPos, const std::shared_ptr<CGraphicsPipeline>& pGraphicsPipeline);
+	void RT_RenderPreview(const Vec3& vPos, const SLensFlareRenderParam* pParam);
 
 public:
 

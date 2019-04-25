@@ -337,11 +337,11 @@ public:
 	// Free resources used
 	virtual void Release()                                                                                                {}
 	// Preprocess technique
-	virtual bool Preprocess(const SRenderViewInfo& viewInfo, const std::shared_ptr<CGraphicsPipeline>& pGraphicsPipeline) { return IsActive(); }
+	virtual bool Preprocess(const SRenderViewInfo& viewInfo)                                                              { return IsActive(); }
 	// Some effects might require updating data/parameters, etc
 	virtual void Update()                                                                                                 {}
 	// Render technique
-	virtual void Render(const std::shared_ptr<CGraphicsPipeline>& pGraphicsPipeline) = 0;
+	virtual void Render() = 0;
 	// Reset technique state to default
 	virtual void Reset(bool bOnSpecChange = false) = 0;
 	// release resources when required

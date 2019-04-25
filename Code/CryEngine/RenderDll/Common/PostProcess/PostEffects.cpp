@@ -12,6 +12,7 @@
 #include <Cry3DEngine/I3DEngine.h>
 #include "PostEffects.h"
 #include "PostProcessUtils.h"
+#include "GraphicsPipeline/PostEffects.h"
 
 #include <DriverD3D.h>
 
@@ -108,7 +109,7 @@ void CDepthOfField::Reset(bool bOnSpecChange)
 	m_fUserBlurAmountCurr = 0;
 }
 
-bool CDepthOfField::Preprocess(const SRenderViewInfo& viewInfo, const std::shared_ptr<CGraphicsPipeline>& pGraphicsPipeline)
+bool CDepthOfField::Preprocess(const SRenderViewInfo& viewInfo)
 {
 	// Skip LDR processing, DOF is always performed in HDR
 	return false;
@@ -147,7 +148,7 @@ void CSunShafts::OnLostDevice()
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-bool CSharpening::Preprocess(const SRenderViewInfo& viewInfo, const std::shared_ptr<CGraphicsPipeline>& pGraphicsPipeline)
+bool CSharpening::Preprocess(const SRenderViewInfo& viewInfo)
 {
 	bool bQualityCheck = CPostEffectsMgr::CheckPostProcessQuality(eRQ_Medium, eSQ_Medium);
 
@@ -174,7 +175,7 @@ void CSharpening::Reset(bool bOnSpecChange)
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-bool CBlurring::Preprocess(const SRenderViewInfo& viewInfo, const std::shared_ptr<CGraphicsPipeline>& pGraphicsPipeline)
+bool CBlurring::Preprocess(const SRenderViewInfo& viewInfo)
 {
 	bool bQualityCheck = CPostEffectsMgr::CheckPostProcessQuality(eRQ_Medium, eSQ_Medium);
 
@@ -201,7 +202,7 @@ void CBlurring::Reset(bool bOnSpecChange)
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-bool CUberGamePostProcess::Preprocess(const SRenderViewInfo& viewInfo, const std::shared_ptr<CGraphicsPipeline>& pGraphicsPipeline)
+bool CUberGamePostProcess::Preprocess(const SRenderViewInfo& viewInfo)
 {
 	m_nCurrPostEffectsMask = 0;
 
@@ -266,7 +267,7 @@ void CUberGamePostProcess::Reset(bool bOnSpecChange)
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-bool CColorGrading::Preprocess(const SRenderViewInfo& viewInfo, const std::shared_ptr<CGraphicsPipeline>& pGraphicsPipeline)
+bool CColorGrading::Preprocess(const SRenderViewInfo& viewInfo)
 {
 	// Depreceated: to be removed / replaced by UberPostProcess shader
 	return false;
@@ -284,7 +285,7 @@ void CColorGrading::Reset(bool bOnSpecChange)
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-bool CUnderwaterGodRays::Preprocess(const SRenderViewInfo& viewInfo, const std::shared_ptr<CGraphicsPipeline>& pGraphicsPipeline)
+bool CUnderwaterGodRays::Preprocess(const SRenderViewInfo& viewInfo)
 {
 	bool bQualityCheck = CPostEffectsMgr::CheckPostProcessQuality(eRQ_Medium, eSQ_Medium);
 	if (!bQualityCheck)
@@ -315,7 +316,7 @@ void CUnderwaterGodRays::Reset(bool bOnSpecChange)
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-bool CVolumetricScattering::Preprocess(const SRenderViewInfo& viewInfo, const std::shared_ptr<CGraphicsPipeline>& pGraphicsPipeline)
+bool CVolumetricScattering::Preprocess(const SRenderViewInfo& viewInfo)
 {
 	bool bQualityCheck = CPostEffectsMgr::CheckPostProcessQuality(eRQ_High, eSQ_High);
 	if (!bQualityCheck)
@@ -352,7 +353,7 @@ void CAlienInterference::Reset(bool bOnSpecChange)
 	m_pTintColor->ResetParamVec4(Vec4(Vec3(0.85f, 0.95f, 1.25f) * 0.5f, 1.0f));
 }
 
-bool CAlienInterference::Preprocess(const SRenderViewInfo& viewInfo, const std::shared_ptr<CGraphicsPipeline>& pGraphicsPipeline)
+bool CAlienInterference::Preprocess(const SRenderViewInfo& viewInfo)
 {
 	bool bQualityCheck = CPostEffectsMgr::CheckPostProcessQuality(eRQ_Medium, eSQ_Medium);
 	if (!bQualityCheck)
@@ -371,7 +372,7 @@ bool CAlienInterference::Preprocess(const SRenderViewInfo& viewInfo, const std::
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-bool CWaterDroplets::Preprocess(const SRenderViewInfo& viewInfo, const std::shared_ptr<CGraphicsPipeline>& pGraphicsPipeline)
+bool CWaterDroplets::Preprocess(const SRenderViewInfo& viewInfo)
 {
 	bool bQualityCheck = CPostEffectsMgr::CheckPostProcessQuality(eRQ_Medium, eSQ_Medium);
 	if (!bQualityCheck)
@@ -395,7 +396,7 @@ void CWaterDroplets::Reset(bool bOnSpecChange)
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-bool CWaterFlow::Preprocess(const SRenderViewInfo& viewInfo, const std::shared_ptr<CGraphicsPipeline>& pGraphicsPipeline)
+bool CWaterFlow::Preprocess(const SRenderViewInfo& viewInfo)
 {
 	bool bQualityCheck = CPostEffectsMgr::CheckPostProcessQuality(eRQ_Medium, eSQ_Medium);
 	if (!bQualityCheck)
@@ -418,7 +419,7 @@ void CWaterFlow::Reset(bool bOnSpecChange)
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-bool CScreenFrost::Preprocess(const SRenderViewInfo& viewInfo, const std::shared_ptr<CGraphicsPipeline>& pGraphicsPipeline)
+bool CScreenFrost::Preprocess(const SRenderViewInfo& viewInfo)
 {
 	bool bQualityCheck = CPostEffectsMgr::CheckPostProcessQuality(eRQ_Medium, eSQ_Medium);
 	if (!bQualityCheck)
@@ -601,7 +602,7 @@ void CHudSilhouettes::Reset(bool bOnSpecChange)
 	FindIfSilhouettesOptimisedTechAvailable();
 }
 
-bool CHudSilhouettes::Preprocess(const SRenderViewInfo& viewInfo, const std::shared_ptr<CGraphicsPipeline>& pGraphicsPipeline)
+bool CHudSilhouettes::Preprocess(const SRenderViewInfo& viewInfo)
 {
 	if ((CRenderer::CV_r_customvisions != 3) || (m_bSilhouettesOptimisedTechAvailable))
 	{
@@ -613,7 +614,7 @@ bool CHudSilhouettes::Preprocess(const SRenderViewInfo& viewInfo, const std::sha
 			return false;
 		}
 
-		CRenderView* pRenderView = pGraphicsPipeline->GetCurrentRenderView();
+		CRenderView* pRenderView = m_pCurrentContext->GetRenderView();
 		// no need to proceed
 		float fType = m_pType->GetParam();
 		uint32 nBatchMask = pRenderView->GetBatchFlags(EFSLIST_GENERAL) | pRenderView->GetBatchFlags(EFSLIST_TRANSP_BW) | pRenderView->GetBatchFlags(EFSLIST_TRANSP_AW);
@@ -659,7 +660,7 @@ void CPostStereo::Reset(bool bOnSpecChange)
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-bool CImageGhosting::Preprocess(const SRenderViewInfo& viewInfo, const std::shared_ptr<CGraphicsPipeline>& pGraphicsPipeline)
+bool CImageGhosting::Preprocess(const SRenderViewInfo& viewInfo)
 {
 	CTexture* pPrevFrame = CRendererResources::s_ptexDisplayTargetScaledPrev;
 	if (!pPrevFrame)
@@ -692,7 +693,7 @@ int CFilterKillCamera::Initialize()
 	return 1;
 }
 
-bool CFilterKillCamera::Preprocess(const SRenderViewInfo& viewInfo, const std::shared_ptr<CGraphicsPipeline>& pGraphicsPipeline)
+bool CFilterKillCamera::Preprocess(const SRenderViewInfo& viewInfo)
 {
 	if (!CRenderer::CV_r_PostProcessFilters)
 		return false;
@@ -744,7 +745,7 @@ void CNanoGlass::Release()
 	SAFE_RELEASE(m_pNoise);
 }
 
-bool CNanoGlass::Preprocess(const SRenderViewInfo& viewInfo, const std::shared_ptr<CGraphicsPipeline>& pGraphicsPipeline)
+bool CNanoGlass::Preprocess(const SRenderViewInfo& viewInfo)
 {
 	//////////////////////////////////////////////////////////////////////////
 	// Logic to determine if we can enable the effect. As m_pActive is not double buffered it's likely that this is
@@ -809,7 +810,7 @@ void CScreenBlood::Reset(bool bOnSpecChange)
 	m_pBorder->ResetParamVec4(Vec4(0.0f, 0.0f, 2.0f, 1.0f)); // Border: x=xOffset y=yOffset z=range w=alpha
 }
 
-bool CScreenBlood::Preprocess(const SRenderViewInfo& viewInfo, const std::shared_ptr<CGraphicsPipeline>& pGraphicsPipeline)
+bool CScreenBlood::Preprocess(const SRenderViewInfo& viewInfo)
 {
 	return (CRenderer::CV_r_PostProcessGameFx && m_pAmount->GetParam() > 0.005f);
 }
@@ -822,7 +823,7 @@ void CScreenFader::Reset(bool bOnSpecChange)
 	m_pColor->ResetParamVec4(Vec4(0.0f, 0.0f, 0.0f, 0.0f));
 }
 
-bool CScreenFader::Preprocess(const SRenderViewInfo& viewInfo, const std::shared_ptr<CGraphicsPipeline>& pGraphicsPipeline)
+bool CScreenFader::Preprocess(const SRenderViewInfo& viewInfo)
 {
 	return (CRenderer::CV_r_PostProcessGameFx && m_pColor->GetParamVec4().w > 0.001f);
 }
@@ -830,7 +831,7 @@ bool CScreenFader::Preprocess(const SRenderViewInfo& viewInfo, const std::shared
 //////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////
 
-bool CPost3DRenderer::Preprocess(const SRenderViewInfo& viewInfo, const std::shared_ptr<CGraphicsPipeline>& pGraphicsPipeline)
+bool CPost3DRenderer::Preprocess(const SRenderViewInfo& viewInfo)
 {
 	if (IsActive())
 	{

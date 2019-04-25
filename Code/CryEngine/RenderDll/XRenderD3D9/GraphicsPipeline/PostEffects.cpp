@@ -225,7 +225,7 @@ bool CPostEffectStage::Execute()
 	{
 		CPostEffect* pCurrEffect = (*pItor);
 		pCurrEffect->SetCurrentContext(&m_context);
-		if (pCurrEffect->Preprocess(viewInfo, pGP))
+		if (pCurrEffect->Preprocess(viewInfo))
 		{
 			pCurrEffect->SetCurrentContext(nullptr);
 			const auto id = pCurrEffect->GetID();
@@ -267,7 +267,7 @@ bool CPostEffectStage::Execute()
 			}
 			else
 			{
-				pCurrEffect->Render(pGP);
+				pCurrEffect->Render();
 			}
 		}
 
@@ -388,11 +388,10 @@ void CPostEffectStage::Execute3DHudFlashUpdate()
 	const auto& viewInfo = RenderView()->GetViewInfo(CCamera::eEye_Left);
 	const auto& context = m_context;
 	auto* p3DHUD = context.GetPostEffect(EPostEffectID::HUD3D);
-	std::shared_ptr<CGraphicsPipeline> pActivePipeline = RenderView()->GetGraphicsPipeline();
 
 	// If HUD enabled, pre-process flash updates first.
 	// post effects of EPostEffectID::NanoGlass and EPostEffectID::PostStereo depend on this HUD update.
-	if (p3DHUD && p3DHUD->Preprocess(viewInfo, pActivePipeline))
+	if (p3DHUD && p3DHUD->Preprocess(viewInfo))
 	{
 		auto& pPostEffect = m_postEffectArray[EPostEffectID::HUD3D];
 		if (pPostEffect)
@@ -1699,11 +1698,8 @@ void CHud3DPass::ExecuteBloomTexUpdate(const CPostEffectContext& context, class 
 
 	const auto nThreadID = gRenDev->GetRenderThreadID();
 
-	std::shared_ptr<CGraphicsPipeline> pActivePipeline = context.GetRenderView()->GetGraphicsPipeline();
-	CRY_ASSERT(pActivePipeline);
-
 	// Calculate HUD's projection matrix using fixed FOV.
-	hud3d.CalculateProjMatrix(pActivePipeline);
+	hud3d.CalculateProjMatrix();
 
 	CTexture* pOutputRT = CRendererResources::s_ptexDisplayTargetScaled[1];
 
@@ -1812,11 +1808,8 @@ void CHud3DPass::ExecuteFinalPass(const CPostEffectContext& context, CTexture* p
 
 	const auto nThreadID = gRenDev->GetRenderThreadID();
 
-	std::shared_ptr<CGraphicsPipeline> pActivePipeline = context.GetRenderView()->GetGraphicsPipeline();
-	CRY_ASSERT(pActivePipeline);
-
 	// Calculate HUD's projection matrix using fixed FOV.
-	hud3d.CalculateProjMatrix(pActivePipeline);
+	hud3d.CalculateProjMatrix();
 
 	bool bInterferenceApplied = false;
 	uint32 hudEffectParamCount = 1; // Default to only pass 1 vecs

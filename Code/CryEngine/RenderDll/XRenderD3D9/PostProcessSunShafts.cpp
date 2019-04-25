@@ -23,7 +23,7 @@
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-bool CSunShafts::Preprocess(const SRenderViewInfo& viewInfo, const std::shared_ptr<CGraphicsPipeline>& pGraphicsPipeline)
+bool CSunShafts::Preprocess(const SRenderViewInfo& viewInfo)
 {
 	return IsVisible();
 }
@@ -253,7 +253,7 @@ bool CSunShafts::SunShaftsGen(CTexture* pSunShafts, CTexture* pPingPongRT)
 }
 
 // DEPRECATED
-void CSunShafts::Render(const std::shared_ptr<CGraphicsPipeline>& pGraphicsPipeline)
+void CSunShafts::Render()
 {
 	ASSERT_LEGACY_PIPELINE
 /*

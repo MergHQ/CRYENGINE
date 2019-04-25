@@ -13,6 +13,7 @@
 #include <Cry3DEngine/I3DEngine.h>
 #include "D3DPostProcess.h"
 #include "D3DStereo.h"
+#include "GraphicsPipeline/PostEffects.h"
 #include <CrySystem/Scaleform/IFlashPlayer.h>
 
 #pragma warning(push)
@@ -87,7 +88,7 @@ void CHud3D::Release()
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-bool CHud3D::Preprocess(const SRenderViewInfo& viewInfo, const std::shared_ptr<CGraphicsPipeline>& pGraphicsPipeline)
+bool CHud3D::Preprocess(const SRenderViewInfo& viewInfo)
 {
 	// Warning: This function could get called twice per frame (NanoGlass will call it if its active)
 	//					So don't do any updating here, do it in Update()
@@ -179,11 +180,11 @@ void CHud3D::Reset(bool bOnSpecChange)
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void CHud3D::CalculateProjMatrix(const std::shared_ptr<CGraphicsPipeline>& pGraphicsPipeline)
+void CHud3D::CalculateProjMatrix()
 {
-	const float fHUDFov = clamp_tpl<float>(m_pFOV->GetParam(), 1.0f, 180.0f);
+	const float fHUDFov = clamp_tpl<float>(m_pFOV->GetParam(), 1.0f, 180.0f);	
+	const auto& viewInfo = m_pCurrentContext->GetRenderView()->GetViewInfo(CCamera::eEye_Left);
 
-	const auto& viewInfo = pGraphicsPipeline->GetCurrentViewInfo(CCamera::eEye_Left);
 	// Patch projection matrix to have HUD FOV
 	m_mProj = viewInfo.unjitteredProjMatrix;
 
@@ -804,7 +805,7 @@ void CHud3D::FinalPass()
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void CHud3D::Render(const std::shared_ptr<CGraphicsPipeline>& pGraphicsPipeline)
+void CHud3D::Render()
 {
 	ASSERT_LEGACY_PIPELINE
 /*
