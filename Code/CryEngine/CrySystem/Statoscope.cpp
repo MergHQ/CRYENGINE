@@ -269,7 +269,7 @@ struct SMemoryDG : public IStatoscopeDataGroup
 {
 	virtual SDescription GetDescription() const
 	{
-		return SDescription('m', "memory", "['/Memory/' (float mainMemUsageInMB) (int vidMemUsageInMB)]");
+		return SDescription('m', "memory", "['/Memory/' (float mainMemUsageInMB) (float workingSetSizeInMB) (int vidMemUsageInMB)]");
 	}
 
 	virtual void Write(IStatoscopeFrameRecord& fr)
@@ -277,10 +277,16 @@ struct SMemoryDG : public IStatoscopeDataGroup
 		IMemoryManager::SProcessMemInfo processMemInfo;
 		GetISystem()->GetIMemoryManager()->GetProcessMemInfo(processMemInfo);
 		fr.AddValue(processMemInfo.PagefileUsage / (1024.f * 1024.f));
+		fr.AddValue(processMemInfo.WorkingSetSize / (1024.f * 1024.f));
 
-		size_t vidMem, lastVidMem;
-		gEnv->pRenderer->GetVideoMemoryUsageStats(vidMem, lastVidMem);
-		fr.AddValue((int)vidMem);
+		if (gEnv->pRenderer)
+		{
+			size_t vidMem, lastVidMem;
+			gEnv->pRenderer->GetVideoMemoryUsageStats(vidMem, lastVidMem);
+			fr.AddValue((int)vidMem);
+		}
+		else
+			fr.AddValue(0);
 	}
 };
 
@@ -1705,8 +1711,10 @@ CStatoscope::CStatoscope()
 
 CStatoscope::~CStatoscope()
 {
-	gEnv->pSystem->GetISystemEventDispatcher()->RemoveListener(this);
-	gEnv->pRenderer->UnRegisterCaptureFrame(this);
+	if (gEnv->pSystem->GetISystemEventDispatcher())
+		gEnv->pSystem->GetISystemEventDispatcher()->RemoveListener(this);
+	if (gEnv->pRenderer)
+		gEnv->pRenderer->UnRegisterCaptureFrame(this);
 	delete[] m_pScreenShotBuffer;
 	m_pScreenShotBuffer = NULL;
 

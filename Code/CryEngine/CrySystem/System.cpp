@@ -912,6 +912,7 @@ void CSystem::ShutDown()
 #if CAPTURE_REPLAY_LOG
 	CryGetIMemReplay()->Stop();
 #endif
+	SAFE_DELETE(m_env.pStatoscope);
 
 #if CRY_PLATFORM_LINUX
 	// Delete lock file
