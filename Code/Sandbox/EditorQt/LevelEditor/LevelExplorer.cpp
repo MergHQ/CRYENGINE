@@ -427,6 +427,17 @@ std::vector<CObjectLayer*> CLevelExplorer::GetSelectedObjectLayers() const
 	return layers;
 }
 
+bool CLevelExplorer::OnLockReadOnlyLayers()
+{
+	CObjectLayerManager* pLayerManager = GetIEditorImpl()->GetObjectManager()->GetLayersManager();
+	if (pLayerManager)
+	{
+		pLayerManager->FreezeROnly();
+		return true;
+	}
+	return false;
+}
+
 bool CLevelExplorer::OnMakeLayerActive()
 {
 	auto layers = GetSelectedObjectLayers();
@@ -451,6 +462,11 @@ void CLevelExplorer::CopySelectedLayersInfo(std::function<string(const CObjectLa
 
 void CLevelExplorer::InitActions()
 {
+	RegisterAction("general.hide_all", &CLevelExplorer::OnHideAll);
+	RegisterAction("general.unhide_all", &CLevelExplorer::OnUnhideAll);
+	RegisterAction("general.lock_all", &CLevelExplorer::OnLockAll);
+	RegisterAction("general.unlock_all", &CLevelExplorer::OnUnlockAll);
+	RegisterAction("layer.lock_read_only_layers", &CLevelExplorer::OnLockReadOnlyLayers);
 	RegisterAction("level_explorer.focus_on_active_layer", &CLevelExplorer::FocusActiveLayer);
 	RegisterAction("level_explorer.show_full_hierarchy", [this]() { SetModelType(FullHierarchy); });
 	RegisterAction("level_explorer.show_layers", [this]() { SetModelType(Layers); });
@@ -1026,6 +1042,16 @@ bool CLevelExplorer::OnToggleLock()
 	return true;
 }
 
+void CLevelExplorer::OnLockAll()
+{
+	GetIEditor()->GetObjectManager()->GetLayersManager()->SetAllFrozen(true);
+}
+
+void CLevelExplorer::OnUnlockAll()
+{
+	GetIEditor()->GetObjectManager()->GetLayersManager()->SetAllFrozen(false);
+}
+
 bool CLevelExplorer::OnIsolateLocked()
 {
 	return IsolateLocked(m_treeView->currentIndex());
@@ -1071,6 +1097,16 @@ bool CLevelExplorer::OnToggleHide()
 	LevelExplorerCommandHelper::ToggleVisibility(allLayers, objects);
 
 	return true;
+}
+
+void CLevelExplorer::OnHideAll()
+{
+	GetIEditor()->GetObjectManager()->GetLayersManager()->SetAllVisible(false);
+}
+
+void CLevelExplorer::OnUnhideAll()
+{
+	GetIEditor()->GetObjectManager()->GetLayersManager()->SetAllVisible(true);
 }
 
 bool CLevelExplorer::OnIsolateVisibility()

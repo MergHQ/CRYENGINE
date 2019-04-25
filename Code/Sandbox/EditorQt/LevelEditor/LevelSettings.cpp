@@ -11,6 +11,7 @@
 #include "QT/QtMainFrame.h"
 #include "RecursionLoopGuard.h"
 
+#include <Commands/QCommandAction.h>
 #include <CrySerialization/IArchiveHost.h>
 #include <IUndoObject.h>
 #include <QtUtil.h>
@@ -331,29 +332,39 @@ private:
 	bool           m_bIgnoreEvent = false;
 };
 
-
-
 REGISTER_VIEWPANE_FACTORY_AND_MENU(CLevelSettingsEditor, "Level Settings", "Tools", true, "Level Editor")
-
-// Level Settings commands
-REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(PyLoadLevelSettings, general, import_level_settings,
-                                     "Loads and sets the global level settings.",
-                                     "general.import_level_settings()");
-REGISTER_EDITOR_COMMAND_TEXT(general, import_level_settings, "Import Settings...");
-
-REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(PySaveLevelSettings, general, export_level_settings,
-                                     "Saves the global level settings.",
-                                     "general.export_level_settings()");
-REGISTER_EDITOR_COMMAND_TEXT(general, export_level_settings, "Export Settings...");
-
 }
 
 CLevelSettingsEditor::CLevelSettingsEditor(QWidget* parent)
 	: CDockableEditor(parent)
 {
 	setAttribute(Qt::WA_DeleteOnClose);
-	InitMenu();
+}
+
+void CLevelSettingsEditor::Initialize()
+{
+	CDockableEditor::Initialize();
+
 	RegisterDockingWidgets();
+	RegisterActions();
+	CreateMenu();
+}
+
+void CLevelSettingsEditor::RegisterActions()
+{
+	QCommandAction* pAction = RegisterAction("general.import", &Private_LevelSettings::PyLoadLevelSettings);
+	pAction->setText("Import Settings...");
+	pAction = RegisterAction("general.export", &Private_LevelSettings::PySaveLevelSettings);
+	pAction->setText("Export Settings...");
+}
+
+void CLevelSettingsEditor::CreateMenu()
+{
+	AddToMenu(CEditor::MenuItems::FileMenu);
+
+	auto fileMenu = GetMenu("File");
+	AddToMenu(fileMenu, "general.import");
+	AddToMenu(fileMenu, "general.export");
 }
 
 void CLevelSettingsEditor::RegisterDockingWidgets()
@@ -363,15 +374,6 @@ void CLevelSettingsEditor::RegisterDockingWidgets()
 	EnableDockingSystem();
 	RegisterDockableWidget("Settings", [] { return new CSettingsWidget(); }, true, false);
 	RegisterDockableWidget("Environment Presets", [] { return new CEnvironmentPresetsWidget(); }, true, false);
-}
-
-void CLevelSettingsEditor::InitMenu()
-{
-	AddToMenu(CEditor::MenuItems::FileMenu);
-
-	auto fileMenu = GetMenu("File");
-	AddToMenu(fileMenu, "general.import_level_settings");
-	AddToMenu(fileMenu, "general.export_level_settings");
 }
 
 void CLevelSettingsEditor::CreateDefaultLayout(CDockableContainer* pSender)

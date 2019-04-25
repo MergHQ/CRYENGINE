@@ -98,10 +98,14 @@ private:
 	virtual bool  OnLock() override;
 	virtual bool  OnUnlock() override;
 	virtual bool  OnToggleLock() override;
+	void          OnLockAll();
+	void          OnUnlockAll();
 	virtual bool  OnIsolateLocked() override;
 	virtual bool  OnHide() override;
 	virtual bool  OnUnhide() override;
 	virtual bool  OnToggleHide() override;
+	void          OnHideAll();
+	void          OnUnhideAll();
 	virtual bool  OnIsolateVisibility() override;
 
 	// Context sensitive hierarchical operations
@@ -114,6 +118,7 @@ private:
 	virtual bool OnUnhideChildren() override;
 	virtual bool OnToggleHideChildren() override;
 
+	bool         OnLockReadOnlyLayers();
 	bool         OnMakeLayerActive();
 	bool         IsFirstChildLocked(const std::vector<CObjectLayer*>& layers) const;
 	bool         DoChildrenMatchLockedState(const std::vector<CObjectLayer*>& layers, bool isLocked) const;
