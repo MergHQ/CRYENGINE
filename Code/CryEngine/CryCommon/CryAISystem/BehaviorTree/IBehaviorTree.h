@@ -356,6 +356,8 @@ struct BlackboardVariableId
 		: id(0)
 	{}
 
+	//! Constructs a BlackboardVariableId from a variable name.
+	//! \param _name Name of the variable.
 	BlackboardVariableId(const char* _name)
 	{
 		id = GetIdValueFromName(_name);
@@ -380,6 +382,12 @@ struct BlackboardVariableId
 class Blackboard
 {
 public:
+	
+	//! Creates a a new entry <id, value> in the blackboard. If the given id already exists on the blackboard, the value will be overwritten if and only if existing value type and provided type match. 
+	//! If types do not match, value won't be modified and the function will return false.
+	//! \param id Id of the variable.
+	//! \param value Value of the variable.
+	//! \return True if successfully set.
 	template<typename Type>
 	bool SetVariable(BlackboardVariableId id, const Type& value)
 	{
@@ -396,14 +404,18 @@ public:
 		return true;
 	}
 
+	//! Gets the value of a variable by id if it exists on the blackboard and existing value type and provided type match. 
+	//! \param id Id of the variable.
+	//! \param value Value of the variable.
+	//! \return True if id exists and types match.
 	template<typename Type>
-	bool GetVariable(BlackboardVariableId id, Type& variable) const
+	bool GetVariable(BlackboardVariableId id, Type& value) const
 	{
 		BlackboardVariableArray::const_iterator blackboardVariableIt = std::find_if(m_blackboardVariableArray.begin(), m_blackboardVariableArray.end(), FindBlackboardVariable(id));
 
 		if (blackboardVariableIt != m_blackboardVariableArray.end())
 		{
-			return blackboardVariableIt->second->GetData(variable);
+			return blackboardVariableIt->second->GetData(value);
 		}
 
 		return false;
@@ -412,6 +424,9 @@ public:
 	typedef std::pair<BlackboardVariableId, IBlackboardVariablePtr> BlackboardVariableIdAndPtr;
 	typedef DynArray<BlackboardVariableIdAndPtr>                    BlackboardVariableArray;
 
+	//! Gets the blackboard variable array.
+	//! \return BlackboardVariableArray containing all blackboard entries <id, value>
+	//! \note Use this only if you need to iterate over blackboard items. To retrieve single items GetVariable(id, value) should be preferred instead.
 	const BlackboardVariableArray& GetBlackboardVariableArray() const { return m_blackboardVariableArray; }
 
 private:
