@@ -240,7 +240,14 @@ public:
 		m_contextId = CryGetIMemReplay()->AddFixedContext(type, str);
 	}
 
-	IMemReplay::FixedContextID GetId() const { return m_contextId; }
+	IMemReplay::FixedContextID GetId(EMemStatContextType type, const char* name)
+	{
+		if (m_contextId == s_invalidContextId)
+			m_contextId = CryGetIMemReplay()->AddFixedContext(type, name);
+		return m_contextId; 
+	}
+
+	static constexpr IMemReplay::FixedContextID s_invalidContextId = ~0;
 
 private:
 	CMemStatStaticContext(const CMemStatStaticContext&);
@@ -252,17 +259,23 @@ private:
 class CMemStatStaticContextInstance
 {
 public:
-	CMemStatStaticContextInstance(CMemStatStaticContext& context, EMemStatContextType, const char*) //extra params just for interface compatibility
+	CMemStatStaticContextInstance(CMemStatStaticContext& context, EMemStatContextType type, const char* name) //extra params just for interface compatibility
 	{
-		CryGetIMemReplay()->PushFixedContext(context.GetId());
+		const IMemReplay::FixedContextID fixedId = context.GetId(type, name);
+		if (fixedId != CMemStatStaticContext::s_invalidContextId)
+			CryGetIMemReplay()->PushFixedContext(fixedId);
+		wasPushed = (fixedId != CMemStatStaticContext::s_invalidContextId);
 	}
 	~CMemStatStaticContextInstance()
 	{
-		CryGetIMemReplay()->PopContext();
+		if (wasPushed)
+			CryGetIMemReplay()->PopContext();
 	}
 private:
 	CMemStatStaticContextInstance(const CMemStatStaticContextInstance&);
 	CMemStatStaticContextInstance& operator=(const CMemStatStaticContextInstance&);
+
+	bool wasPushed;
 };
 
 // no-op for compatibility with static context

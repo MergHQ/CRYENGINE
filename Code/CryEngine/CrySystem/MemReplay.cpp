@@ -2173,7 +2173,7 @@ IMemReplay::FixedContextID CMemReplay::AddFixedContext(EMemStatContextType type,
 			return id;
 		}
 	}
-	return -1;
+	return CMemStatStaticContext::s_invalidContextId;
 }
 
 void CMemReplay::PushFixedContext(FixedContextID id)
