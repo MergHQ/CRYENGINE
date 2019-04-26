@@ -1378,33 +1378,32 @@ bool COctreeNode::GetShadowCastersTimeSliced(IRenderNode* pIgnoreNode, ShadowMap
 		{
 			if (pFrustum->aabbCasters.IsReset() || Overlap::AABB_AABB(pFrustum->aabbCasters, GetObjectsBBox()))
 			{
+				const IRenderNode::RenderFlagsType requiredFlags = pFrustum->m_eFrustumType != ShadowMapFrustum::e_HeightMapAO ? ERF_CASTSHADOWMAPS : 0; // Ignore ERF_CASTSHADOWMAPS for ambient occlusion casters
+				const IRenderNode::RenderFlagsType excludeFlags  = ERF_HIDDEN | ERF_COLLISION_PROXY | ERF_RAYCAST_PROXY | renderNodeExcludeFlags;
+				const float shadowViewDistRatio = GetCVars()->e_ShadowsCastViewDistRatio;
+				const bool  includeCharacters   = GetCVars()->e_ShadowsCacheRenderCharacters != 0;
+
 				for (int l = 0; l < eRNListType_ListsNum; l++)
 				{
+					if (!IsRenderNodeTypeEnabled(EERType(l)))
+						continue;
+
 					for (IRenderNode* pNode = m_arrObjects[l].m_pFirstNode, *pNext; pNode; pNode = pNext)
 					{
 						if (pNext = pNode->m_pNext)
 							cryPrefetchT0SSE(pNext);
 
-						if (!IsRenderNodeTypeEnabled(pNode->GetRenderNodeType()))
-							continue;
-
 						if (pNode == pIgnoreNode)
 							continue;
 
-						auto nFlags = pNode->GetRndFlags();
-						if (nFlags & (ERF_HIDDEN | ERF_COLLISION_PROXY | ERF_RAYCAST_PROXY | renderNodeExcludeFlags))
-							continue;
-
-						// Ignore ERF_CASTSHADOWMAPS for ambient occlusion casters
-						if (pFrustum->m_eFrustumType != ShadowMapFrustum::e_HeightMapAO && (pNode->GetRndFlags() & ERF_CASTSHADOWMAPS) == 0)
+						if ((pNode->GetRndFlags() & (excludeFlags | requiredFlags)) != requiredFlags)
 							continue;
 
 						if (!pFrustum->NodeRequiresShadowCacheUpdate(pNode))
 							continue;
 
-						AABB objBox = pNode->GetBBox();
-						const float fDistanceSq = Distance::Point_PointSq(passInfo.GetCamera().GetPosition(), objBox.GetCenter());
-						const float fMaxDist = pNode->GetMaxViewDist() * GetCVars()->e_ShadowsCastViewDistRatio + objBox.GetRadius();
+						const float fDistanceSq = Distance::Point_AABBSq(passInfo.GetCamera().GetPosition(), pNode->GetBBox());
+						const float fMaxDist    = pNode->GetMaxViewDist() * shadowViewDistRatio;
 
 						if (fDistanceSq > sqr(fMaxDist))
 							continue;
@@ -1426,9 +1425,9 @@ bool COctreeNode::GetShadowCastersTimeSliced(IRenderNode* pIgnoreNode, ShadowMap
 								}
 							}
 						}
-						else if (pNode->GetEntityCharacter() != nullptr)
+						else if (includeCharacters)
 						{
-							bCanRender = GetCVars()->e_ShadowsCacheRenderCharacters != 0;
+							bCanRender = pNode->GetEntityCharacter() != nullptr;
 						}
 
 						if (bCanRender)
