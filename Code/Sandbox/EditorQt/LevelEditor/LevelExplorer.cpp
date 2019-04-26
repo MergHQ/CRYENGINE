@@ -505,43 +505,6 @@ void CLevelExplorer::InitActions()
 	});
 }
 
-void CLevelExplorer::customEvent(QEvent* pEvent)
-{
-	using namespace Private_LevelExplorer;
-
-	CDockableEditor::customEvent(pEvent);
-
-	if (pEvent->isAccepted() || pEvent->type() != SandboxEvent::Command)
-	{
-		return;
-	}
-
-	QStringList params = QtUtil::ToQString(static_cast<CommandEvent*>(pEvent)->GetCommand()).split(' ');
-
-	if (params.empty())
-		return;
-
-	QString command = params[0];
-	params.removeFirst();
-
-	QStringList fullCommand = command.split('.');
-	QString module = fullCommand[0];
-	command = fullCommand[1];
-
-	if (module == "version_control_system")
-	{
-		std::vector<CBaseObject*> objects;
-		std::vector<CObjectLayer*> layers;
-		std::vector<CObjectLayer*> layerFolders;
-
-		QModelIndexList selection = m_treeView->selectionModel()->selectedRows();
-
-		LevelModelsUtil::GetObjectsAndLayersForIndexList(selection, objects, layers, layerFolders);
-
-		VersionControlEventHandler::HandleOnLevelExplorer(command, ToIObjectLayers(layers), ToIObjectLayers(layerFolders));
-	}
-}
-
 void CLevelExplorer::OnContextMenu(const QPoint& pos) const
 {
 	using namespace Private_LevelExplorer;
@@ -2024,4 +1987,24 @@ void CLevelExplorer::FocusActiveLayer()
 			m_treeView->selectionModel()->setCurrentIndex(index, QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows);
 		}
 	}
+}
+
+void CLevelExplorer::GetSelection(std::vector<IObjectLayer*>& layers, std::vector<IObjectLayer*>& layerFolders) const
+{
+	using namespace Private_LevelExplorer;
+	std::vector<CBaseObject*> objects;
+	std::vector<CObjectLayer*> objectLayers;
+	std::vector<CObjectLayer*> folders;
+
+	QModelIndexList selection = m_treeView->selectionModel()->selectedRows();
+
+	LevelModelsUtil::GetObjectsAndLayersForIndexList(selection, objects, objectLayers, folders);
+
+	layers = ToIObjectLayers(std::move(objectLayers));
+	layerFolders = ToIObjectLayers(std::move(folders));
+}
+
+std::vector<IObjectLayer*> CLevelExplorer::GetSelectedIObjectLayers() const
+{
+	return Private_LevelExplorer::ToIObjectLayers(GetSelectedObjectLayers());
 }

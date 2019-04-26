@@ -350,12 +350,18 @@ void CLevelSettingsEditor::Initialize()
 	CreateMenu();
 }
 
+bool CLevelSettingsEditor::OnImport()
+{
+	Private_LevelSettings::PyLoadLevelSettings();
+	return true;
+}
+
 void CLevelSettingsEditor::RegisterActions()
 {
-	QCommandAction* pAction = RegisterAction("general.import", &Private_LevelSettings::PyLoadLevelSettings);
-	pAction->setText("Import Settings...");
-	pAction = RegisterAction("general.export", &Private_LevelSettings::PySaveLevelSettings);
-	pAction->setText("Export Settings...");
+	SetActionText("general.import", "Import Settings...");
+
+	RegisterAction("general.export", &Private_LevelSettings::PySaveLevelSettings);
+	SetActionText("general.export", "Export Settings...");
 }
 
 void CLevelSettingsEditor::CreateMenu()

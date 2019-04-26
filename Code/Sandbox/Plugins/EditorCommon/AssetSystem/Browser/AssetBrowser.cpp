@@ -1205,8 +1205,8 @@ void CAssetBrowser::InitAssetsView()
 	// Set up double-clicking.
 	{
 		typedef void (CAssetBrowser::* ResolveOverload)(const QModelIndex&);
-		connect(m_pDetailsView, &QAdvancedTreeView::activated, this, (ResolveOverload) & CAssetBrowser::OnActivated);
-		connect(m_pThumbnailView->GetInternalView(), &QAbstractItemView::activated, this, (ResolveOverload) & CAssetBrowser::OnActivated);
+		connect(m_pDetailsView, &QAdvancedTreeView::activated, this, (ResolveOverload) &CAssetBrowser::OnActivated);
+		connect(m_pThumbnailView->GetInternalView(), &QAbstractItemView::activated, this, (ResolveOverload) &CAssetBrowser::OnActivated);
 	}
 
 	InitNewNameDelegates();
@@ -1379,7 +1379,7 @@ bool CAssetBrowser::OnShowInFileExplorer()
 {
 	std::vector<CAsset*> assets;
 	std::vector<string> folders;
-	ProcessSelection(assets, folders);
+	GetSelection(assets, folders);
 
 	if (assets.empty() && folders.empty())
 	{
@@ -1401,7 +1401,7 @@ bool CAssetBrowser::OnGenerateThumbmails()
 {
 	std::vector<CAsset*> assets;
 	std::vector<string> folders;
-	ProcessSelection(assets, folders);
+	GetSelection(assets, folders);
 	for (const string& folder : folders)
 	{
 		GenerateThumbnailsAsync(folder);
@@ -1420,6 +1420,7 @@ bool CAssetBrowser::OnGenerateThumbmails()
 
 bool CAssetBrowser::OnSaveAll()
 {
+	GetIEditor()->FindDockable("PropertyTree");
 	CProgressNotification notification(tr("Saving modified assets"), QString(), true);
 	auto progress = [&notification](float value) { notification.SetProgress(value); };
 	CAssetManager::GetInstance()->SaveAll(progress);
@@ -1630,7 +1631,7 @@ std::vector<CAsset*> CAssetBrowser::GetSelectedAssets() const
 {
 	std::vector<CAsset*> assets;
 	std::vector<string> folders;
-	ProcessSelection(assets, folders);
+	GetSelection(assets, folders);
 	return assets;
 }
 
@@ -1787,7 +1788,7 @@ void CAssetBrowser::OnAdaptiveLayoutChanged()
 	m_pAssetsViewLayout->setDirection(GetOrientation() == Qt::Horizontal ? QBoxLayout::LeftToRight : QBoxLayout::TopToBottom);
 }
 
-void CAssetBrowser::ProcessSelection(std::vector<CAsset*>& assets, std::vector<string>& folders) const
+void CAssetBrowser::GetSelection(std::vector<CAsset*>& assets, std::vector<string>& folders) const
 {
 	using namespace Private_AssetBrowser;
 
@@ -1829,7 +1830,7 @@ void CAssetBrowser::UpdateSelectionDependantActions()
 {
 	std::vector<CAsset*> assets;
 	std::vector<string> folders;
-	ProcessSelection(assets, folders);
+	GetSelection(assets, folders);
 
 	const bool hasAssetsSelected = !assets.empty();
 	const bool hasSelection = hasAssetsSelected || !folders.empty();
@@ -1866,7 +1867,7 @@ void CAssetBrowser::CreateContextMenu(bool isFolderView /*= false*/)
 
 	std::vector<CAsset*> assets;
 	std::vector<string> folders;
-	ProcessSelection(assets, folders);
+	GetSelection(assets, folders);
 
 	if (!assets.empty())
 	{
@@ -2093,38 +2094,6 @@ void CAssetBrowser::NotifyContextMenuCreation(CAbstractMenu& menu, const std::ve
 	s_signalContextMenuRequested(menu, assets, folders, std::make_shared<Private_AssetBrowser::CContextMenuContext>(this));
 }
 
-void CAssetBrowser::customEvent(QEvent* pEvent)
-{
-	CDockableEditor::customEvent(pEvent);
-
-	if (pEvent->isAccepted() || pEvent->type() != SandboxEvent::Command)
-	{
-		return;
-	}
-
-	CommandEvent* pCommandEvent = static_cast<CommandEvent*>(pEvent);
-
-	QStringList params = QtUtil::ToQString(pCommandEvent->GetCommand()).split(' ');
-
-	if (params.empty())
-		return;
-
-	QString command = params[0];
-	params.removeFirst();
-
-	QStringList fullCommand = command.split('.');
-	QString module = fullCommand[0];
-	command = fullCommand[1];
-
-	if (module == "version_control_system")
-	{
-		std::vector<CAsset*> assets;
-		std::vector<string> folders;
-		ProcessSelection(assets, folders);
-		const bool hasMainViewSelection = !assets.empty() || !folders.empty();
-	}
-}
-
 void CAssetBrowser::AppendFilterDependenciesActions(CAbstractMenu* pAbstractMenu, const CAsset* pAsset)
 {
 	using namespace Private_AssetBrowser;
@@ -2332,7 +2301,7 @@ bool CAssetBrowser::OnRename()
 {
 	std::vector<CAsset*> assets;
 	std::vector<string> folders;
-	ProcessSelection(assets, folders);
+	GetSelection(assets, folders);
 	if (!assets.empty())
 	{
 		OnRenameAsset(*assets.back());
@@ -2761,7 +2730,7 @@ bool CAssetBrowser::OnDelete()
 {
 	std::vector<CAsset*> assets;
 	std::vector<string> folders;
-	ProcessSelection(assets, folders);
+	GetSelection(assets, folders);
 	bool isHandled = false;
 	if (!assets.empty())
 	{

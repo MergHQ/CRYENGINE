@@ -861,6 +861,11 @@ IPane* CEditorImpl::FindDockable(const char* szClassName)
 	return CTabPaneManager::GetInstance()->FindPaneByClass(szClassName);
 }
 
+std::vector<IPane*> CEditorImpl::FindAllDockables(const char* szClassName)
+{
+	return CTabPaneManager::GetInstance()->FindAllPanelsByClass(szClassName);
+}
+
 IPane* CEditorImpl::FindDockableIf(const std::function<bool(IPane*, const string& /*className*/)>& predicate)
 {
 	return CTabPaneManager::GetInstance()->FindPane(predicate);

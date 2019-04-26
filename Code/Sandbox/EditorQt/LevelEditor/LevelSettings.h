@@ -18,6 +18,8 @@ public:
 	virtual void                              Initialize() override;
 	virtual const char*                       GetEditorName() const override { return "Level Settings"; }
 
+	virtual bool                              OnImport() override;
+
 	void                                      RegisterActions();
 	void                                      CreateMenu();
 	void                                      RegisterDockingWidgets();

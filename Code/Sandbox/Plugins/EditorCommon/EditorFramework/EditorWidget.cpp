@@ -84,6 +84,7 @@ QCommandAction* CEditorWidget::RegisterCommandAction(const string& actionId)
 	}
 
 	QCommandAction* pAction = GetIEditor()->GetICommandManager()->CreateNewAction(actionId);
+	CRY_ASSERT_MESSAGE(pAction, "Error occurred while creating action %s", actionId);
 	m_actions[actionId] = pAction;
 	addAction(pAction);
 
@@ -95,6 +96,24 @@ QCommandAction* CEditorWidget::RegisterCommandAction(const string& actionId)
 	return pAction;
 }
 
+void CEditorWidget::UnregisterCommandAction(const string& actionId)
+{
+	auto it = m_actions.find(actionId);
+	if (it == m_actions.cend())
+	{
+		CRY_ASSERT_MESSAGE(false, "Command %s not found. Unregistering failed", actionId.c_str());
+		return;
+	}
+	removeAction(it->second);
+	m_actions.erase(it);
+	string moduleName = actionId.substr(0, actionId.find('.'));
+	string commandName = actionId.substr(moduleName.size() + 1);
+	m_commands.erase(std::remove_if(m_commands.begin(), m_commands.end(), [&moduleName, &commandName](CCommand* pCommand)
+	{
+		return pCommand->GetModule() == moduleName && pCommand->GetName() == commandName;
+	}), m_commands.end());
+}
+
 QCommandAction* CEditorWidget::GetAction(const string& actionId) const
 {
 	const auto& it = m_actions.find(actionId);
@@ -104,6 +123,12 @@ QCommandAction* CEditorWidget::GetAction(const string& actionId) const
 	}
 	CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_ERROR_DBGBRK, string().Format("Command %s not found", actionId));
 	return nullptr;
+}
+
+void CEditorWidget::UnregisterAction(const string& actionId, uintptr_t id /*= 0*/)
+{
+	m_commandRegistry.UnregisterCommand(actionId, id ? id : reinterpret_cast<uintptr_t>(this));
+	UnregisterCommandAction(actionId);
 }
 
 QCommandAction* CEditorWidget::SetActionEnabled(const string& actionId, bool enable)

@@ -205,44 +205,45 @@ public:
 		return NULL;
 	}
 
-	CPluginManager*           GetPluginManager()  { return m_pPluginManager; }
-	CTerrainManager*          GetTerrainManager() { return m_pTerrainManager; }
-	CViewManager*             GetViewManager() override;
-	virtual IViewportManager* GetViewportManager() override;
-	CViewport*                GetActiveView();
-	IDisplayViewport*         GetActiveDisplayViewport();
-	void                      SetActiveView(CViewport* viewport);
+	CPluginManager*             GetPluginManager()  { return m_pPluginManager; }
+	CTerrainManager*            GetTerrainManager() { return m_pTerrainManager; }
+	CViewManager*               GetViewManager() override;
+	virtual IViewportManager*   GetViewportManager() override;
+	CViewport*                  GetActiveView();
+	IDisplayViewport*           GetActiveDisplayViewport();
+	void                        SetActiveView(CViewport* viewport);
 
-	CLevelIndependentFileMan* GetLevelIndependentFileMan() { return m_pLevelIndependentFileMan; }
-	CLevelEditorSharedState*  GetLevelEditorSharedState();
+	CLevelIndependentFileMan*   GetLevelIndependentFileMan() { return m_pLevelIndependentFileMan; }
+	CLevelEditorSharedState*    GetLevelEditorSharedState();
 
-	void                      UpdateViews(int flags = 0xFFFFFFFF, AABB* updateRegion = NULL);
-	void                      ResetViews();
-	void                      UpdateSequencer(bool bOnlyKeys = false);
-	CRuler*                   GetRuler() override { return m_pRuler; }
-	void                      SetDataModified();
-	XmlNodeRef                FindTemplate(const string& templateName);
-	void                      AddTemplate(const string& templateName, XmlNodeRef& tmpl);
-	virtual void              OpenAndFocusDataBase(EDataBaseItemType type, IDataBaseItem* pItem) override;
-	CBaseLibraryDialog*       OpenDataBaseLibrary(EDataBaseItemType type, IDataBaseItem* pItem = NULL);
-	CWnd*                     OpenView(const char* szViewClassName) override;
-	CWnd*                     FindView(const char* szViewClassName) override;
-	virtual IPane*            CreateDockable(const char* szClassName) override;
-	virtual IPane*            FindDockable(const char* szClassName) override;
-	virtual IPane*            FindDockableIf(const std::function<bool(IPane*, const string& /*className*/)>& predicate) override;
-	void                      RaiseDockable(IPane* pPane) override;
-	QWidget*                  CreatePreviewWidget(const QString& file, QWidget* pParent = nullptr) override;
-	virtual void              PostOnMainThread(std::function<void()> task) override;
-	bool                      SelectColor(COLORREF& color, CWnd* parent = 0);
-	void                      Update();
-	Version                   GetFileVersion()    { return m_fileVersion; }
-	Version                   GetProductVersion() { return m_productVersion; }
+	void                        UpdateViews(int flags = 0xFFFFFFFF, AABB* updateRegion = NULL);
+	void                        ResetViews();
+	void                        UpdateSequencer(bool bOnlyKeys = false);
+	CRuler*                     GetRuler() override { return m_pRuler; }
+	void                        SetDataModified();
+	XmlNodeRef                  FindTemplate(const string& templateName);
+	void                        AddTemplate(const string& templateName, XmlNodeRef& tmpl);
+	virtual void                OpenAndFocusDataBase(EDataBaseItemType type, IDataBaseItem* pItem) override;
+	CBaseLibraryDialog*         OpenDataBaseLibrary(EDataBaseItemType type, IDataBaseItem* pItem = NULL);
+	CWnd*                       OpenView(const char* szViewClassName) override;
+	CWnd*                       FindView(const char* szViewClassName) override;
+	virtual IPane*              CreateDockable(const char* szClassName) override;
+	virtual IPane*              FindDockable(const char* szClassName) override;
+	virtual IPane*              FindDockableIf(const std::function<bool(IPane*, const string& /*className*/)>& predicate) override;
+	virtual std::vector<IPane*> FindAllDockables(const char* szClassName) override;
+	void                        RaiseDockable(IPane* pPane) override;
+	QWidget*                    CreatePreviewWidget(const QString& file, QWidget* pParent = nullptr) override;
+	virtual void                PostOnMainThread(std::function<void()> task) override;
+	bool                        SelectColor(COLORREF& color, CWnd* parent = 0);
+	void                        Update();
+	Version                     GetFileVersion()    { return m_fileVersion; }
+	Version                     GetProductVersion() { return m_productVersion; }
 	//! Get shader enumerator.
-	IUndoManager*             GetIUndoManager()   { return m_pUndoManager; }
+	IUndoManager*               GetIUndoManager()   { return m_pUndoManager; }
 	//! Retrieve current animation context.
-	void                      Notify(EEditorNotifyEvent event);
-	void                      RegisterNotifyListener(IEditorNotifyListener* listener);
-	void                      UnregisterNotifyListener(IEditorNotifyListener* listener);
+	void                        Notify(EEditorNotifyEvent event);
+	void                        RegisterNotifyListener(IEditorNotifyListener* listener);
+	void                        UnregisterNotifyListener(IEditorNotifyListener* listener);
 
 	// Register Object Mode sub tools. Needed for tools defined within Sandbox project
 	void RegisterAllObjectModeSubTools() override;

@@ -11,6 +11,7 @@
 #include <map>
 
 class CAbstractMenu;
+struct IPane;
 
 class EDITOR_COMMON_API CDockableContainer : public QWidget, public IStateSerializable
 {
@@ -22,14 +23,18 @@ class EDITOR_COMMON_API CDockableContainer : public QWidget, public IStateSerial
 		bool                      m_isUnique;
 		bool                      m_isInternal;
 		FactoryInfo() {}
-		FactoryInfo(std::function<QWidget*()> factory, bool isUnique, bool isInternal);
+		FactoryInfo(std::function<QWidget*()> factory, bool isUnique, bool isInternal)
+			: m_factory(factory), m_isUnique(isUnique), m_isInternal(isInternal)
+		{}
 	};
 	struct WidgetInstance
 	{
 		QWidget* m_widget;
 		QString  m_spawnName;
 		WidgetInstance() {}
-		WidgetInstance(QWidget* widget, QString spawnName);
+		WidgetInstance(QWidget* widget, QString spawnName) 
+			: m_widget(widget), m_spawnName(spawnName)
+		{}
 	};
 
 public:
@@ -54,6 +59,8 @@ public:
 	// Layout management
 	virtual QVariantMap GetState() const override;
 	virtual void        SetState(const QVariantMap& state) override;
+
+	std::vector<IPane*> GetPanes();
 
 	//! Spawn a widget of the named class and dock it at the specified location.
 	//! Single-instance widgets will not have their position changes, but will be brought to front.

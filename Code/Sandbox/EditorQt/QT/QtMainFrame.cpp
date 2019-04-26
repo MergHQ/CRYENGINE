@@ -25,6 +25,7 @@
 #include <EditorFramework/Events.h>
 #include <EditorFramework/PersonalizationManager.h>
 #include <EditorFramework/ToolBar/ToolBarCustomizeDialog.h>
+#include <EditorFramework/WidgetsGlobalActionRegistry.h>
 #include <Menu/MenuWidgetBuilders.h>
 #include <Preferences/GeneralPreferences.h>
 #include <QTrackingTooltip.h>
@@ -71,7 +72,8 @@ CEditorMainFrame * CEditorMainFrame::m_pInstance = nullptr;
 
 namespace
 {
-CTabPaneManager* s_pToolTabManager = nullptr;
+CTabPaneManager*              s_pToolTabManager = nullptr;
+CWidgetsGlobalActionRegistry* s_pWidgetGlobalActionRegistry = nullptr;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -682,6 +684,7 @@ CEditorMainFrame::CEditorMainFrame(QWidget* parent)
 	m_pAboutDlg = nullptr;
 	Ui_MainWindow().setupUi(this);
 	s_pToolTabManager = new CTabPaneManager(this);
+	s_pWidgetGlobalActionRegistry = new CWidgetsGlobalActionRegistry();
 	connect(m_levelEditor.get(), &CLevelEditor::LevelLoaded, this, &CEditorMainFrame::UpdateWindowTitle);
 
 	setAttribute(Qt::WA_DeleteOnClose, true);
@@ -783,6 +786,7 @@ CEditorMainFrame::~CEditorMainFrame()
 
 	if (m_pInstance)
 	{
+		SAFE_DELETE(s_pWidgetGlobalActionRegistry);
 		SAFE_DELETE(s_pToolTabManager);
 		m_pInstance = 0;
 	}

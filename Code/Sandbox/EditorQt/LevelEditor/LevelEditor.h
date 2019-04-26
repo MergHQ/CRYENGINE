@@ -19,8 +19,6 @@ public:
 	CLevelEditor();
 	~CLevelEditor();
 
-	virtual void        customEvent(QEvent* pEvent) override;
-
 	void                OnEditorNotifyEvent(EEditorNotifyEvent event) override;
 	void                CreateRecentFilesMenu(QMenu* pRecentFilesMenu);
 	virtual const char* GetEditorName() const override { return "Level Editor"; }
@@ -53,6 +51,8 @@ public:
 	//end ILevelEditor
 
 private:
+	void InitActions();
+
 	virtual bool IsOnlyBackend() const override { return true; }
 
 	virtual bool OnNew() override;
@@ -66,6 +66,9 @@ private:
 	virtual bool OnCut() override;
 	virtual bool OnCopy() override;
 	virtual bool OnPaste() override;
+	virtual bool OnSelectAll() override;
+
+	void         OnShowInAssetBrowser(const char* asset);
 
 	void         OnCopyInternal(bool isCut = false);
 	void         OnToggleAssetBrowser();

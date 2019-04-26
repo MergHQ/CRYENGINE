@@ -9,6 +9,7 @@
 
 // EditorCommon
 #include <EditorFramework/Editor.h>
+#include <LevelEditor/ILevelExplorerContext.h>
 
 class QAdvancedTreeView;
 class QFilteringPanel;
@@ -24,7 +25,7 @@ class QToolButton;
 struct CLayerChangeEvent;
 struct CObjectEvent;
 
-class CLevelExplorer final : public CDockableEditor
+class CLevelExplorer final : public CDockableEditor, public ILevelExplorerContext
 {
 	Q_OBJECT
 
@@ -37,7 +38,6 @@ public:
 	virtual const char* GetEditorName() const override { return "Level Explorer"; }
 	virtual void        SetLayout(const QVariantMap& state) override;
 	virtual QVariantMap GetLayout() const override;
-	virtual void        customEvent(QEvent* event) override;
 	//////////////////////////////////////////////////////////////////////////
 
 	enum ModelType
@@ -60,7 +60,13 @@ public:
 
 	std::vector<CObjectLayer*> GetSelectedObjectLayers() const;
 
+	virtual void GetSelection(std::vector<IObjectLayer*>& layers, std::vector<IObjectLayer*>& layerFolders) const override;
+
+	virtual std::vector<IObjectLayer*> GetSelectedIObjectLayers() const override;
+
 protected:
+	virtual const IEditorContext* GetContextObject() const override { return this; };
+
 	// Adaptive layouts enables editor owners to make better use of space
 	bool            SupportsAdaptiveLayout() const override { return true; }
 	// Used for determining what layout direction to use if adaptive layout is turned off

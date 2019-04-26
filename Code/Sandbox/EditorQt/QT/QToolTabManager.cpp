@@ -38,7 +38,7 @@ public:
 	}
 };
 
-namespace
+namespace Private_ToolTabManager
 {
 CTabPaneManager* s_pGlobalToolTabManager = 0;
 
@@ -98,32 +98,48 @@ void PySaveLayoutAs()
 		PySaveLayoutToFile(path.toStdString().c_str());
 	}
 }
+
+void FindSubPanes(IPane* pPane, const char* paneClassName, std::vector<IPane*>& result)
+{
+	for (IPane* pSubPane : pPane->GetSubPanes())
+	{
+		if (strcmp(pSubPane->GetPaneTitle(), paneClassName) == 0)
+		{
+			result.push_back(pSubPane);
+		}
+		else
+		{
+			FindSubPanes(pSubPane, paneClassName, result);
+		}
+	}
 }
 
-REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(PyLoadLayoutFromFile, layout, load,
+}
+
+REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(Private_ToolTabManager::PyLoadLayoutFromFile, layout, load,
                                      "Loads a layout from file.",
                                      "layout.load(str path)");
 
-REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(PySaveLayoutToFile, layout, save,
+REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(Private_ToolTabManager::PySaveLayoutToFile, layout, save,
                                      "Saves current layout to a file.",
                                      "layout.save(str absolutePath)");
 
-REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(PyResetLayout, layout, reset,
+REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(Private_ToolTabManager::PyResetLayout, layout, reset,
                                      "Reset Layout",
                                      "");
 
-REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(PyLoadLayoutDlg, layout, load_dlg,
+REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(Private_ToolTabManager::PyLoadLayoutDlg, layout, load_dlg,
                                      "Load Layout...", "");
 
-REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(PySaveLayoutAs, layout, save_as,
+REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(Private_ToolTabManager::PySaveLayoutAs, layout, save_as,
                                      "Save Layout As...", "");
 
 //////////////////////////////////////////////////////////////////////////
 CTabPaneManager::CTabPaneManager(QWidget* const pParent)
-	: CUserData({ szAppDataLayoutDir, szUserLayout })
+	: CUserData({ Private_ToolTabManager::szAppDataLayoutDir, Private_ToolTabManager::szUserLayout })
 	, m_pParent(pParent)
 {
-	s_pGlobalToolTabManager = this;
+	Private_ToolTabManager::s_pGlobalToolTabManager = this;
 	m_bToolsDirty = false;
 	m_layoutLoaded = false;
 }
@@ -131,12 +147,12 @@ CTabPaneManager::CTabPaneManager(QWidget* const pParent)
 CTabPaneManager::~CTabPaneManager()
 {
 	CloseAllPanes();
-	s_pGlobalToolTabManager = nullptr;
+	Private_ToolTabManager::s_pGlobalToolTabManager = nullptr;
 }
 
 CTabPaneManager* CTabPaneManager::GetInstance()
 {
-	return s_pGlobalToolTabManager;
+	return Private_ToolTabManager::s_pGlobalToolTabManager;
 }
 
 void CTabPaneManager::OnTabPaneMoved(QWidget* tabPane, bool visible)
@@ -405,6 +421,8 @@ QTabPane* CTabPaneManager::CreateTabPane(const char* paneClassName, const char* 
 
 	m_bToolsDirty = true;
 
+	IPane::s_signalPaneCreated(pPane->m_pane);
+
 	return pPane;
 }
 
@@ -633,15 +651,43 @@ IPane* CTabPaneManager::FindPane(const std::function<bool(IPane*, const string& 
 	return nullptr;
 }
 
+std::vector<IPane*> CTabPaneManager::FindAllPanelsByClass(const char* paneClassName)
+{
+	using namespace Private_ToolTabManager;
+	if (!CEditorMainFrame::GetInstance())
+	{
+		return {};
+	}
+	if (!GetToolManager())
+	{
+		return {};
+	}
+	std::vector<IPane*> result;
+	QList<QTabPane*> tools = FindTabPanes();
+	for (int i = 0; i < tools.count(); i++)
+	{
+		QTabPane* tool = tools.at(i);
+		if (0 == strcmp(tool->m_class, paneClassName))
+		{
+			result.push_back(tool->m_pane);
+		}
+		else
+		{
+			FindSubPanes(tool->m_pane, paneClassName, result);
+		}
+	}
+	return result;
+}
+
 void CTabPaneManager::SaveLayout()
 {
 	QJsonDocument doc(QJsonDocument::fromVariant(GetState()));
-	UserDataUtil::Save(szUserLayout, doc.toJson());
+	UserDataUtil::Save(Private_ToolTabManager::szUserLayout, doc.toJson());
 }
 
 bool CTabPaneManager::LoadUserLayout()
 {
-	QVariant state = UserDataUtil::Load(szUserLayout);
+	QVariant state = UserDataUtil::Load(Private_ToolTabManager::szUserLayout);
 
 	if (!state.isValid())
 		return false;
@@ -670,6 +716,7 @@ bool CTabPaneManager::LoadLayout(const char* filePath)
 
 bool CTabPaneManager::LoadDefaultLayout()
 {
+	using namespace Private_ToolTabManager;
 	// Check project folder first
 	QString projectPath(GetIEditorImpl()->GetProjectManager()->GetCurrentProjectDirectoryAbsolute());
 	projectPath = projectPath + "/" + szDefaultLayout;
@@ -720,6 +767,7 @@ bool CTabPaneManager::LoadLayoutFromFile(const char* fullFilename)
 
 QFileInfoList CTabPaneManager::GetUserLayouts()
 {
+	using namespace Private_ToolTabManager;
 	QStringList filter;
 	filter << "*.json";
 
@@ -736,6 +784,7 @@ QFileInfoList CTabPaneManager::GetUserLayouts()
 
 QFileInfoList CTabPaneManager::GetProjectLayouts()
 {
+	using namespace Private_ToolTabManager;
 	QStringList filter;
 	filter << "*.json";
 
@@ -747,6 +796,7 @@ QFileInfoList CTabPaneManager::GetProjectLayouts()
 
 QFileInfoList CTabPaneManager::GetAppLayouts()
 {
+	using namespace Private_ToolTabManager;
 	QStringList filter;
 	filter << "*.json";
 

@@ -1,4 +1,4 @@
-// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2019 Crytek GmbH / Crytek Group. All rights reserved.
 #pragma once
 
 #include "EditorCommonAPI.h"
@@ -6,6 +6,7 @@
 #include "ProxyModels/ItemModelAttribute.h"
 #include "CrySandbox/CrySignal.h"
 #include "AssetSystem/AssetType.h"
+#include "IAssetBrowserContext.h"
 
 #include <QWidget>
 
@@ -33,7 +34,7 @@ struct IUIContext;
 #define ASSET_BROWSER_USE_PREVIEW_WIDGET 0
 
 //! The dockable class for the Asset Browser
-class EDITOR_COMMON_API CAssetBrowser : public CDockableEditor
+class EDITOR_COMMON_API CAssetBrowser : public CDockableEditor, public IAssetBrowserContext
 {
 	Q_OBJECT
 	Q_PROPERTY(int buttonsSpacing READ GetButtonsSpacing WRITE SetButtonsSpacing)
@@ -46,13 +47,16 @@ public:
 	CAssetBrowser(bool bHideEngineFolder = false, QWidget* pParent = nullptr);
 	virtual ~CAssetBrowser();
 
+	//extract actual content from the selection
+	virtual void                GetSelection(std::vector<CAsset*>& assets, std::vector<string>& folders) const override;
+
+	virtual std::vector<string> GetSelectedFolders() const override;
+
 	std::vector<CAsset*> GetSelectedAssets() const;
 	CAsset*              GetLastSelectedAsset() const;
 
 	void                 SelectAsset(const char* szPath) const;
 	void                 SelectAsset(const CAsset& asset) const;
-
-	std::vector<string>  GetSelectedFolders() const;
 
 	//CEditor implementation
 	virtual const char* GetEditorName() const override { return "Asset Browser"; }
@@ -88,8 +92,6 @@ public:
 	int          GetButtonGroupsSpacing() const  { return m_buttonGroupsSpacing; }
 	void         SetButtonGroupsSpacing(int val) { m_buttonGroupsSpacing = val; }
 
-	virtual void customEvent(QEvent* pEvent) override;
-
 signals:
 	//! This signal is emitted whenever the selection of folders or assets changes.
 	void SelectionChanged();
@@ -119,6 +121,8 @@ protected:
 	// Used for determining what layout direction to use if adaptive layout is turned off
 	Qt::Orientation GetDefaultOrientation() const override { return Qt::Horizontal; }
 
+	virtual const IEditorContext* GetContextObject() const override { return this; };
+
 private:
 	void               InitActions();
 	void               InitNewNameDelegates();
@@ -138,9 +142,6 @@ private:
 	QAbstractItemView* GetFocusedView() const;
 
 	virtual bool       eventFilter(QObject* object, QEvent* event) override;
-
-	//extract actual content from the selection for further processing
-	void ProcessSelection(std::vector<CAsset*>& assets, std::vector<string>& folders) const;
 
 	void OnSelectionChanged();
 
