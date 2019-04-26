@@ -227,7 +227,6 @@ bool CPostEffectStage::Execute()
 		pCurrEffect->SetCurrentContext(&m_context);
 		if (pCurrEffect->Preprocess(viewInfo))
 		{
-			pCurrEffect->SetCurrentContext(nullptr);
 			const auto id = pCurrEffect->GetID();
 
 			// TODO: Do this on the last effect, not after AA (because effects after AA use ptexDisplayTarget)
