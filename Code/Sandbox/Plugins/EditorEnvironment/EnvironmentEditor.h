@@ -19,15 +19,13 @@ public:
 
 private:
 	virtual const char*                           GetEditorName() const override        { return "Environment Editor"; }
-	virtual bool                                  AllowsInstantEditing() const override { return true; }
 
 	virtual std::unique_ptr<IAssetEditingSession> CreateEditingSession() override;
 	virtual bool                                  OnOpenAsset(CAsset* pAsset) override;
 	virtual void                                  OnCloseAsset() override;
 	virtual void                                  OnDiscardAssetChanges(CEditableAsset& editAsset) override;
-
-	virtual void                                  CreateDefaultLayout(CDockableContainer* pSender) override;
-	void                                          RegisterDockingWidgets();
+	virtual void                                  OnInitialize() override;
+	virtual void                                  OnCreateDefaultLayout(CDockableContainer* pSender, QWidget* pAssetBrowser) override;
 
 	virtual bool                                  event(QEvent* event) override;
 

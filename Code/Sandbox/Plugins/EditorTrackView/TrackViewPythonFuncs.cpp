@@ -458,11 +458,6 @@ void PyTrackViewToggleLinkTimelines()
 	CommandEvent("trackview.toggle_link_timelines").SendToKeyboardFocus();
 }
 
-void PyTrackViewToggleSyncSelection()
-{
-	CommandEvent("trackview.toggle_sync_selection").SendToKeyboardFocus();
-}
-
 void PyTrackViewSetUnitsTicks()
 {
 	CommandEvent("trackview.set_units_ticks").SendToKeyboardFocus();
@@ -771,55 +766,55 @@ DECLARE_PYTHON_MODULE(trackview);
 // General
 REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(PyTrackViewSetRecording, trackview, set_recording,
                                      "Activates/deactivates TrackView recording mode",
-                                     "trackview.set_time(bool bRecording)");
+                                     "trackview.set_time(bool bRecording)")
 
 // Sequences
 REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(PyTrackViewNewSequenceByName, trackview, new_sequence_by_name,
                                      "Creates a new sequence with the given name.",
-                                     "trackview.new_sequence_by_name(str sequenceName)");
+                                     "trackview.new_sequence_by_name(str sequenceName)")
 REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(PyTrackViewDeleteSequenceByName, trackview, delete_sequence_by_name,
                                      "Deletes the specified sequence.",
-                                     "trackview.delete_sequence_by_name(str sequenceName)");
+                                     "trackview.delete_sequence_by_name(str sequenceName)")
 REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(PyTrackViewSetCurrentSequence, trackview, set_current_sequence,
                                      "Sets the specified sequence as a current one in TrackView.",
-                                     "trackview.set_current_sequence(str sequenceName)");
+                                     "trackview.set_current_sequence(str sequenceName)")
 REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(PyTrackViewGetSequenceName, trackview, get_sequence_name,
                                      "Gets the name of a sequence by its index.",
-                                     "trackview.get_sequence_name(int sequenceIndex)");
+                                     "trackview.get_sequence_name(int sequenceIndex)")
 REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(PyTrackViewGetSequenceTimeRange, trackview, get_sequence_time_range,
                                      "Gets the time range of a sequence as a pair",
-                                     "trackview.get_sequence_time_range(string sequenceName)");
+                                     "trackview.get_sequence_time_range(string sequenceName)")
 REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(PyTrackViewSetSequenceTimeRange, trackview, set_sequence_time_range,
                                      "Sets the time range of a sequence",
-                                     "trackview.set_sequence_time_range(string sequenceName, float start, float end)");
+                                     "trackview.set_sequence_time_range(string sequenceName, float start, float end)")
 REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(PyTrackViewSetSequenceTime, trackview, set_time,
                                      "Sets the time of the sequence currently playing in TrackView.",
-                                     "trackview.set_time(float time)");
+                                     "trackview.set_time(float time)")
 
 // Nodes
 REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(PyTrackViewAddNode, trackview, add_node,
                                      "Adds a new node with the given type & name to the current sequence.",
-                                     "trackview.add_node(str nodeTypeName, str nodeName)");
+                                     "trackview.add_node(str nodeTypeName, str nodeName)")
 REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(PyTrackViewDeleteNode, trackview, delete_node,
                                      "Deletes the specified node from the current sequence.",
-                                     "trackview.delete_node(str nodeName, str parentDirectorName)");
+                                     "trackview.delete_node(str nodeName, str parentDirectorName)")
 REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(PyTrackViewAddTrack, trackview, add_track,
                                      "Adds a track of the given parameter ID to the node.",
-                                     "trackview.add_track(str paramType, str nodeName, str parentDirectorName)");
+                                     "trackview.add_track(str paramType, str nodeName, str parentDirectorName)")
 REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(PyTrackViewDeleteTrack, trackview, delete_track,
                                      "Deletes a track of the given parameter ID (in the given index in case of a multi-track) from the node.",
-                                     "trackview.delete_track(str paramType, int index, str nodeName, str parentDirectorName)");
+                                     "trackview.delete_track(str paramType, int index, str nodeName, str parentDirectorName)")
 REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(PyTrackViewGetNumNodes, trackview, get_num_nodes,
                                      "Gets the number of sequences.",
-                                     "trackview.get_num_nodes(str parentDirectorName)");
+                                     "trackview.get_num_nodes(str parentDirectorName)")
 REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(PyTrackViewGetNodeName, trackview, get_node_name,
                                      "Gets the name of a sequence by its index.",
-                                     "trackview.get_node_name(int nodeIndex, str parentDirectorName)");
+                                     "trackview.get_node_name(int nodeIndex, str parentDirectorName)")
 
 // Tracks
 REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(PyTrackViewGetNumTrackKeys, trackview, get_num_track_keys,
                                      "Gets number of keys of the specified track",
-                                     "trackview.get_num_track_keys(str paramName, int trackIndex, str nodeName, str parentDirectorName)");
+                                     "trackview.get_num_track_keys(str paramName, int trackIndex, str nodeName, str parentDirectorName)")
 REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(PyTrackViewGetKeyValue, trackview, get_key_value,
                                      "Gets the value of the specified key",
                                      "trackview.get_num_track_keys(str paramName, int trackIndex, int keyIndex, str nodeName, str parentDirectorName)");
@@ -855,9 +850,6 @@ REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(PyTrackViewShowSequenceProperties, trackvie
 REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(PyTrackViewToggleLinkTimelines, trackview, toggle_link_timelines,
                                      "Toggle link timelines",
                                      "trackview.toggle_link_timelines()");
-REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(PyTrackViewToggleSyncSelection, trackview, toggle_sync_selection,
-                                     "Toggle sync selection",
-                                     "trackview.toggle_sync_selection()");
 REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(PyTrackViewSetUnitsTicks, trackview, set_units_ticks,
                                      "Set units ticks",
                                      "trackview.set_units_ticks()");
@@ -1038,4 +1030,5 @@ REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(PyTrackViewAddTrackPhysicsDriven, trackview
 REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(PyTrackViewAddTrackProceduralEyes, trackview, add_track_procedural_eyes,
                                      "Add track: Procedural Eyes",
                                      "trackview.add_track_procedural_eyes()");
+REGISTER_COMMAND_REMAPPING(trackview, toggle_sync_selection, general, toggle_sync_selection)
 #pragma warning(pop)

@@ -209,19 +209,6 @@ void CAsset::Edit(CAssetEditor* pEditor)
 	if (!CanBeEdited())
 		return;
 
-	string errorMsg;
-	if (!IsBeingEdited() && !m_type->IsAssetValid(this, errorMsg))
-	{
-		GetIEditor()->GetNotificationCenter()->ShowInfo("Cant open the asset for edit", QtUtil::ToQString(errorMsg));
-		return;
-	}
-
-	// Special handling for switching from a shared instant editor to a dedicated one.
-	if (!pEditor && m_pEditor && m_pEditor == GetType()->GetInstantEditor())
-	{
-		m_pEditor->Close();
-	}
-
 	if (m_pEditor)
 	{
 		m_pEditor->Raise();

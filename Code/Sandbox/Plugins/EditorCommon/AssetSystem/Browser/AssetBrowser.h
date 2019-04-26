@@ -45,6 +45,7 @@ public:
 	static CCrySignal<void(CAbstractMenu&, const std::vector<CAsset*>&, const std::vector<string>& folders, const std::shared_ptr<IUIContext>&)> s_signalContextMenuRequested;
 
 	CAssetBrowser(bool bHideEngineFolder = false, QWidget* pParent = nullptr);
+	CAssetBrowser(const std::vector<CAssetType*>& assetTypes, bool bHideEngineFolder = false, QWidget* pParent = nullptr);
 	virtual ~CAssetBrowser();
 
 	//extract actual content from the selection
@@ -101,6 +102,7 @@ protected:
 
 	QAttributeFilterProxyModel* GetAttributeFilterProxyModel();
 	QItemSelectionModel*        GetItemSelectionModel();
+	const QItemSelectionModel*  GetItemSelectionModel() const;
 	QAdvancedTreeView*          GetDetailsView();
 	QThumbnailsView*            GetThumbnailsView();
 
@@ -125,13 +127,15 @@ protected:
 
 private:
 	void               InitActions();
+	void               SetModel(CAssetFolderFilterModel* pModel);
+	void               SetAssetTypeFilter(const QStringList assetTypeNames);
 	void               InitNewNameDelegates();
 	void               InitViews(bool bHideEngineFolder);
 	void               InitMenus();
 	void               InitAssetsView();
 	void               InitDetailsView();
 	void               InitThumbnailsView();
-	QLayout*           CreateToolBars();
+	void               WaitUntilAssetsAreReady();
 	QWidget*           CreateAssetsViewSelector();
 
 	void               FillCreateAssetMenu(CAbstractMenu* menu, const QString& folder);
@@ -254,7 +258,6 @@ private:
 	std::unique_ptr<CLineEditDelegate>          m_pDetailsViewNewNameDelegate; // Note that delegates are not owned by view.
 	std::unique_ptr<CLineEditDelegate>          m_pThumbnailViewNewNameDelegate;
 	std::unique_ptr<QAttributeFilterProxyModel> m_pAttributeFilterProxyModel;
-	std::unique_ptr<QTimer>                     m_pQuickEditTimer;
 
 	//state variables
 	QVector<QStringList> m_navigationHistory;

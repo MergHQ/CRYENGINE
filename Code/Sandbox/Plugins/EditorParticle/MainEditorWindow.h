@@ -45,7 +45,6 @@ public:
 	CParticleEditor();
 
 	// CEditor
-	virtual void        Initialize() override;
 	virtual const char* GetEditorName() const override { return "Particle Editor"; }
 	// ~CEditor
 
@@ -63,12 +62,9 @@ protected:
 	virtual bool                                  OnAboutToCloseAsset(string& reason) const override;
 	virtual void                                  OnCloseAsset() override;
 	virtual std::unique_ptr<IAssetEditingSession> CreateEditingSession() override;
-	virtual bool                                  AllowsInstantEditing() const override { return true; }
+	virtual void                                  OnCreateDefaultLayout(CDockableContainer* pSender, QWidget* pAssetBrowser) override;
+	virtual void                                  OnInitialize() override;
 	// ~CAssetEditor
-
-	// CEditor
-	virtual void CreateDefaultLayout(CDockableContainer* pSender) override;
-	// ~CEditor
 
 	void AssignToEntity(CBaseObject* pObject, const string& newAssetName);
 	bool AssetSaveDialog(string* pOutputName);
@@ -77,7 +73,6 @@ protected:
 
 private:
 	void         InitMenu();
-	void         RegisterDockingWidgets();
 
 	// CEditor
 	bool OnReload();

@@ -103,15 +103,6 @@ CParticleEditor::CParticleEditor()
 	RegisterAction("particle.show_options", &CParticleEditor::OnShowEffectOptions);
 	RegisterAction("particle.get_from_selection", &CParticleEditor::OnLoadFromSelectedEntity);
 	RegisterAction("particle.assign_to_selection", &CParticleEditor::OnApplyToSelectedEntity);
-
-	RegisterDockingWidgets();
-}
-
-void CParticleEditor::Initialize()
-{
-	CDockableEditor::Initialize();
-
-	InitMenu();
 }
 
 void CParticleEditor::InitMenu()
@@ -143,16 +134,10 @@ void CParticleEditor::InitMenu()
 		sec = pFileMenu->GetNextEmptySection();
 		pFileMenu->AddAction(GetAction("general.import"), sec);
 	}
-
-	// Enable instant editing if possible
-	CAbstractMenu* const pEditMenu = GetMenu(CEditor::MenuItems::EditMenu);
-	pEditMenu->AddCommandAction(m_pLockAction);
 }
 
-void CParticleEditor::RegisterDockingWidgets()
+void CParticleEditor::OnInitialize()
 {
-	EnableDockingSystem();
-
 	RegisterDockableWidget(s_szEffectGraphName, [=]() { return new CEffectAssetWidget(m_pEffectAssetModel.get(), this); }, false, false);
 	RegisterDockableWidget(s_szEffectTreeName, [=]() { return new CEffectPanel(m_pEffectAssetModel.get(), this); }, false, false);
 	RegisterDockableWidget(s_szCurveEditorPanelName, [=]() { return CreateCurveEditorPanel(this); }, false, false);
@@ -162,6 +147,8 @@ void CParticleEditor::RegisterDockingWidgets()
 	// Similar to the object properties, the property trees should be reverted when a feature item
 	// signals SignalInvalidated.
 	RegisterDockableWidget(s_szInspectorName, [&]() { return new CInspectorLegacy(this); }, true, false);
+
+	InitMenu();
 }
 
 bool CParticleEditor::OnUndo()
@@ -265,10 +252,10 @@ bool CParticleEditor::OnAboutToCloseAsset(string& reason) const
 	return !strncmp(&newPfx[0], &oldPfx[0], newPfx.size());
 }
 
-void CParticleEditor::CreateDefaultLayout(CDockableContainer* pSender)
+void CParticleEditor::OnCreateDefaultLayout(CDockableContainer* pSender, QWidget* pAssetBrowser)
 {
 	CRY_ASSERT(pSender);
-	pSender->SpawnWidget(s_szCurveEditorPanelName);
+	pSender->SpawnWidget(s_szCurveEditorPanelName, pAssetBrowser, QToolWindowAreaReference::VSplitRight);
 	pSender->SpawnWidget(s_szEffectGraphName, QToolWindowAreaReference::HSplitTop);
 	pSender->SpawnWidget(s_szInspectorName, QToolWindowAreaReference::VSplitRight);
 }

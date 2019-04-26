@@ -214,6 +214,9 @@ REGISTER_EDITOR_AND_SCRIPT_COMMAND(Private_EditorCommands::OpenEditorMenu, gener
                                    CCommandDescription("Open Editor Menu"))
 REGISTER_EDITOR_UI_COMMAND_DESC(general, open_editor_menu, "", "", "", false)
 
+REGISTER_EDITOR_AND_SCRIPT_KEYBOARD_FOCUS_COMMAND(general, toggle_sync_selection, CCommandDescription("Context driven toggle sync selection command"))
+REGISTER_EDITOR_UI_COMMAND_DESC(general, toggle_sync_selection, "Sync Selection", "", "icons:general_sync_selection.ico", true)
+
 //////////////////////////////////////////////////////////////////////////
 // Main frame UI Commands
 //////////////////////////////////////////////////////////////////////////

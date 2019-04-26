@@ -366,7 +366,7 @@ void CLevelExplorer::InitMenuBar()
 
 	section = menuView->GetNextEmptySection();
 
-	menuView->AddAction(GetAction("level_explorer.sync_selection"), section);
+	menuView->AddAction(GetAction("general.toggle_sync_selection"), section);
 
 	if (m_filterPanel)
 	{
@@ -472,7 +472,7 @@ void CLevelExplorer::InitActions()
 	RegisterAction("level_explorer.show_layers", [this]() { SetModelType(Layers); });
 	RegisterAction("level_explorer.show_all_objects", [this]() { SetModelType(Objects); });
 	RegisterAction("level_explorer.show_active_layer_contents", [this]() { SetModelType(ActiveLayer); });
-	RegisterAction("level_explorer.sync_selection", [this]() { SetSyncSelection(!m_syncSelection); });
+	RegisterAction("general.toggle_sync_selection", [this]() { SetSyncSelection(!m_syncSelection); });
 	RegisterAction("layer.make_active", &CLevelExplorer::OnMakeLayerActive);
 	RegisterAction("layer.toggle_exportable", [this]() { LevelExplorerCommandHelper::ToggleExportable(GetSelectedObjectLayers()); });
 	RegisterAction("layer.toggle_exportable_to_pak", [this]() { LevelExplorerCommandHelper::ToggleExportableToPak(GetSelectedObjectLayers()); });
@@ -590,7 +590,7 @@ void CLevelExplorer::OnContextMenu(const QPoint& pos) const
 		abstractMenu.AddCommandAction(GetAction("level_explorer.show_all_objects"), section);
 		abstractMenu.AddCommandAction(GetAction("level_explorer.show_active_layer_contents"), section);
 		section = abstractMenu.GetNextEmptySection();
-		abstractMenu.AddCommandAction(GetAction("level_explorer.sync_selection"), section);
+		abstractMenu.AddCommandAction(GetAction("general.toggle_sync_selection"), section);
 	}
 
 	QMenu menu;
@@ -1483,7 +1483,7 @@ void CLevelExplorer::SetSyncSelection(bool syncSelection)
 	if (m_syncSelection != syncSelection)
 	{
 		m_syncSelection = syncSelection;
-		SetActionChecked("level_explorer.sync_selection", m_syncSelection);
+		SetActionChecked("general.toggle_sync_selection", m_syncSelection);
 
 		if (m_syncSelection)
 			SyncSelection();

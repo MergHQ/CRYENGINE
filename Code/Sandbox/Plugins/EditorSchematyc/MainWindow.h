@@ -77,15 +77,14 @@ public:
 	CAsset* GetAsset() const { return m_pAsset; }
 
 protected:
-	// CEditor
-	virtual void CreateDefaultLayout(CDockableContainer* pSender) override;
-	// ~CEditor
 
 	// CAssetEditor
 	virtual bool OnOpenAsset(CAsset* pAsset) override;
 	virtual bool OnSaveAsset(CEditableAsset& editAsset) override;
 	virtual bool OnAboutToCloseAsset(string& reason) const override;
 	virtual void OnCloseAsset() override;
+	virtual void OnInitialize() override;
+	virtual void OnCreateDefaultLayout(CDockableContainer* pSender, QWidget* pAssetBrowser) override;
 	// ~CAssetEditor
 
 	void SaveState();
@@ -106,7 +105,6 @@ protected Q_SLOTS:
 	void OnGraphViewWidgetDestruction(QObject* pObject);
 
 private:
-	void                             RegisterWidgets();
 	void                             InitMenu();
 	void                             InitToolbar(QVBoxLayout* pWindowLayout);
 

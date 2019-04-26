@@ -355,11 +355,6 @@ bool CAssetType::IsInPakOnly(const CAsset& asset) const
 	return false;
 }
 
-void CAssetType::SetInstantEditor(CAssetEditor* pEditor)
-{
-	m_pInstantEditor = pEditor;
-}
-
 bool CAssetType::IsValidAssetPath(const char* szFilepath, /*out*/string& reasonToReject)
 {
 	if (!(AssetLoader::IsMetadataFile(szFilepath)))

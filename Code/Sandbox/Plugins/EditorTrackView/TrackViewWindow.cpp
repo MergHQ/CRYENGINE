@@ -191,7 +191,7 @@ void CTrackViewWindow::customEvent(QEvent* pEvent)
 		{
 			pEvent->setAccepted(OnToggleLinkTimelines());
 		}
-		else if (command == "trackview.toggle_sync_selection")
+		else if (command == "general.toggle_sync_selection")
 		{
 			pEvent->setAccepted(OnToggleSyncSelection());
 		}

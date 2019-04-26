@@ -96,10 +96,6 @@ REGISTER_PYTHON_COMMAND(Private_EditorCommands::PyImportFiles, asset, import, "I
 REGISTER_PYTHON_COMMAND(Private_EditorCommands::PyImportDialog, asset, import_dialog, "Imports assets")
 REGISTER_EDITOR_COMMAND_TEXT(asset, import_dialog, "Import");
 
-REGISTER_EDITOR_AND_SCRIPT_KEYBOARD_FOCUS_COMMAND(asset, toggle_instant_editing,
-                                                  CCommandDescription("Toggles instant editing for focused asset editor"))
-REGISTER_EDITOR_UI_COMMAND_DESC(asset, toggle_instant_editing, "Instant Editing", "", "icons:General/Instant_Editing.ico", true)
-
 REGISTER_EDITOR_AND_SCRIPT_KEYBOARD_FOCUS_COMMAND(asset, generate_thumbnails, CCommandDescription("Generate All Thumbnails"))
 
 REGISTER_EDITOR_AND_SCRIPT_KEYBOARD_FOCUS_COMMAND(asset, save_all, CCommandDescription("Save all"))
