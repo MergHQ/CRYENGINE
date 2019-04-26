@@ -50,10 +50,11 @@ void CVisArea::Update(const Vec3* pPoints, int nCount, const char* szName, const
 	m_bIgnoreOutdoorAO = info.bIgnoreOutdoorAO;
 	m_fPortalBlending = info.fPortalBlending;
 
-	m_lstShapePoints.PreAllocate(nCount, nCount);
-
-	if (nCount)
-		memcpy(&m_lstShapePoints[0], pPoints, sizeof(Vec3) * nCount);
+	if (nCount > 0)
+	{
+		m_lstShapePoints.PreAllocate(nCount, nCount);
+		memcpy(&m_lstShapePoints.front(), pPoints, sizeof(Vec3) * nCount);
+	}
 
 	// update bbox
 	m_boxArea.max = SetMinBB();

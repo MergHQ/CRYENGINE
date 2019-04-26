@@ -1861,11 +1861,11 @@ ITelemetryProducer::EResult CTelemetryHTTPPostChunkSplitter::ProduceTelemetry(
 
 				footer+="\r\n";
 
-				int			footerLength=footer.length();
+				size_t footerLength = footer.length();
 
-				assert(footerLength<=inBufferSize);			// could fix this by splitting footer over multiple produce() calls, but it is an unnecessary complication for the buffer sizes in use
+				assert(footerLength <= static_cast<size_t>(inBufferSize));			// could fix this by splitting footer over multiple produce() calls, but it is an unnecessary complication for the buffer sizes in use
 
-				footerLength=min(footerLength,inBufferSize);
+				footerLength = std::min<size_t>(footerLength, inBufferSize);
 
 				memcpy(pOutBuffer,footer.c_str(),footerLength);
 
