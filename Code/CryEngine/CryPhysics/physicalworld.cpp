@@ -1531,7 +1531,7 @@ DEBUG_BREAK;
 			ReallocateList(m_pMassList,0,m_nEntsAlloc);
 			ReallocateList(m_pGroupIds,0,m_nEntsAlloc);
 			ReallocateList(m_pGroupNums,0,m_nEntsAlloc);
-			m_threadData[0].szList=m_threadData[MAX_PHYS_THREADS].szList = m_nEntsAlloc;
+			m_threadData[0].szList = m_nEntsAlloc;
 		}
 	} else if (pent->m_iSimClass>=0) {
 		pe_action_reset reset;
