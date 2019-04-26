@@ -84,6 +84,10 @@
 #include <zlib.h>
 #include "RemoteConsole/RemoteConsole.h"
 #include "ImeManager.h"
+#include "Watchdog.h"
+#include "NullImplementation/NULLAudioSystems.h"
+#include "NullImplementation/NULLRenderAuxGeom.h"
+
 #include "BootProfiler.h"
 #if ALLOW_BROFILER
 #	include <Cry_Brofiler.h>
@@ -92,9 +96,7 @@
 #include "Profiling/PlatformProfiler.h"
 #include "Profiling/ProfilingRenderer.h"
 #include "Profiling/CryProfilingSystem.h"
-#include "Watchdog.h"
-#include "NullImplementation/NULLAudioSystems.h"
-#include "NullImplementation/NULLRenderAuxGeom.h"
+#include "Profiling/PixForWindows.h"
 
 #include <CryMath/PNoise3.h>
 #include <CryString/StringUtils.h>
@@ -408,7 +410,12 @@ CSystem::CSystem(const SSystemInitParams& startupParams)
 	const bool enableBootProfiler = (strstr(startupParams.szSystemCmdLine, "-bootprofiler") != nullptr);
 	const bool enableBrofiler = (strstr(startupParams.szSystemCmdLine, "-brofiler") != nullptr);
 	const bool enablePlatformProfiler = (strstr(startupParams.szSystemCmdLine, "-platformprofiler") != nullptr);
-
+#if CRY_PLATFORM_WINDOWS
+	const bool enablePIX4Windows = (strstr(startupParams.szSystemCmdLine, "-pix4windows") != nullptr);
+#else
+	const bool enablePIX4Windows = false;
+#endif
+	
 	const char* szVerbosity = strstr(startupParams.szSystemCmdLine, "-profile_verbosity=");
 	if (szVerbosity != nullptr)
 	{
@@ -419,7 +426,7 @@ CSystem::CSystem(const SSystemInitParams& startupParams)
 	}
 
 #ifndef RELEASE
-	if (enableBootProfiler + enableBrofiler + enablePlatformProfiler > 1)
+	if (enableBootProfiler + enableBrofiler + enablePlatformProfiler + enablePIX4Windows > 1)
 		__debugbreak(); // may only choose one
 #endif
 
@@ -440,6 +447,16 @@ CSystem::CSystem(const SSystemInitParams& startupParams)
 		m_env.startProfilingSection = CPlatformProfiler::StartSectionStatic;
 		m_env.endProfilingSection = CPlatformProfiler::EndSectionStatic;
 		m_env.recordProfilingMarker = CPlatformProfiler::RecordMarkerStatic;
+	}
+	else
+#endif
+#if CRY_PLATFORM_WINDOWS
+	if (enablePIX4Windows)
+	{
+		m_pProfilingSystem = new CPixForWindows;
+		m_env.startProfilingSection = CPixForWindows::StartSectionStatic;
+		m_env.endProfilingSection = CPixForWindows::EndSectionStatic;
+		m_env.recordProfilingMarker = CPixForWindows::RecordMarkerStatic;
 	}
 	else
 #endif

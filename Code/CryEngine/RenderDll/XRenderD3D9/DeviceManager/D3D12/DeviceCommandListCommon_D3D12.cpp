@@ -4,6 +4,13 @@
 #include "DeviceCommandListCommon_D3D12.h"
 #include "DevicePSO_D3D12.h"
 
+#if CRY_PLATFORM_WINDOWS
+#	ifdef ENABLE_PROFILING_CODE
+#		define USE_PIX
+#	endif
+#	include <WinPixEventRuntime/pix3.h>
+#endif
+
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 bool CDeviceTimestampGroup::s_reservedGroups[MAX_FRAMES_IN_FLIGHT] = { false, false, false, false };
 

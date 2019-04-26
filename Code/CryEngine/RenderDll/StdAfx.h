@@ -407,8 +407,6 @@ template<> inline void           safe_release<ID3D11Buffer>(ID3D11Buffer*& ptr);
 	#if !defined(RELEASE) || defined(ENABLE_PROFILING_CODE)
 		#define USE_PIX_DURANGO 1
 	#endif
-#elif CRY_PLATFORM_WINDOWS
-	#include <pix_win.h>
 #endif
 
 //////////////////////////////////////////////////////////////////////////
