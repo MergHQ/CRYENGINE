@@ -146,8 +146,6 @@ CharacterToolForm::CharacterToolForm(QWidget* parent)
 	m_displayParametersSplitterWidths[0] = 400;
 	m_displayParametersSplitterWidths[1] = 200;
 
-	Initialize();
-
 	setFocusPolicy(Qt::ClickFocus);
 
 	CBroadcastManager* const pGlobalBroadcastManager = GetIEditor()->GetGlobalBroadcastManager();

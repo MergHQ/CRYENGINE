@@ -124,7 +124,7 @@ private:
 	void           SaveLayoutToFile(const char* filename);
 	void           LoadLayoutFromFile(const char* filename);
 	void           ResetLayout();
-	void           Initialize();
+	virtual void   Initialize() override;
 	void           UpdateLayoutMenu();
 	void           UpdatePanesMenu();
 	void           UpdateViewportMode(ExplorerEntry* newEntry);
