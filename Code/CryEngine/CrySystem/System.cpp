@@ -955,6 +955,12 @@ void CSystem::ShutDown()
 	}
 	timeEndPeriod(tc.wPeriodMin);
 #endif // CRY_PLATFORM_WINDOWS
+
+	if (m_env.pJobManager)
+	{
+		m_env.pJobManager->ShutDown();
+		m_env.pJobManager = nullptr;
+	}
 }
 
 /////////////////////////////////////////////////////////////////////////////////
