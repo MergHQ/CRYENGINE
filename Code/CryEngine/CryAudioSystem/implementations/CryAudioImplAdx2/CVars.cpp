@@ -3,7 +3,7 @@
 #include "stdafx.h"
 #include "CVars.h"
 
-#include <CrySystem/IConsole.h>
+#include <CrySystem/ConsoleRegistration.h>
 
 namespace CryAudio
 {

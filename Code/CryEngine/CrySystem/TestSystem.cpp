@@ -5,7 +5,7 @@
 	#include <setjmp.h>
 #endif
 #include <CrySystem/ISystem.h>
-#include <CrySystem/IConsole.h>
+#include <CrySystem/ConsoleRegistration.h>
 #include <CryGame/IGameFramework.h>
 #include <CryCore/optional.h>
 #include "UnitTestExcelReporter.h"

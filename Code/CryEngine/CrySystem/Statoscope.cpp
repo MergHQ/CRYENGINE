@@ -19,6 +19,7 @@
 #include <CryAISystem/IAISystem.h>
 #include <CryParticleSystem/IParticlesPfx2.h>
 #include <CryPhysics/IPhysics.h>
+#include <CrySystem/ConsoleRegistration.h>
 
 #include "StatoscopeStreamingIntervalGroup.h"
 #include "StatoscopeTextureStreamingIntervalGroup.h"

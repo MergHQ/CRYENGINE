@@ -50,6 +50,7 @@
 
 #include <CryCore/Platform/CryLibrary.h>
 #include <CryMovie/IMovieSystem.h>
+#include <CrySystem/ConsoleRegistration.h>
 
 //#define PROFILE_LOADING_WITH_VTUNE
 

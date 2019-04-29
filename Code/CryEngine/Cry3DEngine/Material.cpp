@@ -15,6 +15,7 @@
 #include "MatMan.h"
 #include <CryRenderer/IRenderer.h>
 #include "VisAreas.h"
+#include <CrySystem/ConsoleRegistration.h>
 
 DEFINE_INTRUSIVE_LINKED_LIST(CMatInfo)
 

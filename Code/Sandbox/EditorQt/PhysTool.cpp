@@ -16,6 +16,7 @@
 #include "CrySystem/ISystem.h"
 #include "Objects/EntityObject.h"
 #include "IEditorImpl.h"
+#include "CrySystem/ConsoleRegistration.h"
 
 IMPLEMENT_DYNAMIC(CPhysPullTool, CEditTool)
 

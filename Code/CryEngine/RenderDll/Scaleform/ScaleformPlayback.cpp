@@ -3,10 +3,9 @@
 #include "StdAfx.h"
 
 #if RENDERER_SUPPORT_SCALEFORM
-	#include <CrySystem/ISystem.h>
-	#include <CryRenderer/IRenderer.h>
-	#include <CryRenderer/IStereoRenderer.h>
-	#include <CrySystem/IConsole.h>
+#include <CrySystem/ISystem.h>
+#include <CryRenderer/IRenderer.h>
+#include <CryRenderer/IStereoRenderer.h>
 
 	#include "../XRenderD3D9/DriverD3D.h"
 	#include "../Common/Textures/Texture.h"

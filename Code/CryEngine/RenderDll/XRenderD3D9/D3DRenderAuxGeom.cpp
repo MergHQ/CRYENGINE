@@ -6,8 +6,9 @@
 #include <climits>
 
 #include "Common/RenderDisplayContext.h"
-
 #include "Common/ReverseDepth.h"
+
+#include <CrySystem/ConsoleRegistration.h>
 
 #if defined(ENABLE_RENDER_AUX_GEOM)
 

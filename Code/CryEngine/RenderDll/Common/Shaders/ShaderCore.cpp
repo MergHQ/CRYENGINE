@@ -15,6 +15,7 @@
 
 #include "Common/RenderView.h"
 #include "Common/RendererResources.h"
+#include <CrySystem/ConsoleRegistration.h>
 
 CShader* CShaderMan::s_DefaultShader;
 CShader* CShaderMan::s_shPostEffects;

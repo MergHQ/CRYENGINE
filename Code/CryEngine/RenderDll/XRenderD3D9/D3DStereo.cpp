@@ -9,6 +9,7 @@
 #include "D3DOpenVR.h"
 
 #include <Common/RenderDisplayContext.h>
+#include <CrySystem/ConsoleRegistration.h>
 
 #define MGPU_STEREO
 

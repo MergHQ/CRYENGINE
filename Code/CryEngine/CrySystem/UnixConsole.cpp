@@ -15,6 +15,7 @@
 #include "StdAfx.h"
 #include "System.h"
 #include "UnixConsole.h"
+#include <CrySystem/ConsoleRegistration.h>
 
 #include <CryThreading/IThreadManager.h>
 

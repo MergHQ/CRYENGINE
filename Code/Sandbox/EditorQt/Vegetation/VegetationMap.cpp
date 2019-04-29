@@ -19,6 +19,7 @@
 #include <Controls/QuestionDialog.h>
 #include <Util/FileUtil.h>
 #include <Util/XmlArchive.h>
+#include <CrySystem/ConsoleRegistration.h>
 
 #include <CryPhysics/IPhysics.h>
 

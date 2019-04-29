@@ -78,6 +78,7 @@
 #include <Preferences/GeneralPreferences.h>
 #include <Preferences/ViewportPreferences.h>
 #include <UIEnumsDatabase.h>
+#include <CrySystem/ConsoleRegistration.h>
 
 #include <CrySandbox/CryInterop.h>
 #include <CrySandbox/IEditorGame.h>

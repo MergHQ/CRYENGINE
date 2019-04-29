@@ -5,6 +5,7 @@
 #include <CryUQS/DataSource_XML/DataSource_XML_Includes.h>
 #include <CryUQS/Client/ClientIncludes.h>
 #include <CryUQS/StdLib/StdLibRegistration.h>
+#include <CrySystem/ConsoleRegistration.h>
 
 // *INDENT-OFF* - <hard to read code and declarations due to inconsistent indentation>
 

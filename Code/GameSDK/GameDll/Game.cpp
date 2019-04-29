@@ -43,6 +43,7 @@
 #include <CrySystem/CryVersion.h>
 #include <CryAction/ICustomActions.h>
 #include <CryFlowGraph/IFlowBaseNode.h>
+#include <CrySystem/ConsoleRegistration.h>
 
 #include "ScriptBind_Actor.h"
 #include "ScriptBind_Item.h"

@@ -694,7 +694,3 @@ private:
 	IConsole*              m_pConsole;
 	ELoadConfigurationType m_prevType;
 };
-
-// Inclusion for backwards compatibility
-// Ideally to be removed to reduce header dependencies
-#include "ConsoleRegistration.h"

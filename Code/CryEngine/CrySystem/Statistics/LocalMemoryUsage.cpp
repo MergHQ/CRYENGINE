@@ -32,7 +32,7 @@
 #include "LocalMemoryUsage.h"
 
 #include <CrySystem/ITimer.h>
-#include <CrySystem/IConsole.h>
+#include <CrySystem/ConsoleRegistration.h>
 #include <Cry3DEngine/I3DEngine.h>
 #include <CryRenderer/IRenderAuxGeom.h>
 #include <CryAnimation/ICryAnimation.h>

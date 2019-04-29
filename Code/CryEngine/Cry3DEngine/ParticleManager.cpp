@@ -15,6 +15,7 @@
 #include <CryThreading/IJobManager_JobDelegator.h>
 #include <CrySystem/ZLib/IZLibCompressor.h>
 #include <CrySerialization/ClassFactory.h>
+#include <CrySystem/ConsoleRegistration.h>
 
 #define LIBRARY_PATH    "Libs/"
 #define EFFECTS_SUBPATH LIBRARY_PATH "Particles/"

@@ -19,7 +19,7 @@
 
 #include "StdAfx.h"
 
-#include <CrySystem/IConsole.h>
+#include <CrySystem/ConsoleRegistration.h>
 #include <CryInput/IInput.h>
 #include <CrySystem/ISystem.h>
 #include <CrySystem/ITimer.h>

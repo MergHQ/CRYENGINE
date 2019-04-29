@@ -3,6 +3,8 @@
 #ifndef AICONSOLEVARIABLES_H
 #define AICONSOLEVARIABLES_H
 
+#include <CrySystem/ConsoleRegistration.h>
+
 struct AIConsoleVars
 {
 	// cppcheck-suppress uninitMemberVar

@@ -4,6 +4,7 @@
 #include <CryString/UnicodeFunctions.h>
 #include <CryCore/Platform/WindowsUtils.h>
 #include <CrySystem/IProjectManager.h>
+#include <CrySystem/ConsoleRegistration.h>
 #include <CryFont/IFont.h>
 
 #include "D3DStereo.h"

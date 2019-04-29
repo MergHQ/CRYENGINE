@@ -33,6 +33,7 @@
 #include <CrySystem/ILog.h>
 #include <CrySystem/ITimer.h>
 #include <CrySystem/ISystem.h>
+#include <CrySystem/ConsoleRegistration.h>
 #include <CryPhysics/IPhysics.h>
 #include <CryRenderer/IRenderAuxGeom.h>
 #include <CryLiveCreate/ILiveCreateHost.h>

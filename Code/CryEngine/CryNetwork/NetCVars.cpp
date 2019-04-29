@@ -3,6 +3,7 @@
 #include "StdAfx.h"
 #include "NetCVars.h"
 #include "NetDebugInfo.h"
+#include <CrySystem/ConsoleRegistration.h>
 #if NEW_BANDWIDTH_MANAGEMENT
 	#include <CryGame/IGameFramework.h>
 	#include "Protocol/NetNub.h"

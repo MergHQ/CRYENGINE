@@ -7,6 +7,7 @@
 #include <CrySerialization/Forward.h>
 #include <CrySerialization/IArchiveHost.h>
 #include <CrySystem/File/ICryPak.h>
+#include <CrySystem/ConsoleRegistration.h>
 
 #include "CVars.h"
 #include "Script/ScriptSerializationUtils.h"

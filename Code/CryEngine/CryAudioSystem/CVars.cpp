@@ -5,6 +5,7 @@
 #include "Common.h"
 #include "System.h"
 #include <CrySystem/IConsole.h>
+#include <CrySystem/ConsoleRegistration.h>
 
 #if defined(CRY_AUDIO_USE_OCCLUSION)
 	#include "PropagationProcessor.h"

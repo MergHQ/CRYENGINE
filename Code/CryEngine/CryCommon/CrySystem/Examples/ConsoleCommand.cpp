@@ -1,5 +1,6 @@
 #include <CrySystem/ISystem.h>
 #include <CrySystem/IConsole.h>
+#include <CrySystem/ConsoleRegistration.h>
 
 // The function that will be executed with the command
 void MyCommand(IConsoleCmdArgs* pArgs)

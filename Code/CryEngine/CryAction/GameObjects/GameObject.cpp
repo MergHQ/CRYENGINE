@@ -33,6 +33,7 @@
 #include "IVehicleSystem.h"
 
 #include <CryNetwork/INetwork.h>
+#include <CrySystem/ConsoleRegistration.h>
 
 //#pragma optimize("", off)
 //#pragma inline_depth(0)

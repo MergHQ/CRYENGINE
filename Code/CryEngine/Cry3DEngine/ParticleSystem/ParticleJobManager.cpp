@@ -8,6 +8,7 @@
 #include "ParticleSystem.h"
 #include "ParticleProfiler.h"
 #include <CryRenderer/IGpuParticles.h>
+#include <CrySystem/ConsoleRegistration.h>
 
 namespace pfx2
 {

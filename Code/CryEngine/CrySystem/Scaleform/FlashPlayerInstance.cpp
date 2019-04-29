@@ -5,9 +5,9 @@
 #include <CryMath/Cry_Math.h>
 #include "FlashPlayerInstance.h"
 #include "../System.h"
-#include <CrySystem/IConsole.h>
 #include <CryInput/IInput.h>
 #include <CryCore/AlignmentTools.h>
+#include <CrySystem/ConsoleRegistration.h>
 
 // flash player implementation via Scaleform's GFx
 #ifdef INCLUDE_SCALEFORM_SDK

@@ -51,6 +51,7 @@
 
 #include <CryCore/StlUtils.h>
 #include <CryString/StringUtils.h>
+#include <CrySystem/ConsoleRegistration.h>
 #include <algorithm>
 
 #include "Network/Lobby/GameBrowser.h"

@@ -65,6 +65,7 @@
 #include <CryScriptSystem/IScriptSystem.h>
 #include <CrySystem/File/ICryPak.h>
 #include <CrySystem/ICryPluginManager.h>
+#include <CrySystem/ConsoleRegistration.h>
 #include <CrySystem/ITimer.h>
 #include <CryThreading/IJobManager.h>
 #include <IGameRulesSystem.h>

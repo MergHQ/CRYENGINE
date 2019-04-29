@@ -3,6 +3,7 @@
 #include "StdAfx.h"
 
 #include "CVars.h"
+#include <CrySystem/ConsoleRegistration.h>
 
 namespace Schematyc2
 {

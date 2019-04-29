@@ -75,6 +75,7 @@
 
 #include <CryCore/StaticInstanceList.h>
 #include <algorithm>
+#include <CrySystem/ConsoleRegistration.h>
 
 // Description:
 //	 Helper class for declaring fire command descriptors.

@@ -11,6 +11,7 @@
 #include <CryCore/TypeInfo_impl.h>
 #include <CryString/StringUtils.h>
 #include "Network/Lobby/GameLobby.h"
+#include <CrySystem/ConsoleRegistration.h>
 
 const CGameAudio::SCommandNameTranslationTableEntry CGameAudio::CommandNamesTranslataionTable[]=
 {

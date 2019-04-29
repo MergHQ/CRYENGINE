@@ -15,6 +15,7 @@
 
 #include "MannequinUtils.h"
 #include "MannequinDebug.h"
+#include <CrySystem/ConsoleRegistration.h>
 
 const uint32 MAX_ALLOWED_QUEUE_SIZE = 10;
 

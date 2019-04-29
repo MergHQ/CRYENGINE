@@ -22,6 +22,7 @@
 #include "DialogActorContext.h"
 
 #include "CryAction.h"
+#include <CrySystem/ConsoleRegistration.h>
 
 #define DIALOG_LIBS_PATH_EXCEL "Libs/Dialogs"
 #define DIALOG_LIBS_PATH_MK2   "Libs/Dialogs"

@@ -11,6 +11,7 @@
 #include <CryNetwork/IRemoteCommand.h>
 #include <CryNetwork/INotificationNetwork.h>
 #include <CryRenderer/IRenderAuxGeom.h>
+#include <CrySystem/ConsoleRegistration.h>
 #include "XConsoleVariable.h"
 #include <regex>
 #include <fstream>

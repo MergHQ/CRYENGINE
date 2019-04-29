@@ -16,6 +16,7 @@
 #include <CryEntitySystem/IEntitySystem.h>
 #include <CryAISystem/INavigationSystem.h>
 #include <CryMath/Random.h>
+#include <CrySystem/ConsoleRegistration.h>
 
 #include "CoverSurfaceManager.h"
 

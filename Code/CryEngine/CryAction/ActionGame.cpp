@@ -28,6 +28,7 @@
 #include "Network/ObjectSelector.h"
 
 #include <CrySystem/Scaleform/IFlashUI.h>
+#include <CrySystem/ConsoleRegistration.h>
 
 CActionGame* CActionGame::s_this = 0;
 int CActionGame::g_procedural_breaking = 0;

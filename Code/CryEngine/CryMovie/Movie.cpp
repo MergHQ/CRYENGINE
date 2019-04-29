@@ -28,7 +28,7 @@
 
 #include <CrySystem/ISystem.h>
 #include <CrySystem/ILog.h>
-#include <CrySystem/IConsole.h>
+#include <CrySystem/ConsoleRegistration.h>
 #include <CrySystem/ITimer.h>
 #include <CryRenderer/IRenderer.h>
 #include <CryGame/IGameFramework.h>

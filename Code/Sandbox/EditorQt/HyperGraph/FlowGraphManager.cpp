@@ -8,6 +8,7 @@
 #include <CryFlowGraph/IFlowSystem.h>
 #include <CryFlowGraph/IFlowGraphModuleManager.h>
 #include <CryAISystem/IAIAction.h>
+#include <CrySystem/ConsoleRegistration.h>
 
 #include "FlowGraph.h"
 #include "FlowGraphNode.h"

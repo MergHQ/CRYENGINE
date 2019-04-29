@@ -23,6 +23,7 @@
 #include <CrySystem/ITimer.h>
 #include <CryAISystem/IAISystem.h>
 #include <CryMath/Random.h>
+#include <CrySystem/ConsoleRegistration.h>
 
 #include <CryNetwork/ISerialize.h>
 

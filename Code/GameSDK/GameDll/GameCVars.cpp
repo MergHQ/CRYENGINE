@@ -39,6 +39,7 @@ History:
 #include "UI/Utils/ScreenLayoutManager.h"
 #include "UI/Utils/ILoadingMessageProvider.h"
 #include <CryNetwork/INetworkService.h>
+#include <CrySystem/ConsoleRegistration.h>
 
 #include "LagOMeter.h"
 #include "GameRulesModules/IGameRulesTeamsModule.h"

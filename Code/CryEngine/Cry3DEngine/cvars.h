@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include <CrySystem/ConsoleRegistration.h>
+
 #if defined(CONSOLE_CONST_CVAR_MODE)
 	#define GetFloatCVar(name) name ## Default
 #else

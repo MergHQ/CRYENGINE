@@ -32,7 +32,7 @@
 
 #include "Navigation/NavigationSystem/NavigationSystem.h"
 #include <CryAISystem/NavigationSystem/INavMeshQueryManager.h>
-
+#include <CrySystem/ConsoleRegistration.h>
 
 // Maximum time that an async query can execute before it is aborted as an error
 const float MAX_SYNC_TIME_MS = 20;

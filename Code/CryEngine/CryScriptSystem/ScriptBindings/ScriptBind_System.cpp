@@ -35,6 +35,7 @@
 #include <CryRenderer/IRenderAuxGeom.h>
 #include <CrySystem/IBudgetingSystem.h>
 #include <CrySystem/ILocalizationManager.h>
+#include <CrySystem/ConsoleRegistration.h>
 #include <time.h>
 
 //////////////////////////////////////////////////////////////////////

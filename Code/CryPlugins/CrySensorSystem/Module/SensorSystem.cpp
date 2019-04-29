@@ -4,6 +4,7 @@
 #include "SensorSystem.h"
 
 #include <Cry3DEngine/I3DEngine.h>
+#include <CrySystem/ConsoleRegistration.h>
 
 #include "SchematycEntitySensorVolumeComponent.h"
 #include "SensorMap.h"

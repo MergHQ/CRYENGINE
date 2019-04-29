@@ -18,7 +18,7 @@
 #include <CrySystem/ISystem.h>
 #include "System.h" // to access InitLocalization()
 #include <CryString/CryPath.h>
-#include <CrySystem/IConsole.h>
+#include <CrySystem/ConsoleRegistration.h>
 #include <CryString/StringUtils.h>
 #include <locale.h>
 #include <time.h>

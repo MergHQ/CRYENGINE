@@ -5,6 +5,7 @@
 #include "NavMeshQueryManager.h"
 #include "NavMeshQuery.h"
 #include "Navigation/NavigationSystem/NavigationSystem.h"
+#include <CrySystem/ConsoleRegistration.h>
 
 namespace MNM
 {

@@ -31,6 +31,7 @@
 #include "CryActionCVars.h"
 
 #include "IGameRulesSystem.h"
+#include <CrySystem/ConsoleRegistration.h>
 
 ICVar* CItemSystem::m_pPrecache = 0;
 ICVar* CItemSystem::m_pItemLimitMP = 0;

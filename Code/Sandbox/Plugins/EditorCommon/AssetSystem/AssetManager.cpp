@@ -24,6 +24,7 @@
 #include <IEditor.h>
 #include <CrySystem/IConsole.h>
 #include <CryString/CryPath.h>
+#include <CrySystem/ConsoleRegistration.h>
 
 namespace Private_AssetManager
 {

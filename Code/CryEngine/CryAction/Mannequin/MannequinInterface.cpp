@@ -12,6 +12,7 @@
 #include "GameObjects/GameObject.h"
 #include "MannequinDebug.h"
 #include "ProceduralClipFactory.h"
+#include <CrySystem/ConsoleRegistration.h>
 
 CMannequinInterface::CMannequinInterface()
 	: m_pAnimationDatabaseManager(new CAnimationDatabaseManager())

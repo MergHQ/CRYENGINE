@@ -26,6 +26,7 @@
 #include <CryAISystem/IAIObject.h>
 #include <CryAISystem/IAIActor.h>
 #include <CryGame/IGameFramework.h>
+#include <CrySystem/ConsoleRegistration.h>
 
 #include <../CryAction/IActorSystem.h>
 #define HEAD_BONE_NAME "Bip01 Head"

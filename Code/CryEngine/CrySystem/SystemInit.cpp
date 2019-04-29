@@ -20,6 +20,7 @@
 #include <CryMono/IMonoRuntime.h>
 #include <CryGame/IGameStartup.h>
 #include <CryFont/IFont.h>
+#include <CrySystem/ConsoleRegistration.h>
 
 #if (CRY_PLATFORM_APPLE || CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID) && !defined(DEDICATED_SERVER)
 	#include <dlfcn.h>

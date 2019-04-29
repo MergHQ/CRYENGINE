@@ -6,6 +6,7 @@
 #include <CryGame/IGameFramework.h>
 #include <CryRenderer/IRenderAuxGeom.h>
 #include <CryMath/Cry_Camera.h>
+#include <CrySystem/ConsoleRegistration.h>
 
 #if MANUAL_FRAME_STEP_ENABLED
 

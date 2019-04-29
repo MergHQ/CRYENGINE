@@ -27,6 +27,7 @@
 #include <Cry3DEngine/ITimeOfDay.h>
 #include <CryRenderer/IRenderAuxGeom.h>
 #include <CryCore/RingBuffer.h>
+#include <CrySystem/ConsoleRegistration.h>
 
 #include <array>
 

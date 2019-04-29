@@ -8,7 +8,7 @@
 #include <PathUtils.h>
 #include <ThreadingUtils.h>
 
-#include <CrySystem/IConsole.h>
+#include <CrySystem/ConsoleRegistration.h>
 
 #include <QIcon>
 #include <QPixmap>

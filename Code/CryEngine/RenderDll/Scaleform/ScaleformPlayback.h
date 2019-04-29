@@ -2,6 +2,7 @@
 
 #pragma once
 #include <CryRenderer/IScaleform.h>
+#include <CrySystem/ConsoleRegistration.h>
 
 #if RENDERER_SUPPORT_SCALEFORM
 

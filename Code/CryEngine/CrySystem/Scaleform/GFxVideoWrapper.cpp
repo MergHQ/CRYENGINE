@@ -24,6 +24,7 @@
 
 		#include <CryThreading/IThreadManager.h>
 		#include <CryThreading/IThreadConfigManager.h>
+		#include <CrySystem/ConsoleRegistration.h>
 
 static float s_sys_flash_video_buffertime = 2.0f;
 static float s_sys_flash_video_buffertime_loading = 2.0f;

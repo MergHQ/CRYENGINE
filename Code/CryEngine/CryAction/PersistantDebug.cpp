@@ -7,6 +7,7 @@
 #include <IUIDraw.h>
 #include <CryFont/IFont.h>
 #include <CrySystem/ILocalizationManager.h>
+#include <CrySystem/ConsoleRegistration.h>
 
 CPersistantDebug::CPersistantDebug()
 	: m_pETLog(nullptr)

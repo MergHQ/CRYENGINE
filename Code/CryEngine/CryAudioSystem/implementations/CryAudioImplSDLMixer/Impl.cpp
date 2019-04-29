@@ -19,6 +19,7 @@
 #include <CryAudio/IAudioSystem.h>
 #include <CrySystem/IProjectManager.h>
 #include <CrySystem/IConsole.h>
+#include <CrySystem/ConsoleRegistration.h>
 
 #if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE)
 	#include <Logger.h>

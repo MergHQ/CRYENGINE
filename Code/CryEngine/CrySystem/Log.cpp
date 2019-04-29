@@ -22,6 +22,7 @@
 #include <CryGame/IGameFramework.h>
 #include <CryString/UnicodeFunctions.h>
 #include <CryString/StringUtils.h>
+#include <CrySystem/ConsoleRegistration.h>
 
 #if CRY_PLATFORM_WINDOWS
 	#include <time.h>

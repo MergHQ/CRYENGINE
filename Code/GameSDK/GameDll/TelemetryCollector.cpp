@@ -31,6 +31,7 @@
 #include <CrySystem/Profilers/IStatoscope.h>
 #include "DataPatchDownloader.h"
 #include "GameRules.h"
+#include <CrySystem/ConsoleRegistration.h>
 
 #if !defined (_RELEASE)
 #define TELEMETRY_CHECKS_FOR_OLD_ERRORLOGS (1)

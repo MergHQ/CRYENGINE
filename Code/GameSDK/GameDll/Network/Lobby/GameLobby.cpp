@@ -15,6 +15,7 @@
 #include "IGameSessionHandler.h"
 #include <CryLobby/ICryStats.h>
 #include <CrySystem/File/IResourceManager.h>
+#include <CrySystem/ConsoleRegistration.h>
 
 #include "Game.h"
 #include "Network/Squad/SquadManager.h"

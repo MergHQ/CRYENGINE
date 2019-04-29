@@ -164,6 +164,7 @@
 #include "LipSync/LipSync_FacialInstance.h"
 
 #include <CryFlowGraph/IFlowBaseNode.h>
+#include <CrySystem/ConsoleRegistration.h>
 
 #if !CrySharedLibrarySupported
 extern "C" IGameStartup * CreateGameStartup();

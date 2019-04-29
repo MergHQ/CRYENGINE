@@ -11,6 +11,7 @@
 #include "StdAfx.h"
 #include "PostEffects.h"
 #include <Cry3DEngine/I3DEngine.h>
+#include <CrySystem/ConsoleRegistration.h>
 
 void CParamBool::SetParam(float fParam, bool bForceValue)
 {

@@ -17,6 +17,7 @@
 #include "GameToken.h"
 #include "ScriptBind_GameToken.h"
 #include <CryRenderer/IRenderAuxGeom.h>
+#include <CrySystem/ConsoleRegistration.h>
 
 #define SCRIPT_GAMETOKEN_ALWAYS_CREATE // GameToken.SetValue from Script always creates the token
 // #undef SCRIPT_GAMETOKEN_ALWAYS_CREATE     // GameToken.SetValue from Script warns if Token not found

@@ -1,5 +1,6 @@
 #include <CrySystem/ISystem.h>
 #include <CrySystem/IConsole.h>
+#include <CrySystem/ConsoleRegistration.h>
 
 // Minimal example of how a console variable can be implemented and used
 // In this case we create a system, and a variable that determines whether or not the system should be currently updated

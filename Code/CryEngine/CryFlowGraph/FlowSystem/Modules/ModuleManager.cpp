@@ -9,7 +9,6 @@
 #include <CryFlowGraph/IFlowBaseNode.h>
 #include <CryRenderer/IRenderAuxGeom.h>
 
-
 #if !defined (_RELEASE)
 void RenderModuleDebugInfo();
 #endif

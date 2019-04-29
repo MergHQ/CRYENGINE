@@ -3,6 +3,7 @@
 #include "stdafx.h"
 #include "cvars.h"
 #include <CrySerialization/Enum.h>
+
 //need global var as the singleton approach is too expensive
 Console g_Consoleself;
 namespace

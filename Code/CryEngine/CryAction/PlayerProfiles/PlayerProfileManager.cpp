@@ -8,6 +8,7 @@
 #include <CryCore/Platform/IPlatformOS.h>
 #include <CryCore/CryCrc32.h>
 #include <CryCore/Platform/CryWindows.h>
+#include <CrySystem/ConsoleRegistration.h>
 
 #define SHARED_SAVEGAME_FOLDER            "%USER%/SaveGames"
 
