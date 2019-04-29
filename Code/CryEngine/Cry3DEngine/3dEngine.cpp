@@ -1183,15 +1183,18 @@ void C3DEngine::UpdateRenderingCamera(const char* szCallerName, const SRendering
 
 #endif
 
+	const CCamera* pAuxCamera = nullptr;
 	// set the camera if e_cameraFreeze is not set
 	if (GetCVars()->e_CameraFreeze || GetCVars()->e_CoverageBufferDebugFreeze)
 	{
 		DrawSphere(GetRenderingCamera().GetPosition(), .05f);
 
-		// alwasy set camera to request postion for the renderer, allows debugging with e_camerafreeze
+		// always set camera to request position for the renderer, allows debugging with e_cameraFreeze
+		const CCamera& currentCamera = gEnv->pSystem->GetViewCamera();
+		pAuxCamera = &currentCamera;
+
 		if (GetRenderer())
 		{
-			const CCamera& currentCamera = gEnv->pSystem->GetViewCamera();
 			static CCamera previousCamera = gEnv->pSystem->GetViewCamera();
 
 			if (auto pRenderView = passInfo.GetIRenderView())
@@ -1207,6 +1210,8 @@ void C3DEngine::UpdateRenderingCamera(const char* szCallerName, const SRendering
 	{
 		CCamera previousCam = m_RenderingCamera;
 		m_RenderingCamera = newCam;
+
+		pAuxCamera = &m_RenderingCamera;
 
 		// always set camera to request position for the renderer, allows debugging with e_camerafreeze
 		if (GetRenderer())
@@ -1273,7 +1278,9 @@ void C3DEngine::UpdateRenderingCamera(const char* szCallerName, const SRendering
 	m_deferredRenderProxyStreamingPriorityUpdates.resize(0);
 
 	if (!gEnv->pRenderer->GetIStereoRenderer() || !gEnv->pRenderer->GetIStereoRenderer()->GetStereoEnabled())
-		gEnv->pRenderer->UpdateAuxDefaultCamera(m_RenderingCamera);
+	{
+		gEnv->pRenderer->UpdateAuxDefaultCamera(*pAuxCamera);
+	}
 }
 
 void C3DEngine::PrepareOcclusion(const CCamera& rCamera, const SGraphicsPipelineKey& cullGraphicsContextKey)
