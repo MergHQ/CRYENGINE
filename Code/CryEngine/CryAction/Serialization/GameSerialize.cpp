@@ -17,7 +17,6 @@
 #include <CryMovie/IMovieSystem.h>
 #include "IPlayerProfiles.h"
 #include <CrySystem/IStreamEngine.h>
-#include "DialogSystem/DialogSystem.h"
 #include "MaterialEffects/MaterialEffects.h"
 #include "Network/GameContext.h"
 #include "Network/GameServerNub.h"
@@ -44,7 +43,6 @@ static const char* SAVEGAME_GAMETOKEN_SECTION = "GameTokens";
 static const char* SAVEGAME_TERRAINSTATE_SECTION = "TerrainState";
 static const char* SAVEGAME_TIMER_SECTION = "Timer";
 static const char* SAVEGAME_FLOWSYSTEM_SECTION = "FlowSystem";
-static const char* SAVEGAME_DIALOGSYSTEM_SECTION = "DialogSystem";
 static const char* SAVEGAME_LTLINVENTORY_SECTION = "LTLInventory";
 static const char* SAVEGAME_VIEWSYSTEM_SECTION = "ViewSystem";
 static const char* SAVEGAME_MATERIALEFFECTS_SECTION = "MatFX";
@@ -1060,11 +1058,6 @@ void CGameSerialize::SaveEngineSystems(SSaveEnvironment& savEnv)
 	if (pMatFX)
 		pMatFX->Serialize(savEnv.m_pSaveGame->AddSection(SAVEGAME_MATERIALEFFECTS_SECTION));
 	savEnv.m_checkpoint.Check("MaterialFX");
-
-	CDialogSystem* pDS = savEnv.m_pCryAction->GetDialogSystem();
-	if (pDS)
-		pDS->Serialize(savEnv.m_pSaveGame->AddSection(SAVEGAME_DIALOGSYSTEM_SECTION));
-	savEnv.m_checkpoint.Check("DialogSystem");
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1450,24 +1443,6 @@ void CGameSerialize::LoadEngineSystems(SLoadEnvironment& loadEnv)
 			GameWarning("Unable to open section %s", SAVEGAME_FLOWSYSTEM_SECTION);
 	}
 	loadEnv.m_checkpoint.Check("FlowSystem");
-
-	// Dialog System Reset & Serialization
-	CDialogSystem* pDS = loadEnv.m_pCryAction->GetDialogSystem();
-	if (pDS)
-		pDS->Reset(false);
-
-	// Dialog System First Pass [recreates DialogSessions]
-	loadEnv.m_pSer = loadEnv.m_pLoadGame->GetSection(SAVEGAME_DIALOGSYSTEM_SECTION);
-	if (!loadEnv.m_pSer.get())
-		GameWarning("Unable to open section %s", SAVEGAME_DIALOGSYSTEM_SECTION);
-	else
-	{
-		if (pDS)
-		{
-			pDS->Serialize(*loadEnv.m_pSer);
-		}
-	}
-	loadEnv.m_checkpoint.Check("DialogSystem");
 }
 
 //////////////////////////////////////////////////////////////////////////

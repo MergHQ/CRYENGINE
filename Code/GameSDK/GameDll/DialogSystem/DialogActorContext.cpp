@@ -4,15 +4,19 @@
 #include "DialogActorContext.h"
 #include "DialogSession.h"
 #include "DialogCommon.h"
+
 #include <CryAnimation/ICryAnimation.h>
 #include <CryAnimation/IFacialAnimation.h>
 #include <CryString/StringUtils.h>
-#include "IMovementController.h"
 #include <CrySystem/ILocalizationManager.h>
 #include <CryAISystem/IAIObject.h>
 #include <CryAISystem/IAIActor.h>
 #include <CryAISystem/IAIActorProxy.h>
 #include <CryAISystem/ISignal.h>
+#include <CryGame/IGameFramework.h>
+
+#include <IMovementController.h>
+#include <IActorSystem.h>
 
 static const float LOOKAT_TIMEOUT = 1.0f;
 static const float ANIM_TIMEOUT = 1.0f;
@@ -82,8 +86,8 @@ CDialogActorContext::CDialogActorContext(CDialogSession* pSession, CDialogScript
 	m_entityID = pSession->GetActorEntityId(m_actorID);
 	IEntity* pEntity = gEnv->pEntitySystem->GetEntity(m_entityID);
 	const char* debugName = pEntity ? pEntity->GetName() : "<no entity>";
-	m_pIActor = CCryAction::GetCryAction()->GetIActorSystem()->GetActor(m_entityID);
-	m_bIsLocalPlayer = m_pIActor != 0 && CCryAction::GetCryAction()->GetClientActor() == m_pIActor;
+	m_pIActor = gEnv->pGameFramework->GetIActorSystem()->GetActor(m_entityID);
+	m_bIsLocalPlayer = m_pIActor != 0 && gEnv->pGameFramework->GetClientActor() == m_pIActor;
 	m_SpeechAuxObject = CryAudio::InvalidAuxObjectId;
 
 	ResetState();
@@ -1325,9 +1329,12 @@ CDialogActorContext* CDialogActorContext::GetDialogActorContextByAudioCallbackDa
 {
 	if (pAudioRequestInfo->pUserDataOwner && pAudioRequestInfo->pUserData == CDialogActorContext::GetClassIdentifier())
 	{
-		EntityId const nContextID = static_cast<EntityId>(reinterpret_cast<UINT_PTR>(pAudioRequestInfo->pUserDataOwner));
-		CDialogSystem* pDS = CCryAction::GetCryAction()->GetDialogSystem();
-		return pDS->GetActiveSessionActorContext(nContextID);
+		const CDialogSystem* pDS = g_pGame->GetDialogSystem();
+		if (pDS)
+		{
+			const EntityId nContextID = static_cast<EntityId>(reinterpret_cast<UINT_PTR>(pAudioRequestInfo->pUserDataOwner));
+			return pDS->GetActiveSessionActorContext(nContextID);
+		}
 	}
 	return 0;
 }

@@ -12,7 +12,6 @@
 ////////////////////////////////////////////////////////////////////////////
 
 #include "StdAfx.h"
-#include "CryActionCVars.h"
 #include "CryAction.h"
 
 #include "DialogQueuesManager.h"
@@ -167,7 +166,7 @@ public:
 					ActivateOutput(pActInfo, EOP_DoneFinishedOrAborted, true);
 
 				const string& dialogString = GetPortString(pActInfo, EIP_Dialog);
-				CDialogQueuesManager* pMgr = CCryAction::GetCryAction()->GetDialogSystem()->GetDialogQueueManager();
+				CDialogQueuesManager* pMgr = g_pGame->GetDialogSystem()->GetDialogQueueManager();
 				m_buffer = pMgr->BufferEnumToId(GetPortInt(pActInfo, EIP_BufferId)); // we get the buffer value at this time and use it from now on. If something changes the port value after that, we are not going to care! at all!
 				if (pMgr->IsBufferFree(m_buffer))
 				{
@@ -192,7 +191,7 @@ public:
 				}
 				else
 				{
-					if (CDialogSystem* pDS = CCryAction::GetCryAction()->GetDialogSystem())
+					if (CDialogSystem* pDS = g_pGame->GetDialogSystem())
 					{
 						CDialogQueuesManager* pMgr = pDS->GetDialogQueueManager();
 
@@ -221,7 +220,7 @@ protected:
 	{
 		if (m_buffer != CDialogQueuesManager::NO_QUEUE)
 		{
-			if (CDialogSystem* pDS = CCryAction::GetCryAction()->GetDialogSystem())
+			if (CDialogSystem* pDS = g_pGame->GetDialogSystem())
 			{
 				CDialogQueuesManager* pMgr = pDS->GetDialogQueueManager();
 				pMgr->NotifyDialogDone(m_buffer, m_idForQueueManager);
@@ -232,10 +231,7 @@ protected:
 
 	CDialogSession* GetSession()
 	{
-		CDialogSystem* pDS = NULL;
-		CCryAction* pCryAction = CCryAction::GetCryAction();
-		if (pCryAction)
-			pDS = pCryAction->GetDialogSystem();
+		CDialogSystem* pDS = g_pGame->GetDialogSystem();
 		if (pDS)
 			return pDS->GetSession(m_sessionID);
 		return 0;
@@ -251,7 +247,7 @@ protected:
 			// we always remove first, so we don't get notified
 			pSession->RemoveListener(this);
 
-			CDialogSystem* pDS = CCryAction::GetCryAction()->GetDialogSystem();
+			CDialogSystem* pDS = g_pGame->GetDialogSystem();
 			if (pDS)
 			{
 				pDS->DeleteSession(m_sessionID);
@@ -264,7 +260,7 @@ protected:
 
 	bool PlayDialog(SActivationInfo* pActInfo)
 	{
-		CDialogSystem* pDS = CCryAction::GetCryAction()->GetDialogSystem();
+		CDialogSystem* pDS = g_pGame->GetDialogSystem();
 		if (!pDS)
 			return true;
 		const int fromLine = GetPortInt(pActInfo, EIP_StartLine);

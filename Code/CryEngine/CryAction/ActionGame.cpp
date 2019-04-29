@@ -16,7 +16,6 @@
 #include <CryEntitySystem/IBreakableGlassSystem.h>
 #include "IPlayerProfiles.h"
 #include "IGameSessionHandler.h"
-#include "DialogSystem/DialogSystem.h"
 #include <Cry3DEngine/ITimeOfDay.h>
 #include "TimeOfDayScheduler.h"
 #include "PersistantDebug.h"
@@ -4730,15 +4729,6 @@ void CActionGame::OnEditorSetGameMode(bool bGameMode)
 	pCryAction->GetTimeOfDayScheduler()->Reset();
 	gEnv->pFlowSystem->Reset(false);
 	if (gEnv->pFlashUI) gEnv->pFlashUI->Reload();
-	CDialogSystem* pDS = pCryAction->GetDialogSystem();
-	if (pDS)
-	{
-		pDS->Reset(false);
-		if (bGameMode && CDialogSystem::sAutoReloadScripts != 0)
-		{
-			pDS->ReloadScripts();
-		}
-	}
 
 	pCryAction->GetPersistantDebug()->Reset();
 }

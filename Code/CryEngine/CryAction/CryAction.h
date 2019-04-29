@@ -28,7 +28,6 @@ class CScriptBind_VehicleSystem;
 class CScriptBind_Vehicle;
 class CScriptBind_VehicleSeat;
 class CScriptBind_Inventory;
-class CScriptBind_DialogSystem;
 class CScriptBind_MaterialEffects;
 class CScriptBind_UIAction;
 
@@ -56,8 +55,6 @@ class CViewSystem;
 class CGameplayRecorder;
 class CPersistantDebug;
 class CPlayerProfileManager;
-class CDialogSystem;
-class CSubtitleManager;
 class CGameplayAnalyst;
 class CTimeOfDayScheduler;
 class CNetworkCVars;
@@ -156,8 +153,6 @@ public:
 	virtual IMaterialEffects*             GetIMaterialEffects();
 	virtual IBreakableGlassSystem*        GetIBreakableGlassSystem();
 	virtual IPlayerProfileManager*        GetIPlayerProfileManager();
-	virtual ISubtitleManager*             GetISubtitleManager();
-	virtual IDialogSystem*                GetIDialogSystem();
 	virtual ICooperativeAnimationManager* GetICooperativeAnimationManager();
 	virtual ICheckpointSystem*            GetICheckpointSystem();
 	virtual IForceFeedbackSystem*         GetIForceFeedbackSystem() const;
@@ -305,7 +300,6 @@ public:
 	virtual void                RegisterListener(IGameFrameworkListener* pGameFrameworkListener, const char* name, EFRAMEWORKLISTENERPRIORITY eFrameworkListenerPriority);
 	virtual void                UnregisterListener(IGameFrameworkListener* pGameFrameworkListener);
 
-	CDialogSystem*              GetDialogSystem()             { return m_pDialogSystem; }
 	CTimeOfDayScheduler*        GetTimeOfDayScheduler() const { return m_pTimeOfDayScheduler; }
 
 	CGameStatsConfig*           GetGameStatsConfig();
@@ -503,8 +497,6 @@ private:
 	CMaterialEffects*             m_pMaterialEffects;
 	IBreakableGlassSystem*        m_pBreakableGlassSystem;
 	CPlayerProfileManager*        m_pPlayerProfileManager;
-	CDialogSystem*                m_pDialogSystem;
-	CSubtitleManager*             m_pSubtitleManager;
 
 	IEffectSystem*                m_pEffectSystem;
 	CGameSerialize*               m_pGameSerialize;
@@ -548,7 +540,6 @@ private:
 	CScriptBind_Vehicle*          m_pScriptBindVehicle;
 	CScriptBind_VehicleSeat*      m_pScriptBindVehicleSeat;
 	CScriptBind_Inventory*        m_pScriptInventory;
-	CScriptBind_DialogSystem*     m_pScriptBindDS;
 	CScriptBind_MaterialEffects*  m_pScriptBindMFX;
 	CScriptBind_UIAction*         m_pScriptBindUIAction;
 	CTimeOfDayScheduler*          m_pTimeOfDayScheduler;

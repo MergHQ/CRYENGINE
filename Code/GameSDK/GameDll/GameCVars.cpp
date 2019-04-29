@@ -1718,6 +1718,11 @@ void SCVars::InitCVars(IConsole *pConsole)
 	REGISTER_CVAR(ai_DebugSignalTimers, 0, VF_CHEAT, "Enable Signal Timers Debug Screen\n");
 	REGISTER_CVAR(ai_DebugRangeSignaling, 0, VF_CHEAT, "Enable Range Signaling Debug Screen\n");
 
+#ifdef AI_LOG_SIGNALS
+	REGISTER_CVAR2("ai_LogSignals", &aiLogSignals, 0, VF_CHEAT, "Maximum radius at which player can interact with other entities");
+	REGISTER_CVAR2("ai_MaxSignalDuration", &aiMaxSignalDuration, 3.f, VF_CHEAT, "Maximum radius at which player can interact with other entities");
+#endif
+
 	REGISTER_CVAR(g_actorViewDistRatio, 127, 0, "Sets the view dist ratio for actors.\n");
 	REGISTER_CVAR(g_playerLodRatio, 80, VF_REQUIRE_LEVEL_RELOAD, "Sets the lod ratio for players.\n");
 

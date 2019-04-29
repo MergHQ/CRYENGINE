@@ -84,10 +84,6 @@
 
 #include "Network/GameClientNub.h"
 
-#include "DialogSystem/DialogSystem.h"
-#include "DialogSystem/ScriptBind_DialogSystem.h"
-#include "SubtitleManager.h"
-
 #include "LevelSystem.h"
 #include "ActorSystem.h"
 #include "ItemSystem.h"
@@ -287,8 +283,6 @@ CCryAction::CCryAction(SSystemInitParams& initParams)
 	m_pBreakableGlassSystem(0),
 	m_pForceFeedBackSystem(0),
 	m_pPlayerProfileManager(0),
-	m_pDialogSystem(0),
-	m_pSubtitleManager(0),
 	m_pEffectSystem(0),
 	m_pGameSerialize(0),
 	m_pCallbackTimer(0),
@@ -307,7 +301,6 @@ CCryAction::CCryAction(SSystemInitParams& initParams)
 	m_pScriptBindVehicle(0),
 	m_pScriptBindVehicleSeat(0),
 	m_pScriptInventory(0),
-	m_pScriptBindDS(0),
 	m_pScriptBindMFX(0),
 	m_pScriptBindUIAction(0),
 	m_pPersistantDebug(0),
@@ -1920,11 +1913,8 @@ bool CCryAction::Initialize(SSystemInitParams& startupParams)
 		m_pPlayerProfileManager = new CPlayerProfileManager(new CPlayerProfileImplFSDir());
 #endif
 	}
-	m_pDialogSystem = new CDialogSystem();
-	m_pDialogSystem->Init();
 
 	m_pTimeOfDayScheduler = new CTimeOfDayScheduler();
-	m_pSubtitleManager = new CSubtitleManager();
 
 	m_pCustomActionManager = new CCustomActionManager();
 	m_pCustomEventManager = new CCustomEventManager();
@@ -2168,10 +2158,6 @@ bool CCryAction::CompleteInit()
 	if (gEnv->pFlashUI)
 		gEnv->pFlashUI->Init();
 
-	m_pSystem->SetIDialogSystem(m_pDialogSystem);
-
-	InlineInitializationProcessing("CCryAction::CompleteInit SetDialogSystem");
-
 	if (m_pGameplayAnalyst)
 		m_pGameplayRecorder->RegisterListener(m_pGameplayAnalyst);
 
@@ -2296,7 +2282,6 @@ void CCryAction::InitScriptBinds()
 	{
 		m_pScriptInventory = new CScriptBind_Inventory(m_pSystem, this);
 	}
-	m_pScriptBindDS = new CScriptBind_DialogSystem(m_pSystem, m_pDialogSystem);
 	m_pScriptBindUIAction = new CScriptBind_UIAction();
 }
 
@@ -2319,7 +2304,6 @@ void CCryAction::ReleaseScriptBinds()
 	SAFE_RELEASE(m_pScriptBindVehicle);
 	SAFE_RELEASE(m_pScriptBindVehicleSeat);
 	SAFE_RELEASE(m_pScriptInventory);
-	SAFE_RELEASE(m_pScriptBindDS);
 	SAFE_RELEASE(m_pScriptBindMFX);
 	SAFE_RELEASE(m_pScriptBindUIAction);
 }
@@ -2418,9 +2402,6 @@ void CCryAction::ShutDown()
 	if (m_pPlayerProfileManager)
 		m_pPlayerProfileManager->Shutdown();
 
-	if (m_pDialogSystem)
-		m_pDialogSystem->Shutdown();
-
 	SAFE_RELEASE(m_pActionMapManager);
 	SAFE_RELEASE(m_pItemSystem);
 	SAFE_RELEASE(m_pLevelSystem);
@@ -2434,7 +2415,6 @@ void CCryAction::ShutDown()
 	SAFE_DELETE(m_pBreakableGlassSystem);
 	SAFE_RELEASE(m_pActorSystem);
 	SAFE_DELETE(m_pForceFeedBackSystem);
-	SAFE_DELETE(m_pSubtitleManager);
 	SAFE_DELETE(m_pUIDraw);
 	SAFE_DELETE(m_pScriptRMI);
 	SAFE_DELETE(m_pEffectSystem);
@@ -2446,7 +2426,6 @@ void CCryAction::ShutDown()
 	SAFE_DELETE(m_pGameSerialize);
 	SAFE_DELETE(m_pPersistantDebug);
 	SAFE_DELETE(m_pPlayerProfileManager);
-	SAFE_DELETE(m_pDialogSystem); // maybe delete before
 	SAFE_DELETE(m_pTimeOfDayScheduler);
 	SAFE_DELETE(m_pLocalAllocs);
 	SAFE_DELETE(m_pCooperativeAnimationManager);
@@ -2645,9 +2624,6 @@ bool CCryAction::PostSystemUpdate(bool haveFocus, CEnumFlags<ESystemUpdateFlags>
 
 		if (m_pBreakableGlassSystem)
 			m_pBreakableGlassSystem->Update(frameTime);
-
-		if (m_pDialogSystem)
-			m_pDialogSystem->Update(frameTime);
 
 		if (m_pVehicleSystem)
 			m_pVehicleSystem->Update(frameTime);
@@ -4163,11 +4139,6 @@ IBreakableGlassSystem* CCryAction::GetIBreakableGlassSystem()
 	return m_pBreakableGlassSystem;
 }
 
-IDialogSystem* CCryAction::GetIDialogSystem()
-{
-	return m_pDialogSystem;
-}
-
 IRealtimeRemoteUpdate* CCryAction::GetIRealTimeRemoteUpdate()
 {
 	return &CRealtimeRemoteUpdateListener::GetRealtimeRemoteUpdateListener();
@@ -4912,7 +4883,6 @@ void CCryAction::GetMemoryUsage(ICrySizer* s) const
 	s->AddObject(m_pMaterialEffects);
 	s->AddObject(m_pBreakableGlassSystem);
 	CHILD_STATISTICS(m_pPlayerProfileManager);
-	CHILD_STATISTICS(m_pDialogSystem);
 	CHILD_STATISTICS(m_pEffectSystem);
 	CHILD_STATISTICS(m_pGameSerialize);
 	CHILD_STATISTICS(m_pCallbackTimer);
@@ -4934,17 +4904,11 @@ void CCryAction::GetMemoryUsage(ICrySizer* s) const
 	s->Add(*m_pScriptBindVehicle);
 	s->Add(*m_pScriptBindVehicleSeat);
 	s->Add(*m_pScriptInventory);
-	s->Add(*m_pScriptBindDS);
 	s->Add(*m_pScriptBindMFX);
 	s->Add(*m_pScriptBindUIAction);
 	s->Add(*m_pMaterialEffectsCVars);
 	s->AddObject(*m_pGFListeners);
 	s->Add(*m_nextFrameCommand);
-}
-
-ISubtitleManager* CCryAction::GetISubtitleManager()
-{
-	return m_pSubtitleManager;
 }
 
 void CCryAction::MutePlayer(IConsoleCmdArgs* pArgs)

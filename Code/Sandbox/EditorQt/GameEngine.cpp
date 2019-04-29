@@ -50,7 +50,6 @@
 #include <CryAISystem/IAgent.h>
 #include <CryAISystem/IAISystem.h>
 #include <CryAnimation/ICryAnimation.h>
-#include <CryAudio/Dialog/IDialogSystem.h>
 #include <CryCore/Platform/platform_impl.inl>
 #include <CryDynamicResponseSystem/IDynamicResponseSystem.h>
 #include <CryEntitySystem/IEntitySystem.h>
@@ -1515,10 +1514,6 @@ void CGameEngine::Update()
 				pFlowSystem->Update();
 			}
 
-			if (IDialogSystem* pDialogSystem = gEnv->pGameFramework->GetIDialogSystem())
-			{
-				pDialogSystem->Update(gEnv->pTimer->GetFrameTime());
-			}
 			const CRenderViewport* gameViewport = static_cast<CRenderViewport*>(GetIEditorImpl()->GetViewManager()->GetGameViewport());
 			CRY_ASSERT(gameViewport);
 			gEnv->pSystem->DoFrame(gameViewport->GetDisplayContextKey(), SGraphicsPipelineKey::BaseGraphicsPipelineKey, updateFlags);

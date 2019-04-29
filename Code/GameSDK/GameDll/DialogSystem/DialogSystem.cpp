@@ -21,7 +21,6 @@
 
 #include "DialogActorContext.h"
 
-#include "CryAction.h"
 #include <CrySystem/ConsoleRegistration.h>
 
 #define DIALOG_LIBS_PATH_EXCEL "Libs/Dialogs"
@@ -33,13 +32,14 @@ int CDialogSystem::sLoadSoundSynchronously = 0;
 int CDialogSystem::sAutoReloadScripts = 0;
 int CDialogSystem::sLoadExcelScripts = 0;
 int CDialogSystem::sWarnOnMissingLoc = 0;
+int CDialogSystem::sDebugDialogBuffers = 0;
 ICVar* CDialogSystem::ds_LevelNameOverride = 0;
 
 namespace
 {
 void ScriptReload(IConsoleCmdArgs* pArgs)
 {
-	CDialogSystem* pDS = CCryAction::GetCryAction()->GetDialogSystem();
+	CDialogSystem* pDS = g_pGame->GetDialogSystem();
 	if (pDS)
 	{
 		pDS->ReloadScripts();
@@ -49,7 +49,7 @@ void ScriptReload(IConsoleCmdArgs* pArgs)
 ///////////////////////////////////////////////////////////////////////////
 void ScriptDump(IConsoleCmdArgs* pArgs)
 {
-	CDialogSystem* pDS = CCryAction::GetCryAction()->GetDialogSystem();
+	CDialogSystem* pDS = g_pGame->GetDialogSystem();
 	if (pDS)
 	{
 		int verbosity = 0;
@@ -62,7 +62,7 @@ void ScriptDump(IConsoleCmdArgs* pArgs)
 ///////////////////////////////////////////////////////////////////////////
 void ScriptDumpSessions(IConsoleCmdArgs* pArgs)
 {
-	CDialogSystem* pDS = CCryAction::GetCryAction()->GetDialogSystem();
+	CDialogSystem* pDS = g_pGame->GetDialogSystem();
 	if (pDS)
 	{
 		pDS->DumpSessions();
@@ -89,6 +89,8 @@ bool InitCons()
 	REGISTER_CVAR2("ds_LoadExcelScripts", &CDialogSystem::sLoadExcelScripts, 1, 0, "Load legacy Excel based dialogs.");
 	// Warn on missing Localization entries
 	REGISTER_CVAR2("ds_WarnOnMissingLoc", &CDialogSystem::sWarnOnMissingLoc, 1, 0, "Warn on Missing Localization Entries");
+
+	REGISTER_CVAR2("g_debugDialogBuffers", &CDialogSystem::sDebugDialogBuffers, 0, VF_NULL, "Enables the on screen debug info for flownode dialog buffers.");
 
 	// Warn on missing Localization entries
 	CDialogSystem::ds_LevelNameOverride = REGISTER_STRING("ds_LevelNameOverride", "", 0,
@@ -169,7 +171,8 @@ CDialogSystem::CDialogSystem()
 	InitCons();
 	m_nextSessionID = 1;
 
-	CCryAction::GetCryAction()->GetILevelSystem()->AddListener(this);
+	if (gEnv->pGameFramework->GetILevelSystem())
+		gEnv->pGameFramework->GetILevelSystem()->AddListener(this);
 }
 
 ////////////////////////////////////////////////////////////////////////////
@@ -178,8 +181,8 @@ CDialogSystem::~CDialogSystem()
 	ReleaseSessions();
 	ReleaseScripts();
 
-	if (CCryAction::GetCryAction()->GetILevelSystem())
-		CCryAction::GetCryAction()->GetILevelSystem()->RemoveListener(this);
+	if (gEnv->pGameFramework->GetILevelSystem())
+		gEnv->pGameFramework->GetILevelSystem()->RemoveListener(this);
 }
 
 ////////////////////////////////////////////////////////////////////////////

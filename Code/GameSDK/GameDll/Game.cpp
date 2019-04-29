@@ -53,6 +53,9 @@
 #include "ScriptBind_HitDeathReactions.h"
 #include "Boids/ScriptBind_Boids.h"
 #include "AI/ScriptBind_GameAI.h"
+#include "DialogSystem/ScriptBind_DialogSystem.h"
+#include "DialogSystem/DialogSystem.h"
+#include "SubtitleManager.h"
 #include "UI/HUD/ScriptBind_HUD.h"
 #include "Environment/ScriptBind_InteractiveObject.h"
 #include "Network/Lobby/MatchMakingTelemetry.h"
@@ -425,6 +428,7 @@ CGame::CGame()
 	m_pScriptBindHitDeathReactions(0),
 	m_pScriptBindBoids(0),
 	m_pScriptBindTurret(0),
+	m_pScriptBindDialogSystem(nullptr),
 	m_pPlayerProfileManager(0),
 	m_pGameAudio(0),
 	m_pScreenEffects(0),
@@ -516,7 +520,9 @@ CGame::CGame()
 	m_userChangedDoSignOutAndIn(false),
 #endif
 	m_pMovingPlatformMgr(NULL),
-	m_stereoOutputFunctorId(0)
+	m_stereoOutputFunctorId(0),
+	m_pDialogSystem(nullptr),
+	m_pSubtitleManager(nullptr)
 {
 	static_assert(eCGE_Last <= 64, "Unexpected enum value!");
 
@@ -670,6 +676,8 @@ CGame::~CGame()
 	SAFE_DELETE(m_pMovingPlatformMgr);
 	SAFE_DELETE(m_pMatchMakingTelemetry);
 	SAFE_DELETE(m_pWorldBuilder);
+	SAFE_DELETE(m_pDialogSystem);
+	SAFE_DELETE(m_pSubtitleManager);
 
 	if (m_pLobbySessionHandler != NULL)
 	{
@@ -794,6 +802,11 @@ bool CGame::Init(/*IGameFramework* pFramework*/)
 
 	GetISystem()->GetPlatformOS()->AddListener(this, "CGame");
 	gEnv->pSystem->GetISystemEventDispatcher()->RegisterListener(this, "CGame");
+
+	m_pDialogSystem = new CDialogSystem();
+	gEnv->pSystem->SetIDialogSystem(m_pDialogSystem);
+
+	m_pSubtitleManager = new CSubtitleManager();
 
 	InitScriptBinds();
 
@@ -2643,6 +2656,14 @@ int CGame::Update(bool haveFocus, unsigned int updateFlags) PREFAST_SUPPRESS_WAR
 		}
 	}
 
+	const bool shouldUpdate = gEnv->pGameFramework->IsGameStarted() && !gEnv->pGameFramework->IsGamePaused();
+
+	if (shouldUpdate)
+	{
+		if (m_pDialogSystem)
+			m_pDialogSystem->Update(frameTime);
+	}
+
 	if (gEnv->pGameFramework->IsGamePaused() == false)
 	{
 		m_pWeaponSystem->Update(frameTime);
@@ -3103,6 +3124,16 @@ void CGame::EditorResetGame(bool bStart)
 	if (m_pMovingPlatformMgr)
 		m_pMovingPlatformMgr->Reset();
 
+
+	if (m_pDialogSystem)
+	{
+		m_pDialogSystem->Reset(false);
+		if (bStart && CDialogSystem::sAutoReloadScripts != 0)
+		{
+			m_pDialogSystem->ReloadScripts();
+		}
+	}
+
 	CRangeSignaling::ref().OnEditorSetGameMode(bStart);
 	CSignalTimer::ref().OnEditorSetGameMode(bStart);
 }
@@ -3149,6 +3180,9 @@ void CGame::Shutdown()
 	CFrontEndModelCache::Allow3dFrontEndAssets(false, true);
 
 	gEnv->pGameFramework->ReleaseExtensions();
+
+	if (m_pDialogSystem)
+		m_pDialogSystem->Shutdown();
 
 	this->~CGame();
 }
@@ -3530,9 +3564,23 @@ void CGame::OnActionEvent(const SActionEvent& event)
 		break;
 	case eAE_disconnected:
 		break;
+	case eAE_resetLoadedLevel:
+	{
+		if (m_pDialogSystem)
+		{
+			m_pDialogSystem->Reset(true);
+		}
+		break;
+	}
 	case eAE_unloadLevel:
 		{
 			MEMSTAT_LABEL_SCOPED("CGame::OnActionEvent(eAE_unloadLevel)");
+			
+			if (m_pDialogSystem)
+			{
+				m_pDialogSystem->Reset(true);
+			}
+			
 			m_pGameCache->Reset();
 
 			m_pGameParametersStorage->GetItemResourceCache().FlushCaches();
@@ -3598,6 +3646,13 @@ void CGame::OnActionEvent(const SActionEvent& event)
 	case eAE_loadLevel:
 		{
 			MEMSTAT_LABEL_SCOPED("CGame::OnActionEvent(eAE_loadLevel)");
+			
+			if (m_pDialogSystem)
+			{
+				m_pDialogSystem->Reset(false);
+				m_pDialogSystem->Init();
+			}
+			
 			if (m_pGameAISystem)
 			{
 				m_pGameAISystem->Reset(false);
@@ -3840,6 +3895,7 @@ void CGame::InitScriptBinds()
 	m_pScriptBindTurret = new CScriptBind_Turret(gEnv->pGameFramework->GetISystem());
 	m_pScriptBindProtected = new CScriptBind_ProtectedBinds(gEnv->pGameFramework->GetISystem());
 	m_pScriptBindLightningArc = new CScriptBind_LightningArc(gEnv->pGameFramework->GetISystem());
+	m_pScriptBindDialogSystem = new CScriptBind_DialogSystem(gEnv->pGameFramework->GetISystem(), m_pDialogSystem);
 
 	ICVar* pEnableAI = gEnv->pConsole->GetCVar("sv_AISystem");
 	if (!gEnv->bMultiplayer || (pEnableAI && pEnableAI->GetIVal()))
@@ -3866,6 +3922,7 @@ void CGame::ReleaseScriptBinds()
 	SAFE_DELETE(m_pScriptBindTurret);
 	SAFE_DELETE(m_pScriptBindProtected);
 	SAFE_DELETE(m_pScriptBindGameAI);
+	SAFE_DELETE(m_pScriptBindDialogSystem);
 }
 
 void CGame::CheckReloadLevel()
@@ -3943,6 +4000,7 @@ void CGame::GetMemoryStatistics(ICrySizer* s)
 	s->Add(*m_pScriptBindHitDeathReactions);
 	s->Add(*m_pScriptBindBoids);
 	s->Add(*m_pScriptBindTurret);
+	s->Add(*m_pScriptBindDialogSystem);
 	s->Add(*m_pGameActions);
 
 	m_pGameParametersStorage->GetMemoryStatistics(s);
@@ -3958,6 +4016,9 @@ void CGame::GetMemoryStatistics(ICrySizer* s)
 
 	if (m_pMovementTransitionsSystem)
 		m_pMovementTransitionsSystem->GetMemoryUsage(s);
+
+	if (m_pDialogSystem)
+		m_pDialogSystem->GetMemoryStatistics(s);
 
 	m_pGameCache->GetMemoryUsage(s);
 }
@@ -5662,6 +5723,18 @@ void CGame::PreSerialize()
 void CGame::FullSerialize(TSerialize serializer)
 {
 	serializer.BeginGroup("IGame");
+	
+	if (m_pDialogSystem)
+	{
+		if (serializer.IsReading())
+		{
+			m_pDialogSystem->Reset(false);
+		}
+		serializer.BeginGroup("DialogSystem");
+		m_pDialogSystem->Serialize(serializer);
+		serializer.EndGroup();
+	}
+	
 	if (GetMOSystem())
 	{
 		GetMOSystem()->Serialize(serializer);

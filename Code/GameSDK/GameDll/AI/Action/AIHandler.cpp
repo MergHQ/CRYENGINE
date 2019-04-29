@@ -18,7 +18,6 @@
 #include "AIProxy.h"
 
 #include "PersistantDebug.h"
-#include "CryActionCVars.h"
 
 #include <IActorSystem.h>
 #include <IAnimationGraph.h>
@@ -1302,7 +1301,7 @@ bool CAIHandler::CallScript(IScriptTable* scriptTable, const char* funcName, flo
 			static ICVar* pCVarAILogging = NULL;
 			CTimeValue start;
 			uint64 pagefaults = 0;
-			if (CCryActionCVars::Get().aiLogSignals)
+			if (g_pGame->GetCVars()->aiLogSignals)
 			{
 				if (!pCVarAILogging)
 					pCVarAILogging = gEnv->pConsole->GetCVar("ai_enablewarningserrors");
@@ -1367,7 +1366,7 @@ bool CAIHandler::CallScript(IScriptTable* scriptTable, const char* funcName, flo
 			pScriptSystem->ReleaseFunc(functionToCall);
 
 #ifdef AI_LOG_SIGNALS
-			if (CCryActionCVars::Get().aiLogSignals)
+			if (g_pGame->GetCVars()->aiLogSignals)
 			{
 				if (pCVarAILogging && pCVarAILogging->GetIVal())
 				{
@@ -1377,7 +1376,7 @@ bool CAIHandler::CallScript(IScriptTable* scriptTable, const char* funcName, flo
 					pagefaults = memCounters.PageFaultCount - pagefaults;
 
 				}
-				if (start.GetMilliSeconds() > CCryActionCVars::Get().aiMaxSignalDuration)
+				if (start.GetMilliSeconds() > g_pGame->GetCVars()->aiMaxSignalDuration)
 				{
 					char* behaviour = "";
 					scriptTable->GetValue("Name", behaviour);

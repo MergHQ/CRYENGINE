@@ -5,7 +5,6 @@
 #include <CryMovie/IMovieSystem.h>
 #include <CryRenderer/IRenderAuxGeom.h>
 #include <CryGame/IGameTokens.h>
-#include <CryAudio/Dialog/IDialogSystem.h>
 #include "TimeOfDayScheduler.h"
 #include "IGameRulesSystem.h"
 #include <CryAction/IMaterialEffects.h>
@@ -1389,13 +1388,6 @@ public:
 			CCryAction::GetCryAction()->OnActionEvent(SActionEvent(eAE_loadLevel));
 
 			CCryAction::GetCryAction()->CreatePhysicsQueues();
-
-			// Reset dialog system
-			if (gEnv->pDialogSystem)
-			{
-				gEnv->pDialogSystem->Reset(false);
-				gEnv->pDialogSystem->Init();
-			}
 		}
 
 		NEXT_STEP(EStep::LoadLevelAiAndGame)
@@ -2317,10 +2309,6 @@ void CLevelSystem::UnLoadLevel()
 	}
 
 	// reset a bunch of subsystems
-	if (gEnv->pDialogSystem)
-	{
-		gEnv->pDialogSystem->Reset(true);
-	}
 
 	if (gEnv->pGameFramework)
 	{

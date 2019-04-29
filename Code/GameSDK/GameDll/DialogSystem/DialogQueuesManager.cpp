@@ -2,7 +2,10 @@
 
 #include "StdAfx.h"
 #include "DialogQueuesManager.h"
-#include "CryActionCVars.h"
+#include "DialogSystem.h"
+
+#include "GameCVars.h"
+
 #include <CryRenderer/IRenderAuxGeom.h>
 
 ////////////////////////////////////////////////////////////////////////////
@@ -67,7 +70,7 @@ CDialogQueuesManager::TDialogId CDialogQueuesManager::Play(uint32 queueID, const
 	{
 		m_buffersList[queueID].push_back(dialogId);
 #ifdef DEBUGINFO_DIALOGBUFFER
-		if (CCryActionCVars::Get().g_debugDialogBuffers == 1)
+		if (CDialogSystem::sDebugDialogBuffers == 1)
 			m_dialogNames.insert(std::make_pair(dialogId, name));
 #endif
 	}
@@ -97,7 +100,7 @@ void CDialogQueuesManager::NotifyDialogDone(uint32 queueID, TDialogId dialogId)
 		// and the element we want to delete should almost always be the first one, so we dont care about performance hit
 		stl::find_and_erase(buffer, dialogId);
 #ifdef DEBUGINFO_DIALOGBUFFER
-		if (CCryActionCVars::Get().g_debugDialogBuffers == 1)
+		if (CDialogSystem::sDebugDialogBuffers == 1)
 			m_dialogNames.erase(dialogId);
 #endif
 	}
@@ -129,7 +132,7 @@ void CDialogQueuesManager::Serialize(TSerialize ser)
 void CDialogQueuesManager::Update()
 {
 #ifdef DEBUGINFO_DIALOGBUFFER
-	if (CCryActionCVars::Get().g_debugDialogBuffers == 1)
+	if (CDialogSystem::sDebugDialogBuffers == 1)
 	{
 		for (uint32 i = 0; i < m_numBuffers; ++i)
 		{

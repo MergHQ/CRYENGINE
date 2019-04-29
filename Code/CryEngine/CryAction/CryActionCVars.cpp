@@ -29,11 +29,6 @@ CCryActionCVars::CCryActionCVars()
 	REGISTER_CVAR2("g_userNeverAutoSignsIn", &g_userNeverAutoSignsIn, 0, VF_CHEAT, "for autobuilds never automatically bring up the user sign in window, if the user isn't signed in. Can affect performance and skew performance test results. Has to be added to system.cfg, doesn't work if added to the commandline!");
 #endif
 
-#ifdef AI_LOG_SIGNALS
-	REGISTER_CVAR2("ai_LogSignals", &aiLogSignals, 0, VF_CHEAT, "Maximum radius at which player can interact with other entities");
-	REGISTER_CVAR2("ai_MaxSignalDuration", &aiMaxSignalDuration, 3.f, VF_CHEAT, "Maximum radius at which player can interact with other entities");
-#endif
-
 	// Currently, GameDLLs should set this cvar - it's a fundamental change in AI//depot/Games/Crysis2/Branches/Develop/MP/Trunk/Engine/Config/multiplayer.cfg
 	// 0 is the preferred value, 1 is for Crysis compatibility
 	int defaultAiFlowNodeAlertnessCheck = 1;
@@ -66,8 +61,6 @@ CCryActionCVars::CCryActionCVars()
 	REGISTER_CVAR(g_XMLCPBUseExtraZLibCompression, 1, VF_CHEAT, "Enables an extra zlib compression pass on the binary saves.");
 	REGISTER_CVAR(g_XMLCPBBlockQueueLimit, 6, VF_CHEAT | VF_REQUIRE_APP_RESTART, "Limits the number of blocks to queue for saving, causes a main thread stall if exceeded. 0 for no limit.");
 
-	REGISTER_CVAR(g_debugDialogBuffers, 0, VF_NULL, "Enables the on screen debug info for flownode dialog buffers.");
-
 	REGISTER_CVAR(g_allowDisconnectIfUpdateFails, 1, VF_INVISIBLE, "");
 
 	REGISTER_CVAR(g_useSinglePosition, 1, VF_NULL, "Activates the new Single Position update order");
@@ -99,10 +92,6 @@ CCryActionCVars::~CCryActionCVars()
 	pConsole->UnregisterVariable("g_debug_stats", true);
 	pConsole->UnregisterVariable("g_statisticsMode", true);
 
-#ifdef AI_LOG_SIGNALS
-	pConsole->UnregisterVariable("ai_LogSignals", true);
-	pConsole->UnregisterVariable("ai_MaxSignalDuration", true);
-#endif
 	pConsole->UnregisterVariable("ai_FlowNodeAlertnessCheck", true);
 
 	pConsole->UnregisterVariable("co_usenewcoopanimsystem", true);
@@ -137,7 +126,6 @@ CCryActionCVars::~CCryActionCVars()
 	pConsole->UnregisterVariable("g_XMLCPBSizeReportThreshold", true);
 	pConsole->UnregisterVariable("g_XMLCPBUseExtraZLibCompression", true);
 	pConsole->UnregisterVariable("g_XMLCPBBlockQueueLimit", true);
-	pConsole->UnregisterVariable("g_debugDialogBuffers", true);
 	pConsole->UnregisterVariable("g_saveLoadDumpEntity", true);
 	pConsole->UnregisterVariable("g_dumpClassRegistry", true);
 	pConsole->UnregisterVariable("g_enableActionGame", true);
