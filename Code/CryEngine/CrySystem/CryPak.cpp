@@ -3591,11 +3591,12 @@ bool CCryPak::MakeDir(const char* szPath, bool bGamePathMapping)
 		{
 			*q++ = *p++;
 		}
-		// If empty string, nothing to create
-		if (*newPath != 0)
+
+		if (*newPath != 0 && !CryCreateDirectory(newPath))
 		{
-			CryCreateDirectory(newPath);
+			return false;
 		}
+
 		if (*p)
 		{
 			if (*p != g_cNonNativeSlash)
@@ -3610,7 +3611,7 @@ bool CCryPak::MakeDir(const char* szPath, bool bGamePathMapping)
 		}
 	}
 
-	return CryCreateDirectory(szPath);
+	return true;
 }
 
 //////////////////////////////////////////////////////////////////////////
