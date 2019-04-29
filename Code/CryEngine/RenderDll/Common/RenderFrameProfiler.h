@@ -79,6 +79,9 @@
 
 #else
 // NULL implementation
+	#define PROFILE_LABEL_GPU(X)
+	#define PROFILE_LABEL_PUSH_GPU(X)
+	#define PROFILE_LABEL_POP_GPU(X)
 	#define PROFILE_LABEL(X)
 	#define PROFILE_LABEL_PUSH(X)
 	#define PROFILE_LABEL_POP(X)
