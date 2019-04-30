@@ -162,17 +162,15 @@ struct SProfilingMarker
 #define CRY_PROFILE_THREADEND   if(gEnv->pSystem) gEnv->pSystem->GetProfilingSystem()->EndThread()
 
 #define CRY_PROFILE_SECTION_FULL(subsystem, szName, szArg, isWaiting) \
-	static_assert(CRY_IS_STRING_LITERAL(szName), "Only use string literals as the name of a profiling section!"); \
+	static_assert(szName != nullptr, "Only use string literals as the name of a profiling section!"); \
 	static_assert(bool(uint8(subsystem)) || true, "The subsystem cannot be set dynamically!"); \
 	static_assert(isWaiting || true, "The waiting status cannot be set dynamically!"); \
 	const static SProfilingSectionDescription CRYPROF_CAT(profEventDesc, __LINE__) (__FILE__, szName, __LINE__, isWaiting, subsystem); \
 	SProfilingSection CRYPROF_CAT(profSection, __LINE__)(&CRYPROF_CAT(profEventDesc, __LINE__), szArg);
 
-// helper macro to stringify __FUNC__, otherwise the CRY_IS_STRING_LITERAL() check does not work
-#define CRY_PROFILE_STRINGIFY(s) #s
-#define CRY_PROFILE_FUNCTION(subsystem)               CRY_PROFILE_SECTION_FULL(subsystem, CRY_PROFILE_STRINGIFY(__FUNC__), nullptr, false)
-#define CRY_PROFILE_FUNCTION_ARG(subsystem, argument) CRY_PROFILE_SECTION_FULL(subsystem, CRY_PROFILE_STRINGIFY(__FUNC__), argument, false)
-#define CRY_PROFILE_FUNCTION_WAITING(subsystem)       CRY_PROFILE_SECTION_FULL(subsystem, CRY_PROFILE_STRINGIFY(__FUNC__), nullptr, true)
+#define CRY_PROFILE_FUNCTION(subsystem)               CRY_PROFILE_SECTION_FULL(subsystem, __FUNC__, nullptr, false)
+#define CRY_PROFILE_FUNCTION_ARG(subsystem, argument) CRY_PROFILE_SECTION_FULL(subsystem, __FUNC__, argument, false)
+#define CRY_PROFILE_FUNCTION_WAITING(subsystem)       CRY_PROFILE_SECTION_FULL(subsystem, __FUNC__, nullptr, true)
 
 #define CRY_PROFILE_SECTION(subsystem, szName)            CRY_PROFILE_SECTION_FULL(subsystem, szName, nullptr, false)
 #define CRY_PROFILE_SECTION_ARG(subsystem, szName, szArg) CRY_PROFILE_SECTION_FULL(subsystem, szName, szArg, false)
