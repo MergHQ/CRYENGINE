@@ -21,7 +21,6 @@ public:
 	virtual const char*                           GetEditorName() const override { return "Material Editor"; }
 
 	virtual bool                                  OnOpenAsset(CAsset* pAsset) override;
-	virtual bool                                  OnSaveAsset(CEditableAsset& editAsset) override;
 	virtual void                                  OnCloseAsset() override;
 	virtual void                                  OnDiscardAssetChanges(CEditableAsset& editAsset) override;
 	virtual std::unique_ptr<IAssetEditingSession> CreateEditingSession() override;

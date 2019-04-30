@@ -317,10 +317,6 @@ bool CMaterialEditor::OnOpenAsset(CAsset* pAsset)
 	return true;
 }
 
-bool CMaterialEditor::OnSaveAsset(CEditableAsset& editAsset)
-{
-	return GetAssetBeingEdited()->GetEditingSession()->OnSaveAsset(editAsset);
-}
 
 void CMaterialEditor::OnCloseAsset()
 {

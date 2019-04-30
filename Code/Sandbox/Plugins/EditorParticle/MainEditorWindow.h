@@ -57,7 +57,6 @@ public:
 protected:
 	// CAssetEditor
 	virtual bool                                  OnOpenAsset(CAsset* pAsset) override;
-	virtual bool                                  OnSaveAsset(CEditableAsset& editAsset) override;
 	virtual void                                  OnDiscardAssetChanges(CEditableAsset& editAsset) override;
 	virtual bool                                  OnAboutToCloseAsset(string& reason) const override;
 	virtual void                                  OnCloseAsset() override;

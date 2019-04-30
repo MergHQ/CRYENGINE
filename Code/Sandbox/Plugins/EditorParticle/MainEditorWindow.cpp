@@ -182,11 +182,6 @@ bool CParticleEditor::OnOpenAsset(CAsset* pAsset)
 	return false;
 }
 
-bool CParticleEditor::OnSaveAsset(CEditableAsset& editAsset)
-{
-	return GetAssetBeingEdited()->GetEditingSession()->OnSaveAsset(editAsset);
-}
-
 void CParticleEditor::OnDiscardAssetChanges(CEditableAsset& editAsset)
 {
 	CRY_ASSERT(GetAssetBeingEdited());
