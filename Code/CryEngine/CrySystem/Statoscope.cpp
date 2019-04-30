@@ -1716,9 +1716,7 @@ CStatoscope::~CStatoscope()
 		gEnv->pSystem->GetISystemEventDispatcher()->RemoveListener(this);
 	if (gEnv->pRenderer)
 		gEnv->pRenderer->UnRegisterCaptureFrame(this);
-	delete[] m_pScreenShotBuffer;
-	m_pScreenShotBuffer = NULL;
-
+	SAFE_DELETE_ARRAY(m_pScreenShotBuffer);
 	SAFE_DELETE(m_pDataWriter);
 	SAFE_DELETE(m_pServer);
 }
@@ -2035,6 +2033,14 @@ void CStatoscope::CloseTelemetryStream()
 	SAFE_DELETE(m_pDataWriter);
 }
 
+enum {
+	SCREENSHOT_SCALED_WIDTH, 
+	SCREENSHOT_SCALED_HEIGHT, 
+	SCREENSHOT_MULTIPLIER, 
+	SCREENSHOT_STATOSCOPE_HEADER_SIZE
+};
+const size_t SCREENSHOT_BYTES_PER_PIXEL = 3;
+
 void CStatoscope::PrepareScreenShot()
 {
 	const int widthDelta  = m_lastScreenWidth  - gEnv->pRenderer->GetOverlayWidth();
@@ -2050,9 +2056,8 @@ void CStatoscope::PrepareScreenShot()
 	if (!m_pScreenShotBuffer || widthDelta != 0 || heightDelta != 0)
 	{
 		SAFE_DELETE_ARRAY(m_pScreenShotBuffer);
-
-		const size_t SCREENSHOT_BIT_DEPTH = 4;
-		const size_t bufferSize = shrunkenWidth * shrunkenHeight * SCREENSHOT_BIT_DEPTH;
+		
+		const size_t bufferSize = shrunkenWidth * shrunkenHeight * SCREENSHOT_BYTES_PER_PIXEL + SCREENSHOT_STATOSCOPE_HEADER_SIZE;
 		m_pScreenShotBuffer = new uint8[bufferSize];
 		memset(m_pScreenShotBuffer, 0, bufferSize * sizeof(uint8));
 		gEnv->pRenderer->RegisterCaptureFrame(this);
@@ -2062,44 +2067,21 @@ void CStatoscope::PrepareScreenShot()
 
 uint8* CStatoscope::ProcessScreenShot()
 {
-	//Reserved bytes in buffer indicate size and scale
-	enum { SCREENSHOT_SCALED_WIDTH, SCREENSHOT_SCALED_HEIGHT, SCREENSHOT_MULTIPLIER };
-	uint8* pScreenshotBuf = NULL;
-
 	if (m_ScreenShotState == eSSCS_DataReceived)
 	{
-		const int SCREENSHOT_BIT_DEPTH = 4;
-		const int SCREENSHOT_TARGET_BIT_DEPTH = 3;
 		const int shrunkenWidthNotAligned = OnGetFrameWidth();
 		const int shrunkenWidth = shrunkenWidthNotAligned - shrunkenWidthNotAligned % 4;
 		const int shrunkenHeight = OnGetFrameHeight();
+		
+		m_pScreenShotBuffer[SCREENSHOT_MULTIPLIER] = (uint8)((max(shrunkenWidth, shrunkenHeight) + UCHAR_MAX) / UCHAR_MAX);            //Scaling factor
+		m_pScreenShotBuffer[SCREENSHOT_SCALED_WIDTH] = (uint8)(shrunkenWidth / m_pScreenShotBuffer[SCREENSHOT_MULTIPLIER]);
+		m_pScreenShotBuffer[SCREENSHOT_SCALED_HEIGHT] = (uint8)(shrunkenHeight / m_pScreenShotBuffer[SCREENSHOT_MULTIPLIER]);
 
-		const size_t bufferSize = 3 + (shrunkenWidth * shrunkenHeight * SCREENSHOT_TARGET_BIT_DEPTH);
-		pScreenshotBuf = new uint8[bufferSize];
-
-		if (pScreenshotBuf)
-		{
-			pScreenshotBuf[SCREENSHOT_MULTIPLIER] = (uint8)((max(shrunkenWidth, shrunkenHeight) + UCHAR_MAX) / UCHAR_MAX);            //Scaling factor
-			pScreenshotBuf[SCREENSHOT_SCALED_WIDTH] = (uint8)(shrunkenWidth / pScreenshotBuf[SCREENSHOT_MULTIPLIER]);
-			pScreenshotBuf[SCREENSHOT_SCALED_HEIGHT] = (uint8)(shrunkenHeight / pScreenshotBuf[SCREENSHOT_MULTIPLIER]);
-			int iSrcPixel = 0;
-			int iDstPixel = 3;
-
-			while (iSrcPixel < shrunkenWidth * shrunkenHeight * SCREENSHOT_BIT_DEPTH)
-			{
-				pScreenshotBuf[iDstPixel + 0] = m_pScreenShotBuffer[iSrcPixel++];
-				pScreenshotBuf[iDstPixel + 1] = m_pScreenShotBuffer[iSrcPixel++];
-				pScreenshotBuf[iDstPixel + 2] = m_pScreenShotBuffer[iSrcPixel++];
-
-				iSrcPixel++;
-				iDstPixel += SCREENSHOT_TARGET_BIT_DEPTH;
-			}
-
-			m_ScreenShotState = eSSCS_Idle;
-		}
+		m_ScreenShotState = eSSCS_Idle;		
+		return m_pScreenShotBuffer;
 	}
 
-	return pScreenshotBuf;
+	return nullptr;
 }
 
 void CStatoscope::AddFrameRecord(bool bOutputHeader)
@@ -2109,28 +2091,6 @@ void CStatoscope::AddFrameRecord(bool bOutputHeader)
 	float currentTime = gEnv->pTimer->GetAsyncTime().GetSeconds();
 
 	CStatoscopeFrameRecordWriter fr(m_pDataWriter);
-
-	uint8* pScreenshot = NULL;
-
-	//Screen shot in progress, attempt to process
-	if (m_ScreenShotState == eSSCS_DataReceived)
-	{
-		pScreenshot = ProcessScreenShot();
-	}
-
-	//auto screen shot logic
-	float screenshotCapturePeriod = m_pStatoscopeScreenshotCapturePeriodCVar->GetFVal();
-
-	if ((m_ScreenShotState == eSSCS_Idle) && (screenshotCapturePeriod >= 0.0f))
-	{
-		if (currentTime >= m_screenshotLastCaptureTime + screenshotCapturePeriod)
-		{
-			//Tell the Render thread to dump the mini screenshot to main memory
-			//Then wait for the callback to tell us the data is ready
-			RequestScreenShot();
-			m_screenshotLastCaptureTime = currentTime;
-		}
-	}
 
 	if (m_pDataWriter->m_bShouldOutputLogTopHeader)
 	{
@@ -2199,13 +2159,12 @@ void CStatoscope::AddFrameRecord(bool bOutputHeader)
 	//
 	// 2. Screen shot
 	//
-	if (pScreenshot)
+	if (uint8* pScreenshot = ProcessScreenShot())
 	{
 		m_pDataWriter->WriteData(StatoscopeDataWriter::B64Texture);
 		int screenShotSize = 3 + ((pScreenshot[0] * pScreenshot[2]) * (pScreenshot[1] * pScreenshot[2]) * 3); // width,height,scale + (width*scale * height*scale * 3bpp)
 		m_pDataWriter->WriteData(screenShotSize);
 		m_pDataWriter->WriteData(pScreenshot, screenShotSize);
-		SAFE_DELETE_ARRAY(pScreenshot);
 	}
 	else
 	{
@@ -2241,6 +2200,21 @@ void CStatoscope::AddFrameRecord(bool bOutputHeader)
 
 	// 5. Magic Number, indicate end of frame record
 	m_pDataWriter->WriteData(0xdeadbeef);
+
+
+	//auto screen shot logic
+	float screenshotCapturePeriod = m_pStatoscopeScreenshotCapturePeriodCVar->GetFVal();
+
+	if ((m_ScreenShotState == eSSCS_Idle) && (screenshotCapturePeriod >= 0.0f))
+	{
+		if (currentTime >= m_screenshotLastCaptureTime + screenshotCapturePeriod)
+		{
+			//Tell the Render thread to dump the mini screenshot to main memory
+			//Then wait for the callback to tell us the data is ready
+			RequestScreenShot();
+			m_screenshotLastCaptureTime = currentTime;
+		}
+	}
 }
 
 void CStatoscope::Flush()
@@ -2597,7 +2571,7 @@ bool CStatoscope::OnNeedFrameData(unsigned char*& pConvertedTextureBuf)
 	if (m_ScreenShotState == eSSCS_AwaitingBufferRequest || m_ScreenShotState == eSSCS_AwaitingCapture)
 	{
 		m_ScreenShotState = eSSCS_AwaitingCapture;
-		pConvertedTextureBuf = m_pScreenShotBuffer;
+		pConvertedTextureBuf = m_pScreenShotBuffer + SCREENSHOT_STATOSCOPE_HEADER_SIZE;
 		return true;
 	}
 	return false;
