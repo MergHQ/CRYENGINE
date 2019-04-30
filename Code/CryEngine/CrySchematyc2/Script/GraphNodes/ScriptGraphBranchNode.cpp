@@ -40,8 +40,8 @@ namespace Schematyc2
 
 	void CScriptGraphBranchNode::Refresh(const SScriptRefreshParams& params)
 	{
-		LOADING_TIME_PROFILE_SECTION;
-
+		CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
+		
 		CScriptGraphNodeBase::Refresh(params);
 
 		CScriptGraphNodeBase::SetName("Branch");
@@ -54,7 +54,7 @@ namespace Schematyc2
 
 	void CScriptGraphBranchNode::Serialize(Serialization::IArchive& archive)
 	{
-		LOADING_TIME_PROFILE_SECTION;
+		CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
 		CScriptGraphNodeBase::Serialize(archive);
 

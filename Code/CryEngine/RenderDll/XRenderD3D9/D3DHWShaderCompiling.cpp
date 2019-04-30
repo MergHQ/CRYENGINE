@@ -351,7 +351,7 @@ void CHWShader_D3D::mfCreateBinds(std::vector<SCGBind>& binds, const void* pCons
 
 void CHWShader_D3D::mfGatherFXParameters(SHWSInstance* pInst, std::vector<SCGBind>& BindVars, CHWShader_D3D* pSH, int nFlags, CShader* pFXShader)
 {
-	//	LOADING_TIME_PROFILE_SECTION(iSystem);
+	//	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY)(iSystem);
 
 	uint32 i, j;
 	SAliasSampler samps[MAX_TMU];
@@ -2128,7 +2128,7 @@ SDeviceShaderEntry CHWShader_D3D::mfGetCacheItem(CShader* pFX, const char* name,
 	if (!cache || !cache->m_pRes)
 		return {};
 
-	LOADING_TIME_PROFILE_SECTION(gEnv->pSystem);
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY)(gEnv->pSystem);
 
 	CResFileOpenScope rfOpenGuard(cache->m_pRes);
 	if (!rfOpenGuard.open(RA_READ | (CParserBin::m_bEndians ? RA_ENDIANS : 0), &gRenDev->m_cEF.m_ResLookupDataMan[static_cast<int>(cache->GetType())], nullptr))
@@ -3349,7 +3349,7 @@ bool CHWShader_D3D::mfCompileHLSL_Int(CShader* pSH, char* prog_text, D3DBlob** p
 
 D3DBlob* CHWShader_D3D::mfCompileHLSL(CShader* pSH, char* prog_text, void** ppConstantTable, D3DBlob** ppErrorMsgs, uint32 nFlags, std::vector<SCGBind>& InstBindVars)
 {
-	//	LOADING_TIME_PROFILE_SECTION(iSystem);
+	//	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY)(iSystem);
 
 	// Test adding source text to context
 	string strErr;

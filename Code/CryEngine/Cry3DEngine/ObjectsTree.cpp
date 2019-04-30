@@ -3539,7 +3539,7 @@ void CObjManager::PushIntoCullOutputQueue(const SCheckOcclusionOutput& rCheckOcc
 //////////////////////////////////////////////////////////////////////////
 bool CObjManager::PopFromCullOutputQueue(SCheckOcclusionOutput& pCheckOcclusionOutput)
 {
-	CRY_PROFILE_REGION(PROFILE_3DENGINE, "3DEngine: WaitCullOutputQueue");
+	CRY_PROFILE_SECTION(PROFILE_3DENGINE, "3DEngine: WaitCullOutputQueue");
 
 	return m_CheckOcclusionOutputQueue.dequeue(pCheckOcclusionOutput);
 }

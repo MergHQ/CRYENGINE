@@ -2115,7 +2115,7 @@ bool CShaderMan::CheckAllFilesAreWritable(const char* szDir) const
 
 bool CShaderMan::mfPreloadBinaryShaders()
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 	// don't preload binary shaders if we are in editing mode
 	if (CRenderer::CV_r_shadersediting)
 		return false;
@@ -2167,7 +2167,7 @@ bool CShaderMan::mfPreloadBinaryShaders()
 	char sName[256];
 
 	{
-		LOADING_TIME_PROFILE_SECTION_NAMED("CShaderMan::mfPreloadBinaryShaders(): FilesCFI");
+		CRY_PROFILE_SECTION(PROFILE_LOADING_ONLY, "CShaderMan::mfPreloadBinaryShaders(): FilesCFI");
 		for (i = 0; i < FilesCFI.size(); i++)
 		{
 			if (gEnv->pSystem && gEnv->pSystem->IsQuitting())
@@ -2181,7 +2181,7 @@ bool CShaderMan::mfPreloadBinaryShaders()
 	}
 
 	{
-		LOADING_TIME_PROFILE_SECTION_NAMED("CShaderMan::mfPreloadBinaryShaders(): FilesCFX");
+		CRY_PROFILE_SECTION(PROFILE_LOADING_ONLY, "CShaderMan::mfPreloadBinaryShaders(): FilesCFX");
 		for (i = 0; i < FilesCFX.size(); i++)
 		{
 			if (gEnv->pSystem && gEnv->pSystem->IsQuitting())

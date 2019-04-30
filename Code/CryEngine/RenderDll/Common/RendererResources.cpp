@@ -333,7 +333,7 @@ void CRendererResources::UnloadDefaultSystemTextures(bool bFinalRelease)
 
 void CRendererResources::LoadDefaultSystemTextures()
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
 	char str[256];
 	int i;

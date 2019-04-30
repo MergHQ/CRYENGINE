@@ -881,7 +881,7 @@ CLevelSystem::CLevelSystem(ISystem* pSystem)
 	m_pCurrentLevelInfo(nullptr),
 	m_pLoadingLevelInfo(nullptr)
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 	CRY_ASSERT(pSystem);
 
 	//Load user defined level types
@@ -1217,7 +1217,7 @@ public:
 
 	ILevelSystem::ELevelLoadStatus DoStep()
 	{
-		LOADING_TIME_PROFILE_SECTION;
+		CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
 
 #define NEXT_STEP(step) return SetInProgress(step); case step: 
@@ -1480,7 +1480,7 @@ public:
 				SCOPED_TICKER_LOCK;
 #endif
 
-				LOADING_TIME_PROFILE_SECTION_NAMED("OnLoadingComplete");
+				CRY_PROFILE_SECTION(PROFILE_LOADING_ONLY, "OnLoadingComplete");
 				// Inform Level system listeners that loading of the level is complete.
 				for (std::vector<ILevelSystemListener*>::const_iterator it = m_levelSystem.m_listeners.begin(); it != m_levelSystem.m_listeners.end(); ++it)
 				{
@@ -1613,7 +1613,7 @@ ILevelInfo* CLevelSystem::LoadLevel(const char* _levelName)
 	MEMSTAT_CONTEXT_FMT(EMemStatContextType::Other, "Level load (%s)", _levelName);
 	INDENT_LOG_DURING_SCOPE();
 
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
 	CLevelLoadTimeslicer slicer(*this, _levelName);
 	ILevelSystem::ELevelLoadStatus result;
@@ -1654,7 +1654,7 @@ CLevelSystem::ELevelLoadStatus CLevelSystem::UpdateLoadLevelStatus()
 
 	MEMSTAT_CONTEXT_FMT(EMemStatContextType::Other, "Level load (%s)", m_pLevelLoadTimeslicer->GetLevelName());
 	INDENT_LOG_DURING_SCOPE();
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
 	switch (m_pLevelLoadTimeslicer->DoStep())
 	{
@@ -1808,7 +1808,7 @@ void CLevelSystem::OnLevelNotFound(const char* levelName)
 //------------------------------------------------------------------------
 void CLevelSystem::OnLoadingStart(ILevelInfo* pLevelInfo)
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
 	if (gEnv->pCryPak->GetRecordFileOpenList() == ICryPak::RFOM_EngineStartup)
 		gEnv->pCryPak->RecordFileOpen(ICryPak::RFOM_Level);
@@ -2075,7 +2075,7 @@ static bool SubsituteFile(const string& srcPath, const string& destPath)
 //////////////////////////////////////////////////////////////////////////
 bool CLevelInfo::OpenLevelPak()
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 	//////////////////////////////////////////////////////////////////////////
 	//LiveCreate level reloading functionality
 #ifndef NO_LIVECREATE
@@ -2141,7 +2141,7 @@ bool CLevelInfo::OpenLevelPak()
 //////////////////////////////////////////////////////////////////////////
 void CLevelInfo::CloseLevelPak()
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 	if (!m_levelPakFullPath.empty())
 	{
 		gEnv->pCryPak->ClosePack(m_levelPakFullPath.c_str(), ICryPak::FLAGS_PATH_REAL);

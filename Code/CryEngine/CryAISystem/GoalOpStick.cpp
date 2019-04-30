@@ -776,7 +776,7 @@ EGoalOpResult COPStick::Execute(CPipeUser* pPipeUser)
 
 	//////////////////////////////////////////////////////////////////////////
 	{
-		CRY_PROFILE_REGION(PROFILE_AI, "OPStick::Execute(): Final Path Processing!")
+		CRY_PROFILE_SECTION(PROFILE_AI, "OPStick::Execute(): Final Path Processing!")
 
 		int nPathDecision = pPipeUser->m_nPathDecision;
 
@@ -891,7 +891,7 @@ bool COPStick::GetStickAndSightTargets_CreatePathfindAndTraceGoalOps(CPipeUser* 
 
 	// Create pathfinder operation
 	{
-		CRY_PROFILE_REGION(PROFILE_AI, "OPStick::Execute(): Create Pathfinder/Tracer!");
+		CRY_PROFILE_SECTION(PROFILE_AI, "OPStick::Execute(): Create Pathfinder/Tracer!");
 
 		Vec3 vStickPos = pStickTarget->GetPhysicsPos();
 
@@ -932,7 +932,7 @@ bool COPStick::Trace(CPipeUser* pPipeUser, CAIObject* pStickTarget, EGoalOpResul
 		return false;
 	}
 
-	CRY_PROFILE_REGION(PROFILE_AI, "OPStick::Trace(): Tracer Execute!");
+	CRY_PROFILE_SECTION(PROFILE_AI, "OPStick::Trace(): Tracer Execute!");
 
 	// if using AdjustSpeed then force sprint at this point - will get overridden later
 	bool bAdjustSpeed = !m_bConstantSpeed && (m_pTraceDirective->m_Maneuver == COPTrace::eMV_None);

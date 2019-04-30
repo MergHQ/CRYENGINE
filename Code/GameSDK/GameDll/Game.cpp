@@ -762,7 +762,7 @@ static inline void InlineInitializationProcessing(const char* sDescription)
 
 bool CGame::Init(/*IGameFramework* pFramework*/)
 {
-	LOADING_TIME_PROFILE_SECTION(GetISystem());
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
 	InlineInitializationProcessing("CGame::Init");
 #ifdef GAME_DEBUG_MEM
@@ -2488,7 +2488,7 @@ int CGame::Update(bool haveFocus, unsigned int updateFlags) PREFAST_SUPPRESS_WAR
 	{
 		if (m_pRayCaster)
 		{
-			CRY_PROFILE_REGION(PROFILE_GAME, "GlobalRayCaster");
+			CRY_PROFILE_SECTION(PROFILE_GAME, "GlobalRayCaster");
 
 			m_pRayCaster->SetQuota(g_pGameCVars->g_gameRayCastQuota);
 			m_pRayCaster->Update(frameTime);
@@ -2496,7 +2496,7 @@ int CGame::Update(bool haveFocus, unsigned int updateFlags) PREFAST_SUPPRESS_WAR
 
 		if (m_pIntersectionTester)
 		{
-			CRY_PROFILE_REGION(PROFILE_GAME, "GlobalIntersectionTester");
+			CRY_PROFILE_SECTION(PROFILE_GAME, "GlobalIntersectionTester");
 
 			m_pIntersectionTester->SetQuota(g_pGameCVars->g_gameIntersectionTestQuota);
 			m_pIntersectionTester->Update(frameTime);

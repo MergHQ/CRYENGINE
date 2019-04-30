@@ -77,7 +77,7 @@ void CAIVehicle::Update(EUpdateType type)
 
 	if (!m_bDryUpdate)
 	{
-		CRY_PROFILE_REGION(PROFILE_AI, "AI system vehicle full update");
+		CRY_PROFILE_SECTION(PROFILE_AI, "AI system vehicle full update");
 
 		CTimeValue fCurrentTime = GetAISystem()->GetFrameStartTime();
 		if (m_fLastUpdateTime.GetSeconds() > 0.0f)

@@ -75,7 +75,21 @@
 	    { PROFILE_LABEL_PUSH(label); }                         \
 	    ~CProfileLabelScope()                                  \
 	    { PROFILE_LABEL_POP(m_label); }                        \
-	  } PP_CONCAT(profileLabelScope, __LINE__)(X);             \
+	  } PP_CONCAT(profileLabelScope, __LINE__)(X);
+
+	// need to provide a static name for scopes with changing name for CRY_PROFILE_ macros to work
+	#define PROFILE_LABEL_SCOPE_DYNAMIC(label, fixedName)         \
+	  CRY_PROFILE_SECTION_ARG(PROFILE_RENDERER, fixedName, label); \
+	  class CProfileLabelScope                                    \
+	  {                                                           \
+	    const char* m_label;                                      \
+	  public:                                                     \
+	    CProfileLabelScope(const char* _label)                    \
+			: m_label(_label)                                     \
+	    { PROFILE_LABEL_PUSH(_label); }                           \
+	    ~CProfileLabelScope()                                     \
+	    { PROFILE_LABEL_POP(m_label); }                           \
+	  } PP_CONCAT(profileLabelScope, __LINE__)(label);
 
 #else
 // NULL implementation
@@ -86,6 +100,7 @@
 	#define PROFILE_LABEL_PUSH(X)
 	#define PROFILE_LABEL_POP(X)
 	#define PROFILE_LABEL_SCOPE(X)
+	#define PROFILE_LABEL_SCOPE_DYNAMIC(label, fixedName)
 #endif
 
 #define FUNCTION_PROFILER_RENDER_FLAT CRY_PROFILE_FUNCTION(PROFILE_RENDERER)

@@ -1523,7 +1523,7 @@ bool CStatObj::LineSegIntersection(const Lineseg& lineSeg, Vec3& hitPos, int& su
 
 void CStatObj::SetRenderMesh(_smart_ptr<IRenderMesh>& pRM)
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
 	if (pRM.get() == m_pRenderMesh.get())
 		return;

@@ -1062,7 +1062,7 @@ enum EPass
 
 QBrush PickTrackBrush(const STrackLayout& track)
 {
-	LOADING_TIME_PROFILE_SECTION
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY)
 
 	const QColor trackColor = GetStyleHelper()->timelineTrackColor();
 	const QColor descriptionTrackColor = GetStyleHelper()->timelineDescriptionTrackColor();
@@ -1107,7 +1107,7 @@ void UpdateClipLinesCache(STracksRenderCache& renderCache, const SElementLayout&
 
 void UpdateTracksRenderCache(STracksRenderCache& renderCache, QPainter& painter, const STimelineLayout& layout, const STimelineViewState& viewState, const QRect& trackRect, float timeUnitScale, bool drawMarkers, bool bShowText, int scrollOffset)
 {
-	LOADING_TIME_PROFILE_SECTION
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY)
 
 	renderCache.Clear();
 
@@ -1125,8 +1125,8 @@ void UpdateTracksRenderCache(STracksRenderCache& renderCache, QPainter& painter,
 	const QRect markersRect = QRect(-viewState.scrollPixels.x(), 0, trackRect.width() - viewState.treeWidth, 0);
 
 	const char* passName[] = {
-		"PASS_BACKGROUND",
-		"PASS_MAIN",
+		"BACKGROUND",
+		"MAIN",
 		"NUM_PASSES" };
 
 	QRect outSideBackgroundRectLeft = QRect(0, 0, viewState.TimeToLayout(rulerRange.start), layout.size.height());
@@ -1157,7 +1157,7 @@ void UpdateTracksRenderCache(STracksRenderCache& renderCache, QPainter& painter,
 	{
 		const EPass pass = (EPass)i;
 
-		LOADING_TIME_PROFILE_SECTION_NAMED(passName[i])
+		CRY_PROFILE_SECTION_ARG(PROFILE_LOADING_ONLY, "Pass", passName[i])
 
 		for (size_t j = 0; j < tracks.size(); ++j)
 		{
@@ -1410,7 +1410,7 @@ void UpdateTracksRenderCache(STracksRenderCache& renderCache, QPainter& painter,
 
 void DrawSelectionLines(QPainter& painter, const STimelineViewState& viewState, const Range& visibleRange, STimelineContent& content, int rulerPrecision, int width, int height, float time, float timeUnitScale, bool hasFocus)
 {
-	LOADING_TIME_PROFILE_SECTION
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY)
 
 	const VectorSet<SAnimTime> times = GetSelectedElementsTimeSet(content.track);
 	const QColor indicatorColor = (hasFocus ? GetStyleHelper()->timelineSelectionLinesFocused() : GetStyleHelper()->timelineSelectionLines());
@@ -1429,7 +1429,7 @@ void DrawSelectionLines(QPainter& painter, const STimelineViewState& viewState, 
 
 void UpdateTreeRenderCache(STreeRenderCache& renderCache, const QRect& treeRect, QWidget* timeline, const STimelineContent& content, const STrackLayouts& tracks, const STimelineViewState& viewState, int scrollOffset)
 {
-	LOADING_TIME_PROFILE_SECTION
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY)
 
 	renderCache.Clear();
 
@@ -2553,7 +2553,7 @@ void CTimeline::paintEvent(QPaintEvent* ev)
 #if ENABLE_PROFILING
 	gEnv->pSystem->StartBootProfilerSessionFrames("TimelinePainting");
 #endif
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
 	if (m_viewState.widthPixels <= 0)
 	{
@@ -2627,11 +2627,11 @@ void CTimeline::paintEvent(QPaintEvent* ev)
 	const QPen descriptionTextPen = QPen(GetStyleHelper()->timelineDescriptionTextColor());
 
 	{
-		LOADING_TIME_PROFILE_SECTION_NAMED("Draw calls")
+		CRY_PROFILE_SECTION(PROFILE_LOADING_ONLY, "Draw calls")
 
 		if (m_tracksRenderCache.descTrackBGRects.size())
 		{
-			LOADING_TIME_PROFILE_SECTION_NAMED("Desc tracks")
+			CRY_PROFILE_SECTION(PROFILE_LOADING_ONLY, "Desc tracks")
 
 			const QBrush brush = QBrush(descriptionTrackColor);
 			painter.setPen(Qt::NoPen);
@@ -2641,7 +2641,7 @@ void CTimeline::paintEvent(QPaintEvent* ev)
 
 		if (m_tracksRenderCache.compTrackBGRects.size())
 		{
-			LOADING_TIME_PROFILE_SECTION_NAMED("Compound tracks")
+			CRY_PROFILE_SECTION(PROFILE_LOADING_ONLY, "Compound tracks")
 
 			const QBrush brush = QBrush(compositeTrackColor);
 			painter.setPen(Qt::NoPen);
@@ -2651,7 +2651,7 @@ void CTimeline::paintEvent(QPaintEvent* ev)
 
 		if (m_tracksRenderCache.innerTickLines.size())
 		{
-			LOADING_TIME_PROFILE_SECTION_NAMED("Inner tick lines")
+			CRY_PROFILE_SECTION(PROFILE_LOADING_ONLY, "Inner tick lines")
 
 			painter.setPen(QPen(GetStyleHelper()->timelineInnerTickLines()));
 			painter.setBrush(Qt::NoBrush);
@@ -2660,7 +2660,7 @@ void CTimeline::paintEvent(QPaintEvent* ev)
 
 		if (m_tracksRenderCache.folderTrackBGRects.size())
 		{
-			LOADING_TIME_PROFILE_SECTION_NAMED("Folder tree tracks")
+			CRY_PROFILE_SECTION(PROFILE_LOADING_ONLY, "Folder tree tracks")
 
 			const QBrush brush = QBrush(folderTrackColor);
 			painter.setPen(Qt::NoPen);
@@ -2670,7 +2670,7 @@ void CTimeline::paintEvent(QPaintEvent* ev)
 
 		if (m_tracksRenderCache.nodeTrackBGRects.size())
 		{
-			LOADING_TIME_PROFILE_SECTION_NAMED("Node tree tracks")
+			CRY_PROFILE_SECTION(PROFILE_LOADING_ONLY, "Node tree tracks")
 
 			const QBrush brush = QBrush(nodeTrackColor);
 			painter.setPen(Qt::NoPen);
@@ -2680,7 +2680,7 @@ void CTimeline::paintEvent(QPaintEvent* ev)
 
 		if (m_tracksRenderCache.xSubTrackBGRects.size())
 		{
-			LOADING_TIME_PROFILE_SECTION_NAMED("Tree X subtracks")
+			CRY_PROFILE_SECTION(PROFILE_LOADING_ONLY, "Tree X subtracks")
 
 			const QBrush brush = QBrush(xSubtrackColor);
 			painter.setPen(Qt::NoPen);
@@ -2690,7 +2690,7 @@ void CTimeline::paintEvent(QPaintEvent* ev)
 
 		if (m_tracksRenderCache.ySubTrackBGRects.size())
 		{
-			LOADING_TIME_PROFILE_SECTION_NAMED("Tree Y subtracks")
+			CRY_PROFILE_SECTION(PROFILE_LOADING_ONLY, "Tree Y subtracks")
 
 			const QBrush brush = QBrush(ySubtrackColor);
 			painter.setPen(Qt::NoPen);
@@ -2700,7 +2700,7 @@ void CTimeline::paintEvent(QPaintEvent* ev)
 
 		if (m_tracksRenderCache.zSubTrackBGRects.size())
 		{
-			LOADING_TIME_PROFILE_SECTION_NAMED("Tree Z subtracks")
+			CRY_PROFILE_SECTION(PROFILE_LOADING_ONLY, "Tree Z subtracks")
 
 			const QBrush brush = QBrush(zSubtrackColor);
 			painter.setPen(Qt::NoPen);
@@ -2710,7 +2710,7 @@ void CTimeline::paintEvent(QPaintEvent* ev)
 
 		if (m_tracksRenderCache.subTrackBGRects.size())
 		{
-			LOADING_TIME_PROFILE_SECTION_NAMED("Tree subtracks")
+			CRY_PROFILE_SECTION(PROFILE_LOADING_ONLY, "Tree subtracks")
 
 			const QBrush brush = QBrush(subtrackColor);
 			painter.setPen(Qt::NoPen);
@@ -2720,7 +2720,7 @@ void CTimeline::paintEvent(QPaintEvent* ev)
 
 		if (m_tracksRenderCache.outsideTrackBGRects.size())
 		{
-			LOADING_TIME_PROFILE_SECTION_NAMED("Background Track Area")
+			CRY_PROFILE_SECTION(PROFILE_LOADING_ONLY, "Background Track Area")
 
 			const QBrush brush = QBrush(GetStyleHelper()->timelineOutsideTrackColor());
 			painter.setPen(Qt::NoPen);
@@ -2730,7 +2730,7 @@ void CTimeline::paintEvent(QPaintEvent* ev)
 
 		if (m_tracksRenderCache.bottomLines.size())
 		{
-			LOADING_TIME_PROFILE_SECTION_NAMED("Bottom lines")
+			CRY_PROFILE_SECTION(PROFILE_LOADING_ONLY, "Bottom lines")
 
 			painter.setPen(QPen(GetStyleHelper()->timelineBottomLines()));
 			painter.setBrush(Qt::NoBrush);
@@ -2739,7 +2739,7 @@ void CTimeline::paintEvent(QPaintEvent* ev)
 
 		if (m_tracksRenderCache.camRects.size())
 		{
-			LOADING_TIME_PROFILE_SECTION_NAMED("Camera rects")
+			CRY_PROFILE_SECTION(PROFILE_LOADING_ONLY, "Camera rects")
 
 			painter.setBrush(QBrush(GetStyleHelper()->timelineCamTrackColor()));
 			PaintRenderCacheRects(painter, m_tracksRenderCache.camRects);
@@ -2747,7 +2747,7 @@ void CTimeline::paintEvent(QPaintEvent* ev)
 
 		if (m_tracksRenderCache.seleTrackBGRects.size())
 		{
-			LOADING_TIME_PROFILE_SECTION_NAMED("Selected tracks")
+			CRY_PROFILE_SECTION(PROFILE_LOADING_ONLY, "Selected tracks")
 
 			const QBrush brush = QBrush(selectionColor);
 			painter.setPen(Qt::NoPen);
@@ -2757,7 +2757,7 @@ void CTimeline::paintEvent(QPaintEvent* ev)
 
 		if (m_tracksRenderCache.detachedTrackBGRects.size())
 		{
-			LOADING_TIME_PROFILE_SECTION_NAMED("Detached tracks")
+			CRY_PROFILE_SECTION(PROFILE_LOADING_ONLY, "Detached tracks")
 
 			const QBrush brush = QBrush(detachedTrackColor);
 			painter.setPen(Qt::NoPen);
@@ -2766,7 +2766,7 @@ void CTimeline::paintEvent(QPaintEvent* ev)
 		}
 
 		{
-			LOADING_TIME_PROFILE_SECTION_NAMED("Text")
+			CRY_PROFILE_SECTION(PROFILE_LOADING_ONLY, "Text")
 
 			painter.setPen(descriptionTextPen);
 			for (const QRenderText& txt : m_tracksRenderCache.text)
@@ -2777,7 +2777,7 @@ void CTimeline::paintEvent(QPaintEvent* ev)
 
 		if (m_tracksRenderCache.toggleRects.size())
 		{
-			LOADING_TIME_PROFILE_SECTION_NAMED("Toggle rects")
+			CRY_PROFILE_SECTION(PROFILE_LOADING_ONLY, "Toggle rects")
 
 			painter.setBrush(QBrush(GetStyleHelper()->timelineToggleColor()));
 			PaintRenderCacheRects(painter, m_tracksRenderCache.toggleRects);
@@ -2785,7 +2785,7 @@ void CTimeline::paintEvent(QPaintEvent* ev)
 
 		if (m_tracksRenderCache.selectedClipRects.size())
 		{
-			LOADING_TIME_PROFILE_SECTION_NAMED("Selected clips")
+			CRY_PROFILE_SECTION(PROFILE_LOADING_ONLY, "Selected clips")
 
 			painter.setPen(QPen(hasFocus() ? GetStyleHelper()->timelineSelectedClipFocused() : GetStyleHelper()->timelineSelectedClip()));
 			painter.setBrush(QBrush(hasFocus() ? GetStyleHelper()->timelineSelectedClipFocused() : GetStyleHelper()->timelineSelectedClip()));
@@ -2794,7 +2794,7 @@ void CTimeline::paintEvent(QPaintEvent* ev)
 
 		if (m_tracksRenderCache.unclippedClipLines.size())
 		{
-			LOADING_TIME_PROFILE_SECTION_NAMED("Unclip")
+			CRY_PROFILE_SECTION(PROFILE_LOADING_ONLY, "Unclip")
 
 			painter.setPen(QPen(GetStyleHelper()->timelineUnclipPen()));
 			PaintRenderCacheLines(painter, m_tracksRenderCache.unclippedClipLines);
@@ -2802,7 +2802,7 @@ void CTimeline::paintEvent(QPaintEvent* ev)
 
 		if (m_tracksRenderCache.defaultClipRects.size())
 		{
-			LOADING_TIME_PROFILE_SECTION_NAMED("Clips")
+			CRY_PROFILE_SECTION(PROFILE_LOADING_ONLY, "Clips")
 
 			painter.setPen(QPen(GetStyleHelper()->timelineClipPen()));
 			painter.setBrush(QBrush(GetStyleHelper()->timelineClipBrush()));
@@ -2811,7 +2811,7 @@ void CTimeline::paintEvent(QPaintEvent* ev)
 
 		if (!m_tracksRenderCache.defaultKeyIcons.empty())
 		{
-			LOADING_TIME_PROFILE_SECTION_NAMED("Keys")
+			CRY_PROFILE_SECTION(PROFILE_LOADING_ONLY, "Keys")
 
 			painter.setPen(Qt::NoPen);
 			painter.setBrush(Qt::NoBrush);
@@ -2824,7 +2824,7 @@ void CTimeline::paintEvent(QPaintEvent* ev)
 
 		if (!m_tracksRenderCache.selectedKeyIcons.empty())
 		{
-			LOADING_TIME_PROFILE_SECTION_NAMED("Selected keys")
+			CRY_PROFILE_SECTION(PROFILE_LOADING_ONLY, "Selected keys")
 
 			painter.setPen(Qt::NoPen);
 			painter.setBrush(Qt::NoBrush);
@@ -2837,7 +2837,7 @@ void CTimeline::paintEvent(QPaintEvent* ev)
 
 		if (m_tracksRenderCache.disbTrackBGRects.size())
 		{
-			LOADING_TIME_PROFILE_SECTION_NAMED("Disabled tracks")
+			CRY_PROFILE_SECTION(PROFILE_LOADING_ONLY, "Disabled tracks")
 
 			const QBrush brush = QBrush(GetStyleHelper()->timelineDisabledColor());
 			painter.setPen(Qt::NoPen);
@@ -2933,11 +2933,11 @@ void CTimeline::paintEvent(QPaintEvent* ev)
 
 	// draw highlighted after selection rectangle
 	{
-		LOADING_TIME_PROFILE_SECTION_NAMED("Draw calls")
+		CRY_PROFILE_SECTION(PROFILE_LOADING_ONLY, "Draw calls")
 
 		if (!m_tracksRenderCache.highlightedKeyIcons.empty())
 		{
-			LOADING_TIME_PROFILE_SECTION_NAMED("Highlighted keys")
+			CRY_PROFILE_SECTION(PROFILE_LOADING_ONLY, "Highlighted keys")
 
 			painter.setPen(Qt::NoPen);
 			painter.setBrush(Qt::NoBrush);
@@ -2958,7 +2958,7 @@ void CTimeline::paintEvent(QPaintEvent* ev)
 	{
 		if (m_pContent)
 		{
-			LOADING_TIME_PROFILE_SECTION_NAMED("Desc tree")
+			CRY_PROFILE_SECTION(PROFILE_LOADING_ONLY, "Desc tree")
 
 			int searchHeight = m_searchWidget ? m_searchWidget->height() + 1 : 0;
 			QRect treeRect(0, searchHeight, m_viewState.treeWidth - SPLITTER_WIDTH + 1, height() - searchHeight);
@@ -2990,7 +2990,7 @@ void CTimeline::paintEvent(QPaintEvent* ev)
 
 			if (m_treeRenderCache.descTrackBGRects.size())
 			{
-				LOADING_TIME_PROFILE_SECTION_NAMED("Desc tree tracks")
+				CRY_PROFILE_SECTION(PROFILE_LOADING_ONLY, "Desc tree tracks")
 
 				const QBrush brush = QBrush(descriptionTrackColor);
 				painter.setPen(Qt::NoPen);
@@ -3000,7 +3000,7 @@ void CTimeline::paintEvent(QPaintEvent* ev)
 
 			if (m_treeRenderCache.folderTrackBGRects.size())
 			{
-				LOADING_TIME_PROFILE_SECTION_NAMED("Folder tree tracks")
+				CRY_PROFILE_SECTION(PROFILE_LOADING_ONLY, "Folder tree tracks")
 
 				const QBrush brush = QBrush(folderTrackColor);
 				painter.setPen(Qt::NoPen);
@@ -3010,7 +3010,7 @@ void CTimeline::paintEvent(QPaintEvent* ev)
 
 			if (m_treeRenderCache.nodeTrackBGRects.size())
 			{
-				LOADING_TIME_PROFILE_SECTION_NAMED("Node tree tracks")
+				CRY_PROFILE_SECTION(PROFILE_LOADING_ONLY, "Node tree tracks")
 
 				const QBrush brush = QBrush(nodeTrackColor);
 				painter.setPen(Qt::NoPen);
@@ -3020,7 +3020,7 @@ void CTimeline::paintEvent(QPaintEvent* ev)
 
 			if (m_treeRenderCache.xSubTrackBGRects.size())
 			{
-				LOADING_TIME_PROFILE_SECTION_NAMED("Tree X subtracks")
+				CRY_PROFILE_SECTION(PROFILE_LOADING_ONLY, "Tree X subtracks")
 
 				const QBrush brush = QBrush(zSubtrackColor);
 				painter.setPen(Qt::NoPen);
@@ -3030,7 +3030,7 @@ void CTimeline::paintEvent(QPaintEvent* ev)
 
 			if (m_treeRenderCache.ySubTrackBGRects.size())
 			{
-				LOADING_TIME_PROFILE_SECTION_NAMED("Tree Y subtracks")
+				CRY_PROFILE_SECTION(PROFILE_LOADING_ONLY, "Tree Y subtracks")
 
 				const QBrush brush = QBrush(ySubtrackColor);
 				painter.setPen(Qt::NoPen);
@@ -3040,7 +3040,7 @@ void CTimeline::paintEvent(QPaintEvent* ev)
 
 			if (m_treeRenderCache.zSubTrackBGRects.size())
 			{
-				LOADING_TIME_PROFILE_SECTION_NAMED("Tree Z subtracks")
+				CRY_PROFILE_SECTION(PROFILE_LOADING_ONLY, "Tree Z subtracks")
 
 				const QBrush brush = QBrush(zSubtrackColor);
 				painter.setPen(Qt::NoPen);
@@ -3050,7 +3050,7 @@ void CTimeline::paintEvent(QPaintEvent* ev)
 
 			if (m_treeRenderCache.subTrackBGRects.size())
 			{
-				LOADING_TIME_PROFILE_SECTION_NAMED("Tree Any subtracks")
+				CRY_PROFILE_SECTION(PROFILE_LOADING_ONLY, "Tree Any subtracks")
 
 				const QBrush brush = QBrush(subtrackColor);
 				painter.setPen(Qt::NoPen);
@@ -3060,7 +3060,7 @@ void CTimeline::paintEvent(QPaintEvent* ev)
 
 			if (m_treeRenderCache.compTrackBGRects.size())
 			{
-				LOADING_TIME_PROFILE_SECTION_NAMED("Compound tree tracks")
+				CRY_PROFILE_SECTION(PROFILE_LOADING_ONLY, "Compound tree tracks")
 
 				const QBrush brush = QBrush(compositeTrackColor);
 				painter.setPen(Qt::NoPen);
@@ -3070,7 +3070,7 @@ void CTimeline::paintEvent(QPaintEvent* ev)
 
 			if (m_treeRenderCache.seleTrackBGRects.size())
 			{
-				LOADING_TIME_PROFILE_SECTION_NAMED("Selected tree tracks")
+				CRY_PROFILE_SECTION(PROFILE_LOADING_ONLY, "Selected tree tracks")
 
 				const QBrush brush = QBrush(selectionColor);
 				painter.setPen(Qt::NoPen);
@@ -3080,7 +3080,7 @@ void CTimeline::paintEvent(QPaintEvent* ev)
 
 			if (m_treeRenderCache.detaTrackBGRects.size())
 			{
-				LOADING_TIME_PROFILE_SECTION_NAMED("Detached tree tracks")
+				CRY_PROFILE_SECTION(PROFILE_LOADING_ONLY, "Detached tree tracks")
 
 				const QBrush brush = QBrush(detachedTrackColor);
 				painter.setPen(Qt::NoPen);
@@ -3090,7 +3090,7 @@ void CTimeline::paintEvent(QPaintEvent* ev)
 
 			if (m_treeRenderCache.trackLines.size())
 			{
-				LOADING_TIME_PROFILE_SECTION_NAMED("Tree lines")
+				CRY_PROFILE_SECTION(PROFILE_LOADING_ONLY, "Tree lines")
 
 				painter.setPen(QPen(GetStyleHelper()->timelineTreeLines()));
 				PaintRenderCacheLines(painter, m_treeRenderCache.trackLines);
@@ -3098,7 +3098,7 @@ void CTimeline::paintEvent(QPaintEvent* ev)
 
 			if (m_treeRenderCache.text.size())
 			{
-				LOADING_TIME_PROFILE_SECTION_NAMED("Tree text")
+				CRY_PROFILE_SECTION(PROFILE_LOADING_ONLY, "Tree text")
 				painter.setPen(QPen(GetStyleHelper()->timelineTreeText()));
 
 				for (const QRenderText& txt : m_treeRenderCache.text)
@@ -3109,7 +3109,7 @@ void CTimeline::paintEvent(QPaintEvent* ev)
 
 			if (m_treeRenderCache.xSubTrackText.size())
 			{
-				LOADING_TIME_PROFILE_SECTION_NAMED("Sub track X text")
+				CRY_PROFILE_SECTION(PROFILE_LOADING_ONLY, "Sub track X text")
 				painter.setPen(QPen(GetStyleHelper()->timelineTreeXSubtrackText()));
 
 				for (const QRenderText& txt : m_treeRenderCache.xSubTrackText)
@@ -3120,7 +3120,7 @@ void CTimeline::paintEvent(QPaintEvent* ev)
 
 			if (m_treeRenderCache.ySubTrackText.size())
 			{
-				LOADING_TIME_PROFILE_SECTION_NAMED("Sub track Y text")
+				CRY_PROFILE_SECTION(PROFILE_LOADING_ONLY, "Sub track Y text")
 				painter.setPen(QPen(GetStyleHelper()->timelineTreeYSubtrackText()));
 
 				for (const QRenderText& txt : m_treeRenderCache.ySubTrackText)
@@ -3131,7 +3131,7 @@ void CTimeline::paintEvent(QPaintEvent* ev)
 
 			if (m_treeRenderCache.xSubTrackText.size())
 			{
-				LOADING_TIME_PROFILE_SECTION_NAMED("Sub track Z text")
+				CRY_PROFILE_SECTION(PROFILE_LOADING_ONLY, "Sub track Z text")
 				painter.setPen(QPen(GetStyleHelper()->timelineTreeZSubtrackText()));
 
 				for (const QRenderText& txt : m_treeRenderCache.zSubTrackText)
@@ -3142,7 +3142,7 @@ void CTimeline::paintEvent(QPaintEvent* ev)
 
 			if (m_treeRenderCache.nodeTrackText.size())
 			{
-				LOADING_TIME_PROFILE_SECTION_NAMED("Node track text")
+				CRY_PROFILE_SECTION(PROFILE_LOADING_ONLY, "Node track text")
 				painter.setPen(QPen(GetStyleHelper()->timelineTreeNodeTrackText()));
 
 				for (const QRenderText& txt : m_treeRenderCache.nodeTrackText)
@@ -3153,7 +3153,7 @@ void CTimeline::paintEvent(QPaintEvent* ev)
 
 			if (m_treeRenderCache.compoundTrackText.size())
 			{
-				LOADING_TIME_PROFILE_SECTION_NAMED("Compound track text")
+				CRY_PROFILE_SECTION(PROFILE_LOADING_ONLY, "Compound track text")
 				painter.setPen(QPen(GetStyleHelper()->timelineTreeCompoundTrackText()));
 
 				for (const QRenderText& txt : m_treeRenderCache.compoundTrackText)
@@ -3164,7 +3164,7 @@ void CTimeline::paintEvent(QPaintEvent* ev)
 
 			if (m_treeRenderCache.folderTrackText.size())
 			{
-				LOADING_TIME_PROFILE_SECTION_NAMED("Folder track text")
+				CRY_PROFILE_SECTION(PROFILE_LOADING_ONLY, "Folder track text")
 				painter.setPen(QPen(GetStyleHelper()->timelineTreeFolderTrackText()));
 
 				for (const QRenderText& txt : m_treeRenderCache.folderTrackText)
@@ -3175,7 +3175,7 @@ void CTimeline::paintEvent(QPaintEvent* ev)
 
 			if (m_treeRenderCache.primitives.size())
 			{
-				LOADING_TIME_PROFILE_SECTION_NAMED("Tree primitives")
+				CRY_PROFILE_SECTION(PROFILE_LOADING_ONLY, "Tree primitives")
 
 				for (const QStyleOptionViewItem& styleOption : m_treeRenderCache.primitives)
 				{
@@ -3185,7 +3185,7 @@ void CTimeline::paintEvent(QPaintEvent* ev)
 
 			if (m_treeRenderCache.icons.size())
 			{
-				LOADING_TIME_PROFILE_SECTION_NAMED("Tree icons")
+				CRY_PROFILE_SECTION(PROFILE_LOADING_ONLY, "Tree icons")
 
 				for (const QRenderIcon& icon : m_treeRenderCache.icons)
 				{
@@ -3195,7 +3195,7 @@ void CTimeline::paintEvent(QPaintEvent* ev)
 
 			if (m_tracksRenderCache.disbTrackBGRects.size())
 			{
-				LOADING_TIME_PROFILE_SECTION_NAMED("Disabled tracks")
+				CRY_PROFILE_SECTION(PROFILE_LOADING_ONLY, "Disabled tracks")
 
 				const QBrush brush = QBrush(GetStyleHelper()->timelineDisabledColor());
 				painter.setPen(Qt::NoPen);

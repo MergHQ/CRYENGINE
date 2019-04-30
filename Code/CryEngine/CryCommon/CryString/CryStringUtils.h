@@ -502,10 +502,15 @@ constexpr bool cry_is_string_literal_impl_in_quotes(const char* szStr)
 			: cry_is_string_literal_impl_in_quotes(szStr + 1));
 }
 
+constexpr bool isspace_constexpr(char chr)
+{
+	return chr == ' ' || chr == '\t' || chr == '\n' || chr == '\r' || chr == '\f' || chr == '\v';
+}
+
 constexpr bool cry_is_string_literal_impl_outside_quotes(const char* szStr)
 {
 	return szStr[0] == 0
-		|| (isspace(szStr[0]) && cry_is_string_literal_impl_outside_quotes(szStr + 1))
+		|| (isspace_constexpr(szStr[0]) && cry_is_string_literal_impl_outside_quotes(szStr + 1))
 		|| (szStr[0] == '"' && cry_is_string_literal_impl_in_quotes(szStr + 1));
 }
 

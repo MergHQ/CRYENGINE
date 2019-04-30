@@ -289,7 +289,7 @@ public:
 		typename Submitted::iterator it = m_submitted.find(queuedID);
 		if (it == m_submitted.end())
 		{
-			CRY_PROFILE_REGION_ARG(PROFILE_PHYSICS, "DeferredActionQueue::Cancel::PriorityQueue", CryStringUtils::toString(uint32(m_priorityQueue.size())).c_str());
+			CRY_PROFILE_SECTION_ARG(PROFILE_PHYSICS, "DeferredActionQueue::Cancel::PriorityQueue", CryStringUtils::toString(uint32(m_priorityQueue.size())).c_str());
 			
 			if (m_priorityQueue.has(queuedID))
 			{
@@ -302,7 +302,7 @@ public:
 		}
 		else
 		{
-			CRY_PROFILE_REGION_ARG(PROFILE_PHYSICS, "DeferredActionQueue::Cancel::Submitted", CryStringUtils::toString(uint32(m_submitted.size())).c_str());
+			CRY_PROFILE_SECTION_ARG(PROFILE_PHYSICS, "DeferredActionQueue::Cancel::Submitted", CryStringUtils::toString(uint32(m_submitted.size())).c_str());
 
 			m_slots.erase(it->second);
 			m_submitted.erase(it);

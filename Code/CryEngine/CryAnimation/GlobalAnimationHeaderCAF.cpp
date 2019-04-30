@@ -9,7 +9,7 @@
 //////////////////////////////////////////////////////////////////////////
 uint32 GlobalAnimationHeaderCAF::LoadCAF()
 {
-	LOADING_TIME_PROFILE_SECTION(GetISystem());
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 	MEMSTAT_CONTEXT_FMT(EMemStatContextType::Other, "CAF Animation %s", m_FilePath.c_str());
 
 	m_nFlags = 0;
@@ -263,7 +263,7 @@ void GlobalAnimationHeaderCAFStreamContent::StreamAsyncOnComplete(IReadStream* p
 void GlobalAnimationHeaderCAFStreamContent::StreamOnComplete(IReadStream* pStream, unsigned nError)
 {
 	DEFINE_PROFILER_FUNCTION();
-	//LOADING_TIME_PROFILE_SECTION(g_pISystem);
+	//CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY)(g_pISystem);
 
 	GlobalAnimationHeaderCAF& caf = g_AnimationManager.m_arrGlobalCAF[m_id];
 
@@ -369,7 +369,7 @@ bool GlobalAnimationHeaderCAFStreamContent::ParseChunkRange(IChunkFile* pChunkFi
 
 uint32 GlobalAnimationHeaderCAF::DoesExistCAF()
 {
-	LOADING_TIME_PROFILE_SECTION(GetISystem());
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 	_smart_ptr<IChunkFile> pChunkFile = g_pI3DEngine->CreateChunkFile(true);
 	if (!pChunkFile->Read(m_FilePath))
 		return 0;

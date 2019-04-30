@@ -416,7 +416,7 @@ void TransformMesh(CMesh& mesh, Matrix34 tm)
 bool CStatObj::LoadStreamRenderMeshes(bool bLod, const void* pData, const int nDataSize)
 {
 	MEMSTAT_CONTEXT(EMemStatContextType::CGF, m_szFileName.c_str());
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
 	CLoaderCGF cgfLoader(util::pool_allocate, util::pool_free, GetCVars()->e_StatObjTessellationMode != 2 || bLod);
 	CStackContainer<CContentCGF> contentContainer(InplaceFactory(m_szFileName));

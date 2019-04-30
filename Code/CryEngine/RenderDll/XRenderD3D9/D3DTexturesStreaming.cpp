@@ -345,7 +345,7 @@ void CTexture::StreamCopyMipsTexToMem(int8 nStartMip, int8 nEndMip, bool bToDevi
 				if (mp->DataArray)
 				{
 #ifndef _RELEASE
-					CRY_PROFILE_REGION_WAITING(PROFILE_RENDERER, "update texture");
+					CRY_PROFILE_SECTION_WAITING(PROFILE_RENDERER, "update texture");
 					CryInterlockedAdd(&CTexture::s_nTexturesDataBytesUploaded, mh[nLod].m_SideSize);					
 #endif
 					// TODO: batch upload (instead of loop)
@@ -377,7 +377,7 @@ void CTexture::StreamCopyMipsTexToMem(int8 nStartMip, int8 nEndMip, bool bToDevi
 				const uint32 nRows = nMipSize / nRowPitch;
 				assert(nMipSize % nRowPitch == 0);
 
-				CRY_PROFILE_REGION_WAITING(PROFILE_RENDERER, "update texture");
+				CRY_PROFILE_SECTION_WAITING(PROFILE_RENDERER, "update texture");
 
 				pDevTexture->DownloadToStagingResource(D3D11CalcSubresource(nDevTexMip, iSide, nTexMips), [&](void* pData, uint32 rowPitch, uint32 slicePitch)
 				{
@@ -447,7 +447,7 @@ ID3D11CommandList* CTexture::StreamCreateDeferred(int8 nStartMip, int8 nEndMip, 
 					const int nVSize = m_nHeight >> nLod;
 					const uint32 nRowPitch   = CTexture::TextureDataSize(nUSize,      1, 1, 1, 1, m_eDstFormat, m_eSrcTileMode);
 					const uint32 nSlicePitch = CTexture::TextureDataSize(nUSize, nVSize, 1, 1, 1, m_eDstFormat, m_eSrcTileMode);
-					CRY_PROFILE_REGION_WAITING(PROFILE_RENDERER, "update texture");
+					CRY_PROFILE_SECTION_WAITING(PROFILE_RENDERER, "update texture");
 					{
 						s_pStreamDeferredCtx->UpdateSubresource(pID3DTexture, D3D11CalcSubresource(nDevTexMip, iSide, nTexMips), NULL, &mp->DataArray[0], nRowPitch, nSlicePitch);
 					}

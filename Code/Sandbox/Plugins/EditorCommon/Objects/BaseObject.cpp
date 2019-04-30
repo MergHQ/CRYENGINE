@@ -629,7 +629,7 @@ CBaseObject::~CBaseObject()
 
 void CBaseObject::Done()
 {
-	LOADING_TIME_PROFILE_SECTION_ARGS(m_name.c_str());
+	CRY_PROFILE_FUNCTION_ARG(PROFILE_LOADING_ONLY, m_name.c_str());
 	CBaseObject* pGroup = GetGroup();
 
 	// Must unlink all objects before removing from group or prefab
@@ -2977,7 +2977,7 @@ bool CBaseObject::IsParentAttachmentValid() const
 
 void CBaseObject::InvalidateTM(int flags)
 {
-	LOADING_TIME_PROFILE_SECTION
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY)
 
 	bool bMatrixWasValid = m_bMatrixValid;
 
@@ -3750,7 +3750,7 @@ Matrix33 CBaseObject::GetWorldScaleTM() const
 
 void CBaseObject::SetTransformDelegate(ITransformDelegate* pTransformDelegate, bool bInvalidateTM)
 {
-	LOADING_TIME_PROFILE_SECTION
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY)
 	if (m_pTransformDelegate != pTransformDelegate)
 	{
 		m_pTransformDelegate = pTransformDelegate;

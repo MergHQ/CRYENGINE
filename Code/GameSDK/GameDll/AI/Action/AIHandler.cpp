@@ -565,7 +565,7 @@ void CAIHandler::AIMind(SOBJECTSTATE& state)
 
 		if (state.nTargetType > AIOBJECT_PLAYER)   //-- grenade (or any other registered object type) seen
 		{
-			CRY_PROFILE_REGION(PROFILE_AI, "AI_OnObjectSeen");
+			CRY_PROFILE_SECTION(PROFILE_AI, "AI_OnObjectSeen");
 
 			value = &state.fDistanceFromTarget;
 			if (!pExtraData)
@@ -603,7 +603,7 @@ void CAIHandler::AIMind(SOBJECTSTATE& state)
 			pExtraData->iValue = (int)state.eTargetStuntReaction;
 			state.eTargetStuntReaction = AITSR_NONE;
 
-			CRY_PROFILE_REGION(PROFILE_AI, "AI_OnPlayerSeen2");
+			CRY_PROFILE_SECTION(PROFILE_AI, "AI_OnPlayerSeen2");
 			value = &state.fDistanceFromTarget;
 
 			if (IAIActor* pAIActor = CastToIAIActorSafe(pEntityAI))
@@ -768,7 +768,7 @@ const char* CAIHandler::CheckAndGetBehaviorTransition(const char* szSignalText) 
 			{
 				if (*szNextBehaviorName)
 				{
-					CRY_PROFILE_REGION(PROFILE_AI, "Logging of the character change");
+					CRY_PROFILE_SECTION(PROFILE_AI, "Logging of the character change");
 					if (m_pEntity && m_pEntity->GetName())
 					{
 						AILogCommentID("<CAIHandler> ", "Entity %s changing behavior from %s to %s on signal %s",
@@ -796,7 +796,7 @@ const char* CAIHandler::CheckAndGetBehaviorTransition(const char* szSignalText) 
 
 	if (tableIsValid && pCharacterTable->GetValue(szSignalText, szNextBehaviorName) && *szNextBehaviorName)
 	{
-		CRY_PROFILE_REGION(PROFILE_AI, "Logging of DEFAULT character change");
+		CRY_PROFILE_SECTION(PROFILE_AI, "Logging of DEFAULT character change");
 		if (m_pEntity && m_pEntity->GetName())
 		{
 			AILogCommentID("<CAIHandler> ", "Entity %s changing behavior from %s to %s on signal %s [DEFAULT character]",
@@ -1130,7 +1130,7 @@ void CAIHandler::FindOrLoadBehavior(const char* szBehaviorName, SmartScriptTable
 	if (!m_pBehaviorTable->GetValue(szBehaviorName, pBehaviorTable))
 	{
 		//[petar] if behaviour not preloaded then force loading of it
-		CRY_PROFILE_REGION(PROFILE_AI, "On-DemandBehaviourLoading");
+		CRY_PROFILE_SECTION(PROFILE_AI, "On-DemandBehaviourLoading");
 		const char* szAIBehaviorFileName = GetBehaviorFileName(szBehaviorName);
 		if (szAIBehaviorFileName)
 		{
@@ -1288,14 +1288,14 @@ bool CAIHandler::CallScript(IScriptTable* scriptTable, const char* funcName, flo
 #endif
 			//			string str="Calling behavior >> ";
 			//			str+= funcName;
-			//		CRY_PROFILE_REGION(PROFILE_AI, "Calling behavior signal");
-			//		CRY_PROFILE_REGION(PROFILE_AI, str.c_str());
+			//		CRY_PROFILE_SECTION(PROFILE_AI, "Calling behavior signal");
+			//		CRY_PROFILE_SECTION(PROFILE_AI, str.c_str());
 
 			// only use strings which are known at compile time...
 			// not doing so causes a stack corruption in the frame profiler -- CW
 			//		FRAME_PROFILER( funcName,m_pGame->GetSystem(),PROFILE_AI );
 			//cry_sprintf(m_szSignalName,"AISIGNAL: %s",funcName);
-			CRY_PROFILE_REGION(PROFILE_AI, "AISIGNAL");
+			CRY_PROFILE_SECTION(PROFILE_AI, "AISIGNAL");
 
 #ifdef AI_LOG_SIGNALS
 			static ICVar* pCVarAILogging = NULL;

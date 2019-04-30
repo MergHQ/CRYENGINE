@@ -300,7 +300,7 @@ CRenderer::~CRenderer()
 //////////////////////////////////////////////////////////////////////////
 void CRenderer::PostInit()
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
 	//////////////////////////////////////////////////////////////////////////
 	// Initialize the shader system
@@ -353,7 +353,7 @@ void CRenderer::PostInit()
 
 void CRenderer::StartRenderIntroMovies()
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 	MEMSTAT_CONTEXT(EMemStatContextType::Other, "Staer Render Intro Movie");
 	assert(m_pIntroMovieRenderer == 0);
 
@@ -775,7 +775,7 @@ SDisplayContextKey CRenderer::AddCustomContext(const CRenderDisplayContextPtr& c
 
 SDisplayContextKey CRenderer::CreateSwapChainBackedContext(const SDisplayContextDescription& desc) threadsafe
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
 	const int width = desc.screenResolution.x;
 	const int height = desc.screenResolution.y;
@@ -1031,7 +1031,7 @@ bool CRenderer::IsCurrentContextMainVP()
 
 void CRenderer::InitSystemResources(int nFlags)
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 	MEMSTAT_CONTEXT(EMemStatContextType::Other, "Init System Resources");
 
 	if (!m_bSystemResourcesInit)
@@ -1329,7 +1329,7 @@ const char* CRenderer::EF_GetStringFromShaderGlobalMaskGen(const char* szShaderN
 
 SShaderItem CRenderer::EF_LoadShaderItem(const char* szName, bool bShare, int flags, SInputShaderResources* Res, uint64 nMaskGen, const SLoadShaderItemArgs* pArgs)
 {
-	LOADING_TIME_PROFILE_SECTION_ARGS(szName);
+	CRY_PROFILE_FUNCTION_ARG(PROFILE_LOADING_ONLY, szName);
 
 	return m_cEF.mfShaderItemForName(szName, bShare, flags, Res, nMaskGen, pArgs);
 }
@@ -1599,7 +1599,7 @@ void CRenderer::EF_SubmitWind(const SWindGrid* pWind)
 {
 	auto lambdaCallback = [=]
 	{
-		CRY_PROFILE_REGION(PROFILE_RENDERER, "CRenderer::EF_SubmitWind::lambda");
+		CRY_PROFILE_SECTION(PROFILE_RENDERER, "CRenderer::EF_SubmitWind::lambda");
 
 		m_pCurWindGrid = pWind;
 		if (!CTexture::IsTextureExist(CRendererResources::s_ptexWindGrid))
@@ -3504,7 +3504,7 @@ void CRenderer::GetThreadIDs(threadID& mainThreadID, threadID& renderThreadID) c
 //////////////////////////////////////////////////////////////////////////
 void CRenderer::PostLevelLoading()
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
 	if (gRenDev)
 	{
@@ -3519,7 +3519,7 @@ void CRenderer::PostLevelLoading()
 	}
 
 	{
-		LOADING_TIME_PROFILE_SECTION(iSystem);
+		CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY)(iSystem);
 		const bool isBlocking = true;
 		CTexture::Precache(isBlocking);
 	}
@@ -4574,7 +4574,7 @@ void CRenderer::RefreshShaderResourceConstants(SShaderItem* pShaderItem, IMateri
 		{
 			if (pShaderItem->m_pShader && pShaderItem->m_pShaderResources)
 			{
-				CRY_PROFILE_REGION(PROFILE_RENDERER, "CRenderer::RefreshShaderResourceConstants");
+				CRY_PROFILE_SECTION(PROFILE_RENDERER, "CRenderer::RefreshShaderResourceConstants");
 				if (pShaderItem->RefreshResourceConstants())
 					pShaderItem->m_pShaderResources->UpdateConstants(pShaderItem->m_pShader);
 			}
@@ -4594,7 +4594,7 @@ void CRenderer::ForceUpdateShaderItem(SShaderItem* pShaderItem, IMaterial* pMate
 		{
 			if (pShaderItem->m_pShader && pShaderItem->m_pShaderResources)
 			{
-				CRY_PROFILE_REGION(PROFILE_RENDERER, "CRenderer::ForceUpdateShaderItem");
+				CRY_PROFILE_SECTION(PROFILE_RENDERER, "CRenderer::ForceUpdateShaderItem");
 				static_cast<CShader*>(pShaderItem->m_pShader)->m_Flags &= ~EF_RELOADED;
 				pShaderItem->Update();
 			}

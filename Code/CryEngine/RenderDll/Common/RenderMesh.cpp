@@ -1053,7 +1053,7 @@ bool CRenderMesh::CopyStreamToSystemForUpdate(SMeshStream& MS, size_t nSize)
 
 size_t CRenderMesh::SetMesh_Int(CMesh &mesh, int nSecColorsSetOffset, uint32 flags, const Vec3 *pPosOffset)	
 {
-  LOADING_TIME_PROFILE_SECTION;
+  CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
   MEMORY_SCOPE_CHECK_HEAP();
 	MEMSTAT_CONTEXT(EMemStatContextType::RenderMeshType, this->GetTypeName());
 	MEMSTAT_CONTEXT(EMemStatContextType::RenderMesh, this->GetSourceName());
@@ -1323,7 +1323,7 @@ error:
 
 size_t CRenderMesh::SetMesh(CMesh &mesh, int nSecColorsSetOffset, uint32 flags, const Vec3 *pPosOffset, bool requiresLock)
 {
-  LOADING_TIME_PROFILE_SECTION;
+  CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
   MEMORY_SCOPE_CHECK_HEAP();
   size_t resultingSize = ~0U;
 # ifdef USE_VBIB_PUSH_DOWN
@@ -4277,7 +4277,7 @@ void CRenderMesh::UpdateModified()
 // Mesh garbage collector
 void CRenderMesh::Tick(uint numFrames)
 {
-	CRY_PROFILE_REGION(PROFILE_RENDERER, "CRenderMesh::Tick");
+	CRY_PROFILE_SECTION(PROFILE_RENDERER, "CRenderMesh::Tick");
 
 	MEMORY_SCOPE_CHECK_HEAP();
 	ASSERT_IS_RENDER_THREAD(gRenDev->m_pRT)
@@ -4488,7 +4488,7 @@ bool CRenderMesh::SyncAsyncUpdate(int threadID, bool block)
 	SREC_AUTO_LOCK(m_sResLock); 
 	if (m_asyncUpdateStateCounter[threadID]) 
 	{
-		CRY_PROFILE_REGION(PROFILE_RENDERER, "CRenderMesh::SyncAsyncUpdate() sync");
+		CRY_PROFILE_SECTION(PROFILE_RENDERER, "CRenderMesh::SyncAsyncUpdate() sync");
 		int iter = 0;
 		while (m_asyncUpdateState[threadID])
 		{
@@ -4585,7 +4585,7 @@ void CRenderMesh::CreateRemappedBoneIndicesPair(const uint pairGuid, const TRend
 void CRenderMesh::CreateRemappedBoneIndicesPair(const DynArray<JointIdType> &arrRemapTable, const uint pairGuid, const void* tag)
 {
 	ASSERT_IS_MAIN_THREAD(gRenDev->m_pRT);
-	CRY_PROFILE_REGION(PROFILE_RENDERER, "CRenderMesh::CreateRemappedBoneIndicesPair");
+	CRY_PROFILE_SECTION(PROFILE_RENDERER, "CRenderMesh::CreateRemappedBoneIndicesPair");
 
 	SREC_AUTO_LOCK(m_sResLock); 
 
@@ -4700,7 +4700,7 @@ void CRenderMesh::ReleaseRemappedBoneIndicesPair(const uint pairGuid)
 	}
 
 	CRY_ASSERT(gRenDev->m_pRT->IsRenderThread());
-	CRY_PROFILE_REGION(PROFILE_RENDERER, "CRenderMesh::ReleaseRemappedBoneIndicesPair");
+	CRY_PROFILE_SECTION(PROFILE_RENDERER, "CRenderMesh::ReleaseRemappedBoneIndicesPair");
 
 	SREC_AUTO_LOCK(m_sResLock); 
 	size_t deleted = ~0u; 

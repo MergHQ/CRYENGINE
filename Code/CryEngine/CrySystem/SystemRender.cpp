@@ -509,7 +509,7 @@ void CSystem::RenderJobStats()
 //! Update screen and call some important tick functions during loading.
 void CSystem::SynchronousLoadingTick(const char* pFunc, int line)
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 	if (gEnv && gEnv->bMultiplayer && !gEnv->IsEditor())
 	{
 		//UpdateLoadingScreen currently contains a couple of tick functions that need to be called regularly during the synchronous level loading,

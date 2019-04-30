@@ -838,7 +838,7 @@ void CShaderMan::RT_ParseShader(CShader* pSH, uint64 nMaskGen, uint32 flags, CSh
 		// PC would need to support import of console data
 		if (!gRenDev->IsShaderCacheGenMode())
 		{
-			CRY_PROFILE_REGION(PROFILE_RENDERER, "Renderer: ImportShader");
+			CRY_PROFILE_SECTION(PROFILE_RENDERER, "Renderer: ImportShader");
 
 			bSuccess = ImportShader(pSH, m_Bin);
 
@@ -862,7 +862,7 @@ void CShaderMan::RT_ParseShader(CShader* pSH, uint64 nMaskGen, uint32 flags, CSh
 #endif
 	if (!bSuccess)
 	{
-		CRY_PROFILE_REGION(PROFILE_RENDERER, "Renderer: RT_ParseShader");
+		CRY_PROFILE_SECTION(PROFILE_RENDERER, "Renderer: RT_ParseShader");
 
 
 		bool nukeCaches = false;

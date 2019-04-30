@@ -15,7 +15,7 @@ DECLARE_JOB("SkinningTransformationsComputation", TSkinningTransformationsComput
 
 CCharInstance::CCharInstance(const string& strFileName, CDefaultSkeleton* pDefaultSkeleton) : m_skinningTransformationsCount(0), m_skinningTransformationsMovement(0)
 {
-	LOADING_TIME_PROFILE_SECTION(g_pISystem);
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY)(g_pISystem);
 	MEMSTAT_CONTEXT(EMemStatContextType::Other, "Character Instance");
 
 	g_pCharacterManager->RegisterInstanceSkel(pDefaultSkeleton, this);

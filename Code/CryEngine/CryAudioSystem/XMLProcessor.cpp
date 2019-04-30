@@ -625,7 +625,7 @@ void CXMLProcessor::ClearControlsData(ContextId const contextId, bool const clea
 //////////////////////////////////////////////////////////////////////////
 void CXMLProcessor::ParsePreloads(XmlNodeRef const& rootNode, ContextId const contextId, char const* const szFolderName, uint const version)
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
 	int const numPreloadRequests = rootNode->getChildCount();
 

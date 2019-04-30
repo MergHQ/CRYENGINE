@@ -3475,7 +3475,7 @@ void CDeviceBufferManager::UnlockDevMan()
 //////////////////////////////////////////////////////////////////////////////////////
 bool CDeviceBufferManager::Init()
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 	MEMSTAT_CONTEXT(EMemStatContextType::Other, "Init Device Buffer Manager");
 
 	MEMORY_SCOPE_CHECK_HEAP();

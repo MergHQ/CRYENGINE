@@ -142,7 +142,7 @@ void CAssetManager::Init()
 {
 	using namespace AssetManagerHelpers;
 
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
 	UpdateAssetTypes();
 	UpdateAssetImporters();

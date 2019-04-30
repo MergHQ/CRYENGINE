@@ -1078,7 +1078,7 @@ void CShaderMan::mfInitGlobal(void)
 
 void CShaderMan::mfInit(void)
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 	s_cNameHEAD = CCryNameTSCRC("HEAD");
 
 	CTexture::Init();
@@ -1206,7 +1206,7 @@ void CShaderMan::UnloadShaderStartupCache()
 
 void CShaderMan::mfPostInit()
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
 	CTexture::PostInit();
 
@@ -1351,7 +1351,7 @@ const SShaderProfile& CRenderer::GetShaderProfile(EShaderType eST) const
 
 void CShaderMan::RT_SetShaderQuality(EShaderType eST, EShaderQuality eSQ)
 {
-	CRY_PROFILE_REGION(PROFILE_RENDERER, "CShaderMan::RT_SetShaderQuality");
+	CRY_PROFILE_SECTION(PROFILE_RENDERER, "CShaderMan::RT_SetShaderQuality");
 
 	eSQ = CLAMP(eSQ, eSQ_Low, eSQ_VeryHigh);
 	if (eST == eST_All)
@@ -1442,7 +1442,7 @@ void CShaderMan::mfReleaseSystemShaders()
 
 void CShaderMan::mfLoadBasicSystemShaders()
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 	if (!s_DefaultShader)
 	{
 		s_DefaultShader = mfNewShader("<Default>");
@@ -1463,7 +1463,7 @@ void CShaderMan::mfLoadBasicSystemShaders()
 
 void CShaderMan::mfLoadDefaultSystemShaders()
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 	if (!s_DefaultShader)
 	{
 		s_DefaultShader = mfNewShader("<Default>");
@@ -2530,7 +2530,7 @@ float CShaderMan::EvalWaveForm2(SWaveForm* wf, float frac)
 
 void CShaderMan::mfBeginFrame()
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 }
 
 void CHWShader::mfCleanupCache()

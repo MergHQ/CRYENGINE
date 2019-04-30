@@ -476,7 +476,7 @@ void CSceneDepthStage::ExecutePasses(float sourceWidth, float sourceHeight, floa
 
 void CSceneDepthStage::ReadbackLatestData()
 {
-	CRY_PROFILE_REGION(PROFILE_RENDERER, "CDepthReadbackStage::ReadbackLatestData");
+	CRY_PROFILE_SECTION(PROFILE_RENDERER, "CDepthReadbackStage::ReadbackLatestData");
 
 	// Determine the last completed readback.
 	const uint32 oldestReadback = m_readbackIndex % kMaxReadbackPasses;

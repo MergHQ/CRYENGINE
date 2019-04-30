@@ -1557,7 +1557,7 @@ float CRopeEntity::Solver(float time_interval, float seglen)
 		Ebefore += m_segs[i].vel.len2();
 
 	if (m_bHasContacts+m_nAttach || m_flags & rope_subdivide_segs) {
-		CRY_PROFILE_REGION(PROFILE_PHYSICS, "Rope solver MC");
+		CRY_PROFILE_SECTION(PROFILE_PHYSICS, "Rope solver MC");
 		int bBounced; iter=m_maxIters;
 		float vrel,vreq,dPtang;
 		Vec3 dp;
@@ -1654,7 +1654,7 @@ float CRopeEntity::Solver(float time_interval, float seglen)
 				m_segs[i].vel = m_vtx[m_segs[i].iVtx0].vel;
 		}
 	}	else {
-		CRY_PROFILE_REGION(PROFILE_PHYSICS, "Rope solver CG");
+		CRY_PROFILE_SECTION(PROFILE_PHYSICS, "Rope solver CG");
 		m_segs[0].vcontact.x = 0;
 		m_segs[0].vcontact.y = m_segs[1].dir*m_segs[0].dir;
 		m_segs[0].vcontact.z = (m_segs[0].vel-m_segs[1].vel)*m_segs[0].dir;
@@ -2142,7 +2142,7 @@ int CRopeEntity::Step(float time_interval)
 	collBBox[0]=BBox[0]; collBBox[1]=BBox[1];
 
 	if (collTypes & ent_all | m_flags & rope_collides_with_attachment) {
-		CRY_PROFILE_REGION(PROFILE_PHYSICS, "Rope collision");
+		CRY_PROFILE_SECTION(PROFILE_PHYSICS, "Rope collision");
 		int objtypes;
 		CPhysicalEntity **pentlist,*pentbuf[2];
 		int iseg,nEnts,iend,ippbv=0,nPrecompPartBVs=0;

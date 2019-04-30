@@ -1115,7 +1115,7 @@ namespace Schematyc2
 	//////////////////////////////////////////////////////////////////////////
 	ILibPtr CCompiler::Compile(const IScriptFile& scriptFile)
 	{
-		LOADING_TIME_PROFILE_SECTION_ARGS(scriptFile.GetFileName());
+		CRY_PROFILE_FUNCTION_ARG(PROFILE_LOADING_ONLY, scriptFile.GetFileName());
 
 		const char* szScriptFileName = scriptFile.GetFileName();
 		SCHEMATYC2_COMPILER_ASSERT(szScriptFileName);
@@ -1230,7 +1230,7 @@ namespace Schematyc2
 	void CCompiler::CompileAll()
 	{
 		MEMSTAT_CONTEXT(EMemStatContextType::Other, "Schematyc: Compile All");
-		LOADING_TIME_PROFILE_SECTION;
+		CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
 		gEnv->pSchematyc2->GetScriptRegistry().VisitFiles(ScriptFileVisitor::FromMemberFunction<CCompiler, &CCompiler::VisitAndCompileScriptFile>(*this));
 	}
@@ -1379,7 +1379,7 @@ namespace Schematyc2
 	void CCompiler::CompileClass(const IScriptFile& scriptFile, const IScriptClass& scriptClass, CLib& lib, CLibClass& libClass, TDocGraphSequenceVector& docGraphSequences)
 	{
 		MEMSTAT_CONTEXT(EMemStatContextType::Other, "Schematyc: Compile Class");
-		LOADING_TIME_PROFILE_SECTION_ARGS(scriptClass.GetName());
+		CRY_PROFILE_FUNCTION_ARG(PROFILE_LOADING_ONLY, scriptClass.GetName());
 
 		struct SPendingGraph // #SchematycTODO : Move this outside of the function!!!
 		{

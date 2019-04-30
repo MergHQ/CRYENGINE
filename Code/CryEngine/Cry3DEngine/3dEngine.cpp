@@ -2983,7 +2983,7 @@ IRenderNode* C3DEngine::CreateRenderNode(EERType type)
 
 void C3DEngine::DeleteRenderNode(IRenderNode* pRenderNode)
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
 	UnRegisterEntityDirect(pRenderNode);
 
@@ -4312,7 +4312,7 @@ void C3DEngine::SetStreamableListener(IStreamedObjectListener* pListener)
 
 void C3DEngine::PrecacheLevel(bool bPrecacheAllVisAreas, Vec3* pPrecachePoints, int nPrecachePointsNum)
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
 	if (GetVisAreaManager())
 		GetVisAreaManager()->PrecacheLevel(bPrecacheAllVisAreas, pPrecachePoints, nPrecachePointsNum);
@@ -4855,7 +4855,7 @@ void C3DEngine::SetCachedShadowBounds(const AABB& shadowBounds, float fAdditiona
 //////////////////////////////////////////////////////////////////////////
 void C3DEngine::SetRecomputeCachedShadows(uint nUpdateStrategy)
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 	m_nCachedShadowsUpdateStrategy = nUpdateStrategy;
 
 	if (IRenderer* const pRenderer = GetRenderer())

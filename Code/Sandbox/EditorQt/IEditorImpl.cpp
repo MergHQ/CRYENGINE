@@ -107,7 +107,7 @@ CEditorImpl::CEditorImpl(CGameEngine* ge)
 	, m_objectHideMask(0)
 	, editorConfigSpec(CONFIG_MEDIUM_SPEC)
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
 	//This is dangerous and should (in theory) be set at the end of the constructor for safety, after everything is properly initialized.
 	//Code within this scope can use GetIEditorImpl() at their own risk
@@ -444,7 +444,7 @@ void CEditorImpl::CloseDocument()
 {
 	if (theDocument)
 	{
-		LOADING_TIME_PROFILE_SECTION;
+		CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 		Notify(eNotify_OnBeginSceneClose);
 		theDocument->DeleteContents();
 		delete theDocument;
@@ -1303,7 +1303,7 @@ ESystemConfigSpec CEditorImpl::GetEditorConfigSpec() const
 
 void CEditorImpl::InitFinished()
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
 	if (!m_bInitialized)
 	{

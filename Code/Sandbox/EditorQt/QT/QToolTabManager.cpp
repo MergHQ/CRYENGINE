@@ -190,7 +190,7 @@ QString CTabPaneManager::CreateObjectName(const char* title)
 
 QTabPane* CTabPaneManager::CreateTabPane(const char* paneClassName, const char* title, int nOverrideDockDirection, bool bLoadLayoutPersonalization)
 {
-	LOADING_TIME_PROFILE_SECTION_ARGS(paneClassName);
+	CRY_PROFILE_FUNCTION_ARG(PROFILE_LOADING_ONLY, paneClassName);
 	QTabPane* pPane = 0;
 	bool isToolAlreadyCreated = false;
 
@@ -701,7 +701,7 @@ bool CTabPaneManager::LoadUserLayout()
 bool CTabPaneManager::LoadLayout(const char* filePath)
 {
 	LOADING_TIME_PROFILE_AUTO_SESSION("sandbox_load_layout");
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
 	if (QFile(filePath).exists())
 		return LoadLayoutFromFile(filePath);
@@ -742,7 +742,7 @@ void CTabPaneManager::SaveLayoutToFile(const char* fullFilename)
 
 bool CTabPaneManager::LoadLayoutFromFile(const char* fullFilename)
 {
-	LOADING_TIME_PROFILE_SECTION_ARGS(fullFilename);
+	CRY_PROFILE_FUNCTION_ARG(PROFILE_LOADING_ONLY, fullFilename);
 	QFile file(fullFilename);
 	if (!file.open(QIODevice::ReadOnly))
 	{
@@ -813,7 +813,7 @@ QFileInfoList CTabPaneManager::GetAppLayouts()
 
 void CTabPaneManager::CloseAllPanes()
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
 	bool bNeedsToDelete = false;
 	while (!m_panes.empty())
@@ -866,7 +866,7 @@ void CTabPaneManager::CreateContentInPanes()
 
 IPane* CTabPaneManager::CreatePaneContents(QTabPane* pTool)
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 	pTool->m_bViewCreated = true;
 
 	IClassDesc* pClassDesc = GetIEditorImpl()->GetClassFactory()->FindClass(pTool->m_class);
@@ -896,7 +896,7 @@ IPane* CTabPaneManager::CreatePaneContents(QTabPane* pTool)
 		CRuntimeClass* pRuntimeClass = pViewPaneClass->GetRuntimeClass();
 		if (pRuntimeClass && mfcHostWidget)
 		{
-			LOADING_TIME_PROFILE_SECTION_NAMED("Loading MFC Tool");
+			CRY_PROFILE_SECTION(PROFILE_LOADING_ONLY, "Loading MFC Tool");
 			assert(pRuntimeClass->IsDerivedFrom(RUNTIME_CLASS(CWnd)) || pRuntimeClass == RUNTIME_CLASS(CWnd));
 			pTool->m_MfcWnd = (CWnd*)pRuntimeClass->CreateObject();
 			assert(pTool->m_MfcWnd);
@@ -954,7 +954,7 @@ QVariant CTabPaneManager::GetState() const
 
 void CTabPaneManager::SetState(const QVariant& state)
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
 	// During the layout load, Qt events must be processed in order to cleanup after all tools.
 	// If the layout is loaded with a toolbar button, repeated clicking may cause this method to be called while the initial load is still in progress.
@@ -989,7 +989,7 @@ void CTabPaneManager::SetState(const QVariant& state)
 		for (QVariantMap::const_iterator iter = openToolsMap.begin(); iter != openToolsMap.end(); ++iter)
 		{
 			QString key = iter.key();
-			LOADING_TIME_PROFILE_SECTION_ARGS(key.toStdString().c_str());
+			CRY_PROFILE_FUNCTION_ARG(PROFILE_LOADING_ONLY, key.toStdString().c_str());
 			QVariantMap v = iter.value().toMap();
 			string className = v.value("class").toString().toStdString().c_str();
 			QVariantMap state = v.value("state", QVariantMap()).toMap();

@@ -1844,7 +1844,7 @@ void CAttachmentManager::DrawAttachments(SRendParams& rParams, const Matrix34& r
 	}
 #endif
 	{
-		LOADING_TIME_PROFILE_SECTION_NAMED("SkinAttachments");
+		CRY_PROFILE_SECTION(PROFILE_LOADING_ONLY, "SkinAttachments");
 		for (uint32 i = m_sortedRanges[eRange_SkinMesh].begin; i < m_sortedRanges[eRange_SkinMesh].end; i++)
 		{
 			IAttachment* pIAttachment = m_arrAttachments[i];
@@ -1889,7 +1889,7 @@ void CAttachmentManager::DrawAttachments(SRendParams& rParams, const Matrix34& r
 		}
 	}
 	{
-		LOADING_TIME_PROFILE_SECTION_NAMED("VertexClothAttachments");
+		CRY_PROFILE_SECTION(PROFILE_LOADING_ONLY, "VertexClothAttachments");
 		for (uint32 i = m_sortedRanges[eRange_VertexClothOrPendulumRow].begin; i < m_sortedRanges[eRange_VertexClothOrPendulumRow].end; i++)
 		{
 			IAttachment* pIAttachment = m_arrAttachments[i];
@@ -2151,7 +2151,7 @@ void CAttachmentManager::GetMemoryUsage(ICrySizer* pSizer) const
 
 void CAttachmentManager::SortByType()
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 	m_TypeSortingRequired = 0;
 	CDefaultSkeleton& rDefaultSkeleton = *m_pSkelInstance->m_pDefaultSkeleton;
 	memset(m_sortedRanges, 0, sizeof(m_sortedRanges));

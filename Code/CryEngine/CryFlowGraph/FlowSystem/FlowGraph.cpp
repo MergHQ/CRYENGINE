@@ -339,7 +339,7 @@ void CFlowGraphBase::Cleanup()
 
 CFlowGraphBase::~CFlowGraphBase()
 {
-	LOADING_TIME_PROFILE_SECTION
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY)
 
 	RemoveGraphTokens();
 
@@ -1203,7 +1203,7 @@ const char* CFlowGraphBase::GetGlobalNameForGraphToken(const char* tokenName) co
 
 void CFlowGraphBase::UnregisterGraphTokens()
 {
-	LOADING_TIME_PROFILE_SECTION
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY)
 
 	IGameTokenSystem* pGTS = gEnv->pGameFramework->GetIGameTokenSystem();
 	IF_UNLIKELY(!pGTS) return;
@@ -1227,7 +1227,7 @@ void CFlowGraphBase::UnregisterGraphTokens()
 
 void CFlowGraphBase::RemoveGraphTokens()
 {
-	LOADING_TIME_PROFILE_SECTION
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY)
 	if (m_graphTokens.empty()) return; //nothing to do
 
 	if (m_bRegistered)

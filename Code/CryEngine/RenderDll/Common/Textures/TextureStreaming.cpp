@@ -933,7 +933,7 @@ bool CTexture::StreamPrepare(CImageFilePtr&& pIM)
 
 bool CTexture::StreamPrepare_Finalise(bool bFromLoad)
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
 	const bool bNative = (m_eSrcTileMode != eTM_None);
 
@@ -1565,7 +1565,7 @@ void CTexture::InitStreaming()
 
 void CTexture::RT_FlushStreaming(bool bAbort)
 {
-	CRY_PROFILE_REGION(PROFILE_RENDERER, "CTexture::RT_FlushStreaming");
+	CRY_PROFILE_SECTION(PROFILE_RENDERER, "CTexture::RT_FlushStreaming");
 
 	RT_FlushAllStreamingTasks(bAbort);
 

@@ -2193,7 +2193,7 @@ void CGameRules::PrecacheList(XmlNodeRef precacheListNode)
 //------------------------------------------------------------------------
 void CGameRules::PrecacheLevel()
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
 	CallScript(m_script, "PrecacheLevel");
 	XmlNodeRef root = gEnv->pSystem->LoadXmlFromFile( PRECACHE_LIST_XML );
@@ -2316,7 +2316,7 @@ void CGameRules::PrecacheLevel()
 
 void CGameRules::PrecacheLevelResource(const char* resourceName, EGameResourceType resourceType)
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
 	INDENT_LOG_DURING_SCOPE(true, "While %s is precaching level resource '%s' (resourceType=%d)...", GetEntity()->GetEntityTextDescription().c_str(), resourceName, resourceType);
 
@@ -8990,7 +8990,7 @@ void CGameRules::OnSystemEvent( ESystemEvent event,UINT_PTR wparam,UINT_PTR lpar
 	{
 		case	ESYSTEM_EVENT_LEVEL_LOAD_END:
 			{
-				LOADING_TIME_PROFILE_SECTION_NAMED("CGameRules::OnSystemEvent() ESYSTEM_EVENT_LEVEL_LOAD_END");
+				CRY_PROFILE_SECTION(PROFILE_LOADING_ONLY, "CGameRules::OnSystemEvent() ESYSTEM_EVENT_LEVEL_LOAD_END");
 				if(IGameRulesSpectatorModule * pSpectatorModule = GetSpectatorModule())
 				{
 					EntityId spectatorPositionId = pSpectatorModule->GetSpectatorLocation(0);

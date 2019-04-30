@@ -130,7 +130,7 @@ void CRenderPassScheduler::Execute(CGraphicsPipeline* pGraphicsPipeline)
 				prevLabel = "";
 			}
 
-			PROFILE_LABEL_SCOPE(pass.pPrimitivePass->GetLabel());
+			PROFILE_LABEL_SCOPE_DYNAMIC(pass.pPrimitivePass->GetLabel(), "PASS");
 			pGraphicsPipeline->GetCurrentRenderView()->GetDrawer().InitDrawSubmission();
 			pass.pScenePass->Execute();
 			pGraphicsPipeline->GetCurrentRenderView()->GetDrawer().JobifyDrawSubmission();

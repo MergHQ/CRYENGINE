@@ -484,7 +484,7 @@ CSystem::CSystem(const SSystemInitParams& startupParams)
 	m_pTestSystem = stl::make_unique<CryTest::CTestSystem>(this);
 #endif
 
-	LOADING_TIME_PROFILE_SECTION_NAMED("CSystem Boot");
+	CRY_PROFILE_SECTION(PROFILE_LOADING_ONLY, "CSystem Boot");
 
 	m_pMiniGUI = nullptr;
 	m_pPerfHUD = nullptr;
@@ -1160,7 +1160,7 @@ public:
 		while (true)
 		{
 			{
-				CRY_PROFILE_REGION_WAITING(PROFILE_PHYSICS, "Wait - Physics Update");
+				CRY_PROFILE_SECTION_WAITING(PROFILE_PHYSICS, "Wait - Physics Update");
 
 				QueryPerformanceCounter(&waitStart);
 				m_FrameEvent.Wait(); // Wait until new frame
@@ -1168,7 +1168,7 @@ public:
 			}
 
 			{
-				CRY_PROFILE_REGION(PROFILE_PHYSICS, "Physics Update");
+				CRY_PROFILE_SECTION(PROFILE_PHYSICS, "Physics Update");
 
 				m_lastWaitTimeTaken = waitEnd.QuadPart - waitStart.QuadPart;
 
@@ -1285,7 +1285,7 @@ public:
 
 	void EnsureStepDone()
 	{
-		CRY_PROFILE_REGION_WAITING(PROFILE_SYSTEM, "SysUpdate:PhysicsEnsureDone");
+		CRY_PROFILE_SECTION_WAITING(PROFILE_SYSTEM, "SysUpdate:PhysicsEnsureDone");
 
 		if (m_bIsActive)
 		{
@@ -1520,7 +1520,7 @@ int prev_sys_float_exceptions = -1;
 //////////////////////////////////////////////////////////////////////
 void CSystem::PrePhysicsUpdate()
 {
-	CRY_PROFILE_REGION(PROFILE_SYSTEM, "System::PrePhysicsUpdate");
+	CRY_PROFILE_SECTION(PROFILE_SYSTEM, "System::PrePhysicsUpdate");
 
 	if (m_env.pGameFramework)
 	{
@@ -1603,7 +1603,7 @@ bool CSystem::DoFrame(const SDisplayContextKey& displayContextKey, const SGraphi
 		return true;
 	}
 
-	CRY_PROFILE_REGION(PROFILE_SYSTEM, __FUNC__);
+	CRY_PROFILE_FUNCTION(PROFILE_SYSTEM);
 #if defined(JOBMANAGER_SUPPORT_PROFILING)
 	m_env.GetJobManager()->SetFrameStartTime(m_env.pTimer->GetAsyncTime());
 #endif
@@ -1763,7 +1763,6 @@ bool CSystem::DoFrame(const SDisplayContextKey& displayContextKey, const SGraphi
 //////////////////////////////////////////////////////////////////////
 bool CSystem::Update(CEnumFlags<ESystemUpdateFlags> updateFlags, int nPauseMode)
 {
-	CRY_PROFILE_REGION(PROFILE_SYSTEM, "System: Update");
 	CRY_PROFILE_FUNCTION(PROFILE_SYSTEM)
 	MEMSTAT_CONTEXT(EMemStatContextType::Other, "CSystem::Update");
 
@@ -1944,7 +1943,7 @@ bool CSystem::Update(CEnumFlags<ESystemUpdateFlags> updateFlags, int nPauseMode)
 #if CRY_PLATFORM_WINDOWS
 	// process window messages
 	{
-		CRY_PROFILE_REGION(PROFILE_SYSTEM, "SysUpdate:PeekMessageW");
+		CRY_PROFILE_SECTION(PROFILE_SYSTEM, "SysUpdate:PeekMessageW");
 
 		if (m_hWnd && ::IsWindow((HWND)m_hWnd))
 		{
@@ -2031,7 +2030,7 @@ bool CSystem::Update(CEnumFlags<ESystemUpdateFlags> updateFlags, int nPauseMode)
 	//update console system
 	if (m_env.pConsole)
 	{
-		CRY_PROFILE_REGION(PROFILE_SYSTEM, "SysUpdate:Console");
+		CRY_PROFILE_SECTION(PROFILE_SYSTEM, "SysUpdate:Console");
 
 		if (!(updateFlags & ESYSUPDATE_EDITOR))
 			m_env.pConsole->Update();
@@ -2077,7 +2076,7 @@ bool CSystem::Update(CEnumFlags<ESystemUpdateFlags> updateFlags, int nPauseMode)
 		CPhysicsThreadTask* pPhysicsThreadTask = ((CPhysicsThreadTask*)m_PhysThread);
 		if (!pPhysicsThreadTask)
 		{
-			CRY_PROFILE_REGION(PROFILE_SYSTEM, "SystemUpdate: AllAIAndPhysics");
+			CRY_PROFILE_SECTION(PROFILE_SYSTEM, "SystemUpdate: AllAIAndPhysics");
 
 			//////////////////////////////////////////////////////////////////////
 			// update entity system (a little bit) before physics
@@ -2108,7 +2107,7 @@ bool CSystem::Update(CEnumFlags<ESystemUpdateFlags> updateFlags, int nPauseMode)
 
 				if ((nPauseMode != 1) && !(updateFlags & ESYSUPDATE_IGNORE_PHYSICS) && g_cvars.sys_physics && !bNoUpdate)
 				{
-					CRY_PROFILE_REGION(PROFILE_SYSTEM, "SysUpdate:Physics");
+					CRY_PROFILE_SECTION(PROFILE_SYSTEM, "SysUpdate:Physics");
 
 					//int iPrevTime = m_env.pPhysicalWorld->GetiPhysicsTime();
 					//float fPrevTime=m_env.pPhysicalWorld->GetPhysicsTime();
@@ -2153,14 +2152,14 @@ bool CSystem::Update(CEnumFlags<ESystemUpdateFlags> updateFlags, int nPauseMode)
 
 				if (bNotLoading)
 				{
-					CRY_PROFILE_REGION(PROFILE_SYSTEM, "SysUpdate:PumpLoggedEvents");
+					CRY_PROFILE_SECTION(PROFILE_SYSTEM, "SysUpdate:PumpLoggedEvents");
 					m_env.pPhysicalWorld->PumpLoggedEvents();
 				}
 
 				// now AI
 				if ((nPauseMode == 0) && !(updateFlags & ESYSUPDATE_IGNORE_AI) && g_cvars.sys_ai && !bNoUpdate)
 				{
-					CRY_PROFILE_REGION(PROFILE_SYSTEM, "SysUpdate:AI");
+					CRY_PROFILE_SECTION(PROFILE_SYSTEM, "SysUpdate:AI");
 					//////////////////////////////////////////////////////////////////////
 					//update AI system - match physics
 					if (m_env.pAISystem && !m_cvAIUpdate->GetIVal() && g_cvars.sys_ai)
@@ -2182,7 +2181,7 @@ bool CSystem::Update(CEnumFlags<ESystemUpdateFlags> updateFlags, int nPauseMode)
 		{
 			if (bNotLoading)
 			{
-				CRY_PROFILE_REGION(PROFILE_SYSTEM, "SysUpdate:PumpLoggedEvents");
+				CRY_PROFILE_SECTION(PROFILE_SYSTEM, "SysUpdate:PumpLoggedEvents");
 				m_env.pPhysicalWorld->PumpLoggedEvents();
 			}
 
@@ -2213,7 +2212,7 @@ bool CSystem::Update(CEnumFlags<ESystemUpdateFlags> updateFlags, int nPauseMode)
 			}
 			if ((nPauseMode == 0) && !(updateFlags & ESYSUPDATE_IGNORE_AI) && g_cvars.sys_ai && !bNoUpdate)
 			{
-				CRY_PROFILE_REGION(PROFILE_SYSTEM, "SysUpdate:AI");
+				CRY_PROFILE_SECTION(PROFILE_SYSTEM, "SysUpdate:AI");
 				//////////////////////////////////////////////////////////////////////
 				//update AI system
 				if (m_env.pAISystem && !m_cvAIUpdate->GetIVal())
@@ -2517,7 +2516,7 @@ void CSystem::SetViewCamera(CCamera& Camera)
 //////////////////////////////////////////////////////////////////////////
 XmlNodeRef CSystem::LoadXmlFromFile(const char* sFilename, bool bReuseStrings)
 {
-	LOADING_TIME_PROFILE_SECTION_ARGS(sFilename);
+	CRY_PROFILE_FUNCTION_ARG(PROFILE_LOADING_ONLY, sFilename);
 
 	return m_pXMLUtils->LoadXmlFromFile(sFilename, bReuseStrings);
 }
@@ -2525,7 +2524,7 @@ XmlNodeRef CSystem::LoadXmlFromFile(const char* sFilename, bool bReuseStrings)
 //////////////////////////////////////////////////////////////////////////
 XmlNodeRef CSystem::LoadXmlFromBuffer(const char* buffer, size_t size, bool bReuseStrings)
 {
-	LOADING_TIME_PROFILE_SECTION
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY)
 	return m_pXMLUtils->LoadXmlFromBuffer(buffer, size, bReuseStrings);
 }
 
@@ -2938,7 +2937,7 @@ void CSystem::debug_GetCallStackRaw(void** callstack, uint32& callstackLength)
 //////////////////////////////////////////////////////////////////////////
 void CSystem::ExecuteCommandLine()
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 	// should only be called once
 	{
 		static bool bCalledAlready = false;

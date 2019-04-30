@@ -202,7 +202,7 @@ CResourceManager::CResourceManager()
 void CResourceManager::PrepareLevel(const char* sLevelFolder, const char* sLevelName)
 {
 	MEMSTAT_CONTEXT(EMemStatContextType::Other, "Preload Level pak files");
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
 	m_sLevelFolder = sLevelFolder;
 	m_sLevelName = sLevelName;
@@ -294,7 +294,7 @@ bool CResourceManager::LoadFastLoadPaks(bool bToMemory)
 	//if (g_cvars.pakVars.nLoadCache)
 	{
 		MEMSTAT_CONTEXT(EMemStatContextType::Other, "Paks Fast Load Cache");
-		LOADING_TIME_PROFILE_SECTION;
+		CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
 		// Load a special _fastload paks
 		int nPakPreloadFlags = ICryPak::FLAGS_FILENAMES_AS_CRC32 | ICryArchive::FLAGS_OVERRIDE_PAK;
@@ -359,7 +359,7 @@ IResourceList* CResourceManager::GetLevelResourceList()
 //////////////////////////////////////////////////////////////////////////
 bool CResourceManager::LoadLevelCachePak(const char* sPakName, const char* sBindRoot, bool bOnlyDuringLevelLoading)
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 	MEMSTAT_CONTEXT_FMT(EMemStatContextType::Other, "LoadLevelCachePak %s", sPakName);
 
 	CryPathString pakPath = GetCurrentLevelCacheFolder() + "/" + sPakName;
@@ -517,7 +517,7 @@ void CResourceManager::UnloadMenuCommonPak(const char* sPakName, const char* sRe
 //////////////////////////////////////////////////////////////////////////
 void CResourceManager::UnloadLevelCachePak(const char* sPakName)
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 	CryPathString pakPath = GetCurrentLevelCacheFolder() + "/" + sPakName;
 	pakPath.MakeLower();
 	pakPath.replace(CCryPak::g_cNonNativeSlash, CCryPak::g_cNativeSlash);
@@ -539,7 +539,7 @@ void CResourceManager::UnloadLevelCachePak(const char* sPakName)
 //////////////////////////////////////////////////////////////////////////
 void CResourceManager::UnloadAllLevelCachePaks(bool bLevelLoadEnd)
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
 	if (!bLevelLoadEnd)
 	{

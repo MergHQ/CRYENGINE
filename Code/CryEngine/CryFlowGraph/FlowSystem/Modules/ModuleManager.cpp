@@ -64,7 +64,7 @@ void CFlowGraphModuleManager::Shutdown()
 
 void CFlowGraphModuleManager::DestroyModule(TModuleMap::iterator& itModule)
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 	IF_UNLIKELY(!itModule->second) return;
 
 	for (CListenerSet<IFlowGraphModuleListener*>::Notifier notifier(m_listeners); notifier.IsValid(); notifier.Next())
@@ -77,7 +77,7 @@ void CFlowGraphModuleManager::DestroyModule(TModuleMap::iterator& itModule)
 
 void CFlowGraphModuleManager::ClearModules()
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 	for (TModuleMap::iterator i = m_Modules.begin(), end = m_Modules.end(); i != end; ++i)
 	{
 		DestroyModule(i);
@@ -90,7 +90,7 @@ void CFlowGraphModuleManager::ClearModules()
 
 void CFlowGraphModuleManager::ClearLevelModules()
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 	for (TModuleMap::iterator it = m_Modules.begin(); it != m_Modules.end();)
 	{
 		CFlowGraphModule* pModule = it->second;
@@ -159,7 +159,7 @@ CFlowGraphModule* CFlowGraphModuleManager::PreLoadModuleFile(const char* moduleN
 void CFlowGraphModuleManager::LoadModuleGraph(const char* moduleName, const char* fileName, IFlowGraphModuleListener::ERootGraphChangeReason rootGraphChangeReason)
 {
 	// Load actual graph with nodes and edges. The module should already be constructed and its nodes (call/start/end) registered
-	LOADING_TIME_PROFILE_SECTION_ARGS(fileName);
+	CRY_PROFILE_FUNCTION_ARG(PROFILE_LOADING_ONLY, fileName);
 
 	// first check for existing module - must exist by this point
 	CFlowGraphModule* pModule = static_cast<CFlowGraphModule*>(GetModule(moduleName));
@@ -300,7 +300,7 @@ void CFlowGraphModuleManager::ScanFolder(const string& folderName, bool bGlobal)
 
 void CFlowGraphModuleManager::RescanModuleNames(bool bGlobal, const char* szLoadedLevelName)
 {
-	LOADING_TIME_PROFILE_SECTION_ARGS(bGlobal ? "Global Modules" : "Level Modules");
+	CRY_PROFILE_FUNCTION_ARG(PROFILE_LOADING_ONLY, bGlobal ? "Global Modules" : "Level Modules");
 
 	CryFixedStringT<512> path = "";
 
@@ -340,7 +340,7 @@ void CFlowGraphModuleManager::RescanModuleNames(bool bGlobal, const char* szLoad
 
 void CFlowGraphModuleManager::ScanAndReloadModules(bool bScanGlobalModules, bool bScanLevelModules, const char* szLoadedLevelName)
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
 	// First pass: RescanModuleNames will "preload" the modules.
 	// The module will be constructed ant its nodes (call,start,end) registered in the flowsystem. The actual graph is not loaded.

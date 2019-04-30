@@ -417,7 +417,7 @@ CVegetationMap::~CVegetationMap()
 
 void CVegetationMap::ClearObjects()
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 	ClearSectors();
 	m_objects.clear();
 }
@@ -2716,7 +2716,7 @@ void CVegetationMap::UpdateConfigSpec()
 void CVegetationMap::Save(bool bBackup)
 {
 	using namespace Private_VegetationMap;
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 	CTempFileHelper helper(GetIEditorImpl()->GetLevelDataFolder() + kVegetationMapFile);
 
 	CXmlArchive xmlAr;
@@ -2729,7 +2729,7 @@ void CVegetationMap::Save(bool bBackup)
 bool CVegetationMap::Load()
 {
 	using namespace Private_VegetationMap;
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 	string filename = GetIEditorImpl()->GetLevelDataFolder() + kVegetationMapFile;
 	CXmlArchive xmlAr;
 	xmlAr.bLoading = true;

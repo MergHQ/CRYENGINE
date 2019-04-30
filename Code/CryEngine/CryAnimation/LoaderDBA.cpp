@@ -160,7 +160,7 @@ void* CInternalDatabaseInfo::StreamOnNeedStorage(IReadStream* pStream, unsigned 
 void CInternalDatabaseInfo::StreamAsyncOnComplete(IReadStream* pStream, unsigned nError)
 {
 	DEFINE_PROFILER_FUNCTION();
-	//LOADING_TIME_PROFILE_SECTION(g_pISystem);
+	//CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY)(g_pISystem);
 	MEMSTAT_CONTEXT(EMemStatContextType::DBA, m_strFilePath.c_str());
 
 	if (pStream->IsError())
@@ -294,7 +294,7 @@ bool CInternalDatabaseInfo::ReadControllers(IChunkFile::ChunkDesc* pChunkDesc, b
 
 bool CInternalDatabaseInfo::ReadController905(IChunkFile::ChunkDesc* pChunkDesc, bool bStreaming)
 {
-	LOADING_TIME_PROFILE_SECTION(g_pISystem);
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY)(g_pISystem);
 
 	if (pChunkDesc->bSwapEndian)
 		CryFatalError("%s: data are stored in non-native endian format", __FUNCTION__);

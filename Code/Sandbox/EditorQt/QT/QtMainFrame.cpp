@@ -674,7 +674,7 @@ CEditorMainFrame::CEditorMainFrame(QWidget* parent)
 	, m_bClosing(false)
 	, m_bUserEventPriorityMode(false)
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
 	m_levelEditor->Initialize();
 
@@ -813,7 +813,7 @@ void CEditorMainFrame::SetDefaultLayout()
 
 void CEditorMainFrame::PostLoad()
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 	InitActions();
 	InitMenus();
 
@@ -1583,7 +1583,7 @@ void CEditorMainFrame::closeEvent(QCloseEvent* event)
 
 bool CEditorMainFrame::BeforeClose()
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 	SaveConfig();
 	// disconnect now or we'll end up closing all panels and saving an empty layout
 	disconnect(m_layoutChangedConnection);
@@ -1592,7 +1592,7 @@ bool CEditorMainFrame::BeforeClose()
 	GetIEditorImpl()->GetGlobalBroadcastManager()->Broadcast(aboutToQuitEvent);
 
 	{
-		LOADING_TIME_PROFILE_SECTION_NAMED("CEditorMainFrame::BeforeClose() Save Changes?");
+		CRY_PROFILE_SECTION(PROFILE_LOADING_ONLY, "CEditorMainFrame::BeforeClose() Save Changes?");
 
 		if (aboutToQuitEvent.GetChangeListCount() > 0)
 		{
@@ -1638,7 +1638,7 @@ bool CEditorMainFrame::BeforeClose()
 
 void CEditorMainFrame::SaveConfig()
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 	if (!GetIEditorImpl()->IsInMatEditMode())
 	{
 		CTabPaneManager::GetInstance()->SaveLayout();

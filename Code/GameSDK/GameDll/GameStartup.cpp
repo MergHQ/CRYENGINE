@@ -188,7 +188,7 @@ IGameRef CGameStartup::Init(SSystemInitParams &startupParams)
 
 	InlineInitializationProcessing("CGameStartup::Init");
 
-  LOADING_TIME_PROFILE_SECTION(GetISystem());
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
 	// Load thread config
 	gEnv->pThreadManager->GetThreadConfigManager()->LoadConfig("%engine%/config/game.thread_config");

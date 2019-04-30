@@ -283,7 +283,7 @@ IMaterial* CMatMan::LoadMaterial(const char* sMtlName, bool bMakeIfNotFound, boo
 
 	MEMSTAT_CONTEXT(EMemStatContextType::Other, "Materials");
 	MEMSTAT_CONTEXT(EMemStatContextType::MTL, name);
-	LOADING_TIME_PROFILE_SECTION_ARGS(sMtlName); // Only profile actually loading of the material.
+	CRY_PROFILE_FUNCTION_ARG(PROFILE_LOADING_ONLY, sMtlName); // Only profile actually loading of the material.
 
 	CRY_DEFINE_ASSET_SCOPE("Material", sMtlName);
 
@@ -997,7 +997,7 @@ void CMatMan::InitDefaults()
 		return;
 	m_bInitialized = true;
 
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
 	SYNCHRONOUS_LOADING_TICK();
 
@@ -1117,7 +1117,7 @@ IMaterial* CMatMan::LoadMaterialFromXml(const char* sMtlName, XmlNodeRef mtlNode
 //////////////////////////////////////////////////////////////////////////
 void CMatMan::PreloadLevelMaterials()
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
 	//bool bMtlfCacheExist = GetISystem()->GetIResourceManager()->LoadLevelCachePak( MTL_LEVEL_CACHE_PAK,"" );
 	//if (!bMtlfCacheExist)
@@ -1174,7 +1174,7 @@ void CMatMan::PreloadLevelMaterials()
 //////////////////////////////////////////////////////////////////////////
 void CMatMan::PreloadDecalMaterials()
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
 	float fStartTime = GetCurAsyncTimeSec();
 

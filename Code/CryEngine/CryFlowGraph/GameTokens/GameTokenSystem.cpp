@@ -492,7 +492,7 @@ void CGameTokenSystem::Serialize(TSerialize ser)
 //////////////////////////////////////////////////////////////////////////
 void CGameTokenSystem::LoadLibs(const char* sFileSpec)
 {
-	LOADING_TIME_PROFILE_SECTION(GetISystem());
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 	m_bGoingIntoGame = true;
 
 	ICryPak* pPak = gEnv->pCryPak;

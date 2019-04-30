@@ -969,7 +969,7 @@ CActionGame::eInitTaskState CActionGame::NonBlockingConnect(BlockingConditionFun
 
 bool CActionGame::BlockingConnect(BlockingConditionFunction condition, bool requireClientChannel, const char* conditionText)
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 	MEMSTAT_CONTEXT(EMemStatContextType::Other, "BlockingConnect");
 
 	bool ok = false;
@@ -4689,7 +4689,7 @@ void CActionGame::FixBrokenObjects(bool bRestoreBroken)
 
 void CActionGame::OnEditorSetGameMode(bool bGameMode)
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 	FixBrokenObjects(true);
 	ClearBreakHistory();
 

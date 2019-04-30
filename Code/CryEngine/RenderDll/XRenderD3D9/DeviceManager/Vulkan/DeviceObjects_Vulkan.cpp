@@ -537,7 +537,7 @@ void CDeviceObjectFactory::ReleaseNullResources()
 
 void CDeviceObjectFactory::UpdateDeferredUploads()
 {
-	CRY_PROFILE_REGION(PROFILE_RENDERER, "CDeviceObjectFactory::UpdateDeferredUploads");
+	CRY_PROFILE_SECTION(PROFILE_RENDERER, "CDeviceObjectFactory::UpdateDeferredUploads");
 	AUTO_LOCK_T(CryCriticalSectionNonRecursive, m_deferredUploadCS);
 
 	for (auto& upload : m_deferredUploads)

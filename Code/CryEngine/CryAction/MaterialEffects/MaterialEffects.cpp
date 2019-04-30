@@ -511,7 +511,7 @@ void CMaterialEffects::LoadSpreadSheet()
 
 void CMaterialEffects::PreLoadAssets()
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
 	for (TMFXEffectId id = 0; id < m_effectContainers.size(); ++id)
 		if (m_effectContainers[id])
@@ -893,7 +893,7 @@ bool CMaterialEffects::PlayBreakageEffect(ISurfaceType* pSurfaceType, const char
 
 void CMaterialEffects::CompleteInit()
 {
-	LOADING_TIME_PROFILE_SECTION
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY)
 
 	if (m_bDataInitialized)
 		return;

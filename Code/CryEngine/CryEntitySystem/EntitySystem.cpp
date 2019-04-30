@@ -337,7 +337,7 @@ void CEntitySystem::PurgeHeaps()
 
 void CEntitySystem::Reset()
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
 	if (CVar::es_UseProximityTriggerSystem)
 	{
@@ -518,8 +518,7 @@ bool CEntitySystem::ValidateSpawnParameters(SEntitySpawnParams& params)
 
 IEntity* CEntitySystem::SpawnPreallocatedEntity(CEntity* pPrecreatedEntity, SEntitySpawnParams& params, bool bAutoInit)
 {
-	LOADING_TIME_PROFILE_SECTION_ARGS((params.pClass ? params.pClass->GetName() : "Unknown"));
-	CRY_PROFILE_FUNCTION(PROFILE_ENTITY);
+	CRY_PROFILE_FUNCTION_ARG(PROFILE_ENTITY, (params.pClass ? params.pClass->GetName() : "Unknown"));
 
 	if (!ValidateSpawnParameters(params))
 	{
@@ -967,7 +966,7 @@ int CEntitySystem::QueryProximity(SEntityProximityQuery& query)
 //////////////////////////////////////////////////////////////////////
 void CEntitySystem::PrePhysicsUpdate()
 {
-	CRY_PROFILE_REGION(PROFILE_ENTITY, "EntitySystem::PrePhysicsUpdate");
+	CRY_PROFILE_SECTION(PROFILE_ENTITY, "EntitySystem::PrePhysicsUpdate");
 	MEMSTAT_FUNCTION_CONTEXT(EMemStatContextType::Other);
 
 	SEntityEvent event(ENTITY_EVENT_PREPHYSICSUPDATE);
@@ -1020,7 +1019,7 @@ void CEntitySystem::PrePhysicsUpdate()
 //////////////////////////////////////////////////////////////////////
 void CEntitySystem::Update()
 {
-	CRY_PROFILE_REGION(PROFILE_ENTITY, "EntitySystem::Update");
+	CRY_PROFILE_SECTION(PROFILE_ENTITY, "EntitySystem::Update");
 	MEMSTAT_FUNCTION_CONTEXT(EMemStatContextType::Other);
 
 	const float fFrameTime = gEnv->pTimer->GetFrameTime();
@@ -1176,7 +1175,7 @@ std::array<const char*, static_cast<size_t>(Cry::Entity::EEvent::Count)> s_event
 //////////////////////////////////////////////////////////////////////////
 void CEntitySystem::UpdateEntityComponents(float fFrameTime)
 {
-	CRY_PROFILE_REGION(PROFILE_ENTITY, "EntitySystem::UpdateEntityComponents");
+	CRY_PROFILE_SECTION(PROFILE_ENTITY, "EntitySystem::UpdateEntityComponents");
 
 	SEntityUpdateContext ctx = { fFrameTime, gEnv->pTimer->GetCurrTime(), gEnv->nMainFrameID };
 
@@ -1503,7 +1502,7 @@ void CEntitySystem::OnEditorSimulationModeChanged(EEditorSimulationMode mode)
 //////////////////////////////////////////////////////////////////////////
 void CEntitySystem::OnLevelLoaded()
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
 	const SEntityEvent event(ENTITY_EVENT_LEVEL_LOADED);
 
@@ -1524,7 +1523,7 @@ void CEntitySystem::OnLevelLoaded()
 //////////////////////////////////////////////////////////////////////////
 void CEntitySystem::OnLevelGameplayStart()
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
 	const SEntityEvent event(ENTITY_EVENT_START_GAME);
 
@@ -1700,7 +1699,7 @@ void CEntitySystem::UpdateTimers()
 	if (last != first)
 	{
 		{
-			CRY_PROFILE_REGION(PROFILE_ENTITY, "Split");
+			CRY_PROFILE_SECTION(PROFILE_ENTITY, "Split");
 			// Make a separate list, because OnTrigger call can modify original timers map.
 			m_currentTimers.clear();
 			m_currentTimers.reserve(std::distance(first, last));
@@ -1718,7 +1717,7 @@ void CEntitySystem::UpdateTimers()
 		}
 
 		{
-			CRY_PROFILE_REGION(PROFILE_ENTITY, "SendEvent");
+			CRY_PROFILE_SECTION(PROFILE_ENTITY, "SendEvent");
 			SEntityEvent entityEvent;
 			entityEvent.event = ENTITY_EVENT_TIMER;
 
@@ -1801,7 +1800,7 @@ bool CEntitySystem::OnLoadLevel(const char* szLevelPath)
 //////////////////////////////////////////////////////////////////////////
 void CEntitySystem::LoadEntities(XmlNodeRef& objectsNode, bool bIsLoadingLevelFile)
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 	MEMSTAT_FUNCTION_CONTEXT(EMemStatContextType::Other);
 
 	//Update loading screen and important tick functions
@@ -3459,7 +3458,7 @@ void CEntitySystem::LinkLayerChildren()
 //////////////////////////////////////////////////////////////////////////
 void CEntitySystem::LoadLayers(const char* dataFile)
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
 	ClearLayers();
 	XmlNodeRef root = GetISystem()->LoadXmlFromFile(dataFile);
@@ -3532,7 +3531,7 @@ CEntityLayer* CEntitySystem::GetLayerForEntity(EntityId id)
 //////////////////////////////////////////////////////////////////////////
 void CEntitySystem::EnableDefaultLayers(bool isSerialized)
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
 	if (!gEnv->p3DEngine->IsAreaActivationInUse())
 		return;
@@ -3546,7 +3545,7 @@ void CEntitySystem::EnableDefaultLayers(bool isSerialized)
 
 void CEntitySystem::EnableLayer(const char* szLayer, bool isEnable, bool isSerialized)
 {
-	LOADING_TIME_PROFILE_SECTION_ARGS(szLayer);
+	CRY_PROFILE_FUNCTION_ARG(PROFILE_LOADING_ONLY, szLayer);
 	if (!gEnv->p3DEngine->IsAreaActivationInUse())
 		return;
 	IEntityLayer* pLayer = FindLayer(szLayer);
@@ -3558,7 +3557,7 @@ void CEntitySystem::EnableLayer(const char* szLayer, bool isEnable, bool isSeria
 
 void CEntitySystem::EnableLayer(IEntityLayer* pLayer, bool bIsEnable, bool bIsSerialized, bool bAffectsChildren)
 {
-	LOADING_TIME_PROFILE_SECTION_ARGS(pLayer->GetName());
+	CRY_PROFILE_FUNCTION_ARG(PROFILE_LOADING_ONLY, pLayer->GetName());
 	const bool bEnableChange = pLayer->IsEnabledBrush() != bIsEnable;
 
 #if ENABLE_STATOSCOPE

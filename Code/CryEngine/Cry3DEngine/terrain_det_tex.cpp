@@ -47,7 +47,7 @@ void CTerrain::SetDetailLayerProperties(int nId, float fScaleX, float fScaleY,
 
 void CTerrain::LoadSurfaceTypesFromXML(XmlNodeRef pDetTexTagList)
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
 	MEMSTAT_CONTEXT(EMemStatContextType::Terrain, "Surface types");
 

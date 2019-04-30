@@ -266,7 +266,7 @@ void CLevelModelsManager::DeleteLayerModels()
 
 void CLevelModelsManager::CreateLayerModels()
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 	const auto& layers = GetIEditorImpl()->GetObjectManager()->GetLayersManager()->GetLayers();
 	for (IObjectLayer* pLayer : layers)
 	{

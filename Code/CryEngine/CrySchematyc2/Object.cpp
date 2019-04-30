@@ -1255,7 +1255,7 @@ namespace Schematyc2
 		CRY_ASSERT_MESSAGE(pFunction, "Function %s not found in class %s", pFunction->GetName(), m_pLibClass->GetName());
 		if(pFunction)
 		{
-			LOADING_TIME_PROFILE_SECTION_NAMED_ARGS("ProcessFunction", pFunction->GetName());
+			CRY_PROFILE_SECTION_ARG(PROFILE_LOADING_ONLY, "ProcessFunction", pFunction->GetName());
 			static uint32 s_recursionDepth = 0;
 			if(s_recursionDepth >= CVars::sc_MaxRecursionDepth)
 			{
@@ -1309,7 +1309,7 @@ namespace Schematyc2
 #endif
 				//int64 ticksSinceLastNode = CryGetTicks();
 
-				LOADING_TIME_PROFILE_SECTION_NAMED_ARGS("Doing operations", pFunction->GetName());
+				CRY_PROFILE_SECTION_ARG(PROFILE_LOADING_ONLY, "Doing operations", pFunction->GetName());
 				for(size_t pos = 0, size = pFunction->GetSize(); pos < size; )
 				{
 #if SCHEMATYC2_DEBUGGING
@@ -1733,7 +1733,7 @@ namespace Schematyc2
 								TVariantConstArray	functionInputs(functionInputSize ? &stack[stackSize - functionInputSize - functionOutputSize] : NULL, functionInputSize);
 								TVariantArray				functionOutputs(functionOutputSize ? &stack[stackSize - functionOutputSize] : NULL, functionOutputSize);
 
-								LOADING_TIME_PROFILE_SECTION_NAMED_ARGS("Function call", pGlobalFunction->GetName());
+								CRY_PROFILE_SECTION_ARG(PROFILE_LOADING_ONLY, "Function call", pGlobalFunction->GetName());
 								pGlobalFunction->Call(functionInputs, functionOutputs);
 							}
 							pos += pOp->size;
@@ -1762,7 +1762,7 @@ namespace Schematyc2
 									{
 										TVariantConstArray	functionInputs(variantInputSize ? &stack[prevStackSize - variantInputSize] : NULL, variantInputSize);
 										TVariantArray				functionOutputs(variantOutputSize ? &stack[prevStackSize] : NULL, variantOutputSize);
-										LOADING_TIME_PROFILE_SECTION_NAMED_ARGS("Interface call", pAbstractInterfaceFunction->GetName());
+										CRY_PROFILE_SECTION_ARG(PROFILE_LOADING_ONLY, "Interface call", pAbstractInterfaceFunction->GetName());
 										const bool					result = pObject->CallAbstractInterfaceFunction(pCallEnvAbstractInterfaceFunctionOp->abstractInterfaceGUID, pCallEnvAbstractInterfaceFunctionOp->functionGUID, functionInputs, functionOutputs);
 										stack.Push(CVariant(result));
 									}
@@ -1798,7 +1798,7 @@ namespace Schematyc2
 									{
 										TVariantConstArray	functionInputs(variantInputSize ? &stack[prevStackSize - variantInputSize] : NULL, variantInputSize);
 										TVariantArray				functionOutputs(variantOutputSize ? &stack[prevStackSize] : NULL, variantOutputSize);
-										LOADING_TIME_PROFILE_SECTION_NAMED_ARGS("Interface call", pAbstractInterfaceFunction->GetName());
+										CRY_PROFILE_SECTION_ARG(PROFILE_LOADING_ONLY, "Interface call", pAbstractInterfaceFunction->GetName());
 										const bool					result = pObject->CallAbstractInterfaceFunction(pCallLibAbstractInterfaceFunctionOp->abstractInterfaceGUID, pCallLibAbstractInterfaceFunctionOp->functionGUID, functionInputs, functionOutputs);
 										stack.Push(CVariant(result));
 									}
@@ -1830,7 +1830,7 @@ namespace Schematyc2
 									stack.Resize(stackSize);
 									TVariantConstArray	functionInputs(functionInputSize ? &stack[stackSize - functionInputSize - functionOutputSize] : NULL, functionInputSize);
 									TVariantArray				functionOutputs(functionOutputSize ? &stack[stackSize - functionOutputSize] : NULL, functionOutputSize);
-									LOADING_TIME_PROFILE_SECTION_NAMED_ARGS("Function call", pComponentMemberFunction->GetName());
+									CRY_PROFILE_SECTION_ARG(PROFILE_LOADING_ONLY, "Function call", pComponentMemberFunction->GetName());
 									pComponentMemberFunction->Call(*m_componentInstances[iComponentInstance].pComponent, functionInputs, functionOutputs);
 								}
 							}
@@ -1856,7 +1856,7 @@ namespace Schematyc2
 									stack.Resize(stackSize);
 									TVariantConstArray	functionInputs(functionInputSize ? &stack[stackSize - functionInputSize - functionOutputSize] : NULL, functionInputSize);
 									TVariantArray				functionOutputs(functionOutputSize ? &stack[stackSize - functionOutputSize] : NULL, functionOutputSize);
-									LOADING_TIME_PROFILE_SECTION_NAMED_ARGS("Function call", pActionMemberFunction->GetName());
+									CRY_PROFILE_SECTION_ARG(PROFILE_LOADING_ONLY, "Function call", pActionMemberFunction->GetName());
 									pActionMemberFunction->Call(*m_actionInstances[iActionInstance].pAction, functionInputs, functionOutputs);
 								}
 							}
@@ -1880,7 +1880,7 @@ namespace Schematyc2
 									stack.Resize(stackSize);
 									TVariantConstArray	functionInputs(functionInputSize? &stack[stackSize - functionInputSize - functionOutputSize] : NULL, functionInputSize);
 									TVariantArray				functionOutputs(functionOutputSize ? &stack[stackSize - functionOutputSize] : NULL, functionOutputSize);
-									LOADING_TIME_PROFILE_SECTION_NAMED_ARGS("Function call", pLibFunction->GetName());
+									CRY_PROFILE_SECTION_ARG(PROFILE_LOADING_ONLY, "Function call", pLibFunction->GetName());
 									ProcessFunction(pCallLibFunctionOp->functionId, functionInputs, functionOutputs);
 								}
 							}

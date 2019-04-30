@@ -1072,7 +1072,7 @@ bool CScriptSystem::ExecuteFile(const char* sFileName, bool bRaiseError, bool bF
 	if (strlen(sFileName) <= 0)
 		return false;
 
-	LOADING_TIME_PROFILE_SECTION_ARGS(sFileName);
+	CRY_PROFILE_FUNCTION_ARG(PROFILE_LOADING_ONLY, sFileName);
 
 	INDENT_LOG_DURING_SCOPE(true, "Executing file '%s' (raiseErrors=%d%s)", sFileName, bRaiseError, bForceReload ? ", force reload" : "");
 
@@ -2138,7 +2138,7 @@ void CScriptSystem::ShowDebugger(const char* pszSourceFile, int iLine, const cha
 //////////////////////////////////////////////////////////////////////////
 void CScriptSystem::Update()
 {
-	CRY_PROFILE_REGION(PROFILE_SCRIPT, "ScriptSystem: Update");
+	CRY_PROFILE_SECTION(PROFILE_SCRIPT, "ScriptSystem: Update");
 	MEMSTAT_FUNCTION_CONTEXT(EMemStatContextType::Other);
 	
 	ITimer* pTimer = gEnv->pTimer;
@@ -2187,7 +2187,7 @@ void CScriptSystem::Update()
 
 	//if(bKickIn)
 	{
-		CRY_PROFILE_REGION(PROFILE_SCRIPT, "Lua GC");
+		CRY_PROFILE_SECTION(PROFILE_SCRIPT, "Lua GC");
 
 		//CryLog( "Lua GC=%d",GetCGCount() );
 

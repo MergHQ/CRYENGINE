@@ -4351,7 +4351,7 @@ bool CSmartObjectManager::GetSmartObjectLinkCostFactorForMNM(const OffMeshLink_S
 				                         pRequesterEntity,
 				                         &m_statesToExcludeForPathfinding) > 0)
 				{
-					CRY_PROFILE_REGION(PROFILE_AI, "CSmartObjectManager::GetSmartObjectLinkCostFactorForMNM::CostMultiplierCalculation");
+					CRY_PROFILE_SECTION(PROFILE_AI, "CSmartObjectManager::GetSmartObjectLinkCostFactorForMNM::CostMultiplierCalculation");
 					if (fCostMultiplier)
 					{
 						*fCostMultiplier = vHelperLinks[0]->condition->fProximityFactor;

@@ -804,7 +804,7 @@ void C3DEngine::DebugDraw_UpdateDebugNode()
 
 void C3DEngine::RenderWorld(const int nRenderFlags, const SRenderingPassInfo& passInfo, const char* szDebugName)
 {
-	CRY_PROFILE_REGION(PROFILE_3DENGINE, "3DEngine: RenderWorld");
+	CRY_PROFILE_SECTION(PROFILE_3DENGINE, "3DEngine: RenderWorld");
 	MEMSTAT_CONTEXT(EMemStatContextType::Other, "C3DEngine::RenderWorld");
 
 #if defined(FEATURE_SVO_GI)
@@ -1588,7 +1588,7 @@ void C3DEngine::RenderScene(const int nRenderFlags, const SRenderingPassInfo& pa
 		const auto& auxStatObjs = passInfo.GetIRenderView()->GetAuxiliaryStatObjects();
 		if (auxStatObjs.size())
 		{
-			CRY_PROFILE_REGION(PROFILE_RENDERER, "auxiliaryStatObjects");
+			CRY_PROFILE_SECTION(PROFILE_RENDERER, "auxiliaryStatObjects");
 			for (auto& obj : auxStatObjs)
 				obj.second->Render(obj.first, passInfo);
 		}
@@ -1603,7 +1603,7 @@ void C3DEngine::RenderScene(const int nRenderFlags, const SRenderingPassInfo& pa
 
 	if (passInfo.RenderShadows() && !passInfo.IsRecursivePass())
 	{
-		CRY_PROFILE_REGION(PROFILE_3DENGINE, "Prepare Shadow Passes");
+		CRY_PROFILE_SECTION(PROFILE_3DENGINE, "Prepare Shadow Passes");
 
 		// Collect shadow passes used in scene and allocate render view for each of them
 		uint32 nTimeSlicedShadowsUpdatedThisFrame = 0;
@@ -1621,7 +1621,7 @@ void C3DEngine::RenderScene(const int nRenderFlags, const SRenderingPassInfo& pa
 	}
 	else
 	{
-		CRY_PROFILE_REGION(PROFILE_3DENGINE, "Traverse Outdoor Lights");
+		CRY_PROFILE_SECTION(PROFILE_3DENGINE, "Traverse Outdoor Lights");
 		uint32 outdoorCullMask = IsOutdoorVisible() ? passCullMask : (passCullMask & ~kPassCullMainMask);
 
 		// render point lights
@@ -1632,7 +1632,7 @@ void C3DEngine::RenderScene(const int nRenderFlags, const SRenderingPassInfo& pa
 	// draw objects inside visible vis areas
 	if (m_pVisAreaManager)
 	{
-		CRY_PROFILE_REGION(PROFILE_3DENGINE, "Traverse Indoor Octrees");
+		CRY_PROFILE_SECTION(PROFILE_3DENGINE, "Traverse Indoor Octrees");
 		m_pVisAreaManager->DrawVisibleSectors(passInfo, passCullMask);
 	}
 
@@ -1680,7 +1680,7 @@ void C3DEngine::RenderScene(const int nRenderFlags, const SRenderingPassInfo& pa
 
 		passInfo.GetRendItemSorter().IncreaseOctreeCounter();
 		{
-			CRY_PROFILE_REGION(PROFILE_3DENGINE, "Traverse Outdoor Octree");
+			CRY_PROFILE_SECTION(PROFILE_3DENGINE, "Traverse Outdoor Octree");
 			uint32 outdoorCullMask = IsOutdoorVisible() ? passCullMask : (passCullMask & ~kPassCullMainMask);
 			m_pObjectsTree->Render_Object_Nodes(false, OCTREENODE_RENDER_FLAG_OBJECTS, GetSkyColor(), outdoorCullMask, passInfo);
 		}
@@ -1700,7 +1700,7 @@ void C3DEngine::RenderScene(const int nRenderFlags, const SRenderingPassInfo& pa
 
 	// render outdoor entities very near of camera - fix for 1p vehicle entering into indoor
 	{
-		CRY_PROFILE_REGION(PROFILE_3DENGINE, "COctreeNode::Render_Object_Nodes_NEAR");
+		CRY_PROFILE_SECTION(PROFILE_3DENGINE, "COctreeNode::Render_Object_Nodes_NEAR");
 		passInfo.GetRendItemSorter().IncreaseOctreeCounter();
 		if (GetCVars()->e_PortalsBigEntitiesFix)
 		{
@@ -1724,7 +1724,7 @@ void C3DEngine::RenderScene(const int nRenderFlags, const SRenderingPassInfo& pa
 		auto dwRndFlags = pObj->GetRndFlags();
 		if (dwRndFlags & ERF_HUD || passInfo.GetCamera().IsAABBVisible_E(objBox))
 		{
-			CRY_PROFILE_REGION(PROFILE_3DENGINE, "C3DEngine::RenderScene_DrawAlwaysVisible");
+			CRY_PROFILE_SECTION(PROFILE_3DENGINE, "C3DEngine::RenderScene_DrawAlwaysVisible");
 
 			Vec3 vCamPos = passInfo.GetCamera().GetPosition();
 			float fEntDistance = sqrt_tpl(Distance::Point_AABBSq(vCamPos, objBox)) * passInfo.GetZoomFactor();
@@ -1850,7 +1850,7 @@ void C3DEngine::RenderScene(const int nRenderFlags, const SRenderingPassInfo& pa
 	FinishWindGridJob();
 
 	{
-		CRY_PROFILE_REGION(PROFILE_RENDERER, "Renderer::EF_EndEf3D");
+		CRY_PROFILE_SECTION(PROFILE_RENDERER, "Renderer::EF_EndEf3D");
 		GetRenderer()->EF_EndEf3D(GetObjManager()->m_nUpdateStreamingPrioriryRoundId, GetObjManager()->m_nUpdateStreamingPrioriryRoundIdFast, passInfo, nRenderFlags);
 	}
 

@@ -1723,7 +1723,7 @@ CStatoscope::~CStatoscope()
 
 static char* Base64Encode(const uint8* buffer, int len)
 {
-	CRY_PROFILE_REGION(PROFILE_SYSTEM, "CStatoscope::Base64Encode");
+	CRY_PROFILE_SECTION(PROFILE_SYSTEM, "CStatoscope::Base64Encode");
 
 	static const char base64Dict[64] = {
 		'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P',

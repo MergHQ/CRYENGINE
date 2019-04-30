@@ -32,7 +32,7 @@ enum EProfiledSubsystem : uint8
 	PROFILE_ACTION,
 	PROFILE_GAME,
 	PROFILE_INPUT,
-	PROFILE_LOADING_ONLY,
+	PROFILE_LOADING_ONLY, //!< Deprecated
 
 	PROFILE_LAST_SUBSYSTEM //!< Must always be last.
 };
@@ -100,7 +100,7 @@ struct SProfilingSectionDescription
 	EProfiledSubsystem subsystem;
 	//! color stored with 1B per channel
 	uint32 color_argb;
-	
+
 	//! can be used by a profiling system to attach its own information
 	mutable uintptr_t customData;
 };
@@ -161,25 +161,22 @@ struct SProfilingMarker
 #define CRY_PROFILE_THREADSTART if(gEnv->pSystem) gEnv->pSystem->GetProfilingSystem()->StartThread()
 #define CRY_PROFILE_THREADEND   if(gEnv->pSystem) gEnv->pSystem->GetProfilingSystem()->EndThread()
 
-// static_assert(is_string_literal(PNAME))
-#define CRY_PROFILE_SECTION_NEW(SYS, PNAME, SZARG, WAITING) \
-	const static SProfilingSectionDescription CRYPROF_CAT(profEventDesc, __LINE__) (__FILE__, PNAME, __LINE__, WAITING, SYS); \
-	SProfilingSection CRYPROF_CAT(profSection, __LINE__)(&CRYPROF_CAT(profEventDesc, __LINE__), SZARG);
+#define CRY_PROFILE_SECTION_FULL(subsystem, szName, szArg, isWaiting) \
+	static_assert(CRY_IS_STRING_LITERAL(szName), "Only use string literals as the name of a profiling section!"); \
+	static_assert(bool(uint8(subsystem)) || true, "The subsystem cannot be set dynamically!"); \
+	static_assert(isWaiting || true, "The waiting status cannot be set dynamically!"); \
+	const static SProfilingSectionDescription CRYPROF_CAT(profEventDesc, __LINE__) (__FILE__, szName, __LINE__, isWaiting, subsystem); \
+	SProfilingSection CRYPROF_CAT(profSection, __LINE__)(&CRYPROF_CAT(profEventDesc, __LINE__), szArg);
 
-#define LOADING_TIME_PROFILE_SECTION                               CRY_PROFILE_SECTION_NEW(PROFILE_LOADING_ONLY, __FUNC__, nullptr, false)
-#define LOADING_TIME_PROFILE_SECTION_ARGS(args)                    CRY_PROFILE_SECTION_NEW(PROFILE_LOADING_ONLY, __FUNC__, args, false)
-#define LOADING_TIME_PROFILE_SECTION_NAMED(sectionName)            CRY_PROFILE_SECTION_NEW(PROFILE_LOADING_ONLY, sectionName, nullptr, false)
-#define LOADING_TIME_PROFILE_SECTION_NAMED_ARGS(sectionName, args) CRY_PROFILE_SECTION_NEW(PROFILE_LOADING_ONLY, sectionName, args, false)
+// helper macro to stringify __FUNC__, otherwise the CRY_IS_STRING_LITERAL() check does not work
+#define CRY_PROFILE_STRINGIFY(s) #s
+#define CRY_PROFILE_FUNCTION(subsystem)               CRY_PROFILE_SECTION_FULL(subsystem, CRY_PROFILE_STRINGIFY(__FUNC__), nullptr, false)
+#define CRY_PROFILE_FUNCTION_ARG(subsystem, argument) CRY_PROFILE_SECTION_FULL(subsystem, CRY_PROFILE_STRINGIFY(__FUNC__), argument, false)
+#define CRY_PROFILE_FUNCTION_WAITING(subsystem)       CRY_PROFILE_SECTION_FULL(subsystem, CRY_PROFILE_STRINGIFY(__FUNC__), nullptr, true)
 
-#define CRY_PROFILE_REGION(subsystem, szName)               CRY_PROFILE_SECTION_NEW(subsystem, szName, nullptr, false)
-#define CRY_PROFILE_REGION_ARG(subsystem, szName, argument) CRY_PROFILE_SECTION_NEW(subsystem, szName, argument, false)
-#define CRY_PROFILE_REGION_WAITING(subsystem, szName)       CRY_PROFILE_SECTION_NEW(subsystem, szName, nullptr, true)
-
-#define CRY_PROFILE_FUNCTION(subsystem)                CRY_PROFILE_SECTION_NEW(subsystem, __FUNC__, nullptr, false)
-#define CRY_PROFILE_FUNCTION_ARG(subsystem, argument)  CRY_PROFILE_SECTION_NEW(subsystem, __FUNC__, argument, false)
-#define CRY_PROFILE_FUNCTION_WAITING(subsystem)        CRY_PROFILE_SECTION_NEW(subsystem, __FUNC__, nullptr, true)
-#define CRY_PROFILE_SECTION(subsystem, szName)         CRY_PROFILE_SECTION_NEW(subsystem, szName, nullptr, false)
-#define CRY_PROFILE_SECTION_WAITING(subsystem, szName) CRY_PROFILE_SECTION_NEW(subsystem, szName, nullptr, true)
+#define CRY_PROFILE_SECTION(subsystem, szName)            CRY_PROFILE_SECTION_FULL(subsystem, szName, nullptr, false)
+#define CRY_PROFILE_SECTION_ARG(subsystem, szName, szArg) CRY_PROFILE_SECTION_FULL(subsystem, szName, szArg, false)
+#define CRY_PROFILE_SECTION_WAITING(subsystem, szName)    CRY_PROFILE_SECTION_FULL(subsystem, szName, nullptr, true)
 
 #define CRY_PROFILE_MARKER(SYS, PNAME) \
 	static SProfilingMarkerDescription CRYPROF_CAT(profMarkerDesc, __LINE__) = {__FILE__, PNAME, __LINE__, SYS, 0}; \
@@ -190,19 +187,12 @@ struct SProfilingMarker
 #define CRY_PROFILE_THREADSTART
 #define CRY_PROFILE_THREADEND
 
-#define LOADING_TIME_PROFILE_SECTION
-#define LOADING_TIME_PROFILE_SECTION_ARGS(args)
-#define LOADING_TIME_PROFILE_SECTION_NAMED(sectionName)
-#define LOADING_TIME_PROFILE_SECTION_NAMED_ARGS(sectionName, args)
-
-#define CRY_PROFILE_REGION(subsystem, szName)
-#define CRY_PROFILE_REGION_ARG(subsystem, szName, argument)
-#define CRY_PROFILE_REGION_WAITING(subsystem, szName)
-
 #define CRY_PROFILE_FUNCTION(subsystem)
 #define CRY_PROFILE_FUNCTION_ARG(subsystem, argument)
 #define CRY_PROFILE_FUNCTION_WAITING(subsystem)
+
 #define CRY_PROFILE_SECTION(subsystem, szName)
+#define CRY_PROFILE_SECTION_ARG(subsystem, szName, argument)
 #define CRY_PROFILE_SECTION_WAITING(subsystem, szName)
 
 #define CRY_PROFILE_MARKER(SYS, PNAME)

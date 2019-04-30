@@ -206,7 +206,7 @@ void CharacterToolForm::Initialize()
 		return;
 	}
 	
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 	m_private.reset(new SPrivate(this, m_system->document.get()));
  
 	m_modeCharacter.reset(new ModeCharacter());

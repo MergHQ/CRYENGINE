@@ -417,14 +417,14 @@ CGroup::CGroup()
 
 void CGroup::Done()
 {
-	LOADING_TIME_PROFILE_SECTION_ARGS(GetName().c_str());
+	CRY_PROFILE_FUNCTION_ARG(PROFILE_LOADING_ONLY, GetName().c_str());
 	DeleteAllMembers();
 	CBaseObject::Done();
 }
 
 void CGroup::DeleteAllMembers()
 {
-	LOADING_TIME_PROFILE_SECTION
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY)
 	std::vector<CBaseObject*> children;
 	for (auto pChild : m_children)
 		children.push_back(pChild);
@@ -666,7 +666,7 @@ void CGroup::RemoveMember(CBaseObject* pMember, bool keepPos, bool placeOnRoot)
 
 void CGroup::RemoveMembers(std::vector<CBaseObject*>& members, bool keepPos /*= true*/, bool placeOnRoot /*= false*/)
 {
-	LOADING_TIME_PROFILE_SECTION
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY)
 	CBaseObject* pPrefab = GetPrefab();
 	if (pPrefab != this)
 	{
@@ -1148,7 +1148,7 @@ void CGroup::OnChildModified()
 
 void CGroup::InvalidateBBox()
 {
-	LOADING_TIME_PROFILE_SECTION
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY)
 	if (CBaseObject* pParent = GetGroup())
 	{
 		CGroup* pParentGroup = static_cast<CGroup*>(pParent);
@@ -1202,7 +1202,7 @@ void CGroup::DetachChildren(std::vector<CBaseObject*>& objects, bool shouldKeepP
 		return;
 
 	using namespace Private_Group;
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
 	auto batchProcessDispatcher = GetObjectManager()->GetBatchProcessDispatcher();
 	batchProcessDispatcher.Start(objects);

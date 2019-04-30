@@ -240,7 +240,7 @@ CCryNameTSCRC CHWShader::mfGetCacheClassName(EHWShaderClass eClass)
 
 CHWShader* CHWShader::mfForName(const char* name, const char* nameSource, uint32 CRC32, const char* szEntryFunc, EHWShaderClass eClass, const TArray<uint32>& SHData, const FXShaderToken& Table, uint32 dwType, CShader* pFX, uint64 nMaskGen, uint64 nMaskGenFX)
 {
-	//	LOADING_TIME_PROFILE_SECTION(iSystem);
+	//	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY)(iSystem);
 	if (!name || !name[0])
 		return nullptr;
 
@@ -762,7 +762,7 @@ void CHWShader_D3D::mfPrecacheAllCombinations(CShader* pFX, CResFileOpenScope& r
 #endif
 
 	CRY_ASSERT(gRenDev->m_pRT->IsRenderThread());
-	CRY_PROFILE_REGION(PROFILE_RENDERER, "CHWShader_D3D::mfPrecacheAllCombinations()");
+	CRY_PROFILE_SECTION(PROFILE_RENDERER, "CHWShader_D3D::mfPrecacheAllCombinations()");
 
 	std::vector<std::pair<size_t, const SDeviceShaderEntry*>> entries;
 	const auto entries_pred = [](const typename decltype(entries)::value_type &lhs, std::size_t rhs) noexcept { return std::get<0>(lhs) < rhs; };

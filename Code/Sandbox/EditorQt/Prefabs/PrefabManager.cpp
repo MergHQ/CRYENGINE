@@ -301,7 +301,7 @@ string CPrefabManager::GetLibsPath()
 
 void CPrefabManager::Serialize(XmlNodeRef& node, bool bLoading)
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 	if (bLoading)
 	{
 		CBaseLibraryManager::Serialize(node, bLoading);

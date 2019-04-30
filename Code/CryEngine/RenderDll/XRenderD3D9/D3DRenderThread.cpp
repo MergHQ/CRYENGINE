@@ -19,7 +19,7 @@
 
 bool CD3D9Renderer::RT_CreateDevice()
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 	MEMSTAT_CONTEXT(EMemStatContextType::D3D, "Renderer CreateDevice");
 
 #if CRY_PLATFORM_WINDOWS && !defined(SUPPORT_DEVICE_INFO)
@@ -163,7 +163,7 @@ void CD3D9Renderer::RT_Init()
 
 void CD3D9Renderer::RT_ReleaseRenderResources(uint32 nFlags)
 {
-	CRY_PROFILE_REGION(PROFILE_RENDERER, "CD3D9Renderer::RT_ReleaseRenderResources");
+	CRY_PROFILE_SECTION(PROFILE_RENDERER, "CD3D9Renderer::RT_ReleaseRenderResources");
 
 	if (nFlags & FRR_FLUSH_TEXTURESTREAMING)
 	{
@@ -264,7 +264,7 @@ void CD3D9Renderer::RT_ReleaseRenderResources(uint32 nFlags)
 
 void CD3D9Renderer::RT_CreateRenderResources()
 {
-	CRY_PROFILE_REGION(PROFILE_RENDERER, "CD3D9Renderer::RT_CreateRenderResources");
+	CRY_PROFILE_SECTION(PROFILE_RENDERER, "CD3D9Renderer::RT_CreateRenderResources");
 
 	CRendererResources::LoadDefaultSystemTextures();
 	CRendererResources::CreateSystemTargets(0, 0);

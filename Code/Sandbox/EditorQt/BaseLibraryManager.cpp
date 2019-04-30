@@ -297,7 +297,7 @@ void CBaseLibraryManager::SaveAllLibs()
 //////////////////////////////////////////////////////////////////////////
 void CBaseLibraryManager::Serialize(XmlNodeRef& node, bool bLoading)
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 	string rootNodeName = GetRootNodeName();
 	if (bLoading)
 	{

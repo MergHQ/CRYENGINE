@@ -551,7 +551,7 @@ void CD3D9Renderer::RT_PostRenderScene(CRenderView* pRenderView)
 void CD3D9Renderer::RT_RenderScene(CRenderView* pRenderView)
 {
 	FUNCTION_PROFILER_RENDERER();
-	PROFILE_LABEL_SCOPE(pRenderView->IsRecursive() ? "SCENE_REC" : "SCENE");
+	PROFILE_LABEL_SCOPE_DYNAMIC((pRenderView->IsRecursive() ? "SCENE_REC" : "SCENE"), "SCENE");
 
 	gcpRendD3D->SetCurDownscaleFactor(gcpRendD3D->m_CurViewportScale);
 

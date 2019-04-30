@@ -301,7 +301,7 @@ CPrefabObject::CPrefabObject()
 
 void CPrefabObject::Done()
 {
-	LOADING_TIME_PROFILE_SECTION_ARGS(GetName().c_str());
+	CRY_PROFILE_FUNCTION_ARG(PROFILE_LOADING_ONLY, GetName().c_str());
 
 	SetPrefab(nullptr);
 	DeleteAllMembers();
@@ -744,7 +744,7 @@ void CPrefabObject::OnEvent(ObjectEvent event)
 
 void CPrefabObject::DeleteAllPrefabObjects()
 {
-	LOADING_TIME_PROFILE_SECTION
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY)
 	std::vector<CBaseObject*> descendants;
 	GetAllPrefabFlagedDescendants(descendants);
 	DetachAll(false, true);
@@ -1278,7 +1278,7 @@ void CPrefabObject::AddMembers(std::vector<CBaseObject*>& objects, bool shouldKe
 
 void CPrefabObject::RemoveMembers(std::vector<CBaseObject*>& members, bool keepPos /*= true*/, bool placeOnRoot /*= false*/)
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 	if (!m_pPrefabItem)
 	{
 		SetPrefab(m_prefabGUID, true);
@@ -1335,7 +1335,7 @@ void CPrefabObject::DeleteAllMembers()
 
 void CPrefabObject::SyncPrefab(const SObjectChangedContext& context)
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 	if (!m_autoUpdatePrefabs)
 	{
 		for (SObjectChangedContext& change : m_pendingChanges)

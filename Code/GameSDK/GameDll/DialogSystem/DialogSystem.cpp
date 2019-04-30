@@ -282,7 +282,7 @@ void CDialogSystem::OnLoadingComplete(ILevelInfo* pLevel)
 ////////////////////////////////////////////////////////////////////////////
 /* virtual */ bool CDialogSystem::ReloadScripts(const char* levelName)
 {
-	LOADING_TIME_PROFILE_SECTION(gEnv->pSystem);
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY)(gEnv->pSystem);
 
 	ReleaseSessions();
 	ReleaseScripts();

@@ -232,7 +232,7 @@ void RootOpticsElement::RenderPreview(const SLensFlareRenderParam* pParam, const
 
 void RootOpticsElement::RT_RenderPreview(const Vec3& vPos, const SLensFlareRenderParam* pParam)
 {
-	CRY_PROFILE_REGION(PROFILE_RENDERER, "RootOpticsElement::RT_RenderPreview")
+	CRY_PROFILE_SECTION(PROFILE_RENDERER, "RootOpticsElement::RT_RenderPreview");
 
 	SFlareLight light;
 	light.m_vPos = vPos;

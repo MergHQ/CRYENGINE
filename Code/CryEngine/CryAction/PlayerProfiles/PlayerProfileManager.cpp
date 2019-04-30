@@ -266,7 +266,7 @@ CPlayerProfileManager::~CPlayerProfileManager()
 //------------------------------------------------------------------------
 bool CPlayerProfileManager::Initialize()
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 	if (m_bInitialized)
 		return true;
 
@@ -1428,7 +1428,7 @@ bool CPlayerProfileManager::IsOnlineOnlyAttribute(const char* name)
 //------------------------------------------------------------------------
 bool CPlayerProfileManager::RegisterOnlineAttributes()
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 	ECryLobbyError error = eCLE_ServiceNotSupported;
 	ICryStats* stats = gEnv->pLobby ? gEnv->pLobby->GetStats() : nullptr;
 

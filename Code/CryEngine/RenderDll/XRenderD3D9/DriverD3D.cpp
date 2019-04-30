@@ -3065,7 +3065,7 @@ void CD3D9Renderer::RenderAux()
 		// Render Thread will commit it's own buffer right before final rendering
 		m_pRT->ExecuteRenderThreadCommand([=/*, renderData = std::move(renderData)*/]() mutable        // Renable the capture-by-move once we support C++14..............
 		{
-			CRY_PROFILE_REGION(PROFILE_RENDERER, "CD3D9Renderer::RenderAux lambda");
+			CRY_PROFILE_SECTION(PROFILE_RENDERER, "CD3D9Renderer::RenderAux lambda");
 
 			// Renders the aux geometries collected with the collector assigned to the renderer between begin and end.
 			if (!GetS3DRend().IsStereoEnabled() || GetS3DRend().IsMenuModeEnabled())
@@ -3292,7 +3292,7 @@ void CD3D9Renderer::RT_EndFrame()
 
 		if (!IsEditorMode())
 		{
-			CRY_PROFILE_REGION(PROFILE_RENDERER, "Present");
+			CRY_PROFILE_SECTION(PROFILE_RENDERER, "Present");
 			pDC->PrePresent();
 
 #if CRY_RENDERER_GNM
@@ -5306,7 +5306,7 @@ CRYREGISTER_SINGLETON_CLASS(CEngineModule_CryRenderer)
 //=========================================================================================
 void CD3D9Renderer::LockParticleVideoMemory(int frameId)
 {
-	CRY_PROFILE_REGION(PROFILE_RENDERER, "LockParticleVideoMemory");
+	CRY_PROFILE_SECTION(PROFILE_RENDERER, "LockParticleVideoMemory");
 
 	gcpRendD3D.GetParticleBufferSet().Lock(frameId);
 }

@@ -92,7 +92,7 @@ namespace Schematyc2
 
 	void CScriptGraphBase::Serialize_New(Serialization::IArchive& archive)
 	{
-		LOADING_TIME_PROFILE_SECTION;
+		CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
 		switch(SerializationContext::GetPass(archive))
 		{

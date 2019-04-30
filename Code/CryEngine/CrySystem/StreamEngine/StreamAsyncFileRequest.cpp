@@ -684,7 +684,7 @@ uint32 CAsyncIOFileRequest::ReadFileInPages(CStreamingIOThread* pIOThread, CCryF
 {
 #if defined(ENABLE_PROFILING_CODE)
 	const char* pFileNameShort = PathUtil::GetFile(m_strFileName.c_str());
-	CRY_PROFILE_REGION_ARG(PROFILE_SYSTEM, "ReadFileInPages", pFileNameShort);
+	CRY_PROFILE_SECTION_ARG(PROFILE_SYSTEM, "ReadFileInPages", pFileNameShort);
 #endif
 
 	CCryPak* pCryPak = static_cast<CCryPak*>(gEnv->pCryPak);

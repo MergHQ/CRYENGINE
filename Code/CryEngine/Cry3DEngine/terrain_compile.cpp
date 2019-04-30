@@ -477,7 +477,7 @@ void CTerrain::LoadVegetationData(PodArray<StatInstGroup>& rTable, PodArray<Stat
 template<class T>
 bool CTerrain::Load_T(T*& f, int& nDataSize, STerrainChunkHeader* pTerrainChunkHeader, std::vector<struct IStatObj*>** ppStatObjTable, std::vector<IMaterial*>** ppMatTable, bool bHotUpdate, SHotUpdateInfo* pExportInfo)
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
 	assert(pTerrainChunkHeader->nVersion == TERRAIN_CHUNK_VERSION);
 	if (pTerrainChunkHeader->nVersion != TERRAIN_CHUNK_VERSION)
@@ -529,7 +529,7 @@ bool CTerrain::Load_T(T*& f, int& nDataSize, STerrainChunkHeader* pTerrainChunkH
 
 	if (bHMap && !m_pParentNode)
 	{
-		LOADING_TIME_PROFILE_SECTION_NAMED("BuildSectorsTree");
+		CRY_PROFILE_SECTION(PROFILE_LOADING_ONLY, "BuildSectorsTree");
 
 		// build nodes tree in fast way
 		BuildSectorsTree(false);
@@ -541,7 +541,7 @@ bool CTerrain::Load_T(T*& f, int& nDataSize, STerrainChunkHeader* pTerrainChunkH
 	// setup physics grid
 	if (!m_bEditor && !bHotUpdate)
 	{
-		LOADING_TIME_PROFILE_SECTION_NAMED("SetupEntityGrid");
+		CRY_PROFILE_SECTION(PROFILE_LOADING_ONLY, "SetupEntityGrid");
 
 		int nCellSize = CTerrain::GetTerrainSize() > 2048 ? CTerrain::GetTerrainSize() >> 10 : 2;
 		nCellSize = max(nCellSize, GetCVars()->e_PhysMinCellSize);
@@ -564,7 +564,7 @@ bool CTerrain::Load_T(T*& f, int& nDataSize, STerrainChunkHeader* pTerrainChunkH
 		{
 			// get vegetation objects count
 			MEMSTAT_CONTEXT(EMemStatContextType::Terrain, "Vegetation");
-			LOADING_TIME_PROFILE_SECTION_NAMED("Vegetation");
+			CRY_PROFILE_SECTION(PROFILE_LOADING_ONLY, "Vegetation");
 
 			int nObjectsCount = 0;
 			if (!LoadDataFromFile(&nObjectsCount, 1, f, nDataSize, eEndian))
@@ -599,7 +599,7 @@ bool CTerrain::Load_T(T*& f, int& nDataSize, STerrainChunkHeader* pTerrainChunkH
 		{
 			// get brush objects count
 			MEMSTAT_CONTEXT(EMemStatContextType::Terrain, "Brushes");
-			LOADING_TIME_PROFILE_SECTION_NAMED("Brushes");
+			CRY_PROFILE_SECTION(PROFILE_LOADING_ONLY, "Brushes");
 
 			int nObjectsCount = 0;
 			if (!LoadDataFromFile(&nObjectsCount, 1, f, nDataSize, eEndian))
@@ -636,7 +636,7 @@ bool CTerrain::Load_T(T*& f, int& nDataSize, STerrainChunkHeader* pTerrainChunkH
 
 		{
 			// get brush materials count
-			LOADING_TIME_PROFILE_SECTION_NAMED("BrushMaterials");
+			CRY_PROFILE_SECTION(PROFILE_LOADING_ONLY, "BrushMaterials");
 
 			int nObjectsCount = 0;
 			if (!LoadDataFromFile(&nObjectsCount, 1, f, nDataSize, eEndian))
@@ -693,7 +693,7 @@ bool CTerrain::Load_T(T*& f, int& nDataSize, STerrainChunkHeader* pTerrainChunkH
 	// set nodes data
 	int nNodesLoaded = 0;
 	{
-		LOADING_TIME_PROFILE_SECTION_NAMED("TerrainNodes");
+		CRY_PROFILE_SECTION(PROFILE_LOADING_ONLY, "TerrainNodes");
 
 		if (!bHotUpdate)
 			PrintMessage("===== Initializing terrain nodes ===== ");
@@ -705,7 +705,7 @@ bool CTerrain::Load_T(T*& f, int& nDataSize, STerrainChunkHeader* pTerrainChunkH
 		if (!bHotUpdate)
 			PrintMessage("===== Loading outdoor instances ===== ");
 
-		LOADING_TIME_PROFILE_SECTION_NAMED("ObjectInstances");
+		CRY_PROFILE_SECTION(PROFILE_LOADING_ONLY, "ObjectInstances");
 
 		PodArray<IRenderNode*> arrUnregisteredObjects;
 		Get3DEngine()->m_pObjectsTree->UnregisterEngineObjectsInArea(pExportInfo, arrUnregisteredObjects, true);
@@ -739,7 +739,7 @@ bool CTerrain::Load_T(T*& f, int& nDataSize, STerrainChunkHeader* pTerrainChunkH
 
 	if (bObjs)
 	{
-		LOADING_TIME_PROFILE_SECTION_NAMED("PostObj");
+		CRY_PROFILE_SECTION(PROFILE_LOADING_ONLY, "PostObj");
 
 		if (ppStatObjTable)
 			*ppStatObjTable = pStatObjTable;
@@ -754,7 +754,7 @@ bool CTerrain::Load_T(T*& f, int& nDataSize, STerrainChunkHeader* pTerrainChunkH
 
 	if (bHMap)
 	{
-		LOADING_TIME_PROFILE_SECTION_NAMED("PostTerrain");
+		CRY_PROFILE_SECTION(PROFILE_LOADING_ONLY, "PostTerrain");
 
 		GetParentNode()->UpdateRangeInfoShift();
 		ResetTerrainVertBuffers(NULL);

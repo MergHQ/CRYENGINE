@@ -451,7 +451,7 @@ void CCryAction::MapCmd(IConsoleCmdArgs* args)
 {
 	SLICE_SCOPE_DEFINE();
 
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 	MEMSTAT_CONTEXT(EMemStatContextType::Other, "MapCmd");
 
 	uint32 flags = eGSF_NonBlockingConnect;
@@ -1756,7 +1756,7 @@ bool CCryAction::Initialize(SSystemInitParams& startupParams)
 	// Flow nodes are registered only when compiled as dynamic library
 	CryRegisterFlowNodes();
 
-	LOADING_TIME_PROFILE_SECTION_NAMED("CCryAction::Init() after system");
+	CRY_PROFILE_SECTION(PROFILE_LOADING_ONLY, "CCryAction::Init() after system");
 
 	InlineInitializationProcessing("CCryAction::Init CrySystem and CryAction init");
 
@@ -1766,7 +1766,7 @@ bool CCryAction::Initialize(SSystemInitParams& startupParams)
 
 	if (gEnv->pRenderer)
 	{
-		LOADING_TIME_PROFILE_SECTION_NAMED("CCryAction::Init() pFlashUI");
+		CRY_PROFILE_SECTION(PROFILE_LOADING_ONLY, "CCryAction::Init() pFlashUI");
 
 		IFlashUIPtr pFlashUI = GetIFlashUIPtr();
 		m_pSystem->SetIFlashUI(pFlashUI ? pFlashUI.get() : NULL);
@@ -2022,7 +2022,7 @@ bool CCryAction::Initialize(SSystemInitParams& startupParams)
 
 bool CCryAction::InitGame(SSystemInitParams& startupParams)
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
 	string gameDLLName;
 	if (ICVar* pCVarGameDir = gEnv->pConsole->GetCVar("sys_dll_game"))
@@ -2096,7 +2096,7 @@ bool CCryAction::InitGame(SSystemInitParams& startupParams)
 //------------------------------------------------------------------------
 void CCryAction::InitForceFeedbackSystem()
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 	SAFE_DELETE(m_pForceFeedBackSystem);
 	m_pForceFeedBackSystem = new CForceFeedBackSystem();
 	m_pForceFeedBackSystem->Initialize();
@@ -2106,7 +2106,7 @@ void CCryAction::InitForceFeedbackSystem()
 
 void CCryAction::InitGameVolumesManager()
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
 	if (m_pGameVolumesManager == NULL)
 	{
@@ -2138,7 +2138,7 @@ static std::vector<const char*> gs_lipSyncExtensionNamesForExposureToEditor;
 //------------------------------------------------------------------------
 bool CCryAction::CompleteInit()
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 #ifdef CRYACTION_DEBUG_MEM
 	DumpMemInfo("CryAction::CompleteInit Start");
 #endif
@@ -2177,7 +2177,7 @@ bool CCryAction::CompleteInit()
 	// in editor mode, this is done in GameEngine.cpp
 	if ((m_pItemSystem) && (gEnv->IsEditor() == false))
 	{
-		LOADING_TIME_PROFILE_SECTION_NAMED("CCryAction::CompleteInit(): EquipmentPacks");
+		CRY_PROFILE_SECTION(PROFILE_LOADING_ONLY, "CCryAction::CompleteInit(): EquipmentPacks");
 		m_pItemSystem->GetIEquipmentManager()->DeleteAllEquipmentPacks();
 		m_pItemSystem->GetIEquipmentManager()->LoadEquipmentPacksFromPath("Libs/EquipmentPacks");
 	}
@@ -2263,7 +2263,7 @@ bool CCryAction::CompleteInit()
 //------------------------------------------------------------------------
 void CCryAction::InitScriptBinds()
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
 	m_pScriptNet = new CScriptBind_Network(m_pSystem, this);
 	m_pScriptA = new CScriptBind_Action(this);
@@ -2496,7 +2496,7 @@ void CCryAction::PrePhysicsUpdate()
 
 void CCryAction::PreSystemUpdate()
 {
-	CRY_PROFILE_REGION(PROFILE_GAME, "CCryAction::PreRenderUpdate");
+	CRY_PROFILE_SECTION(PROFILE_GAME, "CCryAction::PreRenderUpdate");
 
 	if (!m_nextFrameCommand->empty())
 	{
@@ -2531,7 +2531,7 @@ uint32 CCryAction::GetPreUpdateTicks()
 
 bool CCryAction::PostSystemUpdate(bool haveFocus, CEnumFlags<ESystemUpdateFlags> updateFlags)
 {
-	CRY_PROFILE_REGION(PROFILE_GAME, "CCryAction::PostSystemUpdate");
+	CRY_PROFILE_SECTION(PROFILE_GAME, "CCryAction::PostSystemUpdate");
 
 	float frameTime = gEnv->pTimer->GetFrameTime();
 
@@ -2651,7 +2651,7 @@ bool CCryAction::PostSystemUpdate(bool haveFocus, CEnumFlags<ESystemUpdateFlags>
 
 	if (auto* pGame = CCryAction::GetCryAction()->GetIGame())
 	{
-		CRY_PROFILE_REGION(PROFILE_GAME, "UpdateLegacyGame");
+		CRY_PROFILE_SECTION(PROFILE_GAME, "UpdateLegacyGame");
 		continueRunning = pGame->Update(haveFocus, updateFlags.UnderlyingValue()) > 0;
 	}
 
@@ -2660,7 +2660,7 @@ bool CCryAction::PostSystemUpdate(bool haveFocus, CEnumFlags<ESystemUpdateFlags>
 
 void CCryAction::PreFinalizeCamera(CEnumFlags<ESystemUpdateFlags> updateFlags)
 {
-	CRY_PROFILE_REGION(PROFILE_GAME, "CCryAction::PreFinalizeCamera");
+	CRY_PROFILE_SECTION(PROFILE_GAME, "CCryAction::PreFinalizeCamera");
 
 	if (m_pShowLanBrowserCVAR->GetIVal() == 0)
 	{
@@ -2699,14 +2699,14 @@ void CCryAction::PreFinalizeCamera(CEnumFlags<ESystemUpdateFlags> updateFlags)
 
 void CCryAction::PreRender()
 {
-	CRY_PROFILE_REGION(PROFILE_GAME, "CCryAction::PreRender");
+	CRY_PROFILE_SECTION(PROFILE_GAME, "CCryAction::PreRender");
 
 	CALL_FRAMEWORK_LISTENERS(OnPreRender());
 }
 
 void CCryAction::PostRender(CEnumFlags<ESystemUpdateFlags> updateFlags)
 {
-	CRY_PROFILE_REGION(PROFILE_GAME, "CCryAction::PostRender");
+	CRY_PROFILE_SECTION(PROFILE_GAME, "CCryAction::PostRender");
 
 	if (updateFlags & ESYSUPDATE_EDITOR_AI_PHYSICS)
 	{
@@ -2749,7 +2749,7 @@ void CCryAction::PostRender(CEnumFlags<ESystemUpdateFlags> updateFlags)
 
 void CCryAction::PostRenderSubmit()
 {
-	CRY_PROFILE_REGION(PROFILE_GAME, "CCryAction::PostRenderSubmit");
+	CRY_PROFILE_SECTION(PROFILE_GAME, "CCryAction::PostRenderSubmit");
 	MEMSTAT_CONTEXT(EMemStatContextType::Other, "CCryAction::PostRenderSubmit");
 
 	if (m_pGame)
@@ -2879,7 +2879,7 @@ bool CCryAction::IsGameStarted()
 
 bool CCryAction::StartGameContext(const SGameStartParams* pGameStartParams)
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 	MEMSTAT_CONTEXT(EMemStatContextType::Other, "StartGameContext");
 
 	if (gEnv->IsEditor())
@@ -2982,7 +2982,7 @@ bool CCryAction::ChangeGameContext(const SGameContextParams* pGameContextParams)
 
 void CCryAction::EndGameContext()
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 	if (!gEnv) // SCA fix
 		return;
 
@@ -3107,7 +3107,7 @@ void CCryAction::ReleaseGameStats()
 
 void CCryAction::InitEditor(IGameToEditorInterface* pGameToEditor)
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 	m_isEditing = true;
 
 	m_pGameToEditor = pGameToEditor;
@@ -3233,7 +3233,7 @@ bool CCryAction::SaveGame(const char* path, bool bQuick, bool bForceImmediate, E
 	CryLog("[SAVE GAME] %s to '%s'%s%s - checkpoint=\"%s\"", bQuick ? "Quick-saving" : "Saving", path, bForceImmediate ? " immediately" : "Delayed", ignoreDelay ? " ignoring delay" : "", checkPointName);
 	INDENT_LOG_DURING_SCOPE();
 
-	LOADING_TIME_PROFILE_SECTION(gEnv->pSystem);
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY)(gEnv->pSystem);
 
 	MEMSTAT_CONTEXT(EMemStatContextType::Other, "Saving game");
 
@@ -3547,7 +3547,7 @@ IGameFramework::TSaveGameName CCryAction::CreateSaveGameName()
 //------------------------------------------------------------------------
 void CCryAction::OnEditorSetGameMode(int iMode)
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
 	if (m_externalGameLibrary.pGame && iMode < 2)
 	{

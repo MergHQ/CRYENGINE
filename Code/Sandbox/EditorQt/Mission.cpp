@@ -297,7 +297,7 @@ void CMission::ExportAnimations(XmlNodeRef& root)
 
 void CMission::SyncContent(bool bRetrieve, bool bIgnoreObjects, bool bSkipLoadingAI /* = false */)
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
 	// Save data from current Document to Mission.
 	IObjectManager* objMan = GetIEditorImpl()->GetObjectManager();

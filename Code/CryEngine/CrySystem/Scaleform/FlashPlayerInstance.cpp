@@ -2754,7 +2754,7 @@ bool CFlashPlayer::Load(const char* pFilePath, unsigned int options, unsigned in
 
 	FLASH_PROFILER_LIGHT;
 
-	//LOADING_TIME_PROFILE_SECTION;
+	//CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
 	SYNC_THREADS;
 
@@ -2850,7 +2850,7 @@ bool CFlashPlayer::Bootstrap(GFxMovieDef* pMovieDef, unsigned int options, unsig
 
 	FLASH_PROFILER_LIGHT;
 
-	//LOADING_TIME_PROFILE_SECTION;
+	//CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
 	SYNC_THREADS;
 

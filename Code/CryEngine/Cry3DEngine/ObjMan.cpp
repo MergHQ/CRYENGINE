@@ -238,7 +238,7 @@ I3DEngine::ELevelLoadStatus CObjManager::CPreloadTimeslicer::DoStep(const float 
 {
 #define NEXT_STEP(step) return SetInProgress(step); case step: 
 
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 	INDENT_LOG_DURING_SCOPE();
 
 	switch (m_currentStep)
@@ -390,7 +390,7 @@ I3DEngine::ELevelLoadStatus CObjManager::UpdatePreloadLevelObjects()
 		return I3DEngine::ELevelLoadStatus::Failed;
 	}
 
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
 	const float timeSlicingLimitSec = 1.0f;
 
@@ -612,7 +612,7 @@ IStreamEngine* CStatObjAsyncLoader::s_pStreamEngine = nullptr;
 
 void CObjManager::LoadStatObjAsync(const char* szFileName, const char* szGeomName, bool useStreaming, uint32 loadingFlags, IStatObjFoundCallback* pCallback)
 {
-	LOADING_TIME_PROFILE_SECTION_ARGS(szFileName);
+	CRY_PROFILE_FUNCTION_ARG(PROFILE_LOADING_ONLY, szFileName);
 	MEMSTAT_CONTEXT(EMemStatContextType::Other, "Static Geometry");
 
 	SLoadPrepareState prepState = LoadStatObj_Prepare(szFileName, szGeomName, nullptr, loadingFlags);
@@ -658,7 +658,7 @@ CStatObj* CObjManager::LoadStatObj(const char* szFileName
                                    , const char* szGeomName, IStatObj::SSubObject** ppSubObject
                                    , bool useStreaming, uint32 loadingFlags)
 {
-	LOADING_TIME_PROFILE_SECTION_ARGS(szFileName);
+	CRY_PROFILE_FUNCTION_ARG(PROFILE_LOADING_ONLY, szFileName);
 	MEMSTAT_CONTEXT(EMemStatContextType::Other, "Static Geometry");
 	
 	SLoadPrepareState prepState = LoadStatObj_Prepare(szFileName, szGeomName, ppSubObject, loadingFlags);

@@ -399,7 +399,7 @@ namespace Schematyc2
 	bool CScriptRegistry::Load()
 	{
 		MEMSTAT_CONTEXT(EMemStatContextType::Other, "Schematyc: Load Script Registry");
-		LOADING_TIME_PROFILE_SECTION;
+		CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 		// Load old script files.
 		{
 			MEMSTAT_CONTEXT(EMemStatContextType::Other, "Schematyc: Load Old Script Files");
@@ -728,7 +728,7 @@ namespace Schematyc2
 
 	CScriptFilePtr CScriptRegistry::CreateFile(const char* szFileName, const SGUID& guid, EScriptFileFlags flags)
 	{
-		LOADING_TIME_PROFILE_SECTION(szFileName);
+		CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY)(szFileName);
 		SCHEMATYC2_SYSTEM_ASSERT(szFileName);
 		if(szFileName)
 		{
@@ -767,7 +767,7 @@ namespace Schematyc2
 
 	void CScriptRegistry::EnumFile(const char* szFileName, unsigned attributes)
 	{
-		LOADING_TIME_PROFILE_SECTION;
+		CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 		const bool bOnDisk = (attributes & _A_IN_CRYPAK) == 0;
 		if(bOnDisk || !CVars::sc_IgnorePAKFiles)
 		{

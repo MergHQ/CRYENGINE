@@ -187,7 +187,7 @@ extern "C"
 			pSystem = stl::make_unique<CSystem>(startupParams);
 			startupParams.pSystem = pSystem.get();
 
-			LOADING_TIME_PROFILE_SECTION_NAMED("CreateSystemInterface");
+			CRY_PROFILE_SECTION(PROFILE_LOADING_ONLY, "CreateSystemInterface");
 			ModuleInitISystem(pSystem.get(), "CrySystem");
 #if CRY_PLATFORM_DURANGO
 #if !defined(_LIB)

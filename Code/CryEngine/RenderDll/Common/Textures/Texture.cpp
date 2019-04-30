@@ -864,7 +864,7 @@ struct CompareTextures
 
 void CTexture::Precache(const bool isBlocking)
 {
-	LOADING_TIME_PROFILE_SECTION(iSystem);
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY)(iSystem);
 
 	if (!s_bPrecachePhase)
 		return;
@@ -884,8 +884,7 @@ void CTexture::Precache(const bool isBlocking)
 
 void CTexture::RT_Precache(const bool isFinalPrecache)
 {
-	CRY_PROFILE_REGION(PROFILE_RENDERER, "CTexture::RT_Precache");
-	LOADING_TIME_PROFILE_SECTION(iSystem);
+	CRY_PROFILE_FUNCTION(PROFILE_RENDERER);
 
 	// Disable invalid file access logging if texture streaming is disabled
 	// If texture streaming is turned off, we will hit this on the renderthread
@@ -1028,7 +1027,7 @@ void CTexture::RT_Precache(const bool isFinalPrecache)
 
 void CTexture::Load(ETEX_Format eFormat)
 {
-	LOADING_TIME_PROFILE_SECTION_NAMED_ARGS("CTexture::Load(ETEX_Format eTFDst)", m_SrcName);
+	CRY_PROFILE_SECTION_ARG(PROFILE_LOADING_ONLY, "CTexture::Load(ETEX_Format eTFDst)", m_SrcName);
 	m_bWasUnloaded = false;
 	m_bStreamed = false;
 
@@ -1071,7 +1070,7 @@ void CTexture::ToggleStreaming(const bool bEnable)
 
 void CTexture::LoadFromImage(const char* name, ETEX_Format eFormat)
 {
-	LOADING_TIME_PROFILE_SECTION_ARGS(name);
+	CRY_PROFILE_FUNCTION_ARG(PROFILE_LOADING_ONLY, name);
 
 	if (CRenderer::CV_r_texnoload && SetNoTexture())
 		return;
@@ -1132,7 +1131,7 @@ void CTexture::Load(CImageFilePtr&& pImage)
 		return;
 	}
 
-	//LOADING_TIME_PROFILE_SECTION_NAMED_ARGS("CTexture::Load(CImageFile* pImage)", pImage->mfGet_filename().c_str());
+	//CRY_PROFILE_SECTION_ARG(PROFILE_LOADING_ONLY, "CTexture::Load(CImageFile* pImage)", pImage->mfGet_filename().c_str());
 
 	if ((m_eFlags & FT_ALPHA) && !pImage->mfIs_image(0))
 	{
@@ -1793,7 +1792,7 @@ void CTexture::Init()
 
 void CTexture::PostInit()
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 }
 
 int __cdecl TexCallback(const VOID* arg1, const VOID* arg2)
