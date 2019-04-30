@@ -1426,13 +1426,7 @@ void CTerrainNode::OffsetPosition(const Vec3& delta)
 
 void CTerrainNode::SetTraversalFrameId(uint32 onePassTraversalFrameId, int shadowFrustumLod)
 {
-	if (m_onePassTraversalFrameId != onePassTraversalFrameId)
-	{
-		m_onePassTraversalShadowCascades = 0;
-		m_onePassTraversalFrameId = onePassTraversalFrameId;
-	}
-
-	m_onePassTraversalShadowCascades |= BIT(shadowFrustumLod);
+	IRenderNode::SetOnePassTraversalFrameId(onePassTraversalFrameId, shadowFrustumLod);
 
 	// mark also the path to this node
 	if (m_pParent)

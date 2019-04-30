@@ -636,7 +636,7 @@ uint32 COctreeNode::UpdateCullMask(uint32 onePassTraversalFrameId, uint32 onePas
 	if (passCullMask & ~kPassCullMainMask)
 	{
 		// test sun shadows hull. for cached shadows also nodes outside hull need to be rendered
-		if (onePassTraversalFrameId < passInfo.GetMainFrameID() && !IsAABBInsideHull(CLightEntity::GetCastersHull().GetElements(), CLightEntity::GetCastersHull().Count(), nodeBox))
+		if (onePassTraversalFrameId != passInfo.GetMainFrameID() && !IsAABBInsideHull(CLightEntity::GetCastersHull().GetElements(), CLightEntity::GetCastersHull().Count(), nodeBox))
 		{
 			passCullMask &= kPassCullMainMask;   // cull all except main view
 		}
@@ -657,7 +657,7 @@ uint32 COctreeNode::UpdateCullMask(uint32 onePassTraversalFrameId, uint32 onePas
 				if (pFr->IsCached() || pFr->m_eFrustumType == ShadowMapFrustum::e_PerObject)
 				{
 					// cull casters not marked for shadow cache sliced update
-					if (onePassTraversalFrameId < passInfo.GetMainFrameID() || (onePassTraversalShadowCascades & BIT(pFr->nShadowMapLod)) == 0)
+					if (onePassTraversalFrameId != passInfo.GetMainFrameID() || (onePassTraversalShadowCascades & BIT(pFr->nShadowMapLod)) == 0)
 					{
 						passCullMask &= ~BIT(passId);
 					}
@@ -3782,21 +3782,14 @@ bool CObjManager::IsBoxOccluded(const AABB& objBox,
 
 void COctreeNode::SetTraversalFrameId(IRenderNode* pObj, uint32 onePassTraversalFrameId, int shadowFrustumLod)
 {
-	if (pObj->m_onePassTraversalFrameId != onePassTraversalFrameId)
-	{
-		pObj->m_onePassTraversalShadowCascades = 0;
-		pObj->m_onePassTraversalFrameId = onePassTraversalFrameId;
-	}
-
-	pObj->m_onePassTraversalShadowCascades |= BIT(shadowFrustumLod);
+	pObj->SetOnePassTraversalFrameId(onePassTraversalFrameId, shadowFrustumLod);
 
 	// mark also the path to this object, m_onePassTraversalFrameId will be used to guide the tree traversal
-	COctreeNode* pOcNode = (COctreeNode*)pObj->m_pOcNode;
+	COctreeNode* pOcNode = static_cast<COctreeNode*>(pObj->m_pOcNode);
 
-	while (pOcNode && pOcNode->m_onePassTraversalFrameId != onePassTraversalFrameId)
+	while (pOcNode && 
+		   CryInterlockedExchange(reinterpret_cast<volatile LONG*>(&pOcNode->m_onePassTraversalFrameId), onePassTraversalFrameId) != onePassTraversalFrameId)
 	{
-		pOcNode->m_onePassTraversalFrameId = onePassTraversalFrameId;
-
 		pOcNode = pOcNode->m_pParent;
 	}
 }

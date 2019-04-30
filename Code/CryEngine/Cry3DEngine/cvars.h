@@ -408,6 +408,7 @@ struct CVars : public Cry3DEngineBase
 	int   e_ShadowsCacheMaxNodesPerFrame;
 	int   e_ShadowsCacheObjectLod;
 	int   e_ShadowsCacheRenderCharacters;
+	int   e_ShadowsCacheJobs;
 	int   e_ShadowsPerObject;
 	int   e_DynamicDistanceShadows;
 	float e_ShadowsPerObjectResolutionScale;

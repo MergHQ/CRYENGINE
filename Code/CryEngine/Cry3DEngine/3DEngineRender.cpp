@@ -1615,6 +1615,9 @@ void C3DEngine::RenderScene(const int nRenderFlags, const SRenderingPassInfo& pa
 
 		// store ptr to collected shadow passes into main view pass
 		const_cast<SRenderingPassInfo&>(passInfo).SetShadowPasses(&shadowPassInfo);
+
+		// Wait for shadow cache jobs to finish.
+		FinalizePrepareShadowPasses(passInfo, shadowFrustums, shadowPassInfo);
 	}
 	else
 	{
@@ -3744,5 +3747,21 @@ void C3DEngine::PrepareShadowPasses(const SRenderingPassInfo& passInfo, uint32& 
 		pShadowsView->SetShadowFrustumOwner(pFr);
 		pShadowsView->SwitchUsageMode(IRenderView::eUsageModeWriting);
 		pFr->pOnePassShadowView = std::move(pShadowsView);
+	}
+}
+
+void C3DEngine::FinalizePrepareShadowPasses(const SRenderingPassInfo& passInfo, const std::vector<std::pair<ShadowMapFrustum*, const CLightEntity*>>& shadowFrustums, std::vector<SRenderingPassInfo>& shadowPassInfo)
+{
+	CRY_PROFILE_FUNCTION_WAITING(PROFILE_3DENGINE);
+
+	for (const auto& frustumLightPair : shadowFrustums)
+	{
+		if (frustumLightPair.first->IsCached())
+		{
+			if (auto& pShadowCacheData = frustumLightPair.first->pShadowCacheData)
+			{
+				pShadowCacheData->mTraverseOctreeJobState.Wait();
+			}
+		}
 	}
 }

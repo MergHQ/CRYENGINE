@@ -1,8 +1,8 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#if !defined(SHADOWRENDERER_H)
-#define SHADOWRENDERER_H
+#pragma once
 
+#include <CryThreading/IJobManager.h>
 #include "ShadowUtils.h"
 
 #include "Textures/PowerOf2BlockPacker.h" // CPowerOf2BlockPacker
@@ -64,13 +64,17 @@ struct ShadowMapFrustum : public CMultiThreadRefCount
 			memset(mOctreePathNodeProcessed, 0x0, sizeof(mOctreePathNodeProcessed));
 			mGeneration = cacheGeneration;
 			mObjectsRendered = 0;
+			mTraverseOctreeJobState.Wait();
 		}
+		
 		uint32                           mObjectsRendered;
 		uint8                            mGeneration;
 
 		static const int                 MAX_TRAVERSAL_PATH_LENGTH = 32;
 		uint8                            mOctreePath[MAX_TRAVERSAL_PATH_LENGTH];
 		uint8                            mOctreePathNodeProcessed[MAX_TRAVERSAL_PATH_LENGTH];
+
+		JobManager::SJobState            mTraverseOctreeJobState;
 	};
 
 public:
@@ -589,5 +593,3 @@ struct SShadowFrustumToRender
 		CRY_ASSERT(pFrustum->pDepthTex == nullptr);
 	}
 };
-
-#endif

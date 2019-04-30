@@ -304,6 +304,9 @@ public:
 
 		ZeroArray(m_shadowCacheLod);
 		ZeroArray(m_shadowCacheLastRendered);
+
+		m_onePassTraversalFrameId = 0;
+		m_onePassTraversalShadowCascades = 0;
 	}
 
 	virtual bool CanExecuteRenderAsJob() const { return false; }
@@ -585,6 +588,28 @@ public:
 	// Retrieve a pointer to the entity who owns this render node.
 	virtual IEntity* GetOwnerEntity() const           { return nullptr; }
 
+	void SetOnePassTraversalFrameId(uint32 onePassTraversalFrameId, int shadowFrustumLod)
+	{
+		uint64 onePassDataPrev = m_onePassData.load();
+		uint64 onePassDataCurr;
+
+		do
+		{
+			uint32 traversalFrameId  = uint32(onePassDataPrev);
+			uint32 traversalCascades = uint32(onePassDataPrev >> 32);
+
+			if (traversalFrameId != onePassTraversalFrameId)
+			{
+				traversalCascades = 0;
+				traversalFrameId = onePassTraversalFrameId;
+			}
+
+			traversalCascades |= BIT(shadowFrustumLod);
+			onePassDataCurr    = uint64(traversalCascades) << 32 | traversalFrameId;
+
+		} while (!m_onePassData.compare_exchange_weak(onePassDataPrev, onePassDataCurr));
+	}
+
 public:
 
 	//! Every sector has linked list of IRenderNode objects.
@@ -602,6 +627,17 @@ public:
 
 	//! Hud silhouette parameter, default is black with alpha zero
 	uint32 m_nHUDSilhouettesParam;
+
+	//! Used to request visiting of the node during one-pass traversal
+	union
+	{
+		std::atomic<uint64> m_onePassData;
+		struct
+		{
+			uint32 m_onePassTraversalFrameId;
+			uint32 m_onePassTraversalShadowCascades;
+		};
+	};
 
 	//! Max view distance.
 	float m_fWSMaxViewDist;
@@ -624,10 +660,6 @@ public:
 	//! The high 24 bits store the actual ID of the object. This need not be the same as CryGUID,
 	//! though the CryGUID could be used to generate it
 	uint32 m_nEditorSelectionID;
-
-	//! Used to request visiting of the node during one-pass traversal
-	uint32 m_onePassTraversalFrameId = 0;
-	uint32 m_onePassTraversalShadowCascades = 0;
 
 #ifdef TRACK_THREADED_ACCESS_TO_RENDERNODES
 	DBG_THREAD_ACCESS_INFO;
