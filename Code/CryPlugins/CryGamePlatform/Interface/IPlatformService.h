@@ -52,6 +52,25 @@ namespace Cry
 				virtual void OnAuthTokenReceived(bool success, const char* szToken) = 0;
 			};
 
+			enum class EPermission
+			{
+				Communication,
+				Multiplayer,
+				ViewProfiles,
+				WebBrowser,
+
+				Count // Internal use
+			};
+
+			enum class EPrivacyPermission
+			{
+				VoiceCommunication,
+				TextCommunication,
+				PlayMultiplayer,
+
+				Count // Internal use
+			};
+
 			virtual ~IService() {}
 
 			//! Adds a service event listener
@@ -87,6 +106,10 @@ namespace Cry
 #endif // CRY_GAMEPLATFORM_EXPERIMENTAL
 			//! Gets an IAccount representation of another user by account id
 			virtual IAccount* GetAccountById(const AccountIdentifier& accountId) const = 0;
+			//! Adds the account into a lobby or match context for interaction relevant updates (HasPrivacyPermission)
+			virtual void AddAccountToLocalSession(const AccountIdentifier& accountId) = 0;
+			//! Removes the account from a lobby or match context
+			virtual void RemoveAccountFromLocalSession(const AccountIdentifier& accountId) = 0;
 
 			//! Checks if the local user has the other user in their friends list for this service
 			virtual bool IsFriendWith(const AccountIdentifier& otherAccountId) const = 0;
@@ -95,7 +118,7 @@ namespace Cry
 			//! Opens a known dialog targeted at a specific user id via the platform's overlay
 			virtual bool OpenDialogWithTargetUser(EUserTargetedDialog dialog, const AccountIdentifier& otherAccountId) const = 0;
 
-			//! Opens a known dialog via the platforms's overlay
+			//! Opens a known dialog via the platform's overlay
 			virtual bool OpenDialog(EDialog dialog) const = 0;
 			//! Opens a browser window via the platform's overlay
 			virtual bool OpenBrowser(const char* szURL) const = 0;
@@ -103,13 +126,19 @@ namespace Cry
 			virtual bool CanOpenPurchaseOverlay() const = 0;
 
 			//! Check if information about a user (e.g. personal name, avatar...) is available, otherwise download it.
-			//! \note It is recommended to limit requests for bulky data (like avatars) to a minimum as some platforms may have bandwitdth or other limitations.
+			//! \note It is recommended to limit requests for bulky data (like avatars) to a minimum as some platforms may have bandwidth or other limitations.
 			//! \retval true Information is not yet available and listeners will be notified once retrieved.
 			//! \retval false Information is already available and there's no need for a download.
 			virtual bool RequestUserInformation(const AccountIdentifier& accountId, UserInformationMask info) = 0;
 
 			//! CHeck if there is an active connection to the service's backend
 			virtual bool IsLoggedIn() const = 0;
+
+			//! Check if a user has permission to perform certain actions on the platform
+			virtual bool HasPermission(const AccountIdentifier& accountId, EPermission permission) const = 0;
+
+			//! Check if the user's privacy settings grant permission to perform certain actions with the target user
+			virtual bool HasPrivacyPermission(const AccountIdentifier& accountId, const AccountIdentifier& targetAccountId, EPrivacyPermission permission) const = 0;
 		};
 	}
 }
