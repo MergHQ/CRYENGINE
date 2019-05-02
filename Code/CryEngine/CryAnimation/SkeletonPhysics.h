@@ -61,7 +61,7 @@ public:
 
 	void                      InitPhysicsSkeleton()                                                                                                                                        {}
 	void                      InitializeAnimToPhysIndexArray()                                                                                                                             {}
-	int                       CreateAuxilaryPhysics(IPhysicalEntity* pHost, const Matrix34& mtx, f32 scale, Vec3 offset, int nLod)                                                         { return 0; }
+	int                       CreateAuxilaryPhysics(IPhysicalEntity* pHost, const Matrix34& mtx, const QuatTS& offset, int nLod)		                                                       { return 0; }
 	int                       FillRopeLenArray(float* arr, int i0, int sz)                                                                                                                 { return 0; }
 	void                      DestroyPhysics()                                                                                                                                             {}
 	void                      SetAuxParams(pe_params* pf)                                                                                                                                  {}
@@ -183,7 +183,7 @@ public:
 	CDefaultSkeleton::SJoint*       GetModelJointPointer(int nBone);
 	const CDefaultSkeleton::SJoint* GetModelJointPointer(int nBone) const;
 
-	Vec3                            GetOffset()                        { return m_vOffset; }
+	Vec3                            GetOffset()                        { return m_offset.t; }
 
 	IPhysicalEntity*                GetPhysEntOnJoint(int32 nId)       { return m_ppBonePhysics ? m_ppBonePhysics[nId] : 0; }
 	const IPhysicalEntity*          GetPhysEntOnJoint(int32 nId) const { return const_cast<CSkeletonPhysics*>(this)->GetPhysEntOnJoint(nId); }
@@ -220,14 +220,12 @@ private:
 
 	void ForceReskin();
 
-	void SetOffset(Vec3 offset) { m_vOffset = offset; }
-
 	// Initialization/creation
 public:
 	void                     InitPhysicsSkeleton();
 	void                     InitializeAnimToPhysIndexArray();
 	int                      CreateAuxilaryPhysics(IPhysicalEntity* pHost, const Matrix34& mtx, int nLod = 0);
-	int                      CreateAuxilaryPhysics(IPhysicalEntity* pHost, const Matrix34& mtx, f32 scale, Vec3 offset, int nLod);
+	int                      CreateAuxilaryPhysics(IPhysicalEntity* pHost, const Matrix34& mtx, const QuatTS& offset, int nLod);
 	int                      FillRopeLenArray(float* arr, int i0, int sz);
 	void                     DestroyPhysics();
 	void                     SetAuxParams(pe_params* pf);
@@ -244,6 +242,7 @@ public:
 	bool                     SetJointPhysProperties_ROPE(uint32 jointIndex, int nLod, const DynArray<SJointProperty>& props);
 
 	void                     SetLocation(const QuatTS& location) { m_location = location; }
+	void                     SetOffset(const QuatTS& offset)     { m_offset = offset; }
 
 private:
 	void CreateRagdollDefaultPose(Skeleton::CPoseData& poseData);
@@ -345,7 +344,7 @@ private:
 		bool bSet : 1;
 	}*                      m_pPhysImpactBuffer;
 
-	Vec3                    m_vOffset;
+	QuatTS                  m_offset;
 	mutable int             m_iSpineBone[3];
 	mutable uint32          m_nSpineBones;
 	int                     m_nAuxPhys;
@@ -355,7 +354,6 @@ private:
 	f32                     m_fPhysBlendMaxTime;
 	f32                     m_frPhysBlendMaxTime;
 	float                   m_stiffnessScale;
-	f32                     m_fScale;
 	f32                     m_fMass;
 	Vec3                    m_prevPosPivot;
 	Vec3                    m_velPivot;

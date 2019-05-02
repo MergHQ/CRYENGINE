@@ -1557,8 +1557,8 @@ int CArticulatedEntity::SyncWithHost(int bRecalcJoints, float time_interval)
 		m_pHost->GetStatus(&sp);
 		m_posPivot = sp.q*m_posHostPivot + sp.pos;
 		pe_params_pos pp;
-		pp.pos = m_posPivot - m_offsPivot;
 		pp.q = m_pHost->m_qrot*m_qHostPivot;
+		pp.pos = m_posPivot - pp.q*m_offsPivot;
 		pp.pGridRefEnt = m_pHost;
 		pp.bRecalcBounds = 0;
 		if (!m_bAwake || m_body.M<=0 || m_flags & aef_recorded_physics) {

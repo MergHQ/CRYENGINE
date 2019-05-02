@@ -397,6 +397,11 @@ void CEntitySlot::SetLocalTM(const Matrix34& localTM)
 	ComputeWorldTransform();
 
 	OnXForm(EntityTransformationFlagsMask());
+
+	if (m_pCharacter)
+	{
+		m_pCharacter->SetCharacterOffset(QuatTS(Quat(IDENTITY), Vec3(ZERO), m_pEntity->GetScale().x) * QuatTS(m_localTM));
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////
