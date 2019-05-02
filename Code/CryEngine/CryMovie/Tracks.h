@@ -17,13 +17,13 @@ public:
 	{
 		if (bLoading)
 		{
-			const char* pSelection = keyNode->getAttr("node");
-			cry_strcpy(key.m_selection, pSelection);
+			const char* pCameraDesc = keyNode->getAttr("node");
+			cry_strcpy(key.m_cameraDesc, pCameraDesc);
 			keyNode->getAttr("BlendTime", key.m_blendTime);
 		}
 		else
 		{
-			keyNode->setAttr("node", key.m_selection);
+			keyNode->setAttr("node", key.m_cameraDesc);
 			keyNode->setAttr("BlendTime", key.m_blendTime);
 		}
 	}
