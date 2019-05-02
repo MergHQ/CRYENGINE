@@ -4340,7 +4340,6 @@ float CPhysicalWorld::PrimitiveWorldIntersection(const SPWIParams &pp, WriteLock
 	} else {
 		ip.bStopAtFirstTri = true;
 		ip.bNoBorder = true;
-		ip.bNoAreaContacts = true;
 	}
 	if (pp.ppcontact)
 		*pp.ppcontact = 0;
