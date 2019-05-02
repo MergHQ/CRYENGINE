@@ -25,9 +25,6 @@
 #include <CryRenderer/IRenderAuxGeom.h>
 #include "CryActionCVars.h"
 
-#include <CryAISystem/IAIObject.h>
-#include <CryAISystem/IAIActorProxy.h>
-
 // ugly: for GetMovementController()
 #include "IActorSystem.h"
 #include "IVehicleSystem.h"
@@ -445,7 +442,7 @@ void CGameObject::DebugUpdateState()
 
 	if (g_showUpdateState == 2)
 	{
-		bool checkAIDisable = !ShouldUpdateAI() && GetEntity()->GetAI();
+		bool checkAIDisable = !ShouldUpdateAI() && GetEntity()->HasAI();
 		for (TExtensions::iterator iter = m_extensions.begin(); iter != m_extensions.end(); ++iter)
 		{
 			uint slotbit = 1;
@@ -534,7 +531,7 @@ void CGameObject::Update(SEntityUpdateContext& ctx)
 	 */
 	bool shouldUpdateAI = ShouldUpdateAI();
 	bool keepUpdating = shouldUpdateAI;
-	bool checkAIDisableOnSlots = !shouldUpdateAI && GetEntity()->GetAI();
+	bool checkAIDisableOnSlots = !shouldUpdateAI && GetEntity()->HasAI();
 	for (TExtensions::iterator iter = m_extensions.begin(); iter != m_extensions.end(); ++iter)
 	{
 		uint32 slotbit = 1;
@@ -708,9 +705,6 @@ void CGameObject::ProcessEvent(const SEntityEvent& event)
 			PostRemoteSpawn();
 			break;
 		}
-
-		if (IAIObject* aiObject = m_pEntity->GetAI())
-			aiObject->EntityEvent(event);
 
 		// Events to extensions are sent by Entity system as they are EntityComponents
 		/*
@@ -1585,7 +1579,7 @@ bool CGameObject::ShouldUpdate()
 	// evaluate main-loop activation
 	bool shouldUpdateAI(!GetEntity()->IsHidden() && (IsProbablyVisible() || !IsProbablyDistant()));
 	bool shouldBeActivated = shouldUpdateAI;
-	bool hasAI = NULL != GetEntity()->GetAI();
+	bool hasAI = GetEntity()->HasAI();
 	bool checkAIDisableOnSlots = !shouldUpdateAI && hasAI;
 	for (TExtensions::iterator iter = m_extensions.begin(); iter != m_extensions.end() && !shouldBeActivated; ++iter)
 	{
@@ -1604,7 +1598,7 @@ void CGameObject::EvaluateUpdateActivation()
 	// evaluate main-loop activation
 	bool shouldUpdateAI = ShouldUpdateAI();
 	bool shouldBeActivated = shouldUpdateAI;
-	bool hasAI = NULL != GetEntity()->GetAI();
+	bool hasAI = GetEntity()->HasAI();
 	bool checkAIDisableOnSlots = !shouldUpdateAI && hasAI;
 	for (TExtensions::iterator iter = m_extensions.begin(); iter != m_extensions.end() && !shouldBeActivated; ++iter)
 	{
@@ -1689,15 +1683,6 @@ void CGameObject::SetActivation(bool activate)
 	{
 		m_bShouldUpdate = activate;
 		m_pEntity->UpdateComponentEventMask(this);
-
-		if (!activate)
-		{
-			IAIObject* aiObject = m_pEntity->GetAI();
-			IAIActorProxy* proxy = aiObject ? aiObject->GetProxy() : 0;
-
-			if (proxy)
-				proxy->NotifyAutoDeactivated();
-		}
 	}
 
 	if (activate)

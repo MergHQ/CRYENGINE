@@ -38,8 +38,6 @@
 #include <CryRenderer/IRenderAuxGeom.h>
 #include <CryLiveCreate/ILiveCreateHost.h>
 #include <CryMath/Cry_Camera.h>
-#include <CryAISystem/IAgent.h>
-#include <CryAISystem/IAIActorProxy.h>
 #include <CrySystem/File/IResourceManager.h>
 #include <CryPhysics/IDeferredCollisionEvent.h>
 #include <CryNetwork/IRemoteCommand.h>

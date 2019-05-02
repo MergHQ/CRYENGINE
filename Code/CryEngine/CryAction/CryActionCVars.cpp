@@ -2,7 +2,6 @@
 
 #include "StdAfx.h"
 #include "CryActionCVars.h"
-#include <CryAISystem/IAIRecorder.h>
 #include "Serialization/XmlSerializeHelper.h"
 #include "Network/GameContext.h"
 #include <CrySystem/ConsoleRegistration.h>

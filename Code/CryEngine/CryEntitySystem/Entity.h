@@ -208,7 +208,7 @@ public:
 	//////////////////////////////////////////////////////////////////////////
 	virtual const IAIObject* GetAI() const final                 { return m_aiObjectID ? GetAIObject() : nullptr; }
 	virtual IAIObject*       GetAI() final                       { return m_aiObjectID ? GetAIObject() : nullptr; }
-	virtual bool             HasAI() const final                 { return m_aiObjectID != 0; }
+	virtual bool             HasAI() const final                 { return (m_flags & ENTITY_FLAG_HAS_AI) != 0; }
 	virtual tAIObjectID      GetAIObjectID() const final         { return m_aiObjectID; }
 	virtual void             SetAIObjectID(tAIObjectID id) final { m_aiObjectID = id; }
 	//////////////////////////////////////////////////////////////////////////

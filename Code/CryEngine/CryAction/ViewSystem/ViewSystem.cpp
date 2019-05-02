@@ -8,7 +8,6 @@
 #include "CryAction.h"
 #include "IActorSystem.h"
 #include <CryMath/PNoise3.h>
-#include <CryAISystem/IAISystem.h>
 #include <CryRenderer/IRenderAuxGeom.h>
 #include <CrySystem/ConsoleRegistration.h>
 
