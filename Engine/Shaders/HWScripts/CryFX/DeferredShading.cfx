@@ -384,7 +384,7 @@ pixout SSRRaytracePS(vtxOutWPOS IN)
 	const float fDepth = GetLinearDepth( SSRRay_LinDepth, int2(ScreenTC * g_mSSRParams.xy * g_ScreenSize.xy) ); // read from full size buffer even in halfres mode
 	
 	if (fDepth == 1.0)
-		return OUT; // Ignore sky pixels
+		discard; // Ignore sky pixels
 
 	const float3 vPositionWS = GetWorldPos( fDepth, IN.CamVec ) + CV_WorldViewPosition.xyz;
 	const float2 halfTexel = g_ScreenSize.zw;

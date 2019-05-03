@@ -11,6 +11,15 @@ void CScreenSpaceReflectionsStage::Init()
 		m_prevViewProj[i] = IDENTITY;
 }
 
+void CScreenSpaceReflectionsStage::Update()
+{
+	CTexture* targetRT = CRenderer::CV_r_SSReflHalfRes
+		? CRendererResources::s_ptexHDRTargetMaskedScaled[0][1]
+		: CRendererResources::s_ptexHDRTargetMasked;
+
+	CClearSurfacePass::Execute(targetRT, Clr_Empty);
+}
+
 void CScreenSpaceReflectionsStage::Execute()
 {
 	FUNCTION_PROFILER_RENDERER();
