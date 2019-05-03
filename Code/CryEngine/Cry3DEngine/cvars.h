@@ -4,11 +4,7 @@
 
 #include <CrySystem/ConsoleRegistration.h>
 
-#if defined(CONSOLE_CONST_CVAR_MODE)
-	#define GetFloatCVar(name) name ## Default
-#else
-	#define GetFloatCVar(name) (Cry3DEngineBase::GetCVars())->name
-#endif
+#define GetFloatCVar(name) (Cry3DEngineBase::GetCVars())->name
 
 // console variables
 struct CVars : public Cry3DEngineBase
