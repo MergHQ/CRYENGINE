@@ -127,7 +127,6 @@ namespace Cry
 				mutable DynArray<IAccount*> m_friends;
 #if CRY_GAMEPLATFORM_EXPERIMENTAL
 				DynArray<IAccount*> m_blockedAccounts;
-				DynArray<IAccount*> m_mutedAccounts;
 #endif // CRY_GAMEPLATFORM_EXPERIMENTAL
 
 				std::vector<IListener*> m_listeners;

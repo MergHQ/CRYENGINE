@@ -452,11 +452,11 @@ namespace Cry
 				{
 					m_friends.clear();
 
-					constexpr int friendFlags = k_EFriendFlagAll;
+					constexpr int friendFlags = k_EFriendFlagImmediate;
 					const int friendCount = pSteamFriends->GetFriendCount(friendFlags);
 					for (int i = 0; i < friendCount; ++i)
 					{
-						CSteamID friendId = pSteamFriends->GetFriendByIndex(i, friendFlags);
+						const CSteamID friendId = pSteamFriends->GetFriendByIndex(i, friendFlags);
 						m_friends.push_back(TryGetAccount(friendId));
 					}
 				}
@@ -467,16 +467,27 @@ namespace Cry
 #if CRY_GAMEPLATFORM_EXPERIMENTAL
 			const DynArray<IAccount*>& CService::GetBlockedAccounts() const
 			{
-				CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_ERROR, "[Steam][Service] GetBlockedAccounts() is not implemented yet");
+				if (ISteamFriends* const pSteamFriends = SteamFriends())
+				{
+					m_blockedAccounts.clear();
+
+					constexpr int friendFlags = k_EFriendFlagBlocked | k_EFriendFlagIgnored | k_EFriendFlagIgnoredFriend;
+					const int friendCount = pSteamFriends->GetFriendCount(friendFlags);
+					for (int i = 0; i < friendCount; ++i)
+					{
+						const CSteamID friendId = pSteamFriends->GetFriendByIndex(i, friendFlags);
+						m_blockedAccounts.push_back(TryGetAccount(friendId));
+					}
+				}
 
 				return m_blockedAccounts;
 			}
 
 			const DynArray<IAccount*>& CService::GetMutedAccounts() const
 			{
-				CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_ERROR, "[Steam][Service] GetMutedAccounts() is not implemented yet");
-
-				return m_mutedAccounts;
+				// Steam does not support muting
+				static const DynArray<IAccount*> dummy;
+				return dummy;
 			}
 #endif // CRY_GAMEPLATFORM_EXPERIMENTAL
 
