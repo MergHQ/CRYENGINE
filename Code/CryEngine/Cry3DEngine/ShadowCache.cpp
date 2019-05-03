@@ -178,21 +178,22 @@ void ShadowCacheGenerator::InitCachedFrustum(ShadowMapFrustumPtr& pFr, ShadowMap
 	IRenderNode* pCastingException = static_cast<CLightEntity*>(m_pLightEntity->GetLightProperties().m_pOwner)->GetCastingException();
 	auto pCastersHull = bUseCastersHull ? &m_pLightEntity->GetCastersHull() : nullptr;
 
-	auto job = [=]()
+	auto jobLambda = [=]()
 	{
 		m_pObjManager->MakeStaticShadowCastersList(pCastingException, pFr, pCastersHull,
 			bExcludeDynamicDistanceShadows ? ERF_DYNAMIC_DISTANCESHADOWS : 0, maxNodesPerFrame, passInfo);
 
 		AddTerrainCastersToFrustum(pFr, passInfo);
 	};
-
+	
 	if (GetCVars()->e_ShadowsCacheJobs)
 	{
-		gEnv->pJobManager->AddLambdaJob("job:shadows:MakeStaticShadowCastersList", job, JobManager::eRegularPriority, &pFr->pShadowCacheData->mTraverseOctreeJobState);
+		DECLARE_LAMBDA_JOB("job:shadows:MakeStaticShadowCastersList", TMakeStaticShadowCastersListJob);
+		TMakeStaticShadowCastersListJob(jobLambda).Run(JobManager::eRegularPriority, &pFr->pShadowCacheData->mTraverseOctreeJobState);
 	}
 	else
 	{
-		job();
+		jobLambda();
 	}
 
 	pFr->Invalidate();

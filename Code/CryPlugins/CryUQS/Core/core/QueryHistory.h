@@ -236,6 +236,7 @@ namespace UQS
 			bool                                           SerializeToXmlFile(const char* szXmlFilePath, string& error) const;
 			bool                                           DeserializeFromXmlFile(const char* szXmlFilePath, string& error);
 			void                                           StartAsyncXmlSerializeJob(const char* szFileName);
+			void                                           AsyncXmlSerializeJob(string xmlFilePath, SHistoryData snapshot);
 			void                                           PrintStatisticsToConsole(const char* szMessagePrefix) const;
 
 		private:

@@ -363,6 +363,7 @@ public:
 	void                   CalculateViewInfo();
 
 	void                   StartOptimizeTransparentRenderItemsResolvesJob();
+	void                   OptimizeTransparentRenderItemsResolvesJob();
 	void                   WaitForOptimizeTransparentRenderItemsResolvesJob() const;
 	bool                   HasResolveForList(ERenderListID list) const
 	{

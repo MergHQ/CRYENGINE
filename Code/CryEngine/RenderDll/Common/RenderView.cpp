@@ -352,10 +352,12 @@ void CRenderView::SwitchUsageMode(EUsageMode mode)
 		//if (m_viewType != eViewType_Shadow)
 		{
 			// Job_PostWrite job will be called when all writing to the view will finish (m_jobstate_Write is stopped)
-			auto lambda_job_after_write = [this] {
-				Job_PostWrite();
-			};
-			m_jobstate_Write.RegisterPostJob("JobRenderViewPostWrite", lambda_job_after_write, JobManager::eRegularPriority, &m_jobstate_PostWrite);
+			DECLARE_JOB("JobRenderViewPostWrite", TJobRenderViewPostWrite, CRenderView::Job_PostWrite);
+			TJobRenderViewPostWrite job;
+			job.SetClassInstance(this);
+			job.RegisterJobState(&m_jobstate_PostWrite);
+			job.SetPriorityLevel(JobManager::eRegularPriority);
+			m_jobstate_Write.RegisterPostJob(std::move(job));
 		}
 
 		// If no items will be written, next SetStopped call will trigger post job
@@ -2105,8 +2107,9 @@ CRenderView::RenderItems& CRenderView::GetShadowItems(ShadowMapFrustum* pFrustum
 void CRenderView::Job_PostWrite()
 {
 	CRY_PROFILE_FUNCTION_ARG(PROFILE_RENDERER, m_name.c_str());
-
 	CRY_ASSERT(!m_bPostWriteExecuted);
+
+	DECLARE_JOB("SortRenderItems", TSortRenderItemsJob, CRenderView::Job_SortRenderItemsInList);
 
 	// Prevent double entering this
 	CryAutoLock<CryCriticalSectionNonRecursive> lock(m_lock_PostWrite);
@@ -2139,12 +2142,9 @@ void CRenderView::Job_PostWrite()
 
 		if (!renderItems.empty())
 		{
-			auto lambda_job = [=]
-			{
-				Job_SortRenderItemsInList(ERenderListID(renderList));
-			};
-			gEnv->pJobManager->AddLambdaJob("SortRenderItems", lambda_job, JobManager::eRegularPriority, &m_jobstate_Sort);
-			//lambda_job();
+			TSortRenderItemsJob job((ERenderListID)renderList);
+			job.SetClassInstance(this);
+			job.Run(JobManager::eRegularPriority, &m_jobstate_Sort);
 		}
 	}
 
