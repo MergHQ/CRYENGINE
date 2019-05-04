@@ -126,7 +126,7 @@ namespace Cry
 				mutable std::vector<std::unique_ptr<CAccount>> m_accounts;
 				mutable DynArray<IAccount*> m_friends;
 #if CRY_GAMEPLATFORM_EXPERIMENTAL
-				DynArray<IAccount*> m_blockedAccounts;
+				mutable DynArray<IAccount*> m_blockedAccounts;
 #endif // CRY_GAMEPLATFORM_EXPERIMENTAL
 
 				std::vector<IListener*> m_listeners;

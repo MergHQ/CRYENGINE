@@ -214,7 +214,7 @@ namespace Cry
 						{
 							stack_string str;
 							str.Format("[Steam] Achievement details for stat '%s' are missing", szName);
-							CRY_ASSERT_MESSAGE(true, str.c_str());
+							CRY_ASSERT_MESSAGE(false, str.c_str());
 							CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_WARNING, str.c_str());
 							return nullptr;
 						}
