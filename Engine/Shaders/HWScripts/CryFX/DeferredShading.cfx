@@ -561,6 +561,9 @@ pixout SSDO_Sampling_PS(vtxOut IN)
     float2 linearUV = IN.baseTC.xy;
     float fCenterDepth = GetLinearDepth(SSDOSamp_LinZ, int2(linearUV * cbSSDO.screenSize.xy));
 
+	if (fCenterDepth == 1.0f)
+		discard; // Ignore sky pixels
+
 	float3 vReceiverPos = float3( linearUV.xy * cbSSDO.viewSpaceParams.xy + cbSSDO.viewSpaceParams.zw, 1 ) * fCenterDepth * cbSSDO.nearFarClipDist.y;
 	
 	// Vary maximum radius to get a good compromise between small and larger scale occlusion

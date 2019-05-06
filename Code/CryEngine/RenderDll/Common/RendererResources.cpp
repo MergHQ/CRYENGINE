@@ -118,6 +118,7 @@ CTexture* CRendererResources::s_ptexNoTexture;
 CTexture* CRendererResources::s_ptexNoTextureCM;
 CTexture* CRendererResources::s_ptexWhite;
 CTexture* CRendererResources::s_ptexGray;
+CTexture* CRendererResources::s_ptexMedian;
 CTexture* CRendererResources::s_ptexBlack;
 CTexture* CRendererResources::s_ptexBlackAlpha;
 CTexture* CRendererResources::s_ptexBlackCM;
@@ -437,6 +438,13 @@ void CRendererResources::LoadDefaultSystemTextures()
 		if (!CTexture::IsTextureExist(s_ptexWindGrid))
 		{
 			s_ptexWindGrid->Create2DTexture(256, 256, 1, FT_DONT_RELEASE | FT_DONT_STREAM, nullptr, eTF_R16G16F);
+		}
+
+		s_ptexMedian = CTexture::GetOrCreateTextureObject("$MedianColor", 8, 8, 1, eTT_2D, FT_DONT_STREAM | FT_USAGE_RENDERTARGET, eTF_Unknown);
+		if (!CTexture::IsTextureExist(s_ptexMedian))
+		{
+			s_ptexMedian->CreateRenderTarget(eTF_R8G8B8A8, Clr_Median);
+			CClearSurfacePass::Execute(s_ptexMedian, Clr_Median);
 		}
 
 		s_ptexFarPlane = CTexture::GetOrCreateTextureObject("$FarPlane", 8, 8, 1, eTT_2D, FT_DONT_STREAM | FT_USAGE_DEPTHSTENCIL, eTF_Unknown);

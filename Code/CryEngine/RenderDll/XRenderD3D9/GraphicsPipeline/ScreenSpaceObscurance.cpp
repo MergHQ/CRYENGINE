@@ -23,17 +23,17 @@ void CScreenSpaceObscuranceStage::Init()
 	m_passObscurance.AllocateTypedConstantBuffer<ObscuranceConstants>(eConstantBufferShaderSlot_PerPrimitive, EShaderStage_Pixel);
 }
 
+void CScreenSpaceObscuranceStage::Update()
+{
+	if (CRendererCVars::CV_r_ssdo)
+		CClearSurfacePass::Execute(CRendererResources::s_ptexSceneNormalsBent, Clr_Median);
+}
+
 void CScreenSpaceObscuranceStage::Execute()
 {
 #if defined(DURANGO_USE_ESRAM)
 	m_passCopyFromESRAM.Execute(CRendererResources::s_ptexSceneSpecularESRAM, CRendererResources::s_ptexSceneSpecular);
 #endif
-
-	if (!CRenderer::CV_r_ssdo)
-	{
-		CClearSurfacePass::Execute(CRendererResources::s_ptexSceneNormalsBent, Clr_Median);
-		return;
-	}
 
 	PROFILE_LABEL_SCOPE("DIRECTIONAL_OCC");
 
@@ -42,7 +42,7 @@ void CScreenSpaceObscuranceStage::Execute()
 	CRendererResources__s_ptexSceneSpecular = CRendererResources::s_ptexSceneSpecularESRAM;
 #endif
 
-	const bool bLowResOutput = (CRenderer::CV_r_ssdoHalfRes == 3);
+	const bool bLowResOutput = (CRendererCVars::CV_r_ssdoHalfRes == 3);
 	if (bLowResOutput)
 		CRendererResources__s_ptexSceneSpecular = CRendererResources::s_ptexDisplayTargetScaled[0];
 
@@ -54,12 +54,12 @@ void CScreenSpaceObscuranceStage::Execute()
 	// Obscurance generation
 	{
 		uint64 rtMask = 0;
-		rtMask |= CRenderer::CV_r_ssdoHalfRes ? g_HWSR_MaskBit[HWSR_SAMPLE0] : 0;
+		rtMask |= CRendererCVars::CV_r_ssdoHalfRes ? g_HWSR_MaskBit[HWSR_SAMPLE0] : 0;
 		rtMask |= bHMAOEnabled ? g_HWSR_MaskBit[HWSR_SAMPLE1] : 0;
-		rtMask |= CRenderer::CV_r_DeferredShadingTiled == CTiledShadingStage::eDeferredMode_Disabled ? g_HWSR_MaskBit[HWSR_SAMPLE2] : 0;
+		rtMask |= CRendererCVars::CV_r_DeferredShadingTiled == CTiledShadingStage::eDeferredMode_Disabled ? g_HWSR_MaskBit[HWSR_SAMPLE2] : 0;
 
 		// Extreme magnification as happening with small FOVs will cause banding issues with half-res depth
-		if (CRenderer::CV_r_ssdoHalfRes == 2 && RAD2DEG(RenderView()->GetCamera(CCamera::eEye_Left).GetFov()) < 30)
+		if (CRendererCVars::CV_r_ssdoHalfRes == 2 && RAD2DEG(RenderView()->GetCamera(CCamera::eEye_Left).GetFov()) < 30)
 			rtMask &= ~g_HWSR_MaskBit[HWSR_SAMPLE0];
 
 		static CCryNameTSCRC techSampling("SSDO_Sampling");
@@ -179,7 +179,7 @@ void CScreenSpaceObscuranceStage::Execute()
 		PostProcessUtils().StretchRect(CRendererResources__s_ptexSceneSpecular, CRendererResources::s_ptexSceneNormalsBent);
 	}
 
-	if (CRenderer::CV_r_ssdoColorBleeding)
+	if (IsColorBleeding())
 	{
 		// Generate low frequency scene albedo for color bleeding (convolution not gamma correct but acceptable)
 		m_passAlbedoDownsample0.Execute(CRendererResources::s_ptexSceneDiffuse, CRendererResources::s_ptexDisplayTargetScaled[0]);
