@@ -146,6 +146,10 @@ extern "C" DLL_EXPORT SRegFactoryNode* GetHeadToRegFactories()
 	#include <CryMath/ISplineSerialization_impl.h>
 
 	#include <CryCore/TypeInfo_impl.h>
+	#include <CryMemory/VirtualMemory_impl.h>
+	#if CRY_PLATFORM_ORBIS
+		#include <CryMemory/VirtualMemory_impl_sce.h>
+	#endif
 
 	#define CRY_PLATFORM_IMPL_H_FILE 1
 	#include <CryCore/CryTypeInfo.inl>

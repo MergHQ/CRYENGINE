@@ -22,6 +22,7 @@ add_sources("NoUberFile"
 		"GUIDTests.cpp"
 		"CryTestTests.cpp"
 		"FileVersionTests.cpp"
+		"ThreadSafePushContainerTest.cpp"
 )
 end_sources()
 
