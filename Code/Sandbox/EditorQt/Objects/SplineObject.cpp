@@ -1086,7 +1086,7 @@ bool CSplineObject::Init(CBaseObject* prev, const string& file)
 
 void CSplineObject::Done()
 {
-	LOADING_TIME_PROFILE_SECTION_ARGS(GetName().c_str());
+	CRY_PROFILE_FUNCTION_ARG(PROFILE_LOADING_ONLY, GetName().c_str());
 	m_points.clear();
 	__super::Done();
 }

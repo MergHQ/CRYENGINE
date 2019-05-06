@@ -7,14 +7,8 @@
 #include <CryRenderer/IRenderAuxGeom.h>
 #include <CrySystem/Profilers/SamplesHistory.h>
 
-#if 0
 #define PROFILE_AREA_FUNC_ARG(arg) CRY_PROFILE_FUNCTION_ARG(PROFILE_ENTITY, arg)
 #define PROFILE_AREA_SECTION(name) CRY_PROFILE_SECTION(PROFILE_ENTITY, name)
-#else
-#define PROFILE_AREA_FUNC_ARG(arg) CRY_PROFILE_REGION_ARG(PROFILE_ENTITY, __FUNC__, arg)
-#define PROFILE_AREA_SECTION(name) CRY_PROFILE_REGION(PROFILE_ENTITY, name)
-#endif
-
 
 struct SDebugLogDrawer
 {
@@ -1715,7 +1709,7 @@ void CAreaManager::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR l
 	{
 	case ESYSTEM_EVENT_LEVEL_LOAD_END:
 		{
-			LOADING_TIME_PROFILE_SECTION_NAMED("CAreaManager::OnSystemEvent ESYSTEM_EVENT_LEVEL_LOAD_END");
+			CRY_PROFILE_SECTION(PROFILE_LOADING_ONLY, "CAreaManager::OnSystemEvent ESYSTEM_EVENT_LEVEL_LOAD_END");
 			for (auto const pArea : m_areas)
 			{
 				pArea->ResolveEntityIds();

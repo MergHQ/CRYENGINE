@@ -5,7 +5,7 @@
 #include <CrySystem/ISystem.h>
 #include <Cry3DEngine/I3DEngine.h>
 #include <CryRenderer/IRenderer.h>
-#include <CrySystem/IConsole.h>
+#include <CrySystem/ConsoleRegistration.h>
 #include <CryAnimation/ICryAnimation.h>
 #include <CrySystem/Profilers/IPerfHud.h>
 #include <CryString/CryPath.h>

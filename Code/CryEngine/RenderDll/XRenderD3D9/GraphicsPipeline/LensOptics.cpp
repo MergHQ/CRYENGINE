@@ -72,7 +72,7 @@ void CLensOpticsStage::Execute()
 				continue;
 
 			{
-				PROFILE_LABEL_SCOPE(pLight->m_sName && pLight->m_sName[0] != '\0' ? pLight->m_sName : "unknown");
+				PROFILE_LABEL_SCOPE_DYNAMIC((pLight->m_sName && pLight->m_sName[0] != '\0' ? pLight->m_sName : "unknown"), "LIGHT");
 
 				pRootElem->SetOcclusionQuery(pOcc);
 				pOcc->SetOccPlaneSizeRatio(pRootElem->GetOccSize());

@@ -162,27 +162,27 @@ struct SCameraKey : public STrackKey
 {
 	SCameraKey() : m_blendTime(0.0f)
 	{
-		m_selection[0] = 0;
+		m_cameraDesc[0] = 0;
 	}
 
 	static const char* GetType()              { return "Camera"; }
-	const char*        GetDescription() const { return m_selection; }
+	const char*        GetDescription() const { return m_cameraDesc; }
 
 	void               Serialize(Serialization::IArchive& ar)
 	{
 		STrackKey::Serialize(ar);
 
-		string selection(m_selection);
-		ar(Serialization::SequenceCameraPicker(selection), "selection", "Selection");
+		string cameraDesc(m_cameraDesc);
+		ar(Serialization::SequenceCameraPicker(cameraDesc), "camera", "Camera");
 
 		if (ar.isInput())
-			cry_strcpy(m_selection, selection.c_str());
+			cry_strcpy(m_cameraDesc, cameraDesc.c_str());
 
 		ar(m_blendTime, "blendTime", "Blend Time");
 	}
 
 	float m_blendTime;
-	char  m_selection[128]; // Node name.
+	char  m_cameraDesc[128]; // Node name.
 };
 
 struct SFaceSequenceKey : public STrackDurationKey
@@ -381,6 +381,7 @@ struct SCharacterKey : public STimeRangeKey
 		ar(m_bBlendGap, "blendGap", "Blend Gap");
 		ar(m_bUnload, "unload", "Unload");
 		ar(m_bInPlace, "inPlace", "In Place");
+		ar(m_defaultAnimDuration, "defaultAnimDuration", "Default Animation Duration");
 	}
 
 	float GetMaxEndTime() const

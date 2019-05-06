@@ -22,7 +22,7 @@ CBreadcrumbsBar::CBreadcrumbsBar()
 	connect(m_dropDownButton, &QToolButton::clicked, this, &CBreadcrumbsBar::OnDropDownClicked);
 
 	m_breadCrumbsLayout = new QHBoxLayout();
-	m_breadCrumbsLayout->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
+	m_breadCrumbsLayout->setAlignment(Qt::AlignLeft | Qt::AlignTop);
 	m_breadCrumbsLayout->setSpacing(0);
 	m_breadCrumbsLayout->setMargin(0);
 

@@ -16,8 +16,7 @@ namespace Private_EditorCommands
 
 void ShowInAssetBrowser(const char* path)
 {
-	string cmd("asset.show_in_asset_browser ");
-	cmd += path;
+	string cmd = string().Format("asset.show_in_asset_browser '%s'", path);
 	CommandEvent(cmd.c_str()).SendToKeyboardFocus();
 }
 
@@ -96,10 +95,6 @@ REGISTER_EDITOR_COMMAND_SHORTCUT(asset, open_browser, "Alt+F2; Ctrl+Alt+B")
 REGISTER_PYTHON_COMMAND(Private_EditorCommands::PyImportFiles, asset, import, "Imports assets");
 REGISTER_PYTHON_COMMAND(Private_EditorCommands::PyImportDialog, asset, import_dialog, "Imports assets")
 REGISTER_EDITOR_COMMAND_TEXT(asset, import_dialog, "Import");
-
-REGISTER_EDITOR_AND_SCRIPT_KEYBOARD_FOCUS_COMMAND(asset, toggle_instant_editing,
-                                                  CCommandDescription("Toggles instant editing for focused asset editor"))
-REGISTER_EDITOR_UI_COMMAND_DESC(asset, toggle_instant_editing, "Instant Editing", "", "icons:General/Instant_Editing.ico", true)
 
 REGISTER_EDITOR_AND_SCRIPT_KEYBOARD_FOCUS_COMMAND(asset, generate_thumbnails, CCommandDescription("Generate All Thumbnails"))
 

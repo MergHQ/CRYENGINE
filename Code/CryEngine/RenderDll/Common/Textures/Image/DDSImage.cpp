@@ -26,7 +26,7 @@ CImageDDSFile::CImageDDSFile(const string& filename)
 
 CImageDDSFile::CImageDDSFile(const string& filename, uint32 nFlags) : CImageFile(filename)
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 	m_pFileMemory = 0;
 	if (!Load(filename, nFlags) || NULL == m_pFileMemory)  // load data from file
 	{
@@ -88,7 +88,7 @@ DDSSplitted::DDSDesc CImageDDSFile::mfGet_DDSDesc() const
 //////////////////////////////////////////////////////////////////////
 bool CImageDDSFile::Load(const string& filename, uint32 nFlags)
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
 	DDSSplitted::TPath adjustedFileName;
 	AdjustFirstFileName(nFlags, filename.c_str(), adjustedFileName);
@@ -137,7 +137,7 @@ int8 CImageDDSFile::AdjustHeader()
 
 bool CImageDDSFile::LoadFromFile(DDSSplitted::FileWrapper& file, uint32 nFlags, DDSSplitted::RequestInfo* pConts, size_t& nConts, size_t nContsCap)
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
 	if (file.IsValid())
 	{
@@ -393,7 +393,7 @@ void CImageDDSFile::StreamAsyncOnComplete(IReadStream* pStream, uint32 nError)
 
 bool CImageDDSFile::SetHeaderFromMemory(byte* pFileStart, byte* pFileAfterHeader, uint32 nFlags)
 {
-	LOADING_TIME_PROFILE_SECTION
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY)
 
 	CImageExtensionHelper::DDS_FILE_DESC&    dds = *(CImageExtensionHelper::DDS_FILE_DESC   *)pFileStart;
 	CImageExtensionHelper::DDS_HEADER_DXT10& ddx = *(CImageExtensionHelper::DDS_HEADER_DXT10*)pFileAfterHeader;

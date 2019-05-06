@@ -387,27 +387,27 @@ public:
 	// CPU stalls due to the rect lock call since the buffer will already be in system
 	// memory when it is called
 	// Inputs :
-	//			pDstARGBA8			:	Pointer to a buffer that will hold the captured frame (should be at least 4*dstWidth*dstHieght for RGBA surface)
+	//			pDstRGB8			:	Pointer to a buffer that will hold the captured frame (should be at least 3*dstWidth*dstHeight for RGB surface).
 	//			destinationWidth	:	Width of the frame to copy
 	//			destinationHeight	:	Height of the frame to copy
 	//
 	//			Note :	If dstWidth or dstHeight is larger than the current surface dimensions, the dimensions
 	//					of the surface are used for the copy
 	//
-	virtual bool CaptureFrameBufferFast(unsigned char* pDstRGBA8, int destinationWidth, int destinationHeight) override;
+	virtual bool CaptureFrameBufferFast(unsigned char* pDstRGB8, int destinationWidth, int destinationHeight) override;
 
 	/////////////////////////////////////////////////////////////////////////////////////////////////////
 	// Copy a captured surface to a buffer
 	//
 	// Inputs :
-	//			pDstARGBA8			:	Pointer to a buffer that will hold the captured frame (should be at least 4*dstWidth*dstHieght for RGBA surface)
+	//			pDstRGB8			:	Pointer to a buffer that will hold the captured frame (should be at least 3*dstWidth*dstHeight for RGB surface).
 	//			destinationWidth	:	Width of the frame to copy
 	//			destinationHeight	:	Height of the frame to copy
 	//
 	//			Note :	If dstWidth or dstHeight is larger than the current surface dimensions, the dimensions
 	//					of the surface are used for the copy
 	//
-	virtual bool CopyFrameBufferFast(unsigned char* pDstRGBA8, int destinationWidth, int destinationHeight) override;
+	virtual bool CopyFrameBufferFast(unsigned char* pDstRGB8, int destinationWidth, int destinationHeight) override;
 
 	/////////////////////////////////////////////////////////////////////////////////////////////////////
 	// This routine registers a callback address that is called when a new frame is available
@@ -924,7 +924,7 @@ inline void CD3D9Renderer::WaitForAsynchronousDevice() const
 #if DURANGO_ENABLE_ASYNC_DIPS
 	if (m_nAsyncDeviceState)
 	{
-		CRY_PROFILE_REGION_WAITING(PROFILE_RENDERER, "Sync Async DIPS");
+		CRY_PROFILE_SECTION_WAITING(PROFILE_RENDERER, "Sync Async DIPS");
 
 		while (m_nAsyncDeviceState)
 		{

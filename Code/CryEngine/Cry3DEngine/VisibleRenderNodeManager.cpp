@@ -304,7 +304,7 @@ void CVisibleRenderNodesManager::OnRenderNodeDeleted(IRenderNode* pRenderNode)
 
 	if (pNodeTempData)
 	{
-		LOADING_TIME_PROFILE_SECTION;
+		CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
 		CryAutoCriticalSectionNoRecursive lock(m_accessLock);
 

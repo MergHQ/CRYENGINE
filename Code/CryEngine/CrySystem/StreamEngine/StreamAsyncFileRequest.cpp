@@ -93,6 +93,8 @@ void CAsyncIOFileRequest::operator delete(void* p)
 CAsyncIOFileRequest::CAsyncIOFileRequest()
 	: m_nRefCount(0)
 	, m_pMemoryBuffer(NULL)
+	, m_bOutputAllocated(false)
+	, m_bStatsUpdated(false)
 {
 	Reset();
 }
@@ -307,7 +309,7 @@ uint32 CAsyncIOFileRequest::AllocateOutput(CCachedFileData* pZipEntry)
 			++nMemoryBufferUsers;
 		m_nMemoryBufferUsers = nMemoryBufferUsers;
 
-		m_bOutputAllocated = 1;
+		m_bOutputAllocated = true;
 	}
 
 #ifdef SUPPORT_RSA_AND_STREAMCIPHER_PAK_ENCRYPTION
@@ -488,6 +490,8 @@ void CAsyncIOFileRequest::FreeBuffer()
 		CryInterlockedAdd(&stats.typeInfo[m_eType].nPendingReadBytes, -nSize);
 	}
 #endif
+
+	m_bOutputAllocated = false;
 }
 
 CAsyncIOFileRequest* CAsyncIOFileRequest::Allocate(EStreamTaskType eType)
@@ -523,6 +527,8 @@ void CAsyncIOFileRequest::Reset()
 	m_pReadStream = NULL;
 	m_strFileName.resize(0);
 	m_pakFile.resize(0);
+	m_bSortKeyComputed = false;
+	m_bReadBegun = false;
 
 #ifdef SUPPORT_RSA_AND_STREAMCIPHER_PAK_ENCRYPTION
 	m_decryptionCTRInitialisedAgainst = m_pakFile;
@@ -684,7 +690,7 @@ uint32 CAsyncIOFileRequest::ReadFileInPages(CStreamingIOThread* pIOThread, CCryF
 {
 #if defined(ENABLE_PROFILING_CODE)
 	const char* pFileNameShort = PathUtil::GetFile(m_strFileName.c_str());
-	CRY_PROFILE_REGION_ARG(PROFILE_SYSTEM, "ReadFileInPages", pFileNameShort);
+	CRY_PROFILE_SECTION_ARG(PROFILE_SYSTEM, "ReadFileInPages", pFileNameShort);
 #endif
 
 	CCryPak* pCryPak = static_cast<CCryPak*>(gEnv->pCryPak);

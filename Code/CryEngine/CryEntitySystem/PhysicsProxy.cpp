@@ -1764,9 +1764,12 @@ bool CEntityPhysics::ConvertCharacterToRagdoll(SEntityPhysicalizeParams& params,
 	GetEntity()->SetInternalFlag(CEntity::EInternalFlag::PhysicsHasCharacter, true);
 	GetEntity()->SetInternalFlag(CEntity::EInternalFlag::PhysicsSyncCharacter, true);
 
+	Matrix34 mtxloc = GetEntity()->GetSlotLocalTM(params.nSlot, false);
+	mtxloc.ScaleColumn(GetEntity()->GetScale());
+	GetEntity()->SetSlotLocalTM(params.nSlot, Matrix34(IDENTITY));
+
 	// This is special case when converting living character into the rag-doll
-	IPhysicalEntity* pPhysEntity = pCharacter->GetISkeletonPose()->RelinquishCharacterPhysics(//GetEntity()->GetSlotWorldTM(params.nSlot),
-		GetEntity()->GetWorldTM(), params.fStiffnessScale, params.bCopyJointVelocities, velInitial);
+	IPhysicalEntity* pPhysEntity = pCharacter->GetISkeletonPose()->RelinquishCharacterPhysics(mtxloc,	params.fStiffnessScale, params.bCopyJointVelocities, velInitial);
 	if (pPhysEntity)
 	{
 		// Store current velocity.

@@ -719,7 +719,7 @@ int ResourceParticleParams::LoadResources(const char* pEffectName)
 {
 	// Load only what is not yet loaded. Check everything, but caller may check params.bResourcesLoaded first.
 	// Call UnloadResources to force unload/reload.
-	LOADING_TIME_PROFILE_SECTION(gEnv->pSystem);
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY)(gEnv->pSystem);
 
 	if (!bEnabled)
 	{

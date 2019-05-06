@@ -28,6 +28,8 @@ COpenProjectPanel::COpenProjectPanel(CSelectProjectDialog* pParent, bool runOnSa
 	, m_pTreeView(new QAdvancedTreeView)
 	, m_pThumbnailView(new QThumbnailsView(nullptr, false, this))
 {
+	m_pMainLayout->setMargin(0);
+	m_pMainLayout->setSpacing(0);
 	setLayout(m_pMainLayout);
 
 	m_pSortedModel->setSourceModel(m_pModel);
@@ -43,14 +45,24 @@ COpenProjectPanel::COpenProjectPanel(CSelectProjectDialog* pParent, bool runOnSa
 
 void COpenProjectPanel::CreateSearchPanel()
 {
+
+	QWidget* pSearchBoxContainer = new QWidget();
+	pSearchBoxContainer->setObjectName("SearchBoxContainer");
+
+	QHBoxLayout* pSearchBoxLayout = new QHBoxLayout();
+	pSearchBoxLayout->setAlignment(Qt::AlignTop);
+	pSearchBoxLayout->setMargin(0);
+	pSearchBoxLayout->setSpacing(0);
+
 	QSearchBox* pSearchBox = new QSearchBox(this);
 	pSearchBox->EnableContinuousSearch(true);
 	pSearchBox->SetModel(m_pSortedModel);
 
-	QHBoxLayout* pLayout = new QHBoxLayout;
-	pLayout->addWidget(pSearchBox);
 
-	m_pMainLayout->addLayout(pLayout);
+	pSearchBoxLayout->addWidget(pSearchBox);
+	pSearchBoxContainer->setLayout(pSearchBoxLayout);
+
+	m_pMainLayout->addWidget(pSearchBoxContainer);
 }
 
 void COpenProjectPanel::CreateViews()
@@ -90,11 +102,14 @@ void COpenProjectPanel::CreateViews()
 	connect(pView, &QAbstractItemView::activated, this, &COpenProjectPanel::OpenProject);
 
 	QHBoxLayout* pLayout = new QHBoxLayout;
+	pLayout->setMargin(0);
+	pLayout->setSpacing(0);
 	pLayout->addWidget(m_pTreeView);
 	pLayout->addWidget(m_pThumbnailView);
 
 	QVBoxLayout* pButtonsLayout = new QVBoxLayout;
 	pButtonsLayout->setMargin(0);
+	pButtonsLayout->setSpacing(0);
 	pButtonsLayout->addSpacerItem(new QSpacerItem(0, 0, QSizePolicy::Minimum, QSizePolicy::Expanding));
 
 	QButtonGroup* pViewModeButtons = new QButtonGroup(this);
@@ -149,6 +164,8 @@ void COpenProjectPanel::CreateDialogButtons(bool runOnSandboxInit)
 	connect(pQuitBtn, SIGNAL(clicked()), m_pParent, SLOT(reject()));
 
 	QHBoxLayout* pButtonsLayout = new QHBoxLayout;
+	pButtonsLayout->setMargin(0);
+	pButtonsLayout->setSpacing(0);
 	pButtonsLayout->addWidget(m_pAddProjectBtn);
 	pButtonsLayout->addStretch();
 	pButtonsLayout->addWidget(m_pOpenProjectBtn, 0, Qt::AlignRight);
@@ -311,4 +328,12 @@ void COpenProjectPanel::keyPressEvent(QKeyEvent* pEvent)
 	}
 	
 	QWidget::keyPressEvent(pEvent);
+}
+
+void COpenProjectPanel::paintEvent(QPaintEvent*)
+{
+	QStyleOption styleOption;
+	styleOption.init(this);
+	QPainter painter(this);
+	style()->drawPrimitive(QStyle::PE_Widget, &styleOption, &painter, this);
 }

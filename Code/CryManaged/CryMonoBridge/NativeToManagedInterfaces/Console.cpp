@@ -7,7 +7,7 @@
 #include "Wrappers/MonoClass.h"
 #include "Wrappers/MonoString.h"
 
-#include <CrySystem/IConsole.h>
+#include <CrySystem/ConsoleRegistration.h>
 
 static void AddConsoleCommandFunction(ConsoleCommandFunc consoleCommandFunc, MonoInternals::MonoString* commandName, int nFlags, MonoInternals::MonoString* sHelp, bool isManaged)
 {

@@ -532,7 +532,7 @@ void CSystem::RemoveRequestListener(void (*func)(SRequestInfo const* const), voi
 //////////////////////////////////////////////////////////////////////////
 void CSystem::ExternalUpdate()
 {
-	CRY_PROFILE_REGION(PROFILE_AUDIO, "Audio: External Update");
+	CRY_PROFILE_SECTION(PROFILE_AUDIO, "Audio: External Update");
 
 	CRY_ASSERT(gEnv->mMainThreadId == CryGetCurrentThreadId());
 	CRequest request;
@@ -795,7 +795,7 @@ bool CSystem::OnInputEvent(SInputEvent const& event)
 //////////////////////////////////////////////////////////////////////////
 void CSystem::InternalUpdate()
 {
-	CRY_PROFILE_REGION(PROFILE_AUDIO, "Audio: Internal Update");
+	CRY_PROFILE_SECTION(PROFILE_AUDIO, "Audio: Internal Update");
 
 	if (m_lastExternalThreadFrameId != m_externalThreadFrameId)
 	{
@@ -828,7 +828,7 @@ void CSystem::InternalUpdate()
 	else
 	{
 		// If we're faster than the external thread let's wait to make room for other threads.
-		CRY_PROFILE_REGION_WAITING(PROFILE_AUDIO, "Wait - Audio Update");
+		CRY_PROFILE_SECTION_WAITING(PROFILE_AUDIO, "Wait - Audio Update");
 
 		// The external thread will wake the audio thread up effectively syncing it to itself.
 		// If not however, the audio thread will execute at a minimum of roughly 30 fps.
@@ -1433,7 +1433,7 @@ void CSystem::Log(ELogType const type, char const* const szFormat, ...)
 #if defined(CRY_AUDIO_USE_DEBUG_CODE)
 	if (szFormat != nullptr && szFormat[0] != '\0' && gEnv->pLog->GetVerbosityLevel() != -1)
 	{
-		CRY_PROFILE_REGION(PROFILE_AUDIO, "CSystem::Log");
+		CRY_PROFILE_SECTION(PROFILE_AUDIO, "CSystem::Log");
 
 		char buffer[256];
 		va_list ArgList;

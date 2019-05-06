@@ -794,7 +794,10 @@ function(CryLauncher target)
 	elseif(NOT ANDROID)
 		set_property(TARGET ${THIS_PROJECT} PROPERTY OUTPUT_NAME "${OPTION_LAUNCHER_EXECUTABLE}")	
 	endif()
-
+	if (DURANGO)
+		# Set empty so the output directory will default to the solution directory
+		set_property(TARGET ${target} PROPERTY ARCHIVE_OUTPUT_DIRECTORY "")	
+	endif()
 	if(OPTION_STATIC_LINKING)
 		use_scaleform()
 		target_compile_definitions(${THIS_PROJECT} PRIVATE _LIB -DCRY_IS_MONOLITHIC_BUILD)

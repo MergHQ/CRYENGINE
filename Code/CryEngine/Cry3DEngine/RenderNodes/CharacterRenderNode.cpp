@@ -556,7 +556,7 @@ void CCharacterRenderNode::UpdateStreamingPriority(const SUpdateStreamingPriorit
 		bDrawNear = true;
 	}
 
-	CRY_PROFILE_REGION(PROFILE_3DENGINE, "UpdateObjectsStreamingPriority_PrecacheCharacter");
+	CRY_PROFILE_SECTION(PROFILE_3DENGINE, "UpdateObjectsStreamingPriority_PrecacheCharacter");
 
 	const SRenderingPassInfo& passInfo = *streamingContext.pPassInfo;
 	// If the object is in camera space, don't use the prediction position.

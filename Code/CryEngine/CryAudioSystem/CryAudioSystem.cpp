@@ -9,6 +9,7 @@
 #include <CrySystem/IEngineModule.h>
 #include <CryExtension/ICryFactory.h>
 #include <CryExtension/ClassWeaver.h>
+#include <CrySystem/ConsoleRegistration.h>
 
 #if defined(CRY_AUDIO_USE_DEBUG_CODE)
 	#include <CryGame/IGameFramework.h>

@@ -57,6 +57,8 @@ namespace Cry
 				virtual const DynArray<IAccount*>& GetMutedAccounts() const override;
 #endif // CRY_GAMEPLATFORM_EXPERIMENTAL
 				virtual CAccount* GetAccountById(const AccountIdentifier& accountId) const override;
+				virtual void AddAccountToLocalSession(const AccountIdentifier& accountId) override {};
+				virtual void RemoveAccountFromLocalSession(const AccountIdentifier& accountId) override {};
 				virtual bool IsFriendWith(const AccountIdentifier& accountId) const override;
 				virtual EFriendRelationship GetFriendRelationship(const AccountIdentifier& accountId) const override;
 
@@ -87,6 +89,9 @@ namespace Cry
 
 				virtual bool RequestUserInformation(const AccountIdentifier& accountId, UserInformationMask info) override;
 				virtual bool IsLoggedIn() const override;
+
+				virtual bool HasPermission(const AccountIdentifier& accountId, EPermission permission) const override { return true; }
+				virtual bool HasPrivacyPermission(const AccountIdentifier& accountId, const AccountIdentifier& targetAccountId, EPrivacyPermission permission) const override { return true; };
 				// ~IService
 
 			protected:
@@ -121,8 +126,7 @@ namespace Cry
 				mutable std::vector<std::unique_ptr<CAccount>> m_accounts;
 				mutable DynArray<IAccount*> m_friends;
 #if CRY_GAMEPLATFORM_EXPERIMENTAL
-				DynArray<IAccount*> m_blockedAccounts;
-				DynArray<IAccount*> m_mutedAccounts;
+				mutable DynArray<IAccount*> m_blockedAccounts;
 #endif // CRY_GAMEPLATFORM_EXPERIMENTAL
 
 				std::vector<IListener*> m_listeners;

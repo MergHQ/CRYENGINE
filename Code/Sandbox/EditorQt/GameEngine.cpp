@@ -50,7 +50,6 @@
 #include <CryAISystem/IAgent.h>
 #include <CryAISystem/IAISystem.h>
 #include <CryAnimation/ICryAnimation.h>
-#include <CryAudio/Dialog/IDialogSystem.h>
 #include <CryCore/Platform/platform_impl.inl>
 #include <CryDynamicResponseSystem/IDynamicResponseSystem.h>
 #include <CryEntitySystem/IEntitySystem.h>
@@ -65,6 +64,7 @@
 #include <CryScriptSystem/IScriptSystem.h>
 #include <CrySystem/File/ICryPak.h>
 #include <CrySystem/ICryPluginManager.h>
+#include <CrySystem/ConsoleRegistration.h>
 #include <CrySystem/ITimer.h>
 #include <CryThreading/IJobManager.h>
 #include <IGameRulesSystem.h>
@@ -438,7 +438,7 @@ bool CGameEngine::Init(bool bPreviewMode, bool bTestMode, bool bShaderCacheGen, 
 
 void CGameEngine::InitAdditionalEngineComponents()
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
 	if (HMODULE hGameModule = (HMODULE)gEnv->pGameFramework->GetGameModuleHandle())
 	{
@@ -457,7 +457,7 @@ void CGameEngine::InitAdditionalEngineComponents()
 	InitializeEditorGame();
 
 	{
-		LOADING_TIME_PROFILE_SECTION_NAMED("CGameEngine::InitAdditionalEngineComponents - lua entity scripts");
+		CRY_PROFILE_SECTION(PROFILE_LOADING_ONLY, "CGameEngine::InitAdditionalEngineComponents - lua entity scripts");
 		// Execute Editor.lua override file.
 		IScriptSystem* pScriptSystem = m_pISystem->GetIScriptSystem();
 		pScriptSystem->ExecuteFile("Editor.Lua", false);
@@ -470,28 +470,28 @@ void CGameEngine::InitAdditionalEngineComponents()
 
 	if (pEditor->GetFlowGraphManager())
 	{
-		LOADING_TIME_PROFILE_SECTION_NAMED("CGameEngine::InitAdditionalEngineComponents - FG init");
+		CRY_PROFILE_SECTION(PROFILE_LOADING_ONLY, "CGameEngine::InitAdditionalEngineComponents - FG init");
 		SplashScreen::SetText("Loading Flowgraph...");
 		pEditor->GetFlowGraphManager()->Init();
 	}
 
 	if (pEditor->GetMatFxGraphManager())
 	{
-		LOADING_TIME_PROFILE_SECTION_NAMED("CGameEngine::InitAdditionalEngineComponents - Material FX init");
+		CRY_PROFILE_SECTION(PROFILE_LOADING_ONLY, "CGameEngine::InitAdditionalEngineComponents - Material FX init");
 		SplashScreen::SetText("Loading Material Effects Flowgraphs...");
 		pEditor->GetMatFxGraphManager()->Init();
 	}
 
 	if (pEditor->GetFlowGraphDebuggerEditor())
 	{
-		LOADING_TIME_PROFILE_SECTION_NAMED("CGameEngine::InitAdditionalEngineComponents - Init FG debugger");
+		CRY_PROFILE_SECTION(PROFILE_LOADING_ONLY, "CGameEngine::InitAdditionalEngineComponents - Init FG debugger");
 		SplashScreen::SetText("Initializing Flowgraph Debugger...");
 		pEditor->GetFlowGraphDebuggerEditor()->Init();
 	}
 
 	if (pEditor->GetFlowGraphModuleManager())
 	{
-		LOADING_TIME_PROFILE_SECTION_NAMED("CGameEngine::InitAdditionalEngineComponents - Init FG modules");
+		CRY_PROFILE_SECTION(PROFILE_LOADING_ONLY, "CGameEngine::InitAdditionalEngineComponents - Init FG modules");
 		SplashScreen::SetText("Initializing Flowgraph Module Manager...");
 		pEditor->GetFlowGraphModuleManager()->Init();
 	}
@@ -500,7 +500,7 @@ void CGameEngine::InitAdditionalEngineComponents()
 	CPrefabManager* const pPrefabManager = pEditor->GetPrefabManager();
 	if (pPrefabManager)
 	{
-		LOADING_TIME_PROFILE_SECTION_NAMED("CGameEngine::InitAdditionalEngineComponents - Init Prefab events");
+		CRY_PROFILE_SECTION(PROFILE_LOADING_ONLY, "CGameEngine::InitAdditionalEngineComponents - Init Prefab events");
 		SplashScreen::SetText("Initializing Prefab Events...");
 		CPrefabEvents* pPrefabEvents = pPrefabManager->GetPrefabEvents();
 		CRY_ASSERT(pPrefabEvents != NULL);
@@ -513,14 +513,14 @@ void CGameEngine::InitAdditionalEngineComponents()
 
 	if (pEditor->GetAI())
 	{
-		LOADING_TIME_PROFILE_SECTION_NAMED("CGameEngine::InitAdditionalEngineComponents - Init AI Actions, behaviours, smart objects");
+		CRY_PROFILE_SECTION(PROFILE_LOADING_ONLY, "CGameEngine::InitAdditionalEngineComponents - Init AI Actions, behaviours, smart objects");
 		SplashScreen::SetText("Initializing AI Actions and Smart Objects...");
 		pEditor->GetAI()->Init(m_pISystem);
 	}
 
 	if (pEditor->GetUIManager())
 	{
-		LOADING_TIME_PROFILE_SECTION_NAMED("CGameEngine::InitAdditionalEngineComponents - Init UI Actions");
+		CRY_PROFILE_SECTION(PROFILE_LOADING_ONLY, "CGameEngine::InitAdditionalEngineComponents - Init UI Actions");
 		SplashScreen::SetText("Loading UI Actions...");
 		pEditor->GetUIManager()->Init();
 	}
@@ -528,7 +528,7 @@ void CGameEngine::InitAdditionalEngineComponents()
 	CCustomActionsEditorManager* const pCustomActionsManager = pEditor->GetCustomActionManager();
 	if (pCustomActionsManager)
 	{
-		LOADING_TIME_PROFILE_SECTION_NAMED("CGameEngine::InitAdditionalEngineComponents - Init UI Actions");
+		CRY_PROFILE_SECTION(PROFILE_LOADING_ONLY, "CGameEngine::InitAdditionalEngineComponents - Init UI Actions");
 		SplashScreen::SetText("Loading Custom Actions...");
 		pCustomActionsManager->Init(m_pISystem);
 	}
@@ -539,7 +539,7 @@ void CGameEngine::InitAdditionalEngineComponents()
 
 void CGameEngine::InitializeEditorGame()
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 	if (m_pEditorGame != nullptr)
 	{
 		m_pEditorGame->Init(m_pISystem, m_pGameToEditorInterface);
@@ -559,7 +559,7 @@ void CGameEngine::InitializeEditorGame()
 
 bool CGameEngine::StartGameContext()
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 	if (gEnv->pGameFramework->StartedGameContext())
 		return true;
 
@@ -630,7 +630,7 @@ bool CGameEngine::LoadLevel(
   bool bDeleteAIGraph,
   bool bReleaseResources)
 {
-	LOADING_TIME_PROFILE_SECTION(GetIEditorImpl()->GetSystem());
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY)(GetIEditorImpl()->GetSystem());
 	m_bLevelLoaded = false;
 	m_missionName = mission;
 	CryLog("Loading map '%s' into engine...", (const char*)m_levelPath);
@@ -993,7 +993,7 @@ void CGameEngine::SetGameMode(bool bInGame)
 		return;
 
 	LOADING_TIME_PROFILE_AUTO_SESSION(bInGame ? "SetGameModeGame" : "SetGameModeEditor");
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
 	// Enables engine to know about that.
 	gEnv->SetIsEditorGameMode(bInGame);
@@ -1352,7 +1352,7 @@ void CGameEngine::ExportAiData(
 
 void CGameEngine::ResetResources()
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 	if (gEnv->pEntitySystem)
 	{
 		/// Delete all entities.
@@ -1514,10 +1514,6 @@ void CGameEngine::Update()
 				pFlowSystem->Update();
 			}
 
-			if (IDialogSystem* pDialogSystem = gEnv->pGameFramework->GetIDialogSystem())
-			{
-				pDialogSystem->Update(gEnv->pTimer->GetFrameTime());
-			}
 			const CRenderViewport* gameViewport = static_cast<CRenderViewport*>(GetIEditorImpl()->GetViewManager()->GetGameViewport());
 			CRY_ASSERT(gameViewport);
 			gEnv->pSystem->DoFrame(gameViewport->GetDisplayContextKey(), SGraphicsPipelineKey::BaseGraphicsPipelineKey, updateFlags);
@@ -1547,7 +1543,7 @@ void CGameEngine::OnEditorNotifyEvent(EEditorNotifyEvent event)
 	case eNotify_OnBeginNewScene:
 	case eNotify_OnBeginSceneOpen:
 		{
-			LOADING_TIME_PROFILE_SECTION_NAMED("CGameEngine::OnEditorNotifyEvent() OnBeginNewScene/SceneOpen");
+			CRY_PROFILE_SECTION(PROFILE_LOADING_ONLY, "CGameEngine::OnEditorNotifyEvent() OnBeginNewScene/SceneOpen");
 
 			StartGameContext();
 
@@ -1570,7 +1566,7 @@ void CGameEngine::OnEditorNotifyEvent(EEditorNotifyEvent event)
 		break;
 	case eNotify_OnEndSceneOpen:
 		{
-			LOADING_TIME_PROFILE_SECTION_NAMED("CGameEngine::OnEditorNotifyEvent() OnEndSceneOpen");
+			CRY_PROFILE_SECTION(PROFILE_LOADING_ONLY, "CGameEngine::OnEditorNotifyEvent() OnEndSceneOpen");
 			if (m_pEditorGame)
 			{
 				// This method must be called so we will have a player to start game mode later.
@@ -1587,7 +1583,7 @@ void CGameEngine::OnEditorNotifyEvent(EEditorNotifyEvent event)
 		}
 	case eNotify_OnEndNewScene: // intentional fall-through?
 		{
-			LOADING_TIME_PROFILE_SECTION_NAMED("CGameEngine::OnEditorNotifyEvent() OnEndNewScene");
+			CRY_PROFILE_SECTION(PROFILE_LOADING_ONLY, "CGameEngine::OnEditorNotifyEvent() OnEndNewScene");
 
 			if (m_pEditorGame)
 			{
@@ -1605,7 +1601,7 @@ void CGameEngine::OnEditorNotifyEvent(EEditorNotifyEvent event)
 		break;
 	case eNotify_OnClearLevelContents:
 		{
-			LOADING_TIME_PROFILE_SECTION_NAMED("CGameEngine::OnEditorNotifyEvent() OnClearLevelContents");
+			CRY_PROFILE_SECTION(PROFILE_LOADING_ONLY, "CGameEngine::OnEditorNotifyEvent() OnClearLevelContents");
 
 			SetGameMode(false);
 

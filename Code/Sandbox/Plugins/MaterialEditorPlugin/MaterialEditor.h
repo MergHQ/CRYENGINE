@@ -21,12 +21,8 @@ public:
 	virtual const char*                           GetEditorName() const override { return "Material Editor"; }
 
 	virtual bool                                  OnOpenAsset(CAsset* pAsset) override;
-	virtual bool                                  OnSaveAsset(CEditableAsset& editAsset) override;
 	virtual void                                  OnCloseAsset() override;
 	virtual void                                  OnDiscardAssetChanges(CEditableAsset& editAsset) override;
-
-	virtual bool                                  AllowsInstantEditing() const override { return true; }
-
 	virtual std::unique_ptr<IAssetEditingSession> CreateEditingSession() override;
 
 	void                                          SetMaterial(CMaterial* pMaterial);
@@ -54,10 +50,9 @@ public:
 	void OnRemoveSubMaterial(int slot);
 
 private:
-
 	void         InitMenuBar();
-	void         CreateToolbar();
-	virtual void CreateDefaultLayout(CDockableContainer* pSender) override;
+	virtual void OnInitialize() override;
+	virtual void OnCreateDefaultLayout(CDockableContainer* pSender, QWidget* pAssetBrowser) override;
 	virtual void OnLayoutChange(const QVariantMap& state) override;
 	void         BroadcastPopulateInspector();
 

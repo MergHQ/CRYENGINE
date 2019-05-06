@@ -91,8 +91,10 @@ void STexStreamOutState::CopyMips()
 	{
 		const int8 nOldMipOffset = m_nStartMip - tp->m_nMinMipVidUploaded;
 		const int8 nNumMips = tp->GetNumMips() - m_nStartMip;
+
 	#if CRY_PLATFORM_DURANGO && (CRY_RENDERER_DIRECT3D >= 110) && (CRY_RENDERER_DIRECT3D < 120)
 		m_pNewPoolItem->m_pDevTexture->InitD3DTexture();
+
 		m_copyFence = CTexture::StreamCopyMipsTexToTex_MoveEngine(tp->m_pFileTexMips->m_pPoolItem, 0 + nOldMipOffset, m_pNewPoolItem, 0, nNumMips);
 	#else
 		CTexture::StreamCopyMipsTexToTex(tp->m_pFileTexMips->m_pPoolItem, 0 + nOldMipOffset, m_pNewPoolItem, 0, nNumMips);
@@ -288,17 +290,12 @@ void CTexture::StreamCopyMipsTexToMem(int8 nStartMip, int8 nEndMip, bool bToDevi
 		assert(pDevTexture == m_pFileTexMips->m_pPoolItem->m_pDevTexture);
 		nTexMips = m_pFileTexMips->m_pPoolItem->m_pOwner->m_nMips;
 	}
+
 	if (bToDevice && pNewPoolItem)
 	{
-		if (m_pDevTexture)
-			m_pDevTexture->SetOwner(NULL);
-
 		assert(pNewPoolItem->m_pDevTexture);
 		pDevTexture = pNewPoolItem->m_pDevTexture;
 		nTexMips = pNewPoolItem->m_pOwner->m_nMips;
-
-		if (m_pDevTexture)
-			m_pDevTexture->SetOwner(this);
 	}
 
 	if (!pDevTexture)
@@ -317,7 +314,6 @@ void CTexture::StreamCopyMipsTexToMem(int8 nStartMip, int8 nEndMip, bool bToDevi
 		// If a pool item was provided, it would have a valid dev texture, so we shouldn't have ended up here..
 		assert(!bToDevice || !pNewPoolItem);
 		SetDevTexture(pDevTexture);
-		m_pDevTexture->SetOwner(this);
 	}
 
 	if (CRenderer::CV_r_texturesstreamingnoupload && bToDevice)
@@ -345,7 +341,7 @@ void CTexture::StreamCopyMipsTexToMem(int8 nStartMip, int8 nEndMip, bool bToDevi
 				if (mp->DataArray)
 				{
 #ifndef _RELEASE
-					CRY_PROFILE_REGION_WAITING(PROFILE_RENDERER, "update texture");
+					CRY_PROFILE_SECTION_WAITING(PROFILE_RENDERER, "update texture");
 					CryInterlockedAdd(&CTexture::s_nTexturesDataBytesUploaded, mh[nLod].m_SideSize);					
 #endif
 					// TODO: batch upload (instead of loop)
@@ -377,7 +373,7 @@ void CTexture::StreamCopyMipsTexToMem(int8 nStartMip, int8 nEndMip, bool bToDevi
 				const uint32 nRows = nMipSize / nRowPitch;
 				assert(nMipSize % nRowPitch == 0);
 
-				CRY_PROFILE_REGION_WAITING(PROFILE_RENDERER, "update texture");
+				CRY_PROFILE_SECTION_WAITING(PROFILE_RENDERER, "update texture");
 
 				pDevTexture->DownloadToStagingResource(D3D11CalcSubresource(nDevTexMip, iSide, nTexMips), [&](void* pData, uint32 rowPitch, uint32 slicePitch)
 				{
@@ -447,7 +443,7 @@ ID3D11CommandList* CTexture::StreamCreateDeferred(int8 nStartMip, int8 nEndMip, 
 					const int nVSize = m_nHeight >> nLod;
 					const uint32 nRowPitch   = CTexture::TextureDataSize(nUSize,      1, 1, 1, 1, m_eDstFormat, m_eSrcTileMode);
 					const uint32 nSlicePitch = CTexture::TextureDataSize(nUSize, nVSize, 1, 1, 1, m_eDstFormat, m_eSrcTileMode);
-					CRY_PROFILE_REGION_WAITING(PROFILE_RENDERER, "update texture");
+					CRY_PROFILE_SECTION_WAITING(PROFILE_RENDERER, "update texture");
 					{
 						s_pStreamDeferredCtx->UpdateSubresource(pID3DTexture, D3D11CalcSubresource(nDevTexMip, iSide, nTexMips), NULL, &mp->DataArray[0], nRowPitch, nSlicePitch);
 					}
@@ -508,12 +504,15 @@ void CTexture::StreamRemoveFromPool()
 
 	s_pPoolMgr->ReleaseItem(m_pFileTexMips->m_pPoolItem);
 
-	m_pFileTexMips->m_pPoolItem = NULL;
+	m_pFileTexMips->m_pPoolItem = nullptr;
 	m_nDevTextureSize = 0;
 	m_nPersistentSize = 0;
+
 	if (m_pDevTexture)
-		m_pDevTexture->SetOwner(NULL);
-	m_pDevTexture = NULL;
+	{
+		m_pDevTexture->SetOwner(nullptr);
+		m_pDevTexture = nullptr;
+	}
 
 	SetMinLoadedMip(MAX_MIP_LEVELS);
 	m_nMinMipVidActive = MAX_MIP_LEVELS;
@@ -552,23 +551,16 @@ void CTexture::StreamAssignPoolItem(STexPoolItem* pItem, int8 nMinMip)
 		StreamRemoveFromPool();
 
 		m_pFileTexMips->m_pPoolItem = pItem;
-		m_nDevTextureSize = pItemOwner->m_nDevTextureSize;
-		m_nPersistentSize = nPersSize;
 		pItem->m_pTex = this;
 	}
 
 #if CRY_PLATFORM_DURANGO && (CRY_RENDERER_DIRECT3D >= 110) && (CRY_RENDERER_DIRECT3D < 120)
 	pItem->m_pDevTexture->InitD3DTexture();
 #endif
+	SetDevTexture(pItem->m_pDevTexture);
 
-	SAFE_RELEASE(m_pDevTexture);
-	m_pDevTexture = pItem->m_pDevTexture;
-	if (m_pDevTexture)
-		m_pDevTexture->SetOwner(this);
-
-#if CRY_PLATFORM_DURANGO && (CRY_RENDERER_DIRECT3D >= 110) && (CRY_RENDERER_DIRECT3D < 120)
-	m_nDeviceAddressInvalidated = m_pDevTexture->GetBaseAddressInvalidated();
-#endif
+	m_nDevTextureSize = pItemOwner->m_nDevTextureSize;
+	m_nPersistentSize = nPersSize;
 
 	SetMinLoadedMip(m_nMips - pItemOwner->m_nMips);
 	StreamActivateLod(nMinMip);
@@ -635,8 +627,8 @@ STexPoolItem* CTexture::StreamGetPoolItem(int8 nStartMip, int8 nMips, bool bShou
 		}
 	}
 
-	MEMSTAT_CONTEXT(EMemStatContextType::Texture, "Creating Texture");
-	MEMSTAT_CONTEXT_FMT(EMemStatContextType::Texture, "%s %ix%ix%i %08x", m_SrcName.c_str(), m_nWidth, m_nHeight, m_nMips, m_eFlags);
+	MEMSTAT_CONTEXT(EMemStatContextType::Texture, "Streaming Texture");
+	MEMSTAT_CONTEXT_FMT(EMemStatContextType::Texture, "%s %ix%ix%i %i %08x", m_SrcName.c_str(), m_nWidth, m_nHeight, m_nDepth * m_nArraySize, m_nMips, m_eFlags);
 
 	STextureLayout pLayout = GetLayout();
 	STexturePayload pPayload;

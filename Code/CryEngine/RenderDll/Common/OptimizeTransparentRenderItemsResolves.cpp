@@ -254,31 +254,35 @@ std::size_t CRenderView::OptimizeTransparentRenderItemsResolves(STransparentSegm
 	return resolves_count;
 }
 
+DECLARE_JOB("OptimizeTransparentRenderItemsResolvesJob", TOptimizeTransparentRenderItemsResolvesJob, CRenderView::OptimizeTransparentRenderItemsResolvesJob);
+void CRenderView::OptimizeTransparentRenderItemsResolvesJob()
+{
+	static constexpr ERenderListID refractiveLists[] = { EFSLIST_TRANSP_BW, EFSLIST_TRANSP_AW, EFSLIST_TRANSP_NEAREST };
+
+	std::size_t resolves_count = 0;
+	for (const auto &list : refractiveLists)
+	{
+		if (!HasResolveForList(list))
+			continue;
+
+		auto& segments = GetTransparentSegments(list);
+		auto& renderItems = GetRenderItems(list);
+
+		// Clear list
+		segments = {};
+		// Pre-compute segments
+		resolves_count = OptimizeTransparentRenderItemsResolves(segments, renderItems, resolves_count);
+	}
+}
+
 void CRenderView::StartOptimizeTransparentRenderItemsResolvesJob()
 {
 	if (!CRendererCVars::CV_r_Refraction || CRendererCVars::CV_r_RefractionPartialResolveMode == 0)
 		return;
 
-	gEnv->pJobManager->AddLambdaJob("OptimizeTransparentRenderItemsResolvesJob", [this]()
-		{
-			static constexpr ERenderListID refractiveLists[] = { EFSLIST_TRANSP_BW, EFSLIST_TRANSP_AW, EFSLIST_TRANSP_NEAREST };
-
-			std::size_t resolves_count = 0;
-			for (const auto &list : refractiveLists)
-			{
-				if (!HasResolveForList(list))
-					continue;
-
-				auto& segments = GetTransparentSegments(list);
-				auto& renderItems = GetRenderItems(list);
-
-				// Clear list
-				segments = {};
-				// Pre-compute segments
-				resolves_count = OptimizeTransparentRenderItemsResolves(segments, renderItems, resolves_count);
-			}
-		},
-		JobManager::eRegularPriority, &m_optimizeTransparentRenderItemsResolvesJobStatus);
+	TOptimizeTransparentRenderItemsResolvesJob job;
+	job.SetClassInstance(this);
+	job.Run(JobManager::eRegularPriority, &m_optimizeTransparentRenderItemsResolvesJobStatus);
 }
 
 void CRenderView::WaitForOptimizeTransparentRenderItemsResolvesJob() const

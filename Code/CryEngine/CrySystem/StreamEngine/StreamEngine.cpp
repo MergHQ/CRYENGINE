@@ -170,7 +170,7 @@ size_t CStreamEngine::StartBatchRead(IReadStreamPtr* pStreamsOut, const StreamRe
 				CReadStream* pStream;
 
 				{
-					CRY_PROFILE_REGION(PROFILE_SYSTEM, "CStreamEngine::StartBatchRead_AllocReadStream");
+					CRY_PROFILE_SECTION(PROFILE_SYSTEM, "CStreamEngine::StartBatchRead_AllocReadStream");
 					pStream = CReadStream::Allocate(this, args.tSource, args.szFile, args.pCallback, &args.params);
 				}
 
@@ -198,7 +198,7 @@ size_t CStreamEngine::StartBatchRead(IReadStreamPtr* pStreamsOut, const StreamRe
 			}
 
 			{
-				CRY_PROFILE_REGION(PROFILE_SYSTEM, "CStreamEngine::StartBatchRead_PushStreams");
+				CRY_PROFILE_SECTION(PROFILE_SYSTEM, "CStreamEngine::StartBatchRead_PushStreams");
 				CryMT::set<CReadStream_AutoPtr>::AutoLock lock(m_streams.get_lock());
 				for (size_t i = 0; i < nStreamsInBatch; ++i)
 					m_streams.insert(pStreams[i]);
@@ -207,13 +207,13 @@ size_t CStreamEngine::StartBatchRead(IReadStreamPtr* pStreamsOut, const StreamRe
 			CAsyncIOFileRequest* pFileReqs[MaxStreamsPerBatch];
 
 			{
-				CRY_PROFILE_REGION(PROFILE_SYSTEM, "CStreamEngine::StartBatchRead_CreateRequests");
+				CRY_PROFILE_SECTION(PROFILE_SYSTEM, "CStreamEngine::StartBatchRead_CreateRequests");
 				for (size_t i = 0; i < nStreamsInBatch; ++i)
 					pFileReqs[i] = pStreams[i]->CreateFileRequest();
 			}
 
 			{
-				CRY_PROFILE_REGION(PROFILE_SYSTEM, "CStreamEngine::StartBatchRead_PushRequests");
+				CRY_PROFILE_SECTION(PROFILE_SYSTEM, "CStreamEngine::StartBatchRead_PushRequests");
 				for (size_t i = 0; i < nStreamsInBatch; ++i)
 				{
 					CAsyncIOFileRequest* pFileRequest = pFileReqs[i];
@@ -536,7 +536,7 @@ void CStreamEngine::Update()
 void CStreamEngine::UpdateAndWait(bool bAbortAll)
 {
 	// for stream->Wait sync
-	LOADING_TIME_PROFILE_SECTION(gEnv->pSystem);
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY)(gEnv->pSystem);
 
 	if (bAbortAll)
 	{

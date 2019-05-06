@@ -97,7 +97,7 @@ CharacterManager::~CharacterManager()
 //////////////////////////////////////////////////////////////////////////
 void CharacterManager::PreloadLevelModels()
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 	MEMSTAT_CONTEXT(EMemStatContextType::Other, "Preload Characters");
 
 	//bool bCdfCacheExist = GetISystem()->GetIResourceManager()->LoadLevelCachePak( CDF_LEVEL_CACHE_PAK,"" ); // Keep it open until level end.
@@ -126,7 +126,7 @@ void CharacterManager::PreloadLevelModels()
 //////////////////////////////////////////////////////////////////////////
 void CharacterManager::PreloadModelsCHR()
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 	MEMSTAT_CONTEXT(EMemStatContextType::Other, "Preload CHR");
 
 	CryLog("===== Preloading Characters ====");
@@ -223,7 +223,7 @@ void CharacterManager::PreloadModelsCHR()
 
 void CharacterManager::PreloadModelsCGA()
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 	MEMSTAT_CONTEXT(EMemStatContextType::Other, "Preload CGA");
 
 	CryLog("===== Preloading CGAs ====");
@@ -305,7 +305,7 @@ void CharacterManager::PreloadModelsCGA()
 //////////////////////////////////////////////////////////////////////////
 void CharacterManager::PreloadModelsCDF()
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 	MEMSTAT_CONTEXT(EMemStatContextType::Other, "Preload CDF");
 
 	CryLog("===== Preloading CDFs ====");
@@ -393,7 +393,7 @@ ICharacterInstance* CharacterManager::CreateInstance(const char* szFilePath, uin
 
 ICharacterInstance* CharacterManager::CreateSKELInstance(const char* strFilePath, uint32 nLoadingFlags)
 {
-	LOADING_TIME_PROFILE_SECTION(g_pISystem);
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY)(g_pISystem);
 	CDefaultSkeleton* pModelSKEL = CheckIfModelSKELLoaded(strFilePath, nLoadingFlags);
 	if (pModelSKEL == 0)
 	{
@@ -448,7 +448,7 @@ ISkin* CharacterManager::LoadModelSKIN(const char* szFilePath, uint32 nLoadingFl
 	uint32 isSKIN = stricmp(fileExt, CRY_SKIN_FILE_EXT) == 0;
 	if (isSKIN)
 	{
-		LOADING_TIME_PROFILE_SECTION(g_pISystem);
+		CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY)(g_pISystem);
 		CSkin* pModelSKIN = FetchModelSKIN(strFilePath.c_str(), nLoadingFlags);
 		return pModelSKIN;
 	}
@@ -477,7 +477,7 @@ IDefaultSkeleton* CharacterManager::LoadModelSKEL(const char* szFilePath, uint32
 	uint32 isSKEL = stricmp(fileExt, CRY_SKEL_FILE_EXT) == 0;
 	if (isSKEL)
 	{
-		LOADING_TIME_PROFILE_SECTION(g_pISystem);
+		CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY)(g_pISystem);
 		CDefaultSkeleton* pModelSKEL = FetchModelSKEL(strFilePath.c_str(), nLoadingFlags);  //SKEL not in memory, so load it
 		return pModelSKEL;                                                                  //SKIN not in memory, so load it
 	}
@@ -879,7 +879,7 @@ bool CharacterManager::StreamHasCharacterResources(const char* szFilePath, int n
 //////////////////////////////////////////////////////////////////////////
 ICharacterInstance* CharacterManager::CreateCGAInstance(const char* strPath, uint32 nLoadingFlags)
 {
-	LOADING_TIME_PROFILE_SECTION(g_pISystem);
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY)(g_pISystem);
 
 	uint64 membegin = 0;
 	if (Console::GetInst().ca_MemoryUsageLog)
@@ -920,7 +920,7 @@ ICharacterInstance* CharacterManager::CreateCGAInstance(const char* strPath, uin
 
 void CharacterManager::RegisterModelSKEL(CDefaultSkeleton* pDefaultSkeleton, uint32 nLoadingFlags)
 {
-	LOADING_TIME_PROFILE_SECTION(g_pISystem);
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY)(g_pISystem);
 	CDefaultSkeletonReferences dsr;
 	dsr.m_pDefaultSkeleton = pDefaultSkeleton;
 	if ((nLoadingFlags & CA_CharEditModel) == 0)
@@ -1026,7 +1026,7 @@ ICharacterInstance* CharacterManager::GetICharInstanceFromModel(const IDefaultSk
 //---------------------------------------------------------------------------------------------------
 void CharacterManager::RegisterModelSKIN(CSkin* pDefaultSkinning, uint32 nLoadingFlags)
 {
-	LOADING_TIME_PROFILE_SECTION(g_pISystem);
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY)(g_pISystem);
 	CDefaultSkinningReferences dsr;
 	dsr.m_pDefaultSkinning = pDefaultSkinning;
 	if ((nLoadingFlags & CA_CharEditModel) == 0)
@@ -1218,7 +1218,7 @@ namespace Helper
 {
 	int PruneWeldedVertices(SClothGeometry& clothGeometry, std::vector<Vec3>& unweldedVerts, strided_pointer<const Vec3> const& pVertices)
 	{
-		CRY_PROFILE_REGION(PROFILE_ANIMATION, "CharacterManager::Helper::PruneWeldedVertices");
+		CRY_PROFILE_SECTION(PROFILE_ANIMATION, "CharacterManager::Helper::PruneWeldedVertices");
 
 		// look for welded vertices and prune them
 		int nWelded = 0;
@@ -1263,7 +1263,7 @@ namespace Helper
 	template<class T>
 	void WrapVertices(SClothGeometry& clothGeometry, int lod, T pVtx, int nVtx, std::vector<std::vector<int>> const& simAdjTris, mesh_data const& simMesh)
 	{
-		CRY_PROFILE_REGION(PROFILE_ANIMATION, "CharacterManager::Helper::WrapVertices");
+		CRY_PROFILE_SECTION(PROFILE_ANIMATION, "CharacterManager::Helper::WrapVertices");
 
 		SSkinMapEntry* skinMap = new SSkinMapEntry[nVtx];
 		clothGeometry.skinMap[lod] = skinMap;
@@ -1290,7 +1290,7 @@ namespace Helper
 	template<class T0, class T1>
 	void DetermineTangents(SClothGeometry& clothGeometry, int lod, int nTris, const vtx_idx* pIndices, const T0& pVtx, const T1& pUVs)
 	{
-		CRY_PROFILE_REGION(PROFILE_ANIMATION, "CharacterManager::Helper::DetermineTangents");
+		CRY_PROFILE_SECTION(PROFILE_ANIMATION, "CharacterManager::Helper::DetermineTangents");
 
 		// prepare tangent data
 		clothGeometry.tangentData[lod] = new STangentData[nTris];
@@ -1738,7 +1738,7 @@ void CharacterManager::UpdateRendererFrame()
 void CharacterManager::Update(bool bPaused)
 {
 	s_bPaused = bPaused;
-	CRY_PROFILE_REGION(PROFILE_ANIMATION, "CharacterManager::Update");
+	CRY_PROFILE_SECTION(PROFILE_ANIMATION, "CharacterManager::Update");
 	MEMSTAT_CONTEXT(EMemStatContextType::Other, "CharacterManager::Update");
 	ANIMATION_LIGHT_PROFILER();
 
@@ -2887,7 +2887,7 @@ void CharacterManager::ClearBSPACECache()
 
 int32 CharacterManager::LoadCDF(const char* pathname)
 {
-	LOADING_TIME_PROFILE_SECTION_ARGS(pathname);
+	CRY_PROFILE_FUNCTION_ARG(PROFILE_LOADING_ONLY, pathname);
 	XmlNodeRef root = g_pISystem->LoadXmlFromFile(pathname);
 	if (root == 0)
 	{
@@ -2900,7 +2900,7 @@ int32 CharacterManager::LoadCDF(const char* pathname)
 
 int32 CharacterManager::LoadCDFFromXML(XmlNodeRef root, const char* pathname)
 {
-	LOADING_TIME_PROFILE_SECTION(g_pISystem);
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY)(g_pISystem);
 
 	MEMSTAT_CONTEXT(EMemStatContextType::CDF, pathname);
 
@@ -2963,7 +2963,7 @@ int32 CharacterManager::LoadCDFFromXML(XmlNodeRef root, const char* pathname)
 
 ICharacterInstance* CharacterManager::LoadCharacterDefinition(const string pathname, uint32 nLoadingFlags)
 {
-	LOADING_TIME_PROFILE_SECTION_ARGS(pathname.c_str());
+	CRY_PROFILE_FUNCTION_ARG(PROFILE_LOADING_ONLY, pathname.c_str());
 	CRY_DEFINE_ASSET_SCOPE("CDF", pathname.c_str());
 
 	uint32 nLogWarnings = (nLoadingFlags & CA_DisableLogWarnings) == 0;
@@ -3451,7 +3451,7 @@ void CharacterManager::ReloadAllModels()
 
 void CharacterManager::SyncAllAnimations()
 {
-	CRY_PROFILE_REGION(PROFILE_ANIMATION, "CharacterManager::SyncAllAnimations");
+	CRY_PROFILE_SECTION(PROFILE_ANIMATION, "CharacterManager::SyncAllAnimations");
 	ANIMATION_LIGHT_PROFILER();
 	MEMSTAT_CONTEXT(EMemStatContextType::Other, "CharacterManager::SyncAllAnimations");
 
@@ -3531,7 +3531,7 @@ void CharacterManager::UpdateInstances(bool bPause)
 //////////////////////////////////////////////////////////////////////////
 void CharacterManager::LoadAnimationImageFile(const char* filenameCAF, const char* filenameAIM)
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
 	if ((m_IMGLoadedFlags & EIMGLoadedFlags::IMGLoaded) == EIMGLoadedFlags::None)
 	{
@@ -3549,7 +3549,7 @@ void CharacterManager::LoadAnimationImageFile(const char* filenameCAF, const cha
 //////////////////////////////////////////////////////////////////////////
 bool CharacterManager::LoadAnimationImageFileCAF(const char* filenameCAF)
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
 	if (Console::GetInst().ca_UseIMG_CAF == 0)
 	{

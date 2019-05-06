@@ -182,7 +182,7 @@ CSwapChain CSwapChain::CreateSwapChain(IDXGIFactory2ToCall* pDXGIFactory, ID3D11
 
 	DXGISwapChain* pSwapChain = nullptr;
 	{
-		LOADING_TIME_PROFILE_SECTION_NAMED("Xbox -- CRenderDisplayContext::CreateSwapChain: CreateSwapChainForCoreWindow()");
+		CRY_PROFILE_SECTION(PROFILE_LOADING_ONLY, "Xbox -- CRenderDisplayContext::CreateSwapChain: CreateSwapChainForCoreWindow()");
 #if (CRY_RENDERER_DIRECT3D >= 120)
 		IDXGISwapChain1ToCall* pDXGISwapChain = nullptr;
 		HRESULT hr = pDXGIFactory->CreateSwapChainForCoreWindow(pD3D12Device, (IUnknown*)gEnv->pWindow, &swapChainDesc, nullptr, &pDXGISwapChain);

@@ -21,6 +21,7 @@
 	#include "ClientHandler.h"
 	#include "ServerHandler.h"
 	#include <CrySystem/Profilers/IStatoscope.h>
+	#include <CrySystem/ConsoleRegistration.h>
 
 extern "C" void SliceAndSleep(const char* pFunc, int line)
 {

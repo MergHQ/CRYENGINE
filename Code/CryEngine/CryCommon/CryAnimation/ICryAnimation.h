@@ -599,6 +599,9 @@ struct ICharacterInstance : IMeshObj
 	// This is a hack to keep entity attachments in synch.
 	virtual void SetAttachmentLocation_DEPRECATED(const QuatTS& newCharacterLocation) = 0;
 
+	//! Sets character offset inside its owner entity (mostly used to update physics)
+	virtual void SetCharacterOffset(const QuatTS& offs) = 0;
+
 	//! Called when the character is detached (if it was an attachment).
 	virtual void OnDetach() = 0;
 

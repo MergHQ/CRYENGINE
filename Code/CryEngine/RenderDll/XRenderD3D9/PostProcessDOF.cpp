@@ -156,7 +156,7 @@ static Vec4 ToUnitDisk(Vec4& O, float blades, float fstop)
 	return Vec4(rr * cosf(phi + normalizedStops), rr * sinf(phi + normalizedStops), 0.0f, 0.0f);
 }
 
-void CDepthOfField::Render(const std::shared_ptr<CGraphicsPipeline>& pGraphicsPipeline)
+void CDepthOfField::Render()
 {
 	ASSERT_LEGACY_PIPELINE
 /*

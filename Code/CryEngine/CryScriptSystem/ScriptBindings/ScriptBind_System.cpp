@@ -25,16 +25,16 @@
 #include <CryEntitySystem/IEntitySystem.h>
 #include <CrySystem/ITimer.h>
 #include <CrySystem/IConsole.h>
-#include <CryAISystem/IAISystem.h>
-#include <CryAISystem/IAgent.h>
 #include <CrySystem/File/ICryPak.h>
 #include <CrySystem/Testing/CryTest.h>
 #include <CryGame/IGameFramework.h>
 #include <CryMath/Cry_Camera.h>
 #include <CryMath/Cry_Geo.h>
+#include <CryPhysics/physinterface.h>
 #include <CryRenderer/IRenderAuxGeom.h>
 #include <CrySystem/IBudgetingSystem.h>
 #include <CrySystem/ILocalizationManager.h>
+#include <CrySystem/ConsoleRegistration.h>
 #include <time.h>
 
 //////////////////////////////////////////////////////////////////////

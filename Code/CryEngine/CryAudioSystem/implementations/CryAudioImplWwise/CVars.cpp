@@ -5,7 +5,7 @@
 
 #include "Common.h"
 #include "Impl.h"
-#include <CrySystem/IConsole.h>
+#include <CrySystem/ConsoleRegistration.h>
 
 namespace CryAudio
 {

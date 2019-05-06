@@ -599,7 +599,7 @@ inline void AddShaderParamToArray(SShaderFXParams& FXParams, FixedDynArray<SFXPa
 
 void CShaderResources::RT_UpdateConstants(IShader* pISH)
 {
-	CRY_PROFILE_REGION(PROFILE_RENDERER, "CShaderResources::RT_UpdateConstants");
+	CRY_PROFILE_SECTION(PROFILE_RENDERER, "CShaderResources::RT_UpdateConstants");
 	//assert(gRenDev->m_pRT->IsRenderThread());
 
 	CShader* pSH = (CShader*)pISH;

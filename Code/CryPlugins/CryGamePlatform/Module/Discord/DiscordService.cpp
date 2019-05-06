@@ -8,6 +8,7 @@
 #include "DiscordUserIdentifier.h"
 
 #include <CrySystem/ICmdLine.h>
+#include <CrySystem/ConsoleRegistration.h>
 
 // Included only once per DLL module.
 #include <CryCore/Platform/platform_impl.inl>

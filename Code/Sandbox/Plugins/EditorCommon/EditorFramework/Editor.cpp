@@ -239,7 +239,6 @@ void CEditor::InitActions()
 	RegisterAction("general.find_next", &CEditor::OnFindNext);
 	RegisterAction("general.select_all", &CEditor::OnSelectAll);
 	RegisterAction("general.duplicate", &CEditor::OnDuplicate);
-	RegisterAction("general.rename", &CEditor::OnRename);
 	RegisterAction("general.lock", &CEditor::OnLock);
 	RegisterAction("general.unlock", &CEditor::OnUnlock);
 	RegisterAction("general.toggle_lock", &CEditor::OnToggleLock);
@@ -380,7 +379,7 @@ void CEditor::EnableDockingSystem()
 	SetContent(m_dockingRegistry);
 }
 
-void CEditor::RegisterDockableWidget(QString name, std::function<QWidget* ()> factory, bool isUnique, bool isInternal)
+void CEditor::RegisterDockableWidget(QString name, std::function<QWidget*()> factory, bool isUnique /*= false*/, bool isInternal /*= false*/)
 {
 	using namespace Private_EditorFramework;
 
@@ -409,13 +408,14 @@ void CEditor::SetLayout(const QVariantMap& state)
 	{
 		SetAdaptiveLayoutEnabled(state["adaptiveLayout"].toBool());
 	}
-
 	if (m_dockingRegistry && state.contains("dockingState"))
 	{
 		m_dockingRegistry->SetState(state["dockingState"].toMap());
 	}
-
-	m_pEditorContent->SetState(state["editorContent"].toMap());
+	if (state.contains("editorContent"))
+	{
+		m_pEditorContent->SetState(state["editorContent"].toMap());
+	}
 }
 
 QVariantMap CEditor::GetLayout() const

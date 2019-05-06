@@ -562,7 +562,6 @@ struct ISystemEventListener
 {
 	// <interfuscator:shuffle>
 	virtual ~ISystemEventListener(){}
-	virtual void OnSystemEventAnyThread(ESystemEvent event, UINT_PTR wparam, UINT_PTR lparam) {}
 	virtual void OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lparam) = 0;
 	// </interfuscator:shuffle>
 };

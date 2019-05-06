@@ -7,6 +7,7 @@
 #include <CryRenderer/IRenderer.h>
 #include <CryRenderer/IRenderAuxGeom.h>
 #include <CrySystem/ITextModeConsole.h>
+#include <CrySystem/ConsoleRegistration.h>
 #include <CryInput/IInput.h>
 #include <CryCore/RingBuffer.h>
 #include <CryThreading/IThreadManager.h>

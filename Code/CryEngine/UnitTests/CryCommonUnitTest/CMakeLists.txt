@@ -72,5 +72,7 @@ elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
 		-Wno-address
 		-Wno-format
 		-Wno-switch
+		-Wno-stringop-truncation
+		-Wno-free-nonheap-object
 	)
 endif()

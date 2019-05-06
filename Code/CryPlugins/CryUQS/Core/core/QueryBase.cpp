@@ -204,7 +204,7 @@ namespace UQS
 
 			if (!m_pQueryBlueprint->GetParent())
 			{
-				CRY_PROFILE_REGION_ARG(UQS_PROFILED_SUBSYSTEM_TO_USE, "UQS::Core::CQueryBase::Start: check global runtime parameters", m_pQueryBlueprint->GetName());
+				CRY_PROFILE_SECTION_ARG(UQS_PROFILED_SUBSYSTEM_TO_USE, "UQS::Core::CQueryBase::Start: check global runtime parameters", m_pQueryBlueprint->GetName());
 
 				if (!m_pQueryBlueprint->CheckPresenceAndTypeOfGlobalRuntimeParamsRecursively(runtimeParams, error))
 				{
@@ -294,7 +294,7 @@ namespace UQS
 
 			if (!m_itemMonitors.empty())
 			{
-				CRY_PROFILE_REGION_ARG(UQS_PROFILED_SUBSYSTEM_TO_USE, "UQS::Core::CQueryBase::Update: item monitors", m_pQueryBlueprint->GetName());
+				CRY_PROFILE_SECTION_ARG(UQS_PROFILED_SUBSYSTEM_TO_USE, "UQS::Core::CQueryBase::Update: item monitors", m_pQueryBlueprint->GetName());
 
 				for (const Client::ItemMonitorUniquePtr& pItemMonitor : m_itemMonitors)
 				{

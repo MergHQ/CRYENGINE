@@ -41,7 +41,7 @@ void CObjManager::EndOcclusionCulling()
 //////////////////////////////////////////////////////////////////////////
 void CObjManager::RenderNonJobObjects(const SRenderingPassInfo& passInfo)
 {
-	CRY_PROFILE_REGION(PROFILE_3DENGINE, "3DEngine: RenderNonJobObjects");
+	CRY_PROFILE_SECTION(PROFILE_3DENGINE, "3DEngine: RenderNonJobObjects");
 	MEMSTAT_CONTEXT(EMemStatContextType::Other, "CObjManager::RenderNonJobObjects");
 
 	bool hasWaited = false;

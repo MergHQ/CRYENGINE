@@ -1097,7 +1097,7 @@ EGoalOpResult COPSeekCover::Execute(CPipeUser* pOperand)
 
 	if (!m_pTraceDirective)
 	{
-		CRY_PROFILE_REGION(PROFILE_AI, "SeekCover/CalculatePathTree");
+		CRY_PROFILE_SECTION(PROFILE_AI, "SeekCover/CalculatePathTree");
 
 		if (m_state >= 0)
 		{

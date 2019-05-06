@@ -2939,7 +2939,7 @@ int CRigidEntity::Step(float time_interval)
 							pcontacts[i].iPrim[1],pcontacts[i].iFeature[1], contact_new|hasArea, max(0.001f,(float)pcontacts[i].t-
 							axis*(pcontacts[i].ptborder[j]-pcontacts[i].pt)+r), iCaller, ntilt);
 				}
-				bSeverePenetration |= isneg(ip.maxUnproj*0.5f-pcontacts[i].t);
+				bSeverePenetration |= isneg(ip.maxUnproj*0.5f-pcontacts[i].t) & iszero((int)(m_parts[g_CurCollParts[i][0]].flags|g_CurColliders[i]->m_parts[g_CurCollParts[i][1]].flags) & geom_no_coll_response);
 			} else 
 				ProcessCanopyContact(pcontacts,i, time_interval, iCaller);
 		}

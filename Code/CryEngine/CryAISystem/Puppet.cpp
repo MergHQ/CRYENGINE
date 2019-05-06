@@ -1810,7 +1810,7 @@ bool CPuppet::NavigateAroundObjects(const Vec3& targetPos, bool fullUpdate)
 
 	if (steeringEnabled && (deltaTime > timeForUpdate || !lastSteeringEnabled))
 	{
-		CRY_PROFILE_REGION(PROFILE_AI, "NavigateAroundObjects Gather Objects");
+		CRY_PROFILE_SECTION(PROFILE_AI, "NavigateAroundObjects Gather Objects");
 
 		m_lastSteerTime = curTime;
 		m_steeringObjects.clear();
@@ -1853,7 +1853,7 @@ bool CPuppet::NavigateAroundObjects(const Vec3& targetPos, bool fullUpdate)
 	{
 		if ((GetType() == AIOBJECT_ACTOR) && !in3D)
 		{
-			CRY_PROFILE_REGION(PROFILE_AI, "NavigateAroundObjects Update Steering");
+			CRY_PROFILE_SECTION(PROFILE_AI, "NavigateAroundObjects Update Steering");
 
 			bool check = fullUpdate;
 			if (m_updatePriority == AIPUP_VERY_HIGH || m_updatePriority == AIPUP_HIGH)
@@ -2016,7 +2016,7 @@ bool CPuppet::NavigateAroundObjects(const Vec3& targetPos, bool fullUpdate)
 		}
 		else
 		{
-			CRY_PROFILE_REGION(PROFILE_AI, "NavigateAroundObjects Update Steering Old");
+			CRY_PROFILE_SECTION(PROFILE_AI, "NavigateAroundObjects Update Steering Old");
 			// Old type steering for the rest of the objects.
 			unsigned nObj = m_steeringObjects.size();
 			for (unsigned i = 0; i < nObj; ++i)

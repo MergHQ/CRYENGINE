@@ -27,7 +27,8 @@ CEditorContent::CEditorContent(CEditor* pEditor)
 	m_pMainLayout->setMargin(0);
 	m_pMainLayout->setSpacing(0);
 	m_pContentLayout->setMargin(0);
-	m_pContentLayout->setSpacing(0);
+	m_pContentLayout->setSpacing(0);	
+
 
 	// Temp content
 	m_pContent = new QWidget(); // place-holder content
@@ -55,6 +56,7 @@ void CEditorContent::SetContent(QWidget* pContent)
 {
 	pContent->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 	QLayoutItem* pItem = m_pContentLayout->replaceWidget(m_pContent, pContent);
+	m_pContent->setContentsMargins(2, 2, 2, 2);
 	m_pContent->deleteLater();
 	delete pItem;
 
@@ -68,6 +70,7 @@ void CEditorContent::SetContent(QLayout* pContentLayout)
 	pContent->setLayout(pContentLayout);
 	pContentLayout->setMargin(0);
 	pContentLayout->setSpacing(0);
+	pContentLayout->setContentsMargins(2, 2, 2, 2);
 
 	QLayoutItem* pItem = m_pContentLayout->replaceWidget(m_pContent, pContent);
 
@@ -130,6 +133,9 @@ void CEditorContent::OnAdaptiveLayoutChanged(Qt::Orientation orientation)
 
 void CEditorContent::SetState(const QVariantMap& state)
 {
+	if (state.empty())
+		return;
+
 	m_pToolBarAreaManager->SetState(state);
 }
 

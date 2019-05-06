@@ -5545,6 +5545,28 @@ void CActor::EndInteractiveAction( EntityId entityId )
 
 }
 
+bool CActor::GetValidPositionNearby(const Vec3& proposedPosition, Vec3& adjustedPosition) const
+{
+	IAIObject* pAIObject = GetEntity()->GetAI();
+	if (pAIObject && gEnv->pAISystem)
+	{
+		if (IAIPathAgent* pAIActor = pAIObject->CastToIAIActor())
+		{
+			return pAIActor->GetValidPositionNearby(proposedPosition, adjustedPosition);
+		}
+	}
+	return false;
+}
+
+void CActor::SetExpectedPhysicsPos(const Vec3& expectedPosition)
+{
+	IAIObject* pAIObject = GetEntity()->GetAI();
+	if (pAIObject && gEnv->pAISystem)
+	{
+		pAIObject->SetExpectedPhysicsPos(expectedPosition);
+	}
+}
+
 void CActor::LockInteractor(EntityId lockId, bool lock)
 {
 	SmartScriptTable locker(gEnv->pScriptSystem);

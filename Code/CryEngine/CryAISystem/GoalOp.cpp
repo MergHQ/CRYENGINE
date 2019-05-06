@@ -4831,7 +4831,7 @@ EGoalOpResult COPDodge::Execute(CPipeUser* pPipeUser)
 
 	if (!m_pTraceDirective)
 	{
-		CRY_PROFILE_REGION(PROFILE_AI, "Dodge/CalculatePathTree");
+		CRY_PROFILE_SECTION(PROFILE_AI, "Dodge/CalculatePathTree");
 
 		IAIObject* pTarget = pPipeUser->GetAttentionTarget();
 		CAIObject* pLastOpResult = pPipeUser->m_refLastOpResult.GetAIObject();

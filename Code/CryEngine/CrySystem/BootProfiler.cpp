@@ -11,6 +11,7 @@
 #include <CryGame/IGameFramework.h>
 #include <CryRenderer/IRenderer.h>
 #include <CryMath/Random.h>
+#include <CrySystem/ConsoleRegistration.h>
 
 // debugging of bootprofiler
 #if 0

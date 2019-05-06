@@ -8,6 +8,7 @@
 #include "ParticleSystem.h"
 #include "ParticleProfiler.h"
 #include <CryRenderer/IGpuParticles.h>
+#include <CrySystem/ConsoleRegistration.h>
 
 namespace pfx2
 {
@@ -67,25 +68,24 @@ void CParticleJobManager::AddUpdateEmitter(CParticleEmitter* pEmitter)
 	}
 }
 
+DECLARE_JOB("job:pfx2:UpdateEmitter", TUpdateEmitterJob, CParticleEmitter::UpdateParticles);
 void CParticleJobManager::ScheduleUpdateEmitter(CParticleEmitter* pEmitter)
 {
-	auto job = [pEmitter]()
-	{
-		pEmitter->UpdateParticles();
-	};
-	auto priority = EmitterHasDeferred(pEmitter) ? JobManager::eHighPriority : JobManager::eRegularPriority;
-	gEnv->pJobManager->AddLambdaJob("job:pfx2:UpdateEmitter", job, priority, &m_updateState);
+	TUpdateEmitterJob job;
+	job.SetClassInstance(pEmitter);
+	job.SetPriorityLevel(EmitterHasDeferred(pEmitter) ? JobManager::eHighPriority : JobManager::eRegularPriority);
+	job.Run(&m_updateState);
 }
 
 void CParticleJobManager::ScheduleUpdates()
 {
-	// Schedule jobs in a high-priority job
+	DECLARE_JOB("job:pfx2:ScheduleUpdates", TScheduleUpdatesJob, CParticleJobManager::Job_ScheduleUpdates);
+
 	CRY_PFX2_ASSERT(!m_updateState.IsRunning());
-	auto job = [this]()
-	{
-		Job_ScheduleUpdates();
-	};
-	gEnv->pJobManager->AddLambdaJob("job:pfx2:ScheduleUpdates", job, JobManager::eHighPriority, &m_updateState);
+	// Schedule jobs in a high-priority job
+	TScheduleUpdatesJob job;
+	job.SetClassInstance(this);
+	job.Run(JobManager::eHighPriority, &m_updateState);
 }
 
 void CParticleJobManager::Job_ScheduleUpdates()
@@ -109,6 +109,14 @@ void CParticleJobManager::Job_ScheduleUpdates()
 	ScheduleUpdateEmitters(m_emittersInvisible, JobManager::eStreamPriority);
 }
 
+typedef std::result_of <TDynArray<CParticleEmitter*>(uint, uint)>::type TEmitterGroup;
+void Job_UpdateEmitterGroup(TEmitterGroup emitterGroup)
+{
+	for (auto pEmitter : emitterGroup)
+		pEmitter->UpdateParticles();
+}
+DECLARE_JOB("job:pfx2:UpdateEmitterGroup", TUpdateEmitterGroupJob, Job_UpdateEmitterGroup);
+
 void CParticleJobManager::ScheduleUpdateEmitters(TDynArray<CParticleEmitter*>& emitters, JobManager::TPriorityLevel priority)
 {
 	CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
@@ -121,15 +129,10 @@ void CParticleJobManager::ScheduleUpdateEmitters(TDynArray<CParticleEmitter*>& e
 	for (uint j = 0; j < numJobs; ++j)
 	{
 		uint e2 = (j + 1) * emitters.size() / numJobs;
-		auto emitterGroup = emitters(e, e2 - e);
+		TEmitterGroup emitterGroup = emitters(e, e2 - e);
 		e = e2;
 
-		auto job = [emitterGroup]()
-		{
-			for (auto pEmitter : emitterGroup)
-				pEmitter->UpdateParticles();
-		};
-		gEnv->pJobManager->AddLambdaJob("job:pfx2:UpdateEmitters", job, priority, &m_updateState);
+		TUpdateEmitterGroupJob(emitterGroup).Run(priority, &m_updateState);
 	}
 	CRY_PFX2_ASSERT(e == emitters.size());
 }

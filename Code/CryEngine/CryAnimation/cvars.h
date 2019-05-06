@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include <CrySystem/ConsoleRegistration.h>
+
 //////////////////////////////////////////////////////////////////////////
 // console variable interfaces.
 // In an instance of this class (singleton for now), there are all the interfaces

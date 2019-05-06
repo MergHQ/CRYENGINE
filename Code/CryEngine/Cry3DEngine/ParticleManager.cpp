@@ -15,6 +15,7 @@
 #include <CryThreading/IJobManager_JobDelegator.h>
 #include <CrySystem/ZLib/IZLibCompressor.h>
 #include <CrySerialization/ClassFactory.h>
+#include <CrySystem/ConsoleRegistration.h>
 
 #define LIBRARY_PATH    "Libs/"
 #define EFFECTS_SUBPATH LIBRARY_PATH "Particles/"
@@ -418,7 +419,7 @@ IParticleEffect* CParticleManager::FindEffect(cstr sEffectName, cstr sSource, bo
 	if (!m_bEnabled || !sEffectName || !*sEffectName)
 		return NULL;
 
-	LOADING_TIME_PROFILE_SECTION(gEnv->pSystem);
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY)(gEnv->pSystem);
 
 	pfx2::PParticleEffect pPfx2 = m_pParticleSystem->FindEffect(sEffectName);
 	if (pPfx2)
@@ -645,7 +646,7 @@ void CParticleManager::OnFrameStart()
 
 void CParticleManager::Update()
 {
-	CRY_PROFILE_REGION(PROFILE_3DENGINE, "ParticleManager Update");
+	CRY_PROFILE_SECTION(PROFILE_3DENGINE, "ParticleManager Update");
 
 	if (m_bEnabled && GetCVars()->e_Particles)
 	{
@@ -654,7 +655,7 @@ void CParticleManager::Update()
 		PARTICLE_LIGHT_PROFILER();
 
 		{
-			CRY_PROFILE_REGION(PROFILE_PARTICLE, "SyncComputeVerticesJobs");
+			CRY_PROFILE_SECTION(PROFILE_PARTICLE, "SyncComputeVerticesJobs");
 			GetRenderer()->SyncComputeVerticesJobs();
 		}
 
@@ -1284,7 +1285,7 @@ int CParticleManager::AddEventTiming(cstr sEvent, const CParticleContainer* pCon
 //////////////////////////////////////////////////////////////////////////
 void CParticleManager::Serialize(TSerialize ser)
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 	ser.BeginGroup("ParticleEmitters");
 
 	if (ser.IsWriting())

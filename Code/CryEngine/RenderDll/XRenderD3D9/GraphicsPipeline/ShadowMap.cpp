@@ -178,9 +178,11 @@ void CShadowMapStage::ReAllocateResources(const SShadowConfig shadowConfig)
 			{
 				char szName[64];
 				cry_sprintf(szName, "$ShadowMapCached_%d_%d", i, m_graphicsPipeline.GetUniqueIdentifierName().c_str());
-				pTx = CTexture::GetOrCreateDepthStencil(szName, nResolutions[i], nResolutions[i], Clr_FarPlane, eTT_2D, FT_DONT_STREAM, texFormat);
+				// Only look for a (possibly) existing CTexture object (without re-creating the device-resource)
+				pTx = CTexture::GetOrCreateTextureObject(szName, nResolutions[i], nResolutions[i], 1, eTT_2D, FT_DONT_STREAM, texFormat);
 			}
 
+			// Check if the embedded device-resource matches our config and re-create it when it differs only
 			pTx->Invalidate(nResolutions[i], nResolutions[i], texFormat);
 
 			// delete existing texture in case it's not needed anymore
@@ -213,6 +215,8 @@ void CShadowMapStage::ReAllocateResources(const SShadowConfig shadowConfig)
 				{
 					const int width = cachedPass.m_pDepthTarget->GetWidth();
 					const int height = cachedPass.m_pDepthTarget->GetHeight();
+
+					// Check if the embedded device-resource matches our config and re-create it when it differs only
 					cachedPass.m_pDepthTarget->Invalidate(width, height, texFormat);
 
 					if (!CTexture::IsTextureExist(cachedPass.m_pDepthTarget))
@@ -698,7 +702,12 @@ bool CShadowMapStage::PrepareOutputsForPass(const SShadowFrustumToRender& frustu
 		    frustum.m_eFrustumType == ShadowMapFrustum::e_PerObject ||
 		    frustum.m_eFrustumType == ShadowMapFrustum::e_Nearest)
 		{
-			pDepthTarget = CTexture::GetOrCreateDepthStencilPtr(pName, frustum.nTextureWidth, frustum.nTextureHeight, frustum.clearValue, frustum.m_eReqTT, FT_USAGE_TEMPORARY | FT_NOMIPS | FT_STATE_CLAMP, frustum.m_eReqTF);
+			// Only look for a (possibly) existing CTexture object (without re-creating the device-resource)
+			pDepthTarget = CTexture::GetOrCreateTextureObjectPtr(pName, frustum.nTextureWidth, frustum.nTextureHeight, 1, frustum.m_eReqTT, FT_USAGE_TEMPORARY | FT_NOMIPS | FT_STATE_CLAMP, frustum.m_eReqTF);
+
+			// Check if the embedded device-resource exist, and only create a new one when this is the first request
+			if (!CTexture::IsTextureExist(pDepthTarget))
+				pDepthTarget->CreateDepthStencil(frustum.m_eReqTF, frustum.clearValue);
 		}
 		else
 		{
@@ -800,7 +809,13 @@ _smart_ptr<CTexture> CShadowMapStage::PrepareOutputsForFrustumWithCaching(const 
 				pClearDepthMapProvider = &cachedPass;
 				clearMode = CShadowMapPass::eClearMode_CopyDepthMap;
 
-				pDepthTarget = CTexture::GetOrCreateDepthStencilPtr(pName, frustum.nTextureWidth, frustum.nTextureHeight, frustum.clearValue, frustum.m_eReqTT, FT_USAGE_TEMPORARY | FT_NOMIPS | FT_STATE_CLAMP, frustum.m_eReqTF);
+				// Only look for a (possibly) existing CTexture object (without re-creating the device-resource)
+				pDepthTarget = CTexture::GetOrCreateTextureObjectPtr(pName, frustum.nTextureWidth, frustum.nTextureHeight, 1, frustum.m_eReqTT, FT_USAGE_TEMPORARY | FT_NOMIPS | FT_STATE_CLAMP, frustum.m_eReqTF);
+
+				// Check if the embedded device-resource exist, and only create a new one when this is the first request
+				if (!CTexture::IsTextureExist(pDepthTarget))
+					pDepthTarget->CreateDepthStencil(frustum.m_eReqTF, frustum.clearValue);
+
 				break;
 			}
 		}

@@ -279,24 +279,23 @@ CAssetFolderFilterModel::CAssetFolderFilterModel(bool recursiveFilter, bool show
 	: m_isRecursive(recursiveFilter)
 	, m_showFolders(showFolders)
 {
-	// There is an issue that calls of MountAppend() is orded dependent. 
-	// It was found out that swapping the order  MountAppend(m_newAssetModel) <-> MountAppend(m_assetsModel) brings a bug 
-	// of refreshing the asset browser view in responce to IFileChangeListener::eChangeType_Renamed_XXX. see CAssetManager::CAssetFileMonitor.    
-
 	SetHeaderDataCallbacks(CAssetModel::GetColumnCount(), &CAssetModel::GetHeaderData, Attributes::s_getAttributeRole);
+	MountSourceModels();
+}
 
-	m_newAssetModel.reset(new FilteredAssetsModel(this));
-	m_newAssetModel->setSourceModel(CNewAssetModel::GetInstance());
-	MountAppend(m_newAssetModel.get());
-	
-	m_foldersModel.reset(new FoldersModel(this));
-	MountAppend(m_foldersModel.get());
-	//first update of the models is manually triggered
-	m_foldersModel->UpdateFolders();
+CAssetFolderFilterModel::CAssetFolderFilterModel(const std::vector<CAssetType*>& assetTypes, bool recursiveFilter, bool showFolders, QObject* parent /*= nullptr*/)
+	: m_isRecursive(recursiveFilter)
+	, m_showFolders(showFolders)
+{
+	const std::vector<int> columnsMapping = CAssetModel::GetColumnsByAssetTypes(assetTypes);
 
-	m_assetsModel.reset(new FilteredAssetsModel(this));
-	m_assetsModel->setSourceModel(CAssetModel::GetInstance());
-	MountAppend(m_assetsModel.get());
+	auto getHeaderData = [columnsMapping](int section, Qt::Orientation orientation, int role) -> QVariant
+	{
+		return CAssetModel::GetHeaderData(columnsMapping[section], orientation, role);
+	};
+
+	SetHeaderDataCallbacks(columnsMapping.size(), getHeaderData, Attributes::s_getAttributeRole);
+	MountSourceModels();
 }
 
 void CAssetFolderFilterModel::SetAcceptedFolders(const QStringList& folders)
@@ -357,4 +356,24 @@ void CAssetFolderFilterModel::SetShowFolders(bool showFolders)
 		m_foldersModel->UpdateFolders();
 		m_assetsModel->invalidate();
 	}
+}
+
+void CAssetFolderFilterModel::MountSourceModels()
+{
+	// There is an issue that calls of MountAppend() is orded dependent. 
+	// It was found out that swapping the order  MountAppend(m_newAssetModel) <-> MountAppend(m_assetsModel) brings a bug 
+	// of refreshing the asset browser view in responce to IFileChangeListener::eChangeType_Renamed_XXX. see CAssetManager::CAssetFileMonitor.    
+
+	m_newAssetModel.reset(new FilteredAssetsModel(this));
+	m_newAssetModel->setSourceModel(CNewAssetModel::GetInstance());
+	MountAppend(m_newAssetModel.get());
+
+	m_foldersModel.reset(new FoldersModel(this));
+	MountAppend(m_foldersModel.get());
+	//first update of the models is manually triggered
+	m_foldersModel->UpdateFolders();
+
+	m_assetsModel.reset(new FilteredAssetsModel(this));
+	m_assetsModel->setSourceModel(CAssetModel::GetInstance());
+	MountAppend(m_assetsModel.get());
 }

@@ -126,7 +126,7 @@ bool C3DEngine::InitLevelForEditor(const char* szFolderName, const char* szMissi
 	CRY_ASSERT_MESSAGE(0, "InitLevelForEditor not supported on consoles yet");
 	return false;
 #else
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
 	m_bInUnload = false;
 	m_bEditor = true;
@@ -220,7 +220,7 @@ bool C3DEngine::InitLevelForEditor(const char* szFolderName, const char* szMissi
 
 bool C3DEngine::LoadTerrain(XmlNodeRef pDoc, std::vector<struct IStatObj*>** ppStatObjTable, std::vector<IMaterial*>** ppMatTable)
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 	MEMSTAT_CONTEXT(EMemStatContextType::Other, "C3DEngine::LoadTerrain");
 
 	PrintMessage("===== Loading %s =====", COMPILED_HEIGHT_MAP_FILE_NAME);
@@ -273,7 +273,7 @@ bool C3DEngine::LoadTerrain(XmlNodeRef pDoc, std::vector<struct IStatObj*>** ppS
 
 bool C3DEngine::LoadVisAreas(std::vector<struct IStatObj*>** ppStatObjTable, std::vector<IMaterial*>** ppMatTable)
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
 	PrintMessage("===== Loading %s =====", COMPILED_VISAREA_MAP_FILE_NAME);
 
@@ -313,7 +313,7 @@ bool C3DEngine::LoadVisAreas(std::vector<struct IStatObj*>** ppStatObjTable, std
 //////////////////////////////////////////////////////////////////////////
 void C3DEngine::UnloadLevel()
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
 	if (m_pLevelLoadTimeslicer)
 	{
@@ -695,7 +695,7 @@ C3DEngineLevelLoadTimeslicer::~C3DEngineLevelLoadTimeslicer()
 
 I3DEngine::ELevelLoadStatus C3DEngineLevelLoadTimeslicer::DoStep()
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
 #if !defined(SYS_ENV_AS_STRUCT)
 	PREFAST_ASSUME(gEnv);
@@ -1027,7 +1027,7 @@ bool C3DEngineLevelLoadTimeslicer::ShouldPreloadLevelObjects() const
 
 bool C3DEngine::LoadLevel(const char* szFolderName, XmlNodeRef missionXml)
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
 	C3DEngineLevelLoadTimeslicer slicer(*this, szFolderName, std::move(missionXml));
 	ELevelLoadStatus result;
@@ -1063,7 +1063,7 @@ I3DEngine::ELevelLoadStatus C3DEngine::UpdateLoadLevelStatus()
 		return ELevelLoadStatus::Failed;
 	}
 
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
 	switch (m_pLevelLoadTimeslicer->DoStep())
 	{
@@ -1212,7 +1212,7 @@ XmlNodeRef C3DEngine::OpenMissionDataXML(const char* szMissionName)
 
 void C3DEngine::LoadMissionDataFromXMLNode(const char* szMissionName)
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
 	if (!m_pTerrain)
 	{
@@ -1598,7 +1598,7 @@ void C3DEngine::LoadTimeOfDaySettingsFromXML(XmlNodeRef node)
 //////////////////////////////////////////////////////////////////////////
 void C3DEngine::LoadParticleEffects(const char* szFolderName)
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
 	if (m_pPartManager)
 	{
@@ -1687,7 +1687,7 @@ void C3DEngine::ReRegisterKilledVegetationInstances()
 //////////////////////////////////////////////////////////////////////////
 bool C3DEngine::LoadUsedShadersList()
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
 	MEMSTAT_CONTEXT(EMemStatContextType::Other, "LoadUsedShadersList");
 
@@ -1699,7 +1699,7 @@ bool C3DEngine::LoadUsedShadersList()
 //////////////////////////////////////////////////////////////////////////
 bool C3DEngine::PrecreateDecals()
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 	MEMSTAT_CONTEXT(EMemStatContextType::Other, "PrecreateDecals");
 
 	CObjManager::DecalsToPrecreate& decals(GetObjManager()->m_decalsToPrecreate);
@@ -1733,7 +1733,7 @@ bool C3DEngine::PrecreateDecals()
 void C3DEngine::PostLoadLevel()
 {
 	MEMSTAT_CONTEXT(EMemStatContextType::Other, "PostLoadLevel");
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
 	//////////////////////////////////////////////////////////////////////////
 	// Submit water material to physics

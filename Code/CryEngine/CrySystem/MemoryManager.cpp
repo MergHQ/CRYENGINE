@@ -40,7 +40,7 @@ CCryMemoryManager* CCryMemoryManager::GetInstance()
 }
 
 #ifndef MEMMAN_STATIC
-#include <CrySystem/IConsole.h>
+#include <CrySystem/ConsoleRegistration.h>
 
 int CCryMemoryManager::s_sys_MemoryDeadListSize;
 
@@ -104,21 +104,28 @@ bool CCryMemoryManager::GetProcessMemInfo(SProcessMemInfo& minfo)
 
 	MEMORYSTATUS MemoryStatus;
 	GlobalMemoryStatus(&MemoryStatus);
-	minfo.PagefileUsage = minfo.PeakPagefileUsage = MemoryStatus.dwTotalPhys - MemoryStatus.dwAvailPhys;
-
 	minfo.FreePhysicalMemory = MemoryStatus.dwAvailPhys;
 	minfo.TotalPhysicalMemory = MemoryStatus.dwTotalPhys;
 
-	#if CRY_PLATFORM_ANDROID
-	// On Android, mallinfo() is an EXTREMELY time consuming operation. Nearly 80% CPU time will be spent
-	// on this operation once -memreplay is given. Since WorkingSetSize is only used for statistics and
-	// debugging purpose, it's simply ignored.
+	minfo.PagefileUsage = 0;
 	minfo.WorkingSetSize = 0;
-	#else
-	struct mallinfo meminfo = mallinfo();
-	minfo.WorkingSetSize = meminfo.usmblks + meminfo.uordblks;
-	#endif
 
+	FILE* statm = fopen("/proc/self/statm", "r");
+	if (statm)
+	{
+		char buffer[256];
+		if (fread(buffer, 1, sizeof(buffer), statm))
+		{
+			buffer[sizeof(buffer) - 1] = 0;
+			int totalPages = 0, residentPages = 0, sharedPages = 0, codePages = 0, unused1 = 0, dataPages = 0, unused2 = 0;
+			if (sscanf(buffer, "%d %d %d %d %d %d %d\n", &totalPages, &residentPages, &sharedPages, &codePages, &unused1, &dataPages, &unused2) == 7)
+			{
+				minfo.PagefileUsage = totalPages * 4096;
+				minfo.WorkingSetSize = residentPages * 4096;
+			}
+		}
+		fclose(statm);
+	}
 #elif CRY_PLATFORM_APPLE
 
 	MEMORYSTATUS MemoryStatus;

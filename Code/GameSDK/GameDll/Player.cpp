@@ -1807,7 +1807,7 @@ void CPlayer::Update(SEntityUpdateContext& ctx, int updateSlot)
 	}
 
 	{
-		CRY_PROFILE_REGION(PROFILE_GAME, "Player Update :: UpdateListeners");
+		CRY_PROFILE_SECTION(PROFILE_GAME, "Player Update :: UpdateListeners");
 
 		TPlayerUpdateListeners::iterator it = m_playerUpdateListeners.begin();
 		TPlayerUpdateListeners::iterator end = m_playerUpdateListeners.end();

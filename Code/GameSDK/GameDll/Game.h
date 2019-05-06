@@ -57,6 +57,7 @@ class CScriptBind_MatchMaking;
 class CScriptBind_Turret;
 class CScriptBind_ProtectedBinds;
 class CScriptBind_LightningArc;
+class CScriptBind_DialogSystem;
 class CWeaponSystem;
 class CGameTokenSignalCreator;
 
@@ -140,6 +141,8 @@ class CStatsEntityIdRegistry;
 
 class CMovingPlatformMgr;
 class CGamePhysicsSettings;
+class CDialogSystem;
+class CSubtitleManager;
 
 enum AsyncState
 {
@@ -535,6 +538,7 @@ public:
 	CDownloadMgr*            GetDownloadMgr()               { return m_pDownloadMgr; }
 	CDLCManager*             GetDLCManager()                { return m_pDLCManager; }
 	CWorldBuilder*           GetWorldBuilder()              { return m_pWorldBuilder; }
+	CDialogSystem*           GetDialogSystem()              { return m_pDialogSystem; }
 
 	CGameCache&              GetGameCache()                 { CRY_ASSERT_MESSAGE(m_pGameCache, "Can't obtain GameCache object until CGame::Init() is called!"); return *m_pGameCache; }
 	const CGameCache&        GetGameCache() const           { CRY_ASSERT_MESSAGE(m_pGameCache, "Can't obtain GameCache object until CGame::Init() is called!"); return *m_pGameCache; }
@@ -775,6 +779,8 @@ protected:
 
 	CWeaponSystem*        m_pWeaponSystem;
 	CGamePhysicsSettings* m_pGamePhysicsSettings;
+	CDialogSystem*        m_pDialogSystem;
+	CSubtitleManager*     m_pSubtitleManager;
 
 	bool                  m_bReload;
 	bool                  m_gameTypeMultiplayer;
@@ -799,6 +805,7 @@ protected:
 	CScriptBind_Turret*            m_pScriptBindTurret;
 	CScriptBind_ProtectedBinds*    m_pScriptBindProtected;
 	CScriptBind_LightningArc*      m_pScriptBindLightningArc;
+	CScriptBind_DialogSystem*      m_pScriptBindDialogSystem;
 
 	//vis table
 	CPlayerVisTable*          m_pPlayerVisTable;

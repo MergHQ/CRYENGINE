@@ -78,6 +78,7 @@
 #include <Preferences/GeneralPreferences.h>
 #include <Preferences/ViewportPreferences.h>
 #include <UIEnumsDatabase.h>
+#include <CrySystem/ConsoleRegistration.h>
 
 #include <CrySandbox/CryInterop.h>
 #include <CrySandbox/IEditorGame.h>
@@ -106,7 +107,7 @@ CEditorImpl::CEditorImpl(CGameEngine* ge)
 	, m_objectHideMask(0)
 	, editorConfigSpec(CONFIG_MEDIUM_SPEC)
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
 	//This is dangerous and should (in theory) be set at the end of the constructor for safety, after everything is properly initialized.
 	//Code within this scope can use GetIEditorImpl() at their own risk
@@ -443,7 +444,7 @@ void CEditorImpl::CloseDocument()
 {
 	if (theDocument)
 	{
-		LOADING_TIME_PROFILE_SECTION;
+		CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 		Notify(eNotify_OnBeginSceneClose);
 		theDocument->DeleteContents();
 		delete theDocument;
@@ -859,6 +860,11 @@ IPane* CEditorImpl::CreateDockable(const char* szClassName)
 IPane* CEditorImpl::FindDockable(const char* szClassName)
 {
 	return CTabPaneManager::GetInstance()->FindPaneByClass(szClassName);
+}
+
+std::vector<IPane*> CEditorImpl::FindAllDockables(const char* szClassName)
+{
+	return CTabPaneManager::GetInstance()->FindAllPanelsByClass(szClassName);
 }
 
 IPane* CEditorImpl::FindDockableIf(const std::function<bool(IPane*, const string& /*className*/)>& predicate)
@@ -1297,7 +1303,7 @@ ESystemConfigSpec CEditorImpl::GetEditorConfigSpec() const
 
 void CEditorImpl::InitFinished()
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
 	if (!m_bInitialized)
 	{

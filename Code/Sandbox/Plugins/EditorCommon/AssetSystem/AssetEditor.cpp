@@ -6,6 +6,7 @@
 #include "AssetManager.h"
 #include "AssetType.h"
 #include "Browser/AssetBrowserDialog.h"
+#include "Browser/AssetBrowserWidget.h"
 #include "Commands/QCommandAction.h"
 #include "Controls/QuestionDialog.h"
 #include "Controls/SingleSelectionDialog.h"
@@ -16,6 +17,7 @@
 #include "FileOperationsExecutor.h"
 #include "FileUtils.h"
 #include "Loader/AssetLoaderHelpers.h"
+#include "Notifications/NotificationCenter.h"
 #include "PathUtils.h"
 #include "QtUtil.h"
 #include "ThreadingUtils.h"
@@ -28,6 +30,8 @@
 
 namespace Private_AssetEditor
 {
+
+static const char* const s_szAssetBrowserPanelName = "Asset Browser";
 
 //! Makes a temporary copy of files in construct time
 //!	and moves them back in the destructor.
@@ -143,8 +147,6 @@ CAssetEditor::CAssetEditor(const char* assetType, QWidget* pParent /*= nullptr*/
 	CRY_ASSERT(type);//type must exist
 	m_supportedAssetTypes.push_back(type);
 
-	m_pLockAction = GetIEditor()->GetICommandManager()->CreateNewAction("asset.toggle_instant_editing");
-
 	Init();
 }
 
@@ -159,8 +161,6 @@ CAssetEditor::CAssetEditor(const QStringList& assetTypes, QWidget* pParent /*= n
 		CRY_ASSERT(type);//type must exist
 		m_supportedAssetTypes.push_back(type);
 	}
-
-	m_pLockAction = GetIEditor()->GetICommandManager()->CreateNewAction("asset.toggle_instant_editing");
 
 	Init();
 }
@@ -180,6 +180,13 @@ bool CAssetEditor::OpenAsset(CAsset* pAsset)
 
 	if (pAsset == m_assetBeingEdited)
 		return true;
+
+	string errorMsg;
+	if (!pAsset->GetType()->IsAssetValid(pAsset, errorMsg))
+	{
+		GetIEditor()->GetNotificationCenter()->ShowInfo("Cant open the asset for edit", QtUtil::ToQString(errorMsg));
+		return false;
+	}
 
 	if (!Close())
 	{
@@ -519,30 +526,6 @@ void CAssetEditor::closeEvent(QCloseEvent* pEvent)
 	{
 		pEvent->ignore();
 	}
-
-	for (CAssetType* pAssetType : m_supportedAssetTypes)
-	{
-		if (pAssetType->GetInstantEditor() == this)
-		{
-			pAssetType->SetInstantEditor(nullptr);
-		}
-	}
-}
-
-void CAssetEditor::customEvent(QEvent* pEvent)
-{
-	CDockableEditor::customEvent(pEvent);
-
-	if (!pEvent->isAccepted() && pEvent->type() == SandboxEvent::Command)
-	{
-		CommandEvent* pCommandEvent = static_cast<CommandEvent*>(pEvent);
-		const string& command = pCommandEvent->GetCommand();
-
-		if (command == "asset.toggle_instant_editing")
-		{
-			SetInstantEditingMode(m_pLockAction->isChecked());
-		}
-	}
 }
 
 void CAssetEditor::dragEnterEvent(QDragEnterEvent* pEvent)
@@ -661,28 +644,12 @@ void CAssetEditor::dropEvent(QDropEvent* pEvent)
 	}
 }
 
-QWidget* CAssetEditor::CreateInstantEditorToolbar()
+void CAssetEditor::CreateDefaultLayout(CDockableContainer* pSender)
 {
-	QToolBar* pToolbar = new QToolBar(this);
-	pToolbar->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
-	pToolbar->addAction(m_pLockAction);
+	using namespace Private_AssetEditor;
 
-	InitInstantEditing();
-
-	return pToolbar;
-}
-
-void CAssetEditor::InitInstantEditing()
-{
-	const bool foundInstantEditor = std::any_of(m_supportedAssetTypes.cbegin(), m_supportedAssetTypes.cend(), [](const CAssetType* pType)
-	{
-		return pType->GetInstantEditor() != nullptr;
-	});
-
-	if (!foundInstantEditor)
-	{
-		SetInstantEditingMode(true);
-	}
+	QWidget* const pAssetBrowser = pSender->SpawnWidget(s_szAssetBrowserPanelName);
+	OnCreateDefaultLayout(pSender, pAssetBrowser);
 }
 
 void CAssetEditor::DiscardAssetChanges()
@@ -817,37 +784,21 @@ bool CAssetEditor::OnSaveAsset(CEditableAsset& editAsset)
 	return GetAssetBeingEdited()->GetEditingSession()->OnSaveAsset(editAsset);
 }
 
-void CAssetEditor::SetInstantEditingMode(bool isActive)
+void CAssetEditor::Initialize()
 {
-	if (isActive)
-	{
-		for (CAssetType* pAssetType : m_supportedAssetTypes)
-		{
-			if (pAssetType->GetInstantEditor() == this)
-			{
-				continue;
-			}
+	using namespace Private_AssetEditor;
 
-			if (pAssetType->GetInstantEditor())
-			{
-				pAssetType->GetInstantEditor()->SetInstantEditingMode(false);
-			}
-			pAssetType->SetInstantEditor(this);
-		}
-	}
-	else
-	{
-		for (CAssetType* pAssetType : m_supportedAssetTypes)
-		{
-			if (pAssetType->GetInstantEditor() == this)
-			{
-				pAssetType->SetInstantEditor(nullptr);
-			}
-		}
-	}
+	CDockableEditor::Initialize();
 
-	if (m_pLockAction && m_pLockAction->isChecked() != isActive)
+	if (IsDockingSystemEnabled())
 	{
-		m_pLockAction->setChecked(isActive);
+		EnableDockingSystem();
+		RegisterDockableWidget(s_szAssetBrowserPanelName, [this]()
+		{
+			CAssetBrowserWidget* const pAssetBrowser = new CAssetBrowserWidget(this);
+			pAssetBrowser->Initialize();
+			return pAssetBrowser;
+		}, true, false);
 	}
+	OnInitialize();
 }

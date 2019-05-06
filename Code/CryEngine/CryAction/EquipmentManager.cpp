@@ -16,6 +16,7 @@
 #include "ItemSystem.h"
 #include "IActorSystem.h"
 #include "Inventory.h"
+#include <CrySystem/ConsoleRegistration.h>
 
 namespace
 {

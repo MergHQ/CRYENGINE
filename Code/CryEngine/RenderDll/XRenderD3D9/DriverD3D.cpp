@@ -791,6 +791,7 @@ void CD3D9Renderer::BeginFrame(const SDisplayContextKey& displayContextKey, cons
 
 	m_cEF.mfBeginFrame();
 
+	CRenderMesh::ClearStaleMemory(true, gRenDev->GetMainThreadID());
 	CRenderElement::Tick();
 	CFlashTextureSourceSharedRT::Tick();
 
@@ -3065,7 +3066,7 @@ void CD3D9Renderer::RenderAux()
 		// Render Thread will commit it's own buffer right before final rendering
 		m_pRT->ExecuteRenderThreadCommand([=/*, renderData = std::move(renderData)*/]() mutable        // Renable the capture-by-move once we support C++14..............
 		{
-			CRY_PROFILE_REGION(PROFILE_RENDERER, "CD3D9Renderer::RenderAux lambda");
+			CRY_PROFILE_SECTION(PROFILE_RENDERER, "CD3D9Renderer::RenderAux lambda");
 
 			// Renders the aux geometries collected with the collector assigned to the renderer between begin and end.
 			if (!GetS3DRend().IsStereoEnabled() || GetS3DRend().IsMenuModeEnabled())
@@ -3292,7 +3293,7 @@ void CD3D9Renderer::RT_EndFrame()
 
 		if (!IsEditorMode())
 		{
-			CRY_PROFILE_REGION(PROFILE_RENDERER, "Present");
+			CRY_PROFILE_SECTION(PROFILE_RENDERER, "Present");
 			pDC->PrePresent();
 
 #if CRY_RENDERER_GNM
@@ -3804,20 +3805,7 @@ void CD3D9Renderer::CloseCaptureFrameBufferFast(void)
 
 }
 
-/////////////////////////////////////////////////////////////////////////////////////////////////////
-// This routines uses 2 destination surfaces.  It triggers a backbuffer copy to one of its surfaces,
-// and then copies the other surface to system memory.  This hopefully will remove any
-// CPU stalls due to the rect lock call since the buffer will already be in system
-// memory when it is called
-// Inputs :
-//			pDstARGBA8			:	Pointer to a buffer that will hold the captured frame (should be at least 4*dstWidth*dstHieght for RGBA surface)
-//			destinationWidth	:	Width of the frame to copy
-//			destinationHeight	:	Height of the frame to copy
-//
-//			Note :	If dstWidth or dstHeight is larger than the current surface dimensions, the dimensions
-//					of the surface are used for the copy
-//
-bool CD3D9Renderer::CaptureFrameBufferFast(unsigned char* pDstRGBA8, int destinationWidth, int destinationHeight)
+bool CD3D9Renderer::CaptureFrameBufferFast(unsigned char* pDstRGB8, int destinationWidth, int destinationHeight)
 {
 	bool bStatus(false);
 
@@ -3878,18 +3866,18 @@ bool CD3D9Renderer::CaptureFrameBufferFast(unsigned char* pDstRGBA8, int destina
 			GetDeviceObjectFactory().GetCoreCommandList().GetCopyInterface()->Copy(pCopySourceTexture->GetDevTexture(), pTargetTexture->GetDevTexture(), region);
 
 			// Copy the previous frame from our local surface to the requested buffer location
+			// pData is in BGRA format
 			pCopyTexture->GetDevTexture()->DownloadToStagingResource(0, [&](void* pData, uint32 rowPitch, uint32 slicePitch)
 			{
 				for (unsigned int i = 0; i < height; ++i)
 				{
 					uint8* pSrc((uint8*)pData + i * rowPitch);
-					uint8* pDst((uint8*)pDstRGBA8 + i * width * 4);
-					for (unsigned int j = 0; j < width; ++j, pSrc += 4, pDst += 4)
+					uint8* pDst((uint8*)pDstRGB8 + i * width * 3);
+					for (unsigned int j = 0; j < width; ++j, pSrc += 4, pDst += 3)
 					{
 						pDst[0] = pSrc[2];
 						pDst[1] = pSrc[1];
 						pDst[2] = pSrc[0];
-						pDst[3] = 255;
 					}
 				}
 
@@ -3904,17 +3892,6 @@ bool CD3D9Renderer::CaptureFrameBufferFast(unsigned char* pDstRGBA8, int destina
 	return bStatus;
 }
 
-/////////////////////////////////////////////////////////////////////////////////////////////////////
-// Copy a captured surface to a buffer
-//
-// Inputs :
-//			pDstARGBA8			:	Pointer to a buffer that will hold the captured frame (should be at least 4*dstWidth*dstHieght for RGBA surface)
-//			destinationWidth	:	Width of the frame to copy
-//			destinationHeight	:	Height of the frame to copy
-//
-//			Note :	If dstWidth or dstHeight is larger than the current surface dimensions, the dimensions
-//					of the surface are used for the copy
-//
 bool CD3D9Renderer::CopyFrameBufferFast(unsigned char* pDstRGBA8, int destinationWidth, int destinationHeight)
 {
 	bool bStatus(false);
@@ -3929,18 +3906,18 @@ bool CD3D9Renderer::CopyFrameBufferFast(unsigned char* pDstRGBA8, int destinatio
 	unsigned int height = std::min(destinationHeight, pCopyTexture->GetHeight());
 
 	// Copy the previous frame from our local surface to the requested buffer location
+	// pData is in BGRA format
 	pCopyTexture->GetDevTexture()->DownloadToStagingResource(0, [&](void* pData, uint32 rowPitch, uint32 slicePitch)
 	{
 		for (unsigned int i = 0; i < height; ++i)
 		{
 			uint8* pSrc((uint8*)pData + i * rowPitch);
-			uint8* pDst((uint8*)pDstRGBA8 + i * width * 4);
-			for (unsigned int j = 0; j < width; ++j, pSrc += 4, pDst += 4)
+			uint8* pDst((uint8*)pDstRGBA8 + i * width * 3);
+			for (unsigned int j = 0; j < width; ++j, pSrc += 4, pDst += 3)
 			{
 				pDst[0] = pSrc[2];
 				pDst[1] = pSrc[1];
 				pDst[2] = pSrc[0];
-				pDst[3] = 255;
 			}
 		}
 
@@ -5330,7 +5307,7 @@ CRYREGISTER_SINGLETON_CLASS(CEngineModule_CryRenderer)
 //=========================================================================================
 void CD3D9Renderer::LockParticleVideoMemory(int frameId)
 {
-	CRY_PROFILE_REGION(PROFILE_RENDERER, "LockParticleVideoMemory");
+	CRY_PROFILE_SECTION(PROFILE_RENDERER, "LockParticleVideoMemory");
 
 	gcpRendD3D.GetParticleBufferSet().Lock(frameId);
 }

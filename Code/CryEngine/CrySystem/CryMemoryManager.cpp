@@ -139,6 +139,13 @@ BucketAllocator<BucketAllocatorDetail::DefaultTraits<BUCKET_ALLOCATOR_DEFAULT_SI
 node_alloc<eCryMallocCryFreeCRTCleanup, true, VIRTUAL_ALLOC_SIZE> g_GlobPageBucketAllocator;
 #endif // defined(USE_GLOBAL_BUCKET_ALLOCATOR)
 
+#ifndef RELEASE
+namespace BucketFull
+{
+	CryCriticalSectionNonRecursive mutex;
+}
+#endif
+
 //////////////////////////////////////////////////////////////////////////
 CRYMEMORYMANAGER_API void* CryMalloc(size_t size, size_t& allocated, size_t alignment)
 {
@@ -156,10 +163,11 @@ CRYMEMORYMANAGER_API void* CryMalloc(size_t size, size_t& allocated, size_t alig
 
 	MEMREPLAY_SCOPE(EMemReplayAllocClass::UserPointer, EMemReplayUserPointerClass::CryMalloc);
 
-	uint8* p;
+	uint8* p = nullptr;
 	size_t sizePlus = size;
 
-	if (!alignment || g_GlobPageBucketAllocator.CanGuaranteeAlignment(sizePlus, alignment))
+	const bool useBucket = !alignment || g_GlobPageBucketAllocator.CanGuaranteeAlignment(sizePlus, alignment);
+	if (useBucket)
 	{
 		if (alignment)
 		{
@@ -178,24 +186,42 @@ CRYMEMORYMANAGER_API void* CryMalloc(size_t size, size_t& allocated, size_t alig
 		//
 		// We use getSize and not getSizeEx because in the case of an allocation with "alignment" == 0 and "size" bigger than the bucket size
 		// the bucket allocator will end up allocating memory using CryCrtMalloc which falls outside the address range of the bucket allocator
-		if(p)
+		if (p)
 		{
 			sizePlus = g_GlobPageBucketAllocator.getSize(p);
 		}
 	}
-	else
+
+	// shouldn't use bucket or failed -> go to CRT malloc
+	if (p == nullptr)
 	{
-		alignment = max(alignment, (size_t)16);
-
-		// emulate alignment
-		sizePlus += alignment;
-		p = (uint8*) CrySystemCrtMalloc(sizePlus);
-
-		if (alignment && p)
+#ifndef RELEASE
+		// we use the lock to ensure that we don't recurse into the assert while handling it (which is going to allocate memory, too)
+		if (useBucket && BucketFull::mutex.TryLock())
 		{
-			uint32 offset = (uint32)(alignment - ((UINT_PTR)p & (alignment - 1)));
-			p += offset;
-			reinterpret_cast<uint32*>(p)[-1] = offset;
+			CRY_ASSERT_MESSAGE(!useBucket, "BucketAllocator is full!");
+			BucketFull::mutex.Unlock();
+		}
+#endif
+
+		if (alignment)
+		{
+			alignment = max(alignment, (size_t)16);
+
+			// emulate alignment
+			sizePlus += alignment;
+			p = (uint8*) CrySystemCrtMalloc(sizePlus);
+			
+			if (p != nullptr)
+			{
+				uint32 offset = (uint32)(alignment - ((UINT_PTR)p & (alignment - 1)));
+				p += offset;
+				reinterpret_cast<uint32*>(p)[-1] = offset;
+			}
+		}
+		else
+		{
+			p = (uint8*)CrySystemCrtMalloc(sizePlus);
 		}
 	}
 
@@ -208,13 +234,10 @@ CRYMEMORYMANAGER_API void* CryMalloc(size_t size, size_t& allocated, size_t alig
 	}
 #endif //!defined(USE_GLOBAL_BUCKET_ALLOCATOR)
 
-	if (!p)
-	{
-		allocated = 0;
-		gEnv->bIsOutOfMemory = true;
-		CryFatalError("**** Memory allocation for %" PRISIZE_T " bytes failed ****", sizePlus);
-		return 0;   // don't crash - allow caller to react
-	}
+// 	if (!p)
+// 	{
+// 		// both, bucket and CRT malloc failed -> going to crash anyway
+// 	}
 
 	CryInterlockedAdd(&g_TotalAllocatedMemory, int64(sizePlus));
 	tls_allocatedMemory += sizePlus;

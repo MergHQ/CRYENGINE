@@ -2,11 +2,9 @@
 
 #pragma once
 
-#if defined(CONSOLE_CONST_CVAR_MODE)
-	#define GetFloatCVar(name) name ## Default
-#else
-	#define GetFloatCVar(name) (Cry3DEngineBase::GetCVars())->name
-#endif
+#include <CrySystem/ConsoleRegistration.h>
+
+#define GetFloatCVar(name) (Cry3DEngineBase::GetCVars())->name
 
 // console variables
 struct CVars : public Cry3DEngineBase
@@ -406,6 +404,7 @@ struct CVars : public Cry3DEngineBase
 	int   e_ShadowsCacheMaxNodesPerFrame;
 	int   e_ShadowsCacheObjectLod;
 	int   e_ShadowsCacheRenderCharacters;
+	int   e_ShadowsCacheJobs;
 	int   e_ShadowsPerObject;
 	int   e_DynamicDistanceShadows;
 	float e_ShadowsPerObjectResolutionScale;

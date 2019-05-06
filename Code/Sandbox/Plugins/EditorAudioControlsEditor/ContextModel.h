@@ -47,7 +47,7 @@ public:
 	void             Reset();
 	void             DisconnectSignals();
 
-	static CContext* GetContextFromIndex(QModelIndex const& index, int const column);
+	static CContext* GetContextFromIndex(QModelIndex const& index);
 
 private:
 

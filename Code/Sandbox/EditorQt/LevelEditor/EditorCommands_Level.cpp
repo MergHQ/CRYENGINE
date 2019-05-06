@@ -37,7 +37,7 @@ namespace Private_LevelCommands
 void PySnapToGrid(const bool bEnable)
 {
 	char buffer[31];
-	cry_sprintf(buffer, "level.snap_to_grid '%i'", bEnable);
+	cry_sprintf(buffer, "level.snap_to_grid %i", bEnable);
 	CommandEvent(buffer).SendToKeyboardFocus();
 }
 
@@ -49,13 +49,20 @@ void PyToggleSnapToGrid()
 void PySnapToAngle(const bool bEnable)
 {
 	char buffer[32];
-	cry_sprintf(buffer, "level.snap_to_angle '%i'", bEnable);
+	cry_sprintf(buffer, "level.snap_to_angle %i", bEnable);
 	CommandEvent(buffer).SendToKeyboardFocus();
 }
 
 void PyToggleSnapToAngle()
 {
 	CommandEvent("level.toggle_snap_to_angle").SendToKeyboardFocus();
+}
+
+void PySnapToScale(const bool bEnable)
+{
+	char buffer[32];
+	cry_sprintf(buffer, "level.snap_to_scale %i", bEnable);
+	CommandEvent(buffer).SendToKeyboardFocus();
 }
 
 void PyToggleSnapToScale()
@@ -66,7 +73,7 @@ void PyToggleSnapToScale()
 void PySnapToVertex(const bool bEnable)
 {
 	char buffer[33];
-	cry_sprintf(buffer, "level.snap_to_vertex '%i'", bEnable);
+	cry_sprintf(buffer, "level.snap_to_vertex %i", bEnable);
 	CommandEvent(buffer).SendToKeyboardFocus();
 }
 
@@ -78,7 +85,7 @@ void PyToggleSnapToVertex()
 void PySnapToPivot(const bool bEnable)
 {
 	char buffer[32];
-	cry_sprintf(buffer, "level.snap_to_pivot '%i'", bEnable);
+	cry_sprintf(buffer, "level.snap_to_pivot %i", bEnable);
 	CommandEvent(buffer).SendToKeyboardFocus();
 }
 
@@ -90,7 +97,7 @@ void PyToggleSnapToPivot()
 void PySnapToTerrain(const bool bEnable)
 {
 	char buffer[34];
-	cry_sprintf(buffer, "level.snap_to_terrain '%i'", bEnable);
+	cry_sprintf(buffer, "level.snap_to_terrain %i", bEnable);
 	CommandEvent(buffer).SendToKeyboardFocus();
 }
 
@@ -102,7 +109,7 @@ void PyToggleSnapToTerrain()
 void PySnapToGeometry(const bool bEnable)
 {
 	char buffer[35];
-	cry_sprintf(buffer, "level.snap_to_geometry '%i'", bEnable);
+	cry_sprintf(buffer, "level.snap_to_geometry %i", bEnable);
 	CommandEvent(buffer).SendToKeyboardFocus();
 }
 
@@ -114,7 +121,7 @@ void PyToggleSnapToGeometry()
 void PySnapToSurfaceNormal(const bool bEnable)
 {
 	char buffer[41];
-	cry_sprintf(buffer, "level.snap_to_surface_normal '%i'", bEnable);
+	cry_sprintf(buffer, "level.snap_to_surface_normal %i", bEnable);
 	CommandEvent(buffer).SendToKeyboardFocus();
 }
 
@@ -361,6 +368,9 @@ REGISTER_EDITOR_AND_SCRIPT_COMMAND(Private_LevelCommands::PySnapToAngle, level, 
 REGISTER_EDITOR_AND_SCRIPT_COMMAND(Private_LevelCommands::PyToggleSnapToAngle, level, toggle_snap_to_angle,
                                    CCommandDescription("Toggle snapping to angle"));
 REGISTER_EDITOR_UI_COMMAND_DESC(level, toggle_snap_to_angle, "", "L", "icons:Viewport/viewport-snap-angle.ico", true)
+
+REGISTER_EDITOR_AND_SCRIPT_COMMAND(Private_LevelCommands::PySnapToScale, level, snap_to_scale,
+	CCommandDescription("Enable/Disable snapping to scale").Param("enable", "0: Disable, 1: Enable"));
 
 REGISTER_EDITOR_AND_SCRIPT_COMMAND(Private_LevelCommands::PyToggleSnapToScale, level, toggle_snap_to_scale,
                                    CCommandDescription("Toggle snapping to scale"));

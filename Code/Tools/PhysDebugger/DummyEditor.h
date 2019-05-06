@@ -10,6 +10,7 @@
 #pragma include_alias("CryAnimation/ICryAnimation.h", "DummyEditor.h")
 #pragma include_alias("Objects/EntityObject.h", "DummyEditor.h")
 #pragma include_alias("IEditorImpl.h", "DummyEditor.h")
+#pragma include_alias("CrySystem/ConsoleRegistration.h", "DummyEditor.h")
 
 #include "CryCore\Platform\platform.h"
 #include "CryMath\Cry_Math.h"

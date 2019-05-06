@@ -16,7 +16,6 @@
 #include "TimeDemoRecorder.h"
 #include <CrySystem/File/CryFile.h>
 #include <IActorSystem.h>
-#include <CryAISystem/IAgent.h>
 #include <ILevelSystem.h>
 #include <CryMovie/IMovieSystem.h>
 #include "IMovementController.h"
@@ -27,6 +26,7 @@
 #include <Cry3DEngine/ITimeOfDay.h>
 #include <CryRenderer/IRenderAuxGeom.h>
 #include <CryCore/RingBuffer.h>
+#include <CrySystem/ConsoleRegistration.h>
 
 #include <array>
 

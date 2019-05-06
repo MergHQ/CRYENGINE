@@ -1556,7 +1556,7 @@ void CClothSimulator::UpdateCollidablesLerp(f32 t01)
 
 void CClothSimulator::PositionsProjectToProxySurface(f32 t01)
 {
-	CRY_PROFILE_REGION(PROFILE_ANIMATION, "CClothSimulator::PositionsProjectToProxySurface");
+	CRY_PROFILE_SECTION(PROFILE_ANIMATION, "CClothSimulator::PositionsProjectToProxySurface");
 
 	std::vector<SCollidable>& collidables = m_permCollidables;
 	int colliderId[2];     // special handling for collision with two colliders at the same time, thus store id
@@ -2030,7 +2030,7 @@ int CClothSimulator::Step()
 		const f32 springDamping = m_config.springDamping;
 		if (springDamping)
 		{
-			CRY_PROFILE_REGION(PROFILE_ANIMATION, "CClothSimulator::Step::Damping");
+			CRY_PROFILE_SECTION(PROFILE_ANIMATION, "CClothSimulator::Step::Damping");
 			for (int i = 0; i < m_nEdges; i++)
 			{
 				DampEdge(m_links[i], springDamping);
@@ -2065,7 +2065,7 @@ int CClothSimulator::Step()
 		float bendStiffness = m_config.bendStiffness;
 		float bendStiffnessByTrianglesAngle = -m_config.bendStiffnessByTrianglesAngle / 10.0f;
 
-		CRY_PROFILE_REGION(PROFILE_ANIMATION, "CClothSimulator::Step::ConstraintsAndCollisions");
+		CRY_PROFILE_SECTION(PROFILE_ANIMATION, "CClothSimulator::Step::ConstraintsAndCollisions");
 
 		// interpolate transformation of collisionProxies
 		UpdateCollidablesLerp(stepTime01);
@@ -2078,7 +2078,7 @@ int CClothSimulator::Step()
 
 			// solve springs - stretching, bending & shearing
 			{
-				CRY_PROFILE_REGION(PROFILE_ANIMATION, "CClothSimulator::Step::SolveEdges");
+				CRY_PROFILE_SECTION(PROFILE_ANIMATION, "CClothSimulator::Step::SolveEdges");
 				if (stretchStiffness)
 				{
 					for (int i = 0; i < m_nEdges; i++)
@@ -2105,7 +2105,7 @@ int CClothSimulator::Step()
 
 			if (m_config.springDampingPerSubstep && springDamping)
 			{
-				CRY_PROFILE_REGION(PROFILE_ANIMATION, "CClothSimulator::Step::DampEdges");
+				CRY_PROFILE_SECTION(PROFILE_ANIMATION, "CClothSimulator::Step::DampEdges");
 				// only damp  stretch links here, in the collision/stiffness loop
 				for (int i = 0; i < m_nEdges; i++)
 				{

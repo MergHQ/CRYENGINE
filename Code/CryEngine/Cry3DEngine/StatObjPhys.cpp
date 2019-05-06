@@ -1469,6 +1469,10 @@ void SyncToRenderMesh(SSyncToRenderMeshContext* ctx, volatile int* updateState)
 			if (updateState)
 				CryInterlockedDecrement(updateState);
 			pPhysGeom->Unlock(0);
+
+			if (ctx->pObj->m_hasClothTangentsData && ctx->pObj->m_pClothTangentsData)
+				ctx->mesh->UnlockStream(VSF_TANGENTS);
+			ctx->mesh->UnlockStream(VSF_GENERAL);
 			return;
 		}
 	}
@@ -1528,6 +1532,10 @@ void SyncToRenderMesh(SSyncToRenderMeshContext* ctx, volatile int* updateState)
 		CryInterlockedDecrement(updateState);
 	if (pPhysGeom)
 		pPhysGeom->Unlock(0);
+
+	if (ctx->pObj->m_hasClothTangentsData && ctx->pObj->m_pClothTangentsData)
+		ctx->mesh->UnlockStream(VSF_TANGENTS);
+	ctx->mesh->UnlockStream(VSF_GENERAL);
 }
 
 DECLARE_JOB(
@@ -1626,6 +1634,7 @@ IStatObj* CStatObj::UpdateVertices(strided_pointer<Vec3> pVtx, strided_pointer<V
 				pObj->m_hasClothTangentsData = 1;
 			}
 			pObj->SetFlags(pObj->GetFlags() & ~STATIC_OBJECT_CANT_BREAK);
+			m_pRenderMesh->UnlockStream(VSF_TANGENTS);
 			m_pRenderMesh->UnLockForThreadAccess();
 		}
 
@@ -1679,7 +1688,7 @@ IStatObj* CStatObj::UpdateVertices(strided_pointer<Vec3> pVtx, strided_pointer<V
 		}
 
 		m_pAsyncUpdateContext->Set(&pObj->m_AABB.min, &pObj->m_AABB.max, iVtx0, nVtx, pVtx, pVtxMap, mask, rscale
-		                           , m_pClothTangentsData, pMeshVtx, pTangents, pNormals, pObj);
+		                           , m_pClothTangentsData, pMeshVtx, pTangents, pNormals, pObj, mesh);
 
 		if (GetCVars()->e_RenderMeshUpdateAsync)
 		{
@@ -1690,9 +1699,6 @@ IStatObj* CStatObj::UpdateVertices(strided_pointer<Vec3> pVtx, strided_pointer<V
 		else
 		{
 			SyncToRenderMesh(m_pAsyncUpdateContext, NULL);
-			if (m_hasClothTangentsData && m_pClothTangentsData)
-				mesh->UnlockStream(VSF_TANGENTS);
-			mesh->UnlockStream(VSF_GENERAL);
 		}
 
 		mesh->UnLockForThreadAccess();

@@ -89,6 +89,7 @@ public:
 	static int    sLoadSoundSynchronously;
 	static int    sLoadExcelScripts; // CVar to load legacy Excel based Dialogs
 	static int    sWarnOnMissingLoc; // CVar ds_WarnOnMissingLoc
+	static int    sDebugDialogBuffers;
 	static ICVar* ds_LevelNameOverride;
 
 protected:

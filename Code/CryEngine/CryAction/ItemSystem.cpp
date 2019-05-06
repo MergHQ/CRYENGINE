@@ -31,6 +31,7 @@
 #include "CryActionCVars.h"
 
 #include "IGameRulesSystem.h"
+#include <CrySystem/ConsoleRegistration.h>
 
 ICVar* CItemSystem::m_pPrecache = 0;
 ICVar* CItemSystem::m_pItemLimitMP = 0;
@@ -873,7 +874,7 @@ void CItemSystem::CacheGeometry(const IItemParamsNode* geometry)
 //------------------------------------------------------------------------
 void CItemSystem::CacheItemGeometry(const char* className)
 {
-	LOADING_TIME_PROFILE_SECTION(gEnv->pSystem);
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY)(gEnv->pSystem);
 	if (m_itemParamsFlushed)
 		return;
 
@@ -897,7 +898,7 @@ void CItemSystem::CacheItemGeometry(const char* className)
 //------------------------------------------------------------------------
 void CItemSystem::CacheItemSound(const char* className)
 {
-	LOADING_TIME_PROFILE_SECTION(gEnv->pSystem);
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY)(gEnv->pSystem);
 	if (m_itemParamsFlushed)
 		return;
 

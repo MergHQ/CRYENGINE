@@ -32,7 +32,7 @@
 
 #include "Navigation/NavigationSystem/NavigationSystem.h"
 #include <CryAISystem/NavigationSystem/INavMeshQueryManager.h>
-
+#include <CrySystem/ConsoleRegistration.h>
 
 // Maximum time that an async query can execute before it is aborted as an error
 const float MAX_SYNC_TIME_MS = 20;
@@ -1420,7 +1420,7 @@ bool CTacticalPointSystem::GenerateInternal(TTacticalPointQuery query, const Que
 	case eTPQ_GO_Hidespots:
 		if (gAIEnv.CVars.CoverSystem)
 		{
-			CRY_PROFILE_REGION(PROFILE_AI, "TPS Generate Cover Locations");
+			CRY_PROFILE_SECTION(PROFILE_AI, "TPS Generate Cover Locations");
 
 			m_cover.resize(0);
 			gAIEnv.pCoverSystem->GetCover(objPos, fSearchDist, m_cover);
@@ -1440,7 +1440,7 @@ bool CTacticalPointSystem::GenerateInternal(TTacticalPointQuery query, const Que
 
 			if (eyes.size())
 			{
-				CRY_PROFILE_REGION(PROFILE_AI, "TPS Generate Cover Locations [GetOcclusion]");
+				CRY_PROFILE_SECTION(PROFILE_AI, "TPS Generate Cover Locations [GetOcclusion]");
 
 				m_avoidCircles.resize(0);
 				GatherAvoidCircles(objPos, fSearchDist, pipeUser, m_avoidCircles);

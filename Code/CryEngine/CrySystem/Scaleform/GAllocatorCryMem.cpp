@@ -9,6 +9,7 @@
 	#include "SharedResources.h"
 	#include "System.h"
 	#include <CryMemory/IMemory.h>
+	#include <CrySystem/ConsoleRegistration.h>
 
 	#define TRACK_ALLOCATIONS
 

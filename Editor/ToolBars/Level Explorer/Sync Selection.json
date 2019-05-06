@@ -1,10 +1,10 @@
 {
     "toolBar": [
         {
-            "command": "level_explorer.sync_selection",
+            "command": "general.toggle_sync_selection",
             "iconPath": "",
             "m_IsCustom": false,
-            "name": "sync_selection",
+            "name": "toggle_sync_selection",
             "type": 0
         }
     ],

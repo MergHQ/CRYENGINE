@@ -605,6 +605,7 @@ QToolWindowSingleTabAreaFrame::QToolWindowSingleTabAreaFrame(QToolWindowManager*
 	, m_pContents(nullptr)
 {
 	m_pLayout->setContentsMargins(0, 0, 0, 0);
+	m_pLayout->setMargin(0);
 	m_pLayout->setSpacing(0);
 
 	m_pCaption->setAttribute(Qt::WA_TransparentForMouseEvents);

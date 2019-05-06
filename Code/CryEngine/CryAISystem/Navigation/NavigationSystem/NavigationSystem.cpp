@@ -1254,7 +1254,7 @@ void NavigationSystem::UpdateMeshes(const CTimeValue frameStartTime, const float
 	{
 		if (!m_runningTasks.empty())
 		{
-			CRY_PROFILE_REGION(PROFILE_AI, "Navigation System::UpdateMeshes() - Running Task Processing");
+			CRY_PROFILE_SECTION(PROFILE_AI, "Navigation System::UpdateMeshes() - Running Task Processing");
 
 			RunningTasks::iterator it = m_runningTasks.begin();
 			RunningTasks::iterator end = m_runningTasks.end();
@@ -1274,7 +1274,7 @@ void NavigationSystem::UpdateMeshes(const CTimeValue frameStartTime, const float
 				CommitTile(result);
 
 				{
-					CRY_PROFILE_REGION_WAITING(PROFILE_AI, "Navigation System::UpdateMeshes() - Running Task Processing - WaitForJob");
+					CRY_PROFILE_SECTION_WAITING(PROFILE_AI, "Navigation System::UpdateMeshes() - Running Task Processing - WaitForJob");
 					gEnv->GetJobManager()->WaitForJob(result.jobState);
 				}
 
@@ -1320,7 +1320,7 @@ void NavigationSystem::UpdateMeshes(const CTimeValue frameStartTime, const float
 		{
 			SetStateAndSendEvent(EWorkingState::Working);
 
-			CRY_PROFILE_REGION(PROFILE_AI, "Navigation System::UpdateMeshes() - Job Spawning");
+			CRY_PROFILE_SECTION(PROFILE_AI, "Navigation System::UpdateMeshes() - Job Spawning");
 			const size_t idealMinimumTaskCount = 2;
 			const size_t MaxRunningTaskCount = multiThreaded ? m_maxRunningTaskCount : std::min(m_maxRunningTaskCount, idealMinimumTaskCount);
 
@@ -1654,7 +1654,7 @@ void NavigationSystem::CommitTile(TileTaskResult& result)
 	{
 	case TileTaskResult::Completed:
 		{
-			CRY_PROFILE_REGION(PROFILE_AI, "Navigation System::CommitTile() - Running Task Processing - ConnectToNetwork");
+			CRY_PROFILE_SECTION(PROFILE_AI, "Navigation System::CommitTile() - Running Task Processing - ConnectToNetwork");
 
 			MNM::TileID tileID = mesh.navMesh.SetTile(result.x, result.y, result.z, result.tile);
 			mesh.navMesh.ConnectToNetwork(tileID, &result.metaData.connectivityData);
@@ -1672,7 +1672,7 @@ void NavigationSystem::CommitTile(TileTaskResult& result)
 		break;
 	case TileTaskResult::Failed:
 		{
-			CRY_PROFILE_REGION(PROFILE_AI, "Navigation System::CommitTile() - Running Task Processing - ClearTile");
+			CRY_PROFILE_SECTION(PROFILE_AI, "Navigation System::CommitTile() - Running Task Processing - ClearTile");
 
 			if (MNM::TileID tileID = mesh.navMesh.GetTileID(result.x, result.y, result.z))
 			{

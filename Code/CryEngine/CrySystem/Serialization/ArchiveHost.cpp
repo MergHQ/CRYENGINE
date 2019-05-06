@@ -10,6 +10,7 @@
 #include <CrySerialization/BlackBox.h>
 #include <CrySerialization/ClassFactory.h>
 #include <CrySystem/File/ICryPak.h>
+#include <CrySystem/ConsoleRegistration.h>
 
 namespace Serialization
 {

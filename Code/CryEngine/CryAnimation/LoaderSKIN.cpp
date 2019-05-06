@@ -56,7 +56,7 @@ bool CryCHRLoader::BeginLoadSkinRenderMesh(CSkin* pSkin, int nRenderLod, EStream
 {
 	using namespace CryCHRLoader_LoadNewSKIN_Helpers;
 
-	LOADING_TIME_PROFILE_SECTION(g_pISystem);
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY)(g_pISystem);
 
 	static_assert(sizeof(TFace) == 6, "Invalid type size!");
 
@@ -447,7 +447,7 @@ bool CSkin::LoadNewSKIN(const char* szFilePath, uint32 nLoadingFlags)
 
 	using namespace SkinLoader_Helpers;
 
-	LOADING_TIME_PROFILE_SECTION(g_pISystem);
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY)(g_pISystem);
 
 	static_assert(sizeof(TFace) == 6, "Invalid type size!");
 

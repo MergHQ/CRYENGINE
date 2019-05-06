@@ -804,7 +804,7 @@ void C3DEngine::DebugDraw_UpdateDebugNode()
 
 void C3DEngine::RenderWorld(const int nRenderFlags, const SRenderingPassInfo& passInfo, const char* szDebugName)
 {
-	CRY_PROFILE_REGION(PROFILE_3DENGINE, "3DEngine: RenderWorld");
+	CRY_PROFILE_SECTION(PROFILE_3DENGINE, "3DEngine: RenderWorld");
 	MEMSTAT_CONTEXT(EMemStatContextType::Other, "C3DEngine::RenderWorld");
 
 #if defined(FEATURE_SVO_GI)
@@ -1588,7 +1588,7 @@ void C3DEngine::RenderScene(const int nRenderFlags, const SRenderingPassInfo& pa
 		const auto& auxStatObjs = passInfo.GetIRenderView()->GetAuxiliaryStatObjects();
 		if (auxStatObjs.size())
 		{
-			CRY_PROFILE_REGION(PROFILE_RENDERER, "auxiliaryStatObjects");
+			CRY_PROFILE_SECTION(PROFILE_RENDERER, "auxiliaryStatObjects");
 			for (auto& obj : auxStatObjs)
 				obj.second->Render(obj.first, passInfo);
 		}
@@ -1603,7 +1603,7 @@ void C3DEngine::RenderScene(const int nRenderFlags, const SRenderingPassInfo& pa
 
 	if (passInfo.RenderShadows() && !passInfo.IsRecursivePass())
 	{
-		CRY_PROFILE_REGION(PROFILE_3DENGINE, "Prepare Shadow Passes");
+		CRY_PROFILE_SECTION(PROFILE_3DENGINE, "Prepare Shadow Passes");
 
 		// Collect shadow passes used in scene and allocate render view for each of them
 		uint32 nTimeSlicedShadowsUpdatedThisFrame = 0;
@@ -1615,10 +1615,13 @@ void C3DEngine::RenderScene(const int nRenderFlags, const SRenderingPassInfo& pa
 
 		// store ptr to collected shadow passes into main view pass
 		const_cast<SRenderingPassInfo&>(passInfo).SetShadowPasses(&shadowPassInfo);
+
+		// Wait for shadow cache jobs to finish.
+		FinalizePrepareShadowPasses(passInfo, shadowFrustums, shadowPassInfo);
 	}
 	else
 	{
-		CRY_PROFILE_REGION(PROFILE_3DENGINE, "Traverse Outdoor Lights");
+		CRY_PROFILE_SECTION(PROFILE_3DENGINE, "Traverse Outdoor Lights");
 		uint32 outdoorCullMask = IsOutdoorVisible() ? passCullMask : (passCullMask & ~kPassCullMainMask);
 
 		// render point lights
@@ -1629,7 +1632,7 @@ void C3DEngine::RenderScene(const int nRenderFlags, const SRenderingPassInfo& pa
 	// draw objects inside visible vis areas
 	if (m_pVisAreaManager)
 	{
-		CRY_PROFILE_REGION(PROFILE_3DENGINE, "Traverse Indoor Octrees");
+		CRY_PROFILE_SECTION(PROFILE_3DENGINE, "Traverse Indoor Octrees");
 		m_pVisAreaManager->DrawVisibleSectors(passInfo, passCullMask);
 	}
 
@@ -1677,7 +1680,7 @@ void C3DEngine::RenderScene(const int nRenderFlags, const SRenderingPassInfo& pa
 
 		passInfo.GetRendItemSorter().IncreaseOctreeCounter();
 		{
-			CRY_PROFILE_REGION(PROFILE_3DENGINE, "Traverse Outdoor Octree");
+			CRY_PROFILE_SECTION(PROFILE_3DENGINE, "Traverse Outdoor Octree");
 			uint32 outdoorCullMask = IsOutdoorVisible() ? passCullMask : (passCullMask & ~kPassCullMainMask);
 			m_pObjectsTree->Render_Object_Nodes(false, OCTREENODE_RENDER_FLAG_OBJECTS, GetSkyColor(), outdoorCullMask, passInfo);
 		}
@@ -1697,7 +1700,7 @@ void C3DEngine::RenderScene(const int nRenderFlags, const SRenderingPassInfo& pa
 
 	// render outdoor entities very near of camera - fix for 1p vehicle entering into indoor
 	{
-		CRY_PROFILE_REGION(PROFILE_3DENGINE, "COctreeNode::Render_Object_Nodes_NEAR");
+		CRY_PROFILE_SECTION(PROFILE_3DENGINE, "COctreeNode::Render_Object_Nodes_NEAR");
 		passInfo.GetRendItemSorter().IncreaseOctreeCounter();
 		if (GetCVars()->e_PortalsBigEntitiesFix)
 		{
@@ -1721,7 +1724,7 @@ void C3DEngine::RenderScene(const int nRenderFlags, const SRenderingPassInfo& pa
 		auto dwRndFlags = pObj->GetRndFlags();
 		if (dwRndFlags & ERF_HUD || passInfo.GetCamera().IsAABBVisible_E(objBox))
 		{
-			CRY_PROFILE_REGION(PROFILE_3DENGINE, "C3DEngine::RenderScene_DrawAlwaysVisible");
+			CRY_PROFILE_SECTION(PROFILE_3DENGINE, "C3DEngine::RenderScene_DrawAlwaysVisible");
 
 			Vec3 vCamPos = passInfo.GetCamera().GetPosition();
 			float fEntDistance = sqrt_tpl(Distance::Point_AABBSq(vCamPos, objBox)) * passInfo.GetZoomFactor();
@@ -1847,7 +1850,7 @@ void C3DEngine::RenderScene(const int nRenderFlags, const SRenderingPassInfo& pa
 	FinishWindGridJob();
 
 	{
-		CRY_PROFILE_REGION(PROFILE_RENDERER, "Renderer::EF_EndEf3D");
+		CRY_PROFILE_SECTION(PROFILE_RENDERER, "Renderer::EF_EndEf3D");
 		GetRenderer()->EF_EndEf3D(GetObjManager()->m_nUpdateStreamingPrioriryRoundId, GetObjManager()->m_nUpdateStreamingPrioriryRoundIdFast, passInfo, nRenderFlags);
 	}
 
@@ -2603,14 +2606,15 @@ void C3DEngine::DisplayInfo(float& fTextPosX, float& fTextPosY, float& fTextStep
 		const bool bFallback = nMainFrameId - nFallbackFrameId < 50;
 
 		cry_sprintf(szMeshPoolUse,
-		            "Mesh Pool: MemUsed:%.2fKB(%d%%%%) Peak %.fKB PoolSize:%" PRISIZE_T "KB Flushes %" PRISIZE_T " Fallbacks %.3fKB %s",
+		            "Mesh Pool: Used:%.2fKB(%d%%%%) Peak %.fKB (%.fKB) PoolSize:%" PRISIZE_T "KB Flushes %" PRISIZE_T " Fallbacks %.3fKB%s",
 		            (float)stats.nPoolInUse / 1024,
 		            iPercentage,
 		            (float)stats.nPoolInUsePeak / 1024,
+		            (float)stats.nPoolRequestPeak / 1024,
 		            stats.nPoolSize / 1024,
 		            stats.nFlushes,
 		            (float)stats.nFallbacks / 1024.0f,
-		            (bFallback ? "FULL!" : bOverflow ? "OVERFLOW" : ""));
+		            (bFallback ? " FULL!" : bOverflow ? " OVERFLOW" : ""));
 
 		if (stats.nPoolSize && (displayInfoVal == 2 || bOverflow || bFallback))
 		{
@@ -2618,19 +2622,32 @@ void C3DEngine::DisplayInfo(float& fTextPosX, float& fTextPosY, float& fTextStep
 			                     bFallback ? Col_Red : bOverflow ? Col_Orange : Col_White,
 			                     "%s", szMeshPoolUse);
 		}
-		if (stats.nPoolSize && displayInfoVal == 2)
+		if (stats.nInstancePoolSize && displayInfoVal == 2)
 		{
 			char szVolatilePoolsUse[256];
 			cry_sprintf(szVolatilePoolsUse,
-			            "Mesh Instance Pool: MemUsed:%.2fKB(%d%%%%) Peak %.fKB PoolSize:%" PRISIZE_T "KB Fallbacks %.3fKB",
+			            "Mesh Instance Pool: Used:%.2fKB(%d%%%%) Peak %.fKB (%.fKB) PoolSize:%" PRISIZE_T "KB Fallbacks %.3fKB",
 			            (float)stats.nInstancePoolInUse / 1024,
 			            iVolatilePercentage,
 			            (float)stats.nInstancePoolInUsePeak / 1024,
+			            (float)stats.nInstancePoolRequestPeak / 1024,
 			            stats.nInstancePoolSize / 1024,
 			            (float)stats.nInstanceFallbacks / 1024.0f);
 
 			DrawTextRightAligned(fTextPosX, fTextPosY += fTextStepY, DISPLAY_INFO_SCALE,
-			                     Col_White, "%s", szVolatilePoolsUse);
+				Col_White, "%s", szVolatilePoolsUse);
+		}
+		if (displayInfoVal == 2)
+		{
+			char szNoPoolsUse[256];
+			cry_sprintf(szNoPoolsUse,
+				"Mesh Unpool: Used:%.2fKB Peak %.fKB (%.fKB)",
+				(float)stats.nUnpooledInUse / 1024,
+				(float)stats.nUnpooledInUsePeak / 1024,
+				(float)stats.nUnpooledRequestPeak / 1024);
+
+			DrawTextRightAligned(fTextPosX, fTextPosY += fTextStepY, DISPLAY_INFO_SCALE,
+				Col_White, "%s", szNoPoolsUse);
 		}
 
 		memcpy(&lastStats, &stats, sizeof(lastStats));
@@ -3744,5 +3761,21 @@ void C3DEngine::PrepareShadowPasses(const SRenderingPassInfo& passInfo, uint32& 
 		pShadowsView->SetShadowFrustumOwner(pFr);
 		pShadowsView->SwitchUsageMode(IRenderView::eUsageModeWriting);
 		pFr->pOnePassShadowView = std::move(pShadowsView);
+	}
+}
+
+void C3DEngine::FinalizePrepareShadowPasses(const SRenderingPassInfo& passInfo, const std::vector<std::pair<ShadowMapFrustum*, const CLightEntity*>>& shadowFrustums, std::vector<SRenderingPassInfo>& shadowPassInfo)
+{
+	CRY_PROFILE_FUNCTION_WAITING(PROFILE_3DENGINE);
+
+	for (const auto& frustumLightPair : shadowFrustums)
+	{
+		if (frustumLightPair.first->IsCached())
+		{
+			if (auto& pShadowCacheData = frustumLightPair.first->pShadowCacheData)
+			{
+				pShadowCacheData->mTraverseOctreeJobState.Wait();
+			}
+		}
 	}
 }

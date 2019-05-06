@@ -29,6 +29,7 @@ public:
 	}
 
 	void Init() final;
+	void Update() final;
 	void Execute();
 
 private:

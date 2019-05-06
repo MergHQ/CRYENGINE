@@ -297,7 +297,7 @@ void CWeaponSystem::LoadItemParams(IItemSystem* pItemSystem)
 {
 	MEMSTAT_CONTEXT(EMemStatContextType::Other, "WeaponSystem: Load Item Params" );
 
-	LOADING_TIME_PROFILE_SECTION(gEnv->pSystem);
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY)(gEnv->pSystem);
 	
 	int numItems = pItemSystem->GetItemParamsCount();
 

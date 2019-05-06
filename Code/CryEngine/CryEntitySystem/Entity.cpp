@@ -2740,7 +2740,7 @@ int CEntity::LoadGeometry(int nSlot, const char* sFilename, const char* sGeomNam
 //////////////////////////////////////////////////////////////////////////
 int CEntity::LoadCharacter(int nSlot, const char* sFilename, int nLoadFlags)
 {
-	LOADING_TIME_PROFILE_SECTION_ARGS(sFilename);
+	CRY_PROFILE_FUNCTION_ARG(PROFILE_LOADING_ONLY, sFilename);
 
 	ICharacterInstance* pChar;
 

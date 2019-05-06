@@ -260,9 +260,9 @@ struct SDummyCVar : ICVar
 	#define DefineConstIntCVar3(name, _var_, defaultValue, flags, help) { static_assert(static_cast<int>(GetCVarOverride( # name, defaultValue)) == static_cast<int>(_var_), "Unexpected value!"); REGISTER_DUMMY_CVAR(int, name, GetCVarOverride( # name, defaultValue)); }
 	#define AllocateConstIntCVar(scope, name)
 
-	#define DefineConstFloatCVar(name, flags, help) { REGISTER_DUMMY_CVAR(float, ( # name), name ## Default); }
-	#define DeclareConstFloatCVar(name)
-	#define DeclareStaticConstFloatCVar(name)
+	#define DefineConstFloatCVar(name, flags, help) { REGISTER_DUMMY_CVAR(float, ( # name), GetCVarOverride( # name, name ## Default) ); }
+	#define DeclareConstFloatCVar(name) static constexpr float name = GetCVarOverride( # name, name ## Default)
+	#define DeclareStaticConstFloatCVar(name) DeclareConstFloatCVar(name)
 	#define AllocateConstFloatCVar(scope, name)
 
 #else

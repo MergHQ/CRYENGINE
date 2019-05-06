@@ -111,6 +111,7 @@
 
 #if CRY_PLATFORM_DURANGO && (CRY_RENDERER_DIRECT3D >= 110) && (CRY_RENDERER_DIRECT3D < 120)
 	#define DEVICE_SUPPORTS_PERFORMANCE_DEVICE
+	#define DEVICE_TEXTURE_STORE_OWNER
 #endif
 
 #if CRY_PLATFORM_DURANGO
@@ -407,8 +408,6 @@ template<> inline void           safe_release<ID3D11Buffer>(ID3D11Buffer*& ptr);
 	#if !defined(RELEASE) || defined(ENABLE_PROFILING_CODE)
 		#define USE_PIX_DURANGO 1
 	#endif
-#elif CRY_PLATFORM_WINDOWS
-	#include <pix_win.h>
 #endif
 
 //////////////////////////////////////////////////////////////////////////

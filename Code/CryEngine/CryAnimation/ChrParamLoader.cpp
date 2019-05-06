@@ -126,7 +126,7 @@ int32 CChrParamLoader::FindAlreadyProcessedListID(const char* paramFileName) con
 // finds the first occurence of
 CAF_ID CChrParamLoader::MemFindFirst(const char** ppAnimPath, const char* szMask, uint32 crcFolder, CAF_ID nCafID)
 {
-	LOADING_TIME_PROFILE_SECTION(g_pISystem);
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY)(g_pISystem);
 
 	(*ppAnimPath) = NULL;
 
@@ -176,7 +176,7 @@ void CChrParamLoader::ExpandWildcardsForPath(SAnimListInfo& animList, const char
 
 bool CChrParamLoader::ExpandWildcards(uint32 listID)
 {
-	LOADING_TIME_PROFILE_SECTION(g_pISystem);
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY)(g_pISystem);
 
 	CDefaultSkeleton* pDefaultSkeleton = m_pDefaultSkeleton;
 	SAnimListInfo& animList = m_parsedLists[listID];
@@ -480,7 +480,7 @@ bool CChrParamLoader::ExpandWildcards(uint32 listID)
 // check if a list has already been parsed and is in memory, if not, parse it and load it into m_parsedLists
 int32 CChrParamLoader::LoadAnimList(const XmlNodeRef animListXmlNode, const char* paramFileName, string strAnimDirName)
 {
-	LOADING_TIME_PROFILE_SECTION(g_pISystem);
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY)(g_pISystem);
 
 	if (!animListXmlNode)
 		return -1;
@@ -867,7 +867,7 @@ bool CChrParamLoader::NoFacialAnimationAliasInDependencies(SAnimListInfo& animLi
 // this function needs some better error management
 bool CChrParamLoader::LoadFromXml(CDefaultSkeleton* pDefaultSkeleton, string defaultAnimDir, const char* const szParamFileName, DynArray<uint32>& listIDs)
 {
-	LOADING_TIME_PROFILE_SECTION(g_pISystem);
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY)(g_pISystem);
 
 	XmlNodeRef xmlRootNode;
 #ifdef EDITOR_PCDEBUGCODE

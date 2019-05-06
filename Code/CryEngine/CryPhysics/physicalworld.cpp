@@ -1531,7 +1531,7 @@ DEBUG_BREAK;
 			ReallocateList(m_pMassList,0,m_nEntsAlloc);
 			ReallocateList(m_pGroupIds,0,m_nEntsAlloc);
 			ReallocateList(m_pGroupNums,0,m_nEntsAlloc);
-			m_threadData[0].szList=m_threadData[MAX_PHYS_THREADS].szList = m_nEntsAlloc;
+			m_threadData[0].szList = m_nEntsAlloc;
 		}
 	} else if (pent->m_iSimClass>=0) {
 		pe_action_reset reset;
@@ -1930,7 +1930,7 @@ int CPhysicalWorld::GetEntitiesAround(const Vec3 &ptmin,const Vec3 &ptmax, CPhys
 									AtomicAdd(&pent->m_lockUpdate, bProcessed^1);
 									volatile char *pw=(volatile char*)&pent->m_lockUpdate+(1+eBigEndian); for(;*pw;); // ReadLock(m_lockUpdate)
 									AtomicAdd(&pent->m_bProcessed, maskCaller & ~-bProcessed);
-									CryInterlockedAdd((int64*)&pent->m_nUsedParts, (pent->m_nUsedParts & 15*maskCaller4)*(bProcessed-1u));
+									CryInterlockedAdd((int64*)&pent->m_nUsedParts, (pent->m_nUsedParts & 15*maskCaller4)*(bProcessed-1ll));
 									int nUsedParts = pent->m_nUsedParts>>iCaller*4 & 15;
 									int notFull = nUsedParts+1>>4 ^ 1;
 									notFull &= 1-iszero((INT_PTR)pGridEnt->m_pEntBuddy);
@@ -4340,7 +4340,6 @@ float CPhysicalWorld::PrimitiveWorldIntersection(const SPWIParams &pp, WriteLock
 	} else {
 		ip.bStopAtFirstTri = true;
 		ip.bNoBorder = true;
-		ip.bNoAreaContacts = true;
 	}
 	if (pp.ppcontact)
 		*pp.ppcontact = 0;

@@ -6,10 +6,13 @@
 #include "DialogSession.h"
 #include "DialogCommon.h"
 #include <CryEntitySystem/IEntitySystem.h>
+#include <CryAISystem/IAgent.h>
 #include <IAnimationGraph.h>
 
 #define DS_DEBUG_SUPPRESSION
 // #undef  DS_DEBUG_SUPPRESSION
+
+struct IPipeUser;
 
 class CDialogActorContext :
 	public _i_reference_target_t,

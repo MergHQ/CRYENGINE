@@ -9,6 +9,7 @@
 
 // EditorCommon
 #include <EditorFramework/Editor.h>
+#include <LevelEditor/ILevelExplorerContext.h>
 
 class QAdvancedTreeView;
 class QFilteringPanel;
@@ -24,7 +25,7 @@ class QToolButton;
 struct CLayerChangeEvent;
 struct CObjectEvent;
 
-class CLevelExplorer final : public CDockableEditor
+class CLevelExplorer final : public CDockableEditor, public ILevelExplorerContext
 {
 	Q_OBJECT
 
@@ -37,7 +38,6 @@ public:
 	virtual const char* GetEditorName() const override { return "Level Explorer"; }
 	virtual void        SetLayout(const QVariantMap& state) override;
 	virtual QVariantMap GetLayout() const override;
-	virtual void        customEvent(QEvent* event) override;
 	//////////////////////////////////////////////////////////////////////////
 
 	enum ModelType
@@ -60,7 +60,13 @@ public:
 
 	std::vector<CObjectLayer*> GetSelectedObjectLayers() const;
 
+	virtual void GetSelection(std::vector<IObjectLayer*>& layers, std::vector<IObjectLayer*>& layerFolders) const override;
+
+	virtual std::vector<IObjectLayer*> GetSelectedIObjectLayers() const override;
+
 protected:
+	virtual const IEditorContext* GetContextObject() const override { return this; };
+
 	// Adaptive layouts enables editor owners to make better use of space
 	bool            SupportsAdaptiveLayout() const override { return true; }
 	// Used for determining what layout direction to use if adaptive layout is turned off
@@ -98,10 +104,14 @@ private:
 	virtual bool  OnLock() override;
 	virtual bool  OnUnlock() override;
 	virtual bool  OnToggleLock() override;
+	void          OnLockAll();
+	void          OnUnlockAll();
 	virtual bool  OnIsolateLocked() override;
 	virtual bool  OnHide() override;
 	virtual bool  OnUnhide() override;
 	virtual bool  OnToggleHide() override;
+	void          OnHideAll();
+	void          OnUnhideAll();
 	virtual bool  OnIsolateVisibility() override;
 
 	// Context sensitive hierarchical operations
@@ -114,6 +124,7 @@ private:
 	virtual bool OnUnhideChildren() override;
 	virtual bool OnToggleHideChildren() override;
 
+	bool         OnLockReadOnlyLayers();
 	bool         OnMakeLayerActive();
 	bool         IsFirstChildLocked(const std::vector<CObjectLayer*>& layers) const;
 	bool         DoChildrenMatchLockedState(const std::vector<CObjectLayer*>& layers, bool isLocked) const;

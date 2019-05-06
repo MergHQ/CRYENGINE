@@ -41,10 +41,6 @@
 #include "../Network/GameServerNub.h"
 #include "../Network/GameServerChannel.h"
 
-#include <CryAISystem/IPathfinder.h>
-#include <CryAISystem/IAIActor.h>
-#include <CryAISystem/IAIObject.h>
-
 #include "Animation/VehicleSeatAnimActions.h"
 
 //#pragma optimize("", off)
@@ -695,11 +691,11 @@ bool CVehicleSeat::SitDown()
 	if (CVehicleSeat* pSeat = GetSeatUsedRemotely(false))
 		pSeat->EnterRemotely(m_passengerId);
 
-	if (pActor->IsPlayer() || pActor->GetEntity()->GetAI())
+	if (pActor->IsPlayer() || pActor->GetEntity()->HasAI())
 	{
 		GivesActorSeatFeatures(true);
 	}
-	else if (!pActor->GetEntity()->GetAI())
+	else if (!pActor->GetEntity()->HasAI())
 	{
 		// enable the seat actions
 		for (TVehicleSeatActionVector::iterator ite = m_seatActions.begin(); ite != m_seatActions.end(); ++ite)
@@ -845,17 +841,13 @@ bool CVehicleSeat::Exit(bool isTransitionEnabled, bool force /*=false*/, Vec3 ex
 			{
 				m_adjustedExitPos.zero();
 
-				if (IAIObject* pAIObject = pActor->GetEntity()->GetAI())
-				{
-					Matrix34 worldTM = GetExitTM(pActor);
-					Vec3 adjustedPos;
+				Matrix34 worldTM = GetExitTM(pActor);
+				Vec3 adjustedPos;
 
-					if (IAIPathAgent* aiactor = pAIObject->CastToIAIActor())
-					{
-						if (aiactor->GetValidPositionNearby(worldTM.GetTranslation(), adjustedPos))
-							if (worldTM.GetTranslation() != adjustedPos)
-								m_adjustedExitPos = adjustedPos;
-					}
+				if (pActor->GetValidPositionNearby(worldTM.GetTranslation(), adjustedPos))
+				{
+					if (worldTM.GetTranslation() != adjustedPos)
+						m_adjustedExitPos = adjustedPos;
 				}
 			}
 		}
@@ -1539,7 +1531,8 @@ void CVehicleSeat::Update(float deltaTime)
 
 				if (!GetISystem()->GetViewCamera().IsAABBVisible_F(worldBounds))
 				{
-					if (IAIObject* pAIObject = pActor->GetEntity()->GetAI())
+					// Commented out for now because GetTeleportPosition isn't implemented anyway
+					/*if (IAIObject* pAIObject = pActor->GetEntity()->GetAI())
 					{
 						if (IAIPathAgent* aiactor = pAIObject->CastToIAIActor())
 							if (aiactor->GetTeleportPosition(m_adjustedExitPos))
@@ -1547,7 +1540,7 @@ void CVehicleSeat::Update(float deltaTime)
 								Exit(false);
 								StandUp();
 							}
-					}
+					}*/
 				}
 			}
 
@@ -2065,7 +2058,7 @@ void CVehicleSeat::PostSerialize()
 			{
 				if (remote)
 					EnterRemotely(m_passengerId);
-				else if (pActor->GetEntity() && pActor->GetEntity()->GetAI())
+				else if (pActor->GetEntity() && pActor->GetEntity()->HasAI())
 				{
 					bool needUpdateTM = false;
 					if (m_isRagdollingOnDeath == false)

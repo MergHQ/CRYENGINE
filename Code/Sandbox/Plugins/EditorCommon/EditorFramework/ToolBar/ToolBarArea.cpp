@@ -57,6 +57,7 @@ CToolBarArea::CToolBarArea(CEditor* pParent, Qt::Orientation orientation)
 
 	UpdateLayoutAlignment();
 
+	setSizePolicy(QSizePolicy::Minimum , QSizePolicy::Minimum);
 	m_pLayout->setSpacing(0);
 	m_pLayout->setMargin(0);
 
@@ -243,11 +244,11 @@ void CToolBarArea::UpdateLayoutAlignment(CToolBarAreaItem* pItemToBeRemoved)
 	{
 		if (m_orientation == Qt::Horizontal)
 		{
-			m_pLayout->setAlignment(Qt::AlignLeft);
+			m_pLayout->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
 		}
 		else
 		{
-			m_pLayout->setAlignment(Qt::AlignTop);
+			m_pLayout->setAlignment(Qt::AlignTop | Qt::AlignHCenter);
 		}
 	}
 }
@@ -537,10 +538,12 @@ void CToolBarArea::customEvent(QEvent* pEvent)
 		if (command == "toolbar.insert_expanding_spacer")
 		{
 			AddSpacer(CSpacerItem::SpacerType::Expanding, GetPlacementIndexFromPosition(m_actionContextPosition));
+			pEvent->setAccepted(true);
 		}
 		else if (command == "toolbar.insert_fixed_spacer")
 		{
 			AddSpacer(CSpacerItem::SpacerType::Fixed, GetPlacementIndexFromPosition(m_actionContextPosition));
+			pEvent->setAccepted(true);
 		}
 		else if (command == "toolbar.toggle_spacer_type")
 		{
@@ -563,6 +566,7 @@ void CToolBarArea::customEvent(QEvent* pEvent)
 				pSpacerItem->SetSpacerType(CSpacerItem::SpacerType::Expanding);
 				m_pLayout->setAlignment(0);
 			}
+			pEvent->setAccepted(true);
 		}
 		else if (command == "toolbar.remove_spacer")
 		{
@@ -572,6 +576,7 @@ void CToolBarArea::customEvent(QEvent* pEvent)
 
 			RemoveItem(pItem);
 			pItem->deleteLater();
+			pEvent->setAccepted(true);
 		}
 	}
 }

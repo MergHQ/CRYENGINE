@@ -1008,6 +1008,7 @@ public:
 	void                            PrepareLightSourcesForRendering_1(const SRenderingPassInfo& passInfo);
 	void                            InitShadowFrustums(const SRenderingPassInfo& passInfo);
 	void                            PrepareShadowPasses(const SRenderingPassInfo& passInfo, uint32& nTimeSlicedShadowsUpdatedThisFrame, std::vector<std::pair<ShadowMapFrustum*, const class CLightEntity*>>& shadowFrustums, std::vector<SRenderingPassInfo>& shadowPassInfo);
+	void                            FinalizePrepareShadowPasses(const SRenderingPassInfo& passInfo, const std::vector<std::pair<ShadowMapFrustum*, const class CLightEntity*>>& shadowFrustums, std::vector<SRenderingPassInfo>& shadowPassInfo);
 
 	///////////////////////////////////////////////////////////////////////////////
 

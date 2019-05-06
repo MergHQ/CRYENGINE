@@ -6,8 +6,9 @@
 #include <climits>
 
 #include "Common/RenderDisplayContext.h"
-
 #include "Common/ReverseDepth.h"
+
+#include <CrySystem/ConsoleRegistration.h>
 
 #if defined(ENABLE_RENDER_AUX_GEOM)
 
@@ -1285,9 +1286,18 @@ CDeviceResourceSetPtr CRenderAuxGeomD3D::CAuxDeviceResourceSetCacheForTexture::G
 	if (it != m_cache.end())
 		return (it->second).first;
 
+	// Fall-back (without creating a cache-entry pointing to the requested missing texture)
 	CTexture *pTexture = CTexture::GetByID(textureId);
 	if (!pTexture || !CTexture::IsTextureExist(pTexture))
+	{
 		pTexture = CRendererResources::s_ptexWhite;
+		textureId = pTexture->GetID();
+
+		CDeviceResourceSetPtr pResourceSet = GetOrCreateResourceSet(textureId);
+		if (!m_pDefaultWhite)
+			m_pDefaultWhite = pResourceSet;
+		return pResourceSet;
+	}
 
 	CDeviceResourceSetDesc auxResourcesSetDesc;
 	auxResourcesSetDesc.SetTexture(0, pTexture, EDefaultResourceViews::Default, EShaderStage_Pixel);
@@ -1298,10 +1308,6 @@ CDeviceResourceSetPtr CRenderAuxGeomD3D::CAuxDeviceResourceSetCacheForTexture::G
 	{
 		m_cache[textureId] = std::make_pair(pResourceSet, _smart_ptr<CTexture>(pTexture));
 		pTexture->AddInvalidateCallback(this, SResourceBindPoint(), OnTextureInvalidated);
-		
-		if (!m_pDefaultWhite && pTexture == CRendererResources::s_ptexWhite)
-			m_pDefaultWhite = pResourceSet;
-
 	}
 	
 	return pResourceSet;

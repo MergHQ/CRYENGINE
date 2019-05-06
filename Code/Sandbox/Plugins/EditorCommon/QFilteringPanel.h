@@ -51,8 +51,14 @@ public:
 	void CreateMenu(CAbstractMenu* pParentMenu);
 
 	//! Adds a new filter with the provided parameters.
-	//! \sa CItemModelAttribute 
+	//! \sa CItemModelAttribute
 	void AddFilter(const QString& attributeName, const QString& operatorName, const QString& filterValue);
+
+	//! Overrides values provided by CItemModelAttributeEnum attributes for this instance of the filtering panel.
+	//! Allows you to define entries even for attributes of a non-enum type. This feature can be used with a custom implementation of the IAttributeFilterOperator.
+	//! \sa IAttributeFilterOperator::CreateEditWidget
+	//! \sa CItemModelAttributeEnum::GetEnumEntries
+	void OverrideAttributeEnumEntries(const QString& attributeName, const QStringList& values);
 
 	bool IsExpanded() const;
 	void SetExpanded(bool expanded);
@@ -70,11 +76,12 @@ private:
 	class CSavedFiltersModel;
 
 	// Fills the provided menu with all the existing filters
-	void FillMenu(CAbstractMenu* pMenu);
+	void                                     FillMenu(CAbstractMenu* pMenu);
 
 	CFilterWidget*                           AddFilter();
 
 	const std::vector<CItemModelAttribute*>& GetAttributes() const { return m_attributes; }
+	const QStringList*                       GetAttributeEnumEntries(const QString& attributeName);
 
 	void                                     OnFilterChanged();
 	void                                     OnSearch();
@@ -117,4 +124,5 @@ private:
 	AttributeFilterSharedPtr          m_favoritesFilter;
 	const char*                       m_uniqueName;
 	CSavedFiltersWidget*              m_savedFiltersWidget;
+	std::map<QString, QStringList>    m_attributeValues;
 };

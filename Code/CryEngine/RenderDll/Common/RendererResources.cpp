@@ -333,7 +333,7 @@ void CRendererResources::UnloadDefaultSystemTextures(bool bFinalRelease)
 
 void CRendererResources::LoadDefaultSystemTextures()
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
 	char str[256];
 	int i;
@@ -935,9 +935,9 @@ void CRendererResources::CreateHDRMaps(int resourceWidth, int resourceHeight)
 	uint32 nHDRTargetFlags = FT_DONT_RELEASE;
 	uint32 nHDRTargetFlagsUAV = nHDRTargetFlags | (FT_USAGE_UNORDERED_ACCESS);  // UAV required for tiled deferred shading
 
-	pHDRPostProcess->AddRenderTarget(width, height, Clr_Unknown, nHDRFormat , 1.0f, "$HDRTarget"      , &s_ptexHDRTarget      , nHDRTargetFlagsUAV);
-	pHDRPostProcess->AddRenderTarget(width, height, Clr_Unknown, nHDRAFormat, 1.0f, "$HDRTargetMasked", &s_ptexHDRTargetMasked, nHDRTargetFlags);
-	pHDRPostProcess->AddRenderTarget(width, height, Clr_Unknown, nHDRQFormat, 1.0f, "$HDRTargetPrev"  , &s_ptexHDRTargetPrev);
+	pHDRPostProcess->AddRenderTarget(width, height, Clr_Empty, nHDRFormat , 1.0f, "$HDRTarget"      , &s_ptexHDRTarget      , nHDRTargetFlagsUAV);
+	pHDRPostProcess->AddRenderTarget(width, height, Clr_Empty, nHDRAFormat, 1.0f, "$HDRTargetMasked", &s_ptexHDRTargetMasked, nHDRTargetFlags);
+	pHDRPostProcess->AddRenderTarget(width, height, Clr_Empty, nHDRQFormat, 1.0f, "$HDRTargetPrev"  , &s_ptexHDRTargetPrev);
 
 	// Scaled versions of the HDR scene texture
 	pHDRPostProcess->AddRenderTarget(width_r2 , height_r2 , Clr_Unknown, nHDRFormat, 0.9f, "$HDRTarget 1/2a" , &s_ptexHDRTargetScaled[0][0], FT_DONT_RELEASE);

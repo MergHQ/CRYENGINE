@@ -31,8 +31,10 @@ public:
 	virtual void        OnCloseAsset() override;
 
 protected:
-	void PushPresetToRender();
-	void SetPreviewResolution();
+	virtual bool IsDockingSystemEnabled() const override { return false; }
+	void         PushPresetToRender();
+	void         SetPreviewResolution();
+
 protected slots:
 	void OnEditOutputs();
 	void OnOutputEditorAccepted();

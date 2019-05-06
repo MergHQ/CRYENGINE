@@ -109,7 +109,9 @@ private:
 	SProfilerSection& FindSection(SFrameData& frameData, SProfilerSection& section);
 
 protected:
-	enum { kNumPendingFrames = MAX_FRAMES_IN_FLIGHT };
+	enum { kNumPendingFrames = MAX_FRAMES_IN_FLIGHT 
+		+ 1 /* display is delayed by one frame */ 
+		+ 1 /* timestamp group fence is issued after RT_EndFrame so it's technically part of the next frame */ };
 
 	std::vector<uint32>               m_stack;
 	SFrameData                        m_frameData[kNumPendingFrames];

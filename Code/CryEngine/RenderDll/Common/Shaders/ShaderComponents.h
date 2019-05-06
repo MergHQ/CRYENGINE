@@ -253,9 +253,9 @@ struct SVertexInputStream
 
 	SVertexInputStream(const char* streamSemanticName, uint8 streamSemanticIndex, uint8 streamAttributeLocation)
 	{
-		CRY_ASSERT(strlen(streamSemanticName) < CRY_ARRAY_COUNT(semanticName));
+		CRY_ASSERT(strlen(streamSemanticName) < CRY_ARRAY_COUNT(semanticName) - 1);
 
-		strncpy(semanticName, streamSemanticName, CRY_ARRAY_COUNT(semanticName));
+		strncpy(semanticName, streamSemanticName, CRY_ARRAY_COUNT(semanticName) - 1);
 		semanticIndex = streamSemanticIndex;
 		attributeLocation = streamAttributeLocation;
 	}

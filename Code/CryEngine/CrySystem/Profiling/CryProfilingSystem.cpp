@@ -3,7 +3,7 @@
 #include "StdAfx.h"
 #include "CryProfilingSystem.h"
 #include "BootProfiler.h"
-#include <CrySystem/IConsole.h>
+#include <CrySystem/ConsoleRegistration.h>
 #include <CryThreading/IThreadManager.h>
 
 #if CRY_PLATFORM_WINDOWS

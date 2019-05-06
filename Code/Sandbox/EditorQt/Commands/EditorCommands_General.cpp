@@ -67,6 +67,9 @@ REGISTER_EDITOR_UI_COMMAND_DESC(general, open, "&Open...", CKeyboardShortcut::St
 REGISTER_EDITOR_AND_SCRIPT_KEYBOARD_FOCUS_COMMAND(general, import, CCommandDescription("Context driven 'import' command"))
 REGISTER_EDITOR_UI_COMMAND_DESC(general, import, "Import...", "", "icons:General/File_Import.ico", false)
 
+REGISTER_EDITOR_AND_SCRIPT_KEYBOARD_FOCUS_COMMAND(general, export, CCommandDescription("Context driven 'export' command"))
+REGISTER_EDITOR_UI_COMMAND_DESC(general, export, "Export...", "", "icons:General/File_Export.ico", false)
+
 REGISTER_EDITOR_AND_SCRIPT_KEYBOARD_FOCUS_COMMAND(general, reload, CCommandDescription("Context driven 'reload' command"))
 REGISTER_EDITOR_UI_COMMAND_DESC(general, reload, "Reload", "", "icons:General/Reload.ico", false)
 
@@ -210,6 +213,9 @@ REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(Private_EditorCommands::PyOpenOrFocusViewPa
 REGISTER_EDITOR_AND_SCRIPT_COMMAND(Private_EditorCommands::OpenEditorMenu, general, open_editor_menu,
                                    CCommandDescription("Open Editor Menu"))
 REGISTER_EDITOR_UI_COMMAND_DESC(general, open_editor_menu, "", "", "", false)
+
+REGISTER_EDITOR_AND_SCRIPT_KEYBOARD_FOCUS_COMMAND(general, toggle_sync_selection, CCommandDescription("Context driven toggle sync selection command"))
+REGISTER_EDITOR_UI_COMMAND_DESC(general, toggle_sync_selection, "Sync Selection", "", "icons:general_sync_selection.ico", true)
 
 //////////////////////////////////////////////////////////////////////////
 // Main frame UI Commands

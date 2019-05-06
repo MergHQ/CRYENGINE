@@ -38,6 +38,7 @@
 
 #include "Utility/CryWatch.h"
 #include <CryGame/GameUtils.h>
+#include <CrySystem/ConsoleRegistration.h>
 
 static TKeyValuePair<EGameOverReason,const char*>
 g_gameOverReasons[] = {

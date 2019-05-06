@@ -116,7 +116,7 @@ void CContextWidget::OnContextMenu(QPoint const& pos)
 
 		if (index.isValid())
 		{
-			CContext const* const pContext = CContextModel::GetContextFromIndex(index, g_contextNameColumn);
+			CContext const* const pContext = CContextModel::GetContextFromIndex(index);
 
 			if ((pContext != nullptr) && (pContext->GetId() != CryAudio::GlobalContextId))
 			{
@@ -158,7 +158,7 @@ void CContextWidget::OnContextMenu(QPoint const& pos)
 //////////////////////////////////////////////////////////////////////////
 void CContextWidget::OnItemDoubleClicked(QModelIndex const& index)
 {
-	CContext const* const pContext = CContextModel::GetContextFromIndex(index, g_contextNameColumn);
+	CContext const* const pContext = CContextModel::GetContextFromIndex(index);
 
 	if ((pContext != nullptr) && (pContext->GetId() != CryAudio::GlobalContextId))
 	{
@@ -193,7 +193,7 @@ bool CContextWidget::eventFilter(QObject* pObject, QEvent* pEvent)
 
 					if (index.isValid())
 					{
-						CContext const* const pContext = CContextModel::GetContextFromIndex(index, g_contextNameColumn);
+						CContext const* const pContext = CContextModel::GetContextFromIndex(index);
 
 						if ((pContext != nullptr) && (pContext->GetId() != CryAudio::GlobalContextId))
 						{
@@ -233,7 +233,7 @@ void CContextWidget::ActivateMultipleContexts()
 	{
 		if (index.isValid())
 		{
-			CContext const* const pContext = CContextModel::GetContextFromIndex(index, g_contextNameColumn);
+			CContext const* const pContext = CContextModel::GetContextFromIndex(index);
 
 			if ((pContext != nullptr) &&
 			    (pContext->GetId() != CryAudio::GlobalContextId) &&
@@ -256,7 +256,7 @@ void CContextWidget::DeactivateMultipleContexts()
 	{
 		if (index.isValid())
 		{
-			CContext const* const pContext = CContextModel::GetContextFromIndex(index, g_contextNameColumn);
+			CContext const* const pContext = CContextModel::GetContextFromIndex(index);
 
 			if ((pContext != nullptr) &&
 			    (pContext->GetId() != CryAudio::GlobalContextId) &&
@@ -311,19 +311,26 @@ void CContextWidget::DeleteMultipleContexts()
 	if (messageBox->Execute() == QDialogButtonBox::Yes)
 	{
 		QModelIndexList const& selection = m_pTreeView->selectionModel()->selectedRows();
+		std::vector<CContext const*> contexts;
+		contexts.reserve(static_cast<size_t>(selection.size()));
 
 		for (auto const& index : selection)
 		{
 			if (index.isValid())
 			{
-				CContext const* const pContext = CContextModel::GetContextFromIndex(index, g_contextNameColumn);
+				CContext const* const pContext = CContextModel::GetContextFromIndex(index);
 
 				if ((pContext != nullptr) && (pContext->GetId() != CryAudio::GlobalContextId))
 				{
-					g_assetsManager.ChangeContext(pContext->GetId(), CryAudio::GlobalContextId);
-					g_contextManager.DeleteContext(pContext);
+					contexts.push_back(pContext);
 				}
 			}
+		}
+
+		for (auto const pContext : contexts)
+		{
+			g_assetsManager.ChangeContext(pContext->GetId(), CryAudio::GlobalContextId);
+			g_contextManager.DeleteContext(pContext);
 		}
 	}
 }

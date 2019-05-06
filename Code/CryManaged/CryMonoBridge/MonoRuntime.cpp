@@ -20,7 +20,7 @@
 #include <CrySystem/ILog.h>
 #include <CrySystem/IProjectManager.h>
 #include <CryAISystem/IAISystem.h>
-#include <CrySystem/IConsole.h>
+#include <CrySystem/ConsoleRegistration.h>
 
 #include "NativeToManagedInterfaces/IMonoNativeToManagedInterface.h"
 #include <CryInput/IHardwareMouse.h>

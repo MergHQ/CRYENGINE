@@ -16,7 +16,6 @@
 #include <CryEntitySystem/IBreakableGlassSystem.h>
 #include "IPlayerProfiles.h"
 #include "IGameSessionHandler.h"
-#include "DialogSystem/DialogSystem.h"
 #include <Cry3DEngine/ITimeOfDay.h>
 #include "TimeOfDayScheduler.h"
 #include "PersistantDebug.h"
@@ -28,6 +27,7 @@
 #include "Network/ObjectSelector.h"
 
 #include <CrySystem/Scaleform/IFlashUI.h>
+#include <CrySystem/ConsoleRegistration.h>
 
 CActionGame* CActionGame::s_this = 0;
 int CActionGame::g_procedural_breaking = 0;
@@ -969,7 +969,7 @@ CActionGame::eInitTaskState CActionGame::NonBlockingConnect(BlockingConditionFun
 
 bool CActionGame::BlockingConnect(BlockingConditionFunction condition, bool requireClientChannel, const char* conditionText)
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 	MEMSTAT_CONTEXT(EMemStatContextType::Other, "BlockingConnect");
 
 	bool ok = false;
@@ -4689,7 +4689,7 @@ void CActionGame::FixBrokenObjects(bool bRestoreBroken)
 
 void CActionGame::OnEditorSetGameMode(bool bGameMode)
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 	FixBrokenObjects(true);
 	ClearBreakHistory();
 
@@ -4729,15 +4729,6 @@ void CActionGame::OnEditorSetGameMode(bool bGameMode)
 	pCryAction->GetTimeOfDayScheduler()->Reset();
 	gEnv->pFlowSystem->Reset(false);
 	if (gEnv->pFlashUI) gEnv->pFlashUI->Reload();
-	CDialogSystem* pDS = pCryAction->GetDialogSystem();
-	if (pDS)
-	{
-		pDS->Reset(false);
-		if (bGameMode && CDialogSystem::sAutoReloadScripts != 0)
-		{
-			pDS->ReloadScripts();
-		}
-	}
 
 	pCryAction->GetPersistantDebug()->Reset();
 }

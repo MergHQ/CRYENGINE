@@ -543,7 +543,7 @@ void CCullThread::PrepareOcclusion()
 
 		if ((bHWZBuffer & 3) > 0)
 		{
-			CRY_PROFILE_REGION(PROFILE_3DENGINE, "Transfer Previous Frame Z-Buffer");
+			CRY_PROFILE_SECTION(PROFILE_3DENGINE, "Transfer Previous Frame Z-Buffer");
 			m_Enabled = RASTERIZER.DownLoadHWDepthBuffer(m_NearPlane, m_FarPlane, m_NearestMax, GetCVars()->e_CoverageBufferBias);
 		}
 		else
@@ -649,7 +649,7 @@ void CCullThread::PrepareOcclusion_RasterizeZBuffer()
 
 		if (bHWZBuffer & 4)
 		{
-			CRY_PROFILE_REGION(PROFILE_3DENGINE, "Rasterize Z-Buffer");
+			CRY_PROFILE_SECTION(PROFILE_3DENGINE, "Rasterize Z-Buffer");
 			m_Enabled = true;
 			RasterizeZBuffer((uint32)PolyLimit);
 		}

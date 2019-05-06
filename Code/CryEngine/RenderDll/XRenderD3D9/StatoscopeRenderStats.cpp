@@ -6,6 +6,7 @@
 #include "PipelineProfiler.h"
 #include <CryNetwork/INetwork.h>
 #include "StatoscopeRenderStats.h"
+#include <CrySystem/ConsoleRegistration.h>
 
 #if ENABLE_STATOSCOPE
 

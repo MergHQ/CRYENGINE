@@ -280,7 +280,7 @@ void CTexture::CreateDeviceTexture(SSubresourceData&& pData)
 
 bool CTexture::RT_CreateDeviceTexture(const SSubresourceData& pData)
 {
-	CRY_PROFILE_REGION(PROFILE_RENDERER, "CTexture::RT_CreateDeviceTexture");
+	CRY_PROFILE_SECTION(PROFILE_RENDERER, "CTexture::RT_CreateDeviceTexture");
 	MEMSTAT_CONTEXT(EMemStatContextType::Texture, "Creating Texture");
 	MEMSTAT_CONTEXT_FMT(EMemStatContextType::Texture, "%s %ix%ix%i %08x", m_SrcName.c_str(), m_nWidth, m_nHeight, m_nMips, m_eFlags);
 	SCOPED_RENDERER_ALLOCATION_NAME_HINT(GetSourceName());
@@ -293,6 +293,7 @@ bool CTexture::RT_CreateDeviceTexture(const SSubresourceData& pData)
 	//if we have any device owned resources allocated, we must sync with render thread
 	if (m_pDevTexture)
 	{
+		CRY_ASSERT(m_pDevTexture->GetOwner() == this);
 		RT_ReleaseDeviceTexture(false, false);
 	}
 
@@ -306,6 +307,7 @@ bool CTexture::RT_CreateDeviceTexture(const SSubresourceData& pData)
 		return false;
 
 	// Assign name to Texture for enhanced debugging
+	m_pDevTexture->SetOwner(this);
 	m_pDevTexture->SetDebugName(m_SrcName);
 
 	assert(!IsStreamed());
@@ -348,7 +350,7 @@ void CTexture::ReleaseDeviceTexture(bool bKeepLastMips, bool bFromUnload) thread
 
 void CTexture::RT_ReleaseDeviceTexture(bool bKeepLastMips, bool bFromUnload) threadsafe
 {
-	CRY_PROFILE_REGION(PROFILE_RENDERER, "CTexture::RT_ReleaseDeviceTexture");
+	CRY_PROFILE_SECTION(PROFILE_RENDERER, "CTexture::RT_ReleaseDeviceTexture");
 
 	if (!bFromUnload)
 		AbortStreamingTasks(this);
@@ -363,6 +365,7 @@ void CTexture::RT_ReleaseDeviceTexture(bool bKeepLastMips, bool bFromUnload) thr
 		{
 			if (CDeviceTexture* const pDevTex = m_pDevTexture)
 			{
+				CRY_ASSERT(m_pDevTexture->GetOwner() == this);
 				pDevTex->SetOwner(nullptr);
 
 				// Ref-Counting only works when there is a backing native objects, otherwise it's -1
@@ -524,19 +527,6 @@ bool SSamplerState::SetDefaultFilterMode(int nFilter)
 	return s_sDefState.SetFilterMode(nFilter);
 }
 
-#if CRY_PLATFORM_DURANGO && (CRY_RENDERER_DIRECT3D >= 110) && (CRY_RENDERER_DIRECT3D < 120)
-void CTexture::ValidateSRVs()
-{
-	// We should only end up here if the texture was moved due to a defrag. This should only be for static textures.
-	m_pDevTexture->ReleaseResourceViews();
-	m_pDevTexture->AllocatePredefinedResourceViews();
-	// TODO: recreate all views that existed ...
-
-	// Notify that resource is dirty
-	InvalidateDeviceResource(this, eDeviceResourceDirty | eDeviceResourceViewDirty);
-}
-#endif
-
 void CTexture::UpdateTextureRegion(const byte* pSrcData, int nX, int nY, int nZ, int USize, int VSize, int ZSize, ETEX_Format eSrcFormat)
 {
 	if (gRenDev->m_pRT->IsRenderThread())
@@ -566,7 +556,7 @@ void CTexture::UpdateTextureRegion(const byte* pSrcData, int nX, int nY, int nZ,
 
 void CTexture::RT_UpdateTextureRegion(const byte* pSrcData, int nX, int nY, int nZ, int USize, int VSize, int ZSize, ETEX_Format eSrcFormat)
 {
-	CRY_PROFILE_REGION(PROFILE_RENDERER, "CTexture::RT_UpdateTextureRegion");
+	CRY_PROFILE_SECTION(PROFILE_RENDERER, "CTexture::RT_UpdateTextureRegion");
 	PROFILE_FRAME(UpdateTextureRegion);
 	PROFILE_LABEL_SCOPE("UpdateTextureRegion");
 

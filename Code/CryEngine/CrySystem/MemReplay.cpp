@@ -837,7 +837,7 @@ static MemFastMutex& GetLogMutex()
 	return logmutex;
 }
 static uint32 g_memReplayFrameCount;
-const int k_maxCallStackDepth = 256;
+const uint k_maxCallStackDepth = 256;
 
 static volatile UINT_PTR s_replayLastGlobal = 0;
 static volatile int s_replayStartingFree = 0;
@@ -911,33 +911,15 @@ void* ReplayAllocatorBase::MapAddressSpace(void* addr, size_t sz)
 	void ReplayAllocatorBase::UnreserveAddressSpace(void* base, void* committedEnd)
 	{
 		int res = munmap(base, reinterpret_cast<char*>(committedEnd) - reinterpret_cast<char*>(base));
-		(void) res;
-		assert(res == 0);
+		CRY_VERIFY(res == 0);
 	}
 
 	void* ReplayAllocatorBase::MapAddressSpace(void* addr, size_t sz)
 	{
 		int res = mprotect(addr, sz, PROT_READ | PROT_WRITE);
+		CRY_VERIFY(res == 0);
 		return addr;
 	}
-#elif CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID
-
-void* ReplayAllocatorBase::ReserveAddressSpace(size_t sz)
-{
-	return mmap(NULL, sz, PROT_NONE, MAP_PRIVATE | MAP_ANON, -1, 0);
-}
-
-void ReplayAllocatorBase::UnreserveAddressSpace(void* base, void* committedEnd)
-{
-	int res = munmap(base, reinterpret_cast<char*>(committedEnd) - reinterpret_cast<char*>(base));
-}
-
-void* ReplayAllocatorBase::MapAddressSpace(void* addr, size_t sz)
-{
-	int res = mprotect(addr, sz, PROT_READ | PROT_WRITE);
-	return addr;
-}
-
 #elif CRY_PLATFORM_ORBIS
 
 	void* ReplayAllocatorBase::ReserveAddressSpace(size_t sz)
@@ -970,24 +952,9 @@ void* ReplayAllocatorBase::MapAddressSpace(void* addr, size_t sz)
 
 namespace
 {
-//helper functions to become strict aliasing warning conform
-ILINE void** CastCallstack(uint32* pCallstack)
-{
-	return alias_cast<void**>(pCallstack);
-}
-ILINE void** CastCallstack(uint64* pCallstack)
-{
-	return alias_cast<void**>(pCallstack);
-}
-	#if !CRY_PLATFORM_WINDOWS && !CRY_PLATFORM_DURANGO && !CRY_PLATFORM_LINUX && !CRY_PLATFORM_ANDROID
 ILINE void** CastCallstack(UINT_PTR* pCallstack)
 {
 	return alias_cast<void**>(pCallstack);
-}
-	#endif
-ILINE volatile long* LongPtr(volatile int* pI)
-{
-	return alias_cast<volatile long*>(pI);
 }
 
 void RetrieveMemReplaySuffix(char* pSuffixBuffer, const char* lwrCommandLine, int bufferLength)
@@ -1731,13 +1698,13 @@ BOOL CReplayModules::EnumModules_Durango(PCSTR moduleName, DWORD64 moduleBase, U
 
 		ModuleLoadDesc mld;
 		cry_sprintf(mld.sig, "%p, %08X, %08X, {%08X-%04X-%04X-%02X %02X-%02X %02X %02X %02X %02X %02X}, %d\n",
-		            moduleBase, moduleSize, ihModInfo.TimeDateStamp,
-		            ihModInfo.PdbSig70.Data1, ihModInfo.PdbSig70.Data2, ihModInfo.PdbSig70.Data3,
-		            ihModInfo.PdbSig70.Data4[0], ihModInfo.PdbSig70.Data4[1],
-		            ihModInfo.PdbSig70.Data4[2], ihModInfo.PdbSig70.Data4[3],
-		            ihModInfo.PdbSig70.Data4[4], ihModInfo.PdbSig70.Data4[5],
-		            ihModInfo.PdbSig70.Data4[6], ihModInfo.PdbSig70.Data4[7],
-		            ihModInfo.PdbAge);
+					moduleBase, moduleSize, ihModInfo.TimeDateStamp,
+					ihModInfo.PdbSig70.Data1, ihModInfo.PdbSig70.Data2, ihModInfo.PdbSig70.Data3,
+					ihModInfo.PdbSig70.Data4[0], ihModInfo.PdbSig70.Data4[1],
+					ihModInfo.PdbSig70.Data4[2], ihModInfo.PdbSig70.Data4[3],
+					ihModInfo.PdbSig70.Data4[4], ihModInfo.PdbSig70.Data4[5],
+					ihModInfo.PdbSig70.Data4[6], ihModInfo.PdbSig70.Data4[7],
+					ihModInfo.PdbAge);
 
 		cry_strcpy(mld.name, moduleName);
 		cry_strcpy(mld.path, pdbPath);
@@ -2141,7 +2108,7 @@ void CMemReplay::AddAllocReference(void* ptr, void* ref)
 
 			new(ev) MemReplayAddAllocReferenceEvent(reinterpret_cast<UINT_PTR>(ptr), reinterpret_cast<UINT_PTR>(ref));
 
-			WriteCallstack(ev->callstack, ev->callstackLength);
+			ev->callstackLength = WriteCallstack(ev->callstack);
 			m_stream.EndAllocateRawEvent<MemReplayAddAllocReferenceEvent>(ev->callstackLength * sizeof(ev->callstack[0]) - sizeof(ev->callstack));
 		}
 	}
@@ -2173,7 +2140,7 @@ IMemReplay::FixedContextID CMemReplay::AddFixedContext(EMemStatContextType type,
 			return id;
 		}
 	}
-	return -1;
+	return CMemStatStaticContext::s_invalidContextId;
 }
 
 void CMemReplay::PushFixedContext(FixedContextID id)
@@ -2265,7 +2232,7 @@ void CMemReplay::MapPage(void* base, size_t size)
 			  k_maxCallStackDepth * sizeof(void*) - SIZEOF_MEMBER(MemReplayMapPageEvent, callstack));
 			new(ev) MemReplayMapPageEvent(reinterpret_cast<UINT_PTR>(base), size);
 
-			WriteCallstack(ev->callstack, ev->callstackLength);
+			ev->callstackLength = WriteCallstack(ev->callstack);
 			m_stream.EndAllocateRawEvent<MemReplayMapPageEvent>(sizeof(ev->callstack[0]) * ev->callstackLength - sizeof(ev->callstack));
 		}
 	}
@@ -2535,15 +2502,15 @@ void CMemReplay::RecordAlloc(EMemReplayAllocClass cls, EMemReplayUserPointerClas
 	  static_cast<uint32>(sizeConsumed),
 	  static_cast<int32>(sizeGlobal));
 
-	WriteCallstack(ev->callstack, ev->callstackLength);
+	ev->callstackLength = WriteCallstack(ev->callstack);
 	m_stream.EndAllocateRawEvent<MemReplayAllocEvent>(sizeof(ev->callstack[0]) * ev->callstackLength - sizeof(ev->callstack));
 }
 
 void CMemReplay::RecordRealloc(EMemReplayAllocClass cls, EMemReplayUserPointerClass subCls, int moduleId, UINT_PTR originalId, UINT_PTR newId, UINT_PTR alignment, UINT_PTR sizeRequested, UINT_PTR sizeConsumed, INT_PTR sizeGlobal)
 {
 	MemReplayReallocEvent* ev = new(m_stream.BeginAllocateRawEvent<MemReplayReallocEvent>(
-	                                  k_maxCallStackDepth * SIZEOF_MEMBER(MemReplayReallocEvent, callstack[0]) - SIZEOF_MEMBER(MemReplayReallocEvent, callstack)))
-	                            MemReplayReallocEvent(
+									  k_maxCallStackDepth * SIZEOF_MEMBER(MemReplayReallocEvent, callstack[0]) - SIZEOF_MEMBER(MemReplayReallocEvent, callstack)))
+								MemReplayReallocEvent(
 	  CryGetCurrentThreadId(),
 	  static_cast<uint16>(moduleId),
 	  static_cast<uint16>(cls),
@@ -2555,7 +2522,7 @@ void CMemReplay::RecordRealloc(EMemReplayAllocClass cls, EMemReplayUserPointerCl
 	  static_cast<uint32>(sizeConsumed),
 	  static_cast<int32>(sizeGlobal));
 
-	WriteCallstack(ev->callstack, ev->callstackLength);
+	ev->callstackLength = WriteCallstack(ev->callstack);
 	m_stream.EndAllocateRawEvent<MemReplayReallocEvent>(ev->callstackLength * sizeof(ev->callstack[0]) - sizeof(ev->callstack));
 }
 
@@ -2564,15 +2531,15 @@ void CMemReplay::RecordFree(EMemReplayAllocClass cls, EMemReplayUserPointerClass
 	MemReplayFreeEvent* ev =
 	  new(m_stream.BeginAllocateRawEvent<MemReplayFreeEvent>(SIZEOF_MEMBER(MemReplayFreeEvent, callstack[0]) * k_maxCallStackDepth - SIZEOF_MEMBER(MemReplayFreeEvent, callstack)))
 	  MemReplayFreeEvent(
-	    CryGetCurrentThreadId(),
-	    static_cast<uint16>(moduleId),
-	    static_cast<uint16>(cls),
-	    static_cast<uint16>(subCls),
-	    id,
-	    static_cast<int32>(sizeGlobal));
+		CryGetCurrentThreadId(),
+		static_cast<uint16>(moduleId),
+		static_cast<uint16>(cls),
+		static_cast<uint16>(subCls),
+		id,
+		static_cast<int32>(sizeGlobal));
 
 	if (REPLAY_RECORD_FREECS)
-		WriteCallstack(ev->callstack, ev->callstackLength);
+		ev->callstackLength = WriteCallstack(ev->callstack);
 	m_stream.EndAllocateRawEvent<MemReplayFreeEvent>(ev->callstackLength * sizeof(ev->callstack[0]) - sizeof(ev->callstack));
 }
 
@@ -2582,10 +2549,12 @@ void CMemReplay::RecordModules()
 	m_modules.RefreshModules(RecordModuleLoad, RecordModuleUnload, this);
 }
 
-void CMemReplay::WriteCallstack(UINT_PTR* callstack, uint32& length)
+uint16 CMemReplay::WriteCallstack(UINT_PTR* callstack)
 {
-	if(g_cvars.memReplayRecordCallstacks)
+	uint32 length;
+	if (g_cvars.memReplayRecordCallstacks)
 	{
+		static_assert(k_maxCallStackDepth < uint16(~0), "Maximum stack depth is too large!");
 		length = k_maxCallStackDepth;
 		CSystem::debug_GetCallStackRaw(CastCallstack(callstack), length);
 	}
@@ -2594,13 +2563,7 @@ void CMemReplay::WriteCallstack(UINT_PTR* callstack, uint32& length)
 		length = 1;
 		*callstack = 0;
 	}
-}
-
-void CMemReplay::WriteCallstack(UINT_PTR* callstack, uint16& length)
-{
-	uint32 len;
-	WriteCallstack(callstack, len);
-	length = len;
+	return length;
 }
 
 MemReplayCrySizer::MemReplayCrySizer(ReplayLogStream& stream, const char* name)

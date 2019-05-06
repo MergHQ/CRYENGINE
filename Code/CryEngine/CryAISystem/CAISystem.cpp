@@ -75,6 +75,7 @@
 
 #include <CryCore/StaticInstanceList.h>
 #include <algorithm>
+#include <CrySystem/ConsoleRegistration.h>
 
 // Description:
 //	 Helper class for declaring fire command descriptors.
@@ -285,7 +286,7 @@ CAISystem::~CAISystem()
 
 bool CAISystem::Init()
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
 	AILogProgress("[AISYSTEM] Initialization started.");
 
@@ -1484,7 +1485,7 @@ void CAISystem::Reset(IAISystem::EResetReason reason)
 	}
 
 	MEMSTAT_CONTEXT(EMemStatContextType::Other, "AI Reset");
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
 	SubSystemCall(Reset(reason));
 
@@ -2093,7 +2094,7 @@ IAIGroup* CAISystem::GetIAIGroup(int nGroupID)
 void CAISystem::ReadAreasFromFile(const char* fileNameAreas)
 {
 	MEMSTAT_CONTEXT_FMT(EMemStatContextType::Navigation, "Areas (%s)", fileNameAreas);
-	LOADING_TIME_PROFILE_SECTION
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY)
 
 	CCryBufferedFileReader file;
 	if (false != file.Open(fileNameAreas, "rb"))
@@ -2167,7 +2168,7 @@ void CAISystem::LoadNavigationData(const char* szLevel, const char* szMission, c
 {
 	MEMSTAT_CONTEXT(EMemStatContextType::Navigation, "AI Navigation");
 
-	LOADING_TIME_PROFILE_SECTION(GetISystem());
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
 	if (!IsEnabled())
 		return;
@@ -2216,7 +2217,7 @@ void CAISystem::LoadMNM(const char* szLevel, const char* szMission, bool bAfterE
 void CAISystem::LoadCover(const char* szLevel, const char* szMission)
 {
 	MEMSTAT_CONTEXT(EMemStatContextType::Navigation, "Cover system");
-	LOADING_TIME_PROFILE_SECTION(GetISystem());
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 	gAIEnv.pCoverSystem->Clear();
 
 	char coverFileName[1024] = { 0 };
@@ -2226,7 +2227,7 @@ void CAISystem::LoadCover(const char* szLevel, const char* szMission)
 
 void CAISystem::LoadLevelData(const char* szLevel, const char* szMission, const EAILoadDataFlags loadDataFlags /*= eAILoadDataFlag_AllSystems*/)
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
 	CRY_ASSERT(szLevel);
 	CRY_ASSERT_TRACE(szMission && szMission[0],
@@ -2486,7 +2487,7 @@ void CAISystem::RegisterSchematycEnvPackage(Schematyc::IEnvRegistrar& registrar)
 //-----------------------------------------------------------------------------------------------------------
 void CAISystem::Update(const CTimeValue frameStartTime, const float frameDeltaTime)
 {
-	CRY_PROFILE_REGION(PROFILE_AI, "AI System: Update");
+	CRY_PROFILE_SECTION(PROFILE_AI, "AI System: Update");
 	AISYSTEM_LIGHT_PROFILER();
 	MEMSTAT_CONTEXT(EMemStatContextType::Other, "AISystem::Update");
 
@@ -2496,7 +2497,7 @@ void CAISystem::Update(const CTimeValue frameStartTime, const float frameDeltaTi
 	CCCPOINT(CAISystem_Update);
 	const bool isAutomaticUpdate = true;
 	{
-		CRY_PROFILE_REGION(PROFILE_AI, "AIUpdate 1")
+		CRY_PROFILE_SECTION(PROFILE_AI, "AIUpdate 1")
 		InitializeSmartObjectsIfNotInitialized();
 		SubsystemUpdateActionManager();
 		SubsystemUpdateRadialOcclusionRaycast();
@@ -2506,7 +2507,7 @@ void CAISystem::Update(const CTimeValue frameStartTime, const float frameDeltaTi
 	}
 
 	{
-		CRY_PROFILE_REGION(PROFILE_AI, "AIUpdate 2")
+		CRY_PROFILE_SECTION(PROFILE_AI, "AIUpdate 2")
 		SubsystemUpdateSystemComponents();
 		SubsystemUpdateAmbientFire();
 		SubsystemUpdateExpensiveAccessoryQuota();
@@ -2519,7 +2520,7 @@ void CAISystem::Update(const CTimeValue frameStartTime, const float frameDeltaTi
 	}
 
 	{
-		CRY_PROFILE_REGION(PROFILE_AI, "AIUpdate 3")
+		CRY_PROFILE_SECTION(PROFILE_AI, "AIUpdate 3")
 		SubsystemUpdatePlayers();
 		SubsystemUpdateGroups();
 	}
@@ -2527,7 +2528,7 @@ void CAISystem::Update(const CTimeValue frameStartTime, const float frameDeltaTi
 	TrySubsystemUpdateMovementSystem(frameStartTime, frameDeltaTime, isAutomaticUpdate);
 
 	{
-		CRY_PROFILE_REGION(PROFILE_AI, "AIUpdate 4");
+		CRY_PROFILE_SECTION(PROFILE_AI, "AIUpdate 4");
 		SubsystemUpdateActorsAndTargetTrackAndORCA();
 		SubsystemUpdateLeaders();
 		SubsystemUpdateSmartObjectManager();	

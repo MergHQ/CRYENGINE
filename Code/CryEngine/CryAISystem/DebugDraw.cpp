@@ -4774,7 +4774,7 @@ void CAISystem::DebugDraw()
 
 	#ifdef CRYAISYSTEM_DEBUG
 	{
-		CRY_PROFILE_REGION(PROFILE_AI, "AIBubblesSystem");
+		CRY_PROFILE_SECTION(PROFILE_AI, "AIBubblesSystem");
 		gAIEnv.pBubblesSystem->Update();
 	}
 	#endif

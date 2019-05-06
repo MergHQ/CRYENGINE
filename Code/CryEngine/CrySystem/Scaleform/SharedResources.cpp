@@ -171,7 +171,7 @@ CSharedFlashPlayerResources::CSharedFlashPlayerResources()
 	, m_pImeHelper(0)
 	#endif
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
 	gEnv->pLog->Log("Using Scaleform GFx " GFC_FX_VERSION_STRING);
 	m_pGSystemInit = new GSystemInitWrapper();
@@ -209,7 +209,7 @@ CSharedFlashPlayerResources::~CSharedFlashPlayerResources()
 
 void CSharedFlashPlayerResources::Init()
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 	assert(!ms_pSharedFlashPlayerResources);
 	static char s_sharedFlashPlayerResourcesStorage[sizeof(CSharedFlashPlayerResources)] = { 0 };
 	if (!ms_pSharedFlashPlayerResources)

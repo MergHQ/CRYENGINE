@@ -1202,7 +1202,7 @@ namespace Schematyc2
 	//////////////////////////////////////////////////////////////////////////
 	void CScriptFile::Load()
 	{
-		LOADING_TIME_PROFILE_SECTION_ARGS(m_fileName.c_str());
+		CRY_PROFILE_FUNCTION_ARG(PROFILE_LOADING_ONLY, m_fileName.c_str());
 
 		if(!m_fileName.empty())
 		{
@@ -1285,7 +1285,7 @@ namespace Schematyc2
 	//////////////////////////////////////////////////////////////////////////
 	void CScriptFile::Refresh(const SScriptRefreshParams& params)
 	{
-		LOADING_TIME_PROFILE_SECTION_ARGS(m_fileName.c_str());
+		CRY_PROFILE_FUNCTION_ARG(PROFILE_LOADING_ONLY, m_fileName.c_str());
 		for(Elements::value_type& element : m_elements)
 		{
 			element.second->Refresh(params);

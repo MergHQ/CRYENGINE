@@ -16,6 +16,7 @@
 #include <CryEntitySystem/IEntitySystem.h>
 #include <CryAISystem/INavigationSystem.h>
 #include <CryMath/Random.h>
+#include <CrySystem/ConsoleRegistration.h>
 
 #include "CoverSurfaceManager.h"
 
@@ -1027,7 +1028,7 @@ bool CAIManager::GetNavigationDebugDisplayAgent(size_t* index) const
 
 void CAIManager::CalculateNavigationAccessibility()
 {
-	LOADING_TIME_PROFILE_SECTION
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY)
 	if (m_pAISystem)
 	{
 		INavigationSystem* pINavigationSystem = m_pAISystem->GetNavigationSystem();

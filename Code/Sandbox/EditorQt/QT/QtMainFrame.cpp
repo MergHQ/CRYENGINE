@@ -25,6 +25,7 @@
 #include <EditorFramework/Events.h>
 #include <EditorFramework/PersonalizationManager.h>
 #include <EditorFramework/ToolBar/ToolBarCustomizeDialog.h>
+#include <EditorFramework/WidgetsGlobalActionRegistry.h>
 #include <Menu/MenuWidgetBuilders.h>
 #include <Preferences/GeneralPreferences.h>
 #include <QTrackingTooltip.h>
@@ -71,7 +72,8 @@ CEditorMainFrame * CEditorMainFrame::m_pInstance = nullptr;
 
 namespace
 {
-CTabPaneManager* s_pToolTabManager = nullptr;
+CTabPaneManager*              s_pToolTabManager = nullptr;
+CWidgetsGlobalActionRegistry* s_pWidgetGlobalActionRegistry = nullptr;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -672,7 +674,7 @@ CEditorMainFrame::CEditorMainFrame(QWidget* parent)
 	, m_bClosing(false)
 	, m_bUserEventPriorityMode(false)
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
 	m_levelEditor->Initialize();
 
@@ -682,6 +684,7 @@ CEditorMainFrame::CEditorMainFrame(QWidget* parent)
 	m_pAboutDlg = nullptr;
 	Ui_MainWindow().setupUi(this);
 	s_pToolTabManager = new CTabPaneManager(this);
+	s_pWidgetGlobalActionRegistry = new CWidgetsGlobalActionRegistry();
 	connect(m_levelEditor.get(), &CLevelEditor::LevelLoaded, this, &CEditorMainFrame::UpdateWindowTitle);
 
 	setAttribute(Qt::WA_DeleteOnClose, true);
@@ -783,6 +786,7 @@ CEditorMainFrame::~CEditorMainFrame()
 
 	if (m_pInstance)
 	{
+		SAFE_DELETE(s_pWidgetGlobalActionRegistry);
 		SAFE_DELETE(s_pToolTabManager);
 		m_pInstance = 0;
 	}
@@ -809,7 +813,7 @@ void CEditorMainFrame::SetDefaultLayout()
 
 void CEditorMainFrame::PostLoad()
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 	InitActions();
 	InitMenus();
 
@@ -1579,7 +1583,7 @@ void CEditorMainFrame::closeEvent(QCloseEvent* event)
 
 bool CEditorMainFrame::BeforeClose()
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 	SaveConfig();
 	// disconnect now or we'll end up closing all panels and saving an empty layout
 	disconnect(m_layoutChangedConnection);
@@ -1588,7 +1592,7 @@ bool CEditorMainFrame::BeforeClose()
 	GetIEditorImpl()->GetGlobalBroadcastManager()->Broadcast(aboutToQuitEvent);
 
 	{
-		LOADING_TIME_PROFILE_SECTION_NAMED("CEditorMainFrame::BeforeClose() Save Changes?");
+		CRY_PROFILE_SECTION(PROFILE_LOADING_ONLY, "CEditorMainFrame::BeforeClose() Save Changes?");
 
 		if (aboutToQuitEvent.GetChangeListCount() > 0)
 		{
@@ -1634,7 +1638,7 @@ bool CEditorMainFrame::BeforeClose()
 
 void CEditorMainFrame::SaveConfig()
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 	if (!GetIEditorImpl()->IsInMatEditMode())
 	{
 		CTabPaneManager::GetInstance()->SaveLayout();

@@ -263,7 +263,7 @@ bool SDynTexture::Update(int nNewWidth, int nNewHeight)
 
 bool SDynTexture::RT_Update(int nNewWidth, int nNewHeight)
 {
-	CRY_PROFILE_REGION(PROFILE_RENDERER, "SDynTexture::RT_Update");
+	CRY_PROFILE_SECTION(PROFILE_RENDERER, "SDynTexture::RT_Update");
 
 	Unlink();
 

@@ -414,12 +414,11 @@ void CRenderer::PrepareParticleRenderObjects(Array<const SAddParticlesToSceneJob
 			pRE->Reset(job.pVertexCreator, threadList, allocId);
 			if (useComputeVerticesJob)
 			{
-				// Start new job to compute the vertices
-				auto job = [pRE, camInfo, pRenderObject]()
-				{
-					pRE->ComputeVertices(camInfo, pRenderObject->m_ObjFlags);
-				};
-				gEnv->pJobManager->AddLambdaJob("job:pfx2:UpdateEmitter", job, JobManager::eLowPriority, &m_ComputeVerticesJobState);
+				DECLARE_JOB("job:pfx2:ComputeVertices", TComputeVerticesJob, CREParticle::ComputeVertices);
+
+				TComputeVerticesJob job(camInfo, pRenderObject->m_ObjFlags);
+				job.SetClassInstance(pRE);
+				job.Run(JobManager::eLowPriority, &m_ComputeVerticesJobState);
 			}
 			else
 			{

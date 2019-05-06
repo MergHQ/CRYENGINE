@@ -705,7 +705,7 @@ bool CShaderManBin::SaveBinShaderLocalInfo(SShaderBin* pBin, uint32 dwName, uint
 
 SShaderBin* CShaderManBin::LoadBinShader(FILE* fpBin, const char* szName, const char* szNameBin, bool bReadParams)
 {
-	LOADING_TIME_PROFILE_SECTION(iSystem);
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY)(iSystem);
 
 	gEnv->pCryPak->FSeek(fpBin, 0, SEEK_SET);
 	SShaderBinHeader Header;
@@ -2649,7 +2649,7 @@ void CShaderManBin::AddTextureToScript(CParserBin& Parser, SFXTexture* pr, PodAr
 
 bool CShaderManBin::ParseBinFX_Technique_Pass_GenerateShaderData(CParserBin& Parser, FXMacroBin& Macros, SShaderFXParams& FXParams, uint32 dwSHName, EHWShaderClass eSHClass, uint64& nAffectMask, uint32 dwSHType, PodArray<uint32>& SHData, SShaderTechnique* pShTech)
 {
-	LOADING_TIME_PROFILE_SECTION(iSystem);
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY)(iSystem);
 	assert(gRenDev->m_pRT->IsRenderThread() || gRenDev->m_pRT->IsLevelLoadingThread());
 
 	bool bRes = true;
@@ -2990,7 +2990,7 @@ bool CShaderManBin::ParseBinFX_Technique_Pass_LoadShader(CParserBin& Parser, FXM
 {
 	assert(gRenDev->m_pRT->IsRenderThread() || gRenDev->m_pRT->IsLevelLoadingThread());
 
-	LOADING_TIME_PROFILE_SECTION(iSystem);
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY)(iSystem);
 	bool bRes = true;
 
 	assert(!SHFrame.IsEmpty());
@@ -3650,7 +3650,7 @@ bool CShaderManBin::ParseBinFX_Technique_CustomRE(CParserBin& Parser, SParserFra
 
 SShaderTechnique* CShaderManBin::ParseBinFX_Technique(CParserBin& Parser, SParserFrame& Frame, SParserFrame Annotations, std::vector<SShaderTechParseParams>& techParams, bool* bPublic)
 {
-	LOADING_TIME_PROFILE_SECTION(iSystem);
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY)(iSystem);
 
 	SParserFrame OldFrame = Parser.BeginFrame(Frame);
 
@@ -3720,7 +3720,7 @@ float g_fTimeA;
 
 bool CShaderManBin::ParseBinFX(SShaderBin* pBin, CShader* ef, uint64 nMaskGen)
 {
-	LOADING_TIME_PROFILE_SECTION_ARGS(pBin->m_szName);
+	CRY_PROFILE_FUNCTION_ARG(PROFILE_LOADING_ONLY, pBin->m_szName);
 
 	bool bRes = true;
 

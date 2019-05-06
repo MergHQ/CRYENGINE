@@ -13,6 +13,7 @@
 #include "DialogLineDatabase.h"
 #include <CryAudio/IAudioInterfacesCommonData.h>
 #include <CryRenderer/IRenderAuxGeom.h>
+#include <CrySystem/ConsoleRegistration.h>
 
 namespace
 {

@@ -132,7 +132,7 @@ void CRoadRenderNode::SetVertices(const Vec3* pVertsAll, int nVertsNumAll,
 
 void CRoadRenderNode::Compile() PREFAST_SUPPRESS_WARNING(6262) //function uses > 32k stack space
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
 	// free old object and mesh
 	m_pRenderMesh = NULL;
@@ -419,7 +419,7 @@ void CRoadRenderNode::Compile() PREFAST_SUPPRESS_WARNING(6262) //function uses >
 
 		if (m_bPhysicalize)
 		{
-			LOADING_TIME_PROFILE_SECTION_NAMED("RoadPhysicalization");
+			CRY_PROFILE_SECTION(PROFILE_LOADING_ONLY, "RoadPhysicalization");
 
 			IGeomManager* pGeoman = GetPhysicalWorld()->GetGeomManager();
 			primitives::box abox;
@@ -435,7 +435,7 @@ void CRoadRenderNode::Compile() PREFAST_SUPPRESS_WARNING(6262) //function uses >
 
 			if (m_pMaterial && m_pPhysEnt)
 			{
-				LOADING_TIME_PROFILE_SECTION_NAMED("RoadPhysicalizationParts");
+				CRY_PROFILE_SECTION(PROFILE_LOADING_ONLY, "RoadPhysicalizationParts");
 
 				ISurfaceType* psf;
 				if ((psf = m_pMaterial->GetSurfaceType()) || m_pMaterial->GetSubMtl(0) && (psf = m_pMaterial->GetSubMtl(0)->GetSurfaceType()))

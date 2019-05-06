@@ -8,7 +8,7 @@
 //#include "BaseEnv/Utils/BaseEnv_EntityMap.h"
 #include "BaseEnv/Utils/BaseEnv_SpatialIndex.h"
 
-#include <CrySystem/IConsole.h>
+#include <CrySystem/ConsoleRegistration.h>
 
 namespace SchematycBaseEnv
 {

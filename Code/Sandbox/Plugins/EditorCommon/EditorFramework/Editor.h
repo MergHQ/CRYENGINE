@@ -33,9 +33,9 @@ public:
 	CEditor(QWidget* pParent = nullptr, bool bIsOnlyBackend = false);
 	virtual ~CEditor();
 
-	virtual void        Initialize();
+	virtual void            Initialize();
 
-	virtual const char* GetEditorName() const = 0;
+	virtual const char*     GetEditorName() const = 0;
 
 	// Editor orientation when using adaptive layouts
 	Qt::Orientation         GetOrientation() const        { return m_currentOrientation; }
@@ -233,7 +233,7 @@ protected:
 	//! Use this method to register all possible dockable widgets for this editor
 	//! isUnique: only one of these widgets can be spawned
 	//! isInternal: the widget is not in the menu
-	void RegisterDockableWidget(QString name, std::function<QWidget* ()> factory, bool isUnique = false, bool isInternal = false);
+	void RegisterDockableWidget(QString name, std::function<QWidget*()> factory, bool isUnique = false, bool isInternal = false);
 
 	//! Implement this method and use CDockableContainer::SpawnWidget to define the default layout
 	virtual void CreateDefaultLayout(CDockableContainer* sender) { CRY_ASSERT_MESSAGE(false, "Not implemented"); }
@@ -258,12 +258,12 @@ public:
 	CCrySignal<void(Qt::Orientation)> signalAdaptiveLayoutChanged;
 
 protected:
-	CBroadcastManager* m_broadcastManager;
-	bool               m_bIsOnlybackend;
-	QMenu*             m_pPaneMenu;
+	CBroadcastManager*  m_broadcastManager;
+	bool                m_bIsOnlybackend;
+	QMenu*              m_pPaneMenu;
+	CDockableContainer* m_dockingRegistry;
 
 private:
-	CDockableContainer*                         m_dockingRegistry;
 	QObject*                                    m_pBroadcastManagerFilter;
 	CEditorContent*                             m_pEditorContent;
 	std::unique_ptr<MenuDesc::CDesc<MenuItems>> m_pMenuDesc;
@@ -292,6 +292,11 @@ public:
 	virtual void        SetState(const QVariantMap& state) final { SetLayout(state); }
 	virtual void        LoadLayoutPersonalization();
 	virtual void        SaveLayoutPersonalization();
+
+	virtual std::vector<IPane*> GetSubPanes() const override 
+	{ 
+		return m_dockingRegistry ? m_dockingRegistry->GetPanes() : std::vector<IPane*>();
+	}
 
 	//! Brings this Editor on top of all otherWindows
 	void Raise();

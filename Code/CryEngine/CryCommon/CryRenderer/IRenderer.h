@@ -1450,18 +1450,18 @@ struct IRenderer//: public IRendererCallbackServer
 
 	//! This routines uses 2 destination surfaces.  It triggers a backbuffer copy to one of its surfaces, and then copies the other surface to system memory.
 	//! This hopefully will remove any CPU stalls due to the rect lock call since the buffer will already be in system memory when it is called.
-	//! \param pDstARGBA8			Pointer to a buffer that will hold the captured frame (should be at least 4*dstWidth*dstHieght for RGBA surface).
-	//! \param destinationWidth	Width of the frame to copy.
-	//! \param destinationHeight	Height of the frame to copy.
+	//! \param pDstRGB8          Pointer to a buffer that will hold the captured frame (should be at least 3*dstWidth*dstHeight for RGB surface).
+	//! \param destinationWidth	 Width of the frame to copy.
+	//! \param destinationHeight Height of the frame to copy.
 	//! \note If dstWidth or dstHeight is larger than the current surface dimensions, the dimensions of the surface are used for the copy.
-	virtual bool CaptureFrameBufferFast(unsigned char* pDstRGBA8, int destinationWidth, int destinationHeight) = 0;
+	virtual bool CaptureFrameBufferFast(unsigned char* pDstRGB8, int destinationWidth, int destinationHeight) = 0;
 
 	//! Copy a captured surface to a buffer.
-	//! \param pDstARGBA8			Pointer to a buffer that will hold the captured frame (should be at least 4*dstWidth*dstHieght for RGBA surface).
-	//! \param destinationWidth	Width of the frame to copy.
-	//! \param destinationHeight	Height of the frame to copy.
+	//! \param pDstRGB8          Pointer to a buffer that will hold the captured frame (should be at least 3*dstWidth*dstHeight for RGB surface).
+	//! \param destinationWidth  Width of the frame to copy.
+	//! \param destinationHeight Height of the frame to copy.
 	//! \note If dstWidth or dstHeight is larger than the current surface dimensions, the dimensions of the surface are used for the copy.
-	virtual bool CopyFrameBufferFast(unsigned char* pDstRGBA8, int destinationWidth, int destinationHeight) = 0;
+	virtual bool CopyFrameBufferFast(unsigned char* pDstRGB8, int destinationWidth, int destinationHeight) = 0;
 
 	//! This routine registers a callback address that is called when a new frame is available.
 	//! \param pCapture			Address of the ICaptureFrameListener object.
@@ -1769,6 +1769,9 @@ struct SMeshPoolStatistics
 	//! The highest amount of memory allocated within the mesh data pool.
 	size_t nPoolInUsePeak;
 
+	//! The highest amount of memory requested within the mesh data pool.
+	size_t nPoolRequestPeak;
+
 	//! The size of the mesh data size in bytes.
 	size_t nInstancePoolSize;
 
@@ -1778,19 +1781,38 @@ struct SMeshPoolStatistics
 	//! The highest amount of memory allocated within the mesh data pool.
 	size_t nInstancePoolInUsePeak;
 
+	//! The highest amount of memory requested within the mesh data pool.
+	size_t nInstancePoolRequestPeak;
+
+	//! The amount of memory currently in use outside the pool.
+	size_t nUnpooledInUse;
+
+	//! The highest amount of memory allocated without the mesh data pool.
+	size_t nUnpooledInUsePeak;
+
+	//! The highest amount of memory requested without the mesh data pool.
+	size_t nUnpooledRequestPeak;
+
 	size_t nFallbacks;
 	size_t nInstanceFallbacks;
+
 	size_t nFlushes;
 
-	SMeshPoolStatistics()
-		: nPoolSize(),
-		nPoolInUse(),
-		nInstancePoolSize(),
-		nInstancePoolInUse(),
-		nInstancePoolInUsePeak(),
-		nFallbacks(),
-		nInstanceFallbacks(),
-		nFlushes()
+	SMeshPoolStatistics() :
+		nPoolSize(0),
+		nPoolInUse(0),
+		nPoolInUsePeak(0),
+		nPoolRequestPeak(0),
+		nInstancePoolSize(0),
+		nInstancePoolInUse(0),
+		nInstancePoolInUsePeak(0),
+		nInstancePoolRequestPeak(0),
+		nUnpooledInUse(0),
+		nUnpooledInUsePeak(0),
+		nUnpooledRequestPeak(0),
+		nFallbacks(0),
+		nInstanceFallbacks(0),
+		nFlushes(0)
 	{}
 };
 

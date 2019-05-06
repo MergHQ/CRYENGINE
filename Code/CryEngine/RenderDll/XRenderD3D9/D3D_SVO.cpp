@@ -1053,12 +1053,17 @@ void CSvoRenderer::CheckAllocateRT(bool bSpecPass)
 		CheckCreateUpdateRT(tsDiff.pRT_ALD_1, nInW, nInH, eTF_R16G16B16A16F, eTT_2D, FT_STATE_CLAMP, "SV1_DIFF_ALD");
 		CheckCreateUpdateRT(tsDiff.pRT_RGB_0, nInW, nInH, eTF_R16G16B16A16F, eTT_2D, FT_STATE_CLAMP, "SVO_DIFF_RGB");
 		CheckCreateUpdateRT(tsDiff.pRT_RGB_1, nInW, nInH, eTF_R16G16B16A16F, eTT_2D, FT_STATE_CLAMP, "SV1_DIFF_RGB");
-
+	}
+	else
+	{
 		CheckCreateUpdateRT(tsSpec.pRT_ALD_0, specW, specH, eTF_R16G16B16A16F, eTT_2D, FT_STATE_CLAMP, "SVO_SPEC_ALD");
 		CheckCreateUpdateRT(tsSpec.pRT_ALD_1, specW, specH, eTF_R16G16B16A16F, eTT_2D, FT_STATE_CLAMP, "SV1_SPEC_ALD");
 		CheckCreateUpdateRT(tsSpec.pRT_RGB_0, specW, specH, eTF_R16G16B16A16F, eTT_2D, FT_STATE_CLAMP, "SVO_SPEC_RGB");
 		CheckCreateUpdateRT(tsSpec.pRT_RGB_1, specW, specH, eTF_R16G16B16A16F, eTT_2D, FT_STATE_CLAMP, "SV1_SPEC_RGB");
+	}
 
+	if (!bSpecPass)
+	{
 	#ifdef FEATURE_SVO_GI_ALLOW_HQ
 		if (e_svoTI_Troposphere_Active)
 		{
@@ -1085,7 +1090,9 @@ void CSvoRenderer::CheckAllocateRT(bool bSpecPass)
 
 		CheckCreateUpdateRT(tsDiff.pRT_FIN_OUT_0, nWidth, nHeight, eTF_R16G16B16A16F, eTT_2D, FT_STATE_CLAMP, "SVO_FIN_DIFF_OUT");
 		CheckCreateUpdateRT(tsDiff.pRT_FIN_OUT_1, nWidth, nHeight, eTF_R16G16B16A16F, eTT_2D, FT_STATE_CLAMP, "SV1_FIN_DIFF_OUT");
-
+	}
+	else
+	{
 		CheckCreateUpdateRT(tsSpec.pRT_RGB_DEM_MIN_0, specW, specH, eTF_R16G16B16A16F, eTT_2D, FT_STATE_CLAMP, "SVO_SPEC_FIN_RGB_MIN");
 		CheckCreateUpdateRT(tsSpec.pRT_ALD_DEM_MIN_0, specW, specH, eTF_R16G16B16A16F, eTT_2D, FT_STATE_CLAMP, "SVO_SPEC_FIN_ALD_MIN");
 		CheckCreateUpdateRT(tsSpec.pRT_RGB_DEM_MAX_0, specW, specH, eTF_R16G16B16A16F, eTT_2D, FT_STATE_CLAMP, "SVO_SPEC_FIN_RGB_MAX");
@@ -1097,7 +1104,10 @@ void CSvoRenderer::CheckAllocateRT(bool bSpecPass)
 
 		CheckCreateUpdateRT(tsSpec.pRT_FIN_OUT_0, nWidth, nHeight, eTF_R16G16B16A16F, eTT_2D, FT_STATE_CLAMP, "SVO_FIN_SPEC_OUT");
 		CheckCreateUpdateRT(tsSpec.pRT_FIN_OUT_1, nWidth, nHeight, eTF_R16G16B16A16F, eTT_2D, FT_STATE_CLAMP, "SV1_FIN_SPEC_OUT");
+	}
 
+	if (!bSpecPass)
+	{
 		// swap ping-pong RT
 		std::swap(tsDiff.pRT_ALD_0, tsDiff.pRT_ALD_1);
 		std::swap(tsDiff.pRT_RGB_0, tsDiff.pRT_RGB_1);
@@ -1106,7 +1116,9 @@ void CSvoRenderer::CheckAllocateRT(bool bSpecPass)
 		std::swap(tsDiff.pRT_RGB_DEM_MAX_0, tsDiff.pRT_RGB_DEM_MAX_1);
 		std::swap(tsDiff.pRT_ALD_DEM_MAX_0, tsDiff.pRT_ALD_DEM_MAX_1);
 		std::swap(tsDiff.pRT_FIN_OUT_0, tsDiff.pRT_FIN_OUT_1);
-
+	}
+	else
+	{
 		std::swap(tsSpec.pRT_ALD_0, tsSpec.pRT_ALD_1);
 		std::swap(tsSpec.pRT_RGB_0, tsSpec.pRT_RGB_1);
 		std::swap(tsSpec.pRT_RGB_DEM_MIN_0, tsSpec.pRT_RGB_DEM_MIN_1);
@@ -1114,7 +1126,10 @@ void CSvoRenderer::CheckAllocateRT(bool bSpecPass)
 		std::swap(tsSpec.pRT_RGB_DEM_MAX_0, tsSpec.pRT_RGB_DEM_MAX_1);
 		std::swap(tsSpec.pRT_ALD_DEM_MAX_0, tsSpec.pRT_ALD_DEM_MAX_1);
 		std::swap(tsSpec.pRT_FIN_OUT_0, tsSpec.pRT_FIN_OUT_1);
+	}
 
+	if (!bSpecPass)
+	{
 	#ifdef FEATURE_SVO_GI_ALLOW_HQ
 		std::swap(m_pRT_SHAD_FIN_0, m_pRT_SHAD_FIN_1);
 	#endif

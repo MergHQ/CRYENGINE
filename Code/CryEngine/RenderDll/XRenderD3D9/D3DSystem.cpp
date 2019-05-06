@@ -4,6 +4,7 @@
 #include <CryString/UnicodeFunctions.h>
 #include <CryCore/Platform/WindowsUtils.h>
 #include <CrySystem/IProjectManager.h>
+#include <CrySystem/ConsoleRegistration.h>
 #include <CryFont/IFont.h>
 
 #include "D3DStereo.h"
@@ -797,7 +798,7 @@ void CD3D9Renderer::InitBaseDisplayContext()
 
 bool CD3D9Renderer::SetWindow(int width, int height)
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
 	iSystem->RegisterWindowMessageHandler(this);
 
@@ -1120,7 +1121,7 @@ const char* sGetSQuality(const char* szName)
 
 CRY_HWND CD3D9Renderer::Init(int x, int y, int width, int height, unsigned int colorBits, int depthBits, int stencilBits, CRY_HWND Glhwnd, bool bReInit, bool bShaderCacheGen)
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
 	// Create and set the current aux collector to capture any aux commands
 	SetCurrentAuxGeomCollector(GetOrCreateAuxGeomCollector(gEnv->pSystem->GetViewCamera()));
@@ -1787,7 +1788,7 @@ bool CD3D9Renderer::CreateDeviceOrbis()
 
 bool CD3D9Renderer::CreateDevice()
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 	ChangeLog();
 
 	m_pixelAspectRatio = 1.0f;
@@ -1884,7 +1885,7 @@ void CD3D9Renderer::GetVideoMemoryUsageStats(size_t& vidMemUsedThisFrame, size_t
 
 HRESULT CALLBACK CD3D9Renderer::OnD3D11CreateDevice(D3DDevice* pd3dDevice)
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 	CD3D9Renderer* rd = gcpRendD3D;
 	rd->m_DeviceWrapper.AssignDevice(pd3dDevice);
 	GetDeviceObjectFactory().AssignDevice(pd3dDevice);
@@ -2038,7 +2039,7 @@ HRESULT CALLBACK CD3D9Renderer::OnD3D11CreateDevice(D3DDevice* pd3dDevice)
 
 HRESULT CALLBACK CD3D9Renderer::OnD3D11PostCreateDevice(D3DDevice* pd3dDevice)
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 	CD3D9Renderer* rd = gcpRendD3D;
 	auto* pDC = rd->GetBaseDisplayContext();
 

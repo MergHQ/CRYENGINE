@@ -1294,8 +1294,10 @@ if (RENDERER_DX12)
 	if (WINDOWS)
 		set_property(TARGET ${THIS_PROJECT} APPEND_STRING PROPERTY LINK_FLAGS " /NODEFAULTLIB:libcmt.lib")
 		target_link_libraries(${THIS_PROJECT} PRIVATE lzma lzss lz4 zlib dxguid d3d12 dxgi d3dcompiler Ole32 Gdi32 wininet Shell32 png16 tiff)
+		target_link_libraries(${THIS_PROJECT} PRIVATE WinPixEventRuntime)
 	elseif(DURANGO)
 		target_link_libraries(${THIS_PROJECT} PRIVATE ws2_32 SmartGlassInterop d3d12_x d3dcompiler dxguid xg_x uuid kernelx)
+		target_link_libraries(${THIS_PROJECT} PRIVATE PIXEvt)
 	endif()
 
 	if(USE_DXC)
@@ -1351,7 +1353,7 @@ if (RENDERER_VULKAN)
 			-Wno-invalid-offsetof
 			-Wno-null-conversion
 		)
-    elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+  elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
 		target_compile_options(${THIS_PROJECT} PRIVATE
 			-Wno-unused-function
 			-Wno-unused-value
@@ -1375,8 +1377,9 @@ if (RENDERER_VULKAN)
 			-Wno-address
 			-Wno-format
 			-Wno-switch
+			-Wno-psabi
 		)
-    endif()
+  endif()
 else()
 	CryFileContainer(CryRenderVulkan SOLUTION_FOLDER "CryEngine")
 endif()

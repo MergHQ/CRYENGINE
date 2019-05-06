@@ -369,22 +369,20 @@ void QFilteringPanel::CFilterWidget::OnSelectAttribute(int index)
 
 		const IAttributeType* pType = attribute->GetType();
 
-		std::vector<Attributes::IAttributeFilterOperator*> types = pType->GetOperators();
+		std::vector<Attributes::IAttributeFilterOperator*> operators = pType->GetOperators();
 
-		CRY_ASSERT(types.size() > 0);
+		CRY_ASSERT(operators.size() > 0);
 
-		if (types.size() == 1)
+		if (operators.size() == 1)
 		{
 			m_pOperatorsComboBox->setVisible(false);
 		}
 		else
 		{
 			m_pOperatorsComboBox->Clear();
-			int i = 0;
-			for (Attributes::IAttributeFilterOperator* type : types)
+			for (Attributes::IAttributeFilterOperator* pOperator : operators)
 			{
-				m_pOperatorsComboBox->AddItem(type->GetName(), reinterpret_cast<intptr_t>(type));
-				i++;
+				m_pOperatorsComboBox->AddItem(pOperator->GetName(), reinterpret_cast<intptr_t>(pOperator));
 			}
 			m_pOperatorsComboBox->setVisible(true);
 		}
@@ -399,7 +397,7 @@ void QFilteringPanel::CFilterWidget::OnSelectAttribute(int index)
 			m_pInvertButton->setVisible(true);
 		}
 
-		OnSelectOperator(types[0]);
+		OnSelectOperator(operators[0]);
 	}
 }
 
@@ -409,9 +407,9 @@ void QFilteringPanel::CFilterWidget::OnSelectOperator(Attributes::IAttributeFilt
 	{
 		m_pFilter->SetOperator(op);
 
-		QWidget* editWidget = op->CreateEditWidget(m_pFilter);
-		editWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
-		m_pEditWidgetContainer->SetChild(editWidget);
+		QWidget* pEditWidget = op->CreateEditWidget(m_pFilter, m_pParent->GetAttributeEnumEntries(m_pFilter->GetAttribute()->GetName()));
+		pEditWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+		m_pEditWidgetContainer->SetChild(pEditWidget);
 	}
 }
 
@@ -1000,6 +998,11 @@ void QFilteringPanel::AddFilter(const QString& attributeName, const QString& ope
 	filter->SetState(state);
 }
 
+void QFilteringPanel::OverrideAttributeEnumEntries(const QString& attributeName, const QStringList& values)
+{
+	m_attributeValues[attributeName] = values;
+}
+
 void QFilteringPanel::SaveFilter(const char* filterName)
 {
 	auto savedFiltersVariant = GetIEditor()->GetPersonalizationManager()->GetProjectProperty("QFilteringPanel", m_uniqueName);
@@ -1079,6 +1082,16 @@ void QFilteringPanel::SetFilterState(const QVariant& state)
 			}
 		}
 	}
+}
+
+const QStringList* QFilteringPanel::GetAttributeEnumEntries(const QString& attributeName)
+{
+	auto it = m_attributeValues.find(attributeName);
+	if (it == m_attributeValues.end())
+	{
+		return nullptr;
+	}
+	return &it->second;
 }
 
 void QFilteringPanel::OnFilterChanged()

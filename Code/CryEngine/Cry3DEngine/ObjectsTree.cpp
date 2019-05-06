@@ -636,7 +636,7 @@ uint32 COctreeNode::UpdateCullMask(uint32 onePassTraversalFrameId, uint32 onePas
 	if (passCullMask & ~kPassCullMainMask)
 	{
 		// test sun shadows hull. for cached shadows also nodes outside hull need to be rendered
-		if (onePassTraversalFrameId < passInfo.GetMainFrameID() && !IsAABBInsideHull(CLightEntity::GetCastersHull().GetElements(), CLightEntity::GetCastersHull().Count(), nodeBox))
+		if (onePassTraversalFrameId != passInfo.GetMainFrameID() && !IsAABBInsideHull(CLightEntity::GetCastersHull().GetElements(), CLightEntity::GetCastersHull().Count(), nodeBox))
 		{
 			passCullMask &= kPassCullMainMask;   // cull all except main view
 		}
@@ -657,7 +657,7 @@ uint32 COctreeNode::UpdateCullMask(uint32 onePassTraversalFrameId, uint32 onePas
 				if (pFr->IsCached() || pFr->m_eFrustumType == ShadowMapFrustum::e_PerObject)
 				{
 					// cull casters not marked for shadow cache sliced update
-					if (onePassTraversalFrameId < passInfo.GetMainFrameID() || (onePassTraversalShadowCascades & BIT(pFr->nShadowMapLod)) == 0)
+					if (onePassTraversalFrameId != passInfo.GetMainFrameID() || (onePassTraversalShadowCascades & BIT(pFr->nShadowMapLod)) == 0)
 					{
 						passCullMask &= ~BIT(passId);
 					}
@@ -1378,33 +1378,32 @@ bool COctreeNode::GetShadowCastersTimeSliced(IRenderNode* pIgnoreNode, ShadowMap
 		{
 			if (pFrustum->aabbCasters.IsReset() || Overlap::AABB_AABB(pFrustum->aabbCasters, GetObjectsBBox()))
 			{
+				const IRenderNode::RenderFlagsType requiredFlags = pFrustum->m_eFrustumType != ShadowMapFrustum::e_HeightMapAO ? ERF_CASTSHADOWMAPS : 0; // Ignore ERF_CASTSHADOWMAPS for ambient occlusion casters
+				const IRenderNode::RenderFlagsType excludeFlags  = ERF_HIDDEN | ERF_COLLISION_PROXY | ERF_RAYCAST_PROXY | renderNodeExcludeFlags;
+				const float shadowViewDistRatio = GetCVars()->e_ShadowsCastViewDistRatio;
+				const bool  includeCharacters   = GetCVars()->e_ShadowsCacheRenderCharacters != 0;
+
 				for (int l = 0; l < eRNListType_ListsNum; l++)
 				{
+					if (!IsRenderNodeTypeEnabled(EERType(l)))
+						continue;
+
 					for (IRenderNode* pNode = m_arrObjects[l].m_pFirstNode, *pNext; pNode; pNode = pNext)
 					{
 						if (pNext = pNode->m_pNext)
 							cryPrefetchT0SSE(pNext);
 
-						if (!IsRenderNodeTypeEnabled(pNode->GetRenderNodeType()))
-							continue;
-
 						if (pNode == pIgnoreNode)
 							continue;
 
-						auto nFlags = pNode->GetRndFlags();
-						if (nFlags & (ERF_HIDDEN | ERF_COLLISION_PROXY | ERF_RAYCAST_PROXY | renderNodeExcludeFlags))
-							continue;
-
-						// Ignore ERF_CASTSHADOWMAPS for ambient occlusion casters
-						if (pFrustum->m_eFrustumType != ShadowMapFrustum::e_HeightMapAO && (pNode->GetRndFlags() & ERF_CASTSHADOWMAPS) == 0)
+						if ((pNode->GetRndFlags() & (excludeFlags | requiredFlags)) != requiredFlags)
 							continue;
 
 						if (!pFrustum->NodeRequiresShadowCacheUpdate(pNode))
 							continue;
 
-						AABB objBox = pNode->GetBBox();
-						const float fDistanceSq = Distance::Point_PointSq(passInfo.GetCamera().GetPosition(), objBox.GetCenter());
-						const float fMaxDist = pNode->GetMaxViewDist() * GetCVars()->e_ShadowsCastViewDistRatio + objBox.GetRadius();
+						const float fDistanceSq = Distance::Point_AABBSq(passInfo.GetCamera().GetPosition(), pNode->GetBBox());
+						const float fMaxDist    = pNode->GetMaxViewDist() * shadowViewDistRatio;
 
 						if (fDistanceSq > sqr(fMaxDist))
 							continue;
@@ -1426,9 +1425,9 @@ bool COctreeNode::GetShadowCastersTimeSliced(IRenderNode* pIgnoreNode, ShadowMap
 								}
 							}
 						}
-						else if (pNode->GetEntityCharacter() != nullptr)
+						else if (includeCharacters)
 						{
-							bCanRender = GetCVars()->e_ShadowsCacheRenderCharacters != 0;
+							bCanRender = pNode->GetEntityCharacter() != nullptr;
 						}
 
 						if (bCanRender)
@@ -3540,7 +3539,7 @@ void CObjManager::PushIntoCullOutputQueue(const SCheckOcclusionOutput& rCheckOcc
 //////////////////////////////////////////////////////////////////////////
 bool CObjManager::PopFromCullOutputQueue(SCheckOcclusionOutput& pCheckOcclusionOutput)
 {
-	CRY_PROFILE_REGION(PROFILE_3DENGINE, "3DEngine: WaitCullOutputQueue");
+	CRY_PROFILE_SECTION(PROFILE_3DENGINE, "3DEngine: WaitCullOutputQueue");
 
 	return m_CheckOcclusionOutputQueue.dequeue(pCheckOcclusionOutput);
 }
@@ -3783,21 +3782,14 @@ bool CObjManager::IsBoxOccluded(const AABB& objBox,
 
 void COctreeNode::SetTraversalFrameId(IRenderNode* pObj, uint32 onePassTraversalFrameId, int shadowFrustumLod)
 {
-	if (pObj->m_onePassTraversalFrameId != onePassTraversalFrameId)
-	{
-		pObj->m_onePassTraversalShadowCascades = 0;
-		pObj->m_onePassTraversalFrameId = onePassTraversalFrameId;
-	}
-
-	pObj->m_onePassTraversalShadowCascades |= BIT(shadowFrustumLod);
+	pObj->SetOnePassTraversalFrameId(onePassTraversalFrameId, shadowFrustumLod);
 
 	// mark also the path to this object, m_onePassTraversalFrameId will be used to guide the tree traversal
-	COctreeNode* pOcNode = (COctreeNode*)pObj->m_pOcNode;
+	COctreeNode* pOcNode = static_cast<COctreeNode*>(pObj->m_pOcNode);
 
-	while (pOcNode && pOcNode->m_onePassTraversalFrameId != onePassTraversalFrameId)
+	while (pOcNode && 
+		   CryInterlockedExchange(reinterpret_cast<volatile LONG*>(&pOcNode->m_onePassTraversalFrameId), onePassTraversalFrameId) != onePassTraversalFrameId)
 	{
-		pOcNode->m_onePassTraversalFrameId = onePassTraversalFrameId;
-
 		pOcNode = pOcNode->m_pParent;
 	}
 }

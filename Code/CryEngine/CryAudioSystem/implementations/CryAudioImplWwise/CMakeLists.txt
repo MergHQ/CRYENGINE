@@ -244,5 +244,6 @@ elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
 		-Wno-unknown-pragmas
 		-Wno-unused-but-set-variable
 		-Wno-unused-function
+		-Wno-stringop-overflow
 	)
 endif()

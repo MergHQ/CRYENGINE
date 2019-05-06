@@ -23,6 +23,7 @@
 	#include <CryRenderer/ITexture.h>
 	#include <CrySystem/IStreamEngine.h>
 	#include <CryString/UnicodeFunctions.h>
+	#include <CrySystem/ConsoleRegistration.h>
 
 	#ifndef GFC_NO_THREADSUPPORT
 //////////////////////////////////////////////////////////////////////////

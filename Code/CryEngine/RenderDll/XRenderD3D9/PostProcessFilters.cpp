@@ -9,7 +9,7 @@
 
 #include <Cry3DEngine/I3DEngine.h>
 
-void CSharpening::Render(const std::shared_ptr<CGraphicsPipeline>& pGraphicsPipeline)
+void CSharpening::Render()
 {
 	ASSERT_LEGACY_PIPELINE
 /*
@@ -40,7 +40,7 @@ void CSharpening::Render(const std::shared_ptr<CGraphicsPipeline>& pGraphicsPipe
 
 // todo: handle different blurring filters, add wavelength based blur
 
-void CBlurring::Render(const std::shared_ptr<CGraphicsPipeline>& pGraphicsPipeline)
+void CBlurring::Render()
 {
 	ASSERT_LEGACY_PIPELINE
 /*
@@ -195,7 +195,7 @@ void CColorGrading::UpdateParams(SColorGradingMergeParams& pMergeParams)
 	pMergeParams.pSelectiveColor[1] = pParams4;
 }
 
-void CColorGrading::Render(const std::shared_ptr<CGraphicsPipeline>& pGraphicsPipeline)
+void CColorGrading::Render()
 {
 	// Deprecated: to be removed / replaced by UberPostProcess shader
 }
@@ -203,20 +203,22 @@ void CColorGrading::Render(const std::shared_ptr<CGraphicsPipeline>& pGraphicsPi
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void CPostAA::Render(const std::shared_ptr<CGraphicsPipeline>& pGraphicsPipeline)
+void CPostAA::Render()
 {
+	CGraphicsPipeline* pGraphicsPipeline = m_pCurrentContext->GetRenderView()->GetGraphicsPipeline().get();
+	CRY_ASSERT(pGraphicsPipeline);
 	pGraphicsPipeline->ExecutePostAA();
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-bool CPostStereo::Preprocess(const SRenderViewInfo& viewInfo, const std::shared_ptr<CGraphicsPipeline>& pGraphicsPipeline)
+bool CPostStereo::Preprocess(const SRenderViewInfo& viewInfo)
 {
 	return gcpRendD3D->GetS3DRend().IsPostStereoEnabled();
 }
 
-void CPostStereo::Render(const std::shared_ptr<CGraphicsPipeline>& pGraphicsPipeline)
+void CPostStereo::Render()
 {
 	ASSERT_LEGACY_PIPELINE
 /*
@@ -300,7 +302,7 @@ void CPostStereo::Render(const std::shared_ptr<CGraphicsPipeline>& pGraphicsPipe
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void CImageGhosting::Render(const std::shared_ptr<CGraphicsPipeline>& pGraphicsPipeline)
+void CImageGhosting::Render()
 {
 	ASSERT_LEGACY_PIPELINE
 /*
@@ -344,7 +346,7 @@ void CImageGhosting::Render(const std::shared_ptr<CGraphicsPipeline>& pGraphicsP
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void CUberGamePostProcess::Render(const std::shared_ptr<CGraphicsPipeline>& pGraphicsPipeline)
+void CUberGamePostProcess::Render()
 {
 	ASSERT_LEGACY_PIPELINE
 /*

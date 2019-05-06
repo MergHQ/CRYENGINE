@@ -200,12 +200,6 @@ public:
 	//! Makes cryasset filename from asset name.
 	string MakeMetadataFilename(const char* szAssetName) const;
 
-	//! Returns an instance of instant editor or nullptr if there is no active instance.
-	CAssetEditor* GetInstantEditor() const { return m_pInstantEditor; }
-
-	//! Assign the editor as the instant editor.
-	void SetInstantEditor(CAssetEditor* pEditor);
-
 	//! Returns true if the asset type supports automatic generation and repairing missing or broken *.cryasset file. 
 	//! The default implementation returns true.
 	//! \sa CAssetGenerator::GenerateCryasset
@@ -252,7 +246,6 @@ private:
 
 private:
 	CryIcon       m_icon;
-	CAssetEditor* m_pInstantEditor = nullptr;
 };
 
 //Helper macro for declaring IClassDesc.

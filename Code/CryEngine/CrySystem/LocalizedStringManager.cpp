@@ -18,7 +18,7 @@
 #include <CrySystem/ISystem.h>
 #include "System.h" // to access InitLocalization()
 #include <CryString/CryPath.h>
-#include <CrySystem/IConsole.h>
+#include <CrySystem/ConsoleRegistration.h>
 #include <CryString/StringUtils.h>
 #include <locale.h>
 #include <time.h>
@@ -874,7 +874,7 @@ bool CLocalizedStringsManager::LoadExcelXmlSpreadsheet(const char* sFileName, bo
 // Loads a string-table from a Excel XML Spreadsheet file.
 bool CLocalizedStringsManager::DoLoadExcelXmlSpreadsheet(const char* sFileName, uint8 nTagID, bool bReload)
 {
-	LOADING_TIME_PROFILE_SECTION_ARGS(sFileName)
+	CRY_PROFILE_FUNCTION_ARG(PROFILE_LOADING_ONLY, sFileName)
 	MEMSTAT_CONTEXT(EMemStatContextType::Other, "Localization XMLs");
 	MEMSTAT_CONTEXT_FMT(EMemStatContextType::Other, "Localization XML (%s)", sFileName);
 

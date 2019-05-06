@@ -216,23 +216,23 @@ void RootOpticsElement::RenderPreview(const SLensFlareRenderParam* pParam, const
 		return;
 
 	_smart_ptr<CRenderView> pRenderView = pParam->passInfo.GetRenderView();
-	std::shared_ptr<CGraphicsPipeline> pGraphicsPipeline = pRenderView->GetGraphicsPipeline();
 
 	if (gcpRendD3D->m_pRT->IsRenderThread())
 	{
-		return RT_RenderPreview(vPos, pGraphicsPipeline);
+		return RT_RenderPreview(vPos, pParam);
 	}
 
 	gcpRendD3D->m_pRT->ExecuteRenderThreadCommand([=]
 	{
+		std::shared_ptr<CGraphicsPipeline> pGraphicsPipeline = pRenderView->GetGraphicsPipeline();
 		pGraphicsPipeline->SetCurrentRenderView(pRenderView.get());
-		RT_RenderPreview(vPos, pGraphicsPipeline);
+		RT_RenderPreview(vPos, pParam);
 	}, ERenderCommandFlags::None);
 }
 
-void RootOpticsElement::RT_RenderPreview(const Vec3& vPos, const std::shared_ptr<CGraphicsPipeline>& pGraphicsPipeline)
+void RootOpticsElement::RT_RenderPreview(const Vec3& vPos, const SLensFlareRenderParam* pParam)
 {
-	CRY_PROFILE_REGION(PROFILE_RENDERER, "RootOpticsElement::RT_RenderPreview");
+	CRY_PROFILE_SECTION(PROFILE_RENDERER, "RootOpticsElement::RT_RenderPreview");
 
 	SFlareLight light;
 	light.m_vPos = vPos;
@@ -254,9 +254,10 @@ void RootOpticsElement::RT_RenderPreview(const Vec3& vPos, const std::shared_ptr
 		viewport.Height = float(pDstRT->GetHeight());
 		viewport.MinDepth = 0.0f;
 		viewport.MaxDepth = 1.0f;
-
+		
+		_smart_ptr<CRenderView> pRenderView = pParam->passInfo.GetRenderView();
 		SRenderViewInfo viewInfo[CCamera::eEye_eCount];
-		size_t viewInfoCount = pGraphicsPipeline->GenerateViewInfo(viewInfo);
+		size_t viewInfoCount = pRenderView->GetGraphicsPipeline()->GenerateViewInfo(viewInfo);
 
 		std::vector<CPrimitiveRenderPass*> prePasses;
 

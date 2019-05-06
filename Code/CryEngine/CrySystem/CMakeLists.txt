@@ -528,6 +528,8 @@ add_sources("CrySystem_uber_4.cpp"
 	PROJECTS CrySystem
 	SOURCE_GROUP "Profiler"
 		"Profiling/PlatformProfiler_win.cpp"
+		"Profiling/PixForWindows.cpp"
+		"Profiling/PixForWindows.h"
 )
 
 # -- platformos.waf_files --
@@ -548,10 +550,11 @@ MACRO(setup_crysystem)
 	if (NOT DURANGO)
 		target_link_libraries( ${THIS_PROJECT} PRIVATE tomcrypt )
 	endif()
-
+	
 	if (WINDOWS)
 		set_property(TARGET ${THIS_PROJECT} APPEND_STRING PROPERTY LINK_FLAGS " /NODEFAULTLIB:libcmt.lib /NODEFAULTLIB:libcpmt.lib")
 		target_link_libraries(${THIS_PROJECT} PRIVATE wininet Shell32 Ole32 Gdi32)
+		target_link_libraries(${THIS_PROJECT} PRIVATE WinPixEventRuntime)
 	elseif (LINUX)
 		target_link_libraries( ${THIS_PROJECT} PRIVATE ncursesw m )
 	elseif (APPLE)

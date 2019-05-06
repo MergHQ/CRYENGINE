@@ -37,7 +37,7 @@ QToolWindowManager::QToolWindowManager(QWidget* parent /*= 0*/, QVariant config,
 	m_mainWrapper = new QToolWindowWrapper(this);
 	m_mainWrapper->getWidget()->setObjectName("mainWrapper");
 	setLayout(new QVBoxLayout(this));
-	layout()->setMargin(0);
+	layout()->setMargin(2);
 	layout()->setSpacing(0);
 	layout()->addWidget(m_mainWrapper->getWidget());
 	m_lastArea = createArea();

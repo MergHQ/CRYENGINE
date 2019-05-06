@@ -26,6 +26,7 @@
 #include <CryAISystem/IAIObject.h>
 #include <CryAISystem/IAIActor.h>
 #include <CryGame/IGameFramework.h>
+#include <CrySystem/ConsoleRegistration.h>
 
 #include <../CryAction/IActorSystem.h>
 #define HEAD_BONE_NAME "Bip01 Head"
@@ -2340,10 +2341,6 @@ void CAnimEntityNode::AnimateCharacterTrack(class CCharacterTrack* pTrack, SAnim
 
 			if (key.m_animation[0])
 			{
-				// retrieve the animation collection for the model
-				IAnimationSet* pAnimations = pCharacter->GetIAnimationSet();
-				assert(pAnimations);
-
 				if (key.m_bUnload)
 				{
 					m_setAnimationSinks.insert(TStringSetIt::value_type(key.m_animation));
@@ -2375,19 +2372,6 @@ void CAnimEntityNode::AnimateCharacterTrack(class CCharacterTrack* pTrack, SAnim
 
 				animState.m_layerPlaysAnimation[trackIndex] = true;
 
-				// fix duration?
-				int animId = pAnimations->GetAnimIDByName(key.m_animation);
-
-				if (animId >= 0)
-				{
-					float duration = pAnimations->GetDuration_sec(animId);
-
-					if (key.m_defaultAnimDuration != duration)
-					{
-						key.m_defaultAnimDuration = duration;
-						pTrack->SetKey(k, &key);
-					}
-				}
 			}
 		}
 

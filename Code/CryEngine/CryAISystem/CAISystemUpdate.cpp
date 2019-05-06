@@ -779,7 +779,7 @@ void CAISystem::SubsystemUpdateActorsAndTargetTrackAndORCA()
 		}
 
 		{
-			CRY_PROFILE_REGION(PROFILE_AI, "UpdateActors - Full Updates");
+			CRY_PROFILE_SECTION(PROFILE_AI, "UpdateActors - Full Updates");
 
 			AIActorVector::iterator it = fullUpdates.begin();
 			AIActorVector::iterator end = fullUpdates.end();
@@ -833,7 +833,7 @@ void CAISystem::SubsystemUpdateActorsAndTargetTrackAndORCA()
 		}
 
 		{
-			CRY_PROFILE_REGION(PROFILE_AI, "UpdateActors - Dry Updates");
+			CRY_PROFILE_SECTION(PROFILE_AI, "UpdateActors - Dry Updates");
 
 			AIActorVector::iterator it = dryUpdates.begin();
 			AIActorVector::iterator end = dryUpdates.end();
@@ -843,7 +843,7 @@ void CAISystem::SubsystemUpdateActorsAndTargetTrackAndORCA()
 		}
 
 		{
-			CRY_PROFILE_REGION(PROFILE_AI, "UpdateActors - Subsystems Updates");
+			CRY_PROFILE_SECTION(PROFILE_AI, "UpdateActors - Subsystems Updates");
 
 			for (IAISystemComponent* systemComponent : m_setSystemComponents)
 			{
@@ -871,7 +871,7 @@ void CAISystem::SubsystemUpdateActorsAndTargetTrackAndORCA()
 
 	if (activeAIActorCount > 0)
 	{
-		CRY_PROFILE_REGION(PROFILE_AI, "UpdateActors - Proxy Updates");
+		CRY_PROFILE_SECTION(PROFILE_AI, "UpdateActors - Proxy Updates");
 		{
 			{
 				AIActorVector::iterator fit = fullUpdates.begin();

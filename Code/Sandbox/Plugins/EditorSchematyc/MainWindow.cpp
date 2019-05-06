@@ -115,8 +115,6 @@ CMainWindow::CMainWindow()
 	InitMenu();
 	InitToolbar(pWindowLayout);
 
-	RegisterWidgets();
-
 	GetIEditor()->RegisterNotifyListener(this);
 }
 
@@ -228,7 +226,7 @@ bool CMainWindow::RestoreUndo(const XmlNodeRef& input)
 	return true;
 }
 
-void CMainWindow::CreateDefaultLayout(CDockableContainer* pSender)
+void CMainWindow::OnCreateDefaultLayout(CDockableContainer* pSender, QWidget* pAssetBrowser)
 {
 	CRY_ASSERT(pSender);
 
@@ -346,10 +344,8 @@ void CMainWindow::OnCloseAsset()
 	m_pAsset = nullptr;
 }
 
-void CMainWindow::RegisterWidgets()
+void CMainWindow::OnInitialize()
 {
-	EnableDockingSystem();
-
 	RegisterDockableWidget("Script Browser", [&]() { return CreateScriptBrowserWidget(); }, true, false);
 	RegisterDockableWidget("Graph View", [&]() { return CreateGraphViewWidget(); }, true, false);
 	RegisterDockableWidget("Preview", [&]() { return CreatePreviewWidget(); }, true, false);

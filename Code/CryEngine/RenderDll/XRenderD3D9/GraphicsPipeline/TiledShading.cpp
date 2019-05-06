@@ -104,10 +104,12 @@ void CTiledShadingStage::Execute()
 	CTexture* pTexGiSpec = CRendererResources::s_ptexBlack;
 
 #if defined(FEATURE_SVO_GI)
-	if (CSvoRenderer::GetInstance()->IsActive() && CSvoRenderer::GetInstance()->GetSpecularFinRT())
+	if (CSvoRenderer::GetInstance()->IsActive())
 	{
-		pTexGiDiff = (CTexture*)CSvoRenderer::GetInstance()->GetDiffuseFinRT();
-		pTexGiSpec = (CTexture*)CSvoRenderer::GetInstance()->GetSpecularFinRT();
+		if (CSvoRenderer::GetInstance()->GetDiffuseFinRT())
+			pTexGiDiff = (CTexture*)CSvoRenderer::GetInstance()->GetDiffuseFinRT();
+		if (CSvoRenderer::GetInstance()->GetSpecularFinRT())
+			pTexGiSpec = (CTexture*)CSvoRenderer::GetInstance()->GetSpecularFinRT();
 	}
 #endif
 

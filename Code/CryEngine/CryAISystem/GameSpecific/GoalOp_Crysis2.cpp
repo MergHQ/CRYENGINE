@@ -2416,7 +2416,7 @@ EGoalOpResult COPCrysis2Fly::Execute(CPipeUser* pPipeUser)
 	{
 	case C2F_INVALID:
 		{
-			CRY_PROFILE_REGION(PROFILE_AI, "COPCrysis2Fly: SETUP ASTAR" );
+			CRY_PROFILE_SECTION(PROFILE_AI, "COPCrysis2Fly: SETUP ASTAR" );
 
 			result = CalculateTarget(pPipeUser);
 
@@ -2433,7 +2433,7 @@ EGoalOpResult COPCrysis2Fly::Execute(CPipeUser* pPipeUser)
 		}
 	case C2F_PATHFINDING:
 		{
-			CRY_PROFILE_REGION(PROFILE_AI, "COPCrysis2Fly: ASTAR UPDATE";
+			CRY_PROFILE_SECTION(PROFILE_AI, "COPCrysis2Fly: ASTAR UPDATE";
 
 			if (m_Solver)
 			{

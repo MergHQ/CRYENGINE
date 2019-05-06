@@ -103,36 +103,6 @@ SStatoscopeData& GetStatoscopeData(uint32 nIndex);
 	#define STATOSCOPE_IO_READ(y)    (void)0
 #endif
 
-//===============================================================================
-//////////////////////////////////////////////////////////////////////////////////////////
-// The buffer invalidations
-struct SBufferInvalidation
-{
-	CDeviceBuffer* buffer;
-	void*          base_ptr;
-	buffer_size_t  offset;
-	buffer_size_t  size;
-
-	bool operator<(const SBufferInvalidation& other) const
-	{
-		if (buffer == other.buffer)
-			return offset < other.offset;
-		return buffer < other.buffer;
-	}
-	bool operator!=(const SBufferInvalidation& other) const
-	{
-		return buffer != other.buffer
-#if CRY_PLATFORM_DURANGO  // Should be removed when we have range based invalidations
-		       && offset != other.offset
-#endif
-		;
-	}
-};
-
-typedef std::vector<SBufferInvalidation> BufferInvalidationsT;
-// returns a reference to the internal buffer invalidates (used to break cyclic depencies in file)
-BufferInvalidationsT& GetBufferInvalidations(uint32 threadid);
-
 namespace
 {
 
@@ -552,7 +522,8 @@ public:
 		{
 			{ src_offset, 0, 0, 0 }, // src position
 			{ dst_offset, 0, 0, 0 }, // dst position
-			{ src_size  , 1, 1, 1 }  // size
+			{ src_size  , 1, 1, 1 }, // size
+			D3D11_COPY_NO_OVERWRITE_REVERT
 		};
 
 		GetDeviceObjectFactory().GetCoreCommandList().GetCopyInterface()->Copy(
@@ -1189,6 +1160,7 @@ public:
 	{
 		DEVBUFFERMAN_ASSERT(dst_buffer && src_buffer && dst_size == src_size);
 
+#if CRY_PLATFORM_MOBILE
 		// NOTE: if the source in in WC memory this would be bad and the GPU-side copy should be used
 		// (async gpu + wait, otherwise the whole command-queue needs to be flushed and processed through)
 		void* src_ptr = BeginRead (src_buffer, src_size, src_offset);
@@ -1196,6 +1168,40 @@ public:
 		StreamBufferData(dst_ptr, src_ptr, src_size);
 		EndReadWrite(src_buffer, src_size, src_offset);
 		EndReadWrite(dst_buffer, dst_size, dst_offset);
+#elif !CRY_PLATFORM_DURANGO
+		const SResourceRegionMapping mapping =
+		{
+			{ src_offset, 0, 0, 0 }, // src position
+			{ dst_offset, 0, 0, 0 }, // dst position
+			{ src_size  , 1, 1, 1 }, // size
+			D3D11_COPY_NO_OVERWRITE
+		};
+
+		GetDeviceObjectFactory().GetCoreCommandList().GetCopyInterface()->Copy(
+			src_buffer,
+			dst_buffer,
+			mapping);
+#else
+		D3D11_BOX srcBox;
+		srcBox.left = (UINT)src_offset;
+		srcBox.top = 0;
+		srcBox.front = 0;
+		srcBox.right = (UINT)(src_offset + src_size);
+		srcBox.bottom = 1;
+		srcBox.back = 1;
+
+		ID3D11DmaEngineContextX* pDMA = GetDeviceObjectFactory().m_pDMA1;
+		pDMA->CopySubresourceRegion(
+			dst_buffer->GetNativeResource(),
+			0,
+			(UINT)dst_offset,
+			0,
+			0,
+			src_buffer->GetNativeResource(),
+			0,
+			&srcBox,
+			D3D11_COPY_NO_OVERWRITE);
+#endif
 	}
 #endif
 };
@@ -1644,7 +1650,11 @@ struct CBufferPoolImpl final
 		buffer_size_t                     m_src_offset;
 		buffer_size_t                     m_dst_offset;
 		buffer_size_t                     m_size;
+#if !CRY_PLATFORM_DURANGO
 		DeviceFenceHandle                 m_copy_fence;
+#else
+		UINT64                            m_copy_fence;
+#endif
 		DeviceFenceHandle                 m_relocate_fence;
 		bool                              m_moving     : 1;
 		bool                              m_relocating : 1;
@@ -1666,7 +1676,9 @@ struct CBufferPoolImpl final
 		{}
 		~SPendingMove()
 		{
+#if !CRY_PLATFORM_DURANGO
 			if (m_copy_fence) GetDeviceObjectFactory().ReleaseFence(m_copy_fence);
+#endif
 			if (m_relocate_fence) GetDeviceObjectFactory().ReleaseFence(m_relocate_fence);
 		}
 	};
@@ -1679,7 +1691,11 @@ struct CBufferPoolImpl final
 		// Should have finished by now ... soft-sync to fence, if not done, don't finish
 		if (move.m_moving)
 		{
-			if (GetDeviceObjectFactory().SyncFence(move.m_copy_fence, block, block) == S_OK)
+#if !CRY_PLATFORM_DURANGO
+			if (GetDeviceObjectFactory().SyncFence( move.m_copy_fence, block, block) == S_OK)
+#else
+			if (GetDeviceObjectFactory().SyncFence(reinterpret_cast<DeviceFenceHandle>(&move.m_copy_fence), block, block) == S_OK)
+#endif
 			{
 				move.m_notification->bDstIsValid = true;
 				move.m_moving = false;
@@ -1878,6 +1894,9 @@ struct CBufferPoolImpl final
 	  , UINT_PTR size
 	  , IDefragAllocatorCopyNotification* pNotification) final
 	{
+#if CRY_PLATFORM_DURANGO
+		CryAutoLock<CryCriticalSection> dmaLock(GetDeviceObjectFactory().m_dma1Lock);
+#endif
 #if CRY_PLATFORM_WINDOWS // Workaround for Win64, using a C-cast here breaks Orbis
 	#pragma warning( push )
 	#pragma warning( disable : 4244)
@@ -1943,7 +1962,13 @@ struct CBufferPoolImpl final
 		  , old_item->m_offset);
 
 		// Issue a fence so that the copy can be synced
+#if !CRY_PLATFORM_DURANGO
 		GetDeviceObjectFactory().IssueFence(pending.m_copy_fence);
+#else
+		ID3D11DmaEngineContextX* pDMA = GetDeviceObjectFactory().m_pDMA1;
+		pending.m_copy_fence = pDMA->InsertFence(D3D11_INSERT_FENCE_NO_KICKOFF);
+		pDMA->Submit();
+#endif
 		pending.m_moving = true;
 		// The move will be considered "done" (bDstIsValid) on the next Update call
 		// thanks to r_flush being one, this is always true!
@@ -2156,11 +2181,13 @@ retry:
 		m_pending_moves.resize(s_PoolConfig.m_pool_max_moves_per_update);
 		for (size_t i = 0; i < s_PoolConfig.m_pool_max_moves_per_update; ++i)
 		{
+#if !CRY_PLATFORM_DURANGO
 			if (GetDeviceObjectFactory().CreateFence(m_pending_moves[i].m_copy_fence) != S_OK)
 			{
 				CryLogAlways("Could not create buffer pool copy gpu fence");
 				return false;
 			}
+#endif
 			if (GetDeviceObjectFactory().CreateFence(m_pending_moves[i].m_relocate_fence) != S_OK)
 			{
 				CryLogAlways("Could not create buffer pool relocate fence");
@@ -3475,7 +3502,7 @@ void CDeviceBufferManager::UnlockDevMan()
 //////////////////////////////////////////////////////////////////////////////////////
 bool CDeviceBufferManager::Init()
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 	MEMSTAT_CONTEXT(EMemStatContextType::Other, "Init Device Buffer Manager");
 
 	MEMORY_SCOPE_CHECK_HEAP();

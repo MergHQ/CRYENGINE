@@ -251,7 +251,7 @@ int main(int argc, char* argv[])
 		return 0;
 	}
 
-	LOADING_TIME_PROFILE_SECTION_NAMED("Sanbox::main() after initting app instance");
+	CRY_PROFILE_SECTION(PROFILE_LOADING_ONLY, "Sanbox::main() after initting app instance");
 
 	WriteSessionData();
 
@@ -260,7 +260,7 @@ int main(int argc, char* argv[])
 	// We must to [re]load style sheet after creating the main form to display the logo on the title bar.
 	// Please see: #1350577. !XB (EditorQt) Restore logo by creating main frame before loading stylesheet.
 	{
-		LOADING_TIME_PROFILE_SECTION_NAMED("SetVisualStyle()");
+		CRY_PROFILE_SECTION(PROFILE_LOADING_ONLY, "SetVisualStyle()");
 		SetVisualStyle();
 	}
 

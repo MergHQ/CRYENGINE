@@ -496,7 +496,7 @@ inline void ApplyImpulse(body_helper *pbody, const Vec3& dP, const Vec3& dL, int
 int InvokeContactSolverMC(contact_helper *pContactsRB,contact_helper_constraint *pContactsC,body_helper *pBodies, 
 													int nContacts,int nBodies, float Ebefore, int nMaxIters,int nPasses,float e,float minSeparationSpeed)
 {
-	CRY_PROFILE_REGION(PROFILE_PHYSICS, "LCPMC");
+	CRY_PROFILE_SECTION(PROFILE_PHYSICS, "LCPMC");
 	int iCaller = get_iCaller_int();
 	int i,j,bBounced,istart,iend,istep,nBounces=0,bContactBounced;
 	float vrel,dPn,dPtang,Eafter;
@@ -1014,7 +1014,7 @@ __solver_step++;
 	g_nBodies = nBodies;
 
 	if (g_bUsePreCG && g_nContacts<16 && !bMultigrid) {
-		CRY_PROFILE_REGION(PROFILE_PHYSICS, "PreCG");
+		CRY_PROFILE_SECTION(PROFILE_PHYSICS, "PreCG");
 
 		real a,b,r2,r2new,pAp,vmax,vdiff;
 
@@ -1259,7 +1259,7 @@ __solver_step++;
 		}
 
 		if (bBounced) {
-			{ CRY_PROFILE_REGION(PROFILE_PHYSICS,"LCPCG");
+			{ CRY_PROFILE_SECTION(PROFILE_PHYSICS,"LCPCG");
 
 			cgiter = pss->nMaxLCPCGiters;
 			for(i=0;i<nBodies;i++) {
@@ -1524,7 +1524,7 @@ __solver_step++;
 			}//"LCPCG"
 
 			if (bBounced) {
-				CRY_PROFILE_REGION(PROFILE_PHYSICS, "LCPCG-unproj");
+				CRY_PROFILE_SECTION(PROFILE_PHYSICS, "LCPCG-unproj");
 
 				///////////////////////////////////////////////////////////////////////////////////
 				// now, use a separate solver for unprojections (unproject each body independently)

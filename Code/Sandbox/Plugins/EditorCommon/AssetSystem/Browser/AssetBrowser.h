@@ -1,4 +1,4 @@
-// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2019 Crytek GmbH / Crytek Group. All rights reserved.
 #pragma once
 
 #include "EditorCommonAPI.h"
@@ -6,6 +6,7 @@
 #include "ProxyModels/ItemModelAttribute.h"
 #include "CrySandbox/CrySignal.h"
 #include "AssetSystem/AssetType.h"
+#include "IAssetBrowserContext.h"
 
 #include <QWidget>
 
@@ -33,7 +34,7 @@ struct IUIContext;
 #define ASSET_BROWSER_USE_PREVIEW_WIDGET 0
 
 //! The dockable class for the Asset Browser
-class EDITOR_COMMON_API CAssetBrowser : public CDockableEditor
+class EDITOR_COMMON_API CAssetBrowser : public CDockableEditor, public IAssetBrowserContext
 {
 	Q_OBJECT
 	Q_PROPERTY(int buttonsSpacing READ GetButtonsSpacing WRITE SetButtonsSpacing)
@@ -44,15 +45,19 @@ public:
 	static CCrySignal<void(CAbstractMenu&, const std::vector<CAsset*>&, const std::vector<string>& folders, const std::shared_ptr<IUIContext>&)> s_signalContextMenuRequested;
 
 	CAssetBrowser(bool bHideEngineFolder = false, QWidget* pParent = nullptr);
+	CAssetBrowser(const std::vector<CAssetType*>& assetTypes, bool bHideEngineFolder = false, QWidget* pParent = nullptr);
 	virtual ~CAssetBrowser();
+
+	//extract actual content from the selection
+	virtual void                GetSelection(std::vector<CAsset*>& assets, std::vector<string>& folders) const override;
+
+	virtual std::vector<string> GetSelectedFolders() const override;
 
 	std::vector<CAsset*> GetSelectedAssets() const;
 	CAsset*              GetLastSelectedAsset() const;
 
 	void                 SelectAsset(const char* szPath) const;
 	void                 SelectAsset(const CAsset& asset) const;
-
-	std::vector<string>  GetSelectedFolders() const;
 
 	//CEditor implementation
 	virtual const char* GetEditorName() const override { return "Asset Browser"; }
@@ -88,8 +93,6 @@ public:
 	int          GetButtonGroupsSpacing() const  { return m_buttonGroupsSpacing; }
 	void         SetButtonGroupsSpacing(int val) { m_buttonGroupsSpacing = val; }
 
-	virtual void customEvent(QEvent* pEvent) override;
-
 signals:
 	//! This signal is emitted whenever the selection of folders or assets changes.
 	void SelectionChanged();
@@ -99,6 +102,7 @@ protected:
 
 	QAttributeFilterProxyModel* GetAttributeFilterProxyModel();
 	QItemSelectionModel*        GetItemSelectionModel();
+	const QItemSelectionModel*  GetItemSelectionModel() const;
 	QAdvancedTreeView*          GetDetailsView();
 	QThumbnailsView*            GetThumbnailsView();
 
@@ -119,15 +123,19 @@ protected:
 	// Used for determining what layout direction to use if adaptive layout is turned off
 	Qt::Orientation GetDefaultOrientation() const override { return Qt::Horizontal; }
 
+	virtual const IEditorContext* GetContextObject() const override { return this; };
+
 private:
 	void               InitActions();
+	void               SetModel(CAssetFolderFilterModel* pModel);
+	void               SetAssetTypeFilter(const QStringList assetTypeNames);
 	void               InitNewNameDelegates();
 	void               InitViews(bool bHideEngineFolder);
 	void               InitMenus();
 	void               InitAssetsView();
 	void               InitDetailsView();
 	void               InitThumbnailsView();
-	QLayout*           CreateToolBars();
+	void               WaitUntilAssetsAreReady();
 	QWidget*           CreateAssetsViewSelector();
 
 	void               FillCreateAssetMenu(CAbstractMenu* menu, const QString& folder);
@@ -138,9 +146,6 @@ private:
 	QAbstractItemView* GetFocusedView() const;
 
 	virtual bool       eventFilter(QObject* object, QEvent* event) override;
-
-	//extract actual content from the selection for further processing
-	void ProcessSelection(std::vector<CAsset*>& assets, std::vector<string>& folders) const;
 
 	void OnSelectionChanged();
 
@@ -253,7 +258,6 @@ private:
 	std::unique_ptr<CLineEditDelegate>          m_pDetailsViewNewNameDelegate; // Note that delegates are not owned by view.
 	std::unique_ptr<CLineEditDelegate>          m_pThumbnailViewNewNameDelegate;
 	std::unique_ptr<QAttributeFilterProxyModel> m_pAttributeFilterProxyModel;
-	std::unique_ptr<QTimer>                     m_pQuickEditTimer;
 
 	//state variables
 	QVector<QStringList> m_navigationHistory;

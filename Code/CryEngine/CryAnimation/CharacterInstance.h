@@ -84,6 +84,7 @@ public:
 	virtual void FinishAnimationComputations() override { m_SkeletonAnim.FinishAnimationComputations(); }
 	virtual void SetParentRenderNode(const ICharacterRenderNode* pRenderNode) override;
 	virtual void SetAttachmentLocation_DEPRECATED(const QuatTS& newCharacterLocation) override { m_location = newCharacterLocation; } // TODO: Resolve this issue (has been described as "This is a hack to keep entity attachments in sync.").
+	virtual void SetCharacterOffset(const QuatTS& offs) override                               { m_SkeletonPose.m_physics.SetOffset(offs); }
 	virtual void OnDetach() override;
 	virtual void HideMaster(uint32 h) override                                                 { m_bHideMaster = (h > 0); };
 	virtual void GetMemoryUsage(ICrySizer * pSizer) const override;

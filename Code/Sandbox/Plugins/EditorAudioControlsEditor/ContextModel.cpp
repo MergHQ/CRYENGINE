@@ -189,7 +189,7 @@ QVariant CContextModel::data(QModelIndex const& index, int role) const
 						}
 					case static_cast<int>(ModelUtils::ERoles::InternalPointer):
 						{
-							variant = reinterpret_cast<intptr_t>(g_contexts[static_cast<size_t>(index.row())]);
+							variant = reinterpret_cast<intptr_t>(pContext);
 							break;
 						}
 					case static_cast<int>(ModelUtils::ERoles::IsDefaultControl):
@@ -368,10 +368,10 @@ void CContextModel::Reset()
 }
 
 //////////////////////////////////////////////////////////////////////////
-CContext* CContextModel::GetContextFromIndex(QModelIndex const& index, int const column)
+CContext* CContextModel::GetContextFromIndex(QModelIndex const& index)
 {
 	CContext* pContext = nullptr;
-	QModelIndex const& nameColumnIndex = index.sibling(index.row(), column);
+	QModelIndex const& nameColumnIndex = index.sibling(index.row(), static_cast<int>(EColumns::Name));
 	QVariant const internalPtr = nameColumnIndex.data(static_cast<int>(ModelUtils::ERoles::InternalPointer));
 
 	if (internalPtr.isValid())

@@ -2,6 +2,7 @@
 #pragma once
 
 #include <CryCore/StlUtils.h>
+#include <CrySandbox/CryFunction.h>
 
 #include <unordered_map>
 
@@ -183,56 +184,6 @@ bool InvokeCommand(std::function<bool(Params...)> f, const string& argsStr)
 	return InvokeCommand(std::move(f), argsStr, Indices{});
 }
 
-template<class... Params>
-struct SParamsPack {};
-
-template <class T> struct SFuncInfo : SFuncInfo<decltype(&T::operator())> {};
-
-template <class T, class Ret, typename... Params>
-struct SFuncInfo<Ret(T::*)(Params...) const> : SFuncInfo<Ret(T::*)(Params...)> {};
-
-template <class T, class R, class... FuncParams>
-struct SFuncInfo<R(T::*)(FuncParams...)> {
-	using Signature = R(FuncParams...);
-	using BoolSignature = bool(FuncParams...);
-	using Ret = R;
-	using Params = SParamsPack<FuncParams...>;
-};
-
-template <class Func>
-std::function<typename SFuncInfo<std::decay_t<Func>>::Signature> ToStdFunction(Func&& f) { return f; }
-
-template<class T, class Func, class... Params>
-std::function<typename SFuncInfo<Func>::BoolSignature> GenerateVoidLambda(Func f, T* pObj, SParamsPack<Params...>)
-{
-	return[pObj, f = std::move(f)](Params&&... params) -> bool
-	{
-		(pObj->*f)(std::forward<Params>(params)...);
-		return true;
-	};
-}
-
-template<class T, class Func, class... Params>
-std::function<typename SFuncInfo<Func>::BoolSignature> GenerateBoolLambda(Func f, T* pObj, SParamsPack<Params...>)
-{
-	return[pObj, f = std::move(f)](Params&&... params) -> bool
-	{
-		return (pObj->*f)(std::forward<Params>(params)...);
-	};
-}
-
-template<class T, class Func, std::enable_if_t<std::is_same<typename SFuncInfo<Func>::Ret, bool>::value, bool> = true>
-std::function<typename SFuncInfo<Func>::BoolSignature> WrapMemberFunction(Func&& f, T* pObj)
-{
-	return GenerateBoolLambda(std::forward<Func>(f), pObj, SFuncInfo<Func>::Params());
-}
-
-template<class T, class Func, class = std::enable_if_t<std::is_same<typename SFuncInfo<Func>::Ret, void>::value>>
-std::function<typename SFuncInfo<Func>::BoolSignature> WrapMemberFunction(Func&& f, T* pObj)
-{
-	return GenerateVoidLambda(std::forward<Func>(f), pObj, SFuncInfo<Func>::Params());
-}
-
 }
 
 template<class T>
@@ -263,7 +214,7 @@ struct SCommandRegistry
 		commands[id] = std::move(func);
 	}
 
-	//! Registers a std::function as a command.
+	//! Registers a void returning std::function as a command.
 	template<class... Params>
 	void RegisterCommand(const string& id, std::function<void(Params...)> f)
 	{
@@ -275,25 +226,18 @@ struct SCommandRegistry
 		RegisterCommand(id, std::move(func));
 	}
 
-	//! Registers a lambda as a command.
+	//! Registers a lambda or a function as a command.
 	template<class Func>
 	void RegisterCommand(const string& id, Func&& f)
 	{
-		RegisterCommand(id, CommandRegistry::ToStdFunction(std::forward<Func>(f)));
-	}
-
-	//! Registers a function pointer as a command.
-	template<class Ret, class... Params>
-	void RegisterCommand(const string& id, Ret(*f)(Params...))
-	{
-		RegisterCommand(id, std::function<Ret(Params...)>(f));
+		RegisterCommand(id, ToStdFunction(std::forward<Func>(f)));
 	}
 
 	//! Registers a member function pointer as a command.
 	template<class T, class Func>
 	void RegisterCommand(const string& id, Func&& f, T* pObj)
 	{
-		RegisterCommand(id, CommandRegistry::WrapMemberFunction(std::forward<Func>(f), pObj));
+		RegisterCommand(id, ToStdFunction(std::forward<Func>(f), pObj));
 	}
 
 	void UnregisterCommand(const string& id)

@@ -1020,7 +1020,7 @@ void CObjectManager::DeleteObject(CBaseObject* obj)
 
 void CObjectManager::DeleteObjects(std::vector<CBaseObject*>& objects)
 {
-	LOADING_TIME_PROFILE_SECTION
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY)
 
 	using namespace Private_ObjectManager;
 
@@ -1116,7 +1116,7 @@ void CObjectManager::FilterOutDeletedObjects(std::vector<CBaseObject*>& objects)
 
 void CObjectManager::DeleteAllObjects()
 {
-	LOADING_TIME_PROFILE_SECTION
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY)
 	CPrefabManager::SkipPrefabUpdate skipUpdates;
 
 	ClearSelection();
@@ -3021,7 +3021,7 @@ void CObjectManager::Serialize(XmlNodeRef& xmlNode, bool bLoading, int flags)
 
 void CObjectManager::CreateAndSelectObjects(CObjectArchive& objectArchive)
 {
-	LOADING_TIME_PROFILE_SECTION
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY)
 	CUndo undo("Create and Select Objects");
 	ClearSelection();
 
@@ -3047,7 +3047,7 @@ void CObjectManager::CreateAndSelectObjects(CObjectArchive& objectArchive)
 
 void CObjectManager::LoadObjects(CObjectArchive& objectArchive)
 {
-	LOADING_TIME_PROFILE_SECTION;
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 	m_bLoadingObjects = true;
 
 	// Prevent the prefab manager from updating prefab instances
