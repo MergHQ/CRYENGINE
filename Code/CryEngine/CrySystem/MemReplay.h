@@ -631,8 +631,7 @@ public:
 private:
 	static void RecordModuleLoad(void* pSelf, const CReplayModules::ModuleLoadDesc& mld);
 	static void RecordModuleUnload(void* pSelf, const CReplayModules::ModuleUnloadDesc& mld);
-	void WriteCallstack(UINT_PTR* callstack, uint32& length);
-	void WriteCallstack(UINT_PTR* callstack, uint16& length);
+    uint16 WriteCallstack(UINT_PTR* callstack);
 
 private:
 	CMemReplay(const CMemReplay&);
