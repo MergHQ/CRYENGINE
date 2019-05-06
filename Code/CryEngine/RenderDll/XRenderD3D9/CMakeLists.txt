@@ -1297,6 +1297,7 @@ if (RENDERER_DX12)
 		target_link_libraries(${THIS_PROJECT} PRIVATE WinPixEventRuntime)
 	elseif(DURANGO)
 		target_link_libraries(${THIS_PROJECT} PRIVATE ws2_32 SmartGlassInterop d3d12_x d3dcompiler dxguid xg_x uuid kernelx)
+		target_link_libraries(${THIS_PROJECT} PRIVATE PIXEvt)
 	endif()
 
 	if(USE_DXC)
