@@ -2606,14 +2606,15 @@ void C3DEngine::DisplayInfo(float& fTextPosX, float& fTextPosY, float& fTextStep
 		const bool bFallback = nMainFrameId - nFallbackFrameId < 50;
 
 		cry_sprintf(szMeshPoolUse,
-		            "Mesh Pool: MemUsed:%.2fKB(%d%%%%) Peak %.fKB PoolSize:%" PRISIZE_T "KB Flushes %" PRISIZE_T " Fallbacks %.3fKB %s",
+		            "Mesh Pool: Used:%.2fKB(%d%%%%) Peak %.fKB (%.fKB) PoolSize:%" PRISIZE_T "KB Flushes %" PRISIZE_T " Fallbacks %.3fKB%s",
 		            (float)stats.nPoolInUse / 1024,
 		            iPercentage,
 		            (float)stats.nPoolInUsePeak / 1024,
+		            (float)stats.nPoolRequestPeak / 1024,
 		            stats.nPoolSize / 1024,
 		            stats.nFlushes,
 		            (float)stats.nFallbacks / 1024.0f,
-		            (bFallback ? "FULL!" : bOverflow ? "OVERFLOW" : ""));
+		            (bFallback ? " FULL!" : bOverflow ? " OVERFLOW" : ""));
 
 		if (stats.nPoolSize && (displayInfoVal == 2 || bOverflow || bFallback))
 		{
@@ -2621,19 +2622,32 @@ void C3DEngine::DisplayInfo(float& fTextPosX, float& fTextPosY, float& fTextStep
 			                     bFallback ? Col_Red : bOverflow ? Col_Orange : Col_White,
 			                     "%s", szMeshPoolUse);
 		}
-		if (stats.nPoolSize && displayInfoVal == 2)
+		if (stats.nInstancePoolSize && displayInfoVal == 2)
 		{
 			char szVolatilePoolsUse[256];
 			cry_sprintf(szVolatilePoolsUse,
-			            "Mesh Instance Pool: MemUsed:%.2fKB(%d%%%%) Peak %.fKB PoolSize:%" PRISIZE_T "KB Fallbacks %.3fKB",
+			            "Mesh Instance Pool: Used:%.2fKB(%d%%%%) Peak %.fKB (%.fKB) PoolSize:%" PRISIZE_T "KB Fallbacks %.3fKB",
 			            (float)stats.nInstancePoolInUse / 1024,
 			            iVolatilePercentage,
 			            (float)stats.nInstancePoolInUsePeak / 1024,
+			            (float)stats.nInstancePoolRequestPeak / 1024,
 			            stats.nInstancePoolSize / 1024,
 			            (float)stats.nInstanceFallbacks / 1024.0f);
 
 			DrawTextRightAligned(fTextPosX, fTextPosY += fTextStepY, DISPLAY_INFO_SCALE,
-			                     Col_White, "%s", szVolatilePoolsUse);
+				Col_White, "%s", szVolatilePoolsUse);
+		}
+		if (displayInfoVal == 2)
+		{
+			char szNoPoolsUse[256];
+			cry_sprintf(szNoPoolsUse,
+				"Mesh Unpool: Used:%.2fKB Peak %.fKB (%.fKB)",
+				(float)stats.nUnpooledInUse / 1024,
+				(float)stats.nUnpooledInUsePeak / 1024,
+				(float)stats.nUnpooledRequestPeak / 1024);
+
+			DrawTextRightAligned(fTextPosX, fTextPosY += fTextStepY, DISPLAY_INFO_SCALE,
+				Col_White, "%s", szNoPoolsUse);
 		}
 
 		memcpy(&lastStats, &stats, sizeof(lastStats));

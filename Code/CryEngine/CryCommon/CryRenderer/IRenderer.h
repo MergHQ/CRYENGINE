@@ -1769,6 +1769,9 @@ struct SMeshPoolStatistics
 	//! The highest amount of memory allocated within the mesh data pool.
 	size_t nPoolInUsePeak;
 
+	//! The highest amount of memory requested within the mesh data pool.
+	size_t nPoolRequestPeak;
+
 	//! The size of the mesh data size in bytes.
 	size_t nInstancePoolSize;
 
@@ -1778,19 +1781,38 @@ struct SMeshPoolStatistics
 	//! The highest amount of memory allocated within the mesh data pool.
 	size_t nInstancePoolInUsePeak;
 
+	//! The highest amount of memory requested within the mesh data pool.
+	size_t nInstancePoolRequestPeak;
+
+	//! The amount of memory currently in use outside the pool.
+	size_t nUnpooledInUse;
+
+	//! The highest amount of memory allocated without the mesh data pool.
+	size_t nUnpooledInUsePeak;
+
+	//! The highest amount of memory requested without the mesh data pool.
+	size_t nUnpooledRequestPeak;
+
 	size_t nFallbacks;
 	size_t nInstanceFallbacks;
+
 	size_t nFlushes;
 
-	SMeshPoolStatistics()
-		: nPoolSize(),
-		nPoolInUse(),
-		nInstancePoolSize(),
-		nInstancePoolInUse(),
-		nInstancePoolInUsePeak(),
-		nFallbacks(),
-		nInstanceFallbacks(),
-		nFlushes()
+	SMeshPoolStatistics() :
+		nPoolSize(0),
+		nPoolInUse(0),
+		nPoolInUsePeak(0),
+		nPoolRequestPeak(0),
+		nInstancePoolSize(0),
+		nInstancePoolInUse(0),
+		nInstancePoolInUsePeak(0),
+		nInstancePoolRequestPeak(0),
+		nUnpooledInUse(0),
+		nUnpooledInUsePeak(0),
+		nUnpooledRequestPeak(0),
+		nFallbacks(0),
+		nInstanceFallbacks(0),
+		nFlushes(0)
 	{}
 };
 

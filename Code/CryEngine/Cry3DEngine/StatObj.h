@@ -136,11 +136,12 @@ struct SSyncToRenderMeshContext
 	strided_pointer<SPipTangents> pTangents;
 	strided_pointer<Vec3>         pNormals; // TODO: change Vec3 to SPipNormal
 	CStatObj*                     pObj;
+	IRenderMesh*                  mesh;
 	JobManager::SJobState         jobState;
 
 	void                          Set(Vec3* _vmin, Vec3* _vmax, int _iVtx0, int _nVtx, strided_pointer<Vec3> _pVtx, int* _pVtxMap
 	                                  , int _mask, float _rscale, SClothTangentVtx* _ctd, strided_pointer<Vec3> _pMeshVtx
-	                                  , strided_pointer<SPipTangents> _pTangents, strided_pointer<Vec3> _pNormals, CStatObj* _pObj)
+	                                  , strided_pointer<SPipTangents> _pTangents, strided_pointer<Vec3> _pNormals, CStatObj* _pObj, IRenderMesh* _mesh)
 	{
 		vmin = _vmin;
 		vmax = _vmax;
@@ -155,6 +156,7 @@ struct SSyncToRenderMeshContext
 		pTangents = _pTangents;
 		pNormals = _pNormals;
 		pObj = _pObj;
+		mesh = _mesh;
 	}
 };
 

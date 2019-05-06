@@ -791,6 +791,7 @@ void CD3D9Renderer::BeginFrame(const SDisplayContextKey& displayContextKey, cons
 
 	m_cEF.mfBeginFrame();
 
+	CRenderMesh::ClearStaleMemory(true, gRenDev->GetMainThreadID());
 	CRenderElement::Tick();
 	CFlashTextureSourceSharedRT::Tick();
 
