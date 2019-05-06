@@ -188,6 +188,7 @@ public:
 	static CTexture* s_ptexNoTextureCM;
 	static CTexture* s_ptexWhite;
 	static CTexture* s_ptexGray;
+	static CTexture* s_ptexMedian;
 	static CTexture* s_ptexBlack;
 	static CTexture* s_ptexBlackAlpha;
 	static CTexture* s_ptexBlackCM;
