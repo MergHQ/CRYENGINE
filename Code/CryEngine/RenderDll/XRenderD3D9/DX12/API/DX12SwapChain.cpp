@@ -76,19 +76,9 @@ CSwapChain* CSwapChain::Create(CCommandListPool& commandQueue, IDXGISwapChain1To
 {
 	IDXGISwapChainToCall* pDXGISwapChain = swapchain;
 	IDXGISwapChain3ToCall* pDXGISwapChain3 = nullptr;
-	ID3D12CommandQueue* pQueue12 = commandQueue.GetD3D12CommandQueue();
-
-#ifdef DX12_LINKEDADAPTER
-	// Put swap-chain on node "0"
-	if (commandQueue.GetDevice()->IsMultiAdapter())
-	{
-		pQueue12 = commandQueue.GetDevice()->GetNativeObject(pQueue12, 0);
-	}
-#endif
 
 	HRESULT hr = S_OK;
-
-	if (hr == S_OK && pDXGISwapChain)
+	if (pDXGISwapChain)
 	{
 		hr = pDXGISwapChain->QueryInterface(IID_GFX_ARGS(&pDXGISwapChain3));
 		pDXGISwapChain->Release();
