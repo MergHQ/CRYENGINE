@@ -590,6 +590,7 @@ public:
 
 	void SetOnePassTraversalFrameId(uint32 onePassTraversalFrameId, int shadowFrustumLod)
 	{
+#if !defined(SWIG)
 		uint64 onePassDataPrev = m_onePassData.load();
 		uint64 onePassDataCurr;
 
@@ -608,6 +609,7 @@ public:
 			onePassDataCurr    = uint64(traversalCascades) << 32 | traversalFrameId;
 
 		} while (!m_onePassData.compare_exchange_weak(onePassDataPrev, onePassDataCurr));
+#endif
 	}
 
 public:
@@ -631,7 +633,9 @@ public:
 	//! Used to request visiting of the node during one-pass traversal
 	union
 	{
+#if !defined(SWIG)
 		std::atomic<uint64> m_onePassData;
+#endif
 		struct
 		{
 			uint32 m_onePassTraversalFrameId;
