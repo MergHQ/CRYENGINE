@@ -293,6 +293,7 @@ bool CTexture::RT_CreateDeviceTexture(const SSubresourceData& pData)
 	//if we have any device owned resources allocated, we must sync with render thread
 	if (m_pDevTexture)
 	{
+		CRY_ASSERT(m_pDevTexture->GetOwner() == this);
 		RT_ReleaseDeviceTexture(false, false);
 	}
 
@@ -306,6 +307,7 @@ bool CTexture::RT_CreateDeviceTexture(const SSubresourceData& pData)
 		return false;
 
 	// Assign name to Texture for enhanced debugging
+	m_pDevTexture->SetOwner(this);
 	m_pDevTexture->SetDebugName(m_SrcName);
 
 	assert(!IsStreamed());
@@ -363,6 +365,7 @@ void CTexture::RT_ReleaseDeviceTexture(bool bKeepLastMips, bool bFromUnload) thr
 		{
 			if (CDeviceTexture* const pDevTex = m_pDevTexture)
 			{
+				CRY_ASSERT(m_pDevTexture->GetOwner() == this);
 				pDevTex->SetOwner(nullptr);
 
 				// Ref-Counting only works when there is a backing native objects, otherwise it's -1
@@ -523,19 +526,6 @@ bool SSamplerState::SetDefaultFilterMode(int nFilter)
 {
 	return s_sDefState.SetFilterMode(nFilter);
 }
-
-#if CRY_PLATFORM_DURANGO && (CRY_RENDERER_DIRECT3D >= 110) && (CRY_RENDERER_DIRECT3D < 120)
-void CTexture::ValidateSRVs()
-{
-	// We should only end up here if the texture was moved due to a defrag. This should only be for static textures.
-	m_pDevTexture->ReleaseResourceViews();
-	m_pDevTexture->AllocatePredefinedResourceViews();
-	// TODO: recreate all views that existed ...
-
-	// Notify that resource is dirty
-	InvalidateDeviceResource(this, eDeviceResourceDirty | eDeviceResourceViewDirty);
-}
-#endif
 
 void CTexture::UpdateTextureRegion(const byte* pSrcData, int nX, int nY, int nZ, int USize, int VSize, int ZSize, ETEX_Format eSrcFormat)
 {

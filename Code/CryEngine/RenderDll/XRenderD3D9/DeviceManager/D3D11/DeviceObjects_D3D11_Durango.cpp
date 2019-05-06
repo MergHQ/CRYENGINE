@@ -966,8 +966,6 @@ void CDurangoGPUMemoryManager::QueueCopy(const CopyDesc& copy)
 
 void CDurangoGPUMemoryManager::Relocate_Int(CDeviceTexture* pDevTex, char* pOldTexBase, char* pTexBase, UINT_PTR size)
 {
-//	pDevTex->Unbind();
-
 	const SDeviceTextureDesc* pDesc = pDevTex->GetTDesc();
 
 #ifndef _RELEASE
@@ -1011,8 +1009,12 @@ void CDurangoGPUMemoryManager::ScheduleCopies(CopyDesc* descriptions, size_t nco
 
 	uint64 fence = ~0ull;
 
+	// NOTE: if the source in in WC memory this would be bad and the GPU-side copy should be used
 	if (CRenderer::CV_r_texturesstreampooldefragmentation == 2)
 	{
+		CryAutoLock<CryCriticalSection> dmaLock(GetDeviceObjectFactory().m_dma1Lock);
+		ID3D11DmaEngineContextX* pDMA = GetDeviceObjectFactory().m_pDMA1;
+
 		UINT_PTR bankRelMask = (1ull << m_bankShift) - 1;
 
 		for (size_t i = 0; i < ncopies; ++i)
@@ -1031,7 +1033,8 @@ void CDurangoGPUMemoryManager::ScheduleCopies(CopyDesc* descriptions, size_t nco
 			srcBox.right = (UINT)(srcBankOffs + copy.size);
 			srcBox.bottom = 1;
 			srcBox.back = 1;
-			gcpRendD3D->GetDeviceContext().CopySubresourceRegion(
+
+			pDMA->CopySubresourceRegion(
 				m_banks[dstBank].pBuffer,
 				0,
 				(UINT)dstBankOffs,
@@ -1039,10 +1042,12 @@ void CDurangoGPUMemoryManager::ScheduleCopies(CopyDesc* descriptions, size_t nco
 				0,
 				m_banks[srcBank].pBuffer,
 				0,
-				&srcBox);
+				&srcBox,
+				D3D11_COPY_NO_OVERWRITE);
 		}
 
-		fence = gcpRendD3D->GetPerformanceDeviceContext().InsertFence();
+		fence = pDMA->InsertFence(D3D11_INSERT_FENCE_NO_KICKOFF);
+		pDMA->Submit();
 
 		for (size_t i = 0; i < ncopies; ++i)
 		{
@@ -1063,8 +1068,10 @@ void CDurangoGPUMemoryManager::ScheduleCopies(CopyDesc* descriptions, size_t nco
 		for (size_t i = 0; i < ncopies; ++i)
 		{
 			CopyDesc &copy = descriptions[i];
+			void* pSrc = GetPhysicalAddress(copy.src);
 			void* pDst = GetPhysicalAddress(copy.dst);
-			memcpy(pDst, GetPhysicalAddress(copy.src), copy.size);
+
+			memcpy(pDst, pSrc, copy.size);
 
 #if defined(TEXTURES_IN_CACHED_MEM)
 			D3DFlushCpuCache(pDst, copy.size);

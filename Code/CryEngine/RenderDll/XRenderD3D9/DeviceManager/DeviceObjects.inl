@@ -245,6 +245,9 @@ inline void CDeviceObjectFactory::OnEndFrame(int frameID)
 
 	// Garbage collect device layer resources and objects
 	TrimPipelineStates(frameID, frameID - UnusedPsoKeepAliveFrames);
+
+	// kill all dangling references to resources (defragmentation may have run after the frame)
+	GetCoreCommandList().GetGraphicsInterface()->ClearState(false);
 }
 
 inline void CDeviceObjectFactory::OnBeginFrame(int frameID)
@@ -252,4 +255,7 @@ inline void CDeviceObjectFactory::OnBeginFrame(int frameID)
 #if CRY_RENDERER_VULKAN
 	UpdateDeferredUploads();
 #endif
+
+	// kill all dangling references to resources (defragmentation may have run before the frame)
+	GetCoreCommandList().GetGraphicsInterface()->ClearState(false);
 }

@@ -760,9 +760,6 @@ private:
 	ColorF                    m_cMaxColor;
 	ColorF                    m_cClearColor;
 
-#if CRY_PLATFORM_DURANGO && (CRY_RENDERER_DIRECT3D >= 110) && (CRY_RENDERER_DIRECT3D < 120)
-	uint32                    m_nDeviceAddressInvalidated;
-#endif
 #if CRY_PLATFORM_DURANGO && DURANGO_USE_ESRAM
 	int32                     m_nESRAMOffset;
 #endif
@@ -1054,20 +1051,6 @@ public:
 	const char*        GetSourceName() const  { return m_SrcName.c_str(); }
 	const size_t       GetAllocatedSystemMemory(bool bIncludePool, bool bIncludeCache = true) const;
 	void               PostCreate();
-
-#if CRY_PLATFORM_DURANGO && (CRY_RENDERER_DIRECT3D >= 110) && (CRY_RENDERER_DIRECT3D < 120)
-	void CheckValidateSRVs()
-	{
-		if (m_pDevTexture && m_pDevTexture->GetBaseAddressInvalidated() != m_nDeviceAddressInvalidated)
-		{
-			ValidateSRVs();
-
-			m_nDeviceAddressInvalidated = m_pDevTexture->GetBaseAddressInvalidated();
-		}
-	}
-
-	void ValidateSRVs();
-#endif
 
 	//////////////////////////////////////////////////////////////////////////
 

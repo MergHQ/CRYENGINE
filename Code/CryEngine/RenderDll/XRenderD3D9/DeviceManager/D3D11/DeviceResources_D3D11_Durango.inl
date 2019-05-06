@@ -485,34 +485,17 @@ void CDeviceTexture::InitD3DTexture()
 
 	if (!m_pNativeResource)
 	{
-		if (!m_gpuHdl.IsValid()) __debugbreak();
-			
-		XG_TILE_MODE tileMode = m_pLayout->xgTileMode;
-		SGPUMemHdl texHdl = m_gpuHdl;
+#ifndef _RELEASE
+		if (!m_gpuHdl.IsValid())
+			__debugbreak();
+#endif
 
 		CDeviceTexturePin pin(this);
 
-#ifndef _RELEASE
-		HRESULT hr = gcpRendD3D->GetPerformanceDevice().CreatePlacementTexture2D(&m_pLayout->d3dDesc, tileMode, 0, pin.GetBaseAddress(), (ID3D11Texture2D**)&m_pNativeResource);
+		HRESULT hr = gcpRendD3D->GetPerformanceDevice().CreatePlacementTexture2D(
+			&m_pLayout->d3dDesc, m_pLayout->xgTileMode, 0, pin.GetBaseAddress(), (ID3D11Texture2D**)&m_pNativeResource);
 		if (FAILED(hr))
-		{
-			__debugbreak();
-		}
-#else
-		gcpRendD3D->GetPerformanceDevice().CreatePlacementTexture2D(&m_pLayout->d3dDesc, tileMode, 0, pin.GetBaseAddress(), (ID3D11Texture2D**)&m_pNativeResource);
-#endif
-
-	//	m_pRenderTargetData = pRenderTargetData;
-	//	m_eNativeFormat = D3DFmt;
-	//	m_resourceElements = CTexture::TextureDataSize(nWdt, nHgt, nDepth, nMips, nArraySize, eTF_A8);
-	//	m_subResources[eSubResource_Mips] = nMips;
-	//	m_subResources[eSubResource_Slices] = nArraySize;
-	//	m_eTT = pLayout.m_eTT;
-	//	m_bFilterable = true;
-	//	m_bIsSrgb = bIsSRGB;
-	//	m_bAllowSrgb = !!(pLayout.m_eFlags & FT_USAGE_ALLOWREADSRGB);
-	//	m_bIsMSAA = false;
-	//	m_eFlags = eFlags | stagingFlags;
+			return;
 
 		// Same as CDeviceTexture::SubstituteUsedResource
 		ReleaseResourceViews();
@@ -529,7 +512,45 @@ void CDeviceTexture::ReplaceTexture(ID3D11Texture2D* pReplacement)
 	ReleaseResourceViews();
 	AllocatePredefinedResourceViews();
 
-	++m_nBaseAddressInvalidated;
+	if (m_pOwner)
+	{
+#ifdef _DEBUG
+		int references = 0;
+
+		SResourceContainer* pRL = CBaseResource::GetResourcesForClass(CTexture::mfGetClassName());
+		ResourcesMapItor it;
+		for (it = pRL->m_RMap.begin(); it != pRL->m_RMap.end(); ++it)
+		{
+			CTexture* tp = (CTexture*)it->second;
+			if (tp && (tp->GetDevTexture() == this))
+			{
+				references++;
+			}
+		}
+
+		if (references > 1)
+		{
+			CryWarning(VALIDATOR_MODULE_3DENGINE, VALIDATOR_ERROR, "Substituting Resource referenced by more than one texture! Might crash in a short while.");
+		}
+#endif
+
+		m_pOwner->InvalidateDeviceResource(m_pOwner, eDeviceResourceDirty | eDeviceResourceViewDirty);
+	}
+#ifdef _DEBUG
+	else
+	{
+		SResourceContainer* pRL = CBaseResource::GetResourcesForClass(CTexture::mfGetClassName());
+		ResourcesMapItor it;
+		for (it = pRL->m_RMap.begin(); it != pRL->m_RMap.end(); ++it)
+		{
+			CTexture* tp = (CTexture*)it->second;
+			if (tp && (tp->GetDevTexture() == this))
+			{
+				CryWarning(VALIDATOR_MODULE_3DENGINE, VALIDATOR_ERROR, "Substituting Resource without marked but existing owner! Might crash in a short while.");
+			}
+		}
+	}
+#endif
 }
 
 void* CDeviceTexture::WeakPin()

@@ -189,9 +189,6 @@ CTexture::CTexture(const uint32 nFlags, const ColorF& clearColor /*= ColorF(Clr_
 	m_nPersistentSize = 0;
 	m_fAvgBrightness = 0.0f;
 
-#if CRY_PLATFORM_DURANGO && (CRY_RENDERER_DIRECT3D >= 110) && (CRY_RENDERER_DIRECT3D < 120)
-	m_nDeviceAddressInvalidated = 0;
-#endif
 #if CRY_PLATFORM_DURANGO && DURANGO_USE_ESRAM
 	m_nESRAMOffset = SKIP_ESRAM;
 #endif
@@ -199,7 +196,7 @@ CTexture::CTexture(const uint32 nFlags, const ColorF& clearColor /*= ColorF(Clr_
 	m_nUpdateFrameID = -1;
 	m_nAccessFrameID = -1;
 	m_nCustomID = -1;
-	m_pDevTexture = NULL;
+	m_pDevTexture = nullptr;
 
 	m_bIsLocked = false;
 	m_bNeedRestoring = false;
@@ -374,22 +371,32 @@ CTexture* CTexture::FindOrRegisterTextureObject(const char* name, uint32 nFlags,
 
 void CTexture::RefDevTexture(CDeviceTexture* pDeviceTex)
 {
-	m_pDevTexture = pDeviceTex;
+	// Hard-wired device-resources can't have a unique owner (they are shared)
+	if ((m_pDevTexture))
+		CRY_ASSERT(m_pDevTexture->GetOwner() == nullptr);
+
+	if ((m_pDevTexture = pDeviceTex))
+		m_pDevTexture->SetOwner(nullptr);
 
 	InvalidateDeviceResource(this, eDeviceResourceDirty);
 }
 
 void CTexture::SetDevTexture(CDeviceTexture* pDeviceTex)
 {
-	if (m_pDevTexture)
-		m_pDevTexture->SetOwner(NULL);
-	SAFE_RELEASE(m_pDevTexture);
+	// Substitute device-resource by a strictly subset one (texture-config doesn't change, only residency)
+	if ((m_pDevTexture))
+	{
+		CRY_ASSERT(m_pDevTexture->GetOwner() == this);
+		m_pDevTexture->SetOwner(nullptr);
+		m_pDevTexture->Release();
+	}
 
-	m_pDevTexture = pDeviceTex;
-	if (m_pDevTexture)
+	if ((m_pDevTexture = pDeviceTex))
 	{
 		m_pDevTexture->SetNoDelete(!!(m_eFlags & FT_DONT_RELEASE));
 		m_pDevTexture->SetOwner(this);
+
+		m_nDevTextureSize = m_nPersistentSize = m_pDevTexture->GetDeviceSize();
 	}
 
 	InvalidateDeviceResource(this, eDeviceResourceDirty);
@@ -397,11 +404,18 @@ void CTexture::SetDevTexture(CDeviceTexture* pDeviceTex)
 
 void CTexture::OwnDevTexture(CDeviceTexture* pDeviceTex)
 {
-	SAFE_RELEASE(m_pDevTexture);
-
-	m_pDevTexture = pDeviceTex;
-	if (m_pDevTexture)
+	// Take ownership of an entirely different device-resource (texture-config does change)
+	if ((m_pDevTexture))
 	{
+		CRY_ASSERT(m_pDevTexture->GetOwner() == this);
+		m_pDevTexture->SetOwner(nullptr);
+		m_pDevTexture->Release();
+	}
+
+	if ((m_pDevTexture = pDeviceTex))
+	{
+		m_pDevTexture->SetOwner(this);
+
 		const STextureLayout Layput = m_pDevTexture->GetLayout();
 
 		m_nWidth       = Layput.m_nWidth;
@@ -416,7 +430,6 @@ void CTexture::OwnDevTexture(CDeviceTexture* pDeviceTex)
 		m_bIsSRGB      = Layput.m_bIsSRGB;
 
 		m_nDevTextureSize = m_nPersistentSize = m_pDevTexture->GetDeviceSize();
-		CryInterlockedAdd(&CTexture::s_nStatsCurManagedNonStreamedTexMem, m_nDevTextureSize);
 	}
 
 	InvalidateDeviceResource(this, eDeviceResourceDirty);
@@ -2401,7 +2414,8 @@ bool CTexture::SetNoTexture(CTexture* pDefaultTexture /* = s_ptexNoTexture*/)
 
 	if (pDefaultTexture)
 	{
-		m_pDevTexture = pDefaultTexture->m_pDevTexture;
+		RefDevTexture(pDefaultTexture->GetDevTexture());
+
 		m_eSrcFormat = pDefaultTexture->GetSrcFormat();
 		m_eDstFormat = pDefaultTexture->GetDstFormat();
 		m_nMips = pDefaultTexture->GetNumMips();
@@ -2413,9 +2427,6 @@ bool CTexture::SetNoTexture(CTexture* pDefaultTexture /* = s_ptexNoTexture*/)
 		m_cMaxColor = 1.0f;
 		m_cClearColor = ColorF(0.0f, 0.0f, 0.0f, 1.0f);
 
-#if CRY_PLATFORM_DURANGO && (CRY_RENDERER_DIRECT3D >= 110) && (CRY_RENDERER_DIRECT3D < 120)
-		m_nDeviceAddressInvalidated = m_pDevTexture->GetBaseAddressInvalidated();
-#endif
 #if CRY_PLATFORM_DURANGO && DURANGO_USE_ESRAM
 		m_nESRAMOffset = SKIP_ESRAM;
 #endif
@@ -2427,8 +2438,10 @@ bool CTexture::SetNoTexture(CTexture* pDefaultTexture /* = s_ptexNoTexture*/)
 			StreamState_ReleaseInfo(this, m_pFileTexMips);
 			m_pFileTexMips = NULL;
 		}
+
 		m_bStreamed = false;
 		m_bPostponed = false;
+
 		m_nDevTextureSize = 0;
 		m_nPersistentSize = 0;
 
