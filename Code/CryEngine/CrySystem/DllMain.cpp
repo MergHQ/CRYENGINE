@@ -180,7 +180,7 @@ extern "C"
 		{
 			MEMSTAT_CONTEXT(EMemStatContextType::Other, "System: Engine Startup");
 
-#if CRY_PLATFORM_DURANGO && defined(ENABLE_PROFILING_CODE)
+#if CRY_PLATFORM_DURANGO
 			DurangoDebugCallStack::InstallExceptionHandler();
 #endif
 
