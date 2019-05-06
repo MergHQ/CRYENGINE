@@ -1800,11 +1800,6 @@ ZipDir::FileEntry* CCryPak::FindPakFileEntry(const char* szPath, unsigned int& n
 {
 	CRY_PROFILE_FUNCTION(PROFILE_SYSTEM);
 
-#if CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID || CRY_PLATFORM_APPLE
-	// Timur, is it safe?
-	//replaceDoublePathFilename((char*)szName);
-#endif
-
 	unsigned nNameLen = (unsigned)strlen(szPath);
 	AUTO_READLOCK(m_csZips);
 	// scan through registered pak files and try to find this file
