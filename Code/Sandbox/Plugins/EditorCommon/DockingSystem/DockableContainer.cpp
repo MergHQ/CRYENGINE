@@ -1,6 +1,8 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
+#include <QPainter>
+#include <QStyleOption>
 #include "DockableContainer.h"
 #include "QTrackingTooltip.h"
 #include "Menu/AbstractMenu.h"
@@ -288,4 +290,12 @@ std::vector<IPane*> CDockableContainer::GetPanes()
 		}
 	}
 	return panes;
+}
+
+void CDockableContainer::paintEvent(QPaintEvent* pEvent)
+{
+	QStyleOption styleOption;
+	styleOption.init(this);
+	QPainter painter(this);
+	style()->drawPrimitive(QStyle::PE_Widget, &styleOption, &painter, this);
 }

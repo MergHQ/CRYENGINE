@@ -81,6 +81,10 @@ public:
 signals:
 	void OnLayoutChange(const QVariantMap& layout);
 
+protected:
+	void paintEvent(QPaintEvent*) override;
+
+
 private:
 	typedef std::map<QString, FactoryInfo>    TNameMap;
 	typedef std::map<QString, WidgetInstance> TWidgetMap;

@@ -57,6 +57,7 @@ CToolBarArea::CToolBarArea(CEditor* pParent, Qt::Orientation orientation)
 
 	UpdateLayoutAlignment();
 
+	setSizePolicy(QSizePolicy::Minimum , QSizePolicy::Minimum);
 	m_pLayout->setSpacing(0);
 	m_pLayout->setMargin(0);
 
@@ -243,11 +244,11 @@ void CToolBarArea::UpdateLayoutAlignment(CToolBarAreaItem* pItemToBeRemoved)
 	{
 		if (m_orientation == Qt::Horizontal)
 		{
-			m_pLayout->setAlignment(Qt::AlignLeft);
+			m_pLayout->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
 		}
 		else
 		{
-			m_pLayout->setAlignment(Qt::AlignTop);
+			m_pLayout->setAlignment(Qt::AlignTop | Qt::AlignHCenter);
 		}
 	}
 }

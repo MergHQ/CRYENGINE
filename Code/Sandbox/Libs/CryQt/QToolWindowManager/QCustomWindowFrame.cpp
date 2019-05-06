@@ -46,7 +46,7 @@ QCustomTitleBar::QCustomTitleBar(QWidget* parent)
 
 	QHBoxLayout* myLayout = new QHBoxLayout(this);
 	myLayout->setContentsMargins(0, 0, 0, 0);
-	myLayout->setMargin(0);
+	myLayout->setMargin(2);
 	myLayout->setSpacing(0);
 	m_caption = new QLabel(this);
 	
@@ -471,7 +471,7 @@ bool QCustomWindowFrame::winEvent(MSG *msg, long *result)
 		return false;
 
 	QRect r = rect();
-	static const int SIZE_MARGIN = 4;
+	static const int SIZE_MARGIN = 8;
 	QPoint newPos = QCursor::pos();
 	r.moveTo(pos());
 
@@ -586,7 +586,7 @@ bool QCustomWindowFrame::winEvent(MSG *msg, long *result)
 	case WM_ACTIVATE:
 	{
 		// Enable shadow
-		MARGINS shadow_on = {0,0,0,0 };
+		MARGINS shadow_on = { 0,0,0,0 };
 		if (dwmExtendFrameIntoClientArea)
 		{
 			auto pFunc = (dwmExtendFrameIntoClientArea_t)dwmExtendFrameIntoClientArea;

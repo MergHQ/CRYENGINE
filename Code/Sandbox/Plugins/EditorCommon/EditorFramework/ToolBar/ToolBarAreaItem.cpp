@@ -191,6 +191,7 @@ void CToolBarItem::ReplaceToolBar(QToolBar* pNewToolBar)
 void CToolBarItem::SetOrientation(Qt::Orientation orientation)
 {
 	CToolBarAreaItem::SetOrientation(orientation);
+	m_pLayout->setAlignment(orientation == Qt::Horizontal? Qt::AlignVCenter : Qt::AlignHCenter);
 	m_pToolBar->setOrientation(m_orientation);
 }
 

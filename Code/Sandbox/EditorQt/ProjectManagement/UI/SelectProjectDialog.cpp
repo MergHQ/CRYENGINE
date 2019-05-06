@@ -72,6 +72,7 @@ CSelectProjectDialog::CSelectProjectDialog(QWidget* pParent, bool runOnSandboxIn
 	QVBoxLayout* pMainLayout = new QVBoxLayout;
 	pMainLayout->setContentsMargins(0, 0, 0, 0);
 	pMainLayout->setSpacing(0);
+	pMainLayout->setMargin(0);
 	pMainLayout->addWidget(pTabs);
 	setLayout(pMainLayout);
 

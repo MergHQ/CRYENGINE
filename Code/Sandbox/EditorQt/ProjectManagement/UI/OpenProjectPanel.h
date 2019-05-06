@@ -21,6 +21,9 @@ class COpenProjectPanel : public QWidget
 public:
 	COpenProjectPanel(CSelectProjectDialog* pParent, bool runOnSandboxInit);
 
+protected:
+	void paintEvent(QPaintEvent*) override;
+
 private:
 	void CreateSearchPanel();
 	void CreateViews();
