@@ -2053,6 +2053,7 @@ void CEntityPhysics::OnPhysicsPostStep(EventPhysPostStep* pEvent)
 			pSlot->GetLocalBounds(bboxLoc);
 			bbox.SetTransformedAABB(pSlot->GetWorldTM(), bboxLoc);
 			pRenderNode->SetBBox(bbox);
+			pRenderNode->SetEntityStatObj(pStatObjNew);	// forces permanent render object invalidation
 		}
 	}
 
