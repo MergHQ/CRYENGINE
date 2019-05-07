@@ -10,6 +10,8 @@
 #include <CrySandbox/CrySignal.h>
 #include <CryCore/StlUtils.h>
 
+#include <future>
+
 class CAssetImporter;
 class CDependencyTracker;
 struct SStaticAssetSelectorEntry;
@@ -79,7 +81,7 @@ public:
 	//! \sa CAssetType::DeleteAssetFiles
 	//! \sa CAssetManager::signalBeforeAssetsRemoved
 	//! \sa CAssetManager::signalAfterAssetsRemoved
-	bool DeleteAssetsWithFiles(std::vector<CAsset*> assets);
+	std::future<void> DeleteAssetsWithFiles(std::vector<CAsset*> assets);
 	
 	//! Removes specified assets from the asset browser. 
 	//! \param assets A collection of assets to be deleted. The assets pointers are invalid after this operation.
@@ -190,8 +192,6 @@ public:
 
 	//! Returns a collection of assets that belong to the directory (including child directories).
 	std::vector<CAssetPtr> GetAssetsFromDirectory(const string& directory, std::function<bool(CAsset*)> predicate = {}) const;
-
-	void WaitAsyncProcess() const;
 
 	//! Returns assets' source files tracker.
 	const AssetFilesTracker<true>& GetSourceFilesTracker() const { return m_sourceFilesTracker; }

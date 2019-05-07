@@ -328,9 +328,6 @@ bool CLevelType::OnCreate(INewAsset& editAsset, const SCreateParams* pCreatePara
 		params = dialog.GetResult();
 	}
 
-	// Waiting for levels removal to complete.
-	CAssetManager::GetInstance()->WaitAsyncProcess();
-
 	const string levelFolder = GetLevelFolder(editAsset);
 	
 	auto createResult = CCryEditApp::GetInstance()->CreateLevel(levelFolder, params.resolution, params.unitSize, params.bUseTerrain);

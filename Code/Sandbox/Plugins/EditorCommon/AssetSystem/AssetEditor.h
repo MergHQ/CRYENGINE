@@ -142,6 +142,11 @@ private:
 	void UpdateWindowTitle();
 	void SetAssetBeingEdited(CAsset* pAsset);
 
+	//! Creates copy of editing asset with given path
+	bool CreateAssetCopy(const string& path);
+	//! Creates and opens copy of editing asset with given path. Any changes to editing asset will be discarded
+	bool CreateAssetCopyAndOpen(const string& path);
+
 	//! OnAboutToCloseAsset returns true if this editor can be safely closed; or false, otherwise.
 	//! An editor is considered to be safely closable, if there are neither unsaved asset modifications,
 	//! nor background operations that need to call back to the editor after completion.
