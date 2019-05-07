@@ -19,6 +19,11 @@ namespace NCryVulkan
 			extern PFN_vkCmdDebugMarkerInsertEXT     CmdDebugMarkerInsert;
 		}
 
+		namespace EXT_rasterization_order
+		{
+			extern bool                              IsSupported;
+		}
+
 		void Init(CDevice* pDevice, const std::vector<const char*>& loadedExtensions);
 	}
 }

@@ -66,6 +66,7 @@ void CDeviceGraphicsPSODesc::InitWithDefaults()
 	m_PrimitiveType = eptTriangleList;
 	m_bDepthClip = true;
 	m_bDepthBoundsTest = false;
+	m_bRelaxedRasterizationOrder = false;
 	m_bDynamicDepthBias = false;
 }
 
