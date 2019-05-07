@@ -44,7 +44,7 @@
 namespace CryMT
 {
 	template<class T>
-	class CThreadSafePushContainer : private VirtualMemory
+	class CThreadSafePushContainer : private CVirtualMemory
 	{
 		static constexpr int32 s_nMaxThreads = 30;
 		static constexpr int32 s_tombstone = 0xfbfbfbfb;
@@ -215,7 +215,7 @@ namespace CryMT
 	///////////////////////////////////////////////////////////////////////////////
 	template<typename T>
 	inline CThreadSafePushContainer<T>::CThreadSafePushContainer(uint32 elementsPerStride, size_t maxCapacity)
-		: VirtualMemory(), m_reservedMemorySize(Align(maxCapacity, GetSystemPageSize()))
+		: CVirtualMemory(), m_reservedMemorySize(Align(maxCapacity, GetSystemPageSize()))
 		, m_numElementsPerStride(elementsPerStride)
 	{
 		CRY_ASSERT(alignof(T) <= GetSystemPageSize());

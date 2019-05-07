@@ -21,23 +21,23 @@
 #	define VA_UNREGISTER_PAGE(PBASE, SIZE)
 #endif
 
-VirtualMemory::VirtualMemory()
+CVirtualMemory::CVirtualMemory()
 {
 	CRY_ASSERT(ValidateSystemPageSize());
 }
 
 #if CRY_PLATFORM_WINAPI
 
-const size_t VirtualMemory::s_systemPageSize = 4 * 1024;
+const size_t CVirtualMemory::s_systemPageSize = 4 * 1024;
 
-bool VirtualMemory::ValidateSystemPageSize()
+bool CVirtualMemory::ValidateSystemPageSize()
 {
 	SYSTEM_INFO si;
 	GetSystemInfo(&si);
 	return s_systemPageSize == si.dwPageSize;
 }
 
-void* VirtualMemory::ReserveAddressRange(size_t reserveSize, const char* usage, size_t alignment)
+void* CVirtualMemory::ReserveAddressRange(size_t reserveSize, const char* usage, size_t alignment)
 {
 	reserveSize = Align(reserveSize, s_systemPageSize);
 	UINT_PTR addr;
@@ -61,18 +61,18 @@ void* VirtualMemory::ReserveAddressRange(size_t reserveSize, const char* usage, 
 	return reinterpret_cast<void*>(addr);
 }
 
-void VirtualMemory::UnreserveAddressRange(void* pBase, size_t reservedSize, size_t alignment)
+void CVirtualMemory::UnreserveAddressRange(void* pBase, size_t reservedSize, size_t alignment)
 {
 	VirtualFree(pBase, 0, MEM_RELEASE);
 }
 
-void VirtualMemory::MapPages(void* pBase, size_t size)
+void CVirtualMemory::MapPages(void* pBase, size_t size)
 {
 	VirtualAlloc(pBase, size, MEM_COMMIT, PAGE_READWRITE);
 	VA_REGISTER_PAGE(pBase, size);
 }
 
-void VirtualMemory::UnmapPages(void* pBase, size_t size)
+void CVirtualMemory::UnmapPages(void* pBase, size_t size)
 {
 	VirtualFree(pBase, size, MEM_DECOMMIT);
 	VA_UNREGISTER_PAGE(pBase, size);
@@ -80,7 +80,7 @@ void VirtualMemory::UnmapPages(void* pBase, size_t size)
 
 #elif CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID || CRY_PLATFORM_APPLE
 
-const size_t VirtualMemory::s_systemPageSize = 4 * 1024;
+const size_t CVirtualMemory::s_systemPageSize = 4 * 1024;
 
 #ifdef RELEASE
 #	define VA_ASSERT_POSIX_SUCCESS(EXPR) EXPR
@@ -92,14 +92,14 @@ const size_t VirtualMemory::s_systemPageSize = 4 * 1024;
 		}
 #endif
 
-bool VirtualMemory::ValidateSystemPageSize()
+bool CVirtualMemory::ValidateSystemPageSize()
 {
 	return s_systemPageSize == sysconf(_SC_PAGESIZE);
 }
 
 #define VA_MAP_FAILED_ADDR (reinterpret_cast<UINT_PTR>(MAP_FAILED))
 
-void* VirtualMemory::ReserveAddressRange(size_t reserveSize, const char* usage, size_t alignment)
+void* CVirtualMemory::ReserveAddressRange(size_t reserveSize, const char* usage, size_t alignment)
 {
 	reserveSize = Align(reserveSize, s_systemPageSize);
 
@@ -137,7 +137,7 @@ void* VirtualMemory::ReserveAddressRange(size_t reserveSize, const char* usage, 
 	return (void*)upAlignedAddr;
 }
 
-void VirtualMemory::UnreserveAddressRange(void* pBase, size_t reservedSize, size_t alignment)
+void CVirtualMemory::UnreserveAddressRange(void* pBase, size_t reservedSize, size_t alignment)
 {
 	reservedSize = Align(reservedSize, s_systemPageSize);
 	if (alignment <= s_systemPageSize)
@@ -154,7 +154,7 @@ void VirtualMemory::UnreserveAddressRange(void* pBase, size_t reservedSize, size
 	}
 }
 
-void VirtualMemory::MapPages(void* pBase, size_t size)
+void CVirtualMemory::MapPages(void* pBase, size_t size)
 {
 	UINT_PTR baseAddr = (UINT_PTR)pBase & ~(s_systemPageSize - 1);
 	UINT_PTR endAddr = Align((UINT_PTR)pBase + size, s_systemPageSize);
@@ -162,7 +162,7 @@ void VirtualMemory::MapPages(void* pBase, size_t size)
 	VA_REGISTER_PAGE(pBase, size);
 }
 
-void VirtualMemory::UnmapPages(void* pBase, size_t size)
+void CVirtualMemory::UnmapPages(void* pBase, size_t size)
 {
 	UINT_PTR baseAddr = (UINT_PTR)pBase & ~(s_systemPageSize - 1);
 	UINT_PTR endAddr = Align((UINT_PTR)pBase + size, s_systemPageSize);

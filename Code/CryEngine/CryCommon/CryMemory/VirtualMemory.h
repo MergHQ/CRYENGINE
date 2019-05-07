@@ -3,10 +3,10 @@
 #pragma once
 
 //! Abstraction of the virtual memory interface
-class VirtualMemory
+class CVirtualMemory
 {
 public:
-	VirtualMemory();
+	CVirtualMemory();
 
 	size_t GetSystemPageSize() const { return s_systemPageSize; }
 

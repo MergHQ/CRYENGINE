@@ -4,14 +4,14 @@
 
 #if CRY_PLATFORM_ORBIS
 
-const size_t VirtualMemory::s_systemPageSize = PAGE_SIZE;
+const size_t CVirtualMemory::s_systemPageSize = PAGE_SIZE;
 
-bool VirtualMemory::ValidateSystemPageSize()
+bool CVirtualMemory::ValidateSystemPageSize()
 {
 	return s_systemPageSize == PAGE_SIZE;
 }
 
-void* VirtualMemory::ReserveAddressRange(size_t reserveSize, const char* usage, size_t alignment)
+void* CVirtualMemory::ReserveAddressRange(size_t reserveSize, const char* usage, size_t alignment)
 {
 	reserveSize = Align(reserveSize, s_systemPageSize);
 	if (alignment <= s_systemPageSize)
@@ -46,7 +46,7 @@ void* VirtualMemory::ReserveAddressRange(size_t reserveSize, const char* usage, 
 	}
 }
 
-void VirtualMemory::UnreserveAddressRange(void* pBase, size_t reservedSize, size_t alignment)
+void CVirtualMemory::UnreserveAddressRange(void* pBase, size_t reservedSize, size_t alignment)
 {
 	if (alignment <= s_systemPageSize)
 	{
@@ -61,7 +61,7 @@ void VirtualMemory::UnreserveAddressRange(void* pBase, size_t reservedSize, size
 	}
 }
 
-void VirtualMemory::MapPages(void* pBase, size_t size)
+void CVirtualMemory::MapPages(void* pBase, size_t size)
 {
 	UINT_PTR baseAddr = (UINT_PTR)pBase & ~(s_systemPageSize - 1);
 	UINT_PTR endAddr = Align((UINT_PTR)pBase + size, s_systemPageSize);
@@ -69,7 +69,7 @@ void VirtualMemory::MapPages(void* pBase, size_t size)
 	VA_REGISTER_PAGE(pBase, size);
 }
 
-void VirtualMemory::UnmapPages(void* pBase, size_t size)
+void CVirtualMemory::UnmapPages(void* pBase, size_t size)
 {
 	UINT_PTR baseAddr = (UINT_PTR)pBase & ~(s_systemPageSize - 1);
 	UINT_PTR endAddr = Align((UINT_PTR)pBase + size, s_systemPageSize);
