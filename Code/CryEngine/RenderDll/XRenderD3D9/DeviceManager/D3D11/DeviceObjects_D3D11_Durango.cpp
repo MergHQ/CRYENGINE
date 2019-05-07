@@ -1351,17 +1351,25 @@ HRESULT CDeviceObjectFactory::BeginTileFromLinear2D(CDeviceTexture* pDst, const 
 
 		if (!bSrcInGPUMemory || (pDstAddr <= pLinSurfaceSrc && pLinSurfaceSrc < pDstAddrEnd))
 		{
-			pRingAllocBase = m_textureStagingRing.BeginAllocate((uint32)pLyt->SizeBytes, (uint32)pLyt->BaseAlignmentBytes, allocCtxs[nAllocCtxs++]);
-			if (!pRingAllocBase)
+			if (CRendererCVars::CV_r_TexturesStagingRingEnabled)
 			{
+				pRingAllocBase = m_textureStagingRing.BeginAllocate((uint32)pLyt->SizeBytes, (uint32)pLyt->BaseAlignmentBytes, allocCtxs[nAllocCtxs++]);
+				if (!pRingAllocBase)
+				{
 #ifndef _RELEASE
-				__debugbreak();
+					__debugbreak();
 #endif
 
-				return E_OUTOFMEMORY;
-			}
+					return E_OUTOFMEMORY;
+				}
 
-			pGPUSrcAddr = pRingAllocBase;
+				pGPUSrcAddr = pRingAllocBase;
+			}
+			else
+			{
+				CryFatalError("Tried to use the texture staging ring while it was disabled!\n"
+				              "enabling r_TexturesStagingRingEnabled will resolve this but consume r_TexturesStagingRingSize MB additional memory.");
+			}
 		}
 		else
 		{
@@ -1437,7 +1445,15 @@ HRESULT CDeviceObjectFactory::BeginTileFromLinear2D(CDeviceTexture* pDst, const 
 
 	for (size_t i = 0; i < nAllocCtxs; ++i)
 	{
-		m_textureStagingRing.EndAllocate(allocCtxs[i], fence);
+		if (CRendererCVars::CV_r_TexturesStagingRingEnabled)
+		{
+			m_textureStagingRing.EndAllocate(allocCtxs[i], fence);
+		}
+		else
+		{
+			CryFatalError("Tried to use the texture staging ring while it was disabled!\n"
+			              "enabling r_TexturesStagingRingEnabled will resolve this but consume r_TexturesStagingRingSize MB additional memory.");
+		}
 	}
 
 	fenceOut = fence;

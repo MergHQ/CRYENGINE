@@ -168,7 +168,10 @@ void CDeviceObjectFactory::AssignDevice(D3DDevice* pDevice)
 		poolMemModel,
 		true);
 
-	m_textureStagingRing.Init(m_pDMA1, 128 * 1024 * 1024);
+	if (CRendererCVars::CV_r_TexturesStagingRingEnabled)
+	{
+		m_textureStagingRing.Init(m_pDMA1, CRendererCVars::CV_r_TexturesStagingRingSize * 1024 * 1024);
+	}
 #endif
 
 	m_pDX11Device = NCryDX11::CDevice::Create(pDevice, D3D_FEATURE_LEVEL_11_0);
