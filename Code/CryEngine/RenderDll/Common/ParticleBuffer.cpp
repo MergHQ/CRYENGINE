@@ -243,9 +243,12 @@ void CParticleBufferSet::WaitForFence(int frameId)
 {
 #if BUFFER_ENABLE_DIRECT_ACCESS == 1
 	assert(m_valid);
+	float time0 = iTimer->GetAsyncCurTime();
 
 	const uint cvId = frameId % CREParticle::numBuffers;
 	GetDeviceObjectFactory().SyncFence(m_fences[cvId], true, false);
+
+	SRenderStatistics::Write().m_Summary.waitForGPU_MT += iTimer->GetAsyncCurTime() - time0;
 #endif
 }
 

@@ -1617,7 +1617,8 @@ struct IRenderer//: public IRendererCallbackServer
 	{
 		float fWaitForMain;
 		float fWaitForRender;
-		float fWaitForGPU;
+		float fWaitForGPU_MT;
+		float fWaitForGPU_RT;
 		float fTimeProcessedRT;
 		float fTimeProcessedRTScene;  //!< The part of the render thread between the "SCENE" profiler labels.
 		float fTimeProcessedGPU;

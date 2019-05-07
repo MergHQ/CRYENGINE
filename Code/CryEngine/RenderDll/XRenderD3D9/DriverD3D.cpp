@@ -1492,7 +1492,8 @@ void CD3D9Renderer::GetRenderTimes(SRenderTimes& outTimes)
 	// Query render times on main thread
 	outTimes.fWaitForMain          = rtSummary.waitForMain;
 	outTimes.fWaitForRender        = rtSummary.waitForRender;
-	outTimes.fWaitForGPU           = rtSummary.waitForGPU;
+	outTimes.fWaitForGPU_MT        = rtSummary.waitForGPU_MT;
+	outTimes.fWaitForGPU_RT        = rtSummary.waitForGPU_RT;
 	outTimes.fTimeProcessedRT      = rtSummary.renderTime;
 	outTimes.fTimeProcessedRTScene = rtSummary.sceneTime;
 	outTimes.fTimeProcessedGPU     = rtSummary.gpuFrameTime;
@@ -2147,7 +2148,7 @@ void CD3D9Renderer::DebugPerfBars(const SRenderStatistics& RStats, int nX, int n
 	nY += nYst + 5;
 	nX -= 5;
 
-	fWaitForGPU = (rtTimings.waitForGPU + fWaitForGPU * fSmooth) / (fSmooth + 1.0f);
+	fWaitForGPU = (rtTimings.waitForGPU_MT + rtTimings.waitForGPU_RT + fWaitForGPU * fSmooth) / (fSmooth + 1.0f);
 	IRenderAuxText::Draw2dLabel(nX, nY, fFSize, &colF.r, false, "Wait for GPU: %.3fms", fWaitForGPU * 1000.0f);
 
 	AuxDrawQuad(nX + fOffs, nY + 4, nX + fOffs + fWaitForGPU / fFrameTime * fMaxBar, nY + 12, Col_Blue, 1.0f);
@@ -3406,7 +3407,7 @@ void CD3D9Renderer::RT_EndFrame()
 		m_nFrameSwapID++;
 	}
 
-	SRenderStatistics::Write().m_Summary.waitForGPU += iTimer->GetAsyncTime().GetDifferenceInSeconds(timePresentBegin);
+	SRenderStatistics::Write().m_Summary.waitForGPU_RT += iTimer->GetAsyncTime().GetDifferenceInSeconds(timePresentBegin);
 
 #ifdef ENABLE_BENCHMARK_SENSOR
 	m_benchmarkRendererSensor->afterSwapBuffers(GetDevice(), GetDeviceContext());

@@ -2873,6 +2873,7 @@ int CGame::Update(bool haveFocus, unsigned int updateFlags) PREFAST_SUPPRESS_WAR
 
 						const float fRenderThreadTime = renderTimes.fTimeProcessedRT;
 						const float fWaitForRender = renderTimes.fWaitForRender;
+						const float fWaitForGPU = renderTimes.fWaitForGPU_MT + renderTimes.fWaitForGPU_RT;
 
 						if (fRenderThreadTime > 0.0f)
 						{
@@ -2889,11 +2890,12 @@ int CGame::Update(bool haveFocus, unsigned int updateFlags) PREFAST_SUPPRESS_WAR
 						{
 							s_gpuTime += gpuFrameTime;
 						}
-						s_waitForGPUTime += renderTimes.fWaitForGPU;
+
+						s_waitForGPUTime += fWaitForGPU;
 
 						//wait for GPU is never zero, using small epsilon to determine if GPU Limited
 						const float GPU_EPSILON = 0.001f;
-						s_gpuLimited += (renderTimes.fWaitForGPU > GPU_EPSILON) ? 1 : 0;
+						s_gpuLimited += (fWaitForGPU > GPU_EPSILON) ? 1 : 0;
 
 						int nGeneralDrawcalls = 0;
 						int nShadowDrawcalls = 0;
