@@ -890,6 +890,10 @@ struct IJobManager
 	//! Add a job.
 	virtual void AddJob(JobManager::CJobDelegator& RESTRICT_REFERENCE crJob, const JobManager::TJobHandle cJobHandle) = 0;
 
+	//! Add a job as a lambda callback.
+	template<typename Callback>
+	void AddLambdaJob(const char* jobName, Callback&& lambdaCallback, TPriorityLevel priority = JobManager::eRegularPriority, SJobState* pJobState = nullptr);
+
 	//! Wait for a job, preempt the calling thread if the job is not done yet.
 	virtual const bool WaitForJob(JobManager::SJobState& rJobState) const = 0;
 
@@ -1424,6 +1428,16 @@ inline const bool JobManager::SJobState::Wait()
 }
 
 #include "IJobManager_JobDelegator.h"
+
+/////////////////////////////////////////////////////////////////////////////////
+template<typename Callback>
+inline void JobManager::IJobManager::AddLambdaJob(const char* jobName, Callback&& lambdaCallback, TPriorityLevel priority, SJobState* pJobState)
+{
+	Detail::CGenericJob<Detail::SJobLambdaFunction<>> job{ jobName, std::forward<Callback>(lambdaCallback) };
+	job.SetPriorityLevel(priority);
+	job.RegisterJobState(pJobState);
+	job.Run();
+}
 
 /////////////////////////////////////////////////////////////////////////////////
 template<class TJob>
