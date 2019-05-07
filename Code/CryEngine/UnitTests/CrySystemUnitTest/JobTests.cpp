@@ -190,21 +190,19 @@ TEST_F(CJobSystemTest, MoveConstructor)
 
 TEST_F(CJobSystemTest, LambdaJobConcise)
 {
-	DECLARE_LAMBDA_JOB("ExampleJob1", TExampleJob1);
-
-	std::atomic<int> v { 0 };
+	std::atomic<int> v{ 0 };
 	JobManager::SJobState jobState;
 	for (int i = 0; i < 100; i++)
 	{
-		TExampleJob1 job = [&v]
+		gEnv->pJobManager->AddLambdaJob("ExampleJob1", [&v]
 		{
 			++v;
-		};
-		job.Run(&jobState);
+		}, JobManager::eRegularPriority, &jobState);
 	}
 	jobState.Wait();
 	REQUIRE(static_cast<int>(v) == 100);
 }
+
 
 DECLARE_LAMBDA_JOB("TestLambdaJob", TTestLambdaJob);
 DECLARE_LAMBDA_JOB("TestLambdaJob2", TTestLambdaJob2, void(int));
@@ -301,30 +299,29 @@ TEST_F(CJobSystemTest, JobState)
 	REQUIRE(!jobState.IsRunning());
 }
 
-void RecordThreadID(std::thread::id* tid)
-{
-	*tid = std::this_thread::get_id();
-}
-DECLARE_JOB("Job1", TRecordThreadIDJob1, RecordThreadID);
-DECLARE_JOB("Job2", TRecordThreadIDJob2, RecordThreadID);
-
 TEST_F(CJobSystemTest, Filter)
 {
 	JobManager::SJobState jobState;
+	JobManager::SJobState jobState2;
 
-	const std::thread::id threadId = std::this_thread::get_id();
+	std::thread::id threadId = std::this_thread::get_id();
 	std::thread::id jobThreadId1, jobThreadId2;
 
 	gEnv->pJobManager->SetJobFilter("Job1");
 
-	TRecordThreadIDJob1 job1(&jobThreadId1);
-	job1.Run(&jobState);
+	gEnv->pJobManager->AddLambdaJob("Job1", [&]
+	{
+		jobThreadId1 = std::this_thread::get_id();
+	}, JobManager::eRegularPriority, &jobState);
 
-	TRecordThreadIDJob2 job2(&jobThreadId2);
-	job2.Run(&jobState);
-	
+	gEnv->pJobManager->AddLambdaJob("Job2", [&]
+	{
+		jobThreadId2 = std::this_thread::get_id();
+	}, JobManager::eRegularPriority, &jobState2);
+
 	jobState.Wait();
-	
+	jobState2.Wait();
+
 	REQUIRE(jobThreadId1 == threadId);
 	REQUIRE(jobThreadId2 != threadId);
 }
@@ -334,14 +331,14 @@ TEST_F(CJobSystemTest, DisableJobSystem)
 	gEnv->pJobManager->SetJobSystemEnabled(0);
 
 	JobManager::SJobState jobState;
-	const std::thread::id threadId = std::this_thread::get_id();
+	std::thread::id threadId = std::this_thread::get_id();
 	std::thread::id jobThreadId;
 	REQUIRE(jobThreadId != threadId);
-
-	TRecordThreadIDJob1 job(&jobThreadId);
-	job.Run(&jobState);
-	
-	jobState.Wait();
+	gEnv->pJobManager->AddLambdaJob("Job", [&]
+	{
+		jobThreadId = std::this_thread::get_id();
+	}, JobManager::eRegularPriority, &jobState);
 	REQUIRE(jobThreadId == threadId);
+	jobState.Wait();
 	gEnv->pJobManager->SetJobSystemEnabled(1);
 }
