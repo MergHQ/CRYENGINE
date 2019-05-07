@@ -1334,6 +1334,7 @@ void CAuxGeomCBCollector::GetMemoryUsage(ICrySizer* pSizer) const
 CAuxGeomCBCollector::AUXJobs CAuxGeomCBCollector::SubmitAuxGeomsAndPrepareForRendering()
 {
 	FUNCTION_PROFILER_RENDERER();
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, "CAuxGeomCBCollector::SubmitAuxGeomsAndPrepareForRendering");
 
 	CAuxGeomCBCollector::AUXJobs auxJobs;
 	std::vector<SThread*>    tmpThreads;	

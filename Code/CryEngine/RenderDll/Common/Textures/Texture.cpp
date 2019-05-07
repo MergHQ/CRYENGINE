@@ -373,7 +373,7 @@ void CTexture::RefDevTexture(CDeviceTexture* pDeviceTex)
 {
 	// Hard-wired device-resources can't have a unique owner (they are shared)
 	if ((m_pDevTexture))
-		CRY_ASSERT(m_pDevTexture->GetOwner() == nullptr);
+		CRY_ASSERT(!DEVICE_TEXTURE_STORE_OWNER || m_pDevTexture->GetOwner() == nullptr);
 
 	if ((m_pDevTexture = pDeviceTex))
 		m_pDevTexture->SetOwner(nullptr);
@@ -386,7 +386,7 @@ void CTexture::SetDevTexture(CDeviceTexture* pDeviceTex)
 	// Substitute device-resource by a strictly subset one (texture-config doesn't change, only residency)
 	if ((m_pDevTexture))
 	{
-		CRY_ASSERT(m_pDevTexture->GetOwner() == this);
+		CRY_ASSERT(!DEVICE_TEXTURE_STORE_OWNER || m_pDevTexture->GetOwner() == this);
 		m_pDevTexture->SetOwner(nullptr);
 		m_pDevTexture->Release();
 	}
@@ -407,7 +407,7 @@ void CTexture::OwnDevTexture(CDeviceTexture* pDeviceTex)
 	// Take ownership of an entirely different device-resource (texture-config does change)
 	if ((m_pDevTexture))
 	{
-		CRY_ASSERT(m_pDevTexture->GetOwner() == this);
+		CRY_ASSERT(!DEVICE_TEXTURE_STORE_OWNER || m_pDevTexture->GetOwner() == this);
 		m_pDevTexture->SetOwner(nullptr);
 		m_pDevTexture->Release();
 	}

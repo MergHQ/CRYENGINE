@@ -396,7 +396,7 @@ class CDeviceTexture : public CDeviceResource
 	const SDeviceTextureDesc* m_pLayout;
 #endif
 
-#if defined(DEVICE_TEXTURE_STORE_OWNER)
+#if DEVICE_TEXTURE_STORE_OWNER
 	CTexture*                 m_pOwner;
 #endif
 
@@ -459,7 +459,7 @@ public:
 		return m_bCube;
 	}
 
-#if defined(DEVICE_TEXTURE_STORE_OWNER)
+#if DEVICE_TEXTURE_STORE_OWNER
 	void SetOwner(CTexture* pOwner) { m_pOwner = pOwner; }
 	CTexture* GetOwner() { return m_pOwner; }
 #else
@@ -595,7 +595,7 @@ private:
 #if (CRY_RENDERER_DIRECT3D >= 110) && (CRY_RENDERER_DIRECT3D < 120) && CRY_PLATFORM_DURANGO
 		, m_pLayout(NULL)
 #endif
-#if defined(DEVICE_TEXTURE_STORE_OWNER)
+#if DEVICE_TEXTURE_STORE_OWNER
 		, m_pOwner(nullptr)
 #endif
 	{

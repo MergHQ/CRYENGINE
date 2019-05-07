@@ -122,6 +122,10 @@ float CRendererCVars::CV_r_rain_maxviewdist;
 float CRendererCVars::CV_r_rain_maxviewdist_deferred;
 float CRendererCVars::CV_r_measureoverdrawscale;
 AllocateConstIntCVar(CRendererCVars, CV_r_texturesstreamingmipfading);
+#if CRY_PLATFORM_DURANGO
+int CRendererCVars::CV_r_TexturesStagingRingEnabled;
+int CRendererCVars::CV_r_TexturesStagingRingSize;
+#endif
 int CRendererCVars::CV_r_TexturesStreamPoolSize;
 int CRendererCVars::CV_r_texturesstreampooldefragmentation;
 int CRendererCVars::CV_r_texturesstreampooldefragmentationmaxmoves;
@@ -2074,6 +2078,14 @@ void CRendererCVars::InitCVars()
 	REGISTER_CVAR3("r_RenderTargetPoolSize", CV_r_rendertargetpoolsize, 0, VF_NULL,
 	               "Size of pool for render targets in MB.\n"
 	               "Default is 50(MB).");
+
+#if CRY_PLATFORM_DURANGO
+	REGISTER_CVAR3("r_TexturesStagingRingEnabled", CV_r_TexturesStagingRingEnabled, 0, VF_REQUIRE_APP_RESTART,
+		"Enable the durango texture staging ringbuffer, disabled by default\n");
+	int nDefaultTexStagingRingSize = 128;
+	REGISTER_CVAR3("r_TexturesStagingRingSize", CV_r_TexturesStagingRingSize, nDefaultTexStagingRingSize, VF_REQUIRE_APP_RESTART,
+		"Size of the durango texture staging ring buffer in MB.\n");
+#endif
 
 	int nDefaultDefragState = 0;
 	int nDefaultTexPoolSize = 1024;
