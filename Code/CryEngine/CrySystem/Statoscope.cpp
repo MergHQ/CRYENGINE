@@ -347,8 +347,8 @@ struct SThreadsDG : public IStatoscopeDataGroup
 {
 	virtual SDescription GetDescription() const
 	{
-		return SDescription('t', "threading", "['/Threading/' (float MTLoadInMS) (float MTWaitingForRTInMS) "
-		                                      "(float RTLoadInMS) (float RTWaitingForMTInMS) (float RTWaitingForGPUInMS) "
+		return SDescription('t', "threading", "['/Threading/' (float MTLoadInMS) (float MTWaitingForRTInMS) (float MTWaitingForGPUInMS)"
+		                                      "(float RTLoadInMS) (float RTWaitingForMTInMS) (float RTWaitingForGPUInMS)"
 		                                      "(float RTFrameLengthInMS) (float RTSceneDrawningLengthInMS) (float NetThreadTimeInMS)]");
 	}
 
@@ -365,16 +365,18 @@ struct SThreadsDG : public IStatoscopeDataGroup
 
 		float RTWaitingForMTInMS = renderTimes.fWaitForMain * 1000.f;
 		float MTWaitingForRTInMS = renderTimes.fWaitForRender * 1000.f;
-		float RTWaitingForGPUInMS = renderTimes.fWaitForGPU * 1000.f;
+		float RTWaitingForGPUInMS = renderTimes.fWaitForGPU_RT * 1000.f;
 		float RTLoadInMS = renderTimes.fTimeProcessedRT * 1000.f;
 
 		float MTLoadInMS = (gEnv->pTimer->GetRealFrameTime() * 1000.0f) - MTWaitingForRTInMS;
+		float MTWaitingForGPUInMS = renderTimes.fWaitForGPU_MT * 1000.f;
 
 		//Load represents pure RT work, so compensate for GPU sync
 		RTLoadInMS = RTLoadInMS - RTWaitingForGPUInMS;
 
 		fr.AddValue(MTLoadInMS);
 		fr.AddValue(MTWaitingForRTInMS);
+		fr.AddValue(MTWaitingForGPUInMS);
 		fr.AddValue(RTLoadInMS);
 		fr.AddValue(RTWaitingForMTInMS);
 		fr.AddValue(RTWaitingForGPUInMS);

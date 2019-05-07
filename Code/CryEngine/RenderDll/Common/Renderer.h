@@ -560,7 +560,8 @@ struct CRY_ALIGN(128) SRenderStatistics
 
 		float waitForMain = 0;
 		float waitForRender = 0;
-		float waitForGPU = 0;
+		float waitForGPU_MT = 0;
+		float waitForGPU_RT = 0;
 		float gpuIdlePerc = 0;
 
 		float gpuFrameTime = 0.0166667f;

@@ -4154,7 +4154,8 @@ void CRenderer::GetRenderTimes(SRenderTimes& outTimes)
 	// Query render times on main thread
 	outTimes.fWaitForMain          = rtSummary.waitForMain;
 	outTimes.fWaitForRender        = rtSummary.waitForRender;
-	outTimes.fWaitForGPU           = rtSummary.waitForGPU;
+	outTimes.fWaitForGPU_MT        = rtSummary.waitForGPU_MT;
+	outTimes.fWaitForGPU_RT        = rtSummary.waitForGPU_RT;
 	outTimes.fTimeProcessedRT      = rtSummary.renderTime;
 	outTimes.fTimeProcessedRTScene = rtSummary.sceneTime;
 	outTimes.fTimeProcessedGPU     = rtSummary.gpuFrameTime;
