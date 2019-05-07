@@ -2668,7 +2668,7 @@ void CAttachmentManager::SwapAttachmentObject(SAttachmentBase* pAttachment, IAtt
 			m_pAttachment->Immediate_SwapBinding(m_pNewAttachment);
 		}
 	private:
-		IAttachment* m_pNewAttachment;
+		_smart_ptr<IAttachment> m_pNewAttachment;
 	};
 	CMD_BUF_PUSH_COMMAND(m_modificationCommandBuffer, CSwapAttachmentObject, pAttachment, pNewAttachment);
 }
