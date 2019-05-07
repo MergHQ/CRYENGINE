@@ -16,6 +16,11 @@ namespace NCryVulkan { namespace Extensions
 		PFN_vkCmdDebugMarkerInsertEXT     CmdDebugMarkerInsert = nullptr;
 	}
 
+	namespace EXT_rasterization_order
+	{
+		bool                              IsSupported          = false;
+	}
+
 	void Init(CDevice* pDevice, const std::vector<const char*>& loadedExtensions)
 	{
 		for (auto extensionName : loadedExtensions)
@@ -30,7 +35,10 @@ namespace NCryVulkan { namespace Extensions
 
 				EXT_debug_marker::IsSupported = true;
 			}
+			else if (strcmp(extensionName, VK_AMD_RASTERIZATION_ORDER_EXTENSION_NAME) == 0)
+			{
+				EXT_rasterization_order::IsSupported = true;
+			}
 		}
 	}
 }}
-
