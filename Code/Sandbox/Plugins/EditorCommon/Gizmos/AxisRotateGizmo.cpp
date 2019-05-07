@@ -241,6 +241,7 @@ public:
 			m_localAngle = DEG2RAD(gSnappingPreferences.SnapAngle(angle));
 		}
 
+		const float oldAngle = m_angle;
 		m_angle = m_localAngle + m_revolutions * g_PI2;
 
 		if (axis * camToOrigin < 0.0f)
@@ -248,7 +249,7 @@ public:
 			m_angle = -m_angle;
 		}
 
-		rotation.angle = m_angle;
+		rotation.angle = m_angle - oldAngle;
 		rotation.axis = axis;
 		return true;
 	}
@@ -369,7 +370,9 @@ public:
 
 		Vec3 offset = view->ViewToAxisConstraint(point, m_interactionLine, offsetOnGizmoCircle);
 
-		m_angle = ((offset * m_interactionLine > 0.0f) ? -1.0f : 1.0f) * offset.len() / scale;
+		const float oldAngle = m_angle;
+		const float sign = (offset * m_interactionLine > 0.0f) ? -1.0f : 1.0f;
+		m_angle = sign * offset.len() / scale;
 
 		if (gSnappingPreferences.angleSnappingEnabled())
 		{
@@ -378,8 +381,9 @@ public:
 		}
 
 		rotation.axis = axis;
-		// express angle in radians
-		rotation.angle = m_angle;
+
+		// Pass delta of rotation; m_angle is used for text rendering
+		rotation.angle = m_angle - oldAngle;
 
 		return true;
 	}
