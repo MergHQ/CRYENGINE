@@ -545,10 +545,17 @@ bool CLevelEditor::OnNew()
 			}
 		}
 	}
-	else if (!CAssetManager::GetInstance()->DeleteAssetsWithFiles({ pAsset }))
+	else
 	{
-		auto messageText = tr("Failed to remove some files of the level that has to be overwritten:\n%1").arg(levelDirectory);
-		CQuestionDialog::SWarning(tr("New Level failed"), messageText);
+		const CLevelType::SLevelCreateParams createParams = settingsDialog.GetResult();
+		pAsset->signalAfterRemoved.Connect([createParams](const CAsset* pAsset)
+		{
+			const static CAssetType* const pLevelType = GetIEditorImpl()->GetAssetManager()->FindAssetType("Level");
+			pLevelType->Create(pAsset->GetMetadataFile(), &createParams);
+		});
+
+		CAssetManager::GetInstance()->DeleteAssetsWithFiles({ pAsset });
+
 		return true;
 	}
 

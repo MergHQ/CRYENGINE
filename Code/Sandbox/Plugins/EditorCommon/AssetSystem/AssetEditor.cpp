@@ -707,31 +707,58 @@ bool CAssetEditor::OnSaveAs()
 	CAsset* pAsset = pAssetManager->FindAssetForMetadata(newAssetPath);
 	if (pAsset)
 	{
-		// Cancel if unable to delete.
-		pAssetManager->DeleteAssetsWithFiles({ pAsset });
-		pAsset = pAssetManager->FindAssetForMetadata(newAssetPath);
-		if (pAsset)
+		pAsset->signalAfterRemoved.Connect([this](const CAsset* pAsset)
 		{
-			return true;
-		}
+			CreateAssetCopyAndOpen(pAsset->GetMetadataFile());
+		});
+		
+		pAssetManager->DeleteAssetsWithFiles({ pAsset });
+		return true;
+	}
+
+	// Create a copy.
+	if (!CreateAssetCopyAndOpen(newAssetPath))
+	{
+		return false;
+	}
+
+	return true;
+}
+
+bool CAssetEditor::CreateAssetCopy(const string& path)
+{
+	if (!m_assetBeingEdited)
+	{
+		return false;
 	}
 
 	// Create a copy.
 	CAssetType::SCreateParams createParams;
 	createParams.pSourceAsset = m_assetBeingEdited;
-	if (!m_assetBeingEdited->GetType()->Create(newAssetPath, &createParams))
+
+	return m_assetBeingEdited->GetType()->Create(path, &createParams);
+}
+
+bool CAssetEditor::CreateAssetCopyAndOpen(const string& path)
+{
+	if (!CreateAssetCopy(path))
 	{
-		return true;
+		CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_WARNING, "Unable to create asset copy: %s - from: %s", path, m_assetBeingEdited->GetMetadataFile());
+		return false;
 	}
 
-	pAsset = pAssetManager->FindAssetForMetadata(newAssetPath);
-	if (pAsset)
+	CAsset* pAsset = CAssetManager::GetInstance()->FindAssetForMetadata(path);
+	if (!pAsset)
 	{
-		// Close previous asset and unconditionally discard all changes.
-		DiscardAssetChanges();
-		CloseAsset();
-		OpenAsset(pAsset);
+		CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_WARNING, "Unable to create asset copy: %s - from: %s", path, m_assetBeingEdited->GetMetadataFile());
+		return false;
 	}
+
+	// Close and discard all changes
+	DiscardAssetChanges();
+	CloseAsset();
+	OpenAsset(pAsset);
+
 	return true;
 }
 

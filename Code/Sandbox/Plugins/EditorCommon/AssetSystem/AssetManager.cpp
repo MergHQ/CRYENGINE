@@ -68,8 +68,6 @@ void InitializeFileToAssetMap(FileToAssetMap& fileToAssetMap, const std::vector<
 	fileToAssetMap.reserve(allocNum);
 }
 
-std::future<void> g_asyncProcess;
-
 std::vector<std::unique_ptr<IFilesGroupController>> ComposeFileGroupsForDeletion(std::vector<CAsset*>& assets)
 {
 		std::vector<std::unique_ptr<IFilesGroupController>> fileGroups;
@@ -427,15 +425,13 @@ void CAssetManager::MergeAssets(std::vector<CAsset*> assets)
 	}
 }
 
-bool CAssetManager::DeleteAssetsWithFiles(std::vector<CAsset*> assets)
+std::future<void> CAssetManager::DeleteAssetsWithFiles(std::vector<CAsset*> assets)
 {
 	using namespace Private_AssetManager;
-	MAKE_SURE(!m_assets.empty(), return false);
-	MAKE_SURE(!assets.empty(), return false);
+	MAKE_SURE(!m_assets.empty(), return std::future<void>());
+	MAKE_SURE(!assets.empty(), return std::future<void>());
 
 	auto fileGroups = ComposeFileGroupsForDeletion(assets);
-
-	signalBeforeAssetsRemoved(assets);
 
 	m_orderedByGUID = false;
 
@@ -444,17 +440,10 @@ bool CAssetManager::DeleteAssetsWithFiles(std::vector<CAsset*> assets)
 		pAsset->GetType()->PreDeleteAssetFiles(*pAsset);
 	}
 
-	g_asyncProcess = ThreadingUtils::AsyncQueue([assets = std::move(assets), fileGroups = std::move(fileGroups), this]() mutable
+	return ThreadingUtils::AsyncQueue([assets = std::move(assets), fileGroups = std::move(fileGroups), this]() mutable
 	{
 		CFileOperationExecutor::GetExecutor()->Delete(std::move(fileGroups));
-
-		ThreadingUtils::PostOnMainThread([this, assets = std::move(assets)]()
-		{
-			signalAfterAssetsRemoved();
-		});
 	});
-
-	return true;
 }
 
 void CAssetManager::DeleteAssetsOnlyFromData(std::vector<CAsset*> assets)
@@ -475,6 +464,7 @@ void CAssetManager::DeleteAssetsOnlyFromData(std::vector<CAsset*> assets)
 	int newSize = m_assets.size();
 	for (auto pAsset : assets)
 	{
+		pAsset->signalBeforeRemoved(pAsset);
 		m_orderedByGUID = false;
 
 		m_sourceFilesTracker.RemoveIndex(pAsset->GetSourceFile(), *pAsset);
@@ -485,6 +475,7 @@ void CAssetManager::DeleteAssetsOnlyFromData(std::vector<CAsset*> assets)
 		m_assets[index] = std::move(m_assets[--newSize]);
 		m_assets.resize(newSize);
 		DeleteAssetFilesFromMap(m_fileToAssetMap, pAssetToDelete);
+		pAsset->signalAfterRemoved(pAsset);
 	}
 	signalAfterAssetsRemoved();
 }
@@ -577,15 +568,6 @@ std::vector<CAssetPtr> CAssetManager::GetAssetsFromDirectory(const string& direc
 		}
 	}
 	return assets;
-}
-
-void CAssetManager::WaitAsyncProcess() const
-{
-	using namespace Private_AssetManager;
-	if (g_asyncProcess.valid())
-	{
-		g_asyncProcess.wait();
-	}
 }
 
 void CAssetManager::UpdateAssetTypes()

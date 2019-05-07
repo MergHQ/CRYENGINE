@@ -1751,7 +1751,9 @@ static void PyDeletePrefabItem(const char* itemName)
 	{
 		return;
 	}
-	pAssetManager->DeleteAssetsWithFiles({ pAsset });
+
+	std::future<void> deleteFuture = pAssetManager->DeleteAssetsWithFiles({ pAsset });
+	deleteFuture.wait();
 }
 
 static std::vector<string> PyGetPrefabItems()
