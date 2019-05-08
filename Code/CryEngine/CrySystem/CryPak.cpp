@@ -1402,7 +1402,7 @@ ICryPak::SignedFileSize CCryPak::GetFileSizeOnDisk(const char* filename)
 #else
 	struct stat desc;
 
-	if (stat(filename, &desc) == 0)
+	if (stat(filename, &desc) == 0 && !(desc.st_mode & S_IFDIR))
 	{
 		return (ICryPak::SignedFileSize)desc.st_size;
 	}
