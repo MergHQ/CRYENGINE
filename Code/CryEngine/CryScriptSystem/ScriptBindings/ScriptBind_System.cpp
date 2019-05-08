@@ -114,6 +114,15 @@ static unsigned int sGetBlendState(int nMode)
 /////////////////////////////////////////////////////////////////////////////////
 CScriptBind_System::~CScriptBind_System()
 {
+	IConsole* pConsole = gEnv->pConsole;
+	for (const string& command : m_registeredCommands)
+	{
+#if (defined(_LAUNCHER) && defined(CRY_IS_MONOLITHIC_BUILD)) || !defined(_LIB)
+		// Manually remove commands from g_moduleCommands - strings were allocated dynamically.
+		stl::find_and_erase(g_moduleCommands, command.c_str());
+#endif
+		pConsole->RemoveCommand(command.c_str());
+	}
 }
 
 /////////////////////////////////////////////////////////////////////////////////
@@ -1482,7 +1491,10 @@ int CScriptBind_System::AddCCommand(IFunctionHandler* pH)
 	pH->GetParam(3, sHelp);
 	assert(sHelp);
 
-	REGISTER_COMMAND(sCCommandName, sCommand, 0, sHelp);
+	// sCCommandName is deallocated by lua afterwards - hold string copy in m_registeredCommands
+	string name = sCCommandName;
+	REGISTER_COMMAND(name.c_str(), sCommand, 0, sHelp);
+	m_registeredCommands.insert(name);
 
 	return pH->EndFunction();
 }

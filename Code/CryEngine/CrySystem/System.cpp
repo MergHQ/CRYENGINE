@@ -639,7 +639,10 @@ void CSystem::ShutDown()
 	}
 
 	if (m_pUserCallback)
+	{
 		m_pUserCallback->OnShutdown();
+		m_pUserCallback = nullptr;
+	}
 
 	GetIRemoteConsole()->Stop();
 
