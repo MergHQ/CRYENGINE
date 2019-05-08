@@ -843,7 +843,26 @@ struct SEfTexModificator
 
 	void   Reset()
 	{
-		memset(this, 0, sizeof(*this));
+		// Do not replace with memset to avoid compiler issues (VS2019/GCC8.3)
+		m_TexGenMatrix.SetZero();
+		m_TexMatrix.SetZero();
+		m_Tiling[0] = m_Tiling[1] = m_Tiling[2] = 0.0f;
+		m_Offs[0] = m_Offs[1] = m_Offs[2] = 0.0f;
+		m_RotOscCenter[0] = m_RotOscCenter[1] = m_RotOscCenter[2] = 0.0f;
+		m_OscRate[0] = m_OscRate[1] = 0.0f;
+		m_OscAmplitude[0] = m_OscAmplitude[1] = 0.0f;
+		m_OscPhase[0] = m_OscPhase[1] = 0.0f;
+		m_LastTime[0] = m_LastTime[1] = 0.0f;
+		m_CurrentJitter[0] = m_CurrentJitter[1] = 0.0f;
+		m_RotOscPhase[0] = m_RotOscPhase[1] = m_RotOscPhase[2] = 0;
+		m_Rot[0] = m_Rot[1] = m_Rot[2] = 0;
+		m_RotOscRate[0] = m_RotOscRate[1] = m_RotOscRate[2] = 0;
+		m_RotOscAmplitude[0] = m_RotOscAmplitude[1] = m_RotOscAmplitude[2] = 0;
+		m_eTGType = 0;
+		m_eRotType = 0;
+		m_eMoveType[0] = m_eMoveType[1] = 0;
+		m_bTexGenProjected = false;
+
 		m_Tiling[0] = m_Tiling[1] = 1.0f;
 	}
 	inline SEfTexModificator()

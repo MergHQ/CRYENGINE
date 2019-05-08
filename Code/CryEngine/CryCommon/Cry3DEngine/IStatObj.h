@@ -90,10 +90,35 @@ struct SRayHitTriangle
 struct SRayHitInfo
 {
 	SRayHitInfo()
+		// Do not replace with memset to avoid compiler issues (VS2019/GCC8.3)
+		: inReferencePoint(0.0f)
+		, inRay(Vec3(0.0f), Vec3(0.0f))
+		, bInFirstHit(false)
+		, inRetTriangle(false)
+		, bUseCache(false)
+		, bOnlyZWrite(false)
+		, bGetVertColorAndTC(false)
+		, fMaxHitDistance(false)
+		, vTri0(0.0f)
+		, vTri1(0.0f)
+		, vTri2(0.0f)
+		, fMinHitOpacity(0.0f)
+		, fDistance(0.0f)
+		, vHitPos(0.0f)
+		, vHitNormal(0.0f)
+		, nHitMatID(0)
+		, nHitTriID(HIT_UNKNOWN)
+		, nHitSurfaceID(0)
+		, pRenderMesh(nullptr)
+		, pStatObj(nullptr)
+		, vHitTC(0.0f)
+		, vHitColor(0.0f)
+		, vHitTangent(0.0f)
+		, vHitBitangent(0.0f)
+		, pHitTris(nullptr)
 	{
-		memset(this, 0, sizeof(*this));
-		nHitTriID = HIT_UNKNOWN;
 	}
+
 	// Input parameters.
 	Vec3  inReferencePoint;
 	Ray   inRay;
