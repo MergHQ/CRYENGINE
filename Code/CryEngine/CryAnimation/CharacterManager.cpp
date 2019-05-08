@@ -1340,8 +1340,8 @@ SClothGeometry* CharacterManager::LoadVClothGeometry(const CAttachmentVCLOTH& pA
 	ret.nVtx = geometry.GetVertexCount();
 	int nSimIndices = geometry.GetIndexCount();
 
-	strided_pointer<const Vec3> pVertices = geometry.GetPositions();
-	const ColorB* pColors = (ColorB*)geometry.GetColors().data;
+	const strided_pointer<const Vec3> pVertices = geometry.GetPositions();
+	const strided_pointer<const uint32> pColors = geometry.GetColors();
 	const vtx_idx* pSimIndices = geometry.GetIndices();
 
 	// find welded vertices and prune them, to avoid simulation issues due to very short edges
@@ -1369,7 +1369,8 @@ SClothGeometry* CharacterManager::LoadVClothGeometry(const CAttachmentVCLOTH& pA
 	ret.weights = new float[ret.nUniqueVtx];
 	for (int i = 0; i < ret.nVtx; i++)
 	{
-		float alpha = 1.f - (float)pColors[i].r / 255.f;
+		static const uint32 red = 0xff;
+		const float alpha = 1.0f - (float)(pColors[i] & red) / 255.0f;
 		ret.weights[ret.weldMap[i]] = alpha;
 	}
 
