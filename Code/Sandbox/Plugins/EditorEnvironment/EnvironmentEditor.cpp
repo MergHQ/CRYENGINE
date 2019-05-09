@@ -104,10 +104,10 @@ void CEnvironmentEditor::OnInitialize()
 
 void CEnvironmentEditor::OnCreateDefaultLayout(CDockableContainer* pSender, QWidget* pAssetBrowser)
 {
-	QWidget* pConstantsTab = pSender->SpawnWidget("Constants", pAssetBrowser, QToolWindowAreaReference::VSplitRight);
+	QWidget* pConstantsTab = pSender->SpawnWidget("Constants", pAssetBrowser, QToolWindowAreaReference::Right);
 	QWidget* pVariablesTab = pSender->SpawnWidget("Variables", pConstantsTab, QToolWindowAreaReference::Right);
 	pSender->SpawnWidget("Curve Editor", pVariablesTab, QToolWindowAreaReference::Right);
-	pSender->SetSplitterSizes(pConstantsTab, { 1, 1, 4 });
+	pSender->SetSplitterSizes(pConstantsTab, { 1, 1, 1, 4 });
 
 	if (m_pPreset)
 	{
