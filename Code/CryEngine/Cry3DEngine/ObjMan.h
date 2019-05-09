@@ -1,5 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
+
 #pragma once
 
 #include "StatObj.h"
@@ -8,6 +9,7 @@
 #include <CryCore/StlUtils.h>
 #include <CryMemory/PoolAllocator.h>
 #include "CCullThread.h"
+#include <CryThreading/CryThreadSafePushContainer.h>
 
 #include <map>
 #include <vector>
@@ -240,7 +242,7 @@ public:
 
 	PodArray<StatInstGroup> m_lstStaticTypes;
 
-	CThreadSafeRendererContainer<SVegetationSpriteInfo> m_arrVegetationSprites[MAX_RECURSION_LEVELS][nThreadsNum];
+	CryMT::CThreadSafePushContainer<SVegetationSpriteInfo> m_arrVegetationSprites[MAX_RECURSION_LEVELS][nThreadsNum];
 
 	void MakeShadowCastersList(CVisArea* pReceiverArea, const AABB& aabbReceiver,
 	                           int dwAllowedTypes, int32 nRenderNodeFlags, Vec3 vLightPos, SRenderLight* pLight, ShadowMapFrustum* pFr, PodArray<struct SPlaneObject>* pShadowHull, const SRenderingPassInfo& passInfo);
@@ -520,11 +522,11 @@ private:
 	stl::PoolAllocator<sizeof(CStatObj), stl::PSyncMultiThread, alignof(CStatObj)>* m_statObjPool;
 #endif
 
-	CThreadSafeRendererContainer<SObjManRenderDebugInfo> m_arrRenderDebugInfo;
+	CryMT::CThreadSafePushContainer<SObjManRenderDebugInfo> m_arrRenderDebugInfo;
 
-	BoundMPMC<SCheckOcclusionOutput>                     m_CheckOcclusionOutputQueue;
+	BoundMPMC<SCheckOcclusionOutput>    m_CheckOcclusionOutputQueue;
 
-	JobManager::SJobState                                m_renderContentJobState;
+	JobManager::SJobState               m_renderContentJobState;
 
 	class CPreloadTimeslicer;
 	std::unique_ptr<CPreloadTimeslicer> m_pPreloadTimeSlicer;

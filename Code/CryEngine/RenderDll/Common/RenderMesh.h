@@ -9,6 +9,7 @@
 #include <CryMath/GeomQuery.h>
 #include <3rdParty/concqueue/concqueue-mpsc.hpp>
 #include <CryThreading/IJobManager.h>
+#include <CryThreading/CryThreadSafePushContainer.h>
 
 #include "ComputeSkinningStorage.h"
 
@@ -20,9 +21,9 @@
 struct SMeshSubSetIndicesJobEntry
 {
 	JobManager::SJobState jobState;
-	_smart_ptr<IRenderMesh> m_pSrcRM;							// source mesh to create a new index mesh from
-	_smart_ptr<IRenderMesh> m_pIndexRM;						// when finished: newly created index mesh for this mask, else NULL
-	hidemask m_nMeshSubSetMask;						// mask to use
+	_smart_ptr<IRenderMesh> m_pSrcRM;   // source mesh to create a new index mesh from
+	_smart_ptr<IRenderMesh> m_pIndexRM; // when finished: newly created index mesh for this mask, else NULL
+	hidemask m_nMeshSubSetMask;         // mask to use
 
 	void CreateSubSetRenderMesh();
 
@@ -559,8 +560,8 @@ public:
 	typedef VectorMap<hidemask,_smart_ptr<IRenderMesh> > MeshSubSetIndices;
 	MeshSubSetIndices m_meshSubSetIndices;
 
-	static CThreadSafeRendererContainer<SMeshSubSetIndicesJobEntry> m_meshSubSetRenderMeshJobs[RT_COMMAND_BUF_COUNT];
-	static CThreadSafeRendererContainer<CRenderMesh*> m_deferredSubsetGarbageCollection[RT_COMMAND_BUF_COUNT];
+	static CryMT::CThreadSafePushContainer<SMeshSubSetIndicesJobEntry> m_meshSubSetRenderMeshJobs[RT_COMMAND_BUF_COUNT];
+	static CryMT::CThreadSafePushContainer<CRenderMesh*> m_deferredSubsetGarbageCollection[RT_COMMAND_BUF_COUNT];
 
 #ifdef RENDER_MESH_TRIANGLE_HASH_MAP_SUPPORT
   CryCriticalSection m_getTrisForPositionLock;

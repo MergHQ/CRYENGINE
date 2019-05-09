@@ -2600,12 +2600,6 @@ void COctreeNode::RenderContentJobEntry(int nRenderMask, Vec3 vAmbColor, uint32 
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-void AddSpriteInfo(CThreadSafeRendererContainer<SVegetationSpriteInfo>& arrSpriteInfo, SVegetationSpriteInfo& rSpriteInfo)
-{
-	arrSpriteInfo.push_back(rSpriteInfo);
-}
-
-///////////////////////////////////////////////////////////////////////////////
 void COctreeNode::RenderVegetations(TDoublyLinkedList<IRenderNode>* lstObjects, const uint32 passCullMask, int nRenderMask, const bool bOcNodeCompletelyInFrustum,
                                     PodArray<SRenderLight*>* pAffectingLights, SSectorTextureSet* pTerrainTexInfo, const SRenderingPassInfo& passInfo)
 {
@@ -2618,7 +2612,7 @@ void COctreeNode::RenderVegetations(TDoublyLinkedList<IRenderNode>* lstObjects, 
 	bool bCheckPerObjectOcclusion = m_vNodeAxisRadius.len2() > pCVars->e_CoverageBufferCullIndividualBrushesMaxNodeSize * pCVars->e_CoverageBufferCullIndividualBrushesMaxNodeSize;
 
 	const bool bRenderSprites = pCVars->e_VegetationSpritesBatching && !(nRenderMask & OCTREENODE_RENDER_FLAG_OBJECTS_ONLY_ENTITIES) && pCVars->e_VegetationSprites;
-	CThreadSafeRendererContainer<SVegetationSpriteInfo>& arrSpriteInfo = GetObjManager()->m_arrVegetationSprites[passInfo.GetRecursiveLevel()][passInfo.ThreadID()];
+	CryMT::CThreadSafePushContainer<SVegetationSpriteInfo>& arrSpriteInfo = GetObjManager()->m_arrVegetationSprites[passInfo.GetRecursiveLevel()][passInfo.ThreadID()];
 
 	const bool bOcclusionCullerInUse = Get3DEngine()->IsStatObjBufferRenderTasksAllowed() && passInfo.IsGeneralPass();
 
@@ -2658,7 +2652,7 @@ void COctreeNode::RenderVegetations(TDoublyLinkedList<IRenderNode>* lstObjects, 
 
 		// check culling of all passes
 		bool bObjectCompletelyInFrustum = bOcNodeCompletelyInFrustum;
-		uint32 objCullMask = UpdateCullMask(pObj->m_onePassTraversalFrameId, pObj->m_onePassTraversalShadowCascades, pObj->m_dwRndFlags, passInfo, objBox, fEntDistance, pObj->m_fWSMaxViewDist, bCheckPerObjectOcclusion, bObjectCompletelyInFrustum, nullptr, passCullMask);
+		const uint32 objCullMask = UpdateCullMask(pObj->m_onePassTraversalFrameId, pObj->m_onePassTraversalShadowCascades, pObj->m_dwRndFlags, passInfo, objBox, fEntDistance, pObj->m_fWSMaxViewDist, bCheckPerObjectOcclusion, bObjectCompletelyInFrustum, nullptr, passCullMask);
 
 		if (objCullMask)
 		{
@@ -2669,7 +2663,7 @@ void COctreeNode::RenderVegetations(TDoublyLinkedList<IRenderNode>* lstObjects, 
 					pObj->m_pSpriteInfo->ucAlphaTestRef = 0;
 					pObj->m_pSpriteInfo->ucDissolveOut = 255;
 
-					AddSpriteInfo(arrSpriteInfo, *pObj->m_pSpriteInfo);
+					arrSpriteInfo.push_back(*pObj->m_pSpriteInfo);
 					continue;
 				}
 			}

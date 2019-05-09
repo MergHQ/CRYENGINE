@@ -719,7 +719,7 @@ void C3DEngine::Tick()
 	TickDelayedRenderNodeDeletion();
 
 	// clear stored cameras from last frame
-	m_RenderingPassCameras[nThreadID].resize(0);
+	m_RenderingPassCameras[nThreadID].clear();
 }
 
 void C3DEngine::ProcessCVarsChange()
@@ -5689,7 +5689,7 @@ CCamera* C3DEngine::GetRenderingPassCamera(const CCamera& rCamera)
 {
 	threadID nThreadID = 0;
 	gEnv->pRenderer->EF_Query(EFQ_RenderThreadList, nThreadID);
-	CCamera* pCamera = ::new(m_RenderingPassCameras[nThreadID].push_back_new())CCamera(rCamera);
+	CCamera* pCamera = m_RenderingPassCameras[nThreadID].push_back_new(rCamera);
 	return pCamera;
 }
 

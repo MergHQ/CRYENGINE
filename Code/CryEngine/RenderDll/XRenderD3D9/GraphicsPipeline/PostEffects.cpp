@@ -1500,10 +1500,9 @@ void CHud3DPass::ExecuteFlashUpdate(const CPostEffectContext& context, CHud3D& h
 
 	const uint32 nThreadID = gRenDev->GetRenderThreadID();
 
-	uint32 nRECount = hud3d.m_pRenderData[nThreadID].size();
 	const bool bForceRefresh = (hud3d.m_pOverideCacheDelay->GetParam() > 0.5f);
 
-	if (nRECount || bForceRefresh) //&& m_nFlashUpdateFrameID != rd->GetFrameID(false) )
+	if (!hud3d.m_pRenderData[nThreadID].empty() || bForceRefresh) //&& m_nFlashUpdateFrameID != rd->GetFrameID(false) )
 	{
 		// Share hud render target with scene normals
 		hud3d.m_pHUD_RT       = CRendererResources::s_ptexCached3DHud;
@@ -1542,10 +1541,8 @@ void CHud3DPass::ExecuteFlashUpdate(const CPostEffectContext& context, CHud3D& h
 		SEfResTexture* pDiffuse = nullptr;
 		SEfResTexture* pPrevDiffuse = nullptr;
 
-		for (uint32 r = 0; r < nRECount; ++r)
+		for (SHudData& pData : hud3d.m_pRenderData[nThreadID])
 		{
-			SHudData& pData = hud3d.m_pRenderData[nThreadID][r];
-
 			pDiffuse = pData.pDiffuse;
 			if (!pDiffuse || !pDiffuse->m_Sampler.m_pDynTexSource)
 			{
@@ -1611,12 +1608,12 @@ void CHud3DPass::ExecuteDownsampleHud4x4(const CPostEffectContext& context, clas
 		pass.BeginAddingPrimitives();
 
 		auto& renderDataArray = hud3d.m_pRenderData[nThreadID];
-		uint32 nRECount = renderDataArray.size();
 		uint32 index = 0;
 
 		CConstantBufferPtr pPerViewCB = context.GetRenderView()->GetGraphicsPipeline()->GetMainViewConstantBuffer();
 
 		auto& primArray = m_downsamplePrimitiveArray;
+		const uint32 nRECount = renderDataArray.capacity();
 		if (primArray.size() > nRECount)
 		{
 			for (auto it = (primArray.begin() + nRECount); it != primArray.end(); ++it)
@@ -1626,9 +1623,8 @@ void CHud3DPass::ExecuteDownsampleHud4x4(const CPostEffectContext& context, clas
 		}
 		primArray.resize(nRECount, nullptr);
 
-		for (uint32 r = 0; r < nRECount; ++r)
+		for (SHudData& pData : renderDataArray)
 		{
-			SHudData& pData = renderDataArray[r];
 			CShaderResources* pShaderResources = (CShaderResources*)pData.pShaderResources;
 
 			SEfResTexture* pDiffuse = pData.pDiffuse;
@@ -1722,12 +1718,12 @@ void CHud3DPass::ExecuteBloomTexUpdate(const CPostEffectContext& context, class 
 		pass.BeginAddingPrimitives();
 
 		auto& renderDataArray = hud3d.m_pRenderData[nThreadID];
-		uint32 nRECount = renderDataArray.size();
 		uint32 index = 0;
 
 		CConstantBufferPtr pPerViewCB = context.GetRenderView()->GetGraphicsPipeline()->GetMainViewConstantBuffer();
 
 		auto& primArray = m_bloomPrimitiveArray;
+		const uint32 nRECount = renderDataArray.capacity();
 		if (primArray.size() > nRECount)
 		{
 			for (auto it = (primArray.begin() + nRECount); it != primArray.end(); ++it)
@@ -1737,9 +1733,8 @@ void CHud3DPass::ExecuteBloomTexUpdate(const CPostEffectContext& context, class 
 		}
 		primArray.resize(nRECount, nullptr);
 
-		for (uint32 r = 0; r < nRECount; ++r)
+		for (SHudData& pData : renderDataArray)
 		{
-			SHudData& pData = renderDataArray[r];
 			CShaderResources* pShaderResources = (CShaderResources*)pData.pShaderResources;
 
 			SEfResTexture* pDiffuse = pData.pDiffuse;
@@ -1905,12 +1900,12 @@ void CHud3DPass::ExecuteFinalPass(const CPostEffectContext& context, CTexture* p
 		pass.BeginAddingPrimitives();
 
 		auto& renderDataArray = hud3d.m_pRenderData[nThreadID];
-		uint32 nRECount = renderDataArray.size();
 		uint32 index = 0;
 
 		CConstantBufferPtr pPerViewCB = context.GetRenderView()->GetGraphicsPipeline()->GetMainViewConstantBuffer();
 
 		auto& primArray = m_hudPrimitiveArray;
+		const uint32 nRECount = renderDataArray.capacity();
 		if (primArray.size() > nRECount)
 		{
 			for (auto it = (primArray.begin() + nRECount); it != primArray.end(); ++it)
@@ -1920,9 +1915,8 @@ void CHud3DPass::ExecuteFinalPass(const CPostEffectContext& context, CTexture* p
 		}
 		primArray.resize(nRECount, nullptr);
 
-		for (uint32 r = 0; r < nRECount; ++r)
+		for (SHudData& pData : renderDataArray)
 		{
-			SHudData& pData = renderDataArray[r];
 			CShaderResources* pShaderResources = (CShaderResources*)pData.pShaderResources;
 
 			SEfResTexture* pDiffuse = pData.pDiffuse;

@@ -23,6 +23,7 @@ CRenderView::CRenderView(const char* name, EViewType type, CRenderView* pParentV
 	, m_skipRenderingFlags(0)
 	, m_frameId(0)
 	, m_pParentView(pParentView)
+	, m_numFogVolumes(0)
 	, m_numUsedClientPolygons(0)
 	, m_bDeferrredNormalDecals(false)
 	, m_bTrackUncompiledItems(true)
@@ -40,61 +41,12 @@ CRenderView::CRenderView(const char* name, EViewType type, CRenderView* pParentV
 		m_renderItems[i].SetNoneWorkerThreadID(gEnv->mMainThreadId);
 	}
 
-	// Init Thread Safe Worker Containers
-	m_tempRenderObjects.tempObjects.Init();
-	m_tempRenderObjects.tempObjects.SetNoneWorkerThreadID(gEnv->mMainThreadId);
-
 	m_shadows.m_pShadowFrustumOwner = pShadowFrustumOwner;
-
-	m_permanentRenderObjectsToCompile.Init();
-	m_permanentRenderObjectsToCompile.SetNoneWorkerThreadID(gEnv->mMainThreadId);
-
-	m_permanentObjects.Init();
-	m_permanentObjects.SetNoneWorkerThreadID(gEnv->mMainThreadId);
 
 	m_polygonDataPool.reset(new CRenderPolygonDataPool);
 
-	m_fogVolumeContributions.reserve(2048);
-
 	ZeroStruct(m_shaderConstants);
-
-	{
-		MEMSTAT_CONTEXT(EMemStatContextType::D3D, "Renderer TempObjects");
-
-		if (m_tempRenderObjects.pRenderObjectsPool)
-		{
-			CryModuleMemalignFree(m_tempRenderObjects.pRenderObjectsPool);
-			m_tempRenderObjects.pRenderObjectsPool = NULL;
-		}
-		m_tempRenderObjects.numObjectsInPool = TEMP_REND_OBJECTS_POOL;
-
-		CRenderObject* arrPrefill[TEMP_REND_OBJECTS_POOL];
-
-		// we use a plain allocation and placement new here to guarantee the alignment, when using array new, the compiler can store it's size and break the alignment
-		m_tempRenderObjects.pRenderObjectsPool = (CRenderObject*)CryModuleMemalign(sizeof(CRenderObject) * (m_tempRenderObjects.numObjectsInPool) + sizeof(CRenderObject), 16);
-		for (uint32 j = 0; j < m_tempRenderObjects.numObjectsInPool; j++)
-		{
-			new(&m_tempRenderObjects.pRenderObjectsPool[j])CRenderObject();
-			arrPrefill[j] = &m_tempRenderObjects.pRenderObjectsPool[j];
-		}
-		m_tempRenderObjects.tempObjects.PrefillContainer(arrPrefill, m_tempRenderObjects.numObjectsInPool);
-		m_tempRenderObjects.tempObjects.resize(0);
-	}
 }
-
-/// Used to delete none pre-allocated RenderObject pool elements
-struct SDeleteNonePoolRenderObjs
-{
-	CRenderObject* m_pPoolStart;
-	CRenderObject* m_pPoolEnd;
-
-	void operator()(CRenderObject** pData) const
-	{
-		// Delete elements outside of pool range
-		if (*pData && (*pData < m_pPoolStart || *pData >= m_pPoolEnd))
-			delete *pData;
-	}
-};
 
 //////////////////////////////////////////////////////////////////////////
 CRenderView::~CRenderView()
@@ -103,18 +55,6 @@ CRenderView::~CRenderView()
 
 	for (auto pClientPoly : m_polygonsPool)
 		delete pClientPoly;
-
-	// Get object pool range
-	CRenderObject* pObjPoolStart = &m_tempRenderObjects.pRenderObjectsPool[0];
-	CRenderObject* pObjPoolEnd = &m_tempRenderObjects.pRenderObjectsPool[m_tempRenderObjects.numObjectsInPool];
-
-	// Delete all items that have not been allocated from the object pool
-	m_tempRenderObjects.tempObjects.clear(SDeleteNonePoolRenderObjs({ pObjPoolStart, pObjPoolEnd }));
-	if (m_tempRenderObjects.pRenderObjectsPool)
-	{
-		CryModuleMemalignFree(m_tempRenderObjects.pRenderObjectsPool);
-		m_tempRenderObjects.pRenderObjectsPool = nullptr;
-	}
 }
 
 SRenderViewShaderConstants& CRenderView::GetShaderConstants()
@@ -161,7 +101,6 @@ void CRenderView::Clear()
 	m_bTrackUncompiledItems = true;
 	m_bAddingClientPolys = false;
 	m_skinningPoolIndex = 0;
-	m_shaderItemsToUpdate.CoalesceMemory();
 	m_shaderItemsToUpdate.clear();
 	for (int i = 0; i < CCamera::eEye_eCount; ++i)
 		m_camera[i] = m_previousCamera[i] = CCamera();
@@ -209,11 +148,11 @@ void CRenderView::Clear()
 	m_shadows.Clear();
 
 	m_fogVolumeContributions.clear();
+	m_numFogVolumes = 0;
 
 	m_globalFogDescription = SRenderGlobalFogDescription();
 
 	ClearTemporaryCompiledObjects();
-	m_permanentRenderObjectsToCompile.CoalesceMemory();
 	m_permanentRenderObjectsToCompile.clear();
 
 	m_bTrackUncompiledItems = true;
@@ -222,9 +161,8 @@ void CRenderView::Clear()
 
 	m_skipRenderingFlags = 0;
 
-	m_tempRenderObjects.tempObjects.resize(0);
+	m_tempRenderObjects.reset_container();
 
-	m_permanentObjects.CoalesceMemory();
 	m_permanentObjects.clear();
 
 	m_bClearTarget = false;
@@ -974,15 +912,8 @@ void CRenderView::UnsetRenderOutput()
 //////////////////////////////////////////////////////////////////////////
 void CRenderView::AddPermanentObjectImpl(CPermanentRenderObject* pObject, const SRenderingPassInfo& passInfo)
 {
-	const int passId = IsShadowGenView() ? 1 : 0;
-
-	SPermanentObjectRecord rec;
-	rec.pRenderObject = pObject;
-	rec.itemSorter = passInfo.GetRendItemSorter().GetValue();
-	rec.shadowFrustumSide = passInfo.ShadowFrustumSide();
-	rec.requiresInstanceDataUpdate = pObject->m_bInstanceDataDirty[passId];
-
-	m_permanentObjects.push_back(rec);
+	const int passId = IsShadowGenView() ? 1 : 0;	
+	m_permanentObjects.push_back(SPermanentObjectRecord{ pObject, passInfo.GetRendItemSorter().GetValue(), passInfo.ShadowFrustumSide(), pObject->m_bInstanceDataDirty[passId] });
 
 	if (IsShadowGenView())
 	{
@@ -1010,17 +941,8 @@ void CRenderView::AddPermanentObject(CRenderObject* pObject, const SRenderingPas
 //////////////////////////////////////////////////////////////////////////
 CRenderObject* CRenderView::AllocateTemporaryRenderObject()
 {
-	CThreadSafeWorkerContainer<CRenderObject*>& Objs = m_tempRenderObjects.tempObjects;
-
-	size_t nId = ~0;
-	CRenderObject** ppObj = Objs.push_back_new(nId);
-	CRenderObject* pObj = NULL;
-
-	if (*ppObj == NULL)
-	{
-		*ppObj = new CRenderObject;
-	}
-	pObj = *ppObj;
+	uint32 nId = ~0;
+	CRenderObject* pObj = m_tempRenderObjects.push_back_new(nId);
 
 	pObj->AssignId(nId);
 	pObj->Init();
@@ -1679,7 +1601,6 @@ void CRenderView::ExpandPermanentRenderObjects()
 {
 	PROFILE_FRAME(ExpandPermanentRenderObjects);
 
-	m_permanentObjects.CoalesceMemory();
 
 	if (!m_permanentObjects.empty())
 	{
@@ -1694,7 +1615,7 @@ void CRenderView::ExpandPermanentRenderObjects()
 	uint32 passMask = BIT(passId);
 
 	// Expand normal render items
-	for (auto record : m_permanentObjects)
+	for (const auto& record : m_permanentObjects)
 	{
 		auto* pRenderObject = record.pRenderObject;
 		assert(pRenderObject->m_bPermanent);
@@ -1814,8 +1735,7 @@ void CRenderView::ExpandPermanentRenderObjects()
 			if (needsCompilation ||
 			    !pRenderObject->m_bAllCompiledValid)
 			{
-				SPermanentRenderObjectCompilationData compilationData{ pRenderObject, compilationOptions };
-				m_permanentRenderObjectsToCompile.push_back(compilationData);
+				m_permanentRenderObjectsToCompile.push_back(SPermanentRenderObjectCompilationData{ pRenderObject, compilationOptions });
 				CryInterlockedExchangeAnd((volatile LONG*)&pRenderObject->m_compiledReadyMask, ~passMask);      // This compiled masks invalid
 				if (auto compiledObj = pRenderObject->m_pCompiledObject)
 					CryInterlockedExchangeAnd((volatile LONG*)&compiledObj->m_compiledFlags, ~compilationOptions);
@@ -1843,21 +1763,23 @@ void CRenderView::CompileModifiedRenderObjects()
 
 	//////////////////////////////////////////////////////////////////////////
 	// Compile all modified objects.
-	m_permanentRenderObjectsToCompile.CoalesceMemory();
+
+#if defined(ENABLE_PROFILING_CODE)
+	int numObjects = 0;
+	int numTempObjects = 0;
+#endif
 
 	uint32 passId = IsShadowGenView() ? 1 : 0;
 	uint32 passMask = BIT(passId);
-
-#if defined(ENABLE_PROFILING_CODE)
-	const auto numObjects = m_permanentRenderObjectsToCompile.size();
-#endif
-
 	const auto nFrameId = gEnv->pRenderer->GetFrameID(false);
 
 	auto* pShadowStage = m_pGraphicsPipeline->GetStage<CShadowMapStage>();
 
 	for (const auto& compilationData : m_permanentRenderObjectsToCompile)
 	{
+#if defined(ENABLE_PROFILING_CODE)
+		++numObjects;
+#endif
 		auto* pRenderObject = compilationData.pObject;
 		auto compilationFlags = compilationData.compilationFlags;
 
@@ -1917,12 +1839,11 @@ void CRenderView::CompileModifiedRenderObjects()
 	m_permanentRenderObjectsToCompile.clear();
 
 	// Compile all temporary compiled objects
-	m_temporaryCompiledObjects.CoalesceMemory();
-#if defined(ENABLE_PROFILING_CODE)
-	int numTempObjects = m_temporaryCompiledObjects.size();
-#endif
 	for (const auto& t : m_temporaryCompiledObjects)
 	{
+#if defined(ENABLE_PROFILING_CODE)
+		++numTempObjects;
+#endif
 		t.pObject->Compile(eObjCompilationOption_All, t.objFlags, t.elmFlags, t.localAABB, this);
 		const bool cachedShadowPsosAreValid = pShadowStage->CanRenderCachedShadows(t.pObject);
 
@@ -1962,9 +1883,7 @@ void CRenderView::UpdateModifiedShaderItems()
 			CheckAndScheduleForUpdate(decal.pMaterial->GetShaderItem(0));
 	}
 
-	m_shaderItemsToUpdate.CoalesceMemory();
-
-	for (auto& item : m_shaderItemsToUpdate)
+	for (const auto& item : m_shaderItemsToUpdate)
 	{
 		auto pShaderResources = item.first;
 		auto pShader = item.second;
@@ -2047,7 +1966,7 @@ void CRenderView::ClearTemporaryCompiledObjects()
 
 CRenderView::ItemsRange CRenderView::GetItemsRange(ERenderListID renderList)
 {
-	auto& items = GetRenderItems(renderList);
+	const auto& items = GetRenderItems(renderList);
 	return ItemsRange(0, items.size());
 }
 
@@ -2055,7 +1974,7 @@ CRenderView::ItemsRange CRenderView::GetShadowItemsRange(ShadowMapFrustum* pFrus
 {
 	if (nFrustumSide < EFSLIST_NUM)
 	{
-		auto& items = GetShadowItems(pFrustum, nFrustumSide);
+		const auto& items = GetShadowItems(pFrustum, nFrustumSide);
 		return ItemsRange(0, items.size());
 	}
 	return ItemsRange(0, 0);
@@ -2512,29 +2431,22 @@ void CRenderView::CheckAndScheduleForUpdate(const SShaderItem& shaderItem) threa
 //////////////////////////////////////////////////////////////////////////
 uint16 CRenderView::PushFogVolumeContribution(const ColorF& fogVolumeContrib, const SRenderingPassInfo& passInfo) threadsafe
 {
+	int numFogVolumes = CryInterlockedIncrement(&m_numFogVolumes);
 	const size_t maxElems((1 << (sizeof(uint16) * 8)) - 1);
-	size_t numElems(m_fogVolumeContributions.size());
-	assert(numElems < maxElems);
-	if (numElems >= maxElems)
+
+	CRY_ASSERT(numFogVolumes < maxElems);
+	if (numFogVolumes >= maxElems)
 		return (uint16) - 1;
 
-	size_t nIndex = ~0;
-	nIndex = m_fogVolumeContributions.lockfree_push_back(fogVolumeContrib);
-	assert(nIndex <= (uint16) - 1); // Beware! Casting from uint32 to uint16 may loose top bits
+	uint32 nIndex = ~0;
+	m_fogVolumeContributions.push_back(fogVolumeContrib, nIndex);
 	return static_cast<uint16>(nIndex);
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CRenderView::GetFogVolumeContribution(uint16 idx, ColorF& rColor) const
 {
-	if (idx >= m_fogVolumeContributions.size())
-	{
-		rColor = ColorF(0.0f, 0.0f, 0.0f, 1.0f);
-	}
-	else
-	{
-		rColor = m_fogVolumeContributions[idx];
-	}
+	rColor = idx != (uint16)-1 ? m_fogVolumeContributions[idx] : ColorF(0.0f, 0.0f, 0.0f, 1.0f);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -2691,7 +2603,7 @@ void CRenderView::SShadows::AddNearestCaster(CRenderObject* pObj, const SRenderi
 
 		Vec3 objTranslation = pObj->GetMatrix(passInfo).GetTranslation();
 
-		AABB* pObjectBox = reinterpret_cast<AABB*>(m_nearestCasterBoxes.push_back_new());
+		AABB* pObjectBox = m_nearestCasterBoxes.push_back_new();
 		pObj->m_pRenderNode->GetLocalBounds(*pObjectBox);
 		pObjectBox->min += objTranslation;
 		pObjectBox->max += objTranslation;
@@ -2726,9 +2638,8 @@ void CRenderView::SShadows::PrepareNearestShadows()
 				CRenderView* pShadowsView = reinterpret_cast<CRenderView*>(fr.pShadowsView.get());
 				CRY_ASSERT(pShadowsView->m_usageMode == IRenderView::eUsageModeReading);
 
-				pShadowsView->m_shadows.m_nearestCasterBoxes.CoalesceMemory();
-				for (int i = 0; i < pShadowsView->m_shadows.m_nearestCasterBoxes.size(); ++i)
-					pNearestFrustum->pFrustum->aabbCasters.Add(pShadowsView->m_shadows.m_nearestCasterBoxes[i]);
+				for(const auto& AABB : pShadowsView->m_shadows.m_nearestCasterBoxes)
+					pNearestFrustum->pFrustum->aabbCasters.Add(AABB);
 
 				for (auto& ri : pShadowsView->GetRenderItems(EFSLIST_NEAREST_OBJECTS))
 					nearestRenderItems.lockfree_push_back(ri);

@@ -4,7 +4,6 @@
 
 #include "Cry3DEngineBase.h"
 #include "SurfaceTypeManager.h"
-#include <CryThreading/CryThreadSafeRendererContainer.h>
 #include "MaterialHelpers.h"
 
 #define MATERIAL_DELETION_DELAY 3 // Number of frames delay + 1

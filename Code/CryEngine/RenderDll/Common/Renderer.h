@@ -4,6 +4,7 @@
 
 #include <CryMemory/CryPool/PoolAlloc.h>
 #include <CryThreading/IJobManager.h>
+#include <CryThreading/CryThreadSafePushContainer.h>
 #include <concqueue/concqueue.hpp>
 #include "TextMessages.h"
 #include "RenderAuxGeom.h"
@@ -1649,12 +1650,12 @@ protected:
 	{
 		std::shared_ptr<class CRenderObjectsPools> m_renderObjectsPools;
 		// Array of render objects that need to be deleted next frame
-		CThreadSafeRendererContainer<class CPermanentRenderObject*> m_persistentRenderObjectsToDelete[RT_COMMAND_BUF_COUNT];
+		CryMT::CThreadSafePushContainer<class CPermanentRenderObject*> m_persistentRenderObjectsToDelete[RT_COMMAND_BUF_COUNT];
 	};
 	STempObjects m_tempRenderObjects;
 
 	// Resource deletion is delayed for at least 3 frames.
-	CThreadSafeRendererContainer<CBaseResource*> m_resourcesToDelete[RT_COMMAND_BUF_COUNT];
+	CryMT::CThreadSafePushContainer<CBaseResource*> m_resourcesToDelete[RT_COMMAND_BUF_COUNT];
 	volatile int m_currentResourceDeleteBuffer = 0;
 
 	// rounds ID from 3D engine, useful for texture streaming

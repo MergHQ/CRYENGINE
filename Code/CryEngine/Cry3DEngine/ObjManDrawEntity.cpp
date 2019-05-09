@@ -369,21 +369,18 @@ void CObjManager::RenderObject(IRenderNode* pEnt, PodArray<SRenderLight*>* pAffe
 
 void CObjManager::RenderAllObjectDebugInfo()
 {
-	m_arrRenderDebugInfo.CoalesceMemory();
-	for (size_t i = 0; i < m_arrRenderDebugInfo.size(); ++i)
+	for (SObjManRenderDebugInfo& rRenderDebugInfo : m_arrRenderDebugInfo)
 	{
-		SObjManRenderDebugInfo& rRenderDebugInfo = m_arrRenderDebugInfo[i];
 		if (rRenderDebugInfo.pEnt)
 			RenderObjectDebugInfo_Impl(rRenderDebugInfo.pEnt, rRenderDebugInfo.fEntDistance);
 	}
-	m_arrRenderDebugInfo.resize(0);
+	m_arrRenderDebugInfo.clear();
 }
 
 void CObjManager::RemoveFromRenderAllObjectDebugInfo(IRenderNode* pEnt)
 {
-	for (size_t i = 0; i < m_arrRenderDebugInfo.size(); ++i)
+	for (SObjManRenderDebugInfo& rRenderDebugInfo : m_arrRenderDebugInfo)
 	{
-		SObjManRenderDebugInfo& rRenderDebugInfo = m_arrRenderDebugInfo[i];
 		if (rRenderDebugInfo.pEnt == pEnt)
 		{
 			rRenderDebugInfo.pEnt = NULL;
@@ -394,7 +391,6 @@ void CObjManager::RemoveFromRenderAllObjectDebugInfo(IRenderNode* pEnt)
 
 void CObjManager::RenderObjectDebugInfo_Impl(IRenderNode* pEnt, float fEntDistance)
 {
-
 	if (GetCVars()->e_BBoxes > 0)
 	{
 		ColorF color(1, 1, 1, 1);

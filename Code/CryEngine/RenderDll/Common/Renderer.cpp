@@ -4723,12 +4723,13 @@ void CRenderer::RemoveSyncWithMainListener(const ISyncMainWithRenderListener* pL
 
 void CRenderer::FreePermanentRenderObjects(int bufferId)
 {
-	m_tempRenderObjects.m_persistentRenderObjectsToDelete[bufferId].CoalesceMemory();
-	for (int i = 0, num = m_tempRenderObjects.m_persistentRenderObjectsToDelete[bufferId].size(); i < num; i++)
+	auto& persistentRenderObjectsToDelete = m_tempRenderObjects.m_persistentRenderObjectsToDelete[bufferId];
+
+	for (CPermanentRenderObject * pRenderObj : persistentRenderObjectsToDelete)
 	{
-		CPermanentRenderObject::FreeToPool(m_tempRenderObjects.m_persistentRenderObjectsToDelete[bufferId][i]);
+		CPermanentRenderObject::FreeToPool(pRenderObj);
 	}
-	m_tempRenderObjects.m_persistentRenderObjectsToDelete[bufferId].clear();
+	persistentRenderObjectsToDelete.clear();
 }
 
 void CRenderer::SetCloudShadowsParams(int nTexID, const Vec3& speed, float tiling, bool invert, float brightness)
@@ -4943,10 +4944,9 @@ void CRenderer::RT_DelayedDeleteResources(bool bAllResources)
 
 	for (buffer = 0; buffer < bufferEnd; ++buffer)
 	{
-		m_resourcesToDelete[buffer].CoalesceMemory();
-		for (size_t i = 0, num = m_resourcesToDelete[buffer].size(); i < num; i++)
+		for (CBaseResource * pResource : m_resourcesToDelete[buffer])
 		{
-			delete m_resourcesToDelete[buffer][i];
+			delete pResource;
 		}
 		m_resourcesToDelete[buffer].clear();
 	}

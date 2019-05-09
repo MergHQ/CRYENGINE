@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include <CryThreading/CryThreadSafePushContainer.h>
+
 #define LV_MAX_COUNT                255
 #define LV_CELL_MAX_LIGHTS          64
 #define LV_MAX_LIGHTS               2048
@@ -29,10 +31,7 @@
 class CLightVolumesMgr : public Cry3DEngineBase
 {
 public:
-	CLightVolumesMgr()
-	{
-		Init();
-	}
+	CLightVolumesMgr();
 
 	void   Init();
 	void   Reset();
@@ -87,9 +86,10 @@ private:
 	typedef DynArray<SLightVolume> LightVolumeVector;
 
 private:
-	LightVolumeVector                           m_pLightVolumes[RT_COMMAND_BUF_COUNT]; // Final light volume list. <todo> move light list creation to renderer to avoid double-buffering this
-	CThreadSafeRendererContainer<SLightVolInfo> m_pLightVolsInfo;                      // World cells data
-	SLightCell m_pWorldLightCells[LV_LIGHTS_WORLD_BUCKET_SIZE];                        // 2D World cell buckets for light sources ids
-	uint16     m_nWorldCells[LV_WORLD_BUCKET_SIZE];                                    // World cell buckets for light volumes
+	LightVolumeVector                              m_pLightVolumes[RT_COMMAND_BUF_COUNT]; // Final light volume list. <todo> move light list creation to renderer to avoid double-buffering this
+	CryMT::CThreadSafePushContainer<SLightVolInfo> m_pLightVolsInfo;                      // World cells data
+	int        m_lightVolsInfoCount;                             // number of elements in m_pLightVolsInfo (it only exposes capacity)
+	SLightCell m_pWorldLightCells[LV_LIGHTS_WORLD_BUCKET_SIZE];  // 2D World cell buckets for light sources ids
+	uint16     m_nWorldCells[LV_WORLD_BUCKET_SIZE];              // World cell buckets for light volumes
 	bool       m_bUpdateLightVolumes : 1;
 };

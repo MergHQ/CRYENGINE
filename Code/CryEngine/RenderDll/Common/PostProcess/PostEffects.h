@@ -133,7 +133,8 @@ private:
 	typedef VectorMap<uintptr_t, SObjMotionBlurParams> OMBParamsMap;
 	typedef OMBParamsMap::iterator                     OMBParamsMapItor;
 	static OMBParamsMap m_pOMBData[3]; // triple buffering: t0: being written, t-1: current render frame, t-2: previous render frame
-	static CThreadSafeRendererContainer<OMBParamsMap::value_type> m_FillData[RT_COMMAND_BUF_COUNT];
+
+	static CryMT::CThreadSafePushContainer<OMBParamsMap::value_type> m_FillData[RT_COMMAND_BUF_COUNT];
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1291,7 +1292,7 @@ class CHud3D : public CPostEffect
 
 public:
 
-	typedef CThreadSafeRendererContainer<SHudData> SHudDataVec;
+	typedef CryMT::CThreadSafePushContainer<SHudData> SHudDataVec;
 
 public:
 
