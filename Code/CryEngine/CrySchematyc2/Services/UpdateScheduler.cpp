@@ -46,7 +46,7 @@ namespace Schematyc2
 
 		const float terrainSize = static_cast<float>(gEnv->p3DEngine->GetTerrainSize());
 
-		m_gridSize = int(terrainSize / CVars::sc_RelevanceGridCellSize);
+		m_gridSize = int(terrainSize / CVars::sc2_RelevanceGridCellSize);
 		m_gridSizeMinusOne = m_gridSize - 1;
 		m_updateHalfDistance = 0;
 
@@ -234,7 +234,7 @@ namespace Schematyc2
 
 		if (!m_updateHalfDistance)
 		{
-			m_updateHalfDistance = int(pRelevanceContext->GetDefaultGridDistanceUpdate() / Schematyc2::CVars::sc_RelevanceGridCellSize);
+			m_updateHalfDistance = int(pRelevanceContext->GetDefaultGridDistanceUpdate() / Schematyc2::CVars::sc2_RelevanceGridCellSize);
 		}
 
 		size_t relevantEntitiesCount(0);
@@ -335,7 +335,7 @@ namespace Schematyc2
 
 #if DEBUG_RELEVANCE_GRID
 		// TODO pavloi 2017.10.02: add debug draw of m_dynamicObjects
-		if (CVars::sc_RelevanceGridDebugStatic)
+		if (CVars::sc2_RelevanceGridDebugStatic)
 		{
 			DebugDrawStatic(pRelevanceContext);
 		}
@@ -442,8 +442,8 @@ namespace Schematyc2
 	////////////////////////////////////////////////////////////////
 	void CRelevanceGrid::GetCellCoordinates(const Vec3 worldPos, ushort &x, ushort& y, ushort& cellIdx) const
 	{
-		x = (ushort)clamp_tpl(int(worldPos.x / CVars::sc_RelevanceGridCellSize), 0, m_gridSizeMinusOne);
-		y = (ushort)clamp_tpl(int(worldPos.y / CVars::sc_RelevanceGridCellSize), 0, m_gridSizeMinusOne);
+		x = (ushort)clamp_tpl(int(worldPos.x / CVars::sc2_RelevanceGridCellSize), 0, m_gridSizeMinusOne);
+		y = (ushort)clamp_tpl(int(worldPos.y / CVars::sc2_RelevanceGridCellSize), 0, m_gridSizeMinusOne);
 		cellIdx = y * m_gridSize + x;
 	}
 
@@ -485,7 +485,7 @@ namespace Schematyc2
 		flags.SetDepthTestFlag(e_DepthTestOff);
 		pRenderAuxGeom->SetRenderFlags(flags);
 
-		const float cellSize = CVars::sc_RelevanceGridCellSize;
+		const float cellSize = CVars::sc2_RelevanceGridCellSize;
 		const float halfCellSize = cellSize * 0.5f - 0.05f;
 		auto buildCellAabb = [cellSize, halfCellSize](int cellX, int cellY)
 		{
@@ -523,10 +523,10 @@ namespace Schematyc2
 			}
 		};
 
-		const bool isDrawAllCells = (CVars::sc_RelevanceGridDebugStatic & 2) != 0;
-		const bool isPrintExtraInfo = (CVars::sc_RelevanceGridDebugStatic & 4) != 0;
-		const bool isLogMemoryStats = (CVars::sc_RelevanceGridDebugStatic & 8) != 0;
-		CVars::sc_RelevanceGridDebugStatic &= ~8;
+		const bool isDrawAllCells = (CVars::sc2_RelevanceGridDebugStatic & 2) != 0;
+		const bool isPrintExtraInfo = (CVars::sc2_RelevanceGridDebugStatic & 4) != 0;
+		const bool isLogMemoryStats = (CVars::sc2_RelevanceGridDebugStatic & 8) != 0;
+		CVars::sc2_RelevanceGridDebugStatic &= ~8;
 
 		if (isLogMemoryStats)
 		{

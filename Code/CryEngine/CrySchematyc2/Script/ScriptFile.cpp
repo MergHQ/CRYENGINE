@@ -1633,7 +1633,7 @@ namespace Schematyc2
 			const IScriptElementPtr& pElement = element.second;
 			if(pElement->GetElementType() == type)
 			{
-				if ((CVars::sc_DiscardOnSave == 0) || ((pElement->GetElementFlags() & EScriptElementFlags::Discard) == 0))
+				if ((CVars::sc2_DiscardOnSave == 0) || ((pElement->GetElementFlags() & EScriptElementFlags::Discard) == 0))
 				{
 					elementsToSave[string(pElement->GetName())].insert( ElementsScopeGuidMap::value_type(pElement->GetScopeGUID(), pElement.get()) );
 				}

@@ -1257,7 +1257,7 @@ namespace Schematyc2
 		{
 			CRY_PROFILE_SECTION_ARG(PROFILE_LOADING_ONLY, "ProcessFunction", pFunction->GetName());
 			static uint32 s_recursionDepth = 0;
-			if(s_recursionDepth >= CVars::sc_MaxRecursionDepth)
+			if(s_recursionDepth >= CVars::sc2_MaxRecursionDepth)
 			{
 				SCHEMATYC2_SYSTEM_METAINFO_CRITICAL_ERROR(
 					SCHEMATYC2_LOG_METAINFO(ECryLinkCommand::Show, SLogMetaItemGUID(pFunction->GetGUID())), 
@@ -1916,13 +1916,13 @@ namespace Schematyc2
 					outputs[iOutput] = stack[iOutput];
 				}
 			}
-			if(CVars::sc_FunctionTimeLimit)
+			if(CVars::sc2_FunctionTimeLimit)
 			{
 				const int64	endTicks = CryGetTicks();
 				const float	time = gEnv->pTimer->TicksToSeconds(endTicks - startTicks);
-				if(time > CVars::sc_FunctionTimeLimit)
+				if(time > CVars::sc2_FunctionTimeLimit)
 				{
-					SCHEMATYC2_SYSTEM_ERROR("Function took more than %f(s) to process: class = %s, function = %s, time = %f(s)", CVars::sc_FunctionTimeLimit, m_pLibClass->GetName(), pFunction->GetName(), time);
+					SCHEMATYC2_SYSTEM_ERROR("Function took more than %f(s) to process: class = %s, function = %s, time = %f(s)", CVars::sc2_FunctionTimeLimit, m_pLibClass->GetName(), pFunction->GetName(), time);
 				}
 			}
 
