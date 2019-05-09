@@ -21,7 +21,6 @@ private:
 
 	void OnAssetOpened();
 	void OnAssetClosed();
-	void OnSelectedVariableChanged(QWidget* pSender);
 	void ResetTree();
 	void OnPlaybackModeChanged(PlaybackMode newMode);
 	void ProcessUserEventsFromCurveEditor(QEvent* pEvent);

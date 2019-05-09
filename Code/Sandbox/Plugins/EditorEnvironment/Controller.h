@@ -63,8 +63,6 @@ public:
 	CCrySignal<void()>                             signalAssetClosed;
 
 	CCrySignal<void()>                             signalNewVariableSelected;
-	CCrySignal<void()>                             signalCurveIsDragging;
-	CCrySignal<void(QWidget* pSender)>             signalSelectedVariableChanged;
 	CCrySignal<void()>                             signalVariableTreeChanged;
 	CCrySignal<void()>                             signalCurveContentChanged;
 

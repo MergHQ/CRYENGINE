@@ -299,7 +299,6 @@ void CController::OnCurveDragging()
 {
 	ApplyVariableChangeToPreset(m_selectedVariableIndex, m_selectedVariableContent);
 	RebuildVariableTreeFromPreset();
-	signalCurveIsDragging();
 }
 
 void CController::OnCurveEditorEndChange()
@@ -334,8 +333,6 @@ void CController::OnVariableTreeEndChange()
 	// 3dEngine data and Curve content are already updated via InterpolateVarTreeChanges
 	GetIEditor()->GetIUndoManager()->Accept(m_pUndoVarCommand->GetDescription());
 	m_pUndoVarCommand.release();
-
-	RebuildVariableTreeFromPreset();
 }
 
 void UpdateToDVarFromCurveContent(ITimeOfDay::IPreset* pPreset, int nVarId, int nSplineId, SCurveEditorContent& content)
