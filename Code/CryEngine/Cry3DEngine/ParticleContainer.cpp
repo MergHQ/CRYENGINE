@@ -803,6 +803,8 @@ void CParticleContainer::Render(SRendParams const& RenParams, SPartRenderParams 
 		else
 			job.pRenderObject->m_fDistance = GetMain().GetNearestDistance(passInfo.GetCamera().GetPosition(), pParams->fSortBoundsScale);
 		job.pRenderObject->m_fSort = pParams->fSortOffset;
+		static_cast<CREParticle*>(job.pRenderObject->m_pRE)->SetBBox(m_bbWorld);
+		job.pRenderObject->m_pRE->m_CustomTexBind[0] = RenParams.nTextureID;
 
 		//
 		// Set remaining SAddParticlesToSceneJob data.
@@ -811,9 +813,6 @@ void CParticleContainer::Render(SRendParams const& RenParams, SPartRenderParams 
 		job.pShaderItem = &pParams->pMaterial->GetShaderItem();
 		if (pParams->fTexAspect == 0.f)
 			non_const(*m_pParams).UpdateTextureAspect();
-
-		job.nCustomTexId = RenParams.nTextureID;
-		job.aabb = m_bbWorld;
 
 		int passId = passInfo.IsShadowPass() ? 1 : 0;
 		int passMask = BIT(passId);

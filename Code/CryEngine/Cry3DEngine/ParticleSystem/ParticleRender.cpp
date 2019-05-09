@@ -15,12 +15,8 @@ struct CRY_ALIGN(CRY_PFX2_PARTICLES_ALIGNMENT) SCachedRenderObject
 
 void CParticleRenderBase::AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams)
 {
-	CParticleEffect* pEffect = pComponent->GetEffect();
 	pComponent->Render.add(this);
 	pComponent->ComputeVertices.add(this);
-	if (m_waterCulling)
-		m_renderObjectBeforeWaterId = pEffect->AddRenderObjectId();
-	m_renderObjectAfterWaterId = pEffect->AddRenderObjectId();
 	pParams->m_requiredShaderType = eST_Particle;
 	pParams->m_renderObjectFlags |= FOB_VERTEX_PULL_MODEL;
 }
@@ -34,17 +30,16 @@ void CParticleRenderBase::Render(CParticleComponentRuntime& runtime, const SRend
 	if (!params.m_pMaterial)
 		return;
 
-	const uint threadId = renderContext.m_passInfo.ThreadID();
 	const auto& emitter = *runtime.GetEmitter();
-	const bool isIndoors = emitter.GetVisEnv().OriginIndoors();
-	const bool renderIndoor = params.m_visibility.m_indoorVisibility != EIndoorVisibility::OutdoorOnly;
-	const bool renderOutdoors = params.m_visibility.m_indoorVisibility != EIndoorVisibility::IndoorOnly;
-	if ((isIndoors && !renderIndoor) || (!isIndoors && !renderOutdoors))
-		return;
-
-	ERenderObjectFlags objFlags = params.m_renderObjectFlags;
-	if (!renderContext.m_lightVolumeId)
-		objFlags &= ~FOB_LIGHTVOLUME;
+	const bool isNear = (emitter.GetRndFlags() & ERF_FOB_NEAREST) || (params.m_renderObjectFlags & FOB_NEAREST);
+	if (!isNear)
+	{
+		const bool isIndoors = emitter.GetVisEnv().OriginIndoors();
+		const bool renderIndoor = params.m_visibility.m_indoorVisibility != EIndoorVisibility::OutdoorOnly;
+		const bool renderOutdoors = params.m_visibility.m_indoorVisibility != EIndoorVisibility::IndoorOnly;
+		if ((isIndoors && !renderIndoor) || (!isIndoors && !renderOutdoors))
+			return;
+	}
 
 	const auto emitterUnderWater = emitter.GetPhysicsEnv().m_tUnderWater;
 	const bool cameraUnderWater  = renderContext.m_passInfo.IsCameraUnderWater();
@@ -52,75 +47,49 @@ void CParticleRenderBase::Render(CParticleComponentRuntime& runtime, const SRend
 	const bool renderBelowWater  = waterVisibility != EWaterVisibility::AboveWaterOnly && emitterUnderWater != ETrinary::If_False;
 	const bool renderAboveWater  = waterVisibility != EWaterVisibility::BelowWaterOnly && emitterUnderWater != ETrinary::If_True;
 
-	if (params.m_renderStateFlags & OS_TRANSPARENT)
+	if (renderContext.m_passInfo.IsShadowPass())
+		AddRenderObject(runtime, renderContext);
+	else if (isNear)
+		AddRenderObject(runtime, renderContext, FOB_NEAREST);
+	else if (params.m_renderStateFlags & OS_TRANSPARENT)
 	{
 		if (m_waterCulling && (cameraUnderWater ? renderAboveWater : renderBelowWater))
-			AddRenderObject(runtime, renderContext, m_renderObjectBeforeWaterId, threadId, objFlags);
+			AddRenderObject(runtime, renderContext);
 		if (cameraUnderWater ? renderBelowWater : renderAboveWater)
-			AddRenderObject(runtime, renderContext, m_renderObjectAfterWaterId, threadId, objFlags | FOB_AFTER_WATER);
+			AddRenderObject(runtime, renderContext, FOB_AFTER_WATER);
 	}
-	else
-	{
-		if (renderAboveWater || renderBelowWater)
-			AddRenderObject(runtime, renderContext, m_renderObjectAfterWaterId, threadId, objFlags);
-	}
+	else if (renderAboveWater || renderBelowWater)
+		AddRenderObject(runtime, renderContext);
 }
 
-void CParticleRenderBase::PrepareRenderObject(const CParticleComponentRuntime& runtime, uint renderObjectId, uint threadId)
+void CParticleRenderBase::AddRenderObject(CParticleComponentRuntime& runtime, const SRenderContext& renderContext, ERenderObjectFlags extraFlags)
 {
 	CRY_PFX2_PROFILE_DETAIL;
-	const SComponentParams& params = runtime.ComponentParams();
-	CRenderObject* pRenderObject = gEnv->pRenderer->EF_GetObject();
-	auto particleMaterial = params.m_pMaterial;
 
-	pRenderObject->SetIdentityMatrix();
-	pRenderObject->m_fAlpha = 1.0f;
-	pRenderObject->m_pCurrMaterial = particleMaterial;
-	pRenderObject->m_pRenderNode = runtime.GetEmitter();
-	pRenderObject->m_ObjFlags = params.m_renderObjectFlags;
-	pRenderObject->m_RState = params.m_renderStateFlags;
-	pRenderObject->m_fSort = 0;
-	pRenderObject->m_pRE = gEnv->pRenderer->EF_CreateRE(eDATA_Particle);
-
-	SRenderObjData* pObjData = pRenderObject->GetObjData();
-	pObjData->m_pParticleShaderData = &params.m_shaderData;
-
-	runtime.GetEmitter()->SetRenderObject(pRenderObject, std::move(particleMaterial), threadId, renderObjectId);
-}
-
-void CParticleRenderBase::AddRenderObject(CParticleComponentRuntime& runtime, const SRenderContext& renderContext, uint renderObjectId, uint threadId, ERenderObjectFlags objFlags)
-{
-	CRY_PFX2_PROFILE_DETAIL;
-	CParticleEmitter& emitter = *runtime.GetEmitter();
-	CRenderObject* pRenderObject = emitter.GetRenderObject(threadId, renderObjectId);
-	if (!pRenderObject)
-	{
-		PrepareRenderObject(runtime, renderObjectId, threadId);
-		pRenderObject = emitter.GetRenderObject(threadId, renderObjectId);
-	}
+	CRenderObject* pRenderObject = runtime.GetRenderObject(renderContext.m_passInfo.ThreadID(), extraFlags);
 	SRenderObjData* pObjData = pRenderObject->GetObjData();
 
 	const float sortBiasSize = 1.0f / 1024.0f;
 	const float numComponents = (float) runtime.GetEffect()->GetNumComponents();
 	const float sortBias = (float) runtime.GetComponent()->GetComponentId() / numComponents + m_sortBias;
 
-	pRenderObject->m_ObjFlags = objFlags;
 	pRenderObject->m_fDistance = renderContext.m_distance;
 	pRenderObject->m_fSort = -sortBias * sortBiasSize * renderContext.m_distance;
 	pRenderObject->SetInstanceDataDirty();
 	pObjData->m_FogVolumeContribIdx = renderContext.m_fogVolumeId;
 	pObjData->m_LightVolumeId = renderContext.m_lightVolumeId;
-	if (const auto p = emitter.m_pTempData)
+	if (const auto p = runtime.GetEmitter()->m_pTempData)
 		reinterpret_cast<Vec4f&>(pObjData->m_fTempVars[0]) = (Vec4f const&)(p->userData.vEnvironmentProbeMults);
 	else
 		reinterpret_cast<Vec4f&>(pObjData->m_fTempVars[0]) = Vec4f(1.0f, 1.0f, 1.0f, 1.0f);
 
-	CParticleJobManager& kernel = GetPSystem()->GetJobManager();
-	kernel.ScheduleComputeVertices(runtime, pRenderObject, renderContext);
-	
-	int passId = renderContext.m_passInfo.IsShadowPass() ? 1 : 0;
-	int passMask = BIT(passId);
-	pRenderObject->m_passReadyMask |= passMask;
+	pRenderObject->m_pRE->m_CustomTexBind[0] = renderContext.m_renderParams.nTextureID;
+
+	int passId = renderContext.m_passInfo.IsShadowPass();
+	static_cast<CREParticle*>(pRenderObject->m_pRE)->SetBBox(runtime.GetBounds());
+	GetPSystem()->GetJobManager().ScheduleComputeVertices(runtime, pRenderObject, renderContext);
+
+	pRenderObject->m_passReadyMask |= BIT(passId);
 
 	renderContext.m_passInfo.GetIRenderView()->AddPermanentObject(
 		pRenderObject,

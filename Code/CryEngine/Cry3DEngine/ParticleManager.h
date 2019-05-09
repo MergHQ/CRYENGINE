@@ -72,8 +72,7 @@ public:
 
 	JobManager::SJobState*   AddUpdateJob(CParticleEmitter* pEmitter);
 
-	SAddParticlesToSceneJob& GetParticlesToSceneJob(const SRenderingPassInfo& passInfo)
-	{ return *m_ParticlesToScene[passInfo.ThreadID()].push_back(); }
+	SAddParticlesToSceneJob& GetParticlesToSceneJob(const SRenderingPassInfo& passInfo);
 
 	void SyncAllUpdateParticlesJobs();
 

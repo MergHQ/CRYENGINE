@@ -562,18 +562,6 @@ namespace gpu_pfx2
 	class IParticleComponentRuntime;
 }
 
-struct CRY_ALIGN(16) SAddParticlesToSceneJob
-{
-	void GetMemoryUsage(ICrySizer* pSizer) const {}
-
-	SShaderItem* pShaderItem;
-	CRenderObject* pRenderObject;
-	IParticleVertexCreator* pVertexCreator = nullptr;
-	gpu_pfx2::IParticleComponentRuntime* pGpuRuntime = nullptr;
-	int16 nCustomTexId;
-	AABB aabb;
-};
-
 #ifdef SUPPORT_HW_MOUSE_CURSOR
 class IHWMouseCursor
 {
@@ -1204,7 +1192,7 @@ struct IRenderer//: public IRendererCallbackServer
 	virtual void PostLevelLoading() = 0;
 	virtual void PostLevelUnload() = 0;
 
-	virtual void EF_AddMultipleParticlesToScene(const SAddParticlesToSceneJob* jobs, size_t numJobs, const SRenderingPassInfo& passInfo) = 0;
+	virtual void EF_AddMultipleParticlesToScene(const struct SAddParticlesToSceneJob* jobs, size_t numJobs, const SRenderingPassInfo& passInfo) = 0;
 	virtual void GetMemoryUsageParticleREs(ICrySizer* pSizer) {}
 
 	/////////////////////////////////////////////////////////////////////////////////

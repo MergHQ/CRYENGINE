@@ -28,7 +28,6 @@ CParticleEffect::CParticleEffect()
 	: m_editVersion(0)
 	, m_dirty(true)
 	, m_substitutedPfx1(false)
-	, m_numRenderObjects(0)
 {
 	m_pAttributes = TAttributeTablePtr(new CAttributeTable);
 }
@@ -45,7 +44,6 @@ void CParticleEffect::Compile()
 	if (!m_dirty)
 		return;
 
-	m_numRenderObjects = 0;
 	m_environFlags = 0;
 	for (auto& component : m_components)
 	{
@@ -161,16 +159,6 @@ string CParticleEffect::MakeUniqueName(const CParticleComponent* forComponent, c
 	while (FindComponentByName(newName));
 
 	return newName;
-}
-
-uint CParticleEffect::AddRenderObjectId()
-{
-	return m_numRenderObjects++;
-}
-
-uint CParticleEffect::GetNumRenderObjectIds() const
-{
-	return m_numRenderObjects;
 }
 
 string CParticleEffect::GetShortName() const

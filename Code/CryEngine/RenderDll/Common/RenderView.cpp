@@ -1497,6 +1497,17 @@ void CRenderView::AddRenderItem(CRenderElement* pElem, CRenderObject* RESTRICT_P
 		objDistance = crymath::sqrt_fast(Distance::Point_AABBSq(position, transformed_aabb)) * GetZoomFactor();
 	}
 
+	//////////////////////////////////////////////////////////////////////////
+	// Permanent objects support.
+	//////////////////////////////////////////////////////////////////////////
+	if (pObj->m_bPermanent)
+	{
+		CPermanentRenderObject* RESTRICT_POINTER pPermanentRendObj = reinterpret_cast<CPermanentRenderObject*>(pObj);
+		auto renderPassType = passInfo.IsShadowPass() ? CPermanentRenderObject::eRenderPass_Shadows : CPermanentRenderObject::eRenderPass_General;
+		pPermanentRendObj->AddRenderItem(pElem, shaderItem, aabb, objDistance, nBatchFlags, nList, renderPassType);
+		return;
+	}
+
 	SRendItem ri = {0};
 
 	// First by ShaderID, then by ShaderTechnique, then by ShaderResourceID
@@ -1507,38 +1518,6 @@ void CRenderView::AddRenderItem(CRenderElement* pElem, CRenderObject* RESTRICT_P
 	ri.pElem = pElem;
 	ri.fDist = objDistance;
 	//ri.nStencRef = pObj->m_nClipVolumeStencilRef + 1; // + 1, we start at 1. 0 is reserved for MSAAed areas.
-
-	//////////////////////////////////////////////////////////////////////////
-	// Permanent objects support.
-	//////////////////////////////////////////////////////////////////////////
-	if (pObj->m_bPermanent)
-	{
-		CPermanentRenderObject* RESTRICT_POINTER pPermanentRendObj = reinterpret_cast<CPermanentRenderObject*>(pObj);
-		WriteLock lock(pPermanentRendObj->m_accessLock); // Block on write access to the render object
-
-		// Must add this render item to the local array.
-		// This is not thread safe!!!, code at 3d engine makes sure this can never be called simultaneously on the same RenderObject on the same pass type.
-		//  General and shadows can be called simultaneously, they are writing to the separate arrays.
-		CPermanentRenderObject::SPermanentRendItem pri = {0};
-
-		pri.m_sortValue = ri.SortVal;
-		pri.m_nBatchFlags = nBatchFlags;
-		pri.m_nRenderList = nList;
-		pri.m_pCompiledObject = nullptr;
-		pri.m_pRenderElement = pElem;
-		pri.m_fDist = objDistance;
-		//pri.nStencRef = ri.nStencRef
-
-		pri.m_ElmFlags = pElem->m_Flags;
-		pri.m_ObjFlags = objFlags;
-		pri.m_aabb = aabb;
-
-		auto renderPassType = passInfo.IsShadowPass() ? CPermanentRenderObject::eRenderPass_Shadows : CPermanentRenderObject::eRenderPass_General;
-		pPermanentRendObj->m_permanentRenderItems[renderPassType].push_back(pri);
-
-		pPermanentRendObj->PrepareForUse(pElem, renderPassType);
-		return;
-	}
 
 	if (m_bTrackUncompiledItems)
 	{
@@ -1757,19 +1736,13 @@ void CRenderView::ExpandPermanentRenderObjects()
 
 					if (!(volatile CCompiledRenderObject*)pri.m_pCompiledObject)
 					{
-						bool bRequireCompiledRenderObject = false;
-						// This item will need a temporary compiled object
 						if (pri.m_pRenderElement && (pri.m_pRenderElement->mfGetType() == eDATA_Mesh || pri.m_pRenderElement->mfGetType() == eDATA_Particle))
 						{
-							bRequireCompiledRenderObject = true;
-						}
-
-						if (bRequireCompiledRenderObject)
-						{
+							// This item will need a temporary compiled object
 							static CryCriticalSectionNonRecursive allocCS;
 							AUTO_LOCK_T(CryCriticalSectionNonRecursive, allocCS);
 
-							if (((volatile CCompiledRenderObject*)pri.m_pCompiledObject) == nullptr)
+							if (!(volatile CCompiledRenderObject*)pri.m_pCompiledObject)
 							{
 								pri.m_pCompiledObject = AllocCompiledObject(pRenderObject, pri.m_pRenderElement, shaderItem); // Allocate new CompiledRenderObject.
 								needsCompilation = true;
