@@ -356,7 +356,17 @@ bool CGameEngine::Init(bool bPreviewMode, bool bTestMode, bool bShaderCacheGen, 
 	// We do this manually in the Editor
 	startupParams.bExecuteCommandLine = false;
 
-	if (strstr(sInCmdLine, "-project") == 0)
+	if (strstr(sInCmdLine, "-create_project"))
+	{
+		const string projectPath = AskUserToSpecifyProject(SplashScreen::GetSplashScreen(), true, CSelectProjectDialog::Tab::Create);
+		if (projectPath.empty())
+		{
+			// Exit Sandbox
+			return false;
+		}
+		AppendProjectPathToCommandLine(projectPath, startupParams);
+	}
+	else if (strstr(sInCmdLine, "-project") == 0)
 	{
 		const string engineFolder = FindCryEngineRootFolder();
 		if (IsProjectSpecifiedInSystemConfig(engineFolder))
@@ -378,8 +388,7 @@ bool CGameEngine::Init(bool bPreviewMode, bool bTestMode, bool bShaderCacheGen, 
 				return false;
 			}
 
-			cry_strcat(startupParams.szSystemCmdLine, " -project ");
-			cry_strcat(startupParams.szSystemCmdLine, projPath);
+			AppendProjectPathToCommandLine(projPath, startupParams);
 		}
 	}
 

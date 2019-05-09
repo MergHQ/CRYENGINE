@@ -181,7 +181,7 @@ void CParticleSystem::Update()
 
 void CParticleSystem::SyncMainWithRender()
 {
-	if (ThreadMode() >= 1)
+	if (ThreadMode() != 0)
 		m_jobManager.SynchronizeUpdates();
 		
 	const CCamera& camera = gEnv->p3DEngine->GetRenderingCamera();

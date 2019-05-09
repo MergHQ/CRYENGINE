@@ -15,6 +15,7 @@ CVariablesWidget::CVariablesWidget(CController& controller)
 {
 	m_pPropertyTree = new QPropertyTree(this);
 	m_pPropertyTree->setHideSelection(false);
+	m_pPropertyTree->setMultiSelection(false);
 
 	m_pPropertyTree->setUndoEnabled(false, false);
 	m_pPropertyTree->setMinimumWidth(300);
@@ -30,13 +31,11 @@ CVariablesWidget::CVariablesWidget(CController& controller)
 	// Signals from this Tab to controller
 	connect(m_pPropertyTree, &QPropertyTree::signalSelected, this, &CVariablesWidget::OnTreeSelectionChanged);
 	connect(m_pPropertyTree, &QPropertyTree::signalBeginUndo, this, &CVariablesWidget::OnSelectedVariableStartChange);
-	connect(m_pPropertyTree, &QPropertyTree::signalEndUndo, this, &CVariablesWidget::OnSelectedVariableEndChange);
+	connect(m_pPropertyTree, &QPropertyTree::signalChanged, this, &CVariablesWidget::OnSelectedVariableEndChange);
 
 	// Signals from controller for UI updating
-
 	m_controller.signalAssetOpened.Connect(this, &CVariablesWidget::OnAssetOpened);
 	m_controller.signalAssetClosed.Connect(this, &CVariablesWidget::OnAssetClosed);
-	m_controller.signalSelectedVariableChanged.Connect(this, &CVariablesWidget::OnSelectedVariableChanged);
 	m_controller.signalVariableTreeChanged.Connect(this, &CVariablesWidget::ResetTree);
 	m_controller.signalPlaybackModeChanged.Connect(this, &CVariablesWidget::OnPlaybackModeChanged);
 	m_controller.signalHandleKeyEventsInVarPropertyTree.Connect(this, &CVariablesWidget::ProcessUserEventsFromCurveEditor);
@@ -46,7 +45,6 @@ CVariablesWidget::~CVariablesWidget()
 {
 	m_controller.signalAssetOpened.DisconnectObject(this);
 	m_controller.signalAssetClosed.DisconnectObject(this);
-	m_controller.signalSelectedVariableChanged.DisconnectObject(this);
 	m_controller.signalVariableTreeChanged.DisconnectObject(this);
 	m_controller.signalPlaybackModeChanged.DisconnectObject(this);
 	m_controller.signalHandleKeyEventsInVarPropertyTree.DisconnectObject(this);
@@ -104,17 +102,11 @@ void CVariablesWidget::OnAssetClosed()
 	m_pPropertyTree->detach();
 }
 
-void CVariablesWidget::OnSelectedVariableChanged(QWidget* pSender)
-{
-	if (pSender != this)
-	{
-		m_pPropertyTree->attach(Serialization::SStruct(m_controller.GetVariables()));
-	}
-}
-
 void CVariablesWidget::ResetTree()
 {
-	m_pPropertyTree->attach(Serialization::SStruct(m_controller.GetVariables()));
+	blockSignals(true);
+	m_pPropertyTree->revert();
+	blockSignals(false);
 }
 
 void CVariablesWidget::OnPlaybackModeChanged(PlaybackMode newMode)

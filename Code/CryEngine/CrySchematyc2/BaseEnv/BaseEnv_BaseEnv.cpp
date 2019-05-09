@@ -72,7 +72,7 @@ namespace SchematycBaseEnv
 	{
 		if (IConsole* pConsole = gEnv->pConsole)
 		{
-			pConsole->UnregisterVariable("sc_Update");
+			pConsole->UnregisterVariable("sc2_Update");
 		}
 	}
 

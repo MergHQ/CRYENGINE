@@ -1486,18 +1486,26 @@ float CD3D9Renderer::GetGPUFrameTime()
 
 void CD3D9Renderer::GetRenderTimes(SRenderTimes& outTimes)
 {
-	// NOTE: returning un-smoothed data, smoothed can be requested using ID "RT_COMMAND_BUF_COUNT"
-	const SRenderStatistics::SFrameSummary& rtSummary = m_pPipelineProfiler->GetFrameSummary(GetMainThreadID());
+	if (m_pPipelineProfiler && m_pPipelineProfiler->IsEnabled())
+	{
+		// NOTE: returning un-smoothed data, smoothed can be requested using ID "RT_COMMAND_BUF_COUNT"
+		const SRenderStatistics::SFrameSummary& rtSummary = m_pPipelineProfiler->GetFrameSummary(GetMainThreadID());
 
-	// Query render times on main thread
-	outTimes.fWaitForMain          = rtSummary.waitForMain;
-	outTimes.fWaitForRender        = rtSummary.waitForRender;
-	outTimes.fWaitForGPU_MT        = rtSummary.waitForGPU_MT;
-	outTimes.fWaitForGPU_RT        = rtSummary.waitForGPU_RT;
-	outTimes.fTimeProcessedRT      = rtSummary.renderTime;
-	outTimes.fTimeProcessedRTScene = rtSummary.sceneTime;
-	outTimes.fTimeProcessedGPU     = rtSummary.gpuFrameTime;
-	outTimes.fTimeGPUIdlePercent   = rtSummary.gpuIdlePerc;
+		// Query render times on main thread
+		outTimes.fWaitForMain          = rtSummary.waitForMain;
+		outTimes.fWaitForRender        = rtSummary.waitForRender;
+		outTimes.fWaitForGPU_MT        = rtSummary.waitForGPU_MT;
+		outTimes.fWaitForGPU_RT        = rtSummary.waitForGPU_RT;
+		outTimes.fTimeProcessedRT      = rtSummary.renderTime;
+		outTimes.fTimeProcessedRTScene = rtSummary.sceneTime;
+		outTimes.fTimeProcessedGPU     = rtSummary.gpuFrameTime;
+		outTimes.fTimeGPUIdlePercent   = rtSummary.gpuIdlePerc;
+	}
+	else
+	{
+		// fall back to CRenderer which doesn't need GPU timers
+		CRenderer::GetRenderTimes(outTimes);
+	}
 }
 #endif
 

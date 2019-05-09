@@ -88,7 +88,7 @@ namespace Schematyc2
 	CScriptRegistry::CScriptRegistry()
 	{
 		m_pRoot.reset(new CScriptRoot(ScriptRegistryUtils::g_dummyScriptFile));
-		REGISTER_COMMAND("sc_SaveAllScriptFiles", ScriptRegistryUtils::SaveAllScriptFilesCommand, VF_NULL, "Save all Schematyc script file regardless of whether they have been modified");
+		REGISTER_COMMAND("sc2_SaveAllScriptFiles", ScriptRegistryUtils::SaveAllScriptFilesCommand, VF_NULL, "Save all Schematyc script file regardless of whether they have been modified");
 	}
 
 	IScriptFile* CScriptRegistry::LoadFile(const char* szFileName)
@@ -407,7 +407,7 @@ namespace Schematyc2
 			stack_string extension = "*.";
 			extension.append(gEnv->pSchematyc2->GetOldScriptExtension());
 			FileUtils::EFileEnumFlags fileEnumFlags = FileUtils::EFileEnumFlags::Recursive;
-			if(CVars::sc_IgnoreUnderscoredFolders)
+			if(CVars::sc2_IgnoreUnderscoredFolders)
 			{
 				fileEnumFlags |= FileUtils::EFileEnumFlags::IgnoreUnderscoredFolders;
 			}
@@ -431,7 +431,7 @@ namespace Schematyc2
 					MEMSTAT_CONTEXT(EMemStatContextType::Other, "Schematyc: Enumerate Files");
 					// Configure file enumeration flags.
 					FileUtils::EFileEnumFlags fileEnumFlags = FileUtils::EFileEnumFlags::Recursive;
-					if(CVars::sc_IgnoreUnderscoredFolders)
+					if(CVars::sc2_IgnoreUnderscoredFolders)
 					{
 						fileEnumFlags |= FileUtils::EFileEnumFlags::IgnoreUnderscoredFolders;
 					}
@@ -769,7 +769,7 @@ namespace Schematyc2
 	{
 		CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 		const bool bOnDisk = (attributes & _A_IN_CRYPAK) == 0;
-		if(bOnDisk || !CVars::sc_IgnorePAKFiles)
+		if(bOnDisk || !CVars::sc2_IgnorePAKFiles)
 		{
 			CScriptFilePtr pFile = CreateFile(szFileName, SGUID(), bOnDisk ? EScriptFileFlags::OnDisk : EScriptFileFlags::None);
 			if(pFile)

@@ -1122,7 +1122,7 @@ namespace Schematyc2
 			return true;
 
 		case EGraphExecutionFilter::DevModeOrLoggingEnabled:
-			return gEnv->pSystem->IsDevMode() || CVars::sc_LogToFile != 0;
+			return gEnv->pSystem->IsDevMode() || CVars::sc2_LogToFile != 0;
 
 		case EGraphExecutionFilter::DevModeOnly:
 			return gEnv->pSystem->IsDevMode();
