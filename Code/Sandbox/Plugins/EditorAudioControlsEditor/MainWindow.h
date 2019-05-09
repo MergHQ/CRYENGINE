@@ -6,10 +6,8 @@
 #include <EditorFramework/Editor.h>
 #include <CrySystem/ISystem.h>
 
+class QAction;
 class QCommandAction;
-class QLabel;
-class QToolBar;
-class QVBoxLayout;
 
 namespace ACE
 {
@@ -95,6 +93,7 @@ private:
 	QCommandAction*           m_pSaveAction;
 	QCommandAction*           m_pRefreshAction;
 	QCommandAction*           m_pReloadAction;
+	QAction*                  m_pPreferencesAction;
 	CFileMonitorSystem* const m_pMonitorSystem;
 	bool                      m_isModified;
 	bool                      m_isReloading;

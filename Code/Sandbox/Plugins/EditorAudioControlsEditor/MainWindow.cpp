@@ -24,11 +24,7 @@
 
 #include <QAction>
 #include <QGuiApplication>
-#include <QHBoxLayout>
 #include <QKeyEvent>
-#include <QLabel>
-#include <QToolBar>
-#include <QVBoxLayout>
 
 namespace ACE
 {
@@ -85,6 +81,7 @@ CMainWindow::CMainWindow()
 	: m_pSaveAction(nullptr)
 	, m_pRefreshAction(nullptr)
 	, m_pReloadAction(nullptr)
+	, m_pPreferencesAction(nullptr)
 	, m_pMonitorSystem(new CFileMonitorSystem(1000, this))
 	, m_isModified(false)
 	, m_isReloading(false)
@@ -160,9 +157,10 @@ void CMainWindow::UpdateState()
 {
 	bool const middleWareFound = g_pIImpl != nullptr;
 
-	m_pSaveAction->setEnabled(middleWareFound);
+	m_pSaveAction->setEnabled(middleWareFound && m_isModified);
 	m_pReloadAction->setEnabled(middleWareFound);
 	m_pRefreshAction->setEnabled(middleWareFound);
+	m_pPreferencesAction->setEnabled(middleWareFound);
 
 	setWindowTitle(QString("%1 (%2)").arg(g_szEditorName).arg(middleWareFound ? g_implInfo.name.c_str() : "Warning: No middleware implementation!"));
 }
@@ -184,8 +182,8 @@ void CMainWindow::InitMenu()
 	m_pRefreshAction->setIcon(CryIcon("icons:Audio/Refresh_Audio.ico"));
 
 	int const section = pMenuEdit->GetNextEmptySection();
-	QAction const* const pPreferencesAction = pMenuEdit->CreateAction(tr("Preferences..."), section);
-	QObject::connect(pPreferencesAction, &QAction::triggered, this, &CMainWindow::OnPreferencesDialog);
+	m_pPreferencesAction = pMenuEdit->CreateAction(tr("Preferences..."), section);
+	QObject::connect(m_pPreferencesAction, &QAction::triggered, this, &CMainWindow::OnPreferencesDialog);
 }
 
 //////////////////////////////////////////////////////////////////////////
