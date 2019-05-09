@@ -68,12 +68,44 @@ end_sources()
 if(AUDIO_ADX2)
 	if(WINDOWS)
 		set( ADX2_PLATFORM_FOLDER pc )
-		set( ADX2_LIB_FOLDER x64 )
+		set( ADX2_LIBS_FOLDER libs/x64 )
 		set( ADX2_LIBS
 			cri_base_pcx64
+			cri_framework_pcx64
 			cri_file_system_pcx64
 			cri_atom_pcx64
 			cri_atom_monitor_pcx64
+			cri_mana_pcx64
+		)
+	elseif(DURANGO)
+		set( ADX2_PLATFORM_FOLDER xboxone )
+		set( ADX2_LIBS_FOLDER libs )
+		set( ADX2_LIBS
+			cri_base_xboxone
+			cri_framework_xboxone
+			cri_file_system_xboxone
+			cri_atom_xboxone
+			cri_atom_monitor_xboxone
+			cri_mana_xboxone
+		)
+	elseif(ORBIS)
+		set( ADX2_PLATFORM_FOLDER ps4 )
+		set( ADX2_LIBS_FOLDER libs )
+		set( ADX2_LIBS
+			libcri_base_ps4
+			libcri_framework_ps4
+			libcri_file_system_ps4
+			libcri_atom_ps4
+			libcri_atom_monitor_ps4
+			libcri_mana_ps4
+		)
+	elseif(LINUX)
+		set( ADX2_PLATFORM_FOLDER linux )
+		set( ADX2_LIBS_FOLDER libs/x86_64-unknown-linux-gnu )
+		set( ADX2_LIBS
+			libcri_base
+			libcri_file_system
+			libcri_atom
 		)
 	endif()
 
@@ -81,7 +113,7 @@ if(AUDIO_ADX2)
 	target_compile_definitions(${THIS_PROJECT} PRIVATE $<$<NOT:$<CONFIG:Release>>:CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE>)
 	target_include_directories(${THIS_PROJECT} PRIVATE ../../Common "${SDK_DIR}/Audio/adx2/SDK/${ADX2_PLATFORM_FOLDER}/include" )
 
-	set( ADX2_LIB_Path "${SDK_DIR}/Audio/adx2/SDK/${ADX2_PLATFORM_FOLDER}/libs/${ADX2_LIB_FOLDER}/" )
+	set( ADX2_LIB_Path "${SDK_DIR}/Audio/adx2/SDK/${ADX2_PLATFORM_FOLDER}/${ADX2_LIBS_FOLDER}/" )
 	make_library(ADX2_LIBS "${ADX2_LIB_Path}")
 	target_link_libraries( ${THIS_PROJECT} PRIVATE ${ADX2_LIBS} )
 
