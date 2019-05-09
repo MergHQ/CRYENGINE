@@ -216,7 +216,7 @@ void CVars::Init()
 	                   " z = freeze particle system"
 	                   " t = used by developers to debug test algorithms");
 	REGISTER_CVAR(e_ParticlesThread, 4, VF_NULL,
-	              "Enable particle threading: 1 = basic, 4 = optimal");
+	              "Enable particle threading: 1 = basic, 4 = optimal, 5 = asynchronous");
 	REGISTER_CVAR(e_ParticlesCollisions, 3,  VF_BITFIELD,
 	              "Enable collisions for non-physical particles:\n"
 	              "  1 = terrain only, 2 = static objects also, 3 = dynamic objects also");

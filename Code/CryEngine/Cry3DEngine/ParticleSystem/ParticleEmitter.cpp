@@ -140,7 +140,7 @@ void CParticleEmitter::Render(const struct SRendParams& rParam, const SRendering
 	if (ThreadMode() >= 4 && !WasRenderedLastFrame())
 	{
 		// Not currently scheduled for high priority update
-		jobManager.ScheduleUpdateEmitter(this);
+		jobManager.ScheduleUpdateEmitter(this, !GetCEffect()->RenderDeferred.empty() ? JobManager::eHighPriority : JobManager::eRegularPriority);
 	}
 
 	if (m_pEffect->RenderDeferred.size())
