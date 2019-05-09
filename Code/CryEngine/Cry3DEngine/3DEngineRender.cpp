@@ -1641,8 +1641,8 @@ void C3DEngine::RenderScene(const int nRenderFlags, const SRenderingPassInfo& pa
 	////////////////////////////////////////////////////////////////////////////////////////
 	for (int t = 0; t < nThreadsNum; t++)
 	{
-		CThreadSafeRendererContainer<SVegetationSpriteInfo>& rList = m_pObjManager->m_arrVegetationSprites[passInfo.GetRecursiveLevel()][t];
-		rList.resize(0);
+		CryMT::CThreadSafePushContainer<SVegetationSpriteInfo>& rList = m_pObjManager->m_arrVegetationSprites[passInfo.GetRecursiveLevel()][t];
+		rList.clear();
 	}
 
 	////////////////////////////////////////////////////////////////////////////////////////

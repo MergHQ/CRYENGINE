@@ -8,8 +8,9 @@
 
 #include <CryCore/Containers/CryListenerSet.h>
 #include <CryMemory/IMemory.h>
-#include <CryThreading/CryThreadSafeRendererContainer.h>
 #include <CryThreading/IJobManager.h>
+#include <CryCore/Containers/CryListenerSet.h>
+#include <CryThreading/CryThreadSafePushContainer.h>
 
 #ifdef DrawText
 	#undef DrawText
@@ -1201,7 +1202,7 @@ private:
 	PodArray<int>       m_arrProcessStreamingLatencyTexNum;
 
 	// fields which are used by SRenderingPass to store over frame information
-	CThreadSafeRendererContainer<CCamera> m_RenderingPassCameras[2];                 // camera storage for SRenderingPass, the cameras cannot be stored on stack to allow job execution
+	CryMT::CThreadSafePushContainer<CCamera> m_RenderingPassCameras[2];  // camera storage for SRenderingPass, the cameras cannot be stored on stack to allow job execution
 
 	float m_fZoomFactor;                                // zoom factor of m_RenderingCamera
 	float m_fPrevZoomFactor;                            // zoom factor of m_RenderingCamera from last frame

@@ -422,7 +422,7 @@ void CVegetation::Render(const SRenderingPassInfo& passInfo, const CLodValue& lo
 
 	if (m_pSpriteInfo && m_pSpriteInfo->ucAlphaTestRef < 255 && GetCVars()->e_VegetationSprites && !passInfo.IsShadowPass())
 	{
-		CThreadSafeRendererContainer<SVegetationSpriteInfo>& arrSpriteInfo = GetObjManager()->m_arrVegetationSprites[passInfo.GetRecursiveLevel()][passInfo.ThreadID()];
+		CryMT::CThreadSafePushContainer<SVegetationSpriteInfo>& arrSpriteInfo = GetObjManager()->m_arrVegetationSprites[passInfo.GetRecursiveLevel()][passInfo.ThreadID()];
 		arrSpriteInfo.push_back(*m_pSpriteInfo);
 	}
 

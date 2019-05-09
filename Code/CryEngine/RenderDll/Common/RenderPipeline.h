@@ -2,8 +2,6 @@
 
 #pragma  once
 
-#include <CryThreading/CryThreadSafeRendererContainer.h>
-#include <CryThreading/CryThreadSafeWorkerContainer.h>
 #include "Shadow_Renderer.h"
 
 #include "LightVolumeBuffer.h"

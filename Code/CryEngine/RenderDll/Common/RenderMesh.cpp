@@ -590,10 +590,8 @@ CRenderMesh::~CRenderMesh()
 	// make sure no subset rendermesh job is still running which uses this mesh
 	for(int j=0;j<RT_COMMAND_BUF_COUNT;++j)
 	{
-		size_t nNumSubSetRenderMeshJobs = m_meshSubSetRenderMeshJobs[j].size();
-		for( size_t i = 0 ; i < nNumSubSetRenderMeshJobs ; ++i )
+		for(SMeshSubSetIndicesJobEntry& rSubSetJob : m_meshSubSetRenderMeshJobs[j])
 		{
-			SMeshSubSetIndicesJobEntry &rSubSetJob = m_meshSubSetRenderMeshJobs[j][i];
 			if(rSubSetJob.m_pSrcRM == this )
 			{
 				gEnv->pJobManager->WaitForJob(rSubSetJob.jobState);
@@ -603,11 +601,11 @@ CRenderMesh::~CRenderMesh()
 	}
 
 	// remove ourself from deferred subset mesh garbage collection
-	for(size_t i = 0 ; i < m_deferredSubsetGarbageCollection[nThreadID].size() ; ++i )
+	for (CRenderMesh*& pMesh : m_deferredSubsetGarbageCollection[nThreadID])
 	{
-		if(m_deferredSubsetGarbageCollection[nThreadID][i] == this)
+		if (pMesh == this)
 		{
-			m_deferredSubsetGarbageCollection[nThreadID][i] = NULL;
+			pMesh = NULL;
 		}
 	}
 
@@ -5097,8 +5095,8 @@ bool CRenderMesh::FillGeometryInfo(CRenderElement::SGeometryInfo& geom)
 	return !streamsMissing;
 }
 
-CThreadSafeRendererContainer<CRenderMesh*> CRenderMesh::m_deferredSubsetGarbageCollection[RT_COMMAND_BUF_COUNT];
-CThreadSafeRendererContainer<SMeshSubSetIndicesJobEntry> CRenderMesh::m_meshSubSetRenderMeshJobs[RT_COMMAND_BUF_COUNT];
+CryMT::CThreadSafePushContainer<CRenderMesh*> CRenderMesh::m_deferredSubsetGarbageCollection[RT_COMMAND_BUF_COUNT];
+CryMT::CThreadSafePushContainer<SMeshSubSetIndicesJobEntry> CRenderMesh::m_meshSubSetRenderMeshJobs[RT_COMMAND_BUF_COUNT];
 
 ///////////////////////////////////////////////////////////////////////////////
 void CRenderMesh::Render(CRenderObject* pObj, const SRenderingPassInfo& passInfo)
@@ -5356,7 +5354,7 @@ IRenderMesh* CRenderMesh::GetRenderMeshForSubsetMask(SRenderObjData* pOD, hidema
 	}
 
 	// subset mesh was not found, start job to create one
-	SMeshSubSetIndicesJobEntry* pSubSetJob = ::new(m_meshSubSetRenderMeshJobs[passInfo.ThreadID()].push_back_new())SMeshSubSetIndicesJobEntry();
+	SMeshSubSetIndicesJobEntry* pSubSetJob = m_meshSubSetRenderMeshJobs[passInfo.ThreadID()].push_back_new();
 	pSubSetJob->m_pSrcRM          = pSrcRM;
 	pSubSetJob->m_pIndexRM        = NULL;
 	pSubSetJob->m_nMeshSubSetMask = nMeshSubSetMask;
@@ -5377,20 +5375,17 @@ void CRenderMesh::RT_PerFrameTick()
 	const threadID nThreadID = gRenDev->GetRenderThreadID();
 
 	// perform all required garbage collections
-	m_deferredSubsetGarbageCollection[nThreadID].CoalesceMemory();
-	for (size_t i = 0; i < m_deferredSubsetGarbageCollection[nThreadID].size(); ++i)
+	for (CRenderMesh* pMesh : m_deferredSubsetGarbageCollection[nThreadID])
 	{
-		if (m_deferredSubsetGarbageCollection[nThreadID][i])
-			m_deferredSubsetGarbageCollection[nThreadID][i]->GarbageCollectSubsetRenderMeshes();
+		if (pMesh)
+			pMesh->GarbageCollectSubsetRenderMeshes();
 	}
-	m_deferredSubsetGarbageCollection[nThreadID].resize(0);
+	m_deferredSubsetGarbageCollection[nThreadID].clear();
 
 	// add all newly generated subset meshes
-	bool bJobsStillRunning          = false;
-	size_t nNumSubSetRenderMeshJobs = m_meshSubSetRenderMeshJobs[nThreadID].size();
-	for (size_t i = 0; i < nNumSubSetRenderMeshJobs; ++i)
+	bool bJobsStillRunning = false;
+	for (SMeshSubSetIndicesJobEntry& rSubSetJob : m_meshSubSetRenderMeshJobs[nThreadID])
 	{
-		SMeshSubSetIndicesJobEntry& rSubSetJob = m_meshSubSetRenderMeshJobs[nThreadID][i];
 		if (rSubSetJob.jobState.IsRunning())
 		{
 			bJobsStillRunning = true;
@@ -5411,7 +5406,7 @@ void CRenderMesh::RT_PerFrameTick()
 	}
 	if (!bJobsStillRunning)
 	{
-		m_meshSubSetRenderMeshJobs[nThreadID].resize(0);
+		m_meshSubSetRenderMeshJobs[nThreadID].clear();
 	}
 }
 
@@ -5420,20 +5415,20 @@ void CRenderMesh::ClearJobResources()
 {
 	for (int i = 0; i < RT_COMMAND_BUF_COUNT; ++i)
 	{
-		for (size_t j = 0, size = m_deferredSubsetGarbageCollection[i].size();  j < size; ++j)
+		for (CRenderMesh* pMesh : m_deferredSubsetGarbageCollection[i])
 		{
-			if (m_deferredSubsetGarbageCollection[i][j])
+			if (pMesh)
 			{
-				m_deferredSubsetGarbageCollection[i][j]->GarbageCollectSubsetRenderMeshes();
+				pMesh->GarbageCollectSubsetRenderMeshes();
 			}
 		}
-		stl::free_container(m_deferredSubsetGarbageCollection[i]);
+		m_deferredSubsetGarbageCollection[i].reset_container();
 
-		for (size_t j = 0, size = m_meshSubSetRenderMeshJobs[i].size(); j < size; ++j)
+		for (SMeshSubSetIndicesJobEntry& rJobEntry : m_meshSubSetRenderMeshJobs[i])
 		{
-			gEnv->pJobManager->WaitForJob(m_meshSubSetRenderMeshJobs[i][j].jobState);
+			gEnv->pJobManager->WaitForJob(rJobEntry.jobState);
 		}
-		stl::free_container(m_meshSubSetRenderMeshJobs[i]);
+		m_meshSubSetRenderMeshJobs[i].reset_container();
 	}
 }
 

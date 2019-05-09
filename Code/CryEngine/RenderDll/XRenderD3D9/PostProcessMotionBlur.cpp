@@ -16,7 +16,8 @@
 #pragma warning(disable: 4244)
 
 CMotionBlur::OMBParamsMap CMotionBlur::m_pOMBData[3];
-CThreadSafeRendererContainer<CMotionBlur::OMBParamsMap::value_type> CMotionBlur::m_FillData[RT_COMMAND_BUF_COUNT];
+
+CryMT::CThreadSafePushContainer<CMotionBlur::OMBParamsMap::value_type> CMotionBlur::m_FillData[RT_COMMAND_BUF_COUNT];
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -75,21 +76,23 @@ void CMotionBlur::OnBeginFrame(const SRenderingPassInfo& passInfo)
 void CMotionBlur::InsertNewElements()
 {
 	uint32 nThreadID = gRenDev->GetRenderThreadID();
-	if (m_FillData[nThreadID].empty())
+	auto& activeFillData = m_FillData[nThreadID];
+	if (activeFillData.empty())
 		return;
 
 	const uint32 nFrameID = gRenDev->GetRenderFrameID();
 	const uint32 nObjFrameWriteID = (nFrameID - 1) % 3;
 
-	m_FillData[nThreadID].CoalesceMemory();
-	m_pOMBData[nObjFrameWriteID].insert(&m_FillData[nThreadID][0], &m_FillData[nThreadID][0] + m_FillData[nThreadID].size());
-	m_FillData[nThreadID].resize(0);
+	m_pOMBData[nObjFrameWriteID].insert(activeFillData.begin(), activeFillData.end());
+	m_FillData[nThreadID].clear();
 }
 
 void CMotionBlur::FreeData()
 {
 	for (int i = 0; i < RT_COMMAND_BUF_COUNT; ++i)
+	{
 		m_FillData[i].clear();
+	}
 
 	for (size_t i = 0; i < CRY_ARRAY_COUNT(m_pOMBData); ++i)
 	{

@@ -152,7 +152,9 @@ void CObjManager::UnloadObjects(bool bDeleteAll)
 	for (size_t rl = 0; rl < MAX_RECURSION_LEVELS; ++rl)
 	{
 		for (size_t ti = 0; ti < nThreadsNum; ++ti)
-			stl::free_container(m_arrVegetationSprites[rl][ti]);
+		{
+			m_arrVegetationSprites[rl][ti].reset_container();
+		}
 	}
 
 	m_lstStaticTypes.Free();

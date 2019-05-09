@@ -9,7 +9,6 @@
 #include <CryMemory/CrySizer.h>
 #include <CryRenderer/IFlares.h>
 #include <CryRenderer/VertexFormats.h>
-#include <CryThreading/CryThreadSafeRendererContainer.h>
 
 class CMaterial;
 class CREMesh;

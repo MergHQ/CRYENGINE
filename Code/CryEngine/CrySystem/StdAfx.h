@@ -177,8 +177,6 @@
 #include <CryExtension/Conversion.h>
 #include <CryExtension/RegFactoryNode.h>
 
-#include <CryThreading/CryThreadSafeRendererContainer.h>
-
 #include <CryRenderer/IScaleform.h> // expensive header
 #include <CryRenderer/IRenderer.h> // expensive header
 

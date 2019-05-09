@@ -604,8 +604,8 @@ void C3DEngine::UnloadLevel()
 
 	//////////////////////////////////////////////////////////////////////////
 	// clear data used for SRenderingPass
-	stl::free_container(m_RenderingPassCameras[0]);
-	stl::free_container(m_RenderingPassCameras[1]);
+	m_RenderingPassCameras[0].reset_container();
+	m_RenderingPassCameras[1].reset_container();
 	stl::free_container(m_deferredRenderProxyStreamingPriorityUpdates);
 
 	for (auto& pFr : m_lstCustomShadowFrustums)
