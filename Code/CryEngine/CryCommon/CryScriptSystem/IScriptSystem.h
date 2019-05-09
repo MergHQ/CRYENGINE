@@ -1208,10 +1208,11 @@ public:
 	}
 	virtual void GetMemoryStatistics(ICrySizer* pSizer) {}
 
-	void         SetGlobalName(const char* sGlobalName)
+	void SetGlobalName(const char* sGlobalName)
 	{
-		assert(strlen(sGlobalName) < sizeof(m_sGlobalName));
-		cry_strcpy(m_sGlobalName, sGlobalName);
+		const size_t length = strlen(sGlobalName);
+		CRY_ASSERT(length < sizeof(m_sGlobalName));
+		cry_strcpy(m_sGlobalName, sGlobalName, length + 1);
 		if (m_pMethodsTable)
 			m_pSS->SetGlobalValue(sGlobalName, m_pMethodsTable);
 	}

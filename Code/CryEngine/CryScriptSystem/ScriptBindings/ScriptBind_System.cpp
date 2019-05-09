@@ -471,8 +471,6 @@ int CScriptBind_System::Log(IFunctionHandler* pH)
 void CScriptBind_System::LogString(IFunctionHandler* pH, bool bToConsoleOnly)
 {
 	const char* sParam = NULL;
-	string szText;
-
 	pH->GetParam(1, sParam);
 
 	if (sParam)
@@ -484,12 +482,12 @@ void CScriptBind_System::LogString(IFunctionHandler* pH, bool bToConsoleOnly)
 		if (sParam[0] <= 5 && sParam[0] != 0)
 		{
 			sLogMessage[0] = sParam[0];
-			cry_strcpy(&sLogMessage[1], sizeof(sLogMessage) - 1, "<Lua> ");
+			cry_strcpy(&sLogMessage[1], sizeof(sLogMessage) - 1, "<Lua> ", sizeof("<Lua> ") + 1);
 			cry_strcat(sLogMessage, &sParam[1]);
 		}
 		else
 		{
-			cry_strcpy(sLogMessage, "<Lua> ");
+			cry_fixed_size_strcpy(sLogMessage, "<Lua> ");
 			cry_strcat(sLogMessage, sParam);
 		}
 

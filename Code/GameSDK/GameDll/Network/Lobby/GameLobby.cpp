@@ -3059,7 +3059,7 @@ void CGameLobby::SetupSessionData()
 	}
 	else
 	{
-		cry_strcpy(m_sessionData.m_name, "default servername");
+		cry_fixed_size_strcpy(m_sessionData.m_name, "default servername");
 	}
 
 	m_sessionData.m_ranked = false;

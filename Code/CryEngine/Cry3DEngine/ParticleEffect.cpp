@@ -854,13 +854,13 @@ void ResourceParticleParams::UnloadResources()
 // Struct and TypeInfo for reading older params
 //
 struct CompatibilityParticleParams
-	: ParticleParams, ZeroInit<CompatibilityParticleParams>, Cry3DEngineBase
+	: ParticleParams, Cry3DEngineBase
 {
-	int    nVersion;
+	int    nVersion = 0;
 	string sSandboxVersion;
 
 	// Version 26
-	float fBounciness;
+	float fBounciness = 0.0f;
 	DEFINE_ENUM(EMoveRelative,
 	            No,
 	            Yes,
@@ -870,30 +870,33 @@ struct CompatibilityParticleParams
 
 	// Version 25
 	ETrinary tDX;
-	bool     bGeometryInPieces;
+	bool     bGeometryInPieces = false;
 
 	// Version 24
-	float fAlphaTest;
-	float fCameraDistanceBias;
-	int   nDrawLast;
+	float fAlphaTest = 0.0f;
+	float fCameraDistanceBias = 0.0f;
+	int   nDrawLast = 0;
 
 	// Version 22
-	float  fPosRandomOffset;
-	float  fAlphaScale;
-	float  fGravityScaleBias;
-	float  fCollisionPercentage;
+	float  fPosRandomOffset = 0.0f;
+	float  fAlphaScale = 0.0f;
+	float  fGravityScaleBias = 0.0f;
+	float  fCollisionPercentage = 0.0f;
 
-	bool   bSimpleParticle;
-	bool   bSecondGeneration, bSpawnOnParentCollision, bSpawnOnParentDeath;
+	bool   bSimpleParticle = false;
+	bool   bSecondGeneration = false;
+	bool   bSpawnOnParentCollision = false;
+	bool   bSpawnOnParentDeath = false;
 
 	string sAllowHalfRes;
 
 	// Version 20
-	bool bBindToEmitter;
-	bool bTextureUnstreamable, bGeometryUnstreamable;
+	bool bBindToEmitter = false;
+	bool bTextureUnstreamable = false;
+	bool bGeometryUnstreamable = false;
 
 	// Version 19
-	bool bIgnoreAttractor;
+	bool bIgnoreAttractor = false;
 
 	void Correct(class CParticleEffect* pEffect);
 

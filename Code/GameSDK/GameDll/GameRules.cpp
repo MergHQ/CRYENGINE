@@ -3726,7 +3726,7 @@ void CGameRules::KillPlayer(IActor* pActor, const bool inDropItem, const bool in
 	bool foundProjectileClassName = m_pGameFramework->GetNetworkSafeClassName(projectileClassName, sizeof(projectileClassName), hitInfo.projectileClassId);
 	if (!foundProjectileClassName)
 	{
-		cry_strcpy(projectileClassName, "unknown projectile");
+		cry_fixed_size_strcpy(projectileClassName, "unknown projectile");
 	}
 
 	IGameRulesAssistScoringModule *assistScoringModule = GetAssistScoringModule();
@@ -3854,7 +3854,7 @@ void CGameRules::KillPlayer(IActor* pActor, const bool inDropItem, const bool in
 		char weaponClassName[128];
 		if (!m_pGameFramework->GetNetworkSafeClassName(weaponClassName, sizeof(weaponClassName), hitInfo.weaponClassId))
 		{
-			cry_strcpy(weaponClassName, "unknown weapon");
+			cry_fixed_size_strcpy(weaponClassName, "unknown weapon");
 		}
 
 		if(sr->ShouldRecordEvent(eSE_Death, pActor))
