@@ -37,7 +37,13 @@
 
 #if CRY_PLATFORM_WINDOWS
 	#include <cri_atom_wasapi.h>
-#endif // CRY_PLATFORM_WINDOWS
+#elif CRY_PLATFORM_DURANGO
+	#include <cri_atom_xboxone.h>
+#elif CRY_PLATFORM_ORBIS
+	#include <cri_atom_ps4.h>
+#elif CRY_PLATFORM_LINUX
+	#include <cri_atom_linux.h>
+#endif
 
 namespace CryAudio
 {
@@ -376,9 +382,13 @@ void CImpl::ShutDown()
 
 #if CRY_PLATFORM_WINDOWS
 	criAtomEx_Finalize_WASAPI();
-#else
-	criAtomEx_Finalize();
-#endif  // CRY_PLATFORM_WINDOWS
+#elif CRY_PLATFORM_DURANGO
+	criAtomEx_Finalize_XBOXONE();
+#elif CRY_PLATFORM_ORBIS
+	criAtomEx_Finalize_PS4();
+#elif CRY_PLATFORM_LINUX
+	criAtomEx_FinalizeForUserPcmOutput_LINUX();
+#endif
 
 	criFs_FinalizeLibrary();
 }
@@ -1232,16 +1242,23 @@ void CImpl::DestructCueInstance(CCueInstance const* const pCueInstance)
 		delete pCue;
 	}
 }
+
 //////////////////////////////////////////////////////////////////////////
 bool CImpl::InitializeLibrary()
 {
 #if CRY_PLATFORM_WINDOWS
 	CriAtomExConfig_WASAPI libraryConfig;
 	criAtomEx_SetDefaultConfig_WASAPI(&libraryConfig);
-#else
-	CriAtomExConfig libraryConfig;
-	criAtomEx_SetDefaultConfig(&libraryConfig);
-#endif  // CRY_PLATFORM_WINDOWS
+#elif CRY_PLATFORM_DURANGO
+	CriAtomExConfig_XBOXONE libraryConfig;
+	criAtomEx_SetDefaultConfig_XBOXONE(&libraryConfig);
+#elif CRY_PLATFORM_ORBIS
+	CriAtomExConfig_PS4 libraryConfig;
+	criAtomEx_SetDefaultConfig_PS4(&libraryConfig);
+#elif CRY_PLATFORM_LINUX
+	CriAtomExConfig_LINUX libraryConfig;
+	criAtomEx_SetDefaultConfig_LINUX(&libraryConfig);
+#endif
 
 	libraryConfig.atom_ex.max_virtual_voices = static_cast<CriSint32>(g_cvars.m_maxVirtualVoices);
 	libraryConfig.atom_ex.max_voice_limit_groups = static_cast<CriSint32>(g_cvars.m_maxVoiceLimitGroups);
@@ -1257,20 +1274,26 @@ bool CImpl::InitializeLibrary()
 
 #if CRY_PLATFORM_WINDOWS
 	criAtomEx_Initialize_WASAPI(&libraryConfig, nullptr, 0);
-#else
-	criAtomEx_Initialize(&libraryConfig, nullptr, 0);
-#endif  // CRY_PLATFORM_WINDOWS
-
-	bool const isInitialized = (criAtomEx_IsInitialized() == CRI_TRUE);
+#elif CRY_PLATFORM_DURANGO
+	criAtomEx_Initialize_XBOXONE(&libraryConfig, nullptr, 0);
+#elif CRY_PLATFORM_ORBIS
+	criAtomEx_Initialize_PS4(&libraryConfig, nullptr, 0);
+#elif CRY_PLATFORM_LINUX
+	criAtomEx_InitializeForUserPcmOutput_LINUX(&libraryConfig, nullptr, 0);
+#endif
 
 #if defined(CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE)
+	bool const isInitialized = (criAtomEx_IsInitialized() == CRI_TRUE);
+
 	if (!isInitialized)
 	{
 		Cry::Audio::Log(ELogType::Error, "Failed to initialize CriAtomEx");
 	}
-#endif  // CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE
 
 	return isInitialized;
+#else
+	return criAtomEx_IsInitialized() == CRI_TRUE;
+#endif  // CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1283,16 +1306,18 @@ bool CImpl::AllocateVoicePool()
 	voicePoolConfig.player_config.max_sampling_rate = static_cast<CriSint32>(g_cvars.m_maxSamplingRate);
 	voicePoolConfig.player_config.streaming_flag = CRI_TRUE;
 
+#if defined(CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE)
 	bool const isAllocated = (criAtomExVoicePool_AllocateStandardVoicePool(&voicePoolConfig, nullptr, 0) != nullptr);
 
-#if defined(CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE)
 	if (!isAllocated)
 	{
 		Cry::Audio::Log(ELogType::Error, "Failed to allocate voice pool");
 	}
-#endif  // CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE
 
 	return isAllocated;
+#else
+	return criAtomExVoicePool_AllocateStandardVoicePool(&voicePoolConfig, nullptr, 0) != nullptr;
+#endif  // CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1303,16 +1328,18 @@ bool CImpl::CreateDbas()
 	dbasConfig.max_streams = static_cast<CriSint32>(g_cvars.m_maxStreams);
 	m_dbasId = criAtomExDbas_Create(&dbasConfig, nullptr, 0);
 
+#if defined(CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE)
 	bool const isCreated = (m_dbasId != CRIATOMEXDBAS_ILLEGAL_ID);
 
-#if defined(CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE)
 	if (!isCreated)
 	{
 		Cry::Audio::Log(ELogType::Error, "Failed to create D-BAS");
 	}
-#endif  // CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE
 
 	return isCreated;
+#else
+	return m_dbasId != CRIATOMEXDBAS_ILLEGAL_ID;
+#endif  // CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE
 }
 
 //////////////////////////////////////////////////////////////////////////
