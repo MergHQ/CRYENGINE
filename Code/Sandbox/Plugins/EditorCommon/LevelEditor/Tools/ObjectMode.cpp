@@ -404,6 +404,8 @@ bool CObjectMode::OnLButtonDown(CViewport* view, int nFlags, CPoint point)
 	bool bLockSelection = GetIEditor()->IsSelectionLocked();
 
 	HitContext hitInfo(view);
+	// Take in consideration all objects (including frozen), while snapping via (Ctrl+Shift+LMB)
+	hitInfo.ignoreFrozenObjects = !(bCtrlClick && bShiftClick);
 	HitTest(hitInfo, view, point);
 
 	if (hitInfo.axis != CLevelEditorSharedState::Axis::None)

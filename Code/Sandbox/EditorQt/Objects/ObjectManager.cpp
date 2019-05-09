@@ -2482,27 +2482,27 @@ void CObjectManager::DeleteSelection()
 	GetIEditorImpl()->GetFlowGraphManager()->SendNotifyEvent(EHG_GRAPH_INVALIDATE);
 }
 
-bool CObjectManager::HitTestObject(CBaseObject* obj, HitContext& hc)
+bool CObjectManager::HitTestObject(CBaseObject* pObject, HitContext& hc)
 {
-	if (obj->IsFrozen())
+	if (hc.ignoreFrozenObjects && pObject->IsFrozen())
 		return false;
 
-	if (obj->IsHidden())
+	if (pObject->IsHidden())
 		return false;
 
 	// This object is rejected by deep selection.
-	if (obj->CheckFlags(OBJFLAG_NO_HITTEST))
+	if (pObject->CheckFlags(OBJFLAG_NO_HITTEST))
 		return false;
 
-	ObjectType objType = obj->GetType();
+	ObjectType objType = pObject->GetType();
 
 	// Check if this object type is masked for selection.
 	if (!(objType & gViewportSelectionPreferences.objectSelectMask))
 	{
-		return obj->IsKindOf(RUNTIME_CLASS(CGroup)) && obj->HitTest(hc);
+		return pObject->IsKindOf(RUNTIME_CLASS(CGroup)) && pObject->HitTest(hc);
 	}
 
-	const bool bSelectionHelperHit = obj->HitHelperTest(hc);
+	const bool bSelectionHelperHit = pObject->HitHelperTest(hc);
 
 	if (hc.bUseSelectionHelpers && !bSelectionHelperHit)
 		return false;
@@ -2510,11 +2510,11 @@ bool CObjectManager::HitTestObject(CBaseObject* obj, HitContext& hc)
 	if (!bSelectionHelperHit)
 	{
 		// Fast checking.
-		if (hc.camera && !obj->IsInCameraView(*hc.camera))
+		if (hc.camera && !pObject->IsInCameraView(*hc.camera))
 		{
 			return false;
 		}
-		else if (hc.bounds && !obj->IntersectRectBounds(*hc.bounds))
+		else if (hc.bounds && !pObject->IntersectRectBounds(*hc.bounds))
 		{
 			return false;
 		}
@@ -2523,22 +2523,22 @@ bool CObjectManager::HitTestObject(CBaseObject* obj, HitContext& hc)
 		if (hc.nSubObjFlags == 0)
 		{
 			Ray ray(hc.raySrc, hc.rayDir);
-			if (!obj->IntersectRayBounds(ray))
+			if (!pObject->IntersectRayBounds(ray))
 				return false;
 		}
-		else if (!obj->HitTestRect(hc))
+		else if (!pObject->HitTestRect(hc))
 		{
 			return false;
 		}
 
 		CEditTool* pEditTool = GetIEditorImpl()->GetLevelEditorSharedState()->GetEditTool();
-		if (pEditTool && pEditTool->HitTest(obj, hc))
+		if (pEditTool && pEditTool->HitTest(pObject, hc))
 		{
 			return true;
 		}
 	}
 
-	return (bSelectionHelperHit || obj->HitTest(hc));
+	return (bSelectionHelperHit || pObject->HitTest(hc));
 }
 
 bool CObjectManager::HitTest(HitContext& hitInfo)
