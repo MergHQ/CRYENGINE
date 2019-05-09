@@ -44,7 +44,7 @@ CCreateProjectPanel::CCreateProjectPanel(CSelectProjectDialog* pParent, bool run
 	CreateProjectNameEditBox();
 	CreateDialogButtons(runOnSandboxInit);
 
-	SetViewMode(false);
+	SetViewMode(true);
 
 	UpdateCreateProjectBtn();
 }

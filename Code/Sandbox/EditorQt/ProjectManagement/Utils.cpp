@@ -9,6 +9,7 @@
 #include <QtUtil.h>
 
 #include <CrySerialization/yasli/JSONIArchive.h>
+#include <CryString/CryStringUtils.h>
 
 #include <QApplication>
 #include <QDirIterator>
@@ -93,6 +94,12 @@ string AskUserToSpecifyProject(QWidget* pParent, bool runOnSandboxInit, CSelectP
 	}
 
 	return dlg.GetPathToProject();
+}
+
+void AppendProjectPathToCommandLine(const string& projectPath, SSystemInitParams& systemParams)
+{
+	cry_strcat(systemParams.szSystemCmdLine, " -project ");
+	cry_strcat(systemParams.szSystemCmdLine, projectPath);
 }
 
 string GetCryEngineProgramDataFolder()
