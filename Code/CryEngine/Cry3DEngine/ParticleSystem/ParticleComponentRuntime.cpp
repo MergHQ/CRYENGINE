@@ -4,6 +4,7 @@
 #include "ParticleComponentRuntime.h"
 #include "ParticleEmitter.h"
 #include "ParticleSystem.h"
+#include "ParticleManager.h"
 #include "ParticleProfiler.h"
 
 namespace pfx2
@@ -204,22 +205,6 @@ void CParticleComponentRuntime::RemoveAllSpawners()
 {
 	Container(EDD_Spawner).Clear();
 	DebugStabilityCheck();
-}
-
-void CParticleComponentRuntime::RenderAll(const SRenderContext& renderContext)
-{
-	CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
-
-	if (auto* pGPURuntime = GetGpuRuntime())
-	{
-		SParticleStats stats;
-		pGPURuntime->AccumStats(stats);
-		auto& statsGPU = GetPSystem()->GetThreadData().statsGPU;
-		statsGPU.components.rendered += stats.components.rendered;
-		statsGPU.particles.rendered += stats.particles.rendered;
-	}
-
-	m_pComponent->Render(*this, renderContext);
 }
 
 void CParticleComponentRuntime::Reparent(TConstArray<TParticleId> swapIds)
@@ -721,6 +706,53 @@ void CParticleComponentRuntime::AccumStats()
 pfx2::TParticleHeap& CParticleComponentRuntime::MemHeap()
 {
 	return GetPSystem()->GetThreadData().memHeap;
+}
+
+
+CRenderObject* CParticleComponentRuntime::CreateRenderObject(uint64 renderFlags) const
+{
+	CRY_PFX2_PROFILE_DETAIL;
+	const SComponentParams& params = ComponentParams();
+	CRenderObject* pRenderObject = gEnv->pRenderer->EF_GetObject();
+	auto particleMaterial = params.m_pMaterial;
+
+	pRenderObject->SetIdentityMatrix();
+	pRenderObject->m_fAlpha = 1.0f;
+	pRenderObject->m_pCurrMaterial = particleMaterial;
+	pRenderObject->m_pRenderNode = m_pEmitter;
+	pRenderObject->m_ObjFlags = ERenderObjectFlags(renderFlags & ~0xFF);
+	pRenderObject->m_RState = uint8(renderFlags);
+	pRenderObject->m_fSort = 0;
+	pRenderObject->m_pRE = gEnv->pRenderer->EF_CreateRE(eDATA_Particle);
+
+	SRenderObjData* pObjData = pRenderObject->GetObjData();
+	pObjData->m_pParticleShaderData = &params.m_shaderData;
+
+	return pRenderObject;
+}
+
+CRenderObject* CParticleComponentRuntime::GetRenderObject(uint threadId, ERenderObjectFlags extraFlags)
+{
+	// Determine needed render flags from component params, render context, and cvars
+	auto allowedRenderFlags = CParticleManager::Instance()->GetRenderFlags();
+	const SComponentParams& params = ComponentParams();
+	uint64 curRenderFlags = allowedRenderFlags & (params.m_renderObjectFlags | params.m_renderStateFlags | extraFlags);
+
+	for (;;)
+	{
+		PRenderObject& pRO = m_renderObjects[threadId].append();
+		if (pRO)
+		{
+			auto objRenderFlags = (pRO->m_ObjFlags & ~0xFF) | pRO->m_RState;
+			if (objRenderFlags == curRenderFlags)
+				return pRO;
+		}
+		else
+		{
+			pRO = CreateRenderObject(curRenderFlags);
+			return pRO;
+		}
+	}
 }
 
 float CParticleComponentRuntime::DeltaTime() const

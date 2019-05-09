@@ -14,6 +14,17 @@ namespace gpu_pfx2
 }
 class CDeviceGraphicsCommandInterface;
 
+struct CRY_ALIGN(16) SAddParticlesToSceneJob
+{
+	void GetMemoryUsage(ICrySizer* pSizer) const {}
+
+	SShaderItem* pShaderItem;
+	CRenderObject* pRenderObject;
+	IParticleVertexCreator* pVertexCreator = nullptr;
+	gpu_pfx2::IParticleComponentRuntime* pGpuRuntime = nullptr;
+	const CCamera* pCamera = nullptr;
+};
+
 struct SParticleAxes
 {
 	Vec3 xAxis;
@@ -42,15 +53,19 @@ struct SRenderVertices
 struct SCameraInfo
 {
 	const CCamera* pCamera;
+	const CCamera* pMainCamera;
 	IVisArea*      pCameraVisArea;
 	bool           bCameraUnderwater;
 	bool           bRecursivePass;
+	bool           bShadowPass;
 
 	SCameraInfo(const SRenderingPassInfo& passInfo) :
 		pCamera(&passInfo.GetCamera()),
+		pMainCamera(&passInfo.GetCamera()),
 		pCameraVisArea(gEnv->p3DEngine->GetVisAreaFromPos(passInfo.GetCamera().GetOccPos())),
 		bCameraUnderwater(passInfo.IsCameraUnderWater()),
-		bRecursivePass(passInfo.IsRecursivePass())
+		bRecursivePass(passInfo.IsRecursivePass()),
+		bShadowPass(passInfo.IsShadowPass())
 	{}
 };
 
@@ -110,9 +125,6 @@ public:
 
 	void                     ComputeVertices(SCameraInfo camInfo, uint64 uRenderFlags);
 
-	bool                     AddedToView() const { return m_addedToView != 0; }
-	void                     SetAddedToView() { m_addedToView = 1; }
-
 	void                     mfGetBBox(AABB& bb) const override { bb = m_bbWorld; }
 	void                     SetBBox(const AABB& bb) { m_bbWorld = bb; }
 
@@ -131,7 +143,6 @@ private:
 	uint32                               m_nFirstIndex;
 	uint32                               m_allocId;
 	uint16                               m_nThreadId;
-	uint8                                m_addedToView;
-	bool                                 m_bIncomplete;
+	bool                                 m_bCompiled;
 	AABB                                 m_bbWorld;
 };

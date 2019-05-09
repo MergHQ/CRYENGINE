@@ -71,6 +71,30 @@ public:
 	};
 	~CPermanentRenderObject();
 
+	void AddRenderItem(CRenderElement* pElem, const SShaderItem& shaderItem, const AABB& aabb, float distance, uint32 nBatchFlags, ERenderListID nList, ERenderPassType renderPassType)
+	{
+		WriteLock lock(m_accessLock); // Block on write access to the render object
+
+		// Must add this render item to the local array.
+		// This is not thread safe!!!, code at 3d engine makes sure this can never be called simultaneously on the same RenderObject on the same pass type.
+		//  General and shadows can be called simultaneously, they are writing to the separate arrays.
+		SPermanentRendItem pri = {0};
+
+		pri.m_sortValue = SRendItem::PackShaderItem(shaderItem);
+		pri.m_nBatchFlags = nBatchFlags;
+		pri.m_nRenderList = nList;
+		pri.m_pCompiledObject = nullptr;
+		pri.m_pRenderElement = pElem;
+		//pri.nStencRef = m_nClipVolumeStencilRef + 1;
+		pri.m_ElmFlags = pElem->m_Flags;
+		pri.m_ObjFlags = m_ObjFlags;
+ 		pri.m_aabb = aabb;
+ 		pri.m_fDist = distance;
+
+		m_permanentRenderItems[renderPassType].push_back(pri);
+		PrepareForUse(pElem, renderPassType);
+	}
+
 	//
 	void PrepareForUse(CRenderElement* pRenderElement, ERenderPassType passType)
 	{

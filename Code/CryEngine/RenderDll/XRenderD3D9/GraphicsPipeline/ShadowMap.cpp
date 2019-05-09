@@ -78,6 +78,9 @@ void CShadowMapStage::Init()
 		// hardcoded point samplers
 		m_perPassResources.SetSampler(8, EDefaultSamplerStates::PointWrap, shaderStages);
 		m_perPassResources.SetSampler(9, EDefaultSamplerStates::PointClamp, shaderStages);
+
+		// particle resources
+		m_graphicsPipeline.SetParticleBuffers(true, m_perPassResources, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
 	}
 
 	// Create resource layout
@@ -473,7 +476,7 @@ bool CShadowMapStage::CreatePipelineState(const SGraphicsPipelineStateDescriptio
 	if (psoDesc.m_RenderState & GS_ALPHATEST)
 		psoDesc.m_ShaderFlags_RT |= g_HWSR_MaskBit[HWSR_ALPHATEST];
 
-	if (psoDesc.m_bAllowTesselation)
+	if (psoDesc.m_bAllowTesselation && (psoDesc.m_PrimitiveType < ept1ControlPointPatchList || psoDesc.m_PrimitiveType > ept4ControlPointPatchList))
 	{
 		psoDesc.m_PrimitiveType = ept3ControlPointPatchList;
 		psoDesc.m_ObjectStreamMask |= VSM_NORMALS;
@@ -1006,6 +1009,9 @@ bool CShadowMapStage::CShadowMapPass::PrepareResources(const CRenderView* pMainV
 
 		m_perPassResources.SetConstantBuffer(eConstantBufferShaderSlot_PerView, m_pPerViewConstantBuffer.get(), EShaderStage_Vertex | EShaderStage_Hull | EShaderStage_Domain | EShaderStage_Pixel);
 	}
+
+	// particle resources
+	m_pShadowMapStage->m_graphicsPipeline.SetParticleBuffers(false, m_perPassResources, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
 
 	CRY_ASSERT(!m_perPassResources.HasChangedBindPoints()); // Cannot change resource layout after init. It is baked into the shaders
 	m_pPerPassResourceSet->Update(m_perPassResources);

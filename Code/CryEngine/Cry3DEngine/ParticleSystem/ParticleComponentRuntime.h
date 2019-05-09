@@ -44,7 +44,6 @@ public:
 	void                          AddSpawners(TVarArray<SSpawnerDesc> descs, bool cull = true);
 	void                          RemoveAllSpawners();
 	void                          RunParticles(uint count, float deltaTime);
-	void                          RenderAll(const SRenderContext& renderContext);
 
 	void                          ComputeVertices(const SCameraInfo& camInfo, CREParticle* pRE, uint64 uRenderFlags, float fMaxPixels) override;
 
@@ -91,7 +90,12 @@ public:
 
 	static TParticleHeap&     MemHeap();
 	float                     DeltaTime() const;
-	bool                      IsPreRunning() const    { return m_isPreRunning; }
+	bool                      IsPreRunning() const              { return m_isPreRunning; }
+
+	void                      ClearRenderObjects(uint threadId) { m_renderObjects[threadId].clear(); }
+	void                      ResetRenderObjects(uint threadId) { m_renderObjects[threadId].reset(); }
+	CRenderObject*            GetRenderObject(uint threadId, ERenderObjectFlags extraFlags);
+	CRenderObject*            CreateRenderObject(uint64 renderFlags) const;
 
 	// Legacy names
 	CParticleContainer&       GetParentContainer()       { return ParentContainer(); }
@@ -110,9 +114,46 @@ private:
 	void DebugStabilityCheck();
 	void UpdateGPURuntime();
 
+	struct PRenderObject
+	{
+		~PRenderObject()
+		{
+			if (m_ptr)
+			{
+				if (m_ptr->m_pRE)
+					m_ptr->m_pRE->Release();
+				if (gEnv->pRenderer)
+					gEnv->pRenderer->EF_FreeObject(m_ptr);
+			}
+		}
+		PRenderObject() {}
+		PRenderObject(PRenderObject&& m)
+			: m_ptr(m.m_ptr)
+		{
+			m.m_ptr = nullptr;
+		}
+		PRenderObject(const PRenderObject&) = delete;
+		void operator=(const PRenderObject&) = delete;
+
+		PRenderObject(CRenderObject* ptr)
+			: m_ptr(ptr) {}
+		void operator=(CRenderObject* ptr)
+		{
+			this->~PRenderObject();
+			m_ptr = ptr;
+		}
+
+		operator CRenderObject*() const { return m_ptr; }
+		CRenderObject* operator->() const { return m_ptr; }
+
+	private:
+		CRenderObject* m_ptr = nullptr;
+	};
+
 	_smart_ptr<CParticleComponent>       m_pComponent;
 	CParticleEmitter*                    m_pEmitter;
 	ElementTypeArray<CParticleContainer> m_containers;
+	TReuseArray<PRenderObject>           m_renderObjects[RT_COMMAND_BUF_COUNT];
 	AABB                                 m_bounds;
 	bool                                 m_alive;
 	bool                                 m_isPreRunning;

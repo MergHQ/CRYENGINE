@@ -44,8 +44,11 @@ public:
 			pParams->m_shaderData.m_alphaTest[1][2] = 0;
 
 			Range alpha = m_opacity.GetValueRange();
+			pParams->m_renderObjectFlags |= FOB_ZPREPASS;
 			if (alpha.start < 1.0f)
 				pParams->m_renderObjectFlags |= FOB_ALPHATEST;
+ 			if (m_castShadows)
+ 				pComponent->AddEnvironFlags(ENV_CAST_SHADOWS);
 		}
 		else
 		{
@@ -84,7 +87,11 @@ public:
 		CParticleFeature::Serialize(ar);
 		ar(m_opacity, "value", "Value");
 		ar(m_blendMode, "BlendMode", "Blend Mode");
-		if (m_blendMode != EBlendMode::Opaque)
+		if (m_blendMode == EBlendMode::Opaque)
+		{
+			ar(m_castShadows, "CastShadows", "Cast Shadows");
+		}
+		else
 		{
 			ar(m_softIntersect, "Softness", "Soft Intersect");
 			ar(m_alphaScale, "AlphaScale", "Alpha Scale");
@@ -109,6 +116,7 @@ protected:
 	CParamMod<EDD_ParticleUpdate, UUnitFloat> m_opacity;
 	EBlendMode                                m_blendMode     = EBlendMode::Alpha;
 	UFloat                                    m_softIntersect = 0.0f;
+	bool                                      m_castShadows   = true;
 	Range                                     m_alphaScale    {0, 1};
 	Range                                     m_clipLow       {0, 0};
 	Range                                     m_clipRange     {1, 1};

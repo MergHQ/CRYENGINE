@@ -22,8 +22,6 @@
 
 using namespace minigui;
 
-CRY_PFX2_DBG
-
 ParticleAllocator::TPoolsList ParticleAllocator::s_pools;
 
 //////////////////////////////////////////////////////////////////////////
@@ -41,12 +39,28 @@ void DestroyParticleManager(IParticleManager* pParticleManager)
 //////////////////////////////////////////////////////////////////////////
 // CParticleBatchDataManager implementation
 
+SAddParticlesToSceneJob& CParticleBatchDataManager::GetParticlesToSceneJob(const SRenderingPassInfo& passInfo)
+{
+	SAddParticlesToSceneJob& job = *m_ParticlesToScene[passInfo.ThreadID()].push_back();
+	if (passInfo.IsShadowPass())
+	{
+		const auto* pFrustum = passInfo.GetIRenderView()->GetShadowFrustumOwner();
+		job.pCamera = &pFrustum->FrustumPlanes[passInfo.ShadowFrustumSide()];
+	}
+	else
+	{
+		job.pCamera = &passInfo.GetCamera();
+	}
+	return job;
+}
+
 void CParticleBatchDataManager::PrepareForRender(const SRenderingPassInfo& passInfo)
 {
 	if (passInfo.GetRecursiveLevel() == 0)
 		m_ParticlesToScene[passInfo.ThreadID()].resize(0);
 	m_ParticlesJobStart[passInfo.ThreadID()][passInfo.GetRecursiveLevel()] = m_ParticlesToScene[passInfo.ThreadID()].size();
 }
+
 void CParticleBatchDataManager::FinishParticleRenderTasks(const SRenderingPassInfo& passInfo)
 {
 	FUNCTION_PROFILER_CONTAINER(this);
@@ -887,6 +901,12 @@ void CParticleManager::UpdateEngineData()
 
 		bInvalidateCachedRenderObjects = (m_bParticleTessellation != bParticleTesselation);
 		m_bParticleTessellation = bParticleTesselation;
+	}
+
+	if (ICVar* pZPass = GetConsole()->GetCVar("r_UseZPass"))
+	{
+		if (pZPass->GetIVal() < 2)
+			m_RenderFlags.SetState(-1, FOB_ZPREPASS);
 	}
 
 	if (m_pLastDefaultParams != &GetDefaultParams() || bInvalidateCachedRenderObjects)

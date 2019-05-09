@@ -42,17 +42,14 @@ public:
 	virtual void         Render(CParticleComponentRuntime& runtime, const SRenderContext& renderContext) override;
 
 protected:
-	void             PrepareRenderObject(const CParticleComponentRuntime& runtime, uint renderObjectId, uint threadId);
-	void             AddRenderObject(CParticleComponentRuntime& runtime, const SRenderContext& renderContext, uint renderObjectId, uint threadId, ERenderObjectFlags objFlags);
+	void           AddRenderObject(CParticleComponentRuntime& runtime, const SRenderContext& renderContext, ERenderObjectFlags extraFlags = FOB_NONE);
 
 	static float CullArea(float area, float areaLimit, TParticleIdArray& ids, TVarArray<float> alphas, TConstArray<float> areas);
 
 protected:
-	UFloat m_fillCost                = 1;
-	SFloat m_sortBias                = 0;
-	uint m_renderObjectBeforeWaterId = -1;
-	uint m_renderObjectAfterWaterId  = -1;
-	bool   m_waterCulling            = false;
+	UFloat m_fillCost     = 1;
+	SFloat m_sortBias     = 0;
+	bool   m_waterCulling = false;
 };
 
 // Frustum culling support

@@ -15,9 +15,6 @@ namespace pfx2
 class CParticleEmitter final : public IParticleEmitter, public Cry3DEngineBase
 {
 public:
-	using SRenderObjectMaterialPair = std::pair<CRenderObject*, _smart_ptr<IMaterial>>;
-
-public:
 	CParticleEmitter(CParticleEffect* pEffect, uint emitterId);
 	~CParticleEmitter();
 
@@ -95,7 +92,6 @@ public:
 	void                      Unregister();
 	void                      Clear();
 	void                      UpdateRuntimes();
-	void                      ResetRenderObjects();
 	void                      UpdateEmitGeomFromEntity();
 	const SVisEnviron&        GetVisEnv() const            { return m_visEnviron; }
 	const SPhysEnviron&       GetPhysicsEnv() const        { return m_physEnviron; }
@@ -108,8 +104,6 @@ public:
 	const ParticleTarget&     GetTarget() const            { return m_target; }
 	float                     GetViewDistRatio() const     { return m_viewDistRatio; }
 	float                     GetTimeScale() const         { return Cry3DEngineBase::GetCVars()->e_ParticlesDebug & AlphaBit('z') ? 0.0f : m_spawnParams.fTimeScale; }
-	CRenderObject*            GetRenderObject(uint threadId, uint renderObjectIdx);
-	void                      SetRenderObject(CRenderObject* pRenderObject, _smart_ptr<IMaterial>&& material, uint threadId, uint renderObjectIdx);
 	float                     GetDeltaTime() const         { return m_time - m_timeUpdated; }
 	float                     GetTime() const              { return m_time; }
 	float                     GetAge() const               { return m_time - m_timeCreated; }
@@ -138,7 +132,6 @@ private:
 private:
 	_smart_ptr<CParticleEffect>            m_pEffect;
 	_smart_ptr<CParticleEffect>            m_pEffectOriginal;
-	std::vector<SRenderObjectMaterialPair> m_pRenderObjects[RT_COMMAND_BUF_COUNT];
 	SVisEnviron                            m_visEnviron;
 	SPhysEnviron                           m_physEnviron;
 	SpawnParams                            m_spawnParams;
@@ -169,7 +162,7 @@ private:
 	uint                                   m_currentSeed;
 	uint                                   m_emitterId;
 	bool                                   m_registered;
-	bool                                   m_boundsChanged;
+	bool                                   m_reRegister;
 	bool                                   m_active;
 	bool                                   m_alive;
 	uint                                   m_unrendered;

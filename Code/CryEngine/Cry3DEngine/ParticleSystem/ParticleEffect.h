@@ -72,8 +72,6 @@ public:
 	CParticleComponent*       FindComponentByName(const char* name) const;
 	TAttributeTablePtr        GetAttributeTable() const                                     { return m_pAttributes; }
 	string                    MakeUniqueName(const CParticleComponent* forComponent, const char* name);
-	uint                      AddRenderObjectId();
-	uint                      GetNumRenderObjectIds() const;
 	STimingParams const&      GetTimings() const                                            { return m_timings; }
 	uint                      GetEnvironFlags() const                                       { return m_environFlags; }
 	void                      AddEnvironFlags(uint flags)                                   { m_environFlags |= flags; }
@@ -86,7 +84,6 @@ private:
 	TComponents        m_components;
 	TComponents        m_topComponents;
 	STimingParams      m_timings;
-	uint               m_numRenderObjects;
 	uint               m_environFlags;
 	int                m_editVersion;
 	bool               m_dirty;

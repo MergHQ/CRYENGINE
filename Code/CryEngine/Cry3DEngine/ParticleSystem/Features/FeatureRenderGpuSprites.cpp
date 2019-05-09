@@ -39,6 +39,7 @@ public:
 	virtual EFeatureType      GetFeatureType() override { return EFT_Render; }
 	virtual CParticleFeature* ResolveDependency(CParticleComponent* pComponent) override;
 	virtual void              AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams) override;
+	virtual void              Render(CParticleComponentRuntime& runtime, const SRenderContext& renderContext) override;
 
 private:
 	template<typename T>
@@ -84,6 +85,19 @@ CParticleFeature* CFeatureRenderGpuSprites::ResolveDependency(CParticleComponent
 
 	return this;
 }
+
+void CFeatureRenderGpuSprites::Render(CParticleComponentRuntime& runtime, const SRenderContext& renderContext)
+{
+	CParticleRenderBase::Render(runtime, renderContext);
+
+	// Accumulate render stats
+	SParticleStats stats;
+	runtime.GetGpuRuntime()->AccumStats(stats);
+	auto& statsGPU = GetPSystem()->GetThreadData().statsGPU;
+	statsGPU.components.rendered += stats.components.rendered;
+	statsGPU.particles.rendered += stats.particles.rendered;
+}
+
 
 CRY_PFX2_LEGACY_FEATURE(CFeatureRenderGpuSprites, "Render", "GPU Sprites");
 CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureRenderGpuSprites, "GPU Particles", "Sprites", colorGPU);
