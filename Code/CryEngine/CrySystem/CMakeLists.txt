@@ -624,6 +624,7 @@ MACRO(setup_crysystem)
 			-Wno-address
 			-Wno-format
 			-Wno-switch
+			-Wno-address-of-packed-member
 		)
 	endif()
 ENDMACRO()

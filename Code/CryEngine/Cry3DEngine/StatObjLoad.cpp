@@ -1568,7 +1568,7 @@ bool CStatObj::SaveToCGF(const char* sFilename, IChunkFile** pOutChunkFile, bool
 	pCGF->GetExportInfo()->bCompiledCGF = true;
 	pCGF->GetExportInfo()->bMergeAllNodes = (GetSubObjectCount() <= 0);
 	pCGF->GetExportInfo()->bHavePhysicsProxy = bHavePhiscalProxy;
-	cry_strcpy(pCGF->GetExportInfo()->rc_version_string, "From Sandbox");
+	cry_fixed_size_strcpy(pCGF->GetExportInfo()->rc_version_string, "From Sandbox");
 
 	CChunkFile* pChunkFile = new CChunkFile();
 	if (pOutChunkFile)

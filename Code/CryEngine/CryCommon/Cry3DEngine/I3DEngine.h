@@ -2363,7 +2363,7 @@ enum EFileTypes
 //! Common header for binary files used by 3dengine.
 struct SCommonFileHeader
 {
-	void Set(uint16 t, uint16 v)   { cry_strcpy(signature, "CRY"); file_type = (uint8)t; version = v; }
+	void Set(uint16 t, uint16 v)   { cry_fixed_size_strcpy(signature, "CRY"); file_type = (uint8)t; version = v; }
 	bool Check(uint16 t, uint16 v) { return strcmp(signature, "CRY") == 0 && t == file_type && v == version; }
 
 	char   signature[4];                //!< File signature, should be "CRY ".

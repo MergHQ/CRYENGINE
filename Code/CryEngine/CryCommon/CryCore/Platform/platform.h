@@ -503,31 +503,6 @@ struct NoMove
 	NoMove& operator=(NoMove&&) = delete;
 };
 
-//! ZeroInit: base class to zero the memory of the derived class before initialization, so local objects initialize the same as static.
-//! Usage:
-//!     class MyClass: ZeroInit<MyClass> {...}
-//!     class MyChild: public MyClass, ZeroInit<MyChild> {...}		// ZeroInit must be the last base class.
-template<class TDerived>
-struct ZeroInit
-{
-#if CRY_COMPILER_CLANG || CRY_COMPILER_GCC
-	bool __dummy;             //!< Dummy var to create non-zero size, ensuring proper placement in TDerived.
-#endif
-
-	ZeroInit(bool bZero = true)
-	{
-		// Optional bool arg to selectively disable zeroing.
-		if (bZero)
-		{
-			// Infer offset of this base class by static casting to derived class.
-			// Zero only the additional memory of the derived class.
-			TDerived* struct_end = static_cast<TDerived*>(this) + 1;
-			size_t memory_size = (char*)struct_end - (char*)this;
-			memset(this, 0, memory_size);
-		}
-	}
-};
-
 // Quick const-manipulation macros
 
 //! Declare a const and variable version of a function simultaneously.

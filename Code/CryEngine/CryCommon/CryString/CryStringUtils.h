@@ -57,7 +57,7 @@ inline bool strcpy_with_clamp(TChar* const dst, size_t const dst_size_in_bytes, 
 	}
 
 	const size_t src_n = src_size_in_bytes / sizeof(TChar);
-	const size_t n = (std::min)(dst_size_in_bytes / sizeof(TChar) - 1, src_n);
+	const size_t n = std::min(dst_size_in_bytes / sizeof(TChar) - 1, src_n);
 
 	for (size_t i = 0; i < n; ++i)
 	{
@@ -97,7 +97,7 @@ inline bool strcat_with_clamp(TChar* const dst, size_t const dst_size_in_bytes, 
 	}
 
 	const size_t src_n = src_size_in_bytes / sizeof(TChar);
-	const size_t n = (std::min)(dst_n - dst_len, src_n);
+	const size_t n = std::min(dst_n - dst_len, src_n);
 	TChar* dst_ptr = &dst[dst_len];
 
 	for (size_t i = 0; i < n; ++i)
@@ -318,6 +318,12 @@ template<size_t SIZE_IN_CHARS>
 inline bool cry_strcpy(_Out_writes_z_(SIZE_IN_CHARS) char (&dst)[SIZE_IN_CHARS], const char* const src, size_t const src_size_in_bytes)
 {
 	return CryStringUtils_Internal::strcpy_with_clamp<char>(dst, SIZE_IN_CHARS, src, src_size_in_bytes);
+}
+
+template<size_t DST_SIZE_IN_CHARS, size_t SRC_SIZE_IN_CHARS>
+inline bool cry_fixed_size_strcpy(_Out_writes_z_(DST_SIZE_IN_CHARS) char (&dst)[DST_SIZE_IN_CHARS], const char (&src)[SRC_SIZE_IN_CHARS])
+{
+	return CryStringUtils_Internal::strcpy_with_clamp<char>(dst, DST_SIZE_IN_CHARS, src, SRC_SIZE_IN_CHARS);
 }
 
 inline bool cry_strcpy_wchar(_Out_writes_z_(dst_size_in_bytes) wchar_t* const dst, size_t const dst_size_in_bytes, const wchar_t* const src)

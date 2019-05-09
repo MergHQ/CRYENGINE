@@ -971,9 +971,9 @@ void CStatObj::TryMergeSubObjects(bool bFromStreaming)
 
 					CStatObj* pStatObj = new CStatObj();
 					pStatObj->m_szFileName = m_szFileName;
-					char lodName[32];
-					cry_strcpy(lodName, "-mlod");
-					ltoa(i, lodName + 5, 10);
+					static_assert(MAX_STATOBJ_LODS_NUM < 10, "Increase size of lodName buffer");
+					char lodName[] = "-mlod?"; // '?' is a placeholder for the number
+					ltoa(i, &lodName[5], 10);
 					pStatObj->m_szFileName.append(lodName);
 					pStatObj->m_szGeomName = m_szGeomName;
 					pStatObj->m_bSubObject = true;

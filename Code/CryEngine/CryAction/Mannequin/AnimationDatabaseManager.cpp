@@ -991,8 +991,7 @@ void CAnimationDatabaseLibrary::AnimEntryToXML(XmlNodeRef outXmlAnimEntry, const
 	{
 		outXmlAnimEntry->setAttr("weightList", animEntry.weightList);
 	}
-	char channelName[10];
-	cry_strcpy(channelName, "channel0");
+	char channelName[] = "channel0";
 	for (uint32 i = 0; i < MANN_NUMBER_BLEND_CHANNELS; i++)
 	{
 		if (animEntry.blendChannels[i] != 0.0f)
@@ -1014,8 +1013,7 @@ bool CAnimationDatabaseLibrary::XMLToAnimEntry(SAnimationEntry& animEntry, XmlNo
 	root->getAttr("weight", animEntry.playbackWeight);
 	root->getAttr("weightList", animEntry.weightList);
 
-	char channelName[10];
-	cry_strcpy(channelName, "channel0");
+	char channelName[] = "channel0";
 	for (uint32 i = 0; i < MANN_NUMBER_BLEND_CHANNELS; i++)
 	{
 		channelName[7] = '0' + i;

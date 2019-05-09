@@ -1396,7 +1396,7 @@ bool CTelemetryCollector::TrySubmitTelemetryProducer(
 			CTelemetryHTTPPostChunkSplitter *pSplit=new CTelemetryHTTPPostChunkSplitter(pInProducer);
 			pInProducer=pSplit;
 			pLargeSubmitData->m_pProducer=pInProducer;
-			cry_strcpy(pLargeSubmitData->m_remoteFileName,"<telemetry producer>");		// can always extract name from post header later if it is needed
+			cry_fixed_size_strcpy(pLargeSubmitData->m_remoteFileName,"<telemetry producer>");		// can always extract name from post header later if it is needed
 
 			assert(inFlags&k_tf_chunked);		// Telemetry producers must be chunked
 			CRY_ASSERT_MESSAGE(inLen<=int(sizeof(pLargeSubmitData->m_postHeaderContents)),"http post header too long, truncating - message liable to get lost");

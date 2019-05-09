@@ -340,14 +340,14 @@ CCryAction::CCryAction(SSystemInitParams& initParams)
 	m_pNetMsgDispatcher(nullptr),
 	m_pEntityContainerMgr(nullptr),
 	m_pEntityAttachmentExNodeRegistry(nullptr),
-	m_pAnimateFragmentNodeCreator(new BehaviorTree::NodeCreator<BehaviorTree::AnimateFragment>("AnimateFragment"))
+	m_pAnimateFragmentNodeCreator(new BehaviorTree::NodeCreator<BehaviorTree::AnimateFragment>("AnimateFragment")),
+	m_gameGUID("{00000000-0000-0000-0000-000000000000}")
 {
 	CRY_ASSERT(!m_pThis);
 	m_pThis = this;
 
 	m_editorLevelName[0] = 0;
 	m_editorLevelFolder[0] = 0;
-	cry_strcpy(m_gameGUID, "{00000000-0000-0000-0000-000000000000}");
 
 	Initialize(initParams);
 }
