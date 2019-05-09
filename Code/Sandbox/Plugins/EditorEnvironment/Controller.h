@@ -72,7 +72,7 @@ public:
 
 private:
 	virtual void OnEditorNotifyEvent(EEditorNotifyEvent event) override;
-	void         RebuildVariableTreeFromPreset();
+	void         RebuildVariableTreeFromPreset(bool newPreset = false);
 	void         RebuildCurveContentFromPreset();
 	void         ApplyVariableChangeToPreset(int paramId, SCurveEditorContent& content);
 

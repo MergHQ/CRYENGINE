@@ -24,7 +24,7 @@ void CController::OnOpenAsset()
 	// QObject is enough for transfer signal for Undo's
 	m_pUndoVarCancelSignal.reset(new QObject);
 
-	RebuildVariableTreeFromPreset();
+	RebuildVariableTreeFromPreset(true);
 	RebuildCurveContentFromPreset();
 
 	signalAssetOpened();
@@ -89,12 +89,10 @@ void CController::PasteCurveContentFromClipboard()
 	OnCurveEditorEndChange();
 }
 
-void CController::RebuildVariableTreeFromPreset()
+void CController::RebuildVariableTreeFromPreset(bool newPreset)
 {
 	auto& variables = m_editor.GetPreset()->GetVariables();
 	const int nTODParamCount = variables.GetVariableCount();
-
-	m_variables.groups.clear();
 
 	std::map<string, size_t> tempMap;
 	int nGroupId = 0;
@@ -111,7 +109,19 @@ void CController::RebuildVariableTreeFromPreset()
 		}
 	}
 
-	m_variables.groups.resize(nGroupId);
+	if (newPreset)
+	{
+		m_variables.groups.clear();
+		m_variables.groups.resize(tempMap.size());
+	}
+
+	// Create [GroupId <=> current element] counter
+	std::map<int, size_t> groupElementCounter;
+	for (auto it : tempMap)
+	{
+		groupElementCounter[it.second] = 0;
+	}
+
 	for (int varID = 0; varID < nTODParamCount; ++varID)
 	{
 		ITimeOfDay::SVariableInfo sVarInfo;
@@ -130,10 +140,24 @@ void CController::RebuildVariableTreeFromPreset()
 			todParam.type = (sVarInfo.type == ITimeOfDay::TYPE_FLOAT) ? STodParameter::EType::Float : STodParameter::EType::Color;
 			todParam.value = Vec3(sVarInfo.fValue[0], sVarInfo.fValue[1], sVarInfo.fValue[2]);
 			todParam.id = nParamID;
-			todParam.name = sVarInfo.szName;
-			todParam.label = sVarInfo.szDisplayName;
 
-			group.params.push_back(todParam);
+			if (newPreset)
+			{
+				todParam.name = sVarInfo.szName;
+				todParam.label = sVarInfo.szDisplayName;
+				group.params.push_back(todParam);
+			}
+			else
+			{
+				// Update value only. Pointer to name should not be changed for proper selection in a tree.
+				int indexInGroup = groupElementCounter[groupId];
+				
+				CRY_ASSERT(group.params[indexInGroup].id == todParam.id);
+				CRY_ASSERT(group.params[indexInGroup].type == todParam.type);
+
+				group.params[indexInGroup].value = todParam.value;
+				++groupElementCounter[groupId];
+			}
 		}
 	}
 

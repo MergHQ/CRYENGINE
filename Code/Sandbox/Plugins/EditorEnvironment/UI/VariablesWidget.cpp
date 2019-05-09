@@ -39,6 +39,7 @@ CVariablesWidget::CVariablesWidget(CController& controller)
 	m_controller.signalVariableTreeChanged.Connect(this, &CVariablesWidget::ResetTree);
 	m_controller.signalPlaybackModeChanged.Connect(this, &CVariablesWidget::OnPlaybackModeChanged);
 	m_controller.signalHandleKeyEventsInVarPropertyTree.Connect(this, &CVariablesWidget::ProcessUserEventsFromCurveEditor);
+	m_controller.signalCurrentTimeChanged.Connect(this, &CVariablesWidget::ResetTree);
 }
 
 CVariablesWidget::~CVariablesWidget()
