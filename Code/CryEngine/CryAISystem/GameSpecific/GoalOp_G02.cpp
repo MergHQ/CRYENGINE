@@ -338,7 +338,7 @@ void COPCharge::ExecuteDry(CPipeUser* pOperand)
 			SetChargeParams();
 			m_state = STATE_CHARGE; //STATE_ANTICIPATE;
 			m_anticipateTime = GetAISystem()->GetFrameStartTime();
-			m_pOperand->SetSignal(GetAISystem()->GetSignalManager()->CreateSignal(AISIGNAL_INCLUDE_DISABLED, gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnChargeStart_DEPRECATED(), pOperand->GetAIObjectID()));
+			m_pOperand->SetSignal(GetAISystem()->GetSignalManager()->CreateSignal(AISIGNAL_INCLUDE_DISABLED, gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnChargeStart_DEPRECATED(), pOperand->GetEntityID()));
 
 			// Start jump approach animation.
 			if (m_pOperand->GetProxy())
@@ -350,7 +350,7 @@ void COPCharge::ExecuteDry(CPipeUser* pOperand)
 			SetChargeParams();
 			m_state = STATE_CHARGE; //STATE_ANTICIPATE;
 			m_anticipateTime = GetAISystem()->GetFrameStartTime();
-			m_pOperand->SetSignal(GetAISystem()->GetSignalManager()->CreateSignal(AISIGNAL_INCLUDE_DISABLED, gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnChargeStart_DEPRECATED(), pOperand->GetAIObjectID()));
+			m_pOperand->SetSignal(GetAISystem()->GetSignalManager()->CreateSignal(AISIGNAL_INCLUDE_DISABLED, gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnChargeStart_DEPRECATED(), pOperand->GetEntityID()));
 
 			// Start jump approach animation.
 			if (m_pOperand->GetProxy())
@@ -382,7 +382,7 @@ void COPCharge::ExecuteDry(CPipeUser* pOperand)
 				// Send the target that was hit along with the signal.
 				AISignals::AISignalExtraData* pData = new AISignals::AISignalExtraData;
 				pData->nID = m_moveTarget->GetEntityID();
-				m_pOperand->SetSignal(GetAISystem()->GetSignalManager()->CreateSignal(AISIGNAL_INCLUDE_DISABLED, gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnChargeHit_DEPRECATED(), pOperand->GetAIObjectID(), pData));
+				m_pOperand->SetSignal(GetAISystem()->GetSignalManager()->CreateSignal(AISIGNAL_INCLUDE_DISABLED, gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnChargeHit_DEPRECATED(), pOperand->GetEntityID(), pData));
 
 				m_state = STATE_FOLLOW_TROUGH;
 			}
@@ -390,7 +390,7 @@ void COPCharge::ExecuteDry(CPipeUser* pOperand)
 			{
 				if (!m_bailOut)
 				{
-					m_pOperand->SetSignal(GetAISystem()->GetSignalManager()->CreateSignal(AISIGNAL_INCLUDE_DISABLED, gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnChargeMiss_DEPRECATED(), pOperand->GetAIObjectID()));
+					m_pOperand->SetSignal(GetAISystem()->GetSignalManager()->CreateSignal(AISIGNAL_INCLUDE_DISABLED, gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnChargeMiss_DEPRECATED(), pOperand->GetEntityID()));
 					m_state = STATE_FOLLOW_TROUGH;
 
 					if (m_pOperand->GetProxy())
@@ -413,7 +413,7 @@ void COPCharge::ExecuteDry(CPipeUser* pOperand)
 
 				if (!m_bailOut)
 				{
-					m_pOperand->SetSignal(GetAISystem()->GetSignalManager()->CreateSignal(AISIGNAL_INCLUDE_DISABLED, gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnChargeBailOut_DEPRECATED(), pOperand->GetAIObjectID()));
+					m_pOperand->SetSignal(GetAISystem()->GetSignalManager()->CreateSignal(AISIGNAL_INCLUDE_DISABLED, gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnChargeBailOut_DEPRECATED(), pOperand->GetEntityID()));
 					m_bailOut = true;
 				}
 			}

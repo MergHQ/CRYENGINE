@@ -2565,7 +2565,7 @@ CAIObject* CPipeUser::GetSpecialAIObject(const char* objName, float range)
 					// lets send a NoFormationPoint event
 					SetSignal(GetAISystem()->GetSignalManager()->CreateSignal(AISIGNAL_DEFAULT, GetAISystem()->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnNoFormationPoint_DEPRECATED()));
 					if (pLeader)
-						pLeader->SetSignal(GetAISystem()->GetSignalManager()->CreateSignal(AISIGNAL_DEFAULT, GetAISystem()->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnNoFormationPoint_DEPRECATED(), GetAIObjectID()));
+						pLeader->SetSignal(GetAISystem()->GetSignalManager()->CreateSignal(AISIGNAL_DEFAULT, GetAISystem()->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnNoFormationPoint_DEPRECATED(), GetEntityID()));
 				}
 			}
 
@@ -2627,7 +2627,7 @@ CAIObject* CPipeUser::GetSpecialAIObject(const char* objName, float range)
 			// lets send a NoFormationPoint event
 			SetSignal(GetAISystem()->GetSignalManager()->CreateSignal(AISIGNAL_DEFAULT, GetAISystem()->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnNoFormationPoint_DEPRECATED()));
 			if (pLeader)
-				pLeader->SetSignal(GetAISystem()->GetSignalManager()->CreateSignal(AISIGNAL_DEFAULT, GetAISystem()->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnNoFormationPoint_DEPRECATED(), GetAIObjectID()));
+				pLeader->SetSignal(GetAISystem()->GetSignalManager()->CreateSignal(AISIGNAL_DEFAULT, GetAISystem()->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnNoFormationPoint_DEPRECATED(), GetEntityID()));
 		}
 	}
 	else if (strcmp(objName, "atttarget") == 0)

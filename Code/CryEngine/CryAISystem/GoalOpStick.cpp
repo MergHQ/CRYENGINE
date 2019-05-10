@@ -1164,7 +1164,7 @@ EGoalOpResult COPStick::HandlePathDecision(CPipeUser* pPipeUser, int nPathDecisi
 				{
 					AISignals::AISignalExtraData* pData = new AISignals::AISignalExtraData;
 					pData->fValue = fDistance - m_fStickDistance;
-					pPipeUser->SetSignal(GetAISystem()->GetSignalManager()->CreateSignal(AISIGNAL_INCLUDE_DISABLED, GetAISystem()->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnEndPathOffset_DEPRECATED(), pPipeUser->GetAIObjectID(), pData));
+					pPipeUser->SetSignal(GetAISystem()->GetSignalManager()->CreateSignal(AISIGNAL_INCLUDE_DISABLED, GetAISystem()->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnEndPathOffset_DEPRECATED(), pPipeUser->GetEntityID(), pData));
 				}
 				else
 				{

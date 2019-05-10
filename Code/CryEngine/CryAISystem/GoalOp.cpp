@@ -529,7 +529,7 @@ EGoalOpResult COPApproach::Execute(CPipeUser* pPipeUser)
 			{
 				AISignals::AISignalExtraData* pData = new AISignals::AISignalExtraData;
 				pData->fValue = dist - endDistance;
-				pPipeUser->SetSignal(GetAISystem()->GetSignalManager()->CreateSignal(AISIGNAL_INCLUDE_DISABLED, GetAISystem()->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnEndPathOffset_DEPRECATED(), pPipeUser->GetAIObjectID(), pData));
+				pPipeUser->SetSignal(GetAISystem()->GetSignalManager()->CreateSignal(AISIGNAL_INCLUDE_DISABLED, GetAISystem()->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnEndPathOffset_DEPRECATED(), pPipeUser->GetEntityID(), pData));
 			}
 			else
 			{
@@ -2623,7 +2623,7 @@ EGoalOpResult COPSignal::Execute(CPipeUser* pPipeUser)
 	switch (m_cFilter)
 	{
 	case AISignals::ESignalFilter::SIGNALFILTER_SENDER:
-		pPipeUser->SetSignal(GetAISystem()->GetSignalManager()->CreateSignal_DEPRECATED(m_nSignalID, m_sSignal, pPipeUser->GetAIObjectID(), pData));
+		pPipeUser->SetSignal(GetAISystem()->GetSignalManager()->CreateSignal_DEPRECATED(m_nSignalID, m_sSignal, pPipeUser->GetEntityID(), pData));
 		m_bSent = true;
 		return eGOR_IN_PROGRESS;
 
@@ -2634,14 +2634,14 @@ EGoalOpResult COPSignal::Execute(CPipeUser* pPipeUser)
 			{
 				CAIActor* pOperandActor = pLastOpResult->CastToCAIActor();
 				if (pOperandActor)
-					pOperandActor->SetSignal(GetAISystem()->GetSignalManager()->CreateSignal_DEPRECATED(m_nSignalID, m_sSignal, pPipeUser->GetAIObjectID(), pData));
+					pOperandActor->SetSignal(GetAISystem()->GetSignalManager()->CreateSignal_DEPRECATED(m_nSignalID, m_sSignal, pPipeUser->GetEntityID(), pData));
 			}
 			break;
 		}
 
 	default:
 		// signal to species, group or anyone within comm range
-		GetAISystem()->SendSignal(m_cFilter, GetAISystem()->GetSignalManager()->CreateSignal_DEPRECATED(m_nSignalID, m_sSignal, pPipeUser->GetAIObjectID(), pData));
+		GetAISystem()->SendSignal(m_cFilter, GetAISystem()->GetSignalManager()->CreateSignal_DEPRECATED(m_nSignalID, m_sSignal, pPipeUser->GetEntityID(), pData));
 	}
 	
 	m_bSent = true;

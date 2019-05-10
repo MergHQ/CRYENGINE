@@ -820,9 +820,10 @@ void CAISystem::SendSignal(unsigned char cFilter, const AISignals::SignalSharedP
 	} autoDelete(pSignal, &pData);
 
 	// Calling this with no senderObject is an error
-	assert(pSignal->GetSenderID() != 0);
+	CRY_ASSERT(pSignal->GetSenderID() != INVALID_ENTITYID);
 
-	IAIObject* pSenderObject = gAIEnv.pAIObjectManager->GetAIObject(pSignal->GetSenderID());
+	const IEntity* pEntity = gEnv->pEntitySystem->GetEntity(pSignal->GetSenderID());
+	IAIObject* pSenderObject = pEntity ? gAIEnv.pAIObjectManager->GetAIObject(pEntity->GetAIObjectID()) : nullptr;
 	CAIActor* pSender = CastToCAIActorSafe(pSenderObject);
 	//filippo: can be that sender is null, for example when you send this signal in multiplayer.
 	if (!pSender)
@@ -3434,7 +3435,7 @@ void CAISystem::EnableGenericShape(const char* shapeName, bool state)
 				AISignals::IAISignalExtraData* pData = CreateSignalExtraData();
 				pData->SetObjectName(shapeName);
 				pData->iValue = shape.type;
-				puppet->SetSignal(GetAISystem()->GetSignalManager()->CreateSignal(AISIGNAL_DEFAULT, GetAISystem()->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnShapeEnabled(), puppet->GetAIObjectID(), pData));
+				puppet->SetSignal(GetAISystem()->GetSignalManager()->CreateSignal(AISIGNAL_DEFAULT, GetAISystem()->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnShapeEnabled(), puppet->GetEntityID(), pData));
 			}
 		}
 		else
@@ -3449,7 +3450,7 @@ void CAISystem::EnableGenericShape(const char* shapeName, bool state)
 			{
 				AISignals::IAISignalExtraData* pData = CreateSignalExtraData();
 				pData->iValue = val;
-				puppet->SetSignal(GetAISystem()->GetSignalManager()->CreateSignal(AISIGNAL_DEFAULT, GetAISystem()->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnShapeDisabled(), puppet->GetAIObjectID(), pData));
+				puppet->SetSignal(GetAISystem()->GetSignalManager()->CreateSignal(AISIGNAL_DEFAULT, GetAISystem()->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnShapeDisabled(), puppet->GetEntityID(), pData));
 			}
 		}
 	}
@@ -3589,7 +3590,7 @@ void CAISystem::NotifyTargetDead(IAIObject* pDeadObject)
 			pData->SetObjectName(pDeadObject->GetName());
 			pData->nID = pDeadObject->GetEntityID();
 			pData->string1 = gAIEnv.pFactionMap->GetFactionName(pDeadObject->GetFactionID());
-			pAIActor->SetSignal(GetAISystem()->GetSignalManager()->CreateSignal(AISIGNAL_INCLUDE_DISABLED, GetAISystem()->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnTargetDead(), pAIActor->GetAIObjectID(), pData));
+			pAIActor->SetSignal(GetAISystem()->GetSignalManager()->CreateSignal(AISIGNAL_INCLUDE_DISABLED, GetAISystem()->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnTargetDead(), pAIActor->GetEntityID(), pData));
 		}
 	}
 
@@ -3622,7 +3623,7 @@ void CAISystem::NotifyTargetDead(IAIObject* pDeadObject)
 				if (!CheckVisibilityToBody(pPuppet, pDeadActor, dist, pNearestThrownEntPhys))
 					continue;
 
-				pPuppet->SetSignal(GetAISystem()->GetSignalManager()->CreateSignal(AISIGNAL_DEFAULT, GetAISystem()->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnGroupMemberMutilated(), pDeadObject->GetEntity()->GetAIObjectID()));
+				pPuppet->SetSignal(GetAISystem()->GetSignalManager()->CreateSignal(AISIGNAL_DEFAULT, GetAISystem()->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnGroupMemberMutilated(), pDeadObject->GetEntityID()));
 			}
 		}
 	}
