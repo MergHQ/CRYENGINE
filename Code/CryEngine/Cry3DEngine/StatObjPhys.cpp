@@ -1642,6 +1642,7 @@ IStatObj* CStatObj::UpdateVertices(strided_pointer<Vec3> pVtx, strided_pointer<V
 		{
 			pObj = (CStatObj*)Clone(true, true, false);
 			pObj->m_pRenderMesh->KeepSysMesh(true);
+			DisableStreaming();
 			pObj->m_pLattice = m_pLattice;
 			m_pLattice = 0;
 		}
@@ -1822,6 +1823,7 @@ IStatObj* CStatObj::SkinVertices(strided_pointer<Vec3> pSkelVtx, const Matrix34&
 	{
 		pObj = (CStatObj*)Clone(true, true, false);
 		pObj->m_pRenderMesh->KeepSysMesh(true);
+		DisableStreaming();
 	}
 	if (!pObj->m_pClonedSourceObject || !pObj->m_pClonedSourceObject->m_pRenderMesh)
 		return pObj;
