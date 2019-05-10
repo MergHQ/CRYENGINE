@@ -237,6 +237,7 @@
         <file alias="common/general_view_horizonal.ico">icons/general_view_horizonal.ico</file>
         <file alias="common/general_view_folder_tree.ico">icons/general_view_folder_tree.ico</file>
         <file alias="common/general_view_recursive_view.ico">icons/general_view_recursive_view.ico</file>
+        <file alias="common/general_hide_irrelevant_folders.ico">icons/general_hide_irrelevant_folders.ico</file>      
         <file alias="common/general_icon_missing.ico">icons/general_icon_missing.ico</file>
         <file alias="common/general_dropdown_arrow.ico">icons/general_dropdown_arrow.ico</file>
         <file alias="common/general_dropdown_triangle.ico">icons/general_dropdown_triangle.ico</file>

@@ -29,13 +29,16 @@ public:
 		QVariant variant = index.data(Qt::DisplayRole);
 		if (variant.isValid())
 		{
+			const bool isEngineAsset = variant.toString().startsWith('%');
+
+			// Assets root folder accepted
 			if (acceptedFolders.isEmpty())
 			{
 				if (m_parent->m_isRecursive)
 				{
-					return !variant.toString().startsWith('%');
+					return !isEngineAsset;
 				}
-				else
+				else // Accept if the asset is located in the root folder
 				{
 					return variant.toString().isEmpty();
 				}
@@ -47,7 +50,7 @@ public:
 			{
 				for (auto& filter : acceptedFolders)
 				{
-					if (folder.startsWith(filter))
+					if (!filter.isEmpty() ? folder.startsWith(filter) : !folder.startsWith("%"))
 					{
 						return true;
 					}
@@ -320,7 +323,7 @@ void CAssetFolderFilterModel::SetAcceptedFolders(const QStringList& folders)
 		//adding trailing / for filtering since CAsset::GetFolder() returns with trailing /
 		for (auto& folder : m_acceptedFolders)
 		{
-			if (!folder.endsWith('/'))
+			if (!folder.isEmpty() && !folder.endsWith('/'))
 				folder += '/';
 		}
 		
