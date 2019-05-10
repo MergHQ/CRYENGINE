@@ -2419,7 +2419,7 @@ void CAttachmentManager::ProcessAttachment(IAttachment* pSocket)
 			const auto parentNodeFlags = pParentRenderNode ? pParentRenderNode->GetRndFlags() : IRenderNode::RenderFlagsType();
 			const auto attachmentFlags = pSocket->GetFlags();
 
-			const bool hidden = ((attachmentFlags & FLAGS_ATTACH_VISIBLE) == 0);
+			const bool hidden = (parentNodeFlags & ERF_HIDDEN) || (!(attachmentFlags & FLAGS_ATTACH_VISIBLE));
 			pRenderNode->Hide(hidden);
 
 			const bool nearest = (parentNodeFlags & ERF_FOB_NEAREST) && (!(attachmentFlags & FLAGS_ATTACH_EXCLUDE_FROM_NEAREST));
