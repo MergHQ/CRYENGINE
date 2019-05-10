@@ -807,7 +807,7 @@ void CAIPlayer::AddThrownEntity(EntityId id)
 			float dist = FLT_MAX;
 			if (!GetAISystem()->CheckVisibilityToBody(pPuppet, pThrownActor, dist))
 				continue;
-			pPuppet->SetSignal(GetAISystem()->GetSignalManager()->CreateSignal(AISIGNAL_DEFAULT, GetAISystem()->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnGroupMemberMutilated(), pThrownActor->GetAIObjectID()));
+			pPuppet->SetSignal(GetAISystem()->GetSignalManager()->CreateSignal(AISIGNAL_DEFAULT, GetAISystem()->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnGroupMemberMutilated(), pThrownActor->GetEntityID()));
 			pPuppet->SetAlarmed();
 		}
 	}
@@ -894,7 +894,7 @@ void CAIPlayer::NotifyPlayerActionToTheLookingAgents(const AISignals::ISignalDes
 					pData->iValue = pAIActor->GetAttentionTargetType();
 					pData->iValue2 = pAIActor->GetAttentionTargetThreat();
 					pData->fValue = pAIActor->GetPos().GetDistance(GetPos());
-					pAISystem->SendSignal(AISignals::ESignalFilter::SIGNALFILTER_SENDER, GetAISystem()->GetSignalManager()->CreateSignal(AISIGNAL_DEFAULT, signalDescription, pAIActor->GetAIObjectID(), pData));
+					pAISystem->SendSignal(AISignals::ESignalFilter::SIGNALFILTER_SENDER, GetAISystem()->GetSignalManager()->CreateSignal(AISIGNAL_DEFAULT, signalDescription, pAIActor->GetEntityID(), pData));
 				}
 			}
 		}

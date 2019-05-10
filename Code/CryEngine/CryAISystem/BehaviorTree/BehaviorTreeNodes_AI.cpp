@@ -2264,7 +2264,7 @@ protected:
 		}
 
 		const AISignals::ISignalDescription& signalDesc = GetAISystem()->GetSignalManager()->GetSignalDescription(m_signalName.c_str());
-		const AISignals::SignalSharedPtr pSignal = GetAISystem()->GetSignalManager()->CreateSignal(AISIGNAL_DEFAULT, signalDesc, pPipeUser->GetAIObjectID());
+		const AISignals::SignalSharedPtr pSignal = GetAISystem()->GetSignalManager()->CreateSignal(AISIGNAL_DEFAULT, signalDesc, pPipeUser->GetEntityID());
 
 		GetAISystem()->SendSignal(m_filter, pSignal);
 	}

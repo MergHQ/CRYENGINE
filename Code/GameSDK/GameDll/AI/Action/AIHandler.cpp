@@ -616,7 +616,7 @@ void CAIHandler::AIMind(SOBJECTSTATE& state)
 				{
 					if (IAIObject::eFOV_Outside != pTarget->IsPointInFOV(pEntityAI->GetPos()))
 					{
-						pSignal = gEnv->pAISystem->GetSignalManager()->CreateSignal(AISIGNAL_DEFAULT, gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnSeenByEnemy(), pTarget->GetAIObjectID());
+						pSignal = gEnv->pAISystem->GetSignalManager()->CreateSignal(AISIGNAL_DEFAULT, gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnSeenByEnemy(), pTarget->GetEntityID());
 						gEnv->pAISystem->SendSignal(AISignals::ESignalFilter::SIGNALFILTER_SENDER, pSignal);
 					}
 				}
@@ -2343,7 +2343,7 @@ void CAIHandler::DoReadibilityPackForAIObjectsOfType(unsigned short int nType, c
 		AISignals::IAISignalExtraData* pData = pAISystem->CreateSignalExtraData();
 		pData->iValue = 0;                                                              // Default Priority.
 		pData->fValue = fResponseDelay > 0.0f ? fResponseDelay : cry_random(2.5f, 4.f); // Delay
-		const AISignals::SignalSharedPtr pSignal = gEnv->pAISystem->GetSignalManager()->CreateSignal_DEPRECATED(AISIGNAL_DEFAULT, szText, nearestInGroup->GetAIObjectID(), pData);
+		const AISignals::SignalSharedPtr pSignal = gEnv->pAISystem->GetSignalManager()->CreateSignal_DEPRECATED(AISIGNAL_DEFAULT, szText, nearestInGroup->GetEntityID(), pData);
 		pAISystem->SendSignal(AISignals::ESignalFilter::SIGNALFILTER_READABILITYRESPONSE, pSignal);
 	}
 }

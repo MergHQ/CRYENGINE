@@ -1153,7 +1153,6 @@ void CFlowNode_AISequenceJoinFormation::ProcessEvent(EFlowEvent event, SActivati
 					if (CAIActor* pAIActor = pAIObject->CastToCAIActor())
 					{
 						const EntityId entityIdToFollow = GetPortEntityId(pActInfo, InputPort_LeaderId);
-						IEntity* pEntityToFollow = gEnv->pEntitySystem->GetEntity(entityIdToFollow);
 
 						AISignals::IAISignalExtraData* pData = gEnv->pAISystem->CreateSignalExtraData();
 						const int goalPipeId = gEnv->pAISystem->AllocGoalPipeId();
@@ -1161,7 +1160,7 @@ void CFlowNode_AISequenceJoinFormation::ProcessEvent(EFlowEvent event, SActivati
 						pAIActor->SetSignal(GetAISystem()->GetSignalManager()->CreateSignal(
 							AISIGNAL_ALLOW_DUPLICATES,
 							gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnActJoinFormation(),
-							pEntityToFollow ? pEntityToFollow->GetAIObjectID() : 0,
+							entityIdToFollow,
 							pData));
 
 						isSignalSent = true;
@@ -1179,7 +1178,7 @@ void CFlowNode_AISequenceJoinFormation::SendSignal(IAIActor* pIAIActor, const ch
 	AISignals::IAISignalExtraData* pData = gEnv->pAISystem->CreateSignalExtraData();
 	const int goalPipeId = GetAISystem()->AllocGoalPipeId();
 	pData->iValue = goalPipeId;
-	pIAIActor->SetSignal(GetAISystem()->GetSignalManager()->CreateSignal_DEPRECATED(AISIGNAL_DEFAULT, signalName, pSender ? pSender->GetAIObjectID() : 0, pData));
+	pIAIActor->SetSignal(GetAISystem()->GetSignalManager()->CreateSignal_DEPRECATED(AISIGNAL_DEFAULT, signalName, pSender ? pSender->GetId() : INVALID_ENTITYID, pData));
 }
 
 //////////////////////////////////////////////////////////////////////////

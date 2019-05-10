@@ -5596,7 +5596,7 @@ void CActor::SetGrabbedByPlayer( IEntity* pPlayerEntity, bool grabbed )
 				{
 					AISignals::IAISignalExtraData *pSData = gEnv->pAISystem->CreateSignalExtraData();	
 					pSData->point = Vec3(0,0,0);
-					pAIActor->SetSignal(gEnv->pAISystem->GetSignalManager()->CreateSignal(AISIGNAL_DEFAULT, gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnGrabbedByPlayer(), pPlayerEntity ?  pPlayerEntity->GetAIObjectID() : 0, pSData));
+					pAIActor->SetSignal(gEnv->pAISystem->GetSignalManager()->CreateSignal(AISIGNAL_DEFAULT, gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnGrabbedByPlayer(), pPlayerEntity ?  pPlayerEntity->GetId() : INVALID_ENTITYID, pSData));
 				}
 				pAIObject->Event(AIEVENT_DISABLE,0);
 			}

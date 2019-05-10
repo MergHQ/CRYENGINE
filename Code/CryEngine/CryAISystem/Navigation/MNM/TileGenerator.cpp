@@ -821,7 +821,6 @@ struct CTileGenerator::SWalkableProbeCheckParams
 			break; //Empty neighbour - stop probe (but no fail)
 
 		bool isCellValid = false;
-		int lastSpanTopDiffSigned;
 
 		const size_t pcount = probeCell.count;
 		const size_t pindex = probeCell.index;
@@ -841,11 +840,15 @@ struct CTileGenerator::SWalkableProbeCheckParams
 			if (probeSpanTopDiffAbsolute <= params.filterParams.climbableVoxelCount
 				&& min(lastSpanNextBottom, probeSpanNextBottom) >= max(lastSpanTop, probeSpanTop) + params.filterParams.minValidHeightVoxelCount)
 			{
+				if (probeSpanTopDiffSigned > params.firstSpanTopDiffSigned + 1 || probeSpanTopDiffSigned < params.firstSpanTopDiffSigned - 1)
+				{
+					// stop probe (but no fail)
+					break;
+				}
+				
 				// Track range of tops in probe
 				probeSpansTopMin = min(probeSpansTopMin, probeSpanTop);
 				probeSpansTopMax = max(probeSpansTopMax, probeSpanTop);
-
-				lastSpanTopDiffSigned = probeSpanTopDiffSigned;
 
 				lastSpanTop = probeSpanTop;
 				lastSpanNextBottom = probeSpanNextBottom;
@@ -859,11 +862,6 @@ struct CTileGenerator::SWalkableProbeCheckParams
 		if (!isCellValid)
 			break;
 
-		if (lastSpanTopDiffSigned > params.firstSpanTopDiffSigned + 1 || lastSpanTopDiffSigned < params.firstSpanTopDiffSigned - 1)
-		{
-			// stop probe (but no fail)
-			break;
-		}
 	} // for all probes in the direction
 
 	const size_t checkedProbesDist = probeIdx - 2;

@@ -2047,7 +2047,7 @@ void CAIActor::HandleBulletRain(SAIEVENT* pAIEvent)
 	pData->nID = pAIEvent->sourceId;
 	pData->fValue = pAIEvent->fThreat; // pressureMultiplier
 
-	SetSignal(GetAISystem()->GetSignalManager()->CreateSignal(AISIGNAL_INCLUDE_DISABLED, GetAISystem()->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnBulletRain(),GetAIObjectID(), pData));
+	SetSignal(GetAISystem()->GetSignalManager()->CreateSignal(AISIGNAL_INCLUDE_DISABLED, GetAISystem()->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnBulletRain(), GetEntityID(), pData));
 
 	if (gAIEnv.pTargetTrackManager->IsEnabled())
 		gAIEnv.pTargetTrackManager->HandleStimulusFromAIEvent(GetAIObjectID(), pAIEvent, TargetTrackHelpers::eEST_BulletRain);

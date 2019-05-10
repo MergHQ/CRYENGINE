@@ -23,7 +23,6 @@
 #include <CryEntitySystem/IEntitySystem.h>
 #include <CryAnimation/ICryAnimation.h>
 #include <CryAISystem/ISignal.h>
-#include <CryAISystem/IAIObject.h>
 #include <CryRenderer/IRenderAuxGeom.h>
 #include <IVehicleSystem.h>
 #include "ItemParams.h"
@@ -694,9 +693,9 @@ EntityId CItemSystem::GiveItem(IActor* pActor, const char* item, bool sound, boo
 			//[kirill] make sure AI gets notified about new item
 			if (gEnv->pAISystem)
 			{
-				if (IAIObject* pActorAI = pActor->GetEntity()->GetAI())
+				if (pActor->GetEntity()->HasAI())
 				{
-					const AISignals::SignalSharedPtr pSignal = gEnv->pAISystem->GetSignalManager()->CreateSignal(AISIGNAL_INCLUDE_DISABLED, gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnUpdateItems(), pActorAI->GetAIObjectID());
+					const AISignals::SignalSharedPtr pSignal = gEnv->pAISystem->GetSignalManager()->CreateSignal(AISIGNAL_INCLUDE_DISABLED, gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnUpdateItems(), pActor->GetEntityId());
 					gEnv->pAISystem->SendSignal(AISignals::ESignalFilter::SIGNALFILTER_SENDER, pSignal);
 				}
 			}

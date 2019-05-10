@@ -154,7 +154,7 @@ void SExportObject::Weld()
 				else
 				{
 					face.vertex[i] = vertexCount;
-					vertices.emplace(v, vertexCount);
+					vertices[v] = vertexCount;
 					++vertexCount;
 				}
 
@@ -169,7 +169,7 @@ void SExportObject::Weld()
 					else
 					{
 						face.normal[i] = normalCount;
-						normals.emplace(n, normalCount);
+						normals[n] = normalCount;
 						++normalCount;
 					}
 				}
@@ -185,7 +185,7 @@ void SExportObject::Weld()
 					else
 					{
 						face.texCoord[i] = texCoordCount;
-						texCoords.emplace(uv, texCoordCount);
+						texCoords[uv] = texCoordCount;
 						++texCoordCount;
 					}
 				}

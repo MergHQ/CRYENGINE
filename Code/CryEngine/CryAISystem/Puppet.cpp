@@ -818,7 +818,7 @@ void CPuppet::UpdateTargetMovementState()
 		if (m_targetApproaching)
 		{
 			m_targetApproach = 0;
-			SetSignal(GetAISystem()->GetSignalManager()->CreateSignal(AISIGNAL_DEFAULT, GetAISystem()->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnTargetApproaching(), pAttentionTarget->GetAIObjectID()));
+			SetSignal(GetAISystem()->GetSignalManager()->CreateSignal(AISIGNAL_DEFAULT, GetAISystem()->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnTargetApproaching(), pAttentionTarget->GetEntityID()));
 		}
 	}
 
@@ -828,7 +828,7 @@ void CPuppet::UpdateTargetMovementState()
 		if (m_targetFleeing)
 		{
 			m_targetFlee = 0;
-			SetSignal(GetAISystem()->GetSignalManager()->CreateSignal(AISIGNAL_DEFAULT, GetAISystem()->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnTargetFleeing(), pAttentionTarget->GetAIObjectID()));
+			SetSignal(GetAISystem()->GetSignalManager()->CreateSignal(AISIGNAL_DEFAULT, GetAISystem()->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnTargetFleeing(), pAttentionTarget->GetEntityID()));
 		}
 	}
 }
@@ -1080,7 +1080,7 @@ void CPuppet::UpdatePuppetInternalState()
 			pData->fValue = (targetSelectionInfo.bIsGroupTarget ? 1.0f : 0.0f);
 			pData->iValue = m_State.eTargetType;
 			pData->iValue2 = m_State.eTargetThreat;
-			SetSignal(GetAISystem()->GetSignalManager()->CreateSignal(AISIGNAL_INCLUDE_DISABLED, GetAISystem()->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnNewAttentionTarget(), GetAIObjectID(), pData));
+			SetSignal(GetAISystem()->GetSignalManager()->CreateSignal(AISIGNAL_INCLUDE_DISABLED, GetAISystem()->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnNewAttentionTarget(), GetEntityID(), pData));
 
 			if (bestTargetEvent)
 				bestTargetEvent->bNeedsUpdating = false;
@@ -1091,7 +1091,7 @@ void CPuppet::UpdatePuppetInternalState()
 			{
 				AISignals::IAISignalExtraData* pData = GetAISystem()->CreateSignalExtraData();
 				pData->iValue = m_State.eTargetThreat;
-				SetSignal(GetAISystem()->GetSignalManager()->CreateSignal(AISIGNAL_INCLUDE_DISABLED, GetAISystem()->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnAttentionTargetThreatChanged(), GetAIObjectID(), pData));
+				SetSignal(GetAISystem()->GetSignalManager()->CreateSignal(AISIGNAL_INCLUDE_DISABLED, GetAISystem()->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnAttentionTargetThreatChanged(), GetEntityID(), pData));
 			}
 
 			// Handle state change of the current attention target.
@@ -1101,12 +1101,12 @@ void CPuppet::UpdatePuppetInternalState()
 			{
 				// Aggressive -> threatening
 				if (m_State.eTargetType == AITARGET_VISUAL || m_State.eTargetType == AITARGET_MEMORY)
-					SetSignal(GetAISystem()->GetSignalManager()->CreateSignal(AISIGNAL_INCLUDE_DISABLED, GetAISystem()->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnNoTargetVisible(), GetAIObjectID()));
+					SetSignal(GetAISystem()->GetSignalManager()->CreateSignal(AISIGNAL_INCLUDE_DISABLED, GetAISystem()->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnNoTargetVisible(), GetEntityID()));
 			}
 			else if (m_AttTargetThreat >= AITHREAT_THREATENING && m_State.eTargetThreat < AITHREAT_THREATENING)
 			{
 				// Threatening -> interesting
-				SetSignal(GetAISystem()->GetSignalManager()->CreateSignal(AISIGNAL_INCLUDE_DISABLED, GetAISystem()->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnNoTargetAwareness(), GetAIObjectID()));
+				SetSignal(GetAISystem()->GetSignalManager()->CreateSignal(AISIGNAL_INCLUDE_DISABLED, GetAISystem()->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnNoTargetAwareness(), GetEntityID()));
 			}
 
 			if (bestTargetEvent)
@@ -2917,7 +2917,7 @@ void CPuppet::FireCommand(float updateTime)
 	GetProxy()->QueryWeaponInfo(weaponInfo);
 
 	if (m_wasReloading && !weaponInfo.isReloading)
-		SetSignal(GetAISystem()->GetSignalManager()->CreateSignal(AISIGNAL_DEFAULT, GetAISystem()->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnReloaded(), GetAIObjectID()));
+		SetSignal(GetAISystem()->GetSignalManager()->CreateSignal(AISIGNAL_DEFAULT, GetAISystem()->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnReloaded(), GetEntityID()));
 	
 	if (weaponInfo.outOfAmmo || weaponInfo.isReloading)
 		canFire = false;
@@ -2926,7 +2926,7 @@ void CPuppet::FireCommand(float updateTime)
 	{
 		if (!m_lowAmmoSent)
 		{
-			SetSignal(GetAISystem()->GetSignalManager()->CreateSignal(AISIGNAL_DEFAULT, GetAISystem()->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnLowAmmo(), GetAIObjectID()));
+			SetSignal(GetAISystem()->GetSignalManager()->CreateSignal(AISIGNAL_DEFAULT, GetAISystem()->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnLowAmmo(), GetEntityID()));
 			m_lowAmmoSent = true;
 		}
 	}
@@ -2939,7 +2939,7 @@ void CPuppet::FireCommand(float updateTime)
 	{
 		if (weaponInfo.outOfAmmo)
 		{
-			SetSignal(GetAISystem()->GetSignalManager()->CreateSignal(AISIGNAL_DEFAULT, GetAISystem()->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnOutOfAmmo(), GetAIObjectID()));
+			SetSignal(GetAISystem()->GetSignalManager()->CreateSignal(AISIGNAL_DEFAULT, GetAISystem()->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnOutOfAmmo(), GetEntityID()));
 
 			m_outOfAmmoSent = true;
 			m_outOfAmmoTimeOut = 0.0f;
@@ -3486,7 +3486,7 @@ void CPuppet::FireMelee(CAIObject* pTarget)
 	// Execute the melee.
 	m_State.fireMelee = eAIFS_On;
 
-	SetSignal(GetAISystem()->GetSignalManager()->CreateSignal(AISIGNAL_DEFAULT, GetAISystem()->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnMeleeExecuted(), GetAIObjectID()));
+	SetSignal(GetAISystem()->GetSignalManager()->CreateSignal(AISIGNAL_DEFAULT, GetAISystem()->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnMeleeExecuted(), GetEntityID()));
 }
 
 //===================================================================
@@ -4168,7 +4168,7 @@ bool CPuppet::CheckTargetInRange(Vec3& vTargetPos)
 	{
 		if (!m_bWarningTargetDistance)
 		{
-			SetSignal(GetAISystem()->GetSignalManager()->CreateSignal(AISIGNAL_INCLUDE_DISABLED, GetAISystem()->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnTargetTooClose(), GetAIObjectID()));
+			SetSignal(GetAISystem()->GetSignalManager()->CreateSignal(AISIGNAL_INCLUDE_DISABLED, GetAISystem()->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnTargetTooClose(), GetEntityID()));
 			m_bWarningTargetDistance = true;
 		}
 		return false;
@@ -4177,7 +4177,7 @@ bool CPuppet::CheckTargetInRange(Vec3& vTargetPos)
 	{
 		if (!m_bWarningTargetDistance)
 		{
-			SetSignal(GetAISystem()->GetSignalManager()->CreateSignal(AISIGNAL_INCLUDE_DISABLED, GetAISystem()->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnTargetTooFar(), GetAIObjectID()));
+			SetSignal(GetAISystem()->GetSignalManager()->CreateSignal(AISIGNAL_INCLUDE_DISABLED, GetAISystem()->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnTargetTooFar(), GetEntityID()));
 			m_bWarningTargetDistance = true;
 		}
 		return false;

@@ -947,7 +947,7 @@ void CAIVehicle::AlertPuppets(void)
 				{
 					CCCPOINT(CAIVehicle_AlertPuppets_SignalVehicle);
 					pPuppet->SetAvoidedVehicle(NILREF);
-					pPuppet->SetSignal(GetAISystem()->GetSignalManager()->CreateSignal(AISIGNAL_DEFAULT, GetAISystem()->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnEndVehicleDanger_DEPRECATED(), GetAIObjectID()));
+					pPuppet->SetSignal(GetAISystem()->GetSignalManager()->CreateSignal(AISIGNAL_DEFAULT, GetAISystem()->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnEndVehicleDanger_DEPRECATED(), GetEntityID()));
 				}
 			}
 
@@ -1017,7 +1017,7 @@ void CAIVehicle::AlertPuppets(void)
 				AISignals::AISignalExtraData* pData = new AISignals::AISignalExtraData;
 				pData->point2 = avoidPos;
 				pData->point = vn;
-				pPuppet->SetSignal(GetAISystem()->GetSignalManager()->CreateSignal(AISIGNAL_DEFAULT, GetAISystem()->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnVehicleDanger_DEPRECATED(), GetAIObjectID(), pData));
+				pPuppet->SetSignal(GetAISystem()->GetSignalManager()->CreateSignal(AISIGNAL_DEFAULT, GetAISystem()->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnVehicleDanger_DEPRECATED(), GetEntityID(), pData));
 
 			}
 			pPuppet->SetAvoidedVehicle(GetWeakRef(this));
@@ -1035,7 +1035,7 @@ void CAIVehicle::AlertPuppets(void)
 				if (pPuppet->GetVehicleAvoidingTime() > 3000)
 				{
 					pPuppet->SetAvoidedVehicle(NILREF);
-					pPuppet->SetSignal(GetAISystem()->GetSignalManager()->CreateSignal(AISIGNAL_DEFAULT, GetAISystem()->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnEndVehicleDanger_DEPRECATED(), GetAIObjectID()));
+					pPuppet->SetSignal(GetAISystem()->GetSignalManager()->CreateSignal(AISIGNAL_DEFAULT, GetAISystem()->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnEndVehicleDanger_DEPRECATED(), GetEntityID()));
 				}
 			}
 		}

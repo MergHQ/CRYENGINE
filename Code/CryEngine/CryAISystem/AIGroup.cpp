@@ -1088,7 +1088,7 @@ void CAIGroup::UpdateReinforcementLogic()
 				pData->nID = nearestSpot->pAI->GetEntityID();
 				pData->iValue = nearestSpot->type;
 
-				AISignals::SignalSharedPtr signal = gEnv->pAISystem->GetSignalManager()->CreateSignal(AISIGNAL_DEFAULT, gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnCallReinforcements_DEPRECATED(), pUnit->GetAIObjectID(), pData);
+				AISignals::SignalSharedPtr signal = gEnv->pAISystem->GetSignalManager()->CreateSignal(AISIGNAL_DEFAULT, gEnv->pAISystem->GetSignalManager()->GetBuiltInSignalDescriptions().GetOnCallReinforcements_DEPRECATED(), pUnit->GetEntityID(), pData);
 				pUnit->SetSignal(signal);
 				pNearestCallerImg->m_lastReinforcementTime = GetAISystem()->GetFrameStartTime();
 
