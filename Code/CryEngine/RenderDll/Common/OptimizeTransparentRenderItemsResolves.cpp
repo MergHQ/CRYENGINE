@@ -229,7 +229,7 @@ std::size_t CRenderView::OptimizeTransparentRenderItemsResolves(STransparentSegm
 	{
 		// Iterate in reverse (from closest resolves to furthest away ones)
 		auto it = segments.rbegin();
-		for (; it != segments.rend() && resolves_count<max_resolves; ++it)
+		for (; it != segments.rend() && resolves_count < static_cast<std::size_t>(max_resolves); ++it)
 			if (it->resolveRects.size())
 				++resolves_count;
 		if (it != segments.rend())
