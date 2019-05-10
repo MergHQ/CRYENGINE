@@ -67,9 +67,9 @@ struct _CryMemoryManagerPoolHelper
 
 	static int                               m_bInitialized;
 
-	// Use template as most modules do not define memory management functions and use the one from CrySystem 
+	// Use template as most modules do not define memory management functions and use the one from CrySystem
 	// which may be part of the Launcher if not build as _LIB (monolithic).
-	template<int> static void BindMemoryFunctionPointers();	
+	template<int> static void BindMemoryFunctionPointers();
 
 	static void Init();
 	static void FakeAllocation(long size)
@@ -237,12 +237,12 @@ void _CryMemoryManagerPoolHelper::Init()
 #ifndef eCryModule
 	BindMemoryFunctionPointers<eCryM_EnginePlugin>();
 #else
-	#if defined(CRY_IS_MONOLITHIC_BUILD) 
+	#if defined(CRY_IS_MONOLITHIC_BUILD)
 		BindMemoryFunctionPointers<eCryM_System>();
 	#else
 		BindMemoryFunctionPointers<eCryModule>();
 	#endif
-#endif		
+#endif
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -430,15 +430,13 @@ void __cdecl operator delete[](void* ptr, const std::nothrow_t& nothrow_constant
 #endif
 
 //////////////////////////////////////////////////////////////////////////
-#ifndef MEMMAN_STATIC
+static IMemoryManager* memMan = nullptr;
 IMemoryManager* CryGetIMemoryManager()
 {
-	static IMemoryManager* memMan = 0;
 	if (!memMan)
 		memMan = _CryMemoryManagerPoolHelper::GetIMemoryManager();
 	return memMan;
 }
-#endif //!defined(_LIB)
 
 // ~memReplay
 #endif // __CryMemoryManager_impl_h__

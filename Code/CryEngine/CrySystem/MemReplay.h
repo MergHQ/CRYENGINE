@@ -3,6 +3,8 @@
 #ifndef __MemReplay_h__
 #define __MemReplay_h__
 
+#include <CrySystem/Profilers/CryMemReplay.h>
+
 #define REPLAY_RECORD_FREECS        1
 #define REPLAY_RECORD_USAGE_CHANGES 0
 #define REPLAY_RECORD_THREADED      1
@@ -558,26 +560,40 @@ private:
 };
 
 //////////////////////////////////////////////////////////////////////////
-class CMemReplay : public IMemReplay
+class CMemReplay final : public IMemReplay
 {
-public:
-	static CMemReplay* GetInstance();
+private:
+	enum class ECreationStatus
+	{
+		Uninitialized = 0,
+		Initialized = 1,
+	};
+
+	typedef CryCriticalSection TLogMutex;
+	typedef CryAutoLock<TLogMutex> TLogAutoLock;
 
 public:
 	CMemReplay();
-	~CMemReplay();
+	virtual ~CMemReplay() {};
+
+#if MEMREPLAY_USES_DETOURS
+	static void Init();
+	static void Shutdown();
+#endif
+
+	static CMemReplay* GetInstance();
 
 	//////////////////////////////////////////////////////////////////////////
 	// IMemReplay interface implementation
 	//////////////////////////////////////////////////////////////////////////
-	void DumpStats();
-	void DumpSymbols();
+	void DumpStats() final;
+	void DumpSymbols() final;
 
-	void StartOnCommandLine(const char* cmdLine);
-	void Start(bool bPaused, const char* openString);
-	void Stop();
-	void Flush();
-	bool EnableAsynchMode();
+	void StartOnCommandLine(const char* cmdLine) final;
+	void Start(bool bPaused, const char* openString) final;
+	void Stop() final;
+	void Flush() final;
+	bool EnableAsynchMode() final;
 
 	void GetInfo(CryReplayInfo& infoOut);
 
@@ -585,47 +601,47 @@ public:
 	bool EnterScope(EMemReplayAllocClass cls, EMemReplayUserPointerClass subCls, int moduleId);
 
 	// Records an event against the currently active scope and exits it.
-	void ExitScope_Alloc(UINT_PTR id, UINT_PTR sz, UINT_PTR alignment = 0);
-	void ExitScope_Realloc(UINT_PTR originalId, UINT_PTR newId, UINT_PTR sz, UINT_PTR alignment = 0);
-	void ExitScope_Free(UINT_PTR id);
-	void ExitScope();
+	void ExitScope_Alloc(EMemReplayAllocClass cls, EMemReplayUserPointerClass subCls, int moduleId, UINT_PTR id, UINT_PTR sz, UINT_PTR alignment = 0) final;
+	void ExitScope_Realloc(EMemReplayAllocClass cls, EMemReplayUserPointerClass subCls, int moduleId, UINT_PTR originalId, UINT_PTR newId, UINT_PTR sz, UINT_PTR alignment = 0) final;
+	void ExitScope_Free(EMemReplayAllocClass cls, EMemReplayUserPointerClass subCls, int moduleId, UINT_PTR id) final;
+	void ExitScope() final;
 
-	void AllocUsage(EMemReplayAllocClass allocClass, UINT_PTR id, UINT_PTR used);
+	void AllocUsage(EMemReplayAllocClass allocClass, UINT_PTR id, UINT_PTR used) final;
 
-	void AddAllocReference(void* ptr, void* ref);
-	void RemoveAllocReference(void* ref);
+	void AddAllocReference(void* ptr, void* ref) final;
+	void RemoveAllocReference(void* ref) final;
 
-	void AddLabel(const char* label);
-	void AddLabelFmt(const char* labelFmt, ...);
-	void AddFrameStart();
-	void AddScreenshot();
+	void AddLabel(const char* label) final;
+	void AddLabelFmt(const char* labelFmt, ...) final;
+	void AddFrameStart() final;
+	void AddScreenshot() final;
 
-	FixedContextID AddFixedContext(EMemStatContextType type, const char* str);
-	void PushFixedContext(FixedContextID id);
+	FixedContextID AddFixedContext(EMemStatContextType type, const char* str) final;
+	void PushFixedContext(FixedContextID id) final;
 
-	void PushContext(EMemStatContextType type, const char* str);
-	void PushContextV(EMemStatContextType type, const char* format, va_list args);
-	void PopContext();
+	void PushContext(EMemStatContextType type, const char* str) final;
+	void PushContextV(EMemStatContextType type, const char* format, va_list args) final;
+	void PopContext() final;
 
-	void MapPage(void* base, size_t size);
-	void UnMapPage(void* base, size_t size);
+	void MapPage(void* base, size_t size) final;
+	void UnMapPage(void* base, size_t size) final;
 
-	void RegisterFixedAddressRange(void* base, size_t size, const char* name);
-	void MarkBucket(int bucket, size_t alignment, void* base, size_t length);
-	void UnMarkBucket(int bucket, void* base);
-	void BucketEnableCleanups(void* allocatorBase, bool enabled);
+	void RegisterFixedAddressRange(void* base, size_t size, const char* name) final;
+	void MarkBucket(int bucket, size_t alignment, void* base, size_t length) final;
+	void UnMarkBucket(int bucket, void* base) final;
+	void BucketEnableCleanups(void* allocatorBase, bool enabled) final;
 
-	void MarkPool(int pool, size_t alignment, void* base, size_t length, const char* name);
-	void UnMarkPool(int pool, void* base);
-	void AddTexturePoolContext(void* ptr, int mip, int width, int height, const char* name, uint32 flags);
+	void MarkPool(int pool, size_t alignment, void* base, size_t length, const char* name) final;
+	void UnMarkPool(int pool, void* base) final;
+	void AddTexturePoolContext(void* ptr, int mip, int width, int height, const char* name, uint32 flags) final;
 
-	void AddSizerTree(const char* name);
+	void AddSizerTree(const char* name) final;
 
-	void RegisterContainer(const void* key, int type);
-	void UnregisterContainer(const void* key);
-	void BindToContainer(const void* key, const void* alloc);
-	void UnbindFromContainer(const void* key, const void* alloc);
-	void SwapContainers(const void* keyA, const void* keyB);
+	void RegisterContainer(const void* key, int type) final;
+	void UnregisterContainer(const void* key) final;
+	void BindToContainer(const void* key, const void* alloc) final;
+	void UnbindFromContainer(const void* key, const void* alloc) final;
+	void SwapContainers(const void* keyA, const void* keyB) final;
 	//////////////////////////////////////////////////////////////////////////
 
 private:
@@ -646,16 +662,42 @@ private:
 	int  GetCurrentExecutableSize();
 
 private:
-	volatile uint32             m_allocReference;
+	int* GetScopeDepthPtr(threadID tid);
+
+#if MEMREPLAY_USES_DETOURS
+	// ntdll
+	typedef __success(return >= 0) LONG NTSTATUS;
+
+	static PVOID NTAPI RtlAllocateHeap_Detour(PVOID HeapHandle, ULONG Flags, SIZE_T Size);
+	static PVOID NTAPI RtlReAllocateHeap_Detour(PVOID HeapHandle, ULONG Flags, PVOID MemoryPointer, ULONG Size);
+	static BOOLEAN NTAPI RtlFreeHeap_Detour(PVOID HeapHandle, ULONG Flags, PVOID BaseAddress);
+	static NTSTATUS NTAPI NtAllocateVirtualMemory_Detour(HANDLE ProcessHandle, PVOID* BaseAddress, ULONG_PTR ZeroBits, PSIZE_T RegionSize, ULONG AllocationType, ULONG Protect);
+	static NTSTATUS NTAPI NtFreeVirtualMemory_Detour(HANDLE ProcessHandle, PVOID* BaseAddress, PSIZE_T RegionSize, ULONG FreeType);
+
+	typedef decltype(&RtlAllocateHeap_Detour) RtlAllocateHeap_Ptr;
+	typedef decltype(&RtlReAllocateHeap_Detour) RtlReAllocateHeap_Ptr;
+	typedef decltype(&RtlFreeHeap_Detour) RtlFreeHeap_Ptr;
+	typedef decltype(&NtAllocateVirtualMemory_Detour) NtAllocateVirtualMemory_Ptr;
+	typedef decltype(&NtFreeVirtualMemory_Detour) NtFreeVirtualMemory_Ptr;
+
+	static RtlAllocateHeap_Ptr         s_originalRtlAllocateHeap;
+	static RtlReAllocateHeap_Ptr       s_originalRtlReAllocateHeap;
+	static RtlFreeHeap_Ptr             s_originalRtlFreeHeap;
+	static NtAllocateVirtualMemory_Ptr s_originalNtAllocateVirtualMemory;
+	static NtFreeVirtualMemory_Ptr     s_originalNtFreeVirtualMemory;
+#endif
+
+	volatile uint32             m_allocReference = 0;
 	ReplayLogStream             m_stream;
 	CReplayModules              m_modules;
 
-	CryCriticalSection          m_scope;
-
 	int                         m_scopeDepth;
-	EMemReplayAllocClass        m_scopeClass;
-	EMemReplayUserPointerClass  m_scopeSubClass;
-	int                         m_scopeModuleId;
+	
+	CryReadModifyLock           m_threadScopesLock;
+	int                         m_threadScopePairsInUse;
+	std::pair<threadID, int>    m_threadScopeDepthPairs[128];
+
+	ECreationStatus             m_status = ECreationStatus::Uninitialized;
 };
 //////////////////////////////////////////////////////////////////////////
 

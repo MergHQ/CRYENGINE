@@ -351,10 +351,6 @@ size_t CryFree(void* p, size_t alignment)
 	{
 		size_t size = 0;
 
-#if CAPTURE_REPLAY_LOG
-		UINT_PTR pid = (UINT_PTR)p;
-#endif
-
 		if (p != NULL)
 		{
 			MEMREPLAY_SCOPE(EMemReplayAllocClass::UserPointer, EMemReplayUserPointerClass::CryMalloc);
@@ -384,7 +380,7 @@ size_t CryFree(void* p, size_t alignment)
 			CryInterlockedAdd(&g_TotalAllocatedMemory, -lsize);
 			tls_allocatedMemory -= lsize;
 
-			MEMREPLAY_SCOPE_FREE(pid);
+			MEMREPLAY_SCOPE_FREE(p);
 		}
 
 		return size;
@@ -392,10 +388,6 @@ size_t CryFree(void* p, size_t alignment)
 #endif
 
 	size_t size = 0;
-
-#if CAPTURE_REPLAY_LOG
-	UINT_PTR pid = (UINT_PTR)p;
-#endif
 
 	if (p != NULL)
 	{
@@ -423,7 +415,7 @@ size_t CryFree(void* p, size_t alignment)
 		CryInterlockedAdd(&g_TotalAllocatedMemory, -lsize);
 		tls_allocatedMemory -= lsize;
 
-		MEMREPLAY_SCOPE_FREE(pid);
+		MEMREPLAY_SCOPE_FREE(UINT_PTR(p));
 	}
 
 	return size;

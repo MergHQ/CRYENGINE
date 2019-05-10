@@ -1,20 +1,10 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-// -------------------------------------------------------------------------
-//  File name:   dllmain.cpp
-//  Version:     v1.00
-//  Created:     1/10/2002 by Timur.
-//  Compilers:   Visual Studio.NET
-//  Description:
-// -------------------------------------------------------------------------
-//  History:
-//
-////////////////////////////////////////////////////////////////////////////
-
 #include "StdAfx.h"
 #include "System.h"
 #include <CryCore/Platform/platform_impl.inl>
 #include "DebugCallStack.h"
+#include "MemReplay.h"
 
 #if CRY_PLATFORM_DURANGO
 	#include "DurangoDebugCallstack.h"
@@ -29,28 +19,7 @@ extern bool g_bCrashRptInstalled;
 	#include <CrySystem/Scaleform/IScaleformHelper.h>
 #endif
 
-// For lua debugger
-//#include <malloc.h>
-
 HMODULE gDLLHandle = nullptr;
-
-struct DummyInitializer
-{
-	DummyInitializer()
-	{
-		dummyValue = 1;
-	}
-
-	int dummyValue;
-};
-
-DummyInitializer& initDummy()
-{
-	static DummyInitializer* p = new DummyInitializer;
-	return *p;
-}
-
-static int warmAllocator = initDummy().dummyValue;
 
 #if !defined(_LIB) && !CRY_PLATFORM_LINUX && !CRY_PLATFORM_ANDROID && !CRY_PLATFORM_APPLE && !CRY_PLATFORM_ORBIS
 	#pragma warning( push )
@@ -63,12 +32,6 @@ BOOL APIENTRY DllMain(HANDLE hModule,
 	gDLLHandle = (HMODULE)hModule;
 	switch (ul_reason_for_call)
 	{
-	case DLL_PROCESS_ATTACH:
-		break;
-	case DLL_PROCESS_DETACH:
-		break;
-
-	//////////////////////////////////////////////////////////////////////////
 	case DLL_THREAD_ATTACH:
 	#ifdef CRY_USE_CRASHRPT
 		if (g_bCrashRptInstalled)
@@ -87,13 +50,19 @@ BOOL APIENTRY DllMain(HANDLE hModule,
 		}
 	#endif //CRY_USE_CRASHRPT
 		break;
-
 	}
-	//	int sbh = _set_sbh_threshold(1016);
 
 	return TRUE;
 }
 	#pragma warning( pop )
+#endif
+
+#if CAPTURE_REPLAY_LOG && MEMREPLAY_USES_DETOURS
+static struct SMemReplayDetours
+{
+	SMemReplayDetours() { CMemReplay::Init(); }
+	~SMemReplayDetours() { CMemReplay::Shutdown(); }
+} s_detourInit;
 #endif
 
 #if defined(USE_GLOBAL_BUCKET_ALLOCATOR)
@@ -172,7 +141,7 @@ extern "C"
 	CRYSYSTEM_API ISystem* CreateSystemInterface(SSystemInitParams& startupParams, bool bManualEngineLoop)
 	{
 #if CAPTURE_REPLAY_LOG
-		CryGetIMemReplay()->StartOnCommandLine(startupParams.szSystemCmdLine);
+		CMemReplay::GetInstance()->StartOnCommandLine(startupParams.szSystemCmdLine);
 #endif
 		MEMSTAT_CONTEXT(EMemStatContextType::Other, "Mainthread");
 

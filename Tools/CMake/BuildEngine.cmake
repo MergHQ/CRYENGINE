@@ -539,6 +539,10 @@ if (OPTION_ENGINE)
 		add_subdirectory("Code/Libs/oculus")
 	endif()
 	
+	if (WINDOWS)
+		add_subdirectory ("Code/Libs/Detours")
+	endif ()
+	
 	if (WINDOWS OR LINUX)
 		add_subdirectory ("Code/Libs/curl")
 	endif ()
