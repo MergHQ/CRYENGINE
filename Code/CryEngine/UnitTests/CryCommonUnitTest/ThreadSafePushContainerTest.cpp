@@ -333,15 +333,20 @@ TEST(CryThreadSafePushContainerDeathTest, MaximumCapacity)
 TEST(CryThreadSafePushContainerDeathTest, TooManyThreads)
 {
 	CryMT::CThreadSafePushContainer<int64> container;
+	std::vector<std::thread> threads;
 	for (int i = 0; i < 30; ++i)
 	{
-		std::thread([&] { container.push_back(1); }).join();
+		threads.emplace_back([&] { container.push_back(1); });
+	}
+	for(auto& thread : threads)
+	{
+		thread.join();
 	}
 
 	EXPECT_FALSE(HasFatalFailure());
 	
 	TEST_WITH_REF(container,
-		//EXPECT_EXIT(rcontainer.push_back(1), ::testing::ExitedWithCode(1337), "s_nMaxThreads limit reached");
-		ASSERT_DEATH_IF_SUPPORTED(rcontainer.push_back(1), "");
+		  //EXPECT_EXIT(rcontainer.push_back(1), ::testing::ExitedWithCode(1337), "s_nMaxThreads limit reached");
+		  ASSERT_DEATH_IF_SUPPORTED(rcontainer.push_back(1), "");
 	);
 }
