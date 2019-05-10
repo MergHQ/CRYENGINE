@@ -3210,6 +3210,7 @@ template<class VertexFormat, class VecPos, class VecUV> bool CRenderMesh::Update
 	assert(gRenDev->m_pRT->IsRenderThread());
 
 	SREC_AUTO_LOCK(m_sResLock);
+	m_nThreadAccessCounter++;
 
 	int nInds = m_nInds * 4;
 
@@ -3278,6 +3279,8 @@ template<class VertexFormat, class VecPos, class VecUV> bool CRenderMesh::Update
 
 	UnlockVB(VSF_GENERAL);
 	UnlockIB();
+
+	m_nThreadAccessCounter--;
 
 	return bRes;
 }
