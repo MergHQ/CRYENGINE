@@ -5185,9 +5185,7 @@ void CSystem::CreateSystemVars()
 	REGISTER_COMMAND("memReplayAddSizerTree", &AddReplaySizerTree, 0, "output in-game sizer information to the log");
 #endif
 
-#ifndef MEMMAN_STATIC
 	CCryMemoryManager::RegisterCVars();
-#endif
 
 #if CRY_PLATFORM_WINDOWS || CRY_PLATFORM_DURANGO
 	REGISTER_CVAR2("sys_display_threads", &g_cvars.sys_display_threads, 0, 0, "Displays Thread info");

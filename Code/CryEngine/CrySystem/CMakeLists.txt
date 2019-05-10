@@ -545,6 +545,10 @@ end_sources()
 #END-FILE-LIST
 
 MACRO(setup_crysystem)
+	if (WINDOWS)
+		target_link_libraries(${THIS_PROJECT} PRIVATE debug Detours)
+	endif ()
+
 	target_link_libraries( ${THIS_PROJECT} PRIVATE zlib expat lz4 md5 )
 	use_scaleform()
 	if (NOT DURANGO)

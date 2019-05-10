@@ -3,6 +3,7 @@
 #include "AssetBrowser.h"
 #include "AssetDropHandler.h"
 #include "AssetReverseDependenciesDialog.h"
+#include "FilteredFolders.h"
 
 #include "AssetSystem/Asset.h"
 #include "AssetSystem/AssetEditor.h"
@@ -656,6 +657,15 @@ class SortFilterProxyModel : public QAttributeFilterProxyModel
 		EAssetModelRowType rowType = (EAssetModelRowType)index.data((int)CAssetModel::Roles::TypeCheckRole).toUInt();
 		if (rowType == eAssetModelRow_Folder)
 		{
+			if (m_pFilteredFolders && !m_pFilteredFolders->IsEmpty())
+			{
+				const QString path = sourceModel()->index(sourceRow, EAssetColumns::eAssetColumns_Folder, sourceParent).data((int)CAssetFoldersModel::Roles::FolderPathRole).toString();
+				if (!m_pFilteredFolders->Contains(path) && !CAssetFoldersModel::GetInstance()->IsEmptyFolder(path))
+				{
+					return false;
+				}
+			}
+
 			if (QDeepFilterProxyModel::rowMatchesFilter(sourceRow, sourceParent))
 			{
 				for (auto filter : m_filters)
@@ -716,8 +726,31 @@ class SortFilterProxyModel : public QAttributeFilterProxyModel
 		QAttributeFilterProxyModel::invalidateFilter();
 	}
 
+public:
+	SortFilterProxyModel(QObject* pParent)
+		: QAttributeFilterProxyModel(QAttributeFilterProxyModel::BaseBehavior, pParent)
+	{
+	}
+
+	void SetFilteredFolders(CFilteredFolders* pFilteredFolders) 
+	{ 
+		if (m_pFilteredFolders)
+		{
+			m_pFilteredFolders->signalInvalidate.DisconnectObject(this);
+		}
+
+		m_pFilteredFolders = pFilteredFolders;
+
+		if (m_pFilteredFolders)
+		{
+			pFilteredFolders->signalInvalidate.Connect(this, &SortFilterProxyModel::InvalidateFilter);
+			InvalidateFilter();
+		}
+	}
+
 private:
 	CAttributeFilter* m_pDependencyFilter = nullptr;
+	CFilteredFolders* m_pFilteredFolders = nullptr;
 };
 
 void GetExtensionFilter(ExtensionFilterVector& extFilter)
@@ -854,7 +887,7 @@ CAssetBrowser::CAssetBrowser(const std::vector<CAssetType*>& assetTypes, bool bH
 
 	SetModel(new CAssetFolderFilterModel(assetTypes, false, true, this));
 	const QStringList assetTypeNames = AssetManagerHelpers::GetUiNamesFromAssetTypes(assetTypes);
-	SetAssetTypeFilter(assetTypeNames);
+	InitAssetTypeFilter(assetTypeNames);
 	InitViews(bHideEngineFolder);
 	m_pFilterPanel->OverrideAttributeEnumEntries(AssetModelAttributes::s_AssetTypeAttribute.GetName(), assetTypeNames);
 
@@ -875,16 +908,25 @@ void CAssetBrowser::SetModel(CAssetFolderFilterModel* pModel)
 {
 	m_pFolderFilterModel.reset(pModel);
 
-	m_pAttributeFilterProxyModel.reset(new Private_AssetBrowser::SortFilterProxyModel(QAttributeFilterProxyModel::BaseBehavior, this));
+	Private_AssetBrowser::SortFilterProxyModel* const pSortFilterProxyModel = new Private_AssetBrowser::SortFilterProxyModel(this);
+
+	m_pAttributeFilterProxyModel.reset(pSortFilterProxyModel);
 	m_pAttributeFilterProxyModel->setSourceModel(m_pFolderFilterModel.get());
 	m_pAttributeFilterProxyModel->setFilterKeyColumn(eAssetColumns_FilterString);
+
+	m_pFilteredFolders.reset(new CFilteredFolders(m_pFolderFilterModel.get(), m_pAttributeFilterProxyModel.get()));
+	pSortFilterProxyModel->SetFilteredFolders(m_pFilteredFolders.get());
 }
 
-void CAssetBrowser::SetAssetTypeFilter(const QStringList assetTypeNames)
+void CAssetBrowser::InitAssetTypeFilter(const QStringList assetTypeNames)
 {
+	MAKE_SURE(!assetTypeNames.empty(), return)
+
 	AttributeFilterSharedPtr pAssetTypeFilter = std::make_shared<CAttributeFilter>(&AssetModelAttributes::s_AssetTypeAttribute);
 	pAssetTypeFilter->SetFilterValue(assetTypeNames);
 	m_pAttributeFilterProxyModel->AddFilter(pAssetTypeFilter);
+	m_pActionHideIrrelevantFolders->setChecked(true);
+	UpdateNonEmptyFolderList();
 }
 
 //"Loading" feature while scanning for assets
@@ -986,6 +1028,7 @@ void CAssetBrowser::InitViews(bool bHideEngineFolder)
 
 	//folders view
 	m_pFoldersView = new CAssetFoldersView(bHideEngineFolder);
+	m_pFoldersView->SetFilteredFolders(m_pFilteredFolders.get());
 	m_pFoldersView->signalSelectionChanged.Connect(this, &CAssetBrowser::OnFolderSelectionChanged);
 	connect(m_pFoldersView->m_treeView, &QTreeView::customContextMenuRequested, this, &CAssetBrowser::OnFolderViewContextMenu);
 
@@ -1002,6 +1045,7 @@ void CAssetBrowser::InitViews(bool bHideEngineFolder)
 	m_pFilterPanel->SetContent(pAssetsView);
 	m_pFilterPanel->GetSearchBox()->setPlaceholderText(tr("Search Assets"));
 	m_pFilterPanel->GetSearchBox()->signalOnSearch.Connect(this, &CAssetBrowser::OnSearch);
+	m_pFilterPanel->signalOnFiltered.Connect(this, &CAssetBrowser::UpdateNonEmptyFolderList);
 
 	m_pFoldersSplitter = new QSplitter();
 	m_pFoldersSplitter->setOrientation(Qt::Horizontal);
@@ -1086,6 +1130,7 @@ void CAssetBrowser::InitActions()
 	m_pActionShowSplitVertically = RegisterAction("asset.view_split_vertically", &CAssetBrowser::OnSplitVerticalView);
 	m_pActionShowFoldersView = RegisterAction("asset.view_folder_tree", &CAssetBrowser::OnFolderTreeView);
 	m_pActionRecursiveView = RegisterAction("asset.view_recursive_view", &CAssetBrowser::OnRecursiveView);
+	m_pActionHideIrrelevantFolders = RegisterAction("asset.view_hide_irrelevant_folders", &CAssetBrowser::OnHideIrrelevantFolders);
 	m_pActionDiscardChanges = RegisterAction("asset.discard_changes", &CAssetBrowser::OnDiscardChanges);
 	m_pActionManageWorkFiles = RegisterAction("asset.manage_work_files", &CAssetBrowser::OnManageWorkFiles);
 	m_pActionGenerateRepairMetaData = RegisterAction("asset.generate_and_repair_all_metadata", &CAssetBrowser::OnGenerateRepairAllMetadata);
@@ -1093,6 +1138,7 @@ void CAssetBrowser::InitActions()
 
 	m_pActionShowFoldersView->setChecked(true);
 	m_pActionRecursiveView->setChecked(false);
+	m_pActionHideIrrelevantFolders->setChecked(false);
 
 #if ASSET_BROWSER_USE_PREVIEW_WIDGET
 	m_pActionShowPreview = RegisterAction("asset.show_preview", &CAssetBrowser::OnShowPreview);
@@ -1677,6 +1723,17 @@ bool CAssetBrowser::IsFoldersViewVisible() const
 	return m_pActionShowFoldersView->isChecked();
 }
 
+bool CAssetBrowser::AreIrrelevantFoldersHidden() const
+{
+	return m_pActionHideIrrelevantFolders->isChecked();
+}
+
+void CAssetBrowser::HideIrrelevantFolders(bool isHidden)
+{
+	m_pActionHideIrrelevantFolders->setChecked(isHidden);
+	UpdateNonEmptyFolderList();
+}
+
 void CAssetBrowser::SetViewMode(ViewMode viewMode)
 {
 	if (m_viewMode != viewMode)
@@ -1736,6 +1793,8 @@ void CAssetBrowser::OnSearch(bool isNewSearch)
 		m_recursiveSearch = false;
 		SetRecursiveView(false);
 	}
+
+	UpdateNonEmptyFolderList();
 }
 
 QAbstractItemView* CAssetBrowser::GetFocusedView() const
@@ -2325,6 +2384,12 @@ bool CAssetBrowser::OnReimport()
 	return true;
 }
 
+bool CAssetBrowser::OnHideIrrelevantFolders()
+{
+	UpdateNonEmptyFolderList();
+	return true;
+}
+
 void CAssetBrowser::OnDelete(const std::vector<CAsset*>& assets)
 {
 	CRY_ASSERT(std::none_of(assets.begin(), assets.end(), [](CAsset* pAsset) { return !pAsset; }));
@@ -2643,6 +2708,11 @@ void CAssetBrowser::UpdateBreadcrumbsBar(const QString& path)
 	while (slashIndex != -1);
 }
 
+void CAssetBrowser::UpdateNonEmptyFolderList()
+{
+	m_pFilteredFolders->Update(AreIrrelevantFoldersHidden());
+}
+
 void CAssetBrowser::OnBreadcrumbClick(const QString& text, const QVariant& data)
 {
 	auto index = CAssetFoldersModel::GetInstance()->FindIndexForFolder(data.toString(), CAssetFoldersModel::Roles::DisplayFolderPathRole);
@@ -2662,7 +2732,7 @@ void CAssetBrowser::OnBreadcrumbsTextChanged(const QString& text)
 	else
 	{
 		// Check if the user entered the absolute path and delete up to the asset folder
-		// fromNativeSeparators ensures same seperators are used
+		// fromNativeSeparators ensures same separators are used
 		QString assetsPaths = QDir::fromNativeSeparators(QDir::currentPath());
 		QString breadCrumbsPath = QDir::fromNativeSeparators(text);
 		if (breadCrumbsPath.contains(assetsPaths))

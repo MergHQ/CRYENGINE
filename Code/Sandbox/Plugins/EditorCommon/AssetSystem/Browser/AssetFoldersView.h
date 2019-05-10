@@ -7,6 +7,8 @@
 #include <QAbstractItemView>
 #include "EditorFramework/StateSerializable.h"
 
+class CFoldersViewProxyModel;
+class CFilteredFolders;
 class QAdvancedTreeView;
 
 class EDITOR_COMMON_API CAssetFoldersView : public QWidget, public IStateSerializable
@@ -14,15 +16,16 @@ class EDITOR_COMMON_API CAssetFoldersView : public QWidget, public IStateSeriali
 	friend class CAssetBrowser;
 public:
 	CAssetFoldersView(bool bHideEngineFolder = false, QWidget* parent = nullptr);
-	~CAssetFoldersView();
 
 	virtual QVariantMap GetState() const override;
 	virtual void        SetState(const QVariantMap& state) override;
 
-	void SelectFolder(const QString& folder);
-	void SelectFolders(const QStringList& folders);
-	void ClearSelection();
-	void RenameFolder(const QString& folder);
+	void                SelectFolder(const QString& folder);
+	void                SelectFolders(const QStringList& folders);
+	void                ClearSelection();
+	void                RenameFolder(const QString& folder);
+
+	void                SetFilteredFolders(CFilteredFolders* pFilteredFolders);
 
 	//! Index must belong to CAssetFoldersModel instance
 	void SelectFolder(const QModelIndex& folderIndex);
@@ -35,23 +38,25 @@ public:
 	//! There must be at least one visible folder, so the returned list is never empty.
 	//! When no folder is selected (the view's selection is empty), the returned list contains
 	//! a single string for the top-level asset folder.
-	const QStringList& GetSelectedFolders() const;
+	const QStringList&       GetSelectedFolders() const;
 
 	const QAdvancedTreeView* GetInternalView() const;
-	void setSelectionMode(QAbstractItemView::SelectionMode mode);
+	void                     setSelectionMode(QAbstractItemView::SelectionMode mode);
 	//! Emitted when the selection has changed, but also if a folder is renamed
 	CCrySignal<void(const QStringList&)> signalSelectionChanged;
 
 private:
+	class CFoldersViewProxyModel;
 
-	void OnSelectionChanged();
-	void OnCreateFolder(const QString& parentFolder);
-	void OnDeleteFolder(const QString& folder);
-	void OnOpenInExplorer(const QString& folder);
-	void OnDataChanged(const QModelIndex& topLeft, const QModelIndex& bottomRight);
+	void    OnSelectionChanged();
+	void    OnCreateFolder(const QString& parentFolder);
+	void    OnDeleteFolder(const QString& folder);
+	void    OnOpenInExplorer(const QString& folder);
+	void    OnDataChanged(const QModelIndex& topLeft, const QModelIndex& bottomRight);
 
 	QString ToFolder(const QModelIndex& index);
 
-	QAdvancedTreeView* m_treeView;
-	QStringList m_selectedFolders;
+	QAdvancedTreeView*      m_treeView;
+	QStringList             m_selectedFolders;
+	CFoldersViewProxyModel* m_pProxyModel;
 };

@@ -1,6 +1,8 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 #pragma once
 
+#include <CryCore/AlignmentTools.h>
+
 enum class EMemReplayAllocClass : uint16
 {
 	UserPointer = 0,
@@ -18,6 +20,8 @@ enum class EMemReplayUserPointerClass : uint16
 	CrtMalloc,
 	CryMalloc,
 	STL,
+	VirtualAlloc,
+	HeapAlloc,
 };
 
 // Add new types at the end, do not modify existing values.
@@ -95,9 +99,9 @@ struct IMemReplay
 	virtual bool EnterScope(EMemReplayAllocClass cls, EMemReplayUserPointerClass subCls, int moduleId) = 0;
 
 	//! Records an event against the currently active scope and exits it.
-	virtual void ExitScope_Alloc(UINT_PTR id, UINT_PTR sz, UINT_PTR alignment = 0) = 0;
-	virtual void ExitScope_Realloc(UINT_PTR originalId, UINT_PTR newId, UINT_PTR sz, UINT_PTR alignment = 0) = 0;
-	virtual void ExitScope_Free(UINT_PTR id) = 0;
+	virtual void ExitScope_Alloc(EMemReplayAllocClass cls, EMemReplayUserPointerClass subCls, int moduleId, UINT_PTR id, UINT_PTR sz, UINT_PTR alignment = 0) = 0;
+	virtual void ExitScope_Realloc(EMemReplayAllocClass cls, EMemReplayUserPointerClass subCls, int moduleId, UINT_PTR originalId, UINT_PTR newId, UINT_PTR sz, UINT_PTR alignment = 0) = 0;
+	virtual void ExitScope_Free(EMemReplayAllocClass cls, EMemReplayUserPointerClass subCls, int moduleId, UINT_PTR id) = 0;
 	virtual void ExitScope() = 0;
 
 	virtual void AllocUsage(EMemReplayAllocClass allocClass, UINT_PTR id, UINT_PTR used) = 0;
@@ -143,7 +147,7 @@ struct IMemReplay
 #endif
 
 #if CAPTURE_REPLAY_LOG
-struct CDummyMemReplay : IMemReplay
+struct CDummyMemReplay final : IMemReplay
 #else //CAPTURE_REPLAY_LOG
 struct IMemReplay
 #endif
@@ -162,9 +166,9 @@ struct IMemReplay
 	bool EnterScope(EMemReplayAllocClass cls, EMemReplayUserPointerClass subCls, int moduleId) { return false; }
 
 	//! Records an event against the currently active scope and exits it.
-	void ExitScope_Alloc(UINT_PTR id, UINT_PTR sz, UINT_PTR alignment = 0)                                {}
-	void ExitScope_Realloc(UINT_PTR originalId, UINT_PTR newId, UINT_PTR sz, UINT_PTR alignment = 0)      {}
-	void ExitScope_Free(UINT_PTR id)                                                                      {}
+	void ExitScope_Alloc(EMemReplayAllocClass cls, EMemReplayUserPointerClass subCls, int moduleId, UINT_PTR id, UINT_PTR sz, UINT_PTR alignment = 0)                                {}
+	void ExitScope_Realloc(EMemReplayAllocClass cls, EMemReplayUserPointerClass subCls, int moduleId, UINT_PTR originalId, UINT_PTR newId, UINT_PTR sz, UINT_PTR alignment = 0)      {}
+	void ExitScope_Free(EMemReplayAllocClass cls, EMemReplayUserPointerClass subCls, int moduleId, UINT_PTR id)                                                                      {}
 	void ExitScope()                                                                                      {}
 
 	void AllocUsage(EMemReplayAllocClass allocClass, UINT_PTR id, UINT_PTR used)                          {}
@@ -209,25 +213,27 @@ struct IMemReplay
 };
 
 #if CAPTURE_REPLAY_LOG
+static IMemReplay* s_pMemReplay = nullptr;
+static SUninitialized<CDummyMemReplay> s_dummyMemReplay;
 inline IMemReplay* CryGetIMemReplay()
 {
-	static CDummyMemReplay s_dummyMemReplay;
-	static IMemReplay* s_pMemReplay = 0;
-	if (!s_pMemReplay)
+	if(!s_pMemReplay)
 	{
-		// get it from System
 		IMemoryManager* pMemMan = CryGetIMemoryManager();
 		if (pMemMan)
 			s_pMemReplay = pMemMan->GetIMemReplay();
 		if (!s_pMemReplay)
-			return &s_dummyMemReplay;
+		{
+			s_dummyMemReplay.DefaultConstruct();
+			return & s_dummyMemReplay.operator CDummyMemReplay&();
+		}
 	}
 	return s_pMemReplay;
 }
 #else
 inline IMemReplay* CryGetIMemReplay()
 {
-	return NULL;
+	return nullptr;
 }
 #endif
 
@@ -244,7 +250,7 @@ public:
 	{
 		if (m_contextId == s_invalidContextId)
 			m_contextId = CryGetIMemReplay()->AddFixedContext(type, name);
-		return m_contextId; 
+		return m_contextId;
 	}
 
 	static constexpr IMemReplay::FixedContextID s_invalidContextId = ~0;
@@ -427,7 +433,7 @@ class CMemReplayScope
 {
 public:
 	CMemReplayScope(EMemReplayAllocClass cls, EMemReplayUserPointerClass subCls, int moduleId)
-		: m_needsExit(CryGetIMemReplay()->EnterScope(cls, subCls, moduleId))
+		: m_needsExit(CryGetIMemReplay()->EnterScope(cls, subCls, moduleId)), cls(cls), subCls(subCls), moduleId(moduleId)
 	{
 	}
 
@@ -442,7 +448,7 @@ public:
 		if (m_needsExit)
 		{
 			m_needsExit = false;
-			CryGetIMemReplay()->ExitScope_Alloc(id, sz, alignment);
+			CryGetIMemReplay()->ExitScope_Alloc(cls, subCls, moduleId, id, sz, alignment);
 		}
 	}
 
@@ -451,7 +457,7 @@ public:
 		if (m_needsExit)
 		{
 			m_needsExit = false;
-			CryGetIMemReplay()->ExitScope_Realloc(origId, newId, newSz, newAlign);
+			CryGetIMemReplay()->ExitScope_Realloc(cls, subCls, moduleId, origId, newId, newSz, newAlign);
 		}
 	}
 
@@ -460,7 +466,7 @@ public:
 		if (m_needsExit)
 		{
 			m_needsExit = false;
-			CryGetIMemReplay()->ExitScope_Free(id);
+			CryGetIMemReplay()->ExitScope_Free(cls, subCls, moduleId, id);
 		}
 	}
 private:
@@ -469,15 +475,20 @@ private:
 
 private:
 	bool m_needsExit;
+	EMemReplayAllocClass cls;
+	EMemReplayUserPointerClass subCls;
+	int moduleId;
 };
+#endif
 
+#if CAPTURE_REPLAY_LOG
 	#ifdef eCryModule
-		#define MEMREPLAY_SCOPE(cls, subCls)               CMemReplayScope _mrCls((cls), (subCls), eCryModule)
+		#define MEMREPLAY_SCOPE(cls, subCls)             CMemReplayScope _mrCls((cls), (subCls), eCryModule)
 	#else
-		#define MEMREPLAY_SCOPE(cls, subCls)               CMemReplayScope _mrCls((cls), (subCls), eCryM_Launcher)
+		#define MEMREPLAY_SCOPE(cls, subCls)             CMemReplayScope _mrCls((cls), (subCls), eCryM_Launcher)
 	#endif
 	#define MEMREPLAY_SCOPE_ALLOC(id, sz, align)         _mrCls.Alloc((UINT_PTR)(id), (sz), (align))
-	#define MEMREPLAY_SCOPE_REALLOC(oid, nid, sz, align) _mrCls.Realloc((UINT_PTR)(oid), (UINT_PTR)nid, (sz), (align))
+	#define MEMREPLAY_SCOPE_REALLOC(oid, nid, sz, align) _mrCls.Realloc((UINT_PTR)(oid), (UINT_PTR)(nid), (sz), (align))
 	#define MEMREPLAY_SCOPE_FREE(id)                     _mrCls.Free((UINT_PTR)(id))
 #else
 	#define MEMREPLAY_SCOPE(cls, subCls)

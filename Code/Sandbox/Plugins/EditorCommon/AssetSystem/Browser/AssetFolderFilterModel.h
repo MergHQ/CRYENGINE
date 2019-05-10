@@ -14,14 +14,15 @@ public:
 	CAssetFolderFilterModel(const std::vector<CAssetType*>& assetTypes, bool recursiveFilter, bool showFolders, QObject* parent = nullptr);
 	CAssetFolderFilterModel(bool recursiveFilter, bool showFolders, QObject* parent = nullptr);
 
-	void SetAcceptedFolders(const QStringList& folders);
-	void ClearAcceptedFolders();
+	void               SetAcceptedFolders(const QStringList& folders);
+	const QStringList& GetAcceptedFolders() const { return m_acceptedFolders; }
+	void               ClearAcceptedFolders();
 
-	void SetRecursive(bool recursive);
-	bool IsRecursive() const { return m_isRecursive; }
+	void               SetRecursive(bool recursive);
+	bool               IsRecursive() const { return m_isRecursive; }
 
-	void SetShowFolders(bool showFolders);
-	bool IsShowingFolders() const { return m_showFolders; }
+	void               SetShowFolders(bool showFolders);
+	bool               IsShowingFolders() const { return m_showFolders; }
 
 protected:
 	void MountSourceModels();

@@ -118,6 +118,9 @@ REGISTER_EDITOR_UI_COMMAND_DESC(asset, view_folder_tree, "", "", "icons:common/g
 REGISTER_EDITOR_AND_SCRIPT_KEYBOARD_FOCUS_COMMAND(asset, view_recursive_view, CCommandDescription("Recursive View"))
 REGISTER_EDITOR_UI_COMMAND_DESC(asset, view_recursive_view, "", "", "icons:common/general_view_recursive_view.ico", true)
 
+REGISTER_EDITOR_AND_SCRIPT_KEYBOARD_FOCUS_COMMAND(asset, view_hide_irrelevant_folders, CCommandDescription("Hide Irrelevant Folders"))
+REGISTER_EDITOR_UI_COMMAND_DESC(asset, view_hide_irrelevant_folders, "", "", "icons:common/general_hide_irrelevant_folders.ico", true)
+
 REGISTER_EDITOR_AND_SCRIPT_KEYBOARD_FOCUS_COMMAND(asset, manage_work_files, CCommandDescription("Manage Work Files..."))
 
 REGISTER_EDITOR_AND_SCRIPT_KEYBOARD_FOCUS_COMMAND(asset, generate_and_repair_all_metadata, CCommandDescription("Generate/Repair All Metadata"))
