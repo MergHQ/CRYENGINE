@@ -18,7 +18,7 @@ namespace Cry
 				CRYINTERFACE_ADD(Cry::IEnginePlugin)
 			CRYINTERFACE_END()
 
-			CRYGENERATE_SINGLETONCLASS_GUID(CPlugin, "Plugin_GamePlatform", "{D1579580-15AB-458C-81AB-05068B275483}"_cry_guid)
+			CRYGENERATE_SINGLETONCLASS_GUID(CPlugin, "Plugin_CryGamePlatform", "{D1579580-15AB-458C-81AB-05068B275483}"_cry_guid)
 
 		public:
 			CPlugin();
@@ -27,7 +27,7 @@ namespace Cry
 			// Cry::IEnginePlugin
 			virtual bool Initialize(SSystemGlobalEnvironment& env, const SSystemInitParams& initParams) override;
 			virtual void MainUpdate(float frameTime) override;
-			virtual const char* GetName() const override { return "GamePlatform"; }
+			virtual const char* GetName() const override { return "CryGamePlatform"; }
 			virtual const char* GetCategory() const override { return "GamePlatform"; }
 			// ~Cry::IEnginePlugin
 
