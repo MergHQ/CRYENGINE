@@ -150,6 +150,7 @@ CRenderPrimitive::EDirtyFlags CRenderPrimitive::Compile(const CPrimitiveRenderPa
 	if ((dirtyMask != eDirty_None) || (m_currentPsoUpdateCount != m_pPipelineState->GetUpdateCount()))
 	{
 		EDirtyFlags revertMask = dirtyMask;
+		m_constantManager.EnableConstantUpdate(false);
 
 		if (dirtyMask & eDirty_Geometry)
 		{
@@ -256,6 +257,7 @@ CRenderPrimitive::EDirtyFlags CRenderPrimitive::Compile(const CPrimitiveRenderPa
 			std::fill(m_inlineConstantBuffers.begin() + sz, m_inlineConstantBuffers.end(), SDeviceObjectHelpers::SConstantBufferBindInfo());
 		}
 
+		m_constantManager.EnableConstantUpdate(true);
 		m_dirtyMask = dirtyMask = eDirty_None;
 	}
 
