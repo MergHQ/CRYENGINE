@@ -140,23 +140,22 @@ void SDeviceObjectHelpers::UpdateBuffer(CConstantBuffer* pBuffer, const void* sr
 	}
 }
 
-SDeviceObjectHelpers::CShaderConstantManager::CShaderConstantManager()
-{
-}
-
 SDeviceObjectHelpers::CShaderConstantManager::CShaderConstantManager(CShaderConstantManager&& other)
 {
 	std::swap(m_constantBuffers, other.m_constantBuffers);
 	std::swap(m_pShaderReflection, other.m_pShaderReflection);
+	m_isConstantUpdateEnabled = other.m_isConstantUpdateEnabled;
 
 	other.m_constantBuffers.clear();
 	other.m_pShaderReflection.reset();
+	other.m_isConstantUpdateEnabled = false;
 }
 
 void SDeviceObjectHelpers::CShaderConstantManager::Reset()
 {
 	m_constantBuffers.clear();
 	m_pShaderReflection.reset();
+	m_isConstantUpdateEnabled = false;
 }
 
 bool SDeviceObjectHelpers::CShaderConstantManager::AllocateShaderReflection(::CShader* pShader, const CCryNameTSCRC& technique, uint64 rtFlags, EShaderStage shaderStages)
@@ -364,15 +363,18 @@ void SDeviceObjectHelpers::CShaderConstantManager::BeginNamedConstantUpdate()
 	CRY_ASSERT_MESSAGE(m_pShaderReflection, "Shader reflection not initialized. If you get this on a CRenderPrimitive, please make sure the primitive " \
 	                                        "has eFlags_ReflectShaderConstants and CRenderPrimitive::Compile() has been executed successfully");
 
-	for (int i = 0, end = m_pShaderReflection->bufferCount; i < end; ++i)
+	if (m_isConstantUpdateEnabled)
 	{
-		auto& updateContext = m_pShaderReflection->bufferUpdateContexts[i];
-		const SConstantBufferBindInfo& cb = m_constantBuffers[updateContext.bufferIndex];
-
-		if (!cb.pBuffer->IsNullBuffer())
+		for (int i = 0, end = m_pShaderReflection->bufferCount; i < end; ++i)
 		{
-			CRY_ASSERT(updateContext.pMappedData == nullptr);
-			updateContext.pMappedData = (Vec4*)cb.pBuffer->BeginWrite();
+			auto& updateContext = m_pShaderReflection->bufferUpdateContexts[i];
+			const SConstantBufferBindInfo& cb = m_constantBuffers[updateContext.bufferIndex];
+
+			if (!cb.pBuffer->IsNullBuffer())
+			{
+				CRY_ASSERT(updateContext.pMappedData == nullptr);
+				updateContext.pMappedData = (Vec4*)cb.pBuffer->BeginWrite();
+			}
 		}
 	}
 }
@@ -381,25 +383,28 @@ void SDeviceObjectHelpers::CShaderConstantManager::EndNamedConstantUpdate(const 
 {
 	CRY_ASSERT(m_pShaderReflection);
 
-	for (int i = 0, end = m_pShaderReflection->bufferCount; i < end; ++i)
+	if (m_isConstantUpdateEnabled)
 	{
-		auto& updateContext = m_pShaderReflection->bufferUpdateContexts[i];
-		const SConstantBufferBindInfo& cb = m_constantBuffers[updateContext.bufferIndex];
-
-		if (!cb.pBuffer->IsNullBuffer())
+		for (int i = 0, end = m_pShaderReflection->bufferCount; i < end; ++i)
 		{
-			CRY_ASSERT(updateContext.pMappedData != nullptr);
-			auto pShaderInstance = reinterpret_cast<CHWShader_D3D::SHWSInstance*>(updateContext.pShaderInstance);
+			auto& updateContext = m_pShaderReflection->bufferUpdateContexts[i];
+			const SConstantBufferBindInfo& cb = m_constantBuffers[updateContext.bufferIndex];
 
-			// update generic per batch constants
-			if (pShaderInstance->m_nParams[0] >= 0)
+			if (!cb.pBuffer->IsNullBuffer())
 			{
-				SCGParamsGroup& Group = CGParamManager::s_Groups[pShaderInstance->m_nParams[0]];
-				CHWShader_D3D::mfSetParameters(Group.pParams, Group.nParams, eHWSC_Num, -1, (Vec4*)updateContext.pMappedData, cb.pBuffer->m_size, pVP, pRenderView);
-			}
+				CRY_ASSERT(updateContext.pMappedData != nullptr);
+				auto pShaderInstance = reinterpret_cast<CHWShader_D3D::SHWSInstance*>(updateContext.pShaderInstance);
 
-			cb.pBuffer->EndWrite();
-			updateContext.pMappedData = nullptr;
+				// update generic per batch constants
+				if (pShaderInstance->m_nParams[0] >= 0)
+				{
+					SCGParamsGroup& Group = CGParamManager::s_Groups[pShaderInstance->m_nParams[0]];
+					CHWShader_D3D::mfSetParameters(Group.pParams, Group.nParams, eHWSC_Num, -1, (Vec4*)updateContext.pMappedData, cb.pBuffer->m_size, pVP, pRenderView);
+				}
+
+				cb.pBuffer->EndWrite();
+				updateContext.pMappedData = nullptr;
+			}
 		}
 	}
 }
@@ -439,25 +444,26 @@ bool SDeviceObjectHelpers::CShaderConstantManager::SetNamedConstant(const CCryNa
 bool SDeviceObjectHelpers::CShaderConstantManager::SetNamedConstantArray(const CCryNameR& paramName, const Vec4 params[], uint32 numParams, EHWShaderClass shaderClass)
 {
 	CRY_ASSERT_MESSAGE(m_pShaderReflection, "Flag eFlags_ReflectConstantBuffersFromShader might be required for pass");
-	if (!m_pShaderReflection->bValid)
-		return false;
 
-	static_assert(MaxReflectedBuffers == 2, "Fixme: the following statement works for MaxReflectedBuffers==2");
-
-	auto& updateContext = m_pShaderReflection->bufferUpdateContexts[0].shaderClass == shaderClass
-	                      ? m_pShaderReflection->bufferUpdateContexts[0]
-	                      : m_pShaderReflection->bufferUpdateContexts[1];
-
-	CRY_ASSERT(updateContext.pMappedData != nullptr);
-
-	if (auto pShaderInstance = reinterpret_cast<CHWShader_D3D::SHWSInstance*>(updateContext.pShaderInstance))
+	if (m_pShaderReflection->bValid && m_isConstantUpdateEnabled)
 	{
-		for (auto& bindVar : pShaderInstance->m_pBindVars)
+		static_assert(MaxReflectedBuffers == 2, "Fixme: the following statement works for MaxReflectedBuffers==2");
+
+		auto& updateContext = m_pShaderReflection->bufferUpdateContexts[0].shaderClass == shaderClass
+			? m_pShaderReflection->bufferUpdateContexts[0]
+			: m_pShaderReflection->bufferUpdateContexts[1];
+
+		CRY_ASSERT(updateContext.pMappedData != nullptr);
+
+		if (auto pShaderInstance = reinterpret_cast<CHWShader_D3D::SHWSInstance*>(updateContext.pShaderInstance))
 		{
-			if (paramName == bindVar.m_Name)
+			for (auto& bindVar : pShaderInstance->m_pBindVars)
 			{
-				memcpy(&updateContext.pMappedData[bindVar.m_dwBind], params, numParams * sizeof(Vec4));
-				return true;
+				if (paramName == bindVar.m_Name)
+				{
+					memcpy(&updateContext.pMappedData[bindVar.m_dwBind], params, numParams * sizeof(Vec4));
+					return true;
+				}
 			}
 		}
 	}

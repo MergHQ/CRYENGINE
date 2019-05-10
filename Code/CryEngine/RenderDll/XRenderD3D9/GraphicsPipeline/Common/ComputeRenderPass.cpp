@@ -64,6 +64,7 @@ CComputeRenderPass::EDirtyFlags CComputeRenderPass::Compile()
 		EDirtyFlags revertMask = dirtyMask;
 
 		m_bCompiled = false;
+		m_constantManager.EnableConstantUpdate(false);
 
 		if (dirtyMask & (eDirty_Resources))
 		{
@@ -109,6 +110,7 @@ CComputeRenderPass::EDirtyFlags CComputeRenderPass::Compile()
 				m_constantManager.InitShaderReflection(*m_pPipelineState);
 		}
 
+		m_constantManager.EnableConstantUpdate(true);
 		m_bCompiled = true;
 
 		m_dirtyMask = dirtyMask = eDirty_None;
