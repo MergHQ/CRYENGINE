@@ -6,6 +6,7 @@
 
 CLightVolumesMgr::CLightVolumesMgr()
 	: m_pLightVolsInfo(16, 1 << 20 /*1 MB virtual capacity*/)
+	, m_lightVolsInfoCount(0)
 {
 	static_assert((5 * LV_MAX_COUNT * sizeof(SLightVolInfo)) < (1 << 20 /*1 MB*/), "Consider using a larger safety margin for the capacity of m_pLightVolsInfo.");
 	Init();
