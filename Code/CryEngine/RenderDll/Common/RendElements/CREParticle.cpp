@@ -882,7 +882,7 @@ void CREParticle::DrawParticlesLegacy(CRenderObject* pRenderObject, CDeviceGraph
 #if CRY_PLATFORM_ORBIS
 	const bool canInstance = false;
 #else
-	const bool canInstance = CRendererCVars::CV_r_ParticlesInstanceVertices;
+	const bool canInstance = (CRendererCVars::CV_r_ParticlesInstanceVertices != 0);
 #endif
 	const bool isPointSprites = (pRenderObject->m_ObjFlags & FOB_POINT_SPRITE) != 0;
 	const bool isTessellated = (pRenderObject->m_ObjFlags & FOB_ALLOW_TESSELLATION) != 0;
