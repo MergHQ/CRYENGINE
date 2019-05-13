@@ -2037,15 +2037,15 @@ void CTrackViewSequenceTabWidget::UpdateTrackViewTrack(CTrackViewTrack* pTrack)
 
 				if (handle.IsValid())
 				{
-					// TODO: this is a very wrong logic
-					if (!iter->added)
+					// TODO: This is a very wrong logic.
+					_smart_ptr<IAnimKeyWrapper> pWrappedKey = GetWrappedKeyFromElement(*pDopeSheetTrack, *iter);
+					if (pWrappedKey)
 					{
-						_smart_ptr<IAnimKeyWrapper> pWrappedKey = GetWrappedKeyFromElement(*pDopeSheetTrack, *iter);
-						if (pWrappedKey)
+						if (!iter->added)
 						{
 							pWrappedKey->SetTime(handle.GetTime());
-							handle.SetKey(pWrappedKey->Key());
 						}
+						handle.SetKey(pWrappedKey->Key());
 					}
 					// ~TODO
 
