@@ -119,7 +119,7 @@ void CStretchRegionPass::Execute(CTexture* pSrcRT, CTexture* pDestRT, const RECT
 		rcD.left = 0;
 		rcD.right = pDestRT->GetWidth();
 		rcD.top = 0;
-		rcS.bottom = pDestRT->GetHeight();
+		rcD.bottom = pDestRT->GetHeight();
 	}
 	const D3DFormat destFormat = DeviceFormats::ConvertFromTexFormat(pDestRT->GetDstFormat());
 	const D3DFormat srcFormat = DeviceFormats::ConvertFromTexFormat(pSrcRT->GetDstFormat());
