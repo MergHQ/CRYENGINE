@@ -207,11 +207,7 @@ void CHardwareMouse::ShowHardwareMouse(bool bShow)
 		CryLogAlways("HM: ShowHardwareMouse = %d", bShow);
 	}
 
-	if (bShow)
-	{
-		SetHardwareMousePosition(m_fCursorX, m_fCursorY);
-	}
-	else
+	if (!bShow)
 	{
 		GetHardwareMousePosition(&m_fCursorX, &m_fCursorY);
 	}
@@ -902,6 +898,11 @@ void CHardwareMouse::Hide(bool hide)
 void CHardwareMouse::UseSystemCursor(bool useSystemCursor)
 {
 	m_shouldUseSystemCursor = useSystemCursor;
+
+	ICVar* cvMouseCursor = gEnv->pConsole->GetCVar("r_MouseCursorTexture");
+	m_curCursorPath = (cvMouseCursor && !useSystemCursor) ? cvMouseCursor->GetString() : "";
+	SetCursor(m_curCursorPath);
+
 }
 
 //-----------------------------------------------------------------------------------------------------
