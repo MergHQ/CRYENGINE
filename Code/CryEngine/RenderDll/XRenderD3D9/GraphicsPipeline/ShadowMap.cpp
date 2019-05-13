@@ -107,41 +107,61 @@ void CShadowMapStage::Init()
 
 		StaticArray<int, MAX_GSM_LODS_NUM> nResolutions = gRenDev->GetCachedShadowsResolution();
 
-		ReAllocateResources({ nShadowTexFormat, nShadowPoolSize, nShadowCacheFormat, nShadowCacheLODs, nShadowCacheCascades, nResolutions });
-	}
+		const SShadowConfig shadowConfig = { nShadowTexFormat, nShadowPoolSize, nShadowCacheFormat, nShadowCacheLODs, nShadowCacheCascades, nResolutions };
+		ReAllocateResources(shadowConfig);
 
-	// Providing the right texture is not necessary at all since shadow map rendering is using texture from depth target pool.
-	// It is only necessary to provide a texture with right format.
-	_smart_ptr<CTexture> pDummyRsmDepth = m_pTexRT_ShadowPool;
-	_smart_ptr<CTexture> pDummyRsmPoolDepth = m_pTexRT_ShadowPool;
+		{
+			// Providing the right texture is not necessary at all since shadow map rendering is using texture from depth target pool.
+			// It is only necessary to provide a texture with right format.
+
+			_smart_ptr<CTexture> pDummyDL = CTexture::GetOrCreateTextureObject("DL_DUMMY", 0, 0, 1,
+				m_pTexRT_ShadowPool->GetTextureType(),
+				m_pTexRT_ShadowPool->GetFlags(),
+				GetShadowTexFormat(shadowConfig, ePass_DirectionalLight));
+
+			_smart_ptr<CTexture> pDummyDLC = CTexture::GetOrCreateTextureObject("DLC_DUMMY", 0, 0, 1,
+				m_pTexRT_ShadowPool->GetTextureType(),
+				m_pTexRT_ShadowPool->GetFlags(),
+				GetShadowTexFormat(shadowConfig, ePass_DirectionalLightCached));
+
+			_smart_ptr<CTexture> pDummyLL = CTexture::GetOrCreateTextureObject("LL_DUMMY", 0, 0, 1,
+				m_pTexRT_ShadowPool->GetTextureType(),
+				m_pTexRT_ShadowPool->GetFlags(),
+				GetShadowTexFormat(shadowConfig, ePass_LocalLight));
+
+			_smart_ptr<CTexture> pDummyRsmDepth     = m_pTexRT_ShadowPool;
+			_smart_ptr<CTexture> pDummyRsmPoolDepth = m_pTexRT_ShadowPool;
 
 #if defined(FEATURE_SVO_GI)
-	CSvoRenderer::GetRsmTextures(m_pRsmColorTex, m_pRsmNormalTex, m_pRsmPoolColorTex, m_pRsmPoolNormalTex);
+			CSvoRenderer::GetRsmTextures(m_pRsmColorTex, m_pRsmNormalTex, m_pRsmPoolColorTex, m_pRsmPoolNormalTex);
 
-	if (!CTexture::IsTextureExist(m_pRsmColorTex))
-	{
-		pDummyRsmDepth = CTexture::GetOrCreateTextureObject("SVO_PRJ_DEPTH_DIRECTIONAL_LIGHT_DUMMY", 0, 0, 1,
-		                                                    m_pTexRT_ShadowPool->GetTextureType(),
-		                                                    m_pTexRT_ShadowPool->GetFlags(),
-		                                                    m_pTexRT_ShadowPool->GetDstFormat());
-	}
-	if (!CTexture::IsTextureExist(m_pRsmPoolColorTex))
-	{
-		pDummyRsmPoolDepth = CTexture::GetOrCreateTextureObject("SVO_PRJ_DEPTH_LOCAL_LIGHT_DUMMY", 0, 0, 1,
-		                                                        m_pTexRT_ShadowPool->GetTextureType(),
-		                                                        m_pTexRT_ShadowPool->GetFlags(),
-		                                                        m_pTexRT_ShadowPool->GetDstFormat());
-	}
+			if (!CTexture::IsTextureExist(m_pRsmColorTex))
+			{
+				pDummyRsmDepth = CTexture::GetOrCreateTextureObject("SVO_PRJ_DEPTH_DIRECTIONAL_LIGHT_DUMMY", 0, 0, 1,
+					m_pTexRT_ShadowPool->GetTextureType(),
+					m_pTexRT_ShadowPool->GetFlags(),
+					GetShadowTexFormat(shadowConfig, ePass_DirectionalLightRSM));
+			}
+
+			if (!CTexture::IsTextureExist(m_pRsmPoolColorTex))
+			{
+				pDummyRsmPoolDepth = CTexture::GetOrCreateTextureObject("SVO_PRJ_DEPTH_LOCAL_LIGHT_DUMMY", 0, 0, 1,
+					m_pTexRT_ShadowPool->GetTextureType(),
+					m_pTexRT_ShadowPool->GetFlags(),
+					GetShadowTexFormat(shadowConfig, ePass_LocalLightRSM));
+			}
 #endif
 
-	// preallocate typically used passes (NOTE: at least one pass is needed for PSO compilation)
-	// *INDENT-OFF*
-	m_ShadowMapPasses[ePass_DirectionalLight      ].Init(this, 8,  m_pTexRT_ShadowPool,                     nullptr,            nullptr);
-	m_ShadowMapPasses[ePass_DirectionalLightCached].Init(this, 8,  m_pTexRT_ShadowPool,                     nullptr,            nullptr);
-	m_ShadowMapPasses[ePass_LocalLight            ].Init(this, 16, m_pTexRT_ShadowPool,                     nullptr,            nullptr);
-	m_ShadowMapPasses[ePass_DirectionalLightRSM   ].Init(this, 1,  pDummyRsmDepth,                          m_pRsmColorTex,     m_pRsmNormalTex);
-	m_ShadowMapPasses[ePass_LocalLightRSM         ].Init(this, 1,  pDummyRsmPoolDepth,                      m_pRsmPoolColorTex, m_pRsmPoolNormalTex);
-	// *INDENT-ON*
+			// preallocate typically used passes (NOTE: at least one pass is needed for PSO compilation)
+			// *INDENT-OFF*
+			m_ShadowMapPasses[ePass_DirectionalLight      ].Init(this,  8, pDummyDL,           nullptr,            nullptr);
+			m_ShadowMapPasses[ePass_DirectionalLightCached].Init(this,  8, pDummyDLC,          nullptr,            nullptr);
+			m_ShadowMapPasses[ePass_LocalLight            ].Init(this, 16, pDummyLL,           nullptr,            nullptr);
+			m_ShadowMapPasses[ePass_DirectionalLightRSM   ].Init(this,  1, pDummyRsmDepth,     m_pRsmColorTex,     m_pRsmNormalTex);
+			m_ShadowMapPasses[ePass_LocalLightRSM         ].Init(this,  1, pDummyRsmPoolDepth, m_pRsmPoolColorTex, m_pRsmPoolNormalTex);
+			// *INDENT-ON*
+		}
+	}
 }
 
 void CShadowMapStage::ReAllocateResources(const SShadowConfig shadowConfig)
