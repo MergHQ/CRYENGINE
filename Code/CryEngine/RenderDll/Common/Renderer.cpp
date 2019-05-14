@@ -777,22 +777,19 @@ SDisplayContextKey CRenderer::CreateSwapChainBackedContext(const SDisplayContext
 {
 	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
-	const int width = desc.screenResolution.x;
+	const int width  = desc.screenResolution.x;
 	const int height = desc.screenResolution.y;
 	const std::string name = desc.type == IRenderer::eViewportType_Default ? "MainView-SwapChain" : "SecView-SwapChain";
+	const bool bMainViewport = desc.type == IRenderer::eViewportType_Default;
 
 	auto pDC = std::make_shared<CSwapChainBackedRenderDisplayContext>(desc, name, m_uniqueDisplayContextId++);
 
-	const bool bMainViewport = desc.type == IRenderer::eViewportType_Default;
 	pDC->m_bMainViewport = bMainViewport;
 	pDC->m_desc.renderFlags |= pDC->m_bMainViewport ? FRT_OVERLAY_DEPTH | FRT_OVERLAY_STENCIL : 0;
 	pDC->m_desc.superSamplingFactor.x = std::max<int>(1, desc.superSamplingFactor.x);
 	pDC->m_desc.superSamplingFactor.y = std::max<int>(1, desc.superSamplingFactor.y);
-	pDC->m_desc.screenResolution.x = 0;
-	pDC->m_desc.screenResolution.y = 0;
-
-	pDC->m_nSSSamplesX = pDC->m_desc.superSamplingFactor.x;
-	pDC->m_nSSSamplesY = pDC->m_desc.superSamplingFactor.y;
+	pDC->m_desc.screenResolution.x = width;
+	pDC->m_desc.screenResolution.y = height;
 
 	pDC->CreateSwapChain(desc.handle, gcpRendD3D->IsFullscreen(), desc.vsync);
 
@@ -869,12 +866,8 @@ SGraphicsPipelineKey CRenderer::RT_CreateGraphicsPipeline(const SGraphicsPipelin
 
 void CRenderer::ResizeContext(CRenderDisplayContext* pDC, int width, int height) threadsafe
 {
-	if (pDC->m_desc.screenResolution.x != width ||
-	    pDC->m_desc.screenResolution.y != height)
+	if (pDC->GetDisplayResolution() != Vec2i(width, height))
 	{
-		pDC->m_desc.screenResolution.x = width;
-		pDC->m_desc.screenResolution.y = height;
-
 		gcpRendD3D->ChangeViewport(pDC, 0, 0, width, height);
 
 		// Must be deferred to Render Thread

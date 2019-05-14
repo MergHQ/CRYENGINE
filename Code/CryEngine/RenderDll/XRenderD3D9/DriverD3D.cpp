@@ -235,6 +235,9 @@ void CD3D9Renderer::ChangeViewport(CRenderDisplayContext* pDC, unsigned int view
 {
 	gRenDev->ExecuteRenderThreadCommand([=]
 	{
+		if (pDC->GetDisplayResolution() == Vec2i(viewPortOffsetX + viewportWidth, viewPortOffsetY + viewportHeight))
+			return;
+
 		// This change will propagate to the other dimensions (output and render)
 		// when HandleDisplayPropertyChanges() is called just before rendering
 		pDC->ChangeDisplayResolution(viewPortOffsetX + viewportWidth, viewPortOffsetY + viewportHeight, SRenderViewport(viewPortOffsetX, viewPortOffsetY, viewportWidth, viewportHeight));

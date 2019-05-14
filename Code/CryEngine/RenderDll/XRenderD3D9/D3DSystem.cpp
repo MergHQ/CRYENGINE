@@ -169,8 +169,12 @@ bool CD3D9Renderer::ChangeDisplayResolution(int nNewDisplayWidth, int nNewDispla
 
 // 		OnD3D11PostCreateDevice(m_devInfo.Device());
 
-		const bool wasFullscreen = m_lastWindowState == EWindowState::Fullscreen;
-		const bool resolutionChanged = nNewDisplayWidth != CRendererResources::s_renderWidth || nNewDisplayHeight != CRendererResources::s_renderHeight;
+		const bool wasFullscreen =
+			m_lastWindowState == EWindowState::Fullscreen;
+		const bool resolutionChanged =
+			nNewDisplayWidth != CRendererResources::s_renderWidth ||
+			nNewDisplayHeight != CRendererResources::s_renderHeight;
+
 		if (isFullscreen && wasFullscreen && resolutionChanged)
 		{
 			// Leave fullscreen before resizing as SetFullscreenState doesn't

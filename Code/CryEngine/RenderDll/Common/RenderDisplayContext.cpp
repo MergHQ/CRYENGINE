@@ -126,24 +126,15 @@ void CSwapChainBackedRenderDisplayContext::CreateSwapChain(CRY_HWND hWnd, bool i
 	m_hWnd = hWnd;
 	m_fullscreen = isFullscreen;
 
-#if !CRY_PLATFORM_CONSOLE
-	CreateOutput();
-	CreateSwapChain(GetWindowHandle(),
-		m_pOutput,
-		GetDisplayResolution().x,
-		GetDisplayResolution().y,
-		IsFullscreen(),
-		IsMainContext(),
-		vsync);
+	// TODO: make m_desc a function parameter
+	m_nSSSamplesX = m_desc.superSamplingFactor.x;
+	m_nSSSamplesY = m_desc.superSamplingFactor.y;
 
-#if (CRY_RENDERER_VULKAN >= 10)
-	m_bVSync = vsync;
-#endif
-#endif
+#if !CRY_PLATFORM_CONSOLE
+	auto w = m_desc.screenResolution.x,
+	     h = m_desc.screenResolution.y;
 
 #if CRY_PLATFORM_WINDOWS
-	auto w = m_DisplayWidth, h = m_DisplayHeight;
-
 	if (TRUE == ::IsWindow((HWND)hWnd))
 	{
 		RECT rc;
@@ -154,6 +145,20 @@ void CSwapChainBackedRenderDisplayContext::CreateSwapChain(CRY_HWND hWnd, bool i
 			h = rc.bottom - rc.top;
 		}
 	}
+#endif
+
+	CreateOutput();
+	CreateSwapChain(GetWindowHandle(),
+		m_pOutput,
+		w,
+		h,
+		IsMainContext(),
+		IsFullscreen(),
+		vsync);
+
+#if (CRY_RENDERER_VULKAN >= 10)
+	m_bVSync = vsync;
+#endif
 #endif
 
 	// Create the output
@@ -420,10 +425,13 @@ void CSwapChainBackedRenderDisplayContext::ChangeOutputIfNecessary(bool isFullsc
 	// Output will need to be recreated if we switched to fullscreen on a different monitor
 	if (recreateSwapChain)
 	{
+		auto w = m_swapChain.GetSurfaceDesc().Width,
+		     h = m_swapChain.GetSurfaceDesc().Height;
+
 		ReleaseBackBuffers();
 
 		// Swap chain needs to be recreated with the new output in mind
-		CreateSwapChain(GetWindowHandle(), m_pOutput, GetDisplayResolution().x, GetDisplayResolution().y, isFullscreen, IsMainContext(), vsync);
+		CreateSwapChain(GetWindowHandle(), m_pOutput, w, h, isFullscreen, IsMainContext(), vsync);
 
 		if (m_pOutput != nullptr)
 		{
@@ -627,13 +635,14 @@ CCustomRenderDisplayContext::CCustomRenderDisplayContext(IRenderer::SDisplayCont
 	CRY_ASSERT(m_pBackBufferProxy->GetSrcFormat() == displayFormat);
 	// ------------------------------------------------------------------------------
 
-	this->m_backBuffersArray = std::move(backBuffersArray);
+	m_backBuffersArray = std::move(backBuffersArray);
 
 	// Assign first back-buffer on initialization
 	m_pBackBufferProxy->RefDevTexture(GetCurrentBackBuffer()->GetDevTexture());
 	m_bSwapProxy = false;
 
-	this->ChangeDisplayResolution(displayWidth, displayHeight);
+	// Create the targets
+	ChangeDisplayResolution(displayWidth, displayHeight);
 }
 
 void CCustomRenderDisplayContext::ShutDown()
