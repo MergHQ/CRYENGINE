@@ -904,7 +904,7 @@ void AIConsoleVars::Init()
 	REGISTER_CVAR2("ai_ModularBehaviorTreeDebugLog", &ModularBehaviorTreeDebugLog, 0, VF_CHEAT | VF_CHEAT_NOCHECK,
 		"[0-1] Enable/Disable the debug text of the behavior tree's log.");
 
-	REGISTER_CVAR2("ai_ModularehaviorTreeDebugBlackboard", &ModularBehaviorTreeDebugBlackboard, 0, VF_CHEAT | VF_CHEAT_NOCHECK,
+	REGISTER_CVAR2("ai_ModularBehaviorTreeDebugBlackboard", &ModularBehaviorTreeDebugBlackboard, 0, VF_CHEAT | VF_CHEAT_NOCHECK,
 		"[0-1] Enable/Disable the debug text of the behavior tree's blackboards.");
 
 	DefineConstIntCVarName("ai_ModularBehaviorTreeDebugExecutionStacks", LogModularBehaviorTreeExecutionStacks, 0, VF_CHEAT | VF_CHEAT_NOCHECK,
