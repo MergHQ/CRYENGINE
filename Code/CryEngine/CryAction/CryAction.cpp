@@ -3112,16 +3112,20 @@ void CCryAction::InitEditor(IGameToEditorInterface* pGameToEditor)
 
 	m_pGameToEditor = pGameToEditor;
 
-	uint32 commConfigCount = gEnv->pAISystem->GetCommunicationManager()->GetConfigCount();
-	if (commConfigCount)
+	const ICommunicationManager* pCommunicationManager = gEnv->pAISystem->GetCommunicationManager();
+	if (pCommunicationManager)
 	{
-		std::vector<const char*> configNames;
-		configNames.resize(commConfigCount);
+		uint32 commConfigCount = gEnv->pAISystem->GetCommunicationManager()->GetConfigCount();
+		if (commConfigCount)
+		{
+			std::vector<const char*> configNames;
+			configNames.resize(commConfigCount);
 
-		for (uint i = 0; i < commConfigCount; ++i)
-			configNames[i] = gEnv->pAISystem->GetCommunicationManager()->GetConfigName(i);
+			for (uint i = 0; i < commConfigCount; ++i)
+				configNames[i] = gEnv->pAISystem->GetCommunicationManager()->GetConfigName(i);
 
-		pGameToEditor->SetUIEnums("CommConfig", &configNames.front(), commConfigCount);
+			pGameToEditor->SetUIEnums("CommConfig", &configNames.front(), commConfigCount);
+		}
 	}
 
 	uint32 factionCount = gEnv->pAISystem->GetFactionMap().GetFactionCount();
