@@ -362,6 +362,18 @@ QCommandAction* CEditorCommandManager::GetCommandAction(const char* command, con
 		}
 		else
 		{
+			std::vector<CCustomCommand*>::const_iterator customCommandIte = std::find_if(m_CustomCommands.cbegin(), m_CustomCommands.cend(), [command](const CCustomCommand* pCommand)
+			{
+				return pCommand->GetCommandString() == command;
+			});
+
+			// If there's a custom command for this action that can be a ui command, return the requested command
+			if (customCommandIte != m_CustomCommands.cend() && (*customCommandIte)->CanBeUICommand())
+			{
+				return static_cast<QCommandAction*>(static_cast<CUiCommand*>(*customCommandIte)->GetUiInfo());
+			}
+
+			// If no custom command was found, then the action isn't registered, and we have no ui info for this command action
 			return new QCommandAction(text ? text : "No Label - Replace Me!", command, nullptr);
 		}
 	}
