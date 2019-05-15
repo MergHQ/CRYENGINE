@@ -252,7 +252,7 @@ public:
 CCommandListDockable::CCommandListDockable(QWidget* const pParent)
 	: CDockableWidget(pParent)
 {
-	m_pModel = std::make_unique<CCommandModel>();
+	m_pModel = std::make_unique<CCommandListModel>();
 
 	const QDeepFilterProxyModel::BehaviorFlags behavior = QDeepFilterProxyModel::AcceptIfChildMatches | QDeepFilterProxyModel::AcceptIfParentMatches;
 	const auto pFilterProxy = new CCommandListSortProxyModel(behavior);
