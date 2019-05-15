@@ -294,15 +294,9 @@ bool CAISystem::Init()
 
 	SetupAIEnvironment();
 
-	// ensure the available communications are ready before the AI scripts get loaded (they in turn might load GoalPipes and other stuff that depend on communication data)
-	gAIEnv.pCommunicationManager->LoadConfigurationAndScanRootFolder("Scripts/AI/Communication");
-
-	if (!m_pScriptAI)
-		m_pScriptAI = new CScriptBind_AI();
+	TrySubsystemInitScriptBind();
 
 	SubSystemCall(Init());
-
-	m_pScriptAI->RunStartupScript(false);
 
 	Reset(IAISystem::RESET_INTERNAL);
 
@@ -364,10 +358,9 @@ bool CAISystem::Init()
 		{
 			gAIEnv.pVisionMap = new CVisionMap();
 		}
-		if (!gAIEnv.pGroupManager)
-		{
-			gAIEnv.pGroupManager = new CGroupManager();
-		}
+
+		TrySubsystemInitGroupSystem();
+
 		if (!gAIEnv.pAIActionManager)
 		{
 			gAIEnv.pAIActionManager = m_pAIActionManager = new CAIActionManager();
@@ -409,10 +402,8 @@ bool CAISystem::Init()
 			gAIEnv.pFactionMap = gAIEnv.pFactionSystem->GetFactionMap();
 			gAIEnv.pFactionMap->RegisterFactionReactionChangedCallback(functor(*this, &CAISystem::OnFactionReactionChanged));
 		}
-		if (!gAIEnv.pTacticalPointSystem)
-		{
-			gAIEnv.pTacticalPointSystem = new CTacticalPointSystem();
-		}
+
+		TrySubsystemInitTacticalPointSystem();
 	}
 
 	m_AIObjectManager.Init();
@@ -506,13 +497,12 @@ void CAISystem::SetupAIEnvironment()
 	if (!gAIEnv.pStatsManager)
 		gAIEnv.pStatsManager = new CStatsManager;
 
-	if (!gAIEnv.pTargetTrackManager)
-		gAIEnv.pTargetTrackManager = new CTargetTrackManager();
+	TrySubsystemInitTargetTrackSystem();
 
 	gAIEnv.pAIActionManager = m_pAIActionManager = new CAIActionManager();
 	gAIEnv.pSmartObjectManager = m_pSmartObjectManager = new CSmartObjectManager();
 
-	gAIEnv.pCommunicationManager = new CCommunicationManager("Scripts/AI/Communication/CommunicationSystemConfiguration.xml");
+	TrySubsystemInitCommunicationSystem();
 	gAIEnv.pBehaviorTreeManager = new BehaviorTree::BehaviorTreeManager();
 
 	if (!gAIEnv.pFactionSystem)
@@ -522,12 +512,9 @@ void CAISystem::SetupAIEnvironment()
 		gAIEnv.pFactionMap = gAIEnv.pFactionSystem->GetFactionMap();
 		gAIEnv.pFactionMap->RegisterFactionReactionChangedCallback(functor(*this, &CAISystem::OnFactionReactionChanged));
 	}
-	if (!gAIEnv.pFormationManager)
-	{
-		gAIEnv.pFormationManager = new CFormationManager();
-	}
 
-	gAIEnv.pCollisionAvoidanceSystem = new Cry::AI::CollisionAvoidance::CCollisionAvoidanceSystem();
+	TrySubsystemInitFormationSystem();
+	TrySubsystemInitORCA();
 
 	gAIEnv.pRayCaster = new IAISystem::GlobalRayCaster;
 	gAIEnv.pRayCaster->SetQuota(gAIEnv.CVars.RayCasterQuota);
@@ -555,6 +542,100 @@ void CAISystem::SetupAIEnvironment()
 	}
 }
 
+void CAISystem::TrySubsystemInitScriptBind()
+{
+	if (gAIEnv.CVars.ScriptBind)
+	{
+		if (m_pScriptAI == nullptr)
+		{
+			m_pScriptAI = new CScriptBind_AI();
+			m_pScriptAI->RunStartupScript(false);
+			return;
+		}
+		CRY_ASSERT_MESSAGE(m_pScriptAI, "AI Script Bind is already initialized.");
+	}
+}
+
+// ensure the available communications are ready before the AI scripts get loaded (they in turn might load GoalPipes and other stuff that depend on communication data)
+void CAISystem::TrySubsystemInitCommunicationSystem()
+{
+	if (gAIEnv.CVars.CommunicationSystem)
+	{
+		if (gAIEnv.pCommunicationManager == nullptr)
+		{
+			gAIEnv.pCommunicationManager = new CCommunicationManager("Scripts/AI/Communication/CommunicationSystemConfiguration.xml");
+			gAIEnv.pCommunicationManager->LoadConfigurationAndScanRootFolder("Scripts/AI/Communication");
+			return;
+		}
+		CRY_ASSERT_MESSAGE(gAIEnv.pCommunicationManager, "AI Communication System is already initialized.");
+	}
+}
+
+void CAISystem::TrySubsystemInitFormationSystem()
+{
+	if (gAIEnv.CVars.FormationSystem)
+	{
+		if (gAIEnv.pFormationManager == nullptr)
+		{
+			gAIEnv.pFormationManager = new CFormationManager();
+			return;
+		}
+		CRY_ASSERT_MESSAGE(gAIEnv.pFormationManager, "AI Formation system is already initialized.");
+	}
+}
+
+void CAISystem::TrySubsystemInitGroupSystem()
+{
+	if (gAIEnv.CVars.GroupSystem)
+	{
+		if (gAIEnv.pGroupManager == nullptr)
+		{
+			gAIEnv.pGroupManager = new CGroupManager();
+			return;
+		}
+		CRY_ASSERT_MESSAGE(gAIEnv.pGroupManager, "AI Group System is already initialized.");
+	}
+}
+
+void CAISystem::TrySubsystemInitTacticalPointSystem()
+{
+	if (gAIEnv.CVars.TacticalPointSystem)
+	{
+		if (gAIEnv.pTacticalPointSystem == nullptr)
+		{
+			gAIEnv.pTacticalPointSystem = new CTacticalPointSystem();
+			return;
+		}
+		CRY_ASSERT_MESSAGE(gAIEnv.pTacticalPointSystem, "AI Tactical Point System is already initialized.");
+	}
+}
+
+void CAISystem::TrySubsystemInitORCA()
+{
+	if (gAIEnv.CVars.EnableORCA)
+	{
+		if (gAIEnv.pCollisionAvoidanceSystem == nullptr)
+		{
+			gAIEnv.pCollisionAvoidanceSystem = new Cry::AI::CollisionAvoidance::CCollisionAvoidanceSystem();
+			return;
+		}
+		CRY_ASSERT_MESSAGE(gAIEnv.pCollisionAvoidanceSystem, "AI ORCA System is already initialized.");
+	}
+}
+
+void CAISystem::TrySubsystemInitTargetTrackSystem()
+{
+	if (gAIEnv.CVars.TargetTracking)
+	{
+		if (gAIEnv.pTargetTrackManager == nullptr)
+		{
+			gAIEnv.pTargetTrackManager = new CTargetTrackManager();
+			return;
+		}
+		CRY_ASSERT_MESSAGE(gAIEnv.pTargetTrackManager, "AI Target Track System is already initialized.");
+	}
+}
+
 //
 //-----------------------------------------------------------------------------------------------------------
 bool CAISystem::InitSmartObjects()
@@ -579,13 +660,14 @@ void CAISystem::Reload()
 	// Clear out any state that would otherwise persist over a reload (e.g. goalpipes)
 	ClearForReload();
 
-	gAIEnv.pCommunicationManager->Reload();
+	if (gAIEnv.pCommunicationManager)
+		gAIEnv.pCommunicationManager->Reload();
 
 	gAIEnv.pFactionMap->Reload();
 	m_globalPerceptionScale.Reload();
 
 	// Reload the root of the AI system scripts, forcing reload of this and all dependencies
-	if (m_pScriptAI->RunStartupScript(true))
+	if (m_pScriptAI && m_pScriptAI->RunStartupScript(true))
 	{
 		IScriptSystem* pSS = gEnv->pScriptSystem;
 		CRY_ASSERT(pSS);
@@ -711,7 +793,8 @@ int CAISystem::GetAlertness(const IAIAlertnessPredicate& alertnessPredicate)
 void CAISystem::ClearForReload(void)
 {
 	m_PipeManager.ClearAllGoalPipes();
-	gAIEnv.pTacticalPointSystem->DestroyAllQueries();
+	if (gAIEnv.pTacticalPointSystem)
+		gAIEnv.pTacticalPointSystem->DestroyAllQueries();
 }
 
 //
@@ -1496,10 +1579,9 @@ void CAISystem::Reset(IAISystem::EResetReason reason)
 #if CAPTURE_REPLAY_LOG
 		CryGetIMemReplay()->AddLabelFmt("AILoad");
 #endif
-		if (!gAIEnv.pTacticalPointSystem)
-		{
-			gAIEnv.pTacticalPointSystem = new CTacticalPointSystem();
-		}
+
+		TrySubsystemInitTacticalPointSystem();
+
 		if (!gAIEnv.pNavigation)
 		{
 			gAIEnv.pNavigation = m_pNavigation = new CNavigation(gEnv->pSystem);
@@ -1527,10 +1609,9 @@ void CAISystem::Reset(IAISystem::EResetReason reason)
 		{
 			gAIEnv.pVisionMap = new CVisionMap();
 		}
-		if (!gAIEnv.pGroupManager)
-		{
-			gAIEnv.pGroupManager = new CGroupManager();
-		}
+
+		TrySubsystemInitGroupSystem();
+
 		if (!gAIEnv.pAIActionManager)
 		{
 			gAIEnv.pAIActionManager = m_pAIActionManager = new CAIActionManager();
@@ -1598,7 +1679,10 @@ void CAISystem::Reset(IAISystem::EResetReason reason)
 			gAIEnv.pNavigationSystem->Clear();
 
 			stl::free_container(m_sWorkingFolder);
-			gAIEnv.pCommunicationManager->Reset();
+
+			if (gAIEnv.pCommunicationManager)
+				gAIEnv.pCommunicationManager->Reset();
+
 			m_PipeManager.ClearAllGoalPipes();
 			CPuppet::ClearStaticData();
 			stl::free_container(m_walkabilityPhysicalEntities);
@@ -1632,13 +1716,12 @@ void CAISystem::Reset(IAISystem::EResetReason reason)
 		return;
 	}
 
-	if (reason == RESET_UNLOAD_LEVEL)
+	if (gAIEnv.pCollisionAvoidanceSystem)
 	{
-		gAIEnv.pCollisionAvoidanceSystem->Clear();
-	}
-	else
-	{
-		gAIEnv.pCollisionAvoidanceSystem->Reset();
+		if (reason == RESET_UNLOAD_LEVEL)
+			gAIEnv.pCollisionAvoidanceSystem->Clear();
+		else
+			gAIEnv.pCollisionAvoidanceSystem->Reset();
 	}
 
 	AILogEvent("CAISystem::Reset %d", reason);
@@ -4215,7 +4298,9 @@ void CAISystem::SerializeInternal(TSerialize ser)
 		ser.EndGroup(); //  "Beacons"
 
 		m_lightManager.Serialize(ser);
-		gAIEnv.pFormationManager->Serialize(ser);
+
+		if (gAIEnv.pFormationManager)
+			gAIEnv.pFormationManager->Serialize(ser);
 
 		// Serialize temporary shapes.
 		ser.BeginGroup("TempGenericShapes");
@@ -4384,7 +4469,8 @@ void CAISystem::SerializeInternal(TSerialize ser)
 		}
 		ser.EndGroup(); // "AI_Groups"
 
-		gAIEnv.pGroupManager->Serialize(ser);
+		if (gAIEnv.pGroupManager)
+			gAIEnv.pGroupManager->Serialize(ser);
 
 		char name[32];
 		ser.BeginGroup("AI_Alertness");
@@ -5219,7 +5305,10 @@ string CAISystem::GetPathTypeNames()
 //===================================================================
 bool CAISystem::ParseTables(int firstTable, bool parseMovementAbility, IFunctionHandler* pH, AIObjectParams& aiParams, bool& updateAlways)
 {
-	return m_pScriptAI->ParseTables(firstTable, parseMovementAbility, pH, aiParams, updateAlways);
+	if (m_pScriptAI)
+		return m_pScriptAI->ParseTables(firstTable, parseMovementAbility, pH, aiParams, updateAlways);
+
+	return false;
 }
 
 bool CAISystem::CompareFloatsFPUBugWorkaround(float fLeft, float fRight)
@@ -5278,8 +5367,11 @@ IAIGroupProxyFactory* CAISystem::GetGroupProxyFactory() const
 
 IAIGroupProxy* CAISystem::GetAIGroupProxy(int groupID)
 {
-	const Group& group = gAIEnv.pGroupManager->GetGroup(groupID);
-	return group.GetProxy();
+	if (gAIEnv.pGroupManager)
+	{
+		return gAIEnv.pGroupManager->GetGroup(groupID).GetProxy();
+	}
+	return nullptr;
 }
 
 const ShapeMap& CAISystem::GetGenericShapes() const

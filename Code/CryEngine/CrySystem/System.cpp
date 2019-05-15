@@ -750,8 +750,8 @@ void CSystem::ShutDown()
 
 	UnloadSchematycModule();
 
-	UnloadEngineModule("CryAction");
 	UnloadEngineModule("CryFlowGraph");
+	UnloadEngineModule("CryAction");
 	SAFE_DELETE(m_pPluginManager);
 
 	m_pPlatformOS.reset();

@@ -37,6 +37,7 @@ void CMainWindow::InitCVarsCallbacks()
 	m_modularBehaviorTreeDebugTimestampsCvarHandle = gEnv->pConsole->GetCVar(k_modularBehaviorTreeDebugTimestampsCvar)->AddOnChange(std::bind(&CMainWindow::OnChanged_ShowTimestampsDebugger, this));
 	m_modularBehaviorTreeDebugEventsCvarHandle = gEnv->pConsole->GetCVar(k_modularBehaviorTreeDebugEventsCvar)->AddOnChange(std::bind(&CMainWindow::OnChanged_ShowEventsDebugger, this));
 	m_modularBehaviorTreeDebugLogCvarHandle = gEnv->pConsole->GetCVar(k_modularBehaviorTreeDebugLogCvar)->AddOnChange(std::bind(&CMainWindow::OnChanged_ShowLogDebugger, this));
+	m_modularBehaviorTreeDebugBlackBoardCvarHandle = gEnv->pConsole->GetCVar(k_modularBehaviorTreeDebugBlackboardCvar)->AddOnChange(std::bind(&CMainWindow::OnChanged_ShowLogDebugger, this));
 	m_modularBehaviorTreeStatisticsCvarHandle = gEnv->pConsole->GetCVar(k_modularBehaviorTreeStatisticsCvar)->AddOnChange(std::bind(&CMainWindow::OnChanged_ShowStatistics, this));
 	m_modularBehaviorTreeDebugExecutionLogCvarHandle = gEnv->pConsole->GetCVar(k_modularBehaviorTreeDebugExecutionLogCvar)->AddOnChange(std::bind(&CMainWindow::OnChanged_ExecutionHistoryLog, this));
 }
@@ -132,6 +133,13 @@ void CMainWindow::InitMenuBar()
 			SetShowLogDebugger(!GetShowLogDebuggerCvar());
 		});
 
+	m_pEnableBlackboardDebuggerMenuAction = pMenuDebug->CreateAction("Show Blackboard", section);
+	m_pEnableBlackboardDebuggerMenuAction->setCheckable(true);
+	QObject::connect(m_pEnableBlackboardDebuggerMenuAction, &QAction::triggered, [this]()
+		{
+			SetShowBlackboardDebugger(!GetShowBlackboardDebuggerCvar());
+		});
+
 	m_pEnableAllDebuggerMenuAction = pMenuDebug->CreateAction("Show All", section);
 	m_pEnableAllDebuggerMenuAction->setCheckable(true);
 	QObject::connect(m_pEnableAllDebuggerMenuAction, &QAction::triggered, [this]()
@@ -145,18 +153,21 @@ void CMainWindow::InitMenuBar()
 				SetShowTimestampsDebugger(true);
 				SetShowEventsDebugger(true);
 				SetShowLogDebugger(true);
+				SetShowBlackboardDebugger(true);
 			}
 			else if (GetShowTreeDebuggerCvar()
 				&& GetShowVariablesDebuggerCvar()
 				&& GetShowTimestampsDebuggerCvar()
 				&& GetShowEventsDebuggerCvar()
-				&& GetShowLogDebuggerCvar())
+				&& GetShowLogDebuggerCvar()
+				&& GetShowBlackboardDebuggerCvar())
 			{
 				SetShowTreeDebugger(false);
 				SetShowVariablesDebugger(false);
 				SetShowTimestampsDebugger(false);
 				SetShowEventsDebugger(false);
 				SetShowLogDebugger(false);
+				SetShowBlackboardDebugger(false);
 			}
 		});
 
@@ -672,6 +683,46 @@ void CMainWindow::OnChanged_ShowLogDebugger()
 	if (debugLogEnabled != m_pEnableLogDebuggerMenuAction->isChecked())
 	{
 		m_pEnableLogDebuggerMenuAction->setChecked(debugLogEnabled);
+	}
+}
+
+bool CMainWindow::GetShowBlackboardDebuggerCvar() const
+{
+	if (!m_pEnableBlackboardDebuggerMenuAction)
+	{
+		return false;
+	}
+
+	const ICVar* pDebugBlackboard = gEnv->pConsole->GetCVar(k_modularBehaviorTreeDebugBlackboardCvar);
+	return pDebugBlackboard->GetIVal();
+}
+
+void CMainWindow::SetShowBlackboardDebugger(const bool enableFlag)
+{
+	if (!m_pEnableBlackboardDebuggerMenuAction)
+	{
+		return;
+	}
+
+	m_pEnableBlackboardDebuggerMenuAction->setChecked(enableFlag);
+
+	ICVar* pDebugBlackboard = gEnv->pConsole->GetCVar(k_modularBehaviorTreeDebugBlackboardCvar);
+	pDebugBlackboard->Set(enableFlag);
+
+	if (!enableFlag)
+	{
+		SetShowAllDebugger(false);
+	}
+}
+
+void CMainWindow::OnChanged_ShowBlackboardDebugger()
+{
+	const ICVar* pDebugBlackboard = gEnv->pConsole->GetCVar(k_modularBehaviorTreeDebugBlackboardCvar);
+	const bool debugBlackboardEnabled = pDebugBlackboard->GetIVal();
+
+	if (debugBlackboardEnabled != m_pEnableBlackboardDebuggerMenuAction->isChecked())
+	{
+		m_pEnableBlackboardDebuggerMenuAction->setChecked(debugBlackboardEnabled);
 	}
 }
 

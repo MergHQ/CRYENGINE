@@ -615,6 +615,14 @@ public:
 	void SetupAIEnvironment();
 	void SetAIHacksConfiguration();
 
+	void TrySubsystemInitCommunicationSystem();
+	void TrySubsystemInitScriptBind();
+	void TrySubsystemInitFormationSystem();
+	void TrySubsystemInitTacticalPointSystem();
+	void TrySubsystemInitGroupSystem();
+	void TrySubsystemInitORCA();
+	void TrySubsystemInitTargetTrackSystem();
+
 	/// Our own internal serialisation - just serialise our state (but not the things
 	/// we own that are capable of serialising themselves)
 	void SerializeInternal(TSerialize ser);

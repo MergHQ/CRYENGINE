@@ -256,8 +256,11 @@ void CAISystem::SubsystemUpdateSystemComponents()
 void CAISystem::SubsystemUpdateCommunicationManager()
 {
 	CRY_PROFILE_FUNCTION(PROFILE_AI)
-	CRY_ASSERT(gAIEnv.pCommunicationManager);
-	gAIEnv.pCommunicationManager->Update(m_frameDeltaTime);
+	if (gAIEnv.CVars.CommunicationSystem)
+	{
+		CRY_ASSERT(gAIEnv.pCommunicationManager);
+		gAIEnv.pCommunicationManager->Update(m_frameDeltaTime);
+	}
 }
 
 void CAISystem::TrySubsystemUpdateVisionMap(const CTimeValue frameStartTime, const float frameDeltaTime, const bool isAutomaticUpdate)
@@ -283,8 +286,11 @@ void CAISystem::TrySubsystemUpdateAuditionMap(const CTimeValue frameStartTime, c
 void CAISystem::SubsystemUpdateGroupManager()
 {
 	CRY_PROFILE_FUNCTION(PROFILE_AI)
-	CRY_ASSERT(gAIEnv.pGroupManager);
-	gAIEnv.pGroupManager->Update(m_frameDeltaTime);
+	if (gAIEnv.CVars.GroupSystem)
+	{
+		CRY_ASSERT(gAIEnv.pGroupManager);
+		gAIEnv.pGroupManager->Update(m_frameDeltaTime);
+	}
 }
 
 void CAISystem::TrySubsystemUpdateCoverSystem(const CTimeValue frameStartTime, const float frameDeltaTime, const bool isAutomaticUpdate)
@@ -433,8 +439,11 @@ void CAISystem::TrySubsystemUpdateBehaviorTreeManager(const CTimeValue frameStar
 void CAISystem::SubsystemUpdateTacticalPointSystem()
 {
 	CRY_PROFILE_FUNCTION(PROFILE_AI)
-	CRY_ASSERT(gAIEnv.pTacticalPointSystem);
-	gAIEnv.pTacticalPointSystem->Update(gAIEnv.CVars.TacticalPointUpdateTime);
+	if (gAIEnv.CVars.TacticalPointSystem)
+	{
+		CRY_ASSERT(gAIEnv.pTacticalPointSystem);
+		gAIEnv.pTacticalPointSystem->Update(gAIEnv.CVars.TacticalPointUpdateTime);
+	}
 }
 
 void CAISystem::SubsystemUpdateAmbientFire()

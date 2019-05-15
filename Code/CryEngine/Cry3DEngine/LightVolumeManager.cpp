@@ -35,38 +35,38 @@ uint16 CLightVolumesMgr::RegisterVolume(const Vec3& vPos, f32 fRadius, uint8 nCl
 {
 	IF (m_bUpdateLightVolumes && fRadius < 256.0f, 1)
 	{
+		FUNCTION_PROFILER_3DENGINE;
+
+		int32 nPosx = (int32)(floorf(vPos.x * LV_CELL_RSIZEX));
+		int32 nPosy = (int32)(floorf(vPos.y * LV_CELL_RSIZEY));
+		int32 nPosz = (int32)(floorf(vPos.z * LV_CELL_RSIZEZ));
+
+		// Check if world cell has any light volume, else add new one
+		uint16 nHashIndex = GetWorldHashBucketKey(nPosx, nPosy, nPosz);
+		uint16* pCurrentVolumeID = &m_nWorldCells[nHashIndex];
+
+		while (*pCurrentVolumeID != 0)
+		{
+			SLightVolInfo& sVolInfo = m_pLightVolsInfo[*pCurrentVolumeID - 1];
+
+			int32 nVolumePosx = (int32)(floorf(sVolInfo.vVolume.x * LV_CELL_RSIZEX));
+			int32 nVolumePosy = (int32)(floorf(sVolInfo.vVolume.y * LV_CELL_RSIZEY));
+			int32 nVolumePosz = (int32)(floorf(sVolInfo.vVolume.z * LV_CELL_RSIZEZ));
+
+			if (nPosx == nVolumePosx &&
+				nPosy == nVolumePosy &&
+				nPosz == nVolumePosz &&
+				nClipVolumeRef == sVolInfo.nClipVolumeID)
+			{
+				return (uint16)* pCurrentVolumeID;
+			}
+
+			pCurrentVolumeID = &sVolInfo.nNextVolume;
+		}
+
 		//we only increment m_lightVolsInfoCount here and clamp it to the max value later
 		if (CryInterlockedIncrement(&m_lightVolsInfoCount) < LV_MAX_COUNT)
 		{
-			FUNCTION_PROFILER_3DENGINE;
-
-			int32 nPosx = (int32)(floorf(vPos.x * LV_CELL_RSIZEX));
-			int32 nPosy = (int32)(floorf(vPos.y * LV_CELL_RSIZEY));
-			int32 nPosz = (int32)(floorf(vPos.z * LV_CELL_RSIZEZ));
-
-			// Check if world cell has any light volume, else add new one
-			uint16 nHashIndex = GetWorldHashBucketKey(nPosx, nPosy, nPosz);
-			uint16* pCurrentVolumeID = &m_nWorldCells[nHashIndex];
-
-			while (*pCurrentVolumeID != 0)
-			{
-				SLightVolInfo& sVolInfo = m_pLightVolsInfo[*pCurrentVolumeID - 1];
-
-				int32 nVolumePosx = (int32)(floorf(sVolInfo.vVolume.x * LV_CELL_RSIZEX));
-				int32 nVolumePosy = (int32)(floorf(sVolInfo.vVolume.y * LV_CELL_RSIZEY));
-				int32 nVolumePosz = (int32)(floorf(sVolInfo.vVolume.z * LV_CELL_RSIZEZ));
-
-				if (nPosx == nVolumePosx &&
-					nPosy == nVolumePosy &&
-					nPosz == nVolumePosz &&
-					nClipVolumeRef == sVolInfo.nClipVolumeID)
-				{
-					return (uint16)* pCurrentVolumeID;
-				}
-
-				pCurrentVolumeID = &sVolInfo.nNextVolume;
-			}
-
 			// create new volume
 			uint32 nIndex = ~0;
 			m_pLightVolsInfo.push_back_new(nIndex, vPos, fRadius, nClipVolumeRef);

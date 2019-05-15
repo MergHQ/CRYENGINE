@@ -76,7 +76,11 @@ private:
 	bool                GetShowLogDebuggerCvar() const;
 	void                SetShowLogDebugger(const bool enableFlag);
 	void                OnChanged_ShowLogDebugger();
-		                
+
+	bool                GetShowBlackboardDebuggerCvar() const;
+	void                SetShowBlackboardDebugger(const bool enableFlag);
+	void                OnChanged_ShowBlackboardDebugger();
+
 	bool                GetShowAllDebugger() const;
 	void                SetShowAllDebugger(const bool enableFlag);
 		                
@@ -109,6 +113,7 @@ private:
 	QAction*            m_pEnableTimestampsDebuggerMenuAction;
 	QAction*            m_pEnableEventsDebuggerMenuAction;
 	QAction*            m_pEnableLogDebuggerMenuAction;
+	QAction*            m_pEnableBlackboardDebuggerMenuAction;
 	QAction*            m_pEnableAllDebuggerMenuAction;
 	QAction*            m_pEnableStatisticsMenuAction;
 
@@ -121,6 +126,7 @@ private:
 	const string        k_modularBehaviorTreeDebugTimestampsCvar = "ai_ModularBehaviorTreeDebugTimestamps";
 	const string        k_modularBehaviorTreeDebugEventsCvar = "ai_ModularBehaviorTreeDebugEvents";
 	const string        k_modularBehaviorTreeDebugLogCvar = "ai_ModularBehaviorTreeDebugLog";
+	const string        k_modularBehaviorTreeDebugBlackboardCvar = "ai_ModularBehaviorTreeDebugBlackboard";
 	const string        k_modularBehaviorTreeStatisticsCvar = "ai_DrawModularBehaviorTreeStatistics";
 	const string        k_modularBehaviorTreeDebugExecutionLogCvar = "ai_ModularBehaviorTreeDebugExecutionStacks";
 
@@ -130,6 +136,7 @@ private:
 	uint64              m_modularBehaviorTreeDebugTimestampsCvarHandle;
 	uint64              m_modularBehaviorTreeDebugEventsCvarHandle;
 	uint64              m_modularBehaviorTreeDebugLogCvarHandle;
+	uint64              m_modularBehaviorTreeDebugBlackBoardCvarHandle;
 	uint64              m_modularBehaviorTreeStatisticsCvarHandle;
 	uint64              m_modularBehaviorTreeDebugExecutionLogCvarHandle;
 };

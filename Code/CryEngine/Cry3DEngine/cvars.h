@@ -447,6 +447,7 @@ struct CVars : public Cry3DEngineBase
 	DeclareConstFloatCVar(e_LodCompMaxSize);
 	float e_ViewDistRatioDetail;
 	DeclareConstIntCVar(e_TerrainDetailMaterialsDebug, 0);
+	DeclareConstIntCVar(e_Sleep, 0);
 	DeclareConstIntCVar(e_TerrainOcclusionCullingStepSize, 4);
 	int   e_Wind;
 	int   e_SQTestMip;

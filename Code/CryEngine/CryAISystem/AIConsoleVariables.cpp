@@ -904,7 +904,7 @@ void AIConsoleVars::Init()
 	REGISTER_CVAR2("ai_ModularBehaviorTreeDebugLog", &ModularBehaviorTreeDebugLog, 0, VF_CHEAT | VF_CHEAT_NOCHECK,
 		"[0-1] Enable/Disable the debug text of the behavior tree's log.");
 
-	REGISTER_CVAR2("ai_ModularehaviorTreeDebugBlackboard", &ModularBehaviorTreeDebugBlackboard, 0, VF_CHEAT | VF_CHEAT_NOCHECK,
+	REGISTER_CVAR2("ai_ModularBehaviorTreeDebugBlackboard", &ModularBehaviorTreeDebugBlackboard, 0, VF_CHEAT | VF_CHEAT_NOCHECK,
 		"[0-1] Enable/Disable the debug text of the behavior tree's blackboards.");
 
 	DefineConstIntCVarName("ai_ModularBehaviorTreeDebugExecutionStacks", LogModularBehaviorTreeExecutionStacks, 0, VF_CHEAT | VF_CHEAT_NOCHECK,
@@ -912,6 +912,17 @@ void AIConsoleVars::Init()
 	                       "0 - Off\n"
 	                       "1 - Log execution stacks of only the currently selected agent\n"
 	                       "2 - Log execution stacks of all currently active agents");
+
+	DefineConstIntCVarName("ai_ScriptBind", ScriptBind, 1, VF_CHEAT | VF_CHEAT_NOCHECK,
+		"[0-1] Enable/Disable the Script Bind AI subsystem.\n");
+	DefineConstIntCVarName("ai_CommunicationSystem", CommunicationSystem, 1, VF_CHEAT | VF_CHEAT_NOCHECK,
+		"[0-1] Enable/Disable the Communication subsystem.\n");
+	DefineConstIntCVarName("ai_FormationSystem", FormationSystem, 1, VF_CHEAT | VF_CHEAT_NOCHECK,
+		"[0-1] Enables/Dsiable the Formation System.\n");
+	DefineConstIntCVarName("ai_GroupSystem", GroupSystem, 1, VF_CHEAT | VF_CHEAT_NOCHECK,
+		"[0-1] Enable/Disable the Group System.\n");
+	DefineConstIntCVarName("ai_TacticalPointSystem", TacticalPointSystem, 1, VF_CHEAT | VF_CHEAT_NOCHECK,
+		"[0-1] Enable/Disable the Tactical Point System.\n");
 
 	// MNM
 

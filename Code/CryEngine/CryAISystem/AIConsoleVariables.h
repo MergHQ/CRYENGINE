@@ -179,6 +179,12 @@ struct AIConsoleVars
 
 	DeclareConstIntCVar(MNMPathfinderPositionInTrianglePredictionType, 1);
 
+	DeclareConstIntCVar(ScriptBind, 1);
+	DeclareConstIntCVar(CommunicationSystem, 1);
+	DeclareConstIntCVar(FormationSystem, 1);
+	DeclareConstIntCVar(GroupSystem, 1);
+	DeclareConstIntCVar(TacticalPointSystem, 1);
+
 	int         MovementSystemPathReplanningEnabled;
 
 	const char* DrawPath;
