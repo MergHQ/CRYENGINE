@@ -39,10 +39,8 @@ public:
 				if (CRenderer::CV_r_StereoEnableMgpu < 0)
 					DescriptorHeapDesc.NodeMask = 1;
 #endif
-				CRY_DX12_VERIFY(
-					pDevice->CreateDescriptorHeap(
-					&DescriptorHeapDesc, riid, (void**)&m_Targets[i]) == S_OK,
-					"Failed to create descriptor heap!");
+				if (pDevice->CreateDescriptorHeap(&DescriptorHeapDesc, riid, (void**)&m_Targets[i]) != S_OK)
+					DX12_ERROR("Failed to create descriptor heap!");
 			}
 
 			if (m_Targets[i])

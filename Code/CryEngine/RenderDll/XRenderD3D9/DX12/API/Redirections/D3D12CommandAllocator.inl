@@ -23,10 +23,8 @@ public:
 		DX12_ASSERT(~0, "0 is not allowed in the broadcaster!");
 		for (int i = 0; i < numTargets; ++i)
 		{
-			CRY_DX12_VERIFY(
-				pDevice->CreateCommandAllocator(
-			  type, riid, (void**)&m_Targets[i]) == S_OK,
-				"Failed to create fence!");
+			if (pDevice->CreateCommandAllocator(type, riid, (void**)&m_Targets[i]) != S_OK)
+				DX12_ERROR("Failed to create fence!");
 		}
 	}
 

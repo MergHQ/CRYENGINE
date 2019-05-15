@@ -173,7 +173,8 @@ void CCommandList::End()
 	{
 		PendingResourceBarriers();
 
-		CRY_DX12_VERIFY(m_pCmdList->Close() == S_OK, "Could not close command list!");
+		if (m_pCmdList->Close() != S_OK)
+			DX12_ERROR("Could not close command list!");
 	}
 
 	m_eState = CLSTATE_COMPLETED;
@@ -402,7 +403,7 @@ bool CCommandList::IsFull(size_t numResources, size_t numSamplers, size_t numRen
 //---------------------------------------------------------------------------------------------------------------------
 void CCommandList::SetGraphicsRootSignature(const CRootSignature* pRootSignature, const D3D12_GPU_VIRTUAL_ADDRESS (&vConstViews)[8 /*CB_PER_FRAME*/])
 {
-	DX12_ASSERT(pRootSignature);
+	DX12_ASSERT(pRootSignature, "Graphics Root-Signature is nullptr");
 
 	const SResourceMappings& rm = pRootSignature->GetResourceMappings();
 	const CD3DX12_ROOT_PARAMETER* pTableInfo = rm.m_RootParameters;
@@ -434,7 +435,7 @@ void CCommandList::SetGraphicsRootSignature(const CRootSignature* pRootSignature
 
 void CCommandList::SetGraphicsDescriptorTables(const CRootSignature* pRootSignature, D3D12_DESCRIPTOR_HEAP_TYPE eType)
 {
-	DX12_ASSERT(pRootSignature);
+	DX12_ASSERT(pRootSignature, "Graphics Root-Signature is nullptr");
 
 	const SResourceMappings& rm = pRootSignature->GetResourceMappings();
 	const CD3DX12_ROOT_PARAMETER* pTableInfo = rm.m_RootParameters;
@@ -458,7 +459,7 @@ void CCommandList::SetGraphicsDescriptorTables(const CRootSignature* pRootSignat
 //---------------------------------------------------------------------------------------------------------------------
 void CCommandList::SetComputeRootSignature(const CRootSignature* pRootSignature, const D3D12_GPU_VIRTUAL_ADDRESS (&vConstViews)[8 /*CB_PER_FRAME*/])
 {
-	DX12_ASSERT(pRootSignature);
+	DX12_ASSERT(pRootSignature, "Graphics Root-Signature is nullptr");
 
 	const SResourceMappings& rm = pRootSignature->GetResourceMappings();
 	const CD3DX12_ROOT_PARAMETER* pTableInfo = rm.m_RootParameters;
@@ -490,7 +491,7 @@ void CCommandList::SetComputeRootSignature(const CRootSignature* pRootSignature,
 
 void CCommandList::SetComputeDescriptorTables(const CRootSignature* pRootSignature, D3D12_DESCRIPTOR_HEAP_TYPE eType)
 {
-	DX12_ASSERT(pRootSignature);
+	DX12_ASSERT(pRootSignature, "Graphics Root-Signature is nullptr");
 
 	const SResourceMappings& rm = pRootSignature->GetResourceMappings();
 	const CD3DX12_ROOT_PARAMETER* pTableInfo = rm.m_RootParameters;
@@ -647,25 +648,25 @@ void CCommandList::BindResourceView(const CView& view, const TRange<UINT>& bindR
 		break;
 
 	case EVT_DepthStencilView:
-		DX12_ASSERT(0, "Unsupported DSV creation for input!");
+		DX12_ERROR("Unsupported DSV creation for input!");
 
 		TrackResourceDSVUsage(resource, view);
 		break;
 
 	case EVT_RenderTargetView:
-		DX12_ASSERT(0, "Unsupported RTV creation for input!");
+		DX12_ERROR("Unsupported RTV creation for input!");
 
 		TrackResourceRTVUsage(resource, view);
 		break;
 
 	case EVT_VertexBufferView:
-		DX12_ASSERT(0, "Unsupported VSV creation for input!");
+		DX12_ERROR("Unsupported VSV creation for input!");
 
 		TrackResourceVBVUsage(resource);
 		break;
 
 	default:
-		DX12_ASSERT(0, "Unsupported resource-type for input!");
+		DX12_ERROR("Unsupported resource-type for input!");
 		break;
 	}
 }
@@ -904,7 +905,7 @@ void CCommandList::ClearView(const CView& view, const FLOAT rgba[4], UINT NumRec
 	case EVT_ConstantBufferView:
 	case EVT_VertexBufferView:
 	default:
-		DX12_ASSERT(0, "Unsupported resource-type for input!");
+		DX12_ERROR("Unsupported resource-type for input!");
 		break;
 	}
 }

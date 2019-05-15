@@ -129,14 +129,14 @@ HRESULT STDMETHODCALLTYPE CCryDX12SwapChain::GetBuffer(
 		case D3D12_RESOURCE_DIMENSION_UNKNOWN:
 		default:
 			*ppSurface = nullptr;
-			DX12_ASSERT(0, "Not implemented!");
+			DX12_ERROR("Not implemented!");
 			break;
 		}
 	}
 	else
 	{
 		*ppSurface = nullptr;
-		DX12_ASSERT(0, "Not implemented!");
+		DX12_ERROR("Not implemented!");
 		return -1;
 	}
 
