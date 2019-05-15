@@ -171,16 +171,15 @@ void CSwapChain::AcquireBuffers()
 		std::vector<UINT> createNodeMasks(m_Desc.BufferCount, 0x1);
 		std::vector<IUnknown*> presentCommandQueues(m_Desc.BufferCount, pDevice->GetNativeObject(m_pCommandQueue.GetD3D12CommandQueue(), 0));
 
-		CRY_DX12_VERIFY(
-			m_pDXGISwapChain->ResizeBuffers1(
-		  m_Desc.BufferCount,
-		  m_Desc.BufferDesc.Width,
-		  m_Desc.BufferDesc.Height,
-		  m_Desc.BufferDesc.Format,
-		  m_Desc.Flags,
-		  &createNodeMasks[0],
-		  &presentCommandQueues[0]) == S_OK,
-			"Failed to re-locate the swap-chain's backbuffer(s) to all device nodes!");
+		if (m_pDXGISwapChain->ResizeBuffers1(
+			m_Desc.BufferCount,
+			m_Desc.BufferDesc.Width,
+			m_Desc.BufferDesc.Height,
+			m_Desc.BufferDesc.Format,
+			m_Desc.Flags,
+			&createNodeMasks[0],
+			&presentCommandQueues[0]) != S_OK)
+			DX12_ERROR("Failed to re-locate the swap-chain's backbuffer(s) to all device nodes!");
 	}
 #endif
 

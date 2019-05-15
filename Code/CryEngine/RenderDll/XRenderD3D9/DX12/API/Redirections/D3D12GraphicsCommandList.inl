@@ -39,10 +39,8 @@ public:
 				if (CRenderer::CV_r_StereoEnableMgpu < 0)
 					nM = 1;
 #endif
-				CRY_DX12_VERIFY(
-					pDevice->CreateCommandList(
-				  nM, type, *(*pCommandAllocator)[i], pInitialState, riid, (void**)&m_Targets[i]) == S_OK,
-					"Failed to create graphics command list!");
+				if (pDevice->CreateCommandList(nM, type, *(*pCommandAllocator)[i], pInitialState, riid, (void**)&m_Targets[i]) != S_OK)
+					DX12_ERROR("Failed to create graphics command list!");
 			}
 		}
 	}

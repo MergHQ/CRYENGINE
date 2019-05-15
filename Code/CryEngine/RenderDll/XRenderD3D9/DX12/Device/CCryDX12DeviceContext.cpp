@@ -890,7 +890,7 @@ HRESULT STDMETHODCALLTYPE CCryDX12DeviceContext::Map(
 			// ConstantBuffer/ShaderResource/UnorderedAccess marker
 			if (MapType & DX12_MAP_DISCARD_MARKER)
 			{
-				DX12_ASSERT(false, "MAP_DISCARD does not work under DX12 when there is a view on the discardable buffer! Please rewrite the algorithm to use NO_OVERWRITE");
+				DX12_ERROR("MAP_DISCARD does not work under DX12 when there is a view on the discardable buffer! Please rewrite the algorithm to use NO_OVERWRITE");
 				abort();
 			}
 		}
@@ -908,7 +908,7 @@ HRESULT STDMETHODCALLTYPE CCryDX12DeviceContext::Map(
 
 	if (S_OK != hr)
 	{
-		DX12_ASSERT(0, "Could not map resource!");
+		DX12_ERROR("Could not map resource!");
 		return hr;
 	}
 
