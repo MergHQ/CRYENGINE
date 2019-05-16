@@ -876,17 +876,23 @@ void ExplorerPanel::OnHeaderColumnToggle()
 
 void ExplorerPanel::OnContextMenu(const QPoint& pos)
 {
+	ExplorerEntries entries;
+	GetSelectedEntries(&entries);
+
+	bool haveChildren = std::any_of(entries.begin(), entries.end(), [](auto const& e) {return e->children.size() > 0; });
+
 	QMenu menu;
 	menu.addAction("Copy Name", this, SLOT(OnMenuCopyName()));
 	menu.addAction("Copy Path", this, SLOT(OnMenuCopyPath()), QKeySequence("Ctrl+C"));
 	menu.addAction("Paste Selection", this, SLOT(OnMenuPasteSelection()), QKeySequence("Ctrl+V"));
-	menu.addAction("Expand All", this, SLOT(OnMenuExpandAll()));
-	menu.addAction("Collapse All", this, SLOT(OnMenuCollapseAll()));
+	if (haveChildren)
+	{
+		menu.addAction("Expand All", this, SLOT(OnMenuExpandAll()));
+		menu.addAction("Collapse All", this, SLOT(OnMenuCollapseAll()));
+	}
 	menu.addSeparator();
 
-	ExplorerEntries entries;
 	ExplorerActions actions;
-	GetSelectedEntries(&entries);
 	m_explorerData->GetCommonActions(&actions, entries);
 
 	for (size_t i = 0; i < actions.size(); ++i)
