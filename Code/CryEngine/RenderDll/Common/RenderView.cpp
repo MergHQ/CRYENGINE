@@ -1220,7 +1220,7 @@ static inline ERenderListID CalculateRenderItemList(const SShaderItem& shaderIte
 		|| passInfo.IsRecursivePass() /* account for recursive scene traversal done in forward fashion*/)
 	{
 		SRenderObjData* pOD = pObj->GetObjData();
-		if (pOD && pOD->m_FogVolumeContribIdx == (uint16) - 1)
+		if (pOD && !pOD->m_FogVolumeContribIdx)
 		{
 			I3DEngine* pEng = gEnv->p3DEngine;
 			ColorF newContrib;
@@ -2428,6 +2428,7 @@ void CRenderView::CheckAndScheduleForUpdate(const SShaderItem& shaderItem) threa
 	}
 }
 
+// Fog Volume indices use the same convention as Light Volume indices: 0 is invalid, 1 is first valid.
 //////////////////////////////////////////////////////////////////////////
 uint16 CRenderView::PushFogVolumeContribution(const ColorF& fogVolumeContrib, const SRenderingPassInfo& passInfo) threadsafe
 {
@@ -2436,17 +2437,17 @@ uint16 CRenderView::PushFogVolumeContribution(const ColorF& fogVolumeContrib, co
 
 	CRY_ASSERT(numFogVolumes < maxElems);
 	if (numFogVolumes >= maxElems)
-		return (uint16) - 1;
+		return 0;
 
 	uint32 nIndex = ~0;
 	m_fogVolumeContributions.push_back(fogVolumeContrib, nIndex);
-	return static_cast<uint16>(nIndex);
+	return static_cast<uint16>(nIndex + 1);
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CRenderView::GetFogVolumeContribution(uint16 idx, ColorF& rColor) const
 {
-	rColor = idx != (uint16)-1 ? m_fogVolumeContributions[idx] : ColorF(0.0f, 0.0f, 0.0f, 1.0f);
+	rColor = idx ? m_fogVolumeContributions[idx - 1] : ColorF(0.0f, 0.0f, 0.0f, 1.0f);
 }
 
 //////////////////////////////////////////////////////////////////////////

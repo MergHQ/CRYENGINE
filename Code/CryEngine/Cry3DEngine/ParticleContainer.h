@@ -66,9 +66,9 @@ struct CRY_ALIGN(16) SPartRenderParams
 	float m_fMaxAngularDensity;
 	uint32 m_nRenFlags;
 	TrinaryFlags<uint64> m_nRenObjFlags;
+	uint16 m_nDeferredLightVolumeId;
 	uint16 m_nFogVolumeContribIdx;
 	float m_fHDRDynamicMultiplier;
-	uint16 m_nDeferredLightVolumeId;
 };
 
 //////////////////////////////////////////////////////////////////////////
