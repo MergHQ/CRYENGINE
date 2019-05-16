@@ -50,7 +50,7 @@ void CParticleRenderBase::Render(CParticleComponentRuntime& runtime, const SRend
 	if (renderContext.m_passInfo.IsShadowPass())
 		AddRenderObject(runtime, renderContext);
 	else if (isNear)
-		AddRenderObject(runtime, renderContext, FOB_NEAREST);
+		AddRenderObject(runtime, renderContext, FOB_NEAREST | FOB_AFTER_WATER);
 	else if (params.m_renderStateFlags & OS_TRANSPARENT)
 	{
 		if (m_waterCulling && (cameraUnderWater ? renderAboveWater : renderBelowWater))

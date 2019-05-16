@@ -770,9 +770,7 @@ CDeviceGraphicsPSOPtr CREParticle::GetGraphicsPSO(CRenderObject* pRenderObject, 
 			if ((pRenderObject->m_ObjFlags & FOB_LIGHTVOLUME) && lightVolumes.HasVolumes() && lightVolumeId >= 0 && lightVolumes.HasLights(lightVolumeId))
 			{
 			#ifndef _RELEASE
-				const uint numVolumes = lightVolumes.GetNumVolumes();
-				if (lightVolumeId >= numVolumes)
-					CRY_ASSERT_MESSAGE(0, "Bad LightVolumeId");
+				CRY_ASSERT(lightVolumeId < lightVolumes.GetNumVolumes());
 			#endif
 				mode = isRecursive ? EParticlePSOMode::WithLightingRecursive : EParticlePSOMode::WithLighting;
 			}
@@ -807,12 +805,10 @@ void CREParticle::PrepareDataToRender(CRenderView* pRenderView, CRenderObject* p
 	const SRenderObjData& objectData = *pRenderObject->GetObjData();
 
 	SParticleInstanceCB instanceCB;
-	const uint lightVolumeId = objectData.m_LightVolumeId - 1;
-	const uint fogVolumeIdx = objectData.m_FogVolumeContribIdx;
-	if (fogVolumeIdx != (uint16) - 1)
+	if (objectData.m_FogVolumeContribIdx)
 	{
 		ColorF contrib;
-		pRenderView->GetFogVolumeContribution(fogVolumeIdx, contrib);
+		pRenderView->GetFogVolumeContribution(objectData.m_FogVolumeContribIdx, contrib);
 		instanceCB.m_avgFogVolumeContrib.x = contrib.r * (1 - contrib.a);
 		instanceCB.m_avgFogVolumeContrib.y = contrib.g * (1 - contrib.a);
 		instanceCB.m_avgFogVolumeContrib.z = contrib.b * (1 - contrib.a);
@@ -820,7 +816,7 @@ void CREParticle::PrepareDataToRender(CRenderView* pRenderView, CRenderObject* p
 	}
 	instanceCB.m_vertexOffset = m_nFirstVertex;
 	instanceCB.m_envCubemapIndex = tiledLights->GetLightShadeIndexBySpecularTextureId(m_CustomTexBind[0]); // #PFX2_TODO these ids are going back and thorth, clean this up
-	instanceCB.m_lightVolumeId = lightVolumeId;
+	instanceCB.m_lightVolumeId = objectData.m_LightVolumeId - 1;
 	instanceCB.m_glowParams = m_pCompiledParticle->m_glowParams;
 
 	m_pCompiledParticle->m_pPerDrawCB->UpdateBuffer(&instanceCB, sizeof(instanceCB));

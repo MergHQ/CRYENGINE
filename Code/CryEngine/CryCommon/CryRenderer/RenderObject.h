@@ -174,8 +174,6 @@ struct SRenderObjData
 
 	const struct SParticleShaderData* m_pParticleShaderData;  // specific data from the Particle Render Function to the shaders
 
-	uint16                            m_FogVolumeContribIdx;
-
 	uint16                            m_scissorX;
 	uint16                            m_scissorY;
 
@@ -183,6 +181,7 @@ struct SRenderObjData
 	uint16                            m_scissorHeight;
 
 	uint16                            m_LightVolumeId;
+	uint16                            m_FogVolumeContribIdx;
 
 	//@ see ERenderObjectCustomFlags
 	uint16 m_nCustomFlags;
@@ -204,7 +203,6 @@ struct SRenderObjData
 		m_nVisionParams = 0;
 		m_pLayerEffectParams = 0;
 		m_nLightID = 0;
-		m_LightVolumeId = 0;
 		m_pSkinningData = NULL;
 		m_scissorX = m_scissorY = m_scissorWidth = m_scissorHeight = 0;
 		m_nCustomData = 0;
@@ -214,7 +212,8 @@ struct SRenderObjData
 		m_pShaderParams = NULL;
 		m_pTerrainSectorTextureInfo = 0;
 		m_fMaxViewDistance = 100000.f;
-		m_FogVolumeContribIdx = ~(uint16)0;
+		m_LightVolumeId = 0;
+		m_FogVolumeContribIdx = 0;
 	}
 
 	void SetShaderParams(const DynArray<SShaderParam>* pShaderParams)
