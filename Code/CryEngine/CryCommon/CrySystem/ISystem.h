@@ -483,8 +483,6 @@ enum ESystemEvent
 	//! Purpose of this event is to enable different modules to communicate with each other without knowing about each other.
 	ESYSTEM_EVENT_URI,
 
-	ESYSTEM_EVENT_USER = 0x1000,
-
 	ESYSTEM_EVENT_BEAM_PLAYER_TO_CAMERA_POS,
 
 	//! Sent if the CrySystem module initialized successfully.
@@ -511,7 +509,12 @@ enum ESystemEvent
 	ESYSTEM_EVENT_GAME_FRAMEWORK_INIT_DONE,
 
 	//! Sent if the CryAction module is about to shutdown
-	ESYSTEM_EVENT_GAME_FRAMEWORK_ABOUT_TO_SHUTDOWN
+	ESYSTEM_EVENT_GAME_FRAMEWORK_ABOUT_TO_SHUTDOWN,
+
+
+	//! Event IDs from this value upwards can be used to define custom events.
+	//! Should always be the last value!
+	ESYSTEM_EVENT_USER,
 };
 
 //! User defined callback, which can be passed to ISystem.
