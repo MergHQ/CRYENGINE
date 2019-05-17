@@ -1887,6 +1887,10 @@ void CD3D9Renderer::GetVideoMemoryUsageStats(size_t& vidMemUsedThisFrame, size_t
 
 //===========================================================================================
 
+#if defined(SUPPORT_DEVICE_INFO) && !CRY_RENDERER_VULKAN
+#include <d3d10.h>
+#endif
+
 HRESULT CALLBACK CD3D9Renderer::OnD3D11CreateDevice(D3DDevice* pd3dDevice)
 {
 	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
@@ -1920,8 +1924,11 @@ HRESULT CALLBACK CD3D9Renderer::OnD3D11CreateDevice(D3DDevice* pd3dDevice)
 	driverVersion.HighPart = (VK_VERSION_MAJOR(version) << 16) | VK_VERSION_MINOR(version);
 	driverVersion.LowPart = (VK_VERSION_PATCH(version) << 16) | VK_HEADER_VERSION;
 	#else
-	rd->m_devInfo.Adapter()->CheckInterfaceSupport(__uuidof(ID3D11Device), &driverVersion);
+	// Note  You can use CheckInterfaceSupport only to check whether a Direct3D 10.x interface is
+	// supported, and only on Windows Vista SP1 and later versions of the operating system.
+	rd->m_devInfo.Adapter()->CheckInterfaceSupport(__uuidof(ID3D10Device), &driverVersion);
 	#endif
+
 	iLog->Log("D3D Adapter: Description: %ls", rd->m_devInfo.AdapterDesc().Description);
 	iLog->Log("D3D Adapter: Driver version (UMD): %d.%02d.%02d.%04d", HIWORD(driverVersion.u.HighPart), LOWORD(driverVersion.u.HighPart), HIWORD(driverVersion.u.LowPart), LOWORD(driverVersion.u.LowPart));
 	iLog->Log("D3D Adapter: VendorId = 0x%.4X", rd->m_devInfo.AdapterDesc().VendorId);
