@@ -45,7 +45,7 @@ void TreeVisualizer::Draw(
   const Blackboard& blackboard, 
   const MessageQueue& eventsLog)
 {
-	if (gAIEnv.CVars.ModularBehaviorTreeDebugTree)
+	if (gAIEnv.CVars.behaviorTree.ModularBehaviorTreeDebugTree)
 	{
 		const DebugNode* firstNode = tree.GetFirstNode().get();
 		if (firstNode)
@@ -59,22 +59,22 @@ void TreeVisualizer::Draw(
 		}
 	}
 
-	if (gAIEnv.CVars.ModularBehaviorTreeDebugLog)
+	if (gAIEnv.CVars.behaviorTree.ModularBehaviorTreeDebugLog)
 	{
 		DrawBehaviorLog(behaviorLog);
 	}
 
-	if (gAIEnv.CVars.ModularBehaviorTreeDebugTimestamps)
+	if (gAIEnv.CVars.behaviorTree.ModularBehaviorTreeDebugTimestamps)
 	{
 		DrawTimestampCollection(timestampCollection);
 	}
 
-	if (gAIEnv.CVars.ModularBehaviorTreeDebugBlackboard)
+	if (gAIEnv.CVars.behaviorTree.ModularBehaviorTreeDebugBlackboard)
 	{
 		DrawBlackboard(blackboard);
 	}
 
-	if (gAIEnv.CVars.ModularBehaviorTreeDebugEvents)
+	if (gAIEnv.CVars.behaviorTree.ModularBehaviorTreeDebugEvents)
 	{
 		DrawEventLog(eventsLog);
 	}

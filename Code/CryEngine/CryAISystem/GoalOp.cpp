@@ -376,7 +376,7 @@ EGoalOpResult COPApproach::Execute(CPipeUser* pPipeUser)
 	CCCPOINT(COPApproach_Execute);
 	CRY_PROFILE_FUNCTION(PROFILE_AI);
 
-	int debugPathfinding = gAIEnv.CVars.DebugPathFinding;
+	int debugPathfinding = gAIEnv.CVars.LegacyDebugPathFinding;
 
 	CAIObject* pTarget = static_cast<CAIObject*>(pPipeUser->GetAttentionTarget());
 
@@ -592,7 +592,7 @@ EGoalOpResult COPApproach::Execute(CPipeUser* pPipeUser)
 
 void COPApproach::Reset(CPipeUser* pPipeUser)
 {
-	if (gAIEnv.CVars.DebugPathFinding)
+	if (gAIEnv.CVars.LegacyDebugPathFinding)
 	{
 		AILogAlways("COPApproach::Reset %s", GetNameSafe(pPipeUser));
 	}
@@ -2890,7 +2890,7 @@ EGoalOpResult COPTacticalPos::Execute(CPipeUser* pPipeUser)
 			CAIObject* pHideTarget = m_refHideTarget.GetAIObject();
 			assert(pHideTarget);
 
-			if (gAIEnv.CVars.DebugPathFinding)
+			if (gAIEnv.CVars.LegacyDebugPathFinding)
 			{
 
 				const Vec3& vHidePos = pHideTarget->GetPos();
@@ -2911,7 +2911,7 @@ EGoalOpResult COPTacticalPos::Execute(CPipeUser* pPipeUser)
 			CAIObject* pHideTarget = m_refHideTarget.GetAIObject();
 			if (pPipeUser->m_nPathDecision == PATHFINDER_PATHFOUND)
 			{
-				if (gAIEnv.CVars.DebugPathFinding)
+				if (gAIEnv.CVars.LegacyDebugPathFinding)
 				{
 					// We should have hide target
 					const Vec3& vHidePos = pHideTarget->GetPos();
@@ -3502,7 +3502,7 @@ COPSteer::~COPSteer()
 	SAFE_DELETE(m_pPathfindDirective);
 	SAFE_DELETE(m_pTraceDirective);
 
-	if (gAIEnv.CVars.DebugPathFinding)
+	if (gAIEnv.CVars.LegacyDebugPathFinding)
 		AILogAlways("COPSteer::~COPSteer %p", this);
 }
 
@@ -3517,7 +3517,7 @@ void COPSteer::DebugDraw(CPipeUser* pPipeUser) const
 //----------------------------------------------------------------------------------------------------------
 void COPSteer::Reset(CPipeUser* pPipeUser)
 {
-	if (gAIEnv.CVars.DebugPathFinding)
+	if (gAIEnv.CVars.LegacyDebugPathFinding)
 		AILogAlways("COPSteer::Reset %s", GetNameSafe(pPipeUser));
 
 	SAFE_DELETE(m_pPathfindDirective);
@@ -3768,7 +3768,7 @@ void COPSteer::RegeneratePath(CPipeUser* pPipeUser, const Vec3& destination)
 
 	m_fLastRegenTime = time;
 
-	if (gAIEnv.CVars.DebugPathFinding)
+	if (gAIEnv.CVars.LegacyDebugPathFinding)
 		AILogAlways("COPSteer::RegeneratePath %s", GetNameSafe(pPipeUser));
 	m_pPathfindDirective->Reset(pPipeUser);
 	if (m_pTraceDirective)
@@ -5091,7 +5091,7 @@ COPCompanionStick::~COPCompanionStick()
 	SAFE_DELETE(m_pPathfindDirective);
 	SAFE_DELETE(m_pTraceDirective);
 
-	if (gAIEnv.CVars.DebugPathFinding)
+	if (gAIEnv.CVars.LegacyDebugPathFinding)
 		AILogAlways("COPSteer::~COPSteer %p", this);
 }
 
@@ -5332,7 +5332,7 @@ void COPCompanionStick::ExecuteDry(CPipeUser* pPipeUser)
 //-------------------------------------------------------------------------------------------------------------
 void COPCompanionStick::Reset(CPipeUser* pPipeUser)
 {
-	if (gAIEnv.CVars.DebugPathFinding)
+	if (gAIEnv.CVars.LegacyDebugPathFinding)
 		AILogAlways("COPSteer::Reset %s", GetNameSafe(pPipeUser));
 
 	SAFE_DELETE(m_pPathfindDirective);
@@ -5417,7 +5417,7 @@ void COPCompanionStick::RegeneratePath(CPipeUser* pPipeUser, const Vec3& destina
 
 	m_fLastRegenTime = time;
 
-	if (gAIEnv.CVars.DebugPathFinding)
+	if (gAIEnv.CVars.LegacyDebugPathFinding)
 		AILogAlways("COPCompanionStick::RegeneratePath %s", GetNameSafe(pPipeUser));
 	m_pPathfindDirective->Reset(pPipeUser);
 	if (m_pTraceDirective)

@@ -1229,7 +1229,7 @@ EGoalOpResult COPSeekCover::Execute(CPipeUser* pOperand)
 					}
 					else
 					{
-						if (gAIEnv.CVars.DebugPathFinding)
+						if (gAIEnv.CVars.LegacyDebugPathFinding)
 							AIWarning("COPSeekCover::Entity %s could not find path.", pOperand->GetName());
 
 						Reset(pOperand);

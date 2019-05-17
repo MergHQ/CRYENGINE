@@ -437,7 +437,7 @@ void CAISystem::SetAIHacksConfiguration()
 	/////////////////////////////////////////////////////////////
 	//TODO This is hack support and should go away at some point!
 	// Set the compatibility mode for feature/setting emulation
-	const char* sValue = gAIEnv.CVars.CompatibilityMode;
+	const char* sValue = gAIEnv.CVars.LegacyCompatibilityMode;
 
 	EConfigCompatabilityMode eCompatMode = ECCM_CRYSIS2;
 
@@ -544,7 +544,7 @@ void CAISystem::SetupAIEnvironment()
 
 void CAISystem::TrySubsystemInitScriptBind()
 {
-	if (gAIEnv.CVars.ScriptBind)
+	if (gAIEnv.CVars.LegacyScriptBind)
 	{
 		if (m_pScriptAI == nullptr)
 		{
@@ -559,7 +559,7 @@ void CAISystem::TrySubsystemInitScriptBind()
 // ensure the available communications are ready before the AI scripts get loaded (they in turn might load GoalPipes and other stuff that depend on communication data)
 void CAISystem::TrySubsystemInitCommunicationSystem()
 {
-	if (gAIEnv.CVars.CommunicationSystem)
+	if (gAIEnv.CVars.legacyCommunicationSystem.CommunicationSystem)
 	{
 		if (gAIEnv.pCommunicationManager == nullptr)
 		{
@@ -573,7 +573,7 @@ void CAISystem::TrySubsystemInitCommunicationSystem()
 
 void CAISystem::TrySubsystemInitFormationSystem()
 {
-	if (gAIEnv.CVars.FormationSystem)
+	if (gAIEnv.CVars.legacyFormationSystem.FormationSystem)
 	{
 		if (gAIEnv.pFormationManager == nullptr)
 		{
@@ -586,7 +586,7 @@ void CAISystem::TrySubsystemInitFormationSystem()
 
 void CAISystem::TrySubsystemInitGroupSystem()
 {
-	if (gAIEnv.CVars.GroupSystem)
+	if (gAIEnv.CVars.legacyGroupSystem.GroupSystem)
 	{
 		if (gAIEnv.pGroupManager == nullptr)
 		{
@@ -599,7 +599,7 @@ void CAISystem::TrySubsystemInitGroupSystem()
 
 void CAISystem::TrySubsystemInitTacticalPointSystem()
 {
-	if (gAIEnv.CVars.TacticalPointSystem)
+	if (gAIEnv.CVars.legacyTacticalPointSystem.TacticalPointSystem)
 	{
 		if (gAIEnv.pTacticalPointSystem == nullptr)
 		{
@@ -612,7 +612,7 @@ void CAISystem::TrySubsystemInitTacticalPointSystem()
 
 void CAISystem::TrySubsystemInitORCA()
 {
-	if (gAIEnv.CVars.EnableORCA)
+	if (gAIEnv.CVars.collisionAvoidance.EnableORCA)
 	{
 		if (gAIEnv.pCollisionAvoidanceSystem == nullptr)
 		{
@@ -625,7 +625,7 @@ void CAISystem::TrySubsystemInitORCA()
 
 void CAISystem::TrySubsystemInitTargetTrackSystem()
 {
-	if (gAIEnv.CVars.TargetTracking)
+	if (gAIEnv.CVars.legacyTargetTracking.TargetTracking)
 	{
 		if (gAIEnv.pTargetTrackManager == nullptr)
 		{
@@ -1763,7 +1763,7 @@ void CAISystem::Reset(IAISystem::EResetReason reason)
 	if (!m_bInitialized)
 		return;
 
-	const char* sStatsTarget = gAIEnv.CVars.StatsTarget;
+	const char* sStatsTarget = gAIEnv.CVars.legacyDebugDraw.StatsTarget;
 	if ((*sStatsTarget != '\0') && (stricmp("none", sStatsTarget) != 0))
 		Record(NULL, IAIRecordable::E_RESET, NULL);
 
@@ -3755,7 +3755,7 @@ float CAISystem::GetRayPerceptionModifier(const Vec3& start, const Vec3& end, co
 	float fPerception = 1.0f;
 	Vec3 hit;
 #ifdef CRYAISYSTEM_DEBUG
-	int icvDrawPerceptionDebugging = gAIEnv.CVars.DrawPerceptionDebugging;
+	int icvDrawPerceptionDebugging = gAIEnv.CVars.legacyPerception.DrawPerceptionDebugging;
 #endif
 	PerceptionModifierShapeMap::iterator pmsi = m_mapPerceptionModifiers.begin(), pmsiEnd = m_mapPerceptionModifiers.end();
 	for (; pmsi != pmsiEnd; ++pmsi)
@@ -4163,7 +4163,7 @@ void CAISystem::Serialize(TSerialize ser)
 		gAIEnv.pObjectContainer->Serialize(ser);
 		ser.EndGroup();
 
-		if (gAIEnv.CVars.ForceSerializeAllObjects)
+		if (gAIEnv.CVars.LegacyForceSerializeAllObjects)
 		{
 			ser.Value("ObjectOwners", gAIEnv.pAIObjectManager->m_Objects);
 			ser.Value("MapDummyObjects", gAIEnv.pAIObjectManager->m_mapDummyObjects);
@@ -4890,7 +4890,7 @@ void CAISystem::NotifyDeath(IAIObject* pVictim)
 //===================================================================
 bool CAISystem::WouldHumanBeVisible(const Vec3& footPos, bool fullCheck) const
 {
-	int ignore = gAIEnv.CVars.IgnoreVisibilityChecks;
+	int ignore = gAIEnv.CVars.LegacyIgnoreVisibilityChecks;
 	if (ignore)
 		return false;
 

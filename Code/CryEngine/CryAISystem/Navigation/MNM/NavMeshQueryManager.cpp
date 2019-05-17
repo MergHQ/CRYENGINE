@@ -67,7 +67,7 @@ namespace MNM
 
 	void CNavMeshQueryManager::DebugDrawQueriesList() const
 	{
-		if (!gAIEnv.CVars.DebugDrawNavigationQueriesList)
+		if (!gAIEnv.CVars.navigation.DebugDrawNavigationQueriesList)
 		{
 			return;
 		}

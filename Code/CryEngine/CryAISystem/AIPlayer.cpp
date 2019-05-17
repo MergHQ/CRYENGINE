@@ -310,13 +310,13 @@ float CAIPlayer::AdjustTargetVisibleRange(const CAIActor& observer, float fVisib
 		{
 		//	case AILL_LIGHT: SOMSpeed
 		case AILL_MEDIUM:
-			fRangeScale *= gAIEnv.CVars.SightRangeMediumIllumMod;
+			fRangeScale *= gAIEnv.CVars.legacyPerception.SightRangeMediumIllumMod;
 			break;
 		case AILL_DARK:
-			fRangeScale *= gAIEnv.CVars.SightRangeDarkIllumMod;
+			fRangeScale *= gAIEnv.CVars.legacyPerception.SightRangeDarkIllumMod;
 			break;
 		case AILL_SUPERDARK:
-			fRangeScale *= gAIEnv.CVars.SightRangeSuperDarkIllumMod;
+			fRangeScale *= gAIEnv.CVars.legacyPerception.SightRangeSuperDarkIllumMod;
 			break;
 		}
 	}
@@ -342,7 +342,7 @@ float CAIPlayer::AdjustTargetVisibleRange(const CAIActor& observer, float fVisib
 //---------------------------------------------------------------------------------
 bool CAIPlayer::IsAffectedByLight() const
 {
-	return (gAIEnv.CVars.PlayerAffectedByLight != 0 ||
+	return (gAIEnv.CVars.legacyPerception.PlayerAffectedByLight != 0 ||
 	        MyBase::IsAffectedByLight());
 }
 
@@ -490,7 +490,7 @@ void CAIPlayer::Update(EUpdateType type)
 		CollectExposedCover();
 
 #ifdef CRYAISYSTEM_DEBUG
-	if (gAIEnv.CVars.DebugDrawDamageControl > 0)
+	if (gAIEnv.CVars.legacyDebugDraw.DebugDrawDamageControl > 0)
 		UpdateHealthHistory();
 #endif
 
@@ -955,7 +955,7 @@ void CAIPlayer::Event(unsigned short eType, SAIEVENT* pEvent)
 	case AIEVENT_LOWHEALTH:
 		{
 			const float scale = (pEvent != NULL) ? pEvent->fThreat : 1.0f;
-			m_mercyTimer = gAIEnv.CVars.RODLowHealthMercyTime * scale;
+			m_mercyTimer = gAIEnv.CVars.legacyPuppetRod.RODLowHealthMercyTime * scale;
 		}
 		break;
 	case AIEVENT_ENABLE:
@@ -1013,7 +1013,7 @@ bool CAIPlayer::GetMissLocation(const Vec3& shootPos, const Vec3& shootDir, floa
 
 void CAIPlayer::NotifyMissLocationConsumed()
 {
-	m_coolMissCooldown += gAIEnv.CVars.CoolMissesCooldown;
+	m_coolMissCooldown += gAIEnv.CVars.legacyFiring.CoolMissesCooldown;
 }
 
 //
@@ -1114,7 +1114,7 @@ void CAIPlayer::DebugDraw()
 	if (IsLowHealthPauseActive())
 	{
 		ICVar* pLowHealth = gEnv->pConsole->GetCVar("g_playerLowHealthThreshold");
-		dc->Draw2dLabel(150, 190, 2.0f, color, true, "Mercy %.2f/%.2f (when below %0.2f)", m_mercyTimer, gAIEnv.CVars.RODLowHealthMercyTime, pLowHealth->GetFVal());
+		dc->Draw2dLabel(150, 190, 2.0f, color, true, "Mercy %.2f/%.2f (when below %0.2f)", m_mercyTimer, gAIEnv.CVars.legacyPuppetRod.RODLowHealthMercyTime, pLowHealth->GetFVal());
 	}
 
 	for (unsigned i = 0, ni = m_exposedCoverObjects.size(); i < ni; ++i)

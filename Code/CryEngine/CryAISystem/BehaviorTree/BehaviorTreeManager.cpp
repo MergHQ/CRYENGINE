@@ -533,7 +533,7 @@ void BehaviorTreeManager::Update(const CTimeValue frameStartTime, const float fr
 			UpdateDebugVisualization(updateContext, entityId, debugTree, instance, agentEntity);
 		}
 
-		if (gAIEnv.CVars.LogModularBehaviorTreeExecutionStacks == 1 && debugThisAgent || gAIEnv.CVars.LogModularBehaviorTreeExecutionStacks == 2)
+		if (gAIEnv.CVars.behaviorTree.LogModularBehaviorTreeExecutionStacks == 1 && debugThisAgent || gAIEnv.CVars.behaviorTree.LogModularBehaviorTreeExecutionStacks == 2)
 		{
 			UpdateExecutionStackLogging(updateContext, entityId, debugTree, instance);
 		}
@@ -645,7 +645,7 @@ void BehaviorTreeManager::UpdateDebugVisualization(UpdateContext updateContext, 
 	#endif // DEBUG_MODULAR_BEHAVIOR_TREE
 
 	#ifdef DEBUG_VARIABLE_COLLECTION
-	if (gAIEnv.CVars.ModularBehaviorTreeDebugVariables)
+	if (gAIEnv.CVars.behaviorTree.ModularBehaviorTreeDebugVariables)
 	{
 		Variables::DebugHelper::DebugDraw(true, instance.variables, instance.behaviorTreeTemplate->variableDeclarations);
 	}

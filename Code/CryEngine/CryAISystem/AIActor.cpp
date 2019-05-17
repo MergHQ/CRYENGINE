@@ -83,9 +83,9 @@ Cry::AI::CollisionAvoidance::ETreatType CActorCollisionAvoidance::GetTreatmentDu
 	}
 	else if ((aiType == AIOBJECT_ALIENTICK) || (aiType == AIOBJECT_ACTOR) || (aiType == AIOBJECT_INFECTED))
 	{
-		const float targetCutoff = gAIEnv.CVars.CollisionAvoidanceTargetCutoffRange;
-		const float pathEndCutoff = gAIEnv.CVars.CollisionAvoidancePathEndCutoffRange;
-		const float smartObjectCutoff = gAIEnv.CVars.CollisionAvoidanceSmartObjectCutoffRange;
+		const float targetCutoff = gAIEnv.CVars.collisionAvoidance.CollisionAvoidanceTargetCutoffRange;
+		const float pathEndCutoff = gAIEnv.CVars.collisionAvoidance.CollisionAvoidancePathEndCutoffRange;
+		const float smartObjectCutoff = gAIEnv.CVars.collisionAvoidance.CollisionAvoidanceSmartObjectCutoffRange;
 
 		const CPipeUser* pPipeUser = m_pActor->CastToCPipeUser();
 
@@ -102,7 +102,7 @@ Cry::AI::CollisionAvoidance::ETreatType CActorCollisionAvoidance::GetTreatmentDu
 	{
 	case Cry::AI::CollisionAvoidance::ETreatType::Agent:
 	{
-		const float forcedSpeed = gAIEnv.CVars.DebugCollisionAvoidanceForceSpeed;
+		const float forcedSpeed = gAIEnv.CVars.collisionAvoidance.DebugCollisionAvoidanceForceSpeed;
 		const bool bUseForcedSpeed = fabs_tpl(forcedSpeed) > 0.0001f;
 
 		float minSpeed;
@@ -111,8 +111,8 @@ Cry::AI::CollisionAvoidance::ETreatType CActorCollisionAvoidance::GetTreatmentDu
 
 		m_pActor->GetMovementSpeedRange(m_pActor->m_State.fMovementUrgency, false, normalSpeed, minSpeed, maxSpeed);
 
-		outAgent.radius = m_pActor->m_Parameters.m_fPassRadius + gAIEnv.CVars.CollisionAvoidanceAgentExtraFat;
-		if (gAIEnv.CVars.CollisionAvoidanceEnableRadiusIncrement)
+		outAgent.radius = m_pActor->m_Parameters.m_fPassRadius + gAIEnv.CVars.collisionAvoidance.CollisionAvoidanceAgentExtraFat;
+		if (gAIEnv.CVars.collisionAvoidance.CollisionAvoidanceEnableRadiusIncrement)
 			outAgent.radius += m_radiusIncrement;
 		outAgent.height = m_pActor->GetBodyInfo().stanceSize.GetSize().z;
 		outAgent.maxSpeed = min(m_pActor->m_State.fDesiredSpeed, maxSpeed);
@@ -127,7 +127,7 @@ Cry::AI::CollisionAvoidance::ETreatType CActorCollisionAvoidance::GetTreatmentDu
 	{
 		outObstacle.currentLocation = m_pActor->GetPhysicsPos();
 		outObstacle.currentVelocity = m_pActor->GetVelocity();
-		outObstacle.radius = m_pActor->m_Parameters.m_fPassRadius + gAIEnv.CVars.CollisionAvoidanceAgentExtraFat;
+		outObstacle.radius = m_pActor->m_Parameters.m_fPassRadius + gAIEnv.CVars.collisionAvoidance.CollisionAvoidanceAgentExtraFat;
 		outObstacle.height = m_pActor->GetBodyInfo().stanceSize.GetSize().z;
 		break;
 	}
@@ -175,19 +175,19 @@ void CActorCollisionAvoidance::ApplyComputedVelocity(const Vec2& avoidanceVeloci
 		m_pActor->m_State.vMoveTarget.zero();
 	}
 
-	if (gAIEnv.CVars.CollisionAvoidanceEnableRadiusIncrement)
+	if (gAIEnv.CVars.collisionAvoidance.CollisionAvoidanceEnableRadiusIncrement)
 	{
 		if (m_pActor->m_State.fDesiredSpeed > 0.5f)
 		{
 			m_radiusIncrement = min(
-				m_radiusIncrement + (m_pActor->m_movementAbility.collisionAvoidanceRadiusIncrement * gAIEnv.CVars.CollisionAvoidanceRadiusIncrementIncreaseRate * updateTime),
+				m_radiusIncrement + (m_pActor->m_movementAbility.collisionAvoidanceRadiusIncrement * gAIEnv.CVars.collisionAvoidance.CollisionAvoidanceRadiusIncrementIncreaseRate * updateTime),
 				m_pActor->m_movementAbility.collisionAvoidanceRadiusIncrement
 			);
 		}
 		else
 		{
 			m_radiusIncrement = max(
-				m_radiusIncrement - (m_pActor->m_movementAbility.collisionAvoidanceRadiusIncrement * gAIEnv.CVars.CollisionAvoidanceRadiusIncrementDecreaseRate * updateTime),
+				m_radiusIncrement - (m_pActor->m_movementAbility.collisionAvoidanceRadiusIncrement * gAIEnv.CVars.collisionAvoidance.CollisionAvoidanceRadiusIncrementDecreaseRate * updateTime),
 				0.0f
 			);
 		}
@@ -821,7 +821,7 @@ void CAIActor::OnAIHandlerSentSignal(const AISignals::SignalSharedPtr& pSignal)
 {
 	CRY_ASSERT(!pSignal->GetSignalDescription().IsNone());
 
-	if (gAIEnv.CVars.LogSignals)
+	if (gAIEnv.CVars.LegacyLogSignals)
 		gEnv->pLog->Log("OnAIHandlerSentSignal: '%s' [%s].", pSignal->GetSignalDescription().GetName(), GetName());
 
 	if (IsRunningBehaviorTree())
@@ -1954,7 +1954,7 @@ void CAIActor::HandleVisualStimulus(SAIEVENT* pAIEvent)
 
 	const float fGlobalVisualPerceptionScale = gEnv->pAISystem->GetGlobalVisualScale(this);
 	const float fVisualPerceptionScale = m_Parameters.m_PerceptionParams.perceptionScale.visual * fGlobalVisualPerceptionScale;
-	if (gAIEnv.CVars.IgnoreVisualStimulus != 0 || m_Parameters.m_bAiIgnoreFgNode || fVisualPerceptionScale <= 0.0f)
+	if (gAIEnv.CVars.legacyPerception.IgnoreVisualStimulus != 0 || m_Parameters.m_bAiIgnoreFgNode || fVisualPerceptionScale <= 0.0f)
 		return;
 
 	if (gAIEnv.pTargetTrackManager->IsEnabled())
@@ -1996,7 +1996,7 @@ void CAIActor::HandleSoundEvent(SAIEVENT* pAIEvent)
 
 	const float fGlobalAudioPerceptionScale = gEnv->pAISystem->GetGlobalAudioScale(this);
 	const float fAudioPerceptionScale = m_Parameters.m_PerceptionParams.perceptionScale.audio * fGlobalAudioPerceptionScale;
-	if (gAIEnv.CVars.IgnoreSoundStimulus != 0 || m_Parameters.m_bAiIgnoreFgNode || fAudioPerceptionScale <= 0.0f)
+	if (gAIEnv.CVars.legacyPerception.IgnoreSoundStimulus != 0 || m_Parameters.m_bAiIgnoreFgNode || fAudioPerceptionScale <= 0.0f)
 		return;
 
 	if (gAIEnv.pTargetTrackManager->IsEnabled())
@@ -2038,7 +2038,7 @@ void CAIActor::HandleBulletRain(SAIEVENT* pAIEvent)
 {
 	CRY_PROFILE_FUNCTION(PROFILE_AI);
 
-	if (gAIEnv.CVars.IgnoreBulletRainStimulus || m_Parameters.m_bAiIgnoreFgNode)
+	if (gAIEnv.CVars.legacyPerception.IgnoreBulletRainStimulus || m_Parameters.m_bAiIgnoreFgNode)
 		return;
 
 	AISignals::IAISignalExtraData* pData = GetAISystem()->CreateSignalExtraData();

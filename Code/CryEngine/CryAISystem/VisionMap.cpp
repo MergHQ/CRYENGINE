@@ -1063,7 +1063,7 @@ void CVisionMap::UpdateObservers()
 		}
 	}
 
-	int numberOfPVSUpdatesLeft = gAIEnv.CVars.VisionMapNumberOfPVSUpdatesPerFrame;
+	int numberOfPVSUpdatesLeft = gAIEnv.CVars.visionMap.VisionMapNumberOfPVSUpdatesPerFrame;
 	while (numberOfPVSUpdatesLeft > 0 && m_observerPVSUpdateQueue.size() > 0)
 	{
 		Observers::iterator observerIt = m_observers.find(m_observerPVSUpdateQueue.front());
@@ -1098,7 +1098,7 @@ void CVisionMap::UpdateObservers()
 		}
 	}
 
-	int numberOfVisibilityUpdatesLeft = gAIEnv.CVars.VisionMapNumberOfVisibilityUpdatesPerFrame;
+	int numberOfVisibilityUpdatesLeft = gAIEnv.CVars.visionMap.VisionMapNumberOfVisibilityUpdatesPerFrame;
 	while (numberOfVisibilityUpdatesLeft > 0 && m_observerVisibilityUpdateQueue.size() > 0)
 	{
 		Observers::iterator observerIt = m_observers.find(m_observerVisibilityUpdateQueue.front());
@@ -1137,16 +1137,16 @@ void CVisionMap::DebugDraw()
 {
 	CRY_PROFILE_FUNCTION(PROFILE_AI);
 
-	if (gAIEnv.CVars.DebugDrawVisionMap)
+	if (gAIEnv.CVars.visionMap.DebugDrawVisionMap)
 	{
 		UpdateDebugVisionMapObjects();
 
 		DebugDrawObservers();
 
-		if (gAIEnv.CVars.DebugDrawVisionMapObservables)
+		if (gAIEnv.CVars.visionMap.DebugDrawVisionMapObservables)
 			DebugDrawObservables();
 
-		if (gAIEnv.CVars.DebugDrawVisionMapStats)
+		if (gAIEnv.CVars.visionMap.DebugDrawVisionMapStats)
 			DebugDrawVisionMapStats();
 	}
 }
@@ -1333,7 +1333,7 @@ void CVisionMap::DebugDrawObservers()
 
 		// Visibility Checks ///////////////////////////////////////////////////
 
-		if (gAIEnv.CVars.DebugDrawVisionMapVisibilityChecks)
+		if (gAIEnv.CVars.visionMap.DebugDrawVisionMapVisibilityChecks)
 		{
 			for (PVS::const_iterator pvsIt = observerInfo.pvs.begin(), end = observerInfo.pvs.end(); pvsIt != end; ++pvsIt)
 			{
@@ -1371,7 +1371,7 @@ void CVisionMap::DebugDrawObservers()
 			}
 		}
 
-		if (gAIEnv.CVars.DebugDrawVisionMapObservers)
+		if (gAIEnv.CVars.visionMap.DebugDrawVisionMapObservers)
 		{
 			// Stats /////////////////////////////////////////////////////////////////
 			{
@@ -1407,7 +1407,7 @@ void CVisionMap::DebugDrawObservers()
 			}
 
 			// FOVs //////////////////////////////////////////////////////////////////
-			if (gAIEnv.CVars.DebugDrawVisionMapObserversFOV)
+			if (gAIEnv.CVars.visionMap.DebugDrawVisionMapObserversFOV)
 			{
 				const ObserverParams& observerParams = observerInfo.observerParams;
 

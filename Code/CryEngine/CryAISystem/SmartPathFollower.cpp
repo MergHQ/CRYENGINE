@@ -521,7 +521,7 @@ bool CSmartPathFollower::FindReachableTarget(float startIndex, float endIndex, f
 
 		if (reachableIndex >= 0.0f)
 		{
-			if (gAIEnv.CVars.DrawPathFollower > 1)
+			if (gAIEnv.CVars.pathFollower.DrawPathFollower > 1)
 				GetAISystem()->AddDebugSphere(m_path.GetPositionAtSegmentIndex(nextIndex), 0.25f, 255, 0, 0, 5.0f);
 		}
 
@@ -568,7 +568,7 @@ bool CSmartPathFollower::CanReachTargetStep(float step, float endIndex, float ne
 
 	while (CanReachTarget(nextIndex))
 	{
-		if (gAIEnv.CVars.DrawPathFollower > 1)
+		if (gAIEnv.CVars.pathFollower.DrawPathFollower > 1)
 			GetAISystem()->AddDebugSphere(m_path.GetPositionAtSegmentIndex(nextIndex), 0.25f, 0, 255, 0, 5.0f);
 
 		reachableIndex = nextIndex;
@@ -874,7 +874,7 @@ bool CSmartPathFollower::Update(PathFollowResult& result, const Vec3& curPos, co
 	const bool isInsideObstacles = m_pathObstacles.IsPointInsideObstacles(m_curPos);
 	bool isAllowedToShortcut;
 
-	if (gAIEnv.CVars.SmartPathFollower_useAdvancedPathShortcutting == 0)
+	if (gAIEnv.CVars.pathFollower.SmartPathFollower_useAdvancedPathShortcutting == 0)
 	{
 		isAllowedToShortcut = isInsideObstacles ? false : m_params.isAllowedToShortcut;
 	}
@@ -908,7 +908,7 @@ bool CSmartPathFollower::Update(PathFollowResult& result, const Vec3& curPos, co
 			}
 
 			const float currentDistance = m_path.GetDistanceAtSegmentIndex(indexAtCurrentPos);
-			indexAtLookAheadPos = m_path.FindSegmentIndexAtDistance(currentDistance + gAIEnv.CVars.SmartPathFollower_LookAheadDistance);
+			indexAtLookAheadPos = m_path.FindSegmentIndexAtDistance(currentDistance + gAIEnv.CVars.pathFollower.SmartPathFollower_LookAheadDistance);
 
 			for (float index = indexAtCurrentPos; index <= indexAtLookAheadPos; index += 1.0f)
 			{
@@ -925,7 +925,7 @@ bool CSmartPathFollower::Update(PathFollowResult& result, const Vec3& curPos, co
 				if (m_pathObstacles.IsLineSegmentIntersectingObstaclesOrCloseToThem(lineseg, maxDistanceToObstaclesToConsiderTooClose))
 				{
 #ifndef _RELEASE
-					if (gAIEnv.CVars.SmartPathFollower_useAdvancedPathShortcutting_debug != 0)
+					if (gAIEnv.CVars.pathFollower.SmartPathFollower_useAdvancedPathShortcutting_debug != 0)
 					{
 						gEnv->pGameFramework->GetIPersistantDebug()->Begin("SmartPathFollower_useAdvancedPathShortcutting_debug", false);
 						gEnv->pGameFramework->GetIPersistantDebug()->AddLine(lineseg.start + Vec3(0.0, 0.0f, 1.5f), lineseg.end + Vec3(0.0f, 0.0f, 1.5f), ColorF(1.0f, 0.0f, 0.0f), 1.0f);
@@ -936,7 +936,7 @@ bool CSmartPathFollower::Update(PathFollowResult& result, const Vec3& curPos, co
 				}
 
 #ifndef _RELEASE
-				if (gAIEnv.CVars.SmartPathFollower_useAdvancedPathShortcutting_debug != 0)
+				if (gAIEnv.CVars.pathFollower.SmartPathFollower_useAdvancedPathShortcutting_debug != 0)
 				{
 					gEnv->pGameFramework->GetIPersistantDebug()->Begin("SmartPathFollower_useAdvancedPathShortcutting_debug", false);
 					gEnv->pGameFramework->GetIPersistantDebug()->AddLine(lineseg.start + Vec3(0.0, 0.0f, 1.5f), lineseg.end + Vec3(0.0f, 0.0f, 1.5f), ColorF(0.0f, 1.0f, 0.0f), 1.0f);
@@ -951,7 +951,7 @@ bool CSmartPathFollower::Update(PathFollowResult& result, const Vec3& curPos, co
 		float currentIndex;
 		float lookAheadIndex;
 
-		const float LookAheadDistance = gAIEnv.CVars.SmartPathFollower_LookAheadDistance;
+		const float LookAheadDistance = gAIEnv.CVars.pathFollower.SmartPathFollower_LookAheadDistance;
 
 		// Generate a look-ahead range based on the current FT index.
 		if (m_followTargetIndex > 0.0f)
@@ -1005,7 +1005,7 @@ bool CSmartPathFollower::Update(PathFollowResult& result, const Vec3& curPos, co
 					targetReachable = false;
 
 #ifndef _RELEASE
-					if (gAIEnv.CVars.DrawPathFollower > 0)
+					if (gAIEnv.CVars.pathFollower.DrawPathFollower > 0)
 					{
 						CDebugDrawContext dc;
 						dc->Draw3dLabel(m_curPos, 1.6f, "Failed PathFollower!");
@@ -1124,7 +1124,7 @@ bool CSmartPathFollower::Update(PathFollowResult& result, const Vec3& curPos, co
 				else
 				{
 					float slowDownDist = 1.2f;
-					const float decelerationMultiplier = m_params.isVehicle ? gAIEnv.CVars.SmartPathFollower_decelerationVehicle : gAIEnv.CVars.SmartPathFollower_decelerationHuman;
+					const float decelerationMultiplier = m_params.isVehicle ? gAIEnv.CVars.pathFollower.SmartPathFollower_decelerationVehicle : gAIEnv.CVars.pathFollower.SmartPathFollower_decelerationHuman;
 					speed = min(speed, decelerationMultiplier * distToEnd / slowDownDist);
 				}
 			}
@@ -1180,7 +1180,7 @@ bool CSmartPathFollower::Update(PathFollowResult& result, const Vec3& curPos, co
 	AIAssert(result.velocityOut.IsValid());
 
 #ifndef _RELEASE
-	if (gAIEnv.CVars.DrawPathFollower > 0)
+	if (gAIEnv.CVars.pathFollower.DrawPathFollower > 0)
 	{
 		// Draw path
 		Draw();
@@ -1219,7 +1219,7 @@ bool CSmartPathFollower::Update(PathFollowResult& result, const Vec3& curPos, co
 float CSmartPathFollower::GetPredictionTimeForMovingAlongPath(const bool isInsideObstacles,
                                                               const float currentSpeedSq)
 {
-	float predictionTime = gAIEnv.CVars.SmartPathFollower_LookAheadPredictionTimeForMovingAlongPathWalk;
+	float predictionTime = gAIEnv.CVars.pathFollower.SmartPathFollower_LookAheadPredictionTimeForMovingAlongPathWalk;
 	if (isInsideObstacles)
 	{
 		// Heuristic time to look ahead on the path when the agent moves inside the shape
@@ -1231,7 +1231,7 @@ float CSmartPathFollower::GetPredictionTimeForMovingAlongPath(const bool isInsid
 		const float minSpeedToBeConsideredRunningOrSprintingSq = sqr(2.0f);
 		if (currentSpeedSq > minSpeedToBeConsideredRunningOrSprintingSq)
 		{
-			predictionTime = gAIEnv.CVars.SmartPathFollower_LookAheadPredictionTimeForMovingAlongPathRunAndSprint;
+			predictionTime = gAIEnv.CVars.pathFollower.SmartPathFollower_LookAheadPredictionTimeForMovingAlongPathRunAndSprint;
 		}
 	}
 

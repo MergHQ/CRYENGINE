@@ -55,7 +55,7 @@ void CMNMUpdatesManager::UpdatePostponedChanges()
 	if (m_updateMode == INavigationUpdatesManager::EUpdateMode::AfterStabilization)
 	{
 		// Uses global timer instead of AI timer because this has to work in Editor mode as well (AI timer only runs in Game and Physics/AI Mode)
-		if (m_frameStartTime.GetDifferenceInSeconds(m_lastUpdateTime) < gAIEnv.CVars.NavmeshStabilizationTimeToUpdate)
+		if (m_frameStartTime.GetDifferenceInSeconds(m_lastUpdateTime) < gAIEnv.CVars.navigation.NavmeshStabilizationTimeToUpdate)
 		{
 			return;
 		}

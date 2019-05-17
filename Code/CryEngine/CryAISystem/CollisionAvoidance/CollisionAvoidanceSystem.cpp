@@ -414,7 +414,7 @@ void CCollisionAvoidanceSystem::PopulateState()
 
 void CCollisionAvoidanceSystem::ApplyResults(float updateTime)
 {
-	if (gAIEnv.CVars.CollisionAvoidanceUpdateVelocities || gAIEnv.CVars.CollisionAvoidanceEnableRadiusIncrement)
+	if (gAIEnv.CVars.collisionAvoidance.CollisionAvoidanceUpdateVelocities || gAIEnv.CVars.collisionAvoidance.CollisionAvoidanceEnableRadiusIncrement)
 	{
 		for (size_t i = 0, count = m_avoidingAgentsPtrs.size(); i < count; ++i)
 		{
@@ -449,7 +449,7 @@ void CCollisionAvoidanceSystem::Update(float updateTime)
 		m_nearbyAgents.clear();
 		m_nearbyObstacles.clear();
 
-		const float range = gAIEnv.CVars.CollisionAvoidanceRange;
+		const float range = gAIEnv.CVars.collisionAvoidance.CollisionAvoidanceRange;
 
 		ComputeNearbyObstacles(agent, index, range, m_nearbyObstacles);
 		ComputeNearbyAgents(agent, index, range, m_nearbyAgents);
@@ -472,7 +472,7 @@ void CCollisionAvoidanceSystem::Update(float updateTime)
 		size_t vertexCount = ComputeFeasibleArea(&m_constraintLines.front(), constraintCount, agent.maxSpeed,
 			feasibleArea);
 
-		float minSpeed = gAIEnv.CVars.CollisionAvoidanceMinSpeed;
+		float minSpeed = gAIEnv.CVars.collisionAvoidance.CollisionAvoidanceMinSpeed;
 
 		SCandidateVelocity candidates[FeasibleAreaMaxVertexCount + 1]; // +1 for clipped desired velocity
 		size_t candidateCount = ComputeOptimalAvoidanceVelocity(feasibleArea, vertexCount, agent, minSpeed, agent.maxSpeed, &candidates[0]);
@@ -514,8 +514,8 @@ void CCollisionAvoidanceSystem::Update(float updateTime)
 		if (debugDraw)
 		{
 			const char* szAgentName = m_avoidingAgentsPtrs[index]->GetDebugName();
-			if(*gAIEnv.CVars.DebugDrawCollisionAvoidanceAgentName && szAgentName
-				&& !stricmp(szAgentName, gAIEnv.CVars.DebugDrawCollisionAvoidanceAgentName))
+			if(*gAIEnv.CVars.collisionAvoidance.DebugDrawCollisionAvoidanceAgentName && szAgentName
+				&& !stricmp(szAgentName, gAIEnv.CVars.collisionAvoidance.DebugDrawCollisionAvoidanceAgentName))
 			{
 				const Vec3 agentLocation = agent.currentLocation;
 
@@ -706,7 +706,7 @@ void CCollisionAvoidanceSystem::ComputeObstacleConstraintLine(const SAgentParams
 	static const float heuristicWeightForDistance = 0.01f;
 	static const float minimumTimeHorizonScale = 0.25f;
 	const float adjustedTimeHorizonScale = max(min(timeHorizonScale, (heuristicWeightForDistance * distanceSq)), minimumTimeHorizonScale);
-	const float TimeHorizon = gAIEnv.CVars.CollisionAvoidanceObstacleTimeHorizon * adjustedTimeHorizonScale;
+	const float TimeHorizon = gAIEnv.CVars.collisionAvoidance.CollisionAvoidanceObstacleTimeHorizon * adjustedTimeHorizonScale;
 	const float invTimeHorizon = 1.0f / TimeHorizon;
 
 	Vec2 u;
@@ -777,10 +777,10 @@ Vec2 CCollisionAvoidanceSystem::ClampSpeedWithNavigationMesh(const SNavigationPr
 	const Vec3& currentVelocity, const Vec2& velocityToClamp) const
 {
 	Vec2 outputVelocity = velocityToClamp;
-	if (gAIEnv.CVars.CollisionAvoidanceClampVelocitiesWithNavigationMesh == 1)
+	if (gAIEnv.CVars.collisionAvoidance.CollisionAvoidanceClampVelocitiesWithNavigationMesh == 1)
 	{
-		const float invTimeHorizon = 1.0f / gAIEnv.CVars.CollisionAvoidanceAgentTimeHorizon;
-		const float TimeStep = gAIEnv.CVars.CollisionAvoidanceTimeStep;
+		const float invTimeHorizon = 1.0f / gAIEnv.CVars.collisionAvoidance.CollisionAvoidanceAgentTimeHorizon;
+		const float TimeStep = gAIEnv.CVars.collisionAvoidance.CollisionAvoidanceTimeStep;
 
 		const Vec3 from = agentPosition;
 		const Vec3 to = agentPosition + Vec3(velocityToClamp.x, velocityToClamp.y, 0.0f);
@@ -864,8 +864,8 @@ void CCollisionAvoidanceSystem::ComputeAgentConstraintLine(const SAgentParams& a
 	const float radiiSq = sqr(radii);
 
 	const float TimeHorizon = timeHorizonScale *
-		(reciprocal ? gAIEnv.CVars.CollisionAvoidanceAgentTimeHorizon : gAIEnv.CVars.CollisionAvoidanceObstacleTimeHorizon);
-	const float TimeStep = gAIEnv.CVars.CollisionAvoidanceTimeStep;
+		(reciprocal ? gAIEnv.CVars.collisionAvoidance.CollisionAvoidanceAgentTimeHorizon : gAIEnv.CVars.collisionAvoidance.CollisionAvoidanceObstacleTimeHorizon);
+	const float TimeStep = gAIEnv.CVars.collisionAvoidance.CollisionAvoidanceTimeStep;
 
 	const float invTimeHorizon = 1.0f / TimeHorizon;
 	const float invTimeStep = 1.0f / TimeStep;
