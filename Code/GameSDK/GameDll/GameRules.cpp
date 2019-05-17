@@ -3075,6 +3075,49 @@ bool CGameRules::CanEnterVehicle( EntityId playerId )
 	return bResult;
 }
 
+void CGameRules::OnVehicleEvent(IVehicle* pVehicle, EVehicleEvent event, const SVehicleEventParams& params)
+{
+	IAISystem* pAISystem = gEnv->pAISystem;
+	if (!pAISystem || !pAISystem->IsEnabled())
+		return;
+	
+	switch (event)
+	{
+	case eVE_Destroyed:
+	{
+		gEnv->pAISystem->GetSmartObjectManager()->SetSmartObjectState(pVehicle->GetEntity(), "Dead");
+		
+		for (int i = 0; i < pVehicle->GetWeaponCount(); ++i)
+		{
+			const EntityId weaponId = pVehicle->GetWeaponId(i);
+			if (IEntity* pWeaponEntity = gEnv->pEntitySystem->GetEntity(weaponId))
+			{
+				pAISystem->GetSmartObjectManager()->SetSmartObjectState(pWeaponEntity, "Busy");
+			}
+		}
+		break;
+	}
+	case eVE_PassengerEnter:
+	{
+		IEntity* pActorEntity = gEnv->pEntitySystem->GetEntity(params.entityId);
+		if (pActorEntity)
+		{
+			pAISystem->GetSmartObjectManager()->AddSmartObjectState(pActorEntity, "InVehicle");
+		}
+		break;
+	}
+	case eVE_PassengerExit:
+	{
+		IEntity* pActorEntity = gEnv->pEntitySystem->GetEntity(params.entityId);
+		if (pActorEntity)
+		{
+			pAISystem->GetSmartObjectManager()->RemoveSmartObjectState(pActorEntity, "InVehicle");
+		}
+		break;
+	}
+	}
+}
+
 //------------------------------------------------------------------------
 bool CGameRules::IsGamemodeScoringEvent(EGameRulesScoreType pointsType) const
 {

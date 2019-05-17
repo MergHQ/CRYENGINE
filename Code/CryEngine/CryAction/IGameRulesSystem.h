@@ -19,6 +19,7 @@
 #include "IGameObject.h"
 #include <CryParticleSystem/IParticles.h>
 #include <CryPhysics/physinterface.h>
+#include "IVehicleSystem.h"
 
 // Summary
 //   Types for the different kind of messages.
@@ -621,6 +622,10 @@ struct IGameRules : public IGameObjectExtension
 	// Parameters
 	//   playerId - Id of the player attempting to enter a vehicle
 	virtual bool CanEnterVehicle(EntityId playerId) = 0;
+
+	// Summary
+	//   Resolves Vehicle event
+	virtual void OnVehicleEvent(IVehicle* pVehicle, EVehicleEvent event, const SVehicleEventParams& params) = 0;
 
 	// Summary
 	//   Prepares an entity to be allowed to respawn

@@ -678,12 +678,6 @@ bool CVehicleSeat::SitDown()
 		m_transitionType = eVT_None;
 	}
 
-	IAISystem* pAISystem = gEnv->pAISystem;
-	if (pAISystem && pAISystem->IsEnabled())
-	{
-		pAISystem->GetSmartObjectManager()->AddSmartObjectState(pActor->GetEntity(), "InVehicle");
-	}
-
 	IEntity* pPassengerEntity = pActor->GetEntity();
 
 	// MR: moved this to before GiveActorSeatFeatures, as the latter sets the vehicle view,
@@ -976,12 +970,6 @@ bool CVehicleSeat::StandUp()
 	}
 
 	IEntity* pPassengerEntity = pActor->GetEntity();
-
-	IAISystem* pAISystem = gEnv->pAISystem;
-	if (pAISystem && pAISystem->IsEnabled())
-	{
-		pAISystem->GetSmartObjectManager()->RemoveSmartObjectState(pActor->GetEntity(), "InVehicle");
-	}
 
 	// allow lua side of the seat implementation to do its business
 	HSCRIPTFUNCTION scriptFunction(0);
