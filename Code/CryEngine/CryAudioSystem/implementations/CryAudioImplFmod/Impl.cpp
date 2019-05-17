@@ -1166,7 +1166,7 @@ FMOD_RESULT F_CALLBACK FmodFileOpenCallback(const char* szName, unsigned int* pF
 	FMOD_RESULT fmodResult = FMOD_ERR_FILE_NOTFOUND;
 
 	char const* szFileName = (char const*)pUserData;
-	FILE* const pFile = gEnv->pCryPak->FOpen(szFileName, "rbx", ICryPak::FOPEN_HINT_DIRECT_OPERATION);
+	FILE* const pFile = gEnv->pCryPak->FOpen(szFileName, "rbx");
 
 	if (pFile != nullptr)
 	{

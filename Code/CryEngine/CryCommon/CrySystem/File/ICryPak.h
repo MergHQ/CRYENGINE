@@ -248,9 +248,6 @@ struct ICryPak
 	//! Used for widening FOpen functionality. They're ignored for the regular File System files.
 	enum EFOpenFlags : uint32
 	{
-		//! If possible, will prevent the file from being read from memory.
-		FOPEN_HINT_DIRECT_OPERATION = BIT32(0),
-
 		//! Will prevent a "missing file" warnings to be created.
 		FOPEN_HINT_QUIET = BIT32(1),
 

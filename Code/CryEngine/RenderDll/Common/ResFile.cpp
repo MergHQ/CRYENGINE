@@ -123,10 +123,10 @@ bool CResFile::mfActivate(bool bFirstTime)
 				char szAcc[16];
 				cry_strcpy(szAcc, m_szAccess);
 				szAcc[0] = 'r';
-				m_handle = gEnv->pCryPak->FOpen(m_name.c_str(), szAcc, nFlags | ICryPak::FOPEN_HINT_DIRECT_OPERATION);
+				m_handle = gEnv->pCryPak->FOpen(m_name.c_str(), szAcc, nFlags);
 			}
 			else
-				m_handle = gEnv->pCryPak->FOpen(m_name.c_str(), m_szAccess, nFlags | ICryPak::FOPEN_HINT_DIRECT_OPERATION);
+				m_handle = gEnv->pCryPak->FOpen(m_name.c_str(), m_szAccess, nFlags);
 			if (!m_handle)
 			{
 				mfSetError("CResFile::Activate - Can't open resource file <%s>", m_name.c_str());
