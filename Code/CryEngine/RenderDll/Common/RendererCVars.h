@@ -302,7 +302,6 @@ public:
 	DeclareStaticConstIntCVar(CV_r_showtimegraph, 0);
 	DeclareStaticConstIntCVar(CV_r_DebugFontRendering, 0);
 	DeclareStaticConstIntCVar(CV_profileStreaming, 0);
-	DeclareStaticConstIntCVar(CV_r_showbufferusage, 0);
 	DeclareStaticConstIntCVar(CV_r_profileshaders, 0);
 	DeclareStaticConstIntCVar(CV_r_ProfileShadersSmooth, 4);
 	DeclareStaticConstIntCVar(CV_r_ProfileShadersGroupByName, 1);

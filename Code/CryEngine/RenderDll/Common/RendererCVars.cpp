@@ -443,7 +443,6 @@ AllocateConstIntCVar(CRendererCVars, CV_r_showtangents);
 AllocateConstIntCVar(CRendererCVars, CV_r_showtimegraph);
 AllocateConstIntCVar(CRendererCVars, CV_r_DebugFontRendering);
 AllocateConstIntCVar(CRendererCVars, CV_profileStreaming);
-AllocateConstIntCVar(CRendererCVars, CV_r_showbufferusage);
 
 ICVar* CRendererCVars::CV_r_ShaderCompilerServer;
 ICVar* CRendererCVars::CV_r_ShaderCompilerFolderName;
@@ -2300,10 +2299,6 @@ void CRendererCVars::InitCVars()
 	                    "Usage: profileStreaming [0/1/2]\n"
 	                    "	1: Graph displayed as points."
 	                    "	2: Graph displayed as lines."
-	                    "Default is 0 (off).");
-	DefineConstIntCVar3("r_ShowBufferUsage", CV_r_showbufferusage, 0, VF_NULL,
-	                    "Shows usage of statically allocated buffers.\n"
-	                    "Usage: r_ShowBufferUSage [0/1]\n"
 	                    "Default is 0 (off).");
 	REGISTER_CVAR3_CB("r_LogVBuffers", CV_r_logVBuffers, 0, VF_CHEAT | VF_CONST_CVAR,
 	                  "Logs vertex buffers in memory to 'LogVBuffers.txt'.\n"
