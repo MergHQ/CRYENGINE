@@ -1319,7 +1319,7 @@ void CAIGroup::Serialize(TSerialize ser)
 void CAIGroup::DebugDraw()
 {
 	// Debug draw reinforcement logic.
-	if (gAIEnv.CVars.DebugDrawReinforcements == m_groupID)
+	if (gAIEnv.CVars.legacyGroupSystem.DebugDrawReinforcements == m_groupID)
 	{
 
 		int totalCount = 0;

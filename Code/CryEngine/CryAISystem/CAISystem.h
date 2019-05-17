@@ -920,7 +920,6 @@ public:
 	                       const ColorB& worldColor, bool drawWorld);
 	void DebugDrawCrowdControl();
 	void DebugDrawRadar();
-	void DebugDrawDistanceLUT();
 	void DrawRadarPath(CPipeUser* pPipeUser, const Matrix34& world, const Matrix34& screen);
 	void DebugDrawRecorderRange() const;
 	void DebugDrawShooting() const;

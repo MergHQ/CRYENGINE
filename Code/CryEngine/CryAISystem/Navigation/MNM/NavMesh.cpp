@@ -634,7 +634,7 @@ void CNavMesh::PredictNextTriangleEntryPosition(const TriangleID bestNodeTriangl
 		const vector3_t v0 = tileOrigin + vector3_t(currentTile.vertices[triangle.vertex[edgeIndex]]);
 		const vector3_t v1 = tileOrigin + vector3_t(currentTile.vertices[triangle.vertex[Utils::next_mod3(edgeIndex)]]);
 
-		switch (gAIEnv.CVars.MNMPathfinderPositionInTrianglePredictionType)
+		switch (gAIEnv.CVars.pathfinder.MNMPathfinderPositionInTrianglePredictionType)
 		{
 		case ePredictionType_TriangleCenter:
 			{
@@ -1205,7 +1205,7 @@ MNM::ERayCastResult CNavMesh::RayCast(const vector3_t& fromLocalPosition, Triang
 {
 	CRY_PROFILE_FUNCTION(PROFILE_AI);
 
-	switch (gAIEnv.CVars.MNMRaycastImplementation)
+	switch (gAIEnv.CVars.navigation.MNMRaycastImplementation)
 	{
 	case 0:
 		return RayCast_v1(fromLocalPosition, fromTri, toLocalPosition, toTri, raycastRequest);
@@ -2204,7 +2204,7 @@ void CNavMesh::Draw(size_t drawFlags, const ITriangleColorSelector& colorSelecto
 
 	const CCamera& camera = gEnv->pSystem->GetViewCamera();
 	const Vec3 cameraPos = camera.GetPosition();
-	const float maxDistanceToRenderSqr = sqr(gAIEnv.CVars.NavmeshTileDistanceDraw);
+	const float maxDistanceToRenderSqr = sqr(gAIEnv.CVars.navigation.NavmeshTileDistanceDraw);
 
 	// collect areas
 	// TODO: Clean this up! Temporary to get up and running.
