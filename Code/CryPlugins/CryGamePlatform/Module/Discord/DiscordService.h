@@ -46,6 +46,7 @@ namespace Cry
 #if CRY_GAMEPLATFORM_EXPERIMENTAL
 				virtual const DynArray<IAccount*>& GetBlockedAccounts() const override;
 				virtual const DynArray<IAccount*>& GetMutedAccounts() const override;
+				virtual bool GetEnvironmentValue(const char* szVarName, string& valueOut) const override;
 #endif // CRY_GAMEPLATFORM_EXPERIMENTAL
 				virtual CAccount* GetAccountById(const AccountIdentifier& accountId) const override;
 				virtual void AddAccountToLocalSession(const AccountIdentifier& accountId) override {};

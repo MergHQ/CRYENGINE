@@ -157,6 +157,15 @@ namespace Cry
 
 				CryLogAlways("[Steam] Successfully initialized Steam API, user_id=%" PRIu64 " build_id=%i", pSteamUser->GetSteamID().ConvertToUint64(), pSteamApps->GetAppBuildId());
 
+#if CRY_GAMEPLATFORM_EXPERIMENTAL
+				m_environment["ApplicationId"].Format("%d", steam_appId);
+				m_environment["BuildId"].Format("%d", pSteamApps->GetAppBuildId());
+				if (strlen(betaName) > 0)
+				{
+					m_environment["NetworkEnvironment"] = betaName;
+				}
+#endif // CRY_GAMEPLATFORM_EXPERIMENTAL
+
 				if (Cry::GamePlatform::IPlugin* pPlugin = gEnv->pSystem->GetIPluginManager()->QueryPlugin<Cry::GamePlatform::IPlugin>())
 				{
 					pPlugin->RegisterMainService(*this);
@@ -488,6 +497,18 @@ namespace Cry
 				// Steam does not support muting
 				static const DynArray<IAccount*> dummy;
 				return dummy;
+			}
+
+			bool CService::GetEnvironmentValue(const char* szVarName, string& valueOut) const
+			{
+				auto pos = m_environment.find(szVarName);
+				if (pos != m_environment.end())
+				{
+					valueOut = pos->second;
+					return true;
+				}
+
+				return false;
 			}
 #endif // CRY_GAMEPLATFORM_EXPERIMENTAL
 

@@ -301,6 +301,13 @@ namespace Cry
 
 				return m_mutedAccounts;
 			}
+
+			bool CService::GetEnvironmentValue(const char* szVarName, string& valueOut) const
+			{
+				CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_ERROR, "[Rail][Service] GetEnvironmentValue() is not implemented yet");
+
+				return false;
+			}
 #endif // CRY_GAMEPLATFORM_EXPERIMENTAL
 
 			CAccount* CService::GetAccountById(const AccountIdentifier& accountId) const

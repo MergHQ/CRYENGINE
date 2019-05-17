@@ -55,6 +55,7 @@ namespace Cry
 #if CRY_GAMEPLATFORM_EXPERIMENTAL
 				virtual const DynArray<IAccount*>& GetBlockedAccounts() const override;
 				virtual const DynArray<IAccount*>& GetMutedAccounts() const override;
+				virtual bool GetEnvironmentValue(const char* szVarName, string& valueOut) const override;
 #endif // CRY_GAMEPLATFORM_EXPERIMENTAL
 				virtual CAccount* GetAccountById(const AccountIdentifier& accountId) const override;
 				virtual void AddAccountToLocalSession(const AccountIdentifier& accountId) override {};
@@ -127,6 +128,7 @@ namespace Cry
 				mutable DynArray<IAccount*> m_friends;
 #if CRY_GAMEPLATFORM_EXPERIMENTAL
 				mutable DynArray<IAccount*> m_blockedAccounts;
+				std::unordered_map<string, string, stl::hash_strcmp<string>, stl::hash_strcmp<string>> m_environment;
 #endif // CRY_GAMEPLATFORM_EXPERIMENTAL
 
 				std::vector<IListener*> m_listeners;
