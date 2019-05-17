@@ -534,6 +534,10 @@ if (OPTION_ENGINE)
 	#libs
 	add_subdirectory ("Code/Libs/bigdigits")
 	add_subdirectory ("Code/Libs/mikkelsen")
+
+	if (WINDOWS)
+		add_subdirectory("Code/Libs/Detours")
+	endif ()
 	
 	if(PLUGIN_VR_OCULUS)
 		add_subdirectory("Code/Libs/oculus")

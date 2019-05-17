@@ -1,3 +1,9 @@
+include_guard(GLOBAL)
+# Header guard to avoid duplicate execution when configuring (template) projects with OPTION_ENGINE
+# Templates include Configure.cmake and add_subdirectory(${CRYENGINE_DIR}) which also includes Configure.cmake
+# Templates do need Configure.cmake to set up some defines.
+# In order to not have duplicate add_subdirectory calls (which causes errors), we need an include guard here.
+
 if(OPTION_ENGINE OR OPTION_SHADERCACHEGEN OR OPTION_SCALEFORMHELPER OR OPTION_SANDBOX OR OPTION_PAKTOOLS OR OPTION_DOXYGEN_EXAMPLES)
 	# Add custom project with just listing of cmake files
 	add_subdirectory("${TOOLS_CMAKE_DIR}")
