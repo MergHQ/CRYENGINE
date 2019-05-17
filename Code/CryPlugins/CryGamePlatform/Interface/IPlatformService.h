@@ -84,7 +84,7 @@ namespace Cry
 			//! Gets the unique identifier of this service
 			virtual ServiceIdentifier GetServiceIdentifier() const = 0;
 
-			// Returns the platform identifier of the build the player is running, usually the trivial version of the application version
+			//! Returns the platform identifier of the build the player is running, usually the trivial version of the application version
 			virtual int GetBuildIdentifier() const = 0;
 
 			//! Checks if the local user owns the specified identifier
@@ -103,6 +103,12 @@ namespace Cry
 			virtual const DynArray<IAccount*>& GetBlockedAccounts() const = 0;
 			//! Gets local user's muted accounts
 			virtual const DynArray<IAccount*>& GetMutedAccounts() const = 0;
+			//! Allows retrieval of platform-specific information that can't be easily added to the IService interface without bloating it
+			//! \param szVarName The variable name
+			//! \param valueOut This is where the variable value will be stored (if any)
+			//! \retval true Value was found and stored in output variable
+			//! \retval false Unknown variable name
+			virtual bool GetEnvironmentValue(const char* szVarName, string& valueOut) const = 0;
 #endif // CRY_GAMEPLATFORM_EXPERIMENTAL
 			//! Gets an IAccount representation of another user by account id
 			virtual IAccount* GetAccountById(const AccountIdentifier& accountId) const = 0;
