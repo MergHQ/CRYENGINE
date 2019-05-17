@@ -3549,7 +3549,8 @@ bool CHWShader_D3D::mfCreateShaderEnv(int nThread, SHWSInstance* pInst, D3DBlob*
 		}
 	}
 
-	mfGatherFXParameters(pInst, pInst->m_pBindVars, pSH, bShaderThread ? 1 : 0, pFXShader);
+	if(!gRenDev->IsShaderCacheGenMode())
+		mfGatherFXParameters(pInst, pInst->m_pBindVars, pSH, bShaderThread ? 1 : 0, pFXShader);
 
 	if (pShader)
 		pSH->mfCreateCacheItem(pInst, pFXShader, InstBindVars, (byte*)pShader->GetBufferPointer(), (uint32)pShader->GetBufferSize(), bShaderThread);

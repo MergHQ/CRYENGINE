@@ -1508,9 +1508,6 @@ FILE* CCryPak::FOpen(const char* pName, const char* szMode, unsigned nInputFlags
 	unsigned nOSFlags = _O_BINARY | _O_RDONLY;
 #endif
 
-	//Timur, Try direct zip operation always.
-	nInputFlags |= FOPEN_HINT_DIRECT_OPERATION;
-
 	int nAdjustFlags = 0;
 
 	// check the szMode
@@ -1570,8 +1567,10 @@ FILE* CCryPak::FOpen(const char* pName, const char* szMode, unsigned nInputFlags
 
 		case 'x':
 		case 'X':
-			nInputFlags |= FOPEN_HINT_DIRECT_OPERATION;
+			CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_WARNING, "Using deprecated file open mode 'x' on file %s.", pName);
 			break;
+		default:
+			CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_WARNING, "Using unknown file open mode '%c' on file %s.", *pModeChar, pName);
 		}
 
 	if (nInputFlags & FLAGS_PATH_REAL)
@@ -1699,12 +1698,7 @@ FILE* CCryPak::FOpen(const char* pName, const char* szMode, unsigned nInputFlags
 
 	CheckFileAccessDisabled(fullPath, szMode);
 
-
 	size_t nFile;
-	if (pFileData != NULL && (nInputFlags & FOPEN_HINT_DIRECT_OPERATION) && !pFileData->m_pZip->IsInMemory())
-	{
-		nOSFlags |= CZipPseudoFile::_O_DIRECT_OPERATION;
-	}
 	nOSFlags |= (archiveFlags & FLAGS_REDIRECT_TO_DISC);
 
 	// try to open the pseudofile from one of the zips, make sure there is no user alias

@@ -121,7 +121,6 @@ struct CZipPseudoFile
 	enum
 	{
 		_O_COMMIT_FLUSH_MODE = 1 << 31,
-		_O_DIRECT_OPERATION  = 1 << 30
 	};
 
 	// this object must be constructed before usage
