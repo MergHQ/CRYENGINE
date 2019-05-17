@@ -4140,6 +4140,11 @@ void CVehicle::BroadcastVehicleEvent(EVehicleEvent event, const SVehicleEventPar
 		return;
 	}
 
+	if (IGameRules* pGameRules = CCryAction::GetCryAction()->GetIGameRulesSystem()->GetCurrentGameRules())
+	{
+		pGameRules->OnVehicleEvent(this, event, params);
+	}
+
 	if (event == eVE_PassengerEnter)  // need to setup listener _before_ the listener event is sent (which params contain seat id).
 	{
 		IScriptTable* pScriptTable = GetEntity()->GetScriptTable();

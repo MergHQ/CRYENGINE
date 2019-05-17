@@ -163,11 +163,15 @@ inline VecType ClosestPtPointTriangle(const VecType& p, const VecType& a, const 
 inline bool PointInTriangle(const vector2_t& p, const vector2_t& a, const vector2_t& b, const vector2_t& c)
 {
 	// Careful: this function can return that the point p is inside triangle abc also in the case of degenerate triangle.
-	const bool e0 = (p - a).cross(a - b) >= 0;
-	const bool e1 = (p - b).cross(b - c) >= 0;
-	const bool e2 = (p - c).cross(c - a) >= 0;
+	const real_t e0 = (p - a).cross(a - b);
+	const real_t e1 = (p - b).cross(b - c);
+	const real_t e2 = (p - c).cross(c - a);
 
-	return (e0 == e1) && (e0 == e2);
+	// Using bitwise operators instead of logical for performance reasons.
+	const bool hasNegative = e0 < 0 | e1 < 0 | e2 < 0;
+	const bool hasPositive = e0 > 0 | e1 > 0 | e2 > 0;
+
+	return !(hasNegative & hasPositive);
 }
 
 //! Projects point p on triangle abc in vertical direction. 
