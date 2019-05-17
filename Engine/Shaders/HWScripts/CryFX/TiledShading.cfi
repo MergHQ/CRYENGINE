@@ -1029,11 +1029,13 @@ void TiledDeferredShadingCS( uint3 GroupID : SV_GroupID,
 						diffuseAcc += (lightTerm * lightColor.rgb) * (surfIsTranslucent ? diffuseTranslucency : diffuseTerm.xxx);
 					
 					#if %_RT_SAMPLE5
-						if (lightType != TILEDLIGHT_TYPE_REGULAR_AREA)
-							TiledLightsShadeInfo[lightIndex].projectorMatrix[3].y = TiledLightsShadeInfo[lightIndex].attenuationParams.y;
+						float4x4 projectorMatrix = TiledLightsShadeInfo[lightIndex].projectorMatrix;
 
-						float3 specTerm = AreaLightGGX( surfNormal, -normalize( position ), lightVecAreaSpec, surfGloss, surfSpecCol, TiledLightsShadeInfo[lightIndex].projectorMatrix, lightType == TILEDLIGHT_TYPE_REGULAR_AREA ? AREA_LIGHT_RECTANGLE : AREA_LIGHT_SPHERE );
-					#else
+						if (lightType != TILEDLIGHT_TYPE_REGULAR_AREA)
+							projectorMatrix[3].y = TiledLightsShadeInfo[lightIndex].attenuationParams.y;
+
+						float3 specTerm = AreaLightGGX( surfNormal, -normalize( position ), lightVecAreaSpec, surfGloss, surfSpecCol, projectorMatrix, lightType == TILEDLIGHT_TYPE_REGULAR_AREA ? AREA_LIGHT_RECTANGLE : AREA_LIGHT_SPHERE );
+#else
 						float3 specTerm = SpecularBRDF( surfNormal, -normalize( position ), lightVec, surfGloss, surfSpecCol );
 					#endif
 						specularAcc += (lightTerm * lightColor.rgb) * lightColor.a * specTerm * NdotL;
