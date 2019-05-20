@@ -242,7 +242,7 @@ bool CTerrain::OpenTerrainTextureFile(SCommonFileHeader& hdrDiffTexHdr, STerrain
 		PrintMessage("Opening %s ...", szFileName);
 
 	// rbx open flags, x is a hint to not cache whole file in memory.
-	FILE* fpDiffTexFile = gEnv->pCryPak->FOpen(Get3DEngine()->GetLevelFilePath(szFileName), "rbx");
+	FILE* fpDiffTexFile = gEnv->pCryPak->FOpen(Get3DEngine()->GetLevelFilePath(szFileName), "rb");
 
 	if (!fpDiffTexFile)
 	{

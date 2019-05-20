@@ -198,7 +198,7 @@ AKRESULT CFileIOHandler::Open(AkFileID nFileID, AkOpenMode eOpenMode, AkFileSyst
 
 		if (fileSize > 0)
 		{
-			FILE* const pFile = gEnv->pCryPak->FOpen(szTemp, "rbx");
+			FILE* const pFile = gEnv->pCryPak->FOpen(szTemp, "rb");
 
 			if (pFile != nullptr)
 			{

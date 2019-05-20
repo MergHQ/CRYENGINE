@@ -823,7 +823,7 @@ IPlatformOS::ECDP_Open CPlatformOS_PC::DoesCachePakExist(const char* const filen
 	realFileName.Format("%%USER%%/cache/%s", filename);
 
 	const uint32 fileOpenFlags = ICryPak::FLAGS_NEVER_IN_PAK | ICryPak::FLAGS_PATH_REAL | ICryPak::FOPEN_ONDISK;
-	FILE* const file = gEnv->pCryPak->FOpen(realFileName.c_str(), "rbx", fileOpenFlags);
+	FILE* const file = gEnv->pCryPak->FOpen(realFileName.c_str(), "rb", fileOpenFlags);
 	if (file == NULL)
 	{
 		CryLog("DoesCachePakExist '%s' ERROR file not found '%s'", filename, realFileName.c_str());

@@ -62,7 +62,7 @@ CriFsIoError IoFileOpen(CriChar8 const* szPath, CriFsFileMode mode, CriFsFileAcc
 		if (pFileObject != nullptr)
 		{
 			auto const szFileName = static_cast<char const*>(szPath);
-			pFileObject->pFile = gEnv->pCryPak->FOpen(szFileName, "rbx");
+			pFileObject->pFile = gEnv->pCryPak->FOpen(szFileName, "rb");
 
 			if (pFileObject->pFile != nullptr)
 			{

@@ -331,7 +331,7 @@ void Pak::Unpak(const char* szArchivePath, const char* szDestPath, std::function
 				}
 
 				ICryPak* const pPak = GetISystem()->GetIPak();
-				FILE* file = pPak->FOpen(PathUtil::Make(pakFolder, path), "rbx");
+				FILE* file = pPak->FOpen(PathUtil::Make(pakFolder, path), "rb");
 				if (!file)
 				{
 				  return;
@@ -464,7 +464,7 @@ EDITOR_COMMON_API void BackupFile(const char* szFilePath)
 EDITOR_COMMON_API bool Pak::CopyFileAllowOverwrite(const char* szSourceFilePath, const char* szDestinationFilePath)
 {
 	ICryPak* const pPak = GetISystem()->GetIPak();
-	FILE* pFile = pPak->FOpen(szSourceFilePath, "rbx");
+	FILE* pFile = pPak->FOpen(szSourceFilePath, "rb");
 	if (!pFile)
 	{
 		return false;

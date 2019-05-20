@@ -3834,7 +3834,7 @@ uint32 CCryPak::ComputeCRC(const char* szPath, uint32 nFileOpenFlags)
 		}
 
 		// rbx open flags, x is a hint to not cache whole file in memory.
-		FILE* fp = gEnv->pCryPak->FOpen(szPath, "rbx", nFileOpenFlags);
+		FILE* fp = gEnv->pCryPak->FOpen(szPath, "rb", nFileOpenFlags);
 
 		if (!fp)
 		{

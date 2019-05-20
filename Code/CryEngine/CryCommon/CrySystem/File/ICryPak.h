@@ -401,10 +401,9 @@ struct ICryPak
 	virtual void              FreePakInfo(PakInfo*) = 0;
 
 	//! Open file handle, file can be on disk or in PAK file.
-	//! Possible mode is r,b,x.
+	//! Possible mode is r,b.
 	//! Example:
-	//! FILE *f = FOpen( "test.txt","rbx" );.
-	//! Mode x is a direct access mode, when used file reads will go directly into the low level file system without any internal data caching.
+	//! FILE *f = FOpen( "test.txt","rb" );
 	//! Text mode is not supported for files in PAKs.
 	//! \see ICryPak::EFOpenFlags.
 	virtual FILE* FOpen(const char* pName, const char* mode, unsigned nFlags = 0) = 0;
