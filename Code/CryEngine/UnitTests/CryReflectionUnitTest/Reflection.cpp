@@ -289,37 +289,7 @@ TEST_F(CReflectionUnitTest, CTypeDescMoveConstructor)
 		REQUIRE(targetBank.m_type == eBankType_Retail);
 	}
 }
-
-TEST_F(CReflectionUnitTest, CTypeDescDestructor)
-{
-	// uint64
-	Cry::Type::CTypeDesc typeDesc = Cry::Type::DescOf<uint64>();
-	uint64 source = 0xc0ffee;
-
-	Cry::Type::CDestructor destructor = typeDesc.GetDestructor();
-	REQUIRE(destructor);
-	if (destructor)
-	{
-		destructor(&source);
-		REQUIRE(source == 0xc0ffee); // Default for uint64 is no change
-	}
-
-	// CBank
-	typeDesc = Cry::Type::DescOf<CBank>();
-	CBank bank;
-	bank.SetAccount(source);
-	bank.m_type = eBankType_Retail;
-
-	destructor = typeDesc.GetDestructor();
-	REQUIRE(destructor);
-	if (destructor)
-	{
-		destructor(&bank);
-		REQUIRE(bank.GetAccount() == -1);
-		REQUIRE(bank.m_type == eBankType_Investment);
-	}
-}
-
+ 
 TEST_F(CReflectionUnitTest, CTypeDescDefaultNewOperator)
 {
 	// uint64
@@ -1365,21 +1335,6 @@ TEST_F(CReflectionUnitTest, CAnyArrayClear)
 		REQUIRE(pBank->m_type == eBankType_Buisness);
 
 		delete pBank;
-	}
-}
-
-TEST_F(CReflectionUnitTest, CAnyArrayDestruct)
-{
-	if (m_pTypeDescCBank)
-	{
-		CBank* pBank = new CBank();
-		pBank->m_type = eBankType_Buisness;
-
-		Cry::Reflection::CAnyArray anyArray(*m_pTypeDescCBank, true);
-		anyArray.AddPointer(pBank);
-		anyArray.DestructAll();
-
-		REQUIRE(pBank->m_type == eBankType_Investment);
 	}
 }
 
