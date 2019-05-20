@@ -3989,7 +3989,7 @@ void CGame::CmdFlyCamPlay(IConsoleCmdArgs *pArgs)
 #if defined(USE_CRY_ASSERT)
 void CGame::CmdIgnoreAllAsserts(IConsoleCmdArgs *pArgs)
 {
-	gEnv->ignoreAllAsserts = true;	
+	Cry::Assert::IgnoreAllAsserts(true);	
 	gEnv->bTesting = true;
 }
 #endif

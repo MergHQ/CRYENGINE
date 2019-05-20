@@ -993,7 +993,7 @@ int DebugCallStack::handleException(EXCEPTION_POINTERS* exception_pointer)
 	}
 
 #ifdef USE_CRY_ASSERT
-	gEnv->ignoreAllAsserts = true;
+	Cry::Assert::IgnoreAllAsserts(true);
 #endif
 
 	gEnv->pLog->FlushAndClose();
@@ -1382,8 +1382,8 @@ void DebugCallStack::MinimalExceptionReport(EXCEPTION_POINTERS* exception_pointe
 	int prev_sys_no_crash_dialog = g_cvars.sys_no_crash_dialog;
 
 #ifdef USE_CRY_ASSERT
-	gEnv->ignoreAllAsserts = true;
-	gEnv->cryAssertLevel = ECryAssertLevel::Disabled;
+	Cry::Assert::IgnoreAllAsserts(true);
+	Cry::Assert::SetAssertLevel(Cry::Assert::ELevel::Disabled);
 #endif
 
 	g_cvars.sys_no_crash_dialog = 1;

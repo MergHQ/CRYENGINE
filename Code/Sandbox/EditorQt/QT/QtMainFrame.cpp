@@ -1739,7 +1739,7 @@ void CEditorMainFrame::AddCommand(CCommand* pCommand)
 
 void CEditorMainFrame::OnIdleCallback()
 {
-	if (gEnv->stoppedOnAssert)
+	if (Cry::Assert::IsInAssert())
 	{
 		// If inside assert dialog, we keep idling.
 		QTimer::singleShot(30, this, &CEditorMainFrame::OnIdleCallback);

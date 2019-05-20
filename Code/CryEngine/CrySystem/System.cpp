@@ -256,6 +256,10 @@ CSystem::CSystem(const SSystemInitParams& startupParams)
 	m_env.bUnattendedMode = false;
 	m_env.bTesting = false;
 
+#if defined(USE_CRY_ASSERT)
+	m_env.assertSettings = Cry::Assert::Detail::SSettings();
+#endif
+
 #if CRY_PLATFORM_DURANGO
 	m_env.ePLM_State = EPLM_UNDEFINED;
 #endif

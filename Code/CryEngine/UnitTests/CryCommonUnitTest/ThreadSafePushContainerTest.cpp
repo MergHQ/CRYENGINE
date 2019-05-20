@@ -5,18 +5,12 @@
 #include <stdio.h>
 
 // Mock
-//inline void CryFatalError(const char* msg, ...) { std::cerr << msg; std::exit(1337); }
 class ICrySizer 
 { 
 public:
 	void AddObject(void*, size_t) {} 
 	void AddObjectSize(void*) {} 
 };
-
-#undef  CRY_ASSERT_MESSAGE
-#define CRY_ASSERT_MESSAGE(condition, ...) EXPECT_TRUE(condition) << __VA_ARGS__
-#undef  CRY_ASSERT
-#define CRY_ASSERT(condition) EXPECT_TRUE(condition)
 
 #include <CryThreading/CryThreadSafePushContainer.h>
 #include <CryString/CryStringUtils.h>

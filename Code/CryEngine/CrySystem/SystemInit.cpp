@@ -502,9 +502,51 @@ static void CmdDumpThreadConfigList(IConsoleCmdArgs* pArgs)
 
 //////////////////////////////////////////////////////////////////////////
 #if defined(USE_CRY_ASSERT)
+static void CmdSetAssertLevel(IConsoleCmdArgs* pArgs)
+{
+	if (pArgs->GetArgCount() > 1)
+	{
+		const int assertLevel = atoi(pArgs->GetArg(1));
+		switch (Cry::Assert::ELevel(assertLevel))
+		{
+		case Cry::Assert::ELevel::Disabled: // "0 = Disable Asserts\n"
+			Cry::Assert::SetAssertLevel(Cry::Assert::ELevel::Disabled);
+			break;
+		case Cry::Assert::ELevel::Enabled:  // "1 = Enable Asserts\n"
+			Cry::Assert::SetAssertLevel(Cry::Assert::ELevel::Enabled);
+			break;
+		case Cry::Assert::ELevel::FatalErrorOnAssert: // "2 = Fatal Error on Assert\n"
+			Cry::Assert::SetAssertLevel(Cry::Assert::ELevel::FatalErrorOnAssert);
+			break;
+		case Cry::Assert::ELevel::DebugBreakOnAssert: // "3 = Debug break on Assert\n"
+			Cry::Assert::SetAssertLevel(Cry::Assert::ELevel::DebugBreakOnAssert);
+			break;
+		default:
+			CryLogAlways("Unrecognized assert level: %i", assertLevel);
+		}
+	}
+	else
+	{
+		CryLogAlways("Current assert level: %i", int(Cry::Assert::GetAssertLevel()));
+	}
+}
+
+static void CmdLogAsserts(IConsoleCmdArgs* pArgs)
+{
+	if (pArgs->GetArgCount() > 1)
+	{
+		const int doLog = atoi(pArgs->GetArg(1));
+		Cry::Assert::LogAssertsAlways(doLog != 0);
+	}
+	else
+	{
+		CryLogAlways("%s = %i", pArgs->GetArg(0), int(Cry::Assert::LogAssertsAlways()));
+	}
+}
+
 static void CmdIgnoreAssertsFromModule(IConsoleCmdArgs* pArgs)
 {
-	if (gEnv && gEnv->pSystem && pArgs->GetArgCount() == 2)
+	if (pArgs->GetArgCount() == 2)
 	{
 		string requestedModule = pArgs->GetArg(1);
 
@@ -512,7 +554,7 @@ static void CmdIgnoreAssertsFromModule(IConsoleCmdArgs* pArgs)
 		{
 			if (requestedModule == GetCryModuleName(i))
 			{
-				gEnv->pSystem->DisableAssertionsForModule(i);
+				Cry::Assert::DisableAssertionsForModule(i);
 				return;
 			}
 		}
@@ -2912,7 +2954,7 @@ bool CSystem::Initialize(SSystemInitParams& startupParams)
 			GetISystem()->LoadConfiguration("vr.cfg", 0, eLoadConfigInit);
 
 #ifdef USE_CRY_ASSERT
-		if (m_env.cryAssertLevel > ECryAssertLevel::Enabled)
+		if (Cry::Assert::GetAssertLevel() > Cry::Assert::ELevel::Enabled)
 		{
 			gEnv->bUnattendedMode = true; // skip assert UI when sys_assert is 2 or 3
 		}
@@ -5210,8 +5252,7 @@ void CSystem::CreateSystemVars()
 #endif
 
 #if defined(USE_CRY_ASSERT)
-	const bool defaultAsserts = 1;
-	REGISTER_CVAR2("sys_asserts", &m_env.cryAssertLevel, defaultAsserts, VF_NULL,
+	REGISTER_COMMAND("sys_asserts", CmdSetAssertLevel, VF_NULL,
 	               "0 = Disable Asserts\n"
 	               "1 = Enable Asserts\n"
 	               "2 = Fatal Error on Assert\n"
@@ -5219,7 +5260,7 @@ void CSystem::CreateSystemVars()
 	               );
 
 	REGISTER_COMMAND("sys_ignore_asserts_from_module", CmdIgnoreAssertsFromModule, VF_NULL, "Disables asserts from the specified module");
-	REGISTER_CVAR2("sys_log_asserts", &g_cvars.sys_log_asserts, 1, VF_NULL, "Enable/Disable Asserts logging");
+	REGISTER_COMMAND("sys_log_asserts", CmdLogAsserts, VF_NULL, "If set to 0, only the first occurence of an assert will be logged. Default is 1.");
 #endif
 
 	REGISTER_CVAR2("sys_error_debugbreak", &g_cvars.sys_error_debugbreak, 0, VF_CHEAT, "__debugbreak() if a VALIDATOR_ERROR_DBGBREAK message is hit");
@@ -5343,7 +5384,7 @@ void CSystem::OnFatalError(const char* message)
 #if defined(USE_CRY_ASSERT)
 void CSystem::OnAssert(const char* condition, const char* message, const char* fileName, unsigned int fileLineNumber)
 {
-	if (m_env.cryAssertLevel == ECryAssertLevel::Disabled)
+	if (Cry::Assert::IsAssertLevel(Cry::Assert::ELevel::Disabled))
 	{
 		return;
 	}
@@ -5353,38 +5394,11 @@ void CSystem::OnAssert(const char* condition, const char* message, const char* f
 	{
 		(*it)->OnAssert(condition, message, fileName, fileLineNumber);
 	}
-	if (!m_env.ignoreAllAsserts)
+
+	if (!Cry::Assert::IgnoreAllAsserts() && Cry::Assert::IsAssertLevel(Cry::Assert::ELevel::FatalErrorOnAssert))
 	{
-		if (m_env.cryAssertLevel == ECryAssertLevel::FatalErrorOnAssert)
-		{
-			CryFatalError("<assert> %s\r\n%s\r\n%s (%u)\r\n", condition, message, fileName, fileLineNumber);
-		}
-		if (m_env.cryAssertLevel == ECryAssertLevel::DebugBreakOnAssert)
-		{
-	#ifndef _RELEASE
-			CryDebugBreak();
-	#endif
-		}
+		CryFatalError("<assert> %s\r\n%s\r\n%s (%u)\r\n", condition, message, fileName, fileLineNumber);
 	}
 }
 
-bool CSystem::AreAssertsEnabledForModule(uint32 moduleId)
-{
-	return !m_disabledAssertModules[moduleId];
-}
-
-void CSystem::DisableAssertionsForModule(uint32 moduleId)
-{
-	m_disabledAssertModules.set(moduleId, true);
-}
-
-bool CSystem::IsAssertDialogVisible() const
-{
-	return m_isAsserting;
-}
-
-void CSystem::SetAssertVisible(bool bAssertVisble)
-{
-	m_isAsserting = bAssertVisble;
-}
 #endif
