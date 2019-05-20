@@ -487,6 +487,10 @@ public:
 	static float CV_r_PostProcessHUD3DGlowAmount;
 	static float CV_r_normalslength;
 	static float CV_r_TexelsPerMeter;
+	static float CV_r_OverdrawComplexity;
+	static float CV_r_OverdrawComplexityBluePoint;
+	static float CV_r_OverdrawComplexitySmoothness;
+	static float CV_r_OverdrawComplexityCompression;
 	static float CV_r_TexturesStreamingMaxRequestedMB;
 	static int   CV_r_TexturesStreamingMaxRequestedJobs;
 	static float CV_r_TexturesStreamingMipBias;

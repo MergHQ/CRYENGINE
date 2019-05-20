@@ -29,19 +29,23 @@ class CSceneCustomStage : public CGraphicsPipelineStage
 public:
 	static const EGraphicsPipelineStage StageID = eStage_SceneCustom;
 
-	enum EPass
+	enum EPass : uint8
 	{
 		ePass_DebugViewSolid = 0,
 		ePass_DebugViewWireframe,
+		ePass_DebugViewOverdraw,
 		ePass_DebugViewDrawModes,
 		ePass_SelectionIDs, // draw highlighted objects from editor
 		ePass_Silhouette,
+
+		ePass_Count
 	};
+
+	static_assert(ePass_Count <= MAX_PIPELINE_SCENE_STAGE_PASSES,
+		"The pipeline-state array is unable to carry as much pass-permutation as defined here!");
 
 public:
 	CSceneCustomStage(CGraphicsPipeline& graphicsPipeline);
-
-	static bool DoDebugRendering();
 
 	bool IsStageActive(EShaderRenderingFlags flags) const final
 	{
@@ -52,8 +56,10 @@ public:
 	}
 
 	void Init() final;
+	void Resize(int renderWidth, int renderHeight) final;
 	void Update() final;
-	void Prepare();
+
+	void OnCVarsChanged(const CCVarUpdateRecorder& cvarUpdater) final;
 
 	void Execute();
 	void ExecuteSilhouettePass();
@@ -65,6 +71,7 @@ public:
 	bool CreatePipelineStates(DevicePipelineStatesArray* pStateArray, const SGraphicsPipelineStateDescription& stateDesc, CGraphicsPipelineStateLocalCache* pStateCache);
 	bool CreatePipelineState(const SGraphicsPipelineStateDescription& desc, EPass passID, CDeviceGraphicsPSOPtr& outPSO);
 
+	bool IsDebuggerEnabled()           const;
 	bool IsSelectionHighlightEnabled() const { return gEnv->IsEditor() && !gEnv->IsEditorGameMode(); }
 	bool IsDebugOverlayEnabled()       const { return CRenderer::CV_e_DebugDraw > 0; }
 
@@ -79,7 +86,15 @@ private:
 
 	CSceneRenderPass         m_debugViewPass;
 	CSceneRenderPass         m_selectionIDPass;
-	CFullscreenPass          m_highlightPass;
-
 	CSceneRenderPass         m_silhouetteMaskPass;
+	CFullscreenPass          m_highlightPass;
+	CFullscreenPass          m_resolvePass;
+
+	CGpuBuffer               m_overdrawCount;
+	CGpuBuffer               m_overdrawDepth;
+	CGpuBuffer               m_overdrawStats;
+	CGpuBuffer               m_overdrawHisto;
+
+	int                      m_samplerPoint;
+	int                      m_samplerLinear;
 };

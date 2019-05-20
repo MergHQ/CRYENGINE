@@ -95,9 +95,6 @@ void CStandardGraphicsPipeline::Init()
 	// per view constant buffer
 	m_mainViewConstantBuffer.CreateDeviceBuffer();
 
-	// Register all common stages
-	CGraphicsPipeline::Init();
-
 	// Register all other stages that don't need the global PSO cache
 	RegisterStage<CSceneCustomStage>();
 	RegisterStage<CHeightMapAOStage>();
@@ -128,8 +125,8 @@ void CStandardGraphicsPipeline::Init()
 	RegisterStage<COmniCameraStage>();
 	RegisterStage<CVolumetricFogStage>();
 
-	// Now init stages
-	InitStages();
+	// Register and initialize all common stages
+	CGraphicsPipeline::Init();
 
 	// Out-of-pipeline passes for display
 	m_HDRToFramePass.reset(new CStretchRectPass(this));
@@ -421,7 +418,8 @@ void CStandardGraphicsPipeline::Execute()
 	FUNCTION_PROFILER_RENDERER();
 
 	// TODO: Make this into it's own stage or pipeline
-	if (CSceneCustomStage::DoDebugRendering() && m_renderingFlags & EShaderRenderingFlags::SHDF_ALLOW_RENDER_DEBUG)
+	if (GetStage<CSceneCustomStage>() && GetStage<CSceneCustomStage>()->IsDebuggerEnabled() &&
+		m_renderingFlags & EShaderRenderingFlags::SHDF_ALLOW_RENDER_DEBUG)
 	{
 		GetStage<CSceneCustomStage>()->ExecuteDebugger();
 

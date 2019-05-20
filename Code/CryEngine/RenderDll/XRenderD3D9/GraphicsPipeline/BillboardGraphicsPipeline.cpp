@@ -66,11 +66,8 @@ void CBillboardGraphicsPipeline::Init()
 	// per view constant buffer
 	m_mainViewConstantBuffer.CreateDeviceBuffer();
 
-	// Register all common stages
+	// Register and initialize all common stages
 	CGraphicsPipeline::Init();
-
-	// Now init stages
-	InitStages();
 
 	// Out-of-pipeline passes for display
 	m_HDRToFramePass.reset(new CStretchRectPass(this));

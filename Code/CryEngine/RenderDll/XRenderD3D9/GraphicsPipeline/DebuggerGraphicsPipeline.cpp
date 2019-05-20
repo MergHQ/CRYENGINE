@@ -66,14 +66,11 @@ void CDebuggerGraphicsPipeline::Init()
 	// per view constant buffer
 	m_mainViewConstantBuffer.CreateDeviceBuffer();
 
-	// Register all common stages
-	CGraphicsPipeline::Init();
-
 	// Register all other stages that don't need the global PSO cache
 	RegisterStage<CSceneCustomStage>();
 
-	// Now init stages
-	InitStages();
+	// Register and initialize all common stages
+	CGraphicsPipeline::Init();
 
 	// Out-of-pipeline passes for display
 	m_HDRToFramePass.reset(new CStretchRectPass);

@@ -45,7 +45,6 @@ void CGraphicsPipeline::ClearDeviceState()
 }
 
 //////////////////////////////////////////////////////////////////////////
-
 void CGraphicsPipeline::Init()
 {
 	// Register scene stages that make use of the global PSO cache
@@ -65,6 +64,12 @@ void CGraphicsPipeline::Init()
 	}
 
 	m_pVRProjectionManager = gcpRendD3D->m_pVRProjectionManager;
+
+	// Initializes all the pipeline stages.
+	for (auto it = m_pipelineStages.begin(); it != m_pipelineStages.end(); ++it)
+	{
+		if (*it) (*it)->Init();
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////

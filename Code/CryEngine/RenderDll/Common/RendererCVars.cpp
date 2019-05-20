@@ -531,6 +531,10 @@ float CRendererCVars::CV_r_ZFightingDepthScale;
 float CRendererCVars::CV_r_ZFightingExtrude;
 
 float CRendererCVars::CV_r_TexelsPerMeter;
+float CRendererCVars::CV_r_OverdrawComplexity;
+float CRendererCVars::CV_r_OverdrawComplexityBluePoint;
+float CRendererCVars::CV_r_OverdrawComplexitySmoothness;
+float CRendererCVars::CV_r_OverdrawComplexityCompression;
 
 int CRendererCVars::CV_r_enableAltTab;
 int CRendererCVars::CV_r_StereoFlipEyes;
@@ -2839,6 +2843,29 @@ void CRendererCVars::InitCVars()
 	REGISTER_CVAR3("r_ZFightingDepthScale", CV_r_ZFightingDepthScale, 0.995f, VF_CHEAT, "Controls anti z-fighting measures in shaders (scaling homogeneous z).");
 	REGISTER_CVAR3("r_ZFightingExtrude", CV_r_ZFightingExtrude, 0.001f, VF_CHEAT, "Controls anti z-fighting measures in shaders (extrusion along normal in world units).");
 
+	REGISTER_CVAR3("r_OverdrawComplexity", CV_r_OverdrawComplexity, 0, VF_RENDERER_CVAR,
+	               "Enables visualization of depth- and quad-overdraw complexity.\n"
+	               "Making the mode negative results in all evaluations taking ZPrePass into account."
+	               "Usage: r_OverdrawComplexity [0/1/2/3/4]\n"
+	               "0: no overdraw shown (default)\n"
+	               "1: overdraw without any culling\n"
+	               "2: overdraw with depth culling (z-test)\n"
+	               "3: rejection rate with depth culling (z-test)\n"
+	               "4: overdraw without any culling, including quad-overdraw (dead lanes)\n"
+	               "5: overdraw with depth culling (z-test), including quad-overdraw (dead lanes)\n"
+	               "6: rejection rate with depth culling (z-test), including quad-overdraw (dead lanes)\n");
+
+	REGISTER_CVAR3("r_OverdrawComplexityBluePoint", CV_r_OverdrawComplexityBluePoint, 4.0f, 0,
+	               "Specifies which integer count is anchored at dark blue (2,25,147). Default is 4.\n"
+	               "Usage: r_OverdrawComplexityBluePoint [n]\n");
+	REGISTER_CVAR3("r_OverdrawComplexitySmoothness", CV_r_OverdrawComplexitySmoothness, 1.25f, 0,
+	               "Smoothness of the logarithmic mapping of the counts (the value is the log-base).\n"
+	               "Smaller values produce a steeper mapping than larger values.\n"
+	               "Usage: r_OverdrawComplexitySmoothness [n]\n");
+	REGISTER_CVAR3("r_OverdrawComplexityCompression", CV_r_OverdrawComplexityCompression, 1.0f, 0,
+	               "Amount of compression applied after logarithmic mapping (linear divisor).\n"
+	               "Usage: r_OverdrawComplexityCompression [n]\n");
+	
 	REGISTER_CVAR3("r_enableAltTab", CV_r_enableAltTab, 1, VF_NULL,
 	               "Toggles alt tabbing in and out of fullscreen when the game is not in devmode.\n"
 	               "Usage: r_enableAltTab [toggle]\n"

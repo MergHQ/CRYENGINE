@@ -188,28 +188,6 @@ protected:
 		m_pipelineStages[T::StageID] = pPipelineStage;
 	}
 
-	void InitStages()
-	{
-		for (auto pStage : m_pipelineStages)
-		{
-			if (pStage)
-			{
-				pStage->Init();
-			}
-		}
-	}
-
-	void ResizeStages(int renderWidth, int renderHeight)
-	{
-		for (auto pStage : m_pipelineStages)
-		{
-			if (pStage)
-			{
-				pStage->Resize(renderWidth, renderHeight);
-			}
-		}
-	}
-
 public:
 	std::unique_ptr<CStretchRectPass>             m_ResolvePass;
 	std::unique_ptr<CDownsamplePass>              m_DownscalePass;
