@@ -245,7 +245,7 @@ void CPakImporter::Unpak(const char* szArchivePath, const char* szDestPath, std:
 			}
 
 			ICryPak* const pPak = GetISystem()->GetIPak();
-			FILE* file = pPak->FOpen(path, "rbx");
+			FILE* file = pPak->FOpen(path, "rb");
 			if (!file)
 			{
 				return;

@@ -1412,7 +1412,7 @@ bool CImpl::RegisterAcf()
 
 	if (acfExists)
 	{
-		FILE* const pAcfFile = gEnv->pCryPak->FOpen(acfPath.c_str(), "rbx");
+		FILE* const pAcfFile = gEnv->pCryPak->FOpen(acfPath.c_str(), "rb");
 		size_t const acfFileSize = gEnv->pCryPak->FGetSize(acfPath.c_str());
 
 		MEMSTAT_CONTEXT(EMemStatContextType::AudioImpl, "CryAudio::Impl::Adx2::CImpl::m_pAcfBuffer");

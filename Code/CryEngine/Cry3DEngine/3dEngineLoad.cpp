@@ -226,7 +226,7 @@ bool C3DEngine::LoadTerrain(XmlNodeRef pDoc, std::vector<struct IStatObj*>** ppS
 	PrintMessage("===== Loading %s =====", COMPILED_HEIGHT_MAP_FILE_NAME);
 
 	// open file
-	FILE* f = GetPak()->FOpen(GetLevelFilePath(COMPILED_HEIGHT_MAP_FILE_NAME), "rbx");
+	FILE* f = GetPak()->FOpen(GetLevelFilePath(COMPILED_HEIGHT_MAP_FILE_NAME), "rb");
 	if (!f)
 		return 0;
 
@@ -278,7 +278,7 @@ bool C3DEngine::LoadVisAreas(std::vector<struct IStatObj*>** ppStatObjTable, std
 	PrintMessage("===== Loading %s =====", COMPILED_VISAREA_MAP_FILE_NAME);
 
 	// open file
-	FILE* f = GetPak()->FOpen(GetLevelFilePath(COMPILED_VISAREA_MAP_FILE_NAME), "rbx");
+	FILE* f = GetPak()->FOpen(GetLevelFilePath(COMPILED_VISAREA_MAP_FILE_NAME), "rb");
 	if (!f)
 		return false;
 
@@ -1646,7 +1646,7 @@ bool C3DEngine::RestoreTerrainFromDisk()
 	{
 		m_pTerrain->ResetTerrainVertBuffers(NULL);
 
-		if (FILE* f = GetPak()->FOpen(GetLevelFilePath(COMPILED_HEIGHT_MAP_FILE_NAME), "rbx"))
+		if (FILE* f = GetPak()->FOpen(GetLevelFilePath(COMPILED_HEIGHT_MAP_FILE_NAME), "rb"))
 		{
 			GetTerrain()->ReloadModifiedHMData(f);
 			GetPak()->FClose(f);

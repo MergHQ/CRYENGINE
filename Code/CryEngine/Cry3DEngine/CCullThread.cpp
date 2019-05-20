@@ -53,8 +53,8 @@ bool CCullThread::LoadLevel(const char* pFolderName)
 {
 	MEMSTAT_CONTEXT(EMemStatContextType::Other, "Occluder Mesh");
 	m_OCMBuffer.resize(0);
-	//FILE* pFile	=	gEnv->pCryPak->FOpen("Canyon25.ocm","rbx");
-	FILE* pFile = gEnv->pCryPak->FOpen((string(pFolderName) + "/occluder.ocm").c_str(), "rbx");
+	//FILE* pFile	=	gEnv->pCryPak->FOpen("Canyon25.ocm","rb");
+	FILE* pFile = gEnv->pCryPak->FOpen((string(pFolderName) + "/occluder.ocm").c_str(), "rb");
 	if (!pFile)
 	{
 		//__debugbreak();

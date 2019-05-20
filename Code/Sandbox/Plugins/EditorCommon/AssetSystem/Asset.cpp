@@ -71,7 +71,7 @@ static uint64 GetModificationTime(const string& filePath)
 {
 	uint64 timestamp = 0;
 	ICryPak* const pPak = GetISystem()->GetIPak();
-	FILE* pFile = pPak->FOpen(filePath.c_str(), "rbx");
+	FILE* pFile = pPak->FOpen(filePath.c_str(), "rb");
 	if (pFile)
 	{
 		timestamp = pPak->GetModificationTime(pFile);

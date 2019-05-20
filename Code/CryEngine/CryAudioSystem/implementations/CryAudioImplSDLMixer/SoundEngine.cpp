@@ -353,7 +353,7 @@ bool LoadSampleImpl(const SampleId id, const string& samplePath)
 	{
 		// Sample could be inside a pak file so we need to open it manually and load it from the raw file
 		size_t const fileSize = gEnv->pCryPak->FGetSize(samplePath);
-		FILE* const pFile = gEnv->pCryPak->FOpen(samplePath, "rbx");
+		FILE* const pFile = gEnv->pCryPak->FOpen(samplePath, "rb");
 
 		if (pFile && fileSize > 0)
 		{
