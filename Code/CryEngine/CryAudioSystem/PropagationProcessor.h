@@ -25,6 +25,7 @@ public:
 	~CPropagationProcessor() = default;
 
 	void Init();
+	void Release();
 
 	// PhysicsSystem callback
 	static int  OnObstructionTest(EventPhys const* pEvent);
@@ -51,11 +52,11 @@ private:
 		uint8 const rayIndex,
 		uint8 const samplePosIndex,
 		bool const bSynch,
-		SOcclusionInfo& info);
+		SOcclusionInfo* const pInfo);
 	void  RunObstructionQuery();
-	void  ProcessLow(Vec3 const& up, Vec3 const& side, bool const bSynch, SOcclusionInfo& info);
-	void  ProcessMedium(Vec3 const& up, Vec3 const& side, bool const bSynch, SOcclusionInfo& info);
-	void  ProcessHigh(Vec3 const& up, Vec3 const& side, bool const bSynch, SOcclusionInfo& info);
+	void  ProcessLow(Vec3 const& up, Vec3 const& side, bool const bSynch, SOcclusionInfo* const pInfo);
+	void  ProcessMedium(Vec3 const& up, Vec3 const& side, bool const bSynch, SOcclusionInfo* const pInfo);
+	void  ProcessHigh(Vec3 const& up, Vec3 const& side, bool const bSynch, SOcclusionInfo* const pInfo);
 	uint8 GetNumConcurrentRays(EOcclusionType const occlusionTypeWhenAdaptive) const;
 	uint8 GetNumSamplePositions(EOcclusionType const occlusionTypeWhenAdaptive) const;
 	bool  CanRunOcclusion();

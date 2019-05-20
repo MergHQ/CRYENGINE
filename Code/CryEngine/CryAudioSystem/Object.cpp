@@ -46,6 +46,11 @@ void CObject::Destruct()
 
 	g_pIImpl->DestructObject(m_pIObject);
 	m_pIObject = nullptr;
+
+#if defined(CRY_AUDIO_USE_OCCLUSION)
+	m_propagationProcessor.Release();
+#endif    // CRY_AUDIO_USE_OCCLUSION
+
 	delete this;
 }
 
@@ -733,9 +738,9 @@ void CObject::DrawDebugInfo(
 					EOcclusionType const occlusionType = m_propagationProcessor.GetOcclusionType();
 					OcclusionInfos const& occlusionInfos = m_propagationProcessor.GetOcclusionInfos();
 
-					for (auto const& info : occlusionInfos)
+					for (SOcclusionInfo const* const pInfo : occlusionInfos)
 					{
-						float const occlusion = info.occlusion;
+						float const occlusion = pInfo->occlusion;
 
 						CryFixedStringT<MaxMiscStringLength> debugText;
 
@@ -746,7 +751,7 @@ void CObject::DrawDebugInfo(
 								debugText.Format(
 									"%s(%s)",
 									Debug::g_szOcclusionTypes[static_cast<std::underlying_type<EOcclusionType>::type>(occlusionType)],
-									Debug::g_szOcclusionTypes[static_cast<std::underlying_type<EOcclusionType>::type>(info.occlusionTypeWhenAdaptive)]);
+									Debug::g_szOcclusionTypes[static_cast<std::underlying_type<EOcclusionType>::type>(pInfo->occlusionTypeWhenAdaptive)]);
 							}
 							else
 							{
@@ -769,7 +774,7 @@ void CObject::DrawDebugInfo(
 							"Occl: %3.2f | Type: %s | %s",
 							occlusion,
 							debugText.c_str(),
-							info.pListener->GetName());
+							pInfo->pListener->GetName());
 
 						screenPos.y += Debug::g_objectLineHeight;
 					}

@@ -4,6 +4,7 @@
 
 #if defined(CRY_AUDIO_USE_OCCLUSION)
 	#include "RayInfo.h"
+	#include "Common/PoolObject.h"
 	#include <CryAudio/IAudioInterfacesCommonData.h>
 
 	#if defined(CRY_AUDIO_USE_DEBUG_CODE)
@@ -39,75 +40,13 @@ struct SRayDebugInfo final
 };
 	#endif // CRY_AUDIO_USE_DEBUG_CODE
 
-struct SOcclusionInfo final
+struct SOcclusionInfo final : public CPoolObject<SOcclusionInfo, stl::PSyncNone>
 {
-	SOcclusionInfo(SOcclusionInfo const& rhs)
-		: pListener(rhs.pListener)
-		, lastQuerriedOcclusion(rhs.lastQuerriedOcclusion)
-		, occlusion(rhs.occlusion)
-		, currentListenerDistance(rhs.currentListenerDistance)
-		, rayIndex(rhs.rayIndex)
-		, raysOcclusion(rhs.raysOcclusion)
-		, raysInfo(rhs.raysInfo)
-		, occlusionTypeWhenAdaptive(rhs.occlusionTypeWhenAdaptive)
-	#if defined(CRY_AUDIO_USE_DEBUG_CODE)
-		, rayDebugInfos(rhs.rayDebugInfos)
-		, listenerOcclusionPlaneColor(rhs.listenerOcclusionPlaneColor)
-		, collisionSpherePositions(rhs.collisionSpherePositions)
-	#endif // CRY_AUDIO_USE_DEBUG_CODE
-	{}
-
-	SOcclusionInfo(SOcclusionInfo&& rhs)
-		: pListener(rhs.pListener)
-		, lastQuerriedOcclusion(rhs.lastQuerriedOcclusion)
-		, occlusion(rhs.occlusion)
-		, currentListenerDistance(rhs.currentListenerDistance)
-		, rayIndex(rhs.rayIndex)
-		, raysOcclusion(rhs.raysOcclusion)
-		, raysInfo(rhs.raysInfo)
-		, occlusionTypeWhenAdaptive(rhs.occlusionTypeWhenAdaptive)
-	#if defined(CRY_AUDIO_USE_DEBUG_CODE)
-		, rayDebugInfos(rhs.rayDebugInfos)
-		, listenerOcclusionPlaneColor(rhs.listenerOcclusionPlaneColor)
-		, collisionSpherePositions(rhs.collisionSpherePositions)
-	#endif // CRY_AUDIO_USE_DEBUG_CODE
-	{}
-
-	SOcclusionInfo& operator=(SOcclusionInfo const& rhs)
-	{
-		pListener = rhs.pListener;
-		lastQuerriedOcclusion = rhs.lastQuerriedOcclusion;
-		occlusion = rhs.occlusion;
-		currentListenerDistance = rhs.currentListenerDistance;
-		rayIndex = rhs.rayIndex;
-		raysOcclusion = rhs.raysOcclusion;
-		raysInfo = rhs.raysInfo;
-		occlusionTypeWhenAdaptive = rhs.occlusionTypeWhenAdaptive;
-	#if defined(CRY_AUDIO_USE_DEBUG_CODE)
-		rayDebugInfos = rhs.rayDebugInfos;
-		listenerOcclusionPlaneColor = rhs.listenerOcclusionPlaneColor;
-		collisionSpherePositions = rhs.collisionSpherePositions;
-	#endif // CRY_AUDIO_USE_DEBUG_CODE
-		return *this;
-	}
-
-	SOcclusionInfo& operator=(SOcclusionInfo&& rhs)
-	{
-		pListener = rhs.pListener;
-		lastQuerriedOcclusion = rhs.lastQuerriedOcclusion;
-		occlusion = rhs.occlusion;
-		currentListenerDistance = rhs.currentListenerDistance;
-		rayIndex = rhs.rayIndex;
-		raysOcclusion = std::move(rhs.raysOcclusion);
-		raysInfo = std::move(rhs.raysInfo);
-		occlusionTypeWhenAdaptive = rhs.occlusionTypeWhenAdaptive;
-	#if defined(CRY_AUDIO_USE_DEBUG_CODE)
-		rayDebugInfos = std::move(rhs.rayDebugInfos);
-		listenerOcclusionPlaneColor = std::move(rhs.listenerOcclusionPlaneColor);
-		collisionSpherePositions = std::move(rhs.collisionSpherePositions);
-	#endif // CRY_AUDIO_USE_DEBUG_CODE
-		return *this;
-	}
+	SOcclusionInfo() = delete;
+	SOcclusionInfo(SOcclusionInfo const&) = delete;
+	SOcclusionInfo(SOcclusionInfo&&) = delete;
+	SOcclusionInfo& operator=(SOcclusionInfo const&) = delete;
+	SOcclusionInfo& operator=(SOcclusionInfo&&) = delete;
 
 	explicit SOcclusionInfo(CListener* const pListener_)
 		: pListener(pListener_)
@@ -138,6 +77,6 @@ struct SOcclusionInfo final
 	#endif // CRY_AUDIO_USE_DEBUG_CODE
 };
 
-using OcclusionInfos = std::vector<SOcclusionInfo>;
+using OcclusionInfos = std::vector<SOcclusionInfo*>;
 }      // namespace CryAudio
 #endif // CRY_AUDIO_USE_OCCLUSION

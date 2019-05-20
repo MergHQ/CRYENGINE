@@ -861,6 +861,10 @@ bool CSystem::Initialize()
 
 		CObject::CreateAllocator(static_cast<uint16>(g_cvars.m_objectPoolSize));
 
+#if defined(CRY_AUDIO_USE_OCCLUSION)
+		SOcclusionInfo::CreateAllocator(static_cast<uint16>(g_cvars.m_objectPoolSize));
+#endif    // CRY_AUDIO_USE_OCCLUSION
+
 		if (g_cvars.m_triggerInstancePoolSize < 1)
 		{
 			g_cvars.m_triggerInstancePoolSize = 1;
@@ -951,6 +955,10 @@ void CSystem::Release()
 
 		CObject::FreeMemoryPool();
 		CTriggerInstance::FreeMemoryPool();
+
+#if defined(CRY_AUDIO_USE_OCCLUSION)
+		SOcclusionInfo::FreeMemoryPool();
+#endif    // CRY_AUDIO_USE_OCCLUSION
 
 		m_isInitialized = false;
 	}
@@ -3684,6 +3692,19 @@ void CSystem::HandleDrawDebug()
 					Debug::DrawMemoryPoolInfo(*pAuxGeom, posX, posY, memAlloc, allocator.GetCounts(), "Objects", m_objectPoolSize);
 				}
 			}
+
+	#if defined(CRY_AUDIO_USE_OCCLUSION)
+			{
+				auto& allocator = SOcclusionInfo::GetAllocator();
+				size_t const memAlloc = allocator.GetTotalMemory().nAlloc;
+				totalPoolSize += memAlloc;
+
+				if (drawDetailedMemInfo)
+				{
+					Debug::DrawMemoryPoolInfo(*pAuxGeom, posX, posY, memAlloc, allocator.GetCounts(), "Occlusion Infos", m_objectPoolSize);
+				}
+			}
+	#endif // CRY_AUDIO_USE_OCCLUSION
 
 			{
 				auto& allocator = CTriggerInstance::GetAllocator();
