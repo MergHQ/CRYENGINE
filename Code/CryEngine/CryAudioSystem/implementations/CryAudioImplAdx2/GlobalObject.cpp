@@ -15,20 +15,12 @@ namespace Impl
 namespace Adx2
 {
 //////////////////////////////////////////////////////////////////////////
-CGlobalObject::CGlobalObject()
+CGlobalObject::CGlobalObject(CListener* const pListener)
+	: CBaseObject(pListener)
 {
-	CRY_ASSERT_MESSAGE(g_pObject == nullptr, "g_pObject is not nullptr during %s", __FUNCTION__);
-	g_pObject = this;
-
 #if defined(CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE)
 	m_name = "Global Object";
 #endif  // CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE
-}
-
-//////////////////////////////////////////////////////////////////////////
-CGlobalObject::~CGlobalObject()
-{
-	g_pObject = nullptr;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -40,7 +32,7 @@ void CGlobalObject::SetTransformation(CTransformation const& transformation)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CGlobalObject::SetOcclusion(float const occlusion)
+void CGlobalObject::SetOcclusion(IListener* const pIListener, float const occlusion, uint8 const numRemainingListeners)
 {
 #if defined(CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE)
 	Cry::Audio::Log(ELogType::Error, "Trying to set occlusion and obstruction values on the global object!");

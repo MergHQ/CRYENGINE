@@ -22,7 +22,7 @@ void CGlobalObject::SetTransformation(CTransformation const& transformation)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CGlobalObject::SetOcclusion(float const occlusion)
+void CGlobalObject::SetOcclusion(IListener* const pIListener, float const occlusion, uint8 const numRemainingListeners)
 {
 #if defined(CRY_AUDIO_IMPL_WWISE_USE_DEBUG_CODE)
 	Cry::Audio::Log(ELogType::Error, "Trying to set occlusion and obstruction values on the global object!");

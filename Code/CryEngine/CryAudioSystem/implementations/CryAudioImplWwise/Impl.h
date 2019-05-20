@@ -64,15 +64,15 @@ public:
 	virtual void                    DestructEnvironmentConnection(IEnvironmentConnection const* const pIEnvironmentConnection) override;
 	virtual ISettingConnection*     ConstructSettingConnection(XmlNodeRef const& rootNode) override;
 	virtual void                    DestructSettingConnection(ISettingConnection const* const pISettingConnection) override;
-	virtual IObject*                ConstructGlobalObject() override;
-	virtual IObject*                ConstructObject(CTransformation const& transformation, char const* const szName = nullptr) override;
+	virtual IObject*                ConstructGlobalObject(IListeners const& listeners) override;
+	virtual IObject*                ConstructObject(CTransformation const& transformation, IListeners const& listeners, char const* const szName = nullptr) override;
 	virtual void                    DestructObject(IObject const* const pIObject) override;
-	virtual IListener*              ConstructListener(CTransformation const& transformation, char const* const szName = nullptr) override;
+	virtual IListener*              ConstructListener(CTransformation const& transformation, char const* const szName) override;
 	virtual void                    DestructListener(IListener* const pIListener) override;
 
 	// Below data is only used when CRY_AUDIO_IMPL_WWISE_USE_DEBUG_CODE is defined!
 	virtual void DrawDebugMemoryInfo(IRenderAuxGeom& auxGeom, float const posX, float& posY, bool const drawDetailedInfo) override;
-	virtual void DrawDebugInfoList(IRenderAuxGeom& auxGeom, float& posX, float posY, float const debugDistance, char const* const szTextFilter) const override;
+	virtual void DrawDebugInfoList(IRenderAuxGeom& auxGeom, float& posX, float posY, Vec3 const& camPos, float const debugDistance, char const* const szTextFilter) const override;
 	// ~CryAudio::Impl::IImpl
 
 #if defined(CRY_AUDIO_IMPL_WWISE_USE_DEBUG_CODE)

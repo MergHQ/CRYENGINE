@@ -49,8 +49,9 @@ public:
 	virtual void        RemoveRequestListener(void (*func)(SRequestInfo const* const), void* const pObjectToListenTo) override;
 	virtual void        ExternalUpdate() override;
 	virtual char const* GetConfigPath() const override;
-	virtual IListener*  CreateListener(CTransformation const& transformation, char const* const szName = nullptr) override;
+	virtual IListener*  CreateListener(CTransformation const& transformation, char const* const szName) override;
 	virtual void        ReleaseListener(IListener* const pIListener) override;
+	virtual IListener*  GetListener(ListenerId const id = DefaultListenerId) override;
 	virtual IObject*    CreateObject(SCreateObjectData const& objectData = SCreateObjectData::GetEmptyObject()) override;
 	virtual void        ReleaseObject(IObject* const pIObject) override;
 	virtual void        GetTriggerData(ControlId const triggerId, STriggerData& triggerData) override;

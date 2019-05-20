@@ -13,4 +13,5 @@ template<class T> ResourceSelector<T> AudioParameter(T& s)      { return Resourc
 template<class T> ResourceSelector<T> AudioEnvironment(T& s)    { return ResourceSelector<T>(s, "AudioEnvironment"); }
 template<class T> ResourceSelector<T> AudioPreloadRequest(T& s) { return ResourceSelector<T>(s, "AudioPreloadRequest"); }
 template<class T> ResourceSelector<T> AudioSetting(T& s)        { return ResourceSelector<T>(s, "AudioSetting"); }
+template<class T> ResourceSelector<T> AudioListener(T& s)       { return ResourceSelector<T>(s, "AudioListener"); }
 };

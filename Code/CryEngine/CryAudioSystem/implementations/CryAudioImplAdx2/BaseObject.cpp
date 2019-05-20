@@ -69,14 +69,17 @@ static void PlaybackEventCallback(void* pObject, CriAtomExPlaybackEvent playback
 }
 
 //////////////////////////////////////////////////////////////////////////
-CBaseObject::CBaseObject()
-	: m_flags(EObjectFlags::IsVirtual) // Set to virtual because voices always start in virtual state.
+CBaseObject::CBaseObject(CListener* const pListener)
+	: m_pListener(pListener)
+	, m_flags(EObjectFlags::IsVirtual) // Set to virtual because voices always start in virtual state.
 {
 	ZeroStruct(m_3dAttributes);
 	m_p3dSource = criAtomEx3dSource_Create(&g_3dSourceConfig, nullptr, 0);
 	m_pPlayer = criAtomExPlayer_Create(&g_playerConfig, nullptr, 0);
-	criAtomExPlayer_SetPlaybackEventCallback(m_pPlayer, PlaybackEventCallback, this);
 	CRY_ASSERT_MESSAGE(m_pPlayer != nullptr, "m_pPlayer is null pointer during %s", __FUNCTION__);
+	criAtomExPlayer_SetPlaybackEventCallback(m_pPlayer, PlaybackEventCallback, this);
+	criAtomExPlayer_Set3dListenerHn(m_pPlayer, m_pListener->GetHandle());
+	criAtomExPlayer_Set3dSourceHn(m_pPlayer, m_p3dSource);
 	m_cueInstances.reserve(2);
 }
 
@@ -200,6 +203,26 @@ ERequestStatus CBaseObject::SetName(char const* const szName)
 #endif  // CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE
 
 	return ERequestStatus::Success;
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CBaseObject::AddListener(IListener* const pIListener)
+{
+	m_pListener = static_cast<CListener*>(pIListener);
+
+	criAtomExPlayer_Stop(m_pPlayer);
+	criAtomExPlayer_Set3dListenerHn(m_pPlayer, m_pListener->GetHandle());
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CBaseObject::RemoveListener(IListener* const pIListener)
+{
+	if (m_pListener == static_cast<CListener*>(pIListener))
+	{
+		m_pListener = nullptr;
+		criAtomExPlayer_Stop(m_pPlayer);
+		criAtomExPlayer_Set3dListenerHn(m_pPlayer, nullptr);
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////

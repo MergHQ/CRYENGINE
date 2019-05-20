@@ -19,11 +19,11 @@ public:
 	CGlobalObject& operator=(CGlobalObject const&) = delete;
 	CGlobalObject& operator=(CGlobalObject&&) = delete;
 
-	CGlobalObject();
-	virtual ~CGlobalObject() override;
+	CGlobalObject(int const listenerMask, Listeners const& listeners);
+	virtual ~CGlobalObject() override = default;
 
 	// CryAudio::Impl::IObject
-	virtual void SetOcclusion(float const occlusion) override;
+	virtual void SetOcclusion(IListener* const pIListener, float const occlusion, uint8 const numRemainingListeners) override;
 	virtual void SetOcclusionType(EOcclusionType const occlusionType) override;
 	virtual void ToggleFunctionality(EObjectFunctionality const type, bool const enable) override;
 	// ~CryAudio::Impl::IObject

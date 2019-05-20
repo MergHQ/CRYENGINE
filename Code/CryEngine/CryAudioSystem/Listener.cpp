@@ -5,10 +5,12 @@
 #include "Common.h"
 #include "System.h"
 #include "ListenerRequestData.h"
+#include "Managers.h"
+#include "ListenerManager.h"
 #include "Common/IListener.h"
 
 #if defined(CRY_AUDIO_USE_DEBUG_CODE)
-	#include "GlobalObject.h"
+	#include "Common/Logger.h"
 #endif // CRY_AUDIO_USE_DEBUG_CODE
 
 namespace CryAudio
@@ -34,7 +36,6 @@ void CListener::HandleSetTransformation(CTransformation const& transformation)
 
 #if defined(CRY_AUDIO_USE_DEBUG_CODE)
 	m_transformation = transformation;
-	g_previewObject.HandleSetTransformation(transformation);
 #endif // CRY_AUDIO_USE_DEBUG_CODE
 }
 
@@ -48,9 +49,16 @@ CTransformation const& CListener::GetTransformation() const
 void CListener::SetName(char const* const szName, SRequestUserData const& userData /*= SRequestUserData::GetEmptyObject()*/)
 {
 #if defined(CRY_AUDIO_USE_DEBUG_CODE)
-	SListenerRequestData<EListenerRequestType::SetName> requestData(szName, this);
-	CRequest const request(&requestData, userData);
-	g_system.PushRequest(request);
+	if (m_isUserCreated && (_stricmp(szName, m_name.c_str()) != 0))
+	{
+		SListenerRequestData<EListenerRequestType::SetName> requestData(szName, this);
+		CRequest const request(&requestData, userData);
+		g_system.PushRequest(request);
+	}
+	else
+	{
+		Cry::Audio::Log(ELogType::Error, "Cannot change name of listener \"%s\" during %s", m_name.c_str(), __FUNCTION__);
+	}
 #endif // CRY_AUDIO_USE_DEBUG_CODE
 }
 
@@ -58,8 +66,9 @@ void CListener::SetName(char const* const szName, SRequestUserData const& userDa
 //////////////////////////////////////////////////////////////////////////
 void CListener::HandleSetName(char const* const szName)
 {
-	m_name = szName;
-	m_pImplData->SetName(m_name);
+	g_listenerManager.GetUniqueListenerName(szName, m_name);
+	m_id = StringToId(m_name.c_str());
+	m_pImplData->SetName(m_name.c_str());
 }
 #endif // CRY_AUDIO_USE_DEBUG_CODE
 }      // namespace CryAudio

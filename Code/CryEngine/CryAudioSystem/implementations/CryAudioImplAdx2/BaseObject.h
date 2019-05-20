@@ -16,6 +16,7 @@ namespace Adx2
 {
 class CCue;
 class CCueInstance;
+class CListener;
 
 enum class EObjectFlags : EnumFlagsType
 {
@@ -45,6 +46,8 @@ public:
 	virtual CTransformation const& GetTransformation() const override                                { return CTransformation::GetEmptyObject(); }
 	virtual void                   StopAllTriggers() override;
 	virtual ERequestStatus         SetName(char const* const szName) override;
+	virtual void                   AddListener(IListener* const pIListener) override;
+	virtual void                   RemoveListener(IListener* const pIListener) override;
 	virtual void                   ToggleFunctionality(EObjectFunctionality const type, bool const enable) override {}
 
 	// Below data is only used when CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE is defined!
@@ -61,20 +64,20 @@ public:
 	void                PausePlayer(CriBool const shouldPause);
 
 	CriAtomExPlayerHn   GetPlayer() const       { return m_pPlayer; }
-	CriAtomEx3dSourceHn Get3dSource() const     { return m_p3dSource; }
-
 	CueInstances const& GetCueInstances() const { return m_cueInstances; }
 
 #if defined(CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE)
-	char const* GetName() const { return m_name.c_str(); }
+	CListener*  GetListener() const { return m_pListener; }
+	char const* GetName() const     { return m_name.c_str(); }
 #endif  // CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE
 
 protected:
 
-	CBaseObject();
+	CBaseObject(CListener* const pListener);
 
 	void UpdateVirtualState(CCueInstance* const pCueInstance);
 
+	CListener*          m_pListener;
 	EObjectFlags        m_flags;
 	S3DAttributes       m_3dAttributes;
 	CriAtomEx3dSourceHn m_p3dSource;

@@ -275,7 +275,7 @@ public:
 		if (enableAudio && m_pIAudioListener == nullptr)
 		{
 			static const Matrix34 identityMatrix(IDENTITY);
-			m_pIAudioListener = gEnv->pAudioSystem->CreateListener(identityMatrix);
+			m_pIAudioListener = gEnv->pAudioSystem->CreateListener(identityMatrix, "AnimEventPlayer");
 		}
 		else if (m_pIAudioListener != nullptr)
 		{

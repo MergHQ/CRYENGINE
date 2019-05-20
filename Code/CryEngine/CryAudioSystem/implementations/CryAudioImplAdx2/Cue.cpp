@@ -29,10 +29,6 @@ ETriggerResult CCue::Execute(IObject* const pIObject, TriggerInstanceId const tr
 	case EActionType::Start:
 		{
 			CriAtomExPlayerHn const pPlayer = pBaseObject->GetPlayer();
-
-			criAtomExPlayer_Set3dListenerHn(pPlayer, g_pListener->GetHandle());
-			criAtomExPlayer_Set3dSourceHn(pPlayer, pBaseObject->Get3dSource());
-
 			auto const iter = g_acbHandles.find(m_cueSheetId);
 
 			if (iter != g_acbHandles.end())

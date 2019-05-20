@@ -27,6 +27,8 @@ enum class EObjectRequestType : EnumFlagsType
 	SetCurrentEnvironments,
 	SetEnvironment,
 	ProcessPhysicsRay,
+	AddListener,
+	RemoveListener,
 	ToggleAbsoluteVelocityTracking,
 	ToggleRelativeVelocityTracking,
 #if defined(CRY_AUDIO_USE_DEBUG_CODE)
@@ -266,6 +268,44 @@ struct SObjectRequestData<EObjectRequestType::ProcessPhysicsRay> final : public 
 	virtual ~SObjectRequestData() override = default;
 
 	CRayInfo& rayInfo;
+};
+
+//////////////////////////////////////////////////////////////////////////
+template<>
+struct SObjectRequestData<EObjectRequestType::AddListener> final : public SObjectRequestDataBase
+{
+	explicit SObjectRequestData(CObject* const pObject_, ListenerId const listenerId_)
+		: SObjectRequestDataBase(EObjectRequestType::AddListener, pObject_)
+		, listenerId(listenerId_)
+	{}
+
+	explicit SObjectRequestData(SObjectRequestData<EObjectRequestType::AddListener> const* const pORData)
+		: SObjectRequestDataBase(EObjectRequestType::AddListener, pORData->pObject)
+		, listenerId(pORData->listenerId)
+	{}
+
+	virtual ~SObjectRequestData() override = default;
+
+	ListenerId const listenerId;
+};
+
+//////////////////////////////////////////////////////////////////////////
+template<>
+struct SObjectRequestData<EObjectRequestType::RemoveListener> final : public SObjectRequestDataBase
+{
+	explicit SObjectRequestData(CObject* const pObject_, ListenerId const listenerId_)
+		: SObjectRequestDataBase(EObjectRequestType::RemoveListener, pObject_)
+		, listenerId(listenerId_)
+	{}
+
+	explicit SObjectRequestData(SObjectRequestData<EObjectRequestType::RemoveListener> const* const pORData)
+		: SObjectRequestDataBase(EObjectRequestType::RemoveListener, pORData->pObject)
+		, listenerId(pORData->listenerId)
+	{}
+
+	virtual ~SObjectRequestData() override = default;
+
+	ListenerId const listenerId;
 };
 
 //////////////////////////////////////////////////////////////////////////

@@ -18,17 +18,20 @@ namespace Wwise
 //////////////////////////////////////////////////////////////////////////
 CBaseObject::CBaseObject(
 	AkGameObjectID const id,
+	ListenerInfos const& listenerInfos,
 	char const* const szName /*= nullptr*/,
 	Vec3 const& position /*= { 0.0f, 0.0f, 0.0f }*/)
 	: m_id(id)
 	, m_flags(EObjectFlags::None)
 	, m_position(position)
-	, m_distanceToListener(0.0f)
+	, m_shortestDistanceToListener(0.0f)
+	, m_listenerInfos(listenerInfos)
 #if defined(CRY_AUDIO_IMPL_WWISE_USE_DEBUG_CODE)
 	, m_name(szName)
 #endif  // CRY_AUDIO_IMPL_WWISE_USE_DEBUG_CODE
 {
 	m_eventInstances.reserve(2);
+	SetListeners();
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -68,7 +71,7 @@ void CBaseObject::Update(float const deltaTime)
 		{
 #if defined(CRY_AUDIO_IMPL_WWISE_USE_DEBUG_CODE)
 			// Always update in production code for debug draw.
-			pEventInstance->UpdateVirtualState(m_distanceToListener);
+			pEventInstance->UpdateVirtualState(m_shortestDistanceToListener);
 
 			if (pEventInstance->GetState() != EEventInstanceState::Virtual)
 			{
@@ -77,7 +80,7 @@ void CBaseObject::Update(float const deltaTime)
 #else
 			if (((m_flags& EObjectFlags::IsVirtual) != 0) && ((m_flags& EObjectFlags::UpdateVirtualStates) != 0))
 			{
-				pEventInstance->UpdateVirtualState(m_distanceToListener);
+				pEventInstance->UpdateVirtualState(m_shortestDistanceToListener);
 
 				if (pEventInstance->GetState() != EEventInstanceState::Virtual)
 				{
@@ -107,7 +110,7 @@ void CBaseObject::AddEventInstance(CEventInstance* const pEventInstance)
 {
 	SetDistanceToListener();
 
-	pEventInstance->UpdateVirtualState(m_distanceToListener);
+	pEventInstance->UpdateVirtualState(m_shortestDistanceToListener);
 
 	if ((m_flags& EObjectFlags::IsVirtual) != 0)
 	{
@@ -154,6 +157,49 @@ ERequestStatus CBaseObject::SetName(char const* const szName)
 }
 
 //////////////////////////////////////////////////////////////////////////
+void CBaseObject::AddListener(IListener* const pIListener)
+{
+	auto const pListener = static_cast<CListener*>(pIListener);
+	float const distance = m_position.GetDistance(pListener->GetPosition());
+
+	m_listenerInfos.emplace_back(pListener, distance);
+
+	SetListeners();
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CBaseObject::RemoveListener(IListener* const pIListener)
+{
+	auto const pListener = static_cast<CListener*>(pIListener);
+	bool wasRemoved = false;
+
+	auto iter(m_listenerInfos.begin());
+	auto const iterEnd(m_listenerInfos.cend());
+
+	for (; iter != iterEnd; ++iter)
+	{
+		SListenerInfo const& info = *iter;
+
+		if (info.pListener == pListener)
+		{
+			if (iter != (iterEnd - 1))
+			{
+				(*iter) = m_listenerInfos.back();
+			}
+
+			m_listenerInfos.pop_back();
+			wasRemoved = true;
+			break;
+		}
+	}
+
+	if (wasRemoved)
+	{
+		SetListeners();
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
 void CBaseObject::StopEvent(AkUniqueID const eventId)
 {
 	for (auto const pEventInstance : m_eventInstances)
@@ -168,8 +214,60 @@ void CBaseObject::StopEvent(AkUniqueID const eventId)
 //////////////////////////////////////////////////////////////////////////
 void CBaseObject::SetDistanceToListener()
 {
-	m_distanceToListener = m_position.GetDistance(g_pListener->GetPosition());
+	m_shortestDistanceToListener = std::numeric_limits<float>::max();
+
+	for (auto& listenerInfo : m_listenerInfos)
+	{
+		listenerInfo.distance = m_position.GetDistance(listenerInfo.pListener->GetPosition());
+		m_shortestDistanceToListener = std::min(m_shortestDistanceToListener, listenerInfo.distance);
+	}
 }
-} // namespace Wwise
-} // namespace Impl
-} // namespace CryAudio
+
+//////////////////////////////////////////////////////////////////////////
+void CBaseObject::SetListeners()
+{
+	size_t const numListeners = m_listenerInfos.size();
+	AkGameObjectID* const listenerIds = new AkGameObjectID[numListeners];
+
+	for (size_t i = 0; i < numListeners; ++i)
+	{
+		AkGameObjectID const id = m_listenerInfos[i].pListener->GetId();
+		listenerIds[i] = id;
+	}
+
+	AK::SoundEngine::SetListeners(m_id, listenerIds, static_cast<AkUInt32>(numListeners));
+	delete[] listenerIds;
+
+#if defined(CRY_AUDIO_IMPL_WWISE_USE_DEBUG_CODE)
+	UpdateListenerNames();
+#endif  // CRY_AUDIO_IMPL_WWISE_USE_DEBUG_CODE
+}
+
+#if defined(CRY_AUDIO_IMPL_WWISE_USE_DEBUG_CODE)
+//////////////////////////////////////////////////////////////////////////
+void CBaseObject::UpdateListenerNames()
+{
+	m_listenerNames.clear();
+	size_t const numListeners = m_listenerInfos.size();
+
+	if (numListeners != 0)
+	{
+		for (size_t i = 0; i < numListeners; ++i)
+		{
+			m_listenerNames += m_listenerInfos[i].pListener->GetName();
+
+			if (i != (numListeners - 1))
+			{
+				m_listenerNames += ", ";
+			}
+		}
+	}
+	else
+	{
+		m_listenerNames = "No Listener!";
+	}
+}
+#endif // CRY_AUDIO_IMPL_WWISE_USE_DEBUG_CODE
+}      // namespace Wwise
+}      // namespace Impl
+}      // namespace CryAudio

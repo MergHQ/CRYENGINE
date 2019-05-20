@@ -6,6 +6,7 @@
 #include "Managers.h"
 #include "System.h"
 #include "ListenerManager.h"
+#include "Listener.h"
 #include "Request.h"
 #include "Environment.h"
 #include "Parameter.h"
@@ -210,7 +211,13 @@ void CObject::Update(float const deltaTime)
 
 	if (m_propagationProcessor.HasNewOcclusionValues())
 	{
-		m_pIObject->SetOcclusion(m_propagationProcessor.GetOcclusion());
+		auto numRemainingListeners = static_cast<uint8>(m_listeners.size());
+
+		for (auto const pListener : m_listeners)
+		{
+			m_pIObject->SetOcclusion(pListener->GetImplData(), m_propagationProcessor.GetOcclusion(pListener), numRemainingListeners);
+			--numRemainingListeners;
+		}
 	}
 #endif // CRY_AUDIO_USE_OCCLUSION
 
@@ -224,11 +231,79 @@ void CObject::HandleSetTransformation(CTransformation const& transformation)
 	m_pIObject->SetTransformation(transformation);
 }
 
+//////////////////////////////////////////////////////////////////////////
+void CObject::HandleAddListener(ListenerId const id)
+{
+	bool hasListener = false;
+
+	for (auto const pListener : m_listeners)
+	{
+		if (pListener->GetId() == id)
+		{
+			hasListener = true;
+			break;
+		}
+	}
+
+	if (!hasListener)
+	{
+		CListener* const pListener = g_listenerManager.GetListener(id);
+		m_listeners.push_back(pListener);
+		m_pIObject->AddListener(pListener->GetImplData());
+
+#if defined(CRY_AUDIO_USE_OCCLUSION)
+		m_propagationProcessor.AddListener(pListener);
+#endif // CRY_AUDIO_USE_OCCLUSION
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CObject::HandleRemoveListener(ListenerId const id)
+{
+	auto iter(m_listeners.begin());
+	auto const iterEnd(m_listeners.cend());
+
+	for (; iter != iterEnd; ++iter)
+	{
+		CListener* const pListener = *iter;
+
+		if (pListener->GetId() == id)
+		{
+			m_pIObject->RemoveListener(pListener->GetImplData());
+
+#if defined(CRY_AUDIO_USE_OCCLUSION)
+			m_propagationProcessor.RemoveListener(pListener);
+#endif  // CRY_AUDIO_USE_OCCLUSION
+
+			if (iter != (iterEnd - 1))
+			{
+				(*iter) = m_listeners.back();
+			}
+
+			m_listeners.pop_back();
+			break;
+		}
+	}
+
+#if defined(CRY_AUDIO_USE_DEBUG_CODE)
+	if (m_listeners.empty())
+	{
+		Cry::Audio::Log(ELogType::Warning, R"(Object "%s" has no listener!)", m_name.c_str());
+	}
+#endif  // CRY_AUDIO_USE_DEBUG_CODE
+}
+
 #if defined(CRY_AUDIO_USE_OCCLUSION)
 ///////////////////////////////////////////////////////////////////////////
 void CObject::SetOcclusion(float const occlusion)
 {
-	m_pIObject->SetOcclusion(occlusion);
+	auto numRemainingListeners = static_cast<uint8>(m_listeners.size());
+
+	for (auto const pListener : m_listeners)
+	{
+		m_pIObject->SetOcclusion(pListener->GetImplData(), occlusion, numRemainingListeners);
+		--numRemainingListeners;
+	}
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -259,9 +334,10 @@ void CObject::ReleasePendingRays()
 #endif // CRY_AUDIO_USE_OCCLUSION
 
 //////////////////////////////////////////////////////////////////////////
-void CObject::Init(Impl::IObject* const pIObject)
+void CObject::Init(Impl::IObject* const pIObject, Listeners const& listeners)
 {
 	m_pIObject = pIObject;
+	m_listeners = listeners;
 
 #if defined(CRY_AUDIO_USE_DEBUG_CODE)
 	CRY_ASSERT_MESSAGE(m_pIObject != nullptr, "m_pIObject is nullptr on object \"%s\" during %s", m_name.c_str(), __FUNCTION__);
@@ -314,6 +390,7 @@ void CObject::DrawDebugInfo(
 {
 	Vec3 const& position = m_transformation.GetPosition();
 	Vec3 screenPos(ZERO);
+	float distance = 0.0f;
 
 	if (IRenderer* const pRenderer = gEnv->pRenderer)
 	{
@@ -322,341 +399,343 @@ void CObject::DrawDebugInfo(
 
 		screenPos.x = screenPos.x * 0.01f * camera.GetViewSurfaceX();
 		screenPos.y = screenPos.y * 0.01f * camera.GetViewSurfaceZ();
+
+		distance = position.GetDistance(camera.GetPosition());
 	}
 	else
 	{
 		screenPos.z = -1.0f;
 	}
 
-	if ((screenPos.z >= 0.0f) && (screenPos.z <= 1.0f))
+	if ((screenPos.z >= 0.0f) && (screenPos.z <= 1.0f) && ((g_cvars.m_debugDistance <= 0.0f) || ((g_cvars.m_debugDistance > 0.0f) && (distance <= g_cvars.m_debugDistance))))
 	{
-		float const distance = position.GetDistance(g_listenerManager.GetActiveListenerTransformation().GetPosition());
+		bool const drawSphere = (g_cvars.m_drawDebug & Debug::EDrawFilter::Spheres) != 0;
+		bool const drawLabel = (g_cvars.m_drawDebug & Debug::EDrawFilter::ObjectLabel) != 0;
+		bool const drawTriggers = (g_cvars.m_drawDebug & Debug::EDrawFilter::ObjectTriggers) != 0;
+		bool const drawStates = (g_cvars.m_drawDebug & Debug::EDrawFilter::ObjectStates) != 0;
+		bool const drawParameters = (g_cvars.m_drawDebug & Debug::EDrawFilter::ObjectParameters) != 0;
+		bool const drawEnvironments = (g_cvars.m_drawDebug & Debug::EDrawFilter::ObjectEnvironments) != 0;
+		bool const drawDistance = (g_cvars.m_drawDebug & Debug::EDrawFilter::ObjectDistance) != 0;
+	#if defined(CRY_AUDIO_USE_OCCLUSION)
+		bool const drawOcclusionRayLabel = (g_cvars.m_drawDebug & Debug::EDrawFilter::OcclusionRayLabels) != 0;
+		bool const drawOcclusionRayOffset = (g_cvars.m_drawDebug & Debug::EDrawFilter::OcclusionRayOffset) != 0;
+		bool const drawOcclusionRaysOrSpheres = ((g_cvars.m_drawDebug & Debug::EDrawFilter::OcclusionRays) != 0) ||
+		                                        ((g_cvars.m_drawDebug & Debug::EDrawFilter::OcclusionCollisionSpheres) != 0);
+		bool const drawOcclusionListenerPlane = (g_cvars.m_drawDebug & Debug::EDrawFilter::OcclusionListenerPlane) != 0;
+	#endif // CRY_AUDIO_USE_OCCLUSION
+		bool const filterAllObjectInfo = (g_cvars.m_drawDebug & Debug::EDrawFilter::FilterAllObjectInfo) != 0;
 
-		if ((g_cvars.m_debugDistance <= 0.0f) || ((g_cvars.m_debugDistance > 0.0f) && (distance <= g_cvars.m_debugDistance)))
+		// Check if any trigger matches text filter.
+		bool doesTriggerMatchFilter = false;
+		std::vector<CryFixedStringT<MaxMiscStringLength>> triggerInfo;
+
+		if ((drawTriggers && !m_triggerInstances.empty()) || filterAllObjectInfo)
 		{
-			bool const drawSphere = (g_cvars.m_drawDebug & Debug::EDrawFilter::Spheres) != 0;
-			bool const drawLabel = (g_cvars.m_drawDebug & Debug::EDrawFilter::ObjectLabel) != 0;
-			bool const drawTriggers = (g_cvars.m_drawDebug & Debug::EDrawFilter::ObjectTriggers) != 0;
-			bool const drawStates = (g_cvars.m_drawDebug & Debug::EDrawFilter::ObjectStates) != 0;
-			bool const drawParameters = (g_cvars.m_drawDebug & Debug::EDrawFilter::ObjectParameters) != 0;
-			bool const drawEnvironments = (g_cvars.m_drawDebug & Debug::EDrawFilter::ObjectEnvironments) != 0;
-			bool const drawDistance = (g_cvars.m_drawDebug & Debug::EDrawFilter::ObjectDistance) != 0;
-	#if defined(CRY_AUDIO_USE_OCCLUSION)
-			bool const drawOcclusionRayLabel = (g_cvars.m_drawDebug & Debug::EDrawFilter::OcclusionRayLabels) != 0;
-			bool const drawOcclusionRayOffset = (g_cvars.m_drawDebug & Debug::EDrawFilter::OcclusionRayOffset) != 0;
-			bool const drawOcclusionRaysOrSpheres = ((g_cvars.m_drawDebug & Debug::EDrawFilter::OcclusionRays) != 0) ||
-			                                        ((g_cvars.m_drawDebug & Debug::EDrawFilter::OcclusionCollisionSpheres) != 0);
-			bool const drawOcclusionListenerPlane = (g_cvars.m_drawDebug & Debug::EDrawFilter::OcclusionListenerPlane) != 0;
-	#endif // CRY_AUDIO_USE_OCCLUSION
-			bool const filterAllObjectInfo = (g_cvars.m_drawDebug & Debug::EDrawFilter::FilterAllObjectInfo) != 0;
+			Debug::TriggerCounts triggerCounts;
 
-			// Check if any trigger matches text filter.
-			bool doesTriggerMatchFilter = false;
-			std::vector<CryFixedStringT<MaxMiscStringLength>> triggerInfo;
-
-			if ((drawTriggers && !m_triggerInstances.empty()) || filterAllObjectInfo)
+			for (auto const& triggerInstancePair : m_triggerInstances)
 			{
-				Debug::TriggerCounts triggerCounts;
-
-				for (auto const& triggerInstancePair : m_triggerInstances)
-				{
-					++(triggerCounts[triggerInstancePair.second->GetTriggerId()]);
-				}
-
-				for (auto const& triggerCountsPair : triggerCounts)
-				{
-					CTrigger const* const pTrigger = stl::find_in_map(g_triggers, triggerCountsPair.first, nullptr);
-
-					if (pTrigger != nullptr)
-					{
-						char const* const szTriggerName = pTrigger->GetName();
-
-						if (!isTextFilterDisabled)
-						{
-							CryFixedStringT<MaxControlNameLength> lowerCaseTriggerName(szTriggerName);
-							lowerCaseTriggerName.MakeLower();
-
-							if (lowerCaseTriggerName.find(lowerCaseSearchString) != CryFixedStringT<MaxControlNameLength>::npos)
-							{
-								doesTriggerMatchFilter = true;
-							}
-						}
-
-						CryFixedStringT<MaxMiscStringLength> debugText;
-						uint8 const numInstances = triggerCountsPair.second;
-
-						if (numInstances == 1)
-						{
-							debugText.Format("%s\n", szTriggerName);
-						}
-						else
-						{
-							debugText.Format("%s: %u\n", szTriggerName, numInstances);
-						}
-
-						triggerInfo.emplace_back(debugText);
-					}
-				}
+				++(triggerCounts[triggerInstancePair.second->GetTriggerId()]);
 			}
 
-			// Check if any state or switch matches text filter.
-			bool doesStateSwitchMatchFilter = false;
-			std::map<CSwitch const* const, CSwitchState const* const> switchStateInfo;
-
-			if ((drawStates && !m_switchStates.empty()) || filterAllObjectInfo)
+			for (auto const& triggerCountsPair : triggerCounts)
 			{
-				for (auto const& switchStatePair : m_switchStates)
+				CTrigger const* const pTrigger = stl::find_in_map(g_triggers, triggerCountsPair.first, nullptr);
+
+				if (pTrigger != nullptr)
 				{
-					CSwitch const* const pSwitch = stl::find_in_map(g_switches, switchStatePair.first, nullptr);
+					char const* const szTriggerName = pTrigger->GetName();
 
-					if (pSwitch != nullptr)
+					if (!isTextFilterDisabled)
 					{
-						CSwitchState const* const pSwitchState = stl::find_in_map(pSwitch->GetStates(), switchStatePair.second, nullptr);
+						CryFixedStringT<MaxControlNameLength> lowerCaseTriggerName(szTriggerName);
+						lowerCaseTriggerName.MakeLower();
 
-						if (pSwitchState != nullptr)
+						if (lowerCaseTriggerName.find(lowerCaseSearchString) != CryFixedStringT<MaxControlNameLength>::npos)
 						{
-							if (!isTextFilterDisabled)
-							{
-								char const* const szSwitchName = pSwitch->GetName();
-								CryFixedStringT<MaxControlNameLength> lowerCaseSwitchName(szSwitchName);
-								lowerCaseSwitchName.MakeLower();
-								char const* const szStateName = pSwitchState->GetName();
-								CryFixedStringT<MaxControlNameLength> lowerCaseStateName(szStateName);
-								lowerCaseStateName.MakeLower();
-
-								if ((lowerCaseSwitchName.find(lowerCaseSearchString) != CryFixedStringT<MaxControlNameLength>::npos) ||
-								    (lowerCaseStateName.find(lowerCaseSearchString) != CryFixedStringT<MaxControlNameLength>::npos))
-								{
-									doesStateSwitchMatchFilter = true;
-								}
-							}
-
-							switchStateInfo.emplace(pSwitch, pSwitchState);
+							doesTriggerMatchFilter = true;
 						}
 					}
-				}
-			}
 
-			// Check if any parameter matches text filter.
-			bool doesParameterMatchFilter = false;
-			std::map<char const* const, float const> parameterInfo;
-
-			if ((drawParameters && !m_parameters.empty()) || filterAllObjectInfo)
-			{
-				for (auto const& parameterPair : m_parameters)
-				{
-					CParameter const* const pParameter = stl::find_in_map(g_parameters, parameterPair.first, nullptr);
-
-					if (pParameter != nullptr)
-					{
-						char const* const szParameterName = pParameter->GetName();
-
-						if (!isTextFilterDisabled)
-						{
-							CryFixedStringT<MaxControlNameLength> lowerCaseParameterName(szParameterName);
-							lowerCaseParameterName.MakeLower();
-
-							if (lowerCaseParameterName.find(lowerCaseSearchString) != CryFixedStringT<MaxControlNameLength>::npos)
-							{
-								doesParameterMatchFilter = true;
-							}
-						}
-
-						parameterInfo.emplace(szParameterName, parameterPair.second);
-					}
-				}
-			}
-
-			// Check if any environment matches text filter.
-			bool doesEnvironmentMatchFilter = false;
-			std::map<char const* const, float const> environmentInfo;
-
-			if ((drawEnvironments && !m_environments.empty()) || filterAllObjectInfo)
-			{
-				for (auto const& environmentPair : m_environments)
-				{
-					if (environmentPair.second > 0.0f)
-					{
-						CEnvironment const* const pEnvironment = stl::find_in_map(g_environments, environmentPair.first, nullptr);
-
-						if (pEnvironment != nullptr)
-						{
-							char const* const szEnvironmentName = pEnvironment->GetName();
-
-							if (!isTextFilterDisabled)
-							{
-								CryFixedStringT<MaxControlNameLength> lowerCaseEnvironmentName(szEnvironmentName);
-								lowerCaseEnvironmentName.MakeLower();
-
-								if (lowerCaseEnvironmentName.find(lowerCaseSearchString) != CryFixedStringT<MaxControlNameLength>::npos)
-								{
-									doesEnvironmentMatchFilter = true;
-								}
-							}
-
-							environmentInfo.emplace(szEnvironmentName, environmentPair.second);
-						}
-					}
-				}
-			}
-
-			// Check if object name matches text filter.
-			bool doesObjectNameMatchFilter = false;
-
-	#if defined(CRY_AUDIO_USE_OCCLUSION)
-			if (!isTextFilterDisabled &&
-			    (drawSphere ||
-			     drawLabel ||
-			     drawDistance ||
-			     drawOcclusionRayLabel ||
-			     drawOcclusionRayOffset ||
-			     drawOcclusionRaysOrSpheres ||
-			     drawOcclusionListenerPlane ||
-			     filterAllObjectInfo))
-	#else
-			if (!isTextFilterDisabled && (drawSphere || drawLabel || drawDistance || filterAllObjectInfo))
-	#endif // CRY_AUDIO_USE_OCCLUSION
-			{
-				CryFixedStringT<MaxControlNameLength> lowerCaseObjectName(m_name.c_str());
-				lowerCaseObjectName.MakeLower();
-				doesObjectNameMatchFilter = (lowerCaseObjectName.find(lowerCaseSearchString) != CryFixedStringT<MaxControlNameLength>::npos);
-			}
-
-			bool const hasActiveData = (m_flags& EObjectFlags::Active) != 0;
-			bool const isVirtual = (m_flags& EObjectFlags::Virtual) != 0;
-			bool const canDraw = (g_cvars.m_hideInactiveObjects == 0) || ((g_cvars.m_hideInactiveObjects != 0) && hasActiveData && !isVirtual);
-
-			if (canDraw)
-			{
-				if (drawSphere && (isTextFilterDisabled || doesObjectNameMatchFilter))
-				{
-					auxGeom.DrawSphere(
-						position,
-						Debug::g_objectRadiusPositionSphere,
-						isVirtual ? Debug::s_globalColorVirtual : Debug::s_objectColorPositionSphere);
-				}
-
-				if (drawLabel && (isTextFilterDisabled || doesObjectNameMatchFilter))
-				{
-					auxGeom.Draw2dLabel(
-						screenPos.x,
-						screenPos.y,
-						Debug::g_objectFontSize,
-						isVirtual ? Debug::s_globalColorVirtual : (hasActiveData ? Debug::s_objectColorActive : Debug::s_globalColorInactive),
-						false,
-						"%s", m_name.c_str());
-
-					screenPos.y += Debug::g_objectLineHeight;
-				}
-
-				if (drawTriggers && (isTextFilterDisabled || doesTriggerMatchFilter))
-				{
-					for (auto const& debugText : triggerInfo)
-					{
-						auxGeom.Draw2dLabel(
-							screenPos.x,
-							screenPos.y,
-							Debug::g_objectFontSize,
-							isVirtual ? Debug::s_globalColorVirtual : Debug::s_objectColorTrigger,
-							false,
-							"%s", debugText.c_str());
-
-						screenPos.y += Debug::g_objectLineHeight;
-					}
-				}
-
-				if (drawStates && (isTextFilterDisabled || doesStateSwitchMatchFilter))
-				{
-					for (auto const& switchStatePair : switchStateInfo)
-					{
-						auto const pSwitch = switchStatePair.first;
-						auto const pSwitchState = switchStatePair.second;
-
-						Debug::CStateDrawData& drawData = m_stateDrawInfo.emplace(std::piecewise_construct, std::forward_as_tuple(pSwitch->GetId()), std::forward_as_tuple(pSwitchState->GetId())).first->second;
-						drawData.Update(pSwitchState->GetId());
-						ColorF const switchTextColor = { 0.8f, drawData.m_currentSwitchColor, 0.6f };
-
-						auxGeom.Draw2dLabel(
-							screenPos.x,
-							screenPos.y,
-							Debug::g_objectFontSize,
-							isVirtual ? Debug::s_globalColorVirtual : switchTextColor,
-							false,
-							"%s: %s\n",
-							pSwitch->GetName(),
-							pSwitchState->GetName());
-
-						screenPos.y += Debug::g_objectLineHeight;
-					}
-				}
-
-				if (drawParameters && (isTextFilterDisabled || doesParameterMatchFilter))
-				{
-					for (auto const& parameterPair : parameterInfo)
-					{
-						auxGeom.Draw2dLabel(
-							screenPos.x,
-							screenPos.y,
-							Debug::g_objectFontSize,
-							isVirtual ? Debug::s_globalColorVirtual : Debug::s_objectColorParameter,
-							false,
-							"%s: %2.2f\n",
-							parameterPair.first,
-							parameterPair.second);
-
-						screenPos.y += Debug::g_objectLineHeight;
-					}
-				}
-
-				if (drawEnvironments && (isTextFilterDisabled || doesEnvironmentMatchFilter))
-				{
-					for (auto const& environmentPair : environmentInfo)
-					{
-						auxGeom.Draw2dLabel(
-							screenPos.x,
-							screenPos.y,
-							Debug::g_objectFontSize,
-							isVirtual ? Debug::s_globalColorVirtual : Debug::s_objectColorEnvironment,
-							false,
-							"%s: %.2f\n",
-							environmentPair.first,
-							environmentPair.second);
-
-						screenPos.y += Debug::g_objectLineHeight;
-					}
-				}
-
-				if (drawDistance && (isTextFilterDisabled || doesObjectNameMatchFilter))
-				{
 					CryFixedStringT<MaxMiscStringLength> debugText;
+					uint8 const numInstances = triggerCountsPair.second;
 
-					if (m_maxRadius > 0.0f)
+					if (numInstances == 1)
 					{
-						debugText.Format("Dist: %4.1fm / Max: %.1fm", distance, m_maxRadius);
+						debugText.Format("%s\n", szTriggerName);
 					}
 					else
 					{
-						debugText.Format("Dist: %4.1fm", distance);
+						debugText.Format("%s: %u\n", szTriggerName, numInstances);
 					}
 
+					triggerInfo.emplace_back(debugText);
+				}
+			}
+		}
+
+		// Check if any state or switch matches text filter.
+		bool doesStateSwitchMatchFilter = false;
+		std::map<CSwitch const* const, CSwitchState const* const> switchStateInfo;
+
+		if ((drawStates && !m_switchStates.empty()) || filterAllObjectInfo)
+		{
+			for (auto const& switchStatePair : m_switchStates)
+			{
+				CSwitch const* const pSwitch = stl::find_in_map(g_switches, switchStatePair.first, nullptr);
+
+				if (pSwitch != nullptr)
+				{
+					CSwitchState const* const pSwitchState = stl::find_in_map(pSwitch->GetStates(), switchStatePair.second, nullptr);
+
+					if (pSwitchState != nullptr)
+					{
+						if (!isTextFilterDisabled)
+						{
+							char const* const szSwitchName = pSwitch->GetName();
+							CryFixedStringT<MaxControlNameLength> lowerCaseSwitchName(szSwitchName);
+							lowerCaseSwitchName.MakeLower();
+							char const* const szStateName = pSwitchState->GetName();
+							CryFixedStringT<MaxControlNameLength> lowerCaseStateName(szStateName);
+							lowerCaseStateName.MakeLower();
+
+							if ((lowerCaseSwitchName.find(lowerCaseSearchString) != CryFixedStringT<MaxControlNameLength>::npos) ||
+							    (lowerCaseStateName.find(lowerCaseSearchString) != CryFixedStringT<MaxControlNameLength>::npos))
+							{
+								doesStateSwitchMatchFilter = true;
+							}
+						}
+
+						switchStateInfo.emplace(pSwitch, pSwitchState);
+					}
+				}
+			}
+		}
+
+		// Check if any parameter matches text filter.
+		bool doesParameterMatchFilter = false;
+		std::map<char const* const, float const> parameterInfo;
+
+		if ((drawParameters && !m_parameters.empty()) || filterAllObjectInfo)
+		{
+			for (auto const& parameterPair : m_parameters)
+			{
+				CParameter const* const pParameter = stl::find_in_map(g_parameters, parameterPair.first, nullptr);
+
+				if (pParameter != nullptr)
+				{
+					char const* const szParameterName = pParameter->GetName();
+
+					if (!isTextFilterDisabled)
+					{
+						CryFixedStringT<MaxControlNameLength> lowerCaseParameterName(szParameterName);
+						lowerCaseParameterName.MakeLower();
+
+						if (lowerCaseParameterName.find(lowerCaseSearchString) != CryFixedStringT<MaxControlNameLength>::npos)
+						{
+							doesParameterMatchFilter = true;
+						}
+					}
+
+					parameterInfo.emplace(szParameterName, parameterPair.second);
+				}
+			}
+		}
+
+		// Check if any environment matches text filter.
+		bool doesEnvironmentMatchFilter = false;
+		std::map<char const* const, float const> environmentInfo;
+
+		if ((drawEnvironments && !m_environments.empty()) || filterAllObjectInfo)
+		{
+			for (auto const& environmentPair : m_environments)
+			{
+				if (environmentPair.second > 0.0f)
+				{
+					CEnvironment const* const pEnvironment = stl::find_in_map(g_environments, environmentPair.first, nullptr);
+
+					if (pEnvironment != nullptr)
+					{
+						char const* const szEnvironmentName = pEnvironment->GetName();
+
+						if (!isTextFilterDisabled)
+						{
+							CryFixedStringT<MaxControlNameLength> lowerCaseEnvironmentName(szEnvironmentName);
+							lowerCaseEnvironmentName.MakeLower();
+
+							if (lowerCaseEnvironmentName.find(lowerCaseSearchString) != CryFixedStringT<MaxControlNameLength>::npos)
+							{
+								doesEnvironmentMatchFilter = true;
+							}
+						}
+
+						environmentInfo.emplace(szEnvironmentName, environmentPair.second);
+					}
+				}
+			}
+		}
+
+		// Check if object name matches text filter.
+		bool doesObjectNameMatchFilter = false;
+
+	#if defined(CRY_AUDIO_USE_OCCLUSION)
+		if (!isTextFilterDisabled &&
+		    (drawSphere ||
+		     drawLabel ||
+		     drawDistance ||
+		     drawOcclusionRayLabel ||
+		     drawOcclusionRayOffset ||
+		     drawOcclusionRaysOrSpheres ||
+		     drawOcclusionListenerPlane ||
+		     filterAllObjectInfo))
+	#else
+		if (!isTextFilterDisabled && (drawSphere || drawLabel || drawDistance || filterAllObjectInfo))
+	#endif // CRY_AUDIO_USE_OCCLUSION
+		{
+			CryFixedStringT<MaxControlNameLength> lowerCaseObjectName(m_name.c_str());
+			lowerCaseObjectName.MakeLower();
+			doesObjectNameMatchFilter = (lowerCaseObjectName.find(lowerCaseSearchString) != CryFixedStringT<MaxControlNameLength>::npos);
+		}
+
+		bool const hasActiveData = (m_flags& EObjectFlags::Active) != 0;
+		bool const isVirtual = (m_flags& EObjectFlags::Virtual) != 0;
+		bool const canDraw = (g_cvars.m_hideInactiveObjects == 0) || ((g_cvars.m_hideInactiveObjects != 0) && hasActiveData && !isVirtual);
+
+		if (canDraw)
+		{
+			if (drawSphere && (isTextFilterDisabled || doesObjectNameMatchFilter))
+			{
+				auxGeom.DrawSphere(
+					position,
+					Debug::g_objectRadiusPositionSphere,
+					isVirtual ? Debug::s_globalColorVirtual : Debug::s_objectColorPositionSphere);
+			}
+
+			if (drawLabel && (isTextFilterDisabled || doesObjectNameMatchFilter))
+			{
+				auxGeom.Draw2dLabel(
+					screenPos.x,
+					screenPos.y,
+					Debug::g_objectFontSize,
+					isVirtual ? Debug::s_globalColorVirtual : (hasActiveData ? Debug::s_objectColorActive : Debug::s_globalColorInactive),
+					false,
+					"%s", m_name.c_str());
+
+				screenPos.y += Debug::g_objectLineHeight;
+			}
+
+			if (drawTriggers && (isTextFilterDisabled || doesTriggerMatchFilter))
+			{
+				for (auto const& debugText : triggerInfo)
+				{
 					auxGeom.Draw2dLabel(
 						screenPos.x,
 						screenPos.y,
 						Debug::g_objectFontSize,
-						isVirtual ? Debug::s_globalColorVirtual : Debug::s_objectColorActive,
+						isVirtual ? Debug::s_globalColorVirtual : Debug::s_objectColorTrigger,
 						false,
 						"%s", debugText.c_str());
 
 					screenPos.y += Debug::g_objectLineHeight;
 				}
+			}
+
+			if (drawStates && (isTextFilterDisabled || doesStateSwitchMatchFilter))
+			{
+				for (auto const& switchStatePair : switchStateInfo)
+				{
+					auto const pSwitch = switchStatePair.first;
+					auto const pSwitchState = switchStatePair.second;
+
+					Debug::CStateDrawData& drawData = m_stateDrawInfo.emplace(std::piecewise_construct, std::forward_as_tuple(pSwitch->GetId()), std::forward_as_tuple(pSwitchState->GetId())).first->second;
+					drawData.Update(pSwitchState->GetId());
+					ColorF const switchTextColor = { 0.8f, drawData.m_currentSwitchColor, 0.6f };
+
+					auxGeom.Draw2dLabel(
+						screenPos.x,
+						screenPos.y,
+						Debug::g_objectFontSize,
+						isVirtual ? Debug::s_globalColorVirtual : switchTextColor,
+						false,
+						"%s: %s\n",
+						pSwitch->GetName(),
+						pSwitchState->GetName());
+
+					screenPos.y += Debug::g_objectLineHeight;
+				}
+			}
+
+			if (drawParameters && (isTextFilterDisabled || doesParameterMatchFilter))
+			{
+				for (auto const& parameterPair : parameterInfo)
+				{
+					auxGeom.Draw2dLabel(
+						screenPos.x,
+						screenPos.y,
+						Debug::g_objectFontSize,
+						isVirtual ? Debug::s_globalColorVirtual : Debug::s_objectColorParameter,
+						false,
+						"%s: %2.2f\n",
+						parameterPair.first,
+						parameterPair.second);
+
+					screenPos.y += Debug::g_objectLineHeight;
+				}
+			}
+
+			if (drawEnvironments && (isTextFilterDisabled || doesEnvironmentMatchFilter))
+			{
+				for (auto const& environmentPair : environmentInfo)
+				{
+					auxGeom.Draw2dLabel(
+						screenPos.x,
+						screenPos.y,
+						Debug::g_objectFontSize,
+						isVirtual ? Debug::s_globalColorVirtual : Debug::s_objectColorEnvironment,
+						false,
+						"%s: %.2f\n",
+						environmentPair.first,
+						environmentPair.second);
+
+					screenPos.y += Debug::g_objectLineHeight;
+				}
+			}
+
+			if (drawDistance && (isTextFilterDisabled || doesObjectNameMatchFilter))
+			{
+				CryFixedStringT<MaxMiscStringLength> debugText;
+
+				if (m_maxRadius > 0.0f)
+				{
+					debugText.Format("Dist: %4.1fm / Max: %.1fm", distance, m_maxRadius);
+				}
+				else
+				{
+					debugText.Format("Dist: %4.1fm", distance);
+				}
+
+				auxGeom.Draw2dLabel(
+					screenPos.x,
+					screenPos.y,
+					Debug::g_objectFontSize,
+					isVirtual ? Debug::s_globalColorVirtual : Debug::s_objectColorActive,
+					false,
+					"%s", debugText.c_str());
+
+				screenPos.y += Debug::g_objectLineHeight;
+			}
 
 	#if defined(CRY_AUDIO_USE_OCCLUSION)
-				if (((m_flags& EObjectFlags::CanRunOcclusion) != 0) && (isTextFilterDisabled || doesObjectNameMatchFilter))
+			if (((m_flags& EObjectFlags::CanRunOcclusion) != 0) && (isTextFilterDisabled || doesObjectNameMatchFilter))
+			{
+				if (drawOcclusionRayLabel)
 				{
-					if (drawOcclusionRayLabel)
+					EOcclusionType const occlusionType = m_propagationProcessor.GetOcclusionType();
+					OcclusionInfos const& occlusionInfos = m_propagationProcessor.GetOcclusionInfos();
+
+					for (auto const& info : occlusionInfos)
 					{
-						EOcclusionType const occlusionType = m_propagationProcessor.GetOcclusionType();
-						float const occlusion = m_propagationProcessor.GetOcclusion();
+						float const occlusion = info.occlusion;
 
 						CryFixedStringT<MaxMiscStringLength> debugText;
 
@@ -667,7 +746,7 @@ void CObject::DrawDebugInfo(
 								debugText.Format(
 									"%s(%s)",
 									Debug::g_szOcclusionTypes[static_cast<std::underlying_type<EOcclusionType>::type>(occlusionType)],
-									Debug::g_szOcclusionTypes[static_cast<std::underlying_type<EOcclusionType>::type>(m_propagationProcessor.GetOcclusionTypeWhenAdaptive())]);
+									Debug::g_szOcclusionTypes[static_cast<std::underlying_type<EOcclusionType>::type>(info.occlusionTypeWhenAdaptive)]);
 							}
 							else
 							{
@@ -687,48 +766,49 @@ void CObject::DrawDebugInfo(
 							Debug::g_objectFontSize,
 							isVirtual ? Debug::s_globalColorVirtual : (((occlusionType != EOcclusionType::None) && (occlusionType != EOcclusionType::Ignore)) ? activeRayLabelColor : Debug::s_globalColorInactive),
 							false,
-							"Occl: %3.2f | Type: %s",
+							"Occl: %3.2f | Type: %s | %s",
 							occlusion,
-							debugText.c_str());
+							debugText.c_str(),
+							info.pListener->GetName());
 
 						screenPos.y += Debug::g_objectLineHeight;
 					}
-
-					if (drawOcclusionRayOffset && !isVirtual)
-					{
-						float const occlusionRayOffset = m_propagationProcessor.GetOcclusionRayOffset();
-
-						if (occlusionRayOffset > 0.0f)
-						{
-							SAuxGeomRenderFlags const previousRenderFlags = auxGeom.GetRenderFlags();
-							SAuxGeomRenderFlags newRenderFlags(e_Def3DPublicRenderflags | e_AlphaBlended);
-							auxGeom.SetRenderFlags(newRenderFlags);
-
-							auxGeom.DrawSphere(
-								position,
-								occlusionRayOffset,
-								Debug::s_objectColorOcclusionOffsetSphere);
-
-							auxGeom.SetRenderFlags(previousRenderFlags);
-						}
-					}
-
-					if (drawOcclusionRaysOrSpheres)
-					{
-						m_propagationProcessor.DrawDebugInfo(auxGeom);
-					}
-
-					if (drawOcclusionListenerPlane)
-					{
-						m_propagationProcessor.DrawListenerPlane(auxGeom);
-					}
 				}
-	#endif  // CRY_AUDIO_USE_OCCLUSION
 
-				if ((g_cvars.m_drawDebug & Debug::EDrawFilter::ObjectImplInfo) != 0)
+				if (drawOcclusionRayOffset && !isVirtual)
 				{
-					m_pIObject->DrawDebugInfo(auxGeom, screenPos.x, screenPos.y, (isTextFilterDisabled ? nullptr : lowerCaseSearchString.c_str()));
+					float const occlusionRayOffset = m_propagationProcessor.GetOcclusionRayOffset();
+
+					if (occlusionRayOffset > 0.0f)
+					{
+						SAuxGeomRenderFlags const previousRenderFlags = auxGeom.GetRenderFlags();
+						SAuxGeomRenderFlags newRenderFlags(e_Def3DPublicRenderflags | e_AlphaBlended);
+						auxGeom.SetRenderFlags(newRenderFlags);
+
+						auxGeom.DrawSphere(
+							position,
+							occlusionRayOffset,
+							Debug::s_objectColorOcclusionOffsetSphere);
+
+						auxGeom.SetRenderFlags(previousRenderFlags);
+					}
 				}
+
+				if (drawOcclusionRaysOrSpheres)
+				{
+					m_propagationProcessor.DrawDebugInfo(auxGeom);
+				}
+
+				if (drawOcclusionListenerPlane)
+				{
+					m_propagationProcessor.DrawListenerPlane(auxGeom);
+				}
+			}
+	#endif // CRY_AUDIO_USE_OCCLUSION
+
+			if ((g_cvars.m_drawDebug & Debug::EDrawFilter::ObjectImplInfo) != 0)
+			{
+				m_pIObject->DrawDebugInfo(auxGeom, screenPos.x, screenPos.y, (isTextFilterDisabled ? nullptr : lowerCaseSearchString.c_str()));
 			}
 		}
 	}
@@ -922,6 +1002,20 @@ void CObject::SetName(char const* const szName, SRequestUserData const& userData
 	SObjectRequestData<EObjectRequestType::SetName> requestData(this, szName);
 	PushRequest(requestData, userData);
 #endif // CRY_AUDIO_USE_DEBUG_CODE
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CObject::AddListener(ListenerId const id, SRequestUserData const& userData /*= SRequestUserData::GetEmptyObject()*/)
+{
+	SObjectRequestData<EObjectRequestType::AddListener> requestData(this, id);
+	PushRequest(requestData, userData);
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CObject::RemoveListener(ListenerId const id, SRequestUserData const& userData /*= SRequestUserData::GetEmptyObject()*/)
+{
+	SObjectRequestData<EObjectRequestType::RemoveListener> requestData(this, id);
+	PushRequest(requestData, userData);
 }
 
 //////////////////////////////////////////////////////////////////////////

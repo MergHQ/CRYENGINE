@@ -142,11 +142,13 @@ struct SCreateObjectData
 		char const* const szName_ = nullptr,
 		EOcclusionType const occlusionType_ = EOcclusionType::Ignore,
 		CTransformation const& transformation_ = CTransformation::GetEmptyObject(),
-		bool const setCurrentEnvironments_ = false)
+		bool const setCurrentEnvironments_ = false,
+		ListenerIds const& listenerIds_ = g_defaultListenerIds)
 		: szName(szName_)
 		, occlusionType(occlusionType_)
 		, transformation(transformation_)
 		, setCurrentEnvironments(setCurrentEnvironments_)
+		, listenerIds(listenerIds_)
 	{}
 
 	static SCreateObjectData const& GetEmptyObject() { static SCreateObjectData const emptyInstance; return emptyInstance; }
@@ -161,6 +163,7 @@ struct SCreateObjectData
 	CTransformation const transformation;
 
 	bool const            setCurrentEnvironments;
+	ListenerIds const     listenerIds;
 };
 
 struct SExecuteTriggerData : public SCreateObjectData
@@ -416,11 +419,11 @@ struct IAudioSystem
 	 * Constructs an instance of an audio listener.
 	 * Note: Retrieving a listener this way requires the instance to be freed via ReleaseListener once not needed anymore!
 	 * @param transformation - transformation of the listener to be created.
-	 * @param szName - optional name of the listener to be created.
+	 * @param szName - name of the listener to be created.
 	 * @return Pointer to a freshly constructed CryAudio::IListener instance.
 	 * @see ReleaseListener
 	 */
-	virtual IListener* CreateListener(CTransformation const& transformation, char const* const szName = nullptr) = 0;
+	virtual IListener* CreateListener(CTransformation const& transformation, char const* const szName) = 0;
 
 	/**
 	 * Destructs the passed audio listener instance.
@@ -429,6 +432,13 @@ struct IAudioSystem
 	 * @see CreateListener
 	 */
 	virtual void ReleaseListener(IListener* const pIListener) = 0;
+
+	/**
+	 * Returns a pointer to the requested listener.
+	 * @param id - id of the requested listener. If none is provided, a pointer to the default listener is returned.
+	 * @return Pointer to the requested listener.
+	 */
+	virtual IListener* GetListener(ListenerId const id = DefaultListenerId) = 0;
 
 	/**
 	 * Constructs an instance of an audio object.

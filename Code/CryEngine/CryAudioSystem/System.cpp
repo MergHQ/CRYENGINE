@@ -36,6 +36,7 @@
 #include <CrySystem/ITimer.h>
 #include <CryString/CryPath.h>
 #include <CryEntitySystem/IEntitySystem.h>
+#include <CryMath/Cry_Camera.h>
 
 #if defined(CRY_AUDIO_USE_OCCLUSION)
 	#include "PropagationProcessor.h"
@@ -895,6 +896,7 @@ bool CSystem::Initialize()
 			std::forward_as_tuple(SContextInfo(GlobalContextId, true, true)));
 #endif // CRY_AUDIO_USE_DEBUG_CODE
 
+		g_listenerManager.Initialize();
 		g_fileCacheManager.Initialize();
 
 		CRY_ASSERT_MESSAGE(!m_mainThread.IsActive(), "AudioSystem thread active before initialization during %s", __FUNCTION__);
@@ -1323,7 +1325,7 @@ char const* CSystem::GetConfigPath() const
 }
 
 ///////////////////////////////////////////////////////////////////////////
-CryAudio::IListener* CSystem::CreateListener(CTransformation const& transformation, char const* const szName /*= nullptr*/)
+CryAudio::IListener* CSystem::CreateListener(CTransformation const& transformation, char const* const szName)
 {
 	CListener* pListener = nullptr;
 	SSystemRequestData<ESystemRequestType::RegisterListener> const requestData(&pListener, transformation, szName);
@@ -1336,9 +1338,33 @@ CryAudio::IListener* CSystem::CreateListener(CTransformation const& transformati
 ///////////////////////////////////////////////////////////////////////////
 void CSystem::ReleaseListener(CryAudio::IListener* const pIListener)
 {
-	SSystemRequestData<ESystemRequestType::ReleaseListener> const requestData(static_cast<CListener*>(pIListener));
-	CRequest const request(&requestData);
-	PushRequest(request);
+	if (static_cast<CListener*>(pIListener)->IsUserCreated())
+	{
+		SSystemRequestData<ESystemRequestType::ReleaseListener> const requestData(static_cast<CListener*>(pIListener));
+		CRequest const request(&requestData);
+		PushRequest(request);
+	}
+#if defined(CRY_AUDIO_USE_DEBUG_CODE)
+	else
+	{
+		Cry::Audio::Log(ELogType::Error, "Non-user-created listener cannot get released during %s", __FUNCTION__);
+	}
+#endif  // CRY_AUDIO_USE_DEBUG_CODE
+}
+
+//////////////////////////////////////////////////////////////////////////
+IListener* CSystem::GetListener(ListenerId const id /*= DefaultListenerId*/)
+{
+	CListener* pListener = &g_defaultListener;
+
+	if ((id != DefaultListenerId) && (id != InvalidListenerId))
+	{
+		SSystemRequestData<ESystemRequestType::GetListener> const requestData(&pListener, id);
+		CRequest const request(&requestData, ERequestFlags::ExecuteBlocking);
+		PushRequest(request);
+	}
+
+	return static_cast<CryAudio::IListener*>(pListener);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1669,15 +1695,29 @@ ERequestStatus CSystem::ProcessSystemRequest(CRequest const& request)
 
 			if (pTrigger != nullptr)
 			{
+				Listeners listeners;
+
+				for (auto const id : pRequestData->listenerIds)
+				{
+					listeners.push_back(g_listenerManager.GetListener(id));
+				}
+
+				Impl::IListeners implListeners;
+
+				for (auto const pListener : listeners)
+				{
+					implListeners.push_back(pListener->GetImplData());
+				}
+
 				MEMSTAT_CONTEXT(EMemStatContextType::AudioSystem, "CryAudio::CObject");
 
 #if defined(CRY_AUDIO_USE_DEBUG_CODE)
 				auto const pNewObject = new CObject(pRequestData->transformation, pRequestData->name.c_str());
-				pNewObject->Init(g_pIImpl->ConstructObject(pRequestData->transformation, pNewObject->GetName()));
+				pNewObject->Init(g_pIImpl->ConstructObject(pRequestData->transformation, implListeners, pNewObject->GetName()), listeners);
 				g_constructedObjects.push_back(pNewObject);
 #else
 				auto const pNewObject = new CObject(pRequestData->transformation);
-				pNewObject->Init(g_pIImpl->ConstructObject(pRequestData->transformation));
+				pNewObject->Init(g_pIImpl->ConstructObject(pRequestData->transformation, implListeners), listeners);
 #endif      // CRY_AUDIO_USE_DEBUG_CODE
 
 				if (pRequestData->setCurrentEnvironments)
@@ -2037,7 +2077,7 @@ ERequestStatus CSystem::ProcessSystemRequest(CRequest const& request)
 	case ESystemRequestType::RegisterListener:
 		{
 			auto const pRequestData = static_cast<SSystemRequestData<ESystemRequestType::RegisterListener> const*>(request.GetData());
-			*pRequestData->ppListener = g_listenerManager.CreateListener(pRequestData->transformation, pRequestData->name.c_str());
+			*pRequestData->ppListener = g_listenerManager.CreateListener(pRequestData->transformation, pRequestData->name.c_str(), true);
 			break;
 		}
 	case ESystemRequestType::ReleaseListener:
@@ -2054,19 +2094,40 @@ ERequestStatus CSystem::ProcessSystemRequest(CRequest const& request)
 
 			break;
 		}
+	case ESystemRequestType::GetListener:
+		{
+			auto const pRequestData = static_cast<SSystemRequestData<ESystemRequestType::GetListener> const*>(request.GetData());
+			*pRequestData->ppListener = g_listenerManager.GetListener(pRequestData->id);
+			break;
+		}
 	case ESystemRequestType::RegisterObject:
 		{
 			auto const pRequestData = static_cast<SSystemRequestData<ESystemRequestType::RegisterObject> const*>(request.GetData());
+
+			Listeners listeners;
+
+			for (auto const id : pRequestData->listenerIds)
+			{
+				listeners.push_back(g_listenerManager.GetListener(id));
+			}
+
+			Impl::IListeners implListeners;
+			implListeners.reserve(listeners.size());
+
+			for (auto const pListener : listeners)
+			{
+				implListeners.push_back(pListener->GetImplData());
+			}
 
 			MEMSTAT_CONTEXT(EMemStatContextType::AudioSystem, "CryAudio::CObject");
 
 #if defined(CRY_AUDIO_USE_DEBUG_CODE)
 			auto const pNewObject = new CObject(pRequestData->transformation, pRequestData->name.c_str());
-			pNewObject->Init(g_pIImpl->ConstructObject(pRequestData->transformation, pNewObject->GetName()));
+			pNewObject->Init(g_pIImpl->ConstructObject(pRequestData->transformation, implListeners, pNewObject->GetName()), listeners);
 			g_constructedObjects.push_back(pNewObject);
 #else
 			auto const pNewObject = new CObject(pRequestData->transformation);
-			pNewObject->Init(g_pIImpl->ConstructObject(pRequestData->transformation));
+			pNewObject->Init(g_pIImpl->ConstructObject(pRequestData->transformation, implListeners), listeners);
 #endif    // CRY_AUDIO_USE_DEBUG_CODE
 
 			if (pRequestData->setCurrentEnvironments)
@@ -2539,6 +2600,24 @@ ERequestStatus CSystem::ProcessObjectRequest(CRequest const& request)
 			break;
 		}
 #endif // CRY_AUDIO_USE_OCCLUSION
+	case EObjectRequestType::AddListener:
+		{
+			auto const pRequestData = static_cast<SObjectRequestData<EObjectRequestType::AddListener> const*>(request.GetData());
+
+			pObject->HandleAddListener(pRequestData->listenerId);
+			result = ERequestStatus::Success;
+
+			break;
+		}
+	case EObjectRequestType::RemoveListener:
+		{
+			auto const pRequestData = static_cast<SObjectRequestData<EObjectRequestType::RemoveListener> const*>(request.GetData());
+
+			pObject->HandleRemoveListener(pRequestData->listenerId);
+			result = ERequestStatus::Success;
+
+			break;
+		}
 	case EObjectRequestType::ToggleAbsoluteVelocityTracking:
 		{
 			auto const pRequestData = static_cast<SObjectRequestData<EObjectRequestType::ToggleAbsoluteVelocityTracking> const*>(request.GetData());
@@ -2893,18 +2972,56 @@ ERequestStatus CSystem::HandleSetImpl(Impl::IImpl* const pIImpl)
 		g_pIImpl = static_cast<Impl::IImpl*>(pImpl);
 	}
 
+	CRY_ASSERT_MESSAGE(g_defaultListener.GetImplData() == nullptr, "<Audio> The default listeners's impl-data must be nullptr during %s", __FUNCTION__);
+	g_defaultListener.SetImplData(g_pIImpl->ConstructListener(CTransformation::GetEmptyObject(), g_szDefaultListenerName));
+
 	CRY_ASSERT_MESSAGE(g_object.GetImplDataPtr() == nullptr, "<Audio> The global object's impl-data must be nullptr during %s", __FUNCTION__);
-	g_object.SetImplDataPtr(g_pIImpl->ConstructGlobalObject());
+	Impl::IListeners const defaultImplListener{ g_defaultListener.GetImplData() };
+	g_object.SetImplDataPtr(g_pIImpl->ConstructGlobalObject(defaultImplListener));
+
+	string const listenerNames = g_cvars.m_pListeners->GetString();
+
+	if (!listenerNames.empty())
+	{
+		int curPos = 0;
+		string listenerName = listenerNames.Tokenize(",", curPos);
+
+		while (!listenerName.empty())
+		{
+			listenerName.Trim();
+
+			if (g_listenerManager.GetListener(StringToId(listenerName.c_str())) == &g_defaultListener)
+			{
+				g_listenerManager.CreateListener(CTransformation::GetEmptyObject(), listenerName.c_str(), false);
+			}
+
+			listenerName = listenerNames.Tokenize(",", curPos);
+		}
+	}
 
 #if defined(CRY_AUDIO_USE_DEBUG_CODE)
+	CRY_ASSERT_MESSAGE(g_previewListener.GetImplData() == nullptr, "<Audio> The preview listeners's impl-data must be nullptr during %s", __FUNCTION__);
+	g_previewListener.SetImplData(g_pIImpl->ConstructListener(CTransformation::GetEmptyObject(), g_szPreviewListenerName));
+
 	CRY_ASSERT_MESSAGE(g_previewObject.GetImplDataPtr() == nullptr, "<Audio> The preview object's impl-data must be nullptr during %s", __FUNCTION__);
-	g_previewObject.SetImplDataPtr(g_pIImpl->ConstructObject(g_previewObject.GetTransformation(), g_previewObject.GetName()));
+	Impl::IListeners const previewImplListener{ g_previewListener.GetImplData() };
+	g_previewObject.SetImplDataPtr(g_pIImpl->ConstructObject(g_previewObject.GetTransformation(), previewImplListener, g_previewObject.GetName()));
+
+	g_listenerManager.ReconstructImplData();
 
 	for (auto const pObject : g_constructedObjects)
 	{
 		CRY_ASSERT_MESSAGE(pObject->GetImplDataPtr() == nullptr, "<Audio> The object's impl-data must be nullptr during %s", __FUNCTION__);
 
-		pObject->SetImplDataPtr(g_pIImpl->ConstructObject(pObject->GetTransformation(), pObject->GetName()));
+		Listeners const& listeners = pObject->GetListeners();
+		Impl::IListeners implListeners;
+
+		for (auto const pListener : listeners)
+		{
+			implListeners.push_back(pListener->GetImplData());
+		}
+
+		pObject->SetImplDataPtr(g_pIImpl->ConstructObject(pObject->GetTransformation(), implListeners, pObject->GetName()));
 	}
 
 	for (auto const& contextPair : g_contextInfo)
@@ -2937,9 +3054,7 @@ ERequestStatus CSystem::HandleSetImpl(Impl::IImpl* const pIImpl)
 	}
 
 	HandleUpdateDebugInfo();
-
 #endif // CRY_AUDIO_USE_DEBUG_CODE
-	g_listenerManager.OnAfterImplChanged();
 
 	SetImplLanguage();
 
@@ -3411,12 +3526,13 @@ void DrawObjectInfo(
 	IRenderAuxGeom& auxGeom,
 	float const posX,
 	float& posY,
+	Vec3 const& camPos,
 	CObject const& object,
 	CryFixedStringT<MaxControlNameLength> const& lowerCaseSearchString,
 	size_t& numObjects)
 {
 	Vec3 const& position = object.GetTransformation().GetPosition();
-	float const distance = position.GetDistance(g_listenerManager.GetActiveListenerTransformation().GetPosition());
+	float const distance = position.GetDistance(camPos);
 
 	if ((g_cvars.m_debugDistance <= 0.0f) || ((g_cvars.m_debugDistance > 0.0f) && (distance < g_cvars.m_debugDistance)))
 	{
@@ -3468,9 +3584,16 @@ void DrawObjectDebugInfo(IRenderAuxGeom& auxGeom, float const posX, float posY)
 	DrawGlobalObjectInfo(auxGeom, posX, posY, g_object, lowerCaseSearchString, numObjects);
 	DrawGlobalObjectInfo(auxGeom, posX, posY, g_previewObject, lowerCaseSearchString, numObjects);
 
+	Vec3 const& camPos = GetISystem()->GetViewCamera().GetPosition();
+
 	for (auto const pObject : g_constructedObjects)
 	{
-		DrawObjectInfo(auxGeom, posX, posY, *pObject, lowerCaseSearchString, numObjects);
+		float const distance = pObject->GetTransformation().GetPosition().GetDistance(camPos);
+
+		if ((g_cvars.m_debugDistance <= 0.0f) || ((g_cvars.m_debugDistance > 0.0f) && (distance <= g_cvars.m_debugDistance)))
+		{
+			DrawObjectInfo(auxGeom, posX, posY, camPos, *pObject, lowerCaseSearchString, numObjects);
+		}
 	}
 
 	auxGeom.Draw2dLabel(posX, headerPosY, Debug::g_listHeaderFontSize, Debug::s_globalColorHeader, false, "Audio Objects [%" PRISIZE_T "]", numObjects);
@@ -3707,7 +3830,7 @@ void CSystem::HandleDrawDebug()
 
 			size_t const numObjects = g_constructedObjects.size();
 			size_t const numActiveObjects = g_activeObjects.size();
-			size_t const numListeners = g_listenerManager.GetNumActiveListeners();
+			size_t const numListeners = g_listenerManager.GetNumListeners();
 			size_t const numEventListeners = g_eventListenerManager.GetNumEventListeners();
 
 	#if defined(CRY_AUDIO_USE_OCCLUSION)
@@ -3886,7 +4009,9 @@ void CSystem::HandleDrawDebug()
 		{
 			if (g_pIImpl != nullptr)
 			{
-				g_pIImpl->DrawDebugInfoList(*pAuxGeom, posX, posY, g_cvars.m_debugDistance, g_cvars.m_pDebugFilter->GetString());
+				Vec3 const& camPos = GetISystem()->GetViewCamera().GetPosition();
+
+				g_pIImpl->DrawDebugInfoList(*pAuxGeom, posX, posY, camPos, g_cvars.m_debugDistance, g_cvars.m_pDebugFilter->GetString());
 				// The impl is responsible for increasing posX.
 			}
 		}

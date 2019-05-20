@@ -25,10 +25,12 @@ struct SObject final : IObject
 	virtual void                   Update(float const deltaTime) override                                                                        {}
 	virtual void                   SetTransformation(CTransformation const& transformation) override                                             {}
 	virtual CTransformation const& GetTransformation() const override                                                                            { return CTransformation::GetEmptyObject(); }
-	virtual void                   SetOcclusion(float const occlusion) override                                                                  {}
+	virtual void                   SetOcclusion(IListener* const pIListener, float const occlusion, uint8 const numRemainingListeners) override  {}
 	virtual void                   SetOcclusionType(EOcclusionType const occlusionType) override                                                 {}
 	virtual void                   StopAllTriggers() override                                                                                    {}
 	virtual ERequestStatus         SetName(char const* const szName) override                                                                    { return ERequestStatus::Success; }
+	virtual void                   AddListener(IListener* const pIListener) override                                                             {}
+	virtual void                   RemoveListener(IListener* const pIListener) override                                                          {}
 	virtual void                   ToggleFunctionality(EObjectFunctionality const type, bool const enable) override                              {}
 	virtual void                   DrawDebugInfo(IRenderAuxGeom& auxGeom, float const posX, float posY, char const* const szTextFilter) override {}
 };
@@ -151,14 +153,14 @@ void CImpl::GetInfo(SImplInfo& implInfo) const
 }
 
 ///////////////////////////////////////////////////////////////////////////
-IObject* CImpl::ConstructGlobalObject()
+IObject* CImpl::ConstructGlobalObject(IListeners const& listeners)
 {
 	MEMSTAT_CONTEXT(EMemStatContextType::AudioSystem, "CryAudio::Impl::Null::SObject");
 	return static_cast<IObject*>(new SObject());
 }
 
 ///////////////////////////////////////////////////////////////////////////
-IObject* CImpl::ConstructObject(CTransformation const& transformation, char const* const szName /*= nullptr*/)
+IObject* CImpl::ConstructObject(CTransformation const& transformation, IListeners const& listeners, char const* const szName /*= nullptr*/)
 {
 	MEMSTAT_CONTEXT(EMemStatContextType::AudioSystem, "CryAudio::Impl::Null::SObject");
 	return static_cast<IObject*>(new SObject());
@@ -177,7 +179,7 @@ void CImpl::DestructListener(IListener* const pIListener)
 }
 
 ///////////////////////////////////////////////////////////////////////////
-IListener* CImpl::ConstructListener(CTransformation const& transformation, char const* const szName /*= nullptr*/)
+IListener* CImpl::ConstructListener(CTransformation const& transformation, char const* const szName)
 {
 	MEMSTAT_CONTEXT(EMemStatContextType::AudioSystem, "CryAudio::Impl::Null::SListener");
 	return static_cast<IListener*>(new SListener());
@@ -270,7 +272,7 @@ void CImpl::DrawDebugMemoryInfo(IRenderAuxGeom& auxGeom, float posX, float& posY
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CImpl::DrawDebugInfoList(IRenderAuxGeom& auxGeom, float& posX, float posY, float const debugDistance, char const* const szTextFilter) const
+void CImpl::DrawDebugInfoList(IRenderAuxGeom& auxGeom, float& posX, float posY, Vec3 const& camPos, float const debugDistance, char const* const szTextFilter) const
 {
 }
 } // namespace Null

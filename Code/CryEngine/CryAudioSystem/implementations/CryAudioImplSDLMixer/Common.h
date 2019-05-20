@@ -11,14 +11,11 @@ namespace SDL_mixer
 {
 class CEventInstance;
 class CImpl;
-class CListener;
 class CObject;
 class CEvent;
 
 extern bool g_bMuted;
 extern CImpl* g_pImpl;
-extern CListener* g_pListener;
-extern CObject* g_pObject;
 
 using SampleId = uint;
 using ChannelList = std::vector<int>;

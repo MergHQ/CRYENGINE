@@ -5,9 +5,11 @@
 
 #include "DefaultComponents/AI/PathfindingComponent.h"
 #include "DefaultComponents/Audio/AreaComponent.h"
+#include "DefaultComponents/Audio/DefaultListenerComponent.h"
 #include "DefaultComponents/Audio/DefaultTriggerComponent.h"
 #include "DefaultComponents/Audio/EnvironmentComponent.h"
 #include "DefaultComponents/Audio/ListenerComponent.h"
+#include "DefaultComponents/Audio/MultiListenerComponent.h"
 #include "DefaultComponents/Audio/OcclusionComponent.h"
 #include "DefaultComponents/Audio/ParameterComponent.h"
 #include "DefaultComponents/Audio/PreloadComponent.h"
@@ -96,6 +98,10 @@ void CPlugin_CryDefaultEntities::RegisterComponents(Schematyc::IEnvRegistrar& re
 			Cry::Audio::DefaultComponents::CAreaComponent::Register(componentScope);
 		}
 		{
+			Schematyc::CEnvRegistrationScope componentScope = scope.Register(SCHEMATYC_MAKE_ENV_COMPONENT(Cry::Audio::DefaultComponents::CDefaultListenerComponent));
+			Cry::Audio::DefaultComponents::CDefaultListenerComponent::Register(componentScope);
+		}
+		{
 			Schematyc::CEnvRegistrationScope componentScope = scope.Register(SCHEMATYC_MAKE_ENV_COMPONENT(Cry::Audio::DefaultComponents::CDefaultTriggerComponent));
 			Cry::Audio::DefaultComponents::CDefaultTriggerComponent::Register(componentScope);
 		}
@@ -106,6 +112,10 @@ void CPlugin_CryDefaultEntities::RegisterComponents(Schematyc::IEnvRegistrar& re
 		{
 			Schematyc::CEnvRegistrationScope componentScope = scope.Register(SCHEMATYC_MAKE_ENV_COMPONENT(Cry::Audio::DefaultComponents::CListenerComponent));
 			Cry::Audio::DefaultComponents::CListenerComponent::Register(componentScope);
+		}
+		{
+			Schematyc::CEnvRegistrationScope componentScope = scope.Register(SCHEMATYC_MAKE_ENV_COMPONENT(Cry::Audio::DefaultComponents::CMultiListenerComponent));
+			Cry::Audio::DefaultComponents::CMultiListenerComponent::Register(componentScope);
 		}
 		{
 			Schematyc::CEnvRegistrationScope componentScope = scope.Register(SCHEMATYC_MAKE_ENV_COMPONENT(Cry::Audio::DefaultComponents::COcclusionComponent));

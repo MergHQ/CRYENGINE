@@ -26,7 +26,11 @@ void CObject::Update(float const deltaTime)
 	{
 		float distance = 0.0f;
 		float angle = 0.0f;
-		GetDistanceAngleToObject(g_pListener->GetTransformation(), m_transformation, distance, angle);
+
+		if (m_pListener != nullptr)
+		{
+			GetDistanceAngleToObject(m_pListener->GetTransformation(), m_transformation, distance, angle);
+		}
 
 		auto iter(m_eventInstances.begin());
 		auto iterEnd(m_eventInstances.end());
@@ -79,6 +83,21 @@ ERequestStatus CObject::SetName(char const* const szName)
 #endif  // CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE
 
 	return ERequestStatus::Success;
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CObject::AddListener(IListener* const pIListener)
+{
+	m_pListener = static_cast<CListener*>(pIListener);
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CObject::RemoveListener(IListener* const pIListener)
+{
+	if (m_pListener == static_cast<CListener*>(pIListener))
+	{
+		m_pListener = nullptr;
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////

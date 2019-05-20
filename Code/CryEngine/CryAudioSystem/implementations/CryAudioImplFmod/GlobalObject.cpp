@@ -15,24 +15,16 @@ namespace Impl
 namespace Fmod
 {
 //////////////////////////////////////////////////////////////////////////
-CGlobalObject::CGlobalObject()
+CGlobalObject::CGlobalObject(int const listenerMask, Listeners const& listeners)
+	: CBaseObject(listenerMask, listeners)
 {
-	CRY_ASSERT_MESSAGE(g_pObject == nullptr, "g_pObject is not nullptr during %s", __FUNCTION__);
-	g_pObject = this;
-
 #if defined(CRY_AUDIO_IMPL_FMOD_USE_DEBUG_CODE)
 	m_name = "Global Object";
 #endif  // CRY_AUDIO_IMPL_FMOD_USE_DEBUG_CODE
 }
 
 //////////////////////////////////////////////////////////////////////////
-CGlobalObject::~CGlobalObject()
-{
-	g_pObject = nullptr;
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CGlobalObject::SetOcclusion(float const occlusion)
+void CGlobalObject::SetOcclusion(IListener* const pIListener, float const occlusion, uint8 const numRemainingListeners)
 {
 #if defined(CRY_AUDIO_IMPL_FMOD_USE_DEBUG_CODE)
 	Cry::Audio::Log(ELogType::Error, "Trying to set occlusion and obstruction values on the global object!");

@@ -5,6 +5,7 @@
 #include "AssetsManager.h"
 #include "ContextManager.h"
 #include "ImplManager.h"
+#include "ListenerManager.h"
 #include "NameValidator.h"
 
 namespace ACE
@@ -15,6 +16,7 @@ ContextIds g_activeUserDefinedContexts;
 CAssetsManager g_assetsManager;
 CContextManager g_contextManager;
 CImplManager g_implManager;
+CListenerManager g_listenerManager;
 Impl::IImpl* g_pIImpl = nullptr;
 CMainWindow* g_pMainWindow = nullptr;
 CSystemControlsWidget* g_pSystemControlsWidget = nullptr;

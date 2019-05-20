@@ -25,6 +25,8 @@ struct ITriggerConnection;
 struct ITriggerInfo;
 struct SFileInfo;
 
+using IListeners = DynArray<IListener*>;
+
 struct IImpl
 {
 	/** @cond */
@@ -294,22 +296,24 @@ struct IImpl
 	/**
 	 * Create an object implementing IObject that stores all of the data needed by the AudioImplementation
 	 * to identify and use the GlobalAudioObject.
+	 * @param listeners - listeners which listen to all sounds emmitted from the object
 	 * @return IObject pointer to the audio implementation-specific data needed by the audio middleware and the
 	 * @return AudioImplementation code to use the corresponding GlobalAudioObject; nullptr if the new IObject instance was not created
 	 * @see DestructObject
 	 */
-	virtual IObject* ConstructGlobalObject() = 0;
+	virtual IObject* ConstructGlobalObject(IListeners const& listeners) = 0;
 
 	/**
 	 * Create an object implementing IObject that stores all of the data needed by the AudioImplementation
 	 * to identify and use the AudioObject. Return a pointer to that object.
 	 * @param transformation - transformation of the object to construct
+	 * @param listeners - listeners which listen to all sounds emmitted from the object
 	 * @param szName - optional name of the object to construct (not used in release builds)
 	 * @return IObject pointer to the audio implementation-specific data needed by the audio middleware and the
 	 * @return AudioImplementation code to use the corresponding GlobalAudioObject; nullptr if the new IObject instance was not created
 	 * @see DestructObject
 	 */
-	virtual IObject* ConstructObject(CTransformation const& transformation, char const* const szName = nullptr) = 0;
+	virtual IObject* ConstructObject(CTransformation const& transformation, IListeners const& listeners, char const* const szName = nullptr) = 0;
 
 	/**
 	 * Free the memory and potentially other resources used by the supplied IObject instance
@@ -323,12 +327,12 @@ struct IImpl
 	 * Construct an object implementing IListener that stores all of the data needed by the AudioImplementation
 	 * to identify and use an AudioListener. Return a pointer to that object.
 	 * @param transformation - transformation of the listener to construct
-	 * @param szName - optional name of the listener to construct (not used in release builds)
+	 * @param szName - name of the listener to construct (not used in release builds)
 	 * @return CryAudio::Impl::IListener pointer to the audio implementation-specific data needed by the audio middleware and the
 	 * @return AudioImplementation code to use the corresponding AudioListener; nullptr if the new CryAudio::Impl::IListener instance was not created.
 	 * @see DestructListener
 	 */
-	virtual IListener* ConstructListener(CTransformation const& transformation, char const* const szName = nullptr) = 0;
+	virtual IListener* ConstructListener(CTransformation const& transformation, char const* const szName) = 0;
 
 	/**
 	 * Destruct the supplied CryAudio::Impl::IListener instance.
@@ -392,11 +396,12 @@ struct IImpl
 	 * @param[out] auxGeom - a reference to the IRenderAuxGeom that draws the debug info.
 	 * @param[out] posX - x-axis position of the auxGeom. Has to be increased by the width of the list(s) to avoid overlapping with other debug info.
 	 * @param[in] posY - y-axis position of the auxGeom.
+	 * @param[in] camPos - position of the camera. Useful for distance filtering.
 	 * @param[in] debugDistance - distance from the listener to where object debug is drawn. Is <= 0 if filtering is disabled.
 	 * @param[in] szTextFilter - current set text filter. Is nullptr if filtering is disabled.
 	 * @return void
 	 */
-	virtual void DrawDebugInfoList(IRenderAuxGeom& auxGeom, float& posX, float posY, float const debugDistance, char const* const szTextFilter) const = 0;
+	virtual void DrawDebugInfoList(IRenderAuxGeom& auxGeom, float& posX, float posY, Vec3 const& camPos, float const debugDistance, char const* const szTextFilter) const = 0;
 };
 } // namespace Impl
 } // namespace CryAudio

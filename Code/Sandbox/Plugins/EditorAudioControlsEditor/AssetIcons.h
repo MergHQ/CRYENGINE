@@ -17,6 +17,7 @@ static CryIcon s_settingIcon;
 static CryIcon s_stateIcon;
 static CryIcon s_switchIcon;
 static CryIcon s_triggerIcon;
+static CryIcon s_listenerIcon;
 
 //////////////////////////////////////////////////////////////////////////
 inline void InitAssetIcons()
@@ -31,6 +32,7 @@ inline void InitAssetIcons()
 	s_stateIcon = CryIcon("icons:audio/assets/state.ico");
 	s_switchIcon = CryIcon("icons:audio/assets/switch.ico");
 	s_triggerIcon = CryIcon("icons:audio/assets/trigger.ico");
+	s_listenerIcon = CryIcon("icons:audio/assets/listener.ico");
 }
 
 //////////////////////////////////////////////////////////////////////////

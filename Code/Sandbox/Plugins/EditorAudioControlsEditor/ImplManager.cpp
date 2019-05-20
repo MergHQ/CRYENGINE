@@ -35,7 +35,7 @@ bool CImplManager::LoadImpl()
 	GetIEditor()->GetIUndoManager()->Suspend();
 
 	bool isLoaded = true;
-	ICVar const* const pCVar = gEnv->pConsole->GetCVar(CryAudio::g_implCVarName);
+	ICVar const* const pCVar = gEnv->pConsole->GetCVar(CryAudio::g_szImplCVarName);
 
 	if (pCVar != nullptr)
 	{
@@ -87,7 +87,7 @@ bool CImplManager::LoadImpl()
 	}
 	else
 	{
-		CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_WARNING, "[Audio Controls Editor] CVar %s not defined. Needed to derive the Editor plugin name.", CryAudio::g_implCVarName);
+		CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_WARNING, "[Audio Controls Editor] CVar %s not defined. Needed to derive the Editor plugin name.", CryAudio::g_szImplCVarName);
 		isLoaded = false;
 	}
 

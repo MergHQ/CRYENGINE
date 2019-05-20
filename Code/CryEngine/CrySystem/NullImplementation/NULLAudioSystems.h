@@ -26,6 +26,8 @@ public:
 	virtual void SetOcclusionType(EOcclusionType const occlusionType, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override                                  {}
 	virtual void SetOcclusionRayOffset(float const occlusionRayOffset, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override                                 {}
 	virtual void SetName(char const* const szName, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override                                                     {}
+	virtual void AddListener(ListenerId const id, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override                                                      {}
+	virtual void RemoveListener(ListenerId const id, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override                                                   {}
 	virtual void ToggleAbsoluteVelocityTracking(bool const enable, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override                                     {}
 	virtual void ToggleRelativeVelocityTracking(bool const enable, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override                                     {}
 };
@@ -67,6 +69,7 @@ public:
 	virtual char const* GetConfigPath() const override                                                                                                                                                                  { return ""; }
 	virtual IListener*  CreateListener(CTransformation const& transformation, char const* const szName = nullptr) override                                                                                              { return nullptr; }
 	virtual void        ReleaseListener(IListener* const pIListener) override                                                                                                                                           {}
+	virtual IListener*  GetListener(ListenerId const id = DefaultListenerId) override                                                                                                                                   { return nullptr; }
 	virtual IObject*    CreateObject(SCreateObjectData const& objectData = SCreateObjectData::GetEmptyObject()) override                                                                                                { return static_cast<IObject*>(&m_object); }
 	virtual void        ReleaseObject(IObject* const pIObject) override                                                                                                                                                 {}
 	virtual void        GetTriggerData(ControlId const triggerId, STriggerData& triggerData) override                                                                                                                   {}

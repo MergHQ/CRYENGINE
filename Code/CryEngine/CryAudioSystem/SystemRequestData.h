@@ -43,6 +43,7 @@ enum class ESystemRequestType : EnumFlagsType
 	ReleasePendingRays,
 	GetImplInfo,
 	RegisterListener,
+	GetListener,
 	ReleaseListener,
 	RegisterObject,
 	ReleaseObject,
@@ -535,6 +536,28 @@ struct SSystemRequestData<ESystemRequestType::RegisterListener> final : public S
 
 //////////////////////////////////////////////////////////////////////////
 template<>
+struct SSystemRequestData<ESystemRequestType::GetListener> final : public SSystemRequestDataBase
+{
+	explicit SSystemRequestData(CListener** const ppListener_, ListenerId const id_)
+		: SSystemRequestDataBase(ESystemRequestType::GetListener)
+		, ppListener(ppListener_)
+		, id(id_)
+	{}
+
+	explicit SSystemRequestData(SSystemRequestData<ESystemRequestType::GetListener> const* const pALRData)
+		: SSystemRequestDataBase(ESystemRequestType::GetListener)
+		, ppListener(pALRData->ppListener)
+		, id(pALRData->id)
+	{}
+
+	virtual ~SSystemRequestData() override = default;
+
+	CListener** const ppListener;
+	ListenerId const  id;
+};
+
+//////////////////////////////////////////////////////////////////////////
+template<>
 struct SSystemRequestData<ESystemRequestType::ReleaseListener> final : public SSystemRequestDataBase
 {
 	explicit SSystemRequestData(CListener* const pListener_)
@@ -563,6 +586,7 @@ struct SSystemRequestData<ESystemRequestType::RegisterObject> final : public SSy
 		, occlusionType(data.occlusionType)
 		, transformation(data.transformation)
 		, setCurrentEnvironments(data.setCurrentEnvironments)
+		, listenerIds(data.listenerIds)
 	{}
 
 	explicit SSystemRequestData(SSystemRequestData<ESystemRequestType::RegisterObject> const* const pSRData)
@@ -572,6 +596,7 @@ struct SSystemRequestData<ESystemRequestType::RegisterObject> final : public SSy
 		, occlusionType(pSRData->occlusionType)
 		, transformation(pSRData->transformation)
 		, setCurrentEnvironments(pSRData->setCurrentEnvironments)
+		, listenerIds(pSRData->listenerIds)
 	{}
 
 	virtual ~SSystemRequestData() override = default;
@@ -581,6 +606,7 @@ struct SSystemRequestData<ESystemRequestType::RegisterObject> final : public SSy
 	EOcclusionType const                       occlusionType;
 	CTransformation const                      transformation;
 	bool const setCurrentEnvironments;
+	ListenerIds const                          listenerIds;
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -633,6 +659,7 @@ struct SSystemRequestData<ESystemRequestType::ExecuteTriggerEx> final : public S
 		, entityId(data.entityId)
 		, setCurrentEnvironments(data.setCurrentEnvironments)
 		, triggerId(data.triggerId)
+		, listenerIds(data.listenerIds)
 	{}
 
 	explicit SSystemRequestData(SSystemRequestData<ESystemRequestType::ExecuteTriggerEx> const* const pSRData)
@@ -643,6 +670,7 @@ struct SSystemRequestData<ESystemRequestType::ExecuteTriggerEx> final : public S
 		, entityId(pSRData->entityId)
 		, setCurrentEnvironments(pSRData->setCurrentEnvironments)
 		, triggerId(pSRData->triggerId)
+		, listenerIds(pSRData->listenerIds)
 	{}
 
 	virtual ~SSystemRequestData() override = default;
@@ -653,6 +681,7 @@ struct SSystemRequestData<ESystemRequestType::ExecuteTriggerEx> final : public S
 	EntityId const                             entityId;
 	bool const setCurrentEnvironments;
 	ControlId const                            triggerId;
+	ListenerIds const                          listenerIds;
 };
 
 //////////////////////////////////////////////////////////////////////////

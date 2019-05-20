@@ -4,6 +4,7 @@
 #include "Object.h"
 #include "Event.h"
 #include "EventInstance.h"
+#include "Listener.h"
 #include "Impl.h"
 #include <CryAudio/IAudioSystem.h>
 
@@ -69,7 +70,7 @@ void CObject::SetTransformation(CTransformation const& transformation)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CObject::SetOcclusion(float const occlusion)
+void CObject::SetOcclusion(IListener* const pIListener, float const occlusion, uint8 const numRemainingListeners)
 {
 }
 
@@ -95,6 +96,21 @@ ERequestStatus CObject::SetName(char const* const szName)
 #endif  // CRY_AUDIO_IMPL_PORTAUDIO_USE_DEBUG_CODE
 
 	return ERequestStatus::Success;
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CObject::AddListener(IListener* const pIListener)
+{
+	m_pListener = static_cast<CListener*>(pIListener);
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CObject::RemoveListener(IListener* const pIListener)
+{
+	if (m_pListener == static_cast<CListener*>(pIListener))
+	{
+		m_pListener = nullptr;
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////

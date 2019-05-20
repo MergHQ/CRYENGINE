@@ -25,7 +25,7 @@ public:
 	CListener& operator=(CListener const&) = delete;
 	CListener& operator=(CListener&&) = delete;
 
-	explicit CListener(CTransformation const& transformation, uint16 const id, CriAtomEx3dListenerHn const pHandle);
+	explicit CListener(CTransformation const& transformation, CriAtomEx3dListenerHn const pHandle);
 	virtual ~CListener() override = default;
 
 	// CryAudio::Impl::IListener
@@ -35,7 +35,6 @@ public:
 	virtual CTransformation const& GetTransformation() const override { return m_transformation; }
 	// ~CryAudio::Impl::IListener
 
-	uint16                GetId() const       { return m_id; }
 	CriAtomEx3dListenerHn GetHandle() const   { return m_pHandle; }
 	Vec3 const&           GetPosition() const { return m_position; }
 	Vec3 const&           GetVelocity() const { return m_velocity; }
@@ -48,7 +47,6 @@ private:
 
 	void SetVelocity();
 
-	uint16 const                m_id;
 	CriAtomEx3dListenerHn const m_pHandle;
 	bool                        m_isMovingOrDecaying;
 	Vec3                        m_velocity;

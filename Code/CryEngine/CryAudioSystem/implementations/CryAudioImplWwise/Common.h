@@ -29,16 +29,14 @@ namespace Wwise
 class CImpl;
 class CListener;
 class CBaseObject;
-class CGlobalObject;
 class CEventInstance;
 
 extern CImpl* g_pImpl;
-extern CListener* g_pListener;
-extern CGlobalObject* g_pObject;
 
 extern uint32 g_numObjectsWithRelativeVelocity;
 
 using EventInstances = std::vector<CEventInstance*>;
+using Listeners = std::vector<CListener*>;
 
 //////////////////////////////////////////////////////////////////////////
 inline void FillAKVector(Vec3 const& vCryVector, AkVector& vAKVector)
