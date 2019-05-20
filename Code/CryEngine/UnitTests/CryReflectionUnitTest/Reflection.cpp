@@ -25,11 +25,6 @@ class CReflectionUnitTest : public ::testing::Test
 protected:
 	virtual void SetUp() override
 	{
-		// Prepare gEnv.
-#if defined(USE_CRY_ASSERT)
-		gEnv->ignoreAllAsserts = true;
-		gEnv->noAssertDialog = true;
-#endif
 		m_pArchiveHost = Serialization::CreateArchiveHost();
 
 		m_pModule = new Cry::Reflection::CModule();

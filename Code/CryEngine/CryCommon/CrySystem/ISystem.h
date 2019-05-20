@@ -929,19 +929,16 @@ struct SSystemGlobalEnvironment
 	TProfilerMarkerCallback       recordProfilingMarker;
 	//////////////////////////////////////////////////////////////////////////
 
-#if defined(USE_CRY_ASSERT)
-	bool            ignoreAllAsserts = false;
-	bool            noAssertDialog = false;
-	bool            stoppedOnAssert = false;
-	ECryAssertLevel cryAssertLevel = ECryAssertLevel::Enabled;
-#endif
-
 	//! Whether we are running unattended, disallows message boxes and other blocking events that require human intervention
 	bool          bUnattendedMode;
 	//! Whether we are unit testing
 	bool          bTesting;
 
 	bool          bNoRandomSeed;
+
+#if defined(USE_CRY_ASSERT)
+	Cry::Assert::Detail::SSettings assertSettings;
+#endif
 
 	SPlatformInfo pi;
 
@@ -1500,20 +1497,6 @@ struct ISystem
 	//! Called after the processing of the assert message box(Windows or Xbox).
 	//! It will be called even when asserts are disabled by the console variables.
 	virtual void OnAssert(const char* condition, const char* message, const char* fileName, unsigned int fileLineNumber) = 0;
-
-	//! Returns if the assert window from CryAssert is visible.
-	//! OBS1: needed by the editor, as in some cases it can freeze if during an assert engine it will handle
-	//! some events such as mouse movement in a CryPhysics assert.
-	//! OBS2: it will always return false, if asserts are disabled or ignored.
-	virtual bool IsAssertDialogVisible() const = 0;
-
-	//! Checks if asserts are enabled for the specified module (see eCryModule)
-	virtual bool AreAssertsEnabledForModule(uint32 moduleId) = 0;
-	//! Disables assertions for the specified module (see eCryModule)
-	virtual void DisableAssertionsForModule(uint32 moduleId) = 0;
-	//! Sets the AssertVisisble internal variable.
-	//! Typically it should only be called by CryAssert.
-	virtual void SetAssertVisible(bool bAssertVisble) = 0;
 #endif
 
 	//! Get the index of the currently running Crytek application, (0 = first instance, 1 = second instance, etc).

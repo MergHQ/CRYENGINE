@@ -81,12 +81,15 @@ class CEngineModule_CryAudioSystem : public ISystemModule
 		if (CreateAudioSystem(env))
 		{
 #if CRY_PLATFORM_DURANGO
-			// Do this before initializing the audio middleware!
-			HRESULT const result = ApuCreateHeap(static_cast<UINT32>(g_cvars.m_fileCacheManagerSize << 10));
-
-			if (result != S_OK)
 			{
-				CryFatalError("<Audio>: AudioSystem failed to allocate APU heap! (%d byte)", g_cvars.m_fileCacheManagerSize << 10);
+				// Do this before initializing the audio middleware!
+				MEMSTAT_CONTEXT(EMemStatContextType::AudioSystem, "AudioSystem ApuCreateHeap");
+				HRESULT const result = ApuCreateHeap(static_cast<UINT32>(g_cvars.m_fileCacheManagerSize << 10));
+
+				if (result != S_OK)
+				{
+					CryFatalError("<Audio>: AudioSystem failed to allocate APU heap! (%d byte)", g_cvars.m_fileCacheManagerSize << 10);
+				}
 			}
 #endif  // CRY_PLATFORM_DURANGO
 

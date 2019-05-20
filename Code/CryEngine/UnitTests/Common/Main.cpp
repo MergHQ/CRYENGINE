@@ -7,7 +7,22 @@
 #if CRY_PLATFORM_WINDOWS
 #include <tchar.h>
 
-GTEST_API_ int main(int argc, char **argv) {
+void GTestPreAssertCallback(bool& inout_logAssert, bool& inout_ignoreAssert, const char* msg, const char* pszFile, unsigned int uiLine)
+{
+	ADD_FAILURE() << "Assert on " << pszFile << ":" << uiLine << "\n" << msg;
+}
+
+GTEST_API_ int main(int argc, char **argv)
+{
+	// needed in CryCommonUnitTests
+#ifndef SYS_ENV_AS_STRUCT
+	if (!gEnv)
+	{
+		gEnv = new SSystemGlobalEnvironment;
+	}
+	Cry::Assert::ShowDialogOnAssert(false);
+	Cry::Assert::SetCustomAssertCallback(&GTestPreAssertCallback);
+#endif
 
 // Essential step to allow editor plugins to be delay loaded
 // Editor plugin DLLs are placed in a sub folder, thus can't be loaded by the test executable directly.

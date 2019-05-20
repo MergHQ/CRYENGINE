@@ -270,6 +270,7 @@ public:
 
 public:
 	CDurangoGPURingMemAllocator();
+	~CDurangoGPURingMemAllocator();
 
 	bool  Init(ID3D11DmaEngineContextX* pContext, uint32 size);
 

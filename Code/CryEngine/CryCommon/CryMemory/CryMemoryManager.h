@@ -18,7 +18,6 @@
 #pragma once
 #include <algorithm>
 #include <cstddef>
-#include "../CryCore/Assert/CryAssert.h"
 
 #if !defined(_RELEASE)
 //! Enable this to check for heap corruption on windows systems by walking the crt.

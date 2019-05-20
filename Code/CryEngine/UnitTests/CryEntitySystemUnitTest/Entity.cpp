@@ -751,12 +751,6 @@ protected:
 		gEnv->pCryPak = &m_mockCryPak;
 		gEnv->pTimer = &m_mockTimer;
 		
-
-#if defined(USE_CRY_ASSERT)
-		gEnv->ignoreAllAsserts = true;
-		gEnv->noAssertDialog = true;
-#endif
-
 		gEnv->pCryPak = &m_mockCryPak;
 
 		EXPECT_CALL(m_mockCryPak, IsFileExist(_, _))
