@@ -413,6 +413,7 @@ void CFeatureRenderRibbon::WriteToGPUMem(const CParticleComponentRuntime& runtim
 	stats.pixels.updated += pos_round(pixels);
 	stats.pixels.rendered += pos_round(pixelsDrawn);
 	stats.particles.rendered += totalRenderedParticles;
+	stats.spawners.rendered += ribbons.size();
 	stats.components.rendered ++;
 
 	GetPSystem()->GetProfiler().AddEntry(runtime, EPS_RendereredParticles, totalRenderedParticles);

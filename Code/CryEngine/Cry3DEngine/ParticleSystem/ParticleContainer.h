@@ -72,7 +72,8 @@ public:
 	void                              BeginSpawn();
 	void                              AddElements(uint count);
 	void                              EndSpawn();
-	void                              RemoveElements(TVarArray<TParticleId> toRemove, TVarArray<TParticleId> swapIds);
+	void                              MakeSwapIds(TConstArray<TParticleId> toRemove, TVarArray<TParticleId> swapIds);
+	void                              RemoveElements(TVarArray<TParticleId> toRemove);
 	void                              Reparent(TConstArray<TParticleId> swapIds, TDataType<TParticleId> parentType, bool removeOrphans = false);
 
 	// Old names	
@@ -84,7 +85,6 @@ private:
 	template<typename T> const T*     Data(TDataType<T> type) const          { return reinterpret_cast<const T*>(ByteData(type)); }
 	template<typename T> T*           Data(TDataType<T> type)                { return reinterpret_cast<T*>(ByteData(type)); }
 
-	void                              MakeSwapIds(TVarArray<TParticleId> toRemove, TVarArray<TParticleId> swapIds);
 	byte*                             AllocData(uint cap, uint size);
 	void                              FreeData();
 	

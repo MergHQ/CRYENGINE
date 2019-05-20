@@ -98,12 +98,12 @@ CAssetFoldersView::CAssetFoldersView(bool bHideEngineFolder /*= false*/, QWidget
 	QAbstractItemModel* pModel = CAssetFoldersModel::GetInstance();
 	CRY_ASSERT(pModel);
 
-	m_pProxyModel = new CFoldersViewProxyModel(bHideEngineFolder);
+	m_pProxyModel.reset(new CFoldersViewProxyModel(bHideEngineFolder));
 	m_pProxyModel->setSourceModel(pModel);
 	m_pProxyModel->setFilterKeyColumn(0);
 
 	m_treeView = new QAdvancedTreeView();
-	m_treeView->setModel(m_pProxyModel);
+	m_treeView->setModel(m_pProxyModel.get());
 	m_treeView->setSelectionMode(QAbstractItemView::ExtendedSelection);
 	m_treeView->setSelectionBehavior(QAbstractItemView::SelectRows);
 	m_treeView->setUniformRowHeights(true);
@@ -113,7 +113,7 @@ CAssetFoldersView::CAssetFoldersView(bool bHideEngineFolder /*= false*/, QWidget
 	m_treeView->setDragDropMode(QAbstractItemView::DragDrop);
 
 	connect(m_treeView->selectionModel(), &QItemSelectionModel::selectionChanged, [this]() { OnSelectionChanged(); });
-	connect(m_pProxyModel, &QAbstractItemModel::dataChanged, this, &CAssetFoldersView::OnDataChanged);
+	connect(m_pProxyModel.get(), &QAbstractItemModel::dataChanged, this, &CAssetFoldersView::OnDataChanged);
 
 	QWidget* pSearchBoxContainer = new QWidget();
 	pSearchBoxContainer->setObjectName("SearchBoxContainer");
@@ -125,7 +125,7 @@ CAssetFoldersView::CAssetFoldersView(bool bHideEngineFolder /*= false*/, QWidget
 
 	QSearchBox* pSearchBox = new QSearchBox();
 	pSearchBox->setPlaceholderText(tr("Search Folders"));
-	pSearchBox->SetModel(m_pProxyModel);
+	pSearchBox->SetModel(m_pProxyModel.get());
 	pSearchBox->EnableContinuousSearch(true);
 	pSearchBox->SetAutoExpandOnSearch(m_treeView);
 
@@ -247,7 +247,7 @@ void CAssetFoldersView::RenameFolder(const QString& folder)
 
 void CAssetFoldersView::SetFilteredFolders(CFilteredFolders* pFilteredFolders)
 {
-	m_pProxyModel->SetFilteredFolders(pFilteredFolders);
+	static_cast<CFoldersViewProxyModel*>(m_pProxyModel.get())->SetFilteredFolders(pFilteredFolders);
 }
 
 const QStringList& CAssetFoldersView::GetSelectedFolders() const

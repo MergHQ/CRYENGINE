@@ -37,7 +37,8 @@ void ParticleContainerRemoveTest(size_t containerSz, TParticleId* toRemove, size
 		toRemoveMem.push_back(toRemove[i]);
 	}
 	TParticleIdArray swapIds(heap, container.Size());
-	container.RemoveElements(toRemoveMem, swapIds);
+	container.MakeSwapIds(toRemoveMem, swapIds);
+	container.RemoveElements(toRemoveMem);
 
 	// check if none of the particles are in the toRemove list
 	for (uint i = 0; i < containerSz - toRemoveSz; ++i)

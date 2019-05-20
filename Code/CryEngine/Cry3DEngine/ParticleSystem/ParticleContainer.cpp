@@ -183,15 +183,12 @@ void CParticleContainer::AddElements(uint count)
 	Resize(m_lastSpawnId);
 }
 
-void CParticleContainer::RemoveElements(TVarArray<TParticleId> toRemove, TVarArray<TParticleId> swapIds)
+void CParticleContainer::RemoveElements(TVarArray<TParticleId> toRemove)
 {
 	CRY_PFX2_PROFILE_DETAIL;
 
 	if (toRemove.empty())
 		return;
-
-	if (!swapIds.empty())
-		MakeSwapIds(toRemove, swapIds);
 
 	for (auto dataTypeId : EParticleDataType::indices())
 	{
@@ -234,10 +231,10 @@ void CParticleContainer::Reparent(TConstArray<TParticleId> swapIds, TDataType<TP
 			removeIds.push_back(id);
 	}
 	if (!removeIds.empty())
-		RemoveElements(removeIds, {});
+		RemoveElements(removeIds);
 }
 
-void CParticleContainer::MakeSwapIds(TVarArray<TParticleId> toRemove, TVarArray<TParticleId> swapIds)
+void CParticleContainer::MakeSwapIds(TConstArray<TParticleId> toRemove, TVarArray<TParticleId> swapIds)
 {
 	CRY_PFX2_PROFILE_DETAIL;
 

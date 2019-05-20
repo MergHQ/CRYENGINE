@@ -87,6 +87,7 @@ public:
 	SGroupRange               SpawnedRangeV(EDataDomain domain = EDD_Particle) const { return SGroupRange(Container(domain).SpawnedRange()); }
 
 	const SComponentParams&   ComponentParams() const { return m_pComponent->GetComponentParams(); }
+	STimingParams             GetMaxTimings() const;
 
 	static TParticleHeap&     MemHeap();
 	float                     DeltaTime() const;

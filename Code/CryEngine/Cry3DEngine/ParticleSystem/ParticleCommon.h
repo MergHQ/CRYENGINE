@@ -76,9 +76,9 @@ using TFloatArray                      = THeapArray<float>;
 
 template<typename T> using TDynArray   = FastDynArray<T, uint, NAlloc::ModuleAlloc>;
 template<typename T> using TSmallArray = SmallDynArray<T, uint, NAlloc::ModuleAlloc>;
-template<typename T> using TSmartArray = TDynArray<_smart_ptr<T>>;
+template<typename T> using TSmartArray = TSmallArray<_smart_ptr<T>>;
 
-template<typename T> struct TReuseArray : TDynArray<T>
+template<typename T> struct TReuseArray : TSmallArray<T>
 {
 	void reset()
 	{

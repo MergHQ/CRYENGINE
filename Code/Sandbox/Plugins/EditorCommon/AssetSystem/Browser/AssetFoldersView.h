@@ -1,14 +1,18 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 #pragma once
 
-#include <QWidget>
+
+#include "EditorFramework/StateSerializable.h"
+#include "ProxyModels/DeepFilterProxyModel.h"
+
 #include <CrySandbox/CrySignal.h>
+
 #include <QAbstractItemModel>
 #include <QAbstractItemView>
-#include "EditorFramework/StateSerializable.h"
+#include <QWidget>
 
-class CFoldersViewProxyModel;
 class CFilteredFolders;
+class CFoldersViewProxyModel;
 class QAdvancedTreeView;
 
 class EDITOR_COMMON_API CAssetFoldersView : public QWidget, public IStateSerializable
@@ -56,7 +60,7 @@ private:
 
 	QString ToFolder(const QModelIndex& index);
 
-	QAdvancedTreeView*      m_treeView;
-	QStringList             m_selectedFolders;
-	CFoldersViewProxyModel* m_pProxyModel;
+	QAdvancedTreeView*                     m_treeView;
+	QStringList                            m_selectedFolders;
+	std::unique_ptr<QDeepFilterProxyModel> m_pProxyModel;
 };

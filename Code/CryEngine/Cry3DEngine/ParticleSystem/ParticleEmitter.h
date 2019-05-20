@@ -84,8 +84,10 @@ public:
 	void                      RenderDeferred(const SRenderContext& renderContext);
 	CParticleContainer&       GetParentContainer()         { return m_parentContainer; }
 	const CParticleContainer& GetParentContainer() const   { return m_parentContainer; }
-	const TRuntimes&          GetRuntimes() const          { return m_componentRuntimes; }
-	CParticleComponentRuntime*GetRuntimeFor(CParticleComponent* pComponent) { return m_componentRuntimesFor[pComponent->GetComponentId()]; }
+	const TRuntimes&          GetRuntimes() const          { return m_runtimes; }
+	const TRuntimes&          GetRuntimesPreUpdate() const { return m_runtimesPreUpdate; }
+	const TRuntimes&          GetRuntimesDeferred() const  { return m_runtimesDeferred; }
+	CParticleComponentRuntime*GetRuntimeFor(CParticleComponent* pComponent) { return m_runtimesFor[pComponent->GetComponentId()]; }
 	const CParticleEffect*    GetCEffect() const           { return m_pEffect; }
 	CParticleEffect*          GetCEffect()                 { return m_pEffect; }
 	void                      Register();
@@ -108,6 +110,7 @@ public:
 	float                     GetTime() const              { return m_time; }
 	float                     GetAge() const               { return m_time - m_timeCreated; }
 	uint                      IsHidden() const             { return GetRndFlags() & ERF_HIDDEN; }
+	STimingParams             GetMaxTimings() const;
 	bool                      WasRenderedLastFrame() const { return m_unrendered <= 1 && !IsHidden(); }
 	uint32                    GetInitialSeed() const       { return m_initialSeed; }
 	uint32                    GetCurrentSeed() const       { return m_currentSeed; }
@@ -130,44 +133,47 @@ private:
 	IEntity* GetEmitGeometryEntity() const;
 
 private:
-	_smart_ptr<CParticleEffect>            m_pEffect;
-	_smart_ptr<CParticleEffect>            m_pEffectOriginal;
-	SVisEnviron                            m_visEnviron;
-	SPhysEnviron                           m_physEnviron;
-	SpawnParams                            m_spawnParams;
-	CAttributeInstance                     m_attributeInstance;
-	TParticleFeatures                      m_emitterFeatures;
-	AABB                                   m_realBounds;
-	AABB                                   m_nextBounds;
-	AABB                                   m_bounds;
-	CParticleContainer                     m_parentContainer;
-	TRuntimes                              m_componentRuntimesFor;
-	TRuntimes                              m_componentRuntimes;
-	QuatTS                                 m_location;
-	IEntity*                               m_entityOwner;
-	int                                    m_entitySlot;
-	ParticleTarget                         m_target;
-	GeomRef                                m_emitterGeometry;
-	int                                    m_emitterGeometrySlot;
-	ColorF                                 m_profilerColor;
-	float                                  m_viewDistRatio;
-	float                                  m_time;
-	float                                  m_timeCreated;
-	float                                  m_timeStable;
-	float                                  m_timeUpdated;
-	float                                  m_timeDeath;
-	int                                    m_emitterEditVersion;
-	int                                    m_effectEditVersion;
-	uint                                   m_initialSeed;
-	uint                                   m_currentSeed;
-	uint                                   m_emitterId;
-	bool                                   m_registered;
-	bool                                   m_reRegister;
-	bool                                   m_active;
-	bool                                   m_alive;
-	uint                                   m_unrendered;
-	uint                                   m_debug;
-	stl::PSyncMultiThread                  m_lock;
+	_smart_ptr<CParticleEffect> m_pEffect;
+	_smart_ptr<CParticleEffect> m_pEffectOriginal;
+	SVisEnviron                 m_visEnviron;
+	SPhysEnviron                m_physEnviron;
+	SpawnParams                 m_spawnParams;
+	CAttributeInstance          m_attributeInstance;
+	TParticleFeatures           m_emitterFeatures;
+	AABB                        m_realBounds;
+	AABB                        m_nextBounds;
+	AABB                        m_bounds;
+	CParticleContainer          m_parentContainer;
+	TRuntimes                   m_runtimes;
+	TRuntimes                   m_runtimesFor;
+	TRuntimes                   m_runtimesPreUpdate;
+	TRuntimes                   m_runtimesDeferred;
+	uint                        m_environFlags;
+	QuatTS                      m_location;
+	IEntity*                    m_entityOwner;
+	int                         m_entitySlot;
+	ParticleTarget              m_target;
+	GeomRef                     m_emitterGeometry;
+	int                         m_emitterGeometrySlot;
+	ColorF                      m_profilerColor;
+	float                       m_viewDistRatio;
+	float                       m_time;
+	float                       m_timeCreated;
+	float                       m_timeStable;
+	float                       m_timeUpdated;
+	float                       m_timeDeath;
+	int                         m_emitterEditVersion;
+	int                         m_effectEditVersion;
+	uint                        m_initialSeed;
+	uint                        m_currentSeed;
+	uint                        m_emitterId;
+	bool                        m_registered;
+	bool                        m_reRegister;
+	bool                        m_active;
+	bool                        m_alive;
+	uint                        m_unrendered;
+	uint                        m_debug;
+	stl::PSyncMultiThread       m_lock;
 };
 
 }

@@ -368,18 +368,17 @@ void CParticleComponentRuntime::RemoveParticles()
 		TParticleIdArray swapIds(MemHeap());
 		const bool hasChildren = !m_pComponent->GetChildComponents().empty();
 		if (hasChildren)
-			swapIds.resize(numParticles);
-
-		Container().RemoveElements(removeIds, swapIds);
-
-		if (hasChildren)
 		{
+			swapIds.resize(numParticles);
+			Container().MakeSwapIds(removeIds, swapIds);
 			for (const auto& pChild : m_pComponent->GetChildComponents())
 			{
 				if (auto pSubRuntime = m_pEmitter->GetRuntimeFor(pChild))
 					pSubRuntime->Reparent(swapIds);
 			}
 		}
+
+		Container().RemoveElements(removeIds);
 	}
 }
 
@@ -588,7 +587,7 @@ void CParticleComponentRuntime::GetMaxParticleCounts(int& total, int& perFrame, 
 	total = counts.burst;
 	const float rate = counts.rate + counts.perFrame * maxFPS;
 	const float extendedLife = ComponentParams().m_maxParticleLife + rcp(minFPS); // Particles stay 1 frame after death
-	if (rate > 0.0f && std::isfinite(extendedLife))
+	if (rate > 0.0f && valueisfinite(extendedLife))
 		total += int_ceil(rate * extendedLife);
 	perFrame = int(counts.burst + counts.perFrame) + int_ceil(counts.rate / minFPS);
 
@@ -675,7 +674,7 @@ void CParticleComponentRuntime::DebugStabilityCheck()
 	for (auto id : FullRange(EDD_Spawner))
 	{
 		TParticleId parentId = parentIds.Load(id);
-		CRY_PFX2_ASSERT(parentId < parentCount);                             // this spawner is not pointing to the correct parent
+		CRY_PFX2_ASSERT(parentId < parentCount || parentId == gInvalidId);   // this spawner is not pointing to the correct parent
 	}
 #endif
 }
@@ -693,6 +692,9 @@ void CParticleComponentRuntime::AccumStats()
 	auto& stats = GetPSystem()->GetThreadData().statsCPU;
 	stats.components.alive += IsAlive();
 	stats.components.updated ++;
+	stats.spawners.alloc += Container(EDD_Spawner).Capacity();
+	stats.spawners.alive += Container(EDD_Spawner).Size();
+	stats.spawners.updated += Container(EDD_Spawner).Size();
 	stats.particles.alloc += allocParticles;
 	stats.particles.alive += aliveParticles;
 	stats.particles.updated += aliveParticles;
@@ -702,6 +704,39 @@ void CParticleComponentRuntime::AccumStats()
 	profiler.AddEntry(*this, EPS_AllocatedParticles, allocParticles);
 }
 
+pfx2::STimingParams CParticleComponentRuntime::GetMaxTimings() const
+{
+	if (m_pComponent->GetChildComponents().empty())
+		return ComponentParams();
+
+	STimingParams timings = ComponentParams();
+
+	// Adjust lifetimes to include child lifetimes
+	float maxChildEq = 0.0f, maxChildLife = 0.0f;
+	for (const auto& pChild : m_pComponent->GetChildComponents())
+	{
+		if (auto pSubRuntime = m_pEmitter->GetRuntimeFor(pChild))
+		{
+			STimingParams timingsChild = pSubRuntime->GetMaxTimings();
+			SetMax(maxChildEq, timingsChild.m_equilibriumTime);
+			SetMax(maxChildLife, timingsChild.m_maxTotalLife);
+		}
+	}
+
+	const float moreEq = maxChildEq - FiniteOr(timings.m_maxParticleLife, 0.0f);
+	if (moreEq > 0.0f)
+	{
+		timings.m_stableTime += moreEq;
+		timings.m_equilibriumTime += moreEq;
+	}
+	const float moreLife = maxChildLife - FiniteOr(timings.m_maxParticleLife, 0.0f);
+	if (moreLife > 0.0f)
+	{
+		timings.m_maxTotalLife += moreLife;
+	}
+
+	return timings;
+}
 
 pfx2::TParticleHeap& CParticleComponentRuntime::MemHeap()
 {

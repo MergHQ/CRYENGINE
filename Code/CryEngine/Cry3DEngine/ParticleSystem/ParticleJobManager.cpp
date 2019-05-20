@@ -15,11 +15,6 @@ namespace pfx2
 
 int e_ParticlesJobsPerThread = 16;
 
-ILINE bool EmitterHasDeferred(CParticleEmitter* pEmitter)
-{
-	return !pEmitter->GetCEffect()->RenderDeferred.empty();
-}
-
 CParticleJobManager::CParticleJobManager()
 {
 	REGISTER_CVAR(e_ParticlesJobsPerThread, 16, 0, "Maximum particle jobs to assign per worker thread");
@@ -57,7 +52,7 @@ void CParticleJobManager::AddUpdateEmitter(CParticleEmitter* pEmitter)
 		// Schedule emitters rendered last frame first
 		if (threadMode >= 2 && pEmitter->WasRenderedLastFrame())
 		{
-			if (threadMode >= 4 && EmitterHasDeferred(pEmitter))
+			if (threadMode >= 4 && pEmitter->GetRuntimesDeferred().size())
 				m_emittersDeferred.push_back(pEmitter);
 			else
 				m_emittersVisible.push_back(pEmitter);
@@ -70,7 +65,7 @@ void CParticleJobManager::AddUpdateEmitter(CParticleEmitter* pEmitter)
 		auto job = [pEmitter]() { pEmitter->UpdateParticles(); };
 		if (pEmitter->WasRenderedLastFrame())
 		{
-			if (EmitterHasDeferred(pEmitter))
+			if (pEmitter->GetRuntimesDeferred().size())
 			{
 				gEnv->pJobManager->AddLambdaJob("job:pfx2:UpdateEmitter (deferred)", job, JobManager::eHighPriority, &m_updateState);
 			}
