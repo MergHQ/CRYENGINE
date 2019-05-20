@@ -9,12 +9,9 @@
 #include "ParameterState.h"
 #include "ParameterEnvironment.h"
 #include "Return.h"
+#include "Listener.h"
 
 #include <CryAudio/IAudioSystem.h>
-
-#if defined(CRY_AUDIO_IMPL_FMOD_USE_DEBUG_CODE)
-	#include <Logger.h>
-#endif // CRY_AUDIO_IMPL_FMOD_USE_DEBUG_CODE
 
 namespace CryAudio
 {
@@ -23,16 +20,22 @@ namespace Impl
 namespace Fmod
 {
 //////////////////////////////////////////////////////////////////////////
-CBaseObject::CBaseObject()
-	: m_flags(EObjectFlags::None)
+CBaseObject::CBaseObject(int const listenerMask, Listeners const& listeners)
+	: m_listenerMask(listenerMask)
+	, m_flags(EObjectFlags::None)
 	, m_occlusion(0.0f)
 	, m_absoluteVelocity(0.0f)
+	, m_listeners(listeners)
 {
 	ZeroStruct(m_attributes);
 	m_attributes.forward.z = 1.0f;
 	m_attributes.up.y = 1.0f;
 
 	m_eventInstances.reserve(2);
+
+#if defined(CRY_AUDIO_IMPL_FMOD_USE_DEBUG_CODE)
+	UpdateListenerNames();
+#endif  // CRY_AUDIO_IMPL_FMOD_USE_DEBUG_CODE
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -122,6 +125,79 @@ ERequestStatus CBaseObject::SetName(char const* const szName)
 	m_name = szName;
 #endif  // CRY_AUDIO_IMPL_FMOD_USE_DEBUG_CODE
 	return ERequestStatus::Success;
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CBaseObject::AddListener(IListener* const pIListener)
+{
+	auto const pNewListener = static_cast<CListener*>(pIListener);
+	int const newListenerId = pNewListener->GetId();
+	bool hasListener = false;
+
+	for (auto const pListener : m_listeners)
+	{
+		if (pListener->GetId() == newListenerId)
+		{
+			hasListener = true;
+			break;
+		}
+	}
+
+	if (!hasListener)
+	{
+		m_listenerMask |= BIT(newListenerId);
+		m_listeners.push_back(pNewListener);
+
+		for (auto const pEventInstance : m_eventInstances)
+		{
+			pEventInstance->SetListenermask(m_listenerMask);
+		}
+
+#if defined(CRY_AUDIO_IMPL_FMOD_USE_DEBUG_CODE)
+		UpdateListenerNames();
+#endif    // CRY_AUDIO_IMPL_FMOD_USE_DEBUG_CODE
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CBaseObject::RemoveListener(IListener* const pIListener)
+{
+	auto const pListenerToRemove = static_cast<CListener*>(pIListener);
+	bool wasRemoved = false;
+
+	auto iter(m_listeners.begin());
+	auto const iterEnd(m_listeners.cend());
+
+	for (; iter != iterEnd; ++iter)
+	{
+		CListener* const pListener = *iter;
+
+		if (pListener == pListenerToRemove)
+		{
+			m_listenerMask &= ~BIT(pListenerToRemove->GetId());
+
+			if (iter != (iterEnd - 1))
+			{
+				(*iter) = m_listeners.back();
+			}
+
+			m_listeners.pop_back();
+			wasRemoved = true;
+			break;
+		}
+	}
+
+	if (wasRemoved)
+	{
+		for (auto const pEventInstance : m_eventInstances)
+		{
+			pEventInstance->SetListenermask(m_listenerMask);
+		}
+
+#if defined(CRY_AUDIO_IMPL_FMOD_USE_DEBUG_CODE)
+		UpdateListenerNames();
+#endif    // CRY_AUDIO_IMPL_FMOD_USE_DEBUG_CODE
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -300,6 +376,32 @@ void CBaseObject::UpdateVelocityTracking()
 
 	trackVelocity ? (m_flags |= EObjectFlags::TrackAbsoluteVelocity) : (m_flags &= ~EObjectFlags::TrackAbsoluteVelocity);
 }
-} // namespace Fmod
-} // namespace Impl
-} // namespace CryAudio
+
+#if defined(CRY_AUDIO_IMPL_FMOD_USE_DEBUG_CODE)
+//////////////////////////////////////////////////////////////////////////
+void CBaseObject::UpdateListenerNames()
+{
+	m_listenerNames.clear();
+	size_t const numListeners = m_listeners.size();
+
+	if (numListeners != 0)
+	{
+		for (size_t i = 0; i < numListeners; ++i)
+		{
+			m_listenerNames += m_listeners[i]->GetName();
+
+			if (i != (numListeners - 1))
+			{
+				m_listenerNames += ", ";
+			}
+		}
+	}
+	else
+	{
+		m_listenerNames = "No Listener!";
+	}
+}
+#endif // CRY_AUDIO_IMPL_FMOD_USE_DEBUG_CODE
+}      // namespace Fmod
+}      // namespace Impl
+}      // namespace CryAudio

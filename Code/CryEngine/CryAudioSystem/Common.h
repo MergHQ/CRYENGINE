@@ -25,6 +25,7 @@ struct ISwitchStateConnection;
 struct ITriggerConnection;
 } // namespace Impl
 
+class CListener;
 class CSystem;
 class CObject;
 class CGlobalObject;
@@ -69,8 +70,10 @@ using SwitchStateConnections = std::vector<Impl::ISwitchStateConnection*>;
 using EnvironmentConnections = std::vector<Impl::IEnvironmentConnection*>;
 using SettingConnections = std::vector<Impl::ISettingConnection*>;
 using Objects = std::vector<CObject*>;
+using Listeners = std::vector<CListener*>;
 
 extern Impl::IImpl* g_pIImpl;
+extern CListener g_defaultListener;
 extern CSystem g_system;
 extern ESystemStates g_systemStates;
 extern TriggerLookup g_triggers;
@@ -125,7 +128,11 @@ static void IncrementTriggerInstanceIdCounter()
 }
 
 #if defined(CRY_AUDIO_USE_DEBUG_CODE)
+extern CListener g_previewListener;
 extern Objects g_constructedObjects;
+
+constexpr char const* g_szPreviewListenerName = "Preview Listener";
+constexpr ListenerId g_previewListenerId = StringToId("ThisIsTheHopefullyUniqueIdForThePreviewListener");
 
 constexpr char const* g_szPreviewTriggerName = "preview_trigger";
 constexpr ControlId g_previewTriggerId = StringToId(g_szPreviewTriggerName);

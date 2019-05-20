@@ -42,12 +42,15 @@ SPoolSizes g_poolSizes;
 std::map<ContextId, SPoolSizes> g_contextPoolSizes;
 std::vector<SMasterBank> g_masterBanks;
 
+std::map<int, bool> g_listenerIds;
+
 #if defined(CRY_AUDIO_IMPL_FMOD_USE_DEBUG_CODE)
 SPoolSizes g_debugPoolSizes;
 EventInstances g_constructedEventInstances;
 uint16 g_objectPoolSize = 0;
 uint16 g_eventInstancePoolSize = 0;
 size_t g_masterBankSize = 0;
+std::vector<CListener*> g_constructedListeners;
 #endif  // CRY_AUDIO_IMPL_FMOD_USE_DEBUG_CODE
 
 constexpr char const* g_szEventPrefix = "event:/";
@@ -180,6 +183,11 @@ ERequestStatus CImpl::Init(uint16 const objectPoolSize)
 	m_regularSoundBankFolder += g_szAssetsFolderName;
 	m_localizedSoundBankFolder = m_regularSoundBankFolder;
 
+	for (int i = 0; i < FMOD_MAX_LISTENERS; ++i)
+	{
+		g_listenerIds.emplace(i, false);
+	}
+
 	FMOD_RESULT fmodResult = FMOD::Studio::System::create(&g_pStudioSystem);
 	CRY_AUDIO_IMPL_FMOD_ASSERT_OK;
 	fmodResult = g_pStudioSystem->getCoreSystem(&g_pCoreSystem);
@@ -239,14 +247,10 @@ ERequestStatus CImpl::Init(uint16 const objectPoolSize)
 	fmodResult = g_pStudioSystem->initialize(g_cvars.m_maxChannels, studioInitFlags, initFlags, pExtraDriverData);
 	CRY_AUDIO_IMPL_FMOD_ASSERT_OK;
 
-	LoadMasterBanks();
-
-	FMOD_3D_ATTRIBUTES attributes = {
-		{ 0 } };
-	attributes.forward.z = 1.0f;
-	attributes.up.y = 1.0f;
-	fmodResult = g_pStudioSystem->setListenerAttributes(0, &attributes);
+	fmodResult = g_pStudioSystem->setNumListeners(FMOD_MAX_LISTENERS);
 	CRY_AUDIO_IMPL_FMOD_ASSERT_OK;
+
+	LoadMasterBanks();
 
 	return (fmodResult == FMOD_OK) ? ERequestStatus::Success : ERequestStatus::Failure;
 }
@@ -579,26 +583,52 @@ void CImpl::GetInfo(SImplInfo& implInfo) const
 }
 
 ///////////////////////////////////////////////////////////////////////////
-IObject* CImpl::ConstructGlobalObject()
+IObject* CImpl::ConstructGlobalObject(IListeners const& listeners)
 {
-	MEMSTAT_CONTEXT(EMemStatContextType::AudioImpl, "CryAudio::Impl::Fmod::CGlobalObject");
-	new CGlobalObject;
+	int const numListeners = listeners.size();
+	CRY_ASSERT_MESSAGE(numListeners <= FMOD_MAX_LISTENERS, "Number of listeners (%d) exceeded FMOD_MAX_LISTENERS (%d) during %s", numListeners, FMOD_MAX_LISTENERS, __FUNCTION__);
 
-	if (!stl::push_back_unique(g_constructedObjects, static_cast<CBaseObject*>(g_pObject)))
+	int listenerMask = 0;
+	Listeners objectListeners;
+
+	for (int i = 0; (i < numListeners) && (i < FMOD_MAX_LISTENERS); ++i)
+	{
+		auto const pListener = static_cast<CListener*>(listeners[i]);
+		listenerMask |= BIT(pListener->GetId());
+		objectListeners.emplace_back(pListener);
+	}
+
+	MEMSTAT_CONTEXT(EMemStatContextType::AudioImpl, "CryAudio::Impl::Fmod::CGlobalObject");
+	auto const pObject = new CGlobalObject(listenerMask, objectListeners);
+
+	if (!stl::push_back_unique(g_constructedObjects, static_cast<CBaseObject*>(pObject)))
 	{
 #if defined(CRY_AUDIO_IMPL_FMOD_USE_DEBUG_CODE)
 		Cry::Audio::Log(ELogType::Warning, "Trying to construct an already registered object.");
 #endif    // CRY_AUDIO_IMPL_FMOD_USE_DEBUG_CODE
 	}
 
-	return static_cast<IObject*>(g_pObject);
+	return static_cast<IObject*>(pObject);
 }
 
 ///////////////////////////////////////////////////////////////////////////
-IObject* CImpl::ConstructObject(CTransformation const& transformation, char const* const szName /*= nullptr*/)
+IObject* CImpl::ConstructObject(CTransformation const& transformation, IListeners const& listeners, char const* const szName /*= nullptr*/)
 {
+	int const numListeners = listeners.size();
+	CRY_ASSERT_MESSAGE(numListeners <= FMOD_MAX_LISTENERS, "Number of listeners (%d) exceeded FMOD_MAX_LISTENERS (%d) during %s", numListeners, FMOD_MAX_LISTENERS, __FUNCTION__);
+
+	int listenerMask = 0;
+	Listeners objectListeners;
+
+	for (int i = 0; (i < numListeners) && (i < FMOD_MAX_LISTENERS); ++i)
+	{
+		auto const pListener = static_cast<CListener*>(listeners[i]);
+		listenerMask |= BIT(pListener->GetId());
+		objectListeners.emplace_back(pListener);
+	}
+
 	MEMSTAT_CONTEXT(EMemStatContextType::AudioImpl, "CryAudio::Impl::Fmod::CObject");
-	CBaseObject* const pObject = new CObject(transformation);
+	CBaseObject* const pObject = new CObject(transformation, listenerMask, objectListeners);
 
 #if defined(CRY_AUDIO_IMPL_FMOD_USE_DEBUG_CODE)
 	if (szName != nullptr)
@@ -633,29 +663,51 @@ void CImpl::DestructObject(IObject const* const pIObject)
 }
 
 ///////////////////////////////////////////////////////////////////////////
-IListener* CImpl::ConstructListener(CTransformation const& transformation, char const* const szName /*= nullptr*/)
+IListener* CImpl::ConstructListener(CTransformation const& transformation, char const* const szName)
 {
-	static int id = 0;
+	int id = FMOD_MAX_LISTENERS;
+
+	for (auto& listenerIdPair : g_listenerIds)
+	{
+		if (!listenerIdPair.second)
+		{
+			id = listenerIdPair.first;
+			listenerIdPair.second = true;
+			break;
+		}
+	}
+
+	CRY_ASSERT_MESSAGE(id < FMOD_MAX_LISTENERS, "Number of listeners (%d) exceeded FMOD_MAX_LISTENERS (%d) during %s", id, FMOD_MAX_LISTENERS, __FUNCTION__);
 
 	MEMSTAT_CONTEXT(EMemStatContextType::AudioImpl, "CryAudio::Impl::Fmod::CListener");
-	g_pListener = new CListener(transformation, id++);
+	auto const pListener = new CListener(transformation, id);
 
 #if defined(CRY_AUDIO_IMPL_FMOD_USE_DEBUG_CODE)
-	if (szName != nullptr)
+	pListener->SetName(szName);
+
+	if (!stl::push_back_unique(g_constructedListeners, pListener))
 	{
-		g_pListener->SetName(szName);
+		Cry::Audio::Log(ELogType::Warning, "Trying to construct an already registered listener.");
 	}
 #endif  // CRY_AUDIO_IMPL_FMOD_USE_DEBUG_CODE
 
-	return static_cast<IListener*>(g_pListener);
+	return static_cast<IListener*>(pListener);
 }
 
 ///////////////////////////////////////////////////////////////////////////
 void CImpl::DestructListener(IListener* const pIListener)
 {
-	CRY_ASSERT_MESSAGE(pIListener == g_pListener, "pIListener is not g_pListener during %s", __FUNCTION__);
-	delete g_pListener;
-	g_pListener = nullptr;
+	auto const pListener = static_cast<CListener*>(pIListener);
+	g_listenerIds[pListener->GetId()] = false;
+
+#if defined(CRY_AUDIO_IMPL_FMOD_USE_DEBUG_CODE)
+	if (!stl::find_and_erase(g_constructedListeners, pListener))
+	{
+		Cry::Audio::Log(ELogType::Warning, "Trying to delete a non-existing listener.");
+	}
+#endif  // CRY_AUDIO_IMPL_FMOD_USE_DEBUG_CODE
+
+	delete pListener;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1688,24 +1740,28 @@ void CImpl::DrawDebugMemoryInfo(IRenderAuxGeom& auxGeom, float const posX, float
 	                    m_name.c_str(), memAllocSizeString.c_str(), totalPoolSizeString.c_str(), totalMasterBankSizeString.c_str(), totalMemSizeString.c_str());
 
 	size_t const numEvents = g_constructedEventInstances.size();
+	size_t const numListeners = g_constructedListeners.size();
 
 	posY += Debug::g_systemLineHeight;
-	auxGeom.Draw2dLabel(posX, posY, Debug::g_systemFontSize, Debug::s_systemColorTextSecondary, false, "Active Events: %3" PRISIZE_T " | Objects with Doppler: %u",
-	                    numEvents, g_numObjectsWithDoppler);
+	auxGeom.Draw2dLabel(posX, posY, Debug::g_systemFontSize, Debug::s_systemColorTextSecondary, false, "Active Events: %3" PRISIZE_T " | Listeners: %" PRISIZE_T " | Objects with Doppler: %u",
+	                    numEvents, numListeners, g_numObjectsWithDoppler);
 
-	Vec3 const& listenerPosition = g_pListener->GetPosition();
-	Vec3 const& listenerDirection = g_pListener->GetTransformation().GetForward();
-	float const listenerVelocity = g_pListener->GetVelocity().GetLength();
-	char const* const szName = g_pListener->GetName();
+	for (auto const pListener : g_constructedListeners)
+	{
+		Vec3 const& listenerPosition = pListener->GetPosition();
+		Vec3 const& listenerDirection = pListener->GetTransformation().GetForward();
+		float const listenerVelocity = pListener->GetVelocity().GetLength();
+		char const* const szName = pListener->GetName();
 
-	posY += Debug::g_systemLineHeight;
-	auxGeom.Draw2dLabel(posX, posY, Debug::g_systemFontSize, Debug::s_systemColorListenerActive, false, "Listener: %s | PosXYZ: %.2f %.2f %.2f | FwdXYZ: %.2f %.2f %.2f | Velocity: %.2f m/s",
-	                    szName, listenerPosition.x, listenerPosition.y, listenerPosition.z, listenerDirection.x, listenerDirection.y, listenerDirection.z, listenerVelocity);
+		posY += Debug::g_systemLineHeight;
+		auxGeom.Draw2dLabel(posX, posY, Debug::g_systemFontSize, Debug::s_systemColorListenerActive, false, "Listener: %s | PosXYZ: %.2f %.2f %.2f | FwdXYZ: %.2f %.2f %.2f | Velocity: %.2f m/s",
+		                    szName, listenerPosition.x, listenerPosition.y, listenerPosition.z, listenerDirection.x, listenerDirection.y, listenerDirection.z, listenerVelocity);
+	}
 #endif  // CRY_AUDIO_IMPL_FMOD_USE_DEBUG_CODE
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CImpl::DrawDebugInfoList(IRenderAuxGeom& auxGeom, float& posX, float posY, float const debugDistance, char const* const szTextFilter) const
+void CImpl::DrawDebugInfoList(IRenderAuxGeom& auxGeom, float& posX, float posY, Vec3 const& camPos, float const debugDistance, char const* const szTextFilter) const
 {
 #if defined(CRY_AUDIO_IMPL_FMOD_USE_DEBUG_CODE)
 	if ((g_cvars.m_debugListFilter & g_debugListMask) != 0)
@@ -1723,7 +1779,7 @@ void CImpl::DrawDebugInfoList(IRenderAuxGeom& auxGeom, float& posX, float posY, 
 			for (auto const pEventInstance : g_constructedEventInstances)
 			{
 				Vec3 const& position = pEventInstance->GetObject().GetTransformation().GetPosition();
-				float const distance = position.GetDistance(g_pListener->GetPosition());
+				float const distance = position.GetDistance(camPos);
 
 				if ((debugDistance <= 0.0f) || ((debugDistance > 0.0f) && (distance < debugDistance)))
 				{
@@ -1750,7 +1806,8 @@ void CImpl::DrawDebugInfoList(IRenderAuxGeom& auxGeom, float& posX, float posY, 
 							color = Debug::s_listColorItemStopping;
 						}
 
-						auxGeom.Draw2dLabel(posX, posY, Debug::g_listFontSize, color, false, "%s on %s", szEventName, pEventInstance->GetObject().GetName());
+						auxGeom.Draw2dLabel(posX, posY, Debug::g_listFontSize, color, false, "%s on %s (%s)",
+						                    szEventName, pEventInstance->GetObject().GetName(), pEventInstance->GetObject().GetListenerNames());
 
 						posY += Debug::g_listLineHeight;
 					}

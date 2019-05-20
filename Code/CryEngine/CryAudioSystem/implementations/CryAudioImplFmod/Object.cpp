@@ -18,9 +18,11 @@ namespace Impl
 namespace Fmod
 {
 //////////////////////////////////////////////////////////////////////////
-CObject::CObject(CTransformation const& transformation)
-	: m_transformation(transformation)
+CObject::CObject(CTransformation const& transformation, int const listenerMask, Listeners const& listeners)
+	: CBaseObject(listenerMask, listeners)
+	, m_transformation(transformation)
 	, m_previousAbsoluteVelocity(0.0f)
+	, m_lowestOcclusionPerListener(1.0f)
 	, m_position(transformation.GetPosition())
 	, m_previousPosition(transformation.GetPosition())
 	, m_velocity(ZERO)
@@ -64,7 +66,7 @@ void CObject::SetTransformation(CTransformation const& transformation)
 		m_previousPosition = m_position;
 	}
 
-	float const threshold = m_position.GetDistance(g_pListener->GetPosition()) * g_cvars.m_positionUpdateThresholdMultiplier;
+	float const threshold = GetDistanceToListener() * g_cvars.m_positionUpdateThresholdMultiplier;
 
 	if (!m_transformation.IsEquivalent(transformation, threshold))
 	{
@@ -81,16 +83,23 @@ void CObject::SetTransformation(CTransformation const& transformation)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CObject::SetOcclusion(float const occlusion)
+void CObject::SetOcclusion(IListener* const pIListener, float const occlusion, uint8 const numRemainingListeners)
 {
-	SetParameter(g_occlusionParameterInfo, occlusion);
+	// Lowest occlusion value of all listeners is used.
+	m_lowestOcclusionPerListener = std::min(m_lowestOcclusionPerListener, occlusion);
 
-	for (auto const pEventInstance : m_eventInstances)
+	if (numRemainingListeners == 1)
 	{
-		pEventInstance->SetOcclusion(occlusion);
-	}
+		SetParameter(g_occlusionParameterInfo, m_lowestOcclusionPerListener);
 
-	m_occlusion = occlusion;
+		for (auto const pEventInstance : m_eventInstances)
+		{
+			pEventInstance->SetOcclusion(m_lowestOcclusionPerListener);
+		}
+
+		m_occlusion = m_lowestOcclusionPerListener;
+		m_lowestOcclusionPerListener = 1.0f;
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -244,6 +253,20 @@ void CObject::UpdateVelocities(float const deltaTime)
 			m_absoluteVelocity = absoluteVelocity;
 		}
 	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+float CObject::GetDistanceToListener()
+{
+	float shortestDistanceToListener = std::numeric_limits<float>::max();
+
+	for (auto const pListener : m_listeners)
+	{
+		float const distance = m_position.GetDistance(pListener->GetPosition());
+		shortestDistanceToListener = std::min(shortestDistanceToListener, distance);
+	}
+
+	return shortestDistanceToListener;
 }
 } // namespace Fmod
 } // namespace Impl

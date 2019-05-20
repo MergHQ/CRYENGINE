@@ -9,7 +9,7 @@
 #include "GameObjects/GameObject.h"
 #include "IGameSessionHandler.h"
 #include "ViewSystem.h"
-#include <DefaultComponents/Audio/ListenerComponent.h>
+#include <DefaultComponents/Audio/DefaultListenerComponent.h>
 
 namespace Cry
 {
@@ -73,7 +73,7 @@ void CView::Update(float frameTime, bool isActive)
 	{
 		m_viewParams.SaveLast();
 
-		const CCamera &sysCam = m_pSystem->GetViewCamera();
+		const CCamera& sysCam = m_pSystem->GetViewCamera();
 
 		//process screen shaking
 		ProcessShaking(frameTime);
@@ -177,7 +177,7 @@ void CView::Update(float frameTime, bool isActive)
 					const Vec3 cameraLocalPos = m_viewParams.position;
 
 					// Set entity's camera space position
-					const Vec3 cameraSpacePos(-cameraLocalPos * m_viewParams.rotation);
+					const Vec3 cameraSpacePos(-cameraLocalPos* m_viewParams.rotation);
 					pLinkedToEntity->SetSlotCameraSpacePos(slotIndex, cameraSpacePos);
 
 					// Add world pos onto camera local pos
@@ -790,7 +790,7 @@ void CView::CreateAudioListener()
 			gEnv->pEntitySystem->AddEntityEventListener(m_pAudioListenerEntity->GetId(), ENTITY_EVENT_DONE, this);
 			m_pAudioListenerEntity->SetName(pIEntity->GetName());
 
-			m_pAudioListenerComponent = m_pAudioListenerEntity->GetOrCreateComponent<Cry::Audio::DefaultComponents::CListenerComponent>();
+			m_pAudioListenerComponent = m_pAudioListenerEntity->GetOrCreateComponent<Cry::Audio::DefaultComponents::CDefaultListenerComponent>();
 			CRY_ASSERT(m_pAudioListenerComponent != nullptr);
 			m_pAudioListenerComponent->SetComponentFlags(m_pAudioListenerComponent->GetComponentFlags() | IEntityComponent::EFlags::UserAdded);
 		}

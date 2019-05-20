@@ -25,10 +25,11 @@ public:
 	int m_fileCacheManagerSize = 384 << 10;
 #endif // CRY_PLATFORM_DURANGO
 
-	int m_objectPoolSize = 256;
-	int m_triggerInstancePoolSize = 512;
-	int m_ignoreWindowFocus = 0;
-	int m_poolAllocationMode = 0;
+	int    m_objectPoolSize = 256;
+	int    m_triggerInstancePoolSize = 512;
+	int    m_ignoreWindowFocus = 0;
+	int    m_poolAllocationMode = 0;
+	ICVar* m_pListeners = nullptr;
 
 #if defined(CRY_AUDIO_USE_OCCLUSION)
 	int   m_occlusionCollisionTypes = 0;

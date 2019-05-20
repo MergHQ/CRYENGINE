@@ -14,13 +14,9 @@ namespace Adx2
 {
 class CImpl;
 class CBaseObject;
-class CGlobalObject;
-class CListener;
 class CCueInstance;
 
 extern CImpl* g_pImpl;
-extern CGlobalObject* g_pObject;
-extern CListener* g_pListener;
 
 using Objects = std::vector<CBaseObject*>;
 extern Objects g_constructedObjects;

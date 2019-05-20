@@ -80,6 +80,8 @@ public:
 	FMOD::Studio::EventInstance* GetFmodEventInstance() const                                       { return m_pInstance; }
 	void                         SetFmodEventInstance(FMOD::Studio::EventInstance* const pInstance) { m_pInstance = pInstance; }
 
+	void                         SetListenermask(int const mask)                                    { m_pInstance->setListenerMask(mask); }
+
 	bool                         PrepareForOcclusion();
 	void                         SetOcclusion(float const occlusion);
 	void                         SetReturnSend(CReturn const* const pReturn, float const value);

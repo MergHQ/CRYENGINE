@@ -596,3 +596,21 @@ void CEntityComponentAudio::ToggleRelativeVelocityTracking(bool const enable, Cr
 		std::for_each(m_mapAuxObjects.begin(), m_mapAuxObjects.end(), SToggleRelativeVelocityTracking(enable));
 	}
 }
+
+//////////////////////////////////////////////////////////////////////////
+void CEntityComponentAudio::AddListener(CryAudio::ListenerId const listenerId)
+{
+	for (auto const& objectPair : m_mapAuxObjects)
+	{
+		objectPair.second.pIObject->AddListener(listenerId);
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CEntityComponentAudio::RemoveListener(CryAudio::ListenerId const listenerId)
+{
+	for (auto const& objectPair : m_mapAuxObjects)
+	{
+		objectPair.second.pIObject->RemoveListener(listenerId);
+	}
+}

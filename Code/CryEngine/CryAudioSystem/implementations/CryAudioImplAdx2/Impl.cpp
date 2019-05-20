@@ -59,6 +59,7 @@ SPoolSizes g_debugPoolSizes;
 CueInstances g_constructedCueInstances;
 uint16 g_objectPoolSize = 0;
 uint16 g_cueInstancePoolSize = 0;
+std::vector<CListener*> g_constructedListeners;
 #endif  // CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE
 
 //////////////////////////////////////////////////////////////////////////
@@ -680,26 +681,38 @@ void CImpl::GetInfo(SImplInfo& implInfo) const
 }
 
 ///////////////////////////////////////////////////////////////////////////
-IObject* CImpl::ConstructGlobalObject()
+IObject* CImpl::ConstructGlobalObject(IListeners const& listeners)
 {
-	MEMSTAT_CONTEXT(EMemStatContextType::AudioImpl, "CryAudio::Impl::Adx2::CGlobalObject");
-	new CGlobalObject;
+	auto const pListener = static_cast<CListener*>(listeners[0]); // ADX2 supports only one listener per player.
 
-	if (!stl::push_back_unique(g_constructedObjects, static_cast<CBaseObject*>(g_pObject)))
-	{
+	MEMSTAT_CONTEXT(EMemStatContextType::AudioImpl, "CryAudio::Impl::Adx2::CGlobalObject");
+	auto const pObject = new CGlobalObject(pListener);
+
 #if defined(CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE)
+	if (!stl::push_back_unique(g_constructedObjects, static_cast<CBaseObject*>(pObject)))
+	{
 		Cry::Audio::Log(ELogType::Warning, "Trying to construct an already registered object.");
-#endif    // CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE
 	}
 
-	return static_cast<IObject*>(g_pObject);
+	if (listeners.size() > 1)
+	{
+		Cry::Audio::Log(ELogType::Warning, R"(More than one listener is passed in %s. Adx2 supports only one listener per object. Listener "%s" will be used for object "%s".)",
+		                __FUNCTION__, pListener->GetName(), pObject->GetName());
+	}
+#else
+	stl::push_back_unique(g_constructedObjects, static_cast<CBaseObject*>(pObject));
+#endif  // CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE
+
+	return static_cast<IObject*>(pObject);
 }
 
 ///////////////////////////////////////////////////////////////////////////
-IObject* CImpl::ConstructObject(CTransformation const& transformation, char const* const szName /*= nullptr*/)
+IObject* CImpl::ConstructObject(CTransformation const& transformation, IListeners const& listeners, char const* const szName /*= nullptr*/)
 {
+	auto const pListener = static_cast<CListener*>(listeners[0]); // ADX2 supports only one listener per player.
+
 	MEMSTAT_CONTEXT(EMemStatContextType::AudioImpl, "CryAudio::Impl::Adx2::CObject");
-	auto const pObject = new CObject(transformation);
+	auto const pObject = new CObject(transformation, pListener);
 
 #if defined(CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE)
 	pObject->SetName(szName);
@@ -707,6 +720,12 @@ IObject* CImpl::ConstructObject(CTransformation const& transformation, char cons
 	if (!stl::push_back_unique(g_constructedObjects, pObject))
 	{
 		Cry::Audio::Log(ELogType::Warning, "Trying to construct an already registered object.");
+	}
+
+	if (listeners.size() > 1)
+	{
+		Cry::Audio::Log(ELogType::Warning, R"(More than one listener is passed in %s. Adx2 supports only one listener per object. Listener "%s" will be used for object "%s".)",
+		                __FUNCTION__, pListener->GetName(), pObject->GetName());
 	}
 #else
 	stl::push_back_unique(g_constructedObjects, pObject);
@@ -731,23 +750,23 @@ void CImpl::DestructObject(IObject const* const pIObject)
 }
 
 ///////////////////////////////////////////////////////////////////////////
-IListener* CImpl::ConstructListener(CTransformation const& transformation, char const* const szName /*= nullptr*/)
+IListener* CImpl::ConstructListener(CTransformation const& transformation, char const* const szName)
 {
 	IListener* pIListener = nullptr;
 
-	static uint16 id = 0;
 	CriAtomEx3dListenerHn const pHandle = criAtomEx3dListener_Create(&m_listenerConfig, nullptr, 0);
 
 	if (pHandle != nullptr)
 	{
 		MEMSTAT_CONTEXT(EMemStatContextType::AudioImpl, "CryAudio::Impl::Adx2::CListener");
-		g_pListener = new CListener(transformation, id++, pHandle);
+		auto const pListener = new CListener(transformation, pHandle);
 
 #if defined(CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE)
-		g_pListener->SetName(szName);
+		pListener->SetName(szName);
+		g_constructedListeners.push_back(pListener);
 #endif    // CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE
 
-		pIListener = static_cast<IListener*>(g_pListener);
+		pIListener = static_cast<IListener*>(pListener);
 	}
 
 	return pIListener;
@@ -756,10 +775,29 @@ IListener* CImpl::ConstructListener(CTransformation const& transformation, char 
 ///////////////////////////////////////////////////////////////////////////
 void CImpl::DestructListener(IListener* const pIListener)
 {
-	CRY_ASSERT_MESSAGE(pIListener == g_pListener, "pIListener is not g_pListener during %s", __FUNCTION__);
-	criAtomEx3dListener_Destroy(g_pListener->GetHandle());
-	delete g_pListener;
-	g_pListener = nullptr;
+	auto const pListener = static_cast<CListener*>(pIListener);
+	criAtomEx3dListener_Destroy(pListener->GetHandle());
+
+#if defined(CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE)
+	auto iter(g_constructedListeners.begin());
+	auto const iterEnd(g_constructedListeners.cend());
+
+	for (; iter != iterEnd; ++iter)
+	{
+		if ((*iter) == pListener)
+		{
+			if (iter != (iterEnd - 1))
+			{
+				(*iter) = g_constructedListeners.back();
+			}
+
+			g_constructedListeners.pop_back();
+			break;
+		}
+	}
+#endif    // CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE
+
+	delete pListener;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1681,25 +1719,29 @@ void CImpl::DrawDebugMemoryInfo(IRenderAuxGeom& auxGeom, float const posX, float
 	                    m_name.c_str(), memAllocSizeString.c_str(), totalPoolSizeString.c_str(), acfSizeString.c_str(), totalMemSizeString.c_str());
 
 	size_t const numCueInstances = g_constructedCueInstances.size();
+	size_t const numListeners = g_constructedListeners.size();
 
 	posY += Debug::g_systemLineHeight;
 	auxGeom.Draw2dLabel(posX, posY, Debug::g_systemFontSize, Debug::s_systemColorTextSecondary, false,
-	                    "Active Cues: %3" PRISIZE_T " | Objects with Doppler: %u | DSP Bus Setting: %s | Active Snapshot: %s",
-	                    numCueInstances, g_numObjectsWithDoppler, g_debugCurrentDspBusSettingName.c_str(), g_debugActiveSnapShotName.c_str());
+	                    "Active Cues: %3" PRISIZE_T " | Listeners: %" PRISIZE_T " | Objects with Doppler: %u | DSP Bus Setting: %s | Active Snapshot: %s",
+	                    numCueInstances, numListeners, g_numObjectsWithDoppler, g_debugCurrentDspBusSettingName.c_str(), g_debugActiveSnapShotName.c_str());
 
-	Vec3 const& listenerPosition = g_pListener->GetPosition();
-	Vec3 const& listenerDirection = g_pListener->GetTransformation().GetForward();
-	float const listenerVelocity = g_pListener->GetVelocity().GetLength();
-	char const* const szName = g_pListener->GetName();
+	for (auto const pListener : g_constructedListeners)
+	{
+		Vec3 const& listenerPosition = pListener->GetPosition();
+		Vec3 const& listenerDirection = pListener->GetTransformation().GetForward();
+		float const listenerVelocity = pListener->GetVelocity().GetLength();
+		char const* const szName = pListener->GetName();
 
-	posY += Debug::g_systemLineHeight;
-	auxGeom.Draw2dLabel(posX, posY, Debug::g_systemFontSize, Debug::s_systemColorListenerActive, false, "Listener: %s | PosXYZ: %.2f %.2f %.2f | FwdXYZ: %.2f %.2f %.2f | Velocity: %.2f m/s",
-	                    szName, listenerPosition.x, listenerPosition.y, listenerPosition.z, listenerDirection.x, listenerDirection.y, listenerDirection.z, listenerVelocity);
+		posY += Debug::g_systemLineHeight;
+		auxGeom.Draw2dLabel(posX, posY, Debug::g_systemFontSize, Debug::s_systemColorListenerActive, false, "Listener: %s | PosXYZ: %.2f %.2f %.2f | FwdXYZ: %.2f %.2f %.2f | Velocity: %.2f m/s",
+		                    szName, listenerPosition.x, listenerPosition.y, listenerPosition.z, listenerDirection.x, listenerDirection.y, listenerDirection.z, listenerVelocity);
+	}
 #endif  // CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CImpl::DrawDebugInfoList(IRenderAuxGeom& auxGeom, float& posX, float posY, float const debugDistance, char const* const szTextFilter) const
+void CImpl::DrawDebugInfoList(IRenderAuxGeom& auxGeom, float& posX, float posY, Vec3 const& camPos, float const debugDistance, char const* const szTextFilter) const
 {
 #if defined(CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE)
 	if ((g_cvars.m_debugListFilter & g_debugListMask) != 0)
@@ -1717,7 +1759,7 @@ void CImpl::DrawDebugInfoList(IRenderAuxGeom& auxGeom, float& posX, float posY, 
 			for (auto const pCueInstance : g_constructedCueInstances)
 			{
 				Vec3 const& position = pCueInstance->GetObject().GetTransformation().GetPosition();
-				float const distance = position.GetDistance(g_pListener->GetPosition());
+				float const distance = position.GetDistance(camPos);
 
 				if ((debugDistance <= 0.0f) || ((debugDistance > 0.0f) && (distance < debugDistance)))
 				{
@@ -1730,9 +1772,10 @@ void CImpl::DrawDebugInfoList(IRenderAuxGeom& auxGeom, float& posX, float posY, 
 					{
 						ECueInstanceFlags const flags = pCueInstance->GetFlags();
 						ColorF color = Debug::s_listColorItemActive;
+						char const* const szListenerName = (pCueInstance->GetObject().GetListener() != nullptr) ? pCueInstance->GetObject().GetListener()->GetName() : "No Listener!";
 
 						CryFixedStringT<MaxMiscStringLength> debugText;
-						debugText.Format("%s on %s", szCueName, pCueInstance->GetObject().GetName());
+						debugText.Format("%s on %s (%s)", szCueName, pCueInstance->GetObject().GetName(), szListenerName);
 
 						if ((flags& ECueInstanceFlags::IsPending) != 0)
 						{
@@ -1747,7 +1790,7 @@ void CImpl::DrawDebugInfoList(IRenderAuxGeom& auxGeom, float& posX, float posY, 
 							float const fadeOutTime = pCueInstance->GetCue().GetFadeOutTime();
 							float const remainingTime = std::max(0.0f, fadeOutTime - (gEnv->pTimer->GetAsyncTime().GetSeconds() - pCueInstance->GetTimeFadeOutStarted()));
 
-							debugText.Format("%s on %s (%.2f sec)", szCueName, pCueInstance->GetObject().GetName(), remainingTime);
+							debugText.Format("%s on %s (%s) (%.2f sec)", szCueName, pCueInstance->GetObject().GetName(), szListenerName, remainingTime);
 							color = Debug::s_listColorItemStopping;
 						}
 

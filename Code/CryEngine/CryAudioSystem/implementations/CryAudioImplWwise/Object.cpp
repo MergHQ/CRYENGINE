@@ -27,8 +27,12 @@ constexpr char const* g_szRelativeVelocityParameterName = "relative_velocity";
 static AkRtpcID const s_relativeVelocityParameterId = AK::SoundEngine::GetIDFromString(g_szRelativeVelocityParameterName);
 
 //////////////////////////////////////////////////////////////////////////
-CObject::CObject(AkGameObjectID const id, CTransformation const& transformation, char const* const szName)
-	: CBaseObject(id, szName, transformation.GetPosition())
+CObject::CObject(
+	AkGameObjectID const id,
+	CTransformation const& transformation,
+	ListenerInfos const& listenerInfos,
+	char const* const szName)
+	: CBaseObject(id, listenerInfos, szName, transformation.GetPosition())
 	, m_needsToUpdateAuxSends(false)
 	, m_previousRelativeVelocity(0.0f)
 	, m_previousAbsoluteVelocity(0.0f)
@@ -83,7 +87,7 @@ void CObject::SetTransformation(CTransformation const& transformation)
 		m_previousPosition = m_position;
 	}
 
-	float const threshold = m_distanceToListener * g_cvars.m_positionUpdateThresholdMultiplier;
+	float const threshold = m_shortestDistanceToListener * g_cvars.m_positionUpdateThresholdMultiplier;
 
 	if (!m_transformation.IsEquivalent(transformation, threshold))
 	{
@@ -96,22 +100,15 @@ void CObject::SetTransformation(CTransformation const& transformation)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CObject::SetOcclusion(float const occlusion)
+void CObject::SetOcclusion(IListener* const pIListener, float const occlusion, uint8 const numRemainingListeners)
 {
-	if (g_listenerId != AK_INVALID_GAME_OBJECT)
-	{
-		AK::SoundEngine::SetObjectObstructionAndOcclusion(
-			m_id,
-			g_listenerId,                     // Set occlusion for only the default listener for now.
-			static_cast<AkReal32>(occlusion), // The occlusion value is currently used on obstruction as well until a correct obstruction value is calculated.
-			static_cast<AkReal32>(occlusion));
-	}
-#if defined(CRY_AUDIO_IMPL_WWISE_USE_DEBUG_CODE)
-	else
-	{
-		Cry::Audio::Log(ELogType::Warning, "Wwise - invalid listener Id during %s!", __FUNCTION__);
-	}
-#endif  // CRY_AUDIO_IMPL_WWISE_USE_DEBUG_CODE
+	auto const pListener = static_cast<CListener*>(pIListener);
+
+	AK::SoundEngine::SetObjectObstructionAndOcclusion(
+		m_id,
+		pListener->GetId(),               // Set occlusion for only the default listener for now.
+		static_cast<AkReal32>(occlusion), // The occlusion value is currently used on obstruction as well until a correct obstruction value is calculated.
+		static_cast<AkReal32>(occlusion));
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -227,17 +224,31 @@ void CObject::UpdateVelocities(float const deltaTime)
 
 		if ((m_flags& EObjectFlags::TrackRelativeVelocity) != 0)
 		{
-			// Approaching positive, departing negative value.
+			// Approaching positive, departing negative value. Highest value of all listeners is used.
 			float relativeVelocity = 0.0f;
 
-			if (((m_flags& EObjectFlags::MovingOrDecaying) != 0) && !g_pListener->HasMoved())
+			for (auto const& info : m_listenerInfos)
 			{
-				relativeVelocity = -m_velocity.Dot((m_position - g_pListener->GetPosition()).GetNormalized());
-			}
-			else if (((m_flags& EObjectFlags::MovingOrDecaying) != 0) && g_pListener->HasMoved())
-			{
-				Vec3 const relativeVelocityVec(m_velocity - g_pListener->GetVelocity());
-				relativeVelocity = -relativeVelocityVec.Dot((m_position - g_pListener->GetPosition()).GetNormalized());
+				if (((m_flags& EObjectFlags::MovingOrDecaying) != 0) && !info.pListener->HasMoved())
+				{
+					float const tempRelativeVelocity = -m_velocity.Dot((m_position - info.pListener->GetPosition()).GetNormalized());
+
+					if (fabs(tempRelativeVelocity) > fabs(relativeVelocity))
+					{
+						relativeVelocity = tempRelativeVelocity;
+					}
+				}
+				else if (((m_flags& EObjectFlags::MovingOrDecaying) != 0) && info.pListener->HasMoved())
+				{
+					Vec3 const relativeVelocityVec(m_velocity - info.pListener->GetVelocity());
+
+					float const tempRelativeVelocity = -relativeVelocityVec.Dot((m_position - info.pListener->GetPosition()).GetNormalized());
+
+					if (fabs(tempRelativeVelocity) > fabs(relativeVelocity))
+					{
+						relativeVelocity = tempRelativeVelocity;
+					}
+				}
 			}
 
 			TryToSetRelativeVelocity(relativeVelocity);
@@ -245,15 +256,26 @@ void CObject::UpdateVelocities(float const deltaTime)
 	}
 	else if ((m_flags& EObjectFlags::TrackRelativeVelocity) != 0)
 	{
-		// Approaching positive, departing negative value.
-		if (g_pListener->HasMoved())
+		for (auto const& info : m_listenerInfos)
 		{
-			float const relativeVelocity = g_pListener->GetVelocity().Dot((m_position - g_pListener->GetPosition()).GetNormalized());
-			TryToSetRelativeVelocity(relativeVelocity);
-		}
-		else if (m_previousRelativeVelocity != 0.0f)
-		{
-			TryToSetRelativeVelocity(0.0f);
+			// Approaching positive, departing negative value. Highest value of all listeners is used.
+			float relativeVelocity = 0.0f;
+
+			if (info.pListener->HasMoved())
+			{
+				float const tempRelativeVelocity = info.pListener->GetVelocity().Dot((m_position - info.pListener->GetPosition()).GetNormalized());
+
+				if (fabs(tempRelativeVelocity) > fabs(relativeVelocity))
+				{
+					relativeVelocity = tempRelativeVelocity;
+				}
+
+				TryToSetRelativeVelocity(relativeVelocity);
+			}
+			else if (m_previousRelativeVelocity != 0.0f)
+			{
+				TryToSetRelativeVelocity(0.0f);
+			}
 		}
 	}
 }

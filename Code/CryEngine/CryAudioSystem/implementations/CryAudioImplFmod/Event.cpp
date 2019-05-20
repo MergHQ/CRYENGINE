@@ -122,6 +122,7 @@ ETriggerResult CEvent::Execute(IObject* const pIObject, TriggerInstanceId const 
 				FMOD::Studio::EventInstance* pFmodEventInstance = nullptr;
 				fmodResult = m_pEventDescription->createInstance(&pFmodEventInstance);
 				CRY_AUDIO_IMPL_FMOD_ASSERT_OK;
+				pFmodEventInstance->setListenerMask(pBaseObject->GetListenerMask());
 				pEventInstance->SetFmodEventInstance(pFmodEventInstance);
 
 				if ((m_flags& EEventFlags::CheckedParameters) == 0)

@@ -735,6 +735,8 @@ struct IEntityAudioComponent : public IEntityComponent
 	virtual void RemoveAsListenerFromAudioAuxObject(CryAudio::AuxObjectId const audioAuxObjectId, void (*func)(CryAudio::SRequestInfo const* const)) = 0;
 	virtual void ToggleAbsoluteVelocityTracking(bool const enable, CryAudio::AuxObjectId const audioAuxObjectId = CryAudio::DefaultAuxObjectId, CryAudio::SRequestUserData const& userData = CryAudio::SRequestUserData::GetEmptyObject()) = 0;
 	virtual void ToggleRelativeVelocityTracking(bool const enable, CryAudio::AuxObjectId const audioAuxObjectId = CryAudio::DefaultAuxObjectId, CryAudio::SRequestUserData const& userData = CryAudio::SRequestUserData::GetEmptyObject()) = 0;
+	virtual void AddListener(CryAudio::ListenerId const listenerId) = 0;
+	virtual void RemoveListener(CryAudio::ListenerId const listenerId) = 0;
 };
 
 //! Type of an area managed by IEntityAreaComponent.

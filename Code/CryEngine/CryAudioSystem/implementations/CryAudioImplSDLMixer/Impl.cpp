@@ -44,6 +44,7 @@ uint16 g_objectPoolSize = 0;
 uint16 g_eventInstancePoolSize = 0;
 
 EventInstances g_constructedEventInstances;
+std::vector<CListener*> g_constructedListeners;
 #endif  // CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE
 
 //////////////////////////////////////////////////////////////////////////
@@ -628,31 +629,29 @@ void CImpl::DestructSettingConnection(ISettingConnection const* const pISettingC
 }
 
 ///////////////////////////////////////////////////////////////////////////
-IObject* CImpl::ConstructGlobalObject()
+IObject* CImpl::ConstructGlobalObject(IListeners const& listeners)
 {
-	MEMSTAT_CONTEXT(EMemStatContextType::AudioImpl, "CryAudio::Impl::SDL_mixer::CObject");
-	g_pObject = new CObject(CTransformation::GetEmptyObject(), 0);
-
-#if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE)
-	g_pObject->SetName("Global Object");
-#endif  // CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE
-
-	g_objects.push_back(g_pObject);
-	return static_cast<IObject*>(g_pObject);
+	return ConstructObject(CTransformation::GetEmptyObject(), listeners, "Global Object");
 }
 
 ///////////////////////////////////////////////////////////////////////////
-IObject* CImpl::ConstructObject(CTransformation const& transformation, char const* const szName /*= nullptr*/)
+IObject* CImpl::ConstructObject(CTransformation const& transformation, IListeners const& listeners, char const* const szName /*= nullptr*/)
 {
-	static uint32 id = 1;
+	auto const pListener = static_cast<CListener*>(listeners[0]);
 
 	MEMSTAT_CONTEXT(EMemStatContextType::AudioImpl, "CryAudio::Impl::SDL_mixer::CObject");
-	auto const pObject = new CObject(transformation, id++);
+	auto const pObject = new CObject(transformation, pListener);
 
 #if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE)
 	if (szName != nullptr)
 	{
 		pObject->SetName(szName);
+	}
+
+	if (listeners.size() > 1)
+	{
+		Cry::Audio::Log(ELogType::Warning, R"(More than one listener is passed in %s. SDL Mixer supports only one listener per object. Listener "%s" will be used for object "%s".)",
+		                __FUNCTION__, pListener->GetName(), pObject->GetName());
 	}
 #endif  // CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE
 
@@ -667,40 +666,49 @@ void CImpl::DestructObject(IObject const* const pIObject)
 	{
 		auto const pObject = static_cast<CObject const*>(pIObject);
 		stl::find_and_erase(g_objects, pObject);
-
-		if (pObject == g_pObject)
-		{
-			delete pObject;
-			g_pObject = nullptr;
-		}
-		else
-		{
-			delete pObject;
-		}
+		delete pObject;
 	}
 }
 
 ///////////////////////////////////////////////////////////////////////////
-IListener* CImpl::ConstructListener(CTransformation const& transformation, char const* const szName /*= nullptr*/)
+IListener* CImpl::ConstructListener(CTransformation const& transformation, char const* const szName)
 {
-	static ListenerId id = 0;
-
 	MEMSTAT_CONTEXT(EMemStatContextType::AudioImpl, "CryAudio::Impl::SDL_mixer::CListener");
-	g_pListener = new CListener(transformation, id++);
+	auto const pListener = new CListener(transformation);
 
 #if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE)
-	g_pListener->SetName(szName);
+	pListener->SetName(szName);
+	g_constructedListeners.push_back(pListener);
 #endif  // CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE
 
-	return static_cast<IListener*>(g_pListener);
+	return static_cast<IListener*>(pListener);
 }
 
 ///////////////////////////////////////////////////////////////////////////
 void CImpl::DestructListener(IListener* const pIListener)
 {
-	CRY_ASSERT_MESSAGE(pIListener == g_pListener, "pIListener is not g_pListener during %s", __FUNCTION__);
-	delete g_pListener;
-	g_pListener = nullptr;
+	auto const pListener = static_cast<CListener*>(pIListener);
+
+#if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE)
+	auto iter(g_constructedListeners.begin());
+	auto const iterEnd(g_constructedListeners.cend());
+
+	for (; iter != iterEnd; ++iter)
+	{
+		if ((*iter) == pListener)
+		{
+			if (iter != (iterEnd - 1))
+			{
+				(*iter) = g_constructedListeners.back();
+			}
+
+			g_constructedListeners.pop_back();
+			break;
+		}
+	}
+#endif  // CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE
+
+	delete pListener;
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -885,21 +893,26 @@ void CImpl::DrawDebugMemoryInfo(IRenderAuxGeom& auxGeom, float const posX, float
 	                    m_name.c_str(), memAllocSizeString.c_str(), totalPoolSizeString.c_str(), totalSamplesString.c_str(), totalMemSizeString.c_str());
 
 	size_t const numEvents = g_constructedEventInstances.size();
+	size_t const numListeners = g_constructedListeners.size();
 
 	posY += Debug::g_systemLineHeight;
-	auxGeom.Draw2dLabel(posX, posY, Debug::g_systemFontSize, Debug::s_systemColorTextSecondary, false, "Active Events: %" PRISIZE_T, numEvents);
+	auxGeom.Draw2dLabel(posX, posY, Debug::g_systemFontSize, Debug::s_systemColorTextSecondary, false, "Active Events: %3" PRISIZE_T " | Listeners: %" PRISIZE_T, numEvents, numListeners);
 
-	Vec3 const& listenerPosition = g_pListener->GetTransformation().GetPosition();
-	Vec3 const& listenerDirection = g_pListener->GetTransformation().GetForward();
-	char const* const szName = g_pListener->GetName();
+	for (auto const pListener : g_constructedListeners)
+	{
+		Vec3 const& listenerPosition = pListener->GetTransformation().GetPosition();
+		Vec3 const& listenerDirection = pListener->GetTransformation().GetForward();
+		char const* const szName = pListener->GetName();
 
-	posY += Debug::g_systemLineHeight;
-	auxGeom.Draw2dLabel(posX, posY, Debug::g_systemFontSize, Debug::s_systemColorListenerActive, false, "Listener: %s | PosXYZ: %.2f %.2f %.2f | FwdXYZ: %.2f %.2f %.2f", szName, listenerPosition.x, listenerPosition.y, listenerPosition.z, listenerDirection.x, listenerDirection.y, listenerDirection.z);
+		posY += Debug::g_systemLineHeight;
+		auxGeom.Draw2dLabel(posX, posY, Debug::g_systemFontSize, Debug::s_systemColorListenerActive, false, "Listener: %s | PosXYZ: %.2f %.2f %.2f | FwdXYZ: %.2f %.2f %.2f",
+		                    szName, listenerPosition.x, listenerPosition.y, listenerPosition.z, listenerDirection.x, listenerDirection.y, listenerDirection.z);
+	}
 #endif  // CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CImpl::DrawDebugInfoList(IRenderAuxGeom& auxGeom, float& posX, float posY, float const debugDistance, char const* const szTextFilter) const
+void CImpl::DrawDebugInfoList(IRenderAuxGeom& auxGeom, float& posX, float posY, Vec3 const& camPos, float const debugDistance, char const* const szTextFilter) const
 {
 #if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE)
 	CryFixedStringT<MaxControlNameLength> lowerCaseSearchString(szTextFilter);
@@ -911,7 +924,7 @@ void CImpl::DrawDebugInfoList(IRenderAuxGeom& auxGeom, float& posX, float posY, 
 	for (auto const pEventInstance : g_constructedEventInstances)
 	{
 		Vec3 const& position = pEventInstance->GetObject().GetTransformation().GetPosition();
-		float const distance = position.GetDistance(g_pListener->GetTransformation().GetPosition());
+		float const distance = position.GetDistance(camPos);
 
 		if ((debugDistance <= 0.0f) || ((debugDistance > 0.0f) && (distance < debugDistance)))
 		{
@@ -923,16 +936,17 @@ void CImpl::DrawDebugInfoList(IRenderAuxGeom& auxGeom, float& posX, float posY, 
 			if (draw)
 			{
 				ColorF color = Debug::s_listColorItemActive;
+				char const* const szListenerName = (pEventInstance->GetObject().GetListener() != nullptr) ? pEventInstance->GetObject().GetListener()->GetName() : "No Listener!";
 
 				CryFixedStringT<MaxMiscStringLength> debugText;
-				debugText.Format("%s on %s", szEventName, pEventInstance->GetObject().GetName());
+				debugText.Format("%s on %s (%s)", szEventName, pEventInstance->GetObject().GetName(), szListenerName);
 
 				if (pEventInstance->IsFadingOut())
 				{
 					float const fadeOutTime = static_cast<float>(pEventInstance->GetEvent().GetFadeOutTime()) / 1000.0f;
 					float const remainingTime = std::max(0.0f, fadeOutTime - (gEnv->pTimer->GetAsyncTime().GetSeconds() - pEventInstance->GetTimeFadeOutStarted()));
 
-					debugText.Format("%s on %s (%.2f sec)", szEventName, pEventInstance->GetObject().GetName(), remainingTime);
+					debugText.Format("%s on %s (%s) (%.2f sec)", szEventName, pEventInstance->GetObject().GetName(), szListenerName, remainingTime);
 					color = Debug::s_listColorItemStopping;
 				}
 

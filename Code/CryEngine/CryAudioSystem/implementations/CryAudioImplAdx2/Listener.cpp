@@ -10,9 +10,8 @@ namespace Impl
 namespace Adx2
 {
 //////////////////////////////////////////////////////////////////////////
-CListener::CListener(CTransformation const& transformation, uint16 const id, CriAtomEx3dListenerHn const pHandle)
-	: m_id(id)
-	, m_pHandle(pHandle)
+CListener::CListener(CTransformation const& transformation, CriAtomEx3dListenerHn const pHandle)
+	: m_pHandle(pHandle)
 	, m_isMovingOrDecaying(false)
 	, m_velocity(ZERO)
 	, m_position(transformation.GetPosition())

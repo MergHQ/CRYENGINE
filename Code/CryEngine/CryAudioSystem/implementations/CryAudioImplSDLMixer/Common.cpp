@@ -20,8 +20,6 @@ namespace SDL_mixer
 {
 bool g_bMuted = false;
 CImpl* g_pImpl = nullptr;
-CListener* g_pListener = nullptr;
-CObject* g_pObject = nullptr;
 Objects g_objects;
 
 //////////////////////////////////////////////////////////////////////////

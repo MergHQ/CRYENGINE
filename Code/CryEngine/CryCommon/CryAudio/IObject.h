@@ -111,6 +111,20 @@ struct IObject
 	virtual void SetName(char const* const szName, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) = 0;
 
 	/**
+	 * Adds a listener with the given id to the audio object.
+	 * @param id - id of the listener to add.
+	 * @return void
+	 */
+	virtual void AddListener(ListenerId const id, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) = 0;
+
+	/**
+	 * Removes a listener with the given id from the audio object.
+	 * @param id - id of the listener to remove.
+	 * @return void
+	 */
+	virtual void RemoveListener(ListenerId const id, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) = 0;
+
+	/**
 	 * Toggles whether this audio object should track and update its absolute velocity.
 	 * @param enable - if true enables absolute velocity tracking otherwise disables it.
 	 * @return void

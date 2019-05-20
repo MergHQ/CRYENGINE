@@ -10,8 +10,6 @@ namespace Impl
 {
 namespace SDL_mixer
 {
-using ListenerId = uint;
-
 class CListener final : public IListener
 {
 public:
@@ -22,9 +20,8 @@ public:
 	CListener& operator=(CListener const&) = delete;
 	CListener& operator=(CListener&&) = delete;
 
-	explicit CListener(CTransformation const& transformation, ListenerId const id)
+	explicit CListener(CTransformation const& transformation)
 		: m_transformation(transformation)
-		, m_id(id)
 	{}
 
 	virtual ~CListener() override = default;
@@ -42,8 +39,7 @@ public:
 
 private:
 
-	CTransformation  m_transformation;
-	ListenerId const m_id;
+	CTransformation m_transformation;
 
 #if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE)
 	CryFixedStringT<MaxObjectNameLength> m_name;

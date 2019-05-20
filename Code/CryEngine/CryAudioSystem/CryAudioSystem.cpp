@@ -210,7 +210,7 @@ CEngineModule_CryAudioSystem::CEngineModule_CryAudioSystem()
 		gEnv->pSystem->GetISystemEventDispatcher()->RegisterListener(&g_system, "CryAudio::CSystem");
 	}
 
-	m_pImplNameCVar = REGISTER_STRING_CB(g_implCVarName, "CryAudioImplSDLMixer", 0,
+	m_pImplNameCVar = REGISTER_STRING_CB(g_szImplCVarName, "CryAudioImplSDLMixer", 0,
 	                                     "Holds the name of the audio implementation library to be used.\n"
 	                                     "Usage: s_ImplName <name of the library without extension>\n"
 	                                     "Default: CryAudioImplSDLMixer\n",
@@ -222,7 +222,7 @@ CEngineModule_CryAudioSystem::~CEngineModule_CryAudioSystem()
 {
 	if (gEnv->pConsole != nullptr)
 	{
-		gEnv->pConsole->UnregisterVariable(g_implCVarName);
+		gEnv->pConsole->UnregisterVariable(g_szImplCVarName);
 	}
 
 	if (gEnv->pSystem != nullptr)

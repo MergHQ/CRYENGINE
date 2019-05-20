@@ -8,6 +8,7 @@
 #include "../CryCore/Platform/platform.h"
 #include "../CryCore/CryEnumMacro.h"
 #include "../CryCore/CryCrc32.h"
+#include "../CryCore/Containers/CryArray.h"
 
 #define CRY_AUDIO_DATA_ROOT "audio"
 
@@ -24,6 +25,9 @@ using EnumFlagsType = IdType;
 using AuxObjectId = IdType;
 using LibraryId = IdType;
 using ContextId = IdType;
+using ListenerId = IdType;
+
+using ListenerIds = DynArray<ListenerId>;
 
 constexpr ControlId InvalidControlId = 0;
 constexpr SwitchStateId InvalidSwitchStateId = 0;
@@ -34,6 +38,7 @@ constexpr TriggerInstanceId InvalidTriggerInstanceId = 0;
 constexpr AuxObjectId InvalidAuxObjectId = 0;
 constexpr AuxObjectId DefaultAuxObjectId = 1;
 constexpr ContextId InvalidContextId = 0;
+constexpr ListenerId InvalidListenerId = 0;
 constexpr uint8 MaxInfoStringLength = 128;
 constexpr uint8 MaxControlNameLength = 128;
 constexpr uint8 MaxFileNameLength = 128;
@@ -43,7 +48,9 @@ constexpr uint16 MaxMiscStringLength = 512;
 constexpr uint32 InvalidCRC32 = 0xFFFFffff;
 constexpr float FloatEpsilon = 1.0e-3f;
 
-constexpr char const* g_implCVarName = "s_ImplName";
+constexpr char const* g_szImplCVarName = "s_ImplName";
+constexpr char const* g_szListenersCVarName = "s_Listeners";
+constexpr char const* g_szDefaultListenerName = "Default Listener";
 
 constexpr char const* g_szLoseFocusTriggerName = "lose_focus";
 constexpr char const* g_szGetFocusTriggerName = "get_focus";
@@ -108,6 +115,9 @@ constexpr IdType StringToId(char const* const szSource)
 constexpr PreloadRequestId GlobalPreloadRequestId = StringToId(g_szGlobalPreloadRequestName);
 constexpr LibraryId DefaultLibraryId = StringToId(g_szDefaultLibraryName);
 constexpr ContextId GlobalContextId = StringToId(g_szGlobalContextName);
+constexpr ListenerId DefaultListenerId = StringToId("ThisIsTheHopefullyUniqueIdForTheDefaultListener");
+
+static ListenerIds const g_defaultListenerIds{ DefaultListenerId };
 
 /**
  * @enum CryAudio::ERequestFlags

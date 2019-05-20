@@ -21,8 +21,9 @@ namespace Adx2
 constexpr CriChar8 const* g_szOcclusionAisacName = "occlusion";
 
 //////////////////////////////////////////////////////////////////////////
-CObject::CObject(CTransformation const& transformation)
-	: m_transformation(transformation)
+CObject::CObject(CTransformation const& transformation, CListener* const pListener)
+	: CBaseObject(pListener)
+	, m_transformation(transformation)
 	, m_occlusion(0.0f)
 	, m_previousAbsoluteVelocity(0.0f)
 	, m_position(transformation.GetPosition())
@@ -74,7 +75,7 @@ void CObject::SetTransformation(CTransformation const& transformation)
 		m_previousPosition = m_position;
 	}
 
-	float const threshold = m_position.GetDistance(g_pListener->GetPosition()) * g_cvars.m_positionUpdateThresholdMultiplier;
+	float const threshold = (m_pListener != nullptr) ? (m_position.GetDistance(m_pListener->GetPosition()) * g_cvars.m_positionUpdateThresholdMultiplier) : 0.0f;
 
 	if (!m_transformation.IsEquivalent(transformation, threshold))
 	{
@@ -95,7 +96,7 @@ void CObject::SetTransformation(CTransformation const& transformation)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CObject::SetOcclusion(float const occlusion)
+void CObject::SetOcclusion(IListener* const pIListener, float const occlusion, uint8 const numRemainingListeners)
 {
 	criAtomExPlayer_SetAisacControlByName(m_pPlayer, g_szOcclusionAisacName, static_cast<CriFloat32>(occlusion));
 	criAtomExPlayer_UpdateAll(m_pPlayer);

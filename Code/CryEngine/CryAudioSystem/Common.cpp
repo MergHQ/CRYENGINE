@@ -4,6 +4,7 @@
 #include "Common.h"
 #include "System.h"
 #include "Object.h"
+#include "Listener.h"
 #include "GlobalObject.h"
 #include "LoseFocusTrigger.h"
 #include "GetFocusTrigger.h"
@@ -47,6 +48,8 @@ TriggerInstanceId g_triggerInstanceIdCounter = 1;
 SPoolSizes g_poolSizes;
 
 #if defined(CRY_AUDIO_USE_DEBUG_CODE)
+CListener g_defaultListener(DefaultListenerId, false, g_szDefaultListenerName);
+CListener g_previewListener(g_previewListenerId, false, g_szPreviewListenerName);
 Objects g_constructedObjects;
 CGlobalObject g_object("Global Object");
 CGlobalObject g_previewObject("Preview Object");
@@ -55,6 +58,7 @@ SPoolSizes g_debugPoolSizes;
 ContextInfo g_contextInfo;
 ContextDebugInfo g_contextDebugInfo;
 #else
+CListener g_defaultListener(DefaultListenerId, false);
 CGlobalObject g_object;
 #endif // CRY_AUDIO_USE_DEBUG_CODE
 }      // namespace CryAudio

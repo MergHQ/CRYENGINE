@@ -4,6 +4,7 @@
 
 #include "AssetsManager.h"
 #include "ResourceSelectorDialog.h"
+#include "ListenerSelectorDialog.h"
 
 #include <IResourceSelectorHost.h>
 #include <ListSelectionDialog.h>
@@ -63,6 +64,14 @@ SResourceSelectionResult AudioSettingSelector(SResourceSelectorContext const& co
 	return ShowSelectDialog(context, szPreviousValue, EAssetType::Setting, false);
 }
 
+SResourceSelectionResult AudioListenerSelector(SResourceSelectorContext const& context, char const* szPreviousValue)
+{
+	CListenerSelectorDialog dialog(context.parentWidget);
+	CListenerSelectorDialog::SResourceSelectionDialogResult dialogResult = dialog.ChooseListener(szPreviousValue);
+	SResourceSelectionResult result{ dialogResult.selectionAccepted, dialogResult.selectedListener.c_str() };
+	return result;
+}
+
 REGISTER_RESOURCE_SELECTOR("AudioTrigger", AudioTriggerSelector, "")
 REGISTER_RESOURCE_SELECTOR("AudioSwitch", AudioSwitchSelector, "") // Deprecated.
 REGISTER_RESOURCE_SELECTOR("AudioState", AudioStateSelector, "")   // Deprecated.
@@ -71,4 +80,5 @@ REGISTER_RESOURCE_SELECTOR("AudioParameter", AudioParameterSelector, "")
 REGISTER_RESOURCE_SELECTOR("AudioEnvironment", AudioEnvironmentSelector, "")
 REGISTER_RESOURCE_SELECTOR("AudioPreloadRequest", AudioPreloadRequestSelector, "")
 REGISTER_RESOURCE_SELECTOR("AudioSetting", AudioSettingSelector, "")
+REGISTER_RESOURCE_SELECTOR("AudioListener", AudioListenerSelector, "")
 } // namespace ACE

@@ -182,7 +182,7 @@ CModelViewport::CModelViewport(const char* settingsPath)
 		gEnv->pInput->AddEventListener(this);
 	}
 
-	m_pIAudioListener = gEnv->pAudioSystem->CreateListener(m_viewTM);
+	m_pIAudioListener = gEnv->pAudioSystem->CreateListener(m_viewTM, "ModelViewport");
 	m_AABB.Reset();
 }
 

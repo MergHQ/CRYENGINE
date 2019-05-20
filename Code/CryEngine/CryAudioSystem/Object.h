@@ -67,8 +67,10 @@ public:
 #endif // CRY_AUDIO_USE_DEBUG_CODE
 
 	void HandleSetTransformation(CTransformation const& transformation);
+	void HandleAddListener(ListenerId const id);
+	void HandleRemoveListener(ListenerId const id);
 
-	void Init(Impl::IObject* const pIObject);
+	void Init(Impl::IObject* const pIObject, Listeners const& listeners);
 	void Destruct();
 
 	void StopAllTriggers();
@@ -82,6 +84,7 @@ public:
 #endif // CRY_AUDIO_USE_OCCLUSION
 
 	Impl::IObject*         GetImplDataPtr() const    { return m_pIObject; }
+	Listeners const&       GetListeners() const      { return m_listeners; }
 	CTransformation const& GetTransformation() const { return m_transformation; }
 
 	bool                   IsPlaying() const;
@@ -135,8 +138,10 @@ private:
 	virtual void SetOcclusionType(EOcclusionType const occlusionType, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override;
 	virtual void SetOcclusionRayOffset(float const offset, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override;
 	virtual void SetName(char const* const szName, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override;
-	void         ToggleAbsoluteVelocityTracking(bool const enable, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override;
-	void         ToggleRelativeVelocityTracking(bool const enable, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override;
+	virtual void AddListener(ListenerId const id, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override;
+	virtual void RemoveListener(ListenerId const id, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override;
+	virtual void ToggleAbsoluteVelocityTracking(bool const enable, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override;
+	virtual void ToggleRelativeVelocityTracking(bool const enable, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override;
 	// ~CryAudio::IObject
 
 	void SetActive();
@@ -150,6 +155,8 @@ private:
 #if defined(CRY_AUDIO_USE_OCCLUSION)
 	CPropagationProcessor m_propagationProcessor;
 #endif // CRY_AUDIO_USE_OCCLUSION
+
+	Listeners m_listeners;
 
 #if defined(CRY_AUDIO_USE_DEBUG_CODE)
 public:

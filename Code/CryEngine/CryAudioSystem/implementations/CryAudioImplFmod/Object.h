@@ -20,14 +20,14 @@ public:
 	CObject& operator=(CObject const&) = delete;
 	CObject& operator=(CObject&&) = delete;
 
-	explicit CObject(CTransformation const& transformation);
+	explicit CObject(CTransformation const& transformation, int const listenerMask, Listeners const& listeners);
 	virtual ~CObject() override;
 
 	// CryAudio::Impl::IObject
 	virtual void                   Update(float const deltaTime) override;
 	virtual void                   SetTransformation(CTransformation const& transformation) override;
 	virtual CTransformation const& GetTransformation() const override { return m_transformation; }
-	virtual void                   SetOcclusion(float const occlusion) override;
+	virtual void                   SetOcclusion(IListener* const pIListener, float const occlusion, uint8 const numRemainingListeners) override;
 	virtual void                   SetOcclusionType(EOcclusionType const occlusionType) override;
 	virtual void                   ToggleFunctionality(EObjectFunctionality const type, bool const enable) override;
 
@@ -37,11 +37,13 @@ public:
 
 private:
 
-	void Set3DAttributes();
-	void UpdateVelocities(float const deltaTime);
+	void  Set3DAttributes();
+	void  UpdateVelocities(float const deltaTime);
+	float GetDistanceToListener();
 
 	CTransformation m_transformation;
 	float           m_previousAbsoluteVelocity;
+	float           m_lowestOcclusionPerListener;
 	Vec3            m_position;
 	Vec3            m_previousPosition;
 	Vec3            m_velocity;

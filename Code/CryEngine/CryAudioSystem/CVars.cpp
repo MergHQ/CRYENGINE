@@ -284,6 +284,11 @@ void CCVars::RegisterVariables()
 	               "1: Accumulate pool sizes of the global context and the largest pool size for each control in any other context.\n"
 	               "This option may be used if maximum one other context besides the global context will be active at any time.\n");
 
+	m_pListeners = REGISTER_STRING(g_szListenersCVarName, "", VF_READONLY,
+	                               "Specifies the names of listeners that should get constructed when the audio system gets initialized.\n"
+	                               "Usage: s_Listeners Listener1,Listener2,..\n"
+	                               "More than one listener can be specified by using a comma separated list");
+
 #if defined(CRY_AUDIO_USE_OCCLUSION)
 	REGISTER_CVAR2("s_OcclusionMaxDistance", &m_occlusionMaxDistance, m_occlusionMaxDistance, VF_CHEAT | VF_CHEAT_NOCHECK,
 	               "Occlusion is not calculated for audio objects, whose distance to the listener is greater than this value. Setting this value to 0 disables obstruction/occlusion calculations.\n"
@@ -514,6 +519,7 @@ void CCVars::UnregisterVariables()
 		pConsole->UnregisterVariable("s_TriggerInstancePoolSize");
 		pConsole->UnregisterVariable("s_IgnoreWindowFocus");
 		pConsole->UnregisterVariable("s_PoolAllocationMode");
+		pConsole->UnregisterVariable(g_szListenersCVarName);
 
 #if defined(CRY_AUDIO_USE_OCCLUSION)
 		pConsole->UnregisterVariable("s_OcclusionMaxDistance");

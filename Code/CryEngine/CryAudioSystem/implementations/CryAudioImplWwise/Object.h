@@ -21,14 +21,18 @@ public:
 	CObject& operator=(CObject const&) = delete;
 	CObject& operator=(CObject&&) = delete;
 
-	explicit CObject(AkGameObjectID const id, CTransformation const& transformation, char const* const szName);
+	explicit CObject(
+		AkGameObjectID const id,
+		CTransformation const& transformation,
+		ListenerInfos const& listenerInfos,
+		char const* const szName);
 	virtual ~CObject() override;
 
 	// CryAudio::Impl::IObject
 	virtual void                   Update(float const deltaTime) override;
 	virtual void                   SetTransformation(CTransformation const& transformation) override;
 	virtual CTransformation const& GetTransformation() const override { return m_transformation; }
-	virtual void                   SetOcclusion(float const occlusion) override;
+	virtual void                   SetOcclusion(IListener* const pIListener, float const occlusion, uint8 const numRemainingListeners) override;
 	virtual void                   SetOcclusionType(EOcclusionType const occlusionType) override;
 	virtual void                   ToggleFunctionality(EObjectFunctionality const type, bool const enable) override;
 

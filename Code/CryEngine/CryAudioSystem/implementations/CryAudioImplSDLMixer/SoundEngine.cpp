@@ -537,7 +537,12 @@ ETriggerResult SoundEngine::ExecuteEvent(CObject* const pObject, CEvent* const p
 					// Get distance and angle from the listener to the object
 					float distance = 0.0f;
 					float angle = 0.0f;
-					GetDistanceAngleToObject(g_pListener->GetTransformation(), pObject->GetTransformation(), distance, angle);
+
+					if (pObject->GetListener() != nullptr)
+					{
+						GetDistanceAngleToObject(pObject->GetListener()->GetTransformation(), pObject->GetTransformation(), distance, angle);
+					}
+
 					SetChannelPosition(pEventInstance->GetEvent(), channelID, distance, angle);
 
 					g_channels[channelID].pObject = pObject;
