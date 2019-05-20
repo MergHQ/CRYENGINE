@@ -126,7 +126,7 @@ namespace CryGTestDetails
 		{
 			char lhs[messageBufferLength] = {}, rhs[messageBufferLength] = {};
 			this->parse(this->m_msg, "==", lhs, rhs);
-			GTEST_ASSERT_(::testing::internal::EqHelper<GTEST_IS_NULL_LITERAL_(this->m_val1)>::Compare(lhs, rhs, this->m_val1, this->m_val2),
+			GTEST_ASSERT_(::testing::internal::EqHelper::Compare(lhs, rhs, this->m_val1, this->m_val2),
 				CRY_GTEST_MESSAGE);
 		}
 	};
