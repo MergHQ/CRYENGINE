@@ -561,7 +561,7 @@ struct IGameRules : public IGameObjectExtension
 	//   type - indicated the message type
 	//   msg - the message to be sent
 	virtual void SendTextMessage(ETextMessageType type, const char* msg, uint32 to = eRMI_ToAllClients, int channelId = -1,
-	                             const char* p0 = 0, const char* p1 = 0, const char* p2 = 0, const char* p3 = 0) = 0;
+		const char* p0 = 0, const char* p1 = 0, const char* p2 = 0, const char* p3 = 0) = 0;
 
 	// Summary
 	//   Broadcasts a chat message to the clients in the game which are part of the target
@@ -625,7 +625,7 @@ struct IGameRules : public IGameObjectExtension
 
 	// Summary
 	//   Resolves Vehicle event
-	virtual void OnVehicleEvent(IVehicle* pVehicle, EVehicleEvent event, const SVehicleEventParams& params) = 0;
+	virtual void OnVehicleEvent(IVehicle* pVehicle, EVehicleEvent event, const SVehicleEventParams& params) {}
 
 	// Summary
 	//   Prepares an entity to be allowed to respawn
