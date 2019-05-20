@@ -423,7 +423,7 @@ CDurangoGPUMemoryManager::AllocateResult CDurangoGPUMemoryManager::AllocatePinne
 
 			{
 				PREFAST_SUPPRESS_WARNING(6246)
-					MEMREPLAY_HIDE_BANKALLOC();
+				MEMREPLAY_HIDE_BANKALLOC();
 				hr = D3DAllocateGraphicsMemory(1ull << m_bankShift, 64 * 1024, 0, m_memType, &newBank.pBase);
 			}
 
@@ -463,6 +463,9 @@ CDurangoGPUMemoryManager::AllocateResult CDurangoGPUMemoryManager::AllocatePinne
 		pBaseAddress = (char*)bank.pBase + bankRelOffset;
 		ret.hdl = SGPUMemHdl(apr.hdl);
 		ret.baseAddress = pBaseAddress;
+#if defined(MEMREPLAY_INSTRUMENT_TEXTUREPOOL)
+		MEMREPLAY_SCOPE_ALLOC(pBaseAddress, amount, align);
+#endif
 	}
 	else if (m_allowAdditionalBanks)
 	{
@@ -471,6 +474,7 @@ CDurangoGPUMemoryManager::AllocateResult CDurangoGPUMemoryManager::AllocatePinne
 #endif
 
 		// Try and just allocate memory from D3D directly.
+		MEMSTAT_CONTEXT(EMemStatContextType::Other, "CDurangoGPUMemoryManager::AllocatePinned Overflow");
 		HRESULT hr = D3DAllocateGraphicsMemory(Align(amount, MinD3DAlignment), max(align, (size_t)MinD3DAlignment), 0, m_memType, &pBaseAddress);
 		if (!FAILED(hr))
 		{
@@ -480,12 +484,6 @@ CDurangoGPUMemoryManager::AllocateResult CDurangoGPUMemoryManager::AllocatePinne
 			m_overflowAllocationMap[pBaseAddress] = amount;
 		}
 	}
-
-#if defined(MEMREPLAY_INSTRUMENT_TEXTUREPOOL)
-	if (pBaseAddress)
-		MEMREPLAY_SCOPE_ALLOC(pBaseAddress, amount, align);
-#endif
-
 	return ret;
 }
 
@@ -534,7 +532,9 @@ void CDurangoGPUMemoryManager::FreeUnused(SGPUMemHdl hdl)
 
 		pBaseAddress = (char*)bank.pBase + bankRelOffset;
 #endif
-
+#if defined(MEMREPLAY_INSTRUMENT_TEXTUREPOOL)
+		MEMREPLAY_SCOPE_FREE(pBaseAddress);
+#endif
 		m_pAllocator->Free(daHdl);
 	}
 	else
@@ -547,10 +547,6 @@ void CDurangoGPUMemoryManager::FreeUnused(SGPUMemHdl hdl)
 		m_overflowAllocationMap.erase(pBaseAddress);
 		D3DFreeGraphicsMemory(pBaseAddress);
 	}
-
-#if defined(MEMREPLAY_INSTRUMENT_TEXTUREPOOL)
-	MEMREPLAY_SCOPE_FREE(pBaseAddress);
-#endif
 }
 
 void CDurangoGPUMemoryManager::BindContext(SGPUMemHdl hdl, CDeviceTexture* pDevTex)
@@ -1095,6 +1091,14 @@ CDurangoGPURingMemAllocator::CDurangoGPURingMemAllocator()
 {
 }
 
+CDurangoGPURingMemAllocator::~CDurangoGPURingMemAllocator()
+{
+	if (m_pCPUAddr)
+	{
+		D3DFreeGraphicsMemory(m_pCPUAddr);
+	}
+}
+
 bool CDurangoGPURingMemAllocator::Init(ID3D11DmaEngineContextX* pContext, uint32 size)
 {
 #ifndef _RELEASE
@@ -1104,6 +1108,7 @@ bool CDurangoGPURingMemAllocator::Init(ID3D11DmaEngineContextX* pContext, uint32
 	}
 #endif
 
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, "CDurangoGPURingMemAllocator");
 	HRESULT hr = D3DAllocateGraphicsMemory(
 		size,
 		BaseAlignment,
