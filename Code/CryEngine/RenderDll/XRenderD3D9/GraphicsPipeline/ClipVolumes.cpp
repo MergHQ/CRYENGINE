@@ -304,6 +304,12 @@ void CClipVolumesStage::GenerateClipVolumeInfo()
 	}
 }
 
+uint32 CClipVolumesStage::GetClipVolumeShaderParams(const Vec4*& shaderParams) const
+{
+	shaderParams = m_clipVolumeShaderParams;
+	return m_nShaderParamCount;
+}
+
 void CClipVolumesStage::Prepare()
 {
 	FUNCTION_PROFILER_RENDERER();

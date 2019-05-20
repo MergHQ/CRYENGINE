@@ -174,15 +174,11 @@ AllocateConstIntCVar(CRendererCVars, CV_r_deferredshadingLightVolumes);
 AllocateConstIntCVar(CRendererCVars, CV_r_deferredDecals);
 AllocateConstIntCVar(CRendererCVars, CV_r_deferredDecalsDebug);
 
-AllocateConstIntCVar(CRendererCVars, CV_r_DeferredShadingScissor);
-AllocateConstIntCVar(CRendererCVars, CV_r_DeferredShadingDepthBoundsTest);
 AllocateConstIntCVar(CRendererCVars, CV_r_DeferredShadingDebugGBuffer);
-int CRendererCVars::CV_r_DeferredShadingAmbient;
 AllocateConstIntCVar(CRendererCVars, CV_r_DeferredShadingEnvProbes);
 AllocateConstIntCVar(CRendererCVars, CV_r_DeferredShadingAmbientLights);
 AllocateConstIntCVar(CRendererCVars, CV_r_DeferredShadingLights);
 AllocateConstIntCVar(CRendererCVars, CV_r_DeferredShadingAreaLights);
-AllocateConstIntCVar(CRendererCVars, CV_r_DeferredShadingStencilPrepass);
 AllocateConstIntCVar(CRendererCVars, CV_r_CBufferUseNativeDepth);
 
 float CRendererCVars::CV_r_DeferredShadingLightLodRatio;
@@ -1098,22 +1094,6 @@ void CRendererCVars::InitCVars()
 	                    "Usage: r_DeferredShadingEnvProbes [0/1]\n"
 	                    "Default is 1 (enabled)");
 
-	DefineConstIntCVar3("r_DeferredShadingStencilPrepass", CV_r_DeferredShadingStencilPrepass, 1, VF_DUMPTODISK,
-	                    "Toggles deferred shading stencil pre pass.\n"
-	                    "Usage: r_DeferredShadingStencilPrepass [0/1]\n"
-	                    "Default is 1 (enabled)");
-
-	DefineConstIntCVar3("r_DeferredShadingScissor", CV_r_DeferredShadingScissor, 1, VF_DUMPTODISK,
-	                    "Toggles deferred shading scissor test.\n"
-	                    "Usage: r_DeferredShadingScissor [0/1]\n"
-	                    "Default is 1 (enabled)");
-
-	DefineConstIntCVar3("r_DeferredShadingDepthBoundsTest", CV_r_DeferredShadingDepthBoundsTest, DEF_SHAD_DBT_DEFAULT_VAL,
-	                    VF_DUMPTODISK,
-	                    "Toggles deferred shading depth bounds test.\n"
-	                    "Usage: r_DeferredShadingDepthBoundsTest [0/1]\n"
-	                    "Default is 1 (enabled)");
-
 	DefineConstIntCVar3("r_DebugGBuffer", CV_r_DeferredShadingDebugGBuffer, 0, VF_NULL,
 	                    "Debug view for gbuffer attributes\n"
 	                    "  0 - Disabled\n"
@@ -1142,13 +1122,6 @@ void CRendererCVars::InitCVars()
 	                    "Enables/Disables more complex area lights processing.\n"
 	                    "Usage: r_DeferredShadingAreaLights [0/1]\n"
 	                    "Default is 0 (disabled)");
-
-	REGISTER_CVAR3("r_DeferredShadingAmbient", CV_r_DeferredShadingAmbient, 1, VF_DUMPTODISK,
-	               "Enables/Disables ambient processing.\n"
-	               "Usage: r_DeferredShadingAmbient [0/1/2]\n"
-	               "  0: no ambient passes (disabled)\n"
-	               "  1: vis areas and outdoor ambient  (default)\n"
-	               "  2: only outdoor (debug vis areas mode)\n");
 
 	REGISTER_CVAR3("r_DeferredShadingLightStencilRatio", CV_r_DeferredShadingLightStencilRatio, 0.21f, VF_DUMPTODISK,
 	               "Sets screen ratio for deferred lights to use stencil (eg: 0.2 - 20% of screen).\n"

@@ -162,7 +162,7 @@ void CHeightMapAOStage::Execute()
 	CRY_ASSERT(!m_bHeightMapAOExecuted);
 	m_bHeightMapAOExecuted = true;
 
-	if (CDeferredShading::Instance().GetResolvedStencilRT() == nullptr)
+	if (CRendererResources::s_ptexClipVolumes == nullptr)
 	{
 		CDeferredShading::Instance().SetupPasses(RenderView());
 	}
@@ -274,8 +274,10 @@ void CHeightMapAOStage::Execute()
 			CShader* pShader = pRenderer->m_cEF.s_ShaderShadowBlur;
 
 			const Vec4* pClipVolumeParams = nullptr;
-			uint32 clipVolumeCount = RenderView()->GetClipVolumes().size();
-			CDeferredShading::Instance().GetClipVolumeParams(pClipVolumeParams);
+			uint32 clipVolumeCount = 0;
+
+			if (auto pClipVolumesStage = m_graphicsPipeline.GetStage<CClipVolumesStage>())
+				clipVolumeCount = pClipVolumesStage->GetClipVolumeShaderParams(pClipVolumeParams);
 
 			if (m_passSmoothing.IsDirty(resolutionIndex, clipVolumeCount > 0 ? 1 : 0))
 			{
@@ -289,7 +291,7 @@ void CHeightMapAOStage::Execute()
 
 				m_passSmoothing.SetTextureSamplerPair(0, pDestRT, EDefaultSamplerStates::PointClamp);
 				m_passSmoothing.SetTextureSamplerPair(1, m_pHeightMapAOScreenDepthTex, EDefaultSamplerStates::PointClamp);
-				m_passSmoothing.SetTextureSamplerPair(2, CDeferredShading::Instance().GetResolvedStencilRT(), EDefaultSamplerStates::PointClamp);
+				m_passSmoothing.SetTextureSamplerPair(2, CRendererResources::s_ptexClipVolumes, EDefaultSamplerStates::PointClamp);
 			}
 
 			static CCryNameR namePixelOffset("PixelOffset");

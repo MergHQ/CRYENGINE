@@ -1304,9 +1304,6 @@ struct IRenderer//: public IRendererCallbackServer
 
 	virtual int EF_AddDeferredLight(const SRenderLight& pLight, float fMult, const SRenderingPassInfo& passInfo) = 0;
 
-	// Deferred clip volumes
-	virtual void Ef_AddDeferredGIClipVolume(const IRenderMesh* pClipVolume, const Matrix34& mxTransform) = 0;
-
 	//! Called in between levels to free up memory.
 	virtual void EF_ReleaseDeferredData() = 0;
 
