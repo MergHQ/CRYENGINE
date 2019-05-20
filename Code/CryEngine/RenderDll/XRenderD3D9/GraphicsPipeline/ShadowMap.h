@@ -35,6 +35,9 @@ class CShadowMapStage : public CGraphicsPipelineStage
 		ePass_First = ePass_DirectionalLight
 	};
 
+	static_assert(ePass_Count <= MAX_PIPELINE_SCENE_STAGE_PASSES,
+		"The pipeline-state array is unable to carry as much pass-permutation as defined here!");
+
 public:
 	static const EGraphicsPipelineStage StageID = eStage_ShadowMap;
 

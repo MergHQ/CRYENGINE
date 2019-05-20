@@ -20,6 +20,7 @@ public:
 		eZPassMode_DiscardingZPrePass = 3,
 		eZPassMode_FullZPrePass       = 4
 	};
+
 	static const EGraphicsPipelineStage StageID = eStage_SceneGBuffer;
 
 	enum EPerPassTexture
@@ -34,14 +35,19 @@ public:
 		ePerPassTexture_SceneLinearDepth = 32,
 	};
 
-	enum EPass
+	enum EPass : uint8
 	{
 		// limit: MAX_PIPELINE_SCENE_STAGE_PASSES
 		ePass_FullGBufferFill  = 0,
 		ePass_DepthBufferFill  = 1,
 		ePass_AttrGBufferFill  = 2,
 		ePass_MicroGBufferFill = 3,
+
+		ePass_Count
 	};
+
+	static_assert(ePass_Count <= MAX_PIPELINE_SCENE_STAGE_PASSES,
+		"The pipeline-state array is unable to carry as much pass-permutation as defined here!");
 
 	CSceneGBufferStage(CGraphicsPipeline& graphicsPipeline);
 
