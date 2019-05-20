@@ -181,6 +181,7 @@ void CFeatureRenderSprites::ComputeVertices(const CParticleComponentRuntime& run
 	{
 		SortSprites(spritesContext);
   		WriteToGPUMem(spritesContext);
+		stats.spawners.rendered += runtime.Container(EDD_Spawner).Size();
 		stats.particles.rendered += spritesContext.m_particleIds.size();
 		stats.particles.culled += runtime.GetContainer().GetNumParticles() - spritesContext.m_particleIds.size();
 
@@ -405,7 +406,7 @@ void CFeatureRenderSprites::SortSprites(SSpritesContext& spritesContext)
 				keys[i] = (float)ids.Load(particleId);
 			}
 		}
-		else if (std::isfinite(spritesContext.m_runtime.ComponentParams().m_maxTotalLIfe)
+		else if (!spritesContext.m_runtime.ComponentParams().IsImmortal()
 		&& container.HasData(EPDT_SpawnFraction))
 		{
 			auto fractions = container.IStream(EPDT_SpawnFraction);

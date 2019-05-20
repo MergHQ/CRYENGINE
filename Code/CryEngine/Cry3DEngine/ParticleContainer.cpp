@@ -1010,7 +1010,7 @@ void CParticleContainer::GetCounts(SParticleCounts& counts) const
 		reinterpret_cast<SContainerCounts&>(counts) += m_Counts;
 		counts.components.updated += 1.f;
 		counts.particles.updated += m_Particles.size();
-		counts.subemitters.updated += m_Emitters.size();
+		counts.spawners.updated += m_Emitters.size();
 
 		if ((m_nEnvFlags & REN_ANY) && !m_bbWorldDyn.IsReset())
 		{

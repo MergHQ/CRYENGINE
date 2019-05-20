@@ -44,7 +44,6 @@ void CParticleEffect::Compile()
 	if (!m_dirty)
 		return;
 
-	m_environFlags = 0;
 	for (auto& component : m_components)
 	{
 		component->m_pEffect = this;
@@ -56,37 +55,20 @@ void CParticleEffect::Compile()
 	Sort();
 
 	uint id = 0;
-	MainPreUpdate.clear();
-	RenderDeferred.clear();
 	for (auto& component : m_components)
 	{
 		component->m_componentId = id++;
 		if (!component->IsActive())
 			continue;
 		component->Compile();
-		if (component->MainPreUpdate.size())
-			MainPreUpdate.push_back(component);
-		if (component->RenderDeferred.size())
-			RenderDeferred.push_back(component);
 	}
 
 	m_topComponents.clear();
-	m_timings = {};
 	for (auto& component : m_components)
 	{
 		component->FinalizeCompile();
 		if (!component->GetParentComponent())
-		{
 			m_topComponents.push_back(component);
-			if (!component->IsActive())
-				continue;
-			component->UpdateTimings();
-			const STimingParams& timings = component->ComponentParams();
-			SetMax(m_timings.m_maxParticleLife, timings.m_maxParticleLife);
-			SetMax(m_timings.m_stableTime, timings.m_stableTime);
-			SetMax(m_timings.m_equilibriumTime, timings.m_equilibriumTime);
-			SetMax(m_timings.m_maxTotalLIfe, timings.m_maxTotalLIfe);
-		}
 	}
 
 	m_dirty = false;

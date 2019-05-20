@@ -81,7 +81,8 @@ void CParticleSystem::OnFrameStart()
 void CParticleSystem::TrimEmitters(bool finished_only)
 {
 	CRY_PFX2_PROFILE_DETAIL;
-	stl::find_and_erase_all_if(m_emitters, [=](const _smart_ptr<CParticleEmitter>& emitter) -> bool
+
+	auto doTrim = [=](const _smart_ptr<CParticleEmitter>& emitter) -> bool
 	{
 		if (!emitter->IsIndependent())
 			return false;
@@ -91,7 +92,10 @@ void CParticleSystem::TrimEmitters(bool finished_only)
 				return false;
 		}
 		return true;
-	});
+	};
+
+	stl::find_and_erase_all_if(m_emitters, doTrim);
+	stl::find_and_erase_all_if(m_emittersPreUpdate, doTrim);
 }
 
 void CParticleSystem::Update()
@@ -132,6 +136,12 @@ void CParticleSystem::Update()
 	TrimEmitters(!m_bResetEmitters);
 	m_bResetEmitters = false;
 	m_emitters.append(m_newEmitters);
+	for (auto& pEmitter : m_newEmitters)
+	{
+		pEmitter->CheckUpdated();
+		if (pEmitter->GetRuntimesPreUpdate().size())
+			m_emittersPreUpdate.push_back(pEmitter);
+	}
 	m_newEmitters.clear();
 
 	// Init stats for current frame
@@ -162,10 +172,27 @@ void CParticleSystem::Update()
 	// Check for edited effects
 	if (gEnv->IsEditing())
 	{
+		m_emittersPreUpdate.clear();
 		for (auto& pEmitter : m_emitters)
+		{
 			pEmitter->CheckUpdated();
+			if (pEmitter->GetRuntimesPreUpdate().size())
+				m_emittersPreUpdate.push_back(pEmitter);
+		}
 	}
 
+	// Execute PreUpdates, to update forces, etc
+	for (auto& pEmitter : m_emittersPreUpdate)
+	{
+		if (!pEmitter->IsAlive())
+			continue;
+		for (auto& pRuntime: pEmitter->GetRuntimesPreUpdate())
+		{
+			pRuntime->GetComponent()->MainPreUpdate(*pRuntime);
+		}
+	}
+
+	// Update remaining emitter state
 	for (auto& pEmitter : m_emitters)
 	{
 		mainData.statsCPU.components.alloc += pEmitter->GetRuntimes().size();
@@ -229,6 +256,7 @@ void DisplayParticleStats(Vec2& displayLocation, float lineHeight, cstr name, TS
 	DisplayStatsHeader(displayLocation, lineHeight, name);
 	DisplayElementStats(displayLocation, lineHeight, "Emitters", stats.emitters);
 	DisplayElementStats(displayLocation, lineHeight, "Components", stats.components);
+	DisplayElementStats(displayLocation, lineHeight, "Spawners", stats.spawners);
 	DisplayElementStats(displayLocation, lineHeight, "Particles", reinterpret_cast<const TElementCounts<float>&>(stats.particles));
 
 	if (!stats.pixels.IsZero())
@@ -307,14 +335,11 @@ void CParticleSystem::ClearRenderResources()
 	{
 		CRY_ASSERT_MESSAGE(pEmitter->Unique(), "Emitter %s not unique", pEmitter->GetCEffect()->GetShortName().c_str());
 	}
-	for (const auto& pEmitter : m_newEmitters)
-	{
-		CRY_ASSERT_MESSAGE(pEmitter->Unique(), "Emitter %s not unique", pEmitter->GetCEffect()->GetShortName().c_str());
-	}
 #endif
 
 	m_emitters.clear();
 	m_newEmitters.clear();
+	m_emittersPreUpdate.clear();
 
 	for (auto it = m_effects.begin(); it != m_effects.end(); )
 	{

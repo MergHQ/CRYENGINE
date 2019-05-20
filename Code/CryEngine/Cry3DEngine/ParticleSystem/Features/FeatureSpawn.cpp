@@ -31,10 +31,10 @@ MakeDataType(ESDT_ParticleCounts, SMaxParticleCounts, EDD_None);
 class CParticleFeatureSpawnBase : public CParticleFeature
 {
 public:
-	virtual EFeatureType GetFeatureType() override
-	{
-		return EFT_Spawn;
-	}
+	virtual EFeatureType GetFeatureType() override { return EFT_Spawn; }
+
+	// Initialize after LifeTime and Child features, for timing
+	virtual int Priority() const override { return 1; }
 
 	virtual void AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams) override
 	{
@@ -58,22 +58,29 @@ public:
 		// Compute equilibrium and full life times
 		CParticleComponent* pParent = pComponent->GetParentComponent();
 		const float parentParticleLife = pParent ? pParent->ComponentParams().m_maxParticleLife : gInfinity;
-		const float preDelay = pParams->m_maxTotalLIfe;
+		const float preDelay = pParams->m_maxTotalLife;
 		const float delay = preDelay + m_delay.GetValueRange().end;
 
 		STimingParams timings;
 		timings.m_equilibriumTime = delay;
-		timings.m_maxTotalLIfe = min(delay + m_duration.GetValueRange().end, parentParticleLife);
+		timings.m_maxTotalLife = min(delay + m_duration.GetValueRange().end, parentParticleLife);
+
+		timings.m_maxTotalLife += pParams->m_maxParticleLife;
+		if (valueisfinite(pParams->m_maxParticleLife))
+		{
+			timings.m_equilibriumTime += pParams->m_maxParticleLife;
+			timings.m_stableTime += pParams->m_maxParticleLife;
+		}
 
 		if (m_restart.IsEnabled())
 		{
-			timings.m_stableTime = timings.m_maxTotalLIfe;
-			timings.m_equilibriumTime = timings.m_maxTotalLIfe;
-			timings.m_maxTotalLIfe = parentParticleLife;
+			timings.m_stableTime = timings.m_maxTotalLife;
+			timings.m_equilibriumTime = timings.m_maxTotalLife;
+			timings.m_maxTotalLife = parentParticleLife;
 		}
 		SetMax(pParams->m_stableTime, timings.m_stableTime);
 		SetMax(pParams->m_equilibriumTime, timings.m_equilibriumTime);
-		SetMax(pParams->m_maxTotalLIfe, timings.m_maxTotalLIfe);
+		SetMax(pParams->m_maxTotalLife, timings.m_maxTotalLife);
 
 		if (m_duration.GetBaseValue() == 0.0f)
 		{
@@ -128,7 +135,7 @@ public:
 				ages[i] += dT;
 			}
 
-			container.RemoveElements(removeIds, {});
+			container.RemoveElements(removeIds);
 			runtime.AddSpawners(spawners, false);
 		}
 	}
@@ -211,7 +218,7 @@ protected:
 		{
 			// Skip spawning immortal independent effects
 			float maxLifetime = m_delay.GetValueRange().end + m_duration.GetValueRange().end + runtime.ComponentParams().m_maxParticleLife;
-			if (!std::isfinite(maxLifetime))
+			if (!valueisfinite(maxLifetime))
 				range = SUpdateRange();
 		}
 
@@ -250,7 +257,7 @@ protected:
 					if (entry.m_count == 1)
 						entry.m_ageIncrement = 0.0f;
 
-					if (std::isfinite(lifetimes[i]))
+					if (valueisfinite(lifetimes[i]))
 					{
 						float total = count;
 						if (lifetimes[i] * spawnTime > 0.0f)

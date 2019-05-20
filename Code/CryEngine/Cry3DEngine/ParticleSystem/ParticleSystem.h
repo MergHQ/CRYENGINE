@@ -12,8 +12,7 @@ namespace pfx2
 {
 
 class CParticleEmitter;
-typedef TSmartArray<CParticleEmitter> TParticleEmitters;
-
+using TParticleEmitters = TDynArray<_smart_ptr<CParticleEmitter>>;
 
 class CParticleSystem : public Cry3DEngineBase, public IParticleSystem, ISyncMainWithRenderListener
 {
@@ -100,6 +99,7 @@ private:
 	CParticleProfiler              m_profiler;
 	TNameAssetMap<CParticleEffect> m_effects;
 	TParticleEmitters              m_emitters;
+	TParticleEmitters              m_emittersPreUpdate;
 	TParticleEmitters              m_newEmitters;
 	std::vector<SThreadData>       m_threadData;
 	TNameAssetMap<IMaterial>       m_materials;

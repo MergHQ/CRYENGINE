@@ -235,40 +235,6 @@ pfx2::CParticleComponent::TComponents& CParticleComponent::GetParentChildren()
 	return m_parent ? m_parent->m_children : m_pEffect->GetTopComponents();
 }
 
-void CParticleComponent::UpdateTimings()
-{
-	m_params.m_maxTotalLIfe += m_params.m_maxParticleLife;
-	m_params.m_equilibriumTime += FiniteOr(m_params.m_maxParticleLife, 0.0f);
-	m_params.m_stableTime += FiniteOr(m_params.m_maxParticleLife, 0.0f);
-
-	// Adjust parent lifetimes to include child lifetimes
-	if (m_children.size())
-	{
-		float maxChildEq = 0.0f, maxChildLife = 0.0f;
-		for (auto& pChild : m_children)
-		{
-			if (!pChild->IsActive())
-				continue;
-			pChild->UpdateTimings();
-			const STimingParams& timingsChild = pChild->ComponentParams();
-			SetMax(maxChildEq, timingsChild.m_equilibriumTime);
-			SetMax(maxChildLife, timingsChild.m_maxTotalLIfe);
-		}
-
-		const float moreEq = maxChildEq - FiniteOr(m_params.m_maxParticleLife, 0.0f);
-		if (moreEq > 0.0f)
-		{
-			m_params.m_stableTime += moreEq;
-			m_params.m_equilibriumTime += moreEq;
-		}
-		const float moreLife = maxChildLife - FiniteOr(m_params.m_maxParticleLife, 0.0f);
-		if (moreLife > 0.0f)
-		{
-			m_params.m_maxTotalLIfe += moreLife;
-		}
-	}
-}
-
 bool CParticleComponent::CanMakeRuntime(CParticleEmitter* pEmitter) const
 {
 	if (!IsEnabled())
@@ -482,12 +448,6 @@ pfx2::CParticleFeature* CParticleComponent::FindFeature(const SParticleFeaturePa
 			return pFeature;
 	}
 	return nullptr;
-}
-
-void CParticleComponent::AddEnvironFlags(uint flags)
-{
-	m_params.m_environFlags |= flags;
-	m_pEffect->AddEnvironFlags(flags);
 }
 
 SERIALIZATION_CLASS_NAME(CParticleComponent, CParticleComponent, "Component", "Component");

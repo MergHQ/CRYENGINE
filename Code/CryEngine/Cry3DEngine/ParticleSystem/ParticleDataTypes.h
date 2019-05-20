@@ -247,6 +247,8 @@ template<typename T>
 struct TDataType: EParticleDataType
 {
 	using EParticleDataType::EParticleDataType;
+	TDataType(cstr name, EDataDomain domain = EDD_Particle)
+		: EParticleDataType(name, nullptr, SDataInfo((T*)0, domain)) {}
 
 	// Access element sub-types
 	using             TElem = typename TDimInfo<T>::TElem;
@@ -292,10 +294,10 @@ struct TDataType: EParticleDataType
 //  MakeDataType(EPDT_SpawnID, TParticleID)
 //  MakeDataType(EPVF_Velocity, Vec3)
 
-inline EDataDomain PDT_FLAGS(EDataDomain domain = EDD_Particle) { return domain; } // Helper function for variadic macro
+inline EDataDomain DT_FLAGS(EDataDomain domain = EDD_Particle) { return domain; } // Helper function for variadic macro
 
 #define MakeDataType(Name, T, ...) \
-  TDataType<T> Name(SkipPrefix(#Name), nullptr, SDataInfo((T*)0, PDT_FLAGS(__VA_ARGS__)))
+	TDataType<T> Name(SkipPrefix(#Name), DT_FLAGS(__VA_ARGS__))
 
 inline cstr SkipPrefix(cstr name)
 {

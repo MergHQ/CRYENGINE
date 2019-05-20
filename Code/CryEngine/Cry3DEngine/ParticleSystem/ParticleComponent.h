@@ -104,11 +104,11 @@ struct SVisibilityParams
 struct STimingParams
 {
 	float m_maxParticleLife = 0;  // Max time a particle can live
-	float m_maxTotalLIfe    = 0;  // Max time an emitter can live
+	float m_maxTotalLife    = 0;  // Max time an emitter can live
 	float m_stableTime      = 0;  // Max time for particles, including children, to die
 	float m_equilibriumTime = 0;  // Time for emitter to reach equilibrium after activation
 
-	bool  IsImmortal() const { return !std::isfinite(m_maxTotalLIfe); }
+	bool  IsImmortal() const { return !valueisfinite(m_maxTotalLife); }
 };
 
 struct SComponentParams: STimingParams
@@ -135,7 +135,7 @@ struct SComponentParams: STimingParams
 class CParticleComponent final : public IParticleComponent, public SFeatureDispatchers
 {
 public:
-	typedef TSmartArray<CParticleComponent> TComponents;
+	using TComponents = TSmartArray<CParticleComponent>;
 
 	CParticleComponent();
 
@@ -175,7 +175,7 @@ public:
 	void                                  SetEffect(CParticleEffect* pEffect)   { m_pEffect = pEffect; }
 
 	void                                  AddParticleData(EParticleDataType type);
-	void                                  AddEnvironFlags(uint flags);
+	void                                  AddEnvironFlags(uint flags)           { m_params.m_environFlags |= flags; }
 
 	bool                                  UsesGPU() const                       { return m_params.m_usesGPU; }
 	gpu_pfx2::SComponentParams&           GPUComponentParams()                  { return m_GPUParams; };
@@ -220,15 +220,13 @@ private:
 	bool                                     m_dirty;
 
 	gpu_pfx2::SComponentParams               m_GPUParams;
-	std::vector<gpu_pfx2::IParticleFeature*> m_gpuFeatures;
+	TSmallArray<gpu_pfx2::IParticleFeature*> m_gpuFeatures;
 
 	const TComponents& GetParentChildren() const;
 	TComponents&       GetParentChildren();
-
-	void               UpdateTimings();
 };
 
-typedef TSmartArray<CParticleComponent> TComponents;
+using TComponents = CParticleComponent::TComponents;
 
 }
 
