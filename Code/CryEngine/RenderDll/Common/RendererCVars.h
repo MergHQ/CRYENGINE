@@ -239,14 +239,11 @@ public:
 	DeclareStaticConstIntCVar(CV_r_deferredshadingLightVolumes, 1);
 	DeclareStaticConstIntCVar(CV_r_deferredDecals, 1);
 	DeclareStaticConstIntCVar(CV_r_deferredDecalsDebug, 0);
-	DeclareStaticConstIntCVar(CV_r_DeferredShadingScissor, 1);
 	DeclareStaticConstIntCVar(CV_r_DeferredShadingDebugGBuffer, 0);
 	DeclareStaticConstIntCVar(CV_r_DeferredShadingEnvProbes, 1);
-	static int CV_r_DeferredShadingAmbient;
 	DeclareStaticConstIntCVar(CV_r_DeferredShadingAmbientLights, 1);
 	DeclareStaticConstIntCVar(CV_r_DeferredShadingLights, 1);
 	DeclareStaticConstIntCVar(CV_r_DeferredShadingAreaLights, 0);
-	DeclareStaticConstIntCVar(CV_r_DeferredShadingStencilPrepass, 1);
 	static int CV_r_HDRSwapChain;
 	DeclareStaticConstIntCVar(CV_r_HDRDebug, 0);
 	static int CV_r_HDRBloom;
@@ -274,7 +271,6 @@ public:
 	static int   CV_r_ShadowsScreenSpace;
 	static float CV_r_ShadowsScreenSpaceLength;
 	DeclareStaticConstIntCVar(CV_r_debuglights, 0);
-	DeclareStaticConstIntCVar(CV_r_DeferredShadingDepthBoundsTest, DEF_SHAD_DBT_DEFAULT_VAL);
 	static int CV_r_sunshafts;
 	DeclareStaticConstIntCVar(CV_r_SonarVision, 1);
 	DeclareStaticConstIntCVar(CV_r_ThermalVision, 1);

@@ -4,19 +4,10 @@
 #include "gtest/gtest-spi.h"
 #include <stdio.h>
 
-// Mock
-class ICrySizer 
-{ 
-public:
-	void AddObject(void*, size_t) {} 
-	void AddObjectSize(void*) {} 
-};
-
 #include <CryThreading/CryThreadSafePushContainer.h>
 #include <CryString/CryStringUtils.h>
 #include <array>
 #include <thread>
-
 
 #define TEST_WITH_REF(variable, statement) {static auto& r##variable = variable; statement;}
 

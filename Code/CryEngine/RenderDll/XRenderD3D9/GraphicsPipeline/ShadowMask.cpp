@@ -1172,17 +1172,6 @@ int CLocalLightShadows::PreparePrimitivesForLight(const CRenderView* pRenderView
 	const int nSides = pFrustum->GetNumSides();
 	const bool bReverseDepth = (viewInfo.flags & SRenderViewInfo::eFlags_ReverseDepth) != 0;
 
-	/* TheoM TODO: scissor
-	   if (CRenderer::CV_r_DeferredShadingScissor)
-	   {
-	   EF_Scissor(true,
-	    static_cast<int>(lightRect.x * m_RP.m_CurDownscaleFactor.x),
-	    static_cast<int>(lightRect.y * m_RP.m_CurDownscaleFactor.y),
-	    static_cast<int>(lightRect.z * m_RP.m_CurDownscaleFactor.x + 1),
-	    static_cast<int>(lightRect.w * m_RP.m_CurDownscaleFactor.y + 1));
-	   }
-	 */
-
 	CRenderPrimitive* stencilPrimitives[6 * 2], * samplingPrimitives[6];
 	int numStencilPrimitives = 0, numSamplingPrimitives = 0;
 

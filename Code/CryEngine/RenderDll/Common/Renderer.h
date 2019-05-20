@@ -1092,10 +1092,6 @@ public:
 	virtual void                   EF_QueryImpl(ERenderQueryTypes eQuery, void* pInOut0, uint32 nInOutSize0, void* pInOut1, uint32 nInOutSize1) override;
 
 	//////////////////////////////////////////////////////////////////////////
-	// Deferred ambient passes
-	virtual void Ef_AddDeferredGIClipVolume(const IRenderMesh* pClipVolume, const Matrix34& mxTransform) override;
-
-	//////////////////////////////////////////////////////////////////////////
 	// Post processing effects interfaces
 
 	virtual void  EF_SetPostEffectParam(const char* pParam, float fValue, bool bForceValue = false) override;

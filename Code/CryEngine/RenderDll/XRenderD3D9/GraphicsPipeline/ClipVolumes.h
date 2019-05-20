@@ -19,6 +19,7 @@ public:
 
 	CGpuBuffer* GetClipVolumeInfoBuffer()                 { return &m_clipVolumeInfoBuf; }
 	CTexture*   GetClipVolumeStencilVolumeTexture() const { return m_pClipVolumeStencilVolumeTex; }
+	uint32      GetClipVolumeShaderParams(const Vec4*& shaderParams) const;
 
 	bool        IsOutdoorVisible() const                  { CRY_ASSERT(m_bClipVolumesValid); return m_bOutdoorVisible; }
 

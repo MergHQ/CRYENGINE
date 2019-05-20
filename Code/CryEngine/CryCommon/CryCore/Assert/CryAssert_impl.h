@@ -197,7 +197,7 @@ namespace Cry {
 			{
 				if (szFormat == NULL || szFormat[0] == '\0')
 				{
-					cry_strcpy(tls_szAssertMessage, "<no message was provided for this assert>");
+					cry_fixed_size_strcpy(tls_szAssertMessage, "<no message was provided for this assert>");
 				}
 				else
 				{
