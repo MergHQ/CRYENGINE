@@ -13,12 +13,12 @@ namespace Impl
 namespace Adx2
 {
 class CImpl;
-class CBaseObject;
+class CObject;
 class CCueInstance;
 
 extern CImpl* g_pImpl;
 
-using Objects = std::vector<CBaseObject*>;
+using Objects = std::vector<CObject*>;
 extern Objects g_constructedObjects;
 
 using AcbHandles = std::map<uint32, CriAtomExAcbHn>;

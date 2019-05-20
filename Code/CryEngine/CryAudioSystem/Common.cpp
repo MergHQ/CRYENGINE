@@ -5,7 +5,7 @@
 #include "System.h"
 #include "Object.h"
 #include "Listener.h"
-#include "GlobalObject.h"
+#include "DefaultObject.h"
 #include "LoseFocusTrigger.h"
 #include "GetFocusTrigger.h"
 #include "MuteAllTrigger.h"
@@ -29,7 +29,7 @@ PreloadRequestLookup g_preloadRequests;
 EnvironmentLookup g_environments;
 SettingLookup g_settings;
 TriggerInstanceIdLookup g_triggerInstanceIdToObject;
-TriggerInstanceIdLookupGlobal g_triggerInstanceIdToGlobalObject;
+TriggerInstanceIdLookupDefault g_triggerInstanceIdToDefaultObject;
 ContextLookup g_registeredContexts;
 
 CLoseFocusTrigger g_loseFocusTrigger;
@@ -51,14 +51,14 @@ SPoolSizes g_poolSizes;
 CListener g_defaultListener(DefaultListenerId, false, g_szDefaultListenerName);
 CListener g_previewListener(g_previewListenerId, false, g_szPreviewListenerName);
 Objects g_constructedObjects;
-CGlobalObject g_object("Global Object");
-CGlobalObject g_previewObject("Preview Object");
+CDefaultObject g_defaultObject("Default Object");
+CDefaultObject g_previewObject("Preview Object");
 CPreviewTrigger g_previewTrigger;
 SPoolSizes g_debugPoolSizes;
 ContextInfo g_contextInfo;
 ContextDebugInfo g_contextDebugInfo;
 #else
 CListener g_defaultListener(DefaultListenerId, false);
-CGlobalObject g_object;
+CDefaultObject g_defaultObject;
 #endif // CRY_AUDIO_USE_DEBUG_CODE
 }      // namespace CryAudio

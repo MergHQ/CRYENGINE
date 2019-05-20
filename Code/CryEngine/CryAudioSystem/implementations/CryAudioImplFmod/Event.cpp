@@ -4,7 +4,7 @@
 #include "Event.h"
 #include "Common.h"
 #include "Impl.h"
-#include "BaseObject.h"
+#include "Object.h"
 #include "EventInstance.h"
 
 namespace CryAudio
@@ -95,7 +95,7 @@ ETriggerResult CEvent::Execute(IObject* const pIObject, TriggerInstanceId const 
 {
 	ETriggerResult result = ETriggerResult::Failure;
 
-	auto const pBaseObject = static_cast<CBaseObject*>(pIObject);
+	auto const pObject = static_cast<CObject*>(pIObject);
 
 	switch (m_actionType)
 	{
@@ -104,7 +104,7 @@ ETriggerResult CEvent::Execute(IObject* const pIObject, TriggerInstanceId const 
 			FMOD_RESULT fmodResult = FMOD_ERR_UNINITIALIZED;
 
 #if defined(CRY_AUDIO_IMPL_FMOD_USE_DEBUG_CODE)
-			CEventInstance* const pEventInstance = g_pImpl->ConstructEventInstance(triggerInstanceId, *this, *pBaseObject);
+			CEventInstance* const pEventInstance = g_pImpl->ConstructEventInstance(triggerInstanceId, *this, *pObject);
 #else
 			CEventInstance* const pEventInstance = g_pImpl->ConstructEventInstance(triggerInstanceId, *this);
 #endif        // CRY_AUDIO_IMPL_FMOD_USE_DEBUG_CODE
@@ -122,7 +122,7 @@ ETriggerResult CEvent::Execute(IObject* const pIObject, TriggerInstanceId const 
 				FMOD::Studio::EventInstance* pFmodEventInstance = nullptr;
 				fmodResult = m_pEventDescription->createInstance(&pFmodEventInstance);
 				CRY_AUDIO_IMPL_FMOD_ASSERT_OK;
-				pFmodEventInstance->setListenerMask(pBaseObject->GetListenerMask());
+				pFmodEventInstance->setListenerMask(pObject->GetListenerMask());
 				pEventInstance->SetFmodEventInstance(pFmodEventInstance);
 
 				if ((m_flags& EEventFlags::CheckedParameters) == 0)
@@ -165,12 +165,12 @@ ETriggerResult CEvent::Execute(IObject* const pIObject, TriggerInstanceId const 
 				CRY_AUDIO_IMPL_FMOD_ASSERT_OK;
 				fmodResult = pEventInstance->GetFmodEventInstance()->setUserData(pEventInstance);
 				CRY_AUDIO_IMPL_FMOD_ASSERT_OK;
-				fmodResult = pEventInstance->GetFmodEventInstance()->set3DAttributes(&pBaseObject->GetAttributes());
+				fmodResult = pEventInstance->GetFmodEventInstance()->set3DAttributes(&pObject->GetAttributes());
 				CRY_AUDIO_IMPL_FMOD_ASSERT_OK;
 
-				pBaseObject->AddEventInstance(pEventInstance);
+				pObject->AddEventInstance(pEventInstance);
 
-				if (pBaseObject->SetEventInstance(pEventInstance))
+				if (pObject->SetEventInstance(pEventInstance))
 				{
 					result = (pEventInstance->GetState() == EEventState::Playing) ? ETriggerResult::Playing : ETriggerResult::Virtual;
 				}
@@ -184,7 +184,7 @@ ETriggerResult CEvent::Execute(IObject* const pIObject, TriggerInstanceId const 
 		}
 	case EActionType::Stop:
 		{
-			pBaseObject->StopEventInstance(m_id);
+			pObject->StopEventInstance(m_id);
 			result = ETriggerResult::DoNotTrack;
 
 			break;
@@ -195,7 +195,7 @@ ETriggerResult CEvent::Execute(IObject* const pIObject, TriggerInstanceId const 
 			FMOD_RESULT fmodResult = FMOD_ERR_UNINITIALIZED;
 
 			int const capacity = 32;
-			EventInstances const& eventInstances = pBaseObject->GetEventInstances();
+			EventInstances const& eventInstances = pObject->GetEventInstances();
 
 			for (auto const pEventInstance : eventInstances)
 			{
@@ -253,8 +253,8 @@ ETriggerResult CEvent::Execute(IObject* const pIObject, TriggerInstanceId const 
 //////////////////////////////////////////////////////////////////////////
 void CEvent::Stop(IObject* const pIObject)
 {
-	auto const pBaseObject = static_cast<CBaseObject*>(pIObject);
-	pBaseObject->StopEventInstance(m_id);
+	auto const pObject = static_cast<CObject*>(pIObject);
+	pObject->StopEventInstance(m_id);
 }
 
 //////////////////////////////////////////////////////////////////////////

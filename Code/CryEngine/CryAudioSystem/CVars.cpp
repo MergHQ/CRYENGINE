@@ -398,7 +398,7 @@ void CCVars::RegisterVariables()
 	                  "j: Draw spheres with occlusion ray offset radius around active audio objects.\n"
 	                  "k: Draw occlusion listener plane.\n"
 	                  "l: Draw occlusion collision spheres.\n"
-	                  "m: Draw global object info.\n"
+	                  "m: Draw Default Object info.\n"
 	                  "n: Draw middleware specific info for active audio objects.\n"
 	                  "q: Hide audio system memory info.\n"
 	                  "r: Apply filter also to inactive object debug info.\n"
@@ -431,19 +431,19 @@ void CCVars::RegisterVariables()
 
 	REGISTER_COMMAND("s_ExecuteTrigger", CmdExecuteTrigger, VF_CHEAT,
 	                 "Execute an Audio Trigger.\n"
-	                 "The argument is the name of the trigger to be executed on the Global Object.\n"
+	                 "The argument is the name of the trigger to be executed on the Default Object.\n"
 	                 "Usage: s_ExecuteTrigger MuteDialog\n");
 
 	REGISTER_COMMAND("s_StopTrigger", CmdStopTrigger, VF_CHEAT,
 	                 "Execute an Audio Trigger.\n"
-	                 "The argument is the name of the trigger to be stopped on the Global Object.\n"
-	                 "If no argument ois provided, all playing triggers on the Global Object get stopped.\n"
+	                 "The argument is the name of the trigger to be stopped on the Default Object.\n"
+	                 "If no argument ois provided, all playing triggers on the Default Object get stopped.\n"
 	                 "Usage: s_StopTrigger MuteDialog\n");
 
 	REGISTER_COMMAND("s_SetParameter", CmdSetParameter, VF_CHEAT,
 	                 "Set an Audio Parameter value.\n"
 	                 "The first argument is the name of the parameter to be set, the second argument is the float value to be set."
-	                 "The parameter is set on the Global Object.\n"
+	                 "The parameter is set on the Default Object.\n"
 	                 "Usage: s_SetParameter volume_music 1.0\n");
 
 	REGISTER_COMMAND("s_SetParameterGlobally", CmdSetParameterGlobally, VF_CHEAT,
@@ -455,7 +455,7 @@ void CCVars::RegisterVariables()
 	REGISTER_COMMAND("s_SetSwitchState", CmdSetSwitchState, VF_CHEAT,
 	                 "Set an Audio Switch to a provided State.\n"
 	                 "The first argument is the name of the switch to, the second argument is the name of the state to be set."
-	                 "The switch state is set on the Global Object.\n"
+	                 "The switch state is set on the Default Object.\n"
 	                 "Usage: s_SetSwitchState weather rain\n");
 
 	REGISTER_COMMAND("s_SetSwitchStateGlobally", CmdSetSwitchStateGlobally, VF_CHEAT,

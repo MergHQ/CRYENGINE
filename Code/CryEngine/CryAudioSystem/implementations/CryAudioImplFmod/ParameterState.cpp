@@ -3,7 +3,7 @@
 #include "stdafx.h"
 #include "ParameterState.h"
 #include "Common.h"
-#include "BaseObject.h"
+#include "Object.h"
 
 #if defined(CRY_AUDIO_IMPL_FMOD_USE_DEBUG_CODE)
 	#include <Logger.h>
@@ -18,17 +18,17 @@ namespace Fmod
 //////////////////////////////////////////////////////////////////////////
 CParameterState::~CParameterState()
 {
-	for (auto const pBaseObject : g_constructedObjects)
+	for (auto const pObject : g_constructedObjects)
 	{
-		pBaseObject->RemoveParameter(m_parameterInfo);
+		pObject->RemoveParameter(m_parameterInfo);
 	}
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CParameterState::Set(IObject* const pIObject)
 {
-	auto const pBaseObject = static_cast<CBaseObject*>(pIObject);
-	pBaseObject->SetParameter(m_parameterInfo, m_value);
+	auto const pObject = static_cast<CObject*>(pIObject);
+	pObject->SetParameter(m_parameterInfo, m_value);
 
 #if defined(CRY_AUDIO_IMPL_FMOD_USE_DEBUG_CODE)
 	if (m_parameterInfo.IsGlobal())
@@ -37,7 +37,7 @@ void CParameterState::Set(IObject* const pIObject)
 		                R"(FMOD - Global parameter "%s" was set to %f on object "%s". Consider setting it globally.)",
 		                m_parameterInfo.GetName(),
 		                m_value,
-		                pBaseObject->GetName());
+		                pObject->GetName());
 	}
 #endif  // CRY_AUDIO_IMPL_FMOD_USE_DEBUG_CODE
 }
@@ -51,9 +51,9 @@ void CParameterState::SetGlobally()
 	}
 	else
 	{
-		for (auto const pBaseObject : g_constructedObjects)
+		for (auto const pObject : g_constructedObjects)
 		{
-			pBaseObject->SetParameter(m_parameterInfo, m_value);
+			pObject->SetParameter(m_parameterInfo, m_value);
 		}
 
 #if defined(CRY_AUDIO_IMPL_FMOD_USE_DEBUG_CODE)

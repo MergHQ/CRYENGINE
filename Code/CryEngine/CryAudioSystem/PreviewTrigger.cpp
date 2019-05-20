@@ -4,7 +4,7 @@
 
 #if defined(CRY_AUDIO_USE_DEBUG_CODE)
 	#include "PreviewTrigger.h"
-	#include "GlobalObject.h"
+	#include "DefaultObject.h"
 	#include "TriggerUtils.h"
 	#include "Common/IImpl.h"
 	#include "Common/IObject.h"
@@ -66,7 +66,7 @@ void CPreviewTrigger::Execute(XmlNodeRef const& node)
 //////////////////////////////////////////////////////////////////////////
 void CPreviewTrigger::Execute()
 {
-	Impl::IObject* const pIObject = g_previewObject.GetImplDataPtr();
+	Impl::IObject* const pIObject = g_previewObject.GetImplData();
 
 	uint16 numPlayingInstances = 0;
 	uint16 numPendingInstances = 0;

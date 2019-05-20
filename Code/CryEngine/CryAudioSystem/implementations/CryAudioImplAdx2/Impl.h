@@ -60,7 +60,6 @@ public:
 	virtual void                    DestructEnvironmentConnection(IEnvironmentConnection const* const pIEnvironmentConnection) override;
 	virtual ISettingConnection*     ConstructSettingConnection(XmlNodeRef const& rootNode) override;
 	virtual void                    DestructSettingConnection(ISettingConnection const* const pISettingConnection) override;
-	virtual IObject*                ConstructGlobalObject(IListeners const& listeners) override;
 	virtual IObject*                ConstructObject(CTransformation const& transformation, IListeners const& listeners, char const* const szName = nullptr) override;
 	virtual void                    DestructObject(IObject const* const pIObject) override;
 	virtual IListener*              ConstructListener(CTransformation const& transformation, char const* const szName) override;
@@ -76,7 +75,7 @@ public:
 	// ~CryAudio::Impl::IImpl
 
 #if defined(CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE)
-	CCueInstance* ConstructCueInstance(TriggerInstanceId const triggerInstanceId, CriAtomExPlaybackId const playbackId, CCue& cue, CBaseObject const& baseObject);
+	CCueInstance* ConstructCueInstance(TriggerInstanceId const triggerInstanceId, CriAtomExPlaybackId const playbackId, CCue& cue, CObject const& object);
 #else
 	CCueInstance* ConstructCueInstance(TriggerInstanceId const triggerInstanceId, CriAtomExPlaybackId const playbackId, CCue& cue);
 #endif  // CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE

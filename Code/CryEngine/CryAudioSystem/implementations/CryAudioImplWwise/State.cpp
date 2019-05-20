@@ -2,10 +2,9 @@
 
 #include "stdafx.h"
 #include "State.h"
-#include "Object.h"
 
 #if defined(CRY_AUDIO_IMPL_WWISE_USE_DEBUG_CODE)
-	#include "BaseObject.h"
+	#include "Object.h"
 	#include <Logger.h>
 #endif  // CRY_AUDIO_IMPL_WWISE_USE_DEBUG_CODE
 
@@ -23,7 +22,7 @@ void CState::Set(IObject* const pIObject)
 	SetGlobally();
 
 #if defined(CRY_AUDIO_IMPL_WWISE_USE_DEBUG_CODE)
-	auto const pObject = static_cast<CBaseObject*>(pIObject);
+	auto const pObject = static_cast<CObject*>(pIObject);
 	Cry::Audio::Log(ELogType::Warning, R"(Wwise - state "%s: %s" was set on object "%s". Consider setting it globally.)",
 	                m_stateGroupName.c_str(), m_stateName.c_str(), pObject->GetName());
 #endif  // CRY_AUDIO_IMPL_WWISE_USE_DEBUG_CODE

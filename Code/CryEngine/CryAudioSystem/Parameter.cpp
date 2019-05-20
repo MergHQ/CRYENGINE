@@ -8,7 +8,7 @@
 
 #if defined(CRY_AUDIO_USE_DEBUG_CODE)
 	#include "Object.h"
-	#include "GlobalObject.h"
+	#include "DefaultObject.h"
 	#include "Common/Logger.h"
 #endif // CRY_AUDIO_USE_DEBUG_CODE
 
@@ -29,7 +29,7 @@ CParameter::~CParameter()
 //////////////////////////////////////////////////////////////////////////
 void CParameter::Set(CObject const& object, float const value) const
 {
-	Impl::IObject* const pIObject = object.GetImplDataPtr();
+	Impl::IObject* const pIObject = object.GetImplData();
 
 	for (auto const pConnection : m_connections)
 	{
@@ -45,9 +45,9 @@ void CParameter::Set(CObject const& object, float const value) const
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CParameter::Set(CGlobalObject const& globalObject, float const value) const
+void CParameter::Set(CDefaultObject const& object, float const value) const
 {
-	Impl::IObject* const pIObject = globalObject.GetImplDataPtr();
+	Impl::IObject* const pIObject = object.GetImplData();
 
 	for (auto const pConnection : m_connections)
 	{
@@ -56,10 +56,10 @@ void CParameter::Set(CGlobalObject const& globalObject, float const value) const
 
 	if (m_connections.empty())
 	{
-		Cry::Audio::Log(ELogType::Warning, R"(Parameter "%s" set on object "%s" without connections)", GetName(), globalObject.GetName());
+		Cry::Audio::Log(ELogType::Warning, R"(Parameter "%s" set on object "%s" without connections)", GetName(), object.GetName());
 	}
 
-	const_cast<CGlobalObject&>(globalObject).StoreParameterValue(m_id, value);
+	const_cast<CDefaultObject&>(object).StoreParameterValue(m_id, value);
 }
 #else
 //////////////////////////////////////////////////////////////////////////

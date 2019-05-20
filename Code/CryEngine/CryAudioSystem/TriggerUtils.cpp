@@ -2,7 +2,7 @@
 
 #include "stdafx.h"
 #include "TriggerUtils.h"
-#include "GlobalObject.h"
+#include "DefaultObject.h"
 #include "System.h"
 #include "CallbackRequestData.h"
 #include "Common/IObject.h"
@@ -40,7 +40,7 @@ void SendFinishedTriggerInstanceRequest(
 //////////////////////////////////////////////////////////////////////////
 void ExecuteDefaultTriggerConnections(Control const* const pControl, TriggerConnections const& connections)
 {
-	Impl::IObject* const pIObject = g_object.GetImplDataPtr();
+	Impl::IObject* const pIObject = g_defaultObject.GetImplData();
 
 	uint16 numPlayingInstances = 0;
 	uint16 numPendingInstances = 0;
@@ -67,14 +67,14 @@ void ExecuteDefaultTriggerConnections(Control const* const pControl, TriggerConn
 #if defined(CRY_AUDIO_USE_DEBUG_CODE)
 		else if (result != ETriggerResult::DoNotTrack)
 		{
-			Cry::Audio::Log(ELogType::Warning, R"(Trigger "%s" failed on object "%s" during %s)", pControl->GetName(), g_object.GetName(), __FUNCTION__);
+			Cry::Audio::Log(ELogType::Warning, R"(Trigger "%s" failed on object "%s" during %s)", pControl->GetName(), g_defaultObject.GetName(), __FUNCTION__);
 		}
 #endif  // CRY_AUDIO_USE_DEBUG_CODE
 	}
 
 	if ((numPlayingInstances > 0) || (numPendingInstances > 0))
 	{
-		g_object.ConstructTriggerInstance(pControl->GetId(), numPlayingInstances, numPendingInstances, ERequestFlags::None, nullptr, nullptr, nullptr);
+		g_defaultObject.ConstructTriggerInstance(pControl->GetId(), numPlayingInstances, numPendingInstances, ERequestFlags::None, nullptr, nullptr, nullptr);
 	}
 	else
 	{

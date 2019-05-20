@@ -28,7 +28,7 @@ namespace Impl
 namespace Fmod
 {
 class CImpl;
-class CBaseObject;
+class CObject;
 class CEventInstance;
 class CReturn;
 class CListener;
@@ -49,7 +49,7 @@ constexpr char const* g_szAbsoluteVelocityParameterName = "absolute_velocity";
 extern CParameterInfo g_occlusionParameterInfo;
 extern CParameterInfo g_absoluteVelocityParameterInfo;
 
-using Objects = std::vector<CBaseObject*>;
+using Objects = std::vector<CObject*>;
 using EventInstances = std::vector<CEventInstance*>;
 using Listeners = std::vector<CListener*>;
 

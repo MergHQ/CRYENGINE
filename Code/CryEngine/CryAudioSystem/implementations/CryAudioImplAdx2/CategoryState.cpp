@@ -4,7 +4,7 @@
 #include "CategoryState.h"
 
 #if defined(CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE)
-	#include "BaseObject.h"
+	#include "Object.h"
 	#include <Logger.h>
 #endif  // CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE
 
@@ -20,9 +20,9 @@ void CCategoryState::Set(IObject* const pIObject)
 	SetGlobally();
 
 #if defined(CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE)
-	auto const pBaseObject = static_cast<CBaseObject const*>(pIObject);
+	auto const pObject = static_cast<CObject const*>(pIObject);
 	Cry::Audio::Log(ELogType::Warning, R"(Adx2 - Category "%s" was set to %f on object "%s". Consider setting it globally.)",
-	                m_name.c_str(), static_cast<float>(m_value), pBaseObject->GetName());
+	                m_name.c_str(), static_cast<float>(m_value), pObject->GetName());
 #endif  // CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE
 }
 

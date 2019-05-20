@@ -13,7 +13,7 @@ namespace Impl
 {
 namespace Adx2
 {
-class CBaseObject;
+class CObject;
 class CCue;
 
 enum class ECueInstanceFlags : EnumFlagsType
@@ -45,13 +45,13 @@ public:
 		TriggerInstanceId const triggerInstanceId,
 		CriAtomExPlaybackId const playbackId,
 		CCue& cue,
-		CBaseObject const& baseObject)
+		CObject const& object)
 		: m_triggerInstanceId(triggerInstanceId)
 		, m_playbackId(playbackId)
 		, m_cue(cue)
 		, m_flags(ECueInstanceFlags::IsVirtual | ECueInstanceFlags::IsPending) // Voices always start in virtual state.
 		, m_timeFadeOutStarted(0.0f)
-		, m_baseObject(baseObject)
+		, m_object(object)
 	{}
 #else
 	explicit CCueInstance(
@@ -76,16 +76,16 @@ public:
 	void                SetFlag(ECueInstanceFlags const flag)    { m_flags = m_flags | flag; }
 	void                RemoveFlag(ECueInstanceFlags const flag) { m_flags = m_flags & ~flag; }
 
-	bool                PrepareForPlayback(CBaseObject& baseObject);
+	bool                PrepareForPlayback(CObject& object);
 
 	void                Stop();
 	void                Pause();
 	void                Resume();
 
 #if defined(CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE)
-	void               StartFadeOut();
-	float              GetTimeFadeOutStarted() const { return m_timeFadeOutStarted; }
-	CBaseObject const& GetObject() const             { return m_baseObject; }
+	void           StartFadeOut();
+	float          GetTimeFadeOutStarted() const { return m_timeFadeOutStarted; }
+	CObject const& GetObject() const             { return m_object; }
 #endif  // CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE
 
 private:
@@ -96,8 +96,8 @@ private:
 	CCue&                          m_cue;
 
 #if defined(CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE)
-	float              m_timeFadeOutStarted;
-	CBaseObject const& m_baseObject;
+	float          m_timeFadeOutStarted;
+	CObject const& m_object;
 #endif  // CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE
 };
 } // namespace Adx2

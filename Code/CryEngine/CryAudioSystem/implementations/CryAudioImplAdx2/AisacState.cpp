@@ -2,7 +2,7 @@
 
 #include "stdafx.h"
 #include "AisacState.h"
-#include "BaseObject.h"
+#include "Object.h"
 
 namespace CryAudio
 {
@@ -13,9 +13,9 @@ namespace Adx2
 //////////////////////////////////////////////////////////////////////////
 void CAisacState::Set(IObject* const pIObject)
 {
-	auto const pBaseObject = static_cast<CBaseObject const*>(pIObject);
+	auto const pObject = static_cast<CObject const*>(pIObject);
 
-	CriAtomExPlayerHn const pPlayer = pBaseObject->GetPlayer();
+	CriAtomExPlayerHn const pPlayer = pObject->GetPlayer();
 	criAtomExPlayer_SetAisacControlByName(pPlayer, static_cast<CriChar8 const*>(m_name.c_str()), m_value);
 	criAtomExPlayer_UpdateAll(pPlayer);
 }
@@ -25,9 +25,9 @@ void CAisacState::SetGlobally()
 {
 	auto const szName = static_cast<CriChar8 const*>(m_name.c_str());
 
-	for (auto const pBaseObject : g_constructedObjects)
+	for (auto const pObject : g_constructedObjects)
 	{
-		CriAtomExPlayerHn const pPlayer = pBaseObject->GetPlayer();
+		CriAtomExPlayerHn const pPlayer = pObject->GetPlayer();
 		criAtomExPlayer_SetAisacControlByName(pPlayer, szName, m_value);
 		criAtomExPlayer_UpdateAll(pPlayer);
 	}

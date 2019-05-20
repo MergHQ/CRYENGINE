@@ -2,7 +2,7 @@
 
 #include "stdafx.h"
 #include "EventInstance.h"
-#include "BaseObject.h"
+#include "Object.h"
 #include "CVars.h"
 #include "Return.h"
 #include "Event.h"

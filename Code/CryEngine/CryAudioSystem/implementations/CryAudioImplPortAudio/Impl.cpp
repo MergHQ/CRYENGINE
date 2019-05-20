@@ -368,12 +368,6 @@ void CImpl::GetInfo(SImplInfo& implInfo) const
 }
 
 ///////////////////////////////////////////////////////////////////////////
-IObject* CImpl::ConstructGlobalObject(IListeners const& listeners)
-{
-	return ConstructObject(CTransformation::GetEmptyObject(), listeners, "Global Object");
-}
-
-///////////////////////////////////////////////////////////////////////////
 IObject* CImpl::ConstructObject(CTransformation const& transformation, IListeners const& listeners, char const* const szName /*= nullptr*/)
 {
 	auto const pListener = static_cast<CListener*>(listeners[0]);

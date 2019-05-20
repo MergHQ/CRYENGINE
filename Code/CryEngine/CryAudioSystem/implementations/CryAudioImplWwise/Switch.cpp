@@ -2,7 +2,7 @@
 
 #include "stdafx.h"
 #include "Switch.h"
-#include "BaseObject.h"
+#include "Object.h"
 
 #if defined(CRY_AUDIO_IMPL_WWISE_USE_DEBUG_CODE)
 	#include <Logger.h>
@@ -19,9 +19,9 @@ namespace Wwise
 //////////////////////////////////////////////////////////////////////////
 void CSwitch::Set(IObject* const pIObject)
 {
-	auto const pBaseObject = static_cast<CBaseObject const*>(pIObject);
+	auto const pObject = static_cast<CObject const*>(pIObject);
 
-	AK::SoundEngine::SetSwitch(m_switchGroupId, m_switchId, pBaseObject->GetId());
+	AK::SoundEngine::SetSwitch(m_switchGroupId, m_switchId, pObject->GetId());
 }
 
 //////////////////////////////////////////////////////////////////////////

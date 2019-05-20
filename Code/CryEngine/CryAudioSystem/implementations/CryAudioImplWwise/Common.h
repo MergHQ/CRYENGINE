@@ -28,7 +28,6 @@ namespace Wwise
 {
 class CImpl;
 class CListener;
-class CBaseObject;
 class CEventInstance;
 
 extern CImpl* g_pImpl;
@@ -68,18 +67,13 @@ inline void FillAKListenerPosition(CTransformation const& transformation, AkList
 	outTransformation.SetOrientation(vec1, vec2);
 }
 
-extern AkGameObjectID g_listenerId; // To be removed once multi-listener support is implemented.
-extern AkGameObjectID g_globalObjectId;
-
 #if defined(CRY_AUDIO_IMPL_WWISE_USE_DEBUG_CODE)
-constexpr char const* g_globalObjectName = "Global Object";
-
 class CEventInstance;
-class CBaseObject;
+class CObject;
 
 extern CryCriticalSection g_cs;
 extern std::unordered_map<AkPlayingID, CEventInstance*> g_playingIds;
-extern std::unordered_map<AkGameObjectID, CBaseObject*> g_gameObjectIds;
+extern std::unordered_map<AkGameObjectID, CObject*> g_gameObjectIds;
 
 using States = std::map<CryFixedStringT<MaxControlNameLength>, CryFixedStringT<MaxControlNameLength>>;
 extern States g_debugStates;
