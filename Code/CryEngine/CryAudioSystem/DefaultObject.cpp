@@ -1,7 +1,7 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "stdafx.h"
-#include "GlobalObject.h"
+#include "DefaultObject.h"
 #include "CVars.h"
 #include "Managers.h"
 #include "System.h"
@@ -33,7 +33,7 @@
 namespace CryAudio
 {
 //////////////////////////////////////////////////////////////////////////
-void CGlobalObject::Release()
+void CDefaultObject::Release()
 {
 	// Do not clear the object's name though!
 
@@ -46,7 +46,7 @@ void CGlobalObject::Release()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CGlobalObject::ConstructTriggerInstance(
+void CDefaultObject::ConstructTriggerInstance(
 	ControlId const triggerId,
 	uint16 const numPlayingConnectionInstances,
 	uint16 const numPendingConnectionInstances,
@@ -67,12 +67,12 @@ void CGlobalObject::ConstructTriggerInstance(
 		std::forward_as_tuple(new CTriggerInstance(triggerId, INVALID_ENTITYID, numPlayingConnectionInstances, numPendingConnectionInstances, flags, pOwner, pUserData, pUserDataOwner)));
 #endif // CRY_AUDIO_USE_DEBUG_CODE
 
-	g_triggerInstanceIdToGlobalObject[g_triggerInstanceIdCounter] = this;
+	g_triggerInstanceIdToDefaultObject[g_triggerInstanceIdCounter] = this;
 	IncrementTriggerInstanceIdCounter();
 }
 
 ///////////////////////////////////////////////////////////////////////////
-void CGlobalObject::ReportStartedTriggerInstance(TriggerInstanceId const triggerInstanceId, ETriggerResult const result)
+void CDefaultObject::ReportStartedTriggerInstance(TriggerInstanceId const triggerInstanceId, ETriggerResult const result)
 {
 	TriggerInstances::iterator const iter(m_triggerInstances.find(triggerInstanceId));
 
@@ -83,7 +83,7 @@ void CGlobalObject::ReportStartedTriggerInstance(TriggerInstanceId const trigger
 }
 
 ///////////////////////////////////////////////////////////////////////////
-void CGlobalObject::ReportFinishedTriggerInstance(TriggerInstanceId const triggerInstanceId, ETriggerResult const result)
+void CDefaultObject::ReportFinishedTriggerInstance(TriggerInstanceId const triggerInstanceId, ETriggerResult const result)
 {
 	TriggerInstances::iterator const iter(m_triggerInstances.find(triggerInstanceId));
 
@@ -95,7 +95,7 @@ void CGlobalObject::ReportFinishedTriggerInstance(TriggerInstanceId const trigge
 		{
 			if (pTriggerInstance->IsPlayingInstanceFinished())
 			{
-				g_triggerInstanceIdToGlobalObject.erase(triggerInstanceId);
+				g_triggerInstanceIdToDefaultObject.erase(triggerInstanceId);
 				pTriggerInstance->SendFinishedRequest();
 
 				m_triggerInstances.erase(iter);
@@ -106,7 +106,7 @@ void CGlobalObject::ReportFinishedTriggerInstance(TriggerInstanceId const trigge
 		{
 			if (pTriggerInstance->IsPendingInstanceFinished())
 			{
-				g_triggerInstanceIdToGlobalObject.erase(triggerInstanceId);
+				g_triggerInstanceIdToDefaultObject.erase(triggerInstanceId);
 				pTriggerInstance->SendFinishedRequest();
 
 				m_triggerInstances.erase(iter);
@@ -123,19 +123,19 @@ void CGlobalObject::ReportFinishedTriggerInstance(TriggerInstanceId const trigge
 }
 
 ///////////////////////////////////////////////////////////////////////////
-void CGlobalObject::StopAllTriggers()
+void CDefaultObject::StopAllTriggers()
 {
 	m_pIObject->StopAllTriggers();
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CGlobalObject::SetImplDataPtr(Impl::IObject* const pIObject)
+void CDefaultObject::SetImplData(Impl::IObject* const pIObject)
 {
 	m_pIObject = pIObject;
 }
 
 ///////////////////////////////////////////////////////////////////////////
-void CGlobalObject::Update(float const deltaTime)
+void CDefaultObject::Update(float const deltaTime)
 {
 	if (!m_triggerInstances.empty())
 	{
@@ -145,13 +145,8 @@ void CGlobalObject::Update(float const deltaTime)
 
 #if defined(CRY_AUDIO_USE_DEBUG_CODE)
 ///////////////////////////////////////////////////////////////////////////
-void CGlobalObject::ForceImplementationRefresh(bool const setTransformation)
+void CDefaultObject::ForceImplementationRefresh()
 {
-	if (setTransformation)
-	{
-		m_pIObject->SetTransformation(m_transformation);
-	}
-
 	// Parameters
 	for (auto const& parameterPair : m_parameters)
 	{
@@ -201,34 +196,20 @@ void CGlobalObject::ForceImplementationRefresh(bool const setTransformation)
 	}
 }
 
-///////////////////////////////////////////////////////////////////////////
-void CGlobalObject::HandleSetTransformation(CTransformation const& transformation)
-{
-	m_transformation = transformation;
-	m_pIObject->SetTransformation(transformation);
-}
-
 //////////////////////////////////////////////////////////////////////////
-ERequestStatus CGlobalObject::HandleSetName(char const* const szName)
-{
-	m_name = szName;
-	return m_pIObject->SetName(szName);
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CGlobalObject::StoreParameterValue(ControlId const id, float const value)
+void CDefaultObject::StoreParameterValue(ControlId const id, float const value)
 {
 	m_parameters[id] = value;
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CGlobalObject::StoreSwitchValue(ControlId const switchId, SwitchStateId const switchStateId)
+void CDefaultObject::StoreSwitchValue(ControlId const switchId, SwitchStateId const switchStateId)
 {
 	m_switchStates[switchId] = switchStateId;
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool CGlobalObject::ExecuteDefaultTrigger(ControlId const id)
+bool CDefaultObject::ExecuteDefaultTrigger(ControlId const id)
 {
 	bool wasSuccess = true;
 
@@ -275,9 +256,9 @@ bool CGlobalObject::ExecuteDefaultTrigger(ControlId const id)
 }
 
 ///////////////////////////////////////////////////////////////////////////
-void CGlobalObject::DrawDebugInfo(IRenderAuxGeom& auxGeom, float const posX, float posY)
+void CDefaultObject::DrawDebugInfo(IRenderAuxGeom& auxGeom, float const posX, float posY)
 {
-	auxGeom.Draw2dLabel(posX, posY, Debug::g_listHeaderFontSize, Debug::s_globalColorHeader, false, "Global Object");
+	auxGeom.Draw2dLabel(posX, posY, Debug::g_listHeaderFontSize, Debug::s_globalColorHeader, false, "Default Object");
 	posY += Debug::g_listHeaderLineHeight;
 
 	// Check if text filter is enabled.

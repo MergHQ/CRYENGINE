@@ -28,7 +28,7 @@ struct ITriggerConnection;
 class CListener;
 class CSystem;
 class CObject;
-class CGlobalObject;
+class CDefaultObject;
 class CLoseFocusTrigger;
 class CGetFocusTrigger;
 class CMuteAllTrigger;
@@ -61,7 +61,7 @@ using PreloadRequestLookup = std::map<PreloadRequestId, CPreloadRequest*>;
 using EnvironmentLookup = std::map<EnvironmentId, CEnvironment const*>;
 using SettingLookup = std::map<ControlId, CSetting const*>;
 using TriggerInstanceIdLookup = std::map<TriggerInstanceId, CObject*>;
-using TriggerInstanceIdLookupGlobal = std::map<TriggerInstanceId, CGlobalObject*>;
+using TriggerInstanceIdLookupDefault = std::map<TriggerInstanceId, CDefaultObject*>;
 using ContextLookup = std::map<ContextId, CryFixedStringT<MaxFileNameLength>>;
 
 using TriggerConnections = std::vector<Impl::ITriggerConnection*>;
@@ -83,9 +83,9 @@ extern PreloadRequestLookup g_preloadRequests;
 extern EnvironmentLookup g_environments;
 extern SettingLookup g_settings;
 extern TriggerInstanceIdLookup g_triggerInstanceIdToObject;
-extern TriggerInstanceIdLookupGlobal g_triggerInstanceIdToGlobalObject;
+extern TriggerInstanceIdLookupDefault g_triggerInstanceIdToDefaultObject;
 extern ContextLookup g_registeredContexts;
-extern CGlobalObject g_object;
+extern CDefaultObject g_defaultObject;
 extern CLoseFocusTrigger g_loseFocusTrigger;
 extern CGetFocusTrigger g_getFocusTrigger;
 extern CMuteAllTrigger g_muteAllTrigger;
@@ -139,7 +139,7 @@ constexpr ControlId g_previewTriggerId = StringToId(g_szPreviewTriggerName);
 
 class CPreviewTrigger;
 extern CPreviewTrigger g_previewTrigger;
-extern CGlobalObject g_previewObject;
+extern CDefaultObject g_previewObject;
 extern SPoolSizes g_debugPoolSizes;
 
 using SwitchStateIds = std::map<ControlId, SwitchStateId>;

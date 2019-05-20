@@ -2,7 +2,7 @@
 
 #include "stdafx.h"
 #include "Parameter.h"
-#include "BaseObject.h"
+#include "Object.h"
 
 #include <AK/SoundEngine/Common/AkSoundEngine.h>
 
@@ -15,10 +15,10 @@ namespace Wwise
 //////////////////////////////////////////////////////////////////////////
 void CParameter::Set(IObject* const pIObject, float const value)
 {
-	auto const pBaseObject = static_cast<CBaseObject const*>(pIObject);
+	auto const pObject = static_cast<CObject const*>(pIObject);
 	auto const rtpcValue = static_cast<AkRtpcValue>(m_multiplier * value + m_shift);
 
-	AK::SoundEngine::SetRTPCValue(m_id, rtpcValue, pBaseObject->GetId());
+	AK::SoundEngine::SetRTPCValue(m_id, rtpcValue, pObject->GetId());
 }
 
 //////////////////////////////////////////////////////////////////////////

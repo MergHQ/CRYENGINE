@@ -153,13 +153,6 @@ void CImpl::GetInfo(SImplInfo& implInfo) const
 }
 
 ///////////////////////////////////////////////////////////////////////////
-IObject* CImpl::ConstructGlobalObject(IListeners const& listeners)
-{
-	MEMSTAT_CONTEXT(EMemStatContextType::AudioSystem, "CryAudio::Impl::Null::SObject");
-	return static_cast<IObject*>(new SObject());
-}
-
-///////////////////////////////////////////////////////////////////////////
 IObject* CImpl::ConstructObject(CTransformation const& transformation, IListeners const& listeners, char const* const szName /*= nullptr*/)
 {
 	MEMSTAT_CONTEXT(EMemStatContextType::AudioSystem, "CryAudio::Impl::Null::SObject");

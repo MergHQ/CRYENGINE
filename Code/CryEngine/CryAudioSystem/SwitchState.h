@@ -46,7 +46,7 @@ public:
 
 #if defined(CRY_AUDIO_USE_DEBUG_CODE)
 	void        Set(CObject const& object) const;
-	void        Set(CGlobalObject const& globalObject) const;
+	void        Set(CDefaultObject const& object) const;
 	char const* GetName() const { return m_name.c_str(); }
 #else
 	void        Set(Impl::IObject* const pIObject) const;

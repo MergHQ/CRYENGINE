@@ -12,7 +12,7 @@ namespace Fmod
 {
 class CEventInstance;
 class CEvent;
-class CBaseObject;
+class CObject;
 
 class CImpl final : public IImpl
 {
@@ -57,7 +57,6 @@ public:
 	virtual void                    DestructEnvironmentConnection(IEnvironmentConnection const* const pIEnvironmentConnection) override;
 	virtual ISettingConnection*     ConstructSettingConnection(XmlNodeRef const& rootNode) override;
 	virtual void                    DestructSettingConnection(ISettingConnection const* const pISettingConnection) override;
-	virtual IObject*                ConstructGlobalObject(IListeners const& listeners) override;
 	virtual IObject*                ConstructObject(CTransformation const& transformation, IListeners const& listeners, char const* const szName = nullptr) override;
 	virtual void                    DestructObject(IObject const* const pIObject) override;
 	virtual IListener*              ConstructListener(CTransformation const& transformation, char const* const szName) override;
@@ -73,7 +72,7 @@ public:
 	// ~CryAudio::Impl::IImpl
 
 #if defined(CRY_AUDIO_IMPL_FMOD_USE_DEBUG_CODE)
-	CEventInstance* ConstructEventInstance(TriggerInstanceId const triggerInstanceId, CEvent& event, CBaseObject const& baseObject);
+	CEventInstance* ConstructEventInstance(TriggerInstanceId const triggerInstanceId, CEvent& event, CObject const& object);
 #else
 	CEventInstance* ConstructEventInstance(TriggerInstanceId const triggerInstanceId, CEvent& event);
 #endif  // CRY_AUDIO_IMPL_FMOD_USE_DEBUG_CODE

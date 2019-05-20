@@ -295,16 +295,6 @@ struct IImpl
 
 	/**
 	 * Create an object implementing IObject that stores all of the data needed by the AudioImplementation
-	 * to identify and use the GlobalAudioObject.
-	 * @param listeners - listeners which listen to all sounds emmitted from the object
-	 * @return IObject pointer to the audio implementation-specific data needed by the audio middleware and the
-	 * @return AudioImplementation code to use the corresponding GlobalAudioObject; nullptr if the new IObject instance was not created
-	 * @see DestructObject
-	 */
-	virtual IObject* ConstructGlobalObject(IListeners const& listeners) = 0;
-
-	/**
-	 * Create an object implementing IObject that stores all of the data needed by the AudioImplementation
 	 * to identify and use the AudioObject. Return a pointer to that object.
 	 * @param transformation - transformation of the object to construct
 	 * @param listeners - listeners which listen to all sounds emmitted from the object
@@ -319,7 +309,7 @@ struct IImpl
 	 * Free the memory and potentially other resources used by the supplied IObject instance
 	 * @param pIObject - pointer to the object implementing IObject to be discarded
 	 * @return void
-	 * @see ConstructObject, ConstructGlobalObject
+	 * @see ConstructObject
 	 */
 	virtual void DestructObject(IObject const* const pIObject) = 0;
 

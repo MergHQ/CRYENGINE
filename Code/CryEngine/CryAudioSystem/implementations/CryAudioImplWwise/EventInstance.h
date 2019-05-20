@@ -13,7 +13,7 @@ namespace Impl
 {
 namespace Wwise
 {
-class CBaseObject;
+class CObject;
 class CEvent;
 
 enum class EEventInstanceState : EnumFlagsType
@@ -34,13 +34,13 @@ public:
 	CEventInstance& operator=(CEventInstance&&) = delete;
 
 #if defined(CRY_AUDIO_IMPL_WWISE_USE_DEBUG_CODE)
-	CEventInstance(TriggerInstanceId const triggerInstanceId, CEvent& event, CBaseObject const& baseObject)
+	CEventInstance(TriggerInstanceId const triggerInstanceId, CEvent& event, CObject const& object)
 		: m_triggerInstanceId(triggerInstanceId)
 		, m_event(event)
 		, m_state(EEventInstanceState::None)
 		, m_playingId(AK_INVALID_UNIQUE_ID)
 		, m_toBeRemoved(false)
-		, m_baseObject(baseObject)
+		, m_object(object)
 	{}
 #else
 	CEventInstance(TriggerInstanceId const triggerInstanceId, CEvent& event)
@@ -68,7 +68,7 @@ public:
 	void                UpdateVirtualState(float const distance);
 
 #if defined(CRY_AUDIO_IMPL_WWISE_USE_DEBUG_CODE)
-	CBaseObject const& GetObject() const { return m_baseObject; }
+	CObject const& GetObject() const { return m_object; }
 #endif  // CRY_AUDIO_IMPL_WWISE_USE_DEBUG_CODE
 
 private:
@@ -80,7 +80,7 @@ private:
 	std::atomic_bool        m_toBeRemoved;
 
 #if defined(CRY_AUDIO_IMPL_WWISE_USE_DEBUG_CODE)
-	CBaseObject const& m_baseObject;
+	CObject const& m_object;
 #endif  // CRY_AUDIO_IMPL_WWISE_USE_DEBUG_CODE
 };
 } // namespace Wwise

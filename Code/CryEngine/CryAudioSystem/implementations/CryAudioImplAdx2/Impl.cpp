@@ -6,7 +6,6 @@
 #include "CVars.h"
 #include "Listener.h"
 #include "Object.h"
-#include "GlobalObject.h"
 #include "AisacControl.h"
 #include "AisacEnvironment.h"
 #include "AisacState.h"
@@ -681,32 +680,6 @@ void CImpl::GetInfo(SImplInfo& implInfo) const
 }
 
 ///////////////////////////////////////////////////////////////////////////
-IObject* CImpl::ConstructGlobalObject(IListeners const& listeners)
-{
-	auto const pListener = static_cast<CListener*>(listeners[0]); // ADX2 supports only one listener per player.
-
-	MEMSTAT_CONTEXT(EMemStatContextType::AudioImpl, "CryAudio::Impl::Adx2::CGlobalObject");
-	auto const pObject = new CGlobalObject(pListener);
-
-#if defined(CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE)
-	if (!stl::push_back_unique(g_constructedObjects, static_cast<CBaseObject*>(pObject)))
-	{
-		Cry::Audio::Log(ELogType::Warning, "Trying to construct an already registered object.");
-	}
-
-	if (listeners.size() > 1)
-	{
-		Cry::Audio::Log(ELogType::Warning, R"(More than one listener is passed in %s. Adx2 supports only one listener per object. Listener "%s" will be used for object "%s".)",
-		                __FUNCTION__, pListener->GetName(), pObject->GetName());
-	}
-#else
-	stl::push_back_unique(g_constructedObjects, static_cast<CBaseObject*>(pObject));
-#endif  // CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE
-
-	return static_cast<IObject*>(pObject);
-}
-
-///////////////////////////////////////////////////////////////////////////
 IObject* CImpl::ConstructObject(CTransformation const& transformation, IListeners const& listeners, char const* const szName /*= nullptr*/)
 {
 	auto const pListener = static_cast<CListener*>(listeners[0]); // ADX2 supports only one listener per player.
@@ -737,16 +710,16 @@ IObject* CImpl::ConstructObject(CTransformation const& transformation, IListener
 ///////////////////////////////////////////////////////////////////////////
 void CImpl::DestructObject(IObject const* const pIObject)
 {
-	auto const pBaseObject = static_cast<CBaseObject const*>(pIObject);
+	auto const pObject = static_cast<CObject const*>(pIObject);
 
-	if (!stl::find_and_erase(g_constructedObjects, pBaseObject))
+	if (!stl::find_and_erase(g_constructedObjects, pObject))
 	{
 #if defined(CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE)
 		Cry::Audio::Log(ELogType::Warning, "Trying to delete a non-existing object.");
 #endif    // CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE
 	}
 
-	delete pBaseObject;
+	delete pObject;
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -1226,11 +1199,11 @@ void CImpl::SetLanguage(char const* const szLanguage)
 
 #if defined(CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE)
 //////////////////////////////////////////////////////////////////////////
-CCueInstance* CImpl::ConstructCueInstance(TriggerInstanceId const triggerInstanceId, CriAtomExPlaybackId const playbackId, CCue& cue, CBaseObject const& baseObject)
+CCueInstance* CImpl::ConstructCueInstance(TriggerInstanceId const triggerInstanceId, CriAtomExPlaybackId const playbackId, CCue& cue, CObject const& object)
 {
 	cue.IncrementNumInstances();
 
-	auto const pCueInstance = new CCueInstance(triggerInstanceId, playbackId, cue, baseObject);
+	auto const pCueInstance = new CCueInstance(triggerInstanceId, playbackId, cue, object);
 	g_constructedCueInstances.push_back(pCueInstance);
 
 	return pCueInstance;
@@ -1494,18 +1467,18 @@ void CImpl::Set3dSourceConfig()
 //////////////////////////////////////////////////////////////////////////
 void CImpl::MuteAllObjects(CriBool const shouldMute)
 {
-	for (auto const pBaseObject : g_constructedObjects)
+	for (auto const pObject : g_constructedObjects)
 	{
-		pBaseObject->MutePlayer(shouldMute);
+		pObject->MutePlayer(shouldMute);
 	}
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CImpl::PauseAllObjects(CriBool const shouldPause)
 {
-	for (auto const pBaseObject : g_constructedObjects)
+	for (auto const pObject : g_constructedObjects)
 	{
-		pBaseObject->PausePlayer(shouldPause);
+		pObject->PausePlayer(shouldPause);
 	}
 }
 

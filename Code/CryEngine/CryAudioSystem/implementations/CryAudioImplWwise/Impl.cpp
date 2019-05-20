@@ -16,7 +16,6 @@
 #include "Listener.h"
 #include "ListenerInfo.h"
 #include "Object.h"
-#include "GlobalObject.h"
 #include "SoundBank.h"
 #include "State.h"
 #include "Switch.h"
@@ -139,9 +138,9 @@ static void ErrorMonitorCallback(
 
 	CryAutoLock<CryCriticalSection> const lock(CryAudio::Impl::Wwise::g_cs);
 	CryAudio::Impl::Wwise::CEventInstance const* const pEventInstance = stl::find_in_map(CryAudio::Impl::Wwise::g_playingIds, in_playingID, nullptr);
-	CryAudio::Impl::Wwise::CBaseObject const* const pBaseObject = stl::find_in_map(CryAudio::Impl::Wwise::g_gameObjectIds, in_gameObjID, nullptr);
+	CryAudio::Impl::Wwise::CObject const* const pObject = stl::find_in_map(CryAudio::Impl::Wwise::g_gameObjectIds, in_gameObjID, nullptr);
 	char const* const szEventName = (pEventInstance != nullptr) ? pEventInstance->GetEvent().GetName() : "Unknown PlayingID";
-	char const* const szObjectName = (pBaseObject != nullptr) ? pBaseObject->GetName() : "Unknown GameObjID";
+	char const* const szObjectName = (pObject != nullptr) ? pObject->GetName() : "Unknown GameObjID";
 	Cry::Audio::Log(
 		((in_eErrorLevel& AK::Monitor::ErrorLevel_Error) != 0) ? CryAudio::ELogType::Error : CryAudio::ELogType::Comment,
 		"<Wwise> %s | ErrorCode: %d | PlayingID: %u (%s) | GameObjID: %" PRISIZE_T " (%s)", szTemp, in_eErrorCode, in_playingID, szEventName, in_gameObjID, szObjectName);
@@ -1128,40 +1127,6 @@ void CImpl::GetInfo(SImplInfo& implInfo) const
 }
 
 ///////////////////////////////////////////////////////////////////////////
-IObject* CImpl::ConstructGlobalObject(IListeners const& listeners)
-{
-	g_globalObjectId = m_gameObjectId++;
-
-	ListenerInfos listenerInfos;
-	int const numListeners = listeners.size();
-
-	for (int i = 0; i < numListeners; ++i)
-	{
-		listenerInfos.emplace_back(static_cast<CListener*>(listeners[i]), 0.0f);
-	}
-
-#if defined(CRY_AUDIO_IMPL_WWISE_USE_DEBUG_CODE)
-	char const* const szName = "GlobalObject";
-	AK::SoundEngine::RegisterGameObj(g_globalObjectId, szName);
-
-	MEMSTAT_CONTEXT(EMemStatContextType::AudioImpl, "CryAudio::Impl::Wwise::CGlobalObject");
-	auto const pObject = new CGlobalObject(g_globalObjectId, listenerInfos, szName);
-
-	{
-		CryAutoLock<CryCriticalSection> const lock(CryAudio::Impl::Wwise::g_cs);
-		g_gameObjectIds[g_globalObjectId] = pObject;
-	}
-#else
-	AK::SoundEngine::RegisterGameObj(g_globalObjectId);
-
-	MEMSTAT_CONTEXT(EMemStatContextType::AudioImpl, "CryAudio::Impl::Wwise::CGlobalObject");
-	auto const pObject = new CGlobalObject(g_globalObjectId, listenerInfos);
-#endif  // CRY_AUDIO_IMPL_WWISE_USE_DEBUG_CODE
-
-	return static_cast<IObject*>(pObject);
-}
-
-///////////////////////////////////////////////////////////////////////////
 IObject* CImpl::ConstructObject(CTransformation const& transformation, IListeners const& listeners, char const* const szName /*= nullptr*/)
 {
 #if defined(CRY_AUDIO_IMPL_WWISE_USE_DEBUG_CODE)
@@ -1194,18 +1159,18 @@ IObject* CImpl::ConstructObject(CTransformation const& transformation, IListener
 ///////////////////////////////////////////////////////////////////////////
 void CImpl::DestructObject(IObject const* const pIObject)
 {
-	auto const pBaseObject = static_cast<CBaseObject const*>(pIObject);
-	AkGameObjectID const objectID = pBaseObject->GetId();
+	auto const pObject = static_cast<CObject const*>(pIObject);
+	AkGameObjectID const objectID = pObject->GetId();
 	AK::SoundEngine::UnregisterGameObj(objectID);
 
 #if defined(CRY_AUDIO_IMPL_WWISE_USE_DEBUG_CODE)
 	{
 		CryAutoLock<CryCriticalSection> const lock(CryAudio::Impl::Wwise::g_cs);
-		g_gameObjectIds.erase(pBaseObject->GetId());
+		g_gameObjectIds.erase(pObject->GetId());
 	}
 #endif  // CRY_AUDIO_IMPL_WWISE_USE_DEBUG_CODE
 
-	delete pBaseObject;
+	delete pObject;
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -1263,7 +1228,7 @@ void CImpl::GamepadConnected(DeviceId const deviceUniqueID)
 	CRY_ASSERT(m_mapInputDevices.find(deviceUniqueID) == m_mapInputDevices.end()); // Mustn't exist yet!
 	AkOutputSettings settings("Wwise_Motion", static_cast<AkUniqueID>(deviceUniqueID));
 	AkOutputDeviceID deviceID = AK_INVALID_OUTPUT_DEVICE_ID;
-	AKRESULT const wwiseResult = AK::SoundEngine::AddOutput(settings, &deviceID, &g_listenerId, 1);
+	AKRESULT const wwiseResult = AK::SoundEngine::AddOutput(settings, &deviceID);
 
 	if (CRY_AUDIO_IMPL_WWISE_IS_OK(wwiseResult))
 	{
@@ -1710,12 +1675,12 @@ void CImpl::SetLanguage(char const* const szLanguage)
 
 #if defined(CRY_AUDIO_IMPL_WWISE_USE_DEBUG_CODE)
 //////////////////////////////////////////////////////////////////////////
-CEventInstance* CImpl::ConstructEventInstance(TriggerInstanceId const triggerInstanceId, CEvent& event, CBaseObject const& baseObject)
+CEventInstance* CImpl::ConstructEventInstance(TriggerInstanceId const triggerInstanceId, CEvent& event, CObject const& object)
 {
 	event.IncrementNumInstances();
 	MEMSTAT_CONTEXT(EMemStatContextType::AudioImpl, "CryAudio::Impl::Wwise::CEventInstance");
 
-	auto const pEventInstance = new CEventInstance(triggerInstanceId, event, baseObject);
+	auto const pEventInstance = new CEventInstance(triggerInstanceId, event, object);
 	g_constructedEventInstances.push_back(pEventInstance);
 
 	return pEventInstance;

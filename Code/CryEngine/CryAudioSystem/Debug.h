@@ -26,7 +26,7 @@ enum class EDrawFilter : EnumFlagsType
 	OcclusionRayOffset        = BIT(15), // j
 	OcclusionListenerPlane    = BIT(16), // k
 	OcclusionCollisionSpheres = BIT(17), // l
-	GlobalObjectInfo          = BIT(18), // m
+	DefaultObjectInfo         = BIT(18), // m
 	ObjectImplInfo            = BIT(19), // n
 
 	HideMemoryInfo            = BIT(22), // q

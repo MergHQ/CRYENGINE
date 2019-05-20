@@ -380,7 +380,7 @@ void CObject::Release()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CObject::SetImplDataPtr(Impl::IObject* const pIObject)
+void CObject::SetImplData(Impl::IObject* const pIObject)
 {
 	m_pIObject = pIObject;
 

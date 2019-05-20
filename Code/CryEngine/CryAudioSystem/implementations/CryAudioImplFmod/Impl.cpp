@@ -8,7 +8,6 @@
 #include "Event.h"
 #include "EventInstance.h"
 #include "Listener.h"
-#include "GlobalObject.h"
 #include "MasterBank.h"
 #include "Object.h"
 #include "Parameter.h"
@@ -583,35 +582,6 @@ void CImpl::GetInfo(SImplInfo& implInfo) const
 }
 
 ///////////////////////////////////////////////////////////////////////////
-IObject* CImpl::ConstructGlobalObject(IListeners const& listeners)
-{
-	int const numListeners = listeners.size();
-	CRY_ASSERT_MESSAGE(numListeners <= FMOD_MAX_LISTENERS, "Number of listeners (%d) exceeded FMOD_MAX_LISTENERS (%d) during %s", numListeners, FMOD_MAX_LISTENERS, __FUNCTION__);
-
-	int listenerMask = 0;
-	Listeners objectListeners;
-
-	for (int i = 0; (i < numListeners) && (i < FMOD_MAX_LISTENERS); ++i)
-	{
-		auto const pListener = static_cast<CListener*>(listeners[i]);
-		listenerMask |= BIT(pListener->GetId());
-		objectListeners.emplace_back(pListener);
-	}
-
-	MEMSTAT_CONTEXT(EMemStatContextType::AudioImpl, "CryAudio::Impl::Fmod::CGlobalObject");
-	auto const pObject = new CGlobalObject(listenerMask, objectListeners);
-
-	if (!stl::push_back_unique(g_constructedObjects, static_cast<CBaseObject*>(pObject)))
-	{
-#if defined(CRY_AUDIO_IMPL_FMOD_USE_DEBUG_CODE)
-		Cry::Audio::Log(ELogType::Warning, "Trying to construct an already registered object.");
-#endif    // CRY_AUDIO_IMPL_FMOD_USE_DEBUG_CODE
-	}
-
-	return static_cast<IObject*>(pObject);
-}
-
-///////////////////////////////////////////////////////////////////////////
 IObject* CImpl::ConstructObject(CTransformation const& transformation, IListeners const& listeners, char const* const szName /*= nullptr*/)
 {
 	int const numListeners = listeners.size();
@@ -628,7 +598,7 @@ IObject* CImpl::ConstructObject(CTransformation const& transformation, IListener
 	}
 
 	MEMSTAT_CONTEXT(EMemStatContextType::AudioImpl, "CryAudio::Impl::Fmod::CObject");
-	CBaseObject* const pObject = new CObject(transformation, listenerMask, objectListeners);
+	auto const pObject = new CObject(transformation, listenerMask, objectListeners);
 
 #if defined(CRY_AUDIO_IMPL_FMOD_USE_DEBUG_CODE)
 	if (szName != nullptr)
@@ -650,16 +620,16 @@ IObject* CImpl::ConstructObject(CTransformation const& transformation, IListener
 ///////////////////////////////////////////////////////////////////////////
 void CImpl::DestructObject(IObject const* const pIObject)
 {
-	auto const pBaseObject = static_cast<CBaseObject const*>(pIObject);
+	auto const pObject = static_cast<CObject const*>(pIObject);
 
-	if (!stl::find_and_erase(g_constructedObjects, pBaseObject))
+	if (!stl::find_and_erase(g_constructedObjects, pObject))
 	{
 #if defined(CRY_AUDIO_IMPL_FMOD_USE_DEBUG_CODE)
 		Cry::Audio::Log(ELogType::Warning, "Trying to delete a non-existing object.");
 #endif    // CRY_AUDIO_IMPL_FMOD_USE_DEBUG_CODE
 	}
 
-	delete pBaseObject;
+	delete pObject;
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -1523,12 +1493,12 @@ void CImpl::PauseMasterBus(bool const shouldPause)
 
 #if defined(CRY_AUDIO_IMPL_FMOD_USE_DEBUG_CODE)
 //////////////////////////////////////////////////////////////////////////
-CEventInstance* CImpl::ConstructEventInstance(TriggerInstanceId const triggerInstanceId, CEvent& event, CBaseObject const& baseObject)
+CEventInstance* CImpl::ConstructEventInstance(TriggerInstanceId const triggerInstanceId, CEvent& event, CObject const& object)
 {
 	event.IncrementNumInstances();
 	MEMSTAT_CONTEXT(EMemStatContextType::AudioImpl, "CryAudio::Impl::Fmod::CEventInstance");
 
-	auto const pEventInstance = new CEventInstance(triggerInstanceId, event, baseObject);
+	auto const pEventInstance = new CEventInstance(triggerInstanceId, event, object);
 	g_constructedEventInstances.push_back(pEventInstance);
 
 	return pEventInstance;

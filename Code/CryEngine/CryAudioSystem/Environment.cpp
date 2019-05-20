@@ -27,7 +27,7 @@ CEnvironment::~CEnvironment()
 ///////////////////////////////////////////////////////////////////////////
 void CEnvironment::Set(CObject const& object, float const value) const
 {
-	Impl::IObject* const pIObject = object.GetImplDataPtr();
+	Impl::IObject* const pIObject = object.GetImplData();
 
 	for (auto const pConnection : m_connections)
 	{

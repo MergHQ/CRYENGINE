@@ -3,7 +3,7 @@
 #include "stdafx.h"
 #include "CueInstance.h"
 #include "Common.h"
-#include "BaseObject.h"
+#include "Object.h"
 #include "Cue.h"
 
 #if defined(CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE)
@@ -17,7 +17,7 @@ namespace Impl
 namespace Adx2
 {
 //////////////////////////////////////////////////////////////////////////
-bool CCueInstance::PrepareForPlayback(CBaseObject& baseObject)
+bool CCueInstance::PrepareForPlayback(CObject& object)
 {
 	bool isPlaying = false;
 
@@ -41,7 +41,7 @@ bool CCueInstance::PrepareForPlayback(CBaseObject& baseObject)
 		}
 
 		RemoveFlag(ECueInstanceFlags::IsPending);
-		baseObject.UpdateVelocityTracking();
+		object.UpdateVelocityTracking();
 
 		isPlaying = true;
 	}

@@ -4,7 +4,7 @@
 #include "VcaState.h"
 
 #if defined(CRY_AUDIO_IMPL_FMOD_USE_DEBUG_CODE)
-	#include "BaseObject.h"
+	#include "Object.h"
 	#include <Logger.h>
 #endif  // CRY_AUDIO_IMPL_FMOD_USE_DEBUG_CODE
 
@@ -20,8 +20,8 @@ void CVcaState::Set(IObject* const pIObject)
 	SetGlobally();
 
 #if defined(CRY_AUDIO_IMPL_FMOD_USE_DEBUG_CODE)
-	auto const pBaseObject = static_cast<CBaseObject const*>(pIObject);
-	Cry::Audio::Log(ELogType::Warning, R"(Fmod - VCA "%s" was set to %f on object "%s". Consider setting it globally.)", m_name.c_str(), m_value, pBaseObject->GetName());
+	auto const pObject = static_cast<CObject const*>(pIObject);
+	Cry::Audio::Log(ELogType::Warning, R"(Fmod - VCA "%s" was set to %f on object "%s". Consider setting it globally.)", m_name.c_str(), m_value, pObject->GetName());
 #endif  // CRY_AUDIO_IMPL_FMOD_USE_DEBUG_CODE
 }
 

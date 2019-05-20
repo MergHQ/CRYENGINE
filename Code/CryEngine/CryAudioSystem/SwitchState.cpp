@@ -8,7 +8,7 @@
 
 #if defined(CRY_AUDIO_USE_DEBUG_CODE)
 	#include "Object.h"
-	#include "GlobalObject.h"
+	#include "DefaultObject.h"
 	#include "Common/Logger.h"
 #endif // CRY_AUDIO_USE_DEBUG_CODE
 
@@ -29,7 +29,7 @@ CSwitchState::~CSwitchState()
 //////////////////////////////////////////////////////////////////////////
 void CSwitchState::Set(CObject const& object) const
 {
-	Impl::IObject* const pIObject = object.GetImplDataPtr();
+	Impl::IObject* const pIObject = object.GetImplData();
 
 	for (auto const pConnection : m_connections)
 	{
@@ -45,9 +45,9 @@ void CSwitchState::Set(CObject const& object) const
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CSwitchState::Set(CGlobalObject const& globalObject) const
+void CSwitchState::Set(CDefaultObject const& object) const
 {
-	Impl::IObject* const pIObject = globalObject.GetImplDataPtr();
+	Impl::IObject* const pIObject = object.GetImplData();
 
 	for (auto const pConnection : m_connections)
 	{
@@ -56,10 +56,10 @@ void CSwitchState::Set(CGlobalObject const& globalObject) const
 
 	if (m_connections.empty())
 	{
-		Cry::Audio::Log(ELogType::Warning, R"(SwitchState "%s" set on object "%s" without connections)", GetName(), globalObject.GetName());
+		Cry::Audio::Log(ELogType::Warning, R"(SwitchState "%s" set on object "%s" without connections)", GetName(), object.GetName());
 	}
 
-	const_cast<CGlobalObject&>(globalObject).StoreSwitchValue(m_switchId, m_switchStateId);
+	const_cast<CDefaultObject&>(object).StoreSwitchValue(m_switchId, m_switchStateId);
 }
 #else
 //////////////////////////////////////////////////////////////////////////

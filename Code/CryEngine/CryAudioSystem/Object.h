@@ -83,7 +83,7 @@ public:
 	void ReleasePendingRays();
 #endif // CRY_AUDIO_USE_OCCLUSION
 
-	Impl::IObject*         GetImplDataPtr() const    { return m_pIObject; }
+	Impl::IObject*         GetImplData() const       { return m_pIObject; }
 	Listeners const&       GetListeners() const      { return m_listeners; }
 	CTransformation const& GetTransformation() const { return m_transformation; }
 
@@ -162,7 +162,7 @@ private:
 public:
 
 	void           Release();
-	void           SetImplDataPtr(Impl::IObject* const pIObject);
+	void           SetImplData(Impl::IObject* const pIObject);
 	#if defined(CRY_AUDIO_USE_OCCLUSION)
 	void           ResetObstructionRays() { m_propagationProcessor.ResetRayData(); }
 	#endif // CRY_AUDIO_USE_OCCLUSION
