@@ -9,8 +9,6 @@
 #include <array>
 #include <thread>
 
-#define TEST_WITH_REF(variable, statement) {static auto& r##variable = variable; statement;}
-
 void InsertElements(CryMT::CThreadSafePushContainer<int64>* container, uint64 begin, uint64 end)
 {
 	for (uint64 i = begin; i < end; ++i)
@@ -247,9 +245,7 @@ TEST(CryThreadSafePushContainer, Tomb)
 {
 	CryMT::CThreadSafePushContainer<int32> container;
 	
-	TEST_WITH_REF(container,
-		EXPECT_NONFATAL_FAILURE(rcontainer.push_back(0xfbfbfbfb); , "tombstone");
-	);
+	EXPECT_ASSERT_FAILURE(container.push_back(0xfbfbfbfb); , "tombstone");
 }
 
 TEST(CryThreadSafePushContainer, OutofBounds)
@@ -264,10 +260,8 @@ TEST(CryThreadSafePushContainer, OutofBounds)
 	EXPECT_EQ(container[0], 432);
 	EXPECT_EQ(container[1], 56);
 	
-	TEST_WITH_REF(container,
-		EXPECT_NONFATAL_FAILURE(rcontainer[2], "out of bound");
-		EXPECT_NONFATAL_FAILURE(rcontainer[3], "out of bound");
-	);
+	EXPECT_ASSERT_FAILURE(container[2], "out of bound");
+	EXPECT_ASSERT_FAILURE(container[3], "out of bound");
 }
 
 TEST(CryThreadSafePushContainer, MultiContainer)
@@ -302,11 +296,12 @@ TEST(CryThreadSafePushContainer, MultiContainer)
 TEST(CryThreadSafePushContainerDeathTest, NoMemoryConsumed)
 {
 	CryMT::CThreadSafePushContainer<int64> container;
-	ASSERT_DEATH_IF_SUPPORTED(container[0], "");
+	volatile int64 x; // without this the access can be optimized away in release
+	ASSERT_DEATH_IF_SUPPORTED(x = container[0], "");
 	container.push_back(42);
-	EXPECT_NO_FATAL_FAILURE(container[0]);
+	EXPECT_NO_FATAL_FAILURE(x = container[0]);
 	container.reset_container();
-	ASSERT_DEATH_IF_SUPPORTED(container[0], "");
+	ASSERT_DEATH_IF_SUPPORTED(x = container[0], "");
 }
 
 TEST(CryThreadSafePushContainerDeathTest, MaximumCapacity)
@@ -329,9 +324,5 @@ TEST(CryThreadSafePushContainerDeathTest, TooManyThreads)
 	}
 
 	EXPECT_FALSE(HasFatalFailure());
-	
-	TEST_WITH_REF(container,
-		  //EXPECT_EXIT(rcontainer.push_back(1), ::testing::ExitedWithCode(1337), "s_nMaxThreads limit reached");
-		  ASSERT_DEATH_IF_SUPPORTED(rcontainer.push_back(1), "");
-	);
+	ASSERT_DEATH_IF_SUPPORTED(container.push_back(1), "");
 }

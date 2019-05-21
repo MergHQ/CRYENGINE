@@ -503,3 +503,8 @@ inline void PrintTo(const CryFixedStringT<S>& str, ::std::ostream* os) { *os << 
 template<size_t S>
 inline void PrintTo(const CryFixedWStringT<S>& str, ::std::ostream* os) { *os << str.c_str(); }
 
+#ifdef USE_CRY_ASSERT
+#	define EXPECT_ASSERT_FAILURE(statement, substr) EXPECT_NONFATAL_FAILURE(statement, substr)
+#else
+#	define EXPECT_ASSERT_FAILURE(statement, substr)
+#endif
