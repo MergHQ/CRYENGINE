@@ -576,10 +576,8 @@ public:
 	CMemReplay();
 	virtual ~CMemReplay() {};
 
-#if MEMREPLAY_USES_DETOURS
 	static void Init();
 	static void Shutdown();
-#endif
 
 	static CMemReplay* GetInstance();
 
