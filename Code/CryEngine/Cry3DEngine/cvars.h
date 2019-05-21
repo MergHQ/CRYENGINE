@@ -428,7 +428,7 @@ struct CVars : public Cry3DEngineBase
 	float e_ShadowsCastViewDistRatioLights;
 	int   e_ShadowsUpdateViewDistRatio;
 	int   e_Lods;
-	DeclareConstIntCVar(e_LodFaceArea, 1);
+	int   e_LodFaceArea;
 	float e_ShadowsConstBias;
 	int   e_ParticlesCollisions;
 	int   e_ParticlesObjectCollisions;

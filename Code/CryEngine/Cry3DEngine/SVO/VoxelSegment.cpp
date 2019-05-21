@@ -2275,8 +2275,8 @@ void CVoxelSegment::FindTrianglesForVoxelization(PodArray<int>*& rpNodeTrisXYZ)
 
 			arrTris.Clear();
 			nodeHitInfo.pHitTris = &arrTris;
+			nodeHitInfo.useBoxIntersection = true;
 
-			nodeHitInfo.fMinHitOpacity = GetCVars()->e_svoTI_MinVoxelOpacity;
 			int minVoxelOpacity = (int)(GetCVars()->e_svoTI_MinVoxelOpacity * 255.f);
 
 			float timeRayIntersection = Cry3DEngineBase::GetTimer()->GetAsyncCurTime();
