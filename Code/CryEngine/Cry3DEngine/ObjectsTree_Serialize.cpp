@@ -225,9 +225,9 @@ inline void LoadCommonData(SRenderNodeChunk* pChunk, IRenderNode* pObj, const SL
 	COPY_MEMBER_LOAD(pObj, pChunk, m_ucViewDistRatio);
 	COPY_MEMBER_LOAD(pObj, pChunk, m_ucLodRatio);
 	COPY_MEMBER_LOAD(pObj, pChunk, m_cShadowLodBias);
-	pObj->m_dwRndFlags &= ~(ERF_HIDDEN | ERF_SELECTED);
-	if (pObj->m_dwRndFlags & ERF_CASTSHADOWMAPS)
-		pObj->m_dwRndFlags |= ERF_HAS_CASTSHADOWMAPS;
+	
+	pObj->SetRndFlags(ERF_HIDDEN | ERF_SELECTED, false);
+	pObj->SetRndFlags(ERF_CASTSHADOWMAPS | ERF_HAS_CASTSHADOWMAPS, pObj->GetRndFlags() & ERF_CASTSHADOWMAPS ? true : false);
 
 	if (NULL != pLayerVisibility)
 	{
@@ -356,7 +356,7 @@ int COctreeNode::LoadObjects(byte* pPtr, byte* pEndPtr, std::vector<IStatObj*>* 
 			if (pRN && pRN->m_pOcNode != this)
 			{
 				Get3DEngine()->UnRegisterEntityDirect(pRN);
-				LinkObject(pRN, pRN->GetRenderNodeType());
+				LinkObject(pRN, pRN->GetRenderNodeType(), !pRN->IsHidden());
 				pRN->m_pOcNode = this;
 				SetCompiled(IRenderNode::GetRenderNodeListId(pRN->GetRenderNodeType()), false);
 			}
@@ -818,9 +818,6 @@ void COctreeNode::LoadSingleObject(byte*& pPtr, std::vector<IStatObj*>* pStatObj
 		// set material
 		pObj->SetMaterial(CObjManager::GetItemPtr(pMatTable, pChunk->m_nMaterialId));
 
-		// to get correct indirect lighting the registration must be done before checking if this object is inside a VisArea
-		Get3DEngine()->RegisterEntity(pObj);
-
 		if (NULL != pLayerVisibility)
 		{
 			if (!CheckLayerVisibility(pObj->GetLayerId(), pLayerVisibility))
@@ -833,6 +830,9 @@ void COctreeNode::LoadSingleObject(byte*& pPtr, std::vector<IStatObj*>* pStatObj
 			// keep everything deactivated, game will activate it later
 			pObj->SetRndFlags(ERF_HIDDEN, true);
 		}
+
+		// to get correct indirect lighting the registration must be done before checking if this object is inside a VisArea
+		Get3DEngine()->RegisterEntity(pObj);
 
 		if (!(Get3DEngine()->IsObjectsLayerHidden(pObj->GetLayerId(), pObj->GetBBox()) && GetCVars()->e_ObjectLayersActivationPhysics == 1) && !(pChunk->m_dwRndFlags & ERF_NO_PHYSICS))
 			pObj->Physicalize();

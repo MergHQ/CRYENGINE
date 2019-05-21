@@ -46,6 +46,7 @@ public:
 	virtual ~CVegetation();
 	void                 SetStatObjGroupIndex(int nVegetationGroupIndex) override;
 
+	virtual void         Instance(bool bInstance) override;
 	void                 CheckCreateDeformable();
 	virtual bool         CanExecuteRenderAsJob() const override;
 	int                  GetStatObjGroupId() const override      { return m_nObjectTypeIndex; }

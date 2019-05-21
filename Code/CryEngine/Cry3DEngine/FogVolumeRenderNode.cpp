@@ -557,7 +557,7 @@ void CFogVolumeRenderNode::TraceFogVolumes(const Vec3& worldPos, ColorF& fogColo
 			const CFogVolumeRenderNode* pFogVol((*it).m_pFogVol);
 
 			// only trace visible fog volumes
-			if (!(pFogVol->GetRndFlags() & ERF_HIDDEN))
+			if (!pFogVol->IsHidden())
 			{
 				// check if view ray intersects with bounding box of current fog volume
 				if (Overlap::Lineseg_AABB(lineseg, pFogVol->m_WSBBox))

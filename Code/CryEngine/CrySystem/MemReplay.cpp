@@ -1818,7 +1818,6 @@ namespace
 }
 #endif
 
-#if MEMREPLAY_USES_DETOURS
 // we cannot use a static here, due to initialization order requirements
 SUninitialized<CMemReplay> g_memReplay;
 CMemReplay* CMemReplay::GetInstance()
@@ -1831,6 +1830,7 @@ CMemReplay* CMemReplay::GetInstance()
 
 void CMemReplay::Init()
 {
+#if MEMREPLAY_USES_DETOURS
 	// Prefer ntdll alloc functions over kernel32 functions (the deeper the better)
 	const HMODULE ntdll = ::GetModuleHandleA("ntdll.dll");
 	s_originalRtlAllocateHeap = (RtlAllocateHeap_Ptr)::GetProcAddress(ntdll, "RtlAllocateHeap");
@@ -1845,12 +1845,14 @@ void CMemReplay::Init()
 	MemReplayDetourAttach(&s_originalNtAllocateVirtualMemory, NtAllocateVirtualMemory_Detour);
 	MemReplayDetourAttach(&s_originalNtFreeVirtualMemory, NtFreeVirtualMemory_Detour);
 
+#endif
 	g_memReplay.DefaultConstruct();
 	((CMemReplay&)g_memReplay).m_status = ECreationStatus::Initialized;
 }
 
 void CMemReplay::Shutdown()
 {
+#if MEMREPLAY_USES_DETOURS
 	((CMemReplay&)g_memReplay).m_status = ECreationStatus::Uninitialized;
 
 	MemReplayDetourDetach(&s_originalRtlAllocateHeap, RtlAllocateHeap_Detour);
@@ -1858,14 +1860,8 @@ void CMemReplay::Shutdown()
 	MemReplayDetourDetach(&s_originalRtlFreeHeap, RtlFreeHeap_Detour);
 	MemReplayDetourDetach(&s_originalNtAllocateVirtualMemory, NtAllocateVirtualMemory_Detour);
 	MemReplayDetourDetach(&s_originalNtFreeVirtualMemory, NtFreeVirtualMemory_Detour);
-}
-#else
-CMemReplay* CMemReplay::GetInstance()
-{
-	static CMemReplay g_memReplay;
-	return &g_memReplay;
-}
 #endif
+}
 
 CMemReplay::CMemReplay()
 	: m_allocReference(0)

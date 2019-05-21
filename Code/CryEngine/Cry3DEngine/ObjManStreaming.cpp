@@ -1008,9 +1008,6 @@ void CObjManager::UpdateRenderNodeStreamingPriority(IRenderNode* pObj, float fEn
 {
 	//  FUNCTION_PROFILER_3DENGINE;
 
-	if (pObj->m_dwRndFlags & ERF_HIDDEN)
-		return;
-
 	if (pObj->m_fWSMaxViewDist < 0.01f)
 		return;
 

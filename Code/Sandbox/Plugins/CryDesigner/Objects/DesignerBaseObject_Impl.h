@@ -118,14 +118,16 @@ void DesignerBaseObject<T>::UpdateHiddenIStatObjState()
 
 	bool bHidden = IsHiddenByOption() || IsHidden() || IsHiddenBySpec() || GetIEditor()->IsInGameMode();
 
+	uint64 renderFlag = GetCompiler()->GetRenderFlags();
 	if (bHidden)
 	{
-		pCompiler->SetRenderFlags(GetCompiler()->GetRenderFlags() | ERF_HIDDEN);
+		renderFlag |= ERF_HIDDEN;
 	}
 	else
 	{
-		pCompiler->SetRenderFlags(GetCompiler()->GetRenderFlags() & (~ERF_HIDDEN));
+		renderFlag &= ~ERF_HIDDEN;
 	}
+	pCompiler->SetRenderFlags(renderFlag);
 
 	pCompiler->Compile(this, GetModel(), eShelf_Any, true);
 }

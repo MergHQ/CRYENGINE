@@ -4942,7 +4942,7 @@ void CGame::CmdHideAllDummyPlayers(IConsoleCmdArgs* pCmdArgs)
 									IRenderNode* pRenderNode = pIEntityRender->GetRenderNode();
 									if(pRenderNode)
 									{
-										pRenderNode->Hide(bHidePlayers);
+										pRenderNode->SetRndFlags(ERF_HIDDEN, bHidePlayers);
 									}
 								}
 

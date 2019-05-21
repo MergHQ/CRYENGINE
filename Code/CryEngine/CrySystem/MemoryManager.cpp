@@ -222,13 +222,7 @@ uint32 CCryMemoryManager::TraceHeapGetColor()
 IMemReplay* CCryMemoryManager::GetIMemReplay()
 {
 #if CAPTURE_REPLAY_LOG
-	IMemReplay* pMemReplay = CMemReplay::GetInstance();
-	if (!pMemReplay)
-	{
-		static CDummyMemReplay s_dummyMemReplay;
-		return &s_dummyMemReplay;
-	}
-	return pMemReplay;
+	return CMemReplay::GetInstance();
 #else
 	static IMemReplay memReplay;
 	return &memReplay;

@@ -2245,16 +2245,7 @@ void CEntityObject::SetSelected(bool bSelect)
 		IRenderNode* pRenderNode = m_pEntity->GetRenderNode();
 		if (pRenderNode)
 		{
-			uint64 flags = pRenderNode->GetRndFlags();
-			if (bSelect)
-			{
-				flags |= ERF_SELECTED;
-			}
-			else
-			{
-				flags &= ~ERF_SELECTED;
-			}
-			pRenderNode->SetRndFlags(flags);
+			pRenderNode->SetRndFlags(ERF_SELECTED, bSelect);
 		}
 	}
 

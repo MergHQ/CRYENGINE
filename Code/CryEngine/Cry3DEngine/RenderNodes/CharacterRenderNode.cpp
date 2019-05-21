@@ -71,7 +71,7 @@ void CCharacterRenderNode::Render(const SRendParams& inputRendParams, const SRen
 
 	DBG_LOCK_TO_THREAD(this);
 
-	if (!m_pCharacterInstance || m_dwRndFlags & ERF_HIDDEN)
+	if (!m_pCharacterInstance)
 		return;
 
 	// some parameters will be modified

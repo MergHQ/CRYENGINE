@@ -57,12 +57,12 @@ BOOL APIENTRY DllMain(HANDLE hModule,
 	#pragma warning( pop )
 #endif
 
-#if CAPTURE_REPLAY_LOG && MEMREPLAY_USES_DETOURS
-static struct SMemReplayDetours
+#if CAPTURE_REPLAY_LOG
+static struct SMemReplayInit
 {
-	SMemReplayDetours() { CMemReplay::Init(); }
-	~SMemReplayDetours() { CMemReplay::Shutdown(); }
-} s_detourInit;
+	SMemReplayInit() { CMemReplay::Init(); }
+	~SMemReplayInit() { CMemReplay::Shutdown(); }
+} s_memReplayInit;
 #endif
 
 #if defined(USE_GLOBAL_BUCKET_ALLOCATOR)

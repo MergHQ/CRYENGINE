@@ -4294,7 +4294,7 @@ void CActionGame::HideBrokenObjectsByIndex(uint16* pObjectIndicies, int32 iNumOb
 			if (m_brokenObjs[i].itype == PHYS_FOREIGN_ID_STATIC)
 			{
 				//CryLogAlways("Hide & remove decals from original pBrush 0x%p at index %d", m_brokenObjs[i].pBrush, i);
-				m_brokenObjs[i].pBrush->Hide(true);
+				m_brokenObjs[i].pBrush->SetRndFlags(ERF_HIDDEN, true);
 
 				//At the moment there is no code support for hiding decals for later re-display. This means that to avoid
 				//	decals being left floating in mid air, we need to remove them when the killcam starts
@@ -4330,7 +4330,7 @@ void CActionGame::UnhideBrokenObjectsByIndex(uint16* pObjectIndicies, int32 iNum
 			if (m_brokenObjs[i].itype == PHYS_FOREIGN_ID_STATIC)
 			{
 				BreakLogAlways("UNHIDING original pBrush 0x%p at index %d", m_brokenObjs[i].pBrush, i);
-				m_brokenObjs[i].pBrush->Hide(false);
+				m_brokenObjs[i].pBrush->SetRndFlags(ERF_HIDDEN, false);
 
 				//At the moment there is no code support for hiding decals for later re-display. This means that to avoid
 				//	decals being left floating in mid air, we need to remove them when the killcam starts

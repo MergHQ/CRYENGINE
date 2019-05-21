@@ -1267,6 +1267,11 @@ void C3DEngine::UpdateRenderingCamera(const char* szCallerName, const SRendering
 	for (int i = 0, nSize = m_deferredRenderProxyStreamingPriorityUpdates.size(); i < nSize; ++i)
 	{
 		IRenderNode* pRenderNode = m_deferredRenderProxyStreamingPriorityUpdates[i];
+
+		// Might have been hidden directly after registration
+		if (pRenderNode->IsHidden())
+			continue;
+
 		AABB aabb = pRenderNode->GetBBox();
 		const Vec3& vCamPos = GetRenderingCamera().GetPosition();
 		float fEntDistance = sqrt_tpl(Distance::Point_AABBSq(vCamPos, aabb)) * passInfo.GetZoomFactor();
@@ -1428,7 +1433,7 @@ void C3DEngine::CreateDecal(const struct CryEngineDecalInfo& decal)
 			//      if(decalOnRenderNode.ownerInfo.pRenderNode->GetRenderNodeType() != decal.ownerInfo.pRenderNode->GetRenderNodeType())
 			//      continue;
 
-			if (decalOnRenderNode.ownerInfo.pRenderNode->GetRndFlags() & ERF_HIDDEN)
+			if (decalOnRenderNode.ownerInfo.pRenderNode->IsHidden())
 				continue;
 
 			m_pDecalManager->SpawnHierarchical(decalOnRenderNode, NULL);
@@ -4884,11 +4889,9 @@ void C3DEngine::SetRecomputeCachedShadows(IRenderNode* pNode, uint updateStrateg
 
 	if (IRenderer* const pRenderer = GetRenderer())
 	{
-		if (GetCVars()->e_DynamicDistanceShadows != 0 && pNode && pNode->m_pOcNode != nullptr)
+		if (GetCVars()->e_DynamicDistanceShadows != 0 && pNode)
 		{
-			ERNListType nodeListType = IRenderNode::GetRenderNodeListId(pNode->GetRenderNodeType());
-
-			pNode->m_pOcNode->MarkAsUncompiled(nodeListType);
+			pNode->MarkAsUncompiled();
 		}
 	}
 }
@@ -5300,15 +5303,17 @@ void C3DEngine::ActivateObjectsLayer(uint16 nLayerId, bool bActivate, bool bPhys
 		for (size_t i = 0; i < m_lstStaticLights.size(); ++i)
 		{
 			ILightSource* pLight = m_lstStaticLights[i];
-			if (pLight->GetLayerId() == nLayerId)
-				pLight->SetRndFlags(ERF_HIDDEN, !bActivate);
+
+			if (pLight->GetLayerId() == nLayerId || nLayerId == uint16(~0))
+				if (pLight != m_pSun) // TODO: e_Sun is the CVar controlling visibility of the sun
+					pLight->SetRndFlags(ERF_HIDDEN, !bActivate);
 		}
 	}
 }
 
 bool C3DEngine::IsObjectsLayerHidden(uint16 nLayerId, const AABB& objBox)
 {
-	if (IsAreaActivationInUse() && nLayerId && nLayerId < 0xFFFF)
+	if (IsAreaActivationInUse() && nLayerId && nLayerId < uint16(~0))
 	{
 		m_arrObjectLayersActivity.CheckAllocated(nLayerId + 1);
 
@@ -5368,13 +5373,13 @@ void C3DEngine::PrecacheRenderNode(IRenderNode* pObj, float fEntDistanceReal)
 
 	if (m_pObjManager)
 	{
-		auto dwOldRndFlags = pObj->m_dwRndFlags;
-		pObj->m_dwRndFlags &= ~ERF_HIDDEN;
+		auto dwOldRndFlags = pObj->GetRndFlags();
+		pObj->SetRndFlags(ERF_HIDDEN, false);
 
 		SRenderingPassInfo passInfo = SRenderingPassInfo::CreateGeneralPassRenderingInfo(SGraphicsPipelineKey::BaseGraphicsPipelineKey, gEnv->pSystem->GetViewCamera());
 		m_pObjManager->UpdateRenderNodeStreamingPriority(pObj, fEntDistanceReal, 1.0f, fEntDistanceReal < GetFloatCVar(e_StreamCgfFastUpdateMaxDistance), passInfo, true);
 
-		pObj->m_dwRndFlags = dwOldRndFlags;
+		pObj->SetRndFlags(dwOldRndFlags);
 	}
 }
 
@@ -6474,10 +6479,6 @@ void C3DEngine::RenderRenderNode_ShadowPass(IShadowCaster* pShadowCaster, const 
 	CRY_ASSERT(passInfo.IsShadowPass());
 
 	IRenderNode* pRenderNode = static_cast<IRenderNode*>(pShadowCaster);
-	if ((pRenderNode->m_dwRndFlags & ERF_HIDDEN) != 0)
-	{
-		return;
-	}
 
 	int nStaticObjectLod = -1;
 	if (passInfo.GetShadowMapType() == SRenderingPassInfo::SHADOW_MAP_CACHED)
@@ -6599,7 +6600,7 @@ void C3DEngine::AsyncOctreeUpdate(IRenderNode* pEnt, uint32 nFrameID, bool bUnRe
 	}
 
 	if (!(dwRndFlags & ERF_RENDER_ALWAYS) && !(dwRndFlags & ERF_CASTSHADOWMAPS))
-		if (GetCVars()->e_ObjFastRegister && pEnt->m_pOcNode && ((COctreeNode*)pEnt->m_pOcNode)->IsRightNode(aabb, fObjRadiusSqr, pEnt->m_fWSMaxViewDist))
+		if (GetCVars()->e_ObjFastRegister && pEnt->GetParent() && ((COctreeNode*)pEnt->GetParent())->IsRightNode(aabb, fObjRadiusSqr, pEnt->m_fWSMaxViewDist))
 		{
 			// same octree node
 			Vec3 vEntCenter = GetEntityRegisterPoint(pEnt);
@@ -6619,7 +6620,7 @@ void C3DEngine::AsyncOctreeUpdate(IRenderNode* pEnt, uint32 nFrameID, bool bUnRe
 			}
 		}
 
-	if (pEnt->m_pOcNode)
+	if (pEnt->GetParent())
 	{
 		UnRegisterEntityImpl(pEnt);
 	}
@@ -6628,7 +6629,7 @@ void C3DEngine::AsyncOctreeUpdate(IRenderNode* pEnt, uint32 nFrameID, bool bUnRe
 		//  Temporary solution: Force streaming priority update for objects that was not registered before
 		//  and was not visible before since usual prediction system was not able to detect them
 
-		if ((uint32)pEnt->GetDrawFrame(0) < nFrameID - 16)
+		if (!pEnt->IsHidden() && (uint32)pEnt->GetDrawFrame(0) < nFrameID - 16)
 		{
 			// defer the render node streaming priority update still we have a correct 3D Engine camera
 			int nElementID = m_deferredRenderProxyStreamingPriorityUpdates.Find(pEnt);
@@ -6659,7 +6660,7 @@ void C3DEngine::AsyncOctreeUpdate(IRenderNode* pEnt, uint32 nFrameID, bool bUnRe
 		{
 			if (pStatObj->m_bHaveOcclusionProxy)
 			{
-				pEnt->m_dwRndFlags |= ERF_GOOD_OCCLUDER;
+				pEnt->SetRndFlags(ERF_GOOD_OCCLUDER, true);
 				pEnt->m_nInternalFlags |= IRenderNode::HAS_OCCLUSION_PROXY;
 			}
 		}
@@ -6695,7 +6696,7 @@ void C3DEngine::AsyncOctreeUpdate(IRenderNode* pEnt, uint32 nFrameID, bool bUnRe
 	}
 
 	//////////////////////////////////////////////////////////////////////////
-	if (pEnt->m_dwRndFlags & ERF_OUTDOORONLY || !(m_pVisAreaManager && m_pVisAreaManager->SetEntityArea(pEnt, aabb, fObjRadiusSqr)))
+	if (pEnt->GetRndFlags() & ERF_OUTDOORONLY || !(m_pVisAreaManager && m_pVisAreaManager->SetEntityArea(pEnt, aabb, fObjRadiusSqr)))
 	{
 		if (m_pObjectsTree)
 		{
@@ -6744,10 +6745,10 @@ bool C3DEngine::UnRegisterEntityImpl(IRenderNode* pEnt)
 	bool bFound = false;
 	//pEnt->PhysicalizeFoliage(false);
 
-	if (pEnt->m_pOcNode)
-		bFound = ((COctreeNode*)pEnt->m_pOcNode)->DeleteObject(pEnt);
+	if (pEnt->GetParent())
+		bFound = ((COctreeNode*)pEnt->GetParent())->DeleteObject(pEnt);
 
-	if (pEnt->m_dwRndFlags & ERF_RENDER_ALWAYS || (eRenderNodeType == eERType_Light) || (eRenderNodeType == eERType_FogVolume))
+	if (pEnt->GetRndFlags() & ERF_RENDER_ALWAYS || (eRenderNodeType == eERType_Light) || (eRenderNodeType == eERType_FogVolume))
 	{
 		m_lstAlwaysVisible.Delete(pEnt);
 	}
@@ -6781,7 +6782,7 @@ Vec3 C3DEngine::GetEntityRegisterPoint(IRenderNode* pEnt)
 
 	Vec3 vPoint;
 
-	if (pEnt->m_dwRndFlags & ERF_REGISTER_BY_POSITION)
+	if (pEnt->GetRndFlags() & ERF_REGISTER_BY_POSITION)
 	{
 		vPoint = pEnt->GetPos();
 		vPoint.z += 0.25f;

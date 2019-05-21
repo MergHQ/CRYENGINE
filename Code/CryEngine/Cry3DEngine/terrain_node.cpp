@@ -278,7 +278,7 @@ bool CTerrainNode::CheckVis(bool bAllInside, bool bAllowRenderIntoCBuffer, const
 		  ((vCamPos.x > vCenter.x) ? 2 : 0) |
 		  ((vCamPos.y > vCenter.y) ? 1 : 0);
 
-		m_pChilds[nFirst].CheckVis(bAllInside, bAllowRenderIntoCBuffer, passInfo, passCullMask);
+		m_pChilds[nFirst ^ 0].CheckVis(bAllInside, bAllowRenderIntoCBuffer, passInfo, passCullMask);
 		m_pChilds[nFirst ^ 1].CheckVis(bAllInside, bAllowRenderIntoCBuffer, passInfo, passCullMask);
 		m_pChilds[nFirst ^ 2].CheckVis(bAllInside, bAllowRenderIntoCBuffer, passInfo, passCullMask);
 		m_pChilds[nFirst ^ 3].CheckVis(bAllInside, bAllowRenderIntoCBuffer, passInfo, passCullMask);
@@ -601,7 +601,7 @@ void CTerrainNode::RemoveProcObjects(bool bRecursive)
 
 	for (int i = 0; i < m_arrProcObjects.Count(); i++)
 	{
-		assert(m_arrProcObjects[i]->m_dwRndFlags & ERF_PROCEDURAL);
+		assert(m_arrProcObjects[i]->GetRndFlags() & ERF_PROCEDURAL);
 		delete m_arrProcObjects[i];
 	}
 

@@ -2012,7 +2012,7 @@ CMergedMeshRenderNode::CMergedMeshRenderNode()
 	m_visibleAABB.Reset();
 	SetRndFlags(ERF_CASTSHADOWMAPS | ERF_HAS_CASTSHADOWMAPS, true);
 	if (GetCVars()->e_MergedMeshesOutdoorOnly)
-		SetRndFlags(GetRndFlags() | ERF_OUTDOORONLY, true);
+		SetRndFlags(ERF_OUTDOORONLY, true);
 }
 CMergedMeshRenderNode::~CMergedMeshRenderNode()
 {

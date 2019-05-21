@@ -1117,9 +1117,10 @@ void CStatObj::RenderInternal(CRenderObject* pRenderObject, hidemask nSubObjectH
 	if (pRenderObject->m_pRenderNode)
 	{
 		IRenderNode* pRN = (IRenderNode*)pRenderObject->m_pRenderNode;
+		IRenderNode::RenderFlagsType renderFlags = pRN->GetRndFlags();
 		if (m_bEditor)
 		{
-			if (pRN->m_dwRndFlags & ERF_SELECTED)
+			if (renderFlags & ERF_SELECTED)
 			{
 				m_nSelectedFrameId = passInfo.GetMainFrameID();
 				if (m_pParentObject)
@@ -1129,14 +1130,14 @@ void CStatObj::RenderInternal(CRenderObject* pRenderObject, hidemask nSubObjectH
 			else
 				pRenderObject->m_ObjFlags &= ~FOB_SELECTED;
 
-			if (!gEnv->IsEditing() && pRN->m_dwRndFlags & ERF_RAYCAST_PROXY)
+			if (!gEnv->IsEditing() && (renderFlags & ERF_RAYCAST_PROXY))
 			{
 				return;
 			}
 		}
 		else
 		{
-			if (pRN->m_dwRndFlags & ERF_RAYCAST_PROXY)
+			if (renderFlags & ERF_RAYCAST_PROXY)
 			{
 				return;
 			}

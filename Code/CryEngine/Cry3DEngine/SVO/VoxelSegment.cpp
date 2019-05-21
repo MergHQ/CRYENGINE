@@ -1933,6 +1933,7 @@ bool CVoxelSegment::CheckCollectObjectsForVoxelization(const AABB& cloudBoxWS, P
 			{
 				PodArray<IRenderNode*> arrRenderNodes;
 
+				// TODO: query for non-hidden objects only
 				Get3DEngine()->GetObjectsByTypeGlobal(arrRenderNodes, (EERType)objType, &cloudBoxEX, bAllowStartStreaming ? &bSuccess : 0, ERF_GI_MODE_BIT0);
 				if (Get3DEngine()->GetVisAreaManager())
 					Get3DEngine()->GetVisAreaManager()->GetObjectsByType(arrRenderNodes, (EERType)objType, &cloudBoxEX, bAllowStartStreaming ? &bSuccess : 0, ERF_GI_MODE_BIT0);
@@ -1949,7 +1950,7 @@ bool CVoxelSegment::CheckCollectObjectsForVoxelization(const AABB& cloudBoxWS, P
 					if (pNode->GetRndFlags() & (ERF_COLLISION_PROXY | ERF_RAYCAST_PROXY | ERF_PENDING_DELETE))
 						continue;
 
-					if (!GetCVars()->e_svoTI_VoxelizeHiddenObjects && (pNode->GetRndFlags() & ERF_HIDDEN))
+					if (!GetCVars()->e_svoTI_VoxelizeHiddenObjects && pNode->IsHidden())
 						continue;
 
 					if (bThisIsLowLodNode)

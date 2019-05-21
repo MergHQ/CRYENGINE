@@ -877,7 +877,7 @@ void CRopeRenderNode::Render(const SRendParams& rParams, const SRenderingPassInf
 
 	DBG_LOCK_TO_THREAD(this);
 
-	if (GetCVars()->e_Ropes == 0 || (m_dwRndFlags & ERF_HIDDEN) || m_pMaterial == NULL)
+	if (GetCVars()->e_Ropes == 0 || m_pMaterial == NULL)
 		return; // false;
 
 	if (GetCVars()->e_Ropes == 2)
