@@ -12,6 +12,7 @@ struct CCGAJoint;
 class CSkeletonPose;
 class CSkeletonAnim;
 class CCharInstance;
+struct SBatchUpdateValidator;
 
 class CSkeletonPhysicsNull
 {
@@ -122,38 +123,6 @@ struct aux_phys_data
 	int              iBoneStiffnessController;
 
 	void             GetMemoryUsage(ICrySizer* pSizer) const {}
-};
-
-struct SBatchUpdateValidator : pe_action_batch_parts_update::Validator
-{
-	SBatchUpdateValidator()
-	{
-		bValid = 1;
-		nRefCount = 1;
-		lock = 0;
-		WriteLock glock(g_lockList);
-		next = prev = &g_firstValidator;
-		next = g_firstValidator.next;
-		g_firstValidator.next->prev = this;
-		g_firstValidator.next = this;
-	}
-	~SBatchUpdateValidator() { WriteLock glock(g_lockList); prev->next = next; next->prev = prev; }
-	int                             bValid;
-	int                             nRefCount;
-	volatile int                    lock;
-	volatile SBatchUpdateValidator* next, * prev;
-	static SBatchUpdateValidator    g_firstValidator;
-	static volatile int             g_lockList;
-
-	virtual bool Lock()
-	{
-		if (!bValid) { Release(); return false; }
-		CryReadLock(&lock);
-		return true;
-	}
-	virtual void Unlock()  { CryReleaseReadLock(&lock); Release(); }
-	int          AddRef()  { return CryInterlockedIncrement(&nRefCount); }
-	void         Release() { if (CryInterlockedDecrement(&nRefCount) <= 0) delete this; }
 };
 
 class CSkeletonPhysics
