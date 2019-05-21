@@ -331,12 +331,7 @@ void CWaterShapeObject::UpdateGameArea()
 			else
 				m_pWVRN->SetMaterial(0);
 
-			uint64 renderFlags = m_pWVRN->GetRndFlags();
-			if (CheckFlags(OBJFLAG_INVISIBLE) || IsHiddenBySpec())
-				renderFlags |= ERF_HIDDEN;
-			else
-				renderFlags &= ~ERF_HIDDEN;
-			m_pWVRN->SetRndFlags(renderFlags);
+			m_pWVRN->SetRndFlags(ERF_HIDDEN, CheckFlags(OBJFLAG_INVISIBLE) || IsHiddenBySpec());
 		}
 	}
 
@@ -463,7 +458,7 @@ void CWaterShapeObject::SetHidden(bool bHidden)
 void CWaterShapeObject::UpdateVisibility(bool visible)
 {
 	if (visible == CheckFlags(OBJFLAG_INVISIBLE) ||
-	    m_pWVRN && (bool(m_pWVRN->GetRndFlags() & ERF_HIDDEN) == (visible && !IsHiddenBySpec())) // force update if spec changed
+	    m_pWVRN && (m_pWVRN->IsHidden() == (visible && !IsHiddenBySpec())) // force update if spec changed
 	    )
 	{
 		__super::UpdateVisibility(visible);

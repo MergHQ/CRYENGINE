@@ -103,6 +103,30 @@ void CVegetation::Init()
 }
 
 //////////////////////////////////////////////////////////////////////////
+void CVegetation::Instance(bool bInstance)
+{
+	if (bInstance == IsInstanced())
+		return;
+
+	if (!bInstance)
+	{
+		// Drop instancing/temp-data even from hidden objects
+		if (m_pInstancingInfo)
+		{
+			SAFE_DELETE(m_pInstancingInfo);
+			InvalidatePermanentRenderObject();
+		}
+	}
+
+	// keep inactive objects at the end of the list
+	// keep active objects at the front of the list
+	if (!IsHidden() && m_pOcNode)
+		m_pOcNode->ReorderObject(this, !bInstance);
+
+	FlipRndFlags(ERF_STATIC_INSTANCING);
+}
+
+//////////////////////////////////////////////////////////////////////////
 void CVegetation::CalcMatrix(Matrix34A& tm, int* pFObjFlags)
 {
 	FUNCTION_PROFILER_3DENGINE;
@@ -415,8 +439,8 @@ void CVegetation::Render(const SRenderingPassInfo& passInfo, const CLodValue& lo
 	// because it can be called from the physics callback.
 	// A query for the visareastencilref is therefore issued every time it is rendered.
 	pRenderObject->m_nClipVolumeStencilRef = 0;
-	if (m_pOcNode && m_pOcNode->GetVisArea())
-		pRenderObject->m_nClipVolumeStencilRef = ((IVisArea*)m_pOcNode->GetVisArea())->GetStencilRef();
+	if (auto pVisArea = GetEntityVisArea())
+		pRenderObject->m_nClipVolumeStencilRef = pVisArea->GetStencilRef();
 	else if (userData.m_pClipVolume)
 		pRenderObject->m_nClipVolumeStencilRef = userData.m_pClipVolume->GetStencilRef();
 

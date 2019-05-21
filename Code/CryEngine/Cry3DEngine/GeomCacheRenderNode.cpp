@@ -164,7 +164,7 @@ void CGeomCacheRenderNode::Render(const struct SRendParams& rendParams, const SR
 	DBG_LOCK_TO_THREAD(this);
 
 	if (!m_bInitialized || !m_bDrawing || (m_renderMeshes.empty() && m_renderMeshUpdateContexts.empty())
-	    || !m_pGeomCache || m_dwRndFlags & ERF_HIDDEN || !passInfo.RenderGeomCaches())
+	    || !m_pGeomCache || !passInfo.RenderGeomCaches())
 	{
 		return;
 	}

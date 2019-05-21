@@ -1813,6 +1813,8 @@ void CLightEntity::Render(const SRendParams& rParams, const SRenderingPassInfo& 
 
 	DBG_LOCK_TO_THREAD(this);
 
+	CRY_ASSERT(!(m_light.m_Flags & DLF_DISABLED));
+
 #if defined(FEATURE_SVO_GI)
 	if (GetCVars()->e_svoTI_SkipNonGILights && GetCVars()->e_svoTI_Apply && !GetGIMode())
 		return;
@@ -1820,7 +1822,7 @@ void CLightEntity::Render(const SRendParams& rParams, const SRenderingPassInfo& 
 		return;
 #endif
 
-	if (m_layerId != uint16(~0) && m_dwRndFlags & ERF_HIDDEN)
+	if (m_layerId != uint16(~0))
 		return;
 
 	if (!(m_light.m_Flags & DLF_DEFERRED_LIGHT) || passInfo.IsRecursivePass())
@@ -1871,9 +1873,6 @@ void CLightEntity::Render(const SRendParams& rParams, const SRenderingPassInfo& 
 		return;
 
 	//assert(m_light.IsOk());
-
-	if ((m_light.m_Flags & DLF_DISABLED) || (!GetCVars()->e_DynamicLights))
-		return;
 
 	if ((m_light.m_Flags & DLF_PROJECT) && (m_light.m_fLightFrustumAngle < 90.f) && (m_light.m_pLightImage || m_light.m_pLightDynTexSource))
 #if defined(FEATURE_SVO_GI)
@@ -2035,8 +2034,7 @@ void CLightEntity::Render(const SRendParams& rParams, const SRenderingPassInfo& 
 
 void CLightEntity::Hide(bool bHide)
 {
-	SetRndFlags(ERF_HIDDEN, bHide);
-
+	ILightSource::Hide(bHide);
 	if (bHide)
 	{
 		m_light.m_Flags |= DLF_DISABLED;
@@ -2058,7 +2056,7 @@ IRenderNode::EGIMode CLightEntity::GetGIMode() const
 {
 	if (IRenderNode::GetGIMode() == eGM_StaticVoxelization || IRenderNode::GetGIMode() == eGM_DynamicVoxelization || m_light.m_Flags & DLF_SUN)
 	{
-		if (!(m_light.m_Flags & (DLF_DISABLED | DLF_FAKE | DLF_VOLUMETRIC_FOG_ONLY | DLF_AMBIENT | DLF_DEFERRED_CUBEMAPS)) && !(m_dwRndFlags & ERF_HIDDEN))
+		if (!(m_light.m_Flags & (DLF_DISABLED | DLF_FAKE | DLF_VOLUMETRIC_FOG_ONLY | DLF_AMBIENT | DLF_DEFERRED_CUBEMAPS)) && !IsHidden())
 		{
 			if (m_light.m_BaseColor.Luminance() > .01f && m_light.m_fRadius > 0.5f)
 			{

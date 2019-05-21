@@ -473,6 +473,7 @@ void CVegetationMap::UpdateGroundDecal(CVegetationInstance* pInst)
 
 		// update basic entity render flags
 		unsigned int renderFlags = 0;
+
 		pInst->pRenderNodeGroundDecal->SetRndFlags(renderFlags);
 
 		// set properties

@@ -1727,7 +1727,10 @@ void C3DEngine::RenderScene(const int nRenderFlags, const SRenderingPassInfo& pa
 	for (int i = 0; i < m_lstAlwaysVisible.Count(); i++)
 	{
 		IRenderNode* pObj = m_lstAlwaysVisible[i];
-		const AABB& objBox = pObj->GetBBox();
+		if (!pObj->IsRenderable())
+			continue;
+
+		const AABB objBox = pObj->GetBBox();
 		// don't frustum cull the HUD. When e.g. zooming the FOV for this camera is very different to the
 		// fixed HUD FOV, and this can cull incorrectly.
 		auto dwRndFlags = pObj->GetRndFlags();
@@ -3701,8 +3704,8 @@ void C3DEngine::PrepareShadowPasses(const SRenderingPassInfo& passInfo, uint32& 
 	// render outdoor point lights and collect dynamic point light frustums
 	if (IsObjectsTreeValid())
 	{
-		uint32 outdoorCullMask = IsOutdoorVisible() ? passCullMask : (passCullMask & ~kPassCullMainMask);
-		m_pObjectsTree->Render_LightSources(false, outdoorCullMask, passInfo);
+		if (uint32 outdoorCullMask = IsOutdoorVisible() ? passCullMask : (passCullMask & ~kPassCullMainMask))
+			m_pObjectsTree->Render_LightSources(false, outdoorCullMask, passInfo);
 	}
 
 	// render indoor point lights and collect dynamic point light frustums

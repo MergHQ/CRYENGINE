@@ -13,6 +13,9 @@
 
 #define SUPP_HMAP_OCCL
 
+struct IRenderNode;
+template<class T> struct TDoublyLinkedList;
+
 struct IMaterial;
 struct IVisArea;
 struct SRenderingPassInfo;
@@ -25,6 +28,8 @@ struct IEntity;
 struct pe_articgeomparams;
 struct EventPhysCollision;
 struct pe_params_area;
+struct SRenderNodeChunk;
+struct SLayerVisibility;
 
 enum EERType
 {
@@ -242,12 +247,14 @@ struct IShadowCaster
 	int8              unused;
 };
 
+class  COctreeNode;
 struct IOctreeNode
 {
 public:
 	struct CTerrainNode* GetTerrainNode() const { return m_pTerrainNode; }
 	struct CVisArea*     GetVisArea() const     { return m_pVisArea; }
 	virtual void         MarkAsUncompiled(const ERNListType eListType) = 0;
+	virtual void         ReorderObject(IRenderNode* pObj, bool bPushFront) = 0;
 
 protected:
 	struct CVisArea*     m_pVisArea;
@@ -292,7 +299,7 @@ public:
 		m_dwRndFlags = 0;
 		m_ucViewDistRatio = 100;
 		m_ucLodRatio = 100;
-		m_pOcNode = 0;
+		m_pOcNode = nullptr;
 		m_nHUDSilhouettesParam = 0;
 		m_fWSMaxViewDist = 0;
 		m_nInternalFlags = 0;
@@ -342,8 +349,10 @@ public:
 	//! Renders node geometry
 	virtual void Render(const struct SRendParams& EntDrawParams, const SRenderingPassInfo& passInfo) = 0;
 
-	//! Hides/disables node in renderer.
-	virtual void Hide(bool bHide) { SetRndFlags(ERF_HIDDEN, bHide); }
+	//! Helpers to check state of node
+	bool IsHidden    () const { return GetRndFlags() & (ERF_HIDDEN) ? true : false; }
+	bool IsRenderable() const { return GetRndFlags() & (ERF_HIDDEN | ERF_STATIC_INSTANCING) ? false : true; }
+	bool IsInstanced () const { return GetRndFlags() & (ERF_STATIC_INSTANCING) ? true : false; }
 
 	//! Gives access to object components.
 	virtual IStatObj* GetEntityStatObj(unsigned int nSubPartId = 0, Matrix34A* pMatrix = NULL, bool bReturnOnlyVisible = false);
@@ -482,8 +491,9 @@ public:
 	}
 
 	//! Rendering flags. (@see ERenderNodeFlags)
-	ILINE void            SetRndFlags(RenderFlagsType dwFlags)               { m_dwRndFlags = dwFlags; }
-	ILINE void            SetRndFlags(RenderFlagsType dwFlags, bool bEnable) { if (bEnable) SetRndFlags(m_dwRndFlags | dwFlags); else SetRndFlags(m_dwRndFlags & (~dwFlags)); }
+	ILINE void            SetRndFlags(RenderFlagsType dwFlags)               { if ((m_dwRndFlags ^ dwFlags) & ERF_HIDDEN) Hide(dwFlags & ERF_HIDDEN ? true : false); m_dwRndFlags  = dwFlags; }
+	ILINE void            FlipRndFlags(RenderFlagsType dwFlags)              { if (dwFlags & ERF_HIDDEN) Hide((m_dwRndFlags ^ dwFlags) & ERF_HIDDEN ? true : false); m_dwRndFlags ^= dwFlags; }
+	ILINE void            SetRndFlags(RenderFlagsType dwFlags, bool bEnable) { if (bEnable) dwFlags = m_dwRndFlags | dwFlags; else dwFlags = m_dwRndFlags & (~dwFlags); SetRndFlags(dwFlags); }
 	ILINE RenderFlagsType GetRndFlags() const                                { return m_dwRndFlags; }
 
 	//! Object draw frames (set if was drawn).
@@ -504,10 +514,10 @@ public:
 	}
 
 	//! \return Current VisArea or null if in outdoors or entity was not registered in 3Dengine.
-	ILINE IVisArea* GetEntityVisArea() const { return m_pOcNode ? (IVisArea*)(m_pOcNode->GetVisArea()) : NULL; }
+	ILINE IVisArea* GetEntityVisArea() const { return m_pOcNode ? (IVisArea*)(m_pOcNode->GetVisArea()) : nullptr; }
 
 	//! \return Current VisArea or null if in outdoors or entity was not registered in 3Dengine.
-	struct CTerrainNode* GetEntityTerrainNode() const { return (m_pOcNode && !m_pOcNode->GetVisArea()) ? m_pOcNode->GetTerrainNode() : NULL; }
+	struct CTerrainNode* GetEntityTerrainNode() const { return GetEntityVisArea() ? m_pOcNode->GetTerrainNode() : nullptr; }
 
 	//! Makes object visible at any distance.
 	ILINE void SetViewDistUnlimited() { SetViewDistRatio(255); }
@@ -570,6 +580,9 @@ public:
 	//! Inform 3d engine that permanent render object that captures drawing state of this node is not valid and must be recreated.
 	ILINE void   InvalidatePermanentRenderObject() { if (m_pTempData) m_pTempData->invalidRenderObjects = m_pTempData->hasValidRenderObjects.load(); }
 
+	void MarkAsUncompiled() const;
+	IOctreeNode* GetParent() const;
+
 	virtual void SetEditorObjectId(uint32 nEditorObjectId)
 	{
 		// lower 8 bits of the ID is for highlight/selection and other flags
@@ -612,10 +625,19 @@ public:
 #endif
 	}
 
-public:
+private:
+	template<class T> friend struct TDoublyLinkedList;
+	friend struct IOctreeNode;
+	friend class  COctreeNode;
 
 	//! Every sector has linked list of IRenderNode objects.
 	IRenderNode* m_pNext, * m_pPrev;
+
+protected:
+#if !defined(SWIG) && !defined(CryMonoBridge_EXPORTS)
+	friend void CopyCommonData(SRenderNodeChunk* pChunk, IRenderNode* pObj);
+	friend void LoadCommonData(SRenderNodeChunk* pChunk, IRenderNode* pObj, const SLayerVisibility* pLayerVisibility);
+#endif
 
 	//! Current objects tree cell.
 	IOctreeNode* m_pOcNode;
@@ -623,6 +645,13 @@ public:
 	//! Render flags (@see ERenderNodeFlags)
 	RenderFlagsType m_dwRndFlags;
 
+	//! Hides/shows node in renderer.
+	virtual void Hide(bool bHide) { bool toggleHide = bHide != IsHidden(); if (toggleHide) { m_dwRndFlags ^= ERF_HIDDEN; if (m_pOcNode) m_pOcNode->ReorderObject(this, !bHide); } }
+
+	//! Enables/disables instancing on the node
+	virtual void Instance(bool bInstance) {};
+
+public:
 	//! Pointer to temporary data allocated only for currently visible objects.
 	SRenderNodeTempData* m_pTempData = nullptr;
 	int                  m_manipulationFrame = -1;
@@ -669,6 +698,17 @@ public:
 	DBG_THREAD_ACCESS_INFO;
 #endif
 };
+
+inline IOctreeNode* IRenderNode::GetParent() const
+{
+	return m_pOcNode;
+}
+
+inline void IRenderNode::MarkAsUncompiled() const
+{
+	if (m_pOcNode)
+		m_pOcNode->MarkAsUncompiled(GetRenderNodeListId(GetRenderNodeType()));
+}
 
 inline void IRenderNode::SetViewDistRatio(int nViewDistRatio)
 {

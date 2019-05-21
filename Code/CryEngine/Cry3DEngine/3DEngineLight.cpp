@@ -137,7 +137,7 @@ void C3DEngine::FindPotentialLightSources(const SRenderingPassInfo& passInfo)
 		if (pLight->m_Flags & DLF_DEFERRED_LIGHT)
 			break; // process deferred lights in CLightEntity::Render(), deferred lights are stored in the end of this array
 
-		int nRenderNodeMinSpec = (pLightEntity->m_dwRndFlags & ERF_SPEC_BITS_MASK) >> ERF_SPEC_BITS_SHIFT;
+		int nRenderNodeMinSpec = (pLightEntity->GetRndFlags() & ERF_SPEC_BITS_MASK) >> ERF_SPEC_BITS_SHIFT;
 		if (!CheckMinSpec(nRenderNodeMinSpec))
 			continue;
 
@@ -681,11 +681,7 @@ void C3DEngine::AddPerObjectShadow(IShadowCaster* pCaster, float fConstBias, flo
 	if (bRequiresObjTreeUpdate)
 	{
 		CRY_PROFILE_FUNCTION(PROFILE_3DENGINE);
-
-		if (static_cast<IRenderNode*>(pCaster)->m_pOcNode)
-		{
-			static_cast<COctreeNode*>(static_cast<IRenderNode*>(pCaster)->m_pOcNode)->SetCompiled(IRenderNode::GetRenderNodeListId(pCaster->GetRenderNodeType()), false);
-		}
+		static_cast<IRenderNode*>(pCaster)->MarkAsUncompiled();
 	}
 }
 
@@ -695,14 +691,10 @@ void C3DEngine::RemovePerObjectShadow(IShadowCaster* pCaster)
 	if (pOS)
 	{
 		CRY_PROFILE_FUNCTION(PROFILE_3DENGINE);
+		static_cast<IRenderNode*>(pCaster)->MarkAsUncompiled();
 
 		size_t nIndex = (size_t)(pOS - m_lstPerObjectShadows.begin());
 		m_lstPerObjectShadows.Delete(nIndex);
-
-		if (static_cast<IRenderNode*>(pCaster)->m_pOcNode)
-		{
-			static_cast<COctreeNode*>(static_cast<IRenderNode*>(pCaster)->m_pOcNode)->SetCompiled(IRenderNode::GetRenderNodeListId(pCaster->GetRenderNodeType()), false);
-		}
 	}
 }
 

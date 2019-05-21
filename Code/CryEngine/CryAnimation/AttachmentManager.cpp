@@ -2420,7 +2420,7 @@ void CAttachmentManager::ProcessAttachment(IAttachment* pSocket)
 			const auto attachmentFlags = pSocket->GetFlags();
 
 			const bool hidden = (parentNodeFlags & ERF_HIDDEN) || (!(attachmentFlags & FLAGS_ATTACH_VISIBLE));
-			pRenderNode->Hide(hidden);
+			pRenderNode->SetRndFlags(ERF_HIDDEN, hidden);
 
 			const bool nearest = (parentNodeFlags & ERF_FOB_NEAREST) && (!(attachmentFlags & FLAGS_ATTACH_EXCLUDE_FROM_NEAREST));
 			pRenderNode->SetRndFlags(ERF_FOB_NEAREST, nearest);
@@ -2445,13 +2445,13 @@ void CAttachmentManager::ProcessAttachment(IAttachment* pSocket)
 		pRenderNode->SetRndFlags(ERF_NO_3DENGINE_REGISTRATION, auxiliaryViewport);
 
 		// This check prevents attachments from being added to the scene graph when the parent character isn't.
-		if (auxiliaryViewport || (m_pSkelInstance->GetParentRenderNode() && m_pSkelInstance->GetParentRenderNode()->m_pOcNode))
+		if (auxiliaryViewport || (m_pSkelInstance->GetParentRenderNode() && m_pSkelInstance->GetParentRenderNode()->GetParent()))
 		{
 			pRenderNode->SetMatrix(Matrix34{ pSocket->GetAttWorldAbsolute() * pSocket->GetAdditionalTransformation() });
 		}
 		else
 		{
-			if (pRenderNode->m_pOcNode)
+			if (pRenderNode->GetParent())
 			{
 				gEnv->p3DEngine->UnRegisterEntityAsJob(pRenderNode);
 			}

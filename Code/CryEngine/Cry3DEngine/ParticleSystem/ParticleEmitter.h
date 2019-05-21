@@ -109,7 +109,6 @@ public:
 	float                     GetDeltaTime() const         { return m_time - m_timeUpdated; }
 	float                     GetTime() const              { return m_time; }
 	float                     GetAge() const               { return m_time - m_timeCreated; }
-	uint                      IsHidden() const             { return GetRndFlags() & ERF_HIDDEN; }
 	STimingParams             GetMaxTimings() const;
 	bool                      WasRenderedLastFrame() const { return m_unrendered <= 1 && !IsHidden(); }
 	uint32                    GetInitialSeed() const       { return m_initialSeed; }

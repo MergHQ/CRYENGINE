@@ -200,7 +200,10 @@ void CEntitySlot::UpdateRenderNode(bool bForceRecreateNode)
 			SetRenderNodeFlags(renderNodeFlags, ERF_MOVES_EVERY_FRAME, !bPhysicsIsStatic);
 		}
 		renderNodeFlags |= renderNodeParams.additionalRenderNodeFlags;
+
 		m_pRenderNode->SetRndFlags(renderNodeFlags);
+
+		m_pRenderNode->SetRndFlags(ERF_HIDDEN, !bSlotShouldRender);
 
 		// Update render node location
 		m_pRenderNode->SetMatrix(m_worldTM);
@@ -238,8 +241,6 @@ void CEntitySlot::UpdateRenderNode(bool bForceRecreateNode)
 		{
 			m_pRenderNode->SetCameraSpacePos(nullptr);
 		}
-
-		m_pRenderNode->Hide(!bSlotShouldRender);
 
 		UpdateViewDistRatio(renderNodeParams);
 

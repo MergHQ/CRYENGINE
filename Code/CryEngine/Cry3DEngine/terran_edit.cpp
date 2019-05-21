@@ -656,8 +656,6 @@ void CTerrain::CloneRegion(const AABB& region, const Vec3& offset, float zRotati
 
 			pBrush->CalcBBox();
 
-			pBrush->m_pOcNode = NULL;
-
 			// to get correct indirect lighting the registration must be done before checking if this object is inside a VisArea
 			Get3DEngine()->RegisterEntity(pBrush);
 

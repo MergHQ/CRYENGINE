@@ -792,7 +792,7 @@ void CParticleManager::EraseEmitter(CParticleEmitter* pEmitter)
 		// Free resources.
 		pEmitter->Reset();
 
-		if (pEmitter->Unique() == 1 && !pEmitter->m_pOcNode)
+		if (pEmitter->Unique() == 1 && !pEmitter->GetParent())
 		{
 			// Free object itself if no other refs.
 			for (auto& pListener : m_ListenersList)
