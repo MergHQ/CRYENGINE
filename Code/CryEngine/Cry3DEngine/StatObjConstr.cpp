@@ -1424,17 +1424,17 @@ bool CStatObj::RayIntersection(SRayHitInfo& hitInfo, IMaterial* pCustomMtl)
 				hit.inRay.origin = invertedTM.TransformPoint(hit.inRay.origin);
 				hit.inRay.direction = invertedTM.TransformVector(hit.inRay.direction);
 
-				int nFirstTriangleId = hit.pHitTris ? hit.pHitTris->Count() : 0;
-
 				if (((CStatObj*)m_subObjects[i].pStatObj)->RayIntersection(hit, pCustomMtl))
 				{
 					if (hit.fDistance < fMinDistance)
 					{
-						hitInfo.pStatObj = m_subObjects[i].pStatObj;
 						bAnyHit = true;
 						hitOut = hit;
 					}
 				}
+
+#if defined(FEATURE_SVO_GI)
+				int nFirstTriangleId = hit.pHitTris ? hit.pHitTris->Count() : 0;
 
 				// transform collected triangles from sub-object space into object space
 				if (hit.pHitTris)
@@ -1446,6 +1446,7 @@ bool CStatObj::RayIntersection(SRayHitInfo& hitInfo, IMaterial* pCustomMtl)
 							ht.v[c] = m_subObjects[i].tm.TransformPoint(ht.v[c]);
 					}
 				}
+#endif
 			}
 		}
 		if (bAnyHit)
@@ -1463,11 +1464,6 @@ bool CStatObj::RayIntersection(SRayHitInfo& hitInfo, IMaterial* pCustomMtl)
 		if (pRenderMesh)
 		{
 			bool bRes = CRenderMeshUtils::RayIntersection(pRenderMesh, hitInfo, pCustomMtl);
-			if (bRes)
-			{
-				hitInfo.pStatObj = this;
-				hitInfo.pRenderMesh = pRenderMesh;
-			}
 			return bRes;
 		}
 	}

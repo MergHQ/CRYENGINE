@@ -97,25 +97,25 @@ struct SRayHitInfo
 		, inRetTriangle(false)
 		, bUseCache(false)
 		, bOnlyZWrite(false)
+#if defined(FEATURE_SVO_GI)
 		, bGetVertColorAndTC(false)
+		, useBoxIntersection(false)
+		, pHitTris(nullptr)
+		, vHitTC(0.0f)
+		, vHitColor(0.0f)
+		, vHitTangent(0.0f)
+		, vHitBitangent(0.0f)
+#endif
 		, fMaxHitDistance(false)
 		, vTri0(0.0f)
 		, vTri1(0.0f)
 		, vTri2(0.0f)
-		, fMinHitOpacity(0.0f)
 		, fDistance(0.0f)
 		, vHitPos(0.0f)
 		, vHitNormal(0.0f)
 		, nHitMatID(0)
 		, nHitTriID(HIT_UNKNOWN)
 		, nHitSurfaceID(0)
-		, pRenderMesh(nullptr)
-		, pStatObj(nullptr)
-		, vHitTC(0.0f)
-		, vHitColor(0.0f)
-		, vHitTangent(0.0f)
-		, vHitBitangent(0.0f)
-		, pHitTris(nullptr)
 	{
 	}
 
@@ -126,12 +126,19 @@ struct SRayHitInfo
 	bool  inRetTriangle;
 	bool  bUseCache;
 	bool  bOnlyZWrite;
+#if defined(FEATURE_SVO_GI)
 	bool  bGetVertColorAndTC;
+	bool  useBoxIntersection;            //!< Collect triangles overlapping specified area
+	PodArray<SRayHitTriangle>* pHitTris; //!< Pre-allocated array for found triangles
+	Vec2                       vHitTC;
+	Vec4                       vHitColor;
+	Vec4                       vHitTangent;
+	Vec4                       vHitBitangent;
+#endif
 	float fMaxHitDistance;   //!< When not 0, only hits with closer distance will be registered.
 	Vec3  vTri0;
 	Vec3  vTri1;
 	Vec3  vTri2;
-	float fMinHitOpacity;
 
 	// Output parameters.
 	float                      fDistance; //!< Distance from reference point.
@@ -140,13 +147,6 @@ struct SRayHitInfo
 	int                        nHitMatID;     //!< Material Id that was hit.
 	int                        nHitTriID;     //!< Triangle Id that was hit.
 	int                        nHitSurfaceID; //!< Material Id that was hit.
-	struct IRenderMesh*        pRenderMesh;
-	struct IStatObj*           pStatObj;
-	Vec2                       vHitTC;
-	Vec4                       vHitColor;
-	Vec4                       vHitTangent;
-	Vec4                       vHitBitangent;
-	PodArray<SRayHitTriangle>* pHitTris;
 };
 
 enum EFileStreamingStatus

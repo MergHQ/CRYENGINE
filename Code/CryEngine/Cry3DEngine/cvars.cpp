@@ -822,7 +822,7 @@ void CVars::Init()
 
 	REGISTER_CVAR(e_Lods, 1, VF_NULL,
 	              "Load and use LOD models for static geometry");
-	DefineConstIntCVar(e_LodFaceArea, 1, VF_NULL,
+	REGISTER_CVAR(e_LodFaceArea, 1, VF_NULL,
 	                   "Use geometric mean of faces area to compute LOD");
 	DefineConstIntCVar(e_LodsForceUse, 1, VF_NULL,
 	                   "Force using LODs even if triangle count do not suit");
