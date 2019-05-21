@@ -11,6 +11,29 @@
 
 CryBonePhysicsLinked CryBonePhysicsLinked::g_empty = {};
 
+struct SBatchUpdateValidator : pe_action_batch_parts_update::Validator
+{
+	SBatchUpdateValidator()
+		: bValid(1)
+		, nRefCount(1)
+		, lock(0)
+	{}
+
+	int          bValid;
+	int          nRefCount;
+	volatile int lock;
+
+	virtual bool Lock()
+	{
+		if (!bValid) { Release(); return false; }
+		CryReadLock(&lock);
+		return true;
+	}
+	virtual void Unlock()  { CryReleaseReadLock(&lock); Release(); }
+	int          AddRef()  { return CryInterlockedIncrement(&nRefCount); }
+	void         Release() { if (CryInterlockedDecrement(&nRefCount) <= 0) delete this; }
+};
+
 CSkeletonPhysics::CSkeletonPhysics()
 	: m_pCharPhysics(nullptr)
 	, m_ppBonePhysics(nullptr)
@@ -2432,9 +2455,6 @@ void CSkeletonPhysics::SynchronizeWithPhysics(Skeleton::CPoseData& poseData)
 }
 
 // SynchronizeTo
-
-SBatchUpdateValidator SBatchUpdateValidator::g_firstValidator;
-volatile int SBatchUpdateValidator::g_lockList;
 
 void CSkeletonPhysics::Physics_SynchronizeToEntity(IPhysicalEntity& physicalEntity, QuatT offset)
 {
