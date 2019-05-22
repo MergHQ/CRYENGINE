@@ -57,7 +57,7 @@ void CFeatureMotionFluidDynamics::Update(const gpu_pfx2::SUpdateContext& context
 	params.worldOffsetZ = emitterPos[2] - 0.5f * params.gridSizeZ * params.h;
 	params.particleInfluence = p.particleInfluence;
 	pFluidSim->SetParameters(&params);
-	pRuntime->FluidCollisions(commandList);
+	pRuntime->FluidCollisions(commandList, context);
 	pFluidSim->RenderThreadUpdate(commandList);
 	pRuntime->EvolveParticles(commandList);
 }

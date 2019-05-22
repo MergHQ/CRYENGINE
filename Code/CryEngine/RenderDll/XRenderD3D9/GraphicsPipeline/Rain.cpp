@@ -197,15 +197,15 @@ void CRainStage::ExecuteDeferredRainGBuffer()
 
 	CD3D9Renderer* const RESTRICT_POINTER rd = gcpRendD3D;
 
-	CTexture* CRendererResources__s_ptexSceneSpecular = CRendererResources::s_ptexSceneSpecular;
+	CTexture* CRendererResources__s_ptexSceneSpecular = m_graphicsPipelineResources.m_pTexSceneSpecular;
 #if defined(DURANGO_USE_ESRAM)
-	CRendererResources__s_ptexSceneSpecular = CRendererResources::s_ptexSceneSpecularESRAM;
+	CRendererResources__s_ptexSceneSpecular = m_graphicsPipelineResources.m_pTexSceneSpecularESRAM;
 #endif
 
 	// TODO: Try avoiding the copy by directly accessing UAVs
-	m_passCopyGBufferNormal.Execute(CRendererResources::s_ptexSceneNormalsMap, CRendererResources::s_ptexSceneNormalsBent);
-	m_passCopyGBufferSpecular.Execute(CRendererResources__s_ptexSceneSpecular, CRendererResources::s_ptexSceneSpecularTmp);
-	m_passCopyGBufferDiffuse.Execute(CRendererResources::s_ptexSceneDiffuse, CRendererResources::s_ptexSceneDiffuseTmp);
+	m_passCopyGBufferNormal.Execute(m_graphicsPipelineResources.m_pTexSceneNormalsMap, m_graphicsPipelineResources.m_pTexSceneNormalsBent);
+	m_passCopyGBufferSpecular.Execute(CRendererResources__s_ptexSceneSpecular, m_graphicsPipelineResources.m_pTexSceneSpecularTmp);
+	m_passCopyGBufferDiffuse.Execute(m_graphicsPipelineResources.m_pTexSceneDiffuse, m_graphicsPipelineResources.m_pTexSceneDiffuseTmp);
 
 	const auto& viewInfo = GetCurrentViewInfo();
 
@@ -232,14 +232,14 @@ void CRainStage::ExecuteDeferredRainGBuffer()
 
 		pass.SetState(GS_NODEPTHTEST);
 
-		pass.SetRenderTarget(0, CRendererResources::s_ptexSceneNormalsMap);
+		pass.SetRenderTarget(0, m_graphicsPipelineResources.m_pTexSceneNormalsMap);
 		pass.SetRenderTarget(1, CRendererResources__s_ptexSceneSpecular);
-		pass.SetRenderTarget(2, CRendererResources::s_ptexSceneDiffuse);
+		pass.SetRenderTarget(2, m_graphicsPipelineResources.m_pTexSceneDiffuse);
 
-		pass.SetTexture(0, CRendererResources::s_ptexLinearDepth);
-		pass.SetTexture(1, CRendererResources::s_ptexSceneNormalsBent);
-		pass.SetTexture(2, CRendererResources::s_ptexSceneSpecularTmp);
-		pass.SetTexture(3, CRendererResources::s_ptexSceneDiffuseTmp);
+		pass.SetTexture(0, m_graphicsPipelineResources.m_pTexLinearDepth);
+		pass.SetTexture(1, m_graphicsPipelineResources.m_pTexSceneNormalsBent);
+		pass.SetTexture(2, m_graphicsPipelineResources.m_pTexSceneSpecularTmp);
+		pass.SetTexture(3, m_graphicsPipelineResources.m_pTexSceneDiffuseTmp);
 		pass.SetTexture(4, m_pSurfaceFlowTex);
 		pass.SetTexture(5, m_pRainSpatterTex);
 		pass.SetTexture(6, m_pPuddleMaskTex);
@@ -383,7 +383,7 @@ void CRainStage::Execute()
 				pass.SetRequirePerViewConstantBuffer(true);
 				pass.SetRequireWorldPos(true);
 
-				pass.SetTexture(0, CRendererResources::s_ptexLinearDepthScaled[2]);
+				pass.SetTexture(0, m_graphicsPipelineResources.m_pTexLinearDepthScaled[2]);
 				pass.SetTexture(1, pOcclusionTex);
 				pass.SetTexture(2, m_pHighFreqNoiseTex);
 
@@ -410,7 +410,7 @@ void CRainStage::Execute()
 		}
 	}
 
-	auto* pRenderTarget = CRendererResources::s_ptexHDRTarget;
+	auto* pRenderTarget = m_graphicsPipelineResources.m_pTexHDRTarget;
 
 	D3DViewPort viewport;
 	viewport.TopLeftX = 0.0f;
@@ -448,7 +448,7 @@ void CRainStage::Execute()
 		prim.SetFlags(CRenderPrimitive::eFlags_None);
 		prim.SetTechnique(CShaderMan::s_shPostEffectsGame, pSceneRainTechName, rtMask);
 
-		prim.SetTexture(0, CRendererResources::s_ptexLinearDepth);
+		prim.SetTexture(0, m_graphicsPipelineResources.m_pTexLinearDepth);
 		prim.SetTexture(1, m_pRainfallTex);
 		prim.SetTexture(2, m_pRainfallNormalTex);
 		prim.SetTexture(3, CRendererResources::s_ptexHDRFinalBloom);

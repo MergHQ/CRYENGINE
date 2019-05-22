@@ -64,7 +64,11 @@ UVMappingEditor::UVMappingEditor()
 
 	setContentsMargins(0, 0, 0, 0);
 
-	m_pViewport = new QViewport(gEnv, 0);
+	IRenderer::SGraphicsPipelineDescription graphicsPipelineDesc;
+	graphicsPipelineDesc.type = EGraphicsPipelineType::Minimum;
+	graphicsPipelineDesc.shaderFlags = SHDF_SECONDARY_VIEWPORT | SHDF_FORWARD_MINIMAL | SHDF_ALLOWHDR;
+
+	m_pViewport = new QViewport(gEnv, graphicsPipelineDesc, 0);
 	m_pViewport->AddConsumer(m_pGizmo.get());
 	m_pViewportAdapter.reset(new CDisplayViewportAdapter(m_pViewport));
 

@@ -2256,7 +2256,7 @@ struct SRenderLight
 	}
 
 	//! Use this instead of m_Color.
-	const ColorF& GetFinalColor(const ColorF& cColor) const
+	const ColorF& GetFinalColor() const
 	{
 		return m_Color;
 	}

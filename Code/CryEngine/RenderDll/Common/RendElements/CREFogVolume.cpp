@@ -228,7 +228,7 @@ bool CREFogVolume::Compile(CRenderObject* pObj, uint64 objFlags, ERenderElementF
 		if (!compiledObj.m_pMaterialResourceSet)
 		{
 			CDeviceResourceSetDesc materialResources;
-			for (const auto& res : pRenderView->GetGraphicsPipeline()->GetDefaultMaterialBindPoints().GetResources())
+			for (const auto& res : CSceneRenderPass::GetDefaultMaterialBindPoints().GetResources())
 			{
 				const SResourceBindPoint& bindPoint = res.first;
 				const SResourceBinding& binding = res.second;
@@ -252,7 +252,7 @@ bool CREFogVolume::Compile(CRenderObject* pObj, uint64 objFlags, ERenderElementF
 
 		if (!compiledObj.m_pPerDrawRS)
 		{
-			compiledObj.m_pPerDrawRS = pRenderView->GetGraphicsPipeline()->GetDefaulDrawExtraResourceSet();
+			compiledObj.m_pPerDrawRS = CSceneRenderPass::GetDefaulDrawExtraResourceSet();
 		}
 	}
 

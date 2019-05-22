@@ -26,25 +26,25 @@ void CScreenSpaceObscuranceStage::Init()
 void CScreenSpaceObscuranceStage::Update()
 {
 	if (CRendererCVars::CV_r_ssdo)
-		CClearSurfacePass::Execute(CRendererResources::s_ptexSceneNormalsBent, Clr_Median);
+		CClearSurfacePass::Execute(m_graphicsPipelineResources.m_pTexSceneNormalsBent, Clr_Median);
 }
 
 void CScreenSpaceObscuranceStage::Execute()
 {
 #if defined(DURANGO_USE_ESRAM)
-	m_passCopyFromESRAM.Execute(CRendererResources::s_ptexSceneSpecularESRAM, CRendererResources::s_ptexSceneSpecular);
+	m_passCopyFromESRAM.Execute(m_graphicsPipelineResources.m_pTexSceneSpecularESRAM, m_graphicsPipelineResources.m_pTexSceneSpecular);
 #endif
 
 	PROFILE_LABEL_SCOPE("DIRECTIONAL_OCC");
 
-	CTexture* CRendererResources__s_ptexSceneSpecular = CRendererResources::CRendererResources::s_ptexSceneSpecularTmp;
+	CTexture* CRendererResources__s_ptexSceneSpecular = m_graphicsPipelineResources.m_pTexSceneSpecularTmp;
 #if defined(DURANGO_USE_ESRAM)
-	CRendererResources__s_ptexSceneSpecular = CRendererResources::s_ptexSceneSpecularESRAM;
+	CRendererResources__s_ptexSceneSpecular = m_graphicsPipelineResources.m_pTexSceneSpecularESRAM;
 #endif
 
 	const bool bLowResOutput = (CRendererCVars::CV_r_ssdoHalfRes == 3);
 	if (bLowResOutput)
-		CRendererResources__s_ptexSceneSpecular = CRendererResources::s_ptexDisplayTargetScaled[0];
+		CRendererResources__s_ptexSceneSpecular = m_graphicsPipelineResources.m_pTexDisplayTargetScaled[0];
 
 	CShader* pShader = CShaderMan::s_shDeferredShading;
 
@@ -73,9 +73,9 @@ void CScreenSpaceObscuranceStage::Execute()
 		m_passObscurance.SetFlags(CPrimitiveRenderPass::ePassFlags_VrProjectionPass);
 
 		// These 'pairs' all used the same samplerstate!!
-		m_passObscurance.SetTexture(0, CRendererResources::s_ptexSceneNormalsMap);
-		m_passObscurance.SetTexture(1, CRendererResources::s_ptexLinearDepth);
-		m_passObscurance.SetTexture(5, CRendererResources::s_ptexLinearDepthScaled[bLowResOutput]);
+		m_passObscurance.SetTexture(0, m_graphicsPipelineResources.m_pTexSceneNormalsMap);
+		m_passObscurance.SetTexture(1, m_graphicsPipelineResources.m_pTexLinearDepth);
+		m_passObscurance.SetTexture(5, m_graphicsPipelineResources.m_pTexLinearDepthScaled[bLowResOutput]);
 		if (bHMAOEnabled)
 		{
 			m_passObscurance.SetTexture(11, heightMapAO->GetHeightMapAOScreenDepthTex());
@@ -100,7 +100,7 @@ void CScreenSpaceObscuranceStage::Execute()
 
 			auto constants = m_passObscurance.BeginTypedConstantUpdate<ObscuranceConstants>(eConstantBufferShaderSlot_PerPrimitive, EShaderStage_Pixel);
 
-			constants->screenSize = Vec4((float)CRendererResources::s_ptexLinearDepth->GetWidth(), (float)CRendererResources::s_ptexLinearDepth->GetHeight(), 1.0f / (float)CRendererResources__s_ptexSceneSpecular->GetWidth(), 1.0f / (float)CRendererResources__s_ptexSceneSpecular->GetHeight());
+			constants->screenSize = Vec4((float)m_graphicsPipelineResources.m_pTexLinearDepth->GetWidth(), (float)m_graphicsPipelineResources.m_pTexLinearDepth->GetHeight(), 1.0f / (float)CRendererResources__s_ptexSceneSpecular->GetWidth(), 1.0f / (float)CRendererResources__s_ptexSceneSpecular->GetHeight());
 			constants->nearFarClipDist = Vec4(viewInfo[0].nearClipPlane, viewInfo[0].farClipPlane, 0, 0);
 
 			float radius = CRenderer::CV_r_ssdoRadius / viewInfo[0].farClipPlane;
@@ -140,8 +140,8 @@ void CScreenSpaceObscuranceStage::Execute()
 	// Filtering pass
 	if (CRenderer::CV_r_ssdo != 99)
 	{
-		const int32 sizeX = CRendererResources::s_ptexLinearDepth->GetWidth();
-		const int32 sizeY = CRendererResources::s_ptexLinearDepth->GetHeight();
+		const int32 sizeX = m_graphicsPipelineResources.m_pTexLinearDepth->GetWidth();
+		const int32 sizeY = m_graphicsPipelineResources.m_pTexLinearDepth->GetHeight();
 		const int32 srcSizeX = CRendererResources__s_ptexSceneSpecular->GetWidth();
 		const int32 srcSizeY = CRendererResources__s_ptexSceneSpecular->GetHeight();
 
@@ -151,10 +151,10 @@ void CScreenSpaceObscuranceStage::Execute()
 			m_passFilter.SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_PS);
 			m_passFilter.SetPrimitiveType(CRenderPrimitive::ePrim_ProceduralTriangle);
 			m_passFilter.SetTechnique(pShader, techFilter, 0);
-			m_passFilter.SetRenderTarget(0, CRendererResources::s_ptexSceneNormalsBent);
+			m_passFilter.SetRenderTarget(0, m_graphicsPipelineResources.m_pTexSceneNormalsBent);
 			m_passFilter.SetState(GS_NODEPTHTEST);
 			m_passFilter.SetTexture(0, CRendererResources__s_ptexSceneSpecular);
-			m_passFilter.SetTexture(1, CRendererResources::s_ptexLinearDepth);
+			m_passFilter.SetTexture(1, m_graphicsPipelineResources.m_pTexLinearDepth);
 			m_passFilter.SetSampler(0, EDefaultSamplerStates::LinearClamp);
 			m_passFilter.SetSampler(1, EDefaultSamplerStates::PointClamp);
 		}
@@ -176,15 +176,15 @@ void CScreenSpaceObscuranceStage::Execute()
 	}
 	else  // For debugging
 	{
-		PostProcessUtils().StretchRect(CRendererResources__s_ptexSceneSpecular, CRendererResources::s_ptexSceneNormalsBent);
+		PostProcessUtils().StretchRect(CRendererResources__s_ptexSceneSpecular, m_graphicsPipelineResources.m_pTexSceneNormalsBent);
 	}
 
 	if (IsColorBleeding())
 	{
 		// Generate low frequency scene albedo for color bleeding (convolution not gamma correct but acceptable)
-		m_passAlbedoDownsample0.Execute(CRendererResources::s_ptexSceneDiffuse, CRendererResources::s_ptexDisplayTargetScaled[0]);
-		m_passAlbedoDownsample1.Execute(CRendererResources::s_ptexDisplayTargetScaled[0], CRendererResources::s_ptexDisplayTargetScaled[1]);
-		m_passAlbedoDownsample2.Execute(CRendererResources::s_ptexDisplayTargetScaled[1], CRendererResources::s_ptexAOColorBleed);
-		m_passAlbedoBlur.Execute(CRendererResources::s_ptexAOColorBleed, CRendererResources::s_ptexDisplayTargetScaled[2], 1.0f, 4.0f);
+		m_passAlbedoDownsample0.Execute(m_graphicsPipelineResources.m_pTexSceneDiffuse, m_graphicsPipelineResources.m_pTexDisplayTargetScaled[0]);
+		m_passAlbedoDownsample1.Execute(m_graphicsPipelineResources.m_pTexDisplayTargetScaled[0], m_graphicsPipelineResources.m_pTexDisplayTargetScaled[1]);
+		m_passAlbedoDownsample2.Execute(m_graphicsPipelineResources.m_pTexDisplayTargetScaled[1], m_graphicsPipelineResources.m_pTexAOColorBleed);
+		m_passAlbedoBlur.Execute(m_graphicsPipelineResources.m_pTexAOColorBleed, m_graphicsPipelineResources.m_pTexDisplayTargetScaled[2], 1.0f, 4.0f);
 	}
 }

@@ -57,7 +57,7 @@ void DrawCompiledRenderItemsToCommandList(
 	if (passContext.type == GraphicsPipelinePassType::resolve)
 	{
 		// Resolve pass
-		passContext.pSceneRenderPass->ResolvePass(*commandList, passContext.resolveScreenBounds);
+		passContext.pSceneRenderPass->ResolvePass(*passContext.pRenderView->GetGraphicsPipeline().get(), *commandList, passContext.resolveScreenBounds);
 	}
 	else
 	{

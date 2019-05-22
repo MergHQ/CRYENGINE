@@ -17,6 +17,7 @@
 #include <Common/RenderDisplayContext.h>
 #include <Gpu/Particles/GpuParticleManager.h>
 #include <GraphicsPipeline/ComputeSkinning.h>
+#include <GraphicsPipeline/Common/SceneRenderPass.h>
 
 #if CRY_PLATFORM_WINDOWS
 	#if defined(USE_AMD_API)
@@ -602,6 +603,9 @@ void CD3D9Renderer::RT_ShutDown(uint32 nFlags)
 {
 	if (m_pGpuParticleManager)
 		static_cast<gpu_pfx2::CManager*>(m_pGpuParticleManager)->CleanupResources();
+
+
+	CSceneRenderPass::Shutdown();
 
 	CREBreakableGlassBuffer::RT_ReleaseInstance();
 	SAFE_DELETE(m_pVRProjectionManager);

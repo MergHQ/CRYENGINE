@@ -556,7 +556,7 @@ void CShadowMapStage::Update()
 	pRenderView->PrepareShadowViews();
 
 	// prepare the shadow pool
-	CDeferredShading::Instance().SetupPasses(pRenderView);
+	m_graphicsPipeline.GetDeferredShading()->SetupPasses(pRenderView);
 
 	// now prepare passes for each frustum
 	for (auto& passGroup : m_ShadowMapPasses)

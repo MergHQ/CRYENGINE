@@ -850,6 +850,9 @@ SGraphicsPipelineKey CRenderer::RT_CreateGraphicsPipeline(const SGraphicsPipelin
 	case EGraphicsPipelineType::Mobile:
 		pNewGraphicsPipeline = std::make_shared<CMobileGraphicsPipeline>(desc, "Mobile_" + uniqueCtrStr, key);
 		break;
+	case EGraphicsPipelineType::CharacterTool:
+		pNewGraphicsPipeline = std::make_shared<CCharacterToolGraphicsPipeline>(desc, "CharacterTool_" + uniqueCtrStr, key);
+		break;
 	}
 
 	pNewGraphicsPipeline->Init();
@@ -1093,7 +1096,7 @@ void CRenderer::FreeSystemResources(int nFlags)
 	{
 		ExecuteRenderThreadCommand([=]
 		{
-			EF_ReleaseDeferredData();
+			EF_ReleaseDeferredData(m_pActiveGraphicsPipeline.get());
 		}, ERenderCommandFlags::FlushAndWait);
 
 		ForceFlushRTCommands();
@@ -2126,6 +2129,36 @@ void CRenderer::EF_QueryImpl(ERenderQueryTypes eQuery, void* pInOut0, uint32 nIn
 		{
 			int recursion = 0;
 			WriteQueryResult(pInOut0, nInOutSize0, recursion);
+		}
+		break;
+
+	case EFQ_Alloc_APITargets:
+		{
+			CryAutoReadLock<CryRWLock> lock(CBaseResource::s_cResLock);
+
+			int nSize = 0;
+			SResourceContainer* pRL = CBaseResource::GetResourcesForClass(CTexture::mfGetClassName());
+			if (pRL)
+			{
+				ResourcesMapItor itor;
+				for (itor = pRL->m_RMap.begin(); itor != pRL->m_RMap.end(); itor++)
+				{
+					CTexture* tp = (CTexture*)itor->second;
+					if (!tp || tp->IsNoTexture())
+						continue;
+
+					if (!(tp->GetFlags() & (FT_USAGE_DEPTHSTENCIL | FT_USAGE_UNORDERED_ACCESS)))
+					{
+						nSize += tp->GetDeviceDataSize();
+
+						if (!(tp->GetFlags() & (FT_USAGE_RENDERTARGET)))
+						{
+							nSize -= tp->GetDeviceDataSize();
+						}						
+					}					
+				}
+			}
+			WriteQueryResult(pInOut0, nInOutSize0, nSize);
 		}
 		break;
 

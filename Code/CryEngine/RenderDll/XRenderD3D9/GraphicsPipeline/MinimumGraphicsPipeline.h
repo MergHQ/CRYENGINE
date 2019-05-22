@@ -57,16 +57,7 @@ public:
 	void         Execute() final;
 	void         ShutDown() final;
 
-	virtual bool CreatePipelineStates(DevicePipelineStatesArray* pStateArray,
-	                                  SGraphicsPipelineStateDescription stateDesc,
-	                                  CGraphicsPipelineStateLocalCache* pStateCache) final;
-
-	bool                     FillCommonScenePassStates(const SGraphicsPipelineStateDescription& inputDesc, CDeviceGraphicsPSODesc& psoDesc) final;
-	CDeviceResourceLayoutPtr CreateScenePassLayout(const CDeviceResourceSetDesc& perPassResources) final;
-
 private:
-	CCVarUpdateRecorder                    m_changedCVars;
-
 	std::unique_ptr<CStretchRectPass>      m_HDRToFramePass;
 	std::unique_ptr<CStretchRectPass>      m_PostToFramePass;
 	std::unique_ptr<CStretchRectPass>      m_FrameToFramePass;

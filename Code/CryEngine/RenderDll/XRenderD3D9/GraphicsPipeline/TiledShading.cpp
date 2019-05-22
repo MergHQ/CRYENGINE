@@ -33,13 +33,12 @@ void CTiledShadingStage::Execute()
 	FUNCTION_PROFILER_RENDERER();
 	PROFILE_LABEL_SCOPE("TILED_SHADING");
 
-	CD3D9Renderer* const __restrict rd = gcpRendD3D;
-
 	auto* clipVolumes = m_graphicsPipeline.GetStage<CClipVolumesStage>();
 	auto* tiledLights = m_graphicsPipeline.GetStage<CTiledLightVolumesStage>();
 	auto* ssObscurance = m_graphicsPipeline.GetStage<CScreenSpaceObscuranceStage>();
 
 #if (CRY_RENDERER_DIRECT3D >= 110) && (CRY_RENDERER_DIRECT3D < 120)
+	CD3D9Renderer* const __restrict rd = gcpRendD3D;
 	// on dx11, some input resources might still be bound as render targets.
 	// dx11 will then just ignore the bind call
 	ID3D11RenderTargetView* nullViews[] = { nullptr, nullptr, nullptr, nullptr };
@@ -98,10 +97,10 @@ void CTiledShadingStage::Execute()
 
 	rtFlags |= m_graphicsPipeline.GetVrProjectionManager()->GetRTFlags();
 
-	CTexture* texClipVolumeIndex = CRendererResources::s_ptexClipVolumes;
-	CTexture* pTexCaustics = tiledLights->IsCausticsVisible() ? CRendererResources::s_ptexSceneTargetR11G11B10F[1] : CRendererResources::s_ptexBlack;
-	CTexture* pTexAOColorBleed = ssObscurance->IsColorBleeding() ? CRendererResources::s_ptexAOColorBleed : CRendererResources::s_ptexBlack;
-	CTexture* pTexBentNormals = ssObscurance->IsObscuring() ? CRendererResources::s_ptexSceneNormalsBent : CRendererResources::s_ptexMedian;
+	CTexture* texClipVolumeIndex = m_graphicsPipelineResources.m_pTexClipVolumes;
+	CTexture* pTexCaustics = tiledLights->IsCausticsVisible() ? m_graphicsPipelineResources.m_pTexSceneTargetR11G11B10F[1] : CRendererResources::s_ptexBlack;
+	CTexture* pTexAOColorBleed = ssObscurance->IsColorBleeding() ? m_graphicsPipelineResources.m_pTexAOColorBleed : CRendererResources::s_ptexBlack;
+	CTexture* pTexBentNormals = ssObscurance->IsObscuring() ? m_graphicsPipelineResources.m_pTexSceneNormalsBent : CRendererResources::s_ptexMedian;
 
 	CTexture* pTexGiDiff = CRendererResources::s_ptexBlack;
 	CTexture* pTexGiSpec = CRendererResources::s_ptexBlack;
@@ -122,18 +121,18 @@ void CTiledShadingStage::Execute()
 		m_passCullingShading.SetTechnique(CShaderMan::s_shDeferredShading, techTiledShading, rtFlags);
 
 		m_passCullingShading.SetOutputUAV(0, tiledLights->GetTiledTranspLightMaskBuffer());
-		m_passCullingShading.SetOutputUAV(1, CRendererResources::s_ptexHDRTarget);
-		m_passCullingShading.SetOutputUAV(2, CRendererResources::s_ptexSceneTargetR11G11B10F[0]);
+		m_passCullingShading.SetOutputUAV(1, m_graphicsPipelineResources.m_pTexHDRTarget);
+		m_passCullingShading.SetOutputUAV(2, m_graphicsPipelineResources.m_pTexSceneTargetR11G11B10F[0]);
 
 		m_passCullingShading.SetSampler(0, EDefaultSamplerStates::TrilinearClamp);
 
-		m_passCullingShading.SetTexture(0, CRendererResources::s_ptexLinearDepth);
-		m_passCullingShading.SetTexture(1, CRendererResources::s_ptexSceneNormalsMap);
-		m_passCullingShading.SetTexture(2, CRendererResources::s_ptexSceneSpecular);
-		m_passCullingShading.SetTexture(3, CRendererResources::s_ptexSceneDiffuse);
-		m_passCullingShading.SetTexture(4, CRendererResources::s_ptexShadowMask);
+		m_passCullingShading.SetTexture(0, m_graphicsPipelineResources.m_pTexLinearDepth);
+		m_passCullingShading.SetTexture(1, m_graphicsPipelineResources.m_pTexSceneNormalsMap);
+		m_passCullingShading.SetTexture(2, m_graphicsPipelineResources.m_pTexSceneSpecular);
+		m_passCullingShading.SetTexture(3, m_graphicsPipelineResources.m_pTexSceneDiffuse);
+		m_passCullingShading.SetTexture(4, m_graphicsPipelineResources.m_pTexShadowMask);
 		m_passCullingShading.SetTexture(5, pTexBentNormals);
-		m_passCullingShading.SetTexture(6, CRendererResources::s_ptexHDRTargetMaskedScaled[0][0]);
+		m_passCullingShading.SetTexture(6, m_graphicsPipelineResources.m_pTexHDRTargetMaskedScaled[0][0]);
 		m_passCullingShading.SetTexture(7, CRendererResources::s_ptexEnvironmentBRDF);
 		m_passCullingShading.SetTexture(8, texClipVolumeIndex);
 		m_passCullingShading.SetTexture(9, pTexAOColorBleed);
@@ -187,15 +186,10 @@ void CTiledShadingStage::Execute()
 		m_passCullingShading.SetConstant(frustumBLName, frustumBL);
 
 		static CCryNameR sunDirName("SunDir");
-		Vec4 sunDirParam(gEnv->p3DEngine->GetSunDirNormalized(), TiledShading_SunDistance);
-		m_passCullingShading.SetConstant(sunDirName, sunDirParam);
-
 		static CCryNameR sunColorName("SunColor");
-		Vec3 sunColor;
-		gEnv->p3DEngine->GetGlobalParameter(E3DPARAM_SUN_COLOR, sunColor);
-		sunColor *= rd->m_fAdaptedSceneScaleLBuffer;  // Apply LBuffers range rescale
-		Vec4 sunColorParam(sunColor.x, sunColor.y, sunColor.z, gEnv->p3DEngine->GetGlobalParameter(E3DPARAM_SUN_SPECULAR_MULTIPLIER));
-		m_passCullingShading.SetConstant(sunColorName, sunColorParam);
+
+		m_passCullingShading.SetConstant(sunDirName, Vec4(m_pRenderView->GetSunLightDirection(), TiledShading_SunDistance));
+		m_passCullingShading.SetConstant(sunColorName, m_pRenderView->GetSunLightColor());
 
 		static CCryNameR ssdoParamsName("SSDOParams");
 		Vec4 ssdoParams(CRenderer::CV_r_ssdoAmountDirect, CRenderer::CV_r_ssdoAmountAmbient, CRenderer::CV_r_ssdoAmountReflection, 0);

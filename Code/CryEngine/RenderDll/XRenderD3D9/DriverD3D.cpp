@@ -638,9 +638,9 @@ void CD3D9Renderer::HandleDisplayPropertyChanges(std::shared_ptr<CGraphicsPipeli
 		if (CRendererResources::s_renderWidth  != renderWidth  ||
 			CRendererResources::s_renderHeight != renderHeight)
 		{
-			// The global resources are only used for the main viewport currently, but never for
-			// secondary ones, as they are forward shaded minimally without utilizing global resources
-			bChangedRendering = pDC->IsDeferredShadeable();
+			// Some of the global resources are only used for the main viewport currently
+			// Deferred shade-able resources are managed in their own graphics pipeline
+			bChangedRendering = pDC->IsMainViewport();
 
 			// Hack for editor (editor viewports will be resized earlier)
 			if (IsEditorMode() && pDC->IsMainViewport())
@@ -3856,11 +3856,11 @@ bool CD3D9Renderer::CaptureFrameBufferFast(unsigned char* pDstRGB8, int destinat
 				// reuse stereo left and right RTs to downscale
 				CStretchRegionPass(m_pActiveGraphicsPipeline.get()).Execute(
 					pSourceTexture,
-					CRendererResources::s_ptexSceneDiffuseTmp,
+					m_pActiveGraphicsPipeline->GetPipelineResources().m_pTexSceneDiffuseTmp,
 					&srcRct, &dstRct,
 					true, ColorF(1, 1, 1, 1), 0);
 
-				pCopySourceTexture = CRendererResources::s_ptexSceneDiffuseTmp;
+				pCopySourceTexture = m_pActiveGraphicsPipeline->GetPipelineResources().m_pTexSceneDiffuseTmp;
 			}
 			else
 			{

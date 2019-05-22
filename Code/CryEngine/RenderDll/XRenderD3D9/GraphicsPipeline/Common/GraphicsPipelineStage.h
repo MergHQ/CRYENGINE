@@ -6,6 +6,7 @@
 
 class CCVarUpdateRecorder;
 class CGraphicsPipeline;
+class CGraphicsPipelineResources;
 class CGraphicsPipelineStage;
 class CGraphicsPipelineStateLocalCache;
 class CRenderOutput;
@@ -105,15 +106,16 @@ public:
 	virtual void SetRenderView(CRenderView* pRenderView) { m_pRenderView = pRenderView; }
 
 public:
-	CRenderView*           RenderView() const { return m_pRenderView; }
-	const SRenderViewport& GetViewport() const;
+	CRenderView*                RenderView() const { return m_pRenderView; }
+	const SRenderViewport&      GetViewport() const;
 
-	const SRenderViewInfo& GetCurrentViewInfo() const;
+	const SRenderViewInfo&      GetCurrentViewInfo() const;
 
-	const CRenderOutput&   GetRenderOutput() const;
-	CRenderOutput&         GetRenderOutput();
+	const CRenderOutput&        GetRenderOutput() const;
+	CRenderOutput&              GetRenderOutput();
 
-	CGraphicsPipeline&     m_graphicsPipeline;
+	CGraphicsPipeline&          m_graphicsPipeline;
+	CGraphicsPipelineResources& m_graphicsPipelineResources;
 
 protected:
 	void ClearDeviceOutputState();

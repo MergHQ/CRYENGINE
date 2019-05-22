@@ -411,20 +411,25 @@ void CSvoRenderer::ExecuteComputeShader(const char* szTechFinalName, CSvoCompute
 	#endif
 }
 
-CTexture* CSvoRenderer::GetGBuffer(int nId) // simplify branch compatibility
+CTexture* CSvoRenderer::GetGBuffer(const CGraphicsPipelineResources& pipelineResources, int nId) // simplify branch compatibility
 {
 	CTexture* pRes;
 
 	if (nId == 0)
-		pRes = CRendererResources::s_ptexSceneNormalsMap;
+		pRes = pipelineResources.m_pTexSceneNormalsMap;
 	else if (nId == 1)
-		pRes = CRendererResources::s_ptexSceneDiffuse;
+		pRes = pipelineResources.m_pTexSceneDiffuse;
 	else if (nId == 2)
-		pRes = CRendererResources::s_ptexSceneSpecular;
+		pRes = pipelineResources.m_pTexSceneSpecular;
 	else
 		pRes = 0;
 
 	return pRes;
+}
+
+CTexture* CSvoRenderer::GetZBuffer(const CGraphicsPipelineResources& pipelineResources, bool bLinear)
+{
+	return pipelineResources.m_pTexLinearDepth;
 }
 
 void CSvoRenderer::TropospherePass()
@@ -506,10 +511,12 @@ void CSvoRenderer::TraceSunShadowsPass()
 
 void CSvoRenderer::SetupGBufferTextures(CSvoFullscreenPass& rp)
 {
-	rp.SetTexture(4, CRendererResources::s_ptexLinearDepth);
-	rp.SetTexture(14, GetGBuffer(0));
-	rp.SetTexture(5, GetGBuffer(1));
-	rp.SetTexture(7, GetGBuffer(2));
+	const CGraphicsPipelineResources& pipelineResources = RenderView()->GetGraphicsPipeline()->GetPipelineResources();
+
+	rp.SetTexture(4, GetZBuffer(pipelineResources, true));
+	rp.SetTexture(14, GetGBuffer(pipelineResources, 0));
+	rp.SetTexture(5, GetGBuffer(pipelineResources, 1));
+	rp.SetTexture(7, GetGBuffer(pipelineResources, 2));
 }
 
 void CSvoRenderer::ConeTracePass(SSvoTargetsSet* pTS)
@@ -523,6 +530,7 @@ void CSvoRenderer::ConeTracePass(SSvoTargetsSet* pTS)
 
 	const char* szTechFinalName = "ConeTracePass";
 	const bool bBindDynamicLights = !GetIntegratioMode() && e_svoTI_InjectionMultiplier && m_arrLightsDynamic.Count();
+	const CGraphicsPipelineResources& pipelineResources = RenderView()->GetGraphicsPipeline()->GetPipelineResources();
 
 	rp.SetTechnique(m_pShader, szTechFinalName, GetRunTimeFlags(pTS == &m_pPasses->m_tsDiff));
 	rp.SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_PS);
@@ -558,8 +566,8 @@ void CSvoRenderer::ConeTracePass(SSvoTargetsSet* pTS)
 
 	if (GetIntegratioMode() && e_svoTI_SSDepthTrace)
 	{
-		if (CRendererResources::s_ptexHDRTargetPrev->GetUpdateFrameID() > 1)
-			rp.SetTexture(12, CRendererResources::s_ptexHDRTargetPrev);
+		if (pipelineResources.m_pTexHDRTargetPrev->GetUpdateFrameID() > 1)
+			rp.SetTexture(12, pipelineResources.m_pTexHDRTargetPrev);
 		else
 			rp.SetTexture(12, CRendererResources::s_ptexBlack);
 	}

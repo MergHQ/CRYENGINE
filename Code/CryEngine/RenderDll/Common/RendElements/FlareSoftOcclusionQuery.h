@@ -178,7 +178,7 @@ public:
 
 private:
 
-	bool PrepareOcclusionPrimitive(CRenderPrimitive& primitive, const CPrimitiveRenderPass& targetPass, const SRenderViewInfo& viewInfo);
+	bool PrepareOcclusionPrimitive(CRenderPrimitive& primitive, const CPrimitiveRenderPass& targetPass, const SRenderViewInfo& viewInfo, CRenderView* pRenderView);
 	bool PrepareGatherPrimitive(CRenderPrimitive& primitive, const CPrimitiveRenderPass& targetPass, SRenderViewInfo* pViewInfo, int viewInfoCount, CRenderView* pRenderView);
 
 	int m_nPos;

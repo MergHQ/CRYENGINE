@@ -334,7 +334,7 @@ void CVolumetricFogStage::ResizeResource(int volumeWidth, int volumeHeight, int 
 
 	// downscaled depth buffer.
 	const int32 depthTempWidth = (volumeWidth << 1);
-	const int32 depthTempHeight = (CRendererResources::s_ptexLinearDepthScaled[0]->GetHeight() >> 1);
+	const int32 depthTempHeight = (m_graphicsPipelineResources.m_pTexLinearDepthScaled[0]->GetHeight() >> 1);
 	const ETEX_Format fmtDepth = eTF_R16F;
 
 	// downscaled shadow maps.
@@ -1539,7 +1539,7 @@ void CVolumetricFogStage::ExecuteDownscaledDepth(const SScopedComputeCommandList
 	{
 		const int32 nScreenWidth = m_pMaxDepthTemp->GetWidth();
 		const int32 nScreenHeight = m_pMaxDepthTemp->GetHeight();
-		const int32 nSrcTexWidth = CRendererResources::s_ptexLinearDepthScaled[0]->GetWidth();
+		const int32 nSrcTexWidth = m_graphicsPipelineResources.m_pTexLinearDepthScaled[0]->GetWidth();
 
 		auto& pass = m_passDownscaleDepthHorizontal;
 
@@ -1550,7 +1550,7 @@ void CVolumetricFogStage::ExecuteDownscaledDepth(const SScopedComputeCommandList
 
 			pass.SetOutputUAV(0, m_pMaxDepthTemp);
 
-			pass.SetTexture(0, CRendererResources::s_ptexLinearDepthScaled[0]);
+			pass.SetTexture(0, m_graphicsPipelineResources.m_pTexLinearDepthScaled[0]);
 
 			pass.SetSampler(0, EDefaultSamplerStates::PointClamp);
 		}

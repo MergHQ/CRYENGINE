@@ -225,7 +225,7 @@ void CClipVolumesStage::Update()
 {
 	CRenderView* pRenderView = RenderView();
 
-	m_pBlendValuesRT = CRendererResources::s_ptexClipVolumes;
+	m_pBlendValuesRT = m_graphicsPipelineResources.m_pTexClipVolumes;
 	m_pDepthTarget = RenderView()->GetDepthTarget();
 
 	m_stencilPass.SetDepthTarget(m_pDepthTarget);
@@ -515,7 +515,7 @@ void CClipVolumesStage::Prepare()
 				CRenderPrimitive& primBlend = m_blendPrimitives[i];
 				primBlend.SetTechnique(CShaderMan::s_shDeferredShading, techPortalBlend, m_graphicsPipeline.GetVrProjectionManager()->GetRTFlags());
 				primBlend.SetRenderState(GS_STENCIL | GS_NODEPTHTEST | GS_NOCOLMASK_RBA);
-				primBlend.SetTexture(3, CRendererResources::s_ptexLinearDepth);
+				primBlend.SetTexture(3, m_graphicsPipelineResources.m_pTexLinearDepth);
 				primBlend.SetCullMode(eCULL_Front);
 				primBlend.SetStencilState(StencilStateTest, stencilTestRef, StencilReadWriteMask, StencilReadWriteMask);
 				primBlend.Compile(m_blendValuesPass);

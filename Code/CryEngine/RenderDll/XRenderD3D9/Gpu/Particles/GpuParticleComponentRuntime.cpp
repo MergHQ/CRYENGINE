@@ -408,11 +408,11 @@ gpu_physics::CParticleFluidSimulation* CParticleComponentRuntime::CreateFluidSim
 	return m_pFluidSimulation.get();
 }
 
-void CParticleComponentRuntime::FluidCollisions(CDeviceCommandListRef RESTRICT_REFERENCE commandList)
+void CParticleComponentRuntime::FluidCollisions(CDeviceCommandListRef RESTRICT_REFERENCE commandList, const gpu_pfx2::SUpdateContext& context)
 {
 	if (m_parameters->numParticles)
 	{
-		m_pFluidSimulation->FluidCollisions(commandList, m_parameters.GetDeviceConstantBuffer(), eConstantBufferSlot_Base);
+		m_pFluidSimulation->FluidCollisions(commandList, context, m_parameters.GetDeviceConstantBuffer(), eConstantBufferSlot_Base);
 	}
 }
 

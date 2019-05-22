@@ -678,7 +678,7 @@ bool CREParticle::Compile(CRenderObject* pRenderObject, uint64 objFlags, ERender
 
 	m_pCompiledParticle->m_pShaderDataCB->UpdateBuffer(objectData.m_pParticleShaderData, sizeof(*objectData.m_pParticleShaderData));
 
-	CDeviceResourceSetDesc perInstanceExtraResources(pGraphicsPipeline->GetDefaultDrawExtraResourceLayout(), nullptr, nullptr);
+	CDeviceResourceSetDesc perInstanceExtraResources(CSceneRenderPass::GetDefaultDrawExtraResourceLayout(), nullptr, nullptr);
 
 	perInstanceExtraResources.SetConstantBuffer(
 		eConstantBufferShaderSlot_PerGroup,
@@ -765,19 +765,22 @@ CDeviceGraphicsPSOPtr CREParticle::GetGraphicsPSO(CRenderObject* pRenderObject, 
 			assert(pRenderObject->GetObjData());
 			const bool isRecursive = context.passID == CSceneForwardStage::ePass_ForwardRecursive;
 			CGraphicsPipeline* pGraphicsPipeline = context.pRenderView->GetGraphicsPipeline().get();
-			const CLightVolumeBuffer& lightVolumes = pGraphicsPipeline->GetLightVolumeBuffer();
+			CTiledLightVolumesStage* pLightVolumeStage = pGraphicsPipeline->GetStage<CTiledLightVolumesStage>();
+			CRY_ASSERT(pLightVolumeStage);
+			
+			const CLightVolumeBuffer& lightVolumes = pLightVolumeStage->GetLightVolumeBuffer();
 			const int lightVolumeId = pRenderObject->GetObjData()->m_LightVolumeId - 1;
 			if ((pRenderObject->m_ObjFlags & FOB_LIGHTVOLUME) && lightVolumes.HasVolumes() && lightVolumeId >= 0 && lightVolumes.HasLights(lightVolumeId))
 			{
-			#ifndef _RELEASE
+#ifndef _RELEASE
 				CRY_ASSERT(lightVolumeId < lightVolumes.GetNumVolumes());
-			#endif
+#endif
 				mode = isRecursive ? EParticlePSOMode::WithLightingRecursive : EParticlePSOMode::WithLighting;
 			}
 			else
 			{
 				mode = isRecursive ? EParticlePSOMode::NoLightingRecursive : EParticlePSOMode::NoLighting;
-			}
+			}	
 		}
 	}
 	else if (context.stageID == eStage_VolumetricFog)

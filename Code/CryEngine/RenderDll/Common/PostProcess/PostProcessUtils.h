@@ -166,7 +166,7 @@ struct SPostEffectsUtils
 	static CTexture* GetVelocityObjectRT(CRenderView* pRenderView)
 	{
 		int eye = static_cast<int>(pRenderView->GetCurrentEye());
-		return CRendererResources::s_ptexVelocityObjects[eye];
+		return pRenderView->GetGraphicsPipeline()->GetPipelineResources().m_pTexVelocityObjects[eye];
 	}
 
 	static float GetOverscanBorderAspectRatio()

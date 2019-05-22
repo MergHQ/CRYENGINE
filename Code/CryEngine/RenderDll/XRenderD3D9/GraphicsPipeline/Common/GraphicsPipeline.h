@@ -60,6 +60,86 @@ enum EGraphicsPipelineStage
 class CGraphicsPipelineStage;
 struct SRenderViewInfo;
 
+class CGraphicsPipelineResources
+{
+public:
+	CTexture* m_pTexSceneDiffuse = nullptr;
+	CTexture* m_pTexSceneNormalsMap = nullptr;                                              // RT with normals for deferred shading
+	CTexture* m_pTexSceneSpecular = nullptr;
+#if defined(DURANGO_USE_ESRAM)														        
+	CTexture* m_pTexSceneSpecularESRAM = nullptr;                                           // Temporary scene specular in ESRAM, aliased with other ESRAM RTs
+#endif																				        
+	CTexture* m_pTexVelocityObjects[CCamera::eEye_eCount] = { nullptr, nullptr };           // CSceneGBufferStage, Dynamic object velocity (for left and right eye)
+	CTexture* m_pTexLinearDepth = nullptr;
+	CTexture* m_pTexHDRTarget = nullptr;
+	CTexture* m_pTexShadowMask = nullptr;                                                   // CShadowMapStage
+	CTexture* m_pTexSceneNormalsBent = nullptr;
+	CTexture* m_pTexSceneDepthScaled[3] = { nullptr, nullptr, nullptr };                    // Half/Quarter/Eighth resolution depth-stencil, used for sub-resolution rendering
+	CTexture* m_pTexLinearDepthScaled[3] = { nullptr, nullptr, nullptr };                   // Min, Max, Avg, med
+	CTexture* m_pTexClipVolumes = nullptr;                                                  // CClipVolumeStage, CTiledShadingStage, CHeightMapAOStage
+	CTexture* m_pTexAOColorBleed = nullptr;                                                 // CScreenSpaceObscuranceStage, CTiledShadingStage
+	CTexture* m_pTexSceneDiffuseTmp = nullptr;
+	CTexture* m_pTexSceneSpecularTmp = nullptr;
+
+	CTexture* m_pTexDisplayTargetScaled[3] = { nullptr, nullptr, nullptr };                 // low-resolution/blurred version. 2x/4x/8x/16x smaller than screen
+	CTexture* m_pTexDisplayTargetScaledTemp[2] = { nullptr, nullptr };                      // low-resolution/blurred version. 2x/4x/8x/16x smaller than screen, temp textures (used for blurring/ping-pong)
+	CTexture* m_pTexHDRTargetScaled[4][4] = { {nullptr, nullptr, nullptr, nullptr},
+	                                          {nullptr, nullptr, nullptr, nullptr}, 
+	                                          {nullptr, nullptr, nullptr, nullptr}, 
+	                                          {nullptr, nullptr, nullptr, nullptr} };       // CAutoExposureStage, CBloomStage, CSunShaftsStage
+	CTexture* m_pTexHDRTargetMaskedScaled[4][4] = { {nullptr, nullptr, nullptr, nullptr},
+											        {nullptr, nullptr, nullptr, nullptr},
+											        {nullptr, nullptr, nullptr, nullptr},
+											        {nullptr, nullptr, nullptr, nullptr} }; // CScreenSpaceReflectionsStage, CDepthOfFieldStage, CSnowStage
+
+	CTexture* m_pTexDisplayTargetDst = nullptr;                                             // display-colorspace target
+	CTexture* m_pTexDisplayTargetSrc = nullptr;                                             // display-colorspace target
+	CTexture* m_pTexSceneSelectionIDs = nullptr;                                            // Selection ID buffer used for selection and highlight passes
+	CTexture* m_pTexSceneTargetR11G11B10F[2] = { nullptr, nullptr };                        // CMotionBlurStage
+	CTexture* m_pTexHDRTargetPrev = nullptr;                                                // CScreenSpaceReflectionsStage, CWaterStage, CMotionBlurStage, CSvoRenderer
+	CTexture* m_pTexHDRMeasuredLuminance[MAX_GPU_NUM];                                      // CAutoExposureStage, CScreenSpaceReflectionsStage
+	CTexture* m_pTexHDRTargetMasked = nullptr;                                              // CScreenSpaceReflectionsStage, CPostAAStage
+	CTexture* m_pTexSceneTarget = nullptr;                                                  // Shared rt for generic usage (refraction/srgb/diffuse accumulation/hdr motionblur/etc)
+
+
+	CTexture* m_pTexLinearDepthFixup = nullptr;
+	ResourceViewHandle m_pTexLinearDepthFixupUAV;
+
+public:
+	CGraphicsPipelineResources(CGraphicsPipeline& graphicsPipeline) : m_graphicsPipeline(graphicsPipeline) 
+	{
+		for (int i = 0; i < MAX_GPU_NUM; ++i)
+		{
+			m_pTexHDRMeasuredLuminance[i] = nullptr;
+		}
+
+		m_resourceWidth = 32;
+		m_resourceHeight = 32;
+	}
+
+	void Init();
+	void Shutdown();
+	void Discard();
+	void Clear();
+	void Resize(int renderWidth, int renderHeight);
+
+private:
+	void CreateResources(int resourceWidth, int resourceHeight);
+
+	void CreateDepthMaps(int resourceWidth, int resourceHeight);
+	void CreateDeferredMaps(int resourceWidth, int resourceHeight);
+	void CreateHDRMaps(int resourceWidth, int resourceHeight);
+	void CreatePostFXMaps(int resourceWidth, int resourceHeight);
+	void CreateSceneMaps(int resourceWidth, int resourceHeight);
+
+private:
+	CGraphicsPipeline& m_graphicsPipeline;
+	SRenderTargetPool  m_renderTargetPool;
+
+	int m_resourceWidth, m_resourceHeight;
+};
+
+
 class CGraphicsPipeline
 {
 public:
@@ -112,45 +192,46 @@ public:
 		return m_pCurrentRenderView->GetViewInfoCount();
 	}
 
-	virtual bool CreatePipelineStates(DevicePipelineStatesArray* pStateArray,
-	                                  SGraphicsPipelineStateDescription stateDesc,
-	                                  CGraphicsPipelineStateLocalCache* pStateCache) = 0;
+	bool CreatePipelineStates(DevicePipelineStatesArray* pStateArray,
+		                      SGraphicsPipelineStateDescription stateDesc,
+		                      CGraphicsPipelineStateLocalCache* pStateCache);
 
-	virtual bool                     FillCommonScenePassStates(const SGraphicsPipelineStateDescription& inputDesc, CDeviceGraphicsPSODesc& psoDesc) = 0;
-	virtual CDeviceResourceLayoutPtr CreateScenePassLayout(const CDeviceResourceSetDesc& perPassResources) = 0;
+	CDeviceResourceLayoutPtr CreateScenePassLayout(const CDeviceResourceSetDesc& perPassResources);
 
 public:
-	bool                  AllowsHDRRendering() const                            { return (m_renderingFlags & SHDF_ALLOWHDR) != 0; }
-	bool                  IsPostProcessingEnabled() const                       { return (m_renderingFlags & SHDF_ALLOWPOSTPROCESS) && CRenderer::IsPostProcessingEnabled(); }
+	bool                  AllowsHDRRendering() const                                          { return (m_renderingFlags & SHDF_ALLOWHDR) != 0; }
+	bool                  IsPostProcessingEnabled() const                                     { return (m_renderingFlags & SHDF_ALLOWPOSTPROCESS) && CRenderer::IsPostProcessingEnabled(); }
 
-	CRenderPassScheduler& GetRenderPassScheduler()                              { return m_renderPassScheduler; }
+	CRenderPassScheduler& GetRenderPassScheduler()                                            { return m_renderPassScheduler; }
 
-	void                  SetVrProjectionManager(CVrProjectionManager* manager) { m_pVRProjectionManager = manager; }
-	CVrProjectionManager* GetVrProjectionManager() const                        { return m_pVRProjectionManager; }
+	void                  SetVrProjectionManager(CVrProjectionManager* manager)               { m_pVRProjectionManager = manager; }
+	CVrProjectionManager* GetVrProjectionManager() const                                      { return m_pVRProjectionManager; }
 
 	void                  SetCurrentRenderView(CRenderView* pRenderView);
-	CRenderView*          GetCurrentRenderView()    const { return m_pCurrentRenderView; }
-	CRenderOutput*        GetCurrentRenderOutput()  const { return m_pCurrentRenderView->GetRenderOutput(); }
+	CRenderView*          GetCurrentRenderView()    const                                     { return m_pCurrentRenderView; }
+	CRenderOutput*        GetCurrentRenderOutput()  const                                     { return m_pCurrentRenderView->GetRenderOutput(); }
 
 	//! Set current pipeline flags
-	void           SetPipelineFlags(EPipelineFlags pipelineFlags)           { m_pipelineFlags = pipelineFlags; }
+	void           SetPipelineFlags(EPipelineFlags pipelineFlags)                             { m_pipelineFlags = pipelineFlags; }
 	//! Get current pipeline flags
-	EPipelineFlags GetPipelineFlags() const                                 { return m_pipelineFlags; }
-	bool           IsPipelineFlag(EPipelineFlags pipelineFlagsToTest) const { return 0 != ((uint64)m_pipelineFlags & (uint64)pipelineFlagsToTest); }
+	EPipelineFlags GetPipelineFlags() const                                                   { return m_pipelineFlags; }
+	bool           IsPipelineFlag(EPipelineFlags pipelineFlagsToTest) const                   { return 0 != ((uint64)m_pipelineFlags & (uint64)pipelineFlagsToTest); }
 
 	// Animation time is used for rendering animation effects and can be paused if CRenderer::m_bPauseTimer is true
 	CTimeValue GetAnimationTime() const { return gRenDev->GetAnimationTime(); }
 
 	// Time of the last main to renderer thread sync
-	CTimeValue                                     GetFrameSyncTime() const       { return gRenDev->GetFrameSyncTime(); }
+	CTimeValue                                     GetFrameSyncTime() const                   { return gRenDev->GetFrameSyncTime(); }
 
-	const IRenderer::SGraphicsPipelineDescription& GetPipelineDescription() const { return m_pipelineDesc; }
+	const IRenderer::SGraphicsPipelineDescription& GetPipelineDescription() const             { return m_pipelineDesc; }
 
-	uint32                                         GetRenderFlags() const         { return m_renderingFlags; }
+	uint32                                         GetRenderFlags() const                     { return m_renderingFlags; }
 
-	const Vec2_tpl<uint32_t>                       GetRenderResolution() const    { return Vec2_tpl<uint32_t>(m_renderWidth, m_renderHeight); };
+	const Vec2_tpl<uint32_t>                       GetRenderResolution() const                { return Vec2_tpl<uint32_t>(m_renderWidth, m_renderHeight); };
 
 	const SRenderViewInfo&                         GetCurrentViewInfo(CCamera::EEye eye) const;
+
+	CGraphicsPipelineResources&                    GetPipelineResources()                     { return m_pipelineResources; }
 
 	const SGraphicsPipelineKey                     GetKey() const                             { return m_key; }
 	void                                           GeneratePerViewConstantBuffer(const SRenderViewInfo* pViewInfo, int viewInfoCount, CConstantBufferPtr pPerViewBuffer, const SRenderViewport* pCustomViewport = nullptr);
@@ -158,14 +239,11 @@ public:
 	uint32                                         GetNumInvalidDrawcalls() const             { return m_numInvalidDrawcalls; }
 
 	CConstantBufferPtr                             GetMainViewConstantBuffer()                { return m_mainViewConstantBuffer.GetDeviceConstantBuffer(); }
-	const CDeviceResourceSetDesc&                  GetDefaultMaterialBindPoints()       const { return m_defaultMaterialBindPoints; }
 	std::array<SamplerStateHandle, EFSS_MAX>       GetDefaultMaterialSamplers()         const;
-	const CDeviceResourceSetDesc&                  GetDefaultDrawExtraResourceLayout()  const { return m_defaultDrawExtraRL; }
-	CDeviceResourceSetPtr                          GetDefaulDrawExtraResourceSet()      const { return m_pDefaultDrawExtraRS; }
 
 	const std::string&                             GetUniqueIdentifierName() const            { return m_uniquePipelineIdentifierName; }
 
-	CLightVolumeBuffer&                            GetLightVolumeBuffer()                     { return m_lightVolumeBuffer; }
+	CDeferredShading*                              GetDeferredShading()                       { return m_pDeferredShading; }
 
 	void                                           SetParticleBuffers(bool bOnInit, CDeviceResourceSetDesc& resources, ResourceViewHandle hView, EShaderStage shaderStages) const;
 
@@ -178,6 +256,8 @@ public:
 	void                                           ClearState();
 	void                                           ClearDeviceState();
 
+	const std::string                              MakeUniqueTexIdentifierName(const std::string& texName) const { return texName + m_uniquePipelineIdentifierName; }
+
 	template<class T> T* GetStage() { return static_cast<T*>(m_pipelineStages[T::StageID]); }
 
 protected:
@@ -189,18 +269,16 @@ protected:
 	}
 
 public:
-	std::unique_ptr<CStretchRectPass>             m_ResolvePass;
-	std::unique_ptr<CDownsamplePass>              m_DownscalePass;
-	std::unique_ptr<CSharpeningUpsamplePass>      m_UpscalePass;
-	std::unique_ptr<CAnisotropicVerticalBlurPass> m_AnisoVBlurPass;
+	std::unique_ptr<CStretchRectPass>                           m_ResolvePass;
+	std::unique_ptr<CDownsamplePass>                            m_DownscalePass;
+	std::unique_ptr<CSharpeningUpsamplePass>                    m_UpscalePass;
+	std::unique_ptr<CAnisotropicVerticalBlurPass>               m_AnisoVBlurPass;
+
+	int                                                         m_nStencilMaskRef;
 
 protected:
 	std::array<CGraphicsPipelineStage*, eStage_Count>           m_pipelineStages;
 	CRenderPassScheduler                                        m_renderPassScheduler;
-
-	CDeviceResourceSetDesc                                      m_defaultMaterialBindPoints;
-	CDeviceResourceSetDesc                                      m_defaultDrawExtraRL;
-	CDeviceResourceSetPtr                                       m_pDefaultDrawExtraRS;
 
 	EShaderRenderingFlags                                       m_renderingFlags = EShaderRenderingFlags(0);
 
@@ -208,15 +286,20 @@ protected:
 
 	CVrProjectionManager*                                       m_pVRProjectionManager;
 
+	CCVarUpdateRecorder                                         m_changedCVars;
+
+	CDeferredShading*                                           m_pDeferredShading;
+
+	CGraphicsPipelineResources                                  m_pipelineResources;
+
+	IRenderer::SGraphicsPipelineDescription                     m_pipelineDesc;
+
 	bool m_bInitialized = false;
 
 	int  m_numInvalidDrawcalls = 0;
 
 private:
 	CRenderView* m_pCurrentRenderView = nullptr;
-
-	// light volume data
-	CLightVolumeBuffer m_lightVolumeBuffer;
 
 	//! @see EPipelineFlags
 	EPipelineFlags                          m_pipelineFlags;
@@ -226,7 +309,6 @@ private:
 
 	std::string                             m_uniquePipelineIdentifierName;
 
-	IRenderer::SGraphicsPipelineDescription m_pipelineDesc;
 	SGraphicsPipelineKey                    m_key = SGraphicsPipelineKey::InvalidGraphicsPipelineKey;
 };
 

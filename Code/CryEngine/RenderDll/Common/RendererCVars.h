@@ -183,6 +183,8 @@ public:
 
 	static int CV_r_BreakOnError;
 
+	static int CV_r_PipelineResourceDiscardAfterFrame;
+
 #if CRY_PLATFORM_DURANGO
 	static int CV_r_TexturesStagingRingEnabled;
 	static int CV_r_TexturesStagingRingSize;

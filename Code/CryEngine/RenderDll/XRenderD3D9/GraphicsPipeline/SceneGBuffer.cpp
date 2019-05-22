@@ -82,7 +82,7 @@ bool CSceneGBufferStage::CreatePipelineState(const SGraphicsPipelineStateDescrip
 	outPSO = NULL;
 
 	CDeviceGraphicsPSODesc psoDesc(m_pResourceLayout, desc);
-	if (!m_graphicsPipeline.FillCommonScenePassStates(desc, psoDesc))
+	if (!CSceneRenderPass::FillCommonScenePassStates(desc, psoDesc, m_graphicsPipeline.GetVrProjectionManager()))
 		return true;
 
 	CShader* pShader = static_cast<CShader*>(desc.shaderItem.m_pShader);
@@ -225,7 +225,7 @@ bool CSceneGBufferStage::SetAndBuildPerPassResources(bool bOnInit)
 		m_perPassResources.SetTexture(ePerPassTexture_TerrainNormMap, CTexture::GetByID(nTerrainTex1), EDefaultResourceViews::Default, EShaderStage_Pixel);
 		m_perPassResources.SetTexture(ePerPassTexture_TerrainBaseMap, CTexture::GetByID(nTerrainTex0), EDefaultResourceViews::sRGB, EShaderStage_Pixel);
 		m_perPassResources.SetTexture(ePerPassTexture_NormalsFitting, CRendererResources::s_ptexNormalsFitting, EDefaultResourceViews::Default, EShaderStage_Pixel);
-		m_perPassResources.SetTexture(ePerPassTexture_SceneLinearDepth, CRendererResources::s_ptexLinearDepth, EDefaultResourceViews::Default, EShaderStage_Pixel);
+		m_perPassResources.SetTexture(ePerPassTexture_SceneLinearDepth, m_graphicsPipelineResources.m_pTexLinearDepth, EDefaultResourceViews::Default, EShaderStage_Pixel);
 	}
 
 	// constant buffers
@@ -276,9 +276,9 @@ void CSceneGBufferStage::Update()
 
 	if (!isForwardMinimal)
 	{
-		CTexture* pSceneSpecular = CRendererResources::s_ptexSceneSpecular;
+		CTexture* pSceneSpecular = m_graphicsPipelineResources.m_pTexSceneSpecular;
 #if defined(DURANGO_USE_ESRAM)
-		pSceneSpecular = CRendererResources::s_ptexSceneSpecularESRAM;
+		pSceneSpecular = m_graphicsPipelineResources.m_pTexSceneSpecularESRAM;
 #endif
 
 		// Opaque Pass
@@ -287,9 +287,9 @@ void CSceneGBufferStage::Update()
 			// Depth
 			pZTexture,
 			// Color 0
-			CRendererResources::s_ptexSceneNormalsMap,
+			m_graphicsPipelineResources.m_pTexSceneNormalsMap,
 			// Color 1
-			CRendererResources::s_ptexSceneDiffuse,
+			m_graphicsPipelineResources.m_pTexSceneDiffuse,
 			// Color 2
 			pSceneSpecular
 		);
@@ -300,13 +300,13 @@ void CSceneGBufferStage::Update()
 			// Depth
 			pZTexture,
 			// Color 0
-			CRendererResources::s_ptexSceneNormalsMap,
+			m_graphicsPipelineResources.m_pTexSceneNormalsMap,
 			// Color 1
-			CRendererResources::s_ptexSceneDiffuse,
+			m_graphicsPipelineResources.m_pTexSceneDiffuse,
 			// Color 2
 			pSceneSpecular,
 			// Color 3
-			CRendererResources::s_ptexVelocityObjects[0]
+			m_graphicsPipelineResources.m_pTexVelocityObjects[0]
 		);
 
 		// Overlay Pass
@@ -315,9 +315,9 @@ void CSceneGBufferStage::Update()
 			// Depth
 			pZTexture,
 			// Color 0
-			CRendererResources::s_ptexSceneNormalsMap,
+			m_graphicsPipelineResources.m_pTexSceneNormalsMap,
 			// Color 1
-			CRendererResources::s_ptexSceneDiffuse,
+			m_graphicsPipelineResources.m_pTexSceneDiffuse,
 			// Color 2
 			pSceneSpecular
 		);
@@ -328,7 +328,7 @@ void CSceneGBufferStage::Update()
 			// Depth
 			pZTexture,
 			// Color 0
-			CRendererResources::s_ptexSceneNormalsMap
+			m_graphicsPipelineResources.m_pTexSceneNormalsMap
 		);
 	}
 }
@@ -459,14 +459,14 @@ void CSceneGBufferStage::ExecuteGBufferVisualization()
 	static CCryNameTSCRC tech("DebugGBuffer");
 
 	m_passBufferVisualization.SetTechnique(CShaderMan::s_shDeferredShading, tech, 0);
-	m_passBufferVisualization.SetRenderTarget(0, CRendererResources::s_ptexSceneDiffuseTmp);
+	m_passBufferVisualization.SetRenderTarget(0, m_graphicsPipelineResources.m_pTexSceneDiffuseTmp);
 	m_passBufferVisualization.SetPrimitiveType(CRenderPrimitive::ePrim_ProceduralTriangle);
 	m_passBufferVisualization.SetState(GS_NODEPTHTEST);
 
-	m_passBufferVisualization.SetTexture(0, CRendererResources::s_ptexLinearDepth);
-	m_passBufferVisualization.SetTexture(1, CRendererResources::s_ptexSceneNormalsMap);
-	m_passBufferVisualization.SetTexture(2, CRendererResources::s_ptexSceneDiffuse);
-	m_passBufferVisualization.SetTexture(3, CRendererResources::s_ptexSceneSpecular);
+	m_passBufferVisualization.SetTexture(0, m_graphicsPipelineResources.m_pTexLinearDepth);
+	m_passBufferVisualization.SetTexture(1, m_graphicsPipelineResources.m_pTexSceneNormalsMap);
+	m_passBufferVisualization.SetTexture(2, m_graphicsPipelineResources.m_pTexSceneDiffuse);
+	m_passBufferVisualization.SetTexture(3, m_graphicsPipelineResources.m_pTexSceneSpecular);
 	m_passBufferVisualization.SetSampler(0, EDefaultSamplerStates::PointClamp);
 
 	m_passBufferVisualization.BeginConstantUpdate();
@@ -521,9 +521,9 @@ void CSceneGBufferStage::Execute()
 
 		if (bClearAll)
 		{
-			CClearSurfacePass::Execute(CRendererResources::s_ptexSceneNormalsMap, Clr_Transparent);
-			CClearSurfacePass::Execute(CRendererResources::s_ptexSceneDiffuse, Clr_Empty);
-			CClearSurfacePass::Execute(CRendererResources::s_ptexSceneSpecular, Clr_Empty);
+			CClearSurfacePass::Execute(m_graphicsPipelineResources.m_pTexSceneNormalsMap, Clr_Transparent);
+			CClearSurfacePass::Execute(m_graphicsPipelineResources.m_pTexSceneDiffuse, Clr_Empty);
+			CClearSurfacePass::Execute(m_graphicsPipelineResources.m_pTexSceneSpecular, Clr_Empty);
 		}
 
 		// Clear velocity target

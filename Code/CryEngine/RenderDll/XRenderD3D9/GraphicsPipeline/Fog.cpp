@@ -117,14 +117,15 @@ void CFogStage::Execute()
 	int32 height = RenderView()->GetViewport().height;
 #endif
 
+	auto* pVolFogStage = m_graphicsPipeline.GetStage<CVolumetricFogStage>();
+
 	const bool bReverseDepth = true;
-	const bool bVolumtricFog = (gRenDev->m_bVolumetricFogEnabled != 0);
+	const bool bVolumetricFog = pVolFogStage && (gRenDev->m_bVolumetricFogEnabled != 0);
 #if defined(VOLUMETRIC_FOG_SHADOWS)
 	const bool bVolFogShadow = (gRenDev->m_bVolFogShadowsEnabled != 0);
 #else
 	const bool bVolFogShadow = false;
 #endif
-	auto* pVolFogStage = m_graphicsPipeline.GetStage<CVolumetricFogStage>();
 
 	if (bVolFogShadow)
 	{
@@ -147,7 +148,7 @@ void CFogStage::Execute()
 
 		// prevent fog depth clipping if volumetric fog, SVOGI, or single pass stereo rendering are activated.
 		bool bFogDepthTest = (CRendererCVars::CV_r_FogDepthTest != 0.0f)
-		                     && !bVolumtricFog
+		                     && !bVolumetricFog
 		                     && !nSvoGiTexId
 		                     && !bSinglePassStereo;
 
@@ -161,7 +162,7 @@ void CFogStage::Execute()
 
 		uint32 inputFlag = 0;
 		inputFlag |= bVolFogShadow ? BIT(0) : 0;
-		inputFlag |= bVolumtricFog ? BIT(2) : 0;
+		inputFlag |= bVolumetricFog ? BIT(2) : 0;
 		inputFlag |= bFogDepthTest ? BIT(3) : 0;
 		inputFlag |= bReverseDepth ? BIT(4) : 0;
 
@@ -170,12 +171,12 @@ void CFogStage::Execute()
 			uint64 rtMask = 0;
 			rtMask |= bVolFogShadow ? g_HWSR_MaskBit[HWSR_SAMPLE0] : 0;
 			rtMask |= nSvoGiTexId ? g_HWSR_MaskBit[HWSR_SAMPLE2] : 0;
-			rtMask |= bVolumtricFog ? g_HWSR_MaskBit[HWSR_VOLUMETRIC_FOG] : 0;
+			rtMask |= bVolumetricFog ? g_HWSR_MaskBit[HWSR_VOLUMETRIC_FOG] : 0;
 
 			static CCryNameTSCRC techName("FogPass");
 			m_passFog.SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_PS);
 			m_passFog.SetTechnique(pShader, techName, rtMask);
-			m_passFog.SetRenderTarget(0, CRendererResources::s_ptexHDRTarget);
+			m_passFog.SetRenderTarget(0, m_graphicsPipelineResources.m_pTexHDRTarget);
 
 			m_passFog.SetFlags(CPrimitiveRenderPass::ePassFlags_VrProjectionPass);
 
@@ -184,12 +185,12 @@ void CFogStage::Execute()
 			nRS = bReverseDepth ? ReverseDepthHelper::ConvertDepthFunc(nRS) : nRS;
 			m_passFog.SetState(nRS);
 
-			m_passFog.SetTexture(0, CRendererResources::s_ptexLinearDepth);
+			m_passFog.SetTexture(0, m_graphicsPipelineResources.m_pTexLinearDepth);
 			m_passFog.SetSampler(0, EDefaultSamplerStates::PointClamp);
 
 			m_passFog.SetDepthTarget(RenderView()->GetDepthTarget());
 
-			if (bVolumtricFog)
+			if (bVolumetricFog)
 			{
 				pVolFogStage->BindVolumetricFogResources(m_passFog, 1, 0);
 			}
@@ -305,11 +306,11 @@ void CFogStage::Execute()
 
 			static CCryNameTSCRC techName("FogPassWithLightning");
 			m_passLightning.SetTechnique(pShader, techName, rtMask);
-			m_passLightning.SetRenderTarget(0, CRendererResources::s_ptexHDRTarget);
+			m_passLightning.SetRenderTarget(0, m_graphicsPipelineResources.m_pTexHDRTarget);
 
 			m_passLightning.SetState(GS_NODEPTHTEST | GS_BLSRC_ONE | GS_BLDST_ONE);
 
-			m_passLightning.SetTexture(0, CRendererResources::s_ptexLinearDepth);
+			m_passLightning.SetTexture(0, m_graphicsPipelineResources.m_pTexLinearDepth);
 
 			m_passLightning.SetRequireWorldPos(true);
 
@@ -373,7 +374,7 @@ void CFogStage::ExecuteVolumetricFogShadow()
 			m_passVolFogShadowRaycast.SetRequireWorldPos(true);
 			m_passVolFogShadowRaycast.SetRequirePerViewConstantBuffer(true);
 
-			m_passVolFogShadowRaycast.SetTexture(0, CRendererResources::s_ptexLinearDepth);
+			m_passVolFogShadowRaycast.SetTexture(0, m_graphicsPipelineResources.m_pTexLinearDepth);
 			m_passVolFogShadowRaycast.SetTexture(1, m_pTexInterleaveSamplePattern);
 
 			CShadowUtils::SetShadowSamplingContextToRenderPass(m_passVolFogShadowRaycast, 0, 1, 2, 3, 2);

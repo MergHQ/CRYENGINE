@@ -588,6 +588,51 @@ const SRenderLight* CRenderView::GetSunLight() const
 	return nullptr;
 }
 
+const Vec4 CRenderView::GetSunLightColor()
+{
+	Vec4 color;
+
+	if (m_shaderRenderingFlags & SHDF_SECONDARY_VIEWPORT)
+	{
+		const SRenderLight* sunLight = GetSunLight();
+		if (sunLight)
+		{
+			Vec3 sunColor = sunLight->GetFinalColor().toVec3();
+			sunColor *= gcpRendD3D->m_fAdaptedSceneScaleLBuffer;  // Apply LBuffers range rescale
+			color = Vec4(sunColor.x, sunColor.y, sunColor.z, 1.0f);
+		}
+	}
+	else // Main viewport
+	{
+		Vec3 sunColor;
+		gEnv->p3DEngine->GetGlobalParameter(E3DPARAM_SUN_COLOR, sunColor);
+		sunColor *= gcpRendD3D->m_fAdaptedSceneScaleLBuffer;  // Apply LBuffers range rescale
+		color = Vec4(sunColor.x, sunColor.y, sunColor.z, gEnv->p3DEngine->GetGlobalParameter(E3DPARAM_SUN_SPECULAR_MULTIPLIER));
+	}
+
+	return color;
+}
+
+const Vec3 CRenderView::GetSunLightDirection()
+{
+	Vec3 lightDir;
+
+	if (m_shaderRenderingFlags & SHDF_SECONDARY_VIEWPORT)
+	{
+		const SRenderLight* sunLight = GetSunLight();
+		if (sunLight)
+		{
+			lightDir = sunLight->GetPosition().normalized();
+		}		
+	}
+	else
+	{
+		lightDir = gEnv->p3DEngine->GetSunDirNormalized();
+	}
+
+	return lightDir;
+}
+
 //////////////////////////////////////////////////////////////////////////
 uint8 CRenderView::AddClipVolume(const IClipVolume* pClipVolume)
 {
@@ -882,6 +927,7 @@ void CRenderView::ChangeRenderResolution(uint32_t renderWidth, uint32_t renderHe
 
 	m_RenderWidth  = renderWidth;
 	m_RenderHeight = renderHeight;
+
 	if (renderWidth  == GetOutputResolution()[0] &&
 	    renderHeight == GetOutputResolution()[1] && m_pRenderOutput) 
 	{
@@ -892,7 +938,7 @@ void CRenderView::ChangeRenderResolution(uint32_t renderWidth, uint32_t renderHe
 	}
 	else
 	{
-		m_pColorTarget = CRendererResources::s_ptexHDRTarget;
+		m_pColorTarget = m_pGraphicsPipeline->GetPipelineResources().m_pTexHDRTarget;
 		m_pDepthTarget = nullptr; // Allocate temporary depth target
 		m_pDepthTarget.Assign_NoAddRef(CRendererResources::CreateDepthTarget(renderWidth, renderHeight, Clr_Transparent, eTF_Unknown));
 
@@ -965,6 +1011,14 @@ void CRenderView::SetViewport(const SRenderViewport& viewport)
 const SRenderViewport& CRenderView::GetViewport() const
 {
 	return m_viewport;
+}
+
+//////////////////////////////////////////////////////////////////////////
+
+void CRenderView::SetGraphicsPipeline(std::shared_ptr<CGraphicsPipeline> pipeline)
+{
+	m_pGraphicsPipeline = pipeline;
+	m_shaderRenderingFlags = m_pGraphicsPipeline->GetPipelineDescription().shaderFlags;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1290,7 +1344,8 @@ static inline ERenderListID CalculateRenderItemList(const SShaderItem& shaderIte
 	const bool bShadowPass = passInfo.IsShadowPass();
 	if (!bShadowPass)
 	{
-		const bool bForceOpaqueForward = passInfo.IsAuxWindow();
+		CGraphicsPipeline* pGraphicsPipeline = gcpRendD3D->FindGraphicsPipeline(passInfo.GetGraphicsPipelineKey()).get();
+		const bool bForceOpaqueForward = passInfo.IsAuxWindow() && (pGraphicsPipeline->GetPipelineDescription().shaderFlags & SHDF_FORWARD_MINIMAL);
 
 		const bool bHair = (pSH->m_Flags2 & EF2_HAIR) != 0;
 		const bool bRefractive = (pSH->m_Flags & EF_REFRACTIVE) != 0;

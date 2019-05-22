@@ -45,7 +45,7 @@ class EDITOR_COMMON_API QViewport : public QWidget
 {
 	Q_OBJECT
 public:
-	QViewport(SSystemGlobalEnvironment* env, QWidget* parent, int supersamplingFactor = 1);
+	QViewport(SSystemGlobalEnvironment* env, IRenderer::SGraphicsPipelineDescription graphicsPipelineDesc, QWidget* parent, int supersamplingFactor = 1);
 	~QViewport();
 
 	void                     AddConsumer(QViewportConsumer* consumer);
@@ -164,4 +164,6 @@ private:
 	std::unique_ptr<CDisplayViewportAdapter> m_pViewportAdapter;
 	CGizmoManager                            m_gizmoManager;
 	IRenderer::SGraphicsPipelineDescription  m_graphicsPipelineDesc;
+
+	string                                   m_prevCharacterToolCubemapName;
 };

@@ -19,7 +19,6 @@ class CVolumetricFogStage;
 class CFogStage;
 class CVolumetricCloudsStage;
 class CWaterStage;
-class CSkyStage;
 class CWaterRipplesStage;
 class CMotionBlurStage;
 class CDepthOfFieldStage;
@@ -46,10 +45,10 @@ class CCamera;
 
 struct SRenderViewInfo;
 
-class CMobileGraphicsPipeline : public CGraphicsPipeline
+class CCharacterToolGraphicsPipeline : public CGraphicsPipeline
 {
 public:
-	CMobileGraphicsPipeline(const IRenderer::SGraphicsPipelineDescription& desc, const std::string& uniqueIdentifier, const SGraphicsPipelineKey key);
+	CCharacterToolGraphicsPipeline(const IRenderer::SGraphicsPipelineDescription& desc, const std::string& uniqueIdentifier, const SGraphicsPipelineKey key);
 
 	void         Init() final;
 	void         Resize(int renderWidth, int renderHeight) final;

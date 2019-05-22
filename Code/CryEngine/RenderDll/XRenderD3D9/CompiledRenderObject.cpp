@@ -387,17 +387,15 @@ void CCompiledRenderObject::CompilePerInstanceCB(CRenderObject* pRenderObject, b
 //////////////////////////////////////////////////////////////////////////
 void CCompiledRenderObject::CompilePerDrawExtraResources(CRenderObject* pRenderObject, CRenderView* pRenderView)
 {
-	CGraphicsPipeline* pGraphicsPipeline = pRenderView->GetGraphicsPipeline().get();
-
 	if (!m_bHasTessellation && !pRenderObject->m_data.m_pSkinningData) // only needed for skinning and tessellation at the moment
 	{
-		m_perDrawExtraResources = pGraphicsPipeline->GetDefaulDrawExtraResourceSet();
+		m_perDrawExtraResources = CSceneRenderPass::GetDefaulDrawExtraResourceSet();
 		CRY_ASSERT_MESSAGE(m_perDrawExtraResources && m_perDrawExtraResources->IsValid(), "Bad shared default resources");
 		CryInterlockedExchangeOr((volatile LONG*)&m_compiledFlags, eObjCompilationOption_PerInstanceExtraResources);
 		return;
 	}
 
-	CDeviceResourceSetDesc perInstanceExtraResources(pGraphicsPipeline->GetDefaultDrawExtraResourceLayout(), nullptr, nullptr);
+	CDeviceResourceSetDesc perInstanceExtraResources(CSceneRenderPass::GetDefaultDrawExtraResourceLayout(), nullptr, nullptr);
 
 	if (SSkinningData* pSkinningData = pRenderObject->m_data.m_pSkinningData)
 	{

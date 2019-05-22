@@ -93,7 +93,6 @@ public:
 	bool                   IsMainContext() const             { return IsMainViewport(); }
 	bool                   IsEditorDisplay() const;
 	bool                   IsScalable() const                { return IsMainViewport() && !IsEditorDisplay(); }
-	bool                   IsDeferredShadeable() const       { return IsMainViewport(); }
 	bool                   IsSuperSamplingEnabled() const    { return m_nSSSamplesX * m_nSSSamplesY > 1; }
 	bool                   IsNativeScalingEnabled() const;
 	bool                   IsHighDynamicRangeDisplay() const { return false; /* CRendererCVars::CV_r_HDRSwapChain */ }

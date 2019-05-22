@@ -1273,6 +1273,7 @@ unsigned sizeOfMapS(Map& map)
 #include "GraphicsPipeline/MinimumGraphicsPipeline.h"
 #include "GraphicsPipeline/BillboardGraphicsPipeline.h"
 #include "GraphicsPipeline/MobileGraphicsPipeline.h"
+#include "GraphicsPipeline/CharacterToolGraphicsPipeline.h"
 
 /*-----------------------------------------------------------------------------
    Vector transformations.

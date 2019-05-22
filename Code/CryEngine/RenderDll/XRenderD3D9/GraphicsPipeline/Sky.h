@@ -15,6 +15,7 @@ public:
 	void Update() final;
 
 	void Execute(CTexture* pColorTex, CTexture* pDepthTex);
+	void ExecuteMinimum(CTexture* pColorTex, CTexture* pDepthTex);
 
 private:
 	void CreateSkyDomeTextures(int32 width, int32 height);

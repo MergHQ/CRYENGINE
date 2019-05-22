@@ -98,8 +98,8 @@ private:
 	void PrepareCascadePrimitivesWithBlending(CPrimitiveRenderPass& sliceGenPass, int& firstUnusedStencilValue, const SCascadePrimitiveContext& context);
 	void PrepareCascadePrimitivesWithPrepass(CPrimitiveRenderPass& sliceGenPass, CPrimitiveRenderPass* pDebugCascadesPass, int& firstUnusedStencilValue, const SCascadePrimitiveContext& context);
 
-	void PreparePerObjectPrimitives(CRenderPrimitive& primStencil0, CRenderPrimitive& primStencil1, CRenderPrimitive& primSampling, int& firstUnusedStencilValue, const SCustomPrimitiveContext& context);
-	void PrepareNearestPrimitive(CRenderPrimitive& primitive, ShadowMapFrustum* pFrustum, uint64 rtFlags);
+	void PreparePerObjectPrimitives(CRenderPrimitive& primStencil0, CRenderPrimitive& primStencil1, CRenderPrimitive& primSampling, int& firstUnusedStencilValue, const SCustomPrimitiveContext& context, CGraphicsPipeline* pGraphicsPipeline);
+	void PrepareNearestPrimitive(CRenderPrimitive& primitive, ShadowMapFrustum* pFrustum, uint64 rtFlags, CGraphicsPipeline* pGraphicsPipeline);
 	void PrepareCustomShadowsPrimitive(CRenderPrimitive& primitive, _smart_ptr<CTexture>& pCloudShadowTex, CGraphicsPipeline* pGraphicsPipeline) const;
 	bool PrepareDebugPrimitive(CPrimitiveRenderPass& debugPass, CRenderPrimitive& primitive, const ShadowMapFrustum* pFrustum, int stencilRef, CRenderView* pRenderView) const;
 
@@ -230,7 +230,7 @@ void CShadowMaskStage::Prepare()
 #endif
 
 	// Set rendertarget
-	this->m_pShadowMaskRT = CRendererResources::s_ptexShadowMask;
+	this->m_pShadowMaskRT = m_graphicsPipelineResources.m_pTexShadowMask;
 
 	// Initialize passes
 	D3DViewPort viewport;
@@ -260,7 +260,7 @@ void CShadowMaskStage::Prepare()
 	}
 
 	m_debugCascadesPass.SetFlags(CPrimitiveRenderPass::ePassFlags_VrProjectionPass);
-	m_debugCascadesPass.SetRenderTarget(0, CRendererResources::s_ptexSceneDiffuse);
+	m_debugCascadesPass.SetRenderTarget(0, m_graphicsPipelineResources.m_pTexSceneDiffuse);
 	m_debugCascadesPass.SetDepthTarget(pZTexture);
 	m_debugCascadesPass.SetViewport(viewport);
 	m_debugCascadesPass.BeginAddingPrimitives();
@@ -271,7 +271,7 @@ void CShadowMaskStage::Prepare()
 
 	// Prepare primitives
 	const EShaderQuality shaderQuality = rd->m_cEF.m_ShaderProfiles[eST_Shadow].GetShaderQuality();
-	int firstUnusedStencilValue = rd->m_nStencilMaskRef;
+	int firstUnusedStencilValue = m_graphicsPipeline.m_nStencilMaskRef;
 
 	if (CRendererCVars::CV_r_ShadowsMask == 1 || CRendererCVars::CV_r_ShadowsMask == 2)
 	{
@@ -298,9 +298,9 @@ void CShadowMaskStage::Prepare()
 			rtFlagsByQuality[shaderQuality]);
 	}
 
-	CRY_ASSERT(rd->m_nStencilMaskRef == STENCIL_VALUE_OUTDOORS + 1);
-	CRY_ASSERT(rd->m_nStencilMaskRef + firstUnusedStencilValue < STENC_MAX_REF);
-	rd->m_nStencilMaskRef += firstUnusedStencilValue;
+	CRY_ASSERT(m_graphicsPipeline.m_nStencilMaskRef == STENCIL_VALUE_OUTDOORS + 1);
+	CRY_ASSERT(m_graphicsPipeline.m_nStencilMaskRef + firstUnusedStencilValue < STENC_MAX_REF);
+	m_graphicsPipeline.m_nStencilMaskRef += firstUnusedStencilValue;
 
 	// Clear first rendertarget slice and stencil buffer
 	{
@@ -448,7 +448,7 @@ int CSunShadows::PreparePrimitives(CPrimitiveRenderPass& sliceGenPass, int& firs
 
 			if (pFrustum->m_eFrustumType == ShadowMapFrustum::e_Nearest)
 			{
-				PrepareNearestPrimitive(nearestShadowPrimitive, pFrustum, rtFlags);
+				PrepareNearestPrimitive(nearestShadowPrimitive, pFrustum, rtFlags, pRenderView->GetGraphicsPipeline().get());
 				nearestShadowPrimitive.Compile(sliceGenPass);
 
 				sliceGenPass.AddPrimitive(&nearestShadowPrimitive);
@@ -461,7 +461,7 @@ int CSunShadows::PreparePrimitives(CPrimitiveRenderPass& sliceGenPass, int& firs
 				auto& primStencil0 = cachedCustomPrimitives[customPrimitiveCount++];
 				auto& primStencil1 = cachedCustomPrimitives[customPrimitiveCount++];
 
-				PreparePerObjectPrimitives(primStencil0, primStencil1, primSampling, firstUnusedStencilValue, context);
+				PreparePerObjectPrimitives(primStencil0, primStencil1, primSampling, firstUnusedStencilValue, context, pRenderView->GetGraphicsPipeline().get());
 
 				primStencil0.Compile(sliceGenPass);
 				sliceGenPass.AddPrimitive(&primStencil0);
@@ -494,6 +494,7 @@ int CSunShadows::PreparePrimitives(CPrimitiveRenderPass& sliceGenPass, int& firs
 void CSunShadows::PrepareCascadePrimitivesWithPrepass(CPrimitiveRenderPass& sliceGenPass, CPrimitiveRenderPass* pDebugCascadesPass, int& firstUnusedStencilValue, const SCascadePrimitiveContext& context)
 {
 	const SRenderViewInfo& viewInfo = shadowMaskStage.m_viewInfo[0];
+	CGraphicsPipelineResources& pipelineResource = context.pMainRenderView->GetGraphicsPipeline()->GetPipelineResources();
 
 	// stencil primitives first
 	for (int i = context.frustums.size() - 1; i >= 0; --i)
@@ -552,11 +553,11 @@ void CSunShadows::PrepareCascadePrimitivesWithPrepass(CPrimitiveRenderPass& slic
 		primSampling.SetPrimitiveType(CRenderPrimitive::ePrim_ProceduralTriangle);
 		primSampling.SetTexture(0, pFrustum->pDepthTex ? pFrustum->pDepthTex : CRendererResources::s_ptexFarPlane);
 		primSampling.SetTexture(1, CRendererResources::s_ptexShadowJitterMap);
-		primSampling.SetTexture(2, CRendererResources::s_ptexLinearDepth);
+		primSampling.SetTexture(2, pipelineResource.m_pTexLinearDepth);
 		primSampling.SetTexture(3, CRendererResources::s_ptexFarPlane);
-		primSampling.SetTexture(4, CRendererResources::s_ptexSceneNormalsMap);
-		primSampling.SetTexture(5, CRendererResources::s_ptexSceneDiffuse);
-		primSampling.SetTexture(6, CRendererResources::s_ptexSceneSpecular);
+		primSampling.SetTexture(4, pipelineResource.m_pTexSceneNormalsMap);
+		primSampling.SetTexture(5, pipelineResource.m_pTexSceneDiffuse);
+		primSampling.SetTexture(6, pipelineResource.m_pTexSceneSpecular);
 		primSampling.SetSampler(0, EDefaultSamplerStates::LinearCompare);
 		primSampling.SetSampler(1, EDefaultSamplerStates::PointClamp);
 		primSampling.SetSampler(2, EDefaultSamplerStates::PointWrap);
@@ -585,7 +586,8 @@ void CSunShadows::PrepareCascadePrimitivesNoBlending(CPrimitiveRenderPass& slice
 {
 	static CCryNameTSCRC techSampling = "ShadowMaskVolume";
 	CShader* pShader = CShaderMan::s_ShaderShadowMaskGen;
-
+	
+	CGraphicsPipelineResources& pipelineResource = context.pMainRenderView->GetGraphicsPipeline()->GetPipelineResources();
 	const SRenderViewInfo& viewInfo = shadowMaskStage.m_viewInfo[0];
 	const int maxStencilValue = firstUnusedStencilValue + context.frustums.size() - 1;
 	const bool bReverseDepth = (viewInfo.flags & SRenderViewInfo::eFlags_ReverseDepth) != 0;
@@ -614,11 +616,11 @@ void CSunShadows::PrepareCascadePrimitivesNoBlending(CPrimitiveRenderPass& slice
 		primSampling.SetPrimitiveType(CRenderPrimitive::ePrim_CenteredBox);
 		primSampling.SetTexture(0, pFrustum->pDepthTex ? pFrustum->pDepthTex : CRendererResources::s_ptexFarPlane);
 		primSampling.SetTexture(1, CRendererResources::s_ptexShadowJitterMap);
-		primSampling.SetTexture(2, CRendererResources::s_ptexLinearDepth);
+		primSampling.SetTexture(2, pipelineResource.m_pTexLinearDepth);
 		primSampling.SetTexture(3, CRendererResources::s_ptexFarPlane);
-		primSampling.SetTexture(4, CRendererResources::s_ptexSceneNormalsMap);
-		primSampling.SetTexture(5, CRendererResources::s_ptexSceneDiffuse);
-		primSampling.SetTexture(6, CRendererResources::s_ptexSceneSpecular);
+		primSampling.SetTexture(4, pipelineResource.m_pTexSceneNormalsMap);
+		primSampling.SetTexture(5, pipelineResource.m_pTexSceneDiffuse);
+		primSampling.SetTexture(6, pipelineResource.m_pTexSceneSpecular);
 		primSampling.SetSampler(0, EDefaultSamplerStates::LinearCompare);
 		primSampling.SetSampler(1, EDefaultSamplerStates::PointClamp);
 		primSampling.SetSampler(2, EDefaultSamplerStates::PointWrap);
@@ -637,6 +639,7 @@ void CSunShadows::PrepareCascadePrimitivesWithBlending(CPrimitiveRenderPass& sli
 	static CCryNameTSCRC techSampling = "ShadowMaskVolume";
 	CShader* pShader = CShaderMan::s_ShaderShadowMaskGen;
 
+	CGraphicsPipelineResources& pipelineResource = context.pMainRenderView->GetGraphicsPipeline()->GetPipelineResources();
 	const SRenderViewInfo& viewInfo = shadowMaskStage.m_viewInfo[0];
 	const int maxStencilValue = firstUnusedStencilValue + 2 * context.frustums.size() - 1;
 	const bool bReverseDepth = (viewInfo.flags & SRenderViewInfo::eFlags_ReverseDepth) != 0;
@@ -668,11 +671,11 @@ void CSunShadows::PrepareCascadePrimitivesWithBlending(CPrimitiveRenderPass& sli
 			primSampling.SetPrimitiveType(CRenderPrimitive::ePrim_CenteredBox);
 			primSampling.SetTexture(0, pFrustum->pDepthTex ? pFrustum->pDepthTex : CRendererResources::s_ptexFarPlane);
 			primSampling.SetTexture(1, CRendererResources::s_ptexShadowJitterMap);
-			primSampling.SetTexture(2, CRendererResources::s_ptexLinearDepth);
+			primSampling.SetTexture(2, pipelineResource.m_pTexLinearDepth);
 			primSampling.SetTexture(3, CRendererResources::s_ptexFarPlane);
-			primSampling.SetTexture(4, CRendererResources::s_ptexSceneNormalsMap);
-			primSampling.SetTexture(5, CRendererResources::s_ptexSceneDiffuse);
-			primSampling.SetTexture(6, CRendererResources::s_ptexSceneSpecular);
+			primSampling.SetTexture(4, pipelineResource.m_pTexSceneNormalsMap);
+			primSampling.SetTexture(5, pipelineResource.m_pTexSceneDiffuse);
+			primSampling.SetTexture(6, pipelineResource.m_pTexSceneSpecular);
 			primSampling.SetSampler(0, EDefaultSamplerStates::LinearCompare);
 			primSampling.SetSampler(1, EDefaultSamplerStates::PointClamp);
 			primSampling.SetSampler(2, EDefaultSamplerStates::PointWrap);
@@ -697,11 +700,11 @@ void CSunShadows::PrepareCascadePrimitivesWithBlending(CPrimitiveRenderPass& sli
 			primSampling.SetPrimitiveType(CRenderPrimitive::ePrim_CenteredBox);
 			primSampling.SetTexture(0, pFrustum->pDepthTex ? pFrustum->pDepthTex : CRendererResources::s_ptexFarPlane);
 			primSampling.SetTexture(1, CRendererResources::s_ptexShadowJitterMap);
-			primSampling.SetTexture(2, CRendererResources::s_ptexLinearDepth);
+			primSampling.SetTexture(2, pipelineResource.m_pTexLinearDepth);
 			primSampling.SetTexture(3, CRendererResources::s_ptexFarPlane);
-			primSampling.SetTexture(4, CRendererResources::s_ptexSceneNormalsMap);
-			primSampling.SetTexture(5, CRendererResources::s_ptexSceneDiffuse);
-			primSampling.SetTexture(6, CRendererResources::s_ptexSceneSpecular);
+			primSampling.SetTexture(4, pipelineResource.m_pTexSceneNormalsMap);
+			primSampling.SetTexture(5, pipelineResource.m_pTexSceneDiffuse);
+			primSampling.SetTexture(6, pipelineResource.m_pTexSceneSpecular);
 			primSampling.SetSampler(0, EDefaultSamplerStates::LinearCompare);
 			primSampling.SetSampler(1, EDefaultSamplerStates::PointClamp);
 			primSampling.SetSampler(2, EDefaultSamplerStates::PointWrap);
@@ -730,11 +733,11 @@ void CSunShadows::PrepareCascadePrimitivesWithBlending(CPrimitiveRenderPass& sli
 			primSampling.SetPrimitiveType(CRenderPrimitive::ePrim_CenteredBox);
 			primSampling.SetTexture(0, pNextFrustum->pDepthTex ? pNextFrustum->pDepthTex : CRendererResources::s_ptexFarPlane);
 			primSampling.SetTexture(1, CRendererResources::s_ptexShadowJitterMap);
-			primSampling.SetTexture(2, CRendererResources::s_ptexLinearDepth);
+			primSampling.SetTexture(2, pipelineResource.m_pTexLinearDepth);
 			primSampling.SetTexture(3, CRendererResources::s_ptexFarPlane);
-			primSampling.SetTexture(4, CRendererResources::s_ptexSceneNormalsMap);
-			primSampling.SetTexture(5, CRendererResources::s_ptexSceneDiffuse);
-			primSampling.SetTexture(6, CRendererResources::s_ptexSceneSpecular);
+			primSampling.SetTexture(4, pipelineResource.m_pTexSceneNormalsMap);
+			primSampling.SetTexture(5, pipelineResource.m_pTexSceneDiffuse);
+			primSampling.SetTexture(6, pipelineResource.m_pTexSceneSpecular);
 			primSampling.SetSampler(0, EDefaultSamplerStates::LinearCompare);
 			primSampling.SetSampler(1, EDefaultSamplerStates::PointClamp);
 			primSampling.SetSampler(2, EDefaultSamplerStates::PointWrap);
@@ -751,11 +754,12 @@ void CSunShadows::PrepareCascadePrimitivesWithBlending(CPrimitiveRenderPass& sli
 	firstUnusedStencilValue = maxStencilValue + 1;
 }
 
-void CSunShadows::PrepareNearestPrimitive(CRenderPrimitive& primitive, ShadowMapFrustum* pFrustum, uint64 rtFlags)
+void CSunShadows::PrepareNearestPrimitive(CRenderPrimitive& primitive, ShadowMapFrustum* pFrustum, uint64 rtFlags, CGraphicsPipeline* pGraphicsPipeline)
 {
 	static CCryNameTSCRC techSampling = "ShadowMaskVolume";
 	CShader* pShader = CShaderMan::s_ShaderShadowMaskGen;
 
+	CGraphicsPipelineResources& pipelineResource = pGraphicsPipeline->GetPipelineResources();
 	const SRenderViewInfo& viewInfo = shadowMaskStage.m_viewInfo[0];
 	const bool bReverseDepth = (viewInfo.flags & SRenderViewInfo::eFlags_ReverseDepth) != 0;
 	const int gsDepthFunc = bReverseDepth ? GS_DEPTHFUNC_LEQUAL : GS_DEPTHFUNC_GEQUAL;
@@ -783,11 +787,11 @@ void CSunShadows::PrepareNearestPrimitive(CRenderPrimitive& primitive, ShadowMap
 	primitive.SetCustomIndexStream(~0u, RenderIndexType(0));
 	primitive.SetTexture(0, pFrustum->pDepthTex ? pFrustum->pDepthTex : CRendererResources::s_ptexFarPlane);
 	primitive.SetTexture(1, CRendererResources::s_ptexShadowJitterMap);
-	primitive.SetTexture(2, CRendererResources::s_ptexLinearDepth);
+	primitive.SetTexture(2, pipelineResource.m_pTexLinearDepth);
 	primitive.SetTexture(3, CRendererResources::s_ptexFarPlane);
-	primitive.SetTexture(4, CRendererResources::s_ptexSceneNormalsMap);
-	primitive.SetTexture(5, CRendererResources::s_ptexSceneDiffuse);
-	primitive.SetTexture(6, CRendererResources::s_ptexSceneSpecular);
+	primitive.SetTexture(4, pipelineResource.m_pTexSceneNormalsMap);
+	primitive.SetTexture(5, pipelineResource.m_pTexSceneDiffuse);
+	primitive.SetTexture(6, pipelineResource.m_pTexSceneSpecular);
 	primitive.SetSampler(0, EDefaultSamplerStates::LinearCompare);
 	primitive.SetSampler(1, EDefaultSamplerStates::PointClamp);
 	primitive.SetSampler(2, EDefaultSamplerStates::PointWrap);
@@ -796,9 +800,10 @@ void CSunShadows::PrepareNearestPrimitive(CRenderPrimitive& primitive, ShadowMap
 	PrepareConstantBuffers(primitive, pFrustum, nullptr, false);
 }
 
-void CSunShadows::PreparePerObjectPrimitives(CRenderPrimitive& primStencil0, CRenderPrimitive& primStencil1, CRenderPrimitive& primSampling, int& firstUnusedStencilValue, const SCustomPrimitiveContext& context)
+void CSunShadows::PreparePerObjectPrimitives(CRenderPrimitive& primStencil0, CRenderPrimitive& primStencil1, CRenderPrimitive& primSampling, int& firstUnusedStencilValue, const SCustomPrimitiveContext& context, CGraphicsPipeline* pGraphicsPipeline)
 {
 	const int stencilRef = firstUnusedStencilValue;
+	CGraphicsPipelineResources& pipelineResource = pGraphicsPipeline->GetPipelineResources();
 	const SRenderViewInfo& viewInfo = shadowMaskStage.m_viewInfo[0];
 	const bool bReverseDepth = (viewInfo.flags & SRenderViewInfo::eFlags_ReverseDepth) != 0;
 	const int gsDepthTest = (bReverseDepth ? GS_DEPTHFUNC_GEQUAL : GS_DEPTHFUNC_LEQUAL);
@@ -855,11 +860,11 @@ void CSunShadows::PreparePerObjectPrimitives(CRenderPrimitive& primStencil0, CRe
 		primSampling.SetPrimitiveType(CRenderPrimitive::ePrim_CenteredBox);
 		primSampling.SetTexture(0, context.pFrustum->pDepthTex ? context.pFrustum->pDepthTex : CRendererResources::s_ptexFarPlane);
 		primSampling.SetTexture(1, CRendererResources::s_ptexShadowJitterMap);
-		primSampling.SetTexture(2, CRendererResources::s_ptexLinearDepth);
+		primSampling.SetTexture(2, pipelineResource.m_pTexLinearDepth);
 		primSampling.SetTexture(3, CRendererResources::s_ptexFarPlane);
-		primSampling.SetTexture(4, CRendererResources::s_ptexSceneNormalsMap);
-		primSampling.SetTexture(5, CRendererResources::s_ptexSceneDiffuse);
-		primSampling.SetTexture(6, CRendererResources::s_ptexSceneSpecular);
+		primSampling.SetTexture(4, pipelineResource.m_pTexSceneNormalsMap);
+		primSampling.SetTexture(5, pipelineResource.m_pTexSceneDiffuse);
+		primSampling.SetTexture(6, pipelineResource.m_pTexSceneSpecular);
 		primSampling.SetSampler(0, EDefaultSamplerStates::LinearCompare);
 		primSampling.SetSampler(1, EDefaultSamplerStates::PointClamp);
 		primSampling.SetSampler(2, EDefaultSamplerStates::PointWrap);
@@ -961,9 +966,12 @@ void CSunShadows::PrepareCustomShadowsPrimitive(CRenderPrimitive& primitive, _sm
 	pCloudShadowTex = rd->GetCloudShadowTextureId() > 0 ? CTexture::GetByID(rd->GetCloudShadowTextureId()) : CRendererResources::s_ptexWhite;
 	SamplerStateHandle cloudSamplerState = EDefaultSamplerStates::BilinearWrap;
 
+	CGraphicsPipelineResources& pipelineResource = pGraphicsPipeline->GetPipelineResources();
+
 	auto* pVolumetricCloudStage = pGraphicsPipeline->GetStage<CVolumetricCloudsStage>();
 
-	if (rd->m_bVolumetricCloudsEnabled)
+	EShaderRenderingFlags shaderFlags = (EShaderRenderingFlags)pGraphicsPipeline->GetPipelineDescription().shaderFlags;
+	if (rd->m_bVolumetricCloudsEnabled && pVolumetricCloudStage && pVolumetricCloudStage->IsStageActive(shaderFlags))
 	{
 		rtFlags |= g_HWSR_MaskBit[HWSR_SAMPLE3];
 		pCloudShadowTex = pVolumetricCloudStage->m_pTexVolCloudShadow;
@@ -986,7 +994,7 @@ void CSunShadows::PrepareCustomShadowsPrimitive(CRenderPrimitive& primitive, _sm
 	primitive.SetRenderState(GS_NODEPTHTEST | GS_BLSRC_ONE | GS_BLDST_ONE | GS_BLEND_OP_MAX);
 	primitive.SetPrimitiveType(CRenderPrimitive::ePrim_ProceduralTriangle);
 	primitive.SetTexture(0, pCloudShadowTex);
-	primitive.SetTexture(2, CRendererResources::s_ptexLinearDepth);
+	primitive.SetTexture(2, pipelineResource.m_pTexLinearDepth);
 
 #if defined(FEATURE_SVO_GI)
 	if (pSR && pSR->GetTracedSunShadowsRT())
@@ -996,7 +1004,7 @@ void CSunShadows::PrepareCustomShadowsPrimitive(CRenderPrimitive& primitive, _sm
 #endif
 
 	// we need transmittance info for SS shadows
-	primitive.SetTexture(4, CRendererResources::s_ptexSceneNormalsMap);
+	primitive.SetTexture(4, pipelineResource.m_pTexSceneNormalsMap);
 
 	primitive.SetSampler(0, cloudSamplerState);
 	primitive.SetDrawInfo(eptTriangleList, 0, 0, 3);
@@ -1152,12 +1160,13 @@ int CLocalLightShadows::PreparePrimitivesForLight(const CRenderView* pRenderView
 	ShadowMapFrustum* pFrustum = pFrustumToRender->pFrustum;
 	const SRenderViewInfo& viewInfo = shadowMaskStage.m_viewInfo[0];
 	auto* pShadowMapStage = pRenderView->GetGraphicsPipeline()->GetStage<CShadowMapStage>();
+	CGraphicsPipeline* pGraphicsPipeline = pRenderView->GetGraphicsPipeline().get();
 
 	// determine what's more beneficial: full screen quad or light volume
 	bool bStencilMask = true;
 	bool bUseLightVolumes = false;
 	EShapeMeshType meshType = SHAPE_PROJECTOR;
-	CDeferredShading::Instance().GetLightRenderSettings(pRenderView, pLight, bStencilMask, bUseLightVolumes, meshType);
+	pGraphicsPipeline->GetDeferredShading()->GetLightRenderSettings(pRenderView, pLight, bStencilMask, bUseLightVolumes, meshType);
 
 	CRY_ASSERT(meshType >= SHAPE_PROJECTOR && meshType <= SHAPE_PROJECTOR2);
 	const CRenderPrimitive::EPrimitiveType meshToPrimtype[] =
@@ -1229,7 +1238,7 @@ int CLocalLightShadows::PreparePrimitivesForLight(const CRenderView* pRenderView
 			  STENCOP_FAIL(FSS_STENCOP_KEEP) |
 			  STENCOP_ZFAIL(FSS_STENCOP_KEEP) |
 			  STENCOP_PASS(FSS_STENCOP_KEEP), stencilRef);
-			primSampling.SetTexture(0, CRendererResources::s_ptexLinearDepth);
+			primSampling.SetTexture(0, pGraphicsPipeline->GetPipelineResources().m_pTexLinearDepth);
 			primSampling.SetTexture(1, pShadowMapStage->m_pTexRT_ShadowPool);
 			primSampling.SetTexture(7, CRendererResources::s_ptexShadowJitterMap);
 			primSampling.SetSampler(3, EDefaultSamplerStates::LinearCompare);

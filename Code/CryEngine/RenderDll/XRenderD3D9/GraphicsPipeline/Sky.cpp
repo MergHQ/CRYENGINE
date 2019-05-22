@@ -411,3 +411,47 @@ void CSkyStage::Execute(CTexture* pColorTex, CTexture* pDepthTex)
 		}
 	}
 }
+
+void CSkyStage::ExecuteMinimum(CTexture* pColorTex, CTexture* pDepthTex)
+{
+	FUNCTION_PROFILER_RENDERER();
+	PROFILE_LABEL_SCOPE("SKY_PASS_MINIMUM");
+
+	CRenderView* const pRenderView = RenderView();
+	const bool applyFog = pRenderView->IsGlobalFogEnabled() && !(m_graphicsPipeline.IsPipelineFlag(CGraphicsPipeline::EPipelineFlags::NO_SHADER_FOG));
+
+	CTexture* pSkyDomeTextureMie = CRendererResources::s_ptexBlack;
+	CTexture* pSkyDomeTextureRayleigh = CRendererResources::s_ptexBlack;
+
+	CTexture* pSkyDomeTex = CRendererResources::s_ptexBlack;
+	CTexture* pSkyMoonTex = CRendererResources::s_ptexBlack;
+
+	uint64 rtMask = 0;
+	rtMask = g_HWSR_MaskBit[HWSR_SAMPLE1];
+	rtMask |= applyFog ? g_HWSR_MaskBit[HWSR_FOG] : 0;
+
+	if (m_skyPass.IsDirty(rtMask, m_skyDomeTextureLastTimeStamp,
+		pSkyMoonTex->GetTextureID(), pSkyDomeTex->GetTextureID(), pDepthTex->GetTextureID()))
+	{
+		const SSamplerState samplerDescLinearWrapU(FILTER_LINEAR, eSamplerAddressMode_Wrap, eSamplerAddressMode_Clamp, eSamplerAddressMode_Clamp, 0);
+		const SamplerStateHandle samplerStateLinearWrapU = GetDeviceObjectFactory().GetOrCreateSamplerStateHandle(samplerDescLinearWrapU);
+
+		static CCryNameTSCRC techSkyPass("SkyPass");
+		m_skyPass.SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_PS);
+		m_skyPass.SetTechnique(CShaderMan::s_ShaderStars, techSkyPass, rtMask);
+		m_skyPass.SetRequirePerViewConstantBuffer(true);
+		m_skyPass.SetRenderTarget(0, pColorTex);
+		m_skyPass.SetDepthTarget(pDepthTex);
+		m_skyPass.SetState(GS_DEPTHFUNC_EQUAL);
+		m_skyPass.SetTexture(0, pSkyDomeTex);
+		m_skyPass.SetSampler(0, EDefaultSamplerStates::LinearClamp);
+
+		m_skyPass.SetTexture(1, pSkyDomeTextureMie);
+		m_skyPass.SetTexture(2, pSkyDomeTextureRayleigh);
+		m_skyPass.SetTexture(3, pSkyMoonTex);
+		m_skyPass.SetSampler(1, samplerStateLinearWrapU);
+	}
+
+	m_skyPass.BeginConstantUpdate();
+	m_skyPass.Execute();
+}
