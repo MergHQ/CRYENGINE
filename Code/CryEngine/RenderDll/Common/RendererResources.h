@@ -263,6 +263,8 @@ public:
 	static CTexture* s_ptexAOVOJitter;
 	static CTexture* s_ptexNormalsFitting;
 	static CTexture* s_ptexPerlinNoiseMap;
+	static CTexture* s_ptexLTC1;
+	static CTexture* s_ptexLTC2;
 
 	// Static resolution [independent] targets =================================================================
 

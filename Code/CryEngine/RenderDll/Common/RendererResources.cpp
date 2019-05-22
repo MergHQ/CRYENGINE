@@ -116,6 +116,8 @@ CTexture* CRendererResources::s_ptexFromObj;
 CTexture* CRendererResources::s_ptexRT_2D;
 CTexture* CRendererResources::s_ptexNormalsFitting;
 CTexture* CRendererResources::s_ptexPerlinNoiseMap;
+CTexture* CRendererResources::s_ptexLTC1;
+CTexture* CRendererResources::s_ptexLTC2;
 CTexture* CRendererResources::s_ptexWindGrid;
 
 
@@ -300,6 +302,8 @@ void CRendererResources::LoadDefaultSystemTextures()
 			{ s_ptexAOVOJitter,                  "%ENGINE%/EngineAssets/ScreenSpace/PointsOnSphereVO4x4.tif",        FT_DONT_RELEASE | FT_DONT_STREAM },
 			{ s_ptexNormalsFitting,              "%ENGINE%/EngineAssets/ScreenSpace/NormalsFitting.dds",             FT_DONT_RELEASE | FT_DONT_STREAM },
 			{ s_ptexPerlinNoiseMap,              "%ENGINE%/EngineAssets/Textures/perlinNoise2D.dds",                 FT_DONT_RELEASE | FT_DONT_STREAM },
+			{ s_ptexLTC1,                        "%ENGINE%/EngineAssets/Shading/ltc_1.dds",                          FT_DONT_RELEASE | FT_DONT_STREAM },
+			{ s_ptexLTC2,                        "%ENGINE%/EngineAssets/Shading/ltc_2.dds",                          FT_DONT_RELEASE | FT_DONT_STREAM },
 
 #if !defined(_RELEASE)
 			{ s_ptexNoTexture,                   "%ENGINE%/EngineAssets/TextureMsg/ReplaceMe.tif",                   FT_DONT_RELEASE | FT_DONT_STREAM },

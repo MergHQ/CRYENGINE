@@ -123,8 +123,6 @@ void CLightEntity::SetMatrix(const Matrix34& mat)
 		if (!(m_light.m_Flags & DLF_DEFERRED_CUBEMAPS))
 		{
 			float fRadius = m_light.m_fRadius;
-			if (m_light.m_Flags & DLF_AREA_LIGHT) // Use max for area lights.
-				fRadius += max(m_light.m_fAreaWidth, m_light.m_fAreaHeight);
 			SetBBox(AABB(worldPosition - Vec3(fRadius), worldPosition + Vec3(fRadius)));
 		}
 		else
@@ -326,8 +324,6 @@ int CLightEntity::UpdateGSMLightSourceDynamicShadowFrustum(int nDynamicLodCount,
 		else
 		{
 			float fRadius = m_light.m_fRadius;
-			if (m_light.m_Flags & DLF_AREA_LIGHT) // Use max for area lights.
-				fRadius += max(m_light.m_fAreaWidth, m_light.m_fAreaHeight);
 			SetBBox(AABB(m_light.m_Origin - Vec3(fRadius), m_light.m_Origin + Vec3(fRadius)));
 		}
 
@@ -511,7 +507,7 @@ bool CLightEntity::ProcessFrustum(int nLod, float fGSMBoxSize, float fDistanceFr
 		const uint32 renderNodeFlags = pFr->m_eFrustumType == ShadowMapFrustum::e_GsmDynamicDistance ? ERF_DYNAMIC_DISTANCESHADOWS : 0xFFFFFFFF;
 		SetupShadowFrustumCamera_SUN(pFr, SMC_EXTEND_FRUSTUM | SMC_SHADOW_FRUSTUM_TEST, renderNodeFlags, lstCastersHull, nLod, passInfo);
 	}
-	else if (m_light.m_Flags & (DLF_PROJECT | DLF_AREA_LIGHT))
+	else if (m_light.m_Flags & DLF_PROJECT)
 	{
 		InitShadowFrustum_PROJECTOR(pFr, SMC_EXTEND_FRUSTUM | SMC_SHADOW_FRUSTUM_TEST, passInfo);
 		SetupShadowFrustumCamera_PROJECTOR(pFr, SMC_EXTEND_FRUSTUM | SMC_SHADOW_FRUSTUM_TEST, passInfo);
@@ -1423,7 +1419,7 @@ void CLightEntity::InitShadowFrustum_PROJECTOR(ShadowMapFrustum* pFr, int dwAllo
 		fSMZ1 /= fCamFactor;
 
 		float fCoverageScaleFactor = GetCVars()->e_ShadowsResScale;
-		if (!(m_light.m_Flags & (DLF_PROJECT | DLF_AREA_LIGHT)))
+		if (!(m_light.m_Flags & DLF_PROJECT))
 			fCoverageScaleFactor /= 3.5f;
 
 		nTexSize = int((fSMZ1 - fSMZ0) * ((float)GetCVars()->e_ShadowsMaxTexRes * fCoverageScaleFactor /*/(7*cCam.GetFarPlane())*/));
@@ -1433,7 +1429,7 @@ void CLightEntity::InitShadowFrustum_PROJECTOR(ShadowMapFrustum* pFr, int dwAllo
 
 		uint32 nMinRes, nMaxRes, nPhysicalMaxRes;
 
-		if (m_light.m_Flags & (DLF_PROJECT | DLF_AREA_LIGHT))
+		if (m_light.m_Flags & DLF_PROJECT)
 		{
 			nMinRes = MIN_SHADOW_RES_PROJ_LIGHT;
 			nMaxRes = nMaxTexRes;
@@ -1856,15 +1852,6 @@ void CLightEntity::Render(const SRendParams& rParams, const SRenderingPassInfo& 
 	{
 		OBB obb(OBB::CreateOBBfromAABB(Matrix33(m_light.m_ObjMatrix), AABB(-m_light.m_ProbeExtents, m_light.m_ProbeExtents)));
 		bIsVisible = passInfo.GetCamera().IsOBBVisible_F(m_light.m_Origin, obb);
-	}
-	else if (m_light.m_Flags & DLF_AREA_LIGHT)
-	{
-		// OBB test for area lights.
-		Vec3 vBoxMax(m_light.m_fRadius, m_light.m_fRadius + m_light.m_fAreaWidth, m_light.m_fRadius + m_light.m_fAreaHeight);
-		Vec3 vBoxMin(-0.1f, -(m_light.m_fRadius + m_light.m_fAreaWidth), -(m_light.m_fRadius + m_light.m_fAreaHeight));
-
-		OBB obb(OBB::CreateOBBfromAABB(Matrix33(m_light.m_ObjMatrix), AABB(vBoxMin, vBoxMax)));
-		bIsVisible = passInfo.GetCamera().IsOBBVisible_F(m_light.m_BaseOrigin, obb);
 	}
 	else
 		bIsVisible = passInfo.GetCamera().IsSphereVisible_F(sp);

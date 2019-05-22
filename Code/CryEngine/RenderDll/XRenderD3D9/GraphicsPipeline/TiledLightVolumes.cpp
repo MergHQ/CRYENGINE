@@ -814,10 +814,6 @@ void CTiledLightVolumesStage::GenerateLightList()
 			if (renderLight.m_Flags & (DLF_FAKE | DLF_VOLUMETRIC_FOG_ONLY))
 				continue;
 
-			// Skip non-ambient area light if support is disabled
-			if ((renderLight.m_Flags & DLF_AREA_LIGHT) && !(renderLight.m_Flags & DLF_AMBIENT) && !CRenderer::CV_r_DeferredShadingAreaLights)
-				continue;
-
 			++numRenderLights;
 
 			if (numTileLights == MaxNumTileLights)
@@ -825,14 +821,14 @@ void CTiledLightVolumesStage::GenerateLightList()
 
 			// Setup standard parameters
 			float mipFactor = (cameraPosition - renderLight.m_Origin).GetLengthSquared() / max(0.001f, renderLight.m_fRadius * renderLight.m_fRadius);
-			bool areaLightRect = (renderLight.m_Flags & DLF_AREA_LIGHT) && renderLight.m_fAreaWidth && renderLight.m_fAreaHeight && renderLight.m_fLightFrustumAngle;
+			bool isAreaLight = (renderLight.m_Flags & DLF_AREA) != 0;
 			float volumeSize = (lightListIdx == 0) ? renderLight.m_ProbeExtents.len() : renderLight.m_fRadius;
 			Vec3 pos = renderLight.GetPosition();
 			lightInfo.posRad = Vec4(pos, volumeSize);
 			Vec4 posVS = Vec4(pos, 1) * matView;
 			lightInfo.depthBoundsVS = Vec2(posVS.z - volumeSize, posVS.z + volumeSize) * invCameraFar;
 			lightShadeInfo.posRad = Vec4(pos.x, pos.y, pos.z, volumeSize);
-			lightShadeInfo.attenuationParams = Vec2(areaLightRect ? (renderLight.m_fAreaWidth + renderLight.m_fAreaHeight) * 0.25f : renderLight.m_fAttenuationBulbSize, renderLight.m_fAreaHeight * 0.5f);
+			lightShadeInfo.attenuationParams = Vec2(renderLight.m_fAttenuationBulbSize, renderLight.m_fAreaHeight * 0.5f);
 			float intensityScale = rd->m_fAdaptedSceneScaleLBuffer;
 			lightShadeInfo.color = Vec4(renderLight.m_Color.r * intensityScale,
 			                            renderLight.m_Color.g * intensityScale,
@@ -956,36 +952,107 @@ void CTiledLightVolumesStage::GenerateLightList()
 					lightShadeInfo.projectorMatrix = projMatT;
 				}
 
-				// Handle rectangular area lights
-				if (areaLightRect)
+				// Handle area lights
+				if (isAreaLight)
 				{
-					lightInfo.volumeType = tlVolumeOBB;
 					lightShadeInfo.lightType = ambientLight ? tlTypeAmbientArea : tlTypeRegularArea;
-
-					float expensionRadius = renderLight.m_fRadius * 1.08f;
-					Vec3 scale(expensionRadius, expensionRadius, expensionRadius);
-					Matrix34 areaLightMat = CShadowUtils::GetAreaLightMatrix(&renderLight, scale);
-
-					lightInfo.volumeParams0 = Vec4(areaLightMat.GetColumn0().GetNormalized(), areaLightMat.GetColumn0().GetLength() * 0.5f);
-					lightInfo.volumeParams1 = Vec4(areaLightMat.GetColumn1().GetNormalized(), areaLightMat.GetColumn1().GetLength() * 0.5f);
-					lightInfo.volumeParams2 = Vec4(areaLightMat.GetColumn2().GetNormalized(), areaLightMat.GetColumn2().GetLength() * 0.5f);
 
 					float volumeSize = renderLight.m_fRadius + max(renderLight.m_fAreaWidth, renderLight.m_fAreaHeight);
 					lightInfo.depthBoundsVS = Vec2(posVS.z - volumeSize, posVS.z + volumeSize) * invCameraFar;
 
-					float areaFov = renderLight.m_fLightFrustumAngle * 2.0f;
-					if (renderLight.m_Flags & DLF_CASTSHADOW_MAPS)
-						areaFov = min(areaFov, 135.0f); // Shadow can only cover ~135 degree FOV without looking bad, so we clamp the FOV to hide shadow clipping
+					// Pre-transform polygonal shape vertices
+					Matrix33 rotationMat;
+					rotationMat.SetColumn0(renderLight.m_ObjMatrix.GetColumn0().GetNormalized());
+					rotationMat.SetColumn1(renderLight.m_ObjMatrix.GetColumn1().GetNormalized());
+					rotationMat.SetColumn2(renderLight.m_ObjMatrix.GetColumn2().GetNormalized());	
 
-					const float cosAngle = cosf(areaFov * (gf_PI / 360.0f));
+					Vec3 lightPos = renderLight.GetPosition() - viewInfo.cameraOrigin;
+					Vec3 polygonPos[4];
+					float areaWidth = renderLight.m_fAreaWidth * 0.5f;
+					float areaHeight = renderLight.m_fAreaHeight * 0.5f;
+
+					if (renderLight.m_nAreaShape == 1) // Rectangular light source
+					{
+						polygonPos[0] = rotationMat.TransformVector(Vec3(-areaWidth, 0, -areaHeight)) + lightPos;
+						polygonPos[1] = rotationMat.TransformVector(Vec3(areaWidth, 0, -areaHeight)) + lightPos;
+						polygonPos[2] = rotationMat.TransformVector(Vec3(areaWidth, 0, areaHeight)) + lightPos;
+						polygonPos[3] = rotationMat.TransformVector(Vec3(-areaWidth, 0, areaHeight)) + lightPos;
+					}
+					else
+					{
+						Vec3 ex = rotationMat.TransformVector(Vec3(1, 0, 0) * areaWidth  * 0.5f);
+						Vec3 ey = rotationMat.TransformVector(Vec3(0, 0, 1) * areaHeight * 0.5f);
+						polygonPos[0] = lightPos - ex - ey;
+						polygonPos[1] = lightPos + ex - ey;
+						polygonPos[2] = lightPos + ex + ey;
+						polygonPos[3] = lightPos - ex + ey;
+					}
 
 					Matrix44 areaLightParams;
-					areaLightParams.SetRow4(0, Vec4(renderLight.m_ObjMatrix.GetColumn0().GetNormalized(), 1.0f));
-					areaLightParams.SetRow4(1, Vec4(renderLight.m_ObjMatrix.GetColumn1().GetNormalized(), 1.0f));
-					areaLightParams.SetRow4(2, Vec4(renderLight.m_ObjMatrix.GetColumn2().GetNormalized(), 1.0f));
-					areaLightParams.SetRow4(3, Vec4(renderLight.m_fAreaWidth * 0.5f, renderLight.m_fAreaHeight * 0.5f, 0, cosAngle));
+					areaLightParams.SetRow4(0, Vec4(polygonPos[0].x, polygonPos[0].y, polygonPos[0].z, renderLight.m_nAreaShape));
+					areaLightParams.SetRow4(1, Vec4(polygonPos[1].x, polygonPos[1].y, polygonPos[1].z, renderLight.m_bAreaTwoSided));
+					areaLightParams.SetRow4(2, Vec4(polygonPos[2].x, polygonPos[2].y, polygonPos[2].z, renderLight.m_bAreaTextured));
+					areaLightParams.SetRow4(3, Vec4(polygonPos[3].x, polygonPos[3].y, polygonPos[3].z, 0));
+
+					lightShadeInfo.resIndex = lightShadeInfo.resNoIndex;
+					{
+						CTexture* pAreaTexture = (CTexture*)renderLight.m_pLightImage;
+
+						int arrayIndex = InsertTexture(pAreaTexture, mipFactor, m_spotTexAtlas, -1);
+						if (arrayIndex < 0)
+							continue;  // Skip light
+
+						lightShadeInfo.resIndex = arrayIndex;
+						lightShadeInfo.resMipClamp0 = lightShadeInfo.resMipClamp1 = m_spotTexAtlas.items[arrayIndex].lowestRenderableMip;
+					}
 
 					lightShadeInfo.projectorMatrix = areaLightParams;
+
+					// Draw light geometry helper when light is selected
+					if (renderLight.m_pOwner->GetRndFlags() & ERF_SELECTED)
+					{
+						if (renderLight.m_nAreaShape == 1) // Rectangular light source
+						{
+							Vec3 p0 = Vec3(-renderLight.m_fAreaWidth * 0.5f, 0, -renderLight.m_fAreaHeight * 0.5f);
+							Vec3 p1 = Vec3(-renderLight.m_fAreaWidth * 0.5f, 0, renderLight.m_fAreaHeight * 0.5f);
+							Vec3 p2 = Vec3(renderLight.m_fAreaWidth * 0.5f, 0, renderLight.m_fAreaHeight * 0.5f);
+							Vec3 p3 = Vec3(renderLight.m_fAreaWidth * 0.5f, 0, -renderLight.m_fAreaHeight * 0.5f);
+
+							p0 = rotationMat.TransformVector(p0) + renderLight.GetPosition();
+							p1 = rotationMat.TransformVector(p1) + renderLight.GetPosition();
+							p2 = rotationMat.TransformVector(p2) + renderLight.GetPosition();
+							p3 = rotationMat.TransformVector(p3) + renderLight.GetPosition();
+							
+							gcpRendD3D.GetIRenderAuxGeom()->DrawLine(p0, ColorB(1.0f), p1, ColorB(1.0f));
+							gcpRendD3D.GetIRenderAuxGeom()->DrawLine(p1, ColorB(1.0f), p2, ColorB(1.0f));
+							gcpRendD3D.GetIRenderAuxGeom()->DrawLine(p2, ColorB(1.0f), p3, ColorB(1.0f));
+							gcpRendD3D.GetIRenderAuxGeom()->DrawLine(p3, ColorB(1.0f), p0, ColorB(1.0f));
+						}
+						else if (renderLight.m_nAreaShape == 2) // Circular light source
+						{
+							float radiusX = renderLight.m_fAreaWidth * 0.25f;
+							float radiusZ = renderLight.m_fAreaHeight * 0.25f;
+
+							Vec3 p0, p1;
+							p0.x = radiusX * sin(0.0f);
+							p0.y = 0;
+							p0.z = radiusZ * cos(0.0f);
+							p0 = rotationMat.TransformVector(p0) + renderLight.GetPosition();
+
+							float step = 10.0f / 180 * gf_PI;
+							for (float angle = step; angle < 360.0f / 180 * gf_PI + step; angle += step)
+							{
+								p1.x = radiusX * sin(angle);
+								p1.y = 0;
+								p1.z = radiusZ * cos(angle);
+
+								p1 = rotationMat.TransformVector(p1) + renderLight.GetPosition();
+								gcpRendD3D.GetIRenderAuxGeom()->DrawLine(p0, ColorB(1.0f), p1, ColorB(1.0f));
+
+								p0 = p1;
+							}
+						}
+					}
 				}
 
 				// Handle shadow casters

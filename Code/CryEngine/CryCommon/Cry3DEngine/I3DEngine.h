@@ -3071,7 +3071,7 @@ inline SRenderingPassInfo SRenderingPassInfo::CreateShadowPassRenderingInfo(cons
 		else
 			passInfo.m_eShadowMapRendering = SHADOW_MAP_GSM;
 	}
-	else if (nLightFlags & (DLF_POINT | DLF_PROJECT | DLF_AREA_LIGHT))
+	else if (nLightFlags & (DLF_POINT | DLF_PROJECT | DLF_AREA))
 		passInfo.m_eShadowMapRendering = static_cast<uint8>(SHADOW_MAP_LOCAL);
 	else
 		passInfo.m_eShadowMapRendering = static_cast<uint8>(SHADOW_MAP_NONE);

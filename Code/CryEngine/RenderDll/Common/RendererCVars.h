@@ -245,7 +245,6 @@ public:
 	DeclareStaticConstIntCVar(CV_r_DeferredShadingEnvProbes, 1);
 	DeclareStaticConstIntCVar(CV_r_DeferredShadingAmbientLights, 1);
 	DeclareStaticConstIntCVar(CV_r_DeferredShadingLights, 1);
-	DeclareStaticConstIntCVar(CV_r_DeferredShadingAreaLights, 0);
 	static int CV_r_HDRSwapChain;
 	DeclareStaticConstIntCVar(CV_r_HDRDebug, 0);
 	static int CV_r_HDRBloom;

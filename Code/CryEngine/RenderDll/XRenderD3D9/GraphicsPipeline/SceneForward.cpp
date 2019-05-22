@@ -667,6 +667,7 @@ bool CSceneForwardStage::PreparePerPassResources(bool bOnInit, bool bShadowMask,
 			// Custom for pass
 			resources.SetSampler(10, EDefaultSamplerStates::BilinearWrap, EShaderStage_AllWithoutCompute);
 			resources.SetSampler(11, EDefaultSamplerStates::LinearCompare, EShaderStage_AllWithoutCompute);
+			resources.SetSampler(15, EDefaultSamplerStates::TrilinearClamp, EShaderStage_AllWithoutCompute);
 		}
 
 		// Textures

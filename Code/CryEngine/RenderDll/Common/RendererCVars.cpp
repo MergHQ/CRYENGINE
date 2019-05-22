@@ -179,7 +179,6 @@ AllocateConstIntCVar(CRendererCVars, CV_r_DeferredShadingDebugGBuffer);
 AllocateConstIntCVar(CRendererCVars, CV_r_DeferredShadingEnvProbes);
 AllocateConstIntCVar(CRendererCVars, CV_r_DeferredShadingAmbientLights);
 AllocateConstIntCVar(CRendererCVars, CV_r_DeferredShadingLights);
-AllocateConstIntCVar(CRendererCVars, CV_r_DeferredShadingAreaLights);
 AllocateConstIntCVar(CRendererCVars, CV_r_CBufferUseNativeDepth);
 
 float CRendererCVars::CV_r_DeferredShadingLightLodRatio;
@@ -1118,11 +1117,6 @@ void CRendererCVars::InitCVars()
 	                    "Enables/Disables ambient lights.\n"
 	                    "Usage: r_DeferredShadingAmbientLights [0/1]\n"
 	                    "Default is 1 (enabled)");
-
-	DefineConstIntCVar3("r_DeferredShadingAreaLights", CV_r_DeferredShadingAreaLights, 0, VF_DUMPTODISK,
-	                    "Enables/Disables more complex area lights processing.\n"
-	                    "Usage: r_DeferredShadingAreaLights [0/1]\n"
-	                    "Default is 0 (disabled)");
 
 	REGISTER_CVAR3("r_DeferredShadingLightStencilRatio", CV_r_DeferredShadingLightStencilRatio, 0.21f, VF_DUMPTODISK,
 	               "Sets screen ratio for deferred lights to use stencil (eg: 0.2 - 20% of screen).\n"
