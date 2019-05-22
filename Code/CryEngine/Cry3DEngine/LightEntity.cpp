@@ -1818,9 +1818,6 @@ void CLightEntity::Render(const SRendParams& rParams, const SRenderingPassInfo& 
 		return;
 #endif
 
-	if (m_layerId != uint16(~0))
-		return;
-
 	if (!(m_light.m_Flags & DLF_DEFERRED_LIGHT) || passInfo.IsRecursivePass())
 		return;
 
