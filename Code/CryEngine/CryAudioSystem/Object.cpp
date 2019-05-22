@@ -70,7 +70,7 @@ void CObject::SetActive()
 		m_flags |= EObjectFlags::Active;
 	}
 
-	g_triggerInstanceIdToObject[g_triggerInstanceIdCounter] = this;
+	g_triggerInstanceIdLookup[g_triggerInstanceIdCounter] = this;
 }
 
 #if defined(CRY_AUDIO_USE_DEBUG_CODE)
@@ -151,7 +151,7 @@ void CObject::ReportFinishedTriggerInstance(TriggerInstanceId const triggerInsta
 		{
 			if (pTriggerInstance->IsPlayingInstanceFinished())
 			{
-				g_triggerInstanceIdToObject.erase(triggerInstanceId);
+				g_triggerInstanceIdLookup.erase(triggerInstanceId);
 				pTriggerInstance->SendFinishedRequest();
 
 				m_triggerInstances.erase(iter);
@@ -162,7 +162,7 @@ void CObject::ReportFinishedTriggerInstance(TriggerInstanceId const triggerInsta
 		{
 			if (pTriggerInstance->IsPendingInstanceFinished())
 			{
-				g_triggerInstanceIdToObject.erase(triggerInstanceId);
+				g_triggerInstanceIdLookup.erase(triggerInstanceId);
 				pTriggerInstance->SendFinishedRequest();
 
 				m_triggerInstances.erase(iter);
@@ -445,7 +445,7 @@ void CObject::DrawDebugInfo(
 
 			for (auto const& triggerCountsPair : triggerCounts)
 			{
-				CTrigger const* const pTrigger = stl::find_in_map(g_triggers, triggerCountsPair.first, nullptr);
+				CTrigger const* const pTrigger = stl::find_in_map(g_triggerLookup, triggerCountsPair.first, nullptr);
 
 				if (pTrigger != nullptr)
 				{
@@ -487,7 +487,7 @@ void CObject::DrawDebugInfo(
 		{
 			for (auto const& switchStatePair : m_switchStates)
 			{
-				CSwitch const* const pSwitch = stl::find_in_map(g_switches, switchStatePair.first, nullptr);
+				CSwitch const* const pSwitch = stl::find_in_map(g_switchLookup, switchStatePair.first, nullptr);
 
 				if (pSwitch != nullptr)
 				{
@@ -525,7 +525,7 @@ void CObject::DrawDebugInfo(
 		{
 			for (auto const& parameterPair : m_parameters)
 			{
-				CParameter const* const pParameter = stl::find_in_map(g_parameters, parameterPair.first, nullptr);
+				CParameter const* const pParameter = stl::find_in_map(g_parameterLookup, parameterPair.first, nullptr);
 
 				if (pParameter != nullptr)
 				{
@@ -557,7 +557,7 @@ void CObject::DrawDebugInfo(
 			{
 				if (environmentPair.second > 0.0f)
 				{
-					CEnvironment const* const pEnvironment = stl::find_in_map(g_environments, environmentPair.first, nullptr);
+					CEnvironment const* const pEnvironment = stl::find_in_map(g_environmentLookup, environmentPair.first, nullptr);
 
 					if (pEnvironment != nullptr)
 					{
@@ -830,7 +830,7 @@ void CObject::ForceImplementationRefresh()
 	// Parameters
 	for (auto const& parameterPair : m_parameters)
 	{
-		CParameter const* const pParameter = stl::find_in_map(g_parameters, parameterPair.first, nullptr);
+		CParameter const* const pParameter = stl::find_in_map(g_parameterLookup, parameterPair.first, nullptr);
 
 		if (pParameter != nullptr)
 		{
@@ -845,7 +845,7 @@ void CObject::ForceImplementationRefresh()
 	// Switches
 	for (auto const& switchPair : m_switchStates)
 	{
-		CSwitch const* const pSwitch = stl::find_in_map(g_switches, switchPair.first, nullptr);
+		CSwitch const* const pSwitch = stl::find_in_map(g_switchLookup, switchPair.first, nullptr);
 
 		if (pSwitch != nullptr)
 		{
@@ -861,7 +861,7 @@ void CObject::ForceImplementationRefresh()
 	// Environments
 	for (auto const& environmentPair : m_environments)
 	{
-		CEnvironment const* const pEnvironment = stl::find_in_map(g_environments, environmentPair.first, nullptr);
+		CEnvironment const* const pEnvironment = stl::find_in_map(g_environmentLookup, environmentPair.first, nullptr);
 
 		if (pEnvironment != nullptr)
 		{
@@ -873,7 +873,7 @@ void CObject::ForceImplementationRefresh()
 	// Last re-execute its active triggers.
 	for (auto const& triggerInstancePair : m_triggerInstances)
 	{
-		CTrigger const* const pTrigger = stl::find_in_map(g_triggers, triggerInstancePair.second->GetTriggerId(), nullptr);
+		CTrigger const* const pTrigger = stl::find_in_map(g_triggerLookup, triggerInstancePair.second->GetTriggerId(), nullptr);
 
 		if (pTrigger != nullptr)
 		{

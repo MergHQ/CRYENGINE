@@ -52,7 +52,6 @@ public:
 		EntityId const entityId = INVALID_ENTITYID) const;
 
 	void Execute(
-		CDefaultObject& object,
 		void* const pOwner = nullptr,
 		void* const pUserData = nullptr,
 		void* const pUserDataOwner = nullptr,
@@ -68,7 +67,6 @@ public:
 		uint16 const triggerCounter) const;
 
 	void Execute(
-		CDefaultObject& object,
 		TriggerInstanceId const triggerInstanceId,
 		CTriggerInstance* const pTriggerInstance,
 		uint16 const triggerCounter) const;

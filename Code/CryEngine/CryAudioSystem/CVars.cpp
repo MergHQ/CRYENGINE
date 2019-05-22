@@ -398,7 +398,7 @@ void CCVars::RegisterVariables()
 	                  "j: Draw spheres with occlusion ray offset radius around active audio objects.\n"
 	                  "k: Draw occlusion listener plane.\n"
 	                  "l: Draw occlusion collision spheres.\n"
-	                  "m: Draw Default Object info.\n"
+	                  "m: Draw global playback info.\n"
 	                  "n: Draw middleware specific info for active audio objects.\n"
 	                  "q: Hide audio system memory info.\n"
 	                  "r: Apply filter also to inactive object debug info.\n"

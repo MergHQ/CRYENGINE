@@ -93,6 +93,4 @@ private:
 	float m_radius;
 #endif // CRY_AUDIO_USE_DEBUG_CODE
 };
-
-using TriggerInstances = std::map<TriggerInstanceId, CTriggerInstance*>;
 } // namespace CryAudio

@@ -8,7 +8,6 @@
 
 #if defined(CRY_AUDIO_USE_DEBUG_CODE)
 	#include "Object.h"
-	#include "DefaultObject.h"
 	#include "Common/Logger.h"
 #endif // CRY_AUDIO_USE_DEBUG_CODE
 
@@ -43,24 +42,6 @@ void CSwitchState::Set(CObject const& object) const
 
 	const_cast<CObject&>(object).StoreSwitchValue(m_switchId, m_switchStateId);
 }
-
-//////////////////////////////////////////////////////////////////////////
-void CSwitchState::Set(CDefaultObject const& object) const
-{
-	Impl::IObject* const pIObject = object.GetImplData();
-
-	for (auto const pConnection : m_connections)
-	{
-		pConnection->Set(pIObject);
-	}
-
-	if (m_connections.empty())
-	{
-		Cry::Audio::Log(ELogType::Warning, R"(SwitchState "%s" set on object "%s" without connections)", GetName(), object.GetName());
-	}
-
-	const_cast<CDefaultObject&>(object).StoreSwitchValue(m_switchId, m_switchStateId);
-}
 #else
 //////////////////////////////////////////////////////////////////////////
 void CSwitchState::Set(Impl::IObject* const pIObject) const
@@ -71,6 +52,24 @@ void CSwitchState::Set(Impl::IObject* const pIObject) const
 	}
 }
 #endif   // CRY_AUDIO_USE_DEBUG_CODE
+
+//////////////////////////////////////////////////////////////////////////
+void CSwitchState::Set() const
+{
+	for (auto const pConnection : m_connections)
+	{
+		pConnection->Set(g_pIObject);
+	}
+
+#if defined(CRY_AUDIO_USE_DEBUG_CODE)
+	if (m_connections.empty())
+	{
+		Cry::Audio::Log(ELogType::Warning, R"(SwitchState "%s" set without connections)", GetName());
+	}
+
+	g_switchStates[m_switchId] = m_switchStateId;
+#endif // CRY_AUDIO_USE_DEBUG_CODE
+}
 
 //////////////////////////////////////////////////////////////////////////
 void CSwitchState::SetGlobally() const

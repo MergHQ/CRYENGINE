@@ -17,7 +17,6 @@
 #include "File.h"
 #include "Listener.h"
 #include "Object.h"
-#include "DefaultObject.h"
 #include "LoseFocusTrigger.h"
 #include "GetFocusTrigger.h"
 #include "MuteAllTrigger.h"
@@ -121,6 +120,7 @@ struct SRequestCount final
 
 SRequestCount g_requestsPerUpdate;
 SRequestCount g_requestPeaks;
+Debug::StateDrawInfo g_stateDrawInfo;
 
 //////////////////////////////////////////////////////////////////////////
 void CountRequestPerUpdate(CRequest const& request)
@@ -346,7 +346,177 @@ void SetRequestCountPeak()
 
 	ZeroStruct(g_requestsPerUpdate);
 }
+
+//////////////////////////////////////////////////////////////////////////
+bool ExecuteDefaultTrigger(ControlId const id)
+{
+	bool wasSuccess = true;
+
+	switch (id)
+	{
+	case g_loseFocusTriggerId:
+		{
+			g_loseFocusTrigger.Execute();
+			break;
+		}
+	case g_getFocusTriggerId:
+		{
+			g_getFocusTrigger.Execute();
+			break;
+		}
+	case g_muteAllTriggerId:
+		{
+			g_muteAllTrigger.Execute();
+			break;
+		}
+	case g_unmuteAllTriggerId:
+		{
+			g_unmuteAllTrigger.Execute();
+			break;
+		}
+	case g_pauseAllTriggerId:
+		{
+			g_pauseAllTrigger.Execute();
+			break;
+		}
+	case g_resumeAllTriggerId:
+		{
+			g_resumeAllTrigger.Execute();
+			break;
+		}
+	default:
+		{
+			wasSuccess = false;
+			break;
+		}
+	}
+
+	return wasSuccess;
+}
+
+///////////////////////////////////////////////////////////////////////////
+void ForceGlobalDataImplRefresh()
+{
+	// Parameters
+	for (auto const& parameterPair : g_parameters)
+	{
+		CParameter const* const pParameter = stl::find_in_map(g_parameterLookup, parameterPair.first, nullptr);
+
+		if (pParameter != nullptr)
+		{
+			pParameter->Set(parameterPair.second);
+		}
+		else
+		{
+			Cry::Audio::Log(ELogType::Warning, "Parameter \"%u\" does not exist!", parameterPair.first);
+		}
+	}
+
+	// Switches
+	for (auto const& switchPair : g_switchStates)
+	{
+		CSwitch const* const pSwitch = stl::find_in_map(g_switchLookup, switchPair.first, nullptr);
+
+		if (pSwitch != nullptr)
+		{
+			CSwitchState const* const pState = stl::find_in_map(pSwitch->GetStates(), switchPair.second, nullptr);
+
+			if (pState != nullptr)
+			{
+				pState->Set();
+			}
+		}
+	}
+
+	uint16 triggerCounter = 0;
+	// Last re-execute its active triggers.
+	for (auto const& triggerInstancePair : g_triggerInstances)
+	{
+		CTrigger const* const pTrigger = stl::find_in_map(g_triggerLookup, triggerInstancePair.second->GetTriggerId(), nullptr);
+
+		if (pTrigger != nullptr)
+		{
+			pTrigger->Execute(triggerInstancePair.first, triggerInstancePair.second, triggerCounter);
+			++triggerCounter;
+		}
+		else if (!ExecuteDefaultTrigger(triggerInstancePair.second->GetTriggerId()))
+		{
+			Cry::Audio::Log(ELogType::Warning, "Trigger \"%u\" does not exist!", triggerInstancePair.second->GetTriggerId());
+		}
+	}
+}
 #endif // CRY_AUDIO_USE_DEBUG_CODE
+
+//////////////////////////////////////////////////////////////////////////
+void ReleaseGlobalData()
+{
+	for (auto& triggerInstancePair : g_triggerInstances)
+	{
+		triggerInstancePair.second->Release();
+	}
+
+	g_pIObject = nullptr;
+}
+
+///////////////////////////////////////////////////////////////////////////
+void ReportStartedGlobalTriggerInstance(TriggerInstanceId const triggerInstanceId, ETriggerResult const result)
+{
+	TriggerInstances::iterator const iter(g_triggerInstances.find(triggerInstanceId));
+
+	if (iter != g_triggerInstances.end())
+	{
+		iter->second->SetPendingToPlaying();
+	}
+}
+
+///////////////////////////////////////////////////////////////////////////
+void ReportFinishedGlobalTriggerInstance(TriggerInstanceId const triggerInstanceId, ETriggerResult const result)
+{
+	TriggerInstances::iterator const iter(g_triggerInstances.find(triggerInstanceId));
+
+	if (iter != g_triggerInstances.end())
+	{
+		CTriggerInstance* const pTriggerInstance = iter->second;
+
+		if (result != ETriggerResult::Pending)
+		{
+			if (pTriggerInstance->IsPlayingInstanceFinished())
+			{
+				g_triggerInstanceIds.erase(std::remove(g_triggerInstanceIds.begin(), g_triggerInstanceIds.end(), triggerInstanceId), g_triggerInstanceIds.end());
+				pTriggerInstance->SendFinishedRequest();
+
+				g_triggerInstances.erase(iter);
+				delete pTriggerInstance;
+			}
+		}
+		else
+		{
+			if (pTriggerInstance->IsPendingInstanceFinished())
+			{
+				g_triggerInstanceIds.erase(std::remove(g_triggerInstanceIds.begin(), g_triggerInstanceIds.end(), triggerInstanceId), g_triggerInstanceIds.end());
+				pTriggerInstance->SendFinishedRequest();
+
+				g_triggerInstances.erase(iter);
+				delete pTriggerInstance;
+			}
+		}
+	}
+#if defined(CRY_AUDIO_USE_DEBUG_CODE)
+	else
+	{
+		Cry::Audio::Log(ELogType::Warning, "Unknown trigger instance id %u during %s", triggerInstanceId, __FUNCTION__);
+	}
+#endif  // CRY_AUDIO_USE_DEBUG_CODE
+}
+
+///////////////////////////////////////////////////////////////////////////
+void UpdateGlobalData(float const deltaTime)
+{
+	if (!g_triggerInstances.empty())
+	{
+		g_pIObject->Update(deltaTime);
+	}
+}
 
 //////////////////////////////////////////////////////////////////////////
 void AllocateMemoryPools()
@@ -448,7 +618,7 @@ void UpdateActiveObjects(float const deltaTime)
 
 	if (deltaTime > 0.0f)
 	{
-		g_defaultObject.Update(deltaTime);
+		UpdateGlobalData(deltaTime);
 
 #if defined(CRY_AUDIO_USE_DEBUG_CODE)
 		g_previewObject.Update(deltaTime);
@@ -490,7 +660,7 @@ void UpdateActiveObjects(float const deltaTime)
 	}
 	else
 	{
-		g_defaultObject.Update(deltaTime);
+		UpdateGlobalData(deltaTime);
 
 #if defined(CRY_AUDIO_USE_DEBUG_CODE)
 		g_previewObject.Update(deltaTime);
@@ -1399,7 +1569,7 @@ void CSystem::ReleaseObject(CryAudio::IObject* const pIObject)
 void CSystem::GetTriggerData(ControlId const triggerId, STriggerData& triggerData)
 {
 #if defined(CRY_AUDIO_USE_DEBUG_CODE)
-	CTrigger const* const pTrigger = stl::find_in_map(g_triggers, triggerId, nullptr);
+	CTrigger const* const pTrigger = stl::find_in_map(g_triggerLookup, triggerId, nullptr);
 
 	if (pTrigger != nullptr)
 	{
@@ -1428,13 +1598,11 @@ void CSystem::ReleaseImpl()
 	}
 #endif // CRY_AUDIO_USE_DEBUG_CODE
 
-	g_pIImpl->DestructObject(g_defaultObject.GetImplData());
-	g_defaultObject.SetImplData(nullptr);
-	g_defaultObject.Release();
+	g_pIImpl->DestructObject(g_pIObject);
+	ReleaseGlobalData();
 
 #if defined(CRY_AUDIO_USE_DEBUG_CODE)
 	g_pIImpl->DestructObject(g_previewObject.GetImplData());
-	g_previewObject.SetImplData(nullptr);
 	g_previewObject.Release();
 	ResetRequestCount();
 #endif // CRY_AUDIO_USE_DEBUG_CODE
@@ -1664,11 +1832,11 @@ ERequestStatus CSystem::ProcessSystemRequest(CRequest const& request)
 		{
 			auto const pRequestData = static_cast<SSystemRequestData<ESystemRequestType::ExecuteTrigger> const* const>(request.GetData());
 
-			CTrigger const* const pTrigger = stl::find_in_map(g_triggers, pRequestData->triggerId, nullptr);
+			CTrigger const* const pTrigger = stl::find_in_map(g_triggerLookup, pRequestData->triggerId, nullptr);
 
 			if (pTrigger != nullptr)
 			{
-				pTrigger->Execute(g_defaultObject, request.pOwner, request.pUserData, request.pUserDataOwner, request.flags);
+				pTrigger->Execute(request.pOwner, request.pUserData, request.pUserDataOwner, request.flags);
 				result = ERequestStatus::Success;
 			}
 
@@ -1678,11 +1846,11 @@ ERequestStatus CSystem::ProcessSystemRequest(CRequest const& request)
 		{
 			auto const pRequestData = static_cast<SSystemRequestData<ESystemRequestType::StopTrigger> const* const>(request.GetData());
 
-			CTrigger const* const pTrigger = stl::find_in_map(g_triggers, pRequestData->triggerId, nullptr);
+			CTrigger const* const pTrigger = stl::find_in_map(g_triggerLookup, pRequestData->triggerId, nullptr);
 
 			if (pTrigger != nullptr)
 			{
-				pTrigger->Stop(g_defaultObject.GetImplData());
+				pTrigger->Stop(g_pIObject);
 				result = ERequestStatus::Success;
 			}
 
@@ -1690,7 +1858,7 @@ ERequestStatus CSystem::ProcessSystemRequest(CRequest const& request)
 		}
 	case ESystemRequestType::StopAllTriggers:
 		{
-			g_defaultObject.StopAllTriggers();
+			g_pIObject->StopAllTriggers();
 			result = ERequestStatus::Success;
 
 			break;
@@ -1699,7 +1867,7 @@ ERequestStatus CSystem::ProcessSystemRequest(CRequest const& request)
 		{
 			auto const pRequestData = static_cast<SSystemRequestData<ESystemRequestType::ExecuteTriggerEx> const*>(request.GetData());
 
-			CTrigger const* const pTrigger = stl::find_in_map(g_triggers, pRequestData->triggerId, nullptr);
+			CTrigger const* const pTrigger = stl::find_in_map(g_triggerLookup, pRequestData->triggerId, nullptr);
 
 			if (pTrigger != nullptr)
 			{
@@ -1921,16 +2089,11 @@ ERequestStatus CSystem::ProcessSystemRequest(CRequest const& request)
 		{
 			auto const pRequestData = static_cast<SSystemRequestData<ESystemRequestType::SetParameter> const*>(request.GetData());
 
-			CParameter const* const pParameter = stl::find_in_map(g_parameters, pRequestData->parameterId, nullptr);
+			CParameter const* const pParameter = stl::find_in_map(g_parameterLookup, pRequestData->parameterId, nullptr);
 
 			if (pParameter != nullptr)
 			{
-#if defined(CRY_AUDIO_USE_DEBUG_CODE)
-				pParameter->Set(g_defaultObject, pRequestData->value);
-#else
-				pParameter->Set(g_defaultObject.GetImplData(), pRequestData->value);
-#endif    // CRY_AUDIO_USE_DEBUG_CODE
-
+				pParameter->Set(pRequestData->value);
 				result = ERequestStatus::Success;
 			}
 
@@ -1940,7 +2103,7 @@ ERequestStatus CSystem::ProcessSystemRequest(CRequest const& request)
 		{
 			auto const pRequestData = static_cast<SSystemRequestData<ESystemRequestType::SetParameter> const*>(request.GetData());
 
-			CParameter const* const pParameter = stl::find_in_map(g_parameters, pRequestData->parameterId, nullptr);
+			CParameter const* const pParameter = stl::find_in_map(g_parameterLookup, pRequestData->parameterId, nullptr);
 
 			if (pParameter != nullptr)
 			{
@@ -1954,7 +2117,7 @@ ERequestStatus CSystem::ProcessSystemRequest(CRequest const& request)
 		{
 			auto const pRequestData = static_cast<SSystemRequestData<ESystemRequestType::SetSwitchState> const*>(request.GetData());
 
-			CSwitch const* const pSwitch = stl::find_in_map(g_switches, pRequestData->switchId, nullptr);
+			CSwitch const* const pSwitch = stl::find_in_map(g_switchLookup, pRequestData->switchId, nullptr);
 
 			if (pSwitch != nullptr)
 			{
@@ -1962,12 +2125,7 @@ ERequestStatus CSystem::ProcessSystemRequest(CRequest const& request)
 
 				if (pState != nullptr)
 				{
-#if defined(CRY_AUDIO_USE_DEBUG_CODE)
-					pState->Set(g_defaultObject);
-#else
-					pState->Set(g_defaultObject.GetImplData());
-#endif      // CRY_AUDIO_USE_DEBUG_CODE
-
+					pState->Set();
 					result = ERequestStatus::Success;
 				}
 			}
@@ -1978,7 +2136,7 @@ ERequestStatus CSystem::ProcessSystemRequest(CRequest const& request)
 		{
 			auto const pRequestData = static_cast<SSystemRequestData<ESystemRequestType::SetSwitchState> const*>(request.GetData());
 
-			CSwitch const* const pSwitch = stl::find_in_map(g_switches, pRequestData->switchId, nullptr);
+			CSwitch const* const pSwitch = stl::find_in_map(g_switchLookup, pRequestData->switchId, nullptr);
 
 			if (pSwitch != nullptr)
 			{
@@ -1997,7 +2155,7 @@ ERequestStatus CSystem::ProcessSystemRequest(CRequest const& request)
 		{
 			auto const pRequestData = static_cast<SSystemRequestData<ESystemRequestType::AutoLoadSetting> const*>(request.GetData());
 
-			for (auto const& settingPair : g_settings)
+			for (auto const& settingPair : g_settingLookup)
 			{
 				CSetting const* const pSetting = settingPair.second;
 
@@ -2016,7 +2174,7 @@ ERequestStatus CSystem::ProcessSystemRequest(CRequest const& request)
 		{
 			auto const pRequestData = static_cast<SSystemRequestData<ESystemRequestType::LoadSetting> const*>(request.GetData());
 
-			CSetting const* const pSetting = stl::find_in_map(g_settings, pRequestData->id, nullptr);
+			CSetting const* const pSetting = stl::find_in_map(g_settingLookup, pRequestData->id, nullptr);
 
 			if (pSetting != nullptr)
 			{
@@ -2030,7 +2188,7 @@ ERequestStatus CSystem::ProcessSystemRequest(CRequest const& request)
 		{
 			auto const pRequestData = static_cast<SSystemRequestData<ESystemRequestType::UnloadSetting> const*>(request.GetData());
 
-			CSetting const* const pSetting = stl::find_in_map(g_settings, pRequestData->id, nullptr);
+			CSetting const* const pSetting = stl::find_in_map(g_settingLookup, pRequestData->id, nullptr);
 
 			if (pSetting != nullptr)
 			{
@@ -2185,7 +2343,7 @@ ERequestStatus CSystem::ProcessSystemRequest(CRequest const& request)
 		{
 			auto const pRequestData = static_cast<SSystemRequestData<ESystemRequestType::ExecutePreviewTrigger> const*>(request.GetData());
 
-			CTrigger const* const pTrigger = stl::find_in_map(g_triggers, pRequestData->triggerId, nullptr);
+			CTrigger const* const pTrigger = stl::find_in_map(g_triggerLookup, pRequestData->triggerId, nullptr);
 
 			if (pTrigger != nullptr)
 			{
@@ -2242,7 +2400,7 @@ ERequestStatus CSystem::ProcessSystemRequest(CRequest const& request)
 				pObject->StopAllTriggers();
 			}
 
-			g_defaultObject.StopAllTriggers();
+			g_pIObject->StopAllTriggers();
 			g_previewObject.StopAllTriggers();
 
 			// Store active contexts for reloading after they have been unloaded which empties the map.
@@ -2324,7 +2482,7 @@ ERequestStatus CSystem::ProcessCallbackRequest(CRequest& request)
 			bool objectFound = false;
 #endif  // CRY_AUDIO_USE_DEBUG_CODE
 
-			CObject* const pObject = stl::find_in_map(g_triggerInstanceIdToObject, pRequestData->triggerInstanceId, nullptr);
+			CObject* const pObject = stl::find_in_map(g_triggerInstanceIdLookup, pRequestData->triggerInstanceId, nullptr);
 
 			if (pObject != nullptr)
 			{
@@ -2334,18 +2492,13 @@ ERequestStatus CSystem::ProcessCallbackRequest(CRequest& request)
 				objectFound = true;
 #endif    // CRY_AUDIO_USE_DEBUG_CODE
 			}
-			else
+			else if (std::find(g_triggerInstanceIds.begin(), g_triggerInstanceIds.end(), pRequestData->triggerInstanceId) != g_triggerInstanceIds.end())
 			{
-				CDefaultObject* const pObject = stl::find_in_map(g_triggerInstanceIdToDefaultObject, pRequestData->triggerInstanceId, nullptr);
-
-				if (pObject != nullptr)
-				{
-					pObject->ReportStartedTriggerInstance(pRequestData->triggerInstanceId, pRequestData->result);
+				ReportStartedGlobalTriggerInstance(pRequestData->triggerInstanceId, pRequestData->result);
 
 #if defined(CRY_AUDIO_USE_DEBUG_CODE)
-					objectFound = true;
+				objectFound = true;
 #endif      // CRY_AUDIO_USE_DEBUG_CODE
-				}
 			}
 
 #if defined(CRY_AUDIO_USE_DEBUG_CODE)
@@ -2364,7 +2517,7 @@ ERequestStatus CSystem::ProcessCallbackRequest(CRequest& request)
 			bool objectFound = false;
 #endif  // CRY_AUDIO_USE_DEBUG_CODE
 
-			CObject* const pObject = stl::find_in_map(g_triggerInstanceIdToObject, pRequestData->triggerInstanceId, nullptr);
+			CObject* const pObject = stl::find_in_map(g_triggerInstanceIdLookup, pRequestData->triggerInstanceId, nullptr);
 
 			if (pObject != nullptr)
 			{
@@ -2375,18 +2528,13 @@ ERequestStatus CSystem::ProcessCallbackRequest(CRequest& request)
 #endif    // CRY_AUDIO_USE_DEBUG_CODE
 
 			}
-			else
+			else if (std::find(g_triggerInstanceIds.begin(), g_triggerInstanceIds.end(), pRequestData->triggerInstanceId) != g_triggerInstanceIds.end())
 			{
-				CDefaultObject* const pObject = stl::find_in_map(g_triggerInstanceIdToDefaultObject, pRequestData->triggerInstanceId, nullptr);
-
-				if (pObject != nullptr)
-				{
-					pObject->ReportFinishedTriggerInstance(pRequestData->triggerInstanceId, pRequestData->result);
+				ReportFinishedGlobalTriggerInstance(pRequestData->triggerInstanceId, pRequestData->result);
 
 #if defined(CRY_AUDIO_USE_DEBUG_CODE)
-					objectFound = true;
+				objectFound = true;
 #endif      // CRY_AUDIO_USE_DEBUG_CODE
-				}
 			}
 
 #if defined(CRY_AUDIO_USE_DEBUG_CODE)
@@ -2472,7 +2620,7 @@ ERequestStatus CSystem::ProcessObjectRequest(CRequest const& request)
 		{
 			auto const pRequestData = static_cast<SObjectRequestData<EObjectRequestType::ExecuteTrigger> const*>(request.GetData());
 
-			CTrigger const* const pTrigger = stl::find_in_map(g_triggers, pRequestData->triggerId, nullptr);
+			CTrigger const* const pTrigger = stl::find_in_map(g_triggerLookup, pRequestData->triggerId, nullptr);
 
 			if (pTrigger != nullptr)
 			{
@@ -2486,7 +2634,7 @@ ERequestStatus CSystem::ProcessObjectRequest(CRequest const& request)
 		{
 			auto const pRequestData = static_cast<SObjectRequestData<EObjectRequestType::StopTrigger> const*>(request.GetData());
 
-			CTrigger const* const pTrigger = stl::find_in_map(g_triggers, pRequestData->triggerId, nullptr);
+			CTrigger const* const pTrigger = stl::find_in_map(g_triggerLookup, pRequestData->triggerId, nullptr);
 
 			if (pTrigger != nullptr)
 			{
@@ -2516,7 +2664,7 @@ ERequestStatus CSystem::ProcessObjectRequest(CRequest const& request)
 		{
 			auto const pRequestData = static_cast<SObjectRequestData<EObjectRequestType::SetParameter> const*>(request.GetData());
 
-			CParameter const* const pParameter = stl::find_in_map(g_parameters, pRequestData->parameterId, nullptr);
+			CParameter const* const pParameter = stl::find_in_map(g_parameterLookup, pRequestData->parameterId, nullptr);
 
 			if (pParameter != nullptr)
 			{
@@ -2535,7 +2683,7 @@ ERequestStatus CSystem::ProcessObjectRequest(CRequest const& request)
 		{
 			auto const pRequestData = static_cast<SObjectRequestData<EObjectRequestType::SetSwitchState> const*>(request.GetData());
 
-			CSwitch const* const pSwitch = stl::find_in_map(g_switches, pRequestData->switchId, nullptr);
+			CSwitch const* const pSwitch = stl::find_in_map(g_switchLookup, pRequestData->switchId, nullptr);
 
 			if (pSwitch != nullptr)
 			{
@@ -2587,7 +2735,7 @@ ERequestStatus CSystem::ProcessObjectRequest(CRequest const& request)
 		{
 			auto const pRequestData = static_cast<SObjectRequestData<EObjectRequestType::SetEnvironment> const*>(request.GetData());
 
-			CEnvironment const* const pEnvironment = stl::find_in_map(g_environments, pRequestData->environmentId, nullptr);
+			CEnvironment const* const pEnvironment = stl::find_in_map(g_environmentLookup, pRequestData->environmentId, nullptr);
 
 			if (pEnvironment != nullptr)
 			{
@@ -2983,13 +3131,13 @@ ERequestStatus CSystem::HandleSetImpl(Impl::IImpl* const pIImpl)
 	CRY_ASSERT_MESSAGE(g_defaultListener.GetImplData() == nullptr, "<Audio> The default listeners's impl-data must be nullptr during %s", __FUNCTION__);
 	g_defaultListener.SetImplData(g_pIImpl->ConstructListener(CTransformation::GetEmptyObject(), g_szDefaultListenerName));
 
-	CRY_ASSERT_MESSAGE(g_defaultObject.GetImplData() == nullptr, "<Audio> The default object's impl-data must be nullptr during %s", __FUNCTION__);
+	CRY_ASSERT_MESSAGE(g_pIObject == nullptr, "<Audio> g_pIObject must be nullptr during %s", __FUNCTION__);
 	Impl::IListeners const defaultImplListener{ g_defaultListener.GetImplData() };
 
 #if defined(CRY_AUDIO_USE_DEBUG_CODE)
-	g_defaultObject.SetImplData(g_pIImpl->ConstructObject(CTransformation::GetEmptyObject(), defaultImplListener, g_defaultObject.GetName()));
+	g_pIObject = g_pIImpl->ConstructObject(CTransformation::GetEmptyObject(), defaultImplListener, g_szGlobalName);
 #else
-	g_defaultObject.SetImplData(g_pIImpl->ConstructObject(CTransformation::GetEmptyObject(), defaultImplListener));
+	g_pIObject = g_pIImpl->ConstructObject(CTransformation::GetEmptyObject(), defaultImplListener);
 #endif // CRY_AUDIO_USE_DEBUG_CODE
 
 	string const listenerNames = g_cvars.m_pListeners->GetString();
@@ -3086,7 +3234,7 @@ void CSystem::SetImplLanguage()
 //////////////////////////////////////////////////////////////////////////
 void CSystem::HandleActivateContext(ContextId const contextId)
 {
-	CryFixedStringT<MaxFileNameLength> const contextName = stl::find_in_map(g_registeredContexts, contextId, "");
+	CryFixedStringT<MaxFileNameLength> const contextName = stl::find_in_map(g_contextLookup, contextId, "");
 
 	if (!contextName.empty())
 	{
@@ -3180,7 +3328,7 @@ void CSystem::SetCurrentEnvironmentsOnObject(CObject* const pObject, EntityId co
 
 			if (entityToIgnore == INVALID_ENTITYID || entityToIgnore != areaInfo.envProvidingEntityId)
 			{
-				CEnvironment const* const pEnvironment = stl::find_in_map(g_environments, areaInfo.audioEnvironmentId, nullptr);
+				CEnvironment const* const pEnvironment = stl::find_in_map(g_environmentLookup, areaInfo.audioEnvironmentId, nullptr);
 
 				if (pEnvironment != nullptr)
 				{
@@ -3507,34 +3655,6 @@ void DrawRequestDebugInfo(IRenderAuxGeom& auxGeom, float const posX, float posY)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void DrawDefaultObjectInfo(
-	IRenderAuxGeom& auxGeom,
-	float const posX,
-	float& posY,
-	CDefaultObject const& object,
-	CryFixedStringT<MaxControlNameLength> const& lowerCaseSearchString,
-	size_t& numObjects)
-{
-	char const* const szObjectName = object.GetName();
-	CryFixedStringT<MaxControlNameLength> lowerCaseObjectName(szObjectName);
-	lowerCaseObjectName.MakeLower();
-	bool const hasActiveData = object.IsActive();
-	bool const stringFound = (lowerCaseSearchString.empty() || (lowerCaseSearchString.compareNoCase("0") == 0)) || (lowerCaseObjectName.find(lowerCaseSearchString) != CryFixedStringT<MaxControlNameLength>::npos);
-	bool const draw = stringFound && ((g_cvars.m_hideInactiveObjects == 0) || ((g_cvars.m_hideInactiveObjects != 0) && hasActiveData));
-
-	if (draw)
-	{
-		auxGeom.Draw2dLabel(posX, posY, Debug::g_listFontSize,
-		                    !hasActiveData ? Debug::s_globalColorInactive : Debug::s_listColorItemActive,
-		                    false,
-		                    "%s", szObjectName);
-
-		posY += Debug::g_listLineHeight;
-		++numObjects;
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////
 void DrawObjectInfo(
 	IRenderAuxGeom& auxGeom,
 	float const posX,
@@ -3593,11 +3713,9 @@ void DrawObjectDebugInfo(IRenderAuxGeom& auxGeom, float const posX, float posY)
 	lowerCaseSearchString.MakeLower();
 
 	posY += Debug::g_listHeaderLineHeight;
-
-	DrawDefaultObjectInfo(auxGeom, posX, posY, g_defaultObject, lowerCaseSearchString, numObjects);
-	DrawDefaultObjectInfo(auxGeom, posX, posY, g_previewObject, lowerCaseSearchString, numObjects);
-
 	Vec3 const& camPos = GetISystem()->GetViewCamera().GetPosition();
+
+	DrawObjectInfo(auxGeom, posX, posY, camPos, g_previewObject, lowerCaseSearchString, numObjects);
 
 	for (auto const pObject : g_constructedObjects)
 	{
@@ -3628,7 +3746,7 @@ void DrawPerActiveObjectDebugInfo(IRenderAuxGeom& auxGeom)
 //////////////////////////////////////////////////////////////////////////
 void DrawContextDebugInfo(IRenderAuxGeom& auxGeom, float const posX, float posY)
 {
-	auxGeom.Draw2dLabel(posX, posY, Debug::g_listHeaderFontSize, Debug::s_globalColorHeader, false, "Contexts [%" PRISIZE_T "]", g_registeredContexts.size() + 1);
+	auxGeom.Draw2dLabel(posX, posY, Debug::g_listHeaderFontSize, Debug::s_globalColorHeader, false, "Contexts [%" PRISIZE_T "]", g_contextLookup.size() + 1);
 	posY += Debug::g_listHeaderLineHeight;
 
 	for (auto const& contextPair : g_contextDebugInfo)
@@ -3642,6 +3760,200 @@ void DrawContextDebugInfo(IRenderAuxGeom& auxGeom, float const posX, float posY)
 			"%s", contextPair.first.c_str());
 
 		posY += Debug::g_listLineHeight;
+	}
+}
+
+///////////////////////////////////////////////////////////////////////////
+void DrawGlobalDataDebugInfo(IRenderAuxGeom& auxGeom, float const posX, float posY)
+{
+	auxGeom.Draw2dLabel(posX, posY, Debug::g_listHeaderFontSize, Debug::s_globalColorHeader, false, g_szGlobalName);
+	posY += Debug::g_listHeaderLineHeight;
+
+	// Check if text filter is enabled.
+	CryFixedStringT<MaxControlNameLength> lowerCaseSearchString(g_cvars.m_pDebugFilter->GetString());
+	lowerCaseSearchString.MakeLower();
+	bool const isTextFilterDisabled = (lowerCaseSearchString.empty() || (lowerCaseSearchString.compareNoCase("0") == 0));
+	bool const filterAllObjectInfo = (g_cvars.m_drawDebug & Debug::EDrawFilter::FilterAllObjectInfo) != 0;
+
+	// Check if any trigger matches text filter.
+	bool doesTriggerMatchFilter = false;
+	std::vector<CryFixedStringT<MaxMiscStringLength>> triggerInfo;
+
+	if (!g_triggerInstances.empty() || filterAllObjectInfo)
+	{
+		Debug::TriggerCounts triggerCounts;
+
+		for (auto const& triggerInstancePair : g_triggerInstances)
+		{
+			++(triggerCounts[triggerInstancePair.second->GetTriggerId()]);
+		}
+
+		for (auto const& triggerCountsPair : triggerCounts)
+		{
+			CTrigger const* const pTrigger = stl::find_in_map(g_triggerLookup, triggerCountsPair.first, nullptr);
+
+			if (pTrigger != nullptr)
+			{
+				char const* const szTriggerName = pTrigger->GetName();
+
+				if (!isTextFilterDisabled)
+				{
+					CryFixedStringT<MaxControlNameLength> lowerCaseTriggerName(szTriggerName);
+					lowerCaseTriggerName.MakeLower();
+
+					if (lowerCaseTriggerName.find(lowerCaseSearchString) != CryFixedStringT<MaxControlNameLength>::npos)
+					{
+						doesTriggerMatchFilter = true;
+					}
+				}
+
+				CryFixedStringT<MaxMiscStringLength> debugText;
+				uint8 const numInstances = triggerCountsPair.second;
+
+				if (numInstances == 1)
+				{
+					debugText.Format("%s\n", szTriggerName);
+				}
+				else
+				{
+					debugText.Format("%s: %u\n", szTriggerName, numInstances);
+				}
+
+				triggerInfo.emplace_back(debugText);
+			}
+		}
+	}
+
+	// Check if any state or switch matches text filter.
+	bool doesStateSwitchMatchFilter = false;
+	std::map<CSwitch const* const, CSwitchState const* const> switchStateInfo;
+
+	if (!g_switchStates.empty() || filterAllObjectInfo)
+	{
+		for (auto const& switchStatePair : g_switchStates)
+		{
+			CSwitch const* const pSwitch = stl::find_in_map(g_switchLookup, switchStatePair.first, nullptr);
+
+			if (pSwitch != nullptr)
+			{
+				CSwitchState const* const pSwitchState = stl::find_in_map(pSwitch->GetStates(), switchStatePair.second, nullptr);
+
+				if (pSwitchState != nullptr)
+				{
+					if (!isTextFilterDisabled)
+					{
+						char const* const szSwitchName = pSwitch->GetName();
+						CryFixedStringT<MaxControlNameLength> lowerCaseSwitchName(szSwitchName);
+						lowerCaseSwitchName.MakeLower();
+						char const* const szStateName = pSwitchState->GetName();
+						CryFixedStringT<MaxControlNameLength> lowerCaseStateName(szStateName);
+						lowerCaseStateName.MakeLower();
+
+						if ((lowerCaseSwitchName.find(lowerCaseSearchString) != CryFixedStringT<MaxControlNameLength>::npos) ||
+						    (lowerCaseStateName.find(lowerCaseSearchString) != CryFixedStringT<MaxControlNameLength>::npos))
+						{
+							doesStateSwitchMatchFilter = true;
+						}
+					}
+
+					switchStateInfo.emplace(pSwitch, pSwitchState);
+				}
+			}
+		}
+	}
+
+	// Check if any parameter matches text filter.
+	bool doesParameterMatchFilter = false;
+	std::map<char const* const, float const> parameterInfo;
+
+	if (!g_parameters.empty() || filterAllObjectInfo)
+	{
+		for (auto const& parameterPair : g_parameters)
+		{
+			CParameter const* const pParameter = stl::find_in_map(g_parameterLookup, parameterPair.first, nullptr);
+
+			if (pParameter != nullptr)
+			{
+				char const* const szParameterName = pParameter->GetName();
+
+				if (!isTextFilterDisabled)
+				{
+					CryFixedStringT<MaxControlNameLength> lowerCaseParameterName(szParameterName);
+					lowerCaseParameterName.MakeLower();
+
+					if (lowerCaseParameterName.find(lowerCaseSearchString) != CryFixedStringT<MaxControlNameLength>::npos)
+					{
+						doesParameterMatchFilter = true;
+					}
+				}
+
+				parameterInfo.emplace(szParameterName, parameterPair.second);
+			}
+		}
+	}
+
+	if (isTextFilterDisabled || doesTriggerMatchFilter)
+	{
+		for (auto const& debugText : triggerInfo)
+		{
+			auxGeom.Draw2dLabel(
+				posX,
+				posY,
+				Debug::g_objectFontSize,
+				Debug::s_objectColorTrigger,
+				false,
+				"%s", debugText.c_str());
+
+			posY += Debug::g_objectLineHeight;
+		}
+	}
+
+	if (isTextFilterDisabled || doesStateSwitchMatchFilter)
+	{
+		for (auto const& switchStatePair : switchStateInfo)
+		{
+			auto const pSwitch = switchStatePair.first;
+			auto const pSwitchState = switchStatePair.second;
+
+			Debug::CStateDrawData& drawData = g_stateDrawInfo.emplace(std::piecewise_construct, std::forward_as_tuple(pSwitch->GetId()), std::forward_as_tuple(pSwitchState->GetId())).first->second;
+			drawData.Update(pSwitchState->GetId());
+			ColorF const switchTextColor = { 0.8f, drawData.m_currentSwitchColor, 0.6f };
+
+			auxGeom.Draw2dLabel(
+				posX,
+				posY,
+				Debug::g_objectFontSize,
+				switchTextColor,
+				false,
+				"%s: %s\n",
+				pSwitch->GetName(),
+				pSwitchState->GetName());
+
+			posY += Debug::g_objectLineHeight;
+		}
+	}
+
+	if (isTextFilterDisabled || doesParameterMatchFilter)
+	{
+		for (auto const& parameterPair : parameterInfo)
+		{
+			auxGeom.Draw2dLabel(
+				posX,
+				posY,
+				Debug::g_objectFontSize,
+				Debug::s_objectColorParameter,
+				false,
+				"%s: %2.2f\n",
+				parameterPair.first,
+				parameterPair.second);
+
+			posY += Debug::g_objectLineHeight;
+		}
+	}
+
+	if ((g_cvars.m_drawDebug & Debug::EDrawFilter::ObjectImplInfo) != 0)
+	{
+		g_pIObject->DrawDebugInfo(auxGeom, posX, posY, (isTextFilterDisabled ? nullptr : lowerCaseSearchString.c_str()));
 	}
 }
 
@@ -3962,7 +4274,7 @@ void CSystem::HandleDrawDebug()
 			debugDraw += "Occlusion Collision Spheres, ";
 		}
 
-		if ((g_cvars.m_drawDebug & Debug::EDrawFilter::DefaultObjectInfo) != 0)
+		if ((g_cvars.m_drawDebug & Debug::EDrawFilter::GlobalPlaybackInfo) != 0)
 		{
 			debugDraw += "Default Object Info, ";
 		}
@@ -4013,9 +4325,9 @@ void CSystem::HandleDrawDebug()
 			posX += 600.0f;
 		}
 
-		if ((g_cvars.m_drawDebug & Debug::EDrawFilter::DefaultObjectInfo) != 0)
+		if ((g_cvars.m_drawDebug & Debug::EDrawFilter::GlobalPlaybackInfo) != 0)
 		{
-			g_defaultObject.DrawDebugInfo(*pAuxGeom, posX, posY);
+			DrawGlobalDataDebugInfo(*pAuxGeom, posX, posY);
 			posX += 400.0f;
 		}
 
@@ -4060,7 +4372,7 @@ void CSystem::HandleRetriggerControls()
 		pObject->ForceImplementationRefresh();
 	}
 
-	g_defaultObject.ForceImplementationRefresh();
+	ForceGlobalDataImplRefresh();
 	g_previewObject.ForceImplementationRefresh();
 
 	if ((g_systemStates& ESystemStates::IsMuted) != 0)
