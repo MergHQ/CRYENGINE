@@ -2,8 +2,8 @@
 
 #include "stdafx.h"
 #include "TriggerUtils.h"
-#include "DefaultObject.h"
 #include "System.h"
+#include "TriggerInstance.h"
 #include "CallbackRequestData.h"
 #include "Common/IObject.h"
 #include "Common/ITriggerConnection.h"
@@ -40,14 +40,12 @@ void SendFinishedTriggerInstanceRequest(
 //////////////////////////////////////////////////////////////////////////
 void ExecuteDefaultTriggerConnections(Control const* const pControl, TriggerConnections const& connections)
 {
-	Impl::IObject* const pIObject = g_defaultObject.GetImplData();
-
 	uint16 numPlayingInstances = 0;
 	uint16 numPendingInstances = 0;
 
 	for (auto const pConnection : connections)
 	{
-		ETriggerResult const result = pConnection->Execute(pIObject, g_triggerInstanceIdCounter);
+		ETriggerResult const result = pConnection->Execute(g_pIObject, g_triggerInstanceIdCounter);
 
 		if ((result == ETriggerResult::Playing) || (result == ETriggerResult::Virtual) || (result == ETriggerResult::Pending))
 		{
@@ -67,19 +65,45 @@ void ExecuteDefaultTriggerConnections(Control const* const pControl, TriggerConn
 #if defined(CRY_AUDIO_USE_DEBUG_CODE)
 		else if (result != ETriggerResult::DoNotTrack)
 		{
-			Cry::Audio::Log(ELogType::Warning, R"(Trigger "%s" failed on object "%s" during %s)", pControl->GetName(), g_defaultObject.GetName(), __FUNCTION__);
+			Cry::Audio::Log(ELogType::Warning, R"(Trigger "%s" failed during %s)", pControl->GetName(), __FUNCTION__);
 		}
 #endif  // CRY_AUDIO_USE_DEBUG_CODE
 	}
 
 	if ((numPlayingInstances > 0) || (numPendingInstances > 0))
 	{
-		g_defaultObject.ConstructTriggerInstance(pControl->GetId(), numPlayingInstances, numPendingInstances, ERequestFlags::None, nullptr, nullptr, nullptr);
+		ConstructGlobalTriggerInstance(pControl->GetId(), numPlayingInstances, numPendingInstances, ERequestFlags::None, nullptr, nullptr, nullptr);
 	}
 	else
 	{
 		// All of the events have either finished before we got here or never started, immediately inform the user that the trigger has finished.
 		SendFinishedTriggerInstanceRequest(pControl->GetId(), INVALID_ENTITYID);
 	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void ConstructGlobalTriggerInstance(
+	ControlId const triggerId,
+	uint16 const numPlayingConnectionInstances,
+	uint16 const numPendingConnectionInstances,
+	ERequestFlags const flags,
+	void* const pOwner,
+	void* const pUserData,
+	void* const pUserDataOwner)
+{
+#if defined(CRY_AUDIO_USE_DEBUG_CODE)
+	g_triggerInstances.emplace(
+		std::piecewise_construct,
+		std::forward_as_tuple(g_triggerInstanceIdCounter),
+		std::forward_as_tuple(new CTriggerInstance(triggerId, INVALID_ENTITYID, numPlayingConnectionInstances, numPendingConnectionInstances, flags, pOwner, pUserData, pUserDataOwner, 0.0f)));
+#else
+	g_triggerInstances.emplace(
+		std::piecewise_construct,
+		std::forward_as_tuple(g_triggerInstanceIdCounter),
+		std::forward_as_tuple(new CTriggerInstance(triggerId, INVALID_ENTITYID, numPlayingConnectionInstances, numPendingConnectionInstances, flags, pOwner, pUserData, pUserDataOwner)));
+#endif // CRY_AUDIO_USE_DEBUG_CODE
+
+	g_triggerInstanceIds.emplace_back(g_triggerInstanceIdCounter);
+	IncrementTriggerInstanceIdCounter();
 }
 } // namespace CryAudio

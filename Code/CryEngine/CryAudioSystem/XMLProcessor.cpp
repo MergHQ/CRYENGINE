@@ -133,7 +133,7 @@ void ParseContextSystemData(char const* const szFolderPath, SPoolSizes& poolSize
 
 					if (ParseSystemDataFile(szSubFolderName, contextPoolSizes, contextId))
 					{
-						g_registeredContexts[contextId] = szName;
+						g_contextLookup[contextId] = szName;
 
 #if defined(CRY_AUDIO_USE_DEBUG_CODE)
 						auto contextInfo = g_contextInfo.find(szName);
@@ -187,7 +187,7 @@ void ParseContextSystemData(char const* const szFolderPath, SPoolSizes& poolSize
 void CXMLProcessor::ParseSystemData()
 {
 	ZeroStruct(g_poolSizes);
-	g_registeredContexts.clear();
+	g_contextLookup.clear();
 
 #if defined(CRY_AUDIO_USE_DEBUG_CODE)
 	for (auto& contextPair : g_contextInfo)
@@ -484,7 +484,7 @@ void CXMLProcessor::ParsePreloadsData(char const* const szFolderPath, ContextId 
 	}
 
 #if defined(CRY_AUDIO_USE_DEBUG_CODE)
-	char const* const szContextName = stl::find_in_map(g_registeredContexts, contextId, "unknown");
+	char const* const szContextName = stl::find_in_map(g_contextLookup, contextId, "unknown");
 	float const duration = (gEnv->pTimer->GetAsyncTime() - startTime).GetMilliSeconds();
 	Cry::Audio::Log(ELogType::Comment, R"(Parsed preloads data in "%s" for context "%s" in %.3f ms!)", szFolderPath, szContextName, duration);
 #endif // CRY_AUDIO_USE_DEBUG_CODE
@@ -530,8 +530,8 @@ void CXMLProcessor::ClearControlsData(ContextId const contextId, bool const clea
 		}
 #endif  // CRY_AUDIO_USE_DEBUG_CODE
 
-		TriggerLookup::iterator iterTriggers(g_triggers.begin());
-		TriggerLookup::const_iterator iterTriggersEnd(g_triggers.end());
+		TriggerLookup::iterator iterTriggers(g_triggerLookup.begin());
+		TriggerLookup::const_iterator iterTriggersEnd(g_triggerLookup.end());
 
 		while (iterTriggers != iterTriggersEnd)
 		{
@@ -540,16 +540,16 @@ void CXMLProcessor::ClearControlsData(ContextId const contextId, bool const clea
 			if (clearAll || (pTrigger->GetContextId() == contextId))
 			{
 				delete pTrigger;
-				iterTriggers = g_triggers.erase(iterTriggers);
-				iterTriggersEnd = g_triggers.end();
+				iterTriggers = g_triggerLookup.erase(iterTriggers);
+				iterTriggersEnd = g_triggerLookup.end();
 				continue;
 			}
 
 			++iterTriggers;
 		}
 
-		ParameterLookup::iterator iterParameters(g_parameters.begin());
-		ParameterLookup::const_iterator iterParametersEnd(g_parameters.end());
+		ParameterLookup::iterator iterParameters(g_parameterLookup.begin());
+		ParameterLookup::const_iterator iterParametersEnd(g_parameterLookup.end());
 
 		while (iterParameters != iterParametersEnd)
 		{
@@ -558,16 +558,16 @@ void CXMLProcessor::ClearControlsData(ContextId const contextId, bool const clea
 			if (clearAll || (pParameter->GetContextId() == contextId))
 			{
 				delete pParameter;
-				iterParameters = g_parameters.erase(iterParameters);
-				iterParametersEnd = g_parameters.end();
+				iterParameters = g_parameterLookup.erase(iterParameters);
+				iterParametersEnd = g_parameterLookup.end();
 				continue;
 			}
 
 			++iterParameters;
 		}
 
-		SwitchLookup::iterator iterSwitches(g_switches.begin());
-		SwitchLookup::const_iterator iterSwitchesEnd(g_switches.end());
+		SwitchLookup::iterator iterSwitches(g_switchLookup.begin());
+		SwitchLookup::const_iterator iterSwitchesEnd(g_switchLookup.end());
 
 		while (iterSwitches != iterSwitchesEnd)
 		{
@@ -576,16 +576,16 @@ void CXMLProcessor::ClearControlsData(ContextId const contextId, bool const clea
 			if (clearAll || (pSwitch->GetContextId() == contextId))
 			{
 				delete pSwitch;
-				iterSwitches = g_switches.erase(iterSwitches);
-				iterSwitchesEnd = g_switches.end();
+				iterSwitches = g_switchLookup.erase(iterSwitches);
+				iterSwitchesEnd = g_switchLookup.end();
 				continue;
 			}
 
 			++iterSwitches;
 		}
 
-		EnvironmentLookup::iterator iterEnvironments(g_environments.begin());
-		EnvironmentLookup::const_iterator iterEnvironmentsEnd(g_environments.end());
+		EnvironmentLookup::iterator iterEnvironments(g_environmentLookup.begin());
+		EnvironmentLookup::const_iterator iterEnvironmentsEnd(g_environmentLookup.end());
 
 		while (iterEnvironments != iterEnvironmentsEnd)
 		{
@@ -594,16 +594,16 @@ void CXMLProcessor::ClearControlsData(ContextId const contextId, bool const clea
 			if (clearAll || (pEnvironment->GetContextId() == contextId))
 			{
 				delete pEnvironment;
-				iterEnvironments = g_environments.erase(iterEnvironments);
-				iterEnvironmentsEnd = g_environments.end();
+				iterEnvironments = g_environmentLookup.erase(iterEnvironments);
+				iterEnvironmentsEnd = g_environmentLookup.end();
 				continue;
 			}
 
 			++iterEnvironments;
 		}
 
-		SettingLookup::iterator iterSettings(g_settings.begin());
-		SettingLookup::const_iterator iterSettingsEnd(g_settings.end());
+		SettingLookup::iterator iterSettings(g_settingLookup.begin());
+		SettingLookup::const_iterator iterSettingsEnd(g_settingLookup.end());
 
 		while (iterSettings != iterSettingsEnd)
 		{
@@ -612,8 +612,8 @@ void CXMLProcessor::ClearControlsData(ContextId const contextId, bool const clea
 			if (clearAll || (pSetting->GetContextId() == contextId))
 			{
 				delete pSetting;
-				iterSettings = g_settings.erase(iterSettings);
-				iterSettingsEnd = g_settings.end();
+				iterSettings = g_settingLookup.erase(iterSettings);
+				iterSettingsEnd = g_settingLookup.end();
 				continue;
 			}
 
@@ -755,7 +755,7 @@ void CXMLProcessor::ParseEnvironments(XmlNodeRef const& rootNode, ContextId cons
 			char const* const szEnvironmentName = environmentNode->getAttr(g_szNameAttribute);
 			auto const environmentId = static_cast<EnvironmentId const>(StringToId(szEnvironmentName));
 
-			if ((environmentId != InvalidControlId) && (stl::find_in_map(g_environments, environmentId, nullptr) == nullptr))
+			if ((environmentId != InvalidControlId) && (stl::find_in_map(g_environmentLookup, environmentId, nullptr) == nullptr))
 			{
 				//there is no entry yet with this ID in the container
 				int const numConnections = environmentNode->getChildCount();
@@ -794,7 +794,7 @@ void CXMLProcessor::ParseEnvironments(XmlNodeRef const& rootNode, ContextId cons
 
 					if (pNewEnvironment != nullptr)
 					{
-						g_environments[environmentId] = pNewEnvironment;
+						g_environmentLookup[environmentId] = pNewEnvironment;
 					}
 				}
 			}
@@ -822,7 +822,7 @@ void CXMLProcessor::ParseSettings(XmlNodeRef const& rootNode, ContextId const co
 			char const* const szSettingName = settingNode->getAttr(g_szNameAttribute);
 			auto const settingId = static_cast<ControlId>(StringToId(szSettingName));
 
-			if ((settingId != InvalidControlId) && (stl::find_in_map(g_settings, settingId, nullptr) == nullptr))
+			if ((settingId != InvalidControlId) && (stl::find_in_map(g_settingLookup, settingId, nullptr) == nullptr))
 			{
 				int const numConnections = settingNode->getChildCount();
 
@@ -862,7 +862,7 @@ void CXMLProcessor::ParseSettings(XmlNodeRef const& rootNode, ContextId const co
 
 					if (pNewSetting != nullptr)
 					{
-						g_settings[settingId] = pNewSetting;
+						g_settingLookup[settingId] = pNewSetting;
 					}
 				}
 			}
@@ -890,7 +890,7 @@ void CXMLProcessor::ParseTriggers(XmlNodeRef const& rootNode, ContextId const co
 			char const* const szTriggerName = triggerNode->getAttr(g_szNameAttribute);
 			auto const triggerId = static_cast<ControlId const>(StringToId(szTriggerName));
 
-			if ((triggerId != InvalidControlId) && (stl::find_in_map(g_triggers, triggerId, nullptr) == nullptr))
+			if ((triggerId != InvalidControlId) && (stl::find_in_map(g_triggerLookup, triggerId, nullptr) == nullptr))
 			{
 				int const numConnections = triggerNode->getChildCount();
 				TriggerConnections connections;
@@ -936,7 +936,7 @@ void CXMLProcessor::ParseTriggers(XmlNodeRef const& rootNode, ContextId const co
 
 					if (pNewTrigger != nullptr)
 					{
-						g_triggers[triggerId] = pNewTrigger;
+						g_triggerLookup[triggerId] = pNewTrigger;
 					}
 				}
 			}
@@ -1047,7 +1047,7 @@ void CXMLProcessor::ParseSwitches(XmlNodeRef const& rootNode, ContextId const co
 			char const* const szSwitchName = switchNode->getAttr(g_szNameAttribute);
 			auto const switchId = static_cast<ControlId const>(StringToId(szSwitchName));
 
-			if ((switchId != InvalidControlId) && (stl::find_in_map(g_switches, switchId, nullptr) == nullptr))
+			if ((switchId != InvalidControlId) && (stl::find_in_map(g_switchLookup, switchId, nullptr) == nullptr))
 			{
 				MEMSTAT_CONTEXT(EMemStatContextType::AudioSystem, "CryAudio::CSwitch");
 #if defined(CRY_AUDIO_USE_DEBUG_CODE)
@@ -1108,7 +1108,7 @@ void CXMLProcessor::ParseSwitches(XmlNodeRef const& rootNode, ContextId const co
 					}
 				}
 
-				g_switches[switchId] = pNewSwitch;
+				g_switchLookup[switchId] = pNewSwitch;
 			}
 #if defined(CRY_AUDIO_USE_DEBUG_CODE)
 			else
@@ -1134,7 +1134,7 @@ void CXMLProcessor::ParseParameters(XmlNodeRef const& rootNode, ContextId const 
 			char const* const szParameterName = parameterNode->getAttr(g_szNameAttribute);
 			auto const parameterId = static_cast<ControlId const>(StringToId(szParameterName));
 
-			if ((parameterId != InvalidControlId) && (stl::find_in_map(g_parameters, parameterId, nullptr) == nullptr))
+			if ((parameterId != InvalidControlId) && (stl::find_in_map(g_parameterLookup, parameterId, nullptr) == nullptr))
 			{
 				int const numConnections = parameterNode->getChildCount();
 				ParameterConnections connections;
@@ -1171,7 +1171,7 @@ void CXMLProcessor::ParseParameters(XmlNodeRef const& rootNode, ContextId const 
 
 					if (pParameter != nullptr)
 					{
-						g_parameters[parameterId] = pParameter;
+						g_parameterLookup[parameterId] = pParameter;
 					}
 				}
 			}

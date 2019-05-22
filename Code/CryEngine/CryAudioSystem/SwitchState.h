@@ -41,12 +41,12 @@ public:
 
 	~CSwitchState();
 
+	void          Set() const;
 	void          SetGlobally() const;
 	SwitchStateId GetId() const { return m_switchStateId; }
 
 #if defined(CRY_AUDIO_USE_DEBUG_CODE)
 	void        Set(CObject const& object) const;
-	void        Set(CDefaultObject const& object) const;
 	char const* GetName() const { return m_name.c_str(); }
 #else
 	void        Set(Impl::IObject* const pIObject) const;

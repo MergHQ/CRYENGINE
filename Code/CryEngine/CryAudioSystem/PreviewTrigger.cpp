@@ -4,8 +4,8 @@
 
 #if defined(CRY_AUDIO_USE_DEBUG_CODE)
 	#include "PreviewTrigger.h"
-	#include "DefaultObject.h"
 	#include "TriggerUtils.h"
+	#include "Object.h"
 	#include "Common/IImpl.h"
 	#include "Common/IObject.h"
 	#include "Common/ITriggerConnection.h"
@@ -94,7 +94,7 @@ void CPreviewTrigger::Execute()
 
 	if ((numPlayingInstances > 0) || (numPendingInstances > 0))
 	{
-		g_previewObject.ConstructTriggerInstance(m_id, numPlayingInstances, numPendingInstances, ERequestFlags::None, nullptr, nullptr, nullptr);
+		g_previewObject.ConstructTriggerInstance(m_id, INVALID_ENTITYID, numPlayingInstances, numPendingInstances, ERequestFlags::None, nullptr, nullptr, nullptr, 0.0f);
 	}
 	else
 	{

@@ -39,11 +39,11 @@ public:
 
 	~CParameter();
 
+	void Set(float const value) const;
 	void SetGlobally(float const value) const;
 
 #if defined(CRY_AUDIO_USE_DEBUG_CODE)
 	void Set(CObject const& object, float const value) const;
-	void Set(CDefaultObject const& object, float const value) const;
 #else
 	void Set(Impl::IObject* const pIObject, float const value) const;
 #endif // CRY_AUDIO_USE_DEBUG_CODE
