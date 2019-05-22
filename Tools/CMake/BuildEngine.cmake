@@ -534,10 +534,6 @@ if (OPTION_ENGINE)
 	#libs
 	add_subdirectory ("Code/Libs/bigdigits")
 	add_subdirectory ("Code/Libs/mikkelsen")
-
-	if (WINDOWS)
-		add_subdirectory("Code/Libs/Detours")
-	endif ()
 	
 	if(PLUGIN_VR_OCULUS)
 		add_subdirectory("Code/Libs/oculus")
@@ -630,6 +626,10 @@ if (OPTION_ENGINE OR OPTION_SHADERCACHEGEN)
 	add_subdirectory ("Code/Libs/lzss")
 	add_subdirectory ("Code/Libs/tiff")	
 endif()
+
+if (WINDOWS)
+	add_subdirectory ("Code/Libs/Detours")
+endif ()
 
 add_subdirectory ("Code/Libs/qpOASES")
 
