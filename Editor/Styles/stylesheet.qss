@@ -1213,7 +1213,8 @@ CEditorDialog, CDockableDialog
 
 QCustomWindowFrame 
 {
-	margin:0px;
+	qproperty-resizeMargin: 4;
+	margin: 0 4 4 4;
 	border:0px;
 	padding:0;
 }
