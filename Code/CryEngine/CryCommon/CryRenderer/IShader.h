@@ -2004,7 +2004,7 @@ enum eDynamicLightFlags : uint32
 	DLF_DEFERRED_CUBEMAPS       = BIT32(11),
 	DLF_HAS_CLIP_VOLUME         = BIT32(12),
 	DLF_DISABLED                = BIT32(13),
-	DLF_AREA_LIGHT              = BIT32(14),
+	DLF_AREA                    = BIT32(14),
 	DLF_USE_FOR_SVOGI           = BIT32(15),
 	// UNUSED										=	BIT(16),
 	DLF_FAKE                    = BIT32(17),   //!< No lighting, used for Flares, beams and such.
@@ -2026,7 +2026,7 @@ enum eDynamicLightFlags : uint32
 	DLF_SPECULAROCCLUSION = BIT32(30),
 	DLF_DIFFUSEOCCLUSION  = BIT32(31),
 
-	DLF_LIGHTTYPE_MASK    = (DLF_DIRECTIONAL | DLF_POINT | DLF_PROJECT | DLF_AREA_LIGHT)
+	DLF_LIGHTTYPE_MASK    = (DLF_DIRECTIONAL | DLF_POINT | DLF_PROJECT | DLF_AREA)
 };
 
 //! Area light types.
@@ -2142,7 +2142,7 @@ struct SRenderLight
 	{
 		// Adjust light intensity so that the intended brightness is reached 1 meter from the light's surface
 		// I / (1 + bulb)^2 = 1; I = (1 + bulb)^2
-		if (m_Flags & (DLF_AREA_LIGHT | DLF_AMBIENT))
+		if (m_Flags & DLF_AMBIENT)
 			return 1.0f;
 		return sqr(1.0f + m_fAttenuationBulbSize);
 	}
@@ -2373,6 +2373,9 @@ struct SRenderLight
 		m_pLightAnim = dl.m_pLightAnim;
 		m_fAreaWidth = dl.m_fAreaWidth;
 		m_fAreaHeight = dl.m_fAreaHeight;
+		m_bAreaTwoSided = dl.m_bAreaTwoSided;
+		m_bAreaTextured = dl.m_bAreaTextured;
+		m_nAreaShape = dl.m_nAreaShape;
 		m_fBoxWidth = dl.m_fBoxWidth;
 		m_fBoxHeight = dl.m_fBoxHeight;
 		m_fBoxLength = dl.m_fBoxLength;
@@ -2460,8 +2463,12 @@ public:
 	float                m_fClipRadius = 100.f;
 	float                m_fAttenuationBulbSize = 0.1f;
 
+	// Area Light properties
 	float                m_fAreaWidth = 1.f;
 	float                m_fAreaHeight = 1.f;
+	bool                 m_bAreaTwoSided = false;
+	bool                 m_bAreaTextured = false;
+	uint8                m_nAreaShape = 0;
 
 	float                m_fFogRadialLobe = 0;  //!< The blend ratio of two radial lobe for volumetric fog.
 

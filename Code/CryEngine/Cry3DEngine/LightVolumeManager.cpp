@@ -121,7 +121,7 @@ void CLightVolumesMgr::AddLight(const SRenderLight& pLight, const SLightVolInfo*
 			Vec3 lightColor = pLight.m_Color.toVec3();
 
 			// Adjust light intensity so that the intended brightness is reached 1 meter from the light's surface
-			IF (!(pLight.m_Flags & (DLF_AREA_LIGHT | DLF_AMBIENT)), 1)
+			IF (!(pLight.m_Flags & DLF_AMBIENT), 1)
 			{
 				fAttenuationBulbSize = max(fAttenuationBulbSize, 0.001f);
 

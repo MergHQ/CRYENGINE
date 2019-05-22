@@ -7273,7 +7273,7 @@ bool CScriptBind_Entity::ParseLightParams(IScriptTable* pLightTable, SRenderLigh
 	if (chain.GetValue("link_to_sky_color", flag) && flag)
 		light.m_Flags |= DLF_LINK_TO_SKY_COLOR;
 	if (chain.GetValue("area_light", flag) && flag)
-		light.m_Flags |= DLF_AREA_LIGHT;
+		light.m_Flags |= DLF_AREA;
 	if (chain.GetValue("deferred_light", flag) && flag)
 		light.m_Flags |= DLF_DEFERRED_LIGHT;
 	if (chain.GetValue("volumetric_fog", flag) && flag)
@@ -7562,7 +7562,7 @@ bool CScriptBind_Entity::ParseLightParams(IScriptTable* pLightTable, SRenderLigh
 	if (bTimeScrubbingInTrackView)
 		light.m_Flags |= DLF_TRACKVIEW_TIMESCRUBBING;
 
-	if (!(light.m_Flags & DLF_AREA_LIGHT) && light.m_fLightFrustumAngle && (light.m_pLightImage != nullptr) && light.m_pLightImage->IsTextureLoaded() || light.m_pLightDynTexSource)
+	if (light.m_fLightFrustumAngle && (light.m_pLightImage != nullptr) && light.m_pLightImage->IsTextureLoaded() || light.m_pLightDynTexSource)
 		light.m_Flags |= DLF_PROJECT;
 	else
 	{

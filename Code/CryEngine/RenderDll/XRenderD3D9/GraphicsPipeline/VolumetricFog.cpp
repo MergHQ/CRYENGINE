@@ -1046,7 +1046,6 @@ void CVolumetricFogStage::GenerateLightList()
 	const Vec3 worldViewPos = viewInfo.cameraOrigin;
 	const Vec3 cameraPosition = pRenderView->GetCamera(CCamera::eEye_Left).GetPosition();
 
-	const bool areaLights = (CRendererCVars::CV_r_DeferredShadingAreaLights > 0);
 	const float minBulbSize = max(0.001f, min(2.0f, CRendererCVars::CV_r_VolumetricFogMinimumLightBulbSize));// limit the minimum bulb size to reduce the light flicker.
 
 	// NOTE: Get aligned stack-space (pointer and size aligned to manager's alignment requirement)
@@ -1081,10 +1080,6 @@ void CVolumetricFogStage::GenerateLightList()
 			if ((renderLight.m_Flags & DLF_FAKE) || !(renderLight.m_Flags & DLF_VOLUMETRIC_FOG))
 				continue;
 
-			// Skip non-ambient area light if support is disabled
-			if ((renderLight.m_Flags & DLF_AREA_LIGHT) && !(renderLight.m_Flags & DLF_AMBIENT) && !areaLights)
-				continue;
-
 			++numRenderLights;
 
 			if (numTileLights == MaxNumTileLights)
@@ -1092,13 +1087,13 @@ void CVolumetricFogStage::GenerateLightList()
 
 			// Setup standard parameters
 			float mipFactor = (cameraPosition - renderLight.m_Origin).GetLengthSquared() / max(0.001f, renderLight.m_fRadius * renderLight.m_fRadius);
-			bool areaLightRect = (renderLight.m_Flags & DLF_AREA_LIGHT) && renderLight.m_fAreaWidth && renderLight.m_fAreaHeight && renderLight.m_fLightFrustumAngle;
+			bool isAreaLight = (renderLight.m_Flags & DLF_AREA) != 0;
 			float volumeSize = (lightListIdx == 0) ? renderLight.m_ProbeExtents.len() : renderLight.m_fRadius;
 			Vec3 pos = renderLight.GetPosition();
 			lightShadeInfo.posRad = Vec4(pos.x - worldViewPos.x, pos.y - worldViewPos.y, pos.z - worldViewPos.z, volumeSize);
 			Vec4 posVS = Vec4(pos, 1) * matView;
 			lightCullInfo.posRad = Vec4(posVS.x, posVS.y, posVS.z, volumeSize);
-			lightShadeInfo.attenuationParams = Vec2(areaLightRect ? (renderLight.m_fAreaWidth + renderLight.m_fAreaHeight) * 0.25f : renderLight.m_fAttenuationBulbSize, renderLight.m_fAreaHeight * 0.5f);
+			lightShadeInfo.attenuationParams = Vec2(renderLight.m_fAttenuationBulbSize, minBulbSize);
 			lightCullInfo.depthBounds = Vec2(posVS.z - volumeSize, posVS.z + volumeSize);
 			lightShadeInfo.color = Vec4(renderLight.m_Color.r * itensityScale,
 			                            renderLight.m_Color.g * itensityScale,
@@ -1293,37 +1288,59 @@ void CVolumetricFogStage::GenerateLightList()
 				}
 
 				// Handle rectangular area lights
-				if (areaLightRect)
+				if (isAreaLight)
 				{
-					lightCullInfo.volumeType = CTiledLightVolumesStage::tlVolumeOBB;
 					lightShadeInfo.lightType = ambientLight ? CTiledLightVolumesStage::tlTypeAmbientArea : CTiledLightVolumesStage::tlTypeRegularArea;
 					lightCullInfo.miscFlag = 0;
 
-					float expensionRadius = renderLight.m_fRadius * 1.08f;
-					Vec3 scale(expensionRadius, expensionRadius, expensionRadius);
-					Matrix34 areaLightMat = CShadowUtils::GetAreaLightMatrix(&renderLight, scale);
-
-					Vec4 u0 = Vec4(areaLightMat.GetColumn0().GetNormalized(), 0) * matView;
-					Vec4 u1 = Vec4(areaLightMat.GetColumn1().GetNormalized(), 0) * matView;
-					Vec4 u2 = Vec4(areaLightMat.GetColumn2().GetNormalized(), 0) * matView;
-					lightCullInfo.volumeParams0 = Vec4(u0.x, u0.y, u0.z, areaLightMat.GetColumn0().GetLength() * 0.5f);
-					lightCullInfo.volumeParams1 = Vec4(u1.x, u1.y, u1.z, areaLightMat.GetColumn1().GetLength() * 0.5f);
-					lightCullInfo.volumeParams2 = Vec4(u2.x, u2.y, u2.z, areaLightMat.GetColumn2().GetLength() * 0.5f);
+					// Pre-transform polygonal shape vertices
+					Matrix33 rotationMat;
+					rotationMat.SetColumn0(renderLight.m_ObjMatrix.GetColumn0().GetNormalized());
+					rotationMat.SetColumn1(renderLight.m_ObjMatrix.GetColumn1().GetNormalized());
+					rotationMat.SetColumn2(renderLight.m_ObjMatrix.GetColumn2().GetNormalized());
 
 					float volumeSize = renderLight.m_fRadius + max(renderLight.m_fAreaWidth, renderLight.m_fAreaHeight);
 					lightCullInfo.depthBounds = Vec2(posVS.z - volumeSize, posVS.z + volumeSize);
+					
+					Vec3 lightPos = renderLight.GetPosition() - viewInfo.cameraOrigin;
+					Vec3 polygonPos[4];
+					float areaWidth = renderLight.m_fAreaWidth * 0.5f;
+					float areaHeight = renderLight.m_fAreaHeight * 0.5f;
 
-					float areaFov = renderLight.m_fLightFrustumAngle * 2.0f;
-					if (renderLight.m_Flags & DLF_CASTSHADOW_MAPS)
-						areaFov = min(areaFov, 135.0f); // Shadow can only cover ~135 degree FOV without looking bad, so we clamp the FOV to hide shadow clipping
-
-					const float cosAngle = cosf(areaFov * (gf_PI / 360.0f));
+					if (renderLight.m_nAreaShape == 1) // Rectangular light source
+					{
+						polygonPos[0] = rotationMat.TransformVector(Vec3(-areaWidth, 0, -areaHeight)) + lightPos;
+						polygonPos[1] = rotationMat.TransformVector(Vec3(areaWidth, 0, -areaHeight)) + lightPos;
+						polygonPos[2] = rotationMat.TransformVector(Vec3(areaWidth, 0, areaHeight)) + lightPos;
+						polygonPos[3] = rotationMat.TransformVector(Vec3(-areaWidth, 0, areaHeight)) + lightPos;
+					}
+					else
+					{
+						Vec3 ex = rotationMat.TransformVector(Vec3(1, 0, 0) * areaWidth  * 0.5f);
+						Vec3 ey = rotationMat.TransformVector(Vec3(0, 0, 1) * areaHeight * 0.5f);
+						polygonPos[0] = lightPos - ex - ey;
+						polygonPos[1] = lightPos + ex - ey;
+						polygonPos[2] = lightPos + ex + ey;
+						polygonPos[3] = lightPos - ex + ey;
+					}
 
 					Matrix44 areaLightParams;
-					areaLightParams.SetRow4(0, Vec4(renderLight.m_ObjMatrix.GetColumn0().GetNormalized(), 1.0f));
-					areaLightParams.SetRow4(1, Vec4(renderLight.m_ObjMatrix.GetColumn1().GetNormalized(), 1.0f));
-					areaLightParams.SetRow4(2, Vec4(renderLight.m_ObjMatrix.GetColumn2().GetNormalized(), 1.0f));
-					areaLightParams.SetRow4(3, Vec4(renderLight.m_fAreaWidth * 0.5f, renderLight.m_fAreaHeight * 0.5f, 0, cosAngle));
+					areaLightParams.SetRow4(0, Vec4(polygonPos[0].x, polygonPos[0].y, polygonPos[0].z, renderLight.m_nAreaShape));
+					areaLightParams.SetRow4(1, Vec4(polygonPos[1].x, polygonPos[1].y, polygonPos[1].z, renderLight.m_bAreaTwoSided));
+					areaLightParams.SetRow4(2, Vec4(polygonPos[2].x, polygonPos[2].y, polygonPos[2].z, renderLight.m_bAreaTextured));
+					areaLightParams.SetRow4(3, Vec4(polygonPos[3].x, polygonPos[3].y, polygonPos[3].z, 0));
+
+					lightShadeInfo.resIndex = lightShadeInfo.resNoIndex;
+					{
+						CTexture* pAreaTexture = (CTexture*)renderLight.m_pLightImage;
+
+						int arrayIndex = tiledLights->InsertTexture(pAreaTexture, mipFactor, tiledLights->m_spotTexAtlas, -1);
+						if (arrayIndex < 0)
+							continue;  // Skip light
+
+						lightShadeInfo.resIndex = arrayIndex;
+						lightShadeInfo.resMipClamp0 = lightShadeInfo.resMipClamp1 = tiledLights->m_spotTexAtlas.items[arrayIndex].lowestRenderableMip;
+					}
 
 					lightShadeInfo.projectorMatrix = areaLightParams;
 				}
@@ -1911,12 +1928,6 @@ void CVolumetricFogStage::ExecuteInjectInscatteringLight(const SScopedComputeCom
 		break;
 	}
 
-	// set area light support.
-	if (CRendererCVars::CV_r_DeferredShadingAreaLights > 0)
-	{
-		rtMask |= g_HWSR_MaskBit[HWSR_SAMPLE2];
-	}
-
 	// set texture format toggle
 	if (m_seperateDensity)
 	{
@@ -1964,7 +1975,8 @@ void CVolumetricFogStage::ExecuteInjectInscatteringLight(const SScopedComputeCom
 	inputFlag |= bSunShadow ? BIT(0) : 0;
 	inputFlag |= bStaticShadowMap ? BIT(1) : 0;
 
-	if (pass.IsDirty(inputFlag, rtMask))
+	int spotLightAtlasID = tiledLights->GetProjectedLightAtlas()->GetID();
+	if (pass.IsDirty(inputFlag, rtMask, spotLightAtlasID))
 	{
 		static CCryNameTSCRC techName("InjectVolumetricInscattering");
 		pass.SetTechnique(pShader, techName, rtMask);

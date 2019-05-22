@@ -557,7 +557,7 @@ void COctreeNode::AddLightSource(SRenderLight* pSource, const SRenderingPassInfo
 		OBB obb(OBB::CreateOBBfromAABB(Matrix33(pSource->m_ObjMatrix), AABB(-pSource->m_ProbeExtents, pSource->m_ProbeExtents)));
 		bIsVisible = passInfo.GetCamera().IsOBBVisible_F(pSource->m_Origin, obb);
 	}
-	else if (pSource->m_Flags & DLF_AREA_LIGHT)
+	else if (pSource->m_Flags & DLF_AREA)
 	{
 		// OBB test for area lights.
 		Vec3 vBoxMax(pSource->m_fRadius, pSource->m_fRadius + pSource->m_fAreaWidth, pSource->m_fRadius + pSource->m_fAreaHeight);

@@ -57,16 +57,6 @@ struct STiledClipVolumeInfo
 #define TILEDLIGHT_VOLUME_OBB      3
 #define TILEDLIGHT_VOLUME_SUN      4
 
-#define TILEDLIGHT_TYPE_PROBE              1
-#define TILEDLIGHT_TYPE_AMBIENT_POINT      2
-#define TILEDLIGHT_TYPE_AMBIENT_PROJECTOR  3
-#define TILEDLIGHT_TYPE_AMBIENT_AREA       4
-#define TILEDLIGHT_TYPE_REGULAR_POINT      5
-#define TILEDLIGHT_TYPE_REGULAR_PROJECTOR  6
-#define TILEDLIGHT_TYPE_REGULAR_POINTFACE  7
-#define TILEDLIGHT_TYPE_REGULAR_AREA       8
-#define TILEDLIGHT_TYPE_SUN                9
-
 ////////////////////////////////////////////////////////////////////////////
 
 Buffer<uint>                           Fwd_TileLightMask : register(t17);
@@ -85,6 +75,7 @@ Texture2D<float4>                      Fwd_GiSpecularRT : register(t47);
 #endif
 
 SamplerComparisonState SampStateComp : register(s14);
+SamplerState SampStateTrilinearClamp : register(s15);
 
 #define SHADOW_SAMPLE_COUNT 16
 float4 irreg_kernel_2d[SHADOW_SAMPLE_COUNT/2] : PB_IrregKernel;
@@ -190,13 +181,13 @@ void TiledForwardShading(in ForwardShadingAttribs attribs, inout float3 diffuseA
 		int lightType = Fwd_TiledLightsShadeInfo[lightShadeInfoIdx].lightType;
 		
 		[branch]
-		if (lightIndex < 0 || lightType > TILEDLIGHT_TYPE_AMBIENT_AREA)
+		if (lightIndex < 0 || lightType > LIGHT_TYPE_AMBIENT_AREA)
 			break;
 			
 		if (applyProbes)
 		{
 			const float clipVolumeWeight = 1;  // TODO
-			if (lightType == TILEDLIGHT_TYPE_PROBE && probeWeightSum < 1 && clipVolumeWeight > 0)
+			if (lightType == LIGHT_TYPE_PROBE && probeWeightSum < 1 && clipVolumeWeight > 0)
 			{
 				float3 lightVec = Fwd_TiledLightsShadeInfo[lightShadeInfoIdx].posRad.xyz - (attribs.worldPos + GetWorldViewPos());
 				
@@ -264,13 +255,13 @@ void TiledForwardShading(in ForwardShadingAttribs attribs, inout float3 diffuseA
 		const float4 posRad = Fwd_TiledLightsShadeInfo[lightShadeInfoIdx].posRad;
 		const float3 lightVec = posRad.xyz - (position + GetWorldViewPos());
 		
-		if (applyNonProbes && lightType > TILEDLIGHT_TYPE_AMBIENT_AREA && length( lightVec ) < posRad.w)
+		if (applyNonProbes && lightType > LIGHT_TYPE_AMBIENT_AREA && length( lightVec ) < posRad.w)
 		{
 			bool skipShading = false;
 			bool shadowMap = false;
 			
 			ForwardLightParams lightParams;
-			lightParams.type = LT_TILED;
+            lightParams.type = lightType;
 			lightParams.lightVec = normalize(lightVec);
 			lightParams.illuminance = Fwd_TiledLightsShadeInfo[lightShadeInfoIdx].color.rgb;
 			
@@ -279,7 +270,7 @@ void TiledForwardShading(in ForwardShadingAttribs attribs, inout float3 diffuseA
 			
 			const float clipVolumeWeight = 1;
 
-			if (lightType == TILEDLIGHT_TYPE_REGULAR_PROJECTOR)
+			if (lightType == LIGHT_TYPE_REGULAR_PROJECTOR)
 			{
 				if (attenuation > 0)
 				{
@@ -298,7 +289,7 @@ void TiledForwardShading(in ForwardShadingAttribs attribs, inout float3 diffuseA
 						shadowMap = true;
 				}
 			}
-			else if (lightType == TILEDLIGHT_TYPE_REGULAR_POINTFACE)
+			else if (lightType == LIGHT_TYPE_REGULAR_POINTFACE)
 			{
 				uint cubeFace = selectCubeFace(lightVec);
 				
@@ -360,12 +351,20 @@ void TiledForwardShading(in ForwardShadingAttribs attribs, inout float3 diffuseA
 				}
 
 				lightParams.illuminance *= shadowOccl;
-				
-				float3 diffuse, specular;
-				Callback_ShadingDirect(attribs, lightParams, diffuse, specular);
-				diffuseAcc += diffuse;
-				specularAcc += specular;
-			}
+
+                float3 diffuseTerm = 0;
+                float3 specularTerm = 0;
+
+                attribs.areaAttribs.transform = Fwd_TiledLightsShadeInfo[lightShadeInfoIdx].projectorMatrix;
+                attribs.areaAttribs.lightPos = Fwd_TiledLightsShadeInfo[lightShadeInfoIdx].posRad.xyz - GetWorldViewPos();
+                attribs.areaAttribs.position = position;
+                attribs.areaAttribs.lightArrayIdx = GetResourceIndexAndMipClamps(Fwd_TiledLightsShadeInfo[lightShadeInfoIdx].resIndex).x;
+
+                Callback_ShadingDirect(attribs, lightParams, diffuseAcc, specularTerm);
+
+				diffuseAcc += diffuseTerm;
+                specularAcc += specularTerm;
+            }
 		}
 		
 		while (maskIndex < 8)
@@ -395,8 +394,6 @@ float4 SSDOParams;
 #if FEATURE_SVO_GI
 float4 ForwGiIntegrationMode : PB_SvoParams4;
 #endif
-
-SamplerState SampStateTrilinearClamp : register(s0);
 
 RWBuffer<uint> TileTranspLightMaskUAV : register(u0);
 RWTexture2D<float3> HDRSceneTargetUAV : register(u1);
@@ -741,7 +738,7 @@ void TiledDeferredShadingCS( uint3 GroupID : SV_GroupID,
 		while (curLight < sTileLightCount)
 		{
 			int lightType = TiledLightsShadeInfo[lightIndex].lightType;
-			if (lightType != TILEDLIGHT_TYPE_PROBE)
+			if (lightType != LIGHT_TYPE_PROBE)
 				break;
 
 			const float clipVolumeBlendWeight = CalcClipVolumeBlendWeight(clipVolumeStencilID, clipVolumeData, clipVolumeBlendFactor, TiledLightsShadeInfo[lightIndex].stencilID);
@@ -839,7 +836,7 @@ void TiledDeferredShadingCS( uint3 GroupID : SV_GroupID,
 		while (curLight < sTileLightCount)
 		{
 			int lightType = TiledLightsShadeInfo[lightIndex].lightType;
-			if (lightType != TILEDLIGHT_TYPE_AMBIENT_AREA)
+			if (lightType != LIGHT_TYPE_AMBIENT_AREA)
 				break;
 
 			const float clipVolumeBlendWeight = CalcClipVolumeBlendWeight(clipVolumeStencilID, clipVolumeData, clipVolumeBlendFactor, TiledLightsShadeInfo[lightIndex].stencilID);
@@ -855,7 +852,7 @@ void TiledDeferredShadingCS( uint3 GroupID : SV_GroupID,
 				float NdotL;
 				float PdotL = 1;
 			
-				[branch] if (lightType == TILEDLIGHT_TYPE_AMBIENT_AREA)
+				[branch] if (lightType == LIGHT_TYPE_AMBIENT_AREA)
 				{
 					lightVec = ComputeNearestLightOnRectangle(lightVec, TiledLightsShadeInfo[lightIndex].projectorMatrix);
 
@@ -879,7 +876,7 @@ void TiledDeferredShadingCS( uint3 GroupID : SV_GroupID,
 					lightVec = normalize( lightVec );
 					NdotL = saturate( dot( surfNormal, lightVec ) );
 				
-					if (lightType == TILEDLIGHT_TYPE_AMBIENT_PROJECTOR)
+					if (lightType == LIGHT_TYPE_AMBIENT_PROJECTOR)
 					{
 						filter = 0;
 						[branch] if (attenuation > 0)
@@ -951,24 +948,12 @@ void TiledDeferredShadingCS( uint3 GroupID : SV_GroupID,
 			float attenuation;
 			float PdotL = 1;
 		
-			[branch] if (lightType == TILEDLIGHT_TYPE_SUN)
+			[branch] if (lightType == LIGHT_TYPE_SUN)
 			{
 				lightVec = SunDir.xyz;
 				lightVecAreaSpec = SunDir.xyz * SunDir.w;
 				attenuation = (TiledClipVolumeInfo[clipVolumeStencilID].data & CLIPVOLUME_AFFECTED_BY_SUN) ? 1.0 : 0.0;
 			}
-	#if %_RT_SAMPLE5
-			else if (lightType == TILEDLIGHT_TYPE_REGULAR_AREA)
-			{
-				const float clipVolumeBlendWeight = CalcClipVolumeBlendWeight( clipVolumeStencilID, clipVolumeData, clipVolumeBlendFactor, TiledLightsShadeInfo[lightIndex].stencilID );
-				lightVecAreaSpec = lightVec;
-				lightVec = ComputeNearestLightOnRectangle(lightVec, TiledLightsShadeInfo[lightIndex].projectorMatrix);
-				attenuation = GetPhysicalLightAttenuation( length( lightVec ), rcp(lightAtt), TiledLightsShadeInfo[lightIndex].attenuationParams.x ) * clipVolumeBlendWeight;
-				lightVec = normalize( lightVec );
-				PdotL = dot( -lightVec.xyz, TiledLightsShadeInfo[lightIndex].projectorMatrix[0].xyz );
-				attenuation *= GetSpotAttenuation( PdotL, TiledLightsShadeInfo[lightIndex].projectorMatrix[3].w, lightAtt ) * step( 0, PdotL );
-			}
-	#endif
 			else
 			{
 				const float clipVolumeBlendWeight = CalcClipVolumeBlendWeight(clipVolumeStencilID, clipVolumeData, clipVolumeBlendFactor, TiledLightsShadeInfo[lightIndex].stencilID);
@@ -980,15 +965,15 @@ void TiledDeferredShadingCS( uint3 GroupID : SV_GroupID,
 		
 			float NdotL = saturate( dot( surfNormal, lightVec ) ) * saturate( PdotL );
 		
-			[branch] if (attenuation > 0 && (NdotL > 0 || surfIsTranslucent)) 
+			[branch] if (attenuation > 0 && (NdotL > 0 || surfIsTranslucent || lightType == LIGHT_TYPE_REGULAR_AREA)) 
 			{
 				float lightTerm = 1;
 				bool shadowMap = TiledLightsShadeInfo[lightIndex].shadowParams.x > 0;
 				bool skipShading = false;
 			
-				[branch] if (lightType != TILEDLIGHT_TYPE_SUN)
+				[branch] if (lightType != LIGHT_TYPE_SUN)
 				{
-					[branch] if (lightType == TILEDLIGHT_TYPE_REGULAR_PROJECTOR)
+					[branch] if (lightType == LIGHT_TYPE_REGULAR_PROJECTOR)
 					{
 						float4 vProjTC = mul(TiledLightsShadeInfo[lightIndex].projectorMatrix, float4(position + GetWorldViewPos(), 1));
 						vProjTC.xy /= vProjTC.w;
@@ -1001,7 +986,7 @@ void TiledDeferredShadingCS( uint3 GroupID : SV_GroupID,
 							lightTerm = SpotTexArray.SampleLevel( SampStateTrilinearClamp, float3( vProjTC.xy, resIndexClamps.x ), resIndexClamps.y ).r;
 						}
 					}
-					else if (lightType == TILEDLIGHT_TYPE_REGULAR_POINTFACE)
+					else if (lightType == LIGHT_TYPE_REGULAR_POINTFACE)
 					{
 						skipShading = (TiledLightsShadeInfo[lightIndex].resIndex != selectCubeFace(lightVec));
 					}
@@ -1023,26 +1008,33 @@ void TiledDeferredShadingCS( uint3 GroupID : SV_GroupID,
 						float lightOccl = 1.0 - saturate( dot( lightVec, occlusionData.xyz ) * SSDOParams.x );
 						lightOccl *= lightOccl;
 						lightTerm *= attenuation * shadowTerm * lightOccl;
-					
-						float diffuseTerm = DiffuseBRDF( surfNormal, -normalize( position ), lightVec, surfGloss, NdotL );
-						float3 diffuseTranslucency = ThinTranslucencyBRDF( surfNormal, lightVec, surfTransmittanceColor );
-						diffuseAcc += (lightTerm * lightColor.rgb) * (surfIsTranslucent ? diffuseTranslucency : diffuseTerm.xxx);
-					
-					#if %_RT_SAMPLE5
-						float4x4 projectorMatrix = TiledLightsShadeInfo[lightIndex].projectorMatrix;
 
-						if (lightType != TILEDLIGHT_TYPE_REGULAR_AREA)
-							projectorMatrix[3].y = TiledLightsShadeInfo[lightIndex].attenuationParams.y;
+						float3 diffuseTerm = 0;
+						float3 specTerm = 0;
+						float3 diffuseTranslucency = 0;
 
-						float3 specTerm = AreaLightGGX( surfNormal, -normalize( position ), lightVecAreaSpec, surfGloss, surfSpecCol, projectorMatrix, lightType == TILEDLIGHT_TYPE_REGULAR_AREA ? AREA_LIGHT_RECTANGLE : AREA_LIGHT_SPHERE );
-#else
-						float3 specTerm = SpecularBRDF( surfNormal, -normalize( position ), lightVec, surfGloss, surfSpecCol );
-					#endif
-						specularAcc += (lightTerm * lightColor.rgb) * lightColor.a * specTerm * NdotL;
+						if (lightType == LIGHT_TYPE_REGULAR_AREA)
+						{
+							float3 lightPos = TiledLightsShadeInfo[lightIndex].posRad.xyz - GetWorldViewPos();
+							uint4 resIndexClamps = GetResourceIndexAndMipClamps( TiledLightsShadeInfo[lightIndex].resIndex );
+							AreaLightLTC_GGX( surfNormal, -normalize( position ), surfGloss, surfSpecCol, position, lightPos, 
+                                              resIndexClamps.x, TiledLightsShadeInfo[lightIndex].projectorMatrix, SpotTexArray, diffuseTerm, specTerm );
+
+							diffuseAcc += ( lightTerm * lightColor.rgb ) * diffuseTerm;
+							specularAcc += ( lightTerm * lightColor.rgb ) * lightColor.a * specTerm;
+						}
+						else
+						{
+							diffuseTerm = DiffuseBRDF( surfNormal, -normalize( position ), lightVec, surfGloss, NdotL );
+							specTerm = SpecularBRDF( surfNormal, -normalize( position ), lightVec, surfGloss, surfSpecCol );
+							diffuseTranslucency = ThinTranslucencyBRDF( surfNormal, lightVec, surfTransmittanceColor );
+
+							diffuseAcc += ( lightTerm * lightColor.rgb ) * ( surfIsTranslucent ? diffuseTranslucency : diffuseTerm.xxx );
+							specularAcc += ( lightTerm * lightColor.rgb ) * lightColor.a * specTerm * NdotL;
+						}
 					}
 				}
-			}
-		
+			}		
 			++curLight;
 			lightIndex = sTileLightIndices[min( curLight, TILED_SHADING_MAX_NUM_LIGHTS - 1 )];
 		}

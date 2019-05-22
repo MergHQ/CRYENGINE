@@ -69,8 +69,6 @@ void CTiledShadingStage::Execute()
 		rtFlags |= g_HWSR_MaskBit[HWSR_SAMPLE3];
 	if (CRenderer::CV_r_DeferredShadingSSS)
 		rtFlags |= g_HWSR_MaskBit[HWSR_SAMPLE4];
-	if (CRenderer::CV_r_DeferredShadingAreaLights > 0)
-		rtFlags |= g_HWSR_MaskBit[HWSR_SAMPLE5];
 
 #if defined(FEATURE_SVO_GI)
 	if (CSvoRenderer::GetInstance()->IsActive())
@@ -124,7 +122,7 @@ void CTiledShadingStage::Execute()
 		m_passCullingShading.SetOutputUAV(1, m_graphicsPipelineResources.m_pTexHDRTarget);
 		m_passCullingShading.SetOutputUAV(2, m_graphicsPipelineResources.m_pTexSceneTargetR11G11B10F[0]);
 
-		m_passCullingShading.SetSampler(0, EDefaultSamplerStates::TrilinearClamp);
+		m_passCullingShading.SetSampler(15, EDefaultSamplerStates::TrilinearClamp);
 
 		m_passCullingShading.SetTexture(0, m_graphicsPipelineResources.m_pTexLinearDepth);
 		m_passCullingShading.SetTexture(1, m_graphicsPipelineResources.m_pTexSceneNormalsMap);
@@ -139,13 +137,16 @@ void CTiledShadingStage::Execute()
 		m_passCullingShading.SetTexture(10, pTexGiDiff);
 		m_passCullingShading.SetTexture(11, pTexGiSpec);
 		m_passCullingShading.SetTexture(12, pTexCaustics);
-
+		
 		m_passCullingShading.SetBuffer(16, bSeparateCullingPass ? tiledLights->GetTiledOpaqueLightMaskBuffer() : tiledLights->GetLightCullInfoBuffer());
 		m_passCullingShading.SetBuffer(17, tiledLights->GetLightShadeInfoBuffer());
 		m_passCullingShading.SetBuffer(18, clipVolumes->GetClipVolumeInfoBuffer());
 		m_passCullingShading.SetTexture(19, tiledLights->GetSpecularProbeAtlas());
 		m_passCullingShading.SetTexture(20, tiledLights->GetDiffuseProbeAtlas());
 		m_passCullingShading.SetTexture(21, tiledLights->GetProjectedLightAtlas());
+
+		m_passCullingShading.SetTexture(35, CRendererResources::s_ptexLTC1);
+		m_passCullingShading.SetTexture(36, CRendererResources::s_ptexLTC2);
 
 		m_pTexGiDiff = pTexGiDiff;
 		m_pTexGiSpec = pTexGiSpec;

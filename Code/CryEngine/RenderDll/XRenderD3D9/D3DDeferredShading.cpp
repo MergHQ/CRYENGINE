@@ -106,54 +106,19 @@ void CDeferredShading::SetupGlobalConsts(CRenderView* pRenderView)
 
 void CDeferredShading::GetLightRenderSettings(const CRenderView* pRenderView, const SRenderLight* const __restrict pDL, bool& bStencilMask, bool& bUseLightVolumes, EShapeMeshType& meshType)
 {
-	const bool bAreaLight = (pDL->m_Flags & DLF_AREA_LIGHT) && pDL->m_fAreaWidth && pDL->m_fAreaHeight && pDL->m_fLightFrustumAngle;
-
 	if (CRenderer::CV_r_deferredshadingLightVolumes)
 	{
-		if (bAreaLight)
-		{
-			// area lights use non-uniform box volume
-			// need to do more complex box intersection test
-			float fExpensionRadius = pDL->m_fRadius * 1.08f;
-			Vec3 vScale(fExpensionRadius, fExpensionRadius, fExpensionRadius);
-
-			Matrix34 mObjInv = CShadowUtils::GetAreaLightMatrix(pDL, vScale);
-			mObjInv.Invert();
-
-			// check if volumes bounding box intersects the near clipping plane
-			const CCamera& camera = pRenderView->GetCamera(CCamera::eEye_Left);
-			const Plane* pNearPlane(camera.GetFrustumPlane(FR_PLANE_NEAR));
-			Vec3 pntOnNearPlane(camera.GetPosition() - pNearPlane->DistFromPlane(camera.GetPosition()) * pNearPlane->n);
-			Vec3 pntOnNearPlaneOS(mObjInv.TransformPoint(pntOnNearPlane));
-
-			Vec3 nearPlaneOS_n(mObjInv.TransformVector(pNearPlane->n));
-			f32 nearPlaneOS_d(-nearPlaneOS_n.Dot(pntOnNearPlaneOS));
-
-			// get extreme lengths
-			float t(fabsf(nearPlaneOS_n.x) + fabsf(nearPlaneOS_n.y) + fabsf(nearPlaneOS_n.z));
-
-			float t0 = t + nearPlaneOS_d;
-			float t1 = -t + nearPlaneOS_d;
-
-			if (t0 * t1 > 0.0f)
-				bUseLightVolumes = true;
-			else
-				bStencilMask = true;
-		}
+		const float kDLRadius = pDL->m_fRadius;
+		const float fSmallLightBias = 0.5f;
+		// the light mesh tessellation and near clipping plane require some bias when testing if inside sphere
+		// higher bias for low radius lights
+		float fSqLightRadius = kDLRadius * max(-0.1f * kDLRadius + 1.5f, 1.22f);
+		fSqLightRadius = max(kDLRadius + fSmallLightBias, fSqLightRadius); //always add on a minimum bias, for very small light's sake
+		fSqLightRadius *= fSqLightRadius;
+		if (fSqLightRadius < pDL->m_Origin.GetSquaredDistance(m_pCamPos))
+			bUseLightVolumes = true;
 		else
-		{
-			const float kDLRadius = pDL->m_fRadius;
-			const float fSmallLightBias = 0.5f;
-			// the light mesh tessellation and near clipping plane require some bias when testing if inside sphere
-			// higher bias for low radius lights
-			float fSqLightRadius = kDLRadius * max(-0.1f * kDLRadius + 1.5f, 1.22f);
-			fSqLightRadius = max(kDLRadius + fSmallLightBias, fSqLightRadius); //always add on a minimum bias, for very small light's sake
-			fSqLightRadius *= fSqLightRadius;
-			if (fSqLightRadius < pDL->m_Origin.GetSquaredDistance(m_pCamPos))
-				bUseLightVolumes = true;
-			else
-				bStencilMask = true;
-		}
+			bStencilMask = true;
 	}
 
 	Vec4 pLightRect = Vec4(pDL->m_sX, pDL->m_sY, pDL->m_sWidth, pDL->m_sHeight);

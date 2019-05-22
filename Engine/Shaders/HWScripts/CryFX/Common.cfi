@@ -28,10 +28,15 @@
 
 // === Lights definitions ========================================================
 
-#define LT_DIRECTIONAL 0
-#define LT_OMNI        1
-#define LT_PROJECTED   2
-#define LT_TILED       4
+#define LIGHT_TYPE_PROBE              1
+#define LIGHT_TYPE_AMBIENT_POINT      2
+#define LIGHT_TYPE_AMBIENT_PROJECTOR  3
+#define LIGHT_TYPE_AMBIENT_AREA       4
+#define LIGHT_TYPE_REGULAR_POINT      5
+#define LIGHT_TYPE_REGULAR_PROJECTOR  6
+#define LIGHT_TYPE_REGULAR_POINTFACE  7
+#define LIGHT_TYPE_REGULAR_AREA       8
+#define LIGHT_TYPE_SUN                9
 
 //=== Common definitions =========================================================
 

@@ -307,7 +307,7 @@ void Callback_ShadingDirect(in ForwardShadingAttribs attribs, in ForwardLightPar
 	cSpecular *= fNdotLCornea;
 
 	// Iris self-shadowing
-	if (light.type == LT_DIRECTIONAL)
+	if (light.type == LIGHT_TYPE_SUN)
 	{
 		const float2 lightDelta = float2(vLightTS.x, vLightTS.y) * IrisDepth;
 		const float2 uv = attribs.custom.baseTC.xy;
@@ -401,7 +401,7 @@ pixout EyePS(vert2FragGeneral IN)
 	// Handle direct lighting from sun
 	{
 		ForwardLightParams lightParams;
-		lightParams.type = LT_DIRECTIONAL;
+        lightParams.type = LIGHT_TYPE_SUN;
 		lightParams.lightVec = CV_SunLightDir.xyz;
 		lightParams.illuminance = CV_SunColor.xyz * (1 - GetSunShadowMask(IN.screenProj).r);
 		

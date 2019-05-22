@@ -344,19 +344,9 @@ bool CD3D9Renderer::PrepareShadowGenForFrustum(CRenderView* pRenderView, ShadowM
 		//////////////////////////////////////////////////////////////////////////
 		if (!pCurFrustum->bOmniDirectionalShadow)
 		{
-			if (pCurFrustum->m_Flags & (DLF_PROJECT | DLF_AREA_LIGHT))
+			if (pCurFrustum->m_Flags & DLF_PROJECT)
 			{
 				SRenderLight instLight = *pLight;
-				if (pLight->m_Flags & DLF_AREA_LIGHT)
-				{
-					// Pull the shadow frustum back to encompas the area of the light source.
-					float fMaxSize = max(pLight->m_fAreaWidth, pLight->m_fAreaHeight);
-					float fScale = fMaxSize / max(tanf(DEG2RAD(pLight->m_fLightFrustumAngle)), 0.0001f);
-
-					Vec3 vOffsetDir = fScale * pLight->m_ObjMatrix.GetColumn0().GetNormalized();
-					instLight.SetPosition(instLight.m_Origin - vOffsetDir);
-					instLight.m_fProjectorNearPlane = fScale;
-				}
 
 				// Frustum angle is clamped to prevent projection matrix problems.
 				// We clamp here because area lights and non-shadow casting lights can cast 180 degree light.
