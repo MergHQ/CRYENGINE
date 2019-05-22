@@ -5,6 +5,7 @@
 
 #include "Common/RenderView.h"
 #include "Common/ReverseDepth.h"
+#include "Common/Textures/TextureHelpers.h"
 #include "CompiledRenderObject.h"
 #include "GraphicsPipelineStage.h"
 
@@ -13,6 +14,9 @@
 #include <vector>
 
 int CSceneRenderPass::s_recursionCounter = 0;
+CDeviceResourceSetDesc* CSceneRenderPass::s_pDefaultMaterialBindPoints = nullptr;
+CDeviceResourceSetDesc* CSceneRenderPass::s_pDefaultDrawExtraRL = nullptr;
+CDeviceResourceSetPtr   CSceneRenderPass::s_pDefaultDrawExtraRS = nullptr;
 
 CSceneRenderPass::CSceneRenderPass()
 	: m_renderPassDesc()
@@ -21,6 +25,153 @@ CSceneRenderPass::CSceneRenderPass()
 	m_numRenderItemGroups = 0;
 
 	SetLabel("SCENE_PASS");
+}
+
+void CSceneRenderPass::Initialize()
+{
+	if (!s_pDefaultMaterialBindPoints)
+	{
+		s_pDefaultMaterialBindPoints = new CDeviceResourceSetDesc();
+
+		// default material bind points
+		{
+			s_pDefaultMaterialBindPoints->SetConstantBuffer(eConstantBufferShaderSlot_PerMaterial, CDeviceBufferManager::GetNullConstantBuffer(), EShaderStage_AllWithoutCompute);
+
+			for (EEfResTextures texType = EFTT_DIFFUSE; texType < EFTT_MAX; texType = EEfResTextures(texType + 1))
+			{
+				if (TextureHelpers::IsSlotAvailable(texType))
+				{
+					EShaderStage shaderStages = TextureHelpers::GetShaderStagesForTexSlot(texType);
+					s_pDefaultMaterialBindPoints->SetTexture(texType, CRendererResources::s_pTexNULL, EDefaultResourceViews::Default, shaderStages);
+				}
+			}
+		}
+	}
+
+	// default extra per instance
+	if (!s_pDefaultDrawExtraRL)
+	{
+		s_pDefaultDrawExtraRL = new CDeviceResourceSetDesc();
+
+		s_pDefaultDrawExtraRL->SetConstantBuffer(eConstantBufferShaderSlot_SkinQuat, CDeviceBufferManager::GetNullConstantBuffer(), EShaderStage_Vertex);
+		s_pDefaultDrawExtraRL->SetConstantBuffer(eConstantBufferShaderSlot_SkinQuatPrev, CDeviceBufferManager::GetNullConstantBuffer(), EShaderStage_Vertex);
+		s_pDefaultDrawExtraRL->SetConstantBuffer(eConstantBufferShaderSlot_PerGroup, CDeviceBufferManager::GetNullConstantBuffer(), EShaderStage_Vertex | EShaderStage_Pixel | EShaderStage_Hull);
+
+		// Deliberately aliasing slots/use-cases here for visibility (e.g. EReservedTextureSlot_ComputeSkinVerts, EReservedTextureSlot_SkinExtraWeights and
+		// EReservedTextureSlot_GpuParticleStream). The resource layout will just pick the first.
+		s_pDefaultDrawExtraRL->SetBuffer(EReservedTextureSlot_SkinExtraWeights, CDeviceBufferManager::GetNullBufferStructured(), EDefaultResourceViews::Default, EShaderStage_Vertex);
+		s_pDefaultDrawExtraRL->SetBuffer(EReservedTextureSlot_ComputeSkinVerts, CDeviceBufferManager::GetNullBufferStructured(), EDefaultResourceViews::Default, EShaderStage_Vertex);
+		s_pDefaultDrawExtraRL->SetBuffer(EReservedTextureSlot_GpuParticleStream, CDeviceBufferManager::GetNullBufferStructured(), EDefaultResourceViews::Default, EShaderStage_Vertex);
+		s_pDefaultDrawExtraRL->SetBuffer(EReservedTextureSlot_AdjacencyInfo, CDeviceBufferManager::GetNullBufferTyped(), EDefaultResourceViews::Default, EShaderStage_Domain);
+
+		if (!s_pDefaultDrawExtraRS)
+		{
+			s_pDefaultDrawExtraRS = GetDeviceObjectFactory().CreateResourceSet();
+			s_pDefaultDrawExtraRS->Update(*s_pDefaultDrawExtraRL);
+		}
+	}
+}
+
+void CSceneRenderPass::Shutdown()
+{
+	if (s_pDefaultMaterialBindPoints)
+	{
+		SAFE_DELETE(s_pDefaultMaterialBindPoints);
+	}
+
+	if (s_pDefaultDrawExtraRL)
+	{
+		s_pDefaultDrawExtraRL->ClearResources();
+		SAFE_DELETE(s_pDefaultDrawExtraRL);
+	}
+	
+	if (s_pDefaultDrawExtraRS)
+	{
+		s_pDefaultDrawExtraRS.reset();
+	}	
+}
+
+//////////////////////////////////////////////////////////////////////////
+bool CSceneRenderPass::FillCommonScenePassStates(const SGraphicsPipelineStateDescription& inputDesc, CDeviceGraphicsPSODesc& psoDesc, CVrProjectionManager* pVRProjectionManager)
+{
+	CShader* pShader = static_cast<CShader*>(inputDesc.shaderItem.m_pShader);
+	SShaderTechnique* pTechnique = pShader->GetTechnique(inputDesc.shaderItem.m_nTechnique, inputDesc.technique, true);
+	if (!pTechnique)
+		return false;
+
+	CShaderResources* pRes = static_cast<CShaderResources*>(inputDesc.shaderItem.m_pShaderResources);
+	const uint64 objectFlags = inputDesc.objectFlags;
+	SShaderPass* pShaderPass = &pTechnique->m_Passes[0];
+
+	// Handle quality flags
+	CStandardGraphicsPipeline::ApplyShaderQuality(psoDesc, gcpRendD3D->GetShaderProfile(pShader->m_eShaderType));
+
+	psoDesc.m_ShaderFlags_RT |= g_HWSR_MaskBit[HWSR_REVERSE_DEPTH];
+
+	// Set resource states
+	bool bTwoSided = false;
+
+	if (pRes->m_ResFlags & MTL_FLAG_2SIDED)
+		bTwoSided = true;
+
+	if (pRes->IsAlphaTested())
+		psoDesc.m_ShaderFlags_RT |= g_HWSR_MaskBit[HWSR_ALPHATEST];
+
+	if (pRes->m_Textures[EFTT_DIFFUSE] && pRes->m_Textures[EFTT_DIFFUSE]->m_Ext.m_pTexModifier)
+		psoDesc.m_ShaderFlags_MD |= pRes->m_Textures[EFTT_DIFFUSE]->m_Ext.m_nUpdateFlags;
+
+	// Merge EDeformType into EVertexModifier to save space/parameters
+	if (pRes->m_pDeformInfo)
+		psoDesc.m_ShaderFlags_MDV |= EVertexModifier(pRes->m_pDeformInfo->m_eType);
+
+	psoDesc.m_ShaderFlags_MDV |= psoDesc.m_pShader->m_nMDV;
+
+	if (objectFlags & FOB_OWNER_GEOMETRY)
+		psoDesc.m_ShaderFlags_MDV &= ~MDV_DEPTH_OFFSET;
+
+	if (objectFlags & FOB_BENDED)
+		psoDesc.m_ShaderFlags_MDV |= MDV_BENDING;
+
+	if (!(objectFlags & FOB_TRANS_MASK))
+		psoDesc.m_ShaderFlags_RT |= g_HWSR_MaskBit[HWSR_OBJ_IDENTITY];
+
+	if (objectFlags & FOB_BLEND_WITH_TERRAIN_COLOR)
+		psoDesc.m_ShaderFlags_RT |= g_HWSR_MaskBit[HWSR_BLEND_WITH_TERRAIN_COLOR];
+
+	psoDesc.m_bAllowTesselation = false;
+	psoDesc.m_ShaderFlags_RT |= g_HWSR_MaskBit[HWSR_NO_TESSELLATION];
+
+	if (objectFlags & FOB_NEAREST)
+		psoDesc.m_ShaderFlags_RT |= g_HWSR_MaskBit[HWSR_NEAREST];
+
+	if (objectFlags & FOB_DISSOLVE)
+		psoDesc.m_ShaderFlags_RT |= g_HWSR_MaskBit[HWSR_DISSOLVE];
+
+	if (psoDesc.m_RenderState & GS_ALPHATEST)
+		psoDesc.m_ShaderFlags_RT |= g_HWSR_MaskBit[HWSR_ALPHATEST];
+
+#ifdef TESSELLATION_RENDERER
+	const bool bHasTesselationShaders = pShaderPass && pShaderPass->m_HShader && pShaderPass->m_DShader;
+	if (bHasTesselationShaders && (!(objectFlags & FOB_NEAREST) && (objectFlags & FOB_ALLOW_TESSELLATION)))
+	{
+		psoDesc.m_ShaderFlags_RT &= ~g_HWSR_MaskBit[HWSR_NO_TESSELLATION];
+		psoDesc.m_bAllowTesselation = true;
+	}
+#endif
+
+	psoDesc.m_CullMode = bTwoSided ? eCULL_None : ((pShaderPass && pShaderPass->m_eCull != -1) ? (ECull)pShaderPass->m_eCull : eCULL_Back);
+	psoDesc.m_PrimitiveType = inputDesc.primitiveType;
+
+	if (psoDesc.m_bAllowTesselation && (psoDesc.m_PrimitiveType < ept1ControlPointPatchList || psoDesc.m_PrimitiveType > ept4ControlPointPatchList))
+	{
+		// Hard-coded primitive type should not be set here, do it only if tessellation primitive type not already set
+		psoDesc.m_PrimitiveType = ept3ControlPointPatchList;
+		psoDesc.m_ObjectStreamMask |= VSM_NORMALS;
+	}
+
+	psoDesc.m_ShaderFlags_RT |= pVRProjectionManager->GetRTFlags();
+
+	return true;
 }
 
 void CSceneRenderPass::SetupDrawContext(uint32 stageID, uint32 stagePassID, EShaderTechniqueID technique, uint32 includeFilter, uint32 excludeFilter)
@@ -127,10 +278,10 @@ void CSceneRenderPass::PrepareRenderPassForUse(CDeviceCommandListRef RESTRICT_RE
 	}
 }
 
-void CSceneRenderPass::ResolvePass(CDeviceCommandListRef RESTRICT_REFERENCE commandList, const std::vector<TRect_tpl<uint16>>& screenBounds) const
+void CSceneRenderPass::ResolvePass(CGraphicsPipeline& graphicsPipeline, CDeviceCommandListRef RESTRICT_REFERENCE commandList, const std::vector<TRect_tpl<uint16>>& screenBounds) const
 {
-	const auto textureWidth = CRendererResources::s_ptexHDRTarget->GetWidth();
-	const auto textureHeight = CRendererResources::s_ptexHDRTarget->GetHeight();
+	const auto textureWidth = graphicsPipeline.GetPipelineResources().m_pTexHDRTarget->GetWidth();
+	const auto textureHeight = graphicsPipeline.GetPipelineResources().m_pTexHDRTarget->GetHeight();
 
 	for (const auto& bounds : screenBounds)
 	{
@@ -153,7 +304,7 @@ void CSceneRenderPass::ResolvePass(CDeviceCommandListRef RESTRICT_REFERENCE comm
 		};
 
 		if (mapping.Extent.Width && mapping.Extent.Height && mapping.Extent.Depth)
-			commandList.GetCopyInterface()->Copy(CRendererResources::s_ptexHDRTarget->GetDevTexture(), CRendererResources::s_ptexSceneTarget->GetDevTexture(), mapping);
+			commandList.GetCopyInterface()->Copy(graphicsPipeline.GetPipelineResources().m_pTexHDRTarget->GetDevTexture(), graphicsPipeline.GetPipelineResources().m_pTexSceneTarget->GetDevTexture(), mapping);
 	}
 }
 

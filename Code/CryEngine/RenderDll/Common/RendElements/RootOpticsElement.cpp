@@ -266,12 +266,12 @@ void RootOpticsElement::RT_RenderPreview(const Vec3& vPos, const SLensFlareRende
 		previewPass.SetViewport(viewport);
 		previewPass.BeginAddingPrimitives();
 
-		if (ProcessAll(previewPass, prePasses, light, viewInfo, viewInfoCount, true, bIgnoreOcclusionQueries))
+		if (ProcessAll(pRenderView->GetGraphicsPipeline().get(), previewPass, prePasses, light, viewInfo, viewInfoCount, true, bIgnoreOcclusionQueries))
 			previewPass.Execute();
 	}
 }
 
-bool RootOpticsElement::ProcessAll(CPrimitiveRenderPass& targetPass, std::vector<CPrimitiveRenderPass*>& prePasses, const SFlareLight& light, const SRenderViewInfo* pViewInfo, int viewInfoCount, bool bForceRender, bool bUpdateOcclusion)
+bool RootOpticsElement::ProcessAll(CGraphicsPipeline* pGraphicsPipeline, CPrimitiveRenderPass& targetPass, std::vector<CPrimitiveRenderPass*>& prePasses, const SFlareLight& light, const SRenderViewInfo* pViewInfo, int viewInfoCount, bool bForceRender, bool bUpdateOcclusion)
 {
 	CRY_ASSERT(IsGroupEnabled() && (viewInfoCount > 0) && (viewInfoCount <= CCamera::eEye_eCount));
 
@@ -322,6 +322,7 @@ bool RootOpticsElement::ProcessAll(CPrimitiveRenderPass& targetPass, std::vector
 	}
 
 	SPreparePrimitivesContext context(targetPass, prePasses);
+	context.pGraphicsPipeline = pGraphicsPipeline;
 	context.pViewInfo = pViewInfo;
 	context.viewInfoCount = viewInfoCount;
 	context.lightWorldPos = vSrcWorldPos;

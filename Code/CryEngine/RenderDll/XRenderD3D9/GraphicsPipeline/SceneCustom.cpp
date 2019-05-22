@@ -70,9 +70,9 @@ bool CSceneCustomStage::CreatePipelineState(const SGraphicsPipelineStateDescript
 	const auto shaderType = desc.shaderItem.m_pShader->GetShaderType();
 	const bool bIsCommonMesh = (shaderType != eST_Particle);
 	CDeviceGraphicsPSODesc psoDesc(m_pResourceLayout, desc);
-	if (bIsCommonMesh && !m_graphicsPipeline.FillCommonScenePassStates(desc, psoDesc))
+	if (bIsCommonMesh && !CSceneRenderPass::FillCommonScenePassStates(desc, psoDesc, m_graphicsPipeline.GetVrProjectionManager()))
 		return true;
-
+	
 	CSceneRenderPass* pSceneRenderPass = nullptr;
 
 	if (passID == ePass_DebugViewSolid)
@@ -201,7 +201,7 @@ bool CSceneCustomStage::SetAndBuildPerPassResources(bool bOnInit)
 		m_perPassResources.SetTexture(ePerPassTexture_TerrainNormMap, CTexture::GetByID(nTerrainTex1), EDefaultResourceViews::Default, EShaderStage_Pixel);
 		m_perPassResources.SetTexture(ePerPassTexture_TerrainBaseMap, CTexture::GetByID(nTerrainTex0), EDefaultResourceViews::sRGB, EShaderStage_Pixel);
 		m_perPassResources.SetTexture(ePerPassTexture_NormalsFitting, CRendererResources::s_ptexNormalsFitting, EDefaultResourceViews::Default, EShaderStage_Pixel);
-		m_perPassResources.SetTexture(ePerPassTexture_SceneLinearDepth, CRendererResources::s_ptexLinearDepth, EDefaultResourceViews::Default, EShaderStage_Pixel);
+		m_perPassResources.SetTexture(ePerPassTexture_SceneLinearDepth, m_graphicsPipelineResources.m_pTexLinearDepth, EDefaultResourceViews::Default, EShaderStage_Pixel);
 		m_perPassResources.SetTexture(ePerPassTexture_PaletteTexelsPerMeter, CRendererResources::s_ptexPaletteTexelsPerMeter, EDefaultResourceViews::Default, EShaderStage_Pixel);
 	}
 
@@ -283,7 +283,7 @@ void CSceneCustomStage::Update()
 		// Depth
 		pDepthTexture,
 		// Color 0
-		CRendererResources::s_ptexSceneNormalsMap
+		m_graphicsPipelineResources.m_pTexSceneNormalsMap
 	);
 
 	if (gEnv->IsEditor())
@@ -294,7 +294,7 @@ void CSceneCustomStage::Update()
 			// Depth
 			pDepthTexture,
 			// Color 0
-			CRendererResources::s_ptexSceneSelectionIDs
+			m_graphicsPipelineResources.m_pTexSceneSelectionIDs
 		);
 	}
 
@@ -614,7 +614,7 @@ void CSceneCustomStage::ExecuteSelectionHighlight()
 		return;
 
 	// update our depth texture here
-	CTexture* pTargetRT = CRendererResources::s_ptexSceneSelectionIDs;
+	CTexture* pTargetRT = m_graphicsPipelineResources.m_pTexSceneSelectionIDs;
 	CTexture* pTargetDS = CRendererResources::CreateDepthTarget(pTargetRT->GetWidth(), pTargetRT->GetHeight(), ColorF(Clr_FarPlane_Rev.r, 1, 0, 0), eTF_Unknown);
 
 	CClearSurfacePass::Execute(pTargetDS, CLEAR_ZBUFFER | CLEAR_STENCIL, Clr_FarPlane_Rev.r, 1);
@@ -690,7 +690,7 @@ void CSceneCustomStage::ExecuteSilhouettePass()
 	auto prevPipelineFlags = m_graphicsPipeline.GetPipelineFlags();
 
 	{
-		CClearSurfacePass::Execute(CRendererResources::s_ptexSceneNormalsMap, Clr_Transparent);
+		CClearSurfacePass::Execute(m_graphicsPipelineResources.m_pTexSceneNormalsMap, Clr_Transparent);
 
 		// Prepare ========================================================================
 		auto& RESTRICT_REFERENCE commandList = GetDeviceObjectFactory().GetCoreCommandList();

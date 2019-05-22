@@ -35,12 +35,12 @@ int CSunShaftsStage::GetDownscaledTargetsIndex()
 
 CTexture* CSunShaftsStage::GetFinalOutputRT()
 {
-	return CRendererResources::s_ptexDisplayTargetScaled[GetDownscaledTargetsIndex()];
+	return m_graphicsPipelineResources.m_pTexDisplayTargetScaled[GetDownscaledTargetsIndex()];
 }
 
 CTexture* CSunShaftsStage::GetTempOutputRT()
 {
-	return CRendererResources::s_ptexDisplayTargetScaledTemp[GetDownscaledTargetsIndex()];
+	return m_graphicsPipelineResources.m_pTexDisplayTargetScaledTemp[GetDownscaledTargetsIndex()];
 }
 
 void CSunShaftsStage::GetCompositionParams(Vec4& params0, Vec4& params1)
@@ -77,8 +77,8 @@ void CSunShaftsStage::Execute()
 			m_passShaftsMask.SetRenderTarget(0, pFinalRT);
 			m_passShaftsMask.SetState(GS_NODEPTHTEST);
 
-			m_passShaftsMask.SetTexture(0, CRendererResources::s_ptexLinearDepthScaled[downscaledSourceIndex]);
-			m_passShaftsMask.SetTexture(1, CRendererResources::s_ptexHDRTargetScaled[downscaledSourceIndex][0]);
+			m_passShaftsMask.SetTexture(0, m_graphicsPipelineResources.m_pTexLinearDepthScaled[downscaledSourceIndex]);
+			m_passShaftsMask.SetTexture(1, m_graphicsPipelineResources.m_pTexHDRTargetScaled[downscaledSourceIndex][0]);
 			m_passShaftsMask.SetSampler(0, EDefaultSamplerStates::PointClamp);
 		}
 

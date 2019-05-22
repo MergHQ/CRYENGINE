@@ -98,6 +98,49 @@ enum
 
 #define MAX_OCCLUSION_READBACK_TEXTURES (MAX_GPU_NUM * MAX_FRAMES_IN_FLIGHT)
 
+//  render targets info - first gather list of hdr targets, sort by size and create after
+struct SRenderTargetInfo
+{
+	SRenderTargetInfo() : nWidth(0), nHeight(0), cClearColor(Clr_Empty), Format(eTF_Unknown), nFlags(0), lplpStorage(0), nPitch(0), fPriority(0.0f), nCustomID(0)
+	{}
+
+	uint32      nWidth;
+	uint32      nHeight;
+	ColorF      cClearColor;
+	ETEX_Format Format;
+	uint32      nFlags;
+	CTexture**  lplpStorage;
+	char        szName[64];
+	uint32      nPitch;
+	float       fPriority;
+	int32       nCustomID;
+};
+
+struct RenderTargetSizeSort
+{
+	bool operator()(const SRenderTargetInfo& drtStart, const SRenderTargetInfo& drtEnd) { return (drtStart.nPitch * drtStart.fPriority) > (drtEnd.nPitch * drtEnd.fPriority); }
+};
+
+class SRenderTargetPool
+{
+public:
+	void AddRenderTarget(uint32 nWidth, uint32 nHeight, const ColorF& cClear, ETEX_Format Format, float fPriority, const char* szName, CTexture** pStorage, uint32 nFlags = 0, int32 nCustomID = -1, bool bDynamicTex = 0);
+	bool CreateRenderTargetList();
+	void ClearRenderTargetList()
+	{
+		m_pRenderTargets.clear();
+	}
+
+	static SRenderTargetPool* GetInstance()
+	{
+		static SRenderTargetPool pInstance;
+		return &pInstance;
+	}
+
+private:
+	std::vector<SRenderTargetInfo> m_pRenderTargets;
+};
+
 class CRendererResources
 {
 	static bool RainOcclusionMapsInitialized() { return s_ptexRainSSOcclusion[0] != nullptr; }
@@ -121,29 +164,24 @@ public:
 	static bool m_bLoadedSystem;
 
 	// Global renderer resources
-	static void CreateDepthMaps(int resourceWidth, int resourceHeight);
 	static void CreateSceneMaps(int resourceWidth, int resourceHeight);
 	static void CreateHDRMaps(int resourceWidth, int resourceHeight);
 	static bool CreatePostFXMaps(int resourceWidth, int resourceHeight);
-	static void CreateDeferredMaps(int resourceWidth, int resourceHeight);
 	static void CreateSystemTargets(int resourceWidth, int resourceHeight);
 	static void PrepareRainOcclusionMaps();
 	static void CreateRainOcclusionMaps(int resourceWidth, int resourceHeight);
 
 	static void ResizeSystemTargets(int renderWidth, int renderHeight);
 
-	static void DestroyDepthMaps();
 	static void DestroySceneMaps();
 	static void DestroyHDRMaps();
 	static void DestroyPostFXMaps();
-	static void DestroyDeferredMaps();
 	static void DestroySystemTargets();
 	static void DestroyRainOcclusionMaps();
 
 	static void LoadDefaultSystemTextures();
 	static void UnloadDefaultSystemTextures(bool bFinalRelease = false);
 
-	static void Clear();
 	static void ShutDown();
 	static void Update(EShaderRenderingFlags renderingFlags);
 
@@ -233,7 +271,6 @@ public:
 	static int       s_nCurLumTextureIndex;                                      // CAutoExposureStage
 	static CTexture* s_ptexCurLumTexture;                                        // CAutoExposureStage, CToneMappingStage, CPostAAStage
 	static CTexture* s_ptexHDRToneMaps[NUM_HDR_TONEMAP_TEXTURES];                // CAutoExposureStage, CBloomStage
-	static CTexture* s_ptexHDRMeasuredLuminance[MAX_GPU_NUM];                    // CAutoExposureStage, CScreenSpaceReflectionsStage
 	static CTexture* s_ptexFarPlane;                                             // shadow map representing the far plane (all tests pass)
 	static CTexture* s_ptexRainOcclusion;                                        // CRainStage, CSnowStage, top-down rain occlusion
 	static CTexture* s_ptexWaterOcean;                                           // CWaterStage, CREWaterOcean, water ocean vertex texture
@@ -245,47 +282,11 @@ public:
 
 	// Render resolution [dependent] targets ===================================================================
 
-	static CTexture*          s_ptexSceneSelectionIDs;                           // Selection ID buffer used for selection and highlight passes
-
-	static CTexture*          s_ptexSceneDepthScaled[3];                         // Half/Quarter/Eighth resolution depth-stencil, used for sub-resolution rendering
-	static CTexture*          s_ptexLinearDepth;
-	static CTexture*          s_ptexLinearDepthScaled[3];                        // Min, Max, Avg, med
-	static CTexture*          s_ptexLinearDepthFixup;
-	static ResourceViewHandle s_ptexLinearDepthFixupUAV;
-
-	static CTexture*          s_ptexSceneTarget;                                 // Shared rt for generic usage (refraction/srgb/diffuse accumulation/hdr motionblur/etc)
-	static CTexture*          s_ptexSceneTargetR11G11B10F[2];                    // CMotionBlurStage
-	static CTexture*          s_ptexSceneDiffuse;
-	static CTexture*          s_ptexSceneDiffuseTmp;
-	static CTexture*          s_ptexSceneSpecular;
-#if defined(DURANGO_USE_ESRAM)
-	static CTexture*          s_ptexSceneSpecularESRAM;                          // Temporary scene specular in ESRAM, aliased with other ESRAM RTs
-#endif
-	static CTexture*          s_ptexSceneSpecularTmp;
-	static CTexture*          s_ptexSceneNormalsMap;                             // RT with normals for deferred shading
-	static CTexture*          s_ptexSceneNormalsBent;
-
 	static CTexture*          s_ptexVelocity;                                    // CMotionBlurStage
 	static CTexture*          s_ptexVelocityTiles[3];                            // CMotionBlurStage
-	static CTexture*          s_ptexVelocityObjects[CCamera::eEye_eCount];       // CSceneGBufferStage, Dynamic object velocity (for left and right eye)
-
-	static CTexture*          s_ptexHDRTarget;
-	static CTexture*          s_ptexHDRTargetPrev;                               // CScreenSpaceReflectionsStage, CWaterStage, CMotionBlurStage, CSvoRenderer
-	static CTexture*          s_ptexHDRTargetScaled[4][4];                       // CAutoExposureStage, CBloomStage, CSunShaftsStage
-
-	static CTexture*          s_ptexHDRTargetMasked;                             // CScreenSpaceReflectionsStage, CPostAAStage
-	static CTexture*          s_ptexHDRTargetMaskedScaled[4][4];                 // CScreenSpaceReflectionsStage, CDepthOfFieldStage, CSnowStage
 
 	static CTexture*          s_ptexHDRFinalBloom;                               // CRainStage, CToneMappingStage, CBloomStage
 
-	static CTexture*          s_ptexDisplayTargetSrc;                            // display-colorspace target
-	static CTexture*          s_ptexDisplayTargetDst;                            // display-colorspace target
-	static CTexture*          s_ptexDisplayTargetScaled[3];                      // low-resolution/blurred version. 2x/4x/8x/16x smaller than screen
-	static CTexture*          s_ptexDisplayTargetScaledTemp[2];                  // low-resolution/blurred version. 2x/4x/8x/16x smaller than screen, temp textures (used for blurring/ping-pong)
-
-	static CTexture*          s_ptexAOColorBleed;                                // CScreenSpaceObscuranceStage, CTiledShadingStage
-	static CTexture*          s_ptexShadowMask;                                  // CShadowMapStage
-	static CTexture*          s_ptexClipVolumes;                                 // CClipVolumeStage, CTiledShadingStage, CHeightMapAOStage
 	static CTexture*          s_ptexModelHudBuffer;                              // CV_r_UsePersistentRTForModelHUD, used by Menu3DModelRenderer to postprocess render models
 	static CTexture*          s_ptexSceneCoC[MIN_DOF_COC_K];                     // CDepthOfFieldStage
 	static CTexture*          s_ptexSceneCoCTemp;                                // CDepthOfFieldStage

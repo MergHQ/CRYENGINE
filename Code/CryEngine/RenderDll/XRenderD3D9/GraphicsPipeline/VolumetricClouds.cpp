@@ -463,7 +463,7 @@ void CVolumetricCloudsStage::Init()
 		}
 
 		CRY_ASSERT(m_pScaledPrevDepthTex[e] == nullptr);
-		m_pScaledPrevDepthTex[e] = CTexture::GetOrCreateTextureObject(tnamePrevDepth[e], 0, 0, 0, eTT_2D, CRendererResources::s_ptexLinearDepthScaled[0]->GetFlags(), eTF_Unknown);
+		m_pScaledPrevDepthTex[e] = CTexture::GetOrCreateTextureObject(tnamePrevDepth[e], 0, 0, 0, eTT_2D, m_graphicsPipelineResources.m_pTexLinearDepthScaled[0]->GetFlags(), eTF_Unknown);
 	}
 
 	CRY_ASSERT(m_pCloudDepthTex == nullptr);
@@ -501,8 +501,8 @@ void CVolumetricCloudsStage::Update()
 	if (!bVolumetricClouds)
 		return;
 
-	const int32 screenWidth  = CRendererResources::s_renderWidth;
-	const int32 screenHeight = CRendererResources::s_renderHeight;
+	const int32 screenWidth  = m_graphicsPipeline.GetRenderResolution().x;
+	const int32 screenHeight = m_graphicsPipeline.GetRenderResolution().y;
 	const bool bStereo = rd->IsStereoEnabled();
 	const bool stereoReproj = bStereo && CRenderer::CV_r_VolumetricCloudsStereoReprojection != 0;
 
@@ -567,7 +567,7 @@ void CVolumetricCloudsStage::Update()
 			bReset |= createTexture2D(m_pDownscaledMinTex[e][i], eTF_R16G16B16A16F, rtFlags, condStereo);
 		}
 
-		bReset |= createTexture2D(m_pScaledPrevDepthTex[e], CRendererResources::s_ptexLinearDepthScaled[0]->GetDstFormat(), CRendererResources::s_ptexLinearDepthScaled[0]->GetFlags(), condStereo);
+		bReset |= createTexture2D(m_pScaledPrevDepthTex[e], m_graphicsPipelineResources.m_pTexLinearDepthScaled[0]->GetDstFormat(), m_graphicsPipelineResources.m_pTexLinearDepthScaled[0]->GetFlags(), condStereo);
 	}
 
 	createTexture2D(m_pCloudDepthTex, eTF_R32F, rtFlags, true);
@@ -871,7 +871,7 @@ void CVolumetricCloudsStage::Execute()
 				pass.SetPrimitiveFlags(CRenderPrimitive::eFlags_None);
 				pass.SetTechnique(pShader, shaderName, rtMask);
 
-				pass.SetRenderTarget(0, CRendererResources::s_ptexHDRTarget);
+				pass.SetRenderTarget(0, m_graphicsPipelineResources.m_pTexHDRTarget);
 				pass.SetDepthTarget(zTarget);
 
 				// using GS_BLDST_SRCALPHA because GS_BLDST_ONEMINUSSRCALPHA causes banding artifact when alpha value is very low.
@@ -879,7 +879,7 @@ void CVolumetricCloudsStage::Execute()
 
 				pass.SetFlags(CPrimitiveRenderPass::ePassFlags_VrProjectionPass);
 
-				pass.SetTexture(0, CRendererResources::s_ptexLinearDepth);
+				pass.SetTexture(0, m_graphicsPipelineResources.m_pTexLinearDepth);
 				pass.SetTexture(1, context.scaledZTarget);
 				pass.SetTexture(2, currMaxTex);
 				pass.SetTexture(3, currMinTex);
@@ -1366,8 +1366,8 @@ void CVolumetricCloudsStage::GenerateCloudShaderParam(::VCCloudRenderContext& co
 	SRenderViewInfo viewInfos[2];
 	const size_t viewInfoCount = m_graphicsPipeline.GenerateViewInfo(viewInfos);
 
-	const int32 width  = CRendererResources::s_renderWidth;
-	const int32 height = CRendererResources::s_renderHeight;
+	const int32 width  = m_graphicsPipeline.GetRenderResolution().x;
+	const int32 height = m_graphicsPipeline.GetRenderResolution().y;
 	const bool bStereo = rd->IsStereoEnabled();
 	const bool bReverseDepth = true;
 	const f32 time = m_graphicsPipeline.GetAnimationTime().GetSeconds();
@@ -1447,7 +1447,7 @@ void CVolumetricCloudsStage::GenerateCloudShaderParam(::VCCloudRenderContext& co
 	{
 		context.scaledTarget = m_pDownscaledLeftEyeTex; // left eye is re-projected to right eye.
 	}
-	context.scaledZTarget = CRendererResources::s_ptexLinearDepthScaled[downscaleIndex > 0];
+	context.scaledZTarget = m_graphicsPipelineResources.m_pTexLinearDepthScaled[downscaleIndex > 0];
 
 	// enable fast path when clouds are always rendered in low shading mode, and viewable region is covered by cloud shadow map.
 	const f32 shadingLOD = cloudMiscParams.y;

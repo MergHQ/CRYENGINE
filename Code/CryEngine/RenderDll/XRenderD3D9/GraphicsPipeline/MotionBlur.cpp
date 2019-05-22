@@ -66,7 +66,7 @@ void CMotionBlurStage::Execute()
 			m_passPacking.SetTechnique(pShader, techPackVelocities, bRadialBlur ? g_HWSR_MaskBit[HWSR_SAMPLE0] : 0);
 			m_passPacking.SetRenderTarget(0, CRendererResources::s_ptexVelocity);
 			m_passPacking.SetState(GS_NODEPTHTEST);
-			m_passPacking.SetTexture(0, CRendererResources::s_ptexLinearDepth);
+			m_passPacking.SetTexture(0, m_graphicsPipelineResources.m_pTexLinearDepth);
 			m_passPacking.SetTexture(1, GetUtils().GetVelocityObjectRT(RenderView()));
 			m_passPacking.SetSampler(0, EDefaultSamplerStates::PointClamp);
 			m_passPacking.SetRequireWorldPos(true);
@@ -111,7 +111,7 @@ void CMotionBlurStage::Execute()
 			Vec4 params = Vec4(
 				      (float)CRendererResources::s_ptexVelocity->GetWidth(),
 				      (float)CRendererResources::s_ptexVelocity->GetHeight(),
-				ceilf((float)CRendererResources::s_renderWidth / tileCountX), 0);
+				ceilf((float)m_graphicsPipeline.GetRenderResolution().x / tileCountX), 0);
 			m_passTileGen1.SetConstant(motionBlurParamName, params, eHWSC_Pixel);
 
 			m_passTileGen1.Execute();
@@ -167,7 +167,7 @@ void CMotionBlurStage::Execute()
 
 		if (bGatherDofEnabled)
 		{
-			m_passCopy.Execute(CRendererResources::s_ptexHDRTarget, CRendererResources::s_ptexSceneTargetR11G11B10F[0]);
+			m_passCopy.Execute(m_graphicsPipelineResources.m_pTexHDRTarget, m_graphicsPipelineResources.m_pTexSceneTargetR11G11B10F[0]);
 		}
 
 		if (m_passMotionBlur.IsDirty(CRenderer::CV_r_MotionBlurQuality, bGatherDofEnabled))
@@ -181,9 +181,9 @@ void CMotionBlurStage::Execute()
 			m_passMotionBlur.SetPrimitiveType(CRenderPrimitive::ePrim_ProceduralTriangle);
 			m_passMotionBlur.SetTechnique(pShader, techMotionBlur, rtMask);
 			m_passMotionBlur.SetFlags(CPrimitiveRenderPass::ePassFlags_VrProjectionPass);
-			m_passMotionBlur.SetRenderTarget(0, CRendererResources::s_ptexHDRTarget);
+			m_passMotionBlur.SetRenderTarget(0, m_graphicsPipelineResources.m_pTexHDRTarget);
 			m_passMotionBlur.SetState(GS_NODEPTHTEST | GS_BLSRC_ONE | GS_BLDST_ONEMINUSSRCALPHA);
-			m_passMotionBlur.SetTexture(0, bGatherDofEnabled ? CRendererResources::s_ptexSceneTargetR11G11B10F[0] : CRendererResources::s_ptexHDRTargetPrev);
+			m_passMotionBlur.SetTexture(0, bGatherDofEnabled ? m_graphicsPipelineResources.m_pTexSceneTargetR11G11B10F[0] : m_graphicsPipelineResources.m_pTexHDRTargetPrev);
 			m_passMotionBlur.SetTexture(1, CRendererResources::s_ptexVelocity);
 			m_passMotionBlur.SetTexture(2, CRendererResources::s_ptexVelocityTiles[2]);
 			m_passMotionBlur.SetSampler(0, EDefaultSamplerStates::LinearClamp);

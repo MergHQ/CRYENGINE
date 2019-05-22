@@ -109,7 +109,7 @@ public:
 
 	gpu_physics::CParticleFluidSimulation* CreateFluidSimulation(const gpu_pfx2::SUpdateContext& context);
 	gpu_physics::CParticleFluidSimulation* GetFluidSimulation() { return m_pFluidSimulation.get(); }
-	void                                   FluidCollisions(CDeviceCommandListRef RESTRICT_REFERENCE commandList);
+	void                                   FluidCollisions(CDeviceCommandListRef RESTRICT_REFERENCE commandList, const gpu_pfx2::SUpdateContext& context);
 	void                                   EvolveParticles(CDeviceCommandListRef RESTRICT_REFERENCE commandList);
 
 private:

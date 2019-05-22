@@ -61,7 +61,6 @@ public:
 
 	void OnCVarsChanged(const CCVarUpdateRecorder& cvarUpdater) final;
 
-	void Execute();
 	void ExecuteSilhouettePass();
 	void ExecuteHelpers();
 	void ExecuteDebugger();

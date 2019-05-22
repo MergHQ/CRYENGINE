@@ -61,7 +61,7 @@ void CToneMappingStage::Execute()
 		// TODO: CPostEffectContext::GetDstBackBufferTexture() pre-EnableAltBackBuffer()
 		static CCryNameTSCRC techToneMapping("HDRFinalPass");
 		m_passToneMapping.SetTechnique(pShader, techToneMapping, rtMask);
-		m_passToneMapping.SetRenderTarget(0, CRendererResources::s_ptexDisplayTargetDst);
+		m_passToneMapping.SetRenderTarget(0, m_graphicsPipelineResources.m_pTexDisplayTargetDst);
 		m_passToneMapping.SetState(GS_NODEPTHTEST);
 		m_passToneMapping.SetFlags(CPrimitiveRenderPass::ePassFlags_RequireVrProjectionConstants);
 		m_passToneMapping.SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants);	// Enables reflection constants addition in the shader
@@ -69,7 +69,7 @@ void CToneMappingStage::Execute()
 		CTexture* pBloomTex = bBloomEnabled ? CRendererResources::s_ptexHDRFinalBloom : CRendererResources::s_ptexBlack;
 
 		m_passToneMapping.SetSampler(0, EDefaultSamplerStates::LinearClamp);
-		m_passToneMapping.SetTexture(0, CRendererResources::s_ptexHDRTarget);
+		m_passToneMapping.SetTexture(0, m_graphicsPipelineResources.m_pTexHDRTarget);
 		m_passToneMapping.SetTexture(1, CRendererResources::s_ptexCurLumTexture);
 		m_passToneMapping.SetTexture(2, pBloomTex);
 		m_passToneMapping.SetTexture(7, CRendererResources::s_ptexVignettingMap);
@@ -136,12 +136,12 @@ void CToneMappingStage::ExecuteDebug()
 
 		// TODO: CPostEffectContext::GetDstBackBufferTexture() pre-EnableAltBackBuffer()
 		m_passToneMapping.SetTechnique(pShader, techToneMapping, rtMask);
-		m_passToneMapping.SetRenderTarget(0, CRendererResources::s_ptexDisplayTargetDst);
+		m_passToneMapping.SetRenderTarget(0, m_graphicsPipelineResources.m_pTexDisplayTargetDst);
 		m_passToneMapping.SetState(GS_NODEPTHTEST);
 		m_passToneMapping.SetFlags(CPrimitiveRenderPass::ePassFlags_RequireVrProjectionConstants);
 		m_passToneMapping.SetPrimitiveFlags(primFlags);
 		m_passToneMapping.SetSampler(0, EDefaultSamplerStates::LinearClamp);
-		m_passToneMapping.SetTexture(0, CRendererResources::s_ptexHDRTarget);
+		m_passToneMapping.SetTexture(0, m_graphicsPipelineResources.m_pTexHDRTarget);
 		m_passToneMapping.SetTexture(1, CRendererResources::s_ptexCurLumTexture);
 		m_passToneMapping.SetRequireWorldPos(true);
 		m_passToneMapping.SetRequirePerViewConstantBuffer(true);
@@ -169,8 +169,8 @@ void CToneMappingStage::ExecuteFixedExposure(CTexture* pColorTex, CTexture* pDep
 	return;
 
 	// TODO: CPostEffectContext::GetDstBackBufferTexture() pre-EnableAltBackBuffer()
-	CTexture* pSrcTex = CRendererResources::s_ptexHDRTarget;
-	CTexture* pDstTex = CRendererResources::s_ptexDisplayTargetDst;
+	CTexture* pSrcTex = m_graphicsPipelineResources.m_pTexHDRTarget;
+	CTexture* pDstTex = m_graphicsPipelineResources.m_pTexDisplayTargetDst;
 
 	auto& pass = m_passFixedExposureToneMapping;
 

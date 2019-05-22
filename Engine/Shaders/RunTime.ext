@@ -230,6 +230,7 @@ Property
   Precache = GlassPS
   Precache = MultiLayeredMaterialsPS
   Precache = ParticlePS
+  Precache = DeferredPassPS
 }
 
 Property

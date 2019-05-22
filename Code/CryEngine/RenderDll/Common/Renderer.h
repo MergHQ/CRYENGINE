@@ -1071,7 +1071,7 @@ public:
 
 	virtual void         EF_InvokeShadowMapRenderJobs(const SRenderingPassInfo& passInfo, const int nFlags) override {}
 	virtual IRenderView* GetNextAvailableShadowsView(IRenderView* pMainRenderView, ShadowMapFrustum* pOwnerFrustum) override;
-	void                 PrepareShadowFrustumForShadowPool(ShadowMapFrustum* pFrustum, uint32 frameID, const SRenderLight& light, uint32* timeSlicedShadowsUpdated) override final;
+	void                 PrepareShadowFrustumForShadowPool(IRenderView* pMainRenderView, ShadowMapFrustum* pFrustum, uint32 frameID, const SRenderLight& light, uint32* timeSlicedShadowsUpdated) override final;
 
 	// 2d interface for shaders
 	virtual void EF_EndEf2D(const bool bSort) override = 0;
@@ -1083,7 +1083,7 @@ public:
 
 	virtual int                    EF_AddDeferredLight(const SRenderLight& pLight, float fMult, const SRenderingPassInfo& passInfo) override;
 
-	virtual void                   EF_ReleaseDeferredData() override;
+	virtual void                   EF_ReleaseDeferredData(CGraphicsPipeline* pGraphicsPipeline) override;
 	virtual SInputShaderResources* EF_CreateInputShaderResource(IRenderShaderResources* pOptionalCopyFrom = nullptr) override;
 	virtual void                   ClearPerFrameData(const SRenderingPassInfo& passInfo);
 	virtual bool                   EF_UpdateDLight(SRenderLight* pDL) const override;
@@ -1433,8 +1433,6 @@ public:
 	float m_overrideRefreshRate;
 	int   m_overrideScanlineOrder;
 #endif
-
-	int       m_nStencilMaskRef;
 
 	byte      m_bDeviceSupportsInstancing;
 

@@ -166,7 +166,8 @@ private:
 
 	bool IsStageActive() const
 	{
-		return !RenderView()->IsRecursive() && RenderView()->GetCurrentEye() != CCamera::eEye_Right;
+		bool isSecondaryViewport = m_graphicsPipeline.GetPipelineDescription().shaderFlags & SHDF_SECONDARY_VIEWPORT;
+		return !isSecondaryViewport && !RenderView()->IsRecursive() && RenderView()->GetCurrentEye() != CCamera::eEye_Right;
 	}
 
 	_smart_ptr<CTexture>     m_ShadowMapCache[MAX_GSM_LODS_NUM];

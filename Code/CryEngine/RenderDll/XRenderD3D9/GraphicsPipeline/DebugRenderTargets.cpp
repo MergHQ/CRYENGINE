@@ -244,7 +244,7 @@ void CDebugRenderTargetsStage::Execute()
 		ResetRenderTargetList();
 
 		SRenderTargetInfo rtInfo;
-		rtInfo.pTexture = CRendererResources::s_ptexSceneDiffuseTmp;
+		rtInfo.pTexture = m_graphicsPipelineResources.m_pTexSceneDiffuseTmp;
 		m_renderTargetList.push_back(rtInfo);
 		m_columnCount = 1;
 

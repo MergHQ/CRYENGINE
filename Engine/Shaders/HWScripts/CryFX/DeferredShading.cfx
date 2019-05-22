@@ -388,7 +388,11 @@ pixout SSRRaytracePS(vtxOutWPOS IN)
 
 	const float3 vPositionWS = GetWorldPos( fDepth, IN.CamVec ) + CV_WorldViewPosition.xyz;
 	const float2 halfTexel = g_ScreenSize.zw;
+#if !%_RT_SECONDARY_VIEW
 	const float fLum  = GetTexture2DLod( SSRRay_HDRLum, SSRRay_LinDepth_Sampler, float4( ScreenTC, 0, 0 ) ).x * 100; // Limit brightness to reduce aliasing of specular highlights
+#else
+    const float fLum = 1.0f; // We don't have auto exposure running in secondary viewports
+#endif
 
 	MaterialAttribsCommon attribs = DecodeGBuffer(
 		GetTexture2D( SSRRay_Norms, SSRRay_Norms_Sampler, ScreenTC + halfTexel ), 0,

@@ -97,7 +97,7 @@ public:
 	void                Load(IXmlNode* pNode) override;
 
 	void                RenderPreview(const SLensFlareRenderParam* pParam, const Vec3& vPos) override;
-	bool                ProcessAll(CPrimitiveRenderPass& targetPass, std::vector<CPrimitiveRenderPass*>& prePasses, const SFlareLight& light, const SRenderViewInfo* pViewInfo, int viewInfoCount, bool bForceRender = false, bool bUpdateOcclusion = true);
+	bool                ProcessAll(CGraphicsPipeline* pGraphicsPipeline, CPrimitiveRenderPass& targetPass, std::vector<CPrimitiveRenderPass*>& prePasses, const SFlareLight& light, const SRenderViewInfo* pViewInfo, int viewInfoCount, bool bForceRender = false, bool bUpdateOcclusion = true);
 
 	IOpticsElementBase* GetParent() const override                 { return NULL; }
 

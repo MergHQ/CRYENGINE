@@ -120,7 +120,8 @@ void CD3D9Renderer::EF_PrepareShadowGenRenderList(const SRenderingPassInfo& pass
 	}
 
 #if defined(ENABLE_PROFILING_CODE)
-	m_frameRenderStats[m_nFillThreadID].m_NumShadowPoolFrustums += CDeferredShading::Instance().m_shadowPoolAlloc.Num();
+	CDeferredShading* pDeferredShading = pRenderView->GetGraphicsPipeline()->GetDeferredShading();
+	m_frameRenderStats[m_nFillThreadID].m_NumShadowPoolFrustums += pDeferredShading->m_shadowPoolAlloc.Num();
 #endif
 
 	// Prepare frustums for tiled shading
@@ -187,10 +188,12 @@ bool CD3D9Renderer::EF_PrepareShadowGenForLight(CRenderView* pRenderView, SRende
 
 void CD3D9Renderer::PrepareShadowPool(CRenderView* pRenderView) const
 {
+	CDeferredShading* pDeferredShading = pRenderView->GetGraphicsPipeline()->GetDeferredShading();
+
 	const auto nRequestedPoolSize = iConsole->GetCVar("e_ShadowsPoolSize")->GetIVal();
-	auto& shadowPoolSize = CDeferredShading::Instance().m_nShadowPoolSize;
-	auto& blockPack = CDeferredShading::Instance().m_blockPack;
-	auto& shadowPoolAlloc = CDeferredShading::Instance().m_shadowPoolAlloc;
+	auto& shadowPoolSize = pDeferredShading->m_nShadowPoolSize;
+	auto& blockPack = pDeferredShading->m_blockPack;
+	auto& shadowPoolAlloc = pDeferredShading->m_shadowPoolAlloc;
 
 	RenderLightsList& arrLights = pRenderView->GetLightsArray(eDLT_DeferredLight);
 

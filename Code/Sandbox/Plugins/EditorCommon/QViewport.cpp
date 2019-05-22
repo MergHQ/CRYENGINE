@@ -172,9 +172,10 @@ void QViewport::DrawOrigin(const int left, const int top, const float scale, con
 struct QViewport::SPrivate
 {
 	SRenderLight m_VPLight0;
+	SRenderLight m_VPEnvProbe0;
 };
 
-QViewport::QViewport(SSystemGlobalEnvironment* env, QWidget* parent, int supersamplingFactor)
+QViewport::QViewport(SSystemGlobalEnvironment* env, IRenderer::SGraphicsPipelineDescription graphicsPipelineDesc, QWidget* parent, int supersamplingFactor)
 	: QWidget(parent)
 	, m_renderContextCreated(false)
 	, m_updating(false)
@@ -216,6 +217,7 @@ QViewport::QViewport(SSystemGlobalEnvironment* env, QWidget* parent, int supersa
 	m_LightRotationRadian = 0;
 
 	m_pViewportAdapter.reset(new CDisplayViewportAdapter(this));
+	m_graphicsPipelineDesc = graphicsPipelineDesc;
 
 	CreateRenderContext();
 }
@@ -316,11 +318,7 @@ bool QViewport::CreateRenderContext()
 		desc.screenResolution.y = m_height;
 
 		m_displayContextKey = gEnv->pRenderer->CreateSwapChainBackedContext(desc);
-
-		m_graphicsPipelineDesc.type = EGraphicsPipelineType::Minimum;
-		m_graphicsPipelineDesc.shaderFlags = SHDF_SECONDARY_VIEWPORT | SHDF_ALLOW_SKY | SHDF_ALLOWHDR | SHDF_FORWARD_MINIMAL;
-
-		m_graphicsPipelineKey = gEnv->pRenderer->CreateGraphicsPipeline(m_graphicsPipelineDesc);
+		m_graphicsPipelineKey = gEnv->pRenderer->CreateGraphicsPipeline(m_graphicsPipelineDesc);	
 
 		m_renderContextCreated = true;
 		m_creatingRenderContext = false;
@@ -816,10 +814,77 @@ void QViewport::Render(SDisplayContext& context)
 	// In EF_StartEf(), usage mode is switched to CRenderView::eUsageModeWriting. Thus, render item lists are added below.
 	m_env->pRenderer->EF_StartEf(passInfo);
 
-	SRendParams rp;
-	rp.AmbientColor.r = m_settings->lighting.m_ambientColor.r / 255.0f * m_settings->lighting.m_brightness;
-	rp.AmbientColor.g = m_settings->lighting.m_ambientColor.g / 255.0f * m_settings->lighting.m_brightness;
-	rp.AmbientColor.b = m_settings->lighting.m_ambientColor.b / 255.0f * m_settings->lighting.m_brightness;
+	//---------------------------------------------------------------------------------------
+	//---- Environment probe    -------------------------------------------------------------
+	//---------------------------------------------------------------------------------------
+
+	m_private->m_VPEnvProbe0.SetPosition(Vec3(0, 0, 0));
+	m_private->m_VPEnvProbe0.SetRadius(10000.0f, 0);
+	m_private->m_VPEnvProbe0.SetLightColor(ColorF(m_settings->lighting.m_cubemapColor.r / 255.0f * m_settings->lighting.m_cubemapMultiplier,
+		m_settings->lighting.m_cubemapColor.g / 255.0f * m_settings->lighting.m_cubemapMultiplier,
+		m_settings->lighting.m_cubemapColor.b / 255.0f * m_settings->lighting.m_cubemapMultiplier, 1));
+	m_private->m_VPEnvProbe0.m_ProbeExtents = Vec3(m_private->m_VPEnvProbe0.m_fRadius);
+	m_private->m_VPEnvProbe0.m_fBoxWidth = m_private->m_VPEnvProbe0.m_fRadius * 0.5f;
+	m_private->m_VPEnvProbe0.m_fBoxLength = m_private->m_VPEnvProbe0.m_fRadius * 0.5f;
+	m_private->m_VPEnvProbe0.m_fBoxHeight = m_private->m_VPEnvProbe0.m_fRadius * 0.5f;
+	m_private->m_VPEnvProbe0.m_Flags |= DLF_DEFERRED_CUBEMAPS;
+
+	Matrix34 mat = Matrix34::CreateIdentity();
+	m_private->m_VPEnvProbe0.SetMatrix(mat);
+
+	if (m_settings->lighting.m_cubemapName != m_prevCharacterToolCubemapName)
+	{
+		m_private->m_VPEnvProbe0.ReleaseCubemaps();
+	}
+
+	if (!m_settings->lighting.m_cubemapName.empty() && !m_private->m_VPEnvProbe0.GetDiffuseCubemap() && !m_private->m_VPEnvProbe0.GetSpecularCubemap())
+	{
+		bool bFailed = false;
+		const char* specularCubemap = m_settings->lighting.m_cubemapName;
+		string sSpecularName(specularCubemap);
+		int strIndex = sSpecularName.find("_diff");
+		if (strIndex >= 0)
+		{
+			sSpecularName = sSpecularName.substr(0, strIndex) + sSpecularName.substr(strIndex + 5, sSpecularName.length());
+			specularCubemap = sSpecularName.c_str();
+		}
+
+		CryPathString diffuseCubemap;
+		diffuseCubemap.Format("%s%s%s.%s", PathUtil::AddSlash(PathUtil::GetPathWithoutFilename(specularCubemap)).c_str(),
+			PathUtil::GetFileName(specularCubemap).c_str(), "_diff", PathUtil::GetExt(specularCubemap));
+
+		// '\\' in filename causing texture duplication
+		string specularCubemapUnix = PathUtil::ToUnixPath(specularCubemap);
+		string diffuseCubemapUnix = PathUtil::ToUnixPath(diffuseCubemap);
+
+		m_private->m_VPEnvProbe0.SetSpecularCubemap(gEnv->pRenderer->EF_LoadTexture(specularCubemapUnix.c_str(), 0));
+		m_private->m_VPEnvProbe0.SetDiffuseCubemap(gEnv->pRenderer->EF_LoadTexture(diffuseCubemapUnix.c_str(), 0));
+
+		if (!m_private->m_VPEnvProbe0.GetSpecularCubemap() || !m_private->m_VPEnvProbe0.GetSpecularCubemap()->IsTextureLoaded())
+		{
+			GetISystem()->Warning(VALIDATOR_MODULE_ENTITYSYSTEM, VALIDATOR_WARNING, 0, specularCubemap,
+				"Deferred cubemap texture not found: %s", specularCubemap);
+
+			bFailed = true;
+		}
+		if (!m_private->m_VPEnvProbe0.GetDiffuseCubemap() || !m_private->m_VPEnvProbe0.GetDiffuseCubemap()->IsTextureLoaded())
+		{
+			GetISystem()->Warning(VALIDATOR_MODULE_ENTITYSYSTEM, VALIDATOR_WARNING, 0, diffuseCubemap,
+				"Deferred diffuse cubemap texture not found: %s", diffuseCubemap);
+
+			bFailed = true;
+		}
+
+		if (bFailed)
+		{
+			m_private->m_VPEnvProbe0.m_Flags |= DLF_DISABLED;
+			m_private->m_VPEnvProbe0.ReleaseCubemaps();
+		}
+
+		m_prevCharacterToolCubemapName = m_settings->lighting.m_cubemapName;
+	}
+
+	m_env->pRenderer->EF_AddDeferredLight(m_private->m_VPEnvProbe0, 1.0f, passInfo);
 
 	//---------------------------------------------------------------------------------------
 	//---- directional light    -------------------------------------------------------------
@@ -833,7 +898,6 @@ void QViewport::Render(SDisplayContext& context)
 	Matrix33 LightRot33 = Matrix33::CreateRotationZ(m_LightRotationRadian);
 
 	f32 lightMultiplier = m_settings->lighting.m_lightMultiplier;
-	f32 lightSpecMultiplier = m_settings->lighting.m_lightSpecMultiplier;
 	f32 lightRadius = 400;
 
 	f32 lightOrbit = 15.0f;
@@ -846,7 +910,6 @@ void QViewport::Render(SDisplayContext& context)
 	d0.z = f32(m_settings->lighting.m_directionalLightColor.b) / 255.0f;
 	m_private->m_VPLight0.m_Flags |= DLF_POINT;
 	m_private->m_VPLight0.SetLightColor(ColorF(d0.x * lightMultiplier, d0.y * lightMultiplier, d0.z * lightMultiplier, 0));
-	m_private->m_VPLight0.SetSpecularMult(lightSpecMultiplier);
 	m_private->m_VPLight0.SetRadius(lightRadius);
 
 	ColorB col;
@@ -862,6 +925,7 @@ void QViewport::Render(SDisplayContext& context)
 	//---------------------------------------------------------------------------------------
 
 	Matrix34 tm(IDENTITY);
+	SRendParams rp;
 	rp.pMatrix = &tm;
 	rp.pPrevMatrix = &tm;
 

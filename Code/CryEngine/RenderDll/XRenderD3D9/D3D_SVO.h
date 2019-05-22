@@ -124,7 +124,8 @@ protected:
 	void                   SetEditingHelper(const Sphere& sp) final;
 	bool                   IsShaderItemUsedForVoxelization(SShaderItem& rShaderItem, IRenderNode* pRN) final;
 
-	static CTexture*       GetGBuffer(int nId);
+	static CTexture*       GetGBuffer(const CGraphicsPipelineResources& pipelineResources, int nId);
+	static CTexture*       GetZBuffer(const CGraphicsPipelineResources& pipelineResources, bool bLinear = true);
 	void                   UpscalePass(SSvoTargetsSet* pTS);
 	void                   DemosaicPass(SSvoTargetsSet* pTS);
 	void                   ConeTracePass(SSvoTargetsSet* pTS);

@@ -3732,7 +3732,7 @@ void C3DEngine::PrepareShadowPasses(const SRenderingPassInfo& passInfo, uint32& 
 	m_onePassShadowFrustumsCount = shadowFrustums.size();
 
 	shadowPassInfo.reserve(kMaxShadowPassesNum);
-	CRenderView* pMainRenderView = passInfo.GetRenderView();
+	CRenderView* pRenderView = passInfo.GetRenderView();
 	for (const auto& pair : shadowFrustums)
 	{
 		auto* pFr = pair.first;
@@ -3741,12 +3741,12 @@ void C3DEngine::PrepareShadowPasses(const SRenderingPassInfo& passInfo, uint32& 
 		assert(!pFr->pOnePassShadowView);
 
 		// Prepare time-sliced shadow frustum updates
-		GetRenderer()->PrepareShadowFrustumForShadowPool(pFr,
+		GetRenderer()->PrepareShadowFrustumForShadowPool((IRenderView*)pRenderView, pFr,
 			static_cast<uint32>(passInfo.GetFrameID()),
 			light->GetLightProperties(),
 			&nTimeSlicedShadowsUpdatedThisFrame);
 
-		IRenderViewPtr pShadowsView = GetRenderer()->GetNextAvailableShadowsView((IRenderView*)pMainRenderView, pFr);
+		IRenderViewPtr pShadowsView = GetRenderer()->GetNextAvailableShadowsView((IRenderView*)pRenderView, pFr);
 		for (int cubeSide = 0; cubeSide < pFr->GetNumSides() && shadowPassInfo.size() < kMaxShadowPassesNum; ++cubeSide)
 		{
 			if (pFr->ShouldCacheSideHint(cubeSide))

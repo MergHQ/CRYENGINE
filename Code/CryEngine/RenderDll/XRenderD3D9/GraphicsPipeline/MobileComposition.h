@@ -20,7 +20,7 @@ public:
 
 	void Init() final;
 	void ExecuteDeferredLighting();
-	void ExecutePostProcessing();
+	void ExecutePostProcessing(CTexture* pOutput);
 
 private:
 	CDepthDownsamplePass m_passDepthDownsample2;

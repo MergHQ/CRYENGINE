@@ -137,6 +137,7 @@ enum ERenderQueryTypes
 	EFQ_IncrementFrameID,
 	EFQ_DeviceLost,
 
+	EFQ_Alloc_APITargets,
 	EFQ_Alloc_APITextures,
 	EFQ_Alloc_APIMesh,
 
@@ -221,6 +222,7 @@ enum class EGraphicsPipelineType
 	Minimum,
 	Billboard,
 	Mobile,
+	CharacterTool,
 };
 
 // Interface to the graphics constant buffers
@@ -1291,7 +1293,7 @@ struct IRenderer//: public IRendererCallbackServer
 
 	virtual void         EF_InvokeShadowMapRenderJobs(const SRenderingPassInfo& passInfo, const int nFlags) = 0;
 	virtual IRenderView* GetNextAvailableShadowsView(IRenderView* pMainRenderView, ShadowMapFrustum* pOwnerFrustum) = 0;
-	virtual void         PrepareShadowFrustumForShadowPool(ShadowMapFrustum* pFrustum, uint32 frameID, const SRenderLight& light, uint32* timeSlicedShadowsUpdated) = 0;
+	virtual void         PrepareShadowFrustumForShadowPool(IRenderView* pMainRenderView, ShadowMapFrustum* pFrustum, uint32 frameID, const SRenderLight& light, uint32* timeSlicedShadowsUpdated) = 0;
 	virtual void         PrepareShadowPool(CRenderView* pRenderView) const = 0;
 
 	// Dynamic lights.
@@ -1305,7 +1307,7 @@ struct IRenderer//: public IRendererCallbackServer
 	virtual int EF_AddDeferredLight(const SRenderLight& pLight, float fMult, const SRenderingPassInfo& passInfo) = 0;
 
 	//! Called in between levels to free up memory.
-	virtual void EF_ReleaseDeferredData() = 0;
+	virtual void EF_ReleaseDeferredData(CGraphicsPipeline* pGraphicsPipeline) = 0;
 
 	//! Called in between levels to free up memory.
 	virtual SInputShaderResources* EF_CreateInputShaderResource(IRenderShaderResources* pOptionalCopyFrom = 0) = 0;

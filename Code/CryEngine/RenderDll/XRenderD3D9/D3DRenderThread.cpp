@@ -218,6 +218,11 @@ void CD3D9Renderer::RT_ReleaseRenderResources(uint32 nFlags)
 			m_pRenderAuxGeomD3D->ReleaseResources();
 #endif //ENABLE_RENDER_AUX_GEOM
 
+		if (!(nFlags & FRR_TEXTURES))
+		{
+			m_pActiveGraphicsPipeline->GetPipelineResources().Clear();
+		}
+
 		m_pBaseGraphicsPipeline.reset();
 		m_pActiveGraphicsPipeline.reset();
 		m_graphicsPipelines.clear();
@@ -248,10 +253,6 @@ void CD3D9Renderer::RT_ReleaseRenderResources(uint32 nFlags)
 
 		CTexture::ShutDown();
 		CRendererResources::ShutDown();
-	}
-	else
-	{
-		CRendererResources::Clear();
 	}
 
 	// sync dev buffer only once per frame, to prevent syncing to the currently rendered frame

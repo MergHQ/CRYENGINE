@@ -21,7 +21,7 @@ void CBloomStage::Execute()
 
 	// Note: Just scaling the sampling offsets depending on the resolution is not very accurate but works acceptably
 #if defined(USE_CRY_ASSERT)
-	int widthHalfRes = (CRendererResources::s_ptexHDRTarget->GetWidth() + 1) / 2;
+	int widthHalfRes = (m_graphicsPipelineResources.m_pTexHDRTarget->GetWidth() + 1) / 2;
 	int widthQuarterRes = (widthHalfRes + 1) / 2;
 	CRY_ASSERT(CRendererResources::s_ptexHDRFinalBloom->GetWidth() == widthQuarterRes);
 #endif
@@ -37,9 +37,9 @@ void CBloomStage::Execute()
 		m_pass1H.SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_PS);
 		m_pass1H.SetPrimitiveType(CRenderPrimitive::ePrim_ProceduralTriangle);
 		m_pass1H.SetTechnique(CShaderMan::s_shHDRPostProcess, techBloomGaussian, 0);
-		m_pass1H.SetRenderTarget(0, CRendererResources::s_ptexHDRTargetScaled[1][1]);
+		m_pass1H.SetRenderTarget(0, m_graphicsPipelineResources.m_pTexHDRTargetScaled[1][1]);
 		m_pass1H.SetState(GS_NODEPTHTEST | GS_NOCOLMASK_A);
-		m_pass1H.SetTexture(0, CRendererResources::s_ptexHDRTargetScaled[1][0]);
+		m_pass1H.SetTexture(0, m_graphicsPipelineResources.m_pTexHDRTargetScaled[1][0]);
 		m_pass1H.SetSampler(0, samplerBloom);
 	}
 
@@ -53,9 +53,9 @@ void CBloomStage::Execute()
 		m_pass1V.SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_PS);
 		m_pass1V.SetPrimitiveType(CRenderPrimitive::ePrim_ProceduralTriangle);
 		m_pass1V.SetTechnique(CShaderMan::s_shHDRPostProcess, techBloomGaussian, 0);
-		m_pass1V.SetRenderTarget(0, CRendererResources::s_ptexHDRTargetScaled[1][0]);
+		m_pass1V.SetRenderTarget(0, m_graphicsPipelineResources.m_pTexHDRTargetScaled[1][0]);
 		m_pass1V.SetState(GS_NODEPTHTEST | GS_NOCOLMASK_A);
-		m_pass1V.SetTexture(0, CRendererResources::s_ptexHDRTargetScaled[1][1]);
+		m_pass1V.SetTexture(0, m_graphicsPipelineResources.m_pTexHDRTargetScaled[1][1]);
 		m_pass1V.SetSampler(0, samplerBloom);
 	}
 
@@ -69,9 +69,9 @@ void CBloomStage::Execute()
 		m_pass2H.SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_PS);
 		m_pass2H.SetPrimitiveType(CRenderPrimitive::ePrim_ProceduralTriangle);
 		m_pass2H.SetTechnique(CShaderMan::s_shHDRPostProcess, techBloomGaussian, 0);
-		m_pass2H.SetRenderTarget(0, CRendererResources::s_ptexHDRTargetScaled[1][1]);
+		m_pass2H.SetRenderTarget(0, m_graphicsPipelineResources.m_pTexHDRTargetScaled[1][1]);
 		m_pass2H.SetState(GS_NODEPTHTEST | GS_NOCOLMASK_A);
-		m_pass2H.SetTexture(0, CRendererResources::s_ptexHDRTargetScaled[1][0]);
+		m_pass2H.SetTexture(0, m_graphicsPipelineResources.m_pTexHDRTargetScaled[1][0]);
 		m_pass2H.SetSampler(0, samplerBloom);
 	}
 
@@ -87,8 +87,8 @@ void CBloomStage::Execute()
 		m_pass2V.SetTechnique(CShaderMan::s_shHDRPostProcess, techBloomGaussian, g_HWSR_MaskBit[HWSR_SAMPLE0]);
 		m_pass2V.SetRenderTarget(0, CRendererResources::s_ptexHDRFinalBloom);
 		m_pass2V.SetState(GS_NODEPTHTEST | GS_NOCOLMASK_A);
-		m_pass2V.SetTexture(0, CRendererResources::s_ptexHDRTargetScaled[1][1]);
-		m_pass2V.SetTexture(1, CRendererResources::s_ptexHDRTargetScaled[1][0]);
+		m_pass2V.SetTexture(0, m_graphicsPipelineResources.m_pTexHDRTargetScaled[1][1]);
+		m_pass2V.SetTexture(1, m_graphicsPipelineResources.m_pTexHDRTargetScaled[1][0]);
 		m_pass2V.SetSampler(0, samplerBloom);
 	}
 

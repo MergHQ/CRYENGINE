@@ -144,6 +144,9 @@ void CTiledLightVolumesStage::Init()
 	// Tiled Light Volumes ===============================================================
 
 	m_lightVolumeInfoBuf.Create(MaxNumTileLights, sizeof(STiledLightVolumeInfo), DXGI_FORMAT_UNKNOWN, CDeviceObjectFactory::USAGE_CPU_WRITE | CDeviceObjectFactory::USAGE_STRUCTURED | CDeviceObjectFactory::BIND_SHADER_RESOURCE, NULL);
+	
+	// preallocate light volume buffer
+	m_lightVolumeBuffer.Create();
 
 	// Create geometry for light volumes
 	{
@@ -285,6 +288,7 @@ void CTiledLightVolumesStage::Destroy(bool destroyResolutionIndependentResources
 	{
 		m_lightCullInfoBuf.Release();
 		m_lightShadeInfoBuf.Release();
+		m_lightVolumeBuffer.Release();
 	}
 
 	m_tileOpaqueLightMaskBuf.Release();
@@ -747,11 +751,7 @@ void CTiledLightVolumesStage::InjectSunIntoTiledLights(uint32_t& counter)
 	lightShadeInfo.shadowParams = Vec2(1, 0);
 	lightShadeInfo.shadowMaskIndex = 0;
 	lightShadeInfo.stencilID0 = lightShadeInfo.stencilID1 = STENCIL_VALUE_OUTDOORS;
-
-	Vec3 sunColor;
-	gEnv->p3DEngine->GetGlobalParameter(E3DPARAM_SUN_COLOR, sunColor);
-	sunColor *= gcpRendD3D->m_fAdaptedSceneScaleLBuffer;  // Apply LBuffers range rescale
-	lightShadeInfo.color = Vec4(sunColor.x, sunColor.y, sunColor.z, gEnv->p3DEngine->GetGlobalParameter(E3DPARAM_SUN_SPECULAR_MULTIPLIER));
+	lightShadeInfo.color = m_pRenderView->GetSunLightColor();
 
 	++counter;
 }
@@ -762,6 +762,7 @@ void CTiledLightVolumesStage::GenerateLightList()
 
 	CD3D9Renderer* const __restrict rd = gcpRendD3D;
 	CRenderView* pRenderView = RenderView();
+	CDeferredShading* pDeferredShading = pRenderView->GetGraphicsPipeline()->GetDeferredShading();
 
 	const auto& defLights = pRenderView->GetLightsArray(eDLT_DeferredLight);
 	const auto& envProbes = pRenderView->GetLightsArray(eDLT_DeferredCubemap);
@@ -770,7 +771,7 @@ void CTiledLightVolumesStage::GenerateLightList()
 	const SRenderViewInfo& viewInfo = pRenderView->GetViewInfo(CCamera::eEye_Left);
 	const Vec3 cameraPosition = pRenderView->GetCamera(CCamera::eEye_Left).GetPosition();
 
-	const uint32 maxSliceCount = CRendererResources::s_ptexShadowMask->StreamGetNumSlices();	// Should be set to same texture as CShadowMaskStage::m_pShadowMaskRT
+	const uint32 maxSliceCount = m_graphicsPipelineResources.m_pTexShadowMask->StreamGetNumSlices();	// Should be set to same texture as CShadowMaskStage::m_pShadowMaskRT
 
 	const float invCameraFar = 1.0f / viewInfo.farClipPlane;
 
@@ -1005,7 +1006,7 @@ void CTiledLightVolumesStage::GenerateLightList()
 						if (numTileLights + numSides > MaxNumTileLights)
 							continue;  // Skip light
 
-						const Vec2 shadowParams = Vec2(kernelSize * ((float)firstFrustum.nTexSize / (float)CDeferredShading::Instance().m_nShadowPoolSize), firstFrustum.fDepthConstBias);
+						const Vec2 shadowParams = Vec2(kernelSize * ((float)firstFrustum.nTexSize / (float)pDeferredShading->m_nShadowPoolSize), firstFrustum.fDepthConstBias);
 						const Vec3 cubeDirs[6] = { Vec3(-1, 0, 0), Vec3(1, 0, 0), Vec3(0, -1, 0), Vec3(0, 1, 0), Vec3(0, 0, -1), Vec3(0, 0, 1) };
 
 						for (int side = 0; side < numSides; ++side)
@@ -1229,7 +1230,7 @@ void CTiledLightVolumesStage::ExecuteVolumeListGen(uint32 dispatchSizeX, uint32 
 
 	GenerateLightVolumeInfo();
 
-	CTexture* pDepthRT = CRendererResources::s_ptexSceneDepthScaled[2];
+	CTexture* pDepthRT = m_graphicsPipelineResources.m_pTexSceneDepthScaled[2];
 	assert(CRendererCVars::CV_r_VrProjectionType > 0 || (pDepthRT->GetWidth() == dispatchSizeX && pDepthRT->GetHeight() == dispatchSizeY));
 
 	SRenderViewInfo viewInfo[2];
@@ -1281,7 +1282,7 @@ void CTiledLightVolumesStage::ExecuteVolumeListGen(uint32 dispatchSizeX, uint32 
 				primitive.SetRenderState(bInsideVolume ? GS_NODEPTHTEST : GS_DEPTHFUNC_GEQUAL);
 				primitive.SetEnableDepthClip(!bInsideVolume);
 				primitive.SetCullMode(bInsideVolume ? eCULL_Front : eCULL_Back);
-				primitive.SetTexture(3, CRendererResources::s_ptexLinearDepthScaled[2], EDefaultResourceViews::Default, EShaderStage_Vertex | EShaderStage_Pixel);
+				primitive.SetTexture(3, m_graphicsPipelineResources.m_pTexLinearDepthScaled[2], EDefaultResourceViews::Default, EShaderStage_Vertex | EShaderStage_Pixel);
 				primitive.SetBuffer(1, &m_lightVolumeInfoBuf, EDefaultResourceViews::Default, EShaderStage_Vertex | EShaderStage_Pixel);
 
 				SVolumeGeometry& volumeMesh = m_volumeMeshes[volumeType];

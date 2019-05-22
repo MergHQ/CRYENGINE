@@ -143,6 +143,7 @@ public:
 	virtual void       SetCameras(const CCamera* pCameras, int cameraCount) final;
 	virtual void       SetPreviousFrameCameras(const CCamera* pCameras, int cameraCount) final;
 
+
 	// Begin/End writing items to the view from 3d engine traversal.
 	virtual void                 SwitchUsageMode(EUsageMode mode) override;
 
@@ -175,7 +176,7 @@ public:
 	virtual void                                      SetViewport(const SRenderViewport& viewport) final;
 	virtual const SRenderViewport&                    GetViewport() const final;
 
-	virtual void                                      SetGraphicsPipeline(std::shared_ptr<CGraphicsPipeline> pipeline) final { m_pGraphicsPipeline = pipeline; }
+	virtual void                                      SetGraphicsPipeline(std::shared_ptr<CGraphicsPipeline> pipeline) final;
 	virtual const std::shared_ptr<CGraphicsPipeline>& GetGraphicsPipeline() const final                                      { return m_pGraphicsPipeline; }
 
 	//! Get resolution of the render target surface(s)
@@ -291,6 +292,8 @@ public:
 
 	bool                  HasSunLight() { return GetSunLight() != nullptr; }
 	const SRenderLight*   GetSunLight() const;
+	const Vec4            GetSunLightColor();
+	const Vec3            GetSunLightDirection();
 	//////////////////////////////////////////////////////////////////////////
 
 	virtual const SRendererData& GetRendererData() const override { return m_rendererData; }

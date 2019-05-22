@@ -147,8 +147,8 @@ void CDeferredDecalsStage::SetupDecalPrimitive(const SDeferredDecal& decal, CRen
 	primitive.SetSampler(1, diffuseMapSampler);
 	primitive.SetSampler(9, EDefaultSamplerStates::PointClamp);  // Used by gbuffer normal encoding
 
-	primitive.SetTexture(0, CRendererResources::s_ptexLinearDepth);
-	primitive.SetTexture(1, CRendererResources::s_ptexSceneNormalsBent);  // Contains copy of scene normals
+	primitive.SetTexture(0, m_graphicsPipelineResources.m_pTexLinearDepth);
+	primitive.SetTexture(1, m_graphicsPipelineResources.m_pTexSceneNormalsBent);  // Contains copy of scene normals
 	primitive.SetTexture(2, (CTexture*)pDiffuseMap);
 	primitive.SetTexture(3, (CTexture*)pNormalMap);
 	primitive.SetTexture(4, (CTexture*)pSmoothnessMap);
@@ -239,7 +239,7 @@ void CDeferredDecalsStage::SetupDecalPrimitive(const SDeferredDecal& decal, CRen
 		// MipLevel = log2 --------------------------------------------------------
 		//                 screenResolution * dot(viewVector, decalNormal)
 
-		const float screenRes = (float)CRendererResources::s_ptexSceneNormalsMap->GetWidth() * 0.5f + (float)CRendererResources::s_ptexSceneNormalsMap->GetHeight() * 0.5f;
+		const float screenRes = (float)m_graphicsPipelineResources.m_pTexSceneNormalsMap->GetWidth() * 0.5f + (float)m_graphicsPipelineResources.m_pTexSceneNormalsMap->GetHeight() * 0.5f;
 		const float decalSize = max(vBasisX.GetLength() * 2.0f, vBasisY.GetLength() * 2.0f);
 		const float texScale = max(
 			texMatrix.GetColumn(0).GetLength() * decal.rectTexture.w,
@@ -300,18 +300,18 @@ void CDeferredDecalsStage::Execute()
 	PROFILE_LABEL_SCOPE("DEFERRED_DECALS");
 
 	// Create temporary copy to enable reads from normal target
-	GetDeviceObjectFactory().GetCoreCommandList().GetCopyInterface()->Copy(CRendererResources::s_ptexSceneNormalsMap->GetDevTexture(), CRendererResources::s_ptexSceneNormalsBent->GetDevTexture());
+	GetDeviceObjectFactory().GetCoreCommandList().GetCopyInterface()->Copy(m_graphicsPipelineResources.m_pTexSceneNormalsMap->GetDevTexture(), m_graphicsPipelineResources.m_pTexSceneNormalsBent->GetDevTexture());
 
 	// Sort decals
 	std::stable_sort(deferredDecals.begin(), deferredDecals.end(), DecalSortComparison());
 
-	CTexture* pSceneSpecular = CRendererResources::s_ptexSceneSpecular;
+	CTexture* pSceneSpecular = m_graphicsPipelineResources.m_pTexSceneSpecular;
 #if defined(DURANGO_USE_ESRAM)
-	pSceneSpecular = CRendererResources::s_ptexSceneSpecularESRAM;
+	pSceneSpecular = m_graphicsPipelineResources.m_pTexSceneSpecularESRAM;
 #endif
 
-	m_decalPass.SetRenderTarget(0, CRendererResources::s_ptexSceneNormalsMap);
-	m_decalPass.SetRenderTarget(1, CRendererResources::s_ptexSceneDiffuse);
+	m_decalPass.SetRenderTarget(0, m_graphicsPipelineResources.m_pTexSceneNormalsMap);
+	m_decalPass.SetRenderTarget(1, m_graphicsPipelineResources.m_pTexSceneDiffuse);
 	m_decalPass.SetRenderTarget(2, pSceneSpecular);
 	m_decalPass.SetDepthTarget(RenderView()->GetDepthTarget());
 

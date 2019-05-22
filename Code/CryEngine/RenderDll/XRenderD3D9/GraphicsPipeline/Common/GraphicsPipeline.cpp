@@ -3,10 +3,13 @@
 #include "StdAfx.h"
 #include "GraphicsPipeline.h"
 #include "Common/RendererResources.h"
+#include "Common/Textures/TextureHelpers.h"
+#include "XRenderD3D9/D3DPostProcess.h"
 #include "../PostAA.h"
 #include "../ShadowMap.h"
 #include "../SceneGBuffer.h"
 #include "../SceneForward.h"
+#include "../SceneCustom.h"
 #include "../TiledLightVolumes.h"
 #include "../ClipVolumes.h"
 #include "../Fog.h"
@@ -14,12 +17,444 @@
 #include "../VolumetricFog.h"
 #include "../DebugRenderTargets.h"
 
+void CGraphicsPipelineResources::Init()
+{
+	// Default Template textures
+	int nRTFlags = FT_DONT_RELEASE | FT_DONT_STREAM | FT_STATE_CLAMP | FT_USAGE_RENDERTARGET;
+
+	m_pTexVelocityObjects[0] = CTexture::GetOrCreateTextureObject(m_graphicsPipeline.MakeUniqueTexIdentifierName("$VelocityObjects").c_str(), 0, 0, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_RENDERTARGET | FT_USAGE_UNORDERED_ACCESS, eTF_Unknown, -1);
+	// Only used for VR, but we need to support runtime switching
+	m_pTexVelocityObjects[1] = CTexture::GetOrCreateTextureObject(m_graphicsPipeline.MakeUniqueTexIdentifierName("$VelocityObjects_R").c_str(), 0, 0, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_RENDERTARGET | FT_USAGE_UNORDERED_ACCESS, eTF_Unknown, -1);
+
+	m_pTexSceneNormalsMap = CTexture::GetOrCreateTextureObject(m_graphicsPipeline.MakeUniqueTexIdentifierName("$SceneNormalsMap").c_str(), 0, 0, 1, eTT_2D, nRTFlags, eTF_R8G8B8A8, TO_SCENE_NORMALMAP);
+	m_pTexSceneDiffuse = CTexture::GetOrCreateTextureObject(m_graphicsPipeline.MakeUniqueTexIdentifierName("$SceneDiffuse").c_str(), 0, 0, 1, eTT_2D, nRTFlags, eTF_R8G8B8A8);
+	m_pTexSceneSpecular = CTexture::GetOrCreateTextureObject(m_graphicsPipeline.MakeUniqueTexIdentifierName("$SceneSpecular").c_str(), 0, 0, 1, eTT_2D, nRTFlags, eTF_R8G8B8A8);
+#if defined(DURANGO_USE_ESRAM)
+	m_pTexSceneSpecularESRAM = CTexture::GetOrCreateTextureObject(m_graphicsPipeline.MakeUniqueTexIdentifierName("$SceneSpecularESRAM").c_str(), 0, 0, 1, eTT_2D, nRTFlags, eTF_R8G8B8A8);
+#endif
+
+	m_pTexLinearDepth = CTexture::GetOrCreateTextureObject(m_graphicsPipeline.MakeUniqueTexIdentifierName("$ZTarget").c_str(), 0, 0, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_RENDERTARGET, eTF_Unknown);
+	m_pTexHDRTarget = CTexture::GetOrCreateTextureObject(m_graphicsPipeline.MakeUniqueTexIdentifierName("$HDRTarget").c_str(), 0, 0, 1, eTT_2D, nRTFlags, eTF_Unknown);
+	m_pTexShadowMask = CTexture::GetOrCreateTextureObject(m_graphicsPipeline.MakeUniqueTexIdentifierName("$ShadowMask").c_str(), 0, 0, 1, eTT_2DArray, nRTFlags, eTF_R8, TO_SHADOWMASK);
+	m_pTexSceneNormalsBent = CTexture::GetOrCreateTextureObject(m_graphicsPipeline.MakeUniqueTexIdentifierName("$SceneNormalsBent").c_str(), 0, 0, 1, eTT_2D, nRTFlags, eTF_R8G8B8A8);
+
+	m_pTexSceneDepthScaled[0] = CTexture::GetOrCreateTextureObject(m_graphicsPipeline.MakeUniqueTexIdentifierName("$SceneDepthScaled").c_str(), 0, 0, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_DEPTHSTENCIL, eTF_Unknown);
+	m_pTexSceneDepthScaled[1] = CTexture::GetOrCreateTextureObject(m_graphicsPipeline.MakeUniqueTexIdentifierName("$SceneDepthScaled2").c_str(), 0, 0, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_DEPTHSTENCIL, eTF_Unknown);
+	m_pTexSceneDepthScaled[2] = CTexture::GetOrCreateTextureObject(m_graphicsPipeline.MakeUniqueTexIdentifierName("$SceneDepthScaled3").c_str(), 0, 0, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_DEPTHSTENCIL, eTF_Unknown);
+
+	m_pTexLinearDepthScaled[0] = CTexture::GetOrCreateTextureObject(m_graphicsPipeline.MakeUniqueTexIdentifierName("$ZTargetScaled").c_str(), 0, 0, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_RENDERTARGET, eTF_Unknown, TO_DOWNSCALED_ZTARGET_FOR_AO);
+	m_pTexLinearDepthScaled[1] = CTexture::GetOrCreateTextureObject(m_graphicsPipeline.MakeUniqueTexIdentifierName("$ZTargetScaled2").c_str(), 0, 0, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_RENDERTARGET, eTF_Unknown, TO_QUARTER_ZTARGET_FOR_AO);
+	m_pTexLinearDepthScaled[2] = CTexture::GetOrCreateTextureObject(m_graphicsPipeline.MakeUniqueTexIdentifierName("$ZTargetScaled3").c_str(), 0, 0, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_RENDERTARGET, eTF_Unknown);
+
+	m_pTexClipVolumes = CTexture::GetOrCreateTextureObject(m_graphicsPipeline.MakeUniqueTexIdentifierName("$ClipVolumes").c_str(), 0, 0, 1, eTT_2D, nRTFlags, eTF_R8G8);
+
+	m_pTexSceneDiffuseTmp = CTexture::GetOrCreateTextureObject(m_graphicsPipeline.MakeUniqueTexIdentifierName("$SceneDiffuseTmp").c_str(), 0, 0, 1, eTT_2D, nRTFlags, eTF_R8G8B8A8, TO_SCENE_DIFFUSE_ACC);
+	m_pTexSceneSpecularTmp = CTexture::GetOrCreateTextureObject(m_graphicsPipeline.MakeUniqueTexIdentifierName("$SceneSpecularTmp").c_str(), 0, 0, 1, eTT_2D, nRTFlags, eTF_R8G8B8A8, TO_SCENE_SPECULAR_ACC);
+
+	m_pTexDisplayTargetScaled[0] = CTexture::GetOrCreateTextureObject(m_graphicsPipeline.MakeUniqueTexIdentifierName("$DisplayTarget 1/2a").c_str(), 0, 0, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_RENDERTARGET, eTF_Unknown, TO_BACKBUFFERSCALED_D2);
+	m_pTexDisplayTargetScaled[1] = CTexture::GetOrCreateTextureObject(m_graphicsPipeline.MakeUniqueTexIdentifierName("$DisplayTarget 1/4a").c_str(), 0, 0, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_RENDERTARGET, eTF_Unknown, TO_BACKBUFFERSCALED_D4);
+	m_pTexDisplayTargetScaled[2] = CTexture::GetOrCreateTextureObject(m_graphicsPipeline.MakeUniqueTexIdentifierName("$DisplayTarget 1/8").c_str(), 0, 0, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_RENDERTARGET, eTF_Unknown, TO_BACKBUFFERSCALED_D8);
+
+	m_pTexDisplayTargetScaledTemp[0] = CTexture::GetOrCreateTextureObject(m_graphicsPipeline.MakeUniqueTexIdentifierName("$DisplayTarget 1/2b").c_str(), 0, 0, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_RENDERTARGET, eTF_Unknown, -1);
+	m_pTexDisplayTargetScaledTemp[1] = CTexture::GetOrCreateTextureObject(m_graphicsPipeline.MakeUniqueTexIdentifierName("$DisplayTarget 1/4b").c_str(), 0, 0, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_RENDERTARGET, eTF_Unknown, -1);
+
+	m_pTexDisplayTargetSrc = CTexture::GetOrCreateTextureObject(m_graphicsPipeline.MakeUniqueTexIdentifierName("$DisplayTarget").c_str(), 0, 0, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_RENDERTARGET, eTF_Unknown, TO_BACKBUFFERMAP);
+	m_pTexDisplayTargetDst = CTexture::GetOrCreateTextureObject(m_graphicsPipeline.MakeUniqueTexIdentifierName("$DisplayTargetDst").c_str(), 0, 0, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_RENDERTARGET, eTF_Unknown);
+
+	m_pTexSceneSelectionIDs = CTexture::GetOrCreateTextureObject(m_graphicsPipeline.MakeUniqueTexIdentifierName("$SceneSelectionIDs").c_str(), 0, 0, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_RENDERTARGET, eTF_R32F);
+	
+	m_pTexSceneTargetR11G11B10F[0] = CTexture::GetOrCreateTextureObject(m_graphicsPipeline.MakeUniqueTexIdentifierName("$SceneTargetR11G11B10F_0").c_str(), 0, 0, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_RENDERTARGET, eTF_Unknown, -1);
+	m_pTexSceneTargetR11G11B10F[1] = CTexture::GetOrCreateTextureObject(m_graphicsPipeline.MakeUniqueTexIdentifierName("$SceneTargetR11G11B10F_1").c_str(), 0, 0, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_RENDERTARGET, eTF_Unknown, -1);
+
+	m_pTexLinearDepthFixup = CTexture::GetOrCreateTextureObject(m_graphicsPipeline.MakeUniqueTexIdentifierName("$ZTargetFixup").c_str(), 0, 0, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_RENDERTARGET, eTF_Unknown);
+	m_pTexSceneTarget = CTexture::GetOrCreateTextureObject(m_graphicsPipeline.MakeUniqueTexIdentifierName("$SceneTarget").c_str(), 0, 0, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_RENDERTARGET, eTF_Unknown, TO_SCENE_TARGET);
+
+#if CRY_PLATFORM_DURANGO && DURANGO_USE_ESRAM
+	// Assign ESRAM offsets
+	if (CRenderer::CV_r_useESRAM)
+	{
+		// Precomputed offsets, using xg library and aligned to 4k
+		//     1600x900 RGBA16F:  11894784
+		//     1600x900 RGBA8:     5955584
+
+		if (gRenDev->GetWidth() <= 1600 && gRenDev->GetHeight() <= 900)
+		{
+			m_pTexHDRTarget->SetESRAMOffset(0);
+			m_pTexSceneSpecularESRAM->SetESRAMOffset(0);
+			m_pTexSceneNormalsMap->SetESRAMOffset(11894784 + 5955584 * 0);
+			m_pTexSceneDiffuse->SetESRAMOffset(11894784 + 5955584 * 1);
+			// Depth target uses: 11894784 + 5955584 * 2
+		}
+		else
+		{
+			iLog->LogError("Disabling ESRAM since resolution is larger than 1600x900");
+			assert(0);
+		}
+	}
+#endif
+
+	CreateResources(0, 0);
+}
+
+void CGraphicsPipelineResources::CreateResources(int resourceWidth, int resourceHeight)
+{
+	if (!resourceWidth) resourceWidth = m_resourceWidth;
+	if (!resourceHeight) resourceHeight = m_resourceHeight;
+
+	if (!resourceWidth) resourceWidth = m_graphicsPipeline.GetRenderResolution().x;
+	if (!resourceHeight) resourceHeight = m_graphicsPipeline.GetRenderResolution().y;
+
+	CRY_ASSERT(resourceWidth);
+	CRY_ASSERT(resourceHeight);
+
+	CreateDepthMaps(resourceWidth, resourceHeight);
+	CreateDeferredMaps(resourceWidth, resourceHeight);
+	CreateHDRMaps(resourceWidth, resourceHeight);
+	CreatePostFXMaps(resourceWidth, resourceHeight);
+	CreateSceneMaps(resourceWidth, resourceHeight);
+
+	m_resourceWidth = resourceWidth;
+	m_resourceHeight = resourceHeight;
+}
+
+void CGraphicsPipelineResources::Resize(int renderWidth, int renderHeight)
+{
+	int resourceWidth = m_resourceWidth;
+	int resourceHeight = m_resourceHeight;
+
+	if (resourceWidth != renderWidth ||
+		resourceHeight != renderHeight)
+	{
+		resourceWidth = renderWidth;
+		resourceHeight = renderHeight;
+	}
+
+	CreateDepthMaps(resourceWidth, resourceHeight);
+	CreateDeferredMaps(resourceWidth, resourceHeight);
+	CreateHDRMaps(resourceWidth, resourceHeight);
+	CreatePostFXMaps(resourceWidth, resourceHeight);
+	CreateSceneMaps(resourceWidth, resourceHeight);
+
+	m_resourceWidth = resourceWidth;
+	m_resourceHeight = resourceHeight;
+}
+
+void CGraphicsPipelineResources::CreateDeferredMaps(int resourceWidth, int resourceHeight)
+{
+	Vec2i resolution = Vec2i(resourceWidth, resourceHeight);
+	const int width = resolution.x, width_r2 = (width + 1) / 2, width_r4 = (width_r2 + 1) / 2, width_r8 = (width_r4 + 1) / 2;
+	const int height = resolution.y, height_r2 = (height + 1) / 2, height_r4 = (height_r2 + 1) / 2, height_r8 = (height_r4 + 1) / 2;
+
+	ETEX_Format preferredDepthFormat = CRendererResources::GetDepthFormat();
+	ETEX_Format fmtZScaled = eTF_R16G16B16A16F;
+
+	SD3DPostEffectsUtils::GetOrCreateRenderTarget(m_graphicsPipeline.MakeUniqueTexIdentifierName("$SceneNormalsMap").c_str(), m_pTexSceneNormalsMap, width, height, Clr_Unknown, true, false, eTF_R8G8B8A8, TO_SCENE_NORMALMAP, FT_USAGE_ALLOWREADSRGB);
+	SD3DPostEffectsUtils::GetOrCreateRenderTarget(m_graphicsPipeline.MakeUniqueTexIdentifierName("$SceneDiffuse").c_str(), m_pTexSceneDiffuse, width, height, Clr_Empty, true, false, eTF_R8G8B8A8, -1, FT_USAGE_ALLOWREADSRGB);
+	SD3DPostEffectsUtils::GetOrCreateRenderTarget(m_graphicsPipeline.MakeUniqueTexIdentifierName("$SceneSpecular").c_str(), m_pTexSceneSpecular, width, height, Clr_Empty, true, false, eTF_R8G8B8A8, -1, FT_USAGE_ALLOWREADSRGB);
+#if defined(DURANGO_USE_ESRAM)
+	SD3DPostEffectsUtils::GetOrCreateRenderTarget(m_graphicsPipeline.MakeUniqueTexIdentifierName("$SceneSpecularESRAM").c_str(), m_pTexSceneSpecularESRAM, width, height, Clr_Empty, true, false, eTF_R8G8B8A8, -1);
+#endif
+	SD3DPostEffectsUtils::GetOrCreateRenderTarget(m_graphicsPipeline.MakeUniqueTexIdentifierName("$VelocityObjects").c_str(), m_pTexVelocityObjects[0], width, height, Clr_Transparent, true, false, eTF_R16G16F, -1, FT_USAGE_UNORDERED_ACCESS);
+	if (gRenDev->IsStereoEnabled())
+	{
+		SD3DPostEffectsUtils::GetOrCreateRenderTarget(m_graphicsPipeline.MakeUniqueTexIdentifierName("$VelocityObjects_R").c_str(), m_pTexVelocityObjects[1], width, height, Clr_Transparent, true, false, eTF_R16G16F, -1, FT_USAGE_UNORDERED_ACCESS);
+	}
+
+	SD3DPostEffectsUtils::GetOrCreateRenderTarget(m_graphicsPipeline.MakeUniqueTexIdentifierName("$SceneNormalsBent").c_str(), m_pTexSceneNormalsBent, width, height, Clr_Median, true, false, eTF_R8G8B8A8);
+
+	SD3DPostEffectsUtils::GetOrCreateDepthStencil(m_graphicsPipeline.MakeUniqueTexIdentifierName("$SceneDepthScaled").c_str(), m_pTexSceneDepthScaled[0], width_r2, height_r2, Clr_FarPlane_Rev, false, false, preferredDepthFormat, -1, FT_USAGE_DEPTHSTENCIL);
+	SD3DPostEffectsUtils::GetOrCreateDepthStencil(m_graphicsPipeline.MakeUniqueTexIdentifierName("$SceneDepthScaled2").c_str(), m_pTexSceneDepthScaled[1], width_r4, height_r4, Clr_FarPlane_Rev, false, false, preferredDepthFormat, -1, FT_USAGE_DEPTHSTENCIL);
+	SD3DPostEffectsUtils::GetOrCreateDepthStencil(m_graphicsPipeline.MakeUniqueTexIdentifierName("$SceneDepthScaled3").c_str(), m_pTexSceneDepthScaled[2], width_r8, height_r8, Clr_FarPlane_Rev, false, false, preferredDepthFormat, -1, FT_USAGE_DEPTHSTENCIL);
+
+	SD3DPostEffectsUtils::GetOrCreateRenderTarget(m_graphicsPipeline.MakeUniqueTexIdentifierName("$ZTargetScaled").c_str(), m_pTexLinearDepthScaled[0], width_r2, height_r2, ColorF(1.0f, 1.0f, 1.0f, 1.0f), 1, 0, fmtZScaled, TO_DOWNSCALED_ZTARGET_FOR_AO);
+	SD3DPostEffectsUtils::GetOrCreateRenderTarget(m_graphicsPipeline.MakeUniqueTexIdentifierName("$ZTargetScaled2").c_str(), m_pTexLinearDepthScaled[1], width_r4, height_r4, ColorF(1.0f, 1.0f, 1.0f, 1.0f), 1, 0, fmtZScaled, TO_QUARTER_ZTARGET_FOR_AO);
+	SD3DPostEffectsUtils::GetOrCreateRenderTarget(m_graphicsPipeline.MakeUniqueTexIdentifierName("$ZTargetScaled3").c_str(), m_pTexLinearDepthScaled[2], width_r8, height_r8, ColorF(1.0f, 1.0f, 1.0f, 1.0f), 1, 0, fmtZScaled);
+
+	SD3DPostEffectsUtils::GetOrCreateRenderTarget(m_graphicsPipeline.MakeUniqueTexIdentifierName("$ClipVolumes").c_str(), m_pTexClipVolumes, width, height, Clr_Empty, false, false, eTF_R8G8);
+	SD3DPostEffectsUtils::GetOrCreateRenderTarget(m_graphicsPipeline.MakeUniqueTexIdentifierName("$AOColorBleed").c_str(), m_pTexAOColorBleed, width_r8, height_r8, Clr_Unknown, true, false, eTF_R8G8B8A8);
+
+	SD3DPostEffectsUtils::GetOrCreateRenderTarget(m_graphicsPipeline.MakeUniqueTexIdentifierName("$SceneDiffuseTmp").c_str(), m_pTexSceneDiffuseTmp, width, height, Clr_Empty, true, false, eTF_R8G8B8A8);
+	SD3DPostEffectsUtils::GetOrCreateRenderTarget(m_graphicsPipeline.MakeUniqueTexIdentifierName("$SceneSpecularTmp").c_str(), m_pTexSceneSpecularTmp, width, height, Clr_Empty, true, false, eTF_R8G8B8A8);
+
+	// shadow mask
+	if (m_pTexShadowMask)
+		m_pTexShadowMask->Invalidate(resolution.x, resolution.y, eTF_R8);
+
+	if (!CTexture::IsTextureExist(m_pTexShadowMask))
+	{
+		const int nArraySize = gcpRendD3D->CV_r_ShadowCastingLightsMaxCount;
+		m_pTexShadowMask = CTexture::GetOrCreateTextureArray(m_graphicsPipeline.MakeUniqueTexIdentifierName("$ShadowMask").c_str(), resolution.x, resolution.y, nArraySize, 1, eTT_2DArray, FT_DONT_STREAM | FT_USAGE_RENDERTARGET, eTF_R8, TO_SHADOWMASK);
+	}
+
+	// Pre-create shadow pool
+	IF(gcpRendD3D->m_pRT->IsRenderThread() && gEnv->p3DEngine, 1)
+	{
+		//init shadow pool size
+		static ICVar* p_e_ShadowsPoolSize = iConsole->GetCVar("e_ShadowsPoolSize");
+		gcpRendD3D->m_nShadowPoolHeight = p_e_ShadowsPoolSize->GetIVal();
+		gcpRendD3D->m_nShadowPoolWidth = gcpRendD3D->m_nShadowPoolHeight; //square atlas
+	}
+}
+
+void CGraphicsPipelineResources::CreateDepthMaps(int resourceWidth, int resourceHeight)
+{
+	const uint32 nRTFlags = FT_DONT_STREAM | FT_DONT_RELEASE | FT_USAGE_RENDERTARGET;
+	uint32 nUAFlags = FT_DONT_STREAM | FT_DONT_RELEASE | FT_USAGE_RENDERTARGET | FT_USAGE_UNORDERED_ACCESS | FT_USAGE_UAV_RWTEXTURE;
+
+	m_pTexLinearDepth->SetFlags(nRTFlags);
+	m_pTexLinearDepth->SetWidth(resourceWidth);
+	m_pTexLinearDepth->SetHeight(resourceHeight);
+	m_pTexLinearDepth->CreateRenderTarget(CRendererResources::s_eTFZ, ColorF(1.0f, 1.0f, 1.0f, 1.0f));
+
+	if (!CRendererCVars::CV_r_HDRTexFormat)
+	{
+		m_pTexLinearDepthFixup->SetFlags(nUAFlags);
+		m_pTexLinearDepthFixup->SetWidth(resourceWidth);
+		m_pTexLinearDepthFixup->SetHeight(resourceHeight);
+		m_pTexLinearDepthFixup->CreateRenderTarget(eTF_R32F, ColorF(1.0f, 1.0f, 1.0f, 1.0f));
+
+		SResourceView typedUAV = SResourceView::UnorderedAccessView(DXGI_FORMAT_R32_UINT, 0, -1, 0, SResourceView::eUAV_ReadWrite);
+		m_pTexLinearDepthFixupUAV = m_pTexLinearDepthFixup->GetDevTexture()->GetOrCreateResourceViewHandle(typedUAV);
+	}
+}
+
+void CGraphicsPipelineResources::CreateHDRMaps(int resourceWidth, int resourceHeight)
+{
+	m_renderTargetPool.ClearRenderTargetList();
+
+	const int width = resourceWidth, width_r2 = (width + 1) / 2, width_r4 = (width_r2 + 1) / 2, width_r8 = (width_r4 + 1) / 2, width_r16 = (width_r8 + 1) / 2;
+	const int height = resourceHeight, height_r2 = (height + 1) / 2, height_r4 = (height_r2 + 1) / 2, height_r8 = (height_r4 + 1) / 2, height_r16 = (height_r8 + 1) / 2;
+	uint32 nHDRTargetFlags = FT_DONT_RELEASE;
+	uint32 nHDRTargetFlagsUAV = nHDRTargetFlags | (FT_USAGE_UNORDERED_ACCESS);  // UAV required for tiled deferred shading
+
+	const ETEX_Format nHDRFormat = CRendererResources::GetHDRFormat(false, false); // No alpha, default is HiQ, can be downgraded
+	const ETEX_Format nHDRQFormat = CRendererResources::GetHDRFormat(false, true); // No alpha, default is LoQ, can be upgraded
+	const ETEX_Format nHDRAFormat = CRendererResources::GetHDRFormat(true, false); // With alpha
+	
+	m_renderTargetPool.AddRenderTarget(width, height, Clr_Unknown, nHDRFormat, 1.0f, m_graphicsPipeline.MakeUniqueTexIdentifierName("$HDRTarget").c_str(), &m_pTexHDRTarget, nHDRTargetFlagsUAV);
+
+	// Scaled versions of the HDR scene texture
+	m_renderTargetPool.AddRenderTarget(width_r2, height_r2, Clr_Unknown, nHDRFormat, 0.9f, m_graphicsPipeline.MakeUniqueTexIdentifierName("$HDRTarget 1/2a").c_str(), &m_pTexHDRTargetScaled[0][0], FT_DONT_RELEASE);
+	m_renderTargetPool.AddRenderTarget(width_r4, height_r4, Clr_Unknown, nHDRFormat, 0.9f, m_graphicsPipeline.MakeUniqueTexIdentifierName("$HDRTarget 1/4a").c_str(), &m_pTexHDRTargetScaled[1][0], FT_DONT_RELEASE);
+	m_renderTargetPool.AddRenderTarget(width_r4, height_r4, Clr_Unknown, nHDRFormat, 0.9f, m_graphicsPipeline.MakeUniqueTexIdentifierName("$HDRTarget 1/4b").c_str(), &m_pTexHDRTargetScaled[1][1], FT_DONT_RELEASE);
+
+	// Scaled versions of compositions of the HDR scene texture (with alpha)
+	m_renderTargetPool.AddRenderTarget(width_r2, height_r2, Clr_Unknown, nHDRAFormat, 0.9f, m_graphicsPipeline.MakeUniqueTexIdentifierName("$HDRTargetMasked 1/2a").c_str(), &m_pTexHDRTargetMaskedScaled[0][0], FT_DONT_RELEASE);
+	m_renderTargetPool.AddRenderTarget(width_r2, height_r2, Clr_Unknown, nHDRAFormat, 0.9f, m_graphicsPipeline.MakeUniqueTexIdentifierName("$HDRTargetMasked 1/2b").c_str(), &m_pTexHDRTargetMaskedScaled[0][1], FT_DONT_RELEASE);
+	m_renderTargetPool.AddRenderTarget(width_r2, height_r2, Clr_Unknown, nHDRAFormat, 0.9f, m_graphicsPipeline.MakeUniqueTexIdentifierName("$HDRTargetMasked 1/2c").c_str(), &m_pTexHDRTargetMaskedScaled[0][2], FT_DONT_RELEASE);
+	m_renderTargetPool.AddRenderTarget(width_r2, height_r2, Clr_Unknown, nHDRAFormat, 0.9f, m_graphicsPipeline.MakeUniqueTexIdentifierName("$HDRTargetMasked 1/2d").c_str(), &m_pTexHDRTargetMaskedScaled[0][3], FT_DONT_RELEASE);
+	m_renderTargetPool.AddRenderTarget(width_r4, height_r4, Clr_Unknown, nHDRAFormat, 0.9f, m_graphicsPipeline.MakeUniqueTexIdentifierName("$HDRTargetMasked 1/4a").c_str(), &m_pTexHDRTargetMaskedScaled[1][0], FT_DONT_RELEASE);
+	m_renderTargetPool.AddRenderTarget(width_r4, height_r4, Clr_Unknown, nHDRAFormat, 0.9f, m_graphicsPipeline.MakeUniqueTexIdentifierName("$HDRTargetMasked 1/4b").c_str(), &m_pTexHDRTargetMaskedScaled[1][1], FT_DONT_RELEASE);
+	m_renderTargetPool.AddRenderTarget(width_r8, height_r8, Clr_Unknown, nHDRAFormat, 0.9f, m_graphicsPipeline.MakeUniqueTexIdentifierName("$HDRTargetMasked 1/8a").c_str(), &m_pTexHDRTargetMaskedScaled[2][0], FT_DONT_RELEASE);
+	m_renderTargetPool.AddRenderTarget(width_r8, height_r8, Clr_Unknown, nHDRAFormat, 0.9f, m_graphicsPipeline.MakeUniqueTexIdentifierName("$HDRTargetMasked 1/8b").c_str(), &m_pTexHDRTargetMaskedScaled[2][1], FT_DONT_RELEASE);
+	m_renderTargetPool.AddRenderTarget(width_r16, height_r16, Clr_Unknown, nHDRAFormat, 0.9f, m_graphicsPipeline.MakeUniqueTexIdentifierName("$HDRTargetMasked 1/16a").c_str(), &m_pTexHDRTargetMaskedScaled[3][0], FT_DONT_RELEASE);
+	m_renderTargetPool.AddRenderTarget(width_r16, height_r16, Clr_Unknown, nHDRAFormat, 0.9f, m_graphicsPipeline.MakeUniqueTexIdentifierName("$HDRTargetMasked 1/16b").c_str(), &m_pTexHDRTargetMaskedScaled[3][1], FT_DONT_RELEASE);
+	m_renderTargetPool.AddRenderTarget(width, height, Clr_Unknown, nHDRQFormat, 1.0f, m_graphicsPipeline.MakeUniqueTexIdentifierName("$HDRTargetPrev").c_str(), &m_pTexHDRTargetPrev);
+	m_renderTargetPool.AddRenderTarget(width, height, Clr_Unknown, nHDRAFormat, 1.0f, m_graphicsPipeline.MakeUniqueTexIdentifierName("$HDRTargetMasked").c_str(), &m_pTexHDRTargetMasked, nHDRTargetFlags);
+	
+	m_renderTargetPool.AddRenderTarget(width, height, Clr_Unknown, nHDRQFormat, 1.0f, m_graphicsPipeline.MakeUniqueTexIdentifierName("$SceneTargetR11G11B10F_0").c_str(), &m_pTexSceneTargetR11G11B10F[0], nHDRTargetFlagsUAV);
+	m_renderTargetPool.AddRenderTarget(width, height, Clr_Unknown, nHDRQFormat, 1.0f, m_graphicsPipeline.MakeUniqueTexIdentifierName("$SceneTargetR11G11B10F_1").c_str(), &m_pTexSceneTargetR11G11B10F[1], nHDRTargetFlags);
+
+#if RENDERER_ENABLE_FULL_PIPELINE
+	for (int i = 0; i < MAX_GPU_NUM; ++i)
+	{
+		char szName[256];
+		cry_sprintf(szName, m_graphicsPipeline.MakeUniqueTexIdentifierName("$HDRMeasuredLum_%d").c_str(), i);
+		m_pTexHDRMeasuredLuminance[i] = CTexture::GetOrCreate2DTexture(szName, 1, 1, 0, FT_DONT_RELEASE | FT_DONT_STREAM, NULL, eTF_R16G16F);
+	}
+#endif
+
+	m_renderTargetPool.CreateRenderTargetList();
+}
+
+void CGraphicsPipelineResources::CreatePostFXMaps(int resourceWidth, int resourceHeight)
+{
+#if RENDERER_ENABLE_FULL_PIPELINE
+	const int width = resourceWidth, width_r2 = (width + 1) / 2, width_r4 = (width_r2 + 1) / 2, width_r8 = (width_r4 + 1) / 2;
+	const int height = resourceHeight, height_r2 = (height + 1) / 2, height_r4 = (height_r2 + 1) / 2, height_r8 = (height_r4 + 1) / 2;
+
+	CRY_DISABLE_WARN_UNUSED_VARIABLES();
+	const ETEX_Format nHDRFormat = CRendererResources::GetHDRFormat(false, false); // No alpha, default is HiQ, can be downgraded
+	const ETEX_Format nHDRAFormat = CRendererResources::GetHDRFormat(true, false); // With alpha
+	const ETEX_Format nHDRQFormat = CRendererResources::GetHDRFormat(false, true); // No alpha, default is LoQ, can be upgraded
+	const ETEX_Format nLDRPFormat = CRendererResources::GetLDRFormat(true);         // With more than 8 mantissa bits for calculations
+	CRY_RESTORE_WARN_UNUSED_VARIABLES();
+
+	SPostEffectsUtils::GetOrCreateRenderTarget(m_graphicsPipeline.MakeUniqueTexIdentifierName("$DisplayTarget 1/2a").c_str(), m_pTexDisplayTargetScaled[0], width_r2, height_r2, Clr_Unknown, 1, 0, nLDRPFormat, TO_BACKBUFFERSCALED_D2, FT_DONT_RELEASE);
+	SPostEffectsUtils::GetOrCreateRenderTarget(m_graphicsPipeline.MakeUniqueTexIdentifierName("$DisplayTarget 1/4a").c_str(), m_pTexDisplayTargetScaled[1], width_r4, height_r4, Clr_Unknown, 1, 0, nLDRPFormat, TO_BACKBUFFERSCALED_D4, FT_DONT_RELEASE);
+	SPostEffectsUtils::GetOrCreateRenderTarget(m_graphicsPipeline.MakeUniqueTexIdentifierName("$DisplayTarget 1/8").c_str(), m_pTexDisplayTargetScaled[2], width_r8, height_r8, Clr_Unknown, 1, 0, nLDRPFormat, TO_BACKBUFFERSCALED_D8, FT_DONT_RELEASE);
+
+	// Scaled versions of the scene target
+	SPostEffectsUtils::GetOrCreateRenderTarget(m_graphicsPipeline.MakeUniqueTexIdentifierName("$DisplayTarget").c_str(), m_pTexDisplayTargetSrc, width, height, Clr_Unknown, 1, 0, nLDRPFormat, TO_BACKBUFFERMAP, FT_DONT_RELEASE);
+	SPostEffectsUtils::GetOrCreateRenderTarget(m_graphicsPipeline.MakeUniqueTexIdentifierName("$DisplayTargetDst").c_str(), m_pTexDisplayTargetDst, width, height, Clr_Unknown, 1, 0, nLDRPFormat, TO_BACKBUFFERMAP, FT_DONT_RELEASE);
+
+	SPostEffectsUtils::GetOrCreateRenderTarget(m_graphicsPipeline.MakeUniqueTexIdentifierName("$DisplayTarget 1/2b").c_str(), m_pTexDisplayTargetScaledTemp[0], width_r2, height_r2, Clr_Unknown, 1, 0, nLDRPFormat, -1, FT_DONT_RELEASE);
+	SPostEffectsUtils::GetOrCreateRenderTarget(m_graphicsPipeline.MakeUniqueTexIdentifierName("$DisplayTarget 1/4b").c_str(), m_pTexDisplayTargetScaledTemp[1], width_r4, height_r4, Clr_Unknown, 1, 0, nLDRPFormat, -1, FT_DONT_RELEASE);
+
+#endif
+}
+
+void CGraphicsPipelineResources::CreateSceneMaps(int resourceWidth, int resourceHeight)
+{
+	const int32 nWidth = resourceWidth;
+	const int32 nHeight = resourceHeight;
+	const ETEX_Format eHDRTF = CRendererResources::GetHDRFormat(false, false);
+	uint32 nFlags = FT_DONT_STREAM | FT_USAGE_RENDERTARGET | FT_USAGE_UNORDERED_ACCESS;
+
+	if (!m_pTexSceneTarget)
+		m_pTexSceneTarget = CTexture::GetOrCreateRenderTarget("$SceneTarget", nWidth, nHeight, Clr_Empty, eTT_2D, nFlags, eHDRTF, TO_SCENE_TARGET);
+	else
+	{
+		m_pTexSceneTarget->SetFlags(nFlags);
+		m_pTexSceneTarget->SetWidth(nWidth);
+		m_pTexSceneTarget->SetHeight(nHeight);
+		m_pTexSceneTarget->CreateRenderTarget(eHDRTF, Clr_Empty);
+	}
+
+	if (gEnv->IsEditor())
+	{
+		SD3DPostEffectsUtils::GetOrCreateRenderTarget(m_graphicsPipeline.MakeUniqueTexIdentifierName("$SceneSelectionIDs").c_str(), m_pTexSceneSelectionIDs, nWidth, nHeight, Clr_Transparent, false, false, eTF_R32F, -1, nFlags);
+	}
+}
+
+void CGraphicsPipelineResources::Shutdown()
+{
+	SAFE_RELEASE_FORCE(m_pTexHDRTarget);
+	SAFE_RELEASE_FORCE(m_pTexHDRTargetPrev);
+	SAFE_RELEASE_FORCE(m_pTexHDRTargetMasked);
+	SAFE_RELEASE_FORCE(m_pTexLinearDepth);
+	SAFE_RELEASE_FORCE(m_pTexSceneDiffuse);
+	SAFE_RELEASE_FORCE(m_pTexSceneNormalsMap);
+	SAFE_RELEASE_FORCE(m_pTexSceneSpecular);
+	SAFE_RELEASE_FORCE(m_pTexVelocityObjects[0]);
+	SAFE_RELEASE_FORCE(m_pTexVelocityObjects[1]);
+	SAFE_RELEASE_FORCE(m_pTexShadowMask);
+	SAFE_RELEASE_FORCE(m_pTexSceneNormalsBent);
+	SAFE_RELEASE_FORCE(m_pTexLinearDepthScaled[0]);
+	SAFE_RELEASE_FORCE(m_pTexLinearDepthScaled[1]);
+	SAFE_RELEASE_FORCE(m_pTexLinearDepthScaled[2]);
+	SAFE_RELEASE_FORCE(m_pTexDisplayTargetScaledTemp[0]);
+	SAFE_RELEASE_FORCE(m_pTexDisplayTargetScaledTemp[1]);
+	SAFE_RELEASE_FORCE(m_pTexSceneDepthScaled[0]);
+	SAFE_RELEASE_FORCE(m_pTexSceneDepthScaled[1]);
+	SAFE_RELEASE_FORCE(m_pTexSceneDepthScaled[2]);
+	SAFE_RELEASE_FORCE(m_pTexClipVolumes);
+	SAFE_RELEASE_FORCE(m_pTexAOColorBleed);
+	SAFE_RELEASE_FORCE(m_pTexSceneDiffuseTmp);
+	SAFE_RELEASE_FORCE(m_pTexSceneSpecularTmp);
+	SAFE_RELEASE_FORCE(m_pTexDisplayTargetScaled[0]);
+	SAFE_RELEASE_FORCE(m_pTexDisplayTargetScaled[1]);
+	SAFE_RELEASE_FORCE(m_pTexDisplayTargetScaled[2]);
+	SAFE_RELEASE_FORCE(m_pTexDisplayTargetDst);
+	SAFE_RELEASE_FORCE(m_pTexDisplayTargetSrc);
+	SAFE_RELEASE_FORCE(m_pTexSceneSelectionIDs);
+	SAFE_RELEASE_FORCE(m_pTexSceneTargetR11G11B10F[0]);
+	SAFE_RELEASE_FORCE(m_pTexSceneTargetR11G11B10F[1]);
+	SAFE_RELEASE_FORCE(m_pTexLinearDepthFixup);
+	SAFE_RELEASE_FORCE(m_pTexSceneTarget);
+
+	for (int i = 0; i < MAX_GPU_NUM; ++i)
+	{
+		SAFE_RELEASE_FORCE(m_pTexHDRMeasuredLuminance[i]);
+	}
+
+	for (int i = 0; i < 4; ++i)
+	{
+		for (int j = 0; j < 4; ++j)
+		{
+			SAFE_RELEASE_FORCE(m_pTexHDRTargetScaled[i][j]);
+			SAFE_RELEASE_FORCE(m_pTexHDRTargetMaskedScaled[i][j]);
+		}
+	}
+
+	m_resourceWidth  = 0;
+	m_resourceHeight = 0;
+}
+
+void CGraphicsPipelineResources::Discard()
+{
+	// DISCARD RESOURCES
+	//------------------------------------------------------------------------------
+#if (CRY_RENDERER_DIRECT3D >= 111)
+	gcpRendD3D->GetDeviceContext().DiscardResource(m_pTexHDRTarget->GetDevTexture(false)->GetNativeResource());
+	gcpRendD3D->GetDeviceContext().DiscardResource(m_pTexHDRTargetPrev->GetDevTexture(false)->GetNativeResource());
+	gcpRendD3D->GetDeviceContext().DiscardResource(m_pTexHDRTargetMasked->GetDevTexture(false)->GetNativeResource());
+	gcpRendD3D->GetDeviceContext().DiscardResource(m_pTexLinearDepth->GetDevTexture(false)->GetNativeResource());
+	gcpRendD3D->GetDeviceContext().DiscardResource(m_pTexSceneDiffuse->GetDevTexture(false)->GetNativeResource());
+	gcpRendD3D->GetDeviceContext().DiscardResource(m_pTexSceneNormalsMap->GetDevTexture(false)->GetNativeResource());
+	gcpRendD3D->GetDeviceContext().DiscardResource(m_pTexSceneSpecular->GetDevTexture(false)->GetNativeResource());
+	gcpRendD3D->GetDeviceContext().DiscardResource(m_pTexVelocityObjects[0]->GetDevTexture(false)->GetNativeResource());
+	gcpRendD3D->GetDeviceContext().DiscardResource(m_pTexVelocityObjects[1]->GetDevTexture(false)->GetNativeResource());
+	gcpRendD3D->GetDeviceContext().DiscardResource(m_pTexShadowMask->GetDevTexture(false)->GetNativeResource());
+	gcpRendD3D->GetDeviceContext().DiscardResource(m_pTexSceneNormalsBent->GetDevTexture(false)->GetNativeResource());
+	gcpRendD3D->GetDeviceContext().DiscardResource(m_pTexLinearDepthScaled[0]->GetDevTexture(false)->GetNativeResource());
+	gcpRendD3D->GetDeviceContext().DiscardResource(m_pTexLinearDepthScaled[1]->GetDevTexture(false)->GetNativeResource());
+	gcpRendD3D->GetDeviceContext().DiscardResource(m_pTexLinearDepthScaled[2]->GetDevTexture(false)->GetNativeResource());
+	gcpRendD3D->GetDeviceContext().DiscardResource(m_pTexSceneDepthScaled[0]->GetDevTexture(false)->GetNativeResource());
+	gcpRendD3D->GetDeviceContext().DiscardResource(m_pTexSceneDepthScaled[1]->GetDevTexture(false)->GetNativeResource());
+	gcpRendD3D->GetDeviceContext().DiscardResource(m_pTexSceneDepthScaled[2]->GetDevTexture(false)->GetNativeResource());
+	gcpRendD3D->GetDeviceContext().DiscardResource(m_pTexClipVolumes->GetDevTexture(false)->GetNativeResource());
+	gcpRendD3D->GetDeviceContext().DiscardResource(m_pTexAOColorBleed->GetDevTexture(false)->GetNativeResource());
+	gcpRendD3D->GetDeviceContext().DiscardResource(m_pTexSceneDiffuseTmp->GetDevTexture(false)->GetNativeResource());
+	gcpRendD3D->GetDeviceContext().DiscardResource(m_pTexSceneSpecularTmp->GetDevTexture(false)->GetNativeResource());
+	gcpRendD3D->GetDeviceContext().DiscardResource(m_pTexDisplayTargetScaled[0]->GetDevTexture(false)->GetNativeResource());
+	gcpRendD3D->GetDeviceContext().DiscardResource(m_pTexDisplayTargetScaled[1]->GetDevTexture(false)->GetNativeResource());
+	gcpRendD3D->GetDeviceContext().DiscardResource(m_pTexDisplayTargetScaled[2]->GetDevTexture(false)->GetNativeResource());
+	gcpRendD3D->GetDeviceContext().DiscardResource(m_pTexDisplayTargetDst->GetDevTexture(false)->GetNativeResource());
+	gcpRendD3D->GetDeviceContext().DiscardResource(m_pTexDisplayTargetSrc-> GetDevTexture(false)->GetNativeResource());
+	gcpRendD3D->GetDeviceContext().DiscardResource(m_pTexSceneSelectionIDs->GetDevTexture(false)->GetNativeResource());
+	gcpRendD3D->GetDeviceContext().DiscardResource(m_pTexSceneTargetR11G11B10F[0]->GetDevTexture(false)->GetNativeResource());
+	gcpRendD3D->GetDeviceContext().DiscardResource(m_pTexSceneTargetR11G11B10F[1]->GetDevTexture(false)->GetNativeResource());
+	gcpRendD3D->GetDeviceContext().DiscardResource(m_pTexLinearDepthFixup->GetDevTexture(false)->GetNativeResource());
+	gcpRendD3D->GetDeviceContext().DiscardResource(m_pTexSceneTarget->GetDevTexture(false)->GetNativeResource());
+
+	for (int i = 0; i < MAX_GPU_NUM; ++i)
+	{
+		gcpRendD3D->GetDeviceContext().DiscardResource(m_pTexHDRMeasuredLuminance[i]->GetDevTexture(false)->GetNativeResource());
+	}
+
+	for (int i = 0; i < 4; ++i)
+	{
+		for (int j = 0; j < 4; ++j)
+		{
+			gcpRendD3D->GetDeviceContext().DiscardResource(m_pTexHDRTargetScaled[i][j]->GetDevTexture(false)->GetNativeResource());
+			gcpRendD3D->GetDeviceContext().DiscardResource(m_pTexHDRTargetMaskedScaled[i][j]->GetDevTexture(false)->GetNativeResource());
+		}
+	}
+#endif
+}
+
+void CGraphicsPipelineResources::Clear()
+{
+	CTexture* clearTextures[] =
+	{
+		m_pTexSceneNormalsMap,
+		m_pTexSceneDiffuse,
+		m_pTexSceneSpecular,
+		m_pTexSceneDiffuseTmp,
+		m_pTexSceneSpecularTmp,
+		m_pTexDisplayTargetSrc,
+		m_pTexDisplayTargetDst,
+		m_pTexLinearDepth,
+		m_pTexHDRTarget,
+		m_pTexSceneTarget
+	};
+
+	for (auto pTex : clearTextures)
+	{
+		if (CTexture::IsTextureExist(pTex))
+		{
+			CClearSurfacePass::Execute(pTex, pTex->GetClearColor());
+		}
+	}
+}
+
 //////////////////////////////////////////////////////////////////////////
 CGraphicsPipeline::CGraphicsPipeline(const IRenderer::SGraphicsPipelineDescription& desc, const std::string& uniqueIdentifier, const SGraphicsPipelineKey key)
-	: m_defaultMaterialBindPoints()
-	, m_defaultDrawExtraRL()
-	, m_uniquePipelineIdentifierName(uniqueIdentifier)
+	: m_changedCVars(gEnv->pConsole)
+	, m_pipelineResources(*this)
 	, m_pipelineDesc(desc)
+	, m_uniquePipelineIdentifierName(uniqueIdentifier)
 	, m_key(key)
 {
 	m_renderingFlags = (EShaderRenderingFlags)desc.shaderFlags;
@@ -47,6 +482,13 @@ void CGraphicsPipeline::ClearDeviceState()
 //////////////////////////////////////////////////////////////////////////
 void CGraphicsPipeline::Init()
 {
+	// per view constant buffer
+	m_mainViewConstantBuffer.CreateDeviceBuffer();
+
+	m_pDeferredShading = new CDeferredShading(this);
+
+	m_pipelineResources.Init();	
+
 	// Register scene stages that make use of the global PSO cache
 	RegisterStage<CShadowMapStage>();
 	RegisterStage<CSceneGBufferStage>();
@@ -75,7 +517,11 @@ void CGraphicsPipeline::Init()
 //////////////////////////////////////////////////////////////////////////
 void CGraphicsPipeline::ShutDown()
 {
-	m_lightVolumeBuffer.Release();
+	m_pipelineResources.Shutdown();
+
+	m_mainViewConstantBuffer.Clear();
+
+	SAFE_DELETE(m_pDeferredShading);
 
 	// destroy stages in reverse order to satisfy data dependencies
 	for (auto it = m_pipelineStages.rbegin(); it != m_pipelineStages.rend(); ++it)
@@ -88,6 +534,59 @@ void CGraphicsPipeline::ShutDown()
 }
 
 //////////////////////////////////////////////////////////////////////////
+
+bool CGraphicsPipeline::CreatePipelineStates(DevicePipelineStatesArray* pStateArray, SGraphicsPipelineStateDescription stateDesc, CGraphicsPipelineStateLocalCache* pStateCache)
+{
+	// NOTE: Please update SDeviceObjectHelpers::CheckTessellationSupport when adding new techniques types here.
+
+	bool bFullyCompiled = true;
+
+	// GBuffer
+	{
+		stateDesc.technique = TTYPE_Z;
+		bFullyCompiled &= GetStage<CSceneGBufferStage>()->CreatePipelineStates(pStateArray, stateDesc, pStateCache);
+	}
+
+	// ShadowMap
+	{
+		stateDesc.technique = TTYPE_SHADOWGEN;
+		bFullyCompiled &= GetStage<CShadowMapStage>()->CreatePipelineStates(pStateArray, stateDesc, pStateCache);
+	}
+
+	// Forward
+	{
+		stateDesc.technique = TTYPE_GENERAL;
+		bFullyCompiled &= GetStage<CSceneForwardStage>()->CreatePipelineStates(pStateArray, stateDesc, pStateCache);
+	}
+
+#if RENDERER_ENABLE_FULL_PIPELINE
+	// Custom
+	{
+		stateDesc.technique = TTYPE_DEBUG;
+		bFullyCompiled &= GetStage<CSceneCustomStage>()->CreatePipelineStates(pStateArray, stateDesc, pStateCache);
+	}
+#endif
+
+	return bFullyCompiled;
+}
+
+//////////////////////////////////////////////////////////////////////////
+CDeviceResourceLayoutPtr CGraphicsPipeline::CreateScenePassLayout(const CDeviceResourceSetDesc& perPassResources)
+{
+	SDeviceResourceLayoutDesc layoutDesc;
+
+	layoutDesc.SetConstantBuffer(EResourceLayoutSlot_PerDrawCB, eConstantBufferShaderSlot_PerDraw, EShaderStage_Vertex | EShaderStage_Pixel | EShaderStage_Domain);
+
+	layoutDesc.SetResourceSet(EResourceLayoutSlot_PerDrawExtraRS, CSceneRenderPass::GetDefaultDrawExtraResourceLayout());
+	layoutDesc.SetResourceSet(EResourceLayoutSlot_PerMaterialRS, CSceneRenderPass::GetDefaultMaterialBindPoints());
+	layoutDesc.SetResourceSet(EResourceLayoutSlot_PerPassRS, perPassResources);
+
+	CDeviceResourceLayoutPtr pResourceLayout = GetDeviceObjectFactory().CreateResourceLayout(layoutDesc);
+	assert(pResourceLayout != nullptr);
+	return pResourceLayout;
+}
+
+//////////////////////////////////////////////////////////////////////////
 void CGraphicsPipeline::Resize(int renderWidth, int renderHeight)
 {
 	// Sets the current render resolution on all the pipeline stages.
@@ -96,6 +595,8 @@ void CGraphicsPipeline::Resize(int renderWidth, int renderHeight)
 		if (*it)
 			(*it)->Resize(renderWidth, renderHeight);
 	}
+
+	m_pipelineResources.Resize(renderWidth, renderHeight);
 
 	m_renderWidth  = renderWidth;
 	m_renderHeight = renderHeight;

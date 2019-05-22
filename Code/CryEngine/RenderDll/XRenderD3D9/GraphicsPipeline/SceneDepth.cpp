@@ -76,7 +76,7 @@ void CSceneDepthStage::ExecuteLinearization()
 	PROFILE_LABEL_SCOPE("DEPTH REDUCTION");
 
 	CTexture* pZTexture = RenderView()->GetDepthTarget();
-	CTexture* pLTexture = CRendererResources::s_ptexLinearDepth;
+	CTexture* pLTexture = m_graphicsPipelineResources.m_pTexLinearDepth;
 
 	// TODO: copy out pZTexture before binding to prevent decompression of the pZTexture in further use
 	m_LinearizePass.Execute(pZTexture, pLTexture);
@@ -88,14 +88,14 @@ void CSceneDepthStage::ExecuteLinearization()
 #endif
 
 		m_DownSamplePasses[0].Execute(pLTexture,
-		                              CRendererResources::s_ptexLinearDepthScaled[0],
-		                              CRendererResources::s_ptexSceneDepthScaled[0], (pLTexture == pZTexture), true);
+			m_graphicsPipelineResources.m_pTexLinearDepthScaled[0],
+			m_graphicsPipelineResources.m_pTexSceneDepthScaled[0], (pLTexture == pZTexture), true);
 
 		for (int res = 1; res < 3; ++res)
 			m_DownSamplePasses[res].Execute(
-				CRendererResources::s_ptexLinearDepthScaled[res - 1],
-				CRendererResources::s_ptexLinearDepthScaled[res],
-				CRendererResources::s_ptexSceneDepthScaled[res], false, false);
+				m_graphicsPipelineResources.m_pTexLinearDepthScaled[res - 1],
+				m_graphicsPipelineResources.m_pTexLinearDepthScaled[res],
+				m_graphicsPipelineResources.m_pTexSceneDepthScaled[res], false, false);
 	}
 
 	if (m_graphicsPipeline.GetVrProjectionManager()->IsMultiResEnabledStatic())
@@ -114,7 +114,7 @@ void CSceneDepthStage::ExecuteLinearization()
 void CSceneDepthStage::ExecuteDelinearization()
 {
 	for (int res = 0; res < 3; ++res)
-		m_CopyDepthPasses[res].Execute(CRendererResources::s_ptexLinearDepthScaled[res], CRendererResources::s_ptexSceneDepthScaled[res]);
+		m_CopyDepthPasses[res].Execute(m_graphicsPipelineResources.m_pTexLinearDepthScaled[res], m_graphicsPipelineResources.m_pTexSceneDepthScaled[res]);
 }
 
 void CSceneDepthStage::ExecuteReadback()
@@ -199,7 +199,7 @@ CTexture* CSceneDepthStage::GetInputTexture(EConfigurationFlags& flags)
 	return
 	  bUseNativeDepth ? pRenderView->GetDepthTarget()
 	  : bMultiResEnabled ? m_graphicsPipeline.GetVrProjectionManager()->GetZTargetFlattened()
-	  : CRendererResources::s_ptexLinearDepth;
+	  : m_graphicsPipelineResources.m_pTexLinearDepth;
 }
 
 bool CSceneDepthStage::CreateResources(uint32 sourceWidth, uint32 sourceHeight)

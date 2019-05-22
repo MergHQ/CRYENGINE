@@ -37,8 +37,9 @@ public:
 	CGpuBuffer*           GetLightCullInfoBuffer()        { return &m_lightCullInfoBuf; }
 	CGpuBuffer*           GetLightShadeInfoBuffer()       { return &m_lightShadeInfoBuf; }
 	CTexture*             GetProjectedLightAtlas() const  { return m_spotTexAtlas.texArray; }
-	CTexture*             GetSpecularProbeAtlas() const   { return m_specularProbeAtlas.texArray; }
-	CTexture*             GetDiffuseProbeAtlas() const    { return m_diffuseProbeAtlas.texArray; }
+	CTexture*             GetSpecularProbeAtlas()  const  { return m_specularProbeAtlas.texArray; }
+	CTexture*             GetDiffuseProbeAtlas()   const  { return m_diffuseProbeAtlas.texArray; }
+	CLightVolumeBuffer&   GetLightVolumeBuffer()          { return m_lightVolumeBuffer; }
 
 	STiledLightInfo*      GetTiledLightInfo()             { return m_tileLights; }
 	STiledLightCullInfo*  GetTiledLightCullInfo()         { return &tileLightsCull[0]; }
@@ -242,6 +243,9 @@ private:
 	// Tiled Light Volumes ===============================================================
 
 	CGpuBuffer           m_lightVolumeInfoBuf;
+
+	// light volume data
+	CLightVolumeBuffer   m_lightVolumeBuffer;
 
 	SVolumeGeometry      m_volumeMeshes[eVolumeType_Count];
 

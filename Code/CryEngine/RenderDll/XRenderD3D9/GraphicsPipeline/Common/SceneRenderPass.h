@@ -23,6 +23,9 @@ public:
 
 	CSceneRenderPass();
 
+	static void Initialize();
+	static void Shutdown();
+
 	// Called in Init()
 	void SetFlags(EPassFlags flags) { m_passFlags = flags; }
 	void SetDepthBias(float constBias, float slopeBias, float biasClamp);
@@ -49,7 +52,7 @@ public:
 	void                       BeginRenderPass(CDeviceCommandListRef RESTRICT_REFERENCE commandList, bool bNearest) const;
 	void                       EndRenderPass(CDeviceCommandListRef RESTRICT_REFERENCE commandList, bool bNearest) const;
 
-	void                       ResolvePass(CDeviceCommandListRef RESTRICT_REFERENCE commandList, const std::vector<TRect_tpl<uint16>>& screenBounds) const;
+	void                       ResolvePass(CGraphicsPipeline& graphicsPipeline, CDeviceCommandListRef RESTRICT_REFERENCE commandList, const std::vector<TRect_tpl<uint16>>& screenBounds) const;
 
 	uint32                     GetStageID()             const { return m_stageID; }
 	uint32                     GetPassID()              const { return m_passID; }
@@ -57,9 +60,16 @@ public:
 	EPassFlags                 GetFlags()               const { return m_passFlags; }
 	const D3DViewPort&         GetViewport(bool n)      const { return m_viewPort[n]; }
 	const D3DRectangle&        GetScissorRect()         const { return m_scissorRect; }
-
+	
 	CDeviceResourceLayoutPtr   GetResourceLayout() const      { return m_pResourceLayout; }
 	const CDeviceRenderPassPtr GetRenderPass()     const      { return m_pRenderPass; }
+
+public:
+	static bool FillCommonScenePassStates(const SGraphicsPipelineStateDescription& inputDesc, CDeviceGraphicsPSODesc& psoDesc, CVrProjectionManager* pVRProjectionManager);	
+	
+	static const CDeviceResourceSetDesc& GetDefaultMaterialBindPoints()      { return *s_pDefaultMaterialBindPoints; }
+	static const CDeviceResourceSetDesc& GetDefaultDrawExtraResourceLayout() { return *s_pDefaultDrawExtraRL; }
+	static       CDeviceResourceSetPtr   GetDefaulDrawExtraResourceSet()     { return  s_pDefaultDrawExtraRS; }
 
 protected:
 	static bool OnResourceInvalidated(void* pThis, SResourceBindPoint bindPoint, UResourceReference pResource, uint32 flags) threadsafe;
@@ -92,7 +102,12 @@ protected:
 	std::vector<SGraphicsPipelinePassContext> m_passContexts;
 
 protected:
-	static int s_recursionCounter;                // For asserting Begin/EndExecution get called on pass
+	static int                                s_recursionCounter;            // For asserting Begin/EndExecution get called on pass
+
+private:
+	static CDeviceResourceSetDesc*            s_pDefaultMaterialBindPoints;
+	static CDeviceResourceSetDesc*            s_pDefaultDrawExtraRL;
+	static CDeviceResourceSetPtr              s_pDefaultDrawExtraRS;
 };
 
 DEFINE_ENUM_FLAG_OPERATORS(CSceneRenderPass::EPassFlags)

@@ -77,8 +77,12 @@ void CGizmoTranslateOp::OnRelease()
 CPreviewWidget::CPreviewWidget(QWidget* pParent)
 	: QWidget(pParent)
 {
+	IRenderer::SGraphicsPipelineDescription graphicsPipelineDesc;
+	graphicsPipelineDesc.type = EGraphicsPipelineType::Minimum;
+	graphicsPipelineDesc.shaderFlags = SHDF_SECONDARY_VIEWPORT | SHDF_ALLOWHDR | SHDF_FORWARD_MINIMAL;
+
 	m_pMainLayout = new QBoxLayout(QBoxLayout::TopToBottom);
-	m_pViewport = new QViewport(gEnv, this);
+	m_pViewport = new QViewport(gEnv, graphicsPipelineDesc, this);
 
 	m_viewportSettings.rendering.fps = false;
 	m_viewportSettings.grid.showGrid = true;

@@ -54,46 +54,12 @@
 
 CStandardGraphicsPipeline::CStandardGraphicsPipeline(const IRenderer::SGraphicsPipelineDescription& desc, const std::string& uniqueIdentifier, const SGraphicsPipelineKey key)
 	: CGraphicsPipeline(desc, uniqueIdentifier, key)
-	, m_changedCVars(gEnv->pConsole)
-{}
+{
+}
 
 void CStandardGraphicsPipeline::Init()
 {
 	MEMSTAT_CONTEXT(EMemStatContextType::Other, "CStandardGraphicsPipeline::Init");
-
-	// default material bind points
-	{
-		m_defaultMaterialBindPoints.SetConstantBuffer(eConstantBufferShaderSlot_PerMaterial, CDeviceBufferManager::GetNullConstantBuffer(), EShaderStage_AllWithoutCompute);
-
-		for (EEfResTextures texType = EFTT_DIFFUSE; texType < EFTT_MAX; texType = EEfResTextures(texType + 1))
-		{
-			if (TextureHelpers::IsSlotAvailable(texType))
-			{
-				EShaderStage shaderStages = TextureHelpers::GetShaderStagesForTexSlot(texType);
-				m_defaultMaterialBindPoints.SetTexture(texType, CRendererResources::s_pTexNULL, EDefaultResourceViews::Default, shaderStages);
-			}
-		}
-	}
-
-	// default extra per instance
-	{
-		m_defaultDrawExtraRL.SetConstantBuffer(eConstantBufferShaderSlot_SkinQuat    , CDeviceBufferManager::GetNullConstantBuffer(), EShaderStage_Vertex);
-		m_defaultDrawExtraRL.SetConstantBuffer(eConstantBufferShaderSlot_SkinQuatPrev, CDeviceBufferManager::GetNullConstantBuffer(), EShaderStage_Vertex);
-		m_defaultDrawExtraRL.SetConstantBuffer(eConstantBufferShaderSlot_PerGroup    , CDeviceBufferManager::GetNullConstantBuffer(), EShaderStage_Vertex | EShaderStage_Pixel | EShaderStage_Hull);
-
-		// Deliberately aliasing slots/use-cases here for visibility (e.g. EReservedTextureSlot_ComputeSkinVerts, EReservedTextureSlot_SkinExtraWeights and
-		// EReservedTextureSlot_GpuParticleStream). The resource layout will just pick the first.
-		m_defaultDrawExtraRL.SetBuffer(EReservedTextureSlot_SkinExtraWeights , CDeviceBufferManager::GetNullBufferStructured(), EDefaultResourceViews::Default, EShaderStage_Vertex);
-		m_defaultDrawExtraRL.SetBuffer(EReservedTextureSlot_ComputeSkinVerts , CDeviceBufferManager::GetNullBufferStructured(), EDefaultResourceViews::Default, EShaderStage_Vertex);
-		m_defaultDrawExtraRL.SetBuffer(EReservedTextureSlot_GpuParticleStream, CDeviceBufferManager::GetNullBufferStructured(), EDefaultResourceViews::Default, EShaderStage_Vertex);
-		m_defaultDrawExtraRL.SetBuffer(EReservedTextureSlot_AdjacencyInfo    , CDeviceBufferManager::GetNullBufferTyped()     , EDefaultResourceViews::Default, EShaderStage_Domain);
-
-		m_pDefaultDrawExtraRS = GetDeviceObjectFactory().CreateResourceSet();
-		m_pDefaultDrawExtraRS->Update(m_defaultDrawExtraRL);
-	}
-
-	// per view constant buffer
-	m_mainViewConstantBuffer.CreateDeviceBuffer();
 
 	// Register all other stages that don't need the global PSO cache
 	RegisterStage<CSceneCustomStage>();
@@ -143,9 +109,6 @@ void CStandardGraphicsPipeline::Init()
 	m_UpscalePass.reset(new CSharpeningUpsamplePass(this));
 	m_AnisoVBlurPass.reset(new CAnisotropicVerticalBlurPass(this));
 
-	// preallocate light volume buffer
-	GetLightVolumeBuffer().Create();
-
 	m_bInitialized = true;
 }
 
@@ -162,10 +125,6 @@ void CStandardGraphicsPipeline::ShutDown()
 
 	CGraphicsPipeline::ShutDown();
 	CGraphicsPipeline::SetCurrentRenderView(nullptr);
-
-	m_mainViewConstantBuffer.Clear();
-	m_defaultDrawExtraRL.ClearResources();
-	m_pDefaultDrawExtraRS.reset();
 
 	m_HDRToFramePass.reset();
 	m_PostToFramePass.reset();
@@ -200,138 +159,6 @@ void CStandardGraphicsPipeline::Update(EShaderRenderingFlags renderingFlags)
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool CStandardGraphicsPipeline::CreatePipelineStates(DevicePipelineStatesArray* pStateArray, SGraphicsPipelineStateDescription stateDesc, CGraphicsPipelineStateLocalCache* pStateCache)
-{
-	// NOTE: Please update SDeviceObjectHelpers::CheckTessellationSupport when adding new techniques types here.
-
-	bool bFullyCompiled = true;
-
-	// GBuffer
-	{
-		stateDesc.technique = TTYPE_Z;
-		bFullyCompiled &= GetStage<CSceneGBufferStage>()->CreatePipelineStates(pStateArray, stateDesc, pStateCache);
-	}
-
-	// ShadowMap
-	{
-		stateDesc.technique = TTYPE_SHADOWGEN;
-		bFullyCompiled &= GetStage<CShadowMapStage>()->CreatePipelineStates(pStateArray, stateDesc, pStateCache);
-	}
-
-	// Forward
-	{
-		stateDesc.technique = TTYPE_GENERAL;
-		bFullyCompiled &= GetStage<CSceneForwardStage>()->CreatePipelineStates(pStateArray, stateDesc, pStateCache);
-	}
-
-#if RENDERER_ENABLE_FULL_PIPELINE
-	// Custom
-	{
-		stateDesc.technique = TTYPE_DEBUG;
-		bFullyCompiled &= GetStage<CSceneCustomStage>()->CreatePipelineStates(pStateArray, stateDesc, pStateCache);
-	}
-#endif
-
-	return bFullyCompiled;
-}
-
-bool CStandardGraphicsPipeline::FillCommonScenePassStates(const SGraphicsPipelineStateDescription& inputDesc, CDeviceGraphicsPSODesc& psoDesc)
-{
-	CShader* pShader = static_cast<CShader*>(inputDesc.shaderItem.m_pShader);
-	SShaderTechnique* pTechnique = pShader->GetTechnique(inputDesc.shaderItem.m_nTechnique, inputDesc.technique, true);
-	if (!pTechnique)
-		return false;
-
-	CShaderResources* pRes = static_cast<CShaderResources*>(inputDesc.shaderItem.m_pShaderResources);
-	const uint64 objectFlags = inputDesc.objectFlags;
-	SShaderPass* pShaderPass = &pTechnique->m_Passes[0];
-
-	// Handle quality flags
-	CStandardGraphicsPipeline::ApplyShaderQuality(psoDesc, gcpRendD3D->GetShaderProfile(pShader->m_eShaderType));
-
-	psoDesc.m_ShaderFlags_RT |= g_HWSR_MaskBit[HWSR_REVERSE_DEPTH];
-
-	// Set resource states
-	bool bTwoSided = false;
-
-	if (pRes->m_ResFlags & MTL_FLAG_2SIDED)
-		bTwoSided = true;
-
-	if (pRes->IsAlphaTested())
-		psoDesc.m_ShaderFlags_RT |= g_HWSR_MaskBit[HWSR_ALPHATEST];
-
-	if (pRes->m_Textures[EFTT_DIFFUSE] && pRes->m_Textures[EFTT_DIFFUSE]->m_Ext.m_pTexModifier)
-		psoDesc.m_ShaderFlags_MD |= pRes->m_Textures[EFTT_DIFFUSE]->m_Ext.m_nUpdateFlags;
-
-	// Merge EDeformType into EVertexModifier to save space/parameters
-	if (pRes->m_pDeformInfo)
-		psoDesc.m_ShaderFlags_MDV |= EVertexModifier(pRes->m_pDeformInfo->m_eType);
-
-	psoDesc.m_ShaderFlags_MDV |= psoDesc.m_pShader->m_nMDV;
-
-	if (objectFlags & FOB_OWNER_GEOMETRY)
-		psoDesc.m_ShaderFlags_MDV &= ~MDV_DEPTH_OFFSET;
-
-	if (objectFlags & FOB_BENDED)
-		psoDesc.m_ShaderFlags_MDV |= MDV_BENDING;
-
-	if (!(objectFlags & FOB_TRANS_MASK))
-		psoDesc.m_ShaderFlags_RT |= g_HWSR_MaskBit[HWSR_OBJ_IDENTITY];
-
-	if (objectFlags & FOB_BLEND_WITH_TERRAIN_COLOR)
-		psoDesc.m_ShaderFlags_RT |= g_HWSR_MaskBit[HWSR_BLEND_WITH_TERRAIN_COLOR];
-
-	psoDesc.m_bAllowTesselation = false;
-	psoDesc.m_ShaderFlags_RT |= g_HWSR_MaskBit[HWSR_NO_TESSELLATION];
-
-	if (objectFlags & FOB_NEAREST)
-		psoDesc.m_ShaderFlags_RT |= g_HWSR_MaskBit[HWSR_NEAREST];
-
-	if (objectFlags & FOB_DISSOLVE)
-		psoDesc.m_ShaderFlags_RT |= g_HWSR_MaskBit[HWSR_DISSOLVE];
-
-	if (psoDesc.m_RenderState & GS_ALPHATEST)
-		psoDesc.m_ShaderFlags_RT |= g_HWSR_MaskBit[HWSR_ALPHATEST];
-
-#ifdef TESSELLATION_RENDERER
-	const bool bHasTesselationShaders = pShaderPass && pShaderPass->m_HShader && pShaderPass->m_DShader;
-	if (bHasTesselationShaders && (!(objectFlags & FOB_NEAREST) && (objectFlags & FOB_ALLOW_TESSELLATION)))
-	{
-		psoDesc.m_ShaderFlags_RT &= ~g_HWSR_MaskBit[HWSR_NO_TESSELLATION];
-		psoDesc.m_bAllowTesselation = true;
-	}
-#endif
-
-	psoDesc.m_CullMode = bTwoSided ? eCULL_None : ((pShaderPass && pShaderPass->m_eCull != -1) ? (ECull)pShaderPass->m_eCull : eCULL_Back);
-	psoDesc.m_PrimitiveType = inputDesc.primitiveType;
-
-	if (psoDesc.m_bAllowTesselation && (psoDesc.m_PrimitiveType < ept1ControlPointPatchList || psoDesc.m_PrimitiveType > ept4ControlPointPatchList))
-	{
-		// Hard-coded primitive type should not be set here, do it only if tessellation primitive type not already set
-		psoDesc.m_PrimitiveType = ept3ControlPointPatchList;
-		psoDesc.m_ObjectStreamMask |= VSM_NORMALS;
-	}
-
-	psoDesc.m_ShaderFlags_RT |= m_pVRProjectionManager->GetRTFlags();
-
-	return true;
-}
-
-CDeviceResourceLayoutPtr CStandardGraphicsPipeline::CreateScenePassLayout(const CDeviceResourceSetDesc& perPassResources)
-{
-	SDeviceResourceLayoutDesc layoutDesc;
-
-	layoutDesc.SetConstantBuffer(EResourceLayoutSlot_PerDrawCB, eConstantBufferShaderSlot_PerDraw, EShaderStage_Vertex | EShaderStage_Pixel | EShaderStage_Domain);
-
-	layoutDesc.SetResourceSet(EResourceLayoutSlot_PerDrawExtraRS, GetDefaultDrawExtraResourceLayout());
-	layoutDesc.SetResourceSet(EResourceLayoutSlot_PerMaterialRS, GetDefaultMaterialBindPoints());
-	layoutDesc.SetResourceSet(EResourceLayoutSlot_PerPassRS, perPassResources);
-
-	CDeviceResourceLayoutPtr pResourceLayout = GetDeviceObjectFactory().CreateResourceLayout(layoutDesc);
-	assert(pResourceLayout != nullptr);
-	return pResourceLayout;
-}
-
 void CStandardGraphicsPipeline::ExecuteHDRPostProcessing()
 {
 	FUNCTION_PROFILER_RENDERER();
@@ -348,9 +175,9 @@ void CStandardGraphicsPipeline::ExecuteHDRPostProcessing()
 	if (GetStage<CRainStage>()->IsStageActive(m_renderingFlags))
 		GetStage<CRainStage>()->Execute();
 
-	// Note: MB uses s_ptexHDRTargetPrev to avoid doing another copy, so this should be right before the MB pass
+	// Note: MB uses m_pTexHDRTargetPrev to avoid doing another copy, so this should be right before the MB pass
 	{
-		m_FrameToFramePass->Execute(CRendererResources::s_ptexHDRTarget, CRendererResources::s_ptexHDRTargetPrev);
+		m_FrameToFramePass->Execute(m_pipelineResources.m_pTexHDRTarget, m_pipelineResources.m_pTexHDRTargetPrev);
 	}
 
 	if (GetStage<CDepthOfFieldStage>()->IsStageActive(m_renderingFlags))
@@ -370,9 +197,9 @@ void CStandardGraphicsPipeline::ExecuteHDRPostProcessing()
 		PROFILE_LABEL_SCOPE("HALFRES_DOWNSAMPLE_HDRTARGET");
 
 		if (CRendererCVars::CV_r_HDRBloomQuality > 1)
-			m_HQSubResPass[0]->Execute(CRendererResources::s_ptexHDRTarget, CRendererResources::s_ptexHDRTargetScaled[0][0], true);
+			m_HQSubResPass[0]->Execute(m_pipelineResources.m_pTexHDRTarget, m_pipelineResources.m_pTexHDRTargetScaled[0][0], true);
 		else
-			m_LQSubResPass[0]->Execute(CRendererResources::s_ptexHDRTarget, CRendererResources::s_ptexHDRTargetScaled[0][0]);
+			m_LQSubResPass[0]->Execute(m_pipelineResources.m_pTexHDRTarget, m_pipelineResources.m_pTexHDRTargetScaled[0][0]);
 	}
 
 	// Quarter resolution downsampling
@@ -382,9 +209,9 @@ void CStandardGraphicsPipeline::ExecuteHDRPostProcessing()
 		PROFILE_LABEL_SCOPE("QUARTER_RES_DOWNSAMPLE_HDRTARGET");
 
 		if (CRendererCVars::CV_r_HDRBloomQuality > 0)
-			m_HQSubResPass[1]->Execute(CRendererResources::s_ptexHDRTargetScaled[0][0], CRendererResources::s_ptexHDRTargetScaled[1][0], CRendererCVars::CV_r_HDRBloomQuality >= 1);
+			m_HQSubResPass[1]->Execute(m_pipelineResources.m_pTexHDRTargetScaled[0][0], m_pipelineResources.m_pTexHDRTargetScaled[1][0], CRendererCVars::CV_r_HDRBloomQuality >= 1);
 		else
-			m_LQSubResPass[1]->Execute(CRendererResources::s_ptexHDRTargetScaled[0][0], CRendererResources::s_ptexHDRTargetScaled[1][0]);
+			m_LQSubResPass[1]->Execute(m_pipelineResources.m_pTexHDRTargetScaled[0][0], m_pipelineResources.m_pTexHDRTargetScaled[1][0]);
 	}
 
 	// reads CRendererResources::s_ptexHDRTargetScaled[1][0]
@@ -395,7 +222,7 @@ void CStandardGraphicsPipeline::ExecuteHDRPostProcessing()
 	if (GetStage<CBloomStage>()->IsStageActive(m_renderingFlags))
 		GetStage<CBloomStage>()->Execute();
 
-	// writes CRendererResources::s_ptexSceneTargetR11G11B10F[0]
+	// writes m_graphicsPipelineResources.m_pTexSceneTargetR11G11B10F[0]
 	if (GetStage<CLensOpticsStage>()->IsStageActive(m_renderingFlags))
 		GetStage<CLensOpticsStage>()->Execute();
 
@@ -462,9 +289,9 @@ void CStandardGraphicsPipeline::Execute()
 
 	// Issue split barriers for GBuffer
 	CTexture* pTextures[] = {
-		CRendererResources::s_ptexSceneNormalsMap,
-		CRendererResources::s_ptexSceneDiffuse,
-		CRendererResources::s_ptexSceneSpecular,
+		m_pipelineResources.m_pTexSceneNormalsMap,
+		m_pipelineResources.m_pTexSceneDiffuse,
+		m_pipelineResources.m_pTexSceneSpecular,
 		pZTexture
 	};
 
@@ -544,7 +371,7 @@ void CStandardGraphicsPipeline::Execute()
 			GetStage<CTiledShadingStage>()->Execute();
 
 			if (GetStage<CScreenSpaceSSSStage>()->IsStageActive(m_renderingFlags))
-				GetStage<CScreenSpaceSSSStage>()->Execute(CRendererResources::s_ptexSceneTargetR11G11B10F[0]);
+				GetStage<CScreenSpaceSSSStage>()->Execute(m_pipelineResources.m_pTexSceneTargetR11G11B10F[0]);
 		}
 	}
 
@@ -556,7 +383,7 @@ void CStandardGraphicsPipeline::Execute()
 		// Opaque forward passes
 		if (GetStage<CSkyStage>())
 		{
-			GetStage<CSkyStage>()->Execute(CRendererResources::s_ptexHDRTarget, pZTexture);
+			GetStage<CSkyStage>()->Execute(m_pipelineResources.m_pTexHDRTarget, pZTexture);
 		}
 	}
 
@@ -625,7 +452,7 @@ void CStandardGraphicsPipeline::Execute()
 			// CRendererResources::s_ptexDisplayTarget -> CRenderOutput->m_pColorTarget (PostAA)
 			// Post effects disabled, copy diffuse to color target
 			if (!GetStage<CPostEffectStage>()->Execute())
-				m_PostToFramePass->Execute(CRendererResources::s_ptexDisplayTargetDst, pRenderView->GetRenderOutput()->GetColorTarget());
+				m_PostToFramePass->Execute(m_pipelineResources.m_pTexDisplayTargetDst, pRenderView->GetRenderOutput()->GetColorTarget());
 
 			// CRenderOutput->m_pColorTarget
 			GetStage<CSceneForwardStage>()->ExecuteAfterPostProcessLDR();
@@ -647,7 +474,7 @@ void CStandardGraphicsPipeline::Execute()
 	else
 	{
 		// Raw HDR copy
-		m_HDRToFramePass->Execute(CRendererResources::s_ptexHDRTarget, pRenderView->GetRenderOutput()->GetColorTarget());
+		m_HDRToFramePass->Execute(m_pipelineResources.m_pTexHDRTarget, pRenderView->GetRenderOutput()->GetColorTarget());
 	}
 
 	if (GetStage<COmniCameraStage>()->IsStageActive(m_renderingFlags))
@@ -660,4 +487,9 @@ void CStandardGraphicsPipeline::Execute()
 
 	m_renderPassScheduler.SetEnabled(false);
 	m_renderPassScheduler.Execute(this);
+
+	if (CRendererCVars::CV_r_PipelineResourceDiscardAfterFrame > 1)
+	{
+		m_pipelineResources.Discard();
+	}
 }

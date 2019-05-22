@@ -215,10 +215,12 @@ CSoftOcclusionManager::~CSoftOcclusionManager()
 	if (m_gatherVertexBuffer != ~0u)    gcpRendD3D->m_DevBufMan.Destroy(m_gatherVertexBuffer);
 }
 
-bool CSoftOcclusionManager::PrepareOcclusionPrimitive(CRenderPrimitive& primitive, const CPrimitiveRenderPass& targetPass, const SRenderViewInfo& viewInfo)
+bool CSoftOcclusionManager::PrepareOcclusionPrimitive(CRenderPrimitive& primitive, const CPrimitiveRenderPass& targetPass, const SRenderViewInfo& viewInfo, CRenderView* pRenderView)
 {
 	if (m_indexBuffer == ~0u || m_occlusionVertexBuffer == ~0u)
 		return false;
+
+	CGraphicsPipelineResources& pipelineResources = pRenderView->GetGraphicsPipeline()->GetPipelineResources();
 
 	const uint32 vertexCount = GetSize() * 4;
 	const uint32 indexCount = GetSize() * 3 * 2;
@@ -256,7 +258,7 @@ bool CSoftOcclusionManager::PrepareOcclusionPrimitive(CRenderPrimitive& primitiv
 
 	primitive.SetTechnique(CShaderMan::s_ShaderSoftOcclusionQuery, techRenderPlane, 0);
 	primitive.SetRenderState(GS_NODEPTHTEST);
-	primitive.SetTexture(0, CRendererResources::s_ptexLinearDepthScaled[0]);
+	primitive.SetTexture(0, pipelineResources.m_pTexLinearDepthScaled[0]);
 	primitive.SetSampler(0, EDefaultSamplerStates::PointBorder_Black);
 	primitive.SetPrimitiveType(CRenderPrimitive::ePrim_Triangle);
 	primitive.SetCustomIndexStream(m_indexBuffer, Index16);
@@ -410,7 +412,7 @@ bool CSoftOcclusionManager::Update(SRenderViewInfo* pViewInfo, int viewInfoCount
 			m_occlusionPass.SetViewport(viewport);
 			m_occlusionPass.BeginAddingPrimitives();
 
-			if (PrepareOcclusionPrimitive(m_occlusionPrimitive, m_occlusionPass, *pViewInfo))
+			if (PrepareOcclusionPrimitive(m_occlusionPrimitive, m_occlusionPass, *pViewInfo, pRenderView))
 			{
 				m_occlusionPass.AddPrimitive(&m_occlusionPrimitive);
 				m_occlusionPass.Execute();

@@ -68,6 +68,7 @@ AllocateConstIntCVar(CRendererCVars, CV_r_logVidMem);
 AllocateConstIntCVar(CRendererCVars, CV_r_useESRAM);
 int CRendererCVars::CV_r_DeferredShadingSortLights;
 
+int CRendererCVars::CV_r_PipelineResourceDiscardAfterFrame;
 int CRendererCVars::CV_r_BreakOnError;
 int CRendererCVars::CV_r_durango_async_dips;
 int CRendererCVars::CV_r_durango_async_dips_sync;
@@ -2743,6 +2744,10 @@ void CRendererCVars::InitCVars()
 	REGISTER_CVAR3("r_ShowVideoMemoryStats", CV_r_ShowVideoMemoryStats, 0, VF_NULL, "");
 	REGISTER_COMMAND("r_ShowRenderTarget", &Cmd_ShowRenderTarget, VF_CHEAT, CDebugRenderTargetsStage::showRenderTargetHelp);
 
+	REGISTER_CVAR3("r_PipelineResourceDiscardAfterFrame", CV_r_PipelineResourceDiscardAfterFrame, 0, VF_NULL,
+	               "0=Off,\n"
+                   "1=Allow for CharacterToolPipeline only,\n"
+	               "2=Allow for all graphics pipelines");
 	REGISTER_CVAR3("r_BreakOnError", CV_r_BreakOnError, 0, VF_NULL, "calls debugbreak on illegal behaviour");
 	REGISTER_CVAR3("r_durango_async_dips", CV_r_durango_async_dips, 0, VF_NULL, "enables async dip submission on durango");
 	REGISTER_CVAR3("r_durango_async_dips_sync", CV_r_durango_async_dips_sync, 9999, VF_CHEAT, "enables async dip submission sync on durango");

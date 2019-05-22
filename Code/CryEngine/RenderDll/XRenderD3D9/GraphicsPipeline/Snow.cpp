@@ -144,15 +144,15 @@ void CSnowStage::ExecuteDeferredSnowGBuffer()
 
 	PROFILE_LABEL_SCOPE("DEFERRED_SNOW_GBUFFER");
 
-	CTexture* CRendererResources__s_ptexSceneSpecular = CRendererResources::s_ptexSceneSpecular;
+	CTexture* CRendererResources__s_ptexSceneSpecular = m_graphicsPipelineResources.m_pTexSceneSpecular;
 #if defined(DURANGO_USE_ESRAM)
-	CRendererResources__s_ptexSceneSpecular = CRendererResources::s_ptexSceneSpecularESRAM;
+	CRendererResources__s_ptexSceneSpecular = m_graphicsPipelineResources.m_pTexSceneSpecularESRAM;
 #endif
 
 	// TODO: Try avoiding the copy by directly accessing UAVs
-	m_passCopyGBufferNormal.Execute(CRendererResources::s_ptexSceneNormalsMap, CRendererResources::s_ptexSceneNormalsBent);
-	m_passCopyGBufferSpecular.Execute(CRendererResources__s_ptexSceneSpecular, CRendererResources::s_ptexSceneSpecularTmp);
-	m_passCopyGBufferDiffuse.Execute(CRendererResources::s_ptexSceneDiffuse, CRendererResources::s_ptexSceneDiffuseTmp);
+	m_passCopyGBufferNormal.Execute(m_graphicsPipelineResources.m_pTexSceneNormalsMap, m_graphicsPipelineResources.m_pTexSceneNormalsBent);
+	m_passCopyGBufferSpecular.Execute(CRendererResources__s_ptexSceneSpecular, m_graphicsPipelineResources.m_pTexSceneSpecularTmp);
+	m_passCopyGBufferDiffuse.Execute(m_graphicsPipelineResources.m_pTexSceneDiffuse, m_graphicsPipelineResources.m_pTexSceneDiffuseTmp);
 
 	if (CRenderer::CV_r_snow_displacement && CTexture::IsTextureExist(m_pSnowDisplacementTex))
 	{
@@ -187,8 +187,8 @@ void CSnowStage::ExecuteDeferredSnowGBuffer()
 		pass.SetStencilState(stencilState, stencilRef, stencilReadMask, 0xFF);
 		pass.SetState(GS_NODEPTHTEST | GS_STENCIL);
 
-		pass.SetRenderTarget(0, CRendererResources::s_ptexSceneNormalsMap);
-		pass.SetRenderTarget(1, CRendererResources::s_ptexSceneDiffuse);
+		pass.SetRenderTarget(0, m_graphicsPipelineResources.m_pTexSceneNormalsMap);
+		pass.SetRenderTarget(1, m_graphicsPipelineResources.m_pTexSceneDiffuse);
 		pass.SetRenderTarget(2, CRendererResources__s_ptexSceneSpecular);
 		pass.SetDepthTarget(zTarget);
 
@@ -201,10 +201,10 @@ void CSnowStage::ExecuteDeferredSnowGBuffer()
 			pass.SetRenderTarget(3, nullptr);
 		}
 
-		pass.SetTexture(0, CRendererResources::s_ptexSceneDiffuseTmp);
-		pass.SetTexture(1, CRendererResources::s_ptexSceneNormalsBent);
-		pass.SetTexture(2, CRendererResources::s_ptexSceneSpecularTmp);
-		pass.SetTexture(3, CRendererResources::s_ptexLinearDepth);
+		pass.SetTexture(0, m_graphicsPipelineResources.m_pTexSceneDiffuseTmp);
+		pass.SetTexture(1, m_graphicsPipelineResources.m_pTexSceneNormalsBent);
+		pass.SetTexture(2, m_graphicsPipelineResources.m_pTexSceneSpecularTmp);
+		pass.SetTexture(3, m_graphicsPipelineResources.m_pTexLinearDepth);
 		pass.SetTexture(4, m_pSnowDerivativesTex);
 		pass.SetTexture(5, m_pSnowSpatterTex);
 		pass.SetTexture(6, m_pFrostBubblesBumpTex);
@@ -333,11 +333,11 @@ void CSnowStage::ExecuteDeferredSnowDisplacement()
 
 			pass.SetState(GS_NODEPTHTEST);
 
-			pass.SetRenderTarget(0, CRendererResources::s_ptexSceneSpecularTmp);
+			pass.SetRenderTarget(0, m_graphicsPipelineResources.m_pTexSceneSpecularTmp);
 
 			pass.SetTexture(0, m_pSnowDisplacementTex);
-			pass.SetTexture(1, CRendererResources::s_ptexLinearDepth);
-			pass.SetTexture(2, CRendererResources::s_ptexSceneNormalsMap);
+			pass.SetTexture(1, m_graphicsPipelineResources.m_pTexLinearDepth);
+			pass.SetTexture(2, m_graphicsPipelineResources.m_pTexSceneNormalsMap);
 
 			pass.SetSampler(0, EDefaultSamplerStates::PointClamp);
 
@@ -364,10 +364,10 @@ void CSnowStage::ExecuteDeferredSnowDisplacement()
 
 			pass.SetState(GS_NODEPTHTEST);
 
-			pass.SetRenderTarget(0, CRendererResources::s_ptexSceneDiffuseTmp);
+			pass.SetRenderTarget(0, m_graphicsPipelineResources.m_pTexSceneDiffuseTmp);
 
-			pass.SetTexture(0, CRendererResources::s_ptexSceneSpecularTmp);
-			pass.SetTexture(1, CRendererResources::s_ptexLinearDepth);
+			pass.SetTexture(0, m_graphicsPipelineResources.m_pTexSceneSpecularTmp);
+			pass.SetTexture(1, m_graphicsPipelineResources.m_pTexLinearDepth);
 
 			pass.SetSampler(0, EDefaultSamplerStates::PointClamp);
 
@@ -385,10 +385,10 @@ void CSnowStage::ExecuteDeferredSnowDisplacement()
 	{
 		PROFILE_LABEL_SCOPE("APPLY_DISPLACEMENT");
 
-		CRY_ASSERT(CRendererResources::s_ptexHDRTarget       ->GetDstFormat() == CRendererResources::s_ptexSceneTarget    ->GetDstFormat());
-		CRY_ASSERT(CRendererResources::s_ptexSceneSpecularTmp->GetDstFormat() == CRendererResources::s_ptexSceneDiffuseTmp->GetDstFormat());
+		CRY_ASSERT(m_graphicsPipelineResources.m_pTexHDRTarget->GetDstFormat() == m_graphicsPipelineResources.m_pTexSceneTarget->GetDstFormat());
+		CRY_ASSERT(m_graphicsPipelineResources.m_pTexSceneSpecularTmp->GetDstFormat() == m_graphicsPipelineResources.m_pTexSceneDiffuseTmp->GetDstFormat());
 
-		m_passCopySceneToParallaxSnowSrc.Execute(CRendererResources::s_ptexHDRTarget, CRendererResources::s_ptexSceneTarget);
+		m_passCopySceneToParallaxSnowSrc.Execute(m_graphicsPipelineResources.m_pTexHDRTarget, m_graphicsPipelineResources.m_pTexSceneTarget);
 
 		static CCryNameTSCRC techName = "ParallaxMapApply";
 		static CCryNameR paramsName("g_DisplacementParams");
@@ -406,11 +406,11 @@ void CSnowStage::ExecuteDeferredSnowDisplacement()
 
 				pass.SetState(GS_NODEPTHTEST);
 
-				pass.SetRenderTarget(0, CRendererResources::s_ptexHDRTarget);
-				pass.SetRenderTarget(1, CRendererResources::s_ptexSceneSpecularTmp);
+				pass.SetRenderTarget(0, m_graphicsPipelineResources.m_pTexHDRTarget);
+				pass.SetRenderTarget(1, m_graphicsPipelineResources.m_pTexSceneSpecularTmp);
 
-				pass.SetTexture(0, CRendererResources::s_ptexSceneTarget);
-				pass.SetTexture(1, CRendererResources::s_ptexSceneDiffuseTmp);
+				pass.SetTexture(0, m_graphicsPipelineResources.m_pTexSceneTarget);
+				pass.SetTexture(1, m_graphicsPipelineResources.m_pTexSceneDiffuseTmp);
 
 				pass.SetSampler(0, EDefaultSamplerStates::LinearClamp);
 
@@ -439,11 +439,11 @@ void CSnowStage::ExecuteDeferredSnowDisplacement()
 
 				pass.SetState(GS_NODEPTHTEST);
 
-				pass.SetRenderTarget(0, CRendererResources::s_ptexSceneTarget);
-				pass.SetRenderTarget(1, CRendererResources::s_ptexSceneDiffuseTmp);
+				pass.SetRenderTarget(0, m_graphicsPipelineResources.m_pTexSceneTarget);
+				pass.SetRenderTarget(1, m_graphicsPipelineResources.m_pTexSceneDiffuseTmp);
 
-				pass.SetTexture(0, CRendererResources::s_ptexHDRTarget);
-				pass.SetTexture(1, CRendererResources::s_ptexSceneSpecularTmp);
+				pass.SetTexture(0, m_graphicsPipelineResources.m_pTexHDRTarget);
+				pass.SetTexture(1, m_graphicsPipelineResources.m_pTexSceneSpecularTmp);
 
 				pass.SetSampler(0, EDefaultSamplerStates::LinearClamp);
 
@@ -473,11 +473,11 @@ void CSnowStage::ExecuteDeferredSnowDisplacement()
 
 				pass.SetState(GS_NODEPTHTEST);
 
-				pass.SetRenderTarget(0, CRendererResources::s_ptexHDRTarget);
-				pass.SetRenderTarget(1, CRendererResources::s_ptexLinearDepth);
+				pass.SetRenderTarget(0, m_graphicsPipelineResources.m_pTexHDRTarget);
+				pass.SetRenderTarget(1, m_graphicsPipelineResources.m_pTexLinearDepth);
 
-				pass.SetTexture(0, CRendererResources::s_ptexSceneTarget);
-				pass.SetTexture(1, CRendererResources::s_ptexSceneDiffuseTmp);
+				pass.SetTexture(0, m_graphicsPipelineResources.m_pTexSceneTarget);
+				pass.SetTexture(1, m_graphicsPipelineResources.m_pTexSceneDiffuseTmp);
 
 				pass.SetSampler(0, EDefaultSamplerStates::LinearClamp);
 
@@ -543,7 +543,7 @@ void CSnowStage::Execute()
 	PROFILE_LABEL_SCOPE("SCENE_SNOW_FLAKES");
 
 	// copy scene target texture
-	m_passCopySceneTargetTexture.Execute(CRendererResources::s_ptexHDRTarget, CRendererResources::s_ptexSceneTarget);
+	m_passCopySceneTargetTexture.Execute(m_graphicsPipelineResources.m_pTexHDRTarget, m_graphicsPipelineResources.m_pTexSceneTarget);
 
 	CreateSnowClusters();
 	UpdateSnowClusters();
@@ -559,8 +559,8 @@ bool CSnowStage::GenerateSnowClusterVertex()
 {
 	const SSnowParams snowVolParams = m_SnowVolParams;
 
-	int32 iRTWidth  = CRendererResources::s_renderWidth;
-	int32 iRTHeight = CRendererResources::s_renderHeight;
+	int32 iRTWidth  = m_graphicsPipeline.GetRenderResolution().x;
+	int32 iRTHeight = m_graphicsPipeline.GetRenderResolution().y;
 	float fAspect = float(iRTWidth) / iRTHeight;
 
 	// Vertex offsets for sprite expansion.
@@ -723,12 +723,12 @@ void CSnowStage::RenderSnowClusters()
 {
 	SRenderViewShaderConstants& PF = RenderView()->GetShaderConstants();
 
-	CTexture* pSceneSrc = CRendererResources::s_ptexHDRTarget;
+	CTexture* pSceneSrc = m_graphicsPipelineResources.m_pTexHDRTarget;
 	CTexture* pVelocitySrc = CRendererResources::s_ptexVelocity;
 	if (CRenderer::CV_r_snow_halfres)
 	{
-		pSceneSrc = CRendererResources::s_ptexHDRTargetMaskedScaled[0][0];
-		pVelocitySrc = CRendererResources::s_ptexDisplayTargetScaled[0];
+		pSceneSrc = m_graphicsPipelineResources.m_pTexHDRTargetMaskedScaled[0][0];
+		pVelocitySrc = m_graphicsPipelineResources.m_pTexDisplayTargetScaled[0];
 
 		// Clear the buffers
 		CClearSurfacePass::Execute(pSceneSrc, Clr_Transparent);
@@ -801,8 +801,8 @@ void CSnowStage::RenderSnowClusters()
 		pPrim->SetCullMode(eCULL_None);
 		pPrim->SetRenderState(renderState);
 
-		pPrim->SetTexture(0, CRendererResources::s_ptexSceneTarget);
-		pPrim->SetTexture(1, CRendererResources::s_ptexLinearDepth);
+		pPrim->SetTexture(0, m_graphicsPipelineResources.m_pTexSceneTarget);
+		pPrim->SetTexture(1, m_graphicsPipelineResources.m_pTexLinearDepth);
 		pPrim->SetTexture(2, pOcclusionTex);
 		pPrim->SetTexture(3, m_pSnowFlakesTex);
 
@@ -849,11 +849,11 @@ void CSnowStage::ExecuteHalfResComposite()
 		pass.SetTechnique(CShaderMan::s_shPostEffectsGame, techName, 0);
 		pass.SetState(GS_NODEPTHTEST | GS_BLSRC_SRCALPHA | GS_BLDST_ONEMINUSSRCALPHA);
 
-		pass.SetRenderTarget(0, CRendererResources::s_ptexHDRTarget);
+		pass.SetRenderTarget(0, m_graphicsPipelineResources.m_pTexHDRTarget);
 		pass.SetRenderTarget(1, CRendererResources::s_ptexVelocity);
 
-		pass.SetTexture(0, CRendererResources::s_ptexHDRTargetMaskedScaled[0][0]);
-		pass.SetTexture(1, CRendererResources::s_ptexDisplayTargetScaled[0]);
+		pass.SetTexture(0, m_graphicsPipelineResources.m_pTexHDRTargetMaskedScaled[0][0]);
+		pass.SetTexture(1, m_graphicsPipelineResources.m_pTexDisplayTargetScaled[0]);
 
 		pass.SetSampler(0, EDefaultSamplerStates::TrilinearClamp);
 		pass.SetSampler(1, EDefaultSamplerStates::PointClamp);
@@ -875,8 +875,8 @@ void CSnowStage::GetScissorRegion(const Vec3& cameraOrigin, const Vec3& vCenter,
 	if (bInsideLightVolume)
 	{
 		sX = sY = 0;
-		sWidth  = CRendererResources::s_renderWidth;
-		sHeight = CRendererResources::s_renderHeight;
+		sWidth  = m_graphicsPipeline.GetRenderResolution().x;
+		sHeight = m_graphicsPipeline.GetRenderResolution().y;
 		return;
 	}
 
@@ -962,8 +962,8 @@ void CSnowStage::GetScissorRegion(const Vec3& cameraOrigin, const Vec3& vCenter,
 		vMax.y = max(vMax.y, vWin.y);
 	}
 
-	float fWidth = (float)CRendererResources::s_renderWidth;
-	float fHeight = (float)CRendererResources::s_renderHeight;
+	float fWidth = (float)m_graphicsPipeline.GetRenderResolution().x;
+	float fHeight = (float)m_graphicsPipeline.GetRenderResolution().y;
 
 	sX = (int32)(vMin.x * fWidth);
 	sY = (int32)((1.0f - vMax.y) * fHeight);

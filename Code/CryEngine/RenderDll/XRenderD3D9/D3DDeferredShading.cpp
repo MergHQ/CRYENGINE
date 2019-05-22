@@ -36,15 +36,13 @@
 #pragma warning(push)
 #pragma warning(disable: 4244)
 
-CDeferredShading* CDeferredShading::m_pInstance = NULL;
-
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void CDeferredShading::ReleaseData(std::shared_ptr<CGraphicsPipeline> pGraphicsPipeline)
+void CDeferredShading::ReleaseData()
 {
-	CRY_ASSERT(pGraphicsPipeline);
-	auto* tiledLights = pGraphicsPipeline->GetStage<CTiledLightVolumesStage>();
+	CRY_ASSERT(m_pGraphicsPipeline);
+	auto* tiledLights = m_pGraphicsPipeline->GetStage<CTiledLightVolumesStage>();
 	tiledLights->Clear();
 
 	m_shadowPoolAlloc.SetUse(0);
@@ -58,8 +56,9 @@ void CDeferredShading::ReleaseData(std::shared_ptr<CGraphicsPipeline> pGraphicsP
 
 void CDeferredShading::SetupPasses(CRenderView* pRenderView)
 {
-	m_pDiffuseRT = CRendererResources::s_ptexSceneDiffuse;
-
+	CGraphicsPipelineResources& pipelineResources = pRenderView->GetGraphicsPipeline()->GetPipelineResources();
+	m_pDiffuseRT = pipelineResources.m_pTexSceneDiffuse;
+	
 	const auto& viewInfo = pRenderView->GetViewInfo(CCamera::eEye_Left);
 
 	m_pCamFront = viewInfo.cameraVZ;
@@ -261,16 +260,36 @@ struct DeffDecalSort
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void CDeferredShading::Release()
+CDeferredShading::CDeferredShading(CGraphicsPipeline* pGraphicsPipeline)
+	: m_blockPack(0, 0)
+	, m_pGraphicsPipeline(pGraphicsPipeline)
 {
-	CRendererResources::DestroyDeferredMaps();
+	for (int i = 0; i < MAX_GPU_NUM; ++i)
+	{
+		m_prevViewProj[i].SetIdentity();
+	}
+
+	for (int i = 0; i < RT_COMMAND_BUF_COUNT; ++i)
+	{
+		for (int j = 0; j < MAX_REND_RECURSION_LEVELS; ++j)
+		{
+			m_nVisAreasGIRef[i][j] = 0;
+		}
+	}
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void CRenderer::EF_ReleaseDeferredData()
+void CDeferredShading::Release()
 {
-	if (CDeferredShading::IsValid())
-		CDeferredShading::Instance().ReleaseData(m_pActiveGraphicsPipeline);
+
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void CRenderer::EF_ReleaseDeferredData(CGraphicsPipeline* pGraphicsPipeline)
+{
+	pGraphicsPipeline->GetDeferredShading()->ReleaseData();
 }
