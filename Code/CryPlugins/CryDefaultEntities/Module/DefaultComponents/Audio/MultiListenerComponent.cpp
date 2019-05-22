@@ -156,6 +156,8 @@ void CMultiListenerComponent::SetDefaultListener()
 {
 	if (m_pIEntityAudioComponent != nullptr)
 	{
+		m_pIEntityAudioComponent->RemoveListener(CryAudio::DefaultListenerId);
+
 		if (m_listenerHelper.m_listeners.empty())
 		{
 			m_listenerHelper.m_listeners.emplace_back(CryAudio::g_szDefaultListenerName);
@@ -163,10 +165,6 @@ void CMultiListenerComponent::SetDefaultListener()
 #if defined(INCLUDE_DEFAULT_PLUGINS_PRODUCTION_CODE)
 			m_previousListenerIds.emplace_back(CryAudio::DefaultListenerId);
 #endif      // INCLUDE_DEFAULT_PLUGINS_PRODUCTION_CODE
-		}
-		else
-		{
-			m_pIEntityAudioComponent->RemoveListener(CryAudio::DefaultListenerId);
 		}
 	}
 }
