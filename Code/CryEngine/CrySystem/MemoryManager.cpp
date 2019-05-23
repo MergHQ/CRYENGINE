@@ -20,12 +20,18 @@
 #endif
 extern int64 g_TotalAllocatedMemory;
 extern thread_local int64 tls_allocatedMemory;
+SUninitialized<CCryMemoryManager> s_memoryManager;
+bool s_bMemoryManagerInitialized = false;
 
 //////////////////////////////////////////////////////////////////////////
 CCryMemoryManager* CCryMemoryManager::GetInstance()
 {
-	static CCryMemoryManager s_memoryManager;
-	return &s_memoryManager;
+	if (!s_bMemoryManagerInitialized)
+	{
+		s_memoryManager.DefaultConstruct();
+		s_bMemoryManagerInitialized = true;
+	}
+	return &static_cast<CCryMemoryManager&>(s_memoryManager);
 }
 
 //////////////////////////////////////////////////////////////////////////
