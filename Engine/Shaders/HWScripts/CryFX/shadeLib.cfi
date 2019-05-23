@@ -449,8 +449,8 @@ const static float LTC_LUT_BIAS = 0.5f / LTC_LUT_SIZE;
 #define AREALIGHT_TYPE_DISK 2
 
 // Precomputed textures
-Texture2D<float4> LTCTex_1 : register(t35); 
-Texture2D<float4> LTCTex_2 : register(t36); 
+Texture2D<float4> LTCTex_1 : register(t48); 
+Texture2D<float4> LTCTex_2 : register(t49); 
 
 // Utility functions
 float3 IntegrateEdgeVec(float3 v1, float3 v2)

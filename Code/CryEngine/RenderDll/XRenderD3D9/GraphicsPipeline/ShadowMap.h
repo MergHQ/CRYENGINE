@@ -166,7 +166,7 @@ private:
 
 	bool IsStageActive() const
 	{
-		bool isSecondaryViewport = m_graphicsPipeline.GetPipelineDescription().shaderFlags & SHDF_SECONDARY_VIEWPORT;
+		bool isSecondaryViewport = (m_graphicsPipeline.GetPipelineDescription().shaderFlags & SHDF_SECONDARY_VIEWPORT) != 0;
 		return !isSecondaryViewport && !RenderView()->IsRecursive() && RenderView()->GetCurrentEye() != CCamera::eEye_Right;
 	}
 
