@@ -55,18 +55,19 @@ private:
 
 	virtual bool IsOnlyBackend() const override { return true; }
 
-	virtual bool OnNew() override;
-	virtual bool OnOpen() override;
-	virtual bool OnSave() override;
-	virtual bool OnSaveAs() override;
-	virtual bool OnDelete() override;
-	virtual bool OnDuplicate() override;
-
 	virtual bool OnFind() override;
-	virtual bool OnCut() override;
-	virtual bool OnCopy() override;
-	virtual bool OnPaste() override;
-	virtual bool OnSelectAll() override;
+
+	bool OnNew();
+	bool OnOpen();
+	bool OnSave();
+	bool OnSaveAs();
+	bool OnDelete();
+	bool OnDuplicate();
+
+	bool OnCut();
+	bool OnCopy();
+	bool OnPaste();
+	bool OnSelectAll();
 
 	void         OnShowInAssetBrowser(const char* asset);
 

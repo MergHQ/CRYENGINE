@@ -229,6 +229,19 @@ CLevelEditor::~CLevelEditor()
 
 void CLevelEditor::InitActions()
 {
+	// Register general command handlers
+	RegisterAction("general.new", &CLevelEditor::OnNew);
+	RegisterAction("general.open", &CLevelEditor::OnOpen);
+	RegisterAction("general.save", &CLevelEditor::OnSave);
+	RegisterAction("general.save_as", &CLevelEditor::OnSaveAs);
+	RegisterAction("general.delete", &CLevelEditor::OnDelete);
+	RegisterAction("general.duplicate", &CLevelEditor::OnDuplicate);
+	RegisterAction("general.cut", &CLevelEditor::OnCut);
+	RegisterAction("general.copy", &CLevelEditor::OnCopy);
+	RegisterAction("general.paste", &CLevelEditor::OnPaste);
+	RegisterAction("general.select_all", &CLevelEditor::OnSelectAll);
+
+	// Register level specific command handlers
 	RegisterAction("level.snap_to_grid",           &CLevelEditor::EnableGridSnapping);
 	RegisterAction("level.snap_to_angle",          &CLevelEditor::EnableAngleSnapping);
 	RegisterAction("level.snap_to_scale",          &CLevelEditor::EnableScaleSnapping);

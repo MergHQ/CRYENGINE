@@ -174,7 +174,7 @@ private:
 	void               OnFolderSelectionChanged(const QStringList& selectedFolders);
 	void               OnActivated(const QModelIndex& index);
 	void               OnCurrentChanged(const QModelIndex& current, const QModelIndex& previous);
-	void               OnDelete(const std::vector<CAsset*>& assets);
+	void               Delete(const std::vector<CAsset*>& assets);
 
 	void               OnRenameAsset(CAsset& asset);
 	void               OnRenameFolder(const QString& folder);
@@ -208,17 +208,19 @@ private:
 	bool               OnReimport();
 	bool               OnHideIrrelevantFolders();
 
-	// CEditor impl
+	// CEditor
 	virtual bool OnFind() override;
-	virtual bool OnDelete() override;
-	virtual bool OnOpen() override;
-	virtual bool OnCopy() override;
-	virtual bool OnPaste() override;
-	virtual bool OnDuplicate() override;
-	virtual bool OnImport() override;
-	virtual bool OnNewFolder() override;
-	virtual bool OnRename() override;
-	virtual bool OnSave() override;
+	// ~CEditor
+
+	bool OnDelete();
+	bool OnOpen();
+	bool OnCopy();
+	bool OnPaste();
+	bool OnDuplicate();
+	bool OnImport();
+	bool OnNewFolder();
+	bool OnRename();
+	bool OnSave();
 
 	void         Paste(bool pasteNextToOriginal);
 

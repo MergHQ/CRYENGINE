@@ -43,34 +43,7 @@ CSubstancePresetEditor::CSubstancePresetEditor(QWidget* pParent /*= nullptr*/)
 	, m_pOutputsGraphEditor(nullptr)
 	, m_pPreset(nullptr)
 {
-	AddToMenu(CEditor::MenuItems::SaveAs);
-
 	m_pScrollBox = new QScrollableBox();
-	
-	m_pSubstanceMenu = GetRootMenu()->CreateMenu("Substance Preset", 0);
-	QAction* const pAction = m_pSubstanceMenu->CreateAction("Reset Inputs");
-	connect(pAction, &QAction::triggered, [=]()
-	{
-		if (m_pPreset)
-		{
-			m_pPreset->Reset();
-			m_propertyTree->revert();
-			PushPresetToRender();
-		}
-	});
-
-	QAction* const pRevertAction = m_pSubstanceMenu->CreateAction("Revert Changes");
-	connect(pRevertAction, &QAction::triggered, [=]()
-	{
-		if (m_pPreset)
-		{
-			m_pPreset->Reload();
-			m_propertyTree->revert();
-			m_pOutputsWidget->RefreshOutputs();
-			PushPresetToRender();
-		}
-	});
-
 	
 	QHBoxLayout* resolutionLayout = new QHBoxLayout();
 	m_pComboXRes = new QMenuComboBox();
@@ -144,7 +117,35 @@ CSubstancePresetEditor::CSubstancePresetEditor(QWidget* pParent /*= nullptr*/)
 	);
 	SetPreviewResolution();
 	m_pScrollBox->hide();
+}
 
+void CSubstancePresetEditor::OnInitialize()
+{
+	AddToMenu(CEditor::MenuItems::SaveAs);
+
+	m_pSubstanceMenu = GetRootMenu()->CreateMenu("Substance Preset", 0);
+	QAction* const pAction = m_pSubstanceMenu->CreateAction("Reset Inputs");
+	connect(pAction, &QAction::triggered, [=]()
+	{
+		if (m_pPreset)
+		{
+			m_pPreset->Reset();
+			m_propertyTree->revert();
+			PushPresetToRender();
+		}
+	});
+
+	QAction* const pRevertAction = m_pSubstanceMenu->CreateAction("Revert Changes");
+	connect(pRevertAction, &QAction::triggered, [=]()
+	{
+		if (m_pPreset)
+		{
+			m_pPreset->Reload();
+			m_propertyTree->revert();
+			m_pOutputsWidget->RefreshOutputs();
+			PushPresetToRender();
+		}
+	});
 }
 
 void CSubstancePresetEditor::UniformResolutionClicked()

@@ -50,12 +50,15 @@ public:
 	void OnRemoveSubMaterial(int slot);
 
 private:
+	void         RegisterActions();
 	void         InitMenuBar();
 	virtual void OnInitialize() override;
 	virtual void OnCreateDefaultLayout(CDockableContainer* pSender, QWidget* pAssetBrowser) override;
 	virtual void OnLayoutChange(const QVariantMap& state) override;
 	void         BroadcastPopulateInspector();
 
+	bool         OnUndo() { return false; }
+	bool         OnRedo() { return false; }
 	void         OnConvertToMultiMaterial();
 	void         OnConvertToSingleMaterial();
 	void         OnAddSubMaterial();

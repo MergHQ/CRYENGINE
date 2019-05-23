@@ -112,6 +112,7 @@ CMainWindow::CMainWindow()
 	pWindowLayout->setContentsMargins(0, 0, 0, 0);
 	SetContent(pWindowLayout);
 
+	RegisterActions();
 	InitMenu();
 	InitToolbar(pWindowLayout);
 
@@ -351,6 +352,16 @@ void CMainWindow::OnInitialize()
 	RegisterDockableWidget("Preview", [&]() { return CreatePreviewWidget(); }, true, false);
 	RegisterDockableWidget("Log", [&]() { return CreateLogWidget(); }, true, false);
 	RegisterDockableWidget("Properties", [&]() { return CreateInspectorWidget(); }, true, false);
+}
+
+void CMainWindow::RegisterActions()
+{
+	RegisterAction("general.undo", &CMainWindow::OnUndo);
+	RegisterAction("general.redo", &CMainWindow::OnRedo);
+	RegisterAction("general.copy", &CMainWindow::OnCopy);
+	RegisterAction("general.cut", &CMainWindow::OnCut);
+	RegisterAction("general.paste", &CMainWindow::OnPaste);
+	RegisterAction("general.delete", &CMainWindow::OnDelete);
 }
 
 void CMainWindow::InitMenu()

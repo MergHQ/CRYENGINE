@@ -162,61 +162,15 @@ protected:
 	virtual bool IsOnlyBackend() const { return m_bIsOnlybackend; }
 
 	//File menu methods
-	virtual bool OnNew()                         { return false; }
-	virtual bool OnNewFolder()                   { return false; }
-	virtual bool OnOpen()                        { return false; }
 	virtual bool OnOpenFile(const QString& path) { CRY_ASSERT(0); return false; }
-	virtual bool OnImport()                      { return false; }
-	virtual bool OnRefresh()                     { return false; }
-	virtual bool OnReload()                      { return false; }
-	virtual bool OnClose()                       { return false; }
-	virtual bool OnSave()                        { return false; }
-	virtual bool OnSaveAs()                      { return false; }
 
 	//Edit menu methods
-	virtual bool OnUndo()   { return false; }
-	virtual bool OnRedo()   { return false; }
-	virtual bool OnCopy()   { return false; }
-	virtual bool OnCut()    { return false; }
-	virtual bool OnPaste()  { return false; }
-	virtual bool OnDelete() { return false; }
 	virtual bool OnFind()   { return false; }
 	//By default, these call OnFind.
 	//if FindNext() is called before Find(), it is expected that the Find functionnality is called instead
 	virtual bool OnFindPrevious() { return OnFind(); }
 	virtual bool OnFindNext()     { return OnFind(); }
-	virtual bool OnDuplicate()    { return false; }
 	virtual bool OnHelp();
-
-	// Context sensitive item operations
-	virtual bool OnSelectAll()         { return false; }
-	virtual bool OnRename()            { return false; }
-	// Locking
-	virtual bool OnLock()              { return false; }
-	virtual bool OnUnlock()            { return false; }
-	virtual bool OnToggleLock()        { return false; }
-	virtual bool OnIsolateLocked()     { return false; }
-	// Visibility
-	virtual bool OnHide()              { return false; }
-	virtual bool OnUnhide()            { return false; }
-	virtual bool OnToggleHide()        { return false; }
-	virtual bool OnIsolateVisibility() { return false; }
-
-	// Context sensitive hierarchical operations
-	virtual bool OnCollapseAll()        { return false; }
-	virtual bool OnExpandAll()          { return false; }
-	// Locking
-	virtual bool OnLockChildren()       { return false; }
-	virtual bool OnUnlockChildren()     { return false; }
-	virtual bool OnToggleLockChildren() { return false; }
-	// Visibility
-	virtual bool OnHideChildren()       { return false; }
-	virtual bool OnUnhideChildren()     { return false; }
-	virtual bool OnToggleHideChildren() { return false; }
-
-	//View menu methods
-	virtual bool OnZoomIn()  { return false; }
-	virtual bool OnZoomOut() { return false; }
 
 	//! Returns the default action for a command from editor's menu.
 	QCommandAction* GetMenuAction(MenuItems item);

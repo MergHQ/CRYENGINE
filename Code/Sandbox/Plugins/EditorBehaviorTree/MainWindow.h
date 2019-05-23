@@ -22,6 +22,7 @@ public:
 	CMainWindow(QWidget* pParent = nullptr);
 
 	// CEditor implementation
+	virtual void Initialize() override;
 	virtual const char* GetEditorName() const override { return "Behavior Tree Editor"; }
 	virtual void        SetLayout(const QVariantMap& state) override;
 	virtual QVariantMap GetLayout() const override;
@@ -31,14 +32,16 @@ public:
 
 private:
 	// CEditor implementation
-	virtual bool        OnNew() override;
-	virtual bool        OnOpen() override;
 	virtual bool        OnOpenFile(const QString& path) override;
-	virtual bool        OnSave() override;
-	virtual bool        OnSaveAs() override;
-	virtual bool        OnReload() override;
 	// ~CEditor implementation
 
+	bool        OnNew();
+	bool        OnOpen();
+	bool        OnSave();
+	bool        OnSaveAs();
+	bool        OnReload();
+
+	void        RegisterActions();
 	void                InitMenuBar();
 	void                InitCVarsCallbacks();
 

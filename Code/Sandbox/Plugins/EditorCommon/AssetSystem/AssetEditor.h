@@ -54,8 +54,8 @@ public:
 	CAsset*       GetAssetBeingEdited()       { return m_assetBeingEdited; }
 	const CAsset* GetAssetBeingEdited() const { return m_assetBeingEdited; }
 
-	virtual bool  OnSave() override;   // #TODO Make this method final.
-	virtual bool  OnSaveAs() override; // #TODO Make this method final.
+	virtual bool  OnSave();   // #TODO Make this method non-virtual.
+	virtual bool  OnSaveAs(); // #TODO Make this method non-virtual.
 
 	bool          SaveBackup(const string& backupFolder);
 
@@ -132,7 +132,7 @@ protected:
 	bool TryCloseAsset();
 
 private:
-	void Init();
+	void RegisterActions();
 	void InitGenericMenu();
 	void InitNewMenu();
 	int  GetNewableAssetCount() const;
@@ -159,11 +159,12 @@ private:
 	//! The method calls OnCloseAsset and signalAssetClosed.
 	void CloseAsset();
 
-	//Methods implemented generically are set to final on purpose
-	virtual bool OnNew() override final;
-	virtual bool OnOpen() override final;
+	bool OnNew();
+	bool OnOpen();
+	bool OnClose();
+
+	//Method implemented generically are set to final on purpose
 	virtual bool OnOpenFile(const QString& path) override final;
-	virtual bool OnClose() override final;
 	virtual void Initialize() final;
 	virtual void CreateDefaultLayout(CDockableContainer* pSender) final;
 

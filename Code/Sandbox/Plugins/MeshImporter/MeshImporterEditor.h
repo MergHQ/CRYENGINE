@@ -45,8 +45,6 @@ protected:
 	virtual bool OnSave() override;
 	virtual bool OnSaveAs() override;
 
-	virtual void customEvent(QEvent* pEvent) override;
-
 private:
 	std::unique_ptr<MeshImporter::CBaseDialog> m_pDialog;
 };

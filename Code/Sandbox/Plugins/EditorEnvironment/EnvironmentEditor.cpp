@@ -76,10 +76,14 @@ CEnvironmentEditor::CEnvironmentEditor()
 	, m_pPreset(nullptr)
 	, m_controller(*this)
 {
-	AddToMenu(CEditor::MenuItems::SaveAs);
-	AddToMenu(CEditor::MenuItems::EditMenu);
-	AddToMenu(CEditor::MenuItems::Undo);
-	AddToMenu(CEditor::MenuItems::Redo);
+	RegisterActions();
+	AddToMenu({ CEditor::MenuItems::SaveAs, CEditor::MenuItems::EditMenu, CEditor::MenuItems::Undo, CEditor::MenuItems::Redo });
+}
+
+void CEnvironmentEditor::RegisterActions()
+{
+	RegisterAction("general.undo", &CEnvironmentEditor::OnUndo);
+	RegisterAction("general.redo", &CEnvironmentEditor::OnRedo);
 }
 
 std::unique_ptr<IAssetEditingSession> CEnvironmentEditor::CreateEditingSession()

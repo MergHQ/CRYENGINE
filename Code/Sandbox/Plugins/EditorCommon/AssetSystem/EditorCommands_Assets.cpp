@@ -125,8 +125,6 @@ REGISTER_EDITOR_AND_SCRIPT_KEYBOARD_FOCUS_COMMAND(asset, manage_work_files, CCom
 
 REGISTER_EDITOR_AND_SCRIPT_KEYBOARD_FOCUS_COMMAND(asset, generate_and_repair_all_metadata, CCommandDescription("Generate/Repair All Metadata"))
 
-REGISTER_EDITOR_AND_SCRIPT_KEYBOARD_FOCUS_COMMAND(asset, reimport, CCommandDescription("Reimport"))
-
 REGISTER_EDITOR_AND_SCRIPT_KEYBOARD_FOCUS_COMMAND(asset, discard_changes, CCommandDescription("Discard Changes"));
 
 #if ASSET_BROWSER_USE_PREVIEW_WIDGET

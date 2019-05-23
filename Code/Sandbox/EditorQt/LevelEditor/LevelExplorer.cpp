@@ -462,17 +462,37 @@ void CLevelExplorer::CopySelectedLayersInfo(std::function<string(const CObjectLa
 
 void CLevelExplorer::InitActions()
 {
+	// Register general commands
+	RegisterAction("general.new", &CLevelExplorer::OnNew);
+	RegisterAction("general.new_folder", &CLevelExplorer::OnNewFolder);
+	RegisterAction("general.import", &CLevelExplorer::OnImport);
+	RegisterAction("general.reload", &CLevelExplorer::OnReload);
+	RegisterAction("general.delete", &CLevelExplorer::OnDelete);
+	RegisterAction("general.rename", &CLevelExplorer::OnRename);
+	RegisterAction("general.lock", &CLevelExplorer::OnLock);
+	RegisterAction("general.unlock", &CLevelExplorer::OnUnlock);
+	RegisterAction("general.toggle_lock", &CLevelExplorer::OnToggleLock);
+	RegisterAction("general.isolate_locked", &CLevelExplorer::OnIsolateLocked);
+	RegisterAction("general.hide", &CLevelExplorer::OnHide);
+	RegisterAction("general.unhide", &CLevelExplorer::OnUnhide);
+	RegisterAction("general.toggle_visibility", &CLevelExplorer::OnToggleHide);
+	RegisterAction("general.isolate_visibility", &CLevelExplorer::OnIsolateVisibility);
+	RegisterAction("general.collapse_all", &CLevelExplorer::OnCollapseAll);
+	RegisterAction("general.expand_all", &CLevelExplorer::OnExpandAll);
+	RegisterAction("general.lock_children", &CLevelExplorer::OnLockChildren);
+	RegisterAction("general.unlock_children", &CLevelExplorer::OnUnlockChildren);
+	RegisterAction("general.toggle_children_locking", &CLevelExplorer::OnToggleLockChildren);
+	RegisterAction("general.hide_children", &CLevelExplorer::OnHideChildren);
+	RegisterAction("general.unhide_children", &CLevelExplorer::OnUnhideChildren);
+	RegisterAction("general.toggle_children_visibility", &CLevelExplorer::OnToggleHideChildren);
 	RegisterAction("general.hide_all", &CLevelExplorer::OnHideAll);
 	RegisterAction("general.unhide_all", &CLevelExplorer::OnUnhideAll);
 	RegisterAction("general.lock_all", &CLevelExplorer::OnLockAll);
 	RegisterAction("general.unlock_all", &CLevelExplorer::OnUnlockAll);
-	RegisterAction("layer.lock_read_only_layers", &CLevelExplorer::OnLockReadOnlyLayers);
-	RegisterAction("level_explorer.focus_on_active_layer", &CLevelExplorer::FocusActiveLayer);
-	RegisterAction("level_explorer.show_full_hierarchy", [this]() { SetModelType(FullHierarchy); });
-	RegisterAction("level_explorer.show_layers", [this]() { SetModelType(Layers); });
-	RegisterAction("level_explorer.show_all_objects", [this]() { SetModelType(Objects); });
-	RegisterAction("level_explorer.show_active_layer_contents", [this]() { SetModelType(ActiveLayer); });
 	RegisterAction("general.toggle_sync_selection", [this]() { SetSyncSelection(!m_syncSelection); });
+
+	// Register layer commands
+	RegisterAction("layer.lock_read_only_layers", &CLevelExplorer::OnLockReadOnlyLayers);
 	RegisterAction("layer.make_active", &CLevelExplorer::OnMakeLayerActive);
 	RegisterAction("layer.toggle_exportable", [this]() { LevelExplorerCommandHelper::ToggleExportable(GetSelectedObjectLayers()); });
 	RegisterAction("layer.toggle_exportable_to_pak", [this]() { LevelExplorerCommandHelper::ToggleExportableToPak(GetSelectedObjectLayers()); });
@@ -481,6 +501,15 @@ void CLevelExplorer::InitActions()
 	RegisterAction("layer.toggle_pc", [this]() { LevelExplorerCommandHelper::TogglePlatformSpecs(GetSelectedObjectLayers(), eSpecType_PC); });
 	RegisterAction("layer.toggle_xbox_one", [this]() { LevelExplorerCommandHelper::TogglePlatformSpecs(GetSelectedObjectLayers(), eSpecType_XBoxOne); });
 	RegisterAction("layer.toggle_ps4", [this]() { LevelExplorerCommandHelper::TogglePlatformSpecs(GetSelectedObjectLayers(), eSpecType_PS4); });
+
+	// Register level explorer commands
+	RegisterAction("level_explorer.focus_on_active_layer", &CLevelExplorer::FocusActiveLayer);
+	RegisterAction("level_explorer.show_full_hierarchy", [this]() { SetModelType(FullHierarchy); });
+	RegisterAction("level_explorer.show_layers", [this]() { SetModelType(Layers); });
+	RegisterAction("level_explorer.show_all_objects", [this]() { SetModelType(Objects); });
+	RegisterAction("level_explorer.show_active_layer_contents", [this]() { SetModelType(ActiveLayer); });
+	
+	// Register path commands
 	RegisterAction("path_utils.copy_name", [this]()
 	{
 		CopySelectedLayersInfo([](const CObjectLayer* pLayer)

@@ -105,15 +105,16 @@ protected Q_SLOTS:
 	void OnGraphViewWidgetDestruction(QObject* pObject);
 
 private:
+	void                             RegisterActions();
 	void                             InitMenu();
 	void                             InitToolbar(QVBoxLayout* pWindowLayout);
 
-	virtual bool                     OnUndo() override;
-	virtual bool                     OnRedo() override;
-	virtual bool                     OnCopy() override;
-	virtual bool                     OnCut() override;
-	virtual bool                     OnPaste() override;
-	virtual bool                     OnDelete() override;
+	bool                     OnUndo();
+	bool                     OnRedo();
+	bool                     OnCopy();
+	bool                     OnCut();
+	bool                     OnPaste();
+	bool                     OnDelete();
 
 	void                             ConfigureLogs();
 	void                             LoadSettings();

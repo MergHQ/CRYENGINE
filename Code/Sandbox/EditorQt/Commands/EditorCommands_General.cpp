@@ -70,6 +70,9 @@ REGISTER_EDITOR_UI_COMMAND_DESC(general, import, "Import...", "", "icons:General
 REGISTER_EDITOR_AND_SCRIPT_KEYBOARD_FOCUS_COMMAND(general, export, CCommandDescription("Context driven 'export' command"))
 REGISTER_EDITOR_UI_COMMAND_DESC(general, export, "Export...", "", "icons:General/File_Export.ico", false)
 
+REGISTER_EDITOR_AND_SCRIPT_KEYBOARD_FOCUS_COMMAND(general, reimport, CCommandDescription("Context driven 're-import' command"))
+REGISTER_EDITOR_UI_COMMAND_DESC(general, reimport, "Reimport", "", "", false)
+
 REGISTER_EDITOR_AND_SCRIPT_KEYBOARD_FOCUS_COMMAND(general, reload, CCommandDescription("Context driven 'reload' command"))
 REGISTER_EDITOR_UI_COMMAND_DESC(general, reload, "Reload", "", "icons:General/Reload.ico", false)
 
@@ -86,7 +89,7 @@ REGISTER_EDITOR_AND_SCRIPT_KEYBOARD_FOCUS_COMMAND(general, save_as, CCommandDesc
 REGISTER_EDITOR_UI_COMMAND_DESC(general, save_as, "Save As...", CKeyboardShortcut::StandardKey::SaveAs, "icons:General/Save_as.ico", false)
 
 REGISTER_EDITOR_AND_SCRIPT_KEYBOARD_FOCUS_COMMAND(general, rename, CCommandDescription("Context driven 'rename' command"))
-REGISTER_EDITOR_UI_COMMAND_DESC(general, rename, "Rename", "F2", "", false)
+REGISTER_EDITOR_UI_COMMAND_DESC(general, rename, "Rename", "F2", "icons:General/editable_true.ico", false)
 
 REGISTER_EDITOR_AND_SCRIPT_KEYBOARD_FOCUS_COMMAND(general, cut, CCommandDescription("Context driven 'cut' command"))
 REGISTER_EDITOR_UI_COMMAND_DESC(general, cut, "Cut", CKeyboardShortcut::StandardKey::Cut, "icons:General/Cut.ico", false)
@@ -99,6 +102,9 @@ REGISTER_EDITOR_UI_COMMAND_DESC(general, paste, "Paste", CKeyboardShortcut::Stan
 
 REGISTER_EDITOR_AND_SCRIPT_KEYBOARD_FOCUS_COMMAND(general, delete, CCommandDescription("Context driven 'delete' command"))
 REGISTER_EDITOR_UI_COMMAND_DESC(general, delete, "Delete", CKeyboardShortcut::StandardKey::Delete, "icons:General/Delete.ico", false)
+
+REGISTER_EDITOR_AND_SCRIPT_KEYBOARD_FOCUS_COMMAND(general, clear, CCommandDescription("Context driven 'clear' command"))
+REGISTER_EDITOR_UI_COMMAND_DESC(general, clear, "Clear", "", "icons:General/Element_Clear.ico", false)
 
 REGISTER_EDITOR_AND_SCRIPT_KEYBOARD_FOCUS_COMMAND(general, duplicate, CCommandDescription("Context driven 'duplicate' command"))
 REGISTER_EDITOR_UI_COMMAND_DESC(general, duplicate, "Duplicate", CKeyboardShortcut("Ctrl+D"), "icons:General/Duplicate.ico", false)

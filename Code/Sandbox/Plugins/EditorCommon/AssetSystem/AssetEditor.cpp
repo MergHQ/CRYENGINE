@@ -146,8 +146,7 @@ CAssetEditor::CAssetEditor(const char* assetType, QWidget* pParent /*= nullptr*/
 	auto type = CAssetManager::GetInstance()->FindAssetType(assetType);
 	CRY_ASSERT(type);//type must exist
 	m_supportedAssetTypes.push_back(type);
-
-	Init();
+	RegisterActions();
 }
 
 CAssetEditor::CAssetEditor(const QStringList& assetTypes, QWidget* pParent /*= nullptr*/)
@@ -161,15 +160,7 @@ CAssetEditor::CAssetEditor(const QStringList& assetTypes, QWidget* pParent /*= n
 		CRY_ASSERT(type);//type must exist
 		m_supportedAssetTypes.push_back(type);
 	}
-
-	Init();
-}
-
-void CAssetEditor::Init()
-{
-	InitGenericMenu();
-
-	setAcceptDrops(true);
+	RegisterActions();
 }
 
 bool CAssetEditor::OpenAsset(CAsset* pAsset)
@@ -219,6 +210,15 @@ bool CAssetEditor::CanOpenAsset(const CAssetType* pType)
 		return false;
 
 	return std::find(m_supportedAssetTypes.begin(), m_supportedAssetTypes.end(), pType) != m_supportedAssetTypes.end();
+}
+
+void CAssetEditor::RegisterActions()
+{
+	RegisterAction("general.new", &CAssetEditor::OnNew);
+	RegisterAction("general.open", &CAssetEditor::OnOpen);
+	RegisterAction("general.save", &CAssetEditor::OnSave);
+	RegisterAction("general.save_as", &CAssetEditor::OnSaveAs);
+	RegisterAction("general.close", &CAssetEditor::OnClose);
 }
 
 void CAssetEditor::InitGenericMenu()
@@ -711,7 +711,7 @@ bool CAssetEditor::OnSaveAs()
 		{
 			CreateAssetCopyAndOpen(pAsset->GetMetadataFile());
 		});
-		
+
 		pAssetManager->DeleteAssetsWithFiles({ pAsset });
 		return true;
 	}
@@ -783,7 +783,7 @@ bool CAssetEditor::SaveBackup(const string& backupFolder)
 	// 4. Restore old files from the temp copy.
 
 	CAutoAssetRecovery tempCopy(*m_assetBeingEdited);
-	
+
 	if (!tempCopy.IsValid() || !OnSave())
 	{
 		return false;
@@ -801,7 +801,7 @@ bool CAssetEditor::SaveBackup(const string& backupFolder)
 		pCryPak->MakeDir(PathUtil::GetDirectory(destFile.c_str()));
 		FileUtils::MoveFileAllowOverwrite(file.c_str(), destFile.c_str());
 	}
-	
+
 	// tempCopy restores asset files.
 	return true;
 }
@@ -816,6 +816,10 @@ void CAssetEditor::Initialize()
 	using namespace Private_AssetEditor;
 
 	CDockableEditor::Initialize();
+
+	InitGenericMenu();
+
+	setAcceptDrops(true);
 
 	if (IsDockingSystemEnabled())
 	{
