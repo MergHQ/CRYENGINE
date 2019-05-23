@@ -143,7 +143,7 @@ private:
 	void               WaitUntilAssetsAreReady();
 	QWidget*           CreateAssetsViewSelector();
 
-	void               FillCreateAssetMenu(CAbstractMenu* menu, const QString& folder);
+	void               FillCreateAssetMenu(CAbstractMenu* menu, bool enable);
 
 	void               BeginCreateAsset(const CAssetType& type, const CAssetType::SCreateParams* pCreateParams);
 	void               EndCreateAsset();
@@ -227,26 +227,27 @@ private:
 	//ui components
 	CAssetFoldersView* m_pFoldersView = nullptr;
 	CBreadcrumbsBar*   m_pBreadcrumbs = nullptr;
-	QCommandAction*    m_pActionRecursiveView = nullptr;
-	QCommandAction*    m_pActionShowFoldersView = nullptr;
-	QCommandAction*    m_pActionManageWorkFiles = nullptr;
-	QCommandAction*    m_pActionShowInFileExplorer = nullptr;
+	QCommandAction*    m_pActionCopy = nullptr;
 	QCommandAction*    m_pActionCopyName = nullptr;
 	QCommandAction*    m_pActionCopyPath = nullptr;
-	QCommandAction*    m_pActionShowThumbnails = nullptr;
+	QCommandAction*    m_pActionDelete = nullptr;
+	QCommandAction*    m_pActionDiscardChanges = nullptr;
+	QCommandAction*    m_pActionDuplicate = nullptr;
+	QCommandAction*    m_pActionGenerateRepairMetaData = nullptr;
+	QCommandAction*    m_pActionGenerateThumbnails = nullptr;
+	QCommandAction*    m_pActionHideIrrelevantFolders = nullptr;
+	QCommandAction*    m_pActionManageWorkFiles = nullptr;
+	QCommandAction*    m_pActionPaste = nullptr;
+	QCommandAction*    m_pActionRecursiveView = nullptr;
+	QCommandAction*    m_pActionReimport = nullptr;
+	QCommandAction*    m_pActionRename = nullptr;
+	QCommandAction*    m_pActionSave = nullptr;
 	QCommandAction*    m_pActionShowDetails = nullptr;
+	QCommandAction*    m_pActionShowFoldersView = nullptr;
+	QCommandAction*    m_pActionShowInFileExplorer = nullptr;
 	QCommandAction*    m_pActionShowSplitHorizontally = nullptr;
 	QCommandAction*    m_pActionShowSplitVertically = nullptr;
-	QCommandAction*    m_pActionDelete = nullptr;
-	QCommandAction*    m_pActionRename = nullptr;
-	QCommandAction*    m_pActionCopy = nullptr;
-	QCommandAction*    m_pActionDuplicate = nullptr;
-	QCommandAction*    m_pActionSave = nullptr;
-	QCommandAction*    m_pActionPaste = nullptr;
-	QCommandAction*    m_pActionReimport = nullptr;
-	QCommandAction*    m_pActionDiscardChanges = nullptr;
-	QCommandAction*    m_pActionGenerateRepairMetaData = nullptr;
-	QCommandAction*    m_pActionHideIrrelevantFolders = nullptr;
+	QCommandAction*    m_pActionShowThumbnails = nullptr;
 #if ASSET_BROWSER_USE_PREVIEW_WIDGET
 	QCommandAction*    m_pActionShowPreview = nullptr;
 #endif

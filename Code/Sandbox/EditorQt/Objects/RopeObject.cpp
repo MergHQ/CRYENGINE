@@ -334,6 +334,8 @@ void CRopeObject::UpdateGameArea()
 
 				UpdateRopeLinks();
 			}
+			if (m_pEntity && m_physicsState)
+				m_pEntity->SetPhysicsState(m_physicsState);
 		}
 
 		UpdateAudioData();
@@ -530,6 +532,9 @@ void CRopeObject::OnEvent(ObjectEvent event)
 	case EVENT_RELOAD_ENTITY:
 		m_bAreaModified = true;
 		UpdateGameArea();
+		break;
+	case EVENT_PHYSICS_GETSTATE: case EVENT_PHYSICS_RESETSTATE: case EVENT_PHYSICS_APPLYSTATE:
+		CEntityObject::OnEvent(event);
 		break;
 	}
 }
