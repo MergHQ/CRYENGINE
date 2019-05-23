@@ -145,8 +145,8 @@ void CTiledShadingStage::Execute()
 		m_passCullingShading.SetTexture(20, tiledLights->GetDiffuseProbeAtlas());
 		m_passCullingShading.SetTexture(21, tiledLights->GetProjectedLightAtlas());
 
-		m_passCullingShading.SetTexture(35, CRendererResources::s_ptexLTC1);
-		m_passCullingShading.SetTexture(36, CRendererResources::s_ptexLTC2);
+		m_passCullingShading.SetTexture(48, CRendererResources::s_ptexLTC1);
+		m_passCullingShading.SetTexture(49, CRendererResources::s_ptexLTC2);
 
 		m_pTexGiDiff = pTexGiDiff;
 		m_pTexGiSpec = pTexGiSpec;
