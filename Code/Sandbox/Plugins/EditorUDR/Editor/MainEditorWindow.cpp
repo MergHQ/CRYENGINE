@@ -440,19 +440,19 @@ CMainEditorWindow::CMainEditorWindow()
 	{
 		QMenu* pFileMenu = menuBar()->addMenu("&File");
 
-		QAction* pLoadRecording = pFileMenu->addAction("&Load recording");
+		QAction* pLoadRecording = pFileMenu->addAction("&Load...");
 		connect(pLoadRecording, &QAction::triggered, this, &CMainEditorWindow::OnLoadTreeFromFile);
 
-		QAction* pSaveLiveRecording = pFileMenu->addAction("&Save 'live' recording");
+		QAction* pSaveLiveRecording = pFileMenu->addAction("&Save Live Tree");
 		connect(pSaveLiveRecording, &QAction::triggered, this, &CMainEditorWindow::OnSaveLiveTreeToFile);
 	}
 
 	m_pComboBoxTreeToShow = new QComboBox(this);
-	m_pComboBoxTreeToShow->addItem("Live tree", QVariant(static_cast<int>(Cry::UDR::ITreeManager::ETreeIndex::Live)));
-	m_pComboBoxTreeToShow->addItem("Deserialized tree", QVariant(static_cast<int>(Cry::UDR::ITreeManager::ETreeIndex::Deserialized)));
+	m_pComboBoxTreeToShow->addItem("Live Tree", QVariant(static_cast<int>(Cry::UDR::ITreeManager::ETreeIndex::Live)));
+	m_pComboBoxTreeToShow->addItem("Deserialized Tree", QVariant(static_cast<int>(Cry::UDR::ITreeManager::ETreeIndex::Deserialized)));
 
 	m_pButtonClearCurrentTree = new QPushButton(this);
-	m_pButtonClearCurrentTree->setText("Clear tree");
+	m_pButtonClearCurrentTree->setText("Clear Tree");
 
 	m_pTextLogMessages = new QTextEdit(this);
 	m_pTextLogMessages->setReadOnly(true);

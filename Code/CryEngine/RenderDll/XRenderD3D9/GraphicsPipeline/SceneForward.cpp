@@ -778,6 +778,9 @@ bool CSceneForwardStage::PreparePerPassResources(bool bOnInit, bool bShadowMask,
 			resources.SetTexture(24, m_graphicsPipelineResources.m_pTexSceneNormalsBent, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
 			resources.SetTexture(41, m_graphicsPipelineResources.m_pTexSceneDiffuse, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);  //  Eye AO overlay
 
+			resources.SetTexture(48, CRendererResources::s_ptexLTC1, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
+			resources.SetTexture(49, CRendererResources::s_ptexLTC2, EDefaultResourceViews::Default, EShaderStage_AllWithoutCompute);
+
 			// Overwrite resources for transparent pass (need to be careful that the layout is still the same)
 			if (includeForwardShadowResources)
 			{
