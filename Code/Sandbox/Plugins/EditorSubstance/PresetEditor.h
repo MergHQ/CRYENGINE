@@ -26,6 +26,7 @@ public:
 
 	virtual const char* GetEditorName() const override { return "Substance Instance Editor"; }
 
+	virtual void        OnInitialize();
 	virtual bool        OnOpenAsset(CAsset* pAsset) override;
 	virtual bool        OnSaveAsset(CEditableAsset& editAsset) override;
 	virtual void        OnCloseAsset() override;

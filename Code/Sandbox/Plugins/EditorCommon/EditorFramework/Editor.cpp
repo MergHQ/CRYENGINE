@@ -168,33 +168,33 @@ void CEditor::InitMenuDesc()
 	m_pMenuDesc.reset(new CDesc<MenuItems>());
 	m_pMenuDesc->Init(
 		MenuDesc::AddMenu(MenuItems::FileMenu, 0, 0, "File",
-		                  AddAction(MenuItems::New, 0, 0, GetAction("general.new")),
-		                  AddAction(MenuItems::NewFolder, 0, 1, GetAction("general.new_folder")),
-		                  AddAction(MenuItems::Open, 0, 2, GetAction("general.open")),
-		                  AddAction(MenuItems::Close, 0, 3, GetAction("general.close")),
-		                  AddAction(MenuItems::Save, 0, 4, GetAction("general.save")),
-		                  AddAction(MenuItems::SaveAs, 0, 5, GetAction("general.save_as")),
+		                  AddAction(MenuItems::New, 0, 0, [this]() { return GetAction("general.new"); }),
+		                  AddAction(MenuItems::NewFolder, 0, 1, [this]() { return GetAction("general.new_folder"); }),
+		                  AddAction(MenuItems::Open, 0, 2, [this]() { return GetAction("general.open"); }),
+		                  AddAction(MenuItems::Close, 0, 3, [this]() { return GetAction("general.close"); }),
+		                  AddAction(MenuItems::Save, 0, 4, [this]() { return GetAction("general.save"); }),
+		                  AddAction(MenuItems::SaveAs, 0, 5, [this]() { return GetAction("general.save_as"); }),
 		                  AddMenu(MenuItems::RecentFiles, 0, 6, "Recent Files")),
 		MenuDesc::AddMenu(MenuItems::EditMenu, 0, 1, "Edit",
-		                  AddAction(MenuItems::Undo, 0, 0, GetAction("general.undo")),
-		                  AddAction(MenuItems::Redo, 0, 1, GetAction("general.redo")),
-		                  AddAction(MenuItems::Copy, 1, 0, GetAction("general.copy")),
-		                  AddAction(MenuItems::Cut, 1, 1, GetAction("general.cut")),
-		                  AddAction(MenuItems::Paste, 1, 2, GetAction("general.paste")),
-		                  AddAction(MenuItems::Rename, 1, 3, GetAction("general.rename")),
-		                  AddAction(MenuItems::Delete, 1, 4, GetAction("general.delete")),
-		                  AddAction(MenuItems::Find, 2, 0, GetAction("general.find")),
-		                  AddAction(MenuItems::FindPrevious, 2, 1, GetAction("general.find_previous")),
-		                  AddAction(MenuItems::FindNext, 2, 2, GetAction("general.find_next")),
-		                  AddAction(MenuItems::SelectAll, 2, 3, GetAction("general.select_all")),
-		                  AddAction(MenuItems::Duplicate, 3, 0, GetAction("general.duplicate"))),
+		                  AddAction(MenuItems::Undo, 0, 0, [this]() { return GetAction("general.undo"); }),
+		                  AddAction(MenuItems::Redo, 0, 1, [this]() { return GetAction("general.redo"); }),
+		                  AddAction(MenuItems::Copy, 1, 0, [this]() { return GetAction("general.copy"); }),
+		                  AddAction(MenuItems::Cut, 1, 1, [this]() { return GetAction("general.cut"); }),
+		                  AddAction(MenuItems::Paste, 1, 2, [this]() { return GetAction("general.paste"); }),
+		                  AddAction(MenuItems::Rename, 1, 3, [this]() { return GetAction("general.rename"); }),
+		                  AddAction(MenuItems::Delete, 1, 4, [this]() { return GetAction("general.delete"); }),
+		                  AddAction(MenuItems::Find, 2, 0, [this]() { return GetAction("general.find"); }),
+		                  AddAction(MenuItems::FindPrevious, 2, 1, [this]() { return GetAction("general.find_previous"); }),
+		                  AddAction(MenuItems::FindNext, 2, 2, [this]() { return GetAction("general.find_next"); }),
+		                  AddAction(MenuItems::SelectAll, 2, 3, [this]() { return GetAction("general.select_all"); }),
+		                  AddAction(MenuItems::Duplicate, 3, 0, [this]() { return GetAction("general.duplicate"); })),
 		MenuDesc::AddMenu(MenuItems::ViewMenu, 0, 2, "View",
-		                  AddAction(MenuItems::ZoomIn, 0, 0, GetAction("general.zoom_in")),
-		                  AddAction(MenuItems::ZoomOut, 0, 1, GetAction("general.zoom_out"))),
+		                  AddAction(MenuItems::ZoomIn, 0, 0, [this]() { return GetAction("general.zoom_in"); }),
+		                  AddAction(MenuItems::ZoomOut, 0, 1, [this]() { return GetAction("general.zoom_out"); })),
 		MenuDesc::AddMenu(MenuItems::ToolBarMenu, 0, 10, "Toolbars"),
 		MenuDesc::AddMenu(MenuItems::WindowMenu, 0, 20, "Window"),
 		MenuDesc::AddMenu(MenuItems::HelpMenu, 1, CAbstractMenu::EPriorities::ePriorities_Append, "Help",
-		                  AddAction(MenuItems::Help, 0, 0, GetAction("general.help")))
+		                  AddAction(MenuItems::Help, 0, 0, [this]() { return GetAction("general.help"); }))
 		);
 
 }
@@ -218,45 +218,9 @@ void CEditor::SetContent(QLayout* content)
 
 void CEditor::InitActions()
 {
-	RegisterAction("general.new", &CEditor::OnNew);
-	RegisterAction("general.new_folder", &CEditor::OnNewFolder);
-	RegisterAction("general.open", &CEditor::OnOpen);
-	RegisterAction("general.close", &CEditor::OnClose);
-	RegisterAction("general.save", &CEditor::OnSave);
-	RegisterAction("general.save_as", &CEditor::OnSaveAs);
-	RegisterAction("general.import", &CEditor::OnImport);
-	RegisterAction("general.refresh", &CEditor::OnRefresh);
-	RegisterAction("general.reload", &CEditor::OnReload);
-	RegisterAction("general.undo", &CEditor::OnUndo);
-	RegisterAction("general.redo", &CEditor::OnRedo);
-	RegisterAction("general.copy", &CEditor::OnCopy);
-	RegisterAction("general.cut", &CEditor::OnCut);
-	RegisterAction("general.paste", &CEditor::OnPaste);
-	RegisterAction("general.rename", &CEditor::OnRename);
-	RegisterAction("general.delete", &CEditor::OnDelete);
 	RegisterAction("general.find", &CEditor::OnFind);
 	RegisterAction("general.find_previous", &CEditor::OnFindPrevious);
 	RegisterAction("general.find_next", &CEditor::OnFindNext);
-	RegisterAction("general.select_all", &CEditor::OnSelectAll);
-	RegisterAction("general.duplicate", &CEditor::OnDuplicate);
-	RegisterAction("general.lock", &CEditor::OnLock);
-	RegisterAction("general.unlock", &CEditor::OnUnlock);
-	RegisterAction("general.toggle_lock", &CEditor::OnToggleLock);
-	RegisterAction("general.isolate_locked", &CEditor::OnIsolateLocked);
-	RegisterAction("general.hide", &CEditor::OnHide);
-	RegisterAction("general.unhide", &CEditor::OnUnhide);
-	RegisterAction("general.toggle_visibility", &CEditor::OnToggleHide);
-	RegisterAction("general.isolate_visibility", &CEditor::OnIsolateVisibility);
-	RegisterAction("general.collapse_all", &CEditor::OnCollapseAll);
-	RegisterAction("general.expand_all", &CEditor::OnExpandAll);
-	RegisterAction("general.lock_children", &CEditor::OnLockChildren);
-	RegisterAction("general.unlock_children", &CEditor::OnUnlockChildren);
-	RegisterAction("general.toggle_children_locking", &CEditor::OnToggleLockChildren);
-	RegisterAction("general.hide_children", &CEditor::OnHideChildren);
-	RegisterAction("general.unhide_children", &CEditor::OnUnhideChildren);
-	RegisterAction("general.toggle_children_visibility", &CEditor::OnToggleHideChildren);
-	RegisterAction("general.zoom_in", &CEditor::OnZoomIn);
-	RegisterAction("general.zoom_out", &CEditor::OnZoomOut);
 	RegisterAction("general.help", &CEditor::OnHelp);
 	RegisterAction("editor.toggle_adaptive_layout", [this]()
 	{

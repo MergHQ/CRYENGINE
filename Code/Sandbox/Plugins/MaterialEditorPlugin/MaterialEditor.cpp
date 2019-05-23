@@ -104,7 +104,7 @@ CMaterialEditor::CMaterialEditor()
 	: CAssetEditor("Material")
 	, m_pMaterial(nullptr)
 {
-	InitMenuBar();
+	RegisterActions();
 	GetIEditor()->GetMaterialManager()->AddListener(this);
 }
 
@@ -113,12 +113,15 @@ CMaterialEditor::~CMaterialEditor()
 	GetIEditor()->GetMaterialManager()->RemoveListener(this);
 }
 
+void CMaterialEditor::RegisterActions()
+{
+	RegisterAction("general.undo", &CMaterialEditor::OnUndo);
+	RegisterAction("general.redo", &CMaterialEditor::OnRedo);
+}
+
 void CMaterialEditor::InitMenuBar()
 {
-	AddToMenu(CEditor::MenuItems::SaveAs);
-	AddToMenu(CEditor::MenuItems::EditMenu);
-	AddToMenu(CEditor::MenuItems::Undo);
-	AddToMenu(CEditor::MenuItems::Redo);
+	AddToMenu({ CEditor::MenuItems::FileMenu, CEditor::MenuItems::SaveAs, CEditor::MenuItems::EditMenu, CEditor::MenuItems::Undo, CEditor::MenuItems::Redo });
 
 	CAbstractMenu* pFileMenu = GetMenu(CEditor::MenuItems::FileMenu);
 	QAction* pAction = pFileMenu->CreateAction(CryIcon("icons:General/Picker.ico"), tr("Pick Material From Scene"), 0, 1);
@@ -253,6 +256,8 @@ void CMaterialEditor::OnInitialize()
 
 	RegisterDockableWidget("Material", [&]() { return new CSubMaterialView(this); }, true);
 	RegisterDockableWidget("Preview", [&]() { return new CMaterialPreviewWidget(this); });
+
+	InitMenuBar();
 }
 
 void CMaterialEditor::OnCreateDefaultLayout(CDockableContainer* pSender, QWidget* pAssetBrowser)
@@ -317,7 +322,6 @@ bool CMaterialEditor::OnOpenAsset(CAsset* pAsset)
 	return true;
 }
 
-
 void CMaterialEditor::OnCloseAsset()
 {
 	SetMaterial(nullptr);
@@ -370,9 +374,9 @@ void CMaterialEditor::BroadcastPopulateInspector()
 		}
 
 		PopulateInspectorEvent event([this](CInspector& inspector)
-		{
-		  inspector.AddPropertyTree(m_pMaterialSerializer->CreatePropertyTree());
-		}, title);
+		  {
+		                             inspector.AddPropertyTree(m_pMaterialSerializer->CreatePropertyTree());
+			}, title);
 		event.Broadcast(this);
 	}
 	else

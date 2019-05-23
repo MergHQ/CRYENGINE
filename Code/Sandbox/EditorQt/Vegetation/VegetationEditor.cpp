@@ -1272,12 +1272,22 @@ CVegetationEditor::CVegetationEditor(QWidget* parent)
 	, p(new SImplementation(this))
 {
 	SetContent(p->GetContentLayout());
+	RegisterActions();
 	setAttribute(Qt::WA_DeleteOnClose);
 }
 
 CVegetationEditor::~CVegetationEditor()
 {
 	GetIEditorImpl()->GetLevelEditorSharedState()->SetEditTool(nullptr);
+}
+
+void CVegetationEditor::RegisterActions()
+{
+	// Register general commands
+	RegisterAction("general.new", &CVegetationEditor::OnNew);
+	RegisterAction("general.delete", &CVegetationEditor::OnDelete);
+	RegisterAction("general.duplicate", &CVegetationEditor::OnDuplicate);
+	RegisterAction("general.select_all", &CVegetationEditor::OnSelectAll);
 }
 
 bool CVegetationEditor::OnNew()

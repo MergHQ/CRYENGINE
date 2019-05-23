@@ -119,10 +119,15 @@ int CAbstractMenu::GetMaxPriority(int section) const
 	CRY_ASSERT(!IsEmpty());
 	CRY_ASSERT(section >= eSections_Min);
 	const std::pair<int, int> adj(section + 1, ePriorities_Min);
-	auto maxItemInSection = --std::lower_bound(m_sortedItems.begin(), m_sortedItems.end(), adj, [](const auto& lhp, const auto& adj)
+	auto itemInSelection = std::lower_bound(m_sortedItems.begin(), m_sortedItems.end(), adj, [](const auto& lhp, const auto& adj)
 	{
 		return lhp->MakeKey() < adj;
 	});
+	if (itemInSelection == m_sortedItems.begin())
+	{
+		return (*itemInSelection)->m_priority;
+	}
+	auto maxItemInSection = --itemInSelection;
 	return (*maxItemInSection)->m_priority;
 }
 

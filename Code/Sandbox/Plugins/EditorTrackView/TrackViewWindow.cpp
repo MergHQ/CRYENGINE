@@ -68,8 +68,25 @@ CTrackViewWindow::CTrackViewWindow(QWidget* pParent)
 
 	stl::push_back_unique(ms_trackViewWindows, this);
 
+	RegisterActions();
 	InitMenu();
  	InstallReleaseMouseFilter(this);
+}
+
+void CTrackViewWindow::RegisterActions()
+{
+	RegisterAction("general.new", &CTrackViewWindow::OnNew);
+	RegisterAction("general.open", &CTrackViewWindow::OnOpen);
+	RegisterAction("general.close", &CTrackViewWindow::OnClose);
+	RegisterAction("general.undo", &CTrackViewWindow::OnUndo);
+	RegisterAction("general.redo", &CTrackViewWindow::OnRedo);
+	RegisterAction("general.copy", &CTrackViewWindow::OnCopy);
+	RegisterAction("general.cut", &CTrackViewWindow::OnCut);
+	RegisterAction("general.paste", &CTrackViewWindow::OnPaste);
+	RegisterAction("general.delete", &CTrackViewWindow::OnDelete);
+	RegisterAction("general.duplicate", &CTrackViewWindow::OnDuplicate);
+	RegisterAction("general.zoom_in", &CTrackViewWindow::OnZoomIn);
+	RegisterAction("general.zoom_out", &CTrackViewWindow::OnZoomOut);
 }
 
 CTrackViewWindow::~CTrackViewWindow()

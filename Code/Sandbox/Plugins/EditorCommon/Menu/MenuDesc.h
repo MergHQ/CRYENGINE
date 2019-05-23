@@ -70,9 +70,9 @@ struct SItem
 template<typename K>
 struct SActionItem : SItem<K>
 {
-	SActionItem(QCommandAction* pAction, int priority, int section, const K& key)
+	SActionItem(std::function<QCommandAction*()> retrieveActionCallback, int priority, int section, const K& key)
 		: SItem<K>(priority, section, key)
-		, m_pAction(pAction)
+		, m_retrieveActionCallback(retrieveActionCallback)
 	{
 	}
 
@@ -84,7 +84,7 @@ struct SActionItem : SItem<K>
 		}
 	}
 
-	QCommandAction* const m_pAction;
+	std::function<QCommandAction*()> m_retrieveActionCallback;
 };
 
 template<typename K>
@@ -128,9 +128,9 @@ struct SMenuItem : SItem<K>
 };
 
 template<typename K>
-std::unique_ptr<SActionItem<K>> AddAction(const K& key, int section, int priority, QCommandAction* pAction)
+std::unique_ptr<SActionItem<K>> AddAction(const K& key, int section, int priority, std::function<QCommandAction*()> retrieveActionCallback)
 {
-	return std::make_unique<SActionItem<K>>(pAction, priority, section, key);
+	return std::make_unique<SActionItem<K>>(retrieveActionCallback, priority, section, key);
 }
 
 template<typename K, typename ... ARGS>
@@ -151,10 +151,13 @@ struct SAddItemVisitor : SItemVisitor<K>
 
 	virtual void Visit(const SActionItem<K>& actionItem) override
 	{
+		QCommandAction* pAction = actionItem.m_retrieveActionCallback();
+		CRY_ASSERT_MESSAGE(pAction, "Trying to add an unregistered action to editor menu. Make sure to call RegisterAction");
+
 		CAbstractMenu* const pMenu = actionItem.FindMenu(m_pRootMenu);
-		if (pMenu && !pMenu->ContainsAction(actionItem.m_pAction))
+		if (pMenu && !pMenu->ContainsAction(pAction))
 		{
-			pMenu->AddAction(actionItem.m_pAction, actionItem.m_section, actionItem.m_priority);
+			pMenu->AddAction(pAction, actionItem.m_section, actionItem.m_priority);
 		}
 	}
 
@@ -173,7 +176,7 @@ struct SAddItemVisitor : SItemVisitor<K>
 template<typename K>
 struct SGetMenuNameVisitor : SItemVisitor<K>
 {
-	virtual void Visit(const SItem<K>&) override {}
+	virtual void Visit(const SItem<K>&) override       {}
 	virtual void Visit(const SActionItem<K>&) override {}
 
 	virtual void Visit(const SMenuItem<K>& menuItem) override
@@ -188,9 +191,9 @@ template<typename K>
 struct SGetMenuActionVisitor : SItemVisitor<K>
 {
 	virtual void Visit(const SItem<K>&) override {}
-	virtual void Visit(const SActionItem<K>& menuItem) override 
+	virtual void Visit(const SActionItem<K>& menuItem) override
 	{
-		m_pAction = menuItem.m_pAction;
+		m_pAction = menuItem.m_retrieveActionCallback();
 	}
 
 	virtual void Visit(const SMenuItem<K>&) override {}

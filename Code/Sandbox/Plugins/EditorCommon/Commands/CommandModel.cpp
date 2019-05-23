@@ -289,7 +289,7 @@ Qt::ItemFlags CCommandModel::flags(const QModelIndex& index) const
 		const auto pCommand = GetCommand(index);
 		if (pCommand->IsCustomCommand() || index.column() == 2)
 		{
-			return indexFlags | Qt::ItemIsEditable;
+			indexFlags |= Qt::ItemIsEditable;
 		}
 	}
 

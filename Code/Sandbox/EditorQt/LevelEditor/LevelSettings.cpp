@@ -339,6 +339,7 @@ CLevelSettingsEditor::CLevelSettingsEditor(QWidget* parent)
 	: CDockableEditor(parent)
 {
 	setAttribute(Qt::WA_DeleteOnClose);
+	RegisterActions();
 }
 
 void CLevelSettingsEditor::Initialize()
@@ -346,18 +347,12 @@ void CLevelSettingsEditor::Initialize()
 	CDockableEditor::Initialize();
 
 	RegisterDockingWidgets();
-	RegisterActions();
 	CreateMenu();
-}
-
-bool CLevelSettingsEditor::OnImport()
-{
-	Private_LevelSettings::PyLoadLevelSettings();
-	return true;
 }
 
 void CLevelSettingsEditor::RegisterActions()
 {
+	RegisterAction("general.import", &Private_LevelSettings::PyLoadLevelSettings);
 	SetActionText("general.import", "Import Settings...");
 
 	RegisterAction("general.export", &Private_LevelSettings::PySaveLevelSettings);

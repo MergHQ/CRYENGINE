@@ -1121,6 +1121,16 @@ void CAssetBrowser::InitViews(bool bHideEngineFolder)
 
 void CAssetBrowser::InitActions()
 {
+	m_pActionDelete = RegisterAction("general.delete", &CAssetBrowser::OnDelete);
+	RegisterAction("general.open", &CAssetBrowser::OnOpen);
+	m_pActionCopy = RegisterAction("general.copy", &CAssetBrowser::OnCopy);
+	m_pActionPaste = RegisterAction("general.paste", &CAssetBrowser::OnPaste);
+	m_pActionDuplicate = RegisterAction("general.duplicate", &CAssetBrowser::OnDuplicate);
+	RegisterAction("general.import", &CAssetBrowser::OnImport);
+	RegisterAction("general.new_folder", &CAssetBrowser::OnNewFolder);
+	m_pActionRename = RegisterAction("general.rename", &CAssetBrowser::OnRename);
+	m_pActionSave = RegisterAction("general.save", &CAssetBrowser::OnSave);
+
 	m_pActionShowInFileExplorer = RegisterAction("path_utils.show_in_file_explorer", &CAssetBrowser::OnShowInFileExplorer);
 	RegisterAction("asset.generate_thumbnails", &CAssetBrowser::OnGenerateThumbmails);
 	m_pActionSave = RegisterAction("asset.save_all", &CAssetBrowser::OnSaveAll);
@@ -1134,7 +1144,7 @@ void CAssetBrowser::InitActions()
 	m_pActionDiscardChanges = RegisterAction("asset.discard_changes", &CAssetBrowser::OnDiscardChanges);
 	m_pActionManageWorkFiles = RegisterAction("asset.manage_work_files", &CAssetBrowser::OnManageWorkFiles);
 	m_pActionGenerateRepairMetaData = RegisterAction("asset.generate_and_repair_all_metadata", &CAssetBrowser::OnGenerateRepairAllMetadata);
-	m_pActionReimport = RegisterAction("asset.reimport", &CAssetBrowser::OnReimport);
+	m_pActionReimport = RegisterAction("general.reimport", &CAssetBrowser::OnReimport);
 
 	m_pActionShowFoldersView->setChecked(true);
 	m_pActionRecursiveView->setChecked(false);
@@ -1149,7 +1159,6 @@ void CAssetBrowser::InitMenus()
 {
 	// File menu
 	AddToMenu({ CEditor::MenuItems::FileMenu, CEditor::MenuItems::Save });
-	m_pActionSave = GetMenuAction(CEditor::MenuItems::Save);
 
 	CAbstractMenu* const pMenuFile = GetMenu(CEditor::MenuItems::FileMenu);
 	pMenuFile->signalAboutToShow.Connect([pMenuFile, this]()
@@ -1187,12 +1196,6 @@ void CAssetBrowser::InitMenus()
 
 	// Edit menu
 	AddToMenu({ MenuItems::EditMenu, MenuItems::Copy, MenuItems::Paste, MenuItems::Duplicate, MenuItems::Rename, MenuItems::Delete });
-
-	m_pActionCopy = GetMenuAction(MenuItems::Copy);
-	m_pActionPaste = GetMenuAction(MenuItems::Paste);
-	m_pActionDuplicate = GetMenuAction(MenuItems::Duplicate);
-	m_pActionRename = GetMenuAction(MenuItems::Rename);
-	m_pActionDelete = GetMenuAction(MenuItems::Delete);
 
 	CAbstractMenu* const pMenuEdit = GetMenu(CEditor::MenuItems::EditMenu);
 
@@ -2390,7 +2393,7 @@ bool CAssetBrowser::OnHideIrrelevantFolders()
 	return true;
 }
 
-void CAssetBrowser::OnDelete(const std::vector<CAsset*>& assets)
+void CAssetBrowser::Delete(const std::vector<CAsset*>& assets)
 {
 	CRY_ASSERT(std::none_of(assets.begin(), assets.end(), [](CAsset* pAsset) { return !pAsset; }));
 
@@ -2787,7 +2790,7 @@ bool CAssetBrowser::OnDelete()
 	bool isHandled = false;
 	if (!assets.empty())
 	{
-		OnDelete(assets);
+		Delete(assets);
 		isHandled = true;
 	}
 	for (const string& folder : folders)

@@ -67,16 +67,18 @@ private:
 	virtual void closeEvent(QCloseEvent* pEvent) override;
 	// ~QWidget
 
+	bool OnReload();
+	bool OnRefresh();
+	bool OnSave();
+
 	// CEditor
-	virtual bool OnReload() override;
-	virtual bool OnRefresh() override;
-	virtual bool OnSave() override;
 	virtual void CreateDefaultLayout(CDockableContainer* pSender) override;
 	virtual bool CanQuit(std::vector<string>& unsavedChanges) override;
 	// ~CEditor
 
 	void                   InitMenu();
 	void                   UpdateState();
+	void                   RegisterActions();
 	void                   RegisterWidgets();
 	void                   Reload(bool const hasImplChanged = false);
 	void                   SaveBeforeImplChange();

@@ -71,15 +71,17 @@ protected:
 	void OnShowEffectOptions();
 
 private:
+	void         RegisterActions();
 	void         InitMenu();
 
-	// CEditor
 	bool OnReload();
 	bool OnImport();
 
-	virtual bool OnUndo() override;
-	virtual bool OnRedo() override;
-	// ~CEditor
+	bool OnCopy() { return false; }
+	bool OnPaste() { return false; }
+	bool OnDelete() { return false; }
+	bool OnUndo();
+	bool OnRedo();
 
 protected Q_SLOTS:
 	void OnLoadFromSelectedEntity();

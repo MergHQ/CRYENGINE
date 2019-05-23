@@ -18,6 +18,10 @@ public:
 	static ITimeOfDay*   GetTimeOfDay();
 
 private:
+	void RegisterActions();
+	bool OnUndo() { return false; }
+	bool OnRedo() { return false; }
+
 	virtual const char*                           GetEditorName() const override        { return "Environment Editor"; }
 
 	virtual std::unique_ptr<IAssetEditingSession> CreateEditingSession() override;

@@ -77,16 +77,6 @@ REGISTER_VIEWPANE_FACTORY_AND_MENU(MainDialogAdapter, MainDialogAdapter::GetName
 REGISTER_VIEWPANE_FACTORY_AND_MENU(DialogChrAdapter, DialogChrAdapter::GetName(), "Tools", false, "FBX Import")
 REGISTER_VIEWPANE_FACTORY_AND_MENU(DialogCafAdapter, DialogCafAdapter::GetName(), "Tools", false, "FBX Import")
 
-static void PyImport()
-{
-	CommandEvent("meshimporter.import").SendToKeyboardFocus();
-}
-
-static void PyReimport()
-{
-	CommandEvent("meshimporter.reimport").SendToKeyboardFocus();
-}
-
 string GenerateCharacter(const QString& filePath);
 
 string PyGenerateCharacter(const char* filePath)
@@ -109,22 +99,25 @@ string PyGenerateCharacter(const char* filePath)
 
 DECLARE_PYTHON_MODULE(meshimporter);
 
-REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(PyImport, meshimporter, import, "Import...", "meshimporter.import()");
-REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(PyReimport, meshimporter, reimport, "Reimport...", "meshimporter.reimport()");
 REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(PyGenerateCharacter, meshimporter, generate_character, "Generate...", "meshimporter.generate_character filepath");
-REGISTER_EDITOR_COMMAND_TEXT(meshimporter, import, "Import");
 
 CEditorAdapter::CEditorAdapter(std::unique_ptr<MeshImporter::CBaseDialog> pDialog, QWidget* pParent)
 	: CAssetEditor(ToStringList(MeshImporter::GetAssetTypesFromFileFormatFlags(pDialog->GetOpenFileFormatFlags())), pParent)
 	, m_pDialog(std::move(pDialog))
 {
 	// Create file menu.
+	RegisterAction("general.import", [this](){ m_pDialog->OnImportFile(); });
+	RegisterAction("general.reimport", [this](){ m_pDialog->OnReimportFile(); });
+
 	AddToMenu(CEditor::MenuItems::FileMenu);
 
 	AddToMenu(CEditor::MenuItems::Open);
 	AddToMenu(CEditor::MenuItems::Save);
 	AddToMenu(CEditor::MenuItems::SaveAs);
-	AddToMenu("File", "meshimporter.import");
+
+	CAbstractMenu* pFileMenu = GetMenu(CEditor::MenuItems::FileMenu);
+	pFileMenu->AddAction(GetAction("general.import"));
+	pFileMenu->AddAction(GetAction("general.reimport"));
 
 	m_pDialog->CreateMenu(this);
 
@@ -134,21 +127,20 @@ CEditorAdapter::CEditorAdapter(std::unique_ptr<MeshImporter::CBaseDialog> pDialo
 
 		if (toolButtons & MeshImporter::CBaseDialog::eToolButtonFlags_Import)
 		{
-			QAction* const pAct = GetAction_Deprecated("meshimporter.import");
-			pAct->setIcon(CryIcon("icons:General/File_Import.ico"));
+			QAction* const pAct = GetAction("general.import");
 			pToolBar->addAction(pAct);
 		}
 
 		if (toolButtons & MeshImporter::CBaseDialog::eToolButtonFlags_Open)
 		{
-			pToolBar->addAction(GetAction_Deprecated("general.open"));
+			pToolBar->addAction(GetAction("general.open"));
 		}
 
 		pToolBar->addSeparator();
 
 		if (toolButtons & MeshImporter::CBaseDialog::eToolButtonFlags_Save)
 		{
-			pToolBar->addAction(GetAction_Deprecated("general.save"));
+			pToolBar->addAction(GetAction("general.save"));
 		}
 	}
 
@@ -173,26 +165,6 @@ void CEditorAdapter::Host_AddToMenu(const char* menu, const char* command)
 IViewPaneClass::EDockingDirection CEditorAdapter::GetDockingDirection() const
 {
 	return IViewPaneClass::DOCK_FLOAT;
-}
-
-void CEditorAdapter::customEvent(QEvent* pEvent)
-{
-	CEditor::customEvent(pEvent);
-	if (!pEvent->isAccepted() && pEvent->type() == SandboxEvent::Command)
-	{
-		CommandEvent* commandEvent = static_cast<CommandEvent*>(pEvent);
-		const string& command = commandEvent->GetCommand();
-		if (command == "meshimporter.import")
-		{
-			m_pDialog->OnImportFile();
-			pEvent->accept();
-		}
-		else if (command == "meshimporter.reimport")
-		{
-			m_pDialog->OnReimportFile();
-			pEvent->accept();
-		}
-	}
 }
 
 bool CEditorAdapter::OnAboutToCloseAsset(string& reason) const

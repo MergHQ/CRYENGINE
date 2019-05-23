@@ -91,6 +91,7 @@ CMainWindow::CMainWindow()
 
 	setAttribute(Qt::WA_DeleteOnClose);
 	setObjectName(GetEditorName());
+	RegisterActions();
 
 	ModelUtils::InitIcons();
 
@@ -170,20 +171,26 @@ void CMainWindow::InitMenu()
 {
 	AddToMenu({ CEditor::MenuItems::FileMenu, CEditor::MenuItems::Save, CEditor::MenuItems::EditMenu });
 	CAbstractMenu* const pMenuEdit = GetMenu(MenuItems::EditMenu);
-	m_pSaveAction = GetMenuAction(CEditor::MenuItems::Save);
 
-	m_pReloadAction = GetAction("general.reload");
 	pMenuEdit->AddCommandAction(m_pReloadAction);
-	// Create and get refresh action so we can provide extra context through text and icon
-	// This action will benefit from sharing the general.refresh shortcut
-	m_pRefreshAction = GetAction("general.refresh");
 	pMenuEdit->AddCommandAction(m_pRefreshAction);
-	m_pRefreshAction->setText("Refresh Audio System");
-	m_pRefreshAction->setIcon(CryIcon("icons:Audio/Refresh_Audio.ico"));
 
 	int const section = pMenuEdit->GetNextEmptySection();
 	m_pPreferencesAction = pMenuEdit->CreateAction(tr("Preferences..."), section);
 	QObject::connect(m_pPreferencesAction, &QAction::triggered, this, &CMainWindow::OnPreferencesDialog);
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CMainWindow::RegisterActions()
+{
+	m_pReloadAction = RegisterAction("general.reload", &CMainWindow::OnReload);
+	m_pRefreshAction = RegisterAction("general.refresh", &CMainWindow::OnRefresh);
+	m_pSaveAction = RegisterAction("general.save", &CMainWindow::OnSave);
+
+	// Create and get refresh action so we can provide extra context through text and icon
+	// This action will benefit from sharing the general.refresh shortcut
+	m_pRefreshAction->setText("Refresh Audio System");
+	m_pRefreshAction->setIcon(CryIcon("icons:Audio/Refresh_Audio.ico"));
 }
 
 //////////////////////////////////////////////////////////////////////////

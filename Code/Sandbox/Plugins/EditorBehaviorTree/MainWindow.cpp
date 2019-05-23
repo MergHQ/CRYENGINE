@@ -5,6 +5,10 @@
 #include "MainWindow.h"
 #include "TreePanel.h"
 
+// EditorCommon
+#include <Commands/QCommandAction.h>
+
+// Qt
 #include <QAction>
 #include <QCloseEvent>
 #include <QDockWidget>
@@ -25,9 +29,26 @@ CMainWindow::CMainWindow(QWidget* pParent)
 	m_pMainLayout->setSpacing(0);
 
 	SetContent(m_pMainLayout);
+	RegisterActions();
+
+	InitCVarsCallbacks();
+}
+
+void CMainWindow::Initialize()
+{
+	CDockableEditor::Initialize();
 
 	InitMenuBar();
-	InitCVarsCallbacks();
+}
+
+void CMainWindow::RegisterActions()
+{
+	// Register general actions
+	RegisterAction("general.new", &CMainWindow::OnNew);
+	RegisterAction("general.open", &CMainWindow::OnOpen);
+	RegisterAction("general.save", &CMainWindow::OnSave);
+	RegisterAction("general.save_as", &CMainWindow::OnSaveAs);
+	RegisterAction("general.reload", &CMainWindow::OnReload);
 }
 
 void CMainWindow::InitCVarsCallbacks()
@@ -49,7 +70,7 @@ void CMainWindow::InitMenuBar()
 
 	CAbstractMenu* const pFileMenu = GetMenu(CEditor::MenuItems::FileMenu);
 	int section = pFileMenu->GetNextEmptySection();
-	pFileMenu->CreateCommandAction("general.reload", section);
+	pFileMenu->AddAction(GetAction("general.reload"), section);
 
 	//View
 	AddToMenu(CEditor::MenuItems::ViewMenu);
@@ -59,16 +80,16 @@ void CMainWindow::InitMenuBar()
 	m_pShowXmlLineNumberMenuAction = pMenuView->CreateAction("Show XML line numbers", section);
 	m_pShowXmlLineNumberMenuAction->setCheckable(true);
 	QObject::connect(m_pShowXmlLineNumberMenuAction, &QAction::triggered, [this]()
-		{
-			m_pTreePanel->OnWindowEvent_ShowXmlLineNumbers(GetShowXmlLineNumbers());
-		});
+	{
+		m_pTreePanel->OnWindowEvent_ShowXmlLineNumbers(GetShowXmlLineNumbers());
+	});
 
 	m_pShowCommentsMenuAction = pMenuView->CreateAction("Show comments", section);
 	m_pShowCommentsMenuAction->setCheckable(true);
 	QObject::connect(m_pShowCommentsMenuAction, &QAction::triggered, [this]()
-		{
-			m_pTreePanel->OnWindowEvent_ShowComments(GetShowComments());
-		});
+	{
+		m_pTreePanel->OnWindowEvent_ShowComments(GetShowComments());
+	});
 
 	CAbstractMenu* pMenuEvents = pMenuView->CreateMenu("Built-in Events", section);
 	section = pMenuEvents->GetNextEmptySection();
@@ -76,23 +97,23 @@ void CMainWindow::InitMenuBar()
 	m_pEnableCryEngineEventsMenuAction = pMenuEvents->CreateAction("Enable CryEngine events", section);
 	m_pEnableCryEngineEventsMenuAction->setCheckable(true);
 	QObject::connect(m_pEnableCryEngineEventsMenuAction, &QAction::triggered, [this]()
-		{
-			m_pTreePanel->OnWindowEvent_ShowCryEngineSignals(GetEnableCryEngineEvents());
-		});
+	{
+		m_pTreePanel->OnWindowEvent_ShowCryEngineSignals(GetEnableCryEngineEvents());
+	});
 
 	m_pEnableGameSDKEventsMenuAction = pMenuEvents->CreateAction("Enable GameSDK events", section);
 	m_pEnableGameSDKEventsMenuAction->setCheckable(true);
 	QObject::connect(m_pEnableGameSDKEventsMenuAction, &QAction::triggered, [this]()
-		{
-			m_pTreePanel->OnWindowEvent_ShowDeprecatedSignals(GetEnableCryEngineEvents());
-		});
+	{
+		m_pTreePanel->OnWindowEvent_ShowDeprecatedSignals(GetEnableCryEngineEvents());
+	});
 
 	m_pEnableDeprecatedEventsMenuAction = pMenuEvents->CreateAction("Enable Deprecated events", section);
 	m_pEnableDeprecatedEventsMenuAction->setCheckable(true);
 	QObject::connect(m_pEnableDeprecatedEventsMenuAction, &QAction::triggered, [this]()
-		{
-			m_pTreePanel->OnWindowEvent_ShowDeprecatedSignals(GetEnableCryEngineEvents());
-		});
+	{
+		m_pTreePanel->OnWindowEvent_ShowDeprecatedSignals(GetEnableCryEngineEvents());
+	});
 
 	// Debug
 	CAbstractMenu* pMenuDebug = GetRootMenu()->CreateMenu("Debug", section);
@@ -101,23 +122,23 @@ void CMainWindow::InitMenuBar()
 	m_pEnableTreeDebuggerMenuAction = pMenuDebug->CreateAction("Show Tree", section);
 	m_pEnableTreeDebuggerMenuAction->setCheckable(true);
 	QObject::connect(m_pEnableTreeDebuggerMenuAction, &QAction::triggered, [this]()
-		{
-			SetShowTreeDebugger(!GetShowTreeDebuggerCvar());
-		});
+	{
+		SetShowTreeDebugger(!GetShowTreeDebuggerCvar());
+	});
 
 	m_pEnableVariablesDebuggerMenuAction = pMenuDebug->CreateAction("Show Variables", section);
 	m_pEnableVariablesDebuggerMenuAction->setCheckable(true);
 	QObject::connect(m_pEnableVariablesDebuggerMenuAction, &QAction::triggered, [this]()
-		{
-			SetShowVariablesDebugger(!GetShowVariablesDebuggerCvar());
-		});
+	{
+		SetShowVariablesDebugger(!GetShowVariablesDebuggerCvar());
+	});
 
 	m_pEnableTimestampsDebuggerMenuAction = pMenuDebug->CreateAction("Show Timestamps", section);
 	m_pEnableTimestampsDebuggerMenuAction->setCheckable(true);
 	QObject::connect(m_pEnableTimestampsDebuggerMenuAction, &QAction::triggered, [this]()
-		{
-			SetShowTimestampsDebugger(!GetShowTimestampsDebuggerCvar());
-		});
+	{
+		SetShowTimestampsDebugger(!GetShowTimestampsDebuggerCvar());
+	});
 
 	m_pEnableEventsDebuggerMenuAction = pMenuDebug->CreateAction("Show Events", section);
 	m_pEnableEventsDebuggerMenuAction->setCheckable(true);
@@ -129,9 +150,9 @@ void CMainWindow::InitMenuBar()
 	m_pEnableLogDebuggerMenuAction = pMenuDebug->CreateAction("Show Log", section);
 	m_pEnableLogDebuggerMenuAction->setCheckable(true);
 	QObject::connect(m_pEnableLogDebuggerMenuAction, &QAction::triggered, [this]()
-		{
-			SetShowLogDebugger(!GetShowLogDebuggerCvar());
-		});
+	{
+		SetShowLogDebugger(!GetShowLogDebuggerCvar());
+	});
 
 	m_pEnableBlackboardDebuggerMenuAction = pMenuDebug->CreateAction("Show Blackboard", section);
 	m_pEnableBlackboardDebuggerMenuAction->setCheckable(true);
@@ -143,6 +164,10 @@ void CMainWindow::InitMenuBar()
 	m_pEnableAllDebuggerMenuAction = pMenuDebug->CreateAction("Show All", section);
 	m_pEnableAllDebuggerMenuAction->setCheckable(true);
 	QObject::connect(m_pEnableAllDebuggerMenuAction, &QAction::triggered, [this]()
+	{
+		const bool isEnabled = GetShowAllDebugger();
+
+		if (isEnabled)
 		{
 			const bool isEnabled = GetShowAllDebugger();
 
@@ -169,48 +194,49 @@ void CMainWindow::InitMenuBar()
 				SetShowLogDebugger(false);
 				SetShowBlackboardDebugger(false);
 			}
-		});
+		}
+	});
 
 	section = pMenuDebug->GetNextEmptySection();
 	m_pEnableStatisticsMenuAction = pMenuDebug->CreateAction("Show Statistics", section);
 	m_pEnableStatisticsMenuAction->setCheckable(true);
 	QObject::connect(m_pEnableStatisticsMenuAction, &QAction::triggered, [this]()
-		{
-			SetShowStatisticsCvar(!GetShowStatisticsCvar());
-		});
+	{
+		SetShowStatisticsCvar(!GetShowStatisticsCvar());
+	});
 
 	CAbstractMenu* pMenuExecutionHistory = pMenuDebug->CreateMenu("Execution History", section);
 	m_pEnableExecutionHistoryLogCurrentEntityMenuAction = pMenuExecutionHistory->CreateAction("Log execution for current agent", section);
 	m_pEnableExecutionHistoryLogCurrentEntityMenuAction->setCheckable(true);
 	QObject::connect(m_pEnableExecutionHistoryLogCurrentEntityMenuAction, &QAction::triggered, [this]()
-		{
-			const int previousValue = GetEnableExecutionHistoryLogCvar();
+	{
+		const int previousValue = GetEnableExecutionHistoryLogCvar();
 
-			if (previousValue == 0 || previousValue == 2)
-			{
-				SetEnableExecutionHistoryLog(1);
-			}
-			else if (previousValue == 1)
-			{
-				SetEnableExecutionHistoryLog(0);
-			}
-		});
+		if (previousValue == 0 || previousValue == 2)
+		{
+		  SetEnableExecutionHistoryLog(1);
+		}
+		else if (previousValue == 1)
+		{
+		  SetEnableExecutionHistoryLog(0);
+		}
+	});
 
 	m_pEnableExecutionHistoryLogAllEntitiesMenuAction = pMenuExecutionHistory->CreateAction("Log execution for all agents", section);
 	m_pEnableExecutionHistoryLogAllEntitiesMenuAction->setCheckable(true);
 	QObject::connect(m_pEnableExecutionHistoryLogAllEntitiesMenuAction, &QAction::triggered, [this]()
-		{
-			const int previousValue = GetEnableExecutionHistoryLogCvar();
+	{
+		const int previousValue = GetEnableExecutionHistoryLogCvar();
 
-			if (previousValue == 0 || previousValue == 1)
-			{
-				SetEnableExecutionHistoryLog(2);
-			}
-			else if (previousValue == 2)
-			{
-				SetEnableExecutionHistoryLog(0);
-			}
-		});
+		if (previousValue == 0 || previousValue == 1)
+		{
+		  SetEnableExecutionHistoryLog(2);
+		}
+		else if (previousValue == 2)
+		{
+		  SetEnableExecutionHistoryLog(0);
+		}
+	});
 }
 
 void CMainWindow::SetLayout(const QVariantMap& state)
