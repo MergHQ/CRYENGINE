@@ -376,6 +376,20 @@ QString ToUnixPath(const QString& path)
 	return path;
 }
 
+EDITOR_COMMON_API string GetEditorFolderPath()
+{
+	string path;
+
+	return path.Format("%s/Editor", GetEnginePath());
+}
+
+EDITOR_COMMON_API string GetEditorScriptsFolderPath()
+{
+	string path;
+
+	return path.Format("%s/Scripts", GetEditorFolderPath());
+}
+
 string GamePathToCryPakPath(const string& path, bool bForWriting /*= false*/)
 {
 	CRY_ASSERT(gEnv && gEnv->pCryPak);
