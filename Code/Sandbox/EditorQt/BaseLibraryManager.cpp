@@ -148,21 +148,20 @@ void CBaseLibraryManager::DeleteItem(IDataBaseItem* pItem)
 //////////////////////////////////////////////////////////////////////////
 IDataBaseLibrary* CBaseLibraryManager::LoadLibrary(const string& inFilename, bool bReload)
 {
-	string filename = inFilename;
 	// If library is already loaded ignore it.
 	for (int i = 0; i < m_libs.size(); i++)
 	{
-		if (stricmp(filename, m_libs[i]->GetFilename()) == 0 || stricmp(inFilename, m_libs[i]->GetFilename()) == 0)
+		if (stricmp(inFilename, m_libs[i]->GetFilename()) == 0)
 		{
-			Error(_T("Loading Duplicate Library: %s"), filename.c_str());
+			Error(_T("Loading Duplicate Library: %s"), inFilename.c_str());
 			return nullptr;
 		}
 	}
 
 	TSmartPtr<CBaseLibrary> pLib = MakeNewLibrary();
-	if (!pLib->Load(filename))
+	if (!pLib->Load(inFilename))
 	{
-		Error(_T("Failed to Load Item Library: %s"), filename.c_str());
+		Error(_T("Failed to Load Item Library: %s"), inFilename.c_str());
 		return nullptr;
 	}
 	if (FindLibrary(pLib->GetName()) != 0)

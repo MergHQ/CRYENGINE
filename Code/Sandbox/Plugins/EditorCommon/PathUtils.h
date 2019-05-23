@@ -99,6 +99,12 @@ EDITOR_COMMON_API string  ToGamePath(const char* path);
 
 EDITOR_COMMON_API QString ToUnixPath(const QString& path);
 
+//!Get the path of the Editor folder in the engine installation path
+EDITOR_COMMON_API string GetEditorFolderPath();
+
+//!Get the path of the Scripts folder inside the Editor folder in the engine installation path
+EDITOR_COMMON_API string GetEditorScriptsFolderPath();
+
 //! Returns true if the name is not empty and only contains letters, numbers or '-' '_' ' ', and starts with a significant character
 //! This restrictive naming policy ensures filenames will work on any system
 EDITOR_COMMON_API bool IsValidFileName(const QString& name);

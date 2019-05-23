@@ -65,6 +65,7 @@ void ResetTransforms(CGroup* pParent, const std::vector<CBaseObject*>& children,
 void RestoreTransforms(std::vector<CBaseObject*>& children, bool shouldKeepPos, const std::vector<Matrix34>& worldTMs,
                        const std::vector<ITransformDelegate*>& transformDelegates)
 {
+	CScopedSuspendUndo suspendUndoRestore;
 	if (shouldKeepPos)
 	{
 		// Keep old world space transformation.
@@ -538,19 +539,19 @@ bool CGroup::CreateFrom(std::vector<CBaseObject*>& objects)
 	return true;
 }
 
-void CGroup::CreateFrom(std::vector<CBaseObject*>& objects, Vec3 center)
+CGroup* CGroup::CreateFrom(std::vector<CBaseObject*>& objects, Vec3 center)
 {
 	if (objects.empty())
 	{
-		return;
+		return nullptr;
 	}
 
 	CUndo undo("Create Group");
-	CGroup* group = (CGroup*)GetIEditorImpl()->NewObject("Group");
-	if (!group)
+	CGroup* pGroup = (CGroup*)GetIEditorImpl()->NewObject("Group");
+	if (!pGroup)
 	{
 		undo.Cancel();
-		return;
+		return nullptr;
 	}
 
 	if (CBaseObject* pLastParent = objects[objects.size() - 1]->GetGroup())
@@ -560,14 +561,16 @@ void CGroup::CreateFrom(std::vector<CBaseObject*>& objects, Vec3 center)
 		center = m.TransformPoint(center);
 	}
 	// Snap center to grid.
-	group->SetPos(gSnappingPreferences.Snap3D(center));
+	pGroup->SetPos(gSnappingPreferences.Snap3D(center));
 
-	if (!group->CreateFrom(objects))
+	if (!pGroup->CreateFrom(objects))
 	{
 		undo.Cancel();
-		GetIEditorImpl()->DeleteObject(group);
-		return;
+		GetIEditorImpl()->DeleteObject(pGroup);
+		return nullptr;
 	}
+
+	return pGroup;
 }
 
 bool CGroup::Init(CBaseObject* prev, const string& file)
