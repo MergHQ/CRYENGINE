@@ -203,6 +203,19 @@ public:
 			}
 		}
 	}
+
+	virtual void mouseReleaseEvent(QMouseEvent *event) override
+	{
+		// Qt documentation says that it is possible for the user to deselect 
+		// the selected item with QAbstractItemView::SingleSelection.
+		// but it does not work this way.
+		// Remove the following workaround when the Qt bug fixed: https://bugreports.qt.io/browse/QTBUG-75898
+		auto temp = TView::selectionMode();
+		TView::setSelectionMode(QAbstractItemView::ExtendedSelection);
+		TView::mouseReleaseEvent(event);
+		TView::setSelectionMode(temp);
+	}
+
 private:
 	QString m_root;
 };
@@ -1132,7 +1145,7 @@ void CAssetBrowser::InitActions()
 	m_pActionSave = RegisterAction("general.save", &CAssetBrowser::OnSave);
 
 	m_pActionShowInFileExplorer = RegisterAction("path_utils.show_in_file_explorer", &CAssetBrowser::OnShowInFileExplorer);
-	RegisterAction("asset.generate_thumbnails", &CAssetBrowser::OnGenerateThumbmails);
+	m_pActionGenerateThumbnails = RegisterAction("asset.generate_thumbnails", &CAssetBrowser::OnGenerateThumbmails);
 	m_pActionSave = RegisterAction("asset.save_all", &CAssetBrowser::OnSaveAll);
 	m_pActionShowDetails = RegisterAction("asset.view_details", &CAssetBrowser::OnDetailsView);
 	m_pActionShowThumbnails = RegisterAction("asset.view_thumbnails", &CAssetBrowser::OnThumbnailsView);
@@ -1163,17 +1176,11 @@ void CAssetBrowser::InitMenus()
 	CAbstractMenu* const pMenuFile = GetMenu(CEditor::MenuItems::FileMenu);
 	pMenuFile->signalAboutToShow.Connect([pMenuFile, this]()
 	{
-		pMenuFile->Clear();
 		auto folderSelection = m_pFoldersView->GetSelectedFolders();
-		const QString folder = (folderSelection.size() == 1 && !CAssetFoldersModel::GetInstance()->IsReadOnlyFolder(folderSelection[0]))
-		                       ? folderSelection[0]
-		                       : QString();
-
+		pMenuFile->Clear();
 		pMenuFile->AddCommandAction(GetAction("general.new_folder"));
 		CAbstractMenu* subMenu = pMenuFile->CreateMenu(tr("New Asset"));
-		FillCreateAssetMenu(subMenu, folder);
-
-		const bool bEnableImport = !folder.isNull();
+		FillCreateAssetMenu(subMenu, folderSelection.size() == 1 && !CAssetFoldersModel::GetInstance()->IsReadOnlyFolder(folderSelection[0]));
 
 		int section = pMenuFile->GetNextEmptySection();
 		pMenuFile->AddCommandAction(GetAction("general.import"), section);
@@ -1188,7 +1195,7 @@ void CAssetBrowser::InitMenus()
 		m_pActionSave->setEnabled(isModified);
 
 		section = pMenuFile->GetNextEmptySection();
-		pMenuFile->AddCommandAction(GetAction("asset.generate_thumbnails"), section);
+		pMenuFile->AddCommandAction(m_pActionGenerateThumbnails, section);
 
 		pMenuFile->AddCommandAction(m_pActionGenerateRepairMetaData, section);
 		m_pActionGenerateRepairMetaData->setEnabled(!CAssetManager::GetInstance()->IsScanning());
@@ -1364,7 +1371,7 @@ void CAssetBrowser::SelectAsset(const CAsset& asset) const
 }
 
 // TODO: Only add menu entries for asset types that support creating new assets, i.e., implement CAssetType::Create().
-void CAssetBrowser::FillCreateAssetMenu(CAbstractMenu* menu, const QString& folder)
+void CAssetBrowser::FillCreateAssetMenu(CAbstractMenu* menu, bool enable)
 {
 	for (CAssetType* pAssetType : CAssetManager::GetInstance()->GetAssetTypes())
 	{
@@ -1373,11 +1380,9 @@ void CAssetBrowser::FillCreateAssetMenu(CAbstractMenu* menu, const QString& fold
 			continue;
 		}
 
-		const bool bEnableAction = !folder.isNull();
-
 		QAction* const pAction = menu->CreateAction(pAssetType->GetUiTypeName());
 		connect(pAction, &QAction::triggered, [this, pAssetType]() { BeginCreateAsset(*pAssetType, nullptr); });
-		pAction->setEnabled(bEnableAction);
+		pAction->setEnabled(enable);
 	}
 }
 
@@ -1904,8 +1909,13 @@ void CAssetBrowser::UpdateSelectionDependantActions()
 	std::vector<string> folders;
 	GetSelection(assets, folders);
 
+	if (assets.empty() && folders.empty())
+	{
+		folders = GetSelectedFolders();
+	}
+
 	const bool hasAssetsSelected = !assets.empty();
-	const bool hasSelection = hasAssetsSelected || !folders.empty();
+	const bool hasWritableFolderSelected = folders.size() == 1 && !CAssetFoldersModel::GetInstance()->IsReadOnlyFolder(QtUtil::ToQString(folders[0]));
 
 	m_pActionManageWorkFiles->setEnabled(hasAssetsSelected);
 	m_pActionDelete->setEnabled(hasAssetsSelected);
@@ -1914,6 +1924,13 @@ void CAssetBrowser::UpdateSelectionDependantActions()
 	m_pActionDuplicate->setEnabled(hasAssetsSelected);
 	m_pActionSave->setEnabled(hasAssetsSelected);
 	m_pActionReimport->setEnabled(hasAssetsSelected);
+
+	GetAction("general.new_folder")->setEnabled(hasWritableFolderSelected);
+	GetAction("general.import")->setEnabled(hasWritableFolderSelected);
+	m_pActionShowInFileExplorer->setEnabled(hasWritableFolderSelected);
+	m_pActionGenerateThumbnails->setEnabled(hasWritableFolderSelected);
+
+	UpdatePasteActionState();
 }
 
 void CAssetBrowser::UpdatePasteActionState()
@@ -1953,7 +1970,7 @@ void CAssetBrowser::CreateContextMenu(bool isFolderView /*= false*/)
 		}
 		BuildContextMenuForFolders(folders, abstractMenu);
 	}
-	else if (assets.empty() && folders.empty() && !IsRecursiveView())//nothing selected in recursive view
+	else if (assets.empty() && folders.empty())
 	{
 		BuildContextMenuForEmptiness(abstractMenu);
 	}
@@ -1969,27 +1986,34 @@ void CAssetBrowser::CreateContextMenu(bool isFolderView /*= false*/)
 
 void CAssetBrowser::BuildContextMenuForEmptiness(CAbstractMenu& abstractMenu)
 {
-	std::vector<string> selectedFolders = GetSelectedFolders();
-	CAssetFoldersModel* pModel = CAssetFoldersModel::GetInstance();
+	const std::vector<string> selectedFolders = GetSelectedFolders();
+	CAssetFoldersModel* const pModel = CAssetFoldersModel::GetInstance();
 
 	int foldersSection = abstractMenu.GetNextEmptySection();
 	abstractMenu.SetSectionName(foldersSection, "Folders");
 
 	auto folder = QtUtil::ToQString(selectedFolders[0]);
-	if (selectedFolders.size() == 1 && !pModel->IsReadOnlyFolder(folder))
-	{
-		abstractMenu.AddCommandAction(GetAction("general.new_folder"));
+	abstractMenu.AddCommandAction(GetAction("general.new_folder"));
 
-		CAbstractMenu* const pCreateAssetMenu = abstractMenu.CreateMenu(tr("New Asset"));
-		FillCreateAssetMenu(pCreateAssetMenu, folder);
+	CAbstractMenu* const pCreateAssetMenu = abstractMenu.CreateMenu(tr("New Asset"));
+	FillCreateAssetMenu(pCreateAssetMenu, selectedFolders.size() == 1 && !pModel->IsReadOnlyFolder(folder));
 
-		abstractMenu.AddCommandAction(GetAction("general.paste"), foldersSection);
-		UpdatePasteActionState();
+	abstractMenu.AddCommandAction(GetAction("general.paste"), foldersSection);
+	abstractMenu.AddCommandAction(GetAction("general.import"), foldersSection);
+	abstractMenu.AddCommandAction(m_pActionShowInFileExplorer, foldersSection);
+	abstractMenu.AddCommandAction(m_pActionGenerateThumbnails, foldersSection);
 
-		abstractMenu.AddCommandAction(GetAction("general.import"), foldersSection);
-		abstractMenu.AddCommandAction(m_pActionShowInFileExplorer, foldersSection);
-		abstractMenu.AddCommandAction(GetAction("asset.generate_thumbnails"), foldersSection);
-	}
+	int section = abstractMenu.GetNextEmptySection();
+	abstractMenu.AddCommandAction(m_pActionRecursiveView, section);
+	abstractMenu.AddCommandAction(m_pActionShowDetails, section);
+	abstractMenu.AddCommandAction(m_pActionShowThumbnails, section);
+	abstractMenu.AddCommandAction(m_pActionShowSplitHorizontally, section);
+	abstractMenu.AddCommandAction(m_pActionShowSplitVertically, section);
+
+	section = abstractMenu.GetNextEmptySection();
+	abstractMenu.AddCommandAction(m_pActionShowFoldersView, section);
+
+	UpdateSelectionDependantActions();
 
 	NotifyContextMenuCreation(abstractMenu, {}, selectedFolders);
 }
@@ -2018,7 +2042,7 @@ void CAssetBrowser::BuildContextMenuForFolders(const std::vector<string>& folder
 	}
 
 	abstractMenu.AddCommandAction(m_pActionShowInFileExplorer);
-	abstractMenu.AddCommandAction(GetAction("asset.generate_thumbnails"));
+	abstractMenu.AddCommandAction(m_pActionGenerateThumbnails);
 
 	NotifyContextMenuCreation(abstractMenu, {}, folders);
 }
