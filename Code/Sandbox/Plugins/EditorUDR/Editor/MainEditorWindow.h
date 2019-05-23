@@ -22,7 +22,7 @@
 #include <CryGame/IGameFramework.h>
 
 
-#define UDR_EDITOR_NAME "UDR Recordings (experimental)"
+#define UDR_EDITOR_NAME "UDR Visualizer (Experimental)"
 
 
 class CUDRTreeModel;
