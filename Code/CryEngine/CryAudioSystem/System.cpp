@@ -3167,6 +3167,7 @@ ERequestStatus CSystem::HandleSetImpl(Impl::IImpl* const pIImpl)
 	CRY_ASSERT_MESSAGE(g_previewObject.GetImplData() == nullptr, "<Audio> The preview object's impl-data must be nullptr during %s", __FUNCTION__);
 	Impl::IListeners const previewImplListener{ g_previewListener.GetImplData() };
 	g_previewObject.SetImplData(g_pIImpl->ConstructObject(CTransformation::GetEmptyObject(), previewImplListener, g_previewObject.GetName()));
+	g_previewObject.SetFlag(EObjectFlags::IgnoreDrawDebugInfo);
 
 	g_listenerManager.ReconstructImplData();
 
@@ -3739,7 +3740,10 @@ void DrawPerActiveObjectDebugInfo(IRenderAuxGeom& auxGeom)
 
 	for (auto const pObject : g_activeObjects)
 	{
-		pObject->DrawDebugInfo(auxGeom, isTextFilterDisabled, lowerCaseSearchString);
+		if ((pObject->GetFlags() & EObjectFlags::IgnoreDrawDebugInfo) == 0)
+		{
+			pObject->DrawDebugInfo(auxGeom, isTextFilterDisabled, lowerCaseSearchString);
+		}
 	}
 }
 
