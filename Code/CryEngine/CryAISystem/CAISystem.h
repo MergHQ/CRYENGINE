@@ -619,6 +619,7 @@ public:
 	void TrySubsystemInitScriptBind();
 	void TrySubsystemInitFormationSystem();
 	void TrySubsystemInitTacticalPointSystem();
+	void TrySubsystemInitCoverSystem();
 	void TrySubsystemInitGroupSystem();
 	void TrySubsystemInitORCA();
 	void TrySubsystemInitTargetTrackSystem();

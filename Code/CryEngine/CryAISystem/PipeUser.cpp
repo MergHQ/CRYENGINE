@@ -130,7 +130,7 @@ CPipeUser::~CPipeUser(void)
 
 	gAIEnv.pMovementSystem->UnregisterEntity(GetEntityID());
 
-	if (m_pCoverUser)
+	if (m_pCoverUser && gAIEnv.pCoverSystem)
 	{
 		gAIEnv.pCoverSystem->UnregisterEntity(GetEntityID());
 	}
@@ -304,8 +304,13 @@ void CPipeUser::Reset(EObjectResetType type)
 		params.fillCoverEyesCustomMethod = functor(*this, &CPipeUser::FillCoverEyes);
 		params.activeCoverInvalidateCallback = functor(*this, &CPipeUser::SetCoverInvalidated);
 		params.activeCoverCompromisedCallback = functor(*this, &CPipeUser::SetCoverInvalidated);
-		m_pCoverUser = gAIEnv.pCoverSystem->RegisterEntity(GetEntityID(), params);
-		m_pCoverUser->Reset();
+
+		if (gAIEnv.pCoverSystem)
+		{
+			m_pCoverUser = gAIEnv.pCoverSystem->RegisterEntity(GetEntityID(), params);
+			m_pCoverUser->Reset();
+		}
+
 		break;
 	}
 	case AIOBJRESET_SHUTDOWN:
@@ -3162,7 +3167,9 @@ void CPipeUser::PostSerialize()
 	params.userID = entityId;
 	params.activeCoverInvalidateCallback = functor(*this, &CPipeUser::SetCoverInvalidated);
 	params.activeCoverCompromisedCallback = functor(*this, &CPipeUser::SetCoverInvalidated);
-	m_pCoverUser = gAIEnv.pCoverSystem->RegisterEntity(entityId, params);
+	
+	if (gAIEnv.pCoverSystem)
+		m_pCoverUser = gAIEnv.pCoverSystem->RegisterEntity(entityId, params);
 }
 
 #ifdef USE_DEPRECATED_AI_CHARACTER_SYSTEM
@@ -4220,7 +4227,7 @@ void CPipeUser::CreateMovementPlanCoverEndBlocks(DynArray<Movement::BlockPtr>& b
 
 void CPipeUser::PrePathFollowUpdate(const MovementUpdateContext& context, bool bIsLastFollowBlock)
 {
-	if (!bIsLastFollowBlock || !IsMovingToCover())
+	if (!bIsLastFollowBlock || !IsMovingToCover() || !gAIEnv.pCoverSystem)
 		return;
 	
 	CoverID coverID = GetCoverID();

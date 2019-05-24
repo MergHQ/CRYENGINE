@@ -896,8 +896,8 @@ void CAISystem::DebugDrawPerceptionModifiers()
 void CAISystem::DebugDrawTargetTracks() const
 {
 	CRY_PROFILE_FUNCTION(PROFILE_AI);
-
-	gAIEnv.pTargetTrackManager->DebugDraw();
+	if (gAIEnv.pTargetTrackManager)
+		gAIEnv.pTargetTrackManager->DebugDraw();
 }
 
 void CAISystem::DebugDrawDebugAgent()
@@ -1977,7 +1977,7 @@ void CAISystem::DebugDrawAgent(CAIObject* pAgentObj) const
 	CPipeUser* pPipeUser = pAgent->CastToCPipeUser();
 	if (pPipeUser)
 	{
-		if (gAIEnv.CVars.legacyCoverSystem.DebugDrawCover)
+		if (gAIEnv.CVars.legacyCoverSystem.DebugDrawCover && gAIEnv.pCoverSystem)
 		{
 			gAIEnv.pCoverSystem->DebugDrawCoverUser(pPipeUser->GetEntityID());
 		}
@@ -2090,7 +2090,7 @@ void CAISystem::DebugDrawAgent(CAIObject* pAgentObj) const
 	y -= 20.0f;
 	x -= 50.0f;
 
-	const bool bCoverOK = gAIEnv.pCoverSystem->GetSurfaceCount() > 0;
+	const bool bCoverOK = gAIEnv.pCoverSystem && gAIEnv.pCoverSystem->GetSurfaceCount() > 0;
 
 	{
 		float offset = pVehicle ? 100.0f : 130.0f;
@@ -4730,7 +4730,7 @@ void CAISystem::DebugDraw()
 	if (gAIEnv.CVars.legacyInterestSystem.DebugInterest > 0)
 		DebugDrawInterestSystem(gAIEnv.CVars.legacyInterestSystem.DebugInterest);
 
-	if (gAIEnv.CVars.behaviorTree.DrawModularBehaviorTreeStatistics > 0)
+	if (gAIEnv.pBehaviorTreeManager && gAIEnv.CVars.behaviorTree.DrawModularBehaviorTreeStatistics > 0)
 		gAIEnv.pBehaviorTreeManager->DrawMemoryInformation();
 
 	if (debugDrawValue < 0)
@@ -4746,16 +4746,16 @@ void CAISystem::DebugDraw()
 		systemComponent->DebugDraw(dc.operator->());
 	}
 
-	if (gAIEnv.CVars.collisionAvoidance.DebugDrawCollisionAvoidance > 0)
+	if (gAIEnv.pCollisionAvoidanceSystem && gAIEnv.CVars.collisionAvoidance.DebugDrawCollisionAvoidance > 0)
 		gAIEnv.pCollisionAvoidanceSystem->DebugDraw();
 
-	if (gAIEnv.CVars.legacyCommunicationSystem.DebugDrawCommunication > 0)
+	if (gAIEnv.pCommunicationManager && gAIEnv.CVars.legacyCommunicationSystem.DebugDrawCommunication > 0)
 		gAIEnv.pCommunicationManager->DebugDraw();
 
 	if (gAIEnv.pVisionMap && gAIEnv.CVars.visionMap.DebugDrawVisionMap != 0)
 		gAIEnv.pVisionMap->DebugDraw();
 
-	if (gAIEnv.pCoverSystem)
+	if (gAIEnv.pCoverSystem && gAIEnv.CVars.legacyCoverSystem.DebugDrawCover)
 		gAIEnv.pCoverSystem->DebugDraw();
 
 	if (gAIEnv.pNavigationSystem && gAIEnv.CVars.navigation.DebugDrawNavigation > 0)
@@ -4767,7 +4767,8 @@ void CAISystem::DebugDraw()
 	#ifdef CRYAISYSTEM_DEBUG
 	{
 		CRY_PROFILE_SECTION(PROFILE_AI, "AIBubblesSystem");
-		gAIEnv.pBubblesSystem->Update();
+		if (gAIEnv.pBubblesSystem)
+			gAIEnv.pBubblesSystem->Update();
 	}
 	#endif
 
@@ -4826,7 +4827,7 @@ void CAISystem::DebugDraw()
 
 	DebugDrawStatsTarget(gAIEnv.CVars.legacyDebugDraw.StatsTarget);
 
-	if (gAIEnv.CVars.legacyFormationSystem.DrawFormations)
+	if (gAIEnv.pFormationManager && gAIEnv.CVars.legacyFormationSystem.DrawFormations)
 		gAIEnv.pFormationManager->DebugDraw();
 
 	DebugDrawType();
@@ -4843,7 +4844,8 @@ void CAISystem::DebugDraw()
 	DebugDrawAgents();
 	DebugDrawShooting();
 
-	gAIEnv.pTacticalPointSystem->DebugDraw();
+	if (gAIEnv.pTacticalPointSystem)
+		gAIEnv.pTacticalPointSystem->DebugDraw();
 
 	DebugDrawLightManager();
 	//DebugDrawP0AndP1();

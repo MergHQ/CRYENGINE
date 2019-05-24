@@ -10,7 +10,7 @@ void SAIConsoleVarsLegacyCoverSystem::Init()
 		"Enables the cover system.\n"
 		"Usage: ai_CoverSystem [0/1]\n"
 		"Default is 1 (on)\n"
-		"0 - off - use anchors\n"
+		"0 - off \n"
 		"1 - use offline cover surfaces\n");
 
 	DefineConstIntCVarName("ai_DebugDrawCover", DebugDrawCover, 0, VF_CHEAT | VF_CHEAT_NOCHECK,
