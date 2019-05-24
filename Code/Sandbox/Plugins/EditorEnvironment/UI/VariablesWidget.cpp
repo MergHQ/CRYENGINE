@@ -49,6 +49,7 @@ CVariablesWidget::~CVariablesWidget()
 	m_controller.signalVariableTreeChanged.DisconnectObject(this);
 	m_controller.signalPlaybackModeChanged.DisconnectObject(this);
 	m_controller.signalHandleKeyEventsInVarPropertyTree.DisconnectObject(this);
+	m_controller.signalCurrentTimeChanged.DisconnectObject(this);
 }
 
 // Handling user input
