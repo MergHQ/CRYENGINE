@@ -534,9 +534,11 @@ void JobManager::CJobManager::AddJob(JobManager::CJobDelegator& crJob, const Job
 	{
 		Invoker delegator = crJob.GetGenericDelegator();
 		const void* pParamMem = crJob.GetJobParamData();
-
-		// execute job function
-		(*delegator)((void*)pParamMem);
+		{
+			MEMSTAT_CONTEXT_FMT(EMemStatContextType::Other, "Job: %s", cJobHandle->cpString);
+			// execute job function
+			(*delegator)((void*)pParamMem);
+		}
 
 		IF(infoBlock.GetJobState(), 1)
 		{
