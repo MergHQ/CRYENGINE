@@ -232,11 +232,6 @@ CSystem::CSystem(const SSystemInitParams& startupParams)
 	m_pSystemEventDispatcher->RegisterListener(this, "CSystem");
 
 	//////////////////////////////////////////////////////////////////////////
-	// Clear environment.
-	//////////////////////////////////////////////////////////////////////////
-	memset(&m_env, 0, sizeof(m_env));
-
-	//////////////////////////////////////////////////////////////////////////
 	// Reset handles.
 	memset(&m_dll, 0, sizeof(m_dll));
 	//////////////////////////////////////////////////////////////////////////
@@ -246,28 +241,12 @@ CSystem::CSystem(const SSystemInitParams& startupParams)
 	m_env.pSystem = this;
 	m_env.pTimer = &m_Time;
 	m_env.pNameTable = &m_nameTable;
-	m_env.bServer = false;
-	m_env.bMultiplayer = false;
-	m_env.bHostMigrating = false;
 	m_env.startProfilingSection = CCryProfilingSystemImpl::StartSectionStaticDummy;
 	m_env.endProfilingSection = CCryProfilingSystemImpl::EndSectionStaticDummy;
 	m_env.recordProfilingMarker = CCryProfilingSystemImpl::RecordMarkerStaticDummy;
 
-	m_env.bUnattendedMode = false;
-	m_env.bTesting = false;
-
-#if defined(USE_CRY_ASSERT)
-	m_env.assertSettings = Cry::Assert::Detail::SSettings();
-#endif
-
-#if CRY_PLATFORM_DURANGO
-	m_env.ePLM_State = EPLM_UNDEFINED;
-#endif
-
 	m_env.SetFMVIsPlaying(false);
 	m_env.SetCutsceneIsPlaying(false);
-
-	m_env.szDebugStatus[0] = '\0';
 
 #if CRY_PLATFORM_DESKTOP
 	m_env.SetIsClient(false);
