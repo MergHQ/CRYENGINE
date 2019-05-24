@@ -88,9 +88,9 @@
 						bool isInAssertHandler = false;
 						bool ignoreAllAsserts = false;
 						bool showAssertDialog = true;
-						bool logAlways = true;
+						bool logAlways = false;
 						// used to ensure we only assert in one thread at a time
-						volatile int lock;
+						volatile int lock = 0;
 					};
 
 					bool CryAssertIsEnabled();

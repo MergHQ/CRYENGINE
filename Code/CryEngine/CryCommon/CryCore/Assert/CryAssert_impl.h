@@ -210,26 +210,20 @@ namespace Cry {
 
 			void CryLogAssert(const char* _pszCondition, const char* _pszFile, unsigned int _uiLine)
 			{
-				if (!gEnv || !gEnv->pSystem)
+				ISystem* const pSystem = GetISystem();
+				if (!pSystem)
 					return;
 
-				if (gEnv->pConsole)
-				{
-					static ICVar* pLogAsserts = gEnv->pConsole->GetCVar("sys_log_asserts");
-					if (pLogAsserts && !pLogAsserts->GetIVal())
-						return;
-				}
-
 			#ifdef _RELEASE
-				GetISystem()->WarningV(VALIDATOR_MODULE_UNKNOWN, VALIDATOR_ASSERT, 0, _pszFile, gs_szMessage, va_list());
+				pSystem->WarningV(VALIDATOR_MODULE_UNKNOWN, VALIDATOR_ASSERT, 0, _pszFile, gs_szMessage, va_list());
 			#else
 				if (tls_szAssertMessage[0] == '\0')
 				{
-					GetISystem()->Warning(VALIDATOR_MODULE_UNKNOWN, VALIDATOR_ASSERT, 0, _pszFile, "Condition: %s [line %u]", _pszCondition, _uiLine);
+					pSystem->Warning(VALIDATOR_MODULE_UNKNOWN, VALIDATOR_ASSERT, 0, _pszFile, "Condition: %s [line %u]", _pszCondition, _uiLine);
 				}
 				else
 				{
-					GetISystem()->Warning(VALIDATOR_MODULE_UNKNOWN, VALIDATOR_ASSERT, 0, _pszFile, "%s (Condition: %s)[line %u]", tls_szAssertMessage, _pszCondition, _uiLine);
+					pSystem->Warning(VALIDATOR_MODULE_UNKNOWN, VALIDATOR_ASSERT, 0, _pszFile, "%s (Condition: %s)[line %u]", tls_szAssertMessage, _pszCondition, _uiLine);
 				}
 			#endif
 			}
