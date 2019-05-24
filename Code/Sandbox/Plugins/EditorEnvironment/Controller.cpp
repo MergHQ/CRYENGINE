@@ -357,6 +357,8 @@ void CController::OnVariableTreeEndChange()
 	// 3dEngine data and Curve content are already updated via InterpolateVarTreeChanges
 	GetIEditor()->GetIUndoManager()->Accept(m_pUndoVarCommand->GetDescription());
 	m_pUndoVarCommand.release();
+
+	m_editor.GetAssetBeingEdited()->SetModified(true);
 }
 
 void UpdateToDVarFromCurveContent(ITimeOfDay::IPreset* pPreset, int nVarId, int nSplineId, SCurveEditorContent& content)
