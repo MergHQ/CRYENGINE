@@ -401,12 +401,18 @@ void JobManager::ThreadBackEnd::CThreadBackEndWorkerThread::ThreadEntry()
 #endif
 
 		{
+#if CAPTURE_REPLAY_LOG || defined(ENABLE_PROFILING_CODE)
+			const char* cpJobName = pJobManager->GetJobName(infoBlock.jobInvoker);
+#endif
 #if defined(ENABLE_PROFILING_CODE)
-			SProfilingSection profSection(GetTrackerForName(pJobManager->GetJobName(infoBlock.jobInvoker)), nullptr);
+			SProfilingSection profSection(GetTrackerForName(cpJobName), nullptr);
 #endif
 			uint64 nJobStartTicks = CryGetTicks();
-			// call delegator function to invoke job entry
-			(*infoBlock.jobInvoker)(infoBlock.GetParamAddress());
+			{
+				MEMSTAT_CONTEXT_FMT(EMemStatContextType::Other, "Job: %s", cpJobName);
+				// call delegator function to invoke job entry
+				(*infoBlock.jobInvoker)(infoBlock.GetParamAddress());
+			}
 			
 			nTicksInJobExecution += CryGetTicks() - nJobStartTicks;
 		}

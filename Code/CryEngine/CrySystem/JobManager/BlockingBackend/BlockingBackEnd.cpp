@@ -293,13 +293,14 @@ void JobManager::BlockingBackEnd::CBlockingBackEndWorkerThread::ThreadEntry()
 #if defined(JOBMANAGER_SUPPORT_STATOSCOPE)
 		const uint64 nStartTime = JobManager::IWorkerBackEndProfiler::GetTimeSample();
 #endif
-
 		// call delegator function to invoke job entry
 #if !defined(_RELEASE) || defined(PERFORMANCE_BUILD)
 		CRY_PROFILE_SECTION(PROFILE_SYSTEM, "Job");
 #endif
-		(*infoBlock.jobInvoker)(infoBlock.GetParamAddress());
-
+		{
+			MEMSTAT_CONTEXT_FMT(EMemStatContextType::Other, "Job: %s", CJobManager::Instance()->GetJobName(infoBlock.jobInvoker));
+			(*infoBlock.jobInvoker)(infoBlock.GetParamAddress());
+		}
 #if defined(JOBMANAGER_SUPPORT_STATOSCOPE)
 		JobManager::IWorkerBackEndProfiler* workerProfiler = m_pBlockingBackend->GetBackEndWorkerProfiler();
 		const uint64 nEndTime = JobManager::IWorkerBackEndProfiler::GetTimeSample();
