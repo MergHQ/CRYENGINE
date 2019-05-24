@@ -1980,8 +1980,7 @@ TEST_F(CReflectionUnitTest, CAnyArrayRemove)
 
 		anyArray.Remove(0);
 		REQUIRE(anyArray.GetSize() == 0);
-		EXPECT_ASSERT_FAILURE(pTarget = anyArray.GetPointer<CBank>(0), "'index' (0) is out of bounds (0).");
-		REQUIRE(pTarget == nullptr);
+		EXPECT_ASSERT_FAILURE(REQUIRE(anyArray.GetPointer<CBank>(0) == nullptr), "'index' (0) is out of bounds (0).");
 	}
 }
 
