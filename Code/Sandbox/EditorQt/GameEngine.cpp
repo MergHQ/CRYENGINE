@@ -1282,7 +1282,7 @@ void CGameEngine::ClearAllAINavigation()
 
 void CGameEngine::GenerateAICoverSurfaces()
 {
-	if (!gEnv->pAISystem)
+	if (!gEnv->pAISystem || !gEnv->pAISystem->GetCoverSystem())
 		return;
 
 	CCoverSurfaceManager* coverSurfaceManager = GetIEditorImpl()->GetAI()->GetCoverSurfaceManager();

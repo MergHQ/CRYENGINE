@@ -296,11 +296,13 @@ void CAISystem::SubsystemUpdateGroupManager()
 void CAISystem::TrySubsystemUpdateCoverSystem(const CTimeValue frameStartTime, const float frameDeltaTime, const bool isAutomaticUpdate)
 {
 	CRY_PROFILE_FUNCTION(PROFILE_AI)
-	CRY_ASSERT(gAIEnv.pCoverSystem);
-	if (!ShouldUpdateSubsystem(IAISystem::ESubsystemUpdateFlag::CoverSystem, isAutomaticUpdate))
-		return;
+	if (gAIEnv.CVars.legacyCoverSystem.CoverSystem)
+	{
+		if (!ShouldUpdateSubsystem(IAISystem::ESubsystemUpdateFlag::CoverSystem, isAutomaticUpdate))
+			return;
 
-	gAIEnv.pCoverSystem->Update(frameStartTime, frameDeltaTime);
+		gAIEnv.pCoverSystem->Update(frameStartTime, frameDeltaTime);
+	}
 }
 
 void CAISystem::TrySubsystemUpdateNavigationSystem(const CTimeValue frameStartTime, const float frameDeltaTime, const bool isAutomaticUpdate)

@@ -339,10 +339,9 @@ bool CAISystem::Init()
 		{
 			gAIEnv.pNavigation = m_pNavigation = new CNavigation(gEnv->pSystem);
 		}
-		if (!gAIEnv.pCoverSystem)
-		{
-			gAIEnv.pCoverSystem = new CCoverSystem("Scripts/AI/Cover.xml");
-		}
+
+		TrySubsystemInitCoverSystem();
+
 		if (!gAIEnv.pMNMPathfinder)
 		{
 			gAIEnv.pPathfinderNavigationSystemUser = new MNM::PathfinderNavigationSystemUser;
@@ -610,6 +609,19 @@ void CAISystem::TrySubsystemInitTacticalPointSystem()
 	}
 }
 
+void CAISystem::TrySubsystemInitCoverSystem()
+{
+	if (gAIEnv.CVars.legacyCoverSystem.CoverSystem)
+	{
+		if (gAIEnv.pCoverSystem == nullptr)
+		{
+			gAIEnv.pCoverSystem = new CCoverSystem("Scripts/AI/Cover.xml");
+			return;
+		}
+		CRY_ASSERT_MESSAGE(gAIEnv.pCoverSystem, "AI Cover System is already initialized.");
+	}
+}
+
 void CAISystem::TrySubsystemInitORCA()
 {
 	if (gAIEnv.CVars.collisionAvoidance.EnableORCA)
@@ -684,7 +696,8 @@ void CAISystem::Reload()
 	if (gAIEnv.pTargetTrackManager)
 		gAIEnv.pTargetTrackManager->ReloadConfig();
 
-	gAIEnv.pCoverSystem->ReloadConfig();
+	if (gAIEnv.pCoverSystem)
+		gAIEnv.pCoverSystem->ReloadConfig();
 
 	gAIEnv.pBehaviorTreeManager->Reset();
 }
@@ -1586,10 +1599,8 @@ void CAISystem::Reset(IAISystem::EResetReason reason)
 		{
 			gAIEnv.pNavigation = m_pNavigation = new CNavigation(gEnv->pSystem);
 		}
-		if (!gAIEnv.pCoverSystem)
-		{
-			gAIEnv.pCoverSystem = new CCoverSystem("Scripts/AI/Cover.xml");
-		}
+
+		TrySubsystemInitCoverSystem();
 
 		CRY_ASSERT(gAIEnv.pNavigationSystem);
 		gAIEnv.pNavigationSystem->Clear();
@@ -2302,11 +2313,15 @@ void CAISystem::LoadCover(const char* szLevel, const char* szMission)
 {
 	MEMSTAT_CONTEXT(EMemStatContextType::Navigation, "Cover system");
 	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
-	gAIEnv.pCoverSystem->Clear();
 
-	char coverFileName[1024] = { 0 };
-	cry_sprintf(coverFileName, "%s/cover%s.bai", szLevel, szMission);
-	gAIEnv.pCoverSystem->ReadSurfacesFromFile(coverFileName);
+	if (gAIEnv.pCoverSystem)
+	{
+		gAIEnv.pCoverSystem->Clear();
+
+		char coverFileName[1024] = { 0 };
+		cry_sprintf(coverFileName, "%s/cover%s.bai", szLevel, szMission);
+		gAIEnv.pCoverSystem->ReadSurfacesFromFile(coverFileName);
+	}
 }
 
 void CAISystem::LoadLevelData(const char* szLevel, const char* szMission, const EAILoadDataFlags loadDataFlags /*= eAILoadDataFlag_AllSystems*/)

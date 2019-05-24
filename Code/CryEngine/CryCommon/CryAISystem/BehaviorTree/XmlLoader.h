@@ -13,8 +13,13 @@ public:
 	{
 		stack_string file;
 		file.Format("%s%s.xml", path, name);
-		XmlNodeRef behaviorTreeNode = GetISystem()->LoadXmlFromFile(file);
-		return behaviorTreeNode;
+		const bool fileExists = gEnv->pCryPak->IsFileExist(file, ICryPak::eFileLocation_OnDisk);
+		if (fileExists)
+		{
+			return GetISystem()->LoadXmlFromFile(file);
+		}
+
+		return XmlNodeRef();
 	}
 
 	// isLoadingFromEditor = true -> Tree will be loaded even if the result of the operation is LoadFailure. This is used in the Behavior Tree Editor, since it's convinient to still load the tree with errors so we can fix them without having to manually edit the XML.

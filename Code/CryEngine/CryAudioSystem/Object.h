@@ -28,6 +28,7 @@ enum class EObjectFlags : EnumFlagsType
 	CanRunOcclusion       = BIT(3),
 	TrackAbsoluteVelocity = BIT(4),
 	TrackRelativeVelocity = BIT(5),
+	IgnoreDrawDebugInfo   = BIT(6),
 #endif // CRY_AUDIO_USE_DEBUG_CODE
 };
 CRY_CREATE_ENUM_FLAG_OPERATORS(EObjectFlags);
