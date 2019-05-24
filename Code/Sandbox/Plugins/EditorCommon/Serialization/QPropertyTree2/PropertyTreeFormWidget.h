@@ -103,14 +103,26 @@ private:
 
 	void  RecursiveInstallEventFilter(QWidget* pWidget);
 
+	//!An SFormRow is owned by the CFormWidget in the m_rows vector and represent all the children rows of that widget
+	/*!
+	For example:
+		root CFormWidget:
+		 -> SFormRow with model Material Settings
+		    -> Material Settings CFormWidget
+				  -> SFormRow with model Shader Type
+					     -> Shader Type CFormWidget with child widget created (and actually owned by) the Shader Type model
+		 -> SFormRow shader parameters
+				-> Material Settings CFormWidget
+				   -> ...
+		Note that IPropertyTree derived widgets are only attached to their CFormWidget for painting, construction and release to factory is handled by the model
+	*/
+	//!This is used to hold a CFormWidget and its related model
 	struct SFormRow
 	{
 		SFormRow(const CRowModel* pRowModel);
-		SFormRow(SFormRow&& other);
 		SFormRow(const SFormRow& other) = delete;
 		~SFormRow();
 
-		SFormRow& operator=(SFormRow&& other);
 		SFormRow& operator=(const SFormRow& other) = delete;
 
 		_smart_ptr<const CRowModel> m_pModel;
@@ -128,8 +140,11 @@ private:
 
 	int       GetSplitterPosition() const;
 	SFormRow* ModelToFormRow(const CRowModel* pRow);
-	SFormRow* RowAtPos(const QPoint& position);
-	int       InsertionIndexAtPos(const QPoint& position, int tolerancePx = 5);
+	//Finds the row at position (if it exist)
+	SFormRow* RowAtPosition(const QPoint& position);
+	//Finds the row at position (if it exist) and returns the index into the m_rows array
+	size_t    RowIndexAtPosition(const QPoint& position);
+	int       InsertIndexAtPosition(const QPoint& position, int tolerancePx = 5);
 	int       RowIndex(const SFormRow* pRow);
 
 	void      UpdateActiveRow(const QPoint& cursorPos);
@@ -139,16 +154,18 @@ private:
 
 	void      ToggleExpand(SFormRow& row, bool skipLayout = false);
 
-	_smart_ptr<const CRowModel> m_pRowModel;
-	QPropertyTree2*             m_pParentTree;
-	const int                   m_nesting;
+	_smart_ptr<const CRowModel>            m_pRowModel;
+	QPropertyTree2*                        m_pParentTree;
+	const int                              m_nesting;
 
-	std::vector<SFormRow>       m_rows;
-	SFormRow*                   m_pActiveRow;
-	QPoint                      m_lastCursorPos; //Last position tested for hovering. Used to avoid unnecessary computing.
-	QPoint                      m_mouseDownPos;
-	bool                        m_allowReorderChildren;
-	int                         m_dragInsertIndex; //-2 = not dragging at all, -1 = dragging but invalid index, >0 = valid index
+	std::vector<std::unique_ptr<SFormRow>> m_rows;
+	SFormRow*                              m_pActiveRow;
+	//Last position tested for hovering. Used to avoid unnecessary computing.
+	QPoint m_lastCursorPos;                      
+	QPoint m_mouseDownPos;
+	bool   m_allowReorderChildren;
+	//-2 = not dragging at all, -1 = dragging but invalid index, >0 = valid index
+	int    m_dragInsertIndex;                      
 
 	//Style props
 	int    m_spacing;
@@ -169,6 +186,6 @@ public:
 	void ReleaseWidgets(QPropertyTree2* pPropertyTree);
 
 private:
-	QHBoxLayout * m_pHBoxLayout;
+	QHBoxLayout* m_pHBoxLayout;
 };
 }
