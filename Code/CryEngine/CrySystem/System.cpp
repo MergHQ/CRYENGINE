@@ -345,7 +345,6 @@ CSystem::CSystem(const SSystemInitParams& startupParams)
 	m_expectingMapCommand = false;
 #endif
 
-	m_nStrangeRatio = 1000;
 	// no mem stats at the moment
 	m_pMemStats = nullptr;
 	m_pSizer = nullptr;
@@ -2247,40 +2246,19 @@ bool CSystem::Update(CEnumFlags<ESystemUpdateFlags> updateFlags, int nPauseMode)
 		if (m_env.p3DEngine)
 			m_env.p3DEngine->Tick();  // clear per frame temp data
 
-		if (m_pProcess && (m_pProcess->GetFlags() & PROC_3DENGINE))
+		if (m_pProcess)
 		{
-			if ((nPauseMode != 1))
-				if (!IsEquivalent(m_ViewCamera.GetPosition(), Vec3(0, 0, 0), VEC_EPSILON))
+			if (m_pProcess->GetFlags() & PROC_3DENGINE)
+			{
+				if ((nPauseMode != 1) && !IsEquivalent(m_ViewCamera.GetPosition(), Vec3(0, 0, 0), VEC_EPSILON))
 				{
-					if (m_env.p3DEngine)
-					{
-						//					m_env.p3DEngine->SetCamera(m_ViewCamera);
-						m_pProcess->Update();
-#ifndef EXCLUDE_UPDATE_ON_CONSOLE
-						//////////////////////////////////////////////////////////////////////////
-						// Strange, !do not remove... ask Timur for the meaning of this.
-						//////////////////////////////////////////////////////////////////////////
-						if (m_nStrangeRatio > 32767)
-						{
-							gEnv->pScriptSystem->SetGCFrequency(-1); // lets get nasty.
-						}
-						//////////////////////////////////////////////////////////////////////////
-						// Strange, !do not remove... ask Timur for the meaning of this.
-						//////////////////////////////////////////////////////////////////////////
-						if (m_nStrangeRatio > 1000)
-						{
-							if (m_pProcess && (m_pProcess->GetFlags() & PROC_3DENGINE))
-								m_nStrangeRatio += cry_random(1, 11);
-						}
-#endif      //EXCLUDE_UPDATE_ON_CONSOLE
-						//////////////////////////////////////////////////////////////////////////
-					}
+					m_pProcess->Update();
 				}
-		}
-		else
-		{
-			if (m_pProcess)
+			}
+			else
+			{
 				m_pProcess->Update();
+			}
 		}
 	}
 
@@ -2815,12 +2793,6 @@ void CSystem::UnloadSchematycModule()
 	UnloadEngineModule("CrySchematyc2");
 
 	gEnv->pSchematyc2 = nullptr;
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CSystem::Strange()
-{
-	m_nStrangeRatio += cry_random(1, 101);
 }
 
 //////////////////////////////////////////////////////////////////////////
