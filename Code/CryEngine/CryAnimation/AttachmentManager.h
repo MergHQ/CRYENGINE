@@ -201,7 +201,6 @@ private:
 	private:
 		std::vector<CCharInstance*> m_characters;                 //!< List of character instances attached directly to this attachment manager.
 		std::vector<IAttachment*> m_attachments;                  //!< List of attachments containing character instances stored in the characters vector above. These two vectors match by index.
-		std::unordered_map<IAttachment*, int> m_attachmentsToIdx; //!< Keep track of idx per attachment
 		uint32 m_frameId = 0xffffffff;                            //!< Frame identifier of the last update, used to determine if a cache rebuild is needed.
 	};
 	sAttachedCharactersCache m_attachedCharactersCache;
