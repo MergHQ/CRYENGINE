@@ -808,6 +808,7 @@ typedef D3DBaseView     CDeviceResourceView;
 //////////////////////////////////////////////////////////////////////////
 #define MAX_FRAME_LATENCY    3                          // At most 16 - 1 (DXGI limitation)
 #define MAX_FRAMES_IN_FLIGHT (MAX_FRAME_LATENCY + 1)    // Current frame and frames buffered by driver/GPU
+#define MAX_TIMESTAMP_GROUPS 16                         // Must be at least MAX_FRAMES_IN_FLIGHT+N (see PipelineProfiler)
 
 #if CRY_PLATFORM_DURANGO
 	#include <xg.h>

@@ -3895,9 +3895,7 @@ bool CCryPak::ComputeMD5(const char* szPath, unsigned char* md5, uint32 nFileOpe
 			}
 		}
 
-		// rbx open flags, x is a hint to not cache whole file in memory.
-		FILE* fp = gEnv->pCryPak->FOpen(szPath, "rbx", nFileOpenFlags);
-
+		FILE* fp = gEnv->pCryPak->FOpen(szPath, "rb", nFileOpenFlags);
 		if (!fp)
 		{
 			delete[]pMem;
