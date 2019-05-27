@@ -27,6 +27,12 @@ public:
 		, m_pFilteredFolders(nullptr)
 	{
 	}
+	virtual ~CFoldersViewProxyModel() override
+	{
+		// unsubscribe
+		SetFilteredFolders(nullptr);
+	}
+
 	bool rowMatchesFilter(int sourceRow, const QModelIndex& sourceParent) const
 	{
 		if (m_bHideEngineFolder)
