@@ -1203,7 +1203,6 @@ int32 CAttachmentManager::RemoveAttachmentByNameCRC(uint32 nameCRC, uint32 loadi
 
 void CAttachmentManager::sAttachedCharactersCache::Push(CCharInstance* character, IAttachment* attachment)
 {
-	m_attachmentsToIdx[attachment] = m_attachments.size();
 	m_attachments.push_back(attachment);
 	m_characters.push_back(character);
 }
@@ -1212,17 +1211,19 @@ void CAttachmentManager::sAttachedCharactersCache::Clear()
 {
 	m_characters.clear();
 	m_attachments.clear();
-	m_attachmentsToIdx.clear();
 }
 
 void CAttachmentManager::sAttachedCharactersCache::Erase(IAttachment* attachment)
 {
-	if (m_attachmentsToIdx.find(attachment)!=m_attachmentsToIdx.end())
+	const int s = m_attachments.size();
+	for (int idx = 0; idx < s; ++idx)
 	{
-		int idx = m_attachmentsToIdx[attachment];
-		m_attachmentsToIdx.erase(attachment);
-		m_attachments.erase(m_attachments.begin() + idx);
-		m_characters.erase(m_characters.begin() + idx);
+		if (m_attachments[idx] == attachment)
+		{
+			m_attachments.erase(m_attachments.begin() + idx);
+			m_characters.erase(m_characters.begin() + idx);
+			break;
+		}
 	}
 }
 
