@@ -286,7 +286,7 @@ CDevice::CDevice(ID3D12Device* d3d12Device, D3D_FEATURE_LEVEL featureLevel, UINT
 
 	// Timer query heap
 	{
-		D3D12_QUERY_HEAP_DESC desc = { D3D12_QUERY_HEAP_TYPE_TIMESTAMP, 4096, m_nodeMask };
+		D3D12_QUERY_HEAP_DESC desc = { D3D12_QUERY_HEAP_TYPE_TIMESTAMP, MAX_TIMESTAMP_GROUPS * 1024 /*CDeviceTimestampGroup_Base::kMaxTimestamps*/, m_nodeMask };
 		m_TimestampHeap.Init(this, desc);
 	}
 
