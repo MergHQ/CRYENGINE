@@ -264,7 +264,6 @@ TEST_F(CJobSystemTest, LambdaJobVerbose)
 TEST_F(CJobSystemTest, PostJob)
 {
 	JobManager::SJobState jobState;
-	JobManager::SJobState jobState2;
 	std::atomic<int> x{ 0 };
 
 	DECLARE_LAMBDA_JOB("ExampleJob2", TExampleJob2);
@@ -273,19 +272,18 @@ TEST_F(CJobSystemTest, PostJob)
 		REQUIRE(static_cast<int>(x) == 0);
 		x++;
 	};
-	job1.Run(JobManager::eRegularPriority, &jobState);
-	
 	DECLARE_LAMBDA_JOB("PostJob", TPostJob);
 	TPostJob postJob = [&]
 	{
 		REQUIRE(static_cast<int>(x) == 1);
 		x++;
-	};
-	postJob.RegisterJobState(&jobState2);
+	}; 
+	postJob.RegisterJobState(&jobState);
 	jobState.RegisterPostJob(std::move(postJob));
 
+	job1.Run(JobManager::eRegularPriority, &jobState);
+
 	jobState.Wait();
-	jobState2.Wait();
 	REQUIRE(static_cast<int>(x) == 2);
 }
 
@@ -299,6 +297,7 @@ TEST_F(CJobSystemTest, JobState)
 	REQUIRE(!jobState.IsRunning());
 }
 
+#if !defined(_RELEASE) //Job system filtering is a debugging feature and not part of the release build
 TEST_F(CJobSystemTest, Filter)
 {
 	JobManager::SJobState jobState;
@@ -325,6 +324,7 @@ TEST_F(CJobSystemTest, Filter)
 	REQUIRE(jobThreadId1 == threadId);
 	REQUIRE(jobThreadId2 != threadId);
 }
+#endif
 
 TEST_F(CJobSystemTest, DisableJobSystem)
 {
