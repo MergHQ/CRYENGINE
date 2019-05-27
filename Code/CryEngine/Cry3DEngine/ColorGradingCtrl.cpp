@@ -238,9 +238,8 @@ void CColorGradingCtrl::Serialize(TSerialize& ar)
 
 	if (ar.IsWriting())
 	{
-		if (!m_charts.empty())
+		if (ar.BeginOptionalGroup("ColorChart", !m_charts.empty()))
 		{
-			ar.BeginGroup("ColorChart");
 			ar.Value("FilePath", m_charts.back().texturePath);
 			ar.EndGroup();
 		}
@@ -249,14 +248,16 @@ void CColorGradingCtrl::Serialize(TSerialize& ar)
 	{
 		Reset();
 
-		ar.BeginGroup("ColorChart");
-		string texturePath;
-		ar.Value("FilePath", texturePath);
-		if (!texturePath.empty())
+		if (ar.BeginOptionalGroup("ColorChart", true))
 		{
-			m_textureLoader.LoadTexture(texturePath, 0);
+			string texturePath;
+			ar.Value("FilePath", texturePath);
+			if (!texturePath.empty())
+			{
+				m_textureLoader.LoadTexture(texturePath, 0);
+			}
+			ar.EndGroup();
 		}
-		ar.EndGroup();
 	}
 
 	ar.EndGroup();
