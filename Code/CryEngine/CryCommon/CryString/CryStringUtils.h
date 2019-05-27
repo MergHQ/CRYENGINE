@@ -296,13 +296,20 @@ static inline bool MatchesWildcards_Tpl(const CharType* pStr, const CharType* pW
 //! \endcond
 
 //////////////////////////////////////////////////////////////////////////
-// cry_strcpy(), cry_strcpy_wchar()
 
+//! Copies all characters from 0-terminated src to dst of given size.
+//! When content from src is longer than dst can hold, the content is clamped.
+//! The copied content in dst is guaranteed to end with a terminating-0, even in case of clamping.
+//! Note the function can be potentially unsafe because of memory reordering.
 inline bool cry_strcpy(_Out_writes_z_(dst_size_in_bytes) char* const dst, size_t const dst_size_in_bytes, const char* const src)
 {
 	return CryStringUtils_Internal::strcpy_with_clamp<char>(dst, dst_size_in_bytes, src, (size_t)-1);
 }
 
+//! Copies all characters from src of given size to dst of given size.
+//! When content from src is longer than dst can hold, the content is clamped.
+//! The copied content in dst is guaranteed to end with a terminating-0, even in case of clamping.
+//! Note the function can be potentially unsafe because of memory reordering.
 inline bool cry_strcpy(_Out_writes_z_(dst_size_in_bytes) char* const dst, size_t const dst_size_in_bytes, const char* const src, size_t const src_size_in_bytes)
 {
 	return CryStringUtils_Internal::strcpy_with_clamp<char>(dst, dst_size_in_bytes, src, src_size_in_bytes);
@@ -351,6 +358,10 @@ inline bool cry_strcpy_wchar(_Out_writes_z_(SIZE_IN_CHARS*2) wchar_t (&dst)[SIZE
 //////////////////////////////////////////////////////////////////////////
 // cry_strcat(), cry_strcat_wchar()
 
+//! Appends all characters from 0-terminated src to dst of given size.
+//! When the result is longer than dst can hold, the content is clamped.
+//! The copied content in dst is guaranteed to end with a terminating-0, even in case of clamping.
+//! Note the function can be potentially unsafe because of memory reordering.
 inline bool cry_strcat( _Inout_updates_z_(dst_size_in_bytes) char* const dst, size_t const dst_size_in_bytes, const char* const src)
 {
 	return CryStringUtils_Internal::strcat_with_clamp<char>(dst, dst_size_in_bytes, src, (size_t)-1);
@@ -362,6 +373,10 @@ inline bool cry_strcat( _Inout_updates_z_(SIZE_IN_CHARS) char (&dst)[SIZE_IN_CHA
 	return CryStringUtils_Internal::strcat_with_clamp<char>(dst, SIZE_IN_CHARS, src, (size_t)-1);
 }
 
+//! Appends all characters from src of given size to dst of given size.
+//! When the result is longer than dst can hold, the content is clamped.
+//! The copied content in dst is guaranteed to end with a terminating-0, even in case of clamping.
+//! Note the function can be potentially unsafe because of memory reordering.
 inline bool cry_strcat( _Inout_updates_z_(dst_size_in_bytes) char* const dst, size_t const dst_size_in_bytes, const char* const src, size_t const src_size_in_bytes)
 {
 	return CryStringUtils_Internal::strcat_with_clamp<char>(dst, dst_size_in_bytes, src, src_size_in_bytes);
