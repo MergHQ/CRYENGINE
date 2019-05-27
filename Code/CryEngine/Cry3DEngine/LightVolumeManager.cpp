@@ -5,10 +5,8 @@
 #include "ClipVolumeManager.h"
 
 CLightVolumesMgr::CLightVolumesMgr()
-	: m_pLightVolsInfo(16, 1 << 20 /*1 MB virtual capacity*/)
-	, m_lightVolsInfoCount(0)
+	: m_lightVolsInfoCount(0)
 {
-	static_assert((5 * LV_MAX_COUNT * sizeof(SLightVolInfo)) < (1 << 20 /*1 MB*/), "Consider using a larger safety margin for the capacity of m_pLightVolsInfo.");
 	Init();
 }
 
@@ -65,12 +63,11 @@ uint16 CLightVolumesMgr::RegisterVolume(const Vec3& vPos, f32 fRadius, uint8 nCl
 		}
 
 		//we only increment m_lightVolsInfoCount here and clamp it to the max value later
-		if (CryInterlockedIncrement(&m_lightVolsInfoCount) < LV_MAX_COUNT)
+		const int newSize = CryInterlockedIncrement(&m_lightVolsInfoCount);
+		if (newSize <= LV_MAX_COUNT)
 		{
-			// create new volume
-			uint32 nIndex = ~0;
-			m_pLightVolsInfo.push_back_new(nIndex, vPos, fRadius, nClipVolumeRef);
-			*pCurrentVolumeID = static_cast<uint16>(nIndex + 1);
+			m_pLightVolsInfo[newSize - 1] = SLightVolInfo(vPos, fRadius, nClipVolumeRef);
+			*pCurrentVolumeID = static_cast<uint16>(newSize);
 
 			return *pCurrentVolumeID;
 		}
@@ -161,7 +158,7 @@ void CLightVolumesMgr::Update(const SRenderingPassInfo& passInfo)
 
 	const uint32 nLightCount = passInfo.GetIRenderView()->GetLightsCount(eDLT_DeferredLight);
 
-	uint32 nLightVols = min(m_lightVolsInfoCount, LV_MAX_COUNT);
+	const uint32 nLightVols = min(m_lightVolsInfoCount, LV_MAX_COUNT);
 	LightVolumeVector& lightVols = m_pLightVolumes[passInfo.ThreadID()];
 	lightVols.resize(nLightVols);
 
@@ -175,10 +172,9 @@ void CLightVolumesMgr::Update(const SRenderingPassInfo& passInfo)
 
 	uint8 nLightProcessed[LV_MAX_LIGHTS] = { 0 };
 
-	auto lightVolsInfoIterator = m_pLightVolsInfo.begin();
-	for (uint32 v = 0; v < nLightVols; ++v, ++lightVolsInfoIterator)
+	for (uint32 v = 0; v < nLightVols; ++v)
 	{
-		const Vec4* __restrict vBVol = &(*lightVolsInfoIterator).vVolume;
+		const Vec4* __restrict vBVol = &m_pLightVolsInfo[v].vVolume;
 		int32 nMiny = (int32)(floorf((vBVol->y - vBVol->w) * LV_LIGHT_CELL_R_SIZE));
 		int32 nMaxy = (int32)(floorf((vBVol->y + vBVol->w) * LV_LIGHT_CELL_R_SIZE));
 		int32 nMinx = (int32)(floorf((vBVol->x - vBVol->w) * LV_LIGHT_CELL_R_SIZE));
@@ -209,7 +205,7 @@ void CLightVolumesMgr::Update(const SRenderingPassInfo& passInfo)
 					IF (nLightProcessed[nLightId] != v + 1, 1)
 					{
 						nLightProcessed[nLightId] = v + 1;
-						AddLight(pDL, &(*lightVolsInfoIterator), lightVols[v]);
+						AddLight(pDL, &m_pLightVolsInfo[v], lightVols[v]);
 					}
 				}
 			}
@@ -224,7 +220,6 @@ void CLightVolumesMgr::Clear(const SRenderingPassInfo& passInfo)
 	{
 		memset(m_nWorldCells, 0, sizeof(m_nWorldCells));
 		memset(m_pWorldLightCells, 0, sizeof(m_pWorldLightCells));
-		m_pLightVolsInfo.clear();
 		m_lightVolsInfoCount = 0;
 		m_bUpdateLightVolumes = (GetCVars()->e_LightVolumes == 1) ? true : false;
 	}
@@ -265,11 +260,10 @@ void CLightVolumesMgr::DrawDebug(const SRenderingPassInfo& passInfo)
 	float fYLine = 8.0f, fYStep = 20.0f;
 	IRenderAuxText::Draw2dLabel(8.0f, fYLine += fYStep, 2.0f, (float*)&cWhite.r, false, "Light Volumes Info (count %d)", nLightVols);
 
-	auto lightVolsInfoIterator = m_pLightVolsInfo.begin();
-	for (uint32 v = 0; v < nLightVols; ++v, ++lightVolsInfoIterator)  // draw each light volume
+	for (uint32 v = 0; v < nLightVols; ++v)  // draw each light volume
 	{
 		SLightVolume& lv = lightVols[v];
-		SLightVolInfo& lvInfo = *lightVolsInfoIterator;
+		SLightVolInfo& lvInfo = m_pLightVolsInfo[v];
 
 		ColorF& cCol = (lv.pData.size() >= 10) ? cBad : ((lv.pData.size() >= 5) ? cWarning : cGood);
 		const Vec3 vPos = Vec3(lvInfo.vVolume.x, lvInfo.vVolume.y, lvInfo.vVolume.z);
