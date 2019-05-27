@@ -1418,7 +1418,11 @@ inline void JobManager::SJobState::RunPostJob()
 {
 	// Start post job if set.
 	if (m_pImpl->m_pFollowUpJob)
-		m_pImpl->m_pFollowUpJob->Run();
+	{
+		//job is cleared after the scope to prevent infinite chaining
+		std::unique_ptr<CJobBase> job = std::move(m_pImpl->m_pFollowUpJob);
+		job->Run();
+	}
 }
 
 /////////////////////////////////////////////////////////////////////////////////
