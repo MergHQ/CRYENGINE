@@ -745,6 +745,12 @@ public:
 	{
 	}
 
+	virtual ~SortFilterProxyModel() override
+	{
+		// unsubscribe
+		SetFilteredFolders(nullptr);
+	}
+
 	void SetFilteredFolders(CFilteredFolders* pFilteredFolders) 
 	{ 
 		if (m_pFilteredFolders)
@@ -975,11 +981,13 @@ void CAssetBrowser::WaitUntilAssetsAreReady()
 		tempWidget->deleteLater();
 		tempWidget2->deleteLater();
 		CAssetManager::GetInstance()->signalScanningCompleted.DisconnectById((uintptr_t)this);
+		UpdateNonEmptyFolderList();
 	}, (uintptr_t)this);
 }
 
 CAssetBrowser::~CAssetBrowser()
 {
+	m_pFoldersView->SetFilteredFolders(nullptr);
 	CAssetManager::GetInstance()->signalScanningCompleted.DisconnectById((uintptr_t)this);
 }
 
