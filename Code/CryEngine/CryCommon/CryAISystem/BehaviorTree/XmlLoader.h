@@ -13,7 +13,7 @@ public:
 	{
 		stack_string file;
 		file.Format("%s%s.xml", path, name);
-		const bool fileExists = gEnv->pCryPak->IsFileExist(file, ICryPak::eFileLocation_OnDisk);
+		const bool fileExists = gEnv->pCryPak->IsFileExist(file, ICryPak::eFileLocation_Any);
 		if (fileExists)
 		{
 			return GetISystem()->LoadXmlFromFile(file);

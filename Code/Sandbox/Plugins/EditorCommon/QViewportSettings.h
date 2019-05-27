@@ -176,7 +176,7 @@ struct SViewportLightingSettings
 	{
 		m_cubemapMultiplier = 3.0f;
 		m_cubemapColor = ColorB(255, 255, 255, 255);
-		m_cubemapName = "textures/cubemaps/pbs_reference/overcast_probe_cm.dds";
+		m_cubemapName = "%ENGINE%/EngineAssets/Textures/default_probe_cm.dds";
 
 		m_useLightRotation = 0;
 		m_lightMultiplier = 3.0f;
