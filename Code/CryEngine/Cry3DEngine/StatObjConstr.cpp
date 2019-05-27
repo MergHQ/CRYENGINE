@@ -1424,6 +1424,10 @@ bool CStatObj::RayIntersection(SRayHitInfo& hitInfo, IMaterial* pCustomMtl)
 				hit.inRay.origin = invertedTM.TransformPoint(hit.inRay.origin);
 				hit.inRay.direction = invertedTM.TransformVector(hit.inRay.direction);
 
+#if defined(FEATURE_SVO_GI)
+				int nFirstTriangleId = hit.pHitTris ? hit.pHitTris->Count() : 0;
+#endif
+
 				if (((CStatObj*)m_subObjects[i].pStatObj)->RayIntersection(hit, pCustomMtl))
 				{
 					if (hit.fDistance < fMinDistance)
@@ -1434,8 +1438,6 @@ bool CStatObj::RayIntersection(SRayHitInfo& hitInfo, IMaterial* pCustomMtl)
 				}
 
 #if defined(FEATURE_SVO_GI)
-				int nFirstTriangleId = hit.pHitTris ? hit.pHitTris->Count() : 0;
-
 				// transform collected triangles from sub-object space into object space
 				if (hit.pHitTris)
 				{
@@ -1662,7 +1664,7 @@ void CStatObj::GetStatisticsNonRecursive(SStatistics& si)
 
 	for (int j = 0; j < pStatObj->m_arrPhysGeomInfo.GetGeomCount(); j++)
 	{
-		if (pStatObj->GetPhysGeom(j))
+		if (pStatObj->GetPhysGeom(j) && pStatObj->GetPhysGeom(j)->pGeom)
 		{
 			ICrySizer* pPhysSizer = GetISystem()->CreateSizer();
 			pStatObj->GetPhysGeom(j)->pGeom->GetMemoryStatistics(pPhysSizer);

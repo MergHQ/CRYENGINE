@@ -560,7 +560,6 @@ private:
 	void UnloadSchematycModule();
 	//@}
 
-	void Strange();
 	bool ParseSystemConfig(string& sFileName);
 
 	//////////////////////////////////////////////////////////////////////////
@@ -673,7 +672,6 @@ private: // ------------------------------------------------------
 	bool               m_bInDevMode;            //!< Set to true if was in dev mode.
 	bool               m_bGameFolderWritable;   //!< True when verified that current game folder have write access.
 	SDefaultValidator* m_pDefaultValidator;     //!<
-	int                m_nStrangeRatio;         //!<
 	string             m_sDelayedScreeenshot;   //!< to delay a screenshot call for a frame
 	CCpuFeatures*      m_pCpu;                  //!< CPU features
 	int                m_ttMemStatSS;           //!< Time to memstat screenshot
