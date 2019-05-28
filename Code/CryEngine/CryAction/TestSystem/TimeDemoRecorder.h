@@ -218,6 +218,7 @@ private:
 	CTimeValue         GetTime();
 	// Set Value of console variable.
 	void               SetConsoleVar(const char* sVarName, float value);
+	void               SetConsoleVar(const char* sVarName, int value);
 	// Get value of console variable.
 	float              GetConsoleVar(const char* sVarName);
 

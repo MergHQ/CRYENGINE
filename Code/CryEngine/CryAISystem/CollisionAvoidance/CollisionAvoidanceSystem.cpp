@@ -21,27 +21,54 @@ CCollisionAvoidanceSystem::CCollisionAvoidanceSystem()
 {
 }
 
-void CCollisionAvoidanceSystem::RegisterAgent(IAgent* pAgent)
+bool CCollisionAvoidanceSystem::RegisterAgent(IAgent* pAgent)
 {
-	CRY_ASSERT(pAgent != nullptr);
-	CRY_ASSERT(m_isUpdating == false);
-
 	if (!pAgent)
-		return;
+	{
+		CRY_ASSERT_MESSAGE(pAgent, "Parameter 'pAgent' must be non-null.");
+		return false;
+	}
+
+	if (m_isUpdating)
+	{
+		CRY_ASSERT_MESSAGE(!m_isUpdating, "Collision Avoidance System should not be updating while an agent is being registered.");
+		return false;
+	}
+
+	// The magic number '3' was already a constraint. See ComputeFeasibleArea function.
+	if (m_registeredAgentsPtrs.size() + 3 >= FeasibleAreaMaxVertexCount)
+	{
+		// With this early return we avoid registering more agents that the maximum allowed to prevent memory corruptions in 'ComputeFeasibleArea' function.
+		CRY_ASSERT_MESSAGE(m_registeredAgentsPtrs.size() + 3 < FeasibleAreaMaxVertexCount, "Maximum number of agents is 61 (value of enum 'FeasibleAreaMaxVertexCount' minus 3).");
+		return false;
+	}
 
 	auto actorIt = std::find(m_registeredAgentsPtrs.begin(), m_registeredAgentsPtrs.end(), pAgent);
 	if (actorIt == m_registeredAgentsPtrs.end())
 	{
 		m_registeredAgentsPtrs.push_back(pAgent);
 	}
+	return true;
 }
 
-void CCollisionAvoidanceSystem::UnregisterAgent(IAgent* pAgent)
+bool CCollisionAvoidanceSystem::UnregisterAgent(IAgent* pAgent)
 {
-	CRY_ASSERT(pAgent != nullptr);
-	CRY_ASSERT(m_isUpdating == false);
-
-	m_registeredAgentsPtrs.erase(std::remove(m_registeredAgentsPtrs.begin(), m_registeredAgentsPtrs.end(), pAgent), m_registeredAgentsPtrs.end());
+	if (pAgent)
+	{
+		if (!m_isUpdating)
+		{
+			const std::vector<IAgent*>::const_iterator it = std::remove(m_registeredAgentsPtrs.begin(), m_registeredAgentsPtrs.end(), pAgent);
+			if (it != m_registeredAgentsPtrs.end())
+			{
+				m_registeredAgentsPtrs.erase(it, m_registeredAgentsPtrs.end());
+				return true;
+			}
+			CRY_ASSERT_MESSAGE(it != m_registeredAgentsPtrs.end(), "Parameter 'pAgent' was not registered.");
+		}
+		CRY_ASSERT_MESSAGE(!m_isUpdating, "Collision Avoidance System should not be updating while an agent is being unregistered.");
+	}
+	CRY_ASSERT_MESSAGE(pAgent, "Parameter 'pAgent' must be non-null.");
+	return false;
 }
 
 CCollisionAvoidanceSystem::AgentID CCollisionAvoidanceSystem::CreateAgent(NavigationAgentTypeID navigationTypeID, const INavMeshQueryFilter* pQueryFilter)
@@ -172,7 +199,7 @@ size_t CCollisionAvoidanceSystem::ComputeFeasibleArea(const SConstraintLine* lin
 	Vec2* clipped = buf1;
 	Vec2* output = clipped;
 
-	assert(3 + lineCount <= FeasibleAreaMaxVertexCount);
+	CRY_ASSERT_MESSAGE(3 + lineCount <= FeasibleAreaMaxVertexCount, "More agents/obstacles than the maximum supported are being handled. This will cause memory buffers to go beyond their limit, possibly corrupting memory. This shouldn't happen since the system should not allow to register more agents than the maximum which is equivalent to 'FeasibleAreaMaxVertexCount' - 3. See RegisterAgent function.");
 
 	const float HalfSize = 1.0f + radius;
 

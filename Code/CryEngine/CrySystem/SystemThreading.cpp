@@ -259,7 +259,7 @@ bool CThreadManager::JoinThread(IThread* pThreadTask, EJoinMode eJoinMode)
 	}
 
 	// Wait for completion of the target thread exit condition
-	pThreadImpl->m_threadExitMutex.Lock();
+	AUTO_LOCK_T(decltype(pThreadImpl->m_threadExitMutex), pThreadImpl->m_threadExitMutex);
 	while (pThreadImpl->m_isRunning)
 	{
 #if !CRY_PLATFORM_ORBIS
@@ -270,14 +270,12 @@ bool CThreadManager::JoinThread(IThread* pThreadTask, EJoinMode eJoinMode)
 		// 2) If pThreadImpl->m_isRunning == false we would not be in this loop. Hence there is no double call of UnregisterThread()
 		if (!CryThreadUtil::CryIsThreadAlive(pThreadImpl->m_threadHandle))
 		{
-			pThreadImpl->m_threadExitMutex.Unlock();
 			pThreadImpl->m_pThreadMngr->UnregisterThread(pThreadImpl->m_pThreadTask);
 			break;
 		}
 #endif
 		pThreadImpl->m_threadExitCondition.Wait(pThreadImpl->m_threadExitMutex);
 	}
-	pThreadImpl->m_threadExitMutex.Unlock();
 
 	return true;
 }
