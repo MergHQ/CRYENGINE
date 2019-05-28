@@ -50,6 +50,8 @@ namespace Cry
 				virtual void OnGetSteamAuthTicketResponse(bool success, uint32 authTicket) = 0;
 				//! Called when a token request received a response
 				virtual void OnAuthTokenReceived(bool success, const char* szToken) = 0;
+				//! Called when the connection status to the platform service changed
+				virtual void OnNetworkStatusChanged(const EConnectionStatus& connectionStatus) = 0;
 			};
 
 			enum class EPermission

@@ -494,9 +494,9 @@ namespace Cry
 
 			const DynArray<IAccount*>& CService::GetMutedAccounts() const
 			{
-				// Steam does not support muting
-				static const DynArray<IAccount*> dummy;
-				return dummy;
+				CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_ERROR, "[Steam][Service] GetMutedAccounts() is not implemented yet");
+
+				return m_mutedAccounts;
 			}
 
 			bool CService::GetEnvironmentValue(const char* szVarName, string& valueOut) const

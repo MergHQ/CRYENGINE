@@ -128,6 +128,7 @@ namespace Cry
 				mutable DynArray<IAccount*> m_friends;
 #if CRY_GAMEPLATFORM_EXPERIMENTAL
 				mutable DynArray<IAccount*> m_blockedAccounts;
+				mutable DynArray<IAccount*> m_mutedAccounts;
 				std::unordered_map<string, string, stl::hash_strcmp<string>, stl::hash_strcmp<string>> m_environment;
 #endif // CRY_GAMEPLATFORM_EXPERIMENTAL
 

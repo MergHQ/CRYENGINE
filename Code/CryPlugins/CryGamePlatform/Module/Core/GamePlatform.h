@@ -75,6 +75,7 @@ namespace Cry
 			virtual void OnPersonaStateChanged(const IAccount& account, CEnumFlags<EPersonaChangeFlags> changeFlags) override {}
 			virtual void OnGetSteamAuthTicketResponse(bool success, uint32 authTicket) override {}
 			virtual void OnAuthTokenReceived(bool success, const char* szToken) override {}
+			virtual void OnNetworkStatusChanged(const EConnectionStatus& connectionStatus) override {}
 			// ~IService::IListener
 
 			// ISystemEventListener
