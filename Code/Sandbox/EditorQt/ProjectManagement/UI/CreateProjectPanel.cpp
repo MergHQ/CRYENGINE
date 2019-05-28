@@ -223,6 +223,11 @@ void CCreateProjectPanel::OnCreateProjectPressed()
 
 void CCreateProjectPanel::OnItemDoubleClicked(const QModelIndex& index)
 {
+	if (!m_pCreateProjectBtn->isEnabled())
+	{
+		return;
+	}
+
 	if (!index.isValid())
 	{
 		CRY_ASSERT(false);
