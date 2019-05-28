@@ -59,7 +59,8 @@ public:
 	virtual void       OnRenderNodeVisible( bool bBecomeVisible ) override;
 	virtual void       OnRenderNodeBecomeVisibleAsync(SRenderNodeTempData* pTempData, const SRenderingPassInfo& passInfo) override { OnRenderNodeVisible(true); }
 
-	virtual void       SetCameraSpacePos(Vec3* pCameraSpacePos) override;
+	virtual void                              SetCameraSpaceParams(stl::optional<SCameraSpaceParams> cameraSpaceParams) override;
+	virtual stl::optional<SCameraSpaceParams> GetCameraSpaceParams() const override;
 
 	virtual void       GetMemoryUsage(ICrySizer* pSizer) const override {}
 
@@ -101,7 +102,7 @@ private:
 	// Cached Local space bounding box
 	mutable AABB m_cachedBoundsLocal;
 
-	Vec3*    m_pCameraSpacePos = nullptr;
+	stl::optional<SCameraSpaceParams> m_cameraSpaceParams = stl::nullopt;
 
 	// When render node is created by the entity, pointer to the owner entity.
 	IEntity* m_pOwnerEntity = 0;

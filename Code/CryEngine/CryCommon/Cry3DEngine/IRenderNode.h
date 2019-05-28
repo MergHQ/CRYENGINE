@@ -4,6 +4,7 @@
 
 #include <atomic>
 #include <CryAudio/IAudioSystem.h>
+#include <CryCore/optional.h>
 #include <CryEntitySystem/IEntity.h>
 #include <CryThreading/Debug.h>
 
@@ -157,6 +158,13 @@ public:
 	}
 
 	void MarkForAutoDelete();
+};
+
+//! Supplemental parameters used for camera-space rendering (ERF_FOB_NEAREST).
+struct SCameraSpaceParams
+{
+	Vec3 cameraSpacePosition; //!< Position of the render node, expressed in reference frame of the camera.
+	Vec3 worldSpaceOffset;    //!< Additional translation offset, expressed in coordinate system of the world.
 };
 
 // RenderNode flags
@@ -550,9 +558,13 @@ public:
 	//! \return Lod distance ratio.
 	ILINE int GetShadowLodBias() const { return m_cShadowLodBias; }
 
-	//! Sets camera space position of the render node.
-	//! Only implemented by few nodes.
-	virtual void SetCameraSpacePos(Vec3* pCameraSpacePos) {}
+	//! Sets supplemental parameters used for camera-space rendering (ERF_FOB_NEAREST).
+	//! Parameter values shall reflect the current render node position, as supplied with SetMatrix().
+	//! Usage of this feature is optional. The benefit is increased rendering precision.
+	virtual void SetCameraSpaceParams(stl::optional<SCameraSpaceParams> cameraSpaceParams) {}
+
+	//! Retrieves camera space parameters that have been previously set by a call to SetCameraSpaceParams().
+	virtual stl::optional<SCameraSpaceParams> GetCameraSpaceParams() const { return stl::nullopt; }
 
 	//! Set material layers mask.
 	ILINE void               SetMaterialLayers(uint8 nMtlLayers) { m_nMaterialLayers = nMtlLayers; }

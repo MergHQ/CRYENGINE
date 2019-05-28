@@ -76,7 +76,9 @@ public:
 	virtual void       FillBBox(AABB& aabb) const final { aabb = GetBBox(); }
 	virtual void       OffsetPosition(const Vec3& delta) final;
 
-	virtual void SetCameraSpacePos( Vec3* pCameraSpacePos ) final;
+	virtual void SetCameraSpaceParams(stl::optional<SCameraSpaceParams> cameraSpaceParams) override;
+	virtual stl::optional<SCameraSpaceParams> GetCameraSpaceParams() const override;
+
 	virtual void SetSubObjectHideMask( hidemask subObjHideMask ) final;
 
 	virtual bool       CanExecuteRenderAsJob() const final;
@@ -127,7 +129,7 @@ public:
 	// Hide mask disable individual sub-objects rendering in the compound static objects
 	hidemask m_nSubObjHideMask;
 
-	Vec3*    m_pCameraSpacePos = nullptr;
+	stl::optional<SCameraSpaceParams> m_cameraSpaceParams = stl::nullopt;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

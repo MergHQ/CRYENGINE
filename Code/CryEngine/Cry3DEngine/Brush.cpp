@@ -60,12 +60,6 @@ CBrush::~CBrush()
 	if (m_pDeform)
 		delete m_pDeform;
 
-	if (m_pCameraSpacePos)
-	{
-		delete m_pCameraSpacePos;
-		m_pCameraSpacePos = nullptr;
-	}
-
 	GetInstCount(GetRenderNodeType())--;
 }
 
@@ -751,19 +745,14 @@ void CBrush::OffsetPosition(const Vec3& delta)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CBrush::SetCameraSpacePos(Vec3* pCameraSpacePos)
+void CBrush::SetCameraSpaceParams(stl::optional<SCameraSpaceParams> cameraSpaceParams)
 {
-	if (pCameraSpacePos)
-	{
-		if (!m_pCameraSpacePos)
-			m_pCameraSpacePos = new Vec3;
-		*m_pCameraSpacePos = *pCameraSpacePos;
-	}
-	else
-	{
-		delete m_pCameraSpacePos;
-		m_pCameraSpacePos = nullptr;
-	}
+	m_cameraSpaceParams = cameraSpaceParams;
+}
+
+stl::optional<SCameraSpaceParams> CBrush::GetCameraSpaceParams() const
+{
+	return m_cameraSpaceParams;
 }
 
 void CBrush::SetSubObjectHideMask(hidemask subObjHideMask)
@@ -1079,11 +1068,11 @@ void CBrush::OnRenderNodeBecomeVisibleAsync(SRenderNodeTempData* pTempData, cons
 void CBrush::CalcNearestTransform(Matrix34& transformMatrix, const SRenderingPassInfo& passInfo)
 {
 	// Camera space
-	if (m_pCameraSpacePos)
+	if (m_cameraSpaceParams)
 	{
 		// Use camera space relative position
 		const Matrix33 cameraRotation = Matrix33(passInfo.GetCamera().GetViewMatrix());
-		transformMatrix.SetTranslation(*m_pCameraSpacePos * cameraRotation);
+		transformMatrix.SetTranslation((m_cameraSpaceParams->cameraSpacePosition * cameraRotation) + m_cameraSpaceParams->worldSpaceOffset);
 	}
 	else
 	{
