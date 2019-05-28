@@ -193,6 +193,7 @@ inline void RopeParamsToXml(IRopeRenderNode::SRopeParams& rp, XmlNodeRef& node, 
 		node->getAttr("smoothIters", rp.boneSmoothIters);
 		node->getAttr("segObjLen", rp.segObjLen);
 		node->getAttr("segObjRot", rp.segObjRot);
+		node->getAttr("segObjRot0", rp.segObjRot0);
 		node->getAttr("segObjAxis", (int&)rp.segObjAxis);
 		rp.segmentObj = node->getAttr("segmentObj");
 	}
@@ -229,6 +230,7 @@ inline void RopeParamsToXml(IRopeRenderNode::SRopeParams& rp, XmlNodeRef& node, 
 		node->setAttr("smoothIters", rp.boneSmoothIters);
 		node->setAttr("segObjLen", rp.segObjLen);
 		node->setAttr("segObjRot", rp.segObjRot);
+		node->setAttr("segObjRot0", rp.segObjRot0);
 		node->setAttr("segObjAxis", rp.segObjAxis);
 		node->setAttr("segmentObj", rp.segmentObj);
 	}

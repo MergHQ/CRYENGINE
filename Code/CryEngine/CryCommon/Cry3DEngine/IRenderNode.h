@@ -1138,6 +1138,7 @@ struct IRopeRenderNode : public IRenderNode
 		ERopeSegAxis segObjAxis = eRopeSeg_Auto;
 		float        segObjLen  = 1.0f;
 		float        segObjRot  = 0.0f;
+		float        segObjRot0 = 0.0f;
 		int          boneSmoothIters = 2;
 
 		//////////////////////////////////////////////////////////////////////////
