@@ -496,9 +496,6 @@ CSystem::CSystem(const SSystemInitParams& startupParams)
 	if (startupParams.pPrintSync)
 		m_env.pConsole->AddOutputPrintSink(startupParams.pPrintSync);
 
-	if(m_pProfilingSystem)
-		m_pProfilingSystem->RegisterCVars();
-
 	m_pPluginManager = new CCryPluginManager(startupParams);
 
 	m_pUserAnalyticsSystem = new CUserAnalyticsSystem();
