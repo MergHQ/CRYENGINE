@@ -31,12 +31,22 @@ CActorCollisionAvoidance::CActorCollisionAvoidance(CAIActor* pActor)
 	: m_pActor(pActor)
 	, m_radiusIncrement(0.0f)
 {
-	gEnv->pAISystem->GetCollisionAvoidanceSystem()->RegisterAgent(this);
+	const bool agentRegisteredSuccessfully = gEnv->pAISystem->GetCollisionAvoidanceSystem()->RegisterAgent(this);
+	if (!agentRegisteredSuccessfully)
+	{
+		CRY_ASSERT_MESSAGE(agentRegisteredSuccessfully, "Actor '%s' could not be registered to the Collision Avoidance System.", pActor->GetName());
+		gEnv->pLog->LogWarning("Actor '%s' could not be registered to the Collision Avoidance System.", pActor->GetName());
+	}
 }
 
 CActorCollisionAvoidance::~CActorCollisionAvoidance()
 {
-    gEnv->pAISystem->GetCollisionAvoidanceSystem()->UnregisterAgent(this);
+    const bool agentUnregisteredSuccessfully = gEnv->pAISystem->GetCollisionAvoidanceSystem()->UnregisterAgent(this);
+	if (!agentUnregisteredSuccessfully)
+	{
+		CRY_ASSERT_MESSAGE(agentUnregisteredSuccessfully, "Actor '%s' could not be unregistered from the Collision Avoidance System.", m_pActor->GetName());
+		gEnv->pLog->LogWarning("Actor '%s' could not be unregistered from the Collision Avoidance System.", m_pActor->GetName());
+	}
 }
 
 void CActorCollisionAvoidance::Reset()
