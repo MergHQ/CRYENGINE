@@ -26,6 +26,7 @@ CEntitySlot::CEntitySlot(CEntity* pEntity)
 	m_worldTM.SetIdentity();
 	m_nSubObjHideMask = 0;
 	m_cameraSpacePos.Set(0, 0, 0);
+	m_bCameraSpacePos = false;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -235,11 +236,11 @@ void CEntitySlot::UpdateRenderNode(bool bForceRecreateNode)
 
 		if (m_bCameraSpacePos)
 		{
-			m_pRenderNode->SetCameraSpacePos(&m_cameraSpacePos);
+			m_pRenderNode->SetCameraSpaceParams(SCameraSpaceParams{ m_cameraSpacePos, Vec3{ZERO} });
 		}
 		else
 		{
-			m_pRenderNode->SetCameraSpacePos(nullptr);
+			m_pRenderNode->SetCameraSpaceParams(stl::nullopt);
 		}
 
 		UpdateViewDistRatio(renderNodeParams);

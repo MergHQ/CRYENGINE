@@ -2457,6 +2457,25 @@ void CAttachmentManager::ProcessAttachment(IAttachment* pSocket)
 				gEnv->p3DEngine->UnRegisterEntityAsJob(pRenderNode);
 			}
 		}
+
+		// Propagates SCameraSpaceParams through the attachment hierarchy to increase camera-space (ERF_FOB_NEAREST) rendering precision.
+		if (m_pSkelInstance->GetParentRenderNode())
+		{
+			const stl::optional<SCameraSpaceParams>& cameraSpaceParams = m_pSkelInstance->GetParentRenderNode()->GetCameraSpaceParams();
+			if (cameraSpaceParams)
+			{
+				assert(pRenderNode->GetRndFlags() & ERF_FOB_NEAREST);
+
+				const Vec3& modelSpaceOffset = (pSocket->GetAttModelRelative() * pSocket->GetAdditionalTransformation()).t;
+				const Vec3& worldSpaceOffset = m_pSkelInstance->m_location.s * (m_pSkelInstance->m_location.q * modelSpaceOffset);
+
+				pRenderNode->SetCameraSpaceParams(SCameraSpaceParams{ cameraSpaceParams->cameraSpacePosition, cameraSpaceParams->worldSpaceOffset + worldSpaceOffset });
+			}
+			else
+			{
+				pRenderNode->SetCameraSpaceParams(stl::nullopt);
+			}
+		}
 	}
 }
 
