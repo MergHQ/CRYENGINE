@@ -2872,6 +2872,9 @@ bool CSystem::Initialize(SSystemInitParams& startupParams)
 		if (m_pUserCallback)
 			m_pUserCallback->OnInit(this);
 
+		if (m_pProfilingSystem)
+			m_pProfilingSystem->RegisterCVars();
+
 #ifdef ENABLE_LOADING_PROFILER
 		CBootProfiler::GetInstance().RegisterCVars();
 #endif
