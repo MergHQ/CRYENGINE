@@ -45,8 +45,6 @@ CAudioControlsEditorPlugin::CAudioControlsEditorPlugin()
 	g_implManager.LoadImpl();
 	g_listenerManager.Initialize();
 
-	ReloadData(EReloadFlags::ReloadSystemControls | EReloadFlags::SendSignals);
-
 	GetISystem()->GetISystemEventDispatcher()->RegisterListener(this, "CAudioControlsEditorPlugin");
 
 	CryAudio::ESystemEvents const events = CryAudio::ESystemEvents::ContextActivated | CryAudio::ESystemEvents::ContextDeactivated;

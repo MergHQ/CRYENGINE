@@ -17,6 +17,15 @@ typedef void (WINAPI * PGNSI)();
 using TPfnGetAudioInterface = Impl::IImpl* (*)(ISystem*);
 
 //////////////////////////////////////////////////////////////////////////
+void ReloadSystemControls()
+{
+	if (g_pMainWindow == nullptr)
+	{
+		CAudioControlsEditorPlugin::ReloadData(EReloadFlags::ReloadSystemControls);
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
 CImplManager::~CImplManager()
 {
 	if (m_hMiddlewarePlugin != nullptr)
@@ -58,6 +67,7 @@ bool CImplManager::LoadImpl()
 
 		if (m_hMiddlewarePlugin == nullptr)
 		{
+			ReloadSystemControls();
 			CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_WARNING, "[Audio Controls Editor] Couldn't load the middleware specific editor dll.");
 			isLoaded = false;
 		}
@@ -67,6 +77,7 @@ bool CImplManager::LoadImpl()
 
 			if (pfnAudioInterface == nullptr)
 			{
+				ReloadSystemControls();
 				CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_WARNING, "[Audio Controls Editor] Couldn't get middleware interface from loaded dll.");
 				FreeLibrary(m_hMiddlewarePlugin);
 				isLoaded = false;
@@ -80,13 +91,23 @@ bool CImplManager::LoadImpl()
 					g_extensionFilters.clear();
 					g_supportedFileTypes.clear();
 					g_pIImpl->Initialize(g_implInfo, g_extensionFilters, g_supportedFileTypes);
-					CAudioControlsEditorPlugin::ReloadData(EReloadFlags::ReloadImplData);
+
+					if (g_pMainWindow != nullptr)
+					{
+						CAudioControlsEditorPlugin::ReloadData(EReloadFlags::ReloadImplData);
+					}
+					else
+					{
+						CAudioControlsEditorPlugin::ReloadData(EReloadFlags::ReloadSystemControls | EReloadFlags::SendSignals | EReloadFlags::ReloadImplData);
+					}
+
 				}
 			}
 		}
 	}
 	else
 	{
+		ReloadSystemControls();
 		CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_WARNING, "[Audio Controls Editor] CVar %s not defined. Needed to derive the Editor plugin name.", CryAudio::g_szImplCVarName);
 		isLoaded = false;
 	}
