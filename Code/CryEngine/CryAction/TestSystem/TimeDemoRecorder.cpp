@@ -1903,6 +1903,14 @@ void CTimeDemoRecorder::SetConsoleVar(const char* sVarName, float value)
 }
 
 //////////////////////////////////////////////////////////////////////////
+void CTimeDemoRecorder::SetConsoleVar(const char* sVarName, int value)
+{
+	ICVar* pVar = gEnv->pConsole->GetCVar(sVarName);
+	if (pVar)
+		pVar->Set(value);
+}
+
+//////////////////////////////////////////////////////////////////////////
 float CTimeDemoRecorder::GetConsoleVar(const char* sVarName)
 {
 	ICVar* pVar = gEnv->pConsole->GetCVar(sVarName);
@@ -2018,7 +2026,7 @@ void CTimeDemoRecorder::StartSession()
 			// Profile peaks by registering a listener.
 			pProfSystem->PauseRecording(false);
 			GetISystem()->GetLegacyProfilerInterface()->AddFrameListener(this);
-			SetConsoleVar("profile_peak_tolerance", 50);
+			SetConsoleVar("profile_peak_tolerance", 50.0f);
 		}
 	}
 
