@@ -1717,6 +1717,7 @@ void CRopeRenderNode::UpdateRenderMesh()
 				const float dx = bbox.GetSize()[iax] * trans.s * m_params.segObjLen, dxInv = 1 / dx;
 				if (iax)
 					trans.q = Quat::CreateRotationV0V1(Vec3(0, iax & 1, iax >> 1 & 1), Vec3(1, 0, 0));
+				trans.q = Quat::CreateRotationAA(m_params.segObjRot0, Vec3(1, 0, 0)) * trans.q;
 				Quat dq = Quat::CreateRotationAA(m_params.segObjRot, Vec3(1, 0, 0) * trans.q);
 				trans.t = Vec3(-bbox.min[iax] * trans.s, 0, 0);
 				uint8 nosmooth = m_params.nFlags & eRope_SegObjBends ? 0 : 255;
@@ -1728,6 +1729,9 @@ void CRopeRenderNode::UpdateRenderMesh()
 				texSeg.data = (Vec2*)pSegMesh->GetUVPtr(texSeg.iStride, FSL_READ);
 				strided_pointer<SPipTangents> tngSeg;
 				tngSeg.data = (SPipTangents*)pSegMesh->GetTangentPtr(tngSeg.iStride, FSL_READ);
+				strided_pointer<byte> clr, clrSeg;
+				if (clrSeg.data = (byte*)pSegMesh->GetColorPtr(clrSeg.iStride, FSL_READ))
+					clr.data = (byte*)m_pRenderMesh->GetColorPtr(clr.iStride, FSL_VIDEO_CREATE);
 				Vec3_tpl<vtx_idx>* idxSeg = (Vec3_tpl<vtx_idx>*)pSegMesh->GetIndexPtr(FSL_READ);
 				int nvtx = pSegMesh->GetVerticesCount(), ntris = pSegMesh->GetIndicesCount() / 3;
 				m_tmpIdx.resize(m_params.nNumSegments * ntris);
@@ -1736,6 +1740,8 @@ void CRopeRenderNode::UpdateRenderMesh()
 					for (int j = 0; j < nvtx; j++, i++)
 					{
 						vtx[i] = trans * vtxSeg[j];
+						if (clrSeg.data)
+							clr[i] = clrSeg[j];
 						Vec4 t4, b4;
 						tngSeg[j].GetTB(t4, b4);
 						Vec3 t3(t4), b3(b4), n = (t3 ^ b3).GetNormalizedFast();
