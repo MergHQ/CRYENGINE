@@ -391,8 +391,19 @@ void CBrush::PhysicalizeOnHeap(IGeneralMemoryHeap* pHeap, bool bInstant)
 	}
 
 	Matrix34 mtxScale;
-	mtxScale.SetScale(Vec3(fScaleX, fScaleY, fScaleZ));
+	Matrix33 mtxNoScale = Matrix33(m_Matrix) * Diag33(fScaleX, fScaleY, fScaleZ).invert();
 	params.pMtx3x4 = &mtxScale;
+	pe_params_pos par_pos;
+	par_pos.pos = m_Matrix.GetTranslation();
+	if (mtxNoScale.IsOrthonormalRH())
+	{	// if scale is cleanly separatable into pre-scale, apply scale to geometry and rotation+translation to the entity
+		mtxScale.SetScale(Vec3(fScaleX, fScaleY, fScaleZ));
+		par_pos.q = Quat(mtxNoScale);
+	}	
+	else
+	{	// otherwise apply merged rotation+scale to geometry and traslantion to the entity
+		mtxScale = Matrix33(m_Matrix);
+	}
 	m_pStatObj->Physicalize(m_pPhysEnt, &params);
 
 	{ // Update foreign data flags based on render flags
@@ -413,9 +424,6 @@ void CBrush::PhysicalizeOnHeap(IGeneralMemoryHeap* pHeap, bool bInstant)
 	par_flags.flagsOR = pef_never_affect_triggers | pef_log_state_changes;
 	m_pPhysEnt->SetParams(&par_flags);
 
-	pe_params_pos par_pos;
-	par_pos.pos = m_Matrix.GetTranslation();
-	par_pos.q = Quat(Matrix33(m_Matrix) * Diag33(fScaleX, fScaleY, fScaleZ).invert());
 	par_pos.bEntGridUseOBB = 1;
 	m_pPhysEnt->SetParams(&par_pos);
 
