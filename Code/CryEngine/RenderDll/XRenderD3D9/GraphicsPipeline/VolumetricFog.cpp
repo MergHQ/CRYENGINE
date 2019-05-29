@@ -1987,6 +1987,7 @@ void CVolumetricFogStage::ExecuteInjectInscatteringLight(const SScopedComputeCom
 
 		pass.SetInlineConstantBuffer(eConstantBufferShaderSlot_PerView, m_graphicsPipeline.GetMainViewConstantBuffer());
 		pass.SetSampler(3, EDefaultSamplerStates::TrilinearClamp);
+		pass.SetSampler(15, EDefaultSamplerStates::TrilinearClamp);
 
 		if (!m_seperateDensity)
 		{
