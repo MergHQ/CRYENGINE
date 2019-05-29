@@ -2435,6 +2435,9 @@ void CAttachmentManager::ProcessAttachment(IAttachment* pSocket)
 			const bool hiddenInShadowPass = (!(parentNodeFlags & ERF_CASTSHADOWMAPS)) || (attachmentFlags & FLAGS_ATTACH_HIDE_SHADOW_PASS);
 			pRenderNode->SetRndFlags(ERF_CASTSHADOWMAPS, !hiddenInShadowPass);
 
+			const bool movesEveryFrame = (parentNodeFlags & ERF_MOVES_EVERY_FRAME) != 0;
+			pRenderNode->SetRndFlags(ERF_MOVES_EVERY_FRAME, movesEveryFrame);
+
 			if (pRenderNode->GetRndFlags() & ERF_CASTSHADOWMAPS)
 			{
 				pRenderNode->SetRndFlags(ERF_HAS_CASTSHADOWMAPS, true);

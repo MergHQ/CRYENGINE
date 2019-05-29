@@ -854,7 +854,7 @@ void CBrush::Render(const CLodValue& lodValue, const SRenderingPassInfo& passInf
 	}
 
 	CRenderObject* pObj = nullptr;
-	if (m_pFoliage || m_pDeform || (m_dwRndFlags & ERF_HUD) || isNearestObject)
+	if (m_pFoliage || m_pDeform || (m_dwRndFlags & (ERF_HUD | ERF_MOVES_EVERY_FRAME)) || isNearestObject)
 	{
 		// Foliage and deform do not support permanent render objects
 		// HUD is managed in custom render-lists and also doesn't support it
@@ -904,7 +904,8 @@ void CBrush::Render(const CLodValue& lodValue, const SRenderingPassInfo& passInf
 	pObj->m_ObjFlags |= (m_dwRndFlags & ERF_FOB_ALLOW_TERRAIN_LAYER_BLEND  ) ? FOB_ALLOW_TERRAIN_LAYER_BLEND   : FOB_NONE;
 	pObj->m_ObjFlags |= (m_dwRndFlags & ERF_FOB_ALLOW_DECAL_BLEND          ) ? FOB_ALLOW_DECAL_BLEND           : FOB_NONE;
 
-	if (m_dwRndFlags & ERF_NO_DECALNODE_DECALS && !(gEnv->nMainFrameID - m_lastMoveFrameId < 3))
+	if ((m_dwRndFlags & (ERF_NO_DECALNODE_DECALS | ERF_MOVES_EVERY_FRAME)) ||
+		(gEnv->nMainFrameID - m_lastMoveFrameId < 3))
 	{
 		pObj->m_ObjFlags |= FOB_DYNAMIC_OBJECT;
 	}
@@ -1037,6 +1038,7 @@ void CBrush::Render(const CLodValue& lodValue, const SRenderingPassInfo& passInf
 		}
 
 		pObj->m_data.m_nHUDSilhouetteParams = m_nHUDSilhouettesParam;
+		pObj->m_data.m_uniqueObjectId = reinterpret_cast<uintptr_t>(this);
 
 		m_pStatObj->RenderInternal(pObj, m_nSubObjHideMask, lodValue, passInfo);
 	}
