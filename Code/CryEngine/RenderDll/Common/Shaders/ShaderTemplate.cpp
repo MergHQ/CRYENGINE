@@ -317,7 +317,7 @@ CTexture* CShaderMan::mfCheckTemplateTexName(const char* mapname, ETEX_Type eTT)
 	else if (!stricmp(mapname, "$DisplayTarget"))
 		TexPic = pipelineResources.m_pTexDisplayTargetSrc;
 	else if (!stricmp(mapname, "$ModelHUD"))
-		TexPic = CRendererResources::s_ptexModelHudBuffer;
+		TexPic = pipelineResources.m_pTexModelHudBuffer;
 	else if (!stricmp(mapname, "$DisplayTargetScaled_d2"))
 		TexPic = pipelineResources.m_pTexDisplayTargetScaled[0];
 	else if (!stricmp(mapname, "$DisplayTargetScaled_d4"))
@@ -327,7 +327,7 @@ CTexture* CShaderMan::mfCheckTemplateTexName(const char* mapname, ETEX_Type eTT)
 	else if (!stricmp(mapname, "$HDR_BackBuffer"))
 		TexPic = pipelineResources.m_pTexSceneTarget;
 	else if (!stricmp(mapname, "$HDR_FinalBloom"))
-		TexPic = CRendererResources::s_ptexHDRFinalBloom;
+		TexPic = pipelineResources.m_pTexHDRFinalBloom;
 	else if (!stricmp(mapname, "$HDR_TargetPrev"))
 		TexPic = pipelineResources.m_pTexHDRTargetPrev;
 	else if (!stricmp(mapname, "$HDR_AverageLuminance"))
@@ -345,9 +345,9 @@ CTexture* CShaderMan::mfCheckTemplateTexName(const char* mapname, ETEX_Type eTT)
 	else if (!stricmp(mapname, "$WaterVolumeDDN"))
 		TexPic = CRendererResources::s_ptexWaterVolumeDDN;
 	else if (!stricmp(mapname, "$WaterVolumeReflPrev"))
-		TexPic = CRendererResources::s_ptexWaterVolumeRefl[1];
+		TexPic = pipelineResources.m_pTexWaterVolumeRefl[1];
 	else if (!stricmp(mapname, "$WaterVolumeRefl"))
-		TexPic = CRendererResources::s_ptexWaterVolumeRefl[0];
+		TexPic = pipelineResources.m_pTexWaterVolumeRefl[0];
 	else if (!stricmp(mapname, "$SceneNormalsMap"))
 		TexPic = pipelineResources.m_pTexSceneNormalsMap;
 	else if (!stricmp(mapname, "$SceneDiffuse"))

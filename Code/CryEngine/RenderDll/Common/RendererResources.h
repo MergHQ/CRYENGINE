@@ -143,9 +143,6 @@ private:
 
 class CRendererResources
 {
-	static bool RainOcclusionMapsInitialized() { return s_ptexRainSSOcclusion[0] != nullptr; }
-	static bool RainOcclusionMapsEnabled();
-
 public:
 	void InitResources() {}
 
@@ -164,28 +161,21 @@ public:
 	static bool m_bLoadedSystem;
 
 	// Global renderer resources
-	static void CreateSceneMaps(int resourceWidth, int resourceHeight);
 	static void CreateHDRMaps(int resourceWidth, int resourceHeight);
 	static bool CreatePostFXMaps(int resourceWidth, int resourceHeight);
 	static void CreateSystemTargets(int resourceWidth, int resourceHeight);
-	static void PrepareRainOcclusionMaps();
-	static void CreateRainOcclusionMaps(int resourceWidth, int resourceHeight);
 
 	static void ResizeSystemTargets(int renderWidth, int renderHeight);
 
-	static void DestroySceneMaps();
 	static void DestroyHDRMaps();
 	static void DestroyPostFXMaps();
 	static void DestroySystemTargets();
-	static void DestroyRainOcclusionMaps();
 
 	static void LoadDefaultSystemTextures();
 	static void UnloadDefaultSystemTextures(bool bFinalRelease = false);
 
 	static void ShutDown();
-	static void Update(EShaderRenderingFlags renderingFlags);
 
-	static void OnCVarsChanged(const CCVarUpdateRecorder& rCVarRecs);
 	static void OnRenderResolutionChanged(int renderWidth, int renderHeight);
 	static void OnOutputResolutionChanged(int outputWidth, int outputHeight);
 	static void OnDisplayResolutionChanged(int displayWidth, int displayHeight);
@@ -274,30 +264,12 @@ public:
 	static CTexture* s_ptexCurLumTexture;                                        // CAutoExposureStage, CToneMappingStage, CPostAAStage
 	static CTexture* s_ptexHDRToneMaps[NUM_HDR_TONEMAP_TEXTURES];                // CAutoExposureStage, CBloomStage
 	static CTexture* s_ptexFarPlane;                                             // shadow map representing the far plane (all tests pass)
-	static CTexture* s_ptexRainOcclusion;                                        // CRainStage, CSnowStage, top-down rain occlusion
 	static CTexture* s_ptexWaterOcean;                                           // CWaterStage, CREWaterOcean, water ocean vertex texture
 	static CTexture* s_ptexWaterVolumeTemp[2];                                   // CWaterStage, water volume heightmap
 	static CTexture* s_ptexWaterVolumeDDN;                                       // CWaterStage, water volume heightmap
 	static CTexture* s_ptexFlaresOcclusionRing[MAX_OCCLUSION_READBACK_TEXTURES]; // CFlareSoftOcclusionQuery
 	static CTexture* s_ptexFlaresGather;                                         // CFlareSoftOcclusionQuery
 	static CTexture* s_ptexVolumetricFog;                                        // CVolumetricFogStage
-
-	// Render resolution [dependent] targets ===================================================================
-
-	static CTexture*          s_ptexVelocity;                                    // CMotionBlurStage
-	static CTexture*          s_ptexVelocityTiles[3];                            // CMotionBlurStage
-
-	static CTexture*          s_ptexHDRFinalBloom;                               // CRainStage, CToneMappingStage, CBloomStage
-
-	static CTexture*          s_ptexModelHudBuffer;                              // CV_r_UsePersistentRTForModelHUD, used by Menu3DModelRenderer to postprocess render models
-	static CTexture*          s_ptexSceneCoC[MIN_DOF_COC_K];                     // CDepthOfFieldStage
-	static CTexture*          s_ptexSceneCoCTemp;                                // CDepthOfFieldStage
-	static CTexture*          s_ptexWaterVolumeRefl[2];                          // CWaterStage, water volume reflections buffer
-	static CTexture*          s_ptexRainSSOcclusion[2];                          // CRainStage, screen-space rain occlusion accumulation
-
-	// Display resolution [dependent] targets ==================================================================
-	static CTexture* s_ptexCached3DHud;                                          // CHud3DPass, 3d hud cached overframes
-	static CTexture* s_ptexCached3DHudScaled;                                    // CHud3DPass, downsampled 3d hud cached overframes
 
 	// Pools ===================================================================================================
 	static SEnvTexture         s_EnvTexts[MAX_ENVTEXTURES];                      // FX_DrawToRenderTarget, SHRenderTarget::GetEnv2D

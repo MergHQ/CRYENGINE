@@ -66,9 +66,9 @@ public:
 	CTexture* m_pTexSceneDiffuse = nullptr;
 	CTexture* m_pTexSceneNormalsMap = nullptr;                                              // RT with normals for deferred shading
 	CTexture* m_pTexSceneSpecular = nullptr;
-#if defined(DURANGO_USE_ESRAM)														        
+#if defined(DURANGO_USE_ESRAM)
 	CTexture* m_pTexSceneSpecularESRAM = nullptr;                                           // Temporary scene specular in ESRAM, aliased with other ESRAM RTs
-#endif																				        
+#endif
 	CTexture* m_pTexVelocityObjects[CCamera::eEye_eCount] = { nullptr, nullptr };           // CSceneGBufferStage, Dynamic object velocity (for left and right eye)
 	CTexture* m_pTexLinearDepth = nullptr;
 	CTexture* m_pTexHDRTarget = nullptr;
@@ -88,9 +88,9 @@ public:
 	                                          {nullptr, nullptr, nullptr, nullptr}, 
 	                                          {nullptr, nullptr, nullptr, nullptr} };       // CAutoExposureStage, CBloomStage, CSunShaftsStage
 	CTexture* m_pTexHDRTargetMaskedScaled[4][4] = { {nullptr, nullptr, nullptr, nullptr},
-											        {nullptr, nullptr, nullptr, nullptr},
-											        {nullptr, nullptr, nullptr, nullptr},
-											        {nullptr, nullptr, nullptr, nullptr} }; // CScreenSpaceReflectionsStage, CDepthOfFieldStage, CSnowStage
+													{nullptr, nullptr, nullptr, nullptr},
+													{nullptr, nullptr, nullptr, nullptr},
+													{nullptr, nullptr, nullptr, nullptr} }; // CScreenSpaceReflectionsStage, CDepthOfFieldStage, CSnowStage
 
 	CTexture* m_pTexDisplayTargetDst = nullptr;                                             // display-colorspace target
 	CTexture* m_pTexDisplayTargetSrc = nullptr;                                             // display-colorspace target
@@ -101,16 +101,37 @@ public:
 	CTexture* m_pTexHDRTargetMasked = nullptr;                                              // CScreenSpaceReflectionsStage, CPostAAStage
 	CTexture* m_pTexSceneTarget = nullptr;                                                  // Shared rt for generic usage (refraction/srgb/diffuse accumulation/hdr motionblur/etc)
 
+	CTexture* m_pTexVelocity = nullptr;                                                     // CMotionBlurStage
+	CTexture* m_pTexVelocityTiles[3] = { nullptr, nullptr, nullptr };                       // CMotionBlurStage
 
+	CTexture* m_pTexHDRFinalBloom = nullptr;                                                // CRainStage, CToneMappingStage, CBloomStage
+
+	CTexture* m_pTexModelHudBuffer = nullptr;                                               // CV_r_UsePersistentRTForModelHUD, used by Menu3DModelRenderer to postprocess render models
+	CTexture* m_pTexSceneCoC[MIN_DOF_COC_K];                                                // CDepthOfFieldStage
+	CTexture* m_pTexSceneCoCTemp = nullptr;                                                 // CDepthOfFieldStage
+	CTexture* m_pTexWaterVolumeRefl[2] = { nullptr, nullptr };                              // CWaterStage, water volume reflections buffer
+	CTexture* m_pTexRainSSOcclusion[2] = { nullptr, nullptr };                              // CRainStage, screen-space rain occlusion accumulation
+
+	CTexture* m_pTexCached3DHud = nullptr;                                                  // CHud3DPass, 3d hud cached overframes
+	CTexture* m_pTexCached3DHudScaled = nullptr;                                            // CHud3DPass, downsampled 3d hud cached overframes
+	CTexture* m_pTexRainOcclusion = nullptr;                                                // CRainStage, CSnowStage, top-down rain occlusion
 	CTexture* m_pTexLinearDepthFixup = nullptr;
 	ResourceViewHandle m_pTexLinearDepthFixupUAV;
-
+	
 public:
+	bool RainOcclusionMapsInitialized() { return m_pTexRainSSOcclusion[0] != nullptr; }
+	bool RainOcclusionMapsEnabled();
+
 	CGraphicsPipelineResources(CGraphicsPipeline& graphicsPipeline) : m_graphicsPipeline(graphicsPipeline) 
 	{
 		for (int i = 0; i < MAX_GPU_NUM; ++i)
 		{
 			m_pTexHDRMeasuredLuminance[i] = nullptr;
+		}
+
+		for (int i = 0; i < MIN_DOF_COC_K; ++i)
+		{
+			m_pTexSceneCoC[i] = nullptr;
 		}
 
 		m_resourceWidth = 32;
@@ -122,6 +143,12 @@ public:
 	void Discard();
 	void Clear();
 	void Resize(int renderWidth, int renderHeight);
+	void OnCVarsChanged(const CCVarUpdateRecorder& rCVarRecs);
+	void Update(EShaderRenderingFlags renderingFlags);
+
+	void PrepareRainOcclusionMaps();
+	void CreateRainOcclusionMaps(int resourceWidth, int resourceHeight);
+	void DestroyRainOcclusionMaps();
 
 private:
 	void CreateResources(int resourceWidth, int resourceHeight);

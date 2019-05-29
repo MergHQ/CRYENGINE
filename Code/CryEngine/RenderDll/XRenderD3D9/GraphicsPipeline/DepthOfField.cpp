@@ -100,7 +100,7 @@ void CDepthOfFieldStage::Execute()
 				m_passLayerDownscale.SetTechnique(pShader, techNameDownscale, 0);
 				m_passLayerDownscale.SetRenderTarget(0, m_graphicsPipelineResources.m_pTexHDRTargetMaskedScaled[0][0]);  // Near
 				m_passLayerDownscale.SetRenderTarget(1, m_graphicsPipelineResources.m_pTexHDRTargetMaskedScaled[0][1]);  // Far
-				m_passLayerDownscale.SetRenderTarget(2, CRendererResources::s_ptexSceneCoC[0]);      // CoC Near/Far
+				m_passLayerDownscale.SetRenderTarget(2, m_graphicsPipelineResources.m_pTexSceneCoC[0]);      // CoC Near/Far
 				m_passLayerDownscale.SetState(GS_NODEPTHTEST);
 				m_passLayerDownscale.SetTextureSamplerPair(0, m_graphicsPipelineResources.m_pTexLinearDepth, EDefaultSamplerStates::PointClamp);
 				m_passLayerDownscale.SetTextureSamplerPair(1, m_graphicsPipelineResources.m_pTexHDRTarget, EDefaultSamplerStates::LinearClamp);
@@ -123,14 +123,14 @@ void CDepthOfFieldStage::Execute()
 					static CCryNameTSCRC techNameTileMinCoC("TileMinCoC");
 					m_passTileMinCoC[i].SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_VS);
 					m_passTileMinCoC[i].SetTechnique(pShader, techNameTileMinCoC, 0);
-					m_passTileMinCoC[i].SetRenderTarget(0, CRendererResources::s_ptexSceneCoC[i]);  // Near
+					m_passTileMinCoC[i].SetRenderTarget(0, m_graphicsPipelineResources.m_pTexSceneCoC[i]);  // Near
 					m_passTileMinCoC[i].SetState(GS_NODEPTHTEST);
-					m_passTileMinCoC[i].SetTextureSamplerPair(0, CRendererResources::s_ptexSceneCoC[i - 1], EDefaultSamplerStates::LinearClamp);
+					m_passTileMinCoC[i].SetTextureSamplerPair(0, m_graphicsPipelineResources.m_pTexSceneCoC[i - 1], EDefaultSamplerStates::LinearClamp);
 				}
 
 				m_passTileMinCoC[i].BeginConstantUpdate();
-				const Vec4 vParams = Vec4((float)CRendererResources::s_ptexSceneCoC[i - 1]->GetWidth(), (float)CRendererResources::s_ptexSceneCoC[i - 1]->GetHeight(),
-				                          1.0f / (float)CRendererResources::s_ptexSceneCoC[i - 1]->GetWidth(), 1.0f / (float)CRendererResources::s_ptexSceneCoC[i - 1]->GetHeight());
+				const Vec4 vParams = Vec4((float)m_graphicsPipelineResources.m_pTexSceneCoC[i - 1]->GetWidth(), (float)m_graphicsPipelineResources.m_pTexSceneCoC[i - 1]->GetHeight(),
+				                          1.0f / (float)m_graphicsPipelineResources.m_pTexSceneCoC[i - 1]->GetWidth(), 1.0f / (float)m_graphicsPipelineResources.m_pTexSceneCoC[i - 1]->GetHeight());
 				m_passTileMinCoC[i].SetConstant(dofFocusParam1Name, vParams, eHWSC_Vertex);
 				m_passTileMinCoC[i].Execute();
 			}
@@ -163,11 +163,11 @@ void CDepthOfFieldStage::Execute()
 				m_passGather0.SetTechnique(pShader, techDOF, 0);
 				m_passGather0.SetRenderTarget(0, m_graphicsPipelineResources.m_pTexHDRTargetMaskedScaled[0][2]);
 				m_passGather0.SetRenderTarget(1, m_graphicsPipelineResources.m_pTexHDRTargetMaskedScaled[0][3]);
-				m_passGather0.SetRenderTarget(2, CRendererResources::s_ptexSceneCoCTemp);
+				m_passGather0.SetRenderTarget(2, m_graphicsPipelineResources.m_pTexSceneCoCTemp);
 				m_passGather0.SetState(GS_NODEPTHTEST);
 
 				m_passGather0.SetTexture(0, m_graphicsPipelineResources.m_pTexLinearDepthScaled[0]);
-				m_passGather0.SetTexture(4, CRendererResources::s_ptexSceneCoC[MIN_DOF_COC_K - 1]);
+				m_passGather0.SetTexture(4, m_graphicsPipelineResources.m_pTexSceneCoC[MIN_DOF_COC_K - 1]);
 				m_passGather0.SetSampler(0, EDefaultSamplerStates::PointClamp);
 
 				m_passGather0.SetTexture(1, m_graphicsPipelineResources.m_pTexHDRTargetMaskedScaled[0][0]);
@@ -208,11 +208,11 @@ void CDepthOfFieldStage::Execute()
 				m_passGather1.SetTechnique(pShader, techDOF, g_HWSR_MaskBit[HWSR_SAMPLE0]);
 				m_passGather1.SetRenderTarget(0, m_graphicsPipelineResources.m_pTexHDRTargetMaskedScaled[0][0]);
 				m_passGather1.SetRenderTarget(1, m_graphicsPipelineResources.m_pTexHDRTargetMaskedScaled[0][1]);
-				m_passGather1.SetRenderTarget(2, CRendererResources::s_ptexSceneCoC[0]);
+				m_passGather1.SetRenderTarget(2, m_graphicsPipelineResources.m_pTexSceneCoC[0]);
 				m_passGather1.SetState(GS_NODEPTHTEST);
 
 				m_passGather1.SetTexture(0, m_graphicsPipelineResources.m_pTexLinearDepthScaled[0]);
-				m_passGather1.SetTexture(4, CRendererResources::s_ptexSceneCoC[MIN_DOF_COC_K - 1]);
+				m_passGather1.SetTexture(4, m_graphicsPipelineResources.m_pTexSceneCoC[MIN_DOF_COC_K - 1]);
 				m_passGather1.SetSampler(0, EDefaultSamplerStates::PointClamp);
 
 				m_passGather1.SetTexture(1, m_graphicsPipelineResources.m_pTexHDRTargetMaskedScaled[0][2]);

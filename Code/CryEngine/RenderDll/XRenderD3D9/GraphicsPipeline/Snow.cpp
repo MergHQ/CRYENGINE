@@ -166,7 +166,7 @@ void CSnowStage::ExecuteDeferredSnowGBuffer()
 	uint64 rtMask = 0;
 	rtMask |= (rainVolParams.bApplyOcclusion) ? g_HWSR_MaskBit[HWSR_SAMPLE0] : 0;
 
-	CTexture* pOcclusionTex = (rainVolParams.bApplyOcclusion) ? CRendererResources::s_ptexRainOcclusion : CRendererResources::s_ptexBlack;
+	CTexture* pOcclusionTex = (rainVolParams.bApplyOcclusion) ? m_graphicsPipelineResources.m_pTexRainOcclusion : CRendererResources::s_ptexBlack;
 	CTexture* zTarget = pRenderView->GetDepthTarget();
 
 	auto& pass = m_passDeferredSnowGBuffer;
@@ -511,7 +511,7 @@ void CSnowStage::Execute()
 			return;
 		}
 
-		if (!CTexture::IsTextureExist(CRendererResources::s_ptexRainOcclusion))
+		if (!CTexture::IsTextureExist(m_graphicsPipelineResources.m_pTexRainOcclusion))
 		{
 			return;
 		}
@@ -725,7 +725,7 @@ void CSnowStage::RenderSnowClusters()
 	SRenderViewShaderConstants& PF = RenderView()->GetShaderConstants();
 
 	CTexture* pSceneSrc = m_graphicsPipelineResources.m_pTexHDRTarget;
-	CTexture* pVelocitySrc = CRendererResources::s_ptexVelocity;
+	CTexture* pVelocitySrc = m_graphicsPipelineResources.m_pTexVelocity;
 	if (CRenderer::CV_r_snow_halfres)
 	{
 		pSceneSrc = m_graphicsPipelineResources.m_pTexHDRTargetMaskedScaled[0][0];
@@ -758,8 +758,8 @@ void CSnowStage::RenderSnowClusters()
 
 	auto pPerViewCB = m_graphicsPipeline.GetMainViewConstantBuffer();
 
-	CTexture* pOcclusionTex = (rainVolParams.bApplyOcclusion && CTexture::IsTextureExist(CRendererResources::s_ptexRainOcclusion)) ?
-	                          CRendererResources::s_ptexRainOcclusion : CRendererResources::s_ptexBlack;
+	CTexture* pOcclusionTex = (rainVolParams.bApplyOcclusion && CTexture::IsTextureExist(m_graphicsPipelineResources.m_pTexRainOcclusion)) ?
+		m_graphicsPipelineResources.m_pTexRainOcclusion : CRendererResources::s_ptexBlack;
 
 	uint64 rtMask = 0;
 	if (rainVolParams.bApplyOcclusion)
@@ -851,7 +851,7 @@ void CSnowStage::ExecuteHalfResComposite()
 		pass.SetState(GS_NODEPTHTEST | GS_BLSRC_SRCALPHA | GS_BLDST_ONEMINUSSRCALPHA);
 
 		pass.SetRenderTarget(0, m_graphicsPipelineResources.m_pTexHDRTarget);
-		pass.SetRenderTarget(1, CRendererResources::s_ptexVelocity);
+		pass.SetRenderTarget(1, m_graphicsPipelineResources.m_pTexVelocity);
 
 		pass.SetTexture(0, m_graphicsPipelineResources.m_pTexHDRTargetMaskedScaled[0][0]);
 		pass.SetTexture(1, m_graphicsPipelineResources.m_pTexDisplayTargetScaled[0]);

@@ -122,26 +122,15 @@ CTexture* CRendererResources::s_ptexWindGrid;
 
 
 // Post-process related textures
-CTexture* CRendererResources::s_ptexModelHudBuffer;
-CTexture* CRendererResources::s_ptexCached3DHud;
-CTexture* CRendererResources::s_ptexCached3DHudScaled;
 CTexture* CRendererResources::s_ptexDisplayTargetScaledPrev;
 
 CTexture* CRendererResources::s_ptexWaterOcean;
 CTexture* CRendererResources::s_ptexWaterVolumeTemp[2];
 CTexture* CRendererResources::s_ptexWaterVolumeDDN;
-CTexture* CRendererResources::s_ptexWaterVolumeRefl[2] = { NULL };
-CTexture* CRendererResources::s_ptexRainOcclusion;
-CTexture* CRendererResources::s_ptexRainSSOcclusion[2];
 
 CTexture* CRendererResources::s_ptexFarPlane;
 CTexture* CRendererResources::s_ptexCloudsLM;
 
-CTexture* CRendererResources::s_ptexVelocity;
-CTexture* CRendererResources::s_ptexVelocityTiles[3] = { NULL };
-CTexture* CRendererResources::s_ptexSceneCoC[MIN_DOF_COC_K] = { NULL };
-CTexture* CRendererResources::s_ptexSceneCoCTemp = NULL;
-CTexture* CRendererResources::s_ptexHDRFinalBloom;
 CTexture* CRendererResources::s_ptexHDRAdaptedLuminanceCur[8];
 int CRendererResources::s_nCurLumTextureIndex;
 CTexture* CRendererResources::s_ptexCurLumTexture;
@@ -352,9 +341,6 @@ void CRendererResources::LoadDefaultSystemTextures()
 
 		s_ptexRT_2D = CTexture::GetOrCreateTextureObject("$RT_2D", 0, 0, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_RENDERTARGET, eTF_Unknown, TO_RT_2D);
 
-		if (RainOcclusionMapsEnabled())
-			PrepareRainOcclusionMaps();
-
 		//s_ptexHitAreaRT[0] = CTexture::CreateTextureObject("$HitEffectAccumBuffRT_0", 128, 128, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_RENDERTARGET, eTF_Unknown);
 		//s_ptexHitAreaRT[1] = CTexture::CreateTextureObject("$HitEffectAccumBuffRT_1", 128, 128, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_RENDERTARGET, eTF_Unknown);
 
@@ -373,16 +359,8 @@ void CRendererResources::LoadDefaultSystemTextures()
 
 		s_ptexFarPlane = CTexture::GetOrCreateTextureObject("$FarPlane", 8, 8, 1, eTT_2D, FT_DONT_STREAM | FT_USAGE_DEPTHSTENCIL, eTF_Unknown);
 
-		if (!s_ptexModelHudBuffer)
-			s_ptexModelHudBuffer = CTexture::GetOrCreateTextureObject("$ModelHud", 0, 0, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_RENDERTARGET, eTF_Unknown, TO_MODELHUD);
-
 		//	if (!s_ptexBackBuffer)
 		{
-			s_ptexVelocity = CTexture::GetOrCreateTextureObject("$Velocity", 0, 0, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_RENDERTARGET, eTF_Unknown, -1);
-			s_ptexVelocityTiles[0] = CTexture::GetOrCreateTextureObject("$VelocityTilesTmp0", 0, 0, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_RENDERTARGET, eTF_Unknown, -1);
-			s_ptexVelocityTiles[1] = CTexture::GetOrCreateTextureObject("$VelocityTilesTmp1", 0, 0, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_RENDERTARGET, eTF_Unknown, -1);
-			s_ptexVelocityTiles[2] = CTexture::GetOrCreateTextureObject("$VelocityTiles", 0, 0, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_RENDERTARGET, eTF_Unknown, -1);
-
 			s_ptexDisplayTargetScaledPrev = CTexture::GetOrCreateTextureObject("$DisplayTarget 1 / 2p", 0, 0, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_RENDERTARGET, eTF_Unknown);
 
 			s_ptexFlaresGather = CTexture::GetOrCreateTextureObject("$FlaresGather", 0, 0, 1, eTT_2D, nRTFlags, eTF_R8 /* 1-bit used only */);
@@ -398,8 +376,6 @@ void CRendererResources::LoadDefaultSystemTextures()
 			s_ptexWaterVolumeTemp[0] = CTexture::GetOrCreateTextureObject("$WaterVolumeTemp_0", 64, 64, 1, eTT_2D, /*FT_DONT_RELEASE |*/ FT_NOMIPS | FT_DONT_STREAM, eTF_Unknown);
 			s_ptexWaterVolumeTemp[1] = CTexture::GetOrCreateTextureObject("$WaterVolumeTemp_1", 64, 64, 1, eTT_2D, /*FT_DONT_RELEASE |*/ FT_NOMIPS | FT_DONT_STREAM, eTF_Unknown);
 			s_ptexWaterVolumeDDN = CTexture::GetOrCreateTextureObject("$WaterVolumeDDN", 64, 64, 1, eTT_2D, /*FT_DONT_RELEASE |*/ FT_DONT_STREAM | FT_USAGE_RENDERTARGET | FT_FORCE_MIPS, eTF_Unknown, TO_WATERVOLUMEMAP);
-			s_ptexWaterVolumeRefl[0] = CTexture::GetOrCreateTextureObject("$WaterVolumeRefl", 64, 64, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_RENDERTARGET | FT_FORCE_MIPS, eTF_Unknown, TO_WATERVOLUMEREFLMAP);
-			s_ptexWaterVolumeRefl[1] = CTexture::GetOrCreateTextureObject("$WaterVolumeReflPrev", 64, 64, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_RENDERTARGET | FT_FORCE_MIPS, eTF_Unknown, TO_WATERVOLUMEREFLMAPPREV);
 		}
 
 		// Create dummy texture object for terrain and clouds lightmap
@@ -499,9 +475,6 @@ void CRendererResources::CreateSystemTargets(int resourceWidth, int resourceHeig
 
 	if (!gcpRendD3D->m_bSystemTargetsInit)
 	{
-		// Create scene targets
-		CreateSceneMaps(resourceWidth, resourceHeight);
-
 		// Create HDR targets
 		CreateHDRMaps(resourceWidth, resourceHeight);
 
@@ -534,9 +507,6 @@ void CRendererResources::ResizeSystemTargets(int renderWidth, int renderHeight)
 		resourceHeight = renderHeight;
 #endif
 
-		// Resize scene targets
-		CreateSceneMaps(resourceWidth, resourceHeight);
-
 		// Resize HDR targets
 		CreateHDRMaps(resourceWidth, resourceHeight);
 
@@ -552,7 +522,6 @@ void CRendererResources::DestroySystemTargets()
 {
 	if (gcpRendD3D->m_bSystemTargetsInit)
 	{
-		DestroySceneMaps();
 		DestroyHDRMaps();
 		DestroyPostFXMaps();
 
@@ -569,38 +538,6 @@ void CRendererResources::DestroySystemTargets()
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-
-void CRendererResources::CreateSceneMaps(int resourceWidth, int resourceHeight)
-{
-	const int32 nWidth  = resourceWidth;
-	const int32 nHeight = resourceHeight;
-	uint32 nFlags = FT_DONT_STREAM | FT_USAGE_RENDERTARGET | FT_USAGE_UNORDERED_ACCESS;
-	nFlags &= ~(FT_USAGE_MSAA | FT_USAGE_UNORDERED_ACCESS);
-
-	// This RT can be used by the Render3DModelMgr if the buffer needs to be persistent
-	if (CRenderer::CV_r_UsePersistentRTForModelHUD > 0)
-	{
-		if (!CTexture::IsTextureExist(s_ptexModelHudBuffer))
-			s_ptexModelHudBuffer = CTexture::GetOrCreateRenderTarget("$ModelHUD", nWidth, nHeight, Clr_Transparent, eTT_2D, nFlags, eTF_R8G8B8A8);
-		else
-		{
-			s_ptexModelHudBuffer->SetFlags(nFlags);
-			s_ptexModelHudBuffer->SetWidth(nWidth);
-			s_ptexModelHudBuffer->SetHeight(nHeight);
-			s_ptexModelHudBuffer->CreateRenderTarget(eTF_R8G8B8A8, Clr_Transparent);
-		}
-	}
-}
-
-void CRendererResources::DestroySceneMaps()
-{
-	if (CRenderer::CV_r_UsePersistentRTForModelHUD > 0)
-	{
-		SAFE_RELEASE(s_ptexModelHudBuffer);
-	}
-}
-
-//==================================================================================================
 
 void CRendererResources::CreateHDRMaps(int resourceWidth, int resourceHeight)
 {
@@ -621,8 +558,6 @@ void CRendererResources::CreateHDRMaps(int resourceWidth, int resourceHeight)
 	uint32 nHDRTargetFlagsUAV = nHDRTargetFlags | (FT_USAGE_UNORDERED_ACCESS);  // UAV required for tiled deferred shading
 	CRY_RESTORE_WARN_UNUSED_VARIABLES();
 
-	pHDRPostProcess->AddRenderTarget(width_r4, height_r4, Clr_Unknown, nHDRQFormat, 0.9f, "$HDRFinalBloom", &s_ptexHDRFinalBloom, FT_DONT_RELEASE);
-
 	for (int i = 0; i < 8; i++)
 	{
 		char szName[256];
@@ -630,20 +565,7 @@ void CRendererResources::CreateHDRMaps(int resourceWidth, int resourceHeight)
 		pHDRPostProcess->AddRenderTarget(1, 1, Clr_White, eTF_R16G16F, 0.1f, szName, &s_ptexHDRAdaptedLuminanceCur[i], FT_DONT_RELEASE);
 	}
 
-	pHDRPostProcess->AddRenderTarget(width, height, Clr_Unknown, eTF_R8G8B8A8, 0.1f, "$Velocity", &s_ptexVelocity, FT_DONT_RELEASE);
-	pHDRPostProcess->AddRenderTarget(   20, height, Clr_Unknown, eTF_R8G8B8A8, 0.1f, "$VelocityTilesTmp0", &s_ptexVelocityTiles[0], FT_DONT_RELEASE);
-	pHDRPostProcess->AddRenderTarget(   20,     20, Clr_Unknown, eTF_R8G8B8A8, 0.1f, "$VelocityTilesTmp1", &s_ptexVelocityTiles[1], FT_DONT_RELEASE);
-	pHDRPostProcess->AddRenderTarget(   20,     20, Clr_Unknown, eTF_R8G8B8A8, 0.1f, "$VelocityTiles", &s_ptexVelocityTiles[2], FT_DONT_RELEASE);
-
 #if RENDERER_ENABLE_FULL_PIPELINE
-	pHDRPostProcess->AddRenderTarget(width_r2, height_r2, Clr_Unknown, eTF_R16G16F, 1.0f, "$MinCoC_0_Temp", &s_ptexSceneCoCTemp, FT_DONT_RELEASE);
-	for (int i = 0; i < MIN_DOF_COC_K; i++)
-	{
-		char szName[256];
-		cry_sprintf(szName, "$MinCoC_%d", i);
-		pHDRPostProcess->AddRenderTarget(width_r2 / (i + 1), height_r2 / (i + 1), Clr_Unknown, eTF_R16G16F, 0.1f, szName, &s_ptexSceneCoC[i], FT_DONT_RELEASE, -1, true);
-	}
-
 	// TODO: make it a MIP-mapped resource and/or use compute
 	// Luminance rt
 	for (int i = 0; i < NUM_HDR_TONEMAP_TEXTURES; i++)
@@ -668,8 +590,6 @@ void CRendererResources::DestroyHDRMaps()
 {
 	int i;
 
-	SAFE_RELEASE_FORCE(s_ptexHDRFinalBloom);
-
 	for (i = 0; i < 8; i++)
 	{
 		SAFE_RELEASE_FORCE(s_ptexHDRAdaptedLuminanceCur[i]);
@@ -682,17 +602,6 @@ void CRendererResources::DestroyHDRMaps()
 	SAFE_RELEASE_FORCE(s_ptexHDRMeasuredLuminanceDummy);
 
 	s_ptexCurLumTexture = NULL;
-
-	SAFE_RELEASE_FORCE(s_ptexVelocity);
-	SAFE_RELEASE_FORCE(s_ptexVelocityTiles[0]);
-	SAFE_RELEASE_FORCE(s_ptexVelocityTiles[1]);
-	SAFE_RELEASE_FORCE(s_ptexVelocityTiles[2]);
-
-	SAFE_RELEASE_FORCE(s_ptexSceneCoCTemp);
-	for (i = 0; i < MIN_DOF_COC_K; i++)
-	{
-		SAFE_RELEASE_FORCE(s_ptexSceneCoC[i]);
-	}
 }
 
 //==================================================================================================
@@ -700,9 +609,6 @@ void CRendererResources::DestroyHDRMaps()
 bool CRendererResources::CreatePostFXMaps(int resourceWidth, int resourceHeight)
 {
 #if RENDERER_ENABLE_FULL_PIPELINE
-
-	if (RainOcclusionMapsEnabled())
-		CreateRainOcclusionMaps(resourceWidth, resourceHeight);
 	
 	CRY_DISABLE_WARN_UNUSED_VARIABLES();
 	const int width = resourceWidth, width_r2 = (width + 1) / 2, width_r4 = (width_r2 + 1) / 2, width_r8 = (width_r4 + 1) / 2;
@@ -718,12 +624,6 @@ bool CRendererResources::CreatePostFXMaps(int resourceWidth, int resourceHeight)
 
 	// Ghosting requires data overframes, need to handle for each GPU in MGPU mode
 	SPostEffectsUtils::GetOrCreateRenderTarget("$DisplayTarget 1/2p", s_ptexDisplayTargetScaledPrev, width_r2, height_r2, Clr_Unknown, 1, 0, nLDRPFormat, -1, FT_DONT_RELEASE);
-
-	SPostEffectsUtils::GetOrCreateRenderTarget("$Cached3DHud", s_ptexCached3DHud, width, height, Clr_Unknown, 1, 0, eTF_R8G8B8A8, -1, FT_DONT_RELEASE);
-	SPostEffectsUtils::GetOrCreateRenderTarget("$Cached3DHudDownsampled", s_ptexCached3DHudScaled, width_r4, height_r4, Clr_Unknown, 1, 0, eTF_R8G8B8A8, -1, FT_DONT_RELEASE);
-
-	SPostEffectsUtils::GetOrCreateRenderTarget("$WaterVolumeRefl"    , s_ptexWaterVolumeRefl[0], width_r2, height_r2, Clr_Unknown, 1, true, nHDRQFormat, TO_WATERVOLUMEREFLMAP, FT_DONT_RELEASE);
-	SPostEffectsUtils::GetOrCreateRenderTarget("$WaterVolumeReflPrev", s_ptexWaterVolumeRefl[1], width_r2, height_r2, Clr_Unknown, 1, true, nHDRQFormat, TO_WATERVOLUMEREFLMAPPREV, FT_DONT_RELEASE);
 
 	//	s_ptexWaterVolumeRefl[0]->DisableMgpuSync();
 	//	s_ptexWaterVolumeRefl[1]->DisableMgpuSync();
@@ -754,74 +654,13 @@ bool CRendererResources::CreatePostFXMaps(int resourceWidth, int resourceHeight)
 
 void CRendererResources::DestroyPostFXMaps()
 {
-	DestroyRainOcclusionMaps();
-
 	SAFE_RELEASE_FORCE(s_ptexDisplayTargetScaledPrev);
-
 	SAFE_RELEASE(s_ptexWaterVolumeDDN);
-	SAFE_RELEASE_FORCE(s_ptexWaterVolumeRefl[0]);
-	SAFE_RELEASE_FORCE(s_ptexWaterVolumeRefl[1]);
-
-	SAFE_RELEASE_FORCE(s_ptexCached3DHud);
-	SAFE_RELEASE_FORCE(s_ptexCached3DHudScaled);
 
 	for (int i = 0; i < MAX_OCCLUSION_READBACK_TEXTURES; i++)
 		SAFE_RELEASE_FORCE(s_ptexFlaresOcclusionRing[i]);
 
 	SAFE_RELEASE_FORCE(s_ptexFlaresGather);
-}
-
-void CRendererResources::PrepareRainOcclusionMaps()
-{
-	if (!s_ptexRainOcclusion)
-	{
-		s_ptexRainOcclusion = CTexture::GetOrCreateTextureObject("$RainOcclusion", RAIN_OCC_MAP_SIZE, RAIN_OCC_MAP_SIZE, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_RENDERTARGET, eTF_R8G8B8A8);
-		s_ptexRainSSOcclusion[0] = CTexture::GetOrCreateTextureObject("$RainSSOcclusion0", 0, 0, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_RENDERTARGET, eTF_Unknown);
-		s_ptexRainSSOcclusion[1] = CTexture::GetOrCreateTextureObject("$RainSSOcclusion1", 0, 0, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_RENDERTARGET, eTF_Unknown);
-	}
-}
-
-void CRendererResources::CreateRainOcclusionMaps(int resourceWidth, int resourceHeight)
-{
-	PrepareRainOcclusionMaps();
-
-	if (!CTexture::IsTextureExist(s_ptexRainOcclusion))
-		SPostEffectsUtils::GetOrCreateRenderTarget("$RainOcclusion", s_ptexRainOcclusion, RAIN_OCC_MAP_SIZE, RAIN_OCC_MAP_SIZE, Clr_Neutral, false, false, eTF_R8, -1, FT_DONT_RELEASE);
-
-	const int width_r8 = (resourceWidth + 7) / 8;
-	const int height_r8 = (resourceHeight + 7) / 8;
-
-	if (!s_ptexRainSSOcclusion[0] ||
-		s_ptexRainSSOcclusion[0]->GetWidth() != width_r8 ||
-		s_ptexRainSSOcclusion[0]->GetHeight() != height_r8)
-	{
-		SPostEffectsUtils::GetOrCreateRenderTarget("$RainSSOcclusion0", s_ptexRainSSOcclusion[0], width_r8, height_r8, Clr_Unknown, 1, false, eTF_R8);
-		SPostEffectsUtils::GetOrCreateRenderTarget("$RainSSOcclusion1", s_ptexRainSSOcclusion[1], width_r8, height_r8, Clr_Unknown, 1, false, eTF_R8);
-	}
-}
-
-void CRendererResources::DestroyRainOcclusionMaps()
-{
-	SAFE_RELEASE_FORCE(s_ptexRainOcclusion);
-	SAFE_RELEASE(s_ptexRainSSOcclusion[0]);
-	SAFE_RELEASE(s_ptexRainSSOcclusion[1]);
-}
-
-void CRendererResources::OnCVarsChanged(const CCVarUpdateRecorder& rCVarRecs)
-{
-	const bool enabled = RainOcclusionMapsEnabled();
-	if (enabled != RainOcclusionMapsInitialized())
-	{
-		if (enabled)
-			CreateRainOcclusionMaps(s_resourceWidth, s_resourceHeight);
-		else
-			DestroyRainOcclusionMaps();
-	}
-}
-
-bool CRendererResources::RainOcclusionMapsEnabled()
-{
-	return CRendererCVars::IsRainEnabled() || CRendererCVars::IsSnowEnabled();
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -894,18 +733,6 @@ void CRendererResources::ShutDown()
 	s_ShaderTemplates.Free();
 
 	SAFE_DELETE(s_pTexNULL);
-}
-
-void CRendererResources::Update(EShaderRenderingFlags renderingFlags)
-{
-	CD3D9Renderer* const RESTRICT_POINTER rd = gcpRendD3D;
-	const auto shouldApplyOcclusion = rd->m_bDeferredRainOcclusionEnabled && CRendererCVars::IsRainEnabled();
-
-	// Create/release the occlusion texture on demand
-	if (!shouldApplyOcclusion && CTexture::IsTextureExist(s_ptexRainOcclusion))
-		s_ptexRainOcclusion->ReleaseDeviceTexture(false);
-	else if (shouldApplyOcclusion && !CTexture::IsTextureExist(s_ptexRainOcclusion))
-		s_ptexRainOcclusion->CreateRenderTarget(eTF_R8, Clr_Neutral);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
