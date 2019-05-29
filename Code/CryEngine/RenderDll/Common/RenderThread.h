@@ -349,7 +349,7 @@ struct CRY_ALIGN(128) SRenderThread
 	void RC_ResumeDevice();
 #endif
 
-	void RC_PrecacheResource(ITexture* pTP, float fMipFactor, float fTimeToReady, int Flags, int nUpdateId, int nCounter = 1);
+	void RC_PrecacheResource(ITexture* pTP, float fMipFactor, float fTimeToReady, int Flags, int nUpdateId);
 
 	void RC_FlashRender(std::shared_ptr<IFlashPlayer_RenderProxy> && pPlayer);
 	void RC_FlashRenderPlayer(std::shared_ptr<IFlashPlayer> && pPlayer);

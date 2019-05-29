@@ -531,8 +531,8 @@ int CTiledLightVolumesStage::InsertTexture(CTexture* pTexInput, float mipFactor,
 			if (item.texture->StreamGetLoadedMip() < item.texture->GetNumPersistentMips())
 			{
 				// 0 = near, 1 = far
-				item.texture->PrecacheAsynchronously(item.mipFactorRequested, FPR_STARTLOADING | FPR_HIGHPRIORITY, item.texture->GetStreamRoundInfo(0).nRoundUpdateId + 1, 0);
-				item.texture->PrecacheAsynchronously(item.mipFactorRequested, FPR_STARTLOADING | FPR_HIGHPRIORITY, item.texture->GetStreamRoundInfo(1).nRoundUpdateId + 1, 1);
+				item.texture->PrecacheAsynchronously(item.mipFactorRequested, FPR_STARTLOADING | FPR_HIGHPRIORITY, item.texture->GetStreamRoundInfo(0).nRoundUpdateId + 1);
+				item.texture->PrecacheAsynchronously(item.mipFactorRequested, FPR_STARTLOADING | FPR_HIGHPRIORITY, item.texture->GetStreamRoundInfo(1).nRoundUpdateId + 1);
 			}
 		}
 
@@ -687,8 +687,8 @@ void CTiledLightVolumesStage::UploadTextures(TextureAtlas& atlas)
 			if (issueCommand)
 			{
 				// 0 = near, 1 = far
-				pTexUpload->PrecacheAsynchronously(mipFactorRequested, FPR_STARTLOADING | FPR_HIGHPRIORITY, pTexUpload->GetStreamRoundInfo(0).nRoundUpdateId + 1, 0);
-				pTexUpload->PrecacheAsynchronously(mipFactorRequested, FPR_STARTLOADING | FPR_HIGHPRIORITY, pTexUpload->GetStreamRoundInfo(1).nRoundUpdateId + 1, 1);
+				pTexUpload->PrecacheAsynchronously(mipFactorRequested, FPR_STARTLOADING | FPR_HIGHPRIORITY, pTexUpload->GetStreamRoundInfo(0).nRoundUpdateId + 1);
+				pTexUpload->PrecacheAsynchronously(mipFactorRequested, FPR_STARTLOADING | FPR_HIGHPRIORITY, pTexUpload->GetStreamRoundInfo(1).nRoundUpdateId + 1);
 			}
 		}
 	}

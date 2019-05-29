@@ -124,32 +124,28 @@ bool CSkyStage::LoadStarsData()
 
 void CSkyStage::SetSkyParameters()
 {
-	const eSkyType skyType = gEnv->p3DEngine->GetSkyType();
-	I3DEngine* const p3DEngine = gEnv->p3DEngine;
+	auto threadID = gRenDev->GetRenderThreadID();
+	CD3D9Renderer* const RESTRICT_POINTER rd = gcpRendD3D;
 
 	// SkyBox
 	{
 		static CCryNameR skyBoxParamName("SkyDome_SkyBoxParams");
-		const float skyBoxAngle = DEG2RAD(p3DEngine->GetGlobalParameter(E3DPARAM_SKY_SKYBOX_ANGLE));
-		const float skyBoxScaling = skyType == eSkyType_HDRSky
-		                            ? 2.f
-		                            : 1.0f / std::max(0.0001f, p3DEngine->GetGlobalParameter(E3DPARAM_SKY_SKYBOX_STRETCHING));
-		const float skyBoxMultiplier = p3DEngine->GetGlobalParameter(E3DPARAM_SKYBOX_MULTIPLIER);
+		const float skyBoxAngle = DEG2RAD(rd->m_p3DEngineCommon[threadID].m_SkyInfo.m_fSkyBoxAngle);
+		const float skyBoxScaling = rd->m_p3DEngineCommon[threadID].m_SkyInfo.m_fSkyBoxStretching;
+		const float skyBoxMultiplier = rd->m_p3DEngineCommon[threadID].m_SkyInfo.m_fSkyBoxMultiplier; // Deprecated: E3DPARAM_SKYBOX_MULTIPLIER
 		const Vec4 skyBoxParams(skyBoxAngle, skyBoxScaling, skyBoxMultiplier, 0.f);
 		m_skyPass.SetConstant(skyBoxParamName, skyBoxParams, eHWSC_Pixel);
 
 		static CCryNameR skyBoxExposureName("SkyDome_SkyBoxExposure");
-		Vec3 skyBoxExposure;
-		p3DEngine->GetGlobalParameter(E3DPARAM_SKY_SKYBOX_EXPOSURE, skyBoxExposure);
-		m_skyPass.SetConstant(skyBoxExposureName, Vec4(skyBoxExposure, 1.f), eHWSC_Pixel);
+		const Vec3& skyBoxExposure = rd->m_p3DEngineCommon[threadID].m_SkyInfo.m_vSkyBoxEmittance;
+		m_skyPass.SetConstant(skyBoxExposureName, Vec4(skyBoxExposure, 1.0f), eHWSC_Pixel);
 
 		static CCryNameR skyBoxOpacityName("SkyDome_SkyBoxOpacity");
-		Vec3 skyBoxOpacity;
-		p3DEngine->GetGlobalParameter(E3DPARAM_SKY_SKYBOX_OPACITY, skyBoxOpacity);
-		m_skyPass.SetConstant(skyBoxOpacityName, Vec4(skyBoxOpacity, 1.f), eHWSC_Pixel);
+		const Vec3& skyBoxOpacity = rd->m_p3DEngineCommon[threadID].m_SkyInfo.m_vSkyBoxFilter;
+		m_skyPass.SetConstant(skyBoxOpacityName, Vec4(skyBoxOpacity, 1.0f), eHWSC_Pixel);
 	}
 
-	if (skyType == eSkyType_HDRSky)
+	if (rd->m_p3DEngineCommon[threadID].m_SkyInfo.m_bApplySkyDome)
 	{
 		SetHDRSkyParameters();
 	}
@@ -263,24 +259,24 @@ static void FillSkyTextureData(CTexture* pTexture, const void* pData, const uint
 
 void CSkyStage::Execute(CTexture* pColorTex, CTexture* pDepthTex)
 {
-	I3DEngine* const p3DEngine = gEnv->p3DEngine;
-
-	if (!p3DEngine->IsSkyVisible())
-		return;
-
 	FUNCTION_PROFILER_RENDERER();
 	PROFILE_LABEL_SCOPE("SKY_PASS");
 
-	const eSkyType skyType = gEnv->p3DEngine->GetSkyType();
+	I3DEngine* const p3DEngine = gEnv->p3DEngine;
+	auto threadID = gRenDev->GetRenderThreadID();
+	CD3D9Renderer* const RESTRICT_POINTER rd = gcpRendD3D;
+
+	const bool isProcedualSky = rd->m_p3DEngineCommon[threadID].m_SkyInfo.m_bApplySkyDome;
+	const bool isOverlayedSky = rd->m_p3DEngineCommon[threadID].m_SkyInfo.m_bApplySkyBox;
 
 	CRenderView* const pRenderView = RenderView();
 	const bool applyFog = pRenderView->IsGlobalFogEnabled() && !(m_graphicsPipeline.IsPipelineFlag(CGraphicsPipeline::EPipelineFlags::NO_SHADER_FOG));
-	bool isProcedualSky = false;
 
 	CTexture* pSkyDomeTextureMie = CRendererResources::s_ptexBlack;
 	CTexture* pSkyDomeTextureRayleigh = CRendererResources::s_ptexBlack;
+	CTexture* pSkyDomeTex = CRendererResources::s_ptexBlack;
 
-	if (skyType == eSkyType_HDRSky)
+	if (isProcedualSky)
 	{
 		const SSkyLightRenderParams* const pRenderParams = p3DEngine->GetSkyLightRenderParams();
 
@@ -297,30 +293,28 @@ void CSkyStage::Execute(CTexture* pColorTex, CTexture* pDepthTex)
 
 		pSkyDomeTextureMie = m_pSkyDomeTextureMie;
 		pSkyDomeTextureRayleigh = m_pSkyDomeTextureRayleigh;
-
-		isProcedualSky = true;
 	}
 
-	const string skyDomeTextureName = p3DEngine->GetSkyDomeTextureName();
-	const bool hasSkyDomeTexture = !skyDomeTextureName.empty();
-	CTexture* pSkyDomeTex = hasSkyDomeTexture
-	                        ? CTexture::ForName(skyDomeTextureName, FT_DONT_STREAM, eTF_Unknown)
-	                        : CRendererResources::s_ptexBlack;
+	if (isOverlayedSky)
+	{
+		pSkyDomeTex = rd->m_p3DEngineCommon[threadID].m_SkyInfo.m_pSkyBoxTexture.get();
+	}
 
 	const string moonTextureName = p3DEngine->GetMoonTextureName();
 	const bool hasMoonTexture = !moonTextureName.empty();
 	CTexture* pSkyMoonTex = hasMoonTexture
-	                        ? CTexture::ForName(moonTextureName, FT_DONT_STREAM, eTF_Unknown)
-	                        : CRendererResources::s_ptexBlack;
+		? CTexture::ForName(moonTextureName, FT_DONT_STREAM, eTF_Unknown)
+		: CRendererResources::s_ptexBlack;
 
 	uint64 rtMask = 0;
 	rtMask |= isProcedualSky ? g_HWSR_MaskBit[HWSR_SAMPLE0] : 0;
-	rtMask |= hasSkyDomeTexture ? g_HWSR_MaskBit[HWSR_SAMPLE1] : 0;
+	rtMask |= isOverlayedSky ? g_HWSR_MaskBit[HWSR_SAMPLE1] : 0;
 	if (rtMask == 0) // in case no sky texture is provided, draw black sky
 		rtMask = g_HWSR_MaskBit[HWSR_SAMPLE1];
 	rtMask |= applyFog ? g_HWSR_MaskBit[HWSR_FOG] : 0;
 
-	if (m_skyPass.IsDirty(skyType, rtMask, m_skyDomeTextureLastTimeStamp,
+	// TODO: streaming invalidation
+	if (m_skyPass.IsDirty(rtMask, m_skyDomeTextureLastTimeStamp,
 	                      pSkyMoonTex->GetTextureID(), pSkyDomeTex->GetTextureID(), pDepthTex->GetTextureID()))
 	{
 		const SSamplerState samplerDescLinearWrapU(FILTER_LINEAR, eSamplerAddressMode_Wrap, eSamplerAddressMode_Clamp, eSamplerAddressMode_Clamp, 0);
@@ -347,11 +341,11 @@ void CSkyStage::Execute(CTexture* pColorTex, CTexture* pDepthTex)
 	m_skyPass.Execute();
 
 	// Stars
-	if (skyType == eSkyType_HDRSky)
+	if (isProcedualSky)
 	{
 		const float starIntensity = gEnv->p3DEngine->GetGlobalParameter(E3DPARAM_NIGHSKY_STAR_INTENSITY);
 
-		if (skyType == eSkyType_HDRSky && starIntensity > 1e-3f)
+		if (starIntensity > 1e-3f)
 		{
 			D3DViewPort viewport = RenderViewportToD3D11Viewport(RenderView()->GetViewport());
 			if (pRenderView->IsRecursive())

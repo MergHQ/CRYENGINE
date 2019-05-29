@@ -739,7 +739,7 @@ void CD3D9Renderer::EF_EndEf3D(const int nPrecacheUpdateIdSlow, const int nPreca
 	m_streamZonesRoundId[0] = max(m_streamZonesRoundId[0], nPrecacheUpdateIdFast);
 	m_streamZonesRoundId[1] = max(m_streamZonesRoundId[1], nPrecacheUpdateIdSlow);
 
-	m_p3DEngineCommon.Update(passInfo);
+	m_p3DEngineCommon[passInfo.ThreadID()].Update(passInfo);
 
 	if (CV_r_NoDraw == 4)
 	{

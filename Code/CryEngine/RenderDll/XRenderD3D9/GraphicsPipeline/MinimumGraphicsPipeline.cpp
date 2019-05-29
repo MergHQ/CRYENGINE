@@ -157,10 +157,8 @@ void CMinimumGraphicsPipeline::Execute()
 	// forward opaque and transparent passes for recursive rendering
 	GetStage<CSceneForwardStage>()->ExecuteMinimum(pColorTex, pDepthTex);
 
-	if (GetStage<CSkyStage>())
-	{
+	if (GetStage<CSkyStage>()->IsStageActive(m_renderingFlags))
 		GetStage<CSkyStage>()->Execute(pColorTex, pDepthTex);
-	}
 
 	// Insert fence which is used on consoles to prevent overwriting video memory
 	pRenderer->InsertParticleVideoDataFence(pRenderer->GetRenderFrameID());

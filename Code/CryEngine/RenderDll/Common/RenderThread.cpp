@@ -298,22 +298,31 @@ void SRenderThread::RC_EndFrame(bool bWait)
 	SyncMainWithRender(true);
 }
 
-void SRenderThread::RC_PrecacheResource(ITexture* pTP, float fMipFactor, float fTimeToReady, int Flags, int nUpdateId, int nCounter)
+void SRenderThread::RC_PrecacheResource(ITexture* pTP, float fMipFactor, float fTimeToReady, int Flags, int nUpdateId)
 {
 	if (!pTP)
 		return;
 
+	if (CRenderer::CV_r_TexturesStreamingDebug)
+	{
+		const char* const sTexFilter = CRenderer::CV_r_TexturesStreamingDebugfilter->GetString();
+		if (sTexFilter != 0 && sTexFilter[0])
+			if (strstr(pTP->GetName(), sTexFilter))
+				CryLogAlways("CD3D9Renderer::RC_PrecacheResource: Mip=%5.2f nUpdateId=%4d (%s) Name=%s",
+					fMipFactor, nUpdateId, (Flags & FPR_SINGLE_FRAME_PRIORITY_UPDATE) ? "NEAR" : "FAR", pTP->GetName());
+	}
+
 	if (IsRenderThread())
 	{
 		// NOTE: bypasses time measurement!
-		gRenDev->PrecacheTexture(pTP, fMipFactor, fTimeToReady, Flags, nUpdateId, nCounter);
+		gRenDev->PrecacheTexture(pTP, fMipFactor, fTimeToReady, Flags, nUpdateId);
 		return;
 	}
 
 	_smart_ptr<ITexture> pRefTexture = pTP;
 	ExecuteRenderThreadCommand([=]
 	{
-		RC_PrecacheResource(pRefTexture.get(), fMipFactor, fTimeToReady, Flags, nUpdateId, nCounter);
+		RC_PrecacheResource(pRefTexture.get(), fMipFactor, fTimeToReady, Flags, nUpdateId);
 	}, ERenderCommandFlags::LevelLoadingThread_defer);
 }
 

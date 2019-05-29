@@ -1120,8 +1120,11 @@ void CRenderer::FreeSystemResources(int nFlags)
 		m_pSpriteVerts = NULL;
 		m_pSpriteInds  = NULL;
 
-		m_p3DEngineCommon.m_RainOccluders.Release(true);
-		m_p3DEngineCommon.m_CausticInfo.Release();
+		for (int i = 0; i < RT_COMMAND_BUF_COUNT; ++i)
+		{
+			m_p3DEngineCommon[i].m_RainOccluders.Release();
+			m_p3DEngineCommon[i].m_CausticInfo.Release();
+		}
 
 		for (uint i = 0; i < CLightStyle::s_LStyles.Num(); i++)
 		{
@@ -2819,81 +2822,179 @@ void CRenderer::SetTextureAlphaChannelFromRGB(byte* pMemBuffer, int nTexSize)
 
 //=============================================================================
 // Precaching
-bool CRenderer::EF_PrecacheResource(IRenderMesh* _pPB, IMaterial* pMaterial, float fMipFactor, float fTimeToReady, int nFlags, int nUpdateId)
+void CRenderer::PrecacheTexture(ITexture* pTP, float fMipFactor, float fTimeToReady, int Flags, int nUpdateId)
 {
-	int i;
 	if (!CRenderer::CV_r_texturesstreaming)
-		return true;
+		return;
 
-	CRenderMesh* pPB = (CRenderMesh*)_pPB;
+	CRY_ASSERT_MESSAGE(pTP, "Invalid parameter given to EF_PrecacheResource");
+	CTexture* pTexture = (CTexture*)pTP;
 
-	for (i = 0; i < pPB->m_Chunks.size(); i++)
-	{
-		CRenderChunk* pChunk = &pPB->m_Chunks[i];
-		assert(!"do pre-cache with real materials");
+	pTexture->PrecacheAsynchronously(fMipFactor, Flags, nUpdateId);
+}
 
-		assert(0);
+bool CRenderer::EF_PrecacheResource(ITexture* pTP, float fMipFactor, float fTimeToReady, int Flags, int nUpdateId)
+{
+	m_pRT->RC_PrecacheResource(pTP, fMipFactor, fTimeToReady, Flags, nUpdateId);
 
-		//@TODO: Timur
-		CRY_ASSERT_MESSAGE(pMaterial, "RenderMesh must have material");
-		CShaderResources* pSR = (CShaderResources*)pMaterial->GetShaderItem(pChunk->m_nMatID).m_pShaderResources;
-		if (!pSR)
-			continue;
-		if (pSR->m_nFrameLoad != gRenDev->GetRenderFrameID())
-		{
-			pSR->m_nFrameLoad        = gRenDev->GetRenderFrameID();
-			pSR->m_fMinMipFactorLoad = 999999.0f;
-		}
-		else if (fMipFactor >= pSR->m_fMinMipFactorLoad)
-			continue;
-		pSR->m_fMinMipFactorLoad = fMipFactor;
-		for (int j = 0; j <= pSR->m_nLastTexture; j++)
-		{
-			if (!pSR->m_Textures[j])
-				continue;
-			CTexture* tp = pSR->m_Textures[j]->m_Sampler.m_pTex;
-			if (!tp)
-				continue;
-			fMipFactor *= pSR->m_Textures[j]->GetTiling(0) * pSR->m_Textures[j]->GetTiling(1);
-
-			m_pRT->RC_PrecacheResource(tp, fMipFactor, 0, nFlags, nUpdateId);
-		}
-	}
 	return true;
 }
 
 bool CRenderer::EF_PrecacheResource(SRenderLight* pLS, float fMipFactor, float fTimeToReady, int Flags, int nUpdateId)
 {
-	CRY_PROFILE_FUNCTION(PROFILE_RENDERER);
-
-	if (!CRenderer::CV_r_texturesstreaming)
-		return true;
-
+	CRY_ASSERT_MESSAGE(pLS, "Invalid parameter given to EF_PrecacheResource");
 	ITexture* pLightTexture = pLS->m_pLightImage ? pLS->m_pLightImage : pLS->m_pLightDynTexSource ? pLS->m_pLightDynTexSource->GetTexture() : NULL;
+
 	if (pLightTexture)
-		m_pRT->RC_PrecacheResource(pLightTexture, fMipFactor, 0, Flags, nUpdateId);
+		CRenderer::EF_PrecacheResource(pLightTexture, fMipFactor, 0, Flags, nUpdateId);
 	if (pLS->GetDiffuseCubemap())
-		m_pRT->RC_PrecacheResource(pLS->GetDiffuseCubemap(), fMipFactor, 0, Flags, nUpdateId);
+		CRenderer::EF_PrecacheResource(pLS->GetDiffuseCubemap(), fMipFactor, 0, Flags, nUpdateId);
 	if (pLS->GetSpecularCubemap())
-		m_pRT->RC_PrecacheResource(pLS->GetSpecularCubemap(), fMipFactor, 0, Flags, nUpdateId);
+		CRenderer::EF_PrecacheResource(pLS->GetSpecularCubemap(), fMipFactor, 0, Flags, nUpdateId);
+
 	return true;
 }
 
-void CRenderer::PrecacheTexture(ITexture* pTP, float fMipFactor, float fTimeToReady, int Flags, int nUpdateId, int nCounter)
+bool CRenderer::EF_PrecacheResource(IRenderShaderResources* pShaderResources, float fMipFactorSI, float fTimeToReady, int nFlags, int nUpdateId)
 {
-	if (!CRenderer::CV_r_texturesstreaming)
-		return;
+	CRY_ASSERT_MESSAGE(pShaderResources, "Invalid parameter given to EF_PrecacheResource");
+	CShaderResources* pSR = (CShaderResources*)pShaderResources;
 
-	assert(m_pRT->IsRenderThread());
+	// Optimizations: 1) Virtual calls removed. 2) Prefetch next iteration's SEfResTexture
+	SEfResTexture* pNextResTex = NULL;
+	EEfResTextures iSlot;
+	for (iSlot = EEfResTextures(0); iSlot < EFTT_MAX; iSlot = EEfResTextures(iSlot + 1))
+	{
+		pNextResTex = pSR->m_Textures[iSlot];
+		if (pNextResTex)
+		{
+			PrefetchLine(pNextResTex, offsetof(SEfResTexture, m_Sampler.m_pITex));
+			iSlot = EEfResTextures(iSlot + 1);
+			break;
+		}
+	}
 
-	if (pTP)
-		((CTexture*)pTP)->CTexture::PrecacheAsynchronously(fMipFactor, Flags, nUpdateId, nCounter);
+	while (pNextResTex)
+	{
+		SEfResTexture* pResTex = pNextResTex;
+		pNextResTex = NULL;
+		for (; iSlot < EFTT_MAX; iSlot = EEfResTextures(iSlot + 1))
+		{
+			pNextResTex = pSR->m_Textures[iSlot];
+			if (pNextResTex)
+			{
+				PrefetchLine(pNextResTex, offsetof(SEfResTexture, m_Sampler.m_pITex));
+				iSlot = EEfResTextures(iSlot + 1);
+				break;
+			}
+		}
+
+		if (CTexture* pTexture = pResTex->m_Sampler.m_pTex)
+		{
+			float fMipFactor = fMipFactorSI * min(fabsf(pResTex->GetTiling(0)), fabsf(pResTex->GetTiling(1)));
+			CRenderer::EF_PrecacheResource(pTexture, fMipFactor, 0, nFlags, nUpdateId);
+		}
+	}
+
+	return true;
 }
 
-bool CRenderer::EF_PrecacheResource(IShader* pSH, float fMipFactor, float fTimeToReady, int Flags)
+bool CRenderer::EF_PrecacheResource(IRenderShaderResources* pShaderResources, int iScreenTexels, float fTimeToReady, int Flags, int nUpdateId)
 {
-	if (!CRenderer::CV_r_texturesstreaming)
-		return true;
+	CRY_ASSERT_MESSAGE(pShaderResources, "Invalid parameter given to EF_PrecacheResource");
+	CShaderResources* pSR = (CShaderResources*)pShaderResources;
+
+	// Optimizations: 1) Virtual calls removed. 2) Prefetch next iteration's SEfResTexture
+	SEfResTexture* pNextResTex = NULL;
+	EEfResTextures iSlot;
+	for (iSlot = EEfResTextures(0); iSlot < EFTT_MAX; iSlot = EEfResTextures(iSlot + 1))
+	{
+		pNextResTex = pSR->m_Textures[iSlot];
+		if (pNextResTex)
+		{
+			PrefetchLine(pNextResTex, offsetof(SEfResTexture, m_Sampler.m_pITex));
+			iSlot = EEfResTextures(iSlot + 1);
+			break;
+		}
+	}
+
+	while (pNextResTex)
+	{
+		SEfResTexture* pResTex = pNextResTex;
+		pNextResTex = NULL;
+		for (; iSlot < EFTT_MAX; iSlot = EEfResTextures(iSlot + 1))
+		{
+			pNextResTex = pSR->m_Textures[iSlot];
+			if (pNextResTex)
+			{
+				PrefetchLine(pNextResTex, offsetof(SEfResTexture, m_Sampler.m_pITex));
+				iSlot = EEfResTextures(iSlot + 1);
+				break;
+			}
+		}
+
+		if (CTexture* pTexture = pResTex->m_Sampler.m_pTex)
+		{
+			float minTiling = min(fabsf(pResTex->GetTiling(0)), fabsf(pResTex->GetTiling(1)));
+			int maxResolution = max(abs(pTexture->GetHeight()), abs(pTexture->GetWidth()));
+
+			float minMipMap = logf(max(1.0f, iScreenTexels / minTiling)) / logf(2.0f);
+			float maxMipMap = logf(float(maxResolution)) / logf(2.0f);
+
+			float currentMipFactor = expf((maxMipMap - minMipMap) * 2.0f * 0.69314718055994530941723212145818f /*M_LN2*/);
+			float fMipFactor = currentMipFactor / gRenDev->GetMipDistFactor(pTexture->GetHeight(), pTexture->GetWidth());
+
+			CRenderer::EF_PrecacheResource(pTexture, fMipFactor, 0.f, Flags, nUpdateId);
+		}
+	}
+
+	return true;
+}
+
+bool CRenderer::EF_PrecacheResource(SShaderItem* pSI, float fMipFactorSI, float fTimeToReady, int Flags, int nUpdateId)
+{
+	CRY_ASSERT_MESSAGE(pSI, "Invalid parameter given to EF_PrecacheResource");
+	CShader* pSH = (CShader*)pSI->m_pShader;
+
+	if (pSH && !(pSH->m_Flags & EF_NODRAW))
+	{
+		if (IRenderShaderResources* pSR = pSI->m_pShaderResources)
+			CRenderer::EF_PrecacheResource(pSR, fMipFactorSI, fTimeToReady, Flags, nUpdateId);
+	}
+
+	return true;
+}
+
+bool CRenderer::EF_PrecacheResource(SShaderItem* pSI, int iScreenTexels, float fTimeToReady, int Flags, int nUpdateId)
+{
+	CRY_ASSERT_MESSAGE(pSI, "Invalid parameter given to EF_PrecacheResource");
+	CShader* pSH = (CShader*)pSI->m_pShader;
+
+	if (pSH && !(pSH->m_Flags & EF_NODRAW))
+	{
+		if (IRenderShaderResources* pSR = pSI->m_pShaderResources)
+			CRenderer::EF_PrecacheResource(pSR, iScreenTexels, fTimeToReady, Flags, nUpdateId);
+	}
+
+	return true;
+}
+
+bool CRenderer::EF_PrecacheResource(IShader* pSH, float fMipFactor, float fTimeToReady, int Flags, int nUpdateId)
+{
+	return true;
+}
+
+bool CRenderer::EF_PrecacheResource(IRenderMesh* _pPB, IMaterial* pMaterial, float fMipFactor, float fTimeToReady, int nFlags, int nUpdateId)
+{
+	CRY_ASSERT_MESSAGE(_pPB && pMaterial, "Invalid parameter given to EF_PrecacheResource");
+	CRenderMesh* pPB = (CRenderMesh*)_pPB;
+
+	for (int i = 0; i < pPB->m_Chunks.size(); i++)
+	{
+		CRenderChunk* pChunk = &pPB->m_Chunks[i];
+
+		EF_PrecacheResource(&pMaterial->GetShaderItem(pChunk->m_nMatID), fMipFactor, fTimeToReady, nFlags, nUpdateId);
+	}
 
 	return true;
 }
@@ -3815,6 +3916,7 @@ void IRenderer::SDrawCallCountInfo::Update(CRenderObject* pObj, IRenderMesh* pRM
 
 void S3DEngineCommon::Update(const SRenderingPassInfo& passInfo)
 {
+	CRY_ASSERT(gcpRendD3D->m_pRT->IsMainThread());
 	I3DEngine* p3DEngine = gEnv->p3DEngine;
 
 	Vec3 cameraPosition = passInfo.GetCamera().GetPosition();
@@ -3830,6 +3932,8 @@ void S3DEngineCommon::Update(const SRenderingPassInfo& passInfo)
 			m_pCamVisAreaInfo.nFlags |= VAF_AFFECTED_BY_OUT_LIGHTS;
 	}
 
+	UpdateSkyInfo(passInfo);
+
 	// Update ocean info
 	m_OceanInfo.m_fWaterLevel       = p3DEngine->GetWaterLevel(&cameraPosition);
 	m_OceanInfo.m_nOceanRenderFlags = p3DEngine->GetOceanRenderFlags();
@@ -3842,6 +3946,8 @@ void S3DEngineCommon::Update(const SRenderingPassInfo& passInfo)
 		{
 			UpdateRainInfo(passInfo);
 			UpdateSnowInfo(passInfo);
+			UpdateRainOccInfo(passInfo);
+
 			m_RainInfo.nUpdateFrameID = nFrmID;
 		}
 	}
@@ -3850,8 +3956,76 @@ void S3DEngineCommon::Update(const SRenderingPassInfo& passInfo)
 	if (CRenderer::CV_r_rain < 2 || m_RainInfo.bDisableOcclusion)
 	{
 		m_RainOccluders.Release();
-		stl::free_container(m_RainOccluders.m_arrCurrOccluders[passInfo.ThreadID()]);
+		stl::free_container(m_RainOccluders.m_arrOccluders);
 		m_RainInfo.bApplyOcclusion = false;
+	}
+}
+
+void S3DEngineCommon::UpdateSkyInfo(const SRenderingPassInfo& passInfo)
+{
+	I3DEngine* p3DEngine = gEnv->p3DEngine;
+	IMaterial* pSkyMaterial = p3DEngine->GetSkyMaterial();
+
+	m_SkyInfo.m_bIsVisible = p3DEngine->IsSkyVisible();
+	m_SkyInfo.m_bApplySkyBox = false;
+	m_SkyInfo.m_bApplySkyDome = true;
+
+	m_SkyInfo.m_fSkyBoxAngle      = p3DEngine->GetGlobalParameter(E3DPARAM_SKY_SKYBOX_ANGLE);
+	m_SkyInfo.m_fSkyBoxStretching = p3DEngine->GetGlobalParameter(E3DPARAM_SKY_SKYBOX_STRETCHING);
+	m_SkyInfo.m_fSkyBoxMultiplier = p3DEngine->GetGlobalParameter(E3DPARAM_SKYBOX_MULTIPLIER); // Deprecated: E3DPARAM_SKYBOX_MULTIPLIER
+
+	p3DEngine->GetGlobalParameter(E3DPARAM_SKY_SKYBOX_EMITTANCE, m_SkyInfo.m_vSkyBoxEmittance);
+	p3DEngine->GetGlobalParameter(E3DPARAM_SKY_SKYBOX_FILTER, m_SkyInfo.m_vSkyBoxFilter);
+	
+	m_SkyInfo.m_pSkyMaterial = pSkyMaterial;
+	m_SkyInfo.m_pSkyBoxTexture = nullptr;
+
+	// Translate to kilo-scale
+	m_SkyInfo.m_vSkyBoxEmittance *= (RENDERER_LIGHT_UNIT_SCALE / 1000.0f);
+
+	// Note: this should be deprecated at some point.
+	// Update some sky params from the material:
+	//    - m_fSkyBoxAngle
+	//    - m_vSkyBoxExposure
+	//    - m_vSkyBoxOpacity
+	//    - m_SkyDomeTextureName
+	if (pSkyMaterial &&
+		pSkyMaterial->GetShaderItem().m_pShader &&
+		pSkyMaterial->GetShaderItem().m_pShaderResources)
+	{
+		IRenderShaderResources* const pShaderResources = pSkyMaterial->GetShaderItem().m_pShaderResources;
+
+		// Angle is additive
+		auto& shaderParams = pShaderResources->GetParameters();
+		for (int i = 0; i < shaderParams.size(); i++)
+		{
+			const SShaderParam* const sp = &(shaderParams)[i];
+			if (sp && !stricmp(sp->m_Name, "SkyboxAngle") && sp->m_Type == eType_FLOAT)
+			{
+				m_SkyInfo.m_fSkyBoxAngle += sp->m_Value.m_Float;
+			}
+		}
+
+		m_SkyInfo.m_vSkyBoxEmittance += pShaderResources->GetFinalEmittance().toVec3();
+		m_SkyInfo.m_vSkyBoxFilter *= (pShaderResources->GetColorValue(EFTT_DIFFUSE) * pShaderResources->GetStrengthValue(EFTT_OPACITY)).toVec3();
+
+		if (const SEfResTexture* const pSkyTexInfo = pShaderResources->GetTexture(EFTT_DIFFUSE))
+		{
+			m_SkyInfo.m_pSkyBoxTexture =
+				pSkyTexInfo->m_Sampler.m_pTex;
+
+			m_SkyInfo.m_bApplySkyBox =
+				(m_SkyInfo.m_vSkyBoxFilter.x != 0.0f ||
+				 m_SkyInfo.m_vSkyBoxFilter.y != 0.0f ||
+				 m_SkyInfo.m_vSkyBoxFilter.z != 0.0f) &&
+				!pSkyTexInfo->m_Name.empty();
+
+			m_SkyInfo.m_bApplySkyDome =
+				(m_SkyInfo.m_vSkyBoxFilter.x != 1.0f ||
+				 m_SkyInfo.m_vSkyBoxFilter.y != 1.0f ||
+				 m_SkyInfo.m_vSkyBoxFilter.z != 1.0f) ||
+				pSkyTexInfo->m_Name.empty();
+		}
 	}
 }
 
@@ -3890,8 +4064,6 @@ void S3DEngineCommon::UpdateRainInfo(const SRenderingPassInfo& passInfo)
 	m_RainInfo.vColor.Set(1, 1, 1);
 	m_RainInfo.vWorldPos.Set(0, 0, 0);
 #endif
-
-	UpdateRainOccInfo(passInfo);
 }
 
 void S3DEngineCommon::UpdateSnowInfo(const SRenderingPassInfo& passInfo)
@@ -3904,8 +4076,6 @@ void S3DEngineCommon::UpdateSnowInfo(const SRenderingPassInfo& passInfo)
 
 	gEnv->p3DEngine->GetSnowSurfaceParams(m_SnowInfo.m_vWorldPos, m_SnowInfo.m_fRadius, m_SnowInfo.m_fSnowAmount, m_SnowInfo.m_fFrostAmount, m_SnowInfo.m_fSurfaceFreezing);
 	gEnv->p3DEngine->GetSnowFallParams(m_SnowInfo.m_nSnowFlakeCount, m_SnowInfo.m_fSnowFlakeSize, m_SnowInfo.m_fSnowFallBrightness, m_SnowInfo.m_fSnowFallGravityScale, m_SnowInfo.m_fSnowFallWindScale, m_SnowInfo.m_fSnowFallTurbulence, m_SnowInfo.m_fSnowFallTurbulenceFreq);
-
-	UpdateRainOccInfo(passInfo);
 }
 
 void S3DEngineCommon::UpdateRainOccInfo(const SRenderingPassInfo& passInfo)
@@ -4110,9 +4280,6 @@ void S3DEngineCommon::UpdateRainOccInfo(const SRenderingPassInfo& passInfo)
 			           "Reached max rain occluder limit (Max: %i), some objects may have been discarded!", nMaxOccluders);
 		}
 #endif
-
-		m_RainOccluders.m_arrCurrOccluders[passInfo.ThreadID()].resize(m_RainOccluders.m_nNumOccluders);
-		std::copy(arrOccluders.begin(), arrOccluders.begin() + m_RainOccluders.m_nNumOccluders, m_RainOccluders.m_arrCurrOccluders[passInfo.ThreadID()].begin());
 	}
 
 	bOldDisableOcclusion = bDisableOcclusion;

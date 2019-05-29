@@ -444,9 +444,8 @@ void C3DEngine::UnloadLevel()
 
 	CleanLevelShaders();
 
-	stl::free_container(m_SkyDomeTextureName[0]);
 	stl::free_container(m_MoonTextureName);
-	for (int skyTypeIdx = 0; skyTypeIdx < eSkyType_NumSkyTypes; ++skyTypeIdx)
+	for (int skyTypeIdx = 0; skyTypeIdx < eSkySpec_NumSkySpecs; ++skyTypeIdx)
 		SAFE_RELEASE(m_pSkyMat[skyTypeIdx]);
 
 	if (m_pCloudShadowTex.get())
@@ -1327,12 +1326,14 @@ void C3DEngine::LoadEnvironmentSettingsFromXML(XmlNodeRef pInputNode)
 	m_fTerrainDetailMaterialsViewDistRatio = fTerrainDetailMaterialsViewDistRatio;
 
 	// SkyBox
-	const string hdrSkyMatName = GetXMLAttribText(pInputNode, "SkyBox", "Material", "");
-	const string skyMatName = GetXMLAttribText(pInputNode, "SkyBox", "MaterialLowSpec", "");
-	m_pSkyMat[eSkyType_HDRSky] = hdrSkyMatName.empty() ? NULL : GetMatMan()->LoadMaterial(hdrSkyMatName.c_str(), false);
-	m_pSkyMat[eSkyType_Sky] = skyMatName.empty() ? NULL : GetMatMan()->LoadMaterial(skyMatName.c_str(), false);
+	const string defSkyMatName = GetXMLAttribText(pInputNode, "SkyBox", "Material", "");
+	const string lowSkyMatName = GetXMLAttribText(pInputNode, "SkyBox", "MaterialLowSpec", "");
+	m_pSkyMat[eSkySpec_Def] = defSkyMatName.empty() ? nullptr : GetMatMan()->LoadMaterial(defSkyMatName.c_str(), false);
+	m_pSkyMat[eSkySpec_Low] = lowSkyMatName.empty() ? nullptr : GetMatMan()->LoadMaterial(lowSkyMatName.c_str(), false);
+	if (!m_pSkyMat[eSkySpec_Low])
+		m_pSkyMat[eSkySpec_Low] = m_pSkyMat[eSkySpec_Def];
 
-	m_fSkyBoxAngle[0] = (float)atof(GetXMLAttribText(pInputNode, "SkyBox", "Angle", "0.0"));
+	m_fSkyBoxAngle = (float)atof(GetXMLAttribText(pInputNode, "SkyBox", "Angle", "0.0"));
 	m_fSkyBoxStretching = (float)atof(GetXMLAttribText(pInputNode, "SkyBox", "Stretching", "1.0"));
 
 	// set terrain water, sun road and bottom shaders
@@ -1360,6 +1361,7 @@ void C3DEngine::LoadEnvironmentSettingsFromXML(XmlNodeRef pInputNode)
 	m_oceanCausticDepth = (float) atof(GetXMLAttribText(pInputNode, "Ocean", "CausticDepth", "8.0"));
 	m_oceanCausticIntensity = (float) atof(GetXMLAttribText(pInputNode, "Ocean", "CausticIntensity", "1.0"));
 
+	UpdateSkyParams();
 	UpdateWindParams();
 
 	// Per-level merged meshes pool size (on consoles)
@@ -1552,6 +1554,22 @@ void C3DEngine::UpdateMoonParams()
 	m_MoonTextureName = moon.texture;
 
 	UpdateMoonDirection();
+}
+
+void C3DEngine::UpdateSkyParams()
+{
+	const auto& sky = GetTimeOfDay()->GetSkyParams();
+
+	// Selective overwrite
+	if (!sky.materialDefSpec.empty())
+		m_pSkyMat[eSkySpec_Def] = GetMatMan()->LoadMaterial(sky.materialDefSpec.c_str(), false);
+	else
+		m_pSkyMat[eSkySpec_Def] = nullptr;
+
+	if (!sky.materialLowSpec.empty())
+		m_pSkyMat[eSkySpec_Low] = GetMatMan()->LoadMaterial(sky.materialLowSpec.c_str(), false);
+	else
+		m_pSkyMat[eSkySpec_Low] = m_pSkyMat[eSkySpec_Def];
 }
 
 void C3DEngine::UpdateWindParams()

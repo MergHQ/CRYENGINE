@@ -436,8 +436,8 @@ void CWaterStage::ExecuteWaterVolumeCaustics()
 	CD3D9Renderer* const RESTRICT_POINTER rd = gcpRendD3D;
 
 	const bool bWaterRipple = (m_graphicsPipeline.GetRenderFlags() & SHDF_ALLOWPOSTPROCESS) != 0;
-
 	auto* pWaterRipplesStage = m_graphicsPipeline.GetStage<CWaterRipplesStage>();
+	auto threadID = gRenDev->GetRenderThreadID();
 
 	const auto& waterRenderItems = pRenderView->GetRenderItems(EFSLIST_WATER);
 	const auto& waterVolumeRenderItems = pRenderView->GetRenderItems(EFSLIST_WATER_VOLUMES);
@@ -460,7 +460,7 @@ void CWaterStage::ExecuteWaterVolumeCaustics()
 
 	// Needed by ePass_FogVolume and ExecuteDeferredOceanCaustics()
 	{
-		N3DEngineCommon::SOceanInfo& OceanInfo = gcpRendD3D->m_p3DEngineCommon.m_OceanInfo;
+		N3DEngineCommon::SOceanInfo& OceanInfo = gcpRendD3D->m_p3DEngineCommon[threadID].m_OceanInfo;
 		const bool bOceanVolumeVisible = (OceanInfo.m_nOceanRenderFlags & OCR_OCEANVOLUME_VISIBLE) != 0;
 
 		if (m_bOceanMaskGen && bOceanVolumeVisible)
@@ -503,7 +503,7 @@ void CWaterStage::ExecuteWaterVolumeCaustics()
 
 		// TODO: move this to local member if it isn't used in other stages.
 		// Caustics info.
-		N3DEngineCommon::SCausticInfo& causticInfo = rd->m_p3DEngineCommon.m_CausticInfo;
+		N3DEngineCommon::SCausticInfo& causticInfo = rd->m_p3DEngineCommon[threadID].m_CausticInfo;
 
 		// NOTE: caustics gen texture is generated only once if stereo rendering is activated.
 		if (pRenderView->GetCurrentEye() == CCamera::eEye_Left)
@@ -527,8 +527,9 @@ void CWaterStage::ExecuteDeferredWaterVolumeCaustics()
 {
 	PROFILE_LABEL_SCOPE("DEFERRED_WATERVOLUME_CAUSTICS");
 
+	auto threadID = gRenDev->GetRenderThreadID();
 	CD3D9Renderer* const RESTRICT_POINTER rd = gcpRendD3D;
-	N3DEngineCommon::SCausticInfo& causticInfo = rd->m_p3DEngineCommon.m_CausticInfo;
+	N3DEngineCommon::SCausticInfo& causticInfo = rd->m_p3DEngineCommon[threadID].m_CausticInfo;
 
 	auto* pTargetTex = m_graphicsPipelineResources.m_pTexSceneTargetR11G11B10F[1];
 	auto& pass = m_passDeferredWaterVolumeCaustics;
@@ -568,6 +569,7 @@ void CWaterStage::ExecuteDeferredOceanCaustics()
 {
 	FUNCTION_PROFILER_RENDERER();
 
+	auto threadID = gRenDev->GetRenderThreadID();
 	CD3D9Renderer* const RESTRICT_POINTER rd = gcpRendD3D;
 	I3DEngine* RESTRICT_POINTER pEng = gEnv->p3DEngine;
 
@@ -576,7 +578,7 @@ void CWaterStage::ExecuteDeferredOceanCaustics()
 	const float fCausticsDepth = causticParams.z;
 	const float fCausticsIntensity = causticParams.w;
 
-	N3DEngineCommon::SOceanInfo& OceanInfo = rd->m_p3DEngineCommon.m_OceanInfo;
+	N3DEngineCommon::SOceanInfo& OceanInfo = rd->m_p3DEngineCommon[threadID].m_OceanInfo;
 	const bool bOceanVolumeVisible = (OceanInfo.m_nOceanRenderFlags & OCR_OCEANVOLUME_VISIBLE) != 0;
 	if (!bOceanVolumeVisible || iszero(fCausticsIntensity))
 	{
@@ -1210,6 +1212,7 @@ bool CWaterStage::SetAndBuildPerPassResources(bool bOnInit, EPass passId)
 
 void CWaterStage::UpdatePerPassResources(EPass passId)
 {
+	auto threadID = gRenDev->GetRenderThreadID();
 	CD3D9Renderer* RESTRICT_POINTER pRenderer = gcpRendD3D;
 	SRenderViewShaderConstants& PF = RenderView()->GetShaderConstants();
 
@@ -1220,7 +1223,7 @@ void CWaterStage::UpdatePerPassResources(EPass passId)
 #if defined(VOLUMETRIC_FOG_SHADOWS)
 		const bool bRenderFogShadow = pRenderer->m_bVolFogShadowsEnabled;
 #endif
-		N3DEngineCommon::SCausticInfo& causticInfo = pRenderer->m_p3DEngineCommon.m_CausticInfo;
+		N3DEngineCommon::SCausticInfo& causticInfo = pRenderer->m_p3DEngineCommon[threadID].m_CausticInfo;
 
 		CRY_ASSERT(pWaterRipplesStage);
 		CRY_ASSERT(pVolFogStage);

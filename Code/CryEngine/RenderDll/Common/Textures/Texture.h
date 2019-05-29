@@ -883,7 +883,7 @@ public:
 		SSamplerState::SetDefaultClampingMode(nMode, nMode, nMode);
 	}
 	virtual const bool IsTextureLoaded() const           final { return IsLoaded(); }
-	virtual void       PrecacheAsynchronously(float fMipFactor, int nFlags, int nUpdateId, int nCounter = 1);
+	void               PrecacheAsynchronously(float fMipFactor, int nFlags, int nUpdateId);
 	virtual byte*      GetData32(int nSide = 0, int nLevel = 0, byte* pDst = NULL, ETEX_Format eDstFormat = eTF_R8G8B8A8);
 
 	virtual const uint32  GetDeviceDataSize() const         final { return m_nDevTextureSize; }

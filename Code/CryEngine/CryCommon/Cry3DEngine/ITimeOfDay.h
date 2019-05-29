@@ -26,6 +26,13 @@ struct ITimeOfDay
 		PARAM_SUN_INTENSITY,
 		PARAM_SUN_SPECULAR_MULTIPLIER,
 
+		PARAM_SKYBOX_ANGLE,
+		PARAM_SKYBOX_STRETCHING,
+		PARAM_SKYBOX_COLOR,
+		PARAM_SKYBOX_INTENSITY,
+		PARAM_SKYBOX_FILTER,
+		PARAM_SKYBOX_OPACITY,
+
 		PARAM_FOG_COLOR,
 		PARAM_FOG_COLOR_MULTIPLIER,
 		PARAM_VOLFOG_HEIGHT,
@@ -187,6 +194,7 @@ struct ITimeOfDay
 		PARAM_GI_MULTIPLIER,
 		PARAM_SUN_COLOR_MULTIPLIER,
 
+
 		PARAM_TOTAL
 	};
 
@@ -234,6 +242,12 @@ struct ITimeOfDay
 		float  longitude;
 		float  size;
 		string texture;
+	};
+
+	struct Sky
+	{
+		string materialDefSpec;
+		string materialLowSpec;
 	};
 
 	struct Wind
@@ -349,6 +363,7 @@ struct ITimeOfDay
 
 		virtual Sun&           GetSunParams() = 0;
 		virtual Moon&          GetMoonParams() = 0;
+		virtual Sky&           GetSkyParams() = 0;
 		virtual Wind&          GetWindParams() = 0;
 		virtual CloudShadows&  GetCloudShadowsParams() = 0;
 		virtual ColorGrading&  GetColorGradingParams() = 0;
@@ -484,12 +499,13 @@ struct ITimeOfDay
 	void                 ResetVariables()                                    { GetCurrentPreset().Reset(); }
 	Sun&                 GetSunParams()                                      { return GetConstants().GetSunParams(); }
 	const Moon&          GetMoonParams()                                     { return GetConstants().GetMoonParams(); }
+	const Sky&           GetSkyParams()                                      { return GetConstants().GetSkyParams(); }
 	const Wind&          GetWindParams()                                     { return GetConstants().GetWindParams(); }
 	const CloudShadows&  GetCloudShadowsParams()                             { return GetConstants().GetCloudShadowsParams(); }
 	const TotalIllum&    GetTotalIlluminationParams()                        { return GetConstants().GetTotalIlluminationParams(); }
 	const TotalIllumAdv& GetTotalIlluminationAdvParams()                     { return GetConstants().GetTotalIlluminationAdvParams(); }
 
-	static const char*   GetDefaultPresetFilepath()                          { return "EngineAssets/Shading/default.env"; }
+	static const char*   GetDefaultPresetFilepath()                          { return "%ENGINE%/EngineAssets/Shading/default.env"; }
 
 protected:
 	virtual bool RegisterListenerImpl(IListener* const pListener, const char* const szDbgName, const bool staticName) = 0;

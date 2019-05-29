@@ -64,6 +64,7 @@ void CSnowStage::Destroy()
 
 void CSnowStage::Update()
 {
+	auto threadID = gRenDev->GetRenderThreadID();
 	CD3D9Renderer* const RESTRICT_POINTER rd = gcpRendD3D;
 	const CRenderView* pRenderView = RenderView();
 
@@ -71,8 +72,8 @@ void CSnowStage::Update()
 	{
 		// TODO: remove implicit dependency to ExecuteRainPreprocess() due to SRainParams::matOccTransRender updated in ExecuteRainPreprocess().
 		// TODO: m_RainInfo and m_SnowInfo need to be unique for each view-port if the engine supports multi view-port rendering.
-		SRainParams& rainVolParams = rd->m_p3DEngineCommon.m_RainInfo;
-		SSnowParams& snowVolParams = rd->m_p3DEngineCommon.m_SnowInfo;
+		SRainParams& rainVolParams = rd->m_p3DEngineCommon[threadID].m_RainInfo;
+		SSnowParams& snowVolParams = rd->m_p3DEngineCommon[threadID].m_SnowInfo;
 
 		m_RainVolParams = rainVolParams;
 		m_SnowVolParams = snowVolParams;

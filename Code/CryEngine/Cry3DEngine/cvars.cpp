@@ -854,7 +854,7 @@ void CVars::Init()
 	REGISTER_CVAR(e_SkyQuality, 1, VF_NULL,
 	              "Quality of dynamic sky: 1 (very high), 2 (high).");
 	REGISTER_CVAR(e_SkyType, 1, VF_NULL,
-	              "Type of sky used: 0 (static), 1 (dynamic).");
+	              "Type of sky used: 0 (low-spec), 1 (default-spec).");
 
 	DefineConstIntCVar(e_DisplayMemoryUsageIcon, e_DisplayMemoryUsageIconDefault, VF_NULL,
 	                   "Turns On/Off the memory usage icon rendering: 1 on, 0 off.");
