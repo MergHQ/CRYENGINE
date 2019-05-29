@@ -178,6 +178,7 @@ CAssetGenerator::CAssetGenerator()
 	m_rcSettings.shrink_to_fit();
 }
 
+// The method must be called only from the main thread. 
 void CAssetGenerator::GenerateCryasset(const string& filePath, const string& destFolder /* = "" */)
 {
 	using namespace Private_AssetGenerator;
@@ -253,7 +254,10 @@ void CAssetGenerator::OnCompilationFinished(const char* szSource, const char* sz
 	auto const absRoot = PathUtil::GetCurrentProjectDirectoryAbsolute();
 	auto const destFolder = PathUtil::Make(absRoot, PathUtil::GetDirectory(PathUtil::ToUnixPath(szSource)));
 	auto const targetFile = PathUtil::Make(absRoot, PathUtil::ToUnixPath(szTarget));
-	GenerateCryasset(targetFile, destFolder);
+	ThreadingUtils::PostOnMainThread([this, targetFile, destFolder]()
+	{
+		GenerateCryasset(targetFile, destFolder);
+	});
 }
 
 void CAssetGenerator::OnCompilationQueueTriggered(int nPending)
