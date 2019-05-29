@@ -992,6 +992,9 @@ SEntityGrid* CPhysicalWorld::DestroyGrid(SEntityGrid *pgrid)
 		}
 	m_gthunks[pgrid->m_iGThunk0].inextOwned = m_iFreeGThunk0;
 	m_iFreeGThunk0 = pgrid->m_iGThunk0;
+	for(CPhysicalEntity *pent=m_pHiddenEnts; pent; pent=pent->m_next)
+		if (GetGrid(pent)==pgrid)	// check hidden ents explicitly, since they don't have grid thunks
+			SetGrid(pent, &m_entgrid);
 	pgrid->Free();
 	delete pgrid;
 	return next;
