@@ -689,8 +689,8 @@ public:
 	virtual void DebugDraw_UpdateDebugNode();
 
 	void         DebugDraw_Draw();
-	bool         IsOutdoorVisible();
-	void         UpdateSky(const SRenderingPassInfo& passInfo);
+	bool         IsOutdoorVisible() const;
+	void         ProcessSky(const SRenderingPassInfo& passInfo);
 	int          GetStreamingFramesSinceLevelStart() { return m_nStreamingFramesSinceLevelStart; }
 	int          GetRenderFramesSinceLevelStart()    { return m_nFramesSinceLevelStart; }
 
@@ -699,6 +699,7 @@ public:
 	Vec3 GetTerrainSurfaceNormal(Vec3 vPos);
 	void LoadEnvironmentSettingsFromXML(XmlNodeRef pInputNode);
 	void UpdateMoonParams();
+	void UpdateSkyParams();
 	void UpdateWindParams();
 	void UpdateCloudShadows();
 #if defined(FEATURE_SVO_GI)
@@ -732,12 +733,9 @@ public:
 
 	// Level info
 	float                 m_fSkyBoxStretching;
-	// These params can be overridden by the sky material
-	bool                  m_bSkyMatOverride;
-	float                 m_fSkyBoxAngle[2];
-	Vec3                  m_vSkyBoxExposure[2];
-	Vec3                  m_vSkyBoxOpacity[2];
-	string                m_SkyDomeTextureName[2];
+	float                 m_fSkyBoxAngle;
+	Vec3                  m_vSkyBoxExposure;
+	Vec3                  m_vSkyBoxOpacity;
 
 	float                 m_fMaxViewDistScale;
 	float                 m_fMaxViewDistHighSpec;
@@ -899,7 +897,7 @@ public:
 
 	// Level shaders
 	_smart_ptr<IMaterial> m_pTerrainWaterMat;
-	_smart_ptr<IMaterial> m_pSkyMat[eSkyType_NumSkyTypes];
+	_smart_ptr<IMaterial> m_pSkyMat[eSkySpec_NumSkySpecs];
 	_smart_ptr<IMaterial> m_pSunMat;
 
 	// Fog Materials
@@ -910,9 +908,9 @@ public:
 	{
 		m_pTerrainWaterMat = 0;
 
-		for (int skyTypeIdx = 0; skyTypeIdx < eSkyType_NumSkyTypes; ++skyTypeIdx)
-			m_pSkyMat[skyTypeIdx] = 0;
-		m_pSunMat = 0;
+		m_pSunMat = nullptr;
+		for (int skyTypeIdx = 0; skyTypeIdx < eSkySpec_NumSkySpecs; ++skyTypeIdx)
+			m_pSkyMat[skyTypeIdx] = nullptr;
 
 		m_pMatFogVolEllipsoid = 0;
 		m_pMatFogVolBox = 0;
@@ -1076,18 +1074,15 @@ public:
 
 	//////////////////////////////////////////////////////////////////////////
 	// Sky
-	virtual bool                         IsSkyVisible() final;
+	virtual bool                         IsSkyVisible() const final;
 	virtual eSkyType                     GetSkyType() const final { return (eSkyType)GetCVars()->e_SkyType; }
+	virtual IMaterial*                   GetSkyMaterial() const;
+	virtual void                         SetSkyMaterial(IMaterial* pSkyMat, eSkyType type); 
 
 	virtual const SSkyLightRenderParams* GetSkyLightRenderParams() const final;
 
-	virtual string                       GetSkyDomeTextureName() const final      { return m_SkyDomeTextureName[m_bSkyMatOverride]; }
-	virtual void                         SetSkyDomeTextureName(string name) final { m_SkyDomeTextureName[0] = name; }
-
 	virtual string                       GetMoonTextureName() const final         { return m_MoonTextureName; }
 	virtual void                         SetMoonTextureName(string name) final    { m_MoonTextureName = name; }
-
-	virtual void                         SetSkyMaterial(IMaterial* pSkyMat, eSkyType type);
 
 	using I3DEngine::SetGlobalParameter;
 	virtual void                     SetGlobalParameter(E3DEngineParameter param, const Vec3& v);

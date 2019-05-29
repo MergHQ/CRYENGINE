@@ -591,12 +591,12 @@ const bool CTexture::IsParticularMipStreamed(float fMipFactor) const
 	return m_nMinMipVidUploaded <= nMip;
 }
 
-void CTexture::PrecacheAsynchronously(float fMipFactor, int nFlags, int nUpdateId, int nCounter)
+void CTexture::PrecacheAsynchronously(float fMipFactor, int nFlags, int nUpdateId)
 {
 	if (!IsStreamed())
 		return;   // already done
 
-	s_pTextureStreamer->UpdateMip(this, fMipFactor, nFlags, nUpdateId, nCounter);
+	s_pTextureStreamer->UpdateMip(this, fMipFactor, nFlags, nUpdateId);
 
 	// for distance streaming it's just the same as update rendering distance
 	StreamLoadFromCache(nFlags);

@@ -171,10 +171,11 @@ void CRainStage::Update()
 {
 	if (RenderView()->GetCurrentEye() != CCamera::eEye_Right)
 	{
+		auto threadID = gRenDev->GetRenderThreadID();
 		CD3D9Renderer* const RESTRICT_POINTER rd = gcpRendD3D;
 		// TODO: improve this dependency and make it double-buffer.
 		// copy rain info to member variable every frame.
-		m_RainVolParams = rd->m_p3DEngineCommon.m_RainInfo;
+		m_RainVolParams = rd->m_p3DEngineCommon[threadID].m_RainInfo;
 	}
 }
 
@@ -496,23 +497,24 @@ void CRainStage::Execute()
 
 void CRainStage::ExecuteRainOcclusion()
 {
+	auto threadID = gRenDev->GetRenderThreadID();
 	CD3D9Renderer* const RESTRICT_POINTER rd = gcpRendD3D;
 
 	// TODO: m_RainInfo needs to be unique for each view-port if the engine supports multi view-port rendering.
-	SRainParams& rainVolParams = rd->m_p3DEngineCommon.m_RainInfo;
+	SRainParams& rainVolParams = rd->m_p3DEngineCommon[threadID].m_RainInfo;
 	const auto gpuId = rd->RT_GetCurrGpuID();
 
 	if (rainVolParams.areaAABB.IsReset() ||
-		rd->m_p3DEngineCommon.m_RainOccluders.m_bProcessed[gpuId])
+		rd->m_p3DEngineCommon[threadID].m_RainOccluders.m_bProcessed[gpuId])
 		return;
 
-	const auto& arrOccluders = rd->m_p3DEngineCommon.m_RainOccluders.m_arrCurrOccluders[gRenDev->GetRenderThreadID()];
+	const auto& arrOccluders = rd->m_p3DEngineCommon[threadID].m_RainOccluders.m_arrOccluders;
 	if (arrOccluders.empty())
 		return;
 
 	ExecuteRainOcclusionGen();
 
-	rd->m_p3DEngineCommon.m_RainOccluders.m_bProcessed[gpuId] = true;
+	rd->m_p3DEngineCommon[threadID].m_RainOccluders.m_bProcessed[gpuId] = true;
 
 	// store occlusion transformation matrix when occlusion map is updated.
 	// TODO: make this variable class member variable after porting all rain features to new graphics pipeline.
@@ -522,6 +524,7 @@ void CRainStage::ExecuteRainOcclusion()
 
 void CRainStage::ExecuteRainOcclusionGen()
 {
+	auto threadID = gRenDev->GetRenderThreadID();
 	CD3D9Renderer* const RESTRICT_POINTER rd = gcpRendD3D;
 	SRainParams& rainVolParams = m_RainVolParams;
 
@@ -558,7 +561,7 @@ void CRainStage::ExecuteRainOcclusionGen()
 
 		static CCryNameTSCRC techName("RainOcclusion");
 
-		const auto& arrOccluders = rd->m_p3DEngineCommon.m_RainOccluders.m_arrCurrOccluders[gRenDev->GetRenderThreadID()];
+		const auto& arrOccluders = rd->m_p3DEngineCommon[threadID].m_RainOccluders.m_arrOccluders;
 		int32 index = 0;
 		auto countPrimitives = m_rainOccluderPrimitives.size();
 		for (auto& it : arrOccluders)

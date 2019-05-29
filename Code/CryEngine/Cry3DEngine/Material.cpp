@@ -889,12 +889,12 @@ void CMatInfo::PrecacheTextures(const float fMipFactor, const int nFlags, bool b
 			if (rZone.nRoundId == (nRoundId - 1))
 			{
 				nCurrentFlags |= rZone.bHighPriority ? FPR_HIGHPRIORITY : 0;
-				GetRenderer()->EF_PrecacheResource(&rSI, rZone.fMinMipFactor, 0, nCurrentFlags, nRoundId, 1); // accumulated value is valid
+				GetRenderer()->EF_PrecacheResource(&rSI, rZone.fMinMipFactor, 0, nCurrentFlags, nRoundId); // accumulated value is valid
 			}
 			else
 			{
 				nCurrentFlags |= (nFlags & FPR_HIGHPRIORITY);
-				GetRenderer()->EF_PrecacheResource(&rSI, fMipFactor, 0, nCurrentFlags, nRoundId, 1); // accumulated value is not valid, pass current value
+				GetRenderer()->EF_PrecacheResource(&rSI, fMipFactor, 0, nCurrentFlags, nRoundId); // accumulated value is not valid, pass current value
 			}
 		}
 
@@ -919,7 +919,7 @@ void CMatInfo::PrecacheTextures(const int iScreenTexels, const int nFlags, bool 
 		{
 			{
 				nCurrentFlags |= (nFlags & FPR_HIGHPRIORITY);
-				GetRenderer()->EF_PrecacheResource(&rSI, iScreenTexels, 0, nCurrentFlags, nRoundId, 1); // accumulated value is not valid, pass current value
+				GetRenderer()->EF_PrecacheResource(&rSI, iScreenTexels, 0, nCurrentFlags, nRoundId); // accumulated value is not valid, pass current value
 			}
 		}
 	}

@@ -381,10 +381,8 @@ void CStandardGraphicsPipeline::Execute()
 		GetStage<CSceneForwardStage>()->ExecuteOpaque();
 
 		// Opaque forward passes
-		if (GetStage<CSkyStage>())
-		{
+		if (GetStage<CSkyStage>()->IsStageActive(m_renderingFlags))
 			GetStage<CSkyStage>()->Execute(m_pipelineResources.m_pTexHDRTarget, pZTexture);
-		}
 	}
 
 	// Deferred ocean caustics

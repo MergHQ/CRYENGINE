@@ -1480,17 +1480,17 @@ void CLocalMemoryUsage::CollectMaterialInfo_Recursive(SMaterialInfo* materialInf
 	{
 		for (uint32 dwI = 0; dwI < EFTT_MAX; ++dwI)
 		{
-			SEfResTexture* pTex = rItem.m_pShaderResources->GetTexture(dwI);
+			SEfResTexture* pResTex = rItem.m_pShaderResources->GetTexture(dwI);
 
-			if (pTex && pTex->m_Sampler.m_pITex)
+			if (pResTex && pResTex->m_Sampler.m_pITex)
 			{
-				ITexture* pTexture = pTex->m_Sampler.m_pITex;
+				ITexture* pTexture = pResTex->m_Sampler.m_pITex;
 				if (pTexture && pTexture->GetStreamableMipNumber() > 0)
 				{
 					STextureInfoAndTilingFactor textureInfo;
 
 					textureInfo.m_pTextureInfo = GetTextureInfo(pTexture);
-					textureInfo.m_tilingFactor = pTex->GetTiling(0) * pTex->GetTiling(1);
+					textureInfo.m_tilingFactor = min(fabsf(pResTex->GetTiling(0)), fabsf(pResTex->GetTiling(1)));
 
 					materialInfo->AddTextureInfo(textureInfo);
 				}

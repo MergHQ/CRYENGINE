@@ -500,10 +500,7 @@ void CGraphicsPipeline::Init()
 	RegisterStage<CFogStage>();
 	RegisterStage<CDebugRenderTargetsStage>();
 
-	if ((m_pipelineDesc.shaderFlags & SHDF_ALLOW_SKY) != 0)
-	{
-		RegisterStage<CSkyStage>();
-	}
+	RegisterStage<CSkyStage>();
 
 	m_pVRProjectionManager = gcpRendD3D->m_pVRProjectionManager;
 

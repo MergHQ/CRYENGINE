@@ -78,6 +78,24 @@ void MoonImpl::Serialize(Serialization::IArchive& ar)
 }
 
 //////////////////////////////////////////////////////////////////////////
+SkyImpl::SkyImpl()
+{
+	ResetVariables();
+}
+
+void SkyImpl::ResetVariables()
+{
+	materialDefSpec = "";
+	materialLowSpec = "";
+}
+
+void SkyImpl::Serialize(Serialization::IArchive& ar)
+{
+	ar(Serialization::MaterialPicker(materialDefSpec), "MaterialDef", "Material (default-spec)");
+	ar(Serialization::MaterialPicker(materialLowSpec), "MaterialLow", "Material (low-spec)");
+}
+
+//////////////////////////////////////////////////////////////////////////
 WindImpl::WindImpl()
 {
 	ResetVariables();
@@ -291,6 +309,7 @@ void STimeOfDayConstants::Reset()
 {
 	sun.ResetVariables();
 	moon.ResetVariables();
+	sky.ResetVariables();
 	wind.ResetVariables();
 	cloudShadows.ResetVariables();
 	colorGrading.ResetVariables();
@@ -302,6 +321,7 @@ void STimeOfDayConstants::Serialize(Serialization::IArchive& ar)
 {
 	ar(sun, "Sun", "Sun");
 	ar(moon, "Moon", "Moon");
+	ar(sky, "Sky", "Sky");
 	ar(wind, "Wind", "Wind");
 	ar(cloudShadows, "CloudShadows", "Cloud Shadows");
 	ar(colorGrading, "ColorGrading", "Color Grading");
@@ -317,6 +337,11 @@ ITimeOfDay::Sun& STimeOfDayConstants::GetSunParams()
 ITimeOfDay::Moon& STimeOfDayConstants::GetMoonParams()
 {
 	return moon;
+}
+
+ITimeOfDay::Sky& STimeOfDayConstants::GetSkyParams()
+{
+	return sky;
 }
 
 ITimeOfDay::Wind& STimeOfDayConstants::GetWindParams()

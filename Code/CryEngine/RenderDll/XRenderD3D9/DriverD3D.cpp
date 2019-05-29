@@ -970,18 +970,18 @@ void CD3D9Renderer::RT_BeginFrame(const SDisplayContextKey& displayContextKey, c
 		m_bVolFogCloudShadowsEnabled = m_bVolFogShadowsEnabled && m_bCloudShadowsEnabled && m_cloudShadowTexId > 0 && volFogShadowEnable.y != 0 && !m_bVolumetricCloudsEnabled;
 #endif
 
-		SRainParams& rainVolParams = m_p3DEngineCommon.m_RainInfo;
+		SRainParams& rainVolParams = m_p3DEngineCommon[GetRenderThreadID()].m_RainInfo;
 		m_bDeferredRainEnabled = (rainVolParams.fAmount * CRenderer::CV_r_rainamount > 0.05f
 		                          && rainVolParams.fCurrentAmount > 0.05f
 		                          && rainVolParams.fRadius > 0.05f
 		                          && CV_r_rain > 0);
 
-		SSnowParams& snowVolParams = m_p3DEngineCommon.m_SnowInfo;
+		SSnowParams& snowVolParams = m_p3DEngineCommon[GetRenderThreadID()].m_SnowInfo;
 		m_bDeferredSnowEnabled = ((snowVolParams.m_fSnowAmount > 0.05f || snowVolParams.m_fFrostAmount > 0.05f)
 		                          && snowVolParams.m_fRadius > 0.05f
 		                          && CV_r_snow > 0);
 
-		const auto& arrOccluders = m_p3DEngineCommon.m_RainOccluders.m_arrCurrOccluders[GetRenderThreadID()];
+		const auto& arrOccluders = m_p3DEngineCommon[GetRenderThreadID()].m_RainOccluders.m_arrOccluders;
 		m_bDeferredRainOcclusionEnabled = (rainVolParams.bApplyOcclusion
 		                                   && ((CV_r_snow == 2 && m_bDeferredSnowEnabled) || (CV_r_rain == 2 && m_bDeferredRainEnabled))
 		                                   && !arrOccluders.empty());
@@ -1135,7 +1135,7 @@ void CD3D9Renderer::RT_BeginFrame(const SDisplayContextKey& displayContextKey, c
 	// Verify if water caustics needed at all
 	if (CV_r_watercaustics)
 	{
-		N3DEngineCommon::SOceanInfo& OceanInfo = gRenDev->m_p3DEngineCommon.m_OceanInfo;
+		N3DEngineCommon::SOceanInfo& OceanInfo = m_p3DEngineCommon[GetRenderThreadID()].m_OceanInfo;
 		m_bWaterCaustics = (OceanInfo.m_nOceanRenderFlags & OCR_OCEANVOLUME_VISIBLE) != 0;
 	}
 
@@ -4547,133 +4547,6 @@ void CD3D9Renderer::UpdateTextureInVideoMemory(uint32 tnum, unsigned char* newda
 {
 	CTexture* pTex = CTexture::GetByID(tnum);
 	pTex->UpdateTextureRegion(newdata, posx, posy, posz, w, h, sizez, eTFSrc);
-}
-
-bool CD3D9Renderer::EF_PrecacheResource(SShaderItem* pSI, int iScreenTexels, float fTimeToReady, int Flags, int nUpdateId, int nCounter)
-{
-	CRY_PROFILE_FUNCTION(PROFILE_RENDERER);
-
-	CShader* pSH = (CShader*)pSI->m_pShader;
-
-	if (pSH && !(pSH->m_Flags & EF_NODRAW))
-	{
-		if (CShaderResources* pSR = (CShaderResources*)pSI->m_pShaderResources)
-		{
-			// Optimisations: 1) Virtual calls removed. 2) Prefetch next iteration's SEfResTexture
-			SEfResTexture* pNextResTex = NULL;
-			EEfResTextures iSlot;
-			for (iSlot = EEfResTextures(0); iSlot < EFTT_MAX; iSlot = EEfResTextures(iSlot + 1))
-			{
-				pNextResTex = pSR->m_Textures[iSlot];
-				if (pNextResTex)
-				{
-					PrefetchLine(pNextResTex, offsetof(SEfResTexture, m_Sampler.m_pITex));
-					iSlot = EEfResTextures(iSlot + 1);
-					break;
-				}
-			}
-			while (pNextResTex)
-			{
-				SEfResTexture* pResTex = pNextResTex;
-				pNextResTex = NULL;
-				for (; iSlot < EFTT_MAX; iSlot = EEfResTextures(iSlot + 1))
-				{
-					pNextResTex = pSR->m_Textures[iSlot];
-					if (pNextResTex)
-					{
-						PrefetchLine(pNextResTex, offsetof(SEfResTexture, m_Sampler.m_pITex));
-						iSlot = EEfResTextures(iSlot + 1);
-						break;
-					}
-				}
-				if (ITexture* pITex = pResTex->m_Sampler.m_pITex)
-				{
-					float minTiling = min(fabsf(pResTex->GetTiling(0)), fabsf(pResTex->GetTiling(1)));
-					int maxResolution = max(abs(pITex->GetHeight()), abs(pITex->GetWidth()));
-
-					float minMipMap = log(max(1.0f, iScreenTexels / minTiling)) / log(2.0f);
-					float maxMipMap = log(maxResolution) / log(2.0f);
-
-					float currentMipFactor = expf((maxMipMap - minMipMap) * 2.0f * 0.69314718055994530941723212145818f /*LN2*/);
-					float fMipFactor = currentMipFactor / gRenDev->GetMipDistFactor(pITex->GetHeight(), pITex->GetWidth());
-
-					CD3D9Renderer::EF_PrecacheResource(pITex, fMipFactor, 0.f, Flags, nUpdateId, nCounter);
-				}
-			}
-		}
-	}
-
-	return true;
-}
-
-bool CD3D9Renderer::EF_PrecacheResource(SShaderItem* pSI, float fMipFactorSI, float fTimeToReady, int Flags, int nUpdateId, int nCounter)
-{
-	CRY_PROFILE_FUNCTION(PROFILE_RENDERER);
-
-	CShader* pSH = (CShader*)pSI->m_pShader;
-
-	if (pSH && !(pSH->m_Flags & EF_NODRAW))
-	{
-		if (CShaderResources* pSR = (CShaderResources*)pSI->m_pShaderResources)
-		{
-			// Optimisations: 1) Virtual calls removed. 2) Prefetch next iteration's SEfResTexture
-			SEfResTexture* pNextResTex = NULL;
-			EEfResTextures iSlot;
-			for (iSlot = EEfResTextures(0); iSlot < EFTT_MAX; iSlot = EEfResTextures(iSlot + 1))
-			{
-				pNextResTex = pSR->m_Textures[iSlot];
-				if (pNextResTex)
-				{
-					PrefetchLine(pNextResTex, offsetof(SEfResTexture, m_Sampler.m_pITex));
-					iSlot = EEfResTextures(iSlot + 1);
-					break;
-				}
-			}
-			while (pNextResTex)
-			{
-				SEfResTexture* pResTex = pNextResTex;
-				pNextResTex = NULL;
-				for (; iSlot < EFTT_MAX; iSlot = EEfResTextures(iSlot + 1))
-				{
-					pNextResTex = pSR->m_Textures[iSlot];
-					if (pNextResTex)
-					{
-						PrefetchLine(pNextResTex, offsetof(SEfResTexture, m_Sampler.m_pITex));
-						iSlot = EEfResTextures(iSlot + 1);
-						break;
-					}
-				}
-				if (ITexture* pITex = pResTex->m_Sampler.m_pITex)
-				{
-					float fMipFactor = fMipFactorSI * min(fabsf(pResTex->GetTiling(0)), fabsf(pResTex->GetTiling(1)));
-					CD3D9Renderer::EF_PrecacheResource(pITex, fMipFactor, 0.f, Flags, nUpdateId, nCounter);
-				}
-			}
-		}
-	}
-
-	return true;
-}
-
-bool CD3D9Renderer::EF_PrecacheResource(ITexture* pTP, float fMipFactor, float fTimeToReady, int Flags, int nUpdateId, int nCounter)
-{
-	CRY_PROFILE_FUNCTION(PROFILE_RENDERER);
-
-	// Check for the presence of a D3D device
-	CRY_ASSERT(static_cast<const CD3D9Renderer*>(this)->GetDevice().IsValid());
-
-	if (CRenderer::CV_r_TexturesStreamingDebug)
-	{
-		const char* const sTexFilter = CRenderer::CV_r_TexturesStreamingDebugfilter->GetString();
-		if (sTexFilter != 0 && sTexFilter[0])
-			if (strstr(pTP->GetName(), sTexFilter))
-				CryLogAlways("CD3D9Renderer::EF_PrecacheResource: Mip=%5.2f nUpdateId=%4d (%s) Name=%s",
-				             fMipFactor, nUpdateId, (Flags & FPR_SINGLE_FRAME_PRIORITY_UPDATE) ? "NEAR" : "FAR", pTP->GetName());
-	}
-
-	m_pRT->RC_PrecacheResource(pTP, fMipFactor, fTimeToReady, Flags, nUpdateId, nCounter);
-
-	return true;
 }
 
 unsigned int CD3D9Renderer::UploadToVideoMemory(unsigned char* pSrcData, int w, int h, int d, ETEX_Format eSrcFormat, ETEX_Format eTFDst, int8 nummipmap, ETEX_Type eTT, bool repeat, int filter, int Id, const char* szCacheName, int flags, EEndian eEndian, RectI* pRegion, bool bAsyncDevTexCreation)

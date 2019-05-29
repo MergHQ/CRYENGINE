@@ -21,6 +21,13 @@ SERIALIZATION_ENUM_DEFAULTNAME(PARAM_SUN_COLOR)
 SERIALIZATION_ENUM_DEFAULTNAME(PARAM_SUN_INTENSITY)
 SERIALIZATION_ENUM_DEFAULTNAME(PARAM_SUN_SPECULAR_MULTIPLIER)
 
+SERIALIZATION_ENUM_DEFAULTNAME(PARAM_SKYBOX_ANGLE)
+SERIALIZATION_ENUM_DEFAULTNAME(PARAM_SKYBOX_STRETCHING)
+SERIALIZATION_ENUM_DEFAULTNAME(PARAM_SKYBOX_COLOR)
+SERIALIZATION_ENUM_DEFAULTNAME(PARAM_SKYBOX_INTENSITY)
+SERIALIZATION_ENUM_DEFAULTNAME(PARAM_SKYBOX_FILTER)
+SERIALIZATION_ENUM_DEFAULTNAME(PARAM_SKYBOX_OPACITY)
+
 SERIALIZATION_ENUM_DEFAULTNAME(PARAM_FOG_COLOR)
 SERIALIZATION_ENUM_DEFAULTNAME(PARAM_FOG_COLOR_MULTIPLIER)
 SERIALIZATION_ENUM_DEFAULTNAME(PARAM_VOLFOG_HEIGHT)
@@ -1060,6 +1067,7 @@ void CTimeOfDay::UpdateEnvLighting(bool forceUpdate)
 	Vec3 sunPos;
 
 	const ITimeOfDay::Sun& sun = GetSunParams();
+	const ITimeOfDay::Sky& sky = GetSkyParams();
 
 	if (sun.sunLinkedToTOD)
 	{
@@ -1165,10 +1173,36 @@ void CTimeOfDay::UpdateEnvLighting(bool forceUpdate)
 	// set sun, sky, and fog color
 	const Vec3 sunColor(GetValue(PARAM_SUN_COLOR));
 	const float sunIntensityLux(GetValue(PARAM_SUN_INTENSITY).x * sunMultiplier);
-	p3DEngine->SetSunColor(ConvertIlluminanceToLightColor(sunIntensityLux, sunColor));
+	const Vec3 sunEmission(ConvertIlluminanceToLightColor(sunIntensityLux, sunColor));
+	p3DEngine->SetSunColor(sunEmission);
 	p3DEngine->SetGlobalParameter(E3DPARAM_SUN_SPECULAR_MULTIPLIER, Vec3(sunSpecMultiplier, 0, 0));
 	p3DEngine->SetSkyBrightness(skyBrightMultiplier);
 	p3DEngine->SetGIAmount(GIMultiplier);
+
+	const float skyboxAngle(GetValue(PARAM_SKYBOX_ANGLE).x);
+	p3DEngine->SetGlobalParameter(E3DPARAM_SKY_SKYBOX_ANGLE, skyboxAngle);
+	const float skyboxStretch(GetValue(PARAM_SKYBOX_STRETCHING).x);
+	p3DEngine->SetGlobalParameter(E3DPARAM_SKY_SKYBOX_STRETCHING, skyboxStretch);
+	const Vec3 skyboxColor(GetValue(PARAM_SKYBOX_COLOR));
+	const float skyboxIntensityLux(GetValue(PARAM_SKYBOX_INTENSITY).x * sunMultiplier);
+	const Vec3 skyboxEmmission(ConvertIlluminanceToLightColor(skyboxIntensityLux, skyboxColor));
+	p3DEngine->SetGlobalParameter(E3DPARAM_SKY_SKYBOX_EMITTANCE, skyboxEmmission);
+	const Vec3 skyboxFilter(GetValue(PARAM_SKYBOX_FILTER));
+	const float skyboxOpacity(GetValue(PARAM_SKYBOX_OPACITY).x);
+	p3DEngine->SetGlobalParameter(E3DPARAM_SKY_SKYBOX_FILTER, skyboxFilter * skyboxOpacity);
+
+	// Selective overwrite
+	IMaterial* pMaterialDef = nullptr;
+	if (!sky.materialDefSpec.empty())
+		p3DEngine->SetSkyMaterial(pMaterialDef = gEnv->p3DEngine->GetMaterialManager()->LoadMaterial(sky.materialDefSpec.c_str(), false), eSkySpec_Def);
+	else
+		p3DEngine->SetSkyMaterial(pMaterialDef, eSkySpec_Def);
+
+	IMaterial* pMaterialLow = nullptr;
+	if (!sky.materialLowSpec.empty())
+		p3DEngine->SetSkyMaterial(pMaterialLow = gEnv->p3DEngine->GetMaterialManager()->LoadMaterial(sky.materialLowSpec.c_str(), false), eSkySpec_Low);
+	else
+		p3DEngine->SetSkyMaterial(pMaterialDef, eSkySpec_Low);
 
 	const Vec3 fogColor(fogMultiplier * GetValue(PARAM_FOG_COLOR));
 	p3DEngine->SetFogColor(fogColor);

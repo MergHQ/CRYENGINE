@@ -469,7 +469,7 @@ void CPlanningTextureStreamer::Precache(CTexture* pTexture)
 	}
 }
 
-void CPlanningTextureStreamer::UpdateMip(CTexture* pTexture, const float fMipFactor, const int nFlags, const int nUpdateId, const int nCounter)
+void CPlanningTextureStreamer::UpdateMip(CTexture* pTexture, const float fMipFactor, const int nFlags, const int nUpdateId)
 {
 	CHK_RENDTH;
 

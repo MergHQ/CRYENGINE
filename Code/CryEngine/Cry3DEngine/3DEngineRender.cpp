@@ -1504,6 +1504,11 @@ const SSkyLightRenderParams* C3DEngine::GetSkyLightRenderParams() const
 	return m_pSkyLightManager ? m_pSkyLightManager->GetRenderParams() : NULL;
 }
 
+IMaterial* C3DEngine::GetSkyMaterial() const
+{
+	return m_pSkyMat[GetSkyType()];
+}
+
 void C3DEngine::SetSkyMaterial(IMaterial* pSkyMat, eSkyType type)
 {
 	m_pSkyMat[type] = pSkyMat;
@@ -1676,7 +1681,7 @@ void C3DEngine::RenderScene(const int nRenderFlags, const SRenderingPassInfo& pa
 
 		if (IsSkyVisible())
 		{
-			UpdateSky(passInfo);
+			ProcessSky(passInfo);
 		}
 
 		// start processing terrain
@@ -1964,17 +1969,19 @@ void C3DEngine::ProcessOcean(const SRenderingPassInfo& passInfo)
 	}
 }
 
-bool C3DEngine::IsSkyVisible()
+bool C3DEngine::IsSkyVisible() const
 {
 	return GetCVars()->e_SkyBox && IsOutdoorVisible();
 }
 
-void C3DEngine::UpdateSky(const SRenderingPassInfo& passInfo)
+void C3DEngine::ProcessSky(const SRenderingPassInfo& passInfo)
 {
 	FUNCTION_PROFILER_3DENGINE;
-	MEMSTAT_CONTEXT(EMemStatContextType::Other, "C3DEngine::UpdateSky");
+	MEMSTAT_CONTEXT(EMemStatContextType::Other, "C3DEngine::ProcessSky");
 
-	const eSkyType skyType = GetSkyType();
+	IMaterial* pSkyMaterial = GetSkyMaterial();
+	Vec3 vSkyBoxOpacity(1.0f, 1.0f, 1.0f);
+	string SkyDomeTextureName;
 
 	// Note: this should be deprecated at some point.
 	// Update some sky params from the material:
@@ -1982,43 +1989,48 @@ void C3DEngine::UpdateSky(const SRenderingPassInfo& passInfo)
 	//    - m_vSkyBoxExposure
 	//    - m_vSkyBoxOpacity
 	//    - m_SkyDomeTextureName
-	if (m_pSkyMat[skyType]
-		&& m_pSkyMat[skyType]->GetShaderItem().m_pShader
-		&& m_pSkyMat[skyType]->GetShaderItem().m_pShaderResources)
+	if (pSkyMaterial &&
+		pSkyMaterial->GetShaderItem().m_pShader &&
+		pSkyMaterial->GetShaderItem().m_pShaderResources)
 	{
-		m_bSkyMatOverride = true;
+		IRenderShaderResources* const pShaderResources = pSkyMaterial->GetShaderItem().m_pShaderResources;
 
-		IRenderShaderResources* const pShaderResources = m_pSkyMat[skyType]->GetShaderItem().m_pShaderResources;
-
-		auto& shaderParams = pShaderResources->GetParameters();
-		for (int i = 0; i < shaderParams.size(); i++)
-		{
-			const SShaderParam* const sp = &(shaderParams)[i];
-			if (sp && !stricmp(sp->m_Name, "SkyboxAngle") && sp->m_Type == eType_FLOAT)
-			{
-				m_fSkyBoxAngle[1] = sp->m_Value.m_Float;
-			}
-		}
-
-		m_vSkyBoxExposure[1] = pShaderResources->GetFinalEmittance().toVec3();
-		m_vSkyBoxOpacity[1] = (pShaderResources->GetColorValue(EFTT_DIFFUSE) * pShaderResources->GetStrengthValue(EFTT_OPACITY)).toVec3();
+		vSkyBoxOpacity = (pShaderResources->GetColorValue(EFTT_DIFFUSE) * pShaderResources->GetStrengthValue(EFTT_OPACITY)).toVec3();
 
 		if (const SEfResTexture* const pSkyTexInfo = pShaderResources->GetTexture(EFTT_DIFFUSE))
 		{
-			m_SkyDomeTextureName[1] = pSkyTexInfo->m_Name;
+			SkyDomeTextureName = pSkyTexInfo->m_Name;
 		}
-		else
-		{
-			stl::free_container(m_SkyDomeTextureName[1]);
-		}
-	}
-	else
-	{
-		m_bSkyMatOverride = false;
 	}
 
-	// dynamic sky dome
-	if (skyType == eSkyType_HDRSky)
+	const bool bOverlaySkyBox =
+		(vSkyBoxOpacity.x != 0.0f ||
+		 vSkyBoxOpacity.y != 0.0f ||
+		 vSkyBoxOpacity.z != 0.0f) &&
+		!SkyDomeTextureName.empty();
+
+	const bool bProceduralSkyBox =
+		(vSkyBoxOpacity.x != 1.0f ||
+		 vSkyBoxOpacity.y != 1.0f ||
+		 vSkyBoxOpacity.z != 1.0f) ||
+		SkyDomeTextureName.empty();
+
+	// Overlay sky box
+	if (bOverlaySkyBox)
+	{
+		//!< Vertical fov in radiants [0..1*PI].
+		// Example:
+		// - fFoV is 90deg (or PI/2rad), so 25% of the sky-box fills the screen
+		// - fMipFactor is -2 (2^-2 = 0.25)
+		float fFoV = passInfo.GetCamera().GetFov() / 3.14159265358979323846f /*M_PI*/;
+		float fMipFactor = log2f(fFoV);
+
+		pSkyMaterial->RequestTexturesLoading(fMipFactor);
+	//	gRenDev->EF_PrecacheResource(pShaderResources, ?, ?, ?, ?);
+	}
+
+	// Procedural sky dome
+	if (bProceduralSkyBox)
 	{
 #ifndef CONSOLE_CONST_CVAR_MODE
 		GetCVars()->e_SkyQuality = crymath::clamp(GetCVars()->e_SkyQuality, 1, 2);

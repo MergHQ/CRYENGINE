@@ -840,6 +840,7 @@ DynArray<std::uint16_t> CTexture::RenderEnvironmentCMHDR(std::size_t size, const
 	float oldSkyKm, oldSkyKr, oldSkyG;
 	if (CRenderer::CV_r_HideSunInCubemaps)
 	{
+		// if (isSkyProcedural)
 		gEnv->p3DEngine->GetSkyLightParameters(oldSunDir, oldSunStr, oldSkyKm, oldSkyKr, oldSkyG, oldSunRGB);
 		gEnv->p3DEngine->SetSkyLightParameters(oldSunDir, oldSunStr, oldSkyKm, oldSkyKr, 1.0f, oldSunRGB, true); // Hide sun disc
 	}
