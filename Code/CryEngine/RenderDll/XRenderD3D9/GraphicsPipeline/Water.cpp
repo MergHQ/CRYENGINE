@@ -249,7 +249,7 @@ void CWaterStage::Init()
 
 	// TODO: move a texture to local member variable.
 	//CRY_ASSERT(CTexture::IsTextureExist(CRendererResources::s_ptexWaterCaustics[0])); // this can fail because CRendererResources::s_ptexWaterCaustics[0] is null when launching the engine with r_watervolumecaustics=0.
-	CRY_ASSERT(CTexture::IsTextureExist(CRendererResources::s_ptexWaterVolumeRefl[0]));
+	CRY_ASSERT(CTexture::IsTextureExist(m_graphicsPipelineResources.m_pTexWaterVolumeRefl[0]));
 
 	m_passOceanMaskGen.SetLabel("OCEAN_MASK_GEN");
 	m_passOceanMaskGen.SetFlags(CSceneRenderPass::ePassFlags_ReverseDepth);
@@ -361,14 +361,14 @@ void CWaterStage::Update()
 	{
 		// TODO: Is m_CurDownscaleFactor needed for new graphics pipeline?
 		const auto& downscaleFactor = gRenDev->GetRenderQuality().downscaleFactor;
-		const int32 nWidth = int32(CRendererResources::s_ptexWaterVolumeRefl[0]->GetWidth() * (downscaleFactor.x));
-		const int32 nHeight = int32(CRendererResources::s_ptexWaterVolumeRefl[0]->GetHeight() * (downscaleFactor.y));
+		const int32 nWidth = int32(m_graphicsPipelineResources.m_pTexWaterVolumeRefl[0]->GetWidth() * (downscaleFactor.x));
+		const int32 nHeight = int32(m_graphicsPipelineResources.m_pTexWaterVolumeRefl[0]->GetHeight() * (downscaleFactor.y));
 
 		// TODO: looks something wrong between rect and viewport?
-		D3DViewPort viewport = { 0.0f, float(CRendererResources::s_ptexWaterVolumeRefl[0]->GetHeight() - nHeight), float(nWidth), float(nHeight), 0.0f, 1.0f };
+		D3DViewPort viewport = { 0.0f, float(m_graphicsPipelineResources.m_pTexWaterVolumeRefl[0]->GetHeight() - nHeight), float(nWidth), float(nHeight), 0.0f, 1.0f };
 
 		m_passWaterReflectionGen.SetViewport(viewport);
-		m_passWaterReflectionGen.SetRenderTargets(m_graphicsPipelineResources.m_pTexSceneDepthScaled[0], CRendererResources::s_ptexWaterVolumeRefl[0]);
+		m_passWaterReflectionGen.SetRenderTargets(m_graphicsPipelineResources.m_pTexSceneDepthScaled[0], m_graphicsPipelineResources.m_pTexWaterVolumeRefl[0]);
 	}
 
 	if (CTexture::IsTextureExist(m_pVolumeCausticsRT)
@@ -1087,7 +1087,7 @@ bool CWaterStage::SetAndBuildPerPassResources(bool bOnInit, EPass passId)
 
 	// NOTE: update this resource set at every frame, otherwise have double resource sets.
 	const int32 currWaterVolID = GetCurrentFrameID(frameID);
-	CTexture* pCurrWaterVolRefl = CRendererResources::s_ptexWaterVolumeRefl[currWaterVolID];
+	CTexture* pCurrWaterVolRefl = m_graphicsPipelineResources.m_pTexWaterVolumeRefl[currWaterVolID];
 
 	// NOTE: only water surface needs water reflection texture.
 
@@ -1645,7 +1645,7 @@ void CWaterStage::ExecuteReflection()
 
 		const int32 frameID = pRenderView->GetFrameId();
 		const int32 currWaterVolID = GetCurrentFrameID(frameID);
-		CTexture* pCurrWaterVolRefl = CRendererResources::s_ptexWaterVolumeRefl[currWaterVolID];
+		CTexture* pCurrWaterVolRefl = m_graphicsPipelineResources.m_pTexWaterVolumeRefl[currWaterVolID];
 
 		m_passCopySceneTargetReflection.Execute(m_graphicsPipelineResources.m_pTexSceneTarget, m_graphicsPipelineResources.m_pTexHDRTargetScaled[0][0]);
 		m_passCopySSReflection.Execute(m_graphicsPipelineResources.m_pTexHDRTargetMaskedScaled[0][1], pCurrWaterVolRefl);

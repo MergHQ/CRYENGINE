@@ -1512,9 +1512,12 @@ void CHud3DPass::ExecuteFlashUpdate(const CPostEffectContext& context, CHud3D& h
 
 	if (!hud3d.m_pRenderData[nThreadID].empty() || bForceRefresh) //&& m_nFlashUpdateFrameID != rd->GetFrameID(false) )
 	{
+		auto pGraphicsPipeline = context.GetRenderView()->GetGraphicsPipeline();
+		CGraphicsPipelineResources& pipelineResources = pGraphicsPipeline->GetPipelineResources();
+
 		// Share hud render target with scene normals
-		hud3d.m_pHUD_RT       = CRendererResources::s_ptexCached3DHud;
-		hud3d.m_pHUDScaled_RT = CRendererResources::s_ptexCached3DHudScaled;
+		hud3d.m_pHUD_RT = pipelineResources.m_pTexCached3DHud;
+		hud3d.m_pHUDScaled_RT = pipelineResources.m_pTexCached3DHudScaled;
 
 		if ((context.GetRenderView()->GetFrameId() % max(1, (int)CRenderer::CV_r_PostProcessHUD3DCache)) != 0)
 		{

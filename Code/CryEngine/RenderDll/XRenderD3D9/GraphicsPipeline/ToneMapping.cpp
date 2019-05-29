@@ -66,7 +66,7 @@ void CToneMappingStage::Execute()
 		m_passToneMapping.SetFlags(CPrimitiveRenderPass::ePassFlags_RequireVrProjectionConstants);
 		m_passToneMapping.SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants);	// Enables reflection constants addition in the shader
 
-		CTexture* pBloomTex = bBloomEnabled ? CRendererResources::s_ptexHDRFinalBloom : CRendererResources::s_ptexBlack;
+		CTexture* pBloomTex = bBloomEnabled ? m_graphicsPipelineResources.m_pTexHDRFinalBloom : CRendererResources::s_ptexBlack;
 
 		m_passToneMapping.SetSampler(0, EDefaultSamplerStates::LinearClamp);
 		m_passToneMapping.SetTexture(0, m_graphicsPipelineResources.m_pTexHDRTarget);

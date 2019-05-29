@@ -214,7 +214,7 @@ void CRainStage::ExecuteDeferredRainGBuffer()
 	const auto shouldApplyOcclusion = rd->m_bDeferredRainOcclusionEnabled;
 
 	CTexture* pDepthStencilTex = RenderView()->GetDepthTarget();
-	CTexture* pOcclusionTex = shouldApplyOcclusion ? CRendererResources::s_ptexRainOcclusion : CRendererResources::s_ptexBlack;
+	CTexture* pOcclusionTex = shouldApplyOcclusion ? m_graphicsPipelineResources.m_pTexRainOcclusion : CRendererResources::s_ptexBlack;
 
 	uint64 rtMask = 0;
 	if (shouldApplyOcclusion)
@@ -343,10 +343,10 @@ void CRainStage::Execute()
 	if (shouldApplyOcclusion)
 	{
 		if (rainVolParams.areaAABB.IsReset() ||
-			!CTexture::IsTextureExist(CRendererResources::s_ptexRainOcclusion))
+			!CTexture::IsTextureExist(m_graphicsPipelineResources.m_pTexRainOcclusion))
 			return;
 
-		if (!(CTexture::IsTextureExist(CRendererResources::s_ptexRainSSOcclusion[0]) && CTexture::IsTextureExist(CRendererResources::s_ptexRainSSOcclusion[1])))
+		if (!(CTexture::IsTextureExist(m_graphicsPipelineResources.m_pTexRainSSOcclusion[0]) && CTexture::IsTextureExist(m_graphicsPipelineResources.m_pTexRainSSOcclusion[1])))
 		{
 			// Render targets not generated yet
 			// - Better to skip and have no rain than it render over everything
@@ -370,14 +370,14 @@ void CRainStage::Execute()
 
 			auto& pass = m_passRainOcclusionAccumulation;
 
-			CTexture* pOcclusionTex = CRendererResources::s_ptexRainOcclusion;
+			CTexture* pOcclusionTex = m_graphicsPipelineResources.m_pTexRainOcclusion;
 
 			if (pass.IsDirty())
 			{
 				static CCryNameTSCRC pSceneRainOccAccTechName("SceneRainOccAccumulate");
 				pass.SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_VS);
 				pass.SetTechnique(CShaderMan::s_shPostEffectsGame, pSceneRainOccAccTechName, 0);
-				pass.SetRenderTarget(0, CRendererResources::s_ptexRainSSOcclusion[0]);
+				pass.SetRenderTarget(0, m_graphicsPipelineResources.m_pTexRainSSOcclusion[0]);
 
 				pass.SetState(GS_NODEPTHTEST);
 
@@ -407,7 +407,7 @@ void CRainStage::Execute()
 			PROFILE_LABEL_SCOPE("BLUR");
 
 			const float fDist = 8.0f;
-			m_passRainOcclusionBlur.Execute(CRendererResources::s_ptexRainSSOcclusion[0], CRendererResources::s_ptexRainSSOcclusion[1], 1.0f, fDist);
+			m_passRainOcclusionBlur.Execute(m_graphicsPipelineResources.m_pTexRainSSOcclusion[0], m_graphicsPipelineResources.m_pTexRainSSOcclusion[1], 1.0f, fDist);
 		}
 	}
 
@@ -452,9 +452,9 @@ void CRainStage::Execute()
 		prim.SetTexture(0, m_graphicsPipelineResources.m_pTexLinearDepth);
 		prim.SetTexture(1, m_pRainfallTex);
 		prim.SetTexture(2, m_pRainfallNormalTex);
-		prim.SetTexture(3, CRendererResources::s_ptexHDRFinalBloom);
+		prim.SetTexture(3, m_graphicsPipelineResources.m_pTexHDRFinalBloom);
 
-		auto* pSSOcclusionTex = shouldApplyOcclusion ? CRendererResources::s_ptexRainSSOcclusion[0] : CRendererResources::s_ptexBlack;
+		auto* pSSOcclusionTex = shouldApplyOcclusion ? m_graphicsPipelineResources.m_pTexRainSSOcclusion[0] : CRendererResources::s_ptexBlack;
 		prim.SetTexture(4, pSSOcclusionTex);
 
 		// Bind average luminance
@@ -532,7 +532,7 @@ void CRainStage::ExecuteRainOcclusionGen()
 	CTexture* pTmpDepthSurface = CRendererResources::CreateDepthTarget(RAIN_OCC_MAP_SIZE, RAIN_OCC_MAP_SIZE, Clr_FarPlane, eTF_Unknown);
 
 	// clear buffers
-	CClearSurfacePass::Execute(CRendererResources::s_ptexRainOcclusion, Clr_Neutral);
+	CClearSurfacePass::Execute(m_graphicsPipelineResources.m_pTexRainOcclusion, Clr_Neutral);
 	CClearSurfacePass::Execute(pTmpDepthSurface, CLEAR_ZBUFFER, Clr_FarPlane.r, Val_Unused);
 
 	// render occluders to rain occlusion texture
@@ -542,12 +542,12 @@ void CRainStage::ExecuteRainOcclusionGen()
 		D3DViewPort viewport;
 		viewport.TopLeftX = 0.0f;
 		viewport.TopLeftY = 0.0f;
-		viewport.Width = static_cast<float>(CRendererResources::s_ptexRainOcclusion->GetWidth());
-		viewport.Height = static_cast<float>(CRendererResources::s_ptexRainOcclusion->GetHeight());
+		viewport.Width = static_cast<float>(m_graphicsPipelineResources.m_pTexRainOcclusion->GetWidth());
+		viewport.Height = static_cast<float>(m_graphicsPipelineResources.m_pTexRainOcclusion->GetHeight());
 		viewport.MinDepth = 0.0f;
 		viewport.MaxDepth = 1.0f;
 
-		pass.SetRenderTarget(0, CRendererResources::s_ptexRainOcclusion);
+		pass.SetRenderTarget(0, m_graphicsPipelineResources.m_pTexRainOcclusion);
 		pass.SetDepthTarget(pTmpDepthSurface);
 		pass.SetViewport(viewport);
 		pass.BeginAddingPrimitives();
