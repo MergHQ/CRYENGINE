@@ -171,15 +171,14 @@ void CryInvalidParameterHandler(
   unsigned int line,
   uintptr_t pReserved)
 {
-	//size_t i;
-	//char sFunc[128];
-	//char sExpression[128];
-	//char sFile[128];
-	//wcstombs_s( &i,sFunc,sizeof(sFunc),function,_TRUNCATE );
-	//wcstombs_s( &i,sExpression,sizeof(sExpression),expression,_TRUNCATE );
-	//wcstombs_s( &i,sFile,sizeof(sFile),file,_TRUNCATE );
-	//CryFatalError( "Invalid parameter detected in function %s. File: %s Line: %d, Expression: %s",sFunc,sFile,line,sExpression );
-	CryFatalError("Invalid parameter detected in CRT function");
+	size_t i;
+	char sFunc[128];
+	char sExpression[128];
+	char sFile[128];
+	wcstombs_s(&i, sFunc, sizeof(sFunc), function, _TRUNCATE);
+	wcstombs_s(&i, sExpression, sizeof(sExpression), expression, _TRUNCATE);
+	wcstombs_s(&i, sFile, sizeof(sFile), file, _TRUNCATE);
+	CryFatalError("Invalid parameter detected in function %s. File: %s Line: %d, Expression: %s", sFunc, sFile, line, sExpression);
 }
 
 void InitCRTHandlers()
