@@ -1695,8 +1695,8 @@ void C3DEngine::RenderScene(const int nRenderFlags, const SRenderingPassInfo& pa
 		passInfo.GetRendItemSorter().IncreaseOctreeCounter();
 		{
 			CRY_PROFILE_SECTION(PROFILE_3DENGINE, "Traverse Outdoor Octree");
-			uint32 outdoorCullMask = IsOutdoorVisible() ? passCullMask : (passCullMask & ~kPassCullMainMask);
-			m_pObjectsTree->Render_Object_Nodes(false, OCTREENODE_RENDER_FLAG_OBJECTS, GetSkyColor(), outdoorCullMask, passInfo);
+			if (uint32 outdoorCullMask = IsOutdoorVisible() ? passCullMask : (passCullMask & ~kPassCullMainMask))
+				m_pObjectsTree->Render_Object_Nodes(false, OCTREENODE_RENDER_FLAG_OBJECTS, GetSkyColor(), outdoorCullMask, passInfo);
 		}
 
 		if (GetCVars()->e_ObjectsTreeBBoxes >= 3)
