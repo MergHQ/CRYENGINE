@@ -2755,7 +2755,7 @@ void CRendererCVars::InitCVars()
 	               "Usage: r_D3D12SubmissionThread [0-15]");
 	REGISTER_CVAR3("r_D3D12WaitableSwapChain", CV_r_D3D12WaitableSwapChain, 0, VF_REQUIRE_APP_RESTART | VF_CHEAT,
 	               "Enables highest performance in windowed mode (does not allow switching to fullscreen).");
-	REGISTER_CVAR3("r_D3D12BatchResourceBarriers", CV_r_D3D12BatchResourceBarriers, 1, VF_NULL,
+	REGISTER_CVAR3("r_D3D12BatchResourceBarriers", CV_r_D3D12BatchResourceBarriers, 2, VF_NULL,
 	               "Enables batching of resource barriers.\n"
 	               "0=Off,\n"
 	               "1=On,\n"
