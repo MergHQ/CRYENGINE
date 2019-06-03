@@ -24,6 +24,8 @@ public:
 			return;
 
 		CacheProperties(*pEntity, m_cachedProperties);
+
+		pObject->SetLayerModified();
 	}
 
 	virtual int GetSize() override { return sizeof(*this); }
@@ -47,6 +49,8 @@ public:
 
 			RestoreComponentProperties(pComponent, *cachedComponent.pProperties.get());
 		}
+
+		pObject->SetLayerModified();
 	}
 	virtual void Redo() override
 	{
@@ -65,6 +69,8 @@ public:
 
 			RestoreComponentProperties(pComponent, *cachedComponent.pProperties.get());
 		}
+
+		pObject->SetLayerModified();
 	}
 
 protected:
@@ -133,6 +139,8 @@ public:
 				continue;
 
 			pEntity->RemoveComponent(pComponent);
+		
+			pEntityObject->SetLayerModified();
 		}
 
 		GetIEditor()->GetObjectManager()->EmitPopulateInspectorEvent();
@@ -151,6 +159,8 @@ public:
 				continue;
 
 			componentInstanceInfo.instanceGUID = AddComponentInternal(pEntity);
+		
+			pEntityObject->SetLayerModified();
 		}
 
 		GetIEditor()->GetObjectManager()->EmitPopulateInspectorEvent();
@@ -161,7 +171,13 @@ public:
 		const CryGUID& componentInstanceGUID = AddComponentInternal(pEntity);
 		if (!componentInstanceGUID.IsNull())
 		{
-			m_affectedEntityInfo.emplace_back(SComponentInstanceInfo{ pEntity->GetGuid(), componentInstanceGUID });
+			const CryGUID& guid = pEntity->GetGuid();
+			m_affectedEntityInfo.emplace_back(SComponentInstanceInfo{ guid, componentInstanceGUID });
+			
+			if (CEntityObject* pEntityObject = static_cast<CEntityObject*>(GetIEditorImpl()->GetObjectManager()->FindObject(guid)))
+			{
+				pEntityObject->SetLayerModified();
+			}
 		}
 	}
 
