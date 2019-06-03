@@ -202,7 +202,7 @@ CEntity* GetAdam(CEntity* pAdam, Matrix34& mtx)
 {
 	CEntity* pParent;
 	mtx.SetIdentity();
-	while (pParent = static_cast<CEntity*>(pAdam->GetParent()))
+	while ((pParent = static_cast<CEntity*>(pAdam->GetParent())) && (pParent != pAdam->GetLocalSimParent()))
 	{
 		mtx = Matrix34::CreateScale(pParent->GetScale()) * pAdam->GetLocalTM() * mtx;
 		pAdam = pParent;

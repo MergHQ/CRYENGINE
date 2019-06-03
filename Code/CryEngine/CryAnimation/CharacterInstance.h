@@ -82,7 +82,8 @@ public:
 	virtual float GetUniformScale() const override                                              { return m_location.s; }
 	virtual void CopyPoseFrom(const ICharacterInstance &instance) override;
 	virtual void FinishAnimationComputations() override { m_SkeletonAnim.FinishAnimationComputations(); }
-	virtual void SetParentRenderNode(const ICharacterRenderNode* pRenderNode) override;
+	virtual void SetParentRenderNode(ICharacterRenderNode* pRenderNode) override;
+	virtual ICharacterRenderNode* GetParentRenderNode() const override { return m_pParentRenderNode; }
 	virtual void SetAttachmentLocation_DEPRECATED(const QuatTS& newCharacterLocation) override { m_location = newCharacterLocation; } // TODO: Resolve this issue (has been described as "This is a hack to keep entity attachments in sync.").
 	virtual void SetCharacterOffset(const QuatTS& offs) override                               { m_SkeletonPose.m_physics.SetOffset(offs); }
 	virtual void OnDetach() override;
@@ -123,8 +124,6 @@ public:
 	bool  GetWasVisible() const          { return m_bWasVisible; };
 
 	int32 GetAnimationLOD() const        { return m_nAnimationLOD; }
-
-	const ICharacterRenderNode* GetParentRenderNode() { return m_pParentRenderNode;  }
 
 	bool  FacialAnimationEnabled() const { return m_bFacialAnimationEnabled; }
 
@@ -249,7 +248,7 @@ public:
 
 private:
 
-	const ICharacterRenderNode* m_pParentRenderNode;
+	ICharacterRenderNode* m_pParentRenderNode;
 
 	_smart_ptr<IMaterial> m_pInstanceMaterial;
 

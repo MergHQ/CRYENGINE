@@ -291,7 +291,16 @@ void CCharacterRenderNode::SetCharacter(ICharacterInstance* pCharacter)
 		}
 
 		m_pCharacterInstance = pCharacter;
-		m_pCharacterInstance->SetParentRenderNode(this);
+
+		if (m_pCharacterInstance)
+		{
+			if (const auto pPreviousOwner = static_cast<CCharacterRenderNode*>(m_pCharacterInstance->GetParentRenderNode()))
+			{
+				pPreviousOwner->m_pCharacterInstance = nullptr;
+			}
+
+			m_pCharacterInstance->SetParentRenderNode(this);
+		}
 
 		InvalidatePermanentRenderObject();
 	}
