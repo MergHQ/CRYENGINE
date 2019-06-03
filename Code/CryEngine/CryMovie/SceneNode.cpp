@@ -476,13 +476,13 @@ void CAnimSceneNode::OnReset()
 
 		if (m_cvar_t_FixedStep)
 		{
-			m_cvar_t_FixedStep->Set(0);
+			m_cvar_t_FixedStep->Set(0.0f);
 		}
 	}
 
 	if (GetTrackForParameter(eAnimParamType_FixedTimeStep) && m_cvar_t_FixedStep)
 	{
-		m_cvar_t_FixedStep->Set(0);
+		m_cvar_t_FixedStep->Set(0.0f);
 	}
 }
 
