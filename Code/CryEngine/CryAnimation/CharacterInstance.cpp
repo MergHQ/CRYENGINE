@@ -196,7 +196,7 @@ void CCharInstance::CopyPoseFrom(const ICharacterInstance& rICharInstance)
 	}
 }
 
-void CCharInstance::SetParentRenderNode(const ICharacterRenderNode* pRenderNode)
+void CCharInstance::SetParentRenderNode(ICharacterRenderNode* pRenderNode)
 {
 	if (m_pParentRenderNode != pRenderNode)
 	{

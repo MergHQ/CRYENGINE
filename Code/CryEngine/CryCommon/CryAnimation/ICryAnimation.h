@@ -594,7 +594,10 @@ struct ICharacterInstance : IMeshObj
 	//! Sets up a non-owning reference to the parent IRenderNode instance.
 	//! Reference set through this method is used for propagating state to IRenderNodes controlled by this character instance (e.g. character attachments).
 	//! This method has been introduced as a temporary measure and should not be relied upon by any system apart from 3DEngine.
-	virtual void SetParentRenderNode(const ICharacterRenderNode* pRenderNode) = 0;
+	virtual void SetParentRenderNode(ICharacterRenderNode* pRenderNode) = 0;
+
+	//! Accesses the parent IRenderNode instance that has been previously set by a call to SetParentRenderNode().
+	virtual ICharacterRenderNode* GetParentRenderNode() const = 0;
 
 	// This is a hack to keep entity attachments in synch.
 	virtual void SetAttachmentLocation_DEPRECATED(const QuatTS& newCharacterLocation) = 0;
