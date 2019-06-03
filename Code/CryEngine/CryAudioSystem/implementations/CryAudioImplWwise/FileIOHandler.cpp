@@ -115,25 +115,25 @@ AKRESULT CFileIOHandler::Open(AkOSChar const* sFileName, AkOpenMode eOpenMode, A
 		{
 		case AK_OpenModeRead:
 			{
-				sOpenMode = "rbx";
+				sOpenMode = "rb";
 
 				break;
 			}
 		case AK_OpenModeWrite:
 			{
-				sOpenMode = "wbx";
+				sOpenMode = "wb";
 
 				break;
 			}
 		case AK_OpenModeWriteOvrwr:
 			{
-				sOpenMode = "w+bx";
+				sOpenMode = "w+b";
 
 				break;
 			}
 		case AK_OpenModeReadWrite:
 			{
-				sOpenMode = "abx";
+				sOpenMode = "ab";
 
 				break;
 			}

@@ -580,6 +580,7 @@ public:
 	static void Shutdown();
 
 	static CMemReplay* GetInstance();
+	static void RegisterCVars();
 
 	//////////////////////////////////////////////////////////////////////////
 	// IMemReplay interface implementation

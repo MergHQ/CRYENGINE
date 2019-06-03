@@ -2966,7 +2966,7 @@ void C3DEngine::DisplayInfo(float& fTextPosX, float& fTextPosY, float& fTextStep
 		const float curPhysTime = TICKS_TO_MS(gUpdateTimes[gUpdateTimeIdx].PhysStepTime);
 		DrawTextRightAligned(fTextPosX, fTextPosY += fTextStepY, DISPLAY_INFO_SCALE_SMALL, curPhysTime > MAX_PHYS_TIME ? Col_Red : Col_White, "%3.1f ms      Phys", curPhysTime);
 		const float curPhysWaitTime = TICKS_TO_MS(gUpdateTimes[gUpdateTimeIdx].physWaitTime);
-		DrawTextRightAligned(fTextPosX, fTextPosY += fTextStepY, DISPLAY_INFO_SCALE_SMALL, curPhysTime > MAX_PHYS_TIME ? Col_Red : Col_White, "%3.1f ms   WaitPhys", curPhysWaitTime);
+		DrawTextRightAligned(fTextPosX, fTextPosY += fTextStepY, DISPLAY_INFO_SCALE_SMALL, curPhysTime > MAX_PHYS_TIME ? Col_Red : Col_White, "%3.1f ms  WaitPhys", curPhysWaitTime);
 
 		IF (gEnv->pPhysicalWorld, 1)
 		{
@@ -3064,16 +3064,21 @@ void C3DEngine::DisplayInfo(float& fTextPosX, float& fTextPosY, float& fTextStep
 				pProfiler->AcquireReadAccess();
 				for(auto pTracker : *pProfiler->GetActiveTrackers())
 				{
-					if (pTracker->pDescription->subsystem == PROFILE_AUDIO)
+					if (pTracker->pDescription->subsystem == PROFILE_AUDIO && !pTracker->pDescription->isWaiting)
 					{
 						fTimeMS += pTracker->selfValue.Average();
 					}
 				}
 				pProfiler->ReleaseReadAccess();
+				
+				DrawTextRightAligned(fTextPosX, fTextPosY += (fTextStepY - STEP_SMALL_DIFF),
+					DISPLAY_INFO_SCALE_SMALL, fTimeMS > maxVal ? Col_Red : Col_White, "%.2f ms     Audio", fTimeMS);
 			}
-
-			DrawTextRightAligned(fTextPosX, fTextPosY += (fTextStepY - STEP_SMALL_DIFF),
-			                     DISPLAY_INFO_SCALE_SMALL, fTimeMS > maxVal ? Col_Red : Col_White, "%.2f ms     Audio", fTimeMS);
+			else
+			{
+				DrawTextRightAligned(fTextPosX, fTextPosY += (fTextStepY - STEP_SMALL_DIFF),
+					DISPLAY_INFO_SCALE_SMALL, fTimeMS > maxVal ? Col_Red : Col_White, "-------     Audio");
+			}
 		}
 
 		{
@@ -3081,7 +3086,7 @@ void C3DEngine::DisplayInfo(float& fTextPosX, float& fTextPosY, float& fTextStep
 
 			float fTimeMS = 1000.0f * gEnv->pTimer->TicksToSeconds(stat.nMainStreamingThreadWait);
 			DrawTextRightAligned(fTextPosX, fTextPosY += (fTextStepY - STEP_SMALL_DIFF),
-			                     DISPLAY_INFO_SCALE_SMALL, Col_White, "%3.1f ms     StreamFin", fTimeMS);
+			                     DISPLAY_INFO_SCALE_SMALL, Col_White, "%3.1f ms   StreamFin", fTimeMS);
 
 		}
 
@@ -3091,7 +3096,7 @@ void C3DEngine::DisplayInfo(float& fTextPosX, float& fTextPosY, float& fTextStep
 
 			float fTimeMS = 1000.0f * gEnv->pTimer->TicksToSeconds(stat.m_nNetworkSync);
 			DrawTextRightAligned(fTextPosX, fTextPosY += (fTextStepY - STEP_SMALL_DIFF),
-			                     DISPLAY_INFO_SCALE_SMALL, Col_White, "%3.1f ms     NetworkSync", fTimeMS);
+			                     DISPLAY_INFO_SCALE_SMALL, Col_White, "%3.1f ms NetworkSync", fTimeMS);
 		}
 	}
 

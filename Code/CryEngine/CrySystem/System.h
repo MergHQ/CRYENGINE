@@ -176,8 +176,6 @@ struct SSystemCVars
 #endif
 
 	int sys_vr_support;
-
-	int memReplayRecordCallstacks;
 };
 extern SSystemCVars g_cvars;
 
