@@ -528,8 +528,15 @@ void CCryProfilingSystem::EndFrame()
 		m_pBootProfiler->OnFrameEnd();
 #endif
 
-	// pause was requested or no one is listening for the results
-	m_trackingPaused = m_willPause || m_FrameListeners.empty();
+	bool neededForDisplayinfo =  false;
+	if (gEnv->pConsole)
+	{
+		ICVar* pRDisplayinfo = gEnv->pConsole->GetCVar("r_displayinfo");
+		if (pRDisplayinfo)
+			neededForDisplayinfo = pRDisplayinfo->GetIVal() == 2 || pRDisplayinfo->GetIVal() >= 5;
+	}
+	// pause requested or no one needs the results
+	m_trackingPaused = m_willPause || (m_FrameListeners.empty() && !neededForDisplayinfo);
 }
 
 void CCryProfilingSystem::RecordMarker(SProfilingMarker* pMarker)
