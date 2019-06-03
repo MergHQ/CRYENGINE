@@ -741,7 +741,12 @@ static void DrawSceneToCubeSide(CRenderOutputPtr pRenderOutput, const Vec3& Pos,
 	pRenderView->SetCameras(&cam, 1);
 	pRenderView->SetPreviousFrameCameras(&cam, 1);
 
+	gcpRendD3D->ResizePipelineAndContext(generalPassInfo.GetGraphicsPipelineKey(), generalPassInfo.GetDisplayContextKey(), tex_size, tex_size);
+	gcpRendD3D->BeginFrame(generalPassInfo.GetDisplayContextKey(), generalPassInfo.GetGraphicsPipelineKey());
+	
 	pEngine->RenderWorld(shaderRenderflags, generalPassInfo, __FUNCTION__);
+
+	gcpRendD3D->EndFrame();
 
 	gEnv->pSystem->SetViewCamera(prevCamera);
 
@@ -852,15 +857,6 @@ DynArray<std::uint16_t> CTexture::RenderEnvironmentCMHDR(std::size_t size, const
 	pipelineDesc.type = EGraphicsPipelineType::Standard;
 	pipelineDesc.shaderFlags = SHDF_CUBEMAPGEN | SHDF_ALLOWPOSTPROCESS | SHDF_ALLOWHDR | SHDF_ZPASS | SHDF_NOASYNC | SHDF_ALLOW_AO;
 	SGraphicsPipelineKey pipelineKey = gcpRendD3D->CreateGraphicsPipeline(pipelineDesc);
-
-	gcpRendD3D->ExecuteRenderThreadCommand(
-		[=]
-	{
-		gcpRendD3D->OnRenderResolutionChanged(size, size);
-		std::shared_ptr<CGraphicsPipeline> pipeline = gcpRendD3D->FindGraphicsPipeline(pipelineKey);
-		pipeline->Resize(size, size);
-	}, ERenderCommandFlags::None
-		);
 
 	vecData.reserve(size * size * 6 * 4);
 	for (int nSide = 0; nSide < 6; nSide++)
