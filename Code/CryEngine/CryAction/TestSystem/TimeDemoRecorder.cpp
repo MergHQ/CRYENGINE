@@ -33,20 +33,21 @@
 //////////////////////////////////////////////////////////////////////////
 // Brush Export structures.
 //////////////////////////////////////////////////////////////////////////
-#define TIMEDEMO_FILE_SIGNATURE         "CRY "
-#define TIMEDEMO_FILE_TYPE              150
-#define TIMEDEMO_FILE_VERSION_1         1
-#define TIMEDEMO_FILE_VERSION_2         2
-#define TIMEDEMO_FILE_VERSION_3         4 // ?
-#define TIMEDEMO_FILE_VERSION_4         6
-#define TIMEDEMO_FILE_VERSION_7         7
-#define TIMEDEMO_FILE_VERSION           TIMEDEMO_FILE_VERSION_7
+#define TIMEDEMO_FILE_SIGNATURE            "CRY "
+#define TIMEDEMO_FILE_TYPE                 150
+#define TIMEDEMO_FILE_VERSION_1            1
+#define TIMEDEMO_FILE_VERSION_2            2
+#define TIMEDEMO_FILE_VERSION_3            4 // ?
+#define TIMEDEMO_FILE_VERSION_4            6
+#define TIMEDEMO_FILE_VERSION_7            7
+#define TIMEDEMO_FILE_VERSION              TIMEDEMO_FILE_VERSION_7
 
-#define TIMEDEMO_MAX_INPUT_EVENTS       16
-#define TIMEDEMO_MAX_GAME_EVENTS        1 // For now...
-#define TIMEDEMO_MAX_DESCRIPTION_LENGTH 128
+#define TIMEDEMO_MAX_INPUT_EVENTS          16
+#define TIMEDEMO_MAX_GAME_EVENTS           1 // For now...
+#define TIMEDEMO_MAX_DESCRIPTION_LENGTH_V4 64
+#define TIMEDEMO_MAX_DESCRIPTION_LENGTH_V7 128
 
-#define FIXED_TIME_STEP                 (30) // Assume running at 30fps.
+#define FIXED_TIME_STEP                    (30) // Assume running at 30fps.
 
 enum ETimeDemoFileFlags
 {
@@ -173,12 +174,13 @@ struct STimeDemoFrame_2
 	}
 };
 
+template <int DESCRIPTION_LENGTH>
 struct SRecordedGameEvent
 {
 	uint32 gameEventType;
-	char   entityName[TIMEDEMO_MAX_DESCRIPTION_LENGTH];
-	char   description[TIMEDEMO_MAX_DESCRIPTION_LENGTH];
-	char   description2[TIMEDEMO_MAX_DESCRIPTION_LENGTH];
+	char   entityName[DESCRIPTION_LENGTH];
+	char   description[DESCRIPTION_LENGTH];
+	char   description2[DESCRIPTION_LENGTH];
 	float  value;
 	int32  extra;
 
@@ -200,7 +202,26 @@ struct SRecordedGameEvent
 	}
 };
 
-STimeDemoGameEvent::STimeDemoGameEvent(const SRecordedGameEvent& event)
+struct SRecordedGameEventV4 : SRecordedGameEvent<TIMEDEMO_MAX_DESCRIPTION_LENGTH_V4>
+{
+	using SRecordedGameEvent<TIMEDEMO_MAX_DESCRIPTION_LENGTH_V4>::operator=;
+};
+
+struct SRecordedGameEventV7 : SRecordedGameEvent<TIMEDEMO_MAX_DESCRIPTION_LENGTH_V7>
+{
+	using SRecordedGameEvent<TIMEDEMO_MAX_DESCRIPTION_LENGTH_V7>::operator=;
+};
+
+STimeDemoGameEvent::STimeDemoGameEvent(const SRecordedGameEventV4& event)
+	: entityName(event.entityName)
+	, gameEventType(event.gameEventType)
+	, description(event.description)
+	, description2(event.description2)
+	, value(event.value)
+	, extra(event.extra)
+{}
+
+STimeDemoGameEvent::STimeDemoGameEvent(const SRecordedGameEventV7& event)
 	: entityName(event.entityName)
 	, gameEventType(event.gameEventType)
 	, description(event.description)
@@ -259,7 +280,7 @@ struct STimeDemoFrame_4
 	int                   numInputEvents;
 	STimeDemoFrameEvent_2 inputEvents[TIMEDEMO_MAX_INPUT_EVENTS];
 	int                   numGameEvents;
-	SRecordedGameEvent    gameEvents[TIMEDEMO_MAX_GAME_EVENTS];
+	SRecordedGameEventV4  gameEvents[TIMEDEMO_MAX_GAME_EVENTS];
 
 	uint32                bFollow; // if true, data from the next timedemo frame will be collected in this frame
 
@@ -303,7 +324,7 @@ struct STimeDemoFrame_7
 	int                   numInputEvents;
 	STimeDemoFrameEvent_2 inputEvents[TIMEDEMO_MAX_INPUT_EVENTS];
 	int                   numGameEvents;
-	SRecordedGameEvent    gameEvents[TIMEDEMO_MAX_GAME_EVENTS];
+	SRecordedGameEventV7  gameEvents[TIMEDEMO_MAX_GAME_EVENTS];
 
 	uint32                bFollow;
 
@@ -1500,6 +1521,20 @@ void CTimeDemoRecorder::PreUpdate()
 //////////////////////////////////////////////////////////////////////////
 void CTimeDemoRecorder::PostUpdate()
 {
+	string log;
+	if (m_logInfoQueue.dequeue(log))
+	{
+		gEnv->pLog->Log("%s", log.c_str());
+
+		string filename = PathUtil::Make("%USER%/TestResults", PathUtil::ReplaceExtension(CTimeDemoRecorder::s_timedemo_file->GetString(), "log"));
+		FILE* hFile = fxopen(filename.c_str(), "at");
+		if (hFile)
+		{
+			fprintf(hFile, "%s\n", log.c_str());
+			fclose(hFile);
+		}
+	}
+
 	if (gEnv->pSystem->IsQuitting())
 	{
 		return;
@@ -2127,16 +2162,7 @@ void CTimeDemoRecorder::LogInfo(const char* format, ...)
 	cry_vsprintf(szBuffer, format, ArgList);
 	va_end(ArgList);
 
-	gEnv->pLog->Log("%s", szBuffer);
-
-	string filename = PathUtil::Make("%USER%/TestResults", PathUtil::ReplaceExtension(CTimeDemoRecorder::s_timedemo_file->GetString(), "log"));
-	FILE* hFile = fxopen(filename.c_str(), "at");
-	if (hFile)
-	{
-		// Write the string to the file and close it
-		fprintf(hFile, "%s\n", szBuffer);
-		fclose(hFile);
-	}
+	m_logInfoQueue.enqueue(szBuffer);
 }
 
 //////////////////////////////////////////////////////////////////////////

@@ -372,9 +372,9 @@ void CGraphicsPipelineResources::PrepareRainOcclusionMaps()
 {
 	if (!m_pTexRainOcclusion)
 	{
-		m_pTexRainOcclusion = CTexture::GetOrCreateTextureObject("$RainOcclusion", RAIN_OCC_MAP_SIZE, RAIN_OCC_MAP_SIZE, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_RENDERTARGET, eTF_R8G8B8A8);
-		m_pTexRainSSOcclusion[0] = CTexture::GetOrCreateTextureObject("$RainSSOcclusion0", 0, 0, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_RENDERTARGET, eTF_Unknown);
-		m_pTexRainSSOcclusion[1] = CTexture::GetOrCreateTextureObject("$RainSSOcclusion1", 0, 0, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_RENDERTARGET, eTF_Unknown);
+		m_pTexRainOcclusion = CTexture::GetOrCreateTextureObject(m_graphicsPipeline.MakeUniqueTexIdentifierName("$RainOcclusion").c_str(), RAIN_OCC_MAP_SIZE, RAIN_OCC_MAP_SIZE, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_RENDERTARGET, eTF_R8G8B8A8);
+		m_pTexRainSSOcclusion[0] = CTexture::GetOrCreateTextureObject(m_graphicsPipeline.MakeUniqueTexIdentifierName("$RainSSOcclusion0").c_str(), 0, 0, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_RENDERTARGET, eTF_Unknown);
+		m_pTexRainSSOcclusion[1] = CTexture::GetOrCreateTextureObject(m_graphicsPipeline.MakeUniqueTexIdentifierName("$RainSSOcclusion1").c_str(), 0, 0, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_RENDERTARGET, eTF_Unknown);
 	}
 }
 
@@ -383,7 +383,7 @@ void CGraphicsPipelineResources::CreateRainOcclusionMaps(int resourceWidth, int 
 	PrepareRainOcclusionMaps();
 
 	if (!CTexture::IsTextureExist(m_pTexRainOcclusion))
-		SPostEffectsUtils::GetOrCreateRenderTarget("$RainOcclusion", m_pTexRainOcclusion, RAIN_OCC_MAP_SIZE, RAIN_OCC_MAP_SIZE, Clr_Neutral, false, false, eTF_R8, -1, FT_DONT_RELEASE);
+		SPostEffectsUtils::GetOrCreateRenderTarget(m_graphicsPipeline.MakeUniqueTexIdentifierName("$RainOcclusion").c_str(), m_pTexRainOcclusion, RAIN_OCC_MAP_SIZE, RAIN_OCC_MAP_SIZE, Clr_Neutral, false, false, eTF_R8, -1, FT_DONT_RELEASE);
 
 	const int width_r8 = (resourceWidth + 7) / 8;
 	const int height_r8 = (resourceHeight + 7) / 8;
@@ -392,8 +392,8 @@ void CGraphicsPipelineResources::CreateRainOcclusionMaps(int resourceWidth, int 
 		m_pTexRainSSOcclusion[0]->GetWidth() != width_r8 ||
 		m_pTexRainSSOcclusion[0]->GetHeight() != height_r8)
 	{
-		SPostEffectsUtils::GetOrCreateRenderTarget("$RainSSOcclusion0", m_pTexRainSSOcclusion[0], width_r8, height_r8, Clr_Unknown, 1, false, eTF_R8);
-		SPostEffectsUtils::GetOrCreateRenderTarget("$RainSSOcclusion1", m_pTexRainSSOcclusion[1], width_r8, height_r8, Clr_Unknown, 1, false, eTF_R8);
+		SPostEffectsUtils::GetOrCreateRenderTarget(m_graphicsPipeline.MakeUniqueTexIdentifierName("$RainSSOcclusion0").c_str(), m_pTexRainSSOcclusion[0], width_r8, height_r8, Clr_Unknown, 1, false, eTF_R8);
+		SPostEffectsUtils::GetOrCreateRenderTarget(m_graphicsPipeline.MakeUniqueTexIdentifierName("$RainSSOcclusion1").c_str(), m_pTexRainSSOcclusion[1], width_r8, height_r8, Clr_Unknown, 1, false, eTF_R8);
 	}
 }
 

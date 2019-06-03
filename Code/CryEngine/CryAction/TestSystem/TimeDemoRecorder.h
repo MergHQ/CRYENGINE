@@ -18,9 +18,11 @@
 #include <CryCore/Containers/CryListenerSet.h>
 #include <CryAction/ITimeDemoRecorder.h>
 #include <CrySystem/Profilers/ILegacyProfiler.h>
+#include <3rdParty/concqueue/concqueue-spsc.hpp>
 #include "ITestModule.h"
 
-struct SRecordedGameEvent;
+struct SRecordedGameEventV4;
+struct SRecordedGameEventV7;
 
 struct STimeDemoGameEvent
 {
@@ -50,7 +52,8 @@ struct STimeDemoGameEvent
 		}
 	}
 
-	STimeDemoGameEvent(const SRecordedGameEvent& event);
+	STimeDemoGameEvent(const SRecordedGameEventV4& event);
+	STimeDemoGameEvent(const SRecordedGameEventV7& event);
 
 	void GetMemoryUsage(ICrySizer* pSizer) const
 	{
@@ -323,6 +326,8 @@ private:
 	float      m_fixedTimeStep;
 
 	string     m_file;
+
+	concqueue::spsc_queue_t<string> m_logInfoQueue;
 
 	//	IGameStateRecorder* m_pGameStateRecorder;
 

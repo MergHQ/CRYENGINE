@@ -803,6 +803,13 @@ SDisplayContextKey CRenderer::CreateSwapChainBackedContext(const SDisplayContext
 	{
 		gRenDev->ExecuteRenderThreadCommand([=]
 		{
+			if (pDC->GetDisplayResolution() == Vec2i(width, height))
+				return;
+
+#ifdef _DEBUG
+			CryLog("CreateSwapChainBackedContext(%d, %d) from [%d, %d]", width, height, pDC->GetDisplayResolution()[0], pDC->GetDisplayResolution()[1]);
+#endif
+
 			pDC->ChangeDisplayResolution(width, height);
 		}, ERenderCommandFlags::FlushAndWait);
 	}
