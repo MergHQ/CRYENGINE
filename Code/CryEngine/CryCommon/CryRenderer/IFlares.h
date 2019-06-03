@@ -8,9 +8,8 @@
 #include <CryCore/Containers/CryArray.h>
 
 class CCamera;
-
+class CRenderView;
 struct IShader;
-struct SRenderingPassInfo;
 
 class __MFPA
 {
@@ -96,10 +95,10 @@ private:
 
 struct SLensFlareRenderParam
 {
-	SLensFlareRenderParam(CCamera* pCamera, IShader* pShader, const SRenderingPassInfo& passInfo) :
+	SLensFlareRenderParam(CCamera* pCamera, IShader* pShader, CRenderView* pRenderView) :
 		pCamera(pCamera),
 		pShader(pShader),
-		passInfo(passInfo)
+		pRenderView(pRenderView)
 	{
 	}
 	~SLensFlareRenderParam(){}
@@ -109,7 +108,7 @@ struct SLensFlareRenderParam
 	}
 	CCamera* pCamera;
 	IShader* pShader;
-	const SRenderingPassInfo& passInfo;
+	CRenderView* pRenderView;
 };
 
 class ISoftOcclusionQuery
