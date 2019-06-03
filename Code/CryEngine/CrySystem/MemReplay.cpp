@@ -6,6 +6,7 @@
 #include "System.h"
 
 #include <CrySystem/ISystem.h>
+#include <CrySystem/ConsoleRegistration.h>
 #include <CryCore/Platform/platform.h>
 #include <CryCore/BitFiddling.h>
 #include <CryCore/AlignmentTools.h>
@@ -16,8 +17,6 @@
 #if CAPTURE_REPLAY_LOG && MEMREPLAY_USES_DETOURS
 #	include <detours.h>
 #endif
-
-extern SSystemCVars g_cvars;
 
 // FIXME DbgHelp broken on Durango currently
 #if CRY_PLATFORM_WINDOWS //|| CRY_PLATFORM_DURANGO
@@ -59,6 +58,9 @@ struct CVDebugInfo
 #endif
 
 #if CAPTURE_REPLAY_LOG || ENABLE_STATOSCOPE
+
+static int s_memReplayRecordCallstacks = 1;
+static int s_memReplaySaveToProjectDirectory = 1;
 
 #pragma pack(push)
 #pragma pack(1)
@@ -680,8 +682,20 @@ void ReplayDiskWriter::Close()
 	if (m_fp)
 	{
 		::fclose(m_fp);
-
 		m_fp = NULL;
+	}
+
+	if (s_memReplaySaveToProjectDirectory && gEnv->pCryPak)
+	{
+		const CryPathString saveDirectory = CryPathString(gEnv->pCryPak->GetGameFolder()) + "/MemReplays/";
+		gEnv->pCryPak->MakeDir(saveDirectory);
+		const CryPathString saveFile = saveDirectory + m_filename;
+
+		if (rename(m_filename, saveFile.c_str()) != 0)
+		{
+			CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_WARNING, 
+				"Failed to move the MemReplay recording from '%s' to '%s'.", m_filename, saveFile.c_str());
+		}
 	}
 
 	#if defined(USE_FILE_HANDLE_CACHE)
@@ -863,6 +877,8 @@ namespace
 		RecordingThreadScope() { assert(s_recordThreadId == threadID(-1)); s_recordThreadId = CryGetCurrentThreadId(); }
 		~RecordingThreadScope() { assert(s_recordThreadId != threadID(-1)); s_recordThreadId = threadID(-1); }
 	};
+
+	static bool g_memReplayPaused = false;
 }
 
 #if CRY_PLATFORM_WINDOWS || CRY_PLATFORM_DURANGO
@@ -1499,12 +1515,8 @@ uint64 ReplayLogStream::GetUncompressedLength() const
 
 #define SIZEOF_MEMBER(cls, mbr) (sizeof(reinterpret_cast<cls*>(0)->mbr))
 
-static bool g_memReplayPaused = false;
-
 //////////////////////////////////////////////////////////////////////////
 // CMemReplay class implementation.
-//////////////////////////////////////////////////////////////////////////
-
 //////////////////////////////////////////////////////////////////////////
 
 static int GetCurrentSysAlloced()
@@ -1828,6 +1840,88 @@ CMemReplay* CMemReplay::GetInstance()
  		return nullptr;
 }
 
+
+static void DumpAllocs(IConsoleCmdArgs* pParams)
+{
+	CryGetIMemReplay()->DumpStats();
+}
+
+static void ReplayDumpSymbols(IConsoleCmdArgs* pParams)
+{
+	CryGetIMemReplay()->DumpSymbols();
+}
+
+static void ReplayStop(IConsoleCmdArgs* pParams)
+{
+	CryGetIMemReplay()->Stop();
+}
+
+static void ReplayPause(IConsoleCmdArgs* pParams)
+{
+	CryGetIMemReplay()->Start(true);
+}
+
+static void ReplayResume(IConsoleCmdArgs* pParams)
+{
+	CryGetIMemReplay()->Start(false);
+}
+
+static void MemReplayRecordCallstacksChanged(ICVar* pCvar)
+{
+	if (s_memReplayRecordCallstacks)
+		CryGetIMemReplay()->AddLabel("Start recording Callstacks");
+	else
+		CryGetIMemReplay()->AddLabel("Stop recording Callstacks");
+}
+
+static void AddReplayLabel(IConsoleCmdArgs* pParams)
+{
+	if (pParams->GetArgCount() < 2)
+		CryLog("Not enough arguments");
+	else
+		CryGetIMemReplay()->AddLabel(pParams->GetArg(1));
+}
+
+static void ReplayInfo(IConsoleCmdArgs* pParams)
+{
+	CryReplayInfo info;
+	CryGetIMemReplay()->GetInfo(info);
+
+	CryLog("Uncompressed length: %" PRIu64, info.uncompressedLength);
+	CryLog("Written length: %" PRIu64, info.writtenLength);
+	CryLog("Tracking overhead: %u", info.trackingSize);
+	CryLog("Output filename: %s", info.filename ? info.filename : "(not open)");
+}
+
+static void AddReplaySizerTree(IConsoleCmdArgs* pParams)
+{
+	const char* name = "Sizers";
+
+	if (pParams->GetArgCount() >= 2)
+		name = pParams->GetArg(1);
+
+	CryGetIMemReplay()->AddSizerTree(name);
+}
+
+void CMemReplay::RegisterCVars()
+{
+	REGISTER_COMMAND("memDumpAllocs", &DumpAllocs, VF_NULL, "print allocs with stack traces");
+	REGISTER_COMMAND("memReplayDumpSymbols", &ReplayDumpSymbols, VF_NULL, "dump symbol info to mem replay log");
+	REGISTER_COMMAND("memReplayStop", &ReplayStop, VF_NULL, "stop logging to mem replay");
+	REGISTER_COMMAND("memReplayPause", &ReplayPause, VF_NULL, "Pause collection of mem replay data");
+	REGISTER_COMMAND("memReplayResume", &ReplayResume, VF_NULL, "Resume collection of mem replay data (use with -memReplayPaused cmdline)");
+	REGISTER_CVAR2_CB("memReplayRecordCallstacks", &s_memReplayRecordCallstacks, 1, VF_NULL,
+		"Turn the logging of callstacks by memreplay on(1) or off(0).\n"
+		"Saves a lot of memory on the log, but it will obviously contain less information. "
+		"Can be toggled during recording sessions to only add detail to specific sections of the recording."
+		, MemReplayRecordCallstacksChanged);
+	REGISTER_CVAR2("memReplaySaveToProjectDirectory", &s_memReplaySaveToProjectDirectory, 1, VF_NULL, 
+		"Setting this to 0 will save MemReplay recordings to the engine root directory, rather than the directory of the project.");
+	REGISTER_COMMAND("memReplayLabel", &AddReplayLabel, VF_NULL, "record a label in the mem replay log");
+	REGISTER_COMMAND("memReplayInfo", &ReplayInfo, VF_NULL, "output some info about the replay log");
+	REGISTER_COMMAND("memReplayAddSizerTree", &AddReplaySizerTree, VF_NULL, "output in-game sizer information to the log");
+}
+
 void CMemReplay::Init()
 {
 #if MEMREPLAY_USES_DETOURS
@@ -2138,7 +2232,8 @@ void CMemReplay::ExitScope_Alloc(EMemReplayAllocClass cls, EMemReplayUserPointer
 			s_replayLastGlobal = global;
 
 			TLogAutoLock lock(GetLogMutex());
-			RecordAlloc(cls, subCls, moduleId, id, alignment, sz, sz, changeGlobal);
+			if (m_stream.IsOpen())
+				RecordAlloc(cls, subCls, moduleId, id, alignment, sz, sz, changeGlobal);
 		}
 	}
 }
@@ -2745,7 +2840,7 @@ void CMemReplay::RecordModules()
 uint16 CMemReplay::WriteCallstack(UINT_PTR* callstack)
 {
 	uint32 length;
-	if (g_cvars.memReplayRecordCallstacks)
+	if (s_memReplayRecordCallstacks)
 	{
 		static_assert(k_maxCallStackDepth < uint16(~0), "Maximum stack depth is too large!");
 		length = k_maxCallStackDepth;

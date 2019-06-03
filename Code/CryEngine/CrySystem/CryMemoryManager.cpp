@@ -631,10 +631,6 @@ size_t CrySystemCrtGetUsedSpace()
 	return used;
 }
 
-CRYMEMORYMANAGER_API void CryResetStats(void)
-{
-}
-
 int GetPageBucketAlloc_wasted_in_allocation()
 {
 	return g_GlobPageBucketAllocator.get_wasted_in_allocation();
