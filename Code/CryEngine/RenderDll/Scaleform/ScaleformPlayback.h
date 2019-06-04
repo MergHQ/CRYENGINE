@@ -170,8 +170,7 @@ struct SSF_GlobalDrawParams
 		TexSmartPtr pRenderTarget;
 		TexSmartPtr pStencilTarget;
 		Matrix44    oldViewMat;
-		int         oldViewportWidth;
-		int         oldViewportHeight;
+		D3DViewPort oldViewport;
 
 		// Pass for GraphicsPipeline > 0
 		CPrimitiveRenderPass     renderPass;
@@ -188,14 +187,16 @@ struct SSF_GlobalDrawParams
 
 	struct _D3DRectangle : public ::D3DRectangle
 	{
-		_D3DRectangle() {}
+		_D3DRectangle() : ::D3DRectangle({ 0, 0, 0, 0 }) {}
 		_D3DRectangle(int l, int t, int r, int b) { left = l; top = t; right = r; bottom = b; }
+		_D3DRectangle operator=(const ::D3DRectangle& rc) noexcept { ::D3DRectangle::operator=(rc);  return *this; }
 	} scissor;
 
 	struct _D3DViewPort : public ::D3DViewPort
 	{
-		_D3DViewPort() {}
+		_D3DViewPort() : ::D3DViewPort({ 0, 0, 0, 0, 0.0f, 1.0f }) {}
 		_D3DViewPort(float l, float t, float w, float h) { TopLeftX = l; TopLeftY = t; Width = w; Height = h; MinDepth = 0.0f; MaxDepth = 1.0f; }
+		_D3DViewPort operator=(const ::D3DViewPort& vp) noexcept { ::D3DViewPort::operator=(vp);  return *this; }
 	} viewport;
 
 	OutputParams* pRenderOutput;

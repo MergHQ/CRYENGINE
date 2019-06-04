@@ -834,8 +834,7 @@ void CScaleformPlayback::PushOutputTarget(const Viewport& viewport)
 
 	sNewOutput.key = m_renderTargetStack.size() - 1;
 	sNewOutput.oldViewMat = m_matViewport;
-	sNewOutput.oldViewportHeight = 0;
-	sNewOutput.oldViewportWidth = 0;
+	sNewOutput.oldViewport = params.viewport;
 
 	// NOTE: this is a hacky workaround for all custom resolution outputs
 	if (auto* pDC = m_pRenderOutput->GetDisplayContext())
@@ -908,12 +907,11 @@ void CScaleformPlayback::PopRenderTarget()
 	ApplyTextureInfo(0);
 //	ApplyTextureInfo(1);
 
-	// restore viewport matrix when popping render target
-	m_matViewport = pCurOutput->oldViewMat;
-
 	// Graphics pipeline >= 1
 	{
-		params.viewport = SSF_GlobalDrawParams::_D3DViewPort(0.f, 0.f, float(pCurOutput->oldViewportWidth), float(pCurOutput->oldViewportHeight));
+		// restore viewport matrix when popping render target
+		m_matViewport = pCurOutput->oldViewMat;
+		params.viewport = pCurOutput->oldViewport;
 	}
 
 	m_renderTargetStack.pop_back();
@@ -955,8 +953,7 @@ int32 CScaleformPlayback::PushTempRenderTarget(const RectF& frameRect, uint32 ta
 
 	sNewOutput.key = m_renderTargetStack.size() - 1;
 	sNewOutput.oldViewMat = m_matViewport;
-	sNewOutput.oldViewportHeight = 0; // Previous width
-	sNewOutput.oldViewportWidth = 0;  // Previous height
+	sNewOutput.oldViewport = params.viewport;
 	sNewOutput.pRenderTarget = pNewTempRT;
 	sNewOutput.pStencilTarget = pNewTempST;
 	sNewOutput.bRenderTargetClear = pNewTempRT && wantClear;
