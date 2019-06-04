@@ -400,6 +400,8 @@ bool CSceneForwardStage::CreatePipelineState(const SGraphicsPipelineStateDescrip
 				psoDesc.m_RenderState &= ~(GS_STENCIL | GS_DEPTHWRITE | GS_DEPTHFUNC_MASK | GS_ALPHATEST);
 				psoDesc.m_RenderState |= GS_DEPTHFUNC_EQUAL;
 				psoDesc.m_ShaderFlags_RT &= ~(g_HWSR_MaskBit[HWSR_ALPHATEST] | g_HWSR_MaskBit[HWSR_DISSOLVE]);
+
+				pSceneRenderPass = &m_forwardOpaquePass;
 			}
 			else if (passId == ePass_Forward)
 			{
