@@ -17,7 +17,7 @@ void CScreenSpaceReflectionsStage::Update()
 		? m_graphicsPipelineResources.m_pTexHDRTargetMaskedScaled[0][1]
 		: m_graphicsPipelineResources.m_pTexHDRTargetMasked;
 
-	CClearSurfacePass::Execute(targetRT, Clr_Empty);
+	CClearSurfacePass::Execute(targetRT, Clr_Transparent);
 }
 
 void CScreenSpaceReflectionsStage::Execute()
