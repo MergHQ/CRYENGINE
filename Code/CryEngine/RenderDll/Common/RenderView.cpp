@@ -250,8 +250,12 @@ void CRenderView::CalculateViewInfo()
 
 	CRenderView* pRenderView = this;
 	size_t viewInfoCount = 0;
-	for (CCamera::EEye eye = CCamera::eEye_Left; eye != (gcpRendD3D->IsStereoEnabled() ? CCamera::eEye_Both : CCamera::eEye_Right); eye = CCamera::EEye(eye + 1))
+
+	m_viewInfoCount = (gcpRendD3D->IsStereoEnabled() ? CCamera::eEye_Both : CCamera::eEye_Right);
+	for(uint32 eyeIdx = 0; eyeIdx < m_viewInfoCount; eyeIdx++)
 	{
+		CCamera::EEye eye = (CCamera::EEye)((GetCurrentEye() + eyeIdx) % CCamera::eEye_eCount);
+
 		const CCamera& cam = pRenderView->GetCamera(eye);
 		const CCamera& previousCam = pRenderView->GetPreviousCamera(eye);
 
