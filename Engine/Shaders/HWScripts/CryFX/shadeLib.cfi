@@ -646,7 +646,7 @@ float3 LTC_Rectangle(float3 N, float3 P, float3x3 mat, float3 points[4],
     float scale = LTCTex_2.SampleLevel(SampStateTrilinearClamp, uv, 0).w;
     sum = len * scale;
 
-    float3 output = (sum, sum, sum);
+    float3 output = float3(sum, sum, sum);
     output *= texturedLight;
 
     return output;
@@ -767,7 +767,7 @@ float3 LTC_Disk(float3 N, float3 P, float3x3 mat, float3 points[4],
     uv = uv * LTC_LUT_SCALE + LTC_LUT_BIAS;
     float scale = LTCTex_2.SampleLevel(SampStateTrilinearClamp, uv, 0).w;
     sum = formFactor * scale;
-    float3 output = (sum, sum, sum);
+    float3 output = sum;
 
     return output;
 }
