@@ -534,6 +534,8 @@ private:
 	CCamera         m_previousCamera[CCamera::eEye_eCount];   // Previous frame render camera
 
 	SRenderViewInfo m_viewInfo[CCamera::eEye_eCount];         // Calculated View Information
+															  // Index 0 belongs to the current eye, other eye come after that.
+
 	size_t          m_viewInfoCount;                          // Number of current m_viewInfo structures.
 
 	// Internal job states to control when view job processing is done.
