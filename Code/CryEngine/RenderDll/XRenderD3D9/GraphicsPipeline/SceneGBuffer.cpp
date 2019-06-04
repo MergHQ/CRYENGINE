@@ -560,8 +560,10 @@ void CSceneGBufferStage::Execute()
 			rendItemDrawer.JobifyDrawSubmission();
 			rendItemDrawer.WaitForDrawSubmission();
 
-			// Function call is guaranteed to be side-effect-free
+			// Reading depth produces depth-target transitions which have to be reverted
 			m_graphicsPipeline.GetStage<CSceneDepthStage>()->Execute();
+			if (CRenderer::CV_r_DeferredShadingTiled < CTiledShadingStage::eDeferredMode_Disabled)
+				m_opaquePass.PrepareRenderPassForUse(commandList);
 
 			rendItemDrawer.InitDrawSubmission();
 		}
@@ -576,8 +578,9 @@ void CSceneGBufferStage::Execute()
 			rendItemDrawer.JobifyDrawSubmission();
 			rendItemDrawer.WaitForDrawSubmission();
 
-			// Function call is guaranteed to be side-effect-free
+			// Reading depth produces depth-target transitions which have to be reverted
 			m_graphicsPipeline.GetStage<CSceneDepthStage>()->Execute();
+			m_overlayPass.PrepareRenderPassForUse(commandList);
 
 			rendItemDrawer.InitDrawSubmission();
 		}
