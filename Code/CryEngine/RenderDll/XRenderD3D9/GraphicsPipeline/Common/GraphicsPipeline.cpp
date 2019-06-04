@@ -253,18 +253,18 @@ void CGraphicsPipelineResources::CreateHDRMaps(int resourceWidth, int resourceHe
 	m_renderTargetPool.AddRenderTarget(width_r4, height_r4, Clr_Unknown, nHDRFormat, 0.9f, m_graphicsPipeline.MakeUniqueTexIdentifierName("$HDRTarget 1/4b").c_str(), &m_pTexHDRTargetScaled[1][1], FT_DONT_RELEASE);
 
 	// Scaled versions of compositions of the HDR scene texture (with alpha)
-	m_renderTargetPool.AddRenderTarget(width_r2, height_r2, Clr_Unknown, nHDRAFormat, 0.9f, m_graphicsPipeline.MakeUniqueTexIdentifierName("$HDRTargetMasked 1/2a").c_str(), &m_pTexHDRTargetMaskedScaled[0][0], FT_DONT_RELEASE);
-	m_renderTargetPool.AddRenderTarget(width_r2, height_r2, Clr_Unknown, nHDRAFormat, 0.9f, m_graphicsPipeline.MakeUniqueTexIdentifierName("$HDRTargetMasked 1/2b").c_str(), &m_pTexHDRTargetMaskedScaled[0][1], FT_DONT_RELEASE);
-	m_renderTargetPool.AddRenderTarget(width_r2, height_r2, Clr_Unknown, nHDRAFormat, 0.9f, m_graphicsPipeline.MakeUniqueTexIdentifierName("$HDRTargetMasked 1/2c").c_str(), &m_pTexHDRTargetMaskedScaled[0][2], FT_DONT_RELEASE);
-	m_renderTargetPool.AddRenderTarget(width_r2, height_r2, Clr_Unknown, nHDRAFormat, 0.9f, m_graphicsPipeline.MakeUniqueTexIdentifierName("$HDRTargetMasked 1/2d").c_str(), &m_pTexHDRTargetMaskedScaled[0][3], FT_DONT_RELEASE);
-	m_renderTargetPool.AddRenderTarget(width_r4, height_r4, Clr_Unknown, nHDRAFormat, 0.9f, m_graphicsPipeline.MakeUniqueTexIdentifierName("$HDRTargetMasked 1/4a").c_str(), &m_pTexHDRTargetMaskedScaled[1][0], FT_DONT_RELEASE);
-	m_renderTargetPool.AddRenderTarget(width_r4, height_r4, Clr_Unknown, nHDRAFormat, 0.9f, m_graphicsPipeline.MakeUniqueTexIdentifierName("$HDRTargetMasked 1/4b").c_str(), &m_pTexHDRTargetMaskedScaled[1][1], FT_DONT_RELEASE);
-	m_renderTargetPool.AddRenderTarget(width_r8, height_r8, Clr_Unknown, nHDRAFormat, 0.9f, m_graphicsPipeline.MakeUniqueTexIdentifierName("$HDRTargetMasked 1/8a").c_str(), &m_pTexHDRTargetMaskedScaled[2][0], FT_DONT_RELEASE);
-	m_renderTargetPool.AddRenderTarget(width_r8, height_r8, Clr_Unknown, nHDRAFormat, 0.9f, m_graphicsPipeline.MakeUniqueTexIdentifierName("$HDRTargetMasked 1/8b").c_str(), &m_pTexHDRTargetMaskedScaled[2][1], FT_DONT_RELEASE);
-	m_renderTargetPool.AddRenderTarget(width_r16, height_r16, Clr_Unknown, nHDRAFormat, 0.9f, m_graphicsPipeline.MakeUniqueTexIdentifierName("$HDRTargetMasked 1/16a").c_str(), &m_pTexHDRTargetMaskedScaled[3][0], FT_DONT_RELEASE);
-	m_renderTargetPool.AddRenderTarget(width_r16, height_r16, Clr_Unknown, nHDRAFormat, 0.9f, m_graphicsPipeline.MakeUniqueTexIdentifierName("$HDRTargetMasked 1/16b").c_str(), &m_pTexHDRTargetMaskedScaled[3][1], FT_DONT_RELEASE);
+	m_renderTargetPool.AddRenderTarget(width_r2, height_r2, Clr_Transparent, nHDRAFormat, 0.9f, m_graphicsPipeline.MakeUniqueTexIdentifierName("$HDRTargetMasked 1/2a").c_str(), &m_pTexHDRTargetMaskedScaled[0][0], FT_DONT_RELEASE);
+	m_renderTargetPool.AddRenderTarget(width_r2, height_r2, Clr_Transparent, nHDRAFormat, 0.9f, m_graphicsPipeline.MakeUniqueTexIdentifierName("$HDRTargetMasked 1/2b").c_str(), &m_pTexHDRTargetMaskedScaled[0][1], FT_DONT_RELEASE);
+	m_renderTargetPool.AddRenderTarget(width_r2, height_r2, Clr_Transparent, nHDRAFormat, 0.9f, m_graphicsPipeline.MakeUniqueTexIdentifierName("$HDRTargetMasked 1/2c").c_str(), &m_pTexHDRTargetMaskedScaled[0][2], FT_DONT_RELEASE);
+	m_renderTargetPool.AddRenderTarget(width_r2, height_r2, Clr_Transparent, nHDRAFormat, 0.9f, m_graphicsPipeline.MakeUniqueTexIdentifierName("$HDRTargetMasked 1/2d").c_str(), &m_pTexHDRTargetMaskedScaled[0][3], FT_DONT_RELEASE);
+	m_renderTargetPool.AddRenderTarget(width_r4, height_r4, Clr_Transparent, nHDRAFormat, 0.9f, m_graphicsPipeline.MakeUniqueTexIdentifierName("$HDRTargetMasked 1/4a").c_str(), &m_pTexHDRTargetMaskedScaled[1][0], FT_DONT_RELEASE);
+	m_renderTargetPool.AddRenderTarget(width_r4, height_r4, Clr_Transparent, nHDRAFormat, 0.9f, m_graphicsPipeline.MakeUniqueTexIdentifierName("$HDRTargetMasked 1/4b").c_str(), &m_pTexHDRTargetMaskedScaled[1][1], FT_DONT_RELEASE);
+	m_renderTargetPool.AddRenderTarget(width_r8, height_r8, Clr_Transparent, nHDRAFormat, 0.9f, m_graphicsPipeline.MakeUniqueTexIdentifierName("$HDRTargetMasked 1/8a").c_str(), &m_pTexHDRTargetMaskedScaled[2][0], FT_DONT_RELEASE);
+	m_renderTargetPool.AddRenderTarget(width_r8, height_r8, Clr_Transparent, nHDRAFormat, 0.9f, m_graphicsPipeline.MakeUniqueTexIdentifierName("$HDRTargetMasked 1/8b").c_str(), &m_pTexHDRTargetMaskedScaled[2][1], FT_DONT_RELEASE);
+	m_renderTargetPool.AddRenderTarget(width_r16, height_r16, Clr_Transparent, nHDRAFormat, 0.9f, m_graphicsPipeline.MakeUniqueTexIdentifierName("$HDRTargetMasked 1/16a").c_str(), &m_pTexHDRTargetMaskedScaled[3][0], FT_DONT_RELEASE);
+	m_renderTargetPool.AddRenderTarget(width_r16, height_r16, Clr_Transparent, nHDRAFormat, 0.9f, m_graphicsPipeline.MakeUniqueTexIdentifierName("$HDRTargetMasked 1/16b").c_str(), &m_pTexHDRTargetMaskedScaled[3][1], FT_DONT_RELEASE);
 	m_renderTargetPool.AddRenderTarget(width, height, Clr_Unknown, nHDRQFormat, 1.0f, m_graphicsPipeline.MakeUniqueTexIdentifierName("$HDRTargetPrev").c_str(), &m_pTexHDRTargetPrev);
-	m_renderTargetPool.AddRenderTarget(width, height, Clr_Unknown, nHDRAFormat, 1.0f, m_graphicsPipeline.MakeUniqueTexIdentifierName("$HDRTargetMasked").c_str(), &m_pTexHDRTargetMasked, nHDRTargetFlags);
+	m_renderTargetPool.AddRenderTarget(width, height, Clr_Transparent, nHDRAFormat, 1.0f, m_graphicsPipeline.MakeUniqueTexIdentifierName("$HDRTargetMasked").c_str(), &m_pTexHDRTargetMasked, nHDRTargetFlags);
 	
 	m_renderTargetPool.AddRenderTarget(width, height, Clr_Unknown, nHDRQFormat, 1.0f, m_graphicsPipeline.MakeUniqueTexIdentifierName("$SceneTargetR11G11B10F_0").c_str(), &m_pTexSceneTargetR11G11B10F[0], nHDRTargetFlagsUAV);
 	m_renderTargetPool.AddRenderTarget(width, height, Clr_Unknown, nHDRQFormat, 1.0f, m_graphicsPipeline.MakeUniqueTexIdentifierName("$SceneTargetR11G11B10F_1").c_str(), &m_pTexSceneTargetR11G11B10F[1], nHDRTargetFlags);
@@ -627,9 +627,9 @@ void CGraphicsPipeline::Init()
 	m_pipelineResources.Init();	
 
 	// Register scene stages that make use of the global PSO cache
-	RegisterStage<CShadowMapStage>();
 	RegisterStage<CSceneGBufferStage>();
 	RegisterStage<CSceneForwardStage>();
+	RegisterStage<CShadowMapStage>();
 
 	// Register all other stages that don't need the global PSO cache
 	RegisterStage<CTiledLightVolumesStage>();

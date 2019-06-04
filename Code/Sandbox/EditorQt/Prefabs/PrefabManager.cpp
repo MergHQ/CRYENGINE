@@ -516,7 +516,7 @@ bool CPrefabManager::AttachObjectToPrefab(CPrefabObject* pPrefab, CBaseObject* p
 	{
 		if (!pPrefab->CanAddMember(pObject))
 		{
-			Warning("Object %s is already part of a prefab (%s)", pObject->GetName(), pObject->GetPrefab()->GetName());
+			Warning("Object %s cannot be added as a Member to prefab %s", pObject->GetName(), pPrefab->GetName());
 			return false;
 		}
 
