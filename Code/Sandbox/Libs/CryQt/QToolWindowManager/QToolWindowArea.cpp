@@ -638,8 +638,6 @@ void QToolWindowSingleTabAreaFrame::setContents(QWidget* widget)
 {
 	if (m_pContents)
 	{
-		QObject::disconnect(m_pContents, &QWidget::windowTitleChanged, this, &QWidget::setWindowTitle);
-		QObject::disconnect(m_pContents, &QWidget::windowIconChanged, this, &QWidget::setWindowIcon);
 		m_pLayout->removeWidget(m_pContents);
 	}
 	if (widget)

@@ -7,20 +7,15 @@
 #include "EnvironmentPresetsWidget.h"
 #include "FileDialogs/SystemFileDialog.h"
 #include "GameEngine.h"
-#include "Mission.h"
 #include "QT/QtMainFrame.h"
 #include "RecursionLoopGuard.h"
 
-#include <Commands/QCommandAction.h>
-#include <CrySerialization/IArchiveHost.h>
 #include <IUndoObject.h>
-#include <QtUtil.h>
 #include <Serialization/QPropertyTree/QPropertyTree.h>
 #include <Util/MFCUtil.h>
 
-#include <QMenuBar>
-#include <QLayout>
 #include <QDir>
+#include <QVBoxLayout>
 
 namespace Private_LevelSettings
 {
@@ -34,9 +29,7 @@ public:
 		CXmlTemplate::SetValues(GetIEditorImpl()->GetDocument()->GetEnvironmentTemplate(), m_old_settings);
 	}
 
-	virtual ~CUndoLevelSettings() {}
-
-protected:
+private:
 	void Undo(bool bUndo)
 	{
 		if (bUndo && !m_new_settings)
@@ -168,6 +161,7 @@ void CreateItems(XmlNodeRef& node, CVarBlockPtr& outBlockPtr, IVariable::OnSetCa
 			if (!stricmp(type, "int"))
 			{
 				CSmartVariable<int> intVar;
+				CAutoSupressUpdateCallback<int> updateSupressor(intVar);
 				AddVariable(group, intVar, child->getTag(), child->getTag(), strDescription, func, pUserData);
 				int nValue(0);
 				if (child->getAttr("value", nValue))
@@ -180,6 +174,7 @@ void CreateItems(XmlNodeRef& node, CVarBlockPtr& outBlockPtr, IVariable::OnSetCa
 			else if (!stricmp(type, "float"))
 			{
 				CSmartVariable<float> floatVar;
+				CAutoSupressUpdateCallback<float> updateSupressor(floatVar);
 				AddVariable(group, floatVar, child->getTag(), child->getTag(), strDescription, func, pUserData);
 				float fValue(0.0f);
 				if (child->getAttr("value", fValue))
@@ -192,6 +187,7 @@ void CreateItems(XmlNodeRef& node, CVarBlockPtr& outBlockPtr, IVariable::OnSetCa
 			else if (!stricmp(type, "vector"))
 			{
 				CSmartVariable<Vec3> vec3Var;
+				CAutoSupressUpdateCallback<Vec3> updateSupressor(vec3Var);
 				AddVariable(group, vec3Var, child->getTag(), child->getTag(), strDescription, func, pUserData);
 				Vec3 vValue(0, 0, 0);
 				if (child->getAttr("value", vValue))
@@ -200,14 +196,16 @@ void CreateItems(XmlNodeRef& node, CVarBlockPtr& outBlockPtr, IVariable::OnSetCa
 			else if (!stricmp(type, "bool"))
 			{
 				CSmartVariable<bool> bVar;
+				CAutoSupressUpdateCallback<bool> updateSupressor(bVar);
 				AddVariable(group, bVar, child->getTag(), child->getTag(), strDescription, func, pUserData);
-				bool bValue(false);
+				bool bValue = false;
 				if (child->getAttr("value", bValue))
 					bVar->Set(bValue);
 			}
 			else if (!stricmp(type, "texture"))
 			{
 				CSmartVariable<string> textureVar;
+				CAutoSupressUpdateCallback<string> updateSupressor(textureVar);
 				AddVariable(group, textureVar, child->getTag(), child->getTag(), strDescription, func, pUserData, IVariable::DT_TEXTURE);
 				const char* textureName;
 				if (child->getAttr("value", &textureName))
@@ -216,6 +214,7 @@ void CreateItems(XmlNodeRef& node, CVarBlockPtr& outBlockPtr, IVariable::OnSetCa
 			else if (!stricmp(type, "material"))
 			{
 				CSmartVariable<string> materialVar;
+				CAutoSupressUpdateCallback<string> updateSupressor(materialVar);
 				AddVariable(group, materialVar, child->getTag(), child->getTag(), strDescription, func, pUserData, IVariable::DT_MATERIAL);
 				const char* materialName;
 				if (child->getAttr("value", &materialName))
@@ -224,6 +223,7 @@ void CreateItems(XmlNodeRef& node, CVarBlockPtr& outBlockPtr, IVariable::OnSetCa
 			else if (!stricmp(type, "color"))
 			{
 				CSmartVariable<Vec3> colorVar;
+				CAutoSupressUpdateCallback<Vec3> updateSupressor(colorVar);
 				AddVariable(group, colorVar, child->getTag(), child->getTag(), strDescription, func, pUserData, IVariable::DT_COLOR);
 				ColorB color;
 				if (child->getAttr("value", color))
@@ -242,37 +242,35 @@ class CSettingsWidget : public QWidget, public ISystemEventListener
 public:
 	CSettingsWidget(QWidget* pParent = nullptr)
 		: QWidget(pParent)
+		, m_pPropertyTree(new QPropertyTree(this))
 	{
-		m_pPropertyTree = new QPropertyTree(this);
-
 		connect(m_pPropertyTree, &QPropertyTree::signalAboutToSerialize, this, &CSettingsWidget::BeforeSerialization);
 		connect(m_pPropertyTree, &QPropertyTree::signalSerialized, this, &CSettingsWidget::AfterSerialization);
 		connect(m_pPropertyTree, &QPropertyTree::signalBeginUndo, this, &CSettingsWidget::OnBeginUndo);
 		connect(m_pPropertyTree, &QPropertyTree::signalEndUndo, this, &CSettingsWidget::OnEndUndo);
 
+		setAttribute(Qt::WA_DeleteOnClose);
+
 		m_pPropertyTree->setExpandLevels(2);
 		m_pPropertyTree->setSizePolicy(QSizePolicy::MinimumExpanding, QSizePolicy::MinimumExpanding);
-		ReloadFromTemplate();
-		
+		ResetPropertyTree();
 		setLayout(new QVBoxLayout());
 		layout()->setContentsMargins(0, 0, 0, 0);
 		layout()->addWidget(m_pPropertyTree);
 
-		if (GetISystem()->GetISystemEventDispatcher())
-			GetISystem()->GetISystemEventDispatcher()->RegisterListener(this, "CLevelSettingsEditor");
+		GetISystem()->GetISystemEventDispatcher()->RegisterListener(this, "CLevelSettingsEditor");
 	}
 
 	virtual ~CSettingsWidget()
 	{
-		if (GetISystem()->GetISystemEventDispatcher())
-			GetISystem()->GetISystemEventDispatcher()->RemoveListener(this);
+		GetISystem()->GetISystemEventDispatcher()->RemoveListener(this);
 	}
 
-	void OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lparam)
+	virtual void OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lparam) override
 	{
 		if (ESYSTEM_EVENT_ENVIRONMENT_SETTINGS_CHANGED == event)
 		{
-			ReloadFromTemplate();
+			ResetPropertyTree();
 		}
 	}
 
@@ -307,11 +305,8 @@ private:
 		m_bIgnoreEvent = false;
 	}
 
-	void ReloadFromTemplate()
+	void ResetPropertyTree()
 	{
-		if (!m_pPropertyTree)
-			return;
-
 		RECURSION_GUARD(m_bIgnoreEvent)
 
 		m_pPropertyTree->detach();
