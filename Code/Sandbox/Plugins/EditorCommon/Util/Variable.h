@@ -1613,3 +1613,22 @@ public:
 
 // Restore warnings about virtual overrides hidden
 #pragma warning(pop)
+
+// RAII suppressor of update commands for CSmartVariables
+template<typename T>
+class CAutoSupressUpdateCallback
+{
+public:
+	explicit CAutoSupressUpdateCallback(CSmartVariable<T>& var)
+		: m_var(var)
+	{
+		m_var->EnableUpdateCallbacks(false);
+	}
+
+	~CAutoSupressUpdateCallback()
+	{
+		m_var->EnableUpdateCallbacks(true);
+	}
+private:
+	CSmartVariable<T>& m_var;
+};

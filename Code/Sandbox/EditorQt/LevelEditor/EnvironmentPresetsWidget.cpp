@@ -227,6 +227,8 @@ CEnvironmentPresetsWidget::CEnvironmentPresetsWidget(QWidget* pParent /*= nullpt
 	connect(m_pPropertyTree, &QPropertyTree::signalEndUndo, this, &CEnvironmentPresetsWidget::OnEndUndo);
 	connect(m_pPropertyTree, &QPropertyTree::signalAboutToSerialize, this, &CEnvironmentPresetsWidget::BeforeSerialization);
 	connect(m_pPropertyTree, &QPropertyTree::signalSerialized, this, &CEnvironmentPresetsWidget::AfterSerialization);
+	
+	setAttribute(Qt::WA_DeleteOnClose);
 
 	m_pPropertyTree->setSizeHint(QSize(70, 70));
 	m_pPropertyTree->setValueColumnWidth(0.70f);
