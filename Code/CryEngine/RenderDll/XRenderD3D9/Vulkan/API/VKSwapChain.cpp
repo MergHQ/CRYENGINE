@@ -286,4 +286,15 @@ void CSwapChain::ForfeitBuffers()
 	m_BackBuffers.clear();
 }
 
+void CSwapChain::FlushAndWaitForBuffers()
+{
+	// Wait that that front has passed before continuing
+	// TODO: could be a lot more tight (see NCryDX12.CSwapChain::FlushAndWaitForBuffers)
+	if (m_NumBackbuffers)
+	{
+		auto* pDevice = m_BackBuffers[0].GetDevice();
+		pDevice->FlushAndWaitForGPU();
+	}
+}
+
 }

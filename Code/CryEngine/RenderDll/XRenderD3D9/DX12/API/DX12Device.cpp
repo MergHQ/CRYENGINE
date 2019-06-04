@@ -1293,4 +1293,23 @@ void CDevice::FlushAndWaitForGPU()
 	m_Scheduler.GetCommandListPool(CMDQUEUE_GRAPHICS).WaitForFenceOnCPU();
 }
 
+void CDevice::FlushAndWaitForGPU(const UINT64 (&fenceValues)[CMDQUEUE_NUM])
+{
+	// Submit pending command-lists containing some fence-value in case there are left-overs, make sure it's flushed to and executed on the hardware
+	auto& rScheduler = GetScheduler();
+	auto& rFenceSet = rScheduler.GetFenceManager();
+
+	// Group-FlushToFence()
+	rScheduler.SubmitCommands(CMDQUEUE_GRAPHICS, false, fenceValues[CMDQUEUE_GRAPHICS]);
+	rScheduler.SubmitCommands(CMDQUEUE_COMPUTE , false, fenceValues[CMDQUEUE_COMPUTE ]);
+	rScheduler.SubmitCommands(CMDQUEUE_COPY    , false, fenceValues[CMDQUEUE_COPY    ]);
+
+	rScheduler.GetCommandListPool(CMDQUEUE_GRAPHICS).GetAsyncCommandQueue().Flush(fenceValues[CMDQUEUE_GRAPHICS]);
+	rScheduler.GetCommandListPool(CMDQUEUE_COMPUTE ).GetAsyncCommandQueue().Flush(fenceValues[CMDQUEUE_COMPUTE ]);
+	rScheduler.GetCommandListPool(CMDQUEUE_COPY    ).GetAsyncCommandQueue().Flush(fenceValues[CMDQUEUE_COPY    ]);
+
+	// Group-WaitForFence()
+	rFenceSet.WaitForFence(fenceValues);
+}
+
 }

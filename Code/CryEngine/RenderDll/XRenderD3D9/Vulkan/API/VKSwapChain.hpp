@@ -101,6 +101,7 @@ public:
 	void    UnblockBuffers(CCommandList* pCommandList);
 	void    VerifyBufferCounters();
 	void    ForfeitBuffers();
+	void    FlushAndWaitForBuffers();
 
 private:
 	CDevice*                 m_pDevice;
