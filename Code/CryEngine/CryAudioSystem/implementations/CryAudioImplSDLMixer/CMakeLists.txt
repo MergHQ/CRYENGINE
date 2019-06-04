@@ -48,7 +48,6 @@ if(AUDIO_SDL_MIXER)
 		sdl_mixer_static
 		timidity
 		native_midi
-		flac_static
 		libogg_static
 		libmikmod_static
 		libvorbis_static
