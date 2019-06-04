@@ -679,7 +679,7 @@ uint32 COctreeNode::UpdateCullMask(uint32 onePassTraversalFrameId, uint32 onePas
 						{
 							pFr = shadowPasses->at(n + 1).GetIRenderView()->GetShadowFrustumOwner();
 
-							if (!pFr->IsDynamicGsmCascade())
+							if (!pFr->IsDynamicGsmCascade() && !pFr->IsCached())
 							{
 								break; // next frustum is not GSM cascade
 							}
@@ -2589,19 +2589,19 @@ void COctreeNode::RenderContentJobEntry(int nRenderMask, Vec3 vAmbColor, uint32 
 		}
 	}
 
-	if (m_arrObjects[eRNListType_Vegetation].m_pFirstNode && passInfo.RenderVegetation())
+	if (m_arrObjects[eRNListType_Vegetation].m_pFirstNode && m_arrObjects[eRNListType_Vegetation].m_pFirstNode->IsRenderable() && passInfo.RenderVegetation())
 		this->RenderVegetations(&m_arrObjects[eRNListType_Vegetation], passCullMask, nRenderMask, m_bNodeCompletelyInFrustum != 0, pAffectingLights, pTerrainTexInfo, passInfo);
 
-	if (/*GetCVars()->e_SceneMerging!=3 && */ m_arrObjects[eRNListType_Brush].m_pFirstNode && passInfo.RenderBrushes())
-		this->RenderBrushes(&m_arrObjects[eRNListType_Brush], passCullMask, m_bNodeCompletelyInFrustum != 0, pAffectingLights, pTerrainTexInfo, passInfo);
+	if (m_arrObjects[eRNListType_Brush].m_pFirstNode && m_arrObjects[eRNListType_Brush].m_pFirstNode->IsRenderable() && passInfo.RenderBrushes())
+			this->RenderBrushes(&m_arrObjects[eRNListType_Brush], passCullMask, m_bNodeCompletelyInFrustum != 0, pAffectingLights, pTerrainTexInfo, passInfo);
 
 	if (passCullMask & kPassCullMainMask) // if visible for main pass
 	{
-		if (m_arrObjects[eRNListType_DecalsAndRoads].m_pFirstNode && (passInfo.RenderDecals() || passInfo.RenderRoads()))
+		if (m_arrObjects[eRNListType_DecalsAndRoads].m_pFirstNode && m_arrObjects[eRNListType_DecalsAndRoads].m_pFirstNode->IsRenderable() && (passInfo.RenderDecals() || passInfo.RenderRoads()))
 			this->RenderDecalsAndRoads(&m_arrObjects[eRNListType_DecalsAndRoads], passCullMask, nRenderMask, vAmbColor, m_bNodeCompletelyInFrustum != 0, pAffectingLights, passInfo);
 	}
 
-	if (m_arrObjects[eRNListType_Unknown].m_pFirstNode)
+	if (m_arrObjects[eRNListType_Unknown].m_pFirstNode && m_arrObjects[eRNListType_Unknown].m_pFirstNode->IsRenderable() && passInfo.RenderEntities())
 		this->RenderCommonObjects(&m_arrObjects[eRNListType_Unknown], passCullMask, nRenderMask, vAmbColor, m_bNodeCompletelyInFrustum != 0, pAffectingLights, pTerrainTexInfo, passInfo);
 
 	m_renderLock.Unlock();
@@ -2923,7 +2923,7 @@ void COctreeNode::RenderCommonObjects(TDoublyLinkedList<IRenderNode>* lstObjects
 				EERType rnType = pObj->GetRenderNodeType();
 				if (rnType == eERType_MovableBrush)
 				{
-					GetObjManager()->RenderBrush((CBrush*)pObj, pAffectingLights, nullptr, objBox, fEntDistance, true, passInfo, passCullMask);
+					GetObjManager()->RenderBrush((CBrush*)pObj, pAffectingLights, nullptr, objBox, fEntDistance, true, passInfo, objCullMask);
 				}
 				else
 				{
