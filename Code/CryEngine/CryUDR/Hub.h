@@ -22,6 +22,9 @@ namespace Cry
 			virtual IRecursiveSyncObject&	GetRecursiveSyncObject() override;
 			// ~IHub
 
+			// TODO: Should be part of CTreeManager interface.
+			void                            ClearTree(ITreeManager::ETreeIndex treeIndex);
+
 		private:
 
 			static void						CmdDumpRecordings(IConsoleCmdArgs* pArgs);

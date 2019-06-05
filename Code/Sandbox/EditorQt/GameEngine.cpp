@@ -67,6 +67,7 @@
 #include <CrySystem/ConsoleRegistration.h>
 #include <CrySystem/ITimer.h>
 #include <CryThreading/IJobManager.h>
+#include <CryUDR/IUDR.h>
 #include <IGameRulesSystem.h>
 #include <ILevelSystem.h>
 
@@ -910,6 +911,11 @@ void CGameEngine::SwitchToInGame()
 	QAction* suspendAction = GetIEditorImpl()->GetICommandManager()->GetAction("game.toggle_suspend_input");
 	QString shortcut = suspendAction->shortcut().toString();
 	pNotificationCenter->ShowInfo("Starting Game", QString("Press ") + shortcut + " for mouse control");
+
+	if (m_pISystem->GetIUDR())
+	{
+		m_pISystem->GetIUDR()->Reset();
+	}	
 }
 
 void CGameEngine::SwitchToInEditor()

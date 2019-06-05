@@ -1164,6 +1164,7 @@ add_sources("NoUberFile"
 		"CryUDR/shared/RecursiveSyncObjectAutoLock.h"
 		"CryUDR/shared/IString.h"
 		"CryUDR/shared/String.h"
+		"CryUDR/shared/ITimeMetadata.h"
 		"CryUDR/Examples/SpidersExample.cpp"
 )
 

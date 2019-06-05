@@ -8,6 +8,7 @@
 
 #include "shared/IString.h"
 #include "shared/String.h"
+#include "shared/ITimeMetadata.h"
 
 #include "core/IRenderPrimitiveCollection.h"
 #include "core/ILogMessageCollection.h"

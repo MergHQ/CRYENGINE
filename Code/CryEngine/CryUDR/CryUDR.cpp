@@ -29,12 +29,44 @@ class CEngineModule_CryUDR : public Cry::UDR::IUDR
 	virtual const char* GetCategory() const override { return "CryEngine"; }
 	virtual bool        Initialize(SSystemGlobalEnvironment& env, const SSystemInitParams& initParams) override
 	{
-		env.pUDR = this;
-		return true;
+		if (env.pTimer)
+		{
+			env.pUDR = this;
+			m_baseTimestamp = env.pTimer->GetAsyncTime();
+			return true;
+		}
+		CRY_ASSERT_MESSAGE(env.pTimer, "Global Env Timer must be initialized before UDR.");
+		return false;
 	}
 	// ~Cry::IDefaultModule
 
 	// Cry::IUDR
+	virtual bool SetConfig(const SConfig& config) override
+	{
+		m_config = config;
+		return true;
+	}
+
+	virtual const SConfig& GetConfig() const override
+	{
+		return m_config;
+	}
+
+	// TODO: This function may be called from Sandbox Editor to manually clear UDR data. In that case, the config should be ignored. Maybe we need a different function or force parameter?
+	virtual void Reset() override
+	{
+		if (m_config.resetDataOnSwitchToGameMode)
+		{
+			m_baseTimestamp = gEnv->pTimer->GetAsyncTime();
+			m_cHub.ClearTree(Cry::UDR::ITreeManager::ETreeIndex::Live);
+		}
+	}
+
+	virtual CTimeValue GetElapsedTime() const override
+	{
+		return gEnv->pTimer->GetAsyncTime() - m_baseTimestamp;
+	}
+
 	virtual Cry::UDR::IHub& GetHub() override
 	{
 		return m_cHub;
@@ -42,7 +74,11 @@ class CEngineModule_CryUDR : public Cry::UDR::IUDR
 	// ~Cry::IUDR
 
 private:
-	Cry::UDR::CHub m_cHub;
+
+	Cry::UDR::CHub          m_cHub;
+	CTimeValue              m_baseTimestamp;
+	// TODO: Add a frame counter that gets updated in the Update function.
+	Cry::UDR::IUDR::SConfig m_config;
 };
 
 CRYREGISTER_SINGLETON_CLASS(CEngineModule_CryUDR)
