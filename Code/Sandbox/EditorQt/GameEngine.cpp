@@ -67,7 +67,7 @@
 #include <CrySystem/ConsoleRegistration.h>
 #include <CrySystem/ITimer.h>
 #include <CryThreading/IJobManager.h>
-#include <CryUDR/IUDR.h>
+#include <CryUDR/IUDRSystem.h>
 #include <IGameRulesSystem.h>
 #include <ILevelSystem.h>
 

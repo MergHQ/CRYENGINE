@@ -339,10 +339,10 @@ public:
 #ifdef CRY_TESTING
 	CryTest::ITestSystem*        GetITestSystem() override            { return m_pTestSystem.get(); }
 #endif
-	IUserAnalyticsSystem*        GetIUserAnalyticsSystem() override;
-	Cry::IPluginManager*         GetIPluginManager() override;
-	Cry::IProjectManager*        GetIProjectManager() override;
-	virtual Cry::UDR::IUDR*      GetIUDR() override                 { return m_env.pUDR; }
+	IUserAnalyticsSystem*         GetIUserAnalyticsSystem() override;
+	Cry::IPluginManager*          GetIPluginManager() override;
+	Cry::IProjectManager*         GetIProjectManager() override;
+	virtual Cry::UDR::IUDRSystem* GetIUDR() override                 { return m_env.pUDR; }
 
 	IResourceManager*            GetIResourceManager() override;
 	ITextModeConsole*            GetITextModeConsole() override;

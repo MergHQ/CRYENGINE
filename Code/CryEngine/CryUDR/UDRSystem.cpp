@@ -1,20 +1,18 @@
-// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2019 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
 #include <CrySystem/ConsoleRegistration.h>
 
 // *INDENT-OFF* - <hard to read code and declarations due to inconsistent indentation>
 
-namespace Cry 
+namespace Cry
 {
 	namespace UDR
 	{
-
-		CHub* CHub::s_pInstance;
-
-		CHub::CHub()
-			: m_treeManager()
-			, m_nodeStack(m_treeManager.GetTree(ITreeManager::ETreeIndex::Live).GetRootNodeWritable())
+		CUDRSystem* CUDRSystem::s_pInstance;
+		
+		CUDRSystem::CUDRSystem()
+			: m_nodeStack(m_treeManager.GetTree(ITreeManager::ETreeIndex::Live).GetRootNodeWritable())
 		{
 			CRY_ASSERT(!s_pInstance);
 			s_pInstance = this;
@@ -27,37 +25,73 @@ namespace Cry
 			REGISTER_COMMAND("UDR_PrintLiveNodes", CmdPrintLiveNodes, 0, "");
 			REGISTER_COMMAND("UDR_PrintStatistics", CmdPrintStatistics, 0, "");
 		}
-
-		CHub::~CHub()
+		
+		CUDRSystem::~CUDRSystem()
 		{
 			SCvars::Unregister();
 
 			CRY_ASSERT(s_pInstance == this);
 			s_pInstance = nullptr;
 		}
-
-		ITreeManager& CHub::GetTreeManager()
+		
+		bool CUDRSystem::Initialize()
+		{
+			const bool timeMetadataInitializedSuccessfully = m_timeMetadataBase.Initialize();
+			CRY_ASSERT_MESSAGE(timeMetadataInitializedSuccessfully, "Base Time metadata for the UDR System could not be initialized.");
+			return timeMetadataInitializedSuccessfully;
+		}
+		
+		// TODO: Think about adding a parameter: ResetReason to distinguish between an automatic reset (level load/unload, switch to game) and a user requested reset (manually calls clear through code or editor).
+		void CUDRSystem::Reset()
+		{
+			if (m_config.resetDataOnSwitchToGameMode)
+			{
+				m_treeManager.GetTree(ITreeManager::ETreeIndex::Live).Clear();
+				m_timeMetadataBase.Initialize();
+			}
+		}
+				
+		void CUDRSystem::Update(const CTimeValue frameStartTime, const float frameDeltaTime)
+		{
+			m_frameStartTime = frameStartTime;
+			m_frameDeltaTime = frameDeltaTime;
+			
+			// TODO: Update.
+		}
+		
+		ITreeManager& CUDRSystem::GetTreeManager()
 		{
 			return m_treeManager;
 		}
 
-		INodeStack& CHub::GetNodeStack()
+		INodeStack& CUDRSystem::GetNodeStack()
 		{
 			return m_nodeStack;
 		}
 
-		IRecursiveSyncObject& CHub::GetRecursiveSyncObject()
+		IRecursiveSyncObject& CUDRSystem::GetRecursiveSyncObject()
 		{
 			return m_recursiveSyncObject;
 		}
-
-		void CHub::ClearTree(ITreeManager::ETreeIndex treeIndex)
+		
+		CTimeValue CUDRSystem::GetElapsedTime() const
 		{
-			CNode& root = m_treeManager.GetTree(treeIndex).GetRootNodeWritable();
-			root.RemoveChildren();
+			// TODO: Add Operator - or function to calculate diff to CTimeMetada.
+			return gEnv->pTimer->GetAsyncTime() - m_timeMetadataBase.GetTimestamp();
+		}
+		
+		bool CUDRSystem::SetConfig(const IUDRSystem::SConfig& config)
+		{
+			m_config = config;
+			return true;
 		}
 
-		void CHub::CmdDumpRecordings(IConsoleCmdArgs* pArgs)
+		const IUDRSystem::SConfig& CUDRSystem::GetConfig() const
+		{
+			return m_config;
+		}
+		
+		void CUDRSystem::CmdDumpRecordings(IConsoleCmdArgs* pArgs)
 		{
 			if (s_pInstance)
 			{
@@ -107,17 +141,17 @@ namespace Cry
 			}
 		}
 
-		void CHub::CmdClearRecordingsInLiveTree(IConsoleCmdArgs* pArgs)
+		void CUDRSystem::CmdClearRecordingsInLiveTree(IConsoleCmdArgs* pArgs)
 		{
 			HelpCmdClearRecordings(pArgs, ITreeManager::ETreeIndex::Live);
 		}
 
-		void CHub::CmdClearRecordingsInDeserializedTree(IConsoleCmdArgs* pArgs)
+		void CUDRSystem::CmdClearRecordingsInDeserializedTree(IConsoleCmdArgs* pArgs)
 		{
 			HelpCmdClearRecordings(pArgs, ITreeManager::ETreeIndex::Deserialized);
 		}
 
-		void CHub::CmdPrintLiveNodes(IConsoleCmdArgs* pArgs)
+		void CUDRSystem::CmdPrintLiveNodes(IConsoleCmdArgs* pArgs)
 		{
 			if (s_pInstance)
 			{
@@ -130,7 +164,7 @@ namespace Cry
 			}
 		}
 
-		void CHub::CmdPrintStatistics(IConsoleCmdArgs* pArgs)
+		void CUDRSystem::CmdPrintStatistics(IConsoleCmdArgs* pArgs)
 		{
 			if (s_pInstance)
 			{
@@ -144,7 +178,7 @@ namespace Cry
 			}
 		}
 
-		void CHub::HelpCmdClearRecordings(IConsoleCmdArgs* pArgs, ITreeManager::ETreeIndex treeIndex)
+		void CUDRSystem::HelpCmdClearRecordings(IConsoleCmdArgs* pArgs, ITreeManager::ETreeIndex treeIndex)
 		{
 			if (s_pInstance)
 			{

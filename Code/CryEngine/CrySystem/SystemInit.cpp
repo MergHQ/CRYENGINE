@@ -1305,12 +1305,20 @@ bool CSystem::InitUDR(const SSystemInitParams& startupParams)
 {
 	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
-	if (!InitializeEngineModule(startupParams, DLL_UDR, cryiidof<Cry::UDR::IUDR>(), false))
+	if (!InitializeEngineModule(startupParams, DLL_UDR, cryiidof<Cry::UDR::IUDREngineModule>(), false))
 	{
-		gEnv->pLog->LogWarning("UDR not created.");
+		gEnv->pLog->LogWarning("UDR Module could not be created.");
 		return false;
 	}
 
+	const bool initializedSuccessfully = m_env.pUDR->Initialize();
+	if (!initializedSuccessfully)
+	{
+		CRY_ASSERT_MESSAGE(initializedSuccessfully, "UDR System could not be initialized.");
+		gEnv->pLog->LogWarning("UDR System could not be initialized.");
+		return false;
+		
+	}
 	return true;
 }
 

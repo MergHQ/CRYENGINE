@@ -45,7 +45,7 @@ namespace Cry
 
 		private:
 
-			void                   UpdateTimeMetadata(const CTimeMetadata timeMetadata);
+			void                   UpdateTimeMetadata(const CTimeMetadata& timeMetadata);
 
 		private:
 
