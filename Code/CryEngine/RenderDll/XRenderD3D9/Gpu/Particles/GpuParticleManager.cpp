@@ -156,7 +156,7 @@ void CManager::RenderThreadPostUpdate(CRenderView* pRenderView)
 
 #if (CRY_RENDERER_DIRECT3D >= 111)
 			const UINT numRanges = 1;
-			const D3D11_RECT uavRange = { 0, 0, numRuntimes, 0 };
+			const D3D11_RECT uavRange = { 0, 0, numRuntimes, 1 };
 
 			m_clearRegionPass->Execute(&m_counter.GetBuffer(), nulls, numRanges, &uavRange);
 			m_clearRegionPass->Execute(&m_scratch.GetBuffer(), nulls, numRanges, &uavRange);
