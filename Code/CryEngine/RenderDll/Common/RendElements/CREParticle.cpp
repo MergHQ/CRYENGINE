@@ -637,6 +637,7 @@ bool CREParticle::Compile(CRenderObject* pRenderObject, uint64 objFlags, ERender
 
 	stateDesc.objectRuntimeMask &= ~g_HWSR_MaskBit[HWSR_LIGHTVOLUME0];
 	stateDesc.objectRuntimeMask |= g_HWSR_MaskBit[HWSR_DEBUG0];
+	stateDesc.objectRuntimeMask &= ~g_HWSR_MaskBit[HWSR_PARTICLE_SHADOW];
 	bCompiled &= pGraphicsPipeline->GetStage<CSceneCustomStage>()->CreatePipelineState(stateDesc, CSceneCustomStage::ePass_DebugViewSolid, pGraphicsPSO);
 	m_pCompiledParticle->m_pGraphicsPSOs[uint(EParticlePSOMode::DebugSolid)] = pGraphicsPSO;
 
