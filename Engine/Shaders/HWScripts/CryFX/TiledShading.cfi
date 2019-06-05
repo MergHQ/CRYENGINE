@@ -242,6 +242,7 @@ void TiledForwardShading(in ForwardShadingAttribs attribs, inout float3 diffuseA
 	}
 #endif
 	
+	[loop]
 	for (;;)
 	{
 		[branch]
