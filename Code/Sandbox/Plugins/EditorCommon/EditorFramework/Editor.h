@@ -142,7 +142,7 @@ protected:
 	void               SetPersonalizationState(const QVariantMap& state);
 	const QVariantMap& GetPersonalizationState();
 
-	// Must be overridden to add handling of adaptive layous. Adaptive layouts enables editor owners to make better use of space
+	// Must be overridden to add handling of adaptive layouts. Adaptive layouts enables editor owners to make better use of space
 	virtual bool SupportsAdaptiveLayout() const  { return false; }
 	bool         IsAdaptiveLayoutEnabled() const { return SupportsAdaptiveLayout() && m_isAdaptiveLayoutEnabled; }
 	// Triggered on resize for editors that support adaptive layouts

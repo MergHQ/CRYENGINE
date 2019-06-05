@@ -345,14 +345,12 @@ void CEditor::EnableDockingSystem()
 
 void CEditor::RegisterDockableWidget(QString name, std::function<QWidget*()> factory, bool isUnique /*= false*/, bool isInternal /*= false*/)
 {
-	using namespace Private_EditorFramework;
-
 	if (!m_pBroadcastManagerFilter)
 	{
 		m_pBroadcastManagerFilter = new Private_EditorFramework::CBroadcastManagerFilter(GetBroadcastManager());
 	}
 
-	//This filter is needed because the widget may not alway be in the child hierarchy of this broadcast manager
+	//This filter is needed because the widget may not always be in the child hierarchy of this broadcast manager
 	QPointer<QObject> pFilter(m_pBroadcastManagerFilter);
 	auto wrapperFactory = [name, factory, pFilter]() -> QWidget*
 												{

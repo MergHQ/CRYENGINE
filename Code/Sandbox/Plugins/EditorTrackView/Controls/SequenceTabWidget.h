@@ -65,8 +65,6 @@ public:
 	void                ApplyChangedProperties(bool bUpdateProperties = true);
 	void                TimelineLayoutChanged(bool bUpdateProperties = true);
 
-	void                SetToolbar(QToolBar* pToolbar);
-
 	const SelectedKeys& GetCurrentSelectedKeys() const { return m_currentKeySelection; }
 	CTrackViewNode*     GetNodeFromActiveSequence(const STimelineTrack* pDopeSheetTrack);
 
