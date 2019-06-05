@@ -1308,6 +1308,7 @@ struct ISystem
 	virtual IUserAnalyticsSystem*   GetIUserAnalyticsSystem() = 0;
 	virtual Cry::IPluginManager*    GetIPluginManager() = 0;
 	virtual Cry::IProjectManager*   GetIProjectManager() = 0;
+	virtual Cry::UDR::IUDR*         GetIUDR() = 0;
 
 	//! \return Can be NULL, because it only exists when running through the editor, not in pure game mode.
 	virtual IResourceManager*                  GetIResourceManager() = 0;

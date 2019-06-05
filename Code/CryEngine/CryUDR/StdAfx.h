@@ -20,7 +20,10 @@
 
 #include <CryRenderer/IRenderAuxGeom.h>
 
+#include <CrySystem/TimeValue.h>
+
 #include "CVars.h"
+#include "TimeMetadata.h"
 #include "RenderPrimitives.h"
 #include "RenderPrimitiveCollection.h"
 #include "LogMessageCollection.h"

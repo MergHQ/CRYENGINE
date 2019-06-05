@@ -342,6 +342,7 @@ public:
 	IUserAnalyticsSystem*        GetIUserAnalyticsSystem() override;
 	Cry::IPluginManager*         GetIPluginManager() override;
 	Cry::IProjectManager*        GetIProjectManager() override;
+	virtual Cry::UDR::IUDR*      GetIUDR() override                 { return m_env.pUDR; }
 
 	IResourceManager*            GetIResourceManager() override;
 	ITextModeConsole*            GetITextModeConsole() override;

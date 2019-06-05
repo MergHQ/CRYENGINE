@@ -51,6 +51,12 @@ namespace Cry
 			return m_recursiveSyncObject;
 		}
 
+		void CHub::ClearTree(ITreeManager::ETreeIndex treeIndex)
+		{
+			CNode& root = m_treeManager.GetTree(treeIndex).GetRootNodeWritable();
+			root.RemoveChildren();
+		}
+
 		void CHub::CmdDumpRecordings(IConsoleCmdArgs* pArgs)
 		{
 			if (s_pInstance)

@@ -27,6 +27,8 @@ add_sources("CryUDR_Uber_0.cpp"
 		"TreeManager.cpp"
 		"RecursiveSyncObject.h"
 		"RecursiveSyncObject.cpp"
+		"TimeMetadata.h"
+		"TimeMetadata.cpp"
 		"CryUDR.cpp"
 )
 
