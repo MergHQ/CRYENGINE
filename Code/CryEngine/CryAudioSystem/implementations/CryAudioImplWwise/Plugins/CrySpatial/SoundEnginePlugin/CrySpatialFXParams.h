@@ -53,8 +53,8 @@ public:
 
 	AK::AkFXParameterChangeHandler<g_numParams> m_paramChangeHandler;
 
-	CrySpatialRTPCParams                        RTPC;
-	CrySpatialNonRTPCParams                     NonRTPC;
+	CrySpatialRTPCParams                        m_rtpc;
+	CrySpatialNonRTPCParams                     m_nonRtpc;
 }
 
 AK_ALIGN_DMA;

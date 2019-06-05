@@ -194,8 +194,8 @@ void CrySpatialFX::OnInputConnected(AK::IAkMixerInputContext* in_pInput)
 	// Setup FilterBanks
 	{
 		float const sampleRate = m_sampleRate;
-		userData->filterBankA = new SBiquadIIFilterBank(sampleRate);
-		userData->filterBankB = new SBiquadIIFilterBank(sampleRate);
+		userData->pFilterBankA = new SBiquadIIFilterBank(sampleRate);
+		userData->pFilterBankB = new SBiquadIIFilterBank(sampleRate);
 	}
 
 	AkEmitterListenerPair emitterListener;
@@ -548,26 +548,26 @@ void CrySpatialFX::HRTF_MonoTo5_1(
 
 	// Filter Sources behind Listener
 	{
-		BiquadIIFilter* pFilterDominant = &userData->filterBankB->filterBand11; // FilterDominant
-		BiquadIIFilter* pFilterResidual = &userData->filterBankA->filterBand11; // FilterResidual
+		BiquadIIFilter* pFilterDominant = &userData->pFilterBankB->filterBand11; // FilterDominant
+		BiquadIIFilter* pFilterResidual = &userData->pFilterBankA->filterBand11; // FilterResidual
 
 		switch (userData->voiceCycleDominantDelay)
 		{
 		case 0:
 			{
-				pFilterDominant = &userData->filterBankA->filterBand11;
+				pFilterDominant = &userData->pFilterBankA->filterBand11;
 				break;
 			}
 		case 1:
 			{
-				pFilterDominant = &userData->filterBankA->filterBand11;
-				pFilterResidual = &userData->filterBankB->filterBand11;
+				pFilterDominant = &userData->pFilterBankA->filterBand11;
+				pFilterResidual = &userData->pFilterBankB->filterBand11;
 				break;
 			}
 		case 2:
 			{
-				pFilterDominant = &userData->filterBankB->filterBand11;
-				pFilterResidual = &userData->filterBankA->filterBand11;
+				pFilterDominant = &userData->pFilterBankB->filterBand11;
+				pFilterResidual = &userData->pFilterBankA->filterBand11;
 				break;
 			}
 		default:
@@ -712,26 +712,26 @@ void CrySpatialFX::HRTF_MonoTo7_1(
 	}
 
 	{
-		BiquadIIFilter* pFilterDominant = &userData->filterBankB->filterBand11; // FilterDominant
-		BiquadIIFilter* pFilterResidual = &userData->filterBankA->filterBand11; // FilterResidual
+		BiquadIIFilter* pFilterDominant = &userData->pFilterBankB->filterBand11; // FilterDominant
+		BiquadIIFilter* pFilterResidual = &userData->pFilterBankA->filterBand11; // FilterResidual
 
 		switch (userData->voiceCycleDominantDelay)
 		{
 		case 0:
 			{
-				pFilterDominant = &userData->filterBankA->filterBand11;
+				pFilterDominant = &userData->pFilterBankA->filterBand11;
 				break;
 			}
 		case 1:
 			{
-				pFilterDominant = &userData->filterBankA->filterBand11;
-				pFilterResidual = &userData->filterBankB->filterBand11;
+				pFilterDominant = &userData->pFilterBankA->filterBand11;
+				pFilterResidual = &userData->pFilterBankB->filterBand11;
 				break;
 			}
 		case 2:
 			{
-				pFilterDominant = &userData->filterBankB->filterBand11;
-				pFilterResidual = &userData->filterBankA->filterBand11;
+				pFilterDominant = &userData->pFilterBankB->filterBand11;
+				pFilterResidual = &userData->pFilterBankA->filterBand11;
 				break;
 			}
 		default:
@@ -1038,63 +1038,63 @@ void CrySpatialFX::EQInputBuffer(
 	{
 	case 0:
 		{
-			filterDominant0 = &userData->filterBankA->filterBand00;
-			filterDominant1 = &userData->filterBankA->filterBand01;
-			filterDominant2 = &userData->filterBankA->filterBand02;
-			filterDominant3 = &userData->filterBankA->filterBand03;
-			filterDominant4 = &userData->filterBankA->filterBand04;
-			filterDominant5 = &userData->filterBankA->filterBand05;
-			filterDominant6 = &userData->filterBankA->filterBand06;
-			filterDominant7 = &userData->filterBankA->filterBand07;
-			filterDominant8 = &userData->filterBankA->filterBand08;
+			filterDominant0 = &userData->pFilterBankA->filterBand00;
+			filterDominant1 = &userData->pFilterBankA->filterBand01;
+			filterDominant2 = &userData->pFilterBankA->filterBand02;
+			filterDominant3 = &userData->pFilterBankA->filterBand03;
+			filterDominant4 = &userData->pFilterBankA->filterBand04;
+			filterDominant5 = &userData->pFilterBankA->filterBand05;
+			filterDominant6 = &userData->pFilterBankA->filterBand06;
+			filterDominant7 = &userData->pFilterBankA->filterBand07;
+			filterDominant8 = &userData->pFilterBankA->filterBand08;
 
 			break;
 		}
 	case 1:
 		{
-			filterDominant0 = &userData->filterBankA->filterBand00;
-			filterDominant1 = &userData->filterBankA->filterBand01;
-			filterDominant2 = &userData->filterBankA->filterBand02;
-			filterDominant3 = &userData->filterBankA->filterBand03;
-			filterDominant4 = &userData->filterBankA->filterBand04;
-			filterDominant5 = &userData->filterBankA->filterBand05;
-			filterDominant6 = &userData->filterBankA->filterBand06;
-			filterDominant7 = &userData->filterBankA->filterBand07;
-			filterDominant8 = &userData->filterBankA->filterBand08;
+			filterDominant0 = &userData->pFilterBankA->filterBand00;
+			filterDominant1 = &userData->pFilterBankA->filterBand01;
+			filterDominant2 = &userData->pFilterBankA->filterBand02;
+			filterDominant3 = &userData->pFilterBankA->filterBand03;
+			filterDominant4 = &userData->pFilterBankA->filterBand04;
+			filterDominant5 = &userData->pFilterBankA->filterBand05;
+			filterDominant6 = &userData->pFilterBankA->filterBand06;
+			filterDominant7 = &userData->pFilterBankA->filterBand07;
+			filterDominant8 = &userData->pFilterBankA->filterBand08;
 
-			filterResidual0 = &userData->filterBankB->filterBand00;
-			filterResidual1 = &userData->filterBankB->filterBand01;
-			filterResidual2 = &userData->filterBankB->filterBand02;
-			filterResidual3 = &userData->filterBankB->filterBand03;
-			filterResidual4 = &userData->filterBankB->filterBand04;
-			filterResidual5 = &userData->filterBankB->filterBand05;
-			filterResidual6 = &userData->filterBankB->filterBand06;
-			filterResidual7 = &userData->filterBankB->filterBand07;
-			filterResidual8 = &userData->filterBankB->filterBand08;
+			filterResidual0 = &userData->pFilterBankB->filterBand00;
+			filterResidual1 = &userData->pFilterBankB->filterBand01;
+			filterResidual2 = &userData->pFilterBankB->filterBand02;
+			filterResidual3 = &userData->pFilterBankB->filterBand03;
+			filterResidual4 = &userData->pFilterBankB->filterBand04;
+			filterResidual5 = &userData->pFilterBankB->filterBand05;
+			filterResidual6 = &userData->pFilterBankB->filterBand06;
+			filterResidual7 = &userData->pFilterBankB->filterBand07;
+			filterResidual8 = &userData->pFilterBankB->filterBand08;
 
 			break;
 		}
 	case 2:
 		{
-			filterResidual0 = &userData->filterBankA->filterBand00;
-			filterResidual1 = &userData->filterBankA->filterBand01;
-			filterResidual2 = &userData->filterBankA->filterBand02;
-			filterResidual3 = &userData->filterBankA->filterBand03;
-			filterResidual4 = &userData->filterBankA->filterBand04;
-			filterResidual5 = &userData->filterBankA->filterBand05;
-			filterResidual6 = &userData->filterBankA->filterBand06;
-			filterResidual7 = &userData->filterBankA->filterBand07;
-			filterResidual8 = &userData->filterBankA->filterBand08;
+			filterResidual0 = &userData->pFilterBankA->filterBand00;
+			filterResidual1 = &userData->pFilterBankA->filterBand01;
+			filterResidual2 = &userData->pFilterBankA->filterBand02;
+			filterResidual3 = &userData->pFilterBankA->filterBand03;
+			filterResidual4 = &userData->pFilterBankA->filterBand04;
+			filterResidual5 = &userData->pFilterBankA->filterBand05;
+			filterResidual6 = &userData->pFilterBankA->filterBand06;
+			filterResidual7 = &userData->pFilterBankA->filterBand07;
+			filterResidual8 = &userData->pFilterBankA->filterBand08;
 
-			filterDominant0 = &userData->filterBankB->filterBand00;
-			filterDominant1 = &userData->filterBankB->filterBand01;
-			filterDominant2 = &userData->filterBankB->filterBand02;
-			filterDominant3 = &userData->filterBankB->filterBand03;
-			filterDominant4 = &userData->filterBankB->filterBand04;
-			filterDominant5 = &userData->filterBankB->filterBand05;
-			filterDominant6 = &userData->filterBankB->filterBand06;
-			filterDominant7 = &userData->filterBankB->filterBand07;
-			filterDominant8 = &userData->filterBankB->filterBand08;
+			filterDominant0 = &userData->pFilterBankB->filterBand00;
+			filterDominant1 = &userData->pFilterBankB->filterBand01;
+			filterDominant2 = &userData->pFilterBankB->filterBand02;
+			filterDominant3 = &userData->pFilterBankB->filterBand03;
+			filterDominant4 = &userData->pFilterBankB->filterBand04;
+			filterDominant5 = &userData->pFilterBankB->filterBand05;
+			filterDominant6 = &userData->pFilterBankB->filterBand06;
+			filterDominant7 = &userData->pFilterBankB->filterBand07;
+			filterDominant8 = &userData->pFilterBankB->filterBand08;
 
 			break;
 		}
@@ -1460,36 +1460,36 @@ void CrySpatialFX::EQConcealedChannel(
 	float const elevationFactor = (fabs(m_gameElevation) / static_cast<float>(g_piHalf));
 	float const elevationFactorInversedClamp = (elevationFactor > 0.85f) ? 0.0f : 1.0f - (elevationFactor / 0.85f);
 
-	BiquadIIFilter* filterDominant11 = &userData->filterBankA->filterBand11;
-	BiquadIIFilter* filterResidual11 = &userData->filterBankB->filterBand11;
-	BiquadIIFilter* filterDominant10 = &userData->filterBankA->filterBand10;
-	BiquadIIFilter* filterResidual10 = &userData->filterBankB->filterBand10;
+	BiquadIIFilter* filterDominant11 = &userData->pFilterBankA->filterBand11;
+	BiquadIIFilter* filterResidual11 = &userData->pFilterBankB->filterBand11;
+	BiquadIIFilter* filterDominant10 = &userData->pFilterBankA->filterBand10;
+	BiquadIIFilter* filterResidual10 = &userData->pFilterBankB->filterBand10;
 	BiquadIIFilter* filterResidual09;
 
 	switch (cycleProxy)
 	{
 	case 0:
 		{
-			filterDominant11 = &userData->filterBankA->filterBand11;
-			filterDominant10 = &userData->filterBankA->filterBand10;
+			filterDominant11 = &userData->pFilterBankA->filterBand11;
+			filterDominant10 = &userData->pFilterBankA->filterBand10;
 			break;
 		}
 	case 1:
 		{
-			filterDominant11 = &userData->filterBankA->filterBand11;
-			filterDominant10 = &userData->filterBankA->filterBand10;
-			filterResidual11 = &userData->filterBankB->filterBand11;
-			filterResidual10 = &userData->filterBankB->filterBand10;
-			filterResidual09 = &userData->filterBankB->filterBand09;
+			filterDominant11 = &userData->pFilterBankA->filterBand11;
+			filterDominant10 = &userData->pFilterBankA->filterBand10;
+			filterResidual11 = &userData->pFilterBankB->filterBand11;
+			filterResidual10 = &userData->pFilterBankB->filterBand10;
+			filterResidual09 = &userData->pFilterBankB->filterBand09;
 			break;
 		}
 	case 2:
 		{
-			filterDominant11 = &userData->filterBankB->filterBand11;
-			filterDominant10 = &userData->filterBankB->filterBand10;
-			filterResidual11 = &userData->filterBankA->filterBand11;
-			filterResidual10 = &userData->filterBankA->filterBand10;
-			filterResidual09 = &userData->filterBankA->filterBand09;
+			filterDominant11 = &userData->pFilterBankB->filterBand11;
+			filterDominant10 = &userData->pFilterBankB->filterBand10;
+			filterResidual11 = &userData->pFilterBankA->filterBand11;
+			filterResidual10 = &userData->pFilterBankA->filterBand10;
+			filterResidual09 = &userData->pFilterBankA->filterBand09;
 			break;
 		}
 	default:
@@ -1645,32 +1645,32 @@ void CrySpatialFX::EQDirectChannel(
 	float const elevationFactor = (fabs(m_gameElevation) / static_cast<float>(g_piHalf));
 	float const elevationFactorInversedClamp = (elevationFactor > 0.85f) ? 0.0f : 1.0f - (elevationFactor / 0.85f);
 
-	BiquadIIFilter* filterDominant09 = &userData->filterBankA->filterBand09; // FilterDominant
-	BiquadIIFilter* filterResidual09 = &userData->filterBankB->filterBand09; // FilterResidual
-	BiquadIIFilter* filterResidual10 = &userData->filterBankB->filterBand09; // FilterResidual
-	BiquadIIFilter* filterResidual11 = &userData->filterBankB->filterBand09; // FilterResidual
+	BiquadIIFilter* filterDominant09 = &userData->pFilterBankA->filterBand09; // FilterDominant
+	BiquadIIFilter* filterResidual09 = &userData->pFilterBankB->filterBand09; // FilterResidual
+	BiquadIIFilter* filterResidual10 = &userData->pFilterBankB->filterBand09; // FilterResidual
+	BiquadIIFilter* filterResidual11 = &userData->pFilterBankB->filterBand09; // FilterResidual
 
 	switch (cycleProxy)
 	{
 	case 0:
 		{
-			filterDominant09 = &userData->filterBankA->filterBand09;
+			filterDominant09 = &userData->pFilterBankA->filterBand09;
 			break;
 		}
 	case 1:
 		{
-			filterDominant09 = &userData->filterBankA->filterBand09;
-			filterResidual09 = &userData->filterBankB->filterBand09;
-			filterResidual10 = &userData->filterBankB->filterBand10;
-			filterResidual11 = &userData->filterBankB->filterBand11;
+			filterDominant09 = &userData->pFilterBankA->filterBand09;
+			filterResidual09 = &userData->pFilterBankB->filterBand09;
+			filterResidual10 = &userData->pFilterBankB->filterBand10;
+			filterResidual11 = &userData->pFilterBankB->filterBand11;
 			break;
 		}
 	case 2:
 		{
-			filterDominant09 = &userData->filterBankB->filterBand09;
-			filterResidual09 = &userData->filterBankA->filterBand09;
-			filterResidual10 = &userData->filterBankA->filterBand10;
-			filterResidual11 = &userData->filterBankA->filterBand11;
+			filterDominant09 = &userData->pFilterBankB->filterBand09;
+			filterResidual09 = &userData->pFilterBankA->filterBand09;
+			filterResidual10 = &userData->pFilterBankA->filterBand10;
+			filterResidual11 = &userData->pFilterBankA->filterBand11;
 			break;
 		}
 	default:

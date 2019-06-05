@@ -15,9 +15,9 @@ namespace Plugins
 {
 //////////////////////////////////////////////////////////////////////////
 CrySpatialFXParams::CrySpatialFXParams(CrySpatialFXParams const& in_rParams)
+	: m_rtpc(in_rParams.m_rtpc)
+	, m_nonRtpc(in_rParams.m_nonRtpc)
 {
-	RTPC = in_rParams.RTPC;
-	NonRTPC = in_rParams.NonRTPC;
 	m_paramChangeHandler.SetAllParamChanges();
 }
 
@@ -33,7 +33,7 @@ AKRESULT CrySpatialFXParams::Init(AK::IAkPluginMemAlloc* in_pAllocator, void con
 	if (in_ulBlockSize == 0)
 	{
 		// Initialize default parameters here
-		NonRTPC.fFilterFreq = 0.0f;
+		m_nonRtpc.fFilterFreq = 0.0f;
 		m_paramChangeHandler.SetAllParamChanges();
 		return AK_Success;
 	}
@@ -71,7 +71,7 @@ AKRESULT CrySpatialFXParams::SetParam(AkPluginParamID in_paramID, void const* in
 	{
 	case g_paramIDfilterFrequency:
 		{
-			NonRTPC.fFilterFreq = *((AkReal32*)in_pValue);
+			m_nonRtpc.fFilterFreq = *((AkReal32*)in_pValue);
 			m_paramChangeHandler.SetParamChange(g_paramIDfilterFrequency);
 			break;
 		}

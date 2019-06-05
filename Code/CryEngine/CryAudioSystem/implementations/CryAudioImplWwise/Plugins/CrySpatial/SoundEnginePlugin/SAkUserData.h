@@ -32,7 +32,7 @@ enum class ESourceDirection
 struct SAkUserData final
 {
 	explicit SAkUserData()
-		: pVoiceDelayBuffer()
+		: pVoiceDelayBuffer(nullptr)
 		, voiceDelayPrev(0)
 		, voiceCycleDominantEQ(0)
 		, voiceCycleDominantDelay(0)
@@ -40,13 +40,15 @@ struct SAkUserData final
 		, lastVolumeConcealed(1.0f)
 		, inputType(EVoiceType::None)
 		, lastSourceDirection(ESourceDirection::None)
+		, pFilterBankA(nullptr)
+		, pFilterBankB(nullptr)
 	{
 	}
 
 	~SAkUserData()
 	{
-		delete filterBankA;
-		delete filterBankB;
+		delete pFilterBankA;
+		delete pFilterBankB;
 	}
 
 	std::unique_ptr<AkAudioBuffer> pVoiceDelayBuffer;
@@ -61,8 +63,8 @@ struct SAkUserData final
 	EVoiceType                     inputType;
 	ESourceDirection               lastSourceDirection;
 
-	SBiquadIIFilterBank*           filterBankA;
-	SBiquadIIFilterBank*           filterBankB;
+	SBiquadIIFilterBank*           pFilterBankA;
+	SBiquadIIFilterBank*           pFilterBankB;
 };
 } // namespace Plugins
 } // namespace Wwise
