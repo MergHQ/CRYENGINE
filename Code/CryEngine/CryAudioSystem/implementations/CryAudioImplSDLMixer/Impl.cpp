@@ -27,6 +27,7 @@
 	#include <CrySystem/ITimer.h>
 #endif  // CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE
 
+#include <SDL.h>
 #include <SDL_mixer.h>
 
 namespace CryAudio
@@ -35,6 +36,25 @@ namespace Impl
 {
 namespace SDL_mixer
 {
+static string const s_regularAssetsPath = string(CRY_AUDIO_DATA_ROOT) + "/" + g_szImplFolderName + "/" + g_szAssetsFolderName + "/";
+constexpr int g_supportedFormats = MIX_INIT_OGG | MIX_INIT_MP3;
+constexpr int g_sampleRate = 48000;
+constexpr int g_bufferSize = 4096;
+
+static string s_localizedAssetsPath = "";
+
+enum class EChannelFinishedRequestQueueId : EnumFlagsType
+{
+	One,
+	Two,
+	Count
+};
+CRY_CREATE_ENUM_FLAG_OPERATORS(EChannelFinishedRequestQueueId);
+
+using ChannelFinishedRequests = std::deque<int>;
+ChannelFinishedRequests g_channelFinishedRequests[IntegralValue(EChannelFinishedRequestQueueId::Count)];
+CryCriticalSection g_channelFinishedCriticalSection;
+
 SPoolSizes g_poolSizes;
 std::map<ContextId, SPoolSizes> g_contextPoolSizes;
 
@@ -46,6 +66,202 @@ uint16 g_eventInstancePoolSize = 0;
 EventInstances g_constructedEventInstances;
 std::vector<CListener*> g_constructedListeners;
 #endif  // CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE
+
+//////////////////////////////////////////////////////////////////////////
+void LoadMetadata(string const& path, bool const isLocalized)
+{
+	string const rootDir = isLocalized ? s_localizedAssetsPath : s_regularAssetsPath;
+
+	_finddata_t fd;
+	ICryPak* pCryPak = gEnv->pCryPak;
+	intptr_t handle = pCryPak->FindFirst(rootDir + path + "*.*", &fd);
+
+	if (handle != -1)
+	{
+		do
+		{
+			string const name = fd.name;
+
+			if ((name != ".") && (name != "..") && !name.empty())
+			{
+				if (fd.attrib & _A_SUBDIR)
+				{
+					LoadMetadata(path + name + "/", isLocalized);
+				}
+				else
+				{
+					string::size_type const posExtension = name.rfind('.');
+
+					if (posExtension != string::npos)
+					{
+						string const fileExtension = name.data() + posExtension;
+
+						if ((_stricmp(fileExtension, ".mp3") == 0) ||
+						    (_stricmp(fileExtension, ".ogg") == 0) ||
+						    (_stricmp(fileExtension, ".wav") == 0))
+						{
+							if (path.empty())
+							{
+								g_samplePaths[StringToId(name.c_str())] = rootDir + name;
+							}
+							else
+							{
+								string const pathName = path + name;
+								g_samplePaths[StringToId(pathName.c_str())] = rootDir + pathName;
+							}
+						}
+					}
+				}
+			}
+		}
+		while (pCryPak->FindNext(handle, &fd) >= 0);
+
+		pCryPak->FindClose(handle);
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void FreeAllSampleData()
+{
+	Mix_HaltChannel(-1);
+	SampleDataMap::const_iterator it = g_sampleData.begin();
+	SampleDataMap::const_iterator end = g_sampleData.end();
+
+	for (; it != end; ++it)
+	{
+		Mix_FreeChunk(it->second);
+	}
+
+	g_sampleData.clear();
+	g_samplePaths.clear();
+
+#if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE)
+	g_loadedSampleSize = 0;
+#endif    // CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE
+}
+
+//////////////////////////////////////////////////////////////////////////
+void ProcessChannelFinishedRequests(ChannelFinishedRequests& queue)
+{
+	if (!queue.empty())
+	{
+		for (int const finishedChannelId : queue)
+		{
+			CObject const* const pObject = g_channels[finishedChannelId].pObject;
+
+			if (pObject != nullptr)
+			{
+				for (auto const pEventInstance : pObject->m_eventInstances)
+				{
+					if (pEventInstance != nullptr)
+					{
+						ChannelList::iterator const channelsEnd = pEventInstance->m_channels.end();
+
+						for (ChannelList::iterator channelIt = pEventInstance->m_channels.begin(); channelIt != channelsEnd; ++channelIt)
+						{
+							if (*channelIt == finishedChannelId)
+							{
+								pEventInstance->m_channels.erase(channelIt);
+
+								if (pEventInstance->m_channels.empty())
+								{
+									pEventInstance->SetToBeRemoved();
+								}
+
+								break;
+							}
+						}
+					}
+				}
+
+				g_channels[finishedChannelId].pObject = nullptr;
+			}
+
+			g_freeChannels.push(finishedChannelId);
+		}
+
+		queue.clear();
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void ChannelFinishedPlaying(int const channel)
+{
+	if ((channel >= 0) && (channel < g_numMixChannels))
+	{
+		CryAutoLock<CryCriticalSection> autoLock(g_channelFinishedCriticalSection);
+		g_channelFinishedRequests[IntegralValue(EChannelFinishedRequestQueueId::One)].push_back(channel);
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void Mute()
+{
+	Mix_Volume(-1, 0);
+	g_isMuted = true;
+}
+
+//////////////////////////////////////////////////////////////////////////
+void UnMute()
+{
+	Objects::const_iterator objectIt = g_objects.begin();
+	Objects::const_iterator const objectEnd = g_objects.end();
+
+	for (; objectIt != objectEnd; ++objectIt)
+	{
+		CObject* const pObject = *objectIt;
+
+		if (pObject != nullptr)
+		{
+			EventInstances::const_iterator eventIt = pObject->m_eventInstances.begin();
+			EventInstances::const_iterator const eventEnd = pObject->m_eventInstances.end();
+
+			for (; eventIt != eventEnd; ++eventIt)
+			{
+				CEventInstance* const pEventInstance = *eventIt;
+
+				if (pEventInstance != nullptr)
+				{
+					CEvent const& event = pEventInstance->GetEvent();
+
+					float const volumeMultiplier = GetVolumeMultiplier(pObject, event.GetSampleId());
+					int const mixVolume = GetAbsoluteVolume(event.GetVolume(), volumeMultiplier);
+
+					ChannelList::const_iterator channelIt = pEventInstance->m_channels.begin();
+					ChannelList::const_iterator const channelEnd = pEventInstance->m_channels.end();
+
+					for (; channelIt != channelEnd; ++channelIt)
+					{
+						Mix_Volume(*channelIt, mixVolume);
+					}
+				}
+			}
+		}
+	}
+
+	g_isMuted = false;
+}
+
+//////////////////////////////////////////////////////////////////////////
+SampleId LoadSample(string const& sampleFilePath, bool const onlyMetadata, bool const isLocalized)
+{
+	SampleId const id = StringToId(sampleFilePath.c_str());
+
+	if (stl::find_in_map(g_sampleData, id, nullptr) == nullptr)
+	{
+		if (onlyMetadata)
+		{
+			string const assetPath = isLocalized ? s_localizedAssetsPath : s_regularAssetsPath;
+			g_samplePaths[id] = assetPath + sampleFilePath;
+		}
+		else if (!LoadSampleImpl(id, sampleFilePath))
+		{
+			return g_invalidSampleId;
+		}
+	}
+
+	return id;
+}
 
 //////////////////////////////////////////////////////////////////////////
 void CountPoolSizes(XmlNodeRef const& node, SPoolSizes& poolSizes)
@@ -128,12 +344,19 @@ CImpl::CImpl()
 ///////////////////////////////////////////////////////////////////////////
 void CImpl::Update()
 {
-	SoundEngine::Update();
+	{
+		CryAutoLock<CryCriticalSection> lock(g_channelFinishedCriticalSection);
+		g_channelFinishedRequests[IntegralValue(EChannelFinishedRequestQueueId::One)].swap(g_channelFinishedRequests[IntegralValue(EChannelFinishedRequestQueueId::Two)]);
+	}
+
+	ProcessChannelFinishedRequests(g_channelFinishedRequests[IntegralValue(EChannelFinishedRequestQueueId::Two)]);
 }
 
 ///////////////////////////////////////////////////////////////////////////
 ERequestStatus CImpl::Init(uint16 const objectPoolSize)
 {
+	ERequestStatus requestStatus = ERequestStatus::Failure;
+
 	if (g_cvars.m_eventPoolSize < 1)
 	{
 		g_cvars.m_eventPoolSize = 1;
@@ -157,12 +380,53 @@ ERequestStatus CImpl::Init(uint16 const objectPoolSize)
 		SetLanguage(pCVar->GetString());
 	}
 
-	if (SoundEngine::Init())
+	if (SDL_Init(SDL_INIT_AUDIO) == 0)
 	{
-		return ERequestStatus::Success;
-	}
+		int const loadedFormats = Mix_Init(g_supportedFormats);
 
-	return ERequestStatus::Failure;
+		if ((loadedFormats & g_supportedFormats) == g_supportedFormats)
+		{
+			if (Mix_OpenAudio(g_sampleRate, MIX_DEFAULT_FORMAT, 2, g_bufferSize) == 0)
+			{
+				Mix_AllocateChannels(g_numMixChannels);
+
+				g_isMuted = false;
+				Mix_Volume(-1, SDL_MIX_MAXVOLUME);
+
+				for (int i = 0; i < g_numMixChannels; ++i)
+				{
+					g_freeChannels.push(i);
+				}
+
+				Mix_ChannelFinished(ChannelFinishedPlaying);
+
+				LoadMetadata("", false);
+				LoadMetadata("", true);
+
+				requestStatus = ERequestStatus::Success;
+			}
+#if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE)
+			else
+			{
+				Cry::Audio::Log(ELogType::Error, R"(SDLMixer::Mix_OpenAudio() failed to init the SDL Mixer API with error "%s")", Mix_GetError());
+			}
+#endif      // CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE
+		}
+#if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE)
+		else
+		{
+			Cry::Audio::Log(ELogType::Error, R"(SDLMixer::Mix_Init() failed to init support for format flags %d with error "%s")", g_supportedFormats, Mix_GetError());
+		}
+#endif    // CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE
+	}
+#if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE)
+	else
+	{
+		Cry::Audio::Log(ELogType::Error, "SDL::SDL_Init() returned: %s", SDL_GetError());
+	}
+#endif    // CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE
+
+	return requestStatus;
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -173,7 +437,12 @@ void CImpl::ShutDown()
 ///////////////////////////////////////////////////////////////////////////
 void CImpl::Release()
 {
-	SoundEngine::Release();
+	FreeAllSampleData();
+	g_objects.clear();
+	g_objects.shrink_to_fit();
+	Mix_Quit();
+	Mix_CloseAudio();
+	SDL_Quit();
 
 	delete this;
 	g_pImpl = nullptr;
@@ -185,7 +454,9 @@ void CImpl::Release()
 ///////////////////////////////////////////////////////////////////////////
 void CImpl::OnRefresh()
 {
-	SoundEngine::Refresh();
+	FreeAllSampleData();
+	LoadMetadata("", false);
+	LoadMetadata("", true);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -260,43 +531,45 @@ void CImpl::OnAfterLibraryDataChanged(int const poolAllocationMode)
 ///////////////////////////////////////////////////////////////////////////
 void CImpl::OnLoseFocus()
 {
-	SoundEngine::Mute();
+	Mute();
 }
 
 ///////////////////////////////////////////////////////////////////////////
 void CImpl::OnGetFocus()
 {
-	SoundEngine::UnMute();
+	UnMute();
 }
 
 ///////////////////////////////////////////////////////////////////////////
 void CImpl::MuteAll()
 {
-	SoundEngine::Mute();
+	Mute();
 }
 
 ///////////////////////////////////////////////////////////////////////////
 void CImpl::UnmuteAll()
 {
-	SoundEngine::UnMute();
+	UnMute();
 }
 
 ///////////////////////////////////////////////////////////////////////////
 void CImpl::PauseAll()
 {
-	SoundEngine::Pause();
+	Mix_Pause(-1);
+	Mix_PauseMusic();
 }
 
 ///////////////////////////////////////////////////////////////////////////
 void CImpl::ResumeAll()
 {
-	SoundEngine::Resume();
+	Mix_Resume(-1);
+	Mix_ResumeMusic();
 }
 
 ///////////////////////////////////////////////////////////////////////////
 ERequestStatus CImpl::StopAllSounds()
 {
-	SoundEngine::Stop();
+	Mix_HaltChannel(-1);
 	return ERequestStatus::Success;
 }
 
@@ -360,7 +633,7 @@ ITriggerConnection* CImpl::ConstructTriggerConnection(XmlNodeRef const& rootNode
 		char const* const szLocalized = rootNode->getAttr(g_szLocalizedAttribute);
 		bool const isLocalized = (szLocalized != nullptr) && (_stricmp(szLocalized, g_szTrueValue) == 0);
 
-		SampleId const sampleId = SoundEngine::LoadSample(fullFilePath, true, isLocalized);
+		SampleId const sampleId = LoadSample(fullFilePath, true, isLocalized);
 		CEvent::EActionType type = CEvent::EActionType::Start;
 
 		if (_stricmp(rootNode->getAttr(g_szTypeAttribute), g_szStopValue) == 0)
@@ -490,7 +763,7 @@ ITriggerConnection* CImpl::ConstructTriggerConnection(ITriggerInfo const* const 
 	if (pTriggerInfo != nullptr)
 	{
 		string const fullFilePath = GetFullFilePath(pTriggerInfo->name.c_str(), pTriggerInfo->path.c_str());
-		SampleId const sampleId = SoundEngine::LoadSample(fullFilePath, true, pTriggerInfo->isLocalized);
+		SampleId const sampleId = LoadSample(fullFilePath, true, pTriggerInfo->isLocalized);
 
 		MEMSTAT_CONTEXT(EMemStatContextType::AudioImpl, "CryAudio::Impl::SDL_mixer::CEvent");
 		pITriggerConnection = static_cast<ITriggerConnection*>(
@@ -540,7 +813,7 @@ IParameterConnection* CImpl::ConstructParameterConnection(XmlNodeRef const& root
 		char const* const szLocalized = rootNode->getAttr(g_szLocalizedAttribute);
 		bool const isLocalized = (szLocalized != nullptr) && (_stricmp(szLocalized, g_szTrueValue) == 0);
 
-		SampleId const sampleId = SoundEngine::LoadSample(fullFilePath, true, isLocalized);
+		SampleId const sampleId = LoadSample(fullFilePath, true, isLocalized);
 
 		float multiplier = g_defaultParamMultiplier;
 		float shift = g_defaultParamShift;
@@ -580,7 +853,7 @@ ISwitchStateConnection* CImpl::ConstructSwitchStateConnection(XmlNodeRef const& 
 		char const* const szLocalized = rootNode->getAttr(g_szLocalizedAttribute);
 		bool const isLocalized = (szLocalized != nullptr) && (_stricmp(szLocalized, g_szTrueValue) == 0);
 
-		SampleId const sampleId = SoundEngine::LoadSample(fullFilePath, true, isLocalized);
+		SampleId const sampleId = LoadSample(fullFilePath, true, isLocalized);
 
 		float value = g_defaultStateValue;
 		rootNode->getAttr(g_szValueAttribute, value);
@@ -734,7 +1007,7 @@ void CImpl::SetLanguage(char const* const szLanguage)
 
 		if (shouldReload)
 		{
-			SoundEngine::Refresh();
+			OnRefresh();
 		}
 	}
 }

@@ -3,7 +3,6 @@
 #pragma once
 
 #include <IImpl.h>
-#include "SoundEngine.h"
 
 namespace CryAudio
 {
@@ -11,6 +10,10 @@ namespace Impl
 {
 namespace SDL_mixer
 {
+class CEvent;
+class CObject;
+class CEventInstance;
+
 class CImpl final : public IImpl
 {
 public:

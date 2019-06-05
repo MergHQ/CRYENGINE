@@ -104,8 +104,6 @@ public:
 	float GetAttenuationMinDistance() const { return m_attenuationMinDistance; }
 	float GetAttenuationMaxDistance() const { return m_attenuationMaxDistance; }
 	int   GetVolume() const                 { return m_volume; }
-	int   GetNumLoops() const               { return m_numLoops; }
-	int   GetFadeInTime() const             { return m_fadeInTime; }
 	int   GetFadeOutTime() const            { return m_fadeOutTime; }
 	bool  IsPanningEnabled() const          { return m_isPanningEnabled; }
 

@@ -8,7 +8,6 @@
 #include "Listener.h"
 #include "VolumeParameter.h"
 #include "VolumeState.h"
-#include "SoundEngine.h"
 #include <CryAudio/IAudioSystem.h>
 
 #include <SDL_mixer.h>
@@ -117,7 +116,7 @@ void CObject::SetVolume(SampleId const sampleId, float const value)
 {
 	m_volumeMultipliers[sampleId] = value;
 
-	if (!g_bMuted)
+	if (!g_isMuted)
 	{
 		float const volumeMultiplier = GetVolumeMultiplier(this, sampleId);
 
