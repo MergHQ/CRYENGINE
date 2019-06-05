@@ -3129,7 +3129,12 @@ ERequestStatus CSystem::HandleSetImpl(Impl::IImpl* const pIImpl)
 	}
 
 	CRY_ASSERT_MESSAGE(g_defaultListener.GetImplData() == nullptr, "<Audio> The default listeners's impl-data must be nullptr during %s", __FUNCTION__);
+
+#if defined(CRY_AUDIO_USE_DEBUG_CODE)
+	g_defaultListener.SetImplData(g_pIImpl->ConstructListener(g_defaultListener.GetDebugTransformation(), g_szDefaultListenerName));
+#else
 	g_defaultListener.SetImplData(g_pIImpl->ConstructListener(CTransformation::GetEmptyObject(), g_szDefaultListenerName));
+#endif // CRY_AUDIO_USE_DEBUG_CODE
 
 	CRY_ASSERT_MESSAGE(g_pIObject == nullptr, "<Audio> g_pIObject must be nullptr during %s", __FUNCTION__);
 	Impl::IListeners const defaultImplListener{ g_defaultListener.GetImplData() };

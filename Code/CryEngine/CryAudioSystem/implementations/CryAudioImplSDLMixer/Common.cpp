@@ -18,9 +18,13 @@ namespace Impl
 {
 namespace SDL_mixer
 {
-bool g_bMuted = false;
+bool g_isMuted = false;
 CImpl* g_pImpl = nullptr;
 Objects g_objects;
+SampleDataMap g_sampleData;
+SampleNameMap g_samplePaths;
+TChannelQueue g_freeChannels;
+SChannelData g_channels[g_numMixChannels];
 
 //////////////////////////////////////////////////////////////////////////
 int GetAbsoluteVolume(int const eventVolume, float const multiplier)
@@ -58,44 +62,44 @@ void GetDistanceAngleToObject(
 
 	// Angle
 	// Project point to plane formed by the listeners position/direction
-	Vec3 n = listenerTransformation.GetUp().GetNormalized();
-	Vec3 objectDir = Vec3::CreateProjection(listenerToObject, n).normalized();
+	Vec3 const listenerUpDir = listenerTransformation.GetUp().GetNormalized();
+	Vec3 const objectDir = Vec3::CreateProjection(listenerToObject, listenerUpDir).normalized();
 
 	// Get angle between listener position and projected point
 	Vec3 const listenerDir = listenerTransformation.GetForward().GetNormalizedFast();
-	angle = RAD2DEG(asin_tpl(objectDir.Cross(listenerDir).Dot(n)));
+	angle = RAD2DEG(asin_tpl(objectDir.Cross(listenerDir).Dot(listenerUpDir)));
 }
 
 //////////////////////////////////////////////////////////////////////////
 void SetChannelPosition(CEvent const& event, int const channelID, float const distance, float const angle)
 {
 	static const uint8 sdlMaxDistance = 255;
-	float const min = event.GetAttenuationMinDistance();
-	float const max = event.GetAttenuationMaxDistance();
+	float const minDistance = event.GetAttenuationMinDistance();
+	float const maxDistance = event.GetAttenuationMaxDistance();
 
-	if (min <= max)
+	if (minDistance <= maxDistance)
 	{
-		uint8 nDistance = 0;
+		uint8 distanceToSet = 0;
 
-		if ((max >= 0.0f) && (distance > min))
+		if ((maxDistance >= 0.0f) && (distance > minDistance))
 		{
-			if (min != max)
+			if (minDistance != maxDistance)
 			{
-				float const finalDistance = distance - min;
-				float const range = max - min;
-				nDistance = static_cast<uint8>((std::min((finalDistance / range), 1.0f) * sdlMaxDistance) + 0.5f);
+				float const finalDistance = distance - minDistance;
+				float const range = maxDistance - minDistance;
+				distanceToSet = static_cast<uint8>((std::min((finalDistance / range), 1.0f) * sdlMaxDistance) + 0.5f);
 			}
 			else
 			{
-				nDistance = sdlMaxDistance;
+				distanceToSet = sdlMaxDistance;
 			}
 		}
-		//Temp code, to be reviewed during the SetChannelPosition rewrite:
-		Mix_SetDistance(channelID, nDistance);
+		// Temp code, to be reviewed during the SetChannelPosition rewrite:
+		Mix_SetDistance(channelID, distanceToSet);
 
 		if (event.IsPanningEnabled())
 		{
-			//Temp code, to be reviewed during the SetChannelPosition rewrite:
+			// Temp code, to be reviewed during the SetChannelPosition rewrite:
 			float const absAngle = fabs(angle);
 			float const frontAngle = (angle > 0.0f ? 1.0f : -1.0f) * (absAngle > 90.0f ? 180.f - absAngle : absAngle);
 			float const rightVolume = (frontAngle + 90.0f) / 180.0f;
@@ -108,9 +112,110 @@ void SetChannelPosition(CEvent const& event, int const channelID, float const di
 #if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE)
 	else
 	{
-		Cry::Audio::Log(ELogType::Error, "The minimum attenuation distance (%f) is higher than the maximum (%f) of %s", min, max, event.GetName());
+		Cry::Audio::Log(ELogType::Error, "The minimum attenuation distance (%f) is higher than the maximum (%f) of %s", minDistance, maxDistance, event.GetName());
 	}
 #endif  // CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE
+}
+
+//////////////////////////////////////////////////////////////////////////
+SampleId LoadSampleFromMemory(void* pMemory, size_t const size, string const& samplePath, SampleId const overrideId)
+{
+	SampleId const id = (overrideId != g_invalidSampleId) ? overrideId : StringToId(samplePath.c_str());
+	Mix_Chunk* pSample = stl::find_in_map(g_sampleData, id, nullptr);
+
+	if (pSample != nullptr)
+	{
+		Mix_FreeChunk(pSample);
+
+#if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE)
+		Cry::Audio::Log(ELogType::Warning, "Loading sample %s which had already been loaded", samplePath.c_str());
+#endif    // CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE
+	}
+
+	SDL_RWops* const pData = SDL_RWFromMem(pMemory, size);
+
+	if (pData != nullptr)
+	{
+		pSample = Mix_LoadWAV_RW(pData, 0);
+
+		if (pSample != nullptr)
+		{
+			g_sampleData[id] = pSample;
+			g_samplePaths[id] = samplePath;
+
+#if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE)
+			g_loadedSampleSize += size;
+#endif      // CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE
+
+			return id;
+		}
+#if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE)
+		else
+		{
+			Cry::Audio::Log(ELogType::Error, R"(SDL Mixer failed to load sample. Error: "%s")", Mix_GetError());
+		}
+#endif    // CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE
+	}
+#if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE)
+	else
+	{
+		Cry::Audio::Log(ELogType::Error, R"(SDL Mixer failed to transform the audio data. Error: "%s")", SDL_GetError());
+	}
+#endif  // CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE
+
+	return g_invalidSampleId;
+}
+
+//////////////////////////////////////////////////////////////////////////
+bool LoadSampleImpl(SampleId const id, string const& samplePath)
+{
+	bool isLoaded = true;
+	Mix_Chunk* const pSample = Mix_LoadWAV(samplePath.c_str());
+
+	if (pSample != nullptr)
+	{
+#if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE)
+		SampleNameMap::const_iterator it = g_samplePaths.find(id);
+
+		if ((it != g_samplePaths.end()) && (it->second != samplePath))
+		{
+			Cry::Audio::Log(ELogType::Error, "Loaded a Sample with the already existing ID %u, but from a different path source path '%s' <-> '%s'.", static_cast<uint>(id), it->second.c_str(), samplePath.c_str());
+		}
+
+		if (stl::find_in_map(g_sampleData, id, nullptr) != nullptr)
+		{
+			Cry::Audio::Log(ELogType::Error, "Loading sample '%s' which had already been loaded", samplePath.c_str());
+		}
+#endif    // CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE
+		g_sampleData[id] = pSample;
+		g_samplePaths[id] = samplePath;
+	}
+	else
+	{
+		// Sample could be inside a pak file so we need to open it manually and load it from the raw file
+		size_t const fileSize = gEnv->pCryPak->FGetSize(samplePath);
+		FILE* const pFile = gEnv->pCryPak->FOpen(samplePath, "rb");
+
+		if (pFile && (fileSize > 0))
+		{
+			void* const pData = CryModuleMalloc(fileSize);
+			gEnv->pCryPak->FReadRawAll(pData, fileSize, pFile);
+			SampleId const newId = LoadSampleFromMemory(pData, fileSize, samplePath, id);
+
+			if (newId == g_invalidSampleId)
+			{
+#if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE)
+				Cry::Audio::Log(ELogType::Error, R"(SDL Mixer failed to load sample %s. Error: "%s")", samplePath.c_str(), Mix_GetError());
+#endif        // CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE
+
+				isLoaded = false;
+			}
+
+			CryModuleFree(pData);
+		}
+	}
+
+	return isLoaded;
 }
 
 #if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE)
