@@ -5,9 +5,11 @@
 #include "EditorCommonAPI.h"
 #include "EditorFramework/StateSerializable.h"
 #include "QToolwindowManager/QToolWindowManager.h"
-#include <functional>
+
 #include <QVariantMap>
 #include <QWidget>
+
+#include <functional>
 #include <map>
 
 class CAbstractMenu;
@@ -81,14 +83,12 @@ public:
 signals:
 	void OnLayoutChange(const QVariantMap& layout);
 
-protected:
-	void paintEvent(QPaintEvent*) override;
-
-
 private:
 	typedef std::map<QString, FactoryInfo>    TNameMap;
 	typedef std::map<QString, WidgetInstance> TWidgetMap;
+
 	void showEvent(QShowEvent* event);
+	void paintEvent(QPaintEvent*) override;
 
 	// Extra spawning functions; wraps internal functionality
 	QWidget* SpawnWidget(QString name, QString forceObjectName, const QToolWindowAreaTarget& target);

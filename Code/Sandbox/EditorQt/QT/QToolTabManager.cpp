@@ -825,7 +825,7 @@ void CTabPaneManager::CloseAllPanes()
 
 	if (bNeedsToDelete)
 	{
-		//This must be called to ensure the deffered delete of child widgets is called synchronously
+		//This must be called to ensure the deferred delete of child widgets is called synchronously
 		//as destruction code will often rely on child widgets being deleted before the parent
 		qApp->processEvents();
 	}

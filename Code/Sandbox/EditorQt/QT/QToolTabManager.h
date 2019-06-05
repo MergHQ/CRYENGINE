@@ -66,7 +66,6 @@ public:
 	IPane*              FindPane(const std::function<bool(IPane*, const string& /*className*/)>& predicate);
 	std::vector<IPane*> FindAllPanelsByClass(const char* paneClassName);
 
-	void   Close(IPane* pane);
 	void   BringToFront(IPane* pane);
 	IPane* OpenOrCreatePane(const char* paneClassName);
 

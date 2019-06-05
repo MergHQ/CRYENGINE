@@ -1922,12 +1922,15 @@ void CAssetBrowser::UpdateSelectionDependantActions()
 		folders = GetSelectedFolders();
 	}
 
+	const QString selectedFolder = folders.size() == 1 ? QtUtil::ToQString(folders[0]) : QString();
+
 	const bool hasAssetsSelected = !assets.empty();
-	const bool hasWritableFolderSelected = folders.size() == 1 && !CAssetFoldersModel::GetInstance()->IsReadOnlyFolder(QtUtil::ToQString(folders[0]));
+	const bool hasWritableFolderSelected = !selectedFolder.isNull() && !CAssetFoldersModel::GetInstance()->IsReadOnlyFolder(selectedFolder);
+	const bool hasEmptyFolderSelected = hasWritableFolderSelected && CAssetFoldersModel::GetInstance()->IsEmptyFolder(selectedFolder);
 
 	m_pActionManageWorkFiles->setEnabled(hasAssetsSelected);
-	m_pActionDelete->setEnabled(hasAssetsSelected);
-	m_pActionRename->setEnabled(hasAssetsSelected);
+	m_pActionDelete->setEnabled(hasAssetsSelected ^ hasEmptyFolderSelected);
+	m_pActionRename->setEnabled(hasAssetsSelected ^ hasEmptyFolderSelected);
 	m_pActionCopy->setEnabled(hasAssetsSelected);
 	m_pActionDuplicate->setEnabled(hasAssetsSelected);
 	m_pActionSave->setEnabled(hasAssetsSelected);
@@ -2043,14 +2046,12 @@ void CAssetBrowser::BuildContextMenuForFolders(const std::vector<string>& folder
 	abstractMenu.SetSectionName(foldersSection, "Folders");
 	abstractMenu.AddCommandAction(GetAction("general.new_folder"));
 
-	if (CAssetFoldersModel::GetInstance()->IsEmptyFolder(folder))
-	{
-		abstractMenu.AddCommandAction(GetAction("general.delete"));
-		abstractMenu.AddCommandAction(GetAction("general.rename"));
-	}
-
+	abstractMenu.AddCommandAction(m_pActionDelete);
+	abstractMenu.AddCommandAction(m_pActionRename);
 	abstractMenu.AddCommandAction(m_pActionShowInFileExplorer);
 	abstractMenu.AddCommandAction(m_pActionGenerateThumbnails);
+
+	UpdateSelectionDependantActions();
 
 	NotifyContextMenuCreation(abstractMenu, {}, folders);
 }
@@ -2383,6 +2384,11 @@ bool CAssetBrowser::OnRename()
 	{
 		OnRenameAsset(*assets.back());
 		return true;
+	}
+
+	if (folders.empty())
+	{
+		folders = GetSelectedFolders();
 	}
 
 	if (!folders.empty())
@@ -2825,13 +2831,21 @@ bool CAssetBrowser::OnDelete()
 		Delete(assets);
 		isHandled = true;
 	}
-	for (const string& folder : folders)
+	else
 	{
-		const QString& qFolder = QtUtil::ToQString(folder);
-		if (CAssetFoldersModel::GetInstance()->IsEmptyFolder(qFolder))
+		if (folders.empty())
 		{
-			CAssetFoldersModel::GetInstance()->DeleteFolder(qFolder);
-			isHandled = true;
+			folders = GetSelectedFolders();
+		}
+
+		for (const string& folder : folders)
+		{
+			const QString& qFolder = QtUtil::ToQString(folder);
+			if (CAssetFoldersModel::GetInstance()->IsEmptyFolder(qFolder))
+			{
+				CAssetFoldersModel::GetInstance()->DeleteFolder(qFolder);
+				isHandled = true;
+			}
 		}
 	}
 	return isHandled;
