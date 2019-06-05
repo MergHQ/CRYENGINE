@@ -71,6 +71,9 @@ public:
 	virtual IViewPaneClass::EDockingDirection GetDockingDirection() const override { return IViewPaneClass::DOCK_FLOAT; }
 	// ~CDockableWindow
 
+protected:
+	void customEvent(QEvent* event) override;
+
 private:
 
 	void SetActiveTree(Cry::UDR::ITreeManager::ETreeIndex treeIndex);
