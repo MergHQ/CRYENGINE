@@ -54,8 +54,8 @@ public:
 
 	AK::AkFXParameterChangeHandler<g_numAttachmentParams> m_paramChangeHandler;
 
-	CrySpatialAttachmentRTPCParams                        RTPC;
-	CrySpatialAttachmentNonRTPCParams                     NonRTPC;
+	CrySpatialAttachmentRTPCParams                        m_rtpc;
+	CrySpatialAttachmentNonRTPCParams                     m_nonRtpc;
 }
 
 AK_ALIGN_DMA;

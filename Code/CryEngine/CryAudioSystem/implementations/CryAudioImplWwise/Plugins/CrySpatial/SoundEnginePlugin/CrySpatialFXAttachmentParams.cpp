@@ -15,9 +15,9 @@ namespace Plugins
 {
 //////////////////////////////////////////////////////////////////////////
 CrySpatialFXAttachmentParams::CrySpatialFXAttachmentParams(const CrySpatialFXAttachmentParams& in_rParams)
+	: m_rtpc(in_rParams.m_rtpc)
+	, m_nonRtpc(in_rParams.m_nonRtpc)
 {
-	RTPC = in_rParams.RTPC;
-	NonRTPC = in_rParams.NonRTPC;
 	m_paramChangeHandler.SetAllParamChanges();
 }
 

@@ -180,7 +180,7 @@ namespace Cry
 			ar(m_timeMetadataMax, "m_renderPrimitivesTimeMetadataMax");
 		}
 
-		void CRenderPrimitiveCollection::UpdateTimeMetadata(const CTimeMetadata timeMetadata)
+		void CRenderPrimitiveCollection::UpdateTimeMetadata(const CTimeMetadata& timeMetadata)
 		{
 			CRY_ASSERT_MESSAGE(timeMetadata.IsValid(), "Parameter 'timeMetadata' must be valid.");
 

@@ -238,7 +238,7 @@ void CWaterStage::Init()
 
 	PrepareDefaultPerInstanceResources();
 	for (uint32 i = 0; i < ePass_Count; ++i)
-		SetAndBuildPerPassResources(true, EPass(i));
+		UpdatePerPassResources(true, EPass(i));
 
 	// Create resource layout
 	m_pResourceLayout = CreateScenePassLayout(m_perPassResources[ePass_WaterSurface]);
@@ -811,7 +811,7 @@ void CWaterStage::ExecuteWaterFogVolumeBeforeTransparent()
 	// prepare per pass device resource
 	// this update must be called once after water ripple stage's execute() because waterRippleLookup parameter depends on it.
 	// this update needs to be called after the execute() of fog and volumetric fog because their data is updated in their execute().
-	SetAndBuildPerPassResources(false, ePass_FogVolume);
+	UpdatePerPassResources(false, ePass_FogVolume);
 
 	// render water fog volumes before water.
 	ExecuteSceneRenderPass(m_passWaterFogVolumeBeforeWater, ePass_FogVolume, FB_GENERAL | FB_BELOW_WATER, 0, EFSLIST_WATER_VOLUMES);
@@ -850,11 +850,11 @@ void CWaterStage::Execute()
 	}
 
 	// generate water volume reflection.
-	SetAndBuildPerPassResources(false, ePass_ReflectionGen);
+	UpdatePerPassResources(false, ePass_ReflectionGen);
 	ExecuteReflection();
 
 	// render water volume and ocean surfaces.
-	SetAndBuildPerPassResources(false, ePass_WaterSurface);
+	UpdatePerPassResources(false, ePass_WaterSurface);
 	ExecuteSceneRenderPass(m_passWaterSurface, ePass_WaterSurface, FB_GENERAL, 0, EFSLIST_WATER);
 
 	// render water fog volumes after water.
@@ -1040,7 +1040,7 @@ bool CWaterStage::PrepareDefaultPerInstanceResources()
 	return m_pDefaultPerInstanceResourceSet->Update(m_defaultPerInstanceResources);
 }
 
-bool CWaterStage::SetAndBuildPerPassResources(bool bOnInit, EPass passId)
+bool CWaterStage::UpdatePerPassResources(bool bOnInit, EPass passId)
 {
 	const CRenderView* pRenderView = RenderView();
 
@@ -1456,7 +1456,7 @@ void CWaterStage::ExecuteOceanMaskGen()
 	// prepare per pass device resource
 	// this update must be called after water ripple stage's execute() because waterRippleLookup parameter depends on it.
 	// this update must be called after updating N3DEngineCommon::SCausticInfo.
-	SetAndBuildPerPassResources(false, ePass_OceanMaskGen);
+	UpdatePerPassResources(false, ePass_OceanMaskGen);
 
 	CClearSurfacePass::Execute(m_pOceanMaskTex, Clr_Transparent);
 
@@ -1511,7 +1511,7 @@ void CWaterStage::ExecuteWaterVolumeCausticsGen(N3DEngineCommon::SCausticInfo& c
 	// prepare per pass device resource
 	// this update must be called after water ripple stage's execute() because waterRippleLookup parameter depends on it.
 	// this update must be called after updating N3DEngineCommon::SCausticInfo.
-	SetAndBuildPerPassResources(false, ePass_CausticsGen);
+	UpdatePerPassResources(false, ePass_CausticsGen);
 
 	CClearSurfacePass::Execute(m_pVolumeCausticsRT, Clr_Transparent);
 

@@ -182,14 +182,14 @@ namespace Cry
 		inline CScopeBase::~CScopeBase()
 		{
 			CRY_ASSERT(m_adapter.m_pNode);
-			gEnv->pUDR->GetHub().GetNodeStack().PopNode();
+			gEnv->pUDR->GetNodeStack().PopNode();
 		}
 
 		inline void CScopeBase::PushNode(INode& node)
 		{
 			CRY_ASSERT(!m_adapter.m_pNode);
 			m_adapter.m_pNode = &node;
-			gEnv->pUDR->GetHub().GetNodeStack().PushNode(node);
+			gEnv->pUDR->GetNodeStack().PushNode(node);
 		}
 
 		inline const char* CScopeBase::GetName() const
@@ -221,7 +221,7 @@ namespace Cry
 
 		inline CScope_FixedString::CScope_FixedString(const char* szNodeName)
 		{
-			PushNode(gEnv->pUDR->GetHub().GetNodeStack().GetTopNode().AddChild_FixedStringIfNotYetExisting(szNodeName));
+			PushNode(gEnv->pUDR->GetNodeStack().GetTopNode().AddChild_FixedStringIfNotYetExisting(szNodeName));
 		}
 
 		//===================================================================================
@@ -242,7 +242,7 @@ namespace Cry
 
 		inline CScope_UniqueStringAutoIncrement::CScope_UniqueStringAutoIncrement(const char* szNodeNamePrefix)
 		{
-			PushNode(gEnv->pUDR->GetHub().GetNodeStack().GetTopNode().AddChild_UniqueStringAutoIncrement(szNodeNamePrefix));
+			PushNode(gEnv->pUDR->GetNodeStack().GetTopNode().AddChild_UniqueStringAutoIncrement(szNodeNamePrefix));
 		}
 
 		//===================================================================================
@@ -262,7 +262,7 @@ namespace Cry
 
 		inline CScope_UseLastAutoIncrementedUniqueString::CScope_UseLastAutoIncrementedUniqueString(const char* szNodeNamePrefix)
 		{
-			PushNode(gEnv->pUDR->GetHub().GetNodeStack().GetTopNode().AddChild_FindLastAutoIncrementedUniqueNameOrCreateIfNotYetExisting(szNodeNamePrefix));
+			PushNode(gEnv->pUDR->GetNodeStack().GetTopNode().AddChild_FindLastAutoIncrementedUniqueNameOrCreateIfNotYetExisting(szNodeNamePrefix));
 		}
 
 		//===================================================================================
@@ -282,7 +282,7 @@ namespace Cry
 
 		inline CScope_CurrentSystemFrame::CScope_CurrentSystemFrame()
 		{
-			PushNode(gEnv->pUDR->GetHub().GetNodeStack().GetTopNode().AddChild_CurrentSystemFrame());
+			PushNode(gEnv->pUDR->GetNodeStack().GetTopNode().AddChild_CurrentSystemFrame());
 		}
 
 	}

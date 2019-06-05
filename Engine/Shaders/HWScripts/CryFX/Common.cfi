@@ -86,6 +86,7 @@ half4 GetTexture2DGrad(Texture2D tex, SamplerState samplerState, float2 uv, floa
 half4 GetTexture2DLod(Texture2D tex, SamplerState samplerState, float4 uv)                              { return tex.SampleLevel(samplerState, uv.xy, uv.w); }
 half4 GetTexture2DLod(Texture2D tex, SamplerState samplerState, float2 uv, float Lod)                   { return tex.SampleLevel(samplerState, uv.xy, Lod); }
 half4 GetTexture2DProj(Texture2D tex, SamplerState samplerState, float4 uv)                             { return tex.Sample(samplerState, uv.xy * rcp(uv.w)); }
+half2 GetTexture2DProj(Texture2D<float2> tex, SamplerState samplerState, float4 uv)                     { return tex.Sample(samplerState, uv.xy * rcp(uv.w)); }
 half4 GetTexture2DBias(Texture2D tex, SamplerState samplerState, float4 uv)                             { return tex.SampleBias(samplerState, uv.xy, uv.w); }
 half4 GetTexture2D(Texture2D tex, SamplerState samplerState, float2 uv)                                 { return tex.Sample(samplerState, uv); }
 half4 GetTextureCube(TextureCube tex, SamplerState samplerState, float3 uv)                             { return tex.Sample(samplerState, uv); }
@@ -144,6 +145,7 @@ half4 GetDiffuseTex(Texture2D tex, float2 texTC)                                
 half4 GetDiffuseTexGrad(Texture2D tex, float2 texTC, float2 ddxUV, float2 ddyUV)                    { return GetTexture2DGrad(tex, ssMaterialAnisoHigh, texTC.xy, ddxUV, ddyUV ); }
 half4 GetDiffuseTexLod(Texture2D tex, float4 texTC)                                                 { return GetTexture2DLod(tex, ssMaterialAnisoHigh, texTC.xyzw); }
 half4 GetDiffuseTexProj(Texture2D tex, float4 texTC)                                                { return GetTexture2DProj(tex, ssMaterialAnisoHigh, texTC.xyzw); }
+half2 GetDiffuseTexProj(Texture2D<float2> tex, float4 texTC)                                        { return GetTexture2DProj(tex, ssMaterialAnisoHigh, texTC.xyzw); }
 half4 GetDiffuseTexBias(Texture2D tex, float4 texTC)                                                { return GetTexture2DBias(tex, ssMaterialAnisoHigh, texTC.xyzw); }
 half4 GetCustomTex(Texture2D tex, float2 texTC)                                                     { return GetTexture2D(tex, ssMaterialAnisoHigh, texTC.xy); }
 half4 GetCustomTexLod(Texture2D tex, float4 texTC)                                                  { return GetTexture2DLod(tex, ssMaterialAnisoHigh, texTC.xyzw); }

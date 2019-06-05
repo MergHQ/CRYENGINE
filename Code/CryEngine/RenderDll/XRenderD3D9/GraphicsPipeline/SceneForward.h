@@ -75,7 +75,7 @@ public:
 	void FillCloudShadingParams(SCloudShadingParams& cloudParams, bool enable = true) const;
 
 private:
-	bool PreparePerPassResources(bool bOnInit, bool bShadowMask = true, bool bFog = true);
+	bool UpdatePerPassResources(bool bOnInit, bool bShadowMask = true, bool bFog = true);
 	void ExecuteTransparent(bool bBelowWater);
 
 private:

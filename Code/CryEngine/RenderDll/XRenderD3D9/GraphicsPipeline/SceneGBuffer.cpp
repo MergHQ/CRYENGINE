@@ -25,7 +25,7 @@ CSceneGBufferStage::CSceneGBufferStage(CGraphicsPipeline& graphicsPipeline)
 void CSceneGBufferStage::Init()
 {
 	m_pPerPassResourceSet = GetDeviceObjectFactory().CreateResourceSet(CDeviceResourceSet::EFlags_ForceSetAllState);
-	CRY_VERIFY(SetAndBuildPerPassResources(true));
+	CRY_VERIFY(UpdatePerPassResources(true));
 
 	// Create resource layout
 	m_pResourceLayout = m_graphicsPipeline.CreateScenePassLayout(m_perPassResources);
@@ -199,7 +199,7 @@ bool CSceneGBufferStage::CreatePipelineStates(DevicePipelineStatesArray* pStateA
 	return bFullyCompiled;
 }
 
-bool CSceneGBufferStage::SetAndBuildPerPassResources(bool bOnInit)
+bool CSceneGBufferStage::UpdatePerPassResources(bool bOnInit)
 {
 	// samplers
 	{
@@ -261,7 +261,7 @@ void CSceneGBufferStage::Update()
 	EShaderRenderingFlags flags = (EShaderRenderingFlags)m_graphicsPipeline.GetRenderFlags();
 	const bool isForwardMinimal = (flags & SHDF_FORWARD_MINIMAL) != 0;
 
-	SetAndBuildPerPassResources(false);
+	UpdatePerPassResources(false);
 
 	{
 		// Depth pre-pass

@@ -7,8 +7,8 @@ sources_platform(ALL)
 
 add_sources("CryUDR_Uber_0.cpp"
 	SOURCE_GROUP "Root"
-		"Hub.cpp"
-		"Hub.h"
+		"UDRSystem.cpp"
+		"UDRSystem.h"
 		"Node.h"
 		"Node.cpp"
 		"NodeStack.h"

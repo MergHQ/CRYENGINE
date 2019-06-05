@@ -23,7 +23,7 @@ void CSceneCustomStage::Init()
 
 	CTypedConstantBuffer<HLSL_PerPassConstantBuffer_Custom, 256> cb(m_pPerPassConstantBuffer);
 	cb.UploadZeros();
-	CRY_VERIFY(SetAndBuildPerPassResources(true));
+	CRY_VERIFY(UpdatePerPassResources(true));
 
 	// Create resource layout
 	m_pResourceLayout = m_graphicsPipeline.CreateScenePassLayout(m_perPassResources);
@@ -168,7 +168,7 @@ bool CSceneCustomStage::CreatePipelineStates(DevicePipelineStatesArray* pStateAr
 	return bFullyCompiled;
 }
 
-bool CSceneCustomStage::SetAndBuildPerPassResources(bool bOnInit)
+bool CSceneCustomStage::UpdatePerPassResources(bool bOnInit)
 {
 	assert(m_pPerPassConstantBuffer);
 
@@ -268,6 +268,8 @@ void CSceneCustomStage::Update()
 	CTexture* pColorTexture = pRenderView->GetColorTarget();
 	CTexture* pDepthTexture = pRenderView->GetDepthTarget();
 
+	UpdatePerPassResources(false);
+
 	// Debug View Pass
 	m_debugViewPass.SetViewport(viewport);
 	m_debugViewPass.SetRenderTargets(
@@ -297,8 +299,6 @@ void CSceneCustomStage::Update()
 			m_graphicsPipelineResources.m_pTexSceneSelectionIDs
 		);
 	}
-
-	SetAndBuildPerPassResources(false);
 }
 
 void CSceneCustomStage::Resize(int renderWidth, int renderHeight)

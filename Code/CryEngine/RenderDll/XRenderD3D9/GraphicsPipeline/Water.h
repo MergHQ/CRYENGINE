@@ -133,7 +133,7 @@ public:
 private:
 	CDeviceResourceLayoutPtr CreateScenePassLayout(const CDeviceResourceSetDesc& perPassResources);
 	bool                     PrepareDefaultPerInstanceResources();
-	bool                     SetAndBuildPerPassResources(bool bOnInit, EPass passId);
+	bool                     UpdatePerPassResources(bool bOnInit, EPass passId);
 	void                     UpdatePerPassResources(EPass passId);
 	void                     PrepareVolumeCausticsRenderTargets(bool hasCaustics, int renderWidth, int renderHeight);
 

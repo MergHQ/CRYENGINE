@@ -208,7 +208,7 @@ IDataBaseLibrary* CBaseLibraryManager::AddLibrary(const string& library, bool bS
 	}
 	else
 	{
-		filename.Format("%s.%s", filename.c_str(), GetFileExtension());
+		filename.Format("%s.%s", CryPathString(filename).c_str(), GetFileExtension());
 	}
 	lib->SetFilename(filename);
 	lib->SetModified(false);

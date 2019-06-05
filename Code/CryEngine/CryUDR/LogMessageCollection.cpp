@@ -105,7 +105,7 @@ namespace Cry
 			ar(m_timeMetadataMax, "timeMetadataMax");
 		}
 
-		void CLogMessageCollection::UpdateTimeMetadata(const CTimeMetadata timeMetadata)
+		void CLogMessageCollection::UpdateTimeMetadata(const CTimeMetadata& timeMetadata)
 		{
 			CRY_ASSERT_MESSAGE(timeMetadata.IsValid(), "Parameter 'timeMetadata' must be valid.");
 

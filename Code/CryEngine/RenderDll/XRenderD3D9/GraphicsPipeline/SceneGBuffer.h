@@ -74,7 +74,7 @@ public:
 	bool IsGBufferVisualizationEnabled() const { return CRendererCVars::CV_r_DeferredShadingDebugGBuffer > 0; }
 
 private:
-	bool SetAndBuildPerPassResources(bool bOnInit);
+	bool UpdatePerPassResources(bool bOnInit);
 
 	void ExecuteDepthPrepass();
 	void ExecuteSceneOpaque();

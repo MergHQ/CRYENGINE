@@ -126,7 +126,7 @@ struct ICoreRegistry;
 }   // ~Script namespace
 
 namespace UDR {
-struct IUDR;
+struct IUDRSystem;
 }
 
 struct IPluginManager;
@@ -884,7 +884,7 @@ struct SSystemGlobalEnvironment
 	Cry::Reflection::IModule*      pReflection = nullptr;
 	Cry::Script::ICoreEnvironment* pScriptCoreEnv = nullptr;
 	Cry::Script::ICoreRegistry*    pScriptCoreRegistry = nullptr;
-	Cry::UDR::IUDR*                pUDR = nullptr;
+	Cry::UDR::IUDRSystem*          pUDR = nullptr;
 
 #if CRY_PLATFORM_DURANGO
 	void*      pWindow = nullptr;
@@ -1308,7 +1308,7 @@ struct ISystem
 	virtual IUserAnalyticsSystem*   GetIUserAnalyticsSystem() = 0;
 	virtual Cry::IPluginManager*    GetIPluginManager() = 0;
 	virtual Cry::IProjectManager*   GetIProjectManager() = 0;
-	virtual Cry::UDR::IUDR*         GetIUDR() = 0;
+	virtual Cry::UDR::IUDRSystem*   GetIUDR() = 0;
 
 	//! \return Can be NULL, because it only exists when running through the editor, not in pure game mode.
 	virtual IResourceManager*                  GetIResourceManager() = 0;

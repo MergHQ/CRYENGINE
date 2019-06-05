@@ -75,7 +75,7 @@ public:
 	bool IsDebugOverlayEnabled()       const { return CRenderer::CV_e_DebugDraw > 0; }
 
 private:
-	bool SetAndBuildPerPassResources(bool bOnInit);
+	bool UpdatePerPassResources(bool bOnInit);
 
 private:
 	CDeviceResourceSetDesc   m_perPassResources;
