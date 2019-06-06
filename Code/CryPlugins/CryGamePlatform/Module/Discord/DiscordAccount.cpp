@@ -48,8 +48,9 @@ namespace Cry
 
 				DiscordRichPresence discordPresence = {};
 
-				// For some obscure reason they named 'details' the first presence line
-				// and 'state' the second one...
+				// NOTE: Field names can be a bit misleading:
+				// * 'details' is the first, and shortest, presence line
+				// * 'state' is optional and provides additional information 
  				discordPresence.details = m_presence.headline.c_str();
  				discordPresence.state = m_presence.activity.c_str();
 				discordPresence.partySize = m_presence.partySize;
