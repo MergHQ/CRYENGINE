@@ -77,44 +77,35 @@ void SetChannelPosition(CEvent const& event, int const channelID, float const di
 	float const minDistance = event.GetAttenuationMinDistance();
 	float const maxDistance = event.GetAttenuationMaxDistance();
 
-	if (minDistance <= maxDistance)
-	{
-		uint8 distanceToSet = 0;
+	uint8 distanceToSet = 0;
 
-		if ((maxDistance >= 0.0f) && (distance > minDistance))
+	if ((maxDistance >= 0.0f) && (distance > minDistance))
+	{
+		if (minDistance != maxDistance)
 		{
-			if (minDistance != maxDistance)
-			{
-				float const finalDistance = distance - minDistance;
-				float const range = maxDistance - minDistance;
-				distanceToSet = static_cast<uint8>((std::min((finalDistance / range), 1.0f) * sdlMaxDistance) + 0.5f);
-			}
-			else
-			{
-				distanceToSet = sdlMaxDistance;
-			}
+			float const finalDistance = distance - minDistance;
+			float const range = maxDistance - minDistance;
+			distanceToSet = static_cast<uint8>((std::min((finalDistance / range), 1.0f) * sdlMaxDistance) + 0.5f);
 		}
+		else
+		{
+			distanceToSet = sdlMaxDistance;
+		}
+	}
+	// Temp code, to be reviewed during the SetChannelPosition rewrite:
+	Mix_SetDistance(channelID, distanceToSet);
+
+	if (event.IsPanningEnabled())
+	{
 		// Temp code, to be reviewed during the SetChannelPosition rewrite:
-		Mix_SetDistance(channelID, distanceToSet);
-
-		if (event.IsPanningEnabled())
-		{
-			// Temp code, to be reviewed during the SetChannelPosition rewrite:
-			float const absAngle = fabs(angle);
-			float const frontAngle = (angle > 0.0f ? 1.0f : -1.0f) * (absAngle > 90.0f ? 180.f - absAngle : absAngle);
-			float const rightVolume = (frontAngle + 90.0f) / 180.0f;
-			float const leftVolume = 1.0f - rightVolume;
-			Mix_SetPanning(channelID,
-			               static_cast<uint8>(255.0f * leftVolume),
-			               static_cast<uint8>(255.0f * rightVolume));
-		}
+		float const absAngle = fabs(angle);
+		float const frontAngle = (angle > 0.0f ? 1.0f : -1.0f) * (absAngle > 90.0f ? 180.f - absAngle : absAngle);
+		float const rightVolume = (frontAngle + 90.0f) / 180.0f;
+		float const leftVolume = 1.0f - rightVolume;
+		Mix_SetPanning(channelID,
+		               static_cast<uint8>(255.0f * leftVolume),
+		               static_cast<uint8>(255.0f * rightVolume));
 	}
-#if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE)
-	else
-	{
-		Cry::Audio::Log(ELogType::Error, "The minimum attenuation distance (%f) is higher than the maximum (%f) of %s", minDistance, maxDistance, event.GetName());
-	}
-#endif  // CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE
 }
 
 //////////////////////////////////////////////////////////////////////////

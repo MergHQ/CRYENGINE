@@ -47,12 +47,11 @@ enum class EChannelFinishedRequestQueueId : EnumFlagsType
 {
 	One,
 	Two,
-	Count
+	Count,
 };
-CRY_CREATE_ENUM_FLAG_OPERATORS(EChannelFinishedRequestQueueId);
 
 using ChannelFinishedRequests = std::deque<int>;
-ChannelFinishedRequests g_channelFinishedRequests[IntegralValue(EChannelFinishedRequestQueueId::Count)];
+ChannelFinishedRequests g_channelFinishedRequests[static_cast<int>(EChannelFinishedRequestQueueId::Count)];
 CryCriticalSection g_channelFinishedCriticalSection;
 
 SPoolSizes g_poolSizes;
@@ -190,7 +189,7 @@ void ChannelFinishedPlaying(int const channel)
 	if ((channel >= 0) && (channel < g_numMixChannels))
 	{
 		CryAutoLock<CryCriticalSection> autoLock(g_channelFinishedCriticalSection);
-		g_channelFinishedRequests[IntegralValue(EChannelFinishedRequestQueueId::One)].push_back(channel);
+		g_channelFinishedRequests[static_cast<int>(EChannelFinishedRequestQueueId::One)].push_back(channel);
 	}
 }
 
@@ -346,10 +345,10 @@ void CImpl::Update()
 {
 	{
 		CryAutoLock<CryCriticalSection> lock(g_channelFinishedCriticalSection);
-		g_channelFinishedRequests[IntegralValue(EChannelFinishedRequestQueueId::One)].swap(g_channelFinishedRequests[IntegralValue(EChannelFinishedRequestQueueId::Two)]);
+		g_channelFinishedRequests[static_cast<int>(EChannelFinishedRequestQueueId::One)].swap(g_channelFinishedRequests[static_cast<int>(EChannelFinishedRequestQueueId::Two)]);
 	}
 
-	ProcessChannelFinishedRequests(g_channelFinishedRequests[IntegralValue(EChannelFinishedRequestQueueId::Two)]);
+	ProcessChannelFinishedRequests(g_channelFinishedRequests[static_cast<int>(EChannelFinishedRequestQueueId::Two)]);
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -663,7 +662,7 @@ ITriggerConnection* CImpl::ConstructTriggerConnection(XmlNodeRef const& rootNode
 				rootNode->getAttr(g_szAttenuationMaxDistanceAttribute, maxDistance);
 
 				minDistance = std::max(0.0f, minDistance);
-				maxDistance = std::max(0.0f, maxDistance);
+				maxDistance = std::max(0.1f, maxDistance);
 
 				if (minDistance > maxDistance)
 				{
