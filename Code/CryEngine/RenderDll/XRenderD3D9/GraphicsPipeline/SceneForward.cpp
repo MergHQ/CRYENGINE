@@ -175,11 +175,6 @@ void CSceneForwardStage::Update()
 	const bool isForwardMinimal = (flags & SHDF_FORWARD_MINIMAL) != 0;
 
 	if (!isForwardMinimal)
-		UpdatePerPassResources(false);
-	else
-		UpdatePerPassResources(false, false, RenderView()->IsGlobalFogEnabled());
-
-	if (!isForwardMinimal)
 	{
 #if RENDERER_ENABLE_FULL_PIPELINE
 		const CRenderOutput* pRenderOutput = pRenderView->GetRenderOutput();
@@ -881,6 +876,8 @@ void CSceneForwardStage::ExecuteOpaque()
 	CRenderView* pRenderView = RenderView();
 	auto& renderItemDrawer = pRenderView->GetDrawer();
 
+	UpdatePerPassResources(false);
+
 	auto& RESTRICT_REFERENCE commandList = GetDeviceObjectFactory().GetCoreCommandList();
 
 	m_forwardEyeOverlayPass.PrepareRenderPassForUse(commandList);
@@ -962,6 +959,8 @@ void CSceneForwardStage::ExecuteTransparent(bool bBelowWater)
 	CRenderView* pRenderView = RenderView();
 
 	CSceneRenderPass& scenePass = bBelowWater ? m_forwardTransparentBWPass : m_forwardTransparentAWPass;
+
+	UpdatePerPassResources(false);
 
 	auto& RESTRICT_REFERENCE commandList = GetDeviceObjectFactory().GetCoreCommandList();
 
@@ -1067,6 +1066,8 @@ void CSceneForwardStage::ExecuteTransparentLoRes(int subRes)
 	scenePass.ExchangeRenderTarget(0, pTargetRT);
 	scenePass.ExchangeDepthTarget(pTargetDS);
 
+	UpdatePerPassResources(false);
+
 	auto& RESTRICT_REFERENCE commandList = GetDeviceObjectFactory().GetCoreCommandList();
 
 	scenePass.PrepareRenderPassForUse(commandList);
@@ -1105,6 +1106,8 @@ void CSceneForwardStage::ExecuteAfterPostProcessHDR()
 	// TODO: CPostEffectContext::GetDstBackBufferTexture() pre-EnableAltBackBuffer()
 	scenePass.ExchangeRenderTarget(0, m_graphicsPipelineResources.m_pTexDisplayTargetDst);
 
+	UpdatePerPassResources(false);
+
 	auto& RESTRICT_REFERENCE commandList = GetDeviceObjectFactory().GetCoreCommandList();
 
 	scenePass.PrepareRenderPassForUse(commandList);
@@ -1135,6 +1138,8 @@ void CSceneForwardStage::ExecuteAfterPostProcessLDR()
 	// TODO: CPostEffectContext::GetDstBackBufferTexture() post-EnableAltBackBuffer()
 	scenePass.ExchangeRenderTarget(0, RenderView()->GetRenderOutput()->GetColorTarget());
 
+	UpdatePerPassResources(false);
+
 	auto& RESTRICT_REFERENCE commandList = GetDeviceObjectFactory().GetCoreCommandList();
 
 	scenePass.PrepareRenderPassForUse(commandList);
@@ -1157,6 +1162,8 @@ void CSceneForwardStage::ExecuteMobile()
 
 	CRenderView* pRenderView = RenderView();
 	auto& renderItemDrawer = pRenderView->GetDrawer();
+
+	UpdatePerPassResources(false);
 
 	auto& RESTRICT_REFERENCE commandList = GetDeviceObjectFactory().GetCoreCommandList();
 
@@ -1218,6 +1225,10 @@ void CSceneForwardStage::ExecuteMinimum(CTexture* pColorTex, CTexture* pDepthTex
 
 	m_forwardTransparentRecursivePass.ExchangeRenderTarget(0, pColorTex);
 	m_forwardTransparentRecursivePass.ExchangeDepthTarget(pDepthTex);
+
+	const bool bShadowMask = false;
+	const bool bFog = RenderView()->IsGlobalFogEnabled();
+	UpdatePerPassResources(false, bShadowMask, bFog);
 
 	auto& RESTRICT_REFERENCE commandList = GetDeviceObjectFactory().GetCoreCommandList();
 
