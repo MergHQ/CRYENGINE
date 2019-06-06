@@ -113,19 +113,40 @@ _smart_ptr<CDevice> CInstance::CreateDevice(size_t physicalDeviceIndex)
 	std::vector<const char*> extensions;
 	for (const auto& requestedExtension : m_enabledPhysicalDeviceExtensions)
 	{
-		int i;
-		for (i=0; i < pDeviceInfo.implicitExtensions.size(); ++i)
+		bool found = false;
+
+		for (int i = 0; i < pDeviceInfo.implicitExtensions.size(); ++i)
 		{
 			const VkExtensionProperties& availableExtension = pDeviceInfo.implicitExtensions[i];
 
 			if (strcmp(availableExtension.extensionName, requestedExtension.name) == 0)
 			{
 				extensions.push_back(requestedExtension.name);
+				found = true;
 				break;
 			}
 		}
 
-		if (i == pDeviceInfo.implicitExtensions.size() && requestedExtension.bRequired)
+		if (!found)
+		{
+			for (int l = 0; l < pDeviceInfo.devicelayers.size(); ++l)
+			{
+				for (const auto& e : pDeviceInfo.devicelayers[l].extensions)
+				{
+					if (strcmp(e.extensionName, requestedExtension.name) == 0)
+					{
+						extensions.push_back(e.extensionName);
+						found = true;
+						break;
+					}
+				}
+
+				if (found)
+					break;
+			}
+		}
+
+		if (!found && requestedExtension.bRequired)
 		{
 			VK_ERROR("Failed to load extension '%s'", requestedExtension.name);
 			return nullptr;
@@ -288,7 +309,11 @@ VkResult CInstance::InitializeInstance(const char* appName, uint32_t appVersion,
 	applicationInfo.applicationVersion = appVersion;
 	applicationInfo.pEngineName = engineName;
 	applicationInfo.engineVersion = engineVersion;
+#if CRY_RENDERER_VULKAN >= 11
+	applicationInfo.apiVersion = VK_API_VERSION_1_1;
+#else
 	applicationInfo.apiVersion = VK_API_VERSION_1_0;
+#endif
 
 	VkInstanceCreateInfo instanceInfo = {};
 

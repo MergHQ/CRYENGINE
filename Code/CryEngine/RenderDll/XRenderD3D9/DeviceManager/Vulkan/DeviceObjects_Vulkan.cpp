@@ -411,7 +411,6 @@ CDeviceSamplerState* CDeviceObjectFactory::CreateSamplerState(const SSamplerStat
 
 CDeviceInputLayout* CDeviceObjectFactory::CreateInputLayout(const SInputLayout& pLayout, const SShaderBlob* m_pConsumingVertexShader)
 {
-	VK_NOT_IMPLEMENTED;
 	return nullptr;
 }
 
