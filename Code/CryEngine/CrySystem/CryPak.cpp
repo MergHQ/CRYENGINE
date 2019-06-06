@@ -843,8 +843,8 @@ CCryPak::~CCryPak()
 		for (TAliasList::iterator it = m_arrAliases.begin(); it != cAliasEnd; ++it)
 		{
 			tNameAlias* tTemp = (*it);
-			SAFE_DELETE(tTemp->szName);
-			SAFE_DELETE(tTemp->szAlias);
+			SAFE_DELETE_ARRAY(tTemp->szName);
+			SAFE_DELETE_ARRAY(tTemp->szAlias);
 			delete tTemp;
 		}
 	}

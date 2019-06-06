@@ -22,17 +22,12 @@ namespace Cry
 
 			CRYGENERATE_SINGLETONCLASS_GUID(CEngineModule_CryUDR, "EngineModule_CryUDR", "52eb3317-1abe-412a-9173-5d8d8277c3e4"_cry_guid)
 
-			virtual ~CEngineModule_CryUDR() override
-			{
-				SAFE_DELETE(gEnv->pUDR);
-			}
-
 			// Cry::IDefaultModule
 			virtual const char* GetName() const override     { return "CryUDR"; }
 			virtual const char* GetCategory() const override { return "CryEngine"; }
 			virtual bool        Initialize(SSystemGlobalEnvironment& env, const SSystemInitParams& initParams) override
 			{
-				env.pUDR = new CUDRSystem();
+				env.pUDR = &CUDRSystem::GetInstance();
 				return true;
 			}
 			// ~Cry::IDefaultModule

@@ -11,8 +11,8 @@ namespace Cry
 		class CUDRSystem final : public IUDRSystem
 		{
 		public:
-			explicit CUDRSystem();
-			~CUDRSystem();
+			CUDRSystem(const CUDRSystem&) = delete;
+			CUDRSystem(CUDRSystem&&) = delete;
 
 			// IUDR
 			virtual bool                  Initialize() override;
@@ -25,12 +25,26 @@ namespace Cry
 			
 			virtual bool                  SetConfig(const SConfig& config) override;
 			virtual const SConfig&        GetConfig() const override;
-
-			virtual CTimeValue            GetElapsedTime() const override;
 			// ~IUDR
 
+			//! Gets the single existing instance of the UDR system. 
+			//! \return Singleton instance of UDR system.
+			//! \note Provides access to the UDR System through specific class (CUDRSystem) as opposed to the global environment which provides access through the interface (IUDRSystem). 
+			static CUDRSystem&            GetInstance();
+
+			//! Gets the elapsed time since UDR was initialized or reset.
+			//! \return Elapsed time.
+			//! \note Global Environment and Timer System must be initialized.
+			CTimeValue                    GetElapsedTime() const;
+
+			CUDRSystem&                   operator=(const CUDRSystem&) = delete;
+			CUDRSystem&                   operator=(CUDRSystem&&) = delete;
+
 		private:
-		
+
+			explicit CUDRSystem();
+			~CUDRSystem();
+
 			static void                   CmdDumpRecordings(IConsoleCmdArgs* pArgs);
 			static void                   CmdClearRecordingsInLiveTree(IConsoleCmdArgs* pArgs);
 			static void                   CmdClearRecordingsInDeserializedTree(IConsoleCmdArgs* pArgs);
@@ -41,7 +55,7 @@ namespace Cry
 
 		private:
 
-			static CUDRSystem*            s_pInstance;
+			static CUDRSystem             s_instance;
 			
 			IUDRSystem::SConfig           m_config;
 			CTreeManager                  m_treeManager;
