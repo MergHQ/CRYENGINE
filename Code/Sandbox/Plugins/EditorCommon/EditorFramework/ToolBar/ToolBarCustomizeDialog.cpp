@@ -277,6 +277,8 @@ void CToolBarCustomizeDialog::QDropContainer::SetCurrentToolBarDesc(std::shared_
 
 void CToolBarCustomizeDialog::QDropContainer::BuildPreview()
 {
+	std::shared_ptr<CToolBarService::QItemDesc> pSelectedItem = m_pSelectedItem;
+
 	if (m_pCurrentToolBar)
 	{
 		selectedItemChanged(nullptr);
@@ -292,6 +294,12 @@ void CToolBarCustomizeDialog::QDropContainer::BuildPreview()
 
 	m_pCurrentToolBar = CreateToolBar(m_pCurrentToolBarDesc->GetName(), m_pCurrentToolBarDesc);
 	m_pPreviewLayout->addWidget(m_pCurrentToolBar);
+
+	if (pSelectedItem && m_pCurrentToolBarDesc && m_pCurrentToolBarDesc->GetItems().contains(pSelectedItem))
+	{
+		m_pSelectedItem = pSelectedItem;
+		selectedItemChanged(pSelectedItem);
+	}
 }
 
 void CToolBarCustomizeDialog::QDropContainer::ShowContextMenu(const QPoint& position)
@@ -324,6 +332,11 @@ void CToolBarCustomizeDialog::QDropContainer::ShowContextMenu(const QPoint& posi
 
 void CToolBarCustomizeDialog::QDropContainer::SetSelectedActionIcon(const char* szIconPath)
 {
+	if (!m_pSelectedItem)
+	{
+		return;
+	}
+
 	if (m_pSelectedItem->GetType() == CToolBarService::QItemDesc::Command)
 	{
 		std::static_pointer_cast<CToolBarService::QCommandDesc>(m_pSelectedItem)->SetIcon(szIconPath);

@@ -141,13 +141,13 @@ void CGraphicsPipelineResources::Resize(int renderWidth, int renderHeight)
 	{
 		resourceWidth = renderWidth;
 		resourceHeight = renderHeight;
-	}
 
-	CreateDepthMaps(resourceWidth, resourceHeight);
-	CreateDeferredMaps(resourceWidth, resourceHeight);
-	CreateHDRMaps(resourceWidth, resourceHeight);
-	CreatePostFXMaps(resourceWidth, resourceHeight);
-	CreateSceneMaps(resourceWidth, resourceHeight);
+		CreateDepthMaps(resourceWidth, resourceHeight);
+		CreateDeferredMaps(resourceWidth, resourceHeight);
+		CreateHDRMaps(resourceWidth, resourceHeight);
+		CreatePostFXMaps(resourceWidth, resourceHeight);
+		CreateSceneMaps(resourceWidth, resourceHeight);
+	}
 
 	m_resourceWidth = resourceWidth;
 	m_resourceHeight = resourceHeight;
