@@ -335,9 +335,12 @@ void CEntityObject::Done()
 	}
 	SAFE_RELEASE(m_pFlowGraph);
 
+	//Remove the entity from the entity system, this does not clean some of the editor side structures (for example entity links)
 	DeleteEntity();
 	UnloadScript();
 
+	//We need to remove all the editor side entity links and disconnect all the observers
+	RemoveAllEntityLinks();
 	ReleaseEventTargets();
 
 	for (CListenerSet<IEntityObjectListener*>::Notifier notifier(m_listeners); notifier.IsValid(); notifier.Next())
