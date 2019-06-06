@@ -11,9 +11,9 @@ namespace Cry
 		bool CTimeMetadata::Initialize()
 		{
 			// We cannot assert here because the default constructor is used by yasli serialization.
-			if (gEnv && gEnv->pUDR)
+			if (gEnv && gEnv->pTimer)
 			{
-				m_timestamp = gEnv->pUDR->GetElapsedTime();
+				m_timestamp = CUDRSystem::GetInstance().GetElapsedTime();
 				m_frameID = gEnv->nMainFrameID;
 				return true;
 			}

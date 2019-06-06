@@ -49,10 +49,6 @@ namespace Cry
 			//! \return Current configuration.
 			virtual const SConfig&        GetConfig() const = 0;
 
-			//! Gets the elapsed time since UDR was created or reset.
-			//! \return Elapsed time since UDR was created or reset.
-			virtual CTimeValue            GetElapsedTime() const = 0;
-
 		};
 
 	}
