@@ -14,7 +14,7 @@
 
 namespace
 {
-const unsigned int sCurrentPresetVersion = 4;
+const unsigned int sCurrentPresetVersion = 3;
 const float sAnimTimeSecondsIn24h = 24.0f;   // 24 hours = (sAnimTimeSecondsIn24h * SAnimTime::numTicksPerSecond) ticks
 
 const float sBezierSplineKeyValueEpsilon = 0.001f;
@@ -572,13 +572,59 @@ void CEnvironmentPreset::Reset()
 	m_constants.Reset();
 }
 
+void CEnvironmentPreset::ReadVariablesFromXML(Serialization::IArchive& ar, CTimeOfDayVariables& variables, const bool bConvertLegacyVersion)
+{
+	CTimeOfDayVariable var, firstVar;
+	ar(var, "var");
+	firstVar = var;
+
+	// read until we reach the beginning of the archive again
+	while (true)
+	{
+		if (bConvertLegacyVersion)
+		{
+			//converting from initial version.
+			//rescale time from [0..1] to [0..sAnimTimeSecondsIn24h]
+			for (unsigned int j = 0; j < 3; ++j)
+			{
+				CBezierSpline* pSpline = var.GetSpline(j);
+				const size_t nKeyCount = pSpline->GetKeyCount();
+				if (!nKeyCount)
+				{
+					continue;
+				}
+
+				std::vector<SBezierKey> tempKeys;
+				tempKeys.resize(nKeyCount);
+				pSpline->GetKeys(&tempKeys[0]);
+				for (unsigned int k = 0; k < nKeyCount; ++k)
+				{
+					SBezierKey& key = tempKeys[k];
+					key.m_time *= sAnimTimeSecondsIn24h;
+				}
+				pSpline->SetKeys(&tempKeys[0], nKeyCount);
+			}
+		}
+
+		if (auto dest = variables.GetVar(var.GetId()))
+		{
+			dest->SetValuesFrom(var);
+		}
+
+		ar(var, "var");
+		if (var.GetId() == firstVar.GetId()) break;
+	}
+}
+
 void CEnvironmentPreset::Serialize(Serialization::IArchive& ar)
 {
 	if (ar.isInput())
 	{
 		unsigned int version = 0;
-		const bool bReadResult = ar(version, "version");
-		if (bReadResult && (sCurrentPresetVersion == version))
+		const bool bConvertLegacyVersion = !ar(version, "version");
+
+		CRY_ASSERT(version <= sCurrentPresetVersion);
+		if (!bConvertLegacyVersion && (sCurrentPresetVersion == version))
 		{
 			// read directly
 			for (size_t i = 0; i < ITimeOfDay::PARAM_TOTAL; ++i)
@@ -589,56 +635,10 @@ void CEnvironmentPreset::Serialize(Serialization::IArchive& ar)
 			//Root node is for XML-header only. PropertyTree will have no root node
 			ar(m_constants, "Constants");
 		}
-		else if (bReadResult && (2 == version))
-		{
-			for (size_t i = 0; i < ITimeOfDay::PARAM_TOTAL; ++i)
-			{
-				CTimeOfDayVariable& var = *m_variables.GetVar(static_cast<ITimeOfDay::ETimeOfDayParamID>(i));
-				ar(var, "var");
-			}
-			m_constants.Reset();
-		}
 		else
 		{
 			// convert to current version
-			for (size_t i = 0; i < ITimeOfDay::PARAM_TOTAL; ++i)
-			{
-				CTimeOfDayVariable tempVar;
-				ar(tempVar, "var");
-
-				if (!bReadResult)
-				{
-					//converting from initial version.
-					//rescale time from [0..1] to [0..sAnimTimeSecondsIn24h]
-					for (unsigned int j = 0; j < 3; ++j)
-					{
-						CBezierSpline* pSpline = tempVar.GetSpline(j);
-						const size_t nKeyCount = pSpline->GetKeyCount();
-						if (!nKeyCount)
-						{
-							continue;
-						}
-
-						std::vector<SBezierKey> tempKeys;
-						tempKeys.resize(nKeyCount);
-						pSpline->GetKeys(&tempKeys[0]);
-						for (unsigned int k = 0; k < nKeyCount; ++k)
-						{
-							SBezierKey& key = tempKeys[k];
-							key.m_time *= sAnimTimeSecondsIn24h;
-						}
-						pSpline->SetKeys(&tempKeys[0], nKeyCount);
-					}
-				}
-
-				//update the actual var
-				const ITimeOfDay::ETimeOfDayParamID id = tempVar.GetId();
-				if (id < ITimeOfDay::PARAM_TOTAL)
-				{
-					CTimeOfDayVariable& var = *m_variables.GetVar(id);
-					var.SetValuesFrom(tempVar);
-				}
-			}
+			ReadVariablesFromXML(ar, m_variables, bConvertLegacyVersion);
 			m_constants.Reset();
 		}
 	}
