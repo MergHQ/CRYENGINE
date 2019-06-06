@@ -27,7 +27,8 @@
 	//#define RENDERER_ENABLE_LEGACY_PIPELINE
 #endif
 
-/* Choice of rendering pipeline:
+
+/* Choice of rendering pipeline: 
  * RENDERER_ENABLE_FULL_PIPELINE   - full rendering pipeline with all bells and whistles
  * RENDERER_ENABLE_MOBILE_PIPELINE - reduced rendering pipeline with limited features for mobile
  * Note that both pipelines can be enabled simultaneously and runtime-switched via r_GraphicsPipelineMobile cvar
@@ -370,6 +371,13 @@ template<> inline void           safe_release<ID3D11Buffer>(ID3D11Buffer*& ptr);
 	#endif
 
 	#include <vulkan/vulkan.h>
+#endif
+
+
+#if CRY_RENDERER_VULKAN > 10
+#if !VK_VERSION_1_1
+#error ("Included Vulkan header files are not supporting Vulkan 1.1.")
+#endif
 #endif
 
 // Internal numbers:  10|0   (three decimal digits)

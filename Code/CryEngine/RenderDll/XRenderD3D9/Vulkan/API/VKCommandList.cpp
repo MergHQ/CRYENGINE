@@ -493,14 +493,26 @@ void CCommandListPool::Configure()
 			m_MapQueueBits[queueFlags] = std::make_pair(f, queueCount);
 		}
 
-		for (int i = 0x0; i <= 0x3; ++i)
-		for (int f = 0x0; f <= 0xF; ++f)
-		for (int n = 0x0; n <= 0x3; ++n)
-		{
-			int queueFlags = f & ~(1U << n);
+		const int supportedQueueTypeCount = sizeof(m_MapQueueType) / sizeof(m_MapQueueType[0]);
+		int allQueueFlagBits = VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT | VK_QUEUE_TRANSFER_BIT | VK_QUEUE_SPARSE_BINDING_BIT;
+		int lastValidElementIdx = countTrailingZeros32(VK_QUEUE_SPARSE_BINDING_BIT);
+#if CRY_RENDERER_VULKAN >= 11
+		allQueueFlagBits |= VK_QUEUE_PROTECTED_BIT;
+		lastValidElementIdx = countTrailingZeros32(VK_QUEUE_PROTECTED_BIT);
+#endif
 
-			if (m_MapQueueBits[queueFlags].first == 0xFFFFFFFF)
-				m_MapQueueBits[queueFlags] = m_MapQueueBits[f];
+		for (int i = 0x0; i <= supportedQueueTypeCount; ++i)
+		{
+			for (int f = 0x0; f <= allQueueFlagBits; ++f)
+			{
+				for (int n = 0x0; n <= lastValidElementIdx; ++n)
+				{
+					int queueFlags = f & ~(1U << n);
+
+					if (m_MapQueueBits[queueFlags].first == 0xFFFFFFFF)
+						m_MapQueueBits[queueFlags] = m_MapQueueBits[f];
+				}
+			}
 		}
 	}
 }
