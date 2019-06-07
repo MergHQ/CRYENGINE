@@ -217,6 +217,11 @@ struct INavigationSystem
 #endif
 
 	virtual NavigationMeshID GetMeshID(const char* name, NavigationAgentTypeID agentTypeID) const = 0;
+	
+	//! Returns array of all navigation mesh ids for an agent type.
+	//! \param agentTypeID Navigation agent type id.
+	//! \returns Dynamic array containing ids of all navigation meshes registered to specific agent type.
+	virtual DynArray<NavigationMeshID> GetMeshIDsForAgentType(const NavigationAgentTypeID agentTypeID) const = 0;
 	virtual const char*  GetMeshName(NavigationMeshID meshID) const = 0;
 	virtual void         SetMeshName(NavigationMeshID meshID, const char* name) = 0;
 
