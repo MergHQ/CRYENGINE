@@ -896,7 +896,6 @@ void CDeviceCopyCommandInterfaceImpl::CopyBuffer(CBufferResource* pSrc, CBufferR
 #if !_RELEASE
 	const uint32_t srcSize = pSrc->GetStride() * pSrc->GetElementCount();
 	const uint32_t dstSize = pDst->GetStride() * pDst->GetElementCount();
-	VK_ASSERT(pSrc->GetStride() == pDst->GetStride(), "Buffer element sizes must be compatible"); // Not actually a Vk requirement, but likely a bug
 	VK_ASSERT(mapping.Extent.Width > 0, "Invalid extents");
 	VK_ASSERT(mapping.SourceOffset.Left + mapping.Extent.Width <= srcSize, "Source region too large");
 	VK_ASSERT(mapping.DestinationOffset.Left + mapping.Extent.Width <= dstSize, "Destination region too large");
@@ -1098,54 +1097,50 @@ bool CDeviceCopyCommandInterfaceImpl::FillBuffer(const void* pSrc, CBufferResour
 	return pMapped != nullptr;
 }
 
-CBufferResource* CDeviceCopyCommandInterfaceImpl::UploadBuffer(const void* pSrc, CBufferResource* pDst, const SResourceMemoryMapping& mapping, bool bAllowGpu)
+CBufferResource* CDeviceCopyCommandInterfaceImpl::PrepareStagingBuffer(const void* pSrc, NCryVulkan::CBufferResource* pDst, SResourceMemoryMapping mapping)
+{
+	const uint32_t srcBytes  = mapping.MemoryLayout.volumeStride;
+	const uint32_t dstOffset = mapping.ResourceOffset.Left;
+	VK_ASSERT(mapping.MemoryLayout.rowStride == mapping.MemoryLayout.volumeStride, "Invalid source memory layout"); // Fill uses volumeStride since it also fills images.
+	VK_ASSERT(mapping.ResourceOffset.Subresource == 0, "Buffer array slices not yet supported");
+	VK_ASSERT(srcBytes % pDst->GetStride() == 0 && dstOffset % pDst->GetStride() == 0, "source data length and destination offset must be divisble by their buffer strides.");
+	VK_ASSERT(!pDst->GetFlag(kResourceFlagCpuWritable), "Distention must have cpu writable flag.");
+
+	// When we are not updating at the start of the buffer, we need to adjust the fill parameters,
+	// since the staging buffer is not necessarily the same size as the destination buffer.
+	mapping.ResourceOffset.Left = 0;
+	
+	CBufferResource* pResult = nullptr;
+	if (GetDevice()->CreateOrReuseStagingResource(pDst, srcBytes, &pResult, true) != VK_SUCCESS)
+	{
+		VK_ASSERT(false, "Upload buffer skipped: Cannot create staging buffer");
+		return nullptr;
+	}
+
+	if (!FillBuffer(pSrc, pResult, mapping))
+	{
+		VK_ASSERT(false, "Unable to fill staging buffer");
+		SAFE_RELEASE(pResult);
+	}
+
+	return pResult;
+}
+
+void CDeviceCopyCommandInterfaceImpl::UploadBuffer(const void* pSrc, CBufferResource* pDst, const SResourceMemoryMapping& mapping)
 {
 	const uint32_t srcBytes = mapping.MemoryLayout.volumeStride;
 	const uint32_t dstOffset = mapping.ResourceOffset.Left;
 	VK_ASSERT(mapping.MemoryLayout.rowStride == mapping.MemoryLayout.volumeStride, "Invalid source memory layout"); // Fill uses volumeStride since it also fills images.
 	VK_ASSERT(mapping.ResourceOffset.Subresource == 0, "Buffer array slices not yet supported");
+	VK_ASSERT(srcBytes % pDst->GetStride() == 0 && dstOffset % pDst->GetStride() == 0, "source data length and destination offset must be divisble by their buffer strides.");
 
 	const bool bIsUsedByGpu = false; // TODO: Implement this
-
-	CBufferResource* pStaging = pDst;
-	const SResourceMemoryMapping* pMapping = &mapping;
-	SResourceMemoryMapping tempMapping;
-
-	const bool bStage = !pDst->GetFlag(kResourceFlagCpuWritable) || bIsUsedByGpu;
-	if (bStage)
-	{
-		// When we are not updating at the start of the buffer, we need to adjust the fill parameters,
-		// since the staging buffer is not necessarily the same size as the destination buffer.
-		if (mapping.ResourceOffset.Left != 0)
-		{
-			tempMapping = mapping;
-			tempMapping.ResourceOffset.Left = 0;
-			pMapping = &tempMapping;
-		}
-
-		if (GetDevice()->CreateOrReuseStagingResource(pDst, srcBytes, &pStaging, true) != VK_SUCCESS)
-		{
-			VK_ASSERT(false, "Upload buffer skipped: Cannot create staging buffer");
-			return nullptr;
-		}
-	}
-
-	const bool bFilled = FillBuffer(pSrc, pStaging, *pMapping);
-	VK_ASSERT(bFilled, "Unable to fill staging buffer");
+	const bool bStage       = !pDst->GetFlag(kResourceFlagCpuWritable) || bIsUsedByGpu;
 
 	if (bStage)
 	{
-		if (bFilled)
+		if (CBufferResource* pStaging = PrepareStagingBuffer(pSrc, pDst, mapping))
 		{
-			if (!bAllowGpu)
-			{
-				// We would need to use the GPU to perform the upload, however the caller chose not to allow this.
-				// Instead hand-off the staging buffer containing the data to the caller to handle in some other way.
-				VK_ASSERT(srcBytes % pDst->GetStride() == 0 && dstOffset % pDst->GetStride() == 0, "");
-				pStaging->SetStrideAndElementCount(pDst->GetStride(), srcBytes / pDst->GetStride());
-				return pStaging;
-			}
-
 			RequestTransition(pStaging, VK_ACCESS_TRANSFER_READ_BIT);
 			RequestTransition(pDst, VK_ACCESS_TRANSFER_WRITE_BIT);
 			GetVKCommandList()->PendingResourceBarriers();
@@ -1156,12 +1151,16 @@ CBufferResource* CDeviceCopyCommandInterfaceImpl::UploadBuffer(const void* pSrc,
 			info.size = srcBytes;
 			vkCmdCopyBuffer(GetVKCommandList()->GetVkCommandList(), pStaging->GetHandle(), pDst->GetHandle(), 1, &info);
 			GetVKCommandList()->m_nCommands += CLCOUNT_COPY;
+
+			pStaging->Release();
 		}
-
-		pStaging->Release(); // trigger ReleaseLater with kResourceFlagReusable
 	}
+	else
+	{
 
-	return nullptr;
+		const bool bFilled = FillBuffer(pSrc, pDst, mapping);
+		VK_ASSERT(bFilled, "Unable to fill staging buffer");
+	}
 }
 
 void CDeviceCopyCommandInterfaceImpl::UploadImage(const void* pSrc, CImageResource* pDst, const SResourceMemoryMapping& mapping, bool bExt)

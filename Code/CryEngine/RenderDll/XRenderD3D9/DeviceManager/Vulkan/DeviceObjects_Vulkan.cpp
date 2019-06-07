@@ -1026,21 +1026,34 @@ HRESULT CDeviceObjectFactory::CreateBuffer(buffer_size_t nSize, buffer_size_t el
 		mapping.Extent.Subresources = 1;
 		mapping.MemoryLayout = SResourceMemoryAlignment::Linear(elemSize, nSize);
 
-		const bool bImmediateUpload = gcpRendD3D->m_pRT->IsRenderThread() && !gcpRendD3D->m_pRT->IsRenderLoadingThread();
+		const bool deferUpload = !gcpRendD3D->m_pRT->IsRenderThread() || gcpRendD3D->m_pRT->IsRenderLoadingThread();
 
-		CDeviceCommandListRef commandList = GetCoreCommandList();
-		if (CBufferResource* const pStaging = commandList.GetCopyInterface()->UploadBuffer(pData, pResult, mapping, bImmediateUpload))
+		if (deferUpload)
 		{
-			// Unable to perform upload immediately (not called from render-thread and the desired buffer is not CPU writable).
-			// We have to perform the staging at the earliest convenience of the render-thread instead.
-			SDeferredUploadData uploadData;
-			uploadData.pStagingBuffer.Assign_NoAddRef(pStaging);
-			uploadData.pTarget = pResult;
-			uploadData.targetMapping = mapping;
-			uploadData.bExtendedAdressing = false;
+			if (pResult->GetFlag(kResourceFlagCpuWritable))
+			{
+				CDeviceCopyCommandInterfaceImpl::FillBuffer(pData, pResult, mapping);
+			}
+			else
+			{
+				if (CBufferResource* pStaging = CDeviceCopyCommandInterfaceImpl::PrepareStagingBuffer(pData, pResult, mapping))
+				{
+					// Unable to perform upload immediately (not called from render-thread and the desired buffer is not CPU writable).
+					// We have to perform the staging at the earliest convenience of the render-thread instead.
+					SDeferredUploadData uploadData;
+					uploadData.pStagingBuffer.Assign_NoAddRef(pStaging);
+					uploadData.pTarget = pResult;
+					uploadData.targetMapping = mapping;
+					uploadData.bExtendedAdressing = false;
 
-			AUTO_LOCK_T(CryCriticalSectionNonRecursive, m_deferredUploadCS);
-			m_deferredUploads.push_back(uploadData);
+					AUTO_LOCK_T(CryCriticalSectionNonRecursive, m_deferredUploadCS);
+					m_deferredUploads.push_back(uploadData);
+				}
+			}
+		}
+		else
+		{
+			GetCoreCommandList().GetCopyInterface()->UploadBuffer(pData, pResult, mapping);
 		}
 	}
 
