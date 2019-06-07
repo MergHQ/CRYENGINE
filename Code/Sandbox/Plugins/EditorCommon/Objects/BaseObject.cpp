@@ -3324,8 +3324,12 @@ void CBaseObject::SetMaterial(IEditorMaterial* mtl)
 		m_pMaterial->AddRef();
 	}
 
-	// Not sure if really needed, but add just in case
+	//This will notify CObjectPropertyWidget (if the object is selected CObjectPropertyWidget will be an observer) in CObjectPropertyWidget::OnObjectEvent
+	//and cause the object properties widget to update and display the new material
 	UpdateUIVars();
+
+	//If we are in a prefab propagate material change to all the other instances
+	UpdatePrefab(eOCOT_Modify);
 }
 
 string CBaseObject::GetMaterialName() const
