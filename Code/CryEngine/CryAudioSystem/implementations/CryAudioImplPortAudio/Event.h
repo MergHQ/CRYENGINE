@@ -62,8 +62,8 @@ public:
 	void IncrementNumInstances() { ++m_numInstances; }
 	void DecrementNumInstances();
 
-	bool CanBeDestructed() const   { return m_toBeDestructed && (m_numInstances == 0); }
-	void SetToBeDestructed() const { m_toBeDestructed = true; }
+	bool CanBeDestructed() const { return m_toBeDestructed && (m_numInstances == 0); }
+	void SetToBeDestructed()     { m_toBeDestructed = true; }
 
 	uint32 const                                pathId;
 	int const                                   numLoops;
@@ -77,8 +77,8 @@ public:
 
 private:
 
-	uint16       m_numInstances;
-	mutable bool m_toBeDestructed;
+	uint16 m_numInstances;
+	bool   m_toBeDestructed;
 };
 } // namespace PortAudio
 } // namespace Impl

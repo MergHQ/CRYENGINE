@@ -50,7 +50,7 @@ public:
 	virtual void                    GetInfo(SImplInfo& implInfo) const override;
 	virtual ITriggerConnection*     ConstructTriggerConnection(XmlNodeRef const& rootNode, float& radius) override;
 	virtual ITriggerConnection*     ConstructTriggerConnection(ITriggerInfo const* const pITriggerInfo) override;
-	virtual void                    DestructTriggerConnection(ITriggerConnection const* const pITriggerConnection) override;
+	virtual void                    DestructTriggerConnection(ITriggerConnection* const pITriggerConnection) override;
 	virtual IParameterConnection*   ConstructParameterConnection(XmlNodeRef const& rootNode) override;
 	virtual void                    DestructParameterConnection(IParameterConnection const* const pIParameterConnection) override;
 	virtual ISwitchStateConnection* ConstructSwitchStateConnection(XmlNodeRef const& rootNode) override;

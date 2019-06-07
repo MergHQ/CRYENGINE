@@ -201,7 +201,7 @@ ITriggerConnection* CImpl::ConstructTriggerConnection(ITriggerInfo const* const 
 }
 
 ///////////////////////////////////////////////////////////////////////////
-void CImpl::DestructTriggerConnection(ITriggerConnection const* const pITriggerConnection)
+void CImpl::DestructTriggerConnection(ITriggerConnection* const pITriggerConnection)
 {
 }
 

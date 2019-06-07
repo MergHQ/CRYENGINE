@@ -80,8 +80,8 @@ public:
 	void           IncrementNumInstances() { ++m_numInstances; }
 	void           DecrementNumInstances();
 
-	bool           CanBeDestructed() const   { return m_toBeDestructed && (m_numInstances == 0); }
-	void           SetToBeDestructed() const { m_toBeDestructed = true; }
+	bool           CanBeDestructed() const { return m_toBeDestructed && (m_numInstances == 0); }
+	void           SetToBeDestructed()     { m_toBeDestructed = true; }
 
 #if defined(CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE)
 	float GetFadeOutTime() const { return m_fadeOutTime; }
@@ -94,7 +94,7 @@ private:
 	EActionType const m_actionType;
 	CriAtomExAcbHn    m_pAcbHandle;
 	uint16            m_numInstances;
-	mutable bool      m_toBeDestructed;
+	bool              m_toBeDestructed;
 
 #if defined(CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE)
 	CryFixedStringT<MaxControlNameLength> const m_cueSheetName;

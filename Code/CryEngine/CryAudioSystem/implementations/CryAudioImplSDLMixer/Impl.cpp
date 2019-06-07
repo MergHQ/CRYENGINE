@@ -634,6 +634,7 @@ ITriggerConnection* CImpl::ConstructTriggerConnection(XmlNodeRef const& rootNode
 
 		SampleId const sampleId = LoadSample(fullFilePath, true, isLocalized);
 		CEvent::EActionType type = CEvent::EActionType::Start;
+		EEventFlags flags = EEventFlags::None;
 
 		if (_stricmp(rootNode->getAttr(g_szTypeAttribute), g_szStopValue) == 0)
 		{
@@ -650,14 +651,18 @@ ITriggerConnection* CImpl::ConstructTriggerConnection(XmlNodeRef const& rootNode
 
 		if (type == CEvent::EActionType::Start)
 		{
-			bool const isPanningEnabled = (_stricmp(rootNode->getAttr(g_szPanningEnabledAttribute), g_szTrueValue) == 0);
-			bool const isAttenuationEnabled = (_stricmp(rootNode->getAttr(g_szAttenuationEnabledAttribute), g_szTrueValue) == 0);
-
-			float minDistance = -1.0f;
-			float maxDistance = -1.0f;
-
-			if (isAttenuationEnabled)
+			if (_stricmp(rootNode->getAttr(g_szPanningEnabledAttribute), g_szTrueValue) == 0)
 			{
+				flags |= EEventFlags::IsPanningEnabled;
+			}
+
+			float minDistance = g_defaultMinAttenuationDist;
+			float maxDistance = g_defaultMaxAttenuationDist;
+
+			if (_stricmp(rootNode->getAttr(g_szAttenuationEnabledAttribute), g_szTrueValue) == 0)
+			{
+				flags |= EEventFlags::IsAttenuationEnnabled;
+
 				rootNode->getAttr(g_szAttenuationMinDistanceAttribute, minDistance);
 				rootNode->getAttr(g_szAttenuationMaxDistanceAttribute, maxDistance);
 
@@ -706,6 +711,7 @@ ITriggerConnection* CImpl::ConstructTriggerConnection(XmlNodeRef const& rootNode
 				new CEvent(
 					fullFilePath.c_str(),
 					StringToId(fullFilePath.c_str()),
+					flags,
 					type,
 					sampleId,
 					minDistance,
@@ -713,12 +719,12 @@ ITriggerConnection* CImpl::ConstructTriggerConnection(XmlNodeRef const& rootNode
 					normalizedVolume,
 					numLoops,
 					fadeInTimeMs,
-					fadeOutTimeMs,
-					isPanningEnabled));
+					fadeOutTimeMs));
 #else
 			pITriggerConnection = static_cast<ITriggerConnection*>(
 				new CEvent(
 					StringToId(fullFilePath.c_str()),
+					flags,
 					type,
 					sampleId,
 					minDistance,
@@ -726,8 +732,7 @@ ITriggerConnection* CImpl::ConstructTriggerConnection(XmlNodeRef const& rootNode
 					normalizedVolume,
 					numLoops,
 					fadeInTimeMs,
-					fadeOutTimeMs,
-					isPanningEnabled));
+					fadeOutTimeMs));
 #endif        // CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE
 		}
 		else
@@ -735,10 +740,10 @@ ITriggerConnection* CImpl::ConstructTriggerConnection(XmlNodeRef const& rootNode
 			MEMSTAT_CONTEXT(EMemStatContextType::AudioImpl, "CryAudio::Impl::SDL_mixer::CEvent");
 
 #if defined(CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE)
-			pITriggerConnection = static_cast<ITriggerConnection*>(new CEvent(fullFilePath.c_str(), StringToId(fullFilePath.c_str()), type, sampleId));
+			pITriggerConnection = static_cast<ITriggerConnection*>(new CEvent(fullFilePath.c_str(), StringToId(fullFilePath.c_str()), flags, type, sampleId));
 
 #else
-			pITriggerConnection = static_cast<ITriggerConnection*>(new CEvent(StringToId(fullFilePath.c_str()), type, sampleId));
+			pITriggerConnection = static_cast<ITriggerConnection*>(new CEvent(StringToId(fullFilePath.c_str()), flags, type, sampleId));
 #endif        // CRY_AUDIO_IMPL_SDLMIXER_USE_DEBUG_CODE
 		}
 	}
@@ -769,6 +774,7 @@ ITriggerConnection* CImpl::ConstructTriggerConnection(ITriggerInfo const* const 
 			new CEvent(
 				fullFilePath.c_str(),
 				StringToId(fullFilePath.c_str()),
+				EEventFlags::None,
 				CEvent::EActionType::Start,
 				sampleId,
 				-1.0f,
@@ -776,8 +782,7 @@ ITriggerConnection* CImpl::ConstructTriggerConnection(ITriggerInfo const* const 
 				128,
 				0,
 				0,
-				0,
-				false));
+				0));
 	}
 
 	return pITriggerConnection;
@@ -787,10 +792,10 @@ ITriggerConnection* CImpl::ConstructTriggerConnection(ITriggerInfo const* const 
 }
 
 ///////////////////////////////////////////////////////////////////////////
-void CImpl::DestructTriggerConnection(ITriggerConnection const* const pITriggerConnection)
+void CImpl::DestructTriggerConnection(ITriggerConnection* const pITriggerConnection)
 {
-	auto const pEvent = static_cast<CEvent const*>(pITriggerConnection);
-	pEvent->SetToBeDestructed();
+	auto const pEvent = static_cast<CEvent*>(pITriggerConnection);
+	pEvent->SetFlag(EEventFlags::ToBeDestructed);
 
 	if (pEvent->CanBeDestructed())
 	{

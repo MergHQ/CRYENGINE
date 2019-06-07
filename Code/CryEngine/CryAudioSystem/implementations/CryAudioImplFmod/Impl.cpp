@@ -850,13 +850,13 @@ ITriggerConnection* CImpl::ConstructTriggerConnection(ITriggerInfo const* const 
 }
 
 ///////////////////////////////////////////////////////////////////////////
-void CImpl::DestructTriggerConnection(ITriggerConnection const* const pITriggerConnection)
+void CImpl::DestructTriggerConnection(ITriggerConnection* const pITriggerConnection)
 {
-	auto const pBaseTriggerConnection = static_cast<CBaseTriggerConnection const*>(pITriggerConnection);
+	auto const pBaseTriggerConnection = static_cast<CBaseTriggerConnection*>(pITriggerConnection);
 
 	if (pBaseTriggerConnection->GetType() == CBaseTriggerConnection::EType::Event)
 	{
-		auto const pEvent = static_cast<CEvent const*>(pBaseTriggerConnection);
+		auto const pEvent = static_cast<CEvent*>(pBaseTriggerConnection);
 		pEvent->SetToBeDestructed();
 
 		if (pEvent->CanBeDestructed())
