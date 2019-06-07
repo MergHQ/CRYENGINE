@@ -402,7 +402,7 @@ bool CToolBarCustomizeDialog::QDropContainer::eventFilter(QObject* pObject, QEve
 
 void CToolBarCustomizeDialog::QDropContainer::mouseMoveEvent(QMouseEvent* pEvent)
 {
-	if (!m_pSelectedItem || !m_bDragStarted || !(pEvent->buttons() & Qt::LeftButton))
+	if (!m_pCurrentToolBar && !m_pSelectedItem || !m_bDragStarted || !(pEvent->buttons() & Qt::LeftButton))
 		return;
 
 	if ((pEvent->pos() - m_DragStartPosition).manhattanLength() < QApplication::startDragDistance())
@@ -426,6 +426,11 @@ void CToolBarCustomizeDialog::QDropContainer::mouseMoveEvent(QMouseEvent* pEvent
 
 void CToolBarCustomizeDialog::QDropContainer::dragEnterEvent(QDragEnterEvent* pEvent)
 {
+	if (!m_pCurrentToolBar)
+	{
+		return;
+	}
+
 	const CDragDropData* pDragDropData = CDragDropData::FromMimeData(pEvent->mimeData());
 
 	if (pDragDropData->HasCustomData(GetToolBarItemMimeType()) || pDragDropData->HasCustomData(CCommandModel::GetCommandMimeType()))
