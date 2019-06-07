@@ -53,6 +53,10 @@ namespace Adx2
 SPoolSizes g_poolSizes;
 std::map<ContextId, SPoolSizes> g_contextPoolSizes;
 
+constexpr uint32 g_cueSynthCueAttribId = StringToId("CriMw.CriAtomCraft.AcCore.AcOoCueSynthCue");
+constexpr uint32 g_cueFolderAttribId = StringToId("CriMw.CriAtomCraft.AcCore.AcOoCueFolder");
+constexpr uint32 g_cueFolderPrivateAttribId = StringToId("CriMw.CriAtomCraft.AcCore.AcOoCueFolderPrivate");
+
 #if defined(CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE)
 SPoolSizes g_debugPoolSizes;
 CueInstances g_constructedCueInstances;
@@ -173,54 +177,64 @@ void ParseAcbInfoFile(XmlNodeRef const& rootNode, uint32 const acbId)
 
 		if (cueNode.isValid())
 		{
-			char const* const typeAttrib = cueNode->getAttr("OrcaType");
+			uint32 const typeAttribId = StringToId(cueNode->getAttr("OrcaType"));
 
-			if (_stricmp(typeAttrib, "CriMw.CriAtomCraft.AcCore.AcOoCueSynthCue") == 0)
+			switch (typeAttribId)
 			{
-				uint32 const cueId = StringToId(cueNode->getAttr("OrcaName"));
-
-				if (cueNode->haveAttr("Pos3dDistanceMax"))
+			case g_cueSynthCueAttribId:
 				{
-					float distanceMax = 0.0f;
-					cueNode->getAttr("Pos3dDistanceMax", distanceMax);
+					uint32 const cueId = StringToId(cueNode->getAttr("OrcaName"));
 
-					g_cueRadiusInfo[cueId].emplace_back(acbId, distanceMax);
-				}
-
-				int const numTrackNodes = cueNode->getChildCount();
-				float cueFadeOutTime = 0.0f;
-
-				for (int j = 0; j < numTrackNodes; ++j)
-				{
-					XmlNodeRef const trackNode = cueNode->getChild(j);
-
-					if (trackNode.isValid())
+					if (cueNode->haveAttr("Pos3dDistanceMax"))
 					{
-						int const numWaveNodes = trackNode->getChildCount();
+						float distanceMax = 0.0f;
+						cueNode->getAttr("Pos3dDistanceMax", distanceMax);
 
-						for (int k = 0; k < numWaveNodes; ++k)
+						g_cueRadiusInfo[cueId].emplace_back(acbId, distanceMax);
+					}
+
+					int const numTrackNodes = cueNode->getChildCount();
+					float cueFadeOutTime = 0.0f;
+
+					for (int j = 0; j < numTrackNodes; ++j)
+					{
+						XmlNodeRef const trackNode = cueNode->getChild(j);
+
+						if (trackNode.isValid())
 						{
-							XmlNodeRef const waveNode = trackNode->getChild(k);
+							int const numWaveNodes = trackNode->getChildCount();
 
-							if (waveNode->haveAttr("EgReleaseTimeMs"))
+							for (int k = 0; k < numWaveNodes; ++k)
 							{
-								float trackFadeOutTime = 0.0f;
-								waveNode->getAttr("EgReleaseTimeMs", trackFadeOutTime);
-								cueFadeOutTime = std::max(cueFadeOutTime, trackFadeOutTime);
+								XmlNodeRef const waveNode = trackNode->getChild(k);
+
+								if (waveNode->haveAttr("EgReleaseTimeMs"))
+								{
+									float trackFadeOutTime = 0.0f;
+									waveNode->getAttr("EgReleaseTimeMs", trackFadeOutTime);
+									cueFadeOutTime = std::max(cueFadeOutTime, trackFadeOutTime);
+								}
 							}
 						}
 					}
-				}
 
-				if (cueFadeOutTime > 0.0f)
-				{
-					g_cueFadeOutTimes[cueId].emplace_back(acbId, cueFadeOutTime / 1000.0f);
+					if (cueFadeOutTime > 0.0f)
+					{
+						g_cueFadeOutTimes[cueId].emplace_back(acbId, cueFadeOutTime / 1000.0f);
+					}
+
+					break;
 				}
-			}
-			else if ((_stricmp(typeAttrib, "CriMw.CriAtomCraft.AcCore.AcOoCueFolder") == 0) ||
-			         (_stricmp(typeAttrib, "CriMw.CriAtomCraft.AcCore.AcOoCueFolderPrivate") == 0))
-			{
-				ParseAcbInfoFile(cueNode, acbId);
+			case g_cueFolderAttribId: // Intentional fall-through.
+			case g_cueFolderPrivateAttribId:
+				{
+					ParseAcbInfoFile(cueNode, acbId);
+					break;
+				}
+			default:
+				{
+					break;
+				}
 			}
 		}
 	}
@@ -849,7 +863,7 @@ ITriggerConnection* CImpl::ConstructTriggerConnection(XmlNodeRef const& rootNode
 		}
 
 		MEMSTAT_CONTEXT(EMemStatContextType::AudioImpl, "CryAudio::Impl::Adx2::CCue");
-		pITriggerConnection = static_cast<ITriggerConnection*>(new CCue(cueId, szName, StringToId(szCueSheetName), type, szCueSheetName, fadeOutTime));
+		pITriggerConnection = static_cast<ITriggerConnection*>(new CCue(cueId, szName, cueSheetId, type, szCueSheetName, fadeOutTime));
 #else
 		MEMSTAT_CONTEXT(EMemStatContextType::AudioImpl, "CryAudio::Impl::Adx2::CCue");
 		pITriggerConnection = static_cast<ITriggerConnection*>(new CCue(cueId, szName, StringToId(szCueSheetName), type));
@@ -950,13 +964,20 @@ IParameterConnection* CImpl::ConstructParameterConnection(XmlNodeRef const& root
 	if (_stricmp(szTag, g_szAisacControlTag) == 0)
 	{
 		char const* const szName = rootNode->getAttr(g_szNameAttribute);
+		CriAtomExAisacControlId const id = criAtomExAcf_GetAisacControlIdByName(szName);
+
 		float multiplier = g_defaultParamMultiplier;
 		float shift = g_defaultParamShift;
 		rootNode->getAttr(g_szMutiplierAttribute, multiplier);
 		rootNode->getAttr(g_szShiftAttribute, shift);
 
 		MEMSTAT_CONTEXT(EMemStatContextType::AudioImpl, "CryAudio::Impl::Adx2::CAisacControl");
-		pIParameterConnection = static_cast<IParameterConnection*>(new CAisacControl(szName, multiplier, shift));
+
+#if defined(CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE)
+		pIParameterConnection = static_cast<IParameterConnection*>(new CAisacControl(id, multiplier, shift, szName));
+#else
+		pIParameterConnection = static_cast<IParameterConnection*>(new CAisacControl(id, multiplier, shift));
+#endif    // CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE
 	}
 	else if (_stricmp(szTag, g_szSCategoryTag) == 0)
 	{
@@ -1050,12 +1071,18 @@ ISwitchStateConnection* CImpl::ConstructSwitchStateConnection(XmlNodeRef const& 
 	else if (_stricmp(szTag, g_szAisacControlTag) == 0)
 	{
 		char const* const szName = rootNode->getAttr(g_szNameAttribute);
+		CriAtomExAisacControlId const id = criAtomExAcf_GetAisacControlIdByName(szName);
+
 		float value = g_defaultStateValue;
 		rootNode->getAttr(g_szValueAttribute, value);
 
 		MEMSTAT_CONTEXT(EMemStatContextType::AudioImpl, "CryAudio::Impl::Adx2::CAisacState");
-		pISwitchStateConnection = static_cast<ISwitchStateConnection*>(new CAisacState(szName, static_cast<CriFloat32>(value)));
 
+#if defined(CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE)
+		pISwitchStateConnection = static_cast<ISwitchStateConnection*>(new CAisacState(id, static_cast<CriFloat32>(value), szName));
+#else
+		pISwitchStateConnection = static_cast<ISwitchStateConnection*>(new CAisacState(id, static_cast<CriFloat32>(value)));
+#endif    // CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE
 	}
 	else if (_stricmp(szTag, g_szGameVariableTag) == 0)
 	{
@@ -1108,13 +1135,20 @@ IEnvironmentConnection* CImpl::ConstructEnvironmentConnection(XmlNodeRef const& 
 	else if (_stricmp(szTag, g_szAisacControlTag) == 0)
 	{
 		char const* const szName = rootNode->getAttr(g_szNameAttribute);
+		CriAtomExAisacControlId const id = criAtomExAcf_GetAisacControlIdByName(szName);
+
 		float multiplier = g_defaultParamMultiplier;
 		float shift = g_defaultParamShift;
 		rootNode->getAttr(g_szMutiplierAttribute, multiplier);
 		rootNode->getAttr(g_szShiftAttribute, shift);
 
 		MEMSTAT_CONTEXT(EMemStatContextType::AudioImpl, "CryAudio::Impl::Adx2::CAisacEnvironment");
-		pEnvironmentConnection = static_cast<IEnvironmentConnection*>(new CAisacEnvironment(szName, multiplier, shift));
+
+#if defined(CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE)
+		pEnvironmentConnection = static_cast<IEnvironmentConnection*>(new CAisacEnvironment(id, multiplier, shift, szName));
+#else
+		pEnvironmentConnection = static_cast<IEnvironmentConnection*>(new CAisacEnvironment(id, multiplier, shift));
+#endif    // CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE
 	}
 #if defined(CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE)
 	else
@@ -1402,6 +1436,9 @@ bool CImpl::RegisterAcf()
 		{
 			acfRegistered = true;
 
+			g_absoluteVelocityAisacId = criAtomExAcf_GetAisacControlIdByName(g_szAbsoluteVelocityAisacName);
+			g_occlusionAisacId = criAtomExAcf_GetAisacControlIdByName(g_szOcclusionAisacName);
+
 #if defined(CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE)
 			m_acfFileSize = acfFileSize;
 #endif      // CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE
@@ -1429,6 +1466,9 @@ void CImpl::UnregisterAcf()
 	criAtomEx_UnregisterAcf();
 	delete[] m_pAcfBuffer;
 	m_pAcfBuffer = nullptr;
+
+	g_absoluteVelocityAisacId = CRIATOMEX_INVALID_AISAC_CONTROL_ID;
+	g_occlusionAisacId = CRIATOMEX_INVALID_AISAC_CONTROL_ID;
 }
 
 //////////////////////////////////////////////////////////////////////////

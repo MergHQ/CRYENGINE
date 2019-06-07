@@ -16,19 +16,17 @@ void CAisacState::Set(IObject* const pIObject)
 	auto const pObject = static_cast<CObject const*>(pIObject);
 
 	CriAtomExPlayerHn const pPlayer = pObject->GetPlayer();
-	criAtomExPlayer_SetAisacControlByName(pPlayer, static_cast<CriChar8 const*>(m_name.c_str()), m_value);
+	criAtomExPlayer_SetAisacControlById(pPlayer, m_id, m_value);
 	criAtomExPlayer_UpdateAll(pPlayer);
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CAisacState::SetGlobally()
 {
-	auto const szName = static_cast<CriChar8 const*>(m_name.c_str());
-
 	for (auto const pObject : g_constructedObjects)
 	{
 		CriAtomExPlayerHn const pPlayer = pObject->GetPlayer();
-		criAtomExPlayer_SetAisacControlByName(pPlayer, szName, m_value);
+		criAtomExPlayer_SetAisacControlById(pPlayer, m_id, m_value);
 		criAtomExPlayer_UpdateAll(pPlayer);
 	}
 }

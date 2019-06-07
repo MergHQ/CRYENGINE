@@ -17,11 +17,25 @@ namespace Impl
 {
 namespace Adx2
 {
-static string const s_nameAttrib = "OrcaName";
-static string const s_typeAttrib = "OrcaType";
+constexpr char const* g_nameAttrib = "OrcaName";
+constexpr char const* g_typeAttrib = "OrcaType";
+
+constexpr uint32 g_globalSettingsAttribId = CryAudio::StringToId("GlobalSettings");
+constexpr uint32 g_cueSheetFolderAttribId = CryAudio::StringToId("CueSheetFolder");
+
+constexpr uint32 g_aisacControlsAttribId = CryAudio::StringToId("AISAC-Controls");
+constexpr uint32 g_gameVariablesAttribId = CryAudio::StringToId("GameVariables");
+constexpr uint32 g_selectorFolderAttribId = CryAudio::StringToId("SelectorFolder");
+constexpr uint32 g_categoriesAttribId = CryAudio::StringToId("Categories");
+constexpr uint32 g_dspBusSettingsAttribId = CryAudio::StringToId("DspBusSettings");
+
+constexpr uint32 g_coreDspBusAttribId = CryAudio::StringToId("CriMw.CriAtomCraft.AcCore.AcOoDspBus");
+constexpr uint32 g_coreDspSettingSnapshotAttribId = CryAudio::StringToId("CriMw.CriAtomCraft.AcCore.AcOoDspSettingSnapshot");
+constexpr uint32 g_coreCueSheetSubFolderAttribId = CryAudio::StringToId("CriMw.CriAtomCraft.AcCore.AcOoCueSheetSubFolder");
+constexpr uint32 g_coreCueFolderAttribId = CryAudio::StringToId("CriMw.CriAtomCraft.AcCore.AcOoCueFolder");
 
 //////////////////////////////////////////////////////////////////////////
-XmlNodeRef FindNodeByAttributeValue(XmlNodeRef const& rootNode, string const attributeValue)
+XmlNodeRef FindNodeByAttributeValue(XmlNodeRef const& rootNode, uint32 const valueId)
 {
 	XmlNodeRef node;
 
@@ -35,16 +49,16 @@ XmlNodeRef FindNodeByAttributeValue(XmlNodeRef const& rootNode, string const att
 
 			if (childNode.isValid())
 			{
-				string const nameValue = childNode->getAttr(s_nameAttrib);
+				uint32 const nameValueId = CryAudio::StringToId(childNode->getAttr(g_nameAttrib));
 
-				if (nameValue.compareNoCase(attributeValue) == 0)
+				if (nameValueId == valueId)
 				{
 					node = childNode;
 					break;
 				}
 				else if (childNode->getChildCount() > 0)
 				{
-					node = FindNodeByAttributeValue(childNode, attributeValue);
+					node = FindNodeByAttributeValue(childNode, valueId);
 
 					if (node.isValid())
 					{
@@ -139,7 +153,7 @@ void CProjectLoader::LoadGlobalSettings(string const& folderPath, CItem& parent)
 
 			if (rootNode.isValid())
 			{
-				XmlNodeRef const globalSettingsNode = FindNodeByAttributeValue(rootNode, "GlobalSettings");
+				XmlNodeRef const globalSettingsNode = FindNodeByAttributeValue(rootNode, g_globalSettingsAttribId);
 
 				if (globalSettingsNode.isValid())
 				{
@@ -152,35 +166,52 @@ void CProjectLoader::LoadGlobalSettings(string const& folderPath, CItem& parent)
 
 						if (childNode.isValid() && (childNode->getChildCount() > 0))
 						{
-							char const* const szNameValue = childNode->getAttr(s_nameAttrib);
+							uint32 const nameValueId = CryAudio::StringToId(childNode->getAttr(g_nameAttrib));
 
-							if (_stricmp(szNameValue, "AISAC-Controls") == 0)
+							switch (nameValueId)
 							{
-								CItem* const pFolder = CreateItem(s_aisacControlsFolderName, EItemType::FolderGlobal, pGlobalSettingsFolder, EItemFlags::IsContainer);
-								ParseGlobalSettingsFile(childNode, *pFolder, EItemType::AisacControl);
-							}
-							else if (_stricmp(szNameValue, "GameVariables") == 0)
-							{
-								CItem* const pFolder = CreateItem(s_gameVariablesFolderName, EItemType::FolderGlobal, pGlobalSettingsFolder, EItemFlags::IsContainer);
-								ParseGlobalSettingsFile(childNode, *pFolder, EItemType::GameVariable);
-							}
-							else if (_stricmp(szNameValue, "SelectorFolder") == 0)
-							{
-								CItem* const pFolder = CreateItem(s_selectorsFolderName, EItemType::FolderGlobal, pGlobalSettingsFolder, EItemFlags::IsContainer);
-								ParseGlobalSettingsFile(childNode, *pFolder, EItemType::Selector);
-							}
-							else if (_stricmp(szNameValue, "Categories") == 0)
-							{
-								CItem* const pFolder = CreateItem(s_categoriesFolderName, EItemType::FolderGlobal, pGlobalSettingsFolder, EItemFlags::IsContainer);
-								ParseGlobalSettingsFile(childNode, *pFolder, EItemType::CategoryGroup);
-							}
-							else if (_stricmp(szNameValue, "DspBusSettings") == 0)
-							{
-								m_pBusesFolder = CreateItem(s_dspBusesFolderName, EItemType::FolderGlobal, pGlobalSettingsFolder, EItemFlags::IsContainer);
-								m_pSnapShotsFolder = CreateItem(s_snapshotsFolderName, EItemType::FolderGlobal, pGlobalSettingsFolder, EItemFlags::IsContainer);
+							case g_aisacControlsAttribId:
+								{
+									CItem* const pFolder = CreateItem(s_aisacControlsFolderName, EItemType::FolderGlobal, pGlobalSettingsFolder, EItemFlags::IsContainer);
+									ParseGlobalSettingsFile(childNode, *pFolder, EItemType::AisacControl);
 
-								CItem* const pFolder = CreateItem(s_dspBusSettingsFolderName, EItemType::FolderGlobal, pGlobalSettingsFolder, EItemFlags::IsContainer);
-								ParseBusSettings(childNode, *pFolder);
+									break;
+								}
+							case g_gameVariablesAttribId:
+								{
+									CItem* const pFolder = CreateItem(s_gameVariablesFolderName, EItemType::FolderGlobal, pGlobalSettingsFolder, EItemFlags::IsContainer);
+									ParseGlobalSettingsFile(childNode, *pFolder, EItemType::GameVariable);
+
+									break;
+								}
+							case g_selectorFolderAttribId:
+								{
+									CItem* const pFolder = CreateItem(s_selectorsFolderName, EItemType::FolderGlobal, pGlobalSettingsFolder, EItemFlags::IsContainer);
+									ParseGlobalSettingsFile(childNode, *pFolder, EItemType::Selector);
+
+									break;
+								}
+							case g_categoriesAttribId:
+								{
+									CItem* const pFolder = CreateItem(s_categoriesFolderName, EItemType::FolderGlobal, pGlobalSettingsFolder, EItemFlags::IsContainer);
+									ParseGlobalSettingsFile(childNode, *pFolder, EItemType::CategoryGroup);
+
+									break;
+								}
+							case g_dspBusSettingsAttribId:
+								{
+									m_pBusesFolder = CreateItem(s_dspBusesFolderName, EItemType::FolderGlobal, pGlobalSettingsFolder, EItemFlags::IsContainer);
+									m_pSnapShotsFolder = CreateItem(s_snapshotsFolderName, EItemType::FolderGlobal, pGlobalSettingsFolder, EItemFlags::IsContainer);
+
+									CItem* const pFolder = CreateItem(s_dspBusSettingsFolderName, EItemType::FolderGlobal, pGlobalSettingsFolder, EItemFlags::IsContainer);
+									ParseBusSettings(childNode, *pFolder);
+
+									break;
+								}
+							default:
+								{
+									break;
+								}
 							}
 						}
 					}
@@ -206,7 +237,7 @@ void CProjectLoader::ParseGlobalSettingsFile(XmlNodeRef const& node, CItem& pare
 
 		if (childNode.isValid())
 		{
-			char const* const szNameValue = childNode->getAttr(s_nameAttrib);
+			char const* const szNameValue = childNode->getAttr(g_nameAttrib);
 			CItem* const pItem = CreateItem(szNameValue, type, &parent, EItemFlags::None);
 
 			switch (type)
@@ -245,7 +276,7 @@ void CProjectLoader::ParseBusSettings(XmlNodeRef const& node, CItem& parent)
 
 		if (childNode.isValid())
 		{
-			char const* const szNameValue = childNode->getAttr(s_nameAttrib);
+			char const* const szNameValue = childNode->getAttr(g_nameAttrib);
 			CreateItem(szNameValue, EItemType::DspBusSetting, &parent, EItemFlags::None);
 			ParseBusesAndSnapshots(childNode);
 		}
@@ -263,17 +294,28 @@ void CProjectLoader::ParseBusesAndSnapshots(XmlNodeRef const& node)
 
 		if (childNode.isValid())
 		{
-			char const* const typeAttrib = childNode->getAttr(s_typeAttrib);
+			uint32 const typeAttribId = CryAudio::StringToId(childNode->getAttr(g_typeAttrib));
 
-			if (_stricmp(typeAttrib, "CriMw.CriAtomCraft.AcCore.AcOoDspBus") == 0)
+			switch (typeAttribId)
 			{
-				char const* const szNameValue = childNode->getAttr(s_nameAttrib);
-				CreateItem(szNameValue, EItemType::Bus, m_pBusesFolder, EItemFlags::None);
-			}
-			else if (_stricmp(typeAttrib, "CriMw.CriAtomCraft.AcCore.AcOoDspSettingSnapshot") == 0)
-			{
-				char const* const szNameValue = childNode->getAttr(s_nameAttrib);
-				CreateItem(szNameValue, EItemType::Snapshot, m_pSnapShotsFolder, EItemFlags::None);
+			case g_coreDspBusAttribId:
+				{
+					char const* const szNameValue = childNode->getAttr(g_nameAttrib);
+					CreateItem(szNameValue, EItemType::Bus, m_pBusesFolder, EItemFlags::None);
+
+					break;
+				}
+			case g_coreDspSettingSnapshotAttribId:
+				{
+					char const* const szNameValue = childNode->getAttr(g_nameAttrib);
+					CreateItem(szNameValue, EItemType::Snapshot, m_pSnapShotsFolder, EItemFlags::None);
+
+					break;
+				}
+			default:
+				{
+					break;
+				}
 			}
 		}
 	}
@@ -322,12 +364,12 @@ void CProjectLoader::LoadWorkUnitFile(string const& folderPath, CItem& parent)
 			if (rootNode.isValid())
 			{
 				PathUtil::RemoveExtension(fileName);
-				XmlNodeRef const workUnitNode = FindNodeByAttributeValue(rootNode, fileName);
+				XmlNodeRef const workUnitNode = FindNodeByAttributeValue(rootNode, CryAudio::StringToId(fileName.c_str()));
 
 				if (workUnitNode.isValid())
 				{
 					CItem* const pWorkUnit = CreateItem(fileName, EItemType::WorkUnit, &parent, EItemFlags::IsContainer);
-					XmlNodeRef const cueSheetFolderNode = FindNodeByAttributeValue(rootNode, "CueSheetFolder");
+					XmlNodeRef const cueSheetFolderNode = FindNodeByAttributeValue(rootNode, g_cueSheetFolderAttribId);
 
 					if (cueSheetFolderNode.isValid())
 					{
@@ -356,7 +398,7 @@ void CProjectLoader::ParseWorkUnitFile(XmlNodeRef const& node, CItem& parent)
 
 		if (childNode.isValid())
 		{
-			char const* const szNameValue = childNode->getAttr(s_nameAttrib);
+			char const* const szNameValue = childNode->getAttr(g_nameAttrib);
 
 			if (childNode->haveAttr("CueID"))
 			{
@@ -367,15 +409,31 @@ void CProjectLoader::ParseWorkUnitFile(XmlNodeRef const& node, CItem& parent)
 				CItem* const pItem = CreateItem(szNameValue, EItemType::CueSheet, &parent, EItemFlags::IsContainer);
 				ParseWorkUnitFile(childNode, *pItem);
 			}
-			else if (_stricmp(childNode->getAttr(s_typeAttrib), "CriMw.CriAtomCraft.AcCore.AcOoCueSheetSubFolder") == 0)
+			else
 			{
-				CItem* const pItem = CreateItem(szNameValue, EItemType::FolderCueSheet, &parent, EItemFlags::IsContainer);
-				ParseWorkUnitFile(childNode, *pItem);
-			}
-			else if (_stricmp(childNode->getAttr(s_typeAttrib), "CriMw.CriAtomCraft.AcCore.AcOoCueFolder") == 0)
-			{
-				CItem* const pItem = CreateItem(szNameValue, EItemType::FolderCue, &parent, EItemFlags::IsContainer);
-				ParseWorkUnitFile(childNode, *pItem);
+				uint32 const typeAttribId = CryAudio::StringToId(childNode->getAttr(g_typeAttrib));
+
+				switch (typeAttribId)
+				{
+				case g_coreCueSheetSubFolderAttribId:
+					{
+						CItem* const pItem = CreateItem(szNameValue, EItemType::FolderCueSheet, &parent, EItemFlags::IsContainer);
+						ParseWorkUnitFile(childNode, *pItem);
+
+						break;
+					}
+				case g_coreCueFolderAttribId:
+					{
+						CItem* const pItem = CreateItem(szNameValue, EItemType::FolderCue, &parent, EItemFlags::IsContainer);
+						ParseWorkUnitFile(childNode, *pItem);
+
+						break;
+					}
+				default:
+					{
+						break;
+					}
+				}
 			}
 		}
 	}

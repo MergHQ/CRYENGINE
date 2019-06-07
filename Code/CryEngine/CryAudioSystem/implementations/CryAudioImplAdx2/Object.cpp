@@ -22,7 +22,6 @@ namespace Impl
 {
 namespace Adx2
 {
-constexpr CriChar8 const* g_szOcclusionAisacName = "occlusion";
 CryCriticalSection g_cs;
 
 //////////////////////////////////////////////////////////////////////////
@@ -231,7 +230,7 @@ void CObject::SetTransformation(CTransformation const& transformation)
 //////////////////////////////////////////////////////////////////////////
 void CObject::SetOcclusion(IListener* const pIListener, float const occlusion, uint8 const numRemainingListeners)
 {
-	criAtomExPlayer_SetAisacControlByName(m_pPlayer, g_szOcclusionAisacName, static_cast<CriFloat32>(occlusion));
+	criAtomExPlayer_SetAisacControlById(m_pPlayer, g_occlusionAisacId, static_cast<CriFloat32>(occlusion));
 	criAtomExPlayer_UpdateAll(m_pPlayer);
 
 	m_occlusion = occlusion;
@@ -411,7 +410,7 @@ void CObject::UpdateVelocityTracking()
 	{
 		m_flags &= ~EObjectFlags::TrackAbsoluteVelocity;
 
-		criAtomExPlayer_SetAisacControlByName(m_pPlayer, g_szAbsoluteVelocityAisacName, 0.0f);
+		criAtomExPlayer_SetAisacControlById(m_pPlayer, g_absoluteVelocityAisacId, 0.0f);
 		criAtomExPlayer_UpdateAll(m_pPlayer);
 
 #if defined(CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE)
@@ -503,7 +502,7 @@ void CObject::UpdateVelocities(float const deltaTime)
 			m_previousAbsoluteVelocity = absoluteVelocity;
 			float const absoluteVelocityNormalized = (std::min(absoluteVelocity, g_cvars.m_maxVelocity) / g_cvars.m_maxVelocity);
 
-			criAtomExPlayer_SetAisacControlByName(m_pPlayer, g_szAbsoluteVelocityAisacName, static_cast<CriFloat32>(absoluteVelocityNormalized));
+			criAtomExPlayer_SetAisacControlById(m_pPlayer, g_absoluteVelocityAisacId, static_cast<CriFloat32>(absoluteVelocityNormalized));
 			criAtomExPlayer_UpdateAll(m_pPlayer);
 
 #if defined(CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE)

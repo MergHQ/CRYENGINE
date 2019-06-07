@@ -51,7 +51,7 @@ private:
 	void   RemoveEmptyEditorFolders(CItem* const pEditorFolder);
 
 	CItem* GetContainer(string const& id, EItemType const type, CItem& parent, EPakStatus const pakStatus);
-	void   LoadContainer(XmlNodeRef const& node, EItemType const type, string const& relationshipParamName, CItem& parent, EPakStatus const pakStatus);
+	void   LoadContainer(XmlNodeRef const& node, EItemType const type, uint32 const relationshipParamId, CItem& parent, EPakStatus const pakStatus);
 	void   LoadSnapshotGroup(XmlNodeRef const& node, CItem& parent, EPakStatus const pakStatus);
 	void   LoadFolder(XmlNodeRef const& node, CItem& parent, EPakStatus const pakStatus);
 	void   LoadMixerGroup(XmlNodeRef const& node, CItem& parent, EPakStatus const pakStatus);
