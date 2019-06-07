@@ -1062,6 +1062,23 @@ NavigationMeshID NavigationSystem::GetMeshID(const char* name, NavigationAgentTy
 	return NavigationMeshID();
 }
 
+DynArray<NavigationMeshID> NavigationSystem::GetMeshIDsForAgentType(const NavigationAgentTypeID agentTypeID) const
+{
+	CRY_ASSERT(agentTypeID.IsValid() && (agentTypeID <= m_agentTypes.size()));
+
+	DynArray<NavigationMeshID> allMeshIDs;
+
+	if (agentTypeID.IsValid() && (agentTypeID <= m_agentTypes.size()))
+	{
+		const AgentType& agentType = m_agentTypes[agentTypeID - 1];
+		for (const AgentType::MeshInfo& meshInfo : agentType.meshes)
+		{
+			allMeshIDs.push_back(meshInfo.id);
+		}
+	}
+	return allMeshIDs;
+}
+
 const char* NavigationSystem::GetMeshName(NavigationMeshID meshID) const
 {
 	if (meshID && m_meshes.validate(meshID))

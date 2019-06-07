@@ -499,6 +499,7 @@ public:
 #endif
 
 	virtual NavigationMeshID      GetMeshID(const char* name, NavigationAgentTypeID agentTypeID) const override;
+	virtual DynArray<NavigationMeshID> GetMeshIDsForAgentType(const NavigationAgentTypeID agentTypeID) const override;
 	virtual const char*           GetMeshName(NavigationMeshID meshID) const override;
 	virtual void                  SetMeshName(NavigationMeshID meshID, const char* name) override;
 

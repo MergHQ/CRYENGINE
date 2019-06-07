@@ -14,7 +14,7 @@
 
 namespace
 {
-const unsigned int sCurrentPresetVersion = 3;
+const unsigned int sCurrentPresetVersion = 4;
 const float sAnimTimeSecondsIn24h = 24.0f;   // 24 hours = (sAnimTimeSecondsIn24h * SAnimTime::numTicksPerSecond) ticks
 
 const float sBezierSplineKeyValueEpsilon = 0.001f;
