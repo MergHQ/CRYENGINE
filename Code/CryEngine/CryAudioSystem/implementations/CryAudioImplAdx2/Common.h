@@ -30,6 +30,10 @@ extern CriAtomEx3dSourceConfig g_3dSourceConfig;
 extern uint32 g_numObjectsWithDoppler;
 
 constexpr CriChar8 const* g_szAbsoluteVelocityAisacName = "absolute_velocity";
+constexpr CriChar8 const* g_szOcclusionAisacName = "occlusion";
+
+extern CriAtomExAisacControlId g_absoluteVelocityAisacId;
+extern CriAtomExAisacControlId g_occlusionAisacId;
 
 using CueInstances = std::vector<CCueInstance*>;
 

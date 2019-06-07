@@ -18,6 +18,9 @@ CriAtomEx3dSourceConfig g_3dSourceConfig;
 
 uint32 g_numObjectsWithDoppler = 0;
 
+CriAtomExAisacControlId g_absoluteVelocityAisacId = CRIATOMEX_INVALID_AISAC_CONTROL_ID;
+CriAtomExAisacControlId g_occlusionAisacId = CRIATOMEX_INVALID_AISAC_CONTROL_ID;
+
 #if defined(CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE)
 GameVariableValues g_gameVariableValues;
 CategoryValues g_categoryValues;

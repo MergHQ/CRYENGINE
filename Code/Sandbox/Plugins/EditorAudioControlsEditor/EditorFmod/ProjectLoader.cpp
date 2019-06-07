@@ -30,6 +30,41 @@ constexpr char const* g_szReturnsPath = "/metadata/return/";
 constexpr char const* g_szVcasPath = "/metadata/vca/";
 constexpr char const* g_szBankPath = "/metadata/bank/";
 
+constexpr char const* g_szAttribName = "name";
+constexpr char const* g_szAttribId = "id";
+constexpr char const* g_szAttribTrue = "true";
+
+constexpr uint32 g_classIdEventFolder = CryAudio::StringToId("EventFolder");
+constexpr uint32 g_classIdParameterPresetFolder = CryAudio::StringToId("ParameterPresetFolder");
+constexpr uint32 g_classIdSnapshotGroup = CryAudio::StringToId("SnapshotGroup");
+constexpr uint32 g_classIdEvent = CryAudio::StringToId("Event");
+constexpr uint32 g_classIdSnapshot = CryAudio::StringToId("Snapshot");
+constexpr uint32 g_classIdParameterPreset = CryAudio::StringToId("ParameterPreset");
+constexpr uint32 g_classIdMixerReturn = CryAudio::StringToId("MixerReturn");
+constexpr uint32 g_classIdMixerGroup = CryAudio::StringToId("MixerGroup");
+constexpr uint32 g_classIdMixerVCA = CryAudio::StringToId("MixerVCA");
+constexpr uint32 g_classIdAudioTable = CryAudio::StringToId("AudioTable");
+constexpr uint32 g_classIdProgrammerSound = CryAudio::StringToId("ProgrammerSound");
+
+constexpr uint32 g_attribIdName = CryAudio::StringToId(g_szAttribName);
+constexpr uint32 g_attribIdItems = CryAudio::StringToId("items");
+constexpr uint32 g_attribIdSourceDirectory = CryAudio::StringToId("sourceDirectory");
+constexpr uint32 g_attribIdIsLocalized = CryAudio::StringToId("isLocalized");
+constexpr uint32 g_attribIdIncludeSubDirectories = CryAudio::StringToId("includeSubDirectories");
+
+constexpr uint32 g_tagIdIdProperty = CryAudio::StringToId("property");
+constexpr uint32 g_tagIdIdRelationship = CryAudio::StringToId("relationship");
+
+constexpr uint32 g_relationshipIdFolder = CryAudio::StringToId("folder");
+constexpr uint32 g_relationshipIdOutput = CryAudio::StringToId("output");
+
+constexpr uint32 g_fileExtensionIdAiff = CryAudio::StringToId(".aiff");
+constexpr uint32 g_fileExtensionIdFlac = CryAudio::StringToId(".flac");
+constexpr uint32 g_fileExtensionIdMp2 = CryAudio::StringToId(".mp2");
+constexpr uint32 g_fileExtensionIdMp3 = CryAudio::StringToId(".mp3");
+constexpr uint32 g_fileExtensionIdOgg = CryAudio::StringToId(".ogg");
+constexpr uint32 g_fileExtensionIdWav = CryAudio::StringToId(".wav");
+
 using ItemNames = std::vector<string>;
 
 //////////////////////////////////////////////////////////////////////////
@@ -214,50 +249,69 @@ void CProjectLoader::ParseFile(string const& filepath, CItem& parent, EPakStatus
 
 				if (childNode.isValid())
 				{
-					char const* const szClassName = childNode->getAttr("class");
+					uint32 const classNameId = CryAudio::StringToId(childNode->getAttr("class"));
 
-					if ((_stricmp(szClassName, "EventFolder") == 0) || (_stricmp(szClassName, "ParameterPresetFolder") == 0))
+					switch (classNameId)
 					{
-						LoadFolder(childNode, parent, pakStatus);
-					}
-					else if (_stricmp(szClassName, "SnapshotGroup") == 0)
-					{
-						LoadSnapshotGroup(childNode, parent, pakStatus);
-					}
-					else if (_stricmp(szClassName, "Event") == 0)
-					{
-						pItem = LoadEvent(childNode, parent, pakStatus);
-					}
-					else if (_stricmp(szClassName, "Snapshot") == 0)
-					{
-						LoadSnapshot(childNode, parent, pakStatus);
-					}
-					else if (_stricmp(szClassName, "ParameterPreset") == 0)
-					{
-						LoadParameter(childNode, parent, pakStatus);
-					}
-					else if (_stricmp(szClassName, "MixerReturn") == 0)
-					{
-						LoadReturn(childNode, parent, pakStatus);
-					}
-					else if (_stricmp(szClassName, "MixerGroup") == 0)
-					{
-						LoadMixerGroup(childNode, parent, pakStatus);
-					}
-					else if (_stricmp(szClassName, "MixerVCA") == 0)
-					{
-						LoadVca(childNode, parent, pakStatus);
-					}
-					else if (_stricmp(szClassName, "AudioTable") == 0)
-					{
-						LoadAudioTable(childNode);
-					}
-					else if (_stricmp(szClassName, "ProgrammerSound") == 0)
-					{
-						if ((pItem != nullptr) && (pItem->GetType() == EItemType::Event))
+					case g_classIdEventFolder: // Intentional fall-through.
+					case g_classIdParameterPresetFolder:
 						{
-							string const pathName = Utils::GetPathName(pItem, m_rootItem);
-							CImpl::s_programmerSoundEvents.emplace_back(pathName);
+							LoadFolder(childNode, parent, pakStatus);
+							break;
+						}
+					case g_classIdSnapshotGroup:
+						{
+							LoadSnapshotGroup(childNode, parent, pakStatus);
+							break;
+						}
+					case g_classIdEvent:
+						{
+							pItem = LoadEvent(childNode, parent, pakStatus);
+							break;
+						}
+					case g_classIdSnapshot:
+						{
+							LoadSnapshot(childNode, parent, pakStatus);
+							break;
+						}
+					case g_classIdParameterPreset:
+						{
+							LoadParameter(childNode, parent, pakStatus);
+							break;
+						}
+					case g_classIdMixerReturn:
+						{
+							LoadReturn(childNode, parent, pakStatus);
+							break;
+						}
+					case g_classIdMixerGroup:
+						{
+							LoadMixerGroup(childNode, parent, pakStatus);
+							break;
+						}
+					case g_classIdMixerVCA:
+						{
+							LoadVca(childNode, parent, pakStatus);
+							break;
+						}
+					case g_classIdAudioTable:
+						{
+							LoadAudioTable(childNode);
+							break;
+						}
+					case g_classIdProgrammerSound:
+						{
+							if ((pItem != nullptr) && (pItem->GetType() == EItemType::Event))
+							{
+								string const pathName = Utils::GetPathName(pItem, m_rootItem);
+								CImpl::s_programmerSoundEvents.emplace_back(pathName);
+							}
+
+							break;
+						}
+					default:
+						{
+							break;
 						}
 					}
 				}
@@ -342,7 +396,7 @@ CItem* CProjectLoader::GetContainer(string const& id, EItemType const type, CIte
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CProjectLoader::LoadContainer(XmlNodeRef const& node, EItemType const type, string const& relationshipParamName, CItem& parent, EPakStatus const pakStatus)
+void CProjectLoader::LoadContainer(XmlNodeRef const& node, EItemType const type, uint32 const relationshipParamId, CItem& parent, EPakStatus const pakStatus)
 {
 	string name = "";
 	CItem* pParent = &parent;
@@ -351,9 +405,9 @@ void CProjectLoader::LoadContainer(XmlNodeRef const& node, EItemType const type,
 	for (int i = 0; i < numChildren; ++i)
 	{
 		XmlNodeRef const childNode = node->getChild(i);
-		string const attribName = childNode->getAttr("name");
+		uint32 const attribId = CryAudio::StringToId(childNode->getAttr(g_szAttribName));
 
-		if (attribName.compareNoCase("name") == 0)
+		if (attribId == g_attribIdName)
 		{
 			// Get the container name.
 			XmlNodeRef const nameNode = childNode->getChild(0);
@@ -363,7 +417,7 @@ void CProjectLoader::LoadContainer(XmlNodeRef const& node, EItemType const type,
 				name = nameNode->getContent();
 			}
 		}
-		else if (attribName.compareNoCase(relationshipParamName) == 0)
+		else if (attribId == relationshipParamId)
 		{
 			// Get the container parent.
 			XmlNodeRef const parentContainerNode = childNode->getChild(0);
@@ -377,7 +431,7 @@ void CProjectLoader::LoadContainer(XmlNodeRef const& node, EItemType const type,
 	}
 
 	CItem* const pContainer = CreateItem(name, type, pParent, EItemFlags::IsContainer, pakStatus);
-	m_containerIds[node->getAttr("id")] = pContainer;
+	m_containerIds[node->getAttr(g_szAttribId)] = pContainer;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -390,29 +444,40 @@ void CProjectLoader::LoadSnapshotGroup(XmlNodeRef const& node, CItem& parent, EP
 	for (int i = 0; i < numChildren; ++i)
 	{
 		XmlNodeRef const childNode = node->getChild(i);
-		char const* const szAttribName = childNode->getAttr("name");
+		uint32 const attribId = CryAudio::StringToId(childNode->getAttr(g_szAttribName));
 
-		if (_stricmp(szAttribName, "name") == 0)
+		switch (attribId)
 		{
-			XmlNodeRef const nameNode = childNode->getChild(0);
-
-			if (nameNode.isValid())
+		case g_attribIdName:
 			{
-				name = nameNode->getContent();
-			}
-		}
-		else if (_stricmp(szAttribName, "items") == 0)
-		{
-			int const itemCount = childNode->getChildCount();
+				XmlNodeRef const nameNode = childNode->getChild(0);
 
-			for (int j = 0; j < itemCount; ++j)
-			{
-				XmlNodeRef const itemNode = childNode->getChild(j);
-
-				if (itemNode.isValid())
+				if (nameNode.isValid())
 				{
-					snapshotsItems.emplace_back(itemNode->getContent());
+					name = nameNode->getContent();
 				}
+
+				break;
+			}
+		case g_attribIdItems:
+			{
+				int const itemCount = childNode->getChildCount();
+
+				for (int j = 0; j < itemCount; ++j)
+				{
+					XmlNodeRef const itemNode = childNode->getChild(j);
+
+					if (itemNode.isValid())
+					{
+						snapshotsItems.emplace_back(itemNode->getContent());
+					}
+				}
+
+				break;
+			}
+		default:
+			{
+				break;
 			}
 		}
 	}
@@ -431,13 +496,13 @@ void CProjectLoader::LoadSnapshotGroup(XmlNodeRef const& node, CItem& parent, EP
 //////////////////////////////////////////////////////////////////////////
 void CProjectLoader::LoadFolder(XmlNodeRef const& node, CItem& parent, EPakStatus const pakStatus)
 {
-	LoadContainer(node, EItemType::Folder, "folder", parent, pakStatus);
+	LoadContainer(node, EItemType::Folder, g_relationshipIdFolder, parent, pakStatus);
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CProjectLoader::LoadMixerGroup(XmlNodeRef const& node, CItem& parent, EPakStatus const pakStatus)
 {
-	LoadContainer(node, EItemType::MixerGroup, "output", parent, pakStatus);
+	LoadContainer(node, EItemType::MixerGroup, g_relationshipIdOutput, parent, pakStatus);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -454,40 +519,51 @@ CItem* CProjectLoader::LoadItem(XmlNodeRef const& node, EItemType const type, CI
 
 		if (childNode.isValid())
 		{
-			char const* const szTag = childNode->getTag();
+			uint32 const tagId = CryAudio::StringToId(childNode->getTag());
 
-			if (_stricmp(szTag, "property") == 0)
+			switch (tagId)
 			{
-				string const paramName = childNode->getAttr("name");
-
-				if (paramName == "name")
+			case g_tagIdIdProperty:
 				{
-					XmlNodeRef const valueNode = childNode->getChild(0);
+					uint32 const paramNameId = CryAudio::StringToId(childNode->getAttr(g_szAttribName));
 
-					if (valueNode.isValid())
+					if (paramNameId == g_attribIdName)
 					{
-						itemName = valueNode->getContent();
-					}
-				}
-			}
-			else if (_stricmp(szTag, "relationship") == 0)
-			{
-				char const* const relationshipName = childNode->getAttr("name");
+						XmlNodeRef const valueNode = childNode->getChild(0);
 
-				if ((_stricmp(relationshipName, "folder") == 0) || (_stricmp(relationshipName, "output") == 0))
-				{
-					XmlNodeRef const valueNode = childNode->getChild(0);
-
-					if (valueNode.isValid())
-					{
-						string const parentContainerId = valueNode->getContent();
-						auto const folder = m_containerIds.find(parentContainerId);
-
-						if (folder != m_containerIds.end())
+						if (valueNode.isValid())
 						{
-							pParent = (*folder).second;
+							itemName = valueNode->getContent();
 						}
 					}
+
+					break;
+				}
+			case g_tagIdIdRelationship:
+				{
+					uint32 const relationshipId = CryAudio::StringToId(childNode->getAttr(g_szAttribName));
+
+					if ((relationshipId == g_relationshipIdFolder) || (relationshipId == g_relationshipIdOutput))
+					{
+						XmlNodeRef const valueNode = childNode->getChild(0);
+
+						if (valueNode.isValid())
+						{
+							string const parentContainerId = valueNode->getContent();
+							auto const folder = m_containerIds.find(parentContainerId);
+
+							if (folder != m_containerIds.end())
+							{
+								pParent = (*folder).second;
+							}
+						}
+					}
+
+					break;
+				}
+			default:
+				{
+					break;
 				}
 			}
 		}
@@ -495,7 +571,7 @@ CItem* CProjectLoader::LoadItem(XmlNodeRef const& node, EItemType const type, CI
 
 	if (type == EItemType::Snapshot)
 	{
-		string const id = node->getAttr("id");
+		string const id = node->getAttr(g_szAttribId);
 
 		auto const snapshotGroupPair = m_snapshotGroupItems.find(id);
 
@@ -566,37 +642,50 @@ void CProjectLoader::LoadAudioTable(XmlNodeRef const& node)
 
 		if (childNode.isValid())
 		{
-			char const* const szTag = childNode->getTag();
+			uint32 const tagId = CryAudio::StringToId(childNode->getTag());
 
-			if (_stricmp(szTag, "property") == 0)
+			if (tagId == g_tagIdIdProperty)
 			{
-				string const paramName = childNode->getAttr("name");
+				uint32 const paramId = CryAudio::StringToId(childNode->getAttr(g_szAttribName));
 
-				if (paramName == "sourceDirectory")
+				switch (paramId)
 				{
-					XmlNodeRef const valueNode = childNode->getChild(0);
-
-					if (valueNode.isValid())
+				case g_attribIdSourceDirectory:
 					{
-						name = m_projectPath + "/" + valueNode->getContent();
+						XmlNodeRef const valueNode = childNode->getChild(0);
+
+						if (valueNode.isValid())
+						{
+							name = m_projectPath + "/" + valueNode->getContent();
+						}
+
+						break;
 					}
-				}
-				else if (paramName == "isLocalized")
-				{
-					XmlNodeRef const valueNode = childNode->getChild(0);
-
-					if ((valueNode.isValid()) && (_stricmp(valueNode->getContent(), "true") == 0))
+				case g_attribIdIsLocalized:
 					{
-						isLocalized = true;
+						XmlNodeRef const valueNode = childNode->getChild(0);
+
+						if ((valueNode.isValid()) && (_stricmp(valueNode->getContent(), g_szAttribTrue) == 0))
+						{
+							isLocalized = true;
+						}
+
+						break;
 					}
-				}
-				else if (paramName == "includeSubDirectories")
-				{
-					XmlNodeRef const valueNode = childNode->getChild(0);
-
-					if ((valueNode.isValid()) && (_stricmp(valueNode->getContent(), "true") == 0))
+				case g_attribIdIncludeSubDirectories:
 					{
-						includeSubdirs = true;
+						XmlNodeRef const valueNode = childNode->getChild(0);
+
+						if ((valueNode.isValid()) && (_stricmp(valueNode->getContent(), g_szAttribTrue) == 0))
+						{
+							includeSubdirs = true;
+						}
+
+						break;
+					}
+				default:
+					{
+						break;
 					}
 				}
 			}
@@ -662,16 +751,24 @@ void CProjectLoader::LoadKeysFromFiles(CItem& parent, string const& filePath)
 
 					if (posExtension != string::npos)
 					{
-						string const fileExtension = fileName.data() + posExtension;
+						uint32 const fileExtensionId = CryAudio::StringToId(fileName.data() + posExtension);
 
-						if ((_stricmp(fileExtension, ".mp3") == 0) ||
-						    (_stricmp(fileExtension, ".ogg") == 0) ||
-						    (_stricmp(fileExtension, ".wav") == 0) ||
-						    (_stricmp(fileExtension, ".mp2") == 0) ||
-						    (_stricmp(fileExtension, ".flac") == 0) ||
-						    (_stricmp(fileExtension, ".aiff") == 0))
+						switch (fileExtensionId)
 						{
-							CreateItem(PathUtil::RemoveExtension(fileName), EItemType::Key, &parent, EItemFlags::None);
+						case g_fileExtensionIdWav:  // Intentional fall-through.
+						case g_fileExtensionIdOgg:  // Intentional fall-through.
+						case g_fileExtensionIdMp3:  // Intentional fall-through.
+						case g_fileExtensionIdMp2:  // Intentional fall-through.
+						case g_fileExtensionIdFlac: // Intentional fall-through.
+						case g_fileExtensionIdAiff:
+							{
+								CreateItem(PathUtil::RemoveExtension(fileName), EItemType::Key, &parent, EItemFlags::None);
+								break;
+							}
+						default:
+							{
+								break;
+							}
 						}
 					}
 				}
