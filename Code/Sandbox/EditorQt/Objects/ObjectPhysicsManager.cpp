@@ -782,7 +782,8 @@ void CObjectPhysicsManager::SimulateSelectedObjectsPositions()
 		pPhysEntity->Action(&aa);
 
 		m_simObjects.push_back(pSel->GetObject(i));
-		pObject->SetWorldTM(pObject->GetIEntity()->GetWorldTM());
+		if (pObject->GetIEntity())
+			pObject->SetWorldTM(pObject->GetIEntity()->GetWorldTM());
 	}
 	m_wasSimObjects = m_simObjects.size();
 
