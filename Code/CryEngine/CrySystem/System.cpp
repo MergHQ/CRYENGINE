@@ -1938,6 +1938,9 @@ bool CSystem::Update(CEnumFlags<ESystemUpdateFlags> updateFlags, int nPauseMode)
 	//update time subsystem
 	m_Time.UpdateOnFrameStart();
 
+	const CTimeValue& frameStartTime = m_Time.GetFrameStartTime();
+	const float frameTime = m_Time.GetFrameTime();
+
 	// Don't do a thing if we're not in a level
 	if (m_env.p3DEngine && bNotLoading)
 		m_env.p3DEngine->OnFrameStart();
@@ -2077,7 +2080,7 @@ bool CSystem::Update(CEnumFlags<ESystemUpdateFlags> updateFlags, int nPauseMode)
 			int maxSteps = 1;
 			float fCurTime = m_Time.GetCurrTime();
 			//float fPrevTime = m_env.pPhysicalWorld->GetPhysicsTime();
-			float timeToDo = m_Time.GetFrameTime();//fCurTime - fPrevTime;
+			float timeToDo = frameTime;//fCurTime - fPrevTime;
 			if (m_env.bMultiplayer)
 				timeToDo = m_Time.GetRealFrameTime();
 			m_env.pPhysicalWorld->TracePendingRays();
@@ -2145,7 +2148,7 @@ bool CSystem::Update(CEnumFlags<ESystemUpdateFlags> updateFlags, int nPauseMode)
 					//////////////////////////////////////////////////////////////////////
 					//update AI system - match physics
 					if (m_env.pAISystem && !m_cvAIUpdate->GetIVal() && g_cvars.sys_ai)
-						m_env.pAISystem->Update(gEnv->pTimer->GetFrameStartTime(), gEnv->pTimer->GetFrameTime());
+						m_env.pAISystem->Update(frameStartTime, frameTime);
 				}
 			}
 
@@ -2179,9 +2182,9 @@ bool CSystem::Update(CEnumFlags<ESystemUpdateFlags> updateFlags, int nPauseMode)
 				pPhysicsThreadTask->Resume();
 				float lag = pPhysicsThreadTask->GetRequestedStep();
 
-				if (pPhysicsThreadTask->RequestStep(m_Time.GetFrameTime()))
+				if (pPhysicsThreadTask->RequestStep(frameTime))
 				{
-					pVars->threadLag = lag + m_Time.GetFrameTime();
+					pVars->threadLag = lag + frameTime;
 					//GetILog()->Log("Physics thread lags behind; accum time %.3f", pVars->threadLag);
 				}
 			}
@@ -2198,7 +2201,7 @@ bool CSystem::Update(CEnumFlags<ESystemUpdateFlags> updateFlags, int nPauseMode)
 				//////////////////////////////////////////////////////////////////////
 				//update AI system
 				if (m_env.pAISystem && !m_cvAIUpdate->GetIVal())
-					m_env.pAISystem->Update(gEnv->pTimer->GetFrameStartTime(), gEnv->pTimer->GetFrameTime());
+					m_env.pAISystem->Update(frameStartTime, frameTime);
 			}
 		}
 		pe_params_waterman pwm;
@@ -2328,6 +2331,11 @@ bool CSystem::Update(CEnumFlags<ESystemUpdateFlags> updateFlags, int nPauseMode)
 	if (m_env.pHardwareMouse != nullptr)
 	{
 		m_env.pHardwareMouse->Update();
+	}
+
+	if (gEnv->pUDR && nPauseMode == 0)
+	{
+		gEnv->pUDR->Update(frameStartTime, frameTime);
 	}
 
 	//Now update frame statistics
