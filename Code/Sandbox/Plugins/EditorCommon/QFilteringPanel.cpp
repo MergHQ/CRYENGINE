@@ -397,6 +397,7 @@ void QFilteringPanel::CFilterWidget::OnSelectAttribute(int index)
 			m_pInvertButton->setVisible(true);
 		}
 
+		m_pFilter->SetOperator(nullptr);
 		OnSelectOperator(operators[0]);
 	}
 }
