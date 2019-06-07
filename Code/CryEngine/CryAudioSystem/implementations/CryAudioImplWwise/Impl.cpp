@@ -1325,9 +1325,9 @@ ITriggerConnection* CImpl::ConstructTriggerConnection(ITriggerInfo const* const 
 }
 
 ///////////////////////////////////////////////////////////////////////////
-void CImpl::DestructTriggerConnection(ITriggerConnection const* const pITriggerConnection)
+void CImpl::DestructTriggerConnection(ITriggerConnection* const pITriggerConnection)
 {
-	auto const pEvent = static_cast<CEvent const*>(pITriggerConnection);
+	auto const pEvent = static_cast<CEvent*>(pITriggerConnection);
 	pEvent->SetToBeDestructed();
 
 	if (pEvent->CanBeDestructed())

@@ -219,7 +219,7 @@ struct IImpl
 	 * @return void
 	 * @see ConstructTrigger
 	 */
-	virtual void DestructTriggerConnection(ITriggerConnection const* const pITriggerConnection) = 0;
+	virtual void DestructTriggerConnection(ITriggerConnection* const pITriggerConnection) = 0;
 
 	/**
 	 * Parse the implementation-specific XML node that represents an IParameterConnection, return a pointer to the data needed for identifying

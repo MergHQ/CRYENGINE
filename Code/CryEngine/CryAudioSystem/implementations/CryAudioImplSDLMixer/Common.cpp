@@ -18,6 +18,8 @@ namespace Impl
 {
 namespace SDL_mixer
 {
+constexpr uint8 g_sdlMaxDistance = 255;
+
 bool g_isMuted = false;
 CImpl* g_pImpl = nullptr;
 Objects g_objects;
@@ -73,29 +75,33 @@ void GetDistanceAngleToObject(
 //////////////////////////////////////////////////////////////////////////
 void SetChannelPosition(CEvent const& event, int const channelID, float const distance, float const angle)
 {
-	static const uint8 sdlMaxDistance = 255;
-	float const minDistance = event.GetAttenuationMinDistance();
-	float const maxDistance = event.GetAttenuationMaxDistance();
-
 	uint8 distanceToSet = 0;
 
-	if ((maxDistance >= 0.0f) && (distance > minDistance))
+	if ((event.GetFlags() & EEventFlags::IsAttenuationEnnabled) != 0)
 	{
-		if (minDistance != maxDistance)
+		float const minDistance = event.GetAttenuationMinDistance();
+
+		if (distance > minDistance)
 		{
-			float const finalDistance = distance - minDistance;
-			float const range = maxDistance - minDistance;
-			distanceToSet = static_cast<uint8>((std::min((finalDistance / range), 1.0f) * sdlMaxDistance) + 0.5f);
-		}
-		else
-		{
-			distanceToSet = sdlMaxDistance;
+			float const maxDistance = event.GetAttenuationMaxDistance();
+
+			if (minDistance != maxDistance)
+			{
+				float const finalDistance = distance - minDistance;
+				float const range = maxDistance - minDistance;
+				distanceToSet = static_cast<uint8>((std::min((finalDistance / range), 1.0f) * g_sdlMaxDistance) + 0.5f);
+			}
+			else
+			{
+				distanceToSet = g_sdlMaxDistance;
+			}
 		}
 	}
+
 	// Temp code, to be reviewed during the SetChannelPosition rewrite:
 	Mix_SetDistance(channelID, distanceToSet);
 
-	if (event.IsPanningEnabled())
+	if ((event.GetFlags() & EEventFlags::IsPanningEnabled) != 0)
 	{
 		// Temp code, to be reviewed during the SetChannelPosition rewrite:
 		float const absAngle = fabs(angle);

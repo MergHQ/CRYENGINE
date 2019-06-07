@@ -52,8 +52,8 @@ public:
 	void       IncrementNumInstances()   { ++m_numInstances; }
 	void       DecrementNumInstances();
 
-	bool       CanBeDestructed() const   { return m_toBeDestructed && (m_numInstances == 0); }
-	void       SetToBeDestructed() const { m_toBeDestructed = true; }
+	bool       CanBeDestructed() const { return m_toBeDestructed && (m_numInstances == 0); }
+	void       SetToBeDestructed()     { m_toBeDestructed = true; }
 
 #if defined(CRY_AUDIO_IMPL_WWISE_USE_DEBUG_CODE)
 	char const* GetName() const { return m_name.c_str(); }
@@ -64,7 +64,7 @@ private:
 	AkUniqueID const m_id;
 	float const      m_maxAttenuation;
 	uint16           m_numInstances;
-	mutable bool     m_toBeDestructed;
+	bool             m_toBeDestructed;
 
 #if defined(CRY_AUDIO_IMPL_WWISE_USE_DEBUG_CODE)
 	CryFixedStringT<MaxControlNameLength> const m_name;

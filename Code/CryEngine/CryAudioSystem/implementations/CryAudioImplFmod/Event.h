@@ -124,8 +124,8 @@ public:
 	void                                         IncrementNumInstances()     { ++m_numInstances; }
 	void                                         DecrementNumInstances();
 
-	bool                                         CanBeDestructed() const   { return m_toBeDestructed && (m_numInstances == 0); }
-	void                                         SetToBeDestructed() const { m_toBeDestructed = true; }
+	bool                                         CanBeDestructed() const { return m_toBeDestructed && (m_numInstances == 0); }
+	void                                         SetToBeDestructed()     { m_toBeDestructed = true; }
 
 private:
 
@@ -134,7 +134,7 @@ private:
 	FMOD_GUID const                             m_guid;
 	EEventFlags                                 m_flags;
 	uint16                                      m_numInstances;
-	mutable bool                                m_toBeDestructed;
+	bool                                        m_toBeDestructed;
 	CryFixedStringT<MaxControlNameLength> const m_key;
 	FMOD::Studio::EventDescription*             m_pEventDescription;
 };

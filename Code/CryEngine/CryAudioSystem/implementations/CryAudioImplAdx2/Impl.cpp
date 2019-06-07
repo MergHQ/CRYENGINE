@@ -920,13 +920,13 @@ ITriggerConnection* CImpl::ConstructTriggerConnection(ITriggerInfo const* const 
 }
 
 ///////////////////////////////////////////////////////////////////////////
-void CImpl::DestructTriggerConnection(ITriggerConnection const* const pITriggerConnection)
+void CImpl::DestructTriggerConnection(ITriggerConnection* const pITriggerConnection)
 {
-	auto const pBaseTriggerConnection = static_cast<CBaseTriggerConnection const*>(pITriggerConnection);
+	auto const pBaseTriggerConnection = static_cast<CBaseTriggerConnection*>(pITriggerConnection);
 
 	if (pBaseTriggerConnection->GetType() == CBaseTriggerConnection::EType::Cue)
 	{
-		auto const pCue = static_cast<CCue const*>(pBaseTriggerConnection);
+		auto const pCue = static_cast<CCue*>(pBaseTriggerConnection);
 		pCue->SetToBeDestructed();
 
 		if (pCue->CanBeDestructed())
