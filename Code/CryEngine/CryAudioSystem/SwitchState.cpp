@@ -84,6 +84,8 @@ void CSwitchState::SetGlobally() const
 	{
 		Cry::Audio::Log(ELogType::Warning, R"(SwitchState "%s" set globally without connections)", GetName());
 	}
+
+	g_switchStatesGlobally[m_switchId] = m_switchStateId;
 #endif // CRY_AUDIO_USE_DEBUG_CODE
 }
 } // namespace CryAudio

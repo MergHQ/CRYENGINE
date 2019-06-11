@@ -84,6 +84,8 @@ void CParameter::SetGlobally(float const value) const
 	{
 		Cry::Audio::Log(ELogType::Warning, R"(Parameter "%s" set globally without connections)", GetName());
 	}
+
+	g_parametersGlobally[m_id] = value;
 #endif // CRY_AUDIO_USE_DEBUG_CODE
 }
 } // namespace CryAudio

@@ -412,6 +412,20 @@ void ForceGlobalDataImplRefresh()
 		}
 	}
 
+	for (auto const& parameterPair : g_parametersGlobally)
+	{
+		CParameter const* const pParameter = stl::find_in_map(g_parameterLookup, parameterPair.first, nullptr);
+
+		if (pParameter != nullptr)
+		{
+			pParameter->SetGlobally(parameterPair.second);
+		}
+		else
+		{
+			Cry::Audio::Log(ELogType::Warning, "Parameter \"%u\" does not exist!", parameterPair.first);
+		}
+	}
+
 	// Switches
 	for (auto const& switchPair : g_switchStates)
 	{
@@ -424,6 +438,21 @@ void ForceGlobalDataImplRefresh()
 			if (pState != nullptr)
 			{
 				pState->Set();
+			}
+		}
+	}
+
+	for (auto const& switchPair : g_switchStatesGlobally)
+	{
+		CSwitch const* const pSwitch = stl::find_in_map(g_switchLookup, switchPair.first, nullptr);
+
+		if (pSwitch != nullptr)
+		{
+			CSwitchState const* const pState = stl::find_in_map(pSwitch->GetStates(), switchPair.second, nullptr);
+
+			if (pState != nullptr)
+			{
+				pState->SetGlobally();
 			}
 		}
 	}
