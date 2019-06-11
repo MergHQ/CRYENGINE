@@ -19,7 +19,7 @@ void CObject::StopEvent(uint32 const pathId)
 {
 	for (auto const pEventInstance : m_eventInstances)
 	{
-		if (pEventInstance->GetEvent().pathId == pathId)
+		if (pEventInstance->GetEvent().GetPathId() == pathId)
 		{
 			pEventInstance->Stop();
 		}

@@ -941,7 +941,7 @@ void CImpl::DestructTriggerConnection(ITriggerConnection* const pITriggerConnect
 	if (pBaseTriggerConnection->GetType() == CBaseTriggerConnection::EType::Cue)
 	{
 		auto const pCue = static_cast<CCue*>(pBaseTriggerConnection);
-		pCue->SetToBeDestructed();
+		pCue->SetFlag(ECueFlags::ToBeDestructed);
 
 		if (pCue->CanBeDestructed())
 		{

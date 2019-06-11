@@ -14,6 +14,13 @@ namespace Impl
 {
 namespace Adx2
 {
+enum class ECueFlags : EnumFlagsType
+{
+	None           = 0,
+	ToBeDestructed = BIT(1),
+};
+CRY_CREATE_ENUM_FLAG_OPERATORS(ECueFlags);
+
 class CCue final : public CBaseTriggerConnection, public CPoolObject<CCue, stl::PSyncNone>
 {
 public:
@@ -45,11 +52,11 @@ public:
 		, m_id(id)
 		, m_cueSheetId(acbId)
 		, m_actionType(type)
+		, m_flags(ECueFlags::None)
 		, m_pAcbHandle(nullptr)
+		, m_numInstances(0)
 		, m_cueSheetName(szCueSheetName)
 		, m_fadeOutTime(fadeOutTime)
-		, m_numInstances(0)
-		, m_toBeDestructed(false)
 	{}
 #else
 	explicit CCue(
@@ -61,9 +68,9 @@ public:
 		, m_id(id)
 		, m_cueSheetId(acbId)
 		, m_actionType(type)
+		, m_flags(ECueFlags::None)
 		, m_pAcbHandle(nullptr)
 		, m_numInstances(0)
-		, m_toBeDestructed(false)
 	{}
 #endif  // CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE
 
@@ -74,14 +81,15 @@ public:
 	virtual void           Stop(IObject* const pIObject) override;
 	// ~CryAudio::Impl::ITriggerConnection
 
-	uint32         GetId() const           { return m_id; }
-	CriAtomExAcbHn GetAcbHandle() const    { return m_pAcbHandle; }
+	uint32         GetId() const                 { return m_id; }
+	CriAtomExAcbHn GetAcbHandle() const          { return m_pAcbHandle; }
 
-	void           IncrementNumInstances() { ++m_numInstances; }
+	void           SetFlag(ECueFlags const flag) { m_flags |= flag; }
+
+	void           IncrementNumInstances()       { ++m_numInstances; }
 	void           DecrementNumInstances();
 
-	bool           CanBeDestructed() const { return m_toBeDestructed && (m_numInstances == 0); }
-	void           SetToBeDestructed()     { m_toBeDestructed = true; }
+	bool           CanBeDestructed() const { return ((m_flags& ECueFlags::ToBeDestructed) != 0) && (m_numInstances == 0); }
 
 #if defined(CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE)
 	float GetFadeOutTime() const { return m_fadeOutTime; }
@@ -92,9 +100,9 @@ private:
 	uint32 const      m_id;
 	uint32 const      m_cueSheetId;
 	EActionType const m_actionType;
+	ECueFlags         m_flags;
 	CriAtomExAcbHn    m_pAcbHandle;
 	uint16            m_numInstances;
-	bool              m_toBeDestructed;
 
 #if defined(CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE)
 	CryFixedStringT<MaxControlNameLength> const m_cueSheetName;

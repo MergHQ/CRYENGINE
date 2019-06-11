@@ -481,6 +481,7 @@ ITriggerConnection* CImpl::ConstructTriggerConnection(XmlNodeRef const& rootNode
 		{
 			CryFixedStringT<16> const eventTypeString(rootNode->getAttr(g_szTypeAttribute));
 			CEvent::EActionType const actionType = eventTypeString.compareNoCase(g_szStartValue) == 0 ? CEvent::EActionType::Start : CEvent::EActionType::Stop;
+			EEventFlags const flags = isLocalized ? EEventFlags::IsLocalized : EEventFlags::None;
 
 			int numLoops = 0;
 			rootNode->getAttr(g_szLoopCountAttribute, numLoops);
@@ -491,15 +492,15 @@ ITriggerConnection* CImpl::ConstructTriggerConnection(XmlNodeRef const& rootNode
 
 			MEMSTAT_CONTEXT(EMemStatContextType::AudioImpl, "CryAudio::Impl::PortAudio::CEvent");
 			auto const pEvent = new CEvent(
+				flags,
+				actionType,
 				StringToId(path.c_str()),
 				numLoops,
 				static_cast<double>(sfInfo.samplerate),
-				actionType,
-				path.c_str(),
 				streamParameters,
+				path.c_str(),
 				folderName.c_str(),
-				name.c_str(),
-				isLocalized);
+				name.c_str());
 
 			g_events.push_back(pEvent);
 
@@ -543,18 +544,20 @@ ITriggerConnection* CImpl::ConstructTriggerConnection(ITriggerInfo const* const 
 
 		if (GetSoundInfo(path.c_str(), sfInfo, streamParameters))
 		{
+			EEventFlags const flags = pTriggerInfo->isLocalized ? EEventFlags::IsLocalized : EEventFlags::None;
+
 			MEMSTAT_CONTEXT(EMemStatContextType::AudioImpl, "CryAudio::Impl::PortAudio::CEvent");
 			pITriggerConnection = static_cast<ITriggerConnection*>(
 				new CEvent(
+					flags,
+					CEvent::EActionType::Start,
 					StringToId(path.c_str()),
 					0,
 					static_cast<double>(sfInfo.samplerate),
-					CEvent::EActionType::Start,
-					path.c_str(),
 					streamParameters,
+					path.c_str(),
 					folderName.c_str(),
-					name.c_str(),
-					pTriggerInfo->isLocalized));
+					name.c_str()));
 		}
 	}
 
@@ -568,7 +571,7 @@ ITriggerConnection* CImpl::ConstructTriggerConnection(ITriggerInfo const* const 
 void CImpl::DestructTriggerConnection(ITriggerConnection* const pITriggerConnection)
 {
 	auto const pEvent = static_cast<CEvent*>(pITriggerConnection);
-	pEvent->SetToBeDestructed();
+	pEvent->SetFlag(EEventFlags::ToBeDestructed);
 
 	if (pEvent->CanBeDestructed())
 	{
@@ -663,26 +666,28 @@ void CImpl::UpdateLocalizedEvents()
 {
 	for (auto const pEvent : g_events)
 	{
-		if (pEvent->m_isLocalized)
+		if ((pEvent->GetFlags() & EEventFlags::IsLocalized) != 0)
 		{
 			stack_string path = m_localizedSoundBankFolder.c_str();
 			path += "/";
 
-			if (!pEvent->m_folder.empty())
+			char const* const szFolderName = pEvent->GetFolder();
+
+			if ((szFolderName != nullptr) && (szFolderName[0] != '\0'))
 			{
-				path += pEvent->m_folder.c_str();
+				path += szFolderName;
 				path += "/";
 			}
 
-			path += pEvent->m_name.c_str();
+			path += pEvent->GetName();
 
 			SF_INFO sfInfo;
 			PaStreamParameters streamParameters;
 
 			GetSoundInfo(path.c_str(), sfInfo, streamParameters);
-			pEvent->sampleRate = static_cast<double>(sfInfo.samplerate);
-			pEvent->streamParameters = streamParameters;
-			pEvent->filePath = path.c_str();
+			pEvent->SetSampleRate(static_cast<double>(sfInfo.samplerate));
+			pEvent->SetStreamParameters(streamParameters);
+			pEvent->SetFilePath(path.c_str());
 		}
 	}
 }
@@ -842,7 +847,7 @@ void CImpl::DrawDebugInfoList(IRenderAuxGeom& auxGeom, float& posX, float posY, 
 
 		if ((debugDistance <= 0.0f) || ((debugDistance > 0.0f) && (distance < debugDistance)))
 		{
-			char const* const szEventName = pEventInstance->GetEvent().m_name.c_str();
+			char const* const szEventName = pEventInstance->GetEvent().GetName();
 			CryFixedStringT<MaxControlNameLength> lowerCaseEventName(szEventName);
 			lowerCaseEventName.MakeLower();
 			bool const draw = ((lowerCaseSearchString.empty() || (lowerCaseSearchString == "0")) || (lowerCaseEventName.find(lowerCaseSearchString) != CryFixedStringT<MaxControlNameLength>::npos));
