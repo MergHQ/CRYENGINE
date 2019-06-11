@@ -257,7 +257,7 @@ public:
 	virtual void DrawCursor(SDisplayContext& dc, float scale) override
 	{
 		Vec3 cursorDir;
-		cursorDir = ((m_cursorPosition - m_initPosition) ^ dc.view->CameraToWorld(m_cursorPosition)).GetNormalized() * 0.3 * scale;
+		cursorDir = ((m_cursorPosition - m_initPosition) ^ dc.view->CameraToWorld(m_cursorPosition)).GetNormalized() * 0.3f * scale;
 		dc.SetColor(0.0f, 0.0f, 0.0f);
 		dc.DrawArrow(m_cursorPosition, m_cursorPosition + cursorDir, 0.4f * scale);
 		dc.DrawArrow(m_cursorPosition, m_cursorPosition - cursorDir, 0.4f * scale);
@@ -532,7 +532,7 @@ void CAxisRotateGizmo::Display(SDisplayContext& dc)
 			Vec3 yVec = camToOrigin ^ xVec;
 
 			Matrix34 m = Matrix34::CreateFromVectors(xVec, yVec, camToOrigin, m_position);
-			angle = g_PI2;
+			angle = static_cast<float>(g_PI2);
 			dc.PushMatrix(m);
 		}
 		else
@@ -542,7 +542,7 @@ void CAxisRotateGizmo::Display(SDisplayContext& dc)
 			Vec3 xVec = yVec ^ m_axis;
 
 			Matrix34 m = Matrix34::CreateFromVectors(xVec, yVec, m_axis, m_position);
-			angle = g_PI;
+			angle = static_cast<float>(g_PI);
 			dc.PushMatrix(m);
 		}
 

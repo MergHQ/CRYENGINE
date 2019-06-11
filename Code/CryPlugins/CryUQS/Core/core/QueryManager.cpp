@@ -857,10 +857,10 @@ namespace UQS
 				}
 
 				// query ID
-				CDrawUtil2d::DrawLabel(oldX, y, 1.6, Col_White, "#%s", element.queryIdAsString.c_str());
+				CDrawUtil2d::DrawLabel(oldX, y, 1.6f, Col_White, "#%s", element.queryIdAsString.c_str());
 
 				// priority
-				CDrawUtil2d::DrawLabel(oldX, y + 15, 1.6, Col_White, "p: %i", element.priorityHandedOut);
+				CDrawUtil2d::DrawLabel(oldX, y + 15, 1.6f, Col_White, "p: %i", element.priorityHandedOut);
 			}
 		}
 

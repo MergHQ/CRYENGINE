@@ -75,7 +75,7 @@ float CrySpatialFX::ComputeFade(float const volumeFactor, float const strength =
 void CrySpatialFX::ComputeQuadrant()
 {
 	float bigAzimuth = 0.0f;
-	float smallAzimuth = fabs(m_gameAzimuth / static_cast<float>(g_piHalf));
+	auto smallAzimuth = static_cast<float>(fabs(static_cast<AkReal64>(m_gameAzimuth) / g_piHalf));
 	smallAzimuth = modff(smallAzimuth, &bigAzimuth);
 
 	if (m_gameAzimuth < 0.0f)
@@ -844,7 +844,7 @@ void CrySpatialFX::ComputeDelayChannelData(
 	int& out_delay,
 	float& out_eqGain)
 {
-	float const elevationFactor = fabs(m_gameElevation) / static_cast<float>(g_piHalf);
+	auto const elevationFactor = static_cast<float>(fabs(m_gameElevation) / g_piHalf);
 	float const elevationFactorInversedClamp = (elevationFactor > 0.85f) ? 0 : 1 - (elevationFactor / 0.85f);
 
 	if ((m_quadrant == 0) || (m_quadrant == 3)) // azimuth 0 to (Pi/2)
@@ -1009,7 +1009,7 @@ void CrySpatialFX::EQInputBuffer(
 	SAkUserData* const userData = static_cast<SAkUserData*>(pInputContext->GetUserData());
 	int const inputValidFrames = pInputBuffer->uValidFrames;
 
-	float const elevationFactor = (fabs(m_gameElevation) / static_cast<float>(g_piHalf));
+	auto const elevationFactor = static_cast<float>(fabs(m_gameElevation) / g_piHalf);
 	float const elevationFactorInversedClamp = (elevationFactor > 0.85f) ? 0.0f : 1.0f - (elevationFactor / 0.85f);
 
 	BiquadIIFilter
@@ -1305,7 +1305,7 @@ void CrySpatialFX::EQInputBuffer(
 
 	if (m_gameElevation > 0)
 	{
-		float elevation = fabs(m_gameElevation);
+		auto const elevation = static_cast<float>(fabs(m_gameElevation));
 
 		band06Frequency = 6000 - static_cast<int>(3700.0f * ComputeFade(elevation, 0.9f, EFadeType::FadeinLogarithmic));
 		band07Frequency = 6000 + static_cast<int>(3100.0f * ComputeFade(elevation, 0.4f, EFadeType::FadeinLogarithmic));
@@ -1322,7 +1322,7 @@ void CrySpatialFX::EQInputBuffer(
 	}
 	else
 	{
-		float elevation = fabs(m_gameElevation);
+		auto const elevation = static_cast<float>(fabs(m_gameElevation));
 
 		band06Frequency = 6000 + static_cast<int>(4700.0f * elevation);
 		band07Frequency = 6000 - static_cast<int>(900.0f * elevation);
@@ -1457,7 +1457,7 @@ void CrySpatialFX::EQConcealedChannel(
 {
 	SAkUserData* const userData = static_cast<SAkUserData*>(pInputContext->GetUserData());
 
-	float const elevationFactor = (fabs(m_gameElevation) / static_cast<float>(g_piHalf));
+	auto const elevationFactor = static_cast<float>(fabs(m_gameElevation) / g_piHalf);
 	float const elevationFactorInversedClamp = (elevationFactor > 0.85f) ? 0.0f : 1.0f - (elevationFactor / 0.85f);
 
 	BiquadIIFilter* filterDominant11 = &userData->pFilterBankA->filterBand11;
@@ -1642,7 +1642,7 @@ void CrySpatialFX::EQDirectChannel(
 {
 	SAkUserData* const userData = static_cast<SAkUserData*>(pInputContext->GetUserData());
 
-	float const elevationFactor = (fabs(m_gameElevation) / static_cast<float>(g_piHalf));
+	auto const elevationFactor = static_cast<float>(fabs(m_gameElevation) / g_piHalf);
 	float const elevationFactorInversedClamp = (elevationFactor > 0.85f) ? 0.0f : 1.0f - (elevationFactor / 0.85f);
 
 	BiquadIIFilter* filterDominant09 = &userData->pFilterBankA->filterBand09; // FilterDominant

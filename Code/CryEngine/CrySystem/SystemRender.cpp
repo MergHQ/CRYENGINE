@@ -906,7 +906,7 @@ void CSystem::RenderThreadInfo()
 		}
 
 		float  nX     = 5, nY = 10, dY = 12, dX = 10;
-		float  fFSize = 1.2;
+		float  fFSize = 1.2f;
 		ColorF col1   = Col_Yellow;
 		ColorF col2   = Col_Red;
 

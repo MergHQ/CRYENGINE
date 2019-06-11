@@ -1780,7 +1780,7 @@ void CRopeRenderNode::UpdateRenderMesh()
 				uint8 w[3] = { 0, (uint8)(m_params.nFlags & eRope_Smooth ? 127 : 0), 127 };
 				for (int iz = 0, i = 0; iz < (nLengthSamples - 1) * 3 - 1; pt.x += !(iz++ % 3) * seglen, w[0] = w[1])
 				{
-					Quat qtang(sqrt2 * 0.5f, -sqrt2 * 0.5f, 0, 0); // start with rotation by -90 around x, then rotate by +angle around x each step
+					Quat qtang(static_cast<float>(sqrt2 * 0.5), static_cast<float>(-sqrt2 * 0.5), 0.0f, 0.0f); // start with rotation by -90 around x, then rotate by +angle around x each step
 					for (int j = 0; j < s; j++, i++)
 					{
 						const float r = m_params.fThickness * (1 + pt.x * kr);

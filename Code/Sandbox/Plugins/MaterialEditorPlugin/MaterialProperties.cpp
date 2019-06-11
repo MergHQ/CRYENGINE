@@ -293,8 +293,8 @@ void CMaterialSerializer::Serialize(Serialization::IArchive& ar)
 	{
 		ar.openBlock("opacitySettings", "Opacity Settings");
 
-		ar(Serialization::Decorators::Range<float>(shaderResources.m_LMaterial.m_Opacity, 0, 1, 0.01), "opacity", "Opacity");
-		ar(Serialization::Decorators::Range<float>(shaderResources.m_AlphaRef, 0, 1, 0.01), "alphaTest", "Alpha Test");
+		ar(Serialization::Decorators::Range<float>(shaderResources.m_LMaterial.m_Opacity, 0.0f, 1.0f, 0.01f), "opacity", "Opacity");
+		ar(Serialization::Decorators::Range<float>(shaderResources.m_AlphaRef, 0.0f, 1.0f, 0.01f), "alphaTest", "Alpha Test");
 
 		bool bAdditive = (mtlFlags & MTL_FLAG_ADDITIVE);
 		ar(bAdditive, "bAdditive", "Additive");

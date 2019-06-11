@@ -200,8 +200,8 @@ void CRenderViewport::InitCommon()
 
 	m_cameraObjectId = CryGUID::Null();
 
-	m_moveSpeed = 0.1;
-	m_moveSpeedIncrements = log((m_moveSpeed - 0.01) * 100) / log(1.1) + 0.5;
+	m_moveSpeed = 0.1f;
+	m_moveSpeedIncrements = log((m_moveSpeed - 0.01f) * 100) / log(1.1) + 0.5;
 
 	m_bLockCameraMovement = true;
 
