@@ -265,6 +265,10 @@ bool QToolWindowArea::eventFilter(QObject* pObject, QEvent* pEvent)
 				{
 					toolWindow = m_pTabFrame->contents();
 				}
+				if (!toolWindow)
+				{
+					return false;
+				}
 				m_tabDragCanStart = false;
 				//stop internal tab drag in QTabBar
 				QMouseEvent* releaseEvent = new QMouseEvent(QEvent::MouseButtonRelease, me->pos(), Qt::LeftButton, Qt::LeftButton, 0);
