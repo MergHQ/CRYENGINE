@@ -134,7 +134,8 @@ namespace Cry
 
 				std::vector<IListener*> m_listeners;
 
-				uint32 m_authTicketHandle;
+				using HAuthTicket = uint32;
+				std::set<HAuthTicket> m_pendingAuthTicketHandles;
 			};
 		}
 	}

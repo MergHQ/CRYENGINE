@@ -48,7 +48,6 @@ namespace Cry
 				, m_callbackGetSteamAuthTicketResponse(this, &CService::OnGetSteamAuthTicketResponse)
 				, m_callbackOnPersonaChange(this, &CService::OnPersonaStateChange)
 				, m_pServer(nullptr)
-				, m_authTicketHandle(k_HAuthTicketInvalid)
 			{
 				// Map Steam API language codes to engine
 				// Full list of Steam API language codes can be found here: https://partner.steamgames.com/doc/store/localization
@@ -321,11 +320,20 @@ namespace Cry
 
 			void CService::OnGetSteamAuthTicketResponse(GetAuthSessionTicketResponse_t* pData)
 			{
-				const bool success = pData->m_eResult == EResult::k_EResultOK;
-				const uint32 authTicket = pData->m_hAuthTicket;
-				for (IListener* pListener : m_listeners)
+				const HAuthTicket authTicket = pData->m_hAuthTicket;
+				const auto it = m_pendingAuthTicketHandles.find(authTicket);
+				if (it != std::end(m_pendingAuthTicketHandles))
 				{
-					pListener->OnGetSteamAuthTicketResponse(success, authTicket);
+					const bool success = pData->m_eResult == EResult::k_EResultOK;
+					for (IListener* pListener : m_listeners)
+					{
+						pListener->OnGetSteamAuthTicketResponse(success, authTicket);
+					}
+					m_pendingAuthTicketHandles.erase(it);
+				}
+				else
+				{
+					CryLog("[Steam] Ignoring auth token %u as it was not requested by GamePlatform", authTicket);
 				}
 			}
 
@@ -616,7 +624,8 @@ namespace Cry
 					CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_WARNING, "Steam user service not available");
 					return false;
 				}
-				m_authTicketHandle = (uint32)pSteamUser->GetAuthSessionTicket(rgchToken, sizeof(rgchToken), &unTokenLen);
+				const HAuthTicket authTicket = pSteamUser->GetAuthSessionTicket(rgchToken, sizeof(rgchToken), &unTokenLen);
+				m_pendingAuthTicketHandles.insert(authTicket);
 
 				const char hex_chars[16] = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
 
