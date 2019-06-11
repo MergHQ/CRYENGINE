@@ -677,6 +677,8 @@ void CSkeletonPhysics::BuildPhysicalEntity(
 		m_iSurfaceIdx = surface_idx;
 		m_bPhysicsRelinquished = (nLod > 0);
 		m_physLod = nLod;
+		m_nPhysJoints = -1;
+		InitializeAnimToPhysIndexArray();
 	}
 
 	for (int i = m_pInstance->m_AttachmentManager.GetAttachmentCount() - 1; i >= 0; i--)
