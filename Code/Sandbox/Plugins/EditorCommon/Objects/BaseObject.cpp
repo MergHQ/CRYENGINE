@@ -1073,7 +1073,7 @@ void CBaseObject::DrawDefault(SDisplayContext& dc, COLORREF labelColor)
 
 	if (dc.showSelectedObjectOrientation && IsSelected())
 	{
-		float textSize = 1.4;
+		float textSize = 1.4f;
 		const Matrix34& m = GetWorldTM();
 		float scale = dc.view->GetScreenScaleFactor(m.GetTranslation()) * gGizmoPreferences.axisGizmoSize * 0.5f;
 		Vec3 xVec = m.GetTranslation() + scale * m.GetColumn0().GetNormalized();

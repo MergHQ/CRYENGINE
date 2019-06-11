@@ -79,7 +79,7 @@ struct MultiEditTest2
 {
 	MultiEditTest2()
 		: memberInt(156)
-		, memberFloat(1512051.45)
+		, memberFloat(1512051.45f)
 		, memberString("some string")
 		, memberBool(false)
 		, memberSharedPtr(std::make_shared<DynCreateBase>())
@@ -115,7 +115,7 @@ struct TestNestedStruct
 	TestNestedStruct()
 	{
 		memberInt = 123;
-		memberFloat = 456.789;
+		memberFloat = 456.789f;
 		memberString = "some string";
 	}
 
@@ -268,7 +268,7 @@ struct TestStruct
 {
 	TestStruct()
 		: memberInt(123)
-		, memberFloat(456.789)
+		, memberFloat(456.789f)
 		, memberChar('z')
 		, memberInt2(456)
 		, memberBoolLinked1(false)

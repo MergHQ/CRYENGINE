@@ -2067,11 +2067,11 @@ void CMainDialog::AssignScene(const MeshImporter::SImportScenePayload* pPayload)
 	pActiveScene->AddObserver(this);
 
 	*m_pAutoLodSettings = CAutoLodSettings();
-	m_pAutoLodSettings->getGlobalParams().m_fViewreSolution = 26.6932144;
+	m_pAutoLodSettings->getGlobalParams().m_fViewreSolution = 26.6932144f;
 	m_pAutoLodSettings->getGlobalParams().m_iViewsAround = 12;
 	m_pAutoLodSettings->getGlobalParams().m_iViewElevations = 3;
-	m_pAutoLodSettings->getGlobalParams().m_fSilhouetteWeight = 5.0;
-	m_pAutoLodSettings->getGlobalParams().m_fVertexWelding = 0.001;
+	m_pAutoLodSettings->getGlobalParams().m_fSilhouetteWeight = 5.0f;
+	m_pAutoLodSettings->getGlobalParams().m_fVertexWelding = 0.001f;
 	m_pAutoLodSettings->getGlobalParams().m_bCheckTopology = true;
 	m_pAutoLodSettings->getGlobalParams().m_bObjectHasBase = false;
 

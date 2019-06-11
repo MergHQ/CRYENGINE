@@ -43,7 +43,7 @@ UVMappingEditor::UVMappingEditor()
 	m_bLButtonDown = false;
 	m_bHitGizmo = false;
 	m_PrevPivotType = ePivotType_Selection;
-	m_CameraZAngle = PI * 0.5f;
+	m_CameraZAngle = static_cast<float>(PI * 0.5);
 
 	m_ElementSet = new UVElementSet;
 	m_SharedElementSet = new UVElementSet;
@@ -638,9 +638,9 @@ void UVMappingEditor::OnUnmap()
 void UVMappingEditor::OnRotateCamera()
 {
 	SViewportState vs = m_pViewport->GetState();
-	m_CameraZAngle += PI * 0.5f;
-	if (m_CameraZAngle + 0.01f > 2.0f * PI)
-		m_CameraZAngle = 0;
+	m_CameraZAngle += static_cast<float>(PI * 0.5);
+	if (m_CameraZAngle + 0.01f > static_cast<float>(2.0 * PI))
+		m_CameraZAngle = 0.0f;
 	Ang3 ypr = CCamera::CreateAnglesYPR(Matrix33(vs.cameraTarget.q));
 	ypr.x = m_CameraZAngle;
 	vs.cameraTarget.q = Quat(CCamera::CreateOrientationYPR(ypr));

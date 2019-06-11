@@ -63,7 +63,7 @@ CModelViewport::CModelViewport(const char* settingsPath)
 
 	m_camRadius = 10;
 
-	m_moveSpeed = 0.1;
+	m_moveSpeed = 0.1f;
 	m_LightRotationRadian = 0.0f;
 
 	m_weaponIK = false;

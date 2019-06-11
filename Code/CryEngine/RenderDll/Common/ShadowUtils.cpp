@@ -456,7 +456,7 @@ void CShadowUtils::GetShadowMatrixForObject(Matrix44A& mLightProj, Matrix44A& mL
 	{
 		mLightProj.SetIdentity();
 		mLightView.SetIdentity();
-		vFrustumInfo.x = 0.1;
+		vFrustumInfo.x = 0.1f;
 		vFrustumInfo.y = 100.0f;
 		vFrustumInfo.w = 0.00001f;  //ObjDepthTestBias;
 		vFrustumInfo.z = 0.0f;
@@ -884,7 +884,7 @@ void CShadowUtils::GetForwardShadowSamplingInfo(
 	{
 		float fFilteredArea = gcpRendD3D->GetShadowJittering() * (pFr->fWidthS + pFr->fBlurS);
 		if (pFr->m_eFrustumType == ShadowMapFrustum::e_Nearest)
-			fFilteredArea *= 0.1;
+			fFilteredArea *= 0.1f;
 
 		kernelSize = fFilteredArea;
 	}

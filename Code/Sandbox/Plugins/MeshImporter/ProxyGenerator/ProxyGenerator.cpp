@@ -372,7 +372,7 @@ void CProxyGenerator::OnMouse(SPhysProxies* pProx, const SMouseEvent& ev, const 
 		dir.z = 1;
 		primitives::ray ray;
 		ray.origin = cam.GetMatrix().GetTranslation();
-		ray.dir = cam.GetMatrix().TransformVector(Quat(1 / sqrt2, Vec3(-1 / sqrt2, 0, 0)) * dir);
+		ray.dir = cam.GetMatrix().TransformVector(Quat(static_cast<float>(1.0 / sqrt2), Vec3(static_cast<float>(-1.0 / sqrt2), 0.0f, 0.0f)) * dir);
 		primitives::box bbox;
 		pProx->pSrc->pMesh->GetBBox(&bbox);
 		Vec3 dirloc = bbox.Basis * ray.dir;

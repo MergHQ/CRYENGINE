@@ -30,7 +30,7 @@ void CFeatureMotionFluidDynamics::Update(const gpu_pfx2::SUpdateContext& context
 		              Vec3(randX, randY, randZ) * p.spread;
 		bodies[i].lifeTime = 0.0f;
 		bodies[i].v = p.initialVelocity;
-		bodies[i].xp = bodies[i].x + bodies[i].v * 0.016;
+		bodies[i].xp = bodies[i].x + bodies[i].v * 0.016f;
 		bodies[i].phase = 0;
 		bodies[i].vorticity = Vec3(0.0f, 0.0f, 0.0f);
 	}

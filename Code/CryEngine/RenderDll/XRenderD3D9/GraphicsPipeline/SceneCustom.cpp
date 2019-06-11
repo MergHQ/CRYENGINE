@@ -370,7 +370,7 @@ void CSceneCustomStage::ExecuteDebugger()
 	CTexture* pTargetDS = CRendererResources::CreateDepthTarget(pTargetRT->GetWidth(), pTargetRT->GetHeight(), ColorF(Clr_FarPlane_Rev.r, 1, 0, 0), eTF_Unknown);
 
 	CClearSurfacePass::Execute(pTargetDS, CLEAR_ZBUFFER | CLEAR_STENCIL, 0.0f, 1);
-	CClearSurfacePass::Execute(pTargetRT, ColorF(0.2, 0.2, 0.2, 1));
+	CClearSurfacePass::Execute(pTargetRT, ColorF(0.2f, 0.2f, 0.2f, 1.0f));
 
 	m_debugViewPass.ExchangeRenderTarget(0, pTargetRT);
 	m_debugViewPass.ExchangeDepthTarget(pTargetDS);
