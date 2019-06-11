@@ -151,7 +151,9 @@ using ParameterValues = std::map<ControlId, float>;
 using EnvironmentValues = std::map<EnvironmentId, float>;
 
 extern ParameterValues g_parameters;
+extern ParameterValues g_parametersGlobally;
 extern SwitchStateIds g_switchStates;
+extern SwitchStateIds g_switchStatesGlobally;
 
 struct SContextInfo final
 {

@@ -58,7 +58,9 @@ SPoolSizes g_debugPoolSizes;
 ContextInfo g_contextInfo;
 ContextDebugInfo g_contextDebugInfo;
 ParameterValues g_parameters;
+ParameterValues g_parametersGlobally;
 SwitchStateIds g_switchStates;
+SwitchStateIds g_switchStatesGlobally;
 #else
 CListener g_defaultListener(DefaultListenerId, false);
 #endif // CRY_AUDIO_USE_DEBUG_CODE
