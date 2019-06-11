@@ -17,7 +17,7 @@ namespace Adx2
 enum class ECueFlags : EnumFlagsType
 {
 	None           = 0,
-	ToBeDestructed = BIT(1),
+	ToBeDestructed = BIT(0),
 };
 CRY_CREATE_ENUM_FLAG_OPERATORS(ECueFlags);
 

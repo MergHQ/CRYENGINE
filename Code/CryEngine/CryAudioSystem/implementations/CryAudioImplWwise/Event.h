@@ -15,7 +15,7 @@ namespace Wwise
 enum class EEventFlags : EnumFlagsType
 {
 	None           = 0,
-	ToBeDestructed = BIT(1),
+	ToBeDestructed = BIT(0),
 };
 CRY_CREATE_ENUM_FLAG_OPERATORS(EEventFlags);
 
