@@ -432,44 +432,6 @@ void CPrefabObject::OnShowInFG()
 	}
 }
 
-void CPrefabObject::ConvertToProceduralObject()
-{
-	GetIEditor()->GetObjectManager()->ClearSelection();
-
-	GetIEditor()->GetIUndoManager()->Suspend();
-	GetIEditor()->SetModifiedFlag();
-	CBaseObject* pObject = GetIEditor()->GetObjectManager()->NewObject("Entity", 0, "ProceduralObject");
-	if (!pObject)
-	{
-		string sError = "Could not convert prefab to " + this->GetName();
-		CryWarning(VALIDATOR_MODULE_ENTITYSYSTEM, VALIDATOR_ERROR, "Conversion Failure.");
-		return;
-	}
-
-	string sName = this->GetName();
-	pObject->SetName(sName + "_prc");
-	pObject->SetWorldTM(this->GetWorldTM());
-
-	pObject->SetLayer(GetLayer());
-	GetIEditor()->GetObjectManager()->AddObjectToSelection(pObject);
-
-	CEntityObject* pEntityObject = static_cast<CEntityObject*>(pObject);
-
-	CPrefabItem* pPrefab = static_cast<CPrefabObject*>(this)->GetPrefabItem();
-	if (pPrefab)
-	{
-		if (pPrefab->GetLibrary() && pPrefab->GetLibrary()->GetName())
-			pEntityObject->SetEntityPropertyString("filePrefabLibrary", pPrefab->GetLibrary()->GetFilename());
-
-		string sPrefabName = pPrefab->GetFullName();
-		pEntityObject->SetEntityPropertyString("sPrefabVariation", sPrefabName);
-	}
-
-	GetIEditor()->GetObjectManager()->DeleteObject(this);
-
-	GetIEditor()->GetIUndoManager()->Resume();
-}
-
 void CPrefabObject::OnContextMenu(CPopupMenuItem* menu)
 {
 	CGroup::OnContextMenu(menu);
@@ -479,7 +441,6 @@ void CPrefabObject::OnContextMenu(CPopupMenuItem* menu)
 	}
 
 	menu->Add("Find in FlowGraph", [=]() { OnShowInFG(); });
-	menu->Add("Convert to Procedural Object", [=]() { ConvertToProceduralObject(); });
 	menu->Add("Swap Prefab...", [this]()
 	{
 		CPrefabPicker picker;
