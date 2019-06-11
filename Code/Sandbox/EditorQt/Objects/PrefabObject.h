@@ -132,7 +132,6 @@ protected:
 	void         SyncParentObject();
 
 	void         OnShowInFG();
-	void         ConvertToProceduralObject();
 
 private:
 	void DeleteChildrenWithoutUpdating();
