@@ -120,14 +120,16 @@ void CCryProfilingSystem::FilterSubsystemCommand(IConsoleCmdArgs* args)
 		return;
 	}
 
-	bool enable;
+	int mode;
 	if (strcmp("0", args->GetArg(1)) == 0)
-		enable = false;
+		mode = 0;
 	else if (strcmp("1", args->GetArg(1)) == 0)
-		enable = true;
+		mode = 1;
+	else if (strcmp("2", args->GetArg(1)) == 0)
+		mode = 2;
 	else
 	{
-		CryLog("First argument has to be 0 or 1.");
+		CryLog("First argument has to be 0, 1 or 2.");
 		return;
 	}
 
@@ -151,9 +153,13 @@ void CCryProfilingSystem::FilterSubsystemCommand(IConsoleCmdArgs* args)
 	if(changeMask)
 	{
 		ICVar* pCvar = gEnv->pConsole->GetCVar(PROF_CVAR_SUBSYSTEM);
-		int64 newMask = enable ? (pCvar->GetI64Val() | changeMask) : (pCvar->GetI64Val() & ~changeMask);
-		pCvar->Set(newMask);
-		CryLog("Subsystem mask is now set to 0x%" PRIx64 ".", newMask);
+		switch (mode)
+		{
+		case 0: pCvar->Set(pCvar->GetI64Val() & ~changeMask); break;
+		case 1: pCvar->Set(pCvar->GetI64Val() | changeMask); break;
+		case 2: pCvar->Set(changeMask); break;
+		}
+		CryLog("Subsystem mask is now set to 0x%" PRIx64 ".", pCvar->GetI64Val());
 	}
 }
 
@@ -202,8 +208,11 @@ void CCryProfilingSystem::RegisterCVars()
 		, ProfilingSystemFilterCvarChangedCallback);
 	pVerbosityVar->SetMaxValue(CRY_PROFILER_MAX_DEPTH);
 
-	string filterSubsystemHelp = "Allows to turn on/off the profiling filter for subsystems by name. First parameter indicates if you want to enable or disable filtering."
-		" Use 1 to enable filtering, i.e. exclude the subsystem from profiling; otherwise use 0. After that you can give the names of the subsystems you want to set the filter for.\n"
+	string filterSubsystemHelp = "Allows to turn on/off the profiling filter for subsystems by name.\n"
+		"First parameter indicates if you want to enable or disable filtering.\n"
+		"Use 1 to enable filtering, i.e. exclude the subsystem from profiling; otherwise use 0.\n"
+		"Use 2 to profile a system/systems exclusively (i.e. disable all others).\n"
+		"After that you can give the names of the subsystems you want to set the filter for.\n"
 		"E.g. 'profile_filterSubsystem 1 AI Renderer' will exclude the AI and rendering systems from profiling.\n"
 		"Available subsystem names are: ";
 	for (int subsystemId = 0; subsystemId < EProfiledSubsystem::PROFILE_LAST_SUBSYSTEM; ++subsystemId)
