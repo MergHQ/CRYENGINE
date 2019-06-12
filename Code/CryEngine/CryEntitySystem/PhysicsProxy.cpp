@@ -448,14 +448,13 @@ void CEntityPhysics::OnTimer(int id)
 				continue;
 			pe_params_foreign_data pfd;
 			m_pPhysicalEntity->GetParams(&pfd);
-			if (pfd.iForeignData == PHYS_FOREIGN_ID_USER)
+			if (pfd.iForeignData != PHYS_FOREIGN_ID_ENTITY)
 			{
-				IPhysicalEntity* pAttachTo = static_cast<IPhysicalEntity*>(pfd.pForeignData);
+				IPhysicalEntity* pAttachTo = gEnv->pPhysicalWorld->GetPhysicalEntityById(pfd.iForeignData - PHYS_FOREIGN_ID_USER);
 				if (pAttachTo)
 				{
 					pe_status_pos sp;
 					pAttachTo->GetStatus(&sp);
-					pAttachTo->Release();
 					if (1 << sp.iSimClass > ent_independent)
 						pAttachTo = 0;
 				}
@@ -1459,15 +1458,12 @@ void CEntityPhysics::PhysicalizeSoft(SEntityPhysicalizeParams& params)
 	if (!bReady && m_pPhysicalEntity)
 	{
 		pe_params_foreign_data pfd;
-		pfd.iForeignData = PHYS_FOREIGN_ID_USER;
-		pfd.pForeignData = params.pAttachToEntity;
-		if (params.pAttachToEntity)
-			params.pAttachToEntity->AddRef();
+		pfd.iForeignData = params.pAttachToEntity ? PHYS_FOREIGN_ID_USER + gEnv->pPhysicalWorld->GetPhysicalEntityId(params.pAttachToEntity) : PHYS_FOREIGN_ID_ENTITY;
 		pfd.iForeignFlags = params.nAttachToPart;
 		m_pPhysicalEntity->SetParams(&pfd);
 		pe_params_flags pf;
 		pf.flagsOR = pef_disabled;
-		pf.flagsAND = pef_log_poststep;
+		pf.flagsAND = ~pef_log_poststep;
 		m_pPhysicalEntity->SetParams(&pf);
 		GetEntity()->SetInternalFlag(CEntity::EInternalFlag::PhysicsAttachClothOnRender, true);
 		GetEntity()->SetFlags(GetEntity()->GetFlags() | ENTITY_FLAG_SEND_RENDER_EVENT);

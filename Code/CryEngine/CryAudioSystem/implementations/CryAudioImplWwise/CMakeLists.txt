@@ -114,55 +114,10 @@ if (AUDIO_WWISE)
 		)
 
 	set( WWISE_PLUGIN_LIBS
-		AkAudioInputSource
-		AkCompressorFX
-		AkConvolutionReverbFX
-		AkDelayFX
-		AkExpanderFX
-		AkFlangerFX
-		AkGainFX
-		AkGuitarDistortionFX
-		AkHarmonizerFX
-		AkMatrixReverbFX
 		AkMeterFX
-		AkMotionSourceSource
 		AkOpusDecoder
-		AkParametricEQFX
-		AkPeakLimiterFX
-		AkPitchShifterFX
-		AkRecorderFX
-		AkReflectFX
-		AkRoomVerbFX
-		AkRouterMixerFX
-		AkSilenceSource
-		AkSineSource
-		AkSoundSeedGrainSource
-		AkSoundSeedImpactFX
-		AkSoundSeedWindSource
-		AkSoundSeedWooshSource
-		AkSpatialAudio
-		AkStereoDelayFX
-		AkSynthOneSource
-		AkTimeStretchFX
-		AkToneSource
-		AkTremoloFX
 		AkVorbisDecoder
-		McDSPFutzBoxFX
-		McDSPLimiterFX
 		)
-
-	set( WWISE_EXTRA_PLUGIN_LIBS
-		CrankcaseAudioREVModelPlayerFX
-		iZHybridReverbFX
-		iZTrashBoxModelerFX
-		iZTrashDelayFX
-		iZTrashDistortionFX
-		iZTrashDynamicsFX
-		iZTrashFiltersFX
-		iZTrashMultibandDistortionFX
-		AuroHeadphoneFX
-		ResonanceAudioFX
-	)
 
 	set( COMMON_WWISE_LIBS ${WWISE_CORE_LIBS} ${WWISE_PLUGIN_LIBS} )
 
@@ -171,25 +126,25 @@ if (AUDIO_WWISE)
 
 	# TODO: ws2_32 is not needed in release builds (Wwise profiling)
 	set( WIN_LIBS Ole32 Msacm32 dinput8 Winmm dsound dxguid ws2_32 xinput )
-	set( WIN_WWISE_LIBS ${WWISE_EXTRA_PLUGIN_LIBS} AkMotionGeneratorSource AkMotionSink ASIOSourceSink )
+	set( WIN_WWISE_LIBS AkMotionGeneratorSource AkMotionSink ASIOSourceSink )
 	make_library(WIN_WWISE_LIBS "${WWISE_LIB_PATH}")
 	set( WIN_RELEASE_LIBS ${COMMON_WWISE_LIBS} ${WIN_WWISE_LIBS} ${WIN_LIBS} )
 	set( WIN_NONRELEASE_LIBS ${COMM_CENTRAL_LIBS} ${WIN_RELEASE_LIBS} "${WWISE_LIB_PATH}SFLib.lib" )
 
 	set( DURANGO_LIBS MMDevApi Ws2_32 combase kernelx SmartGlassInterop d3dcompiler dxguid xg_x uuid xaudio2 acphal )
-	set( DURANGO_WWISE_LIBS ${WWISE_EXTRA_PLUGIN_LIBS} AkMotionGeneratorSource AkMotionSink )
+	set( DURANGO_WWISE_LIBS AkMotionGeneratorSource AkMotionSink )
 	make_library(DURANGO_WWISE_LIBS "${WWISE_LIB_PATH}")
 	set( DURANGO_RELEASE_LIBS ${COMMON_WWISE_LIBS} ${DURANGO_WWISE_LIBS} ${DURANGO_LIBS} )
 	set( DURANGO_NONRELEASE_LIBS ${COMM_CENTRAL_LIBS} ${DURANGO_RELEASE_LIBS} )
 
 	set( ORBIS_LIBS SceAudioOut_stub_weak SceAjm_stub_weak SceAudio3d_stub_weak SceMove_Stub_weak)
-	set( ORBIS_WWISE_LIBS ${WWISE_EXTRA_PLUGIN_LIBS} SceAudio3dEngine AkMotionGeneratorSource AkMotionSink )
+	set( ORBIS_WWISE_LIBS SceAudio3dEngine AkMotionGeneratorSource AkMotionSink )
 	make_library(ORBIS_WWISE_LIBS "${WWISE_LIB_PATH}")
 	set( ORBIS_RELEASE_LIBS ${COMMON_WWISE_LIBS} ${ORBIS_WWISE_LIBS} ${ORBIS_LIBS} )
 	set( ORBIS_NONRELEASE_LIBS ${COMM_CENTRAL_LIBS} ${ORBIS_RELEASE_LIBS} )
 	
 	set( LINUX_LIBS pthread)
-	set( LINUX_WWISE_LIBS ${WWISE_EXTRA_PLUGIN_LIBS})
+	set( LINUX_WWISE_LIBS )
 	make_library(LINUX_WWISE_LIBS "${WWISE_LIB_PATH}")
 	set( LINUX_RELEASE_LIBS ${COMMON_WWISE_LIBS} ${LINUX_WWISE_LIBS} ${LINUX_LIBS} )
 	set( LINUX_NONRELEASE_LIBS ${COMM_CENTRAL_LIBS} ${LINUX_RELEASE_LIBS} )

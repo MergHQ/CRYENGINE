@@ -41,14 +41,10 @@
 #include <AK/SoundEngine/Common/AkQueryParameters.h>
 #include <AK/SoundEngine/Common/AkCallback.h>
 
-#include <AK/Plugin/AllPluginsRegistrationHelpers.h>
-#include <AK/Plugin/AkConvolutionReverbFXFactory.h>
-
-#if defined(WWISE_USE_OCULUS)
-	#include <OculusSpatializer.h>
-	#include <CryCore/Platform/CryLibrary.h>
-	#define CRY_AUDIO_IMPL_WWISE_OCULUS_SPATIALIZER_DLL "OculusSpatializerWwise.dll"
-#endif // WWISE_USE_OCULUS
+// PluginFactories that can't be loaded on runtime
+#include <AK/Plugin/AkMeterFXFactory.h>
+#include <AK/Plugin/AkVorbisDecoderFactory.h>
+#include <AK/Plugin/AkOpusDecoderFactory.h>
 
 #if defined(CRY_AUDIO_IMPL_WWISE_USE_DEBUG_CODE)
 	#include <AK/Comm/AkCommunication.h> // Communication between Wwise and the game (excluded in release build)
@@ -699,64 +695,6 @@ ERequestStatus CImpl::Init(uint16 const objectPoolSize)
 		}
 	}
 #endif  // CRY_AUDIO_IMPL_WWISE_USE_DEBUG_CODE
-
-#if defined(WWISE_USE_OCULUS)
-	m_pOculusSpatializerLibrary = CryLoadLibrary(CRY_AUDIO_IMPL_WWISE_OCULUS_SPATIALIZER_DLL);
-
-	if (m_pOculusSpatializerLibrary != nullptr)
-	{
-		typedef bool (__stdcall * AkGetSoundEngineCallbacksType)
-		  (unsigned short in_usCompanyID,
-		  unsigned short in_usPluginID,
-		  AkCreatePluginCallback& out_funcEffect,
-		  AkCreateParamCallback& out_funcParam);
-
-		AkGetSoundEngineCallbacksType AkGetSoundEngineCallbacks =
-			(AkGetSoundEngineCallbacksType)CryGetProcAddress(m_pOculusSpatializerLibrary, "AkGetSoundEngineCallbacks");
-
-		if (AkGetSoundEngineCallbacks != nullptr)
-		{
-			AkCreatePluginCallback CreateOculusFX;
-			AkCreateParamCallback CreateOculusFXParams;
-
-			// Register plugin effect
-			if (AkGetSoundEngineCallbacks(AKEFFECTID_OCULUS, AKEFFECTID_OCULUS_SPATIALIZER, CreateOculusFX, CreateOculusFXParams))
-			{
-				AK::SoundEngine::RegisterPlugin(AkPluginTypeMixer, AKEFFECTID_OCULUS, AKEFFECTID_OCULUS_SPATIALIZER, CreateOculusFX, CreateOculusFXParams);
-			}
-	#if defined(CRY_AUDIO_IMPL_WWISE_USE_DEBUG_CODE)
-			else
-			{
-				Cry::Audio::Log(ELogType::Error, "Failed call to AkGetSoundEngineCallbacks in " CRY_AUDIO_IMPL_WWISE_OCULUS_SPATIALIZER_DLL);
-			}
-	#endif    // CRY_AUDIO_IMPL_WWISE_USE_DEBUG_CODE
-
-			// Register plugin attachment (for data attachment on individual sounds, like frequency hints etc.)
-			if (AkGetSoundEngineCallbacks(AKEFFECTID_OCULUS, AKEFFECTID_OCULUS_SPATIALIZER_ATTACHMENT, CreateOculusFX, CreateOculusFXParams))
-			{
-				AK::SoundEngine::RegisterPlugin(AkPluginTypeEffect, AKEFFECTID_OCULUS, AKEFFECTID_OCULUS_SPATIALIZER_ATTACHMENT, nullptr, CreateOculusFXParams);
-			}
-	#if defined(CRY_AUDIO_IMPL_WWISE_USE_DEBUG_CODE)
-			else
-			{
-				Cry::Audio::Log(ELogType::Error, "Failed call to AkGetSoundEngineCallbacks in " CRY_AUDIO_IMPL_WWISE_OCULUS_SPATIALIZER_DLL);
-			}
-	#endif    // CRY_AUDIO_IMPL_WWISE_USE_DEBUG_CODE
-		}
-	#if defined(CRY_AUDIO_IMPL_WWISE_USE_DEBUG_CODE)
-		else
-		{
-			Cry::Audio::Log(ELogType::Error, "Failed to load functions AkGetSoundEngineCallbacks in " CRY_AUDIO_IMPL_WWISE_OCULUS_SPATIALIZER_DLL);
-		}
-	#endif  // CRY_AUDIO_IMPL_WWISE_USE_DEBUG_CODE
-	}
-	#if defined(CRY_AUDIO_IMPL_WWISE_USE_DEBUG_CODE)
-	else
-	{
-		Cry::Audio::Log(ELogType::Error, "Failed to load " CRY_AUDIO_IMPL_WWISE_OCULUS_SPATIALIZER_DLL);
-	}
-	#endif // CRY_AUDIO_IMPL_WWISE_USE_DEBUG_CODE
-#endif   // WWISE_USE_OCULUS
 
 	REINST("Register Global Callback")
 
