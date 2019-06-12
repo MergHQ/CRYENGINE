@@ -38,6 +38,9 @@
 	#include <sys/stat.h>       // fstat, fileno
 //#define fileno(X) ((X)->_Handle)
 #endif
+#if CRY_PLATFORM_LINUX
+	#include <sys/sendfile.h>
+#endif
 
 #if CRY_PLATFORM_ANDROID && defined(ANDROID_OBB)
 	#include <android/asset_manager.h>
@@ -1272,6 +1275,28 @@ bool CCryPak::CopyFileOnDisk(const char* source, const char* dest, bool bFailIfE
 {
 #if CRY_PLATFORM_WINDOWS
 	return ::CopyFile((LPCSTR)source, (LPCSTR)dest, bFailIfExist) == TRUE;
+#elif CRY_PLATFORM_LINUX
+	if (bFailIfExist && IsFileExist(dest, eFileLocation_OnDisk))
+		return false;
+
+	const SignedFileSize sourceSize = GetFileSizeOnDisk(source);
+	if (sourceSize < 0)
+		return false;
+
+	FILE* hSource = fopen(source, "r");
+	FILE* hDestination = fopen(dest, "w");
+	if (hSource == nullptr || hDestination == nullptr)
+	{
+		fclose(hSource);
+		fclose(hDestination);
+		return false;
+	}
+
+	const bool success = (size_t(sourceSize) != sendfile(fileno(hDestination), fileno(hSource), nullptr, size_t(sourceSize)));
+	fclose(hSource);
+	fclose(hDestination);
+
+	return success;
 #else
 	if (bFailIfExist && IsFileExist(dest, eFileLocation_OnDisk))
 		return false;
