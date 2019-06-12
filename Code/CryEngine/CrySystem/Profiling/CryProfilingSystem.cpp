@@ -570,8 +570,8 @@ const CCryProfilingSystem::PeakList* CCryProfilingSystem::GetPeakRecords() const
 
 void CCryProfilingSystem::CheckForPeak(int64 time, SProfilingSectionTracker* pTracker)
 {
-	float average = pTracker->selfValue.Average();
-	float peakValue = pTracker->selfValue.Latest();
+	const float average = pTracker->selfValue.Average();
+	const float peakValue = pTracker->selfValue.Latest();
 
 	if ((peakValue - average) > profile_peak_tolerance)
 	{
@@ -580,7 +580,7 @@ void CCryProfilingSystem::CheckForPeak(int64 time, SProfilingSectionTracker* pTr
 		peak.peakValue = peakValue;
 		peak.averageValue = average;
 		peak.variance = pTracker->selfValue.Variance();
-		peak.count = pTracker->count;
+		peak.count = int(pTracker->count.Latest());
 
 		peak.pageFaults = m_pageFaultsPerFrame.CurrentRaw();
 		peak.frame = gEnv->nMainFrameID;
