@@ -929,17 +929,19 @@ void CDeviceCopyCommandInterfaceImpl::CopyImage(CImageResource* pSrc, CImageReso
 	const uint32_t srcLastMip = (mapping.SourceOffset.Subresource + mapping.Extent.Subresources - 1) % srcMips;
 	const uint32_t srcLastSlice = (mapping.SourceOffset.Subresource + mapping.Extent.Subresources - 1) / srcMips;
 	const uint32_t numSlices = srcLastSlice - srcFirstSlice + 1;
+
+	const uint32_t dstMips = pDst->GetMipCount();
+	const uint32_t dstFirstMip = mapping.DestinationOffset.Subresource % dstMips;
+	const uint32_t dstFirstSlice = mapping.DestinationOffset.Subresource / dstMips;
+
 #if !_RELEASE
 	const uint32_t numMips = srcLastMip - srcFirstMip + 1;
 	VK_ASSERT(mapping.Extent.Width * mapping.Extent.Height * mapping.Extent.Depth * mapping.Extent.Subresources > 0, "Invalid extents");
 	VK_ASSERT(numMips * numSlices == mapping.Extent.Subresources, "Partial copies that cross slice must start at mip 0, and request whole mip chains");
 	VK_ASSERT(srcFirstMip + numMips <= srcMips && srcFirstSlice + numSlices <= pSrc->GetSliceCount(), "Source subresource out of bounds");
-#endif
-	const uint32_t dstMips = pDst->GetMipCount();
-	const uint32_t dstFirstMip = mapping.DestinationOffset.Subresource % dstMips;
-	const uint32_t dstFirstSlice = mapping.DestinationOffset.Subresource / dstMips;
 	VK_ASSERT(dstFirstMip + numMips <= dstMips && dstFirstSlice + numSlices <= pDst->GetSliceCount(), "Destination subresource out of bounds");
-
+#endif
+	
 	const VkImageAspectFlags srcAspects = GetCopyableAspects(pSrc);
 
 	uint32_t mipIndex = 0;
@@ -990,6 +992,8 @@ void CDeviceCopyCommandInterfaceImpl::CopyImage(CImageResource* pSrc, CImageReso
 		dstWidth *= srcBlockWidth;
 		dstHeight *= srcBlockHeight;
 	}
+	const uint32_t kBatchSize = 16;
+
 #if !_RELEASE
 	VK_ASSERT(srcX % (srcBlockWidth << (numMips - 1)) == 0, "Source offset X not aligned for block-mip access");
 	VK_ASSERT(srcY % (srcBlockHeight << (numMips - 1)) == 0, "Source offset Y not aligned for block-mip access");
@@ -1008,10 +1012,9 @@ void CDeviceCopyCommandInterfaceImpl::CopyImage(CImageResource* pSrc, CImageReso
 	const uint32_t dstMipDepth = std::max(pDst->GetDepth() >> dstFirstMip, 1U);
 	VK_ASSERT(srcX + srcWidth <= srcMipWidth && srcY + srcHeight <= srcMipHeight && srcZ + srcDepth <= srcMipDepth, "Source region too large");
 	VK_ASSERT(dstX + dstWidth <= dstMipWidth && dstY + dstHeight <= dstMipHeight && dstZ + dstDepth <= dstMipDepth, "Destination region too large");
-#endif
-	const uint32_t kBatchSize = 16;
-	VkImageCopy batch[kBatchSize];
 	VK_ASSERT(numMips <= kBatchSize, "Cannot copy more than 16 mips at a time");
+#endif
+	VkImageCopy batch[kBatchSize];
 	for (uint32_t srcMip = srcFirstMip; srcMip <= srcLastMip; ++srcMip, ++mipIndex)
 	{
 		batch[mipIndex].srcSubresource.aspectMask = srcAspects;
@@ -1266,14 +1269,14 @@ void CDeviceCopyCommandInterfaceImpl::DownloadImage(NCryVulkan::CImageResource* 
 	const uint32_t numMips = srcLastMip - srcFirstMip + 1;
 	VK_ASSERT((bExt || numMips * numSlices == mapping.Extent.Subresources), "Partial copies that cross slice must start at mip 0, and request whole mip chains");
 	VK_ASSERT(srcFirstMip + numMips <= srcMips && srcFirstSlice + numSlices <= pSrc->GetSliceCount(), "Destination subresource out of bounds");
-#endif
-	uint32_t blockWidth = 1, blockHeight = 1, blockBytes = mapping.MemoryLayout.typeStride;
-	GetBlockSize(pSrc->GetFormat(), blockWidth, blockHeight, blockBytes);
 
 	// This is a limitation of high-level, may eventually change.
 	// When it does, we need to loop over the mips and fill one struct per iteration.
 	// However, we can still batch to one vkCmdCopyImageToBuffer
 	VK_ASSERT(numMips == 1, "Only 1 mip at a time expected");
+#endif
+	uint32_t blockWidth = 1, blockHeight = 1, blockBytes = mapping.MemoryLayout.typeStride;
+	GetBlockSize(pSrc->GetFormat(), blockWidth, blockHeight, blockBytes);
 
 	VkBufferImageCopy batch;
 	batch.bufferOffset = 0;
