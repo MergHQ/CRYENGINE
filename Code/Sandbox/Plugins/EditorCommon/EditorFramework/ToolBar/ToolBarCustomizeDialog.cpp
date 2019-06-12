@@ -194,6 +194,9 @@ void CToolBarCustomizeDialog::QDropContainer::AddItem(const QVariant& itemVarian
 
 void CToolBarCustomizeDialog::QDropContainer::AddCommand(const CCommand* pCommand, int idx /* = -1*/)
 {
+	if (!m_pCurrentToolBarDesc)
+		return;
+
 	m_pCurrentToolBarDesc->InsertCommand(pCommand, idx);
 	UpdateToolBar();
 }
@@ -1137,6 +1140,7 @@ void CToolBarCustomizeDialog::OnContextMenu(const QPoint& position) const
 
 	QMenu* menu = new QMenu();
 	QAction* pAction = menu->addAction("Add");
+	pAction->setEnabled(!m_pToolbarSelect->GetCurrentText().isEmpty());
 
 	connect(pAction, &QAction::triggered, [this, pCommand]()
 	{
