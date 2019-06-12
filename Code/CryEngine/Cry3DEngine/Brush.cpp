@@ -1064,6 +1064,11 @@ void CBrush::OnRenderNodeBecomeVisibleAsync(SRenderNodeTempData* pTempData, cons
 	float fEntDistance = sqrt_tpl(Distance::Point_AABBSq(vCamPos, CBrush::GetBBox())) * passInfo.GetZoomFactor();
 
 	userData.nWantedLod = CObjManager::GetObjectLOD(this, fEntDistance);
+
+	if (GetOwnerEntity() && (GetRndFlags() & ERF_ENABLE_ENTITY_RENDER_CALLBACK))
+	{
+		GetOwnerEntity()->OnRenderNodeVisibilityChange(true);
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////
