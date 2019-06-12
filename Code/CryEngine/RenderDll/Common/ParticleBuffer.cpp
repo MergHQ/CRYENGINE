@@ -62,7 +62,7 @@ void CParticleSubBuffer::Release()
 {
 	Unlock(0);
 	m_buffer.Release();
-	if (m_handle)
+	if (m_handle && gRenDev)
 		gRenDev->m_DevBufMan.Destroy(m_handle);
 	m_handle = 0;
 	m_flags = 0;
@@ -185,7 +185,7 @@ void CParticleBufferSet::Release()
 	m_subBufferAxes.Release();
 	m_subBufferColors.Release();
 
-	if (m_spriteIndexBufferHandle)
+	if (m_spriteIndexBufferHandle && gRenDev)
 		gRenDev->m_DevBufMan.Destroy(m_spriteIndexBufferHandle);
 	m_spriteIndexBufferHandle = 0;
 
