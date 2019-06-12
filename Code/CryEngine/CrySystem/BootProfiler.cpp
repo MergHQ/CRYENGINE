@@ -998,10 +998,13 @@ void CBootProfiler::OnSectionStart(const SProfilingSection& section)
 		uint threadIdx = gThreadsInterface.GetThreadIndexByID(CryGetCurrentThreadId());
 		m_pCurrentSession->StartBlock(section.pDescription->szEventname, section.szDynamicName, section.startValue, threadIdx);
 		
-		const char* szReqLabel = CV_sys_bp_frames_required_label->GetString();
-		if (szReqLabel[0] && strcmp(szReqLabel, section.pDescription->szEventname) == 0)
+		if (CV_sys_bp_frames_required_label)
 		{
-			m_pCurrentSession->SetRequiredLabel(true);
+			const char* szReqLabel = CV_sys_bp_frames_required_label->GetString();
+			if (szReqLabel[0] && strcmp(szReqLabel, section.pDescription->szEventname) == 0)
+			{
+				m_pCurrentSession->SetRequiredLabel(true);
+			}
 		}
 	}
 }
