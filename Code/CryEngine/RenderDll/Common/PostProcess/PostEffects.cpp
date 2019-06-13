@@ -896,7 +896,7 @@ void CMotionBlur::SetupObject(CRenderObject* pObj, const SRenderingPassInfo& pas
 			{
 				SObjMotionBlurParams* pWriteObjMBData = &it->second;
 				SObjMotionBlurParams* pPrevObjMBData = &itPrev->second;
-				pWriteObjMBData->mObjToWorld = pObj->GetMatrix(passInfo);
+				pWriteObjMBData->mObjToWorld = pObj->GetMatrix();
 
 				const float fThreshold = CRenderer::CV_r_MotionBlurThreshold;
 				if (pObj->m_ObjFlags & (FOB_NEAREST | FOB_MOTION_BLUR) || !Matrix34::IsEquivalent(pPrevObjMBData->mObjToWorld, pWriteObjMBData->mObjToWorld, fThreshold))
@@ -909,7 +909,7 @@ void CMotionBlur::SetupObject(CRenderObject* pObj, const SRenderingPassInfo& pas
 			}
 		}
 
-		m_FillData[nThreadID].push_back(OMBParamsMap::value_type(ObjID, SObjMotionBlurParams(pObj, pObj->GetMatrix(passInfo), nFrameID)));
+		m_FillData[nThreadID].push_back(OMBParamsMap::value_type(ObjID, SObjMotionBlurParams(pObj, pObj->GetMatrix(), nFrameID)));
 	}
 }
 //////////////////////////////////////////////////////////////////////////

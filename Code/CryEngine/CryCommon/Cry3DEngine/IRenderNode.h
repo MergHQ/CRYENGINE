@@ -145,6 +145,7 @@ public:
 	~SRenderNodeTempData() { Free(); }
 
 	CRenderObject* GetRenderObject(int nLod); /* thread-safe */
+	CRenderObject* RefreshRenderObject(int nLod);
 	void           Free();
 	void           FreeRenderObjects(); /* non-thread-safe */
 	void           InvalidateRenderObjectsInstanceData();

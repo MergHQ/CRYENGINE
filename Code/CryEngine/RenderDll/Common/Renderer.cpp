@@ -1755,7 +1755,7 @@ void CRenderer::EF_CheckLightMaterial(SRenderLight* pLight, uint16 nRenderLightI
 		{
 			CRenderObject* pRO = passInfo.GetIRenderView()->AllocateTemporaryRenderObject();
 			pRO->m_fAlpha        = 1.0f;
-			pRO->SetAmbientColor(Vec3(0, 0, 0), passInfo);
+			pRO->SetAmbientColor(Vec3(0, 0, 0));
 
 			SRenderObjData* pOD = pRO->GetObjData();
 
@@ -1764,8 +1764,8 @@ void CRenderer::EF_CheckLightMaterial(SRenderLight* pLight, uint16 nRenderLightI
 			pOD->m_fTempVars[3] = pLight->m_fRadius;
 			pOD->m_nLightID     = nRenderLightID;
 
-			pRO->SetAmbientColor(pLight->m_Color, passInfo);
-			pRO->SetMatrix(pLight->m_ObjMatrix, passInfo);
+			pRO->SetAmbientColor(pLight->m_Color);
+			pRO->SetMatrix(pLight->m_ObjMatrix);
 			pRO->m_ObjFlags     |= FOB_TRANS_MASK;
 
 			CRenderElement* pRE = pRendElemBase->Get(0);
@@ -3876,7 +3876,7 @@ void IRenderer::SDrawCallCountInfo::Update(CRenderObject* pObj, IRenderMesh* pRM
 {
 	if (((IRenderNode*)pObj->m_pRenderNode))
 	{
-		pPos = pObj->GetMatrix(gcpRendD3D->GetObjectAccessorThreadConfig()).GetTranslation();
+		pPos = pObj->GetMatrix().GetTranslation();
 
 		if (meshName[0] == '\0')
 		{
@@ -5291,7 +5291,7 @@ void CRenderer::EF_FreeObject(CRenderObject* pObj)
 {
 	assert(pObj && pObj->m_bPermanent);
 
-	m_tempRenderObjects.m_persistentRenderObjectsToDelete[gRenDev->GetMainThreadID()].push_back(reinterpret_cast<CPermanentRenderObject*>(pObj));
+	m_tempRenderObjects.m_persistentRenderObjectsToDelete[gRenDev->GetMainThreadID()].push_back(static_cast<CPermanentRenderObject*>(pObj));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -5300,9 +5300,9 @@ CRenderObject* CRenderer::EF_DuplicateRO(CRenderObject* pSrc, const SRenderingPa
 	if (pSrc->m_bPermanent)
 	{
 		// Clone object and attach to the end of linked list of the source object
-		CPermanentRenderObject* pObjSrc = reinterpret_cast<CPermanentRenderObject*>(pSrc);
-		CPermanentRenderObject* pObjNew = reinterpret_cast<CPermanentRenderObject*>(CRenderer::EF_GetObject());
-
+		CPermanentRenderObject* pObjSrc = static_cast<CPermanentRenderObject*>(pSrc);
+		CPermanentRenderObject* pObjNew = static_cast<CPermanentRenderObject*>(CRenderer::EF_GetObject());
+		
 		uint32 nId = pObjNew->m_Id;
 		pObjNew->CloneObject(pObjSrc);
 		pObjNew->m_Id = nId;

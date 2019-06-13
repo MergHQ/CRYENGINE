@@ -802,7 +802,7 @@ SEnvTexture* CRendererResources::FindSuitableEnvTex(Vec3& Pos, Ang3& Angs, bool 
 		{
 			CRY_ASSERT(!pPassInfo);
 			CRY_ASSERT(!gcpRendD3D->m_pRT->IsRenderThread());
-			objPos = pObj->GetMatrix(*pPassInfo).GetTranslation();
+			objPos = pObj->GetMatrix().GetTranslation();
 		}
 	}
 	float dist = 999999;

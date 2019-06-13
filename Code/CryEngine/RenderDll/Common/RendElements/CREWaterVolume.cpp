@@ -132,7 +132,7 @@ void CREWaterVolume::mfCenter(Vec3& vCenter, CRenderObject* pObj, const SRenderi
 {
 	vCenter = m_pParams->m_center;
 	if (pObj)
-		vCenter += pObj->GetMatrix(passInfo).GetTranslation();
+		vCenter += pObj->GetMatrix().GetTranslation();
 }
 
 void CREWaterVolume::mfGetBBox(AABB& bb) const
@@ -442,7 +442,7 @@ void CREWaterVolume::UpdatePerDrawCB(
 	}
 	else
 	{
-		cb->WorldMatrix = renderObj.GetMatrix(gcpRendD3D->GetObjectAccessorThreadConfig());
+		cb->WorldMatrix = renderObj.GetMatrix();
 	}
 
 	if (m_CustomData)

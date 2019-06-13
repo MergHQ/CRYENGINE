@@ -493,7 +493,7 @@ void CRoadRenderNode::Render(const SRendParams& RendParams, const SRenderingPass
 
 	pObj->m_pRenderNode = this;
 	pObj->m_ObjFlags |= RendParams.dwFObjFlags;
-	pObj->SetAmbientColor(RendParams.AmbientColor, passInfo);
+	pObj->SetAmbientColor(RendParams.AmbientColor);
 	pObj->m_editorSelectionID = m_nEditorSelectionID;
 
 	//RendParams.nRenderList = EFSLIST_DECAL;

@@ -93,7 +93,7 @@ void CStatObj::RenderStreamingDebugInfo(CRenderObject* pRenderObject, const SRen
 			pComment = "No LODs";
 
 		int nDiff = SATURATEB(int(float(nKB - GetCVars()->e_StreamCgfDebugMinObjSize) / max((int)1, GetCVars()->e_StreamCgfDebugMinObjSize) * 255));
-		DrawBBoxLabeled(m_AABB, pRenderObject->GetMatrix(passInfo), ColorB(nDiff, 255 - nDiff, 0, 255),
+		DrawBBoxLabeled(m_AABB, pRenderObject->GetMatrix(), ColorB(nDiff, 255 - nDiff, 0, 255),
 		                "%.2f mb, %s", 1.f / 1024.f * (float)nKB, pComment);
 	}
 #endif //_RELEASE
@@ -115,7 +115,7 @@ void CStatObj::RenderCoverInfo(CRenderObject* pRenderObject, const SRenderingPas
 
 		GetRenderer()->GetIRenderAuxGeom()->DrawAABB(
 		  AABB(localBoxMin, localBoxMax),
-		  pRenderObject->GetMatrix(passInfo) * subObject->localTM,
+		  pRenderObject->GetMatrix() * subObject->localTM,
 		  true, ColorB(192, 0, 255, 255),
 		  eBBD_Faceted);
 	}
@@ -178,10 +178,10 @@ void CStatObj::FillRenderObject(const SRendParams& rParams, IRenderNode* pRender
 
 	assert(rParams.pMatrix);
 	{
-		pObj->SetMatrix(*rParams.pMatrix, passInfo);
+		pObj->SetMatrix(*rParams.pMatrix);
 	}
 
-	pObj->SetAmbientColor(rParams.AmbientColor, passInfo);
+	pObj->SetAmbientColor(rParams.AmbientColor);
 	pObj->m_nClipVolumeStencilRef = rParams.nClipVolumeStencilRef;
 
 	pObj->m_ObjFlags |= FOB_INSHADOW;
@@ -194,11 +194,11 @@ void CStatObj::FillRenderObject(const SRendParams& rParams, IRenderNode* pRender
 	if (pRenderNode && pRenderNode->GetRndFlags() & ERF_RECVWIND)
 	{
 		// This can be different for CVegetation class render nodes
-		pObj->SetBendingData({ 1.0f, GetRadiusVert() }, passInfo);
+		pObj->SetBendingData({ 1.0f, GetRadiusVert() });
 	}
 	else
 	{
-		pObj->SetBendingData({ 0.0f, 0.0f }, passInfo);
+		pObj->SetBendingData({ 0.0f, 0.0f });
 	}
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -297,7 +297,7 @@ bool CStatObj::RenderDebugInfo(CRenderObject* pObj, const SRenderingPassInfo& pa
 	if (!pAuxGeom)
 		return false;
 
-	Matrix34 tm = pObj->GetMatrix(passInfo);
+	Matrix34 tm = pObj->GetMatrix();
 
 	// Convert "camera space" to "world space"
 	if (pObj->m_ObjFlags & FOB_NEAREST)
@@ -653,7 +653,7 @@ bool CStatObj::RenderDebugInfo(CRenderObject* pObj, const SRenderingPassInfo& pa
 				if (pObj)
 				{
 					pObj->m_nMaterialLayers = 0;
-					col = pObj->GetAmbientColor(passInfo);
+					col = pObj->GetAmbientColor();
 				}
 
 				IRenderAuxText::DrawLabelExF(pos, 1.3f, color, true, true, "%d,%d,%d,%d", (int)(col.r * 255.0f), (int)(col.g * 255.0f), (int)(col.b * 255.0f), (int)(col.a * 255.0f));
@@ -1187,7 +1187,7 @@ void CStatObj::RenderInternal(CRenderObject* pRenderObject, hidemask nSubObjectH
 			}
 
 			hidemaskOneBit nBitIndex = hidemask1;
-			Matrix34A renderTM = pRenderObject->GetMatrix(passInfo);
+			Matrix34A renderTM = pRenderObject->GetMatrix();
 			for (int32 i = 0, subObjectsSize = m_subObjects.size(); i < subObjectsSize; ++i, nBitIndex <<= 1)
 			{
 				const SSubObject& subObj = m_subObjects[i];
@@ -1261,7 +1261,7 @@ void CStatObj::RenderSubObject(CRenderObject* pRenderObject, int nLod,
 	{
 		pRenderObject = GetRenderer()->EF_DuplicateRO(pRenderObject, passInfo);
 		pOD = pRenderObject->GetObjData();
-		pOD->m_pSkinningData = subObj.pFoliage->GetSkinningData(pRenderObject->GetMatrix(passInfo), passInfo);
+		pOD->m_pSkinningData = subObj.pFoliage->GetSkinningData(pRenderObject->GetMatrix(), passInfo);
 		pOD->m_uniqueObjectId = reinterpret_cast<uintptr_t>(subObj.pFoliage);
 		pRenderObject->m_ObjFlags |= FOB_SKINNED | FOB_DYNAMIC_OBJECT;
 		((CStatObjFoliage*)subObj.pFoliage)->m_pRenderObject = pRenderObject;
@@ -1278,7 +1278,7 @@ void CStatObj::RenderSubObject(CRenderObject* pRenderObject, int nLod,
 	else
 	{
 		pRenderObject = GetRenderer()->EF_DuplicateRO(pRenderObject, passInfo);
-		pRenderObject->SetMatrix(renderTM * subObj.tm, passInfo);
+		pRenderObject->SetMatrix(renderTM * subObj.tm);
 
 		SRenderObjData* pRenderObjectData = pRenderObject->GetObjData();
 		pRenderObjectData->m_uniqueObjectId = pRenderObjectData->m_uniqueObjectId + nSubObjId;

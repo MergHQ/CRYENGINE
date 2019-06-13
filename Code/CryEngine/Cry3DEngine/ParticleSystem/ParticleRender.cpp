@@ -85,11 +85,10 @@ void CParticleRenderBase::AddRenderObject(CParticleComponentRuntime& runtime, co
 
 	pRenderObject->m_pRE->m_CustomTexBind[0] = renderContext.m_renderParams.nTextureID;
 
-	int passId = renderContext.m_passInfo.IsShadowPass();
 	static_cast<CREParticle*>(pRenderObject->m_pRE)->SetBBox(runtime.GetBounds());
 	GetPSystem()->GetJobManager().ScheduleComputeVertices(runtime, pRenderObject, renderContext);
 
-	pRenderObject->m_passReadyMask |= BIT(passId);
+	pRenderObject->SetPreparedForPass(renderContext.m_passInfo.GetPassType());
 
 	renderContext.m_passInfo.GetIRenderView()->AddPermanentObject(
 		pRenderObject,

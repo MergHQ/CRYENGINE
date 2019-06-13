@@ -467,7 +467,7 @@ void CFogVolumeRenderNode::Render(const SRendParams& rParam, const SRenderingPas
 			return;
 
 		// set basic render object properties
-		pRenderObject->SetMatrix(m_matNodeWS, passInfo);
+		pRenderObject->SetMatrix(m_matNodeWS);
 		pRenderObject->m_ObjFlags |= FOB_TRANS_MASK;
 		pRenderObject->m_fSort = 0;
 

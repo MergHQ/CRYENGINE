@@ -147,8 +147,6 @@ public:
 	// Begin/End writing items to the view from 3d engine traversal.
 	virtual void                 SwitchUsageMode(EUsageMode mode) override;
 
-	virtual CryJobState*         GetWriteMutex() override { return &m_jobstate_Write; }
-
 	virtual void                 AddRenderObject(CRenderElement* pRenderElement, SShaderItem& pShaderItem, CRenderObject* pRenderObject, const SRenderingPassInfo& passInfo, int list, int afterWater) threadsafe final;
 	virtual void                 AddPermanentObject(CRenderObject* pObject, const SRenderingPassInfo& passInfo) final;
 
@@ -241,10 +239,11 @@ public:
 	void       PrepareForRendering();
 	void       PrepareForWriting();
 
-	bool       IsRecursive() const        { return m_viewType == eViewType_Recursive; }
-	bool       IsShadowGenView() const    { return m_viewType == eViewType_Shadow; }
-	bool       IsBillboardGenView() const { return m_viewType == eViewType_BillboardGen; }
-	EUsageMode GetUsageMode() const       { return m_usageMode; }
+	bool                           IsRecursive()        const { return m_viewType == eViewType_Recursive; }
+	bool                           IsShadowGenView()    const { return m_viewType == eViewType_Shadow; }
+	bool                           IsBillboardGenView() const { return m_viewType == eViewType_BillboardGen; }
+	EUsageMode                     GetUsageMode()       const { return m_usageMode; }
+	CRenderObject::ERenderPassType GetPassType()        const { return IsShadowGenView() ? CRenderObject::eRenderPass_Shadows : CRenderObject::eRenderPass_General; }
 	//////////////////////////////////////////////////////////////////////////
 	// Shadows related
 	void AddShadowFrustumToRender(const SShadowFrustumToRender& frustum);
@@ -386,6 +385,7 @@ private:
 	void                   Job_SortRenderItemsInList(ERenderListID list);
 	SRendItem              PrepareRenderItemForRenderList(const SRendItem& ri, uint32 nBatchFlags, uint64 objFlags, CRenderObject* pObj, float objDistance, ERenderListID list, const SShaderItem& shaderItem);
 	void                   SortLights();
+	void                   PreparePermanentRenderObjectsForCompile();
 	void                   ExpandPermanentRenderObjects();
 	void                   UpdateModifiedShaderItems();
 	void                   ClearTemporaryCompiledObjects();
@@ -495,11 +495,15 @@ private:
 
 	uint32                             m_skinningPoolIndex = 0;
 
+	struct SPermanentObjectRecord;
+
 	// Render objects modified by this view.
 	struct SPermanentRenderObjectCompilationData
 	{
-		CPermanentRenderObject*   pObject;
-		EObjectCompilationOptions compilationFlags;
+		const SPermanentObjectRecord*   pPermanentRenderObjectRecord;
+		uint32                          subObjectIdx;
+		CPermanentRenderObject*         pObject;
+		EObjectCompilationOptions       recompilationFlags;
 	};
 	CryMT::CThreadSafePushContainer<SPermanentRenderObjectCompilationData> m_permanentRenderObjectsToCompile;
 
@@ -519,10 +523,28 @@ private:
 	// Persistent objects added to the view.
 	struct SPermanentObjectRecord
 	{
-		CPermanentRenderObject* pRenderObject;
-		uint32                  itemSorter;
-		int                     shadowFrustumSide;
-		bool                    requiresInstanceDataUpdate;
+		CPermanentRenderObject*                    pRenderObject;
+		uint32                                     itemSorter;
+		int                                        shadowFrustumSide;
+		bool                                       requiresInstanceDataUpdate;
+
+		bool                                       passPreparedMask[CRenderObject::eRenderPass_NumTypes];
+		CRenderObject::SInstanceInfo               instanceInfo;
+		std::vector<CRenderObject::SInstanceInfo>  subObjectInstanceInfo;
+
+		void prepareForCompilation();
+
+		const CRenderObject::SInstanceInfo& getSubObjectInstanceInfo(const uint32 idx) const
+		{
+			if (idx == 0)
+				return instanceInfo;
+			return subObjectInstanceInfo[idx - 1];
+		}
+
+		bool IsPreparedForPass(CRenderObject::ERenderPassType passType) const
+		{
+			return passPreparedMask[passType];
+		}
 	};
 	CryMT::CThreadSafePushContainer<SPermanentObjectRecord> m_permanentObjects;
 
@@ -541,7 +563,6 @@ private:
 	// Internal job states to control when view job processing is done.
 	CryJobState                    m_jobstate_Sort;
 	CryJobState                    m_jobstate_PostWrite;
-	CryJobState                    m_jobstate_Write;
 	CryJobState                    m_jobstate_ShadowGen;
 
 	CryCriticalSectionNonRecursive m_lock_UsageMode;

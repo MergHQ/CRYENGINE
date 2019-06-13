@@ -269,18 +269,18 @@ CLodValue CVegetation::ComputeLod(int wantedLod, const SRenderingPassInfo& passI
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CVegetation::FillBendingData(CRenderObject* pObj, const SRenderingPassInfo& passInfo) const
+void CVegetation::FillBendingData(CRenderObject* pObj) const
 {
 	const StatInstGroup& vegetGroup = GetStatObjGroup();
 
 	if (GetCVars()->e_VegetationBending && vegetGroup.fBending)
 	{
-		pObj->SetBendingData({ 0.1f * vegetGroup.fBending, vegetGroup.GetStatObj() ? vegetGroup.GetStatObj()->GetRadiusVert() : 1.0f }, passInfo);
+		pObj->SetBendingData({ 0.1f * vegetGroup.fBending, vegetGroup.GetStatObj() ? vegetGroup.GetStatObj()->GetRadiusVert() : 1.0f });
 		pObj->m_ObjFlags |= FOB_BENDED | FOB_DYNAMIC_OBJECT;
 	}
 	else
 	{
-		pObj->SetBendingData({ 0.0f, 0.0f }, passInfo);
+		pObj->SetBendingData({ 0.0f, 0.0f });
 	}
 }
 
@@ -332,7 +332,7 @@ void CVegetation::Render(const SRenderingPassInfo& passInfo, const CLodValue& lo
 	if (!pStatObj)
 		return;
 
-	FillBendingData(pRenderObject, passInfo);
+	FillBendingData(pRenderObject);
 
 	const Vec3 vCamPos = passInfo.GetCamera().GetPosition();
 	const Vec3 vObjCenter = GetBBox().GetCenter();
@@ -379,9 +379,9 @@ void CVegetation::Render(const SRenderingPassInfo& passInfo, const CLodValue& lo
 	else if (vegetGroup.GetStatObj())
 		pRenderObject->m_pCurrMaterial = vegetGroup.GetStatObj()->GetMaterial();
 
-	ColorF color = pRenderObject->GetAmbientColor(passInfo);
+	ColorF color = pRenderObject->GetAmbientColor();
 	color.a = vegetGroup.fBrightness > 1.f ? 1.f : vegetGroup.fBrightness;
-	pRenderObject->SetAmbientColor(color, passInfo);
+	pRenderObject->SetAmbientColor(color);
 
 	float fRenderQuality = vegetGroup.bUseSprites ?
 	                       min(1.f, max(1.f - fEntDistance2D / GetSpriteSwitchDist(), 0.f)) :
@@ -429,7 +429,7 @@ void CVegetation::Render(const SRenderingPassInfo& passInfo, const CLodValue& lo
 		SRenderObjData* pOD = pRenderObject->GetObjData();
 		if (pOD)
 		{
-			pOD->m_pSkinningData = pFoliage->GetSkinningData(pRenderObject->GetMatrix(passInfo), passInfo);
+			pOD->m_pSkinningData = pFoliage->GetSkinningData(pRenderObject->GetMatrix(), passInfo);
 			pRenderObject->m_ObjFlags |= FOB_SKINNED | FOB_DYNAMIC_OBJECT;
 			pFoliage->SetFlags(pFoliage->GetFlags() & ~IFoliage::FLAG_FROZEN | -(int)(pRenderObject->m_nMaterialLayers & MTL_LAYER_FROZEN) & IFoliage::FLAG_FROZEN);
 		}
@@ -523,7 +523,7 @@ void CVegetation::Render(const SRenderingPassInfo& passInfo, const CLodValue& lo
 			// set sprite translation
 			mat.SetTranslation(m_vPos + matRotZ * pStatObj->GetVegCenter() * GetScale());
 
-			pRenderObject->SetMatrix(mat, passInfo);
+			pRenderObject->SetMatrix(mat);
 
 			// disable selection on sprites
 			pRenderObject->m_editorSelectionID = 0;
