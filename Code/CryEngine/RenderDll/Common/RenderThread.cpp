@@ -987,7 +987,7 @@ void SRenderThread::WaitFlushFinishedCond()
 		// If the RenderThread issues messages (rare occasion, e.g. setting window-styles)
 #if CRY_PLATFORM_WINDOWS
 		const CRY_HWND hWnd = GetRenderWindowHandle();
-		if (hWnd)
+		if (hWnd && gEnv->pSystem)
 		{
 			gEnv->pSystem->PumpWindowMessage(true, hWnd);
 		}
@@ -998,7 +998,7 @@ void SRenderThread::WaitFlushFinishedCond()
 	{
 #if CRY_PLATFORM_WINDOWS
 		const CRY_HWND hWnd = GetRenderWindowHandle();
-		if (hWnd)
+		if (hWnd && gEnv->pSystem)
 		{
 			gEnv->pSystem->PumpWindowMessage(true, hWnd);
 		}
