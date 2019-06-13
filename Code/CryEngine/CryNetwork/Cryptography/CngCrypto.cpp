@@ -164,6 +164,12 @@ void SCngKeyHandleDeleter::operator()(void* h)
 	return TSharedPtr(pKey);
 }
 
+/*static*/ void CCngKey::operator delete(void* ptr)
+{
+	// See buffer allocation in CCngKey::CreateAesKeyFromSecret
+	delete[] reinterpret_cast<uint8*>(ptr);
+}
+
 CCngKey::CCngKey(void* pHandle)
 	: m_handle(pHandle)
 {}
@@ -292,6 +298,12 @@ static void* GetCngHmacSecretPtr(void* pHmac) { return reinterpret_cast<uint8*>(
 	CCngSha256Hmac* pKey = new (reinterpret_cast<void*>(p.get())) CCngSha256Hmac(std::move(hashHandle), isReusable, secretSize);
 	p.release();
 	return TSharedPtr(pKey);
+}
+
+/*static*/ void CCngSha256Hmac::operator delete(void* ptr)
+{
+	// See buffer allocation in CCngSha256Hmac::CreateFromSecret
+	delete[] reinterpret_cast<uint8*>(ptr);
 }
 
 CCngSha256Hmac::CCngSha256Hmac(SCngHashHandle&& handle, bool isReusable, size_t secretSize)
