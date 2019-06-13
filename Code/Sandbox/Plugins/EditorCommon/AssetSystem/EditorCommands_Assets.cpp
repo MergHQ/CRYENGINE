@@ -16,7 +16,7 @@ namespace Private_EditorCommands
 
 void ShowInAssetBrowser(const char* path)
 {
-	string cmd = string().Format("asset.show_in_asset_browser '%s'", path);
+	string cmd = string().Format("asset.show_in_browser '%s'", path);
 	CommandEvent(cmd.c_str()).SendToKeyboardFocus();
 }
 

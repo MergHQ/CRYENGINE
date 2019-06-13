@@ -6,6 +6,8 @@
 
 class QMenu;
 class CDockableDialog;
+class CEditorDialog;
+class CQuickAssetBrowser;
 class CTagLocations;
 
 // This is a stub class that is meant to encapsulate all editor logic for the level editor that is currently in CryEdit.
@@ -90,7 +92,8 @@ Q_SIGNALS:
 	void HelpersDisplayEnabled(bool bEnable);
 
 private:
-	CDockableDialog* m_findWindow;
-	CDockableDialog* m_assetBrowser;
-	CTagLocations*   m_pTagLocations;
+	CDockableDialog*    m_findWindow;
+	CQuickAssetBrowser* m_pQuickAssetBrowser;
+	CEditorDialog*      m_pQuickAssetBrowserDialog;
+	CTagLocations*      m_pTagLocations;
 };
