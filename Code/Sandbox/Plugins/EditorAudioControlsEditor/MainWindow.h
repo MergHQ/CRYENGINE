@@ -80,7 +80,7 @@ private:
 	void                   UpdateState();
 	void                   RegisterActions();
 	void                   RegisterWidgets();
-	void                   Reload(bool const hasImplChanged = false);
+	void                   Reload(bool const hasImplChanged);
 	void                   SaveBeforeImplChange();
 	void                   ReloadSystemData();
 	bool                   TryClose();

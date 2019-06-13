@@ -53,7 +53,9 @@ public:
 	bool             IsTypeDirty(EAssetType const type) const;
 	bool             IsDirty() const;
 	void             ClearDirtyFlags();
-	bool             IsLoading() const { return m_isLoading; }
+	bool             IsLoading() const             { return m_isLoading; }
+
+	bool             ShouldReloadAfterSave() const { return m_reloadAfterSave; }
 
 	void             SetAssetModified(CAsset* const pAsset, bool const isModified);
 
@@ -102,6 +104,7 @@ private:
 	ModifiedSystemTypes m_modifiedTypes;
 	FileNames           m_modifiedLibraryNames;
 	bool                m_isLoading = false;
+	bool                m_reloadAfterSave = false;
 
 	string              m_configFolderPath;
 };

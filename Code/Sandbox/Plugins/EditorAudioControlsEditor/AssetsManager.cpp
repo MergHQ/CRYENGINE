@@ -363,6 +363,7 @@ void CAssetsManager::ClearDirtyFlags()
 {
 	m_modifiedTypes.clear();
 	m_modifiedLibraryNames.clear();
+	m_reloadAfterSave = false;
 	SignalIsDirty(false);
 }
 
@@ -592,8 +593,14 @@ void CAssetsManager::DeleteAsset(CAsset* const pAsset)
 
 		if (type == EAssetType::Library)
 		{
-			m_libraries.erase(std::remove(m_libraries.begin(), m_libraries.end(), static_cast<CLibrary*>(pAsset)), m_libraries.end());
+			auto const pLibrary = static_cast<CLibrary*>(pAsset);
+			m_libraries.erase(std::remove(m_libraries.begin(), m_libraries.end(), pLibrary), m_libraries.end());
 			SignalOnAfterLibraryRemoved();
+
+			if ((pLibrary->GetPakStatus() & EPakStatus::InPak) != 0)
+			{
+				m_reloadAfterSave = true;
+			}
 		}
 		else
 		{
