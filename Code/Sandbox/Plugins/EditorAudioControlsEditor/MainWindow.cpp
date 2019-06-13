@@ -363,12 +363,12 @@ void CMainWindow::keyPressEvent(QKeyEvent* pEvent)
 //////////////////////////////////////////////////////////////////////////
 bool CMainWindow::OnReload()
 {
-	Reload();
+	Reload(false);
 	return true;
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CMainWindow::Reload(bool const hasImplChanged /*= false*/)
+void CMainWindow::Reload(bool const hasImplChanged)
 {
 	m_pMonitorSystem->Disable();
 	g_pFileMonitorMiddleware->Disable();
@@ -475,7 +475,13 @@ bool CMainWindow::OnSave()
 		}
 	}
 
+	bool const shouldReload = g_assetsManager.ShouldReloadAfterSave();
 	g_assetsManager.ClearDirtyFlags();
+
+	if (shouldReload)
+	{
+		Reload(false);
+	}
 
 	return true;
 }
@@ -521,7 +527,7 @@ void CMainWindow::ReloadSystemData()
 	if (shouldReload)
 	{
 		g_assetsManager.ClearDirtyFlags();
-		Reload();
+		Reload(false);
 	}
 	else
 	{

@@ -39,6 +39,7 @@ public:
 	using TSharedPtr = _smart_ptr<CCngKey>;
 
 	static TSharedPtr CreateAesKeyFromSecret(const void* pSecret, const size_t secretSize);
+	static void operator delete(void* ptr);
 
 	void* Handle() { return m_handle.get(); }
 	
@@ -98,6 +99,7 @@ public:
 
 	using TSharedPtr = _smart_ptr<CCngSha256Hmac>;
 	static TSharedPtr CreateFromSecret(const void* pSecret, const size_t secretSize);
+	static void operator delete(void* ptr);
 
 	bool Hash(const uint8* pBuf, const size_t bufSize);
 	bool FinishAndRestartHash(HashResult& result);
