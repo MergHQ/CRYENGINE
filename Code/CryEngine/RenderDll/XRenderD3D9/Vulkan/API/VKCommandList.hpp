@@ -386,7 +386,7 @@ private:
 
 public:
 	static VkQueueFlagBits m_MapQueueType[CMDQUEUE_NUM];
-	static std::pair<uint32, uint32> m_MapQueueBits[1U << 4];
+	static std::pair<uint32, uint32> m_MapQueueBits[1U << 5];  // One element per each permutation of VkQueueFlagBits (VK1.1)
 	static uint32 m_MapQueueIndices[32];
 };
 
