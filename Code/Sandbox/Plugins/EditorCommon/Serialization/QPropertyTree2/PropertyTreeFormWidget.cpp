@@ -1336,7 +1336,7 @@ PropertyTree2::CFormWidget::SFormRow* CFormWidget::ModelToFormRow(const CRowMode
 	const int index = pRowModel->GetIndex();
 
 	//Because of hidden rows, the index of the form row is either at the index or before. Start at index and work our way back to 0.
-	auto beginIt = index > m_rows.size() ? m_rows.rbegin() : m_rows.rbegin() + (m_rows.size() - index - 1);
+	auto beginIt = index >= m_rows.size() ? m_rows.rbegin() : m_rows.rbegin() + (m_rows.size() - index - 1);
 	auto rowsIterator = std::find_if(beginIt, m_rows.rend(), [&](const std::unique_ptr<SFormRow>& pFormRow) { return pFormRow->m_pModel.get() == pRowModel; });
 	if (rowsIterator != m_rows.rend())
 	{
