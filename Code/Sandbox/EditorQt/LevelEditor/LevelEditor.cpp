@@ -62,6 +62,7 @@
 #include <QMenu>
 #include <QMenuBar>
 #include <QtGlobal>
+#include <QVBoxLayout>
 
 // Register viewpanes defined in EditorCommon
 REGISTER_VIEWPANE_FACTORY_AND_MENU(CNotificationCenterDockable, "Notification Center", "Advanced", true, "Advanced")
@@ -77,6 +78,22 @@ public:
 };
 
 REGISTER_VIEWPANE_FACTORY_AND_MENU(CLevelEditorInspector, "Properties", "Tools", false, "Level Editor")
+
+class CQuickAssetBrowser : public CAssetBrowser
+{
+public:
+	CQuickAssetBrowser()
+	{
+		RegisterAction("asset.toggle_browser", &CQuickAssetBrowser::OnToggleAssetBrowser);
+	}
+
+	void OnToggleAssetBrowser()
+	{
+		signalToggleAssetBrowser();
+	}
+
+	CCrySignal<void()> signalToggleAssetBrowser;
+};
 
 namespace Private_LevelEditor
 {
@@ -204,7 +221,8 @@ public:
 CLevelEditor::CLevelEditor()
 	: CEditor(nullptr)
 	, m_findWindow(nullptr)
-	, m_assetBrowser(nullptr)
+	, m_pQuickAssetBrowser(nullptr)
+	, m_pQuickAssetBrowserDialog(nullptr)
 	, m_pTagLocations(new CTagLocations())
 {
 	InitActions();
@@ -212,10 +230,10 @@ CLevelEditor::CLevelEditor()
 
 CLevelEditor::~CLevelEditor()
 {
-	if (m_assetBrowser)
+	if (m_pQuickAssetBrowserDialog)
 	{
-		delete m_assetBrowser;
-		m_assetBrowser = nullptr;
+		m_pQuickAssetBrowserDialog->deleteLater();
+		m_pQuickAssetBrowserDialog = nullptr;
 	}
 
 	if (m_findWindow)
@@ -261,6 +279,7 @@ void CLevelEditor::InitActions()
 	RegisterAction("level.tag_location",                  [this](int slot) { m_pTagLocations->TagLocation(slot); });
 	RegisterAction("level.go_to_tag_location",            [this](int slot) { m_pTagLocations->GotoTagLocation(slot); });
 	RegisterAction("asset.show_in_browser", &CLevelEditor::OnShowInAssetBrowser);
+	RegisterAction("asset.toggle_browser", &CLevelEditor::OnToggleAssetBrowser);
 }
 
 void CLevelEditor::OnEditorNotifyEvent(EEditorNotifyEvent event)
@@ -701,23 +720,31 @@ bool CLevelEditor::OnFind()
 
 void CLevelEditor::OnToggleAssetBrowser()
 {
-	if (!m_assetBrowser)
+	if (!m_pQuickAssetBrowserDialog)
 	{
-		m_assetBrowser = new CDockableDialog("Quick Asset Browser", "Asset Browser");
-		m_assetBrowser->SetHideOnClose();
-		m_assetBrowser->SetTitle(tr("Quick Asset Browser"));
-		m_assetBrowser->Popup();
-		m_assetBrowser->SetPosCascade();
-		m_assetBrowser->GetPaneT<CAssetBrowser>()->GrabFocusSearchBar();
+		m_pQuickAssetBrowserDialog = new CEditorDialog("Quick Asset Browser");
+		QVBoxLayout* pMainLayout = new QVBoxLayout();
+		pMainLayout->setMargin(0);
+		pMainLayout->setSpacing(0);
+		m_pQuickAssetBrowser = new CQuickAssetBrowser();
+		m_pQuickAssetBrowser->Initialize();
+		m_pQuickAssetBrowser->signalToggleAssetBrowser.Connect(this, &CLevelEditor::OnToggleAssetBrowser);
+		pMainLayout->addWidget(m_pQuickAssetBrowser);
+		m_pQuickAssetBrowserDialog->setLayout(pMainLayout);
+		m_pQuickAssetBrowserDialog->Popup();
+		m_pQuickAssetBrowserDialog->SetHideOnClose();
+		m_pQuickAssetBrowserDialog->SetPosCascade();
+		m_pQuickAssetBrowser->GrabFocusSearchBar();
 	}
-	else if (m_assetBrowser->window() && m_assetBrowser->window()->isActiveWindow())
+	else if (m_pQuickAssetBrowserDialog->window() && m_pQuickAssetBrowserDialog->window()->isActiveWindow())
 	{
-		m_assetBrowser->hide();
+		m_pQuickAssetBrowserDialog->hide();
 	}
 	else
 	{
-		m_assetBrowser->Popup();
-		m_assetBrowser->GetPaneT<CAssetBrowser>()->GrabFocusSearchBar();
+		m_pQuickAssetBrowserDialog->Popup();
+		m_pQuickAssetBrowserDialog->activateWindow();
+		m_pQuickAssetBrowser->GrabFocusSearchBar();
 	}
 }
 
@@ -829,11 +856,11 @@ void CLevelEditor::OnShowInAssetBrowser(const char* asset)
 	CAssetBrowser* pAssetBrowser = static_cast<CAssetBrowser*>(CTabPaneManager::GetInstance()->FindPaneByClass("Asset Browser"));
 	if (!pAssetBrowser)
 	{
-		if (!m_assetBrowser || !m_assetBrowser->isActiveWindow())
+		if (!m_pQuickAssetBrowserDialog || !m_pQuickAssetBrowserDialog->isActiveWindow())
 		{
 			OnToggleAssetBrowser();
 		}
-		pAssetBrowser = m_assetBrowser->GetPaneT<CAssetBrowser>();
+		pAssetBrowser = m_pQuickAssetBrowser;
 	}
 	pAssetBrowser->SelectAsset(asset);
 }
