@@ -242,6 +242,7 @@ private:
 	QCommandAction*    m_pActionReimport = nullptr;
 	QCommandAction*    m_pActionRename = nullptr;
 	QCommandAction*    m_pActionSave = nullptr;
+	QCommandAction*    m_pActionSaveAll = nullptr;
 	QCommandAction*    m_pActionShowDetails = nullptr;
 	QCommandAction*    m_pActionShowFoldersView = nullptr;
 	QCommandAction*    m_pActionShowInFileExplorer = nullptr;
