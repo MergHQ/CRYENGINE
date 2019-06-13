@@ -5,7 +5,7 @@
 #include "Common/SharedData.h"
 #include <QWidget>
 
-class QPropertyTree;
+class QPropertyTreeLegacy;
 class QAttributeFilterProxyModel;
 
 namespace ACE
@@ -55,7 +55,7 @@ private:
 	XmlNodeRef ConstructTemporaryTriggerConnections(CControl const* const pControl);
 
 	CControl*                         m_pControl;
-	QPropertyTree* const              m_pConnectionProperties;
+	QPropertyTreeLegacy* const              m_pConnectionProperties;
 	QAttributeFilterProxyModel* const m_pAttributeFilterProxyModel;
 	CConnectionsModel* const          m_pConnectionModel;
 	CTreeView* const                  m_pTreeView;

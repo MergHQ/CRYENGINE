@@ -9,7 +9,7 @@ struct ISubstancePreset;
 struct ISubstancePresetSerializer;
 
 class QMenuComboBox;
-class QPropertyTree;
+class QPropertyTreeLegacy;
 class QScrollableBox;
 class QSplitter;
 
@@ -46,7 +46,7 @@ private:
 	//QSplitter* m_pSplitter;
 	QWidget*                      m_pResolutionWidget;
 	CAbstractMenu*                m_pSubstanceMenu;
-	QPropertyTree*                m_propertyTree;
+	QPropertyTreeLegacy*                m_propertyTree;
 	ISubstancePreset*             m_pPreset;
 	ISubstancePresetSerializer*   m_pSerializer;
 	QScrollableBox*               m_pScrollBox;

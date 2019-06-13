@@ -11,7 +11,7 @@
 #include "RecursionLoopGuard.h"
 
 #include <IUndoObject.h>
-#include <Serialization/QPropertyTree/QPropertyTree.h>
+#include <Serialization/QPropertyTreeLegacy/QPropertyTreeLegacy.h>
 #include <Util/MFCUtil.h>
 
 #include <QDir>
@@ -242,12 +242,13 @@ class CSettingsWidget : public QWidget, public ISystemEventListener
 public:
 	CSettingsWidget(QWidget* pParent = nullptr)
 		: QWidget(pParent)
-		, m_pPropertyTree(new QPropertyTree(this))
+		, m_pPropertyTree(new QPropertyTreeLegacy(this))
 	{
-		connect(m_pPropertyTree, &QPropertyTree::signalAboutToSerialize, this, &CSettingsWidget::BeforeSerialization);
-		connect(m_pPropertyTree, &QPropertyTree::signalSerialized, this, &CSettingsWidget::AfterSerialization);
-		connect(m_pPropertyTree, &QPropertyTree::signalBeginUndo, this, &CSettingsWidget::OnBeginUndo);
-		connect(m_pPropertyTree, &QPropertyTree::signalEndUndo, this, &CSettingsWidget::OnEndUndo);
+		connect(m_pPropertyTree, &QPropertyTreeLegacy::signalAboutToSerialize, this, &CSettingsWidget::BeforeSerialization);
+		connect(m_pPropertyTree, &QPropertyTreeLegacy::signalSerialized, this, &CSettingsWidget::AfterSerialization);
+		connect(m_pPropertyTree, &QPropertyTreeLegacy::signalBeginUndo, this, &CSettingsWidget::OnBeginUndo);
+		connect(m_pPropertyTree, &QPropertyTreeLegacy::signalEndUndo, this, &CSettingsWidget::OnEndUndo);
+
 
 		setAttribute(Qt::WA_DeleteOnClose);
 
@@ -323,7 +324,7 @@ private:
 
 private:
 	CVarBlockPtr   m_varBlock;
-	QPropertyTree* m_pPropertyTree = nullptr;
+	QPropertyTreeLegacy* m_pPropertyTree = nullptr;
 	bool           m_bIgnoreEvent = false;
 };
 

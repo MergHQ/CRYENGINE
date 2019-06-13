@@ -22,7 +22,7 @@
 #include <IUndoObject.h>
 #include <Controls/QuestionDialog.h>
 #include <Menu/AbstractMenu.h>
-#include <Serialization/QPropertyTree/QPropertyTree.h>
+#include <Serialization/QPropertyTreeLegacy/QPropertyTreeLegacy.h>
 #include <Util/FileUtil.h>
 
 #include <CrySandbox/CrySignal.h>
@@ -455,9 +455,9 @@ struct CVegetationEditor::SImplementation : public IEditorNotifyListener
 			return pToolButtonPanel;
 		}
 
-		static QPropertyTree* CreatePropertyTree()
+		static QPropertyTreeLegacy* CreatePropertyTree()
 		{
-			auto pPropertyTree = new QPropertyTree();
+			auto pPropertyTree = new QPropertyTreeLegacy();
 			pPropertyTree->setValueColumnWidth(0.6f);
 			pPropertyTree->setSizeToContent(false);
 			pPropertyTree->setAutoRevert(false);
@@ -509,7 +509,7 @@ struct CVegetationEditor::SImplementation : public IEditorNotifyListener
 
 		QVBoxLayout*         pContentLayout;
 		CVegetationTreeView* pVegetationTreeView;
-		QPropertyTree*       pPropertyTree;
+		QPropertyTreeLegacy*       pPropertyTree;
 		QPreviewWidget*      pPreviewWidget;
 		QSplitter*           pSplitter;
 		QLabel*              pStatusLabel;

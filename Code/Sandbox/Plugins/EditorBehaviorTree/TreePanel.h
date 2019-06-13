@@ -4,10 +4,10 @@
 
 #include "BehaviorTreeDocument.h"
 
-#include <QPropertyTree/ContextList.h>
+#include <QPropertyTreeLegacy/ContextList.h>
 #include <QDockWidget>
 
-class QPropertyTree;
+class QPropertyTreeLegacy;
 
 class CMainWindow;
 
@@ -65,7 +65,7 @@ private:
 private:
 	CMainWindow*                         m_pMainWindow;
 
-	QPropertyTree*                       m_propertyTree;
+	QPropertyTreeLegacy*                       m_propertyTree;
 
 	BehaviorTreeDocument                 m_behaviorTreeDocument;
 	bool                                 m_propertiesAttachedToDocument;

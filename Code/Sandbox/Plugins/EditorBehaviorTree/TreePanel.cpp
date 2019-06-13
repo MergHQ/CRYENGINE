@@ -4,8 +4,8 @@
 #include "TreePanel.h"
 #include "MainWindow.h"
 
-#include <Serialization/QPropertyTree/QPropertyTree.h>
-#include <Serialization/PropertyTree/PropertyTreeStyle.h>
+#include <Serialization/QPropertyTreeLegacy/QPropertyTreeLegacy.h>
+#include <Serialization/PropertyTreeLegacy/PropertyTreeStyle.h>
 #include <QDir>
 #include <QFileInfo>
 #include <QFileDialog>
@@ -18,8 +18,8 @@ TreePanel::TreePanel(CMainWindow* pMainWindow)
 	, m_behaviorTreeNodeSerializationHints()
 	, m_lastOpenedFilePath()
 {
-	m_propertyTree = new QPropertyTree(this);
-	PropertyTreeStyle treeStyle(QPropertyTree::defaultTreeStyle());
+	m_propertyTree = new QPropertyTreeLegacy(this);
+	PropertyTreeStyle treeStyle(QPropertyTreeLegacy::defaultTreeStyle());
 	treeStyle.propertySplitter = false;
 	treeStyle.levelIndent = 1.0f;
 	treeStyle.firstLevelIndent = 1.0f;

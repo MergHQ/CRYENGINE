@@ -6,7 +6,7 @@
 
 #include <EditorFramework/Editor.h>
 #include <EditorFramework/PersonalizationManager.h>
-#include <Serialization/QPropertyTree/QPropertyTree.h>
+#include <Serialization/QPropertyTreeLegacy/QPropertyTreeLegacy.h>
 #include <IPlugin.h>
 
 #include <CrySerialization/Color.h>
@@ -135,7 +135,7 @@ void CVariableUndoCommand::SaveNewState(DynArray<char>&& buff)
 	m_redoState = buff;
 }
 
-void SaveTreeState(const CEditor& editor, const QPropertyTree* pTree, const char* szPropertyName)
+void SaveTreeState(const CEditor& editor, const QPropertyTreeLegacy* pTree, const char* szPropertyName)
 {
 	yasli::JSONOArchive oa;
 	oa(*pTree, szPropertyName);
@@ -144,7 +144,7 @@ void SaveTreeState(const CEditor& editor, const QPropertyTree* pTree, const char
 	GetIEditor()->GetPersonalizationManager()->SetProperty(editor.GetEditorName(), szPropertyName, state);
 }
 
-void RestoreTreeState(const CEditor& editor, QPropertyTree* pTree, const char* szPropertyName)
+void RestoreTreeState(const CEditor& editor, QPropertyTreeLegacy* pTree, const char* szPropertyName)
 {
 	QString state;
 	GetIEditor()->GetPersonalizationManager()->GetProperty(editor.GetEditorName(), szPropertyName, state);

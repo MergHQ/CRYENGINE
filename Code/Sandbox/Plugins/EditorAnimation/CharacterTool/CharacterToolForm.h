@@ -12,7 +12,7 @@ class BroadcastEvent;
 class QBoxLayout;
 class QDockWidget;
 class QMainWindow;
-class QPropertyTree;
+class QPropertyTreeLegacy;
 class QResizeEvent;
 class QSplitter;
 class QToolBar;
@@ -164,7 +164,7 @@ private:
 	vector<string>                             m_recentCharacters;
 	unique_ptr<ViewportPlaybackHotkeyConsumer> m_viewportPlaybackHotkeyConsumer;
 	unique_ptr<DockWidgetManager>              m_dockWidgetManager;
-	unique_ptr<QPropertyTree>                  m_contentLayerPropertyTree;
+	unique_ptr<QPropertyTreeLegacy>                  m_contentLayerPropertyTree;
 
 	QAction*                                   m_actionViewBindPose;
 	QAction*                                   m_actionViewShowOriginalAnimation;

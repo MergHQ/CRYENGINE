@@ -33,8 +33,8 @@
 #include <QClipboard>
 #include <QDir>
 #include <QFile>
-#include <QPropertyTree/ContextList.h>
-#include <QPropertyTree/QPropertyDialog.h>
+#include <QPropertyTreeLegacy/ContextList.h>
+#include <QPropertyTreeLegacy/QPropertyDialog.h>
 
 namespace CharacterTool {
 

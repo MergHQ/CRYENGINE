@@ -18,7 +18,7 @@
 #include <IPostRenderer.h>
 
 #include <CryUDR/InterfaceIncludes.h>
-#include <Serialization/QPropertyTree/QPropertyTree.h>
+#include <Serialization/QPropertyTreeLegacy/QPropertyTreeLegacy.h>
 #include <CryGame/IGameFramework.h>
 
 

@@ -22,7 +22,7 @@
 
 #include <QtUtil.h>
 
-#include <Serialization/QPropertyTree/QPropertyTree.h>
+#include <Serialization/QPropertyTreeLegacy/QPropertyTreeLegacy.h>
 #include <Controls/QuestionDialog.h>
 #include <EditorFramework/Events.h>
 

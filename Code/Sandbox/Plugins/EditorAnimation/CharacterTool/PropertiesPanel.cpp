@@ -13,8 +13,8 @@
 #include "CharacterDocument.h"
 #include "Expected.h"
 #include <CryIcon.h>
-#include <Serialization/QPropertyTree/QPropertyTree.h>
-#include "QPropertyTree/ContextList.h"
+#include <Serialization/QPropertyTreeLegacy/QPropertyTreeLegacy.h>
+#include "QPropertyTreeLegacy/ContextList.h"
 #include "Explorer/ExplorerFileList.h"
 #include <CryAnimation/ICryAnimation.h>
 #include "CharacterToolForm.h"
@@ -92,8 +92,8 @@ PropertiesPanel::PropertiesPanel(QWidget* parent, System* system)
 
 	setContentsMargins(0, 0, 0, 0);
 
-	m_propertyTree = new QPropertyTree(this);
-	PropertyTreeStyle treeStyle(QPropertyTree::defaultTreeStyle());
+	m_propertyTree = new QPropertyTreeLegacy(this);
+	PropertyTreeStyle treeStyle(QPropertyTreeLegacy::defaultTreeStyle());
 	treeStyle.propertySplitter = false;
 	treeStyle.groupRectangle = false;
 	m_propertyTree->setTreeStyle(treeStyle);
@@ -180,7 +180,7 @@ PropertiesPanel::PropertiesPanel(QWidget* parent, System* system)
 	}
 
 	m_splitter = new QSplitter(Qt::Horizontal);
-	m_detailTree = new QPropertyTree(this);
+	m_detailTree = new QPropertyTreeLegacy(this);
 	m_detailTree->setTreeStyle(treeStyle);
 	m_detailTree->setCompact(true);
 	m_detailTree->setMultiSelection(true);

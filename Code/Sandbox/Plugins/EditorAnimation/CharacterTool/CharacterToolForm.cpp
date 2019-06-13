@@ -23,7 +23,7 @@
 #include <QToolBar>
 #include <QToolButton>
 #include <QAdvancedTreeView.h>
-#include <Serialization/QPropertyTree/QPropertyTree.h>
+#include <Serialization/QPropertyTreeLegacy/QPropertyTreeLegacy.h>
 #include "QViewport.h"
 #include "DockTitleBarWidget.h"
 #include "UnsavedChangesDialog.h"

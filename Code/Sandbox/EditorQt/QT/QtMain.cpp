@@ -20,8 +20,8 @@
 //////////////////////////////////////////////////////////////////////////
 
 #include "Util/BoostPythonHelpers.h"
-#include "Serialization/PropertyTree/PropertyTreeStyle.h"
-#include "Serialization/PropertyTree/PropertyTree.h"
+#include "Serialization/PropertyTreeLegacy/PropertyTreeStyle.h"
+#include "Serialization/PropertyTreeLegacy/PropertyTreeLegacy.h"
 #include "QtMainFrame.h"
 #include "SplashScreen.h"
 #include "EditorStyleHelper.h"
@@ -157,7 +157,7 @@ void SetVisualStyle()
 	treeStyle.showSliderCursor = false;
 	treeStyle.groupRectangle = true;
 
-	PropertyTree::setDefaultTreeStyle(treeStyle);
+	PropertyTreeLegacy::setDefaultTreeStyle(treeStyle);
 
 	EnableXTDarkSkin();
 

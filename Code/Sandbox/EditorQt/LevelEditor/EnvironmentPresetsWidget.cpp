@@ -8,7 +8,7 @@
 #include <AssetSystem/Asset.h>
 #include <AssetSystem/Browser/AssetBrowserDialog.h>
 #include <IUndoObject.h>
-#include <Serialization/QPropertyTree/QPropertyTree.h>
+#include <Serialization/QPropertyTreeLegacy/QPropertyTreeLegacy.h>
 
 #include <Cry3DEngine/I3DEngine.h>
 #include <CrySerialization/Decorators/Resources.h>
@@ -221,13 +221,12 @@ CEnvironmentPresetsWidget::CEnvironmentPresetsWidget(QWidget* pParent /*= nullpt
 {
 	using namespace Private_EnvironmentPresetWidget;
 
-	m_pPropertyTree = new QPropertyTree(this);
-
-	connect(m_pPropertyTree, &QPropertyTree::signalBeginUndo, this, &CEnvironmentPresetsWidget::OnBeginUndo);
-	connect(m_pPropertyTree, &QPropertyTree::signalEndUndo, this, &CEnvironmentPresetsWidget::OnEndUndo);
-	connect(m_pPropertyTree, &QPropertyTree::signalAboutToSerialize, this, &CEnvironmentPresetsWidget::BeforeSerialization);
-	connect(m_pPropertyTree, &QPropertyTree::signalSerialized, this, &CEnvironmentPresetsWidget::AfterSerialization);
+	m_pPropertyTree = new QPropertyTreeLegacy(this);
 	
+	connect(m_pPropertyTree, &QPropertyTreeLegacy::signalBeginUndo, this, &CEnvironmentPresetsWidget::OnBeginUndo);
+	connect(m_pPropertyTree, &QPropertyTreeLegacy::signalEndUndo, this, &CEnvironmentPresetsWidget::OnEndUndo);
+	connect(m_pPropertyTree, &QPropertyTreeLegacy::signalAboutToSerialize, this, &CEnvironmentPresetsWidget::BeforeSerialization);
+	connect(m_pPropertyTree, &QPropertyTreeLegacy::signalSerialized, this, &CEnvironmentPresetsWidget::AfterSerialization);
 	setAttribute(Qt::WA_DeleteOnClose);
 
 	m_pPropertyTree->setSizeHint(QSize(70, 70));

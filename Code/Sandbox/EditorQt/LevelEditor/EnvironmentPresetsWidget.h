@@ -5,7 +5,7 @@
 #include <Cry3DEngine/ITimeOfDay.h>
 #include <QWidget>
 
-class QPropertyTree;
+class QPropertyTreeLegacy;
 
 class CEnvironmentPresetsWidget : public QWidget, public ITimeOfDay::IListener
 {
@@ -27,7 +27,7 @@ public:
 	virtual void OnChange(const EChangeType changeType, const char* const szPresetName) override;
 
 private:
-	QPropertyTree*                      m_pPropertyTree = nullptr;
+	QPropertyTreeLegacy*                      m_pPropertyTree = nullptr;
 	bool                                m_ignoreEvent = false;
 	std::unique_ptr<IPresetsSerializer> m_pPresetsSerializer;
 };

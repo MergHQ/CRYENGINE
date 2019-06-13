@@ -697,7 +697,7 @@ QScrollBar::handle:disabled, QScrollBar::handle:horizontal:disabled
 	background-color: rgb(80,80,80);
 }
 
-QPropertyTree 
+QPropertyTreeLegacy 
 {
     color: white;
     selection-background-color: rgb(95,185,237);
@@ -736,7 +736,7 @@ QPropertySplitter
 }
 
 /* Top widget of the property tree */
-QPropertyTree2 
+QPropertyTree
 {
 	qproperty-collapsedIcon: url(icons:General/Pointer_Right.ico);
 	qproperty-expandedIcon: url(icons:General/Pointer_Down_Expanded.ico);
@@ -2097,7 +2097,7 @@ CrySchematycEditor--CVariablesWidget QLabel
 /* ----------------------------------------------------------------------- */
 /* CEditorEnvironmentWindow----------------------------------------------- */
 
-CEditorEnvironmentWindow QPropertyTree
+CEditorEnvironmentWindow QPropertyTreeLegacy 
 {
 	min-width: 310px;
 }

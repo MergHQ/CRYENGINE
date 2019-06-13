@@ -1,10 +1,10 @@
 // Copyright 2001-2019 Crytek GmbH / Crytek Group. All rights reserved.
 
-#include <QPropertyTree/ContextList.h>
+#include <QPropertyTreeLegacy/ContextList.h>
 #include <QWidget>
 
 class CController;
-class QPropertyTree;
+class QPropertyTreeLegacy;
 
 enum class PlaybackMode;
 
@@ -26,6 +26,6 @@ private:
 	void ProcessUserEventsFromCurveEditor(QEvent* pEvent);
 
 	CController&                m_controller;
-	QPropertyTree*              m_pPropertyTree;
+	QPropertyTreeLegacy*              m_pPropertyTree;
 	Serialization::CContextList m_treeContext;
 };
