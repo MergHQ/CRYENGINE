@@ -88,6 +88,14 @@ enum class ELoggingOptions : EnumFlagsType
 };
 CRY_CREATE_ENUM_FLAG_OPERATORS(ELoggingOptions);
 
+enum class EDebugUpdateFilter : EnumFlagsType
+{
+	None             = 0,
+	FileCacheManager = BIT(0),
+	Contexts         = BIT(1),
+};
+CRY_CREATE_ENUM_FLAG_OPERATORS(EDebugUpdateFilter);
+
 struct SRequestCount final
 {
 	uint16 requests = 0;
@@ -472,6 +480,46 @@ void ForceGlobalDataImplRefresh()
 		{
 			Cry::Audio::Log(ELogType::Warning, "Trigger \"%u\" does not exist!", triggerInstancePair.second->GetTriggerId());
 		}
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void UpdateContextDebugInfo(char const* const szDebugFilter)
+{
+	g_contextDebugInfo.clear();
+
+	CryFixedStringT<MaxControlNameLength> lowerCaseSearchString(szDebugFilter);
+	lowerCaseSearchString.MakeLower();
+
+	for (auto const& contextPair : g_contextInfo)
+	{
+		if (contextPair.second.isRegistered)
+		{
+			char const* const szContextName = contextPair.first.c_str();
+			CryFixedStringT<MaxControlNameLength> lowerCaseContextName(szContextName);
+			lowerCaseContextName.MakeLower();
+
+			if ((lowerCaseSearchString.empty() || (lowerCaseSearchString == "0")) || (lowerCaseContextName.find(lowerCaseSearchString) != CryFixedStringT<MaxControlNameLength>::npos))
+			{
+				g_contextDebugInfo.emplace(std::piecewise_construct, std::forward_as_tuple(szContextName), std::forward_as_tuple(contextPair.second.isActive));
+			}
+		}
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void HandleUpdateDebugInfo(EDebugUpdateFilter const filter)
+{
+	char const* const szDebugFilter = g_cvars.m_pDebugFilter->GetString();
+
+	if ((filter& EDebugUpdateFilter::FileCacheManager) != 0)
+	{
+		g_fileCacheManager.UpdateDebugInfo(szDebugFilter);
+	}
+
+	if ((filter& EDebugUpdateFilter::Contexts) != 0)
+	{
+		UpdateContextDebugInfo(szDebugFilter);
 	}
 }
 #endif // CRY_AUDIO_USE_DEBUG_CODE
@@ -2046,7 +2094,7 @@ ERequestStatus CSystem::ProcessSystemRequest(CRequest const& request)
 			g_xmlProcessor.ParsePreloadsData(pRequestData->folderPath.c_str(), pRequestData->contextId);
 
 #if defined(CRY_AUDIO_USE_DEBUG_CODE)
-			HandleUpdateDebugInfo();
+			HandleUpdateDebugInfo(EDebugUpdateFilter::FileCacheManager | EDebugUpdateFilter::Contexts);
 #endif  // CRY_AUDIO_USE_DEBUG_CODE
 
 			result = ERequestStatus::Success;
@@ -2075,7 +2123,7 @@ ERequestStatus CSystem::ProcessSystemRequest(CRequest const& request)
 			g_xmlProcessor.ClearPreloadsData(pRequestData->contextId, false);
 
 #if defined(CRY_AUDIO_USE_DEBUG_CODE)
-			HandleUpdateDebugInfo();
+			HandleUpdateDebugInfo(EDebugUpdateFilter::FileCacheManager | EDebugUpdateFilter::Contexts);
 #endif  // CRY_AUDIO_USE_DEBUG_CODE
 
 			result = ERequestStatus::Success;
@@ -2246,6 +2294,11 @@ ERequestStatus CSystem::ProcessSystemRequest(CRequest const& request)
 			SetImplLanguage();
 
 			g_fileCacheManager.UpdateLocalizedFileCacheEntries();
+
+#if defined(CRY_AUDIO_USE_DEBUG_CODE)
+			HandleUpdateDebugInfo(EDebugUpdateFilter::FileCacheManager);
+#endif  // CRY_AUDIO_USE_DEBUG_CODE
+
 			result = ERequestStatus::Success;
 
 			break;
@@ -2476,7 +2529,7 @@ ERequestStatus CSystem::ProcessSystemRequest(CRequest const& request)
 		}
 	case ESystemRequestType::UpdateDebugInfo:
 		{
-			HandleUpdateDebugInfo();
+			HandleUpdateDebugInfo(EDebugUpdateFilter::FileCacheManager | EDebugUpdateFilter::Contexts);
 			result = ERequestStatus::Success;
 
 			break;
@@ -3249,7 +3302,7 @@ ERequestStatus CSystem::HandleSetImpl(Impl::IImpl* const pIImpl)
 		}
 	}
 
-	HandleUpdateDebugInfo();
+	HandleUpdateDebugInfo(EDebugUpdateFilter::FileCacheManager | EDebugUpdateFilter::Contexts);
 #endif // CRY_AUDIO_USE_DEBUG_CODE
 
 	SetImplLanguage();
@@ -3295,7 +3348,7 @@ void CSystem::HandleActivateContext(ContextId const contextId)
 		}
 
 #if defined(CRY_AUDIO_USE_DEBUG_CODE)
-		HandleUpdateDebugInfo();
+		HandleUpdateDebugInfo(EDebugUpdateFilter::Contexts);
 #endif // CRY_AUDIO_USE_DEBUG_CODE
 	}
 }
@@ -3317,7 +3370,7 @@ void CSystem::HandleDeactivateContext(ContextId const contextId)
 	ReportContextDeactivated(contextId);
 
 #if defined(CRY_AUDIO_USE_DEBUG_CODE)
-	HandleUpdateDebugInfo();
+	HandleUpdateDebugInfo(EDebugUpdateFilter::Contexts);
 #endif // CRY_AUDIO_USE_DEBUG_CODE
 }
 
@@ -3528,7 +3581,7 @@ void CSystem::HandleRefresh()
 		}
 	}
 
-	HandleUpdateDebugInfo();
+	HandleUpdateDebugInfo(EDebugUpdateFilter::FileCacheManager | EDebugUpdateFilter::Contexts);
 
 	Cry::Audio::Log(ELogType::Warning, "Done refreshing the AudioSystem!");
 }
@@ -3593,30 +3646,6 @@ void CSystem::UpdateDebugInfo()
 	SSystemRequestData<ESystemRequestType::UpdateDebugInfo> const requestData;
 	CRequest const request(&requestData);
 	PushRequest(request);
-}
-
-//////////////////////////////////////////////////////////////////////////
-void UpdateContextDebugInfo(char const* const szDebugFilter)
-{
-	g_contextDebugInfo.clear();
-
-	CryFixedStringT<MaxControlNameLength> lowerCaseSearchString(szDebugFilter);
-	lowerCaseSearchString.MakeLower();
-
-	for (auto const& contextPair : g_contextInfo)
-	{
-		if (contextPair.second.isRegistered)
-		{
-			char const* const szContextName = contextPair.first.c_str();
-			CryFixedStringT<MaxControlNameLength> lowerCaseContextName(szContextName);
-			lowerCaseContextName.MakeLower();
-
-			if ((lowerCaseSearchString.empty() || (lowerCaseSearchString == "0")) || (lowerCaseContextName.find(lowerCaseSearchString) != CryFixedStringT<MaxControlNameLength>::npos))
-			{
-				g_contextDebugInfo.emplace(std::piecewise_construct, std::forward_as_tuple(szContextName), std::forward_as_tuple(contextPair.second.isActive));
-			}
-		}
-	}
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -3992,22 +4021,6 @@ void DrawGlobalDataDebugInfo(IRenderAuxGeom& auxGeom, float const posX, float po
 	if ((g_cvars.m_drawDebug & Debug::EDrawFilter::ObjectImplInfo) != 0)
 	{
 		g_pIObject->DrawDebugInfo(auxGeom, posX, posY, (isTextFilterDisabled ? nullptr : lowerCaseSearchString.c_str()));
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CSystem::HandleUpdateDebugInfo()
-{
-	char const* const szDebugFilter = g_cvars.m_pDebugFilter->GetString();
-
-	if ((g_cvars.m_drawDebug & Debug::EDrawFilter::FileCacheManagerInfo) != 0)
-	{
-		g_fileCacheManager.UpdateDebugInfo(szDebugFilter);
-	}
-
-	if ((g_cvars.m_drawDebug & Debug::EDrawFilter::Contexts) != 0)
-	{
-		UpdateContextDebugInfo(szDebugFilter);
 	}
 }
 

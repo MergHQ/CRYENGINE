@@ -137,7 +137,6 @@ private:
 	void SubmitLastIRenderAuxGeomForRendering();
 	void DrawDebug();
 	void HandleDrawDebug();
-	void HandleUpdateDebugInfo();
 	void HandleRetriggerControls();
 	void HandleRefresh();
 
