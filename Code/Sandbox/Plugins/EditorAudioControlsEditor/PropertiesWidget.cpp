@@ -10,7 +10,7 @@
 #include "Common/IImpl.h"
 
 #include <QtUtil.h>
-#include <Serialization/QPropertyTree/QPropertyTree.h>
+#include <Serialization/QPropertyTreeLegacy/QPropertyTreeLegacy.h>
 
 #include <QLabel>
 #include <QString>
@@ -21,7 +21,7 @@ namespace ACE
 //////////////////////////////////////////////////////////////////////////
 CPropertiesWidget::CPropertiesWidget(QWidget* const pParent)
 	: QWidget(pParent)
-	, m_pPropertyTree(new QPropertyTree(this))
+	, m_pPropertyTree(new QPropertyTreeLegacy(this))
 	, m_pConnectionsWidget(new CConnectionsWidget(this))
 	, m_suppressUpdates(false)
 {
@@ -109,8 +109,8 @@ CPropertiesWidget::CPropertiesWidget(QWidget* const pParent)
 			setEnabled(g_pIImpl != nullptr);
 		}, reinterpret_cast<uintptr_t>(this));
 
-	QObject::connect(m_pPropertyTree, &QPropertyTree::signalAboutToSerialize, [&]() { m_suppressUpdates = true; });
-	QObject::connect(m_pPropertyTree, &QPropertyTree::signalSerialized, [&]() { m_suppressUpdates = false; });
+	QObject::connect(m_pPropertyTree, &QPropertyTreeLegacy::signalAboutToSerialize, [&]() { m_suppressUpdates = true; });
+	QObject::connect(m_pPropertyTree, &QPropertyTreeLegacy::signalSerialized, [&]() { m_suppressUpdates = false; });
 }
 
 //////////////////////////////////////////////////////////////////////////

@@ -7,7 +7,7 @@
 
 class CController;
 class CEditor;
-class QPropertyTree;
+class QPropertyTreeLegacy;
 
 // Variables inside TimeOfDay are data driven by design
 // STodPreset - is a root structure to represent all of them in a propertyTree (variables)
@@ -77,5 +77,5 @@ private:
 	string                  m_commandDescription; // for UI
 };
 
-void SaveTreeState(const CEditor& editor, const QPropertyTree* pTree, const char* szPropertyName);
-void RestoreTreeState(const CEditor& editor, QPropertyTree* pTree, const char* szPropertyName);
+void SaveTreeState(const CEditor& editor, const QPropertyTreeLegacy* pTree, const char* szPropertyName);
+void RestoreTreeState(const CEditor& editor, QPropertyTreeLegacy* pTree, const char* szPropertyName);

@@ -56,7 +56,7 @@
 #include <QTabWidget>
 #include <QDir>
 
-#include <QAdvancedPropertyTree.h>
+#include <QAdvancedPropertyTreeLegacy.h>
 #include <QCollapsibleFrame.h>
 
 #define APPLICATION_USER_DIRECTORY      "/CryEngine"
@@ -444,7 +444,7 @@ void CParticleEditor::OnShowEffectOptions()
 
 	PopulateLegacyInspectorEvent popEvent([this, pEffect](CInspectorLegacy& inspector)
 	    {
-	                                      QAdvancedPropertyTree* pPropertyTree = new QAdvancedPropertyTree(pEffect->GetName());
+	                                      QAdvancedPropertyTreeLegacy* pPropertyTree = new QAdvancedPropertyTreeLegacy(pEffect->GetName());
 	                                      // WORKAROUND: Serialization of features doesn't work with the default style.
 	                                      //						 We either need to fix serialization or property tree. As soon as it's
 	                                      //						 done use the commented out code below.
@@ -459,7 +459,7 @@ void CParticleEditor::OnShowEffectOptions()
 	                                      //pPropertyTree->setAggregateMouseEvents(false);
 	                                      //pPropertyTree->setFullRowContainers(true);
 	                                      pPropertyTree->attach(pEffect->GetEffectOptionsSerializer());
-	                                      QObject::connect(pPropertyTree, &QPropertyTree::signalChanged, this, &CParticleEditor::OnEffectOptionsChanged);
+	                                      QObject::connect(pPropertyTree, &QPropertyTreeLegacy::signalChanged, this, &CParticleEditor::OnEffectOptionsChanged);
 
 	                                      QCollapsibleFrame* pInspectorWidget = new QCollapsibleFrame("Particle Effect");
 	                                      pInspectorWidget->SetWidget(pPropertyTree);

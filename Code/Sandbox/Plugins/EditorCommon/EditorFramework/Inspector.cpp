@@ -8,7 +8,7 @@
 #include "EditorFramework/Events.h"
 #include "QScrollableBox.h"
 #include "QtViewPane.h"
-#include "Serialization\QPropertyTree2\PropertyTree2.h"
+#include "Serialization\QPropertyTree\PropertyTree.h"
 
 #include <QApplication>
 #include <QCloseEvent>
@@ -120,7 +120,7 @@ void CInspector::OnPopulate(PopulateInspectorEvent& event)
 	setUpdatesEnabled(true);
 }
 
-void CInspector::AddPropertyTree(QPropertyTree2* pPropertyTree)
+void CInspector::AddPropertyTree(QPropertyTree* pPropertyTree)
 {
 	CRY_PROFILE_FUNCTION(PROFILE_EDITOR);
 	//this inspector supports only one widget at time, clear the previous widget if we add a new one

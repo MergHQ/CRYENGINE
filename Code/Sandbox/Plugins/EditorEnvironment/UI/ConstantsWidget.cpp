@@ -4,7 +4,7 @@
 #include "ConstantsWidget.h"
 #include "EnvironmentEditor.h"
 
-#include <Serialization/QPropertyTree/QPropertyTree.h>
+#include <Serialization/QPropertyTreeLegacy/QPropertyTreeLegacy.h>
 #include <IUndoObject.h>
 
 #include <CrySerialization/IArchiveHost.h>
@@ -81,7 +81,7 @@ private:
 CConstantsWidget::CConstantsWidget(CController& controller)
 	: m_controller(controller)
 {
-	m_pPropertyTree = new QPropertyTree(this);
+	m_pPropertyTree = new QPropertyTreeLegacy(this);
 	m_pPropertyTree->setHideSelection(false);
 	m_pPropertyTree->setUndoEnabled(false, false);
 	m_pPropertyTree->setMinimumWidth(300);
@@ -91,9 +91,9 @@ CConstantsWidget::CConstantsWidget(CController& controller)
 	pLayout->addWidget(m_pPropertyTree);
 	setLayout(pLayout);
 
-	connect(m_pPropertyTree, &QPropertyTree::signalChanged, this, &CConstantsWidget::OnChanged);
-	connect(m_pPropertyTree, &QPropertyTree::signalBeginUndo, this, &CConstantsWidget::OnBeginUndo);
-	connect(m_pPropertyTree, &QPropertyTree::signalEndUndo, this, &CConstantsWidget::OnEndUndo);
+	connect(m_pPropertyTree, &QPropertyTreeLegacy::signalChanged, this, &CConstantsWidget::OnChanged);
+	connect(m_pPropertyTree, &QPropertyTreeLegacy::signalBeginUndo, this, &CConstantsWidget::OnBeginUndo);
+	connect(m_pPropertyTree, &QPropertyTreeLegacy::signalEndUndo, this, &CConstantsWidget::OnEndUndo);
 
 	m_controller.signalAssetOpened.Connect(this, &CConstantsWidget::OnAssetOpened);
 	m_controller.signalAssetClosed.Connect(this, &CConstantsWidget::OnAssetClosed);

@@ -2,13 +2,13 @@
 #include "StdAfx.h"
 #include "MaterialProperties.h"
 #include <Cry3DEngine/ISurfaceType.h>
-#include <Serialization/QPropertyTree2/PropertyTree2.h>
+#include <Serialization/QPropertyTree/PropertyTree.h>
 #include <CrySerialization/Decorators/Range.h>
 #include <CrySerialization/Decorators/Resources.h>
 
 #include "IUndoManager.h"
 
-class CMaterialSerializer::CMaterialPropertyTree : public QPropertyTree2, public IDataBaseManagerListener
+class CMaterialSerializer::CMaterialPropertyTree : public QPropertyTree, public IDataBaseManagerListener
 {
 public:
 	CMaterialPropertyTree(CMaterialSerializer* pMaterialSerializer);
@@ -1093,7 +1093,7 @@ void CMaterialSerializer::SerializeShaderGenParams(Serialization::IArchive& ar)
 	m_pMaterial->SetShaderGenMaskFromUI(shaderGenMask);
 }
 
-QPropertyTree2* CMaterialSerializer::CreatePropertyTree()
+QPropertyTree* CMaterialSerializer::CreatePropertyTree()
 {
 	return new CMaterialSerializer::CMaterialPropertyTree(this);
 }

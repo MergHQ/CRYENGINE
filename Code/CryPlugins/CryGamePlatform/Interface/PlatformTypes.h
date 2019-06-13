@@ -197,8 +197,9 @@ namespace Cry
 				{
 					if (stl::holds_alternative<StringIdentifierValue>(value))
 					{
+						char trailing; // attempt to parse trailing characters as we don't want them.
 						const StringIdentifierValue& str = stl::get<StringIdentifierValue>(value);
-						const int ok = sscanf_s(str.c_str(), "%" PRIu64, &out);
+						const int ok = sscanf_s(str.c_str(), "%" PRIu64 "%c", &out, &trailing);
 						return ok == 1;
 					}
 					else if (stl::holds_alternative<NumericIdentifierValue>(value))
@@ -209,6 +210,7 @@ namespace Cry
 
 					return false;
 				}
+
 				template<class StrType>
 				static bool AsString(const ValueType& value, StrType& out)
 				{

@@ -44,7 +44,7 @@
 #include <Controls/QMenuComboBox.h>
 #include <Serialization/Decorators/EditorActionButton.h>
 
-#include <Serialization/QPropertyTree/QPropertyTree.h>
+#include <Serialization/QPropertyTreeLegacy/QPropertyTreeLegacy.h>
 
 #include <QTemporaryFile>
 #include <QTemporaryDir>
@@ -493,7 +493,7 @@ CDialogCHR::CDialogCHR(QWidget* pParent)
 	m_pPreviewModeWidget = new CPreviewModeWidget();
 	m_pViewportContainer->SetHeaderWidget(m_pPreviewModeWidget);
 
-	m_pPropertyTree = new QPropertyTree();
+	m_pPropertyTree = new QPropertyTreeLegacy();
 	m_pPropertyTree->setSliderUpdateDelay(0);
 
 	m_pModelProperties.reset(new CModelProperties(m_pPropertyTree));

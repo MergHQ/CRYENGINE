@@ -11,7 +11,7 @@
 #include <QViewportConsumer.h>
 #include <CryEntitySystem/IEntitySystem.h>
 #include <CrySerialization/IArchiveHost.h>
-#include <QAdvancedPropertyTree.h>
+#include <QAdvancedPropertyTreeLegacy.h>
 
 #include "Objects/DisplayContext.h"
 #include "QViewportEvents.h"
@@ -25,7 +25,7 @@ CPreviewSettingsWidget::CPreviewSettingsWidget(CPreviewWidget& previewWidget)
 {
 	QVBoxLayout* pLayout = new QVBoxLayout(this);
 
-	m_pPropertyTree = new QAdvancedPropertyTree("Preview Settings");
+	m_pPropertyTree = new QAdvancedPropertyTreeLegacy("Preview Settings");
 	m_pPropertyTree->setExpandLevels(4);
 	m_pPropertyTree->setValueColumnWidth(0.6f);
 	m_pPropertyTree->setAutoRevert(false);

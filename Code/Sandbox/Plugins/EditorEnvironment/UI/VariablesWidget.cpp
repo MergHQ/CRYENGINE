@@ -6,14 +6,14 @@
 #include "Controller.h"
 #include "EnvironmentEditor.h"
 
-#include <Serialization/QPropertyTree/QPropertyTree.h>
+#include <Serialization/QPropertyTreeLegacy/QPropertyTreeLegacy.h>
 
 #include <QVBoxLayout>
 
 CVariablesWidget::CVariablesWidget(CController& controller)
 	: m_controller(controller)
 {
-	m_pPropertyTree = new QPropertyTree(this);
+	m_pPropertyTree = new QPropertyTreeLegacy(this);
 	m_pPropertyTree->setHideSelection(false);
 	m_pPropertyTree->setMultiSelection(false);
 
@@ -29,9 +29,9 @@ CVariablesWidget::CVariablesWidget(CController& controller)
 	m_pPropertyTree->setArchiveContext(m_treeContext.Tail());
 
 	// Signals from this Tab to controller
-	connect(m_pPropertyTree, &QPropertyTree::signalSelected, this, &CVariablesWidget::OnTreeSelectionChanged);
-	connect(m_pPropertyTree, &QPropertyTree::signalBeginUndo, this, &CVariablesWidget::OnSelectedVariableStartChange);
-	connect(m_pPropertyTree, &QPropertyTree::signalChanged, this, &CVariablesWidget::OnSelectedVariableEndChange);
+	connect(m_pPropertyTree, &QPropertyTreeLegacy::signalSelected, this, &CVariablesWidget::OnTreeSelectionChanged);
+	connect(m_pPropertyTree, &QPropertyTreeLegacy::signalBeginUndo, this, &CVariablesWidget::OnSelectedVariableStartChange);
+	connect(m_pPropertyTree, &QPropertyTreeLegacy::signalChanged, this, &CVariablesWidget::OnSelectedVariableEndChange);
 
 	// Signals from controller for UI updating
 	m_controller.signalAssetOpened.Connect(this, &CVariablesWidget::OnAssetOpened);

@@ -4,7 +4,7 @@
 
 #include "ModeCharacter.h"
 #include "ManipScene.h"
-#include <Serialization/QPropertyTree/QPropertyTree.h>
+#include <Serialization/QPropertyTreeLegacy/QPropertyTreeLegacy.h>
 #include <QApplication>
 #include <QToolBar>
 #include <QAction>
@@ -245,7 +245,7 @@ void ModeCharacter::HandleSceneChange(int layerBits, bool continuous)
 	{
 		if (layer >= m_layerPropertyTrees.size())
 			break;
-		QPropertyTree* tree = m_layerPropertyTrees[layer];
+		QPropertyTreeLegacy* tree = m_layerPropertyTrees[layer];
 		if (bitsLeft & 1)
 		{
 			if (tree)

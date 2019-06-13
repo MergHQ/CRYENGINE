@@ -563,8 +563,8 @@ ExplorerPanel::ExplorerPanel(QWidget* parent, ExplorerData* explorerData)
 
 	m_filterOptions.reset(new FilterOptions(*explorerData));
 
-	m_filterOptionsTree = new QPropertyTree(this);
-	PropertyTreeStyle treeStyle(QPropertyTree::defaultTreeStyle());
+	m_filterOptionsTree = new QPropertyTreeLegacy(this);
+	PropertyTreeStyle treeStyle(QPropertyTreeLegacy::defaultTreeStyle());
 	treeStyle.propertySplitter = false;
 	treeStyle.groupRectangle = false;
 	m_filterOptionsTree->setTreeStyle(treeStyle);

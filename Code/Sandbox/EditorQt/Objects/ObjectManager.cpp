@@ -47,10 +47,8 @@
 #include <PathUtils.h>
 #include <Preferences/GlobalHelperPreferences.h>
 #include <Preferences/ViewportPreferences.h>
-#include <QAdvancedPropertyTree.h>
 #include <QT/Widgets/QWaitProgress.h>
 #include <QtUtil.h>
-#include <Serialization/QPropertyTree/QPropertyTree.h>
 #include <Util/FileUtil.h>
 #include <Viewport.h>
 

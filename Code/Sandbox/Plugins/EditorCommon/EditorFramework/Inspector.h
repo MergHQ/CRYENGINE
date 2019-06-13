@@ -14,7 +14,7 @@ class CEditor;
 class PopulateInspectorEvent;
 class QEvent;
 class QLabel;
-class QPropertyTree2;
+class QPropertyTree;
 class QScrollableBox;
 class QToolButton;
 class QVBoxLayout;
@@ -78,7 +78,7 @@ public:
 	virtual QSize       sizeHint() const override     { return QSize(240, 600); }
 	void                closeEvent(QCloseEvent* event);
 	//!Add a property tree to this inspector, only one property tree can be added at a time
-	void                AddPropertyTree(QPropertyTree2* pPropertyTree);
+	void                AddPropertyTree(QPropertyTree* pPropertyTree);
 
 private:
 	//!If the inspector is not locked populate it with a widget allocated by the PopulateInspectorEvent
@@ -98,7 +98,7 @@ private:
 	//!The layout we actually add a widget to
 	QVBoxLayout*                m_pWidgetLayout;
 	//!The property tree owned by this inspector, (added via AddPropertyTree)
-	QPropertyTree2*             m_pOwnedPropertyTree;
+	QPropertyTree*             m_pOwnedPropertyTree;
 };
 
 //! This header widget only exists for styling purposes

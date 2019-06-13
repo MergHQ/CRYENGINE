@@ -19,7 +19,7 @@
 #include <Controls/QuestionDialog.h>
 #include <CrySerialization/IArchive.h>
 #include <CrySerialization/STL.h>
-#include <Serialization/QPropertyTree/QPropertyTree.h>
+#include <Serialization/QPropertyTreeLegacy/QPropertyTreeLegacy.h>
 #include <ProxyModels/AttributeFilterProxyModel.h>
 
 #include <QHeaderView>
@@ -38,7 +38,7 @@ CConnectionsWidget::CConnectionsWidget(QWidget* const pParent)
 	, m_pControl(nullptr)
 	, m_pConnectionModel(new CConnectionsModel(this))
 	, m_pAttributeFilterProxyModel(new QAttributeFilterProxyModel(QAttributeFilterProxyModel::BaseBehavior, this))
-	, m_pConnectionProperties(new QPropertyTree(this))
+	, m_pConnectionProperties(new QPropertyTreeLegacy(this))
 	, m_pTreeView(new CTreeView(this))
 {
 	m_pAttributeFilterProxyModel->setSourceModel(m_pConnectionModel);

@@ -6,7 +6,7 @@
 #include <QtViewPane.h>
 #include <Util/Variable.h>
 
-class QPropertyTree;
+class QPropertyTreeLegacy;
 class CEnvironmentPresets;
 
 class CLevelSettingsEditor : public CDockableEditor

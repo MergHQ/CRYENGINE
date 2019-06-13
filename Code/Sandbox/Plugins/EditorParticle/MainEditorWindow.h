@@ -20,7 +20,7 @@ class QContainer;
 
 class QModelIndex;
 class QDockWidget;
-class QPropertyTree;
+class QPropertyTreeLegacy;
 class QToolBar;
 
 class CCurveEditorPanel;

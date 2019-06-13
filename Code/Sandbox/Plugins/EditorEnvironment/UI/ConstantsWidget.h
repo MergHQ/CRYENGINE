@@ -7,7 +7,7 @@
 enum class PlaybackMode;
 
 class CController;
-class QPropertyTree;
+class QPropertyTreeLegacy;
 
 class CConstantsWidget : public QWidget
 {
@@ -27,5 +27,5 @@ private:
 	void OnPlaybackModeChanged(PlaybackMode newMode);
 
 	CController&   m_controller;
-	QPropertyTree* m_pPropertyTree;
+	QPropertyTreeLegacy* m_pPropertyTree;
 };

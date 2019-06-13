@@ -5,7 +5,7 @@
 #include "Common.h"
 #include <QWidget>
 
-class QPropertyTree;
+class QPropertyTreeLegacy;
 class QLabel;
 
 namespace ACE
@@ -40,7 +40,7 @@ private:
 	void RevertPropertyTree();
 
 	CConnectionsWidget* const m_pConnectionsWidget;
-	QPropertyTree* const      m_pPropertyTree;
+	QPropertyTreeLegacy* const      m_pPropertyTree;
 	QLabel*                   m_pConnectionsLabel;
 	std::unique_ptr<QString>  m_pUsageHint;
 	bool                      m_suppressUpdates;

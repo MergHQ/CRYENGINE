@@ -18,6 +18,7 @@
 
 class CInspectorLegacy;
 class QAction;
+class QCommandAction;
 class QVBoxLayout;
 
 namespace Schematyc {
@@ -107,7 +108,6 @@ protected Q_SLOTS:
 private:
 	void                             RegisterActions();
 	void                             InitMenu();
-	void                             InitToolbar(QVBoxLayout* pWindowLayout);
 
 	bool                     OnUndo();
 	bool                     OnRedo();
@@ -149,9 +149,9 @@ private:
 	QAction*                         m_pCompileAllMenuAction;
 	QAction*                         m_pRefreshEnvironmentMenuAction;
 
-	QAction*                         m_pClearLogToolbarAction;
-	QAction*                         m_pShowLogSettingsToolbarAction;
-	QAction*                         m_pShowPreviewSettingsToolbarAction;
+	QCommandAction*                  m_pClearLogToolbarAction;
+	QCommandAction*                  m_pShowLogSettingsToolbarAction;
+	QCommandAction*                  m_pShowPreviewSettingsToolbarAction;
 
 	CInspectorLegacy*                m_pInspector;
 	CGraphViewWidget*                m_pGraphView;
