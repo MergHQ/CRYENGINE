@@ -963,6 +963,13 @@ void CDeviceCopyCommandInterfaceImpl::CopyImage(CImageResource* pSrc, CImageReso
 	VkImageLayout prevDstLayout      = pDst->GetLayout();
 	VkAccessFlags prevDstAccessFlags = pDst->GetAccess();
 
+	// If the object is marked to be used as SRV in pixel shader, transit its layout to the right one.
+	if (mapping.Flags & DX12_COPY_PIXELSTATE_MARKER)
+	{
+		prevDstLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		prevDstAccessFlags = VK_ACCESS_SHADER_READ_BIT;
+	}
+
 	uint32_t srcBlockWidth = 1, srcBlockHeight = 1, srcBlockBytes;
 	uint32_t dstBlockWidth = 1, dstBlockHeight = 1, dstBlockBytes;
 	const bool bSrcIsBlocks = GetBlockSize(pSrc->GetFormat(), srcBlockWidth, srcBlockHeight, srcBlockBytes);

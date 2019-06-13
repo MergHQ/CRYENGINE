@@ -1376,12 +1376,9 @@ QuatT CScene::GetSelectionTransform(ETransformationSpace space) const
 			r.SetTranslation(r.t / float(selectedElements.size()));
 		}
 
-		if (!_finite(r.t.x) ||
-		    !_finite(r.t.y) ||
-		    !_finite(r.t.z))
+		
+		if (!CRY_VERIFY(_finite(r.t.x) && _finite(r.t.y) && _finite(r.t.z)))
 		{
-			if (::IsDebuggerPresent())
-				__debugbreak();
 			r.SetIdentity();
 		}
 		return r;

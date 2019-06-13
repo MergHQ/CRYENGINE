@@ -456,7 +456,7 @@ bool CD3D9Renderer::FX_DrawToRenderTarget(
 			//Pl.d = -Pl.d;
 			if (pObj)
 			{
-				Matrix44 mat = pObj->GetMatrix(passInfo).GetTransposed();
+				Matrix44 mat = pObj->GetMatrix().GetTransposed();
 				Pl = TransformPlane(mat, Pl);
 			}
 			if ((vPrevPos | Pl.n) - Pl.d < 0)

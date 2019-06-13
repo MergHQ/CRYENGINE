@@ -2953,7 +2953,7 @@ void CMergedMeshRenderNode::RenderRenderMesh(
 	}
 
 	ColorF ambientColor = m_rendParams.AmbientColor;
-	ro->SetAmbientColor(ambientColor, passInfo);
+	ro->SetAmbientColor(ambientColor);
 	ro->m_fAlpha = m_rendParams.fAlpha;
 	ro->m_ObjFlags = FOB_TRANS_MASK | FOB_INSHADOW | FOB_DYNAMIC_OBJECT;
 	ro->m_ObjFlags |= (m_dwRndFlags & ERF_FOB_ALLOW_TERRAIN_LAYER_BLEND) ? FOB_ALLOW_TERRAIN_LAYER_BLEND : FOB_NONE;
@@ -2962,7 +2962,7 @@ void CMergedMeshRenderNode::RenderRenderMesh(
 	{
 		pTempData->userData.bTerrainColorWasUsed = true;
 		ambientColor.a = clamp_tpl((1.0f / 255.f * ucSunDotTerrain), 0.f, 1.f);
-		ro->SetAmbientColor(ambientColor, passInfo);
+		ro->SetAmbientColor(ambientColor);
 		ro->m_ObjFlags |= FOB_BLEND_WITH_TERRAIN_COLOR;
 		ro->m_data.m_pTerrainSectorTextureInfo = pTerrainTexInfo;
 		ro->m_nTextureID = -(int)pTerrainTexInfo->nSlot0 - 1; // nTextureID is set only for proper batching, actual texture id is same for all terrain sectors
@@ -4864,7 +4864,7 @@ void CDeformableNode::UpdateInternalDeform(
 	if (pData->m_State == SDeformableData::READY)
 	{
 		FUNCTION_PROFILER_3DENGINE;
-		Matrix34 worldTM = pRenderObject->GetMatrix(passInfo);
+		Matrix34 worldTM = pRenderObject->GetMatrix();
 
 		// Create a new render mesh and dispatch the asynchronous updates
 #if MMRM_USE_BOUNDS_CHECK
@@ -4949,7 +4949,7 @@ void CDeformableNode::RenderInternalDeform(
 
 		if (m_bbox.IsReset() == false)
 		{
-			Matrix34 worldTM = pRenderObject->GetMatrix(passInfo);
+			Matrix34 worldTM = pRenderObject->GetMatrix();
 			AABB cbbox = AABB::CreateTransformedAABB(worldTM, m_bbox);
 			QueryColliders(m_Colliders, m_nColliders, cbbox);
 			QueryProjectiles(m_Projectiles, m_nProjectiles, cbbox);
@@ -5053,7 +5053,7 @@ void CDeformableNode::RenderInternalDeform(
 	if (!ro)
 		return;
 	ro->m_ObjFlags |= FOB_DYNAMIC_OBJECT;
-	ro->SetMatrix(Matrix34::CreateTranslationMat(centre), passInfo);
+	ro->SetMatrix(Matrix34::CreateTranslationMat(centre));
 	m_renderMesh->Render(ro, passInfo);
 }
 

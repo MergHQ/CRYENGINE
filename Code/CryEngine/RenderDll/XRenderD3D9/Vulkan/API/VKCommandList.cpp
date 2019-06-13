@@ -439,7 +439,7 @@ VkQueueFlagBits CCommandListPool::m_MapQueueType[CMDQUEUE_NUM] =
 	VkQueueFlagBits(CMDLIST_TYPE_COPY)
 };
 
-std::pair<uint32, uint32> CCommandListPool::m_MapQueueBits[1U << 4] =
+std::pair<uint32, uint32> CCommandListPool::m_MapQueueBits[1U << 5] =
 {
 	std::make_pair(0, 0)
 };
@@ -478,7 +478,8 @@ void CCommandListPool::Configure()
 	m_MapQueueType[CMDQUEUE_COMPUTE] = VkQueueFlagBits(CMDLIST_TYPE_COMPUTE /*CRenderer::CV_r_VkHardwareComputeQueue & 7*/);
 	m_MapQueueType[CMDQUEUE_COPY] = VkQueueFlagBits(CMDLIST_TYPE_COPY /*CRenderer::CV_r_VkHardwareCopyQueue & 7*/);
 
-	memset(m_MapQueueBits, ~0U, sizeof(m_MapQueueBits));
+	const uint32 invalidQueueIdx = ~0U;
+	memset(m_MapQueueBits, invalidQueueIdx, sizeof(m_MapQueueBits));
 	memset(m_MapQueueIndices, 0U, sizeof(m_MapQueueIndices));
 	if (const SPhysicalDeviceInfo* pInfo = m_pDevice->GetPhysicalDeviceInfo())
 	{
@@ -493,25 +494,22 @@ void CCommandListPool::Configure()
 			m_MapQueueBits[queueFlags] = std::make_pair(f, queueCount);
 		}
 
-		const int supportedQueueTypeCount = sizeof(m_MapQueueType) / sizeof(m_MapQueueType[0]);
 		int allQueueFlagBits = VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT | VK_QUEUE_TRANSFER_BIT | VK_QUEUE_SPARSE_BINDING_BIT;
-		int lastValidElementIdx = countTrailingZeros32(VK_QUEUE_SPARSE_BINDING_BIT);
 #if CRY_RENDERER_VULKAN >= 11
 		allQueueFlagBits |= VK_QUEUE_PROTECTED_BIT;
-		lastValidElementIdx = countTrailingZeros32(VK_QUEUE_PROTECTED_BIT);
 #endif
 
-		for (int i = 0x0; i <= supportedQueueTypeCount; ++i)
+		for (int queueFlags = 0x1; queueFlags <= allQueueFlagBits; ++queueFlags)
 		{
-			for (int f = 0x0; f <= allQueueFlagBits; ++f)
-			{
-				for (int n = 0x0; n <= lastValidElementIdx; ++n)
-				{
-					int queueFlags = f & ~(1U << n);
+			if (m_MapQueueBits[queueFlags].first == invalidQueueIdx) continue;
 
-					if (m_MapQueueBits[queueFlags].first == 0xFFFFFFFF)
-						m_MapQueueBits[queueFlags] = m_MapQueueBits[f];
-				}
+			for (int subsetQueueFlags = 0x1; subsetQueueFlags < queueFlags; ++subsetQueueFlags)
+			{
+				bool allSubsetFlagsAvailable = (queueFlags & subsetQueueFlags) == subsetQueueFlags;
+
+				// if the subset queue flags is available in the current queueFlags and it is not mapped to another queue flag permutation, yet.
+				if (allSubsetFlagsAvailable && m_MapQueueBits[subsetQueueFlags].first == invalidQueueIdx)
+					m_MapQueueBits[subsetQueueFlags] = m_MapQueueBits[queueFlags];
 			}
 		}
 	}

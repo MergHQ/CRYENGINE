@@ -599,25 +599,25 @@ public:
 		ESystemConfigSpec currentConfigSpec = GetIEditorImpl()->GetEditorConfigSpec();
 
 		actionVery_High->setText(QApplication::translate("MainWindow", "Very High", 0));
-		actionVery_High->setProperty("command", QVariant(QApplication::translate("MainWindow", "general.set_config_spec 4", 0)));
+		actionVery_High->setProperty("command", QString("general.set_config_spec %1").arg(CONFIG_VERYHIGH_SPEC));
 		actionVery_High->setChecked(currentConfigSpec == CONFIG_VERYHIGH_SPEC);
 		actionHigh->setText(QApplication::translate("MainWindow", "High", 0));
-		actionHigh->setProperty("command", QVariant(QApplication::translate("MainWindow", "general.set_config_spec 3", 0)));
+		actionHigh->setProperty("command", QString("general.set_config_spec %1").arg(CONFIG_HIGH_SPEC));
 		actionHigh->setChecked(currentConfigSpec == CONFIG_HIGH_SPEC);
 		actionMedium->setText(QApplication::translate("MainWindow", "Medium", 0));
-		actionMedium->setProperty("command", QVariant(QApplication::translate("MainWindow", "general.set_config_spec 2", 0)));
+		actionMedium->setProperty("command", QString("general.set_config_spec %1").arg(CONFIG_MEDIUM_SPEC));
 		actionMedium->setChecked(currentConfigSpec == CONFIG_MEDIUM_SPEC);
 		actionLow->setText(QApplication::translate("MainWindow", "Low", 0));
-		actionLow->setProperty("command", QVariant(QApplication::translate("MainWindow", "general.set_config_spec 1", 0)));
+		actionLow->setProperty("command", QString("general.set_config_spec %1").arg(CONFIG_LOW_SPEC));
 		actionLow->setChecked(currentConfigSpec == CONFIG_LOW_SPEC);
 		actionXBox_One->setText(QApplication::translate("MainWindow", "XBox One", 0));
-		actionXBox_One->setProperty("command", QVariant(QApplication::translate("MainWindow", "general.set_config_spec 5", 0)));
+		actionXBox_One->setProperty("command", QString("general.set_config_spec %1").arg(CONFIG_DURANGO));
 		actionXBox_One->setChecked(currentConfigSpec == CONFIG_DURANGO);
 		actionPS4->setText(QApplication::translate("MainWindow", "PS4", 0));
-		actionPS4->setProperty("command", QVariant(QApplication::translate("MainWindow", "general.set_config_spec 6", 0)));
+		actionPS4->setProperty("command", QString("general.set_config_spec %1").arg(CONFIG_ORBIS));
 		actionPS4->setChecked(currentConfigSpec == CONFIG_ORBIS);
 		actionCustom->setText(QApplication::translate("MainWindow", "Custom", 0));
-		actionCustom->setProperty("command", QVariant(QApplication::translate("MainWindow", "general.set_config_spec 0", 0)));
+		actionCustom->setProperty("command", QString("general.set_config_spec %1").arg(CONFIG_CUSTOM));
 		actionCustom->setChecked(currentConfigSpec == CONFIG_CUSTOM);
 
 		actionMute_Audio->setText(QApplication::translate("MainWindow", "Mute Audio", 0));

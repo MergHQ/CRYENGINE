@@ -92,7 +92,7 @@ void CLensOpticsStage::Execute()
 				}
 				else
 				{
-					flareLight.m_vPos = pObj->GetMatrix(gcpRendD3D->GetObjectAccessorThreadConfig()).GetTranslation();
+					flareLight.m_vPos = pObj->GetMatrix().GetTranslation();
 					ColorF& c = pLight->m_Color;
 					flareLight.m_cLdrClr.set(c.r, c.g, c.b, 1.0f);
 					flareLight.m_fRadius = pLight->m_fRadius;

@@ -58,14 +58,11 @@ private:
 
 //////////////////////////////////////////////////////////////////////////
 // Class used to allocate/deallocate permanent render objects.
-class CPermanentRenderObject : public CRenderObject
+class CPermanentRenderObject : public IPermanentRenderObject
 {
 public:
 	CPermanentRenderObject()
-		: m_pNextPermanent(nullptr)
-		, m_compiledReadyMask(0)
-		, m_lastCompiledFrame(0)
-		, m_accessLock(0)
+		: m_accessLock(0)
 	{
 		m_bPermanent = true; // must be in constructor
 	};
@@ -112,9 +109,6 @@ public:
 			// Cache used material
 			m_pUsedMaterial = m_pCurrMaterial;
 		}
-		m_bAllCompiledValid = false;
-		m_compiledReadyMask = 0;
-		m_lastCompiledFrame = 0;
 	}
 
 	static CPermanentRenderObject* AllocateFromPool();
@@ -139,13 +133,6 @@ public:
 	//! Persistent object record all items added to the object for the general and for shadow pass.
 	//! These items are then efficiently expanded adding render items to CRenderView lists.
 	SSpecialRenderItemArray<SPermanentRendItem> m_permanentRenderItems[eRenderPass_NumTypes];
-
-	// Next child sub object used for permanent objects
-	CPermanentRenderObject* m_pNextPermanent;
-
-	//! Correspond to the m_passReadyMask, object considered compiled when m_compiledReadyMask == m_passReadyMask
-	int          m_compiledReadyMask;
-	int          m_lastCompiledFrame;
 
 	// Make a reference to a render mesh, to prevent it being deleted while permanent render object still exist.
 	_smart_ptr<CRenderMesh> m_pUsedRenderMesh[eRenderPass_NumTypes];
@@ -190,16 +177,16 @@ private:
 enum EObjectCompilationOptions : uint8
 {
 	eObjCompilationOption_PipelineState             = BIT(0),
-	eObjCompilationOption_PerInstanceConstantBuffer = BIT(1),
-	eObjCompilationOption_PerInstanceExtraResources = BIT(2),
+	eObjCompilationOption_PerDrawConstantBuffer     = BIT(1),
+	eObjCompilationOption_PerDrawExtraResources     = BIT(2),
 	eObjCompilationOption_InputStreams              = BIT(3), // e.g. geometry streams (vertex, index buffers)
 
 	eObjCompilationOption_None                      = 0,
-	eObjCompilationOption_PerIntanceDataOnly        = eObjCompilationOption_PerInstanceConstantBuffer |
-	                                                  eObjCompilationOption_PerInstanceExtraResources,
-	eObjCompilationOption_All                       = eObjCompilationOption_PipelineState |
-	                                                  eObjCompilationOption_PerInstanceConstantBuffer |
-	                                                  eObjCompilationOption_PerInstanceExtraResources |
+	eObjCompilationOption_PerDrawDataOnly           = eObjCompilationOption_PerDrawConstantBuffer     |
+	                                                  eObjCompilationOption_PerDrawExtraResources,
+	eObjCompilationOption_All                       = eObjCompilationOption_PipelineState             |
+	                                                  eObjCompilationOption_PerDrawConstantBuffer     |
+	                                                  eObjCompilationOption_PerDrawExtraResources |
 	                                                  eObjCompilationOption_InputStreams
 };
 DEFINE_ENUM_FLAG_OPERATORS(EObjectCompilationOptions);
@@ -297,7 +284,7 @@ public:
 	SShaderItem            m_shaderItem;
 
 	//////////////////////////////////////////////////////////////////////////
-	EObjectCompilationOptions m_compiledFlags;
+	EObjectCompilationOptions m_compilationDirtyFlags[CRenderObject::eRenderPass_NumTypes];
 
 	// Optimized access to constants that can be directly bound to the root signature.
 	SRootConstants         m_rootConstants;
@@ -325,6 +312,7 @@ public:
 		, m_perDrawInstances(1)
 		, m_pRenderElement(nullptr)
 		, m_pRO(nullptr)
+		, m_compilationDirtyFlags{ eObjCompilationOption_All, eObjCompilationOption_All }
 		, m_TessellationPatchIDOffset(-1)
 		, m_pTessellationAdjacencyBuffer(nullptr)
 		, m_pExtraSkinWeights(nullptr)
@@ -338,7 +326,7 @@ public:
 
 	// Compile(): Returns true if the compilation is fully finished, false if compilation should be retriggered later
 
-	bool Compile(const EObjectCompilationOptions& compilationOptions, uint64 objFlags, ERenderElementFlags elmFlags, const AABB& localAABB, CRenderView* pRenderView);
+	bool Compile(EObjectCompilationOptions compilationOptions, const CRenderObject::SInstanceInfo& instanceInfo, uint64 objFlags, ERenderElementFlags elmFlags, const AABB& localAABB, CRenderView* pRenderView);
 	void PrepareForUse(CDeviceCommandListRef RESTRICT_REFERENCE commandList, bool bInstanceOnly) const;
 
 	void DrawToCommandList(const SGraphicsPipelinePassContext& RESTRICT_REFERENCE passContext, CDeviceCommandList* commandList, CConstantBuffer* pDynamicInstancingBuffer = nullptr, uint32 dynamicInstancingCount = 1) const;
@@ -357,7 +345,7 @@ public:
 	static void                   SetStaticPools(CRenderObjectsPools* pools) { s_pPools = pools; }
 
 private:
-	void CompilePerDrawCB(CRenderObject* pRenderObject, uint64 objFlags);
+	void CompilePerDrawCB(CRenderObject* pRenderObject, const CRenderObject::SInstanceInfo& instanceInfo, uint64 objFlags);
 	void CompilePerInstanceCB(CRenderObject* pRenderObject, bool bForce);
 	void CompilePerDrawExtraResources(CRenderObject* pRenderObject, CRenderView* pRenderView);
 

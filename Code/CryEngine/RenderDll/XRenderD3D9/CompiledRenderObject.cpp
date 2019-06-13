@@ -87,6 +87,8 @@ CCompiledRenderObject::~CCompiledRenderObject()
 	{
 		m_pso[i] = DevicePipelineStatesArray();
 	}
+
+	m_compilationDirtyFlags[0] = m_compilationDirtyFlags[1] = eObjCompilationOption_All;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -117,8 +119,7 @@ bool CCompiledRenderObject::CheckDynamicInstancing(const SGraphicsPipelinePassCo
 		return false;
 
 	// Check that vegetation bending match
-	const auto accessorConfig = gcpRendD3D->GetObjectAccessorThreadConfig();
-	if (m_pRO->GetBendingData(accessorConfig) != pNextObject->m_pRO->GetBendingData(accessorConfig))
+	if (m_pRO->GetBendingData() != pNextObject->m_pRO->GetBendingData())
 		return false;
 
 	// Do not instance vegetation across different terrain sectors
@@ -148,13 +149,12 @@ void CCompiledRenderObject::UpdatePerDrawCB(void* pData, size_t size)
 
 	CRY_ASSERT_MESSAGE(!m_perDrawCB->IsNullBuffer(), "Not allowed to write into the Null resource!");
 	m_perDrawCB->UpdateBuffer(pData, size);
+
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CCompiledRenderObject::CompilePerDrawCB(CRenderObject* pRenderObject, uint64 objFlags)
+void CCompiledRenderObject::CompilePerDrawCB(CRenderObject* pRenderObject, const CRenderObject::SInstanceInfo& instanceInfo, uint64 objFlags)
 {
-	const auto accessorConfig = gcpRendD3D->GetObjectAccessorThreadConfig();
-
 	const CCompiledRenderObject* pRootCompiled = pRenderObject->m_pCompiledObject;
 	if (pRootCompiled && pRootCompiled != this && pRootCompiled->m_perDrawCB)
 	{
@@ -197,8 +197,8 @@ void CCompiledRenderObject::CompilePerDrawCB(CRenderObject* pRenderObject, uint6
 		m_bDynamicInstancingPossible = false;
 
 	// Common shader per instance data.
-	const auto& matrix      = pRenderObject->GetMatrix     (accessorConfig);
-	const auto& bendingData = pRenderObject->GetBendingData(accessorConfig);
+	const auto& matrix      = instanceInfo.m_Matrix;
+	const auto& bendingData = instanceInfo.m_Bending;
 
 	m_instanceData.matrix = matrix;
 	m_instanceData.dissolve = dissolve;
@@ -328,7 +328,7 @@ void CCompiledRenderObject::CompilePerDrawCB(CRenderObject* pRenderObject, uint6
 		cb->CD_CustomData1 = silhouetteColor;
 		cb->CD_CustomData2.x = alias_cast<float>(pRenderObject->m_editorSelectionID);
 
-		ColorF ambColor = pRenderObject->GetAmbientColor(accessorConfig);
+		ColorF ambColor = instanceInfo.m_AmbColor;
 		uint32 ambColorPacked =
 			((static_cast<uint32>(ambColor.r * 255.0f) & 0xFF) << 24)
 			| ((static_cast<uint32>(ambColor.g * 255.0f) & 0xFF) << 16)
@@ -338,15 +338,15 @@ void CCompiledRenderObject::CompilePerDrawCB(CRenderObject* pRenderObject, uint6
 
 		UpdatePerDrawCB(cb, sizeof(HLSL_PerDrawConstantBuffer_Base));
 	}
-
-	CryInterlockedExchangeOr((volatile LONG*)&m_compiledFlags, eObjCompilationOption_PerInstanceConstantBuffer);
 }
 
 void CCompiledRenderObject::CompilePerInstanceCB(CRenderObject* pRenderObject, bool bForce)
 {
 	size_t nSrcInsts = pRenderObject->m_Instances.size();
 	if (m_perDrawInstances == nSrcInsts && !bForce)
+	{
 		return;
+	}
 
 	assert(nSrcInsts != 0 || m_bDynamicInstancingPossible);
 	m_perDrawInstances = std::max(nSrcInsts, (size_t)1);
@@ -382,6 +382,9 @@ void CCompiledRenderObject::CompilePerInstanceCB(CRenderObject* pRenderObject, b
 		pCB->SetDebugName("Generic Per-Instance CB");
 		m_pInstancingConstBuffer = std::move(pCB);
 	}
+
+
+	
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -391,7 +394,6 @@ void CCompiledRenderObject::CompilePerDrawExtraResources(CRenderObject* pRenderO
 	{
 		m_perDrawExtraResources = CSceneRenderPass::GetDefaulDrawExtraResourceSet();
 		CRY_ASSERT_MESSAGE(m_perDrawExtraResources && m_perDrawExtraResources->IsValid(), "Bad shared default resources");
-		CryInterlockedExchangeOr((volatile LONG*)&m_compiledFlags, eObjCompilationOption_PerInstanceExtraResources);
 		return;
 	}
 
@@ -432,8 +434,6 @@ void CCompiledRenderObject::CompilePerDrawExtraResources(CRenderObject* pRenderO
 
 	m_perDrawExtraResources = GetDeviceObjectFactory().CreateResourceSet(CDeviceResourceSet::EFlags_ForceSetAllState);
 	m_perDrawExtraResources->Update(perInstanceExtraResources);
-
-	CryInterlockedExchangeOr((volatile LONG*)&m_compiledFlags, eObjCompilationOption_PerInstanceExtraResources);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -497,17 +497,20 @@ void CCompiledRenderObject::TrackStats(const SGraphicsPipelinePassContext& RESTR
 #endif
 
 //////////////////////////////////////////////////////////////////////////
-bool CCompiledRenderObject::Compile(const EObjectCompilationOptions& compilationOptions, uint64 objFlags, ERenderElementFlags elmFlags, const AABB& localAABB, CRenderView* pRenderView)
+bool CCompiledRenderObject::Compile(EObjectCompilationOptions compilationOptions, const CRenderObject::SInstanceInfo& instanceInfo, uint64 objFlags, ERenderElementFlags elmFlags, const AABB& localAABB, CRenderView* pRenderView)
 {
 	CRY_PROFILE_FUNCTION(PROFILE_RENDERER);
 
-	//int nFrameId = gEnv->pRenderer->GetFrameID(false);
-	//{ char buf[1024]; cry_sprintf(buf,"compiled: %p : frame(%d) \r\n", pRenderObject, nFrameId); OutputDebugString(buf); }
+	const CRenderObject::ERenderPassType passType = pRenderView->GetPassType();
 
+	compilationOptions |= m_compilationDirtyFlags[passType];
+	if (compilationOptions == eObjCompilationOption_None)
+		return true;
+	
 	CRenderObject* pRenderObject = m_pRO;
 	const bool bMuteWarnings = true;  // @TODO: Remove later
 
-	bool updateInstanceDataOnly = (compilationOptions & eObjCompilationOption_PerIntanceDataOnly) == compilationOptions;
+	bool updateInstanceDataOnly = (compilationOptions & eObjCompilationOption_PerDrawDataOnly) == compilationOptions;
 
 	m_bCustomRenderElement = false;
 
@@ -524,11 +527,11 @@ bool CCompiledRenderObject::Compile(const EObjectCompilationOptions& compilation
 
 	const EDataType reType = m_pRenderElement->mfGetType();
 
-	if (compilationOptions & eObjCompilationOption_PerInstanceConstantBuffer && reType != eDATA_Particle)
+	if (compilationOptions & eObjCompilationOption_PerDrawConstantBuffer && reType != eDATA_Particle)
 	{
 		// Update AABB by tranforming from local space
 		const auto& camera = pRenderView->GetCamera(pRenderView->GetCurrentEye());
-		m_aabb = pRenderObject->TransformAABB(objFlags, localAABB, camera.GetPosition(), gcpRendD3D->GetObjectAccessorThreadConfig());
+		m_aabb = pRenderObject->TransformAABB(objFlags, localAABB, camera.GetPosition());
 	}
 
 	const bool bMeshCompatibleRenderElement = reType == eDATA_Mesh || reType == eDATA_Terrain || reType == eDATA_GeomCache || reType == eDATA_ClientPoly;
@@ -569,14 +572,20 @@ bool CCompiledRenderObject::Compile(const EObjectCompilationOptions& compilation
 		m_pTessellationAdjacencyBuffer = reinterpret_cast<CGpuBuffer*>(geomInfo.pTessellationAdjacencyBuffer);
 	}
 
-	if (compilationOptions & eObjCompilationOption_PerInstanceConstantBuffer)
-		CompilePerDrawCB(pRenderObject, objFlags);
+	if (compilationOptions & eObjCompilationOption_PerDrawConstantBuffer)
+	{
+		CompilePerDrawCB(pRenderObject, instanceInfo, objFlags);
+		m_compilationDirtyFlags[passType] &= ~eObjCompilationOption_PerDrawConstantBuffer;
+	}
 
-	if (!pRenderObject->m_Instances.empty() || m_bDynamicInstancingPossible)
+	if ((!pRenderObject->m_Instances.empty() || m_bDynamicInstancingPossible))
 		CompilePerInstanceCB(pRenderObject, m_bDynamicInstancingPossible);
 
-	if (compilationOptions & eObjCompilationOption_PerInstanceExtraResources)
+	if (compilationOptions & eObjCompilationOption_PerDrawExtraResources)
+	{
 		CompilePerDrawExtraResources(pRenderObject, pRenderView);
+		m_compilationDirtyFlags[passType] &= ~eObjCompilationOption_PerDrawExtraResources;
+	}
 
 	// Data may come in later
 	if (!m_perDrawCB || !m_perDrawExtraResources || !m_perDrawExtraResources->IsValid())
@@ -617,7 +626,7 @@ bool CCompiledRenderObject::Compile(const EObjectCompilationOptions& compilation
 		m_drawParams[eDrawParam_General].m_nStartIndex = m_drawParams[eDrawParam_Shadow].m_nStartIndex = geomInfo.nFirstIndex;
 		m_drawParams[eDrawParam_General].m_nVerticesCount = m_drawParams[eDrawParam_Shadow].m_nVerticesCount = geomInfo.nNumVertices;
 
-		CryInterlockedExchangeOr((volatile LONG*)&m_compiledFlags, eObjCompilationOption_InputStreams);
+		m_compilationDirtyFlags[passType] &= ~eObjCompilationOption_InputStreams;
 	}
 
 	if (pRenderObject->m_bPermanent && reType == eDATA_Mesh)
@@ -674,7 +683,7 @@ bool CCompiledRenderObject::Compile(const EObjectCompilationOptions& compilation
 			}
 		}
 
-		CryInterlockedExchangeOr((volatile LONG*)&m_compiledFlags, eObjCompilationOption_PipelineState);
+		m_compilationDirtyFlags[passType] &= ~eObjCompilationOption_PipelineState;
 	}
 
 	m_bIncomplete = false;
@@ -843,9 +852,11 @@ CPermanentRenderObject::~CPermanentRenderObject()
 
 	if (m_pNextPermanent)
 	{
-		FreeToPool(m_pNextPermanent);
+		FreeToPool(static_cast<CPermanentRenderObject*>(m_pNextPermanent));
 		m_pNextPermanent = nullptr;
 	}
+
+	m_bPermanent = false; 
 }
 
 CCompiledRenderObject* CCompiledRenderObject::AllocateFromPool()

@@ -418,7 +418,7 @@ void CTerrainNode::DrawArray(const SRenderingPassInfo& passInfo)
 		if (!GetObjManager()->AddOrCreatePersistentRenderObject(pTempData, pTerrainRenderObject, &lodValue, objMat, passInfo))
 		{
 			pTerrainRenderObject->m_pRenderNode = this;
-			pTerrainRenderObject->SetAmbientColor(Get3DEngine()->GetSkyColor(), passInfo);
+			pTerrainRenderObject->SetAmbientColor(Get3DEngine()->GetSkyColor());
 			pTerrainRenderObject->m_fDistance = m_arrfDistance[passInfo.GetRecursiveLevel()];
 
 			pTerrainRenderObject->m_ObjFlags |= FOB_TRANS_TRANSLATE | FOB_TRANS_SCALE;
@@ -447,7 +447,7 @@ void CTerrainNode::DrawArray(const SRenderingPassInfo& passInfo)
 	if (!GetObjManager()->AddOrCreatePersistentRenderObject(pTempData, pTerrainRenderObject, &lodValue, objMat, passInfo))
 	{
 		pTerrainRenderObject->m_pRenderNode = nullptr;
-		pTerrainRenderObject->SetAmbientColor(Get3DEngine()->GetSkyColor(), passInfo);
+		pTerrainRenderObject->SetAmbientColor(Get3DEngine()->GetSkyColor());
 		pTerrainRenderObject->m_fDistance = m_arrfDistance[passInfo.GetRecursiveLevel()];
 
 		pTerrainRenderObject->m_ObjFlags |= FOB_TRANS_TRANSLATE | FOB_ALLOW_TERRAIN_LAYER_BLEND | FOB_ALLOW_DECAL_BLEND;
@@ -506,7 +506,7 @@ void CTerrainNode::DrawArray(const SRenderingPassInfo& passInfo)
 					continue;
 
 				pDetailObj->m_pRenderNode = nullptr;
-				pDetailObj->SetAmbientColor(Get3DEngine()->GetSkyColor(), passInfo);
+				pDetailObj->SetAmbientColor(Get3DEngine()->GetSkyColor());
 				pDetailObj->m_fDistance = m_arrfDistance[passInfo.GetRecursiveLevel()];
 
 				pDetailObj->m_ObjFlags |= passInfo.IsGeneralPass() ? FOB_NO_FOG : FOB_NONE; // enable fog on recursive rendering (per-vertex)

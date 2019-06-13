@@ -132,9 +132,6 @@ struct IRenderView : public CMultiThreadRefCount
 
 	virtual void   SwitchUsageMode(EUsageMode mode) = 0;
 
-	// All jobs that write items to render view should share and use this synchronization mutex.
-	virtual CryJobState* GetWriteMutex() = 0;
-
 	//! Enable global fog and provide the color when enabled.
 	virtual void SetGlobalFog(const SRenderGlobalFogDescription& fogDescription) = 0;
 

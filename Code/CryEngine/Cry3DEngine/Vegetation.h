@@ -156,7 +156,7 @@ public:
 	}
 
 	// Apply bending parameters to the CRenderObject
-	void FillBendingData(CRenderObject* pObj, const SRenderingPassInfo& passInfo) const;
+	void FillBendingData(CRenderObject* pObj) const;
 
 	// Custom pool allocator for vegetation
 	static void* operator new(size_t size, EAllocatorId allocatorId = eAllocator_Default);

@@ -850,13 +850,13 @@ void CBreakableGlassRenderNode::Render(const SRendParams& renderParams, const SR
 			if (CRenderObject* pRenderObject = passInfo.GetIRenderView()->AllocateTemporaryRenderObject())
 			{
 				// Set render object properties
-				pRenderObject->SetMatrix(m_matrix, passInfo);
+				pRenderObject->SetMatrix(m_matrix);
 				pRenderObject->m_ObjFlags |= FOB_TRANS_MASK;
 				pRenderObject->m_fSort = 0;
 				pRenderObject->m_fDistance = renderParams.fDistance;
 				pRenderObject->m_pCurrMaterial = NULL;  // Null flags as cracks
 				pRenderObject->m_pRenderNode = this;
-				pRenderObject->SetAmbientColor(renderParams.AmbientColor, passInfo);
+				pRenderObject->SetAmbientColor(renderParams.AmbientColor);
 				pRenderObject->m_breakableGlassSubFragIndex = GLASSCFG_GLASS_PLANE_FLAG_LOD;
 				pRenderObject->m_nTextureID = renderParams.nTextureID;
 
@@ -879,13 +879,13 @@ void CBreakableGlassRenderNode::Render(const SRendParams& renderParams, const SR
 				// Set render object properties
 				Matrix34 mat = m_matrix;
 				mat.AddTranslation(offset);
-				pRenderObject->SetMatrix(mat, passInfo);
+				pRenderObject->SetMatrix(mat);
 				pRenderObject->m_ObjFlags |= FOB_TRANS_MASK;
 				pRenderObject->m_fSort = 0;
 				pRenderObject->m_fDistance = renderParams.fDistance;
 				pRenderObject->m_pCurrMaterial = pMaterial;  // Material flags as plane
 				pRenderObject->m_pRenderNode = this;
-				pRenderObject->SetAmbientColor(renderParams.AmbientColor, passInfo);
+				pRenderObject->SetAmbientColor(renderParams.AmbientColor);
 				pRenderObject->m_breakableGlassSubFragIndex = GLASSCFG_GLASS_PLANE_FLAG_LOD;
 				pRenderObject->m_nTextureID = renderParams.nTextureID;
 
@@ -917,14 +917,14 @@ void CBreakableGlassRenderNode::Render(const SRendParams& renderParams, const SR
 					physFrag.m_initialised = true;
 
 					// Set render object properties
-					pRenderObject->SetMatrix(physFrag.m_matrix, passInfo);
+					pRenderObject->SetMatrix(physFrag.m_matrix);
 					pRenderObject->m_ObjFlags |= FOB_TRANS_MASK;
 					pRenderObject->m_fSort = 0;
 					pRenderObject->m_fAlpha = alpha;
 					pRenderObject->m_fDistance = dist;
 					pRenderObject->m_pCurrMaterial = pMaterial;  // Material flags as plane
 					pRenderObject->m_pRenderNode = this;
-					pRenderObject->SetAmbientColor(renderParams.AmbientColor, passInfo);
+					pRenderObject->SetAmbientColor(renderParams.AmbientColor);
 					pRenderObject->m_breakableGlassSubFragIndex = physFrag.m_bufferIndex;
 					pRenderObject->m_nTextureID = renderParams.nTextureID;
 

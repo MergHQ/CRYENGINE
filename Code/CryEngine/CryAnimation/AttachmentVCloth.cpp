@@ -612,7 +612,7 @@ void CAttachmentVCLOTH::RenderAttachment(SRendParams& RendParams, const SRenderi
 
 	pObj->m_fAlpha = RendParams.fAlpha;
 	pObj->m_fDistance = RendParams.fDistance;
-	pObj->SetAmbientColor(RendParams.AmbientColor, passInfo);
+	pObj->SetAmbientColor(RendParams.AmbientColor);
 
 	uLocalObjFlags |= RendParams.dwFObjFlags;
 
@@ -634,7 +634,7 @@ void CAttachmentVCLOTH::RenderAttachment(SRendParams& RendParams, const SRenderi
 
 	assert(RendParams.pMatrix);
 	Matrix34 RenderMat34 = (*RendParams.pMatrix);
-	pObj->SetMatrix(RenderMat34, passInfo);
+	pObj->SetMatrix(RenderMat34);
 	pObj->m_nClipVolumeStencilRef = RendParams.nClipVolumeStencilRef;
 	pObj->m_nTextureID = RendParams.nTextureID;
 

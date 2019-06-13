@@ -786,7 +786,7 @@ void CParticleContainer::Render(SRendParams const& RenParams, SPartRenderParams 
 		}
 		
 		job.pRenderObject->m_ObjFlags = ERenderObjectFlags(nObjFlags & ~0xFF) | RenParams.dwFObjFlags;
-		job.pRenderObject->SetInstanceDataDirty();
+		job.pRenderObject->SetInstanceDataDirty(true);
 
 		pOD->m_FogVolumeContribIdx = PRParams.m_nFogVolumeContribIdx;
 
@@ -814,9 +814,7 @@ void CParticleContainer::Render(SRendParams const& RenParams, SPartRenderParams 
 		if (pParams->fTexAspect == 0.f)
 			non_const(*m_pParams).UpdateTextureAspect();
 
-		int passId = passInfo.IsShadowPass() ? 1 : 0;
-		int passMask = BIT(passId);
-		pRenderObject->m_passReadyMask |= passMask;
+		pRenderObject->SetPreparedForPass(passInfo.GetPassType());
 
 		passInfo.GetIRenderView()->AddPermanentObject(
 			pRenderObject,
@@ -831,7 +829,7 @@ CRenderObject* CParticleContainer::CreateRenderObject(uint64 nObjFlags, const SR
 	SRenderObjData* pOD = pRenderObject->GetObjData();
 
 	pRenderObject->m_pRE = gEnv->pRenderer->EF_CreateRE(eDATA_Particle);
-	pRenderObject->SetMatrix(Matrix34::CreateIdentity(), passInfo);
+	pRenderObject->SetMatrix(Matrix34::CreateIdentity());
 	pRenderObject->m_RState = uint8(nObjFlags);
 	pRenderObject->m_pCurrMaterial = pParams->pMaterial;
 	pOD->m_pParticleShaderData = &GetEffect()->GetParams().ShaderData;

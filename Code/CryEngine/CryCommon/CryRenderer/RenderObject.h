@@ -233,14 +233,6 @@ struct SRenderObjData
 /// It can be compiled into the platform specific efficient rendering compiled object.
 ///
 //////////////////////////////////////////////////////////////////////
-struct SRenderObjectAccessThreadConfig
-{
-	const threadID objAccessorThreadId;
-	SRenderObjectAccessThreadConfig() = delete;
-	explicit SRenderObjectAccessThreadConfig(threadID tID) : objAccessorThreadId(tID) {}
-};
-
-
 class CRY_ALIGN(16) CRenderObject
 {
 public:
@@ -270,49 +262,44 @@ public:
 	{
 		Matrix34     m_Matrix;
 		ColorF       m_AmbColor;
-		ColorF       m_FogVolumeContribution;
-
 		SBendingData m_Bending;
 	};
 
 public:
 	ILINE void SetIdentityMatrix()
 	{
-		for (auto& II : m_II)
-		{
-			II.m_Matrix = Matrix34::CreateIdentity();
-		}
+		m_II.m_Matrix = Matrix34::CreateIdentity();
 	}
 
 	// The template is used to defer the function compilation as SRenderingPassInfo and gcpRendD3D are not defined at this point
-	ILINE void SetMatrix(const Matrix34& mat, const SRenderObjectAccessThreadConfig& roThreadAccessThreadCfg)
+	ILINE void SetMatrix(const Matrix34& mat)
 	{
-		m_II[roThreadAccessThreadCfg.objAccessorThreadId].m_Matrix = mat;
+		m_II.m_Matrix = mat;
 	}
 
-	ILINE void SetAmbientColor(const ColorF& ambColor, const SRenderObjectAccessThreadConfig& roThreadAccessThreadCfg)
+	ILINE void SetAmbientColor(const ColorF& ambColor)
 	{
-		m_II[roThreadAccessThreadCfg.objAccessorThreadId].m_AmbColor = ambColor;
+		m_II.m_AmbColor = ambColor;
 	}
 
-	ILINE void SetBendingData(const SBendingData& vbend, const SRenderObjectAccessThreadConfig& roThreadAccessThreadCfg)
+	ILINE void SetBendingData(const SBendingData& vbend)
 	{
-		m_II[roThreadAccessThreadCfg.objAccessorThreadId].m_Bending = vbend;
+		m_II.m_Bending = vbend;
 	}
 
-	ILINE const Matrix34& GetMatrix(const SRenderObjectAccessThreadConfig& roThreadAccessThreadCfg) const
+	ILINE const Matrix34& GetMatrix() const
 	{
-		return m_II[roThreadAccessThreadCfg.objAccessorThreadId].m_Matrix;
+		return m_II.m_Matrix;
 	}
 
-	ILINE const ColorF& GetAmbientColor(const SRenderObjectAccessThreadConfig& roThreadAccessThreadCfg) const
+	ILINE const ColorF& GetAmbientColor() const
 	{
-		return m_II[roThreadAccessThreadCfg.objAccessorThreadId].m_AmbColor;
+		return m_II.m_AmbColor;
 	}
 
-	ILINE const SBendingData& GetBendingData(const SRenderObjectAccessThreadConfig& roThreadAccessThreadCfg) const
+	ILINE const SBendingData& GetBendingData() const
 	{
-		return m_II[roThreadAccessThreadCfg.objAccessorThreadId].m_Bending;
+		return m_II.m_Bending;
 	}
 
 	ERenderObjectFlags m_ObjFlags;     //!< Combination of FOB_ flags.
@@ -338,22 +325,21 @@ public:
 	uint8 m_DissolveRef;               //!< Dissolve value
 	uint8 m_RState;                    //!< Render state used for object
 
+	bool   m_isPreparedForPass[eRenderPass_NumTypes] = { false, false };
+	bool   m_isInstanceDataDirty[eRenderPass_NumTypes] = { false, false };
+
+	bool   m_bPermanent;                            //!< Object is permanent and persistent across multiple frames
+
 	uint32 m_nMaterialLayers;          //!< Which mtl layers active and how much to blend them
 
 	IRenderNode* m_pRenderNode;        //!< Will define instance id.
 	IMaterial* m_pCurrMaterial;        //!< Parent material used for render object.
 	CRenderElement* m_pRE;             //!< RenderElement used by this CRenderObject
 
-	// Linked list of compiled objects, one per mesh subset (Chunk).
+	// Will point to the CCompiledRenderObject of the last renderitem of either general or shadow pass render item list
+	// NOTE: this is used for sharing per draw constant buffer between all mesh subsets (chunk).
+	// DO NOT USE IT FOR ANYTHING ELSE
 	CCompiledRenderObject* m_pCompiledObject;
-
-	// Common flags
-	bool m_bWasDeleted;                               //!< Object was deleted and in unusable state
-	bool m_bPermanent;                                //!< Object is permanent and persistent across multiple frames
-	bool m_bInstanceDataDirty[eRenderPass_NumTypes];  //!< Object per instance data dirty and needs to be recompiled, (When only the instance data need recompilation)
-	bool m_bAllCompiledValid;                         //!< Set to true when compiled successfully.
-
-	volatile uint32 m_passReadyMask;                  //!< For Persistent Render Objects, This render object will be submitted for filling once for every not ready pass (should be 32 bit for atomic operation to work on it)
 
 	//! Embedded SRenderObjData, optional data carried by CRenderObject
 	SRenderObjData m_data;
@@ -366,7 +352,7 @@ public:
 protected:
 	//////////////////////////////////////////////////////////////////////////
 	// Double buffered since RT and main/job thread will access it simultaneously. One for RT and one for main/job thread 
-	SInstanceInfo m_II[RT_COMMAND_BUF_COUNT];             //!< Per instance data
+	SInstanceInfo m_II;             //!< Per instance data
 
 public:
 	//////////////////////////////////////////////////////////////////////////
@@ -384,14 +370,14 @@ public:
 	}
 	~CRenderObject()
 	{
-	};                   // non virtual destructor!
+		CRY_ASSERT(!m_bPermanent);			
+	}                   // non virtual destructor!
 
 	//=========================================================================================================
 
 	inline void  Init()
 	{
 		m_ObjFlags = FOB_NONE;
-		SetInstanceDataDirty(false);
 
 		m_bPermanent = false;
 		m_nRenderQuality = 65535;
@@ -413,43 +399,43 @@ public:
 
 		m_nRTMask = 0;
 		m_pRenderNode = NULL;
-
-		m_bWasDeleted = false;
-		m_bAllCompiledValid = false;
-
-		m_passReadyMask = 0;
 		m_pCompiledObject = nullptr;
 
 		m_Instances.clear();
 
 		m_data.Init();
 
-		m_II[0].m_Matrix.SetIdentity();
-		m_II[0].m_AmbColor = Col_White;
-		m_II[0].m_Bending = { 0.0f, 0.0f };
-
-		m_II[1] = m_II[0];
+		m_II.m_Matrix.SetIdentity();
+		m_II.m_AmbColor = Col_White;
+		m_II.m_Bending = { 0.0f, 0.0f };
 
 		m_editorSelectionID = 0;
 	}
 
-	void                    AssignId(uint32 id) { m_Id = id; }
-
-	ILINE void SetInstanceDataDirty(bool dirty = true)
-	{
-		for (uint32_t i = 0; i < eRenderPass_NumTypes; ++i)
-			m_bInstanceDataDirty[i] = dirty;
-	}
+	void AssignId(uint32 id) { m_Id = id; }
 
 	ILINE SRenderObjData*         GetObjData()       { return &m_data; }
 	ILINE const SRenderObjData*   GetObjData() const { return &m_data; }
 
 	ILINE CRenderElement*         GetRE() const      { return m_pRE; }
 
-	template <typename ObjectAccessor>
-	AABB TransformAABB(uint64 objFlags, const AABB &aabb, const Vec3 &cameraPosition, ObjectAccessor &&accessor) const
+		// main thread only!
+	bool IsInstanceDataDirty(CRenderObject::ERenderPassType passType)                 const  { return m_isInstanceDataDirty[passType]; }
+	bool SetInstanceDataDirty(CRenderObject::ERenderPassType passType, bool setDirty = true) { return m_isInstanceDataDirty[passType] = setDirty; }
+	void SetInstanceDataDirty(bool setDirty = true) { for (uint passType = 0; passType < eRenderPass_NumTypes; ++passType) SetInstanceDataDirty((ERenderPassType)passType, setDirty); }
+
+	// main thread only!
+	bool IsPreparedForPass(CRenderObject::ERenderPassType passType)                   const   { return m_isPreparedForPass[passType]; }
+	bool SetPreparedForPass(CRenderObject::ERenderPassType passType, bool setPrepared = true) { return m_isPreparedForPass[passType] = setPrepared;}
+
+	const CRenderObject::SInstanceInfo& GetInstanceInfo() const
 	{
-		auto m = GetMatrix(std::forward<ObjectAccessor>(accessor));
+		return m_II;
+	}
+
+	AABB TransformAABB(uint64 objFlags, const AABB &aabb, const Vec3 &cameraPosition) const
+	{
+		auto m = GetMatrix();
 		// Convert from camera space to world space for nearest
 		if (objFlags & FOB_NEAREST)
 			m.AddTranslation(cameraPosition);
@@ -474,6 +460,36 @@ protected:
 
 	friend class CRenderer;
 
+};
+
+// TODO We should check ever growing list of renderobjects chained each other.
+class IPermanentRenderObject : public CRenderObject
+{
+public: 
+	static const int MaxFailedCompilationCount = 42;
+
+public:
+	~IPermanentRenderObject()
+	{
+	}
+
+	// Renderthread only!
+	void   ResetFailedCompilationCount(CRenderObject::ERenderPassType passType)             { m_failedCompilations[passType] = 0; }
+	uint16 GetFailedCompilationCount(CRenderObject::ERenderPassType passType)         const { return m_failedCompilations[passType]; }
+	uint16 IncrementFailedCompilationCount(CRenderObject::ERenderPassType passType)         { return ++m_failedCompilations[passType]; }
+	bool   IsCompiledForPass(CRenderObject::ERenderPassType passType)                 const { return m_isCompiledForPass[passType]; }
+	bool   HasSubObject()                                                             const { return m_pNextPermanent != nullptr; }
+
+	void   SetCompiledForPass(CRenderObject::ERenderPassType passType, bool isCompiled = true)  { m_isCompiledForPass[passType] = isCompiled; }
+
+	// Next child sub object used for permanent objects
+	IPermanentRenderObject* m_pNextPermanent = nullptr;
+
+	uint16              m_failedCompilations [eRenderPass_NumTypes] = { 0, 0 };
+	bool                m_isCompiledForPass  [eRenderPass_NumTypes] = { false, false };
+	
+protected:
+	IPermanentRenderObject() = default;
 };
 
 //! \endcond

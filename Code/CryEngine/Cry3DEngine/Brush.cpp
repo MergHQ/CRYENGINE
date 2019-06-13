@@ -859,7 +859,7 @@ void CBrush::Render(const CLodValue& lodValue, const SRenderingPassInfo& passInf
 		// Foliage and deform do not support permanent render objects
 		// HUD is managed in custom render-lists and also doesn't support it
 		pObj = passInfo.GetIRenderView()->AllocateTemporaryRenderObject();
-		pObj->SetMatrix(transformMatrix, passInfo);
+		pObj->SetMatrix(transformMatrix);
 	}
 	if (!pObj)
 	{
@@ -936,9 +936,9 @@ void CBrush::Render(const CLodValue& lodValue, const SRenderingPassInfo& passInf
 	// temp fix to update ambient color (Vlad please review!)
 	pObj->m_nClipVolumeStencilRef = userData.m_pClipVolume ? userData.m_pClipVolume->GetStencilRef() : 0;
 	if (auto pVisArea = GetEntityVisArea())
-		pObj->SetAmbientColor(pVisArea->GetFinalAmbientColor(), passInfo);
+		pObj->SetAmbientColor(pVisArea->GetFinalAmbientColor());
 	else
-		pObj->SetAmbientColor(Get3DEngine()->GetSkyColor(), passInfo);
+		pObj->SetAmbientColor(Get3DEngine()->GetSkyColor());
 	//////////////////////////////////////////////////////////////////////////
 	pObj->m_editorSelectionID = m_nEditorSelectionID;
 
@@ -990,12 +990,12 @@ void CBrush::Render(const CLodValue& lodValue, const SRenderingPassInfo& passInf
 	if ((GetRndFlags() & ERF_RECVWIND) && GetCVars()->e_VegetationBending)
 	{
 		// this is default value for vegetation if bending in veg group is set to 1
-		pObj->SetBendingData({ 0.1f, m_pStatObj->m_fRadiusVert }, passInfo);
+		pObj->SetBendingData({ 0.1f, m_pStatObj->m_fRadiusVert });
 		pObj->m_ObjFlags |= FOB_BENDED | FOB_DYNAMIC_OBJECT;
 	}
 	else
 	{
-		pObj->SetBendingData({ 0.0f, 0.0f }, passInfo);
+		pObj->SetBendingData({ 0.0f, 0.0f });
 	}
 
 	//IFoliage* pFoliage = GetFoliage(-1);

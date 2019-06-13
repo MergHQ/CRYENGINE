@@ -532,7 +532,7 @@ void CAttachmentSKIN::RenderAttachment(SRendParams& RendParams, const SRendering
 
 	pObj->m_fAlpha = RendParams.fAlpha;
 	pObj->m_fDistance =	RendParams.fDistance;
-	pObj->SetAmbientColor(RendParams.AmbientColor, passInfo);
+	pObj->SetAmbientColor(RendParams.AmbientColor);
 
 	uLocalObjFlags |= RendParams.dwFObjFlags;
 
@@ -552,7 +552,7 @@ void CAttachmentSKIN::RenderAttachment(SRendParams& RendParams, const SRendering
 
 	assert(RendParams.pMatrix);
 	Matrix34 RenderMat34 = (*RendParams.pMatrix);
-	pObj->SetMatrix(RenderMat34, passInfo);
+	pObj->SetMatrix(RenderMat34);
 	pObj->m_nClipVolumeStencilRef = RendParams.nClipVolumeStencilRef;
 	pObj->m_nTextureID = RendParams.nTextureID;
 
@@ -819,7 +819,7 @@ void CAttachmentSKIN::RenderAttachment(SRendParams& RendParams, const SRendering
 			{
 				CModelMesh* pModelMesh = m_pModelSkin->GetModelMesh(nRenderLOD);
 				gEnv->pJobManager->WaitForJob(*pD->m_pSkinningData->pAsyncJobs);
-				SoftwareSkinningDQ_VS_Emulator(pModelMesh, pObj->GetMatrix(passInfo), tang, bitang, norm, wire, pD->m_pSkinningData->pBoneQuatsS);
+				SoftwareSkinningDQ_VS_Emulator(pModelMesh, pObj->GetMatrix(), tang, bitang, norm, wire, pD->m_pSkinningData->pBoneQuatsS);
 			}
 		}
 #endif

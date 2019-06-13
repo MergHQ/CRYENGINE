@@ -2475,11 +2475,6 @@ private:
 //! Used to prevent global state.
 struct SRenderingPassInfo
 {
-	operator SRenderObjectAccessThreadConfig() const
-	{
-		return SRenderObjectAccessThreadConfig(ThreadID());
-	}
-
 	enum EShadowMapType
 	{
 		SHADOW_MAP_NONE = 0,
@@ -2528,6 +2523,7 @@ struct SRenderingPassInfo
 	static SRenderingPassInfo CreateTempRenderingInfo(SRendItemSorter s, const SRenderingPassInfo& rPassInfo);
 
 	// state getter
+	CRenderObject::ERenderPassType   GetPassType() const;
 	bool                             IsGeneralPass() const;
 
 	bool                             IsRecursivePass() const;
@@ -2650,6 +2646,12 @@ private:
 	// Additional sub-passes like shadow frustums (in the future - reflections and portals)
 	std::vector<SRenderingPassInfo>* m_pShadowPasses = nullptr;
 };
+
+///////////////////////////////////////////////////////////////////////////////
+inline CRenderObject::ERenderPassType   SRenderingPassInfo::GetPassType() const
+{
+	return IsShadowPass() ? CRenderObject::eRenderPass_Shadows : CRenderObject::eRenderPass_General;
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 inline bool SRenderingPassInfo::IsGeneralPass() const
