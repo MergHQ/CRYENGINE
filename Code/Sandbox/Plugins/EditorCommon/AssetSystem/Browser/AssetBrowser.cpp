@@ -1154,7 +1154,7 @@ void CAssetBrowser::InitActions()
 
 	m_pActionShowInFileExplorer = RegisterAction("path_utils.show_in_file_explorer", &CAssetBrowser::OnShowInFileExplorer);
 	m_pActionGenerateThumbnails = RegisterAction("asset.generate_thumbnails", &CAssetBrowser::OnGenerateThumbmails);
-	m_pActionSave = RegisterAction("asset.save_all", &CAssetBrowser::OnSaveAll);
+	m_pActionSaveAll = RegisterAction("asset.save_all", &CAssetBrowser::OnSaveAll);
 	m_pActionShowDetails = RegisterAction("asset.view_details", &CAssetBrowser::OnDetailsView);
 	m_pActionShowThumbnails = RegisterAction("asset.view_thumbnails", &CAssetBrowser::OnThumbnailsView);
 	m_pActionShowSplitHorizontally = RegisterAction("asset.view_split_horizontally", &CAssetBrowser::OnSplitHorizontalView);
@@ -1194,9 +1194,10 @@ void CAssetBrowser::InitMenus()
 		pMenuFile->AddCommandAction(GetAction("general.import"), section);
 
 		section = pMenuFile->GetNextEmptySection();
-		pMenuFile->AddCommandAction(GetAction("asset.save_all"), section);
 		pMenuFile->AddCommandAction(m_pActionSave, section);
 		pMenuFile->AddCommandAction(m_pActionDiscardChanges, section);
+		section = pMenuFile->GetNextEmptySection();
+		pMenuFile->AddCommandAction(m_pActionSaveAll, section);
 
 		const bool isModified = HasSelectedModifiedAsset();
 		m_pActionDiscardChanges->setEnabled(isModified);
@@ -1937,7 +1938,6 @@ void CAssetBrowser::UpdateSelectionDependantActions()
 	m_pActionReimport->setEnabled(hasAssetsSelected);
 
 	GetAction("general.new_folder")->setEnabled(hasWritableFolderSelected);
-	GetAction("general.import")->setEnabled(hasWritableFolderSelected);
 	m_pActionShowInFileExplorer->setEnabled(hasWritableFolderSelected);
 	m_pActionGenerateThumbnails->setEnabled(hasWritableFolderSelected);
 
@@ -2102,6 +2102,9 @@ void CAssetBrowser::BuildContextMenuForAssets(const std::vector<CAsset*>& assets
 
 	abstractMenu.AddCommandAction(m_pActionDiscardChanges);
 	m_pActionDiscardChanges->setEnabled(isModified);
+
+	int section = abstractMenu.GetNextEmptySection();
+	abstractMenu.AddCommandAction(m_pActionSaveAll, section);
 
 	//TODO : source control
 	auto it = assetsByType.begin();
