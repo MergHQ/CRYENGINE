@@ -552,7 +552,7 @@ void CFileCacheManager::UncacheFile(CFile* const pFile)
 		pFile->m_pReadStream = nullptr;
 	}
 
-	if (pFile->m_pMemoryBlock != nullptr && pFile->m_pMemoryBlock->GetData() != nullptr)
+	if ((pFile->m_flags & EFileFlags::Cached) != 0 && pFile->m_pMemoryBlock != nullptr && pFile->m_pMemoryBlock->GetData() != nullptr)
 	{
 		Impl::SFileInfo fileInfo;
 		fileInfo.memoryBlockAlignment = pFile->m_memoryBlockAlignment;
@@ -565,7 +565,7 @@ void CFileCacheManager::UncacheFile(CFile* const pFile)
 	}
 
 	pFile->m_pMemoryBlock = nullptr;
-	pFile->m_flags = (pFile->m_flags | EFileFlags::NotCached) & ~(EFileFlags::Cached | EFileFlags::Removable);
+	pFile->m_flags = (pFile->m_flags | EFileFlags::NotCached) & ~(EFileFlags::Cached | EFileFlags::Removable | EFileFlags::Loading);
 	CRY_ASSERT(pFile->m_useCount == 0);
 	pFile->m_useCount = 0;
 
