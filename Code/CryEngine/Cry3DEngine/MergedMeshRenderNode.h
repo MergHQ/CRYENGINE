@@ -568,7 +568,7 @@ public:
 	void                    SetMaterial(IMaterial* pMat)                                                        override { __debugbreak(); }
 	IMaterial*              GetMaterial(Vec3* pHitPos = NULL) const                                             override { __debugbreak(); return NULL; }
 	IMaterial*              GetMaterialOverride()             const                                             override { __debugbreak(); return NULL; }
-	EERType                 GetRenderNodeType()               const                                             override { __debugbreak(); return eERType_MergedMesh; }
+	EERType                 GetRenderNodeType()               const                                             override { return eERType_MergedMeshInstance; }
 	float                   GetMaxViewDist()                  const                                             override { __debugbreak(); return FLT_MAX; }
 	void                    GetMemoryUsage(ICrySizer* pSizer) const                                             override { __debugbreak(); }
 };
