@@ -332,6 +332,6 @@ HRESULT WINAPI D3DReflectDXILorDXBC(
 	_In_ REFIID pInterface,
 	_Out_ void** ppReflector)
 {
-	return D3DReflect(pSrcData, SrcDataSize, pInterface, ppReflector);
+	return D3DReflect(pSrcData, SrcDataSize, IID_ID3D11ShaderReflection, ppReflector);
 }
 #endif
