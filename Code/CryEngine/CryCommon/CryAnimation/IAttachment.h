@@ -790,6 +790,8 @@ inline IMaterial* CSKELAttachment::GetBaseMaterial(uint32 nLOD) const
 struct CSKINAttachment : public IAttachmentObject
 {
 	CSKINAttachment()
+		: m_pReplacementMaterial()
+		, m_pIAttachmentSkin()
 	{}
 
 	virtual EType    GetAttachmentType() override                          { return eAttachment_SkinMesh; }
@@ -811,8 +813,8 @@ struct CSKINAttachment : public IAttachmentObject
 		return m_pReplacementMaterial[nLOD];
 	}
 
-	_smart_ptr<IAttachmentSkin> m_pIAttachmentSkin;
-	_smart_ptr<IMaterial>       m_pReplacementMaterial[g_nMaxGeomLodLevels];
+	_smart_ptr<IMaterial> m_pReplacementMaterial[g_nMaxGeomLodLevels];
+	IAttachmentSkin*      m_pIAttachmentSkin;
 };
 
 inline IMaterial* CSKINAttachment::GetBaseMaterial(uint32 nLOD) const

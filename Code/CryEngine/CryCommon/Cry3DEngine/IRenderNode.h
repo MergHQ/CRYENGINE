@@ -39,7 +39,7 @@ enum EERType
 	eERType_Vegetation,
 	eERType_Light,
 	eERType_Dummy_5, //!< Used to be eERType_Cloud, preserve order for compatibility.
-	eERType_Dummy_1, //!< Used to be eERType_VoxelObject, preserve order for compatibility.
+	eERType_MergedMeshInstance,
 	eERType_FogVolume,
 	eERType_Decal,
 	eERType_ParticleEmitter,

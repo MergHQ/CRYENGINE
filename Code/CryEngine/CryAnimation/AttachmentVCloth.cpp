@@ -30,6 +30,8 @@ uint32 CAttachmentVCLOTH::Immediate_AddBinding(IAttachmentObject* pIAttachmentOb
 	if (pISkinRender == 0)
 		CryFatalError("CryAnimation: if you create the binding for a Skin-Attachment, then you have to pass the pointer to an ISkin as well");
 
+	assert(pIAttachmentObject->GetAttachmentType() == IAttachmentObject::eAttachment_SkinMesh);
+
 	uint32 nLogWarnings = (nLoadingFlags&CA_DisableLogWarnings) == 0;
 	CSkin* pCSkinRenderModel = (CSkin*)pISkinRender;
 
@@ -107,6 +109,9 @@ uint32 CAttachmentVCLOTH::Immediate_AddBinding(IAttachmentObject* pIAttachmentOb
 
 	SAFE_RELEASE(m_pIAttachmentObject);
 	m_pIAttachmentObject = pIAttachmentObject;
+
+	static_cast<CSKINAttachment*>(m_pIAttachmentObject)->m_pIAttachmentSkin = this;
+
 	return 1;
 }
 
@@ -181,6 +186,7 @@ void CAttachmentVCLOTH::Immediate_ClearBinding(uint32 nLoadingFlags)
 {
 	if (m_pIAttachmentObject)
 	{
+		assert(static_cast<CSKINAttachment*>(m_pIAttachmentObject)->m_pIAttachmentSkin == this);
 		m_pIAttachmentObject->Release();
 		m_pIAttachmentObject = 0;
 
