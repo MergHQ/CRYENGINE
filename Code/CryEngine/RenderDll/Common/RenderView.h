@@ -8,6 +8,7 @@
 #include "RenderOutput.h"
 #include "RenderPipeline.h"
 
+#include <CryThreading/CryThreadSafePushContainer.h>
 #include <CryThreading/IJobManager.h>
 #include <CryMath/Range.h>
 

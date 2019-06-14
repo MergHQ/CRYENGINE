@@ -3,6 +3,7 @@
 #pragma once
 
 #include "PostProcessUtils.h"
+#include <CryThreading/CryThreadSafePushContainer.h>
 
 class CSoundEventsListener;
 
