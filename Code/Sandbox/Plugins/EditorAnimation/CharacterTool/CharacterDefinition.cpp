@@ -3141,9 +3141,9 @@ void CharacterDefinition::ApplySkinAttachment(IAttachment* pIAttachment, ICharac
 		if (iattachmentObject->GetAttachmentType() == IAttachmentObject::eAttachment_SkinMesh)
 		{
 			CSKINAttachment* attachmentObject = (CSKINAttachment*)iattachmentObject;
-			if (attachmentObject->m_pIAttachmentSkin)
+			if (attachmentObject->GetIAttachmentSkin())
 			{
-				if (ISkin* skin = attachmentObject->m_pIAttachmentSkin->GetISkin())
+				if (ISkin* skin = attachmentObject->GetIAttachmentSkin()->GetISkin())
 				{
 					existingBindingFilename = skin->GetModelFilePath();
 					if (IMaterial* material = attachmentObject->GetReplacementMaterial(0))
@@ -3181,7 +3181,6 @@ void CharacterDefinition::ApplySkinAttachment(IAttachment* pIAttachment, ICharac
 			return;
 
 		CSKINAttachment* attachmentObject = new CSKINAttachment();
-		attachmentObject->m_pIAttachmentSkin = attachmentSkin;
 
 		_smart_ptr<IMaterial> material;
 		if (!desc.m_strMaterial.empty())

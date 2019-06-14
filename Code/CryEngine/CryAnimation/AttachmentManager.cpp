@@ -572,9 +572,7 @@ void CAttachmentManager::InitAttachmentList(const CharacterAttachment* parrAttac
 
 				if (pIModelSKIN)
 				{
-					CSKINAttachment* pSkinInstance = new CSKINAttachment();
-					pSkinInstance->m_pIAttachmentSkin = pAttachment;
-					IAttachmentObject* pIAttachmentObject = (IAttachmentObject*)pSkinInstance;
+					IAttachmentObject* pIAttachmentObject = new CSKINAttachment();
 					if (pAttachment->Immediate_AddBinding(pIAttachmentObject, pIModelSKIN, nLoadingFlags))
 					{
 						pAttachment->SetFlags(attach.m_AttFlags);
@@ -679,9 +677,7 @@ void CAttachmentManager::InitAttachmentList(const CharacterAttachment* parrAttac
 
 				if (pIModelSKIN && pIModelSimSKIN)
 				{
-					CSKINAttachment* pSkinInstance = new CSKINAttachment();
-					pSkinInstance->m_pIAttachmentSkin = pCAttachmentVCloth;
-					IAttachmentObject* pIAttachmentObject = (IAttachmentObject*)pSkinInstance;
+					IAttachmentObject* pIAttachmentObject = new CSKINAttachment();
 					if (pCAttachmentVCloth->Immediate_AddBinding(pIAttachmentObject, pIModelSKIN, nLoadingFlags))
 					{
 						pCAttachmentVCloth->SetFlags(attach.m_AttFlags | FLAGS_ATTACH_SW_SKINNING);
@@ -892,9 +888,7 @@ IAttachment* CAttachmentManager::CreateVClothAttachment(const SVClothAttachmentP
 
 		if (pModelSKIN && pModelSimSKIN)
 		{
-			CSKINAttachment* pSkinInstance = new CSKINAttachment();
-			pSkinInstance->m_pIAttachmentSkin = pAttachmentVCloth;
-			IAttachmentObject* pAttachmentObject = static_cast<IAttachmentObject*>(pSkinInstance);
+			IAttachmentObject* pAttachmentObject = new CSKINAttachment();
 			if (pAttachmentVCloth->Immediate_AddBinding(pAttachmentObject, pModelSKIN, params.skinLoadingFlags))
 			{
 				pAttachmentVCloth->SetFlags(params.flags | FLAGS_ATTACH_SW_SKINNING);
