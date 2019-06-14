@@ -363,7 +363,7 @@ QTabPane* CTabPaneManager::CreateTabPane(const char* paneClassName, const char* 
 	{
 		paneRect.setRight(paneRect.left() + 10);
 	}
-	if (paneRect.width() < 10)
+	if (paneRect.height() < 10)
 	{
 		paneRect.setBottom(paneRect.top() + 10);
 	}
