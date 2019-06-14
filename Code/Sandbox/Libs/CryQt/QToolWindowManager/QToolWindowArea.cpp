@@ -229,6 +229,10 @@ bool QToolWindowArea::eventFilter(QObject* pObject, QEvent* pEvent)
 	{
 		if (pEvent->type() == QEvent::MouseButtonPress)
 		{
+			// Set default values to not allow dragging
+			m_areaDragCanStart = false;
+			m_tabDragCanStart = false;
+
 			QMouseEvent* me = static_cast<QMouseEvent*>(pEvent);
 			if ((pObject == m_pTabFrame && m_pTabFrame->m_pCaption->rect().contains(me->pos())) || pObject == m_pTabFrame->m_pCaption || (pObject == tabBar() && tabBar()->tabAt(static_cast<QMouseEvent*>(pEvent)->pos()) >= 0))
 			{
