@@ -1706,7 +1706,7 @@ void CRenderView::ExpandPermanentRenderObjects()
 					auto& RESTRICT_REFERENCE pri = permanent_items[i];
 
 					SShaderItem shaderItem;
-					SRendItem::ExtractShaderItem(pri.m_sortValue, shaderItem);
+					SRendItem::ExtractShaderItem(pri.m_sortValue, pri.m_nBatchFlags, shaderItem);
 
 					if (!(volatile CCompiledRenderObject*)pri.m_pCompiledObject)
 					{
