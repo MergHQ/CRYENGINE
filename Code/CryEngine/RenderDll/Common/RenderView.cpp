@@ -1039,7 +1039,7 @@ static inline uint32 CalculateRenderItemBatchFlags(SShaderItem& shaderItem, CRen
 		nBatchFlags &= ~(FB_PREPROCESS & uTransparent);
 
 		const uint32 nMaterialLayers = pObj->m_nMaterialLayers;
-		if ((nMaterialLayers & ~uTransparent) && CRenderer::CV_r_usemateriallayers)
+		if ((nMaterialLayers & ~uTransparent) && (CRenderer::CV_r_usemateriallayers > 0))
 		{
 			const uint32 nResourcesNoDrawFlags = static_cast<CShaderResources*>(pShaderResources)->CShaderResources::GetMtlLayerNoDrawFlags();
 
