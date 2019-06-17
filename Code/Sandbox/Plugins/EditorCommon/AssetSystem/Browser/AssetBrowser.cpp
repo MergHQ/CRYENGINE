@@ -1140,6 +1140,46 @@ void CAssetBrowser::InitViews(bool bHideEngineFolder)
 	OnFolderSelectionChanged(m_pFoldersView->GetSelectedFolders());
 }
 
+void CAssetBrowser::OnCopyName()
+{
+	string clipBoardText;
+	std::vector<CAsset*> assets;
+	std::vector<string> folders;
+	GetSelection(assets, folders);
+
+	for (const string& folder : folders)
+	{
+		clipBoardText += PathUtil::GetFileName(folder) + "\n";;
+	}
+
+	for (const CAsset* pAsset : assets)
+	{
+		clipBoardText += pAsset->GetName() + "\n";
+	}
+
+	QApplication::clipboard()->setText(clipBoardText.c_str());
+}
+
+void CAssetBrowser::OnCopyPath()
+{
+	string clipBoardText;
+	std::vector<CAsset*> assets;
+	std::vector<string> folders;
+	GetSelection(assets, folders);
+
+	for (const string& folder : folders)
+	{
+		clipBoardText += folder + "\n";;
+	}
+
+	for (const CAsset* pAsset : assets)
+	{
+		clipBoardText += pAsset->GetMetadataFile() + "\n";
+	}
+
+	QApplication::clipboard()->setText(clipBoardText.c_str());
+}
+
 void CAssetBrowser::InitActions()
 {
 	m_pActionDelete = RegisterAction("general.delete", &CAssetBrowser::OnDelete);
@@ -1170,6 +1210,9 @@ void CAssetBrowser::InitActions()
 	m_pActionShowFoldersView->setChecked(true);
 	m_pActionRecursiveView->setChecked(false);
 	m_pActionHideIrrelevantFolders->setChecked(false);
+
+	m_pActionCopyName = RegisterAction("path_utils.copy_name", &CAssetBrowser::OnCopyName);
+	m_pActionCopyPath = RegisterAction("path_utils.copy_path", &CAssetBrowser::OnCopyPath);
 
 #if ASSET_BROWSER_USE_PREVIEW_WIDGET
 	m_pActionShowPreview = RegisterAction("asset.show_preview", &CAssetBrowser::OnShowPreview);
@@ -1220,8 +1263,8 @@ void CAssetBrowser::InitMenus()
 
 	section = pMenuEdit->GetNextEmptySection();
 	m_pActionShowInFileExplorer = pMenuEdit->CreateCommandAction("path_utils.show_in_file_explorer", section);
-	m_pActionCopyName = pMenuEdit->CreateCommandAction("path_utils.copy_name", section);
-	m_pActionCopyPath = pMenuEdit->CreateCommandAction("path_utils.copy_path", section);
+	pMenuEdit->AddCommandAction(m_pActionCopyName, section);
+	pMenuEdit->AddCommandAction(m_pActionCopyPath, section);
 
 	AddWorkFilesMenu(*pMenuEdit);
 
