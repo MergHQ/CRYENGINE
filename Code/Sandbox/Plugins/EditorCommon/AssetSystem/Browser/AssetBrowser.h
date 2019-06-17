@@ -222,6 +222,9 @@ private:
 	bool OnRename();
 	bool OnSave();
 
+	void OnCopyName();
+	void OnCopyPath();
+
 	void         Paste(bool pasteNextToOriginal);
 
 	//ui components
