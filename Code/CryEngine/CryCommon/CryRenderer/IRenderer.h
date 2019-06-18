@@ -429,6 +429,7 @@ const float VIRTUAL_SCREEN_HEIGHT = 600.0f;
 #define GS_BLSRC_SRCALPHA_A_ZERO          0x0A // separate alpha blend state
 #define GS_BLSRC_SRC1ALPHA                0x0B // dual source blending
 #define GS_BLSRC_SRC1ALPHA_A_ONE          0x0C
+#define GS_BLSRC_SRCALPHA_A_ONE           0x0D // separate alpha blend state
 #define GS_BLSRC_MASK                     0x0F
 #define GS_BLSRC_SHIFT                    0
 
@@ -475,7 +476,7 @@ enum ColorMask
 static_assert(GS_NOCOLMASK_COUNT <= GS_COLMASK_MASK, "Exceeded count limit of possible color masks (16)");
 
 #define GS_WIREFRAME               0x00010000
-#define GS_POINTRENDERING          0x00020000
+#define GS_POINTRENDERING          0x00020000 // unused - add to free bits
 
 #define GS_DEPTHFUNC_LEQUAL        0x00000000
 #define GS_DEPTHFUNC_EQUAL         0x00040000
