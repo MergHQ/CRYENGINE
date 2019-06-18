@@ -5300,9 +5300,7 @@ CRenderObject* CRenderer::EF_DuplicateRO(CRenderObject* pSrc, const SRenderingPa
 		CPermanentRenderObject* pObjSrc = static_cast<CPermanentRenderObject*>(pSrc);
 		CPermanentRenderObject* pObjNew = static_cast<CPermanentRenderObject*>(CRenderer::EF_GetObject());
 		
-		uint32 nId = pObjNew->m_Id;
 		pObjNew->CloneObject(pObjSrc);
-		pObjNew->m_Id = nId;
 
 		// Link duplicated object to the source object
 		{

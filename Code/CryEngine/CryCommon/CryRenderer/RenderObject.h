@@ -303,7 +303,6 @@ public:
 	}
 
 	ERenderObjectFlags m_ObjFlags;     //!< Combination of FOB_ flags.
-	uint32 m_Id;
 
 	float m_fAlpha;                    //!< Object alpha.
 	float m_fDistance;                 //!< Distance to the object.
@@ -363,8 +362,7 @@ public:
 	/// Constructor
 	//////////////////////////////////////////////////////////////////////////
 	CRenderObject()
-		: m_Id(~0u)
-		  , m_pCompiledObject(nullptr)
+		: m_pCompiledObject(nullptr)
 	{
 		Init();
 	}
@@ -411,8 +409,6 @@ public:
 
 		m_editorSelectionID = 0;
 	}
-
-	void AssignId(uint32 id) { m_Id = id; }
 
 	ILINE SRenderObjData*         GetObjData()       { return &m_data; }
 	ILINE const SRenderObjData*   GetObjData() const { return &m_data; }
