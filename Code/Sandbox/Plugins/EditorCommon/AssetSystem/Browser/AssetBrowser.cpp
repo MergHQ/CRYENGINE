@@ -516,6 +516,7 @@ static std::vector<string> g_clipboard;
 
 CAssetBrowser::CAssetBrowser(bool bHideEngineFolder /*= false*/, QWidget* pParent /*= nullptr*/)
 	: CDockableEditor(pParent)
+	, m_knownAssetTypes(CAssetManager::GetInstance()->GetAssetTypes())
 {
 	setObjectName("Asset Browser");
 
@@ -540,6 +541,7 @@ CAssetBrowser::CAssetBrowser(bool bHideEngineFolder /*= false*/, QWidget* pParen
 
 CAssetBrowser::CAssetBrowser(const std::vector<CAssetType*>& assetTypes, bool bHideEngineFolder /*= false*/, QWidget* pParent /*= nullptr*/)
 	: CDockableEditor(pParent)
+	, m_knownAssetTypes(assetTypes)
 {
 	setObjectName("Asset Browser");
 
@@ -1075,7 +1077,8 @@ void CAssetBrowser::FillCreateAssetMenu(CAbstractMenu* menu, bool enable)
 
 		QAction* const pAction = menu->CreateAction(pAssetType->GetUiTypeName());
 		connect(pAction, &QAction::triggered, [this, pAssetType]() { BeginCreateAsset(*pAssetType, nullptr); });
-		pAction->setEnabled(enable);
+		const bool knownAssetType = std::find(m_knownAssetTypes.cbegin(), m_knownAssetTypes.cend(), pAssetType) != m_knownAssetTypes.cend();
+		pAction->setEnabled(enable && knownAssetType);
 	}
 }
 

@@ -967,10 +967,8 @@ void CRenderView::AddPermanentObject(CRenderObject* pObject, const SRenderingPas
 //////////////////////////////////////////////////////////////////////////
 CRenderObject* CRenderView::AllocateTemporaryRenderObject()
 {
-	uint32 nId = ~0;
-	CRenderObject* pObj = m_tempRenderObjects.push_back_new(nId);
+	CRenderObject* pObj = m_tempRenderObjects.push_back_new();
 
-	pObj->AssignId(nId);
 	pObj->Init();
 	pObj->m_pCompiledObject = nullptr;
 
@@ -984,7 +982,6 @@ void CRenderView::SetViewport(const SRenderViewport& viewport)
 
 	for (CCamera::EEye eye = CCamera::eEye_Left; eye != CCamera::eEye_eCount; eye = CCamera::EEye(eye + 1))
 		m_viewInfo[eye].viewport = viewport;
-
 }
 
 //////////////////////////////////////////////////////////////////////////
