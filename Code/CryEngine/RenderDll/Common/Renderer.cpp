@@ -408,9 +408,6 @@ void CRenderer::Release()
 	CRenderMesh::ShutDown();
 	CHWShader::mfCleanupCache();
 
-	if (!m_DevBufMan.Shutdown())
-		CryWarning(VALIDATOR_MODULE_RENDERER, VALIDATOR_ERROR_DBGBRK, "could not free all buffers from CDevBufferMan!");
-
 	gRenDev = NULL;
 }
 
