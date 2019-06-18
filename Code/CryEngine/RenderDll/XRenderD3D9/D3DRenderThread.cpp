@@ -158,7 +158,6 @@ void CD3D9Renderer::RT_FlashRenderPlaybackLocklessInternal(std::shared_ptr<IFlas
 
 void CD3D9Renderer::RT_Init()
 {
-	EF_Init();
 }
 
 void CD3D9Renderer::RT_ReleaseRenderResources(uint32 nFlags)
