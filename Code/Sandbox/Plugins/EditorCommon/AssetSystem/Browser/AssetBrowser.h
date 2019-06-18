@@ -276,6 +276,8 @@ private:
 	std::unique_ptr<CSortFilterProxyModel>   m_pAttributeFilterProxyModel;
 	std::unique_ptr<CFilteredFolders>        m_pFilteredFolders;
 
+	const std::vector<CAssetType*>           m_knownAssetTypes;
+
 	//state variables
 	QVector<QStringList> m_navigationHistory;
 	ViewMode             m_viewMode = Max;
