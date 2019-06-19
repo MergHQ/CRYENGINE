@@ -52,7 +52,7 @@ struct ITimer;
 struct RenderLMData;
 struct SClipVolumeBlendInfo;
 struct SDeferredLightVolume;
-struct ShadowFrustumMGPUCache;
+struct SShadowCacheUpdateMasks;
 struct ShadowMapFrustum;
 struct SMeshBakingInputParams;
 struct SMeshBakingOutput;
@@ -1576,7 +1576,7 @@ struct IRenderer//: public IRendererCallbackServer
 	virtual void                                      SetDefaultMaterials(IMaterial* pDefMat, IMaterial* pTerrainDefMat) = 0;
 
 	virtual uint32                                    GetActiveGPUCount() const = 0;
-	virtual ShadowFrustumMGPUCache*                   GetShadowFrustumMGPUCache() = 0;
+	virtual SShadowCacheUpdateMasks*                  GetShadowCacheUdapteMasks() = 0;
 	virtual const StaticArray<int, MAX_GSM_LODS_NUM>& GetCachedShadowsResolution() const = 0;
 	virtual void                                      SetCachedShadowsResolution(const StaticArray<int, MAX_GSM_LODS_NUM>& arrResolutions) = 0;
 	virtual void                                      UpdateCachedShadowsLodCount(int nGsmLods) const = 0;

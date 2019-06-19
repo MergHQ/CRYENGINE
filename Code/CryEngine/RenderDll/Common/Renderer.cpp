@@ -278,8 +278,8 @@ void CRenderer::InitRenderer()
 	m_pRT = new SRenderThread;
 	m_pRT->StartRenderThread();
 
-	m_ShadowFrustumMGPUCache.Init();
-	RegisterSyncWithMainListener(&m_ShadowFrustumMGPUCache);
+	m_ShadowFrustumUdateMasks.Init();
+	RegisterSyncWithMainListener(&m_ShadowFrustumUdateMasks);
 
 	// on console some float values in vertex formats can be 16 bit
 	iLog->Log("CRenderer sizeof(Vec2f16)=%" PRISIZE_T " sizeof(Vec3f16)=%" PRISIZE_T, sizeof(Vec2f16), sizeof(Vec3f16));
@@ -403,8 +403,7 @@ void CRenderer::Release()
 	//SAFE_DELETE(g_pSDynTexture_PoolAlloc)
 	//g_pSDynTexture_PoolAlloc = NULL;
 
-	RemoveSyncWithMainListener(&m_ShadowFrustumMGPUCache);
-	m_ShadowFrustumMGPUCache.Release();
+	RemoveSyncWithMainListener(&m_ShadowFrustumUdateMasks);
 	CRenderMesh::ShutDown();
 	CHWShader::mfCleanupCache();
 

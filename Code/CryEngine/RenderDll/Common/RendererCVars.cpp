@@ -905,10 +905,10 @@ void CRendererCVars::OnChange_CachedShadows(ICVar* pCVar)
 		gEnv->p3DEngine->InvalidateShadowCacheData();
 	}
 
-	if (ShadowFrustumMGPUCache* pShadowMGPUCache = gRenDev->GetShadowFrustumMGPUCache())
+	if (auto* pUpdateMasks = gRenDev->GetShadowCacheUdapteMasks())
 	{
-		pShadowMGPUCache->nUpdateMaskRT = 0;
-		pShadowMGPUCache->nUpdateMaskMT = 0;
+		pUpdateMasks->nUpdateMaskRT = 0;
+		pUpdateMasks->nUpdateMaskMT = 0;
 	}
 }
 
