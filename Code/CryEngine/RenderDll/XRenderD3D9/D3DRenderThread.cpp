@@ -158,6 +158,7 @@ void CD3D9Renderer::RT_FlashRenderPlaybackLocklessInternal(std::shared_ptr<IFlas
 
 void CD3D9Renderer::RT_Init()
 {
+	EF_Init();
 }
 
 void CD3D9Renderer::RT_ReleaseRenderResources(uint32 nFlags)
@@ -269,6 +270,8 @@ void CD3D9Renderer::RT_CreateRenderResources()
 	CRendererResources::LoadDefaultSystemTextures();
 	CRendererResources::CreateSystemTargets(0, 0);
 
+	EF_Init();
+
 #if defined(FEATURE_SVO_GI)
 	// TODO: GraphicsPipeline-Stage bootstrapped with Init()
 	CSvoRenderer::GetInstance(true);
@@ -288,7 +291,6 @@ void CD3D9Renderer::RT_CreateRenderResources()
 		CRY_ASSERT(m_pBaseGraphicsPipeline);
 	}
 
-	EF_Init();
 
 	if (m_pPostProcessMgr)
 	{

@@ -107,7 +107,6 @@ void CGraphicsPipelineResources::Init()
 	}
 #endif
 
-	gcpRendD3D->EF_Init();
 
 	CreateResources(0, 0);
 }
