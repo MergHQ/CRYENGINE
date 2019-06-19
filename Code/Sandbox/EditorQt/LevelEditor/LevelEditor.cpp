@@ -701,11 +701,16 @@ bool CLevelEditor::OnFind()
 	if (!m_pFindDialog)
 	{
 		m_pFindDialog = new CEditorDialog(tr("Find Objects"));
+		QVBoxLayout* pMainLayout = new QVBoxLayout();
+		pMainLayout->setMargin(0);
+		pMainLayout->setSpacing(0);
 		m_pFindDialog->SetHideOnClose();
-		CLevelExplorer* m_pLevelExplorer = new CLevelExplorer();
+		m_pLevelExplorer = new CLevelExplorer();
 		m_pLevelExplorer->Initialize();
 		m_pLevelExplorer->SetSyncSelection(false);
 		m_pLevelExplorer->SetModelType(CLevelExplorer::Objects);
+		pMainLayout->addWidget(m_pLevelExplorer);
+		m_pFindDialog->setLayout(pMainLayout);
 		m_pFindDialog->Popup();
 		m_pFindDialog->SetPosCascade();
 		m_pLevelExplorer->GrabFocusSearchBar();
