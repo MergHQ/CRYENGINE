@@ -269,6 +269,11 @@ void CD3D9Renderer::RT_CreateRenderResources()
 	CRendererResources::LoadDefaultSystemTextures();
 	CRendererResources::CreateSystemTargets(0, 0);
 
+#if defined(FEATURE_SVO_GI)
+	// TODO: GraphicsPipeline-Stage bootstrapped with Init()
+	CSvoRenderer::GetInstance(true);
+#endif
+
 	// Create BaseGraphicsPipeline
 	if (!m_pBaseGraphicsPipeline)
 	{
@@ -290,10 +295,6 @@ void CD3D9Renderer::RT_CreateRenderResources()
 		m_pPostProcessMgr->CreateResources();
 	}
 
-#if defined(FEATURE_SVO_GI)
-	// TODO: GraphicsPipeline-Stage bootstrapped with Init()
-	CSvoRenderer::GetInstance(true);
-#endif
 
 #if RENDERER_SUPPORT_SCALEFORM
 	SF_CreateResources();
