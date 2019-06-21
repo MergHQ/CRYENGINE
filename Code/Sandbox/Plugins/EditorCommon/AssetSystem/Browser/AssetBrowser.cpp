@@ -1868,9 +1868,9 @@ void CAssetBrowser::AddWorkFilesMenu(CAbstractMenu& abstractMenu)
 bool CAssetBrowser::HasSelectedModifiedAsset() const
 {
 	const auto assets = GetSelectedAssets();
-	for (CAsset* asset : assets)
+	for (const CAsset* pAsset : assets)
 	{
-		if (asset->IsModified())
+		if (pAsset->IsModified())
 		{
 			return true;
 		}
@@ -2028,19 +2028,18 @@ bool CAssetBrowser::OnImport()
 	if (dropHandler.CanImportAny(filePaths))
 	{
 		CAssetDropHandler::SImportParams importParams;
-		auto folderSelection = m_pFoldersView->GetSelectedFolders();
+		const QStringList& folderSelection = m_pFoldersView->GetSelectedFolders();
 		if (folderSelection.size() == 1)
 		{
 			importParams.outputDirectory = QtUtil::ToString(folderSelection.front());
 		}
-		ThreadingUtils::AsyncFinalize([dropHandler, filePaths, importParams]
+		QStringList list;
+		list.reserve(filePaths.size());
+		for (const string& file : filePaths)
 		{
-			return dropHandler.Import(filePaths, importParams);
-		},
-		                              [](std::vector<CAsset*>&& assets)
-		{
-			GetIEditor()->GetAssetManager()->MergeAssets(assets);
-		});
+			list << QtUtil::ToQString(file);
+		}
+		dropHandler.ImportAsync(list, importParams);
 	}
 	else
 	{
@@ -2242,7 +2241,7 @@ void CAssetBrowser::Paste(bool pasteNextToOriginal)
 			return;
 		}
 
-		auto folderSelection = m_pFoldersView->GetSelectedFolders();
+		const QStringList& folderSelection = m_pFoldersView->GetSelectedFolders();
 		if (folderSelection.size() != 1)
 		{
 			CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_WARNING, "Target folder is ambiguous. Please select a single folder in the Asset Browser to paste");
