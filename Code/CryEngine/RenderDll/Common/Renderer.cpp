@@ -4606,7 +4606,6 @@ SSkinningData* CRenderer::EF_CreateSkinningData(IRenderView* pRenderView, uint32
 {
 	uint32 nNeededSize = Align(sizeof(SSkinningData), 16);
 	nNeededSize += Align(bNeedJobSyncVar ? sizeof(JobManager::SJobState) : 0, 16);
-	nNeededSize += Align(bNeedJobSyncVar ? sizeof(JobManager::SJobState) : 0, 16);
 	nNeededSize += Align(nNumBones * sizeof(DualQuat), 16);
 	nNeededSize += Align(nNumBones * sizeof(compute_skinning::SActiveMorphs), 16);
 
@@ -4618,13 +4617,9 @@ SSkinningData* CRenderer::EF_CreateSkinningData(IRenderView* pRenderView, uint32
 	pSkinningRenderData->pAsyncJobs = bNeedJobSyncVar ? alias_cast<JobManager::SJobState*>(pData) : NULL;
 	pData += Align(bNeedJobSyncVar ? sizeof(JobManager::SJobState) : 0, 16);
 
-	pSkinningRenderData->pAsyncDataJobs = bNeedJobSyncVar ? alias_cast<JobManager::SJobState*>(pData) : NULL;
-	pData += Align(bNeedJobSyncVar ? sizeof(JobManager::SJobState) : 0, 16);
-
-	if (bNeedJobSyncVar) // init job state if requiered
+	if (bNeedJobSyncVar)
 	{
 		new(pSkinningRenderData->pAsyncJobs) JobManager::SJobState();
-		new(pSkinningRenderData->pAsyncDataJobs) JobManager::SJobState();
 	}
 
 	pSkinningRenderData->pBoneQuatsS = alias_cast<DualQuat*>(pData);
@@ -4679,7 +4674,6 @@ SSkinningData* CRenderer::EF_CreateRemappedSkinningData(IRenderView* pRenderView
 	pSkinningRenderData->pBoneQuatsS    = pSourceSkinningData->pBoneQuatsS;
 	pSkinningRenderData->pActiveMorphs  = pSourceSkinningData->pActiveMorphs;
 	pSkinningRenderData->pAsyncJobs     = pSourceSkinningData->pAsyncJobs;
-	pSkinningRenderData->pAsyncDataJobs = pSourceSkinningData->pAsyncDataJobs;
 	pSkinningRenderData->pRenderMesh    = pSourceSkinningData->pRenderMesh;
 
 	pSkinningRenderData->pCharInstCB    = pSourceSkinningData->pCharInstCB;
