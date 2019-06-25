@@ -2436,6 +2436,11 @@ void CAttachmentManager::ProcessAttachment(IAttachment* pSocket)
 			{
 				pRenderNode->SetRndFlags(ERF_HAS_CASTSHADOWMAPS, true);
 			}
+
+			if (pParentRenderNode)
+			{
+				pRenderNode->m_nHUDSilhouettesParam = pParentRenderNode->m_nHUDSilhouettesParam;
+			}
 		}
 
 		// Attachments belonging to characters in auxiliary viewports should not be registered in the 3DEngine scene graph.
