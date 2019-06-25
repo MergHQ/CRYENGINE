@@ -151,7 +151,7 @@ void CController::RebuildVariableTreeFromPreset(bool newPreset)
 			{
 				// Update value only. Pointer to name should not be changed for proper selection in a tree.
 				int indexInGroup = groupElementCounter[groupId];
-				
+
 				CRY_ASSERT(group.params[indexInGroup].id == todParam.id);
 				CRY_ASSERT(group.params[indexInGroup].type == todParam.type);
 
@@ -530,4 +530,28 @@ void CController::AnimateTime()
 
 	// Update all widgets
 	SetCurrentTime(nullptr, time);
+}
+
+std::pair<float, float> CController::GetSelectedValueRange() const
+{
+	const std::pair<float, float> defaultDiaposon(0.f, 1.f);
+
+	if (m_selectedVariableIndex < 0)
+	{
+		return defaultDiaposon;
+	}
+
+	const STodParameter* pVariable = m_variables.remapping.at(m_selectedVariableIndex);
+	switch (pVariable->type)
+	{
+	case STodParameter::EType::Float:
+		return std::pair<float, float>(pVariable->value[1], pVariable->value[2]);
+
+	case STodParameter::EType::Color:
+		return defaultDiaposon;
+
+	default:
+		CRY_ASSERT("Unsupported type");
+		return defaultDiaposon;
+	}
 }

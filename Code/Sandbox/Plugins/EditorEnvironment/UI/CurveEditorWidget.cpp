@@ -246,6 +246,9 @@ void CCurveEditorWidget::OnNewVariableSelected()
 	{
 		m_pCurveEdit->OnFitCurvesVertically();
 		m_pCurveEdit->OnFitCurvesHorizontally();
+
+		const auto range = m_controller.GetSelectedValueRange();
+		m_pCurveEdit->SetValueRange(range.first, range.second);
 	}
 
 	UpdateCurveContent();

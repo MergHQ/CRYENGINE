@@ -8,6 +8,7 @@
 #include <CrySandbox/CrySignal.h>
 
 #include <memory>
+#include <utility>
 
 class CEnvironmentEditor;
 
@@ -26,38 +27,40 @@ class CController : public IAutoEditorNotifyListener
 public:
 	CController(CEnvironmentEditor& editor);
 
-	void                 OnOpenAsset();
-	void                 OnCloseAsset();
+	void                    OnOpenAsset();
+	void                    OnCloseAsset();
 
-	void                 CopySelectedCurveToClipboard();
-	void                 PasteCurveContentFromClipboard();
+	void                    CopySelectedCurveToClipboard();
+	void                    PasteCurveContentFromClipboard();
 
-	void                 OnVariableSelected(int id);
-	void                 InterpolateVarTreeChanges(STodParameter& param, const Vec3& oldValue);
+	void                    OnVariableSelected(int id);
+	void                    InterpolateVarTreeChanges(STodParameter& param, const Vec3& oldValue);
 
-	void                 OnSelectedVariableStartChange();
-	void                 OnCurveDragging();
-	void                 OnCurveEditorEndChange();
-	void                 OnVariableTreeEndChange();
+	void                    OnSelectedVariableStartChange();
+	void                    OnCurveDragging();
+	void                    OnCurveEditorEndChange();
+	void                    OnVariableTreeEndChange();
 
-	void                 UndoVariableChange(ITimeOfDay::IPreset* pPreset, int paramId, bool undo, const DynArray<char>& undoState, DynArray<char>& redoState);
-	void                 RedoVariableChange(ITimeOfDay::IPreset* pPreset, int paramId, const DynArray<char>& redoState);
+	void                    UndoVariableChange(ITimeOfDay::IPreset* pPreset, int paramId, bool undo, const DynArray<char>& undoState, DynArray<char>& redoState);
+	void                    RedoVariableChange(ITimeOfDay::IPreset* pPreset, int paramId, const DynArray<char>& redoState);
 
-	void                 SetCurrentTime(QWidget* pSender, float time);
+	void                    SetCurrentTime(QWidget* pSender, float time);
 
-	void                 GetEnginePlaybackParams(float& startTime, float& endTime, float& speed) const;
-	float                GetCurrentTime() const;
+	void                    GetEnginePlaybackParams(float& startTime, float& endTime, float& speed) const;
+	float                   GetCurrentTime() const;
 	// User changed AndvancedInfo. Send it to the Engine
-	void                 SetEnginePlaybackParams(float startTime, float endTime, float speed) const;
+	void                    SetEnginePlaybackParams(float startTime, float endTime, float speed) const;
 
-	PlaybackMode         GetPlaybackMode() const;
-	void                 TogglePlaybackMode();
-	void                 AnimateTime();
+	PlaybackMode            GetPlaybackMode() const;
+	void                    TogglePlaybackMode();
+	void                    AnimateTime();
 
-	CEnvironmentEditor&  GetEditor()                      { return m_editor; }
-	STodVariablesState&  GetVariables()                   { return m_variables; }
-	int                  GetSelectedVariableIndex() const { return m_selectedVariableIndex; }
-	SCurveEditorContent& GetCurveContent()                { return m_selectedVariableContent; }
+	CEnvironmentEditor&     GetEditor()                      { return m_editor; }
+	STodVariablesState&     GetVariables()                   { return m_variables; }
+	int                     GetSelectedVariableIndex() const { return m_selectedVariableIndex; }
+	SCurveEditorContent&    GetCurveContent()                { return m_selectedVariableContent; }
+
+	std::pair<float, float> GetSelectedValueRange() const;
 
 	CCrySignal<void()>                             signalAssetOpened;
 	CCrySignal<void()>                             signalAssetClosed;
