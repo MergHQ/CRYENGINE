@@ -49,7 +49,8 @@ void CGraphicsPipelineResources::Init()
 	m_pTexClipVolumes = CTexture::GetOrCreateTextureObject(m_graphicsPipeline.MakeUniqueTexIdentifierName("$ClipVolumes").c_str(), 0, 0, 1, eTT_2D, nRTFlags, eTF_R8G8);
 
 	m_pTexSceneDiffuseTmp = CTexture::GetOrCreateTextureObject(m_graphicsPipeline.MakeUniqueTexIdentifierName("$SceneDiffuseTmp").c_str(), 0, 0, 1, eTT_2D, nRTFlags, eTF_R8G8B8A8, TO_SCENE_DIFFUSE_ACC);
-	m_pTexSceneSpecularTmp = CTexture::GetOrCreateTextureObject(m_graphicsPipeline.MakeUniqueTexIdentifierName("$SceneSpecularTmp").c_str(), 0, 0, 1, eTT_2D, nRTFlags, eTF_R8G8B8A8, TO_SCENE_SPECULAR_ACC);
+	m_pTexSceneSpecularTmp[0] = CTexture::GetOrCreateTextureObject(m_graphicsPipeline.MakeUniqueTexIdentifierName("$SceneSpecularTmp").c_str(), 0, 0, 1, eTT_2D, nRTFlags, eTF_R8G8B8A8, TO_SCENE_SPECULAR_ACC);
+	m_pTexSceneSpecularTmp[1] = CTexture::GetOrCreateTextureObject(m_graphicsPipeline.MakeUniqueTexIdentifierName("$SceneSpecularTmp 1/2").c_str(), 0, 0, 1, eTT_2D, nRTFlags, eTF_R8G8B8A8, -1);
 
 	m_pTexDisplayTargetScaled[0] = CTexture::GetOrCreateTextureObject(m_graphicsPipeline.MakeUniqueTexIdentifierName("$DisplayTarget 1/2a").c_str(), 0, 0, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_RENDERTARGET, eTF_Unknown, TO_BACKBUFFERSCALED_D2);
 	m_pTexDisplayTargetScaled[1] = CTexture::GetOrCreateTextureObject(m_graphicsPipeline.MakeUniqueTexIdentifierName("$DisplayTarget 1/4a").c_str(), 0, 0, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_RENDERTARGET, eTF_Unknown, TO_BACKBUFFERSCALED_D4);
@@ -189,7 +190,8 @@ void CGraphicsPipelineResources::CreateDeferredMaps(int resourceWidth, int resou
 	SD3DPostEffectsUtils::GetOrCreateRenderTarget(m_graphicsPipeline.MakeUniqueTexIdentifierName("$AOColorBleed").c_str(), m_pTexAOColorBleed, width_r8, height_r8, Clr_Unknown, true, false, eTF_R8G8B8A8);
 
 	SD3DPostEffectsUtils::GetOrCreateRenderTarget(m_graphicsPipeline.MakeUniqueTexIdentifierName("$SceneDiffuseTmp").c_str(), m_pTexSceneDiffuseTmp, width, height, Clr_Empty, true, false, eTF_R8G8B8A8);
-	SD3DPostEffectsUtils::GetOrCreateRenderTarget(m_graphicsPipeline.MakeUniqueTexIdentifierName("$SceneSpecularTmp").c_str(), m_pTexSceneSpecularTmp, width, height, Clr_Empty, true, false, eTF_R8G8B8A8);
+	SD3DPostEffectsUtils::GetOrCreateRenderTarget(m_graphicsPipeline.MakeUniqueTexIdentifierName("$SceneSpecularTmp").c_str(), m_pTexSceneSpecularTmp[0], width, height, Clr_Median, true, false, eTF_R8G8B8A8);
+	SD3DPostEffectsUtils::GetOrCreateRenderTarget(m_graphicsPipeline.MakeUniqueTexIdentifierName("$SceneSpecularTmp 1/2").c_str(), m_pTexSceneSpecularTmp[1], width_r2, height_r2, Clr_Median, true, false, eTF_R8G8B8A8);
 
 	// shadow mask
 	if (m_pTexShadowMask)
@@ -481,7 +483,8 @@ void CGraphicsPipelineResources::Shutdown()
 	SAFE_RELEASE_FORCE(m_pTexClipVolumes);
 	SAFE_RELEASE_FORCE(m_pTexAOColorBleed);
 	SAFE_RELEASE_FORCE(m_pTexSceneDiffuseTmp);
-	SAFE_RELEASE_FORCE(m_pTexSceneSpecularTmp);
+	SAFE_RELEASE_FORCE(m_pTexSceneSpecularTmp[0]);
+	SAFE_RELEASE_FORCE(m_pTexSceneSpecularTmp[1]);
 	SAFE_RELEASE_FORCE(m_pTexDisplayTargetScaled[0]);
 	SAFE_RELEASE_FORCE(m_pTexDisplayTargetScaled[1]);
 	SAFE_RELEASE_FORCE(m_pTexDisplayTargetScaled[2]);
@@ -556,7 +559,8 @@ void CGraphicsPipelineResources::Discard()
 	gcpRendD3D->GetDeviceContext().DiscardResource(m_pTexClipVolumes->GetDevTexture(false)->GetNativeResource());
 	gcpRendD3D->GetDeviceContext().DiscardResource(m_pTexAOColorBleed->GetDevTexture(false)->GetNativeResource());
 	gcpRendD3D->GetDeviceContext().DiscardResource(m_pTexSceneDiffuseTmp->GetDevTexture(false)->GetNativeResource());
-	gcpRendD3D->GetDeviceContext().DiscardResource(m_pTexSceneSpecularTmp->GetDevTexture(false)->GetNativeResource());
+	gcpRendD3D->GetDeviceContext().DiscardResource(m_pTexSceneSpecularTmp[0]->GetDevTexture(false)->GetNativeResource());
+	gcpRendD3D->GetDeviceContext().DiscardResource(m_pTexSceneSpecularTmp[1]->GetDevTexture(false)->GetNativeResource());
 	gcpRendD3D->GetDeviceContext().DiscardResource(m_pTexDisplayTargetScaled[0]->GetDevTexture(false)->GetNativeResource());
 	gcpRendD3D->GetDeviceContext().DiscardResource(m_pTexDisplayTargetScaled[1]->GetDevTexture(false)->GetNativeResource());
 	gcpRendD3D->GetDeviceContext().DiscardResource(m_pTexDisplayTargetScaled[2]->GetDevTexture(false)->GetNativeResource());
@@ -592,7 +596,6 @@ void CGraphicsPipelineResources::Clear()
 		m_pTexSceneDiffuse,
 		m_pTexSceneSpecular,
 		m_pTexSceneDiffuseTmp,
-		m_pTexSceneSpecularTmp,
 		m_pTexDisplayTargetSrc,
 		m_pTexDisplayTargetDst,
 		m_pTexLinearDepth,

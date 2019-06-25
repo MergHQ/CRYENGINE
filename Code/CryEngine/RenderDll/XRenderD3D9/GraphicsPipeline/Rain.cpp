@@ -205,7 +205,7 @@ void CRainStage::ExecuteDeferredRainGBuffer()
 
 	// TODO: Try avoiding the copy by directly accessing UAVs
 	m_passCopyGBufferNormal.Execute(m_graphicsPipelineResources.m_pTexSceneNormalsMap, m_graphicsPipelineResources.m_pTexSceneNormalsBent);
-	m_passCopyGBufferSpecular.Execute(CRendererResources__s_ptexSceneSpecular, m_graphicsPipelineResources.m_pTexSceneSpecularTmp);
+	m_passCopyGBufferSpecular.Execute(CRendererResources__s_ptexSceneSpecular, m_graphicsPipelineResources.m_pTexSceneSpecularTmp[0]);
 	m_passCopyGBufferDiffuse.Execute(m_graphicsPipelineResources.m_pTexSceneDiffuse, m_graphicsPipelineResources.m_pTexSceneDiffuseTmp);
 
 	const auto& viewInfo = GetCurrentViewInfo();
@@ -239,7 +239,7 @@ void CRainStage::ExecuteDeferredRainGBuffer()
 
 		pass.SetTexture(0, m_graphicsPipelineResources.m_pTexLinearDepth);
 		pass.SetTexture(1, m_graphicsPipelineResources.m_pTexSceneNormalsBent);
-		pass.SetTexture(2, m_graphicsPipelineResources.m_pTexSceneSpecularTmp);
+		pass.SetTexture(2, m_graphicsPipelineResources.m_pTexSceneSpecularTmp[0]);
 		pass.SetTexture(3, m_graphicsPipelineResources.m_pTexSceneDiffuseTmp);
 		pass.SetTexture(4, m_pSurfaceFlowTex);
 		pass.SetTexture(5, m_pRainSpatterTex);

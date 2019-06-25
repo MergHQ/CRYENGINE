@@ -26,7 +26,12 @@ void CScreenSpaceObscuranceStage::Init()
 void CScreenSpaceObscuranceStage::Update()
 {
 	if (CRendererCVars::CV_r_ssdo)
+	{
+		const bool bLowResOutput = (CRendererCVars::CV_r_ssdoHalfRes == 3);
+
 		CClearSurfacePass::Execute(m_graphicsPipelineResources.m_pTexSceneNormalsBent, Clr_Median);
+		CClearSurfacePass::Execute(m_graphicsPipelineResources.m_pTexSceneSpecularTmp[bLowResOutput], Clr_Median);
+	}
 }
 
 void CScreenSpaceObscuranceStage::Execute()
@@ -37,14 +42,12 @@ void CScreenSpaceObscuranceStage::Execute()
 
 	PROFILE_LABEL_SCOPE("DIRECTIONAL_OCC");
 
-	CTexture* CRendererResources__s_ptexSceneSpecular = m_graphicsPipelineResources.m_pTexSceneSpecularTmp;
-#if defined(DURANGO_USE_ESRAM)
-	CRendererResources__s_ptexSceneSpecular = m_graphicsPipelineResources.m_pTexSceneSpecularESRAM;
-#endif
-
 	const bool bLowResOutput = (CRendererCVars::CV_r_ssdoHalfRes == 3);
-	if (bLowResOutput)
-		CRendererResources__s_ptexSceneSpecular = m_graphicsPipelineResources.m_pTexDisplayTargetScaled[0];
+	CTexture* CRendererResources__s_ptexSceneSpecular = m_graphicsPipelineResources.m_pTexSceneSpecularTmp[bLowResOutput];
+#if defined(DURANGO_USE_ESRAM)
+	if (!bLowResOutput)
+		CRendererResources__s_ptexSceneSpecular = m_graphicsPipelineResources.m_pTexSceneSpecularESRAM;
+#endif
 
 	CShader* pShader = CShaderMan::s_shDeferredShading;
 

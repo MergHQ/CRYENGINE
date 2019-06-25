@@ -78,8 +78,8 @@ public:
 	CTexture* m_pTexLinearDepthScaled[3] = { nullptr, nullptr, nullptr };                   // Min, Max, Avg, med
 	CTexture* m_pTexClipVolumes = nullptr;                                                  // CClipVolumeStage, CTiledShadingStage, CHeightMapAOStage
 	CTexture* m_pTexAOColorBleed = nullptr;                                                 // CScreenSpaceObscuranceStage, CTiledShadingStage
-	CTexture* m_pTexSceneDiffuseTmp = nullptr;
-	CTexture* m_pTexSceneSpecularTmp = nullptr;
+	CTexture* m_pTexSceneDiffuseTmp = nullptr;                                              // CRainStage, CSnowStage
+	CTexture* m_pTexSceneSpecularTmp[2] = { nullptr, nullptr };                             // CRainStage, CSnowStage, CScreenSpaceObscuranceStage
 
 	CTexture* m_pTexDisplayTargetScaled[3] = { nullptr, nullptr, nullptr };                 // low-resolution/blurred version. 2x/4x/8x/16x smaller than screen
 	CTexture* m_pTexDisplayTargetScaledTemp[2] = { nullptr, nullptr };                      // low-resolution/blurred version. 2x/4x/8x/16x smaller than screen, temp textures (used for blurring/ping-pong)
