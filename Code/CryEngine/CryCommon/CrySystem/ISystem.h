@@ -11,6 +11,8 @@
 
 #ifdef CRYSYSTEM_EXPORTS
 	#define CRYSYSTEM_API DLL_EXPORT
+#elif defined(CRY_IS_MONOLITHIC_BUILD) && defined(CRY_IS_APPLICATION)
+	#define CRYSYSTEM_API
 #else
 	#define CRYSYSTEM_API DLL_IMPORT
 #endif
