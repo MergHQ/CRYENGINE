@@ -28,11 +28,13 @@ public:
 	virtual ~CLocalizedStringsManager();
 
 	// ILocalizationManager
-	virtual const char*                                 LangNameFromPILID(const ILocalizationManager::EPlatformIndependentLanguageID id);
+	virtual const char*                                 LangNameFromPILID(const ILocalizationManager::EPlatformIndependentLanguageID id) const;
+	virtual const char*                                 ISOCodeFromPILID(const ILocalizationManager::EPlatformIndependentLanguageID id) const;
 	virtual ILocalizationManager::TLocalizationBitfield MaskSystemLanguagesFromSupportedLocalizations(const ILocalizationManager::TLocalizationBitfield systemLanguages);
 	virtual ILocalizationManager::TLocalizationBitfield IsLanguageSupported(const ILocalizationManager::EPlatformIndependentLanguageID id);
 
-	virtual const char*                                 GetLanguage();
+	virtual const char*                                 GetLanguage() const;
+	virtual const char*                                 GetLanguageISOCode() const;
 	virtual bool                                        SetLanguage(const char* sLanguage);
 
 	virtual bool                                        InitLocalizationData(const char* sFileName, bool bReload = false);
@@ -217,6 +219,7 @@ private:
 		typedef std::vector<HuffmanCoder*>          THuffmanCoders;
 
 		string                  sLanguage;
+		string                  sISOCode;
 		StringsKeyMap           m_keysMap;
 		TLocalizedStringEntries m_vLocalizedStrings;
 		THuffmanCoders          m_vEncoders;
@@ -225,6 +228,7 @@ private:
 		{
 			pSizer->AddObject(this, sizeof(*this));
 			pSizer->AddObject(sLanguage);
+			pSizer->AddObject(sISOCode);
 			pSizer->AddObject(m_vLocalizedStrings);
 			pSizer->AddObject(m_keysMap);
 			pSizer->AddObject(m_vEncoders);

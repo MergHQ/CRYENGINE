@@ -41,6 +41,8 @@ const char c_sys_localization_encode[] = "sys_localization_encode";
 const char c_sys_localization_test[] = "sys_localization_test";
 const char c_sys_localization_pak_suffix[] = "sys_localization_pak_suffix";
 
+namespace
+{
 enum ELocalizedXmlColumns
 {
 	ELOCALIZED_COLUMN_SKIP = 0,
@@ -107,9 +109,10 @@ static const char* sLocalizedColumnNames[] =
 	"original actor line",
 	"translated actor line",
 };
+static_assert(CRY_ARRAY_COUNT(sLocalizedColumnNames) == ELocalizedXmlColumns::ELOCALIZED_COLUMN_LAST, "Unexpected array size");
 
 //Please ensure that this array matches the contents of EPlatformIndependentLanguageID in ILocalizationManager.h
-static const char* PLATFORM_INDEPENDENT_LANGUAGE_NAMES[ILocalizationManager::ePILID_MAX_OR_INVALID] =
+static const char* PLATFORM_INDEPENDENT_LANGUAGE_NAMES[] =
 {
 	"japanese",
 	"english",
@@ -130,8 +133,36 @@ static const char* PLATFORM_INDEPENDENT_LANGUAGE_NAMES[ILocalizationManager::ePI
 	"polish",
 	"arabic",
 	"czech",
-	"turkish"
+	"turkish",
 };
+static_assert(CRY_ARRAY_COUNT(PLATFORM_INDEPENDENT_LANGUAGE_NAMES) == ILocalizationManager::ePILID_MAX_OR_INVALID, "Unexpected array size");
+
+// ISO 639-1 codes, if you add more you can find the codes here: https://iso639-3.sil.org/code_tables/639/data
+static const char* ISO_LANGUAGE_CODES[] =
+{
+	"ja",
+	"en",
+	"fr",
+	"es",
+	"de",
+	"it",
+	"nl",
+	"pt",
+	"ru",
+	"ko",
+	"zh",
+	"zh",
+	"fi",
+	"sv",
+	"da",
+	"no",
+	"pl",
+	"ar",
+	"cs",
+	"tr",
+};
+static_assert(CRY_ARRAY_COUNT(ISO_LANGUAGE_CODES) == ILocalizationManager::ePILID_MAX_OR_INVALID, "Unexpected array size");
+}
 
 //////////////////////////////////////////////////////////////////////////
 #if !defined(_RELEASE)
@@ -376,10 +407,16 @@ void CLocalizedStringsManager::FreeData()
 }
 
 //////////////////////////////////////////////////////////////////////////
-const char* CLocalizedStringsManager::LangNameFromPILID(const ILocalizationManager::EPlatformIndependentLanguageID id)
+const char* CLocalizedStringsManager::LangNameFromPILID(const ILocalizationManager::EPlatformIndependentLanguageID id) const
 {
 	assert(id >= 0 && id < ILocalizationManager::ePILID_MAX_OR_INVALID);
 	return PLATFORM_INDEPENDENT_LANGUAGE_NAMES[id];
+}
+
+const char* CLocalizedStringsManager::ISOCodeFromPILID(const ILocalizationManager::EPlatformIndependentLanguageID id) const
+{
+	assert(id >= 0 && id < ILocalizationManager::ePILID_MAX_OR_INVALID);
+	return ISO_LANGUAGE_CODES[id];
 }
 
 //Uses bitwise operations to compare the localizations we provide in this SKU and the languages that the platform supports.
@@ -404,11 +441,14 @@ void CLocalizedStringsManager::SetAvailableLocalizationsBitfield(const ILocaliza
 }
 
 //////////////////////////////////////////////////////////////////////
-const char* CLocalizedStringsManager::GetLanguage()
+const char* CLocalizedStringsManager::GetLanguage() const
 {
-	if (m_pLanguage == 0)
-		return "";
-	return m_pLanguage->sLanguage.c_str();
+	return m_pLanguage != nullptr ? m_pLanguage->sLanguage.c_str() : "";
+}
+
+const char* CLocalizedStringsManager::GetLanguageISOCode() const
+{
+	return m_pLanguage != nullptr ? m_pLanguage->sISOCode.c_str() : "";
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -2320,6 +2360,20 @@ LanguageID g_currentLanguageID = { 0, 0 };
 void CLocalizedStringsManager::InternalSetCurrentLanguage(CLocalizedStringsManager::SLanguage* pLanguage)
 {
 	m_pLanguage = pLanguage;
+	if (m_pLanguage != nullptr)
+	{
+		if (m_pLanguage->sISOCode.empty())
+		{
+			const auto it = std::find_if(std::begin(PLATFORM_INDEPENDENT_LANGUAGE_NAMES), std::end(PLATFORM_INDEPENDENT_LANGUAGE_NAMES),
+				[this](const char* szLang) { return stricmp(m_pLanguage->sLanguage.c_str(), szLang) == 0; });
+			if (it != std::end(PLATFORM_INDEPENDENT_LANGUAGE_NAMES))
+			{
+				const ptrdiff_t index = std::distance(std::begin(PLATFORM_INDEPENDENT_LANGUAGE_NAMES), it);
+				m_pLanguage->sISOCode = ISO_LANGUAGE_CODES[index];
+			}
+		}
+	}
+
 #if CRY_PLATFORM_WINDOWS
 	if (m_pLanguage != 0)
 		g_currentLanguageID = GetLanguageID(m_pLanguage->sLanguage);
