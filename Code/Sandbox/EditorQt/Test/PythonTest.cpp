@@ -18,7 +18,7 @@ void CallPythonFunction(PyObject* pModule, const string& functionName)
 	bool isCallableFunction = pFunction && PyCallable_Check(pFunction);
 	//Debug break here if it's not valid
 	CRY_TEST_ASSERT(isCallableFunction, "Unable to call %s function", functionName.c_str());
-	//Call the function if ist's a valid callable
+	//Call the function if it is a valid callable
 	if (isCallableFunction)
 	{
 		PyObject_CallFunction(pFunction, nullptr);
@@ -183,13 +183,13 @@ void SerializePythonObjects(std::vector<XmlNodeRef>& serializedObjects, PyObject
 	{
 		//Get an item, get the underlying string and use it to find an object in the object manager
 		PyObject* pListItem = PyList_GetItem(pObjectsList, i);
-		bool isItemValid = pListItem && PyString_Check(pListItem);
+		bool isItemValid = pListItem && PyUnicode_Check(pListItem);
 		CRY_TEST_ASSERT(isItemValid, "Contents of the objectsToTest list must be of type string");
 
 		if (isItemValid)
 		{
 			//Get the char string from the python object
-			char* objectName = PyString_AsString(pListItem);
+			char* objectName = PyBytes_AsString(pListItem);
 			CBaseObject* pObjectToTest = GetIEditor()->GetObjectManager()->FindObject(objectName);
 			CRY_TEST_ASSERT(pObjectToTest, "Object named %s does not exist", objectName);
 
@@ -219,7 +219,7 @@ void RunPythonScript()
 	PyObject* pSystemPath = PySys_GetObject("path");
 
 	//Turn the system path string into a python object and append it to the python path
-	PyObject* pTestScriptsPathString = PyString_FromString(testScriptsPath.c_str());
+	PyObject* pTestScriptsPathString = PyUnicode_FromString(testScriptsPath.c_str());
 
 	//This will be the location of the new item in the list
 	int newElementInListPosition = PyList_Size(pSystemPath);
@@ -233,7 +233,7 @@ void RunPythonScript()
 
 	for (string& file : files)
 	{
-		PyObject* pStringObject = PyString_FromString(PathUtil::GetFileName(file.c_str()));
+		PyObject* pStringObject = PyUnicode_FromString(PathUtil::GetFileName(file.c_str()));
 
 		PyObject* pModulesDictionary = PyImport_GetModuleDict();
 		int moduleFound = PyDict_Contains(pModulesDictionary, pStringObject);

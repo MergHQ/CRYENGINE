@@ -1010,13 +1010,13 @@ macro(set_editor_module_flags)
 		-DCRY_ENABLE_RC_HELPER
 		-DIS_EDITOR_BUILD
 		-DQT_FORCE_ASSERT
-		-DUSE_PYTHON_SCRIPTING 
 		-DNO_WARN_MBCS_MFC_DEPRECATION
 	)
 	if(NOT MODULE_DISABLE_MFC AND NOT MODULE_FORCE_STATIC)
 		target_compile_definitions( ${THIS_PROJECT} PRIVATE -D_AFXDLL)
 	endif()
-	target_link_libraries( ${THIS_PROJECT} PRIVATE BoostPython python27)
+	target_link_libraries(${THIS_PROJECT} PRIVATE BoostPython Python)
+
 	use_qt()
 	target_compile_options(${THIS_PROJECT} PRIVATE /EHsc /GR /bigobj /wd4251 /wd4275)
 	target_include_directories(${THIS_PROJECT} PRIVATE "${CRYENGINE_DIR}/Code/Sandbox/Libs/CryQt")
@@ -1363,15 +1363,7 @@ macro(use_scaleform)
 endmacro()
 
 macro(use_xt)
-	if (MSVC_VERSION GREATER 1900) # Visual Studio > 2015
-		set(XT_VERSION vc14)
-	elseif (MSVC_VERSION EQUAL 1900) # Visual Studio 2015
-		set(XT_VERSION vc14)
-	elseif (MSVC_VERSION EQUAL 1800) # Visual Studio 2013
-		set(XT_VERSION vc12)
-	elseif (MSVC_VERSION EQUAL 1700) # Visual Studio 2012
-		set(XT_VERSION vc11)
-	endif()
+	set(XT_VERSION vc14)
 	target_include_directories( ${THIS_PROJECT} PRIVATE "${SDK_DIR}/XT_13_4/Include" )
 	set_libpath_flag()
 	set_property(TARGET ${THIS_PROJECT} APPEND_STRING PROPERTY LINK_FLAGS " ${LIBPATH_FLAG}\"${SDK_DIR}/XT_13_4/lib_${XT_VERSION}\"")

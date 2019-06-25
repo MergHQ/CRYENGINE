@@ -12,7 +12,6 @@
 // For boost 1_58_0 +
 #if BOOST_VERSION >= 105800
 	#define BOOST_NO_IOSTREAM
-	#define BOOST_NO_RTTI
 	#define BOOST_NO_EXCEPTIONS
 	#define BOOST_EXCEPTION_DISABLE
 

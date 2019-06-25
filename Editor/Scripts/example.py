@@ -10,6 +10,6 @@ import sys
 
 if (len(sys.argv) > 1):
     for line in open(sys.argv[1], 'r'):
-        print line
+        print(line)
 else:
-	print "Invalid arguments"
+	print("Invalid arguments")

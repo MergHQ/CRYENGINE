@@ -5,6 +5,7 @@
 #include <BoostPythonMacros.h>
 #include <Commands/ICommandManager.h>
 #include <PathUtils.h>
+#include <QtUtil.h>
 
 #include <QDir>
 
@@ -24,7 +25,7 @@ def rename(arg1,arg2):
 	"""
 	pass
 */
-const char* PyGeneratePythonEditorAutocompleteFiles()
+string PyGeneratePythonEditorAutocompleteFiles()
 {
 	const string outputFolder = PathUtil::GetUserSandboxFolder() + "python/autocomplete/sandbox/";
 
@@ -95,7 +96,8 @@ const char* PyGeneratePythonEditorAutocompleteFiles()
 		ofs << "\tpass\n\n";
 	}
 
-	return dir.absolutePath().toStdString().c_str();
+	string outputDir = QtUtil::ToString(dir.absolutePath());
+	return outputDir;
 }
 
 } // unnamed namespace

@@ -76,7 +76,7 @@ public:
 	PythonViewPaneWidget(PyObject* pWidgetType, const char* name)
 		: name(name)
 		, pythonWidget(InstantiateWidgetFromPython(pWidgetType))
-	{		
+	{
 	}
 
 	~PythonViewPaneWidget()
@@ -175,18 +175,29 @@ static PyMethodDef BridgeMethods[] =
 	{ NULL,              NULL,           0,            NULL} // Sentinel
 };
 
-PyMODINIT_FUNC initSandboxPythonBridge()
+PyMODINIT_FUNC PyInit_SandboxPythonBridge()
 {
 	// Import QtWidgets PySide module so we can convert python objects to QWidget.
 	{
 		Shiboken::AutoDecRef requiredModule(Shiboken::Module::import("PySide2.QtWidgets"));
 		if (requiredModule.isNull())
-			return SBK_MODULE_INIT_ERROR;
+			return nullptr;
 		SbkPySide2_QtWidgetsTypes = Shiboken::Module::getTypes(requiredModule);
 		SbkPySide2_QtWidgetsTypeConverters = Shiboken::Module::getTypeConverters(requiredModule);
 	}
 
-	// Initialize python module and register methods
-	PyObject* module;
-	module = Py_InitModule("SandboxPythonBridge", BridgeMethods);
+	static PyModuleDef moduledef = {
+		PyModuleDef_HEAD_INIT,
+		"SandboxPythonBridge", // m_name
+		nullptr,               // m_doc
+		-1,                    // m_size
+		BridgeMethods,         // m_methods
+		nullptr,               // m_reload
+		nullptr,               // m_traverse
+		nullptr,               // m_clear
+		nullptr                // m_free
+	};
+
+	PyObject* pModule = PyModule_Create(&moduledef);
+	return pModule;
 }

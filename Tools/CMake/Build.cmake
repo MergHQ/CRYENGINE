@@ -20,7 +20,8 @@ if (OPTION_SANDBOX AND OPTION_STATIC_LINKING)
 endif()
 
 if (OPTION_SANDBOX AND WINDOWS)
-	set(QT_DIR "${SDK_DIR}/Qt/5.12.3/msvc2017_64/Qt")
+	set(QT_DEPLOY_ROOT "${SDK_DIR}/Qt/5.12.3_python_37/msvc2017_64")
+	set(QT_DIR "${QT_DEPLOY_ROOT}/Qt")
 	set(Qt5_DIR "${QT_DIR}")
 
 	find_package(Qt5 COMPONENTS Core Gui OpenGL Widgets REQUIRED PATHS "${QT_DIR}" NO_DEFAULT_PATH)

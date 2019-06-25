@@ -1523,7 +1523,7 @@ PRIVATE
 	-DNOT_USE_CRY_MEMORY_MANAGER
 	-DSANDBOX_EDITOR_IMPL
 )
-target_link_libraries(${THIS_PROJECT} PRIVATE tiff zlib prt)
+target_link_libraries(${THIS_PROJECT} PRIVATE tiff zlib prt Python)
 if(WINDOWS)
 	target_link_libraries(${THIS_PROJECT} PRIVATE FbxSdk)
 	target_link_libraries(${THIS_PROJECT} PRIVATE qtmain$<$<CONFIG:Debug>:d>)

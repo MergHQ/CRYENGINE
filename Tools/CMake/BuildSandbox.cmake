@@ -4,6 +4,7 @@ set(CMAKE_AUTOMOC_RELAXED_MODE TRUE)
 
 #modules
 include("${TOOLS_CMAKE_DIR}/modules/FbxSdk.cmake")
+include("${TOOLS_CMAKE_DIR}/modules/Python.cmake")
 #---
 
 add_subdirectory("Code/Sandbox/Libs/CryQt")
@@ -54,6 +55,8 @@ add_subdirectory("Code/Sandbox/Plugins/MeshImporter")
 add_subdirectory("Code/Sandbox/Plugins/PerforcePlugin")
 add_subdirectory("Code/Sandbox/Plugins/PerforcePlugin_Legacy")
 add_subdirectory("Code/Sandbox/Plugins/SandboxPythonBridge")
+add_subdirectory("Code/Sandbox/Libs/SandboxPython")
+
 if (PLUGIN_SAMPLE_EDITOR_PLUGIN)
 	add_subdirectory("Code/Sandbox/Plugins/SamplePlugin")
 endif()
@@ -82,4 +85,4 @@ if(OPTION_UNIT_TEST AND PLUGIN_SAMPLE_EDITOR_PLUGIN)
 endif()
 #libs
 add_subdirectory ("Code/Libs/prt")
-add_subdirectory ("Code/Libs/python")
+

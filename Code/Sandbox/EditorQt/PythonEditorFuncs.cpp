@@ -1,31 +1,30 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
+
+#include "Commands/CommandManager.h"
+#include "Util/BoostPythonHelpers.h"
+#include "Util/Ruler.h"
 #include "IEditorImpl.h"
-#include "GameEngine.h"
 #include "LogFile.h"
 #include "ViewManager.h"
-#include "Commands/CommandManager.h"
-#include <IObjectManager.h>
-#include <Preferences/ViewportPreferences.h>
-#include "Util/BoostPythonHelpers.h"
-#include "Dialogs/QStringDialog.h"
-#include "Dialogs/ToolbarDialog.h"
-#include "Dialogs/GenericSelectItemDialog.h"
-#include "Util/Ruler.h"
-#include "Util/Mailer.h"
-#include "FileDialogs/SystemFileDialog.h"
-#include "Controls/QuestionDialog.h"
-#include "PathUtils.h"
-#include "CryEditDoc.h"
-#include <IUndoObject.h>
-#include <Objects/BaseObject.h>
+
+#include <Dialogs/GenericSelectItemDialog.h>
 #include <Util/FileUtil.h>
+
+#include <Controls/QuestionDialog.h>
+#include <Dialogs/QStringDialog.h>
+#include <FileDialogs/SystemFileDialog.h>
+#include <Objects/BaseObject.h>
+#include <Preferences/ViewportPreferences.h>
+#include <IObjectManager.h>
+#include <PathUtils.h>
+
 #include <CryRenderer/IRenderAuxGeom.h>
 
 namespace
 {
-//////////////////////////////////////////////////////////////////////////
+
 const char* PyGetCVar(const char* pName)
 {
 	ICVar* pCVar = GetIEditorImpl()->GetSystem()->GetIConsole()->GetCVar(pName);
@@ -36,7 +35,7 @@ const char* PyGetCVar(const char* pName)
 	}
 	return pCVar->GetString();
 }
-//////////////////////////////////////////////////////////////////////////
+
 void PySetCVar(const char* pName, pSPyWrappedProperty pValue)
 {
 	ICVar* pCVar = GetIEditorImpl()->GetSystem()->GetIConsole()->GetCVar(pName);
@@ -71,7 +70,6 @@ void PySetCVar(const char* pName, pSPyWrappedProperty pValue)
 	CryLog("PySetCVar: %s set to %s", pName, pCVar->GetString());
 }
 
-//////////////////////////////////////////////////////////////////////////
 const char* PyNewObject(const char* typeName, const char* fileName, const char* name, float x, float y, float z)
 {
 	CBaseObject* pObject = GetIEditorImpl()->NewObject(typeName, fileName);
@@ -103,7 +101,6 @@ pPyGameObject PyCreateObject(const char* typeName, const char* fileName, const c
 	return PyScript::CreatePyGameObject(pObject);
 }
 
-//////////////////////////////////////////////////////////////////////////
 const char* PyNewObjectAtCursor(const char* typeName, const char* fileName, const char* name)
 {
 	CUndo undo("Create new object");
@@ -122,26 +119,22 @@ const char* PyNewObjectAtCursor(const char* typeName, const char* fileName, cons
 	return PyNewObject(typeName, fileName, name, pos.x, pos.y, pos.z);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void PyStartObjectCreation(const char* typeName, const char* fileName)
 {
 	CUndo undo("Create new object");
 	GetIEditorImpl()->StartObjectCreation(typeName, fileName);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void PyRunConsole(const char* text)
 {
 	GetIEditorImpl()->GetSystem()->GetIConsole()->ExecuteString(text);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void PyRunLua(const char* text)
 {
 	GetIEditorImpl()->GetSystem()->GetIScriptSystem()->ExecuteBuffer(text, strlen(text));
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool GetPythonScriptPath(const char* pFile, string& path)
 {
 	bool bRelativePath = true;
@@ -157,7 +150,6 @@ bool GetPythonScriptPath(const char* pFile, string& path)
 	GetCurrentDirectory(MAX_PATH, workingDirectory);
 	string scriptFolder = workingDirectory + string("/");
 	scriptFolder += GetIEditorImpl()->GetSystem()->GetIPak()->GetGameFolder() + string("/");
-	scriptFolder = PathUtil::ToUnixPath(scriptFolder);
 
 	if (bRelativePath)
 	{
@@ -188,49 +180,65 @@ bool GetPythonScriptPath(const char* pFile, string& path)
 	return true;
 }
 
-//////////////////////////////////////////////////////////////////////////
-void GetPythonArgumentsVector(const char* pArguments, std::vector<string>& inputArguments)
+std::vector<wstring> TokenizeArguments(const char* pArguments)
 {
-	if (pArguments == NULL)
-		return;
+	std::vector<wstring> arguments;
+
+	if (!pArguments)
+	{
+		return arguments;
+	}
 
 	string str(pArguments);
 	int pos = 0;
 	string token = str.Tokenize(" ", pos);
 	while (!token.IsEmpty())
 	{
-		inputArguments.push_back(token);
+		wstring wideToken;
+		Unicode::Convert(wideToken, token);
+
+		arguments.push_back(wideToken);
 		token = str.Tokenize(" ", pos);
 	}
+
+	return arguments;
 }
 
-//////////////////////////////////////////////////////////////////////////
-void PyRunFileWithParameters(const char* pFile, const char* pArguments)
+void PyRunFileWithParameters(const char* szFile, const char* pArguments)
 {
 	string path;
-	std::vector<string> inputArguments;
-	GetPythonArgumentsVector(pArguments, inputArguments);
-	if (GetPythonScriptPath(pFile, path))
+	if (!GetPythonScriptPath(szFile, path))
 	{
-		PyObject* pyFileObject = PyFile_FromString(const_cast<char*>(path.GetString()), "r");
-
-		if (pyFileObject)
-		{
-			std::vector<const char*> argv;
-			argv.reserve(inputArguments.size() + 1);
-			argv.push_back(path.GetString());
-
-			for (auto iter = inputArguments.begin(); iter != inputArguments.end(); ++iter)
-			{
-				argv.push_back(*iter);
-			}
-
-			PySys_SetArgv(argv.size(), const_cast<char**>(&argv[0]));
-			PyRun_SimpleFile(PyFile_AsFile(pyFileObject), path);
-			PyErr_Print();
-		}
-		Py_DECREF(pyFileObject);
+		return;
 	}
+
+	FILE* pFile = fopen(path.c_str(), "r");
+	if (!pFile)
+	{
+		return;
+	}
+
+	const std::vector<wstring> inputArguments = TokenizeArguments(pArguments);
+
+	std::vector<wchar_t*> argv;
+	argv.reserve(inputArguments.size() + 1);
+
+	// Path - first
+	std::wstring widePath;
+	Unicode::Convert(widePath, path);
+	argv.push_back(const_cast<wchar_t*>(widePath.c_str()));
+
+	// Add arguments
+	for (auto iter = inputArguments.begin(); iter != inputArguments.end(); ++iter)
+	{
+		argv.push_back(const_cast<wchar_t*>(iter->c_str()));
+	}
+
+	PySys_SetArgv(argv.size(), const_cast<wchar_t**>(&argv[0]));
+	PyRun_SimpleFile(pFile, path.c_str());
+	PyErr_Print();
+
+	fclose(pFile);
 }
 
 void PyRunFile(const char* pFile)
@@ -238,20 +246,17 @@ void PyRunFile(const char* pFile)
 	PyRunFileWithParameters(pFile, nullptr);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void PyExecuteCommand(const char* cmdline)
 {
 	GetIEditorImpl()->GetCommandManager()->Execute(cmdline);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void PyLog(const char* pMessage)
 {
 	if (strcmp(pMessage, "") != 0)
 		CryLogAlways(pMessage);
 }
 
-//////////////////////////////////////////////////////////////////////////
 bool PyMessageBox(const char* pMessage)
 {
 	return QDialogButtonBox::StandardButton::Ok == CQuestionDialog::SQuestion(QObject::tr(""), QObject::tr(pMessage), QDialogButtonBox::StandardButton::Ok | QDialogButtonBox::StandardButton::Cancel);
@@ -671,13 +676,11 @@ void PySetHideMaskAll()
 	gViewportDebugPreferences.SetObjectHideMask(OBJTYPE_ANY);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void PySetHideMaskNone()
 {
 	gViewportDebugPreferences.SetObjectHideMask(0);
 }
 
-//////////////////////////////////////////////////////////////////////////
 void PySetHideMaskInvert()
 {
 	uint32 hideMask = gViewportDebugPreferences.GetObjectHideMask();
@@ -689,7 +692,7 @@ void PySetHideMask(const char* pName, bool bAdd)
 	uint32 hideMask = gViewportDebugPreferences.GetObjectHideMask();
 	int hideType = 0;
 
-	if (!stricmp(pName, "aipoints"))   hideType = OBJTYPE_AIPOINT;
+	if (!stricmp(pName, "aipoints")) hideType = OBJTYPE_AIPOINT;
 	else if (!stricmp(pName, "brushes"))
 		hideType = OBJTYPE_BRUSH;
 	else if (!stricmp(pName, "decals"))
@@ -746,7 +749,7 @@ bool PyGetHideMask(const char* pName)
 	    (!stricmp(pName, "volumes") && (hideMask & OBJTYPE_VOLUME)) ||
 	    (!stricmp(pName, "geomcaches") && (hideMask & OBJTYPE_GEOMCACHE)) ||
 	    (!stricmp(pName, "roads") && (hideMask & OBJTYPE_ROAD)) ||
-	    (!stricmp(pName, "rivers") && (hideMask & OBJTYPE_ROAD)))    return true;
+	    (!stricmp(pName, "rivers") && (hideMask & OBJTYPE_ROAD))) return true;
 
 	return false;
 }

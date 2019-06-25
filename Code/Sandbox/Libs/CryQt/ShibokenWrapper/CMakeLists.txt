@@ -57,10 +57,8 @@ CreateDynamicModule(CryQtShibokenWrapper SOLUTION_FOLDER "Sandbox/Libs")
 target_compile_definitions(${THIS_PROJECT} PRIVATE -DWIN32)
 target_include_directories(${THIS_PROJECT} PRIVATE "${SHIBOKEN_INCLUDE_PATH}" "${PYSIDE_INCLUDE_PATH}" "${PYSIDE_INCLUDE_PATH}/QtGui" "${PYSIDE_INCLUDE_PATH}/QtCore" "${PYSIDE_INCLUDE_PATH}/QtWidgets" "${QT_INCLUDE_PATH}/QtANGLE")
 target_link_libraries(${THIS_PROJECT} PRIVATE dwmapi gdi32 Ole32 qtmain$<$<CONFIG:Debug>:d>)
-target_link_libraries(${THIS_PROJECT} PRIVATE CryQt)
+target_link_libraries(${THIS_PROJECT} PRIVATE CryQt Python)
 set_property(TARGET ${THIS_PROJECT} PROPERTY EXCLUDE_FROM_DEFAULT_BUILD_RELEASE TRUE)
-
-target_link_libraries(${THIS_PROJECT} PRIVATE python27)
 
 # Must include all sub-directories of CryQt, since generated files include header of wraped code by name only.
 FILE(GLOB_RECURSE all_headers "${PARENT_SOURCE_DIRECTORY}/*.h")
@@ -80,11 +78,11 @@ set_property(TARGET ${THIS_PROJECT} APPEND_STRING PROPERTY LINK_FLAGS_PROFILE " 
 set_property(TARGET ${THIS_PROJECT} APPEND_STRING PROPERTY LINK_FLAGS_RELEASE " ${LIBPATH_FLAG}\"${PYSIDE_DIR}\"")
 
 if (NOT DEFINED PYSIDE_LIB)
-	set(PYSIDE_LIB pyside2-python2.7)
+	set(PYSIDE_LIB pyside2.cp37-win_amd64)
 endif()
 
 if (NOT DEFINED SHIBOKEN_LIB)
-	set(SHIBOKEN_LIB shiboken2-python2.7)
+	set(SHIBOKEN_LIB shiboken2.cp37-win_amd64)
 endif()
 
 target_link_libraries(${THIS_PROJECT} PRIVATE "${PYSIDE_LIB}" "${SHIBOKEN_LIB}")

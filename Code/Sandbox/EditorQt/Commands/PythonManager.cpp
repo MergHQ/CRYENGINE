@@ -61,7 +61,12 @@ void CEditorPythonManager::RegisterPythonModule(const SPythonModule& module)
 		registeredModule = &m_pythonModules.back();
 	}
 
-	assert(registeredModule->m_commands.size() != 0); // Register commands before module or module has no commands
+	string submoduleName = registeredModule->m_name;
+	PyObject* pCurrModule = PyImport_AddModule(submoduleName.c_str());
+
+	boost::python::object currentModule(boost::python::handle<>(boost::python::borrowed(pCurrModule)));
+	boost::python::scope submoduleScope(currentModule);
+	CRY_ASSERT(!PyErr_Occurred());
 
 	for (SPythonCommand& cmd : registeredModule->m_commands)
 	{

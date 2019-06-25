@@ -16,7 +16,7 @@ end_sources()
 
 CryEditorPlugin(SandboxPythonBridge PCH "StdAfx.cpp" SOLUTION_FOLDER "Sandbox/Plugins")
 
-set(PYSIDE_SDK_SRC "${SDK_DIR}/Qt/5.12.3/msvc2017_64/PySide/PySide2/")
+set(PYSIDE_SDK_SRC "${QT_DEPLOY_ROOT}/PySide/PySide2/")
 set(PYSIDE_INCLUDE "${PYSIDE_SDK_SRC}include/")
 target_include_directories(${THIS_PROJECT} PRIVATE "${PYSIDE_INCLUDE}shiboken2" "${PYSIDE_INCLUDE}PySide2" "${PYSIDE_INCLUDE}PySide2/QtWidgets" "${PYSIDE_INCLUDE}PySide2/QtGui"  "${PYSIDE_INCLUDE}PySide2/QtCore"  "${QT_DIR}/include/QtANGLE")
 
@@ -25,4 +25,4 @@ set_property(TARGET ${THIS_PROJECT} APPEND_STRING PROPERTY LINK_FLAGS_DEBUG " ${
 set_property(TARGET ${THIS_PROJECT} APPEND_STRING PROPERTY LINK_FLAGS_PROFILE " ${LIBPATH_FLAG}\"${PYSIDE_SDK_SRC}\"")
 set_property(TARGET ${THIS_PROJECT} APPEND_STRING PROPERTY LINK_FLAGS_RELEASE " ${LIBPATH_FLAG}\"${PYSIDE_SDK_SRC}\"")
 
-target_link_libraries(${THIS_PROJECT} PRIVATE pyside2-python2.7 shiboken2-python2.7)
+target_link_libraries(${THIS_PROJECT} PRIVATE pyside2.cp37-win_amd64 shiboken2.cp37-win_amd64)

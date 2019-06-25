@@ -266,6 +266,7 @@ add_sources("Uber_Deprecated.cpp"
 
 add_sources("Uber_EditorFramework.cpp"
 	SOURCE_GROUP "Command"
+		"BoostPythonMacros.cpp"
 		"BoostPythonMacros.h"
 		"Commands/ICommandManager.h"
 		"Commands/Command.cpp"
@@ -960,15 +961,7 @@ target_compile_definitions(${THIS_PROJECT} PRIVATE
 	-DNOT_USE_CRY_MEMORY_MANAGER
 )
 
-if (MSVC_VERSION GREATER 1900) # Visual Studio > 2015
-	set(MFC_VERSION 140)
-elseif (MSVC_VERSION EQUAL 1900) # Visual Studio 2015
-	set(MFC_VERSION 140)
-elseif (MSVC_VERSION EQUAL 1800) # Visual Studio 2013
-	set(MFC_VERSION 120)
-elseif (MSVC_VERSION EQUAL 1700) # Visual Studio 2012
-	set(MFC_VERSION 110)
-endif()
+set(MFC_VERSION 140)
 target_link_libraries(${THIS_PROJECT} PRIVATE mfcs${MFC_VERSION}$<$<CONFIG:Debug>:d> zlib)
 
 #TODO: remove dependencies from editor common to editor!
