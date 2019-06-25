@@ -287,24 +287,23 @@ static CEventsListener g_eventsListener;
 
 void AddAssetsStatusColumn()
 {
-	CAssetModel::GetInstance()->AddColumn(VersionControlUIHelper::GetVCSIconAttribute(), [](const CAsset* pAsset, const CItemModelAttribute* pAttribute, int role) -> QVariant
+	CAssetModel::GetInstance()->AddColumn(VersionControlUIHelper::GetVCSStatusAttribute(), [](const CAsset* pAsset, const CItemModelAttribute* pAttribute, int role) -> QVariant
 	{
-		if (!CVersionControl::GetInstance().IsOnline() || role != Qt::DecorationRole)
-		{
-			return QVariant();
-		} 
-
-		return VersionControlUIHelper::GetIconFromStatus(CAssetsVCSStatusProvider::GetStatus(*pAsset));
-	});
-
-	CAssetModel::GetInstance()->AddColumn(VersionControlUIHelper::GetVCSStatusAttribute(), [](const CAsset* pAsset, const CItemModelAttribute* pAttribute, int role)
-	{
-		if (!CVersionControl::GetInstance().IsOnline() || role != VersionControlUIHelper::GetVCSStatusRole())
+		if (!CVersionControl::GetInstance().IsOnline())
 		{
 			return QVariant();
 		}
 
-		return QVariant(CAssetsVCSStatusProvider::GetStatus(*pAsset));
+		if (role == Qt::DecorationRole)
+		{
+			return VersionControlUIHelper::GetIconFromStatus(CAssetsVCSStatusProvider::GetStatus(*pAsset));
+		}
+		else if (role == VersionControlUIHelper::GetVCSStatusRole())
+		{
+			return QVariant(CAssetsVCSStatusProvider::GetStatus(*pAsset));
+		}
+
+		return QVariant();
 	});
 }
 

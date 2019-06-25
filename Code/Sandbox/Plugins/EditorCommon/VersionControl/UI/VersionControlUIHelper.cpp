@@ -79,9 +79,6 @@ private:
 static CAttributeType<int> g_vcsStatusAttributeType({ new CVCSStatusOperator() });
 static CItemModelAttribute s_vcsStatusAttribute("Version Control Status", &g_vcsStatusAttributeType, CItemModelAttribute::Visible, true, QVariant(), VersionControlUIHelper::GetVCSStatusRole());
 
-static CAttributeType<QIcon> g_iconAttributeType(nullptr);
-static CItemModelAttribute g_vcsIconAttribute("VC status", &g_iconAttributeType, CItemModelAttribute::Visible, false);
-
 }
 
 namespace VersionControlUIHelper
@@ -130,11 +127,6 @@ int GetVCSStatusRole()
 CItemModelAttribute* GetVCSStatusAttribute()
 {
 	return &Private_VersionControlUIHelper::s_vcsStatusAttribute;
-}
-
-CItemModelAttribute* GetVCSIconAttribute()
-{
-	return &Private_VersionControlUIHelper::g_vcsIconAttribute;
 }
 
 }
