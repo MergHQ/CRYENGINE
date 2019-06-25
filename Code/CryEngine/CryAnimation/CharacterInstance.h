@@ -300,7 +300,6 @@ inline int CCharInstance::Release()
 {
 	if (--m_nRefCounter == 0)
 	{
-		m_AttachmentManager.RemoveAllAttachments();
 		delete this;
 		return 0;
 	}

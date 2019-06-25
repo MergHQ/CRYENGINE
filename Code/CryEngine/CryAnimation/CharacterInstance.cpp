@@ -115,6 +115,8 @@ CCharInstance::~CCharInstance()
 	// default skeleton which is no longer available
 	m_AttachmentManager.UpdateBindings();
 
+	m_AttachmentManager.RemoveAllAttachments();
+
 	assert(m_nRefCounter == 0);
 	m_SkeletonPose.m_physics.DestroyPhysics();
 	KillAllSkeletonEffects();
