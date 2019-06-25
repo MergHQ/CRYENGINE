@@ -240,8 +240,8 @@ namespace CryMT
 	template<typename T>
 	inline T& CThreadSafePushContainer<T>::operator[](uint32 n)
 	{
-		CRY_ASSERT_MESSAGE(n < capacity(), "CThreadSafeAddContainer out of bound access detected");
-		CRY_ASSERT_MESSAGE(IsValidEntry(n), "The element for the given index '%d' is marked as invalid.", n);
+		CRY_ASSERT(n < capacity(), "CThreadSafeAddContainer out of bound access detected");
+		CRY_ASSERT(IsValidEntry(n), "The element for the given index '%d' is marked as invalid.", n);
 		return beginPtr()[n];
 	}
 
@@ -340,7 +340,7 @@ namespace CryMT
 	template<typename T>
 	void CThreadSafePushContainer<T>::CheckForTombstone(uint32 index) const
 	{
-		CRY_ASSERT_MESSAGE(IsValidEntry(index), "The inserted element contains the container's tombstone value and will therefore be skipped during iteration.");
+		CRY_ASSERT(IsValidEntry(index), "The inserted element contains the container's tombstone value and will therefore be skipped during iteration.");
 	}
 
 	template<typename T>

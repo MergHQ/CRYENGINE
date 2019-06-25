@@ -50,7 +50,7 @@ public:
 			m_params[index] = any;
 			return true;
 		}
-		CRY_ASSERT_MESSAGE(index < m_params.size(), "Function param 'index' (%i) out of range", index);
+		CRY_ASSERT(index < m_params.size(), "Function param 'index' (%i) out of range", index);
 		return false;
 	}
 

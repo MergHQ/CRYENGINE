@@ -70,7 +70,7 @@ public:
 			CryLogAlways("CryFixedArray() error - data is not aligned. This may happen if you are creating a CryFixedArray on the stack, which isn't supported.");
 		}
 #endif
-		CRY_ASSERT_MESSAGE(((uintptr_t)m_data & (ALIGN - 1)) == 0, "CryFixedArray() error - data is not aligned. This may happen if you are creating a CryFixedArray on the stack, which isn't supported.");
+		CRY_ASSERT(((uintptr_t)m_data & (ALIGN - 1)) == 0, "CryFixedArray() error - data is not aligned. This may happen if you are creating a CryFixedArray on the stack, which isn't supported.");
 		m_curSize[0] = 0;
 	}
 
@@ -206,7 +206,7 @@ public:
 		else
 		{
 			CryLogAlways("CryFixedArray::push_back() failing as array of size %u is full - NOT adding element", N);
-			CRY_ASSERT_TRACE(0, ("CryFixedArray::push_back() failing as array of size %u is full - NOT adding element", N));
+			CRY_ASSERT(0, "CryFixedArray::push_back() failing as array of size %u is full - NOT adding element", N);
 		}
 	}
 
@@ -223,7 +223,7 @@ public:
 		else
 		{
 			CryLogAlways("CryFixedArray::push_back() failing as array of size %u is full - NOT adding element", N);
-			CRY_ASSERT_TRACE(0, ("CryFixedArray::push_back() failing as array of size %u is full - NOT adding element", N));
+			CRY_ASSERT(0, "CryFixedArray::push_back() failing as array of size %u is full - NOT adding element", N);
 		}
 	}
 
@@ -237,7 +237,7 @@ public:
 		else
 		{
 			CryLogAlways("CryFixedArray::pop_back() failed as array is empty");
-			CRY_ASSERT_MESSAGE(0, "CryFixedArray::pop_back() failed as array is empty");
+			CRY_ASSERT(0, "CryFixedArray::pop_back() failed as array is empty");
 		}
 	}
 
@@ -292,7 +292,7 @@ public:
 		else
 		{
 			CryLog("CryFixedArray::removeAt() failed as i=%d is out of range of curSize=%d", i, m_curSize[0]);
-			CRY_ASSERT_MESSAGE(0, string().Format("CryFixedArray::removeAt() failed as i=%d is out of range of curSize=%d", i, m_curSize[0]));
+			CRY_ASSERT(0, string().Format("CryFixedArray::removeAt() failed as i=%d is out of range of curSize=%d", i, m_curSize[0]));
 		}
 		return swappedElement;
 	}

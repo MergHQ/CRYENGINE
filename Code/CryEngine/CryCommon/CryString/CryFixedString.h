@@ -1911,8 +1911,8 @@ void move_init(CryStackStringT<T, S>& dest, CryStackStringT<T, S>& source)
 	#define ASSERT_LEN  (void)(0)
 	#define ASSERT_WLEN (void)(0)
 #else
-	#define ASSERT_LEN  CRY_ASSERT_TRACE(this->length() <= S, ("String '%s' is %u character(s) longer than MAX_SIZE=%u", this->c_str(), this->length() - S, S))
-	#define ASSERT_WLEN CRY_ASSERT_TRACE(this->length() <= S, ("Wide-char string '%ls' is %u character(s) longer than MAX_SIZE=%u", this->c_str(), this->length() - S, S))
+	#define ASSERT_LEN  CRY_ASSERT(this->length() <= S, "String '%s' is %u character(s) longer than MAX_SIZE=%u", this->c_str(), this->length() - S, S)
+	#define ASSERT_WLEN CRY_ASSERT(this->length() <= S, "Wide-char string '%ls' is %u character(s) longer than MAX_SIZE=%u", this->c_str(), this->length() - S, S)
 #endif
 
 //! Template specialization for char.

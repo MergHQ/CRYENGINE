@@ -569,7 +569,7 @@ protected:
 	IMNMCustomPathCostComputer()
 	{
 #if !defined(_RELEASE)
-		CRY_ASSERT_MESSAGE(BeingConstructedViaMakeSharedFunction(), "IMNMCustomPathCostComputer: you should have used MakeShared() to instantiate your class (since it injects the built-in custom deleter to guarantee safe cross-DLL deletion).");
+		CRY_ASSERT(BeingConstructedViaMakeSharedFunction(), "IMNMCustomPathCostComputer: you should have used MakeShared() to instantiate your class (since it injects the built-in custom deleter to guarantee safe cross-DLL deletion).");
 		BeingConstructedViaMakeSharedFunction() = false;
 #endif
 	}

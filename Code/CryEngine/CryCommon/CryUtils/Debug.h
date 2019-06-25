@@ -30,7 +30,7 @@ inline void OpenSourceFile(const char* szFilename)
 				szDevenvPath = szVS2015;
 				if (stat(szDevenvPath, &desc) != 0)
 				{
-					CRY_ASSERT_MESSAGE(false, "Couldn't find devenv.exe");
+					CRY_ASSERT(false, "Couldn't find devenv.exe");
 					return;
 				}
 			}
@@ -56,9 +56,9 @@ inline void OpenSourceFile(const char* szFilename)
 		}
 		return;
 	}
-	CRY_ASSERT_MESSAGE(szFilename, "Can't view source file.");
+	CRY_ASSERT(szFilename, "Can't view source file.");
 #else
-	CRY_ASSERT_MESSAGE(false, "View source is only supported on Windows right now.");
+	CRY_ASSERT(false, "View source is only supported on Windows right now.");
 #endif
 }
 // ~TODO

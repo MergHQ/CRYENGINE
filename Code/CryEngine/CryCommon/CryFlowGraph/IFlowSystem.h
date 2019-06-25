@@ -191,7 +191,7 @@ namespace cry_variant
 template<> \
 ILINE bool ConvertVariant<T, stl::variant_size<TFlowInputDataVariant>::value>(const TFlowInputDataVariant&, T&) \
 { \
-	CRY_ASSERT_MESSAGE(false, "Invalid variant index."); \
+	CRY_ASSERT(false, "Invalid variant index."); \
 	return false; \
 }
 	FLOWSYSTEM_CONVERTVARIANT_SPECIALIZATION(SFlowSystemVoid);
@@ -232,7 +232,7 @@ ILINE bool ConvertVariant<T, stl::variant_size<TFlowInputDataVariant>::value>(co
 template<> \
 ILINE bool ConvertToVariant<T, stl::variant_size<TFlowInputDataVariant>::value>(const T&, TFlowInputDataVariant&) \
 { \
-	CRY_ASSERT_MESSAGE(false, "Invalid variant index."); \
+	CRY_ASSERT(false, "Invalid variant index."); \
 	return false; \
 }
 	FLOWSYSTEM_CONVERTTOVARIANT_SPECIALIZATION(SFlowSystemVoid);
@@ -537,7 +537,7 @@ inline bool DefaultInitializedForTag::Initialize<stl::variant_size<TFlowInputDat
 		return true;
 	}
 
-	CRY_ASSERT_MESSAGE(var.index() == stl::variant_npos, "Invalid variant index.");
+	CRY_ASSERT(var.index() == stl::variant_npos, "Invalid variant index.");
 	return false;
 }
 //! \endcond
@@ -1020,7 +1020,7 @@ private:
 template<>
 ILINE void TFlowInputData::LoadType::SerializeVariant<stl::variant_size<TFlowInputDataVariant>::value>(TFlowInputDataVariant& var)
 {
-	CRY_ASSERT_MESSAGE(false, "Invalid variant index.");
+	CRY_ASSERT(false, "Invalid variant index.");
 }
 template<>
 ILINE void TFlowInputData::WriteType::SerializeVariant<stl::variant_size<TFlowInputDataVariant>::value>(TFlowInputDataVariant& var)
@@ -1029,7 +1029,7 @@ ILINE void TFlowInputData::WriteType::SerializeVariant<stl::variant_size<TFlowIn
 template<>
 ILINE void TFlowInputData::MemStatistics::AddVariant<stl::variant_size<TFlowInputDataVariant>::value>(const TFlowInputDataVariant&)
 {
-	CRY_ASSERT_MESSAGE(false, "Invalid variant index.");
+	CRY_ASSERT(false, "Invalid variant index.");
 }
 
 struct SFlowAddress

@@ -229,7 +229,7 @@ namespace Cry {
 			}
 
 			//////////////////////////////////////////////////////////////////////////
-			NO_INLINE bool CryAssertHandler(SAssertData const& data, SAssertCond& cond)
+			NO_INLINE bool CryAssertHandlerImpl(SAssertData const& data, SAssertCond& cond)
 			{
 				bool retShouldDebugBreak = false;
 				char simplifiedPathBuf[MAX_PATH];

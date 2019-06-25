@@ -232,7 +232,7 @@ namespace TemplateUtils
 				}
 			}
 
-			CRY_ASSERT_MESSAGE(false, "Failed to extract function name!");
+			CRY_ASSERT(false, "Failed to extract function name!");
 
 			outLength = 0;
 			return nullptr;
@@ -257,7 +257,7 @@ namespace TemplateUtils
 				}
 			}
 
-			CRY_ASSERT_MESSAGE(false, "Failed to extract function name!");
+			CRY_ASSERT(false, "Failed to extract function name!");
 
 			outLength = 0;
 			return nullptr;
@@ -305,7 +305,7 @@ namespace TemplateUtils
 
 					if (length > 0)
 					{
-						CRY_ASSERT_MESSAGE(length < sizeof(szStorage), "Not enough space for function name storage - name will be clamped");
+						CRY_ASSERT(length < sizeof(szStorage), "Not enough space for function name storage - name will be clamped");
 
 						cry_strcpy(szStorage, szNameBegin, length);
 						szResult = szStorage;
@@ -365,7 +365,7 @@ namespace TemplateUtils
 							szResult = storage;
 						}
 					}
-					CRY_ASSERT_MESSAGE(szResult[0], "Failed to extract type name!");
+					CRY_ASSERT(szResult[0], "Failed to extract type name!");
 				}
 				return szResult;
 			}

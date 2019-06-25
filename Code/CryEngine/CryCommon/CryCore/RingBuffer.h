@@ -64,7 +64,7 @@ public:
 	// If the collection is empty, the behavior is undefined.
 	reference front()
 	{
-		CRY_ASSERT_MESSAGE(m_count != 0, "Container is empty");
+		CRY_ASSERT(m_count != 0, "Container is empty");
 		return *ptr(m_begin);
 	}
 
@@ -72,7 +72,7 @@ public:
 	// If the collection is empty, the behavior is undefined.
 	const_reference front() const
 	{
-		CRY_ASSERT_MESSAGE(m_count != 0, "Container is empty");
+		CRY_ASSERT(m_count != 0, "Container is empty");
 		return *ptr(m_begin);
 	}
 
@@ -80,7 +80,7 @@ public:
 	// If the collection is empty, the behavior is undefined.
 	reference back()
 	{
-		CRY_ASSERT_MESSAGE(m_count != 0, "Container is empty");
+		CRY_ASSERT(m_count != 0, "Container is empty");
 		return *ptr(wrap(m_begin + m_count - 1));
 	}
 
@@ -88,19 +88,19 @@ public:
 	// If the collection is empty, the behavior is undefined.
 	const_reference back() const
 	{
-		CRY_ASSERT_MESSAGE(m_count != 0, "Container is empty");
+		CRY_ASSERT(m_count != 0, "Container is empty");
 		return *ptr(wrap(m_begin + m_count - 1));
 	}
 
 	reference operator[](size_t idx)
 	{
-		CRY_ASSERT_MESSAGE(idx < m_count, "Out of bounds!");
+		CRY_ASSERT(idx < m_count, "Out of bounds!");
 		return *ptr(wrap(m_begin + idx));
 	}
 	
 	const_reference operator[](size_t idx) const
 	{
-		CRY_ASSERT_MESSAGE(idx < m_count, "Out of bounds!");
+		CRY_ASSERT(idx < m_count, "Out of bounds!");
 		return *ptr(wrap(m_begin + idx));
 	}
 
@@ -142,7 +142,7 @@ public:
 	// If the collection is empty, the behavior is undefined.
 	void pop_front()
 	{
-		CRY_ASSERT_MESSAGE(m_count != 0, "Container is empty");
+		CRY_ASSERT(m_count != 0, "Container is empty");
 		ptr(m_begin)->~T();
 		m_begin = increment(m_begin);
 		--m_count;
@@ -201,7 +201,7 @@ public:
 	// If the collection is empty, the behavior is undefined.
 	void pop_back()
 	{
-		CRY_ASSERT_MESSAGE(m_count != 0, "Container is empty");
+		CRY_ASSERT(m_count != 0, "Container is empty");
 		const I index = wrap(m_begin + m_count - 1);
 		ptr(index)->~T();
 		--m_count;

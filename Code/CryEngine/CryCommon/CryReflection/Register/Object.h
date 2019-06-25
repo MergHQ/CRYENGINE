@@ -42,7 +42,7 @@ struct CObject : public IObject
 
 	virtual bool IsEqualType(const IObject* pObject) const override final
 	{
-		CRY_ASSERT_MESSAGE(IsReflected() && pObject->IsReflected(), "Object is not reflected.");
+		CRY_ASSERT(IsReflected() && pObject->IsReflected(), "Object is not reflected.");
 		return IsReflected() && pObject->IsReflected() && pObject->GetTypeId() == GetTypeId();
 	}
 
@@ -55,7 +55,7 @@ struct CObject : public IObject
 			{
 				return isEqual(this, pObject);
 			}
-			CRY_ASSERT_MESSAGE(isEqual, "Reflected object can't be equal compared.");
+			CRY_ASSERT(isEqual, "Reflected object can't be equal compared.");
 		}
 		return false;
 	}
@@ -72,7 +72,7 @@ struct CObject : public IObject
 		if (pTypeDesc == nullptr)
 		{
 			pTypeDesc = CoreRegistry::GetTypeById(Type::IdOf<TYPE>());
-			CRY_ASSERT_MESSAGE(pTypeDesc, "Requested type not (yet) registered.");
+			CRY_ASSERT(pTypeDesc, "Requested type not (yet) registered.");
 		}
 		return pTypeDesc;
 	}

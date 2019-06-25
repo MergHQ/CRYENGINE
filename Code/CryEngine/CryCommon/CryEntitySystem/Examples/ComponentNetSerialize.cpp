@@ -27,7 +27,7 @@ public:
 	// Helper utility that game code should call to set the health of this component
 	void SetHealth(float newHealth)
 	{
-		CRY_ASSERT_MESSAGE(gEnv->bServer, "Health can only be modified on the server!");
+		CRY_ASSERT(gEnv->bServer, "Health can only be modified on the server!");
 		// Update the local state
 		m_health = newHealth;
 		// Notify the network that the health aspect has changed

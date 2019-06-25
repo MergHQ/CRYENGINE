@@ -1253,7 +1253,7 @@ inline void JobManager::SJobSyncVariable::SetRunning(uint16 count) volatile
 
 		if (newValue.nRunningCounter == 0)
 		{
-			CRY_ASSERT_MESSAGE(0, "JobManager: Atomic counter overflow");
+			CRY_ASSERT(0, "JobManager: Atomic counter overflow");
 		}
 	}
 	while (CryInterlockedCompareExchange((volatile LONG*)&syncVar.wordValue, newValue.wordValue, currentValue.wordValue) != currentValue.wordValue);
@@ -1274,7 +1274,7 @@ inline bool JobManager::SJobSyncVariable::SetStopped(SJobState* pPostCallback, u
 
 		if (currentValue.nRunningCounter == 0)
 		{
-			CRY_ASSERT_MESSAGE(0, "JobManager: Atomic counter underflow");
+			CRY_ASSERT(0, "JobManager: Atomic counter underflow");
 			newValue.nRunningCounter = 1; // Force for potential stability problem, should not happen.
 		}
 

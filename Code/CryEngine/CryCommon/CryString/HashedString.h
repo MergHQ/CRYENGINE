@@ -177,7 +177,7 @@ inline bool CHashedString::operator==(const CHashedString& other) const
 #if defined(HASHEDSTRING_CHECKS_FOR_HASH_CONFLICTS)
 	if (m_hash == other.m_hash)
 	{
-		CRY_ASSERT_MESSAGE(m_textCopy.compareNoCase(other.m_textCopy) == 0 || m_textCopy == other.GetHashAsString() || GetHashAsString() == other.m_textCopy, "HashCollision occured! The same hash was used for two different strings");
+		CRY_ASSERT(m_textCopy.compareNoCase(other.m_textCopy) == 0 || m_textCopy == other.GetHashAsString() || GetHashAsString() == other.m_textCopy, "HashCollision occured! The same hash was used for two different strings");
 		return true;
 	}
 	else

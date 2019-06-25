@@ -79,10 +79,10 @@ private:
 		, verticalDownRange(verticalDownRange)
 		, horizontalRange(horizontalRange)
 	{
-		CRY_ASSERT_MESSAGE(verticalUpRange >= 0 || verticalUpRange == -FLT_MAX, "Snapping metric's vertical up range should have non-negative or default value!");
-		CRY_ASSERT_MESSAGE(verticalDownRange >= 0 || verticalDownRange == -FLT_MAX, "Snapping metric's vertical down range should have non-negative or default value!");
-		CRY_ASSERT_MESSAGE(verticalUpRange != verticalDownRange || verticalUpRange != 0.0f, "Snapping metric's vertical up and down ranges can't be both zero!");
-		CRY_ASSERT_MESSAGE(type == EType::Vertical || horizontalRange != 0.0f, "Snapping metric's horizontal range can't be zero!");
+		CRY_ASSERT(verticalUpRange >= 0 || verticalUpRange == -FLT_MAX, "Snapping metric's vertical up range should have non-negative or default value!");
+		CRY_ASSERT(verticalDownRange >= 0 || verticalDownRange == -FLT_MAX, "Snapping metric's vertical down range should have non-negative or default value!");
+		CRY_ASSERT(verticalUpRange != verticalDownRange || verticalUpRange != 0.0f, "Snapping metric's vertical up and down ranges can't be both zero!");
+		CRY_ASSERT(type == EType::Vertical || horizontalRange != 0.0f, "Snapping metric's horizontal range can't be zero!");
 	}
 
 public:

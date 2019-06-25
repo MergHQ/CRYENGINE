@@ -38,9 +38,9 @@ inline ICoreRegistry* GetCoreRegistry()
 		{
 			return pCoreRegistry;
 		}
-		CRY_ASSERT_MESSAGE(pCoreRegistry, "Core registry must be non-null.");
+		CRY_ASSERT(pCoreRegistry, "Core registry must be non-null.");
 	}
-	CRY_ASSERT_MESSAGE(gEnv->pReflection, "Reflection module not yet initialized.");
+	CRY_ASSERT(gEnv->pReflection, "Reflection module not yet initialized.");
 
 	return nullptr;
 }

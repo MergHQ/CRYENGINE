@@ -106,7 +106,7 @@ public:
 		}
 		else
 		{
-			CRY_ASSERT_MESSAGE(false, "Unsupported CloneType!");
+			CRY_ASSERT(false, "Unsupported CloneType!");
 		}
 	}
 

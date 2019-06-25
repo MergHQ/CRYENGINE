@@ -109,7 +109,7 @@ ILINE unsigned char CryInterlockedCompareExchange128(volatile int64* pDst, int64
 	#if CRY_PLATFORM_IOS
 		#error Ensure CryInterlockedCompareExchange128 is working on IOS also
 	#endif
-	CRY_ASSERT_MESSAGE((((int64)pDst) & 15) == 0, "The destination data must be 16-byte aligned to avoid a general protection fault.");
+	CRY_ASSERT((((int64)pDst) & 15) == 0, "The destination data must be 16-byte aligned to avoid a general protection fault.");
 	#if CRY_PLATFORM_X64 || CRY_PLATFORM_X86
 		bool bEquals;
 		__asm__ __volatile__(

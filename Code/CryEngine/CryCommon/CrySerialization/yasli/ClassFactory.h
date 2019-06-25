@@ -66,7 +66,7 @@ public:
 		const auto it = std::find_if(m_factories.begin(), end, [type](const Factories::value_type& lhs) { return lhs.first == type; });
 		if (it == end)
 		{
-			CRY_ASSERT_MESSAGE(m_factoryCount < m_factories.size(), "Too many factories registered. Increase MAX_FACTORIES to fix this.");
+			CRY_ASSERT(m_factoryCount < m_factories.size(), "Too many factories registered. Increase MAX_FACTORIES to fix this.");
 			if (m_factoryCount < m_factories.size())
 			{
 				m_factories[m_factoryCount] = std::make_pair(type, pFactory);

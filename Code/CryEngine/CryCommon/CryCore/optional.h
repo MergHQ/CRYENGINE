@@ -100,7 +100,7 @@ namespace stl
 				if (!has_val)
 				{
 					// throw
-					CRY_ASSERT_MESSAGE(false, "Attempting to get value but optional is empty");
+					CRY_ASSERT(false, "Attempting to get value but optional is empty");
 				}
 				return *reinterpret_cast<T*>(&storage);
 			}
@@ -108,7 +108,7 @@ namespace stl
 				if (!has_val)
 				{
 					// throw
-					CRY_ASSERT_MESSAGE(false, "Attempting to get value but optional is empty");
+					CRY_ASSERT(false, "Attempting to get value but optional is empty");
 				}
 				return std::move(*reinterpret_cast<T*>(&storage));
 			}
@@ -117,7 +117,7 @@ namespace stl
 				if (!has_val)
 				{
 					// throw
-					CRY_ASSERT_MESSAGE(false, "Attempting to get value but optional is empty");
+					CRY_ASSERT(false, "Attempting to get value but optional is empty");
 				}
 				return *reinterpret_cast<const T*>(&storage);
 			}

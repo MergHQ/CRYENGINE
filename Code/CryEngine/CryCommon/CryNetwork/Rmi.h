@@ -32,7 +32,7 @@ public:
 		User *pUser = pEntity ? pEntity->GetComponent<User>() : nullptr;
 		bool ok = pUser ? (pUser->*m_fn)(std::move(m_params), m_pChannel) : false;
 
-		CRY_ASSERT_MESSAGE(pEntity && pUser && ok, "RMI remote at sync: failed with"
+		CRY_ASSERT(pEntity && pUser && ok, "RMI remote at sync: failed with"
 			" entity id %d. pEntity:%x, pUser:%x (guid:%x), ok:%d", m_id, pEntity,
 			pUser, cryiidof<User>().hipart, ok);
 		return ok;

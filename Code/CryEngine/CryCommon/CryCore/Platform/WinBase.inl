@@ -1338,7 +1338,7 @@ HANDLE CreateFile(
                         const FILETIME *lpLastAccessTime,
                         const FILETIME *lpLastWriteTime )
    {
-   CRY_ASSERT_MESSAGE(0, "SetFileTime not implemented yet");
+   CRY_ASSERT(0, "SetFileTime not implemented yet");
    return FALSE;
    }
  */
@@ -1459,7 +1459,7 @@ BOOL CloseHandle(HANDLE hObject)
 BOOL CancelIo(HANDLE hFile)
 {
 	//TODO: implement
-	CRY_ASSERT_MESSAGE(0, "CancelIo not implemented yet");
+	CRY_ASSERT(0, "CancelIo not implemented yet");
 	return TRUE;
 }
 
@@ -1467,7 +1467,7 @@ BOOL CancelIo(HANDLE hFile)
 HRESULT GetOverlappedResult(HANDLE hFile, void* lpOverlapped, LPDWORD lpNumberOfBytesTransferred, BOOL bWait)
 {
 	//TODO: implement
-	CRY_ASSERT_MESSAGE(0, "GetOverlappedResult not implemented yet");
+	CRY_ASSERT(0, "GetOverlappedResult not implemented yet");
 	return 0;
 }
 
@@ -1482,7 +1482,7 @@ BOOL ReadFile
 )
 {
 	//TODO: implement
-	CRY_ASSERT_MESSAGE(0, "ReadFile not implemented yet");
+	CRY_ASSERT(0, "ReadFile not implemented yet");
 	abort();
 	return TRUE;
 }
@@ -1497,7 +1497,7 @@ BOOL ReadFileEx
   LPOVERLAPPED_COMPLETION_ROUTINE lpCompletionRoutine
 )
 {
-	CRY_ASSERT_MESSAGE(0, "ReadFileEx not implemented yet");
+	CRY_ASSERT(0, "ReadFileEx not implemented yet");
 	return TRUE;
 }
 
@@ -1511,7 +1511,7 @@ DWORD SetFilePointer
 )
 {
 	//TODO: implement
-	CRY_ASSERT_MESSAGE(0, "SetFilePointer not implemented yet");
+	CRY_ASSERT(0, "SetFilePointer not implemented yet");
 	return 0;
 }
 
@@ -1529,7 +1529,7 @@ HANDLE CreateEvent
 )
 {
 	//TODO: implement
-	CRY_ASSERT_MESSAGE(0, "CreateEvent not implemented yet");
+	CRY_ASSERT(0, "CreateEvent not implemented yet");
 	return 0;
 }
 
@@ -1537,7 +1537,7 @@ HANDLE CreateEvent
 DWORD SleepEx(DWORD dwMilliseconds, BOOL bAlertable)
 {
 	//TODO: implement
-	//	CRY_ASSERT_MESSAGE(0, "SleepEx not implemented yet");
+	//	CRY_ASSERT(0, "SleepEx not implemented yet");
 	printf("SleepEx not properly implemented yet\n");
 	Sleep(dwMilliseconds);
 	return 0;
@@ -1547,7 +1547,7 @@ DWORD SleepEx(DWORD dwMilliseconds, BOOL bAlertable)
 DWORD WaitForSingleObjectEx(HANDLE hHandle, DWORD dwMilliseconds, BOOL bAlertable)
 {
 	//TODO: implement
-	CRY_ASSERT_MESSAGE(0, "WaitForSingleObjectEx not implemented yet");
+	CRY_ASSERT(0, "WaitForSingleObjectEx not implemented yet");
 	return 0;
 }
 
@@ -1569,7 +1569,7 @@ DWORD WaitForMultipleObjectsEx(
 DWORD WaitForSingleObject(HANDLE hHandle, DWORD dwMilliseconds)
 {
 	//TODO: implement
-	CRY_ASSERT_MESSAGE(0, "WaitForSingleObject not implemented yet");
+	CRY_ASSERT(0, "WaitForSingleObject not implemented yet");
 	return 0;
 }
 
@@ -1577,7 +1577,7 @@ DWORD WaitForSingleObject(HANDLE hHandle, DWORD dwMilliseconds)
 BOOL SetEvent(HANDLE hEvent)
 {
 	//TODO: implement
-	CRY_ASSERT_MESSAGE(0, "SetEvent not implemented yet");
+	CRY_ASSERT(0, "SetEvent not implemented yet");
 	return TRUE;
 }
 
@@ -1585,7 +1585,7 @@ BOOL SetEvent(HANDLE hEvent)
 BOOL ResetEvent(HANDLE hEvent)
 {
 	//TODO: implement
-	CRY_ASSERT_MESSAGE(0, "ResetEvent not implemented yet");
+	CRY_ASSERT(0, "ResetEvent not implemented yet");
 	return TRUE;
 }
 
@@ -1598,7 +1598,7 @@ HANDLE CreateMutex
 )
 {
 	//TODO: implement
-	CRY_ASSERT_MESSAGE(0, "CreateMutex not implemented yet");
+	CRY_ASSERT(0, "CreateMutex not implemented yet");
 	return 0;
 }
 
@@ -1606,7 +1606,7 @@ HANDLE CreateMutex
 BOOL ReleaseMutex(HANDLE hMutex)
 {
 	//TODO: implement
-	CRY_ASSERT_MESSAGE(0, "ReleaseMutex not implemented yet");
+	CRY_ASSERT(0, "ReleaseMutex not implemented yet");
 	return TRUE;
 }
 
@@ -1627,7 +1627,7 @@ HANDLE CreateThread
 )
 {
 	//TODO: implement
-	CRY_ASSERT_MESSAGE(0, "CreateThread not implemented yet");
+	CRY_ASSERT(0, "CreateThread not implemented yet");
 	return 0;
 }
 
@@ -1718,7 +1718,7 @@ BOOL DeleteFile(LPCSTR lpFileName)
 	int err = unlink(lpFileName);
 	return (0 == err);
 #else
-	CRY_ASSERT_MESSAGE(0, "DeleteFile not implemented yet");
+	CRY_ASSERT(0, "DeleteFile not implemented yet");
 	return TRUE;
 #endif
 }
@@ -1730,7 +1730,7 @@ BOOL MoveFile(LPCSTR lpExistingFileName, LPCSTR lpNewFileName)
 	int err = rename(lpExistingFileName, lpNewFileName);
 	return (0 == err);
 #else
-	CRY_ASSERT_MESSAGE(0, "MoveFile not implemented yet");
+	CRY_ASSERT(0, "MoveFile not implemented yet");
 #endif
 	return TRUE;
 }
@@ -1779,7 +1779,7 @@ BOOL CopyFile(LPCSTR lpExistingFileName, LPCSTR lpNewFileName, BOOL bFailIfExist
 	return TRUE;
 
 #else
-	CRY_ASSERT_MESSAGE(0, "CopyFile not implemented yet");
+	CRY_ASSERT(0, "CopyFile not implemented yet");
 	return FALSE;
 #endif
 }
@@ -1809,7 +1809,7 @@ DWORD GetCurrentProcessId(void)
 //////////////////////////////////////////////////////////////////////////
 BOOL RemoveDirectory(LPCSTR lpPathName)
 {
-	CRY_ASSERT_MESSAGE(0, "RemoveDirectory not implemented yet");
+	CRY_ASSERT(0, "RemoveDirectory not implemented yet");
 	return TRUE;
 }
 
@@ -1913,7 +1913,7 @@ void CryGetExecutableFolder(unsigned int pathSize, char* szPath)
 short CryGetAsyncKeyState(int vKey)
 {
 	//TODO: implement
-	CRY_ASSERT_MESSAGE(0, "CryGetAsyncKeyState not implemented yet");
+	CRY_ASSERT(0, "CryGetAsyncKeyState not implemented yet");
 	return 0;
 }
 

@@ -97,7 +97,7 @@ template<typename FUNCTION_PTR_TYPE, FUNCTION_PTR_TYPE FUNCTION_PTR> struct SExt
 				functionName.assign(szStartOfFunctionName, 0, static_cast<string::size_type>(szEndOfFunctionName - szStartOfFunctionName));
 			}
 		}
-		CRY_ASSERT_MESSAGE(!functionName.empty(), "Failed to extract function name!");
+		CRY_ASSERT(!functionName.empty(), "Failed to extract function name!");
 		return functionName;
 	}
 };
@@ -148,7 +148,7 @@ template<typename TYPE> struct SExtractTypeName
 				typeName.assign(szStartOfTypeName, 0, static_cast<string::size_type>(szEndOfTypeName - szStartOfTypeName));
 			}
 		}
-		CRY_ASSERT_MESSAGE(!typeName.empty(), "Failed to extract type name!");
+		CRY_ASSERT(!typeName.empty(), "Failed to extract type name!");
 		return typeName;
 	}
 };

@@ -33,7 +33,7 @@ struct Index
 		}
 		else
 		{
-			CRY_ASSERT_MESSAGE(index < std::numeric_limits<ValueType>::max(), "Index out of range.");
+			CRY_ASSERT(index < std::numeric_limits<ValueType>::max(), "Index out of range.");
 			m_value = Invalid;
 		}
 	}
@@ -144,7 +144,7 @@ struct Index
 private:
 	bool Serialize(Serialization::IArchive& archive)
 	{
-		CRY_ASSERT_MESSAGE(0, "Index is only valid during runtime and should not be serialized (to file).");
+		CRY_ASSERT(0, "Index is only valid during runtime and should not be serialized (to file).");
 		return false;
 	}
 

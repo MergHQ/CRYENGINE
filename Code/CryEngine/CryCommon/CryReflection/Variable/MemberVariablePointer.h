@@ -59,9 +59,9 @@ inline CMemberVariablePointer::CMemberVariablePointer(TYPE* pClassInstance, size
 			m_pTypeDesc = pVariableDesc->GetTypeDesc();
 			return;
 		}
-		CRY_ASSERT_MESSAGE(pVariableDesc, "Variable with index '%i' not found in class type description.", index);
+		CRY_ASSERT(pVariableDesc, "Variable with index '%i' not found in class type description.", index);
 	}
-	CRY_ASSERT_MESSAGE(pClassTypeDesc, "Class type description not found in reflection registry.");
+	CRY_ASSERT(pClassTypeDesc, "Class type description not found in reflection registry.");
 }
 
 inline CMemberVariablePointer::CMemberVariablePointer(void* pClassInstance, const ITypeDesc& classTypeDesc, size_t index)
@@ -75,7 +75,7 @@ inline CMemberVariablePointer::CMemberVariablePointer(void* pClassInstance, cons
 		m_pTypeDesc = pVariableDesc->GetTypeDesc();
 		return;
 	}
-	CRY_ASSERT_MESSAGE(pVariableDesc, "Variable with index '%i' not found in class type description.", index);
+	CRY_ASSERT(pVariableDesc, "Variable with index '%i' not found in class type description.", index);
 }
 
 template<typename TYPE>
@@ -119,17 +119,17 @@ inline CMemberVariablePointer::CMemberVariablePointer(TYPE* pClassInstance, CTyp
 							m_pTypeDesc = pVariableDesc->GetTypeDesc();
 							return;
 						}
-						CRY_ASSERT_MESSAGE(pVariableDesc, "Variable with index '%i' not found in class type description.", index);
+						CRY_ASSERT(pVariableDesc, "Variable with index '%i' not found in class type description.", index);
 					}
-					CRY_ASSERT_MESSAGE(pBaseClass, "Base class cast must be non-null.");
+					CRY_ASSERT(pBaseClass, "Base class cast must be non-null.");
 				}
-				CRY_ASSERT_MESSAGE(baseCastFunction, "Base cast function must be set.");
+				CRY_ASSERT(baseCastFunction, "Base cast function must be set.");
 			}
-			CRY_ASSERT_MESSAGE(pBaseClassTypeDesc, "Base class type description not found in reflection registry.");
+			CRY_ASSERT(pBaseClassTypeDesc, "Base class type description not found in reflection registry.");
 		}
-		CRY_ASSERT_MESSAGE(pBaseTypeDesc, "Base class type description not found in class description.");
+		CRY_ASSERT(pBaseTypeDesc, "Base class type description not found in class description.");
 	}
-	CRY_ASSERT_MESSAGE(pClassTypeDesc, "Class type description not found in reflection registry.");
+	CRY_ASSERT(pClassTypeDesc, "Class type description not found in reflection registry.");
 }
 
 inline CMemberVariablePointer::CMemberVariablePointer(void* pClassInstance, CTypeId baseClassTypeId, const ITypeDesc& classTypeDesc, size_t index)
@@ -155,15 +155,15 @@ inline CMemberVariablePointer::CMemberVariablePointer(void* pClassInstance, CTyp
 						m_pTypeDesc = pVariableDesc->GetTypeDesc();
 						return;
 					}
-					CRY_ASSERT_MESSAGE(pVariableDesc, "Variable with index '%i' not found in class type description.", index);
+					CRY_ASSERT(pVariableDesc, "Variable with index '%i' not found in class type description.", index);
 				}
-				CRY_ASSERT_MESSAGE(pBaseClass, "Base class cast must be non-null.");
+				CRY_ASSERT(pBaseClass, "Base class cast must be non-null.");
 			}
-			CRY_ASSERT_MESSAGE(baseCastFunction, "Base cast function must be set.");
+			CRY_ASSERT(baseCastFunction, "Base cast function must be set.");
 		}
-		CRY_ASSERT_MESSAGE(pBaseClassTypeDesc, "Base class type description not found in reflection registry.");
+		CRY_ASSERT(pBaseClassTypeDesc, "Base class type description not found in reflection registry.");
 	}
-	CRY_ASSERT_MESSAGE(pBaseTypeDesc, "Base class type description not found in class description.");
+	CRY_ASSERT(pBaseTypeDesc, "Base class type description not found in class description.");
 }
 
 inline CMemberVariablePointer::CMemberVariablePointer(void* pClassInstance, const IBaseTypeDesc& baseClassTypeDesc, const ITypeDesc& classTypeDesc, size_t index)
@@ -184,13 +184,13 @@ inline CMemberVariablePointer::CMemberVariablePointer(void* pClassInstance, cons
 					m_pTypeDesc = pVariableDesc->GetTypeDesc();
 					return;
 				}
-				CRY_ASSERT_MESSAGE(pVariableDesc, "Variable with index '%i' not found in class type description.", index);
+				CRY_ASSERT(pVariableDesc, "Variable with index '%i' not found in class type description.", index);
 			}
-			CRY_ASSERT_MESSAGE(pBaseClass, "Base class cast must be non-null.");
+			CRY_ASSERT(pBaseClass, "Base class cast must be non-null.");
 		}
-		CRY_ASSERT_MESSAGE(baseCastFunction, "Base cast function must be set.");
+		CRY_ASSERT(baseCastFunction, "Base cast function must be set.");
 	}
-	CRY_ASSERT_MESSAGE(pBaseClassTypeDesc, "Base class type description not found in reflection registry.");
+	CRY_ASSERT(pBaseClassTypeDesc, "Base class type description not found in reflection registry.");
 }
 
 template<typename TYPE>
@@ -206,9 +206,9 @@ inline CMemberVariablePointer::CMemberVariablePointer(TYPE* pClassInstance, cons
 			m_pTypeDesc = variableDesc.GetTypeDesc();
 			return;
 		}
-		CRY_ASSERT_MESSAGE(pBaseClass, "Base class cast must be non-null.");
+		CRY_ASSERT(pBaseClass, "Base class cast must be non-null.");
 	}
-	CRY_ASSERT_MESSAGE(baseCastFunction, "Base cast function must be set.");
+	CRY_ASSERT(baseCastFunction, "Base cast function must be set.");
 }
 
 inline CMemberVariablePointer::CMemberVariablePointer(void* pClassInstance, const IBaseTypeDesc& baseClassTypeDesc, const IVariableDesc& variableDesc)
@@ -223,9 +223,9 @@ inline CMemberVariablePointer::CMemberVariablePointer(void* pClassInstance, cons
 			m_pTypeDesc = variableDesc.GetTypeDesc();
 			return;
 		}
-		CRY_ASSERT_MESSAGE(pBaseClass, "Base class cast must be non-null.");
+		CRY_ASSERT(pBaseClass, "Base class cast must be non-null.");
 	}
-	CRY_ASSERT_MESSAGE(baseCastFunction, "Base cast function must be set.");
+	CRY_ASSERT(baseCastFunction, "Base cast function must be set.");
 }
 
 inline CAny CMemberVariablePointer::ToAny() const

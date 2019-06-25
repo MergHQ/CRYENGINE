@@ -29,7 +29,7 @@ struct SFileVersion
 
 	void Set(const char* szVersion)
 	{
-		CRY_ASSERT_MESSAGE(szVersion != nullptr, "No version string passed");
+		CRY_ASSERT(szVersion != nullptr, "No version string passed");
 		if (szVersion != nullptr)
 		{
 			v.fill(0);
@@ -84,7 +84,7 @@ struct SFileVersion
 
 	int& operator[](size_t i)
 	{
-		CRY_ASSERT_MESSAGE(i < v.size(), "Invalid index");
+		CRY_ASSERT(i < v.size(), "Invalid index");
 		return v[i];
 	}
 

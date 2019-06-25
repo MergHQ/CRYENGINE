@@ -321,7 +321,7 @@ void COctree<TPrimitiveContainer, TUserData>::Node::DestroyChildren()
 template<typename TPrimitiveContainer, typename TUserData>
 void COctree<TPrimitiveContainer, TUserData>::Node::Split(const Vec3 &reference, TUserData * pUserData)
 {
-	CRY_ASSERT_MESSAGE(IsLeaf(), "Cannot split a non-leaf node from the octree.");
+	CRY_ASSERT(IsLeaf(), "Cannot split a non-leaf node from the octree.");
 	pChildren = reinterpret_cast<Node*>(malloc(sizeof(Node) * OctreeUtils::eOctant_Count));
 	TPrimitiveContainer* octants[OctreeUtils::eOctant_Count] = { nullptr };
 	AABB octantDomains[OctreeUtils::eOctant_Count];
@@ -566,7 +566,7 @@ template<typename TPrimitiveContainer, typename TUserData>
 template<typename T>
 void COctree<TPrimitiveContainer, TUserData >::PushInitialPrimitive(const T& primitive)
 {
-	CRY_ASSERT_MESSAGE(m_root.IsLeaf(), "Octree has already been split into leaves. PushInitialPrimitive() shouldn't be called anymore on it");
+	CRY_ASSERT(m_root.IsLeaf(), "Octree has already been split into leaves. PushInitialPrimitive() shouldn't be called anymore on it");
 	if (m_root.IsLeaf())
 	{
 		m_root.primitiveContainer.Push(primitive);

@@ -827,7 +827,7 @@ inline string GetProjectFolder()
 	static string cmdLineProjectPath;
 	if (cmdLineProjectPath.IsEmpty() && !checkedForCmdLineProjectArg)
 	{
-		CRY_ASSERT_MESSAGE(gEnv && gEnv->pSystem && gEnv->pSystem->GetICmdLine(), "PathUtil::GetProjectFolder() was called before system was initialized");
+		CRY_ASSERT(gEnv && gEnv->pSystem && gEnv->pSystem->GetICmdLine(), "PathUtil::GetProjectFolder() was called before system was initialized");
 		const ICmdLineArg* project = gEnv->pSystem->GetICmdLine()->FindArg(eCLAT_Pre, "project");
 		if (project)
 		{

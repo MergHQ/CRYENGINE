@@ -1083,7 +1083,7 @@ private:
 				// Nothing
 				break;
 			default:
-				CRY_ASSERT_MESSAGE(false, "Missing case label for Signal Tag");
+				CRY_ASSERT(false, "Missing case label for Signal Tag");
 			}
 		}
 	}

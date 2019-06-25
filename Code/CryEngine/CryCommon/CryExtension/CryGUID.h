@@ -212,7 +212,7 @@ struct CryGUID
 			}
 			else
 			{
-				CRY_ASSERT_MESSAGE(false, "GUID string is invalid: %s", szGuidAsString);
+				CRY_ASSERT(false, "GUID string is invalid: %s", szGuidAsString);
 			}
 		}
 		return guid;

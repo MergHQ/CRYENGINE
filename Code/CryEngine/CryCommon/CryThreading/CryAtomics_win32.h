@@ -157,7 +157,7 @@ ILINE int64 CryInterlockedCompareExchange64(volatile int64* pDst, int64 exchange
 ILINE unsigned char CryInterlockedCompareExchange128(volatile int64* pDst, int64 exchangeHigh, int64 exchangeLow, int64* pComparandResult)
 {
 	static_assert(sizeof(int64) == sizeof(__int64), "Unsecured cast. int64 is not same size as __int64.");
-	CRY_ASSERT_MESSAGE((((int64)pDst) & 15) == 0, "The destination data must be 16-byte aligned to avoid a general protection fault.");
+	CRY_ASSERT((((int64)pDst) & 15) == 0, "The destination data must be 16-byte aligned to avoid a general protection fault.");
 	return _InterlockedCompareExchange128(pDst, exchangeHigh, exchangeLow, pComparandResult);
 }
 //////////////////////////////////////////////////////////////////////////

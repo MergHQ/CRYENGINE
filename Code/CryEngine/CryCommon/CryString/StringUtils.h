@@ -862,7 +862,7 @@ void CProcessor<TPatternStringStorage >::ForEachWildCardResult(const CEvaluation
 {
 	const TConstraintMatches& matches = result.GetMatches();
 	const size_t count = matches.size();
-	CRY_ASSERT_MESSAGE(count == m_descriptor.constraintDescs.size(), "Descriptor and result are out of sync. Either the last Process call failed or the result structure has already been reused after it.");
+	CRY_ASSERT(count == m_descriptor.constraintDescs.size(), "Descriptor and result are out of sync. Either the last Process call failed or the result structure has already been reused after it.");
 	if (count == m_descriptor.constraintDescs.size())
 	{
 		for (size_t i = 0; i < count; ++i)

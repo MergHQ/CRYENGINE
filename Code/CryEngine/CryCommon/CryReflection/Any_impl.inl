@@ -72,9 +72,9 @@ inline CAny::CAny(const VALUE_TYPE& source)
 					return;
 				}
 			}
-			CRY_ASSERT_MESSAGE(copyConstructor, "Type doesn't have a copy constructor.");
+			CRY_ASSERT(copyConstructor, "Type doesn't have a copy constructor.");
 		}
-		CRY_ASSERT_MESSAGE(pTypeDesc, "Couldn't find type in reflection registry.");
+		CRY_ASSERT(pTypeDesc, "Couldn't find type in reflection registry.");
 	}
 }
 
@@ -98,7 +98,7 @@ inline CAny::CAny(VALUE_TYPE* pSource)
 
 			return;
 		}
-		CRY_ASSERT_MESSAGE(pTypeDesc, "Type not found in reflection registry.");
+		CRY_ASSERT(pTypeDesc, "Type not found in reflection registry.");
 	}
 }
 
@@ -112,7 +112,7 @@ inline const ITypeDesc* CAny::GetTypeDesc() const
 	if (m_typeIndex.IsValid())
 	{
 		const ITypeDesc* pTypeDesc = CoreRegistry::GetTypeByIndex(m_typeIndex);
-		CRY_ASSERT_MESSAGE(pTypeDesc, "CTypeDesc for type index not found in reflection registry.");
+		CRY_ASSERT(pTypeDesc, "CTypeDesc for type index not found in reflection registry.");
 
 		return pTypeDesc;
 	}
@@ -147,7 +147,7 @@ inline void CAny::CreateDefaultValue(const ITypeDesc& typeDesc)
 			}
 			return;
 		}
-		CRY_ASSERT_MESSAGE(defaultConstructor, "Default constructor for type '%s' not available!", typeDesc.GetFullQualifiedName());
+		CRY_ASSERT(defaultConstructor, "Default constructor for type '%s' not available!", typeDesc.GetFullQualifiedName());
 	}
 }
 
@@ -192,12 +192,12 @@ inline void CAny::AssignValue(const VALUE_TYPE& source, bool isConst)
 					return;
 				}
 			}
-			CRY_ASSERT_MESSAGE(copyAssignConstructor, "Type doesn't have a copy assign operator.");
+			CRY_ASSERT(copyAssignConstructor, "Type doesn't have a copy assign operator.");
 		}
-		CRY_ASSERT_MESSAGE(pTypeDesc, "Type not found in reflection registry.");
+		CRY_ASSERT(pTypeDesc, "Type not found in reflection registry.");
 	}
-	CRY_ASSERT_MESSAGE(m_isConst == false, "Type is a const value.");
-	CRY_ASSERT_MESSAGE(m_isPointer == false, "Can't assign 'source' to pointer type.");
+	CRY_ASSERT(m_isConst == false, "Type is a const value.");
+	CRY_ASSERT(m_isPointer == false, "Can't assign 'source' to pointer type.");
 }
 
 template<typename VALUE_TYPE>
@@ -240,12 +240,12 @@ inline void CAny::AssignValue(const VALUE_TYPE& source, TypeIndex typeIndex, boo
 					return;
 				}
 			}
-			CRY_ASSERT_MESSAGE(copyAssignConstructor, "Type doesn't have a copy assign operator.");
+			CRY_ASSERT(copyAssignConstructor, "Type doesn't have a copy assign operator.");
 		}
-		CRY_ASSERT_MESSAGE(pTypeDesc, "Type not found in reflection registry.");
+		CRY_ASSERT(pTypeDesc, "Type not found in reflection registry.");
 	}
-	CRY_ASSERT_MESSAGE(m_isConst == false, "Type is a const value.");
-	CRY_ASSERT_MESSAGE(m_isPointer == false, "Can't assign 'source' to pointer type.");
+	CRY_ASSERT(m_isConst == false, "Type is a const value.");
+	CRY_ASSERT(m_isPointer == false, "Can't assign 'source' to pointer type.");
 }
 
 template<typename VALUE_TYPE>
@@ -285,10 +285,10 @@ inline void CAny::AssignValue(const VALUE_TYPE& source, const ITypeDesc& srcType
 				return;
 			}
 		}
-		CRY_ASSERT_MESSAGE(copyAssignConstructor, "Type doesn't have a copy assign operator.");
+		CRY_ASSERT(copyAssignConstructor, "Type doesn't have a copy assign operator.");
 	}
-	CRY_ASSERT_MESSAGE(m_isConst == false, "Type is a const value.");
-	CRY_ASSERT_MESSAGE(m_isPointer == false, "Can't assign 'source' to pointer type.");
+	CRY_ASSERT(m_isConst == false, "Type is a const value.");
+	CRY_ASSERT(m_isPointer == false, "Can't assign 'source' to pointer type.");
 }
 
 inline void CAny::AssignValue(const CAny& source, bool isConst)
@@ -335,13 +335,13 @@ inline void CAny::AssignValue(const void* pSource, TypeIndex typeIndex, bool isC
 					return;
 				}
 			}
-			CRY_ASSERT_MESSAGE(copyAssignOperator, "Type doesn't have a copy assign operator.");
+			CRY_ASSERT(copyAssignOperator, "Type doesn't have a copy assign operator.");
 		}
-		CRY_ASSERT_MESSAGE(pTypeDesc, "Couldn't get type desc for index.");
+		CRY_ASSERT(pTypeDesc, "Couldn't get type desc for index.");
 	}
-	CRY_ASSERT_MESSAGE(pSource, "Parameter must be non-null.");
-	CRY_ASSERT_MESSAGE(m_isConst == false, "Type is a const value.");
-	CRY_ASSERT_MESSAGE(m_isPointer == false, "Can't assign 'pSource' to pointer type.");
+	CRY_ASSERT(pSource, "Parameter must be non-null.");
+	CRY_ASSERT(m_isConst == false, "Type is a const value.");
+	CRY_ASSERT(m_isPointer == false, "Can't assign 'pSource' to pointer type.");
 }
 
 inline void CAny::AssignValue(const void* pSource, const ITypeDesc& srcTypeDesc, bool isConst)
@@ -377,11 +377,11 @@ inline void CAny::AssignValue(const void* pSource, const ITypeDesc& srcTypeDesc,
 				return;
 			}
 		}
-		CRY_ASSERT_MESSAGE(copyAssignOperator, "Type doesn't have a copy assign operator.");
+		CRY_ASSERT(copyAssignOperator, "Type doesn't have a copy assign operator.");
 	}
-	CRY_ASSERT_MESSAGE(pSource, "Parameter must be non-null.");
-	CRY_ASSERT_MESSAGE(m_isConst == false, "Type is a const value.");
-	CRY_ASSERT_MESSAGE(m_isPointer == false, "Can't assign 'pSource' to pointer type.");
+	CRY_ASSERT(pSource, "Parameter must be non-null.");
+	CRY_ASSERT(m_isConst == false, "Type is a const value.");
+	CRY_ASSERT(m_isPointer == false, "Can't assign 'pSource' to pointer type.");
 }
 
 template<typename VALUE_TYPE>
@@ -404,9 +404,9 @@ inline void CAny::AssignPointer(VALUE_TYPE* pPointer)
 
 			return;
 		}
-		CRY_ASSERT_MESSAGE(pTypeDesc, "Type not found in reflection registry.");
+		CRY_ASSERT(pTypeDesc, "Type not found in reflection registry.");
 	}
-	CRY_ASSERT_MESSAGE(m_isPointer, "Can't assign 'pPointer' to value type.");
+	CRY_ASSERT(m_isPointer, "Can't assign 'pPointer' to value type.");
 }
 
 template<typename VALUE_TYPE>
@@ -428,9 +428,9 @@ inline void CAny::AssignPointer(VALUE_TYPE* pPointer, TypeIndex typeIndex)
 
 			return;
 		}
-		CRY_ASSERT_MESSAGE(pTypeDesc, "Type not found in reflection registry.");
+		CRY_ASSERT(pTypeDesc, "Type not found in reflection registry.");
 	}
-	CRY_ASSERT_MESSAGE(m_isPointer, "Can't assign 'pPointer' to value type.");
+	CRY_ASSERT(m_isPointer, "Can't assign 'pPointer' to value type.");
 }
 
 template<typename VALUE_TYPE>
@@ -449,7 +449,7 @@ inline void CAny::AssignPointer(VALUE_TYPE* pPointer, const ITypeDesc& srcTypeDe
 
 		return;
 	}
-	CRY_ASSERT_MESSAGE(m_isPointer, "Can't assign 'pPointer' to value type.");
+	CRY_ASSERT(m_isPointer, "Can't assign 'pPointer' to value type.");
 }
 
 inline void CAny::AssignPointer(void* pPointer, TypeIndex typeIndex)
@@ -467,9 +467,9 @@ inline void CAny::AssignPointer(void* pPointer, TypeIndex typeIndex)
 
 			return;
 		}
-		CRY_ASSERT_MESSAGE(pTypeDesc, "Type not found in reflection registry.");
+		CRY_ASSERT(pTypeDesc, "Type not found in reflection registry.");
 	}
-	CRY_ASSERT_MESSAGE(m_isPointer, "Can't assign 'pPointer' to value type.");
+	CRY_ASSERT(m_isPointer, "Can't assign 'pPointer' to value type.");
 }
 
 inline void CAny::AssignPointer(void* pPointer, const ITypeDesc& srcTypeDesc)
@@ -484,7 +484,7 @@ inline void CAny::AssignPointer(void* pPointer, const ITypeDesc& srcTypeDesc)
 
 		return;
 	}
-	CRY_ASSERT_MESSAGE(m_isPointer, "Can't assign 'pPointer' to value type.");
+	CRY_ASSERT(m_isPointer, "Can't assign 'pPointer' to value type.");
 }
 
 inline void CAny::AssignPointer(const void* pPointer, TypeIndex typeIndex)
@@ -502,9 +502,9 @@ inline void CAny::AssignPointer(const void* pPointer, TypeIndex typeIndex)
 
 			return;
 		}
-		CRY_ASSERT_MESSAGE(pTypeDesc, "Type not found in reflection registry.");
+		CRY_ASSERT(pTypeDesc, "Type not found in reflection registry.");
 	}
-	CRY_ASSERT_MESSAGE(m_isPointer, "Can't assign 'pPointer' to value type.");
+	CRY_ASSERT(m_isPointer, "Can't assign 'pPointer' to value type.");
 }
 
 inline void CAny::AssignPointer(const void* pPointer, const ITypeDesc& srcTypeDesc)
@@ -519,7 +519,7 @@ inline void CAny::AssignPointer(const void* pPointer, const ITypeDesc& srcTypeDe
 
 		return;
 	}
-	CRY_ASSERT_MESSAGE(m_isPointer, "Can't assign 'pPointer' to value type.");
+	CRY_ASSERT(m_isPointer, "Can't assign 'pPointer' to value type.");
 }
 
 template<typename VALUE_TYPE>
@@ -547,9 +547,9 @@ inline bool CAny::CopyValue(VALUE_TYPE& target) const
 				}
 			}
 		}
-		CRY_ASSERT_MESSAGE(pSrcTypeDesc, "Source type description not found.");
+		CRY_ASSERT(pSrcTypeDesc, "Source type description not found.");
 	}
-	CRY_ASSERT_MESSAGE(pDstTypeDesc, "Target type description not found.");
+	CRY_ASSERT(pDstTypeDesc, "Target type description not found.");
 
 	return false;
 }
@@ -580,11 +580,11 @@ inline bool CAny::CopyValue(void* pTarget, TypeIndex typeIndex) const
 					}
 				}
 			}
-			CRY_ASSERT_MESSAGE(pSrcTypeDesc, "Source type description not found.");
+			CRY_ASSERT(pSrcTypeDesc, "Source type description not found.");
 		}
-		CRY_ASSERT_MESSAGE(pDstTypeDesc, "Target type description not found.");
+		CRY_ASSERT(pDstTypeDesc, "Target type description not found.");
 	}
-	CRY_ASSERT_MESSAGE(pTarget, "Parameter must be non-null.");
+	CRY_ASSERT(pTarget, "Parameter must be non-null.");
 
 	return false;
 }
@@ -612,9 +612,9 @@ inline bool CAny::CopyValue(void* pTarget, const ITypeDesc& dstTypeDesc) const
 				}
 			}
 		}
-		CRY_ASSERT_MESSAGE(pSrcTypeDesc, "Source type description not found.");
+		CRY_ASSERT(pSrcTypeDesc, "Source type description not found.");
 	}
-	CRY_ASSERT_MESSAGE(pTarget, "Parameter must be non-null.");
+	CRY_ASSERT(pTarget, "Parameter must be non-null.");
 
 	return false;
 }
@@ -633,11 +633,11 @@ inline void CAny::AssignToPointer(const VALUE_TYPE& source)
 			*static_cast<VALUE_TYPE*>(m_pData) = source;
 			return;
 		}
-		CRY_ASSERT_MESSAGE(pTypeDesc, "Type not found in reflection registry.");
-		CRY_ASSERT_MESSAGE(m_typeIndex == pTypeDesc->GetIndex(), "Can't assign 'source' type to different pointer type.");
+		CRY_ASSERT(pTypeDesc, "Type not found in reflection registry.");
+		CRY_ASSERT(m_typeIndex == pTypeDesc->GetIndex(), "Can't assign 'source' type to different pointer type.");
 	}
-	CRY_ASSERT_MESSAGE(GetPointer() != nullptr, "Pointer type must be non-null.");
-	CRY_ASSERT_MESSAGE(m_isPointer, "Can't assign 'source' to value type.");
+	CRY_ASSERT(GetPointer() != nullptr, "Pointer type must be non-null.");
+	CRY_ASSERT(m_isPointer, "Can't assign 'source' to value type.");
 }
 
 template<typename VALUE_TYPE>
@@ -653,11 +653,11 @@ inline void CAny::AssignToPointer(const VALUE_TYPE& source, TypeIndex typeIndex)
 			*static_cast<VALUE_TYPE*>(m_pData) = source;
 			return;
 		}
-		CRY_ASSERT_MESSAGE(pTypeDesc, "Type not found in reflection registry.");
-		CRY_ASSERT_MESSAGE(m_typeIndex == typeIndex, "Can't assign 'source' type to different pointer type.");
+		CRY_ASSERT(pTypeDesc, "Type not found in reflection registry.");
+		CRY_ASSERT(m_typeIndex == typeIndex, "Can't assign 'source' type to different pointer type.");
 	}
-	CRY_ASSERT_MESSAGE(GetPointer() != nullptr, "Pointer type must be non-null.");
-	CRY_ASSERT_MESSAGE(m_isPointer, "Can't assign 'source' to value type.");
+	CRY_ASSERT(GetPointer() != nullptr, "Pointer type must be non-null.");
+	CRY_ASSERT(m_isPointer, "Can't assign 'source' to value type.");
 }
 
 template<typename VALUE_TYPE>
@@ -672,10 +672,10 @@ inline void CAny::AssignToPointer(const VALUE_TYPE& source, const ITypeDesc& src
 			*static_cast<VALUE_TYPE*>(m_pData) = source;
 			return;
 		}
-		CRY_ASSERT_MESSAGE(m_typeIndex == srcTypeDesc.GetIndex(), "Can't assign 'source' type to different pointer type.");
+		CRY_ASSERT(m_typeIndex == srcTypeDesc.GetIndex(), "Can't assign 'source' type to different pointer type.");
 	}
-	CRY_ASSERT_MESSAGE(GetPointer() != nullptr, "Pointer type must be non-null.");
-	CRY_ASSERT_MESSAGE(m_isPointer, "Can't assign 'source' to value type.");
+	CRY_ASSERT(GetPointer() != nullptr, "Pointer type must be non-null.");
+	CRY_ASSERT(m_isPointer, "Can't assign 'source' to value type.");
 }
 
 inline void CAny::AssignToPointer(void* pSource, TypeIndex typeIndex)
@@ -691,13 +691,13 @@ inline void CAny::AssignToPointer(void* pSource, TypeIndex typeIndex)
 				copyAssignConstructor(m_pData, pSource);
 				return;
 			}
-			CRY_ASSERT_MESSAGE(copyAssignConstructor, "Type doesn't have a copy assign operator.");
+			CRY_ASSERT(copyAssignConstructor, "Type doesn't have a copy assign operator.");
 		}
-		CRY_ASSERT_MESSAGE(pTypeDesc, "Type not found in reflection registry.");
-		CRY_ASSERT_MESSAGE(m_typeIndex == typeIndex, "Can't assign 'source' type to different pointer type.");
+		CRY_ASSERT(pTypeDesc, "Type not found in reflection registry.");
+		CRY_ASSERT(m_typeIndex == typeIndex, "Can't assign 'source' type to different pointer type.");
 	}
-	CRY_ASSERT_MESSAGE(GetPointer() != nullptr, "Pointer type must be non-null.");
-	CRY_ASSERT_MESSAGE(m_isPointer, "Can't assign 'source' to value type.");
+	CRY_ASSERT(GetPointer() != nullptr, "Pointer type must be non-null.");
+	CRY_ASSERT(m_isPointer, "Can't assign 'source' to value type.");
 }
 
 inline void CAny::AssignToPointer(void* pSource, const ITypeDesc& srcTypeDesc)
@@ -712,12 +712,12 @@ inline void CAny::AssignToPointer(void* pSource, const ITypeDesc& srcTypeDesc)
 				copyAssignConstructor(m_pData, pSource);
 				return;
 			}
-			CRY_ASSERT_MESSAGE(copyAssignConstructor, "Type doesn't have a copy assign operator.");
+			CRY_ASSERT(copyAssignConstructor, "Type doesn't have a copy assign operator.");
 		}
-		CRY_ASSERT_MESSAGE(m_typeIndex == srcTypeDesc.GetIndex(), "Can't assign 'source' type to different pointer type.");
+		CRY_ASSERT(m_typeIndex == srcTypeDesc.GetIndex(), "Can't assign 'source' type to different pointer type.");
 	}
-	CRY_ASSERT_MESSAGE(GetPointer() != nullptr, "Pointer type must be non-null.");
-	CRY_ASSERT_MESSAGE(m_isPointer, "Can't assign 'source' to value type.");
+	CRY_ASSERT(GetPointer() != nullptr, "Pointer type must be non-null.");
+	CRY_ASSERT(m_isPointer, "Can't assign 'source' to value type.");
 }
 
 inline void CAny::AssignToPointer(const void* pSource, TypeIndex typeIndex)
@@ -733,13 +733,13 @@ inline void CAny::AssignToPointer(const void* pSource, TypeIndex typeIndex)
 				copyAssignConstructor(m_pData, pSource);
 				return;
 			}
-			CRY_ASSERT_MESSAGE(copyAssignConstructor, "Type doesn't have a copy assign operator.");
+			CRY_ASSERT(copyAssignConstructor, "Type doesn't have a copy assign operator.");
 		}
-		CRY_ASSERT_MESSAGE(pTypeDesc, "Type not found in reflection registry.");
-		CRY_ASSERT_MESSAGE(m_typeIndex == typeIndex, "Can't assign 'source' type to different pointer type.");
+		CRY_ASSERT(pTypeDesc, "Type not found in reflection registry.");
+		CRY_ASSERT(m_typeIndex == typeIndex, "Can't assign 'source' type to different pointer type.");
 	}
-	CRY_ASSERT_MESSAGE(GetPointer() != nullptr, "Pointer type must be non-null.");
-	CRY_ASSERT_MESSAGE(m_isPointer, "Can't assign 'source' to value type.");
+	CRY_ASSERT(GetPointer() != nullptr, "Pointer type must be non-null.");
+	CRY_ASSERT(m_isPointer, "Can't assign 'source' to value type.");
 }
 
 inline void CAny::AssignToPointer(const void* pSource, const ITypeDesc& srcTypeDesc)
@@ -754,12 +754,12 @@ inline void CAny::AssignToPointer(const void* pSource, const ITypeDesc& srcTypeD
 				copyAssignConstructor(m_pData, pSource);
 				return;
 			}
-			CRY_ASSERT_MESSAGE(copyAssignConstructor, "Type doesn't have a copy assign operator.");
+			CRY_ASSERT(copyAssignConstructor, "Type doesn't have a copy assign operator.");
 		}
-		CRY_ASSERT_MESSAGE(m_typeIndex == srcTypeDesc.GetIndex(), "Can't assign 'source' type to different pointer type.");
+		CRY_ASSERT(m_typeIndex == srcTypeDesc.GetIndex(), "Can't assign 'source' type to different pointer type.");
 	}
-	CRY_ASSERT_MESSAGE(GetPointer() != nullptr, "Pointer type must be non-null.");
-	CRY_ASSERT_MESSAGE(m_isPointer, "Can't assign 'source' to value type.");
+	CRY_ASSERT(GetPointer() != nullptr, "Pointer type must be non-null.");
+	CRY_ASSERT(m_isPointer, "Can't assign 'source' to value type.");
 }
 
 template<typename VALUE_TYPE>
@@ -776,7 +776,7 @@ inline VALUE_TYPE* CAny::GetPointer()
 				return reinterpret_cast<VALUE_TYPE*>(GetPointer());
 			}
 		}
-		CRY_ASSERT_MESSAGE(pTypeDesc, "Type not found in reflection registry.");
+		CRY_ASSERT(pTypeDesc, "Type not found in reflection registry.");
 
 	}
 	return nullptr;
@@ -803,7 +803,7 @@ inline const VALUE_TYPE* CAny::GetConstPointer() const
 			return reinterpret_cast<const VALUE_TYPE*>(GetConstPointer());
 		}
 	}
-	CRY_ASSERT_MESSAGE(pTypeDesc, "Type not found in reflection registry.");
+	CRY_ASSERT(pTypeDesc, "Type not found in reflection registry.");
 
 	return nullptr;
 }
@@ -827,11 +827,11 @@ inline bool CAny::IsEqual(const VALUE_TYPE& other) const
 			{
 				return equalOperator(GetConstPointer(), &other);
 			}
-			CRY_ASSERT_MESSAGE(equalOperator, "No equal operator available for type '%s'.", pTypeDesc->GetFullQualifiedName());
+			CRY_ASSERT(equalOperator, "No equal operator available for type '%s'.", pTypeDesc->GetFullQualifiedName());
 		}
 		return false;
 	}
-	CRY_ASSERT_MESSAGE(pTypeDesc, "Type not found in reflection registry.");
+	CRY_ASSERT(pTypeDesc, "Type not found in reflection registry.");
 
 	return false;
 }
@@ -850,15 +850,15 @@ inline bool CAny::IsEqual(const CAny& other) const
 				{
 					return equalOperator(GetConstPointer(), other.GetConstPointer());
 				}
-				CRY_ASSERT_MESSAGE(equalOperator, "No equal operator available for type '%s'.", pTypeDesc->GetFullQualifiedName());
+				CRY_ASSERT(equalOperator, "No equal operator available for type '%s'.", pTypeDesc->GetFullQualifiedName());
 			}
-			CRY_ASSERT_MESSAGE(pTypeDesc, "Type not found in reflection registry.");
+			CRY_ASSERT(pTypeDesc, "Type not found in reflection registry.");
 		}
 		else if (m_isPointer && other.m_isPointer)
 		{
 			return IsEqualPointer(other.GetConstPointer());
 		}
-		CRY_ASSERT_MESSAGE(m_isPointer && other.m_isPointer, "Pointer with value comparison is not valid.");
+		CRY_ASSERT(m_isPointer && other.m_isPointer, "Pointer with value comparison is not valid.");
 	}
 	return false;
 }
@@ -901,12 +901,12 @@ inline void CAny::Destruct()
 				}
 				else
 				{
-					CRY_ASSERT_MESSAGE(destructor, "Type '%s' must have a destructor.", pTypeDesc->GetFullQualifiedName());
+					CRY_ASSERT(destructor, "Type '%s' must have a destructor.", pTypeDesc->GetFullQualifiedName());
 				}
 			}
 			else
 			{
-				CRY_ASSERT_MESSAGE(pTypeDesc, "Type is not registered in reflection database.");
+				CRY_ASSERT(pTypeDesc, "Type is not registered in reflection database.");
 			}
 		}
 	}
@@ -944,10 +944,10 @@ inline bool CAny::Serialize(Serialization::IArchive& archive)
 			m_isSmallValue = (pTypeDesc->GetSize() <= sizeof(m_data));
 		}
 		// TODO: This is a data error. Replace assert with a log message when available.
-		CRY_ASSERT_MESSAGE(pTypeDesc, "Type '%s' doesn't exist in the type registry anymore.", pTypeDesc->GetLabel());
+		CRY_ASSERT(pTypeDesc, "Type '%s' doesn't exist in the type registry anymore.", pTypeDesc->GetLabel());
 
 		// This case should never occur. It means pointer doesn't fit in internal buffer size anymore
-		CRY_ASSERT_MESSAGE(!(m_isPointer && !m_isSmallValue), "Type '%s' doesn't exist in the type registry anymore.", pTypeDesc->GetLabel());
+		CRY_ASSERT(!(m_isPointer && !m_isSmallValue), "Type '%s' doesn't exist in the type registry anymore.", pTypeDesc->GetLabel());
 		if (m_isPointer && !m_isSmallValue)
 		{
 			return false;
@@ -961,7 +961,7 @@ inline bool CAny::Serialize(Serialization::IArchive& archive)
 		{
 			archive(pTypeDesc->GetGuid(), "guid");
 		}
-		CRY_ASSERT_MESSAGE(pTypeDesc, "Any is typeless or type doesn't exist anymore.");
+		CRY_ASSERT(pTypeDesc, "Any is typeless or type doesn't exist anymore.");
 	}
 
 	if (m_isSmallValue)
@@ -982,7 +982,7 @@ inline bool CAny::Serialize(Serialization::IArchive& archive)
 					m_pData = CryModuleMemalign(pTypeDesc->GetSize(), pTypeDesc->GetAlignment());
 					defaultConstructor(m_pData);
 				}
-				CRY_ASSERT_MESSAGE(defaultConstructor, "Type '%s' doesn't have a default constructor.", pTypeDesc->GetLabel());
+				CRY_ASSERT(defaultConstructor, "Type '%s' doesn't have a default constructor.", pTypeDesc->GetLabel());
 			}
 
 			Type::CSerializeFunction serializeFunction = pTypeDesc->GetSerializeFunction();
@@ -990,9 +990,9 @@ inline bool CAny::Serialize(Serialization::IArchive& archive)
 			{
 				return serializeFunction(archive, m_pData, "data", nullptr);
 			}
-			CRY_ASSERT_MESSAGE(serializeFunction, "Type '%s' doesn't have a serialize function.", pTypeDesc->GetLabel());
+			CRY_ASSERT(serializeFunction, "Type '%s' doesn't have a serialize function.", pTypeDesc->GetLabel());
 		}
-		CRY_ASSERT_MESSAGE(pTypeDesc, "Any is typeless or type doesn't exist anymore.");
+		CRY_ASSERT(pTypeDesc, "Any is typeless or type doesn't exist anymore.");
 	}
 	return false;
 }

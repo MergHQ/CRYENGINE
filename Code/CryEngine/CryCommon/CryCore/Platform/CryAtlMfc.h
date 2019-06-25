@@ -134,12 +134,12 @@
 	#undef ASSERT
 	#undef ASSERT_VALID
 	#undef ASSERT_KINDOF
-	#define ASSERT(x)           CRY_ASSERT_MESSAGE(x, "MFC ASSERT")
-	#define ASSERT_KINDOF(t, p) CRY_ASSERT_MESSAGE(p && p->IsKindOf(RUNTIME_CLASS(t)), "MFC ASSERT_KINDOF")
+	#define ASSERT(x)           CRY_ASSERT(x, "MFC ASSERT")
+	#define ASSERT_KINDOF(t, p) CRY_ASSERT(p && p->IsKindOf(RUNTIME_CLASS(t)), "MFC ASSERT_KINDOF")
 	#ifdef _DEBUG
-		#define ASSERT_VALID(x)   CRY_ASSERT_MESSAGE(x && (x->AssertValid(), true), "MFC ASSERT_VALID")
+		#define ASSERT_VALID(x)   CRY_ASSERT(x && (x->AssertValid(), true), "MFC ASSERT_VALID")
 	#else
-		#define ASSERT_VALID(x)   CRY_ASSERT_MESSAGE(x, "MFC ASSERT_VALID")
+		#define ASSERT_VALID(x)   CRY_ASSERT(x, "MFC ASSERT_VALID")
 	#endif
 	#undef CRY_REMAP_MFC_ASSERT
 #endif

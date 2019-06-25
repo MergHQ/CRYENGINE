@@ -290,7 +290,7 @@ struct STagState
 	template<typename T>
 	void GetToInteger(T& value, uint32 numBits) const
 	{
-		CRY_ASSERT_MESSAGE(numBits <= sizeof(T) * 8, "value is not large enough to accommodate the number of bits stored in the TagState");
+		CRY_ASSERT(numBits <= sizeof(T) * 8, "value is not large enough to accommodate the number of bits stored in the TagState");
 		uint32 minSize = (sizeof(T) <= NUM_BYTES ? sizeof(T) : NUM_BYTES);
 #ifdef NEED_ENDIAN_SWAP
 		uint8* pOut = ((uint8*)&value) + sizeof(T);
@@ -1386,7 +1386,7 @@ public:
 					if (priority > priorityCount.priority)
 					{
 						uint32 newTally = priorityTally * (priorityCount.count + 1);
-						//						CRY_ASSERT_MESSAGE(newTally >= priorityTally, "TagState rating overflow - too many distinct priority levels!");
+						//						CRY_ASSERT(newTally >= priorityTally, "TagState rating overflow - too many distinct priority levels!");
 						priorityTally = newTally;
 					}
 					else

@@ -112,7 +112,7 @@ namespace MNM
 					scopeName = "Annotation Changed";
 					break;
 				default:
-					CRY_ASSERT_MESSAGE(false, "New enum value has been added to MNM::NavMeshQueryDebug::InvalidationType: but it's not being handled in this switch statement");
+					CRY_ASSERT(false, "New enum value has been added to MNM::NavMeshQueryDebug::InvalidationType: but it's not being handled in this switch statement");
 				}
 
 				Cry::UDR::CScope_FixedString invalidationsScope(scopeName.c_str());
@@ -234,7 +234,7 @@ namespace MNM
 				}
 				else
 				{
-					CRY_ASSERT_MESSAGE(false, "Can't find the TileId from an existing NavMesh TriangleId. This shouldn't happen in NavMesh wasn't regenerated between the generation phase and this function.");
+					CRY_ASSERT(false, "Can't find the TileId from an existing NavMesh TriangleId. This shouldn't happen in NavMesh wasn't regenerated between the generation phase and this function.");
 				}
 			}
 			return triangleDataArray;

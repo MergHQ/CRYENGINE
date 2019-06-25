@@ -21,7 +21,7 @@ class CDescExtension;
 
 inline IReflection& GetReflectionRegistry()
 {
-	CRY_ASSERT_MESSAGE(gEnv->pReflection, "Reflection module not yet initialized.");
+	CRY_ASSERT(gEnv->pReflection, "Reflection module not yet initialized.");
 	return *gEnv->pReflection;
 }
 

@@ -32,7 +32,7 @@
 
 //! Only enable math asserts in debug builds
 #if defined(_DEBUG)
-	#define CRY_MATH_ASSERT(x) CRY_ASSERT_MESSAGE(x, "CRY_MATH_ASSERT")
+	#define CRY_MATH_ASSERT(x) CRY_ASSERT(x, "CRY_MATH_ASSERT")
 #else
 	#define CRY_MATH_ASSERT(x)
 #endif

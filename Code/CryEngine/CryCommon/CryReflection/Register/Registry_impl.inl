@@ -65,7 +65,7 @@ bool CRegistry<REGISTRY_INTERFACE_TYPE >::UseType_Internal(const ITypeDesc& type
 	const TypeIndex index = typeDesc.GetIndex();
 
 	const ITypeDesc* pTypeDesc = CoreRegistry::GetTypeByIndex(index);
-	CRY_ASSERT_MESSAGE(pTypeDesc, "Type '%s' not found in the global registry.", typeDesc.GetFullQualifiedName());
+	CRY_ASSERT(pTypeDesc, "Type '%s' not found in the global registry.", typeDesc.GetFullQualifiedName());
 	if (pTypeDesc)
 	{
 		m_typesByIndex.emplace_back(index);
@@ -123,7 +123,7 @@ const IFunctionDesc* CRegistry<REGISTRY_INTERFACE_TYPE >::GetFunctionByName(cons
 			}
 		}
 	}
-	CRY_ASSERT_MESSAGE(szName, "Can't search for a function without a name.");
+	CRY_ASSERT(szName, "Can't search for a function without a name.");
 
 	return nullptr;
 }
@@ -134,7 +134,7 @@ bool CRegistry<REGISTRY_INTERFACE_TYPE >::UseFunction_Internal(const IFunctionDe
 	const FunctionIndex index = functionDesc.GetIndex();
 
 	const IFunctionDesc* pFunctionDesc = CoreRegistry::GetFunctionByIndex(index);
-	CRY_ASSERT_MESSAGE(pFunctionDesc, "Function '%s' not found in the global registry.", pFunctionDesc->GetFullQualifiedName());
+	CRY_ASSERT(pFunctionDesc, "Function '%s' not found in the global registry.", pFunctionDesc->GetFullQualifiedName());
 	if (pFunctionDesc)
 	{
 		m_functionsByIndex.emplace_back(index);

@@ -1503,12 +1503,12 @@ public:
 	}
 	const IScope& GetRootScope() const
 	{
-		CRY_ASSERT_MESSAGE(m_rootScope, "Action not installed or queued into actionStack!");
+		CRY_ASSERT(m_rootScope, "Action not installed or queued into actionStack!");
 		return *m_rootScope;
 	}
 	IScope& GetRootScope()
 	{
-		CRY_ASSERT_MESSAGE(m_rootScope, "Action not installed or queued into actionStack!");
+		CRY_ASSERT(m_rootScope, "Action not installed or queued into actionStack!");
 		return *m_rootScope;
 	}
 	uint32 GetFlags() const

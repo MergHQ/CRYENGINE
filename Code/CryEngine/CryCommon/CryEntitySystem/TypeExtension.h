@@ -42,9 +42,9 @@ public:
 				pRegistry->UseType(typeDesc);
 				return;
 			}
-			CRY_ASSERT_MESSAGE(pRegistry, "Reflection registry not initialized.");
+			CRY_ASSERT(pRegistry, "Reflection registry not initialized.");
 		}
-		CRY_ASSERT_MESSAGE(gEnv->pEntitySystem, "EntitySystem not initialized.");
+		CRY_ASSERT(gEnv->pEntitySystem, "EntitySystem not initialized.");
 	}
 	// ~CDescExtension
 

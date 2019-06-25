@@ -129,7 +129,7 @@ public:
 	//! Assigns a pointer without increasing ref count.
 	void Assign_NoAddRef(_I* ptr)
 	{
-		CRY_ASSERT_MESSAGE(!p, "Assign_NoAddRef should only be used on a default-constructed, not-yet-assigned smart_ptr instance");
+		CRY_ASSERT(!p, "Assign_NoAddRef should only be used on a default-constructed, not-yet-assigned smart_ptr instance");
 		p = ptr;
 	}
 

@@ -96,7 +96,7 @@ struct CRY_ALIGN(128) SJobFunction<R (C::*)(T ...), Func>
 	//! Calls the underlying function and discards the return value (if any)
 	void operator()()
 	{
-		CRY_ASSERT_MESSAGE(m_pInstance != nullptr, "Missing this pointer to jobmanager call");
+		CRY_ASSERT(m_pInstance != nullptr, "Missing this pointer to jobmanager call");
 		JobManager::Detail::apply([this](const typename std::remove_reference<T>::type& ... t) { (m_pInstance->*Func)(t ...); }, m_Params);
 	} 
 };

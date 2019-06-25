@@ -350,7 +350,7 @@ struct CryVariant<TArgs...>::variant_helper<T, Types...>
 		{
 			if (stl::holds_alternative<T>(lhs))
 			{
-				CRY_ASSERT_MESSAGE(stl::holds_alternative<T>(rhs), "Both variants need to contain the same type!");
+				CRY_ASSERT(stl::holds_alternative<T>(rhs), "Both variants need to contain the same type!");
 				std::swap(stl::get<T>(lhs), stl::get<T>(rhs));
 			}
 			else

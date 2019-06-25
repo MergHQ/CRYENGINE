@@ -16,9 +16,9 @@
 #if SCHEMATYC_ASSERTS_ENABLED
 
 	#define SCHEMATYC_ASSERT(streamId, expression)                    CRY_ASSERT((expression)); if (!((expression))) { SCHEMATYC_CRITICAL_ERROR(streamId, ("ASSERT" # expression)); }
-	#define SCHEMATYC_ASSERT_MESSAGE(streamId, expression, ...)       CRY_ASSERT_MESSAGE((expression),__VA_ARGS__); if (!((expression))) { SCHEMATYC_CRITICAL_ERROR(streamId, __VA_ARGS__); }
+	#define SCHEMATYC_ASSERT_MESSAGE(streamId, expression, ...)       CRY_ASSERT((expression),__VA_ARGS__); if (!((expression))) { SCHEMATYC_CRITICAL_ERROR(streamId, __VA_ARGS__); }
 	#define SCHEMATYC_ASSERT_FATAL(streamId, expression)              CRY_ASSERT((expression)); if (!((expression))) { SCHEMATYC_FATAL_ERROR(streamId, ("ASSERT" # expression)); }
-	#define SCHEMATYC_ASSERT_FATAL_MESSAGE(streamId, expression, ...) CRY_ASSERT_MESSAGE((expression),__VA_ARGS__); if (!((expression))) { SCHEMATYC_FATAL_ERROR(streamId, __VA_ARGS__); }
+	#define SCHEMATYC_ASSERT_FATAL_MESSAGE(streamId, expression, ...) CRY_ASSERT((expression),__VA_ARGS__); if (!((expression))) { SCHEMATYC_FATAL_ERROR(streamId, __VA_ARGS__); }
 
 	#define SCHEMATYC_CORE_ASSERT(expression)                         SCHEMATYC_ASSERT(Schematyc::LogStreamId::Core, (expression))
 	#define SCHEMATYC_CORE_ASSERT_MESSAGE(expression, ...)            SCHEMATYC_ASSERT_MESSAGE(Schematyc::LogStreamId::Core, (expression), __VA_ARGS__)

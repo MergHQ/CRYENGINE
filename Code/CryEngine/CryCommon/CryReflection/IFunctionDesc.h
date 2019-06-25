@@ -68,7 +68,7 @@ struct SFunctionParameterDesc
 		: typeId(typeId_)
 		, index(static_cast<uint32>(index_))
 	{
-		CRY_ASSERT_MESSAGE(index_ <= std::numeric_limits<uint32>::max(), "Index must be smaller or equal to uint32.");
+		CRY_ASSERT(index_ <= std::numeric_limits<uint32>::max(), "Index must be smaller or equal to uint32.");
 	}
 
 	FunctionParamFlags flags;
@@ -110,7 +110,7 @@ struct CFunctionDesc
 {
 	CFunctionDesc()
 	{
-		CRY_ASSERT_MESSAGE(false, "Missing CFunctionDesc specialization.");
+		CRY_ASSERT(false, "Missing CFunctionDesc specialization.");
 	}
 };
 
@@ -261,7 +261,7 @@ struct SProxy<FUNCTION_DESC, RETURN_TYPE, 0>
 {
 	static void Execute(const CFunctionPtr& funcPtr, CFunctionExecutionContext& context)
 	{
-		CRY_ASSERT_MESSAGE(context.GetParamCount() == 0, "Parameter missmatch.");
+		CRY_ASSERT(context.GetParamCount() == 0, "Parameter missmatch.");
 
 		const RETURN_TYPE result = SExecutionSelection<FUNCTION_DESC>::ExecuteWithReturn(funcPtr, context);
 		context.SetResult<RETURN_TYPE>(result);
@@ -275,7 +275,7 @@ struct SProxy<FUNCTION_DESC, RETURN_TYPE, 1>
 	{
 		auto* const pParam0 = context.GetParam<typename FUNCTION_DESC::template ParamType<0>>(0);
 
-		CRY_ASSERT_MESSAGE(context.GetParamCount() == 1 && pParam0, "Parameter missmatch.");
+		CRY_ASSERT(context.GetParamCount() == 1 && pParam0, "Parameter missmatch.");
 
 		const RETURN_TYPE result = SExecutionSelection<FUNCTION_DESC>::ExecuteWithReturn(funcPtr, context, *pParam0);
 		context.SetResult<RETURN_TYPE>(result);
@@ -290,7 +290,7 @@ struct SProxy<FUNCTION_DESC, RETURN_TYPE, 2>
 		auto* const pParam0 = context.GetParam<typename FUNCTION_DESC::template ParamType<0>>(0);
 		auto* const pParam1 = context.GetParam<typename FUNCTION_DESC::template ParamType<1>>(1);
 
-		CRY_ASSERT_MESSAGE(context.GetParamCount() == 2 && pParam0 && pParam1, "Parameter missmatch.");
+		CRY_ASSERT(context.GetParamCount() == 2 && pParam0 && pParam1, "Parameter missmatch.");
 
 		const RETURN_TYPE result = SExecutionSelection<FUNCTION_DESC>::ExecuteWithReturn(funcPtr, context, *pParam0, *pParam1);
 		context.SetResult<RETURN_TYPE>(result);
@@ -306,7 +306,7 @@ struct SProxy<FUNCTION_DESC, RETURN_TYPE, 3>
 		auto* const pParam1 = context.GetParam<typename FUNCTION_DESC::template ParamType<1>>(1);
 		auto* const pParam2 = context.GetParam<typename FUNCTION_DESC::template ParamType<2>>(2);
 
-		CRY_ASSERT_MESSAGE(context.GetParamCount() == 3 && pParam0 && pParam1 && pParam2, "Parameter missmatch.");
+		CRY_ASSERT(context.GetParamCount() == 3 && pParam0 && pParam1 && pParam2, "Parameter missmatch.");
 
 		const RETURN_TYPE result = SExecutionSelection<FUNCTION_DESC>::ExecuteWithReturn(funcPtr, context, *pParam0, *pParam1, *pParam2);
 		context.SetResult<RETURN_TYPE>(result);
@@ -323,7 +323,7 @@ struct SProxy<FUNCTION_DESC, RETURN_TYPE, 4>
 		auto* const pParam2 = context.GetParam<typename FUNCTION_DESC::template ParamType<2>>(2);
 		auto* const pParam3 = context.GetParam<typename FUNCTION_DESC::template ParamType<3>>(3);
 
-		CRY_ASSERT_MESSAGE(context.GetParamCount() == 4 && pParam0 && pParam1 && pParam2 && pParam3, "Parameter missmatch.");
+		CRY_ASSERT(context.GetParamCount() == 4 && pParam0 && pParam1 && pParam2 && pParam3, "Parameter missmatch.");
 
 		const RETURN_TYPE result = SExecutionSelection<FUNCTION_DESC>::ExecuteWithReturn(funcPtr, context, *pParam0, *pParam1, *pParam2, *pParam3);
 		context.SetResult<RETURN_TYPE>(result);
@@ -341,7 +341,7 @@ struct SProxy<FUNCTION_DESC, RETURN_TYPE, 5>
 		auto* const pParam3 = context.GetParam<typename FUNCTION_DESC::template ParamType<3>>(3);
 		auto* const pParam4 = context.GetParam<typename FUNCTION_DESC::template ParamType<4>>(4);
 
-		CRY_ASSERT_MESSAGE(context.GetParamCount() == 5 && pParam0 && pParam1 && pParam2 && pParam3 && pParam4, "Parameter missmatch.");
+		CRY_ASSERT(context.GetParamCount() == 5 && pParam0 && pParam1 && pParam2 && pParam3 && pParam4, "Parameter missmatch.");
 
 		const RETURN_TYPE result = SExecutionSelection<FUNCTION_DESC>::ExecuteWithReturn(funcPtr, context, *pParam0, *pParam1, *pParam2, *pParam3, *pParam4);
 		context.SetResult<RETURN_TYPE>(result);
@@ -360,7 +360,7 @@ struct SProxy<FUNCTION_DESC, RETURN_TYPE, 6>
 		auto* const pParam4 = context.GetParam<typename FUNCTION_DESC::template ParamType<4>>(4);
 		auto* const pParam5 = context.GetParam<typename FUNCTION_DESC::template ParamType<5>>(5);
 
-		CRY_ASSERT_MESSAGE(context.GetParamCount() == 6 && pParam0 && pParam1 && pParam2 && pParam3 && pParam4 && pParam5, "Parameter missmatch.");
+		CRY_ASSERT(context.GetParamCount() == 6 && pParam0 && pParam1 && pParam2 && pParam3 && pParam4 && pParam5, "Parameter missmatch.");
 
 		const RETURN_TYPE result = SExecutionSelection<FUNCTION_DESC>::ExecuteWithReturn(funcPtr, context, *pParam0, *pParam1, *pParam2, *pParam3, *pParam4, *pParam5);
 		context.SetResult<RETURN_TYPE>(result);
@@ -380,7 +380,7 @@ struct SProxy<FUNCTION_DESC, RETURN_TYPE, 7>
 		auto* const pParam5 = context.GetParam<typename FUNCTION_DESC::template ParamType<5>>(5);
 		auto* const pParam6 = context.GetParam<typename FUNCTION_DESC::template ParamType<6>>(6);
 
-		CRY_ASSERT_MESSAGE(context.GetParamCount() == 7 && pParam0 && pParam1 && pParam2 && pParam3 && pParam4 && pParam5 && pParam6, "Parameter missmatch.");
+		CRY_ASSERT(context.GetParamCount() == 7 && pParam0 && pParam1 && pParam2 && pParam3 && pParam4 && pParam5 && pParam6, "Parameter missmatch.");
 
 		const RETURN_TYPE result = SExecutionSelection<FUNCTION_DESC>::ExecuteWithReturn(funcPtr, context, *pParam0, *pParam1, *pParam2, *pParam3, *pParam4, *pParam5, *pParam6);
 		context.SetResult<RETURN_TYPE>(result);
@@ -401,7 +401,7 @@ struct SProxy<FUNCTION_DESC, RETURN_TYPE, 8>
 		auto* const pParam6 = context.GetParam<typename FUNCTION_DESC::template ParamType<6>>(6);
 		auto* const pParam7 = context.GetParam<typename FUNCTION_DESC::template ParamType<7>>(7);
 
-		CRY_ASSERT_MESSAGE(context.GetParamCount() == 8 && pParam0 && pParam1 && pParam2 && pParam3 && pParam4 && pParam5 && pParam6 && pParam7, "Parameter missmatch.");
+		CRY_ASSERT(context.GetParamCount() == 8 && pParam0 && pParam1 && pParam2 && pParam3 && pParam4 && pParam5 && pParam6 && pParam7, "Parameter missmatch.");
 
 		const RETURN_TYPE result = SExecutionSelection<FUNCTION_DESC>::ExecuteWithReturn(funcPtr, context, *pParam0, *pParam1, *pParam2, *pParam3, *pParam4, *pParam5, *pParam6, *pParam7);
 		context.SetResult<RETURN_TYPE>(result);
@@ -423,7 +423,7 @@ struct SProxy<FUNCTION_DESC, RETURN_TYPE, 9>
 		auto* const pParam7 = context.GetParam<typename FUNCTION_DESC::template ParamType<7>>(7);
 		auto* const pParam8 = context.GetParam<typename FUNCTION_DESC::template ParamType<8>>(8);
 
-		CRY_ASSERT_MESSAGE(context.GetParamCount() == 9 && pParam0 && pParam1 && pParam2 && pParam3 && pParam4 && pParam5 && pParam6 && pParam7 && pParam8, "Parameter missmatch.");
+		CRY_ASSERT(context.GetParamCount() == 9 && pParam0 && pParam1 && pParam2 && pParam3 && pParam4 && pParam5 && pParam6 && pParam7 && pParam8, "Parameter missmatch.");
 
 		const RETURN_TYPE result = SExecutionSelection<FUNCTION_DESC>::ExecuteWithReturn(funcPtr, context, *pParam0, *pParam1, *pParam2, *pParam3, *pParam4, *pParam5, *pParam6, *pParam7, *pParam8);
 		context.SetResult<RETURN_TYPE>(result);
@@ -446,7 +446,7 @@ struct SProxy<FUNCTION_DESC, RETURN_TYPE, 10>
 		auto* const pParam8 = context.GetParam<typename FUNCTION_DESC::template ParamType<8>>(8);
 		auto* const pParam9 = context.GetParam<typename FUNCTION_DESC::template ParamType<9>>(9);
 
-		CRY_ASSERT_MESSAGE(context.GetParamCount() == 10 && pParam0 && pParam1 && pParam2 && pParam3 && pParam4 && pParam5 && pParam6 && pParam7 && pParam8 && pParam9, "Parameter missmatch.");
+		CRY_ASSERT(context.GetParamCount() == 10 && pParam0 && pParam1 && pParam2 && pParam3 && pParam4 && pParam5 && pParam6 && pParam7 && pParam8 && pParam9, "Parameter missmatch.");
 
 		const RETURN_TYPE result = SExecutionSelection<FUNCTION_DESC>::ExecuteWithReturn(funcPtr, context, *pParam0, *pParam1, *pParam2, *pParam3, *pParam4, *pParam5, *pParam6, *pParam7, *pParam8, *pParam9);
 		context.SetResult<RETURN_TYPE>(result);
@@ -462,7 +462,7 @@ struct SProxy<FUNCTION_DESC, void, 0>
 {
 	static void Execute(const CFunctionPtr& funcPtr, CFunctionExecutionContext& context)
 	{
-		CRY_ASSERT_MESSAGE(context.GetParamCount() == 0, "Parameter missmatch.");
+		CRY_ASSERT(context.GetParamCount() == 0, "Parameter missmatch.");
 
 		SExecutionSelection<FUNCTION_DESC>::Execute(funcPtr, context);
 	}
@@ -475,7 +475,7 @@ struct SProxy<FUNCTION_DESC, void, 1>
 	{
 		auto* const pParam0 = context.GetParam<typename FUNCTION_DESC::template ParamType<0>>(0);
 
-		CRY_ASSERT_MESSAGE(context.GetParamCount() == 1 && pParam0, "Parameter missmatch.");
+		CRY_ASSERT(context.GetParamCount() == 1 && pParam0, "Parameter missmatch.");
 
 		SExecutionSelection<FUNCTION_DESC>::Execute(funcPtr, context, *pParam0);
 	}
@@ -489,7 +489,7 @@ struct SProxy<FUNCTION_DESC, void, 2>
 		auto* const pParam0 = context.GetParam<typename FUNCTION_DESC::template ParamType<0>>(0);
 		auto* const pParam1 = context.GetParam<typename FUNCTION_DESC::template ParamType<1>>(1);
 
-		CRY_ASSERT_MESSAGE(context.GetParamCount() == 2 && pParam0 && pParam1, "Parameter missmatch.");
+		CRY_ASSERT(context.GetParamCount() == 2 && pParam0 && pParam1, "Parameter missmatch.");
 
 		SExecutionSelection<FUNCTION_DESC>::Execute(funcPtr, context, *pParam0, *pParam1);
 	}
@@ -504,7 +504,7 @@ struct SProxy<FUNCTION_DESC, void, 3>
 		auto* const pParam1 = context.GetParam<typename FUNCTION_DESC::template ParamType<1>>(1);
 		auto* const pParam2 = context.GetParam<typename FUNCTION_DESC::template ParamType<2>>(2);
 
-		CRY_ASSERT_MESSAGE(context.GetParamCount() == 3 && pParam0 && pParam1 && pParam2, "Parameter missmatch.");
+		CRY_ASSERT(context.GetParamCount() == 3 && pParam0 && pParam1 && pParam2, "Parameter missmatch.");
 
 		SExecutionSelection<FUNCTION_DESC>::Execute(funcPtr, context, *pParam0, *pParam1, *pParam2);
 	}
@@ -520,7 +520,7 @@ struct SProxy<FUNCTION_DESC, void, 4>
 		auto* const pParam2 = context.GetParam<typename FUNCTION_DESC::template ParamType<2>>(2);
 		auto* const pParam3 = context.GetParam<typename FUNCTION_DESC::template ParamType<3>>(3);
 
-		CRY_ASSERT_MESSAGE(context.GetParamCount() == 4 && pParam0 && pParam1 && pParam2 && pParam3, "Parameter missmatch.");
+		CRY_ASSERT(context.GetParamCount() == 4 && pParam0 && pParam1 && pParam2 && pParam3, "Parameter missmatch.");
 
 		SExecutionSelection<FUNCTION_DESC>::Execute(funcPtr, context, *pParam0, *pParam1, *pParam2, *pParam3);
 	}
@@ -537,7 +537,7 @@ struct SProxy<FUNCTION_DESC, void, 5>
 		auto* const pParam3 = context.GetParam<typename FUNCTION_DESC::template ParamType<3>>(3);
 		auto* const pParam4 = context.GetParam<typename FUNCTION_DESC::template ParamType<4>>(4);
 
-		CRY_ASSERT_MESSAGE(context.GetParamCount() == 5 && pParam0 && pParam1 && pParam2 && pParam3 && pParam4, "Parameter missmatch.");
+		CRY_ASSERT(context.GetParamCount() == 5 && pParam0 && pParam1 && pParam2 && pParam3 && pParam4, "Parameter missmatch.");
 
 		SExecutionSelection<FUNCTION_DESC>::Execute(funcPtr, context, *pParam0, *pParam1, *pParam2, *pParam3, *pParam4);
 	}
@@ -555,7 +555,7 @@ struct SProxy<FUNCTION_DESC, void, 6>
 		auto* const pParam4 = context.GetParam<typename FUNCTION_DESC::template ParamType<4>>(4);
 		auto* const pParam5 = context.GetParam<typename FUNCTION_DESC::template ParamType<5>>(5);
 
-		CRY_ASSERT_MESSAGE(context.GetParamCount() == 6 && pParam0 && pParam1 && pParam2 && pParam3 && pParam4 && pParam5, "Parameter missmatch.");
+		CRY_ASSERT(context.GetParamCount() == 6 && pParam0 && pParam1 && pParam2 && pParam3 && pParam4 && pParam5, "Parameter missmatch.");
 
 		SExecutionSelection<FUNCTION_DESC>::Execute(funcPtr, context, *pParam0, *pParam1, *pParam2, *pParam3, *pParam4, *pParam5);
 	}
@@ -574,7 +574,7 @@ struct SProxy<FUNCTION_DESC, void, 7>
 		auto* const pParam5 = context.GetParam<typename FUNCTION_DESC::template ParamType<5>>(5);
 		auto* const pParam6 = context.GetParam<typename FUNCTION_DESC::template ParamType<6>>(6);
 
-		CRY_ASSERT_MESSAGE(context.GetParamCount() == 7 && pParam0 && pParam1 && pParam2 && pParam3 && pParam4 && pParam5 && pParam6, "Parameter missmatch.");
+		CRY_ASSERT(context.GetParamCount() == 7 && pParam0 && pParam1 && pParam2 && pParam3 && pParam4 && pParam5 && pParam6, "Parameter missmatch.");
 
 		SExecutionSelection<FUNCTION_DESC>::Execute(funcPtr, context, *pParam0, *pParam1, *pParam2, *pParam3, *pParam4, *pParam5, *pParam6);
 	}
@@ -594,7 +594,7 @@ struct SProxy<FUNCTION_DESC, void, 8>
 		auto* const pParam6 = context.GetParam<typename FUNCTION_DESC::template ParamType<6>>(6);
 		auto* const pParam7 = context.GetParam<typename FUNCTION_DESC::template ParamType<7>>(7);
 
-		CRY_ASSERT_MESSAGE(context.GetParamCount() == 8 && pParam0 && pParam1 && pParam2 && pParam3 && pParam4 && pParam5 && pParam6 && pParam7, "Parameter missmatch.");
+		CRY_ASSERT(context.GetParamCount() == 8 && pParam0 && pParam1 && pParam2 && pParam3 && pParam4 && pParam5 && pParam6 && pParam7, "Parameter missmatch.");
 
 		SExecutionSelection<FUNCTION_DESC>::Execute(funcPtr, context, *pParam0, *pParam1, *pParam2, *pParam3, *pParam4, *pParam5, *pParam6, *pParam7);
 	}
@@ -615,7 +615,7 @@ struct SProxy<FUNCTION_DESC, void, 9>
 		auto* const pParam7 = context.GetParam<typename FUNCTION_DESC::template ParamType<7>>(7);
 		auto* const pParam8 = context.GetParam<typename FUNCTION_DESC::template ParamType<8>>(8);
 
-		CRY_ASSERT_MESSAGE(context.GetParamCount() == 9 && pParam0 && pParam1 && pParam2 && pParam3 && pParam4 && pParam5 && pParam6 && pParam7 && pParam8, "Parameter missmatch.");
+		CRY_ASSERT(context.GetParamCount() == 9 && pParam0 && pParam1 && pParam2 && pParam3 && pParam4 && pParam5 && pParam6 && pParam7 && pParam8, "Parameter missmatch.");
 
 		SExecutionSelection<FUNCTION_DESC>::Execute(funcPtr, context, *pParam0, *pParam1, *pParam2, *pParam3, *pParam4, *pParam5, *pParam6, *pParam7, *pParam8);
 	}
@@ -637,7 +637,7 @@ struct SProxy<FUNCTION_DESC, void, 10>
 		auto const pParam8 = context.GetParam<typename FUNCTION_DESC::template ParamType<8>>(8);
 		auto const pParam9 = context.GetParam<typename FUNCTION_DESC::template ParamType<9>>(9);
 
-		CRY_ASSERT_MESSAGE(context.GetParamCount() == 10 && pParam0 && pParam1 && pParam2 && pParam3 && pParam4 && pParam5 && pParam6 && pParam7 && pParam8 && pParam9, "Parameter missmatch.");
+		CRY_ASSERT(context.GetParamCount() == 10 && pParam0 && pParam1 && pParam2 && pParam3 && pParam4 && pParam5 && pParam6 && pParam7 && pParam8 && pParam9, "Parameter missmatch.");
 
 		SExecutionSelection<FUNCTION_DESC>::Execute(funcPtr, context, *pParam0, *pParam1, *pParam2, *pParam3, *pParam4, *pParam5, *pParam6, *pParam7, *pParam8, *pParam9);
 	}

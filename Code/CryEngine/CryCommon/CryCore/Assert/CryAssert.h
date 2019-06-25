@@ -96,13 +96,18 @@
 					bool CryAssertIsEnabled();
 					void IsInAssert(bool bIsInAssertHandler);
 					void CryAssertFormat(const char* szFormat, ...);
-					bool CryAssertHandler(SAssertData const& data, SAssertCond& cond);
+					bool CryAssertHandlerImpl(SAssertData const& data, SAssertCond& cond);
 
 					template<typename ... TraceArgs>
 					bool CryAssertHandler(SAssertData const& data, SAssertCond& cond, char const* const szFormattedMessage, TraceArgs ... traceArgs)
 					{
 						CryAssertFormat(szFormattedMessage, traceArgs ...);
-						return CryAssertHandler(data, cond);
+						return CryAssertHandlerImpl(data, cond);
+					}
+
+					inline bool CryAssertHandler(SAssertData const& data, SAssertCond& cond)
+					{
+						return CryAssertHandler(data, cond, nullptr);
 					}
 				} // namespace Detail
 			} // namespace Assert
@@ -126,7 +131,7 @@
 							line };                            \
 						static Cry::Assert::Detail::SAssertCond assertCond = \
 							{ false, true };                   \
-						if (Cry::Assert::Detail::CryAssertHandler(assertData, assertCond, __VA_ARGS__)  \
+						if (Cry::Assert::Detail::CryAssertHandler(assertData, assertCond, ##__VA_ARGS__)  \
 								|| Cry::Assert::IsAssertLevel(Cry::Assert::ELevel::DebugBreakOnAssert)) \
 							CryDebugBreak();                   \
 					}                                          \
@@ -134,14 +139,14 @@
 				PREFAST_ASSUME(condition);                     \
 			} while (false)	
 
-		#define CRY_ASSERT_MESSAGE(condition, ...) CRY_ASSERT_MESSAGE_IMPL(condition, # condition, __FILE__, __LINE__, __VA_ARGS__)
+		#define CRY_ASSERT_MESSAGE(condition, ...) CRY_ASSERT_MESSAGE_IMPL(condition, # condition, __FILE__, __LINE__, ##__VA_ARGS__)
 
 		#define CRY_AUX_VA_ARGS(...)    __VA_ARGS__
 		#define CRY_AUX_STRIP_PARENS(X) X
 		#define CRY_ASSERT_TRACE(condition, parenthese_message) \
 			CRY_ASSERT_MESSAGE(condition, CRY_AUX_STRIP_PARENS(CRY_AUX_VA_ARGS parenthese_message))
 
-		#define CRY_ASSERT(condition) CRY_ASSERT_MESSAGE(condition, nullptr)
+		#define CRY_ASSERT(condition, ...) CRY_ASSERT_MESSAGE_IMPL(condition, # condition, __FILE__, __LINE__, ##__VA_ARGS__)
 
 	#else // defined(USE_CRY_ASSERT)
 
@@ -150,7 +155,7 @@
 		#define CRY_ASSERT_TRACE(condition, parenthese_message) assert(condition)
 		#define CRY_ASSERT_MESSAGE_IMPL(condition, szCondition, file, line, ...) assert(condition)
 		#define CRY_ASSERT_MESSAGE(condition, ... )             assert(condition)
-		#define CRY_ASSERT(condition)                           assert(condition)
+		#define CRY_ASSERT(condition, ...)                      assert(condition)
 
 	#endif // defined(USE_CRY_ASSERT)
 
@@ -181,8 +186,8 @@
 		}
 	}
 
-	#define CRY_VERIFY(expr)                   Cry::VerifyWithMessage(expr, # expr, __FILE__, __LINE__, nullptr)
-	#define CRY_VERIFY_WITH_MESSAGE(expr, ...) Cry::VerifyWithMessage(expr, # expr, __FILE__, __LINE__, __VA_ARGS__)
+	#define CRY_VERIFY(expr, ...)              Cry::VerifyWithMessage(expr, # expr, __FILE__, __LINE__, ##__VA_ARGS__)
+	#define CRY_VERIFY_WITH_MESSAGE(expr, ...) Cry::VerifyWithMessage(expr, # expr, __FILE__, __LINE__, ##__VA_ARGS__)
 
 	//! This forces boost to use CRY_ASSERT, regardless of what it is defined as.
 	#define BOOST_ENABLE_ASSERT_HANDLER

@@ -40,7 +40,7 @@ public:
 			m_proxyFunc(m_functionPtr, context);
 			return;
 		}
-		CRY_ASSERT_MESSAGE(m_proxyFunc && m_functionPtr.IsValid(), "Pointer or proxy not set.");
+		CRY_ASSERT(m_proxyFunc && m_functionPtr.IsValid(), "Pointer or proxy not set.");
 	}
 
 	void Execute_Fast(CFunctionExecutionContext& context) const

@@ -731,7 +731,7 @@ inline void CryStringT<T >::_FreeData(StrHeader* pData)
 	if (pData->nRefCount != -1) // -1 is the default empty string
 	{
 		const int count = pData->Release();
-		CRY_ASSERT_MESSAGE(count > -1, "If this is -1 then most likely a double release happened because of a race condition");
+		CRY_ASSERT(count > -1, "If this is -1 then most likely a double release happened because of a race condition");
 
 		if (count == 0)
 		{

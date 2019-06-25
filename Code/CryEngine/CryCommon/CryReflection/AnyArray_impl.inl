@@ -48,7 +48,7 @@ inline void CAnyArray::SetType(TypeIndex typeIndex, bool isPointer)
 		m_isPointer = isPointer;
 		return;
 	}
-	CRY_ASSERT_MESSAGE(m_pData == nullptr, "Array already uses type index %i.", m_typeIndex.ToValueType());
+	CRY_ASSERT(m_pData == nullptr, "Array already uses type index %i.", m_typeIndex.ToValueType());
 }
 
 inline void CAnyArray::SetType(const ITypeDesc& typeDesc, bool isPointer)
@@ -59,7 +59,7 @@ inline void CAnyArray::SetType(const ITypeDesc& typeDesc, bool isPointer)
 		m_isPointer = isPointer;
 		return;
 	}
-	CRY_ASSERT_MESSAGE(m_pData == nullptr, "Array already uses type index %i.", m_typeIndex.ToValueType());
+	CRY_ASSERT(m_pData == nullptr, "Array already uses type index %i.", m_typeIndex.ToValueType());
 }
 
 inline const ITypeDesc* CAnyArray::GetTypeDesc() const
@@ -71,9 +71,9 @@ inline const ITypeDesc* CAnyArray::GetTypeDesc() const
 		{
 			return pTypeDesc;
 		}
-		CRY_ASSERT_MESSAGE(pTypeDesc, "Type not found in reflection registry.");
+		CRY_ASSERT(pTypeDesc, "Type not found in reflection registry.");
 	}
-	CRY_ASSERT_MESSAGE(m_typeIndex.IsValid(), "Type index is not valid.");
+	CRY_ASSERT(m_typeIndex.IsValid(), "Type index is not valid.");
 
 	return nullptr;
 }
@@ -148,9 +148,9 @@ inline void CAnyArray::AddValue(const VALUE_TYPE& source)
 			AddValueInternal(&source, *pTypeDesc);
 			return;
 		}
-		CRY_ASSERT_MESSAGE(pTypeDesc, "Type not found in reflection registry.");
+		CRY_ASSERT(pTypeDesc, "Type not found in reflection registry.");
 	}
-	CRY_ASSERT_MESSAGE(m_isPointer == false, "Can't add value type 'source' to pointer array.");
+	CRY_ASSERT(m_isPointer == false, "Can't add value type 'source' to pointer array.");
 }
 
 inline void CAnyArray::AddValue(const CAny& source)
@@ -162,10 +162,10 @@ inline void CAnyArray::AddValue(const CAny& source)
 			AddValueInternal(source.GetConstPointer(), *source.GetTypeDesc());
 			return;
 		}
-		CRY_ASSERT_MESSAGE(source.IsPointer() == false, "Trying to add pointer type 'source' to value array.");
+		CRY_ASSERT(source.IsPointer() == false, "Trying to add pointer type 'source' to value array.");
 	}
-	CRY_ASSERT_MESSAGE(m_isPointer == false, "Can't add value type 'source' to pointer array.");
-	CRY_ASSERT_MESSAGE(source.IsEmpty(), "Parameter 'source' is empty.");
+	CRY_ASSERT(m_isPointer == false, "Can't add value type 'source' to pointer array.");
+	CRY_ASSERT(source.IsEmpty(), "Parameter 'source' is empty.");
 }
 
 inline void CAnyArray::AddValue(const void* pSource, TypeIndex typeIndex)
@@ -178,10 +178,10 @@ inline void CAnyArray::AddValue(const void* pSource, TypeIndex typeIndex)
 			AddValueInternal(pSource, *pTypeDesc);
 			return;
 		}
-		CRY_ASSERT_MESSAGE(pTypeDesc, "Type not found in reflection registry.");
+		CRY_ASSERT(pTypeDesc, "Type not found in reflection registry.");
 	}
-	CRY_ASSERT_MESSAGE(pSource, "Input 'pSource' must be non-null.");
-	CRY_ASSERT_MESSAGE(m_isPointer == false, "Can't add value type 'source' to pointer array.");
+	CRY_ASSERT(pSource, "Input 'pSource' must be non-null.");
+	CRY_ASSERT(m_isPointer == false, "Can't add value type 'source' to pointer array.");
 }
 
 inline void CAnyArray::AddValue(const void* pSource, const ITypeDesc& typeDesc)
@@ -191,8 +191,8 @@ inline void CAnyArray::AddValue(const void* pSource, const ITypeDesc& typeDesc)
 		AddValueInternal(pSource, typeDesc);
 		return;
 	}
-	CRY_ASSERT_MESSAGE(pSource, "Input 'pSource' must be non-null.");
-	CRY_ASSERT_MESSAGE(m_isPointer == false, "Can't add value type 'source' to pointer array.");
+	CRY_ASSERT(pSource, "Input 'pSource' must be non-null.");
+	CRY_ASSERT(m_isPointer == false, "Can't add value type 'source' to pointer array.");
 }
 
 template<typename VALUE_TYPE>
@@ -210,9 +210,9 @@ inline void CAnyArray::AddPointer(VALUE_TYPE* pPointer)
 			AddPointerInternal(static_cast<void*>(pPointer), *pTypeDesc);
 			return;
 		}
-		CRY_ASSERT_MESSAGE(pTypeDesc, "Type not found in reflection registry.");
+		CRY_ASSERT(pTypeDesc, "Type not found in reflection registry.");
 	}
-	CRY_ASSERT_MESSAGE(m_isPointer, "Can't add pointer 'pPointer' to value array.");
+	CRY_ASSERT(m_isPointer, "Can't add pointer 'pPointer' to value array.");
 }
 
 inline void CAnyArray::AddPointer(const CAny& source)
@@ -224,10 +224,10 @@ inline void CAnyArray::AddPointer(const CAny& source)
 			AddPointerInternal(source.GetConstPointer(), *source.GetTypeDesc());
 			return;
 		}
-		CRY_ASSERT_MESSAGE(source.IsPointer(), "Trying to add value type 'source' to pointer array.");
+		CRY_ASSERT(source.IsPointer(), "Trying to add value type 'source' to pointer array.");
 	}
-	CRY_ASSERT_MESSAGE(m_isPointer, "Can't add pointer type 'source' to value array.");
-	CRY_ASSERT_MESSAGE(source.IsEmpty(), "Parameter 'source' is empty.");
+	CRY_ASSERT(m_isPointer, "Can't add pointer type 'source' to value array.");
+	CRY_ASSERT(source.IsEmpty(), "Parameter 'source' is empty.");
 }
 
 inline void CAnyArray::AddPointer(const void* pPointer, TypeIndex typeIndex)
@@ -240,9 +240,9 @@ inline void CAnyArray::AddPointer(const void* pPointer, TypeIndex typeIndex)
 			AddPointerInternal(pPointer, *pTypeDesc);
 			return;
 		}
-		CRY_ASSERT_MESSAGE(pTypeDesc, "Type not found in reflection registry.");
+		CRY_ASSERT(pTypeDesc, "Type not found in reflection registry.");
 	}
-	CRY_ASSERT_MESSAGE(m_isPointer, "Can't assign pointer 'pPointer' to value array.");
+	CRY_ASSERT(m_isPointer, "Can't assign pointer 'pPointer' to value array.");
 }
 
 inline void CAnyArray::AddPointer(const void* pPointer, const ITypeDesc& typeDesc)
@@ -252,7 +252,7 @@ inline void CAnyArray::AddPointer(const void* pPointer, const ITypeDesc& typeDes
 		AddPointerInternal(pPointer, typeDesc);
 		return;
 	}
-	CRY_ASSERT_MESSAGE(m_isPointer, "Can't assign pointer 'pPointer' to value array.");
+	CRY_ASSERT(m_isPointer, "Can't assign pointer 'pPointer' to value array.");
 }
 
 template<typename VALUE_TYPE>
@@ -271,9 +271,9 @@ inline void CAnyArray::InsertValueAt(uint32 index, const VALUE_TYPE& source)
 			AssignCopyValueAt(index, &source, *pTypeDesc);
 			return;
 		}
-		CRY_ASSERT_MESSAGE(pTypeDesc, "Type not found in reflection registry.");
+		CRY_ASSERT(pTypeDesc, "Type not found in reflection registry.");
 	}
-	CRY_ASSERT_MESSAGE(m_isPointer == false, "Can't add value type 'source' to pointer array.");
+	CRY_ASSERT(m_isPointer == false, "Can't add value type 'source' to pointer array.");
 }
 
 inline void CAnyArray::InsertValueAt(uint32 index, CAny& source)
@@ -286,10 +286,10 @@ inline void CAnyArray::InsertValueAt(uint32 index, CAny& source)
 			AssignCopyValueAt(index, source.GetConstPointer(), *source.GetTypeDesc());
 			return;
 		}
-		CRY_ASSERT_MESSAGE(source.IsPointer() == false, "Trying to add pointer type 'source' to value array.");
+		CRY_ASSERT(source.IsPointer() == false, "Trying to add pointer type 'source' to value array.");
 	}
-	CRY_ASSERT_MESSAGE(m_isPointer == false, "Can't add value type 'source' to pointer array.");
-	CRY_ASSERT_MESSAGE(source.IsEmpty(), "Parameter 'source' is empty.");
+	CRY_ASSERT(m_isPointer == false, "Can't add value type 'source' to pointer array.");
+	CRY_ASSERT(source.IsEmpty(), "Parameter 'source' is empty.");
 }
 
 inline void CAnyArray::InsertValueAt(uint32 index, const void* pSource, TypeIndex typeIndex)
@@ -303,10 +303,10 @@ inline void CAnyArray::InsertValueAt(uint32 index, const void* pSource, TypeInde
 			AssignCopyValueAt(index, pSource, *pTypeDesc);
 			return;
 		}
-		CRY_ASSERT_MESSAGE(pTypeDesc, "Type not found in reflection registry.");
+		CRY_ASSERT(pTypeDesc, "Type not found in reflection registry.");
 	}
-	CRY_ASSERT_MESSAGE(pSource, "Input 'pSource' must be non-null.");
-	CRY_ASSERT_MESSAGE(m_isPointer == false, "Can't add value type 'source' to pointer array.");
+	CRY_ASSERT(pSource, "Input 'pSource' must be non-null.");
+	CRY_ASSERT(m_isPointer == false, "Can't add value type 'source' to pointer array.");
 }
 
 inline void CAnyArray::InsertValueAt(uint32 index, const void* pSource, const ITypeDesc& typeDesc)
@@ -317,8 +317,8 @@ inline void CAnyArray::InsertValueAt(uint32 index, const void* pSource, const IT
 		AssignCopyValueAt(index, pSource, typeDesc);
 		return;
 	}
-	CRY_ASSERT_MESSAGE(pSource, "Input 'pSource' must be non-null.");
-	CRY_ASSERT_MESSAGE(m_isPointer == false, "Can't add value type 'source' to pointer array.");
+	CRY_ASSERT(pSource, "Input 'pSource' must be non-null.");
+	CRY_ASSERT(m_isPointer == false, "Can't add value type 'source' to pointer array.");
 }
 
 template<typename VALUE_TYPE>
@@ -337,9 +337,9 @@ inline void CAnyArray::InsertPointerAt(uint32 index, const VALUE_TYPE* pPointer)
 			AssignPointerAt(index, pPointer, *pTypeDesc);
 			return;
 		}
-		CRY_ASSERT_MESSAGE(pTypeDesc, "Type not found in reflection registry.");
+		CRY_ASSERT(pTypeDesc, "Type not found in reflection registry.");
 	}
-	CRY_ASSERT_MESSAGE(m_isPointer, "Can't add pointer 'pPointer' to value array.");
+	CRY_ASSERT(m_isPointer, "Can't add pointer 'pPointer' to value array.");
 }
 
 inline void CAnyArray::InsertPointerAt(uint32 index, const CAny& source)
@@ -352,10 +352,10 @@ inline void CAnyArray::InsertPointerAt(uint32 index, const CAny& source)
 			AssignPointerAt(index, source.GetConstPointer(), *source.GetTypeDesc());
 			return;
 		}
-		CRY_ASSERT_MESSAGE(source.IsPointer(), "Trying to add value type 'source' to pointer array.");
+		CRY_ASSERT(source.IsPointer(), "Trying to add value type 'source' to pointer array.");
 	}
-	CRY_ASSERT_MESSAGE(m_isPointer, "Can't add pointer type 'source' to value array.");
-	CRY_ASSERT_MESSAGE(source.IsEmpty() == false, "Parameter 'source' is empty.");
+	CRY_ASSERT(m_isPointer, "Can't add pointer type 'source' to value array.");
+	CRY_ASSERT(source.IsEmpty() == false, "Parameter 'source' is empty.");
 }
 
 inline void CAnyArray::InsertPointerAt(uint32 index, const void* pPointer, TypeIndex typeIndex)
@@ -369,9 +369,9 @@ inline void CAnyArray::InsertPointerAt(uint32 index, const void* pPointer, TypeI
 			AssignPointerAt(index, pPointer, *pTypeDesc);
 			return;
 		}
-		CRY_ASSERT_MESSAGE(pTypeDesc, "Type not found in reflection registry.");
+		CRY_ASSERT(pTypeDesc, "Type not found in reflection registry.");
 	}
-	CRY_ASSERT_MESSAGE(m_isPointer, "Can't assign pointer 'pPointer' to value array.");
+	CRY_ASSERT(m_isPointer, "Can't assign pointer 'pPointer' to value array.");
 }
 
 inline void CAnyArray::InsertPointerAt(uint32 index, const void* pPointer, const ITypeDesc& typeDesc)
@@ -382,7 +382,7 @@ inline void CAnyArray::InsertPointerAt(uint32 index, const void* pPointer, const
 		AssignPointerAt(index, pPointer, typeDesc);
 		return;
 	}
-	CRY_ASSERT_MESSAGE(m_isPointer, "Can't assign pointer 'pPointer' to value array.");
+	CRY_ASSERT(m_isPointer, "Can't assign pointer 'pPointer' to value array.");
 }
 
 template<typename VALUE_TYPE>
@@ -403,14 +403,14 @@ inline void CAnyArray::AssignCopyValueAt(uint32 index, const VALUE_TYPE& source)
 				copyAssignOperator(GetPointerInternal(index), &source);
 				return;
 			}
-			CRY_ASSERT_MESSAGE(copyAssignOperator, "'%s' has no copy assign operator.", pTypeDesc->GetFullQualifiedName());
+			CRY_ASSERT(copyAssignOperator, "'%s' has no copy assign operator.", pTypeDesc->GetFullQualifiedName());
 		}
-		CRY_ASSERT_MESSAGE(pTypeDesc, "Type not found in reflection registry.");
-		CRY_ASSERT_MESSAGE(m_typeIndex == pTypeDesc->GetIndex(), "'source' doesn't match the array type.");
+		CRY_ASSERT(pTypeDesc, "Type not found in reflection registry.");
+		CRY_ASSERT(m_typeIndex == pTypeDesc->GetIndex(), "'source' doesn't match the array type.");
 	}
-	CRY_ASSERT_MESSAGE(m_isConst == false, "Array elements are const and can't be changed.");
-	CRY_ASSERT_MESSAGE(m_isPointer == false, "Can't assign value 'source' to pointer array.");
-	CRY_ASSERT_MESSAGE(index < m_size, "'index' (%i) is out of bounds (%i)", index, m_size);
+	CRY_ASSERT(m_isConst == false, "Array elements are const and can't be changed.");
+	CRY_ASSERT(m_isPointer == false, "Can't assign value 'source' to pointer array.");
+	CRY_ASSERT(index < m_size, "'index' (%i) is out of bounds (%i)", index, m_size);
 }
 
 inline void CAnyArray::AssignCopyValueAt(uint32 index, const CAny& source)
@@ -428,17 +428,17 @@ inline void CAnyArray::AssignCopyValueAt(uint32 index, const CAny& source)
 					copyAssignOperator(GetPointerInternal(index), source.GetConstPointer());
 					return;
 				}
-				CRY_ASSERT_MESSAGE(copyAssignOperator, "'%s' has no copy assign operator.", pTypeDesc->GetFullQualifiedName());
+				CRY_ASSERT(copyAssignOperator, "'%s' has no copy assign operator.", pTypeDesc->GetFullQualifiedName());
 			}
-			CRY_ASSERT_MESSAGE(pTypeDesc, "Type not found in reflection registry.");
-			CRY_ASSERT_MESSAGE(m_typeIndex == pTypeDesc->GetIndex(), "'source' doesn't match the array type.");
+			CRY_ASSERT(pTypeDesc, "Type not found in reflection registry.");
+			CRY_ASSERT(m_typeIndex == pTypeDesc->GetIndex(), "'source' doesn't match the array type.");
 		}
-		CRY_ASSERT_MESSAGE(source.IsPointer() == false, "'source' is pointer type.");
-		CRY_ASSERT_MESSAGE(source.IsEmpty(), "'source' is empty.");
+		CRY_ASSERT(source.IsPointer() == false, "'source' is pointer type.");
+		CRY_ASSERT(source.IsEmpty(), "'source' is empty.");
 	}
-	CRY_ASSERT_MESSAGE(m_isConst == false, "Array elements are const and can't be changed.");
-	CRY_ASSERT_MESSAGE(m_isPointer == false, "Can't assign value 'source' to pointer array.");
-	CRY_ASSERT_MESSAGE(index < m_size, "'index' (%i) is out of bounds (%i).", index, m_size);
+	CRY_ASSERT(m_isConst == false, "Array elements are const and can't be changed.");
+	CRY_ASSERT(m_isPointer == false, "Can't assign value 'source' to pointer array.");
+	CRY_ASSERT(index < m_size, "'index' (%i) is out of bounds (%i).", index, m_size);
 }
 
 inline void CAnyArray::AssignCopyValueAt(uint32 index, const void* pSource, TypeIndex typeIndex)
@@ -454,15 +454,15 @@ inline void CAnyArray::AssignCopyValueAt(uint32 index, const void* pSource, Type
 				copyAssignOperator(GetPointerInternal(index), pSource);
 				return;
 			}
-			CRY_ASSERT_MESSAGE(copyAssignOperator, "Type '%s' has no copy assign operator.", pTypeDesc->GetFullQualifiedName());
+			CRY_ASSERT(copyAssignOperator, "Type '%s' has no copy assign operator.", pTypeDesc->GetFullQualifiedName());
 		}
-		CRY_ASSERT_MESSAGE(pTypeDesc, "Type not found in reflection registry.");
-		CRY_ASSERT_MESSAGE(m_typeIndex == pTypeDesc->GetIndex(), "'typeIndex' doesn't match the array type.");
+		CRY_ASSERT(pTypeDesc, "Type not found in reflection registry.");
+		CRY_ASSERT(m_typeIndex == pTypeDesc->GetIndex(), "'typeIndex' doesn't match the array type.");
 	}
-	CRY_ASSERT_MESSAGE(pSource, "Input 'pSource' must be non-null.");
-	CRY_ASSERT_MESSAGE(m_isConst == false, "Array elements are const and can't be changed.");
-	CRY_ASSERT_MESSAGE(m_isPointer == false, "Can't assign value 'pSource' to pointer array.");
-	CRY_ASSERT_MESSAGE(index < m_size, "'index' (%i) is out of bounds (%i).", index, m_size);
+	CRY_ASSERT(pSource, "Input 'pSource' must be non-null.");
+	CRY_ASSERT(m_isConst == false, "Array elements are const and can't be changed.");
+	CRY_ASSERT(m_isPointer == false, "Can't assign value 'pSource' to pointer array.");
+	CRY_ASSERT(index < m_size, "'index' (%i) is out of bounds (%i).", index, m_size);
 }
 
 inline void CAnyArray::AssignCopyValueAt(uint32 index, const void* pSource, const ITypeDesc& typeDesc)
@@ -477,14 +477,14 @@ inline void CAnyArray::AssignCopyValueAt(uint32 index, const void* pSource, cons
 				copyAssignOperator(GetPointerInternal(index), pSource);
 				return;
 			}
-			CRY_ASSERT_MESSAGE(copyAssignOperator, "Type '%s' has no copy assign operator.", typeDesc.GetFullQualifiedName());
+			CRY_ASSERT(copyAssignOperator, "Type '%s' has no copy assign operator.", typeDesc.GetFullQualifiedName());
 		}
-		CRY_ASSERT_MESSAGE(m_typeIndex == typeDesc.GetIndex(), "'typeDesc' doesn't match the array type.");
+		CRY_ASSERT(m_typeIndex == typeDesc.GetIndex(), "'typeDesc' doesn't match the array type.");
 	}
-	CRY_ASSERT_MESSAGE(pSource, "Input 'pSource' must be non-null.");
-	CRY_ASSERT_MESSAGE(m_isConst == false, "Array elements are const and can't be changed.");
-	CRY_ASSERT_MESSAGE(m_isPointer == false, "Can't assign value 'pSource' to pointer array.");
-	CRY_ASSERT_MESSAGE(index < m_size, "'index' (%i) is out of bounds (%i).", index, m_size);
+	CRY_ASSERT(pSource, "Input 'pSource' must be non-null.");
+	CRY_ASSERT(m_isConst == false, "Array elements are const and can't be changed.");
+	CRY_ASSERT(m_isPointer == false, "Can't assign value 'pSource' to pointer array.");
+	CRY_ASSERT(index < m_size, "'index' (%i) is out of bounds (%i).", index, m_size);
 }
 
 template<typename VALUE_TYPE>
@@ -504,14 +504,14 @@ inline void CAnyArray::AssignMoveValueAt(uint32 index, VALUE_TYPE& source)
 				moveAssignOperator(GetPointerInternal(index), &source);
 				return;
 			}
-			CRY_ASSERT_MESSAGE(pTypeDesc, "Type not found in reflection registry.");
-			CRY_ASSERT_MESSAGE(moveAssignOperator, "Type '%s' has no move assign operator.", pTypeDesc->GetFullQualifiedName());
+			CRY_ASSERT(pTypeDesc, "Type not found in reflection registry.");
+			CRY_ASSERT(moveAssignOperator, "Type '%s' has no move assign operator.", pTypeDesc->GetFullQualifiedName());
 		}
-		CRY_ASSERT_MESSAGE(m_typeIndex == pTypeDesc->GetIndex(), "Type doesn't match the array type.");
+		CRY_ASSERT(m_typeIndex == pTypeDesc->GetIndex(), "Type doesn't match the array type.");
 	}
-	CRY_ASSERT_MESSAGE(m_isConst == false, "Array elements are const and can't be changed.");
-	CRY_ASSERT_MESSAGE(m_isPointer == false, "Can't assign value 'pSource' to pointer array.");
-	CRY_ASSERT_MESSAGE(index < m_size, "'index' (%i) is out of bounds (%i).", index, m_size);
+	CRY_ASSERT(m_isConst == false, "Array elements are const and can't be changed.");
+	CRY_ASSERT(m_isPointer == false, "Can't assign value 'pSource' to pointer array.");
+	CRY_ASSERT(index < m_size, "'index' (%i) is out of bounds (%i).", index, m_size);
 }
 
 inline void CAnyArray::AssignMoveValueAt(uint32 index, CAny& source)
@@ -529,18 +529,18 @@ inline void CAnyArray::AssignMoveValueAt(uint32 index, CAny& source)
 					moveAssignOperator(GetPointerInternal(index), source.GetPointer());
 					return;
 				}
-				CRY_ASSERT_MESSAGE(moveAssignOperator, "'%s' has no move assign operator.", pTypeDesc->GetFullQualifiedName());
+				CRY_ASSERT(moveAssignOperator, "'%s' has no move assign operator.", pTypeDesc->GetFullQualifiedName());
 			}
-			CRY_ASSERT_MESSAGE(pTypeDesc, "Type not found in reflection registry.");
-			CRY_ASSERT_MESSAGE(m_typeIndex == pTypeDesc->GetIndex(), "'source' doesn't match the array type.");
+			CRY_ASSERT(pTypeDesc, "Type not found in reflection registry.");
+			CRY_ASSERT(m_typeIndex == pTypeDesc->GetIndex(), "'source' doesn't match the array type.");
 		}
-		CRY_ASSERT_MESSAGE(source.IsPointer() == false, "'source' is pointer type.");
-		CRY_ASSERT_MESSAGE(source.IsEmpty(), "'source' is empty.");
-		CRY_ASSERT_MESSAGE(source.IsConst() == false, "'source' is const and can't be moved.");
+		CRY_ASSERT(source.IsPointer() == false, "'source' is pointer type.");
+		CRY_ASSERT(source.IsEmpty(), "'source' is empty.");
+		CRY_ASSERT(source.IsConst() == false, "'source' is const and can't be moved.");
 	}
-	CRY_ASSERT_MESSAGE(m_isConst == false, "Array elements are const and can't be changed.");
-	CRY_ASSERT_MESSAGE(m_isPointer == false, "Can't assign value 'source' to pointer array.");
-	CRY_ASSERT_MESSAGE(index < m_size, "'index' (%i) is out of bounds (%i).", index, m_size);
+	CRY_ASSERT(m_isConst == false, "Array elements are const and can't be changed.");
+	CRY_ASSERT(m_isPointer == false, "Can't assign value 'source' to pointer array.");
+	CRY_ASSERT(index < m_size, "'index' (%i) is out of bounds (%i).", index, m_size);
 }
 
 inline void CAnyArray::AssignMoveValueAt(uint32 index, void* pSource, TypeIndex typeIndex)
@@ -556,15 +556,15 @@ inline void CAnyArray::AssignMoveValueAt(uint32 index, void* pSource, TypeIndex 
 				moveAssignOperator(GetPointerInternal(index), pSource);
 				return;
 			}
-			CRY_ASSERT_MESSAGE(pTypeDesc, "Type not found in reflection registry.");
-			CRY_ASSERT_MESSAGE(moveAssignOperator, "Type '%s' has no move assign operator.", pTypeDesc->GetFullQualifiedName());
+			CRY_ASSERT(pTypeDesc, "Type not found in reflection registry.");
+			CRY_ASSERT(moveAssignOperator, "Type '%s' has no move assign operator.", pTypeDesc->GetFullQualifiedName());
 		}
-		CRY_ASSERT_MESSAGE(m_typeIndex == pTypeDesc->GetIndex(), "'typeIndex' doesn't match the array type.");
+		CRY_ASSERT(m_typeIndex == pTypeDesc->GetIndex(), "'typeIndex' doesn't match the array type.");
 	}
-	CRY_ASSERT_MESSAGE(pSource, "Input 'pSource' must be non-null.");
-	CRY_ASSERT_MESSAGE(m_isConst == false, "Array elements are const and can't be changed.");
-	CRY_ASSERT_MESSAGE(m_isPointer == false, "Can't assign value 'pSource' to pointer array.");
-	CRY_ASSERT_MESSAGE(index < m_size, "'index' (%i) is out of bounds (%i).", index, m_size);
+	CRY_ASSERT(pSource, "Input 'pSource' must be non-null.");
+	CRY_ASSERT(m_isConst == false, "Array elements are const and can't be changed.");
+	CRY_ASSERT(m_isPointer == false, "Can't assign value 'pSource' to pointer array.");
+	CRY_ASSERT(index < m_size, "'index' (%i) is out of bounds (%i).", index, m_size);
 }
 
 inline void CAnyArray::AssignMoveValueAt(uint32 index, void* pSource, const ITypeDesc& typeDesc)
@@ -579,14 +579,14 @@ inline void CAnyArray::AssignMoveValueAt(uint32 index, void* pSource, const ITyp
 				moveAssignOperator(GetPointerInternal(index), pSource);
 				return;
 			}
-			CRY_ASSERT_MESSAGE(moveAssignOperator, "Type '%s' has no move assign operator.", typeDesc.GetFullQualifiedName());
+			CRY_ASSERT(moveAssignOperator, "Type '%s' has no move assign operator.", typeDesc.GetFullQualifiedName());
 		}
-		CRY_ASSERT_MESSAGE(m_typeIndex == typeDesc.GetIndex(), "'typeDesc' doesn't match the array type.");
+		CRY_ASSERT(m_typeIndex == typeDesc.GetIndex(), "'typeDesc' doesn't match the array type.");
 	}
-	CRY_ASSERT_MESSAGE(pSource, "Input 'pSource' must be non-null.");
-	CRY_ASSERT_MESSAGE(m_isConst == false, "Array elements are const and can't be changed.");
-	CRY_ASSERT_MESSAGE(m_isPointer == false, "Can't assign value 'pSource' to pointer array.");
-	CRY_ASSERT_MESSAGE(index < m_size, "'index' (%i) is out of bounds (%i).", index, m_size);
+	CRY_ASSERT(pSource, "Input 'pSource' must be non-null.");
+	CRY_ASSERT(m_isConst == false, "Array elements are const and can't be changed.");
+	CRY_ASSERT(m_isPointer == false, "Can't assign value 'pSource' to pointer array.");
+	CRY_ASSERT(index < m_size, "'index' (%i) is out of bounds (%i).", index, m_size);
 }
 
 template<typename VALUE_TYPE>
@@ -604,10 +604,10 @@ inline void CAnyArray::AssignPointerAt(uint32 index, const VALUE_TYPE* pPointer)
 			AssignPointerInternal(index, static_cast<const void*>(pPointer), *pTypeDesc);
 			return;
 		}
-		CRY_ASSERT_MESSAGE(pTypeDesc, "Type not found in reflection registry.");
+		CRY_ASSERT(pTypeDesc, "Type not found in reflection registry.");
 	}
-	CRY_ASSERT_MESSAGE(m_isPointer, "Can't assign pointer 'pPointer' to value array.");
-	CRY_ASSERT_MESSAGE(m_isConst == false, "Array elements are const and can't be changed.");
+	CRY_ASSERT(m_isPointer, "Can't assign pointer 'pPointer' to value array.");
+	CRY_ASSERT(m_isConst == false, "Array elements are const and can't be changed.");
 }
 
 inline void CAnyArray::AssignPointerAt(uint32 index, const CAny& source)
@@ -620,11 +620,11 @@ inline void CAnyArray::AssignPointerAt(uint32 index, const CAny& source)
 			AssignPointerInternal(index, source.GetConstPointer(), *pTypeDesc);
 			return;
 		}
-		CRY_ASSERT_MESSAGE(pTypeDesc, "Type not found in reflection registry.");
+		CRY_ASSERT(pTypeDesc, "Type not found in reflection registry.");
 	}
-	CRY_ASSERT_MESSAGE(m_isPointer, "Can't assign pointer 'source' to value array.");
-	CRY_ASSERT_MESSAGE(source.IsPointer(), "Trying to add value type 'source' to pointer array.");
-	CRY_ASSERT_MESSAGE(m_isConst == false, "Array elements are const and can't be changed.");
+	CRY_ASSERT(m_isPointer, "Can't assign pointer 'source' to value array.");
+	CRY_ASSERT(source.IsPointer(), "Trying to add value type 'source' to pointer array.");
+	CRY_ASSERT(m_isConst == false, "Array elements are const and can't be changed.");
 }
 
 inline void CAnyArray::AssignPointerAt(uint32 index, const void* pPointer, TypeIndex typeIndex)
@@ -637,10 +637,10 @@ inline void CAnyArray::AssignPointerAt(uint32 index, const void* pPointer, TypeI
 			AssignPointerInternal(index, pPointer, *pTypeDesc);
 			return;
 		}
-		CRY_ASSERT_MESSAGE(pTypeDesc, "Type not found in reflection registry.");
+		CRY_ASSERT(pTypeDesc, "Type not found in reflection registry.");
 	}
-	CRY_ASSERT_MESSAGE(m_isPointer, "Can't assign pointer 'pPointer' to value array.");
-	CRY_ASSERT_MESSAGE(m_isConst == false, "Array elements are const and can't be changed.");
+	CRY_ASSERT(m_isPointer, "Can't assign pointer 'pPointer' to value array.");
+	CRY_ASSERT(m_isConst == false, "Array elements are const and can't be changed.");
 }
 
 inline void CAnyArray::AssignPointerAt(uint32 index, const void* pPointer, const ITypeDesc& typeDesc)
@@ -650,8 +650,8 @@ inline void CAnyArray::AssignPointerAt(uint32 index, const void* pPointer, const
 		AssignPointerInternal(index, pPointer, typeDesc);
 		return;
 	}
-	CRY_ASSERT_MESSAGE(m_isPointer, "Can't assign pointer 'pPointer' to value array.");
-	CRY_ASSERT_MESSAGE(m_isConst == false, "Array elements are const and can't be changed.");
+	CRY_ASSERT(m_isPointer, "Can't assign pointer 'pPointer' to value array.");
+	CRY_ASSERT(m_isConst == false, "Array elements are const and can't be changed.");
 }
 
 template<typename VALUE_TYPE>
@@ -667,11 +667,11 @@ inline VALUE_TYPE* CAnyArray::GetPointer(uint32 index)
 			{
 				return reinterpret_cast<VALUE_TYPE*>(GetPointer(index));
 			}
-			CRY_ASSERT_MESSAGE(m_typeIndex == pTypeDesc->GetIndex(), "Type doesn't match the array type.");
+			CRY_ASSERT(m_typeIndex == pTypeDesc->GetIndex(), "Type doesn't match the array type.");
 		}
-		CRY_ASSERT_MESSAGE(pTypeDesc, "Type not found in reflection registry.");
+		CRY_ASSERT(pTypeDesc, "Type not found in reflection registry.");
 	}
-	CRY_ASSERT_MESSAGE(m_isConst == false, "Const element can't be accessed as non-const pointer.");
+	CRY_ASSERT(m_isConst == false, "Const element can't be accessed as non-const pointer.");
 	return nullptr;
 }
 
@@ -683,9 +683,9 @@ inline void* CAnyArray::GetPointer(uint32 index)
 		{
 			return GetPointerInternal(index);
 		}
-		CRY_ASSERT_MESSAGE(index < m_size, "'index' (%i) is out of bounds (%i).", index, m_size);
+		CRY_ASSERT(index < m_size, "'index' (%i) is out of bounds (%i).", index, m_size);
 	}
-	CRY_ASSERT_MESSAGE(m_isConst == false, "Const element can't be accessed as non-const pointer.");
+	CRY_ASSERT(m_isConst == false, "Const element can't be accessed as non-const pointer.");
 
 	return nullptr;
 }
@@ -701,9 +701,9 @@ inline const VALUE_TYPE* CAnyArray::GetConstPointer(uint32 index) const
 		{
 			return reinterpret_cast<const VALUE_TYPE*>(GetConstPointer(index));
 		}
-		CRY_ASSERT_MESSAGE(m_typeIndex == pTypeDesc->GetIndex(), "Type 'VALUE_TYPE' mismatch.");
+		CRY_ASSERT(m_typeIndex == pTypeDesc->GetIndex(), "Type 'VALUE_TYPE' mismatch.");
 	}
-	CRY_ASSERT_MESSAGE(pTypeDesc, "Type not found in reflection registry.");
+	CRY_ASSERT(pTypeDesc, "Type not found in reflection registry.");
 
 	return nullptr;
 }
@@ -714,7 +714,7 @@ inline const void* CAnyArray::GetConstPointer(uint32 index) const
 	{
 		return GetPointerInternal(index);
 	}
-	CRY_ASSERT_MESSAGE(index < m_size, "'index' (%i) is out of bounds (%i).", index, m_size);
+	CRY_ASSERT(index < m_size, "'index' (%i) is out of bounds (%i).", index, m_size);
 
 	return nullptr;
 }
@@ -782,7 +782,7 @@ inline bool CAnyArray::Serialize(Serialization::IArchive& archive)
 			m_typeIndex = pTypeDesc->GetIndex();
 		}
 		// TODO: This is a data error. Replace assert with a log message when available.
-		CRY_ASSERT_MESSAGE(pTypeDesc, "Type '%s' doesn't exist in the type registry anymore.", pTypeDesc->GetLabel());
+		CRY_ASSERT(pTypeDesc, "Type '%s' doesn't exist in the type registry anymore.", pTypeDesc->GetLabel());
 		// ~TODO
 
 		m_isPointer = isPointer;
@@ -825,7 +825,7 @@ inline bool CAnyArray::Serialize(Serialization::IArchive& archive)
 				}
 				return true;
 			}
-			CRY_ASSERT_MESSAGE(serializeFunction, "'%s' doesn't have a serialize function.", pTypeDesc->GetFullQualifiedName());
+			CRY_ASSERT(serializeFunction, "'%s' doesn't have a serialize function.", pTypeDesc->GetFullQualifiedName());
 		}
 	}
 
@@ -896,7 +896,7 @@ inline void CAnyArray::CallDestructors(uint32 begin, uint32 end)
 			}
 			return;
 		}
-		CRY_ASSERT_MESSAGE(destructor, "'%s' has no destructor.", pTypeDesc->GetFullQualifiedName());
+		CRY_ASSERT(destructor, "'%s' has no destructor.", pTypeDesc->GetFullQualifiedName());
 	}
 }
 
@@ -917,7 +917,7 @@ inline void CAnyArray::CallDefaultConstructors(uint32 begin, uint32 end)
 			}
 			return;
 		}
-		CRY_ASSERT_MESSAGE(defaultConstructor, "'%s' has no default constructor.", pTypeDesc->GetFullQualifiedName());
+		CRY_ASSERT(defaultConstructor, "'%s' has no default constructor.", pTypeDesc->GetFullQualifiedName());
 	}
 }
 
@@ -941,9 +941,9 @@ inline void CAnyArray::AddValueInternal(const void* pSource, const ITypeDesc& ty
 			++m_size;
 			return;
 		}
-		CRY_ASSERT_MESSAGE(copyConstructor, "'%s' has no copy constructor.", typeDesc.GetFullQualifiedName());
+		CRY_ASSERT(copyConstructor, "'%s' has no copy constructor.", typeDesc.GetFullQualifiedName());
 	}
-	CRY_ASSERT_MESSAGE(m_typeIndex == typeDesc.GetIndex(), "'typeDesc' doesn't match the array type.");
+	CRY_ASSERT(m_typeIndex == typeDesc.GetIndex(), "'typeDesc' doesn't match the array type.");
 }
 
 inline void CAnyArray::AddPointerInternal(const void* pPointer, const ITypeDesc& typeDesc)
@@ -963,7 +963,7 @@ inline void CAnyArray::AddPointerInternal(const void* pPointer, const ITypeDesc&
 		++m_size;
 		return;
 	}
-	CRY_ASSERT_MESSAGE(m_typeIndex == typeDesc.GetIndex(), "'typeDesc' doesn't match the array type.");
+	CRY_ASSERT(m_typeIndex == typeDesc.GetIndex(), "'typeDesc' doesn't match the array type.");
 }
 
 inline void CAnyArray::AssignPointerInternal(uint32 index, const void* pPointer, const ITypeDesc& typeDesc)
@@ -973,8 +973,8 @@ inline void CAnyArray::AssignPointerInternal(uint32 index, const void* pPointer,
 		*reinterpret_cast<uintptr_t*>(m_pData + (index * GetAlignedSize())) = reinterpret_cast<uintptr_t>(pPointer);
 		return;
 	}
-	CRY_ASSERT_MESSAGE(index < m_size, "'index' (%i) is out of bounds (%i).", index, m_size);
-	CRY_ASSERT_MESSAGE(m_typeIndex == typeDesc.GetIndex(), "'typeDesc' doesn't match the array type.");
+	CRY_ASSERT(index < m_size, "'index' (%i) is out of bounds (%i).", index, m_size);
+	CRY_ASSERT(m_typeIndex == typeDesc.GetIndex(), "'typeDesc' doesn't match the array type.");
 }
 
 inline void CAnyArray::ShiftLeftInternal(uint32 index)
@@ -1001,7 +1001,7 @@ inline void CAnyArray::ShiftLeftInternal(uint32 index)
 			return;
 		}
 	}
-	CRY_ASSERT_MESSAGE(m_size > 0, "Can't shift with 0 elements.");
+	CRY_ASSERT(m_size > 0, "Can't shift with 0 elements.");
 }
 
 inline void CAnyArray::ShiftRightInternal(uint32 index)
@@ -1033,8 +1033,8 @@ inline void CAnyArray::ShiftRightInternal(uint32 index)
 			return;
 		}
 	}
-	CRY_ASSERT_MESSAGE(m_size > 0, "Can't shift with 0 elements.");
-	CRY_ASSERT_MESSAGE(index < m_size, "Element index (%i) is out of bounds (%i)", index, m_size);
+	CRY_ASSERT(m_size > 0, "Can't shift with 0 elements.");
+	CRY_ASSERT(index < m_size, "Element index (%i) is out of bounds (%i)", index, m_size);
 }
 
 } // ~Reflection namespace
