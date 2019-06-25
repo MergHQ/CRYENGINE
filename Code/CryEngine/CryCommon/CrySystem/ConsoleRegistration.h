@@ -180,7 +180,7 @@ struct SDummyCVar : ICVar
 	#else
 	SDummyCVar(T value) : value(value) {}
 	#endif
-	~SDummyCVar() { ConsoleRegistrationHelper::Unregister(this); }
+	~SDummyCVar() { ::ConsoleRegistrationHelper::Unregister(this); }
 
 	void WarnUse() const
 	{
