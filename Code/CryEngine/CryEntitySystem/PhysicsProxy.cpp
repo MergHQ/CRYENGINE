@@ -2030,7 +2030,7 @@ void CEntityPhysics::OnPhysicsPostStep(EventPhysPostStep* pEvent)
 			{
 				Matrix34 mtx = GetEntity()->GetParent()->GetWorldTM().GetInverted();
 				ssv.pos = mtx * ssv.pos;
-				ssv.q = Quat(Matrix33(mtx) * Diag33(mtx.GetColumn0().len(), mtx.GetColumn1().len(), mtx.GetColumn2().len()).invert());
+				ssv.q = Quat(Matrix33(mtx) * Diag33(mtx.GetColumn0().len(), mtx.GetColumn1().len(), mtx.GetColumn2().len()).invert()) * ssv.q;
 			}
 			GetEntity()->SetPosRotScale(ssv.pos, ssv.q, entityScale, ENTITY_XFORM_PHYSICS_STEP);
 

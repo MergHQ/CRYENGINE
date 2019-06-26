@@ -105,11 +105,12 @@ void CClothComponent::Reattach()
 		else
 		{
 			pe_action_attach_points aap;
-			aap.pEntity = gEnv->pPhysicalWorld->GetPhysicalEntityById((int)m_entAttachTo);
 			if ((aap.partid = m_attachPart) < 0)
 				MARK_UNUSED aap.partid;
 			MARK_UNUSED aap.nPoints;
-			GetEntity()->GetPhysics()->Action(&aap);
+			if (IEntity *pent = gEnv->pEntitySystem->GetEntity(m_entAttachTo))
+				if (aap.pEntity = pent->GetPhysicalEntity())
+					GetEntity()->GetPhysics()->Action(&aap);
 		}
 	}
 }
