@@ -571,9 +571,9 @@ CObjectLayer* CObjectLayerManager::FindLayerByNameAndType(const string& layerNam
 
 bool CObjectLayerManager::IsAnyLayerOfType(EObjectLayerType type) const
 {
-	return std::any_of(m_layersMap.begin(), m_layersMap.end(), [](const auto& x)
+	return std::any_of(m_layersMap.begin(), m_layersMap.end(), [type](const auto& x)
 	{
-		return x.second->GetLayerType() == eObjectLayerType_Terrain;
+		return x.second->GetLayerType() == type;
 	});
 }
 

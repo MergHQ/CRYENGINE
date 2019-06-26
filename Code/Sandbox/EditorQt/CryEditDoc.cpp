@@ -984,6 +984,17 @@ bool CCryEditDoc::SaveLevel(const string& filename)
 		helper.UpdateFile(gEditorFilePreferences.filesBackup);
 	}
 
+	// An edge case, this is needed to save ocean parameters, as ocean serialization is a part of terrain serialization.
+	// Normally terrain layer is responsible for this.
+	CObjectLayerManager* const pObjectLayerManager = GetIEditorImpl()->GetObjectManager()->GetLayersManager();
+	if (!pObjectLayerManager->IsAnyLayerOfType(eObjectLayerType_Terrain))
+	{
+		// Save Heightmap and terrain data
+		GetIEditorImpl()->GetTerrainManager()->Save(gEditorFilePreferences.filesBackup);
+		// Save TerrainTexture
+		GetIEditorImpl()->GetTerrainManager()->SaveTexture(gEditorFilePreferences.filesBackup);
+	}
+
 	// Save vegetation
 	if (GetIEditorImpl()->GetVegetationMap())
 		GetIEditorImpl()->GetVegetationMap()->Save(gEditorFilePreferences.filesBackup);
