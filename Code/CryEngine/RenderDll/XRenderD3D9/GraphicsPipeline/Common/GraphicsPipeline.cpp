@@ -70,9 +70,6 @@ void CGraphicsPipelineResources::Init()
 	m_pTexLinearDepthFixup = CTexture::GetOrCreateTextureObject(m_graphicsPipeline.MakeUniqueTexIdentifierName("$ZTargetFixup").c_str(), 0, 0, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_RENDERTARGET, eTF_Unknown);
 	m_pTexSceneTarget = CTexture::GetOrCreateTextureObject(m_graphicsPipeline.MakeUniqueTexIdentifierName("$SceneTarget").c_str(), 0, 0, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_RENDERTARGET, eTF_Unknown, TO_SCENE_TARGET);
 
-	if (!m_pTexModelHudBuffer)
-		m_pTexModelHudBuffer = CTexture::GetOrCreateTextureObject(m_graphicsPipeline.MakeUniqueTexIdentifierName("$ModelHud").c_str(), 0, 0, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_RENDERTARGET, eTF_Unknown, TO_MODELHUD);
-
 	if (RainOcclusionMapsEnabled())
 		PrepareRainOcclusionMaps();
 
@@ -326,9 +323,6 @@ void CGraphicsPipelineResources::CreatePostFXMaps(int resourceWidth, int resourc
 	SPostEffectsUtils::GetOrCreateRenderTarget(m_graphicsPipeline.MakeUniqueTexIdentifierName("$DisplayTarget 1/2b").c_str(), m_pTexDisplayTargetScaledTemp[0], width_r2, height_r2, Clr_Unknown, 1, 0, nLDRPFormat, -1, FT_DONT_RELEASE);
 	SPostEffectsUtils::GetOrCreateRenderTarget(m_graphicsPipeline.MakeUniqueTexIdentifierName("$DisplayTarget 1/4b").c_str(), m_pTexDisplayTargetScaledTemp[1], width_r4, height_r4, Clr_Unknown, 1, 0, nLDRPFormat, -1, FT_DONT_RELEASE);
 
-	SPostEffectsUtils::GetOrCreateRenderTarget(m_graphicsPipeline.MakeUniqueTexIdentifierName("$Cached3DHud").c_str(), m_pTexCached3DHud, width, height, Clr_Unknown, 1, 0, eTF_R8G8B8A8, -1, FT_DONT_RELEASE);
-	SPostEffectsUtils::GetOrCreateRenderTarget(m_graphicsPipeline.MakeUniqueTexIdentifierName("$Cached3DHudDownsampled").c_str(), m_pTexCached3DHudScaled, width_r4, height_r4, Clr_Unknown, 1, 0, eTF_R8G8B8A8, -1, FT_DONT_RELEASE);
-
 	SPostEffectsUtils::GetOrCreateRenderTarget(m_graphicsPipeline.MakeUniqueTexIdentifierName("$WaterVolumeRefl").c_str(), m_pTexWaterVolumeRefl[0], width_r2, height_r2, Clr_Unknown, 1, true, nHDRQFormat, TO_WATERVOLUMEREFLMAP, FT_DONT_RELEASE);
 	SPostEffectsUtils::GetOrCreateRenderTarget(m_graphicsPipeline.MakeUniqueTexIdentifierName("$WaterVolumeReflPrev").c_str(), m_pTexWaterVolumeRefl[1], width_r2, height_r2, Clr_Unknown, 1, true, nHDRQFormat, TO_WATERVOLUMEREFLMAPPREV, FT_DONT_RELEASE);
 #endif
@@ -349,20 +343,6 @@ void CGraphicsPipelineResources::CreateSceneMaps(int resourceWidth, int resource
 		m_pTexSceneTarget->SetWidth(nWidth);
 		m_pTexSceneTarget->SetHeight(nHeight);
 		m_pTexSceneTarget->CreateRenderTarget(eHDRTF, Clr_Empty);
-	}
-
-	// This RT can be used by the Render3DModelMgr if the buffer needs to be persistent
-	if (CRenderer::CV_r_UsePersistentRTForModelHUD > 0)
-	{
-		if (!CTexture::IsTextureExist(m_pTexModelHudBuffer))
-			m_pTexModelHudBuffer = CTexture::GetOrCreateRenderTarget(m_graphicsPipeline.MakeUniqueTexIdentifierName("$ModelHUD").c_str(), nWidth, nHeight, Clr_Transparent, eTT_2D, nFlags, eTF_R8G8B8A8);
-		else
-		{
-			m_pTexModelHudBuffer->SetFlags(nFlags);
-			m_pTexModelHudBuffer->SetWidth(nWidth);
-			m_pTexModelHudBuffer->SetHeight(nHeight);
-			m_pTexModelHudBuffer->CreateRenderTarget(eTF_R8G8B8A8, Clr_Transparent);
-		}
 	}
 
 	if (gEnv->IsEditor())
@@ -502,18 +482,11 @@ void CGraphicsPipelineResources::Shutdown()
 	SAFE_RELEASE_FORCE(m_pTexVelocityTiles[2]);
 	SAFE_RELEASE_FORCE(m_pTexWaterVolumeRefl[0]);
 	SAFE_RELEASE_FORCE(m_pTexWaterVolumeRefl[1]);
-	SAFE_RELEASE_FORCE(m_pTexCached3DHud);
-	SAFE_RELEASE_FORCE(m_pTexCached3DHudScaled);
 
 	SAFE_RELEASE_FORCE(m_pTexSceneCoCTemp);
 	for (int i = 0; i < MIN_DOF_COC_K; i++)
 	{
 		SAFE_RELEASE_FORCE(m_pTexSceneCoC[i]);
-	}
-
-	if (CRenderer::CV_r_UsePersistentRTForModelHUD > 0)
-	{
-		SAFE_RELEASE_FORCE(m_pTexModelHudBuffer);
 	}
 
 	for (int i = 0; i < MAX_GPU_NUM; ++i)

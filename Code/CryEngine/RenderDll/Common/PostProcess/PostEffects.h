@@ -80,11 +80,11 @@ public:
 		Release();
 	}
 
-	virtual int         Initialize();
+	virtual int         Init();
 	virtual int         CreateResources();
 	virtual void        Release();
 
-	virtual void        Render();
+	virtual void        Execute();
 	void                RenderObjectsVelocity();
 
 	virtual void        Reset(bool bOnSpecChange = false);
@@ -208,7 +208,7 @@ public:
 
 	virtual int         CreateResources();
 	virtual void        Release();
-	virtual void        Render();
+	virtual void        Execute();
 
 	SDepthOfFieldParams GetParams();
 
@@ -275,11 +275,11 @@ public:
 		m_nVisSampleCount = 0;
 	}
 
-	virtual int  Initialize();
+	virtual int  Init();
 	virtual void Release();
 	virtual void OnLostDevice();
 	virtual bool Preprocess(const SRenderViewInfo& viewInfo);
-	virtual void Render();
+	virtual void Execute();
 	virtual void Reset(bool bOnSpecChange = false);
 
 	bool         IsVisible();
@@ -322,7 +322,7 @@ public:
 	}
 
 	virtual bool        Preprocess(const SRenderViewInfo& viewInfo);
-	virtual void        Render();
+	virtual void        Execute();
 	virtual void        Reset(bool bOnSpecChange = false);
 
 	virtual const char* GetName() const
@@ -351,7 +351,7 @@ public:
 	}
 
 	virtual bool        Preprocess(const SRenderViewInfo& viewInfo);
-	virtual void        Render();
+	virtual void        Execute();
 	virtual void        Reset(bool bOnSpecChange = false);
 
 	virtual const char* GetName() const
@@ -414,7 +414,7 @@ public:
 	}
 
 	virtual bool        Preprocess(const SRenderViewInfo& viewInfo);
-	virtual void        Render();
+	virtual void        Execute();
 	virtual void        Reset(bool bOnSpecChange = false);
 
 	virtual const char* GetName() const
@@ -506,7 +506,7 @@ public:
 	}
 
 	virtual bool        Preprocess(const SRenderViewInfo& viewInfo);
-	virtual void        Render();
+	virtual void        Execute();
 	virtual void        Reset(bool bOnSpecChange = false);
 	void                UpdateParams(SColorGradingMergeParams& pMergeParams);
 
@@ -567,7 +567,7 @@ public:
 	}
 
 	virtual bool        Preprocess(const SRenderViewInfo& viewInfo);
-	virtual void        Render();
+	virtual void        Execute();
 	virtual void        Reset(bool bOnSpecChange = false);
 
 	virtual const char* GetName() const
@@ -601,7 +601,7 @@ public:
 	}
 
 	virtual bool        Preprocess(const SRenderViewInfo& viewInfo);
-	virtual void        Render();
+	virtual void        Execute();
 	virtual void        Reset(bool bOnSpecChange = false);
 
 	virtual const char* GetName() const
@@ -631,7 +631,7 @@ public:
 	}
 
 	virtual bool        Preprocess(const SRenderViewInfo& viewInfo);
-	virtual void        Render();
+	virtual void        Execute();
 	virtual void        Reset(bool bOnSpecChange = false);
 
 	virtual const char* GetName() const
@@ -661,7 +661,7 @@ public:
 	}
 
 	virtual bool        Preprocess(const SRenderViewInfo& viewInfo);
-	virtual void        Render();
+	virtual void        Execute();
 	virtual void        Reset(bool bOnSpecChange = false);
 
 	virtual const char* GetName() const
@@ -689,7 +689,7 @@ public:
 	}
 
 	virtual bool        Preprocess(const SRenderViewInfo& viewInfo);
-	virtual void        Render();
+	virtual void        Execute();
 	virtual void        Reset(bool bOnSpecChange = false);
 
 	virtual const char* GetName() const
@@ -720,7 +720,7 @@ public:
 	}
 
 	virtual bool        Preprocess(const SRenderViewInfo& viewInfo);
-	virtual void        Render();
+	virtual void        Execute();
 	virtual void        Reset(bool bOnSpecChange = false);
 
 	virtual const char* GetName() const
@@ -768,7 +768,7 @@ public:
 
 	virtual int         CreateResources();
 	virtual bool        Preprocess(const SRenderViewInfo& viewInfo);
-	virtual void        Render();
+	virtual void        Execute();
 	virtual void        Reset(bool bOnSpecChange = false);
 	virtual void        Release();
 
@@ -866,7 +866,7 @@ public:
 	virtual int         CreateResources();
 	virtual void        Release();
 	virtual bool        Preprocess(const SRenderViewInfo& viewInfo);
-	virtual void        Render();
+	virtual void        Execute();
 	virtual void        Reset(bool bOnSpecChange = false);
 
 	virtual const char* GetName() const
@@ -918,7 +918,7 @@ public:
 	virtual int         CreateResources();
 	virtual void        Release();
 	virtual bool        Preprocess(const SRenderViewInfo& viewInfo);
-	virtual void        Render();
+	virtual void        Execute();
 	virtual void        Reset(bool bOnSpecChange = false);
 
 	void                UpdateSoundEvents();
@@ -985,7 +985,7 @@ public:
 	virtual int  CreateResources();
 	virtual void Release();
 	virtual bool Preprocess(const SRenderViewInfo& viewInfo);
-	virtual void Render();
+	virtual void Execute();
 	virtual void Reset(bool bOnSpecChange = false);
 
 	void         AmbientPass();
@@ -1079,7 +1079,7 @@ public:
 	}
 
 	virtual bool        Preprocess(const SRenderViewInfo& viewInfo);
-	virtual void        Render();
+	virtual void        Execute();
 	virtual void        Reset(bool bOnSpecChange = false);
 
 	virtual const char* GetName() const
@@ -1141,7 +1141,7 @@ public:
 
 	virtual bool        Preprocess(const SRenderViewInfo& viewInfo);
 	virtual void        Release();
-	virtual void        Render();
+	virtual void        Execute();
 	virtual void        Reset(bool bOnSpecChange = false);
 
 	virtual const char* GetName() const
@@ -1174,7 +1174,7 @@ public:
 	virtual int         CreateResources()                                                                                        { return 1; }
 	virtual void        Release()                                                                                                {}
 	virtual bool        Preprocess(const SRenderViewInfo& viewInfo) { return true; }
-	virtual void        Render();
+	virtual void        Execute();
 	virtual void        Reset(bool bOnSpecChange = false)                                                                        {}
 
 	virtual const char* GetName() const
@@ -1198,7 +1198,7 @@ public:
 	}
 
 	virtual bool        Preprocess(const SRenderViewInfo& viewInfo);
-	virtual void        Render();
+	virtual void        Execute();
 	virtual void        Reset(bool bOnSpecChange = false);
 	virtual const char* GetName() const
 	{
@@ -1223,7 +1223,7 @@ public:
 	}
 
 	virtual bool        Preprocess(const SRenderViewInfo& viewInfo);
-	virtual void        Render();
+	virtual void        Execute();
 	virtual void        Reset(bool bOnSpecChange = false);
 	virtual const char* GetName() const
 	{
@@ -1362,13 +1362,14 @@ public:
 	virtual int         CreateResources();
 	virtual void        Release();
 	virtual bool        Preprocess(const SRenderViewInfo& viewInfo);
+	virtual bool        IsActive() const;
 
 	virtual void        Update();
 	virtual void        OnBeginFrame(const SRenderingPassInfo& passInfo);
 
 	virtual void        Reset(bool bOnSpecChange = false);
 	virtual void        AddRE(const CRenderElement* re, const SShaderItem* pShaderItem, CRenderObject* pObj, const SRenderingPassInfo& passInfo);
-	virtual void        Render();
+	virtual void        Execute();
 
 	void                FlashUpdateRT();
 	void                UpdateBloomRT(CTexture* pDstRT, CTexture* pBlurDst);
@@ -1471,9 +1472,9 @@ public:
 		m_lastMode = 0;
 	}
 
-	virtual int         Initialize();
+	virtual int         Init();
 	virtual bool        Preprocess(const SRenderViewInfo& viewInfo);
-	virtual void        Render();
+	virtual void        Execute();
 	virtual void        Reset(bool bOnSpecChange = false);
 
 	virtual const char* GetName() const
@@ -1553,7 +1554,7 @@ public:
 	virtual int         CreateResources();
 	virtual void        Release();
 	virtual bool        Preprocess(const SRenderViewInfo& viewInfo);
-	virtual void        Render();
+	virtual void        Execute();
 	virtual void        Reset(bool bOnSpecChange = false);
 
 	virtual const char* GetName() const
@@ -1622,7 +1623,7 @@ public:
 	}
 
 	virtual bool        Preprocess(const SRenderViewInfo& viewInfo);
-	virtual void        Render();
+	virtual void        Execute();
 	virtual void        Reset(bool bOnSpecChange = false);
 	virtual const char* GetName() const
 	{
@@ -1649,7 +1650,7 @@ public:
 	}
 
 	virtual bool        Preprocess(const SRenderViewInfo& viewInfo);
-	virtual void        Render();
+	virtual void        Execute();
 	virtual void        Reset(bool bOnSpecChange = false);
 	virtual const char* GetName() const
 	{
@@ -1718,7 +1719,7 @@ public:
 	}
 
 	virtual bool        Preprocess(const SRenderViewInfo& viewInfo);
-	virtual void        Render();
+	virtual void        Execute();
 	virtual void        Reset(bool bOnSpecChange = false);
 
 	virtual const char* GetName() const

@@ -475,6 +475,7 @@ void CPostEffectsMgr::CreateResources()
 		std::for_each(m_pEffects.begin(), m_pEffects.end(), SContainerPostEffectCreateResources());
 	m_bCreated = true;
 }
+
 void CPostEffectsMgr::ReleaseResources()
 {
 	if (m_bCreated)

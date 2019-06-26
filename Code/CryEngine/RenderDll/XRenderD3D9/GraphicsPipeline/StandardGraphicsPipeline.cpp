@@ -449,7 +449,9 @@ void CStandardGraphicsPipeline::Execute()
 
 			// CRendererResources::s_ptexDisplayTarget -> CRenderOutput->m_pColorTarget (PostAA)
 			// Post effects disabled, copy diffuse to color target
-			if (!GetStage<CPostEffectStage>()->Execute())
+			if (GetStage<CPostEffectStage>()->IsStageActive(m_renderingFlags))
+				GetStage<CPostEffectStage>()->Execute();
+			else
 				m_PostToFramePass->Execute(m_pipelineResources.m_pTexDisplayTargetDst, pRenderView->GetRenderOutput()->GetColorTarget());
 
 			// CRenderOutput->m_pColorTarget

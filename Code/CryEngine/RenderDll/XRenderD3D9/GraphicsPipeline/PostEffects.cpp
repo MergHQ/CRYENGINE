@@ -23,8 +23,8 @@ CPostEffectContext::~CPostEffectContext()
 
 void CPostEffectContext::Setup(CPostEffectsMgr* pPostEffectsMgr)
 {
+	// This is nullptr on shutdown (which happens when chain-loading)
 	m_pPostEffectsMgr = pPostEffectsMgr;
-	CRY_ASSERT(m_pPostEffectsMgr);
 
 	CD3D9Renderer* const RESTRICT_POINTER rd = gcpRendD3D;
 	const auto shaderType = eST_PostProcess;
@@ -95,6 +95,8 @@ const CEffectParam* CPostEffectContext::GetEffectParamByName(const char* pszPara
 
 void CPostEffectStage::Init()
 {
+	m_pPostMgr = PostEffectMgr();
+
 	// TODO: all commented ones
 	//	m_postEffectArray[EPostEffectID::SunShafts           ] = stl::make_unique<CSunShaftsPass           >();
 	//	m_postEffectArray[EPostEffectID::MotionBlur          ] = stl::make_unique<CMotionBlurPass          >();
@@ -125,106 +127,98 @@ void CPostEffectStage::Init()
 	    m_postEffectArray[EPostEffectID::ScreenFader         ] = stl::make_unique<CScreenFaderPass         >(&m_graphicsPipeline);
 	//	m_postEffectArray[EPostEffectID::Post3DRenderer      ] = stl::make_unique<CPost3DRendererPass      >();
 
+	m_context.Setup(m_pPostMgr);
+
 	for (auto& pPostEffect : m_postEffectArray)
 	{
 		if (pPostEffect)
 		{
-			pPostEffect->Init();
+			pPostEffect->Init(&m_context);
 		}
 	}
+
+	if (m_pPostMgr)
+	{
+		for (CPostEffectItor pItor = m_pPostMgr->GetEffects().begin(), pItorEnd = m_pPostMgr->GetEffects().end(); pItor != pItorEnd; ++pItor)
+		{
+			CPostEffect* pCurrEffect = (*pItor);
+			pCurrEffect->SetCurrentContext(&m_context);
+		}
+	}
+}
+
+void CPostEffectStage::Resize(int outputWidth, int outputHeight)
+{
+	for (auto& pPostEffect : m_postEffectArray)
+	{
+		if (pPostEffect)
+		{
+			pPostEffect->Resize(outputWidth, outputHeight);
+		}
+	}
+}
+
+void CPostEffectStage::OnCVarsChanged(const CCVarUpdateRecorder& cvarUpdater)
+{
 }
 
 void CPostEffectStage::Update()
 {
 	CRenderView* pRenderView = RenderView();
 	m_context.SetRenderView(pRenderView);
-}
 
-bool CPostEffectStage::Execute()
-{
-	FUNCTION_PROFILER_RENDERER();
-
-	// TODO: each viewport would need to have its own post effect manager when we will support multi-viewport.
-	CPostEffectsMgr* pPostMgr = PostEffectMgr();
-
-	if (!pPostMgr)
+	for (auto& pPostEffect : m_postEffectArray)
 	{
-		return false;
+		if (pPostEffect)
+		{
+			pPostEffect->Update();
+		}
 	}
 
-	if (CRenderer::CV_r_PostProcessReset)
-	{
-		CRenderer::CV_r_PostProcessReset = 0;
-
-		pPostMgr->Reset();
-	}
-
-	CD3D9Renderer* const RESTRICT_POINTER rd = gcpRendD3D;
-
-	IF (!rd
-	    || !CRenderer::CV_r_PostProcess
-	    || pPostMgr->GetEffects().empty(), 0)
-	{
-		return false;
-	}
-
-	std::shared_ptr<CGraphicsPipeline> pGP = RenderView()->GetGraphicsPipeline();
-
-	// Skip hdr/post processing when rendering different camera views
-	if ((RenderView()->IsViewFlag(SRenderViewInfo::eFlags_MirrorCull))
-	    || (pGP->GetRenderFlags() & SHDF_CUBEMAPGEN)
-	    || (pGP->GetRenderFlags() & SHDF_ALLOWPOSTPROCESS) == 0)
-	{
-		return false;
-	}
-
-	IF (!CShaderMan::s_shPostEffects, 0)
-	{
-		return false;
-	}
-
-	IF (!CTexture::IsTextureExist(pGP->GetPipelineResources().m_pTexDisplayTargetSrc), 0)
-	{
-		return false;
-	}
-
-	IF (!CTexture::IsTextureExist(pGP->GetPipelineResources().m_pTexSceneTarget), 0)
-	{
-		return false;
-	}
-
-	PROFILE_LABEL_SCOPE("POST_EFFECTS_LDR");
-
-	// TODO: port to new graphics pipeline after all post effects are ported to new graphics pipeline.
-	pPostMgr->Begin();
-
-	m_context.Setup(pPostMgr);
-	m_context.SetRenderView(RenderView());
-
-	m_context.EnableAltBackBuffer(true);
-
-	for (CPostEffectItor pItor = pPostMgr->GetEffects().begin(), pItorEnd = pPostMgr->GetEffects().end(); pItor != pItorEnd; ++pItor)
+	for (CPostEffectItor pItor = m_pPostMgr->GetEffects().begin(), pItorEnd = m_pPostMgr->GetEffects().end(); pItor != pItorEnd; ++pItor)
 	{
 		CPostEffect* pCurrEffect = (*pItor);
+		pCurrEffect->SetCurrentContext(&m_context);
+
 		if (pCurrEffect->GetRenderFlags() & PSP_REQUIRES_UPDATE)
 		{
 			pCurrEffect->Update();
 		}
 	}
+}
+
+void CPostEffectStage::Execute()
+{
+	FUNCTION_PROFILER_RENDERER();
+
+	// TODO: each viewport would need to have its own post effect manager when we will support multi-viewport.
+	if (CRenderer::CV_r_PostProcessReset)
+	{
+		CRenderer::CV_r_PostProcessReset = 0;
+
+		m_pPostMgr->Reset();
+	}
+
+	PROFILE_LABEL_SCOPE("POST_EFFECTS_LDR");
+
+	// TODO: port to new graphics pipeline after all post effects are ported to new graphics pipeline.
+	m_pPostMgr->Begin();
+
+	m_context.EnableAltBackBuffer(true);
 
 	Execute3DHudFlashUpdate();
 
 	const auto& viewInfo = RenderView()->GetViewInfo(CCamera::eEye_Left);
+	std::shared_ptr<CGraphicsPipeline> pGP = RenderView()->GetGraphicsPipeline();
 
 #ifndef _RELEASE
-	CPostEffectDebugVec& activeEffects = pPostMgr->GetActiveEffectsDebug();
-	CPostEffectDebugVec& activeParams = pPostMgr->GetActiveEffectsParamsDebug();
+	CPostEffectDebugVec& activeEffects = m_pPostMgr->GetActiveEffectsDebug();
+	CPostEffectDebugVec& activeParams = m_pPostMgr->GetActiveEffectsParamsDebug();
 #endif
 
-	for (CPostEffectItor pItor = pPostMgr->GetEffects().begin(), pItorEnd = pPostMgr->GetEffects().end(); pItor != pItorEnd; ++pItor)
+	for (CPostEffectItor pItor = m_pPostMgr->GetEffects().begin(), pItorEnd = m_pPostMgr->GetEffects().end(); pItor != pItorEnd; ++pItor)
 	{
 		CPostEffect* pCurrEffect = (*pItor);
-		pCurrEffect->SetCurrentContext(&m_context);
 		if (pCurrEffect->Preprocess(viewInfo))
 		{
 			const auto id = pCurrEffect->GetID();
@@ -262,15 +256,13 @@ bool CPostEffectStage::Execute()
 			auto& pPostEffect = m_postEffectArray[id];
 			if (pPostEffect)
 			{
-				pPostEffect->Execute(m_context);
+				pPostEffect->Execute();
 			}
 			else
 			{
-				pCurrEffect->Render();
+				pCurrEffect->Execute();
 			}
 		}
-
-		pCurrEffect->SetCurrentContext(nullptr);
 	}
 
 	// display debug info.
@@ -332,7 +324,7 @@ bool CPostEffectStage::Execute()
 
 		if (CRenderer::CV_r_PostProcess == 3)
 		{
-			StringEffectMap* pEffectsParamsUpdated = pPostMgr->GetDebugParamsUsedInFrame();
+			StringEffectMap* pEffectsParamsUpdated = m_pPostMgr->GetDebugParamsUsedInFrame();
 			if (pEffectsParamsUpdated)
 			{
 				if (!pEffectsParamsUpdated->empty())
@@ -377,16 +369,13 @@ bool CPostEffectStage::Execute()
 #endif
 
 	// TODO: port to new graphics pipeline after all post effects are ported to new graphics pipeline.
-	pPostMgr->End(RenderView());
-
-	return true;
+	m_pPostMgr->End(RenderView());
 }
 
 void CPostEffectStage::Execute3DHudFlashUpdate()
 {
 	const auto& viewInfo = RenderView()->GetViewInfo(CCamera::eEye_Left);
-	const auto& context = m_context;
-	auto* p3DHUD = context.GetPostEffect(EPostEffectID::HUD3D);
+	auto* p3DHUD = m_context.GetPostEffect(EPostEffectID::HUD3D);
 
 	// If HUD enabled, pre-process flash updates first.
 	// post effects of EPostEffectID::NanoGlass and EPostEffectID::PostStereo depend on this HUD update.
@@ -398,7 +387,7 @@ void CPostEffectStage::Execute3DHudFlashUpdate()
 			auto* pHud3dPass = static_cast<CHud3DPass*>(pPostEffect.get());
 			auto& hud3d = *static_cast<CHud3D*>(p3DHUD);
 
-			pHud3dPass->ExecuteFlashUpdate(context, hud3d);
+			pHud3dPass->ExecuteFlashUpdate(hud3d);
 		}
 	}
 }
@@ -412,8 +401,10 @@ CUnderwaterGodRaysPass::~CUnderwaterGodRaysPass()
 	SAFE_RELEASE(m_pUnderwaterBumpTex);
 }
 
-void CUnderwaterGodRaysPass::Init()
+void CUnderwaterGodRaysPass::Init(CPostEffectContext* p)
 {
+	m_pContext = p;
+
 	CRY_ASSERT(m_pWavesTex == nullptr);
 	m_pWavesTex = CTexture::ForName("%ENGINE%/EngineAssets/Textures/oceanwaves_ddn.tif", FT_DONT_STREAM, eTF_Unknown);
 
@@ -424,9 +415,9 @@ void CUnderwaterGodRaysPass::Init()
 	m_pUnderwaterBumpTex = CTexture::ForName("%ENGINE%/EngineAssets/Textures/screen_noisy_bump.dds", FT_DONT_STREAM, eTF_Unknown);
 }
 
-void CUnderwaterGodRaysPass::Execute(const CPostEffectContext& context)
+void CUnderwaterGodRaysPass::Execute()
 {
-	const CEffectParam* pAmount = context.GetEffectParamByName("UnderwaterGodRays_Amount");
+	const CEffectParam* pAmount = m_pContext->GetEffectParamByName("UnderwaterGodRays_Amount");
 	CRY_ASSERT(pAmount != nullptr);
 
 	if (!pAmount)
@@ -439,7 +430,7 @@ void CUnderwaterGodRaysPass::Execute(const CPostEffectContext& context)
 	static CCryNameR param0Name("PB_GodRaysParamsVS");
 	static CCryNameR param1Name("PB_GodRaysParamsPS");
 	
-	CGraphicsPipelineResources& pipelineResources = context.GetRenderView()->GetGraphicsPipeline()->GetPipelineResources();
+	CGraphicsPipelineResources& pipelineResources = m_pContext->GetRenderView()->GetGraphicsPipeline()->GetPipelineResources();
 
 	// render god-rays into low-res render target for less fillrate hit.
 	{
@@ -448,14 +439,14 @@ void CUnderwaterGodRaysPass::Execute(const CPostEffectContext& context)
 		const float fAmount = pAmount->GetParam();
 		const float fWatLevel = SPostEffectsUtils::m_fWaterLevel;
 
-		uint64 rtMask = context.GetShaderRTMask();
+		uint64 rtMask = m_pContext->GetShaderRTMask();
 
 		// TODO: move to context's shader RT mask.
 		{
 			rtMask |= g_HWSR_MaskBit[HWSR_REVERSE_DEPTH];
 		}
 
-		CTexture* pSrcBackBufferTexture = context.GetSrcBackBufferTexture();
+		CTexture* pSrcBackBufferTexture = m_pContext->GetSrcBackBufferTexture();
 
 		for (int32 r = 0; r < SliceCount; ++r)
 		{
@@ -492,8 +483,8 @@ void CUnderwaterGodRaysPass::Execute(const CPostEffectContext& context)
 	// render god-rays into screen.
 	{
 		auto& pass = m_passUnderwaterGodRaysFinal;
-		CTexture* pSrcTex = context.GetSrcBackBufferTexture();
-		CTexture* pDstTex = context.GetDstBackBufferTexture();
+		CTexture* pSrcTex = m_pContext->GetSrcBackBufferTexture();
+		CTexture* pDstTex = m_pContext->GetDstBackBufferTexture();
 
 		if (pass.IsDirty(pDstTex->GetID(), pSrcTex->GetID()))
 		{
@@ -529,15 +520,17 @@ CWaterDropletsPass::~CWaterDropletsPass()
 	SAFE_RELEASE(m_pWaterDropletsBumpTex);
 }
 
-void CWaterDropletsPass::Init()
+void CWaterDropletsPass::Init(CPostEffectContext* p)
 {
+	m_pContext = p;
+
 	CRY_ASSERT(m_pWaterDropletsBumpTex == nullptr);
 	m_pWaterDropletsBumpTex = CTexture::ForName("%ENGINE%/EngineAssets/Textures/water_droplets.dds", FT_DONT_STREAM, eTF_Unknown);
 }
 
-void CWaterDropletsPass::Execute(const CPostEffectContext& context)
+void CWaterDropletsPass::Execute()
 {
-	const CEffectParam* pAmount = context.GetEffectParamByName("WaterDroplets_Amount");
+	const CEffectParam* pAmount = m_pContext->GetEffectParamByName("WaterDroplets_Amount");
 	CRY_ASSERT(pAmount != nullptr);
 
 	if (!pAmount)
@@ -547,8 +540,8 @@ void CWaterDropletsPass::Execute(const CPostEffectContext& context)
 
 	auto& pass = m_passWaterDroplets;
 
-	CTexture* pSrcTex = context.GetSrcBackBufferTexture();
-	CTexture* pDstTex = context.GetDstBackBufferTexture();
+	CTexture* pSrcTex = m_pContext->GetSrcBackBufferTexture();
+	CTexture* pDstTex = m_pContext->GetDstBackBufferTexture();
 
 	if (pass.IsDirty(pDstTex->GetID(), pSrcTex->GetID()))
 	{
@@ -586,15 +579,17 @@ CWaterFlowPass::~CWaterFlowPass()
 	SAFE_RELEASE(m_pWaterFlowBumpTex);
 }
 
-void CWaterFlowPass::Init()
+void CWaterFlowPass::Init(CPostEffectContext* p)
 {
+	m_pContext = p;
+
 	CRY_ASSERT(m_pWaterFlowBumpTex == nullptr);
 	m_pWaterFlowBumpTex = CTexture::ForName("%ENGINE%/EngineAssets/Textures/perlinNoiseNormal_ddn.tif", FT_DONT_STREAM, eTF_Unknown);
 }
 
-void CWaterFlowPass::Execute(const CPostEffectContext& context)
+void CWaterFlowPass::Execute()
 {
-	const CEffectParam* pAmount = context.GetEffectParamByName("WaterFlow_Amount");
+	const CEffectParam* pAmount = m_pContext->GetEffectParamByName("WaterFlow_Amount");
 	CRY_ASSERT(pAmount != nullptr);
 
 	if (!pAmount)
@@ -604,8 +599,8 @@ void CWaterFlowPass::Execute(const CPostEffectContext& context)
 
 	auto& pass = m_passWaterFlow;
 
-	CTexture* pSrcTex = context.GetSrcBackBufferTexture();
-	CTexture* pDstTex = context.GetDstBackBufferTexture();
+	CTexture* pSrcTex = m_pContext->GetSrcBackBufferTexture();
+	CTexture* pDstTex = m_pContext->GetDstBackBufferTexture();
 
 	if (pass.IsDirty(pDstTex->GetID(), pSrcTex->GetID()))
 	{
@@ -637,14 +632,14 @@ void CWaterFlowPass::Execute(const CPostEffectContext& context)
 
 //////////////////////////////////////////////////////////////////////////
 
-void CSharpeningPass::Init()
+void CSharpeningPass::Init(CPostEffectContext* p)
 {
-
+	m_pContext = p;
 }
 
-void CSharpeningPass::Execute(const CPostEffectContext& context)
+void CSharpeningPass::Execute()
 {
-	const CEffectParam* pAmount = context.GetEffectParamByName("FilterSharpening_Amount");
+	const CEffectParam* pAmount = m_pContext->GetEffectParamByName("FilterSharpening_Amount");
 	CRY_ASSERT(pAmount != nullptr);
 
 	if (!pAmount)
@@ -654,10 +649,10 @@ void CSharpeningPass::Execute(const CPostEffectContext& context)
 
 	PROFILE_LABEL_SCOPE("SHARPENING");
 
-	CGraphicsPipelineResources& pipelineResources = context.GetRenderView()->GetGraphicsPipeline()->GetPipelineResources();
+	CGraphicsPipelineResources& pipelineResources = m_pContext->GetRenderView()->GetGraphicsPipeline()->GetPipelineResources();
 
-	CTexture* pSrcTex = context.GetSrcBackBufferTexture();
-	CTexture* pDstTex = context.GetDstBackBufferTexture();
+	CTexture* pSrcTex = m_pContext->GetSrcBackBufferTexture();
+	CTexture* pDstTex = m_pContext->GetDstBackBufferTexture();
 
 	const f32 fSharpenAmount = max(pAmount->GetParam(), CRenderer::CV_r_Sharpening + 1.0f);
 	if (fSharpenAmount > 1e-6f)
@@ -697,14 +692,14 @@ void CSharpeningPass::Execute(const CPostEffectContext& context)
 
 //////////////////////////////////////////////////////////////////////////
 
-void CBlurringPass::Init()
+void CBlurringPass::Init(CPostEffectContext* p)
 {
-
+	m_pContext = p;
 }
 
-void CBlurringPass::Execute(const CPostEffectContext& context)
+void CBlurringPass::Execute()
 {
-	const CEffectParam* pAmount = context.GetEffectParamByName("FilterBlurring_Amount");
+	const CEffectParam* pAmount = m_pContext->GetEffectParamByName("FilterBlurring_Amount");
 	CRY_ASSERT(pAmount != nullptr);
 
 	if (!pAmount)
@@ -714,7 +709,7 @@ void CBlurringPass::Execute(const CPostEffectContext& context)
 
 	PROFILE_LABEL_SCOPE("BLURRING");
 
-	CGraphicsPipelineResources& pipelineResources = context.GetRenderView()->GetGraphicsPipeline()->GetPipelineResources();
+	CGraphicsPipelineResources& pipelineResources = m_pContext->GetRenderView()->GetGraphicsPipeline()->GetPipelineResources();
 
 	auto& pass = m_passBlurring;
 
@@ -724,8 +719,8 @@ void CBlurringPass::Execute(const CPostEffectContext& context)
 	// maximum blur amount to have nice results
 	const float fMaxBlurAmount = 5.0f;
 
-	CTexture* pSrcTex = context.GetSrcBackBufferTexture();
-	CTexture* pDstTex = context.GetDstBackBufferTexture();
+	CTexture* pSrcTex = m_pContext->GetSrcBackBufferTexture();
+	CTexture* pDstTex = m_pContext->GetDstBackBufferTexture();
 
 	m_passStrechRect.Execute(pSrcTex, pipelineResources.m_pTexDisplayTargetScaledTemp[0]);
 	m_passGaussianBlur.Execute(pipelineResources.m_pTexDisplayTargetScaledTemp[0], pipelineResources.m_pTexDisplayTargetScaled[0], 1.0f, LERP(0.0f, fMaxBlurAmount, fAmount));
@@ -758,14 +753,14 @@ void CBlurringPass::Execute(const CPostEffectContext& context)
 
 //////////////////////////////////////////////////////////////////////////
 
-void CUberGamePostEffectPass::Init()
+void CUberGamePostEffectPass::Init(CPostEffectContext* p)
 {
-
+	m_pContext = p;
 }
 
-void CUberGamePostEffectPass::Execute(const CPostEffectContext& context)
+void CUberGamePostEffectPass::Execute()
 {
-	const auto* pPostEffect = context.GetPostEffect(EPostEffectID::UberGamePostProcess);
+	const auto* pPostEffect = m_pContext->GetPostEffect(EPostEffectID::UberGamePostProcess);
 	if (pPostEffect)
 	{
 		PROFILE_LABEL_SCOPE("UBER_GAME_POSTPROCESS");
@@ -796,8 +791,8 @@ void CUberGamePostEffectPass::Execute(const CPostEffectContext& context)
 		}
 
 		auto& pass = m_passRadialBlurAndChromaShift;
-		CTexture* pSrcTex = context.GetSrcBackBufferTexture();
-		CTexture* pDstTex = context.GetDstBackBufferTexture();
+		CTexture* pSrcTex = m_pContext->GetSrcBackBufferTexture();
+		CTexture* pDstTex = m_pContext->GetDstBackBufferTexture();
 
 		if (pass.IsDirty(pDstTex->GetID(), pSrcTex->GetID(), pMaskTex->GetID(), postEffectMask))
 		{
@@ -851,18 +846,18 @@ void CUberGamePostEffectPass::Execute(const CPostEffectContext& context)
 
 //////////////////////////////////////////////////////////////////////////
 
-void CFlashBangPass::Init()
+void CFlashBangPass::Init(CPostEffectContext* p)
 {
-
+	m_pContext = p;
 }
 
-void CFlashBangPass::Execute(const CPostEffectContext& context)
+void CFlashBangPass::Execute()
 {
 	// TODO: each viewport would need to have its own post effect instance when we will support multi-viewport.
-	auto* pPostEffect = const_cast<CPostEffect*>(context.GetPostEffect(EPostEffectID::FlashBang));
+	auto* pPostEffect = const_cast<CPostEffect*>(m_pContext->GetPostEffect(EPostEffectID::FlashBang));
 	if (pPostEffect)
 	{
-		CTexture* pSrcTex = context.GetSrcBackBufferTexture();
+		CTexture* pSrcTex = m_pContext->GetSrcBackBufferTexture();
 
 		auto& postEffect = *static_cast<CFlashBang*>(pPostEffect);
 
@@ -914,7 +909,7 @@ void CFlashBangPass::Execute(const CPostEffectContext& context)
 
 		auto& pass = m_passFlashBang;
 
-		CTexture* pDstTex = context.GetDstBackBufferTexture();
+		CTexture* pDstTex = m_pContext->GetDstBackBufferTexture();
 
 		if (pass.IsDirty(pDstTex->GetID(), pSrcTex->GetID(), postEffect.m_pGhostImage->m_pTexture->GetID()))
 		{
@@ -946,18 +941,19 @@ void CFlashBangPass::Execute(const CPostEffectContext& context)
 
 //////////////////////////////////////////////////////////////////////////
 
-void CPostStereoPass::Init()
+void CPostStereoPass::Init(CPostEffectContext* p)
 {
+	m_pContext = p;
+
 	m_samplerLinearMirror = GetDeviceObjectFactory().GetOrCreateSamplerStateHandle(
 		SSamplerState(FILTER_LINEAR, eSamplerAddressMode_Mirror, eSamplerAddressMode_Mirror, eSamplerAddressMode_Mirror, 0x0));
-
 }
 
-void CPostStereoPass::Execute(const CPostEffectContext& context)
+void CPostStereoPass::Execute()
 {
 	CD3D9Renderer* const RESTRICT_POINTER rd = gcpRendD3D;
 	CD3DStereoRenderer* const RESTRICT_POINTER rendS3D = &(gcpRendD3D.GetS3DRend());
-	CGraphicsPipelineResources& pipelineResources = context.GetRenderView()->GetGraphicsPipeline()->GetPipelineResources();
+	CGraphicsPipelineResources& pipelineResources = m_pContext->GetRenderView()->GetGraphicsPipeline()->GetPipelineResources();
 
 	if (!rendS3D->IsPostStereoEnabled())
 	{
@@ -966,7 +962,7 @@ void CPostStereoPass::Execute(const CPostEffectContext& context)
 
 	PROFILE_LABEL_SCOPE("POST_STEREO");
 
-	CTexture* pSrcBackBufferTexture = context.GetSrcBackBufferTexture();
+	CTexture* pSrcBackBufferTexture = m_pContext->GetSrcBackBufferTexture();
 
 	// Mask near geometry (weapon)
 	CTexture* pTmpMaskTex = pipelineResources.m_pTexSceneNormalsBent; // non-msaaed target
@@ -974,7 +970,7 @@ void CPostStereoPass::Execute(const CPostEffectContext& context)
 	CRY_ASSERT(pTmpMaskTex->GetWidth() == pSrcBackBufferTexture->GetWidth());
 	CRY_ASSERT(pTmpMaskTex->GetHeight() == pSrcBackBufferTexture->GetHeight());
 	CRY_ASSERT(pTmpMaskTex->GetDstFormat() == pSrcBackBufferTexture->GetDstFormat());
-	CTexture* pZTexture = context.GetRenderView()->GetDepthTarget();
+	CTexture* pZTexture = m_pContext->GetRenderView()->GetDepthTarget();
 
 	const bool bReverseDepth = true;
 
@@ -1040,7 +1036,7 @@ void CPostStereoPass::Execute(const CPostEffectContext& context)
 
 		pass.BeginConstantUpdate();
 
-		const auto& viewInfo = context.GetRenderView()->GetViewInfo(CCamera::eEye_Left);
+		const auto& viewInfo = m_pContext->GetRenderView()->GetViewInfo(CCamera::eEye_Left);
 
 		const float viewportScaleX = rd->m_CurViewportScale.x;
 		const float viewportScaleY = rd->m_CurViewportScale.y;
@@ -1069,15 +1065,17 @@ CKillCameraPass::~CKillCameraPass()
 	SAFE_RELEASE(m_pNoiseTex);
 }
 
-void CKillCameraPass::Init()
+void CKillCameraPass::Init(CPostEffectContext* p)
 {
+	m_pContext = p;
+
 	CRY_ASSERT(m_pNoiseTex == nullptr);
 	m_pNoiseTex = CTexture::ForName("%ENGINE%/EngineAssets/Textures/vector_noise.dds", FT_DONT_STREAM, eTF_Unknown);
 }
 
-void CKillCameraPass::Execute(const CPostEffectContext& context)
+void CKillCameraPass::Execute()
 {
-	const auto* pPostEffect = context.GetPostEffect(EPostEffectID::KillCamera);
+	const auto* pPostEffect = m_pContext->GetPostEffect(EPostEffectID::KillCamera);
 	if (pPostEffect)
 	{
 		PROFILE_LABEL_SCOPE("KILL_CAMERA");
@@ -1088,8 +1086,8 @@ void CKillCameraPass::Execute(const CPostEffectContext& context)
 
 		auto& pass = m_passKillCameraFilter;
 
-		CTexture* pSrcTex = context.GetSrcBackBufferTexture();
-		CTexture* pDsttex = context.GetDstBackBufferTexture();
+		CTexture* pSrcTex = m_pContext->GetSrcBackBufferTexture();
+		CTexture* pDsttex = m_pContext->GetDstBackBufferTexture();
 
 		if (pass.IsDirty(pDsttex->GetID(), pSrcTex->GetID()))
 		{
@@ -1153,12 +1151,12 @@ void CKillCameraPass::Execute(const CPostEffectContext& context)
 				}
 			}
 
-			// TODO: move to post effect context.
+			// TODO: move to post effect m_pContext->
 			int width = 0;
 			int height = 0;
-			if (context.GetRenderView())
+			if (m_pContext->GetRenderView())
 			{
-				const SRenderViewport& viewport = context.GetRenderView()->GetViewport();
+				const SRenderViewport& viewport = m_pContext->GetRenderView()->GetViewport();
 				width = viewport.width;
 				height = viewport.height;
 			}
@@ -1203,18 +1201,20 @@ CScreenBloodPass::~CScreenBloodPass()
 	SAFE_RELEASE(m_pWaterDropletsBumpTex);
 }
 
-void CScreenBloodPass::Init()
+void CScreenBloodPass::Init(CPostEffectContext* p)
 {
+	m_pContext = p;
+
 	CRY_ASSERT(m_pWaterDropletsBumpTex == nullptr);
 	m_pWaterDropletsBumpTex = CTexture::ForName("%ENGINE%/EngineAssets/Textures/water_droplets.dds", FT_DONT_STREAM, eTF_Unknown);
 }
 
-void CScreenBloodPass::Execute(const CPostEffectContext& context)
+void CScreenBloodPass::Execute()
 {
-	const CEffectParam* pAmount = context.GetEffectParamByName("ScreenBlood_Amount");
+	const CEffectParam* pAmount = m_pContext->GetEffectParamByName("ScreenBlood_Amount");
 	CRY_ASSERT(pAmount != nullptr);
 
-	const CEffectParam* pBorder = context.GetEffectParamByName("ScreenBlood_Border");
+	const CEffectParam* pBorder = m_pContext->GetEffectParamByName("ScreenBlood_Border");
 	CRY_ASSERT(pBorder != nullptr);
 
 	if (!pAmount || !pBorder)
@@ -1228,7 +1228,7 @@ void CScreenBloodPass::Execute(const CPostEffectContext& context)
 
 	auto& pass = m_passScreenBlood;
 
-	CTexture* pDstTex = context.GetDstBackBufferTexture();
+	CTexture* pDstTex = m_pContext->GetDstBackBufferTexture();
 
 	if (pass.IsDirty(pDstTex->GetID()))
 	{
@@ -1272,12 +1272,14 @@ void CScreenBloodPass::Execute(const CPostEffectContext& context)
 
 //////////////////////////////////////////////////////////////////////////
 
-void CScreenFaderPass::Init()
-{}
-
-void CScreenFaderPass::Execute(const CPostEffectContext& context)
+void CScreenFaderPass::Init(CPostEffectContext* p)
 {
-	const CEffectParam* pColor = context.GetEffectParamByName("ScreenFader_Color");
+	m_pContext = p;
+}
+
+void CScreenFaderPass::Execute()
+{
+	const CEffectParam* pColor = m_pContext->GetEffectParamByName("ScreenFader_Color");
 	CRY_ASSERT(pColor != nullptr);
 
 	if (!pColor)
@@ -1290,7 +1292,7 @@ void CScreenFaderPass::Execute(const CPostEffectContext& context)
 	auto& pass = m_passScreenFader;
 	const Vec4& color = pColor->GetParamVec4();
 
-	CTexture* pDstTex = context.GetDstBackBufferTexture();
+	CTexture* pDstTex = m_pContext->GetDstBackBufferTexture();
 
 	if (pass.IsDirty(pDstTex->GetID()))
 	{
@@ -1319,20 +1321,20 @@ void CScreenFaderPass::Execute(const CPostEffectContext& context)
 
 //////////////////////////////////////////////////////////////////////////
 
-void CHudSilhouettesPass::Init()
+void CHudSilhouettesPass::Init(CPostEffectContext* p)
 {
-
+	m_pContext = p;
 }
 
-void CHudSilhouettesPass::Execute(const CPostEffectContext& context)
+void CHudSilhouettesPass::Execute()
 {
-	const CEffectParam* pAmount = context.GetEffectParamByName("HudSilhouettes_Amount");
+	const CEffectParam* pAmount = m_pContext->GetEffectParamByName("HudSilhouettes_Amount");
 	CRY_ASSERT(pAmount != nullptr);
 
-	const CEffectParam* pType = context.GetEffectParamByName("HudSilhouettes_Type");
+	const CEffectParam* pType = m_pContext->GetEffectParamByName("HudSilhouettes_Type");
 	CRY_ASSERT(pType != nullptr);
 
-	const CEffectParam* pFillStr = context.GetEffectParamByName("HudSilhouettes_FillStr");
+	const CEffectParam* pFillStr = m_pContext->GetEffectParamByName("HudSilhouettes_FillStr");
 	CRY_ASSERT(pFillStr != nullptr);
 
 	if (!pAmount || !pType || !pFillStr)
@@ -1346,7 +1348,7 @@ void CHudSilhouettesPass::Execute(const CPostEffectContext& context)
 	if (CRenderer::CV_r_customvisions == 1
 	    || CRenderer::CV_r_customvisions == 3)
 	{
-		auto* pSceneCustom = context.GetRenderView()->GetGraphicsPipeline()->GetStage<CSceneCustomStage>();
+		auto* pSceneCustom = m_pContext->GetRenderView()->GetGraphicsPipeline()->GetStage<CSceneCustomStage>();
 		if (pSceneCustom)
 		{
 			pSceneCustom->ExecuteSilhouettePass();
@@ -1366,7 +1368,7 @@ void CHudSilhouettesPass::Execute(const CPostEffectContext& context)
 	case 1:
 	case 3:
 		// use optimized version for all
-		ExecuteDeferredSilhouettesOptimised(context, fBlendParam, fType, fFillStrength);
+		ExecuteDeferredSilhouettesOptimised(*m_pContext, fBlendParam, fType, fFillStrength);
 		break;
 	default:
 		// do nothing
@@ -1376,15 +1378,15 @@ void CHudSilhouettesPass::Execute(const CPostEffectContext& context)
 
 void CHudSilhouettesPass::ExecuteDeferredSilhouettesOptimised(const CPostEffectContext& context, float fBlendParam, float fType, float fFillStrength)
 {
-	const bool bHasSilhouettesToRender = (context.GetRenderView()->GetBatchFlags(EFSLIST_CUSTOM) & FB_CUSTOM_RENDER) ? true : false;
-	CGraphicsPipelineResources& pipelineResources = context.GetRenderView()->GetGraphicsPipeline()->GetPipelineResources();
+	const bool bHasSilhouettesToRender = (m_pContext->GetRenderView()->GetBatchFlags(EFSLIST_CUSTOM) & FB_CUSTOM_RENDER) ? true : false;
+	CGraphicsPipelineResources& pipelineResources = m_pContext->GetRenderView()->GetGraphicsPipeline()->GetPipelineResources();
 
 	if (bHasSilhouettesToRender)
 	{
 		PROFILE_LABEL_SCOPE("DEFERRED_SILHOUETTES_PASS");
 
 		CTexture* pSilTex = pipelineResources.m_pTexSceneNormalsMap;
-		CTexture* pDstTex = context.GetDstBackBufferTexture();
+		CTexture* pDstTex = m_pContext->GetDstBackBufferTexture();
 
 		const int flags = FT_USAGE_RENDERTARGET | FT_NOMIPS;
 		SDynTexture* pTmpTex = new SDynTexture(pSilTex->GetWidth() >> 1, pSilTex->GetHeight() >> 1, Clr_Empty, eTF_R8G8B8A8, eTT_2D, flags, "HudSilhouettesTempRT");
@@ -1461,17 +1463,59 @@ CHud3DPass::~CHud3DPass()
 		delete *it;
 	}
 	m_hudPrimitiveArray.clear();
+
+	SAFE_RELEASE_FORCE(m_Cached3DHUD);
+	SAFE_RELEASE_FORCE(m_Cached3DHUD_r4);
 }
 
-void CHud3DPass::Init()
+void CHud3DPass::Init(CPostEffectContext* p)
 {
-
+	m_pContext = p;
 }
 
-void CHud3DPass::Execute(const CPostEffectContext& context)
+void CHud3DPass::Update()
+{
+	auto* pRenderView = m_pContext->GetRenderView();
+	auto* p3DHUD = m_pContext->GetPostEffect(EPostEffectID::HUD3D);
+	const bool shouldApplyPersHUD = (p3DHUD && p3DHUD->IsActive());
+
+	if ((m_Cached3DHUD->GetDevTexture() != nullptr) != shouldApplyPersHUD)
+		Resize(pRenderView->GetRenderResolution()[0], pRenderView->GetRenderResolution()[1]);
+}
+
+void CHud3DPass::Resize(int renderWidth, int renderHeight)
+{
+	auto* p3DHUD = m_pContext->GetPostEffect(EPostEffectID::HUD3D);
+	const bool shouldApplyPersHUD = (p3DHUD && p3DHUD->IsActive());
+
+	const int width  = renderWidth , width_r2  = (width  + 1) / 2, width_r4  = (width_r2  + 1) / 2;
+	const int height = renderHeight, height_r2 = (height + 1) / 2, height_r4 = (height_r2 + 1) / 2;
+
+	const uint32 flags = FT_NOMIPS | FT_DONT_STREAM | FT_USAGE_RENDERTARGET;
+
+	m_Cached3DHUD = CTexture::GetOrCreateTextureObjectPtr("$Cached3DHUD", width, height, 1, eTT_2D, flags, eTF_R8G8B8A8, TO_MODELHUD);
+	if (m_Cached3DHUD)
+	{
+		if (!shouldApplyPersHUD && CTexture::IsTextureExist(m_Cached3DHUD))
+			m_Cached3DHUD->ReleaseDeviceTexture(false);
+		else if (shouldApplyPersHUD && (m_Cached3DHUD->Invalidate(width, height, eTF_R8G8B8A8) || !CTexture::IsTextureExist(m_Cached3DHUD)))
+			m_Cached3DHUD->CreateRenderTarget(eTF_R8G8B8A8, Clr_Transparent);
+	}
+
+	m_Cached3DHUD_r4 = CTexture::GetOrCreateTextureObjectPtr("$Cached3DHUD 1/4", width_r4, height_r4, 1, eTT_2D, flags, eTF_R8G8B8A8, TO_MODELHUD);
+	if (m_Cached3DHUD_r4)
+	{
+		if (!shouldApplyPersHUD && CTexture::IsTextureExist(m_Cached3DHUD_r4))
+			m_Cached3DHUD_r4->ReleaseDeviceTexture(false);
+		else if (shouldApplyPersHUD && (m_Cached3DHUD_r4->Invalidate(width_r4, height_r4, eTF_R8G8B8A8) || !CTexture::IsTextureExist(m_Cached3DHUD_r4)))
+			m_Cached3DHUD_r4->CreateRenderTarget(eTF_R8G8B8A8, Clr_Transparent);
+	}
+}
+
+void CHud3DPass::Execute()
 {
 	// TODO: each viewport would need to have its own post effect instance when we will support multi-viewport.
-	auto* pPostEffect = const_cast<CPostEffect*>(context.GetPostEffect(EPostEffectID::HUD3D));
+	auto* pPostEffect = const_cast<CPostEffect*>(m_pContext->GetPostEffect(EPostEffectID::HUD3D));
 	if (pPostEffect)
 	{
 		PROFILE_LABEL_SCOPE("3D HUD");
@@ -1485,18 +1529,18 @@ void CHud3DPass::Execute(const CPostEffectContext& context)
 		// Update interference rand timer
 		hud3d.m_interferenceRandTimer += gEnv->pTimer->GetFrameTime();
 
-		CTexture* pDstTex = context.GetDstBackBufferTexture();
-		CTexture* pDepthS = context.GetDstDepthStencilTexture();
+		CTexture* pDstTex = m_pContext->GetDstBackBufferTexture();
+		CTexture* pDepthS = m_pContext->GetDstDepthStencilTexture();
 		if (pS3DRend.IsPostStereoEnabled())
 			pDstTex = pS3DRend.GetVrQuadLayerDisplayContext(RenderLayer::eQuadLayers_Headlocked_0).first->GetCurrentBackBuffer();
 
-		ExecuteBloomTexUpdate(context, hud3d);
-		ExecuteFinalPass(context, pDstTex, pDepthS, hud3d);
+		ExecuteBloomTexUpdate(hud3d);
+		ExecuteFinalPass(pDstTex, pDepthS, hud3d);
 	}
 }
 
 // Reminder: for efficient multiple flash files to work correctly - uv's must not override
-void CHud3DPass::ExecuteFlashUpdate(const CPostEffectContext& context, CHud3D& hud3d)
+void CHud3DPass::ExecuteFlashUpdate(CHud3D& hud3d)
 {
 #if defined(USE_VBIB_PUSH_DOWN)
 	//workaround for deadlock when streaming thread wants renderthread to clean mesh pool
@@ -1512,14 +1556,13 @@ void CHud3DPass::ExecuteFlashUpdate(const CPostEffectContext& context, CHud3D& h
 
 	if (!hud3d.m_pRenderData[nThreadID].empty() || bForceRefresh) //&& m_nFlashUpdateFrameID != rd->GetFrameID(false) )
 	{
-		auto pGraphicsPipeline = context.GetRenderView()->GetGraphicsPipeline();
-		CGraphicsPipelineResources& pipelineResources = pGraphicsPipeline->GetPipelineResources();
+		auto pGraphicsPipeline = m_pContext->GetRenderView()->GetGraphicsPipeline();
 
 		// Share hud render target with scene normals
-		hud3d.m_pHUD_RT = pipelineResources.m_pTexCached3DHud;
-		hud3d.m_pHUDScaled_RT = pipelineResources.m_pTexCached3DHudScaled;
+		hud3d.m_pHUD_RT       = m_Cached3DHUD;
+		hud3d.m_pHUDScaled_RT = m_Cached3DHUD_r4;
 
-		if ((context.GetRenderView()->GetFrameId() % max(1, (int)CRenderer::CV_r_PostProcessHUD3DCache)) != 0)
+		if ((m_pContext->GetRenderView()->GetFrameId() % max(1, (int)CRenderer::CV_r_PostProcessHUD3DCache)) != 0)
 		{
 			if (!bForceRefresh)
 			{
@@ -1538,7 +1581,7 @@ void CHud3DPass::ExecuteFlashUpdate(const CPostEffectContext& context, CHud3D& h
 			}
 		}
 
-		hud3d.m_nFlashUpdateFrameID = context.GetRenderView()->GetFrameId();
+		hud3d.m_nFlashUpdateFrameID = m_pContext->GetRenderView()->GetFrameId();
 
 		PROFILE_LABEL_SCOPE("3D HUD FLASHPLAYER UPDATES");
 
@@ -1588,11 +1631,11 @@ void CHud3DPass::ExecuteFlashUpdate(const CPostEffectContext& context, CHud3D& h
 		hud3d.ReleaseFlashPlayerRef(nThreadID);
 
 		// Downsample/blur hud into half res target _1 time only_ - we'll use this for Bloom/Dof
-		ExecuteDownsampleHud4x4(context, hud3d, hud3d.m_pHUDScaled_RT);
+		ExecuteDownsampleHud4x4(hud3d, hud3d.m_pHUDScaled_RT);
 	}
 }
 
-void CHud3DPass::ExecuteDownsampleHud4x4(const CPostEffectContext& context, class CHud3D& hud3d, CTexture* pDstRT)
+void CHud3DPass::ExecuteDownsampleHud4x4(class CHud3D& hud3d, CTexture* pDstRT)
 {
 	PROFILE_LABEL_SCOPE("3D HUD DOWNSAMPLE 4X4");
 
@@ -1621,7 +1664,7 @@ void CHud3DPass::ExecuteDownsampleHud4x4(const CPostEffectContext& context, clas
 		auto& renderDataArray = hud3d.m_pRenderData[nThreadID];
 		uint32 index = 0;
 
-		CConstantBufferPtr pPerViewCB = context.GetRenderView()->GetGraphicsPipeline()->GetMainViewConstantBuffer();
+		CConstantBufferPtr pPerViewCB = m_pContext->GetRenderView()->GetGraphicsPipeline()->GetMainViewConstantBuffer();
 
 		auto& primArray = m_downsamplePrimitiveArray;
 		const uint32 nRECount = renderDataArray.capacity();
@@ -1683,9 +1726,9 @@ void CHud3DPass::ExecuteDownsampleHud4x4(const CPostEffectContext& context, clas
 					auto& cm = prim.GetConstantManager();
 					cm.BeginNamedConstantUpdate();
 
-					SetShaderParams(context, EShaderStage_Vertex | EShaderStage_Pixel, cm, pData, hud3d);
+					SetShaderParams(EShaderStage_Vertex | EShaderStage_Pixel, cm, pData, hud3d);
 
-					cm.EndNamedConstantUpdate(&viewport, context.GetRenderView()); // Unmap constant buffers and mark as bound
+					cm.EndNamedConstantUpdate(&viewport, m_pContext->GetRenderView()); // Unmap constant buffers and mark as bound
 				}
 
 				pass.AddPrimitive(&prim);
@@ -1698,7 +1741,7 @@ void CHud3DPass::ExecuteDownsampleHud4x4(const CPostEffectContext& context, clas
 	}
 }
 
-void CHud3DPass::ExecuteBloomTexUpdate(const CPostEffectContext& context, class CHud3D& hud3d)
+void CHud3DPass::ExecuteBloomTexUpdate(class CHud3D& hud3d)
 {
 	PROFILE_LABEL_SCOPE("UPDATE BLOOM TEX");
 
@@ -1707,7 +1750,7 @@ void CHud3DPass::ExecuteBloomTexUpdate(const CPostEffectContext& context, class 
 	// Calculate HUD's projection matrix using fixed FOV.
 	hud3d.CalculateProjMatrix();
 
-	CGraphicsPipelineResources& pipelineResources = context.GetRenderView()->GetGraphicsPipeline()->GetPipelineResources();
+	CGraphicsPipelineResources& pipelineResources = m_pContext->GetRenderView()->GetGraphicsPipeline()->GetPipelineResources();
 	
 	CTexture* pOutputRT = pipelineResources.m_pTexDisplayTargetScaled[1];
 
@@ -1733,7 +1776,7 @@ void CHud3DPass::ExecuteBloomTexUpdate(const CPostEffectContext& context, class 
 		auto& renderDataArray = hud3d.m_pRenderData[nThreadID];
 		uint32 index = 0;
 
-		CConstantBufferPtr pPerViewCB = context.GetRenderView()->GetGraphicsPipeline()->GetMainViewConstantBuffer();
+		CConstantBufferPtr pPerViewCB = m_pContext->GetRenderView()->GetGraphicsPipeline()->GetMainViewConstantBuffer();
 
 		auto& primArray = m_bloomPrimitiveArray;
 		const uint32 nRECount = renderDataArray.capacity();
@@ -1788,9 +1831,9 @@ void CHud3DPass::ExecuteBloomTexUpdate(const CPostEffectContext& context, class 
 					auto& cm = prim.GetConstantManager();
 					cm.BeginNamedConstantUpdate();
 
-					SetShaderParams(context, EShaderStage_Vertex, cm, pData, hud3d);
+					SetShaderParams(EShaderStage_Vertex, cm, pData, hud3d);
 
-					cm.EndNamedConstantUpdate(&viewport, context.GetRenderView()); // Unmap constant buffers and mark as bound
+					cm.EndNamedConstantUpdate(&viewport, m_pContext->GetRenderView()); // Unmap constant buffers and mark as bound
 				}
 
 				pass.AddPrimitive(&prim);
@@ -1809,11 +1852,11 @@ void CHud3DPass::ExecuteBloomTexUpdate(const CPostEffectContext& context, class 
 	}
 }
 
-void CHud3DPass::ExecuteFinalPass(const CPostEffectContext& context, CTexture* pOutputRT, CTexture* pOutputDS, CHud3D& hud3d)
+void CHud3DPass::ExecuteFinalPass(CTexture* pOutputRT, CTexture* pOutputDS, CHud3D& hud3d)
 {
 	PROFILE_LABEL_SCOPE("3D HUD FINAL PASS");
 
-	CGraphicsPipelineResources& pipelineResources = context.GetRenderView()->GetGraphicsPipeline()->GetPipelineResources();
+	CGraphicsPipelineResources& pipelineResources = m_pContext->GetRenderView()->GetGraphicsPipeline()->GetPipelineResources();
 
 	const auto nThreadID = gRenDev->GetRenderThreadID();
 
@@ -1887,7 +1930,7 @@ void CHud3DPass::ExecuteFinalPass(const CPostEffectContext& context, CTexture* p
 	}
 
 	// Hud simple 2D dof blend
-	const CPostEffect* pDofPostEffect = context.GetPostEffect(EPostEffectID::DepthOfField);
+	const CPostEffect* pDofPostEffect = m_pContext->GetPostEffect(EPostEffectID::DepthOfField);
 	const bool bGameDof = pDofPostEffect->IsActive();
 
 	static float fDofBlend = 0.0f;
@@ -1917,7 +1960,7 @@ void CHud3DPass::ExecuteFinalPass(const CPostEffectContext& context, CTexture* p
 		auto& renderDataArray = hud3d.m_pRenderData[nThreadID];
 		uint32 index = 0;
 
-		CConstantBufferPtr pPerViewCB = context.GetRenderView()->GetGraphicsPipeline()->GetMainViewConstantBuffer();
+		CConstantBufferPtr pPerViewCB = m_pContext->GetRenderView()->GetGraphicsPipeline()->GetMainViewConstantBuffer();
 
 		auto& primArray = m_hudPrimitiveArray;
 		const uint32 nRECount = renderDataArray.capacity();
@@ -1988,7 +2031,7 @@ void CHud3DPass::ExecuteFinalPass(const CPostEffectContext& context, CTexture* p
 					auto& cm = prim.GetConstantManager();
 					cm.BeginNamedConstantUpdate();
 
-					SetShaderParams(context, EShaderStage_Vertex | EShaderStage_Pixel, cm, pData, hud3d);
+					SetShaderParams(EShaderStage_Vertex | EShaderStage_Pixel, cm, pData, hud3d);
 
 					// Set additional parameters
 					vHudEffectParams[0].x = fCurrentDofBlend;
@@ -2001,7 +2044,7 @@ void CHud3DPass::ExecuteFinalPass(const CPostEffectContext& context, CTexture* p
 					if (pROData)
 					{
 						// Apply filter if ignore flag not set
-						if ((pROData->m_nCustomFlags ^ COB_IGNORE_HUD_INTERFERENCE_FILTER) && interferenceStrength > 0.0f)  // without the last check it is possibel that vInterference is NaN
+						if ((pROData->m_nCustomFlags ^ COB_IGNORE_HUD_INTERFERENCE_FILTER) && interferenceStrength > 0.0f)  // without the last check it is possible that vInterference is NaN
 						{
 							vHudEffectParams[0].z *= vInterferenceParams.x;
 						}
@@ -2028,7 +2071,7 @@ void CHud3DPass::ExecuteFinalPass(const CPostEffectContext& context, CTexture* p
 					cm.SetNamedConstantArray(hud3d.m_pHudEffectsParamName, vHudEffectParams, hudEffectParamCount, eHWSC_Pixel);
 					cm.SetNamedConstant(hud3d.m_pHudOverrideColorMultParamName, vOverrideColorParams, eHWSC_Pixel);
 
-					cm.EndNamedConstantUpdate(&viewport, context.GetRenderView()); // Unmap constant buffers and mark as bound
+					cm.EndNamedConstantUpdate(&viewport, m_pContext->GetRenderView()); // Unmap constant buffers and mark as bound
 				}
 
 				pass.AddPrimitive(&prim);
@@ -2073,7 +2116,6 @@ bool CHud3DPass::SetVertex(CRenderPrimitive& prim, struct SHudData& pData) const
 }
 
 void CHud3DPass::SetShaderParams(
-	const CPostEffectContext& context,
 	EShaderStage shaderStages,
 	CRenderPrimitive::ConstantManager& constantManager,
 	const struct SHudData& data,
@@ -2090,7 +2132,7 @@ void CHud3DPass::SetShaderParams(
 	// Render in camera space to remove precision bugs
 	const bool bCameraSpace = (pRO->m_ObjFlags & FOB_NEAREST) ? true : false;
 
-	Matrix44A mView = context.GetRenderView()->GetViewInfo(CCamera::eEye_Left).viewMatrix;
+	Matrix44A mView = m_pContext->GetRenderView()->GetViewInfo(CCamera::eEye_Left).viewMatrix;
 	if (bCameraSpace)
 	{
 		mView.m30 = 0.0f;

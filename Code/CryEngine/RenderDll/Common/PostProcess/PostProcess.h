@@ -331,7 +331,7 @@ public:
 	}
 
 	// Initialize post processing technique - device access allowed (queries, ...)
-	virtual int  Initialize()                                                                                             { return 1; }
+	virtual int  Init()                                                                                                   { return 1; }
 	// Create all the resources for the pp effects which don't require the device (such as textures)
 	virtual int  CreateResources()                                                                                        { return 1; }
 	// Free resources used
@@ -341,7 +341,7 @@ public:
 	// Some effects might require updating data/parameters, etc
 	virtual void Update()                                                                                                 {}
 	// Render technique
-	virtual void Render() = 0;
+	virtual void Execute() = 0;
 	// Reset technique state to default
 	virtual void Reset(bool bOnSpecChange = false) = 0;
 	// release resources when required
@@ -678,7 +678,7 @@ struct SContainerPostEffectInitialize
 	{
 		if (pObj)
 		{
-			pObj->Initialize();
+			pObj->Init();
 		}
 	}
 };

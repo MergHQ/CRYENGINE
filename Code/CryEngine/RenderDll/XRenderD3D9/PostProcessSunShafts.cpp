@@ -253,7 +253,7 @@ bool CSunShafts::SunShaftsGen(CTexture* pSunShafts, CTexture* pPingPongRT)
 }
 
 // DEPRECATED
-void CSunShafts::Render()
+void CSunShafts::Execute()
 {
 	ASSERT_LEGACY_PIPELINE
 /*

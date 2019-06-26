@@ -624,8 +624,6 @@ public:
 	static float  CV_r_VolumetricFogMinimumLightBulbSize;
 	static int    CV_r_VolumetricFogSunLightCorrection;
 
-	static int    CV_r_UsePersistentRTForModelHUD;
-
 	static int    CV_d3d11_CBUpdateStats;
 	static ICVar* CV_d3d11_forcedFeatureLevel;
 

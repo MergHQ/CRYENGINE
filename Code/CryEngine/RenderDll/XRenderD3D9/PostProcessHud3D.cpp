@@ -99,6 +99,11 @@ bool CHud3D::Preprocess(const SRenderViewInfo& viewInfo)
 		return true;
 	}
 
+	return IsActive();
+}
+
+bool CHud3D::IsActive() const
+{
 	const uint32 nThreadID = gRenDev->GetRenderThreadID();
 	if (m_pRenderData[nThreadID].empty())
 	{
@@ -800,7 +805,7 @@ void CHud3D::FinalPass()
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void CHud3D::Render()
+void CHud3D::Execute()
 {
 	ASSERT_LEGACY_PIPELINE
 /*

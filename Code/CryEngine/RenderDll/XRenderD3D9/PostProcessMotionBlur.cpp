@@ -133,7 +133,7 @@ float ComputeMotionScale()
 	return exposureTime / timeStep;
 }
 
-void CMotionBlur::Render()
+void CMotionBlur::Execute()
 {
 	// OLD PIPELINE
 	ASSERT_LEGACY_PIPELINE

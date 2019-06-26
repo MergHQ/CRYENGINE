@@ -9,7 +9,7 @@
 
 #include <Cry3DEngine/I3DEngine.h>
 
-void CSharpening::Render()
+void CSharpening::Execute()
 {
 	ASSERT_LEGACY_PIPELINE
 /*
@@ -40,7 +40,7 @@ void CSharpening::Render()
 
 // todo: handle different blurring filters, add wavelength based blur
 
-void CBlurring::Render()
+void CBlurring::Execute()
 {
 	ASSERT_LEGACY_PIPELINE
 /*
@@ -195,7 +195,7 @@ void CColorGrading::UpdateParams(SColorGradingMergeParams& pMergeParams)
 	pMergeParams.pSelectiveColor[1] = pParams4;
 }
 
-void CColorGrading::Render()
+void CColorGrading::Execute()
 {
 	// Deprecated: to be removed / replaced by UberPostProcess shader
 }
@@ -203,7 +203,7 @@ void CColorGrading::Render()
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void CPostAA::Render()
+void CPostAA::Execute()
 {
 	CGraphicsPipeline* pGraphicsPipeline = m_pCurrentContext->GetRenderView()->GetGraphicsPipeline().get();
 	CRY_ASSERT(pGraphicsPipeline);
@@ -218,7 +218,7 @@ bool CPostStereo::Preprocess(const SRenderViewInfo& viewInfo)
 	return gcpRendD3D->GetS3DRend().IsPostStereoEnabled();
 }
 
-void CPostStereo::Render()
+void CPostStereo::Execute()
 {
 	ASSERT_LEGACY_PIPELINE
 /*
@@ -302,7 +302,7 @@ void CPostStereo::Render()
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void CImageGhosting::Render()
+void CImageGhosting::Execute()
 {
 	ASSERT_LEGACY_PIPELINE
 /*
@@ -346,7 +346,7 @@ void CImageGhosting::Render()
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void CUberGamePostProcess::Render()
+void CUberGamePostProcess::Execute()
 {
 	ASSERT_LEGACY_PIPELINE
 /*

@@ -46,8 +46,12 @@ struct IPostEffectPass : private NoCopy
 {
 	virtual ~IPostEffectPass() {}
 
-	virtual void Init() = 0;
-	virtual void Execute(const CPostEffectContext& context) = 0;
+	virtual void Init(CPostEffectContext* p) = 0;
+	virtual void Update() {}
+	virtual void Resize(int renderWidth, int renderHeight) {}
+	virtual void Execute() = 0;
+
+	CPostEffectContext* m_pContext;
 };
 
 class CPostEffectStage : public CGraphicsPipelineStage
@@ -61,19 +65,44 @@ public:
 #ifndef _RELEASE
 		, m_passAntialiasingDebug(&graphicsPipeline)
 #endif
-	{}
+	{
+		m_pPostMgr = nullptr;
+	}
 
 	virtual ~CPostEffectStage() {}
 
+	bool IsStageActive(EShaderRenderingFlags flags) const
+	{
+		if (!CRenderer::CV_r_PostProcess) return false;
+		if (!CShaderMan::s_shPostEffects) return false;
+		if (!m_pPostMgr || m_pPostMgr->GetEffects().empty()) return false;
+
+		if (RenderView()->IsRecursive()) return false;
+
+		// Skip hdr/post processing when rendering different camera views
+		if ((RenderView()->IsViewFlag(SRenderViewInfo::eFlags_MirrorCull)) ||
+			(flags & SHDF_CUBEMAPGEN) || 
+			(flags & SHDF_ALLOWPOSTPROCESS) == 0)
+		{
+			return false;
+		}
+
+		return true;
+	}
+
 	void Init() final;
+	void Resize(int renderWidth, int renderHeight) final;
 	void Update() final;
 
-	bool Execute();
+	void Execute();
+
+	void OnCVarsChanged(const CCVarUpdateRecorder& cvarUpdater) final;
 
 private:
 	void Execute3DHudFlashUpdate();
 
 private:
+	CPostEffectsMgr*   m_pPostMgr;
 	std::array<std::unique_ptr<IPostEffectPass>, EPostEffectID::Num> m_postEffectArray;
 	CPostEffectContext m_context;
 
@@ -81,7 +110,6 @@ private:
 #ifndef _RELEASE
 	CFullscreenPass    m_passAntialiasingDebug;
 #endif
-
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -98,8 +126,8 @@ public:
 	}
 	~CUnderwaterGodRaysPass();
 
-	virtual void Init() override;
-	virtual void Execute(const CPostEffectContext& context) override;
+	virtual void Init(CPostEffectContext* p) final;
+	virtual void Execute() final;
 
 private:
 	static const int32 SliceCount = 10;
@@ -120,8 +148,8 @@ public:
 	CWaterDropletsPass(CGraphicsPipeline* pGraphicsPipeline) : m_passWaterDroplets(pGraphicsPipeline) {}
 	~CWaterDropletsPass();
 
-	virtual void Init() override;
-	virtual void Execute(const CPostEffectContext& context) override;
+	virtual void Init(CPostEffectContext* p) final;
+	virtual void Execute() final;
 
 private:
 	CFullscreenPass m_passWaterDroplets;
@@ -136,8 +164,8 @@ public:
 	CWaterFlowPass(CGraphicsPipeline* pGraphicsPipeline) : m_passWaterFlow(pGraphicsPipeline) {}
 	~CWaterFlowPass();
 
-	virtual void Init() override;
-	virtual void Execute(const CPostEffectContext& context) override;
+	virtual void Init(CPostEffectContext* p) final;
+	virtual void Execute() final;
 
 private:
 	CFullscreenPass m_passWaterFlow;
@@ -153,8 +181,8 @@ public:
 		: m_passStrechRect(pGraphicsPipeline)
 		, m_passSharpeningAndChromaticAberration(pGraphicsPipeline) {}
 
-	virtual void Init() override;
-	virtual void Execute(const CPostEffectContext& context) override;
+	virtual void Init(CPostEffectContext* p) final;
+	virtual void Execute() final;
 
 private:
 	CStretchRectPass m_passStrechRect;
@@ -170,8 +198,8 @@ public:
 		, m_passGaussianBlur(pGraphicsPipeline)
 		, m_passBlurring(pGraphicsPipeline) {}
 
-	virtual void Init() override;
-	virtual void Execute(const CPostEffectContext& context) override;
+	virtual void Init(CPostEffectContext* p) final;
+	virtual void Execute() final;
 
 private:
 	CStretchRectPass  m_passStrechRect;
@@ -185,8 +213,8 @@ class CUberGamePostEffectPass : public IPostEffectPass
 public:
 	CUberGamePostEffectPass(CGraphicsPipeline* pGraphicsPipeline) : m_passRadialBlurAndChromaShift(pGraphicsPipeline) {}
 
-	virtual void Init() override;
-	virtual void Execute(const CPostEffectContext& context) override;
+	virtual void Init(CPostEffectContext* p) final;
+	virtual void Execute() final;
 
 private:
 	CFullscreenPass m_passRadialBlurAndChromaShift;
@@ -200,8 +228,8 @@ public:
 		: m_passStrechRect(pGraphicsPipeline)
 		, m_passFlashBang(pGraphicsPipeline) {}
 
-	virtual void Init() override;
-	virtual void Execute(const CPostEffectContext& context) override;
+	virtual void Init(CPostEffectContext* p) final;
+	virtual void Execute() final;
 
 private:
 	CStretchRectPass m_passStrechRect;
@@ -216,8 +244,8 @@ public:
 		: m_passNearMask(pGraphicsPipeline)
 		, m_passPostStereo(pGraphicsPipeline) {}
 
-	virtual void Init() override;
-	virtual void Execute(const CPostEffectContext& context) override;
+	virtual void Init(CPostEffectContext* p) final;
+	virtual void Execute() final;
 
 private:
 	CFullscreenPass    m_passNearMask;
@@ -233,8 +261,8 @@ public:
 	CKillCameraPass(CGraphicsPipeline* pGraphicsPipeline) : m_passKillCameraFilter(pGraphicsPipeline) {}
 	~CKillCameraPass();
 
-	virtual void Init() override;
-	virtual void Execute(const CPostEffectContext& context) override;
+	virtual void Init(CPostEffectContext* p) final;
+	virtual void Execute() final;
 
 private:
 	CFullscreenPass m_passKillCameraFilter;
@@ -249,8 +277,8 @@ public:
 	CScreenBloodPass(CGraphicsPipeline* pGraphicsPipeline) : m_passScreenBlood(pGraphicsPipeline) {}
 	~CScreenBloodPass();
 
-	virtual void Init() override;
-	virtual void Execute(const CPostEffectContext& context) override;
+	virtual void Init(CPostEffectContext* p) final;
+	virtual void Execute() final;
 
 private:
 	CFullscreenPass m_passScreenBlood;
@@ -264,8 +292,8 @@ class CScreenFaderPass : public IPostEffectPass
 public:
 	CScreenFaderPass(CGraphicsPipeline* pGraphicsPipeline) : m_passScreenFader(pGraphicsPipeline) {}
 
-	virtual void Init() override;
-	virtual void Execute(const CPostEffectContext& context) override;
+	virtual void Init(CPostEffectContext* p) final;
+	virtual void Execute() final;
 
 private:
 	CFullscreenPass m_passScreenFader;
@@ -279,8 +307,8 @@ public:
 		: m_passStrechRect(pGraphicsPipeline)
 		, m_passDeferredSilhouettesOptimised(pGraphicsPipeline) {}
 
-	virtual void Init() override;
-	virtual void Execute(const CPostEffectContext& context) override;
+	virtual void Init(CPostEffectContext* p) final;
+	virtual void Execute() final;
 
 private:
 	void ExecuteDeferredSilhouettesOptimised(const CPostEffectContext& context, float fBlendParam, float fType, float fFillStrength);
@@ -299,24 +327,29 @@ public:
 
 	~CHud3DPass();
 
-	virtual void Init() override;
-	virtual void Execute(const CPostEffectContext& context) override;
+	virtual void Init(CPostEffectContext* p) final;
+	virtual void Update() final;
+	virtual void Resize(int renderWidth, int renderHeight) final;
+	virtual void Execute() final;
 
-	void ExecuteFlashUpdate(const CPostEffectContext &context, class CHud3D & hud3d);
+	void ExecuteFlashUpdate(class CHud3D & hud3d);
 
 private:
-	void ExecuteDownsampleHud4x4(const CPostEffectContext &context, class CHud3D & hud3d, CTexture* pDstRT);
-	void ExecuteBloomTexUpdate(const CPostEffectContext &context, class CHud3D & hud3d);
-	void ExecuteFinalPass(const CPostEffectContext &context, CTexture* pOutputRT, CTexture* pOutputDS, class CHud3D & hud3d);
+	void ExecuteDownsampleHud4x4(class CHud3D & hud3d, CTexture * pDstRT);
+	void ExecuteBloomTexUpdate(class CHud3D & hud3d);
+	void ExecuteFinalPass(CTexture* pOutputRT, CTexture* pOutputDS, class CHud3D & hud3d);
 
 	bool SetVertex(CRenderPrimitive& prim, struct SHudData& pData) const;
-	void SetShaderParams(const CPostEffectContext& context, EShaderStage shaderStages, CRenderPrimitive::ConstantManager& constantManager, const struct SHudData& data, const class CHud3D& hud3d) const;
+	void SetShaderParams(EShaderStage shaderStages, CRenderPrimitive::ConstantManager& constantManager, const struct SHudData& data, const class CHud3D& hud3d) const;
 
 private:
-	CPrimitiveRenderPass           m_passDownsampleHud4x4;
-	CPrimitiveRenderPass           m_passUpdateBloom;
-	CGaussianBlurPass              m_passBlurGaussian;
-	CPrimitiveRenderPass           m_passRenderHud;
+	_smart_ptr<CTexture>          m_Cached3DHUD = nullptr;
+	_smart_ptr<CTexture>          m_Cached3DHUD_r4 = nullptr;
+
+	CPrimitiveRenderPass          m_passDownsampleHud4x4;
+	CPrimitiveRenderPass          m_passUpdateBloom;
+	CGaussianBlurPass             m_passBlurGaussian;
+	CPrimitiveRenderPass          m_passRenderHud;
 
 	std::vector<CRenderPrimitive*> m_downsamplePrimitiveArray;
 	std::vector<CRenderPrimitive*> m_bloomPrimitiveArray;

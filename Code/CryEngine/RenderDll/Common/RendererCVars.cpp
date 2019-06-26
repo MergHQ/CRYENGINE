@@ -169,8 +169,6 @@ int CRendererCVars::CV_r_DeferredShadingTiledHairQuality;
 int CRendererCVars::CV_r_DeferredShadingSSS;
 int CRendererCVars::CV_r_DeferredShadingFilterGBuffer;
 
-int CRendererCVars::CV_r_UsePersistentRTForModelHUD;
-
 AllocateConstIntCVar(CRendererCVars, CV_r_deferredshadingLightVolumes);
 AllocateConstIntCVar(CRendererCVars, CV_r_deferredDecals);
 AllocateConstIntCVar(CRendererCVars, CV_r_deferredDecalsDebug);
@@ -2983,9 +2981,6 @@ void CRendererCVars::InitCVars()
 	                  "Sets the overscan border height scale\n"
 	                  "Usage: r_OverscanBorderScaleY [0.0->0.25]",
 	                  OnChange_r_OverscanBorderScale);
-
-	REGISTER_CVAR2("r_UsePersistentRTForModelHUD", &CV_r_UsePersistentRTForModelHUD, 0, VF_NULL,
-	               "Uses a seperate RT to render models for the ModelHud Renderer");
 
 #if defined(ENABLE_RENDER_AUX_GEOM)
 	const int defValAuxGeomEnable = 1;

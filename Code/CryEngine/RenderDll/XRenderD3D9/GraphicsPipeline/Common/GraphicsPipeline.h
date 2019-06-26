@@ -106,14 +106,11 @@ public:
 
 	CTexture* m_pTexHDRFinalBloom = nullptr;                                                // CRainStage, CToneMappingStage, CBloomStage
 
-	CTexture* m_pTexModelHudBuffer = nullptr;                                               // CV_r_UsePersistentRTForModelHUD, used by Menu3DModelRenderer to postprocess render models
 	CTexture* m_pTexSceneCoC[MIN_DOF_COC_K];                                                // CDepthOfFieldStage
 	CTexture* m_pTexSceneCoCTemp = nullptr;                                                 // CDepthOfFieldStage
 	CTexture* m_pTexWaterVolumeRefl[2] = { nullptr, nullptr };                              // CWaterStage, water volume reflections buffer
 	CTexture* m_pTexRainSSOcclusion[2] = { nullptr, nullptr };                              // CRainStage, screen-space rain occlusion accumulation
 
-	CTexture* m_pTexCached3DHud = nullptr;                                                  // CHud3DPass, 3d hud cached overframes
-	CTexture* m_pTexCached3DHudScaled = nullptr;                                            // CHud3DPass, downsampled 3d hud cached overframes
 	CTexture* m_pTexRainOcclusion = nullptr;                                                // CRainStage, CSnowStage, top-down rain occlusion
 	CTexture* m_pTexLinearDepthFixup = nullptr;
 	ResourceViewHandle m_pTexLinearDepthFixupUAV;
