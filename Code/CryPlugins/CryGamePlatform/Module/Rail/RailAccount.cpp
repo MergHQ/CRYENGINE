@@ -148,13 +148,13 @@ namespace Cry
 				m_nickname = personalInfo.rail_name;
 			}
 
-			void CAccount::SetAvatarInfo(const rail::RailString& data, const rail::RailImageDataDescriptor& descriptor)
+			void CAccount::SetAvatarInfo(const rail::RailArray<uint8_t>& data, const rail::RailImageDataDescriptor& descriptor)
 			{
 				if (descriptor.pixel_format == rail::kRailImagePixelFormatR8G8B8A8 && descriptor.stride_in_bytes == 0)
 				{
 					const ETEX_Format format = eTF_R8G8B8A8;
 
-					const unsigned char* rawData = reinterpret_cast<const unsigned char*>(data.c_str());
+					const unsigned char* rawData = reinterpret_cast<const unsigned char*>(data.buf());
 
 					const TextureId textureId = gEnv->pRenderer->UploadToVideoMemory(const_cast<unsigned char*>(rawData), descriptor.image_width, descriptor.image_height, format, format, 1);
 

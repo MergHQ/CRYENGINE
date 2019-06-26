@@ -33,7 +33,7 @@ namespace Cry
 
 				void SetFriendInfo(const rail::RailFriendInfo& friendInfo);
 				void SetPersonalInfo(const rail::PlayerPersonalInfo& personalInfo);
-				void SetAvatarInfo(const rail::RailString& data, const rail::RailImageDataDescriptor& descriptor);
+				void SetAvatarInfo(const rail::RailArray<uint8_t>& data, const rail::RailImageDataDescriptor& descriptor);
 
 				const rail::RailID& GetRailID() const { return m_id; }
 				const rail::EnumRailFriendType& GetFriendType() const { return m_friendType; }

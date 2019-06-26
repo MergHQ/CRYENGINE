@@ -41,7 +41,7 @@ namespace Cry
 				static rail::IRailSystemHelper* SystemHelper();
 				static rail::IRailUsersHelper* UsersHelper();
 				static rail::IRailUtils* Utils();
-				static rail::IRailZoneHelper* ZoneHelper();
+				static rail::IRailZoneServerHelper* ZoneHelper();
 
 				static rail::IRailFactory* Factory();
 
@@ -52,13 +52,11 @@ namespace Cry
 				//! ##@{
 				static const char* ErrorString(rail::RailResult code);
 				static const char* EnumString(rail::EnumRoomType value);
-				static const char* EnumString(rail::EnumRoomStatus value);
 				static const char* EnumString(rail::EnumRailUsersInviteType value);
 				static const char* EnumString(rail::EnumRailNotifyWindowType value);
 				static const char* EnumString(rail::EnumRailWindowType value);
 				static const char* EnumString(rail::EnumRailUsersInviteResponseType value);
 				static const char* EnumString(rail::EnumRoomMemberActionStatus value);
-				static const char* EnumString(rail::EnumZoneStatus value);
 				//! ##@}.
 
 				//! \return true on success. languageId is not modified if unsuccessful.
@@ -223,10 +221,10 @@ namespace Cry
 				return pFactory ? pFactory->RailUtils() : nullptr;
 			}
 
-			inline rail::IRailZoneHelper* Helper::ZoneHelper()
+			inline rail::IRailZoneServerHelper* Helper::ZoneHelper()
 			{
 				rail::IRailFactory* const pFactory = Factory();
-				return pFactory ? pFactory->RailZoneHelper() : nullptr;
+				return pFactory ? pFactory->RailZoneServerHelper() : nullptr;
 			}
 
 			inline rail::IRailFactory* Helper::Factory()
@@ -275,17 +273,6 @@ namespace Cry
 				}
 
 				return "Unknown Room Type";
-			}
-
-			inline const char* Helper::EnumString(rail::EnumRoomStatus value)
-			{
-				switch (value)
-				{
-				case rail::kRailRoomStatusFree: return "Free";
-				case rail::kRailRoomStatusFull: return "Full";
-				}
-
-				return "Unknown Room Status";
 			}
 
 			inline const char* Helper::EnumString(rail::EnumRailUsersInviteType value)
@@ -355,19 +342,6 @@ namespace Cry
 				}
 
 				return "Unknown Member Action";
-			}
-
-			inline const char* Helper::EnumString(rail::EnumZoneStatus value)
-			{
-				switch (value)
-				{
-				case rail::kRailZoneStatusSmooth: return "Smooth";
-				case rail::kRailZoneStatusNormal: return "Normal";
-				case rail::kRailZoneStatusBusy:   return "Busy";
-				case rail::kRailZoneStatusFull:   return "Full";
-				}
-
-				return "Unknown Zone Status";
 			}
 		}
 	}

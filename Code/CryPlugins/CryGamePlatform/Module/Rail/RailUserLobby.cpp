@@ -26,11 +26,15 @@ namespace Cry
 				Helper::RegisterEvent(rail::kRailEventFriendsMetadataChanged, *this);
 				Helper::RegisterEvent(rail::kRailEventUsersNotifyInviter, *this);
 				Helper::RegisterEvent(rail::kRailEventUsersInviteJoinGameResult, *this);
+				Helper::RegisterEvent(rail::kRailEventRoomSetRoomMetadataResult, *this);
+				Helper::RegisterEvent(rail::kRailEventRoomGetRoomMetadataResult, *this);
+				Helper::RegisterEvent(rail::kRailEventRoomGetMemberMetadataResult, *this);
+				Helper::RegisterEvent(rail::kRailEventRoomSetMemberMetadataResult, *this);
 
 				if (rail::IRailFriends* pFriends = Helper::Friends())
 				{
 					stack_string cmdLine;
-					cmdLine.Format("--rail_connect_to_zoneid=%" PRIu64 " --rail_connect_to_roomid=%" PRIu64 " --rail_room_password=\"\" +connect_lobby %" PRIu64, m_room.GetZoneId(), m_room.GetRoomId(), m_room.GetRoomId());
+					cmdLine.Format("--rail_connect_to_roomid=%" PRIu64 " --rail_room_password=\"\" +connect_lobby %" PRIu64, m_room.GetRoomID(), m_room.GetRoomID());
 
 					const rail::RailResult res = pFriends->AsyncSetInviteCommandLine(cmdLine.c_str(), "");
 					if (res != rail::kSuccess)
@@ -50,6 +54,10 @@ namespace Cry
 				Helper::UnregisterEvent(rail::kRailEventFriendsMetadataChanged, *this);
 				Helper::UnregisterEvent(rail::kRailEventUsersNotifyInviter, *this);
 				Helper::UnregisterEvent(rail::kRailEventUsersInviteJoinGameResult, *this);
+				Helper::UnregisterEvent(rail::kRailEventRoomSetRoomMetadataResult, *this);
+				Helper::UnregisterEvent(rail::kRailEventRoomGetRoomMetadataResult, *this);
+				Helper::UnregisterEvent(rail::kRailEventRoomGetMemberMetadataResult, *this);
+				Helper::UnregisterEvent(rail::kRailEventRoomSetMemberMetadataResult, *this);
 
 				// Just in case loading gets aborted
 				gEnv->pSystem->GetISystemEventDispatcher()->RemoveListener(this);
@@ -100,69 +108,137 @@ namespace Cry
 
 					CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_WARNING, "[Rail][UserLobby] Created server at %s:%i", ipAddressFinal, m_serverPort);
 
-					string tmpStr;
+					stack_string tmpStr;
 
 					tmpStr.Format("%i", m_serverIP);
-					bool res = m_room.SetRoomMetadata("ipaddress", tmpStr.c_str());
-					if (!res)
-					{
-						CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_ERROR, "[Rail][UserLobby] Failed to set room metadata ipaddress='%s'", tmpStr.c_str());
-					}
+					SetValueForKey(m_roomDataCache, "ipaddress", tmpStr.c_str());
 
 					tmpStr.Format("%i", m_serverPort);
-					res = m_room.SetRoomMetadata("port", tmpStr.c_str());
-					if (!res)
-					{
-						CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_ERROR, "[Rail][UserLobby] Failed to set room metadata port='%s'", tmpStr.c_str());
-					}
+					SetValueForKey(m_roomDataCache, "port", tmpStr.c_str());
 
 					tmpStr.Format("%i", m_serverId);
-					res = m_room.SetRoomMetadata("serverid", tmpStr.c_str());
-					if (!res)
+					SetValueForKey(m_roomDataCache, "serverid", tmpStr.c_str());
+
+					const rail::RailResult res = m_room.AsyncSetRoomMetadata(m_roomDataCache, "");
+					if (res != rail::kSuccess)
 					{
-						CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_ERROR, "[Rail][UserLobby] Failed to set room metadata serverid='%s'", tmpStr.c_str());
+						CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_ERROR, "[Rail][UserLobby] Failed to set room metadata : %s", Helper::ErrorString(res));
 					}
 
 					gEnv->pSystem->GetISystemEventDispatcher()->RemoveListener(this);
 				}
 			}
 
-			bool CUserLobby::SetData(const char* key, const char* value)
+			/*static*/ size_t CUserLobby::FindIndexForKey(const KeyValueArray& kva, const char* szKey)
 			{
-				return m_room.SetRoomMetadata(key, value);
+				const size_t count = kva.size();
+
+				for (size_t idx = 0; idx < count; ++idx)
+				{
+					const rail::RailKeyValue& kvp = kva[idx];
+					if (kvp.key == szKey)
+					{
+						return idx;
+					}
+				}
+				
+				return count;
 			}
 
-			const char* CUserLobby::GetData(const char* key) const
+			/*static*/ const char* CUserLobby::FindValueForKey(const KeyValueArray& kva, const char* szKey)
 			{
-				static rail::RailString str;
-
-				if (m_room.GetRoomMetadata(key, &str))
+				const size_t idx = FindIndexForKey(kva, szKey);
+				if (idx < kva.size())
 				{
-					return str.c_str();
+					return kva[idx].value.c_str();
 				}
 
-				return nullptr;
+				return "";
+			}
+
+			/*static*/ void CUserLobby::SetValueForKey(KeyValueArray& kva, const char* szKey, const char* szValue)
+			{
+				const size_t idx = FindIndexForKey(kva, szKey);
+				if (idx < kva.size())
+				{
+					kva[idx].value = szValue;
+				}
+				else
+				{
+					kva.push_back(rail::RailKeyValue{ szKey, szValue });
+				}
+			}
+
+			bool CUserLobby::SetData(const char* key, const char* value)
+			{
+				SetValueForKey(m_roomDataCache, key, value);
+
+				const rail::RailResult res = m_room.AsyncSetRoomMetadata(m_roomDataCache, "");
+				if (res != rail::kSuccess)
+				{
+					CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_ERROR, "[Rail][UserLobby] Failed to set room metadata : %s", Helper::ErrorString(res));
+					return false;
+				}
+
+				return true;
+			}
+
+			const char* CUserLobby::GetData(const char* szKey) const
+			{
+				const char* szData = nullptr;
+
+				const size_t idx = FindIndexForKey(m_roomDataCache, szKey);
+				if (idx < m_roomDataCache.size())
+				{
+					szData = m_roomDataCache[idx].value.c_str();
+				}
+				
+				rail::RailArray<rail::RailString> keys;
+				keys.push_back(szKey);
+				const rail::RailResult res = m_room.AsyncGetRoomMetadata(keys, "");
+				if (res != rail::kSuccess)
+				{
+					CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_ERROR, "[Rail][UserLobby] Failed to get room metadata : %s", Helper::ErrorString(res));
+				}
+
+				return szData;
 			}
 
 			const char* CUserLobby::GetMemberData(const AccountIdentifier& userId, const char* szKey)
 			{
-				static rail::RailString str;
-
+				const char* szData = nullptr;
+				
 				const rail::RailID railUserId = ExtractRailID(userId);
-				if (m_room.GetMemberMetadata(railUserId, szKey, &str))
+				KeyValueArray& memberData = m_memberDataCache[railUserId.get_id()];
+
+				const size_t idx = FindIndexForKey(memberData, szKey);
+				if (idx < memberData.size())
 				{
-					return str.c_str();
+					szData = memberData[idx].value.c_str();
+				}
+				
+				rail::RailArray<rail::RailString> keys;
+				keys.push_back(szKey);
+
+				const rail::RailResult res = m_room.AsyncGetMemberMetadata(railUserId, keys, "");
+				if (res != rail::kSuccess)
+				{
+					CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_ERROR, "[Rail][UserLobby] Failed to get room member metadata : %s", Helper::ErrorString(res));
 				}
 
-				return nullptr;
+				return szData;
 			}
 
 			void CUserLobby::SetMemberData(const char* szKey, const char* szValue)
 			{
 				if (CAccount* pLocalAccount = m_service.GetLocalAccount())
 				{
-					const bool res = m_room.SetMemberMetadata(pLocalAccount->GetRailID(), szKey, szValue);
-					if (!res)
+					const rail::RailID railUserId = pLocalAccount->GetRailID();
+					KeyValueArray& memberData = m_memberDataCache[railUserId.get_id()];
+					SetValueForKey(memberData, szKey, szValue);
+
+					const rail::RailResult res = m_room.AsyncSetMemberMetadata(railUserId, memberData, "");
+					if (res != rail::kSuccess)
 					{
 						CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_ERROR, "[Rail][UserLobby] Failed to set member metadata %s='%s'", szKey, szValue);
 					}
@@ -171,7 +247,7 @@ namespace Cry
 
 			bool CUserLobby::HostServer(const char* szLevel, bool isLocal)
 			{
-				const rail::RailID ownerId = m_room.GetOwnerId();
+				const rail::RailID ownerId = m_room.GetOwnerID();
 
 				// Only owner can decide to host
 				CAccount* pLocalAccount = m_service.GetLocalAccount();
@@ -201,7 +277,7 @@ namespace Cry
 
 			int CUserLobby::GetNumMembers() const
 			{
-				return m_room.GetNumOfMembers();
+				return m_room.GetMembers();
 			}
 
 			AccountIdentifier CUserLobby::GetMemberAtIndex(int index) const
@@ -222,12 +298,12 @@ namespace Cry
 
 			AccountIdentifier CUserLobby::GetOwnerId() const
 			{
-				return CreateAccountIdentifier(m_room.GetOwnerId());
+				return CreateAccountIdentifier(m_room.GetOwnerID());
 			}
 
 			Cry::GamePlatform::LobbyIdentifier CUserLobby::GetIdentifier() const
 			{
-				return CreateLobbyIdentifier(m_room.GetRoomId());
+				return CreateLobbyIdentifier(m_room.GetRoomID());
 			}
 
 			bool CUserLobby::SendChatMessage(const char* szMessage) const
@@ -249,11 +325,9 @@ namespace Cry
 				if (rail::IRailFriends* pFriends = Helper::Friends())
 				{
 					stack_string cmdLine;
-					cmdLine.Format("--rail_connect_to_zoneid=%" PRIu64 " --rail_connect_to_roomid=%" PRIu64 " --rail_room_password=\"\" +connect_rail_zone %" PRIu64 " +connect_rail_lobby %" PRIu64,
-						m_room.GetZoneId(),
-						m_room.GetRoomId(),
-						m_room.GetZoneId(),
-						m_room.GetRoomId());
+					cmdLine.Format("--rail_connect_to_roomid=%" PRIu64 " --rail_room_password=\"\" +connect_rail_lobby %" PRIu64,
+						m_room.GetRoomID(),
+						m_room.GetRoomID());
 
 					const rail::RailResult res = pFriends->AsyncSetInviteCommandLine(cmdLine.c_str(), "");
 					if (res != rail::kSuccess)
@@ -296,7 +370,7 @@ namespace Cry
 
 			void CUserLobby::OnMemberKicked(const rail::rail_event::NotifyRoomMemberKicked* pKicked)
 			{
-				if (pKicked->room_id != m_room.GetRoomId())
+				if (pKicked->room_id != m_room.GetRoomID())
 				{
 					return;
 				}
@@ -315,7 +389,7 @@ namespace Cry
 
 			void CUserLobby::OnMemberChange(const rail::rail_event::NotifyRoomMemberChange* pChange)
 			{
-				if (pChange->room_id != m_room.GetRoomId())
+				if (pChange->room_id != m_room.GetRoomID())
 				{
 					return;
 				}
@@ -357,9 +431,91 @@ namespace Cry
 				}
 			}
 
+			// Response to AsyncSetRoomMetadata()
+			void CUserLobby::OnSetRoomMetadata(const rail::rail_event::SetRoomMetadataResult* pResult)
+			{
+				if (pResult->room_id != m_room.GetRoomID())
+				{
+					return;
+				}
+
+				if (pResult->result != rail::kSuccess)
+				{
+					CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_ERROR, "[Rail][UserLobby] AsyncSetRoomMetadata() returned failure : %s", Helper::ErrorString(pResult->result));
+				}
+			}
+
+			// Response to AsyncGetRoomMetadata()
+			void CUserLobby::OnGetRoomMetadata(const rail::rail_event::GetRoomMetadataResult* pMetadata)
+			{
+				if (pMetadata->room_id != m_room.GetRoomID())
+				{
+					return;
+				}
+
+				if (pMetadata->result != rail::kSuccess)
+				{
+					CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_ERROR, "[Rail][UserLobby] AsyncGetRoomMetadata() returned failure : %s", Helper::ErrorString(pMetadata->result));
+					return;
+				}
+
+				// Returned metadata can (and usually will be) a subset
+				for (size_t idx = 0; idx < pMetadata->key_value.size(); ++idx)
+				{
+					SetValueForKey(m_roomDataCache, pMetadata->key_value[idx].key.c_str(), pMetadata->key_value[idx].value.c_str());
+				}
+
+				for (IListener* pListener : m_listeners)
+				{
+					pListener->OnLobbyDataUpdate(CreateLobbyIdentifier(pMetadata->room_id));
+				}
+			}
+
+			// Response to AsyncSetMemberMetadata()
+			void CUserLobby::OnSetMemberMetadata(const rail::rail_event::SetMemberMetadataResult* pResult)
+			{
+				if (pResult->room_id != m_room.GetRoomID())
+				{
+					return;
+				}
+
+				if (pResult->result != rail::kSuccess)
+				{
+					CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_ERROR, "[Rail][UserLobby] AsyncSetMemberMetadata() returned failure : %s", Helper::ErrorString(pResult->result));
+				}
+			}
+
+			// // Response to AsyncGetMemberMetadata()
+			void CUserLobby::OnGetMemberMetadata(const rail::rail_event::GetMemberMetadataResult* pMetadata)
+			{
+				if (pMetadata->room_id != m_room.GetRoomID())
+				{
+					return;
+				}
+
+				if (pMetadata->result != rail::kSuccess)
+				{
+					CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_ERROR, "[Rail][UserLobby] AsyncGetMemberMetadata() returned failure : %s", Helper::ErrorString(pMetadata->result));
+					return;
+				}
+
+				KeyValueArray& memberData = m_memberDataCache[pMetadata->member_id.get_id()];
+
+				// Returned metadata can (and usually will be) a subset
+				for (size_t idx = 0; idx < pMetadata->key_value.size(); ++idx)
+				{
+					SetValueForKey(memberData, pMetadata->key_value[idx].key.c_str(), pMetadata->key_value[idx].value.c_str());
+				}
+
+				for (IListener* pListener : m_listeners)
+				{
+					pListener->OnUserDataUpdate(CreateAccountIdentifier(pMetadata->member_id));
+				}
+			}
+
 			void CUserLobby::OnRoomMetadataChange(const rail::rail_event::NotifyMetadataChange* pMetadata)
 			{
-				if (pMetadata->room_id != m_room.GetRoomId())
+				if (pMetadata->room_id != m_room.GetRoomID())
 				{
 					return;
 				}
@@ -377,23 +533,6 @@ namespace Cry
 				{
 					CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_ERROR, "[Rail][UserLobby] AsyncGetAllRoomData() return failure : %s", Helper::ErrorString(res));
 				}
-
-				if (m_serverIP == 0 || m_serverPort == 0 || m_serverId == 0)
-				{
-					const char* ipString = GetData("ipaddress");
-					const char* portString = GetData("port");
-					const char* serverIdString = GetData("serverid");
-
-					if (ipString && strlen(ipString) != 0 && portString && strlen(portString) != 0 && serverIdString && strlen(serverIdString) != 0)
-					{
-						ConnectToServer(atoi(ipString), atoi(portString), atoi(serverIdString));
-					}
-				}
-
-				for (IListener* pListener : m_listeners)
-				{
-					pListener->OnLobbyDataUpdate(CreateLobbyIdentifier(pMetadata->room_id));
-				}
 			}
 
 			void CUserLobby::OnFriendsMetadataChanged(const rail::rail_event::RailFriendsMetadataChanged* pMetadata)
@@ -408,7 +547,16 @@ namespace Cry
 
 				for (size_t uIdx = 0; uIdx < changedData.size(); ++uIdx)
 				{
-					const AccountIdentifier accountId = CreateAccountIdentifier(changedData[uIdx].friend_rail_id);
+					const rail::RailID friendId = changedData[uIdx].friend_rail_id;
+					KeyValueArray& memberData = m_memberDataCache[friendId.get_id()];
+
+					const KeyValueArray& changedKvp = changedData[uIdx].metadatas;
+					for (size_t dataIdx = 0; dataIdx < changedKvp.size(); ++dataIdx)
+					{
+						SetValueForKey(memberData, changedKvp[dataIdx].key.c_str(), changedKvp[dataIdx].value.c_str());
+					}
+
+					const AccountIdentifier accountId = CreateAccountIdentifier(friendId);
 					for (IListener* pListener : m_listeners)
 					{
 						pListener->OnUserDataUpdate(accountId);
@@ -430,16 +578,17 @@ namespace Cry
 				}
 			}
 
-			void CUserLobby::OnRoomGetAllDataResult(const rail::rail_event::RoomAllData* pRoomData)
+			// Response to AsyncGetAllRoomData()
+			void CUserLobby::OnRoomGetAllDataResult(const rail::rail_event::GetAllRoomDataResult* pRoomData)
 			{
-				if (pRoomData->room_info.room_id != m_room.GetRoomId())
+				if (pRoomData->room_info.room_id != m_room.GetRoomID())
 				{
 					return;
 				}
 
 				if (pRoomData->result != rail::kSuccess)
 				{
-					CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_ERROR, "[Rail][UserLobby] Room Get All Metadata failure : %s", Helper::ErrorString(pRoomData->result));
+					CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_ERROR, "[Rail][UserLobby] AsyncGetAllRoomData() returned failure : %s", Helper::ErrorString(pRoomData->result));
 					return;
 				}
 
@@ -447,9 +596,8 @@ namespace Cry
 				CryComment("[Rail][UserLobby] 'name' = '%s'", pRoomData->room_info.room_name.c_str());
 				CryComment("[Rail][UserLobby] 'current_members' = '%u'", pRoomData->room_info.current_members);
 				CryComment("[Rail][UserLobby] 'max_members' = '%u'", pRoomData->room_info.max_members);
-				CryComment("[Rail][UserLobby] 'game_server_rail_id' = '%" PRIu64 "'" , pRoomData->room_info.game_server_rail_id);
+				CryComment("[Rail][UserLobby] 'game_server_rail_id' = '%" PRIu64 "'", pRoomData->room_info.game_server_rail_id);
 				CryComment("[Rail][UserLobby] 'is_joinable' = '%s'", pRoomData->room_info.is_joinable ? "true" : "false");
-				CryComment("[Rail][UserLobby] 'room_state' = '%s'", Helper::EnumString(pRoomData->room_info.room_state));
 				CryComment("[Rail][UserLobby] 'type' = '%s'", Helper::EnumString(pRoomData->room_info.type));
 
 				for (size_t kvIdx = 0; kvIdx < pRoomData->room_info.room_kvs.size(); ++kvIdx)
@@ -457,6 +605,28 @@ namespace Cry
 					const rail::RailKeyValue& keyValue = pRoomData->room_info.room_kvs[kvIdx];
 
 					CryComment("[Rail][UserLobby] '%s' = '%s'", keyValue.key.c_str(), keyValue.value.c_str());
+				}
+
+				for (size_t idx = 0; idx < pRoomData->room_info.room_kvs.size(); ++idx)
+				{
+					SetValueForKey(m_roomDataCache, pRoomData->room_info.room_kvs[idx].key.c_str(), pRoomData->room_info.room_kvs[idx].value.c_str());
+				}
+
+				if (m_serverIP == 0 || m_serverPort == 0 || m_serverId == 0)
+				{
+					const char* ipString = FindValueForKey(m_roomDataCache, "ipaddress");
+					const char* portString = FindValueForKey(m_roomDataCache, "port");
+					const char* serverIdString = FindValueForKey(m_roomDataCache, "serverid");
+
+					if (ipString && strlen(ipString) != 0 && portString && strlen(portString) != 0 && serverIdString && strlen(serverIdString) != 0)
+					{
+						ConnectToServer(atoi(ipString), atoi(portString), atoi(serverIdString));
+					}
+				}
+
+				for (IListener* pListener : m_listeners)
+				{
+					pListener->OnLobbyDataUpdate(CreateLobbyIdentifier(pRoomData->room_info.room_id));
 				}
 			}
 
@@ -527,7 +697,7 @@ namespace Cry
 						OnRoomMetadataChange(static_cast<const rail::rail_event::NotifyMetadataChange*>(pEvent));
 						break;
 					case rail::kRailEventRoomGetAllDataResult:
-						OnRoomGetAllDataResult(static_cast<const rail::rail_event::RoomAllData*>(pEvent));
+						OnRoomGetAllDataResult(static_cast<const rail::rail_event::GetAllRoomDataResult*>(pEvent));
 						break;
 					case rail::kRailEventRoomNotifyMemberChanged:
 						OnMemberChange(static_cast<const rail::rail_event::NotifyRoomMemberChange*>(pEvent));
@@ -543,6 +713,18 @@ namespace Cry
 						break;
 					case rail::kRailEventUsersInviteJoinGameResult:
 						OnUsersInviteJoinGameResult(static_cast<const rail::rail_event::RailUsersInviteJoinGameResult*>(pEvent));
+						break;
+					case rail::kRailEventRoomSetRoomMetadataResult:
+						OnSetRoomMetadata(static_cast<const rail::rail_event::SetRoomMetadataResult*>(pEvent));
+						break;
+					case rail::kRailEventRoomGetRoomMetadataResult:
+						OnGetRoomMetadata(static_cast<const rail::rail_event::GetRoomMetadataResult*>(pEvent));
+						break;
+					case rail::kRailEventRoomSetMemberMetadataResult:
+						OnSetMemberMetadata(static_cast<const rail::rail_event::SetMemberMetadataResult*>(pEvent));
+						break;
+					case rail::kRailEventRoomGetMemberMetadataResult:
+						OnGetMemberMetadata(static_cast<const rail::rail_event::GetMemberMetadataResult*>(pEvent));
 						break;
 				}
 			}

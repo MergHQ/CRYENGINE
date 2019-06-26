@@ -41,7 +41,7 @@ namespace Cry
 				virtual void ShowInviteDialog() const override;
 
 				virtual bool SetData(const char* key, const char* value) override;
-				virtual const char* GetData(const char* key) const override;
+				virtual const char* GetData(const char* szKey) const override;
 				virtual const char* GetMemberData(const AccountIdentifier& userId, const char* szKey) override;
 				virtual void SetMemberData(const char* szKey, const char* szValue) override;
 				// ~IUserLobby
@@ -57,19 +57,30 @@ namespace Cry
 				rail::IRailRoom& GetRoom() const { return m_room; }
 
 			private:
+				using KeyValueArray = rail::RailArray<rail::RailKeyValue>;
 				void ConnectToServer(uint32 ip, uint16 port, IServer::Identifier serverId);
+
+				static size_t FindIndexForKey(const KeyValueArray& kva, const char* szKey);
+				static const char* FindValueForKey(const KeyValueArray& kva, const char* szKey);
+				static void SetValueForKey(KeyValueArray& kva, const char* szKey, const char* szValue);
 
 				void OnUsersInviteJoinGameResult(const rail::rail_event::RailUsersInviteJoinGameResult* pResult);
 				void OnMemberKicked(const rail::rail_event::NotifyRoomMemberKicked* pKicked);
 				void OnMemberChange(const rail::rail_event::NotifyRoomMemberChange* pChange);
 				void OnFriendsMetadataChanged(const rail::rail_event::RailFriendsMetadataChanged* pMetadata);
 				void OnDataReceived(const rail::rail_event::RoomDataReceived* pData);
+				void OnSetRoomMetadata(const rail::rail_event::SetRoomMetadataResult* pResult);
+				void OnGetRoomMetadata(const rail::rail_event::GetRoomMetadataResult* pMetadata);
+				void OnSetMemberMetadata(const rail::rail_event::SetMemberMetadataResult* pResult);
+				void OnGetMemberMetadata(const rail::rail_event::GetMemberMetadataResult* pMetadata);
 				void OnRoomMetadataChange(const rail::rail_event::NotifyMetadataChange* pMetadata);
-				void OnRoomGetAllDataResult(const rail::rail_event::RoomAllData* pRoomData);
+				void OnRoomGetAllDataResult(const rail::rail_event::GetAllRoomDataResult* pRoomData);
 				void OnUsersNotifyInviter(const rail::rail_event::RailUsersNotifyInviter* pInvitation);
 			private:
 				CService& m_service;
 				rail::IRailRoom& m_room;
+				KeyValueArray m_roomDataCache;
+				std::unordered_map<uint64_t, KeyValueArray> m_memberDataCache;
 
 				std::vector<IListener*> m_listeners;
 

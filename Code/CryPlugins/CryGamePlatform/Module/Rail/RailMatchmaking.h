@@ -48,16 +48,14 @@ namespace Cry
 				void AddRoomInstance(rail::IRailRoom* pRoom);
 				void JoinLobby(uint64_t lobbyId, const char* szPassword);
 				void ProcessLaunchParameters();
-				uint64_t GetZone() const;
 				CUserLobby* AllocateUserLobby(uint64_t roomId);
 
-				void OnCreateLobby(const rail::rail_event::CreateRoomInfo* pRoomInfo);
-				void OnLobbyMatchList(const rail::rail_event::RoomInfoList* pRoomList);
+				void OnCreateLobby(const rail::rail_event::CreateRoomResult* pRoomInfo);
+				void OnLobbyMatchList(const rail::rail_event::GetRoomListResult* pRoomList);
 				void OnJoinRequested(const rail::rail_event::RailUsersGetInviteDetailResult* pInvite);
-				void OnLocalJoin(const rail::rail_event::JoinRoomInfo* pJoinInfo);
+				void OnLocalJoin(const rail::rail_event::JoinRoomResult* pJoinInfo);
 				void OnInvited(const rail::rail_event::RailUsersRespondInvitation* pInvite);
-				void OnZoneListReceived(const rail::rail_event::ZoneInfoList* pZones);
-				void OnRoomLeft(const rail::rail_event::LeaveRoomInfo* pLeaveInfo);
+				void OnRoomLeft(const rail::rail_event::LeaveRoomResult* pLeaveInfo);
 
 			private:
 				CService & m_service;
@@ -65,7 +63,6 @@ namespace Cry
 				std::vector<std::unique_ptr<CUserLobby>> m_lobbies;
 				std::vector<rail::IRailRoom*> m_roomInstances;
 
-				uint64_t m_zoneId = 0;
 				rail::RoomInfoListFilter m_lobbyFilter;
 				rail::RailArray<rail::RoomInfo> m_lastQueriedRoomInfo;
 			};

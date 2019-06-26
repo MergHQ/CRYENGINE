@@ -48,37 +48,21 @@ namespace Cry
 				: m_service(service)
 			{
 				Helper::RegisterEvent(rail::kRailEventRoomCreated, *this);
-				Helper::RegisterEvent(rail::kRailEventRoomListResult, *this);
+				Helper::RegisterEvent(rail::kRailEventRoomGetRoomListResult, *this);
 				Helper::RegisterEvent(rail::kRailEventRoomJoinRoomResult, *this);
 				Helper::RegisterEvent(rail::kRailEventUsersRespondInvitation, *this);
-				Helper::RegisterEvent(rail::kRailEventRoomZoneListResult, *this);
 				Helper::RegisterEvent(rail::kRailEventRoomLeaveRoomResult, *this);
 				Helper::RegisterEvent(rail::kRailEventUsersGetInviteDetailResult, *this);
 
 				ProcessLaunchParameters();
-
-				// No zone information yet, look for it
-				if (m_zoneId == 0)
-				{
-					if (rail::IRailZoneHelper* pZones = Helper::ZoneHelper())
-					{
-						// Response received in callback : OnZoneListReceived()
-						const rail::RailResult res = pZones->AsyncGetZoneList("");
-						if (res != rail::kSuccess)
-						{
-							CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_ERROR, "[Rail][Matchmaking] FATAL! Could not get zone information : %s", Helper::ErrorString(res));
-						}
-					}
-				}
 			}
 
 			CMatchmaking::~CMatchmaking()
 			{
 				Helper::UnregisterEvent(rail::kRailEventRoomCreated, *this);
-				Helper::UnregisterEvent(rail::kRailEventRoomListResult, *this);
+				Helper::UnregisterEvent(rail::kRailEventRoomGetRoomListResult, *this);
 				Helper::UnregisterEvent(rail::kRailEventRoomJoinRoomResult, *this);
 				Helper::UnregisterEvent(rail::kRailEventUsersRespondInvitation, *this);
-				Helper::UnregisterEvent(rail::kRailEventRoomZoneListResult, *this);
 				Helper::UnregisterEvent(rail::kRailEventRoomLeaveRoomResult, *this);
 				Helper::UnregisterEvent(rail::kRailEventUsersGetInviteDetailResult, *this);
 
@@ -95,7 +79,7 @@ namespace Cry
 			{
 				if (rail::IRailRoomHelper* pRailMatchmaking = Helper::RoomHelper())
 				{
-					rail::RoomOptions options(GetZone());
+					rail::RoomOptions options;
 					options.max_members = maxMemberCount;
 					options.type = ToRailRoomType(visibility);
 					options.enable_team_voice = false;
@@ -163,7 +147,7 @@ namespace Cry
 				AddLobbyQueryFilterString("version", versionString.c_str(), IUserLobby::EComparison::Equal);
 #endif
 
-				if (rail::IRailZoneHelper* pZones = Helper::ZoneHelper())
+				if (rail::IRailRoomHelper* pRooms = Helper::RoomHelper())
 				{
 					const uint32_t start_index = 0;
 					const uint32_t end_index = 1;
@@ -171,7 +155,7 @@ namespace Cry
 					rail::RailArray<rail::RoomInfoListFilter> filter;
 					filter.push_back(m_lobbyFilter);
 
-					const rail::RailResult res = pZones->AsyncGetRoomListInZone(GetZone(), start_index, end_index, sorter, filter, "");
+					const rail::RailResult res = pRooms->AsyncGetRoomList(start_index, end_index, sorter, filter, "");
 					if (res == rail::kSuccess)
 					{
 						return;
@@ -184,8 +168,8 @@ namespace Cry
 					CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_WARNING, "[Rail][Matchmaking] Matchmaking service not available");
 				}
 
-				rail::rail_event::RoomInfoList temp;
-				temp.total_room_num_in_zone = 0;
+				rail::rail_event::GetRoomListResult temp;
+				temp.total_room_num = 0;
 				OnLobbyMatchList(&temp);
 			}
 
@@ -228,7 +212,7 @@ namespace Cry
 			{
 				if(stl::find(m_roomInstances, pRoom))
 				{
-					CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_WARNING, "[Rail][Matchmaking] Room instance '%" PRIu64 "' was already in the list!?", pRoom->GetRoomId());
+					CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_WARNING, "[Rail][Matchmaking] Room instance '%" PRIu64 "' was already in the list!?", pRoom->GetRoomID());
 					return;
 				}
 
@@ -241,7 +225,7 @@ namespace Cry
 				if (pRailMatchmaking)
 				{
 					rail::RailResult res = rail::kSuccess;
-					if (rail::IRailRoom* pRoom = pRailMatchmaking->OpenRoom(GetZone(), lobbyId, &res))
+					if (rail::IRailRoom* pRoom = pRailMatchmaking->OpenRoom(lobbyId, &res))
 					{
 						CRY_ASSERT_MESSAGE(res == rail::kSuccess, "[Rail][Matchmaking] OpenRoom() succeeded but returned an error : %s", Helper::ErrorString(res));
 						// Actual creation of Lobby is in callback: OnLocalJoin()
@@ -265,15 +249,10 @@ namespace Cry
 					CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_WARNING, "[Rail][Matchmaking] Matchmaking service not available");
 				}
 
-				rail::rail_event::JoinRoomInfo info;
+				rail::rail_event::JoinRoomResult info;
 				info.result = rail::kFailure;
 
 				OnLocalJoin(&info);
-			}
-
-			uint64_t CMatchmaking::GetZone() const
-			{
-				return m_zoneId;
 			}
 
 			void CMatchmaking::ProcessLaunchParameters()
@@ -281,14 +260,12 @@ namespace Cry
 				ICmdLine* const pCmdLine = gEnv->pSystem->GetICmdLine();
 
 				// Check if we were launched from invite. Args are set in CUserLobby.
-				const ICmdLineArg* const pConnectZoneArg = pCmdLine->FindArg(eCLAT_Post, "connect_rail_zone");
 				const ICmdLineArg* const pConnectRoomArg = pCmdLine->FindArg(eCLAT_Post, "connect_rail_lobby");
 
-				if (pConnectZoneArg && pConnectRoomArg)
+				if (pConnectRoomArg)
 				{
 					CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_WARNING, "[Rail][Matchmaking] Received pre-launch join request, loading lobby");
 
-					m_zoneId = Schematyc2::StringUtils::UInt64FromString(pConnectZoneArg->GetValue(), 0);
 					const uint64_t roomId = Schematyc2::StringUtils::UInt64FromString(pConnectRoomArg->GetValue(), 0);
 
 					JoinLobby(roomId, "");
@@ -300,7 +277,7 @@ namespace Cry
 				size_t idx = 0;
 				for (; idx < m_roomInstances.size(); ++idx)
 				{
-					if (m_roomInstances[idx]->GetRoomId() == roomId)
+					if (m_roomInstances[idx]->GetRoomID() == roomId)
 					{
 						break;
 					}
@@ -332,51 +309,8 @@ namespace Cry
 				return pLobby;
 			}
 
-			// Callback for AsyncGetZoneList()
-			void CMatchmaking::OnZoneListReceived(const rail::rail_event::ZoneInfoList* pZones)
-			{
-				if (pZones->result != rail::kSuccess)
-				{
-					CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_ERROR, "[Rail][Matchmaking] Zone list retrieval failure : %s", Helper::ErrorString(pZones->result));
-					return;
-				}
-
-				if (pZones->zone_info.size() == 0)
-				{
-					CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_ERROR, "[Rail][Matchmaking] FATAL! Empty zone list received!");
-					return;
-				}
-
-				CryComment("[Rail][Matchmaking] OnZoneListReceived: %zu zones", pZones->zone_info.size());
-
-				for (size_t zIdx = 0; zIdx < pZones->zone_info.size(); ++zIdx)
-				{
-					const rail::ZoneInfo& info = pZones->zone_info[zIdx];
-
-					CryComment("-----------------------------------------------");
-					CryComment("[Rail][Matchmaking] ZONE:\t\t\t%" PRIu64, info.zone_id);
-					CryComment("[Rail][Matchmaking] name:\t\t\t%s", info.name.c_str());
-					CryComment("[Rail][Matchmaking] description:\t\t\t%s", info.description.c_str());
-					CryComment("[Rail][Matchmaking] country_code:\t\t\t%u", info.country_code);
-					CryComment("[Rail][Matchmaking] idc_id:\t\t\t%" PRIu64, info.idc_id);
-					CryComment("[Rail][Matchmaking] status:\t\t\t%s", Helper::EnumString(info.status));
-				}
-
-				if (m_zoneId == 0)
-				{
-					CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_WARNING, "[Rail][Matchmaking] !!TODO!! Picked zone '%" PRIu64 "' as default", m_zoneId);
-
-					m_zoneId = pZones->zone_info[0].zone_id;
-
-					if (rail::IRailRoomHelper* pRoomHelper = Helper::RoomHelper())
-					{
-						pRoomHelper->set_current_zone_id(m_zoneId);
-					}
-				}
-			}
-
 			// Callback for AsyncCreateRoom()
-			void CMatchmaking::OnCreateLobby(const rail::rail_event::CreateRoomInfo* pRoomInfo)
+			void CMatchmaking::OnCreateLobby(const rail::rail_event::CreateRoomResult* pRoomInfo)
 			{
 				if (pRoomInfo->result != rail::kSuccess)
 				{
@@ -395,7 +329,7 @@ namespace Cry
 			}
 
 			// Callback for AsyncGetRoomListInZone()
-			void CMatchmaking::OnLobbyMatchList(const rail::rail_event::RoomInfoList* pRoomList)
+			void CMatchmaking::OnLobbyMatchList(const rail::rail_event::GetRoomListResult* pRoomList)
 			{
 				if (pRoomList->result != rail::kSuccess)
 				{
@@ -403,7 +337,7 @@ namespace Cry
 					return;
 				}
 
-				m_lastQueriedRoomInfo = pRoomList->room_info;
+				m_lastQueriedRoomInfo = pRoomList->room_infos;
 
 				for (IListener* pListener : m_listeners)
 				{
@@ -412,7 +346,7 @@ namespace Cry
 			}
 
 			// Callback for AsyncJoinRoom()
-			void CMatchmaking::OnLocalJoin(const rail::rail_event::JoinRoomInfo* pJoinInfo)
+			void CMatchmaking::OnLocalJoin(const rail::rail_event::JoinRoomResult* pJoinInfo)
 			{
 				if (pJoinInfo->result == rail::kSuccess)
 				{
@@ -507,7 +441,6 @@ namespace Cry
 				const char* const szValSeparators = " =";
 				int curPos = 0;
 				stack_string roomId;
-				stack_string zoneId;
 				stack_string password;
 
 				stack_string arg = cmdLine.Tokenize(szArgSeparators, curPos);
@@ -516,10 +449,6 @@ namespace Cry
 					if (arg == "rail_connect_to_roomid")
 					{
 						roomId = cmdLine.Tokenize(szValSeparators, curPos);
-					}
-					else if (arg == "rail_connect_to_zoneid")
-					{
-						zoneId = cmdLine.Tokenize(szValSeparators, curPos);
 					}
 					else if (arg == "rail_room_password")
 					{
@@ -530,18 +459,13 @@ namespace Cry
 				}
 
 				CRY_ASSERT_MESSAGE(!roomId.empty(), "[Rail][Matchmaking] Command line parsing failed!");
-				if (!zoneId.empty())
-				{
-					CRY_ASSERT_MESSAGE(m_zoneId == Schematyc2::StringUtils::UInt64FromString(zoneId.c_str(), 0), "[Rail][Matchmaking] Zone mismatch in invite!");
-				}
-
 				const uint64_t railRoomId = Schematyc2::StringUtils::UInt64FromString(roomId.c_str(), 0);
 				JoinLobby(railRoomId, password.c_str());
 			}
 
-			void CMatchmaking::OnRoomLeft(const rail::rail_event::LeaveRoomInfo* pLeaveInfo)
+			void CMatchmaking::OnRoomLeft(const rail::rail_event::LeaveRoomResult* pLeaveInfo)
 			{
-				auto pos = std::find_if(m_roomInstances.begin(), m_roomInstances.end(), [pLeaveInfo](rail::IRailRoom* pRoom) { return pRoom->GetRoomId() == pLeaveInfo->room_id; });
+				auto pos = std::find_if(m_roomInstances.begin(), m_roomInstances.end(), [pLeaveInfo](rail::IRailRoom* pRoom) { return pRoom->GetRoomID() == pLeaveInfo->room_id; });
 				if (pos != m_roomInstances.end())
 				{
 					rail::IRailRoom* pRoomToRelease = *pos;
@@ -571,22 +495,19 @@ namespace Cry
 				switch (eventId)
 				{
 					case rail::kRailEventRoomCreated:
-						OnCreateLobby(static_cast<const rail::rail_event::CreateRoomInfo*>(pEvent));
+						OnCreateLobby(static_cast<const rail::rail_event::CreateRoomResult*>(pEvent));
 						break;
-					case rail::kRailEventRoomListResult:
-						OnLobbyMatchList(static_cast<const rail::rail_event::RoomInfoList*>(pEvent));
+					case rail::kRailEventRoomGetRoomListResult:
+						OnLobbyMatchList(static_cast<const rail::rail_event::GetRoomListResult*>(pEvent));
 						break;
 					case rail::kRailEventRoomJoinRoomResult:
-						OnLocalJoin(static_cast<const rail::rail_event::JoinRoomInfo*>(pEvent));
+						OnLocalJoin(static_cast<const rail::rail_event::JoinRoomResult*>(pEvent));
 						break;
 					case rail::kRailEventUsersRespondInvitation:
 						OnInvited(static_cast<const rail::rail_event::RailUsersRespondInvitation*>(pEvent));
 						break;
-					case rail::kRailEventRoomZoneListResult:
-						OnZoneListReceived(static_cast<const rail::rail_event::ZoneInfoList*>(pEvent));
-						break;
 					case rail::kRailEventRoomLeaveRoomResult:
-						OnRoomLeft(static_cast<const rail::rail_event::LeaveRoomInfo*>(pEvent));
+						OnRoomLeft(static_cast<const rail::rail_event::LeaveRoomResult*>(pEvent));
 						break;
 					case rail::kRailEventUsersGetInviteDetailResult:
 						OnJoinRequested(static_cast<const rail::rail_event::RailUsersGetInviteDetailResult*>(pEvent));
