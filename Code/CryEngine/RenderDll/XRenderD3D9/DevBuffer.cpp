@@ -1168,7 +1168,7 @@ public:
 		StreamBufferData(dst_ptr, src_ptr, src_size);
 		EndReadWrite(src_buffer, src_size, src_offset);
 		EndReadWrite(dst_buffer, dst_size, dst_offset);
-#elif !CRY_PLATFORM_DURANGO
+#elif !(CRY_PLATFORM_DURANGO && (CRY_RENDERER_DIRECT3D >= 110) && (CRY_RENDERER_DIRECT3D < 120))
 		const SResourceRegionMapping mapping =
 		{
 			{ src_offset, 0, 0, 0 }, // src position
@@ -1894,7 +1894,7 @@ struct CBufferPoolImpl final
 	  , UINT_PTR size
 	  , IDefragAllocatorCopyNotification* pNotification) final
 	{
-#if CRY_PLATFORM_DURANGO
+#if CRY_PLATFORM_DURANGO && (CRY_RENDERER_DIRECT3D >= 110) && (CRY_RENDERER_DIRECT3D < 120)
 		CryAutoLock<CryCriticalSection> dmaLock(GetDeviceObjectFactory().m_dma1Lock);
 #endif
 #if CRY_PLATFORM_WINDOWS // Workaround for Win64, using a C-cast here breaks Orbis
@@ -1962,12 +1962,12 @@ struct CBufferPoolImpl final
 		  , old_item->m_offset);
 
 		// Issue a fence so that the copy can be synced
-#if !CRY_PLATFORM_DURANGO
-		GetDeviceObjectFactory().IssueFence(pending.m_copy_fence);
-#else
+#if CRY_PLATFORM_DURANGO && (CRY_RENDERER_DIRECT3D >= 110) && (CRY_RENDERER_DIRECT3D < 120)
 		ID3D11DmaEngineContextX* pDMA = GetDeviceObjectFactory().m_pDMA1;
 		pending.m_copy_fence = pDMA->InsertFence(D3D11_INSERT_FENCE_NO_KICKOFF);
 		pDMA->Submit();
+#else
+		GetDeviceObjectFactory().IssueFence(pending.m_copy_fence);
 #endif
 		pending.m_moving = true;
 		// The move will be considered "done" (bDstIsValid) on the next Update call
@@ -2181,7 +2181,7 @@ retry:
 		m_pending_moves.resize(s_PoolConfig.m_pool_max_moves_per_update);
 		for (size_t i = 0; i < s_PoolConfig.m_pool_max_moves_per_update; ++i)
 		{
-#if !CRY_PLATFORM_DURANGO
+#if !(CRY_PLATFORM_DURANGO && (CRY_RENDERER_DIRECT3D >= 110) && (CRY_RENDERER_DIRECT3D < 120))
 			if (GetDeviceObjectFactory().CreateFence(m_pending_moves[i].m_copy_fence) != S_OK)
 			{
 				CryLogAlways("Could not create buffer pool copy gpu fence");
