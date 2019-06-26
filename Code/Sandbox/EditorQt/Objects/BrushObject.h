@@ -19,7 +19,6 @@ public:
 	void                     Done();
 	void                     Display(CObjectRenderHelper& objRenderHelper);
 	const ColorB&            GetSelectionPreviewHighlightColor() override;
-	void                     DrawSelectionPreviewHighlight(SDisplayContext& dc) override;
 	bool                     CreateGameObject();
 
 	void                     GetLocalBounds(AABB& box);

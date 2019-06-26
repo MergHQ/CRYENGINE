@@ -268,6 +268,12 @@ void CObjectMode::DisplaySelectionPreview(SDisplayContext& dc)
 
 	CRect rc = pViewport->GetSelectionRectangle();
 
+	for (CBaseObjectPtr& pObj : m_highlightedObjects)
+	{
+		pObj->SetHighlight(false);
+	}
+	m_highlightedObjects.clear();
+
 	if (GetCommandMode() == SelectMode)
 	{
 		if (rc.Width() > m_areaRectMinSizeWidth && rc.Height() > m_areaRectMinSizeHeight)
@@ -294,6 +300,11 @@ void CObjectMode::DisplaySelectionPreview(SDisplayContext& dc)
 				if (pObject->GetType() & ~gViewportSelectionPreferences.objectSelectMask)
 					continue;
 
+				if (!pObject->IsHighlighted())
+				{
+					pObject->SetHighlight(true);
+					m_highlightedObjects.push_back(pObject);
+				}
 				pObject->DrawSelectionPreviewHighlight(dc);
 			}
 		}

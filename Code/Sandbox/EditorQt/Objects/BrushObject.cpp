@@ -421,29 +421,6 @@ const ColorB& CBrushObject::GetSelectionPreviewHighlightColor()
 	return gViewportSelectionPreferences.geometryHighlightColor;
 }
 
-void CBrushObject::DrawSelectionPreviewHighlight(SDisplayContext& dc)
-{
-	CBaseObject::DrawSelectionPreviewHighlight(dc);
-
-	if (dc.display2D)
-		return;
-
-	ColorB color = GetSelectionPreviewHighlightColor();
-
-	if (GetParent())
-		color.a = (uint8)(gViewportSelectionPreferences.childObjectGeomAlpha * 255);
-
-	SGeometryDebugDrawInfo dd;
-	dd.tm = GetWorldTM();
-	dd.color = color;
-	dd.lineColor = color;
-	dd.bDrawInFront = true;
-
-	IStatObj* pStatObj = GetIStatObj();
-	if (pStatObj)
-		pStatObj->DebugDraw(dd);
-}
-
 XmlNodeRef CBrushObject::Export(const string& levelPath, XmlNodeRef& xmlNode)
 {
 	return 0;

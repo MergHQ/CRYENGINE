@@ -46,7 +46,6 @@ public:
 	bool                       Init(::CBaseObject* prev, const string& file) override;
 	void                       Display(CObjectRenderHelper& objRenderHelper) override;
 	const ColorB&              GetSelectionPreviewHighlightColor() override;
-	void                       DrawSelectionPreviewHighlight(SDisplayContext& dc) override;
 
 	void                       GetBoundBox(AABB& box) override;
 	void                       GetLocalBounds(AABB& box) override;

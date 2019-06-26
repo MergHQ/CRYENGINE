@@ -173,7 +173,8 @@ private:
 	CryGUID      m_MouseOverObject;
 	bool         m_openContext;
 	// used to keep highlight from disappearing when we use right click menu
-	bool         m_suspendHighlightChange;
+	bool                                 m_suspendHighlightChange;
+	std::vector<_smart_ptr<CBaseObject>> m_highlightedObjects;
 
 	typedef std::vector<CryGUID> TGuidContainer;
 	std::unordered_set<ISubTool*> m_subTools;
