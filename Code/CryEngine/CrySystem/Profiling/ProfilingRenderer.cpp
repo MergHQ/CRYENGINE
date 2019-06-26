@@ -79,7 +79,7 @@ void CProfilingRenderer::RegisterCVars()
 
 	REGISTER_CVAR(profile_row, 5, 0,
 		"Starting row for profile display");
-	REGISTER_CVAR(profile_col, 50, 0,
+	REGISTER_CVAR(profile_col, 11, 0,
 		"Starting column for profile display");
 	REGISTER_CVAR(profile_peak_display, 8.0f, 0,
 		"For how long to display peak values in seconds");
