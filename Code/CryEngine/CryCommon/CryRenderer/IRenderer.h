@@ -1995,6 +1995,13 @@ struct SRendParams
 };
 //! \endcond
 
+struct SAuxStatObjParams
+{
+	SRendParams renderParams;
+	Matrix34 transformMatix;
+	IStatObj* pStatObj;
+};
+
 struct SRendererCloakParams
 {
 	SRendererCloakParams()

@@ -77,13 +77,18 @@ void CSmartObject::Display(CObjectRenderHelper& objRenderHelper)
 
 			m_statObjWorldMatrix = wtm;
 			SRendParams rp;
-			rp.pMatrix = &m_statObjWorldMatrix;
+			rp.pMatrix = nullptr;
 			rp.AmbientColor = ColorF(color[0], color[1], color[2], 1);
 			rp.fAlpha = color[3];
 			rp.dwFObjFlags |= FOB_TRANS_MASK;
 			//rp.nShaderTemplate = EFT_HELPER;
 
-			passInfo.GetIRenderView()->InjectAuxiliaryStatObject(rp, m_pStatObj);
+			SAuxStatObjParams statObjParams;
+			statObjParams.pStatObj = m_pStatObj;
+			statObjParams.renderParams = rp;
+			statObjParams.transformMatix = m_statObjWorldMatrix;
+
+			passInfo.GetIRenderView()->InjectAuxiliaryStatObject(statObjParams);
 		}
 	}
 

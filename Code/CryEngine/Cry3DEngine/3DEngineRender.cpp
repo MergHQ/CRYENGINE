@@ -1604,7 +1604,7 @@ void C3DEngine::RenderScene(const int nRenderFlags, const SRenderingPassInfo& pa
 		{
 			CRY_PROFILE_SECTION(PROFILE_RENDERER, "auxiliaryStatObjects");
 			for (auto& obj : auxStatObjs)
-				obj.second->Render(obj.first, passInfo);
+				obj.pStatObj->Render(obj.renderParams, passInfo);
 		}
 	}
 

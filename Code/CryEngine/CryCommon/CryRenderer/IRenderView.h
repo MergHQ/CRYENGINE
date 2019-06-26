@@ -86,6 +86,8 @@ struct SRendererData
 	RD::SColorGradingInfo colorGrading;
 };
 
+struct SAuxStatObjParams;
+
 // Interface to the render view.
 struct IRenderView : public CMultiThreadRefCount
 {
@@ -202,8 +204,8 @@ struct IRenderView : public CMultiThreadRefCount
 	//! Set associated shadow frustum
 	virtual void                                                  SetShadowFrustumOwner(ShadowMapFrustum* pOwner) = 0;
 
-	virtual void                                                  InjectAuxiliaryStatObject(SRendParams rp, IStatObj* pStatObj) = 0;
-	virtual const std::vector<std::pair<SRendParams, IStatObj*>>& GetAuxiliaryStatObjects() const = 0;
+	virtual void                                                  InjectAuxiliaryStatObject(const SAuxStatObjParams& statObjParams) = 0;
+	virtual const std::vector<SAuxStatObjParams>&				  GetAuxiliaryStatObjects() const = 0;
 
 	virtual void                                                  SetGraphicsPipeline(std::shared_ptr<CGraphicsPipeline> pipeline) = 0;
 	virtual const std::shared_ptr<CGraphicsPipeline>&             GetGraphicsPipeline() const = 0;

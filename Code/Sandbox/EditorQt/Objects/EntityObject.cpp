@@ -2680,9 +2680,14 @@ void CEntityObject::Display(CObjectRenderHelper& objRenderHelper)
 		rp.AmbientColor = ColorF(color[0], color[1], color[2], 1);
 		rp.dwFObjFlags |= FOB_TRANS_MASK;
 		rp.fAlpha = 1;
-		rp.pMatrix = &m_statObjWorldMatrix;
+		rp.pMatrix = nullptr;
 
-		objRenderHelper.GetPassInfo().GetIRenderView()->InjectAuxiliaryStatObject(rp, m_pHelperMesh);
+		SAuxStatObjParams statObjParams;
+		statObjParams.pStatObj = m_pHelperMesh;
+		statObjParams.renderParams = rp;
+		statObjParams.transformMatix = m_statObjWorldMatrix;
+
+		objRenderHelper.GetPassInfo().GetIRenderView()->InjectAuxiliaryStatObject(statObjParams);
 	}
 
 	if (IsSelected())

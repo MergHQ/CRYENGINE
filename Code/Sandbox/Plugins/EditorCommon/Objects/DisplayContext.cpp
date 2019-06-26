@@ -745,15 +745,20 @@ void SDisplayContext::RenderObject(int objectType, const Matrix34& tm, const SRe
 		color[2] = m_color4b.b * (1.0f / 255.0f);
 		color[3] = m_color4b.a * (1.0f / 255.0f);
 
-		m_statObjWorldMatrix = m_matrixStack[m_currentMatrix] * tm;
+
 		SRendParams rp;
-		rp.pMatrix = &m_statObjWorldMatrix;
+		rp.pMatrix = nullptr;
 		rp.AmbientColor = ColorF(color[0], color[1], color[2], 1);
 		rp.fAlpha = color[3];
 		rp.dwFObjFlags |= FOB_TRANS_MASK;
 		//rp.nShaderTemplate = EFT_HELPER;
 
-		passInfo.GetIRenderView()->InjectAuxiliaryStatObject(rp, pObject);
+		SAuxStatObjParams statObjParams;
+		statObjParams.pStatObj = pObject;
+		statObjParams.renderParams = rp;
+		statObjParams.transformMatix = m_matrixStack[m_currentMatrix] * tm;
+
+		passInfo.GetIRenderView()->InjectAuxiliaryStatObject(statObjParams);
 	}
 }
 
