@@ -251,6 +251,12 @@ void CMaterialEditor::OnInitialize()
 	{
 		CInspector* pInspector = new CInspector(this);
 		pInspector->SetLockable(false);
+
+		if (m_pEditedMaterial)
+		{
+			BroadcastPopulateInspector();
+		}
+
 		return pInspector;
 	}, true);
 
@@ -278,7 +284,6 @@ void CMaterialEditor::OnLayoutChange(const QVariantMap& state)
 		if (m_pEditedMaterial)
 		{
 			signalMaterialForEditChanged(m_pEditedMaterial);
-			BroadcastPopulateInspector();
 		}
 	}
 	CAssetEditor::OnLayoutChange(state);
