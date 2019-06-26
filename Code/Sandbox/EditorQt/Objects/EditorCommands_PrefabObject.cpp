@@ -321,6 +321,77 @@ static void PySelectAllInstancesOfSelectedType()
 		GetIEditor()->GetPrefabManager()->SelectAllInstancesOfItem(items[0]);
 	}
 }
+
+static void PyCheckPrefabItemIds()
+{
+	int itemCount = 0;
+	int duplicatedItems = 0;
+
+	CryLog("Scan started");
+
+	//Go though all assets of type prefab
+	const CAssetType* pPrefabType = GetIEditor()->GetAssetManager()->FindAssetType("Prefab");
+	CAssetManager::GetInstance()->ForeachAssetOfType(pPrefabType, [&itemCount, &duplicatedItems](CAsset* pAsset)
+	{
+		++itemCount;
+
+		const CryGUID& guid = pAsset->GetGUID();
+
+		//Get the prefab item from the asset guid
+		IDataBaseItem* pDatabaseItem = GetIEditor()->GetPrefabManager()->LoadItem(guid);
+
+		if (!pDatabaseItem)
+		{
+			return;
+		}
+
+		CPrefabItem* pItem = static_cast<CPrefabItem*>(pDatabaseItem);
+		CryLog("[ITEM SCAN] Checking prefab item %s at path %s", pItem->GetName().c_str(), pAsset->GetFile(0).c_str());
+		
+		if (!pItem->ScanForDuplicateObjects())
+		{
+			++duplicatedItems;
+		}
+	});
+
+	CryLog("Scan completed, item count is %d, duplicate count is %d",itemCount, duplicatedItems);
+}
+
+static void PyFixPrefabItemIsDuplicate()
+{
+	int itemCount = 0;
+	int fixedItemCount = 0;
+
+	CryLog("Scanning for duplicate ids in prefab items");
+
+	//Go though all assets of type prefab
+	const CAssetType* pPrefabType = GetIEditor()->GetAssetManager()->FindAssetType("Prefab");
+	CAssetManager::GetInstance()->ForeachAssetOfType(pPrefabType, [ &itemCount, &fixedItemCount](CAsset* pAsset)
+	{
+		++itemCount;
+
+		const CryGUID& guid = pAsset->GetGUID();
+
+		//Get the prefab item from the asset guid
+		IDataBaseItem* pDatabaseItem = GetIEditor()->GetPrefabManager()->LoadItem(guid);
+
+		if (!pDatabaseItem)
+		{
+			return;
+		}
+
+		CPrefabItem* pItem = static_cast<CPrefabItem*>(pDatabaseItem);
+		if (pItem->FixDuplicateObjects())
+		{
+			//Save the library to disk if we have modified it
+			pItem->GetLibrary()->Save();
+			fixedItemCount++;
+		}
+
+	});
+
+	CryLog("Scan completed, scanned item count is %d, fixed item count is %d", itemCount, fixedItemCount);
+}
 }
 
 DECLARE_PYTHON_MODULE(prefab);
@@ -388,3 +459,9 @@ REGISTER_ONLY_PYTHON_COMMAND(Private_PrefabCommands::PyNewPrefab, prefab, new_pr
 
 REGISTER_PYTHON_COMMAND(Private_PrefabCommands::PyDeletePrefabItem, prefab, delete_item,
                         CCommandDescription("Delete a prefab item from a specified prefab library.").Param("itemName", "The name of the item to delete"));
+
+REGISTER_PYTHON_COMMAND(Private_PrefabCommands::PyFixPrefabItemIsDuplicate, prefab, fix_duplicates_in_items,
+	CCommandDescription("Regenerate prefab ids with duplicated hiparts."));
+
+REGISTER_EDITOR_AND_SCRIPT_COMMAND(Private_PrefabCommands::PyCheckPrefabItemIds, prefab, check_item_ids,
+	CCommandDescription("Make sure object ids in prefab item are valid"));

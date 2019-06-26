@@ -2,6 +2,9 @@
 #include <StdAfx.h>
 
 #include "IEditorImpl.h"
+
+#include <Objects/ObjectManager.h>
+
 #include "IUndoManager.h"
 #include "Util/BoostPythonHelpers.h"
 
@@ -49,6 +52,11 @@ void PyOpenOrFocusViewPane(const char* viewClassName)
 void OpenEditorMenu()
 {
 	CommandEvent("general.open_editor_menu").SendToKeyboardFocus();
+}
+
+int PyGetObjectsCountInLevel()
+{
+	return GetIEditor()->GetObjectManager()->GetObjectCount();
 }
 
 }
@@ -218,6 +226,10 @@ REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(Private_EditorCommands::PyOpenOrFocusViewPa
 
 REGISTER_EDITOR_AND_SCRIPT_COMMAND(Private_EditorCommands::OpenEditorMenu, general, open_editor_menu,
                                    CCommandDescription("Open Editor Menu"))
+
+	REGISTER_EDITOR_AND_SCRIPT_COMMAND(Private_EditorCommands::PyGetObjectsCountInLevel, general, get_objects_count,
+		CCommandDescription("Number of objects in level"))
+
 REGISTER_EDITOR_UI_COMMAND_DESC(general, open_editor_menu, "", "", "", false)
 
 REGISTER_EDITOR_AND_SCRIPT_KEYBOARD_FOCUS_COMMAND(general, toggle_sync_selection, CCommandDescription("Context driven toggle sync selection command"))

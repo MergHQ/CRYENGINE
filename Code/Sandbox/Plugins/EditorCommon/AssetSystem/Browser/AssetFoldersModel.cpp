@@ -97,9 +97,6 @@ CAssetFoldersModel::CAssetFoldersModel(QObject* parent /*= nullptr*/)
 	m_assetFolders = assetFolders.get();
 	m_root.m_subFolders.emplace_back(std::move(assetFolders));
 
-	CAssetManager::GetInstance()->signalBeforeAssetsReset.Connect(this, &CAssetFoldersModel::PreReset);
-	CAssetManager::GetInstance()->signalAfterAssetsReset.Connect(this, &CAssetFoldersModel::PostReset);
-
 	CAssetManager::GetInstance()->signalBeforeAssetsInserted.Connect(this, &CAssetFoldersModel::PreInsert);
 
 	CAssetManager::GetInstance()->signalBeforeAssetsRemoved.Connect(this, &CAssetFoldersModel::PreRemove);
@@ -117,9 +114,6 @@ CAssetFoldersModel::CAssetFoldersModel(QObject* parent /*= nullptr*/)
 
 CAssetFoldersModel::~CAssetFoldersModel()
 {
-	CAssetManager::GetInstance()->signalBeforeAssetsReset.DisconnectObject(this);
-	CAssetManager::GetInstance()->signalAfterAssetsReset.DisconnectObject(this);
-
 	CAssetManager::GetInstance()->signalBeforeAssetsInserted.DisconnectObject(this);
 	CAssetManager::GetInstance()->signalAfterAssetsInserted.DisconnectObject(this);
 

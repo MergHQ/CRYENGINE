@@ -52,6 +52,11 @@ public:
 	void       SetPrefabClassName(string prefabClassNameString);
 
 	void       UpdateObjects();
+	//! Go through all the objects in the xml archive and find if there are xml nodes with tag object. In those nodes check the prefab id to make sure they don't have common highparts
+	//! This check is important because the id resolve process will end up generating the same instance ids if the objects have the same highpart in the prefab id 
+	bool       ScanForDuplicateObjects();
+	//! Fix all duplicate Id in child objects by assigning random guids to the duplicated Id fields
+	bool       FixDuplicateObjects();
 
 	//! Searches and finds the XmlNode with a specified Id in m_objectsNode (the XML representation of this prefab in the prefab library)
 	XmlNodeRef             FindObjectByGuid(const CryGUID& guid, bool fowardSearch = true);

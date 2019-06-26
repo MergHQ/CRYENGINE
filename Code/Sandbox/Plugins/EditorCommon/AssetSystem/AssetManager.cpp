@@ -188,6 +188,17 @@ void CAssetManager::Init()
 	}, (uintptr_t)this);
 }
 
+int CAssetManager::GetAssetsOfTypeCount(const CAssetType* pAssetType)
+{
+	int assetsOfTypeCount = 0;
+	ForeachAssetOfType(pAssetType, [&assetsOfTypeCount](CAsset* pAsset)
+	{
+		assetsOfTypeCount++;
+	});
+
+	return assetsOfTypeCount;
+}
+
 CAssetType* CAssetManager::FindAssetType(const char* name) const
 {
 	auto it = std::lower_bound(m_assetTypes.cbegin(), m_assetTypes.cend(), name, [](const auto a, const auto b)
@@ -282,23 +293,8 @@ CAsset* CAssetManager::FindAssetForFile(const char* szFilePath) const
 
 CAsset* CAssetManager::FindAssetById(const CryGUID& guid)
 {
-	if (!m_orderedByGUID)
-	{
-		signalBeforeAssetsReset();
-		std::sort(m_assets.begin(), m_assets.end(), [](const CAsset* a, const CAsset* b)
-		{
-			return a->GetGUID() < b->GetGUID();
-		});
-		m_orderedByGUID = true;
-		signalAfterAssetsReset();
-	}
-
-	auto it = std::lower_bound(m_assets.cbegin(), m_assets.cend(), guid, [](const CAsset* pAsset, const CryGUID& guid)
-	{
-		return pAsset->GetGUID() < guid;
-	});
-
-	return it != m_assets.cend() && (*it)->GetGUID() == guid ? *it : nullptr;
+	auto it = m_guidsToAssetMap.find(guid);
+	return it != m_guidsToAssetMap.cend() ? it->second : nullptr;
 }
 
 void CAssetManager::AsyncScanForAssets()
@@ -345,7 +341,7 @@ void CAssetManager::InsertAssets(const std::vector<CAsset*>& assets)
 		m_sourceFilesTracker.SetIndex(pAsset->GetSourceFile(), *pAsset);
 		m_workFilesTracker.SetIndices(pAsset->GetWorkFiles(), *pAsset);
 		m_assets.push_back(pAsset);
-		m_orderedByGUID = false;
+		m_guidsToAssetMap[pAsset->GetGUID()] = pAsset;
 		AddAssetFilesToMap(m_fileToAssetMap, pAsset);
 	}
 
@@ -465,8 +461,6 @@ void CAssetManager::DeleteAssetsOnlyFromData(std::vector<CAsset*> assets)
 	for (auto pAsset : assets)
 	{
 		pAsset->signalBeforeRemoved(pAsset);
-		m_orderedByGUID = false;
-
 		m_sourceFilesTracker.RemoveIndex(pAsset->GetSourceFile(), *pAsset);
 		m_workFilesTracker.RemoveIndices(pAsset->GetWorkFiles(), *pAsset);  
 
@@ -474,6 +468,7 @@ void CAssetManager::DeleteAssetsOnlyFromData(std::vector<CAsset*> assets)
 		const CAssetPtr pAssetToDelete = std::move(m_assets[index]);
 		m_assets[index] = std::move(m_assets[--newSize]);
 		m_assets.resize(newSize);
+		m_guidsToAssetMap.erase(pAssetToDelete->GetGUID());
 		DeleteAssetFilesFromMap(m_fileToAssetMap, pAssetToDelete);
 		pAsset->signalAfterRemoved(pAsset);
 	}
@@ -502,7 +497,6 @@ void CAssetManager::MoveAssets(const std::vector<CAsset*>& assets, const char* s
 		DeleteAssetFilesFromMap(m_fileToAssetMap, pAsset);
 		pAsset->GetType()->MoveAsset(pAsset, szDestinationFolder, bMoveSourceFile);
 		AddAssetFilesToMap(m_fileToAssetMap, pAsset);
-		m_orderedByGUID = false;
 	}
 }
 

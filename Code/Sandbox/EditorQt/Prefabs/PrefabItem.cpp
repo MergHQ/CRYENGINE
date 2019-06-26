@@ -13,6 +13,10 @@
 #include "Prefabs/PrefabManager.h"
 #include "BaseLibraryManager.h"
 
+#include <IEditor.h>
+#include "GameEngine.h"
+#include <AssetSystem/AssetManager.h>
+
 #include <Objects/IObjectLayer.h>
 #include <Objects/ObjectLoader.h>
 #include <Preferences/SnappingPreferences.h>
@@ -320,6 +324,127 @@ void CPrefabItem::UpdateObjects()
 			pPrefabObject->SetPrefab(this, true);
 		}
 	}
+}
+
+bool CPrefabItem::ScanForDuplicateObjects()
+{
+	std::vector<CryGUID> guids;
+
+	//find all objects in this item
+	std::vector<XmlNodeRef> objects;
+	FindAllObjectsInLibrary(GetObjectsNode(), objects);
+
+	bool duplicateFound = false;
+	int duplicatedItems = 0;
+
+	//Check all the object nodes for recurring ids
+	for (XmlNodeRef node : objects)
+	{
+		//Make sure we are only dealing with objects, this is necessary because area nodes have an 'Id' property that's named the same as object node Ids. 
+		//The issue is that area nodes use a completely different id naming scheme, so this needs to be skipped
+		if (strcmp(node->getTag(), "Object"))
+		{
+			continue;
+		}
+
+		CryGUID id = CryGUID::FromString(node->getAttr("Id"));
+
+		bool hasId = std::any_of(guids.begin(), guids.end(), [id](const CryGUID& guidToCheck)
+		{
+			//if the high part of this id is the same as another id in the ids list then we need to warn the user about it
+			return id.hipart == guidToCheck.hipart;
+		});
+
+		if (hasId && node->haveAttr("Name"))
+		{
+			CryWarning(EValidatorModule::VALIDATOR_MODULE_EDITOR, EValidatorSeverity::VALIDATOR_ERROR, " Found duplicated hipart in object %s, id is %s", node->getAttr("Name"), id.ToString().c_str());
+			if (!duplicateFound)
+			{
+				duplicatedItems++;
+			}
+
+			duplicateFound = true;
+		}
+		else
+		{
+			guids.push_back(id);
+		}
+	}
+
+	if (duplicateFound)
+	{
+		CryWarning(EValidatorModule::VALIDATOR_MODULE_EDITOR, EValidatorSeverity::VALIDATOR_ERROR, "This prefab item %s has duplicate hipart ids, this will cause a crash on prefab swap, run prefab.fix_duplicates_in_items to recompute prefab ids", GetName().c_str());
+	}
+
+	return !duplicateFound;
+}
+
+bool CPrefabItem::FixDuplicateObjects()
+{
+	bool canRun = true;
+
+	//If the level is loaded check if we have loaded prefab items
+	if (GetIEditor()->GetGameEngine()->IsLevelLoaded() && GetIEditor()->GetPrefabManager()->GetLibraryCount())
+	{
+		//If a level is open make sure that no instances of this item are present in the level
+		if (GetIEditor()->GetPrefabManager()->FindAllInstancesOfItem(this).size())
+		{
+			canRun = false;
+		}
+	}
+
+	if (!canRun)
+	{
+		CryWarning(EValidatorModule::VALIDATOR_MODULE_EDITOR, EValidatorSeverity::VALIDATOR_ERROR, "This command changes prefab ids and cannot be run while any prefab instances are present in the level");
+		return false;
+	}
+
+	//list of the ids loaded up until now
+	std::vector<CryGUID> guids;
+
+	//find all objects in this item
+	std::vector<XmlNodeRef> objects;
+	FindAllObjectsInLibrary(GetObjectsNode(), objects);
+
+	bool duplicateFound = false;
+
+	//Check all the object nodes for recurring ids
+	for (XmlNodeRef node : objects)
+	{
+		//Make sure we are only dealing with objects, this is necessary because area nodes have an 'Id' property that's named the same as object node Ids. 
+		//The issue is that area nodes use a completely different id naming scheme, so this needs to be skipped
+		if (strcmp(node->getTag(), "Object") != 0)
+		{
+			continue;
+		}
+		
+		CryGUID id = CryGUID::FromString(node->getAttr("Id"));
+
+		bool hasGuid = std::any_of(guids.begin(), guids.end(), [id](const CryGUID& guidToCheck)
+		{
+			//if the high part of this id is the same as another id in the ids list then we need to regenerate it
+			return id.hipart == guidToCheck.hipart;
+		});
+
+		if (hasGuid)
+		{
+			//regenerate this id and store it in the XML node
+			node->setAttr("Id", CryGUID::Create());
+			duplicateFound = true;
+		}
+		else
+		{
+			guids.push_back(id);
+		}
+	}
+
+	//if we changed any id mark the item (and the asset) as modified
+	if (duplicateFound)
+	{
+		SetModified();
+	}
+
+	return duplicateFound;
 }
 
 void CPrefabItem::ModifyLibraryPrefab(CSelectionGroup& objectsInPrefabAsFlatSelection, CPrefabObject* pPrefabObject, const SObjectChangedContext& context, const TObjectIdMapping& guidMapping)

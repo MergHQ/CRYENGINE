@@ -73,6 +73,23 @@ void PyImportFiles(const char* filePath)
 	ImportFiles({ string(filePath) });
 }
 
+int PyTypeCount(const char* assetType)
+{
+	int result = -1;
+	const CAssetType* pPrefabType = GetIEditor()->GetAssetManager()->FindAssetType(assetType);
+	if (pPrefabType)
+	{
+		result = GetIEditor()->GetAssetManager()->GetAssetsOfTypeCount(pPrefabType);
+	}
+	else
+	{
+		CryWarning(VALIDATOR_MODULE_ASSETS, VALIDATOR_ERROR, "Asset Type %s does not exist", assetType);
+		result = -1;
+	}
+
+	return result;
+}
+
 }
 
 DECLARE_PYTHON_MODULE(asset);
@@ -95,6 +112,9 @@ REGISTER_EDITOR_COMMAND_SHORTCUT(asset, open_browser, "Alt+F2; Ctrl+Alt+B")
 REGISTER_PYTHON_COMMAND(Private_EditorCommands::PyImportFiles, asset, import, "Imports assets");
 REGISTER_PYTHON_COMMAND(Private_EditorCommands::PyImportDialog, asset, import_dialog, "Imports assets")
 REGISTER_EDITOR_COMMAND_TEXT(asset, import_dialog, "Import");
+
+REGISTER_EDITOR_AND_SCRIPT_COMMAND(Private_EditorCommands::PyTypeCount, asset, count_assets_of_type,
+                                   CCommandDescription("Count the number of assets of a specific type").Param("type", "The name of the asset type"))
 
 REGISTER_EDITOR_AND_SCRIPT_KEYBOARD_FOCUS_COMMAND(asset, generate_thumbnails, CCommandDescription("Generate All Thumbnails"))
 

@@ -21,15 +21,6 @@ CModel::CModel()
 		signalEndChange();
 	}, (uintptr_t)this);
 
-	pAssetManager->signalBeforeAssetsReset.Connect([this]()
-	{
-		signalBeginChange();
-	}, (uintptr_t)this);
-	pAssetManager->signalAfterAssetsReset.Connect([this]()
-	{
-		signalEndChange();
-	}, (uintptr_t)this);
-
 	pAssetManager->signalBeforeAssetsRemoved.Connect([this](const std::vector<CAsset*>& assets)
 	{
 		signalBeginChange();
@@ -56,9 +47,6 @@ CModel::~CModel()
 
 	pAssetManager->signalBeforeAssetsInserted.DisconnectById((uintptr_t)this);
 	pAssetManager->signalAfterAssetsInserted.DisconnectById((uintptr_t)this);
-
-	pAssetManager->signalBeforeAssetsReset.DisconnectById((uintptr_t)this);
-	pAssetManager->signalAfterAssetsReset.DisconnectById((uintptr_t)this);
 
 	pAssetManager->signalBeforeAssetsRemoved.DisconnectById((uintptr_t)this);
 	pAssetManager->signalAfterAssetsRemoved.DisconnectById((uintptr_t)this);

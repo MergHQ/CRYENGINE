@@ -150,9 +150,6 @@ void CAssetModel::Init()
 	CAutoRegisterColumn::RegisterAll();
 	BuildDetailAttributes();
 
-	CAssetManager::GetInstance()->signalBeforeAssetsReset.Connect(this, &CAssetModel::PreReset);
-	CAssetManager::GetInstance()->signalAfterAssetsReset.Connect(this, &CAssetModel::PostReset);
-
 	CAssetManager::GetInstance()->signalBeforeAssetsInserted.Connect(this, &CAssetModel::PreInsert);
 	CAssetManager::GetInstance()->signalAfterAssetsInserted.Connect(this, &CAssetModel::PostInsert);
 
@@ -166,9 +163,6 @@ void CAssetModel::Init()
 
 CAssetModel::~CAssetModel()
 {
-	CAssetManager::GetInstance()->signalBeforeAssetsReset.DisconnectObject(this);
-	CAssetManager::GetInstance()->signalAfterAssetsReset.DisconnectObject(this);
-
 	CAssetManager::GetInstance()->signalBeforeAssetsInserted.DisconnectObject(this);
 	CAssetManager::GetInstance()->signalAfterAssetsInserted.DisconnectObject(this);
 
@@ -602,16 +596,6 @@ QModelIndex CAssetModel::parent(const QModelIndex& index) const
 {
 	//Hierarchy not supported
 	return QModelIndex();
-}
-
-void CAssetModel::PreReset()
-{
-	beginResetModel();
-}
-
-void CAssetModel::PostReset()
-{
-	endResetModel();
 }
 
 void CAssetModel::PreInsert(const std::vector<CAsset*>& assets)

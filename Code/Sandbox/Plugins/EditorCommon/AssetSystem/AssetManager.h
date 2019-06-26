@@ -45,6 +45,7 @@ public:
 	void                                Init();
 
 	int                                 GetAssetsCount() const { return m_assets.size(); }
+	int                                 GetAssetsOfTypeCount(const CAssetType* pAssetType);
 
 	CAssetType*                         FindAssetType(const char* name) const;
 
@@ -201,10 +202,6 @@ public:
 	const AssetFilesTracker<false>& GetWorkFilesTracker() const { return m_workFilesTracker; }
 	AssetFilesTracker<false>& GetWorkFilesTracker() { return m_workFilesTracker; }
 
-	//! Braces the invalidation of all assets.
-	CCrySignal<void()> signalBeforeAssetsReset;
-	CCrySignal<void()> signalAfterAssetsReset;
-
 	//! Braces the insertion of new assets.
 	CCrySignal<void(const std::vector<CAsset*>&)> signalBeforeAssetsInserted;
 	CCrySignal<void(const std::vector<CAsset*>&)> signalAfterAssetsInserted;
@@ -243,6 +240,8 @@ private:
 	std::vector<CAssetPtr>                 m_assets;
 
 	std::unordered_map<string, CAsset*, stl::hash_stricmp<string>, stl::hash_stricmp<string>> m_fileToAssetMap;
+
+	std::unordered_map<CryGUID, CAsset*> m_guidsToAssetMap;
 
 	// There might be assets inserted while the initial scan for assets is still running (e.g., by the file monitor).
 	// Every asset inserted before the initial scanning is completed is added to a batch that will be inserted once scanning is completed.
