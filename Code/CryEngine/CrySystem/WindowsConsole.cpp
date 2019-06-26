@@ -199,6 +199,20 @@ void CWindowsConsole::OnInitProgress(const char* sProgressMsg)
 	}
 }
 
+static BOOL WINAPI CtrlHandler(DWORD evt)
+{
+	switch (evt)
+	{
+	case CTRL_C_EVENT:
+	case CTRL_BREAK_EVENT:
+		return TRUE;
+	case CTRL_CLOSE_EVENT:
+		gEnv->pSystem->Quit();
+		return TRUE;
+	}
+	return FALSE;
+}
+
 void CWindowsConsole::OnInit(ISystem* pSystem)
 {
 	if (m_requireDedicatedServer && !gEnv->IsDedicated())
@@ -220,6 +234,7 @@ void CWindowsConsole::OnInit(ISystem* pSystem)
 		m_inputBufferHandle = GetStdHandle(STD_INPUT_HANDLE);
 		m_screenBufferHandle = GetStdHandle(STD_OUTPUT_HANDLE);
 		SetConsoleMode(m_inputBufferHandle, ENABLE_WINDOW_INPUT);
+		SetConsoleCtrlHandler(CtrlHandler, TRUE);
 		m_consoleScreenBufferSize.X = WINDOWS_CONSOLE_WIDTH;
 		m_consoleScreenBufferSize.Y = WINDOWS_CONSOLE_HEIGHT;
 		m_consoleWindow.Left = 0;
