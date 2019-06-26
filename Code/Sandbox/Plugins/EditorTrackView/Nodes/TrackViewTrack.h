@@ -55,7 +55,7 @@ class CTrackViewTrack : public CTrackViewNode, public ITrackViewKeyBundle
 	friend class CAbstractUndoTrackTransaction;
 
 public:
-	using SAnimKeysIndicesByIndex = std::vector<size_t>;
+	using SAnimKeysIndicesByIndex = AnimTrackKeysIndices;
 
 public:
 	CTrackViewTrack(IAnimTrack* pTrack, CTrackViewAnimNode* pTrackAnimNode, CTrackViewNode* pParentNode,

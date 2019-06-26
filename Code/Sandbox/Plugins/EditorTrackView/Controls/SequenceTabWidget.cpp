@@ -3002,9 +3002,9 @@ void CTrackViewSequenceTabWidget::OnDopesheetPaste(SAnimTime time, STimelineTrac
 				pTrackViewNode = GetActiveSequence()->GetNodeFromGUID(currentTrackGUID);
 			}
 
-			CTrackViewAnimNode* pAnimNode = static_cast<CTrackViewAnimNode*>(pTrackViewNode);
-			if (pAnimNode)
+			if (pTrackViewNode && (pTrackViewNode->GetNodeType() == eTVNT_AnimNode))
 			{
+				CTrackViewAnimNode* pAnimNode = static_cast<CTrackViewAnimNode*>(pTrackViewNode);
 				pAnimNode->PasteNodesFromClipboard();
 			}
 		}

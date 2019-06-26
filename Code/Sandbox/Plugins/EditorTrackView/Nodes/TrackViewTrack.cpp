@@ -497,47 +497,37 @@ void CTrackViewTrack::SerializeSelectedKeys(XmlNodeRef& xmlNode, bool bLoading, 
 		XmlNodeRef subTrackNode;
 		SAnimKeysIndicesByIndex selectedKeysIndicesByIndex;
 
-		if (bLoading)
-		{
-			selectedKeysIndicesByIndex.reserve(xmlNode->getChildCount());
-		}
-		else
-		{
+		if (bLoading == false)
 			GetSelectedKeysIndices(selectedKeysIndicesByIndex);
-		}
 
 		if (bLoading)
 		{
 			if (index)
-			{
 				subTrackNode = xmlNode->getChild(index-1);
-			}
 			else
-			{
 				subTrackNode = xmlNode;
-			}
 		}
 		else
 		{
 			if (index)
-			{
 				subTrackNode = xmlNode->newChild("NewSubTrack");
-			}
 			else
-			{
 				subTrackNode = xmlNode;
-			}
 		}
 
 		if (subTrackNode.isValid())
 		{
+			// We need to "reserve" memory here, because m_pAnimTrack implementation is in the other DLL and m_pAnimTrack->SerializeKeys()
+			// it is changing the contents of the "selectedKeysIndicesByIndex". So we are getting a situation here when memory is allocated in one DLL and
+			// then deallocated in the other one.
+			if (bLoading)
+				selectedKeysIndicesByIndex.reserve(subTrackNode->getChildCount());
+
 			CSelectedKeysSerializationTracker tracker(*this, selectedKeysIndicesByIndex, bLoading);
 			m_pAnimTrack->SerializeKeys(subTrackNode, bLoading, selectedKeysIndicesByIndex, time);
 			
 			if (bLoading)
-			{
 				m_keySelectionStates.resize(m_pAnimTrack->GetNumKeys());
-			}
 		}
 	}
 }
