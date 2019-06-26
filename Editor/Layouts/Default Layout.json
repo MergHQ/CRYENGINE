@@ -1,11 +1,11 @@
 {
-    "MainWindowGeometry": "AdnQywADAAAAAAAAAAAAAAAAB0EAAAQ3AAAABwAAABQAAASaAAAD0wAAAAACAAAAB4AAAAAAAAAAAAAAB0EAAAQ3",
-    "MainWindowState": "AAAA/wAAAAD9AAAAAAAAB0IAAAPiAAAABAAAAAIAAAAIAAAAAvwAAAAGAAAAAAAAAAAAAAAAAAAAAAAAAAIAAAAAAAAAAgAAAAoAAAAeAFMAdABhAG4AZABhAHIAZABUAG8AbwBsAEIAYQByAAAAAAD/////AAAAAAAAAAAAAAAiAEUAZABpAHQAIABNAG8AZABlAHMAVABvAG8AbABCAGEAcgEAAAAA/////wAAAAAAAAAAAAAAJABDAG8AbwByAGQAaQBuAGEAdABlAHMAVABvAG8AbABCAGEAcgEAAAB//////wAAAAAAAAAAAAAAJABDAG8AbgBzAHQAcgBhAGkAbgB0AHMAVABvAG8AbABCAGEAcgAAAAEW/////wAAAAAAAAAAAAAAIABTAGUAbABlAGMAdABpAG8AbgBUAG8AbwBsAEIAYQByAQAAAP7/////AAAAAAAAAAAAAAAcAFAAaAB5AHMAaQBjAHMAVABvAG8AbABCAGEAcgAAAAOM/////wAAAAAAAAAAAAAAFgBHAGEAbQBlAFQAbwBvAGwAQgBhAHIBAAACHP////8AAAAAAAAAAAAAABgAQQB1AGQAaQBvAFQAbwBvAGwAQgBhAHIBAAACm/////8AAAAAAAAAAAAAABwATABhAHkAbwB1AHQAcwBUAG8AbwBsAEIAYQByAQAAAv3/////AAAAAAAAAAAAAAAgAFYAaQBlAHcATQBvAGQAZQBzAFQAbwBvAGwAQgBhAHIAAAAD8AAAAT0AAAAAAAAAAAAAAAIAAAAAAAAAAwAAAAA=",
+    "MainWindowGeometry": "AdnQywADAAAAAAFWAAAAyQAACMcAAAT5AAABTwAAAMkAAAjOAAAFAAAAAAAAAAAACgAAAAFPAAAAyQAACM4AAAUA",
+    "MainWindowState": "AAAA/wAAAAD9AAAAAAAAB3gAAAPeAAAABAAAAAIAAAAIAAAAAvwAAAAGAAAAAAAAAAAAAAAAAAAAAAAAAAIAAAAAAAAAAgAAAAoAAAAeAFMAdABhAG4AZABhAHIAZABUAG8AbwBsAEIAYQByAQAAAAD/////AAAAAAAAAAAAAAAiAEUAZABpAHQAIABNAG8AZABlAHMAVABvAG8AbABCAGEAcgEAAACr/////wAAAAAAAAAAAAAAJABDAG8AbwByAGQAaQBuAGEAdABlAHMAVABvAG8AbABCAGEAcgEAAAEy/////wAAAAAAAAAAAAAAJABDAG8AbgBzAHQAcgBhAGkAbgB0AHMAVABvAG8AbABCAGEAcgAAAAEW/////wAAAAAAAAAAAAAAIABTAGUAbABlAGMAdABpAG8AbgBUAG8AbwBsAEIAYQByAQAAAbn/////AAAAAAAAAAAAAAAcAFAAaAB5AHMAaQBjAHMAVABvAG8AbABCAGEAcgAAAAOM/////wAAAAAAAAAAAAAAFgBHAGEAbQBlAFQAbwBvAGwAQgBhAHIBAAAC3/////8AAAAAAAAAAAAAABgAQQB1AGQAaQBvAFQAbwBvAGwAQgBhAHIBAAADZv////8AAAAAAAAAAAAAABwATABhAHkAbwB1AHQAcwBUAG8AbwBsAEIAYQByAQAAA9D/////AAAAAAAAAAAAAAAgAFYAaQBlAHcATQBvAGQAZQBzAFQAbwBvAGwAQgBhAHIAAAAD8AAAAT0AAAAAAAAAAAAAAAIAAAAAAAAAAwAAAAA=",
     "ToolsLayout": {
         "floatingWindows": [
         ],
         "mainWrapper": {
-            "geometry": "AdnQywADAAAAAAAAAAAAAAAAB0EAAAPhAAAAAAAAAAAAAAdBAAAD4QAAAAAAAAAAB4AAAAAAAAAAAAAAB0EAAAPh",
+            "geometry": "AdnQywADAAAAAAACAAAAAgAAB3UAAAPbAAAAAgAAAAIAAAd1AAAD2wAAAAAAAAAACgAAAAACAAAAAgAAB3UAAAPb",
             "name": "mainWrapper",
             "splitter": {
                 "items": [
@@ -14,21 +14,19 @@
                             {
                                 "currentIndex": 0,
                                 "objectNames": [
-                                    "Create Object",
-                                    "Console"
+                                    "Create Object"
                                 ],
                                 "type": "area"
                             },
                             {
                                 "currentIndex": 0,
                                 "objectNames": [
-                                    "Level Explorer",
-                                    "Level Settings"
+                                    "Level Explorer"
                                 ],
                                 "type": "area"
                             }
                         ],
-                        "state": "AAAA/wAAAAEAAAACAAABJgAAAqsA/////wEAAAACAA==",
+                        "state": "AAAA/wAAAAEAAAACAAABGgAAAs0A/////wEAAAACAA==",
                         "type": "splitter"
                     },
                     {
@@ -48,19 +46,18 @@
                                 "type": "area"
                             }
                         ],
-                        "state": "AAAA/wAAAAEAAAACAAACEgAAAW0A/////wEAAAACAA==",
+                        "state": "AAAA/wAAAAEAAAACAAACEgAAAcQA/////wEAAAACAA==",
                         "type": "splitter"
                     },
                     {
                         "currentIndex": 0,
                         "objectNames": [
-                            "Properties",
-                            "Terrain Editor"
+                            "Properties"
                         ],
                         "type": "area"
                     }
                 ],
-                "state": "AAAA/wAAAAEAAAADAAABWQAABNEAAAFEAP////8BAAAAAQA=",
+                "state": "AAAA/wAAAAEAAAADAAABRQAABOIAAAFFAP////8BAAAAAQA=",
                 "type": "splitter"
             }
         },
@@ -259,9 +256,9 @@
                         "_filter_string_",
                         "VC status",
                         "Version Control Status",
-                        "Dependencies",
-                        "Usage count",
                         "Work File",
+                        "Usage count",
+                        "Dependencies",
                         "File extension",
                         "Files count",
                         "Sub Mtl count",
@@ -308,7 +305,7 @@
                                 },
                                 {
                                     "index": 1,
-                                    "name": "View - AdvancedToolBar",
+                                    "name": "FileToolBar",
                                     "type": 0,
                                     "visible": true
                                 },
@@ -322,6 +319,17 @@
                                     "name": "ViewToolBar",
                                     "type": 0,
                                     "visible": true
+                                },
+                                {
+                                    "index": 4,
+                                    "spacerType": 1,
+                                    "type": 1
+                                },
+                                {
+                                    "index": 5,
+                                    "name": "View TypeToolBar",
+                                    "type": 0,
+                                    "visible": true
                                 }
                             ]
                         }
@@ -333,22 +341,26 @@
                         },
                         {
                             "area": 3,
-                            "name": "View - AdvancedToolBar"
+                            "name": "View TypeToolBar"
+                        },
+                        {
+                            "area": 3,
+                            "name": "FileToolBar"
                         }
                     ]
                 },
                 "filters": {
-                    "expanded": true,
+                    "expanded": false,
                     "favoriteFilter": false
                 },
-                "foldersSplitter": "AAAA/wAAAAEAAAACAAABAAAAAwAB/////wEAAAABAA==",
+                "foldersSplitter": "AAAA/wAAAAEAAAACAAABNwAAA2wB/////wEAAAABAA==",
                 "foldersView": {
                     "selected": [
                         ""
                     ]
                 },
                 "mainViewSplitter": "AAAA/wAAAAEAAAACAAAATAAAAQAB/////wEAAAABAA==",
-                "recursiveView": false,
+                "recursiveView": true,
                 "showFolders": true,
                 "thumbnailView": {
                     "size": {
@@ -357,35 +369,6 @@
                     }
                 },
                 "viewMode": 1
-            }
-        },
-        "Console": {
-            "class": "Console",
-            "state": {
-                "adaptiveLayout": true,
-                "editorContent": {
-                    "isLocked": false,
-                    "toolBarArea": [
-                        {
-                            "items": [
-                            ]
-                        },
-                        {
-                            "items": [
-                            ]
-                        },
-                        {
-                            "items": [
-                            ]
-                        },
-                        {
-                            "items": [
-                            ]
-                        }
-                    ],
-                    "toolBars": [
-                    ]
-                }
             }
         },
         "Create Object": {
@@ -556,9 +539,9 @@
                         },
                         "Layer": {
                             "data": "Layer",
-                            "visible": true,
+                            "visible": false,
                             "visualIndex": 7,
-                            "width": 100
+                            "width": 0
                         },
                         "Layer Color": {
                             "data": "Layer Color",
@@ -582,7 +565,7 @@
                             "data": "Name",
                             "visible": true,
                             "visualIndex": 4,
-                            "width": 250
+                            "width": 240
                         },
                         "Object Type": {
                             "data": "Object Type",
@@ -610,9 +593,9 @@
                         },
                         "Type": {
                             "data": "Type",
-                            "visible": true,
+                            "visible": false,
                             "visualIndex": 10,
-                            "width": 623
+                            "width": 0
                         },
                         "Version Control": {
                             "data": "Version Control",
@@ -667,37 +650,6 @@
                 }
             }
         },
-        "Level Settings": {
-            "class": "Level Settings",
-            "state": {
-                "adaptiveLayout": true,
-                "dockingState": {
-                },
-                "editorContent": {
-                    "isLocked": false,
-                    "toolBarArea": [
-                        {
-                            "items": [
-                            ]
-                        },
-                        {
-                            "items": [
-                            ]
-                        },
-                        {
-                            "items": [
-                            ]
-                        },
-                        {
-                            "items": [
-                            ]
-                        }
-                    ],
-                    "toolBars": [
-                    ]
-                }
-            }
-        },
         "Perspective": {
             "class": "ViewportClass_Perspective",
             "state": {
@@ -733,109 +685,13 @@
                 },
                 "cameraSpeed": 0.010999999940395355,
                 "resolutionMode": 1,
-                "xViewportRes": 1198,
-                "yViewportRes": 536
+                "xViewportRes": 1249,
+                "yViewportRes": 476
             }
         },
         "Properties": {
             "class": "Properties",
             "state": {
-            }
-        },
-        "Terrain Editor": {
-            "class": "Terrain Editor",
-            "state": {
-                "adaptiveLayout": true,
-                "editorContent": {
-                    "isLocked": false,
-                    "toolBarArea": [
-                        {
-                            "items": [
-                            ]
-                        },
-                        {
-                            "items": [
-                            ]
-                        },
-                        {
-                            "items": [
-                            ]
-                        },
-                        {
-                            "items": [
-                            ]
-                        }
-                    ],
-                    "toolBars": [
-                    ]
-                },
-                "layerView": {
-                    "columnData": {
-                        "Filter Color": {
-                            "data": "Filter Color",
-                            "visible": true,
-                            "visualIndex": 1,
-                            "width": 100
-                        },
-                        "Material": {
-                            "data": "Material",
-                            "visible": true,
-                            "visualIndex": 7,
-                            "width": 100
-                        },
-                        "Max Angle": {
-                            "data": "Max Angle",
-                            "visible": true,
-                            "visualIndex": 5,
-                            "width": 100
-                        },
-                        "Max Height": {
-                            "data": "Max Height",
-                            "visible": true,
-                            "visualIndex": 3,
-                            "width": 100
-                        },
-                        "Min Angle": {
-                            "data": "Min Angle",
-                            "visible": true,
-                            "visualIndex": 4,
-                            "width": 100
-                        },
-                        "Min Height": {
-                            "data": "Min Height",
-                            "visible": true,
-                            "visualIndex": 2,
-                            "width": 70
-                        },
-                        "Name": {
-                            "data": "Name",
-                            "visible": true,
-                            "visualIndex": 0,
-                            "width": 89
-                        },
-                        "Texture": {
-                            "data": "Texture",
-                            "visible": true,
-                            "visualIndex": 6,
-                            "width": 100
-                        }
-                    },
-                    "columnOrder": [
-                        "Name",
-                        "Filter Color",
-                        "Min Height",
-                        "Max Height",
-                        "Min Angle",
-                        "Max Angle",
-                        "Texture",
-                        "Material"
-                    ],
-                    "headerSortingOrder": {
-                        "sortOrder": 1,
-                        "sortedSection": 0
-                    },
-                    "version": 1
-                }
             }
         }
     }

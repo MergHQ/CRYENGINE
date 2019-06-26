@@ -7,13 +7,7 @@
             "name": "toggle_sync_selection",
             "type": 0
         },
-        {
-            "command": "asset.view_folder_tree",
-            "iconPath": "",
-            "m_IsCustom": false,
-            "name": "view_folder_tree",
-            "type": 0
-        },
+        "separator",
         {
             "command": "asset.view_recursive_view",
             "iconPath": "",
@@ -27,7 +21,7 @@
             "m_IsCustom": false,
             "name": "view_hide_irrelevant_folders",
             "type": 0
-        } 			
+        }
     ],
     "version": 2
 }
