@@ -857,7 +857,7 @@ struct CCurveEditor::SHandleMoveHandler : public CCurveEditor::SMouseHandler
 
 		m_pKey->m_bModified = true;
 
-		m_pCurveEditor->PostContentUpdate();
+		m_pCurveEditor->ContentUpdate();
 	}
 
 	void focusOutEvent(QFocusEvent* pEvent) override
