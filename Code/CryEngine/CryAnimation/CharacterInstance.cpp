@@ -322,10 +322,8 @@ void CCharInstance::ApplyJointVelocitiesToPhysics(IPhysicalEntity* pent, const Q
 	pe_action_set_velocity asv;
 	CAnimationSet* pAnimationSet = m_pDefaultSkeleton->m_pAnimationSet;
 
-	PREFAST_SUPPRESS_WARNING(6255)
-	QuatT * qAnimCur = (QuatT*)alloca(numNodes * sizeof(QuatT));
-	PREFAST_SUPPRESS_WARNING(6255)
-	QuatT * qAnimNext = (QuatT*)alloca(numNodes * sizeof(QuatT));
+	STACK_ARRAY(QuatT, qAnimCur, numNodes);
+	STACK_ARRAY(QuatT, qAnimNext, numNodes);
 	for (i = 0; i < numNodes; i++)
 		qAnimCur[i] = qAnimNext[i] = m_SkeletonPose.GetPoseData().GetJointRelative(i);
 

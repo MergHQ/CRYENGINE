@@ -75,6 +75,7 @@ CSkeletonPhysics::CSkeletonPhysics()
 	, m_bFullSkeletonUpdate(false)
 	, m_bForcePostSynchronization(false)
 	, m_arrCGAJoints(nullptr)
+	, m_physLod(0)
 {
 	ZeroArray(m_iSpineBone);
 }
