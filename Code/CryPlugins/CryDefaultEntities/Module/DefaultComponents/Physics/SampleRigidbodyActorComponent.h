@@ -19,9 +19,9 @@ namespace Cry
 		protected:
 			// IEntityComponent
 
-			virtual void Initialize() final { Physicalize(); }
+			virtual void Initialize() { Physicalize(); }
 
-			virtual void ProcessEvent(const SEntityEvent& event) final
+			virtual void ProcessEvent(const SEntityEvent& event)
 			{
 				switch (event.event)
 				{
@@ -30,7 +30,7 @@ namespace Cry
 				}
 			}
 
-			virtual Cry::Entity::EventFlags GetEventMask() const final	{	return ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED | ENTITY_EVENT_PHYS_POSTSTEP; }
+			virtual Cry::Entity::EventFlags GetEventMask() const	{	return ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED | ENTITY_EVENT_PHYS_POSTSTEP; }
 
 			// ~IEntityComponent
 
@@ -70,10 +70,10 @@ namespace Cry
 				OnInput();
 			}
 
-			void Physicalize();
-			void SetupLegs(bool immediately = false);
-			void OnInput();
-			int  OnPostStep(float deltaTime);
+			virtual void Physicalize();
+			virtual void SetupLegs(bool immediately = false);
+			virtual void OnInput();
+			virtual int  OnPostStep(float deltaTime);
 
 			float m_friction     = 1.0f;
 			float m_minMass      = 1.0f;

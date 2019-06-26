@@ -16,6 +16,7 @@ public:
 	virtual void RemoveGeometry(int id, int bThreadSafe=1);
 	virtual int SetParams(pe_params *_params,int bThreadSafe=1);
 	virtual int GetParams(pe_params *_params) const;
+	virtual int Action(pe_action*,int bThreadSafe=1);
 	virtual int GetStatus(pe_status*) const;
 
 	virtual void RecomputeMassDistribution(int ipart=-1,int bMassChanged=1);
@@ -41,6 +42,7 @@ public:
 	int m_ipartGround;
 	Vec3 m_ptlocGround, m_nlocGround;
 	int m_matidGround;
+	Vec3 m_lastVelCorr = Vec3(ZERO);
 
 	int m_nCollEnts = -1;
 	CPhysicalEntity **m_pCollEnts;

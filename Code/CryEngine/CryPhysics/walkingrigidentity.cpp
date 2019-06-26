@@ -216,6 +216,20 @@ int CWalkingRigidEntity::GetStatus(pe_status* _status) const
 	return CRigidEntity::GetStatus(_status);
 }
 
+int CWalkingRigidEntity::Action(pe_action* _action,int bThreadSafe)
+{
+	ChangeRequest<pe_action> req(this,m_pWorld,_action,bThreadSafe);
+	if (req.IsQueued())
+		return 1;
+
+	if (_action->type==pe_action_reset::type_id) {
+		if (m_pentGround) {
+			RemoveCollider(m_pentGround); m_pentGround=nullptr;
+		}
+	}
+	return CRigidEntity::Action(_action);
+}
+
 int CWalkingRigidEntity::Step(float dt) 
 { 
 	m_nCollEnts=-1; m_moveDist=0; m_Eaux=0; 
@@ -279,6 +293,7 @@ void CWalkingRigidEntity::CheckAdditionalGeometry(float dt)
 	gwd[1].R = Matrix33(m_qNew);
 	gwd[1].offset = m_posNew;
 	m_Eaux = 0;
+	m_body.v-=m_lastVelCorr; m_lastVelCorr.zero();
 
 	for(int ileg=0; ileg<m_nLegs; ileg++) {
 		aray.m_ray.origin = m_legs[ileg*3];
@@ -331,8 +346,8 @@ int CWalkingRigidEntity::RegisterContacts(float dt, int nMaxPlaneContacts)
 		}	else {
 			float diff = m_legs[m_ilegHit*3+1]*m_legs[m_ilegHit*3+2]-m_distHit;
 			Vec3 leg = m_qNew*-m_legs[m_ilegHit*3+2];
-			m_body.v -= (m_nColliders ? m_gravity : m_gravityFreefall)*dt;
-			m_body.v += leg*(diff*m_unprojScale-m_body.v*leg);
+			m_body.v -= (m_nColliders ? m_gravity : m_gravityFreefall)*dt; // remove gravity applied during RigidBody step
+			m_body.v += (m_lastVelCorr = leg*(diff*m_unprojScale)); // this correction will be used only once, during the next step
 			m_body.P = m_body.v*m_body.M;
 		}
 	return CRigidEntity::RegisterContacts(dt, nMaxPlaneContacts);	

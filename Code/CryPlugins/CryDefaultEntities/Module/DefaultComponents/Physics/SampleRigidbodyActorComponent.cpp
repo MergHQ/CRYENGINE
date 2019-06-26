@@ -51,6 +51,8 @@ int CSampleActorComponent::OnPostStep(float deltaTime)
 	pe_status_dynamics sd;
 	pe_status_sensors ss;
 	Vec3 pt; ss.pPoints = &pt;
+	// ground contact rays are extended by stickVel*dt, so if horizontal velocity is v, stickVel of v*tan(angle) will make the entity stick to slopes up to 'angle'
+	float stickVel = Vec2(m_velMove).GetLength(); // * tan(gf_PI*0.25f), which is 1; will stick to slopes up to pi/4
 	pEntity->GetStatus(&sl);
 	pEntity->GetStatus(&sd);
 	pEntity->GetStatus(&ss);
@@ -60,7 +62,7 @@ int CSampleActorComponent::OnPostStep(float deltaTime)
 		velReq += sl.velGround;	// if we stand on something, inherit its velocity
 		Vec3 dv = (velReq-sl.vel)*(deltaTime*10.0f);	// default inertial movement: exponentially approach velReq with strength 10
 		m_timeFly = 0;
-		pwr.velLegStick = 0.5f;
+		pwr.velLegStick = stickVel;
 		if (m_velJump.len2())
 		{
 			// if jump is requested, immediately set velocity to velJump + velMove
@@ -88,11 +90,12 @@ int CSampleActorComponent::OnPostStep(float deltaTime)
 			pwr.legFriction = m_friction;
 			sp.minEnergy = sqr(0.07f);
 		}
+		asv.v -= sl.groundSlope*(sl.groundSlope*asv.v); // project final velocity on the ground to account for sudden slope changes
 	}	
 	else
 		m_timeFly -= deltaTime;
 	if (m_timeFly <= 0)
-		pwr.velLegStick = 0.5f;
+		pwr.velLegStick = stickVel;
 	pEntity->SetParams(&sp,1);
 	pEntity->SetParams(&pwr,1);
 	pEntity->Action(&asv,1);
