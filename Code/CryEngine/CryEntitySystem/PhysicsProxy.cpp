@@ -1152,10 +1152,15 @@ int CEntityPhysics::AddSlotGeometry(int nSlot, SEntityPhysicalizeParams& params,
 }
 
 //////////////////////////////////////////////////////////////////////////
+int PartIdBelongsToSlot(int id, int* auxData)
+{
+	return EntityPhysicsUtils::GetSlotIdx(id) == *auxData ? id : -1;
+}
+
 void CEntityPhysics::RemoveSlotGeometry(int nSlot)
 {
 	CEntitySlot* pSlot = GetEntity()->GetSlot(nSlot);
-	if (!pSlot || !m_pPhysicalEntity || pSlot->GetStatObj() && pSlot->GetStatObj()->GetFlags() & STATIC_OBJECT_COMPOUND)
+	if (!pSlot || !m_pPhysicalEntity)
 		return;
 
 	CEntityPhysics* pAdamProxy = static_cast<CEntity*>(GetEntity()->GetAdam())->GetPhysicalProxy();
@@ -1163,6 +1168,21 @@ void CEntityPhysics::RemoveSlotGeometry(int nSlot)
 		pAdamProxy = this;
 	if (pSlot->GetStatObj() && pSlot->GetStatObj()->GetPhysGeom())
 		pAdamProxy->m_pPhysicalEntity->RemoveGeometry(GetPartId0(nSlot));
+	else 
+	{
+		pe_action_move_parts amp;
+		if (pSlot->GetCharacter() && pSlot->GetCharacter()->GetObjectType() != CGA)
+		{
+			amp.idEnd = EntityPhysicsUtils::PARTID_MAX_SLOTS - 1;
+		}
+		else
+		{
+			amp.MapPartId = PartIdBelongsToSlot;
+			amp.auxData = &nSlot;
+			amp.szAuxData = sizeof(int);
+		}
+		pAdamProxy->m_pPhysicalEntity->Action(&amp);
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////

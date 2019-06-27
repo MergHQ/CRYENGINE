@@ -43,6 +43,7 @@
 #include "DefaultComponents/Physics/CylinderPrimitiveComponent.h"
 #include "DefaultComponents/Physics/PhysicsPrimitiveComponent.h"
 #include "DefaultComponents/Physics/RigidBodyComponent.h"
+#include "DefaultComponents/Physics/RagdollComponent.h"
 #include "DefaultComponents/Physics/ClothComponent.h"
 #include "DefaultComponents/Physics/SampleRigidbodyActorComponent.h"
 #include "DefaultComponents/Physics/LocalGridComponent.h"
@@ -237,6 +238,10 @@ void CPlugin_CryDefaultEntities::RegisterComponents(Schematyc::IEnvRegistrar& re
 		{
 			Schematyc::CEnvRegistrationScope componentScope = scope.Register(SCHEMATYC_MAKE_ENV_COMPONENT(Cry::DefaultComponents::CRigidBodyComponent));
 			Cry::DefaultComponents::CRigidBodyComponent::Register(componentScope);
+		}
+		{
+			Schematyc::CEnvRegistrationScope componentScope = scope.Register(SCHEMATYC_MAKE_ENV_COMPONENT(Cry::DefaultComponents::CRagdollComponent));
+			Cry::DefaultComponents::CRagdollComponent::Register(componentScope);
 		}
 		{
 			Schematyc::CEnvRegistrationScope componentScope = scope.Register(SCHEMATYC_MAKE_ENV_COMPONENT(Cry::DefaultComponents::CClothComponent));

@@ -25,8 +25,8 @@ namespace Cry
 			// IEntityComponent
 			virtual void Initialize() final;
 
-			virtual void ProcessEvent(const SEntityEvent& event) final;
-			virtual Cry::Entity::EventFlags GetEventMask() const final;
+			virtual void ProcessEvent(const SEntityEvent& event) override;
+			virtual Cry::Entity::EventFlags GetEventMask() const override;
 
 			virtual bool NetSerialize(TSerialize ser, EEntityAspects aspect, uint8 profile, int flags) override;
 			virtual NetworkAspectType GetNetSerializeAspectMask() const override { return eEA_Physics; };
@@ -108,27 +108,30 @@ namespace Cry
 			enum class EPhysicalType
 			{
 				Static = PE_STATIC,
-				Rigid = PE_RIGID
+				Rigid = PE_RIGID,
+				Articulated = PE_ARTICULATED
 			};
 
 			CRigidBodyComponent() {}
 			virtual ~CRigidBodyComponent();
 
-			virtual void SetVelocity(const Vec3& velocity)
+			virtual void SetVelocity(const Vec3& velocity, int idPart = -1)
 			{
 				if (IPhysicalEntity* pPhysicalEntity = m_pEntity->GetPhysics())
 				{
 					pe_action_set_velocity action_set_velocity;
 					action_set_velocity.v = velocity;
+					if (idPart >= 0) action_set_velocity.partid = idPart;
 					pPhysicalEntity->Action(&action_set_velocity);
 				}
 			}
 
-			Vec3 GetVelocity() const
+			Vec3 GetVelocity(int idPart = -1) const
 			{
 				if (IPhysicalEntity* pPhysicalEntity = m_pEntity->GetPhysics())
 				{
 					pe_status_dynamics dynStatus;
+					if (idPart >= 0) dynStatus.partid = idPart;
 					if (pPhysicalEntity->GetStatus(&dynStatus))
 					{
 						return dynStatus.v;
@@ -138,21 +141,23 @@ namespace Cry
 				return ZERO;
 			}
 
-			virtual void SetAngularVelocity(const Vec3& angularVelocity)
+			virtual void SetAngularVelocity(const Vec3& angularVelocity, int idPart = -1)
 			{
 				if (IPhysicalEntity* pPhysicalEntity = m_pEntity->GetPhysics())
 				{
 					pe_action_set_velocity action_set_velocity;
 					action_set_velocity.w = angularVelocity;
+					if (idPart >= 0) action_set_velocity.partid = idPart;
 					pPhysicalEntity->Action(&action_set_velocity);
 				}
 			}
 
-			Vec3 GetAngularVelocity() const
+			Vec3 GetAngularVelocity(int idPart = -1) const
 			{
 				if (IPhysicalEntity* pPhysicalEntity = m_pEntity->GetPhysics())
 				{
 					pe_status_dynamics dynStatus;
+					if (idPart >= 0) dynStatus.partid = idPart;
 					if (pPhysicalEntity->GetStatus(&dynStatus))
 					{
 						return dynStatus.w;
@@ -172,7 +177,7 @@ namespace Cry
 				return m_pEntity->IsPhysicsEnabled();
 			}
 
-			virtual void ApplyImpulse(const Vec3& force)
+			virtual void ApplyImpulse(const Vec3& force, const Vec3& point = Vec3(ZERO), int idPart = -1)
 			{
 				// Only dispatch the impulse to physics if one was provided
 				if (!force.IsZero())
@@ -181,13 +186,15 @@ namespace Cry
 					{
 						pe_action_impulse impulseAction;
 						impulseAction.impulse = force;
+						if (point.len2()) impulseAction.point = point;
+						if (idPart >= 0) impulseAction.partid = idPart;
 
 						pPhysicalEntity->Action(&impulseAction);
 					}
 				}
 			}
 
-			virtual void ApplyAngularImpulse(const Vec3& force)
+			virtual void ApplyAngularImpulse(const Vec3& force, int idPart = -1)
 			{
 				// Only dispatch the impulse to physics if one was provided
 				if (!force.IsZero())
@@ -196,6 +203,7 @@ namespace Cry
 					{
 						pe_action_impulse impulseAction;
 						impulseAction.angImpulse = force;
+						if (idPart >= 0) impulseAction.partid = idPart;
 
 						pPhysicalEntity->Action(&impulseAction);
 					}
@@ -203,7 +211,7 @@ namespace Cry
 			}
 
 		protected:
-			void Physicalize();
+			virtual void Physicalize();
 
 		public:
 			bool m_isNetworked = false;

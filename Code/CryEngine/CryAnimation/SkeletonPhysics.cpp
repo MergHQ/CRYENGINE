@@ -365,6 +365,12 @@ void CSkeletonPhysics::BuildPhysicalEntity(
   int partid0,
   const Matrix34& mtxloc)
 {
+	if (m_pSkeletonPose->m_bSetDefaultPoseExecute)
+	{
+		m_pSkeletonAnim->FinishAnimationComputations();
+		m_pSkeletonPose->SetDefaultPoseExecute(false);
+		m_pSkeletonPose->m_bSetDefaultPoseExecute = false;
+	}
 	const Skeleton::CPoseData& poseData = GetPoseData();
 	CDefaultSkeleton& rDefaultSkeleton = *m_pInstance->m_pDefaultSkeleton;
 	partid0 = partid0 < 0 ? 0 : EntityPhysicsUtils::AllocPartIdRange(partid0, EntityPhysicsUtils::PARTID_MAX_SLOTS);
@@ -810,10 +816,10 @@ IPhysicalEntity* CSkeletonPhysics::CreateCharacterPhysics(
 	const CDefaultSkeleton& rDefaultSkeleton = *m_pInstance->m_pDefaultSkeleton;
 	if (m_pSkeletonPose->m_bSetDefaultPoseExecute)
 	{
+		m_pSkeletonAnim->FinishAnimationComputations();
 		m_pSkeletonPose->SetDefaultPoseExecute(false);
 		m_pSkeletonPose->m_bSetDefaultPoseExecute = false;
 	}
-	m_pSkeletonAnim->FinishAnimationComputations();
 
 	m_offset = QuatTS(mtxloc);
 
@@ -1088,10 +1094,10 @@ int CSkeletonPhysics::CreateAuxilaryPhysics(IPhysicalEntity* pHost, const Matrix
 {
 	if (m_pSkeletonPose->m_bSetDefaultPoseExecute)
 	{
+		m_pSkeletonAnim->FinishAnimationComputations();
 		m_pSkeletonPose->SetDefaultPoseExecute(false);
 		m_pSkeletonPose->m_bSetDefaultPoseExecute = false;
 	}
-	m_pSkeletonAnim->FinishAnimationComputations();
 	const CDefaultSkeleton& rDefaultSkeleton = *m_pInstance->m_pDefaultSkeleton;
 
 	int i, j, k, nchars;
