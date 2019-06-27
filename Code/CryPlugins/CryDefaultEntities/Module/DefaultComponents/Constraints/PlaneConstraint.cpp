@@ -45,7 +45,8 @@ namespace Cry
 		{
 			if (m_bActive)
 			{
-				ConstrainToPoint();
+				auto attach = m_attacher.FindAttachments(this);
+				ConstrainTo(attach.first, m_attacher.noAttachColl, attach.second);
 			}
 			else
 			{
@@ -67,11 +68,15 @@ namespace Cry
 
 				Reset();
 			}
+			else if (event.event == ENTITY_EVENT_PHYSICAL_TYPE_CHANGED)
+			{
+				m_constraintIds.clear();
+			}
 		}
 
 		Cry::Entity::EventFlags CPlaneConstraintComponent::GetEventMask() const
 		{
-			Cry::Entity::EventFlags bitFlags = m_bActive ? ENTITY_EVENT_START_GAME : Cry::Entity::EventFlags();
+			Cry::Entity::EventFlags bitFlags = m_bActive ? (ENTITY_EVENT_START_GAME | ENTITY_EVENT_PHYSICAL_TYPE_CHANGED) : Cry::Entity::EventFlags();
 			bitFlags |= ENTITY_EVENT_COMPONENT_PROPERTY_CHANGED;
 
 			return bitFlags;
@@ -83,14 +88,16 @@ namespace Cry
 			if (context.bSelected)
 			{
 				Quat rot = Quat::CreateRotationV0V1(Vec3(0, 0, 1), m_axis).GetInverted() * Quat(m_pEntity->GetSlotLocalTM(GetEntitySlotId(), false)).GetInverted() * m_pEntity->GetRotation().GetInverted();
+				Vec3 org = GetWorldTransformMatrix().GetTranslation();
 
-				Vec3 pos1 = Vec3(-1, 1, 0) * rot + m_pEntity->GetWorldPos();
-				Vec3 pos2 = Vec3(1, 1, 0) * rot + m_pEntity->GetWorldPos();
-				Vec3 pos3 = Vec3(1, -1, 0) * rot + m_pEntity->GetWorldPos();
-				Vec3 pos4 = Vec3(-1, -1, 0) * rot + m_pEntity->GetWorldPos();
+				Vec3 pos1 = Vec3(-1, 1, 0) * rot + org;
+				Vec3 pos2 = Vec3(1, 1, 0) * rot + org;
+				Vec3 pos3 = Vec3(1, -1, 0) * rot + org;
+				Vec3 pos4 = Vec3(-1, -1, 0) * rot + org;
 
 				gEnv->pAuxGeomRenderer->DrawQuad(pos4, context.debugDrawInfo.color, pos3, context.debugDrawInfo.color, pos2, context.debugDrawInfo.color, pos1, context.debugDrawInfo.color);
 				gEnv->pAuxGeomRenderer->DrawQuad(pos1, context.debugDrawInfo.color, pos2, context.debugDrawInfo.color, pos3, context.debugDrawInfo.color, pos4, context.debugDrawInfo.color);
+				gEnv->pAuxGeomRenderer->DrawLine(org, context.debugDrawInfo.color, org + Vec3(0, 0, 2.2f) * rot, ColorB(0,0,0));
 			}
 		}
 #endif
