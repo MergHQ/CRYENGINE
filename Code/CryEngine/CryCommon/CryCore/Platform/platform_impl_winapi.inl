@@ -247,53 +247,11 @@ namespace
 
 EQuestionResult CryMessageBoxImpl(const char* szText, const char* szCaption, EMessageBox type)
 {
-	const char* szCommandLine = ::GetCommandLineA();
-	if (CryStringUtils::stristr(szCommandLine, "-noprompt") != 0)
-	{
-		return eQR_None;
-	}
-
 #if CRY_PLATFORM_WINDOWS
 	return GetMessageBoxResult(::MessageBoxA(nullptr, szText, szCaption, GetMessageBoxType(type)));
 #else
-	wstring text;
-	Unicode::Convert(text, szText);
-
-	wstring caption;
-	Unicode::Convert(caption, szCaption);
-
-	Windows::UI::Popups::MessageDialog^ messageDialog = ref new Windows::UI::Popups::MessageDialog(ref new Platform::String(text.c_str()), ref new Platform::String(caption.c_str()));
-	Windows::Foundation::IAsyncOperation<Windows::UI::Popups::IUICommand^ >^ asyncOperation = messageDialog->ShowAsync();
-	
-	// Block waiting for user input
-	while (!asyncOperation->Completed) {}
-
-	// TODO: Populate options and return value, currently we only support the Info type on Xbox.
-	//IUICommand* command = asyncOperation->GetResults();
-	return eQR_No;
-#endif
-}
-
-EQuestionResult CryMessageBoxImpl(const wchar_t* szText, const wchar_t* szCaption, EMessageBox type)
-{
-	const char* szCommandLine = ::GetCommandLineA();
-	if (CryStringUtils::stristr(szCommandLine, "-noprompt") != 0)
-	{
-		return eQR_None;
-	}
-
-#if CRY_PLATFORM_WINDOWS
-	return GetMessageBoxResult(::MessageBoxW(nullptr, szText, szCaption, GetMessageBoxType(type)));
-#else
-	Windows::UI::Popups::MessageDialog^ messageDialog = ref new Windows::UI::Popups::MessageDialog(ref new Platform::String(szText), ref new Platform::String(szCaption));
-	Windows::Foundation::IAsyncOperation<Windows::UI::Popups::IUICommand^ >^ asyncOperation = messageDialog->ShowAsync();
-	
-	// Block waiting for user input
-	while (!asyncOperation->Completed) {}
-
-	// TODO: Populate options and return value, currently we only support the Info type on Xbox.
-	//IUICommand* command = asyncOperation->GetResults();
-	return eQR_No;
+	CRY_ASSERT(false, "Should not be called, the actual implementation is in ApplicationView::DurangoSystemCallback::ShowMessage().");
+	return eQR_None;
 #endif
 }
 

@@ -346,7 +346,6 @@ void CryDebugBreak()
 	}
 }
 
-
 //////////////////////////////////////////////////////////////////////////
 void CryFindRootFolderAndSetAsCurrentWorkingDirectory()
 {
@@ -469,17 +468,11 @@ EQuestionResult CryMessageBox(const char* szText, const char* szCaption, EMessag
 
 EQuestionResult CryMessageBox(const wchar_t* szText, const wchar_t* szCaption, EMessageBox type)
 {
-#if CRY_PLATFORM_WINAPI
-	if (gEnv && gEnv->bUnattendedMode)
-	{
-		return eQR_None;
-	}
-
-	// Invoke platform-specific implementation
-	return CryMessageBoxImpl(szText, szCaption, type);
-#else
-	return eQR_None;
-#endif
+	string text;
+	Unicode::Convert(text, szText);
+	string caption;
+	Unicode::Convert(caption, szCaption);
+	return CryMessageBox(text, caption, type);
 }
 
 //////////////////////////////////////////////////////////////////////////

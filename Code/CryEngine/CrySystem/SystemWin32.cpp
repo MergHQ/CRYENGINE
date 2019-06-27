@@ -1120,7 +1120,6 @@ void CSystem::FatalError(const char* format, ...)
 	CollectMemStats(0, nMSP_ForCrashLog);
 
 	OutputDebugString(szBuffer);
-#if CRY_PLATFORM_WINDOWS
 	OnFatalError(szBuffer);
 
 	if (!g_cvars.sys_no_crash_dialog)
@@ -1128,6 +1127,7 @@ void CSystem::FatalError(const char* format, ...)
 		CryMessageBox(szBuffer,"CRYENGINE FATAL ERROR", eMB_Error);
 	}
 
+#if CRY_PLATFORM_WINDOWS
 	//Triggers a fatal error, so the DebugCallstack can create the error.log and terminate the application
 	IDebugCallStack::instance()->FatalError(szBuffer);
 #endif
