@@ -669,7 +669,10 @@ void CAttachmentSKIN::RenderAttachment(SRendParams& RendParams, const SRendering
 			CModelMesh* pModelMesh = m_pModelSkin->GetModelMesh(nRenderLOD);
 			CSoftwareMesh& geometry = pModelMesh->m_softwareMesh;
 
-			SVertexSkinData vertexSkinData;
+			CRY_ASSERT(pRenderMesh->GetVerticesCount() == geometry.GetVertexCount());
+			CRY_ASSERT(pRenderMesh->GetIndicesCount() == geometry.GetIndexCount());
+
+			SVertexSkinData vertexSkinData = SVertexSkinData();
 			vertexSkinData.pTransformations = pD->m_pSkinningData->pBoneQuatsS;
 			vertexSkinData.pTransformationRemapTable = pD->m_pSkinningData->pRemapTable;
 			vertexSkinData.transformationCount = pD->m_pSkinningData->nNumBones;
@@ -687,7 +690,7 @@ void CAttachmentSKIN::RenderAttachment(SRendParams& RendParams, const SRendering
 			vertexSkinData.pTangentUpdateVertIds = geometry.GetTangentUpdateVertIds();
 			vertexSkinData.tangetUpdateVertIdsCount = geometry.GetTangentUpdateTriIdsCount();
 			vertexSkinData.vertexCount = geometry.GetVertexCount();
-			CRY_ASSERT(pRenderMesh->GetVerticesCount() == geometry.GetVertexCount());
+			m_vertexAnimation.SetSkinData(vertexSkinData);
 
 #if CRY_PLATFORM_DURANGO
 			const uint fslCreate = FSL_VIDEO_CREATE;
@@ -697,33 +700,11 @@ void CAttachmentSKIN::RenderAttachment(SRendParams& RendParams, const SRendering
 			const uint fslRead = FSL_READ;
 #endif
 
-			vertexSkinData.pVertexPositionsPrevious = strided_pointer<const Vec3>(NULL);
-			if (pD->m_pSkinningData->pPreviousSkinningRenderData)
-				gEnv->pJobManager->WaitForJob(*pD->m_pSkinningData->pPreviousSkinningRenderData->pAsyncJobs);
-			_smart_ptr<IRenderMesh>& pRenderMeshPrevious = m_pRenderMeshsSW[1 - iCurrentRenderMeshID];
-			if (pRenderMeshPrevious != NULL)
-			{
-				pRenderMeshPrevious->LockForThreadAccess();
-				Vec3* pPrevPositions = (Vec3*)pRenderMeshPrevious->GetPosPtrNoCache(vertexSkinData.pVertexPositionsPrevious.iStride, fslRead);
-				if (pPrevPositions)
-				{
-					vertexSkinData.pVertexPositionsPrevious.data = pPrevPositions;
-					pVertexAnimation->m_previousRenderMesh = pRenderMeshPrevious; 
-				}
-				else
-				{
-					pRenderMeshPrevious->UnlockStream(VSF_GENERAL);
-					pRenderMeshPrevious->UnLockForThreadAccess();
-				}
-			}
-			m_vertexAnimation.SetSkinData(vertexSkinData);
-
-			pVertexAnimation->vertexData.m_vertexCount = pRenderMesh->GetVerticesCount(); 
+			pVertexAnimation->m_pRenderMesh = pRenderMesh;
 
 			pRenderMesh->LockForThreadAccess();
 
 			SVF_P3F_C4B_T2F *pGeneral = (SVF_P3F_C4B_T2F*)pRenderMesh->GetPosPtrNoCache(pVertexAnimation->vertexData.pPositions.iStride, fslCreate);
-
 			pVertexAnimation->vertexData.pPositions.data    = (Vec3*)(&pGeneral[0].xyz);
 			pVertexAnimation->vertexData.pPositions.iStride = sizeof(pGeneral[0]);
 			pVertexAnimation->vertexData.pColors.data       = (uint32*)(&pGeneral[0].color);
@@ -733,18 +714,17 @@ void CAttachmentSKIN::RenderAttachment(SRendParams& RendParams, const SRendering
 			pVertexAnimation->vertexData.pVelocities.data = (Vec3*)pRenderMesh->GetVelocityPtr(pVertexAnimation->vertexData.pVelocities.iStride, fslCreate);
 			pVertexAnimation->vertexData.pTangents.data = (SPipTangents*)pRenderMesh->GetTangentPtr(pVertexAnimation->vertexData.pTangents.iStride, fslCreate);
 			pVertexAnimation->vertexData.pIndices = pRenderMesh->GetIndexPtr(fslCreate);
-			pVertexAnimation->vertexData.m_indexCount = geometry.GetIndexCount();
+			pVertexAnimation->vertexData.m_vertexCount = pRenderMesh->GetVerticesCount();
+			pVertexAnimation->vertexData.m_indexCount = pRenderMesh->GetIndicesCount();
 
 			if (!pVertexAnimation->vertexData.pPositions ||
 				!pVertexAnimation->vertexData.pVelocities ||
 				!pVertexAnimation->vertexData.pTangents)
 			{
-				pRenderMesh->UnlockStream(VSF_GENERAL); 
+				pRenderMesh->UnlockStream(VSF_GENERAL);
 				pRenderMesh->UnlockStream(VSF_TANGENTS);
 				pRenderMesh->UnlockStream(VSF_VERTEX_VELOCITY);
-#if ENABLE_NORMALSTREAM_SUPPORT
-				pRenderMesh->UnlockStream(VSF_NORMALS);
-#endif
+				pRenderMesh->UnlockIndexStream();
 				pRenderMesh->UnLockForThreadAccess();
 				return; 
 			}
@@ -765,6 +745,28 @@ void CAttachmentSKIN::RenderAttachment(SRendParams& RendParams, const SRendering
 					g_vertexAnimationProfiler.AddVertexAnimationStats(m_vertexAnimation.m_vertexAnimationStats);
 				}
 #endif
+			}
+
+			pVertexAnimation->vertexData.pPreviousPositions = strided_pointer<const Vec3>(nullptr);
+			if (pD->m_pSkinningData->pPreviousSkinningRenderData)
+			{
+				gEnv->pJobManager->WaitForJob(*pD->m_pSkinningData->pPreviousSkinningRenderData->pAsyncJobs);
+			}
+			if (IRenderMesh* pRenderMeshPrevious = m_pRenderMeshsSW[1 - iCurrentRenderMeshID])
+			{
+				pRenderMeshPrevious->LockForThreadAccess();
+
+				const Vec3* pPrevPositions = reinterpret_cast<const Vec3*>(pRenderMeshPrevious->GetPosPtrNoCache(pVertexAnimation->vertexData.pPreviousPositions.iStride, fslRead));
+				if (pPrevPositions)
+				{
+					pVertexAnimation->vertexData.pPreviousPositions.data = pPrevPositions;
+					pVertexAnimation->m_pPreviousRenderMesh = pRenderMeshPrevious;
+				}
+				else
+				{
+					pRenderMeshPrevious->UnlockStream(VSF_GENERAL);
+					pRenderMeshPrevious->UnLockForThreadAccess();
+				}
 			}
 
 			pVertexAnimation->pRenderMeshSyncVariable = pRenderMesh->SetAsyncUpdateState();
@@ -791,8 +793,6 @@ void CAttachmentSKIN::RenderAttachment(SRendParams& RendParams, const SRendering
 			{
 				m_vertexAnimation.DrawVertexDebug(pRenderMesh, QuatT(RenderMat34), pVertexAnimation);
 			}
-
-			pRenderMesh->UnLockForThreadAccess();
 		}
 	}
 

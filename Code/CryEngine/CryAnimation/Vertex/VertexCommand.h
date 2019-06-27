@@ -120,7 +120,6 @@ public:
 	uint                                             transformationCount;
 
 	strided_pointer<const Vec3>                      pVertexPositions;
-	strided_pointer<const Vec3>                      pVertexPositionsPrevious;
 	strided_pointer<const Quat>                      pVertexQTangents;
 	strided_pointer<const SoftwareVertexBlendIndex>  pVertexTransformIndices;
 	strided_pointer<const SoftwareVertexBlendWeight> pVertexTransformWeights;

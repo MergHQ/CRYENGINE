@@ -87,13 +87,20 @@ void SVertexAnimationJob::Execute(int)
 	if (commandBufferLength)
 		commandBuffer.Process(vertexData);
 
-	if (m_previousRenderMesh)
+	if (m_pPreviousRenderMesh)
 	{
-		m_previousRenderMesh->UnlockStream(VSF_GENERAL);
-		m_previousRenderMesh->UnLockForThreadAccess();
+		m_pPreviousRenderMesh->UnlockStream(VSF_GENERAL);
+		m_pPreviousRenderMesh->UnLockForThreadAccess();
+		m_pPreviousRenderMesh = nullptr;
 	}
 
-	m_previousRenderMesh = NULL;
+	assert(m_pRenderMesh);
+	m_pRenderMesh->UnlockStream(VSF_GENERAL);
+	m_pRenderMesh->UnlockStream(VSF_TANGENTS);
+	m_pRenderMesh->UnlockStream(VSF_VERTEX_VELOCITY);
+	m_pRenderMesh->UnlockIndexStream();
+	m_pRenderMesh->UnLockForThreadAccess();
+	m_pRenderMesh = nullptr;
 
 	CryInterlockedDecrement(pRenderMeshSyncVariable);
 }

@@ -586,8 +586,7 @@ private:
 	Vector4 SkinByTriangle(int i, strided_pointer<Vec3>& pVtx, int lod);
 
 	void    UpdateSimulation(const DualQuat* pTransformations, const uint transformationCount);
-	template<bool PREVIOUS_POSITIONS>
-	void    SkinSimulationToRenderMesh(int lod, CVertexData& vertexData, const strided_pointer<const Vec3>& pVertexPositionsPrevious);
+	void    SkinSimulationToRenderMesh(int lod, CVertexData& vertexData);
 	void    SetRenderPositionsFromSkinnedPositions(bool setAllPositions);
 
 	void    WaitForJob(bool bPrev);

@@ -232,7 +232,6 @@ bool CVertexAnimation::CompileCommands(CVertexCommandBuffer& commandBuffer)
 
 		pCommand->pVertexPositions.data = NULL;
 		pCommand->pVertexPositions.iStride = 0;
-		pCommand->pVertexPositionsPrevious = m_skinData.pVertexPositionsPrevious;
 		pCommand->pVertexQTangents = m_skinData.pVertexQTangents;
 		pCommand->pVertexTransformIndices = m_skinData.pVertexTransformIndices;
 		pCommand->pVertexTransformWeights = m_skinData.pVertexTransformWeights;

@@ -99,15 +99,23 @@ Type* CVertexCommandBuffer::AddCommand()
 
 struct SVertexAnimationJob
 {
-	CVertexData             vertexData;
-	CVertexCommandBuffer    commandBuffer;
-	uint                    commandBufferLength;
+	CVertexData          vertexData;
+	CVertexCommandBuffer commandBuffer;
+	uint                 commandBufferLength;
 
-	volatile int*           pRenderMeshSyncVariable;
-	_smart_ptr<IRenderMesh> m_previousRenderMesh;
+	IRenderMesh*         m_pRenderMesh;
+	IRenderMesh*         m_pPreviousRenderMesh;
 
-public:
-	SVertexAnimationJob() : commandBufferLength(0), pRenderMeshSyncVariable(nullptr), commandBuffer() {}
+	volatile int*        pRenderMeshSyncVariable;
+
+	SVertexAnimationJob()
+		: vertexData()
+		, commandBuffer()
+		, commandBufferLength()
+		, m_pRenderMesh()
+		, m_pPreviousRenderMesh()
+		, pRenderMeshSyncVariable()
+	{}
 
 	void Begin(JobManager::SJobState* pJob);
 	void Execute(int);

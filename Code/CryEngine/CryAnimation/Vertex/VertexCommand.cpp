@@ -318,8 +318,8 @@ void VertexCommandSkin::Execute(VertexCommandSkin& command, CVertexData& vertexD
 	assert(command.pTransformations);
 	assert(command.pTransformationRemapTable);
 
-	bool hasPreviousPosition = command.pVertexPositionsPrevious != 0;
-	bool hasVelocity = vertexData.GetVelocities() != 0;
+	const bool hasPreviousPosition = vertexData.pPreviousPositions != 0;
+	const bool hasVelocity = vertexData.GetVelocities() != 0;
 
 	if (hasPreviousPosition && hasVelocity)
 	{
@@ -356,9 +356,9 @@ void VertexCommandSkin::ExecuteInternal(VertexCommandSkin& command, CVertexData&
 	strided_pointer<Vec3> pPositions = vertexData.GetPositions();
 	strided_pointer<Vec3> pVelocities = vertexData.GetVelocities();
 	strided_pointer<SPipTangents> pTangents = vertexData.GetTangents();
+	strided_pointer<const Vec3> pPositionsPrevious = vertexData.pPreviousPositions;
 
 	strided_pointer<const Vec3> pPositionsSource = command.pVertexPositions;
-	strided_pointer<const Vec3> pPositionsPrevious = command.pVertexPositionsPrevious;
 	if (!pPositionsSource.data)
 		pPositionsSource = vertexData.pPositions;
 
@@ -548,6 +548,7 @@ void VertexCommandSkin::ExecuteInternal(VertexCommandSkin& command, CVertexData&
 	strided_pointer<Vec3> pPositions = vertexData.GetPositions();
 	strided_pointer<Vec3> pVelocities = vertexData.GetVelocities();
 	strided_pointer<SPipTangents> pTangents = vertexData.GetTangents();
+	strided_pointer<const Vec3> pPositionsPrevious = vertexData.GetPreviousPositions();
 
 	__m128 dq_nq = _mm_setzero_ps();
 	__m128 dq_dq;
@@ -561,7 +562,6 @@ void VertexCommandSkin::ExecuteInternal(VertexCommandSkin& command, CVertexData&
 	CRY_ALIGN(16) Vec4sf tangentBitangent[2];
 	CRY_ALIGN(16) Vec3A newPos;
 
-	strided_pointer<const Vec3> pPositionsPrevious = command.pVertexPositionsPrevious;
 	strided_pointer<const SoftwareVertexBlendIndex> pIndices = command.pVertexTransformIndices;
 	strided_pointer<const SoftwareVertexBlendWeight> pWeights = command.pVertexTransformWeights;
 
