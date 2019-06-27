@@ -615,24 +615,21 @@ void CInventory::Clear(bool forceClear)
 		return;
 	}
 
-	if (!gEnv->bServer)
-	{
-		IItemSystem* pItemSystem = gEnv->pGameFramework->GetIItemSystem();
+	IItemSystem* pItemSystem = gEnv->pGameFramework->GetIItemSystem();
 
-		TInventoryIt end = m_stats.slots.end();
-		for (TInventoryIt it = m_stats.slots.begin(); it != end; ++it)
+	TInventoryIt end = m_stats.slots.end();
+	for (TInventoryIt it = m_stats.slots.begin(); it != end; ++it)
+	{
+		if (IItem* pItem = pItemSystem->GetItem(*it))
 		{
-			if (IItem* pItem = pItemSystem->GetItem(*it))
-			{
-				pItem->RemoveOwnerAttachedAccessories();
-				pItem->AttachToHand(false);
-				pItem->AttachToBack(false);
-				pItem->SetOwnerId(0);
-				pItem->GetEntity()->Hide(true);
-			}
+			pItem->RemoveOwnerAttachedAccessories();
+			pItem->AttachToHand(false);
+			pItem->AttachToBack(false);
+			pItem->SetOwnerId(0);
+			pItem->GetEntity()->Hide(true);
 		}
 	}
-
+	
 	m_stats.slots.clear();
 	m_stats.accessorySlots.clear();
 	ResetAmmoAndUsers();
