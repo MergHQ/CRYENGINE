@@ -11,6 +11,11 @@ QString CreateCDF(
   const QString& skinFilePath,
   const QString& materialFilePath);
 
+QString CreateCDF(
+	const QString& skeletonFilePath,
+	const QStringList& skinsFilePaths,
+	const QStringList& materialsFilePaths);
+
 ICharacterInstance* CreateTemporaryCharacter(
   const QString& skeletonFilePath,
   const QString& skinFilePath,

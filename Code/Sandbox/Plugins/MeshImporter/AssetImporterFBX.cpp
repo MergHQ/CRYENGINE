@@ -152,7 +152,7 @@ static std::vector<std::pair<const FbxTool::SAnimationTake*, string>> GetNamedTa
 	return namedTakes;
 }
 
-static bool WriteAssetMetaData(const FbxMetaData::SMetaData& metaData, const string& outputDirectory, const string& filename)
+static bool GenerateAssetFile(const FbxMetaData::SMetaData& metaData, const string& outputDirectory, const string& filename)
 {
 	using namespace Private_AssetImporterFBX;
 
@@ -507,7 +507,7 @@ void CAssetImporterFBX::ImportMesh(CAssetImportContext& ctx)
 	metaData.outputFileExt = "cgf";
 	WriteMaterialMetaData(pFbxScene, metaData.materialData);
 
-	WriteAssetMetaData(metaData, GetTempDirPath(), basename);
+	GenerateAssetFile(metaData, GetTempDirPath(), basename);
 }
 
 void CAssetImporterFBX::ImportSkeleton(CAssetImportContext& ctx)
@@ -523,7 +523,7 @@ void CAssetImporterFBX::ImportSkeleton(CAssetImportContext& ctx)
 	metaData.sourceFilename = filename;
 	metaData.outputFileExt = "chr";
 
-	WriteAssetMetaData(metaData, GetTempDirPath(), basename);
+	GenerateAssetFile(metaData, GetTempDirPath(), basename);
 }
 
 void CAssetImporterFBX::ImportAllSkins(CAssetImportContext& ctx)
@@ -567,7 +567,7 @@ void CAssetImporterFBX::ImportSkin(const FbxTool::SNode* pFbxNode, const string&
 	nodeMeta.nodePath = FbxTool::GetPath(pFbxNode);
 	metaData.nodeData.push_back(nodeMeta);
 
-	WriteAssetMetaData(metaData, GetTempDirPath(), basename + "_" + name);
+	GenerateAssetFile(metaData, GetTempDirPath(), basename + "_" + name);
 }
 
 void CAssetImporterFBX::ImportAllAnimations(CAssetImportContext& ctx)
@@ -606,7 +606,7 @@ void CAssetImporterFBX::ImportAnimation(const FbxTool::SAnimationTake* pTake, co
 	metaData.animationClip.startFrame = pTake->startFrame;
 	metaData.animationClip.endFrame = pTake->endFrame;
 
-	WriteAssetMetaData(metaData, GetTempDirPath(), basename + "_" + name);
+	GenerateAssetFile(metaData, GetTempDirPath(), basename + "_" + name);
 }
 
 void CAssetImporterFBX::ImportAllTextures(const std::vector<std::pair<string, string>>& relTexs, const string& outputDirectory, CAssetImportContext& ctx)
@@ -747,7 +747,7 @@ void CAssetImporterFBX::ImportCharacterDefinition(CAssetImportContext& ctx, cons
 	});
 
 	string skeletonFilePath;
-	string skinFilePath;
+	QStringList skinsFilePaths;
 
 	if (bHasAnimations)
 	{
@@ -762,7 +762,7 @@ void CAssetImporterFBX::ImportCharacterDefinition(CAssetImportContext& ctx, cons
 			}
 			else if (!strcmp(pAsset->GetType()->GetTypeName(), "SkinnedMesh"))
 			{
-				skinFilePath = pAsset->GetFile(0);
+				skinsFilePaths.append(QString(pAsset->GetFile(0)));
 			}
 		}
 	}
@@ -770,8 +770,9 @@ void CAssetImporterFBX::ImportCharacterDefinition(CAssetImportContext& ctx, cons
 	// Write CDF file.
 	const QString cdf = CreateCDF(
 		QtUtil::ToQString(skeletonFilePath),
-		QtUtil::ToQString(skinFilePath),
-		QString());
+		skinsFilePaths,
+		QStringList());
+
 	if (cdf.isEmpty())
 	{
 		return;
@@ -810,7 +811,7 @@ void CAssetImporterFBX::ReimportAsset(CAsset* pAsset)
 	const string filename = PathUtil::GetFile(absSourcePath);
 	const string basename = PathUtil::RemoveExtension(filename);
 
-	WriteAssetMetaData(metaData, GetTempDirPath(), basename);
+	GenerateAssetFile(metaData, GetTempDirPath(), basename);
 
 	const string outputDir = PathUtil::GetPathWithoutFilename(pAsset->GetMetadataFile());
 	CAssetImportContext ctx;
