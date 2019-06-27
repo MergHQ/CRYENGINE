@@ -2466,8 +2466,6 @@ void CAttachmentManager::ProcessAttachment(IAttachment* pSocket)
 			const stl::optional<SCameraSpaceParams>& cameraSpaceParams = m_pSkelInstance->GetParentRenderNode()->GetCameraSpaceParams();
 			if (cameraSpaceParams)
 			{
-				assert(pRenderNode->GetRndFlags() & ERF_FOB_NEAREST);
-
 				const Vec3& modelSpaceOffset = (pSocket->GetAttModelRelative() * pSocket->GetAdditionalTransformation()).t;
 				const Vec3& worldSpaceOffset = m_pSkelInstance->m_location.s * (m_pSkelInstance->m_location.q * modelSpaceOffset);
 
