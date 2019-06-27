@@ -15,5 +15,5 @@
 						<e_shadows value="0"/>
 						<e_portals value="3"/>
 						<e_fog value="0"/>
-						<r_hdrdebug value="1"/>
+						<r_hdrdebug value="0"/>
 </settings>
