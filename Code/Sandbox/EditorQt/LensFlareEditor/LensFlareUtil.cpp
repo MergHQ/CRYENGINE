@@ -487,8 +487,8 @@ void ApplyOpticsToSelectedEntityWithComponent(const string& opticsFullName, IOpt
 		if (const IEntity* pEntity = pSelectedObj->GetIEntity())
 		{
 			// Get either the point light component or projector light component
-			IEntityComponent* pLightComponent = pEntity->GetComponentByTypeId("0A86908D-642F-4590-ACEF-484E8E39F31B"_cry_guid);
-			pLightComponent = pLightComponent == nullptr ? pEntity->GetComponentByTypeId("07D0CAD1-8E79-4177-9ADD-A2464A009FA5"_cry_guid) : pLightComponent;
+			IEntityComponent* pLightComponent = pEntity->GetComponentByTypeId(s_pointLightID);
+			pLightComponent = pLightComponent == nullptr ? pEntity->GetComponentByTypeId(s_projectorLightID) : pLightComponent;
 
 			if (pLightComponent)
 			{
@@ -653,14 +653,23 @@ void GetLightEntityObjects(std::vector<CEntityObject*>& outEntityLights)
 	GetIEditorImpl()->GetObjectManager()->FindObjectsOfType(RUNTIME_CLASS(CEntityObject), pEntityObjects);
 	for (int i = 0, iObjectSize(pEntityObjects.size()); i < iObjectSize; ++i)
 	{
-		CEntityObject* pEntity = (CEntityObject*)pEntityObjects[i];
-		if (pEntity == NULL)
+		CEntityObject* pEntityObject = (CEntityObject*)pEntityObjects[i];
+		if (pEntityObject == NULL)
 			continue;
-		if (pEntity->CheckFlags(OBJFLAG_DELETED))
+		if (pEntityObject->CheckFlags(OBJFLAG_DELETED))
 			continue;
-		if (!pEntity->IsLight())
+
+		bool hasLightComponent = false;
+
+		if (const IEntity* pEntity = pEntityObject->GetIEntity())
+		{
+			hasLightComponent = pEntity->GetComponentByTypeId(s_pointLightID) != nullptr  // Point Light Component
+							 || pEntity->GetComponentByTypeId(s_projectorLightID) != nullptr; // Projector Light 
+		}
+
+		if (!pEntityObject->IsLight() && !hasLightComponent)
 			continue;
-		outEntityLights.push_back(pEntity);
+		outEntityLights.push_back(pEntityObject);
 	}
 }
 
