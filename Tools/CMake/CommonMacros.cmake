@@ -876,13 +876,26 @@ function(CryUnitTestSuite target)
 		endif()
 		apply_compile_settings()
 	else()
+		add_sources("NoUberFile" SOURCE_GROUP "Imported" 
+			"${CRYENGINE_DIR}/Code/CryEngine/UnitTests/Common/UnitTest.h"
+			"${CRYENGINE_DIR}/Code/CryEngine/UnitTests/Common/Printer.cpp"
+		)
 
-		if (DURANGO)
+		if (WINDOWS OR LINUX)
+			add_sources("NoUberFile" SOURCE_GROUP "Imported" 
+				"${CRYENGINE_DIR}/Code/CryEngine/UnitTests/Common/Main.cpp"
+			)
+		elseif (DURANGO)
 			set(temp_old_output_directory ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
 			set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/bin/durango_test/${target}")
 			set(LAYOUT_DIRECTORY "${CMAKE_SOURCE_DIR}/bin/durango_test/${target}_layout/")
 			file(GLOB RESOURCE_COPY_WILDCARD "${CRYENGINE_DIR}/Code/CryEngine/UnitTests/Resources/*.*")
 			file(COPY ${RESOURCE_COPY_WILDCARD} DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
+			add_sources("NoUberFile" SOURCE_GROUP "Imported" 
+				"${CRYENGINE_DIR}/Code/CryEngine/UnitTests/Common/Main_Durango.cpp"
+				"${CRYENGINE_DIR}/Code/CryEngine/UnitTests/Common/DurangoDebugHelper.h"
+			)
+			add_sources("NoUberFile" SOURCE_GROUP "Generated" "${CMAKE_CURRENT_BINARY_DIR}/Package.appxmanifest")
 
 			configure_durango_game(
 				"GENERATE_DIRECTORY" "${CMAKE_CURRENT_BINARY_DIR}"
@@ -901,7 +914,6 @@ function(CryUnitTestSuite target)
 				"splash_screen" "DurangoSplashScreen.png"
 				"store_logo" "DurangoStoreLogo.png"
 			)
-			add_sources("NoUberFile" SOURCE_GROUP "Generated" "${CMAKE_CURRENT_BINARY_DIR}/Package.appxmanifest")
 		endif()
 
 		prepare_project(${ARGN})
@@ -915,26 +927,13 @@ function(CryUnitTestSuite target)
 			target_compile_definitions(${THIS_PROJECT} PRIVATE _LIB -DCRY_IS_MONOLITHIC_BUILD)
 		endif()
 		
-		target_sources(${target} PRIVATE "${CRYENGINE_DIR}/Code/CryEngine/UnitTests/Common/UnitTest.h")
-		source_group("Imported" FILES "${CRYENGINE_DIR}/Code/CryEngine/UnitTests/Common/UnitTest.h")
 		if (DURANGO)
 			target_compile_options(${THIS_PROJECT} PRIVATE /EHsc /ZW)
-			target_sources(${target} PRIVATE 
-				"${CRYENGINE_DIR}/Code/CryEngine/UnitTests/Common/Main_Durango.cpp"
-				"${CRYENGINE_DIR}/Code/CryEngine/UnitTests/Common/DurangoDebugHelper.h"
-			)
-			source_group("Imported" FILES 
-				"${CRYENGINE_DIR}/Code/CryEngine/UnitTests/Common/Main_Durango.cpp"
-				"${CRYENGINE_DIR}/Code/CryEngine/UnitTests/Common/DurangoDebugHelper.h"
-			)
 			set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${temp_old_output_directory})
 			if (LAYOUT_DIRECTORY)
 				file(TO_NATIVE_PATH "${LAYOUT_DIRECTORY}" NATIVE_LAYOUTDIR)
 				add_custom_command(TARGET ${THIS_PROJECT}	PRE_BUILD COMMAND if exist "\"${NATIVE_LAYOUTDIR}\"" rmdir /s /q "\"${NATIVE_LAYOUTDIR}\"")
 			endif()
-		else()
-			target_sources(${target} PRIVATE "${CRYENGINE_DIR}/Code/CryEngine/UnitTests/Common/Main.cpp")
-			source_group("Imported" FILES "${CRYENGINE_DIR}/Code/CryEngine/UnitTests/Common/Main.cpp")
 		endif()
 
         if (LINUX)
@@ -951,17 +950,19 @@ function(CryUnitTestSuite target)
 endfunction()
 
 function(CryEditorPluginUnitTestSuite target)
+	add_sources("NoUberFile" SOURCE_GROUP "Imported" 
+		"${CRYENGINE_DIR}/Code/CryEngine/UnitTests/Common/UnitTest.h"
+		"${CRYENGINE_DIR}/Code/CryEngine/UnitTests/Common/Main.cpp"
+		"${CRYENGINE_DIR}/Code/CryEngine/UnitTests/Common/Printer.cpp"
+	)
+
 	prepare_project(${ARGN})
 	add_executable(${THIS_PROJECT} ${${THIS_PROJECT}_SOURCES})
 	if(WIN32)
 		set_property(TARGET ${THIS_PROJECT} APPEND_STRING PROPERTY LINK_FLAGS " /SUBSYSTEM:CONSOLE")
 	endif()
 	apply_compile_settings()
-		
-	target_sources(${target} PRIVATE "${CRYENGINE_DIR}/Code/CryEngine/UnitTests/Common/UnitTest.h")
-	source_group("Imported" FILES "${CRYENGINE_DIR}/Code/CryEngine/UnitTests/Common/UnitTest.h")
-	target_sources(${target} PRIVATE "${CRYENGINE_DIR}/Code/CryEngine/UnitTests/Common/Main.cpp")
-	source_group("Imported" FILES "${CRYENGINE_DIR}/Code/CryEngine/UnitTests/Common/Main.cpp")
+
 	target_include_directories(
 		${THIS_PROJECT} PUBLIC 
 		"${CRYENGINE_DIR}/Code/SDKs/googletest_CE_Support/googletest/include"

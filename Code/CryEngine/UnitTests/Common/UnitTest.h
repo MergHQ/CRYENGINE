@@ -1,4 +1,4 @@
-// Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
+// Copyright 2001-2019 Crytek GmbH / Crytek Group. All rights reserved.
 #pragma once
 #include <CryCore/Platform/platform.h>
 #include <gtest/gtest.h>
@@ -457,32 +457,12 @@ namespace CryGTestDetails
 // to improve error message qualities
 namespace testing
 {
-	namespace internal
-	{
-		//std::ceil is not constexpr, therefore we supplement ours
-		template<typename T>
-		constexpr int ceil(T f)
-		{
-			return (static_cast<T>(static_cast<int>(f)) == f) ?
-				static_cast<int>(f) :
-				static_cast<int>(f) + ((f > 0) ? 1 : 0);
-		}
-
-		// "9.20000076(0x1.2666680p+3)" for single-precision float
-		template<typename T>
-		inline void CryUnitTestPrintFloatingPoint(T value, ::std::ostream* os)
-		{
-			std::streamsize defaultPrecision = os->precision();
-			constexpr int max_digits16 = ceil(std::numeric_limits<T>::digits / T(4)/*log2(16)*/ + 1);
-			*os << std::setprecision(std::numeric_limits<T>::max_digits10) << value
-				<< '(' << std::hexfloat << std::setprecision(max_digits16) << value << ')'
-				<< std::setprecision(defaultPrecision);
-		}
-
-		inline void PrintTo(float value, ::std::ostream* os)       { CryUnitTestPrintFloatingPoint(value, os); }
-		inline void PrintTo(double value, ::std::ostream* os)      { CryUnitTestPrintFloatingPoint(value, os); }
-		inline void PrintTo(long double value, ::std::ostream* os) { CryUnitTestPrintFloatingPoint(value, os); }
-	}
+	// These need to be function template specializations rather than overloads, 
+	// because overloading primitive types doesn't work unless visible while template instantiation.
+	// Specialization works regardless of the inclusion order.
+	template<> ::std::string PrintToString(const float& value);
+	template<> ::std::string PrintToString(const double& value);
+	template<> ::std::string PrintToString(const long double& value);
 }
 
 // GTest printing support for CRYENGINE types
