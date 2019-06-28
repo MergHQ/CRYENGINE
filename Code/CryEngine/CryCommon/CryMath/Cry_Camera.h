@@ -730,11 +730,13 @@ inline void CCamera::GetFrustumVertices(Vec3* pVerts) const
 
 	int i = 0;
 
+	//far plane, counter-clockwise quad (z up, x right, y into)
 	pVerts[i++] = m33 * Vec3(+m_edge_flt.x, +m_edge_flt.y, +m_edge_flt.z) + GetPosition();
 	pVerts[i++] = m33 * Vec3(+m_edge_flt.x, +m_edge_flt.y, -m_edge_flt.z) + GetPosition();
 	pVerts[i++] = m33 * Vec3(-m_edge_flt.x, +m_edge_flt.y, -m_edge_flt.z) + GetPosition();
 	pVerts[i++] = m33 * Vec3(-m_edge_flt.x, +m_edge_flt.y, +m_edge_flt.z) + GetPosition();
 
+	//near plane, counter-clockwise quad (z up, x right, y into)
 	pVerts[i++] = m33 * Vec3(+m_edge_nlt.x, +m_edge_nlt.y, +m_edge_nlt.z) + GetPosition();
 	pVerts[i++] = m33 * Vec3(+m_edge_nlt.x, +m_edge_nlt.y, -m_edge_nlt.z) + GetPosition();
 	pVerts[i++] = m33 * Vec3(-m_edge_nlt.x, +m_edge_nlt.y, -m_edge_nlt.z) + GetPosition();
@@ -745,13 +747,13 @@ inline void CCamera::GetFrustumVerticesCam(Vec3* pVerts) const
 {
 	int i = 0;
 
-	//near plane
+	//near plane, counter-clockwise quad (z up, x right, y into)
 	pVerts[i++] = Vec3(+m_edge_nlt.x, +m_edge_nlt.y, +m_edge_nlt.z);
 	pVerts[i++] = Vec3(+m_edge_nlt.x, +m_edge_nlt.y, -m_edge_nlt.z);
 	pVerts[i++] = Vec3(-m_edge_nlt.x, +m_edge_nlt.y, -m_edge_nlt.z);
 	pVerts[i++] = Vec3(-m_edge_nlt.x, +m_edge_nlt.y, +m_edge_nlt.z);
 
-	//far plane
+	//far plane, counter-clockwise quad (z up, x right, y into)
 	pVerts[i++] = Vec3(+m_edge_flt.x, +m_edge_flt.y, +m_edge_flt.z);
 	pVerts[i++] = Vec3(+m_edge_flt.x, +m_edge_flt.y, -m_edge_flt.z);
 	pVerts[i++] = Vec3(-m_edge_flt.x, +m_edge_flt.y, -m_edge_flt.z);

@@ -333,7 +333,7 @@ void COcean::Update(const SRenderingPassInfo& passInfo)
 		}
 	}
 
-	bool bWaterVisible = IsVisible(passInfo);
+	bool bWaterVisible = IsVisible(AABB(), 0.0f, passInfo);
 	float _fWaterPlaneSize = rCamera.GetFarPlane();
 
 	// Check if water surface occluded
@@ -754,7 +754,7 @@ void COcean::RenderFog(const SRenderingPassInfo& passInfo)
 	}
 }
 
-bool COcean::IsVisible(const SRenderingPassInfo& passInfo)
+bool COcean::IsVisible(const AABB& nodeBox, const float nodeDistance, const SRenderingPassInfo& passInfo) const
 {
 	if (abs(m_nLastVisibleFrameId - passInfo.GetFrameID()) <= 2)
 		m_fLastVisibleFrameTime = 0.0f;

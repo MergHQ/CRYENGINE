@@ -58,7 +58,6 @@ CLightEntity::~CLightEntity()
 	SAFE_RELEASE(m_light.m_Shader.m_pShader);
 	//m_light.m_Shader = NULL; // hack to avoid double deallocation
 
-	Get3DEngine()->UregisterLightFromAccessabilityCache(this);
 	Get3DEngine()->FreeRenderNodeState(this);
 	((C3DEngine*)Get3DEngine())->FreeLightSourceComponents(&m_light, false);
 
@@ -1767,11 +1766,134 @@ void CLightEntity::UpdateCastShadowFlag(float fDistance, const SRenderingPassInf
 #endif
 }
 
+bool CLightEntity::IsVisible(const SRenderLight& rLight, const CCamera& rCamera, bool bTestCoverageBuffer) const
+{
+	bool bIsVisible = true;
+
+	if (!(rLight.m_Flags & DLF_ATTACH_TO_SUN))
+	{
+		if (rLight.m_Flags & DLF_DEFERRED_CUBEMAPS)
+		{
+			OBB obb(OBB::CreateOBBfromAABB(Matrix33(rLight.m_ObjMatrix), AABB(-rLight.m_ProbeExtents, rLight.m_ProbeExtents)));
+			bIsVisible = rCamera.IsOBBVisible_F(rLight.m_Origin, obb);
+		}
+		else if (rLight.m_Flags & DLF_AREA)
+		{
+			// OBB test for area lights.
+			Vec3 vBoxMax(rLight.m_fRadius, rLight.m_fRadius + rLight.m_fAreaWidth, rLight.m_fRadius + rLight.m_fAreaHeight);
+			Vec3 vBoxMin(-0.1f, -(rLight.m_fRadius + rLight.m_fAreaWidth), -(rLight.m_fRadius + rLight.m_fAreaHeight));
+
+			OBB obb(OBB::CreateOBBfromAABB(Matrix33(rLight.m_ObjMatrix), AABB(vBoxMin, vBoxMax)));
+			bIsVisible = rCamera.IsOBBVisible_F(rLight.m_BaseOrigin, obb);
+		}
+		else
+		{
+			Sphere sp(rLight.m_BaseOrigin, rLight.m_fRadius);
+			bIsVisible = rCamera.IsSphereVisible_F(sp);
+		}
+	}
+	else
+	{
+		bIsVisible = GetCVars()->e_Sun != 0;
+	}
+
+	if (!bIsVisible)
+		return false;
+
+	if ((rLight.m_Flags & DLF_PROJECT) && (rLight.m_fLightFrustumAngle < 90.f) && (rLight.m_pLightImage || rLight.m_pLightDynTexSource))
+	{
+#if defined(FEATURE_SVO_GI)
+		if (!GetCVars()->e_svoTI_Apply || GetGIMode() != eGM_DynamicVoxelization)
+#endif
+		{
+			CCamera lightCam = rCamera;
+			lightCam.SetPositionNoUpdate(rLight.m_Origin);
+			Matrix34 entMat = ((ILightSource*)(rLight.m_pOwner))->GetMatrix();
+			entMat.OrthonormalizeFast();
+			Matrix33 matRot = Matrix33::CreateRotationVDir(entMat.GetColumn(0));
+			lightCam.SetMatrixNoUpdate(Matrix34(matRot, rLight.m_Origin));
+			lightCam.SetFrustum(1, 1, (rLight.m_fLightFrustumAngle * 2) / 180.0f * gf_PI, 0.1f, rLight.m_fRadius);
+
+			bIsVisible = FrustumIntersection(rCamera, lightCam);
+		}
+	}
+
+	return bIsVisible;
+}
+
+bool CLightEntity::IsVisible(const AABB& nodeBox, const float nodeDistance, const SRenderingPassInfo& passInfo) const
+{
+	const CCamera& rCamera = passInfo.GetCamera();
+	const SRenderLight& rLight = m_light;
+
+	// Frustum and occlusion culling -----------------------------------------------------------------------------
+	if (!IsVisible(rLight, rCamera, passInfo.IsGeneralPass()))
+		return false;
+
+	// VisArea culling -------------------------------------------------------------------------------------------
+	CVisArea* pVisArea = (CVisArea*)GetEntityVisArea();
+
+	int nMaxRecursion = (rLight.m_Flags & DLF_THIS_AREA_ONLY) ? 2 : 3;
+	if (!m_pObjManager || !m_pVisAreaManager || !m_pVisAreaManager->IsEntityVisAreaVisible(this, nMaxRecursion, &rLight, passInfo))
+	{
+		if (rLight.m_Flags & DLF_SUN && m_pVisAreaManager && m_pVisAreaManager->m_bSunIsNeeded)
+			; // sun may be used in indoor even if outdoor is not visible
+		else if (!pVisArea && GetEntityTerrainNode() && !(rLight.m_Flags & DLF_THIS_AREA_ONLY) && m_pVisAreaManager && m_pVisAreaManager->m_bSunIsNeeded)
+			; // not "this area only" outdoor light affects everything
+		else if ((rLight.m_Flags & (DLF_IGNORES_VISAREAS | DLF_THIS_AREA_ONLY)) == DLF_IGNORES_VISAREAS)
+			;
+		else
+			return false;
+	}
+
+	if (pVisArea)
+	{
+		const int nEngineFrameID = passInfo.GetFrameID();
+
+		// vis area lsource
+		IVisArea* pCameraVisArea = Get3DEngine()->GetVisAreaFromPos(rCamera.GetPosition());
+
+		// check if light is visible through light area portal cameras
+		if (pVisArea->m_nRndFrameId == nEngineFrameID && pVisArea != (CVisArea*)pCameraVisArea)
+		{
+			int nCam = 0;
+			for (; nCam < pVisArea->m_lstCurCamerasLen; nCam++)
+				if (IsVisible(rLight, CVisArea::s_tmpCameras[pVisArea->m_lstCurCamerasIdx + nCam], false))
+					break;
+
+			if (nCam == pVisArea->m_lstCurCamerasLen)
+				return false; // invisible
+		}
+
+		// check if lsource is in visible area
+		if (!IsLightAreasVisible() && pCameraVisArea != pVisArea)
+		{
+			if (rLight.m_Flags & DLF_THIS_AREA_ONLY)
+			{
+				if (pVisArea)
+				{
+					int nRndFrameId = pVisArea->GetVisFrameId();
+					if (nEngineFrameID - nRndFrameId > MAX_FRAME_ID_STEP_PER_FRAME)
+						return false; // area invisible
+				}
+				else
+					return false; // area invisible
+			}
+		}
+	}
+	else
+	{
+		// outdoor lsource
+		if (!(rLight.m_Flags & DLF_DIRECTIONAL) && !IsLightAreasVisible())
+			return false; // outdoor invisible
+	}
+
+	return true;
+}
+
 void CLightEntity::Render(const SRendParams& rParams, const SRenderingPassInfo& passInfo)
 {
 	FUNCTION_PROFILER_3DENGINE;
-
-	DBG_LOCK_TO_THREAD(this);
 
 	CRY_ASSERT(!(m_light.m_Flags & DLF_DISABLED));
 
@@ -1781,6 +1903,9 @@ void CLightEntity::Render(const SRendParams& rParams, const SRenderingPassInfo& 
 	if (GetCVars()->e_svoTI_Apply && (IRenderNode::GetGIMode() == eGM_HideIfGiIsActive))
 		return;
 #endif
+
+	if (m_layerId != uint16(~0))
+		return;
 
 	if (!(m_light.m_Flags & DLF_DEFERRED_LIGHT) || passInfo.IsRecursivePass())
 		return;
@@ -1805,98 +1930,6 @@ void CLightEntity::Render(const SRendParams& rParams, const SRenderingPassInfo& 
 	int nRenderNodeMinSpec = (m_dwRndFlags & ERF_SPEC_BITS_MASK) >> ERF_SPEC_BITS_SHIFT;
 	if (!CheckMinSpec(nRenderNodeMinSpec))
 		return;
-
-	Sphere sp(m_light.m_BaseOrigin, m_light.m_fRadius);
-
-	bool bIsVisible = false;
-	if (m_light.m_Flags & DLF_DEFERRED_CUBEMAPS)
-	{
-		OBB obb(OBB::CreateOBBfromAABB(Matrix33(m_light.m_ObjMatrix), AABB(-m_light.m_ProbeExtents, m_light.m_ProbeExtents)));
-		bIsVisible = passInfo.GetCamera().IsOBBVisible_F(m_light.m_Origin, obb);
-	}
-	else
-		bIsVisible = passInfo.GetCamera().IsSphereVisible_F(sp);
-
-	if (!bIsVisible && !(m_light.m_Flags & DLF_ATTACH_TO_SUN))
-		return;
-
-	//assert(m_light.IsOk());
-
-	if ((m_light.m_Flags & DLF_PROJECT) && (m_light.m_fLightFrustumAngle < 90.f) && (m_light.m_pLightImage || m_light.m_pLightDynTexSource))
-#if defined(FEATURE_SVO_GI)
-		if (!GetCVars()->e_svoTI_Apply || GetGIMode() != eGM_DynamicVoxelization)
-#endif
-	{
-		CCamera lightCam = passInfo.GetCamera();
-		lightCam.SetPositionNoUpdate(m_light.m_Origin);
-		Matrix34 entMat = ((ILightSource*)(m_light.m_pOwner))->GetMatrix();
-		entMat.OrthonormalizeFast();
-		Matrix33 matRot = Matrix33::CreateRotationVDir(entMat.GetColumn(0));
-		lightCam.SetMatrixNoUpdate(Matrix34(matRot, m_light.m_Origin));
-		lightCam.SetFrustum(1, 1, (m_light.m_fLightFrustumAngle * 2) / 180.0f * gf_PI, 0.1f, m_light.m_fRadius);
-		if (!FrustumIntersection(passInfo.GetCamera(), lightCam))
-			return;
-	}
-
-	const int nEngineFrameID = passInfo.GetFrameID();
-
-	int nMaxReqursion = (m_light.m_Flags & DLF_THIS_AREA_ONLY) ? 2 : 3;
-	if (!m_pObjManager || !m_pVisAreaManager || !m_pVisAreaManager->IsEntityVisAreaVisible(this, nMaxReqursion, &m_light, passInfo))
-	{
-		if (m_light.m_Flags & DLF_SUN && m_pVisAreaManager && m_pVisAreaManager->m_bSunIsNeeded)
-		{
-			// sun may be used in indoor even if outdoor is not visible
-		}
-		else if (!GetEntityVisArea() && GetEntityTerrainNode() && !(m_light.m_Flags & DLF_THIS_AREA_ONLY) && m_pVisAreaManager && m_pVisAreaManager->m_bSunIsNeeded)
-		{
-			// not "this area only" outdoor light affects everything
-		}
-		else if ((m_light.m_Flags & (DLF_IGNORES_VISAREAS | DLF_THIS_AREA_ONLY)) == DLF_IGNORES_VISAREAS)
-		{
-		}
-		else
-			return;
-	}
-
-	if (CVisArea* pArea = (CVisArea*)GetEntityVisArea())
-	{
-		// vis area lsource
-		IVisArea* pCameraVisArea = Get3DEngine()->GetVisAreaFromPos(passInfo.GetCamera().GetPosition());
-
-		// check if light is visible thru light area portal cameras
-		if (pArea->m_nRndFrameId == nEngineFrameID && pArea != (CVisArea*)pCameraVisArea)
-		{
-			int nCam = 0;
-			for (; nCam < pArea->m_lstCurCamerasLen; nCam++)
-				if (CVisArea::s_tmpCameras[pArea->m_lstCurCamerasIdx + nCam].IsSphereVisible_F(sp))
-					break;
-
-			if (nCam == pArea->m_lstCurCamerasLen)
-				return; // invisible
-		}
-
-		// check if lsource is in visible area
-		if (!IsLightAreasVisible() && pCameraVisArea != pArea)
-		{
-			if (m_light.m_Flags & DLF_THIS_AREA_ONLY)
-			{
-				if (pArea)
-				{
-					int nRndFrameId = pArea->GetVisFrameId();
-					if (nEngineFrameID - nRndFrameId > MAX_FRAME_ID_STEP_PER_FRAME)
-						return; // area invisible
-				}
-				else
-					return; // area invisible
-			}
-		}
-	}
-	else
-	{
-		// outdoor lsource
-		if (!(m_light.m_Flags & DLF_DIRECTIONAL) && !IsLightAreasVisible())
-			return; // outdoor invisible
-	}
 
 	m_light.m_nStencilRef[0] = CClipVolumeManager::AffectsEverythingStencilRef;
 	m_light.m_nStencilRef[1] = CClipVolumeManager::InactiveVolumeStencilRef;
@@ -1929,53 +1962,48 @@ void CLightEntity::Render(const SRendParams& rParams, const SRenderingPassInfo& 
 
 	GetRenderer()->EF_UpdateDLight(&m_light);
 
-	bool bAdded = false;
-
 	// TODO: make it threadsafe and add it to e_ExecuteRenderAsJobMask
 	//3dengine side - lightID assigning
 	m_light.m_Id = int16(Get3DEngine()->GetDynamicLightSources()->Count() + passInfo.GetIRenderView()->GetLightsCount(eDLT_DeferredLight));
 
-	if (!bAdded)
+	if (passInfo.RenderShadows() && (m_light.m_Flags & DLF_CASTSHADOW_MAPS) && m_light.m_Id >= 0)
 	{
-		if (passInfo.RenderShadows() && (m_light.m_Flags & DLF_CASTSHADOW_MAPS) && m_light.m_Id >= 0)
-		{
-			UpdateGSMLightSourceShadowFrustum(passInfo);
+		UpdateGSMLightSourceShadowFrustum(passInfo);
 
-			if (m_pShadowMapInfo)
+		if (m_pShadowMapInfo)
+		{
+			m_light.m_pShadowMapFrustums = reinterpret_cast<ShadowMapFrustum**>(m_pShadowMapInfo->pGSM);
+		}
+	}
+
+	if (GetCVars()->e_DynamicLights && m_fWSMaxViewDist)
+	{
+		SRenderLight* pL = &m_light;
+		const bool isEnvProbe = (pL->m_Flags & DLF_DEFERRED_CUBEMAPS) != 0;
+		if (GetCVars()->e_DynamicLights == 2 && !isEnvProbe)
+		{
+			float fSize = 0.05f * (sinf(GetCurTimeSec() * 10.f) + 2.0f);
+			DrawSphere(pL->m_Origin, fSize, pL->m_Color);
 			{
-				m_light.m_pShadowMapFrustums = reinterpret_cast<ShadowMapFrustum**>(m_pShadowMapInfo->pGSM);
+				IRenderAuxText::DrawLabelF(pL->m_Origin, 1.3f, "id=%d, rad=%.1f, vdr=%d", pL->m_Id, pL->m_fRadius, (int)m_ucViewDistRatio);
+			}
+		}
+		else if (GetCVars()->e_DynamicLights == 3 && isEnvProbe)
+		{
+			float fSize = 0.05f * (sinf(GetCurTimeSec() * 10.f) + 2.0f);
+			DrawSphere(pL->m_Origin, fSize, pL->m_Color);
+			{
+				IRenderAuxText::DrawLabelF(pL->m_Origin, 1.3f, "id=%d, rad=%.1f, vdr=%d", pL->m_Id, pL->m_fRadius, (int)m_ucViewDistRatio);
 			}
 		}
 
-		if (GetCVars()->e_DynamicLights && m_fWSMaxViewDist)
+		const float mult = SATURATE(6.f * (1.f - (rParams.fDistance / m_fWSMaxViewDist)));
+		IF (m_light.m_Color.Luminance() * mult > 0, 1)
 		{
-			SRenderLight* pL = &m_light;
-			const bool isEnvProbe = (pL->m_Flags & DLF_DEFERRED_CUBEMAPS) != 0;
-			if (GetCVars()->e_DynamicLights == 2 && !isEnvProbe)
-			{
-				float fSize = 0.05f * (sinf(GetCurTimeSec() * 10.f) + 2.0f);
-				DrawSphere(pL->m_Origin, fSize, pL->m_Color);
-				{
-					IRenderAuxText::DrawLabelF(pL->m_Origin, 1.3f, "id=%d, rad=%.1f, vdr=%d", pL->m_Id, pL->m_fRadius, (int)m_ucViewDistRatio);
-				}
-			}
-			else if (GetCVars()->e_DynamicLights == 3 && isEnvProbe)
-			{
-				float fSize = 0.05f * (sinf(GetCurTimeSec() * 10.f) + 2.0f);
-				DrawSphere(pL->m_Origin, fSize, pL->m_Color);
-				{
-					IRenderAuxText::DrawLabelF(pL->m_Origin, 1.3f, "id=%d, rad=%.1f, vdr=%d", pL->m_Id, pL->m_fRadius, (int)m_ucViewDistRatio);
-				}
-			}
+			if (passInfo.IsGeneralPass())
+				Get3DEngine()->SetupLightScissors(&m_light, passInfo);
 
-			const float mult = SATURATE(6.f * (1.f - (rParams.fDistance / m_fWSMaxViewDist)));
-			IF (m_light.m_Color.Luminance() * mult > 0, 1)
-			{
-				if (passInfo.IsGeneralPass())
-					Get3DEngine()->SetupLightScissors(&m_light, passInfo);
-
-				Get3DEngine()->AddLightToRenderer(m_light, mult, passInfo);
-			}
+			Get3DEngine()->AddLightToRenderer(m_light, mult, passInfo);
 		}
 	}
 }

@@ -681,7 +681,7 @@ void CCullThread::CreateOcclusionJob(const SCheckOcclusionJobData& rCheckOcclusi
 
 void CCullThread::CheckOcclusion_JobEntry(SCheckOcclusionJobData checkOcclusionData)
 {
-	if (checkOcclusionData.type == SCheckOcclusionJobData::OCTREE_NODE)
+	if (checkOcclusionData.type == SCheckOcclusionJobData::CONTENT_NODE)
 	{
 		AABB rAABB;
 		COctreeNode* pOctTreeNode = checkOcclusionData.octTreeData.pOctTreeNode;
@@ -706,6 +706,33 @@ void CCullThread::CheckOcclusion_JobEntry(SCheckOcclusionJobData checkOcclusionD
 			passInfo.SetShadowPasses(checkOcclusionData.pShadowPasses);
 
 			pOctTreeNode->COctreeNode::RenderContent(checkOcclusionData.octTreeData.nRenderMask, vAmbColor, checkOcclusionData.passCullMask, passInfo);
+		}
+	}
+	else if (checkOcclusionData.type == SCheckOcclusionJobData::LIGHTS_NODE)
+	{
+		AABB rAABB;
+		COctreeNode* pOctTreeNode = checkOcclusionData.octTreeData.pOctTreeNode;
+		const Vec3 cameraPosition = m_passInfoForCheckOcclusion.GetCamera().GetPosition();
+
+		memcpy(&rAABB, &pOctTreeNode->GetObjectsBBox(), sizeof(AABB));
+		float fDistance = sqrtf(Distance::Point_AABBSq(cameraPosition, rAABB));
+
+		// Test OctTree bounding box against main view
+		if (checkOcclusionData.passCullMask & kPassCullMainMask && !CCullThread::TestAABB(rAABB, fDistance))
+		{
+			checkOcclusionData.passCullMask &= ~kPassCullMainMask; // mark as not visible in general view
+		}
+
+		// TODO: check also occlusion of shadow volumes
+
+		if (checkOcclusionData.passCullMask)
+		{
+			Vec3 vAmbColor(checkOcclusionData.octTreeData.vAmbColor[0], checkOcclusionData.octTreeData.vAmbColor[1], checkOcclusionData.octTreeData.vAmbColor[2]);
+
+			SRenderingPassInfo passInfo = SRenderingPassInfo::CreateTempRenderingInfo(/*checkOcclusionData.pCam,*/ checkOcclusionData.rendItemSorter, m_passInfoForCheckOcclusion);
+			passInfo.SetShadowPasses(checkOcclusionData.pShadowPasses);
+
+			pOctTreeNode->COctreeNode::RenderLights(checkOcclusionData.octTreeData.nRenderMask, vAmbColor, checkOcclusionData.passCullMask, passInfo);
 		}
 	}
 	else if (checkOcclusionData.type == SCheckOcclusionJobData::TERRAIN_NODE)
@@ -738,7 +765,7 @@ void CCullThread::CheckOcclusion_JobEntry(SCheckOcclusionJobData checkOcclusionD
 ///////////////////////////////////////////////////////////////////////////////
 bool CCullThread::TestAABB(const AABB& rAABB, float fEntDistance, float fVerticalExpand)
 {
-	IF (GetCVars()->e_CheckOcclusion == 0, 0)
+	IF(GetCVars()->e_CheckOcclusion == 0, 0)
 		return true;
 
 	FUNCTION_PROFILER_3DENGINE;
@@ -784,11 +811,15 @@ bool CCullThread::TestQuad(const Vec3& vCenter, const Vec3& vAxisX, const Vec3& 
 	return false;
 }
 
-void CCullThread::WaitOnCheckOcclusionJobs()
+void CCullThread::WaitOnCheckOcclusionJobs(bool waitForLights)
 {
 	// Ensure all jobs have finished
 	m_checkOcclusion.Wait();
-	GetObjManager()->GetRenderContentJobState().Wait();
+
+	if (!waitForLights)
+		GetObjManager()->GetRenderContentJobState().Wait();
+	else
+		GetObjManager()->GetRenderLightsJobState().Wait();
 }
 
 } // namespace NAsyncCull

@@ -65,6 +65,10 @@ public:
 	virtual void                         SetOwnerEntity(IEntity* pEntity) override;
 	virtual IEntity*                     GetOwnerEntity() const            override { return m_pOwnerEntity; }
 	virtual bool                         IsAllocatedOutsideOf3DEngineDLL() override { return GetOwnerEntity() != nullptr; }
+
+	bool                                 IsVisible(const SRenderLight& rLight, const CCamera& rCamera, bool bTestCoverageBuffer) const;
+	virtual bool                         IsVisible(const AABB& nodeBox, const float nodeDistance, const SRenderingPassInfo& passInfo) const override;
+
 	void                                 InitEntityShadowMapInfoStructure(int dynamicLods, int cachedLods);
 	void                                 UpdateGSMLightSourceShadowFrustum(const SRenderingPassInfo& passInfo);
 	int                                  UpdateGSMLightSourceDynamicShadowFrustum(int nDynamicLodCount, int nDistanceLodCount, float& fDistanceFromViewLastDynamicLod, float& fGSMBoxSizeLastDynamicLod, bool bFadeLastCascade, const SRenderingPassInfo& passInfo);

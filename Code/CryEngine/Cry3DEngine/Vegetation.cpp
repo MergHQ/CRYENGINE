@@ -540,8 +540,10 @@ void CVegetation::Render(const SRenderingPassInfo& passInfo, const CLodValue& lo
 			m_pDeformable->RenderInternalDeform(pRenderObject, lodValue.LodA(), GetBBox(), passInfo);
 	}
 
+#if !defined(_RELEASE)
 	if (GetCVars()->e_BBoxes)
 		GetObjManager()->RenderObjectDebugInfo((IRenderNode*)this, pRenderObject->m_fDistance, passInfo);
+#endif
 }
 
 //////////////////////////////////////////////////////////////////////////

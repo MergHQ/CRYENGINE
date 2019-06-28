@@ -15,8 +15,6 @@
 #include <vector>
 #include <concqueue/concqueue.hpp>
 
-#include "ObjManCullQueue.h"
-
 #include <Cry3DEngine/I3DEngine.h>
 #include "ObjectsTree.h"
 
@@ -257,8 +255,6 @@ public:
 
 	void                    PrecacheStatObj(CStatObj* pStatObj, int nLod, IMaterial* pMaterial, float fImportance, float fEntDistance, bool bFullUpdate, bool bHighPriority);
 
-	NCullQueue::SCullQueue& CullQueue() { return m_cullQueue; }
-
 	//////////////////////////////////////////////////////////////////////////
 
 	typedef std::map<string, CStatObj*, stl::less_stricmp<string>> ObjectsMap;
@@ -303,10 +299,9 @@ public:
 		return 0;
 	}
 
-	int16 GetNearestCubeProbe(PodArray<SRenderLight*>* pAffectingLights, IVisArea* pVisArea, const AABB& objBox, bool bSpecular = true, Vec4* pEnvProbeMults = nullptr);
+	int16 GetNearestCubeProbe(IVisArea* pVisArea, const AABB& objBox, bool bSpecular = true, Vec4* pEnvProbeMults = nullptr);
 
 	void  RenderObject(IRenderNode* o,
-	                   PodArray<SRenderLight*>* pAffectingLights,
 	                   const Vec3& vAmbColor,
 	                   const AABB& objBox,
 	                   float fEntDistance,
@@ -314,15 +309,15 @@ public:
 	                   const SRenderingPassInfo& passInfo,
 	                   FrustumMaskType passCullMask);
 
-	void RenderVegetation(class CVegetation* pEnt, PodArray<SRenderLight*>* pAffectingLights, const AABB &objBox, float fEntDistance,
+	void RenderVegetation(class CVegetation* pEnt, const AABB &objBox, float fEntDistance,
 	                      SSectorTextureSet* pTerrainTexInfo, bool nCheckOcclusion, const SRenderingPassInfo &passInfo, FrustumMaskType passCullMask);
-	void RenderBrush(class CBrush* pEnt, PodArray<SRenderLight*>* pAffectingLights,
-	                 SSectorTextureSet* pTerrainTexInfo,const AABB &objBox, float fEntDistance,
+	void RenderBrush(class CBrush* pEnt, SSectorTextureSet* pTerrainTexInfo,
+	                 const AABB &objBox, float fEntDistance,
 	                 bool nCheckOcclusion, const SRenderingPassInfo &passInfo, FrustumMaskType passCullMask);
 
 	int  ComputeDissolve(const CLodValue& lodValueIn, SRenderNodeTempData* pTempData, IRenderNode* pEnt, float fEntDistance, CLodValue arrlodValuesOut[2]);
 
-	void RenderDecalAndRoad(IRenderNode* pEnt, PodArray<SRenderLight*>* pAffectingLights,
+	void RenderDecalAndRoad(IRenderNode* pEnt,
 	                        const Vec3& vAmbColor, const AABB& objBox, float fEntDistance,
 	                        bool nCheckOcclusion, const SRenderingPassInfo& passInfo);
 
@@ -397,16 +392,6 @@ public:
 	//	void MakeShadowBBox(Vec3 & vBoxMin, Vec3 & vBoxMax, const Vec3 & vLightPos, float fLightRadius, float fShadowVolumeExtent);
 	void MakeUnitCube();
 
-	void BoxCastingShadow_HWOcclQuery(const AABB& objBox, const Vec3& rSunDir, OcclusionTestClient* const pOcclTestVars)
-	{
-#ifdef USE_CULL_QUEUE
-		if (GetCVars()->e_CoverageBuffer)
-		{
-			const uint32 mainFrameID = passInfo.GetMainFrameID();
-			CullQueue().AddItem(objBox, rSunDir, pOcclTestVars, mainFrameID);
-		}
-#endif
-	}
 	bool IsBoxOccluded_HeightMap(const AABB& objBox, float fDistance, EOcclusionObjectType eOcclusionObjectType, OcclusionTestClient* pOcclTestVars, const SRenderingPassInfo& passInfo);
 
 	//////////////////////////////////////////////////////////////////////////
@@ -419,10 +404,8 @@ public:
 	void PushIntoCullOutputQueue(const SCheckOcclusionOutput& rCheckOcclusionOutput);
 	bool PopFromCullOutputQueue(SCheckOcclusionOutput& pCheckOcclusionOutput);
 
-	JobManager::SJobState& GetRenderContentJobState()
-	{
-		return m_renderContentJobState;
-	}
+	JobManager::SJobState& GetRenderContentJobState() { return m_renderContentJobState; }
+	JobManager::SJobState& GetRenderLightsJobState() { return m_renderLightsJobState; }
 
 #ifndef _RELEASE
 	void CoverageBufferDebugDraw();
@@ -451,7 +434,7 @@ public:
 	void         PrepareCullbufferAsync(const CCamera& rCamera, const SGraphicsPipelineKey& cullGraphicsContextKey);
 	void         BeginOcclusionCulling(const SRenderingPassInfo& passInfo);
 	void         EndOcclusionCulling();
-	void         RenderNonJobObjects(const SRenderingPassInfo& passInfo);
+	void         RenderNonJobObjects(const SRenderingPassInfo& passInfo, bool waitForLights);
 	uint32       GetResourcesModificationChecksum(IRenderNode* pOwnerNode) const;
 	bool         AddOrCreatePersistentRenderObject(SRenderNodeTempData* pTempData, CRenderObject*& pRenderObject, const CLodValue* pLodValue, const Matrix34& transformationMatrix, const SRenderingPassInfo& passInfo) const;
 	IRenderMesh* GetBillboardRenderMesh(IMaterial* pMaterial);
@@ -512,8 +495,6 @@ private:
 	CryMT::vector<CStatObj*> m_checkForGarbage;
 	bool                     m_bGarbageCollectionEnabled;
 
-	NCullQueue::SCullQueue   m_cullQueue;
-
 	PodArray<CTerrainNode*>  m_lstTmpCastingNodes;
 
 #ifdef POOL_STATOBJ_ALLOCS
@@ -525,6 +506,7 @@ private:
 	BoundMPMC<SCheckOcclusionOutput>    m_CheckOcclusionOutputQueue;
 
 	JobManager::SJobState               m_renderContentJobState;
+	JobManager::SJobState               m_renderLightsJobState;
 
 	class CPreloadTimeslicer;
 	std::unique_ptr<CPreloadTimeslicer> m_pPreloadTimeSlicer;

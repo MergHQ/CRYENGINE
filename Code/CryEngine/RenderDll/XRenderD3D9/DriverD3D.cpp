@@ -808,9 +808,6 @@ void CD3D9Renderer::BeginFrame(const SDisplayContextKey& displayContextKey, cons
 	CREOcclusionQuery::m_nReadResultNowCounter = 0;
 	CREOcclusionQuery::m_nReadResultTryCounter = 0;
 
-	if (gEnv->p3DEngine)
-		gEnv->p3DEngine->ResetCoverageBufferSignalVariables();
-
 #ifdef DO_RENDERLOG
 	if (CRenderer::CV_r_log)
 		Logv("******************************* BeginFrame %d ********************************\n", gRenDev->GetMainFrameID());

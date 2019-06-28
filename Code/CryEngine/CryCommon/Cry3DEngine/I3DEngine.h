@@ -1411,8 +1411,6 @@ struct I3DEngine : public IProcess
 	//! \return A pointer to an object derived from IStatObj.
 	virtual IStatObj* FindStatObjectByFilename(const char* filename) = 0;
 
-	virtual void      ResetCoverageBufferSignalVariables() = 0;
-
 	//! Gets the amount of loaded objects.
 	//! \return An integer representing the amount of loaded objects.
 	virtual int GetLoadedObjectCount() { return 0; }
@@ -1948,9 +1946,8 @@ struct I3DEngine : public IProcess
 	//! \param pLightSource Pointer to the light.
 	virtual void DeleteLightSource(ILightSource* pLightSource) = 0;
 
-	//! Gives access to the list holding all static light sources.
-	//! \return An array holding all the SRenderLight pointers.
-	virtual const PodArray<SRenderLight*>* GetStaticLightSources() = 0;
+	//! Gives access to the list holding all light sources.
+	//! \return An array holding all the ILightSource pointers.
 	virtual const PodArray<ILightSource*>* GetLightEntities() = 0;
 
 	//! Gives access to list holding all lighting volumes.

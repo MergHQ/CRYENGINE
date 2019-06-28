@@ -85,7 +85,7 @@ public:
 	bool TestAABB(const AABB& rAABB, float fEntDistance, float fVerticalExpand = 0.0f);
 	bool TestQuad(const Vec3& vCenter, const Vec3& vAxisX, const Vec3& vAxisY);
 
-	void WaitOnCheckOcclusionJobs();
+	void WaitOnCheckOcclusionJobs(bool waitForLights);
 
 	CCullThread();
 	~CCullThread();

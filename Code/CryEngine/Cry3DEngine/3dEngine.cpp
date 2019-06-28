@@ -2236,8 +2236,6 @@ void C3DEngine::GetMemoryUsage(class ICrySizer* pSizer) const
 	pSizer->AddObject(m_lstDynLights);
 	pSizer->AddObject(m_lstDynLightsNoLight);
 	pSizer->AddObject(m_lstStaticLights);
-	pSizer->AddObject(m_lstAffectingLightsCombinations);
-	pSizer->AddObject(m_arrLightProjFrustums);
 	pSizer->AddObject(m_arrEntsInFoliage);
 
 	pSizer->AddObject(m_lstRoadRenderNodesForUpdate);
@@ -6513,7 +6511,7 @@ void C3DEngine::RenderRenderNode_ShadowPass(IShadowCaster* pShadowCaster, const 
 		{
 			CBrush* pBrush = static_cast<CBrush*>(pRenderNode);
 			const CLodValue lodValue = pBrush->ComputeLod(wantedLod, passInfo);
-			pBrush->Render(lodValue, passInfo, NULL, NULL);
+			pBrush->Render(lodValue, passInfo, NULL);
 		}
 		break;
 	default:

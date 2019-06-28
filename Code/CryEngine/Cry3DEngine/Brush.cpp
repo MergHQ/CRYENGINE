@@ -786,7 +786,7 @@ bool CBrush::GetLodDistances(const SFrameLodInfo& frameLodInfo, float* distances
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-void CBrush::Render(const CLodValue& lodValue, const SRenderingPassInfo& passInfo, SSectorTextureSet* pTerrainTexInfo, PodArray<SRenderLight*>* pAffectingLights)
+void CBrush::Render(const CLodValue& lodValue, const SRenderingPassInfo& passInfo, SSectorTextureSet* pTerrainTexInfo)
 {
 	FUNCTION_PROFILER_3DENGINE;
 
@@ -927,7 +927,7 @@ void CBrush::Render(const CLodValue& lodValue, const SRenderingPassInfo& passInf
 	if (!passInfo.IsShadowPass() && m_nInternalFlags & IRenderNode::REQUIRES_NEAREST_CUBEMAP)
 	{
 		if (!(pObj->m_nTextureID = GetObjManager()->CheckCachedNearestCubeProbe(this)) || !GetCVars()->e_CacheNearestCubePicking)
-			pObj->m_nTextureID = GetObjManager()->GetNearestCubeProbe(pAffectingLights, GetEntityVisArea(), CBrush::GetBBox());
+			pObj->m_nTextureID = GetObjManager()->GetNearestCubeProbe(GetEntityVisArea(), CBrush::GetBBox());
 
 		pTempData->userData.nCubeMapId = pObj->m_nTextureID;
 	}

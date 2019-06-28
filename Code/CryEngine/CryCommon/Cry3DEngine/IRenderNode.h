@@ -363,6 +363,9 @@ public:
 	//! Don't forget to call this base function when overriding it.
 	virtual void OffsetPosition(const Vec3& delta) = 0;
 
+	//! Is node geometry visible in passInfo's camera
+	virtual bool IsVisible(const AABB& nodeBox, const float nodeDistance, const SRenderingPassInfo& passInfo) const { return true; }
+
 	//! Renders node geometry
 	virtual void Render(const struct SRendParams& EntDrawParams, const SRenderingPassInfo& passInfo) = 0;
 

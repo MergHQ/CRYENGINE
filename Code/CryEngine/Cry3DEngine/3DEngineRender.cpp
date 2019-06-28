@@ -22,7 +22,6 @@
 #include "ObjMan.h"
 #include "ParticleMemory.h"
 #include "ParticleSystem/ParticleSystem.h"
-#include "ObjManCullQueue.h"
 #include "MergedMeshRenderNode.h"
 #include "GeomCacheManager.h"
 #include "DeformableNode.h"
@@ -1526,14 +1525,6 @@ void C3DEngine::RenderScene(const int nRenderFlags, const SRenderingPassInfo& pa
 		GetObjManager()->m_CullThread.SetActive(true);
 
 	////////////////////////////////////////////////////////////////////////////////////////
-	// Sync asynchronous cull queue processing if enabled
-	////////////////////////////////////////////////////////////////////////////////////////
-#ifdef USE_CULL_QUEUE
-	if (GetCVars()->e_CoverageBuffer)
-		GetObjManager()->CullQueue().Wait();
-#endif
-
-	////////////////////////////////////////////////////////////////////////////////////////
 	// Draw potential occluders into z-buffer
 	////////////////////////////////////////////////////////////////////////////////////////
 
@@ -1642,7 +1633,7 @@ void C3DEngine::RenderScene(const int nRenderFlags, const SRenderingPassInfo& pa
 
 		auto outdoorCullMask = IsOutdoorVisible() ? passCullMask : (passCullMask & ~kPassCullMainMask);
 		if (outdoorCullMask != 0)
-			m_pObjectsTree->Render_LightSources(false, outdoorCullMask, passInfo);
+			m_pObjectsTree->Render_Light_Nodes(false, OCTREENODE_RENDER_FLAG_LIGHTS, GetSkyColor(), outdoorCullMask, passInfo);
 	}
 
 	// draw objects inside visible vis areas
@@ -1753,11 +1744,11 @@ void C3DEngine::RenderScene(const int nRenderFlags, const SRenderingPassInfo& pa
 			{
 				if (pObj->GetRenderNodeType() == eERType_Brush || pObj->GetRenderNodeType() == eERType_MovableBrush)
 				{
-					GetObjManager()->RenderBrush((CBrush*)pObj, NULL, NULL, objBox, fEntDistance, false, passInfo, passCullMask & kPassCullMainMask);
+					GetObjManager()->RenderBrush((CBrush*)pObj, NULL, objBox, fEntDistance, false, passInfo, passCullMask & kPassCullMainMask);
 				}
 				else
 				{
-					GetObjManager()->RenderObject(pObj, NULL, GetSkyColor(), objBox, fEntDistance, pObj->GetRenderNodeType(), passInfo, passCullMask & kPassCullMainMask);
+					GetObjManager()->RenderObject(pObj, GetSkyColor(), objBox, fEntDistance, pObj->GetRenderNodeType(), passInfo, passCullMask & kPassCullMainMask);
 				}
 			}
 		}
@@ -1793,7 +1784,7 @@ void C3DEngine::RenderScene(const int nRenderFlags, const SRenderingPassInfo& pa
 	// we wait for all render jobs to finish here
 	if (passInfo.IsGeneralPass() && IsStatObjBufferRenderTasksAllowed())
 	{
-		m_pObjManager->RenderNonJobObjects(passInfo);
+		m_pObjManager->RenderNonJobObjects(passInfo, false);
 	}
 
 	// render terrain ground in case of non job mode
@@ -1835,13 +1826,6 @@ void C3DEngine::RenderScene(const int nRenderFlags, const SRenderingPassInfo& pa
 
 	if (auto* pGame = gEnv->pGameFramework->GetIGame())
 		pGame->OnRenderScene(passInfo);
-
-	////////////////////////////////////////////////////////////////////////////////////////
-	// Start asynchronous cull queue processing if enabled
-	////////////////////////////////////////////////////////////////////////////////////////
-
-	//Tell the c-buffer that the item queue is ready. The render thread supplies the depth buffer to test against and this is prepared asynchronously
-	GetObjManager()->CullQueue().FinishedFillingTestItemQueue();
 
 	////////////////////////////////////////////////////////////////////////////////////////
 	// Finalize frame
@@ -1894,11 +1878,6 @@ void C3DEngine::RenderScene(const int nRenderFlags, const SRenderingPassInfo& pa
 
 	if (passInfo.IsGeneralPass() && IsStatObjBufferRenderTasksAllowed())
 		m_pObjManager->EndOcclusionCulling();
-}
-
-void C3DEngine::ResetCoverageBufferSignalVariables()
-{
-	GetObjManager()->CullQueue().ResetSignalVariables();
 }
 
 void C3DEngine::ProcessOcean(const SRenderingPassInfo& passInfo)
@@ -2627,7 +2606,7 @@ void C3DEngine::DisplayInfo(float& fTextPosX, float& fTextPosY, float& fTextStep
 		const bool bFallback = nMainFrameId - nFallbackFrameId < 50;
 
 		cry_sprintf(szMeshPoolUse,
-		            "Mesh Pool: Used:%.2fKB(%d%%%%) Peak %.fKB (%.fKB) PoolSize:%" PRISIZE_T "KB Flushes %" PRISIZE_T " Fallbacks %.3fKB%s",
+		            "Mesh Pool: Used:%.2fKB(%d%%%%) Peak %.fKB (%.fKB) PoolSize:%" PRISIZE_T "KB Flushes %" PRISIZE_T " Fallbacks %.3fKB %s",
 		            (float)stats.nPoolInUse / 1024,
 		            iPercentage,
 		            (float)stats.nPoolInUsePeak / 1024,
@@ -3720,7 +3699,7 @@ void C3DEngine::PrepareShadowPasses(const SRenderingPassInfo& passInfo, uint32& 
 	{
 		auto outdoorCullMask = IsOutdoorVisible() ? passCullMask : (passCullMask & ~kPassCullMainMask);
 		if (outdoorCullMask != 0)
-			m_pObjectsTree->Render_LightSources(false, outdoorCullMask, passInfo);
+			m_pObjectsTree->Render_Light_Nodes(false, OCTREENODE_RENDER_FLAG_LIGHTS, GetSkyColor(), outdoorCullMask, passInfo);
 	}
 
 	// render indoor point lights and collect dynamic point light frustums
@@ -3731,8 +3710,20 @@ void C3DEngine::PrepareShadowPasses(const SRenderingPassInfo& passInfo, uint32& 
 		if (pArea->IsObjectsTreeValid())
 		{
 			for (int c = 0; c < pArea->m_lstCurCamerasLen; ++c)
-				pArea->GetObjectsTree()->Render_LightSources(false, passCullMask, SRenderingPassInfo::CreateTempRenderingInfo(CVisArea::s_tmpCameras[pArea->m_lstCurCamerasIdx + c], passInfo));
+				pArea->GetObjectsTree()->Render_Light_Nodes(false, OCTREENODE_RENDER_FLAG_LIGHTS, GetSkyColor(), passCullMask, SRenderingPassInfo::CreateTempRenderingInfo(CVisArea::s_tmpCameras[pArea->m_lstCurCamerasIdx + c], passInfo));
 		}
+	}
+
+	if (passInfo.IsGeneralPass() && IsStatObjBufferRenderTasksAllowed())
+	{
+		// Process all light-sources
+		m_pObjManager->m_CullThread.SetActive(false);
+		m_pObjManager->RenderNonJobObjects(passInfo, true);
+		m_pObjManager->EndOcclusionCulling();
+
+		// begin again for all following nodes
+		m_pObjManager->m_CullThread.SetActive(true);
+		m_pObjManager->BeginOcclusionCulling(passInfo);
 	}
 
 	// disable collection of frustums

@@ -571,8 +571,6 @@ void C3DEngine::UnloadLevel()
 	stl::free_container(m_lstAlwaysVisible);
 	if (m_decalRenderNodes.empty())
 		stl::free_container(m_decalRenderNodes);
-	stl::free_container(m_tmpLstLights);
-	stl::free_container(m_tmpLstAffectingLights);
 	stl::free_container(m_lstPerObjectShadows);
 	m_nCustomShadowFrustumCount = 0;
 

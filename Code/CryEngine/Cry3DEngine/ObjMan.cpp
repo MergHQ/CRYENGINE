@@ -1379,8 +1379,10 @@ bool CObjManager::AddOrCreatePersistentRenderObject(SRenderNodeTempData* pTempDa
 				pPermanentRenderObj->SetInstanceDataDirty(passType, false);
 			}
 
+#if !defined(_RELEASE)
 			if (GetCVars()->e_BBoxes && pTempData && pTempData->userData.pOwnerNode)
 				GetObjManager()->RenderObjectDebugInfo(pTempData->userData.pOwnerNode, pPermanentRenderObj->m_fDistance, passInfo);
+#endif
 
 			return true;
 		}

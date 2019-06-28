@@ -533,7 +533,6 @@ public:
 
 	virtual struct ILightSource*           CreateLightSource();
 	virtual void                           DeleteLightSource(ILightSource* pLightSource);
-	virtual const PodArray<SRenderLight*>* GetStaticLightSources();
 	virtual bool                           IsTerrainHightMapModifiedByGame();
 	virtual bool                           RestoreTerrainFromDisk();
 	virtual void                           CheckMemoryHeap();
@@ -933,8 +932,6 @@ private:
 	// without calling high level functions like panorama screenshot
 	void RenderInternal(const int nRenderFlags, const SRenderingPassInfo& passInfo, const char* szDebugName);
 
-	void RegisterLightSourceInSectors(SRenderLight* pDynLight, const SRenderingPassInfo& passInfo);
-
 	bool IsCameraAnd3DEngineInvalid(const SRenderingPassInfo& passInfo, const char* szCaller);
 
 	void DebugDrawStreaming(const SRenderingPassInfo& passInfo);
@@ -995,11 +992,7 @@ public:
 	PodArray<class CRoadRenderNode*> m_lstRoadRenderNodesForUpdate;
 
 	struct ILightSource*            GetSunEntity();
-	PodArray<struct ILightSource*>* GetAffectingLights(const AABB& bbox, bool bAllowSun, const SRenderingPassInfo& passInfo);
-	void                            UregisterLightFromAccessabilityCache(ILightSource* pLight);
 	void                            OnCasterDeleted(IShadowCaster* pCaster);
-
-	virtual void                    ResetCoverageBufferSignalVariables();
 
 	void                            UpdateScene(const SRenderingPassInfo& passInfo);
 	void                            UpdateLightSources(const SRenderingPassInfo& passInfo);
@@ -1245,15 +1238,10 @@ private:
 	int                                       m_nRealLightsNum;
 
 	PodArray<ILightSource*>                   m_lstStaticLights;
-	PodArray<PodArray<struct ILightSource*>*> m_lstAffectingLightsCombinations;
-	PodArray<SRenderLight*>                   m_tmpLstLights;
-	PodArray<struct ILightSource*>            m_tmpLstAffectingLights;
 
 	PodArray<SCollisionClass>                 m_collisionClasses;
 
 #define MAX_LIGHTS_NUM 32
-	PodArray<CCamera> m_arrLightProjFrustums;
-
 	CTimeOfDay*       m_pTimeOfDay;
 
 	ICVar*            m_pLightQuality;

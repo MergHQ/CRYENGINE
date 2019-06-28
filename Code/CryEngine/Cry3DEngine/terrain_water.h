@@ -15,7 +15,7 @@ public:
 	void          Update(const SRenderingPassInfo& passInfo);
 	void          Render(const SRenderingPassInfo& passInfo);
 
-	bool          IsVisible(const SRenderingPassInfo& passInfo);
+	virtual bool  IsVisible(const AABB& nodeBox, const float nodeDistance, const SRenderingPassInfo& passInfo) const override;
 
 	void          SetLastFov(float fLastFov) { m_fLastFov = fLastFov; }
 	static void   SetTimer(ITimer* pTimer);
@@ -71,7 +71,7 @@ private:
 	class CREOcclusionQuery* m_pREOcclusionQueries[CYCLE_BUFFERS_NUM];
 	IShader*                 m_pShaderOcclusionQuery;
 	float                    m_fLastFov;
-	float                    m_fLastVisibleFrameTime;
+	mutable float            m_fLastVisibleFrameTime;
 	int32                    m_nLastVisibleFrameId;
 	static uint32            m_nVisiblePixelsCount;
 

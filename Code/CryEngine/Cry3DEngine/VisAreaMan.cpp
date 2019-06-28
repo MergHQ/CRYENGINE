@@ -1046,7 +1046,7 @@ CVisArea* CVisAreaManager::CreateVisArea(VisAreaGUID visGUID)
 	return new CVisArea(visGUID);
 }
 
-bool CVisAreaManager::IsEntityVisAreaVisibleReqursive(const CVisArea* pVisArea, int nMaxReqursion, PodArray<const CVisArea*>* pUnavailableAreas, const SRenderLight* pLight, const SRenderingPassInfo& passInfo) const
+bool CVisAreaManager::IsEntityVisAreaVisibleRecursive(const CVisArea* pVisArea, int nMaxRecursion, PodArray<const CVisArea*>* pUnavailableAreas, const SRenderLight* pLight, const SRenderingPassInfo& passInfo) const
 {
 	int nAreaId = pUnavailableAreas->Count();
 	pUnavailableAreas->Add(pVisArea);
@@ -1057,19 +1057,23 @@ bool CVisAreaManager::IsEntityVisAreaVisibleReqursive(const CVisArea* pVisArea, 
 		// check is lsource area was rendered in prev frame
 		if (abs(pVisArea->m_nRndFrameId - passInfo.GetFrameID()) > 2)
 		{
-			if (nMaxReqursion > 1)
+			if (nMaxRecursion > 1)
+			{
 				for (int n = 0; n < pVisArea->m_lstConnections.Count(); n++)
 				{
 					// loop other sectors
 					CVisArea* pNeibArea = (CVisArea*)pVisArea->m_lstConnections[n];
 					if (-1 == pUnavailableAreas->Find(pNeibArea) &&
 					    (!pLight || Overlap::Sphere_AABB(Sphere(pLight->m_Origin, pLight->m_fRadius), *pNeibArea->GetAABBox())))
-						if (IsEntityVisAreaVisibleReqursive(pNeibArea, nMaxReqursion - 1, pUnavailableAreas, pLight, passInfo))
+					{
+						if (IsEntityVisAreaVisibleRecursive(pNeibArea, nMaxRecursion - 1, pUnavailableAreas, pLight, passInfo))
 						{
 							bFound = true;
 							break;
 						} //if visible
+					}
 				}     // for
+			}
 		}
 		else
 			bFound = true;
@@ -1081,7 +1085,7 @@ bool CVisAreaManager::IsEntityVisAreaVisibleReqursive(const CVisArea* pVisArea, 
 	return bFound;
 }
 
-bool CVisAreaManager::IsEntityVisAreaVisible(IRenderNode* pEnt, int nMaxReqursion, const SRenderLight* pLight, const SRenderingPassInfo& passInfo) const
+bool CVisAreaManager::IsEntityVisAreaVisible(const IRenderNode* pEnt, int nMaxReqursion, const SRenderLight* pLight, const SRenderingPassInfo& passInfo) const
 {
 	if (!pEnt)
 		return false;
@@ -1091,71 +1095,7 @@ bool CVisAreaManager::IsEntityVisAreaVisible(IRenderNode* pEnt, int nMaxReqursio
 	lUnavailableAreas.Clear();
 	lUnavailableAreas.PreAllocate(nMaxReqursion, 0);
 
-	return IsEntityVisAreaVisibleReqursive((CVisArea*)pEnt->GetEntityVisArea(), nMaxReqursion, &lUnavailableAreas, pLight, passInfo);
-	/*
-	   if(pEnt->GetEntityVisArea())
-	   {
-	    if(pEnt->GetEntityVisArea())//->IsPortal())
-	    { // check is lsource area was rendered in prev frame
-	      CVisArea * pVisArea = pEnt->GetEntityVisArea();
-	      int nRndFrameId = passInfo.GetFrameID();
-	      if(abs(pVisArea->m_nRndFrameId - nRndFrameId)>2)
-	      {
-	        if(!nCheckNeighbors)
-	          return false; // this area is not visible
-
-	        // try neibhour areas
-	        bool bFound = false;
-	        if(pEnt->GetEntityVisArea()->IsPortal())
-	        {
-	          CVisArea * pPort = pEnt->GetEntityVisArea();
-	          for(int n=0; n<pPort->m_lstConnections.Count(); n++)
-	          { // loop other sectors
-	            CVisArea * pNeibArea = (CVisArea*)pPort->m_lstConnections[n];
-	            if(abs(pNeibArea->m_nRndFrameId - passInfo.GetFrameID())<=2)
-	            {
-	              bFound=true;
-	              break;
-	            }
-	          }
-	        }
-	        else
-	        {
-	          for(int t=0; !bFound && t<pVisArea->m_lstConnections.Count(); t++)
-	          { // loop portals
-	            CVisArea * pPort = (CVisArea*)pVisArea->m_lstConnections[t];
-	            if(abs(pPort->m_nRndFrameId - passInfo.GetFrameID())<=2)
-	            {
-	              bFound=true;
-	              break;
-	            }
-
-	            for(int n=0; n<pPort->m_lstConnections.Count(); n++)
-	            { // loop other sectors
-	              CVisArea * pNeibArea = (CVisArea*)pPort->m_lstConnections[n];
-	              if(abs(pNeibArea->m_nRndFrameId - passInfo.GetFrameID())<=2)
-	              {
-	                bFound=true;
-	                break;
-	              }
-	            }
-	          }
-	        }
-
-	        if(!bFound)
-	          return false;
-
-	        return true;
-	      }
-	    }
-	    else
-	      return false; // not visible
-	   }
-	   else if(!IsOutdoorAreasVisible())
-	    return false;
-
-	   return true;
-	 */
+	return IsEntityVisAreaVisibleRecursive((CVisArea*)pEnt->GetEntityVisArea(), nMaxReqursion, &lUnavailableAreas, pLight, passInfo);
 }
 
 int __cdecl CVisAreaManager__CmpDistToPortal(const void* v1, const void* v2)
@@ -1606,52 +1546,6 @@ void CVisAreaManager::IntersectWithBox(const AABB& aabbBox, PodArray<CVisArea*>*
 		{
 			plstResult->Add(m_lstVisAreas[v]);
 		}
-	}
-}
-
-void CVisAreaManager::AddLightSourceReqursive(SRenderLight* pLight, CVisArea* pArea, const int32 nDeepness, const SRenderingPassInfo& passInfo)
-{
-	if (pArea->IsObjectsTreeValid())
-	{
-		pArea->GetObjectsTree()->AddLightSource(pLight, passInfo);
-	}
-
-	if (1 < nDeepness)
-	{
-		for (int v = 0; v < pArea->m_lstConnections.Count(); v++)
-		{
-			CVisArea* pConArea = pArea->m_lstConnections[v];
-			AddLightSourceReqursive(pLight, pConArea, nDeepness - 1, passInfo);
-		}
-	}
-}
-
-void CVisAreaManager::AddLightSource(SRenderLight* pLight, const SRenderingPassInfo& passInfo)
-{
-	CVisArea* pLightArea = (CVisArea*)GetVisAreaFromPos(pLight->m_Origin);
-
-	bool bThisAreaInly = (pLight->m_Flags & DLF_THIS_AREA_ONLY) != 0;
-
-	if (pLightArea)
-	{
-		int nPortal = pLightArea->IsPortal() ? 1 : 0;
-		AddLightSourceReqursive(pLight, pLightArea, nPortal + (bThisAreaInly ? 2 : 3), passInfo);
-	}
-	else if (!bThisAreaInly)
-	{
-		AABB lightBox(
-			pLight->m_Origin - Vec3(pLight->m_fRadius, pLight->m_fRadius, pLight->m_fRadius),
-			pLight->m_Origin + Vec3(pLight->m_fRadius, pLight->m_fRadius, pLight->m_fRadius));
-		PodArray<CVisArea*> arrAreas;
-		arrAreas.Clear();
-		m_pVisAreaManager->IntersectWithBox(lightBox, &arrAreas, true);
-		for (int i = 0; i < arrAreas.Count(); i++)
-			if (arrAreas[i]->IsPortal() && arrAreas[i]->IsConnectedToOutdoor())
-			{
-				pLightArea = arrAreas[i];
-				int nPortal = pLightArea->IsPortal() ? 1 : 0;
-				AddLightSourceReqursive(pLight, pLightArea, nPortal + (bThisAreaInly ? 2 : 3), passInfo);
-			}
 	}
 }
 

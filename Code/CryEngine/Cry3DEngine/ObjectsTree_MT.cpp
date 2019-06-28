@@ -39,7 +39,7 @@ void CObjManager::EndOcclusionCulling()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CObjManager::RenderNonJobObjects(const SRenderingPassInfo& passInfo)
+void CObjManager::RenderNonJobObjects(const SRenderingPassInfo& passInfo, bool waitForLights)
 {
 	CRY_PROFILE_SECTION(PROFILE_3DENGINE, "3DEngine: RenderNonJobObjects");
 	MEMSTAT_CONTEXT(EMemStatContextType::Other, "CObjManager::RenderNonJobObjects");
@@ -56,7 +56,7 @@ void CObjManager::RenderNonJobObjects(const SRenderingPassInfo& passInfo)
 		{
 			if (!hasWaited)
 			{
-				m_CullThread.WaitOnCheckOcclusionJobs();
+				m_CullThread.WaitOnCheckOcclusionJobs(waitForLights);
 				hasWaited = true;
 				continue;
 			}
@@ -70,7 +70,6 @@ void CObjManager::RenderNonJobObjects(const SRenderingPassInfo& passInfo)
 		{
 		case SCheckOcclusionOutput::ROAD_DECALS:
 			GetObjManager()->RenderDecalAndRoad(outputData.common.pObj,
-			                                    outputData.common.pAffectingLights,
 			                                    outputData.vAmbColor,
 			                                    outputData.objBox,
 			                                    outputData.common.fEntDistance,
@@ -85,7 +84,6 @@ void CObjManager::RenderNonJobObjects(const SRenderingPassInfo& passInfo)
 				case eERType_Brush:
 				case eERType_MovableBrush:
 					GetObjManager()->RenderBrush((CBrush*)outputData.common.pObj,
-					                             outputData.common.pAffectingLights,
 					                             outputData.common.pTerrainTexInfo,
 					                             outputData.objBox,
 					                             outputData.common.fEntDistance,
@@ -96,7 +94,6 @@ void CObjManager::RenderNonJobObjects(const SRenderingPassInfo& passInfo)
 
 				case eERType_Vegetation:
 					GetObjManager()->RenderVegetation((CVegetation*)outputData.common.pObj,
-					                                  outputData.common.pAffectingLights,
 					                                  outputData.objBox,
 					                                  outputData.common.fEntDistance,
 					                                  outputData.common.pTerrainTexInfo,
@@ -107,7 +104,6 @@ void CObjManager::RenderNonJobObjects(const SRenderingPassInfo& passInfo)
 
 				default:
 					GetObjManager()->RenderObject(outputData.common.pObj,
-					                              outputData.common.pAffectingLights,
 					                              outputData.vAmbColor,
 					                              outputData.objBox,
 					                              outputData.common.fEntDistance,

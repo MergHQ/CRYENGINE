@@ -31,16 +31,7 @@ const int nThreadsNum = 3;
 //#define DEFINE_MODULE_NAME "Cry3DEngine"
 
 //////////////////////////////////////////////////////////////////////////////////////////////
-// Highlevel defines
-
-// deferred cull queue handling - currently disabled
-// #define USE_CULL_QUEUE
-
-// Crysis3 as it's dx11 only can simply use the zbufferculler everywhere
-// Older CCoverageBuffer currently does not compile
-#if 1
-	#define OCCLUSIONCULLER CZBufferCuller
-#endif
+// High level defines
 
 // Compilation (Export to Engine) not needed on consoles
 #if CRY_PLATFORM_DESKTOP
