@@ -92,6 +92,7 @@ private:
 	bool  focusNextPrevChild(bool next) override;
 
 	void  SetupWidgets();
+	void  ReleasePropertyTree();
 	void  ReleaseWidgets();
 
 	void  UpdateMinimumSize();
