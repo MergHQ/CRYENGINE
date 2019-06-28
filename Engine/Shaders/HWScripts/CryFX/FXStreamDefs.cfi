@@ -123,7 +123,7 @@ struct pixout_gbuffer
 	half4 GBufferC : SV_Target2;
 	
 #if %_RT_MOTION_BLUR
-	half4 VelocityRT  : SV_Target3;
+	half2 VelocityRT  : SV_Target3;
 #endif
 
 #if (%_RT_MSAA_QUALITY || %_RT_MSAA_QUALITY1) && %_RT_ALPHATEST

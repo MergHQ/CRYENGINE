@@ -303,6 +303,7 @@ void CPostAAStage::ApplySMAA(CTexture*& pCurrRT, CTexture*& pDestRT)
 		if (m_passSMAANeighborhoodBlending.IsDirty(pCurrRT->GetTextureID()))
 		{
 			static CCryNameTSCRC techNeighborhoodBlending("NeighborhoodBlendingSMAA");
+			m_passSMAANeighborhoodBlending.SetPrimitiveFlags(CRenderPrimitive::eFlags_None);
 			m_passSMAANeighborhoodBlending.SetPrimitiveType(CRenderPrimitive::ePrim_ProceduralTriangle);
 			m_passSMAANeighborhoodBlending.SetTechnique(CShaderMan::s_shPostAA, techNeighborhoodBlending, 0);
 			m_passSMAANeighborhoodBlending.SetRenderTarget(0, pDestRT);
@@ -610,7 +611,7 @@ void CPostAAStage::Update()
 	// Check if Stereo or AA settings have been updated, if so we might need to recreate prevBackBuffer rendertarget
 	if (oldStereoEnabledState != gRenDev->IsStereoEnabled() ||
 		oldAAState != CRenderer::CV_r_AntialiasingMode)
-		Resize(m_graphicsPipeline.GetRenderResolution().y, m_graphicsPipeline.GetRenderResolution().y);
+		Resize(m_graphicsPipeline.GetRenderResolution().x, m_graphicsPipeline.GetRenderResolution().y);
 }
 
 CTexture* CPostAAStage::GetAARenderTarget(const CRenderView* pRenderView, bool bCurrentFrame) const
