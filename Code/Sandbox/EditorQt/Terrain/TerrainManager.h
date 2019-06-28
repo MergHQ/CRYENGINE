@@ -33,7 +33,7 @@ public:
 
 	//////////////////////////////////////////////////////////////////////////
 	// Layers
-	int     GetLayerCount() const { return static_cast<int>(m_layers.size()); }
+	int     GetLayerCount() const     { return static_cast<int>(m_layers.size()); }
 
 	CLayer* GetLayer(int layer) const { return m_layers[layer]; }
 	CLayer* FindLayer(const char* sLayerName) const;
@@ -42,7 +42,6 @@ public:
 	void    SelectLayer(int layerIndex);
 	int     GetSelectedLayerIndex();
 	CLayer* GetSelectedLayer();
-
 
 	// If index == -1, place it as the last one
 	void AddLayer(CLayer* pLayer, int index = -1);
@@ -93,11 +92,12 @@ public:
 	int         GetDataFilesCount() const;
 	const char* GetDataFilename(int i) const;
 
+	CCrySignal<void(CLayer*)> signalLayerAboutToDelete;
 	CCrySignal<void()>        signalLayersChanged;
 	CCrySignal<void()>        signalTerrainChanged;
 	CCrySignal<void(CLayer*)> signalSelectedLayerChanged;
 
-	static const int s_invalidLayerIndex = -1;
+	static const int          s_invalidLayerIndex = -1;
 
 private:
 	std::vector<_smart_ptr<CSurfaceType>> m_surfaceTypes;

@@ -714,6 +714,7 @@ void CTerrainManager::RemoveSelectedLayer()
 			m_heightmap.EraseLayerID(id);
 	}
 
+	signalLayerAboutToDelete(pLayer);
 	delete pLayer;
 	m_layers.erase(m_layers.begin() + index);
 

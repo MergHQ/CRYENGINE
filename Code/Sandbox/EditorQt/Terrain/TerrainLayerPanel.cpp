@@ -72,8 +72,8 @@ QTerrainLayerPanel::QTerrainLayerPanel(QWidget* parent)
 	QTerrainLayerView* pLayerView = new QTerrainLayerView(this, GetIEditorImpl()->GetTerrainManager());
 	pSplitter->addWidget(pLayerView);
 
-	if (GetIEditorImpl()->GetTerrainManager())
-		GetIEditorImpl()->GetTerrainManager()->signalSelectedLayerChanged.Connect(this, &QTerrainLayerPanel::SetLayer);
+	GetIEditorImpl()->GetTerrainManager()->signalSelectedLayerChanged.Connect(this, &QTerrainLayerPanel::SetLayer);
+	GetIEditorImpl()->GetTerrainManager()->signalLayerAboutToDelete.Connect(this, &QTerrainLayerPanel::OnLayerAboutToDelete);
 
 	QWidget* pPainterContainer = new QWidget(this);
 	QVBoxLayout* pPainterLayout = new QVBoxLayout(pPainterContainer);
@@ -90,8 +90,8 @@ QTerrainLayerPanel::QTerrainLayerPanel(QWidget* parent)
 
 QTerrainLayerPanel::~QTerrainLayerPanel()
 {
-	if (GetIEditorImpl()->GetTerrainManager())
-		GetIEditorImpl()->GetTerrainManager()->signalSelectedLayerChanged.DisconnectObject(this);
+	GetIEditorImpl()->GetTerrainManager()->signalSelectedLayerChanged.DisconnectObject(this);
+	GetIEditorImpl()->GetTerrainManager()->signalLayerAboutToDelete.DisconnectObject(this);
 
 	if (m_layerSerializer.pEditTool)
 		m_layerSerializer.pEditTool->signalPropertiesChanged.DisconnectObject(this);
@@ -144,6 +144,17 @@ void QTerrainLayerPanel::SetLayer(CLayer* pLayer)
 	}
 	else
 	{
+		m_pPropertyTree->revert();
+	}
+}
+
+void QTerrainLayerPanel::OnLayerAboutToDelete(CLayer* pLayer)
+{
+	CRY_ASSERT(pLayer, "Unexpected pLayer value");
+	if (m_layerSerializer.pLayer == pLayer)
+	{
+		m_layerSerializer.pLayer->signalPropertiesChanged.DisconnectObject(this);
+		m_layerSerializer.pLayer = nullptr;
 		m_pPropertyTree->revert();
 	}
 }
