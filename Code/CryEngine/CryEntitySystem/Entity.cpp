@@ -1707,32 +1707,30 @@ IEntityComponent* CEntity::CreateComponentByInterfaceID(const CryInterfaceID& in
 	// First look for a unified Schematyc / Entity component type
 	const Schematyc::IEnvComponent* pEnvComponent = gEnv->pSchematyc ? gEnv->pSchematyc->GetEnvRegistry().GetComponent(interfaceId) : nullptr;
 	ICryFactory* pLegacyComponentFactory = nullptr;
-	if (pEnvComponent != nullptr)
+	if (pEnvComponent == nullptr)
 	{
-		// Resolve to implementation ID
-		componentTypeID = pEnvComponent->GetGUID();
-		pClassDescription = &pEnvComponent->GetDesc();
-	}
-	else
-	{
-		auto visitComponentsLambda = [interfaceId, &pEnvComponent, &pClassDescription](const Schematyc::IEnvComponent& component)
+		// Try to find implementation component of the interface
+		auto visitComponentsLambda = [interfaceId, &pEnvComponent](const Schematyc::IEnvComponent& component)
 		{
 			if (component.GetDesc().FindBaseByTypeID(interfaceId) != nullptr)
 			{
 				pEnvComponent = &component;
-				pClassDescription = &component.GetDesc();
 				return Schematyc::EVisitStatus::Stop;
 			}
-
 			return Schematyc::EVisitStatus::Continue;
 		};
 
 		gEnv->pSchematyc->GetEnvRegistry().VisitComponents(visitComponentsLambda);
 	}
 
-	// Fall back to legacy 5.3 creation
-	if (pEnvComponent == nullptr)
+	if (pEnvComponent != nullptr)
 	{
+		componentTypeID = pEnvComponent->GetGUID();
+		pClassDescription = &pEnvComponent->GetDesc();
+	}
+	else
+	{
+		// Fall back to legacy 5.3 creation
 		if (ICryFactoryRegistry* pFactoryRegistry = gEnv->pSystem->GetCryFactoryRegistry())
 		{
 			size_t numFactories = 1;
