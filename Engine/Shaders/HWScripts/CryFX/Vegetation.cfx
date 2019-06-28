@@ -133,27 +133,84 @@ float BackDiffuseMultiplier
 > = 1.0; 
 #endif
 
+#if %BLENDTERRAIN
 float BlendTerrainCol
 < 
 	register = REG_PM_PARAM_2.z;
-	string UIHelp = "Sets balance between terrain and vegetation color";
-	string UIName = "Terrain Color Blend";
+	string UIHelp = "Sets balance between terrain layer and vegetation";
+	string UIName = "Terrain Layer Blend Visibility";
 	string UIWidget = "slider";
 	float UIMin = 0.0;
 	float UIMax = 1.0;
 	float UIStep = 0.05; 
-> = 0.0; 
+> = 0.0;
 
 float BlendTerrainColDist
 < 
 	register = REG_PM_PARAM_2.w;
-	string UIHelp = "Sets balance between terrain and vegetation color";
-	string UIName = "Terrain Color Blend Dist";
+	string UIHelp = "Sets balance between terrain layer and vegetation";
+	string UIName = "Terrain Layer Blend Dist";
 	string UIWidget = "slider";
 	float UIMin = 0.01;
 	float UIMax = 1.0;
 	float UIStep = 0.05; 
-> = 0.5; 
+> = 0.5;
+
+float BlendTerrainCol_Albedo
+< 
+	register = REG_PM_PARAM_5.y;
+	string UIHelp = "Sets balance between terrain layer and vegetation";
+	string UIName = "Terrain Layer Blend Strength (Albedo)";
+	string UIWidget = "slider";
+	float UIMin = 0.0;
+	float UIMax = 1.0;
+	float UIStep = 0.05; 
+> = 1.0;
+
+float BlendTerrainCol_Normal
+< 
+	register = REG_PM_PARAM_5.z;
+	string UIHelp = "Sets balance between terrain layer and vegetation";
+	string UIName = "Terrain Layer Blend Strength (Normal)";
+	string UIWidget = "slider";
+	float UIMin = 0.0;
+	float UIMax = 1.0;
+	float UIStep = 0.05; 
+> = 1.0;
+
+float BlendTerrainCol_Smoothness
+< 
+	register = REG_PM_PARAM_5.w;
+	string UIHelp = "Sets balance between terrain layer and vegetation";
+	string UIName = "Terrain Layer Blend Strength (Smoothness)";
+	string UIWidget = "slider";
+	float UIMin = 0.0;
+	float UIMax = 1.0;
+	float UIStep = 0.05; 
+> = 1.0;
+
+float BlendTerrainCol_Reflectance
+< 
+	register = REG_PM_PARAM_6.x;
+	string UIHelp = "Sets balance between terrain layer and vegetation";
+	string UIName = "Terrain Layer Blend Strength (Reflectance)";
+	string UIWidget = "slider";
+	float UIMin = 0.0;
+	float UIMax = 1.0;
+	float UIStep = 0.05; 
+> = 1.0;
+
+float BlendTerrainCol_Transmittance
+< 
+	register = REG_PM_PARAM_6.y;
+	string UIHelp = "Sets balance between terrain layer and vegetation";
+	string UIName = "Terrain Layer Blend Strength (Transmittance)";
+	string UIWidget = "slider";
+	float UIMin = 0.0;
+	float UIMax = 1.0;
+	float UIStep = 0.05; 
+> = 1.0;
+#endif
 
 #if %DETAIL_MAPPING
 float DetailBumpScale
@@ -364,7 +421,6 @@ vtxOutVegetation VegetationVS(app2vertGeneral IN)
 #if %BLENDLAYER
 	// blend layer vtx alpha overlaps with alpha on vegetation. Use blue channel instead
 	fAlpha = vertPassPos.Color.z;
-	OUT.Color0.z = vertPassPos.Color.w;
 #endif
 
 	OUT.terrainParams.w = fAlpha;

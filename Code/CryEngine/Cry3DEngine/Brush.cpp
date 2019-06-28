@@ -947,7 +947,11 @@ void CBrush::Render(const CLodValue& lodValue, const SRenderingPassInfo& passInf
 		bool bUseTerrainColor = (GetCVars()->e_BrushUseTerrainColor == 2);
 		if (pMat && GetCVars()->e_BrushUseTerrainColor == 1)
 		{
-			if (pMat->GetSafeSubMtl(0)->GetFlags() & MTL_FLAG_BLEND_TERRAIN)
+			// NOTE: Hack-fix to match CB/SR data to the shader
+			// m_pSCGFlagLegacyFix.insert(MapNameFlagsItor::value_type("%BLENDTERRAIN", (uint64)0x4000000));
+			const uint64 nMaskGenFX = pMat->GetSafeSubMtl(0)->GetShaderItem().m_pShader->GetGenerationMask();
+			const auto nFlags = pMat->GetSafeSubMtl(0)->GetFlags();
+			if ((nMaskGenFX & 0x4000000) || (nFlags & MTL_FLAG_BLEND_TERRAIN))
 				bUseTerrainColor = true;
 		}
 

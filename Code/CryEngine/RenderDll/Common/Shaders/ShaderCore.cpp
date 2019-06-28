@@ -779,6 +779,7 @@ void CShaderMan::mfInitCommonGlobalFlagsLegacyFix(void)
 
 	m_pSCGFlagLegacyFix.insert(MapNameFlagsItor::value_type("%NANOSUIT_EFFECTS", (uint64)0x1000000));
 	m_pSCGFlagLegacyFix.insert(MapNameFlagsItor::value_type("%OFFSET_BUMP_MAPPING", (uint64)0x2000000));
+	m_pSCGFlagLegacyFix.insert(MapNameFlagsItor::value_type("%BLENDTERRAIN", (uint64)0x4000000));
 	m_pSCGFlagLegacyFix.insert(MapNameFlagsItor::value_type("%PARALLAX_OCCLUSION_MAPPING", (uint64)0x8000000));
 
 	m_pSCGFlagLegacyFix.insert(MapNameFlagsItor::value_type("%REALTIME_MIRROR_REFLECTION", (uint64)0x10000000));

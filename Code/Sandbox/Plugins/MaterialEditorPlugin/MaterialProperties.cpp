@@ -375,7 +375,7 @@ void CMaterialSerializer::Serialize(Serialization::IArchive& ar)
 		SetFlag(mtlFlags, MTL_FLAG_HIDEONBREAK, bHideAfterBreaking);
 
 		bool bBlendTerrainColor = (mtlFlags & MTL_FLAG_BLEND_TERRAIN);
-		ar(bBlendTerrainColor, "bBlendTerrainColor", "Blend Terrain Color");
+		ar(bBlendTerrainColor, "bBlendTerrainColor", "Blend Terrain Color (deprecated)");
 		SetFlag(mtlFlags, MTL_FLAG_BLEND_TERRAIN, bBlendTerrainColor);
 
 		bool bTraceableTexture = (mtlFlags & MTL_FLAG_TRACEABLE_TEXTURE);

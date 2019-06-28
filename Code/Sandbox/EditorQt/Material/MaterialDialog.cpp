@@ -468,7 +468,7 @@ public:
 		AddVariable(tableAdvanced, bNoShadow, "No Shadow");
 		AddVariable(tableAdvanced, bScatter, "Use Scattering");
 		AddVariable(tableAdvanced, bHideAfterBreaking, "Hide After Breaking");
-		AddVariable(tableAdvanced, bBlendTerrainColor, "Blend Terrain Color");
+		AddVariable(tableAdvanced, bBlendTerrainColor, "Blend Terrain Color (deprecated)");
 		AddVariable(tableAdvanced, bTraceableTexture, "Traceable Texture");
 
 		AddVariable(tableAdvanced, furAmount, "Fur Amount");
