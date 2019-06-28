@@ -608,7 +608,7 @@ void CResourceManager::Update()
 //////////////////////////////////////////////////////////////////////////
 void CResourceManager::Init()
 {
-	GetISystem()->GetISystemEventDispatcher()->RegisterListener(this,"CResourceManager");
+	GetISystem()->GetISystemEventDispatcher()->RegisterListener(this, "CResourceManager");
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -625,8 +625,7 @@ bool CResourceManager::IsStreamingCachePak(const char* filename) const
 		"dds_cache.pak",
 		"cgf_cache.pak",
 		"skin_cache.pak",
-		"chr_cache.pak"
-	};
+		"chr_cache.pak" };
 
 	for (int i = 0; i < CRY_ARRAY_COUNT(cachePaks); ++i)
 	{
@@ -773,13 +772,15 @@ void CResourceManager::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_P
 			}
 
 			UnloadAllLevelCachePaks(true);
-		}
 
 #if CAPTURE_REPLAY_LOG
-		static int s_loadCount = 0;
-		CryGetIMemReplay()->AddLabelFmt("precacheEnd%d_%s", s_loadCount++, m_sLevelName.c_str());
+			static int s_loadCount = 0;
+			CryGetIMemReplay()->AddLabelFmt("precacheEnd%d_%s", s_loadCount++, m_sLevelName.c_str());
 #endif
+		}
+		break;
 
+	default:
 		break;
 	}
 }

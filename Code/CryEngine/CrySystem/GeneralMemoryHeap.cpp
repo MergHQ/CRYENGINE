@@ -6,24 +6,8 @@
 #include "GeneralMemoryHeap.h"
 #include "PageMappingHeap.h"
 
-CGeneralMemoryHeap::CGeneralMemoryHeap()
-	: m_nRefCount(0)
-	, m_numAllocs(0)
-	, m_isResizable(false)
-	, m_mspace(0)
-	, m_pHeap(NULL)
-	, m_pBlock(NULL)
-	, m_blockSize(0)
-{
-}
-
 CGeneralMemoryHeap::CGeneralMemoryHeap(UINT_PTR base, size_t upperLimit, size_t reserveSize, const char* sUsage)
-	: m_nRefCount(0)
-	, m_numAllocs(0)
-	, m_isResizable(true)
-	, m_pHeap(NULL)
-	, m_pBlock(NULL)
-	, m_blockSize(0)
+	: m_isResizable(true)
 {
 	if (base)
 		m_pHeap = new CPageMappingHeap((char*)base, upperLimit / CMemoryAddressRange::GetSystemPageSize(), CMemoryAddressRange::GetSystemPageSize(), sUsage);
@@ -39,16 +23,9 @@ CGeneralMemoryHeap::CGeneralMemoryHeap(UINT_PTR base, size_t upperLimit, size_t 
 }
 
 CGeneralMemoryHeap::CGeneralMemoryHeap(void* base, size_t size, const char* sUsage)
-	: m_nRefCount(0)
-	, m_numAllocs(0)
-	, m_isResizable(false)
-	, m_pHeap(NULL)
-	, m_pBlock(NULL)
-	, m_blockSize(0)
+	: m_pBlock(base)
+	, m_blockSize(size)
 {
-	m_pBlock = base;
-	m_blockSize = size;
-
 	m_mspace = dlcreate_mspace_with_base(base, size, 1);
 
 #ifdef CRY_TRACE_HEAP

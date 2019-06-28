@@ -553,6 +553,10 @@ TEST(CryMathTest, Vector)
 }
 */
 
+//  
+// #PFX2_TODO: Orbis and Linux have slight differences in precision. Revise the test to support Orbis and Linux.
+#if CRY_COMPILER_MSVC
+
 template<typename Real>
 NO_INLINE Real SNoiseNoInline(Vec4_tpl<Real> v)
 {
@@ -573,14 +577,12 @@ void SnoiseTest()
 	Real p2 = SNoiseNoInline(s2);
 	Real p3 = SNoiseNoInline(s3);
 	Real p4 = SNoiseNoInline(s4);
-	// #PFX2_TODO : Orbis has a slight difference in precision
-#if CRY_COMPILER_MSVC
+
 	REQUIRE(All(p0 == convert<Real>(0.0f)));
 	REQUIRE(All(p1 == convert<Real>(-0.291425288f)));
 	REQUIRE(All(p2 == convert<Real>(-0.295406163f)));
 	REQUIRE(All(p3 == convert<Real>(-0.127176195f)));
 	REQUIRE(All(p4 == convert<Real>(-0.0293087773f)));
-#endif
 }
 
 TEST(CryMathTest, SNoise)
@@ -588,6 +590,8 @@ TEST(CryMathTest, SNoise)
 	SnoiseTest<float>();
 	SnoiseTest<f32v4>();
 }
+
+#endif
 
 TEST(CryMathTest, RadixSortTest)
 {

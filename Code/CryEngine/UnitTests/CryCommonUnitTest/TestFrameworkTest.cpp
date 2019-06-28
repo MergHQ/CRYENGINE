@@ -89,8 +89,21 @@ TEST(CryGTestFrameworkTest, RequireMacroEvaluation)
 	//assignment needs to be wrapped in parentheses
 	REQUIRE((i = 2));
 
-	//comma separated expression has to be wrapped in parentheses but this needs to compile
-	REQUIRE((0, 1));
+
+	{
+#if CRY_COMPILER_CLANG || CRY_COMPILER_GCC
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-value" //for the part before the comma
+#endif
+
+		//comma separated expression has to be wrapped in parentheses but this needs to compile
+		REQUIRE((0, 1));
+
+#if CRY_COMPILER_CLANG || CRY_COMPILER_GCC
+#pragma GCC diagnostic pop
+#endif
+	}
+
 
 	//non-trivial structures: must correctly preserve the state in the expression template
 	{

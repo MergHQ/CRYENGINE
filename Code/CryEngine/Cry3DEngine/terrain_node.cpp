@@ -21,7 +21,7 @@
 #include "LightEntity.h"
 #include <CryMath/MTPseudoRandom.h>
 
-int CTerrainNode::m_nNodesCounter = 0;
+int CTerrainNode::s_nodesCounter = 0;
 
 CTerrainNode* CTerrainNode::GetTexuringSourceNode(int nTexMML, eTexureType eTexType)
 {
@@ -457,7 +457,7 @@ CTerrainNode::~CTerrainNode()
 	assert(m_nOriginX < CTerrain::GetTerrainSize() && m_nOriginY < CTerrain::GetTerrainSize());
 	GetTerrain()->m_arrSecInfoPyramid[m_nTreeLevel][m_nOriginX / nSectorSize][m_nOriginY / nSectorSize] = NULL;
 
-	m_nNodesCounter--;
+	s_nodesCounter--;
 }
 
 void CTerrainNode::CheckLeafData()

@@ -81,14 +81,14 @@ private:
 	bool IsExcludedByFilter(const SProfilingMarker* pMarker) const;
 	void ReapplyTrackerFilter();
 
-	bool m_enabled;
-	bool m_trackingPaused;
-	bool m_willPause;
+	bool m_enabled        = true;
+	bool m_trackingPaused = false;
+	bool m_willPause      = false;
 
-	CBootProfiler* m_pBootProfiler;
+	CBootProfiler* m_pBootProfiler = nullptr;
 	std::vector<ICryProfilerFrameListener*> m_FrameListeners;
 
-	uint32 m_lastTotalPageFaults;
+	uint32 m_lastTotalPageFaults = 0;
 
 	//! trackers can be filtered by thread and subsystem
 	TrackerList m_activeTrackers;

@@ -15,7 +15,7 @@
 #include "System.h"
 #include <CryMemory/CryMemoryManager.h>
 #include <CryScriptSystem/IScriptSystem.h>
-#include <CryCore/ToolsHelpers/ResourceCompilerHelper.h>   
+#include <CryCore/ToolsHelpers/ResourceCompilerHelper.h>
 #include "PhysRenderer.h"
 #include <CrySystem/File/IResourceManager.h>
 #include <CrySystem/Scaleform/IFlashPlayer.h>
@@ -24,7 +24,7 @@
 #include <CrySystem/Profilers/ILegacyProfiler.h>
 
 // Access to some game info.
-#include <CryGame/IGameFramework.h>   
+#include <CryGame/IGameFramework.h>
 #include <../CryAction/ILevelSystem.h>
 #include <CryEntitySystem/IEntitySystem.h>
 
@@ -616,35 +616,12 @@ struct SCryEngineStats
 	};
 
 	SCryEngineStats()
-		: nSummary_CodeAndStaticSize(0)
-
-		, nSummaryCharactersSize(0)
-
-		, nSummary_TextureSize(0)
-		, nSummary_UserTextureSize(0)
-		, nSummary_EngineTextureSize(0)
-		, nSummary_TexturesStreamingThroughput(0.0f)
-		, nSummaryEntityCount(0)
-
-		, nStatObj_SummaryTextureSize(0)
-		, nStatObj_SummaryMeshSize(0)
-		, nStatObj_TotalCount(0)
-
-		, nChar_SummaryMeshSize(0)
-		, nChar_SummaryTextureSize(0)
-		, nChar_NumInstances(0)
-
-		, fLevelLoadTime(0.0f)
-		, nSummary_TexturesPoolSize(0)
 	{
 		ISystem* pSystem = GetISystem();
 		I3DEngine* p3DEngine = pSystem->GetI3DEngine();
 		IRenderer* pRenderer = pSystem->GetIRenderer();
 
 		nTotalAllocatedMemory = CryMemoryGetAllocatedSize();
-		nSummaryMeshSize = 0;
-		nSummaryMeshCount = 0;
-		nAPI_MeshSize = 0;
 
 		if (pRenderer)
 		{
@@ -672,39 +649,39 @@ struct SCryEngineStats
 		}
 	}
 
-	uint64                            nWin32_WorkingSet;
-	uint64                            nWin32_PeakWorkingSet;
-	uint64                            nWin32_PagefileUsage;
-	uint64                            nWin32_PeakPagefileUsage;
-	uint64                            nWin32_PageFaultCount;
+	uint64                            nWin32_WorkingSet = 0;
+	uint64                            nWin32_PeakWorkingSet = 0;
+	uint64                            nWin32_PagefileUsage = 0;
+	uint64                            nWin32_PeakPagefileUsage = 0;
+	uint64                            nWin32_PageFaultCount = 0;
 
-	uint32                            nTotalAllocatedMemory;
-	uint32                            nSummary_CodeAndStaticSize; // Total size of all code plus static data
+	uint32                            nTotalAllocatedMemory = 0;
+	uint32                            nSummary_CodeAndStaticSize = 0; // Total size of all code plus static data
 
-	uint32                            nSummaryScriptSize;
-	uint32                            nSummaryCharactersSize;
-	uint32                            nSummaryMeshCount;
-	uint32                            nSummaryMeshSize;
-	uint32                            nSummaryEntityCount;
+	uint32                            nSummaryScriptSize = 0;
+	uint32                            nSummaryCharactersSize = 0;
+	uint32                            nSummaryMeshCount = 0;
+	uint32                            nSummaryMeshSize = 0;
+	uint32                            nSummaryEntityCount = 0;
 
-	uint32                            nAPI_MeshSize; // Allocated by DirectX
+	uint32                            nAPI_MeshSize = 0; // Allocated by DirectX
 
-	size_t                            nSummary_TextureSize;                 // Total size of all textures
-	size_t                            nSummary_UserTextureSize;             // Size of user textures, (from files...)
-	size_t                            nSummary_EngineTextureSize;           // Dynamic Textures
-	size_t                            nSummary_TexturesPoolSize;            // Dynamic Textures
-	float                             nSummary_TexturesStreamingThroughput; // in KB/sec
+	size_t                            nSummary_TextureSize = 0;                   // Total size of all textures
+	size_t                            nSummary_UserTextureSize = 0;               // Size of user textures, (from files...)
+	size_t                            nSummary_EngineTextureSize = 0;             // Dynamic Textures
+	size_t                            nSummary_TexturesPoolSize = 0;              // Dynamic Textures
+	float                             nSummary_TexturesStreamingThroughput = 0.f; // in KB/sec
 
-	uint32                            nStatObj_SummaryTextureSize;
-	uint32                            nStatObj_SummaryMeshSize;
-	uint32                            nStatObj_TotalCount; // Including sub-objects.
+	uint32                            nStatObj_SummaryTextureSize = 0;
+	uint32                            nStatObj_SummaryMeshSize = 0;
+	uint32                            nStatObj_TotalCount = 0; // Including sub-objects.
 
-	uint32                            nChar_SummaryMeshSize;
-	uint32                            nChar_SummaryTextureSize;
-	uint32                            nChar_NumInstances;
+	uint32                            nChar_SummaryMeshSize = 0;
+	uint32                            nChar_SummaryTextureSize = 0;
+	uint32                            nChar_NumInstances = 0;
 	SAnimMemoryTracker                m_AnimMemoryTracking;
 
-	float                             fLevelLoadTime;
+	float                             fLevelLoadTime = 0.f;
 	SDebugFPSInfo                     infoFPS;
 
 	std::vector<StatObjInfo>          objects;
@@ -1071,9 +1048,9 @@ void CEngineStats::CollectGeometry()
 		p3DEngine->GetLoadedStatObjArray(0, nObjCount);
 		if (nObjCount > 0)
 		{
-#ifdef _PREFAST_
+	#ifdef _PREFAST_
 			const int numStatObjs = nObjCount;
-#endif
+	#endif
 
 			m_stats.objects.reserve(nObjCount);
 			IStatObj** pObjects = new IStatObj*[nObjCount];
@@ -1082,7 +1059,7 @@ void CEngineStats::CollectGeometry()
 			PREFAST_ASSUME(numStatObjs == nObjCount);
 			for (int nCurObj = 0; nCurObj < nObjCount; nCurObj++)
 				AddResource_StatObjWithLODs(pObjects[nCurObj], statObjTextureSizer, 0);
-			
+
 			delete[] pObjects;
 		}
 	}
@@ -1106,7 +1083,7 @@ void CEngineStats::CollectGeometry()
 			if (IStatObj* pEntObject = pRenderNode->GetEntityStatObj())
 			{
 				// if the object is not backed by a file, ignore it
-				if(pEntObject->GetFilePath()[0] == 0)
+				if (pEntObject->GetFilePath()[0] == 0)
 					continue;
 
 				AddResource_StatObjWithLODs(pEntObject, statObjTextureSizer, 0); // Ensure object is registered
@@ -1154,10 +1131,10 @@ void CEngineStats::CollectCharacters() PREFAST_SUPPRESS_WARNING(6262)
 	pICharacterManager->GetLoadedModels(0, nObjCount);
 	if (nObjCount > 0)
 	{
-#ifdef _PREFAST_
+	#ifdef _PREFAST_
 		const int numLoadedModels = nObjCount;
-#endif
-		
+	#endif
+
 		m_stats.characters.reserve(nObjCount);
 		IDefaultSkeleton** pObjects = new IDefaultSkeleton*[nObjCount];
 		pICharacterManager->GetLoadedModels(pObjects, nObjCount);
@@ -1210,7 +1187,7 @@ void CEngineStats::CollectCharacters() PREFAST_SUPPRESS_WARNING(6262)
 			const phys_geometry* pgeom;
 			{
 				for (int i = si.pIDefaultSkeleton->GetJointCount() - 1; i >= 0; i--)
-					if (pgeom = si.pIDefaultSkeleton->GetJointPhysGeom((uint32)i))
+					if (0 != (pgeom = si.pIDefaultSkeleton->GetJointPhysGeom((uint32)i)))
 					{
 						CrySizerImpl physMeshSizer;
 						pgeom->pGeom->GetMemoryStatistics(&physMeshSizer);
@@ -1401,7 +1378,7 @@ void CEngineStats::CollectTextures()
 				{
 					int numCopies = 1;
 
-					numCopies += (pTexture->GetFlags() & FT_STAGE_UPLOAD  ) ? 1 : 0;
+					numCopies += (pTexture->GetFlags() & FT_STAGE_UPLOAD) ? 1 : 0;
 					numCopies += (pTexture->GetFlags() & FT_STAGE_READBACK) ? 1 : 0;
 
 					m_stats.nSummary_EngineTextureSize += size_t(nTexSize) * numCopies;
@@ -2447,7 +2424,7 @@ void CStatsToExcelExporter::ExportPhysEntStatistics(SCryEngineStats& stats)
 	IPhysicalEntity* pent;
 	PhysicsVars* pVars = gEnv->pPhysicalWorld->GetPhysVars();
 
-	for (iter->MoveFirst(); pent = iter->Next(); )
+	for (iter->MoveFirst(); 0 != (pent = iter->Next());)
 	{
 		AddRow();
 		pe_params_foreign_data pfd;
@@ -3461,7 +3438,7 @@ void CStatsToExcelExporter::ExportMemStats(SCryEngineStats& stats)
 //////////////////////////////////////////////////////////////////////////
 
 void CStatsToExcelExporter::ExportStreamingInfo(
-  SStreamEngineStatistics& stats)
+	SStreamEngineStatistics& stats)
 {
 	NewWorksheet("Streaming Info");
 

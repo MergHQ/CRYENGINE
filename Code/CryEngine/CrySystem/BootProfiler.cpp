@@ -988,6 +988,8 @@ void CBootProfiler::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR 
 			StopSaveSessionsThread();
 			break;
 		}
+	default:
+		break;
 	}
 }
 

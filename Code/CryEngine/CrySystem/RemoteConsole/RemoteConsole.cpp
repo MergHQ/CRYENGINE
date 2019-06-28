@@ -33,12 +33,10 @@
 /////////////////////////////////////////////////////////////////////////////////////////////
 CRemoteConsole::CRemoteConsole()
 	: m_listener(1)
-	, m_running(false)
-#ifdef USE_REMOTE_CONSOLE
-	, m_pServer(new SRemoteServer())
-	, m_pLogEnableRemoteConsole(nullptr)
-#endif
 {
+#ifdef USE_REMOTE_CONSOLE
+	m_pServer = new SRemoteServer;
+#endif
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////

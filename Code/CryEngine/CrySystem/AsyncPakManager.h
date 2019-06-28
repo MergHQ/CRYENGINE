@@ -41,22 +41,19 @@ protected:
 			LIFETIME_PERMANENT
 		};
 
-		SAsyncPak() : nRequestCount(0), eState(STATE_UNLOADED), eLifeTime(LIFETIME_LOAD_ONLY),
-			nSize(0), pData(0), bStreaming(false), bPakAlreadyOpen(false), bClosePakOnRelease(false), pReadStream(0) {}
-
 		string& GetStatus(string&) const;
 
 		string              layername;
 		string              filename;
-		size_t              nSize;
-		ICustomMemoryBlock* pData;
-		EState              eState;
-		ELifeTime           eLifeTime;
-		bool                bStreaming;
-		bool                bPakAlreadyOpen;
-		bool                bClosePakOnRelease;
-		int                 nRequestCount;
-		IReadStreamPtr      pReadStream;
+		size_t              nSize              = 0;
+		ICustomMemoryBlock* pData              = nullptr;
+		EState              eState             = STATE_UNLOADED;
+		ELifeTime           eLifeTime          = LIFETIME_LOAD_ONLY;
+		bool                bStreaming         = false;
+		bool                bPakAlreadyOpen    = false;
+		bool                bClosePakOnRelease = false;
+		int                 nRequestCount      = 0;
+		IReadStreamPtr      pReadStream        = nullptr;
 	};
 	typedef std::map<string, SAsyncPak> TPakMap;
 

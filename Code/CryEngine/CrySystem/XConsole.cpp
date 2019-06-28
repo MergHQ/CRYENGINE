@@ -792,13 +792,13 @@ void CXConsole::LoadConfigVar(const char* sVariable, const char* sValue)
 		const bool fromSystemConfig = ((pCVar->GetFlags() & VF_SYSSPEC_OVERWRITE) != 0);
 		bool allowChange = true;
 
-		if (
+		if ((
 #if CVAR_GROUPS_ARE_PRIVILEGED
 		  !m_bIsProcessingGroup &&
 #endif
-		  (isConst || isCheat || isReadOnly) || isDeprecated)
+		  (isConst || isCheat || isReadOnly)) || isDeprecated)
 		{
-			allowChange = !isDeprecated && (gEnv->pSystem->IsDevMode()) || (gEnv->IsEditor());
+			allowChange = (!isDeprecated && gEnv->pSystem->IsDevMode()) || gEnv->IsEditor();
 			if (!(gEnv->IsEditor()) || isDeprecated)
 			{
 #if LOG_CVAR_INFRACTIONS
@@ -920,6 +920,8 @@ void CXConsole::SaveInternalState(struct IDataWriteStream& writer) const
 			case ECVarType::Int64:
 				writer.WriteInt64(pCVar->GetI64Val());
 				break;
+			case ECVarType::Invalid:
+				break;
 			}
 		}
 	}
@@ -954,6 +956,8 @@ void CXConsole::LoadInternalState(struct IDataReadStream& reader)
 			break;
 		case ECVarType::Int64:
 			pVar->Set(reader.ReadInt64());
+			break;
+		case ECVarType::Invalid:
 			break;
 		}
 	}
@@ -2083,7 +2087,9 @@ void CXConsole::DisplayHelp(const char* help, const char* name)
 	else
 	{
 		char* start, * pos;
-		for (pos = (char*)help, start = (char*)help; pos = strstr(pos, "\n"); start = ++pos)
+		for (pos = (char*)help, start = (char*)help; 
+			(pos = strstr(pos, "\n")) != nullptr; 
+			start = ++pos)
 		{
 			string s = start;
 			s.resize(pos - start);

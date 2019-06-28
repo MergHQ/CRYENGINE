@@ -27,12 +27,12 @@ struct SEntityComponentRecord
 	SEntityComponentRecord(const SEntityComponentRecord&) = delete;
 	SEntityComponentRecord& operator=(const SEntityComponentRecord&) = delete;
 	SEntityComponentRecord(SEntityComponentRecord&& other)
-		: pComponent(std::move(other.pComponent))
-		, typeId(other.typeId)
-		, registeredEventsMask(other.registeredEventsMask)
-		, creationOrder(other.creationOrder)
+		: proxyType(other.proxyType)
 		, eventPriority(other.eventPriority)
-		, proxyType(other.proxyType)
+		, creationOrder(other.creationOrder)
+		, registeredEventsMask(other.registeredEventsMask)
+		, typeId(other.typeId)
+		, pComponent(std::move(other.pComponent))
 	{
 		other.pComponent.reset();
 	}

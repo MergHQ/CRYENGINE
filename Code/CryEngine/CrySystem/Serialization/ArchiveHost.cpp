@@ -176,10 +176,11 @@ public:
 		const ECryXmlVersion version = SelectCryXmlVersionToSave(forceVersion);
 		switch (version)
 		{
+		case ECryXmlVersion::Auto: return XmlNodeRef();
 		case ECryXmlVersion::Version1: return SaveXmlNodeVer1(obj, nodeName);
 		case ECryXmlVersion::Version2: return SaveXmlNodeVer2(obj, nodeName);
+		default: return XmlNodeRef();
 		}
-		return XmlNodeRef();
 	}
 
 	bool SaveXmlNode(XmlNodeRef& node, const SStruct& obj, ECryXmlVersion forceVersion = ECryXmlVersion::Auto) override
@@ -187,12 +188,12 @@ public:
 		const ECryXmlVersion version = SelectCryXmlVersionToSave(forceVersion);
 		switch (version)
 		{
+		case ECryXmlVersion::Auto: return false;
 		case ECryXmlVersion::Version1: return SaveXmlNodeVer1(node, obj);
 		case ECryXmlVersion::Version2: return SaveXmlNodeVer2(node, obj);
+		default: return false;
 		}
-		return false;
 	}
-
 
 	XmlNodeRef SaveXmlNodeVer2(const SStruct& obj, const char* nodeName)
 	{
@@ -259,10 +260,11 @@ public:
 		const ECryXmlVersion version = SelectCryXmlVersionToLoad(node, forceVersion);
 		switch (version)
 		{
+		case ECryXmlVersion::Auto: return false;
 		case ECryXmlVersion::Version1: return LoadXmlNodeVer1(obj, node);
 		case ECryXmlVersion::Version2: return LoadXmlNodeVer2(obj, node);
+		default: return false;
 		}
-		return false;
 	}
 
 	bool LoadXmlNodeVer1(const SStruct& obj, const XmlNodeRef& node)

@@ -66,14 +66,9 @@ struct SCallstack
 	SCallstack() {}
 
 	SCallstack(void** addresses, uint32 numAddresses, const char* tag)
-		: m_addresses(addresses, addresses + numAddresses), m_tag(tag)
+		: m_tag(tag)
+		, m_addresses(addresses, addresses + numAddresses)
 	{}
-
-	void swap(SCallstack& other)
-	{
-		m_tag.swap(other.m_tag);
-		m_addresses.swap(other.m_addresses);
-	}
 };
 
 class CDataWriter;
@@ -642,9 +637,9 @@ private:
 	CryStringLocal m_hostname;
 	float          m_connectTimeout;
 	int            m_port;
-	CRYSOCKET      m_socket;
-	bool           m_hasSentHeader;
-	bool           m_socketErrorTriggered;
+	CRYSOCKET      m_socket = -1;
+	bool           m_hasSentHeader = false;
+	bool           m_socketErrorTriggered = false;
 };
 
 struct SParticleProfilersDG;

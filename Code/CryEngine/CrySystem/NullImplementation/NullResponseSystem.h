@@ -4,7 +4,7 @@
 
 A null implementation of the Dynamic Response System, that does nothing. Just a stub, if a real implementation was not provided or failed to initialize
 
-/************************************************************************/
+************************************************************************/
 
 #pragma once
 

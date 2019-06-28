@@ -101,10 +101,12 @@ const char* CPhysRenderer::GetPhysForeignName(void* pForeignData, int iForeignDa
 	if (iForeignData == PHYS_FOREIGN_ID_FOLIAGE)
 		return "**foliage rope**";
 	if (iForeignData == PHYS_FOREIGN_ID_ROPE)
+	{
 		if (IEntity* pEntity = (((IRopeRenderNode*)pForeignData)->GetOwnerEntity()))
 			return pEntity->GetName();
 		else
 			return "Rope";
+	}
 	if (iForeignData == PHYS_FOREIGN_ID_RIGID_PARTICLE)
 		return *((IStatObj*)pForeignData)->GetGeoName() ? ((IStatObj*)pForeignData)->GetGeoName() : ((IStatObj*)pForeignData)->GetFilePath();
 
@@ -232,7 +234,7 @@ void CPhysRenderer::DrawFrame(const Vec3& pnt, const Vec3* axes, const float sca
 			sincos_tpl(step, &sina, &cosa);
 			// axes0 is conventionally the "twist", aka "prinpical" axis for a bone
 			// use axes0 to show rotation ranges around axes1 and 2, and axes1 for rotation around axes0
-			Vec3 axort = axes[(j | j >> 1) & 1 ^ 1], axis = axort.GetRotated(axes[j], lim[0]), axis1;
+			Vec3 axort = axes[((j | j >> 1) & 1) ^ 1], axis = axort.GetRotated(axes[j], lim[0]), axis1;
 			for(float a = lim[0], c = 0.5f; a < lim[1]; a += step, axis = axis1, c += cstep)
 			{
 				axis1 = a + step < lim[1] ? axis.GetRotated(axes[j], cosa, sina) : axort.GetRotated(axes[j], lim[1]);

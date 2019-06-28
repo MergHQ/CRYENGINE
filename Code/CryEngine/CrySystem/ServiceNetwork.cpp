@@ -67,9 +67,9 @@ inline void TranslateAddress(const CRYSOCKADDR_IN& addr, ServiceNetworkAddress& 
 //-----------------------------------------------------------------------------
 
 CServiceNetworkMessage::CServiceNetworkMessage(const uint32 id, const uint32 size)
-	: m_refCount(1)
+	: m_id(id)
 	, m_size(size)
-	, m_id(id)
+	, m_refCount(1)
 {
 	// Allocate buffer memory
 	m_pData = CryModuleMalloc(size);
@@ -149,24 +149,11 @@ CServiceNetworkConnection::CServiceNetworkConnection(
 		const ServiceNetworkAddress& remoteAddress)
 
 	: m_pManager(manager)
-	, m_connectionID(connectionID)
+	, m_endpointType(endpointType)
 	, m_socket(socket)
 	, m_localAddress(localAddress)
 	, m_remoteAddress(remoteAddress)
-	, m_endpointType(endpointType)
-	, m_state(eState_Initializing)
-	, m_sendQueueDataSize(0)
-	, m_receiveQueueDataSize(0)
-	, m_messageDataSentSoFar(0)
-	, m_messageDataReceivedSoFar(0)
-	, m_bCloseRequested(false)
-	, m_pCurrentReceiveMessage(NULL)
-	, m_messageReceiveLength(0)
-	, m_messageDummyReadLength(0)
-	, m_reconnectTryCount(0)
-	, m_bDisableCommunication(false)
-	, m_pSendedMessages(NULL)
-	, m_refCount(1)
+	, m_connectionID(connectionID)
 {
 	// put the socket back in non blocking mode
 	CrySock::MakeSocketNonBlocking(m_socket);
@@ -1198,8 +1185,6 @@ CServiceNetworkListener::CServiceNetworkListener(CServiceNetwork* pManager, CRYS
 	: m_pManager(pManager)
 	, m_socket(socket)
 	, m_localAddress(address)
-	, m_closeRequestReceived(false)
-	, m_refCount(1)
 {
 	LOG_VERBOSE(3, "Listener() local='%s', this=%p",
 	            m_localAddress.ToString().c_str(),

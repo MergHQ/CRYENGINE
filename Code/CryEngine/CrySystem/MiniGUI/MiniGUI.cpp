@@ -60,16 +60,6 @@ public:
 };
 
 //////////////////////////////////////////////////////////////////////////
-CMiniGUI::CMiniGUI() :
-	m_enabled(false),
-	m_inFocus(true),
-	m_bListenersRegistered(false),
-	m_pDPadMenu(NULL),
-	m_pMovingCtrl(NULL)
-{
-}
-
-//////////////////////////////////////////////////////////////////////////
 void CMiniGUI::Init()
 {
 	m_pEventListener = NULL;
@@ -506,6 +496,8 @@ void CMiniGUI::UpdateDPadMenu(const SInputEvent& rInputEvent)
 					m_pDPadMenu = m_pDPadMenu->UpdateSelection(eCtrlEvent_LButtonDown);
 				}
 				break;
+			default:
+				break;
 			}
 		}
 	}
@@ -559,6 +551,8 @@ bool CMiniGUI::OnInputEvent(const SInputEvent& rInputEvent)
 						SetDPadMenu(pCtrl);
 					}
 
+					break;
+				default:
 					break;
 				}
 			}
@@ -833,6 +827,9 @@ void CMiniCtrl::OnEvent(float x, float y, EMiniCtrlEvent event)
 		break;
 
 	case eCtrlEvent_MouseOver:
+		break;
+
+	default:
 		break;
 	}
 }

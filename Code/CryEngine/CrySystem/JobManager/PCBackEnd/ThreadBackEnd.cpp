@@ -496,9 +496,9 @@ ILINE void IncrQueuePullPointer(INT_PTR& rCurPullAddr, const INT_PTR cIncr, cons
 JobManager::ThreadBackEnd::CThreadBackEndWorkerThread::CThreadBackEndWorkerThread(CThreadBackEnd* pThreadBackend, detail::CWorkStatusSyncVar& rSemaphore, JobManager::SJobQueue_ThreadBackEnd& rJobQueue, uint32 nId, bool bIsTempWorker) :
 	m_rWorkSyncVar(rSemaphore),
 	m_rJobQueue(rJobQueue),
-	m_bStop(false),
+	m_pThreadBackend(pThreadBackend),
 	m_nId(nId),
-	m_pThreadBackend(pThreadBackend)
+	m_bStop(false)
 {
 	m_pTempWorkerInfo = bIsTempWorker ? new STempWorkerInfo() : nullptr;
 }

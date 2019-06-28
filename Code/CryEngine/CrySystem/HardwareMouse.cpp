@@ -61,10 +61,7 @@ int CHardwareMouse::s_MouseControllerEmulation = 1;
 //-----------------------------------------------------------------------------------------------------
 
 CHardwareMouse::CHardwareMouse(bool bVisibleByDefault)
-	: m_debugHardwareMouse(0)
-	, m_pExclusiveEventListener(nullptr)
-	, m_pCursorTexture(nullptr)
-	, m_bPrevShowState(true)
+	: m_bPrevShowState(true)
 #if !defined(_RELEASE)
 	, m_allowConfine(GetISystem()->GetICmdLine()->FindArg(eCLAT_Pre, "nomouse") == nullptr)
 #else

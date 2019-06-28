@@ -85,9 +85,10 @@ public:
 		case ESYSTEM_EVENT_LEVEL_POST_UNLOAD:
 			EnableDynamicBucketCleanups(true);
 			break;
-
 		case ESYSTEM_EVENT_LEVEL_LOAD_END:
 			EnableDynamicBucketCleanups(false);
+			break;
+		default:
 			break;
 		}
 #endif
@@ -129,6 +130,8 @@ public:
 					}
 				}
 			}
+			break;
+		default:
 			break;
 		}
 	}

@@ -141,7 +141,6 @@ static CLog::LogStringType indentString("    ");
 //////////////////////////////////////////////////////////////////////
 CLogThread::CLogThread(concqueue::mpsc_queue_t<string>& logQueue)
 	: m_logQueue(logQueue)
-	, m_bIsRunning(false)
 {
 }
 
@@ -196,27 +195,6 @@ void CLogThread::ThreadEntry()
 CLog::CLog(ISystem* pSystem)
 	: m_pSystem(pSystem)
 	, m_fLastLoadingUpdateTime(-1.0f)
-	, m_pLogFile(nullptr)
-	, m_pErrFile(nullptr)
-	, m_nErrCount(0)
-#if defined(SUPPORT_LOG_IDENTER)
-	, m_indentation(0)
-	, m_topIndenter(nullptr)
-#endif
-	, m_pLogIncludeTime(nullptr)
-	, m_bIsPostSystemInit(false)
-	, m_pConsole(nullptr)
-	, m_iLastHistoryItem(0)
-#if KEEP_LOG_FILE_OPEN
-	, m_bFirstLine(true)
-#endif
-	, m_pLogVerbosity(nullptr)
-	, m_pLogWriteToFile(nullptr)
-	, m_pLogWriteToFileVerbosity(nullptr)
-	, m_pLogVerbosityOverridesWriteToFile(nullptr)
-	, m_pLogSpamDelay(nullptr)
-	, m_pLogModule(nullptr)
-	, m_eLogMode(eLogMode_Normal)
 	, m_logFormat("%Y-%m-%dT%H:%M:%S:fffzzz")
 {
 	gEnv->pSystem->GetISystemEventDispatcher()->RegisterListener(this, "CLog");
@@ -381,6 +359,9 @@ void CLog::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lparam)
 		{
 			m_pLogThread->SignalStartWork();
 		}
+		break;
+	default:
+		break;
 	}
 }
 
@@ -657,7 +638,8 @@ void CLog::LogV(const ELogType type, int flags, const char* szFormat, va_list ar
 		{
 			if (m_history[i].type != type)
 				continue;
-			if (m_history[i].ptr == szSpamCheck && *(int*)m_history[i].str.c_str() == *(int*)szFormat || MatchStrings(m_history[i].str, szSpamCheck))
+			if ((m_history[i].ptr == szSpamCheck && *(int*)m_history[i].str.c_str() == *(int*)szFormat)
+				|| MatchStrings(m_history[i].str, szSpamCheck))
 				return;
 		}
 		i = m_iLastHistoryItem = m_iLastHistoryItem + 1 & sz - 1;

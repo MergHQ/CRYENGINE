@@ -37,10 +37,10 @@ bool SStrobosopeSamplingData::SCallstackSampling::operator<(const SCallstackSamp
 
 ////////////////////////////////////////////////////////////////////////////
 CStroboscope::CStroboscope()
-	: m_started(0)
-	, m_startTime(0)
+	: m_startTime(0)
 	, m_endTime(-1)
 	, m_throttle(100)
+	, m_started(0)
 	, m_run(false)
 {
 	m_result.Clear();

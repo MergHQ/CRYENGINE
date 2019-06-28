@@ -73,12 +73,7 @@ static int64 GetFrequency_ProfilerInternal()
 }
 
 CCryProfilingSystem::CCryProfilingSystem()
-	: m_enabled(true)
-	, m_trackingPaused(false)
-	, m_willPause(false)
-	, m_lastTotalPageFaults(0)
-	, m_MsPerTick(1000.0f / GetFrequency_ProfilerInternal())
-	, m_pBootProfiler(nullptr)
+	: m_MsPerTick(1000.0f / GetFrequency_ProfilerInternal())
 {
 	assert(s_pInstance == nullptr);
 	s_pInstance = this;

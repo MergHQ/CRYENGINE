@@ -56,6 +56,8 @@ struct SDefaultValidator : public IValidator
 					bNoMsgBoxOnWarnings = true;
 					m_pSystem->m_sysWarnings->Set(0);
 					break;
+				default:
+					break;
 				}
 			}
 		}

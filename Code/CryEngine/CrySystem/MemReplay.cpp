@@ -1238,6 +1238,9 @@ void ReplayRecordThread::ThreadEntry()
 		case CMD_Flush:
 			m_compressor->Flush();
 			break;
+
+		default:
+			break;
 		}
 
 		m_nextCommand = CMD_Idle;

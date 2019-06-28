@@ -13,8 +13,7 @@
 
 CrySizerStatsBuilder::CrySizerStatsBuilder(CrySizerImpl* pSizer, int nMinSubcomponentBytes) :
 	m_pSizer(pSizer),
-	m_nMinSubcomponentBytes(nMinSubcomponentBytes < 0 || nMinSubcomponentBytes > 0x10000000 ? 0 : nMinSubcomponentBytes),
-	m_pStats(nullptr)
+	m_nMinSubcomponentBytes(nMinSubcomponentBytes < 0 || nMinSubcomponentBytes > 0x10000000 ? 0 : nMinSubcomponentBytes)
 {
 
 }
@@ -108,17 +107,6 @@ CrySizerStats::CrySizerStats(CrySizerImpl* pCrySizer)
 	builder.build(this);
 }
 
-CrySizerStats::CrySizerStats()
-	: m_nStartRow(0)
-	, m_nAgeFrames(0)
-	, m_nMaxNameLength(0)
-{
-	for (int i = 0; i < g_numTimers; ++i)
-	{
-		m_fTime[i] = 0.0f;
-	}
-}
-
 void CrySizerStats::updateKeys()
 {
 	const unsigned int statSize = size();
@@ -189,9 +177,9 @@ bool CrySizerStats::Component::GenericOrder::operator()(const Component& left, c
 }
 
 CrySizerStatsRenderer::CrySizerStatsRenderer(ISystem* pSystem, CrySizerStats* pStats, unsigned nMaxSubcomponentDepth, int nMinSubcomponentBytes) :
-	m_pStats(pStats),
 	m_pRenderer(pSystem->GetIRenderer()),
 	m_pLog(pSystem->GetILog()),
+	m_pStats(pStats),
 	m_pTextModeConsole(pSystem->GetITextModeConsole()),
 	m_nMinSubcomponentBytes(nMinSubcomponentBytes < 0 || nMinSubcomponentBytes > 0x10000000 ? 0x8000 : nMinSubcomponentBytes),
 	m_nMaxSubcomponentDepth(nMaxSubcomponentDepth)

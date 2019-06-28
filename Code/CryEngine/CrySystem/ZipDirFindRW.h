@@ -14,10 +14,8 @@ class FindDataRW
 {
 public:
 	FindDataRW(FileEntryTree* pRoot) :
-		m_pRoot(pRoot),
-		m_pDirHeader(NULL)
+		m_pRoot(pRoot)
 	{
-		m_szWildcard[0] = 0;
 	}
 
 	// returns the directory to which the current object belongs
@@ -34,12 +32,12 @@ protected:
 	bool MatchWildcard(const char* szName);
 
 	// the directory inside which the current object (file or directory) is being searched
-	FileEntryTree* m_pDirHeader;
+	FileEntryTree* m_pDirHeader = nullptr;
 
-	FileEntryTree* m_pRoot; // the root of the zip file in which to search
+	FileEntryTree* m_pRoot = nullptr; // the root of the zip file in which to search
 
 	// the actual wildcard being used in the current scan - the file name wildcard only!
-	char m_szWildcard[_MAX_PATH];
+	char m_szWildcard[_MAX_PATH]{0};
 };
 
 class FindFileRW : public FindDataRW

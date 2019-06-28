@@ -118,7 +118,7 @@ string CCmdLine::Next(char*& src)
 	char ch = 0;
 	char* org = src;
 
-	while (ch = *src++)
+	while ((ch = *src++))
 	{
 		switch (ch)
 		{

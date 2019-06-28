@@ -56,13 +56,13 @@ public:
 
 		ResultPerNode()
 			: nextNodeIdOnShortestPath(std::numeric_limits<uint32>::max())
-			, weightToNextNodeOnShortestPath(std::numeric_limits<T>::max())
 			, weightTotal(std::numeric_limits<T>::max())
+			, weightToNextNodeOnShortestPath(std::numeric_limits<T>::max())
 		{}
 		ResultPerNode(uint32 nextNodeIdOnShortestPath, T weightToNextNodeOnShortestPath, T weightTotal)
 			: nextNodeIdOnShortestPath(nextNodeIdOnShortestPath)
-			, weightToNextNodeOnShortestPath(weightToNextNodeOnShortestPath)
 			, weightTotal(weightTotal)
+			, weightToNextNodeOnShortestPath(weightToNextNodeOnShortestPath)
 		{}
 	};
 

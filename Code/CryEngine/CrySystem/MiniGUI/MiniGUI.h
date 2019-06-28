@@ -29,20 +29,6 @@ class CMiniCtrl : public IMiniCtrl
 {
 public:
 
-	CMiniCtrl() :
-		m_nFlags(0),
-		m_id(0),
-		m_pGUI(NULL),
-		m_renderCallback(NULL),
-		m_fTextSize(12.f),
-		m_prevX(0.f),
-		m_prevY(0.f),
-		m_moving(false),
-		m_requiresResize(false),
-		m_pCloseButton(NULL),
-		m_saveStateOn(false)
-	{};
-
 	//////////////////////////////////////////////////////////////////////////
 	// IMiniCtrl interface implementation.
 	//////////////////////////////////////////////////////////////////////////
@@ -108,25 +94,25 @@ protected:
 	void StopMoving();
 
 protected:
-	int                       m_id;
-	IMiniGUI*                 m_pGUI;
-	uint32                    m_nFlags;
+	int                       m_id             = 0;
+	IMiniGUI*                 m_pGUI           = nullptr;
+	uint32                    m_nFlags         = 0;
 	CryFixedStringT<32>       m_title;
 	Rect                      m_rect;
 	_smart_ptr<IMiniCtrl>     m_pParent;
 	std::vector<IMiniCtrlPtr> m_subCtrls;
-	RenderCallback            m_renderCallback;
-	float                     m_fTextSize;
+	RenderCallback            m_renderCallback = nullptr;
+	float                     m_fTextSize      = 12.f;
 
 	//optional close 'X' button on controls, ref counted by m_subCtrls
-	IMiniCtrl* m_pCloseButton;
+	IMiniCtrl* m_pCloseButton = nullptr;
 
 	//dynamic movement
-	float m_prevX;
-	float m_prevY;
-	bool  m_moving;
-	bool  m_requiresResize;
-	bool  m_saveStateOn;
+	float m_prevX          = 0.f;
+	float m_prevY          = 0.f;
+	bool  m_moving         = false;
+	bool  m_requiresResize = false;
+	bool  m_saveStateOn    = false;
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -138,8 +124,8 @@ public:
 	CRYINTERFACE_END()
 	CRYGENERATE_SINGLETONCLASS_GUID(CMiniGUI, "MiniGUI", "1a049b87-9a4e-4b58-ac14-026e17e6255e"_cry_guid)
 
-	CMiniGUI();
-	virtual ~CMiniGUI() {}
+	CMiniGUI() = default;
+	virtual ~CMiniGUI() = default;
 
 public:
 	void InitMetrics();
@@ -194,9 +180,9 @@ protected:
 	void CloseDPadMenu();
 
 protected:
-	bool                             m_bListenersRegistered;
-	bool                             m_enabled;
-	bool                             m_inFocus;
+	bool                             m_bListenersRegistered = false;
+	bool                             m_enabled = false;
+	bool                             m_inFocus = true;
 
 	SMetrics                         m_metrics;
 
@@ -207,8 +193,8 @@ protected:
 
 	IMiniGUIEventListener*           m_pEventListener;
 
-	CMiniMenu*                       m_pDPadMenu;
-	IMiniCtrl*                       m_pMovingCtrl;
+	CMiniMenu*                       m_pDPadMenu = nullptr;
+	IMiniCtrl*                       m_pMovingCtrl = nullptr;
 	std::vector<minigui::IMiniCtrl*> m_rootMenus;
 };
 

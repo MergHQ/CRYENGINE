@@ -402,8 +402,8 @@ public:
 	CControllerOptNonVirtual() {};
 
 	CControllerOptNonVirtual(int iRotType, int iRotKeyType, int iPosType, int iPosKeyType) :
-		m_position(iPosType, iPosKeyType),
-		m_rotation(iRotType, iRotKeyType)
+		m_rotation(iRotType, iRotKeyType),
+		m_position(iPosType, iPosKeyType)
 	{
 	}
 

@@ -88,7 +88,7 @@ struct SRenderMeshInfoOutput
 // Inplace object for IStreamable* to cache StreamableMemoryContentSize
 struct SStreamAbleObject
 {
-	explicit SStreamAbleObject(IStreamable* pObj, bool bUpdateMemUsage = true) : m_pObj(pObj), fCurImportance(-1000.f)
+	explicit SStreamAbleObject(IStreamable* pObj, bool bUpdateMemUsage = true) : m_pObj(pObj)
 	{
 		if (pObj && bUpdateMemUsage)
 			m_nStreamableContentMemoryUsage = pObj->GetStreamableContentMemoryUsage();
@@ -107,7 +107,7 @@ struct SStreamAbleObject
 	{
 		return m_pObj->GetLastDrawMainFrameId();
 	}
-	float        fCurImportance;
+	float        fCurImportance = -1000.f;
 private:
 	IStreamable* m_pObj;
 	int          m_nStreamableContentMemoryUsage;

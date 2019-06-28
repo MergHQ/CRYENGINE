@@ -12,7 +12,7 @@ class CPageMappingHeap;
 class CGeneralMemoryHeap : public IGeneralMemoryHeap
 {
 public:
-	CGeneralMemoryHeap();
+	CGeneralMemoryHeap() = default;
 
 	// Create a heap that will map/unmap pages in the range [baseAddress, baseAddress + upperLimit).
 	CGeneralMemoryHeap(UINT_PTR baseAddress, size_t upperLimit, size_t reserveSize, const char* sUsage);
@@ -47,18 +47,18 @@ private:
 	CGeneralMemoryHeap& operator=(const CGeneralMemoryHeap&);
 
 private:
-	volatile int                   m_nRefCount;
+	volatile int                   m_nRefCount = 0;
 
-	bool                           m_isResizable;
+	bool                           m_isResizable = false;
 
 	CryCriticalSectionNonRecursive m_mspaceLock;
 	dlmspace                       m_mspace;
 
-	CPageMappingHeap*              m_pHeap;
-	void*                          m_pBlock;
-	size_t                         m_blockSize;
+	CPageMappingHeap*              m_pHeap = nullptr;
+	void*                          m_pBlock = nullptr;
+	size_t                         m_blockSize = 0;
 
-	int                            m_numAllocs;
+	int                            m_numAllocs = 0;
 
 #ifdef CRY_TRACE_HEAP
 	IMemoryManager::HeapHandle m_nTraceHeapHandle;

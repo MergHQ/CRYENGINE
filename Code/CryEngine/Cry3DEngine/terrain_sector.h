@@ -113,7 +113,7 @@ union SHeightMapItem
 	SHeightMapItem()
 		: raw(0) {}
 	SHeightMapItem(uint32 height, uint32 surface)
-		: height(height), surface(surface) {}
+		: surface(surface), height(height) {}
 
 	bool operator==(const SHeightMapItem& other)
 	{
@@ -370,21 +370,9 @@ public:
 	void         StartSectorTexturesStreaming(bool bFinishNow);
 
 	void         Init(int x1, int y1, int nNodeSize, CTerrainNode* pParent, bool bBuildErrorsTable);
-	CTerrainNode() :
-		m_nNodeTexSet(),
-		m_nTexSet(),
-		m_nNodeTextureOffset(-1),
-		m_nNodeHMDataOffset(-1),
-		m_pParent(),
-		m_pLeafData(NULL),
-		m_pUpdateTerrainTempData(NULL),
-		m_pChilds(0),
-		m_nLastTimeUsed(0),
-		m_nSetLodFrameId(0),
-		m_bHMDataIsModified(0)
+	CTerrainNode()
 	{
-		memset(&m_arrfDistance, 0, sizeof(m_arrfDistance));
-		m_nNodesCounter++;
+		s_nodesCounter++;
 	}
 	virtual ~CTerrainNode();
 
@@ -478,7 +466,7 @@ public:
 	IReadStreamPtr       m_pReadStream;
 	EFileStreamingStatus m_eTexStreamingStatus;
 
-	CTerrainNode*        m_pChilds; // 4 childs or NULL
+	CTerrainNode*        m_pChilds = nullptr; // 4 childs or NULL
 
 	// flags
 	uint8 m_bProcObjectsReady : 1;
@@ -494,36 +482,36 @@ public:
 	uint8  m_nTreeLevel;
 
 	uint16 m_nOriginX, m_nOriginY;             // sector origin
-	int    m_nLastTimeUsed;                    // basically last time rendered
-	int    m_nSetLodFrameId;
-	float  m_geomError = kGeomErrorNotSet;             // maximum height difference comparing to next more detailed lod
+	int    m_nLastTimeUsed = 0;                // basically last time rendered
+	int    m_nSetLodFrameId = 0;
+	float  m_geomError = kGeomErrorNotSet;     // maximum height difference comparing to next more detailed lod
 
 protected:
 
 	// temp data for terrain generation
-	CUpdateTerrainTempData* m_pUpdateTerrainTempData;
+	CUpdateTerrainTempData* m_pUpdateTerrainTempData = nullptr;
 
 public:
 
 	PodArray<SSurfaceTypeInfo> m_lstSurfaceTypeInfo;
 	SRangeInfo                 m_rangeInfo;
-	STerrainNodeLeafData*      m_pLeafData;
+	STerrainNodeLeafData*      m_pLeafData = nullptr;
 	PodArray<CVegetation*>     m_arrProcObjects;
 	SSectorTextureSet          m_nNodeTexSet, m_nTexSet; // texture id's
 	uint16                     m_nNodeTextureLastUsedSec4;
 	AABB                       m_boxHeigtmapLocal;
 	float                      m_fBBoxExtentionByObjectsIntegration;
-	struct CTerrainNode*       m_pParent;
-	float                      m_arrfDistance[MAX_RECURSION_LEVELS];
-	int                        m_nNodeTextureOffset;
-	int                        m_nNodeHMDataOffset;
+	struct CTerrainNode*       m_pParent = nullptr;
+	float                      m_arrfDistance[MAX_RECURSION_LEVELS] = {};
+	int                        m_nNodeTextureOffset = -1;
+	int                        m_nNodeHMDataOffset = -1;
 	int FTell(uint8*& f);
 	int FTell(FILE*& f);
-	static PodArray<vtx_idx>       m_arrIndices[SRangeInfo::e_max_surface_types][4];
-	static PodArray<SSurfaceType*> m_lstReadyTypes;
-	static int                     m_nNodesCounter;
+	static PodArray<vtx_idx>       s_arrIndices[SRangeInfo::e_max_surface_types][4];
+	static PodArray<SSurfaceType*> s_lstReadyTypes;
+	static int                     s_nodesCounter;
 	OcclusionTestClient            m_occlusionTestClient;
-	bool                           m_bHMDataIsModified;
+	bool                           m_bHMDataIsModified = false;
 };
 
 // Container to manager temp memory as well as running update jobs

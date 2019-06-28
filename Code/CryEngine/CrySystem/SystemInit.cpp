@@ -752,7 +752,7 @@ WIN_HMODULE CSystem::LoadDynamicLibrary(const char* szModulePath, bool bQuitIfNo
 
 	if (bLogLoadingInfo)
 	{
-		CryLog(msg);
+		CryLog("%s", msg.c_str());
 	}
 
 	WIN_HMODULE handle = nullptr;
@@ -1490,12 +1490,14 @@ char* PhysHelpersToStr(int iHelpers, char* strHelpers)
 	if (iHelpers & 8) *ptr++ = 'l';
 	if (iHelpers & 16) *ptr++ = 'j';
 	if (iHelpers >> 16)
+	{
 		if (!(iHelpers & 1 << 27))
 			ptr += sprintf(ptr, "t(%d)", iHelpers >> 16);
 		else
 			for (int i = 0; i < 16; i++)
 				if (i != 11 && iHelpers & 1 << (16 + i))
 					ptr += sprintf(ptr, "f(%d)", i);
+	}
 	*ptr++ = 0;
 	return strHelpers;
 }
@@ -2863,13 +2865,13 @@ bool CSystem::Initialize(SSystemInitParams& startupParams)
 		//////////////////////////////////////////////////////////////////////////
 		InlineInitializationProcessing("CSystem::Init NotificationNetwork");
 
-		m_pNotificationNetwork = NULL;
+		m_pNotificationNetwork = nullptr;
 #ifndef _RELEASE
 	#if !(CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID)
 
 		if (!startupParams.bMinimal && !gEnv->IsDedicated())
 		{
-			if (m_pNotificationNetwork = CNotificationNetwork::Create())
+			if ((m_pNotificationNetwork = CNotificationNetwork::Create()) != nullptr)
 			{
 				m_pNotificationNetwork->ListenerBind("HotUpdate", &CHotUpdateNotification::Instance());
 			}

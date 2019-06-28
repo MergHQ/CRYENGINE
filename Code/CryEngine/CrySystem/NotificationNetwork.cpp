@@ -1007,6 +1007,9 @@ bool CNotificationNetwork::CConnection::OnMessage(EMessage eMessage, const CChan
 			return true;
 		}
 		return true;
+
+	default:
+		break;
 	}
 
 	return false;

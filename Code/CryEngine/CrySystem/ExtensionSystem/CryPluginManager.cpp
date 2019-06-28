@@ -89,9 +89,9 @@ struct SPluginContainer
 {
 	// Constructor for native plug-ins
 	SPluginContainer(const std::shared_ptr<Cry::IEnginePlugin>& plugin, SNativePluginModule&& module)
-		: m_pPlugin(plugin)
+		: m_pluginClassId(plugin->GetFactory()->GetClassID())
+		, m_pPlugin(plugin)
 		, m_module(std::move(module))
-		, m_pluginClassId(plugin->GetFactory()->GetClassID())
 	{
 	}
 
@@ -172,6 +172,8 @@ void CCryPluginManager::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_
 				it.GetPluginPtr()->RegisterFlowNodes();
 			}
 		}
+		break;
+	default:
 		break;
 	}
 }
@@ -265,7 +267,7 @@ bool CCryPluginManager::LoadPluginBinary(EType type, const char* szBinaryPath, b
 			if (hModule == nullptr)
 			{
 				const string errorMessage = string().Format("Plugin load failed, could not find dynamic library %s!", binaryName.c_str());
-				CryWarning(VALIDATOR_MODULE_SYSTEM, notifyUserOnFailure ? VALIDATOR_ERROR : VALIDATOR_COMMENT, errorMessage.c_str());
+				CryWarning(VALIDATOR_MODULE_SYSTEM, notifyUserOnFailure ? VALIDATOR_ERROR : VALIDATOR_COMMENT, "%s", errorMessage.c_str());
 				if (notifyUserOnFailure)
 				{
 					CryMessageBox(errorMessage.c_str(), "Plug-in load failed!", eMB_Error);
@@ -295,7 +297,7 @@ bool CCryPluginManager::LoadPluginBinary(EType type, const char* szBinaryPath, b
 			if (nativeModule.m_pFactory == nullptr)
 			{
 				const string errorMessage = string().Format("Plugin load failed - valid ICryPlugin implementation was not found in plugin %s!", binaryName.c_str());
-				CryWarning(VALIDATOR_MODULE_SYSTEM, notifyUserOnFailure ? VALIDATOR_ERROR : VALIDATOR_COMMENT, errorMessage.c_str());
+				CryWarning(VALIDATOR_MODULE_SYSTEM, notifyUserOnFailure ? VALIDATOR_ERROR : VALIDATOR_COMMENT, "%s", errorMessage.c_str());
 				if (notifyUserOnFailure)
 				{
 					CryMessageBox(errorMessage.c_str(), "Plug-in load failed!", eMB_Error);
@@ -309,7 +311,7 @@ bool CCryPluginManager::LoadPluginBinary(EType type, const char* szBinaryPath, b
 			if (pPlugin == nullptr)
 			{
 				const string errorMessage = string().Format("Plugin load failed - failed to create plug-in class instance in %s!", binaryName.c_str());
-				CryWarning(VALIDATOR_MODULE_SYSTEM, notifyUserOnFailure ? VALIDATOR_ERROR : VALIDATOR_COMMENT, errorMessage.c_str());
+				CryWarning(VALIDATOR_MODULE_SYSTEM, notifyUserOnFailure ? VALIDATOR_ERROR : VALIDATOR_COMMENT, "%s", errorMessage.c_str());
 				if (notifyUserOnFailure)
 				{
 					CryMessageBox(errorMessage.c_str(), "Plug-in load failed!", eMB_Error);
@@ -328,7 +330,7 @@ bool CCryPluginManager::LoadPluginBinary(EType type, const char* szBinaryPath, b
 			if (gEnv->pMonoRuntime == nullptr)
 			{
 				const string errorMessage = string().Format("Plugin load failed - Tried to load Mono plugin %s without having loaded the CryMono module!", binaryName.c_str());
-				CryWarning(VALIDATOR_MODULE_SYSTEM, notifyUserOnFailure ? VALIDATOR_ERROR : VALIDATOR_COMMENT, errorMessage.c_str());
+				CryWarning(VALIDATOR_MODULE_SYSTEM, notifyUserOnFailure ? VALIDATOR_ERROR : VALIDATOR_COMMENT, "%s", errorMessage.c_str());
 				if (notifyUserOnFailure)
 				{
 					CryMessageBox(errorMessage.c_str(), "Plug-in load failed!", eMB_Error);
@@ -341,7 +343,7 @@ bool CCryPluginManager::LoadPluginBinary(EType type, const char* szBinaryPath, b
 			if (pPlugin == nullptr)
 			{
 				const string errorMessage = string().Format("Plugin load failed - Plugin load failed - Could not load Mono binary %s!", binaryName.c_str());
-				CryWarning(VALIDATOR_MODULE_SYSTEM, notifyUserOnFailure ? VALIDATOR_ERROR : VALIDATOR_COMMENT, errorMessage.c_str());
+				CryWarning(VALIDATOR_MODULE_SYSTEM, notifyUserOnFailure ? VALIDATOR_ERROR : VALIDATOR_COMMENT, "%s", errorMessage.c_str());
 				if (notifyUserOnFailure)
 				{
 					CryMessageBox(errorMessage.c_str(), "Plug-in load failed!", eMB_Error);
@@ -488,7 +490,7 @@ bool CCryPluginManager::LoadPluginByGUID(CryGUID guid, bool notifyUserOnFailure)
 		return LoadPluginFromFile(it->second.uri.c_str(), notifyUserOnFailure);
 
 	const string errorMessage = string().Format("Plugin load failed - could not find %s in the plugin registry", guid.ToString().c_str());
-	CryWarning(VALIDATOR_MODULE_SYSTEM, notifyUserOnFailure ? VALIDATOR_ERROR : VALIDATOR_COMMENT, errorMessage.c_str());
+	CryWarning(VALIDATOR_MODULE_SYSTEM, notifyUserOnFailure ? VALIDATOR_ERROR : VALIDATOR_COMMENT, "%s", errorMessage.c_str());
 	if (notifyUserOnFailure)
 	{
 		CryMessageBox(errorMessage.c_str(), "Plug-in load failed!", eMB_Error);
@@ -505,7 +507,7 @@ bool CCryPluginManager::OnPluginLoaded(bool notifyUserOnFailure)
 	if (!containedPlugin.Initialize(*gEnv, m_systemInitParams))
 	{
 		const string errorMessage = string().Format("Plugin load failed - Initialization failure, check log for possible errors");
-		CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_ERROR, errorMessage.c_str());
+		CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_ERROR, "%s", errorMessage.c_str());
 		if (notifyUserOnFailure)
 		{
 			CryMessageBox(errorMessage.c_str(), "Plug-in load failed!", eMB_Error);

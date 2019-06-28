@@ -265,6 +265,8 @@ void CMiniButton::OnEvent(float x, float y, EMiniCtrlEvent event)
 			}
 		}
 		break;
+	default:
+		break;
 	}
 }
 

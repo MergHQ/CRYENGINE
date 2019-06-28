@@ -409,7 +409,7 @@ void CTestSystem::RunTestsByName(const DynArray<string>& names)
 #if !defined(EXCLUDE_NORMAL_LOG)
 	for (const string& name : names)
 	{
-		CryLogAlways(name);
+		CryLogAlways("%s", name.c_str());
 	}
 #endif
 	SaveAndDisableAssertDialogSetting();

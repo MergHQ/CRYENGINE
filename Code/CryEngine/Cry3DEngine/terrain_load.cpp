@@ -347,9 +347,9 @@ bool CTerrain::OpenTerrainTextureFile(SCommonFileHeader& hdrDiffTexHdr, STerrain
 		{
 			CRY_PROFILE_SECTION(PROFILE_3DENGINE, "CTerrain::OpenTerrainTextureFile: ReleaseHoleNodes & UpdateTerrainNodes");
 
-			int nNodesCounterBefore = CTerrainNode::m_nNodesCounter;
+			int nNodesCounterBefore = CTerrainNode::s_nodesCounter;
 			GetParentNode()->ReleaseHoleNodes();
-			PrintMessage("  %d out of %d nodes cleaned", nNodesCounterBefore - CTerrainNode::m_nNodesCounter, nNodesCounterBefore);
+			PrintMessage("  %d out of %d nodes cleaned", nNodesCounterBefore - CTerrainNode::s_nodesCounter, nNodesCounterBefore);
 
 			if (Get3DEngine()->m_pObjectsTree)
 				Get3DEngine()->m_pObjectsTree->UpdateTerrainNodes();

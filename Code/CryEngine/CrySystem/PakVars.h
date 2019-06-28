@@ -1,7 +1,6 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-#ifndef _CRY_SYSTEM_PAK_VARS_HDR_
-#define _CRY_SYSTEM_PAK_VARS_HDR_
+#pragma once
 
 enum EPakPriority
 {
@@ -11,70 +10,39 @@ enum EPakPriority
 	ePakPriorityFileFirstModsOnly = 3,
 };
 
-// variables that control behaviour of CryPak/StreamEngine subsystems
+// Variables that control behavior of CryPak/StreamEngine subsystems
 struct PakVars
 {
-	int nSaveLevelResourceList;
-	int nSaveFastloadResourceList;
-	int nSaveTotalResourceList;
-	int nSaveMenuCommonResourceList;
-	int nLogMissingFiles;
-	int nLoadCache;
-	int nLoadModePaks;
-	int nReadSlice;
-	int nPriority;
-	int nMessageInvalidFileAccess;
-	int nValidateFileHashes;
-	int nTotalInMemoryPakSizeLimit;
-	int nStreamCache;
-	int nInMemoryPerPakSizeLimit;
-	int nLogInvalidFileAccess;
-	int nLoadFrontendShaderCache;
-	int nUncachedStreamReads;
-#ifndef _RELEASE
-	int nLogAllFileAccess;
-#endif
-	int nDisableNonLevelRelatedPaks;
-
-	PakVars()
-		: nPriority(0)
-		, nReadSlice(0)
-		, nLogMissingFiles(0)
-		, nInMemoryPerPakSizeLimit(0)
-		, nSaveTotalResourceList(0)
-		, nSaveFastloadResourceList(0)
-		, nSaveMenuCommonResourceList(0)
-		, nSaveLevelResourceList(0)
-		, nValidateFileHashes(0)
-		, nUncachedStreamReads(1)
-	{
-		nInMemoryPerPakSizeLimit = 6;    // 6 Megabytes limit
-		nTotalInMemoryPakSizeLimit = 30; // Megabytes
-
-		nLoadCache = 0;       // Load in memory paks from _FastLoad folder
-		nLoadModePaks = 0;    // Load menucommon/gamemodeswitch paks
-		nStreamCache = 0;
-
+	int nSaveLevelResourceList      = 0;
+	int nSaveFastloadResourceList   = 0;
+	int nSaveTotalResourceList      = 0;
+	int nSaveMenuCommonResourceList = 0;
+	int nLogMissingFiles            = 0;
+	int nLoadCache                  = 0; // Load in memory paks from _FastLoad folder
+	int nLoadModePaks               = 0; // Load menucommon/gamemodeswitch paks
+	int nReadSlice                  = 0;
+	int nPriority                   =
 #if defined(_RELEASE)
-		nPriority = ePakPriorityPakOnly;  // Only read from pak files by default
+		ePakPriorityPakOnly;  // Only read from pak files by default
 #else
-		nPriority = ePakPriorityFileFirst;
+		ePakPriorityFileFirst;
 #endif
-
-		nMessageInvalidFileAccess = 0;
-		nLogInvalidFileAccess = 0;
-
-#ifndef _RELEASE
-		nLogAllFileAccess = 0;
-#endif
-
+	int nMessageInvalidFileAccess   = 0;
+	int nValidateFileHashes         =
 #if defined(_DEBUG)
-		nValidateFileHashes = 1;
+		1;
+#else
+		0;
 #endif
-
-		nLoadFrontendShaderCache = 0;
-		nDisableNonLevelRelatedPaks = 1;
-	}
+	int nTotalInMemoryPakSizeLimit  = 30; // Megabytes
+	int nStreamCache                = 0;
+	int nInMemoryPerPakSizeLimit    = 6;  // 6 Megabytes limit
+	int nLogInvalidFileAccess       = 0;
+	int nLoadFrontendShaderCache    = 0;
+	int nUncachedStreamReads        = 1;
+#ifndef _RELEASE
+	int nLogAllFileAccess           = 0;
+#endif
+	int nDisableNonLevelRelatedPaks = 1;
 };
 
-#endif

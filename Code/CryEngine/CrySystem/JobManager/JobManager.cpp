@@ -323,16 +323,6 @@ extern "C"
 }
 
 JobManager::CJobManager::CJobManager()
-	: m_Initialized(false),
-	m_pThreadBackEnd(NULL),
-	m_pBlockingBackEnd(NULL),
-	m_nJobIdCounter(0),
-	m_nJobSystemEnabled(1),
-	m_bJobSystemProfilerPaused(0),
-	m_bJobSystemProfilerEnabled(false),
-	m_nJobsRunCounter(0),
-	m_nFallbackJobsRunCounter(0),
-	m_bSuspendWorkerForMP(false)
 {
 	// create backends
 	m_pThreadBackEnd = new ThreadBackEnd::CThreadBackEnd();
@@ -1345,24 +1335,13 @@ void JobManager::CJobManager::DumpJobList()
 //////////////////////////////////////////////////////////////////////////
 bool JobManager::CJobManager::OnInputEvent(const SInputEvent& event)
 {
-	bool ret = false;
-
-	// Only process keyboard input
-	if (eIDT_Keyboard == event.deviceType)
+	// Pause/Continue profiler data collection with Scroll Lock key
+	if (event.deviceType == eIDT_Keyboard && event.state == eIS_Pressed && event.keyId == eKI_ScrollLock)
 	{
-		// Only if key was pressed
-		if (eIS_Pressed == event.state)
-		{
-			switch (event.keyId)
-			{
-			case eKI_ScrollLock: // Pause/Continue profiler data collection with Scroll Lock key
-				m_bJobSystemProfilerPaused = !m_bJobSystemProfilerPaused;
-				break;
-			}
-		}
+		m_bJobSystemProfilerPaused = !m_bJobSystemProfilerPaused;
 	}
 
-	return ret;
+	return false;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

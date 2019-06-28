@@ -18,14 +18,14 @@ public:
 	{}
 
 	CFunctionDelegate(CFunctionPtr functionPtr, ProxyFunc proxyFunc)
-		: m_functionPtr(functionPtr)
-		, m_proxyFunc(proxyFunc)
+		: m_proxyFunc(proxyFunc)
+		, m_functionPtr(functionPtr)
 	{}
 
 	template<typename FUNCTION_TYPE>
 	CFunctionDelegate(FUNCTION_TYPE pFunction, ProxyFunc proxyFunc)
-		: m_functionPtr(pFunction)
-		, m_proxyFunc(proxyFunc)
+		: m_proxyFunc(proxyFunc)
+		, m_functionPtr(pFunction)
 	{}
 
 	bool IsValid() const

@@ -92,9 +92,9 @@ void CAsyncIOFileRequest::operator delete(void* p)
 //////////////////////////////////////////////////////////////////////////
 CAsyncIOFileRequest::CAsyncIOFileRequest()
 	: m_nRefCount(0)
-	, m_pMemoryBuffer(NULL)
-	, m_bOutputAllocated(false)
+	, m_pMemoryBuffer(nullptr)
 	, m_bStatsUpdated(false)
+	, m_bOutputAllocated(false)
 {
 	Reset();
 }

@@ -70,23 +70,23 @@ public:
 	CBlockingBackEnd(JobManager::SInfoBlock** pRegularWorkerFallbacks, uint32 nRegularWorkerThreads);
 	virtual ~CBlockingBackEnd();
 
-	bool           Init(uint32 nSysMaxWorker);
-	bool           ShutDown();
-	void           Update() {}
+	bool           Init(uint32 nSysMaxWorker) override;
+	bool           ShutDown() override;
+	void           Update() override {}
 
-	virtual void   AddJob(JobManager::CJobDelegator& crJob, const JobManager::TJobHandle cJobHandle, JobManager::SInfoBlock& rInfoBlock);
+	virtual void   AddJob(JobManager::CJobDelegator& crJob, const JobManager::TJobHandle cJobHandle, JobManager::SInfoBlock& rInfoBlock) override;
 
-	virtual bool   AddTempWorkerUntilJobStateIsComplete(JobManager::SJobState& pJobState) { return false; }
-
-	virtual uint32 GetNumWorkerThreads() const { return m_nNumWorker; }
+	virtual uint32 GetNumWorkerThreads() const override { return m_nNumWorker; }
 
 	void           AddBlockingFallbackJob(JobManager::SInfoBlock* pInfoBlock, uint32 nWorkerThreadID);
 
-	virtual bool KickTempWorker() { return false; }
-	virtual bool StopTempWorker() { return false; }
+	virtual bool   KickTempWorker() override { return false; }
+	virtual bool   StopTempWorker() override { return false; }
+
+	virtual bool   AddTempWorkerUntilJobStateIsComplete(JobManager::SJobState& pJobState) { return false; }
 
 #if defined(JOBMANAGER_SUPPORT_STATOSCOPE)
-	JobManager::IWorkerBackEndProfiler* GetBackEndWorkerProfiler() const { return m_pBackEndWorkerProfiler; }
+	JobManager::IWorkerBackEndProfiler* GetBackEndWorkerProfiler() const override { return m_pBackEndWorkerProfiler; }
 #endif
 
 private:
@@ -94,8 +94,8 @@ private:
 
 	JobManager::SJobQueue_BlockingBackEnd m_JobQueue;                   // job queue node where jobs are pushed into and from
 	CryFastSemaphore                      m_Semaphore;                  // semaphore to count available jobs, to allow the workers to go sleeping instead of spinning when no work is requiered
-	CBlockingBackEndWorkerThread**        m_pWorkerThreads;             // worker threads for blocking backend
-	uint8 m_nNumWorker;                                                 // number of allocated worker threads
+	CBlockingBackEndWorkerThread**        m_pWorkerThreads = nullptr;   // worker threads for blocking backend
+	uint8 m_nNumWorker = 0;                                             // number of allocated worker threads
 
 	// members used for special blocking backend fallback handling
 	JobManager::SInfoBlock** m_pRegularWorkerFallbacks;
@@ -103,7 +103,7 @@ private:
 
 	// members required for profiling jobs in the frame profiler
 #if defined(JOBMANAGER_SUPPORT_STATOSCOPE)
-	JobManager::IWorkerBackEndProfiler* m_pBackEndWorkerProfiler;
+	JobManager::IWorkerBackEndProfiler* m_pBackEndWorkerProfiler = nullptr;
 #endif
 };
 

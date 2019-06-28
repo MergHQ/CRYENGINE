@@ -1012,7 +1012,7 @@ void CSystem::RenderMemoryInfo()
 	cry_sprintf(szText, "Lua Allocated Memory: %d KB", luaMemUsage / 1024);
 	DrawLabel(col, row++, HeaderColor, szText);
 
-	if (m_logMemoryInfo) pLog->Log(szText);
+	if (m_logMemoryInfo) pLog->Log("%s", szText);
 	//////////////////////////////////////////////////////////////////////////
 	//////////////////////////////////////////////////////////////////////////
 
@@ -1140,9 +1140,9 @@ void CSystem::RenderMemoryInfo()
 #else
 		if (m_logMemoryInfo)
 		{
-			pLog->Log("    %20s | Alloc: %6d Kb  |  Num: %7d  |  TotalAlloc: %" PRIu64 "KB",
+			pLog->Log("    %20s | Alloc: %6" PRIu64 " Kb  |  Num: %7d  |  TotalAlloc: %" PRIu64 "KB",
 				szModule,
-				usedInModule / 1024, memInfo.num_allocations, memInfo.allocated / 1024u);
+				usedInModule / 1024u, memInfo.num_allocations, memInfo.allocated / 1024u);
 		}
 #endif
 		row++;
@@ -1184,8 +1184,8 @@ void CSystem::RenderMemoryInfo()
 
 	if (m_logMemoryInfo)
 	{
-		pLog->Log("Sum of %d Modules %6d Kb  (Static: %6d Kb)  (Num: %8d) (TotalAlloc: %8I64d KB)", countedMemoryModules, totalUsedInModules / 1024,
-			totalUsedInModulesStatic / 1024, totalNumAllocsInModules, totalAllocatedInModules / 1024);
+		pLog->Log("Sum of %d Modules %6" PRIu64 " Kb  (Static: %6d Kb)  (Num: %8d) (TotalAlloc: %8" PRIu64 " KB)",
+			countedMemoryModules, totalUsedInModules / 1024u, totalUsedInModulesStatic / 1024, totalNumAllocsInModules, totalAllocatedInModules / 1024u);
 	}
 
 	int memUsageInMB_SysCopyMeshes = 0;

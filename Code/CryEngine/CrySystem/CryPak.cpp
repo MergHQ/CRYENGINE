@@ -343,8 +343,8 @@ static void fileAccessMessage(int threadIndex, const char* inName)
 CCryPak::CCryPak(IMiniLog* pLog, PakVars* pPakVars, const bool bLvlRes) :
 	m_pLog(pLog),
 	m_eRecordFileOpenList(RFOM_Disabled),
-	m_pPakVars(pPakVars ? pPakVars : &g_cvars.pakVars),
 	m_fFileAcessTime(0.f),
+	m_pPakVars(pPakVars ? pPakVars : &g_cvars.pakVars),
 	m_bLvlRes(bLvlRes),
 	m_renderThreadId(0),
 	m_pWidget(NULL)
@@ -908,14 +908,14 @@ char* CCryPak::BeautifyPath(char* dst, bool bMakeLowercase)
 void CCryPak::RemoveRelativeParts(char* dst)
 {
 	char* q = dst;
-	char* p = NULL;
+	char* p = nullptr;
 
 	PREFAST_ASSUME(q);
 
 	// replace all '/./' with '/'
 	const char slashDotSlashString[4] = { g_cNativeSlash, '.', g_cNativeSlash, 0 };
 
-	while (p = strstr(q, slashDotSlashString))
+	while ((p = strstr(q, slashDotSlashString)) != nullptr)
 	{
 		//Move the string and the null terminator
 		memmove(p, p + 2, strlen(p + 2) + 1);
@@ -924,7 +924,7 @@ void CCryPak::RemoveRelativeParts(char* dst)
 	// replace all '/%s/../' with '/'
 	const char slashDotDotSlashString[5] = { g_cNativeSlash, '.', '.', g_cNativeSlash, 0 };
 
-	while (p = strstr(q, slashDotDotSlashString))
+	while ((p = strstr(q, slashDotDotSlashString)) != nullptr)
 	{
 		if (p != q) // only remove if not in front of a path
 		{
@@ -4487,17 +4487,7 @@ void CCryPak::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lparam
 			m_fFileAcessTime = 0;
 		}
 		break;
-
-	case ESYSTEM_EVENT_GAME_POST_INIT:
-		break;
-
-	case ESYSTEM_EVENT_LEVEL_LOAD_PREPARE:
-		break;
-
-	case ESYSTEM_EVENT_LEVEL_PRECACHE_START:
-		break;
-
-	case ESYSTEM_EVENT_LEVEL_PRECACHE_END:
+	default: 
 		break;
 	}
 
@@ -4710,7 +4700,7 @@ bool CCryPak::ForEachArchiveFolderEntry(const char* szArchivePath, const char* s
 	{
 		ZipDir::FindFile fd(pZip);
 		ZipDir::FileEntry* pFileEntry = nullptr;
-		for (fd.FindFirst(szFolderPath); pFileEntry = fd.GetFileEntry(); fd.FindNext())
+		for (fd.FindFirst(szFolderPath); (pFileEntry = fd.GetFileEntry()) != nullptr; fd.FindNext())
 		{
 			const char* szFname = fd.GetFileName();
 			if (szFname[0] == '\0')

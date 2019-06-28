@@ -569,9 +569,9 @@ private:
 	{
 		SEventListenerSet(EEntityEvent entityEvent, const SEventListener& firstEventListener)
 			: event(entityEvent)
+			, listeners({ firstEventListener })
 			, firstUnsortedListenerIndex(-1)
-			, hasValidElements(1) 
-			, listeners({ firstEventListener }) {}
+			, hasValidElements(1) {}
 
 		SEventListenerSet(const SEventListenerSet&) = delete;
 		SEventListenerSet& operator=(const SEventListenerSet&) = delete;

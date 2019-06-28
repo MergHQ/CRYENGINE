@@ -2061,6 +2061,7 @@ template<> struct SUIGetTypeStr<eUOT_Events>
 	        UIEVENT_CHECK_RETURN_VALUE(Vec3)                                                                                                                 \
 	        UIEVENT_CHECK_RETURN_VALUE(String)                                                                                                               \
 	        UIEVENT_CHECK_RETURN_VALUE(WString)                                                                                                              \
+	        default: break;                                                                                                                                  \
 	      }                                                                                                                                                  \
 	    }                                                                                                                                                    \
 	  }                                                                                                                                                      \

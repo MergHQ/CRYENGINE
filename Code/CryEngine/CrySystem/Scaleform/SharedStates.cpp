@@ -525,34 +525,20 @@ CryGFxImageCreator::~CryGFxImageCreator()
 
 GImageInfoBase* CryGFxImageCreator::CreateImage(const GFxImageCreateInfo& info)
 {
-	GImageInfoBase* pImageInfo(0);
+	GImageInfoBase* pImageInfo = nullptr;
 	switch (info.Type)
 	{
 	case GFxImageCreateInfo::Input_Image:
+		// create image info and texture for internal image
+		pImageInfo = new GImageInfoXRender(info.pImage);
+		break;
 	case GFxImageCreateInfo::Input_File:
-		{
-			switch (info.Type)
-			{
-			case GFxImageCreateInfo::Input_Image:
-				{
-					// create image info and texture for internal image
-					pImageInfo = new GImageInfoXRender(info.pImage);
-					break;
-				}
-			case GFxImageCreateInfo::Input_File:
-				{
-					// create image info and texture for external image
-					pImageInfo = new GImageInfoFileXRender(info.pFileInfo->FileName.ToCStr(), info.pFileInfo->TargetWidth, info.pFileInfo->TargetHeight);
-					break;
-				}
-			}
-			break;
-		}
+		// create image info and texture for external image
+		pImageInfo = new GImageInfoFileXRender(info.pFileInfo->FileName.ToCStr(), info.pFileInfo->TargetWidth, info.pFileInfo->TargetHeight);
+		break;
 	default:
-		{
-			assert(0);
-			break;
-		}
+		CRY_ASSERT_MESSAGE(false, "Invalid image info");
+		break;
 	}
 	return pImageInfo;
 }

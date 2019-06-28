@@ -425,11 +425,6 @@ IDebugCallStack* IDebugCallStack::instance()
 // Sets up the symbols for functions in the debug file.
 //------------------------------------------------------------------------------------------------------------------------
 DebugCallStack::DebugCallStack()
-	: m_pSystem(0)
-	, m_symbols(false)
-	, m_bCrash(false)
-	, m_szBugMessage(NULL)
-	, m_previousHandler(nullptr)
 {
 	RemoveOldFiles();
 	if (gEnv && gEnv->pThreadManager)

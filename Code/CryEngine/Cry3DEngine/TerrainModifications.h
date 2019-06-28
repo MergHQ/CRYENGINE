@@ -37,7 +37,7 @@ private: // -------------------------------------------------------------------
 
 		// constructor
 		STerrainMod(const Vec3& vPos, const float fRadius, const float fHeight)
-			: m_vPos(vPos), m_fRadius(fRadius), m_fHeight(fHeight)
+			: m_vPos(vPos), m_fHeight(fHeight), m_fRadius(fRadius)
 		{
 		}
 

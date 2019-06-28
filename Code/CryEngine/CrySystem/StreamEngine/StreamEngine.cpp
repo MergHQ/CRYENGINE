@@ -536,7 +536,7 @@ void CStreamEngine::Update()
 void CStreamEngine::UpdateAndWait(bool bAbortAll)
 {
 	// for stream->Wait sync
-	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY)(gEnv->pSystem);
+	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
 	if (bAbortAll)
 	{
@@ -1015,6 +1015,10 @@ const char* CStreamEngine::GetStreamTaskTypeName(EStreamTaskType type)
 		return "GeomCache";
 	case eStreamTaskTypeMergedMesh:
 		return "MergedMesh";
+	case eStreamTaskTypeFSBCache:
+		return "FSBCache";
+	case eStreamTaskTypeCount:
+		break;
 	}
 	return "";
 }
@@ -1334,6 +1338,8 @@ void CStreamEngine::DrawStatistics()
 				case eStreamSourceTypeMemory:
 					sFlags = "MEM";
 					break;
+				case eStreamSourceTypeUnknown:
+					break;
 				}
 				const char* sPriority = "";
 				switch (pFileRequest->m_ePriority)
@@ -1519,6 +1525,8 @@ void CStreamEngine::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR 
 			Shutdown();
 			break;
 		}
+	default:
+		break;
 	}
 }
 

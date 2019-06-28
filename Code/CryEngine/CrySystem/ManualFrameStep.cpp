@@ -40,10 +40,10 @@ float CManualFrameStepController::SCVars::manualFrameStepFrequency = 0.0f;
 CManualFrameStepController::CManualFrameStepController()
 	: m_framesLeft(-1)
 	, m_framesGenerated(0)
-	, m_pendingRequest(false)
-	, m_previousStepSmoothing(true)
 	, m_previousFixedStep(0.0f)
 	, m_heldTimer(-1.0f)
+	, m_pendingRequest(false)
+	, m_previousStepSmoothing(true)
 {
 	if (gEnv->pInput)
 	{
@@ -335,6 +335,8 @@ bool CManualFrameStepController::OnInputEvent(const SInputEvent& inputEvent)
 			break;
 		}
 	#endif // MANUAL_FRAME_STEP_VIEW_HISTORY
+	default:
+		break;
 	}
 
 	return false;
@@ -352,6 +354,8 @@ void CManualFrameStepController::OnSystemEvent(ESystemEvent event, UINT_PTR wpar
 		}
 		break;
 	}
+	default:
+		break;
 	}
 }
 

@@ -14,8 +14,8 @@ struct STypeRegistrationParams
 {
 	STypeRegistrationParams(const Type::CTypeDesc& typeDesc, CGuid guid, ReflectTypeFunction pReflectFunc, const SSourceFileInfo& srcPos)
 		: m_guid(guid)
-		, m_pReflectFunc(pReflectFunc)
 		, m_typeDesc(typeDesc)
+		, m_pReflectFunc(pReflectFunc)
 		, m_srcPos(srcPos)
 	{}
 

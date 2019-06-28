@@ -138,7 +138,7 @@ void CDiskProfiler::Render()
 	{
 		uint32 nTextLeft = 10;
 		// IO count
-		IRenderAuxText::Draw2dLabel(5, labelHeight, fTextSize, colInfo1, false, "IO calls: %d", m_statistics.size());
+		IRenderAuxText::Draw2dLabel(5, labelHeight, fTextSize, colInfo1, false, "IO calls: %lu", m_statistics.size());
 		nTextLeft += 100;
 
 		// display read statistics

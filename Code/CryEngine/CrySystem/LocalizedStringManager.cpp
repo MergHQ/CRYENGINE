@@ -665,6 +665,8 @@ void CLocalizedStringsManager::OnSystemEvent(
 
 			break;
 		}
+	default:
+		break;
 	}
 }
 

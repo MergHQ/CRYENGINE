@@ -385,6 +385,8 @@ TEST(SmallFunctionTest, CallReturnNonTrivial)
 
 	//before C++17, the local variable is moved out. The move sometimes gets elided by the compiler.
 	REQUIRE(Inspector::moveCount <= 1);
+
+	(void)result; //Mutes warning "unused variable 'result'". Here we are only interested in the side effects.
 }
 
 TEST(SmallFunctionTest, CallParameterCopy)

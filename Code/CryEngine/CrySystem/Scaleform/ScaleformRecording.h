@@ -367,8 +367,8 @@ public:
 private:
 	CCachedDataStore(GRenderer::CachedDataType type, IScaleformPlayback* pOwner, const IScaleformPlayback::DeviceData* pData)
 		: CCachedData(pData)
-		, m_Owner(pOwner)
 		, m_type(type)
+		, m_Owner(pOwner)
 	{
 		CryInterlockedIncrement(&ms_numInst);
 	}

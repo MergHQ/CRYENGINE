@@ -19,7 +19,8 @@ static float ftdiff(const FILETIME& b, const FILETIME& a)
 class CCPUMonitor
 {
 public:
-	CCPUMonitor(ISystem* pSystem, int nCPUs) : m_lastUpdate(0.0f), m_pTimer(pSystem->GetITimer()), m_nCPUs(nCPUs)
+	CCPUMonitor(ISystem* pSystem, int nCPUs) 
+		: m_pTimer(pSystem->GetITimer()), m_nCPUs(nCPUs)
 	{
 		FILETIME notNeeded;
 		GetProcessTimes(GetCurrentProcess(), &notNeeded, &notNeeded, &m_lastKernel, &m_lastUser);
@@ -56,7 +57,7 @@ public:
 
 private:
 	ITimer*    m_pTimer;
-	CTimeValue m_lastUpdate;
+	CTimeValue m_lastUpdate = 0.f;
 	FILETIME   m_lastKernel, m_lastUser, m_lastTime;
 	int        m_nCPUs;
 };

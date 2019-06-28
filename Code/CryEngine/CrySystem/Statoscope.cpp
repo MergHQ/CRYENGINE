@@ -2400,7 +2400,7 @@ void CStatoscope::StoreCallstack(const char* tag, void** callstackAddresses, uin
 		CryMT::vector<SCallstack>::AutoLock lock(m_pCallstacks->m_callstacks.get_lock());
 		SCallstack callstack(callstackAddresses, callstackLength, tag);
 		m_pCallstacks->m_callstacks.push_back(SCallstack());
-		m_pCallstacks->m_callstacks.back().swap(callstack);
+		std::swap(m_pCallstacks->m_callstacks.back(), callstack);
 	}
 }
 
@@ -2562,6 +2562,8 @@ void CStatoscope::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lp
 			if (m_pDataWriter)
 				AddFrameRecord(false);
 		}
+		break;
+	default:
 		break;
 	}
 }
@@ -3171,9 +3173,6 @@ void CSocketDataWriter::SendData(const char* pBuffer, int nBytes)
 
 CTelemetryDataWriter::CTelemetryDataWriter(const char* postHeader, const char* hostname, int port, float writeTimeout, float connectTimeout)
 	: CDataWriter(true, writeTimeout)
-	, m_socket(-1)
-	, m_hasSentHeader(false)
-	, m_socketErrorTriggered(false)
 	, m_connectTimeout(connectTimeout)
 {
 	m_postHeader = postHeader;

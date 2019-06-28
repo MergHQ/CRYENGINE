@@ -56,11 +56,11 @@ private:
 #endif
 
 private:
-	SRemoteServer* m_pServer;
-	volatile bool  m_running;
+	SRemoteServer* m_pServer = nullptr;
+	volatile bool  m_running = false;
 	typedef CListenerSet<IRemoteConsoleListener*> TListener;
 	TListener      m_listener;
-	ICVar*         m_pLogEnableRemoteConsole;
+	ICVar*         m_pLogEnableRemoteConsole = nullptr;
 };
 
 #ifdef USE_REMOTE_CONSOLE

@@ -408,11 +408,11 @@ protected:
 					if (pCVarLogging->GetIVal() > 0)
 					{
 						if (type == ECVarType::Int)
-							CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_ERROR, "[CVARS] '%i' is not a valid value of '%s'", value, GetName());
+							CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_ERROR, "[CVARS] '%i' is not a valid value of '%s'", (int)value, GetName());
 						else if (type == ECVarType::Int64)
-							CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_ERROR, "[CVARS] '%lli' is not a valid value of '%s'", value, GetName());
+							CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_ERROR, "[CVARS] '%lli' is not a valid value of '%s'", (int64)value, GetName());
 						else if (type == ECVarType::Float)
-							CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_ERROR, "[CVARS] '%g' is not a valid value of '%s'", value, GetName());
+							CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_ERROR, "[CVARS] '%g' is not a valid value of '%s'", (float)value, GetName());
 					}
 				}
 				return;
@@ -427,11 +427,11 @@ protected:
 					if (pCVarLogging->GetIVal() > 0)
 					{
 						if (type == ECVarType::Int)
-							CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_ERROR, "[CVARS] '%i' is not in the allowed range of '%s' (%i-%i)", value, GetName(), m_minValue, m_maxValue);
+							CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_ERROR, "[CVARS] '%i' is not in the allowed range of '%s' (%i-%i)", (int)value, GetName(), (int)m_minValue, (int)m_maxValue);
 						else if (type == ECVarType::Int64)
-							CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_ERROR, "[CVARS] '%lli' is not in the allowed range of '%s' (%lli-%lli)", value, GetName(), m_minValue, m_maxValue);
+							CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_ERROR, "[CVARS] '%lli' is not in the allowed range of '%s' (%lli-%lli)", (int64)value, GetName(), (int64)m_minValue, (int64)m_maxValue);
 						else if (type == ECVarType::Float)
-							CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_ERROR, "[CVARS] '%g' is not in the allowed range of '%s' (%g-%g)", value, GetName(), m_minValue, m_maxValue);
+							CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_ERROR, "[CVARS] '%g' is not in the allowed range of '%s' (%g-%g)", (float)value, GetName(), (float)m_minValue, (float)m_maxValue);
 					}
 				}
 				value = clamp_tpl(value, m_minValue, m_maxValue);
@@ -448,11 +448,11 @@ protected:
 				if (pCVarLogging->GetIVal() >= 2)
 				{
 					if (type == ECVarType::Int)
-						CryLog("[CVARS] '%s' set to %d (was %d)", GetName(), value, m_value);
+						CryLog("[CVARS] '%s' set to %d (was %d)", GetName(), (int)value, (int)m_value);
 					else if (type == ECVarType::Int64)
-						CryLog("[CVARS] '%s' set to %lli (was %lli)", GetName(), value, m_value);
+						CryLog("[CVARS] '%s' set to %lli (was %lli)", GetName(), (int64)value, (int64)m_value);
 					else if (type == ECVarType::Float)
-						CryLog("[CVARS] '%s' set to %g (was %g)", GetName(), value, m_value);
+						CryLog("[CVARS] '%s' set to %g (was %g)", GetName(), (float)value, (float)m_value);
 				}
 			}
 

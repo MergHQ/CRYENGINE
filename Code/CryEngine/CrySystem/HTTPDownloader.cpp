@@ -11,17 +11,17 @@
 
 //-------------------------------------------------------------------------------------------------
 CHTTPDownloader::CHTTPDownloader()
-	: m_hThread(0),
-	m_hINET(0),
-	m_hUrl(0),
+	: m_hThread(NULL),
+	m_hINET(NULL),
+	m_hUrl(NULL),
+	m_pBuffer(nullptr),
 	m_iFileSize(0),
-	m_pBuffer(0),
 	m_iState(HTTP_STATE_NONE),
 	m_bContinue(false),
-	m_pSystem(0),
-	m_pParent(0)
+	m_pSystem(nullptr),
+	m_pParent(nullptr),
+	m_pScriptSystem(nullptr)
 {
-	m_pScriptSystem = NULL;
 }
 
 //-------------------------------------------------------------------------------------------------

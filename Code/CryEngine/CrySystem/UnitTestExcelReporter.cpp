@@ -218,7 +218,7 @@ void CTestExcelReporter::OnSingleTestStart(const STestInfo& testInfo)
 {
 	string text;
 	text.Format("Test Started: [%s] %s:%s", testInfo.module.c_str(), testInfo.suite.c_str(), testInfo.name.c_str());
-	m_log.Log(text);
+	m_log.Log("%s", text.c_str());
 }
 
 void CTestExcelReporter::OnSingleTestFinish(const STestInfo& testInfo, float fRunTimeInMs, bool bSuccess, const std::vector<SError>& failures)
@@ -229,7 +229,7 @@ void CTestExcelReporter::OnSingleTestFinish(const STestInfo& testInfo, float fRu
 	}
 	else
 	{
-		m_log.Log("Test result: [%s]%s:%s | %d failures:", testInfo.module.c_str(), testInfo.suite.c_str(), testInfo.name.c_str(), failures.size());
+		m_log.Log("Test result: [%s]%s:%s | %lu failures:", testInfo.module.c_str(), testInfo.suite.c_str(), testInfo.name.c_str(), failures.size());
 		for (const SError& err : failures)
 		{
 			m_log.Log("at %s line %d:\t%s", err.fileName.c_str(), err.lineNumber, err.message.c_str());

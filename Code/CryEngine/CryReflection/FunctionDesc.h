@@ -89,13 +89,13 @@ private:
 };
 
 inline CFunctionDesc::CFunctionDesc(CTypeId returnTypeId, const CFunctionDelegate& functionDelegate, const ParamArray& params, const char* szFullQualifiedName, const char* szLabel, const CryGUID& guid)
-	: m_fullQualifiedName(szFullQualifiedName)
+	: m_guid(guid)
+	, m_delegate(functionDelegate)
+	, m_fullQualifiedName(szFullQualifiedName)
+	, m_label(szLabel)
 	, m_pObjectType(nullptr)
 	, m_returnTypeId(returnTypeId)
-	, m_delegate(functionDelegate)
-	, m_label(szLabel)
 	, m_isConstFunction(false)
-	, m_guid(guid)
 {
 	for (const SFunctionParameterDesc& desc : params)
 	{
@@ -104,13 +104,13 @@ inline CFunctionDesc::CFunctionDesc(CTypeId returnTypeId, const CFunctionDelegat
 }
 
 inline CFunctionDesc::CFunctionDesc(const ITypeDesc* pObjectType, CTypeId returnTypeId, const CFunctionDelegate& functionDelegate, const ParamArray& params, const char* szLabel, const CryGUID& guid)
-	: m_fullQualifiedName(pObjectType->GetFullQualifiedName())
+	: m_guid(guid)
+	, m_delegate(functionDelegate)
+	, m_fullQualifiedName(pObjectType->GetFullQualifiedName())
+	, m_label(szLabel)
 	, m_pObjectType(pObjectType)
 	, m_returnTypeId(returnTypeId)
-	, m_delegate(functionDelegate)
-	, m_label(szLabel)
 	, m_isConstFunction(false)
-	, m_guid(guid)
 {
 	for (const SFunctionParameterDesc& desc : params)
 	{

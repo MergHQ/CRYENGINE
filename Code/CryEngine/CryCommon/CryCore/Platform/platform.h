@@ -130,7 +130,7 @@ enum class EPlatform
 #else
 	#define __STDC_FORMAT_MACROS
 	#include <inttypes.h>
-	#if CRY_PLATFORM_APPLE || CRY_PLATFORM_LINUX || CRY_PLATFORM_ORBIS
+	#if CRY_PLATFORM_APPLE || CRY_PLATFORM_LINUX || CRY_PLATFORM_ORBIS || CRY_PLATFORM_ANDROID
 		#undef PRIX64
 		#undef PRIx64
 		#undef PRId64
@@ -149,9 +149,7 @@ enum class EPlatform
 #if !defined(PRISIZE_T)
 	#if CRY_PLATFORM_WINDOWS || CRY_PLATFORM_DURANGO
 		#define PRISIZE_T "I64u"     //size_t defined as unsigned __int64
-	#elif CRY_PLATFORM_ANDROID
-		#define PRISIZE_T "u"
-	#elif CRY_PLATFORM_APPLE || CRY_PLATFORM_LINUX || CRY_PLATFORM_ORBIS
+	#elif CRY_PLATFORM_APPLE || CRY_PLATFORM_LINUX || CRY_PLATFORM_ORBIS || CRY_PLATFORM_ANDROID
 		#define PRISIZE_T "lu"
 	#else
 		#error "Please define PRISIZE_T for this platform"
@@ -161,9 +159,7 @@ enum class EPlatform
 #if !defined(PRI_PTRDIFF_T)
 	#if CRY_PLATFORM_WINDOWS
 		#define PRI_PTRDIFF_T "I64d"
-	#elif CRY_PLATFORM_ANDROID
-		#define PRI_PTRDIFF_T "d"
-	#elif CRY_PLATFORM_APPLE || CRY_PLATFORM_LINUX || CRY_PLATFORM_ORBIS || CRY_PLATFORM_DURANGO
+	#elif CRY_PLATFORM_APPLE || CRY_PLATFORM_LINUX || CRY_PLATFORM_ORBIS || CRY_PLATFORM_ANDROID || CRY_PLATFORM_DURANGO
 		#define PRI_PTRDIFF_T "ld"
 	#else
 		#error "Please defined PRI_PTRDIFF_T for this platform"

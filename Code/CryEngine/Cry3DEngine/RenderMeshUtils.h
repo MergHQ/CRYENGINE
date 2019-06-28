@@ -32,16 +32,20 @@ private:
 struct SIntersectionData
 {
 	SIntersectionData() :
-		pRenderMesh(NULL), nVerts(0), nInds(0),
+		pRenderMesh(nullptr),
+		pHitInfo(nullptr),
+		pMtl(nullptr),
+		bDecalPlacementTestRequested(false),
+		nVerts(0), nInds(0),
 		nPosStride(0), pPos(NULL), pInds(NULL),
 #if defined(FEATURE_SVO_GI)
 		nUVStride(0), pUV(NULL),
 		nColStride(0), pCol(NULL),
 		nTangsStride(0), pTangs(NULL),
 #endif
-		bResult(false), bNeedFallback(false),
-		fDecalPlacementTestMaxSize(1000.f), bDecalPlacementTestRequested(false),
-		pHitInfo(0), pMtl(0)
+		bResult(false),
+		fDecalPlacementTestMaxSize(1000.f),
+		bNeedFallback(false)
 	{
 	}
 

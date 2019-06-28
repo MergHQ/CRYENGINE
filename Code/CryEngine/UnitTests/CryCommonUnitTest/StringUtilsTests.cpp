@@ -357,6 +357,8 @@ TEST(CryStringUtilsTest, DetectLiterals)
 	REQUIRE(CRY_IS_STRING_LITERAL("sdf sdf sd"));
 	REQUIRE(CRY_IS_STRING_LITERAL("sd,;f "  "sd"));
 	REQUIRE(CRY_IS_STRING_LITERAL("sdf\n "	 "sd"));
+
+	//The line break is intentional
 	REQUIRE(CRY_IS_STRING_LITERAL("sdf "	
 		"sd"));
 
@@ -372,8 +374,9 @@ TEST(CryStringUtilsTest, DetectLiterals)
 	string str = "dspimlkn";
 	REQUIRE(!CRY_IS_STRING_LITERAL(str.c_str()));
 
-	// avoid unused warnings
+	// Avoid unused warnings because CRY_IS_STRING_LITERAL does not evaluate nor use the parameter
 	(void) szConst;
 	(void) szStr;
+	(void) szStatConst; 
 }
 

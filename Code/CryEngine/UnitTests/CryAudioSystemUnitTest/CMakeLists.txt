@@ -21,19 +21,10 @@ endif()
 
 if (ORBIS OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
 	target_compile_options(${THIS_PROJECT} PRIVATE
-		-Wno-unknown-pragmas
-		-Wno-unused-variable
-		-Wno-reorder
-		-Wno-parentheses
-		-Wno-format
-		-Wno-switch
-		-Wno-unused-value
-		-Wno-comment
-		-Wno-empty-body
-		-Wno-format-security
-		-Wno-unused-function
-		-Wno-multichar
-		-Wno-unused-private-field
+		-Wno-unknown-pragmas #See usages of raw #pragma warning
+		-Wno-unused-private-field #See CScopedWireFrameMode
+		-Wno-multichar #CryNetwork uses multichar constants such as 'bool'
+		-Wno-unused-function #See ByteOrder, CryGetModuleFileName, WrappedF_Break
 	)
 elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
 	target_compile_options(${THIS_PROJECT} PRIVATE

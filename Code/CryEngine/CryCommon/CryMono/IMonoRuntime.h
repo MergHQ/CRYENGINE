@@ -46,11 +46,11 @@ struct SCSharpCompilerError
 	};
 
 	SCSharpCompilerError(bool isWarning, const string& errorNumber, const string& errorText, const string& fileName, int32 line)
-		: m_errorSeverity(isWarning ? eESeverity_Warning : eESeverity_Error)
-		, m_errorNumber(errorNumber)
+		: m_errorNumber(errorNumber)
 		, m_errorText(errorText)
 		, m_fileName(fileName)
 		, m_line(line)
+		, m_errorSeverity(isWarning ? eESeverity_Warning : eESeverity_Error)
 	{
 
 	}

@@ -112,6 +112,8 @@ void CMiniMenu::OnEvent(float x, float y, EMiniCtrlEvent event)
 			}
 		}
 		break;
+	default:
+		break;
 	}
 }
 
@@ -203,6 +205,9 @@ CMiniMenu* CMiniMenu::UpdateSelection(EMiniCtrlEvent event)
 				OnEvent(0, 0, eCtrlEvent_LButtonDown);
 			}
 		}
+		break;
+
+	default:
 		break;
 	}
 

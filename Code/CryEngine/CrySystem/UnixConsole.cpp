@@ -134,35 +134,14 @@ class CUNIXConsoleSignalHandler
 };
 
 CUNIXConsole::CUNIXConsole()
-	: m_HistoryIndex(-1)
-	, m_PromptResponseChars{0}
-	, m_PromptResponse(0)
-	, m_pSystem(NULL)
-	, m_pConsole(NULL)
-	, m_pTimer(NULL)
-	, m_OnUpdateCalled(false)
-	, m_LastUpdateTime(0.0f)
-	, m_svMap(NULL)
-	, m_svGameRules(NULL)
-	, m_Width(~0)
+	: m_Width(~0)
 	, m_Height(~0)
 	, m_HeaderHeight(1)
 	, m_StatusHeight(1)
 	, m_CmdHeight(2)
 	, m_Color(DEFAULT_COLOR)
 	, m_DefaultColorPair(-1)
-	, m_EnableColor(true)
-	, m_WindowResized(false)
-	, m_OnShutdownCalled(false)
-	, m_Initialized(false)
-	, m_RequireDedicatedServer(false)
 	, m_ScrollUp(0)
-	, m_ColorPair{0}
-	, m_pInputThread(NULL)
-	, m_CursorPosition(0)
-	, m_ScrollPosition(0)
-	, m_fsMode(false)
-	, m_bShowConsole(true)
 {}
 
 CUNIXConsole::~CUNIXConsole()

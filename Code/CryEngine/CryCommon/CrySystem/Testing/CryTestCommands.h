@@ -46,7 +46,7 @@ public:
 	bool Update()
 	{
 #ifdef CRY_TESTING
-		gEnv->pSystem->GetITestSystem()->GetLog()->LogAlways(m_sContent.c_str());
+		gEnv->pSystem->GetITestSystem()->GetLog()->LogAlways("%s", m_sContent.c_str());
 #endif // CRY_TESTING
 		return true;
 	}

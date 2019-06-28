@@ -11,7 +11,7 @@
 class CMaterialLayer : public IMaterialLayer
 {
 public:
-	CMaterialLayer() : m_nRefCount(0), m_nFlags(0)
+	CMaterialLayer() : m_nFlags(0), m_nRefCount(0)
 	{
 	}
 

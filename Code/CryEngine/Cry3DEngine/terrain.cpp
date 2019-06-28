@@ -490,7 +490,7 @@ void CTerrain::GetMemoryUsage(class ICrySizer* pSizer) const
 		SIZER_COMPONENT_NAME(pSizer, "StaticIndices");
 		for (int i = 0; i < SRangeInfo::e_max_surface_types; ++i)
 			for (int j = 0; j < 4; ++j)
-				pSizer->AddObject(CTerrainNode::m_arrIndices[i][j]);
+				pSizer->AddObject(CTerrainNode::s_arrIndices[i][j]);
 	}
 }
 

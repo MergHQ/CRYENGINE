@@ -38,7 +38,7 @@ extern bool g_bEnableBinaryXmlLoading;
 CXmlUtils::CXmlUtils(ISystem* pSystem)
 {
 	m_pSystem = pSystem;
-	m_pSystem->GetISystemEventDispatcher()->RegisterListener(this,"CXmlUtils");
+	m_pSystem->GetISystemEventDispatcher()->RegisterListener(this, "CXmlUtils");
 
 	// create IReadWriteXMLSink object
 	m_pReadWriteXMLSink = new CReadWriteXMLSink();
@@ -130,18 +130,11 @@ IReadWriteXMLSink* CXmlUtils::GetIReadWriteXMLSink()
 class CXmlSerializer : public IXmlSerializer
 {
 public:
-	CXmlSerializer()
-		: m_nRefCount(0)
-		, m_pReaderImpl(NULL)
-		, m_pReaderSer(NULL)
-		, m_pWriterSer(NULL)
-		, m_pWriterImpl(NULL)
-	{
-	}
 	~CXmlSerializer()
 	{
 		ClearAll();
 	}
+
 	void ClearAll()
 	{
 		SAFE_DELETE(m_pReaderSer);
@@ -151,17 +144,17 @@ public:
 	}
 
 	//////////////////////////////////////////////////////////////////////////
-	virtual void        AddRef()  { ++m_nRefCount; }
-	virtual void        Release() { if (--m_nRefCount <= 0) delete this; }
+	void        AddRef() override  { ++m_nRefCount; }
+	void        Release() override { if (--m_nRefCount <= 0) delete this; }
 
-	virtual ISerialize* GetWriter(XmlNodeRef& node)
+	virtual ISerialize* GetWriter(XmlNodeRef& node) override
 	{
 		ClearAll();
 		m_pWriterImpl = new CSerializeXMLWriterImpl(node);
 		m_pWriterSer = new CSimpleSerializeWithDefaults<CSerializeXMLWriterImpl>(*m_pWriterImpl);
 		return m_pWriterSer;
 	}
-	virtual ISerialize* GetReader(XmlNodeRef& node)
+	virtual ISerialize* GetReader(XmlNodeRef& node) override
 	{
 		ClearAll();
 		m_pReaderImpl = new CSerializeXMLReaderImpl(node);
@@ -169,7 +162,7 @@ public:
 		return m_pReaderSer;
 	}
 
-	virtual void GetMemoryUsage(ICrySizer* pSizer) const
+	virtual void GetMemoryUsage(ICrySizer* pSizer) const override
 	{
 		pSizer->Add(*this);
 		pSizer->AddObject(m_pReaderImpl);
@@ -177,12 +170,12 @@ public:
 	}
 	//////////////////////////////////////////////////////////////////////////
 private:
-	int                      m_nRefCount;
-	CSerializeXMLReaderImpl* m_pReaderImpl;
-	CSimpleSerializeWithDefaults<CSerializeXMLReaderImpl>* m_pReaderSer;
+	int                      m_nRefCount = 0;
+	CSerializeXMLReaderImpl* m_pReaderImpl = nullptr;
+	CSimpleSerializeWithDefaults<CSerializeXMLReaderImpl>* m_pReaderSer = nullptr;
 
-	CSerializeXMLWriterImpl*                               m_pWriterImpl;
-	CSimpleSerializeWithDefaults<CSerializeXMLWriterImpl>* m_pWriterSer;
+	CSerializeXMLWriterImpl*                               m_pWriterImpl = nullptr;
+	CSimpleSerializeWithDefaults<CSerializeXMLWriterImpl>* m_pWriterSer = nullptr;
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -261,6 +254,8 @@ void CXmlUtils::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lpar
 	case ESYSTEM_EVENT_LEVEL_LOAD_END:
 		g_pCXmlNode_PoolAlloc->FreeMemoryIfEmpty();
 		break;
+	default:
+		break;
 	}
 }
 
@@ -323,12 +318,12 @@ public:
 	CXmlTableReader();
 	virtual ~CXmlTableReader();
 
-	virtual void Release();
+	void Release() override;
 
-	virtual bool Begin(XmlNodeRef rootNode);
-	virtual int  GetEstimatedRowCount();
-	virtual bool ReadRow(int& rowIndex);
-	virtual bool ReadCell(int& columnIndex, const char*& pContent, size_t& contentSize);
+	virtual bool Begin(XmlNodeRef rootNode) override;
+	virtual int  GetEstimatedRowCount() override;
+	virtual bool ReadRow(int& rowIndex) override;
+	virtual bool ReadCell(int& columnIndex, const char*& pContent, size_t& contentSize) override;
 
 private:
 	bool       m_bExcel;
@@ -424,7 +419,7 @@ bool CXmlTableReader::ReadRow(int& rowIndex)
 
 	if (m_bExcel)
 	{
-		for (;; )
+		for (;;)
 		{
 			if (++m_rowNodeIndex >= rowNodeCount)
 			{
@@ -514,7 +509,7 @@ bool CXmlTableReader::ReadCell(int& columnIndex, const char*& pContent, size_t& 
 	{
 		const int columnNodeCount = m_rowNode->getChildCount();
 
-		for (;; )
+		for (;;)
 		{
 			if (++m_columnNodeIndex >= columnNodeCount)
 			{
@@ -579,7 +574,7 @@ bool CXmlTableReader::ReadCell(int& columnIndex, const char*& pContent, size_t& 
 
 		columnIndex = ++m_column;
 
-		for (;; )
+		for (;;)
 		{
 			char c = pRowContent[m_rowTextPos++];
 
@@ -591,7 +586,7 @@ bool CXmlTableReader::ReadCell(int& columnIndex, const char*& pContent, size_t& 
 			if (c == '\r')
 			{
 				// ignore all '\r' chars
-				for (;; )
+				for (;;)
 				{
 					c = pRowContent[m_rowTextPos++];
 					if ((c == '\n') || (c == '\0'))

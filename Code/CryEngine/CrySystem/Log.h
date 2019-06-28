@@ -37,7 +37,7 @@ public:
 
 private:
 
-	bool m_bIsRunning;
+	bool m_bIsRunning = false;
 	concqueue::mpsc_queue_t<string>& m_logQueue;
 };
 
@@ -144,23 +144,23 @@ private: // -------------------------------------------------------------------
 	CLogThread*                     m_pLogThread;
 	ICVar*                          m_pUseLogThread;
 	concqueue::mpsc_queue_t<string> m_logQueue;
-	bool                            m_bIsPostSystemInit;
+	bool                            m_bIsPostSystemInit = false;
 
 	ISystem*                  m_pSystem;
 	float                     m_fLastLoadingUpdateTime; // for non-frequent streamingEngine update
 	string                    m_filename;               // Contains exactly what was passed in SetFileName
 	string                    m_filePath;               // Contains full path to the log file
 	string                    m_backupFilePath;
-	FILE*                     m_pLogFile;
+	FILE*                     m_pLogFile = nullptr;
 	CryStackStringT<char, 32> m_LogMode;                // mode m_pLogFile has been opened with
-	FILE*                     m_pErrFile;
-	int                       m_nErrCount;
+	FILE*                     m_pErrFile = nullptr;
+	int                       m_nErrCount = 0;
 	string                    m_logFormat;              // Time logging format
 
 #if defined(SUPPORT_LOG_IDENTER)
-	uint8               m_indentation;
+	uint8               m_indentation = 0;
 	LogStringType       m_indentWithString;
-	class CLogIndenter* m_topIndenter;
+	class CLogIndenter* m_topIndenter = nullptr;
 
 	struct SAssetScopeInfo
 	{
@@ -173,8 +173,8 @@ private: // -------------------------------------------------------------------
 	string                       m_assetScopeString;
 #endif
 
-	ICVar*             m_pLogIncludeTime;
-	IConsole*          m_pConsole;
+	ICVar*             m_pLogIncludeTime = nullptr;
+	IConsole*          m_pConsole = nullptr;
 
 	CryCriticalSection m_logCriticalSection;
 
@@ -191,12 +191,12 @@ private: // -------------------------------------------------------------------
 			, time(0.0f) {}
 	};
 	SLogHistoryItem m_history[16];
-	int             m_iLastHistoryItem;
+	int             m_iLastHistoryItem = 0;
 
 #if KEEP_LOG_FILE_OPEN
 	static void LogFlushFile(IConsoleCmdArgs* pArgs);
 
-	bool m_bFirstLine;
+	bool m_bFirstLine = true;
 	char m_logBuffer[256 * 1024];
 #endif
 
@@ -210,12 +210,12 @@ public: // -------------------------------------------------------------------
 	// create backup of log file, useful behavior - only on development platform
 	void CreateBackupFile() const;
 
-	ICVar*    m_pLogVerbosity;                            //
-	ICVar*    m_pLogWriteToFile;                          //
-	ICVar*    m_pLogWriteToFileVerbosity;                 //
-	ICVar*    m_pLogVerbosityOverridesWriteToFile;        //
-	ICVar*    m_pLogSpamDelay;                            //
-	ICVar*    m_pLogModule;                               // Module filter for log
+	ICVar*    m_pLogVerbosity = nullptr;                            //
+	ICVar*    m_pLogWriteToFile = nullptr;                          //
+	ICVar*    m_pLogWriteToFileVerbosity = nullptr;                 //
+	ICVar*    m_pLogVerbosityOverridesWriteToFile = nullptr;        //
+	ICVar*    m_pLogSpamDelay = nullptr;                            //
+	ICVar*    m_pLogModule = nullptr;                               // Module filter for log
 	Callbacks m_callbacks;                                //
 
 	threadID  m_nMainThreadId;
@@ -230,6 +230,6 @@ public: // -------------------------------------------------------------------
 	};
 	CryMT::queue<SLogMsg>              m_threadSafeMsgQueue;
 
-	ELogMode                           m_eLogMode;
+	ELogMode                           m_eLogMode = eLogMode_Normal;
 	mutable SExclusiveThreadAccessLock m_exclusiveLogFileThreadAccessLock;
 };

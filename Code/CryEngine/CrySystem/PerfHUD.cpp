@@ -666,6 +666,9 @@ bool CPerfHUD::OnInputEvent(const SInputEvent& rInputEvent)
 		case eKI_ScrollLock:
 			m_sys_perfhud_pause ^= 1;
 			break;
+
+		default:
+			break;
 		}
 	}
 
@@ -703,6 +706,9 @@ bool CPerfHUD::OnInputEvent(const SInputEvent& rInputEvent)
 				{
 					SetNextState();
 				}
+				break;
+
+			default:
 				break;
 			}
 
@@ -767,10 +773,13 @@ bool CPerfHUD::OnInputEvent(const SInputEvent& rInputEvent)
 				triggerReleased = true;
 				break;
 
-				/*case R2:
-				   m_R2Pressed = false;
-				   triggerReleased=true;
-				   break;*/
+			/*case R2:
+				m_R2Pressed = false;
+				triggerReleased=true;
+				break;*/
+
+			default:
+				break;
 			}
 
 			if (triggerReleased)
@@ -2124,6 +2133,9 @@ void CRenderBatchWidget::Enable(int mode)
 
 		case DISPLAY_MODE_GPU_TIMES:
 			m_pRStatsCVar->Set(0);
+			break;
+
+		default:
 			break;
 		}
 

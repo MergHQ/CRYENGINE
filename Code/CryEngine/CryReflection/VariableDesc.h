@@ -58,25 +58,25 @@ private:
 };
 
 inline CVariableDesc::CVariableDesc(void* pAddress, const char* szLabel, CTypeId typeId, CGuid guid, bool isConst, bool isPublic, const SSourceFileInfo& srcInfo)
-	: m_typeId(typeId)
+	: m_guid(guid)
 	, m_pParentTypeDesc(nullptr)
-	, m_pAddress(pAddress)
-	, m_guid(guid)
+	, m_sourceInfo(srcInfo)
 	, m_label(szLabel)
+	, m_pAddress(pAddress)
+	, m_typeId(typeId)
 	, m_isConst(isConst)
 	, m_isPublic(isPublic)
-	, m_sourceInfo(srcInfo)
 {}
 
 inline CVariableDesc::CVariableDesc(ptrdiff_t offset, const char* szLabel, const CTypeDesc& parentTypeDesc, CTypeId typeId, CGuid guid, bool isConst, bool isPublic, const SSourceFileInfo& srcInfo)
-	: m_typeId(typeId)
+	: m_guid(guid)
 	, m_pParentTypeDesc(&parentTypeDesc)
-	, m_offset(offset)
-	, m_guid(guid)
+	, m_sourceInfo(srcInfo)
 	, m_label(szLabel)
+	, m_offset(offset)
+	, m_typeId(typeId)
 	, m_isConst(isConst)
 	, m_isPublic(isPublic)
-	, m_sourceInfo(srcInfo)
 {}
 
 } // ~Reflection namespace

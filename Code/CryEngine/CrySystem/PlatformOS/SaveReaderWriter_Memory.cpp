@@ -37,10 +37,10 @@ protected:
 
 public:
 	CMemoryFile(const char* fileName, unsigned int userIndex)
-		: m_user(userIndex)
+		: m_bDirty(true)
+		, m_user(userIndex)
 		, m_filePath(fileName)
 		, m_filePtr(0)
-		, m_bDirty(true)
 	{
 		m_filePath.replace('\\', '/');
 	}

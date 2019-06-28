@@ -991,7 +991,6 @@ void CLocalMemoryUsage::DeleteUnusedResources()
 			}
 		}
 	}
-	/*
 	   /*
 	   for( TTextureMap::iterator it = m_globalTextures.begin(); it != m_globalTextures.end(); ++it )
 	    it->second.m_used = false;

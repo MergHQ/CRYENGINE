@@ -297,6 +297,8 @@ bool GTextureXRender::InitTextureInternal(ETEX_Format texFmt, int32 width, int32
 		case eTF_BC3:
 			fmtIdx = 7;
 			break;
+		default:
+			break;
 		}
 
 		gEnv->pLog->LogWarning("<Flash> GTextureXRender::InitTextureInternal( ... ) "

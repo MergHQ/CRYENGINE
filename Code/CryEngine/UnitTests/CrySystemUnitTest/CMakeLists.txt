@@ -23,24 +23,9 @@ endif()
 
 if (ORBIS OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
 	target_compile_options(${THIS_PROJECT} PRIVATE
-		-Wno-unused-variable
-		-Wno-parentheses
-		-Wno-reorder
-		-Wno-unused-value
-		-Wno-unknown-pragmas
-		-Wno-format
-		-Wno-unused-private-field
-		-Wno-multichar
-		-Wno-empty-body
-		-Wno-unused-const-variable
-		-Wno-switch
-		-Wno-unused-function
-		-Wno-char-subscripts
-		-Wno-c++11-narrowing
-		-Wno-address-of-packed-member
-		-Wno-invalid-offsetof
-		-Wno-dynamic-class-memaccess
-		-Wno-comment
+		-Wno-unknown-pragmas #See usages of raw #pragma warning
+		-Wno-unused-private-field #See CScopedWireFrameMode
+		-Wno-unused-function # See CryGetModuleFileName
 	)
 elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
 	target_compile_options(${THIS_PROJECT} PRIVATE
@@ -64,5 +49,9 @@ elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
 		-Wno-format
 		-Wno-switch
 		-Wno-stringop-truncation
+	)
+elseif (MSVC)
+	target_compile_options(${THIS_PROJECT} PRIVATE
+		/we5038 #data member 'member1' will be initialized after data member 'member2' data member 'member' will be initialized after base class 'base_class'
 	)
 endif()

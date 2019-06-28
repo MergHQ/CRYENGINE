@@ -34,8 +34,12 @@ uint32 GetWorkerThreadId();
 
 } // namespace detail
 
-namespace ThreadBackEnd   { class CThreadBackEnd; }
-namespace BlockingBackEnd { class CBlockingBackEnd; }
+namespace ThreadBackEnd   {
+class CThreadBackEnd;
+}
+namespace BlockingBackEnd {
+class CBlockingBackEnd;
+}
 
 // Tracks CPU/PPU worker thread(s) utilization and job execution time per frame
 class CWorkerBackEndProfiler : public IWorkerBackEndProfiler
@@ -44,32 +48,32 @@ public:
 	CWorkerBackEndProfiler();
 	virtual ~CWorkerBackEndProfiler();
 
-	virtual void Init(const uint16 numWorkers);
+	virtual void Init(const uint16 numWorkers) override;
 
 	// Update the profiler at the beginning of the sample period
-	virtual void Update();
-	virtual void Update(const uint32 curTimeSample);
+	virtual void Update() override;
+	virtual void Update(const uint32 curTimeSample) override;
 
 	// Register a job with the profiler
-	virtual void RegisterJob(const uint32 jobId, const char* jobName);
+	virtual void RegisterJob(const uint32 jobId, const char* jobName) override;
 
 	// Record execution information for a registered job
-	virtual void RecordJob(const uint16 profileIndex, const uint8 workerId, const uint32 jobId, const uint32 runTimeMicroSec);
+	virtual void RecordJob(const uint16 profileIndex, const uint8 workerId, const uint32 jobId, const uint32 runTimeMicroSec) override;
 
 	// Get worker frame stats for the JobManager::detail::eJOB_FRAME_STATS - 1 frame
-	virtual void GetFrameStats(JobManager::CWorkerFrameStats& rStats) const;
-	virtual void GetFrameStats(TJobFrameStatsContainer& rJobStats, IWorkerBackEndProfiler::EJobSortOrder jobSortOrder) const;
-	virtual void GetFrameStats(JobManager::CWorkerFrameStats& rStats, TJobFrameStatsContainer& rJobStats, IWorkerBackEndProfiler::EJobSortOrder jobSortOrder) const;
+	virtual void GetFrameStats(JobManager::CWorkerFrameStats& rStats) const override;
+	virtual void GetFrameStats(TJobFrameStatsContainer& rJobStats, IWorkerBackEndProfiler::EJobSortOrder jobSortOrder) const override;
+	virtual void GetFrameStats(JobManager::CWorkerFrameStats& rStats, TJobFrameStatsContainer& rJobStats, IWorkerBackEndProfiler::EJobSortOrder jobSortOrder) const override;
 
 	// Get worker frame stats summary
-	virtual void GetFrameStatsSummary(SWorkerFrameStatsSummary& rStats) const;
-	virtual void GetFrameStatsSummary(SJobFrameStatsSummary& rStats) const;
+	virtual void GetFrameStatsSummary(SWorkerFrameStatsSummary& rStats) const override;
+	virtual void GetFrameStatsSummary(SJobFrameStatsSummary& rStats) const override;
 
 	// Returns the index of the active multi-buffered profile data
-	virtual uint16 GetProfileIndex() const;
+	virtual uint16 GetProfileIndex() const override;
 
 	// Get the number of workers tracked
-	virtual uint32 GetNumWorkers() const;
+	virtual uint32 GetNumWorkers() const override;
 
 protected:
 	void GetWorkerStats(const uint8 nBufferIndex, JobManager::CWorkerFrameStats& rWorkerStats) const;
@@ -80,7 +84,7 @@ protected:
 protected:
 	struct SJobStatsInfo
 	{
-		JobManager::SJobFrameStats m_pJobStats[JobManager::detail::eJOB_FRAME_STATS * JobManager::detail::eJOB_FRAME_STATS_MAX_SUPP_JOBS];    // Array of job stats (multi buffered)
+		JobManager::SJobFrameStats m_pJobStats[JobManager::detail::eJOB_FRAME_STATS* JobManager::detail::eJOB_FRAME_STATS_MAX_SUPP_JOBS];     // Array of job stats (multi buffered)
 	};
 
 	struct SWorkerStatsInfo
@@ -98,7 +102,7 @@ protected:
 };
 
 // singleton managing the job queues
-class CRY_ALIGN(128) CJobManager final: public IJobManager, public IInputEventListener
+class CRY_ALIGN(128) CJobManager final : public IJobManager, public IInputEventListener
 {
 public:
 	// singleton stuff
@@ -110,10 +114,10 @@ public:
 	virtual void Init(uint32 nSysMaxWorker) override;
 
 	// wait for a job, preempt the calling thread if the job is not done yet
-	virtual const bool WaitForJob(JobManager::SJobState & rJobState) const override;
+	virtual const bool WaitForJob(JobManager::SJobState& rJobState) const override;
 
 	//adds a job
-	virtual void AddJob(JobManager::CJobDelegator & crJob, const JobManager::TJobHandle cJobHandle) override;
+	virtual void AddJob(JobManager::CJobDelegator& crJob, const JobManager::TJobHandle cJobHandle) override;
 
 	//obtain job handle from name
 	virtual const JobManager::TJobHandle GetJobHandle(const char* cpJobName, const uint32 cStrLen, JobManager::Invoker pInvoker) override;
@@ -151,8 +155,8 @@ public:
 	void Update(int nJobSystemProfiler) override;
 
 	void SetFrameStartTime(const CTimeValue &rFrameStartTime) override;
-	void SetMainDoneTime(const CTimeValue &) override;
-	void SetRenderDoneTime(const CTimeValue &) override;
+	void SetMainDoneTime(const CTimeValue&) override;
+	void SetRenderDoneTime(const CTimeValue&) override;
 
 	JobManager::Invoker GetJobInvoker(uint32 nIdx)
 	{
@@ -194,16 +198,16 @@ private:
 	uint32 m_nJobInvokerIdx;
 
 	const char* m_pJobFilter;
-	int m_nJobSystemEnabled;                                // should the job system be used
-	int m_bJobSystemProfilerEnabled;                        // should the job system profiler be enabled
-	bool m_bJobSystemProfilerPaused;                        // should the job system profiler be paused
+	int m_nJobSystemEnabled = 1;                                // should the job system be used
+	int m_bJobSystemProfilerEnabled = false;                    // should the job system profiler be enabled
+	bool m_bJobSystemProfilerPaused = false;                    // should the job system profiler be paused
 
-	bool m_Initialized;                                     //true if JobManager have been initialized
+	bool m_Initialized = false;                                     //true if JobManager have been initialized
 
-	ThreadBackEnd::CThreadBackEnd*     m_pThreadBackEnd;    // Backend for regular jobs, available on PC/XBOX. on Xbox threads are polling with a low priority
-	BlockingBackEnd::CBlockingBackEnd* m_pBlockingBackEnd;  // Backend for tasks which can block to prevent stalling regular jobs in this case
+	ThreadBackEnd::CThreadBackEnd* m_pThreadBackEnd = nullptr;       // Backend for regular jobs, available on PC/XBOX. on Xbox threads are polling with a low priority
+	BlockingBackEnd::CBlockingBackEnd* m_pBlockingBackEnd = nullptr; // Backend for tasks which can block to prevent stalling regular jobs in this case
 
-	uint16 m_nJobIdCounter;                     // JobId counter for jobs dynamically allocated at runtime
+	uint16 m_nJobIdCounter = 0;                     // JobId counter for jobs dynamically allocated at runtime
 
 	std::set<JobManager::SJobStringHandle> m_registeredJobs;
 
@@ -212,13 +216,13 @@ private:
 	uint32 m_nCurrentSemaphoreIndex;
 
 	// per frame counter for jobs run/fallback jobs
-	uint32 m_nJobsRunCounter;
-	uint32 m_nFallbackJobsRunCounter;
+	uint32 m_nJobsRunCounter = 0;
+	uint32 m_nFallbackJobsRunCounter = 0;
 
 	JobManager::SInfoBlock** m_pRegularWorkerFallbacks;
 	uint32 m_nRegularWorkerThreads;
 
-	bool m_bSuspendWorkerForMP;
+	bool m_bSuspendWorkerForMP = false;
 	CryMutex m_SuspendWorkerForMPLock;
 	CryConditionVariable m_SuspendWorkerForMPCondion;
 #if defined(JOBMANAGER_SUPPORT_PROFILING)
@@ -232,9 +236,8 @@ private:
 	// singleton stuff
 	CJobManager();
 	// disable copy and assignment
-	CJobManager(const CJobManager &);
-	CJobManager& operator=(const CJobManager&);
-
+	CJobManager(const CJobManager&) = delete;
+	CJobManager& operator=(const CJobManager&) = delete; 
 };
 }//JobManager
 

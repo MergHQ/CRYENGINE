@@ -88,9 +88,9 @@ private:
 
 	typedef std::list<IHardwareMouseEventListener*> TListHardwareMouseEventListeners;
 	TListHardwareMouseEventListeners m_listHardwareMouseEventListeners;
-	IHardwareMouseEventListener*     m_pExclusiveEventListener;
+	IHardwareMouseEventListener*     m_pExclusiveEventListener = nullptr;
 
-	ITexture*  m_pCursorTexture;
+	ITexture*  m_pCursorTexture = nullptr;
 	int        m_iReferenceCounter;
 	float      m_fCursorX;
 	float      m_fCursorY;
@@ -114,7 +114,7 @@ private:
 
 	bool       m_hide;
 	bool       m_calledShowHWMouse;
-	int        m_debugHardwareMouse;
+	int        m_debugHardwareMouse = 0;
 
 	static float s_MouseCursorSoftwareOffsetX;
 	static float s_MouseCursorSoftwareOffsetY;

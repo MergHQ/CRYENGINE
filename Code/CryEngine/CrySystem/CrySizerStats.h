@@ -28,7 +28,7 @@ public:
 	// constructs the statistics based on the given cry sizer
 	CrySizerStats(CrySizerImpl* pCrySizer);
 
-	CrySizerStats();
+	CrySizerStats() = default;
 
 	// this structure describes one component of the memory size statistics
 	struct Component
@@ -108,16 +108,16 @@ protected:
 	ComponentArray m_arrComponents;
 
 	// the maximum length of the component name, in characters
-	size_t m_nMaxNameLength;
+	size_t m_nMaxNameLength = 0;
 
 	// the timer that counts the time spent on statistics gathering
-	float m_fTime[g_numTimers];
+	float m_fTime[g_numTimers] = {};
 
 	// the age of the statistics, in frames
-	int m_nAgeFrames;
+	int m_nAgeFrames = 0;
 
 	//current row offset inc/dec by cursor keys
-	unsigned m_nStartRow;
+	unsigned m_nStartRow = 0;
 
 	friend class CrySizerStatsBuilder;
 };
@@ -148,8 +148,8 @@ protected:
 	size_t addNameSubtree(unsigned nDepth, size_t nName);
 
 protected:
-	CrySizerStats* m_pStats;
-	CrySizerImpl*  m_pSizer;
+	CrySizerStats* m_pStats = nullptr;
+	CrySizerImpl*  m_pSizer = nullptr;
 
 	// this is the mapping from the old names into the new componentn indices
 	typedef std::vector<size_t> IdToIdMap;
@@ -176,9 +176,9 @@ protected: // -------------------------------------------------
 
 	typedef CrySizerStats::Component Component;
 
-	IRenderer*        m_pRenderer;      //
-	ILog*             m_pLog;           //
-	CrySizerStats*    m_pStats;         //
+	IRenderer*        m_pRenderer = nullptr;
+	ILog*             m_pLog      = nullptr;
+	CrySizerStats*    m_pStats    = nullptr;
 
 	ITextModeConsole* m_pTextModeConsole;
 

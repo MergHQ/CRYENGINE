@@ -323,8 +323,8 @@ void CTerrainUpdateDispatcher::GetMemoryUsage(ICrySizer* pSizer) const
 	pSizer->AddObject(m_queuedJobs);
 }
 
-PodArray<vtx_idx> CTerrainNode::m_arrIndices[SRangeInfo::e_max_surface_types][4];
-PodArray<SSurfaceType*> CTerrainNode::m_lstReadyTypes(9);
+PodArray<vtx_idx> CTerrainNode::s_arrIndices[SRangeInfo::e_max_surface_types][4];
+PodArray<SSurfaceType*> CTerrainNode::s_lstReadyTypes(9);
 
 void CTerrainNode::ResetStaticData()
 {
@@ -332,10 +332,10 @@ void CTerrainNode::ResetStaticData()
 	{
 		for (int p = 0; p < 4; p++)
 		{
-			stl::free_container(m_arrIndices[s][p]);
+			stl::free_container(s_arrIndices[s][p]);
 		}
 	}
-	stl::free_container(m_lstReadyTypes);
+	stl::free_container(s_lstReadyTypes);
 }
 
 void CTerrainNode::SetupTexGenParams(SSurfaceType* pSurfaceType, float* pOutParams, uint8 ucProjAxis, bool bOutdoor, float fTexGenScale)
@@ -839,7 +839,7 @@ void CTerrainNode::RenderSectorUpdate_Finish(const SRenderingPassInfo& passInfo)
 		// build all indices
 		GenerateIndicesForAllSurfaces(pRenderMesh, pLeafData->m_arrpNonBorderIdxNum, m_pUpdateTerrainTempData->m_StripsInfo.nNonBorderIndicesCount, 0, m_pUpdateTerrainTempData);
 
-		m_lstReadyTypes.Clear(); // protection from duplications in palette of types
+		s_lstReadyTypes.Clear(); // protection from duplications in palette of types
 
 		uint8 szProj[] = "XYZ";
 		for (int i = 0; i < m_lstSurfaceTypeInfo.Count(); i++)
@@ -848,7 +848,7 @@ void CTerrainNode::RenderSectorUpdate_Finish(const SRenderingPassInfo& passInfo)
 
 			if (pSurfaceType && pSurfaceType->ucThisSurfaceTypeId < SRangeInfo::e_undefined)
 			{
-				if (m_lstReadyTypes.Find(pSurfaceType) < 0)
+				if (s_lstReadyTypes.Find(pSurfaceType) < 0)
 				{
 					bool b3D = pSurfaceType->IsMaterial3D();
 					for (int p = 0; p < 3; p++)
@@ -856,7 +856,7 @@ void CTerrainNode::RenderSectorUpdate_Finish(const SRenderingPassInfo& passInfo)
 						if (b3D || pSurfaceType->GetMaterialOfProjection(szProj[p]))
 						{
 							int nProjId = b3D ? p : 3;
-							PodArray<vtx_idx>& lstIndices = m_arrIndices[pSurfaceType->ucThisSurfaceTypeId][nProjId];
+							PodArray<vtx_idx>& lstIndices = s_arrIndices[pSurfaceType->ucThisSurfaceTypeId][nProjId];
 
 							if (m_lstSurfaceTypeInfo[i].arrpRM[p] && (lstIndices.Count() != m_lstSurfaceTypeInfo[i].arrpRM[p]->GetIndicesCount()))
 							{
@@ -870,7 +870,7 @@ void CTerrainNode::RenderSectorUpdate_Finish(const SRenderingPassInfo& passInfo)
 								break;
 						}
 					}
-					m_lstReadyTypes.Add(pSurfaceType);
+					s_lstReadyTypes.Add(pSurfaceType);
 				}
 			}
 		}
@@ -931,18 +931,18 @@ void CTerrainNode::GenerateIndicesForAllSurfaces(IRenderMesh* pRM, int arrpNonBo
 
 	enum { ARR_INDICES_0_BUFFER_SIZE = 8192 * 3, ARR_INDICES_BUFFER_SIZE = 2048 * 3 };
 
-	m_arrIndices[0][3].reserve(ARR_INDICES_0_BUFFER_SIZE);
+	s_arrIndices[0][3].reserve(ARR_INDICES_0_BUFFER_SIZE);
 
 	for (int s = 0; s < SRangeInfo::e_max_surface_types; s++)
 	{
 		if (s < 10)
 		{
-			m_arrIndices[s][3].reserve(ARR_INDICES_BUFFER_SIZE);
+			s_arrIndices[s][3].reserve(ARR_INDICES_BUFFER_SIZE);
 		}
 
 		for (int p = 0; p < 4; p++)
 		{
-			m_arrIndices[s][p].Clear();
+			s_arrIndices[s][p].Clear();
 
 			arrpNonBorderIdxNum[s][p] = -1;
 		}
@@ -1127,7 +1127,7 @@ void CTerrainNode::GenerateIndicesForAllSurfaces(IRenderMesh* pRM, int arrpNonBo
 				{
 					if (rType.projDir[p])
 					{
-						PodArray<vtx_idx>& rList = m_arrIndices[rType.surfType][p];
+						PodArray<vtx_idx>& rList = s_arrIndices[rType.surfType][p];
 
 						if (j >= nBorderStartIndex && arrpNonBorderIdxNum[rType.surfType][p] < 0)
 						{

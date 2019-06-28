@@ -716,6 +716,8 @@ bool CProfilingRenderer::OnInputEvent(const SInputEvent& event)
 		case eKI_Down:
 			++m_selectedRow;
 			break;
+		default:
+			break;
 		}
 	}
 

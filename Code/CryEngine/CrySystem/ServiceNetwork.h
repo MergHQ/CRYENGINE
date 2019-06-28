@@ -139,16 +139,16 @@ public:
 #pragma pack(pop)
 
 private:
-	CServiceNetwork* m_pManager;
+	CServiceNetwork* m_pManager = nullptr;
 
 	// Type of endpoint (client/server)
 	EEndpoint m_endpointType;
 
 	// Connection state (internal)
-	EState m_state;
+	EState m_state = eState_Initializing;
 
 	// Reference count (updated using CryInterlocked* functions)
-	int volatile m_refCount;
+	int volatile m_refCount = 1;
 
 	// Internal socket data
 	CRYSOCKET m_socket;
@@ -167,7 +167,7 @@ private:
 	uint64 m_lastKeepAliveSendTime;
 	uint64 m_lastMessageReceivedTime;
 	uint64 m_lastInitializationSendTime;
-	uint32 m_reconnectTryCount;
+	uint32 m_reconnectTryCount = 0;
 
 	// Statistics (updated from threads using CryIntelocked* functions)
 	volatile uint32 m_statsNumPacketsSend;
@@ -177,27 +177,27 @@ private:
 
 	// Queue of messages to send (thread access possible)
 	typedef CryMT::queue<CServiceNetworkMessage*> TSendQueue;
-	CServiceNetworkMessage* m_pSendedMessages;
+	CServiceNetworkMessage* m_pSendedMessages = nullptr;
 	TSendQueue              m_pSendQueue;
-	uint32                  m_messageDataSentSoFar;
-	volatile int            m_sendQueueDataSize;
+	uint32                  m_messageDataSentSoFar = 0;
+	volatile int            m_sendQueueDataSize = 0;
 
 	// Queue of received message
 	typedef CryMT::queue<CServiceNetworkMessage*> TReceiveQueue;
 	TReceiveQueue m_pReceiveQueue;
-	uint32        m_receiveQueueDataSize;
-	uint32        m_messageDataReceivedSoFar;
-	uint32        m_messageReceiveLength;
+	uint32        m_receiveQueueDataSize = 0;
+	uint32        m_messageDataReceivedSoFar = 0;
+	uint32        m_messageReceiveLength = 0;
 
 	// Message being received "right now"
-	CServiceNetworkMessage* m_pCurrentReceiveMessage;
-	uint32                  m_messageDummyReadLength;
+	CServiceNetworkMessage* m_pCurrentReceiveMessage = nullptr;
+	uint32                  m_messageDummyReadLength = 0;
 
 	// External request to close this connection was issued
-	bool m_bCloseRequested;
+	bool m_bCloseRequested = false;
 
 	// Do not accept any new data for sending or receiving
-	bool m_bDisableCommunication;
+	bool m_bDisableCommunication = false;
 
 public:
 	ILINE bool IsInitialized() const
@@ -306,7 +306,7 @@ protected:
 	CServiceNetwork* m_pManager;
 
 	// Reference count, updated using CryInterlocked* functions
-	int volatile m_refCount;
+	int volatile m_refCount = 1;
 
 	// Listening socket
 	CRYSOCKET m_socket;
@@ -315,7 +315,7 @@ protected:
 	ServiceNetworkAddress m_localAddress;
 
 	// Request to close this listener was received
-	bool m_closeRequestReceived;
+	bool m_closeRequestReceived = false;
 
 	// Pending connections (but not yet initialized)
 	typedef std::vector<PendingConnection*> TPendingConnectionList;

@@ -4380,6 +4380,7 @@ public:
 			case eKI_Delete:
 				m_showStrippedPath = true;
 				break;
+			default: break;
 			}
 		}
 		return false;

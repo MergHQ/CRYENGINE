@@ -35,8 +35,8 @@ IPlatformOS* IPlatformOS::Create(const uint8 createParams)
 }
 
 CPlatformOS_PC::CPlatformOS_PC(const uint8 createParams)
-	: m_listeners(4)
-	, m_fpsWatcher(15.0f, 3.0f, 7.0f)
+	: m_fpsWatcher(15.0f, 3.0f, 7.0f)
+	, m_listeners(4)
 	, m_delayLevelStartIcon(0.0f)
 	, m_bSignedIn(false)
 	, m_bSaving(false)
@@ -92,6 +92,8 @@ void CPlatformOS_PC::OnPlatformEvent(const IPlatformOS::SPlatformEvent& _event)
 			}
 			break;
 		}
+	default:
+		break;
 	}
 }
 
@@ -708,6 +710,8 @@ void CPlatformOS_PC::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR
 	case ESYSTEM_EVENT_CHANGE_FOCUS:	
 		SetTimerResolution(wparam == 0);  // wparam != 0 is focused, wparam == 0 is not focused 
 		break;
+	default:
+		break;
 	}
 }
 
@@ -723,6 +727,9 @@ void CPlatformOS_PC::OnActionEvent(const SActionEvent& event)
 	case eAE_inGame:
 		m_bLevelLoad = false;
 		m_fpsWatcher.Reset();
+		break;
+
+	default:
 		break;
 	}
 }

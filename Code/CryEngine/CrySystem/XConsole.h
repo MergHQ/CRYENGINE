@@ -37,8 +37,8 @@ struct CConsoleCommand
 
 	//////////////////////////////////////////////////////////////////////////
 	CConsoleCommand()
-		: m_func(0)
-		, m_nFlags(0)
+		: m_nFlags(0)
+		, m_func(0)
 		, m_isManagedExternally(false)
 	{}
 	size_t sizeofThis() const { return sizeof(*this) + m_sName.capacity() + 1 + m_sCommand.capacity() + 1; }
@@ -68,8 +68,8 @@ struct CConsoleCommandArgs : public IConsoleCmdArgs
 	}
 
 private:
-	std::vector<string>& m_args;
 	string&              m_line;
+	std::vector<string>& m_args;
 };
 
 struct string_nocase_lt

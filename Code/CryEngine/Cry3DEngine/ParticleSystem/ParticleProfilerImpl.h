@@ -19,8 +19,8 @@ ILINE CTimeProfiler::CTimeProfiler(CParticleProfiler& profiler, const CParticleC
 	: m_profiler(profiler)
 	, m_runtime(runtime)
 #if !defined(_RELEASE)
-	, m_stat(stat)
 	, m_startTicks(CryGetTicks())
+	, m_stat(stat)
 #endif
 {
 }

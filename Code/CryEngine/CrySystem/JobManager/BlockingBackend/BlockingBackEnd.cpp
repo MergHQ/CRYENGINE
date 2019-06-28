@@ -18,15 +18,9 @@
 JobManager::BlockingBackEnd::CBlockingBackEnd::CBlockingBackEnd(JobManager::SInfoBlock** pRegularWorkerFallbacks, uint32 nRegularWorkerThreads) :
 	m_Semaphore(SJobQueue_BlockingBackEnd::eMaxWorkQueueJobsSize),
 	m_pRegularWorkerFallbacks(pRegularWorkerFallbacks),
-	m_nRegularWorkerThreads(nRegularWorkerThreads),
-	m_pWorkerThreads(NULL),
-	m_nNumWorker(0)
+	m_nRegularWorkerThreads(nRegularWorkerThreads)
 {
 	m_JobQueue.Init();
-
-#if defined(JOBMANAGER_SUPPORT_STATOSCOPE)
-	m_pBackEndWorkerProfiler = 0;
-#endif
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -160,7 +154,7 @@ void JobManager::BlockingBackEnd::CBlockingBackEndWorkerThread::SignalStopWork()
 
 bool JobManager::BlockingBackEnd::IsBlockingWorkerId(uint32 workerId)
 {
-	return (workerId & JobManager::s_blockingWorkerFlag) != 0;
+	return (workerId& JobManager::s_blockingWorkerFlag) != 0;
 }
 
 uint32 JobManager::BlockingBackEnd::GetIndexFromWorkerId(uint32 workerId)
@@ -328,11 +322,11 @@ ILINE void IncrQueuePullPointer_Blocking(INT_PTR& rCurPullAddr, const INT_PTR cI
 
 ///////////////////////////////////////////////////////////////////////////////
 JobManager::BlockingBackEnd::CBlockingBackEndWorkerThread::CBlockingBackEndWorkerThread(CBlockingBackEnd* pBlockingBackend, CryFastSemaphore& rSemaphore, JobManager::SJobQueue_BlockingBackEnd& rJobQueue, JobManager::SInfoBlock** pRegularWorkerFallbacks, uint32 nRegularWorkerThreads, uint32 nID) :
+	m_nId(nID),
+	m_bStop(false),
 	m_rSemaphore(rSemaphore),
 	m_rJobQueue(rJobQueue),
-	m_bStop(false),
 	m_pBlockingBackend(pBlockingBackend),
-	m_nId(nID),
 	m_pRegularWorkerFallbacks(pRegularWorkerFallbacks),
 	m_nRegularWorkerThreads(nRegularWorkerThreads)
 {

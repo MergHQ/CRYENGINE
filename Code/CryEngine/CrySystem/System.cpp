@@ -1335,6 +1335,8 @@ int CSystem::SetThreadState(ESubsystem subsys, bool bActive)
 			}
 		}
 		break;
+	default:
+		break;
 	}
 	return 0;
 }
@@ -2572,6 +2574,8 @@ inline const char* ValidatorModuleToString(EValidatorModule module)
 		return "Online";
 	case VALIDATOR_MODULE_DRS:
 		return "DynamicResponseSystem";
+	default:
+		break;
 	}
 	return "";
 }
@@ -3113,6 +3117,8 @@ void CSystem::SetLoadOrigin(LevelLoadOrigin origin)
 			return;
 		}
 		break;
+	default:
+		break;
 	}
 
 	m_loadOrigin = origin;
@@ -3254,6 +3260,8 @@ void CSystem::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lparam
 				gEnv->pCryPak->DisableRuntimeFileAccess(true);
 			}
 		}
+		break;
+	default:
 		break;
 	}
 }

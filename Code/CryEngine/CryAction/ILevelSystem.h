@@ -103,17 +103,15 @@ struct ILevelInfo
 
 	struct SMinimapInfo
 	{
-		SMinimapInfo() : fStartX(0), fStartY(0), fEndX(1), fEndY(1), fDimX(1), fDimY(1), iWidth(1024), iHeight(1024) {}
-
 		string sMinimapName;
-		int    iWidth;
-		int    iHeight;
-		float  fStartX;
-		float  fStartY;
-		float  fEndX;
-		float  fEndY;
-		float  fDimX;
-		float  fDimY;
+		int    iWidth  = 1024;
+		int    iHeight = 1024;
+		float  fStartX = 0.f;
+		float  fStartY = 0.f;
+		float  fEndX   = 1.f;
+		float  fEndY   = 1.f;
+		float  fDimX   = 1.f;
+		float  fDimY   = 1.f;
 	};
 
 	virtual const char*                      GetName() const = 0;
