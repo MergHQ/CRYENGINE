@@ -844,7 +844,8 @@ void CAssetBrowser::InitActions()
 	m_pActionShowSplitVertically = RegisterAction("asset.view_split_vertically", &CAssetBrowser::OnSplitVerticalView);
 	m_pActionShowFoldersView = RegisterAction("asset.view_folder_tree", &CAssetBrowser::OnFolderTreeView);
 	m_pActionRecursiveView = RegisterAction("asset.view_recursive_view", &CAssetBrowser::OnRecursiveView);
-	m_pActionHideIrrelevantFolders = RegisterAction("asset.view_hide_irrelevant_folders", &CAssetBrowser::OnHideIrrelevantFolders);
+	m_pActionHideIrrelevantFolders = RegisterAction("asset.view_hide_irrelevant_folders", &CAssetBrowser::OnHideIrrelevantFolders); 
+	m_pActionShowHideBreadcrumb = RegisterAction("asset.show_hide_breadcrumb_bar", &CAssetBrowser::OnShowHideBreadcrumbBar);
 	m_pActionDiscardChanges = RegisterAction("asset.discard_changes", &CAssetBrowser::OnDiscardChanges);
 	m_pActionManageWorkFiles = RegisterAction("asset.manage_work_files", &CAssetBrowser::OnManageWorkFiles);
 	m_pActionGenerateRepairMetaData = RegisterAction("asset.generate_and_repair_all_metadata", &CAssetBrowser::OnGenerateRepairAllMetadata);
@@ -853,6 +854,7 @@ void CAssetBrowser::InitActions()
 	m_pActionShowFoldersView->setChecked(true);
 	m_pActionRecursiveView->setChecked(false);
 	m_pActionHideIrrelevantFolders->setChecked(false);
+	m_pActionShowHideBreadcrumb->setChecked(true);
 
 	m_pActionCopyName = RegisterAction("path_utils.copy_name", &CAssetBrowser::OnCopyName);
 	m_pActionCopyPath = RegisterAction("path_utils.copy_path", &CAssetBrowser::OnCopyPath);
@@ -932,6 +934,7 @@ void CAssetBrowser::InitMenus()
 
 	section = menuView->GetNextEmptySection();
 	menuView->AddCommandAction(m_pActionShowFoldersView, section);
+	menuView->AddCommandAction(m_pActionShowHideBreadcrumb, section);
 
 #if ASSET_BROWSER_USE_PREVIEW_WIDGET
 	menuView->AddCommandAction(m_pActionShowPreview);
@@ -1318,9 +1321,13 @@ void CAssetBrowser::SetLayout(const QVariantMap& state)
 	if (showFoldersVar.isValid())
 	{
 		SetFoldersViewVisible(showFoldersVar.toBool());
-
 	}
 
+	QVariant breadcrumbsVisibleVar = state.value("breadcrumbsVisible");
+	if (breadcrumbsVisibleVar.isValid())
+	{
+		SetBreadcrumbsVisible(breadcrumbsVisibleVar.toBool());
+	}
 #if ASSET_BROWSER_USE_PREVIEW_WIDGET
 	QVariant showPreviewVar = state.value("showPreview");
 	if (showPreviewVar.isValid())
@@ -1362,6 +1369,14 @@ void CAssetBrowser::SetFoldersViewVisible(const bool isVisible)
 	m_pFoldersView->setVisible(isVisible);
 }
 
+void CAssetBrowser::SetBreadcrumbsVisible(const bool isVisible)
+{
+	m_pActionShowHideBreadcrumb->setChecked(isVisible);
+	m_pBreadcrumbs->setVisible(isVisible);
+	m_pBackButton->setVisible(isVisible);
+	m_pForwardButton->setVisible(isVisible);
+}
+
 QVariantMap CAssetBrowser::GetLayout() const
 {
 	QVariantMap state = CDockableEditor::GetLayout();
@@ -1370,7 +1385,8 @@ QVariantMap CAssetBrowser::GetLayout() const
 	state.insert("foldersSplitter", m_pFoldersSplitter->saveState().toBase64());
 	state.insert("viewMode", (int)m_viewMode);
 	state.insert("recursiveView", IsRecursiveView());
-	state.insert("showFolders", IsFoldersViewVisible());
+	state.insert("showFolders", IsFoldersViewVisible()); 
+	state.insert("breadcrumbsVisible", AreBreadcrumbsVisible());
 #if ASSET_BROWSER_USE_PREVIEW_WIDGET
 	state.insert("showPreview", m_previewWidget->isVisibleTo(this));
 #endif
@@ -1420,6 +1436,11 @@ CAsset* CAssetBrowser::GetLastSelectedAsset() const
 bool CAssetBrowser::IsRecursiveView() const
 {
 	return m_pActionRecursiveView->isChecked();
+}
+
+bool CAssetBrowser::AreBreadcrumbsVisible() const
+{
+	return m_pActionShowHideBreadcrumb->isChecked();
 }
 
 bool CAssetBrowser::IsFoldersViewVisible() const
@@ -2117,6 +2138,12 @@ bool CAssetBrowser::OnReimport()
 bool CAssetBrowser::OnHideIrrelevantFolders()
 {
 	UpdateNonEmptyFolderList();
+	return true;
+}
+
+bool CAssetBrowser::OnShowHideBreadcrumbBar() 
+{
+	SetBreadcrumbsVisible(!m_pBreadcrumbs->isVisible());
 	return true;
 }
 

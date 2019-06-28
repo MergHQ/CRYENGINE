@@ -446,11 +446,11 @@ QViewportHeader::QViewportHeader(CLevelEditorViewport* pViewport)
 	CEditorCommandManager* pCommandManager = GetIEditorImpl()->GetCommandManager();
 
 	setContentsMargins(0, 0, 0, 0);
-	setFixedHeight(25);
 
 	QBoxLayout* boxlayout = new QBoxLayout(QBoxLayout::LeftToRight);
 	boxlayout->setContentsMargins(0, 0, 0, 0);
 	boxlayout->setSpacing(0);
+	boxlayout->setMargin(0);
 	setLayout(boxlayout);
 
 	m_titleBtn = new QToolButton;

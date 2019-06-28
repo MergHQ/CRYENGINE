@@ -141,11 +141,11 @@ QVariant CLevelLayerModel::GetHeaderData(int section, Qt::Orientation orientatio
 	if (role == Qt::DecorationRole)
 	{
 		if (section == eObjectColumns_Visible)
-			return CryIcon("icons:General/Visibility_True.ico");
+			return CryIcon("icons:General/Visibility_True.ico").pixmap(16,16);
 		if (section == eObjectColumns_Frozen)
-			return CryIcon("icons:general_lock_true.ico");
+			return CryIcon("icons:general_lock_true.ico").pixmap(16, 16);
 		if (section == eObjectColumns_VCS)
-			return CryIcon("icons:VersionControl/icon.ico");
+			return CryIcon("icons:VersionControl/icon.ico").pixmap(16, 16);
 	}
 	if (role == Qt::DisplayRole)
 	{
@@ -427,9 +427,9 @@ QVariant CLevelLayerModel::data(const QModelIndex& index, int role) const
 			switch (index.column())
 			{
 			case eObjectColumns_Visible:
-				return pObject->IsVisible() ? m_iconVisibilityTrue : m_iconVisibilityFalse;
+				return pObject->IsVisible() ? m_iconVisibilityTrue.pixmap(16, 16) : m_iconVisibilityFalse.pixmap(16, 16);
 			case eObjectColumns_Frozen:
-				return pObject->IsFrozen() ? m_iconLevelExplorerLockTrue : m_iconGeneralLockFalse;
+				return pObject->IsFrozen() ? m_iconLevelExplorerLockTrue.pixmap(16, 16) : m_iconGeneralLockFalse.pixmap(16, 16);
 			default:
 				break;
 			}

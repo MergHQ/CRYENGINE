@@ -481,12 +481,24 @@ CCVarBrowser::CCVarBrowser(QWidget* pParent /* = nullptr*/)
 	m_pFilterProxy->setSortRole(static_cast<int>(CCVarModel::Roles::SortRole));
 	m_pFilterProxy->setFilterKeyColumn(eCVarListColumn_Name);
 
+	QWidget* pSearchBoxContainer = new QWidget();
+	pSearchBoxContainer->setObjectName("SearchBoxContainer");
+
+	QHBoxLayout* pSearchBoxLayout = new QHBoxLayout();
+	pSearchBoxLayout->setAlignment(Qt::AlignTop);
+	pSearchBoxLayout->setMargin(0);
+	pSearchBoxLayout->setSpacing(0);
+
 	const auto pSearchBox = new QSearchBox(this);
 	pSearchBox->SetModel(m_pFilterProxy.get());
 	pSearchBox->EnableContinuousSearch(true);
 
 	const auto pFavoriteToggle = new QToolButton(this);
 	pFavoriteToggle->setIcon(FavoritesHelper::GetFavoriteIcon(bFavoritesOnly));
+
+	pSearchBoxLayout->addWidget(pFavoriteToggle);
+	pSearchBoxLayout->addWidget(pSearchBox);
+	pSearchBoxContainer->setLayout(pSearchBoxLayout);
 
 	const auto treeBehavior = static_cast<QAdvancedTreeView::Behavior>(QAdvancedTreeView::PreserveExpandedAfterReset | QAdvancedTreeView::PreserveSelectionAfterReset);
 	m_pTreeView = new QAdvancedTreeView(treeBehavior, this);
@@ -512,8 +524,7 @@ CCVarBrowser::CCVarBrowser(QWidget* pParent /* = nullptr*/)
 
 	const auto pHLayout = new QHBoxLayout();
 	pHLayout->setContentsMargins(0, 0, 0, 0);
-	pHLayout->addWidget(pSearchBox);
-	pHLayout->addWidget(pFavoriteToggle);
+	pHLayout->addWidget(pSearchBoxContainer);
 
 	const auto pLayout = new QVBoxLayout();
 	pLayout->setContentsMargins(0, 0, 0, 0);

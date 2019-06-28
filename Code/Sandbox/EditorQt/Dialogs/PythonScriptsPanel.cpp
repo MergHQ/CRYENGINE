@@ -36,6 +36,14 @@ CPythonScriptsPanel::CPythonScriptsPanel()
 	auto sortModel = new CFileSortProxyModel(this);
 	sortModel->setSourceModel(fileTreeModel);
 
+	QWidget* pSearchBoxContainer = new QWidget();
+	pSearchBoxContainer->setObjectName("SearchBoxContainer");
+
+	QHBoxLayout* pSearchBoxLayout = new QHBoxLayout();
+	pSearchBoxLayout->setAlignment(Qt::AlignTop);
+	pSearchBoxLayout->setMargin(0);
+	pSearchBoxLayout->setSpacing(0);
+
 	const auto pSearchBox = new QSearchBox();
 	auto searchFunction = [=](const QString& text)
 	{
@@ -52,7 +60,11 @@ CPythonScriptsPanel::CPythonScriptsPanel()
 	pSearchBox->SetSearchFunction(std::function<void(const QString&)>(searchFunction));
 
 	pSearchBox->EnableContinuousSearch(true);
-	pLayout->addWidget(pSearchBox);
+
+	pSearchBoxLayout->addWidget(pSearchBox);
+	pSearchBoxContainer->setLayout(pSearchBoxLayout);
+
+	pLayout->addWidget(pSearchBoxContainer);
 
 	m_pTree = new QAdvancedTreeView();
 	m_pTree->setModel(sortModel);

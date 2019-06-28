@@ -261,9 +261,20 @@ CCommandListDockable::CCommandListDockable(QWidget* const pParent)
 	pFilterProxy->setFilterRole(static_cast<int>(CCommandModel::Roles::SearchRole));
 	pFilterProxy->setSortRole(CCommandListModel::SortRole);
 
+	QWidget* pSearchBoxContainer = new QWidget();
+	pSearchBoxContainer->setObjectName("SearchBoxContainer");
+
+	QHBoxLayout* pSearchBoxLayout = new QHBoxLayout();
+	pSearchBoxLayout->setAlignment(Qt::AlignTop);
+	pSearchBoxLayout->setMargin(0);
+	pSearchBoxLayout->setSpacing(0);
+
 	const auto pSearchBox = new QSearchBox();
 	pSearchBox->SetModel(pFilterProxy);
 	pSearchBox->EnableContinuousSearch(true);
+
+	pSearchBoxLayout->addWidget(pSearchBox);
+	pSearchBoxContainer->setLayout(pSearchBoxLayout);
 
 	m_pTreeView = new QAdvancedTreeView();
 	m_pTreeView->setModel(pFilterProxy);
@@ -278,8 +289,8 @@ CCommandListDockable::CCommandListDockable(QWidget* const pParent)
 	pSearchBox->SetAutoExpandOnSearch(m_pTreeView);
 
 	const auto pLayout = new QVBoxLayout();
-	pLayout->setContentsMargins(1, 1, 1, 1);
-	pLayout->addWidget(pSearchBox);
+	pLayout->setContentsMargins(0,0,0,0);
+	pLayout->addWidget(pSearchBoxContainer);
 	pLayout->addWidget(m_pTreeView);
 	setLayout(pLayout);
 }

@@ -128,10 +128,9 @@ QToolButton::pressed
 
 QViewportHeader 
 {
-	min-height: 26;
 	padding:0;
-	padding-top:2px;
-	padding-bottom:2px;
+	min-height:24;
+	spacing:4;
 }
 
 QViewportHeader > QToolButton::menu-indicator 
@@ -159,10 +158,11 @@ QViewportHeader > QToolButton
 	color:rgb(166,166,166);
 	border-radius:0px;
 	max-height:24px;
-	margin:0;
-	margin-left:4px;
-	margin-bottom:4px;
+	margin:2;
     icon-size:16px;
+	padding:0;
+	padding-left:-1;
+	padding-right:-2;
 }
 
 QViewportHeader > QToolButton::checked
@@ -224,6 +224,10 @@ QMainFrameMenuBar > CTrayArea > QToolButton:hover
 QPopupWidget
 {
 	border: 1px solid rgb(97,172,236);
+	min-width:300px;
+	min-height:500px;
+	margin:0;
+	padding:0;
 }
 
 QPopupWidget > QWidget#InsetBorder 
@@ -353,7 +357,7 @@ QMenuBar::item
 	background: transparent;
 	border-radius: 0px;
 	color: white;
-	border-radius:2px;
+	border-radius:3px;
 }
 
 QMenuBar::item:selected 
@@ -402,10 +406,8 @@ QPrecisionSlider#cameraSpeedPopupSlider
 
 QMenu 
 {
-	background-color: rgb(50,50,50);
-	color: rgb(255,255,255);
-	border:0px solid;
-	border-color:rgb(102,102,102);
+	background-color: rgb(35,35,35);
+	color: white;
 }
 
 QMenu::item:selected 
@@ -415,8 +417,13 @@ QMenu::item:selected
 
 QMenu:separator 
 {
-	background-color:rgb(64,64,64);
-	height:1px;
+	border-radius:2px;
+	background-color:rgb(77,77,77);
+	height:2px;
+	margin-left: 4px;
+	margin-right: 4px;
+	margin-top: 4px;
+	margin-bottom: 4px;
 }
 
 QLabelSeparatorWidget 
@@ -977,7 +984,7 @@ QSizeGrip
 
 QDoubleSpinBox 
 {
-	background: rgb(50,50,50);
+	background:rgb(35,35,35);
 	border-color: rgb(50,50,50);
 	padding: 2px;
 	margin: 0px;
@@ -1049,9 +1056,9 @@ QTreeView
 QTreeView::item
 {
 	min-height:24px;
+	min-width:24px;
 	padding:0;
 	margin:0;
-	icon-size:24px;
 }
 
 QTreeView::branch 
@@ -1474,7 +1481,7 @@ EditorStyleHelper
 	qproperty-timelineTreeXSubtrackText: rgb(226, 79, 67);
 	qproperty-timelineTreeYSubtrackText: rgb(126, 211, 33);
 	qproperty-timelineTreeZSubtrackText: rgb(95, 185, 237);
-	qproperty-timelineTreeNodeTrackText: rgb(255, 0, 0);	
+	qproperty-timelineTreeNodeTrackText: rgb(255, 0, 0);
 	qproperty-timelineTreeFolderTrackText: rgb(255, 255, 255);
 	qproperty-timelineTreeCompoundTrackText: rgb(255, 255, 255);
 	qproperty-timelineSplitterNormal: rgb(55, 55, 55);
@@ -1571,7 +1578,7 @@ QAbstractSpinBox
 	border-radius:2px;
 	margin:0px;
 	padding:0px;
-	background-color:rgb(50,50,50);
+	background:rgb(35,35,35);
 }
 
 QAbstractSpinBox::down-button
@@ -1707,9 +1714,9 @@ ACE--CInspectorPanel QLabel#ConnectionsTitle
 
 CCollapsibleFrameHeader 
 {
+	min-height:24;
 	background-color: rgb(102,102,102);
-	margin-top:1px;
-	margin-bottom:1px;
+	margin:0;
 	qproperty-iconSize:16px;
 }
 
@@ -2108,7 +2115,7 @@ CEditorEnvironmentWindow QPropertyTreeLegacy
 QTabPane 
 {
 	padding:0;
-	margin:2;
+	margin:0;
 	background-color:rgb(51,51,51);
 }
 
@@ -2512,26 +2519,26 @@ CToolBarItem
 	background:transparent;
 	margin:0;
 	padding:0;
-	border-radius:3;
-	min-height:32;
-	min-width:32;
+	min-height:34;
+	min-width:34;
 }
 
 CToolBarItem > QToolBar
 {
 	border-radius:3;
 	background:rgb(77,77,77);
-	padding:2;
+	padding:4;
 	min-width:24;
 	min-height:24;
 	border:none;
-	margin:2 ;
+	margin:4;
+	spacing:4;
 }
 
 CToolBarItem > QToolBar > QToolButton, CToolBarItem > QToolBar:vertical > QToolButton
 {
 	border-radius:3;
-	margin:2;
+	margin:0;
 	padding:0;
 	height:24;
 	padding-left:-1;
@@ -2556,6 +2563,8 @@ CToolBarArea
 {
 	background-color: rgb(51, 51, 51);
 	border-radius:3px;
+	min-width:4;
+	min-height:4;
 }
 
 CToolBarArea[dragHover=true]
@@ -2676,17 +2685,19 @@ CToolBarCustomizeDialog QEditableComboBox QLineEdit
 /* CToolBarCustomizeDialog Toolbar Preview */
 CToolBarCustomizeDialog #DropContainer 
 {
-	margin: 2 0 2 0; 
+	margin: 0; 
 	background:rgb(14,14,14);
-	min-height:36;
+	min-height:30;
 	min-width:200;
 }
 
 CToolBarCustomizeDialog #DropContainer QToolBar
 {
+	background:rgb(77,77,77);
+	margin:4;
 	margin-left:0;
 	margin-right:0;
-	min-height:40;
+	min-height:30;
 }
 
 CToolBarCustomizeDialog QToolBar QToolButton::hover

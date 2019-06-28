@@ -256,6 +256,7 @@
         <file alias="General/Arrow_Up.ico">icons/general_Arrow_Up.ico</file>
         <file alias="General/Arrow_Up_Tinted.ico">icons/general_Arrow_Up_Tinted.ico</file>
         <file alias="General/Asset_Browser.ico">icons/general_Asset_Browser.ico</file>
+        <file alias="General/Breadcrumb_Bar.ico">icons/general_breadcrumb_bar.ico</file>
         <file alias="General/Assign_To_Selection.ico">icons/general_Assign_To_Selection.ico</file>
         <file alias="General/Camera.ico">icons/general_Camera.ico</file>
         <file alias="General/Copy.ico">icons/general_file_copy.ico</file>

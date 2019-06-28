@@ -82,10 +82,12 @@ public:
 	void    SetViewMode(ViewMode viewMode);
 
 	bool    IsRecursiveView() const;
+	bool    AreBreadcrumbsVisible() const;
 	void    SetRecursiveView(bool recursiveView);
 
 	bool    IsFoldersViewVisible() const;
 	void    SetFoldersViewVisible(bool isVisible);
+	void    SetBreadcrumbsVisible(const bool isVisible);
 
 	bool    AreIrrelevantFoldersHidden() const;
 	void    HideIrrelevantFolders(bool isHidden);
@@ -208,6 +210,7 @@ private:
 	bool               OnGenerateRepairAllMetadata();
 	bool               OnReimport();
 	bool               OnHideIrrelevantFolders();
+	bool			   OnShowHideBreadcrumbBar();
 
 	// CEditor
 	virtual bool OnFind() override;
@@ -253,6 +256,7 @@ private:
 	QCommandAction*    m_pActionShowSplitHorizontally = nullptr;
 	QCommandAction*    m_pActionShowSplitVertically = nullptr;
 	QCommandAction*    m_pActionShowThumbnails = nullptr;
+	QCommandAction*    m_pActionShowHideBreadcrumb = nullptr;
 #if ASSET_BROWSER_USE_PREVIEW_WIDGET
 	QCommandAction*    m_pActionShowPreview = nullptr;
 #endif
