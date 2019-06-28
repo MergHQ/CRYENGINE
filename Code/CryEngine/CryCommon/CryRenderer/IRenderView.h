@@ -174,6 +174,10 @@ struct IRenderView : public CMultiThreadRefCount
 	//! Add one the previously created permanent render object.
 	virtual void AddPermanentObject(CRenderObject* pRenderObject, const SRenderingPassInfo& passInfo) = 0;
 
+	//! Query if there are any elements in the list
+	virtual bool   HasAddedItems(ERenderListID renderList) = 0;
+	virtual size_t NumAddedItems(ERenderListID renderList) = 0;
+
 	//////////////////////////////////////////////////////////////////////////
 	// Clip Volumes
 	virtual uint8 AddClipVolume(const IClipVolume* pClipVolume) = 0;

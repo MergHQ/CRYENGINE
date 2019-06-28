@@ -1078,7 +1078,7 @@ void CTiledLightVolumesStage::GenerateLightList()
 
 						for (int side = 0; side < numSides; ++side)
 						{
-							bool shouldSample = firstFrustum.ShouldSampleSide(side) && renderLight.m_ShadowMaskIndex < maxSliceCount;
+							bool shouldSample = firstFrustum.ShouldSample(side) && renderLight.m_ShadowMaskIndex < maxSliceCount;
 
 							CShadowUtils::SShadowsSetupInfo shadowsSetup = rd->ConfigShadowTexgen(pRenderView, &firstFrustum, side);
 							Matrix44A shadowMat = shadowsSetup.ShadowMat;

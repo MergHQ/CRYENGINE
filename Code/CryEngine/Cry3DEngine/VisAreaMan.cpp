@@ -526,7 +526,7 @@ void CVisAreaManager::PortalsDrawDebug()
 	}
 }
 
-void CVisAreaManager::DrawVisibleSectors(const SRenderingPassInfo& passInfo, uint32 passCullMask)
+void CVisAreaManager::DrawVisibleSectors(const SRenderingPassInfo& passInfo, FrustumMaskType passCullMask)
 {
 	FUNCTION_PROFILER_3DENGINE;
 

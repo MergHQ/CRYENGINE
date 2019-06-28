@@ -110,7 +110,7 @@ void ShadowCacheGenerator::InitCachedFrustum(ShadowMapFrustumPtr& pFr, ShadowMap
 {
 	const auto frameID = passInfo.GetFrameID();
 
-	pFr->ResetCasterLists();
+	pFr->RequestUpdates(1);
 	pFr->nTexSize = nTexSize;
 
 	if (nUpdateStrategy != ShadowMapFrustum::ShadowCacheData::eIncrementalUpdate)
@@ -118,7 +118,7 @@ void ShadowCacheGenerator::InitCachedFrustum(ShadowMapFrustumPtr& pFr, ShadowMap
 		CRY_ASSERT(cacheLod >= 0 && cacheLod < MAX_GSM_CACHED_LODS_NUM);
 
 		pFr->pShadowCacheData->Reset(GetNextGenerationID());
-		pFr->GetSideSampleMask().store(1);
+		pFr->RequestSamples(1);
 
 		assert(m_pLightEntity->GetLightProperties().m_pOwner);
 		pFr->pLightOwner = m_pLightEntity->GetLightProperties().m_pOwner;
@@ -196,7 +196,6 @@ void ShadowCacheGenerator::InitCachedFrustum(ShadowMapFrustumPtr& pFr, ShadowMap
 		jobLambda();
 	}
 
-	pFr->Invalidate();
 	pFr->bIncrementalUpdate = nUpdateStrategy == ShadowMapFrustum::ShadowCacheData::eIncrementalUpdate && pFr->pShadowCacheData->mObjectsRendered != 0;
 }
 
@@ -332,8 +331,6 @@ void ShadowCacheGenerator::AddTerrainCastersToFrustum(ShadowMapFrustum* pFr, con
 		PodArray<CTerrainNode*> lstTerrainNodes;
 		GetTerrain()->IntersectWithBox(pFr->aabbCasters, &lstTerrainNodes);
 
-		bool bCastersFound = false;
-
 		for (int s = 0; s < lstTerrainNodes.Count(); s++)
 		{
 			CTerrainNode* pNode = lstTerrainNodes[s];
@@ -345,12 +342,7 @@ void ShadowCacheGenerator::AddTerrainCastersToFrustum(ShadowMapFrustum* pFr, con
 			if (!pFr->NodeRequiresShadowCacheUpdate(pNode))
 				continue;
 
-			bCastersFound = true;
-
 			pNode->SetTraversalFrameId(passInfo.GetMainFrameID(), pFr->nShadowMapLod);
 		}
-
-		if (bCastersFound)
-			pFr->RequestUpdate();
 	}
 }

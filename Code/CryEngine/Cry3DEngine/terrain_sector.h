@@ -389,7 +389,7 @@ public:
 	virtual ~CTerrainNode();
 
 	static void   ResetStaticData();
-	bool          CheckVis(bool bAllIN, bool bAllowRenderIntoCBuffer, const SRenderingPassInfo& passInfo, uint32 passCullMask);
+	bool          CheckVis(bool bAllIN, bool bAllowRenderIntoCBuffer, const SRenderingPassInfo& passInfo, FrustumMaskType passCullMask);
 	void          SetupTexturing(bool bMakeUncompressedForEditing, const SRenderingPassInfo& passInfo);
 	void          RequestTextures(const SRenderingPassInfo& passInfo);
 	void          EnableTextureEditingMode(unsigned int textureId);
@@ -397,7 +397,7 @@ public:
 	void          UpdateNodeNormalMapFromHeightMap();
 	static void   SaveCompressedMipmapLevel(const void* data, size_t size, void* userData);
 	void          CheckNodeGeomUnload(const SRenderingPassInfo& passInfo);
-	void          RenderNodeHeightmap(const SRenderingPassInfo& passInfo, uint32 passCullMask);
+	void          RenderNodeHeightmap(const SRenderingPassInfo& passInfo, FrustumMaskType passCullMask);
 	bool          CheckUpdateProcObjects();
 	void          IntersectTerrainAABB(const AABB& aabbBox, PodArray<CTerrainNode*>& lstResult);
 	void          UpdateDetailLayersInfo(bool bRecursive);

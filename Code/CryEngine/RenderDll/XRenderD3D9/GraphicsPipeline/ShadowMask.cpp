@@ -1143,7 +1143,7 @@ int CLocalLightShadows::PreparePrimitives(std::vector<CPrimitiveRenderPass>& mas
 						volumePrimitiveCount,
 						quadPrimitiveCount);
 				else
-					pFrustumToRender->pFrustum->GetSideSampleMask().store(0);
+					pFrustumToRender->pFrustum->RequestSamples(0);
 			}
 		}
 	}
@@ -1186,7 +1186,7 @@ int CLocalLightShadows::PreparePrimitivesForLight(const CRenderView* pRenderView
 
 	for (int nS = 0; nS < nSides; nS++)
 	{
-		if (pFrustum->ShouldSampleSide(nS))
+		if (pFrustum->ShouldSample(nS))
 		{
 			SLocalLightPrimitives& primitives = bUseLightVolumes ? volumePrimitives[volumePrimitiveCount++] : quadPrimitives[quadPrimitiveCount++];
 

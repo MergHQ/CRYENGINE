@@ -232,7 +232,7 @@ float GetPointToBoxDistance(Vec3 vPos, AABB bbox)
 // Hierarchically check nodes visibility
 // Add visible sectors to the list of visible terrain sectors
 
-bool CTerrainNode::CheckVis(bool bAllInside, bool bAllowRenderIntoCBuffer, const SRenderingPassInfo& passInfo, uint32 passCullMask)
+bool CTerrainNode::CheckVis(bool bAllInside, bool bAllowRenderIntoCBuffer, const SRenderingPassInfo& passInfo, FrustumMaskType passCullMask)
 {
 	FUNCTION_PROFILER_3DENGINE;
 
@@ -247,7 +247,7 @@ bool CTerrainNode::CheckVis(bool bAllInside, bool bAllowRenderIntoCBuffer, const
 	passCullMask = COctreeNode::UpdateCullMask(m_onePassTraversalFrameId, m_onePassTraversalShadowCascades, 0, passInfo, boxWS, distance, maxViewDistanceUnlimited, false, bAllInside, &m_occlusionTestClient, passCullMask);
 
 	// stop if no any passes see this node
-	if (!passCullMask)
+	if (passCullMask == 0)
 		return false;
 
 	if (m_bHasHoles == 2)
@@ -304,7 +304,7 @@ bool CTerrainNode::CheckVis(bool bAllInside, bool bAllowRenderIntoCBuffer, const
 	}
 
 	// update procedural vegetation
-	if (passInfo.IsGeneralPass() && GetTerrain()->m_bProcVegetationInUse && GetCVars()->e_ProcVegetation && (passCullMask & kPassCullMainMask))
+	if (passInfo.IsGeneralPass() && GetTerrain()->m_bProcVegetationInUse && GetCVars()->e_ProcVegetation && (passCullMask & kPassCullMainMask) != 0)
 	{
 		CTerrainNode* pNode = this;
 
@@ -614,7 +614,7 @@ void CTerrainNode::RemoveProcObjects(bool bRecursive)
 			m_pChilds[i].RemoveProcObjects(bRecursive);
 }
 
-void CTerrainNode::RenderNodeHeightmap(const SRenderingPassInfo& passInfo, uint32 passCullMask)
+void CTerrainNode::RenderNodeHeightmap(const SRenderingPassInfo& passInfo, FrustumMaskType passCullMask)
 {
 	FUNCTION_PROFILER_3DENGINE;
 	bool bMeshIsUpToDate = true; // actually bUpdateNOTRequired
@@ -636,12 +636,12 @@ void CTerrainNode::RenderNodeHeightmap(const SRenderingPassInfo& passInfo, uint3
 
 	SetupTexturing(false, passInfo);
 
-	if (passCullMask & kPassCullMainMask)
+	if ((passCullMask & kPassCullMainMask) != 0)
 	{
 		bMeshIsUpToDate = RenderSector(passInfo);
 	}
 
-	if (passCullMask & ~kPassCullMainMask)
+	if ((passCullMask & ~kPassCullMainMask) != 0)
 	{
 		COctreeNode::RenderObjectIntoShadowViews(passInfo, 0, this, GetBBox(), passCullMask);
 	}
@@ -677,7 +677,7 @@ void CTerrainNode::RenderNodeHeightmap(const SRenderingPassInfo& passInfo, uint3
 	}
 
 	// pre-cache surface types
-	if (passCullMask & kPassCullMainMask)
+	if ((passCullMask & kPassCullMainMask) != 0)
 	{
 		for (int s = 0; s < Cry3DEngineBase::GetTerrain()->m_SSurfaceType.Count(); s++)
 		{

@@ -691,14 +691,14 @@ void CCullThread::CheckOcclusion_JobEntry(SCheckOcclusionJobData checkOcclusionD
 		float fDistance = sqrtf(Distance::Point_AABBSq(cameraPosition, rAABB));
 
 		// Test OctTree bounding box against main view
-		if (checkOcclusionData.passCullMask & kPassCullMainMask && !CCullThread::TestAABB(rAABB, fDistance))
+		if ((checkOcclusionData.passCullMask & kPassCullMainMask) != 0 && !CCullThread::TestAABB(rAABB, fDistance))
 		{
 			checkOcclusionData.passCullMask &= ~kPassCullMainMask; // mark as not visible in general view
 		}
 
 		// TODO: check also occlusion of shadow volumes
 
-		if (checkOcclusionData.passCullMask)
+		if (checkOcclusionData.passCullMask != 0)
 		{
 			Vec3 vAmbColor(checkOcclusionData.octTreeData.vAmbColor[0], checkOcclusionData.octTreeData.vAmbColor[1], checkOcclusionData.octTreeData.vAmbColor[2]);
 
@@ -717,13 +717,13 @@ void CCullThread::CheckOcclusion_JobEntry(SCheckOcclusionJobData checkOcclusionD
 		float fDistance = checkOcclusionData.terrainData.fDistance;
 
 		// Test bounding box against main view
-		if (checkOcclusionData.passCullMask & kPassCullMainMask && !CCullThread::TestAABB(rAABB, fDistance, TerrainBias))
+		if ((checkOcclusionData.passCullMask & kPassCullMainMask) != 0 && !CCullThread::TestAABB(rAABB, fDistance, TerrainBias))
 		{
 			checkOcclusionData.passCullMask &= ~kPassCullMainMask; // mark as not visible in general view
 		}
 
 		// special case for terrain, they are directly tested and send back to PPU
-		if (checkOcclusionData.passCullMask)
+		if (checkOcclusionData.passCullMask != 0)
 		{
 			SCheckOcclusionOutput outPut = SCheckOcclusionOutput::CreateTerrainOutput(checkOcclusionData.terrainData.pTerrainNode, checkOcclusionData.passCullMask, m_passInfoForCheckOcclusion);
 			GetObjManager()->PushIntoCullOutputQueue(outPut);

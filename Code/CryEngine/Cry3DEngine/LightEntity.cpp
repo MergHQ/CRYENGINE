@@ -134,17 +134,9 @@ void CLightEntity::SetMatrix(const Matrix34& mat)
 
 		m_light.SetPosition(mat.GetTranslation());
 		m_light.SetMatrix(mat);
+
 		SetLightProperties(m_light);
 		Get3DEngine()->RegisterEntity(this);
-
-		//update shadow frustums
-		if (m_pShadowMapInfo != nullptr)
-		{
-			// TODO: Invalidate() might be overkill when new light orientation is "close" to old orientation, in which case an
-			// RequestUpdate() might suffice.
-			for (int i = 0; i < MAX_GSM_LODS_NUM && m_pShadowMapInfo->pGSM[i]; i++)
-				m_pShadowMapInfo->pGSM[i]->Invalidate();
-		}
 	}
 }
 
@@ -276,7 +268,6 @@ void CLightEntity::UpdateGSMLightSourceShadowFrustum(const SRenderingPassInfo& p
 	{
 		if (ShadowMapFrustum* pFr = m_pShadowMapInfo->pGSM[nLod])
 		{
-			pFr->ResetCasterLists();
 			pFr->m_eFrustumType = ShadowMapFrustum::e_GsmDynamic;
 			pFr->pShadowCacheData.reset();
 		}
@@ -492,17 +483,16 @@ bool CLightEntity::ProcessFrustum(int nLod, float fGSMBoxSize, float fDistanceFr
 {
 	ShadowMapFrustum* pFr = m_pShadowMapInfo->pGSM[nLod];
 
-	assert(pFr);
+	CRY_ASSERT(pFr);
 
 	CollectShadowCascadeForOnePassTraversal(pFr);
 
-	bool bDoGSM = fGSMBoxSize != 0;
-
+	const bool bDoGSM = fGSMBoxSize != 0;
 	if (bDoGSM)// && (m_light.m_Flags & DLF_SUN || m_light.m_Flags & DLF_PROJECT))
 	{
-		InitShadowFrustum_SUN_Conserv(pFr, SMC_EXTEND_FRUSTUM | SMC_SHADOW_FRUSTUM_TEST, fGSMBoxSize, fDistanceFromView, nLod, passInfo);
-
 		const uint32 renderNodeFlags = pFr->m_eFrustumType == ShadowMapFrustum::e_GsmDynamicDistance ? ERF_DYNAMIC_DISTANCESHADOWS : 0xFFFFFFFF;
+
+		InitShadowFrustum_SUN_Conserv(pFr, SMC_EXTEND_FRUSTUM | SMC_SHADOW_FRUSTUM_TEST, fGSMBoxSize, fDistanceFromView, nLod, passInfo);
 		SetupShadowFrustumCamera_SUN(pFr, SMC_EXTEND_FRUSTUM | SMC_SHADOW_FRUSTUM_TEST, renderNodeFlags, lstCastersHull, nLod, passInfo);
 	}
 	else if (m_light.m_Flags & DLF_PROJECT)
@@ -512,15 +502,11 @@ bool CLightEntity::ProcessFrustum(int nLod, float fGSMBoxSize, float fDistanceFr
 	}
 	else
 	{
-		pFr->bOmniDirectionalShadow = true;
 		InitShadowFrustum_OMNI(pFr, SMC_EXTEND_FRUSTUM | SMC_SHADOW_FRUSTUM_TEST, passInfo);
 		SetupShadowFrustumCamera_OMNI(pFr, SMC_EXTEND_FRUSTUM | SMC_SHADOW_FRUSTUM_TEST, passInfo);
 	}
 
 	CalculateShadowBias(pFr, nLod, fGSMBoxSize);
-
-	if (GetCVars()->e_ShadowsFrustums && pFr && pFr->GetCasterNum())
-		pFr->DrawFrustum(GetRenderer(), (GetCVars()->e_ShadowsFrustums == 1) ? 1000 : 1);
 
 	return bDoGSM;
 }
@@ -567,9 +553,7 @@ void CLightEntity::InitShadowFrustum_SUN_Conserv(ShadowMapFrustum* pFr, int dwAl
 	Vec3 vViewDir = passInfo.GetCamera().GetViewdir();
 	//float fDistance = sqrt_tpl( fGSMBoxSize*fGSMBoxSize - vEdgeScreen.z*vEdgeScreen.z - vEdgeScreen.x*vEdgeScreen.x ) + vEdgeScreen.y;
 
-	pFr->Invalidate();
-
-	pFr->nOmniFrustumMask.set(0);
+	pFr->RequestUpdates(1);
 	pFr->nShadowMapLod = nLod;
 	pFr->vLightSrcRelPos = m_light.m_Origin - passInfo.GetCamera().GetPosition();
 	pFr->fRadius = m_light.m_fRadius;
@@ -646,7 +630,6 @@ void CLightEntity::InitShadowFrustum_SUN_Conserv(ShadowMapFrustum* pFr, int dwAl
 	// local jitter amount depends on frustum size
 	pFr->fFrustrumSize = 1.0f / (fGSMBoxSize * (float)Get3DEngine()->m_fGsmRange);
 	pFr->nUpdateFrameId = frameID;
-	pFr->bIncrementalUpdate = false;
 
 	//Get gsm bounds
 	GetGsmFrustumBounds(passInfo.GetCamera(), pFr);
@@ -1256,20 +1239,21 @@ void GetCubemapFrustum(ShadowMapFrustum* pFr, int nS, CCamera& shadowFrust)
 
 void CLightEntity::CheckValidFrustums_OMNI(ShadowMapFrustum* pFr, const SRenderingPassInfo& passInfo)
 {
-	pFr->nOmniFrustumMask.reset();
-
 	const CCamera& cameraFrust = passInfo.GetCamera();
 
+	uint32 requestUpdates = 0;
 	for (int nS = 0; nS < OMNI_SIDES_NUM; nS++)
 	{
-
 		CCamera shadowFrust;
 		GetCubemapFrustum(pFr, nS, shadowFrust);
 
 		if (FrustumIntersection(cameraFrust, shadowFrust))
-			pFr->nOmniFrustumMask.set(nS);
-
+		{
+			requestUpdates |= BIT(nS);
+		}
 	}
+
+	pFr->RequestUpdates(requestUpdates);
 }
 
 bool CLightEntity::CheckFrustumsIntersect(CLightEntity* lightEnt)
@@ -1345,14 +1329,12 @@ void CLightEntity::InitShadowFrustum_PROJECTOR(ShadowMapFrustum* pFr, int dwAllo
 
 	Vec3 vProjDir = entMat.GetColumn(0).GetNormalizedSafe();
 
+	pFr->RequestUpdates(1);
 	pFr->nShadowMapLod = -1;    // not used
 
 	// place center into middle of projector far plane
 	pFr->vLightSrcRelPos = -vProjDir * m_light.m_fRadius;
 	pFr->vProjTranslation = m_light.m_Origin - pFr->vLightSrcRelPos;
-	if (pFr->fRadius != m_light.m_fRadius)
-		pFr->Invalidate();
-
 	pFr->bIncrementalUpdate = false;
 	pFr->fRadius = m_light.m_fRadius;
 	assert(m_light.m_pOwner && m_light.m_pOwner == this);
@@ -1365,7 +1347,6 @@ void CLightEntity::InitShadowFrustum_PROJECTOR(ShadowMapFrustum* pFr, int dwAllo
 
 	pFr->fNearDist = 0.01f;
 	pFr->fFarDist = m_light.m_fRadius;
-	pFr->nOmniFrustumMask.set(0);
 	pFr->bUseShadowsPool = (m_light.m_Flags & DLF_DEFERRED_LIGHT) != 0;
 
 	// set texture size
@@ -1383,13 +1364,12 @@ void CLightEntity::InitShadowFrustum_PROJECTOR(ShadowMapFrustum* pFr, int dwAllo
 		nTexSize /= 2;
 
 	float shadowUpdateDist = max(0.0f, fLightToCameraDist - m_light.m_fShadowUpdateMinRadius);
-
 	float shadowUpdateRate = 255.0f;
 
 	if (GetCVars()->e_ShadowsUpdateViewDistRatio)
 		shadowUpdateRate = min(255.f, fShadowUpdateScale * shadowUpdateDist * passInfo.GetZoomFactor() / (fShadowUpdate));
 
-	pFr->nShadowPoolUpdateRate = (uint8) shadowUpdateRate;
+	pFr->nShadowPoolUpdateRate = (uint8)shadowUpdateRate;
 
 	if (m_light.m_Flags & DLF_DEFERRED_LIGHT)
 	{
@@ -1462,7 +1442,6 @@ void CLightEntity::InitShadowFrustum_PROJECTOR(ShadowMapFrustum* pFr, int dwAllo
 	if (pFr->nTexSize != nTexSize)
 	{
 		pFr->nTexSize = nTexSize;
-		pFr->Invalidate();
 	}
 
 	//	m_pShadowMapInfo->bUpdateRequested = false;
@@ -1498,6 +1477,8 @@ void CLightEntity::InitShadowFrustum_PROJECTOR(ShadowMapFrustum* pFr, int dwAllo
 
 void CLightEntity::InitShadowFrustum_OMNI(ShadowMapFrustum* pFr, int dwAllowedTypes, const SRenderingPassInfo& passInfo)
 {
+	pFr->bOmniDirectionalShadow = true;
+
 	InitShadowFrustum_PROJECTOR(pFr, dwAllowedTypes, passInfo);
 	CheckValidFrustums_OMNI(pFr, passInfo);
 
@@ -1688,20 +1669,12 @@ void CLightEntity::SetupShadowFrustumCamera_SUN(ShadowMapFrustum* pFr, int dwAll
 		assert(m_light.m_Flags & DLF_SUN);
 		MakeShadowCastersHull(lstCastersHull, passInfo);
 	}
-
-	//  fill casters list
-	if (pFr->isUpdateRequested())
-	{
-		pFr->ResetCasterLists();
-	}
 }
 
 void CLightEntity::SetupShadowFrustumCamera_PROJECTOR(ShadowMapFrustum* pFr, int dwAllowedTypes, const SRenderingPassInfo& passInfo)
 {
 	FUNCTION_PROFILER_3DENGINE;
 
-	//  fill casters list
-	pFr->ResetCasterLists();
 	pFr->bOmniDirectionalShadow = false;
 
 	if (dwAllowedTypes)
@@ -1715,9 +1688,6 @@ void CLightEntity::SetupShadowFrustumCamera_PROJECTOR(ShadowMapFrustum* pFr, int
 		FrustCam.SetMatrix(mat);
 		FrustCam.SetFrustum(pFr->nTexSize, pFr->nTexSize, pFr->fFOV * (gf_PI / 180.0f), pFr->fNearDist, pFr->fFarDist);
 
-		pFr->ResetCasterLists();
-		pFr->RequestUpdate();
-
 		pFr->aabbCasters.Reset(); // fix: should i .Reset() pFr->aabbCasters ?
 	}
 }
@@ -1726,8 +1696,7 @@ void CLightEntity::SetupShadowFrustumCamera_OMNI(ShadowMapFrustum* pFr, int dwAl
 {
 	FUNCTION_PROFILER_3DENGINE;
 
-	//  fill casters list
-	pFr->ResetCasterLists();
+	pFr->bOmniDirectionalShadow = true;
 
 	if (dwAllowedTypes)
 	{
@@ -1739,9 +1708,6 @@ void CLightEntity::SetupShadowFrustumCamera_OMNI(ShadowMapFrustum* pFr, int dwAl
 
 		FrustCam.SetMatrix(mat);
 		FrustCam.SetFrustum(256, 256, pFr->fFOV * (gf_PI / 180.0f) * 0.9f, pFr->fNearDist, pFr->fFarDist);
-
-		pFr->ResetCasterLists();
-		pFr->RequestUpdate();
 
 		pFr->aabbCasters.Reset(); // fix: should i .Reset() pFr->aabbCasters ?
 
@@ -2079,14 +2045,13 @@ void CLightEntity::OffsetPosition(const Vec3& delta)
 	m_WSBBox.Move(delta);
 }
 
-void CLightEntity::ProcessPerObjectFrustum(ShadowMapFrustum* pFr, struct SPerObjectShadow* pPerObjectShadow, ILightSource* pLightSource, const SRenderingPassInfo& passInfo)
+void CLightEntity::InitShadowFrustum_OBJECT(ShadowMapFrustum* pFr, struct SPerObjectShadow* pPerObjectShadow, ILightSource* pLightSource, const SRenderingPassInfo& passInfo)
 {
-	assert(pFr);
+	CRY_ASSERT(pFr);
 	SRenderLight& light = pLightSource->GetLightProperties();
 
+	pFr->RequestUpdates(1);
 	pFr->m_eFrustumType = ShadowMapFrustum::e_PerObject;
-	pFr->RequestUpdate();
-	pFr->ResetCasterLists();
 
 	// mark the object to be rendered into shadow map
 	COctreeNode::SetTraversalFrameId((IRenderNode*)pPerObjectShadow->pCaster, passInfo.GetMainFrameID(), ~0);

@@ -773,15 +773,6 @@ void CD3D9Renderer::EF_EndEf3D(const int nPrecacheUpdateIdSlow, const int nPreca
 	CV_r_shadersasynccompiling = nAsyncShaders;
 }
 
-void CD3D9Renderer::EF_InvokeShadowMapRenderJobs(const SRenderingPassInfo& passInfo, const int nFlags)
-{
-	CRenderView* pRenderView = passInfo.GetRenderView();
-	if (!pRenderView->IsRecursive())
-	{
-		EF_PrepareShadowGenRenderList(passInfo);
-	}
-}
-
 //////////////////////////////////////////////////////////////////////////
 void CD3D9Renderer::RenderFrame(int nSceneRenderingFlags, const SRenderingPassInfo& passInfo)
 {

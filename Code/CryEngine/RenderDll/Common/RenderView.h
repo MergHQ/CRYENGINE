@@ -151,6 +151,9 @@ public:
 	virtual void                 AddRenderObject(CRenderElement* pRenderElement, SShaderItem& pShaderItem, CRenderObject* pRenderObject, const SRenderingPassInfo& passInfo, int list, int afterWater) threadsafe final;
 	virtual void                 AddPermanentObject(CRenderObject* pObject, const SRenderingPassInfo& passInfo) final;
 
+	virtual bool                 HasAddedItems(ERenderListID renderList) final { return m_addedItems[renderList] != 0; }
+	virtual size_t               NumAddedItems(ERenderListID renderList) final { return m_addedItems[renderList]; }
+
 	virtual void                 SetGlobalFog(const SRenderGlobalFogDescription& fogDescription) final { m_globalFogDescription = fogDescription; }
 
 	virtual void                 SetTargetClearColor(const ColorF& color, bool bEnableClear) override;
@@ -247,7 +250,7 @@ public:
 	CRenderObject::ERenderPassType GetPassType()        const { return IsShadowGenView() ? CRenderObject::eRenderPass_Shadows : CRenderObject::eRenderPass_General; }
 	//////////////////////////////////////////////////////////////////////////
 	// Shadows related
-	void AddShadowFrustumToRender(const SShadowFrustumToRender& frustum);
+	void AddShadowFrustumToRender(SShadowFrustumToRender&& frustum);
 
 	// Get render view used for given frustum.
 	CRenderView*                         GetShadowsView(ShadowMapFrustum* pFrustum);
@@ -420,8 +423,9 @@ private:
 	// For shadows or recursive view parent will be main rendering view
 	CRenderView*    m_pParentView;
 
-	RenderItems     m_renderItems[EFSLIST_NUM];
-	volatile uint32 m_batchFlags[EFSLIST_NUM];
+	std::atomic<size_t> m_addedItems [EFSLIST_NUM];
+	RenderItems         m_renderItems[EFSLIST_NUM];
+	volatile uint32     m_batchFlags [EFSLIST_NUM];
 
 	// Resolve passes information
 	STransparentSegments m_transparentSegments[3];

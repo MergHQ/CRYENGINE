@@ -585,6 +585,7 @@ void CShadowMapStage::PrepareShadowPasses(SShadowFrustumToRender& frustumToRende
 	const auto* pMainView = RenderView();
 	auto* pShadowView = reinterpret_cast<CRenderView*>(frustumToRender.pShadowsView.get());
 	auto* pFrustum = frustumToRender.pFrustum.get();
+	CRY_ASSERT(pFrustum->bRestrictToRT);
 
 	ProfileLabel profileLabel;
 	EPass passID;
@@ -596,7 +597,7 @@ void CShadowMapStage::PrepareShadowPasses(SShadowFrustumToRender& frustumToRende
 		// assign empty shadow map
 		frustumToRender.pFrustum->pDepthTex = CRendererResources::s_ptexFarPlane;
 
-		if (pFrustum->ShouldSampleSide(side))
+		if (pFrustum->ShouldSample(side))
 		{
 			CShadowMapPass& curPass = m_ShadowMapPasses[passID].AddPass();
 			cry_strcpy(curPass.m_ProfileLabel, profileLabel);
@@ -612,10 +613,12 @@ void CShadowMapStage::PrepareShadowPasses(SShadowFrustumToRender& frustumToRende
 				PrepareShadowPassForFrustum(frustumToRender, side, curPass);
 				UpdateShadowFrustumFromPass(curPass, *pFrustum);
 
+				// Symmetric to MT-code, see: CD3D9Renderer::PrepareShadowGenForFrustum
 				curPass.m_bRequiresRender =
-				  (CRendererCVars::CV_r_ShadowMapsUpdate && !pShadowView->GetRenderItems(ERenderListID(side)).empty()) ||
-				   pFrustum->m_eFrustumType == ShadowMapFrustum::e_GsmDynamicDistance ||
-				  (pFrustum->m_eFrustumType == ShadowMapFrustum::e_GsmCached && !pFrustum->bIncrementalUpdate);
+					(CRendererCVars::CV_r_ShadowMapsUpdate && !pShadowView->GetRenderItems(ERenderListID(side)).empty()) ||
+					(pFrustum->m_eFrustumType == ShadowMapFrustum::e_GsmDynamicDistance) ||
+					(pFrustum->m_eFrustumType == ShadowMapFrustum::e_GsmCached && !pFrustum->bIncrementalUpdate) ||
+					(pFrustum->m_eFrustumType == ShadowMapFrustum::e_GsmDynamic && pFrustum->ShouldUpdate(side));
 
 				curPass.SetLabel(curPass.m_ProfileLabel);
 				curPass.SetPassResources(m_pResourceLayout, curPass.GetResources());
@@ -900,7 +903,7 @@ void CShadowMapStage::PrepareShadowPassForFrustum(const SShadowFrustumToRender& 
 	}
 
 	// Override clear mode for dynamic lights: Cached sides do not need a clear
-	if (frustum.m_eFrustumType == ShadowMapFrustum::e_GsmDynamic && frustum.ShouldCacheSideHint(nSide))
+	if (frustum.m_eFrustumType == ShadowMapFrustum::e_GsmDynamic && frustum.ShouldCache(nSide))
 		targetPass.m_clearMode = CShadowMapPass::eClearMode_None;
 }
 

@@ -312,15 +312,13 @@ public:
 	                   float fEntDistance,
 	                   EERType eERType,
 	                   const SRenderingPassInfo& passInfo,
-	                   uint32 passCullMask);
+	                   FrustumMaskType passCullMask);
 
-	void RenderVegetation(class CVegetation* pEnt, PodArray<SRenderLight*>* pAffectingLights,
-													const AABB &objBox, float fEntDistance,
-													SSectorTextureSet* pTerrainTexInfo, bool nCheckOcclusion, const SRenderingPassInfo &passInfo, uint32 passCullMask);
+	void RenderVegetation(class CVegetation* pEnt, PodArray<SRenderLight*>* pAffectingLights, const AABB &objBox, float fEntDistance,
+	                      SSectorTextureSet* pTerrainTexInfo, bool nCheckOcclusion, const SRenderingPassInfo &passInfo, FrustumMaskType passCullMask);
 	void RenderBrush(class CBrush* pEnt, PodArray<SRenderLight*>* pAffectingLights,
-										 SSectorTextureSet* pTerrainTexInfo,
-										 const AABB &objBox, float fEntDistance,
-										 bool nCheckOcclusion, const SRenderingPassInfo &passInfo, uint32 passCullMask);
+	                 SSectorTextureSet* pTerrainTexInfo,const AABB &objBox, float fEntDistance,
+	                 bool nCheckOcclusion, const SRenderingPassInfo &passInfo, FrustumMaskType passCullMask);
 
 	int  ComputeDissolve(const CLodValue& lodValueIn, SRenderNodeTempData* pTempData, IRenderNode* pEnt, float fEntDistance, CLodValue arrlodValuesOut[2]);
 

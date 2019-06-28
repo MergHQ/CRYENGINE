@@ -2590,8 +2590,6 @@ struct SRenderingPassInfo
 		SetThreadID(id);
 	}
 
-private:
-	//! Private constructor, creation is only allowed with create functions.
 	SRenderingPassInfo()
 	{
 		threadID nThreadID = 0;
@@ -2600,6 +2598,7 @@ private:
 		m_nRenderMainFrameID = gEnv->nMainFrameID;
 	}
 
+private:
 	void InitRenderingFlags(uint32 nRenderingFlags);
 	void SetCamera(const CCamera& cam);
 

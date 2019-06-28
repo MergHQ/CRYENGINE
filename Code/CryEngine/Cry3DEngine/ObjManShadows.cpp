@@ -34,8 +34,6 @@ void CObjManager::MakeShadowCastersList(CVisArea* pArea, const AABB& aabbReceive
 
 	assert(pLight && vLightPos.len() > 1); // world space pos required
 
-	pFr->ResetCasterLists();
-
 	assert(CLightEntity::IsOnePassTraversalFrustum(pFr));
 }
 

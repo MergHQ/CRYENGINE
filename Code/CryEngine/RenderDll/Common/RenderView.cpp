@@ -35,6 +35,7 @@ CRenderView::CRenderView(const char* name, EViewType type, CRenderView* pParentV
 
 	for (int i = 0; i < EFSLIST_NUM; i++)
 	{
+		m_addedItems[i] = 0;
 		m_batchFlags[i] = 0;
 
 		m_renderItems[i].Init();
@@ -116,6 +117,7 @@ void CRenderView::Clear()
 	{
 		m_renderItems[i].clear();
 		m_batchFlags[i] = 0;
+		m_addedItems[i] = 0;
 	}
 
 	for (int i = 0; i < eDLT_NumLightTypes; i++)
@@ -936,6 +938,35 @@ void CRenderView::UnsetRenderOutput()
 }
 
 //////////////////////////////////////////////////////////////////////////
+template<bool shadowView, class T>
+void CountRenderItems(T& permanentRenderItems, std::atomic<size_t> (&addedItems)[EFSLIST_NUM], int frustumSide = 0)
+{
+	size_t numItems = permanentRenderItems.size();
+	assert(numItems < 128); // Sanity check, otherwise too many chunks in the mesh
+	for (size_t i = 0; i < numItems; i++)
+	{
+		auto& RESTRICT_REFERENCE pri = permanentRenderItems[i];
+
+		SShaderItem shaderItem;
+		SRendItem::ExtractShaderItem(pri.m_sortValue, pri.m_nBatchFlags, shaderItem);
+
+		CShaderResources* const __restrict pShaderResources = (CShaderResources*)shaderItem.m_pShaderResources;
+
+		// Discard 0 alpha blended geometry - this should be discarded earlier on 3dengine side preferably
+		const bool isInvisible = pShaderResources && pShaderResources->::CShaderResources::IsInvisible();
+		if (!isInvisible)
+		{
+			ERenderListID renderList;
+			if (shadowView)
+				renderList = ERenderListID(frustumSide);
+			else
+				renderList = pri.m_nRenderList;
+
+			++addedItems[renderList];
+		}
+	}
+}
+
 void CRenderView::AddPermanentObjectImpl(CPermanentRenderObject* pObject, const SRenderingPassInfo& passInfo)
 {
 	auto passType = GetPassType();
@@ -943,16 +974,32 @@ void CRenderView::AddPermanentObjectImpl(CPermanentRenderObject* pObject, const 
 
 	if (IsShadowGenView())
 	{
-		for (CPermanentRenderObject* pCurObj = pObject; pCurObj; pCurObj = static_cast<CPermanentRenderObject*>(pCurObj->m_pNextPermanent))
+		for (CPermanentRenderObject* pRenderObject = pObject; pRenderObject; pRenderObject = static_cast<CPermanentRenderObject*>(pRenderObject->m_pNextPermanent))
 		{
-			if (pCurObj->m_ObjFlags & FOB_NEAREST)
-				m_shadows.AddNearestCaster(pCurObj, passInfo);
+			// Simulate the number of calls to AddRenderObject()
+			const bool isInvisible = !pRenderObject->m_fAlpha;
+			if (!isInvisible)
+				CountRenderItems<true>(pRenderObject->m_permanentRenderItems[passType], m_addedItems, passInfo.ShadowFrustumSide());
+
+			if (pRenderObject->m_ObjFlags & FOB_NEAREST)
+				m_shadows.AddNearestCaster(pRenderObject, passInfo);
 		}
 
+		CRY_ASSERT(!m_shadows.m_pShadowFrustumOwner->bRestrictToRT);
 		if (m_shadows.m_pShadowFrustumOwner->IsCached())
 		{
 			if (IRenderNode* pNode = pObject->m_pRenderNode)
 				m_shadows.m_pShadowFrustumOwner->MarkNodeAsCached(pNode);
+		}
+	}
+	else
+	{
+		for (CPermanentRenderObject* pRenderObject = pObject; pRenderObject; pRenderObject = static_cast<CPermanentRenderObject*>(pRenderObject->m_pNextPermanent))
+		{
+			// Simulate the number of calls to AddRenderObject()
+			const bool isInvisible = !pRenderObject->m_fAlpha;
+			if (!isInvisible)
+				CountRenderItems<false>(pRenderObject->m_permanentRenderItems[passType], m_addedItems);
 		}
 	}
 }
@@ -1389,9 +1436,8 @@ void CRenderView::AddRenderObject(CRenderElement* pElem, SShaderItem& shaderItem
 	CShaderResources* const __restrict pShaderResources = (CShaderResources*)shaderItem.m_pShaderResources;
 
 	// Discard 0 alpha blended geometry - this should be discarded earlier on 3dengine side preferably
-	if (!pObj->m_fAlpha)
-		return;
-	if (pShaderResources && pShaderResources->::CShaderResources::IsInvisible())
+	const bool isInvisible = !pObj->m_fAlpha || (pShaderResources && pShaderResources->IsInvisible());
+	if (isInvisible)
 		return;
 
 #ifdef _DEBUG
@@ -1434,6 +1480,9 @@ void CRenderView::AddRenderItem(CRenderElement* pElem, CRenderObject* RESTRICT_P
 	{
 		m_shadows.AddNearestCaster(pObj, passInfo);
 	}
+
+	// Track added items as separate scalars (permanent objects don't add to renderitems immediately)
+	++m_addedItems[nList];
 
 	// Calculate AABB
 	AABB aabb;
@@ -1647,10 +1696,9 @@ void CRenderView::SPermanentObjectRecord::prepareForCompilation()
 void CRenderView::PreparePermanentRenderObjectsForCompile()
 {
 	CRY_PROFILE_FUNCTION(PROFILE_3DENGINE);
+
 	for (auto& permanentRenderObj : m_permanentObjects)
-	{
 		permanentRenderObj.prepareForCompilation();
-	}
 }
 
 void CRenderView::ExpandPermanentRenderObjects()
@@ -1671,8 +1719,6 @@ void CRenderView::ExpandPermanentRenderObjects()
 		CPermanentRenderObject* pRenderObject = record.pRenderObject;
 		assert(pRenderObject->m_bPermanent);
 
-		bool bInvalidateChildObjects = false; // TODO: investigate dependencies which require child object invalidation
-
 		uint32 subobjectIdx = 0;
 		// Submit all valid objects (skip not ready and helper objects), TODO: release helper objects
 		while (pRenderObject)
@@ -1681,6 +1727,8 @@ void CRenderView::ExpandPermanentRenderObjects()
 			EObjectCompilationOptions reCompilationOptions = eObjCompilationOption_None;
 
 			// The scope that Renderobject is locked for reading.
+			const bool isInvisible = !pRenderObject->m_fAlpha;
+			if (!isInvisible)
 			{
 				ReadLock lock(pRenderObject->m_accessLock); // Block on read access to the render object
 
@@ -1705,6 +1753,18 @@ void CRenderView::ExpandPermanentRenderObjects()
 					SShaderItem shaderItem;
 					SRendItem::ExtractShaderItem(pri.m_sortValue, pri.m_nBatchFlags, shaderItem);
 
+					CShaderResources* const __restrict pShaderResources = (CShaderResources*)shaderItem.m_pShaderResources;
+
+					// Rebuild permanent object next frame in case we still rendered with the shader item which has been replaced (and is old)
+					assert(shaderItem.m_pShader && pShaderResources);
+					if (!pShaderResources->IsValid())
+					{
+						if (pRenderObject->m_pRenderNode)
+							pRenderObject->m_pRenderNode->InvalidatePermanentRenderObject();
+
+						continue;
+					}
+
 					if (!(volatile CCompiledRenderObject*)pri.m_pCompiledObject)
 					{
 						if (pri.m_pRenderElement && (pri.m_pRenderElement->mfGetType() == eDATA_Mesh || pri.m_pRenderElement->mfGetType() == eDATA_Particle))
@@ -1721,33 +1781,7 @@ void CRenderView::ExpandPermanentRenderObjects()
 						}
 					}
 
-					// Rebuild permanent object next frame in case we still rendered with the shader item which has been replaced (and is old)
-					assert(shaderItem.m_pShader && shaderItem.m_pShaderResources);
-					if (!shaderItem.m_pShaderResources->IsValid())
-					{
-						if (pRenderObject->m_pRenderNode)
-							pRenderObject->m_pRenderNode->InvalidatePermanentRenderObject();
-					}
-
 					CheckAndScheduleForUpdate(shaderItem);
-
-					ERenderListID renderList;
-					if (renderPassType == CPermanentRenderObject::eRenderPass_Shadows)
-						renderList = ERenderListID(record.shadowFrustumSide);
-					else
-						renderList = pri.m_nRenderList;
-
-					SRendItem ri;
-
-					ri.SortVal = pri.m_sortValue;
-					ri.nBatchFlags = pri.m_nBatchFlags | (pri.m_pCompiledObject ? FB_COMPILED_OBJECT : 0);
-					ri.rendItemSorter = SRendItemSorter(record.itemSorter);
-					ri.pCompiledObject = pri.m_pCompiledObject;
-					ri.pElem = pri.m_pRenderElement;
-					ri.fDist = pri.m_fDist;
-					//ri.nStencRef = pRenderObject->m_nClipVolumeStencilRef + 1; // + 1, we start at 1. 0 is reserved for MSAAed areas.
-
-					AddRenderItemToRenderLists<false>(ri, pri.m_ObjFlags, renderList, pRenderObject, shaderItem);
 
 					// The need for compilation is not detected beforehand, and it only needs to be recompiled because the elements are either skinned, dirty, or need to be updated always.
 					// In this case object need to be recompiled to get skinning, or input stream updated but compilation of constant buffer is not needed.
@@ -1757,6 +1791,29 @@ void CRenderView::ExpandPermanentRenderObjects()
 							reCompilationOptions |= eObjCompilationOption_PerDrawExtraResources;
 
 						needsCompilation = true;
+					}
+
+					// Discard 0 alpha blended geometry - this should be discarded earlier on 3dengine side preferably
+					const bool isInvisible = pShaderResources && pShaderResources->IsInvisible();
+					if (!isInvisible)
+					{
+						ERenderListID renderList;
+						if (renderPassType == CPermanentRenderObject::eRenderPass_Shadows)
+							renderList = ERenderListID(record.shadowFrustumSide);
+						else
+							renderList = pri.m_nRenderList;
+
+						SRendItem ri;
+
+						ri.SortVal = pri.m_sortValue;
+						ri.nBatchFlags = pri.m_nBatchFlags | (pri.m_pCompiledObject ? FB_COMPILED_OBJECT : 0);
+						ri.rendItemSorter = SRendItemSorter(record.itemSorter);
+						ri.pCompiledObject = pri.m_pCompiledObject;
+						ri.pElem = pri.m_pRenderElement;
+						ri.fDist = pri.m_fDist;
+						//ri.nStencRef = pRenderObject->m_nClipVolumeStencilRef + 1; // + 1, we start at 1. 0 is reserved for MSAAed areas.
+
+						AddRenderItemToRenderLists<false>(ri, pri.m_ObjFlags, renderList, pRenderObject, shaderItem);
 					}
 				}
 			}
@@ -1773,8 +1830,8 @@ void CRenderView::ExpandPermanentRenderObjects()
 
 			if (needsCompilation)
 			{
+				CRY_ASSERT(subobjectIdx == 0 || record.subObjectInstanceInfo.size() >= subobjectIdx);
 				m_permanentRenderObjectsToCompile.push_back(SPermanentRenderObjectCompilationData { &record, subobjectIdx, pRenderObject, reCompilationOptions });
-				bInvalidateChildObjects = true;
 			}
 
 			pRenderObject = static_cast<CPermanentRenderObject*>(pRenderObject->m_pNextPermanent);
@@ -2237,9 +2294,12 @@ void CRenderView::Job_SortRenderItemsInList(ERenderListID renderList)
 		// Sort Shadow render items differently
 		if (m_shadows.m_pShadowFrustumOwner)
 		{
+			CRY_ASSERT(m_shadows.m_pShadowFrustumOwner->bRestrictToRT);
+
 			const auto side = renderList;
 			CRY_ASSERT(side >= 0 && side < OMNI_SIDES_NUM);
-			m_shadows.m_pShadowFrustumOwner->SortRenderItemsForFrustumAsync(side, &renderItems[0], renderItems.size());
+			if (n > 0)
+				m_shadows.m_pShadowFrustumOwner->SortRenderItemsForFrustumAsync(side, &renderItems[0], n);
 		}
 
 		return;
@@ -2367,10 +2427,10 @@ void CRenderView::SortLights()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CRenderView::AddShadowFrustumToRender(const SShadowFrustumToRender& frustum)
+void CRenderView::AddShadowFrustumToRender(SShadowFrustumToRender&& frustum)
 {
 	CRY_ASSERT(frustum.pShadowsView->GetFrameId() == GetFrameId());
-	m_shadows.m_renderFrustums.push_back(frustum);
+	m_shadows.m_renderFrustums.emplace_back(std::move(frustum));
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -2402,7 +2462,10 @@ CRenderView::ShadowFrustumsPtr& CRenderView::GetShadowFrustumsForLight(int light
 //////////////////////////////////////////////////////////////////////////
 void CRenderView::PostWriteShadowViews()
 {
-	// Rendering of our shadow views finished, but they may still write items in the jobs in the background
+	for (auto& fr : m_shadows.m_renderFrustums)
+	{
+		fr.pShadowsView->SwitchUsageMode(IRenderView::eUsageModeWritingDone);
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -2568,6 +2631,7 @@ void CRenderView::SShadows::CreateFrustumGroups()
 	for (auto& fr : m_renderFrustums)
 	{
 		m_frustumsByLight[fr.nLightID].push_back(&fr);
+		CRY_ASSERT(fr.pFrustum->bRestrictToRT);
 
 		switch (fr.pFrustum->m_eFrustumType)
 		{
@@ -2666,7 +2730,8 @@ void CRenderView::SShadows::PrepareNearestShadows()
 		}
 
 		nearestRenderItems.CoalesceMemory();
-		pNearestFrustum->pFrustum->GetSideSampleMask().store(nearestRenderItems.empty() ? 0 : 1);
+		CRY_ASSERT(pNearestFrustum->pFrustum->bRestrictToRT);
+		pNearestFrustum->pFrustum->RequestSamples(nearestRenderItems.empty() ? 0 : 1);
 		pNearestShadowsView->SwitchUsageMode(CRenderView::eUsageModeReading);
 	}
 }

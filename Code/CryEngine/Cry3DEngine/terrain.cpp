@@ -27,12 +27,12 @@ namespace TerrainSectorRenderTempData {
 void GetMemoryUsage(ICrySizer* pSizer);
 }
 
-void CTerrain::AddVisSector(CTerrainNode* pNode, uint32 passCullMask)
+void CTerrain::AddVisSector(CTerrainNode* pNode, FrustumMaskType passCullMask)
 {
 	m_lstVisSectors.Add(STerrainVisItem(pNode, passCullMask));
 }
 
-void CTerrain::CheckVis(const SRenderingPassInfo& passInfo, uint32 passCullMask)
+void CTerrain::CheckVis(const SRenderingPassInfo& passInfo, FrustumMaskType passCullMask)
 {
 	FUNCTION_PROFILER_3DENGINE;
 

@@ -1178,7 +1178,7 @@ public:
 	PodArray<SPerObjectShadow>     m_lstPerObjectShadows;
 	std::vector<ShadowMapFrustum*> m_lstCustomShadowFrustums;
 	int                            m_nCustomShadowFrustumCount;
-	uint32                         m_onePassShadowFrustumsCount = 0;
+	uint32                         m_onePassShadowTraversalCount = 0;
 
 	PodArray<SImageInfo>           m_arrBaseTextureData;
 

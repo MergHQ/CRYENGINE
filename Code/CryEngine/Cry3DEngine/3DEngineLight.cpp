@@ -615,7 +615,7 @@ void C3DEngine::InitShadowFrustums(const SRenderingPassInfo& passInfo)
 						pFr->AddRef();
 					}
 
-					CLightEntity::ProcessPerObjectFrustum(pFr, &m_lstPerObjectShadows[i], pSun, passInfo);
+					CLightEntity::InitShadowFrustum_OBJECT(pFr, &m_lstPerObjectShadows[i], pSun, passInfo);
 					++m_nCustomShadowFrustumCount;
 				}
 			}

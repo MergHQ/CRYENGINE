@@ -207,11 +207,9 @@ public:
 	void                             RegisterDeviceWrapperHook(ICryDeviceWrapperHook* pDeviceWrapperHook);
 	void                             UnregisterDeviceWrapperHook(const char* pDeviceHookName);
 
-	void                             EF_PrepareShadowGenRenderList(const SRenderingPassInfo& passInfo);
 	bool                             EF_PrepareShadowGenForLight(CRenderView* pRenderView, SRenderLight* pLight, int nLightID);
-	bool                             PrepareShadowGenForFrustum(CRenderView* pRenderView, ShadowMapFrustum* pCurFrustum, const SRenderLight* pLight, int nLightID, int nLOD = 0);
+	bool                             PrepareShadowGenForFrustum(CRenderView* pRenderView, CRenderView* pShadowView, ShadowMapFrustum* pCurFrustum, const SRenderLight* pLight, int nLightID);
 
-	virtual void                     EF_InvokeShadowMapRenderJobs(const SRenderingPassInfo& passInfo, const int nFlags) override;
 	void                             InvokeShadowMapRenderJobs(ShadowMapFrustum* pCurFrustum, SRenderingPassInfo passInfo);
 	void                             StartInvokeShadowMapRenderJobs(ShadowMapFrustum* pCurFrustum, const SRenderingPassInfo& passInfo);
 
@@ -591,6 +589,8 @@ public:
 
 	virtual void     EF_EndEf3D(const int nPrecacheUpdateId, const int nNearPrecacheUpdateId, const SRenderingPassInfo& passInfo, const int nRenderFlags) override;
 	virtual void     EF_EndEf2D(const bool bSort) override; // 2d only
+
+	virtual void     EF_PrepareShadowTasksForRenderView(const SRenderingPassInfo& passInfo) final;
 
 	virtual CRY_HWND GetHWND() override { return m_hWnd; }
 	virtual bool     SetWindowIcon(const char* path) override;

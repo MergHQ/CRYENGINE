@@ -94,12 +94,14 @@ void CObjManager::RenderDecalAndRoad(IRenderNode* pEnt, PodArray<SRenderLight*>*
 	pEnt->Render(DrawParams, passInfo);
 }
 
-void CObjManager::RenderVegetation(CVegetation* pEnt, PodArray<SRenderLight*>* pAffectingLights,
+void CObjManager::RenderVegetation(CVegetation* pEnt,
+                                   PodArray<SRenderLight*>* pAffectingLights,
                                    const AABB& objBox,
                                    float fEntDistance,
-                                   SSectorTextureSet* pTerrainTexInfo, bool nCheckOcclusion,
+                                   SSectorTextureSet* pTerrainTexInfo,
+                                   bool nCheckOcclusion,
                                    const SRenderingPassInfo& passInfo,
-                                   uint32 passCullMask)
+                                   FrustumMaskType passCullMask)
 {
 	FUNCTION_PROFILER_3DENGINE;
 
@@ -111,7 +113,7 @@ void CObjManager::RenderVegetation(CVegetation* pEnt, PodArray<SRenderLight*>* p
 	if (!pTempData)
 		return;
 
-	if (passCullMask & kPassCullMainMask && nCheckOcclusion)
+	if ((passCullMask & kPassCullMainMask) != 0 && nCheckOcclusion)
 	{
 		if (GetObjManager()->IsBoxOccluded(objBox, fEntDistance * passInfo.GetInverseZoomFactor(), &pTempData->userData.m_OcclState, pEnt->GetEntityVisArea() != nullptr, eoot_OBJECT, passInfo))
 		{
@@ -121,7 +123,7 @@ void CObjManager::RenderVegetation(CVegetation* pEnt, PodArray<SRenderLight*>* p
 
 	const CLodValue lodValue = pEnt->ComputeLod(pTempData->userData.nWantedLod, passInfo);
 
-	if (passCullMask & kPassCullMainMask)
+	if ((passCullMask & kPassCullMainMask) != 0)
 	{
 		if (GetCVars()->e_LodTransitionTime && passInfo.IsGeneralPass())
 		{
@@ -139,18 +141,20 @@ void CObjManager::RenderVegetation(CVegetation* pEnt, PodArray<SRenderLight*>* p
 		}
 	}
 
-	if (passCullMask & ~kPassCullMainMask)
+	if ((passCullMask & ~kPassCullMainMask) != 0)
 	{
 		COctreeNode::RenderObjectIntoShadowViews(passInfo, fEntDistance, pEnt, objBox, passCullMask);
 	}
 }
 
-void CObjManager::RenderObject(IRenderNode* pEnt, PodArray<SRenderLight*>* pAffectingLights,
-                               const Vec3& vAmbColor, const AABB& objBox,
+void CObjManager::RenderObject(IRenderNode* pEnt,
+                               PodArray<SRenderLight*>* pAffectingLights,
+                               const Vec3& vAmbColor,
+                               const AABB& objBox,
                                float fEntDistance,
                                EERType eERType,
                                const SRenderingPassInfo& passInfo,
-                               uint32 passCullMask)
+                               FrustumMaskType passCullMask)
 {
 	FUNCTION_PROFILER_3DENGINE;
 
@@ -270,7 +274,7 @@ void CObjManager::RenderObject(IRenderNode* pEnt, PodArray<SRenderLight*>* pAffe
 	DrawParams.nEditorSelectionID = pEnt->m_nEditorSelectionID;
 	//DrawParams.pInstance = pEnt;
 
-	if (passCullMask & kPassCullMainMask && eERType != eERType_Light && (pEnt->m_nInternalFlags & IRenderNode::REQUIRES_NEAREST_CUBEMAP))
+	if ((passCullMask & kPassCullMainMask) != 0 && eERType != eERType_Light && (pEnt->m_nInternalFlags & IRenderNode::REQUIRES_NEAREST_CUBEMAP))
 	{
 		Vec4 envProbMults = Vec4(1.0f, 1.0f, 1.0f, 1.0f);
 		uint16 nCubemapTexId = 0;
@@ -331,7 +335,7 @@ void CObjManager::RenderObject(IRenderNode* pEnt, PodArray<SRenderLight*>* pAffe
 	DrawParams.nMaterialLayers = pEnt->GetMaterialLayers();
 	DrawParams.lodValue = pEnt->ComputeLod(pTempData->userData.nWantedLod, passInfo);
 
-	if (passCullMask & kPassCullMainMask)
+	if ((passCullMask & kPassCullMainMask) != 0)
 	{
 		if (GetCVars()->e_LodTransitionTime && passInfo.IsGeneralPass() && pEnt->GetRenderNodeType() == eERType_MovableBrush)
 		{
@@ -352,7 +356,7 @@ void CObjManager::RenderObject(IRenderNode* pEnt, PodArray<SRenderLight*>* pAffe
 		}
 	}
 
-	if (passCullMask & ~kPassCullMainMask)
+	if ((passCullMask & ~kPassCullMainMask) != 0)
 	{
 		COctreeNode::RenderObjectIntoShadowViews(passInfo, fEntDistance, pEnt, objBox, passCullMask);
 	}

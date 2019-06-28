@@ -1396,7 +1396,7 @@ void CVolumetricFogStage::GenerateLightList()
 							Vec3 coneDir = Vec3(-spotParamsVS.x, -spotParamsVS.y, -spotParamsVS.z);
 							AABB coneBounds = AABB::CreateAABBfromCone(Cone(coneTip, coneDir, renderLight.m_fRadius, spotParamsVS.w));
 							Vec2 depthBoundsVS = Vec2(coneBounds.min.z, coneBounds.max.z);
-							Vec2 sideShadowParams = firstFrustum.ShouldSampleSide(side) ? shadowParams : Vec2(ZERO);
+							Vec2 sideShadowParams = firstFrustum.ShouldSample(side) ? shadowParams : Vec2(ZERO);
 
 							if (side == 0)
 							{

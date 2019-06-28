@@ -13,7 +13,7 @@ enum { nHMCacheSize = 64 };
 
 class CTerrainUpdateDispatcher;
 
-typedef std::pair<struct CTerrainNode*, uint32> STerrainVisItem;
+typedef std::pair<struct CTerrainNode*, FrustumMaskType> STerrainVisItem;
 
 struct SSurfaceType
 {
@@ -274,7 +274,7 @@ public:
 	int           GetNotReadyTextureNodesCount();
 	void          GetTextureCachesStatus(int& nCount0, int& nCount1) { nCount0 = m_texCache[0].GetPoolSize(); nCount1 = m_texCache[1].GetPoolSize(); }
 
-	void          CheckVis(const SRenderingPassInfo& passInfo, uint32 passCullMask);
+	void          CheckVis(const SRenderingPassInfo& passInfo, FrustumMaskType passCullMask);
 	int           UpdateOcean(const SRenderingPassInfo& passInfo);
 	int           RenderOcean(const SRenderingPassInfo& passInfo);
 	void          UpdateNodesIncrementaly(const SRenderingPassInfo& passInfo);
@@ -298,7 +298,7 @@ public:
 	void          MarkAllSectorsAsUncompiled();
 	void          GetResourceMemoryUsage(ICrySizer* pSizer, const AABB& crstAABB);
 	void          UpdateSectorMeshes(const SRenderingPassInfo& passInfo);
-	void          AddVisSector(CTerrainNode* pNode, uint32 passCullMask);
+	void          AddVisSector(CTerrainNode* pNode, FrustumMaskType passCullMask);
 
 	void          GetVegetationMaterials(std::vector<IMaterial*>*& pMatTable);
 	void          LoadVegetationData(PodArray<struct StatInstGroup>& rTable, PodArray<StatInstGroupChunk>& lstFileChunks, int i);

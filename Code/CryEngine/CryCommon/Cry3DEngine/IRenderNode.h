@@ -256,6 +256,14 @@ struct IShadowCaster
 	int8              unused;
 };
 
+typedef uint64 FrustumMaskType;
+#define FMBIT(x) (FrustumMaskType(1) << (x))
+
+constexpr uint32 kPassCullMainBitId = 0;
+constexpr FrustumMaskType kPassCullMainMask = FMBIT(kPassCullMainBitId);
+
+constexpr uint32 kMaxShadowPassesNum = sizeof(FrustumMaskType) * CHAR_BIT - 1; // reserve first bit for main view
+
 class  COctreeNode;
 struct IOctreeNode
 {

@@ -239,7 +239,7 @@ struct CVisAreaManager : public IVisAreaManager, Cry3DEngineBase
 	bool                 DeleteVisArea(CVisArea* pVisArea);
 	bool                 SetEntityArea(IRenderNode* pEnt, const AABB& objBox, const float fObjRadiusSqr);
 	void                 CheckVis(const SRenderingPassInfo& passInfo);
-	void                 DrawVisibleSectors(const SRenderingPassInfo& passInfo, uint32 passCullMask);
+	void                 DrawVisibleSectors(const SRenderingPassInfo& passInfo, FrustumMaskType passCullMask);
 	void                 ActivatePortal(const Vec3& vPos, bool bActivate, const char* szEntityName);
 	void                 ActivateOcclusionAreas(IVisAreaTestCallback* pTest, bool bActivate);
 	void                 UpdateVisArea(CVisArea* pArea, const Vec3* pPoints, int nCount, const char* szName, const SVisAreaInfo& info);
