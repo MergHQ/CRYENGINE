@@ -267,43 +267,6 @@ void CPostEffectStage::Execute()
 
 	// display debug info.
 #ifndef _RELEASE
-	if (CRenderer::CV_r_AntialiasingModeDebug > 0)
-	{
-		CTexture* pSrcTex = m_context.GetSrcBackBufferTexture();
-		CTexture* pDstTex = m_context.GetDstBackBufferTexture();
-
-		m_passCopyScreenToTex.Execute(pDstTex, pSrcTex);
-
-		auto& pass = m_passAntialiasingDebug;
-
-		if (pass.IsDirty(pSrcTex->GetID(), pDstTex->GetID()))
-		{
-			static CCryNameTSCRC pszTechName("DebugPostAA");
-			pass.SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_PS);
-			pass.SetTechnique(CShaderMan::s_shPostAA, pszTechName, 0);
-			pass.SetState(GS_NODEPTHTEST);
-
-			pass.SetRenderTarget(0, pDstTex);
-
-			pass.SetTexture(0, pSrcTex);
-			pass.SetSampler(0, EDefaultSamplerStates::PointClamp);
-		}
-
-		pass.BeginConstantUpdate();
-
-		float mx = static_cast<float>(pSrcTex->GetWidth() >> 1);
-		float my = static_cast<float>(pSrcTex->GetHeight() >> 1);
-	#if CRY_PLATFORM_WINDOWS
-		gEnv->pHardwareMouse->GetHardwareMouseClientPosition(&mx, &my);
-	#endif
-
-		const Vec4 vDebugParams(mx, my, 1.f, max(1.0f, (float)CRenderer::CV_r_AntialiasingModeDebug));
-		static CCryNameR pszDebugParams("vDebugParams");
-		pass.SetConstant(pszDebugParams, vDebugParams);
-
-		pass.Execute();
-	}
-
 	if (!activeEffects.empty() && CRenderer::CV_r_PostProcess >= 2) // Debug output for active post effects
 	{
 		if (CRenderer::CV_r_PostProcess >= 2)

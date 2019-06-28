@@ -882,6 +882,10 @@ void CGraphicsPipeline::GeneratePerViewConstantBuffer(const SRenderViewInfo* pVi
 		cb.CV_PrevViewProjNearestMatr = viewInfo.prevCameraProjNearestMatrix.GetTransposed();
 		cb.CV_ViewMatr = viewInfo.viewMatrix.GetTransposed();
 		cb.CV_InvViewMatr = viewInfo.invViewMatrix.GetTransposed();
+#ifndef _RELEASE
+		cb.CV_ProjMatr = viewInfo.projMatrix.GetTransposed();
+		cb.CV_ProjMatrUnjittered = viewInfo.unjitteredProjMatrix.GetTransposed();
+#endif
 
 		Vec4r vWBasisX, vWBasisY, vWBasisZ, vCamPos;
 		CShadowUtils::ProjectScreenToWorldExpansionBasis(Matrix44(IDENTITY), *viewInfo.pCamera, m_pCurrentRenderView->m_vProjMatrixSubPixoffset,

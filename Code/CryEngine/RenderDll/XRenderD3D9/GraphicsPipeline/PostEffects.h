@@ -62,9 +62,6 @@ public:
 	CPostEffectStage(CGraphicsPipeline& graphicsPipeline)
 		: CGraphicsPipelineStage(graphicsPipeline)
 		, m_passCopyScreenToTex(&graphicsPipeline)
-#ifndef _RELEASE
-		, m_passAntialiasingDebug(&graphicsPipeline)
-#endif
 	{
 		m_pPostMgr = nullptr;
 	}

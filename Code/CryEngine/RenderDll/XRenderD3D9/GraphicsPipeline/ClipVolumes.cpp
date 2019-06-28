@@ -28,7 +28,6 @@ CClipVolumesStage::CClipVolumesStage(CGraphicsPipeline& graphicsPipeline)
 	, m_filledVolumetricFogDepth(MAX_GPU_NUM)
 	, m_raymarchDistance(0.0f)
 	, m_bClipVolumesValid(false)
-	, m_clearedBlendValuesRT(false)
 	, m_bOutdoorVisible(false)
 {
 	ZeroArray(m_clipVolumeShaderParams);
@@ -607,13 +606,9 @@ void CClipVolumesStage::Execute()
 		{
 			ExecuteVolumetricFog();
 		}
-
-		m_clearedBlendValuesRT = false;
 	}
-	else if (!m_clearedBlendValuesRT)
+	else
 	{
-		m_clearedBlendValuesRT = true;
-
 		CClearSurfacePass::Execute(m_pBlendValuesRT, Clr_Empty);
 	}
 

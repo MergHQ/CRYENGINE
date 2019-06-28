@@ -18,9 +18,12 @@ public:
 		, m_passTemporalAA(&graphicsPipeline)
 		, m_passComposition(&graphicsPipeline)
 		, m_passCopySRGB(&graphicsPipeline)
+#ifndef _RELEASE
+		, m_passAntialiasingDebug(&graphicsPipeline)
+#endif
 	{
-		m_pPrevBackBuffersLeftEye[0] = m_pPrevBackBuffersLeftEye[1] = nullptr;
-		m_pPrevBackBuffersRightEye[0] = m_pPrevBackBuffersRightEye[1] = nullptr;
+		m_pPrevBackBuffers[CCamera::eEye_Left][0] = m_pPrevBackBuffers[CCamera::eEye_Right][0] = nullptr;
+		m_pPrevBackBuffers[CCamera::eEye_Left][1] = m_pPrevBackBuffers[CCamera::eEye_Right][1] = nullptr;
 	}
 
 	// Width and height should be the actual dimensions of the texture to be antialiased,
@@ -41,18 +44,21 @@ public:
 	void Execute();
 
 private:
-	void      ApplySMAA(CTexture*& pCurrRT);
-	void      ApplySRGB(CTexture*& pCurrRT);
+	void      ApplySMAA(CTexture*& pCurrRT, CTexture*& pDestRT);
+	void      ApplySRGB(CTexture*& pCurrRT, CTexture*& pDestRT);
 	void      ApplyTemporalAA(CTexture*& pCurrRT, CTexture*& pMgpuRT, uint32 aaMode);
 	void      DoFinalComposition(CTexture*& pCurrRT, CTexture* pDestRT, uint32 aaMode);
 
 	CTexture* GetAARenderTarget(const CRenderView* pRenderView, bool bCurrentFrame) const;
 
+#ifndef _RELEASE
+	void      ExecuteDebug(CTexture* pZoomRT, CTexture* pDestRT);
+#endif
+
 private:
 	_smart_ptr<CTexture> m_pTexAreaSMAA;
 	_smart_ptr<CTexture> m_pTexSearchSMAA;
-	CTexture*            m_pPrevBackBuffersLeftEye[2];
-	CTexture*            m_pPrevBackBuffersRightEye[2];
+	CTexture*            m_pPrevBackBuffers[CCamera::eEye_eCount][2];
 	int                  m_lastFrameID;
 
 	CFullscreenPass      m_passSMAAEdgeDetection;
@@ -64,4 +70,8 @@ private:
 
 	bool                 oldStereoEnabledState{ false };
 	int                  oldAAState{ 0 };
+
+#ifndef _RELEASE
+	CFullscreenPass      m_passAntialiasingDebug;
+#endif
 };

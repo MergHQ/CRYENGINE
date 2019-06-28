@@ -308,6 +308,7 @@ float CRendererCVars::CV_r_ParticlesAmountGI;
 int CRendererCVars::CV_r_AntialiasingMode_CB;
 int CRendererCVars::CV_r_AntialiasingMode;
 int CRendererCVars::CV_r_AntialiasingModeSCull;
+float CRendererCVars::CV_r_AntialiasingSMAAThreshold;
 int CRendererCVars::CV_r_AntialiasingTAAPattern;
 float CRendererCVars::CV_r_AntialiasingTAASharpening;
 float CRendererCVars::CV_r_AntialiasingTAAFalloffHiFreq;
@@ -1387,28 +1388,37 @@ void CRendererCVars::InitCVars()
 	REGISTER_CVAR3("r_AntialiasingTAAPattern", CV_r_AntialiasingTAAPattern, 1, VF_NULL,
 	               "Selects TAA sampling pattern.\n"
 	               "  0: no subsamples\n"
+	               " ------------------\n"
 	               "  1: optimal pattern for selected aa mode\n"
 	               "  2: 2x\n"
 	               "  3: 3x\n"
-	               "  4: regular 4x\n"
-	               "  5: rotated 4x\n"
+	               "  4: 4x aligned grid\n"
+	               "  5: 4x rotated grid\n"
 	               "  6: 8x\n"
-	               "  7: sparse grid 8x8\n"
-	               "  8: random\n"
-	               "  9: Halton 8x\n"
-	               "  10: Halton 16x\n"
-	               "  11: Halton random");
+	               "  7: 8x sparse grid\n"
+	               " ------------------\n"
+	               "  8: 8x Halton\n"
+	               "  9: 16x Halton\n"
+	               " 10: 1024x Halton\n"
+	               " ------------------\n"
+	               " 11: 4x N-queens (solution to 5)\n"
+	               " 12: 5x N-queens\n"
+	               " 13: 7x N-queens\n"
+	               " 14: 8x N-queens (solution to 6)\n"
+	               " ------------------\n"
+	               " -1: Random");
 
 	REGISTER_CVAR3("r_AntialiasingModeSCull", CV_r_AntialiasingModeSCull, 1, VF_NULL,
 	               "Enables post processed based aa modes stencil culling optimization\n");
-
+	
+	REGISTER_CVAR3("r_AntialiasingSMAAThreshold", CV_r_AntialiasingSMAAThreshold, 0.1f, VF_NULL,
+	               "Specifies threshold (in normalized brightness) when SMAA considers edge-detection. Default 0.1\n"
+	               "Bigger values requires larger brightness differences to trigger edge-detection, which is faster but antialiases less.\n"
+	               "Smaller value allows smaller brightness differences to trigger edge-detection, which is slower but antialiases more.");
+	
 	DefineConstIntCVar3("r_AntialiasingModeDebug", CV_r_AntialiasingModeDebug, 0, VF_NULL,
 	                    "Enables AA debugging views\n"
-	                    "Usage: r_AntialiasingModeDebug [n]"
-	                    "1: Display edge detection"
-	                    "2: Zoom image 2x"
-	                    "3: Zoom image 2x + display edge detection"
-	                    "4: Zoom image 4x, etc");
+	                    "Usage: r_AntialiasingModeDebug [zoom-factor]");
 
 	REGISTER_CVAR3("r_AntialiasingTAASharpening", CV_r_AntialiasingTAASharpening, 0.2f, VF_NULL,
 	               "Enables TAA sharpening.\n");

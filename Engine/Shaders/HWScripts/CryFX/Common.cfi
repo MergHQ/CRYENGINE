@@ -44,6 +44,8 @@
 #include "FXConstantDefs.cfi"
 #include "FXSamplerDefs.cfi"
 
+#include "CommonMath.cfi"
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void ComputeGlobalFogPS(inout half3 cOut, float fDist)
@@ -51,24 +53,6 @@ void ComputeGlobalFogPS(inout half3 cOut, float fDist)
 #if %_RT_FOG
   cOut.xyz = lerp(g_PS_FogColor.xyz, cOut.xyz, fDist);
 #endif  
-}
-
-// Common functions
-half4 EXPAND( half4 a )
-{
-  return a * 2 - 1;
-}
-half3 EXPAND( half3 a )
-{
-  return a * 2 - 1;
-}
-half EXPAND( half a )
-{
-  return a * 2 - 1;
-}
-half2 EXPAND( half2 a )
-{
-  return a * 2 - 1;
 }
 
 float3 TangNormalUnnormalized(float4 Tangent, float4 Binormal)
@@ -84,6 +68,7 @@ float3 TangNormal(float4 Tangent, float4 Binormal)
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 half4 GetTexture2DGrad(Texture2D tex, SamplerState samplerState, float2 uv, float2 ddxUV, float2 ddyUV) { return tex.SampleGrad(samplerState, uv.xy, ddxUV, ddyUV ); }
 half4 GetTexture2DLod(Texture2D tex, SamplerState samplerState, float4 uv)                              { return tex.SampleLevel(samplerState, uv.xy, uv.w); }
+half2 GetTexture2DLod(Texture2D<float2> tex, SamplerState samplerState, float4 uv)                      { return tex.SampleLevel(samplerState, uv.xy, uv.w); }
 half4 GetTexture2DLod(Texture2D tex, SamplerState samplerState, float2 uv, float Lod)                   { return tex.SampleLevel(samplerState, uv.xy, Lod); }
 half4 GetTexture2DProj(Texture2D tex, SamplerState samplerState, float4 uv)                             { return tex.Sample(samplerState, uv.xy * rcp(uv.w)); }
 half2 GetTexture2DProj(Texture2D<float2> tex, SamplerState samplerState, float4 uv)                     { return tex.Sample(samplerState, uv.xy * rcp(uv.w)); }
@@ -296,35 +281,13 @@ float2 DecodeMotionVector(float2 vMotionEncoded, bool bFastEncoded = false)
 	return (vMotionEncoded.xy * vMotionEncoded.xy) * (vMotionEncoded.xy>0.0f ? float2(1, 1) : float2(-1, -1));
 } 
 
-float4 OutputVelocityRT(float2 vCurrPos, float2 vPrevPos, float fAlpha = 1.0f)
+float2 OutputVelocityRT(float2 vCurrPos, float2 vPrevPos, float fAlpha = 1.0f)
 {
 	float2 vVelocity = (vPrevPos - vCurrPos) * fAlpha;
-	return float4(EncodeMotionVector(vVelocity), 0, 0);
+	return float2(EncodeMotionVector(vVelocity));
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-
-half3 LinearToSRGB(half3 col)
-{
-	col = saturate(col);
-	return (col < 0.0031308) ? 12.92h * col : 1.055h * pow(col, 1.0h / 2.4h) - half3(0.055h, 0.055h, 0.055h);
-}
-
-// Encode a float value into 3 bytes (input value should be in the range of [0, 1])
-float3 PackFloatToVec3(const float value)
-{
-	static const float3 bitSh = float3(256.0 * 256.0, 256.0, 1.0);
-	static const float3 bitMsk = float3(0.0, 1.0/256.0, 1.0/256.0);
-	float3 res = frac(value * bitSh);
-	res -= res.xxy * bitMsk;
-	return res;
-}
-
-float UnpackFloatFromVec3(const float3 value)
-{
-	static const float3 bitSh = float3(1.0/(256.0*256.0), 1.0/256.0, 1.0);
-	return dot(value, bitSh);
-}
 
 half GetUnnormalizedLinearDownscaledDepth(in float4 rawDepth)
 {
@@ -434,10 +397,6 @@ void CompressUnsignedNormalToNormalsBuffer(inout half4 vNormal)
 #define LIGHTINGMODEL_TRANSMITTANCE  1
 #define LIGHTINGMODEL_POM_SS         2
 
-#define MAX_FRACTIONAL_8_BIT        (255.0f / 256.0f)
-#define MIDPOINT_8_BIT              (127.0f / 255.0f)
-#define TWO_BITS_EXTRACTION_FACTOR  (3.0f + MAX_FRACTIONAL_8_BIT)
-
 struct MaterialAttribsCommon
 {
 	half3  NormalWorld;
@@ -454,38 +413,6 @@ MaterialAttribsCommon MaterialAttribsDefault()
 {
 	MaterialAttribsCommon attribs = (MaterialAttribsCommon) 0;
 	return attribs;
-}
-
-half GetLuminance( half3 color )
-{
-	return dot( color, half3( 0.2126h, 0.7152h, 0.0722h ) );
-}
-
-half3 EncodeColorYCC( half3 col )
-{
-	half3 encodedCol;
-
-	// Y'Cb'Cr'
-	col = sqrt( col );
-	encodedCol.x = dot( half3(0.299, 0.587, 0.114), col.rgb );
-	encodedCol.y = dot( half3(-0.1687, -0.3312, 0.5), col.rgb );
-	encodedCol.z = dot( half3(0.5, -0.4186, -0.0813), col.rgb );
-	
-	return half3(encodedCol.x, encodedCol.y * MIDPOINT_8_BIT + MIDPOINT_8_BIT, encodedCol.z * MIDPOINT_8_BIT + MIDPOINT_8_BIT);
-}
-
-half3 DecodeColorYCC( half3 encodedCol, const bool useChrominance = true )
-{
-	encodedCol = half3(encodedCol.x, encodedCol.y / MIDPOINT_8_BIT - 1, encodedCol.z / MIDPOINT_8_BIT - 1);
-	if (!useChrominance) encodedCol.yz = 0;
-	
-	// Y'Cb'Cr'
-	half3 col;
-	col.r = encodedCol.x + 1.402 * encodedCol.z;
-	col.g = dot( half3( 1, -0.3441, -0.7141 ), encodedCol.xyz );
-	col.b = encodedCol.x + 1.772 * encodedCol.y;
-
-	return col * col;
 }
 
 half DecodeSunSelfShadowing( half4 bufferA, half4 bufferB, half4 bufferC )
@@ -586,22 +513,6 @@ half DecodeGBufferTransmittanceLum( half4 bufferA )
 {
 	half lightingModel = floor( bufferA.w * TWO_BITS_EXTRACTION_FACTOR );
 	return (lightingModel == LIGHTINGMODEL_TRANSMITTANCE) ? frac( bufferA.w * TWO_BITS_EXTRACTION_FACTOR ) : 0;
-}
-
-uint selectCubeFace(in float3 lightVec)
-{
-	float3 dir = abs(lightVec);
-
-	bool3 pmag = bool3(dir.x > dir.y, dir.y > dir.z, dir.x > dir.z);
-	bool3 nmag = bool3(dir.x <= dir.y, dir.y <= dir.z, dir.x <= dir.z); 
-	bool3 flp  = bool3(lightVec.x == dir.x, lightVec.y == dir.y, lightVec.z == dir.z); 
-
-	uint cubeFace = 
-		(pmag.x) * (pmag.z) * (0 + flp.x) +
-		(nmag.x) * (pmag.y) * (2 + flp.y) +
-		(nmag.z) * (nmag.y) * (4 + flp.z); 
-		
-	return cubeFace;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -758,26 +669,6 @@ float ComputeTextureLOD(in float2 uv, in float2 texDim, out float2 ddx_uv, out f
 	//float lod = max(0.5 * log2(max(mag.x, mag.y)), 0);
 	float lod = log2(max(mag.x, mag.y));
 	return lod;
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-float4 rgb10a2_to_rgb10a2f( float4 InColor )
-{
-	// Shift left 3 bits. This allows us to have the exponent and mantissa on opposite
-	// sides of the decimal point for extraction.
-	float4 OutColor = InColor * 8.0f;
-
-	// Extract the exponent and mantissa that are now on opposite sides of the decimal point
-	float3 e = floor( OutColor.rgb );
-	float3 m = frac( OutColor.rgb );
-	
-	// Perform the 7e3 conversion.  Note that this varies on the value of e for each channel:
-	// if e != 0.0f then the correct conversion is (1+m)/8*pow(2,e).
-	// else it is (1+m)/8*pow(2,e).  
-	OutColor.rgb  = (e == 0.0f) ? 2*m/8 : (1+m)/8 * exp2(e);
-
-	return OutColor;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

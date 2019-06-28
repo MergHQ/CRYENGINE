@@ -551,6 +551,7 @@ public:
 	static int   CV_r_AntialiasingMode_CB;
 	static int   CV_r_AntialiasingMode;
 	static int   CV_r_AntialiasingModeSCull;
+	static float CV_r_AntialiasingSMAAThreshold;
 	static int   CV_r_AntialiasingTAAPattern;
 	static float CV_r_AntialiasingTAAFalloffHiFreq;
 	static float CV_r_AntialiasingTAAFalloffLowFreq;

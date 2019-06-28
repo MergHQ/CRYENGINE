@@ -81,6 +81,5 @@ private:
 	float                                              m_raymarchDistance;
 
 	bool                                               m_bClipVolumesValid;
-	bool                                               m_clearedBlendValuesRT;
 	bool                                               m_bOutdoorVisible;
 };
