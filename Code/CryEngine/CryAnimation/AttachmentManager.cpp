@@ -2437,6 +2437,12 @@ void CAttachmentManager::ProcessAttachment(IAttachment* pSocket)
 				pRenderNode->SetRndFlags(ERF_HAS_CASTSHADOWMAPS, true);
 			}
 
+			const bool hudDepthTest = (parentNodeFlags & ERF_HUD_REQUIRE_DEPTHTEST) != 0;
+			pRenderNode->SetRndFlags(ERF_HUD_REQUIRE_DEPTHTEST, hudDepthTest);
+
+			const bool renderAlways = (parentNodeFlags & ERF_RENDER_ALWAYS) != 0;
+			pRenderNode->SetRndFlags(ERF_RENDER_ALWAYS, renderAlways);
+
 			if (pParentRenderNode)
 			{
 				pRenderNode->m_nHUDSilhouettesParam = pParentRenderNode->m_nHUDSilhouettesParam;
