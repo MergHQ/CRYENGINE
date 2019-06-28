@@ -18,7 +18,7 @@ struct SCompressionPresetTable
 {
 	std::vector<SCompressionPresetEntry> entries;
 
-	const SCompressionPresetEntry* FindPresetForAnimation(const char* animationPath, const vector<string>& tags, const char* skeletonAlias) const;
+	const SCompressionPresetEntry* FindPresetForAnimation(const char* animationPath, const vector<string>& tags) const;
 
 	bool Load(const char* tablePath);
 	bool Save(const char* tablePath);

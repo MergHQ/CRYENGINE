@@ -16,6 +16,7 @@
 #define _SKELETON_INFO
 #pragma once
 
+#include "AnimList.h"
 #include <Cry3DEngine/CGF/CGFContent.h>
 
 class CSkeletonInfo
@@ -29,6 +30,7 @@ public:
 
 public:
 	CSkinningInfo m_SkinningInfo;
+	CAnimList m_animList;
 };
 
 #endif

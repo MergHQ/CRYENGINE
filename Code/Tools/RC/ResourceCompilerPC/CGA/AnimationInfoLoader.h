@@ -75,8 +75,6 @@ public:
 
 	bool m_bNewFormat;
 
-	string m_skeletonName;
-
 	union 
 	{
 		struct NewFormat

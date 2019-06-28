@@ -38,7 +38,7 @@ public:
 	AnimationList(System* system);
 	~AnimationList();
 
-	void                      Populate(ICharacterInstance* character, const char* defaultSkeletonAlias, const AnimationSetFilter& filter, const char* animEventsFilename);
+	void                      Populate(ICharacterInstance* character, const AnimationSetFilter& filter, const char* animEventsFilename);
 	void                      SetAnimationFilterAndScan(const AnimationSetFilter& filter);
 	void                      SetAnimationEventsFilePath(const string& animationEventsFilePath);
 
@@ -103,7 +103,6 @@ private:
 	System*                      m_system;
 	IAnimationSet*               m_animationSet;
 	ICharacterInstance*          m_character;
-	string                       m_defaultSkeletonAlias;
 	string                       m_animEventsFilename;
 
 	CEntryList<AnimationContent> m_animations;

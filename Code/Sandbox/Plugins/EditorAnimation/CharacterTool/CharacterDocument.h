@@ -244,7 +244,6 @@ private:
 	void       PlayAnimEvent(ICharacterInstance* character, const AnimEventInstance& event);
 	void       TriggerAnimEventsInRange(float timeFrom, float timeTo);
 
-	string     GetDefaultSkeletonAlias();
 	void       ReloadCHRPARAMS();
 	void       ReleaseObject();
 	void       Physicalize(int physLod = 0);

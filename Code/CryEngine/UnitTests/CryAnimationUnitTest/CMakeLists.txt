@@ -5,11 +5,13 @@ add_sources("NoUberFile"
 	SOURCE_GROUP "Source Files"
 		"GraphDijkstraTests.cpp"
 		"MergeParametricExamplesTests.cpp"
+		"AnimListPatternMatchingTests.cpp"
 )
 end_sources()
 
 CryUnitTestSuite(CryAnimationUnitTest SOLUTION_FOLDER "UnitTests")
 use_scaleform()
+include_directories("${CRYENGINE_DIR}/Code/CryEngine/CryCommon")
 include_directories("${CRYENGINE_DIR}/Code/CryEngine/CryAnimation")
 target_compile_definitions(${THIS_PROJECT} PRIVATE _LIB CRY_IS_MONOLITHIC_BUILD _LAUNCHER)
 if (NOT OPTION_STATIC_LINKING)

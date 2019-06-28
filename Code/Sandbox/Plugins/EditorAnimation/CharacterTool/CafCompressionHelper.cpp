@@ -103,12 +103,6 @@ bool CafCompressionHelper::CompressAnimationForPreview(string* outputCafPath, st
 
 	const string inputFilePath = PathUtil::ReplaceExtension(animationPath, "i_caf"); //AnimSettingsFileHelper::GetIntermediateFilename(animationPath);
 
-	if (animSettings.build.skeletonAlias.empty())
-	{
-		outErrorMessage->Format("Skeleton alias is not specified.");
-		return false;
-	}
-
 	if (gEnv->pCryPak->IsFileExist(inputFilePath, ICryPak::eFileLocation_OnDisk) == false)
 	{
 		outErrorMessage->Format("Uncompressed animation '%s' doesn't exist on disk.", inputFilePath.c_str());

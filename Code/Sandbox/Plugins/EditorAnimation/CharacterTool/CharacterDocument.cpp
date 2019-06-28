@@ -870,14 +870,14 @@ void CharacterDocument::LoadCharacter(const char* filename)
 				}
 			}
 		}
-		m_system->animationList->Populate(m_compressedCharacter, GetDefaultSkeletonAlias().c_str(), filter, m_compressedCharacter->GetModelAnimEventDatabase());
+		m_system->animationList->Populate(m_compressedCharacter, filter, m_compressedCharacter->GetModelAnimEventDatabase());
 
 		if (characterEntry)
 			characterEntry->content.engineLoadState = CharacterContent::CHARACTER_LOADED;
 	}
 	else
 	{
-		m_system->animationList->Populate(0, GetDefaultSkeletonAlias().c_str(), AnimationSetFilter(), "");
+		m_system->animationList->Populate(nullptr, AnimationSetFilter(), "");
 	}
 
 	m_compressionMachine->SetCharacters(m_uncompressedCharacter, m_compressedCharacter);
@@ -2212,17 +2212,6 @@ bool CharacterDocument::IsExplorerEntrySelected(ExplorerEntry* entry) const
 	return false;
 }
 
-string CharacterDocument::GetDefaultSkeletonAlias()
-{
-	if (!m_compressedCharacter)
-		return string();
-	string skeletonPath = m_compressedCharacter->GetIDefaultSkeleton().GetModelFilePath();
-	string alias = m_system->compressionSkeletonList->FindSkeletonNameByPath(skeletonPath.c_str());
-	if (alias.empty())
-		alias = m_system->compressionSkeletonList->FindSkeletonNameByPath(m_loadedCharacterFilename);
-	return alias;
-}
-
 void CharacterDocument::PreviewAnimationEntry(bool forceRecompile)
 {
 	size_t numLayers = m_system->scene->layers.layers.size();
@@ -2238,7 +2227,6 @@ void CharacterDocument::PreviewAnimationEntry(bool forceRecompile)
 			{
 				SAnimSettings settings;
 				settings.build.compression.SetZeroCompression();
-				settings.build.skeletonAlias = anim->content.newAnimationSkeleton;
 				animSettings[i] = settings;
 				isModified[i] = true;
 			}
@@ -2252,9 +2240,6 @@ void CharacterDocument::PreviewAnimationEntry(bool forceRecompile)
 		}
 		else
 			continue;
-
-		if (animSettings[i].build.skeletonAlias.empty())
-			animSettings[i].build.skeletonAlias = GetDefaultSkeletonAlias();
 	}
 
 	float normalizedTime = 0.0f;

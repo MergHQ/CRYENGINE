@@ -329,7 +329,6 @@ bool SAnimationDefinition::GetDescFromAnimationSettingsFile(SAnimationDesc* desc
 	}
 
 	desc->m_bAdditiveAnimation = animSettings.build.additive;
-	desc->m_skeletonName = animSettings.build.skeletonAlias;
 
 
 	if (animSettings.build.compression.m_useNewFormatWithDefaultSettings)

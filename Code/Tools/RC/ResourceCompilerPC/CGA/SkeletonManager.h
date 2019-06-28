@@ -3,7 +3,7 @@
 #ifndef __SKELETON_MANAGER__H__
 #define __SKELETON_MANAGER__H__
 
-#include <set>
+#include <unordered_map>
 #include "SkeletonLoader.h"
 
 struct IPakSystem;
@@ -15,12 +15,13 @@ class SkeletonManager
 public:
 	SkeletonManager(IPakSystem* pPakSystem, ICryXML* pXMLParser, IResourceCompiler* pRc);
 
-	bool LoadSkeletonList(const string& filename, const string& rootPath, const std::set<string>& skeletons);
-	const CSkeletonInfo* FindSkeleton(const string& name) const;
-	const CSkeletonInfo* LoadSkeleton(const string& name);
+	bool Initialize(const string& rootPath);
+	const CSkeletonInfo* FindSkeletonByAnimFile(const char* filename, bool bRelative = false) const;
+	const CSkeletonInfo* FindSkeleton(const char* filename) const;
+	const CSkeletonInfo* LoadSkeleton(const char* filename);
 
 private:
-	const CSkeletonInfo* LoadSkeletonInfo(const string& name, const string& file);
+	const CSkeletonInfo* LoadSkeletonInfo(const char* filename);
 
 private:
 	IPakSystem* m_pPakSystem;
@@ -29,11 +30,8 @@ private:
 	string m_rootPath;
 	string m_tmpPath;
 
-	typedef std::map<string, string> TNameToFileMap;
-	TNameToFileMap m_nameToFile;
-
-	typedef std::map<string, SkeletonLoader> TNameToSkeletonMap;
-	TNameToSkeletonMap m_nameToSkeletonInfo;
+	typedef std::unordered_map<string, SkeletonLoader, stl::hash_stricmp<string>> TFileToSkeletonMap;
+	TFileToSkeletonMap m_fileToSkeletonInfo;
 };
 
 #endif

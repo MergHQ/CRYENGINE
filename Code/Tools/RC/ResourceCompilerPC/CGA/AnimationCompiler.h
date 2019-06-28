@@ -127,7 +127,7 @@ private:
 	bool RebuildDatabases();
 
 	void InitDbaTableEnumerator();
-	void InitSkeletonManager(const std::set<string>& usedSkeletons);
+	void InitSkeletonManager();
 
 
 	int m_platform;

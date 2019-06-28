@@ -89,8 +89,6 @@ add_sources("Uber_Explorer.cpp"
 		"CharacterTool/AnimationList.h"
 		"CharacterTool/CharacterList.cpp"
 		"CharacterTool/CharacterList.h"
-		"CharacterTool/SkeletonList.cpp"
-		"CharacterTool/SkeletonList.h"
 )
 
 add_sources("Uber_ModalTools.cpp"

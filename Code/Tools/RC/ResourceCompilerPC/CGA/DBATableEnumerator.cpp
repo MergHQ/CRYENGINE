@@ -59,7 +59,6 @@ bool DBATableEnumerator::LoadDBATable(const string& animConfigFolder, const stri
 			item.path = UnifiedPath(PathUtil::ReplaceExtension(path, "caf"));
 			item.path.replace('\\', '/');
 			item.tags = animSettings.build.tags;
-			item.skeletonAlias = animSettings.build.skeletonAlias;
 			filterItems.push_back(item);
 		}
 	}
@@ -110,13 +109,12 @@ bool DBATableEnumerator::GetCAF(EnumeratedCAF* caf, int dbaIndex, int animationI
 	return true;
 }
 
-const char* DBATableEnumerator::FindDBAPath(const char* animationPath, const char* skeleton, const std::vector<string>& tags) const
+const char* DBATableEnumerator::FindDBAPath(const char* animationPath, const std::vector<string>& tags) const
 {
 	if (!m_table.get())
 		return 0;
 	SAnimationFilterItem item;
 	item.path = animationPath;
-	item.skeletonAlias = skeleton;
 	item.tags = tags;
 	int index = m_table->FindDBAForAnimation(item);
 	if (index < 0 || index >= m_table->entries.size())

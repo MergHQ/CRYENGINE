@@ -10,7 +10,6 @@ struct SAnimationFilterItem
 {
 	string              path;
 	std::vector<string> tags;
-	string              skeletonAlias;
 	int                 selectedRule;
 
 	SAnimationFilterItem()

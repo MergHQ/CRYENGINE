@@ -40,7 +40,6 @@ class EditorDBATable;
 class EditorCompressionPresetTable;
 class FilterAnimationList;
 class GizmoSink;
-class SkeletonList;
 struct CharacterDefinition;
 struct DisplayOptions;
 struct SceneContent;
@@ -67,7 +66,6 @@ public:
 	unique_ptr<ExplorerFileList>  sourceAssetList;
 	EditorDBATable*               dbaTable;
 	EditorCompressionPresetTable* compressionPresetTable;
-	SkeletonList*                 compressionSkeletonList;
 	// ^^^
 
 	// serialization contexts

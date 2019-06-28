@@ -180,7 +180,7 @@ static bool LoadAnimEvents(ActionOutput* output, AnimEvents* animEvents, const c
 	return true;
 }
 
-static bool LoadAnimationEntry(SEntry<AnimationContent>* entry, SkeletonList* skeletonList, IAnimationSet* animationSet, const string& defaultSkeleton, const char* animEventsFilename)
+static bool LoadAnimationEntry(SEntry<AnimationContent>* entry, const string& skeletonPath, IAnimationSet* animationSet,const char* animEventsFilename)
 {
 	string cafPath = entry->path;
 	cafPath.MakeLower();
@@ -238,15 +238,12 @@ static bool LoadAnimationEntry(SEntry<AnimationContent>* entry, SkeletonList* sk
 			else
 			{
 				entry->content.settings = SAnimSettings();
-				entry->content.settings.build.skeletonAlias = defaultSkeleton;
-				entry->content.newAnimationSkeleton = defaultSkeleton;
 				result = false;
 			}
 		}
 
 		if (entry->content.settings.build.compression.m_usesNameContainsInPerBoneSettings)
 		{
-			string skeletonPath = skeletonList->FindSkeletonPathByName(entry->content.settings.build.skeletonAlias.c_str());
 			if (!skeletonPath.empty())
 			{
 				vector<string> jointNames = LoadJointNames(skeletonPath.c_str());
@@ -340,7 +337,7 @@ static int GetAnimationPakState(const char* animationPath)
 	return result - 1;
 }
 
-void AnimationList::Populate(ICharacterInstance* character, const char* defaultSkeletonAlias, const AnimationSetFilter& filter, const char* animEventsFilename)
+void AnimationList::Populate(ICharacterInstance* character, const AnimationSetFilter& filter, const char* animEventsFilename)
 {
 	if (!character)
 		return;
@@ -351,7 +348,6 @@ void AnimationList::Populate(ICharacterInstance* character, const char* defaultS
 	m_animationSet = animationSet;
 	m_animEventsFilename = animEventsFilename;
 	m_filter = filter;
-	m_defaultSkeletonAlias = defaultSkeletonAlias;
 	m_character = character;
 
 	ReloadAnimationList();
@@ -432,8 +428,6 @@ void AnimationList::ReloadAnimationList()
 		entry->content.loadedAsAdditive = (flags & CA_ASSET_ADDITIVE) != 0;
 		entry->content.importState = AnimationContent::IMPORTED;
 		entry->content.animationId = i;
-		if (entry->content.settings.build.skeletonAlias.empty())
-			entry->content.settings.build.skeletonAlias = m_defaultSkeletonAlias;
 
 		ExplorerEntryId entryId(m_subtree, entry->id);
 		animationPaths.push_back(animationPath);
@@ -572,7 +566,7 @@ bool        AnimationList::LoadOrGetChangedEntry(unsigned int id)
 		else if (!entry->loaded)
 		{
 			EntryModifiedEvent ev;
-			entry->dataLostDuringLoading = !LoadAnimationEntry(entry, m_system->compressionSkeletonList, m_animationSet, m_defaultSkeletonAlias, m_animEventsFilename.c_str());
+			entry->dataLostDuringLoading = !LoadAnimationEntry(entry, m_character->GetFilePath(), m_animationSet, m_animEventsFilename.c_str());
 			entry->StoreSavedContent();
 			entry->lastContent = entry->savedContent;
 		}
@@ -614,7 +608,7 @@ bool AnimationList::ResaveAnimSettings(const char* filePath)
 	fakeEntry.path = PathUtil::ReplaceExtension(filePath, "caf");
 	fakeEntry.name = PathUtil::GetFileName(fakeEntry.path.c_str());
 
-	if (!LoadAnimationEntry(&fakeEntry, m_system->compressionSkeletonList, m_animationSet, m_defaultSkeletonAlias, m_animEventsFilename.c_str()))
+	if (!LoadAnimationEntry(&fakeEntry, m_character->GetFilePath(), m_animationSet, m_animEventsFilename.c_str()))
 		return false;
 
 	{
@@ -844,7 +838,6 @@ bool AnimationList::SaveAnimationEntry(ActionOutput* output, unsigned int id, bo
 		if (entry->content.importState == AnimationContent::NEW_ANIMATION)
 		{
 			SAnimSettings settings;
-			settings.build.skeletonAlias = entry->content.newAnimationSkeleton;
 			if (!settings.Save(animSettingsFilename.c_str()))
 				return false;
 		}
@@ -953,7 +946,7 @@ void AnimationList::RevertEntry(unsigned int id)
 {
 	if (SEntry<AnimationContent>* entry = m_animations.GetById(id))
 	{
-		entry->dataLostDuringLoading = !LoadAnimationEntry(entry, m_system->compressionSkeletonList, m_animationSet, m_defaultSkeletonAlias, m_animEventsFilename.c_str());
+		entry->dataLostDuringLoading = !LoadAnimationEntry(entry, m_character->GetFilePath(), m_animationSet, m_animEventsFilename.c_str());
 		entry->StoreSavedContent();
 
 		EntryModifiedEvent ev;
@@ -980,7 +973,6 @@ bool AnimationList::UpdateImportEntry(SEntry<AnimationContent>* entry)
 	{
 		entry->content.importState = AnimationContent::NEW_ANIMATION;
 		entry->content.loadedInEngine = false;
-		entry->content.newAnimationSkeleton = m_defaultSkeletonAlias;
 
 		int pakState = GetAnimationPakState(entry->path.c_str());
 		m_system->explorerData->SetEntryColumn(ExplorerEntryId(m_subtree, entry->id), m_explorerColumnPak, pakState, true);
@@ -1018,7 +1010,6 @@ bool AnimationList::ImportAnimation(string* errorMessage, unsigned int id)
 		return false;
 	}
 
-	importEntry->content.settings.build.skeletonAlias = importEntry->content.newAnimationSkeleton;
 	importEntry->content.importState = AnimationContent::WAITING_FOR_CHRPARAMS_RELOAD;
 	SaveEntry(0, importEntry->id);
 
@@ -1127,7 +1118,7 @@ void AnimationList::OnFileChange(const char* filename, EChangeType eType)
 			if (entry)
 			{
 				entryId = ExplorerEntryId(m_subtree, entry->id);
-				LoadAnimationEntry(entry, 0, m_animationSet, 0, m_animEventsFilename.c_str());
+				LoadAnimationEntry(entry, m_character->GetFilePath(), m_animationSet, m_animEventsFilename.c_str());
 				EntryModifiedEvent ev;
 				if (entry->Changed(&ev.previousContent))
 				{

@@ -14,13 +14,6 @@ struct IPakSystem;
 
 #include <CrySerialization/Forward.h>
 
-struct SkeletonAlias
-{
-	string& alias;
-
-	SkeletonAlias(string& alias) : alias(alias) {}
-};
-
 using std::vector;
 
 enum EControllerEnabledState
@@ -86,7 +79,6 @@ struct SCompressionSettings
 
 struct SAnimationBuildSettings
 {
-	string               skeletonAlias;
 	bool                 additive;
 	SCompressionSettings compression;
 	std::vector<string>  tags;

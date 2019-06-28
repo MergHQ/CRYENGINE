@@ -1741,7 +1741,6 @@ private:
 		SAnimationDesc animDesc;
 		animDesc.m_bSkipSaveToDatabase = true;
 		animDesc.m_bAdditiveAnimation = false;
-		animDesc.m_skeletonName = "";
 		animDesc.m_bNewFormat = true;
 		animDesc.newFmt.m_autodeletePosEps = 0.0f;
 		animDesc.newFmt.m_autodeleteRotEps = 0.0f;

@@ -200,7 +200,6 @@ bool SAnimSettings::LoadXMLFromMemory(const char* data, size_t length, const vec
 	SCompressionSettings& compression = build.compression;
 
 	ReadValueFromXmlChildNode(xmlRoot, "AdditiveAnimation", build.additive);
-	ReadValueFromXmlChildNode(xmlRoot, "Skeleton", build.skeletonAlias);
 
 	XmlNodeRef xmlCompressionSettings = xmlRoot->findChild("CompressionSettings");
 	if (xmlCompressionSettings)
@@ -312,7 +311,6 @@ bool SAnimSettings::LoadXMLFromMemory(const char* data, size_t length, const vec
 void SAnimationBuildSettings::Serialize(Serialization::IArchive& ar)
 {
 	ar(additive, "additive", "Additive");
-	ar(SkeletonAlias(skeletonAlias), "skeletonAlias", "Skeleton Alias");
 	ar(compression, "compression", "Compression");
 	ar(tags, "tags", "Tags");
 }

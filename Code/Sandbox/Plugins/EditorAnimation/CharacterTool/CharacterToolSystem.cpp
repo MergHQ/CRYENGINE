@@ -36,7 +36,6 @@ System::System()
 	: loaded(false)
 	, dbaTable(0)
 	, compressionPresetTable(0)
-	, compressionSkeletonList(0)
 {
 }
 
@@ -96,7 +95,6 @@ void System::Initialize()
 	compressionGlobalList.reset(new ExplorerFileList());
 	compressionPresetTable = &compressionGlobalList->AddSingleFile<EditorCompressionPresetTable>("Animations/CompressionPresets.json", "Compression Presets", new SelfLoader<EditorCompressionPresetTable>())->content;
 	dbaTable = &compressionGlobalList->AddSingleFile<EditorDBATable>("Animations/DBATable.json", "DBA Table", new SelfLoader<EditorDBATable>())->content;
-	compressionSkeletonList = &compressionGlobalList->AddSingleFile<SkeletonList>("Animations/SkeletonList.xml", "Skeleton List", new SelfLoader<SkeletonList>())->content;
 
 	animationTagList.reset(new AnimationTagList(compressionPresetTable, dbaTable));
 	animationList.reset(new AnimationList(this));
@@ -127,7 +125,6 @@ void System::Initialize()
 	contextList->Update(this);
 	contextList->Update(document.get());
 	contextList->Update(static_cast<ITagSource*>(animationTagList.get()));
-	contextList->Update(compressionSkeletonList);
 	contextList->Update(compressionPresetTable);
 	contextList->Update(dbaTable);
 	contextList->Update(explorerNavigationProvider.get());
@@ -152,7 +149,6 @@ void System::LoadGlobalData()
 	compressionPresetTable->Load();
 	dbaTable->SetFilterAnimationList(filterAnimationList.get());
 	dbaTable->Load();
-	compressionSkeletonList->Load();
 	compressionGlobalList->Populate();
 	if (sourceAssetList)
 		sourceAssetList->Populate();

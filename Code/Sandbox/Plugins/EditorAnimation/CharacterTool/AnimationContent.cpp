@@ -118,18 +118,9 @@ void AnimationContent::Serialize(Serialization::IArchive& ar)
 	{
 		ar(settings.build.additive, "additive", "Additive");
 	}
-	if (type == ANIMATION && importState == NEW_ANIMATION)
-	{
-		ar(SkeletonAlias(newAnimationSkeleton), "skeletonAlias", "Skeleton Alias");
-		if (newAnimationSkeleton.empty())
-			ar.warning(newAnimationSkeleton, "Skeleton alias should be specified in order to import animation.");
-	}
 
 	if ((type == ANIMATION && (importState == IMPORTED || importState == WAITING_FOR_CHRPARAMS_RELOAD)) || type == AIMPOSE || type == LOOKPOSE)
 	{
-		ar(SkeletonAlias(settings.build.skeletonAlias), "skeletonAlias", "Skeleton Alias");
-		if (settings.build.skeletonAlias.empty())
-			ar.error(settings.build.skeletonAlias, "Skeleton alias is not specified for the animation.");
 		ar(TagList(settings.build.tags), "tags", "Tags");
 	}
 
@@ -142,7 +133,6 @@ void AnimationContent::Serialize(Serialization::IArchive& ar)
 			{
 				SAnimationFilterItem item;
 				item.path = entryBase->path;
-				item.skeletonAlias = settings.build.skeletonAlias;
 				item.tags = settings.build.tags;
 
 				if (EditorCompressionPresetTable* presetTable = ar.context<EditorCompressionPresetTable>())

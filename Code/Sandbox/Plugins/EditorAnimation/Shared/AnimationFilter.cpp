@@ -256,29 +256,6 @@ SERIALIZATION_CLASS_NAME(IAnimationFilterCondition, SAnimationFilterPathContains
 
 // ---------------------------------------------------------------------------
 
-struct SAnimationFilterSkeletonAlias : IAnimationFilterCondition
-{
-	string skeletonAlias;
-
-	bool Check(const SAnimationFilterItem& item) const override
-	{
-		if (stricmp(item.skeletonAlias.c_str(), skeletonAlias.c_str()) == 0)
-			return !invert;
-		else
-			return invert;
-	}
-
-	void Serialize(IArchive& ar) override
-	{
-		IAnimationFilterCondition::Serialize(ar);
-		ar(skeletonAlias, "alias", "^<");
-	}
-};
-
-SERIALIZATION_CLASS_NAME(IAnimationFilterCondition, SAnimationFilterSkeletonAlias, "skeletonAlias", "Skeleton Alias")
-
-// ---------------------------------------------------------------------------
-
 void SAnimationFilter::Filter(std::vector<SAnimationFilterItem>* filteredItems, const std::vector<SAnimationFilterItem>& items) const
 {
 	if (!filteredItems)
