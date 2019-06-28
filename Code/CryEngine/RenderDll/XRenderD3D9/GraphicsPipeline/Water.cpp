@@ -342,6 +342,9 @@ void CWaterStage::Update()
 	// Dynamic dependencies besides dimensions, re-call de-/allocation code
 	Resize(pZTexture->GetWidth(), pZTexture->GetHeight());
 
+	for (uint32 i = 0; i < ePass_Count; ++i)
+		UpdatePerPassResources(false, EPass(i));
+
 	if (m_bOceanMaskGen)
 	{
 		m_passOceanMaskGen.SetViewport(viewport);
@@ -359,16 +362,19 @@ void CWaterStage::Update()
 
 	// TODO: looks something wrong between rect and viewport?
 	{
+		const int32 frameID = pRenderView->GetFrameId();
+		const int32 currWaterVolID = GetCurrentFrameID(frameID);
+
 		// TODO: Is m_CurDownscaleFactor needed for new graphics pipeline?
 		const auto& downscaleFactor = gRenDev->GetRenderQuality().downscaleFactor;
-		const int32 nWidth = int32(m_graphicsPipelineResources.m_pTexWaterVolumeRefl[0]->GetWidth() * (downscaleFactor.x));
-		const int32 nHeight = int32(m_graphicsPipelineResources.m_pTexWaterVolumeRefl[0]->GetHeight() * (downscaleFactor.y));
+		const int32 nWidth  = int32(m_graphicsPipelineResources.m_pTexWaterVolumeRefl[currWaterVolID]->GetWidth () * (downscaleFactor.x));
+		const int32 nHeight = int32(m_graphicsPipelineResources.m_pTexWaterVolumeRefl[currWaterVolID]->GetHeight() * (downscaleFactor.y));
 
 		// TODO: looks something wrong between rect and viewport?
-		D3DViewPort viewport = { 0.0f, float(m_graphicsPipelineResources.m_pTexWaterVolumeRefl[0]->GetHeight() - nHeight), float(nWidth), float(nHeight), 0.0f, 1.0f };
+		D3DViewPort viewport = { 0.0f, float(m_graphicsPipelineResources.m_pTexWaterVolumeRefl[currWaterVolID]->GetHeight() - nHeight), float(nWidth), float(nHeight), 0.0f, 1.0f };
 
 		m_passWaterReflectionGen.SetViewport(viewport);
-		m_passWaterReflectionGen.SetRenderTargets(m_graphicsPipelineResources.m_pTexSceneDepthScaled[0], m_graphicsPipelineResources.m_pTexWaterVolumeRefl[0]);
+		m_passWaterReflectionGen.SetRenderTargets(m_graphicsPipelineResources.m_pTexSceneDepthScaled[0], m_graphicsPipelineResources.m_pTexWaterVolumeRefl[currWaterVolID]);
 	}
 
 	if (CTexture::IsTextureExist(m_pVolumeCausticsRT)
@@ -384,7 +390,12 @@ void CWaterStage::Update()
 
 		m_passWaterCausticsSrcGen.SetViewport(viewportCaustics);
 		m_passWaterCausticsSrcGen.SetRenderTargets(m_graphicsPipelineResources.m_pTexSceneDepthScaled[0], m_pVolumeCausticsRT);
+
+		CClearSurfacePass::Execute(m_pVolumeCausticsRT, Clr_Transparent);
 	}
+
+	if (m_bOceanMaskGen)
+		CClearSurfacePass::Execute(m_pOceanMaskTex, Clr_Transparent);
 }
 
 void CWaterStage::Prepare()
@@ -492,7 +503,7 @@ void CWaterStage::ExecuteWaterVolumeCaustics()
 	}
 
 	if (!isEmpty
-	    && pRenderView->HasRenderItems(EFSLIST_WATER, FB_WATER_CAUSTIC)
+	    && IsCausticsActive()
 	    && CTexture::IsTextureExist(m_pVolumeCausticsRT)
 	    && CTexture::IsTextureExist(m_pVolumeCausticsTempRT)
 	    && CRenderer::CV_r_watercaustics
@@ -808,11 +819,6 @@ void CWaterStage::ExecuteWaterFogVolumeBeforeTransparent()
 	if (pRenderView->IsRecursive())
 		return;
 
-	// prepare per pass device resource
-	// this update must be called once after water ripple stage's execute() because waterRippleLookup parameter depends on it.
-	// this update needs to be called after the execute() of fog and volumetric fog because their data is updated in their execute().
-	UpdatePerPassResources(false, ePass_FogVolume);
-
 	// render water fog volumes before water.
 	ExecuteSceneRenderPass(m_passWaterFogVolumeBeforeWater, ePass_FogVolume, FB_GENERAL | FB_BELOW_WATER, 0, EFSLIST_WATER_VOLUMES);
 }
@@ -822,10 +828,6 @@ void CWaterStage::Execute()
 	FUNCTION_PROFILER_RENDERER();
 
 	CRenderView* pRenderView = RenderView();
-	CRY_ASSERT(pRenderView);
-
-	if (pRenderView->IsRecursive())
-		return;
 
 	PROFILE_LABEL_SCOPE("WATER");
 
@@ -850,15 +852,16 @@ void CWaterStage::Execute()
 	}
 
 	// generate water volume reflection.
-	UpdatePerPassResources(false, ePass_ReflectionGen);
-	ExecuteReflection();
+	if (IsReflectionActive())
+		ExecuteReflection();
 
 	// render water volume and ocean surfaces.
-	UpdatePerPassResources(false, ePass_WaterSurface);
-	ExecuteSceneRenderPass(m_passWaterSurface, ePass_WaterSurface, FB_GENERAL, 0, EFSLIST_WATER);
+	if (IsSurfaceActive())
+		ExecuteSceneRenderPass(m_passWaterSurface, ePass_WaterSurface, FB_GENERAL, 0, EFSLIST_WATER);
 
 	// render water fog volumes after water.
-	ExecuteSceneRenderPass(m_passWaterFogVolumeAfterWater, ePass_FogVolume, FB_GENERAL, FB_BELOW_WATER, EFSLIST_WATER_VOLUMES);
+	if (IsFogVolumeActive())
+		ExecuteSceneRenderPass(m_passWaterFogVolumeAfterWater, ePass_FogVolume, FB_GENERAL, FB_BELOW_WATER, EFSLIST_WATER_VOLUMES);
 }
 
 bool CWaterStage::CreatePipelineStates(uint32 passMask, DevicePipelineStatesArray& stateArray, const SGraphicsPipelineStateDescription& stateDesc, CGraphicsPipelineStateLocalCache* pStateCache)
@@ -1453,13 +1456,6 @@ void CWaterStage::ExecuteOceanMaskGen()
 {
 	PROFILE_LABEL_SCOPE("OCEAN_MASK_GEN");
 
-	// prepare per pass device resource
-	// this update must be called after water ripple stage's execute() because waterRippleLookup parameter depends on it.
-	// this update must be called after updating N3DEngineCommon::SCausticInfo.
-	UpdatePerPassResources(false, ePass_OceanMaskGen);
-
-	CClearSurfacePass::Execute(m_pOceanMaskTex, Clr_Transparent);
-
 	// render ocean surface to generate the mask to identify the pixels where ocean is behind the others and invisible.
 	ExecuteSceneRenderPass(m_passOceanMaskGen, ePass_OceanMaskGen, FB_GENERAL, 0, EFSLIST_WATER);
 }
@@ -1508,26 +1504,16 @@ void CWaterStage::ExecuteWaterVolumeCausticsGen(N3DEngineCommon::SCausticInfo& c
 		causticInfo.m_mCausticMatr.Transpose();
 	}
 
-	// prepare per pass device resource
-	// this update must be called after water ripple stage's execute() because waterRippleLookup parameter depends on it.
-	// this update must be called after updating N3DEngineCommon::SCausticInfo.
-	UpdatePerPassResources(false, ePass_CausticsGen);
-
-	CClearSurfacePass::Execute(m_pVolumeCausticsRT, Clr_Transparent);
-
 	// render water volumes to caustics gen texture.
 	{
-		CTexture* pDepthRT = m_graphicsPipelineResources.m_pTexSceneDepthScaled[0];
-
 		auto& pass = m_passWaterCausticsSrcGen;
 
-		// need to set render target becuase m_pVolumeCausticsRT is recreated when cvars are changed.
-		pass.ExchangeDepthTarget(pDepthRT);
-		pass.ExchangeRenderTarget(0, m_pVolumeCausticsRT);
-
+		// Prepare ========================================================================
 		auto& RESTRICT_REFERENCE commandList = GetDeviceObjectFactory().GetCoreCommandList();
+
 		pass.PrepareRenderPassForUse(commandList);
 
+		// Execute ========================================================================
 		auto& renderItemDrawer = pRenderView->GetDrawer();
 		renderItemDrawer.InitDrawSubmission();
 
@@ -1637,66 +1623,60 @@ void CWaterStage::ExecuteReflection()
 {
 	CRenderView* pRenderView = RenderView();
 
-	if (pRenderView->HasRenderItems(EFSLIST_WATER, FB_WATER_REFL))
+	PROFILE_LABEL_SCOPE("WATER_VOLUME_REFLECTION_GEN");
+
+	const int32 frameID = pRenderView->GetFrameId();
+	const int32 currWaterVolID = GetCurrentFrameID(frameID);
+	CTexture* pCurrWaterVolRefl = m_graphicsPipelineResources.m_pTexWaterVolumeRefl[currWaterVolID];
+
+	m_passCopySceneTargetReflection.Execute(m_graphicsPipelineResources.m_pTexSceneTarget, m_graphicsPipelineResources.m_pTexHDRTargetScaled[0][0]);
+	m_passCopySSReflection.Execute(m_graphicsPipelineResources.m_pTexHDRTargetMaskedScaled[0][1], pCurrWaterVolRefl);
+
+	// draw render items to generate water reflection texture.
 	{
-		CTexture* pDepthRT = m_graphicsPipelineResources.m_pTexSceneDepthScaled[0];
+		auto& pass = m_passWaterReflectionGen;
 
-		PROFILE_LABEL_SCOPE("WATER_VOLUME_REFLECTION_GEN");
+		// Prepare ========================================================================
+		auto& RESTRICT_REFERENCE commandList = GetDeviceObjectFactory().GetCoreCommandList();
 
-		const int32 frameID = pRenderView->GetFrameId();
-		const int32 currWaterVolID = GetCurrentFrameID(frameID);
-		CTexture* pCurrWaterVolRefl = m_graphicsPipelineResources.m_pTexWaterVolumeRefl[currWaterVolID];
+		pass.PrepareRenderPassForUse(commandList);
 
-		m_passCopySceneTargetReflection.Execute(m_graphicsPipelineResources.m_pTexSceneTarget, m_graphicsPipelineResources.m_pTexHDRTargetScaled[0][0]);
-		m_passCopySSReflection.Execute(m_graphicsPipelineResources.m_pTexHDRTargetMaskedScaled[0][1], pCurrWaterVolRefl);
+		// Execute ========================================================================
+		auto& renderItemDrawer = pRenderView->GetDrawer();
+		renderItemDrawer.InitDrawSubmission();
 
-		// draw render items to generate water reflection texture.
-		{
-			auto& pass = m_passWaterReflectionGen;
+		pass.BeginExecution(m_graphicsPipeline);
+		pass.SetupDrawContext(StageID, ePass_ReflectionGen, TTYPE_WATERREFLPASS, FB_WATER_REFL);
+		pass.DrawRenderItems(pRenderView, EFSLIST_WATER);
+		pass.EndExecution();
 
-			// alternates render targets along with updating per pass resource set.
-			pass.ExchangeDepthTarget(pDepthRT);
-			pass.ExchangeRenderTarget(0, pCurrWaterVolRefl);
-
-			auto& RESTRICT_REFERENCE commandList = GetDeviceObjectFactory().GetCoreCommandList();
-			pass.PrepareRenderPassForUse(commandList);
-
-			auto& renderItemDrawer = pRenderView->GetDrawer();
-			renderItemDrawer.InitDrawSubmission();
-
-			pass.BeginExecution(m_graphicsPipeline);
-			pass.SetupDrawContext(StageID, ePass_ReflectionGen, TTYPE_WATERREFLPASS, FB_WATER_REFL);
-			pass.DrawRenderItems(pRenderView, EFSLIST_WATER);
-			pass.EndExecution();
-
-			renderItemDrawer.JobifyDrawSubmission();
-			renderItemDrawer.WaitForDrawSubmission();
-		}
-
-		m_passWaterReflectionMipmapGen.Execute(pCurrWaterVolRefl);
+		renderItemDrawer.JobifyDrawSubmission();
+		renderItemDrawer.WaitForDrawSubmission();
 	}
+
+	m_passWaterReflectionMipmapGen.Execute(pCurrWaterVolRefl);
 }
 
 void CWaterStage::ExecuteSceneRenderPass(CSceneRenderPass& pass, uint32 stagePassID, uint32 includeFilter, uint32 excludeFilter, ERenderListID renderList)
 {
 	CRenderView* pRenderView = RenderView();
 
-	if (pRenderView->HasRenderItems(renderList, includeFilter))
-	{
-		auto& RESTRICT_REFERENCE commandList = GetDeviceObjectFactory().GetCoreCommandList();
-		pass.PrepareRenderPassForUse(commandList);
+	// Prepare ========================================================================
+	auto& RESTRICT_REFERENCE commandList = GetDeviceObjectFactory().GetCoreCommandList();
 
-		auto& renderItemDrawer = pRenderView->GetDrawer();
-		renderItemDrawer.InitDrawSubmission();
+	pass.PrepareRenderPassForUse(commandList);
 
-		pass.BeginExecution(m_graphicsPipeline);
-		pass.SetupDrawContext(StageID, stagePassID, TTYPE_GENERAL, includeFilter, excludeFilter);
-		pass.DrawRenderItems(pRenderView, renderList);
-		pass.EndExecution();
+	// Execute ========================================================================
+	auto& renderItemDrawer = pRenderView->GetDrawer();
+	renderItemDrawer.InitDrawSubmission();
 
-		renderItemDrawer.JobifyDrawSubmission();
-		renderItemDrawer.WaitForDrawSubmission();
-	}
+	pass.BeginExecution(m_graphicsPipeline);
+	pass.SetupDrawContext(StageID, stagePassID, TTYPE_GENERAL, includeFilter, excludeFilter);
+	pass.DrawRenderItems(pRenderView, renderList);
+	pass.EndExecution();
+
+	renderItemDrawer.JobifyDrawSubmission();
+	renderItemDrawer.WaitForDrawSubmission();
 }
 
 int32 CWaterStage::GetCurrentFrameID(const int32 frameID) const

@@ -105,7 +105,7 @@ public:
 		if (flags & EShaderRenderingFlags::SHDF_FORWARD_MINIMAL)
 			return false;
 
-		return true;
+		return !RenderView()->IsRecursive();
 	}
 
 	void                          Init() final;
@@ -128,6 +128,10 @@ public:
 
 	bool                          IsDeferredVolumeCausticsEnabled() const { return CRenderer::CV_r_watercaustics && CRenderer::CV_r_watercausticsdeferred && CRenderer::CV_r_watervolumecaustics; }
 	bool                          IsDeferredOceanCausticsEnabled() const  { return CRenderer::CV_r_watercaustics && CRenderer::CV_r_watercausticsdeferred; }
+	bool                          IsFogVolumeActive() const               { return RenderView()->HasRenderItems(EFSLIST_WATER_VOLUMES, FB_GENERAL); }
+	bool                          IsSurfaceActive() const                 { return RenderView()->HasRenderItems(EFSLIST_WATER, FB_GENERAL); }
+	bool                          IsReflectionActive() const              { return RenderView()->HasRenderItems(EFSLIST_WATER, FB_WATER_REFL); }
+	bool                          IsCausticsActive() const                { return RenderView()->HasRenderItems(EFSLIST_WATER, FB_WATER_CAUSTIC); }
 	bool                          IsNormalGenActive() const               { return m_bWaterNormalGen; }
 
 private:

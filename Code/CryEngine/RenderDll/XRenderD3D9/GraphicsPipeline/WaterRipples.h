@@ -92,6 +92,7 @@ private:
 	Vec4                          m_lookupParam;
 
 	bool                          m_bInitializeSim;
+	bool                          m_bGenerateRipples;
 	bool                          m_bSnapToCenter;
 
 	std::vector<SWaterRippleInfo> m_waterRipples;

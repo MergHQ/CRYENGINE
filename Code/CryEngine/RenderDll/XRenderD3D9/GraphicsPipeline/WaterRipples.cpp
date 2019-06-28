@@ -26,6 +26,7 @@ CWaterRipplesStage::CWaterRipplesStage(CGraphicsPipeline& graphicsPipeline)
 	, m_shaderParam(0.0f)
 	, m_lookupParam(0.0f)
 	, m_bInitializeSim(true)
+	, m_bGenerateRipples(false)
 	, m_bSnapToCenter(false)
 {
 }
@@ -108,6 +109,12 @@ void CWaterRipplesStage::Update()
 	{
 		m_pCVarWaterRipplesDebug = gEnv->pConsole->GetCVar("e_WaterRipplesDebug");
 	}
+
+	m_bGenerateRipples = shouldApplyRipples && RefreshParameters();
+
+	// update shared constant buffer
+	m_constants->params = m_shaderParam;
+	m_constants.CopyToDevice();
 }
 
 bool CWaterRipplesStage::RefreshParameters()
@@ -222,16 +229,8 @@ void CWaterRipplesStage::Execute()
 		return;
 	}
 
-	if (!CTexture::IsTextureExist(m_pTexWaterRipplesDDN)
-	    || !CTexture::IsTextureExist(m_pTempTexture))
-	{
+	if (!m_bGenerateRipples)
 		return;
-	}
-
-	if (!RefreshParameters())
-	{
-		return;
-	}
 
 	{
 		PROFILE_LABEL_SCOPE("WATER RIPPLES GEN");
@@ -253,10 +252,6 @@ void CWaterRipplesStage::Execute()
 		viewport.Height = static_cast<float>(nGridSize);
 		viewport.MinDepth = 0.0f;
 		viewport.MaxDepth = 1.0f;
-
-		// update shared constant buffer
-		m_constants->params = m_shaderParam;
-		m_constants.CopyToDevice();
 
 		// Snapping occurred - update simulation to new offset
 		if (m_bSnapToCenter)
