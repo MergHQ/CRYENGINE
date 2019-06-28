@@ -762,7 +762,6 @@ void PyTrackViewAddTrackProceduralEyes()
 
 DECLARE_PYTHON_MODULE(trackview);
 
-
 // General
 REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(PyTrackViewSetRecording, trackview, set_recording,
                                      "Activates/deactivates TrackView recording mode",
@@ -937,6 +936,9 @@ REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(PyTrackViewSelectMoveKeysTool, trackview, s
 REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(PyTrackViewSelectSlideKeysTool, trackview, select_slide_keys_tool,
                                      "Select slide keys tool",
                                      "trackview.select_slide_keys_tool()");
+REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(PyTrackViewSelectScaleKeysTool, trackview, select_scale_keys_tool,
+                                     "Select scale keys tool",
+                                     "trackview.select_scale_keys_tool()");
 REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(PyTrackViewSelectScaleKeysTool, trackview, select_scale_keys_tools,
                                      "Select scale keys tool",
                                      "trackview.select_scale_keys_tools()");

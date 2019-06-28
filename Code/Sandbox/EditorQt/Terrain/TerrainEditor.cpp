@@ -58,22 +58,6 @@ void PyExportTerrainAreaWithObjects() { GetTerrainDialog()->OnExportTerrainAreaW
 void PyReloadTerrain()                { GetTerrainDialog()->OnReloadTerrain(); }
 void PySelectTerrain()                { GetIEditorImpl()->GetLevelEditorSharedState()->SetEditMode(CLevelEditorSharedState::EditMode::SelectArea); }
 
-void SetTerrainTool(CRuntimeClass* pToolClass)
-{
-	auto pLevelEditorState = GetIEditorImpl()->GetLevelEditorSharedState();
-	auto pCurrentTool = pLevelEditorState->GetEditTool();
-
-	if (pCurrentTool && pCurrentTool->GetRuntimeClass() == pToolClass)
-		return;
-
-	CEditTool* pTerrainTool = (CEditTool*)pToolClass->CreateObject();
-
-	if (!pTerrainTool)
-		return;
-
-	pLevelEditorState->SetEditTool(pTerrainTool);
-}
-
 }
 
 REGISTER_VIEWPANE_FACTORY(CTerrainEditor, "Terrain Editor", "Tools", true)
@@ -222,8 +206,46 @@ CTerrainEditor::CTerrainEditor(QWidget* parent)
 	m_paintTabIdx = m_pTabWidget->addTab(new QTerrainLayerPanel(), "Paint");
 	m_pTabWidget->addTab(new QMinimapPanel(), "Mini Map");
 
-	InitTerrainMenu();
+	// Should be called after tabs were created
+	RegisterActions();
+
 	InstallReleaseMouseFilter(this);
+}
+
+void CTerrainEditor::RegisterActions()
+{
+	RegisterAction("terrain.flatten_tool", [this]() { CTerrainEditor::SetTerrainTool(m_sculptTabIdx, RUNTIME_CLASS(CFlattenTool)); });
+	RegisterAction("terrain.smooth_tool", [this]() { CTerrainEditor::SetTerrainTool(m_sculptTabIdx, RUNTIME_CLASS(CSmoothTool)); });
+	RegisterAction("terrain.raise_lower_tool", [this]() { CTerrainEditor::SetTerrainTool(m_sculptTabIdx, RUNTIME_CLASS(CRiseLowerTool)); });
+	RegisterAction("terrain.duplicate_tool", [this]() { CTerrainEditor::SetTerrainTool(m_sculptTabIdx, RUNTIME_CLASS(CTerrainMoveTool)); });
+	RegisterAction("terrain.make_holes_tool", [this]() { CTerrainEditor::SetTerrainTool(m_sculptTabIdx, RUNTIME_CLASS(CMakeHolesTool)); });
+	RegisterAction("terrain.fill_holes_tool", [this]() { CTerrainEditor::SetTerrainTool(m_sculptTabIdx, RUNTIME_CLASS(CFillHolesTool)); });
+	RegisterAction("terrain.paint_texture_tool", [this]() { CTerrainEditor::SetTerrainTool(m_paintTabIdx, RUNTIME_CLASS(CTerrainTexturePainter)); });
+}
+
+void CTerrainEditor::SetTerrainTool(int tabIndex, CRuntimeClass* pToolClass)
+{
+	auto pLevelEditorState = GetIEditorImpl()->GetLevelEditorSharedState();
+	auto pCurrentTool = pLevelEditorState->GetEditTool();
+
+	if (pCurrentTool && pCurrentTool->GetRuntimeClass() == pToolClass)
+		return;
+
+	CEditTool* pTerrainTool = (CEditTool*)pToolClass->CreateObject();
+
+	if (!pTerrainTool)
+		return;
+
+	pLevelEditorState->SetEditTool(pTerrainTool);
+
+	m_pTabWidget->setCurrentIndex(tabIndex);
+}
+
+void CTerrainEditor::Initialize()
+{
+	CDockableEditor::Initialize();
+
+	InitTerrainMenu();
 }
 
 void CTerrainEditor::SetLayout(const QVariantMap& state)
@@ -335,66 +357,13 @@ void CTerrainEditor::InitTerrainMenu()
 	pLayerMenu->AddAction(GetAction_Deprecated("terrain.flood_layer"), sec);
 
 	CAbstractMenu* pToolsMenu = GetRootMenu()->CreateMenu(tr("Tools"), 0);
-	pToolsMenu->AddAction(GetAction_Deprecated("terrain.flatten_tool"), sec);
-	pToolsMenu->AddAction(GetAction_Deprecated("terrain.smooth_tool"), sec);
-	pToolsMenu->AddAction(GetAction_Deprecated("terrain.raise_lower_tool"), sec);
-	pToolsMenu->AddAction(GetAction_Deprecated("terrain.duplicate_tool"), sec);
-	pToolsMenu->AddAction(GetAction_Deprecated("terrain.make_holes_tool"), sec);
-	pToolsMenu->AddAction(GetAction_Deprecated("terrain.fill_holes_tool"), sec);
-	pToolsMenu->AddAction(GetAction_Deprecated("terrain.paint_texture_tool"), sec);
+	pToolsMenu->AddAction(GetAction("terrain.flatten_tool"), sec);
+	pToolsMenu->AddAction(GetAction("terrain.smooth_tool"), sec);
+	pToolsMenu->AddAction(GetAction("terrain.raise_lower_tool"), sec);
+	pToolsMenu->AddAction(GetAction("terrain.duplicate_tool"), sec);
+	pToolsMenu->AddAction(GetAction("terrain.make_holes_tool"), sec);
+	pToolsMenu->AddAction(GetAction("terrain.fill_holes_tool"), sec);
+	pToolsMenu->AddAction(GetAction("terrain.paint_texture_tool"), sec);
 
 	ForceRebuildMenu();
-}
-
-void CTerrainEditor::customEvent(QEvent* pEvent)
-{
-	CDockableEditor::customEvent(pEvent);
-
-	if (!pEvent->isAccepted() && pEvent->type() == SandboxEvent::Command)
-	{
-		CommandEvent* pCommandEvent = static_cast<CommandEvent*>(pEvent);
-		const string& command = pCommandEvent->GetCommand();
-
-		int switchTabIdx = -1;
-		if (command == "terrain.flatten_tool")
-		{
-			switchTabIdx = m_sculptTabIdx;
-			SetTerrainTool(RUNTIME_CLASS(CFlattenTool));
-		}
-		else if (command == "terrain.smooth_tool")
-		{
-			switchTabIdx = m_sculptTabIdx;
-			SetTerrainTool(RUNTIME_CLASS(CSmoothTool));
-		}
-		else if (command == "terrain.raise_lower_tool")
-		{
-			switchTabIdx = m_sculptTabIdx;
-			SetTerrainTool(RUNTIME_CLASS(CRiseLowerTool));
-		}
-		else if (command == "terrain.duplicate_tool")
-		{
-			switchTabIdx = m_sculptTabIdx;
-			SetTerrainTool(RUNTIME_CLASS(CTerrainMoveTool));
-		}
-		else if (command == "terrain.make_holes_tool")
-		{
-			switchTabIdx = m_sculptTabIdx;
-			SetTerrainTool(RUNTIME_CLASS(CMakeHolesTool));
-		}
-		else if (command == "terrain.fill_holes_tool")
-		{
-			switchTabIdx = m_sculptTabIdx;
-			SetTerrainTool(RUNTIME_CLASS(CFillHolesTool));
-		}
-		else if (command == "terrain.paint_texture_tool")
-		{
-			switchTabIdx = m_paintTabIdx;
-			SetTerrainTool(RUNTIME_CLASS(CTerrainTexturePainter));
-		}
-
-		if (switchTabIdx > -1)
-		{
-			m_pTabWidget->setCurrentIndex(switchTabIdx);
-		}
-	}
 }

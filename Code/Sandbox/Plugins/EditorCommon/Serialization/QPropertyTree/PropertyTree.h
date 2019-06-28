@@ -3,18 +3,16 @@
 
 // EditorCommon
 #include "EditorCommonAPI.h"
+#include "EditorFramework/EditorWidget.h"
 
 // CryQt
-#include "CryIcon.h"
+#include <CryIcon.h>
 
 // CryCommon
 #include <CryCore/smartptr.h>
-#include <CrySerialization/yasli/Serializer.h>
-#include <CrySerialization/yasli/Object.h>
 #include <CrySerialization/yasli/Archive.h>
-
-// Qt
-#include <QWidget>
+#include <CrySerialization/yasli/Object.h>
+#include <CrySerialization/yasli/Serializer.h>
 
 class QScrollArea;
 class QSearchBox;
@@ -35,7 +33,7 @@ class CInlineWidgetBox;
 //		* See CFormRow limitations on the drag highlight
 //		* Draw a highlight to indicate the current search row which may be different from the active row
 // * templated attach method with SFINAE that wraps objects in Serialization::SStruct automatically or errors
-class EDITOR_COMMON_API QPropertyTree : public QWidget
+class EDITOR_COMMON_API QPropertyTree : public CEditorWidget
 {
 	Q_OBJECT
 
@@ -99,7 +97,6 @@ private:
 	class CScrollArea;
 
 	virtual void keyPressEvent(QKeyEvent* pEvent) override;
-	virtual void customEvent(QEvent* pEvent) override;
 
 	//!Used to register undos on widget change, we record the undo on PreChange and accept/discard it on Changed/Discarded
 	void                            OnRowChanged(const PropertyTree2::CRowModel* pRow);
@@ -108,6 +105,7 @@ private:
 	void                            OnRowPreChanged(const PropertyTree2::CRowModel* pRow);
 
 	void                            CopyRowValueToModels(const PropertyTree2::CRowModel* pRow);
+	void                            RegisterActions();
 	void                            OnFind();
 	void                            OnFindPrevious();
 	void                            OnFindNext();

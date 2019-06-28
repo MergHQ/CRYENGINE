@@ -5,12 +5,13 @@
 
 #include "Models/EffectAssetModel.h"
 
-namespace CryParticleEditor 
+namespace CryParticleEditor
 {
 
 CEffectAssetWidget::CEffectAssetWidget(CEffectAssetModel* pEffectAssetModel, QWidget* pParent)
 	: QWidget(pParent)
 	, m_pEffectAssetModel(pEffectAssetModel)
+	, m_updated(false)
 {
 	QBoxLayout* pMainLayout = new QVBoxLayout();
 	pMainLayout->setSpacing(0.0f);
@@ -106,36 +107,6 @@ void CEffectAssetWidget::OnNewComponent()
 bool CEffectAssetWidget::MakeNewComponent(const char* szTemplateName)
 {
 	return m_pEffectAssetModel->MakeNewComponent(szTemplateName);
-}
-
-void CEffectAssetWidget::customEvent(QEvent* pEvent)
-{
-	if (pEvent->type() != SandboxEvent::Command)
-	{
-		return QWidget::customEvent(pEvent);
-	}
-
-	CommandEvent* const pCommandEvent = (CommandEvent*)pEvent;
-	const string& command = pCommandEvent->GetCommand();
-	if (command == "general.copy")
-	{
-		CopyComponents();
-		pEvent->setAccepted(true);
-	}
-	else if (command == "general.paste")
-	{
-		OnPasteComponent();
-		pEvent->setAccepted(true);
-	}
-	else if (command == "general.delete")
-	{
-		OnDeleteSelected();
-		pEvent->setAccepted(true);
-	}
-	else
-	{
-		return QWidget::customEvent(pEvent);
-	}
 }
 
 void CEffectAssetWidget::paintEvent(QPaintEvent* event)

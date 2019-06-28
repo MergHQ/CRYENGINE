@@ -846,53 +846,53 @@ void SlideSelectedElements(STimelineTrack& track, SAnimTime delta, CTimeline::EK
 	std::function<bool(const SAnimTime&, const SAnimTime&)> compareFunc;
 	switch (mode)
 	{
-		case CTimeline::eKeysSlideMode_Both:
+	case CTimeline::eKeysSlideMode_Both:
 		{
 			refTime = SAnimTime();
 			compareFunc = [](const SAnimTime& t0, const SAnimTime& t1) { return false; };
 
 			break;
 		}
-		case CTimeline::eKeysSlideMode_Left:
+	case CTimeline::eKeysSlideMode_Left:
 		{
 			refTime = SAnimTime::Min();
 			compareFunc = [](const SAnimTime& t0, const SAnimTime& t1) { return t0 < t1; };
 
 			break;
 		}
-		case CTimeline::eKeysSlideMode_Right:
+	case CTimeline::eKeysSlideMode_Right:
 		{
 			refTime = SAnimTime::Max();
 			compareFunc = [](const SAnimTime& t0, const SAnimTime& t1) { return t0 > t1; };
 
 			break;
 		}
-		default:
+	default:
 		{
 			CRY_ASSERT_MESSAGE(0, "Wrong value of mode.");
 		}
 	}
 
 	ForEachElement(track, [&refTime, compareFunc](STimelineTrack& track, STimelineElement& element)
-	{
-		if (element.selected)
 		{
-			track.modified = true;
+			if (element.selected)
+			{
+			  track.modified = true;
 
-			if (compareFunc(refTime, element.start))
-				refTime = element.start;
-		}
-	});
+			  if (compareFunc(refTime, element.start))
+					refTime = element.start;
+			}
+		});
 
 	ForEachElement(track, [refTime, delta, compareFunc](STimelineTrack& track, STimelineElement& element)
-	{
-		if (!compareFunc(refTime, element.start) && track.modified)
 		{
-			element.start += delta;
-			if (element.end != SAnimTime::Max())
-				element.end += delta;
-		}
-	});
+			if (!compareFunc(refTime, element.start) && track.modified)
+			{
+			  element.start += delta;
+			  if (element.end != SAnimTime::Max())
+					element.end += delta;
+			}
+		});
 
 	if (track.caps & track.CAP_CLIP_TRUNCATED_BY_NEXT_KEY)
 		UpdateTruncatedDurations(&track);
@@ -1148,9 +1148,9 @@ void UpdateTracksRenderCache(STracksRenderCache& renderCache, QPainter& painter,
 
 		std::copy(std::begin(track.elements), std::end(track.elements), std::back_inserter(layouts));
 		std::sort(std::begin(layouts), std::end(layouts), [](const SElementLayout& a, const SElementLayout& b)
-		{
-			return a.rect.left() < b.rect.left();
-		});
+			{
+				return a.rect.left() < b.rect.left();
+			});
 	}
 
 	for (int32 i = PASS_BACKGROUND; i <= PASS_MAIN; ++i)
@@ -1230,10 +1230,10 @@ void UpdateTracksRenderCache(STracksRenderCache& renderCache, QPainter& painter,
 					const int32 lineY = track.rect.bottom() + 1;
 					renderCache.bottomLines.emplace_back(QLine(QPoint(backgroundRect.left(), lineY), QPoint(backgroundRect.right(), lineY)));
 
-					if (drawMarkers && 
-						(((track.pTimelineTrack->caps & STimelineTrack::CAP_NODE_TRACK) == 0) ||
-						 ((track.pTimelineTrack->caps & STimelineTrack::CAP_FOLDER_TRACK) == 0) ||
-						 ((track.pTimelineTrack->caps & STimelineTrack::CAP_DESCRIPTION_TRACK) == 0)))
+					if (drawMarkers &&
+					    (((track.pTimelineTrack->caps & STimelineTrack::CAP_NODE_TRACK) == 0) ||
+					     ((track.pTimelineTrack->caps & STimelineTrack::CAP_FOLDER_TRACK) == 0) ||
+					     ((track.pTimelineTrack->caps & STimelineTrack::CAP_DESCRIPTION_TRACK) == 0)))
 					{
 						QRect rect = markersRect;
 						rect.setTop(track.rect.top());
@@ -1303,9 +1303,9 @@ void UpdateTracksRenderCache(STracksRenderCache& renderCache, QPainter& painter,
 								curLeft = curLeft > 0 ? curLeft : elementLayout.rect.right();
 								curRight = (i + 1) < numElements ? sortedElements[i + 1].rect.left() : (-viewState.scrollPixels.x() + trackRect.width());
 							}
-							
+
 							int curWidth = curRight - curLeft;
-							if((curWidth > 0) && (!elementCam || (i == (numElements - 1))))
+							if ((curWidth > 0) && (!elementCam || (i == (numElements - 1))))
 							{
 								camRect.setLeft(curLeft);
 								camRect.setRight(curRight);
@@ -1534,9 +1534,9 @@ void UpdateTreeRenderCache(STreeRenderCache& renderCache, const QRect& treeRect,
 		{
 			renderCache.zSubTrackText.emplace_back(QRenderText(textRect, alias));
 		}
-		else if((track.pTimelineTrack->caps & STimelineTrack::CAP_COMPOUND_TRACK))
+		else if ((track.pTimelineTrack->caps & STimelineTrack::CAP_COMPOUND_TRACK))
 		{
-			renderCache.compoundTrackText.emplace_back(QRenderText(textRect, alias));			
+			renderCache.compoundTrackText.emplace_back(QRenderText(textRect, alias));
 		}
 		else
 		{
@@ -1755,7 +1755,7 @@ struct CTimeline::SMoveHandler : SMouseHandler
 
 		bool bNeedMoveElements = false;
 		bool bInvalidateContent = false;
-		
+
 		SAnimTime moveElementsDeltaTime;
 
 		if (m_pClickedElement && (m_timeline->m_snapKeys || m_timeline->m_snapTime || bToggleSelected))
@@ -1869,7 +1869,7 @@ struct CTimeline::SMoveHandler : SMouseHandler
 
 	virtual void MoveElements(STimelineTrack& track, SAnimTime delta) = 0;
 
-	void focusOutEvent(QFocusEvent* ev)
+	void         focusOutEvent(QFocusEvent* ev)
 	{
 		//SetSelectedElementTimes(m_timeline->m_pContent->track, m_elementTimes);
 		m_timeline->UpdateLayout();
@@ -1934,7 +1934,6 @@ struct CTimeline::SSlideHandler : public CTimeline::SMoveHandler
 private:
 	EKeysSlideMode m_keysSlideMode;
 };
-
 
 struct CTimeline::SScaleHandler : public CTimeline::SMoveHandler
 {
@@ -2005,7 +2004,7 @@ struct CTimeline::SPasteHandler : SShiftHandler
 		const QPoint currentPos = QPoint(QCursor::pos().x(), QCursor::pos().y() + scroll);
 
 		m_startPoint = m_timeline->m_viewState.LocalToLayout(QPoint(currentPos));
-		
+
 		m_clickTime = SAnimTime(float(m_startPoint.x()) / m_timeline->m_viewState.widthPixels * m_timeline->m_viewState.visibleDistance);
 		m_startTime = m_clickTime;
 
@@ -2022,10 +2021,10 @@ struct CTimeline::SPasteHandler : SShiftHandler
 	void mouseMoveEvent(QMouseEvent* ev) override
 	{
 		const int scroll = m_timeline->m_scrollBar ? m_timeline->m_scrollBar->value() : 0;
-		
+
 		const QPoint currentPos = QPoint(QCursor::pos().x(), QCursor::pos().y() + scroll);
 		const QPoint currentPoint = m_timeline->m_viewState.LocalToLayout(currentPos);
-		
+
 		const int delta = currentPoint.x() - m_startPoint.x();
 
 		SAnimTime deltaTime = SAnimTime(float(delta) / m_timeline->m_viewState.widthPixels * m_timeline->m_viewState.visibleDistance);
@@ -2041,7 +2040,7 @@ struct CTimeline::SPasteHandler : SShiftHandler
 		{
 			if (element.selected)
 			{
-				element.added = true;
+			  element.added = true;
 			}
 		});
 		m_timeline->ContentChanged(true);
@@ -2055,7 +2054,7 @@ struct CTimeline::SPasteHandler : SShiftHandler
 		{
 			if (element.selected)
 			{
-				element.added = false;
+			  element.added = false;
 			}
 		});
 
@@ -2114,7 +2113,7 @@ struct CTimeline::SScrubHandler : SMouseHandler
 		bool alt = ev->modifiers().testFlag(Qt::AltModifier);
 		bool shift = ev->modifiers().testFlag(Qt::ShiftModifier);
 		bool control = ev->modifiers().testFlag(Qt::ControlModifier);
-		
+
 		if ((alt && !m_timeline->m_invertScrubberSnapping) || (!alt && m_timeline->m_invertScrubberSnapping))
 		{
 			SAnimTime startElementTime = m_startThumbPosition;
@@ -2392,7 +2391,7 @@ struct CTimeline::STreeMouseHandler : SMouseHandler
 // ---------------------------------------------------------------------------
 
 CTimeline::CTimeline(QWidget* parent)
-	: QWidget(parent)
+	: CEditorWidget(parent)
 	, m_cycled(true)
 	, m_sizeToContent(false)
 	, m_snapTime(false)
@@ -2437,31 +2436,34 @@ CTimeline::CTimeline(QWidget* parent)
 
 	m_viewState.visibleDistance = 1.0f;
 
-	auto invalidateTracks = [this]()
-	{
-		InvalidateTracks();
-	};
+	auto invalidateTracks =
+		[this]()
+		{
+			InvalidateTracks();
+		};
 
 	QObject::connect(this, &CTimeline::SignalSelectionChanged, invalidateTracks);
 	QObject::connect(this, &CTimeline::SignalViewOptionChanged, invalidateTracks);
 
-	auto invalidateTreeTracksAndTimeMarkers = [this]()
-	{
-		InvalidateTree();
-		InvalidateTracks();
-		InvalidateTracksTimeMarkers();
-	};
+	auto invalidateTreeTracksAndTimeMarkers =
+		[this]()
+		{
+			InvalidateTree();
+			InvalidateTracks();
+			InvalidateTracksTimeMarkers();
+		};
 
 	QObject::connect(this, &CTimeline::SignalContentChanged, invalidateTreeTracksAndTimeMarkers);
 	QObject::connect(this, &CTimeline::SignalZoom, invalidateTreeTracksAndTimeMarkers);
 	QObject::connect(this, &CTimeline::SignalPan, invalidateTreeTracksAndTimeMarkers);
 	QObject::connect(this, &CTimeline::SignalTimeUnitChanged, invalidateTreeTracksAndTimeMarkers);
 
-	auto invalidateTreeAndTracks = [this]()
-	{
-		InvalidateTree();
-		InvalidateTracks();
-	};
+	auto invalidateTreeAndTracks =
+		[this]()
+		{
+			InvalidateTree();
+			InvalidateTracks();
+		};
 
 	QObject::connect(this, &CTimeline::SignalTrackSelectionChanged, invalidateTreeAndTracks);
 	QObject::connect(this, &CTimeline::SignalTracksBeginDrag, invalidateTreeAndTracks);
@@ -2478,6 +2480,8 @@ CTimeline::CTimeline(QWidget* parent)
 
 	m_highlightedTimer.setSingleShot(true);
 	m_highlightedConnection = QObject::connect(&m_highlightedTimer, &QTimer::timeout, [this]() { UpdateHightlightedInternal(); });
+
+	RegisterActions();
 }
 
 CTimeline::~CTimeline()
@@ -2485,54 +2489,37 @@ CTimeline::~CTimeline()
 	disconnect(m_highlightedConnection);
 }
 
-void CTimeline::customEvent(QEvent* pEvent)
+void CTimeline::RegisterActions()
 {
-	if (pEvent->type() == SandboxEvent::Command)
+	RegisterAction("general.delete", &CTimeline::OnMenuDelete);
+	RegisterAction("general.duplicate", &CTimeline::OnMenuDuplicate);
+	RegisterAction("general.copy", &CTimeline::CopyFromLastMouseMovePosition);
+	RegisterAction("general.cut", &CTimeline::CopyFromLastMouseMovePosition);
+	RegisterAction("general.paste", &CTimeline::PasteFromLastMouseMovePosition);
+	RegisterAction("general.undo", [this]() -> bool
 	{
-		CommandEvent* commandEvent = static_cast<CommandEvent*>(pEvent);
-		const string& command = commandEvent->GetCommand();
-		const QPoint mousePos = mapToGlobal(m_lastMouseMoveEventPos);
+		//uses global undo, do not accept
+		SignalUndo();
+		return false;
+	});
+	RegisterAction("general.redo", [this]() -> bool
+	{
+		//uses global redo, do not accept
+		SignalRedo();
+		return false;
+	});
+}
 
-		if (command == "general.delete")
-		{
-			OnMenuDelete();
-			commandEvent->setAccepted(true);
-		}
-		else if (command == "general.copy")
-		{
-			SignalCopy(GetTimeFromPos(mousePos), GetTrackFromPos(mousePos));
-			commandEvent->setAccepted(true);
-		}
-		else if (command == "general.cut")
-		{
-			SignalCopy(GetTimeFromPos(mousePos), GetTrackFromPos(mousePos));//TODO !
-			commandEvent->setAccepted(true);
-		}
-		else if (command == "general.paste")
-		{
-			SignalPaste(GetTimeFromPos(mousePos), GetTrackFromPos(mousePos));
-			commandEvent->setAccepted(true);
-		}
-		else if (command == "general.undo")
-		{
-			//uses global undo, do not accept
-			SignalUndo();
-		}
-		else if (command == "general.redo")
-		{
-			//uses global undo, do not accept
-			SignalRedo();
-		}
-		else if (command == "general.duplicate")
-		{
-			OnMenuDuplicate();
-			commandEvent->setAccepted(true);
-		}
-	}
-	else
-	{
-		QWidget::customEvent(pEvent);
-	}
+void CTimeline::CopyFromLastMouseMovePosition()
+{
+	const QPoint mousePos = mapToGlobal(m_lastMouseMoveEventPos);
+	SignalCopy(GetTimeFromPos(mousePos), GetTrackFromPos(mousePos));
+}
+
+void CTimeline::PasteFromLastMouseMovePosition()
+{
+	const QPoint mousePos = mapToGlobal(m_lastMouseMoveEventPos);
+	SignalPaste(GetTimeFromPos(mousePos), GetTrackFromPos(mousePos));
 }
 
 void CTimeline::CalculateRulerMarkerTimes()
@@ -3233,23 +3220,24 @@ void CTimeline::paintEvent(QPaintEvent* ev)
 void CTimeline::UpdateHightlightedInternal()
 {
 	using UpdateFunc = std::function<void(const STrackLayout&, const SElementLayoutPtrs&, bool&)>;
-	static UpdateFunc UpdateHighlightedElementsRecursevely = [&](const STrackLayout& trackLayout, const SElementLayoutPtrs& highlightedElements, bool& highlightedStateChanged)
-	{
-		for (auto& element : trackLayout.elements)
+	static UpdateFunc UpdateHighlightedElementsRecursevely =
+		[&](const STrackLayout& trackLayout, const SElementLayoutPtrs& highlightedElements, bool& highlightedStateChanged)
 		{
-			bool isHighlighted = element.IsHighlighted();
-			bool inHighlightedElements = std::find(std::begin(highlightedElements), std::end(highlightedElements), &element) != std::end(highlightedElements);
-			bool stateChanged  = (inHighlightedElements && (!isHighlighted)) || ((!inHighlightedElements) && isHighlighted);
+			for (auto& element : trackLayout.elements)
+			{
+				bool isHighlighted = element.IsHighlighted();
+				bool inHighlightedElements = std::find(std::begin(highlightedElements), std::end(highlightedElements), &element) != std::end(highlightedElements);
+				bool stateChanged = (inHighlightedElements && (!isHighlighted)) || ((!inHighlightedElements) && isHighlighted);
 
-			highlightedStateChanged = highlightedStateChanged || stateChanged;
-			element.SetHighlighted(inHighlightedElements);
-		}
+				highlightedStateChanged = highlightedStateChanged || stateChanged;
+				element.SetHighlighted(inHighlightedElements);
+			}
 
-		for (auto& track : trackLayout.tracks)
-		{
-			UpdateHighlightedElementsRecursevely(track, highlightedElements, highlightedStateChanged);
-		}
-	};
+			for (auto& track : trackLayout.tracks)
+			{
+				UpdateHighlightedElementsRecursevely(track, highlightedElements, highlightedStateChanged);
+			}
+		};
 
 	bool higlightedStateChanged = false;
 	for (auto& track : m_layout->tracks)
@@ -3581,8 +3569,8 @@ void CTimeline::mouseDoubleClickEvent(QMouseEvent* ev)
 					}
 				}
 				else if (((timelineTrack.caps & STimelineTrack::CAP_NODE_TRACK) == 0) &&
-					     ((timelineTrack.caps & STimelineTrack::CAP_FOLDER_TRACK) == 0) &&
-					     ((timelineTrack.caps & STimelineTrack::CAP_DESCRIPTION_TRACK) == 0))
+				         ((timelineTrack.caps & STimelineTrack::CAP_FOLDER_TRACK) == 0) &&
+				         ((timelineTrack.caps & STimelineTrack::CAP_DESCRIPTION_TRACK) == 0))
 				{
 					AddKeyToTrack(timelineTrack, SAnimTime(time));
 				}

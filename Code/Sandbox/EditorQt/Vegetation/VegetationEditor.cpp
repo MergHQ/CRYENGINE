@@ -327,9 +327,9 @@ struct CVegetationEditor::SImplementation : public IEditorNotifyListener
 
 		void SetupToolsMenu(CAbstractMenu* pToolsMenu, CVegetationEditor* pParentEditor)
 		{
-			pToolsMenu->AddCommandAction(pParentEditor->GetAction_Deprecated("vegetation.paint"));
-			pToolsMenu->AddCommandAction(pParentEditor->GetAction_Deprecated("vegetation.erase"));
-			pToolsMenu->AddCommandAction(pParentEditor->GetAction_Deprecated("vegetation.select"));
+			pToolsMenu->AddCommandAction(pParentEditor->GetAction("vegetation.paint"));
+			pToolsMenu->AddCommandAction(pParentEditor->GetAction("vegetation.erase"));
+			pToolsMenu->AddCommandAction(pParentEditor->GetAction("vegetation.select"));
 
 			const int section = pToolsMenu->GetNextEmptySection();
 
@@ -509,7 +509,7 @@ struct CVegetationEditor::SImplementation : public IEditorNotifyListener
 
 		QVBoxLayout*         pContentLayout;
 		CVegetationTreeView* pVegetationTreeView;
-		QPropertyTreeLegacy*       pPropertyTree;
+		QPropertyTreeLegacy* pPropertyTree;
 		QPreviewWidget*      pPreviewWidget;
 		QSplitter*           pSplitter;
 		QLabel*              pStatusLabel;
@@ -1269,10 +1269,13 @@ REGISTER_PYTHON_COMMAND_WITH_EXAMPLE(Private_VegetationEditor::ExportObjectsToXm
 
 CVegetationEditor::CVegetationEditor(QWidget* parent)
 	: CDockableEditor(parent)
-	, p(new SImplementation(this))
 {
-	SetContent(p->GetContentLayout());
 	RegisterActions();
+
+	//Should be after action registrations
+	m_pImpl.reset(new SImplementation(this));
+	SetContent(m_pImpl->GetContentLayout());
+
 	setAttribute(Qt::WA_DeleteOnClose);
 }
 
@@ -1284,61 +1287,24 @@ CVegetationEditor::~CVegetationEditor()
 void CVegetationEditor::RegisterActions()
 {
 	// Register general commands
-	RegisterAction("general.new", &CVegetationEditor::OnNew);
+	RegisterAction("general.new", [this]() { m_pImpl->AddVegetationObject(); });
 	RegisterAction("general.delete", &CVegetationEditor::OnDelete);
-	RegisterAction("general.duplicate", &CVegetationEditor::OnDuplicate);
-	RegisterAction("general.select_all", &CVegetationEditor::OnSelectAll);
+	RegisterAction("general.duplicate", [this]() { m_pImpl->CloneVegetationObject(); });
+	RegisterAction("general.select_all", [this]() { m_pImpl->SelectAll(); });
+
+	RegisterAction("vegetation.paint", []() { 
+		GetIEditor()->GetLevelEditorSharedState()->SetEditTool(new CVegetationPaintTool()); 
+	});
+	RegisterAction("vegetation.erase", []() { GetIEditor()->GetLevelEditorSharedState()->SetEditTool(new CVegetationEraseTool()); });
+	RegisterAction("vegetation.select", []() { GetIEditor()->GetLevelEditorSharedState()->SetEditTool(new CVegetationSelectTool()); });
 }
 
-bool CVegetationEditor::OnNew()
-{
-	p->AddVegetationObject();
-	return true;
-}
-
-bool CVegetationEditor::OnDelete()
+void CVegetationEditor::OnDelete()
 {
 	if (CQuestionDialog::SQuestion("Delete Objects", "Are you sure you want to delete selected vegetation objects?") != QDialogButtonBox::Yes)
 	{
-		return false;
+		return;
 	}
 
-	p->RemoveTreeSelection();
-	return true;
-}
-
-bool CVegetationEditor::OnDuplicate()
-{
-	p->CloneVegetationObject();
-	return true;
-}
-
-bool CVegetationEditor::OnSelectAll()
-{
-	p->SelectAll();
-	return true;
-}
-
-void CVegetationEditor::customEvent(QEvent* pEvent)
-{
-	CDockableEditor::customEvent(pEvent);
-
-	if (!pEvent->isAccepted() && pEvent->type() == SandboxEvent::Command)
-	{
-		CommandEvent* pCommandEvent = static_cast<CommandEvent*>(pEvent);
-		const string& command = pCommandEvent->GetCommand();
-
-		if (command == "vegetation.paint")
-		{
-			GetIEditor()->GetLevelEditorSharedState()->SetEditTool(new CVegetationPaintTool());
-		}
-		else if (command == "vegetation.erase")
-		{
-			GetIEditor()->GetLevelEditorSharedState()->SetEditTool(new CVegetationEraseTool());
-		}
-		else if (command == "vegetation.select")
-		{
-			GetIEditor()->GetLevelEditorSharedState()->SetEditTool(new CVegetationSelectTool());
-		}
-	}
+	m_pImpl->RemoveTreeSelection();
 }

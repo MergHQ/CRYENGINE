@@ -2,16 +2,15 @@
 
 #pragma once
 
+#include "EditorFramework/EditorWidget.h"
 #include "CurveEditorContent.h"
 
 #include <CryMath/Range.h>
 #include <CryMovie/AnimTime.h>
 
-#include <QWidget>
-
 class QToolBar;
 
-class EDITOR_COMMON_API CCurveEditor : public QWidget
+class EDITOR_COMMON_API CCurveEditor : public CEditorWidget
 {
 	Q_OBJECT
 public:
@@ -122,8 +121,6 @@ private:
 	void                                                                        LeftButtonMousePressEvent(QMouseEvent* pEvent);
 	void                                                                        RightButtonMousePressEvent(QMouseEvent* pEvent);
 	void                                                                        MiddleButtonMousePressEvent(QMouseEvent* pEvent);
-
-	void                                                                        customEvent(QEvent* pEvent) override;
 
 	void                                                                        SelectInRect(const QRect& rect, bool bToggleSelected = false, bool bDeselect = false);
 

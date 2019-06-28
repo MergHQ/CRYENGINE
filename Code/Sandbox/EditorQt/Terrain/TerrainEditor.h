@@ -11,19 +11,18 @@ class CTerrainEditor : public CDockableEditor
 public:
 	CTerrainEditor(QWidget* parent = nullptr);
 
+private:
 	virtual IViewPaneClass::EDockingDirection GetDockingDirection() const override { return IViewPaneClass::DOCK_FLOAT; }
 	virtual QRect                             GetPaneRect() override               { return QRect(0, 0, 800, 500); }
-
 	virtual const char*                       GetEditorName() const override       { return "Terrain Editor"; }
-	void                                      InitTerrainMenu();
-
 	virtual void                              SetLayout(const QVariantMap& state);
 	virtual QVariantMap                       GetLayout() const override;
+	virtual void                              Initialize() override;
 
-protected:
-	virtual void customEvent(QEvent* pEvent) override;
+	void                                      RegisterActions();
+	void                                      InitTerrainMenu();
+	void                                      SetTerrainTool(int tabIndex, CRuntimeClass* pTool);
 
-private:
 	QTabWidget* m_pTabWidget;
 	int         m_sculptTabIdx;
 	int         m_paintTabIdx;

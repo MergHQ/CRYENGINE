@@ -3,13 +3,10 @@
 #pragma once
 
 #include "EditorFramework/Editor.h"
+#include "TrackViewCore.h"
 
 #include <CryExtension/CryGUID.h>
 #include <QtViewPane.h>
-
-#include "TrackViewCore.h"
-
-class CTrackViewCore;
 
 class CTrackViewWindow : public CDockableEditor
 {
@@ -26,26 +23,24 @@ public:
 
 	virtual void        SetLayout(const QVariantMap& state) override;
 	virtual QVariantMap GetLayout() const override;
-
-	virtual void        customEvent(QEvent* pEvent) override;
 	// ~CEditor
-	
+
 private:
 	void         RegisterActions();
 	void         InitMenu();
 
-	bool OnNew();
-	bool OnOpen();
-	bool OnClose();
-	bool OnUndo();
-	bool OnRedo();
-	bool OnCopy();
-	bool OnCut();
-	bool OnPaste();
-	bool OnDelete();
-	bool OnDuplicate();
-	bool OnZoomIn();
-	bool OnZoomOut();
+	bool         OnNew();
+	bool         OnOpen();
+	bool         OnClose();
+	bool         OnUndo();
+	bool         OnRedo();
+	bool         OnCopy();
+	bool         OnCut();
+	bool         OnPaste();
+	bool         OnDelete();
+	bool         OnDuplicate();
+	bool         OnZoomIn();
+	bool         OnZoomOut();
 
 	bool         OnExportSequence();
 	bool         OnImportSequence();

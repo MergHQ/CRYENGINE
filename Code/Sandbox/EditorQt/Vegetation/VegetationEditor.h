@@ -13,22 +13,15 @@ public:
 	explicit CVegetationEditor(QWidget* parent = nullptr);
 	~CVegetationEditor();
 
+private:
 	virtual IViewPaneClass::EDockingDirection GetDockingDirection() const override { return IViewPaneClass::DOCK_FLOAT; }
 	virtual QRect                             GetPaneRect() override               { return QRect(0, 0, 800, 500); }
 	virtual const char*                       GetEditorName() const override       { return "Vegetation Editor"; }
 
-protected:
-	virtual void customEvent(QEvent* pEvent) override;
-
-private:
-	void RegisterActions();
-
-	bool OnNew();
-	bool OnDelete();
-	bool OnDuplicate();
-	bool OnSelectAll();
+	void                                      RegisterActions();
+	void                                      OnDelete();
 
 private:
 	struct SImplementation;
-	std::unique_ptr<SImplementation> p;
+	std::unique_ptr<SImplementation> m_pImpl;
 };

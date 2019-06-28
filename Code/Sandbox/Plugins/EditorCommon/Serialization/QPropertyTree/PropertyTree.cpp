@@ -2,21 +2,19 @@
 #include "StdAfx.h"
 #include "PropertyTree.h"
 
+#include "EditorFramework/Events.h"
 #include "PropertyTreeModel.h"
 #include "PropertyTreeIArchive.h"
 #include "PropertyTreeOArchive.h"
 #include "PropertyTreeFormWidget.h"
+#include "QSearchBox.h"
 
-#include <QScrollArea>
-#include <QEvent.h>
-
-#include <EditorFramework/Events.h>
 #include <CrySandbox/ScopedVariableSetter.h>
 #include <CrySerialization/yasli/BinArchive.h>
 
-#include "QSearchBox.h"
+#include <QKeyEvent>
+#include <QScrollArea>
 #include <QToolButton>
-#include <CryIcon.h>
 
 class QPropertyTree::CScrollArea : public QScrollArea
 {
@@ -38,7 +36,8 @@ public:
 //		* finding model children by name could be sped up by a map
 
 QPropertyTree::QPropertyTree(QWidget* pParent /*= nullptr*/)
-	: m_autoRevert(true)
+	: CEditorWidget(pParent)
+	, m_autoRevert(true)
 	, m_ignoreChanges(false)
 	, m_pCurrentSearchRow(nullptr)
 	, m_pActiveRow(nullptr)
@@ -48,6 +47,8 @@ QPropertyTree::QPropertyTree(QWidget* pParent /*= nullptr*/)
 	, m_expandedIcon("icons:General/Pointer_Down_Expanded.ico")
 	, m_dragHandleIcon("icons:General/Drag_Handle_Horizontal.ico")
 {
+	RegisterActions();
+
 	m_pScrollArea = new CScrollArea();
 	m_pScrollArea->setWidgetResizable(true);
 	m_pRootForm = nullptr;
@@ -102,7 +103,13 @@ QPropertyTree::QPropertyTree(QWidget* pParent /*= nullptr*/)
 
 QPropertyTree::~QPropertyTree()
 {
+}
 
+void QPropertyTree::RegisterActions()
+{
+	RegisterAction("general.find", &QPropertyTree::OnFind);
+	RegisterAction("general.find_previous", &QPropertyTree::OnFindPrevious);
+	RegisterAction("general.find_next", &QPropertyTree::OnFindNext);
 }
 
 void QPropertyTree::attach(const yasli::Serializer& serializer)
@@ -294,36 +301,6 @@ void QPropertyTree::keyPressEvent(QKeyEvent* pEvent)
 	}
 
 	pEvent->ignore();
-}
-
-void QPropertyTree::customEvent(QEvent* pEvent)
-{
-	if (pEvent->type() == SandboxEvent::Command)
-	{
-		CommandEvent* pCommandEvent = static_cast<CommandEvent*>(pEvent);
-
-		const string& command = pCommandEvent->GetCommand();
-
-		if (command == "general.find")
-		{
-			OnFind();
-			pEvent->accept();
-		}
-		else if (command == "general.find_previous")
-		{
-			OnFindPrevious();
-			pEvent->accept();
-		}
-		else if (command == "general.find_next")
-		{
-			OnFindNext();
-			pEvent->accept();
-		}
-	}
-	else
-	{
-		QWidget::customEvent(pEvent);
-	}
 }
 
 void QPropertyTree::OnRowChanged(const PropertyTree2::CRowModel* pRow)

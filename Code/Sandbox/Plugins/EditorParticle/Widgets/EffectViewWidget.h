@@ -4,8 +4,6 @@
 
 #include "ViewWidget.h"
 
-#include <QWidget>
-
 namespace CryParticleEditor {
 
 class CEffectAssetModel;
@@ -20,18 +18,17 @@ public:
 
 	const pfx2::IParticleEffect* GetEffect() const;
 	pfx2::IParticleEffect*       GetEffect();
-	const char*                      GetName() const;
+	const char*                  GetName() const;
 
-	void                             OnDeleteSelected();
-	void                             CopyComponents();
-	void                             OnPasteComponent();
-	void                             OnNewComponent();
+	void                         OnDeleteSelected();
+	void                         CopyComponents();
+	void                         OnPasteComponent();
+	void                         OnNewComponent();
 
-	bool                             MakeNewComponent(const char* szTemplateName);
+	bool                         MakeNewComponent(const char* szTemplateName);
 
 protected:
 	// QWidget
-	virtual void customEvent(QEvent* event) override;
 	virtual void paintEvent(QPaintEvent* event) override;
 	// ~QWidget
 
@@ -43,7 +40,7 @@ private:
 private:
 	CEffectAssetModel*             m_pEffectAssetModel;
 	CryParticleEditor::CGraphView* m_pGraphView;
-	bool                           m_updated = false;
+	bool                           m_updated;
 };
 
 }

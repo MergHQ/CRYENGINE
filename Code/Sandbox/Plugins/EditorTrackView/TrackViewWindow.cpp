@@ -3,25 +3,22 @@
 #include "StdAfx.h"
 #include "TrackViewWindow.h"
 
+#include "Controls/SequenceTabWidget.h"
 #include "TrackViewComponentsManager.h"
 #include "TrackViewBatchRenderDlg.h"
 #include "TrackViewSequenceDialog.h"
 #include "TrackViewEventsDialog.h"
 #include "TrackViewExporter.h"
 #include "TrackViewPlugin.h"
-#include "Controls/SequenceTabWidget.h"
-#include "Timeline.h"
-
-#include "Menu/AbstractMenu.h"
-#include "QControls.h"
-
-#include <QVBoxLayout>
-#include <QHBoxLayout>
-#include <QKeyEvent>
-#include <QToolBar>
-#include <QSplitter>
 
 #include <EditorFramework/Events.h>
+#include <Menu/AbstractMenu.h>
+#include <QControls.h>
+#include <Timeline.h>
+
+#include <QKeyEvent>
+#include <QSplitter>
+#include <QVBoxLayout>
 
 std::vector<CTrackViewWindow*> CTrackViewWindow::ms_trackViewWindows;
 
@@ -70,7 +67,7 @@ CTrackViewWindow::CTrackViewWindow(QWidget* pParent)
 
 	RegisterActions();
 	InitMenu();
- 	InstallReleaseMouseFilter(this);
+	InstallReleaseMouseFilter(this);
 }
 
 void CTrackViewWindow::RegisterActions()
@@ -87,6 +84,77 @@ void CTrackViewWindow::RegisterActions()
 	RegisterAction("general.duplicate", &CTrackViewWindow::OnDuplicate);
 	RegisterAction("general.zoom_in", &CTrackViewWindow::OnZoomIn);
 	RegisterAction("general.zoom_out", &CTrackViewWindow::OnZoomOut);
+	RegisterAction("general.toggle_sync_selection", &CTrackViewWindow::OnToggleSyncSelection);
+
+	RegisterAction("trackview.delete_sequence", &CTrackViewWindow::OnDeleteSequence);
+	RegisterAction("trackview.import_from_fbx", &CTrackViewWindow::OnImportSequence);
+	RegisterAction("trackview.export_to_fbx", &CTrackViewWindow::OnExportSequence);
+	RegisterAction("trackview.new_event", &CTrackViewWindow::OnNewEvent);
+	RegisterAction("trackview.show_events", &CTrackViewWindow::OnShowAllEvents);
+	RegisterAction("trackview.toggle_show_dopesheet", &CTrackViewWindow::OnToggleShowDopesheet);
+	RegisterAction("trackview.toggle_show_curve_editor", &CTrackViewWindow::OnToggleShowCurveEditor);
+	RegisterAction("trackview.show_sequence_properties", &CTrackViewWindow::OnSequenceProperties);
+	RegisterAction("trackview.toggle_link_timelines", &CTrackViewWindow::OnToggleLinkTimelines);
+	RegisterAction("trackview.set_units_ticks", &CTrackViewWindow::OnSetUnitsTicks);
+	RegisterAction("trackview.set_units_framecode", &CTrackViewWindow::OnSetUnitsFramecode);
+	RegisterAction("trackview.set_units_time", &CTrackViewWindow::OnSetUnitsTime);
+	RegisterAction("trackview.set_units_frames", &CTrackViewWindow::OnSetUnitsFrames);
+	RegisterAction("trackview.go_to_start", &CTrackViewWindow::OnGoToStart);
+	RegisterAction("trackview.go_to_end", &CTrackViewWindow::OnGoToEnd);
+	RegisterAction("trackview.pause_play", &CTrackViewWindow::OnPlayPause);
+	RegisterAction("trackview.stop", &CTrackViewWindow::OnStop);
+	RegisterAction("trackview.record", &CTrackViewWindow::OnRecord);
+	RegisterAction("trackview.go_to_next_key", &CTrackViewWindow::OnGoToNextKey);
+	RegisterAction("trackview.go_to_prev_key", &CTrackViewWindow::OnGoToPrevKey);
+	RegisterAction("trackview.toogle_loop", &CTrackViewWindow::OnToggleLoop);
+	RegisterAction("trackview.set_playback_start", &CTrackViewWindow::OnSetPlaybackStart);
+	RegisterAction("trackview.set_playback_end", &CTrackViewWindow::OnSetPlaybackEnd);
+	RegisterAction("trackview.reset_playback_start_end", &CTrackViewWindow::OnResetPlaybackStartEnd);
+	RegisterAction("trackview.render_sequence", &CTrackViewWindow::OnRender);
+	RegisterAction("trackview.create_light_animation_set", &CTrackViewWindow::OnLightAnimationSet);
+	RegisterAction("trackview.sync_selected_tracks_to_base_position", &CTrackViewWindow::OnSyncSelectedTracksToBasePosition);
+	RegisterAction("trackview.sync_selected_tracks_from_base_position", &CTrackViewWindow::OnSyncSelectedTracksFromBasePosition);
+	RegisterAction("trackview.no_snap", &CTrackViewWindow::OnNoSnap);
+	RegisterAction("trackview.magnet_snap", &CTrackViewWindow::OnMagnetSnap);
+	RegisterAction("trackview.frame_snap", &CTrackViewWindow::OnFrameSnap);
+	RegisterAction("trackview.grid_snap", &CTrackViewWindow::OnGridSnap);
+	RegisterAction("trackview.delete_selected_tracks", &CTrackViewWindow::OnDeleteSelectedTracks);
+	RegisterAction("trackview.disable_selected_tracks", &CTrackViewWindow::OnDisableSelectedTracks);
+	RegisterAction("trackview.mute_selected_tracks", &CTrackViewWindow::OnMuteSelectedTracks);
+	RegisterAction("trackview.enable_selected_tracks", &CTrackViewWindow::OnEnableSelectedTracks);
+	RegisterAction("trackview.select_move_keys_tool", &CTrackViewWindow::OnSelectMoveKeysTool);
+	RegisterAction("trackview.select_slide_keys_tool", &CTrackViewWindow::OnSelectSlideKeysTool);
+	RegisterAction("trackview.select_scale_keys_tool", &CTrackViewWindow::OnSelectScaleKeysTools);
+	RegisterAction("trackview.set_tangent_auto", &CTrackViewWindow::OnSetTangentAuto);
+	RegisterAction("trackview.set_tangent_in_zero", &CTrackViewWindow::OnSetTangentInZero);
+	RegisterAction("trackview.set_tangent_in_step", &CTrackViewWindow::OnSetTangentInStep);
+	RegisterAction("trackview.set_tangent_in_linear", &CTrackViewWindow::OnSetTangentInLinear);
+	RegisterAction("trackview.set_tangent_out_zero", &CTrackViewWindow::OnSetTangentOutZero);
+	RegisterAction("trackview.set_tangent_out_step", &CTrackViewWindow::OnSetTangentOutStep);
+	RegisterAction("trackview.set_tangent_out_linear", &CTrackViewWindow::OnSetTangentOutLinear);
+	RegisterAction("trackview.break_tangents", &CTrackViewWindow::OnBreakTangents);
+	RegisterAction("trackview.unify_tangents", &CTrackViewWindow::OnUnifyTangents);
+	RegisterAction("trackview.fit_view_horizontal", &CTrackViewWindow::OnFitViewHorizontal);
+	RegisterAction("trackview.fit_view_vertical", &CTrackViewWindow::OnFitViewVertical);
+	RegisterAction("trackview.add_track_position", &CTrackViewWindow::OnAddTrackPosition);
+	RegisterAction("trackview.add_track_rotation", &CTrackViewWindow::OnAddTrackRotation);
+	RegisterAction("trackview.add_track_scale", &CTrackViewWindow::OnAddTrackScale);
+	RegisterAction("trackview.add_track_visibility", &CTrackViewWindow::OnAddTrackVisibility);
+	RegisterAction("trackview.add_track_animation", &CTrackViewWindow::OnAddTrackAnimation);
+	RegisterAction("trackview.add_track_mannequin", &CTrackViewWindow::OnAddTrackMannequin);
+	RegisterAction("trackview.add_track_noise", &CTrackViewWindow::OnAddTrackNoise);
+	RegisterAction("trackview.add_track_audio_file", &CTrackViewWindow::OnAddTrackAudioFile);
+	RegisterAction("trackview.add_track_audio_parameter", &CTrackViewWindow::OnAddTrackAudioParameter);
+	RegisterAction("trackview.add_track_audio_switch", &CTrackViewWindow::OnAddTrackAudioSwitch);
+	RegisterAction("trackview.add_track_audio_trigger", &CTrackViewWindow::OnAddTrackAudioTrigger);
+	RegisterAction("trackview.add_track_drs_signal", &CTrackViewWindow::OnAddTrackDRSSignal);
+	RegisterAction("trackview.add_track_event", &CTrackViewWindow::OnAddTrackEvent);
+	RegisterAction("trackview.add_track_expression", &CTrackViewWindow::OnAddTrackExpression);
+	RegisterAction("trackview.add_track_facial_sequence", &CTrackViewWindow::OnAddTrackFacialSequence);
+	RegisterAction("trackview.add_track_look_at", &CTrackViewWindow::OnAddTrackLookAt);
+	RegisterAction("trackview.add_track_physicalize", &CTrackViewWindow::OnAddTrackPhysicalize);
+	RegisterAction("trackview.add_track_physics_driven", &CTrackViewWindow::OnAddTrackPhysicsDriven);
+	RegisterAction("trackview.add_track_procedural_eyes", &CTrackViewWindow::OnAddTrackProceduralEyes);
 }
 
 CTrackViewWindow::~CTrackViewWindow()
@@ -165,304 +233,6 @@ QVariantMap CTrackViewWindow::GetLayout() const
 	return state;
 }
 
-void CTrackViewWindow::customEvent(QEvent* pEvent)
-{
-	if (pEvent->type() == SandboxEvent::Command)
-	{
-		CommandEvent* commandEvent = static_cast<CommandEvent*>(pEvent);
-
-		const string& command = commandEvent->GetCommand();
-		if (command == "trackview.delete_sequence")
-		{
-			pEvent->setAccepted(OnDeleteSequence());
-		}
-		else if (command == "trackview.import_from_fbx")
-		{
-			pEvent->setAccepted(OnImportSequence());
-		}
-		else if (command == "trackview.export_to_fbx")
-		{
-			pEvent->setAccepted(OnExportSequence());
-		}
-		else if (command == "trackview.new_event")
-		{
-			pEvent->setAccepted(OnNewEvent());
-		}
-		else if (command == "trackview.show_events")
-		{
-			pEvent->setAccepted(OnShowAllEvents());
-		}
-		else if (command == "trackview.toggle_show_dopesheet")
-		{
-			pEvent->setAccepted(OnToggleShowDopesheet());
-		}
-		else if (command == "trackview.toggle_show_curve_editor")
-		{
-			pEvent->setAccepted(OnToggleShowCurveEditor());
-		}
-		else if (command == "trackview.show_sequence_properties")
-		{
-			pEvent->setAccepted(OnSequenceProperties());
-		}
-		else if (command == "trackview.toggle_link_timelines")
-		{
-			pEvent->setAccepted(OnToggleLinkTimelines());
-		}
-		else if (command == "general.toggle_sync_selection")
-		{
-			pEvent->setAccepted(OnToggleSyncSelection());
-		}
-		else if (command == "trackview.set_units_ticks")
-		{
-			pEvent->setAccepted(OnSetUnitsTicks());
-		}
-		else if (command == "trackview.set_units_framecode")
-		{
-			pEvent->setAccepted(OnSetUnitsFramecode());
-		}
-		else if (command == "trackview.set_units_time")
-		{
-			pEvent->setAccepted(OnSetUnitsTime());
-		}
-		else if (command == "trackview.set_units_frames")
-		{
-			pEvent->setAccepted(OnSetUnitsFrames());
-		}
-		else if (command == "trackview.go_to_start")
-		{
-			pEvent->setAccepted(OnGoToStart());
-		}
-		else if (command == "trackview.go_to_end")
-		{
-			pEvent->setAccepted(OnGoToEnd());
-		}
-		else if (command == "trackview.pause_play")
-		{
-			pEvent->setAccepted(OnPlayPause());
-		}
-		else if (command == "trackview.stop")
-		{
-			pEvent->setAccepted(OnStop());
-		}
-		else if (command == "trackview.record")
-		{
-			pEvent->setAccepted(OnRecord());
-		}
-		else if (command == "trackview.go_to_next_key")
-		{
-			pEvent->setAccepted(OnGoToNextKey());
-		}
-		else if (command == "trackview.go_to_prev_key")
-		{
-			pEvent->setAccepted(OnGoToPrevKey());
-		}
-		else if (command == "trackview.toogle_loop")
-		{
-			pEvent->setAccepted(OnToggleLoop());
-		}
-		else if (command == "trackview.set_playback_start")
-		{
-			pEvent->setAccepted(OnSetPlaybackStart());
-		}
-		else if (command == "trackview.set_playback_end")
-		{
-			pEvent->setAccepted(OnSetPlaybackEnd());
-		}
-		else if (command == "trackview.reset_playback_start_end")
-		{
-			pEvent->setAccepted(OnResetPlaybackStartEnd());
-		}
-		else if (command == "trackview.render_sequence")
-		{
-			pEvent->setAccepted(OnRender());
-		}
-		else if (command == "trackview.create_light_animation_set")
-		{
-			pEvent->setAccepted(OnLightAnimationSet());
-		}
-		else if (command == "trackview.sync_selected_tracks_to_base_position")
-		{
-			pEvent->setAccepted(OnSyncSelectedTracksToBasePosition());
-		}
-		else if (command == "trackview.sync_selected_tracks_from_base_position")
-		{
-			pEvent->setAccepted(OnSyncSelectedTracksFromBasePosition());
-		}
-		else if (command == "trackview.no_snap")
-		{
-			pEvent->setAccepted(OnNoSnap());
-		}
-		else if (command == "trackview.magnet_snap")
-		{
-			pEvent->setAccepted(OnMagnetSnap());
-		}
-		else if (command == "trackview.frame_snap")
-		{
-			pEvent->setAccepted(OnFrameSnap());
-		}
-		else if (command == "trackview.grid_snap")
-		{
-			pEvent->setAccepted(OnGridSnap());
-		}
-		else if (command == "trackview.delete_selected_tracks")
-		{
-			pEvent->setAccepted(OnDeleteSelectedTracks());
-		}
-		else if (command == "trackview.disable_selected_tracks")
-		{
-			pEvent->setAccepted(OnDisableSelectedTracks());
-		}
-		else if (command == "trackview.mute_selected_tracks")
-		{
-			pEvent->setAccepted(OnMuteSelectedTracks());
-		}
-		else if (command == "trackview.enable_selected_tracks")
-		{
-			pEvent->setAccepted(OnEnableSelectedTracks());
-		}
-		else if (command == "trackview.select_move_keys_tool")
-		{
-			pEvent->setAccepted(OnSelectMoveKeysTool());
-		}
-		else if (command == "trackview.select_slide_keys_tool")
-		{
-			pEvent->setAccepted(OnSelectSlideKeysTool());
-		}
-		else if (command == "trackview.select_scale_keys_tool")
-		{
-			pEvent->setAccepted(OnSelectScaleKeysTools());
-		}
-		else if (command == "trackview.set_tangent_auto")
-		{
-			pEvent->setAccepted(OnSetTangentAuto());
-		}
-		else if (command == "trackview.set_trangent_in_zero")
-		{
-			pEvent->setAccepted(OnSetTangentInZero());
-		}
-		else if (command == "trackview.set_tangent_in_step")
-		{
-			pEvent->setAccepted(OnSetTangentInStep());
-		}
-		else if (command == "trackview.set_tangent_in_linear")
-		{
-			pEvent->setAccepted(OnSetTangentInLinear());
-		}
-		else if (command == "trackview.set_tangent_out_zero")
-		{
-			pEvent->setAccepted(OnSetTangentOutZero());
-		}
-		else if (command == "trackview.set_tangent_out_step")
-		{
-			pEvent->setAccepted(OnSetTangentOutStep());
-		}
-		else if (command == "trackview.set_tangent_out_linear")
-		{
-			pEvent->setAccepted(OnSetTangentOutLinear());
-		}
-		else if (command == "trackview.break_tangents")
-		{
-			pEvent->setAccepted(OnBreakTangents());
-		}
-		else if (command == "trackview.unify_tangents")
-		{
-			pEvent->setAccepted(OnUnifyTangents());
-		}
-		else if (command == "trackview.fit_view_horizontal")
-		{
-			pEvent->setAccepted(OnFitViewHorizontal());
-		}
-		else if (command == "trackview.fit_view_vertical")
-		{
-			pEvent->setAccepted(OnFitViewVertical());
-		}
-		else if (command == "trackview.add_track_position")
-		{
-			pEvent->setAccepted(OnAddTrackPosition());
-		}
-		else if (command == "trackview.add_track_rotation")
-		{
-			pEvent->setAccepted(OnAddTrackRotation());
-		}
-		else if (command == "trackview.add_track_scale")
-		{
-			pEvent->setAccepted(OnAddTrackScale());
-		}
-		else if (command == "trackview.add_track_visibility")
-		{
-			pEvent->setAccepted(OnAddTrackVisibility());
-		}
-		else if (command == "trackview.add_track_animation")
-		{
-			pEvent->setAccepted(OnAddTrackAnimation());
-		}
-		else if (command == "trackview.add_track_mannequin")
-		{
-			pEvent->setAccepted(OnAddTrackMannequin());
-		}
-		else if (command == "trackview.add_track_noise")
-		{
-			pEvent->setAccepted(OnAddTrackNoise());
-		}
-		else if (command == "trackview.add_track_audio_file")
-		{
-			pEvent->setAccepted(OnAddTrackAudioFile());
-		}
-		else if (command == "trackview.add_track_audio_parameter")
-		{
-			pEvent->setAccepted(OnAddTrackAudioParameter());
-		}
-		else if (command == "trackview.add_track_audio_switch")
-		{
-			pEvent->setAccepted(OnAddTrackAudioSwitch());
-		}
-		else if (command == "trackview.add_track_audio_trigger")
-		{
-			pEvent->setAccepted(OnAddTrackAudioTrigger());
-		}
-		else if (command == "trackview.add_track_drs_signal")
-		{
-			pEvent->setAccepted(OnAddTrackDRSSignal());
-		}
-		else if (command == "trackview.add_track_event")
-		{
-			pEvent->setAccepted(OnAddTrackEvent());
-		}
-		else if (command == "trackview.add_track_expression")
-		{
-			pEvent->setAccepted(OnAddTrackExpression());
-		}
-		else if (command == "trackview.add_track_facial_sequence")
-		{
-			pEvent->setAccepted(OnAddTrackFacialSequence());
-		}
-		else if (command == "trackview.add_track_look_at")
-		{
-			pEvent->setAccepted(OnAddTrackLookAt());
-		}
-		else if (command == "trackview.add_track_physicalize")
-		{
-			pEvent->setAccepted(OnAddTrackPhysicalize());
-		}
-		else if (command == "trackview.add_track_physics_driven")
-		{
-			pEvent->setAccepted(OnAddTrackPhysicsDriven());
-		}
-		else if (command == "trackview.add_track_procedural_eyes")
-		{
-			pEvent->setAccepted(OnAddTrackProceduralEyes());
-		}
-		else
-		{
-			CDockableEditor::customEvent(pEvent);
-		}
-	}
-	else
-	{
-		CDockableEditor::customEvent(pEvent);
-	}
-}
-
 void CTrackViewWindow::InitMenu()
 {
 	const CEditor::MenuItems items[] = {
@@ -470,8 +240,7 @@ void CTrackViewWindow::InitMenu()
 		CEditor::MenuItems::EditMenu,CEditor::MenuItems::ViewMenu,  CEditor::MenuItems::New,
 		CEditor::MenuItems::Open,    CEditor::MenuItems::Close,     CEditor::MenuItems::Undo,
 		CEditor::MenuItems::Redo,    CEditor::MenuItems::Copy,      CEditor::MenuItems::Cut,
-		CEditor::MenuItems::Paste,   CEditor::MenuItems::Delete,    CEditor::MenuItems::Duplicate
-	};
+		CEditor::MenuItems::Paste,   CEditor::MenuItems::Delete,    CEditor::MenuItems::Duplicate };
 	AddToMenu(&items[0], CRY_ARRAY_COUNT(items));
 
 	{
@@ -650,7 +419,6 @@ bool CTrackViewWindow::OnUndo()
 
 bool CTrackViewWindow::OnRedo()
 {
-
 	auto pTabWidget = m_pTrackViewCore->GetComponentsManager()->GetTrackViewSequenceTabWidget();
 	if (pTabWidget)
 	{
