@@ -4918,7 +4918,7 @@ void CSystem::CreateSystemVars()
 	REGISTER_CVAR2("MemInfo", &profile_meminfo, 0, 0, "Display memory information by modules\n1=on, 0=off");
 
 	m_sys_spec = REGISTER_INT_CB("sys_spec", CONFIG_CUSTOM, VF_ALWAYSONCHANGE,    // starts with CONFIG_CUSTOM so callback is called when setting initial value
-	                             "Tells the system cfg spec. (0=custom, 1=low, 2=med, 3=high, 4=very high, 5=XBoxOne, 6=PS4)",
+	                             "Tells the system cfg spec. (0=custom, 1=low, 2=med, 3=high, 4=very high, 5=Xbox One, 6=PS4)",
 	                             OnSysSpecChange);
 
 	m_sys_SimulateTask = REGISTER_INT("sys_SimulateTask", 0, 0,

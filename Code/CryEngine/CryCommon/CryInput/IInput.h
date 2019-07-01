@@ -243,7 +243,7 @@ enum EKeyId : uint32
 	eKI_MouseYAbsolute,
 	eKI_MouseLast,
 
-	// XBox controller.
+	// Xbox controller.
 	eKI_XI_DPadUp = KI_XINPUT_BASE,
 	eKI_XI_DPadDown,
 	eKI_XI_DPadLeft,

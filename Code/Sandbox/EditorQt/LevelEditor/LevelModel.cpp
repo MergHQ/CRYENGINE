@@ -275,7 +275,7 @@ QString CLevelModel::LayerSpecToString(int spec)
 		str += "PC, ";
 
 	if (spec & eSpecType_XBoxOne)
-		str += "XBox One, ";
+		str += "Xbox One, ";
 
 	if (spec & eSpecType_PS4)
 		str += "PS4, ";
@@ -295,7 +295,7 @@ int CLevelModel::LayerSpecToInt(const QString& specStr)
 	if (specStr.contains("PC"))
 		spec = spec | eSpecType_PC;
 
-	if (specStr.contains("XBox One"))
+	if (specStr.contains("Xbox One"))
 		spec = spec | eSpecType_XBoxOne;
 
 	if (specStr.contains("PS4"))

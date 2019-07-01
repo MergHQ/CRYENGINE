@@ -292,8 +292,8 @@ REGISTER_EDITOR_AND_SCRIPT_KEYBOARD_FOCUS_COMMAND(layer, toggle_pc,
 REGISTER_EDITOR_UI_COMMAND_DESC(layer, toggle_pc, "PC", "", "", true)
 
 REGISTER_EDITOR_AND_SCRIPT_KEYBOARD_FOCUS_COMMAND(layer, toggle_xbox_one,
-                                                  CCommandDescription("Toggle selected layers' to load on XBox One. If in a multi selection with multiple state, all items will be marked to load on XBox One"))
-REGISTER_EDITOR_UI_COMMAND_DESC(layer, toggle_xbox_one, "XBox One", "", "", true)
+                                                  CCommandDescription("Toggle selected layers' to load on Xbox One. If in a multi selection with multiple state, all items will be marked to load on Xbox One"))
+REGISTER_EDITOR_UI_COMMAND_DESC(layer, toggle_xbox_one, "Xbox One", "", "", true)
 
 REGISTER_EDITOR_AND_SCRIPT_KEYBOARD_FOCUS_COMMAND(layer, toggle_ps4,
                                                   CCommandDescription("Toggle selected layers' to load on PS4. If in a multi selection with multiple state, all items will be marked to load on PS4"))

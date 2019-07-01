@@ -610,7 +610,7 @@ public:
 		actionLow->setText(QApplication::translate("MainWindow", "Low", 0));
 		actionLow->setProperty("command", QString("general.set_config_spec %1").arg(CONFIG_LOW_SPEC));
 		actionLow->setChecked(currentConfigSpec == CONFIG_LOW_SPEC);
-		actionXBox_One->setText(QApplication::translate("MainWindow", "XBox One", 0));
+		actionXBox_One->setText(QApplication::translate("MainWindow", "Xbox One", 0));
 		actionXBox_One->setProperty("command", QString("general.set_config_spec %1").arg(CONFIG_DURANGO));
 		actionXBox_One->setChecked(currentConfigSpec == CONFIG_DURANGO);
 		actionPS4->setText(QApplication::translate("MainWindow", "PS4", 0));

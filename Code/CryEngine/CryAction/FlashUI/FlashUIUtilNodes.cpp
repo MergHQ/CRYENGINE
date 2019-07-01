@@ -1,19 +1,9 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
-// -------------------------------------------------------------------------
-//  File name:   FlashUIUtilNodes.cpp
-//  Version:     v1.00
-//  Created:     24/4/212 by Paul Reindell.
-//  Description:
-// -------------------------------------------------------------------------
-//  History:
-//
-////////////////////////////////////////////////////////////////////////////
 #include "StdAfx.h"
 #include "FlashUIUtilNodes.h"
 #include "FlashUI.h"
 
-//------------------------------------------------------------------------------------------------------
 void CFlashUIPlatformNode::GetConfiguration(SFlowNodeConfig& config)
 {
 	static const SInputPortConfig in_config[] = {
@@ -23,7 +13,7 @@ void CFlashUIPlatformNode::GetConfiguration(SFlowNodeConfig& config)
 
 	static const SOutputPortConfig out_config[] = {
 		OutputPortConfig_Void("IsPc",      _HELP("Triggered on PC")),
-		OutputPortConfig_Void("IsXBoxOne", _HELP("Triggered on XBox One")),
+		OutputPortConfig_Void("IsXBoxOne", _HELP("Triggered on Xbox One")),
 		OutputPortConfig_Void("IsPS4",     _HELP("Triggered on PS4")),
 		OutputPortConfig_Void("IsAndroid", _HELP("Triggered on Android")),
 		OutputPortConfig_Void("IsConsole", _HELP("Triggered on Consoles")),

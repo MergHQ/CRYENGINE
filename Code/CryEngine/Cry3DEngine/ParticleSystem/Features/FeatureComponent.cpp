@@ -193,7 +193,7 @@ public:
 			ar(m_minimumConfig, "Minimum", "Minimum");
 			ar(m_maximumConfig, "Maximum", "Maximum");
 		}
-		ar(m_XBoxOne, "XBoxOne", "XBox One");
+		ar(m_XBoxOne, "XBoxOne", "Xbox One");
 		ar(m_PS4, "PS4", "Playstation 4");
 	}
 

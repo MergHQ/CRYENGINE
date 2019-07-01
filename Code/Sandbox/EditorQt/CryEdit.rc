@@ -6399,8 +6399,8 @@ BEGIN
         MENUITEM "High",                        ID_GAME_ENABLEHIGHSPEC
         MENUITEM "Medium",                      ID_GAME_ENABLEMEDIUMSPEC
         MENUITEM "Low",                         ID_GAME_ENABLELOWSPEC
-        MENUITEM "XBoxOne",                     ID_GAME_ENABLEDURANGOSPEC
-				MENUITEM "PS4",													ID_GAME_ENABLEORBISSPEC
+        MENUITEM "Xbox One",                     ID_GAME_ENABLEDURANGOSPEC
+		MENUITEM "PS4",													ID_GAME_ENABLEORBISSPEC
     END
     POPUP "&Group"
     BEGIN

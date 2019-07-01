@@ -143,7 +143,7 @@ public:
 		static const SInputPortConfig inputs[] = {
 			InputPortConfig_Void("Enable",      _HELP("Enable reporting")),
 			InputPortConfig_Void("Disable",     _HELP("Disable reporting")),
-			InputPortConfig<int>("Key",         0,                          _HELP("XBoxOne controller key"),                                                    NULL, _UICONFIG(XBoxKeyEnum)),
+			InputPortConfig<int>("Key",         0,                          _HELP("Xbox One controller key"),                                                    NULL, _UICONFIG(XBoxKeyEnum)),
 			InputPortConfig<bool>("NonDevMode", false,                      _HELP("If set to true, can be used in Non-Devmode as well [Debugging backdoor]")),
 			{ 0 }
 		};
@@ -155,7 +155,7 @@ public:
 		config.nFlags |= EFLN_TARGET_ENTITY;
 		config.pInputPorts = inputs;
 		config.pOutputPorts = outputs;
-		config.sDescription = _HELP("Get input from XBox 360 controller. EntityInput is used in multiplayer");
+		config.sDescription = _HELP("Get input from Xbox 360 controller. EntityInput is used in multiplayer");
 		config.SetCategory(EFLN_DEBUG);
 	}
 
@@ -303,7 +303,7 @@ public:
 		static const SInputPortConfig inputs[] = {
 			InputPortConfig_Void("Enable",      _HELP("Enable reporting")),
 			InputPortConfig_Void("Disable",     _HELP("Disable reporting")),
-			InputPortConfig<int>("Key",         0,                          _HELP("XBoxOne controller key"),                                                    NULL, _UICONFIG(XBoxAnalogEnum)),
+			InputPortConfig<int>("Key",         0,                          _HELP("Xbox One controller key"),                                                    NULL, _UICONFIG(XBoxAnalogEnum)),
 			InputPortConfig<bool>("NonDevMode", false,                      _HELP("If set to true, can be used in Non-Devmode as well [Debugging backdoor]")),
 			{ 0 }
 		};
@@ -315,7 +315,7 @@ public:
 		config.nFlags |= EFLN_TARGET_ENTITY;
 		config.pInputPorts = inputs;
 		config.pOutputPorts = outputs;
-		config.sDescription = _HELP("Get analog input from XBox 360 controller. Note: Expensive!  Note2: entity input is used in multiplayer");
+		config.sDescription = _HELP("Get analog input from Xbox 360 controller. Note: Expensive!  Note2: entity input is used in multiplayer");
 		config.SetCategory(EFLN_DEBUG);
 	}
 
@@ -475,7 +475,7 @@ public:
 		{
 			OutputPortConfig_AnyType("Keyboard",          _HELP("Outputs the signal from Check input if the current control scheme is keyboard (Focus on keyboard")),
 			OutputPortConfig_AnyType("KeyboardMouse",     _HELP("Outputs the signal from Check input if the current control scheme is keyboardmouse (Focus on mouse with keyboard")),
-			OutputPortConfig_AnyType("XBoxOneController", _HELP("Outputs the signal from Check input if the current control scheme is XBoxOne controller")),
+			OutputPortConfig_AnyType("XBoxOneController", _HELP("Outputs the signal from Check input if the current control scheme is Xbox One controller")),
 			OutputPortConfig_AnyType("PS4Controller",     _HELP("Outputs the signal from Check input if the current control scheme is PS4 controller")),
 			{ 0 }
 		};
@@ -563,7 +563,7 @@ public:
 		{
 			OutputPortConfig_AnyType("Keyboard",          _HELP("Outputs the signal from Check input if the current control scheme is keyboard (Focus on keyboard")),
 			OutputPortConfig_AnyType("KeyboardMouse",     _HELP("Outputs the signal from Check input if the current control scheme is keyboardmouse (Focus on mouse with keyboard")),
-			OutputPortConfig_AnyType("XBoxOneController", _HELP("Outputs the signal from Check input if the current control scheme is XBoxOne controller")),
+			OutputPortConfig_AnyType("XBoxOneController", _HELP("Outputs the signal from Check input if the current control scheme is Xbox One controller")),
 			OutputPortConfig_AnyType("PS4Controller",     _HELP("Outputs the signal from Check input if the current control scheme is PS4 controller")),
 			{ 0 }
 		};

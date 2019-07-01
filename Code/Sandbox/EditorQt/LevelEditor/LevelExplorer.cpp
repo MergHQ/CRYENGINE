@@ -75,7 +75,7 @@ public:
 					auto combo = new QMenuComboBox(parent);
 					combo->SetMultiSelect(true);
 					combo->AddItem("PC");
-					combo->AddItem("XBox One");
+					combo->AddItem("Xbox One");
 					combo->AddItem("PS4");
 					combo->SetText(index.data().toString());
 					return combo;
