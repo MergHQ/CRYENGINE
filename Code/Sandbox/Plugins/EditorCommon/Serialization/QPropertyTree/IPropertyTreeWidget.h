@@ -11,7 +11,7 @@
 
 class QMenu;
 
-namespace PropertyTree2
+namespace PropertyTree
 {
 class CRowModel;
 }
@@ -57,13 +57,13 @@ struct IPropertyTreeWidget
 	virtual void MoveChild(int oldIndex, int newIndex) {}
 
 	//! A widget has the possibility of adding context menu actions to a row's context menu.
-	virtual void PopulateContextMenu(QMenu* pMenu, const PropertyTree2::CRowModel* pRow) {}
+	virtual void PopulateContextMenu(QMenu* pMenu, const PropertyTree::CRowModel* pRow) {}
 
 	//! A widget has the possibility of adding context menu actions to a child's row's context menu.
-	virtual void PopulateChildContextMenu(QMenu* pMenu, const PropertyTree2::CRowModel* pRow) {}
+	virtual void PopulateChildContextMenu(QMenu* pMenu, const PropertyTree::CRowModel* pRow) {}
 
 	//!Useful if the widget needs information from the parent row, such as the label.
-	void SetRowModel(PropertyTree2::CRowModel* pRow) { m_rowModel = pRow; }
+	void SetRowModel(PropertyTree::CRowModel* pRow) { m_rowModel = pRow; }
 
 	//!Change propagation. Widgets will call these methods, property trees attach to these signals.
 	//!Usually Property Trees will use these signals to register undos, and undo object is registered on PreChanged and accepted on Change
@@ -71,13 +71,13 @@ struct IPropertyTreeWidget
 
 	//!Called when the "final" change of a value happens, these can either be called by itself (like when you change a bool widget) or
 	//!after a set of continuous changes (like when you scroll a float value widget)
-	CCrySignal<void(const PropertyTree2::CRowModel*)> signalChanged;
+	CCrySignal<void(const PropertyTree::CRowModel*)> signalChanged;
 	//!Called when a change operation is discarded by the user (like canceling a resource picker)
-	CCrySignal<void(const PropertyTree2::CRowModel*)> signalDiscarded;
+	CCrySignal<void(const PropertyTree::CRowModel*)> signalDiscarded;
 	//!Called when a continuous change of a value happens, there can be multiple continuous changes. A set of continuous changes is followed by a final non continuous change
-	CCrySignal<void(const PropertyTree2::CRowModel*)> signalContinuousChanged;
+	CCrySignal<void(const PropertyTree::CRowModel*)> signalContinuousChanged;
 	//!Called before any kind of change be it continuous or complete happens
-	CCrySignal<void(const PropertyTree2::CRowModel*)> signalPreChanged;
+	CCrySignal<void(const PropertyTree::CRowModel*)> signalPreChanged;
 
 	virtual ~IPropertyTreeWidget() {}
 
@@ -142,9 +142,9 @@ protected:
 	}
 
 	//!If we are in the middle of a continuous change, aka signalPreChanged was called but no signalChanged/signalDiscarded
-	bool IsContinuousChange() { return m_isContinuousChange; };
+	bool IsContinuousChange() { return m_isContinuousChange; }
 
-	PropertyTree2::CRowModel* m_rowModel;
+	PropertyTree::CRowModel* m_rowModel;
 
 protected:
 	//!Ignore change signals received by the widget
@@ -154,7 +154,7 @@ private:
 	bool m_isContinuousChange = false;
 };
 
-Q_DECLARE_INTERFACE(IPropertyTreeWidget, "PropertyTree2/IPropertyTreeWidget")
+Q_DECLARE_INTERFACE(IPropertyTreeWidget, "PropertyTree/IPropertyTreeWidget")
 
 class CPropertyTreeWidgetFactory
 {

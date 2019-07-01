@@ -4,7 +4,7 @@
 #include "PropertyTreeModel.h"
 #include <CrySerialization/yasli/Archive.h>
 
-namespace PropertyTree2
+namespace PropertyTree
 {
 class PropertyTreeIArchive : public yasli::Archive
 {

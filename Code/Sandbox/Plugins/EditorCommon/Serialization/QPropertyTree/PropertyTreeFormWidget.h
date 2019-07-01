@@ -7,7 +7,7 @@
 #include "PropertyTreeModel.h"
 #include "PropertyTree.h"
 
-namespace PropertyTree2
+namespace PropertyTree
 {
 //This widget container is in charge of laying out the widgets in the tree and drawing the extra elements
 //This also handles interaction with the tree's UI elements (expanding/collapsing, slider...)
@@ -106,17 +106,17 @@ private:
 
 	//!An SFormRow is owned by the CFormWidget in the m_rows vector and represent all the children rows of that widget
 	/*!
-	For example:
-		root CFormWidget:
-		 -> SFormRow with model Material Settings
-		    -> Material Settings CFormWidget
-				  -> SFormRow with model Shader Type
-					     -> Shader Type CFormWidget with child widget created (and actually owned by) the Shader Type model
-		 -> SFormRow shader parameters
-				-> Material Settings CFormWidget
-				   -> ...
-		Note that IPropertyTree derived widgets are only attached to their CFormWidget for painting, construction and release to factory is handled by the model
-	*/
+	   For example:
+	   root CFormWidget:
+	   -> SFormRow with model Material Settings
+	      -> Material Settings CFormWidget
+	        -> SFormRow with model Shader Type
+	             -> Shader Type CFormWidget with child widget created (and actually owned by) the Shader Type model
+	   -> SFormRow shader parameters
+	      -> Material Settings CFormWidget
+	         -> ...
+	   Note that IPropertyTree derived widgets are only attached to their CFormWidget for painting, construction and release to factory is handled by the model
+	 */
 	//!This is used to hold a CFormWidget and its related model
 	struct SFormRow
 	{
@@ -156,17 +156,17 @@ private:
 	void      ToggleExpand(SFormRow& row, bool skipLayout = false);
 
 	_smart_ptr<const CRowModel>            m_pRowModel;
-	QPropertyTree*                        m_pParentTree;
+	QPropertyTree*                         m_pParentTree;
 	const int                              m_nesting;
 
 	std::vector<std::unique_ptr<SFormRow>> m_rows;
 	SFormRow*                              m_pActiveRow;
 	//Last position tested for hovering. Used to avoid unnecessary computing.
-	QPoint m_lastCursorPos;                      
+	QPoint m_lastCursorPos;
 	QPoint m_mouseDownPos;
 	bool   m_allowReorderChildren;
 	//-2 = not dragging at all, -1 = dragging but invalid index, >0 = valid index
-	int    m_dragInsertIndex;                      
+	int    m_dragInsertIndex;
 
 	//Style props
 	int    m_spacing;

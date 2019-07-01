@@ -7,7 +7,7 @@
 
 #include <QWidget>
 
-namespace PropertyTree2
+namespace PropertyTree
 {
 CRowModel::CRowModel(CRowModel* pParent)
 	: m_name("<root>")
@@ -35,7 +35,6 @@ CRowModel::CRowModel(const char* name, const char* label, CRowModel* pParent)
 	{
 		pParent->AddChild(this);
 	}
-
 }
 
 CRowModel::CRowModel(const char* name, const char* label, CRowModel* pParent, const yasli::TypeID& type)
@@ -157,7 +156,7 @@ void CRowModel::MarkDirty(DirtyFlag flag /*= DirtyFlag::Dirty*/)
 		m_dirty = flag;
 	}
 
-	PropertyTree2::CRowModel* pParent = m_pParent;
+	PropertyTree::CRowModel* pParent = m_pParent;
 	while (pParent)
 	{
 		switch (pParent->m_dirty)

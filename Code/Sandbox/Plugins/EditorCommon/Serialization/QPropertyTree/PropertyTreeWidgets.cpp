@@ -17,7 +17,7 @@
 #include <QMenu>
 #include <QToolButton>
 
-namespace PropertyTree2
+namespace PropertyTree
 {
 CTextWidget::CTextWidget()
 	: QLineEdit()
@@ -437,7 +437,7 @@ bool CArrayWidget::IsArrayMutable() const
 	return !m_isFixedSize;
 }
 
-void CArrayWidget::PopulateContextMenu(QMenu* pMenu, const PropertyTree2::CRowModel* pRow)
+void CArrayWidget::PopulateContextMenu(QMenu* pMenu, const PropertyTree::CRowModel* pRow)
 {
 	if (!m_isFixedSize)
 	{
@@ -449,7 +449,7 @@ void CArrayWidget::PopulateContextMenu(QMenu* pMenu, const PropertyTree2::CRowMo
 	}
 }
 
-void CArrayWidget::PopulateChildContextMenu(QMenu* pMenu, const PropertyTree2::CRowModel* pRow)
+void CArrayWidget::PopulateChildContextMenu(QMenu* pMenu, const PropertyTree::CRowModel* pRow)
 {
 	CRY_ASSERT(pRow->GetParent() == m_rowModel);
 
@@ -702,7 +702,7 @@ void CStringListWidget::ShowPopup()
 }
 
 template<typename List>
-void PropertyTree2::CStringListWidget::SetupCombo(const List& list)
+void PropertyTree::CStringListWidget::SetupCombo(const List& list)
 {
 	//NOTE: serialization to archive is disabled from now on
 	//This means that all the operations happening into this scope will not generate property tree events and consequently will not trigger serialization into/from archives
@@ -859,53 +859,53 @@ void CColorwidget::paintEvent(QPaintEvent* paintEvent)
 
 namespace yasli
 {
-REGISTER_PROPERTY_WIDGET(StringInterface, PropertyTree2::CTextWidget);
-REGISTER_PROPERTY_WIDGET(WStringInterface, PropertyTree2::CTextWidget);
-REGISTER_PROPERTY_WIDGET(PointerInterface, PropertyTree2::CPtrTypeSelectWidget);
-REGISTER_PROPERTY_WIDGET(Button, PropertyTree2::CYasliButtonWidget);
-REGISTER_PROPERTY_WIDGET(ContainerInterface, PropertyTree2::CArrayWidget);
-REGISTER_PROPERTY_WIDGET(StringListStaticValue, PropertyTree2::CStringListWidget)
-REGISTER_PROPERTY_WIDGET(StringListValue, PropertyTree2::CStringListWidget)
+REGISTER_PROPERTY_WIDGET(StringInterface, PropertyTree::CTextWidget);
+REGISTER_PROPERTY_WIDGET(WStringInterface, PropertyTree::CTextWidget);
+REGISTER_PROPERTY_WIDGET(PointerInterface, PropertyTree::CPtrTypeSelectWidget);
+REGISTER_PROPERTY_WIDGET(Button, PropertyTree::CYasliButtonWidget);
+REGISTER_PROPERTY_WIDGET(ContainerInterface, PropertyTree::CArrayWidget);
+REGISTER_PROPERTY_WIDGET(StringListStaticValue, PropertyTree::CStringListWidget)
+REGISTER_PROPERTY_WIDGET(StringListValue, PropertyTree::CStringListWidget)
 
-REGISTER_PROPERTY_WIDGET(float, PropertyTree2::CNumberWidget<float> );
-REGISTER_PROPERTY_WIDGET(double, PropertyTree2::CNumberWidget<double> );
-REGISTER_PROPERTY_WIDGET(char, PropertyTree2::CNumberWidget<char> );
+REGISTER_PROPERTY_WIDGET(float, PropertyTree::CNumberWidget<float> );
+REGISTER_PROPERTY_WIDGET(double, PropertyTree::CNumberWidget<double> );
+REGISTER_PROPERTY_WIDGET(char, PropertyTree::CNumberWidget<char> );
 
-REGISTER_PROPERTY_WIDGET(i8, PropertyTree2::CNumberWidget<i8> );
-REGISTER_PROPERTY_WIDGET(i16, PropertyTree2::CNumberWidget<i16> );
-REGISTER_PROPERTY_WIDGET(i32, PropertyTree2::CNumberWidget<i32> );
-REGISTER_PROPERTY_WIDGET(i64, PropertyTree2::CNumberWidget<i64> );
+REGISTER_PROPERTY_WIDGET(i8, PropertyTree::CNumberWidget<i8> );
+REGISTER_PROPERTY_WIDGET(i16, PropertyTree::CNumberWidget<i16> );
+REGISTER_PROPERTY_WIDGET(i32, PropertyTree::CNumberWidget<i32> );
+REGISTER_PROPERTY_WIDGET(i64, PropertyTree::CNumberWidget<i64> );
 
-REGISTER_PROPERTY_WIDGET(u8, PropertyTree2::CNumberWidget<u8> );
-REGISTER_PROPERTY_WIDGET(u16, PropertyTree2::CNumberWidget<u16> );
-REGISTER_PROPERTY_WIDGET(u32, PropertyTree2::CNumberWidget<u32> );
-REGISTER_PROPERTY_WIDGET(u64, PropertyTree2::CNumberWidget<u64> );
+REGISTER_PROPERTY_WIDGET(u8, PropertyTree::CNumberWidget<u8> );
+REGISTER_PROPERTY_WIDGET(u16, PropertyTree::CNumberWidget<u16> );
+REGISTER_PROPERTY_WIDGET(u32, PropertyTree::CNumberWidget<u32> );
+REGISTER_PROPERTY_WIDGET(u64, PropertyTree::CNumberWidget<u64> );
 
-REGISTER_PROPERTY_WIDGET_TEMPLATE(RangeDecorator<float>, _float, PropertyTree2::CNumberWidget<float> );
-REGISTER_PROPERTY_WIDGET_TEMPLATE(RangeDecorator<double>, _double, PropertyTree2::CNumberWidget<double> );
-REGISTER_PROPERTY_WIDGET_TEMPLATE(RangeDecorator<char>, _char, PropertyTree2::CNumberWidget<char> );
+REGISTER_PROPERTY_WIDGET_TEMPLATE(RangeDecorator<float>, _float, PropertyTree::CNumberWidget<float> );
+REGISTER_PROPERTY_WIDGET_TEMPLATE(RangeDecorator<double>, _double, PropertyTree::CNumberWidget<double> );
+REGISTER_PROPERTY_WIDGET_TEMPLATE(RangeDecorator<char>, _char, PropertyTree::CNumberWidget<char> );
 
-REGISTER_PROPERTY_WIDGET_TEMPLATE(RangeDecorator<i8>, _i8, PropertyTree2::CNumberWidget<i8> );
-REGISTER_PROPERTY_WIDGET_TEMPLATE(RangeDecorator<i16>, _i16, PropertyTree2::CNumberWidget<i16> );
-REGISTER_PROPERTY_WIDGET_TEMPLATE(RangeDecorator<i32>, _i32, PropertyTree2::CNumberWidget<i32> );
-REGISTER_PROPERTY_WIDGET_TEMPLATE(RangeDecorator<i64>, _i64, PropertyTree2::CNumberWidget<i64> );
+REGISTER_PROPERTY_WIDGET_TEMPLATE(RangeDecorator<i8>, _i8, PropertyTree::CNumberWidget<i8> );
+REGISTER_PROPERTY_WIDGET_TEMPLATE(RangeDecorator<i16>, _i16, PropertyTree::CNumberWidget<i16> );
+REGISTER_PROPERTY_WIDGET_TEMPLATE(RangeDecorator<i32>, _i32, PropertyTree::CNumberWidget<i32> );
+REGISTER_PROPERTY_WIDGET_TEMPLATE(RangeDecorator<i64>, _i64, PropertyTree::CNumberWidget<i64> );
 
-REGISTER_PROPERTY_WIDGET_TEMPLATE(RangeDecorator<u8>, _u8, PropertyTree2::CNumberWidget<u8> );
-REGISTER_PROPERTY_WIDGET_TEMPLATE(RangeDecorator<u16>, _u16, PropertyTree2::CNumberWidget<u16> );
-REGISTER_PROPERTY_WIDGET_TEMPLATE(RangeDecorator<u32>, _u32, PropertyTree2::CNumberWidget<u32> );
-REGISTER_PROPERTY_WIDGET_TEMPLATE(RangeDecorator<u64>, _u64, PropertyTree2::CNumberWidget<u64> );
+REGISTER_PROPERTY_WIDGET_TEMPLATE(RangeDecorator<u8>, _u8, PropertyTree::CNumberWidget<u8> );
+REGISTER_PROPERTY_WIDGET_TEMPLATE(RangeDecorator<u16>, _u16, PropertyTree::CNumberWidget<u16> );
+REGISTER_PROPERTY_WIDGET_TEMPLATE(RangeDecorator<u32>, _u32, PropertyTree::CNumberWidget<u32> );
+REGISTER_PROPERTY_WIDGET_TEMPLATE(RangeDecorator<u64>, _u64, PropertyTree::CNumberWidget<u64> );
 }
 
 namespace Serialization
 {
-REGISTER_PROPERTY_WIDGET(IActionButton, PropertyTree2::CActionButtonWidget);
-REGISTER_PROPERTY_WIDGET(Vec3AsColor, PropertyTree2::CColorwidget);
+REGISTER_PROPERTY_WIDGET(IActionButton, PropertyTree::CActionButtonWidget);
+REGISTER_PROPERTY_WIDGET(Vec3AsColor, PropertyTree::CColorwidget);
 }
 
 namespace property_tree
 {
-REGISTER_PROPERTY_WIDGET(Color, PropertyTree2::CColorwidget);
+REGISTER_PROPERTY_WIDGET(Color, PropertyTree::CColorwidget);
 }
 
-REGISTER_PROPERTY_WIDGET_TEMPLATE(SerializableColor_tpl<float>, ColorF, PropertyTree2::CColorwidget);
-REGISTER_PROPERTY_WIDGET_TEMPLATE(SerializableColor_tpl<unsigned char>, ColorB, PropertyTree2::CColorwidget);
+REGISTER_PROPERTY_WIDGET_TEMPLATE(SerializableColor_tpl<float>, ColorF, PropertyTree::CColorwidget);
+REGISTER_PROPERTY_WIDGET_TEMPLATE(SerializableColor_tpl<unsigned char>, ColorB, PropertyTree::CColorwidget);

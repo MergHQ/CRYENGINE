@@ -1,10 +1,11 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 #pragma once
 
-#include <CryCore/smartptr.h>
 #include "IPropertyTreeWidget.h"
 
-namespace PropertyTree2
+#include <CryCore/smartptr.h>
+
+namespace PropertyTree
 {
 
 //! The actual underlying model for the tree

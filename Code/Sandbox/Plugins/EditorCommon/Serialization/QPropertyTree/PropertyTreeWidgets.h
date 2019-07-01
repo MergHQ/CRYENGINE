@@ -11,7 +11,7 @@
 #include <QPushButton>
 #include <QWidget>
 
-namespace PropertyTree2
+namespace PropertyTree
 {
 class CTextWidget : public QLineEdit, public IPropertyTreeWidget
 {
@@ -97,8 +97,8 @@ public:
 	virtual bool CanMoveChildren() const final;
 	virtual void MoveChild(int oldIndex, int newIndex) final;
 
-	virtual void PopulateContextMenu(QMenu* pMenu, const PropertyTree2::CRowModel* pRow) final;
-	virtual void PopulateChildContextMenu(QMenu* pMenu, const PropertyTree2::CRowModel* pRow) final;
+	virtual void PopulateContextMenu(QMenu* pMenu, const PropertyTree::CRowModel* pRow) final;
+	virtual void PopulateChildContextMenu(QMenu* pMenu, const PropertyTree::CRowModel* pRow) final;
 	virtual bool SupportsMultiEdit() const final { return true; }
 	virtual void SetMultiEditValue() final;
 
@@ -300,7 +300,7 @@ void CNumberWidget<T >::Serialize(Serialization::IArchive& ar)
 }
 
 template<typename T>
-void PropertyTree2::CNumberWidget<T>::OnValueSubmitted(double value)
+void PropertyTree::CNumberWidget<T >::OnValueSubmitted(double value)
 {
 	if (m_previousValue != value)
 	{
@@ -314,7 +314,7 @@ void PropertyTree2::CNumberWidget<T>::OnValueSubmitted(double value)
 }
 
 template<typename T>
-void PropertyTree2::CNumberWidget<T>::OnValueChanged(double value)
+void PropertyTree::CNumberWidget<T >::OnValueChanged(double value)
 {
 	if (m_previousValue != value)
 	{

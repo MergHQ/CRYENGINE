@@ -18,7 +18,7 @@
 #include "DragDrop.h"
 #include <EditorFramework/Events.h>
 
-namespace PropertyTree2
+namespace PropertyTree
 {
 
 CFormWidget::SFormRow::SFormRow(const CRowModel* pRowModel)
@@ -779,7 +779,7 @@ void CFormWidget::mouseMoveEvent(QMouseEvent* pEvent)
 				int rowIndex = RowIndexAtPosition(m_mouseDownPos);
 				if (rowIndex != -1)
 				{
-					PropertyTree2::CFormWidget::SFormRow& pDraggedRow = *m_rows[rowIndex];
+					PropertyTree::CFormWidget::SFormRow& pDraggedRow = *m_rows[rowIndex];
 
 					CDragDropData* pDragData = new CDragDropData();
 					pDragData->SetCustomData("PropertyRow", pDraggedRow.m_pModel);
@@ -1352,7 +1352,7 @@ int CFormWidget::GetSplitterPosition() const
 	return mapFrom(m_pParentTree, QPoint(splitterPos, 0)).x();
 }
 
-PropertyTree2::CFormWidget::SFormRow* CFormWidget::ModelToFormRow(const CRowModel* pRowModel)
+PropertyTree::CFormWidget::SFormRow* CFormWidget::ModelToFormRow(const CRowModel* pRowModel)
 {
 	CRY_ASSERT(pRowModel && pRowModel->GetParent() == m_pRowModel && !pRowModel->IsHidden());
 
@@ -1371,7 +1371,7 @@ PropertyTree2::CFormWidget::SFormRow* CFormWidget::ModelToFormRow(const CRowMode
 	}
 }
 
-PropertyTree2::CFormWidget::SFormRow* CFormWidget::RowAtPosition(const QPoint& position)
+PropertyTree::CFormWidget::SFormRow* CFormWidget::RowAtPosition(const QPoint& position)
 {
 	int index = RowIndexAtPosition(position);
 	if (index != -1)

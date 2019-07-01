@@ -6,7 +6,7 @@
 #include <CrySerialization/yasli/Callback.h>
 #include "IPropertyTreeWidget.h"
 
-namespace PropertyTree2
+namespace PropertyTree
 {
 
 template<typename ValueType>
@@ -225,14 +225,14 @@ void PropertyTreeIArchive::closeBlock()
 	m_lastVisitedIndex = -1;
 }
 
-const PropertyTree2::CRowModel* PropertyTreeIArchive::FindRowInScope(const char* name, const yasli::TypeID& type)
+const PropertyTree::CRowModel* PropertyTreeIArchive::FindRowInScope(const char* name, const yasli::TypeID& type)
 {
 	if (!m_pCurrentScope || !m_pCurrentScope->HasChildren())
 	{
 		return nullptr;
 	}
 
-	using namespace PropertyTree2;
+	using namespace PropertyTree;
 
 	const std::vector<_smart_ptr<CRowModel>>& childArray = m_pCurrentScope->GetChildren();
 	const int count = childArray.size();

@@ -119,7 +119,7 @@ void QPropertyTree::attach(const yasli::Serializer& serializer)
 		m_attached.clear();
 		m_attached.push_back(yasli::Object(serializer));
 		m_models.clear();
-		m_models.emplace_back(new PropertyTree2::CRowModel(nullptr));
+		m_models.emplace_back(new PropertyTree::CRowModel(nullptr));
 	}
 	revert();
 }
@@ -132,7 +132,7 @@ void QPropertyTree::attach(const yasli::Serializers& serializers)
 	m_models.reserve(serializers.size());
 	for (int i = 0; i < serializers.size(); i++)
 	{
-		m_models.emplace_back(new PropertyTree2::CRowModel(nullptr));
+		m_models.emplace_back(new PropertyTree::CRowModel(nullptr));
 	}
 	revert();
 }
@@ -142,7 +142,7 @@ void QPropertyTree::attach(const yasli::Object& object)
 	m_attached.clear();
 	m_attached.push_back(object);
 	m_models.clear();
-	m_models.emplace_back(new PropertyTree2::CRowModel(nullptr));
+	m_models.emplace_back(new PropertyTree::CRowModel(nullptr));
 	revert();
 }
 
@@ -156,7 +156,7 @@ void QPropertyTree::detach()
 
 void QPropertyTree::revert()
 {
-	using namespace PropertyTree2;
+	using namespace PropertyTree;
 
 	CScopedVariableSetter<bool> ignoreChangesDuringRevert(m_ignoreChanges, true);
 
@@ -165,7 +165,7 @@ void QPropertyTree::revert()
 		for (int i = 0; i < m_attached.size(); i++)
 		{
 			yasli::Object& object = m_attached[i];
-			_smart_ptr<PropertyTree2::CRowModel>& pModel = m_models[i];
+			_smart_ptr<PropertyTree::CRowModel>& pModel = m_models[i];
 			pModel->MarkNotVisitedRecursive();
 
 			PropertyTreeOArchive propertyArchive(*pModel);
@@ -266,7 +266,7 @@ void QPropertyTree::revert()
 
 void QPropertyTree::apply()
 {
-	using namespace PropertyTree2;
+	using namespace PropertyTree;
 
 	if (m_attached.empty())
 	{
@@ -276,7 +276,7 @@ void QPropertyTree::apply()
 	for (int i = 0; i < m_attached.size(); i++)
 	{
 		yasli::Object& object = m_attached[i];
-		_smart_ptr<PropertyTree2::CRowModel>& pModel = m_models[i];
+		_smart_ptr<PropertyTree::CRowModel>& pModel = m_models[i];
 
 		PropertyTreeIArchive modelOArchive(*pModel);
 		modelOArchive.setLastContext(m_pArchiveContext);
@@ -303,7 +303,7 @@ void QPropertyTree::keyPressEvent(QKeyEvent* pEvent)
 	pEvent->ignore();
 }
 
-void QPropertyTree::OnRowChanged(const PropertyTree2::CRowModel* pRow)
+void QPropertyTree::OnRowChanged(const PropertyTree::CRowModel* pRow)
 {
 	if (m_ignoreChanges)
 	{
@@ -329,7 +329,7 @@ void QPropertyTree::OnRowChanged(const PropertyTree2::CRowModel* pRow)
 	}
 }
 
-void QPropertyTree::OnRowDiscarded(const PropertyTree2::CRowModel* pRow)
+void QPropertyTree::OnRowDiscarded(const PropertyTree::CRowModel* pRow)
 {
 	//When a change is discarded signal it and then reload the tree as the serialized data wwill probably have changed as a result of signalDiscarded() (aka maybe undo is called)
 	if (m_ignoreChanges)
@@ -348,7 +348,7 @@ void QPropertyTree::OnRowDiscarded(const PropertyTree2::CRowModel* pRow)
 	}
 }
 
-void QPropertyTree::OnRowContinuousChanged(const PropertyTree2::CRowModel* pRow)
+void QPropertyTree::OnRowContinuousChanged(const PropertyTree::CRowModel* pRow)
 {
 	if (m_ignoreChanges)
 	{
@@ -365,7 +365,7 @@ void QPropertyTree::OnRowContinuousChanged(const PropertyTree2::CRowModel* pRow)
 	signalContinuousChange();
 }
 
-void QPropertyTree::OnRowPreChanged(const PropertyTree2::CRowModel* pRow)
+void QPropertyTree::OnRowPreChanged(const PropertyTree::CRowModel* pRow)
 {
 	if (m_ignoreChanges)
 	{
@@ -382,10 +382,10 @@ void QPropertyTree::OnRowPreChanged(const PropertyTree2::CRowModel* pRow)
 	}
 }
 
-void QPropertyTree::CopyRowValueToModels(const PropertyTree2::CRowModel* pRow)
+void QPropertyTree::CopyRowValueToModels(const PropertyTree::CRowModel* pRow)
 {
 	//Note: for now this only copies one individual row over, but perhaps in cases of mutable containers we also need to copy the state of the children
-	using namespace PropertyTree2;
+	using namespace PropertyTree;
 
 	std::vector<const CRowModel*> parents;
 	const CRowModel* pParent = pRow->GetParent();
@@ -395,7 +395,7 @@ void QPropertyTree::CopyRowValueToModels(const PropertyTree2::CRowModel* pRow)
 		pParent = pParent->GetParent();
 	}
 
-	for (_smart_ptr<PropertyTree2::CRowModel>& pModel : m_models)
+	for (_smart_ptr<PropertyTree::CRowModel>& pModel : m_models)
 	{
 		const CRowModel* pCurrentModel = pModel;
 		for (auto parentsIterator = parents.rbegin(); parentsIterator != parents.rend(); ++parentsIterator)
@@ -455,7 +455,7 @@ void QPropertyTree::OnFindPrevious()
 		m_pCurrentSearchRow = nullptr;
 	}
 
-	const PropertyTree2::CRowModel* pRow = DoFind(m_pCurrentSearchRow ? m_pCurrentSearchRow.get() : m_pRoot.get(), searchText, true);
+	const PropertyTree::CRowModel* pRow = DoFind(m_pCurrentSearchRow ? m_pCurrentSearchRow.get() : m_pRoot.get(), searchText, true);
 	if (pRow)
 	{
 		m_pCurrentSearchRow = pRow;
@@ -477,7 +477,7 @@ void QPropertyTree::OnFindNext()
 		m_pCurrentSearchRow = nullptr;
 	}
 
-	const PropertyTree2::CRowModel* pRow = DoFind(m_pCurrentSearchRow ? m_pCurrentSearchRow : m_pRoot, searchText, false);
+	const PropertyTree::CRowModel* pRow = DoFind(m_pCurrentSearchRow ? m_pCurrentSearchRow : m_pRoot, searchText, false);
 	if (pRow)
 	{
 		m_pCurrentSearchRow = pRow;
@@ -490,7 +490,7 @@ void QPropertyTree::OnCloseSearch()
 	m_pSearchWidget->setVisible(false);
 }
 
-const PropertyTree2::CRowModel* QPropertyTree::DoFind(const PropertyTree2::CRowModel* pCurrentRow, const QString& searchString, bool searchUp /*= false*/)
+const PropertyTree::CRowModel* QPropertyTree::DoFind(const PropertyTree::CRowModel* pCurrentRow, const QString& searchString, bool searchUp /*= false*/)
 {
 	if (searchString.isEmpty())
 	{
@@ -517,7 +517,7 @@ const PropertyTree2::CRowModel* QPropertyTree::DoFind(const PropertyTree2::CRowM
 	return nullptr;
 }
 
-const PropertyTree2::CRowModel* QPropertyTree::GetRowBelow(const PropertyTree2::CRowModel* pRow)
+const PropertyTree::CRowModel* QPropertyTree::GetRowBelow(const PropertyTree::CRowModel* pRow)
 {
 	if (pRow->HasChildren())
 	{
@@ -530,7 +530,7 @@ const PropertyTree2::CRowModel* QPropertyTree::GetRowBelow(const PropertyTree2::
 		const size_t rowCount = pRow->GetParent()->GetChildren().size();
 		while (rowCount - 1 > rowIndex) //Go to next visible sibling
 		{
-			const _smart_ptr<PropertyTree2::CRowModel> pSibling = pRow->GetParent()->GetChildren()[rowIndex + 1];
+			const _smart_ptr<PropertyTree::CRowModel> pSibling = pRow->GetParent()->GetChildren()[rowIndex + 1];
 			if (!pSibling->IsHidden())
 			{
 				return pSibling;
@@ -547,7 +547,7 @@ const PropertyTree2::CRowModel* QPropertyTree::GetRowBelow(const PropertyTree2::
 	return nullptr;
 }
 
-const PropertyTree2::CRowModel* QPropertyTree::GetRowAbove(const PropertyTree2::CRowModel* pRow)
+const PropertyTree::CRowModel* QPropertyTree::GetRowAbove(const PropertyTree::CRowModel* pRow)
 {
 	if (pRow->IsRoot())
 	{
@@ -584,7 +584,7 @@ const PropertyTree2::CRowModel* QPropertyTree::GetRowAbove(const PropertyTree2::
 	return pRow->GetParent();
 }
 
-void QPropertyTree::FocusRow(const PropertyTree2::CRowModel* pRow)
+void QPropertyTree::FocusRow(const PropertyTree::CRowModel* pRow)
 {
 	CRY_ASSERT(pRow);
 	EnsureRowVisible(pRow);
@@ -627,7 +627,7 @@ int QPropertyTree::GetSplitterPosition() const
 	return int(m_splitterRatio * float(width()));
 }
 
-void QPropertyTree::SetActiveRow(const PropertyTree2::CRowModel* pRow)
+void QPropertyTree::SetActiveRow(const PropertyTree::CRowModel* pRow)
 {
 	if (m_pActiveRow != pRow)
 	{
@@ -638,9 +638,9 @@ void QPropertyTree::SetActiveRow(const PropertyTree2::CRowModel* pRow)
 	}
 }
 
-void QPropertyTree::EnsureRowVisible(const PropertyTree2::CRowModel* pRow)
+void QPropertyTree::EnsureRowVisible(const PropertyTree::CRowModel* pRow)
 {
-	PropertyTree2::CFormWidget* pForm = m_pRootForm->ExpandToRow(pRow);
+	PropertyTree::CFormWidget* pForm = m_pRootForm->ExpandToRow(pRow);
 	pForm->ScrollToRow(pRow);
 }
 QScrollArea* QPropertyTree::GetScrollArea()

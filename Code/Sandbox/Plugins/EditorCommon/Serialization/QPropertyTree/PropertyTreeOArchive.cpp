@@ -5,7 +5,7 @@
 #include <CrySerialization/yasli/Callback.h>
 #include "IPropertyTreeWidget.h"
 
-namespace PropertyTree2
+namespace PropertyTree
 {
 template<typename ValueType>
 void PropertyTreeOArchive::ProcessSimpleRow(const ValueType& value, const char* name, const char* label)
@@ -29,7 +29,6 @@ PropertyTreeOArchive::PropertyTreeOArchive(CRowModel& root)
 
 PropertyTreeOArchive::~PropertyTreeOArchive()
 {
-
 }
 
 bool PropertyTreeOArchive::operator()(yasli::StringInterface& value, const char* name, const char* label)
@@ -171,7 +170,7 @@ bool PropertyTreeOArchive::operator()(yasli::ContainerInterface& container, cons
 	if (!pRow->IsWidgetSet())
 	{
 		//We are setting back to ContainerInterface and not to the container type because it is the  typename that creates the CArrayWidget widget
-		//The	REGISTER_PROPERTY_WIDGET(ContainerInterface,	PropertyTree2::CArrayWidget) macro does the factory mapping
+		//The	REGISTER_PROPERTY_WIDGET(ContainerInterface,	PropertyTree::CArrayWidget) macro does the factory mapping
 		pRow->SetWidgetAndType<yasli::ContainerInterface>();
 		//set back to the actual container type
 		pRow->SetType(container.containerType());
@@ -266,7 +265,7 @@ void PropertyTreeOArchive::ExitScope()
 	m_scopeStack.pop_back();
 }
 
-PropertyTree2::CRowModel* PropertyTreeOArchive::FindOrCreateRowInScope(const char* name, const char* label, const yasli::TypeID& type)
+PropertyTree::CRowModel* PropertyTreeOArchive::FindOrCreateRowInScope(const char* name, const char* label, const yasli::TypeID& type)
 {
 	CRY_ASSERT(m_currentScope.m_pScopeRow);
 
@@ -318,7 +317,7 @@ PropertyTree2::CRowModel* PropertyTreeOArchive::FindOrCreateRowInScope(const cha
 	return new CRowModel(name, label, m_currentScope.m_pScopeRow, type);
 }
 
-PropertyTree2::CRowModel* PropertyTreeOArchive::FindRowInScope(const char* name)
+PropertyTree::CRowModel* PropertyTreeOArchive::FindRowInScope(const char* name)
 {
 	CRY_ASSERT(m_currentScope.m_pScopeRow);
 
@@ -340,7 +339,7 @@ PropertyTree2::CRowModel* PropertyTreeOArchive::FindRowInScope(const char* name)
 	return nullptr;
 }
 
-PropertyTree2::CRowModel* PropertyTreeOArchive::GetLastVisitedRow()
+PropertyTree::CRowModel* PropertyTreeOArchive::GetLastVisitedRow()
 {
 	CRY_ASSERT(m_currentScope.m_pScopeRow);
 	if (m_currentScope.m_lastVisitedIndex >= 0 && m_currentScope.m_lastVisitedIndex < m_currentScope.m_pScopeRow->GetChildren().size())

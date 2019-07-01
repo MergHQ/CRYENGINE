@@ -18,7 +18,7 @@ class QScrollArea;
 class QSearchBox;
 class QWheelEvent;
 
-namespace PropertyTree2
+namespace PropertyTree
 {
 class CRowModel;
 class CFormWidget;
@@ -41,8 +41,8 @@ class EDITOR_COMMON_API QPropertyTree : public CEditorWidget
 	Q_PROPERTY(QIcon expandedIcon READ GetExpandedIcon WRITE SetExpandedIcon DESIGNABLE true)
 	Q_PROPERTY(QIcon dragHandleIcon READ GetDragHandleIcon WRITE SetDragHandleIcon DESIGNABLE true)
 
-	friend class PropertyTree2::CFormWidget;
-	friend class PropertyTree2::CInlineWidgetBox;
+	friend class PropertyTree::CFormWidget;
+	friend class PropertyTree::CInlineWidgetBox;
 public:
 	explicit QPropertyTree(QWidget* pParent = nullptr);
 	virtual ~QPropertyTree();
@@ -99,44 +99,44 @@ private:
 	virtual void keyPressEvent(QKeyEvent* pEvent) override;
 
 	//!Used to register undos on widget change, we record the undo on PreChange and accept/discard it on Changed/Discarded
-	void                            OnRowChanged(const PropertyTree2::CRowModel* pRow);
-	void                            OnRowDiscarded(const PropertyTree2::CRowModel* pRow);
-	void                            OnRowContinuousChanged(const PropertyTree2::CRowModel* pRow);
-	void                            OnRowPreChanged(const PropertyTree2::CRowModel* pRow);
+	void                           OnRowChanged(const PropertyTree::CRowModel* pRow);
+	void                           OnRowDiscarded(const PropertyTree::CRowModel* pRow);
+	void                           OnRowContinuousChanged(const PropertyTree::CRowModel* pRow);
+	void                           OnRowPreChanged(const PropertyTree::CRowModel* pRow);
 
-	void                            CopyRowValueToModels(const PropertyTree2::CRowModel* pRow);
-	void                            RegisterActions();
-	void                            OnFind();
-	void                            OnFindPrevious();
-	void                            OnFindNext();
-	void                            OnCloseSearch();
-	const PropertyTree2::CRowModel* DoFind(const PropertyTree2::CRowModel* pCurrentRow, const QString& searchString, bool searchUp = false);
+	void                           CopyRowValueToModels(const PropertyTree::CRowModel* pRow);
+	void                           RegisterActions();
+	void                           OnFind();
+	void                           OnFindPrevious();
+	void                           OnFindNext();
+	void                           OnCloseSearch();
+	const PropertyTree::CRowModel* DoFind(const PropertyTree::CRowModel* pCurrentRow, const QString& searchString, bool searchUp = false);
 
 	//! Computes the next row in vertical order, regardless of hierarchy
-	const PropertyTree2::CRowModel* GetRowBelow(const PropertyTree2::CRowModel* pRow);
+	const PropertyTree::CRowModel* GetRowBelow(const PropertyTree::CRowModel* pRow);
 	//! Computes the previous row in vertical order, regardless of hierarchy
-	const PropertyTree2::CRowModel* GetRowAbove(const PropertyTree2::CRowModel* pRow);
+	const PropertyTree::CRowModel* GetRowAbove(const PropertyTree::CRowModel* pRow);
 	//! "Selects" and scrolls to a row
-	void                            FocusRow(const PropertyTree2::CRowModel* pRow);
+	void                           FocusRow(const PropertyTree::CRowModel* pRow);
 
 	//! Will accumulate all the next changes until set to false again. Notifies once set to false if anything has changed.
-	void                            SetAccumulateChanges(bool accumulate);
+	void                           SetAccumulateChanges(bool accumulate);
 
-	bool                            IsDraggingSplitter() const         { return m_isDraggingSplitter; }
-	void                            SetDraggingSplitter(bool dragging) { m_isDraggingSplitter = dragging; }
+	bool                           IsDraggingSplitter() const         { return m_isDraggingSplitter; }
+	void                           SetDraggingSplitter(bool dragging) { m_isDraggingSplitter = dragging; }
 
-	void                            SetSplitterPosition(int position);
-	int                             GetSplitterPosition() const;
+	void                           SetSplitterPosition(int position);
+	int                            GetSplitterPosition() const;
 
-	void                            SetActiveRow(const PropertyTree2::CRowModel* pRow);
-	const PropertyTree2::CRowModel* GetActiveRow() { return m_pActiveRow.get(); }
+	void                           SetActiveRow(const PropertyTree::CRowModel* pRow);
+	const PropertyTree::CRowModel* GetActiveRow() { return m_pActiveRow.get(); }
 
-	void                            EnsureRowVisible(const PropertyTree2::CRowModel* pRow);
-	QScrollArea*                    GetScrollArea();
+	void                           EnsureRowVisible(const PropertyTree::CRowModel* pRow);
+	QScrollArea*                   GetScrollArea();
 	//! Used to intercept widget wheel events and forward to the scroll area
-	void                            HandleScroll(QWheelEvent* pEvent);
+	void                           HandleScroll(QWheelEvent* pEvent);
 
-	int                             GetAutoExpandDepth() const { return m_autoExpandDepth; }
+	int                            GetAutoExpandDepth() const { return m_autoExpandDepth; }
 
 	//Styling
 	QIcon GetCollapsedIcon() const      { return m_collapsedIcon; }
@@ -148,20 +148,20 @@ private:
 	QIcon GetDragHandleIcon() const     { return m_dragHandleIcon; }
 	void  SetDragHandleIcon(QIcon icon) { m_dragHandleIcon = icon; }
 
-	typedef std::vector<yasli::Object>                        Objects;
-	Objects                                    m_attached;
-	typedef std::vector<_smart_ptr<PropertyTree2::CRowModel>> Models;
-	Models                                     m_models;
-	yasli::Context*                            m_pArchiveContext;
-	_smart_ptr<PropertyTree2::CRowModel>       m_pRoot;
+	typedef std::vector<yasli::Object>                       Objects;
+	Objects                                   m_attached;
+	typedef std::vector<_smart_ptr<PropertyTree::CRowModel>> Models;
+	Models                                    m_models;
+	yasli::Context*                           m_pArchiveContext;
+	_smart_ptr<PropertyTree::CRowModel>       m_pRoot;
 
-	CScrollArea*                               m_pScrollArea;
-	QSearchBox*                                m_pSearchBox;
-	QWidget*                                   m_pSearchWidget;
-	PropertyTree2::CFormWidget*                m_pRootForm;
-	_smart_ptr<const PropertyTree2::CRowModel> m_pCurrentSearchRow;
-	_smart_ptr<const PropertyTree2::CRowModel> m_pActiveRow;
-	QString                                    m_lastSearchText;
+	CScrollArea*                              m_pScrollArea;
+	QSearchBox*                               m_pSearchBox;
+	QWidget*                                  m_pSearchWidget;
+	PropertyTree::CFormWidget*                m_pRootForm;
+	_smart_ptr<const PropertyTree::CRowModel> m_pCurrentSearchRow;
+	_smart_ptr<const PropertyTree::CRowModel> m_pActiveRow;
+	QString                                   m_lastSearchText;
 
 	float m_splitterRatio;
 	bool  m_isDraggingSplitter;

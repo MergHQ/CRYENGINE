@@ -1,7 +1,7 @@
 // Copyright 2001-2019 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
-#include "CrySandbox\CrySignal.h"
+#include "CrySandbox/CrySignal.h"
 
 #include <QStringList>
 
@@ -19,7 +19,7 @@ public:
 	{
 	}
 
-	bool IsEmpty() const {	return m_nonEmptyFolders.empty(); }
+	bool IsEmpty() const { return m_nonEmptyFolders.empty(); }
 
 	bool Contains(const QString& folderPath) const
 	{
@@ -29,9 +29,9 @@ public:
 
 	const QStringList& GetList() const { return m_nonEmptyFolders; }
 
-	void Update(bool enable);
+	void               Update(bool enable);
 
-	void FillNonEmptyFoldersList();
+	void               FillNonEmptyFoldersList();
 
 	CCrySignal<void()> signalInvalidate;
 
