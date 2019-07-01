@@ -374,9 +374,9 @@
         "ShowDisplayInfo": false
     },
     "CNotificationHistory": {
-        "ShowErrors": null,
-        "ShowInfo": null,
-        "ShowWarnings": null,
+        "ShowErrors": true,
+        "ShowInfo": true,
+        "ShowWarnings": true,
         "TreeView": null
     },
     "CObjectBrowser": {

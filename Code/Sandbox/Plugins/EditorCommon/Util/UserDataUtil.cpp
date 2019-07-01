@@ -58,9 +58,10 @@ namespace Private_UserDataUtil
 				{
 					QVariantMap& defaultVariantMap = defaultData[preferredDataKey].toMap();
 					QVariantMap& preferredVariantMap = preferredData[preferredDataKey].toMap();
-					QVariantMap& mergedVariantMap = mergedData[preferredDataKey].toMap();
+					QVariantMap mergedVariantMap;
 
 					Merge(defaultVariantMap, preferredVariantMap, mergedVariantMap);
+					mergedData.insert(preferredDataKey, mergedVariantMap);
 					continue;
 				}
 
