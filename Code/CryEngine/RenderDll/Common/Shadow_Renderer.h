@@ -262,8 +262,8 @@ public:
 	inline uint32 SampleRequests()      const { return nSideSampleMask; }
 
 	// --------------------------------------------------------
-	inline bool ShouldUpdate()          const { return nUpdateSideMask != 0; }
-	inline bool ShouldUpdate(int side)  const { return nUpdateSideMask & BIT(side); }
+	inline bool ShouldUpdate()          const { return (nUpdateSideMask) != 0; }
+	inline bool ShouldUpdate(int side)  const { return (nUpdateSideMask & BIT(side)) != 0; }
 
 	// --------------------------------------------------------
 	inline bool ShouldSample()          const { return (nSideSampleMask) != 0; }
