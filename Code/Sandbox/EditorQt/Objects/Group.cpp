@@ -272,17 +272,17 @@ protected:
 		IObjectManager* pObjectManager = GetIEditor()->GetObjectManager();
 		std::vector<CBaseObject*> objects;
 		objects.reserve(objectsGuids.size());
-		for (auto it = objectsGuids.rbegin(); it != objectsGuids.rend(); ++it)
+		for (int i = objectsGuids.size() - 1; i >= 0; i--)
 		{
-			CBaseObject* pObject = pObjectManager->FindObject(*it);
+			CBaseObject* pObject = pObjectManager->FindObject(objectsGuids[i]);
 			if (pObject)
 			{
 				objects.emplace_back(pObject);
-			}
-			else
+			} //make sure we actually have items to delete in the guid arrays
+			else if(oldLayersGuids.size() && parentGuids.size())
 			{
-				oldLayersGuids.erase(std::next(it).base());
-				parentGuids.erase(std::next(it).base());
+				oldLayersGuids.erase(oldLayersGuids.begin() + i);
+				parentGuids.erase(parentGuids.begin() + i);
 			}
 		}
 

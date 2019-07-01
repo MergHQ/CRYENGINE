@@ -415,40 +415,80 @@ public:
 class CUndoBaseObjectNew : public IUndoObject
 {
 public:
-	CUndoBaseObjectNew(CBaseObject* pObj)
+	CUndoBaseObjectNew(CBaseObject* pObject)
 	{
 		using namespace Private_ObjectManager;
-		m_object = pObj;
+		//We need the guid to make sure this object actually exists in the object manager and it's not only kept alive by the m_object smart pointer
+		m_objectGUID = pObject->GetId();
+		m_object = pObject;
 
-		m_isPrefab = pObj->IsKindOf(RUNTIME_CLASS(CPrefabObject));
+		m_isPrefab = pObject->IsKindOf(RUNTIME_CLASS(CPrefabObject));
 
 		if (m_isPrefab)
-			ExtractRemapingInformation(pObj, m_remaping);
+		{
+			ExtractRemapingInformation(pObject, m_remaping);
+		}
 	}
 protected:
-	virtual const char* GetDescription() override { return "New BaseObject"; }
-	virtual const char* GetObjectName()  override { return m_object->GetName(); }
+	virtual const char* GetDescription() override 
+	{ 
+		string description = "";
+		CBaseObject* pObject = GetIEditor()->GetObjectManager()->FindObject(m_objectGUID);
+		if (pObject)
+		{
+			description.Format("New object %s", pObject->GetName());
+		}
+		return  description;
+	}
+	virtual const char* GetObjectName()  override 
+	{ 
+		CBaseObject* pObject = GetIEditor()->GetObjectManager()->FindObject(m_objectGUID);
+		if(pObject)
+		{
+			return pObject->GetName();
+		}
+		return ""; 
+	}
 
 	virtual void        Undo(bool bUndo) override
 	{
+		CBaseObject* pObject = GetIEditor()->GetObjectManager()->FindObject(m_objectGUID);
+		//if the object does not exist it means it has been deleted after creation and no undo for that deletion has been registered
+		//This happens in one specific case which is the deletion of a prefab item asset. 
+		//The item deletion causes all it's instanced CPrefabObjects to be deleted without an undo
+		if (!pObject)
+		{
+			//we invalidate redo of this operation as it cannot happen without a live object
+			m_redoIsValid = false;
+			m_object = nullptr;
+			return;
+		}
+
 		if (bUndo)
 		{
 			m_redo = XmlHelpers::CreateXmlNode("Redo");
 			// Save current object state.
 			CObjectArchive ar(GetIEditorImpl()->GetObjectManager(), m_redo, false);
 			ar.bUndo = true;
-			m_object->Serialize(ar);
-			m_object->SetLayerModified();
+			pObject->Serialize(ar);
+			pObject->SetLayerModified();
 		}
 
-		m_object->UpdatePrefab(eOCOT_Delete);
+		pObject->UpdatePrefab(eOCOT_Delete);
 
 		// Delete this object.
-		GetIEditorImpl()->DeleteObject(m_object);
+		GetIEditorImpl()->DeleteObject(pObject);
 	}
 	virtual void Redo() override
 	{
 		using namespace Private_ObjectManager;
+
+		//If redo is not valid we stop this operation now
+		if (!m_redoIsValid)
+		{
+			return;
+		}
+
 		if (m_redo)
 		{
 			IObjectManager* pObjMan = GetIEditorImpl()->GetObjectManager();
@@ -473,6 +513,8 @@ private:
 	TGUIDRemap     m_remaping;
 	XmlNodeRef     m_redo;
 	bool           m_isPrefab;
+	bool           m_redoIsValid = true;
+	CryGUID        m_objectGUID;
 };
 
 //////////////////////////////////////////////////////////////////////////
