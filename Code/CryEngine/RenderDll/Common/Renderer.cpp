@@ -2254,13 +2254,17 @@ void CRenderer::EF_QueryImpl(ERenderQueryTypes eQuery, void* pInOut0, uint32 nIn
 	case EFQ_GetAllMeshes:
 		{
 			//Get render mesh lock, to ensure that the mesh list doesn't change while we're copying
-			IRenderMesh** ppMeshes = NULL;
 			uint32 nSize = 0;
 			AUTO_LOCK(CRenderMesh::m_sLinkLock);
 			for (util::list<CRenderMesh>* iter = CRenderMesh::s_MeshList.next; iter != &CRenderMesh::s_MeshList; iter = iter->next)
 			{
-				ppMeshes[nSize] = iter->item<&CRenderMesh::m_Chain>();
 				nSize++;
+			}
+			IRenderMesh** ppMeshes = new IRenderMesh*[nSize];
+			uint32 idx = 0;
+			for (util::list<CRenderMesh>* iter = CRenderMesh::s_MeshList.next; iter != &CRenderMesh::s_MeshList; iter = iter->next)
+			{
+				ppMeshes[idx++] = iter->item<&CRenderMesh::m_Chain>();
 			}
 			WriteQueryResult(pInOut0, nInOutSize0, ppMeshes);
 			WriteQueryResult(pInOut1, nInOutSize1, nSize);
