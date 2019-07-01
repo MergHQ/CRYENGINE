@@ -31,7 +31,8 @@ public:
 	{
 		Int,
 		Float,
-		String
+		String,
+		Int64
 	};
 
 	CCVarModel();
@@ -63,7 +64,7 @@ protected:
 	void OnCVarChanged(ICVar* const pCVar);
 
 	std::vector<string> m_cvars;
-	FavoritesHelper m_favHelper;
+	FavoritesHelper     m_favHelper;
 
 	enum TupleIndices
 	{
@@ -123,11 +124,11 @@ public:
 	static void         SetState(const QVariant& state);
 	// ~CEditor
 
-	void RegisterActions();
-	void CreateMenu();
+	void        RegisterActions();
+	void        CreateMenu();
 
-	static void         LoadCVarListFromFile(const char* szFilename);
-	static void         SaveCVarListToFile(const char* szFilename);
+	static void LoadCVarListFromFile(const char* szFilename);
+	static void SaveCVarListToFile(const char* szFilename);
 
 private:
 	bool OnCopy();
