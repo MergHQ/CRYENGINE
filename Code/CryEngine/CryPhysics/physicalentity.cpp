@@ -448,19 +448,20 @@ int CPhysicalEntity::SetParams(pe_params *_params, int bThreadSafe)
 				}
 				if (params->bRecalcBounds) {
 					ComputeBBox(BBox);
-					if (params->bEntGridUseOBB && !m_pStructure)
-						bPosChanged = m_pWorld->RepositionEntity(this,5,BBox);
 					m_BBox[0] = BBox[0];
 					m_BBox[1] = BBox[1];
 					for(i=0;i<m_nParts;i++)	{
 						m_parts[i].BBox[0] = m_parts[i].pNewCoords->BBox[0];
 						m_parts[i].BBox[1] = m_parts[i].pNewCoords->BBox[1];
 					}
-					m_pWorld->UnlockGrid(this,-bPosChanged);
 				}
 			}
-			if (params->bRecalcBounds)
+			if (params->bRecalcBounds) {
+				if (params->bEntGridUseOBB && !m_pStructure)
+					bPosChanged = m_pWorld->RepositionEntity(this,5,BBox);
+				m_pWorld->UnlockGrid(this,-bPosChanged);
 				RepositionParts();
+			}
 			if (params->bRecalcBounds && !(m_flags & pef_never_affect_triggers)) {
 				CPhysicalEntity **pentlist;
 				m_pWorld->GetEntitiesAround(m_BBox[0],m_BBox[1],pentlist,ent_triggers,this); 
