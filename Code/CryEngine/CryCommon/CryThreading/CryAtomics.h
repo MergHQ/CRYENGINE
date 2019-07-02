@@ -143,7 +143,7 @@ ILINE void CryReleaseSpinLock(volatile int* pLock, int setVal)
 
 ILINE void CryReadLock(volatile int* rw)
 {
-	CryInterlockedAdd(rw, 1);
+	CryInterlockedIncrement(rw);
 #ifdef NEED_ENDIAN_SWAP
 	volatile char* pw = (volatile char*)rw + 1;
 #else
@@ -159,7 +159,7 @@ ILINE void CryReadLock(volatile int* rw)
 
 ILINE void CryReleaseReadLock(volatile int* rw)
 {
-	CryInterlockedAdd(rw, -1);
+	CryInterlockedDecrement(rw);
 }
 
 ILINE void CryWriteLock(volatile int* rw)
