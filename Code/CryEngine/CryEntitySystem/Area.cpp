@@ -3477,8 +3477,10 @@ void CArea::GetRandomPoints(Array<PosNorm> points, CRndGen seed, EGeomForm eForm
 		{
 			point.vPos = m_areaPoints[n];
 			point.vPos.z += m_height * tv;
-			if (!m_bClosed && (n == 0 || n == m_areaPoints.size() - 1))
+			if (!m_bClosed && n == 0)
 				point.vNorm = Vec3(m_areaSegments[n]->normal);
+			else if (!m_bClosed && n == m_areaPoints.size() - 1)
+				point.vNorm = Vec3(m_areaSegments[n-1]->normal);
 			else
 				point.vNorm = Vec3(m_areaSegments[n]->normal + m_areaSegments[PrevPoint(n)]->normal).GetNormalized();
 		};
