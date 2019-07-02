@@ -82,9 +82,9 @@ public:
 	CPoint WorldToClient(Vec2 v);
 	void   SetZoom(Vec2 zoom, CPoint center);
 	void   SetZoom(Vec2 zoom);
-	Vec2   GetZoom() const         { return m_grid.zoom; };
+	Vec2   GetZoom() const         { return m_grid.zoom; }
 	void   SetScrollOffset(Vec2 ofs);
-	Vec2   GetScrollOffset() const { return m_grid.origin; };
+	Vec2   GetScrollOffset() const { return m_grid.origin; }
 	float  SnapTime(float time);
 	float  SnapValue(float val);
 	void   SetLeftOffset(int nLeft);

@@ -13,7 +13,7 @@ public:
 
 	SVersionControlError GetError() const { return m_error; }
 
-	const std::vector<CVersionControlFileStatusUpdate>& GetStatusChanges() const { return m_statusChanges; };
+	const std::vector<CVersionControlFileStatusUpdate>& GetStatusChanges() const { return m_statusChanges; }
 
 private:
 	void SetError(SVersionControlError error) { m_error = error; }

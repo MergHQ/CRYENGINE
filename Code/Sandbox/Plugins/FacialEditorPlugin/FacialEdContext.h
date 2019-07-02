@@ -191,10 +191,10 @@ public:
 	IFacialEffectorsLibrary* GetLibrary();
 
 	void                     SetSequence(IFacialAnimSequence* pSequence);
-	IFacialAnimSequence*     GetSequence() { return m_pCurrentSequence; };
+	IFacialAnimSequence*     GetSequence() { return m_pCurrentSequence; }
 
 	void                     SetSequenceTime(float fTime);
-	float                    GetSequenceTime() { return m_fSequenceTime; };
+	float                    GetSequenceTime() { return m_fSequenceTime; }
 
 	void                     PlaySequence(bool bPlay);
 	bool                     IsPlayingSequence() const { return m_bPlaying; }

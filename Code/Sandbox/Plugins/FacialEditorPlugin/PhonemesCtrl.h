@@ -95,7 +95,7 @@ public:
 
 	int         GetPhonemeCount(int sentenceIndex)   { return (int)m_sentences[sentenceIndex].phonemes.size(); }
 	Phoneme&    GetPhoneme(int sentenceIndex, int i) { return m_sentences[sentenceIndex].phonemes[i]; }
-	void        RemoveAllPhonemes(int sentenceIndex) { m_sentences[sentenceIndex].phonemes.clear(); };
+	void        RemoveAllPhonemes(int sentenceIndex) { m_sentences[sentenceIndex].phonemes.clear(); }
 	void        AddPhoneme(int sentenceIndex, Phoneme& ph);
 
 	void        AddWord(int sentenceIndex, const Word& w);

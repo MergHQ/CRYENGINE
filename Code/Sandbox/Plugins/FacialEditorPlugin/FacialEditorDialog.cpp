@@ -50,13 +50,13 @@ class CFacialEditorViewClass : public IViewPaneClass
 	//////////////////////////////////////////////////////////////////////////
 	// IClassDesc
 	//////////////////////////////////////////////////////////////////////////
-	virtual ESystemClassID SystemClassID()	 override { return ESYSTEM_CLASS_VIEWPANE; };
-	virtual const char*    ClassName()       override { return FACIAL_EDITOR_NAME; };
-	virtual const char*    Category()        override { return "Animation"; };
+	virtual ESystemClassID SystemClassID()	 override { return ESYSTEM_CLASS_VIEWPANE; }
+	virtual const char*    ClassName()       override { return FACIAL_EDITOR_NAME; }
+	virtual const char*    Category()        override { return "Animation"; }
 	virtual const char*    GetMenuPath()     override { return "Animation"; }
-	virtual CRuntimeClass* GetRuntimeClass() override { return RUNTIME_CLASS(CFacialEditorDialog); };
-	virtual const char*    GetPaneTitle()    override { return _T(FACIAL_EDITOR_NAME); };
-	virtual bool           SinglePane()      override { return false; };
+	virtual CRuntimeClass* GetRuntimeClass() override { return RUNTIME_CLASS(CFacialEditorDialog); }
+	virtual const char*    GetPaneTitle()    override { return _T(FACIAL_EDITOR_NAME); }
+	virtual bool           SinglePane()      override { return false; }
 };
 
 REGISTER_CLASS_DESC(CFacialEditorViewClass)

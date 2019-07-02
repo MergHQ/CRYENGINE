@@ -16,9 +16,9 @@ public:
 	int32 GetSample(uint32 nPos);
 	float GetSampleNormalized(uint32 nPos);
 	void  GetSamplesMinMax(int nPos, int nSamplesCount, float& vmin, float& vmax);
-	//int32	GetLengthMs() const { return m_pSoundbufferInfo.nLengthInMs; };
-	bool  IsLoaded()              { return m_bLoaded; };
-	void  SetLoaded(bool bLoaded) { m_bLoaded = bLoaded; };
+	//int32	GetLengthMs() const { return m_pSoundbufferInfo.nLengthInMs; }
+	bool  IsLoaded()              { return m_bLoaded; }
+	void  SetLoaded(bool bLoaded) { m_bLoaded = bLoaded; }
 
 	//uint32	GetSampleCount() { return m_pSoundbufferInfo.nLengthInSamples; }
 	//uint32	GetSamplesPerSec() { return m_pSoundbufferInfo.nBaseFreq; }

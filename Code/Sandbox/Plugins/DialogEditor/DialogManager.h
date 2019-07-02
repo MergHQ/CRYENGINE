@@ -31,7 +31,7 @@ public:
 
 	struct SScriptLine
 	{
-		SScriptLine() { Reset(); };
+		SScriptLine() { Reset(); }
 
 		void Reset()
 		{

@@ -85,15 +85,15 @@ class CVehicleEditorViewClass : public IViewPaneClass
 	//////////////////////////////////////////////////////////////////////////
 	// IClassDesc
 	//////////////////////////////////////////////////////////////////////////
-	virtual ESystemClassID SystemClassID() { return ESYSTEM_CLASS_VIEWPANE; };
-	virtual const char*    ClassName()       { return "Vehicle Editor"; };
-	virtual const char*    Category()        { return "Game"; };
+	virtual ESystemClassID SystemClassID() { return ESYSTEM_CLASS_VIEWPANE; }
+	virtual const char*    ClassName()       { return "Vehicle Editor"; }
+	virtual const char*    Category()        { return "Game"; }
 	//////////////////////////////////////////////////////////////////////////
-	virtual CRuntimeClass* GetRuntimeClass() { return RUNTIME_CLASS(CVehicleEditorDialog); };
-	virtual const char*    GetPaneTitle()    { return _T("Vehicle Editor"); };
-	virtual QRect          GetPaneRect()     { return QRect(200, 200, 600, 500); };
-	virtual bool           SinglePane()      { return false; };
-	virtual bool           WantIdleUpdate()  { return true; };
+	virtual CRuntimeClass* GetRuntimeClass() { return RUNTIME_CLASS(CVehicleEditorDialog); }
+	virtual const char*    GetPaneTitle()    { return _T("Vehicle Editor"); }
+	virtual QRect          GetPaneRect()     { return QRect(200, 200, 600, 500); }
+	virtual bool           SinglePane()      { return false; }
+	virtual bool           WantIdleUpdate()  { return true; }
 	virtual const char* GetMenuPath() override { return "Deprecated"; }
 };
 

@@ -14,8 +14,8 @@ public:
 	CString m_strString;
 	//}}AFX_DATA
 
-	void		SetString(const char* str) { m_strString = str; };
-	const char*	GetString() { return m_strString; };
+	void		SetString(const char* str) { m_strString = str; }
+	const char*	GetString() { return m_strString; }
 
 	// Overrides
 	// ClassWizard generated virtual function overrides
