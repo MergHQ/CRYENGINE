@@ -70,7 +70,7 @@ const char* render_category_cvars[] =
 	"e_TerrainDetailMaterials", "Terrain Detail Texture",
 	"e_Fog",                    "Fog",
 	"e_Terrain",                "Terrain",
-	"e_SkyBox",                 "Sky Box",
+	"e_SkyBox",                 "Skybox",
 	"e_Shadows",                "Shadows",
 	"e_Vegetation",             "Vegetation",
 	"e_WaterOcean",             "Ocean",

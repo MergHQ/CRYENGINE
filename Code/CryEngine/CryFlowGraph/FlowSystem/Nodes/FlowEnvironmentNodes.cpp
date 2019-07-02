@@ -639,8 +639,8 @@ void CFlowNode_SkyMaterialSwitch::GetConfiguration(SFlowNodeConfig& config)
 		InputPortConfig<string>("hdr_mat_Material",    _HELP("Skybox material name (default-spec)")),
 		InputPortConfig<string>("mat_Material",        _HELP("Skybox material name (low-spec)")),
 		InputPortConfig<bool>("Start",          false, _HELP("Trigger to start the loading")),
-		InputPortConfig<float>("Angle",         1.f,   _HELP("Sky box rotation")),
-		InputPortConfig<float>("Stretching",    1.f,   _HELP("Sky box stretching")),
+		InputPortConfig<float>("Angle",         1.f,   _HELP("Skybox rotation")),
+		InputPortConfig<float>("Stretching",    1.f,   _HELP("Skybox stretching")),
 		{ 0 }
 	};
 
