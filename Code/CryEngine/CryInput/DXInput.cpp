@@ -82,9 +82,13 @@ bool CDXInput::Init()
 	m_lastLayout = GetKeyboardLayout(0);
 	if (!AddInputDevice(m_pKeyboard)) return false;
 
-	if (GetISystem()->GetICmdLine()->FindArg(eCLAT_Pre, "nomouse") == NULL)
+	// check for mouse enabled & check confine ability (either not set or zero)
+	if (gEnv->pConsole->GetCVar("sys_NoMouse") == nullptr || gEnv->pConsole->GetCVar("sys_NoMouse")->GetIVal() == 0)
 	{
-		if (!AddInputDevice(new CMouse(*this))) return false;
+		if (!AddInputDevice(new CMouse(*this)))
+		{
+			return false;
+		}
 	}
 
 	// add xinput controllers devices

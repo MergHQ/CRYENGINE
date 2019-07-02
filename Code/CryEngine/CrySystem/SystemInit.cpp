@@ -4861,6 +4861,12 @@ void CSystem::CreateSystemVars()
 #else
 	enum {e_sysKeyboardDefault = 1};
 #endif
+
+	REGISTER_INT("sys_NoMouse", 0, VF_DUMPTODISK | VF_REQUIRE_APP_RESTART,
+		"Disable the mouse (in-game, not applicable to menus) and do not confine the mouse to the window (in fullscreen)"
+		"Usage: sys_MouseConfined [0/1] 0=mouse is enabled in-game and confined  1=mouse is disabled in-game and not confined\n"
+		"Default is 0 [off]");
+
 	m_sysKeyboard = REGISTER_INT("sys_keyboard", e_sysKeyboardDefault, 0,
 	                             "Enables keyboard.\n"
 	                             "Usage: sys_keyboard [0/1]\n"

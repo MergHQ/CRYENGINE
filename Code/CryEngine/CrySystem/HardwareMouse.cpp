@@ -63,7 +63,7 @@ int CHardwareMouse::s_MouseControllerEmulation = 1;
 CHardwareMouse::CHardwareMouse(bool bVisibleByDefault)
 	: m_bPrevShowState(true)
 #if !defined(_RELEASE)
-	, m_allowConfine(GetISystem()->GetICmdLine()->FindArg(eCLAT_Pre, "nomouse") == nullptr)
+	, m_allowConfine((gEnv->pConsole->GetCVar("sys_NoMouse")) && (gEnv->pConsole->GetCVar("sys_NoMouse")->GetIVal() == 0))
 #else
 	, m_allowConfine(true)
 #endif // !defined(_RELEASE)
