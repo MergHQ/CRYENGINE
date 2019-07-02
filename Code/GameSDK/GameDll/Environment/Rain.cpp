@@ -71,7 +71,7 @@ bool CRain::ReloadExtension(IGameObject* pGameObject, const SEntitySpawnParams& 
 {
 	ResetGameObject();
 
-	CRY_ASSERT_MESSAGE(false, "CRain::ReloadExtension not implemented");
+	CRY_ASSERT(false, "CRain::ReloadExtension not implemented");
 
 	return false;
 }
@@ -79,7 +79,7 @@ bool CRain::ReloadExtension(IGameObject* pGameObject, const SEntitySpawnParams& 
 //------------------------------------------------------------------------
 bool CRain::GetEntityPoolSignature(TSerialize signature)
 {
-	CRY_ASSERT_MESSAGE(false, "CRain::GetEntityPoolSignature not implemented");
+	CRY_ASSERT(false, "CRain::GetEntityPoolSignature not implemented");
 
 	return true;
 }

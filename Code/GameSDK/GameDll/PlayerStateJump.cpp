@@ -353,7 +353,7 @@ void CPlayerStateJump::Landed(CPlayer& player, const bool isHeavyWeapon, float f
 			remoteControlled = true;
 		}
 	}
-	CRY_ASSERT_MESSAGE(player.GetLinkedEntity() == NULL || remoteControlled, "Cannot 'land' when you're linked to another entity!");
+	CRY_ASSERT(player.GetLinkedEntity() == NULL || remoteControlled, "Cannot 'land' when you're linked to another entity!");
 #endif
 
 	const SPlayerStats& stats = player.m_stats;

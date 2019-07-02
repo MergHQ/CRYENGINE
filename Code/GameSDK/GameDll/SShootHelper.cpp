@@ -15,14 +15,14 @@ void SShootHelper::DoLocalExplodeEffect(EntityId ownerID, const char* ammo, cons
 	const SAmmoParams* pAmmoParams = GetAmmoParams(ammo);
 	if(!pAmmoParams)
 	{
-		CRY_ASSERT_MESSAGE(false, ("unable to GetAmmoParams for %s", ammo));
+		CRY_ASSERT(false, ("unable to GetAmmoParams for %s", ammo));
 		return;
 	}
 
 	const SExplosionParams* pExplosionParams = pAmmoParams->pExplosion;
 	if(!pExplosionParams)
 	{
-		CRY_ASSERT_MESSAGE(false, ("unable to SExplosionParams for %s", ammo));
+		CRY_ASSERT(false, ("unable to SExplosionParams for %s", ammo));
 		return;
 	}
 
@@ -33,7 +33,7 @@ void SShootHelper::DoLocalExplodeEffect(EntityId ownerID, const char* ammo, cons
 
 		if (EntityEffects::SpawnParticleFX( pExplosionParams->effectName.c_str(), EntityEffects::SEffectSpawnParams( firePos, fireDir, pExplosionParams->effectScale * scaleRadius, -1.0f, false) ) == NULL)
 		{
-			CRY_ASSERT_MESSAGE(false, ("Unable find effect %s", pExplosionParams->effectName.c_str()));
+			CRY_ASSERT(false, ("Unable find effect %s", pExplosionParams->effectName.c_str()));
 		}
 	}
 }
@@ -45,24 +45,24 @@ void SShootHelper::Explode(const EntityId ownerID, const EntityId weaponID, cons
 		const SAmmoParams* pAmmoParams = GetAmmoParams(ammo);
 		if(!pAmmoParams)
 		{
-			CRY_ASSERT_MESSAGE(false, ("unable to GetAmmoParams for %s", ammo));
+			CRY_ASSERT(false, ("unable to GetAmmoParams for %s", ammo));
 			return;
 		}
 
 		const SExplosionParams* pExplosionParams = pAmmoParams->pExplosion;
 		if(!pExplosionParams)
 		{
-			CRY_ASSERT_MESSAGE(false, ("unable to find SExplosionParams for %s", ammo));
+			CRY_ASSERT(false, ("unable to find SExplosionParams for %s", ammo));
 			return;
 		}
 
 		CGameRules *pGameRules = g_pGame->GetGameRules();
-		CRY_ASSERT_MESSAGE(pGameRules, "Unable to find game rules, gonna crash");
+		CRY_ASSERT(pGameRules, "Unable to find game rules, gonna crash");
 
 		float scaleRadius = desiredRadius > 0 ? desiredRadius/pExplosionParams->maxRadius : 1.0f;
 
-		CRY_ASSERT_MESSAGE(pExplosionParams->hitTypeId, string().Format("Invalid hit type '%s' in explosion params for '%s'", pExplosionParams->type.c_str(), ammo));
-		CRY_ASSERT_MESSAGE(pExplosionParams->hitTypeId == pGameRules->GetHitTypeId(pExplosionParams->type.c_str()), "Sanity Check Failed: Stored explosion type id does not match the type string, possibly PreCacheLevelResources wasn't called on this ammo type");
+		CRY_ASSERT(pExplosionParams->hitTypeId, string().Format("Invalid hit type '%s' in explosion params for '%s'", pExplosionParams->type.c_str(), ammo));
+		CRY_ASSERT(pExplosionParams->hitTypeId == pGameRules->GetHitTypeId(pExplosionParams->type.c_str()), "Sanity Check Failed: Stored explosion type id does not match the type string, possibly PreCacheLevelResources wasn't called on this ammo type");
 
 		ExplosionInfo explosionInfo(ownerID, weaponID, 0, (float) damage, firePos, fireDir,
 			pExplosionParams->minRadius * scaleRadius, pExplosionParams->maxRadius * scaleRadius,
@@ -86,18 +86,18 @@ CProjectile* SShootHelper::Shoot(EntityId ownerID, const EntityId weaponID, cons
 	IEntityClass* pAmmoClass = gEnv->pEntitySystem ? gEnv->pEntitySystem->GetClassRegistry()->FindClass(ammo) : NULL;
 	if(!pAmmoClass)
 	{
-		CRY_ASSERT_MESSAGE(false, string().Format("Unable to find ammo class - %s", ammo));
+		CRY_ASSERT(false, string().Format("Unable to find ammo class - %s", ammo));
 		return NULL;
 	}
 
 	CProjectile* pAmmo = g_pGame->GetWeaponSystem()->SpawnAmmo(pAmmoClass, false);
 	if(!pAmmo)
 	{
-		CRY_ASSERT_MESSAGE(false, string().Format("Unable to Spawn ammo - %s", ammo));
+		CRY_ASSERT(false, string().Format("Unable to Spawn ammo - %s", ammo));
 		return NULL;
 	}
 
-	CRY_ASSERT_MESSAGE(hitTypeId, "Invalid hit type id passed to SShootHelper::Shoot");
+	CRY_ASSERT(hitTypeId, "Invalid hit type id passed to SShootHelper::Shoot");
 
 	pAmmo->SetParams(CProjectile::SProjectileDesc(ownerID, 0, weaponID, damage, 0.f, 0.f, 0.f, hitTypeId, 0, false));
 	pAmmo->Launch(firePos, fireDir, Vec3(0.0f, 0.0f, 0.0f));
@@ -112,7 +112,7 @@ const SAmmoParams* SShootHelper::GetAmmoParams(const char* ammo)
 	IEntityClass* pAmmoClass = gEnv->pEntitySystem ? gEnv->pEntitySystem->GetClassRegistry()->FindClass(ammo) : NULL;
 	if(!pAmmoClass)
 	{
-		CRY_ASSERT_MESSAGE(false, string().Format("Unable to find ammo class - %s", ammo));
+		CRY_ASSERT(false, string().Format("Unable to find ammo class - %s", ammo));
 		return NULL;
 	}
 

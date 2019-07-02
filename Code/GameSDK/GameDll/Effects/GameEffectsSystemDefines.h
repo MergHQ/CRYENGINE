@@ -40,7 +40,7 @@
 
 // FX Asserts
 #if DEBUG_GAME_FX_SYSTEM
-	#define FX_ASSERT_MESSAGE(condition,message)		CRY_ASSERT_MESSAGE(condition,message); \
+	#define FX_ASSERT_MESSAGE(condition,message)		CRY_ASSERT(condition,message); \
 																									if(!(condition)) \
 																									{\
 																										CryLogAlways("\n*************************************************************************************"); \

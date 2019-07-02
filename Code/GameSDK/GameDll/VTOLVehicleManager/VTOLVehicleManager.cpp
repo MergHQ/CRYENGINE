@@ -77,7 +77,7 @@ void CVTOLVehicleManager::InitClient(int channelID)
 	for(TVTOLList::const_iterator iter = m_vtolList.begin(), end = m_vtolList.end(); iter!=end; ++iter )
 	{
 		numVehicles++;
-		CRY_ASSERT_MESSAGE(numVehicles <= 1, "We only currently support handling a single VTOL here");
+		CRY_ASSERT(numVehicles <= 1, "We only currently support handling a single VTOL here");
 
 		const SVTOLInfo& info = iter->second;
 		if(IVehicle* pVehicle = g_pGame->GetIGameFramework()->GetIVehicleSystem()->GetVehicle(info.entityId))
@@ -599,7 +599,7 @@ void CVTOLVehicleManager::LockSeats(IVehicle* pVehicle, bool lock)
 void CVTOLVehicleManager::CreateExplosion(IParticleEffect *inParticleEffect, const Vec3& pos, const float inEffectScale, TAudioSignalID inAudioSignal/*=INVALID_AUDIOSIGNAL_ID*/)
 {
 #if !defined(DEDICATED_SERVER)
-	CRY_ASSERT_MESSAGE(inParticleEffect, "CreateExplosion() passsed a NULL inParticleEffect");
+	CRY_ASSERT(inParticleEffect, "CreateExplosion() passsed a NULL inParticleEffect");
 #endif
 
 	if (gEnv->bServer)
@@ -714,7 +714,7 @@ void CVTOLVehicleManager::OnAttachRequest( const SPathFollowingAttachToPathParam
 	}
 	else
 	{
-		CRY_ASSERT_MESSAGE(false, "CVTOLVehicleManager::OnAttachRequest - VTOL doesn't exist. And it really, really should.");
+		CRY_ASSERT(false, "CVTOLVehicleManager::OnAttachRequest - VTOL doesn't exist. And it really, really should.");
 	}
 }
 
@@ -738,7 +738,7 @@ void CVTOLVehicleManager::OnSingleEntityRMI(CGameRules::SModuleRMIEntityParams p
 		{
 			CryLog("CVTOLVehicleManager::OnSingleEntityRMI() eRMITypeSingleEntity_vtol_destroyed");
 			IVehicle* pVehicle = m_pVehicleSystem->GetVehicle( params.m_entityId );
-			CRY_ASSERT_MESSAGE(pVehicle, "have received destroyed VTOL RMI, but cannot find the vehicle for specified entity id");
+			CRY_ASSERT(pVehicle, "have received destroyed VTOL RMI, but cannot find the vehicle for specified entity id");
 			if (pVehicle)
 			{
 				DestroyVTOL(pVehicle->GetEntity(), m_vtolList[params.m_entityId]);
@@ -750,7 +750,7 @@ void CVTOLVehicleManager::OnSingleEntityRMI(CGameRules::SModuleRMIEntityParams p
 
 			CryLog("CVTOLVehicleManager::OnSingleEntityRMI() eRMITypeSingleEntity_vtol_hidden");
 			IVehicle* pVehicle = m_pVehicleSystem->GetVehicle(params.m_entityId);
-			CRY_ASSERT_MESSAGE(pVehicle, "have received hidden VTOL RMI, but cannot find the vehicle for specified entity id");
+			CRY_ASSERT(pVehicle, "have received hidden VTOL RMI, but cannot find the vehicle for specified entity id");
 			if (pVehicle)
 			{		
 				//Hide existing vehicle
@@ -772,7 +772,7 @@ void CVTOLVehicleManager::OnSingleEntityRMI(CGameRules::SModuleRMIEntityParams p
 		{
 			CryLog("CVTOLVehicleManager::OnSingleEntityRMI() eRMITypeSingleEntity_vtol_respawned");
 			IVehicle* pVehicle = m_pVehicleSystem->GetVehicle(params.m_entityId);
-			CRY_ASSERT_MESSAGE(pVehicle, "have received respawned VTOL RMI, but cannot find the vehicle for specified entity id");
+			CRY_ASSERT(pVehicle, "have received respawned VTOL RMI, but cannot find the vehicle for specified entity id");
 			if (pVehicle)
 			{
 				RespawnVTOL(pVehicle, m_vtolList[params.m_entityId]);
@@ -780,7 +780,7 @@ void CVTOLVehicleManager::OnSingleEntityRMI(CGameRules::SModuleRMIEntityParams p
 			break;
 		}
 		default:
-			CRY_ASSERT_MESSAGE(0, string().Format("unhandled RMI data %d", params.m_data));
+			CRY_ASSERT(0, string().Format("unhandled RMI data %d", params.m_data));
 			break;
 	}
 }

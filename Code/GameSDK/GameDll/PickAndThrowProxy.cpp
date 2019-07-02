@@ -113,7 +113,7 @@ void CPickAndThrowProxy::Physicalize()
 			pPrimGeom->Release();
 		} break;
 	default:
-		CRY_ASSERT_MESSAGE(false, "Invalid proxy shape?");
+		CRY_ASSERT(false, "Invalid proxy shape?");
 	}
 
 	if (pGeom)

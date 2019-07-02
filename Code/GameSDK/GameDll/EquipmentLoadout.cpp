@@ -489,7 +489,7 @@ void CEquipmentLoadout::LoadItemDefinitionFromParent(const char* parentItemName,
 	int itemId = GetItemIndexFromName(parentItemName);
 	item.m_parentItemId = itemId;
 	
-	CRY_ASSERT_TRACE((itemId > 0), ("Couldn't find parent '%s' for item '%s', make sure it has been declared above it.", parentItemName, item.m_name.c_str()));
+	CRY_ASSERT((itemId > 0), "Couldn't find parent '%s' for item '%s', make sure it has been declared above it.", parentItemName, item.m_name.c_str());
 
 	if (itemId > 0 && itemId < (int)m_allItems.size())
 	{
@@ -1130,7 +1130,7 @@ void CEquipmentLoadout::ClSetAttachmentInclusionFlags(const TEquipmentPackageCon
 void CEquipmentLoadout::SetAttachmentInclusionFlag(uint32& inclusionFlags, const int attachmentItemId)
 {
 	uint8 bitNum = static_cast<uint8>(attachmentItemId - m_attachmentsStartIndex); 
-	CRY_ASSERT_MESSAGE(bitNum < 32, "CEquipmentLoadout::SetAttachmentInclusionFlag < ERROR - attachment Flag >= 32 require more storage bits");
+	CRY_ASSERT(bitNum < 32, "CEquipmentLoadout::SetAttachmentInclusionFlag < ERROR - attachment Flag >= 32 require more storage bits");
 	
 	//CryLog("CEquipmentLoadout::SetAttachmentInclusionFlag() < Inclusion bit num %d set", bitNum);
 	inclusionFlags |= (1<<bitNum); 
@@ -1141,7 +1141,7 @@ void CEquipmentLoadout::SetAttachmentInclusionFlag(uint32& inclusionFlags, const
 const bool CEquipmentLoadout::IsAttachmentInclusionFlagSet(const uint32& inclusionFlags, const int attachmentItemId) const
 {
 	uint8 bitNum = static_cast<uint8>(attachmentItemId - m_attachmentsStartIndex); 
-	CRY_ASSERT_MESSAGE(bitNum < 32, "CEquipmentLoadout::IsAttachmentInclusionFlagSet() < ERROR - attachment Flag >= 32 require more storage bits");
+	CRY_ASSERT(bitNum < 32, "CEquipmentLoadout::IsAttachmentInclusionFlagSet() < ERROR - attachment Flag >= 32 require more storage bits");
 	//CryLog("CEquipmentLoadout::IsAttachmentInclusionFlagSet() < Inclusion bit num %d checked", bitNum);
 
 	return (inclusionFlags & (1<<bitNum)) > 0; 
@@ -1151,8 +1151,8 @@ const bool CEquipmentLoadout::IsAttachmentInclusionFlagSet(const uint32& inclusi
 // Allow easy checking of any attachment against inclusion flags data etc
 const bool CEquipmentLoadout::ClIsAttachmentIncluded(const SEquipmentItem* pAttachmentItem, const char* pWeaponItemName, const TEquipmentPackageContents& contents) const
 {
-	CRY_ASSERT_MESSAGE(pAttachmentItem != NULL, "CEquipmentLoadout::ClIsAttachmentIncluded < ERROR pAttachmentItem is NULL");
-	CRY_ASSERT_MESSAGE(pWeaponItemName != NULL, "CEquipmentLoadout::ClIsAttachmentIncluded < ERROR pWeaponItemName is NULL");
+	CRY_ASSERT(pAttachmentItem != NULL, "CEquipmentLoadout::ClIsAttachmentIncluded < ERROR pAttachmentItem is NULL");
+	CRY_ASSERT(pWeaponItemName != NULL, "CEquipmentLoadout::ClIsAttachmentIncluded < ERROR pWeaponItemName is NULL");
 
 	////////////////////////////////////////////////////////////////////////////////
 	// a) Loadout - if explicitly included in loadout (e.g default ' 'Assault' loadout gives reflex sight.. even when haven't unlocked )
@@ -1254,7 +1254,7 @@ const bool CEquipmentLoadout::AttachmentIncludedInPackageContents(const SEquipme
 // Allow easy checking of any attachment against inclusion flags data etc
 const bool CEquipmentLoadout::SvIsAttachmentIncluded(const SEquipmentItem* pAttachmentItem,const uint32& inclusionFlags) const
 {
-	CRY_ASSERT_MESSAGE(pAttachmentItem != NULL, "CEquipmentLoadout::SvIsAttachmentIncluded < ERROR pAttatchmentItem is NULL");
+	CRY_ASSERT(pAttachmentItem != NULL, "CEquipmentLoadout::SvIsAttachmentIncluded < ERROR pAttatchmentItem is NULL");
 	
 	// Check appropriate bit
 	if(inclusionFlags > 0 && IsAttachmentInclusionFlagSet(inclusionFlags,pAttachmentItem->m_uniqueIndex))
@@ -1278,7 +1278,7 @@ void CEquipmentLoadout::ClAssignLastSentEquipmentLoadout(CActor *pActor)
 // Server: sets up correct weapon attachments for current player based on client equipment package
 void CEquipmentLoadout::SvAssignWeaponAttachments( const uint8 itemId, const SClientEquipmentPackage& package, CActor * pActor, int playerId )
 {
-	CRY_ASSERT_MESSAGE(pActor != NULL, "CEquipmentLoadout::SvAssignWeaponAttachments < ERROR pActor is NULL");
+	CRY_ASSERT(pActor != NULL, "CEquipmentLoadout::SvAssignWeaponAttachments < ERROR pActor is NULL");
 	int numItems =  m_allItems.size();
 	IGameFramework *pGameFramework = g_pGame->GetIGameFramework();
 	IItemSystem *pItemSystem = pGameFramework->GetIItemSystem();
@@ -1387,7 +1387,7 @@ void CEquipmentLoadout::SvAssignClientEquipmentLoadout(int channelId, int player
 		IItemSystem *pItemSystem = g_pGame->GetIGameFramework()->GetIItemSystem();
 		CActor *pActor = static_cast<CActor*>(g_pGame->GetIGameFramework()->GetIActorSystem()->GetActor(playerId));
 
-		CRY_ASSERT_MESSAGE(pActor->IsPlayer(), "Actor appling loadout to is not a player!");
+		CRY_ASSERT(pActor->IsPlayer(), "Actor appling loadout to is not a player!");
 		CPlayer *pPlayer = static_cast<CPlayer*>(pActor);
 		if (pPlayer && pItemSystem != NULL)
 		{
@@ -1537,7 +1537,7 @@ void CEquipmentLoadout::ApplyWeaponAttachment(const SEquipmentItem *pItem, const
 {
 	IItem* pWeaponItem = pItemSystem->GetItem(lastWeaponId);
 
-	CRY_ASSERT_MESSAGE(pWeaponItem, "No item found!");
+	CRY_ASSERT(pWeaponItem, "No item found!");
 
 	if (pWeaponItem)
 	{
@@ -1642,7 +1642,7 @@ void CEquipmentLoadout::Display3DItem(uint8 itemNumber)
 			if (itemName != NULL && itemName[0])
 			{
 				CItemSharedParams * pItemSharedParams = g_pGame->GetGameSharedParametersStorage()->GetItemSharedParameters(itemName, false);
-				CRY_ASSERT_TRACE(pItemSharedParams, ("Failed to get item params for class called '%s'", itemName));
+				CRY_ASSERT(pItemSharedParams, "Failed to get item params for class called '%s'", itemName);
 
 				if (pItemSharedParams)
 				{
@@ -1698,7 +1698,7 @@ void CEquipmentLoadout::Display3DItem(uint8 itemNumber)
 		if (itemName != NULL && itemName[0])
 		{
 			CItemSharedParams * pItemSharedParams = g_pGame->GetGameSharedParametersStorage()->GetItemSharedParameters(itemName, false);
-			CRY_ASSERT_TRACE(pItemSharedParams, ("Failed to get item params for class called '%s'", itemName));
+			CRY_ASSERT(pItemSharedParams, "Failed to get item params for class called '%s'", itemName);
 
 			if (pItemSharedParams)
 			{
@@ -1952,7 +1952,7 @@ void CEquipmentLoadout::FlagItemAttachmentAsNew(const char* itemName)
 			}
 			else
 			{
-				CRY_ASSERT_TRACE(0, ("Trying to set attachment weapon new flag on %s which is not of weapon loadout type", item.m_name.c_str()));
+				CRY_ASSERT(0, "Trying to set attachment weapon new flag on %s which is not of weapon loadout type", item.m_name.c_str());
 			}
 		}
 	}
@@ -2340,7 +2340,7 @@ void CEquipmentLoadout::SetHighlightedPackage(int packageIndex)
 		if (primaryItemName && primaryItemName[0])
 		{
 			CItemSharedParams * pItemSharedParams = g_pGame->GetGameSharedParametersStorage()->GetItemSharedParameters(primaryItemName, false);
-			CRY_ASSERT_TRACE(pItemSharedParams, ("Failed to get item params for class called '%s'", primaryItemName));
+			CRY_ASSERT(pItemSharedParams, "Failed to get item params for class called '%s'", primaryItemName);
 
 			if (pItemSharedParams)
 			{
@@ -2361,7 +2361,7 @@ void CEquipmentLoadout::SetHighlightedPackage(int packageIndex)
 						if (attachmentName && attachmentName[0])
 						{
 							CItemSharedParams * pSubItemSharedParams = g_pGame->GetGameSharedParametersStorage()->GetItemSharedParameters(attachmentName, false);
-							CRY_ASSERT_TRACE(pSubItemSharedParams, ("Failed to get item params for class called '%s'", attachmentName));
+							CRY_ASSERT(pSubItemSharedParams, "Failed to get item params for class called '%s'", attachmentName);
 
 							if (pSubItemSharedParams)
 							{
@@ -2407,7 +2407,7 @@ void CEquipmentLoadout::SetHighlightedPackage(int packageIndex)
 		if (secondaryItemName && secondaryItemName[0])
 		{
 			CItemSharedParams * pItemSharedParams = g_pGame->GetGameSharedParametersStorage()->GetItemSharedParameters(secondaryItemName, false);
-			CRY_ASSERT_TRACE(pItemSharedParams, ("Failed to get item params for class called '%s'", secondaryItemName));
+			CRY_ASSERT(pItemSharedParams, "Failed to get item params for class called '%s'", secondaryItemName);
 
 			if (pItemSharedParams)
 			{
@@ -2426,7 +2426,7 @@ void CEquipmentLoadout::SetHighlightedPackage(int packageIndex)
 		if (explosiveItemName && explosiveItemName[0])
 		{
 			CItemSharedParams * pItemSharedParams = g_pGame->GetGameSharedParametersStorage()->GetItemSharedParameters(explosiveItemName, false);
-			CRY_ASSERT_TRACE(pItemSharedParams, ("Failed to get item params for class called '%s'", explosiveItemName));
+			CRY_ASSERT(pItemSharedParams, "Failed to get item params for class called '%s'", explosiveItemName);
 
 			if (pItemSharedParams)
 			{

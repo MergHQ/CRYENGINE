@@ -147,7 +147,7 @@ public:
 	virtual void MeleeAttack(bool bShort = false) override;
 	virtual bool CanMeleeAttack() const override;
 
-	virtual IFireMode *GetMeleeFireMode() const override { CRY_ASSERT_MESSAGE(0, "DEPRECATED FUNCTIONALITY: use GetMelee() instead"); return NULL; }
+	virtual IFireMode *GetMeleeFireMode() const override { CRY_ASSERT(0, "DEPRECATED FUNCTIONALITY: use GetMelee() instead"); return NULL; }
 	CMelee* GetMelee() const { return m_melee; }
 
 	virtual void Select(bool select) override;

@@ -123,7 +123,7 @@ void CGameBrowser::StartSearchingForServers(CryMatchmakingSessionSearchCallback 
 		param.m_ranked = false;
 
 		int curData = 0;
-		CRY_ASSERT_MESSAGE( curData < START_SEARCHING_FOR_SERVERS_NUM_DATA, "Session search data buffer overrun" );
+		CRY_ASSERT( curData < START_SEARCHING_FOR_SERVERS_NUM_DATA, "Session search data buffer overrun" );
 		data[curData].m_operator = eCSSO_Equal;
 		data[curData].m_data.m_id = LID_MATCHDATA_VERSION;
 		data[curData].m_data.m_type = eCLUDT_Int32;
@@ -138,7 +138,7 @@ void CGameBrowser::StartSearchingForServers(CryMatchmakingSessionSearchCallback 
 			// if the client can join the server. However this is not supported so the less than equal operator
 			// is used instead. This may return some false positives but never any false negatives, the false
 			// positives will be filtered out when the results are retreived.
-			CRY_ASSERT_MESSAGE( curData < START_SEARCHING_FOR_SERVERS_NUM_DATA, "Session search data buffer overrun" );
+			CRY_ASSERT( curData < START_SEARCHING_FOR_SERVERS_NUM_DATA, "Session search data buffer overrun" );
 			data[curData].m_operator = eCSSO_LessThanEqual;
 			data[curData].m_data.m_id = LID_MATCHDATA_REQUIRED_DLCS;
 			data[curData].m_data.m_type = eCLUDT_Int32;
@@ -148,11 +148,11 @@ void CGameBrowser::StartSearchingForServers(CryMatchmakingSessionSearchCallback 
 
 		param.m_numData = curData;
 
-		//CRY_ASSERT_MESSAGE(m_searchingTask==CryLobbyInvalidTaskID,"CGameBrowser Trying to search for sessions when you think you are already searching.");
+		//CRY_ASSERT(m_searchingTask==CryLobbyInvalidTaskID,"CGameBrowser Trying to search for sessions when you think you are already searching.");
 
 		ECryLobbyError error = StartSearchingForServers(&param, cb, this, false);
 
-		//CRY_ASSERT_MESSAGE(error==eCLE_Success,"CGameBrowser searching for sessions failed.");
+		//CRY_ASSERT(error==eCLE_Success,"CGameBrowser searching for sessions failed.");
 
 		if (error == eCLE_Success)
 		{
@@ -169,7 +169,7 @@ void CGameBrowser::StartSearchingForServers(CryMatchmakingSessionSearchCallback 
 	}
 	else
 	{
-		CRY_ASSERT_MESSAGE(0,"CGameBrowser Cannot search for servers : no lobby service available.");
+		CRY_ASSERT(0,"CGameBrowser Cannot search for servers : no lobby service available.");
 	}
 }
 
@@ -427,7 +427,7 @@ const char* CGameBrowser::GetGameModeStringFromId(int32 id)
 		break;
 
 	default:
-		CRY_ASSERT_MESSAGE(false, "Failed to find game rules rich presence string");
+		CRY_ASSERT(false, "Failed to find game rules rich presence string");
 		break;	
 	}
 
@@ -488,7 +488,7 @@ bool CGameBrowser::CreatePresenceString(CryFixedStringT<MAX_PRESENCE_STRING_SIZE
 #if !defined(_RELEASE)
 			else
 			{
-				CRY_ASSERT_MESSAGE(numData == 3, "Invalid data passed for gameplay rich presence state");
+				CRY_ASSERT(numData == 3, "Invalid data passed for gameplay rich presence state");
 				result = false;
 			}
 #endif
@@ -503,7 +503,7 @@ bool CGameBrowser::CreatePresenceString(CryFixedStringT<MAX_PRESENCE_STRING_SIZE
 			break;
 
 		default:
-			CRY_ASSERT_MESSAGE(false, "[RichPresence] unknown rich presence type given");
+			CRY_ASSERT(false, "[RichPresence] unknown rich presence type given");
 			result = false;
 			break;
 		}
@@ -686,7 +686,7 @@ void CGameBrowser::ConfigurationCallback(ECryLobbyService service, SConfiguratio
 #endif // USE_STEAM
 
 		default:
-			CRY_ASSERT_MESSAGE(0,"Unknown Configuration Parameter Requested!");
+			CRY_ASSERT(0,"Unknown Configuration Parameter Requested!");
 			break;
 		}
 	}

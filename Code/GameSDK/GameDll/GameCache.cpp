@@ -961,7 +961,7 @@ void CGameCharacterDBAs::LoadXmlData()
 			string newDba = PathUtil::ToUnixPath(string(dbaNode->getAttr("name")));
 
 #ifdef _DEBUG
-			CRY_ASSERT_MESSAGE(alreadyParsedDBAs.find(newDba) == alreadyParsedDBAs.end(), "Multiple groups contain this DBA, bad XML data!");
+			CRY_ASSERT(alreadyParsedDBAs.find(newDba) == alreadyParsedDBAs.end(), "Multiple groups contain this DBA, bad XML data!");
 			alreadyParsedDBAs.insert(newDba);
 #endif
 			groupInfo.m_dbas.push_back(newDba);

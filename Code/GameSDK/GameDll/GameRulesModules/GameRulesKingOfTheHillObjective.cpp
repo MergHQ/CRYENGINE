@@ -85,7 +85,7 @@ void CGameRulesKingOfTheHillObjective::Init( XmlNodeRef xml )
 		const char *pTag = xmlChild->getTag();
 		if (!stricmp(pTag, "Icons"))
 		{
-			CRY_ASSERT_MESSAGE(!m_useIcons, "KingOfTheHillObjective xml contains more than one 'Icons' node, we only support one");
+			CRY_ASSERT(!m_useIcons, "KingOfTheHillObjective xml contains more than one 'Icons' node, we only support one");
 			m_useIcons = true;
 
 			m_neutralIcon   = SGameRulesMissionObjectiveInfo::GetIconId(xmlChild->getAttr("neutral"));
@@ -252,7 +252,7 @@ void CGameRulesKingOfTheHillObjective::Update( float frameTime )
 			if (pKotHEntity->m_scoringTeamId)
 			{
 				const int teamIndex = pKotHEntity->m_scoringTeamId - 1;
-				CRY_ASSERT_MESSAGE(teamIndex >= 0 && teamIndex < NUM_TEAMS, "Update() scoringTeamId is out of range");
+				CRY_ASSERT(teamIndex >= 0 && teamIndex < NUM_TEAMS, "Update() scoringTeamId is out of range");
 
 				pKotHEntity->m_timeSinceLastScore += frameTime;
 

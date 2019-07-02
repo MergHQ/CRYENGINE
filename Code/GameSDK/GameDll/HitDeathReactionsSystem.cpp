@@ -1101,7 +1101,7 @@ ProfileId CHitDeathReactionsSystem::GetActorProfileId(const CActor& actor) const
 	if (pHitDeathReactions != NULL)
 	{
 		ProfileId cachedProfileId = pHitDeathReactions->GetProfileId();
-		CRY_ASSERT_TRACE((cachedProfileId == INVALID_PROFILE_ID) || (cachedProfileId == key), ("IMPORTANT ASSERT! %s actor's cached ProfileId doesn't match its actual ProfileId!", actor.GetEntity()->GetName()));
+		CRY_ASSERT((cachedProfileId == INVALID_PROFILE_ID) || (cachedProfileId == key), "IMPORTANT ASSERT! %s actor's cached ProfileId doesn't match its actual ProfileId!", actor.GetEntity()->GetName());
 	}
 #endif
 
@@ -1167,7 +1167,7 @@ ScriptTablePtr CHitDeathReactionsSystem::LoadReactionsScriptTable(const char* sz
 
 void CHitDeathReactionsSystem::GenerateTagMapping(ScriptTablePtr pTags, const char* pArrayName, const int tagType, STagMappingHelper& tagMappingHelper)
 {
-	CRY_ASSERT_MESSAGE(tagType < STagMappingHelper::ETagType_NUM, "TagType index out of range!");
+	CRY_ASSERT(tagType < STagMappingHelper::ETagType_NUM, "TagType index out of range!");
 
 	const char* pTagName = NULL;
 	if (pTags->GetValue(VARIATION_VALUE, pTagName))

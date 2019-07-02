@@ -280,7 +280,7 @@ void CAutoTester::Start(const char *stateSetup, const char *outputPath, bool qui
 	}
 	else
 	{
-		CRY_ASSERT_MESSAGE(0, string().Format("CAutoTester::Start() failed to find state at start in %s", stateSetup));
+		CRY_ASSERT(0, string().Format("CAutoTester::Start() failed to find state at start in %s", stateSetup));
 	}
 
 	// TODO will maybe need to load in the existing file if we want all tests in the same file... junit/bamboo should cope with each test in a different file?
@@ -1047,7 +1047,7 @@ void CAutoTester::Update()
 					UpdatePerformanceTest();
 					break;
 				default:
-					CRY_ASSERT_MESSAGE(0, string().Format("CAutoTester::Update() unrecognised state %d (%s)", m_state, s_autoTesterStateNames[m_state]));
+					CRY_ASSERT(0, string().Format("CAutoTester::Update() unrecognised state %d (%s)", m_state, s_autoTesterStateNames[m_state]));
 					break;
 			}
 		}

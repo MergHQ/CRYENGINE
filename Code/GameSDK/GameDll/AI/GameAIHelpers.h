@@ -132,7 +132,7 @@ public:
 			message.Format(
 				"GameAISystem: Entity with ID %d doesn't exist in the entity system and therefore failed to enter module '%s'",
 				entityID, GetName());
-			CRY_ASSERT_MESSAGE(0, message.c_str());
+			CRY_ASSERT(0, message.c_str());
 			GameWarning("%s", message.c_str());
 #endif
 		}

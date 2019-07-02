@@ -42,13 +42,13 @@ void CHandGrenades::InitFireModes()
 	{
 		if (crygti_isof<CThrow>(m_firemodes[i]))
 		{
-			CRY_ASSERT_MESSAGE(!m_pThrow, "Multiple Throw firemodes assigned to weapon");
+			CRY_ASSERT(!m_pThrow, "Multiple Throw firemodes assigned to weapon");
 			m_pThrow = crygti_cast<CThrow*>(m_firemodes[i]);
 			throwId = i;
 		}
 	}
 
-	CRY_ASSERT_MESSAGE(m_pThrow, "No Throw firemode assigned to weapon");
+	CRY_ASSERT(m_pThrow, "No Throw firemode assigned to weapon");
 
 	if(m_pThrow)
 	{
@@ -68,7 +68,7 @@ bool CHandGrenades::OnActionAttack(EntityId actorId, const ActionId& actionId, i
 	{
 		if(m_pThrow && !m_pThrow->IsFiring())
 		{
-			CRY_ASSERT_MESSAGE(m_pThrow == m_fm, "Currently not in throw firemode");
+			CRY_ASSERT(m_pThrow == m_fm, "Currently not in throw firemode");
 			m_pThrow->Prime();
 			UpdateStowedWeapons();
 		}
@@ -252,7 +252,7 @@ void CHandGrenades::FumbleGrenade()
 {
 	if(m_pThrow)
 	{
-		CRY_ASSERT_MESSAGE(m_pThrow == m_fm, "Currently not in throw firemode");
+		CRY_ASSERT(m_pThrow == m_fm, "Currently not in throw firemode");
 		m_pThrow->FumbleGrenade();
 	}
 }
@@ -272,7 +272,7 @@ void CHandGrenades::StartQuickGrenadeThrow()
 
 	if (m_pThrow && !m_pThrow->IsFiring())
 	{
-		CRY_ASSERT_MESSAGE(m_pThrow == m_fm, "Currently not in throw firemode");
+		CRY_ASSERT(m_pThrow == m_fm, "Currently not in throw firemode");
 		m_pThrow->Prime();
 		UpdateStowedWeapons();
 

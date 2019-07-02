@@ -133,7 +133,7 @@ void CGameRulesExtractionVictoryConditions::UpdateResolutionData(int primaryTeam
 	}
 	else
 	{
-		CRY_ASSERT_MESSAGE(0, "UpdateResolutionData() unexpected primaryTeam");
+		CRY_ASSERT(0, "UpdateResolutionData() unexpected primaryTeam");
 	}
 
 	MaxFloatsToDrawResolutionData(ESVC_DrawResolution_level_1, team1Data, team2Data);

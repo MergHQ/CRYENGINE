@@ -2030,11 +2030,11 @@ void CPickAndThrowWeapon::ScaleTimeValue(float& timeValueToScale, const float to
 //---------------------------------------------------------------------------
 void CPickAndThrowWeapon::PerformCameraShake(const SPickAndThrowParams::SCameraShakeParams& camShake, const CPlayer* pPlayer )
 {
-	CRY_ASSERT_MESSAGE(pPlayer, "CPickAndThrowWeapon::PerformCameraShake(...) < error pPlayer is NULL");
+	CRY_ASSERT(pPlayer, "CPickAndThrowWeapon::PerformCameraShake(...) < error pPlayer is NULL");
 	if(camShake.enabled && camShake.time > 0.0f)
 	{
 		CScreenEffects* pScreenFX = g_pGame->GetScreenEffects();
-		CRY_ASSERT_MESSAGE(pScreenFX, "CPickAndThrowWeapon::PerformCameraShake(...) < error pScreenFX is NULL");
+		CRY_ASSERT(pScreenFX, "CPickAndThrowWeapon::PerformCameraShake(...) < error pScreenFX is NULL");
 
 		float attenuation = 1.0f;
 		if (camShake.viewAngleAttenuation)

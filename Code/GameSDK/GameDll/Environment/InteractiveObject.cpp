@@ -93,14 +93,14 @@ bool CInteractiveObjectEx::ReloadExtension( IGameObject * pGameObject, const SEn
 {
 	ResetGameObject();
 
-	CRY_ASSERT_MESSAGE(false, "CInteractiveObjectEx::ReloadExtension not implemented");
+	CRY_ASSERT(false, "CInteractiveObjectEx::ReloadExtension not implemented");
 	
 	return false;
 }
 
 bool CInteractiveObjectEx::GetEntityPoolSignature( TSerialize signature )
 {
-	CRY_ASSERT_MESSAGE(false, "CInteractiveObjectEx::GetEntityPoolSignature not implemented");
+	CRY_ASSERT(false, "CInteractiveObjectEx::GetEntityPoolSignature not implemented");
 	
 	return true;
 }
@@ -349,7 +349,7 @@ bool CInteractiveObjectEx::Reset()
 	if (entityProperties->GetValue("Interaction", interactionProperties))
 	{
 		ParseAllInteractions(interactionProperties, interactionNames); 
-		CRY_ASSERT_MESSAGE(interactionNames.size() == m_interactionDataSets.size(), "bool CInteractiveObjectEx::Reset() < Error - differing number of animation names than anim sets");
+		CRY_ASSERT(interactionNames.size() == m_interactionDataSets.size(), "bool CInteractiveObjectEx::Reset() < Error - differing number of animation names than anim sets");
 
 		const char* objectModel = NULL;
 		interactionProperties->GetValue("object_Model", objectModel);

@@ -44,7 +44,7 @@ bool CShake::ReloadExtension( IGameObject * pGameObject, const SEntitySpawnParam
 {
 	ResetGameObject();
 
-	CRY_ASSERT_MESSAGE(false, "CShake::ReloadExtension not implemented");
+	CRY_ASSERT(false, "CShake::ReloadExtension not implemented");
 	
 	return false;
 }
@@ -52,7 +52,7 @@ bool CShake::ReloadExtension( IGameObject * pGameObject, const SEntitySpawnParam
 //------------------------------------------------------------------------
 bool CShake::GetEntityPoolSignature( TSerialize signature )
 {
-	CRY_ASSERT_MESSAGE(false, "CShake::GetEntityPoolSignature not implemented");
+	CRY_ASSERT(false, "CShake::GetEntityPoolSignature not implemented");
 	
 	return true;
 }

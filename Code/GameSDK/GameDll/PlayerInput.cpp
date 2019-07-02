@@ -1462,7 +1462,7 @@ void CPlayerInput::AddInputCancelHandler (IPlayerInputCancelHandler * handler, E
 	assert (slot >= 0 && slot < kCHS_num);
 
 #ifndef _RELEASE
-	CRY_ASSERT_TRACE (m_inputCancelHandler[slot] == NULL, ("%s already has an input cancel handler \"%s\" installed in slot %d - can't add \"%s\" too", m_pPlayer->GetEntity()->GetEntityTextDescription().c_str(), m_inputCancelHandler[slot]->DbgGetCancelHandlerName().c_str(), slot, handler->DbgGetCancelHandlerName().c_str()));
+	CRY_ASSERT (m_inputCancelHandler[slot] == NULL, ("%s already has an input cancel handler \"%s\" installed in slot %d - can't add \"%s\" too", m_pPlayer->GetEntity()->GetEntityTextDescription().c_str(), m_inputCancelHandler[slot]->DbgGetCancelHandlerName().c_str(), slot, handler->DbgGetCancelHandlerName().c_str()));
 #endif
 
 	m_inputCancelHandler[slot] = handler;

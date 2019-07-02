@@ -355,7 +355,7 @@ void CPersonalRangeSignaling::CheckActorTargetRanges(IActor* pActor)
 				}
 
 				IActor* pMe = GetActor();
-				CRY_ASSERT_MESSAGE(pMe, "An actor has been removed without cleaning up its range signals.");
+				CRY_ASSERT(pMe, "An actor has been removed without cleaning up its range signals.");
 				if (pMe)
 				{
 					SendSignal(pMe, pRange->GetSignal(), pRange->GetSignalData());

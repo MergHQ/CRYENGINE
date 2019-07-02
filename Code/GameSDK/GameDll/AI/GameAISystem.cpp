@@ -175,7 +175,7 @@ void CGameAISystem::EnterModule(EntityId entityID, const char* moduleName)
 		string message;
 		message.Format("Could not register entity '%s' [%d] with module '%s' - the module doesn't exist.", entity ? entity->GetName() : "NullEntity", entityID, moduleName);
 		gEnv->pLog->LogError("GameAISystem: %s", message.c_str());
-		CRY_ASSERT_MESSAGE(0, message.c_str());
+		CRY_ASSERT(0, message.c_str());
 		return;
 	}
 

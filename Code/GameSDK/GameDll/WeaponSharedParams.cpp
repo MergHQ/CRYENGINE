@@ -482,7 +482,7 @@ void CWeaponSharedParams::ReadFireModeParams(const XmlNodeRef& paramsNode, CItem
 #if !defined (_RELEASE)
 		else if(!strcmp(typ, CMelee::GetWeaponComponentType()))
 		{
-			CRY_ASSERT_MESSAGE(0, "Multiple melee modes found, this isn't supported");
+			CRY_ASSERT(0, "Multiple melee modes found, this isn't supported");
 			GameWarning("Multiple melee modes found, this isn't supported");
 		}
 #endif
@@ -889,7 +889,7 @@ void CWeaponSharedParams::ReadAmmoParams(const XmlNodeRef& paramsNode)
 
 			const char* name = ammoNode->getAttr("name");
 			IEntityClass* pClass = gEnv->pEntitySystem->GetClassRegistry()->FindClass(name);
-			CRY_ASSERT_TRACE(pClass, ("Ammo '%s' class not found in class registry, for weapon", name));
+			CRY_ASSERT(pClass, "Ammo '%s' class not found in class registry, for weapon", name);
 
 			ammoNode->getAttr("amount", amount);
 			ammoNode->getAttr("extra", extra);

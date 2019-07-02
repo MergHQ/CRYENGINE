@@ -540,8 +540,8 @@ public:
 	CWorldBuilder*           GetWorldBuilder()              { return m_pWorldBuilder; }
 	CDialogSystem*           GetDialogSystem()              { return m_pDialogSystem; }
 
-	CGameCache&              GetGameCache()                 { CRY_ASSERT_MESSAGE(m_pGameCache, "Can't obtain GameCache object until CGame::Init() is called!"); return *m_pGameCache; }
-	const CGameCache&        GetGameCache() const           { CRY_ASSERT_MESSAGE(m_pGameCache, "Can't obtain GameCache object until CGame::Init() is called!"); return *m_pGameCache; }
+	CGameCache&              GetGameCache()                 { CRY_ASSERT(m_pGameCache, "Can't obtain GameCache object until CGame::Init() is called!"); return *m_pGameCache; }
+	const CGameCache&        GetGameCache() const           { CRY_ASSERT(m_pGameCache, "Can't obtain GameCache object until CGame::Init() is called!"); return *m_pGameCache; }
 
 	ILINE CUIManager*        GetUI(void)                    { return m_pUIManager; }
 	ILINE CTacticalManager*  GetTacticalManager(void) const { return m_pTacticalManager; }

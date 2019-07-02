@@ -268,7 +268,7 @@ void CGameRulesStandardRounds::Init( XmlNodeRef xml )
 						}
 						else
 						{
-							CRY_ASSERT_MESSAGE(0, "CGameRulesStandardRounds::Init() Reached max number of EndOfRound strings. Increase MAX_END_OF_ROUND_STRINGS if more are required.");
+							CRY_ASSERT(0, "CGameRulesStandardRounds::Init() Reached max number of EndOfRound strings. Increase MAX_END_OF_ROUND_STRINGS if more are required.");
 						}
 					}
 				}
@@ -302,7 +302,7 @@ void CGameRulesStandardRounds::Init( XmlNodeRef xml )
 						}
 						else
 						{
-							CRY_ASSERT_MESSAGE(0, "CGameRulesStandardRounds::Init() Reached max number of EndOfRound Victory strings. Increase k_MaxEndOfRoundVictoryStrings if more are required.");
+							CRY_ASSERT(0, "CGameRulesStandardRounds::Init() Reached max number of EndOfRound Victory strings. Increase k_MaxEndOfRoundVictoryStrings if more are required.");
 						}
 					}
 				}
@@ -838,7 +838,7 @@ const bool CGameRulesStandardRounds::IsCurrentRoundType(const ERoundType roundTy
 		return (m_roundNumber & 0x01);
 	}
 
-	CRY_ASSERT_MESSAGE(0, "Unable to find round type");
+	CRY_ASSERT(0, "Unable to find round type");
 	return false;
 }
 
@@ -851,7 +851,7 @@ void CGameRulesStandardRounds::ShowRoundStartingMessage(bool bPlayAudio)
 	CGameRules *pGameRules = g_pGame->GetGameRules();
 	int localTeam = pGameRules->GetTeam(localActorId);
 
-	CRY_ASSERT_MESSAGE(localActorId, "ShowRoundStartingMessage() is trying to setup messages without a valid local actor");
+	CRY_ASSERT(localActorId, "ShowRoundStartingMessage() is trying to setup messages without a valid local actor");
 
 	CryLog("CGameRulesStandardRounds::ShowRoundStartingMessage() primaryTeam=%d; localTeam=%d", primaryTeam, localTeam);
 
@@ -1162,7 +1162,7 @@ void CGameRulesStandardRounds::StartNewRound( bool isReset )
 
 	if (m_roundEndHUDState == eREHS_Top3)
 	{
-		CRY_ASSERT_MESSAGE(0, "CGameRulesStandardRounds::StartNewRound() about to set round in progress but we are still in Top3 roundstate!");
+		CRY_ASSERT(0, "CGameRulesStandardRounds::StartNewRound() about to set round in progress but we are still in Top3 roundstate!");
 		CryLog("CGameRulesStandardRounds::StartNewRound() about to set round in progress but we are still in Top3 roundstate!");
 
 		// TODO - perhaps reset roundEndHUDState to unknown now

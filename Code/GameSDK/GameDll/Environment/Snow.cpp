@@ -55,7 +55,7 @@ bool CSnow::ReloadExtension( IGameObject * pGameObject, const SEntitySpawnParams
 {
 	ResetGameObject();
 
-	CRY_ASSERT_MESSAGE(false, "CSnow::ReloadExtension not implemented");
+	CRY_ASSERT(false, "CSnow::ReloadExtension not implemented");
 	
 	return false;
 }
@@ -63,7 +63,7 @@ bool CSnow::ReloadExtension( IGameObject * pGameObject, const SEntitySpawnParams
 //------------------------------------------------------------------------
 bool CSnow::GetEntityPoolSignature( TSerialize signature )
 {
-	CRY_ASSERT_MESSAGE(false, "CSnow::GetEntityPoolSignature not implemented");
+	CRY_ASSERT(false, "CSnow::GetEntityPoolSignature not implemented");
 	
 	return true;
 }

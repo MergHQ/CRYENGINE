@@ -20,11 +20,11 @@ CPlayerPlugin::~CPlayerPlugin()
 {
 	if (m_ownerPlayer)
 	{
-		CRY_ASSERT_MESSAGE(!m_entered, ("[PLAYER PLUG-IN] <%s %s \"%s\"> %s", m_ownerPlayer->IsClient() ? "Local" : "Remote", m_ownerPlayer->GetEntity()->GetClass()->GetName(), m_ownerPlayer->GetEntity()->GetName(), string().Format("Player plug-in is being destroyed without having been shut down cleanly!").c_str()));
+		CRY_ASSERT(!m_entered, ("[PLAYER PLUG-IN] <%s %s \"%s\"> %s", m_ownerPlayer->IsClient() ? "Local" : "Remote", m_ownerPlayer->GetEntity()->GetClass()->GetName(), m_ownerPlayer->GetEntity()->GetName(), string().Format("Player plug-in is being destroyed without having been shut down cleanly!").c_str()));
 	}
 	else
 	{
-		CRY_ASSERT_MESSAGE(!m_entered, ("[PLAYER PLUG-IN] <NULL> %s", string().Format("Player plug-in is being destroyed without having been shut down cleanly!").c_str()));
+		CRY_ASSERT(!m_entered, ("[PLAYER PLUG-IN] <NULL> %s", string().Format("Player plug-in is being destroyed without having been shut down cleanly!").c_str()));
 	}
 }
 
@@ -98,7 +98,7 @@ const void* CPlayerPlugin::DefaultData(EPlayerPlugInData dataType)
 		}
 	}
 
-	CRY_ASSERT_MESSAGE(false, "We always want to provide default data");
+	CRY_ASSERT(false, "We always want to provide default data");
 	return NULL;
 }
 

@@ -676,7 +676,7 @@ void CGameRulesStandardPlayerStats::OnRoundEnd()
 //------------------------------------------------------------------------
 void CGameRulesStandardPlayerStats::ProcessSuccessfulExplosion(EntityId playerId, float damageDealt, uint16 projectileClassId)
 {
- 	CRY_ASSERT_MESSAGE(gEnv->bServer, "ProcessSuccessfulExplosion should only be called from the server");
+ 	CRY_ASSERT(gEnv->bServer, "ProcessSuccessfulExplosion should only be called from the server");
 
 	if (SGameRulesPlayerStat* stats = GetPlayerStatsInternal(playerId))
 	{
@@ -752,7 +752,7 @@ void CGameRulesStandardPlayerStats::ProcessSuccessfulExplosion(EntityId playerId
 
 void CGameRulesStandardPlayerStats::IncrementAssistKills(EntityId playerId)
 {
-	CRY_ASSERT_MESSAGE(gEnv->bServer, "IncrementAssistKills should only be called from the server");
+	CRY_ASSERT(gEnv->bServer, "IncrementAssistKills should only be called from the server");
 
 	if (SGameRulesPlayerStat* stats = GetPlayerStatsInternal(playerId))
 	{

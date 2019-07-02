@@ -422,7 +422,7 @@ void CBodyDestructibilityProfile::LoadEvent( const XmlNodeRef& eventNode, SDestr
 			if (attachmentName)
 			{
 				const TDestructibleBodyPartId attachmentIdx = (TDestructibleBodyPartId)parsingHelper.GetAttachmentIndex(attachmentName);
-				CRY_ASSERT_MESSAGE(attachmentIdx != -1, "Something went wrong with the initial attachment pre-parsing, this could crash during run-time");
+				CRY_ASSERT(attachmentIdx != -1, "Something went wrong with the initial attachment pre-parsing, this could crash during run-time");
 				eventData.attachmentsToHide.push_back(attachmentIdx);
 			}
 			else
@@ -446,7 +446,7 @@ void CBodyDestructibilityProfile::LoadEvent( const XmlNodeRef& eventNode, SDestr
 			if (attachmentName)
 			{
 				const TDestructibleBodyPartId attachmentIdx = (TDestructibleBodyPartId)parsingHelper.GetAttachmentIndex(attachmentName);
-				CRY_ASSERT_MESSAGE(attachmentIdx != -1, "Something went wrong with the initial attachment pre-parsing, this could crash during run-time");
+				CRY_ASSERT(attachmentIdx != -1, "Something went wrong with the initial attachment pre-parsing, this could crash during run-time");
 				eventData.attachmentsToUnhide.push_back(attachmentIdx);
 			}
 			else

@@ -1622,7 +1622,7 @@ void CAIHandler::HandleCoverRequest(SOBJECTSTATE& state, CMovementRequest& mr)
 					const float TOO_FAR_AWAY = 50.0f;
 					if (coverLocation.t.GetSquaredDistance2D(m_pEntity->GetPos()) >= sqr(TOO_FAR_AWAY))
 					{
-						CRY_ASSERT_MESSAGE(false, "Cover stance requested but CoverLocation is too far away from the entity");
+						CRY_ASSERT(false, "Cover stance requested but CoverLocation is too far away from the entity");
 						state.coverRequest.coverLocationRequest = eCoverLocationRequest_Clear;
 					}
 				}
@@ -2300,7 +2300,7 @@ void CAIHandler::MakeFace(CAIFaceManager::e_ExpressionEvent expression)
 		return "Action";
 	default:
 		{
-			CRY_ASSERT_MESSAGE(false, "Invalid input name");
+			CRY_ASSERT(false, "Invalid input name");
 			return NULL;
 		}
 	}

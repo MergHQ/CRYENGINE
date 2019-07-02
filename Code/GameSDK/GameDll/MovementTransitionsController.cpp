@@ -128,7 +128,7 @@ public:
 					}
 					else
 					{
-						CRY_ASSERT_MESSAGE( false, "Going to cover but no cover location set" );
+						CRY_ASSERT( false, "Going to cover but no cover location set" );
 						SetParam( "TargetPos", QuatT( player.GetEntity()->GetWorldTM() ) );
 					}
 				}

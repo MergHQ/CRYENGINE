@@ -76,7 +76,7 @@ void CAreaAnnouncer::Init()
 
 	//Scan for areas
 	IEntityClass* pTargetClass = gEnv->pEntitySystem->GetClassRegistry()->FindClass("AreaBox");
-	CRY_ASSERT_MESSAGE(pTargetClass, "Unable to find Target class AreaBox");
+	CRY_ASSERT(pTargetClass, "Unable to find Target class AreaBox");
 
 	if(pTargetClass)
 	{
@@ -141,7 +141,7 @@ void CAreaAnnouncer::LoadAnnouncementArea(const IEntity* pEntity, const char* ar
 	if(signal[0] != signal[1] && (signal[0] == INVALID_AUDIOSIGNAL_ID || signal[1] == INVALID_AUDIOSIGNAL_ID))
 	{
 #if defined(USER_benp)
-		CRY_ASSERT_MESSAGE(0, ("'%s' only has signal for 1 team!", areaName));
+		CRY_ASSERT(0, ("'%s' only has signal for 1 team!", areaName));
 #endif
 		CryWarning(VALIDATOR_MODULE_GAME, VALIDATOR_ERROR, "'%s' only has signal for 1 team!", areaName);
 	}

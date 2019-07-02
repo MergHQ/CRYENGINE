@@ -117,7 +117,7 @@ void CGameRulesSimpleEntityBasedObjective::Init(XmlNodeRef xml)
 			else
 			{
 				CryLog("CGameRulesSimpleEntityBasedObjective::Init, expected 'class' attribute within 'Entity' node");
-				CRY_ASSERT_MESSAGE(false, "We require 'class' attribute within 'Entity' node");
+				CRY_ASSERT(false, "We require 'class' attribute within 'Entity' node");
 			}
 
 			if (xmlChild->getAttr("select", &pSelectType))
@@ -146,7 +146,7 @@ void CGameRulesSimpleEntityBasedObjective::Init(XmlNodeRef xml)
 				else
 				{
 					CryLog("CGameRulesSimpleEntityBasedObjective::Init, unknown 'select' attribute within 'Entity' node");
-					CRY_ASSERT_MESSAGE(false, "Unknown entity select type");
+					CRY_ASSERT(false, "Unknown entity select type");
 				}
 			}
 
@@ -176,7 +176,7 @@ void CGameRulesSimpleEntityBasedObjective::Init(XmlNodeRef xml)
 			{
 				if (m_entityDetails[i].m_pEntityClass == entityDetails.m_pEntityClass)
 				{
-					CRY_ASSERT_MESSAGE(false, "Duplicate entity class detected!");
+					CRY_ASSERT(false, "Duplicate entity class detected!");
 					CryLog("CGameRulesSimpleEntityBasedObjective::Init, ERROR: duplicate entity class detected, entity definitions must be unique");
 					addEntity = false;
 				}
@@ -203,7 +203,7 @@ void CGameRulesSimpleEntityBasedObjective::Init(XmlNodeRef xml)
 				else
 				{
 					CryLog("CGameRulesSimpleEntityBasedObjective::Init, unknown implementation type given ('%s')", pImplementationType);
-					CRY_ASSERT_MESSAGE(false, "Unknown implementation type given");
+					CRY_ASSERT(false, "Unknown implementation type given");
 				}
 				if (m_pObjective)
 				{
@@ -213,7 +213,7 @@ void CGameRulesSimpleEntityBasedObjective::Init(XmlNodeRef xml)
 			else
 			{
 				CryLog("CGameRulesSimpleEntityBasedObjective::Init, implementation type not given");
-				CRY_ASSERT_MESSAGE(false, "Implementation type not given");
+				CRY_ASSERT(false, "Implementation type not given");
 			}
 		}
 	}
@@ -224,7 +224,7 @@ void CGameRulesSimpleEntityBasedObjective::Init(XmlNodeRef xml)
 
 	gEnv->pEntitySystem->AddSink(this, IEntitySystem::OnSpawn | IEntitySystem::OnRemove);
 
-	CRY_ASSERT_MESSAGE(m_pObjective, "Sub-objective not created, this will crash!");
+	CRY_ASSERT(m_pObjective, "Sub-objective not created, this will crash!");
 }
 
 //------------------------------------------------------------------------
@@ -826,7 +826,7 @@ void CGameRulesSimpleEntityBasedObjective::OnSingleEntityRMI( CGameRules::SModul
 		}
 		if (entityType == -1)
 		{
-			CRY_ASSERT_MESSAGE(false, "Entity type not found");
+			CRY_ASSERT(false, "Entity type not found");
 			return;
 		}
 
@@ -872,7 +872,7 @@ void CGameRulesSimpleEntityBasedObjective::OnEntityWithTimeRMI( CGameRules::SMod
 		}
 		if (entityType == -1)
 		{
-			CRY_ASSERT_MESSAGE(false, "Entity type not found");
+			CRY_ASSERT(false, "Entity type not found");
 			return;
 		}
 
@@ -1004,7 +1004,7 @@ bool CGameRulesSimpleEntityBasedObjective::OnRemove( IEntity *pEntity )
 //------------------------------------------------------------------------
 void CGameRulesSimpleEntityBasedObjective::OnReused( IEntity *pEntity, SEntitySpawnParams &params )
 {
-	CRY_ASSERT_MESSAGE(false, "CGameRulesSimpleEntityBasedObjective::OnReused needs implementing");
+	CRY_ASSERT(false, "CGameRulesSimpleEntityBasedObjective::OnReused needs implementing");
 }
 
 //------------------------------------------------------------------------

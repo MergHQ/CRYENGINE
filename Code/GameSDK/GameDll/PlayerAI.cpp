@@ -531,7 +531,7 @@ void CAIAnimationComponent::UpdateStanceAndCover( CPlayer& player, IActionContro
 			}
 			else
 			{
-				CRY_ASSERT_MESSAGE( false, "Cover stance set but no cover location set" );
+				CRY_ASSERT( false, "Cover stance set but no cover location set" );
 				pActionController->RemoveParam( "TargetPos" );
 			}
 		}

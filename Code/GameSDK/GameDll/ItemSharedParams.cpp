@@ -690,7 +690,7 @@ bool CItemSharedParams::ReadAccessories(const XmlNodeRef& paramsNode)
 
 			if (tooManyAttachments)
 			{
-				CRY_ASSERT_MESSAGE(!tooManyAttachments, "This weapon has too many initial attachments");
+				CRY_ASSERT(!tooManyAttachments, "This weapon has too many initial attachments");
 				GameWarning("Too many initial attachments defined for this weapon, maximum allowed is (%d)", initialSetup.max_size());
 			}
 		}

@@ -58,7 +58,7 @@ void CItem::InitClient(int channelId)
 		{
 			char errorMsg[256];
 			cry_sprintf(errorMsg, "CItem::InitClient failed to find network safe class id for %s", m_accessories[i].pClass->GetName());
-			CRY_ASSERT_MESSAGE(result, errorMsg);
+			CRY_ASSERT(result, errorMsg);
 		}
 #endif
 		if(result)
@@ -108,7 +108,7 @@ IMPLEMENT_RMI(CItem, SvRequestAttachAccessory)
 		{
 			char errorMsg[256];
 			cry_sprintf(errorMsg, "CItem::SvRequestAttachAccessory failed to find network safe class name for id %d", params.accessoryClassId);
-			CRY_ASSERT_MESSAGE(result, errorMsg);
+			CRY_ASSERT(result, errorMsg);
 		}
 #else
 		g_pGame->GetIGameFramework()->GetNetworkSafeClassName(accessoryName, sizeof(accessoryName), params.accessoryClassId);
@@ -137,7 +137,7 @@ IMPLEMENT_RMI(CItem, ClAttachAccessory)
 	{
 		char errorMsg[256];
 		cry_sprintf(errorMsg, "CItem::ClAttachAccessory failed to find network safe class name for id %d", params.accessoryClassId);
-		CRY_ASSERT_MESSAGE(result, errorMsg);
+		CRY_ASSERT(result, errorMsg);
 	}
 #else
 	g_pGame->GetIGameFramework()->GetNetworkSafeClassName(accessoryName, sizeof(accessoryName), params.accessoryClassId);
@@ -159,7 +159,7 @@ IMPLEMENT_RMI(CItem, ClAttachInitialAccessory)
 	{
 		char errorMsg[256];
 		cry_sprintf(errorMsg, "CItem::ClAttachAccessory failed to find network safe class name for id %d", params.accessoryClassId);
-		CRY_ASSERT_MESSAGE(result, errorMsg);
+		CRY_ASSERT(result, errorMsg);
 	}
 #else
 	g_pGame->GetIGameFramework()->GetNetworkSafeClassName(accessoryName, sizeof(accessoryName), params.accessoryClassId);
@@ -184,7 +184,7 @@ IMPLEMENT_RMI(CItem, SvRequestDetachAccessory)
 		{
 			char errorMsg[256];
 			cry_sprintf(errorMsg, "CItem::SvRequestDetachAccessory failed to find network safe class name for id %d", params.accessoryClassId);
-			CRY_ASSERT_MESSAGE(result, errorMsg);
+			CRY_ASSERT(result, errorMsg);
 		}
 #else
 		g_pGame->GetIGameFramework()->GetNetworkSafeClassName(accessoryName, sizeof(accessoryName), params.accessoryClassId);
@@ -212,7 +212,7 @@ IMPLEMENT_RMI(CItem, ClDetachAccessory)
 	{
 		char errorMsg[256];
 		cry_sprintf(errorMsg, "CItem::ClDetachAccessory failed to find network safe class name for id %d", params.accessoryClassId);
-		CRY_ASSERT_MESSAGE(result, errorMsg);
+		CRY_ASSERT(result, errorMsg);
 	}
 #else
 	g_pGame->GetIGameFramework()->GetNetworkSafeClassName(accessoryName, sizeof(accessoryName), params.accessoryClassId);

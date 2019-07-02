@@ -479,7 +479,7 @@ public:
 	void ReadMountedProperties(IScriptTable* pScriptTable);
 
 	// accessories
-	virtual void RemoveAccessory(const ItemString& name) { CRY_ASSERT_MESSAGE(0, "DEPRECATED: Use RemoveAccessory(const IEntityClass* pClass)"); };
+	virtual void RemoveAccessory(const ItemString& name) { CRY_ASSERT(0, "DEPRECATED: Use RemoveAccessory(const IEntityClass* pClass)"); };
 	virtual void RemoveAllAccessories();
 	virtual void DetachAllAccessories();
 	virtual void AttachAccessory(const ItemString& name, bool attach, bool noanim, bool force = false, bool firstTimeAttached = false, bool initialLoadoutSetup = false);

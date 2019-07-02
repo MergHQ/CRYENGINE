@@ -1132,32 +1132,32 @@ private:
 		CStateMachineRegistration<host>* host::s_pStateMachineRegistration##name = NULL; \
 		void host::StateMachineHandleEvent##name( const SStateEvent& event ) \
 		{\
-			CRY_ASSERT_TRACE( s_pStateMachineRegistration##name, ("HSM: Somehow the registration class is NULL for the <%s> State Machine", #name) );\
+			CRY_ASSERT( s_pStateMachineRegistration##name, ("HSM: Somehow the registration class is NULL for the <%s> State Machine", #name) );\
 			m_stateMachine##name.StateMachineHandleEvent( *this, *s_pStateMachineRegistration##name, event ); \
 		}\
 		void host::StateMachineInit##name()\
 		{\
-			CRY_ASSERT_TRACE( s_pStateMachineRegistration##name, ("HSM: Somehow the registration class is NULL for the <%s> State Machine", #name) );\
+			CRY_ASSERT( s_pStateMachineRegistration##name, ("HSM: Somehow the registration class is NULL for the <%s> State Machine", #name) );\
 			m_stateMachine##name.StateMachineInit( *this, *s_pStateMachineRegistration##name );\
 		}\
 		void host::StateMachineRelease##name()\
 		{\
-			CRY_ASSERT_TRACE( s_pStateMachineRegistration##name, ("HSM: Somehow the registration class is NULL for the <%s> State Machine", #name) );\
+			CRY_ASSERT( s_pStateMachineRegistration##name, ("HSM: Somehow the registration class is NULL for the <%s> State Machine", #name) );\
 			m_stateMachine##name.StateMachineRelease( *this, *s_pStateMachineRegistration##name );\
 		}\
 		void host::StateMachineReset##name()\
 		{\
-			CRY_ASSERT_TRACE( s_pStateMachineRegistration##name, ("HSM: Somehow the registration class is NULL for the <%s> State Machine", #name) );\
+			CRY_ASSERT( s_pStateMachineRegistration##name, ("HSM: Somehow the registration class is NULL for the <%s> State Machine", #name) );\
 			m_stateMachine##name.StateMachineReset( *this, *s_pStateMachineRegistration##name );\
 		}\
 		void host::StateMachineUpdate##name( const float frameTime, const bool bShouldDebug )\
 		{\
-			CRY_ASSERT_TRACE( s_pStateMachineRegistration##name, ("HSM: Somehow the registration class is NULL for the <%s> State Machine", #name) );\
+			CRY_ASSERT( s_pStateMachineRegistration##name, ("HSM: Somehow the registration class is NULL for the <%s> State Machine", #name) );\
 			m_stateMachine##name.StateMachineUpdateTime( *this, *s_pStateMachineRegistration##name, frameTime, bShouldDebug );\
 		}\
 		void host::StateMachineSerialize##name( const SStateEvent& event )\
 		{\
-			CRY_ASSERT_TRACE( s_pStateMachineRegistration##name, ("HSM: Somehow the registration class is NULL for the <%s> State Machine", #name) );\
+			CRY_ASSERT( s_pStateMachineRegistration##name, ("HSM: Somehow the registration class is NULL for the <%s> State Machine", #name) );\
 			m_stateMachine##name.StateMachineSerialize( *this, *s_pStateMachineRegistration##name, event );\
 		}
 

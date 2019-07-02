@@ -62,9 +62,9 @@ ScreenLayoutManager::~ScreenLayoutManager( )
 //-----------------------------------------------------------------------------------------------------
 void ScreenLayoutManager::SetState( ScreenLayoutStates flags )
 {
-	CRY_ASSERT_MESSAGE( !((flags&eSLO_ScaleMethod_None) && (flags&eSLO_ScaleMethod_WithY)), "HUD: Conflicting scale methods" );
-	CRY_ASSERT_MESSAGE( !((flags&eSLO_ScaleMethod_None) && (flags&eSLO_ScaleMethod_WithX)), "HUD: Conflicting scale methods" );
-	CRY_ASSERT_MESSAGE( !((flags&eSLO_ScaleMethod_WithY) && (flags&eSLO_ScaleMethod_WithX)), "HUD: Conflicting scale methods" );
+	CRY_ASSERT( !((flags&eSLO_ScaleMethod_None) && (flags&eSLO_ScaleMethod_WithY)), "HUD: Conflicting scale methods" );
+	CRY_ASSERT( !((flags&eSLO_ScaleMethod_None) && (flags&eSLO_ScaleMethod_WithX)), "HUD: Conflicting scale methods" );
+	CRY_ASSERT( !((flags&eSLO_ScaleMethod_WithY) && (flags&eSLO_ScaleMethod_WithX)), "HUD: Conflicting scale methods" );
 	m_flags = flags; // |=  /?
 }
 
@@ -218,7 +218,7 @@ const Vec2 ScreenLayoutManager::GetSafeAreaBorderScreenProportion( EHUDSafeAreaI
 	case eHSAID_curent :
 		return GetSafeAreaBorderScreenProportion( m_curSafeAreaID );
 	default :
-		CRY_ASSERT_MESSAGE(0, "HUD: Unhandled SafeArea ID/type");
+		CRY_ASSERT(0, "HUD: Unhandled SafeArea ID/type");
 	}
 
 	return ret*0.5f;
@@ -288,7 +288,7 @@ void ScreenLayoutManager::AdjustToSafeArea( float *fX, float* fY, float* fSizeX 
 	Vec2 s( 0.0f, 0.0f );
 	float assetAspect = 1.0f;
 
-	CRY_ASSERT_MESSAGE( fSizeX && fSizeY || (fSizeX == NULL && fSizeY == NULL), "HUD: Invalid combination of size pointers, probably a mistake in calling code!" );
+	CRY_ASSERT( fSizeX && fSizeY || (fSizeX == NULL && fSizeY == NULL), "HUD: Invalid combination of size pointers, probably a mistake in calling code!" );
 	const bool bHaveSize = fSizeX && fSizeY && (*fSizeY)!=0.0f;
 	if( bHaveSize)
 	{

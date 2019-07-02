@@ -84,7 +84,7 @@ bool CTacticalPointLanguageExtender::GeneratePoints(TGenerateParameters& paramet
 	{
 		generationHandled = true;
 
-		CRY_ASSERT_MESSAGE(gEnv->pAISystem != NULL, "Expected AI System to exist, but it didn't.");
+		CRY_ASSERT(gEnv->pAISystem != NULL, "Expected AI System to exist, but it didn't.");
 		IAIObjectManager* pAIObjMgr = gEnv->pAISystem->GetAIObjectManager();
 
 		IAIObjectIter* advPointObjIter = pAIObjMgr->GetFirstAIObjectInRange(OBJFILTER_TYPE, AIANCHOR_ADVANTAGE_POINT, objectPos, details.fSearchDist, true);
@@ -183,12 +183,12 @@ bool CTacticalPointLanguageExtender::BoolTest(TBoolParameters& params, TObjectTy
 
 void CTacticalPointLanguageExtender::RegisterWithTacticalPointSystem()
 {
-	CRY_ASSERT_MESSAGE(gEnv->pAISystem->GetTacticalPointSystem() != NULL, "Expecting tactical point system to exist, but it doesn't.");
+	CRY_ASSERT(gEnv->pAISystem->GetTacticalPointSystem() != NULL, "Expecting tactical point system to exist, but it doesn't.");
 	ITacticalPointSystem& tacticalPointSystem = *gEnv->pAISystem->GetTacticalPointSystem();
 
 #if defined(USE_CRY_ASSERT)
 	bool successfullyAddedLanguageExtender = tacticalPointSystem.AddLanguageExtender(this);
-	CRY_ASSERT_MESSAGE(successfullyAddedLanguageExtender, "Failed to add tactical point language extender.");
+	CRY_ASSERT(successfullyAddedLanguageExtender, "Failed to add tactical point language extender.");
 #else
 	tacticalPointSystem.AddLanguageExtender(this);
 #endif
@@ -207,12 +207,12 @@ void CTacticalPointLanguageExtender::RegisterQueries()
 
 void CTacticalPointLanguageExtender::UnregisterFromTacticalPointSystem()
 {
-	CRY_ASSERT_MESSAGE(gEnv->pAISystem->GetTacticalPointSystem() != NULL, "Expecting tactical point system to exist, but it doesn't.");
+	CRY_ASSERT(gEnv->pAISystem->GetTacticalPointSystem() != NULL, "Expecting tactical point system to exist, but it doesn't.");
 	ITacticalPointSystem& tacticalPointSystem = *gEnv->pAISystem->GetTacticalPointSystem();
 
 #if defined(USE_CRY_ASSERT)
 	bool successfullyRemovedLanguageExtender = tacticalPointSystem.RemoveLanguageExtender(this);
-	CRY_ASSERT_MESSAGE(successfullyRemovedLanguageExtender, "Failed to remove tactical point language extender.");
+	CRY_ASSERT(successfullyRemovedLanguageExtender, "Failed to remove tactical point language extender.");
 #else
 	tacticalPointSystem.RemoveLanguageExtender(this);
 #endif

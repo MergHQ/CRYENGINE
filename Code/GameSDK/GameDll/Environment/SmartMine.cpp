@@ -76,14 +76,14 @@ bool CSmartMine::ReloadExtension( IGameObject * pGameObject, const SEntitySpawnP
 	ResetGameObject();
 	SM::RegisterEvents( *this, *pGameObject );
 
-	CRY_ASSERT_MESSAGE(false, "CSmartMine::ReloadExtension not implemented");
+	CRY_ASSERT(false, "CSmartMine::ReloadExtension not implemented");
 
 	return false;
 }
 
 bool CSmartMine::GetEntityPoolSignature( TSerialize signature )
 {
-	CRY_ASSERT_MESSAGE(false, "CSmartMine::GetEntityPoolSignature not implemented");
+	CRY_ASSERT(false, "CSmartMine::GetEntityPoolSignature not implemented");
 
 	return true;
 }

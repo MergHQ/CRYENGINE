@@ -326,7 +326,7 @@ void CGameRulesCombiCaptureObjective::Init( XmlNodeRef xml )
 		const char*  tagName = xmlChild->getTag(); 
 		if (!stricmp(tagName, "Icons"))
 		{
-			CRY_ASSERT_MESSAGE(!m_useIcons, "CombiCaptureObjective xml contains more than one 'Icons' node, we only support one");
+			CRY_ASSERT(!m_useIcons, "CombiCaptureObjective xml contains more than one 'Icons' node, we only support one");
 			m_useIcons = true;
 
 			xmlChild->getAttr("priority", m_iconPriority);
@@ -692,7 +692,7 @@ void CGameRulesCombiCaptureObjective::SvUpdateCaptureScorers()
 
 					if (pCaptureEntity && pCaptureEntity->m_enabled)
 					{
-						CRY_ASSERT_MESSAGE(m_attackingTeamId-1 >= 0 && m_attackingTeamId-1 < NUM_TEAMS, "SvUpdateCaptureScorers() attackingTeamId out of range");
+						CRY_ASSERT(m_attackingTeamId-1 >= 0 && m_attackingTeamId-1 < NUM_TEAMS, "SvUpdateCaptureScorers() attackingTeamId out of range");
 
 						const int  count = pDetails->m_insideEntities[m_attackingTeamId - 1].size();
 						for(int k=0; k<count; k++)
@@ -1369,7 +1369,7 @@ void CGameRulesCombiCaptureObjective::OnEntityKilled( const HitInfo &hitInfo )
 					IGameRulesSpawningModule*  pSpawnMo = pGameRules->GetSpawningModule();
 					CRY_ASSERT(pSpawnMo);
 					const int  spawnNumLives = pSpawnMo->GetNumLives();
-					CRY_ASSERT_MESSAGE(g_pGameCVars->g_timelimitextratime <= 0.f, "Sudden Death / Extra Time not supported by this module yet. (The for-loop below will have to change for that.)");
+					CRY_ASSERT(g_pGameCVars->g_timelimitextratime <= 0.f, "Sudden Death / Extra Time not supported by this module yet. (The for-loop below will have to change for that.)");
 					int  numStats = pPlayStatsMo->GetNumPlayerStats();
 					for (int i=0; i<numStats; i++)
 					{
@@ -1545,7 +1545,7 @@ bool CGameRulesCombiCaptureObjective::AllTeamPlayersDead(const int teamId)
 	IGameRulesSpawningModule*  pSpawnMo = pGameRules->GetSpawningModule();
 	CRY_ASSERT(pSpawnMo);
 	const int  spawnNumLives = pSpawnMo->GetNumLives();
-	CRY_ASSERT_MESSAGE(g_pGameCVars->g_timelimitextratime <= 0.f, "Sudden Death / Extra Time not supported by this module yet. (The for-loop below will have to change for that.)");
+	CRY_ASSERT(g_pGameCVars->g_timelimitextratime <= 0.f, "Sudden Death / Extra Time not supported by this module yet. (The for-loop below will have to change for that.)");
 
 	int  numAttackersSpawned = 0;
 

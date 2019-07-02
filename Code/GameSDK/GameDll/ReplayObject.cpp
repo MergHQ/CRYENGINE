@@ -38,7 +38,7 @@ bool CReplayObject::ReloadExtension( IGameObject * pGameObject, const SEntitySpa
 {
 	ResetGameObject();
 
-	CRY_ASSERT_MESSAGE(false, "CReplayObject::ReloadExtension not implemented");
+	CRY_ASSERT(false, "CReplayObject::ReloadExtension not implemented");
 	
 	return false;
 }
@@ -46,7 +46,7 @@ bool CReplayObject::ReloadExtension( IGameObject * pGameObject, const SEntitySpa
 //------------------------------------------------------------------------
 bool CReplayObject::GetEntityPoolSignature( TSerialize signature )
 {
-	CRY_ASSERT_MESSAGE(false, "CReplayObject::GetEntityPoolSignature not implemented");
+	CRY_ASSERT(false, "CReplayObject::GetEntityPoolSignature not implemented");
 	
 	return true;
 }

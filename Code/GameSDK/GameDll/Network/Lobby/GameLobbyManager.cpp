@@ -529,7 +529,7 @@ void CGameLobbyManager::SetPrivateGame(CGameLobby *pLobby, const bool privateGam
 #ifndef _RELEASE
 	if(privateGame)
 	{
-		CRY_ASSERT_MESSAGE(IsPrimarySession(pLobby), "PrivateGame logic is broken!");
+		CRY_ASSERT(IsPrimarySession(pLobby), "PrivateGame logic is broken!");
 	}
 #endif
 

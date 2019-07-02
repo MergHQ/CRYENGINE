@@ -231,10 +231,10 @@ void CGameRulesStandardVictoryConditionsTeam::SetFloatsInDrawResolutionData(ESVC
 	{
 		SDrawResolutionData &resolutionData = m_drawResolutionData[inResolutionLevel];
 
-		CRY_ASSERT_MESSAGE(resolutionData.m_active, "SetFloatsInDrawResolutionData() trying to add data to an inactive resolution level");
+		CRY_ASSERT(resolutionData.m_active, "SetFloatsInDrawResolutionData() trying to add data to an inactive resolution level");
 		if (resolutionData.m_active)
 		{
-			CRY_ASSERT_MESSAGE(resolutionData.m_dataType == SDrawResolutionData::eDataType_float, "SetFloatsInDrawResolutionData() trying to add floats to a level that's not configured for floats");
+			CRY_ASSERT(resolutionData.m_dataType == SDrawResolutionData::eDataType_float, "SetFloatsInDrawResolutionData() trying to add floats to a level that's not configured for floats");
 			if (resolutionData.m_dataType == SDrawResolutionData::eDataType_float)
 			{
 				resolutionData.m_floatDataForTeams[0] = inTeam1Data;
@@ -244,7 +244,7 @@ void CGameRulesStandardVictoryConditionsTeam::SetFloatsInDrawResolutionData(ESVC
 	}
 	else
 	{
-		CRY_ASSERT_MESSAGE(0, "SetFloatsInDrawResolutionData() unhandled inResolutionLevel");
+		CRY_ASSERT(0, "SetFloatsInDrawResolutionData() unhandled inResolutionLevel");
 	}
 }
 
@@ -254,10 +254,10 @@ void CGameRulesStandardVictoryConditionsTeam::MaxFloatsToDrawResolutionData(ESVC
 	{
 		SDrawResolutionData &resolutionData = m_drawResolutionData[inResolutionLevel];
 
-		CRY_ASSERT_MESSAGE(resolutionData.m_active, "MaxFloatsToDrawResolutionData() trying to add data to an inactive resolution level");
+		CRY_ASSERT(resolutionData.m_active, "MaxFloatsToDrawResolutionData() trying to add data to an inactive resolution level");
 		if (resolutionData.m_active)
 		{
-			CRY_ASSERT_MESSAGE(resolutionData.m_dataType == SDrawResolutionData::eDataType_float, "MaxFloatsToDrawResolutionData() trying to add floats to a level that's not configured for floats");
+			CRY_ASSERT(resolutionData.m_dataType == SDrawResolutionData::eDataType_float, "MaxFloatsToDrawResolutionData() trying to add floats to a level that's not configured for floats");
 			if (resolutionData.m_dataType == SDrawResolutionData::eDataType_float)
 			{
 				resolutionData.m_floatDataForTeams[0] = max(inTeam1Data, resolutionData.m_floatDataForTeams[0]);
@@ -267,7 +267,7 @@ void CGameRulesStandardVictoryConditionsTeam::MaxFloatsToDrawResolutionData(ESVC
 	}
 	else
 	{
-		CRY_ASSERT_MESSAGE(0, "MaxFloatsToDrawResolutionData() unhandled inResolutionLevel");
+		CRY_ASSERT(0, "MaxFloatsToDrawResolutionData() unhandled inResolutionLevel");
 	}
 }
 
@@ -277,10 +277,10 @@ void CGameRulesStandardVictoryConditionsTeam::AddFloatsToDrawResolutionData(ESVC
 	{
 		SDrawResolutionData &resolutionData = m_drawResolutionData[inResolutionLevel];
 
-		CRY_ASSERT_MESSAGE(resolutionData.m_active, "AddFloatsToDrawResolutionData() trying to add data to an inactive resolution level");
+		CRY_ASSERT(resolutionData.m_active, "AddFloatsToDrawResolutionData() trying to add data to an inactive resolution level");
 		if (resolutionData.m_active)
 		{
-			CRY_ASSERT_MESSAGE(resolutionData.m_dataType == SDrawResolutionData::eDataType_float, "AddFloatsToDrawResolutionData() trying to add floats to a level that's not configured for floats");
+			CRY_ASSERT(resolutionData.m_dataType == SDrawResolutionData::eDataType_float, "AddFloatsToDrawResolutionData() trying to add floats to a level that's not configured for floats");
 			if (resolutionData.m_dataType == SDrawResolutionData::eDataType_float)
 			{
 				resolutionData.m_floatDataForTeams[0] += inTeam1Data;
@@ -290,7 +290,7 @@ void CGameRulesStandardVictoryConditionsTeam::AddFloatsToDrawResolutionData(ESVC
 	}
 	else
 	{
-		CRY_ASSERT_MESSAGE(0, "AddToDrawResolutionData() unhandled inResolutionLevel");
+		CRY_ASSERT(0, "AddToDrawResolutionData() unhandled inResolutionLevel");
 	}
 }
 
@@ -300,10 +300,10 @@ void CGameRulesStandardVictoryConditionsTeam::AddIntsToDrawResolutionData(ESVC_D
 	{
 		SDrawResolutionData &resolutionData = m_drawResolutionData[inResolutionLevel];
 
-		CRY_ASSERT_MESSAGE(resolutionData.m_active, "AddToDrawResolutionData() trying to add data to an inactive resolution level");
+		CRY_ASSERT(resolutionData.m_active, "AddToDrawResolutionData() trying to add data to an inactive resolution level");
 		if (resolutionData.m_active)
 		{
-			CRY_ASSERT_MESSAGE(resolutionData.m_dataType == SDrawResolutionData::eDataType_int, "AddIntsToDrawResolutionData() trying to add ints to a level that's not configured for ints");
+			CRY_ASSERT(resolutionData.m_dataType == SDrawResolutionData::eDataType_int, "AddIntsToDrawResolutionData() trying to add ints to a level that's not configured for ints");
 			if (resolutionData.m_dataType == SDrawResolutionData::eDataType_int)
 			{
 				resolutionData.m_intDataForTeams[0] += inTeam1Data;
@@ -313,7 +313,7 @@ void CGameRulesStandardVictoryConditionsTeam::AddIntsToDrawResolutionData(ESVC_D
 	}
 	else
 	{
-		CRY_ASSERT_MESSAGE(0, "AddToDrawResolutionData() unhandled inResolutionLevel");
+		CRY_ASSERT(0, "AddToDrawResolutionData() unhandled inResolutionLevel");
 	}
 }
 
@@ -393,7 +393,7 @@ int CGameRulesStandardVictoryConditionsTeam::TryToResolveDraw(ESVC_DrawResolutio
 					}
 					break;
 				default:
-					CRY_ASSERT_MESSAGE(0, "TryToResolveDraw() unhandled data type");
+					CRY_ASSERT(0, "TryToResolveDraw() unhandled data type");
 					break;
 			}
 
@@ -595,7 +595,7 @@ void CGameRulesStandardVictoryConditionsTeam::SvCheckOpponents()
 {
 	CRY_ASSERT(gEnv->bServer);
 
-	CRY_ASSERT_MESSAGE((g_pGame->GetHostMigrationState() == CGame::eHMS_NotMigrating), "Victory Conditions are being checked during a host migration - tell TomH about this!");
+	CRY_ASSERT((g_pGame->GetHostMigrationState() == CGame::eHMS_NotMigrating), "Victory Conditions are being checked during a host migration - tell TomH about this!");
 
 	const bool  hasOpponents = SvGameStillHasOpponentPlayers();
 	if(hasOpponents)
@@ -626,7 +626,7 @@ void CGameRulesStandardVictoryConditionsTeam::CheckTimeLimit()
 	IGameRulesRoundsModule* pRoundsModule=m_pGameRules->GetRoundsModule();
 	if (pRoundsModule)
 	{
-		CRY_ASSERT_MESSAGE(pRoundsModule->IsInProgress(), "CheckTimeLimit() is being called when a round isn't in progress. This shouldn't happen");
+		CRY_ASSERT(pRoundsModule->IsInProgress(), "CheckTimeLimit() is being called when a round isn't in progress. This shouldn't happen");
 	}
 #endif
 
@@ -958,7 +958,7 @@ void CGameRulesStandardVictoryConditionsTeam::CheckScoreLimit()
 	IGameRulesRoundsModule* pDebugRoundsModule=m_pGameRules->GetRoundsModule();
 	if (pDebugRoundsModule)
 	{
-		CRY_ASSERT_MESSAGE(pDebugRoundsModule->IsInProgress(), "CheckScoreLimit() is being called when a round isn't in progress. This shouldn't happen");
+		CRY_ASSERT(pDebugRoundsModule->IsInProgress(), "CheckScoreLimit() is being called when a round isn't in progress. This shouldn't happen");
 	}
 #endif
 
@@ -1171,7 +1171,7 @@ void CGameRulesStandardVictoryConditionsTeam::OnEndGame(int teamId, EGameOverRea
 			}
 			else
 			{
-				CRY_ASSERT_MESSAGE(0, "OnEndGame() invalid winning resolution set for a game that was resolved from a draw to a win");
+				CRY_ASSERT(0, "OnEndGame() invalid winning resolution set for a game that was resolved from a draw to a win");
 			}
 		}
 

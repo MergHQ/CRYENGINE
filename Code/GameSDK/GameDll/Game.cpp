@@ -955,7 +955,7 @@ bool CGame::Init(/*IGameFramework* pFramework*/)
 			if (!(g_pGameCVars && (g_pGameCVars->g_useOnlineServiceForDedicated) && gEnv->IsDedicated()))
 			{
 				error = pLobby->Initialise(eCLS_LAN, features, CGameBrowser::ConfigurationCallback, CGameBrowser::InitialiseCallback, this);
-				CRY_ASSERT_MESSAGE(error == eCLE_Success, "Failed to initialize LAN lobby service");
+				CRY_ASSERT(error == eCLE_Success, "Failed to initialize LAN lobby service");
 			}
 #endif // #if !defined(_RELEASE) || defined(PERFORMANCE_BUILD)
 
@@ -968,7 +968,7 @@ bool CGame::Init(/*IGameFramework* pFramework*/)
 				CryLog("Online lobby currently not supported for dedicated sever. Not initialized");
 			}
 
-			//CRY_ASSERT_MESSAGE( error == eCLE_Success, "Failed to initialize online lobby service" );
+			//CRY_ASSERT( error == eCLE_Success, "Failed to initialize online lobby service" );
 			CryWarning(VALIDATOR_MODULE_GAME, VALIDATOR_COMMENT, "Online Lobby not supported in the default SDK.");
 			m_pSquadManager = new CSquadManager();    // MUST be done before game browser is constructed
 
@@ -1830,7 +1830,7 @@ void CGame::InitPatchableModules(
 		{
 			m_pPlayerProgression->ResetUnlocks();
 
-			CRY_ASSERT_MESSAGE(m_pEquipmentLoadout == NULL, "double initialisation of equipment loadout - logic flow error");
+			CRY_ASSERT(m_pEquipmentLoadout == NULL, "double initialisation of equipment loadout - logic flow error");
 			m_pEquipmentLoadout = new CEquipmentLoadout();
 
 			if (CDataPatchDownloader* pDP = GetDataPatchDownloader())
@@ -3431,7 +3431,7 @@ void CGame::RemoveRenderSceneListener(IRenderSceneListener* pListener)
 
 void CGame::SetExclusiveControllerFromPreviousInput()
 {
-	CRY_ASSERT_MESSAGE(m_pPlayerProfileManager, "No player profile manager, controller index will not be set, this will cause problems");
+	CRY_ASSERT(m_pPlayerProfileManager, "No player profile manager, controller index will not be set, this will cause problems");
 
 	if (m_hasExclusiveController)
 	{
@@ -3850,7 +3850,7 @@ void CGame::LoadActionMaps(const char* filename)
 	{
 		// use action map without any profile stuff
 		pDefaultActionMap = pActionMapManager->GetActionMap("default");
-		CRY_ASSERT_MESSAGE(pDefaultActionMap, "'default' action map not found!");
+		CRY_ASSERT(pDefaultActionMap, "'default' action map not found!");
 	}
 
 	if (pDebugActionMap == nullptr)
@@ -4175,7 +4175,7 @@ public:
 		else
 		{
 			m_bufferOverflow = true;
-			CRY_ASSERT_MESSAGE(false, "Buffer size is not large enough");
+			CRY_ASSERT(false, "Buffer size is not large enough");
 		}
 
 		SwapEndian(data, eBigEndian); //swap back again
@@ -4193,7 +4193,7 @@ public:
 		else
 		{
 			m_bufferOverflow = true;
-			CRY_ASSERT_MESSAGE(false, "Buffer size is not large enough");
+			CRY_ASSERT(false, "Buffer size is not large enough");
 		}
 	}
 
@@ -4277,7 +4277,7 @@ void CGame::UploadSessionTelemetry(void)
 				CGameRules::TCryUserIdSet::const_iterator itUser;
 				for (itUser = users.begin(); itUser != users.end(); ++itUser)
 				{
-					CRY_ASSERT_MESSAGE(itUser->IsValid(), "CryUserId is not valid");
+					CRY_ASSERT(itUser->IsValid(), "CryUserId is not valid");
 					CryFixedStringT<CRYLOBBY_USER_GUID_STRING_LENGTH> str = itUser->get()->GetGUIDAsString();
 					buffer.WriteString(str);
 				}
@@ -5454,7 +5454,7 @@ void CGame::InviteAcceptedCallback(UCryLobbyEventData eventData, void* arg)
 
 	bool acceptInvite = true;
 
-	CRY_ASSERT_MESSAGE(pGame, "No game!");
+	CRY_ASSERT(pGame, "No game!");
 
 	// we should always accept the invite if we have no exclusive controller
 	if (pGame->m_hasExclusiveController)
@@ -5514,7 +5514,7 @@ void CGame::OnlineStateCallback(UCryLobbyEventData eventData, void* arg)
 	CryLog("[Game] OnlineStateCallback");
 
 	CGame* pGame = (CGame*)arg;
-	CRY_ASSERT_MESSAGE(pGame, "No game!");
+	CRY_ASSERT(pGame, "No game!");
 
 	SCryLobbyOnlineStateData* pOnlineStateData = eventData.pOnlineStateData;
 	if (pOnlineStateData)
@@ -5543,7 +5543,7 @@ void CGame::EthernetStateCallback(UCryLobbyEventData eventData, void* arg)
 	CryLog("[Game] EthernetStateCallback");
 
 	CGame* pGame = (CGame*)arg;
-	CRY_ASSERT_MESSAGE(pGame, "No game!");
+	CRY_ASSERT(pGame, "No game!");
 
 	SCryLobbyEthernetStateData* pEthernetStateData = eventData.pEthernetStateData;
 

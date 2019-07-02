@@ -651,7 +651,7 @@ bool CGameRules::Init( IGameObject * pGameObject )
 	{	\
 		if (!gEnv->IsEditor() || useInEditor) \
 		{ \
-			CRY_ASSERT_MESSAGE(!m_##lowerCase##Module, "Module already exists");	\
+			CRY_ASSERT(!m_##lowerCase##Module, "Module already exists");	\
 			m_##lowerCase##Module = pModulesManager->Create##name##Module(className);	\
 			if (m_##lowerCase##Module)	\
 			{	\
@@ -676,7 +676,7 @@ bool CGameRules::Init( IGameObject * pGameObject )
 					if (!ok)
 					{
 						CryLogAlways("Failed to create module %s", className);
-						CRY_ASSERT_MESSAGE(ok, "Failed to create gamerules module");
+						CRY_ASSERT(ok, "Failed to create gamerules module");
 					}
 
 #undef GAMERULES_MODULE_LIST_FUNC
@@ -1035,7 +1035,7 @@ bool CGameRules::ReloadExtension( IGameObject * pGameObject, const SEntitySpawnP
 {
 	ResetGameObject();
 
-	CRY_ASSERT_MESSAGE(false, "CGameRules::ReloadExtension not implemented");
+	CRY_ASSERT(false, "CGameRules::ReloadExtension not implemented");
 	
 	return false;
 }
@@ -1043,7 +1043,7 @@ bool CGameRules::ReloadExtension( IGameObject * pGameObject, const SEntitySpawnP
 //------------------------------------------------------------------------
 bool CGameRules::GetEntityPoolSignature( TSerialize signature )
 {
-	CRY_ASSERT_MESSAGE(false, "CGameRules::GetEntityPoolSignature not implemented");
+	CRY_ASSERT(false, "CGameRules::GetEntityPoolSignature not implemented");
 	
 	return true;
 }
@@ -2049,7 +2049,7 @@ void CGameRules::PrecacheList(XmlNodeRef precacheListNode)
 				case Precache_VehicleXML:
 					{
 						CryLog("Preload vehicle XML %s", precacheItem);
-						CRY_ASSERT_MESSAGE(CryStringUtils::stristr(precacheItem, "Vehicles/Implementations/Xml"), "Precaching XMLs is generally a bad idea and should only be used for vehicle implementation XMLs");
+						CRY_ASSERT(CryStringUtils::stristr(precacheItem, "Vehicles/Implementations/Xml"), "Precaching XMLs is generally a bad idea and should only be used for vehicle implementation XMLs");
 						if (m_cachedXmlNodesMap.find(precacheItem) == m_cachedXmlNodesMap.end())
 						{
 							XmlNodeRef ref=GetISystem()->LoadXmlFromFile(precacheItem);
@@ -2928,7 +2928,7 @@ void CGameRules::OnTextMessage(ETextMessageType type, const char *msg,
 		break;
 
 		default:
-		CRY_ASSERT_MESSAGE( !"HUD MESSAGES", "Unhandled hud message." );
+		CRY_ASSERT( !"HUD MESSAGES", "Unhandled hud message." );
 		break;
 	}
 }
@@ -3180,7 +3180,7 @@ void CGameRules::IncreasePoints(EntityId who, const SGameRulesScoreInfo & scoreI
 
 		// Part 2: send an RMI to the machine belonging to the person who scored so they can display a message!
 		IActor * whoActor =(g_pGame->GetIGameFramework()->GetIActorSystem()->GetActor(who));
-		CRY_ASSERT_MESSAGE(whoActor, string().Format("Can't give a score of %d to entity %d '%s' because it's not an actor", scoreInfo.score, who, GetEntityName(who)));
+		CRY_ASSERT(whoActor, string().Format("Can't give a score of %d to entity %d '%s' because it's not an actor", scoreInfo.score, who, GetEntityName(who)));
 		if (whoActor)
 		{
 			CGameRules::ScoreChangeParams params(scoreInfo.data.PlayerKill.victim, scoreInfo.xp, scoreInfo.type, scoreInfo.xpRsn, teamScore);
@@ -3266,12 +3266,12 @@ void CGameRules::SvAddTaggedEntity(EntityId shooter, EntityId targetId, float ti
 		break;
 	case eRTR_OnShoot:
 		{
-			CRY_ASSERT_MESSAGE(0, "ClTaggedEntity: Unhandled reason 'eRTR_OnShoot' in tagging RMI, ClTaggedEntity." ) ;
+			CRY_ASSERT(0, "ClTaggedEntity: Unhandled reason 'eRTR_OnShoot' in tagging RMI, ClTaggedEntity." ) ;
 		}
 		break;
 	default :
 		{
-			CRY_ASSERT_MESSAGE(0, "ClTaggedEntity: Unhandled reason in tagging RMI, ClTaggedEntity." );
+			CRY_ASSERT(0, "ClTaggedEntity: Unhandled reason in tagging RMI, ClTaggedEntity." );
 		}
 		break;
 	}
@@ -3535,7 +3535,7 @@ void CGameRules::RevivePlayer(IActor *pActor, const Vec3 &pos, const Ang3 &angle
 
 	if (m_statsRecordingModule)
 	{
-		CRY_ASSERT_MESSAGE(m_stateModule,"stats recording module requires an implementation of game state module to work. make sure there's one in this game modes XML");
+		CRY_ASSERT(m_stateModule,"stats recording module requires an implementation of game state module to work. make sure there's one in this game modes XML");
 		IGameRulesStateModule::EGR_GameState gameState = m_stateModule->GetGameState();
 		if (gameState==IGameRulesStateModule::EGRS_InGame || ((g_pGameCVars->g_gameRules_preGame_StartSpawnedFrozen) && gameState==IGameRulesStateModule::EGRS_PreGame))
 		{
@@ -4983,37 +4983,37 @@ bool CGameRules::IsValidPlayerTeam(int teamId) const
 
 void CGameRules::AddSpawnLocation(EntityId location, bool isInitialSpawn, bool doVisTest, const char *pGroupName)
 {
-	CRY_ASSERT_TRACE (m_spawningModule, ("No spawning module present while trying to add spawn location '%s'", GetEntityName(location)));
+	CRY_ASSERT (m_spawningModule, ("No spawning module present while trying to add spawn location '%s'", GetEntityName(location)));
 	m_spawningModule->AddSpawnLocation(location, isInitialSpawn, doVisTest, pGroupName);
 }
 
 void CGameRules::RemoveSpawnLocation(EntityId id, bool isInitialSpawn)
 {
-	CRY_ASSERT_TRACE (m_spawningModule, ("No spawning module present while trying to remove spawn location '%s'", GetEntityName(id)));
+	CRY_ASSERT (m_spawningModule, ("No spawning module present while trying to remove spawn location '%s'", GetEntityName(id)));
 	m_spawningModule->RemoveSpawnLocation(id, isInitialSpawn);
 }
 
 void CGameRules::EnableSpawnLocation(EntityId location, bool isInitialSpawn, const char *pGroupName)
 {
-	CRY_ASSERT_TRACE (m_spawningModule, ("No spawning module present while trying to add spawn location '%s'", GetEntityName(location)));
+	CRY_ASSERT (m_spawningModule, ("No spawning module present while trying to add spawn location '%s'", GetEntityName(location)));
 	m_spawningModule->EnableSpawnLocation(location, isInitialSpawn, pGroupName);
 }
 
 void CGameRules::DisableSpawnLocation(EntityId id, bool isInitialSpawn)
 {
-	CRY_ASSERT_TRACE (m_spawningModule, ("No spawning module present while trying to remove spawn location '%s'", GetEntityName(id)));
+	CRY_ASSERT (m_spawningModule, ("No spawning module present while trying to remove spawn location '%s'", GetEntityName(id)));
 	m_spawningModule->DisableSpawnLocation(id, isInitialSpawn);
 }
 
 int CGameRules::GetSpawnLocationCount() const
 {
-	CRY_ASSERT_TRACE (m_spawningModule, ("No spawning module present while trying to count spawn locations"));
+	CRY_ASSERT (m_spawningModule, ("No spawning module present while trying to count spawn locations"));
 	return m_spawningModule->GetSpawnLocationCount();
 }
 
 // EntityId CGameRules::GetSpawnLocation(int idx, bool initialSpawn) const
 // {
-// 	CRY_ASSERT_TRACE (m_spawningModule, ("No spawning module present while trying to look up spawn location %d", idx));
+// 	CRY_ASSERT (m_spawningModule, ("No spawning module present while trying to look up spawn location %d", idx));
 // 	return m_spawningModule->GetNthSpawnLocation(idx, initialSpawn);
 // }
 
@@ -5031,7 +5031,7 @@ int CGameRules::GetEnemyTeamId(int myTeamId) const
 //------------------------------------------------------------------------
 EntityId CGameRules::GetFirstSpawnLocation(int teamId, EntityId groupId) const
 {
-	CRY_ASSERT_TRACE (m_spawningModule, ("No spawning module present while trying to get first spawn location for team=%d group='%s'", teamId, GetEntityName(groupId)));
+	CRY_ASSERT (m_spawningModule, ("No spawning module present while trying to get first spawn location for team=%d group='%s'", teamId, GetEntityName(groupId)));
 
 	return m_spawningModule->GetFirstSpawnLocation(teamId);
 }
@@ -5262,7 +5262,7 @@ int CGameRules::GetHitTypeId( const uint32 crc ) const
 	}
 
 #ifdef _DEBUG
-	CRY_ASSERT_TRACE(!s_dbgAssertOnFailureToFindHitType, ("Unknown CRC \"%d\" is not one of the %d registered hit types! Please register it in Scripts/Entities/Items/HitTypes.xml file or GameRulesMPDamageHandling.cpp", crc, m_hitTypes.size()));
+	CRY_ASSERT(!s_dbgAssertOnFailureToFindHitType, "Unknown CRC \"%d\" is not one of the %d registered hit types! Please register it in Scripts/Entities/Items/HitTypes.xml file or GameRulesMPDamageHandling.cpp", crc, m_hitTypes.size());
 #endif
 
 	return 0;
@@ -5277,7 +5277,7 @@ int CGameRules::GetHitTypeId(const char *type) const
 	}
 
 #ifdef _DEBUG
-	CRY_ASSERT_TRACE(!s_dbgAssertOnFailureToFindHitType, ("\"%s\" is not one of the %d registered hit types! Please register it in Scripts/Entities/Items/HitTypes.xml file or GameRulesMPDamageHandling.cpp", type, m_hitTypes.size()));
+	CRY_ASSERT(!s_dbgAssertOnFailureToFindHitType, "\"%s\" is not one of the %d registered hit types! Please register it in Scripts/Entities/Items/HitTypes.xml file or GameRulesMPDamageHandling.cpp", type, m_hitTypes.size());
 #endif
 
 	return 0;
@@ -6037,7 +6037,7 @@ void CGameRules::CmdGiveScore(IConsoleCmdArgs *pArgs)
 		if (theEntity)
 		{
 			const int points = atoi(pArgs->GetArg(2));
-			CRY_ASSERT_MESSAGE( points < SGameRulesScoreInfo::SCORE_MAX && points > SGameRulesScoreInfo::SCORE_MIN, string().Format("Adding score for player which is out of net-serialize bounds (%d is not within [%d .. %d])", points, SGameRulesScoreInfo::SCORE_MIN, SGameRulesScoreInfo::SCORE_MAX) );
+			CRY_ASSERT( points < SGameRulesScoreInfo::SCORE_MAX && points > SGameRulesScoreInfo::SCORE_MIN, string().Format("Adding score for player which is out of net-serialize bounds (%d is not within [%d .. %d])", points, SGameRulesScoreInfo::SCORE_MIN, SGameRulesScoreInfo::SCORE_MAX) );
 			SGameRulesScoreInfo si( (EGameRulesScoreType)atoi(pArgs->GetArg(3)), static_cast<TGameRulesScoreInt>(points) );
 			g_pGame->GetGameRules()->IncreasePoints(theEntity->GetId(), si);
 		}
@@ -6058,7 +6058,7 @@ void CGameRules::CmdGiveScore(IConsoleCmdArgs *pArgs)
 #define MESSAGE_FORMAT_STRING  "Damage being done by '%s' to '%s' (with weapon '%s' of class %s, hit type %d '%s') dir={%.2f %.2f %.2f} %s [%s]"
 #define MESSAGE_PARAMETERS     GetEntityName(shooter), GetEntityName(target), GetEntityName(weapon), weaponEntity ? weaponEntity->GetClass()->GetName() : "N/A", hitType, GetHitType(hitType), dir.x, dir.y, dir.z
 #define DO_WARNING(a)          CryWarning(VALIDATOR_MODULE_GAME, VALIDATOR_WARNING, MESSAGE_FORMAT_STRING, MESSAGE_PARAMETERS, a, funcName)
-#define DO_ASSERT(a)           CRY_ASSERT_TRACE(false, (MESSAGE_FORMAT_STRING, MESSAGE_PARAMETERS, a, funcName))
+#define DO_ASSERT(a)           CRY_ASSERT(false, (MESSAGE_FORMAT_STRING, MESSAGE_PARAMETERS, a, funcName))
 
 void CGameRules::SanityCheckHitData(const Vec3 & dir, EntityId shooter, EntityId target, EntityId weapon, uint16 hitType, const char * funcName)
 {
@@ -7872,7 +7872,7 @@ IHostMigrationEventListener::EHostMigrationReturn CGameRules::OnInitiate(SHostMi
 		}
 		else
 		{
-			CRY_ASSERT_MESSAGE(false, "Failed to find client actor when initiating a host migration");
+			CRY_ASSERT(false, "Failed to find client actor when initiating a host migration");
 			return IHostMigrationEventListener::Listener_Terminate;
 		}
 
@@ -8718,8 +8718,8 @@ bool CGameRules::HUDScoreElementTimerShouldCountDown() const
 //------------------------------------------------------------------------
 EDisconnectionCause CGameRules::SvGetLastTeamDiscoCause(const int teamId) const
 {
-	CRY_ASSERT_MESSAGE(GetTeamCount() > 0, "This team-game function is being called in a non-team based game mode");
-	CRY_ASSERT_MESSAGE((teamId == 1) || (teamId == 2), "An invalid team id was passed to this team-game function");
+	CRY_ASSERT(GetTeamCount() > 0, "This team-game function is being called in a non-team based game mode");
+	CRY_ASSERT((teamId == 1) || (teamId == 2), "An invalid team id was passed to this team-game function");
 		
 	EDisconnectionCause cause = m_svLastTeamDiscoCause[teamId - 1];
 
@@ -8736,7 +8736,7 @@ EDisconnectionCause CGameRules::SvGetLastDiscoCause() const
 	}
 	else
 	{
-		CRY_ASSERT_MESSAGE(0, "This non-team function is being called in a team-based game mode");
+		CRY_ASSERT(0, "This non-team function is being called in a team-based game mode");
 	}
 	return cause;
 }
@@ -8831,7 +8831,7 @@ void CGameRules::SetupForbiddenAreaShapesHelpers()
 			EntityId forbiddenAreaId = m_forbiddenAreas[i];
 #if defined(USE_CRY_ASSERT)
 			const bool success = pAreaManager->GetLinkedAreas(forbiddenAreaId, &shapeArray[0], shapeArrayCount);
-			CRY_ASSERT_MESSAGE(success, "increasing k_shapeArraySize will fix this, or linking less entities to the area");
+			CRY_ASSERT(success, "increasing k_shapeArraySize will fix this, or linking less entities to the area");
 #else
 			pAreaManager->GetLinkedAreas(forbiddenAreaId, &shapeArray[0], shapeArrayCount);
 #endif
@@ -8926,7 +8926,7 @@ uint8 CGameRules::GetRequiredPlayerTypesForGameMode()
 			requiredPlayerTypes = k_rptfgm_standard|k_rptfgm_hunter|k_rptfgm_hunter_marine;
 			break;
 		default:
-			CRY_ASSERT_MESSAGE(0, string().Format("CGameRules::GetRequiredPlayerTypesForGameMode() found unhandled gameMode=%d", m_gameMode));
+			CRY_ASSERT(0, string().Format("CGameRules::GetRequiredPlayerTypesForGameMode() found unhandled gameMode=%d", m_gameMode));
 			break;
 	}
 
@@ -9020,7 +9020,7 @@ uint8 CGameRules::GetRequiredPlayerTypeForConversation(int speakingActorTeamId, 
 			}
 			break;
 		default:
-			CRY_ASSERT_MESSAGE(0, string().Format("CGameRules::GetRequiredPlayerTypeForConversation() found unhandled gameMode=%d", m_gameMode));
+			CRY_ASSERT(0, string().Format("CGameRules::GetRequiredPlayerTypeForConversation() found unhandled gameMode=%d", m_gameMode));
 			break;
 	}
 

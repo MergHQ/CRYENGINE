@@ -128,14 +128,14 @@ bool CDoorPanel::ReloadExtension( IGameObject * pGameObject, const SEntitySpawnP
 	ResetGameObject();
 	DP::RegisterEvents( *this, *pGameObject );
 
-	CRY_ASSERT_MESSAGE(false, "CDoorPanel::ReloadExtension not implemented");
+	CRY_ASSERT(false, "CDoorPanel::ReloadExtension not implemented");
 
 	return false;
 }
 
 bool CDoorPanel::GetEntityPoolSignature( TSerialize signature )
 {
-	CRY_ASSERT_MESSAGE(false, "CDoorPanel::GetEntityPoolSignature not implemented");
+	CRY_ASSERT(false, "CDoorPanel::GetEntityPoolSignature not implemented");
 
 	return true;
 }

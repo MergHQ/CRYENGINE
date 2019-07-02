@@ -531,7 +531,7 @@ bool CPlayerMindGameBeamEffect::RetrieveStartPositionOnPlayer(Vec3* leftStartPos
 	case ConnectionPositionOnPlayer_Hands:
 		IF_UNLIKELY (!RetrievePlayerHandPositions(leftStartPosOnPlayer, rightStartPosOnPlayer))
 		{
-			CRY_ASSERT_MESSAGE(false, "CPlayerMindGameBeamEffect::RetrieveStartPositionOnPlayer(): Failed to obtain player's hand position in world-space.");
+			CRY_ASSERT(false, "CPlayerMindGameBeamEffect::RetrieveStartPositionOnPlayer(): Failed to obtain player's hand position in world-space.");
 			return false;
 		}
 		return true;
@@ -539,7 +539,7 @@ bool CPlayerMindGameBeamEffect::RetrieveStartPositionOnPlayer(Vec3* leftStartPos
 	case ConnectionPositionOnPlayer_WaistArea:
 		IF_UNLIKELY (!RetrievePlayerWaistPositions(leftStartPosOnPlayer, rightStartPosOnPlayer))
 		{
-			CRY_ASSERT_MESSAGE(false, "CPlayerMindGameBeamEffect::RetrieveStartPositionOnPlayer(): Failed to obtain player's waist position in world-space.");
+			CRY_ASSERT(false, "CPlayerMindGameBeamEffect::RetrieveStartPositionOnPlayer(): Failed to obtain player's waist position in world-space.");
 			return false;
 		}
 		return true;

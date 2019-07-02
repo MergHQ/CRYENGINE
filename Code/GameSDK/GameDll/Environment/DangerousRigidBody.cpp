@@ -116,14 +116,14 @@ bool CDangerousRigidBody::ReloadExtension( IGameObject * pGameObject, const SEnt
 {
 	ResetGameObject();
 
-	CRY_ASSERT_MESSAGE(false, "CDangerousRigidBody::ReloadExtension not implemented");
+	CRY_ASSERT(false, "CDangerousRigidBody::ReloadExtension not implemented");
 
 	return true;
 }
 
 bool CDangerousRigidBody::GetEntityPoolSignature( TSerialize signature )
 {
-	CRY_ASSERT_MESSAGE(false, "CDangerousRigidBody::GetEntityPoolSignature not implemented");
+	CRY_ASSERT(false, "CDangerousRigidBody::GetEntityPoolSignature not implemented");
 
 	return true;
 }

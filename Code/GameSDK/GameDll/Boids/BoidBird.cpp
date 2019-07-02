@@ -289,7 +289,7 @@ void CBoidBird::UpdateOnGroundAction(float dt, SBoidContext& bc)
 			break;
 
 		default:
-			CRY_ASSERT_MESSAGE(0, "CBoidBird::UpdateOnGroundAction: omitted EOnGroundStatus");
+			CRY_ASSERT(0, "CBoidBird::UpdateOnGroundAction: omitted EOnGroundStatus");
 		}
 	}
 }	

@@ -87,7 +87,7 @@ public:
 	{
 		const size_t memoryUsed = m_memoryPool.GetTotalMemory().nUsed;
 
-		CRY_ASSERT_MESSAGE(memoryUsed == 0, "Freeing memory pool, but there is still objects using it!");
+		CRY_ASSERT(memoryUsed == 0, "Freeing memory pool, but there is still objects using it!");
 		if (memoryUsed != 0)
 		{
 			CryLog("WeaponComponentAllocator: Memory pool for '%s' will be freed but is still in use! Current used size '%" PRISIZE_T "'", TImplementation::GetStaticType()->GetName(), memoryUsed);
@@ -320,8 +320,8 @@ void CWeaponSystem::LoadItemParams(IItemSystem* pItemSystem)
 			return;
 		}
 
-		CRY_ASSERT_MESSAGE(pItemShared, "Failed to create item params");
-		CRY_ASSERT_MESSAGE(itemRootNodeParams != NULL, "No xml found for item params");
+		CRY_ASSERT(pItemShared, "Failed to create item params");
+		CRY_ASSERT(itemRootNodeParams != NULL, "No xml found for item params");
 
 		if (!itemRootNodeParams)
 		{
@@ -343,7 +343,7 @@ void CWeaponSystem::LoadItemParams(IItemSystem* pItemSystem)
 			const char* baseItemFile = pItemSystem->GetItemParamsDescriptionFile(inheritItem);
 			overrideParamsNode = itemRootNodeParams;
 			itemRootNodeParams = gEnv->pSystem->LoadXmlFromFile(baseItemFile);
-			CRY_ASSERT_MESSAGE(itemRootNodeParams != NULL, "No xml found for base item params");
+			CRY_ASSERT(itemRootNodeParams != NULL, "No xml found for base item params");
 
 			m_weaponAlias.AddAlias(inheritItem, pItemName);
 		}
@@ -362,7 +362,7 @@ void CWeaponSystem::LoadItemParams(IItemSystem* pItemSystem)
 			{
 				CWeaponSharedParams* pWeaponShared = pStorage->GetWeaponSharedParameters(pItemName, true);
 
-				CRY_ASSERT_MESSAGE(pWeaponShared, "Failed to create weapon params");
+				CRY_ASSERT(pWeaponShared, "Failed to create weapon params");
 
 				if(pWeaponShared)
 				{
@@ -458,7 +458,7 @@ void CWeaponSystem::DestroyFireModePlugin(IFireModePlugin* pObject)
 	}
 	else
 	{
-		CRY_ASSERT_MESSAGE(false, "Destroy fire mode plugin couldn't be executed, fire mode plugin type destructor method not found, leaking memory!");
+		CRY_ASSERT(false, "Destroy fire mode plugin couldn't be executed, fire mode plugin type destructor method not found, leaking memory!");
 		CryLogAlways("Destroy fire mode plugin couldn't be executed for fire mode plugin type '%s', leaking memory!", pObject->GetRunTimeType()->GetName());
 	}
 }
@@ -493,7 +493,7 @@ void CWeaponSystem::DestroyFireMode(CFireMode* pObject)
 	}
 	else
 	{
-		CRY_ASSERT_MESSAGE(false, "Destroy fire mode couldn't be executed, fire mode type destructor method not found, leaking memory!");
+		CRY_ASSERT(false, "Destroy fire mode couldn't be executed, fire mode type destructor method not found, leaking memory!");
 		CryLogAlways("Destroy fire mode couldn't be executed for fire mode type '%s', leaking memory!", pObject->GetRunTimeType()->GetName());
 	}
 }
@@ -533,7 +533,7 @@ void CWeaponSystem::DestroyZoomMode(CIronSight* pObject)
 	}
 	else
 	{
-		CRY_ASSERT_MESSAGE(false, "Destroy zoom mode couldn't be executed, zoom mode type destructor method not found, leaking memory!");
+		CRY_ASSERT(false, "Destroy zoom mode couldn't be executed, zoom mode type destructor method not found, leaking memory!");
 		CryLogAlways("Destroy zoom mode couldn't be executed for zoom mode type '%s', leaking memory!", pObject->GetRunTimeType()->GetName());
 	}
 }
@@ -888,7 +888,7 @@ void CWeaponSystem::DebugGun(IConsoleCmdArgs *args)
 
 	if(!CItem::sDebugGunClass)
 	{
-		CRY_ASSERT_MESSAGE(0, "DebugGun is not defined.");
+		CRY_ASSERT(0, "DebugGun is not defined.");
 		return;
 	}
 
@@ -921,7 +921,7 @@ void CWeaponSystem::RefGun(IConsoleCmdArgs *args)
 
 		if(!CItem::sRefWeaponClass)
 		{
-			CRY_ASSERT_MESSAGE(0, "RefWeapon is not defined.");
+			CRY_ASSERT(0, "RefWeapon is not defined.");
 			return;
 		}
 

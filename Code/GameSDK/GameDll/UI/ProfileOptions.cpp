@@ -60,7 +60,7 @@ void CProfileOptions::Init()
 	}
 
 	IPlayerProfileManager* const profileManager = g_pGame->GetIGameFramework()->GetIPlayerProfileManager();
-	CRY_ASSERT_MESSAGE(profileManager != NULL, "IPlayerProfileManager doesn't exist - profile options will not be updated");
+	CRY_ASSERT(profileManager != NULL, "IPlayerProfileManager doesn't exist - profile options will not be updated");
 	if(profileManager)
 		profileManager->AddListener(this, false);
 }

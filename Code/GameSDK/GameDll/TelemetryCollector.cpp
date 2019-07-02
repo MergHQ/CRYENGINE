@@ -123,7 +123,7 @@ class CTelemetryMD5 : public ITelemetryProducer
 
 																// could code this so it could write <20 bytes of the hash and finish the rest on a subsequent call, but it shouldn't be neccessary as the callers don't generally work
 																// with buffers so small
-																CRY_ASSERT_MESSAGE(inBufferSize>=20,"MT : insuffient space for md5 hash to be written");
+																CRY_ASSERT(inBufferSize>=20,"MT : insuffient space for md5 hash to be written");
 
 																switch (m_state)
 																{
@@ -252,7 +252,7 @@ CTelemetryCollector::CTelemetryCollector() :
 	assert(s_telemetryCollector==NULL);
 	s_telemetryCollector=this;
 
-	CRY_ASSERT_MESSAGE(k_largeFileSubmitChunkMaxDataSize > 0, string().Format("CTelemetryCollector() k_largeFileSubmitChunkSize=%d has been set smaller than k_maxHttpHeaderSize=%d", k_largeFileSubmitChunkSize, k_maxHttpHeaderSize));
+	CRY_ASSERT(k_largeFileSubmitChunkMaxDataSize > 0, string().Format("CTelemetryCollector() k_largeFileSubmitChunkSize=%d has been set smaller than k_maxHttpHeaderSize=%d", k_largeFileSubmitChunkSize, k_maxHttpHeaderSize));
 
 	m_telemetryCompressionLevel=REGISTER_INT("g_telemetry_compression_level",2,0,"zlib deflateInit2 level value");
 	m_telemetryCompressionWindowBits=REGISTER_INT("g_telemetry_compression_window_bits",24,0,"zlib deflateInit2 window bits");
@@ -475,7 +475,7 @@ bool CTelemetryCollector::ShouldUploadGameLog(bool forPreviousSession)
 		}
 		else if (m_telemetryUploadGameLog->GetIVal() == 2)
 		{
-			CRY_ASSERT_MESSAGE(m_previousSessionCrashChecked, "ShouldUploadGameLog() is trying to upload gamelogs only if we've crashed, yet we've not actually tested whether we've crashed yet!!!");
+			CRY_ASSERT(m_previousSessionCrashChecked, "ShouldUploadGameLog() is trying to upload gamelogs only if we've crashed, yet we've not actually tested whether we've crashed yet!!!");
 			if (m_previousSessionCrashed)
 			{
 				should=true;
@@ -1186,7 +1186,7 @@ int CTelemetryCollector::MakePostHeader(
 	}
 	else
 	{
-		CRY_ASSERT_MESSAGE((inFlags&k_tf_isStream) == 0, "Streaming is only supported with chunked uploads");
+		CRY_ASSERT((inFlags&k_tf_isStream) == 0, "Streaming is only supported with chunked uploads");
 
 		httpPostHeader.Format("POST %s/filestore.php?filename=%s&session2=%s&client=%s&platform=%s&isserver=%d&append=%d&tags=%s HTTP/1.0\n"
 			"Content-Type: %s\n"
@@ -1200,7 +1200,7 @@ int CTelemetryCollector::MakePostHeader(
 
 	if (len>=inMaxBufferSize)
 	{
-		CRY_ASSERT_MESSAGE(len<inMaxBufferSize,"Http header too long for provided buffer");
+		CRY_ASSERT(len<inMaxBufferSize,"Http header too long for provided buffer");
 		len=inMaxBufferSize;
 	}
 
@@ -1349,7 +1349,7 @@ bool CTelemetryCollector::SubmitTelemetryProducer(
 	inFlags |= k_tf_chunked;	// Telemetry producers must be chunked
 	if ((inFlags & k_tf_isStream) && (inFlags & k_tf_md5Digest))
 	{
-		CRY_ASSERT_MESSAGE(false, "Streamed uploads cannot use MD5!");
+		CRY_ASSERT(false, "Streamed uploads cannot use MD5!");
 		delete pInProducer;
 		return false;
 	}
@@ -1399,7 +1399,7 @@ bool CTelemetryCollector::TrySubmitTelemetryProducer(
 			cry_fixed_size_strcpy(pLargeSubmitData->m_remoteFileName,"<telemetry producer>");		// can always extract name from post header later if it is needed
 
 			assert(inFlags&k_tf_chunked);		// Telemetry producers must be chunked
-			CRY_ASSERT_MESSAGE(inLen<=int(sizeof(pLargeSubmitData->m_postHeaderContents)),"http post header too long, truncating - message liable to get lost");
+			CRY_ASSERT(inLen<=int(sizeof(pLargeSubmitData->m_postHeaderContents)),"http post header too long, truncating - message liable to get lost");
 			inLen=min(inLen,int(sizeof(pLargeSubmitData->m_postHeaderContents)));
 			memcpy(pLargeSubmitData->m_postHeaderContents,inPostHeader,inLen);
 			pLargeSubmitData->m_postHeaderSize=inLen;
@@ -1464,7 +1464,7 @@ bool CTelemetryCollector::SubmitLargeFile(
 
 			if (inHintFileData && inHintFileDataLength>0)
 			{
-				CRY_ASSERT_MESSAGE(inHintFileDataLength < k_maxHttpHeaderSize, "SubmitLargeFile() hintFile passed in is too big.. not using it!");
+				CRY_ASSERT(inHintFileDataLength < k_maxHttpHeaderSize, "SubmitLargeFile() hintFile passed in is too big.. not using it!");
 				if (inHintFileDataLength < k_maxHttpHeaderSize)
 				{
 					memcpy(pLargeSubmitData->m_postHeaderContents, inHintFileData, inHintFileDataLength);
@@ -1584,7 +1584,7 @@ ITelemetryProducer::EResult CTelemetryCompressor::ProduceTelemetry(
 	EResult			result=eTS_EndOfStream;
 	CTelemetryCollector			*tc=CTelemetryCollector::GetTelemetryCollector();
 
-	CRY_ASSERT_MESSAGE(maxUncompressedDataSize>=inMinRequired,"CTelemetryCompressor the minimum requested amount of data doesn't leave enough space in the buffer to produce a compressed copy");
+	CRY_ASSERT(maxUncompressedDataSize>=inMinRequired,"CTelemetryCompressor the minimum requested amount of data doesn't leave enough space in the buffer to produce a compressed copy");
 
 	*pOutWritten=0;
 
@@ -1731,7 +1731,7 @@ ITelemetryProducer::EResult CTelemetryStreamCipher::ProduceTelemetry(
 {
 	int					half=inBufferSize/2;
 
-	CRY_ASSERT_MESSAGE(inMinRequired<=half,"min required is too great for the size of the output buffer in CTelemetryStreamCipher");
+	CRY_ASSERT(inMinRequired<=half,"min required is too great for the size of the output buffer in CTelemetryStreamCipher");
 
 	EResult result = m_pSource->ProduceTelemetry(pOutBuffer+half,min(half,inMinRequired),half,pOutWritten);
 
@@ -2141,7 +2141,7 @@ void CTelemetryCollector::CreateEventStream()
 	else
 	{
 		// This currently may happen because NetSerializeTelemetry uses eEA_GameServerStatic as does USE_PC_PREMATCH
-		//CRY_ASSERT_MESSAGE(false, "Events stream already exists!");
+		//CRY_ASSERT(false, "Events stream already exists!");
 	}
 #endif
 }
@@ -2206,7 +2206,7 @@ void CTelemetryCollector::LogEvent(const char* eventName, float value)
 	else
 	{
 		CryLog("Telemetry Event: %s - %f", eventName, value);
-		CRY_ASSERT_MESSAGE(false, "Unable to log event, event stream is not open");
+		CRY_ASSERT(false, "Unable to log event, event stream is not open");
 	}
 #endif
 }
@@ -2233,7 +2233,7 @@ void CTelemetryCollector::UpdateLargeFileChunkPostHeader(
 		hintFileString.replace("&append=0", "&append=1");
 	}
 
-	CRY_ASSERT_MESSAGE(hintFileString.length()==pInLargeFile->m_postHeaderSize, "CTelemetryCollector::MakeLargeFileChunkPostHeader() header length unexpectedly changed");		// if the header len changes it may overwrite the first few bytes of the payload
+	CRY_ASSERT(hintFileString.length()==pInLargeFile->m_postHeaderSize, "CTelemetryCollector::MakeLargeFileChunkPostHeader() header length unexpectedly changed");		// if the header len changes it may overwrite the first few bytes of the payload
 
 	memcpy(pInLargeFile->m_chunkData,hintFileString.c_str(),hintFileString.length());
 }
@@ -2293,7 +2293,7 @@ void CTelemetryCollector::SubmitChunkOfALargeFile(
 			break;
 
 		default:
-			CRY_ASSERT_MESSAGE(0,"unexpected result from ITelemetryProducer::ProduceTelemetry()");
+			CRY_ASSERT(0,"unexpected result from ITelemetryProducer::ProduceTelemetry()");
 			break;
 	}
 }
@@ -2388,7 +2388,7 @@ void CTelemetryCollector::UpdateTransfersInProgress(int inDiff)
 	m_transfersCounter=newValue;
 	m_transferCounterMutex.Unlock();
 
-	CRY_ASSERT_MESSAGE(newValue>=0,"CTelemetryCollector transfers in progress counter has become negative - internal state error in telemetry collector or TCP layer");
+	CRY_ASSERT(newValue>=0,"CTelemetryCollector transfers in progress counter has become negative - internal state error in telemetry collector or TCP layer");
 }
 
 // uploads data to the telemetry server and logs the transaction if required
@@ -2484,7 +2484,7 @@ bool CTelemetryCollector::SubmitFromMemory(
 	bool				success=false;
 	bool				shouldSubmit=ShouldSubmitTelemetry();
 
-	CRY_ASSERT_MESSAGE((inFlags&~(k_tf_appendToRemoteFile))==0,"unsupported flags passed to SubmitFromMemory");
+	CRY_ASSERT((inFlags&~(k_tf_appendToRemoteFile))==0,"unsupported flags passed to SubmitFromMemory");
 
 	if (shouldSubmit)
 	{
@@ -2799,7 +2799,7 @@ void CTelemetryBuffer::DumpToFile(const char *filename)
 		for (offset = 0; offset < m_pBuffer->size(); offset+=m_structSize)
 		{
 			ITelemetryBufferData *packet = (ITelemetryBufferData *) m_pBuffer->at(offset);
-			CRY_ASSERT_MESSAGE(packet->size == m_structSize, "Struct size is not correct, something went wrong here");
+			CRY_ASSERT(packet->size == m_structSize, "Struct size is not correct, something went wrong here");
 			CryFixedStringT<1024> oneString;
 			FormatBufferData(packet, oneString);
 
@@ -2918,12 +2918,12 @@ ITelemetryProducer::EResult CTelemetryBufferProducer::ProduceTelemetry(
 	*pOutWritten = bytesWritten;
 	if (m_offset >= m_length)
 	{
-		CRY_ASSERT_MESSAGE(m_offset == m_length, "The offset should be exactly equal to the length of the buffer when finished streaming");
+		CRY_ASSERT(m_offset == m_length, "The offset should be exactly equal to the length of the buffer when finished streaming");
 		return eTS_EndOfStream;
 	}
 	else
 	{
-		CRY_ASSERT_MESSAGE(*pOutWritten >= inMinRequired, "Haven't written enough data to the buffer");
+		CRY_ASSERT(*pOutWritten >= inMinRequired, "Haven't written enough data to the buffer");
 		return eTS_Available;
 	}
 }

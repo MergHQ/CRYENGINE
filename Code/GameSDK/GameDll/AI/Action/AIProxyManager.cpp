@@ -69,7 +69,7 @@ IAIActorProxy* CAIProxyManager::CreateActorProxy(EntityId entityID)
 		TAIProxyMap::iterator it = m_aiProxyMap.find(entityID);
 		if (it != m_aiProxyMap.end())
 		{
-			CRY_ASSERT_TRACE(false, ("Entity ID %d already has an actor proxy! possible memory leak", entityID));
+			CRY_ASSERT(false, "Entity ID %d already has an actor proxy! possible memory leak", entityID);
 			it->second = pResult;
 		}
 		else

@@ -978,7 +978,7 @@ void CDeathCameraMode::Activate(const CPlayer& clientPlayer)
 	const bool wasKilled = pKillerActor && pKillerActor->IsPlayer() && (m_killerEid != m_subjectEid);
 	CGameRules* pGameRules = g_pGame->GetGameRules();
 	IGameRulesSpectatorModule* pSpectatorModule = pGameRules->GetSpectatorModule();
-	CRY_ASSERT_MESSAGE( pSpectatorModule, "Needs a spectator module to change the mode!");
+	CRY_ASSERT( pSpectatorModule, "Needs a spectator module to change the mode!");
 
 	float deathCam = 0.f;
 	float killerCam = 0.f;
@@ -1031,7 +1031,7 @@ bool CDeathCameraMode::UpdateView(const CPlayer& clientPlayer, SViewParams& view
 		{
 			CGameRules *pGameRules = g_pGame->GetGameRules();
 			IGameRulesSpectatorModule *pSpectatorModule = pGameRules->GetSpectatorModule();
-			CRY_ASSERT_MESSAGE( pSpectatorModule, "Needs a spectator module to change the mode!");
+			CRY_ASSERT( pSpectatorModule, "Needs a spectator module to change the mode!");
 
 			if( m_gotoKillerCam && (gEnv->pEntitySystem->GetEntity(m_killerEid) != NULL) )
 			{

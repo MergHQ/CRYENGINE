@@ -633,7 +633,7 @@ void CPlayerStateLedge::UpdateNearestGrabbableLedge( const CPlayer& player, SLed
 
 SLedgeTransitionData::EOnLedgeTransition CPlayerStateLedge::GetBestTransitionToLedge(const CPlayer& player, const Vec3& refPosition, const LedgeId& ledgeId, SLedgeTransitionData* pLedgeState)
 {
-	CRY_ASSERT_MESSAGE(ledgeId.IsValid(), "Ledge index should be valid");
+	CRY_ASSERT(ledgeId.IsValid(), "Ledge index should be valid");
 
 	const CLedgeManager* pLedgeManager = g_pGame->GetLedgeManager();
 	const SLedgeInfo detectedLedge = pLedgeManager->GetLedgeById(ledgeId);
@@ -780,7 +780,7 @@ void CPlayerStateLedge::StartLedgeBlending( CPlayer& player, const SLedgeBlendin
 
 bool CPlayerStateLedge::IsCharacterMovingTowardsLedge( const CPlayer& player, const LedgeId& ledgeId)
 {
-	CRY_ASSERT_MESSAGE(ledgeId.IsValid(), "Ledge index should be valid");
+	CRY_ASSERT(ledgeId.IsValid(), "Ledge index should be valid");
 
 	// if stick is pressed forwards, always take this ledge
 	// 0.2f --> big enough to allow some room for stick deadzone
@@ -811,7 +811,7 @@ bool CPlayerStateLedge::IsCharacterMovingTowardsLedge( const CPlayer& player, co
 //----------------------------------------------------------
 bool CPlayerStateLedge::IsLedgePointingTowardCharacter(const CPlayer& player, const LedgeId& ledgeId)
 {
-	CRY_ASSERT_MESSAGE(ledgeId.IsValid(), "Ledge index should be valid");
+	CRY_ASSERT(ledgeId.IsValid(), "Ledge index should be valid");
 
 	const CLedgeManager* pLedgeManager = g_pGame->GetLedgeManager();
 	const SLedgeInfo detectedLedge = pLedgeManager->GetLedgeById(ledgeId);

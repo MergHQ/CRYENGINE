@@ -252,7 +252,7 @@ void CMiscAnnouncer::InitXML(XmlNodeRef root)
 				else
 				{
 					CryLog("CMiscAnnouncer::InitXML() failed to find entityClass for pWeaponClassName=%s", pWeaponClassName);
-					CRY_ASSERT_MESSAGE(0, string().Format("CMiscAnnouncer::InitXML() failed to find entityClass for pWeaponClassName=%s", pWeaponClassName));
+					CRY_ASSERT(0, string().Format("CMiscAnnouncer::InitXML() failed to find entityClass for pWeaponClassName=%s", pWeaponClassName));
 				}
 			}
 			else

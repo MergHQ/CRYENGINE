@@ -1510,7 +1510,7 @@ void CActor::StandUp()
 //------------------------------------------------------
 void CActor::OnSetStance(EStance desiredStance)
 {
-	CRY_ASSERT_TRACE(desiredStance >= 0 && desiredStance < STANCE_LAST, ("%s '%s' desired stance %d is out of range 0-%d", GetEntity()->GetClass()->GetName(), GetEntity()->GetName(), desiredStance, STANCE_LAST - 1));
+	CRY_ASSERT(desiredStance >= 0 && desiredStance < STANCE_LAST, "%s '%s' desired stance %d is out of range 0-%d", GetEntity()->GetClass()->GetName(), GetEntity()->GetName(), desiredStance, STANCE_LAST - 1);
 
 #if ENABLE_GAME_CODE_COVERAGE || ENABLE_SHARED_CODE_COVERAGE
 	if (m_desiredStance != desiredStance)
@@ -5888,7 +5888,7 @@ void CActor::OnSpectateModeStatusChanged( bool spectate )
 			CGameRules* pGameRules = g_pGame->GetGameRules();
 			if(!spectate)
 			{
-				CRY_ASSERT_MESSAGE( pGameRules->GetTeam(GetEntityId()) == 0, "CActor::SetSpectateStatus - Trying to add ex-spectator to a team but they already have a team" );
+				CRY_ASSERT( pGameRules->GetTeam(GetEntityId()) == 0, "CActor::SetSpectateStatus - Trying to add ex-spectator to a team but they already have a team" );
 				pGameRules->GetPlayerSetupModule()->OnActorJoinedFromSpectate(this, channelId);
 			}
 			else
@@ -5943,7 +5943,7 @@ void CActor::SetupLocalPlayer()
 
 void CActor::RequestChangeSpectatorStatus( bool spectate )
 {
-	CRY_ASSERT_MESSAGE(IsClient(), "CActor::RequestChangeSpectatorStatus is being called on a non-client player");
+	CRY_ASSERT(IsClient(), "CActor::RequestChangeSpectatorStatus is being called on a non-client player");
 
 	if(!CanSwitchSpectatorStatus())
 	{

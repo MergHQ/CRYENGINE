@@ -816,7 +816,7 @@ public:
 	ILINE const QuatT &GetBoneTransform(int ID) const
 	{
 		CRY_ASSERT((ID >= 0) && (ID < BONE_ID_NUM));
-		CRY_ASSERT_MESSAGE(m_boneIDs[ID] >= 0, string().Format("Accessing unmapped bone %s in %s", s_BONE_ID_NAME[ID], GetEntity()->GetName()));
+		CRY_ASSERT(m_boneIDs[ID] >= 0, string().Format("Accessing unmapped bone %s in %s", s_BONE_ID_NAME[ID], GetEntity()->GetName()));
 
 		return m_boneTrans[ID];
 	}

@@ -118,7 +118,7 @@ public:
 			break;
 
 		default:
-			CRY_ASSERT_MESSAGE(false, "CFlowNode_IsInArea::OnEntityEvent Received unhandled event");
+			CRY_ASSERT(false, "CFlowNode_IsInArea::OnEntityEvent Received unhandled event");
 			break;
 		}
 	}

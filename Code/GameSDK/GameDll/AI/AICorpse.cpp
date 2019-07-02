@@ -152,14 +152,14 @@ bool CAICorpse::ReloadExtension( IGameObject * pGameObject, const SEntitySpawnPa
 
 	RegisterEvents( *this, *pGameObject );
 
-	CRY_ASSERT_MESSAGE(false, "CAICorpse::ReloadExtension not implemented");
+	CRY_ASSERT(false, "CAICorpse::ReloadExtension not implemented");
 
 	return false;
 }
 
 bool CAICorpse::GetEntityPoolSignature( TSerialize signature )
 {
-	CRY_ASSERT_MESSAGE(false, "CAICorpse::GetEntityPoolSignature not implemented");
+	CRY_ASSERT(false, "CAICorpse::GetEntityPoolSignature not implemented");
 
 	return true;
 }

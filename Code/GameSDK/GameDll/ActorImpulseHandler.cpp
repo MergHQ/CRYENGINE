@@ -289,7 +289,7 @@ void CActorImpulseHandler::ApplyDeathImpulse(const HitInfo& lastHit)
 	if (!m_pParams || (lastHit.damage < 0.01f))
 		return;
 
-	//CRY_ASSERT_MESSAGE(m_actor.GetEntity()->GetPhysics() && (m_actor.GetEntity()->GetPhysics()->GetType() == PE_ARTICULATED), "This method is intended to work only for ragdolls!");
+	//CRY_ASSERT(m_actor.GetEntity()->GetPhysics() && (m_actor.GetEntity()->GetPhysics()->GetType() == PE_ARTICULATED), "This method is intended to work only for ragdolls!");
 
 	//************** Dir calculation	
 	Vec3 dir = lastHit.dir;
@@ -667,7 +667,7 @@ void CActorImpulseHandler::LoadDeathImpulses(const IItemParamsNode* pDeathImpuls
 		}
 		else
 		{
-			CRY_ASSERT_TRACE(false, ("Unexpected element: %s", pChild->GetName()));
+			CRY_ASSERT(false, "Unexpected element: %s", pChild->GetName());
 		}
 	}
 

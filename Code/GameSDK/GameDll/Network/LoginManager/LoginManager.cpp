@@ -426,7 +426,7 @@ void CLoginManager::OnPasswordRequired()
 		Logout();
 	}
 #else
-	CRY_ASSERT_MESSAGE(0, "Blaze OnPasswordRequired should only be called on console!");
+	CRY_ASSERT(0, "Blaze OnPasswordRequired should only be called on console!");
 #endif
 }
 

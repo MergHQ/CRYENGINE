@@ -80,7 +80,7 @@ void CUIManager::Init()
 	while (pFactory)
 	{
 		TUIEventSystemPtr pGameEvent = pFactory->Create();
-		CRY_ASSERT_MESSAGE(pGameEvent != NULL, "Invalid IUIEventSystemFactory!");
+		CRY_ASSERT(pGameEvent != NULL, "Invalid IUIEventSystemFactory!");
 		const char* name = pGameEvent->GetTypeName();
 		TUIEventSystems::const_iterator it = m_EventSystems.find(name);
 		if(it == m_EventSystems.end())
@@ -91,7 +91,7 @@ void CUIManager::Init()
 		{
 			string str;
 			str.Format("IUIGameEventSystem \"%s\" already exists!", name);
-			CRY_ASSERT_MESSAGE(false, str.c_str());
+			CRY_ASSERT(false, str.c_str());
 		}
 		pFactory = pFactory->GetNext();
 	}

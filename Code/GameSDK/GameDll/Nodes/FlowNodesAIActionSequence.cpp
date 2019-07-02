@@ -152,7 +152,7 @@ void CFlowNode_AISequenceAction_WeaponDraw::HandleSequenceEvent(AIActionSequence
 	{
 	case AIActionSequence::StartAction:
 		{
-			CRY_ASSERT_MESSAGE(m_actInfo.pEntity, "entity has magically gone");
+			CRY_ASSERT(m_actInfo.pEntity, "entity has magically gone");
 			if (!m_actInfo.pEntity)
 			{
 				// the entity has gone for some reason, at least make sure the action gets finished properly and the FG continues
@@ -164,7 +164,7 @@ void CFlowNode_AISequenceAction_WeaponDraw::HandleSequenceEvent(AIActionSequence
 			IActor* pActor = gEnv->pGameFramework->GetIActorSystem()->GetActor(m_actInfo.pEntity->GetId());
 			if (!pActor)
 			{
-				CRY_ASSERT_MESSAGE(0, "Provided entity must be an IActor");
+				CRY_ASSERT(0, "Provided entity must be an IActor");
 				CryWarning(VALIDATOR_MODULE_AI, VALIDATOR_WARNING, "Provided entity %s must be an IActor", m_actInfo.pEntity->GetName());
 				CancelSequenceAndActivateOutputPort(OutputPort_Done);
 				return;
@@ -283,7 +283,7 @@ void CFlowNode_AISequenceAction_WeaponHolster::HandleSequenceEvent(AIActionSeque
 	{
 	case AIActionSequence::StartAction:
 		{
-			CRY_ASSERT_MESSAGE(m_actInfo.pEntity, "entity has magically gone");
+			CRY_ASSERT(m_actInfo.pEntity, "entity has magically gone");
 			if (!m_actInfo.pEntity)
 			{
 				// the entity has gone for some reason, at least make sure the action gets finished properly and the FG continues
@@ -295,7 +295,7 @@ void CFlowNode_AISequenceAction_WeaponHolster::HandleSequenceEvent(AIActionSeque
 			IActor* pActor = gEnv->pGameFramework->GetIActorSystem()->GetActor(m_actInfo.pEntity->GetId());
 			if (!pActor)
 			{
-				CRY_ASSERT_MESSAGE(0, "Provided entity must be an IActor");
+				CRY_ASSERT(0, "Provided entity must be an IActor");
 				CryWarning(VALIDATOR_MODULE_AI, VALIDATOR_WARNING, "Provided entity %s must be an IActor", m_actInfo.pEntity->GetName());
 				CancelSequenceAndActivateOutputPort(OutputPort_Done);
 				return;
@@ -414,7 +414,7 @@ void CFlowNode_AISequenceAction_WeaponDrawFromInventory::HandleSequenceEvent(AIA
 	{
 	case AIActionSequence::StartAction:
 		{
-			CRY_ASSERT_MESSAGE(m_actInfo.pEntity, "entity has magically gone");
+			CRY_ASSERT(m_actInfo.pEntity, "entity has magically gone");
 			if (!m_actInfo.pEntity)
 			{
 				// the entity has gone for some reason, at least make sure the action gets finished properly and the FG continues
@@ -426,7 +426,7 @@ void CFlowNode_AISequenceAction_WeaponDrawFromInventory::HandleSequenceEvent(AIA
 			IActor* pActor = gEnv->pGameFramework->GetIActorSystem()->GetActor(m_actInfo.pEntity->GetId());
 			if (!pActor)
 			{
-				CRY_ASSERT_MESSAGE(0, "Provided entity must be an IActor");
+				CRY_ASSERT(0, "Provided entity must be an IActor");
 				CryWarning(VALIDATOR_MODULE_AI, VALIDATOR_WARNING, "Provided entity %s must be an IActor", m_actInfo.pEntity->GetName());
 				CancelSequenceAndActivateOutputPort(OutputPort_Done);
 				return;
@@ -438,7 +438,7 @@ void CFlowNode_AISequenceAction_WeaponDrawFromInventory::HandleSequenceEvent(AIA
 			IInventory* pInventory = pActor->GetInventory();
 			if (!pInventory)
 			{
-				CRY_ASSERT_MESSAGE(0, "Actor has no inventory");
+				CRY_ASSERT(0, "Actor has no inventory");
 				CryWarning(VALIDATOR_MODULE_AI, VALIDATOR_WARNING, "Actor %s has no inventory", m_actInfo.pEntity->GetName());
 				CancelSequenceAndActivateOutputPort(OutputPort_Done);
 				return;

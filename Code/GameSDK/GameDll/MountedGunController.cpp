@@ -47,7 +47,7 @@ SMountedGunCRCs MountedGunCRCs;
 
 void CMountedGunController::Update(EntityId mountedGunID, float frameTime)
 {
-	CRY_ASSERT_MESSAGE(m_pControlledPlayer, "Controlled player not initialized");
+	CRY_ASSERT(m_pControlledPlayer, "Controlled player not initialized");
 
 	// Animation state needs to be updated when the player switched between first and third person view
 	if (m_PreviousThirdPersonState != m_pControlledPlayer->IsThirdPerson())
@@ -158,7 +158,7 @@ void CMountedGunController::OnEnter(EntityId mountedGunId)
 {
 	m_PreviousThirdPersonState = m_pControlledPlayer->IsThirdPerson();
 
-	CRY_ASSERT_MESSAGE(m_pControlledPlayer, "Controlled player not initialized");
+	CRY_ASSERT(m_pControlledPlayer, "Controlled player not initialized");
 
 	ICharacterInstance* pCharacter = m_pControlledPlayer->IsThirdPerson() ? m_pControlledPlayer->GetEntity()->GetCharacter(0) : m_pControlledPlayer->GetShadowCharacter();
 	if (pCharacter)
@@ -212,7 +212,7 @@ void CMountedGunController::OnEnter(EntityId mountedGunId)
 
 void CMountedGunController::OnLeave( )
 {
-	CRY_ASSERT_MESSAGE(m_pControlledPlayer, "Controlled player not initialized");
+	CRY_ASSERT(m_pControlledPlayer, "Controlled player not initialized");
 
 	ICharacterInstance* pCharacter = m_pControlledPlayer->IsThirdPerson() ? m_pControlledPlayer->GetEntity()->GetCharacter(0) : m_pControlledPlayer->GetShadowCharacter();
 	if (pCharacter)

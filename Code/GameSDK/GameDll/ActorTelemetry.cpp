@@ -262,11 +262,11 @@ void CActorTelemetry::SubscribeToWeapon(EntityId weaponId)
 						else if (pParams->category == g_pItemStrings->scope)
 							scopeAttachment = itAccessory->pClass->GetName();
 						else
-							CRY_ASSERT_MESSAGE(pParams->category.empty(), string().Format("Unrecognised attachment category %s", pParams->category.c_str()));
+							CRY_ASSERT(pParams->category.empty(), string().Format("Unrecognised attachment category %s", pParams->category.c_str()));
 					}
 					else
 					{
-						CRY_ASSERT_MESSAGE(0, "Unable to find accessory params");
+						CRY_ASSERT(0, "Unable to find accessory params");
 					}
 				}
 

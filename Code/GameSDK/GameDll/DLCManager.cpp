@@ -248,7 +248,7 @@ void CDLCManager::OnDLCMounted(const XmlNodeRef &rootNode, const char* sDLCRootF
 
 						if (success == false)
 						{
-							CRY_ASSERT_MESSAGE(success, "Failed to open DLC packs");
+							CRY_ASSERT(success, "Failed to open DLC packs");
 							CryLog("Failed to open DLC packs '%s'",path.c_str());
 						}
 						else
@@ -303,7 +303,7 @@ void CDLCManager::OnDLCMounted(const XmlNodeRef &rootNode, const char* sDLCRootF
 		}
 		else
 		{
-			CRY_ASSERT_MESSAGE(false, "DLC id is not within range");
+			CRY_ASSERT(false, "DLC id is not within range");
 		}
 	}
 	else
@@ -336,7 +336,7 @@ void CDLCManager::OnDLCMountFailed(IPlatformOS::EDLCMountFail reason)
 	}
 	else
 	{
-		CRY_ASSERT_MESSAGE(false, "Unrecognised DLC error");
+		CRY_ASSERT(false, "Unrecognised DLC error");
 	}
 }
 
@@ -821,7 +821,7 @@ int CDLCManager::DlcIdForLevel( const char* pLevelName )
 			{
 				if (stricmp(m_dlcContents[i].levels[j].c_str(), pTrimmedLevelName) == 0)
 				{
-					CRY_ASSERT_MESSAGE( retVal == -1, "DLC level in multiple DLC packages" );
+					CRY_ASSERT( retVal == -1, "DLC level in multiple DLC packages" );
 					retVal = i;
 				}
 			}

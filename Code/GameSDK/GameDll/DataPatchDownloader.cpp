@@ -60,7 +60,7 @@ void CDataPatchDownloader::AddListener(
 {
 	if (pInListener)
 	{
-		CRY_ASSERT_MESSAGE(m_pListener == NULL || (pInListener == m_pListener), "Adding multiple listeners to CDataPatcher is not currently implemented");   // not needed currently
+		CRY_ASSERT(m_pListener == NULL || (pInListener == m_pListener), "Adding multiple listeners to CDataPatcher is not currently implemented");   // not needed currently
 		m_pListener = pInListener;
 		CDownloadableResourcePtr pRes = GetDownloadableResource();
 		if (pRes)
@@ -192,7 +192,7 @@ void CDataPatchDownloader::AssertPatchDownloaded()
 	CDownloadableResourcePtr pRes = GetDownloadableResource();
 	if (!pRes || (pRes->GetState() & (CDownloadableResource::k_dataAvailable | CDownloadableResource::k_dataPermanentFailMask)) == 0)
 	{
-		CRY_ASSERT_MESSAGE(0, "Attempted to access data patch before it has been downloaded - could lead to a race condition with some clients getting the data and others not");
+		CRY_ASSERT(0, "Attempted to access data patch before it has been downloaded - could lead to a race condition with some clients getting the data and others not");
 	}
 }
 

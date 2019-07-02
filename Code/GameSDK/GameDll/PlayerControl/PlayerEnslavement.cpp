@@ -38,7 +38,7 @@ CPlayerEnslavementForButtonMashing::CPlayerEnslavementForButtonMashing() :
 
 CPlayerEnslavementForButtonMashing::~CPlayerEnslavementForButtonMashing()
 {
-	CRY_ASSERT_MESSAGE(!m_enslaved, "Player animation is still synched with an other entity?!");	
+	CRY_ASSERT(!m_enslaved, "Player animation is still synched with an other entity?!");	
 }
 
 
@@ -85,7 +85,7 @@ void CPlayerEnslavementForButtonMashing::EnslavePlayer(IActionController* pMaste
 	const TagID tagID = pMasterActionController->GetContext().controllerDef.m_scopeContexts.Find( s_slaveContextName );
 	IF_UNLIKELY (tagID == TAG_ID_INVALID)
 	{
-		CRY_ASSERT_MESSAGE(false, "Unable to enslave player because scope context is missing?!");
+		CRY_ASSERT(false, "Unable to enslave player because scope context is missing?!");
 		return;
 	}
 	const uint32 contextID = (uint32)tagID; // (The tag ID is a universal 'interface' for mannequin).

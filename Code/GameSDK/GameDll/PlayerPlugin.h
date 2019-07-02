@@ -156,13 +156,13 @@ struct SDamageHandling
 #define SET_PLAYER_PLUGIN_NAME(name)  const char * DbgGetPluginName() const { return # name; } ILINE name * CheckCorrectNameGiven_ ## name () { return this; }
 #define PlayerPluginLog(...)          do { if (CVAR_IS_ON(pl_debug_log_player_plugins)) CryLogAlways ("[PLAYER PLUG-IN] <%s %s %s \"%s\"> %s", DbgGetClassDetails().c_str(), m_ownerPlayer->IsClient() ? "Local" : "Remote", m_ownerPlayer->GetEntity()->GetClass()->GetName(), m_ownerPlayer->GetEntity()->GetName(), string().Format(__VA_ARGS__).c_str()); } while(0)
 #define PlayerPluginWatch(...)        (CVAR_IS_ON(g_displayDbgText_plugins) && CryWatch ("[PLAYER PLUG-IN] <%s %s %s \"%s\"> %s", DbgGetClassDetails().c_str(), m_ownerPlayer->IsClient() ? "Local" : "Remote", m_ownerPlayer->GetEntity()->GetClass()->GetName(), m_ownerPlayer->GetEntity()->GetName(), string().Format(__VA_ARGS__).c_str()))
-#define PlayerPluginAssert(cond, ...) CRY_ASSERT_TRACE(cond, ("[PLAYER PLUG-IN] <%s %s %s \"%s\"> %s", DbgGetClassDetails().c_str(), m_ownerPlayer->IsClient() ? "Local" : "Remote", m_ownerPlayer->GetEntity()->GetClass()->GetName(), m_ownerPlayer->GetEntity()->GetName(), string().Format(__VA_ARGS__).c_str()))
+#define PlayerPluginAssert(cond, ...) CRY_ASSERT(cond, ("[PLAYER PLUG-IN] <%s %s %s \"%s\"> %s", DbgGetClassDetails().c_str(), m_ownerPlayer->IsClient() ? "Local" : "Remote", m_ownerPlayer->GetEntity()->GetClass()->GetName(), m_ownerPlayer->GetEntity()->GetName(), string().Format(__VA_ARGS__).c_str()))
 #define PLAYER_PLUGIN_DETAILS(plugin) plugin ? plugin->DbgGetClassDetails().c_str() : "NULL"
 #else
 #define SET_PLAYER_PLUGIN_NAME(name)
 #define PlayerPluginLog(...)          (void)0
 #define PlayerPluginWatch(...)        (void)0
-#define PlayerPluginAssert(cond, ...) CRY_ASSERT_TRACE(cond, (__VA_ARGS__))
+#define PlayerPluginAssert(cond, ...) CRY_ASSERT(cond, (__VA_ARGS__))
 #define PLAYER_PLUGIN_DETAILS(plugin) ""
 #endif
 
@@ -183,8 +183,8 @@ public:
 	ILINE void SetOwnerPlayer(CPlayer * player)
 	{
 #if PLAYER_PLUGIN_DEBUGGING
-		CRY_ASSERT_MESSAGE(!m_entered, string().Format("%s shouldn't change owner while entered!", DbgGetClassDetails().c_str()));
-		CRY_ASSERT_MESSAGE((player == NULL) != (m_ownerPlayer == NULL), string().Format("%s shouldn't change owner from %p to %p!", DbgGetClassDetails().c_str(), m_ownerPlayer, player));
+		CRY_ASSERT(!m_entered, string().Format("%s shouldn't change owner while entered!", DbgGetClassDetails().c_str()));
+		CRY_ASSERT((player == NULL) != (m_ownerPlayer == NULL), string().Format("%s shouldn't change owner from %p to %p!", DbgGetClassDetails().c_str(), m_ownerPlayer, player));
 #endif
 		m_ownerPlayer = player;
 	}

@@ -47,7 +47,7 @@ void HazardModule::Reset(bool bUnload)
 {
 	BaseClass::Reset(bUnload);
 
-	CRY_ASSERT_MESSAGE((m_UpdateLockCount == 0), "Not allowed to modify hazards to the hazard module while it is updating!");
+	CRY_ASSERT((m_UpdateLockCount == 0), "Not allowed to modify hazards to the hazard module while it is updating!");
 
 	m_InstanceIDGen = gUndefinedHazardInstanceID + 1;
 	
@@ -147,7 +147,7 @@ HazardProjectileID HazardModule::ReportHazard(
 	assert(hazardContext.m_MaxPosDeviationDistance >= 0.0f);
 	assert(hazardContext.m_MaxAngleDeviationRad >= 0.0f);
 	
-	CRY_ASSERT_MESSAGE((m_UpdateLockCount == 0), "Not allowed to register hazards to the hazard module while it is updating!");
+	CRY_ASSERT((m_UpdateLockCount == 0), "Not allowed to register hazards to the hazard module while it is updating!");
 
 	m_ProjectileHazards.push_back(HazardDataProjectile());
 
@@ -474,7 +474,7 @@ HazardID HazardModule::GenerateHazardID()
 
 	m_InstanceIDGen++;
 
-	CRY_ASSERT_MESSAGE(m_InstanceIDGen != gUndefinedHazardInstanceID, 
+	CRY_ASSERT(m_InstanceIDGen != gUndefinedHazardInstanceID, 
 		"HazardModule::GenerateNewInstanceID() too many hazards generated!");
 
 	return newInstanceID;
@@ -563,7 +563,7 @@ void HazardModule::RemoveExpiredHazardsHelperProcessContainer(CONTAINER& contain
 //
 void HazardModule::PurgeAllHazards()
 {
-	CRY_ASSERT_MESSAGE((m_UpdateLockCount == 0), "Not allowed to modify hazards to the hazard module while it is updating!");
+	CRY_ASSERT((m_UpdateLockCount == 0), "Not allowed to modify hazards to the hazard module while it is updating!");
 	
 	PurgeAllHazardsProcessContainer(m_ProjectileHazards);
 	PurgeAllHazardsProcessContainer(m_SphereHazards);
@@ -596,7 +596,7 @@ template<class CONTAINER>
 void HazardModule::ExpireHazardProcessContainer(
 	CONTAINER& container, const HazardID hazardInstanceID)
 {
-	CRY_ASSERT_MESSAGE((m_UpdateLockCount == 0), "Not allowed to unregister hazards to the hazard module while it is updating!");
+	CRY_ASSERT((m_UpdateLockCount == 0), "Not allowed to unregister hazards to the hazard module while it is updating!");
 
 	int index = IndexOfInstanceID(container, hazardInstanceID);
 	if (index < 0)

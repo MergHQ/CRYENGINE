@@ -39,7 +39,7 @@ bool CWaypointPath::CreatePath(IEntity* pPathEntity)
 			int count = volumeInfo.verticesCount;
 			if(count > MAX_PATH_NODES)
 			{
-				CRY_ASSERT_MESSAGE( false, string().Format("CWaypointPath::CreatePath - path %s has too many nodes - %i/%i. Truncating end nodes.", pPathEntity->GetName(), count, MAX_PATH_NODES) );
+				CRY_ASSERT( false, string().Format("CWaypointPath::CreatePath - path %s has too many nodes - %i/%i. Truncating end nodes.", pPathEntity->GetName(), count, MAX_PATH_NODES) );
 				count = MAX_PATH_NODES;
 			}
 
@@ -136,7 +136,7 @@ Matrix34 CWaypointPath::GetMatrixAtNode(TNodeId currentNode, bool loop) const
 		return Matrix34::Create(Vec3(1.f,1.f,1.f), rotation, atPosition);
 	}
 
-	CRY_ASSERT_MESSAGE(false, "CWaypointPath::GetMatrix - currentNode input is out of range");
+	CRY_ASSERT(false, "CWaypointPath::GetMatrix - currentNode input is out of range");
 	return Matrix34();
 }
 

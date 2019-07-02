@@ -2331,7 +2331,7 @@ void CGameLobby::EnterState(ELobbyState prevState, ELobbyState newState)
 				else
 				{
 					m_votingEnabled = false;
-					CRY_ASSERT_MESSAGE((!s_pGameLobbyCVars->gl_enablePlaylistVoting || s_pGameLobbyCVars->gl_experimentalPlaylistRotationAdvance), "The gl_enablePlaylistVoting cvar currently requires gl_experimentalPlaylistRotationAdvance to also be set");
+					CRY_ASSERT((!s_pGameLobbyCVars->gl_enablePlaylistVoting || s_pGameLobbyCVars->gl_experimentalPlaylistRotationAdvance), "The gl_enablePlaylistVoting cvar currently requires gl_experimentalPlaylistRotationAdvance to also be set");
 
 					if (s_pGameLobbyCVars->gl_experimentalPlaylistRotationAdvance)
 					{
@@ -2540,7 +2540,7 @@ void CGameLobby::EnterState(ELobbyState prevState, ELobbyState newState)
 		break;
 
 	default:
-		CRY_ASSERT_MESSAGE(false, "CGameLobby::EnterState Unknown state");
+		CRY_ASSERT(false, "CGameLobby::EnterState Unknown state");
 		break;
 	}
 
@@ -3187,7 +3187,7 @@ void CGameLobby::CancelLobbyTask(CLobbyTaskQueue::ESessionTask taskType)
 	// If this is the task that's running, might need to cancel the matchmaking task
 	if (m_taskQueue.GetCurrentTask() == taskType)
 	{
-		CRY_ASSERT_MESSAGE(taskType != CLobbyTaskQueue::eST_Create && taskType != CLobbyTaskQueue::eST_Join && taskType != CLobbyTaskQueue::eST_Delete, "Trying to cancel a lobby task that shouldn't be canceled");
+		CRY_ASSERT(taskType != CLobbyTaskQueue::eST_Create && taskType != CLobbyTaskQueue::eST_Join && taskType != CLobbyTaskQueue::eST_Delete, "Trying to cancel a lobby task that shouldn't be canceled");
 
 		CryLobbyTaskID networkTaskId = m_currentTaskId;
 		CryLog("currentTaskId %d", m_currentTaskId);
@@ -4081,7 +4081,7 @@ void CGameLobby::InsertUser(SCryUserInfoResult* user)
 			bool success = m_nameList.RemoveEntryWithInvalidConnection();
 			if(!success)
 			{
-				CRY_ASSERT_MESSAGE(0, string().Format("No players to remove, we have maxed out the session list with %d players", m_nameList.Size()));
+				CRY_ASSERT(0, string().Format("No players to remove, we have maxed out the session list with %d players", m_nameList.Size()));
 			}
 		}
 
@@ -4481,7 +4481,7 @@ static int GetCryLobbyUserTypeSize(ECryLobbyUserDataType type)
 		case eCLUDT_Float32:
 			return CryLobbyPacketUINT32Size;
 		default:
-			CRY_ASSERT_MESSAGE(0, string().Format("Unknown data type %d", type));
+			CRY_ASSERT(0, string().Format("Unknown data type %d", type));
 			break;
 	}
 
@@ -5056,9 +5056,9 @@ void CGameLobby::SendPacket(GameUserPacketDefinitions packetType, SCryMatchMakin
 
 void CGameLobby::SendPacket(CCryLobbyPacket *pPacket, GameUserPacketDefinitions packetType, SCryMatchMakingConnectionUID connectionUID)
 {
-	CRY_ASSERT_TRACE(pPacket->GetWriteBuffer() != NULL, ("Haven't written any data, packetType '%d'", packetType));
-	CRY_ASSERT_TRACE(pPacket->GetWriteBufferPos() == pPacket->GetReadBufferSize(), ("Packet size doesn't match data size, packetType '%d'", packetType));
-	CRY_ASSERT_TRACE(pPacket->GetReliable(), ("Unreliable packet sent, packetType '%d'", packetType));
+	CRY_ASSERT(pPacket->GetWriteBuffer() != NULL, "Haven't written any data, packetType '%d'", packetType);
+	CRY_ASSERT(pPacket->GetWriteBufferPos() == pPacket->GetReadBufferSize(), "Packet size doesn't match data size, packetType '%d'", packetType);
+	CRY_ASSERT(pPacket->GetReliable(), "Unreliable packet sent, packetType '%d'", packetType);
 
 	ICryMatchMaking *pMatchmaking = gEnv->pNetwork->GetLobby()->GetLobbyService()->GetMatchMaking();
 	const int packetSize = pPacket->GetWriteBufferPos();
@@ -5105,7 +5105,7 @@ void CGameLobby::ReadPacket(SCryLobbyUserPacketData** ppPacketData)
 
 	SCryLobbyUserPacketData* pPacketData = (*ppPacketData);
 	CCryLobbyPacket* pPacket = pPacketData->pPacket;
-	CRY_ASSERT_MESSAGE(pPacket->GetReadBuffer() != NULL, "No packet data");
+	CRY_ASSERT(pPacket->GetReadBuffer() != NULL, "No packet data");
 
 	uint32 packetType = pPacket->StartRead();
 	CryLog("Read packet of type '%d' lobby=%p", packetType, this);
@@ -5838,12 +5838,12 @@ void CGameLobby::ReadPacket(SCryLobbyUserPacketData** ppPacketData)
 		}
 	default:
 		{
-			CRY_ASSERT_MESSAGE(0, "Got packet another something - just no idea what");
+			CRY_ASSERT(0, "Got packet another something - just no idea what");
 		}
 		break;
 	}
 
-	CRY_ASSERT_MESSAGE(pPacket->GetReadBufferSize() == pPacket->GetReadBufferPos(), "Haven't read all the data");
+	CRY_ASSERT(pPacket->GetReadBufferSize() == pPacket->GetReadBufferPos(), "Haven't read all the data");
 }
 
 
@@ -7261,7 +7261,7 @@ void CGameLobby::FindGameCreateGame()
 	}
 #endif
 
-	CRY_ASSERT_MESSAGE( CMatchMakingHandler::AllowedToCreateGame(), "[GameLobby] Trying to create a session when we're not allowed to!");
+	CRY_ASSERT( CMatchMakingHandler::AllowedToCreateGame(), "[GameLobby] Trying to create a session when we're not allowed to!");
 
 	m_taskQueue.AddTask(CLobbyTaskQueue::eST_Create, true);
 }
@@ -7528,7 +7528,7 @@ void CGameLobby::SetAutomaticMutingStateForPlayer(SSessionNames::SSessionName *p
 		}
 		break;
 	default:
-		CRY_ASSERT_MESSAGE(0, "Unknown automatic voice muting type");
+		CRY_ASSERT(0, "Unknown automatic voice muting type");
 		break;
 	}
 
@@ -8227,7 +8227,7 @@ THUDWarningId CGameLobby::ShowErrorDialog(const ECryLobbyError error, const char
 		return 0;
 	}
 
-	CRY_ASSERT_MESSAGE((!pDialogParam || pDialogName), "A custom dialog param should only be provided if a custom dialog name is also provided.");
+	CRY_ASSERT((!pDialogParam || pDialogName), "A custom dialog param should only be provided if a custom dialog name is also provided.");
 
 	CryFixedStringT<32>  name;
 	CryFixedStringT<32>  param;
@@ -9924,9 +9924,9 @@ void CGameLobby::UpdateVoteChoices()
 void CGameLobby::MoveUsers(CGameLobby *pFromLobby)
 {
 	CryLog("[GameLobby] MoveUsers pFromLobby %p pToLobby %p", pFromLobby, this);
-	CRY_ASSERT_MESSAGE(pFromLobby->IsServer(), "Only the server should be moving users from one lobby to another");
-	CRY_ASSERT_MESSAGE(pFromLobby != this, "Lobby we are trying to move users into is the one we are already in");
-	CRY_ASSERT_MESSAGE(m_gameLobbyMgr->IsPrimarySession(pFromLobby), "Trying to move users but we're not the primary session");
+	CRY_ASSERT(pFromLobby->IsServer(), "Only the server should be moving users from one lobby to another");
+	CRY_ASSERT(pFromLobby != this, "Lobby we are trying to move users into is the one we are already in");
+	CRY_ASSERT(m_gameLobbyMgr->IsPrimarySession(pFromLobby), "Trying to move users but we're not the primary session");
 
 	const SSessionNames &fromSession = pFromLobby->GetSessionNames();
 	SSessionNames *toSession = &m_nameList;
@@ -9947,7 +9947,7 @@ void CGameLobby::MoveUsers(CGameLobby *pFromLobby)
 		CryLog("[GameLobby] Moving user %s", pSessionName->m_name);
 	}
 
-	CRY_ASSERT_MESSAGE(toSession->Size() <= MAX_PLAYER_LIMIT, string().Format("Too many players added to session names. Count %d Max %d", toSession->Size(), MAX_PLAYER_LIMIT).c_str());
+	CRY_ASSERT(toSession->Size() <= MAX_PLAYER_LIMIT, string().Format("Too many players added to session names. Count %d Max %d", toSession->Size(), MAX_PLAYER_LIMIT).c_str());
 }
 
 //-------------------------------------------------------------------------

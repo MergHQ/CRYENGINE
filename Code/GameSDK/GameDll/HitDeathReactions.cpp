@@ -514,7 +514,7 @@ void CHitDeathReactions::Update(float fFrameTime)
 		if (eAIP_PipeUserPaused == m_AIPausedState)
 		{
 			IPipeUser* pPipeUser = GetAIPipeUser();
-			CRY_ASSERT_TRACE(!pPipeUser || pPipeUser->IsPaused(), ("The actor %s pipe user has been resumed before the reaction has ended! Investigate", m_actor.GetEntity()->GetName()));
+			CRY_ASSERT(!pPipeUser || pPipeUser->IsPaused(), "The actor %s pipe user has been resumed before the reaction has ended! Investigate", m_actor.GetEntity()->GetName());
 		}
 #endif
 
@@ -770,7 +770,7 @@ bool CHitDeathReactions::OnAnimationEvent(const AnimEventInstance &event)
 		}
 		else if (m_actor.GetAnimationEventsTable().m_ragdollStartId == event.m_EventNameLowercaseCRC32)
 		{
-			CRY_ASSERT_MESSAGE(m_actor.GetAnimatedCharacter(), "This class assumes that if this code is called, the actor has a valid animated character");
+			CRY_ASSERT(m_actor.GetAnimatedCharacter(), "This class assumes that if this code is called, the actor has a valid animated character");
 
 			//--- Initiate rag-doll between now & the end of the animation
 			CAnimationPlayerProxy *animPlayerProxy = m_actor.GetAnimatedCharacter()->GetAnimationPlayerProxy(0);
@@ -900,7 +900,7 @@ bool CHitDeathReactions::IsValidReaction(const HitInfo& hitInfo, const SReaction
 		else
 		{
 #ifndef _RELEASE
-			CRY_ASSERT_MESSAGE(false, "Couldn't find shooter entity while checking distance to shooter criteria");
+			CRY_ASSERT(false, "Couldn't find shooter entity while checking distance to shooter criteria");
 			CHitDeathReactionsSystem::Warning("Couldn't find shooter entity while checking distance to shooter criteria");
 #endif
 
@@ -939,7 +939,7 @@ bool CHitDeathReactions::IsValidReaction(const HitInfo& hitInfo, const SReaction
 		Vec2 v2DShotDir(hitInfo.dir);
 		if (v2DShotDir.IsValid())
 		{
-			CRY_ASSERT_MESSAGE(m_actor.GetAnimatedCharacter(), "This class assumes that if this code is called, the actor has a valid animated character");
+			CRY_ASSERT(m_actor.GetAnimatedCharacter(), "This class assumes that if this code is called, the actor has a valid animated character");
 			// [*DavidR | 15/Oct/2010] Note: Using the animated character location to determine shot origin, since it's more accurate.
 			// for now, though, I keep the old method in multiplayer, since it's safer (both client and server side having the same animation orientation
 			// when processing the same hit is tricky, and having the client playing a different animation than the server is bound to cause problems)
@@ -957,7 +957,7 @@ bool CHitDeathReactions::IsValidReaction(const HitInfo& hitInfo, const SReaction
 	
 	// Check stance
 	const SReactionParams::IdContainer& allowedStances = validationParams.allowedStances;
-	CRY_ASSERT_TRACE(allowedStances.empty() || (m_actor.GetStance() != STANCE_NULL), ("%s's current stance is NULL! This actor state is probably incoherent!", m_actor.GetEntity()->GetName()));
+	CRY_ASSERT(allowedStances.empty() || (m_actor.GetStance() != STANCE_NULL), "%s's current stance is NULL! This actor state is probably incoherent!", m_actor.GetEntity()->GetName());
 	IF_UNLIKELY (!allowedStances.empty() && (allowedStances.find(m_actor.GetStance()) == allowedStances.end()))
 		return false;
 
@@ -1115,7 +1115,7 @@ bool CHitDeathReactions::StartReaction(EReactionType reactionType, const HitInfo
 		bSuccess = g_pGameCVars->g_hitDeathReactions_useLuaDefaultFunctions ? Script::CallMethod(m_pSelfTable, szDefaultReactionFnc, reactionParams.reactionScriptTable) : false;
 		if (!bSuccess)
 		{
-			CRY_ASSERT_MESSAGE(!g_pGameCVars->g_hitDeathReactions_useLuaDefaultFunctions, "Can't run default hit reaction lua method. Check HitDeathReactions.lua");
+			CRY_ASSERT(!g_pGameCVars->g_hitDeathReactions_useLuaDefaultFunctions, "Can't run default hit reaction lua method. Check HitDeathReactions.lua");
 
 			// Default execution
 			switch( reactionType )
@@ -1359,7 +1359,7 @@ bool CHitDeathReactions::StartReactionAnimByID(int animID, bool bLoop/* = false*
 {
 	CRY_ASSERT(fAniSpeed > 0.0f);
 
-	CRY_ASSERT_MESSAGE(IsInReaction(), "This method should be called only during a hit or death reaction");
+	CRY_ASSERT(IsInReaction(), "This method should be called only during a hit or death reaction");
 	if (!IsInReaction())
 	{
 		CHitDeathReactionsSystem::Warning("Can't start an animation through HitDeathReactions system "
@@ -1384,7 +1384,7 @@ bool CHitDeathReactions::StartReactionAnimByID(int animID, bool bLoop/* = false*
 		// can negate the effects of partial/additive anims on higher layers. Find a solution to this
 
 		IAnimatedCharacter* pAnimatedCharacter = m_actor.GetAnimatedCharacter();
-		CRY_ASSERT_MESSAGE(pAnimatedCharacter, "This class assumes that if this code is called, the actor has a valid animated character");
+		CRY_ASSERT(pAnimatedCharacter, "This class assumes that if this code is called, the actor has a valid animated character");
 
 		// As we're doing later with the animation graph, we need to take a similar approach to pausing if we're using an action controller.
 		// But we need to do this before tampering with the animation queues directly.
@@ -1493,7 +1493,7 @@ bool CHitDeathReactions::IsPlayingReactionAnim() const
 
 	if (IsExecutionType(eET_ReactionAnim))
 	{
-		CRY_ASSERT_MESSAGE(m_actor.GetAnimatedCharacter(), "This class assumes that if this code is called, the actor has a valid animated character");
+		CRY_ASSERT(m_actor.GetAnimatedCharacter(), "This class assumes that if this code is called, the actor has a valid animated character");
 		CAnimationPlayerProxy* pPlayerProxy = m_actor.GetAnimatedCharacter()->GetAnimationPlayerProxy(0);
 		if (pPlayerProxy)
 		{
@@ -1739,7 +1739,7 @@ bool CHitDeathReactions::EndCurrentReactionInternal(bool bForceRagdollOnHit, boo
 				// Set move direction and speed of entity
 				movementRequest.velocity =  m_actor.GetEntity()->GetWorldTM().TransformVector(m_pCurrentReactionParams->endVelocity);
 
-				CRY_ASSERT_MESSAGE(m_actor.GetAnimatedCharacter(), "This class assumes that if this code is called, the actor has a valid animated character");
+				CRY_ASSERT(m_actor.GetAnimatedCharacter(), "This class assumes that if this code is called, the actor has a valid animated character");
 				m_actor.GetAnimatedCharacter()->AddMovement(movementRequest);
 			}
 		}
@@ -1969,7 +1969,7 @@ bool CHitDeathReactions::ExecuteReactionCommon(const SReactionParams& reactionPa
 
 	if (bSuccess) 
 	{
-		CRY_ASSERT_MESSAGE(m_actor.GetAnimatedCharacter(), "This class assumes that if this code is called, the actor has a valid animated character");
+		CRY_ASSERT(m_actor.GetAnimatedCharacter(), "This class assumes that if this code is called, the actor has a valid animated character");
 		if (reactionParams.flags & SReactionParams::OrientateToMovementDir)
 		{
 			IMovementController* pMovementController = m_actor.GetMovementController();
@@ -2061,7 +2061,7 @@ void CHitDeathReactions::PausePipeUser(bool bPause)
 		// This function should not be called if our current paused state is currently executing a custom signal.
 		//	The reason for this is the AI are right now creating custom behavior, and pausing the pipeuser will
 		//	disable that custom behavior from executing properly. (Kevin)
-		CRY_ASSERT_MESSAGE(eAIP_ExecutingCustomSignal != m_AIPausedState, "CHitDeathReactions::PausePipeUser Attempting to pause while the current pause state is 'eAIP_ExecutingCustomSignal'. This must not happen!");
+		CRY_ASSERT(eAIP_ExecutingCustomSignal != m_AIPausedState, "CHitDeathReactions::PausePipeUser Attempting to pause while the current pause state is 'eAIP_ExecutingCustomSignal'. This must not happen!");
 
 		// Special handling for AI on server
 		if (bPause != (eAIP_PipeUserPaused == m_AIPausedState))
@@ -2131,7 +2131,7 @@ void CHitDeathReactions::OnCustomAnimFinished(bool bInterrupted)
 	}
 
 	IAnimatedCharacter* pAnimatedCharacter = m_actor.GetAnimatedCharacter();
-	CRY_ASSERT_MESSAGE(pAnimatedCharacter, "This class assumes that if this code is called, the actor has a valid animated character");
+	CRY_ASSERT(pAnimatedCharacter, "This class assumes that if this code is called, the actor has a valid animated character");
 
 	// Make sure it gets removed from the animation FIFO. Since we play the anims with repeat last key flag enabled, they
 	// will remain there unless other system overwrites them (Animation Graph) or we clear them
@@ -2254,13 +2254,13 @@ void CHitDeathReactions::StartCollisionReaction(const Vec3& vNormal, const Vec3&
 			IEntity* pEntity = m_actor.GetEntity();
 			const Vec3& vPos = pEntity->GetWorldPos();
 			Vec3 vPlainNormal(vNormal.x, vNormal.y, 0.0f);
-			CRY_ASSERT_MESSAGE(vPlainNormal.IsValid() && !vPlainNormal.IsZero(), "Vertical normals shouldn't validate a Collision Reaction Investigate!");
+			CRY_ASSERT(vPlainNormal.IsValid() && !vPlainNormal.IsZero(), "Vertical normals shouldn't validate a Collision Reaction Investigate!");
 			vPlainNormal.NormalizeSafe(Vec3Constants<float>::fVec3_OneZ);
 			Vec3 vStartPos = vPoint - (vPlainNormal * m_pHitDeathReactionsConfig->fCollReactionStartDist);
 			vStartPos.z = vPos.z;
 			pEntity->SetPos(vStartPos);
 
-			CRY_ASSERT_MESSAGE(m_actor.GetAnimatedCharacter(), "This class assumes that if this code is called, the actor has a valid animated character");
+			CRY_ASSERT(m_actor.GetAnimatedCharacter(), "This class assumes that if this code is called, the actor has a valid animated character");
 		}
 
 		// Play a collision reaction, this will interrupt the previous one. 
@@ -2531,7 +2531,7 @@ bool CHitDeathReactions::IsValidReactionId(ReactionId reactionId) const
 //////////////////////////////////////////////////////////////////////////
 const SReactionParams& CHitDeathReactions::GetReactionParamsById(ReactionId reactionId) const
 {
-	CRY_ASSERT_MESSAGE(IsValidReactionId(reactionId), "this method shouldn't be called if IsValidReactionId is false");
+	CRY_ASSERT(IsValidReactionId(reactionId), "this method shouldn't be called if IsValidReactionId is false");
 
 	ReactionId absReactionId = abs(reactionId);
 
@@ -2564,7 +2564,7 @@ string CHitDeathReactions::GetCurrentAGReactionAnimName() const
 	CRY_ASSERT(pMainChar);
 	if (pMainChar)
 	{
-		CRY_ASSERT_MESSAGE(m_actor.GetAnimatedCharacter(), "This class assumes that if this code is called, the actor has a valid animated character");
+		CRY_ASSERT(m_actor.GetAnimatedCharacter(), "This class assumes that if this code is called, the actor has a valid animated character");
 
 		const CAnimation* pAnim = NULL;
 		CAnimationPlayerProxy* pPlayerProxy = m_actor.GetAnimatedCharacter()->GetAnimationPlayerProxy(0);
@@ -2826,7 +2826,7 @@ void CHitDeathReactionsPhysics::IntersectionTestComplete( const QueuedIntersecti
 	if ((result.distance <= 0.0f)	||	(m_pOwnerHitReactions->m_reactionOnCollision == NO_COLLISION_REACTION))		// No Collision if we are not supposed to
 		return;
 
-	CRY_ASSERT_MESSAGE(result.normal.IsValid() && !result.normal.IsZero() && result.point.IsValid(), "Receiving incorrect data from physics events, check CPhysicalWorld::TracePendingRays method");
+	CRY_ASSERT(result.normal.IsValid() && !result.normal.IsZero() && result.point.IsValid(), "Receiving incorrect data from physics events, check CPhysicalWorld::TracePendingRays method");
 
 	CActor& ownerActor = m_pOwnerHitReactions->m_actor;
 

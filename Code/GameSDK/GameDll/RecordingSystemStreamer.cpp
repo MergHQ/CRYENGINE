@@ -59,9 +59,9 @@ void CRecordingSystem::ClProcessKillCamData(IActor *pActor, const CActor::KillCa
 	const int packetSize=CActor::KillCamFPData::DATASIZE;
 	const int receiveBufferPackets=sizeof(rStreamData.m_buffer)/packetSize;
 
-	CRY_ASSERT_MESSAGE(pActor->GetEntityId()==rStreamData.m_expect.m_sender, "Wrong Sender!");
-	CRY_ASSERT_MESSAGE(packet.m_victim==rStreamData.m_expect.m_victim, "Wrong Victim!");
-	CRY_ASSERT_MESSAGE(packet.m_bToEveryone==rStreamData.m_expect.m_winningKill, "Wrong Winning Kill!");
+	CRY_ASSERT(pActor->GetEntityId()==rStreamData.m_expect.m_sender, "Wrong Sender!");
+	CRY_ASSERT(packet.m_victim==rStreamData.m_expect.m_victim, "Wrong Victim!");
+	CRY_ASSERT(packet.m_bToEveryone==rStreamData.m_expect.m_winningKill, "Wrong Winning Kill!");
 
 	int packetNum=packet.m_numPacket;
 	if (packet.m_packetType==CClientKillCamSender::KCP_NEWTHIRDPERSON)

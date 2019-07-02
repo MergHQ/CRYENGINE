@@ -120,8 +120,8 @@ namespace EntityEffects
 
 	void CEffectsController::InitWithEntity(IEntity *pEntity)
 	{
-		CRY_ASSERT_MESSAGE(pEntity, "Init Effect controller with NULL entity, this will crash!");
-		CRY_ASSERT_MESSAGE((m_pOwnerEntity == NULL), "Effect controller had already an entity assigned");
+		CRY_ASSERT(pEntity, "Init Effect controller with NULL entity, this will crash!");
+		CRY_ASSERT((m_pOwnerEntity == NULL), "Effect controller had already an entity assigned");
 
 		m_pOwnerEntity = pEntity;
 	}

@@ -68,7 +68,7 @@ void CGameRulesMPSpawningWithLives::Init(XmlNodeRef xml)
 	if (xml->getAttr("numLives", m_numLives))
 	{
 		// Only assault mode should have this set, otherwise we go by the variants or frontends setting
-		CRY_ASSERT_MESSAGE(g_pGame->GetGameRules()->GetGameMode() == eGM_Assault, string().Format("SpawningWithLives expects only the assault gamemode to override numLives within the xml. Yet gamemode=%d is trying to", g_pGame->GetGameRules()->GetGameMode()));
+		CRY_ASSERT(g_pGame->GetGameRules()->GetGameMode() == eGM_Assault, string().Format("SpawningWithLives expects only the assault gamemode to override numLives within the xml. Yet gamemode=%d is trying to", g_pGame->GetGameRules()->GetGameMode()));
 		CryLog("CGameRulesMPSpawningWithLives::Init() is setting numLives from the xml to %d", m_numLives);
 	}
 	else
@@ -280,7 +280,7 @@ void CGameRulesMPSpawningWithLives::PerformRevive(EntityId playerId, int teamId,
 						}
 						else
 						{
-							CRY_ASSERT_MESSAGE(0, string().Format("CGameRulesMPSpawningWithLives::PerformRevive() failed to find playerstats for player"));
+							CRY_ASSERT(0, string().Format("CGameRulesMPSpawningWithLives::PerformRevive() failed to find playerstats for player"));
 						}
 					}
 					break;
@@ -309,7 +309,7 @@ void CGameRulesMPSpawningWithLives::EntityRevived(EntityId entityId)
 		{
 			if (const SGameRulesPlayerStat* s=pPlayStatsMod->GetPlayerStats(entityId))
 			{
-				CRY_ASSERT_MESSAGE((s->flags & SGameRulesPlayerStat::PLYSTATFL_HASSPAWNEDTHISROUND), "The PlayerStats module needs to come before the Spawning module in the XML for this game mode.");
+				CRY_ASSERT((s->flags & SGameRulesPlayerStat::PLYSTATFL_HASSPAWNEDTHISROUND), "The PlayerStats module needs to come before the Spawning module in the XML for this game mode.");
 				if (s->deathsThisRound == 0)
 				{
 					CCCPOINT(MPSpawningWithLives_SvListenedEntityRevived_SurvivorChangeNotified);
@@ -460,7 +460,7 @@ void CGameRulesMPSpawningWithLives::OnEntityKilled(const HitInfo &hitInfo)
 				}
 				else
 				{
-					CRY_ASSERT_MESSAGE(0, string().Format("CGameRulesMPSpawningWithLives::OnEntityKilled() failed to find a playerstats for player"));
+					CRY_ASSERT(0, string().Format("CGameRulesMPSpawningWithLives::OnEntityKilled() failed to find a playerstats for player"));
 				}
 			}
 		}
@@ -550,7 +550,7 @@ void CGameRulesMPSpawningWithLives::CreateElimMarker(EntityId playerId)
 	CRY_ASSERT(m_elimMarkerDuration > 0.f);
 	if (IEntity* e=gEnv->pEntitySystem->GetEntity(playerId))
 	{
-		CRY_ASSERT_MESSAGE(m_freeElimMarker, "Ran out of space in ElimMarkers array.");
+		CRY_ASSERT(m_freeElimMarker, "Ran out of space in ElimMarkers array.");
 		if (m_freeElimMarker)
 		{
 			SEntitySpawnParams  params;
@@ -561,7 +561,7 @@ void CGameRulesMPSpawningWithLives::CreateElimMarker(EntityId playerId)
 			params.vPosition = e->GetWorldPos();
 			params.qRotation = e->GetWorldRotation();
 			IEntity*  pMarkerEnt = gEnv->pEntitySystem->SpawnEntity(params);
-			CRY_ASSERT_MESSAGE(pMarkerEnt, "Couldn't create local client entity for ElimMarker.");
+			CRY_ASSERT(pMarkerEnt, "Couldn't create local client entity for ElimMarker.");
 			if (pMarkerEnt)
 			{
 				SElimMarker*  pMarker = m_freeElimMarker;
@@ -580,7 +580,7 @@ void CGameRulesMPSpawningWithLives::CreateElimMarker(EntityId playerId)
 					m_freeElimMarker = m;
 				else
 					m_freeElimMarker = NULL;
-				CRY_ASSERT_MESSAGE(!m_freeElimMarker || ((m_freeElimMarker >= &m_elimMarkers[0]) && (m_freeElimMarker <= &m_elimMarkers[m_kMaxElimMarkers - 1])), "Stomping memory!!");
+				CRY_ASSERT(!m_freeElimMarker || ((m_freeElimMarker >= &m_elimMarkers[0]) && (m_freeElimMarker <= &m_elimMarkers[m_kMaxElimMarkers - 1])), "Stomping memory!!");
 
 				pMarker->playerEid = playerId;
 				pMarker->markerEid = pMarkerEnt->GetId();

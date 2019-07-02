@@ -184,7 +184,7 @@ bool CControllerInputRenderInfo::CreateForInput(const char * mapName, const char
 #endif
 
 #if ASSERT_ON_CONTROLLER_INPUT_ICON_FAILURES
-	CRY_ASSERT_MESSAGE(false, string().Format("No HUD prompt icon/text for \"%s.%s\": %s", mapName, inputName, error.c_str()));
+	CRY_ASSERT(false, string().Format("No HUD prompt icon/text for \"%s.%s\": %s", mapName, inputName, error.c_str()));
 #endif
 
 #endif

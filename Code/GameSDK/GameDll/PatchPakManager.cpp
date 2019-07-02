@@ -127,7 +127,7 @@ CPatchPakManager::~CPatchPakManager()
 				uint32 nFlags = ICryPak::FLAGS_NEVER_IN_PAK | ICryPak::FLAGS_PATH_REAL | ICryArchive::FLAGS_OVERRIDE_PAK;
 #if defined(USE_CRY_ASSERT)
 				bool bSuccess = gEnv->pCryPak->ClosePack(nameStr.c_str(), nFlags);
-				CRY_ASSERT_MESSAGE(bSuccess, "we failed to close our patch pak, pack file. Not good!");
+				CRY_ASSERT(bSuccess, "we failed to close our patch pak, pack file. Not good!");
 #else
 				gEnv->pCryPak->ClosePack(nameStr.c_str(), nFlags);
 #endif
@@ -135,7 +135,7 @@ CPatchPakManager::~CPatchPakManager()
 				CRY_ASSERT(patchPakData.m_pPatchPakMemBlock.get());
 
 				// should deconstruct here as refcount == 1
-				CRY_ASSERT_MESSAGE(patchPakData.m_pPatchPakMemBlock->Unique(), "we're trying to release our memblock but something else still holds a ref to it!");
+				CRY_ASSERT(patchPakData.m_pPatchPakMemBlock->Unique(), "we're trying to release our memblock but something else still holds a ref to it!");
 			}
 
 			// nuke the actual buffer
@@ -702,14 +702,14 @@ void CPatchPakManager::UnloadPatchPakFiles()
 			uint32 nFlags = ICryPak::FLAGS_NEVER_IN_PAK | ICryPak::FLAGS_PATH_REAL | ICryArchive::FLAGS_OVERRIDE_PAK;
 #if defined(USE_CRY_ASSERT)
 			bool bSuccess = gEnv->pCryPak->ClosePack(nameStr.c_str(), nFlags);
-			CRY_ASSERT_MESSAGE(bSuccess, "we failed to close our patch pak, pack file. Not good!");
+			CRY_ASSERT(bSuccess, "we failed to close our patch pak, pack file. Not good!");
 #else
 			gEnv->pCryPak->ClosePack(nameStr.c_str(), nFlags);
 #endif
 
 			// should deconstruct here as refcount == 1
 			CRY_ASSERT(patchPakData.m_pPatchPakMemBlock.get());
-			CRY_ASSERT_MESSAGE(patchPakData.m_pPatchPakMemBlock->Unique(), "we're trying to release our memblock but something else still holds a ref to it!");
+			CRY_ASSERT(patchPakData.m_pPatchPakMemBlock->Unique(), "we're trying to release our memblock but something else still holds a ref to it!");
 			patchPakData.m_pPatchPakMemBlock = NULL;
 			patchPakData.m_state = SPatchPakData::es_Downloaded;
 		}
@@ -932,7 +932,7 @@ void CPatchPakManager::StartNewDownload(const char* inServerName, const int inPo
 			PREFAST_SUPPRESS_WARNING(6387)
 #if defined(USE_CRY_ASSERT)
 			int numMatches = sscanf(pMD5Iter, "%02x", &element); // sscanf with %x param writes an int regardless of the size of the input definition
-			CRY_ASSERT_MESSAGE(numMatches == 1, "failed to parse our file's MD5 from permissions");
+			CRY_ASSERT(numMatches == 1, "failed to parse our file's MD5 from permissions");
 #else
 			sscanf(pMD5Iter, "%02x", &element); // sscanf with %x param writes an int regardless of the size of the input definition
 #endif
@@ -1046,7 +1046,7 @@ bool CPatchPakManager::CheckForNewDownload(const char* inServerName, const int i
 		PREFAST_SUPPRESS_WARNING(6387)
 #if defined(USE_CRY_ASSERT)
 		int numMatches = sscanf(pMD5Iter, "%02x", &element); // sscanf with %x param writes an int regardless of the size of the input definition
-		CRY_ASSERT_MESSAGE(numMatches == 1, "failed to parse our file's MD5 from permissions");
+		CRY_ASSERT(numMatches == 1, "failed to parse our file's MD5 from permissions");
 #else
 		sscanf(pMD5Iter, "%02x", &element); // sscanf with %x param writes an int regardless of the size of the input definition
 #endif
@@ -1185,7 +1185,7 @@ bool CPatchPakManager::CachePakDataToDisk(SPatchPakData* pInPakData)
 		break;
 	default:
 		CryLog("CPatchPakManager::CachePakDataToDisk() unhandled writeResult=%d whilst caching pak %s", writeResult, pInPakData->m_url.c_str());
-		CRY_ASSERT_MESSAGE(0, string().Format("unhandled writeResult=%d whilst caching pak %s", writeResult, pInPakData->m_url.c_str()));
+		CRY_ASSERT(0, string().Format("unhandled writeResult=%d whilst caching pak %s", writeResult, pInPakData->m_url.c_str()));
 		break;
 	}
 
@@ -1336,7 +1336,7 @@ void CPatchPakManager::OpenPatchPakDataAsPak(SPatchPakData* inPakData)
 		CryLog("CPatchPakManager::OpenPatchPakDataAsPak() opening downloaded but not cached pakdata for pak file %s", nameStr.c_str());
 
 		bool success = gEnv->pCryPak->OpenPack(bindRootPath.c_str(), nameStr.c_str(), nFlags, inPakData->m_pPatchPakMemBlock);
-		CRY_ASSERT_MESSAGE(success, string().Format("failed to open pak file for patch pak %s", nameStr.c_str()));
+		CRY_ASSERT(success, string().Format("failed to open pak file for patch pak %s", nameStr.c_str()));
 		if (success)
 		{
 			inPakData->m_state = SPatchPakData::es_PakLoaded;

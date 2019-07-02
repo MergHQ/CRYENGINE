@@ -515,7 +515,7 @@ class CTelemetryStrProducer : public CTelemetryMemBufferProducer
 																				// the m_payload str, but the CryStringT constructor for m_payload will use the same ptr. if it duplicated
 																				// the str contents to a new ptr, or did anything else to its internal ptr, then the ptr used for the
 																				// CTelemetryMemBufferProducer would be the wrong one
-																				CRY_ASSERT_MESSAGE(inCopyMe.c_str()==m_payload.c_str(),"CTelemetryStrProducer ptr mismatch - likely to corrupt data");
+																				CRY_ASSERT(inCopyMe.c_str()==m_payload.c_str(),"CTelemetryStrProducer ptr mismatch - likely to corrupt data");
 																			}
 };
 

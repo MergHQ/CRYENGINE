@@ -455,7 +455,7 @@ bool CReplayActor::GetAdjustedLayerTime(ICharacterInstance* pCharacterInstance, 
 	IAnimationSet* pAnimationSet = pCharacterInstance->GetIAnimationSet();
 	float duration = pAnimationSet->GetDuration_sec(animId);
 	animTime *= params.m_fPlaybackSpeed * speedMultiplier;
-	CRY_ASSERT_MESSAGE(animTime >= 0, "Animation time shouldn't be less than 0");
+	CRY_ASSERT(animTime >= 0, "Animation time shouldn't be less than 0");
 
 	if (duration > 0.0f)
 	{
@@ -601,7 +601,7 @@ void CReplayActor::GunRemovalListener::OnEntityEvent( IEntity *pEntity, const SE
 {
 	if(event.event == ENTITY_EVENT_DONE)
 	{
-		CRY_ASSERT_MESSAGE(pEntity->GetId() == pReplayActor->GetGunId(), "Received event for an entity that wasn't the gun we subscribed to");
+		CRY_ASSERT(pEntity->GetId() == pReplayActor->GetGunId(), "Received event for an entity that wasn't the gun we subscribed to");
 		
 		pReplayActor->SetGunId(0);
 	}

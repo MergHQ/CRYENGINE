@@ -174,7 +174,7 @@ void CDedicatedInput::PreUpdate()
 	else
 	{
 		float fractionDoneThisFrame = changeAmount / (m_interpolateToNewMoveLookInputs + changeAmount);
-		CRY_ASSERT_TRACE (fractionDoneThisFrame >= 0.f && fractionDoneThisFrame <= 1.f, ("fractionDoneThisFrame = %f (changeAmount=%f, interpolate=%f)", fractionDoneThisFrame, changeAmount, m_interpolateToNewMoveLookInputs));
+		CRY_ASSERT(fractionDoneThisFrame >= 0.f && fractionDoneThisFrame <= 1.f, "fractionDoneThisFrame = %f (changeAmount=%f, interpolate=%f)", fractionDoneThisFrame, changeAmount, m_interpolateToNewMoveLookInputs);
 		m_deltaMovement = m_deltaMovement * (1.f - fractionDoneThisFrame) + m_targetDeltaMovement * fractionDoneThisFrame;
 		m_deltaRotation = m_deltaRotation * (1.f - fractionDoneThisFrame) + m_targetDeltaRotation * fractionDoneThisFrame;
 	}

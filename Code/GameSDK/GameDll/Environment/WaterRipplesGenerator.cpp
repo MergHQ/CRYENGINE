@@ -101,14 +101,14 @@ bool CWaterRipplesGenerator::ReloadExtension(IGameObject* pGameObject, const SEn
 
 	WRG::RegisterEvents(*this, *pGameObject);
 
-	CRY_ASSERT_MESSAGE(false, "CWaterRipplesGenerator::ReloadExtension not implemented");
+	CRY_ASSERT(false, "CWaterRipplesGenerator::ReloadExtension not implemented");
 
 	return false;
 }
 
 bool CWaterRipplesGenerator::GetEntityPoolSignature(TSerialize signature)
 {
-	CRY_ASSERT_MESSAGE(false, "CWaterRipplesGenerator::GetEntityPoolSignature not implemented");
+	CRY_ASSERT(false, "CWaterRipplesGenerator::GetEntityPoolSignature not implemented");
 
 	return true;
 }

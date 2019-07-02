@@ -117,7 +117,7 @@ class CGameCodeCoverageOutput_File : public IGameCodeCoverageOutput
 			stream = gEnv->pCryPak->FOpen(filename, "w");
 		}
 		
-		CRY_ASSERT_MESSAGE (stream, string().Format("Failed to open '%s' for output of game code coverage checkpoints!"));
+		CRY_ASSERT (stream, string().Format("Failed to open '%s' for output of game code coverage checkpoints!"));
 		if (stream)
 		{
 			gEnv->pCryPak->FPrintf(stream, "<GameCodeCoverageOutput>\n");
@@ -298,7 +298,7 @@ bool CGameCodeCoverageManager::ReadCodeCoverageContext( IItemParamsNode *paramNo
 	const int numListDefinitionsInFile = listDefinitions ? listDefinitions->GetChildCount() : 0;
 	const int numListDefinitions = min(numListDefinitionsInFile, maxCustomLists);
 	CryLog ("[CODECOVERAGE] Supports up to %d custom lists, XML file specifies %d", maxCustomLists, numListDefinitionsInFile);
-	CRY_ASSERT_MESSAGE (numListDefinitions, string().Format("Code coverage system can only handle a maximum of %d custom lists, but %d are specified in the file. Please remove some lists from XML (or change the TGameCodeCoverageCustomListBitfield definition in GameCodeCoverageManager.h to be a larger type)", maxCustomLists, numListDefinitionsInFile));
+	CRY_ASSERT (numListDefinitions, string().Format("Code coverage system can only handle a maximum of %d custom lists, but %d are specified in the file. Please remove some lists from XML (or change the TGameCodeCoverageCustomListBitfield definition in GameCodeCoverageManager.h to be a larger type)", maxCustomLists, numListDefinitionsInFile));
 
 	// Read number of checkpoints
 	m_nTotalCheckpointsReadFromFile = checkpointsNode ? checkpointsNode->GetChildCount() : 0;
@@ -412,7 +412,7 @@ bool CGameCodeCoverageManager::ReadCodeCoverageContext( IItemParamsNode *paramNo
 		}
 	}
 
-	CRY_ASSERT_MESSAGE(bOk, string().Format("GameCodeCoverageManager: Failed! Found file but failed after reading %d code coverage checkpoints", m_nTotalCheckpointsReadFromFile));
+	CRY_ASSERT(bOk, string().Format("GameCodeCoverageManager: Failed! Found file but failed after reading %d code coverage checkpoints", m_nTotalCheckpointsReadFromFile));
 
 	if (bOk)
 	{
@@ -486,7 +486,7 @@ void CGameCodeCoverageManager::ParseCustomList(const char * name, const char * l
 				}
 			}
 
-			CRY_ASSERT_MESSAGE (doneSomething, string().Format("While reading list '%s', pattern '%s' didn't match any code coverage checkpoint names (or name of any other list)", name, snippet));
+			CRY_ASSERT (doneSomething, string().Format("While reading list '%s', pattern '%s' didn't match any code coverage checkpoint names (or name of any other list)", name, snippet));
 		}
 
 		moveThroughList += nowSkipAhead;
@@ -520,7 +520,7 @@ void CGameCodeCoverageManager::GetRemainingCheckpointLabels( std::vector < const
 		}
 	}
 
-	CRY_ASSERT_MESSAGE(vLabels.size() == reserveNum, string().Format("Reserved room for %d elements, but vector size wound up being %d", reserveNum, vLabels.size()));
+	CRY_ASSERT(vLabels.size() == reserveNum, string().Format("Reserved room for %d elements, but vector size wound up being %d", reserveNum, vLabels.size()));
 }
 	
 //---------------------------------------------------------------------------------------
@@ -895,7 +895,7 @@ void CGameCodeCoverageManager::CheckWhichCheckpointsAreValidForGameState()
 						else if (rulesName)
 						{
 							const char * expanded = gameRulesSystem->GetGameRulesName(eachOne);
-							CRY_ASSERT_MESSAGE (expanded, string().Format("%s is not a game mode alias!", eachOne));
+							CRY_ASSERT (expanded, string().Format("%s is not a game mode alias!", eachOne));
 							match = (expanded && 0 == strcmp(rulesName, expanded));
 						}
 
@@ -1053,7 +1053,7 @@ const SLabelInfoFromFile * CNamedCheckpointGroup::GetFirstUnhitValidCheckpoint()
 		}
 	}
 
-	CRY_ASSERT_TRACE(false, ("No unhit valid checkpoints found in group '%s'", m_name));
+	CRY_ASSERT(false, "No unhit valid checkpoints found in group '%s'", m_name);
 	return NULL;
 }
 

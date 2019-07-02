@@ -71,7 +71,7 @@ CDownloadableResource::~CDownloadableResource()
 	{
 		ReleaseHTTPParser();
 	}
-	CRY_ASSERT_MESSAGE((m_state&k_callbackInProgressMask)==0,"Deleting a resource which is being downloaded - CRASH LIKELY!");	// shouldn't happen due to ref counting
+	CRY_ASSERT((m_state&k_callbackInProgressMask)==0,"Deleting a resource which is being downloaded - CRASH LIKELY!");	// shouldn't happen due to ref counting
 	SAFE_DELETE_ARRAY(m_pBuffer);
 }
 
@@ -807,7 +807,7 @@ CDownloadableResourcePtr CDownloadMgr::FindLocalizedResourceByName(
 		CryFixedStringT<128>			url=templateResource->m_url;
 		ICVar											*pLanguage=gEnv->pConsole->GetCVar("g_language");
 
-		CRY_ASSERT_MESSAGE(pLanguage,"can't find language cvar??");
+		CRY_ASSERT(pLanguage,"can't find language cvar??");
 		if (pLanguage)
 		{
 			url.replace("%LANGUAGE%",pLanguage->GetString());
@@ -1018,8 +1018,8 @@ void CDownloadableResource::SetDownloadInfo(const char* pUrl, const char* pUrlPr
 {
 	CRY_ASSERT(pUrl && pServer && maxDownloadSize>0);
 
-	CRY_ASSERT_MESSAGE(m_port==0,"You cannot call CDownloadableResource::SetDownloadInfo() twice on the same resource");		// not unless the code is strengthened anyway
-	CRY_ASSERT_MESSAGE(port!=0,"You cannot request a download from port 0");		// invalid generally, but also we use 0 as not initialized here
+	CRY_ASSERT(m_port==0,"You cannot call CDownloadableResource::SetDownloadInfo() twice on the same resource");		// not unless the code is strengthened anyway
+	CRY_ASSERT(port!=0,"You cannot request a download from port 0");		// invalid generally, but also we use 0 as not initialized here
 
 	m_port = port;
 	m_maxDownloadSize = maxDownloadSize;
@@ -1182,7 +1182,7 @@ CDownloadableResource::TState CDownloadableResource::GetProgress(
 void CDownloadableResource::AddDataListener(
 	IDataListener	*pInListener)
 {
-	CRY_ASSERT_MESSAGE(std::find(m_listeners.begin(), m_listeners.end(), pInListener) == m_listeners.end(), "A downloadable resource should not have two instances of the same listener");
+	CRY_ASSERT(std::find(m_listeners.begin(), m_listeners.end(), pInListener) == m_listeners.end(), "A downloadable resource should not have two instances of the same listener");
 	m_listeners.push_back(pInListener);
 
 	switch (m_broadcastedState)
@@ -1207,8 +1207,8 @@ void CDownloadableResource::RemoveDataListener(
 {
 	// these are nothing to worry about - it is not uncommon to unregister twice if there is an additional unregister in a destructor
 	// better do unreg twice than have a dangling ptr
-//	CRY_ASSERT_MESSAGE(std::find(m_listenersToRemove.begin(), m_listenersToRemove.end(), pInListener) == m_listenersToRemove.end(), "Trying to remove a data listener twice!");
-//	CRY_ASSERT_MESSAGE(std::find(m_listeners.begin(), m_listeners.end(), pInListener) != m_listeners.end(), "trying to remove a listener thats not in the listners list");
+//	CRY_ASSERT(std::find(m_listenersToRemove.begin(), m_listenersToRemove.end(), pInListener) == m_listenersToRemove.end(), "Trying to remove a data listener twice!");
+//	CRY_ASSERT(std::find(m_listeners.begin(), m_listeners.end(), pInListener) != m_listeners.end(), "trying to remove a listener thats not in the listners list");
 	m_listenersToRemove.push_back(pInListener);
 }
 
@@ -1220,7 +1220,7 @@ IDataListener::~IDataListener()
 		CDownloadMgr		*pMgr=g_pGame->GetDownloadMgr();
 		if (pMgr)
 		{
-			CRY_ASSERT_MESSAGE(!pMgr->IsListenerListening(this),"IDataListener is being deleted but it is still registered as a listener - bad code!");
+			CRY_ASSERT(!pMgr->IsListenerListening(this),"IDataListener is being deleted but it is still registered as a listener - bad code!");
 		}
 	}
 #endif

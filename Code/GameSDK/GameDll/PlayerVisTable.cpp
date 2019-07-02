@@ -243,7 +243,7 @@ void CPlayerVisTable::Update(float dt)
 		if (worstLatency >= assertAfterThisManyFrames && worstIndex > 0 && worstIndex < kNumUsedVistableEntries)
 		{
 			IEntity * entity = gEnv->pEntitySystem->GetEntity(m_visTableEntries[worstIndex].entityId);
-			CRY_ASSERT_MESSAGE(false, string().Format("%u frames have passed since last check of vis-table element %d (entity %d = %s \"%s\") flags=%u", m_visTableEntries[worstIndex].framesSinceLastCheck, worstIndex, m_visTableEntries[worstIndex].entityId, entity ? entity->GetClass()->GetName() : "NULL", entity ? entity->GetName() : "NULL", m_visTableEntries[worstIndex].flags));
+			CRY_ASSERT(false, string().Format("%u frames have passed since last check of vis-table element %d (entity %d = %s \"%s\") flags=%u", m_visTableEntries[worstIndex].framesSinceLastCheck, worstIndex, m_visTableEntries[worstIndex].entityId, entity ? entity->GetClass()->GetName() : "NULL", entity ? entity->GetName() : "NULL", m_visTableEntries[worstIndex].flags));
 		}
 
 

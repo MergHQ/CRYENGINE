@@ -876,7 +876,7 @@ bool CPlayer::Init(IGameObject* pGameObject)
 		{
 			spawningModule->PlayerJoined(entityId);
 		}
-		CRY_ASSERT_MESSAGE(spawningModule, "CPlayer::Init() failed to find required gamerules spawning module");
+		CRY_ASSERT(spawningModule, "CPlayer::Init() failed to find required gamerules spawning module");
 
 		IGameRulesVictoryConditionsModule* pVictoryConditions = pGameRules->GetVictoryConditionsModule();
 		if (pVictoryConditions && IsPlayer())
@@ -1009,7 +1009,7 @@ void CPlayer::RegisterOnHUD(void)
 
 void CPlayer::ReloadClientXmlData()
 {
-	CRY_ASSERT_MESSAGE(IsClient(), "This function should be called only for the client!");
+	CRY_ASSERT(IsClient(), "This function should be called only for the client!");
 
 	ReadDataFromXML(true);
 }
@@ -1191,7 +1191,7 @@ void CPlayer::InitLocalPlayer()
 			}
 		}
 
-		CRY_ASSERT_TRACE(m_playerCamera == NULL, ("%s '%s' already has a camera instance when allocating another = memory leak!", GetEntity()->GetClass()->GetName(), GetEntity()->GetName()));
+		CRY_ASSERT(m_playerCamera == NULL, "%s '%s' already has a camera instance when allocating another = memory leak!", GetEntity()->GetClass()->GetName(), GetEntity()->GetName());
 		m_playerCamera = new CPlayerCamera(*this);
 	}
 
@@ -1343,7 +1343,7 @@ void CPlayer::PostReloadExtension(IGameObject* pGameObject, const SEntitySpawnPa
 		spawningModule->PlayerJoined(params.id);
 	}
 
-	CRY_ASSERT_MESSAGE(spawningModule, "CPlayer::Init() failed to find required gamerules spawning module");
+	CRY_ASSERT(spawningModule, "CPlayer::Init() failed to find required gamerules spawning module");
 
 	{
 		IGameRulesAssistScoringModule* assistScoringModule = pGameRules ? pGameRules->GetAssistScoringModule() : NULL;
@@ -2894,8 +2894,8 @@ void CPlayer::OnStanceChanged(EStance newStance, EStance oldStance)
 
 	CActor::OnStanceChanged(newStance, oldStance);
 
-	CRY_ASSERT_TRACE(newStance == m_stance, ("Expected 'newStance' (%d) to be equal to 'm_stance' (%d)", newStance, m_stance.Value()));
-	CRY_ASSERT_TRACE(newStance != oldStance, ("Expected 'newStance' (%d) to be different to 'oldStance' (%d)", newStance, oldStance));
+	CRY_ASSERT(newStance == m_stance, "Expected 'newStance' (%d) to be equal to 'm_stance' (%d)", newStance, m_stance.Value());
+	CRY_ASSERT(newStance != oldStance, "Expected 'newStance' (%d) to be different to 'oldStance' (%d)", newStance, oldStance);
 
 	if (IsClient())
 	{
@@ -3502,7 +3502,7 @@ void CPlayer::SpawnCorpse()
 				}
 
 				CCorpseManager* pCorpseManager = g_pGame->GetGameRules()->GetCorpseManager();
-				CRY_ASSERT_MESSAGE(pCorpseManager, "NO CORPSE MANAGER INSTANTIATED");
+				CRY_ASSERT(pCorpseManager, "NO CORPSE MANAGER INSTANTIATED");
 				pCorpseManager->RegisterCorpse(corpseId, pCloneEntity->GetWorldPos(), GetBaseHeat());
 
 				IAnimatedCharacter* pAnimatedCharacter = GetAnimatedCharacter();
@@ -4960,7 +4960,7 @@ void CPlayer::NetSerialize_LedgeGrab(TSerialize ser, bool bReading)
 	NET_PROFILE_SCOPE("Ledge Grab", bReading);
 	ser.Value("ledgeId", m_ledgeID, 'ui16');
 
-	CRY_ASSERT_MESSAGE(m_ledgeFlags <= 3, "ledgeflags are out of range of compression policy ui2!");
+	CRY_ASSERT(m_ledgeFlags <= 3, "ledgeflags are out of range of compression policy ui2!");
 	ser.Value("ledgeFlags", m_ledgeFlags, 'ui2'); // must be serialised BEFORE ledgeCounter
 
 	ser.Value("ledgeCounter", this, &CPlayer::GetLedgeCounter, &CPlayer::SetLedgeCounter, 'ui3');
@@ -5005,7 +5005,7 @@ void CPlayer::SetSpectatorOrbitYawSpeed(float yawSpeed, bool singleFrame)
 
 bool CPlayer::CanSpectatorOrbitYaw() const
 {
-	CRY_ASSERT_MESSAGE(m_pPlayerTypeComponent, "CPlayer::CanSpectatorOrbitYaw() - Localplayercomponent not found. This function should only be called on the client player");
+	CRY_ASSERT(m_pPlayerTypeComponent, "CPlayer::CanSpectatorOrbitYaw() - Localplayercomponent not found. This function should only be called on the client player");
 
 #ifndef _RELEASE
 	return g_pGameCVars->g_spectate_follow_orbitEnable > 0 || (m_pPlayerTypeComponent->GetCurrentFollowCameraSettings().m_flags & SFollowCameraSettings::eFCF_AllowOrbitYaw);
@@ -5029,7 +5029,7 @@ void CPlayer::SetSpectatorOrbitPitchSpeed(float pitchSpeed, bool singleFrame)
 
 bool CPlayer::CanSpectatorOrbitPitch() const
 {
-	CRY_ASSERT_MESSAGE(m_pPlayerTypeComponent, "CPlayer::CanSpectatorOrbitPitch() - Localplayercomponent not found. This function should only be called on the client player");
+	CRY_ASSERT(m_pPlayerTypeComponent, "CPlayer::CanSpectatorOrbitPitch() - Localplayercomponent not found. This function should only be called on the client player");
 
 #ifndef _RELEASE
 	return g_pGameCVars->g_spectate_follow_orbitEnable > 0 || (m_pPlayerTypeComponent->GetCurrentFollowCameraSettings().m_flags & SFollowCameraSettings::eFCF_AllowOrbitPitch);
@@ -6601,18 +6601,18 @@ void CPlayer::SetSpectatorModeAndOtherEntId(const uint8 _mode, const EntityId _o
 		switch (mode)
 		{
 		case eASM_Fixed:
-			CRY_ASSERT_MESSAGE(!server, "The server should've already worked out a valid spectator \"other entity\" for himself!");
+			CRY_ASSERT(!server, "The server should've already worked out a valid spectator \"other entity\" for himself!");
 			othEntId = specmod->GetRandomSpectatorLocation();
 			CRY_ASSERT(othEntId);
 			break;
 		case eASM_Free:
 			break;
 		case eASM_Follow:
-			CRY_ASSERT_MESSAGE(!server, "The server should've already worked out a valid spectator \"other entity\" for himself!");
+			CRY_ASSERT(!server, "The server should've already worked out a valid spectator \"other entity\" for himself!");
 			CRY_TODO(18, 3, 2010, "Could clients choose their own Follow subject here too, meaning no spectator \"other entities\" would need to be sent over the network...?");
 			break;
 		default:
-			CRY_ASSERT_MESSAGE(0, string().Format("Unexpected spectator mode '%d'", mode));
+			CRY_ASSERT(0, string().Format("Unexpected spectator mode '%d'", mode));
 		}
 	}
 
@@ -6648,7 +6648,7 @@ void CPlayer::SetSpectatorModeAndOtherEntId(const uint8 _mode, const EntityId _o
 					static const uint32 kDefaultCRC = CCrc32::ComputeLowercase("Default");
 #if defined(USE_CRY_ASSERT)
 					const bool setOk = SetCurrentFollowCameraSettings(kDefaultCRC);
-					CRY_ASSERT_MESSAGE(setOk, "Could not set the view mode to \"Default\"");
+					CRY_ASSERT(setOk, "Could not set the view mode to \"Default\"");
 #else
 					SetCurrentFollowCameraSettings(kDefaultCRC);
 #endif
@@ -6664,7 +6664,7 @@ void CPlayer::SetSpectatorModeAndOtherEntId(const uint8 _mode, const EntityId _o
 					static const uint32 kKillerCRC = CCrc32::ComputeLowercase("Killer");
 #if defined(USE_CRY_ASSERT)
 					const bool setOk = SetCurrentFollowCameraSettings(kKillerCRC);
-					CRY_ASSERT_MESSAGE(setOk, "Could not set the view mode to \"Killer\"");
+					CRY_ASSERT(setOk, "Could not set the view mode to \"Killer\"");
 #else
 					SetCurrentFollowCameraSettings(kKillerCRC);
 #endif
@@ -6856,7 +6856,7 @@ void CPlayer::NetKill(const KillParams& killParams)
 	m_teamWhenKilled = killParams.targetTeam;
 
 #if !defined(_RELEASE)
-	CRY_ASSERT_TRACE(!m_dropCorpseOnDeath, ("Getting multiple deaths for %s '%s' (%s%shealth=%8.2f)", GetEntity()->GetClass()->GetName(), GetEntity()->GetName(), IsClient() ? "client, " : "", GetEntity()->GetAI() ? "AI, " : "", m_health.GetHealth()));
+	CRY_ASSERT(!m_dropCorpseOnDeath, "Getting multiple deaths for %s '%s' (%s%shealth=%8.2f)", GetEntity()->GetClass()->GetName(), GetEntity()->GetName(), IsClient() ? "client, " : "", GetEntity()->GetAI() ? "AI, " : "", m_health.GetHealth());
 #endif
 
 	bool vehicleDestructionDeath = killParams.hit_type == CGameRules::EHitType::VehicleDestruction;
@@ -7690,7 +7690,7 @@ void CPlayer::EnterPickAndThrow(EntityId entityPicked, bool selectImmediately /*
 		IEntityClass* pClass = gEnv->pEntitySystem->GetClassRegistry()->FindClass(name);
 		EntityId pickAndThrowWeaponId = GetInventory()->GetItemByClass(pClass);
 
-		CRY_ASSERT_MESSAGE(pickAndThrowWeaponId, "Player does not have the 'PickAndThrowWeapon' item");
+		CRY_ASSERT(pickAndThrowWeaponId, "Player does not have the 'PickAndThrowWeapon' item");
 		if (pickAndThrowWeaponId)
 		{
 			m_stats.prevPickAndThrowEntity = 0;
@@ -8105,16 +8105,16 @@ void CPlayer::EnterPlayerPlugin(CPlayerPlugin* pluginClass)
 			bOk = false;
 		}
 
-		CRY_ASSERT_TRACE(bOk, ("%s %s can't enter player plug-in class '%s'", GetEntity()->GetClass()->GetName(), GetEntity()->GetName(), PLAYER_PLUGIN_DETAILS(pluginClass)));
+		CRY_ASSERT(bOk, "%s %s can't enter player plug-in class '%s'", GetEntity()->GetClass()->GetName(), GetEntity()->GetName(), PLAYER_PLUGIN_DETAILS(pluginClass));
 
 		if (bOk)
 		{
 			if (m_numActivePlayerPlugins < k_maxActivePlayerPlugIns)
 			{
-				CRY_ASSERT_MESSAGE(this == pluginClass->GetOwnerPlayer(), string().Format("Player '%s' shouldn't enter a player plug-in owned by player '%s'", GetEntity()->GetName(), pluginClass->GetOwnerPlayer() ? pluginClass->GetOwnerPlayer()->GetEntity()->GetName() : "NULL"));
+				CRY_ASSERT(this == pluginClass->GetOwnerPlayer(), string().Format("Player '%s' shouldn't enter a player plug-in owned by player '%s'", GetEntity()->GetName(), pluginClass->GetOwnerPlayer() ? pluginClass->GetOwnerPlayer()->GetEntity()->GetName() : "NULL"));
 				pluginClass->Enter(m_pPlayerPluginEventDistributor);
 
-				CRY_ASSERT_MESSAGE(pluginClass->IsEntered(), "CPlayerPlugin was entered but IsEntered() is still returning false! Maybe the base class Enter function wasn't called from the subclass?");
+				CRY_ASSERT(pluginClass->IsEntered(), "CPlayerPlugin was entered but IsEntered() is still returning false! Maybe the base class Enter function wasn't called from the subclass?");
 				ASSERT_IS_NULL(m_activePlayerPlugins[m_numActivePlayerPlugins]);
 				m_activePlayerPlugins[m_numActivePlayerPlugins] = pluginClass;
 				m_numActivePlayerPlugins++;
@@ -8127,7 +8127,7 @@ void CPlayer::EnterPlayerPlugin(CPlayerPlugin* pluginClass)
 				{
 					CryLog("    %d/%d: %s", i + 1, k_maxActivePlayerPlugIns, m_activePlayerPlugins[i]->DbgGetClassDetails().c_str());
 				}
-				CRY_ASSERT_MESSAGE(0, string().Format("Can't enter plug-in \"%s\" because array of size %d is full! Maybe you need to increase k_maxActivePlayerPlugIns...", pluginClass->DbgGetClassDetails().c_str(), k_maxActivePlayerPlugIns));
+				CRY_ASSERT(0, string().Format("Can't enter plug-in \"%s\" because array of size %d is full! Maybe you need to increase k_maxActivePlayerPlugIns...", pluginClass->DbgGetClassDetails().c_str(), k_maxActivePlayerPlugIns));
 			}
 #endif
 		}
@@ -8161,12 +8161,12 @@ void CPlayer::LeavePlayerPlugin(CPlayerPlugin* pluginClass)
 			bOk = false;
 		}
 
-		CRY_ASSERT_TRACE(bOk, ("%s %s can't leave player plug-in class '%s'", GetEntity()->GetClass()->GetName(), GetEntity()->GetName(), PLAYER_PLUGIN_DETAILS(pluginClass)));
+		CRY_ASSERT(bOk, "%s %s can't leave player plug-in class '%s'", GetEntity()->GetClass()->GetName(), GetEntity()->GetName(), PLAYER_PLUGIN_DETAILS(pluginClass));
 
 		if (bOk)
 		{
 			pluginClass->Leave();
-			CRY_ASSERT_MESSAGE(!pluginClass->IsEntered(), "CPlayerPlugin was left but IsEntered() is still returning true! Maybe the base class Leave function wasn't called from the subclass?");
+			CRY_ASSERT(!pluginClass->IsEntered(), "CPlayerPlugin was left but IsEntered() is still returning true! Maybe the base class Leave function wasn't called from the subclass?");
 
 			for (int i = 0; i < m_numActivePlayerPlugins; i++)
 			{
@@ -8179,7 +8179,7 @@ void CPlayer::LeavePlayerPlugin(CPlayerPlugin* pluginClass)
 				}
 			}
 
-			CRY_ASSERT_MESSAGE(false, string().Format("Player was told to leave plug-in %p which isn't in the list of active plug-ins!", pluginClass));
+			CRY_ASSERT(false, string().Format("Player was told to leave plug-in %p which isn't in the list of active plug-ins!", pluginClass));
 		}
 	}
 }
@@ -8191,7 +8191,7 @@ void CPlayer::LeaveAllPlayerPlugins()
 		ASSERT_IS_NOT_NULL(m_activePlayerPlugins[i]);
 		assert(m_activePlayerPlugins[i]->IsEntered());
 		m_activePlayerPlugins[i]->Leave();
-		CRY_ASSERT_MESSAGE(!m_activePlayerPlugins[i]->IsEntered(), "CPlayerPlugin was left but IsEntered() is still returning true! Maybe the base class Leave function wasn't called from the subclass?");
+		CRY_ASSERT(!m_activePlayerPlugins[i]->IsEntered(), "CPlayerPlugin was left but IsEntered() is still returning true! Maybe the base class Leave function wasn't called from the subclass?");
 		m_activePlayerPlugins[i] = NULL;
 	}
 
@@ -8933,7 +8933,7 @@ void CPlayer::StopStealthKillTargetMovement(EntityId playerId)
 	IActor* pTargetActor = gEnv->pGameFramework->GetIActorSystem()->GetActor(playerId);
 	if (pTargetActor)
 	{
-		CRY_ASSERT_MESSAGE(pTargetActor->GetActorClass() == CPlayer::GetActorClassType(), "CPlayer::NetSetInStealthKill - Expected player; got something else");
+		CRY_ASSERT(pTargetActor->GetActorClass() == CPlayer::GetActorClassType(), "CPlayer::NetSetInStealthKill - Expected player; got something else");
 
 		CPlayer* pTargetPlayer = static_cast<CPlayer*>(pTargetActor);
 		pTargetPlayer->BlockMovementInputsForTime(2.f);
@@ -8966,7 +8966,7 @@ void CPlayer::CaughtInStealthKill(EntityId killerId)
 	{
 		IEntity* pKillerEntity = gEnv->pEntitySystem->GetEntity(killerId);
 
-		CRY_ASSERT_MESSAGE(pKillerEntity, "Invalid killer ID for stealth kill");
+		CRY_ASSERT(pKillerEntity, "Invalid killer ID for stealth kill");
 		if (pKillerEntity)
 		{
 			Vec3 killDirection = GetEntity()->GetWorldPos() - pKillerEntity->GetWorldPos();
@@ -10046,21 +10046,21 @@ CPlayerEntityInteraction& CPlayer::GetPlayerEntityInteration()
 
 const SFollowCameraSettings& CPlayer::GetCurrentFollowCameraSettings() const
 {
-	CRY_ASSERT_MESSAGE(m_pPlayerTypeComponent, "CPlayer::GetCurrentFollowCameraSettings() - Localplayercomponent not found. This function should only be called on the client player");
+	CRY_ASSERT(m_pPlayerTypeComponent, "CPlayer::GetCurrentFollowCameraSettings() - Localplayercomponent not found. This function should only be called on the client player");
 
 	return m_pPlayerTypeComponent->GetCurrentFollowCameraSettings();
 }
 
 void CPlayer::ChangeCurrentFollowCameraSettings(bool increment)
 {
-	CRY_ASSERT_MESSAGE(m_pPlayerTypeComponent, "CPlayer::ChangeCurrentFollowCameraSettings() - Localplayercomponent not found. This function should only be called on the client player");
+	CRY_ASSERT(m_pPlayerTypeComponent, "CPlayer::ChangeCurrentFollowCameraSettings() - Localplayercomponent not found. This function should only be called on the client player");
 
 	return m_pPlayerTypeComponent->ChangeCurrentFollowCameraSettings(increment);
 }
 
 bool CPlayer::SetCurrentFollowCameraSettings(uint32 crcName)
 {
-	CRY_ASSERT_MESSAGE(m_pPlayerTypeComponent, "CPlayer::SetCurrentFollowCameraSettings() - Localplayercomponent not found. This function should only be called on the client player");
+	CRY_ASSERT(m_pPlayerTypeComponent, "CPlayer::SetCurrentFollowCameraSettings() - Localplayercomponent not found. This function should only be called on the client player");
 
 	return m_pPlayerTypeComponent->SetCurrentFollowCameraSettings(crcName);
 }

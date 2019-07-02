@@ -327,7 +327,7 @@ ITelemetryProducer::EResult CMMTelemetryProducer::ProduceTelemetry( char *pOutBu
 		}
 		else
 		{
-			CRY_ASSERT_MESSAGE( (int)writtingIndex >= inMinRequired, "MatchMaking Telemetry event is too large to send" );
+			CRY_ASSERT( (int)writtingIndex >= inMinRequired, "MatchMaking Telemetry event is too large to send" );
 			writtenEnough = true;
 		}
 	}

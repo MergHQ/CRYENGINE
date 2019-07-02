@@ -955,7 +955,7 @@ public:
 
 	virtual void OnPathCompleted(EntityId attachedEntityId)
 	{
-		CRY_ASSERT_MESSAGE(attachedEntityId == m_EntityId, "CMPAttachToPath_Node::OnPathCompleted - Path listener listening to unexpected entity");
+		CRY_ASSERT(attachedEntityId == m_EntityId, "CMPAttachToPath_Node::OnPathCompleted - Path listener listening to unexpected entity");
 
 		CMPPathFollowingManager* pMPPathFollowingManager = g_pGame->GetGameRules()->GetMPPathFollowingManager();
 		pMPPathFollowingManager->UnregisterListener(attachedEntityId);
@@ -2185,7 +2185,7 @@ public:
 				}
 				if (pICVar->GetType() == ECVarType::Int64)
 				{
-					CRY_ASSERT_MESSAGE(false, "CMPCheckCVar_Node::ProcessEvent int64 cvar not implemented");
+					CRY_ASSERT(false, "CMPCheckCVar_Node::ProcessEvent int64 cvar not implemented");
 				}
 			}
 			else

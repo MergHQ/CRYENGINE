@@ -32,7 +32,7 @@ CRecordingBuffer::CRecordingBuffer()
 
 void CRecordingBuffer::Init(size_t size, unsigned char *buffer)
 {
-	CRY_ASSERT_MESSAGE(m_pBuffer==NULL, "CRecordingBuffer initialised twice");
+	CRY_ASSERT(m_pBuffer==NULL, "CRecordingBuffer initialised twice");
 
 	m_allocatedBuffer = false;
 
@@ -84,7 +84,7 @@ void CRecordingBuffer::Update()
 
 void CRecordingBuffer::RemoveFrame()
 {
-	CRY_ASSERT_MESSAGE(m_usedSize > 0, "Unable to remove frame, no packets found");
+	CRY_ASSERT(m_usedSize > 0, "Unable to remove frame, no packets found");
 	SRecording_Packet* pPacket = (SRecording_Packet*)m_pStart;
 	if (pPacket->type == eRBPT_FrameData)
 	{
@@ -106,9 +106,9 @@ void CRecordingBuffer::RemoveFrame()
 
 void CRecordingBuffer::RemovePacket(float recordedTime)
 {
-	CRY_ASSERT_MESSAGE(m_usedSize > 0, "Unable to remove packet, no packets found");
+	CRY_ASSERT(m_usedSize > 0, "Unable to remove packet, no packets found");
 	SRecording_Packet* pPacket = (SRecording_Packet*)m_pStart;
-	CRY_ASSERT_MESSAGE(pPacket->size <= m_usedSize, "Unable to remove more than we are using");
+	CRY_ASSERT(pPacket->size <= m_usedSize, "Unable to remove more than we are using");
 	if (m_pDiscardCallback)
 	{
 		m_pDiscardCallback(pPacket, recordedTime, m_pDiscardCallbackUserData);
@@ -116,7 +116,7 @@ void CRecordingBuffer::RemovePacket(float recordedTime)
 	m_pStart += pPacket->size;
 	if (m_pStart >= m_pBuffer + m_dynamicBufferSize)
 	{
-		CRY_ASSERT_MESSAGE(m_pStart == m_pBuffer + m_dynamicBufferSize, "The packet size has overrun the size of the dynamic buffer");
+		CRY_ASSERT(m_pStart == m_pBuffer + m_dynamicBufferSize, "The packet size has overrun the size of the dynamic buffer");
 		m_pStart = m_pBuffer;
 		m_dynamicBufferSize = m_actualBufferSize;
 	}
@@ -129,7 +129,7 @@ void CRecordingBuffer::RemovePacket(float recordedTime)
 
 void CRecordingBuffer::EnsureFreeSpace(size_t size)
 {
-	CRY_ASSERT_MESSAGE(size <= m_actualBufferSize, "Unable to clear enough space");
+	CRY_ASSERT(size <= m_actualBufferSize, "Unable to clear enough space");
 	while (true)
 	{
 		uint8* pEnd = GetEnd();
@@ -173,9 +173,9 @@ SRecording_Packet *CRecordingBuffer::AllocEmptyPacket(
 {
 	SRecording_Packet		*result=NULL;
 
-	CRY_ASSERT_MESSAGE((inSize % 4) == 0, "The packet size must be 4 byte aligned.");
-	CRY_ASSERT_MESSAGE(inSize >= sizeof(SRecording_Packet), "The size of the packet must not be large enough to hold a SRecording_Packet header.");
-	CRY_ASSERT_MESSAGE(inType != eRBPT_Invalid, "The type of the packet must not be eRBT_Invalid. Has it been initialised properly?");
+	CRY_ASSERT((inSize % 4) == 0, "The packet size must be 4 byte aligned.");
+	CRY_ASSERT(inSize >= sizeof(SRecording_Packet), "The size of the packet must not be large enough to hold a SRecording_Packet header.");
+	CRY_ASSERT(inType != eRBPT_Invalid, "The type of the packet must not be eRBT_Invalid. Has it been initialised properly?");
 
 	EnsureFreeSpace(inSize);
 
@@ -197,7 +197,7 @@ SRecording_Packet *CRecordingBuffer::AllocEmptyPacket(
 
 	m_usedSize += inSize;
 
-	CRY_ASSERT_MESSAGE(m_usedSize <= m_dynamicBufferSize, "Can't use more memory than we have in the buffer, something has gone wrong here");
+	CRY_ASSERT(m_usedSize <= m_dynamicBufferSize, "Can't use more memory than we have in the buffer, something has gone wrong here");
 
 	result->type=inType;
 	result->size=inSize;
@@ -214,7 +214,7 @@ void CRecordingBuffer::AddPacket(const SRecording_Packet& packet)
 
 size_t CRecordingBuffer::GetData(uint8 *pBuffer, size_t bufferSize) const
 {
-	CRY_ASSERT_MESSAGE(bufferSize >= m_usedSize, "The buffer is not large enough to contain all the data");
+	CRY_ASSERT(bufferSize >= m_usedSize, "The buffer is not large enough to contain all the data");
 	size_t copiedSize = min(bufferSize, m_usedSize);
 	if (m_pStart + copiedSize <= m_pBuffer + m_dynamicBufferSize)
 	{

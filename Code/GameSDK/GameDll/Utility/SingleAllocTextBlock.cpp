@@ -57,7 +57,7 @@ void CSingleAllocTextBlock::EmptyWithoutFreeing()
 //----------------------------------------------------------
 void CSingleAllocTextBlock::IncreaseSizeNeeded(size_t theSize)
 {
-	CRY_ASSERT_MESSAGE(m_mem == NULL, "Shouldn't try and increase size after memory allocation!");
+	CRY_ASSERT(m_mem == NULL, "Shouldn't try and increase size after memory allocation!");
 
 	m_sizeNeeded += theSize;
 	m_sizeNeededWithoutUsingDuplicates += theSize;
@@ -66,7 +66,7 @@ void CSingleAllocTextBlock::IncreaseSizeNeeded(size_t theSize)
 //----------------------------------------------------------
 void CSingleAllocTextBlock::IncreaseSizeNeeded(const char * textIn, bool doDuplicateCheck)
 {
-	CRY_ASSERT_MESSAGE(m_mem == NULL, "Shouldn't try and increase size after memory allocation!");
+	CRY_ASSERT(m_mem == NULL, "Shouldn't try and increase size after memory allocation!");
 
 	if (textIn)
 	{
@@ -86,9 +86,9 @@ void CSingleAllocTextBlock::IncreaseSizeNeeded(const char * textIn, bool doDupli
 //----------------------------------------------------------
 void CSingleAllocTextBlock::Allocate()
 {
-	CRY_ASSERT_TRACE(m_mem == NULL, ("Already allocated memory but something's trying to allocate %u bytes more", m_sizeNeeded));
+	CRY_ASSERT(m_mem == NULL, "Already allocated memory but something's trying to allocate %u bytes more", m_sizeNeeded);
 	m_mem = new char[m_sizeNeeded + MORE_SINGLE_ALLOC_TEXT_BLOCK_CHECKS];
-	CRY_ASSERT_TRACE(m_mem != NULL, ("Failed to allocate %u bytes of memory!", m_sizeNeeded));
+	CRY_ASSERT(m_mem != NULL, "Failed to allocate %u bytes of memory!", m_sizeNeeded);
 
 	SingleAllocTextBlockLog ("Allocated %u bytes of memory (saved %u bytes by reusing strings; number of unique strings found is %d/%d)", m_sizeNeeded, m_sizeNeededWithoutUsingDuplicates - m_sizeNeeded, m_reuseDuplicatedStringsNumUsed, m_reuseDuplicatedStringsArraySize);
 
@@ -98,7 +98,7 @@ void CSingleAllocTextBlock::Allocate()
 	m_mem[m_sizeNeeded] = '@';
 #endif
 
-	CRY_ASSERT_TRACE(m_numBytesUsed == 0, ("Allocating memory but have apparently already used %u bytes!", m_numBytesUsed));
+	CRY_ASSERT(m_numBytesUsed == 0, "Allocating memory but have apparently already used %u bytes!", m_numBytesUsed);
 }
 
 //----------------------------------------------------------
@@ -131,7 +131,7 @@ void CSingleAllocTextBlock::RememberPossibleDuplicate(const char * textIn)
 		}
 		else
 		{
-			CRY_ASSERT_MESSAGE(m_mem == NULL, "Only expected to find too many unique strings before memory has been allocated, not afterwards!");
+			CRY_ASSERT(m_mem == NULL, "Only expected to find too many unique strings before memory has been allocated, not afterwards!");
 			SingleAllocTextBlockLog("Too many unique strings - workspace only big enough to cope with %u! The string '%s' was one too many. Not consolidating duplicated strings as a precaution...", m_reuseDuplicatedStringsArraySize, textIn);
 			m_reuseDuplicatedStringsArray = NULL;
 			m_reuseDuplicatedStringsArraySize = 0;
@@ -151,7 +151,7 @@ const char * CSingleAllocTextBlock::StoreText(const char * textIn, bool doDuplic
 		reply = doDuplicateCheck ? FindDuplicate(textIn) : NULL;
 		if (reply == NULL)
 		{
-			CRY_ASSERT_MESSAGE(m_mem != NULL, "No memory has been allocated!");
+			CRY_ASSERT(m_mem != NULL, "No memory has been allocated!");
 			if (cry_strcpy(m_mem + m_numBytesUsed, m_sizeNeeded - m_numBytesUsed, textIn))
 			{
 				reply = m_mem + m_numBytesUsed;
@@ -171,7 +171,7 @@ const char * CSingleAllocTextBlock::StoreText(const char * textIn, bool doDuplic
 		SingleAllocTextBlockLog ("Storing a copy of '%s', now used %u/%u bytes, %u bytes left", textIn, m_numBytesUsed, m_sizeNeeded, m_sizeNeeded - m_numBytesUsed);
 	}
 
-	CRY_ASSERT_TRACE (m_numBytesUsed <= m_sizeNeeded, ("Counters have been set to invalid values! Apparently used %d/%d bytes!", m_numBytesUsed, m_sizeNeeded));
+	CRY_ASSERT(m_numBytesUsed <= m_sizeNeeded, "Counters have been set to invalid values! Apparently used %d/%d bytes!", m_numBytesUsed, m_sizeNeeded);
 
 	return reply;
 }
@@ -179,10 +179,10 @@ const char * CSingleAllocTextBlock::StoreText(const char * textIn, bool doDuplic
 //----------------------------------------------------------
 void CSingleAllocTextBlock::Lock()
 {
-	CRY_ASSERT_MESSAGE(m_numBytesUsed == m_sizeNeeded, string().Format("Didn't fill entire block of reserved memory: allocated %d bytes, used %d", m_sizeNeeded, m_numBytesUsed));
+	CRY_ASSERT(m_numBytesUsed == m_sizeNeeded, "Didn't fill entire block of reserved memory: allocated %d bytes, used %d", m_sizeNeeded, m_numBytesUsed);
 
 #if MORE_SINGLE_ALLOC_TEXT_BLOCK_CHECKS
-	CRY_ASSERT_MESSAGE(m_mem[m_sizeNeeded] == '@', "Memory overwrite");
+	CRY_ASSERT(m_mem[m_sizeNeeded] == '@', "Memory overwrite");
 #endif
 
 	m_reuseDuplicatedStringsArray = NULL;

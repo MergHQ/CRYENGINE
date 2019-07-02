@@ -721,12 +721,12 @@ void CGameRulesStandardState::EnterPostGameState( EPostGameState state )
 					{
 						if(!pRecordingSystem->PlayWinningKillcam())
 						{
-							CRY_ASSERT_MESSAGE(false, "There should be a Winning Kill queued up when we get here...");
+							CRY_ASSERT(false, "There should be a Winning Kill queued up when we get here...");
 						}
 					}
 					else
 					{
-						CRY_ASSERT_MESSAGE(false, "There should be a Winning Kill queued up when we get here...");
+						CRY_ASSERT(false, "There should be a Winning Kill queued up when we get here...");
 					}
 				}
 			}

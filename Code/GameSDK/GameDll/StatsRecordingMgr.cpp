@@ -51,7 +51,7 @@ CStatsRecordingMgr::CStatsRecordingMgr() :
 	memset(m_teamTrackers, 0, sizeof(m_teamTrackers));
 
 	m_gameStats=g_pGame->GetIGameFramework()->GetIGameStatistics();
-	CRY_ASSERT_MESSAGE(m_gameStats,"CStatsRecordingMgr instantiated without IGameStatistics being instantiated first, initialise IGameStatistics first - fatal");
+	CRY_ASSERT(m_gameStats,"CStatsRecordingMgr instantiated without IGameStatistics being instantiated first, initialise IGameStatistics first - fatal");
 
 	m_gameStats->SetStatisticsCallback(this);
 
@@ -208,7 +208,7 @@ CStatsRecordingMgr::CStatsRecordingMgr() :
 	g_pGame->GetIGameFramework()->RegisterListener(this, "CStatsRecordingMgr", FRAMEWORKLISTENERPRIORITY_GAME);
 
 	CDownloadMgr		*pDL=g_pGame->GetDownloadMgr();
-	CRY_ASSERT_MESSAGE(pDL || !gEnv->bMultiplayer,"CStatsRecordingMgr must be instantiated after the CDownloadMgr");		// need to get our settings from the web
+	CRY_ASSERT(pDL || !gEnv->bMultiplayer,"CStatsRecordingMgr must be instantiated after the CDownloadMgr");		// need to get our settings from the web
 	if (pDL)
 	{
 		CDownloadableResourcePtr		pRes=pDL->FindResourceByName("permissions");
@@ -223,7 +223,7 @@ CStatsRecordingMgr::CStatsRecordingMgr() :
 		{
 			CryWarning(VALIDATOR_MODULE_GAME,VALIDATOR_ERROR,"CStatsRecordingMgr failed to start downloading its online settings - will default to sending telemetry");
 #if USER_marktu
-			CRY_ASSERT_MESSAGE(0,"Failed to find permission resource");
+			CRY_ASSERT(0,"Failed to find permission resource");
 #endif
 		}
 	}
@@ -497,7 +497,7 @@ int CStatsRecordingMgr::GetIntAttributeFromProfile(IPlayerProfile *inProfile, co
 				break;
 			}
 			default:
-				CRY_ASSERT_MESSAGE(0, string().Format("unexpected attribute data type = %d", data.GetType()).c_str());
+				CRY_ASSERT(0, string().Format("unexpected attribute data type = %d", data.GetType()).c_str());
 				break;
 		}
 	}
@@ -745,12 +745,12 @@ void CStatsRecordingMgr::BeginRound()
 {
 	if (IsTrackingEnabled() && m_sessionTracker)
 	{
-		CRY_ASSERT_MESSAGE(m_sessionTracker,"BeginRound() called when no session is open");
+		CRY_ASSERT(m_sessionTracker,"BeginRound() called when no session is open");
 		if (!m_sessionTracker)
 		{
 			BeginSession();
 		}
-		CRY_ASSERT_MESSAGE(m_gameStats->GetScopeID()==eGSC_Session,"stats error, session scope not active as aspected");
+		CRY_ASSERT(m_gameStats->GetScopeID()==eGSC_Session,"stats error, session scope not active as aspected");
 		m_gameStats->PushGameScope(eGSC_Round);
 		assert(m_roundTracker);		// tracker will have been assigned and setup by callback
 									// the reason for doing it in the callback rather than here is to allow the push to work from lua
@@ -767,7 +767,7 @@ void CStatsRecordingMgr::BeginRound()
 			{
 				if(m_checkpointCount != 0 && pActor->GetEntity()->IsActivatedForUpdates())
 				{
-					CRY_ASSERT_MESSAGE(strcmp(pActor->GetEntity()->GetName(), "PoolEntity"), "Support for pooled entities has been deprecated.");
+					CRY_ASSERT(strcmp(pActor->GetEntity()->GetName(), "PoolEntity"), "Support for pooled entities has been deprecated.");
 					StartTrackingStats(pActor);
 				}
 			}
@@ -818,12 +818,12 @@ void CStatsRecordingMgr::AddTeam(
 			track->StateValue(eGSS_TeamID, inTeamId);
 			if (inTeamId >= 0 && inTeamId <= MAX_TEAM_INDEX)
 			{
-				CRY_ASSERT_MESSAGE(m_teamTrackers[inTeamId] == NULL, "Trying to add a team with the same team id");
+				CRY_ASSERT(m_teamTrackers[inTeamId] == NULL, "Trying to add a team with the same team id");
 				m_teamTrackers[inTeamId] = track;
 			}
 			else
 			{
-				CRY_ASSERT_MESSAGE(false, "Team ID is out of range, consider increasing MAX_TEAM_INDEX if necessary");
+				CRY_ASSERT(false, "Team ID is out of range, consider increasing MAX_TEAM_INDEX if necessary");
 			}
 		}
 	}
@@ -842,7 +842,7 @@ void CStatsRecordingMgr::OnTeamScore(int teamId, int score, EGameRulesScoreType 
 	}
 	else
 	{
-		CRY_ASSERT_MESSAGE(false, "Team ID is out of range, consider increasing MAX_TEAM_INDEX if necessary");
+		CRY_ASSERT(false, "Team ID is out of range, consider increasing MAX_TEAM_INDEX if necessary");
 	}
 }
 
@@ -951,13 +951,13 @@ void CStatsRecordingMgr::StateActorWeapons(
 	IStatsTracker		*tracker=GetStatsTracker(inActor);
 	IItemSystem			*is=g_pGame->GetIGameFramework()->GetIItemSystem();
 
-	CRY_ASSERT_MESSAGE(tracker,"actor not currently in stats tracker, weapons won't be recorded - call ordering problem?");
+	CRY_ASSERT(tracker,"actor not currently in stats tracker, weapons won't be recorded - call ordering problem?");
 
 	if (tracker)
 	{
 		IInventory *pInv = inActor->GetInventory();
 
-		CRY_ASSERT_MESSAGE(pInv,"expected actor to have an inventory");
+		CRY_ASSERT(pInv,"expected actor to have an inventory");
 
 		int			invCount=pInv->GetCount();
 
@@ -996,11 +996,11 @@ void CStatsRecordingMgr::StateActorWeapons(
 							else if (pParams->category == g_pItemStrings->scope)
 								childNode->setAttr("scope_attachment_class", itAccessory->pClass->GetName());
 							else
-								CRY_ASSERT_MESSAGE(pParams->category.empty(), string().Format("Unrecognised attachment category %s", pParams->category.c_str()));
+								CRY_ASSERT(pParams->category.empty(), string().Format("Unrecognised attachment category %s", pParams->category.c_str()));
 						}
 						else
 						{
-							CRY_ASSERT_MESSAGE(0, "Unable to find accessory params");
+							CRY_ASSERT(0, "Unable to find accessory params");
 						}
 					}
 
@@ -1075,13 +1075,13 @@ void CStatsRecordingMgr::StartTrackingStats(
 
 		if (inActor->IsPlayer())
 		{
-			CRY_ASSERT_TRACE(!pActor->m_telemetry.GetStatsTracker(),("already tracking stats for player %s\n",inActor->GetEntity()->GetName()));
+			CRY_ASSERT(!pActor->m_telemetry.GetStatsTracker(),("already tracking stats for player %s\n",inActor->GetEntity()->GetName()));
 			m_gameStats->AddGameElement(SNodeLocator(eGSEL_Player,eGSC_Round,eGNLT_ChannelID,inActor->GetChannelId()),NULL);
 			CRY_ASSERT(pActor->m_telemetry.GetStatsTracker());
 		}
 		else
 		{
-			CRY_ASSERT_TRACE(!pActor->m_telemetry.GetStatsTracker(),("already tracking stats for actor %s\n",inActor->GetEntity()->GetName()));
+			CRY_ASSERT(!pActor->m_telemetry.GetStatsTracker(),("already tracking stats for actor %s\n",inActor->GetEntity()->GetName()));
 			m_gameStats->AddGameElement(SNodeLocator(eGSEL_AIActor,eGSC_Round,eNLT_EntityID,inActor->GetEntityId()),NULL);
 			CRY_ASSERT(pActor->m_telemetry.GetStatsTracker());
 		}
@@ -1298,7 +1298,7 @@ void CStatsRecordingMgr::OnNodeAdded(const SNodeLocator& locator)
 		{
 			case eGSC_Round:
 				{
-					CRY_ASSERT_MESSAGE(!m_roundTracker,"BeginRound() called when a round is already in progress");
+					CRY_ASSERT(!m_roundTracker,"BeginRound() called when a round is already in progress");
 					if (m_roundTracker)
 					{
 						EndRound();
@@ -1334,7 +1334,7 @@ void CStatsRecordingMgr::OnNodeAdded(const SNodeLocator& locator)
 
 			case eGSC_Session:
 				{
-					CRY_ASSERT_MESSAGE(!m_sessionTracker,"BeginSession() called when session already active");
+					CRY_ASSERT(!m_sessionTracker,"BeginSession() called when session already active");
 					if (m_sessionTracker)
 					{
 						EndSession();
@@ -1357,13 +1357,13 @@ void CStatsRecordingMgr::OnNodeAdded(const SNodeLocator& locator)
 
 					int		channel=locator.locatorValue;
 					IActor	*actor=g_pGame->GetGameRules()->GetActorByChannelId(channel);
-					CRY_ASSERT_TRACE(actor,("Failed to find actor for channel %d",channel));
+					CRY_ASSERT(actor, "Failed to find actor for channel %d",channel);
 					if (actor)
 					{
 						if (actor->IsPlayer())
 						{
 							CPlayer	*player=static_cast<CPlayer*>(actor);
-							CRY_ASSERT_MESSAGE(player->m_telemetry.GetStatsTracker()==NULL,"setting stats tracker for player, but one is already set?!");
+							CRY_ASSERT(player->m_telemetry.GetStatsTracker() == nullptr, "setting stats tracker for player, but one is already set?!");
 							player->m_telemetry.SetStatsTracker(tracker);
 							StateCorePlayerStats(actor);
 							RecordCurrentWeapon(player);
@@ -1381,11 +1381,11 @@ void CStatsRecordingMgr::OnNodeAdded(const SNodeLocator& locator)
 
 					EntityId id = locator.locatorValue;
 					CActor	*pActor=static_cast<CActor*>(g_pGame->GetIGameFramework()->GetIActorSystem()->GetActor(id));
-					CRY_ASSERT_TRACE(pActor,("Failed to find actor %d",id));
+					CRY_ASSERT(pActor, "Failed to find actor %d",id);
 					if (pActor)
 					{
 						CRY_ASSERT(!pActor->IsPlayer());
-						CRY_ASSERT_MESSAGE(pActor->m_telemetry.GetStatsTracker()==NULL,"setting stats tracker for AI, but one is already set?!");
+						CRY_ASSERT(pActor->m_telemetry.GetStatsTracker() == nullptr, "setting stats tracker for AI, but one is already set?!");
 
 						//////////////////////////////////////////////////
 #if !defined(EXCLUDE_NORMAL_LOG)
@@ -1436,14 +1436,14 @@ void CStatsRecordingMgr::OnNodeRemoved(const SNodeLocator& locator, IStatsTracke
 		{
 			case eGSC_Round:
 				{
-					CRY_ASSERT_MESSAGE(tracker==m_roundTracker,"Stats messed up, ended a round that wasn't the round being tracked?!");
+					CRY_ASSERT(tracker==m_roundTracker,"Stats messed up, ended a round that wasn't the round being tracked?!");
 					tracker->StateValue(eGSS_RoundEnd, gEnv->pTimer->GetFrameStartTime(ITimer::ETIMER_UI).GetMilliSecondsAsInt64());
 					m_roundTracker=NULL;
 				}
 				break;
 			case eGSC_Session:
 				{
-					CRY_ASSERT_MESSAGE(tracker==m_sessionTracker,"Stats messed up, ended a session that wasn't the session being tracked?!");
+					CRY_ASSERT(tracker==m_sessionTracker,"Stats messed up, ended a session that wasn't the session being tracked?!");
 					m_sessionTracker=NULL;
 				}
 				break;
@@ -1464,7 +1464,7 @@ void CStatsRecordingMgr::OnNodeRemoved(const SNodeLocator& locator, IStatsTracke
 					if (actor != NULL && actor->IsPlayer())
 					{
 						CPlayer		*player=static_cast<CPlayer*>(actor);
-						CRY_ASSERT_MESSAGE(player->m_telemetry.GetStatsTracker()==tracker || player->m_telemetry.GetStatsTracker()==NULL,"stats tracker mismatch for player");
+						CRY_ASSERT(player->m_telemetry.GetStatsTracker()==tracker || player->m_telemetry.GetStatsTracker()==NULL,"stats tracker mismatch for player");
 						player->m_telemetry.SetStatsTracker(NULL);
 					}
 				}
@@ -1487,7 +1487,7 @@ void CStatsRecordingMgr::OnNodeRemoved(const SNodeLocator& locator, IStatsTracke
 
 						//////////////////////////////////////////////////
 
-						CRY_ASSERT_MESSAGE(pActor->m_telemetry.GetStatsTracker()==tracker || pActor->m_telemetry.GetStatsTracker()==NULL,"stats tracker mismatch for AI actor");
+						CRY_ASSERT(pActor->m_telemetry.GetStatsTracker()==tracker || pActor->m_telemetry.GetStatsTracker()==NULL,"stats tracker mismatch for AI actor");
 						pActor->m_telemetry.SetStatsTracker(NULL);
 					}
 				}

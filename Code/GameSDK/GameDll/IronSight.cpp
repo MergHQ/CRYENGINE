@@ -1112,7 +1112,7 @@ bool CIronSight::IsToggle()
 void CIronSight::FilterView(SViewParams &viewparams)
 {
 	CPlayer* pOwnerPlayer = m_pWeapon->GetOwnerPlayer();
-	CRY_ASSERT_MESSAGE(pOwnerPlayer, "Ironsight:FilterView - This should never happen. This is supposed to be the player's current weapon, but it's not!");
+	CRY_ASSERT(pOwnerPlayer, "Ironsight:FilterView - This should never happen. This is supposed to be the player's current weapon, but it's not!");
 	if(pOwnerPlayer)
 	{
 		const Ang3 frameSway = ZoomSway(*pOwnerPlayer, gEnv->pTimer->GetFrameTime());
@@ -1287,7 +1287,7 @@ float CIronSight::GetZoomInTime() const
 //===================================================
 float CIronSight::GetZoomTransition() const
 {
-	CRY_ASSERT_MESSAGE(!(m_zoomingIn && (m_currentStep == 0)), "GetZoomTransition zooming in whilst on step 0, this should never happen!");
+	CRY_ASSERT(!(m_zoomingIn && (m_currentStep == 0)), "GetZoomTransition zooming in whilst on step 0, this should never happen!");
 
 	const int zoomStep = m_zoomingIn ? -1 : 1;
 	const int prevStep = m_currentStep + zoomStep;

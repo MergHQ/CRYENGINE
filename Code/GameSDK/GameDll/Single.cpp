@@ -911,8 +911,8 @@ bool CSingle::Shoot(bool resetAnimation, bool autoreload, bool isRemote)
 		ammoEntityId = pAmmo->GetEntityId();
 		ammoPredicitonHandle = pAmmo->GetGameObject()->GetPredictionHandle();
 
-		CRY_ASSERT_MESSAGE(m_fireParams->fireparams.hitTypeId, string().Format("Invalid hit type '%s' in fire params for '%s'", m_fireParams->fireparams.hit_type.c_str(), m_pWeapon->GetEntity()->GetName()));
-		CRY_ASSERT_MESSAGE(m_fireParams->fireparams.hitTypeId == g_pGame->GetGameRules()->GetHitTypeId(m_fireParams->fireparams.hit_type.c_str()), "Sanity Check Failed: Stored hit type id does not match the type string, possibly CacheResources wasn't called on this weapon type");
+		CRY_ASSERT(m_fireParams->fireparams.hitTypeId, string().Format("Invalid hit type '%s' in fire params for '%s'", m_fireParams->fireparams.hit_type.c_str(), m_pWeapon->GetEntity()->GetName()));
+		CRY_ASSERT(m_fireParams->fireparams.hitTypeId == g_pGame->GetGameRules()->GetHitTypeId(m_fireParams->fireparams.hit_type.c_str()), "Sanity Check Failed: Stored hit type id does not match the type string, possibly CacheResources wasn't called on this weapon type");
 
 		CProjectile::SProjectileDesc projectileDesc(
 			ownerEntityId, m_pWeapon->GetHostId(), m_pWeapon->GetEntityId(), GetDamage(), m_fireParams->fireparams.damage_drop_min_distance,
@@ -1517,7 +1517,7 @@ Vec3 CSingle::ApplySpread(const Vec3 &dir, float spread, int quadrant) const
 	else
 	{
 		CCCPOINT(Single_ApplySpreadQuadrant);
-		CRY_ASSERT_MESSAGE(quadrant < 4, "Invalid quadrant provided to apply spread");
+		CRY_ASSERT(quadrant < 4, "Invalid quadrant provided to apply spread");
 
 		rx = cry_random(0.0f, 0.5f);
 		rz = cry_random(0.0f, 0.5f);
@@ -1811,8 +1811,8 @@ void CSingle::NetShootEx(const Vec3 &pos, const Vec3 &dir, const Vec3 &vel, cons
 	CProjectile *pAmmo = m_pWeapon->SpawnAmmo(m_fireParams->fireparams.spawn_ammo_class, true);
 	if (pAmmo)
 	{	
-		CRY_ASSERT_MESSAGE(m_fireParams->fireparams.hitTypeId, string().Format("Invalid hit type '%s' in fire params for '%s'", m_fireParams->fireparams.hit_type.c_str(), m_pWeapon->GetEntity()->GetName()));
-		CRY_ASSERT_MESSAGE(m_fireParams->fireparams.hitTypeId == g_pGame->GetGameRules()->GetHitTypeId(m_fireParams->fireparams.hit_type.c_str()), "Sanity Check Failed: Stored hit type id does not match the type string, possibly CacheResources wasn't called on this weapon type");
+		CRY_ASSERT(m_fireParams->fireparams.hitTypeId, string().Format("Invalid hit type '%s' in fire params for '%s'", m_fireParams->fireparams.hit_type.c_str(), m_pWeapon->GetEntity()->GetName()));
+		CRY_ASSERT(m_fireParams->fireparams.hitTypeId == g_pGame->GetGameRules()->GetHitTypeId(m_fireParams->fireparams.hit_type.c_str()), "Sanity Check Failed: Stored hit type id does not match the type string, possibly CacheResources wasn't called on this weapon type");
 
 		CProjectile::SProjectileDesc projectileDesc(
 			m_pWeapon->GetOwnerId(), m_pWeapon->GetHostId(), m_pWeapon->GetEntityId(), m_fireParams->fireparams.damage,

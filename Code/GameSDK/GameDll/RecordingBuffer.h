@@ -107,7 +107,7 @@ public:
 	
 	const uint8* at(size_t offset) const
 	{
-		CRY_ASSERT_MESSAGE(offset < m_usedSize, "Start offset is too large");
+		CRY_ASSERT(offset < m_usedSize, "Start offset is too large");
 		uint8* pStart = m_pStart + offset;
 		if (pStart >= m_pBuffer + m_dynamicBufferSize)
 		{

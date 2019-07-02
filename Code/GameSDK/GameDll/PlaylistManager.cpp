@@ -17,7 +17,7 @@
 #include <CrySystem/ConsoleRegistration.h>
 
 #define LOCAL_WARNING(cond, msg)  do { if (!(cond)) { CryWarning(VALIDATOR_MODULE_GAME, VALIDATOR_WARNING, "%s", msg); } } while(0)
-//#define LOCAL_WARNING(cond, msg)  CRY_ASSERT_MESSAGE(cond, msg)
+//#define LOCAL_WARNING(cond, msg)  CRY_ASSERT(cond, msg)
 
 static CPlaylistManager*  s_pPlaylistManager = NULL;
 
@@ -271,7 +271,7 @@ void SGameModeOption::CopyToCVar( CProfileOptions *pProfileOptions, bool useDefa
 			}
 			else if (m_pCVar->GetType() == ECVarType::Int64)
 			{
-				CRY_ASSERT_MESSAGE(false, "SGameModeOption::CopyToCVar int64 cvar not implemented");
+				CRY_ASSERT(false, "SGameModeOption::CopyToCVar int64 cvar not implemented");
 			}
 		}
 		else
@@ -290,7 +290,7 @@ void SGameModeOption::CopyToCVar( CProfileOptions *pProfileOptions, bool useDefa
 			}
 			else if (m_pCVar->GetType() == ECVarType::Int64)
 			{
-				CRY_ASSERT_MESSAGE(false, "SGameModeOption::CopyToCVar int64 cvar not implemented");
+				CRY_ASSERT(false, "SGameModeOption::CopyToCVar int64 cvar not implemented");
 			}
 		}
 	}
@@ -321,7 +321,7 @@ void SGameModeOption::CopyToProfile( CProfileOptions *pProfileOptions, const cha
 		}
 		else if (m_pCVar->GetType() == ECVarType::Int64)
 		{
-			CRY_ASSERT_MESSAGE(false, "SGameModeOption::CopyToProfile int64 cvar not implemented");
+			CRY_ASSERT(false, "SGameModeOption::CopyToProfile int64 cvar not implemented");
 		}
 	}
 }
@@ -364,7 +364,7 @@ void SGameModeOption::SetCommon( ICVar *pCvar, const char *pProfileOption, bool 
 //---------------------------------------
 CPlaylistManager::CPlaylistManager()
 {
-	CRY_ASSERT_MESSAGE(!s_pPlaylistManager, "There should only ever be one Playlist Manager - and there's one already!");
+	CRY_ASSERT(!s_pPlaylistManager, "There should only ever be one Playlist Manager - and there's one already!");
 	s_pPlaylistManager = this;
 
 	m_playlists.resize(0);
@@ -659,7 +659,7 @@ void CPlaylistManager::ClearAllVariantCVars()
 			}
 			else if (option.m_pCVar->GetType() == ECVarType::Int64)
 			{
-				CRY_ASSERT_MESSAGE(false, "CPlaylistManager::ClearAllVariantCVars int64 cvar not implemented");
+				CRY_ASSERT(false, "CPlaylistManager::ClearAllVariantCVars int64 cvar not implemented");
 			}
 		}
 	}
@@ -766,7 +766,7 @@ void CPlaylistManager::SetCurrentPlaylist(const ILevelRotation::TExtInfoId id)
 	m_currentPlaylistId = id;
 	if (!m_variants.empty())
 	{
-		CRY_ASSERT_MESSAGE((m_defaultVariantIndex != -1), "Failed to find a default variant");
+		CRY_ASSERT((m_defaultVariantIndex != -1), "Failed to find a default variant");
 		SetActiveVariant(m_defaultVariantIndex);
 	}
 
@@ -966,7 +966,7 @@ void CPlaylistManager::AddPlaylistFromXmlNode(XmlNodeRef xmlNode)
 
 #if defined(USE_CRY_ASSERT)
 				ILevelRotation*  pRot = pLevelSystem->FindLevelRotationForExtInfoId(genId);
-				CRY_ASSERT_TRACE(pRot, ("Cannot find newly added extended rotation '%s' with id '%u'", p->rotExtInfo.uniqueName.c_str(), genId));
+				CRY_ASSERT(pRot, "Cannot find newly added extended rotation '%s' with id '%u'", p->rotExtInfo.uniqueName.c_str(), genId);
 #endif
 			}
 			else
@@ -1680,7 +1680,7 @@ void CPlaylistManager::GetGameModeOption(const char *pOption, CryFixedStringT<32
 			}
 			else if (pOptionStruct->m_pCVar->GetType() == ECVarType::Int64)
 			{
-				CRY_ASSERT_MESSAGE(false, "CPlaylistManager::GetGameModeOption int64 cvar not implemented");
+				CRY_ASSERT(false, "CPlaylistManager::GetGameModeOption int64 cvar not implemented");
 			}
 		}
 	}
@@ -1729,7 +1729,7 @@ uint16 CPlaylistManager::PackCustomVariantOption(uint32 index)
 			}
 			else if (cvarType == ECVarType::Int64)
 			{
-				CRY_ASSERT_MESSAGE(false, "CPlaylistManager::PackCustomVariantOption int64 cvar not implemented");
+				CRY_ASSERT(false, "CPlaylistManager::PackCustomVariantOption int64 cvar not implemented");
 			}
 
 			//CryLog("Write %d %d %f %d", index, iValue, option.m_pCVar->GetFVal(), cvarType);
@@ -1841,7 +1841,7 @@ ECVarType CPlaylistManager::UnpackCustomVariantOption(uint16 value, uint32 index
 			}
 			else if (option.m_pCVar->GetType() == ECVarType::Int64)
 			{
-				CRY_ASSERT_MESSAGE(false, "CPlaylistManager::UnpackCustomVariantOption int64 cvar not implemented");
+				CRY_ASSERT(false, "CPlaylistManager::UnpackCustomVariantOption int64 cvar not implemented");
 			}
 		}
 	}	
@@ -1876,7 +1876,7 @@ void CPlaylistManager::ReadDetailedServerInfo(uint16 *pOptions, uint32 numOption
 			}
 			else if (cvarType == ECVarType::Int64)
 			{
-				CRY_ASSERT_MESSAGE(false, "CPlaylistManager::ReadDetailedServerInfo int64 cvar not implemented");
+				CRY_ASSERT(false, "CPlaylistManager::ReadDetailedServerInfo int64 cvar not implemented");
 			}
 
 			m_bIsSettingOptions = false;
@@ -1991,7 +1991,7 @@ void CPlaylistManager::WriteSynchedVars(CCryLobbyPacket* pPacket)
 				break;
 			}
 			case ECVarType::Int64:
-				CRY_ASSERT_MESSAGE(false, "CPlaylistManager::WriteSynchedVars int64 cvar not implemented");
+				CRY_ASSERT(false, "CPlaylistManager::WriteSynchedVars int64 cvar not implemented");
 				break;
 			}
 		}
@@ -2029,7 +2029,7 @@ void CPlaylistManager::ReadSynchedVars(CCryLobbyPacket* pPacket)
 					break;
 				}
 			case ECVarType::Int64:
-				CRY_ASSERT_MESSAGE(false, "CPlaylistManager::ReadSynchedVars int64 cvar not implemented");
+				CRY_ASSERT(false, "CPlaylistManager::ReadSynchedVars int64 cvar not implemented");
 				break;
 			}
 		}
@@ -2061,7 +2061,7 @@ void CPlaylistManager::ReadSetCustomVariantOptions(CCryLobbyPacket* pPacket, CPl
 			}
 			else if (cvarType == ECVarType::Int64)
 			{
-				CRY_ASSERT_MESSAGE(false, "CPlaylistManager::ReadSetCustomVariantOptions int64 cvar not implemented");
+				CRY_ASSERT(false, "CPlaylistManager::ReadSetCustomVariantOptions int64 cvar not implemented");
 			}
 		}
 		else
@@ -2120,7 +2120,7 @@ bool CPlaylistManager::AdvanceRotationUntil(const int newNextIdx)
 
 					if (pLevelRotation->GetNext() == oldNext)
 					{
-						CRY_ASSERT_TRACE(0, ("Caught potential infinite loop whilst looking (and failing to find) newNextIdx '%d' in playlist rotation. Breaking loop.", newNextIdx));
+						CRY_ASSERT(0, "Caught potential infinite loop whilst looking (and failing to find) newNextIdx '%d' in playlist rotation. Breaking loop.", newNextIdx);
 						ok = false;
 						break;
 					}
@@ -2879,7 +2879,7 @@ bool CPlaylistManager::LoadOperand( XmlNodeRef operandXml, SOptionRestriction::S
 						outResult.m_fallbackValue.m_string = pFallbackValue;
 						break;
 					case ECVarType::Int64:
-						CRY_ASSERT_MESSAGE(false, "CPlaylistManager::LoadOperand int64 cvar not implemented");
+						CRY_ASSERT(false, "CPlaylistManager::LoadOperand int64 cvar not implemented");
 						break;
 					}
 
@@ -2999,7 +2999,7 @@ bool CPlaylistManager::CheckOperation( SOptionRestriction::SOperand &operand, bo
 		}
 		break;
 	case ECVarType::Int64:
-		CRY_ASSERT_MESSAGE(false, "CPlaylistManager::CheckOperation int64 cvar not implemented");
+		CRY_ASSERT(false, "CPlaylistManager::CheckOperation int64 cvar not implemented");
 		break;
 	}
 

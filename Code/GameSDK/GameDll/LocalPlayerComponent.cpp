@@ -223,7 +223,7 @@ void CLocalPlayerComponent::InitFollowCameraSettings( const IItemParamsNode* pFo
 		success &= pCameraModeNode->GetAttribute("userSelectable", userSelectable);
 		success &= pCameraModeNode->GetAttribute("disableHeightAdj", disableHeightAdj);
 
-		CRY_ASSERT_MESSAGE(success, string().Format("CLocalPlayerComponent::InitFollowCameraSettings - Invalid follow camera settings - mode %i. Check XML data.", i+1));
+		CRY_ASSERT(success, string().Format("CLocalPlayerComponent::InitFollowCameraSettings - Invalid follow camera settings - mode %i. Check XML data.", i+1));
 
 		mode.m_cameraYaw = DEG2RAD(cameraYawDeg);
 		mode.m_cameraFov = DEG2RAD(cameraFovDeg);

@@ -162,7 +162,7 @@ bool CPlayerComponent::NetSerialize(TSerialize ser, EEntityAspects aspect, uint8
 
 void CPlayerComponent::OnReadyForGameplayOnServer()
 {
-	CRY_ASSERT_MESSAGE(gEnv->bServer, "This function should only be called on the server!");
+	CRY_ASSERT(gEnv->bServer, "This function should only be called on the server!");
 	
 	Vec3 playerScale = Vec3(1.f);
 	Quat playerRotation = IDENTITY;

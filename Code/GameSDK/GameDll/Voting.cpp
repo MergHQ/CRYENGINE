@@ -116,7 +116,7 @@ void  CVotingSystem::Reset()
 
 void	CVotingSystem::GetPlayerVoteBreakdown(EntityId kickTargetId, TVoteDataList& voteDataList) const
 {
-	CRY_ASSERT_MESSAGE(kickTargetId == GetEntityId(), "The requested vote breakdown and the target vote are for two different entities!");
+	CRY_ASSERT(kickTargetId == GetEntityId(), "The requested vote breakdown and the target vote are for two different entities!");
 
 	for( TVoteEntitiesVec::const_iterator iter = m_votesFor.begin(), end = m_votesFor.end(); iter != end; ++iter)
 	{

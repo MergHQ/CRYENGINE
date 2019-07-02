@@ -77,14 +77,14 @@ bool CVicinityDependentObjectMover::ReloadExtension( IGameObject * pGameObject, 
 	ResetGameObject();
 	VICINITYDEPENDENTOBJECTMOVER::RegisterEvents( *this, *pGameObject );
 
-	CRY_ASSERT_MESSAGE( false, "CVicinityDependentObjectMover::ReloadExtension not implemented" );
+	CRY_ASSERT( false, "CVicinityDependentObjectMover::ReloadExtension not implemented" );
 
 	return false;
 }
 
 bool CVicinityDependentObjectMover::GetEntityPoolSignature( TSerialize signature )
 {
-	CRY_ASSERT_MESSAGE( false, "CVicinityDependentObjectMover::GetEntityPoolSignature not implemented" );
+	CRY_ASSERT( false, "CVicinityDependentObjectMover::GetEntityPoolSignature not implemented" );
 
 	return true;
 }

@@ -20,7 +20,7 @@ CWorldBuilder::CWorldBuilder()
 {
 	if(gEnv->pGameFramework)
 	{
-		CRY_ASSERT_MESSAGE(gEnv->pGameFramework->GetILevelSystem(), "Unable to register as levelsystem listener!");
+		CRY_ASSERT(gEnv->pGameFramework->GetILevelSystem(), "Unable to register as levelsystem listener!");
 		if(gEnv->pGameFramework->GetILevelSystem())
 		{
 			gEnv->pGameFramework->GetILevelSystem()->AddListener(this);

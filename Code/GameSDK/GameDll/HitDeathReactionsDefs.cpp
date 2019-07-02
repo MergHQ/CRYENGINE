@@ -167,7 +167,7 @@ int	SReactionParams::SReactionAnim::GetNextReactionAnimId(const IAnimationSet* p
 	if (iNextAnimIndex >= 0)
 	{
 		const bool bIsAnimLoaded = gEnv->pCharacterManager->CAF_IsLoaded(m_nextAnimCRC);
-		CRY_ASSERT_MESSAGE(bIsAnimLoaded, "This anim was expected to have finished streaming!!");
+		CRY_ASSERT(bIsAnimLoaded, "This anim was expected to have finished streaming!!");
 		if (!bIsAnimLoaded)
 			CHitDeathReactionsSystem::Warning("%s was expected to have finished streaming!!", pAnimSet->GetNameByAnimID(pAnimSet->GetAnimIDByCRC(animCRCs[iNextAnimIndex])));
 	}

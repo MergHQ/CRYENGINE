@@ -727,14 +727,14 @@ float CGameRulesSPDamageHandling::CalcExplosionDamage(IEntity* entity, const Exp
 			}
 			else
 			{
-				assert(explosionInfo.radius - explosionInfo.minRadius > 0.0f);
+				CRY_ASSERT(explosionInfo.radius - explosionInfo.minRadius > 0.0f);
 				effect = 1.0f - (sqrtf(distanceSq) - explosionInfo.minRadius) / (explosionInfo.radius - explosionInfo.minRadius);
 				effect *= effect;
 			}
 		}
 	}
 
-	CRY_ASSERT_TRACE (effect >= 0.0f && effect <= 1.0f, ("Effectiveness of explosion should be between 0 and 1 but it's %.3f (minRadius=%.3f, maxRadius=%.3f)", effect, explosionInfo.minRadius, explosionInfo.radius));
+	CRY_ASSERT(effect >= 0.0f && effect <= 1.0f, "Effectiveness of explosion should be between 0 and 1 but it's %.3f (minRadius=%.3f, maxRadius=%.3f)", effect, explosionInfo.minRadius, explosionInfo.radius);
 
 	return explosionInfo.damage * effect * (1.0f - obstruction);
 }

@@ -334,7 +334,7 @@ int CPlayerProgression::CalculateRankFromXp(int xp)
 		return m_maxRank - 1;
 	}
 
-	CRY_ASSERT_MESSAGE(false, "Failed to CalculateRankFromXp");
+	CRY_ASSERT(false, "Failed to CalculateRankFromXp");
 	return 0;
 }
 
@@ -601,9 +601,9 @@ void CPlayerProgression::SanityCheckRanks()
 
 CPlayerProgression::SRank::SRank(XmlNodeRef node)
 {
-	CRY_ASSERT_MESSAGE(strcmp(node->getTag(), "Rank") == 0, "Invalid tag found in rank xml");
-	CRY_ASSERT_MESSAGE(node->haveAttr("name"), "Missing name attribute in rank xml");
-	CRY_ASSERT_MESSAGE(node->haveAttr("xpRequired"), "Missing xpRequired attribute in rank xml");
+	CRY_ASSERT(strcmp(node->getTag(), "Rank") == 0, "Invalid tag found in rank xml");
+	CRY_ASSERT(node->haveAttr("name"), "Missing name attribute in rank xml");
+	CRY_ASSERT(node->haveAttr("xpRequired"), "Missing xpRequired attribute in rank xml");
 
 	cry_strcpy(m_name, node->getAttr("name"));
 	node->getAttr("xpRequired", m_xpRequired);
@@ -620,8 +620,8 @@ void CPlayerProgression::InitEvents(const char* filename)
 		{
 			XmlNodeRef childXML = xml->getChild(iChild);
 
-			CRY_ASSERT_MESSAGE(childXML->haveAttr("name"), "Missing name attribute in event xml");
-			CRY_ASSERT_MESSAGE(childXML->haveAttr("reward"), "Missing reward attribute in event xml");
+			CRY_ASSERT(childXML->haveAttr("name"), "Missing name attribute in event xml");
+			CRY_ASSERT(childXML->haveAttr("reward"), "Missing reward attribute in event xml");
 
 			int index = 0;
 			const bool eventFound = AutoEnum_GetEnumValFromString(childXML->getAttr("name"), s_eventName, EPP_Max, &index);
@@ -635,7 +635,7 @@ void CPlayerProgression::InitEvents(const char* filename)
 }
 void CPlayerProgression::Event(EPPType type, bool skillKill, void *data)
 {
-	CRY_ASSERT_MESSAGE(type >= 0 && type < EPP_Max, "Invalid event type");
+	CRY_ASSERT(type >= 0 && type < EPP_Max, "Invalid event type");
 
 	DEBUG_XP("Event %s", s_eventName[type], m_events[type]);
 
@@ -822,7 +822,7 @@ void CPlayerProgression::Update(CPlayer *pPlayer, float deltaTime, float fHealth
 	if (pRoundsMo && !pRoundsMo->IsInProgress())
 		return;
 
-	CRY_ASSERT_MESSAGE(pPlayer->GetEntityId() == gEnv->pGameFramework->GetClientActorId() || g_pGame->IsGameSessionHostMigrating(), "CPlayerProgression::Update is happening on the wrong player entity!");
+	CRY_ASSERT(pPlayer->GetEntityId() == gEnv->pGameFramework->GetClientActorId() || g_pGame->IsGameSessionHostMigrating(), "CPlayerProgression::Update is happening on the wrong player entity!");
 
 	if(fHealth > 0.0f)
 	{
@@ -1161,7 +1161,7 @@ void CPlayerProgression::MatchBonus(const EGameOverType localWinner, const float
 	//length in game * win/draw/lose modifier * rank
 	if(!gEnv->IsDedicated())
 	{
-		CRY_ASSERT_TRACE (localWinner == EGOT_Lose || localWinner == EGOT_Draw || localWinner == EGOT_Win, ("Unexpected 'local winner' value = %d", localWinner));
+		CRY_ASSERT(localWinner == EGOT_Lose || localWinner == EGOT_Draw || localWinner == EGOT_Win, "Unexpected 'local winner' value = %d", localWinner);
 
 		CCCPOINT_IF(localWinner == EGOT_Lose, PlayerProgression_MatchBonusLose);
 		CCCPOINT_IF(localWinner == EGOT_Draw, PlayerProgression_MatchBonusDraw);
@@ -1221,7 +1221,7 @@ float CPlayerProgression::WinModifier(const EGameOverType localWinner) const
 	case EGOT_Lose:
 		return k_LoseModifier;
 	default:
-		CRY_ASSERT_MESSAGE(false, "Unable to determine Win Modifier");
+		CRY_ASSERT(false, "Unable to determine Win Modifier");
 		return k_DrawModifier;
 	}
 }
@@ -1331,7 +1331,7 @@ const int CPlayerProgression::GetData(EPPData dataType)
 		return  m_skillKillXP;
 
 	default:
-		CRY_ASSERT_MESSAGE(false, "Unable to find data type in CPlayerProgression::GetData");
+		CRY_ASSERT(false, "Unable to find data type in CPlayerProgression::GetData");
 		return -1;
 	}
 }

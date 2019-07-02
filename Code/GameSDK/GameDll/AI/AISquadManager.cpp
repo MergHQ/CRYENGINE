@@ -282,7 +282,7 @@ void AISquadManager::LeaveSquadScope( const SquadScopeID& squadScopeId, const En
 	SquadAgentMap::iterator registeredAgentIt = m_registeredAgents.find(entityID);
 	IF_UNLIKELY(registeredAgentIt == m_registeredAgents.end())
 	{
-		CRY_ASSERT_MESSAGE(0, "AISquadManager : An unregistered entity tried to leave a scope.");
+		CRY_ASSERT(0, "AISquadManager : An unregistered entity tried to leave a scope.");
 		return;
 	}
 
@@ -290,7 +290,7 @@ void AISquadManager::LeaveSquadScope( const SquadScopeID& squadScopeId, const En
 	SquadAgent::EnteredScopes::iterator enteredScopeIt = std::find(squadAgent.enteredScopes.begin(), squadAgent.enteredScopes.end(), squadScopeId);
 	IF_UNLIKELY(enteredScopeIt == squadAgent.enteredScopes.end())
 	{
-		CRY_ASSERT_MESSAGE(0, "AISquadManager : An entity tried to leave a scope which it had not entered.");
+		CRY_ASSERT(0, "AISquadManager : An entity tried to leave a scope which it had not entered.");
 		return;
 	}
 

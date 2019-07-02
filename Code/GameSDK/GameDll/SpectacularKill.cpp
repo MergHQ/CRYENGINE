@@ -300,7 +300,7 @@ void CSpectacularKill::Reset()
 //-----------------------------------------------------------------------
 void CSpectacularKill::DeathBlow(CActor& targetActor)
 {
-	CRY_ASSERT_MESSAGE(m_isBusy, "spectacular kill should be in progress when triggering the death blow");
+	CRY_ASSERT(m_isBusy, "spectacular kill should be in progress when triggering the death blow");
 	if (!m_isBusy)
 		return;
 
@@ -352,7 +352,7 @@ void CSpectacularKill::DeathBlow(CActor& targetActor)
 //-----------------------------------------------------------------------
 void CSpectacularKill::End(bool bKillerDied/* = false*/)
 {
-	CRY_ASSERT_MESSAGE(IsBusy(), "spectacular kill cannot be stopped if it is not in progress");
+	CRY_ASSERT(IsBusy(), "spectacular kill cannot be stopped if it is not in progress");
 	if (!IsBusy())
 		return;
 
@@ -410,7 +410,7 @@ bool CSpectacularKill::StartOnTarget(CActor* pTargetActor)
 	CRY_PROFILE_FUNCTION(PROFILE_GAME);
 
 	CRY_ASSERT(pTargetActor);
-	CRY_ASSERT_MESSAGE(!IsBusy(), "spectacular kill should not be initiated while a spectacular kill is already in progress");
+	CRY_ASSERT(!IsBusy(), "spectacular kill should not be initiated while a spectacular kill is already in progress");
 
 	SSpectacularKillAnimation anim;
 	if (!IsBusy() && pTargetActor && GetValidAnim(pTargetActor, anim) && CanExecuteOnTarget(pTargetActor, anim))
@@ -534,7 +534,7 @@ bool CSpectacularKill::AnimationEvent(ICharacterInstance *pCharacter, const Anim
 //-----------------------------------------------------------------------
 const CSpectacularKill::SSpectacularKillParams* CSpectacularKill::GetParamsForClass( IEntityClass* pTargetClass ) const
 {
-	CRY_ASSERT_TRACE(m_pParams != NULL, ("Trying to get params from a spectacular kill object without params. Check if entity class %s has a param file in Scripts/actor/parameters", m_pOwner->GetEntityClassName()));
+	CRY_ASSERT(m_pParams != NULL, "Trying to get params from a spectacular kill object without params. Check if entity class %s has a param file in Scripts/actor/parameters", m_pOwner->GetEntityClassName());
 	if (m_pParams)
 	{
 		CRY_ASSERT(pTargetClass);
@@ -699,7 +699,7 @@ void CSpectacularKill::ReadXmlData( const IItemParamsNode* pRootNode)
 					}
 				}
 
-				CRY_ASSERT_MESSAGE(targetParams.animations.size() > 0, string().Format("No Animations defined for %s spectacular kill", pTargetClass->GetName()));
+				CRY_ASSERT(targetParams.animations.size() > 0, string().Format("No Animations defined for %s spectacular kill", pTargetClass->GetName()));
 
 				newParams.paramsList.push_back(targetParams);
 			}

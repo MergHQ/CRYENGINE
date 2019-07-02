@@ -77,7 +77,7 @@ void CGameRulesStandardVictoryConditionsPlayer::Update( float frameTime )
 {
 	inherited::Update(frameTime);
 
-	CRY_ASSERT_MESSAGE(g_pGameCVars->g_timelimitextratime == 0.f, "We always expect timelimitextratime to be 0.f. This cvar is deprecated now");
+	CRY_ASSERT(g_pGameCVars->g_timelimitextratime == 0.f, "We always expect timelimitextratime to be 0.f. This cvar is deprecated now");
 
 	IGameRulesStateModule *pStateModule = m_pGameRules->GetStateModule();
 	if (pStateModule != NULL && pStateModule->GetGameState() != IGameRulesStateModule::EGRS_InGame)

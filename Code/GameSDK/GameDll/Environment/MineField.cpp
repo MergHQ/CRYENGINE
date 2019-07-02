@@ -69,14 +69,14 @@ bool CMineField::ReloadExtension( IGameObject * pGameObject, const SEntitySpawnP
 	ResetGameObject();
 	MF::RegisterEvents( *this, *pGameObject );
 
-	CRY_ASSERT_MESSAGE(false, "CMineField::ReloadExtension not implemented");
+	CRY_ASSERT(false, "CMineField::ReloadExtension not implemented");
 
 	return false;
 }
 
 bool CMineField::GetEntityPoolSignature( TSerialize signature )
 {
-	CRY_ASSERT_MESSAGE(false, "CMineField::GetEntityPoolSignature not implemented");
+	CRY_ASSERT(false, "CMineField::GetEntityPoolSignature not implemented");
 
 	return true;
 }

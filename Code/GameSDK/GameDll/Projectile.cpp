@@ -570,7 +570,7 @@ bool CProjectile::ReloadExtension(IGameObject* pGameObject, const SEntitySpawnPa
 {
 	ResetGameObject();
 	Proj::RegisterEvents(*this, *pGameObject);
-	CRY_ASSERT_MESSAGE(false, "CProjectile::ReloadExtension not implemented");
+	CRY_ASSERT(false, "CProjectile::ReloadExtension not implemented");
 
 	return false;
 }
@@ -578,7 +578,7 @@ bool CProjectile::ReloadExtension(IGameObject* pGameObject, const SEntitySpawnPa
 //------------------------------------------------------------------------
 bool CProjectile::GetEntityPoolSignature(TSerialize signature)
 {
-	CRY_ASSERT_MESSAGE(false, "CProjectile::GetEntityPoolSignature not implemented");
+	CRY_ASSERT(false, "CProjectile::GetEntityPoolSignature not implemented");
 
 	return true;
 }
@@ -637,7 +637,7 @@ void CProjectile::Update(SEntityUpdateContext& ctx, int updateSlot)
 {
 	CRY_PROFILE_FUNCTION(PROFILE_GAME);
 
-	CRY_ASSERT_MESSAGE(!RequiresDelayedDestruct() || gEnv->bMultiplayer, "The mpProjectileDestructDelay ammo params should only ever be greater than zero in Multiplayer");
+	CRY_ASSERT(!RequiresDelayedDestruct() || gEnv->bMultiplayer, "The mpProjectileDestructDelay ammo params should only ever be greater than zero in Multiplayer");
 
 	// we need to destroy this projectile
 	if (CheckAnyProjectileFlags(ePFlag_needDestruction) && !GetEntity()->IsKeptAlive())
@@ -1280,7 +1280,7 @@ void CProjectile::Explode(const SExplodeDesc& explodeDesc)
 				{
 					char msg[1024] = { 0 };
 					cry_sprintf(msg, "missing network safe class id for entity class %s", GetEntity()->GetClass()->GetName());
-					CRY_ASSERT_MESSAGE(false, msg);
+					CRY_ASSERT(false, msg);
 				}
 #endif
 			}

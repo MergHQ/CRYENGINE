@@ -20,7 +20,7 @@ public:
 	{
 		m_pSS = pSS;
 		m_pMethodsTable = gEnv->pGameFramework->GetActionScriptBindTable();
-		CRY_ASSERT_MESSAGE(m_pMethodsTable != nullptr, "Failed to retrieve CryAction script table!");
+		CRY_ASSERT(m_pMethodsTable != nullptr, "Failed to retrieve CryAction script table!");
 		if (m_pMethodsTable)
 		{
 			m_pMethodsTable->AddRef();

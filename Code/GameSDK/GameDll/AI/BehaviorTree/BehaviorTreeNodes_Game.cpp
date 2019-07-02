@@ -421,7 +421,7 @@ namespace BehaviorTree
 			void ApplyDamage(const EntityId attackerId, IPhysicalEntity* pCollider, const Vec3& pos, const Vec3& normal, const int surfaceIdx, const int iPart, const float damages)
 			{
 				CGameRules *pGameRules = g_pGame->GetGameRules();
-				CRY_ASSERT_MESSAGE(pGameRules, "No game rules! Melee can not apply hit damage");
+				CRY_ASSERT(pGameRules, "No game rules! Melee can not apply hit damage");
 				if (pGameRules)
 				{
 					float damageScale = 1.0f;
