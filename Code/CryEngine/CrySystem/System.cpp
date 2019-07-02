@@ -3465,20 +3465,37 @@ bool CSystem::HandleMessage(CRY_HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 	int y = GET_Y_LPARAM(lParam);
 	EHARDWAREMOUSEEVENT event = (EHARDWAREMOUSEEVENT)-1;
 	*pResult = 0;
+	LPWINDOWPOS wpos;
+
 	switch (uMsg)
 	{
 	// System event translation
 	case WM_CLOSE:
 		Quit();
 		return false;
-	case WM_MOVE:
-		GetISystemEventDispatcher()->OnSystemEvent(ESYSTEM_EVENT_MOVE, x, y);
-		return false;
-	case WM_SIZE:
-		GetISystemEventDispatcher()->OnSystemEvent(ESYSTEM_EVENT_RESIZE, x, y);
-		return false;
 	case WM_WINDOWPOSCHANGED:
-		GetISystemEventDispatcher()->OnSystemEvent(ESYSTEM_EVENT_POS_CHANGED, 1, 0);
+	{
+		wpos = (LPWINDOWPOS)lParam;
+
+		// Process position and size changes through this event message, as  unprocessed WM_WINDOWPOSCHANGED 
+		// messages are then translated by DefWindowProc to WM_SIZE and WM_MOVE events anyway.
+		// Check the window is moved or resized. Separate checks are intentional, as both events can occur from the a single ::SetWindowPos call
+		if (!(wpos->flags & SWP_NOMOVE))
+		{
+			// If a MOVE is detected (logic inversion intended, the flag NOMOVE must NOT be set) send a MOVE event (top-left location as params)
+			GetISystemEventDispatcher()->OnSystemEvent(ESYSTEM_EVENT_MOVE, wpos->x, wpos->y);
+		}
+		if (!(wpos->flags & SWP_NOSIZE))
+		{
+			// If a SIZE is detected (logic inversion intended; the flag NOSIZE must NOT be set) send a SIZE event (dimensions as params)
+			GetISystemEventDispatcher()->OnSystemEvent(ESYSTEM_EVENT_RESIZE, wpos->cx, wpos->cy);
+		}
+		// Neither: send a POS_CHANGED with the params (details/flags are in the struct (WindowPos*)lParam flags member)
+		if ((wpos->flags & SWP_NOSIZE) && (wpos->flags & SWP_NOMOVE))
+		{
+			GetISystemEventDispatcher()->OnSystemEvent(ESYSTEM_EVENT_POS_CHANGED, wParam, lParam);
+		}
+	}
 		return false;
 	case WM_STYLECHANGED:
 		GetISystemEventDispatcher()->OnSystemEvent(ESYSTEM_EVENT_STYLE_CHANGED, 1, 0);
@@ -3502,7 +3519,29 @@ bool CSystem::HandleMessage(CRY_HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 	case WM_DEVICECHANGE:
 		GetISystemEventDispatcher()->OnSystemEvent(ESYSTEM_EVENT_DEVICE_CHANGED, wParam, lParam);
 		return false;
-
+	case WM_SYSKEYDOWN:
+	{
+		// If ALT is pressed
+		const bool bAltPressed = ((lParam >> 29 & 0x1) != 0);
+		if (bAltPressed)
+		{
+			// ALT + Enter to go exclusive fullscreen
+			if (wParam == VK_RETURN)
+			{
+				// Check "r_WindowType" cvar value (0=Windowed 3=exclusive fullscreen)
+				ICVar* CVWtype = gEnv->pConsole->GetCVar("r_WindowType");
+				const bool bIsCurrentlyFS = (CVWtype != nullptr &&  CVWtype->GetIVal() == 3);
+				// Toggle the value (the cvar will be tied to a callback in the renderer to make changes)
+				CVWtype->Set((bIsCurrentlyFS ? 0 : 3));
+				// Broadcast sysevent (param1 = is fullscreen, param2 = not used)
+				GetISystemEventDispatcher()->OnSystemEvent(ESYSTEM_EVENT_TOGGLE_FULLSCREEN, (bIsCurrentlyFS ? 0 : 1), 0);
+			}
+			// Tell Windows the message is handled
+			*pResult = 0;
+			return true;
+		}
+	}
+	break;
 	case WM_SYSCOMMAND:
 		if ((wParam & 0xFFF0) == SC_SCREENSAVE)
 		{
@@ -3553,7 +3592,6 @@ bool CSystem::HandleMessage(CRY_HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 			}
 		}
 		return (uMsg != WM_CAPTURECHANGED);
-
 	// Events that should be forwarded to the hardware mouse
 	case WM_MOUSEMOVE:
 		event = HARDWAREMOUSEEVENT_MOVE;

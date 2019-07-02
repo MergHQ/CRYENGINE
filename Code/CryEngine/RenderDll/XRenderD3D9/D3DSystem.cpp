@@ -155,12 +155,6 @@ bool CD3D9Renderer::ChangeDisplayResolution(int nNewDisplayWidth, int nNewDispla
 		// disable floating point exceptions due to driver bug when switching to fullscreen
 		SCOPED_DISABLE_FLOAT_EXCEPTIONS();
 #endif
-		if (m_CVWidth)
-			m_CVWidth->Set(nNewDisplayWidth);
-		if (m_CVHeight)
-			m_CVHeight->Set(nNewDisplayHeight);
-		if (m_CVColorBits)
-			m_CVColorBits->Set(nNewColDepth);
 
 		pBC->ChangeOutputIfNecessary(isFullscreen, IsVSynced());
 
@@ -170,13 +164,7 @@ bool CD3D9Renderer::ChangeDisplayResolution(int nNewDisplayWidth, int nNewDispla
 
 // 		OnD3D11PostCreateDevice(m_devInfo.Device());
 
-		const bool wasFullscreen =
-			m_lastWindowState == EWindowState::Fullscreen;
-		const bool resolutionChanged =
-			nNewDisplayWidth != CRendererResources::s_renderWidth ||
-			nNewDisplayHeight != CRendererResources::s_renderHeight;
-
-		if (isFullscreen && wasFullscreen && resolutionChanged)
+		if (isFullscreen)
 		{
 			// Leave fullscreen before resizing as SetFullscreenState doesn't
 			// resize the swapchain unless the fullscreen state changes
@@ -186,8 +174,6 @@ bool CD3D9Renderer::ChangeDisplayResolution(int nNewDisplayWidth, int nNewDispla
 		pBC->ChangeDisplayResolution(nNewDisplayWidth, nNewDisplayHeight);
 		pBC->SetFullscreenState(isFullscreen);
 
-		if (gEnv->pHardwareMouse)
-			gEnv->pHardwareMouse->GetSystemEventListener()->OnSystemEvent(ESYSTEM_EVENT_TOGGLE_FULLSCREEN, isFullscreen ? 1 : 0, 0);
 #endif
 	}
 	else
@@ -392,7 +378,7 @@ void CD3D9Renderer::DestroyWindow(void)
 #elif CRY_PLATFORM_WINDOWS
 	if (gEnv && gEnv->pSystem && !m_bShaderCacheGen)
 	{
-		gEnv->pSystem->UnregisterWindowMessageHandler(this);
+		GetISystem()->GetISystemEventDispatcher()->RemoveListener(this);
 	}
 	if (m_hWnd)
 	{
@@ -812,7 +798,7 @@ bool CD3D9Renderer::SetWindow(int width, int height)
 {
 	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
-	iSystem->RegisterWindowMessageHandler(this);
+	GetISystem()->GetISystemEventDispatcher()->RegisterListener(this, "CD3DRenderer");
 
 #if USE_SDL2_VIDEO && (CRY_RENDERER_OPENGL || CRY_RENDERER_OPENGLES)
 	DXGLCreateSDLWindow(m_WinTitle, width, height, IsFullscreen(), &m_hWnd);
@@ -973,6 +959,7 @@ bool CD3D9Renderer::SetWindow(int width, int height)
 #endif
 
 	return m_hWnd != nullptr;
+
 }
 
 bool CD3D9Renderer::SetWindowIcon(const char* path)
@@ -1416,7 +1403,7 @@ iLog->Log(" %s shader quality: %s", # name, sGetSQuality("q_Shader" # name)); } 
 
 #if CRY_PLATFORM_WINDOWS
 	// Initialize the set of connected monitors
-	HandleMessage(0, WM_DEVICECHANGE, 0, 0, 0);
+	OnSystemEvent(ESYSTEM_EVENT_DEVICE_CHANGED, 0, 0);
 	m_changedMonitor = false;
 	m_bWindowRestored = false;
 #endif
@@ -2088,124 +2075,182 @@ HRESULT CALLBACK CD3D9Renderer::OnD3D11PostCreateDevice(D3DDevice* pd3dDevice)
 	return S_OK;
 }
 
-#if CRY_PLATFORM_WINDOWS
-// Renderer looks for multi-monitor setup changes and fullscreen key combination
-bool CD3D9Renderer::HandleMessage(CRY_HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam, LRESULT* pResult)
+// Change the Window Mode (windowed with border / borderless / fullscreen)
+void CD3D9Renderer::UpdateWindowMode()
 {
-	switch (message)
+#if CRY_PLATFORM_WINDOWS
+
+	// In non-editor mode
+	if (!IsEditorMode())
 	{
-	case WM_DISPLAYCHANGE:
-	case WM_DEVICECHANGE:
+		// Set self as the active window
+		::SetActiveWindow(static_cast<HWND>(GetHWND()));
+
+		// Is the window resizable?
+		ICVar* cvResize = gEnv->pConsole->GetCVar("r_resizableWindow");
+		bool bFixedSize = ((cvResize != nullptr) && (cvResize->GetIVal() == 0));
+
+		// target style
+		DWORD dwStyle = 0;
+
+		EWindowState windowMode = static_cast<EWindowState>(m_CVWindowType->GetIVal());
+		switch (windowMode)
 		{
-			// Count the number of connected display devices
-			bool bHaveMonitorsChanged = true;
-			uint connectedMonitors = 0;
-			EnumDisplayMonitors(NULL, NULL, CountConnectedMonitors, reinterpret_cast<LPARAM>(&connectedMonitors));
-
-			// Check for changes
-			if (connectedMonitors > m_nConnectedMonitors)
-			{
-				iSystem->GetILog()->LogAlways("[Renderer] A display device has been connected to the system");
-			}
-			else if (connectedMonitors < m_nConnectedMonitors)
-			{
-				iSystem->GetILog()->LogAlways("[Renderer] A display device has been disconnected from the system");
-			}
-			else
-			{
-				bHaveMonitorsChanged = false;
-			}
-
-			// Update state
-			m_nConnectedMonitors = connectedMonitors;
-			m_changedMonitor += bHaveMonitorsChanged;
+		case EWindowState::Windowed:
+		{
+			// Change to overlapped window style, add a sizing border and controls to resizable windows
+			dwStyle = (bFixedSize) ?
+				m_dwWinstyleBorder & ~(WS_MAXIMIZEBOX | WS_THICKFRAME) :
+				m_dwWinstyleBorder | (WS_MAXIMIZEBOX | WS_THICKFRAME);
 		}
 		break;
+		case EWindowState::BorderlessFullscreen:
+			// fallthough intentional
+		case EWindowState::BorderlessWindow:
+			// fallthough intentional
+		case EWindowState::Fullscreen:
+			dwStyle = m_dwWinstyleNoBorder;
+			break;
+		default:
+			break;
+		}
 
-	case WM_SYSKEYDOWN:
+		// Window handle
+		HWND hWnd = static_cast<HWND>(m_hWnd);
+
+		// Client coordinates (to get the uper-left corner)
+		RECT targetRect{ 0, 0, 0, 0 };
+		::GetClientRect(hWnd, &targetRect);
+
+		// set style, compensate for window borders in windowed mode
+		SetWindowLongPtrW(hWnd, GWL_STYLE, dwStyle);
+
+		if (windowMode == EWindowState::Windowed)
 		{
-			const bool bAlt = (lParam & (1 << 29)) != 0;
-			if (bAlt)
-			{
-				if (wParam == VK_RETURN) // ALT+ENTER
-				{
-					if (m_CVWindowType != nullptr)
-					{
-						if (m_CVWindowType->GetIVal() == static_cast<int>(EWindowState::Fullscreen))
-						{
-							m_CVWindowType->Set(static_cast<int>(EWindowState::Windowed));
-						}
-						else
-						{
-							m_CVWindowType->Set(static_cast<int>(EWindowState::Fullscreen));
-						}
+			::AdjustWindowRectEx(
+				&targetRect
+				, dwStyle
+				, false
+				, static_cast<DWORD>(::GetWindowLongPtr(hWnd, GWL_EXSTYLE))
+			);
+		}
 
-						// Indicate that we have handled the event
-						*pResult = 0;
-						return true;
-					}
-				}
-				else if (wParam == VK_MENU)
-				{
-					// Windows tries to focus the menu when pressing Alt,
-					// so we need to tell it that we already handled the event
-					*pResult = 0;
-					return true;
-				}
+		// Position the window in the centre of the current monitor
+		int nWidth = (targetRect.right - targetRect.left);
+		int nHeight = (targetRect.bottom - targetRect.top);
+		const RectI bounds = GetBaseDisplayContext()->GetCurrentMonitorBounds();
+
+		// Center window (hide, then move/size, then unhide)
+		ShowWindow(hWnd, SW_HIDE);
+		SetWindowPos(
+			hWnd
+			, (windowMode == EWindowState::Fullscreen) ? HWND_TOPMOST : HWND_NOTOPMOST          // Z-Order (fullscreen exclusive = topmost)
+			, (windowMode == EWindowState::Fullscreen) ? 0 : ((bounds.w / 2) - (nWidth / 2))    // upper-left X
+			, (windowMode == EWindowState::Fullscreen) ? 0 : ((bounds.h / 2) - (nHeight / 2))   // upper-left Y
+			, nWidth    // Width
+			, nHeight   // Height
+			, (SWP_SHOWWINDOW | SWP_DRAWFRAME)    // Flags
+		);
+		ShowWindow(hWnd, SW_SHOW);
+
+	}
+
+#endif //CRY_PLATFORM_WINDOWS
+}
+
+// Change resolution
+void CD3D9Renderer::UpdateResolution()
+{
+#if CRY_PLATFORM_WINDOWS
+	// The ISystemEventListener will catch the resize/etc event generated from the ::SetWindowPos call below, and resize graphics resources on that event
+
+	// Set self as the active window
+	::SetActiveWindow(static_cast<HWND>(GetHWND()));
+
+	const HWND hWnd = static_cast<HWND>(m_hWnd);
+	RECT targetRect{ 0, 0, 0, 0 };
+
+	// Move/size the window to the new coordinates/resolution in non-editor mode
+	if (!IsEditorMode())
+	{
+		// Get client area dimensions in screen space (to use the top-left point)
+		::GetClientRect(hWnd, &targetRect);
+		::ClientToScreen(hWnd, (POINT*)&targetRect.left);
+
+		// set rectangle width, height (based on existing top-left coords)
+		targetRect.right = targetRect.left + m_CVWidth->GetIVal();
+		targetRect.bottom = targetRect.top + m_CVHeight->GetIVal();
+
+		const EWindowState windowMode = static_cast<EWindowState>(m_CVWindowType->GetIVal());
+
+		// Make adjustments to the rectangle to compensate for current window decorations
+		if (windowMode == EWindowState::Windowed)
+		{
+			::AdjustWindowRectEx(
+				&targetRect
+				, static_cast<DWORD>(::GetWindowLongPtr(hWnd, GWL_STYLE))    // window style
+				, false    // False = No menu
+				, static_cast<DWORD>(::GetWindowLongPtr(hWnd, GWL_EXSTYLE))  // extended style
+			);
+		}
+
+		// Position the window in the centre of the current monitor
+		const int nWidth = (targetRect.right - targetRect.left);
+		const int nHeight = (targetRect.bottom - targetRect.top);
+		const RectI scrnBounds = GetBaseDisplayContext()->GetCurrentMonitorBounds();
+		// Move & size (triggers window events)
+		SetWindowPos(
+			hWnd
+			, (windowMode == EWindowState::Fullscreen) ? HWND_TOPMOST : HWND_NOTOPMOST              // Z-Ordering
+			, (windowMode == EWindowState::Fullscreen) ? 0 : ((scrnBounds.w / 2) - (nWidth / 2))    // upper-left X
+			, (windowMode == EWindowState::Fullscreen) ? 0 : ((scrnBounds.h / 2) - (nHeight / 2))   // upper-left Y
+			, nWidth   // Width
+			, nHeight  // Height
+			, (SWP_SHOWWINDOW | SWP_FRAMECHANGED)  // Flags
+		);
+
+	}
+#endif // CRY_PLATFORM_WINDOWS
+}
+
+void CD3D9Renderer::OnSystemEvent(ESystemEvent eEvent, UINT_PTR wParam, UINT_PTR lParam)
+{
+
+#ifdef CRY_PLATFORM_WINDOWS
+
+	switch (eEvent)
+	{
+	case ESYSTEM_EVENT_DISPLAY_CHANGED:
+	{
+		if (!IsEditorMode()) 
+		{
+			// Resolution has chaned while out of focus - normally another app changing resolution
+			if (::GetFocus() != static_cast<HWND>(GetHWND()) && IsFullscreen())
+			{
+				// Change back to windowed
+				m_CVWindowType->Set(static_cast<int>(EWindowState::Windowed));
+				// Send event
+				gEnv->pSystem->GetISystemEventDispatcher()->OnSystemEvent(ESYSTEM_EVENT_TOGGLE_FULLSCREEN, 0, 0);
 			}
 		}
-		break;
-
-	case WM_SIZE:
+	}
+	case ESYSTEM_EVENT_RESIZE:
+	{
+		// Only in editor mode (as the window is externally influenced)
+		if (IsEditorMode())
 		{
-			if (wParam == SIZE_RESTORED)
-			{
-				m_bWindowRestored = true;
-			}
-
-			if (m_CVWidth != nullptr && !m_isChangingResolution && !IsFullscreen())
-			{
-				m_CVWidth->Set(LOWORD(lParam));
-				m_CVHeight->Set(HIWORD(lParam));
-			}
+			// Set the width (CVars only trigger when input and stored values differ; this avoids a self-triggering loop)
+			m_CVWidth->Set((int)wParam);
+			m_CVHeight->Set((int)lParam);
 		}
-		break;
-
-	case WM_ACTIVATE:
-		{
-			HWND hWndActive = nullptr;
-
-			if (wParam != WA_INACTIVE)
-			{
-				SetGamma(CV_r_gamma + m_fDeltaGamma, CV_r_brightness, CV_r_contrast, true);
-				hWndActive = (HWND)hWnd;
-			}
-			else
-			{
-				hWndActive = (HWND)lParam;
-				RestoreGamma();
-			}
-
-			// Toggle DXGI fullscreen state when user alt-tabs out
-			// This is required since we explicitly set the DXGI_MWA_NO_WINDOW_CHANGES, forbidding DXGI from handling this itself
-			if (IsFullscreen() && (hWnd == gcpRendD3D->GetBaseDisplayContext()->GetWindowHandle()))
-			{
-				gcpRendD3D->ExecuteRenderThreadCommand([hWnd, wParam]()
-				{
-					gcpRendD3D->GetBaseDisplayContext()->SetFullscreenState(wParam != WA_INACTIVE);
-
-					::ShowWindow((HWND)hWnd, wParam == WA_INACTIVE ? SW_MINIMIZE : SW_RESTORE);
-				}
-				, ERenderCommandFlags::None);
-			}
-
-			m_hWndActive = hWndActive;
-		}
+	}
+	break;
+	default:
 		break;
 	}
-	return false;
+#endif //CRY_PLATFORM_WINDOWS
+
 }
-#endif // CRY_PLATFORM_WINDOWS
 
 #include "DeviceInfo.inl"
 

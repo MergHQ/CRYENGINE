@@ -100,7 +100,7 @@ struct SDebugRenderTargetInfo
 	std::vector<std::string> args;
 };
 
-class CD3D9Renderer final : public CRenderer, public IWindowMessageHandler
+class CD3D9Renderer final : public CRenderer, public ISystemEventListener
 {
 	friend struct SPixFormat;
 	friend class CD3DStereoRenderer;
@@ -161,6 +161,11 @@ public:
 	virtual void LockParticleVideoMemory(int frameId) override;
 	virtual void UnLockParticleVideoMemory(int frameId) override;
 	virtual void ActivateLayer(const char* pLayerName, bool activate) override;
+
+	virtual void OnSystemEvent(ESystemEvent eEvent, UINT_PTR wParam, UINT_PTR lParam) final;
+	virtual void UpdateVsync() final { m_VSync = (gEnv->pConsole->GetCVar("r_VSync")) ? gEnv->pConsole->GetCVar("r_VSync")->GetIVal() : 0; };
+	virtual void UpdateWindowMode() final;
+	virtual void UpdateResolution() final;
 
 public:
 #ifdef USE_PIX_DURANGO
@@ -684,11 +689,6 @@ private:
 
 	// Called before starting drawing new frame
 	virtual void ClearPerFrameData(const SRenderingPassInfo& passInfo) override;
-#if CRY_PLATFORM_WINDOWS
-public:
-	// Called to inspect window messages sent to this renderer's windows
-	virtual bool HandleMessage(CRY_HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam, LRESULT* pResult) override;
-#endif
 
 public:
 	//////////////////////////////////////////////////////////////////////////
@@ -760,6 +760,12 @@ public:
 	CCryNameTSCRC            m_LevelShaderCacheMissIcon;
 
 	CVrProjectionManager*    m_pVRProjectionManager;
+
+#ifdef CRY_PLATFORM_WINDOWS
+	// Window styles for windowed / fullscreen (Windows desktop only)
+	static const DWORD     m_dwWinstyleBorder{ WS_OVERLAPPEDWINDOW | WS_VISIBLE };
+	static const DWORD     m_dwWinstyleNoBorder{ WS_POPUP | WS_VISIBLE };
+#endif // CRY_PLATFORM_WINDOWS
 
 	CRenderPipelineProfiler* m_pPipelineProfiler;
 

@@ -437,6 +437,10 @@ void CHardwareMouse::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR
 		bool bFocus = (wparam != 0);
 		HandleFocusEvent(bFocus);
 	}
+	else if (event == ESYSTEM_EVENT_POS_CHANGED)
+	{
+		EvaluateCursorConfinement();
+	}
 	else if (event == ESYSTEM_EVENT_MOVE)
 	{
 		EvaluateCursorConfinement();
@@ -870,6 +874,7 @@ bool CHardwareMouse::IsFullscreen()
 	{
 		gEnv->pRenderer->EF_Query(EFQ_Fullscreen, bFullScreen);
 	}
+
 	return bFullScreen;
 }
 

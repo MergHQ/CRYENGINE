@@ -349,7 +349,20 @@ void CSwapChainBackedRenderDisplayContext::CreateOutput()
 {
 #if CRY_PLATFORM_WINDOWS
 	CRY_ASSERT(m_hWnd);
-	HMONITOR hMonitor = MonitorFromWindow((HWND)m_hWnd, MONITOR_DEFAULTTONEAREST);
+	
+	HMONITOR hMonitor{ 0 };
+	if (IsEditorDisplay())
+	{
+		hMonitor = MonitorFromWindow((HWND)m_hWnd, MONITOR_DEFAULTTONEAREST);
+	}
+	else
+	{
+		DXGI_OUTPUT_DESC outDesc;
+		if (m_pOutput && SUCCEEDED(m_pOutput->GetDesc(&outDesc)))
+		{
+			hMonitor = outDesc.Monitor;
+		}
+	}
 
 	if (m_pOutput != nullptr)
 	{
@@ -396,14 +409,23 @@ void CSwapChainBackedRenderDisplayContext::CreateOutput()
 
 void CSwapChainBackedRenderDisplayContext::ChangeOutputIfNecessary(bool isFullscreen, bool vsync)
 {
-	bool isWindowOnExistingOutputMonitor = false;
+	bool isWindowOnExistingOutputMonitor{ true };
 #if CRY_PLATFORM_WINDOWS
-	HMONITOR hMonitor = MonitorFromWindow((HWND)m_hWnd, MONITOR_DEFAULTTONEAREST);
-
-	DXGI_OUTPUT_DESC outputDesc;
-	if (m_pOutput != nullptr && SUCCEEDED(m_pOutput->GetDesc(&outputDesc)))
-		isWindowOnExistingOutputMonitor = outputDesc.Monitor == hMonitor;
-#endif
+	DXGI_OUTPUT_DESC desc;
+	if (m_pOutput != nullptr && SUCCEEDED(m_pOutput->GetDesc(&desc)))
+	{
+		if (IsEditorDisplay())
+		{
+			// compare agains recommended output device
+			isWindowOnExistingOutputMonitor = (desc.Monitor == MonitorFromWindow(static_cast<HWND>(m_hWnd), MONITOR_DEFAULTTONEAREST));
+		}
+		else
+		{
+			// Default to main output device
+			isWindowOnExistingOutputMonitor = true;
+		}
+	}
+#endif //CRY_PLATFORM_WINDOWS
 
 #if CRY_PLATFORM_ANDROID
 	isWindowOnExistingOutputMonitor = true;
@@ -501,6 +523,8 @@ void CSwapChainBackedRenderDisplayContext::SetFullscreenState(bool isFullscreen)
 			AllocateBackBuffers();
 		}
 	}
+	// Trigger a fullscreen toggle event
+	gEnv->pSystem->GetISystemEventDispatcher()->OnSystemEvent(ESYSTEM_EVENT_TOGGLE_FULLSCREEN, isFullscreen ? 1 : 0, 0);
 }
 
 Vec2_tpl<uint32_t> CSwapChainBackedRenderDisplayContext::FindClosestMatchingScreenResolution(const Vec2_tpl<uint32_t> &resolution) const
@@ -528,7 +552,16 @@ RectI CSwapChainBackedRenderDisplayContext::GetCurrentMonitorBounds() const
 {
 #ifdef CRY_PLATFORM_WINDOWS
 	// When moving the window, update the preferred monitor dimensions so full-screen will pick the closest monitor
-	HMONITOR hMonitor = MonitorFromWindow((HWND)m_hWnd, MONITOR_DEFAULTTONEAREST);
+
+	// MonitorFromWindow can give incorrect results in multi-monitor setups with variable resolutions.
+	// Use the currently associated output device. Otherwise, resolution-independent window/screen intersection
+	// logic is required to find the correct outout device/monitor.
+	HMONITOR hMonitor;// = MonitorFromWindow((HWND)m_hWnd, MONITOR_DEFAULTTONEAREST);
+	DXGI_OUTPUT_DESC outDesc;
+	if (m_pOutput != nullptr && SUCCEEDED(m_pOutput->GetDesc(&outDesc)))
+	{
+		hMonitor = outDesc.Monitor;
+	}
 
 	MONITORINFO monitorInfo;
 	monitorInfo.cbSize = sizeof(MONITORINFO);

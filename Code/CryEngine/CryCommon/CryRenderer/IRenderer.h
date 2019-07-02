@@ -978,6 +978,10 @@ struct IRenderer//: public IRendererCallbackServer
 	virtual CRY_HWND Init(int x, int y, int width, int height, unsigned int cbpp, int zbpp, int sbits, CRY_HWND Glhwnd = 0, bool bReInit = false, bool bShaderCacheGen = false) = 0;
 	virtual void     PostInit() = 0;
 
+	virtual void UpdateVsync() = 0;
+	virtual void UpdateWindowMode() = 0;
+	virtual void UpdateResolution() = 0;
+
 	//! Start active rendering of the intro movies while initializing the rest of the engine.
 	virtual void StartRenderIntroMovies() = 0;
 	virtual void StopRenderIntroMovies(bool bWaitForFinished) = 0;

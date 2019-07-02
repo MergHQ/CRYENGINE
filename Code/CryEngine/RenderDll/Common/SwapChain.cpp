@@ -307,7 +307,7 @@ void CSwapChain::ResizeSwapChain(uint32_t buffers, uint32_t width, uint32_t heig
 		CRY_ASSERT_MESSAGE(!isFullscreen || (scDesc.Flags & DXGI_SWAP_CHAIN_FLAG_FRAME_LATENCY_WAITABLE_OBJECT) == 0, "Fullscreen does not work with Waitable SwapChain");
 #endif
 
-		m_pSwapChain->SetFullscreenState(isFullscreen, isFullscreen ? m_pOutput : nullptr);
+		m_pSwapChain->SetFullscreenState(isFullscreen, NULL);
 	}
 
 	// Resize the Resources associated with the SwapChain (needed after going fullscreen):

@@ -88,6 +88,17 @@ void OnWindowStateChanged(ICVar* pCVar)
 	{
 		pFullscreenCVar->Set(pCVar->GetIVal() == 3 ? 1 : 0);
 	}
+	GetISystem()->GetIRenderer()->UpdateWindowMode();
+}
+
+void OnHeightChanged(ICVar* var)
+{
+	GetISystem()->GetIRenderer()->UpdateResolution();
+}
+
+void OnWidthChanged(ICVar* var)
+{
+	GetISystem()->GetIRenderer()->UpdateResolution();
 }
 
 /////////////////////////////////////////////////////////////////////////////////
@@ -121,12 +132,14 @@ void CSystem::CreateRendererVars(const SSystemInitParams& startupParams)
 #endif
 
 	// load renderer settings from engine.ini
-	m_rWidth = REGISTER_INT("r_Width", iWidthDefault, VF_DUMPTODISK,
+	m_rWidth = REGISTER_INT_CB("r_Width", iWidthDefault, VF_DUMPTODISK,
 		"Sets the display width, in pixels.\n"
-		"Usage: r_Width [800/1024/..]");
-	m_rHeight = REGISTER_INT("r_Height", iHeightDefault, VF_DUMPTODISK,
+		"Usage: r_Width [800/1024/..]",
+		OnWidthChanged);
+	m_rHeight = REGISTER_INT_CB("r_Height", iHeightDefault, VF_DUMPTODISK,
 		"Sets the display height, in pixels.\n"
-		"Usage: r_Height [600/768/..]");
+		"Usage: r_Height [600/768/..]",
+		OnHeightChanged);
 	m_rColorBits = REGISTER_INT("r_ColorBits", 32, VF_DUMPTODISK | VF_REQUIRE_APP_RESTART,
 		"Sets the color resolution, in bits per pixel. Default is 32.\n"
 		"Usage: r_ColorBits [32/24/16/8]");

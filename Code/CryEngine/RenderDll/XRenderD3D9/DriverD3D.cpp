@@ -470,7 +470,9 @@ void CD3D9Renderer::CalculateResolutions(int displayWidthRequested, int displayH
 			*pDisplayHeight = 720;
 		}
 	#elif CRY_PLATFORM_WINDOWS
+
 		bool recalculateMonitorProperties = false;
+		auto rectArea = [&](RECT r) -> int { return (r.right - r.left) * (r.bottom - r.top); };
 
 		// Detect if there was a monitor change and we are affected by it
 		// m_changedMonitor is changed by the message-pump and immutable by us (render-thread)
@@ -478,11 +480,15 @@ void CD3D9Renderer::CalculateResolutions(int displayWidthRequested, int displayH
 		{
 			m_inspectedMonitor = m_changedMonitor;
 
-			HMONITOR migratedMonitor = MonitorFromWindow((HWND)m_hWnd, MONITOR_DEFAULTTONEAREST);
+			// Return the output device associated with the swapchain, as MonitorFromWindow can give unexpected results when using multi-monitor
+			// displays with differing resolutions. Future iterations with multi-adapter, multi-monitor support can address this.
+			// Resolution-independent window/monitor intersection logic will be required.
+			// HMONITOR migratedMonitor = MonitorFromWindow((HWND)m_hWnd, MONITOR_DEFAULTTONEAREST);
+			HMONITOR migratedMonitor = m_activeMonitor;
+
 			if (migratedMonitor != m_activeMonitor)
 			{
-				m_activeMonitor = migratedMonitor;
-
+				//m_activeMonitor = migratedMonitor;
 				recalculateMonitorProperties = true;
 			}
 		}
@@ -566,9 +572,9 @@ void CD3D9Renderer::CalculateResolutions(int displayWidthRequested, int displayH
 
 void CD3D9Renderer::HandleDisplayPropertyChanges(std::shared_ptr<CGraphicsPipeline> pActiveGraphicsPipeline)
 {
+
 	FUNCTION_PROFILER_RENDERER();
 
-	CRenderDisplayContext* pBC = GetBaseDisplayContext();
 	CRenderDisplayContext* pDC = GetActiveDisplayContext();
 	CRenderOutput* pRO = pDC->GetRenderOutput().get();
 
@@ -582,7 +588,6 @@ void CD3D9Renderer::HandleDisplayPropertyChanges(std::shared_ptr<CGraphicsPipeli
 
 	if (!IsEditorMode())
 	{
-		CRY_ASSERT(pDC == pBC);
 
 		// Detect changes in refresh property ///////////////////////////////////////////////////////////////////////////
 #if defined(SUPPORT_DEVICE_INFO_USER_DISPLAY_OVERRIDES)
@@ -621,10 +626,11 @@ void CD3D9Renderer::HandleDisplayPropertyChanges(std::shared_ptr<CGraphicsPipeli
 		// r_width and r_height are only honored when in game, otherwise
 		// the resolution is entirely controlled by dynamic window size
 #if CRY_PLATFORM_MOBILE
-		int displayWidthRequested  = displayWidthBefore;
 		int displayHeightRequested = displayHeightBefore;
+		int displayWidthRequested = displayWidthBefore;
 #else
-		int displayWidthRequested  = !IsEditorMode() && (pDC == pBC) && m_CVWidth  ? m_CVWidth ->GetIVal() : displayWidthBefore;
+		CRenderDisplayContext* pBC = GetBaseDisplayContext();
+		int displayWidthRequested = !IsEditorMode() && (pDC == pBC) && m_CVWidth ? m_CVWidth->GetIVal() : displayWidthBefore;
 		int displayHeightRequested = !IsEditorMode() && (pDC == pBC) && m_CVHeight ? m_CVHeight->GetIVal() : displayHeightBefore;
 #endif
 
@@ -691,11 +697,6 @@ void CD3D9Renderer::HandleDisplayPropertyChanges(std::shared_ptr<CGraphicsPipeli
 		// Apply changes of rendering resolution ///////////////////////////////////////////////////////////////////////
 		m_VSync = vSync;
 
-		if (bResizeSwapchain | bChangeWindow)
-		{
-			ChangeWindowProperties(displayWidth, displayHeight);
-		}
-
 		if (bResizeSwapchain | bRecreateSwapchain)
 		{
 			ChangeDisplayResolution(displayWidth, displayHeight, colorBits, 75, bResizeSwapchain | bRecreateSwapchain, pDC);
@@ -739,7 +740,6 @@ EWindowState CD3D9Renderer::CalculateWindowState() const
 	{
 		return EWindowState::Windowed;
 	}
-
 	return static_cast<EWindowState>(m_CVWindowType->GetIVal());
 }
 
@@ -925,7 +925,10 @@ void CD3D9Renderer::RT_BeginFrame(const SDisplayContextKey& displayContextKey, c
 	CSvoRenderer::GetInstance()->BeginFrame(pActiveGraphicsPipeline.get());
 #endif
 
-	HandleDisplayPropertyChanges(pActiveGraphicsPipeline);
+	if (pActiveGraphicsPipeline)
+	{
+		HandleDisplayPropertyChanges(pActiveGraphicsPipeline);
+	}
 
 	GetActiveDisplayContext()->GetRenderOutput()->m_hasBeenCleared = 0;
 
@@ -2160,7 +2163,6 @@ void CD3D9Renderer::DebugPerfBars(const SRenderStatistics& RStats, int nX, int n
 	nY += nYst + 5;
 	nX -= 5;
 
-	fWaitForGPU = (rtTimings.waitForGPU_MT + rtTimings.waitForGPU_RT + fWaitForGPU * fSmooth) / (fSmooth + 1.0f);
 	IRenderAuxText::Draw2dLabel(nX, nY, fFSize, &colF.r, false, "Wait for GPU: %.3fms", fWaitForGPU * 1000.0f);
 
 	AuxDrawQuad(nX + fOffs, nY + 4, nX + fOffs + fWaitForGPU / fFrameTime * fMaxBar, nY + 12, Col_Blue, 1.0f);
