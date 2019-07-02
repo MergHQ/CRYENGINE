@@ -689,9 +689,35 @@ bool CSkin::LoadNewSKIN(const char* szFilePath, uint32 nLoadingFlags)
 			cache.UVs.resize(nVtx);
 			cache.indices.resize(nIndices);
 
-			memcpy(&cache.vertices.front(), pMesh->GetStreamPtr<Vec3>(CMesh::POSITIONS), nVtx * sizeof(Vec3));
-			memcpy(&cache.UVs.front(), pMesh->GetStreamPtr<Vec2>(CMesh::TEXCOORDS), nVtx * sizeof(Vec2));
-			memcpy(&cache.indices.front(), pMesh->GetStreamPtr<vtx_idx>(CMesh::INDICES), nIndices * sizeof(vtx_idx));
+			int cnt;
+			Vec3* pos = pMesh->GetStreamPtr<Vec3>(CMesh::POSITIONS, &cnt);
+			if (cnt == nVtx && pos)
+			{
+				memcpy(&cache.vertices.front(), pos, nVtx * sizeof(Vec3));
+			}
+			else
+			{
+				Vec3f16* pos_f16 = pMesh->GetStreamPtr<Vec3f16>(CMesh::POSITIONSF16, &cnt);
+				if (cnt == nVtx && pos_f16)
+				{
+					for (int i = 0; i < cnt; ++i)
+					{
+						cache.vertices[i] = pos_f16[i].ToVec3();
+					}
+				}
+			}
+
+			Vec2* tex = pMesh->GetStreamPtr<Vec2>(CMesh::TEXCOORDS, &cnt);
+			if (cnt == nVtx && tex)
+			{
+				memcpy(&cache.UVs.front(), tex, nVtx * sizeof(Vec2));
+			}
+
+			vtx_idx* idx = pMesh->GetStreamPtr<vtx_idx>(CMesh::INDICES, &cnt);
+			if (cnt == nIndices && idx)
+			{
+				memcpy(&cache.indices.front(), idx, nIndices * sizeof(vtx_idx));
+			}
 		}
 	} //loop over all LODs
 
