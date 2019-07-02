@@ -657,7 +657,21 @@ static void OnSysSpecChange(ICVar* pVar)
 #if CRY_PLATFORM_ORBIS
 	spec = CONFIG_ORBIS;
 #elif CRY_PLATFORM_DURANGO
-	spec = CONFIG_DURANGO;
+	switch (GetConsoleType())
+	{
+	case CONSOLE_TYPE::CONSOLE_TYPE_XBOX_ONE: // Fallthrough
+	case CONSOLE_TYPE::CONSOLE_TYPE_XBOX_ONE_S:
+		spec = CONFIG_DURANGO;
+		break;
+	case CONSOLE_TYPE::CONSOLE_TYPE_XBOX_ONE_X: // Fallthrough
+	case CONSOLE_TYPE::CONSOLE_TYPE_XBOX_ONE_X_DEVKIT:
+		spec = CONFIG_DURANGO_X;
+		break;
+	default:
+		CRY_ASSERT_MESSAGE(false, "Unknown Xbox type");
+		spec = CONFIG_DURANGO;
+		break;
+	}
 #elif CRY_PLATFORM_MOBILE
 	spec = CONFIG_CUSTOM;
 	GetISystem()->LoadConfiguration("mobile.cfg", 0, eLoadConfigSystemSpec);
