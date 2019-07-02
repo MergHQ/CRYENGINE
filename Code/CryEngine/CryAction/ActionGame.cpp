@@ -22,6 +22,7 @@
 #include "Network/GameStats.h"
 #include "Animation/PoseModifier/IKTorsoAim.h"
 #include "IForceFeedbackSystem.h"
+#include <CryGame/IGameTokens.h>
 
 #include "Network/BreakReplicator.h"
 #include "Network/ObjectSelector.h"
@@ -1073,10 +1074,8 @@ bool CActionGame::Update()
 
 		CServerTimer::Get()->UpdateOnFrameStart();
 
-#ifdef _GAMETOKENSDEBUGINFO
 		if (m_pGameTokenSystem)
 			m_pGameTokenSystem->DebugDraw();
-#endif
 
 		if (g_breakage_debug)
 			DrawBrokenMeshes();
