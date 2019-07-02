@@ -1337,7 +1337,13 @@ void QToolWindowManager::bringToFront(QWidget* toolWindow)
 		toolWindow = toolWindow->parentWidget();
 	}
 	area->setCurrentWidget(toolWindow);
-	area->getWidget()->window()->raise();
+
+	// Make sure the window is no longer minimized, activate it and show
+	QWidget* pWindow = area->getWidget()->window();
+	pWindow->setWindowState((pWindow->windowState() & ~Qt::WindowMinimized) | Qt::WindowActive);
+	pWindow->show();
+	pWindow->raise();
+
 	toolWindow->setFocus();
 }
 
