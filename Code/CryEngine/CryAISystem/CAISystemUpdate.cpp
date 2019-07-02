@@ -67,13 +67,13 @@ void RemoveNonActors(CAISystem::AIActorSet& actorSet)
 	for (CAISystem::AIActorSet::iterator it = actorSet.begin(); it != actorSet.end(); )
 	{
 		IAIObject* pAIObject = it->GetAIObject();
-		CRY_ASSERT_TRACE(pAIObject, ("An AI Actors set contains a null entry for object id %d!", it->GetObjectID()));
+		CRY_ASSERT(pAIObject, "An AI Actors set contains a null entry for object id %d!", it->GetObjectID());
 
 		// [AlexMcC|29.06.10] We can't trust that this is an AI Actor, because CWeakRef::GetAIObject()
 		// doesn't do any type checking. If this weakref becomes invalid, then the id is used by another
 		// object (which can happen if we chainload or load a savegame), this might not be an actor anymore.
 		const bool bIsActor = pAIObject ? (pAIObject->CastToCAIActor() != NULL) : false;
-		CRY_ASSERT_MESSAGE(bIsActor, "A non-actor is in an AI actor set!");
+		CRY_ASSERT(bIsActor, "A non-actor is in an AI actor set!");
 
 		if (pAIObject && bIsActor)
 		{

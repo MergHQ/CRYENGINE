@@ -959,7 +959,7 @@ void CCoverSystem::NotifyCoverUsers(const CoverSurfaceID& surfaceID)
 			}
 			else
 			{
-				CRY_ASSERT_MESSAGE(false, "Cover id=%u is occupied by unregistered entity id=%u", static_cast<uint32>(coverID), static_cast<uint32>(occupantInfo.entityId));
+				CRY_ASSERT(false, "Cover id=%u is occupied by unregistered entity id=%u", static_cast<uint32>(coverID), static_cast<uint32>(occupantInfo.entityId));
 			}
 		}
 	}

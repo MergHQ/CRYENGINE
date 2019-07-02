@@ -1169,7 +1169,7 @@ void NavigationSystem::UpdateInternalNavigationSystemData(const bool blocking)
 
 #if NAV_MESH_REGENERATION_ENABLED
 
-	CRY_ASSERT_MESSAGE(m_pEditorBackgroundUpdate->IsRunning() == false, "Background update for editor is still running while the application has the focus!!");
+	CRY_ASSERT(m_pEditorBackgroundUpdate->IsRunning() == false, "Background update for editor is still running while the application has the focus!!");
 
 	const bool editorBackgroundThreadRunning = m_pEditorBackgroundUpdate->IsRunning();
 	if (editorBackgroundThreadRunning)
@@ -1355,7 +1355,7 @@ void NavigationSystem::UpdateMeshes(const CTimeValue frameStartTime, const float
 				const MNM::CNavMesh::SGridParams& paramsGrid = mesh.navMesh.GetGridParams();
 
 				m_runningTasks.push_back(m_free);
-				CRY_ASSERT_MESSAGE(m_free < m_results.size(), "Index out of array bounds!");
+				CRY_ASSERT(m_free < m_results.size(), "Index out of array bounds!");
 				TileTaskResult& result = m_results[m_free];
 				m_free = result.next;
 
@@ -3614,8 +3614,8 @@ bool NavigationSystem::ReadFromFile(const char* fileName, bool bAfterExporting)
 						file.ReadType(&vtx.x, 3);
 					}
 
-					CRY_ASSERT_MESSAGE(markupId != NavigationVolumeID(), "Markup volume with invalid id loaded!");
-					CRY_ASSERT_MESSAGE(!m_markupVolumes.validate(markupId), "Markup volume with the same id was already loaded!");
+					CRY_ASSERT(markupId != NavigationVolumeID(), "Markup volume with invalid id loaded!");
+					CRY_ASSERT(!m_markupVolumes.validate(markupId), "Markup volume with the same id was already loaded!");
 
 					CreateMarkupVolume(markupId);
 					SetMarkupVolume(0, markupVerticesBuffer.data(), verticesCount, markupId, params);
@@ -4596,7 +4596,7 @@ TileGeneratorExtensionID NavigationSystem::RegisterTileGeneratorExtension(MNM::T
 	}
 	else
 	{
-		CRY_ASSERT_MESSAGE(newId != TileGeneratorExtensionID(), "TileGeneratorExtensionID counter is exausted");
+		CRY_ASSERT(newId != TileGeneratorExtensionID(), "TileGeneratorExtensionID counter is exausted");
 		return TileGeneratorExtensionID();
 	}
 
@@ -5988,7 +5988,7 @@ bool NavigationSystemBackgroundUpdate::Start()
 		m_pBackgroundThread = new Thread(m_navigationSystem);
 		if (!gEnv->pThreadManager->SpawnThread(m_pBackgroundThread, "NavigationSystemBackgroundUpdate"))
 		{
-			CRY_ASSERT_MESSAGE(false, "Error spawning \"NavigationSystemBackgroundUpdate\" thread.");
+			CRY_ASSERT(false, "Error spawning \"NavigationSystemBackgroundUpdate\" thread.");
 			delete m_pBackgroundThread;
 			m_pBackgroundThread = NULL;
 			return false;

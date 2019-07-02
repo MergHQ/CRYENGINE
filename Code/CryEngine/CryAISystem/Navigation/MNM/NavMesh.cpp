@@ -504,7 +504,7 @@ bool CNavMesh::SnapPosition(
 			break;
 		}
 		default:
-			CRY_ASSERT_MESSAGE(false, "CNavMesh::SnapPosition: Unhandled snap metric type!");
+			CRY_ASSERT(false, "CNavMesh::SnapPosition: Unhandled snap metric type!");
 			break;
 		}
 	}
@@ -563,7 +563,7 @@ bool CNavMesh::SnapPosition(
 		break;
 	}
 	default:
-		CRY_ASSERT_MESSAGE(false, "CNavMesh::SnapPosition: Unhandled snap metric type!");
+		CRY_ASSERT(false, "CNavMesh::SnapPosition: Unhandled snap metric type!");
 		break;
 	}
 	return false;
@@ -1083,7 +1083,7 @@ void CNavMesh::RemoveTrianglesByFlags(const MNM::AreaAnnotation::value_type flag
 		const TileID tileId = tileIt->second;
 		STile& tile = m_tiles[tileId - 1].tile;
 
-		CRY_ASSERT_MESSAGE(tile.nodeCount == 0, "Removing triangles from tiles with BV Tree isn't supported");
+		CRY_ASSERT(tile.nodeCount == 0, "Removing triangles from tiles with BV Tree isn't supported");
 		CRY_ASSERT(tile.vertexCount <= MNM::Constants::TileTrianglesMaxCount * 3);
 		memset(verticesAuxArray, 0, sizeof(verticesAuxArray[0]) * tile.vertexCount);
 
@@ -2907,7 +2907,7 @@ bool CNavMesh::IsPointInsideNeighbouringTriangleWhichSharesEdge(const TriangleID
 	} 
 	while ((currentTriangleID != sourceTriangleID || isSwitchingSide) && (++bailOutCounter < 1024));
 
-	CRY_ASSERT_MESSAGE(
+	CRY_ASSERT(
 		bailOutCounter < 1024, 
 		"Potential infinite loop detected: source triangle ID: %u, edge idx: %u, target triangle ID: %u, position: %f, %f, %f", 
 		sourceTriangleID, sourceEdgeIndex, targetTriangleID, targetPosition.x.as_float(), targetPosition.y.as_double(), targetPosition.z.as_float());

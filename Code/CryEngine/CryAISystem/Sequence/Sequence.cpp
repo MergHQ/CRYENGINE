@@ -124,7 +124,7 @@ void Sequence::Cancel()
 
 void Sequence::RequestActionStart(TFlowNodeId actionNodeId)
 {
-	CRY_ASSERT_MESSAGE(actionNodeId != InvalidFlowNodeId, "Sequence::RequestActionStart: clash between passed in actionNodeId and the magic value that specifies an invalid node");
+	CRY_ASSERT(actionNodeId != InvalidFlowNodeId, "Sequence::RequestActionStart: clash between passed in actionNodeId and the magic value that specifies an invalid node");
 
 	if (!m_active || actionNodeId == m_currentActionNodeId)
 		return;

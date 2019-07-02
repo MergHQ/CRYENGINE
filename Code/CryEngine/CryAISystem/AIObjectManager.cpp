@@ -153,7 +153,7 @@ IAIObject* CAIObjectManager::CreateAIObject(const AIObjectParams& params)
 	switch (type)
 	{
 	case AIOBJECT_DUMMY:
-		CRY_ASSERT_MESSAGE(false, "Creating dummy object through the AI object manager (use CAISystem::CreateDummyObject instead)");
+		CRY_ASSERT(false, "Creating dummy object through the AI object manager (use CAISystem::CreateDummyObject instead)");
 		return 0;
 	case AIOBJECT_ACTOR:
 		type = AIOBJECT_ACTOR;

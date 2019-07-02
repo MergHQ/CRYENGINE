@@ -18,7 +18,7 @@ bool CCollisionAvoidanceAgent::Register(IEntity* pEntity)
 		m_pAttachedEntity = pEntity;
 		return gEnv->pAISystem->GetCollisionAvoidanceSystem()->RegisterAgent(this);
 	}
-	CRY_ASSERT_MESSAGE(pEntity, "Parameter 'pEntity' must be non-null.");
+	CRY_ASSERT(pEntity, "Parameter 'pEntity' must be non-null.");
 	return false;
 }
 
@@ -29,7 +29,7 @@ bool CCollisionAvoidanceAgent::Unregister()
 		m_pAttachedEntity = nullptr;
 		return gEnv->pAISystem->GetCollisionAvoidanceSystem()->UnregisterAgent(this);
 	}
-	CRY_ASSERT_MESSAGE(m_pAttachedEntity, "Can't unregister an agent who was not registered.");
+	CRY_ASSERT(m_pAttachedEntity, "Can't unregister an agent who was not registered.");
 	return false;
 }
 
@@ -81,7 +81,7 @@ ETreatType CCollisionAvoidanceAgent::GetTreatmentDuringUpdateTick(SAgentParams& 
 		return ETreatType::None;
 	}
 
-	CRY_ASSERT_MESSAGE(false, "Unhandled CEntityAINavigationComponent::SCollisionAvoidanceProperties::EType value");
+	CRY_ASSERT(false, "Unhandled CEntityAINavigationComponent::SCollisionAvoidanceProperties::EType value");
 	return ETreatType::None;
 }
 

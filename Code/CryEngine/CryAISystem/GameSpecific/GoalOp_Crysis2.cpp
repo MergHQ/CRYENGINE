@@ -1466,7 +1466,7 @@ EGoalOpResult COPCrysis2StickPath::ExecuteCurrentState(CPipeUser* pPipeUser, boo
 			break;
 
 		default:
-			CRY_ASSERT_MESSAGE(false, "COPCrysis2StickPath::Execute Unhandled state");
+			CRY_ASSERT(false, "COPCrysis2StickPath::Execute Unhandled state");
 			break;
 		}
 	}

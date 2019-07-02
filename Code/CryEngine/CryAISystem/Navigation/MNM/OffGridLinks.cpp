@@ -52,7 +52,7 @@ void OffMeshNavigation::AddLink(NavigationMesh& navigationMesh, const TriangleID
 	//////////////////////////////////////////////////////////////////////////
 	// Attempt to find the current link data for this tile or create one if not already cached
 	TileLinks& tileLinks = m_tilesLinks[tileID];
-	CRY_ASSERT_TRACE(tileLinks.triangleLinkCount + 1 < kMaxTileLinks, ("Maximum number of offmesh links in tile reached! (tileID = %u, links count = %d)", tileID, tileLinks.triangleLinkCount));
+	CRY_ASSERT(tileLinks.triangleLinkCount + 1 < kMaxTileLinks, "Maximum number of offmesh links in tile reached! (tileID = %u, links count = %d)", tileID, tileLinks.triangleLinkCount);
 
 	//////////////////////////////////////////////////////////////////////////
 	// Find if we have entries for this triangle, if not insert at the end
@@ -69,7 +69,7 @@ void OffMeshNavigation::AddLink(NavigationMesh& navigationMesh, const TriangleID
 	}
 
 	// A link ID should never be larger than the latest generated
-	CRY_ASSERT_TRACE(linkID <= s_linkIDGenerator, ("A link ID should not be larger than the latest generated (linkID = %u, lastGenerated = %u)", linkID.GetValue(), s_linkIDGenerator.GetValue()));
+	CRY_ASSERT(linkID <= s_linkIDGenerator, "A link ID should not be larger than the latest generated (linkID = %u, lastGenerated = %u)", linkID.GetValue(), s_linkIDGenerator.GetValue());
 
 	//////////////////////////////////////////////////////////////////////////
 	// Begin insert/copy process

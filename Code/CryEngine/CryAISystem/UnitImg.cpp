@@ -274,7 +274,7 @@ void CUnitImg::Serialize(TSerialize ser)
 {
 	m_refUnit.Serialize(ser, "m_refUnit");
 
-	CRY_ASSERT_MESSAGE(m_Plan.empty(), "Todo: implement serialization of m_Plan");
+	CRY_ASSERT(m_Plan.empty(), "Todo: implement serialization of m_Plan");
 	//SerializeListOfPointers(ser, objectTracker, "Plan", m_Plan);
 	ser.Value("m_TagPoint", m_TagPoint);
 	ser.Value("m_flags", m_flags);
@@ -302,7 +302,7 @@ void CUnitAction::Serialize(TSerialize ser)
 	ser.EnumValue("m_Action", m_Action, UA_NONE, UA_LAST);
 	ser.Value("m_BlockingPlan", m_BlockingPlan);
 
-	CRY_ASSERT_MESSAGE(false, "Todo: implement serialization of blocked actions");
+	CRY_ASSERT(false, "Todo: implement serialization of blocked actions");
 	//ser.Value("BlockingActions", m_BlockingActions);
 	//ser.Value("BlockedActions", m_BlockedActions);
 

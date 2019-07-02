@@ -269,7 +269,7 @@ namespace AISignals
 	{
 		if (index >= m_signalDescriptionsVec.size())
 		{
-			CRY_ASSERT_MESSAGE(index >= m_signalDescriptionsVec.size(), "Index must be smaller than size of the vector");
+			CRY_ASSERT(index >= m_signalDescriptionsVec.size(), "Index must be smaller than size of the vector");
 			return m_builtInSignals.GetNone();
 		}
 
@@ -282,7 +282,7 @@ namespace AISignals
 
 		if (it == m_signalDescriptionMap.end())
 		{
-			CRY_ASSERT_MESSAGE(it == m_signalDescriptionMap.end(), "Called GetSignalDescription with a non-registered Signal Name '%s'", szSignalDescName);
+			CRY_ASSERT(it == m_signalDescriptionMap.end(), "Called GetSignalDescription with a non-registered Signal Name '%s'", szSignalDescName);
 			gEnv->pLog->LogWarning("Called GetSignalDescription with a non-registered Signal Name '%s'", szSignalDescName);
 			return GetBuiltInSignalDescriptions().GetNone();
 		}

@@ -4075,8 +4075,8 @@ uint32 CSmartObjectManager::GetSOClassTemplateIStatObj(IEntity* pEntity, IStatOb
 		}
 		else
 		{
-			CRY_ASSERT_MESSAGE(ppStatObjectPtrs, "You must allocate the ppStatObjectPtrs in order to populate it!");
-			CRY_ASSERT_MESSAGE(numAllocStatObjects, "You passed 0 as the number of allocated objects in the array you allocated!");
+			CRY_ASSERT(ppStatObjectPtrs, "You must allocate the ppStatObjectPtrs in order to populate it!");
+			CRY_ASSERT(numAllocStatObjects, "You passed 0 as the number of allocated objects in the array you allocated!");
 
 			numToCopy = min(numAllocStatObjects, (uint32)statObjects.size());
 			if (numToCopy)

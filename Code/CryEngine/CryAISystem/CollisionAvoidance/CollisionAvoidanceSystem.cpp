@@ -25,13 +25,13 @@ bool CCollisionAvoidanceSystem::RegisterAgent(IAgent* pAgent)
 {
 	if (!pAgent)
 	{
-		CRY_ASSERT_MESSAGE(pAgent, "Parameter 'pAgent' must be non-null.");
+		CRY_ASSERT(pAgent, "Parameter 'pAgent' must be non-null.");
 		return false;
 	}
 
 	if (m_isUpdating)
 	{
-		CRY_ASSERT_MESSAGE(!m_isUpdating, "Collision Avoidance System should not be updating while an agent is being registered.");
+		CRY_ASSERT(!m_isUpdating, "Collision Avoidance System should not be updating while an agent is being registered.");
 		return false;
 	}
 
@@ -39,7 +39,7 @@ bool CCollisionAvoidanceSystem::RegisterAgent(IAgent* pAgent)
 	if (m_registeredAgentsPtrs.size() + 3 >= FeasibleAreaMaxVertexCount)
 	{
 		// With this early return we avoid registering more agents that the maximum allowed to prevent memory corruptions in 'ComputeFeasibleArea' function.
-		CRY_ASSERT_MESSAGE(m_registeredAgentsPtrs.size() + 3 < FeasibleAreaMaxVertexCount, "Maximum number of agents is 61 (value of enum 'FeasibleAreaMaxVertexCount' minus 3).");
+		CRY_ASSERT(m_registeredAgentsPtrs.size() + 3 < FeasibleAreaMaxVertexCount, "Maximum number of agents is 61 (value of enum 'FeasibleAreaMaxVertexCount' minus 3).");
 		return false;
 	}
 
@@ -63,11 +63,11 @@ bool CCollisionAvoidanceSystem::UnregisterAgent(IAgent* pAgent)
 				m_registeredAgentsPtrs.erase(it, m_registeredAgentsPtrs.end());
 				return true;
 			}
-			CRY_ASSERT_MESSAGE(it != m_registeredAgentsPtrs.end(), "Parameter 'pAgent' was not registered.");
+			CRY_ASSERT(it != m_registeredAgentsPtrs.end(), "Parameter 'pAgent' was not registered.");
 		}
-		CRY_ASSERT_MESSAGE(!m_isUpdating, "Collision Avoidance System should not be updating while an agent is being unregistered.");
+		CRY_ASSERT(!m_isUpdating, "Collision Avoidance System should not be updating while an agent is being unregistered.");
 	}
-	CRY_ASSERT_MESSAGE(pAgent, "Parameter 'pAgent' must be non-null.");
+	CRY_ASSERT(pAgent, "Parameter 'pAgent' must be non-null.");
 	return false;
 }
 
@@ -199,7 +199,7 @@ size_t CCollisionAvoidanceSystem::ComputeFeasibleArea(const SConstraintLine* lin
 	Vec2* clipped = buf1;
 	Vec2* output = clipped;
 
-	CRY_ASSERT_MESSAGE(3 + lineCount <= FeasibleAreaMaxVertexCount, "More agents/obstacles than the maximum supported are being handled. This will cause memory buffers to go beyond their limit, possibly corrupting memory. This shouldn't happen since the system should not allow to register more agents than the maximum which is equivalent to 'FeasibleAreaMaxVertexCount' - 3. See RegisterAgent function.");
+	CRY_ASSERT(3 + lineCount <= FeasibleAreaMaxVertexCount, "More agents/obstacles than the maximum supported are being handled. This will cause memory buffers to go beyond their limit, possibly corrupting memory. This shouldn't happen since the system should not allow to register more agents than the maximum which is equivalent to 'FeasibleAreaMaxVertexCount' - 3. See RegisterAgent function.");
 
 	const float HalfSize = 1.0f + radius;
 

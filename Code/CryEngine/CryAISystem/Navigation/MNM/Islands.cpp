@@ -221,7 +221,7 @@ void CIslands::ComputeStaticIslands(CNavMesh& navMesh, SConnectionRequests& conn
 				const TriangleID currentTriangleID = trianglesToVisit[index];
 
 				const TileID currentTileId = ComputeTileID(currentTriangleID);
-				CRY_ASSERT_MESSAGE(currentTileId > 0, "ComputeStaticIslands is trying to access a triangle ID associated with an invalid tile id.");
+				CRY_ASSERT(currentTileId > 0, "ComputeStaticIslands is trying to access a triangle ID associated with an invalid tile id.");
 
 				const CNavMesh::TileContainer& container = navMesh.m_tiles[currentTileId - 1];
 				const STile& currentTile = container.tile;
@@ -572,7 +572,7 @@ CIslands::SIsland& CIslands::GetNewIsland(const AreaAnnotation annotation)
 	// Generate new id (NOTE: Invalid is 0)
 	const StaticIslandID id = m_islands.size() + 1;
 
-	CRY_ASSERT_MESSAGE(GetIslandID(id) == id, "CIslands::GetNewIsland: Too many islands created!");
+	CRY_ASSERT(GetIslandID(id) == id, "CIslands::GetNewIsland: Too many islands created!");
 
 	m_islands.emplace_back(id, annotation);
 	return m_islands.back();

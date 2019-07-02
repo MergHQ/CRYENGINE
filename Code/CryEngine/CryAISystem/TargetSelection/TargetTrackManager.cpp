@@ -56,7 +56,7 @@ const char* GetSoundStimulusNameFromType(const int stimulusType)
 	}
 	else
 	{
-		CRY_ASSERT_MESSAGE(0, "CTargetTrackManager::TranslateSoundStimulus Unhandled sound stimulus type");
+		CRY_ASSERT(0, "CTargetTrackManager::TranslateSoundStimulus Unhandled sound stimulus type");
 		return "Unknown";
 	}
 };
@@ -747,7 +747,7 @@ bool CTargetTrackManager::HandleStimulusFromAIEvent(tAIObjectID aiObjectId, cons
 
 			case TargetTrackHelpers::eEST_Generic:
 			default:
-				CRY_ASSERT_MESSAGE(0, "CTargetTrackManager::HandleStimulusEvent Unhandled AIEvent stimulus type received");
+				CRY_ASSERT(0, "CTargetTrackManager::HandleStimulusEvent Unhandled AIEvent stimulus type received");
 				break;
 			}
 
@@ -951,7 +951,7 @@ bool CTargetTrackManager::TranslateSoundStimulusIfCanBeHandled(TargetTrackHelper
 		// Get descriptor
 		SSoundPerceptionDescriptor sDescriptor;
 		if (!pPuppet->GetSoundPerceptionDescriptor((EAISoundStimType)pAIEvent->nType, sDescriptor))
-			CRY_ASSERT_MESSAGE(0, "Missing Sound Perception Descriptor when handling a sound event");
+			CRY_ASSERT(0, "Missing Sound Perception Descriptor when handling a sound event");
 
 		float fEventRadius = pAIEvent->fThreat;
 		float fSoundThreatLevel = 0.0f;

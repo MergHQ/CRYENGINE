@@ -551,7 +551,7 @@ void CAISystem::TrySubsystemInitScriptBind()
 			m_pScriptAI->RunStartupScript(false);
 			return;
 		}
-		CRY_ASSERT_MESSAGE(m_pScriptAI, "AI Script Bind is already initialized.");
+		CRY_ASSERT(m_pScriptAI, "AI Script Bind is already initialized.");
 	}
 }
 
@@ -566,7 +566,7 @@ void CAISystem::TrySubsystemInitCommunicationSystem()
 			gAIEnv.pCommunicationManager->LoadConfigurationAndScanRootFolder("Scripts/AI/Communication");
 			return;
 		}
-		CRY_ASSERT_MESSAGE(gAIEnv.pCommunicationManager, "AI Communication System is already initialized.");
+		CRY_ASSERT(gAIEnv.pCommunicationManager, "AI Communication System is already initialized.");
 	}
 }
 
@@ -579,7 +579,7 @@ void CAISystem::TrySubsystemInitFormationSystem()
 			gAIEnv.pFormationManager = new CFormationManager();
 			return;
 		}
-		CRY_ASSERT_MESSAGE(gAIEnv.pFormationManager, "AI Formation system is already initialized.");
+		CRY_ASSERT(gAIEnv.pFormationManager, "AI Formation system is already initialized.");
 	}
 }
 
@@ -592,7 +592,7 @@ void CAISystem::TrySubsystemInitGroupSystem()
 			gAIEnv.pGroupManager = new CGroupManager();
 			return;
 		}
-		CRY_ASSERT_MESSAGE(gAIEnv.pGroupManager, "AI Group System is already initialized.");
+		CRY_ASSERT(gAIEnv.pGroupManager, "AI Group System is already initialized.");
 	}
 }
 
@@ -605,7 +605,7 @@ void CAISystem::TrySubsystemInitTacticalPointSystem()
 			gAIEnv.pTacticalPointSystem = new CTacticalPointSystem();
 			return;
 		}
-		CRY_ASSERT_MESSAGE(gAIEnv.pTacticalPointSystem, "AI Tactical Point System is already initialized.");
+		CRY_ASSERT(gAIEnv.pTacticalPointSystem, "AI Tactical Point System is already initialized.");
 	}
 }
 
@@ -618,7 +618,7 @@ void CAISystem::TrySubsystemInitCoverSystem()
 			gAIEnv.pCoverSystem = new CCoverSystem("Scripts/AI/Cover.xml");
 			return;
 		}
-		CRY_ASSERT_MESSAGE(gAIEnv.pCoverSystem, "AI Cover System is already initialized.");
+		CRY_ASSERT(gAIEnv.pCoverSystem, "AI Cover System is already initialized.");
 	}
 }
 
@@ -631,7 +631,7 @@ void CAISystem::TrySubsystemInitORCA()
 			gAIEnv.pCollisionAvoidanceSystem = new Cry::AI::CollisionAvoidance::CCollisionAvoidanceSystem();
 			return;
 		}
-		CRY_ASSERT_MESSAGE(gAIEnv.pCollisionAvoidanceSystem, "AI ORCA System is already initialized.");
+		CRY_ASSERT(gAIEnv.pCollisionAvoidanceSystem, "AI ORCA System is already initialized.");
 	}
 }
 
@@ -644,7 +644,7 @@ void CAISystem::TrySubsystemInitTargetTrackSystem()
 			gAIEnv.pTargetTrackManager = new CTargetTrackManager();
 			return;
 		}
-		CRY_ASSERT_MESSAGE(gAIEnv.pTargetTrackManager, "AI Target Track System is already initialized.");
+		CRY_ASSERT(gAIEnv.pTargetTrackManager, "AI Target Track System is already initialized.");
 	}
 }
 
@@ -2329,7 +2329,7 @@ void CAISystem::LoadLevelData(const char* szLevel, const char* szMission, const 
 	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
 	CRY_ASSERT(szLevel);
-	CRY_ASSERT_TRACE(szMission && szMission[0],
+	CRY_ASSERT(szMission && szMission[0],
 	                 ("Loading AI data for level %s without a mission: AI navigation will be broken!",
 	                  szLevel ? szLevel : "<None>"));
 
@@ -2687,7 +2687,7 @@ void CAISystem::UpdateSubsystem(const CTimeValue frameStartTime, const float fra
 		TrySubsystemUpdateGlobalRayCaster(frameStartTime, frameDeltaTime, isAutomaticUpdate);
 		break;
 	default:
-		CRY_ASSERT_MESSAGE(false, "Provided flag is not valid.");
+		CRY_ASSERT(false, "Provided flag is not valid.");
 		break;
 	}
 }
@@ -4119,7 +4119,7 @@ void CAISystem::DebugOutputObjects(const char* txt) const
 
 void CAISystem::UnregisterAIActor(CWeakRef<CAIActor> destroyedObject)
 {
-	CRY_ASSERT_TRACE(!m_iteratingActorSet, ("Removing AIActor %i from enabled/disabled set while iterating over the set (fix this by adding double buffering, or nulling instead of erasing)"));
+	CRY_ASSERT(!m_iteratingActorSet, "Removing AIActor %i from enabled/disabled set while iterating over the set (fix this by adding double buffering, or nulling instead of erasing)");
 
 	m_enabledAIActorsSet.erase(destroyedObject);
 	m_disabledAIActorsSet.erase(destroyedObject);
@@ -5335,7 +5335,7 @@ bool CAISystem::CompareFloatsFPUBugWorkaround(float fLeft, float fRight)
 	// http://hal.archives-ouvertes.fr/docs/00/28/14/29/PDF/floating-point-article.pdf (section 3.1.1 x87 floating-point unit)
 	// This only solves problems in code outside of this cpp file (we found problems in Puppet.h/cpp)
 
-	CRY_ASSERT_MESSAGE(!(fLeft > fRight) || !(fRight > fLeft), "Floating point precision error");
+	CRY_ASSERT(!(fLeft > fRight) || !(fRight > fLeft), "Floating point precision error");
 
 	return fLeft > fRight;
 }
@@ -5590,7 +5590,7 @@ bool CAISystem::ShouldUpdateSubsystem(const IAISystem::ESubsystemUpdateFlag subs
 	const bool shouldUpdateOverride = !isAutomaticUpdate && m_overrideUpdateFlags.Check(subsystemUpdateFlag);
 	const bool shouldUpdate = (shouldUpdateAutomatic || shouldUpdateOverride);
 
-	CRY_ASSERT_MESSAGE(isAutomaticUpdate || m_overrideUpdateFlags.Check(subsystemUpdateFlag),
+	CRY_ASSERT(isAutomaticUpdate || m_overrideUpdateFlags.Check(subsystemUpdateFlag),
 		"Tried to manually update IA subsystem %s but UpdateFlags were not overriden. Subsystem will not be updated.", Serialization::getEnumLabel(subsystemUpdateFlag));
 
 	return shouldUpdate;

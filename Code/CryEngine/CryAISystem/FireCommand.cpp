@@ -1032,7 +1032,7 @@ bool CFireCommandProjectileFast::ChooseShootPoint(Vec3& outShootPoint, IAIObject
 			break;
 
 		default:
-			CRY_ASSERT_MESSAGE(false, "CFireCommandProjectileFast::ChooseShootPoint Unhandled Aim Mode");
+			CRY_ASSERT(false, "CFireCommandProjectileFast::ChooseShootPoint Unhandled Aim Mode");
 		}
 	}
 

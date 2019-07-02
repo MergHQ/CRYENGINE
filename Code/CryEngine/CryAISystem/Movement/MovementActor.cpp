@@ -83,7 +83,7 @@ bool MovementActor::AddActionAbilityCallbacks(const SMovementActionAbilityCallba
 		bNoCallbackAlreadyPresent &= actionAbilities.m_postPathFollowingUpdateCallback.AddUnique(ability.postPathFollowingUpdateCallback);
 	}
 	
-	CRY_ASSERT_MESSAGE(bNoCallbackAlreadyPresent, "MovementActor::AddActionAbilityCallbacks - Trying to add the same movement action ability twice");
+	CRY_ASSERT(bNoCallbackAlreadyPresent, "MovementActor::AddActionAbilityCallbacks - Trying to add the same movement action ability twice");
 	return true;
 }
 

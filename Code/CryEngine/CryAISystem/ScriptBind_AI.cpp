@@ -10967,7 +10967,7 @@ int CScriptBind_AI::LoadBehaviors(IFunctionHandler* pH, const char* folderName, 
 	{
 		if (!BehaviorLoader()(behaviorExplorer.behaviors, it->first.c_str(), it->second))
 		{
-			CRY_ASSERT_TRACE(false, ("Couldn't load behavior %s", it->first.c_str()));
+			CRY_ASSERT(false, "Couldn't load behavior %s", it->first.c_str());
 			++numFailed;
 		}
 	}

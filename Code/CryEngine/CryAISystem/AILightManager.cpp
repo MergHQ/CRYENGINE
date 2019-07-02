@@ -266,7 +266,7 @@ void CAILightManager::DebugDraw()
 				playerEffectCol = ColorB(255, 128, 255);
 				break;
 			default:
-				CRY_ASSERT_MESSAGE(false, "CAILightManager::DebugDraw Unhandled light level");
+				CRY_ASSERT(false, "CAILightManager::DebugDraw Unhandled light level");
 				break;
 			}
 		}

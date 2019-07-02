@@ -431,7 +431,7 @@ uint32 CTargetTrackGroup::GetBestTrack(TargetTrackHelpers::EDesiredTargetMethod 
 		break;
 
 	default:
-		CRY_ASSERT_MESSAGE(false, "CTargetTrackGroup::GetBestTrack Unhandled desired target method");
+		CRY_ASSERT(false, "CTargetTrackGroup::GetBestTrack Unhandled desired target method");
 		break;
 	}
 
@@ -557,7 +557,7 @@ void CTargetTrackGroup::UpdateTargetRepresentation(const CTargetTrack* pBestTrac
 		break;
 
 	default:
-		CRY_ASSERT_MESSAGE(0, "CTargetTrackGroup::UpdateDummyTargetRep Unhandled AI target type");
+		CRY_ASSERT(0, "CTargetTrackGroup::UpdateDummyTargetRep Unhandled AI target type");
 		break;
 	}
 
@@ -728,7 +728,7 @@ void CTargetTrackGroup::DebugDrawTargets(int nMode, int nTargetedCount, bool bEx
 			break;
 
 		default:
-			CRY_ASSERT_MESSAGE(0, "CTargetTrackGroup::DebugDrawTargets Unhandled target type");
+			CRY_ASSERT(0, "CTargetTrackGroup::DebugDrawTargets Unhandled target type");
 			break;
 		}
 		if (!bFirst)

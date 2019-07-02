@@ -34,7 +34,7 @@ CActorCollisionAvoidance::CActorCollisionAvoidance(CAIActor* pActor)
 	const bool agentRegisteredSuccessfully = gEnv->pAISystem->GetCollisionAvoidanceSystem()->RegisterAgent(this);
 	if (!agentRegisteredSuccessfully)
 	{
-		CRY_ASSERT_MESSAGE(agentRegisteredSuccessfully, "Actor '%s' could not be registered to the Collision Avoidance System.", pActor->GetName());
+		CRY_ASSERT(agentRegisteredSuccessfully, "Actor '%s' could not be registered to the Collision Avoidance System.", pActor->GetName());
 		gEnv->pLog->LogWarning("Actor '%s' could not be registered to the Collision Avoidance System.", pActor->GetName());
 	}
 }
@@ -44,7 +44,7 @@ CActorCollisionAvoidance::~CActorCollisionAvoidance()
     const bool agentUnregisteredSuccessfully = gEnv->pAISystem->GetCollisionAvoidanceSystem()->UnregisterAgent(this);
 	if (!agentUnregisteredSuccessfully)
 	{
-		CRY_ASSERT_MESSAGE(agentUnregisteredSuccessfully, "Actor '%s' could not be unregistered from the Collision Avoidance System.", m_pActor->GetName());
+		CRY_ASSERT(agentUnregisteredSuccessfully, "Actor '%s' could not be unregistered from the Collision Avoidance System.", m_pActor->GetName());
 		gEnv->pLog->LogWarning("Actor '%s' could not be unregistered from the Collision Avoidance System.", m_pActor->GetName());
 	}
 }
@@ -367,7 +367,7 @@ void CAIActor::SetPos(const Vec3& pos, const Vec3& dirFwrd)
 
 			vEyeDir = bodyInfo.GetEyeDir();
 
-			CRY_ASSERT_MESSAGE(vEyeDir.IsUnit(), "vEyeDir must be unit vector! vEyeDir = %f, %f, %f", vEyeDir.x, vEyeDir.y, vEyeDir.z);
+			CRY_ASSERT(vEyeDir.IsUnit(), "vEyeDir must be unit vector! vEyeDir = %f, %f, %f", vEyeDir.x, vEyeDir.y, vEyeDir.z);
 
 			SetViewDir(vEyeDir);
 			SetBodyDir(bodyInfo.GetBodyDir());
@@ -1657,7 +1657,7 @@ void CAIActor::GetPhysicalSkipEntities(PhysSkipList& skipList) const
 	   }
 	   }*/
 
-	CRY_ASSERT_MESSAGE(skipList.size() <= 5, "Too many physical skipped entities determined. See SRwiRequest definition.");
+	CRY_ASSERT(skipList.size() <= 5, "Too many physical skipped entities determined. See SRwiRequest definition.");
 }
 
 void CAIActor::UpdateObserverSkipList()

@@ -153,7 +153,7 @@ void STile::AddOffMeshLink(const TriangleID triangleID, const uint16 offMeshInde
 		bool hasOffMeshLink = links && (triangle.linkCount > 0) && (triangle.firstLink < linkCount) && (links[triangle.firstLink].side == Tile::SLink::OffMesh);
 
 		// Try enabling DEBUG_MNM_DATA_CONSISTENCY_ENABLED if you get this
-		CRY_ASSERT_MESSAGE(!hasOffMeshLink, "Not adding offmesh link, already exists");
+		CRY_ASSERT(!hasOffMeshLink, "Not adding offmesh link, already exists");
 
 		if (!hasOffMeshLink)
 		{
@@ -235,7 +235,7 @@ void STile::RemoveOffMeshLink(const TriangleID triangleID)
 	}
 
 	// Try enabling DEBUG_MNM_DATA_CONSISTENCY_ENABLED if you get this
-	CRY_ASSERT_MESSAGE(linkToRemoveIdx != 0xFFFF, "Trying to remove off mesh link that doesn't exist");
+	CRY_ASSERT(linkToRemoveIdx != 0xFFFF, "Trying to remove off mesh link that doesn't exist");
 
 	if (linkToRemoveIdx != 0xFFFF)
 	{
@@ -561,9 +561,9 @@ void STile::ValidateTriangleLinks()
 	{
 		const Tile::STriangle& triangle = triangles[i];
 
-		CRY_ASSERT_MESSAGE(triangle.firstLink <= linkCount || linkCount == 0, "Out of range link");
+		CRY_ASSERT(triangle.firstLink <= linkCount || linkCount == 0, "Out of range link");
 
-		CRY_ASSERT_MESSAGE(nextLink == triangle.firstLink, "Links are not contiguous");
+		CRY_ASSERT(nextLink == triangle.firstLink, "Links are not contiguous");
 
 		nextLink += triangle.linkCount;
 
@@ -571,7 +571,7 @@ void STile::ValidateTriangleLinks()
 		{
 			uint16 linkIdx = triangle.firstLink + l;
 
-			CRY_ASSERT_MESSAGE(links[linkIdx].side != Tile::SLink::OffMesh || l == 0, "Off mesh links should always be first");
+			CRY_ASSERT(links[linkIdx].side != Tile::SLink::OffMesh || l == 0, "Off mesh links should always be first");
 		}
 	}
 
@@ -588,7 +588,7 @@ void STile::ValidateTriangles() const
 		{
 			if (tri.vertex[i] >= verticesMaxIndex)
 			{
-				CRY_ASSERT_MESSAGE(tri.vertex[i] < verticesMaxIndex, "MNM traingle invalid vertex index");
+				CRY_ASSERT(tri.vertex[i] < verticesMaxIndex, "MNM traingle invalid vertex index");
 			}
 		}
 	}

@@ -2719,7 +2719,7 @@ void CPuppet::FireCommand(float updateTime)
 				break;
 
 			default:
-				CRY_ASSERT_MESSAGE(0, "Unhandled reg type for requested grenade throw");
+				CRY_ASSERT(0, "Unhandled reg type for requested grenade throw");
 			}
 		}
 		else if (m_fireMode == FIREMODE_SECONDARY_SMOKE)
@@ -4637,7 +4637,7 @@ bool CPuppet::CanMemoryFire() const
 			break;
 
 		default:
-			CRY_ASSERT_MESSAGE(false, "Unhandled EMemoryFireType in CPuppet::CanMemoryFire()");
+			CRY_ASSERT(false, "Unhandled EMemoryFireType in CPuppet::CanMemoryFire()");
 			break;
 		}
 	}

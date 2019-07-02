@@ -280,7 +280,7 @@ CTacticalPointSystem::SQueryEvaluation::~SQueryEvaluation()
 
 void CTacticalPointSystem::Reset()
 {
-	CRY_ASSERT_MESSAGE(m_LanguageExtenderDummyObjects.empty(), "A language extender hasn't unregistered its dummy objects");
+	CRY_ASSERT(m_LanguageExtenderDummyObjects.empty(), "A language extender hasn't unregistered its dummy objects");
 
 	for (std::map<TPSQueryTicket, const SQueryInstance>::iterator iter = m_mQueryInstanceQueue.begin();
 	     iter != m_mQueryInstanceQueue.end();
@@ -428,7 +428,7 @@ void CTacticalPointSystem::ReleaseExtenderDummyObject(tAIObjectID id)
 		}
 	}
 
-	CRY_ASSERT_MESSAGE(false, "Trying to release a dummy object that isn't registered for this language extender");
+	CRY_ASSERT(false, "Trying to release a dummy object that isn't registered for this language extender");
 }
 
 //----------------------------------------------------------------------------------------------//

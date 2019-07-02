@@ -215,7 +215,7 @@ inline bool ProjectPointOnTriangleVertical(const vector3_t& p, const vector3_t& 
 	const real_t u = (dot11 * dot02 - dot01 * dot12);
 	const real_t v = (dot00 * dot12 - dot01 * dot02);
 
-	CRY_ASSERT_MESSAGE(PointInTriangle(vector2_t(p), vector2_t(a), vector2_t(b), vector2_t(c)), "Projecting point isn't lying inside the triangle.");
+	CRY_ASSERT(PointInTriangle(vector2_t(p), vector2_t(a), vector2_t(b), vector2_t(c)), "Projecting point isn't lying inside the triangle.");
 
 	// Compute only z value of the projected position, x and y stays the same
 	projected.z = a.z + v0.z * u / denom + v1.z * v / denom;

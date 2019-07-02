@@ -2559,7 +2559,7 @@ void CAISystem::DebugDrawAgent(CAIObject* pAgentObj) const
 				color = &orange;
 				break;
 			default:
-				CRY_ASSERT_MESSAGE(false, "CAISystem::DebugDrawAgent Unhandled light level");
+				CRY_ASSERT(false, "CAISystem::DebugDrawAgent Unhandled light level");
 				break;
 			}
 		}

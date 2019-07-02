@@ -44,7 +44,7 @@ CPipeUser* GetPipeUser(const BehaviorTree::Node& node, const BehaviorTree::Updat
 	if (!aiObject)
 	{
 		const string errorMessage = "Node requires an AI Object to work properly because it uses PipeUser. Behavior Tree may not behave as expected.";
-		CRY_ASSERT_MESSAGE(aiObject, errorMessage.c_str());
+		CRY_ASSERT(aiObject, errorMessage.c_str());
 		BehaviorTree::ErrorReporter(node, context).LogError(errorMessage.c_str());
 		return nullptr;
 	}
@@ -59,7 +59,7 @@ CPuppet* GetPuppet(const BehaviorTree::Node& node, const BehaviorTree::UpdateCon
 	if (!aiObject)
 	{
 		const string errorMessage = "Node requires an AI Object to work properly because it uses Puppet. Behavior Tree may not behave as expected.";
-		CRY_ASSERT_MESSAGE(aiObject, errorMessage.c_str());
+		CRY_ASSERT(aiObject, errorMessage.c_str());
 		BehaviorTree::ErrorReporter(node, context).LogError(errorMessage.c_str());
 		return nullptr;
 	}
@@ -3245,7 +3245,7 @@ protected:
 		IF_UNLIKELY (fireTargetAIObject == NULL)
 		{
 			ErrorReporter(*this, context).LogError("Expected fire target!");
-			CRY_ASSERT_MESSAGE(false, "Behavior Tree node Aim suddenly lost its fire target!!");
+			CRY_ASSERT(false, "Behavior Tree node Aim suddenly lost its fire target!!");
 			return Success;
 		}
 

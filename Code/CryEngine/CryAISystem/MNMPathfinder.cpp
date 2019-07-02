@@ -361,7 +361,7 @@ void CMNMPathfinder::SetupNewValidPathRequests()
 		}
 		else
 		{
-			CRY_ASSERT_MESSAGE(0, "Trying to setup new requests while not having available slots in the pool.");
+			CRY_ASSERT(0, "Trying to setup new requests while not having available slots in the pool.");
 		}
 
 		m_requestedPathsQueue.pop_front();
@@ -419,9 +419,9 @@ void CMNMPathfinder::ExecuteAppropriateOperationIfPossible(MNM::PathfinderUtils:
 
 void CMNMPathfinder::SpawnPathfinderProcessingJob(MNM::PathfinderUtils::ProcessingContext& processingContext)
 {
-	CRY_ASSERT_MESSAGE(processingContext.status == MNM::PathfinderUtils::ProcessingContext::InProgress, "PathfinderProcessingJob is spawned even if the process is not 'InProgress'.");
+	CRY_ASSERT(processingContext.status == MNM::PathfinderUtils::ProcessingContext::InProgress, "PathfinderProcessingJob is spawned even if the process is not 'InProgress'.");
 
-	CRY_ASSERT_MESSAGE(!processingContext.jobState.IsRunning(), "The job is still running and we are spawning a new one.");
+	CRY_ASSERT(!processingContext.jobState.IsRunning(), "The job is still running and we are spawning a new one.");
 
 	PathfinderProcessingJob job(&processingContext);
 	job.RegisterJobState(&processingContext.jobState);
@@ -688,7 +688,7 @@ bool CMNMPathfinder::ConstructPathFromFoundWay(
 
 			// Add Exit point
 			pathPoint.vPos = pOffMeshLink->GetEndPosition();
-			CRY_ASSERT_MESSAGE(i > 0, "Path contains offmesh link without exit waypoint");
+			CRY_ASSERT(i > 0, "Path contains offmesh link without exit waypoint");
 			if (i > 0)
 			{
 				pathPoint.iTriId = pWayData[i - 1].triangleID;
@@ -817,9 +817,9 @@ void CMNMPathfinder::ConstructPathIfWayWasFound(MNM::PathfinderUtils::Processing
 
 void CMNMPathfinder::SpawnPathConstructionJob(MNM::PathfinderUtils::ProcessingContext& processingContext)
 {
-	CRY_ASSERT_MESSAGE(processingContext.status == MNM::PathfinderUtils::ProcessingContext::FindWayCompleted, "PathConstructionJob spawned even if the status is not 'FindWayCompleted'");
+	CRY_ASSERT(processingContext.status == MNM::PathfinderUtils::ProcessingContext::FindWayCompleted, "PathConstructionJob spawned even if the status is not 'FindWayCompleted'");
 
-	CRY_ASSERT_MESSAGE(!processingContext.jobState.IsRunning(), "The job is still running and we are spawning a new one.");
+	CRY_ASSERT(!processingContext.jobState.IsRunning(), "The job is still running and we are spawning a new one.");
 
 	PathConstructionJob job(&processingContext);
 	job.RegisterJobState(&processingContext.jobState);

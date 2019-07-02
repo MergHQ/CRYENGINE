@@ -30,7 +30,7 @@ public:
 	{
 		//CRY_PROFILE_FUNCTION(PROFILE_AI);
 
-		CRY_ASSERT_MESSAGE(!openElements.empty(), "PopBestElement has been requested for an empty ElementNode open list.");
+		CRY_ASSERT(!openElements.empty(), "PopBestElement has been requested for an empty ElementNode open list.");
 		BestNodePredicate predicate;
 		typename ElementList::iterator bestElementIt = std::min_element(openElements.begin(), openElements.end(), predicate);
 		ElementNode bestElement = *bestElementIt;

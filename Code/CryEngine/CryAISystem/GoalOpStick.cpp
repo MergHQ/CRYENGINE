@@ -925,7 +925,7 @@ bool COPStick::GetStickAndSightTargets_CreatePathfindAndTraceGoalOps(CPipeUser* 
 
 bool COPStick::Trace(CPipeUser* pPipeUser, CAIObject* pStickTarget, EGoalOpResult* peTraceResult)
 {
-	CRY_ASSERT_MESSAGE(m_pTraceDirective, "m_pTraceDirective should really be set here (set by the calling code)");
+	CRY_ASSERT(m_pTraceDirective, "m_pTraceDirective should really be set here (set by the calling code)");
 	if (!m_pTraceDirective)
 	{
 		*peTraceResult = eGOR_FAILED;

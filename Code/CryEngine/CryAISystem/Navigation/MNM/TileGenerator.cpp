@@ -4071,7 +4071,7 @@ void CTileGenerator::CGeneratedMesh::CopyIntoTile(STile& tile) const
 	const Tile::VertexIndex verticesMaxIndex = static_cast<Tile::VertexIndex>(verticesCount);
 	if (verticesCount != size_t(verticesMaxIndex))
 	{
-		CRY_ASSERT_MESSAGE(verticesCount == size_t(verticesMaxIndex), "MNM vertex count overflow");
+		CRY_ASSERT(verticesCount == size_t(verticesMaxIndex), "MNM vertex count overflow");
 	}
 #endif // DEBUG_MNM_DATA_CONSISTENCY_ENABLED
 

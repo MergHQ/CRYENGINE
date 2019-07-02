@@ -206,20 +206,20 @@ bool CNavMeshQuery::CTriangleIterator::UpdateNavMeshPointer()
 
 	IF_UNLIKELY(m_meshId == NavigationMeshID(0))
 	{
-		CRY_ASSERT_MESSAGE(m_meshId != NavigationMeshID(0), "CNavMeshIterator::UpdateNavMeshPointer: Stored mesh id is invalid (0)");
+		CRY_ASSERT(m_meshId != NavigationMeshID(0), "CNavMeshIterator::UpdateNavMeshPointer: Stored mesh id is invalid (0)");
 		return false;
 	}
 
 	IF_UNLIKELY(!pNavigationSystem)
 	{
-		CRY_ASSERT_MESSAGE(pNavigationSystem, "CNavMeshIterator::UpdateNavMeshPointer: Couldn't retrieve Navigation Systen from gAIEnv.");
+		CRY_ASSERT(pNavigationSystem, "CNavMeshIterator::UpdateNavMeshPointer: Couldn't retrieve Navigation Systen from gAIEnv.");
 		return false;
 	}
 
 	m_pNavMesh = &gAIEnv.pNavigationSystem->GetMesh(m_meshId).navMesh;
 	IF_UNLIKELY(!m_pNavMesh)
 	{
-		CRY_ASSERT_MESSAGE(m_pNavMesh, "CNavMeshIterator::UpdateNavMeshPointer: Couldn't retrieve NavMesh pointer from mesh id.");
+		CRY_ASSERT(m_pNavMesh, "CNavMeshIterator::UpdateNavMeshPointer: Couldn't retrieve NavMesh pointer from mesh id.");
 		return false;
 	}
 
@@ -423,7 +423,7 @@ void CNavMeshQuery::SetStatus(const INavMeshQuery::EQueryStatus status)
 
 bool CNavMeshQuery::IsValid() const
 {
-	CRY_ASSERT_MESSAGE(static_cast<int>(MNM::INavMeshQuery::EQueryStatus::Count) == 8, "CNavMeshQuery::IsValid(): A new Enum MNM::INavMeshQuery::EQueryStatus has been added. Make sure it is being handled in the IsValid() function");
+	CRY_ASSERT(static_cast<int>(MNM::INavMeshQuery::EQueryStatus::Count) == 8, "CNavMeshQuery::IsValid(): A new Enum MNM::INavMeshQuery::EQueryStatus has been added. Make sure it is being handled in the IsValid() function");
 
 	return m_status != MNM::INavMeshQuery::EQueryStatus::Invalid_InitializationFailed &&
 		m_status != MNM::INavMeshQuery::EQueryStatus::Invalid_NavMeshAnnotationChanged &&
@@ -433,7 +433,7 @@ bool CNavMeshQuery::IsValid() const
 
 bool CNavMeshQuery::IsDone() const
 {
-	CRY_ASSERT_MESSAGE(static_cast<int>(MNM::INavMeshQuery::EQueryStatus::Count) == 8, "CNavMeshQuery::IsDone(): A new Enum MNM::INavMeshQuery::EQueryStatus has been added. Make sure it is being handled in the IsDone() function");
+	CRY_ASSERT(static_cast<int>(MNM::INavMeshQuery::EQueryStatus::Count) == 8, "CNavMeshQuery::IsDone(): A new Enum MNM::INavMeshQuery::EQueryStatus has been added. Make sure it is being handled in the IsDone() function");
 
 	return m_status == MNM::INavMeshQuery::EQueryStatus::Done_QueryProcessingStopped || 
 		m_status == MNM::INavMeshQuery::EQueryStatus::Done_Complete;
@@ -441,7 +441,7 @@ bool CNavMeshQuery::IsDone() const
 
 bool CNavMeshQuery::IsRunning() const
 {
-	CRY_ASSERT_MESSAGE(static_cast<int>(MNM::INavMeshQuery::EQueryStatus::Count) == 8, "CNavMeshQuery::IsRunning(): A new Enum MNM::INavMeshQuery::EQueryStatus has been added. Make sure it is being handled in the IsRunning() function");
+	CRY_ASSERT(static_cast<int>(MNM::INavMeshQuery::EQueryStatus::Count) == 8, "CNavMeshQuery::IsRunning(): A new Enum MNM::INavMeshQuery::EQueryStatus has been added. Make sure it is being handled in the IsRunning() function");
 	return m_status == MNM::INavMeshQuery::EQueryStatus::Running;
 }
 
@@ -633,7 +633,7 @@ bool CNavMeshQuery::TriangleIntersectsQueryAabb(const MNM::aabb_t& queryAabbInTi
 		result = queryAabbInTileSpace.contains(v0) && queryAabbInTileSpace.contains(v1) && queryAabbInTileSpace.contains(v2);
 		break;
 	default:
-		CRY_ASSERT_MESSAGE(false, "CNavMeshQuery::TriangleIntersectsQueryAabb: New enum value has been added to MNM::INavMeshQuery::SNavMeshQueryConfig::IntersectionMode but it's not being handled in this switch statement");
+		CRY_ASSERT(false, "CNavMeshQuery::TriangleIntersectsQueryAabb: New enum value has been added to MNM::INavMeshQuery::SNavMeshQueryConfig::IntersectionMode but it's not being handled in this switch statement");
 	}
 	return result;
 }
@@ -830,7 +830,7 @@ void CNavMeshQueryBatch::DeregisterNavMeshCallbacks()
 
 void CNavMeshQueryBatch::OnNavMeshChanged(NavigationAgentTypeID navAgentId, NavigationMeshID navMeshId, TileID changedTileId)
 {
-	CRY_ASSERT_MESSAGE(!IsDone(), "CNavMeshQueryBatch::OnNavMeshChanged: This shouldn't happen. When a query is done, it should automatically be de-registered from NavMesh changes.");
+	CRY_ASSERT(!IsDone(), "CNavMeshQueryBatch::OnNavMeshChanged: This shouldn't happen. When a query is done, it should automatically be de-registered from NavMesh changes.");
 
 	if (m_queryConfig.meshId != navMeshId || m_runtimeData.navAgentTypeId != navAgentId)
 	{
@@ -868,7 +868,7 @@ void CNavMeshQueryBatch::OnNavMeshChanged(NavigationAgentTypeID navAgentId, Navi
 		break;
 	}
 	default:
-		CRY_ASSERT_MESSAGE(false, "CNavMeshQueryBatch::OnNavMeshChanged: New enum value has been added to MNM::INavMeshQuery::SNavMeshQueryConfig::EActionOnNavMeshChange but it's not being handled in this switch statement");
+		CRY_ASSERT(false, "CNavMeshQueryBatch::OnNavMeshChanged: New enum value has been added to MNM::INavMeshQuery::SNavMeshQueryConfig::EActionOnNavMeshChange but it's not being handled in this switch statement");
 	}
 
 #ifdef NAV_MESH_QUERY_DEBUG
@@ -881,7 +881,7 @@ void CNavMeshQueryBatch::OnNavMeshChanged(NavigationAgentTypeID navAgentId, Navi
 
 void CNavMeshQueryBatch::OnNavMeshAnnotationChanged(NavigationAgentTypeID navAgentId, NavigationMeshID navMeshId, TileID changedTileId)
 {
-	CRY_ASSERT_MESSAGE(!IsDone(), "CNavMeshQueryBatch::OnNavMeshAnnotationChanged: This shouldn't happen. When a query is done, it should automatically be de-registered from NavMesh annotation changes.");
+	CRY_ASSERT(!IsDone(), "CNavMeshQueryBatch::OnNavMeshAnnotationChanged: This shouldn't happen. When a query is done, it should automatically be de-registered from NavMesh annotation changes.");
 
 	if (m_queryConfig.meshId != navMeshId || m_runtimeData.navAgentTypeId == navAgentId)
 	{
@@ -919,7 +919,7 @@ void CNavMeshQueryBatch::OnNavMeshAnnotationChanged(NavigationAgentTypeID navAge
 		break;
 	}
 	default:
-		CRY_ASSERT_MESSAGE(false, "CNavMeshQueryBatch::OnNavMeshAnnotationChanged: New enum value has been added to MNM::INavMeshQuery::SNavMeshQueryConfig::EActionOnNavMeshChange but it's not being handled in this switch statement");
+		CRY_ASSERT(false, "CNavMeshQueryBatch::OnNavMeshAnnotationChanged: New enum value has been added to MNM::INavMeshQuery::SNavMeshQueryConfig::EActionOnNavMeshChange but it's not being handled in this switch statement");
 	}
 
 #ifdef NAV_MESH_QUERY_DEBUG

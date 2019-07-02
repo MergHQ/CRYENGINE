@@ -1427,7 +1427,7 @@ bool CAIRecorder::Read(FILE* pFile)
 			}
 			else
 			{
-				CRY_ASSERT_MESSAGE(false, "Recorder has streamded data. This code needs to be readded.");
+				CRY_ASSERT(false, "Recorder has streamded data. This code needs to be readded.");
 
 				//int liveID = idMap[header.unitID];
 				//if (!liveID)

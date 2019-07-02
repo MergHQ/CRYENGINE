@@ -17,7 +17,7 @@ void IslandConnections::SetOneWayOffmeshConnectionBetweenIslands(const MNM::Glob
 	CRY_PROFILE_FUNCTION(PROFILE_AI);
 	
 	CRY_ASSERT(fromIslandId.GetNavigationMeshIDAsUint32() == toIslandId.GetNavigationMeshIDAsUint32());
-	CRY_ASSERT_MESSAGE(m_offMeshLinksMap.find(offMeshLinkId) == m_offMeshLinksMap.end(), "Trying to register the same offMeshLink (id = %u) twice", offMeshLinkId);
+	CRY_ASSERT(m_offMeshLinksMap.find(offMeshLinkId) == m_offMeshLinksMap.end(), "Trying to register the same offMeshLink (id = %u) twice", offMeshLinkId);
 
 	m_offMeshLinksMap.emplace(offMeshLinkId, SOffMeshLinkData(fromIslandId, toTriangleId, connectionObjectOwnerId));
 

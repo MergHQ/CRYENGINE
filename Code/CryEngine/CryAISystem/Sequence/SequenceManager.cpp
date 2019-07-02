@@ -39,7 +39,7 @@ void SequenceManager::StartSequence(SequenceId sequenceId)
 	Sequence* sequence = GetSequence(sequenceId);
 	if (!sequence)
 	{
-		CRY_ASSERT_MESSAGE(false, "Could not access sequence.");
+		CRY_ASSERT(false, "Could not access sequence.");
 		return;
 	}
 
@@ -58,7 +58,7 @@ void SequenceManager::CancelSequence(SequenceId sequenceId)
 	Sequence* sequence = GetSequence(sequenceId);
 	if (!sequence)
 	{
-		CRY_ASSERT_MESSAGE(false, "Could not access sequence.");
+		CRY_ASSERT(false, "Could not access sequence.");
 		return;
 	}
 
@@ -101,7 +101,7 @@ void SequenceManager::SequenceBehaviorReady(EntityId entityId)
 		}
 	}
 
-	CRY_ASSERT_MESSAGE(false, "Entity not registered with any sequence.");
+	CRY_ASSERT(false, "Entity not registered with any sequence.");
 }
 
 void SequenceManager::SequenceInterruptibleBehaviorLeft(EntityId entityId)
@@ -152,7 +152,7 @@ void SequenceManager::RequestActionStart(SequenceId sequenceId, TFlowNodeId acti
 	Sequence* sequence = GetSequence(sequenceId);
 	if (!sequence)
 	{
-		CRY_ASSERT_MESSAGE(false, "Could not access sequence.");
+		CRY_ASSERT(false, "Could not access sequence.");
 		return;
 	}
 
@@ -164,7 +164,7 @@ void SequenceManager::ActionCompleted(SequenceId sequenceId)
 	Sequence* sequence = GetSequence(sequenceId);
 	if (!sequence)
 	{
-		CRY_ASSERT_MESSAGE(false, "Could not access sequence.");
+		CRY_ASSERT(false, "Could not access sequence.");
 		return;
 	}
 
@@ -180,7 +180,7 @@ void SequenceManager::SetBookmark(SequenceId sequenceId, TFlowNodeId bookmarkNod
 	Sequence* sequence = GetSequence(sequenceId);
 	if (!sequence)
 	{
-		CRY_ASSERT_MESSAGE(false, "Could not access sequence.");
+		CRY_ASSERT(false, "Could not access sequence.");
 		return;
 	}
 

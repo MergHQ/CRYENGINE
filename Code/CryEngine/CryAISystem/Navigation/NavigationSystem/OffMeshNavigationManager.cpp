@@ -33,8 +33,8 @@ const MNM::OffMeshNavigation& OffMeshNavigationManager::GetOffMeshNavigationForM
 
 MNM::OffMeshLinkID OffMeshNavigationManager::RequestLinkAddition(const MNM::OffMeshLinkID linkId, const NavigationAgentTypeID agentTypeId, _smart_ptr<MNM::IOffMeshLink> pLinkData, const MNM::SOffMeshLinkCallbacks& callbacks)
 {
-	CRY_ASSERT_MESSAGE(!IsLinkAdditionRequested(linkId), "Link with id %u is already requested!", linkId);
-	CRY_ASSERT_MESSAGE(m_debugRemovingLinkId == linkId || m_links.find(linkId) == m_links.end(), "Link with id %u is aready added!", linkId);
+	CRY_ASSERT(!IsLinkAdditionRequested(linkId), "Link with id %u is already requested!", linkId);
+	CRY_ASSERT(m_debugRemovingLinkId == linkId || m_links.find(linkId) == m_links.end(), "Link with id %u is aready added!", linkId);
 
 	const MNM::OffMeshLinkID requestLinkId = !linkId.IsValid() ? MNM::OffMeshNavigation::GenerateLinkId() : linkId;
 	SLinkAdditionRequest request(agentTypeId, pLinkData, requestLinkId, callbacks);
@@ -170,7 +170,7 @@ MNM::EOffMeshLinkAdditionResult OffMeshNavigationManager::TryCreateLink(const SL
 	TLinkInfoMap::const_iterator it = m_links.find(linkId);
 	if (it != m_links.end())
 	{
-		CRY_ASSERT_MESSAGE(it == m_links.end(), "OffMesh link with id %u already exists!", linkId);
+		CRY_ASSERT(it == m_links.end(), "OffMesh link with id %u already exists!", linkId);
 		return MNM::EOffMeshLinkAdditionResult::AlreadyExists;
 	}
 
@@ -186,7 +186,7 @@ MNM::EOffMeshLinkAdditionResult OffMeshNavigationManager::TryCreateLink(const SL
 	const NavigationMeshID meshId = navigationLinkData.meshId;
 	if (!m_offMeshMap.validate(meshId))
 	{
-		CRY_ASSERT_TRACE(m_offMeshMap.validate(meshId), ("Trying to add offmesh link to invalid mesh! (meshID = %u)", (uint32)meshId));
+		CRY_ASSERT(m_offMeshMap.validate(meshId), "Trying to add offmesh link to invalid mesh! (meshID = %u)", (uint32)meshId);
 		return MNM::EOffMeshLinkAdditionResult::InvalidMesh;
 	}
 
@@ -203,7 +203,7 @@ MNM::EOffMeshLinkAdditionResult OffMeshNavigationManager::TryCreateLink(const SL
 
 	// Register the new link with the off-mesh navigation system
 	offMeshNavigation.AddLink(mesh, navigationLinkData.startTriangleId, navigationLinkData.endTriangleId, linkId);
-	CRY_ASSERT_TRACE(linkId.IsValid(), ("Adding new offmesh link failed"));
+	CRY_ASSERT(linkId.IsValid(), "Adding new offmesh link failed");
 
 	m_links.emplace(linkId, SLinkControlInfo(meshId, navigationLinkData.startTriangleId, navigationLinkData.endTriangleId, navigationLinkData.annotation, request.pLinkData, request.callbacks));
 

@@ -243,7 +243,7 @@ public:
 
 	ProcessingContext& GetContextAtPosition(ProcessingContextId processingContextId)
 	{
-		CRY_ASSERT_MESSAGE(processingContextId >= 0 && processingContextId < m_pool.size(), "ProcessingContextsPool::GetContextAtPosition Trying to access an invalid element of the pool.");
+		CRY_ASSERT(processingContextId >= 0 && processingContextId < m_pool.size(), "ProcessingContextsPool::GetContextAtPosition Trying to access an invalid element of the pool.");
 		return m_pool[processingContextId];
 	}
 

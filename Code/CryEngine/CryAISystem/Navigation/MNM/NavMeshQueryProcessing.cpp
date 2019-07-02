@@ -28,14 +28,14 @@ namespace MNM
 
 		IF_UNLIKELY(!pNavigationSystem)
 		{
-			CRY_ASSERT_MESSAGE(pNavigationSystem, "CNavMeshQueryProcessingBase::UpdateNavMeshPointerBeforeProcessing: Couldn't retrieve Navigation Systen from gAIEnv.");
+			CRY_ASSERT(pNavigationSystem, "CNavMeshQueryProcessingBase::UpdateNavMeshPointerBeforeProcessing: Couldn't retrieve Navigation Systen from gAIEnv.");
 			return false;
 		}
 
 		m_pNavMesh = &gAIEnv.pNavigationSystem->GetMesh(m_meshId).navMesh;
 		IF_UNLIKELY(!m_pNavMesh)
 		{
-			CRY_ASSERT_MESSAGE(m_pNavMesh, "CNavMeshQueryProcessingBase::UpdateNavMeshPointerBeforeProcessing: Couldn't retrieve NavMesh pointer from stored mesh id.");
+			CRY_ASSERT(m_pNavMesh, "CNavMeshQueryProcessingBase::UpdateNavMeshPointerBeforeProcessing: Couldn't retrieve NavMesh pointer from stored mesh id.");
 			return false;
 		}
 		return true;

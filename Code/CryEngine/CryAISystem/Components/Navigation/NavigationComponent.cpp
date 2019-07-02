@@ -631,7 +631,7 @@ void CEntityAINavigationComponent::RegisterEntityIfRequired()
 		const bool agentSucessfullyUnregistered = m_collisionAgent.Unregister();
 		if (!agentSucessfullyUnregistered)
 		{
-			CRY_ASSERT_MESSAGE(agentSucessfullyUnregistered, "Entity '%s' could not be unregistered from the Collision Avoidance System.", GetEntity()->GetName());
+			CRY_ASSERT(agentSucessfullyUnregistered, "Entity '%s' could not be unregistered from the Collision Avoidance System.", GetEntity()->GetName());
 			gEnv->pLog->LogWarning("Entity '%s' could not be unregistered from the Collision Avoidance System.", GetEntity()->GetName());
 		}
 	}
@@ -640,7 +640,7 @@ void CEntityAINavigationComponent::RegisterEntityIfRequired()
 		const bool agentSucessfullyRegistered = m_collisionAgent.Register(GetEntity());
 		if (!agentSucessfullyRegistered)
 		{
-			CRY_ASSERT_MESSAGE(agentSucessfullyRegistered, "Entity '%s' could not be registered to the Collision Avoidance System.", GetEntity()->GetName());
+			CRY_ASSERT(agentSucessfullyRegistered, "Entity '%s' could not be registered to the Collision Avoidance System.", GetEntity()->GetName());
 			gEnv->pLog->LogWarning("Entity '%s' could not be registered to the Collision Avoidance System.", GetEntity()->GetName());
 		}
 	}
