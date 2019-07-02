@@ -620,7 +620,7 @@ void CTelemetryCollector::UploadLastGameLogToPreviousSession()
 		CryLog("CTelemetryCollector::UploadLastGameLogToPreviousSession() we SHOULD upload gamelog");
 
 		// Not bothering with the sanity file checks that error.log uploading does as the last game.log will change every run anyway
-		const char *constBackupLogFileName = gEnv->pLog->GetBackupFileName();
+		const char *constBackupLogFileName = gEnv->pLog->GetBackupFilePath();
 		
 		CryLog("CTelemetryCollector::UploadLastGameLogToPreviousSession() constBackupLogFileName=%s", constBackupLogFileName);
 

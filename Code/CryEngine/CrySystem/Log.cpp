@@ -1314,7 +1314,7 @@ void CLog::LogToFile(const char* szFormat, ...)
 #endif // !defined(EXCLUDE_NORMAL_LOG)
 
 //////////////////////////////////////////////////////////////////////
-void CLog::CreateBackupFile() const
+void CLog::CreateBackupFile()
 {
 	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 #if CRY_PLATFORM_WINDOWS || CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID || CRY_PLATFORM_APPLE || CRY_PLATFORM_DURANGO
@@ -1328,71 +1328,66 @@ void CLog::CreateBackupFile() const
 	FILE* src = fxopen(m_filePath, "rb");
 	UnlockNoneExclusiveAccess(&m_exclusiveLogFileThreadAccessLock);
 
-	const string dstFileDir = PathUtil::GetParentDirectory(m_backupFilePath);
-
-	string sBackupNameAttachment;
-
 	// parse backup name attachment
 	// e.g. BackupNameAttachment="attachment name"
+	string backupNameAttachment;
 	if (src)
 	{
 		bool bKeyFound = false;
-		string sName;
-
+		string name;
 		while (!feof(src))
 		{
 			uint8 c = fgetc(src);
-
 			if (c == '\"')
 			{
 				if (!bKeyFound)
 				{
 					bKeyFound = true;
-
-					if (sName.find("BackupNameAttachment=") == string::npos)
+					if (name.find("BackupNameAttachment=") == string::npos)
 					{
 	#if CRY_PLATFORM_WINDOWS
 						OutputDebugString("Log::CreateBackupFile ERROR '");
-						OutputDebugString(sName.c_str());
+						OutputDebugString(name.c_str());
 						OutputDebugString("' not recognized \n");
 	#endif
 						assert(0);    // broken log file? - first line should include this name - written by LogVersion()
 						return;
 					}
-					sName.clear();
+					name.clear();
 				}
 				else
 				{
-					sBackupNameAttachment = sName;
+					backupNameAttachment = name;
 					break;
 				}
 				continue;
 			}
 			if (c >= ' ')
-				sName += c;
+				name += c;
 			else
 				break;
 		}
 		LockNoneExclusiveAccess(&m_exclusiveLogFileThreadAccessLock);
 		fclose(src);
 		UnlockNoneExclusiveAccess(&m_exclusiveLogFileThreadAccessLock);
-
-		gEnv->pCryPak->MakeDir(dstFileDir);
 	}
 	else
 	{
 		return;
 	}
 
-	const string dstFileStr = m_backupFilePath;
-	const string dstFileName = PathUtil::GetFileName(dstFileStr) + sBackupNameAttachment;
-	const string dstFileExt = PathUtil::GetExt(dstFileStr);
-	const string dstFilePath = PathUtil::Make(dstFileDir, dstFileName, dstFileExt);
-	
-	CryPathString adjustedSrcFilePath;
-	gEnv->pCryPak->AdjustFileName(m_filePath, adjustedSrcFilePath, ICryPak::FLAGS_FOR_WRITING | ICryPak::FLAGS_PATH_REAL);
-	CryPathString adjustedDstFilePath;
-	gEnv->pCryPak->AdjustFileName(dstFilePath, adjustedDstFilePath, ICryPak::FLAGS_FOR_WRITING | ICryPak::FLAGS_PATH_REAL);
+	string backupFolder = "LogBackups";
+#if !defined(CRY_PLATFORM_CONSOLE)
+	backupFolder = PathUtil::Make(PathUtil::GetProjectFolder(), backupFolder);
+#endif
+	const string backupFileName = PathUtil::GetFileName(m_filename) + backupNameAttachment + ".log";
+	const string backupFilePath = PathUtil::Make(backupFolder, backupFileName);
+
+	CryPathString adjustedBackupPath;
+	gEnv->pCryPak->AdjustFileName(backupFilePath, adjustedBackupPath, ICryPak::FLAGS_FOR_WRITING | ICryPak::FLAGS_PATH_REAL);
+	m_backupFilePath = adjustedBackupPath.c_str();
+
+	gEnv->pCryPak->MakeDir(PathUtil::GetParentDirectory(m_backupFilePath));
 
 #if CRY_PLATFORM_DURANGO
 	// Xbox has some limitation in file names. No spaces in file name are allowed. The full path is limited by MAX_PATH, etc.
@@ -1404,15 +1399,14 @@ void CLog::CreateBackupFile() const
 		CRY_ASSERT_MESSAGE(durangoPath.size() <= MAX_PATH, "Log backup path is larger than MAX_PATH");
 		return CryStringUtils::UTF8ToWStrSafe(durangoPath);
 	};
-	const wstring durangoSrcFilePath = processDurangoPath(adjustedSrcFilePath);
-	const wstring durangosDstFilePath = processDurangoPath(adjustedDstFilePath);
+	const wstring durangoSrcFilePath = processDurangoPath(m_filePath);
+	const wstring durangosDstFilePath = processDurangoPath(m_backupFilePath);
 	CRY_VERIFY_WITH_MESSAGE(CopyFile2(durangoSrcFilePath, durangosDstFilePath, nullptr) == S_OK, "Error copying log backup file");
 #else
-	CRY_ASSERT_MESSAGE(adjustedSrcFilePath[0] != '%' && adjustedDstFilePath[0] != '%', "Invalid %ALIAS% in CLog::CreateBackupFile()");
-	CopyFile(adjustedSrcFilePath, adjustedDstFilePath, false);
+	CopyFile(m_filePath, m_backupFilePath, false);
 #endif
 
-#endif
+#endif // CRY_PLATFORM_WINDOWS || CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID || CRY_PLATFORM_APPLE || CRY_PLATFORM_DURANGO
 }
 
 //set the file used to log to disk
@@ -1423,28 +1417,10 @@ bool CLog::SetFileName(const char* szFileName)
 	if (!PathUtil::IsStrValid(szFileName))
 		return false;
 
-	m_filename = szFileName;
-
-	static const string BACKUP_FOLDER = "LogBackups";
-	string directory = PathUtil::GetParentDirectory(szFileName);
-
-#if defined(CRY_PLATFORM_CONSOLE)
-	CRY_ASSERT_MESSAGE(PathUtil::IsRelativePath(szFileName), "Cannot use an absolute file path for .log files on consoles");
-	// On console we just put the LogBackups folder in the root (of the application)
-	string backupDirectory = PathUtil::Make(BACKUP_FOLDER, directory);
-#else
-	//
-	string backupDirectory = PathUtil::Make(directory, BACKUP_FOLDER);
-	if (PathUtil::IsRelativePath(szFileName) && szFileName[0] != '%') // %Alias% could expand to absolute path as well
-	{
-		backupDirectory = PathUtil::Make(PathUtil::GetProjectFolder(), backupDirectory);
-		directory = PathUtil::Make(PathUtil::GetProjectFolder(), directory);
-	}
-#endif
-
-	const string fileName = PathUtil::GetFile(szFileName);
-	m_filePath = PathUtil::Make(directory, fileName);
-	m_backupFilePath = PathUtil::Make(backupDirectory, fileName);
+	CryPathString adjustedPath;
+	gEnv->pCryPak->AdjustFileName(szFileName, adjustedPath, ICryPak::FLAGS_FOR_WRITING | ICryPak::FLAGS_PATH_REAL);
+	m_filePath = adjustedPath.c_str();
+	m_filename = PathUtil::GetFile(m_filePath);
 
 	CreateBackupFile();
 
@@ -1469,7 +1445,7 @@ const char* CLog::GetFilePath() const
 	return m_filePath.c_str();
 }
 
-const char* CLog::GetBackupFileName() const
+const char* CLog::GetBackupFilePath() const
 {
 	return m_backupFilePath.c_str();
 }

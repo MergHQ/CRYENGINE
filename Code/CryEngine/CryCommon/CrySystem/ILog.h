@@ -52,8 +52,8 @@ struct ILog : public IMiniLog
 	//! Get the full file path used to log to disk.
 	virtual const char* GetFilePath() const = 0;
 
-	//! Get the filename where the current log backup was copied to on disk.
-	virtual const char* GetBackupFileName() const = 0;
+	//! Get the full file path to the log backup file
+	virtual const char* GetBackupFilePath() const = 0;
 
 	//! All the following functions will be removed are here just to be able to compile the project.
 

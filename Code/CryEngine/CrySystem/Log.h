@@ -70,7 +70,7 @@ public:
 	virtual bool        SetFileName(const char* filename);
 	virtual const char* GetFileName() const;
 	virtual const char* GetFilePath() const;
-	virtual const char* GetBackupFileName() const;
+	virtual const char* GetBackupFilePath() const;
 #if !defined(EXCLUDE_NORMAL_LOG)
 	virtual void        Log(const char* command, ...) PRINTF_PARAMS(2, 3);
 	virtual void        LogAlways(const char* command, ...) PRINTF_PARAMS(2, 3);
@@ -148,9 +148,9 @@ private: // -------------------------------------------------------------------
 
 	ISystem*                  m_pSystem;
 	float                     m_fLastLoadingUpdateTime; // for non-frequent streamingEngine update
-	string                    m_filename;               // Contains exactly what was passed in SetFileName
-	string                    m_filePath;               // Contains full path to the log file
-	string                    m_backupFilePath;
+	string                    m_filename;               // Contains only the file name and the extension
+	string                    m_filePath;               // Contains the full absolute path to the log file
+	string                    m_backupFilePath;         // Contains the full absolute path to the backup log file
 	FILE*                     m_pLogFile = nullptr;
 	CryStackStringT<char, 32> m_LogMode;                // mode m_pLogFile has been opened with
 	FILE*                     m_pErrFile = nullptr;
@@ -208,7 +208,7 @@ public: // -------------------------------------------------------------------
 	const char* CheckAgainstVerbosity(const char* pText, bool& logtofile, bool& logtoconsole, const uint8 DefaultVerbosity = 2);
 
 	// create backup of log file, useful behavior - only on development platform
-	void CreateBackupFile() const;
+	void CreateBackupFile();
 
 	ICVar*    m_pLogVerbosity = nullptr;                            //
 	ICVar*    m_pLogWriteToFile = nullptr;                          //
