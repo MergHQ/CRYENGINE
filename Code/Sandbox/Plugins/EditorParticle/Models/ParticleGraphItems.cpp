@@ -228,7 +228,7 @@ CChildPinItem* CNodeItem::GetChildPinItem()
 	return static_cast<CChildPinItem*>(m_pins[1]);
 }
 
-uint32 CNodeItem::GetIndex() const
+uint32 CNodeItem::GetEffectIndex() const
 {
 	CParticleGraphModel& model = static_cast<CParticleGraphModel&>(GetViewModel());
 	const pfx2::IParticleEffect& effect = model.GetEffectInterface();

@@ -169,20 +169,30 @@ bool CParticleGraphModel::RemoveNode(CryGraphEditor::CAbstractNodeItem& node)
 	SignalRemoveNode(node);
 	// ~TODO
 
-	const uint32 index = pNodeItem->GetIndex();
-	CRY_ASSERT(index < m_nodes.size());
-	if (index < m_nodes.size())
+	// Delete from effect
+	const uint32 index = pNodeItem->GetEffectIndex();
+	if (index == ~0)
+		return false;
+	m_effect.RemoveComponent(index);
+
+	// Delete from m_nodes (may not match effect after removing connections)
+	for (size_t i = 0; i < m_nodes.size(); ++i)
 	{
-		m_nodes.erase(m_nodes.begin() + index);
-
-		delete pNodeItem;
-
-		m_effect.RemoveComponent(index);
-		return true;
+		if (m_nodes[i] == pNodeItem)
+		{
+			m_nodes.erase(m_nodes.begin() + i);
+			delete pNodeItem;
+			break;
+		}
 	}
 
-	delete pNodeItem;
-	return false;
+	// Sort to match new effect order
+	stl::sort(m_nodes, [](CNodeItem* pNode)
+		{
+			return pNode->GetComponentInterface().GetIndex();
+		});
+
+	return true;
 }
 
 uint32 CParticleGraphModel::GetConnectionItemCount() const

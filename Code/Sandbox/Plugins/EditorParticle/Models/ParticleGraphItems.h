@@ -60,7 +60,7 @@ public:
 	const char*               GetIdentifier() const         { return m_component.GetName(); }
 	pfx2::IParticleComponent& GetComponentInterface() const { return m_component; }
 
-	uint32                    GetIndex() const;
+	uint32                    GetEffectIndex() const;
 	CParentPinItem*           GetParentPinItem();
 	CChildPinItem*            GetChildPinItem();
 
