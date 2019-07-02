@@ -2563,8 +2563,6 @@ CToolBarArea
 {
 	background-color: rgb(51, 51, 51);
 	border-radius:3px;
-	min-width:4;
-	min-height:4;
 }
 
 CToolBarArea[dragHover=true]
