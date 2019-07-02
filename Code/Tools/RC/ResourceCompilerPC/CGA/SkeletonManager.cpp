@@ -9,6 +9,7 @@
 #include "PathHelpers.h"
 #include "PakSystem.h"
 #include "PakXmlFileBufferSource.h"
+#include "StringHelpers.h"
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -27,7 +28,7 @@ SkeletonManager::SkeletonManager(IPakSystem* pPakSystem, ICryXML* pXmlParser, IR
 //////////////////////////////////////////////////////////////////////////
 bool SkeletonManager::Initialize(const string& rootPath)
 {
-	m_rootPath = rootPath;
+	m_rootPath = PathUtil::ToUnixPath(PathUtil::AddSlash(rootPath));
 
 	std::vector<string> foundSkeletons;
 	FileUtil::ScanDirectory(rootPath, "*.chr", foundSkeletons, true, "");
@@ -57,7 +58,7 @@ const CSkeletonInfo* SkeletonManager::FindSkeletonByAnimFile(const char* szAnima
 		}
 		else
 		{
-			RCLogError("Animation file '%s' not part of root directory '%s'!", szAnimationFile, m_rootPath.c_str());
+			RCLogError("Animation file '%s' not part of root directory '%s'!", fullAnimFilePath.c_str(), m_rootPath.c_str());
 		}
 	}
 	else
@@ -93,7 +94,7 @@ const CSkeletonInfo* SkeletonManager::LoadSkeletonInfo(const char* szFilename)
 	}
 
 	stack_string fullFile = PathUtil::Make(m_rootPath, szFilename);
-	RCLog("Loading skeleton with from file '%s'.", fullFile.c_str());
+	RCLog("Loading skeleton '%s'.", fullFile.c_str());
 
 	SkeletonLoader& skeletonInfo = m_fileToSkeletonInfo[szFilename];
 	skeletonInfo.Load(fullFile.c_str(), m_pPakSystem, m_pXmlParser, m_tmpPath);
