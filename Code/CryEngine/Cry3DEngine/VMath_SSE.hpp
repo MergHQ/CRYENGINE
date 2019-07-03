@@ -253,7 +253,7 @@ ILINE vec4 ShiftAR(vec4 V, uint32 Count)
 template<int INDEX>
 ILINE vec4 Splat(vec4 V)
 {
-	CRY_ASSERT_MESSAGE(0, "Should not be reached!");
+	CRY_ASSERT(0, "Should not be reached!");
 	return Vec4FFFFFFFF();
 }
 template<>

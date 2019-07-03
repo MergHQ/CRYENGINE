@@ -73,7 +73,7 @@ void CStatObj::LoadLowLODs(bool useStreaming, uint32 loadingFlags)
 		return;
 
 	int nLoadedLods = 1;
-	CStatObj* loadedLods[MAX_STATOBJ_LODS_NUM] = { 0 };
+	CStatObj* loadedLods[MAX_STATOBJ_LODS_NUM] = { nullptr };
 	for (int lodLevel = 1; lodLevel < MAX_STATOBJ_LODS_NUM; lodLevel++)
 	{
 		CStatObj* pLodStatObj = LoadLowLOD(lodLevel, useStreaming, loadingFlags);

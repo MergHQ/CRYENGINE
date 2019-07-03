@@ -228,9 +228,9 @@ void CDecal::Render(const float fCurTime, int nAfterWater, float fDistanceFading
 			if (m_ownerInfo.pRenderNode && m_ownerInfo.pRenderNode->GetRenderNodeType() == eERType_Vegetation)
 			{
 				CVegetation* pVegetation = (CVegetation*)m_ownerInfo.pRenderNode;
-				CRY_ASSERT_MESSAGE(pVegetation != nullptr, "pVegetation is nullptr");
+				CRY_ASSERT(pVegetation != nullptr, "pVegetation is nullptr");
 				pBody = pVegetation->GetStatObj();
-				CRY_ASSERT_MESSAGE(pBody != nullptr, "pBody is nullptr");
+				CRY_ASSERT(pBody != nullptr, "pBody is nullptr");
 
 				if (pVegetation && pBody && bUseBending)
 				{

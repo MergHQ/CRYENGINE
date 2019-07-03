@@ -13,7 +13,7 @@ namespace pfx2
 template<typename T>
 ILINE T Verify(T in, const char* message)
 {
-	CRY_ASSERT_MESSAGE(in, message);
+	CRY_ASSERT(in, message);
 	return in;
 }
 

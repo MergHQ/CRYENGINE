@@ -123,7 +123,7 @@ void C3DEngine::LoadDefaultAssets()
 bool C3DEngine::InitLevelForEditor(const char* szFolderName, const char* szMissionName)
 {
 #if !CRY_PLATFORM_DESKTOP
-	CRY_ASSERT_MESSAGE(0, "InitLevelForEditor not supported on consoles yet");
+	CRY_ASSERT(0, "InitLevelForEditor not supported on consoles yet");
 	return false;
 #else
 	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);

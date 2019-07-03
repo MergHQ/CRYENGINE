@@ -150,7 +150,7 @@ ILINE vec4 Swizzle(vec4 V)
 template<int INDEX>
 ILINE vec4 Splat(vec4 V)
 {
-	CRY_ASSERT_MESSAGE(0, "Should not be reached!");
+	CRY_ASSERT(0, "Should not be reached!");
 	return Vec4FFFFFFFF();
 }
 template<>

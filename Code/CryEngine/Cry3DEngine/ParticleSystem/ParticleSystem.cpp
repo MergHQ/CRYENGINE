@@ -333,7 +333,7 @@ void CParticleSystem::ClearRenderResources()
 	// All external references need to be released before this point to prevent leaks
 	for (const auto& pEmitter : m_emitters)
 	{
-		CRY_ASSERT_MESSAGE(pEmitter->Unique(), "Emitter %s not unique", pEmitter->GetCEffect()->GetShortName().c_str());
+		CRY_ASSERT(pEmitter->Unique(), "Emitter %s not unique", pEmitter->GetCEffect()->GetShortName().c_str());
 	}
 #endif
 

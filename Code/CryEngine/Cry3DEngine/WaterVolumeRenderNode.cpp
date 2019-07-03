@@ -630,7 +630,7 @@ inline void TransformPosition(Vec3& pos, const Vec3& localOrigin, const Matrix34
 
 void CWaterVolumeRenderNode::Transform(const Vec3& localOrigin, const Matrix34& l2w)
 {
-	CRY_ASSERT_MESSAGE(!IsAttachedToEntity(), "FIXME: Don't currently support transforming attached water volumes");
+	CRY_ASSERT(!IsAttachedToEntity(), "FIXME: Don't currently support transforming attached water volumes");
 
 	if (m_pPhysAreaInput != NULL)
 	{

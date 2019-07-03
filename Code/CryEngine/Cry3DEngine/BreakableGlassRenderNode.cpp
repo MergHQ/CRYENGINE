@@ -285,7 +285,7 @@ void CBreakableGlassRenderNode::Update(SBreakableGlassUpdateParams& params)
 		// Arrays should always be in sync
 		if (newPhysFrags.size() != newPhysFragsInitData.size())
 		{
-			CRY_ASSERT_MESSAGE(0, "Glass physical fragment arrays are out of sync.");
+			CRY_ASSERT(0, "Glass physical fragment arrays are out of sync.");
 			LOG_GLASS_ERROR("Physical fragment arrays are out of sync.");
 		}
 
@@ -499,7 +499,7 @@ void CBreakableGlassRenderNode::DestroyPhysFragment(SGlassPhysFragment* pPhysFra
 	{
 		if (pPhysFrag->m_pRenderNode != this)
 		{
-			CRY_ASSERT_MESSAGE(0, "Glass physicalized fragment being destroyed by invalid render node.");
+			CRY_ASSERT(0, "Glass physicalized fragment being destroyed by invalid render node.");
 			LOG_GLASS_ERROR("Physicalized fragment being destroyed by invalid render node.");
 		}
 

@@ -570,7 +570,7 @@ void C3DEngine::ScreenshotDispatcher(const int nRenderFlags, const SRenderingPas
 		break;
 	case ESST_PANORAMA:
 		{
-			CRY_ASSERT_MESSAGE(0, "Panorama screenshot not supported right now !");
+			CRY_ASSERT(false, "Panorama screenshot not supported right now !");
 			GetConsole()->ShowConsole(false);
 			pStitchedImage = new CStitchedImage(*this, ImageWidth, ImageHeight, ImageWidth, ImageHeight, 1, 0);
 			ScreenShotPanorama(pStitchedImage, nRenderFlags, passInfo, 0, 0);
@@ -3553,7 +3553,7 @@ bool C3DEngine::ScreenShotPanorama(CStitchedImage* pStitchedImage, const int nRe
 #if CRY_PLATFORM_WINDOWS
 	GetRenderer()->EndFrame();
 
-	CRY_ASSERT_MESSAGE(0, "TODO: Fix omnidirectional camera");
+	CRY_ASSERT(false, "TODO: Fix omnidirectional camera");
 
 	const uint32 prevScreenWidth = GetRenderer()->GetOverlayWidth();
 	const uint32 prevScreenHeight = GetRenderer()->GetOverlayHeight();

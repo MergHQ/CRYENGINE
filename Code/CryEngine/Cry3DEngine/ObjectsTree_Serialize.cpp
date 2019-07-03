@@ -585,7 +585,7 @@ void COctreeNode::SaveSingleObject(byte*& pPtr, int& nDatanSize, IRenderNode* pE
 
 		AddToPtr(pPtr, nDatanSize, chunk, eEndian);
 
-		CRY_ASSERT_MESSAGE(sizeof(vtx_idx) == sizeof(uint32), "Road exporting can only occur on a platform with 32-bit vertex indices");
+		CRY_ASSERT(sizeof(vtx_idx) == sizeof(uint32), "Road exporting can only occur on a platform with 32-bit vertex indices");
 
 		AddToPtr(pPtr, nDatanSize, pObj->m_dynamicData.vertices.GetElements(), chunk.m_roadData.numVertices, eEndian);
 		AddToPtr(pPtr, nDatanSize, pObj->m_dynamicData.indices.GetElements(), chunk.m_roadData.numIndices, eEndian);

@@ -1267,7 +1267,7 @@ void CVisAreaManager::DrawOcclusionAreasIntoCBuffer(const SRenderingPassInfo& pa
 					}
 					else
 					{
-						CRY_ASSERT_MESSAGE(pArea->m_lstShapePoints.Count() == 2, "Occlusion area only supports planes or quads");
+						CRY_ASSERT(pArea->m_lstShapePoints.Count() == 2, "Occlusion area only supports planes or quads");
 
 						activeVerts.arrvActiveVerts[0] = pArea->m_lstShapePoints[0];
 						activeVerts.arrvActiveVerts[1] = pArea->m_lstShapePoints[0] + Vec3(0, 0, pArea->m_fHeight);
@@ -1654,9 +1654,9 @@ void CVisAreaManager::ClearRegion(const AABB& region)
 			bool deletedPortal = m_lstPortals.Delete(pVisArea);
 			bool deletedOccluder = m_lstOcclAreas.Delete(pVisArea);
 
-			CRY_ASSERT_MESSAGE(!deletedVis || (m_visAreas.Find(pVisArea) >= 0), "Should only clear pooled vis areas, going to leak");
-			CRY_ASSERT_MESSAGE(!deletedPortal || (m_portals.Find(pVisArea) >= 0), "Should only clear pooled portals, going to leak");
-			CRY_ASSERT_MESSAGE(!deletedOccluder || (m_occlAreas.Find(pVisArea) >= 0), "Should only clear pooled occluders, going to leak");
+			CRY_ASSERT(!deletedVis || (m_visAreas.Find(pVisArea) >= 0), "Should only clear pooled vis areas, going to leak");
+			CRY_ASSERT(!deletedPortal || (m_portals.Find(pVisArea) >= 0), "Should only clear pooled portals, going to leak");
+			CRY_ASSERT(!deletedOccluder || (m_occlAreas.Find(pVisArea) >= 0), "Should only clear pooled occluders, going to leak");
 
 			if (deletedVis || deletedPortal || deletedOccluder)
 			{

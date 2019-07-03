@@ -81,8 +81,7 @@ DECLARE_JOB("VoxelSegmentBuildVoxels", TBuildVoxelsJob, CVoxelSegment::BuildVoxe
 
 CVoxStreamEngine::CVoxStreamEngineThread::CVoxStreamEngineThread(CVoxStreamEngine* pStreamingEngine) : m_pStreamingEngine(pStreamingEngine)
 	, m_bRun(true)
-{
-}
+{}
 
 void CVoxStreamEngine::CVoxStreamEngineThread::ThreadEntry()
 {
@@ -169,7 +168,7 @@ void CVoxStreamEngine::DecompressVoxStreamItem(const SVoxStreamItem item)
 
 #if defined(USE_CRY_ASSERT)
 	const bool ret = m_arrForSyncCallBack.enqueue(item);
-	CRY_ASSERT_MESSAGE(ret, "CVoxStreamEngine::m_arrForSyncCallBack is not big enough.");
+	CRY_ASSERT(ret, "CVoxStreamEngine::m_arrForSyncCallBack is not big enough.");
 #else
 	m_arrForSyncCallBack.enqueue(item);
 #endif

@@ -496,7 +496,7 @@ bool C3DEngine::Init()
 
 	// Allocate the temporary pool used for allocations during streaming and loading
 	const size_t tempPoolSize = static_cast<size_t>(GetCVars()->e_3dEngineTempPoolSize) << 10;
-	CRY_ASSERT_MESSAGE(tempPoolSize != 0, "C3DEngine::Init() temp pool size is set to 0");
+	CRY_ASSERT(tempPoolSize != 0, "C3DEngine::Init() temp pool size is set to 0");
 
 	{
 		MEMSTAT_CONTEXT(EMemStatContextType::Other, "3Engine Temp Pool");
