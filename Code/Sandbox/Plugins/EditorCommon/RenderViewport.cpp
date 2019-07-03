@@ -118,6 +118,7 @@ CRenderViewport::CRenderViewport() : m_pCameraDelegate(nullptr)
 
 	m_bRenderStats = true;
 	m_bUpdateViewport = false;
+	m_lastViewportRenderTime = 0;
 
 	m_pSkipEnts = new PIPhysicalEntity[1024];
 
@@ -470,14 +471,14 @@ void CRenderViewport::Update()
 		}
 	}
 
-	if (IsFocused())
-	{
-		ProcessMouse();
-		ProcessKeys();
-	}
-
 	if (GetIEditor()->IsInGameMode())
 	{
+		if (IsFocused())
+		{
+			ProcessMouse();
+			ProcessKeys();
+		}
+
 		if (CScopedRenderLock lock = CScopedRenderLock())
 		{
 			gEnv->pRenderer->GetIRenderAuxGeom()->SetCurrentDisplayContext(m_displayContextKey);
@@ -499,6 +500,32 @@ void CRenderViewport::Update()
 			CViewport::Update();
 		}
 		return;
+	}
+
+	const ICVar* pSysMaxFPS = gEnv->pConsole->GetCVar("sys_MaxFPS");
+	const int maxFPS = pSysMaxFPS->GetIVal();
+	if (maxFPS > 0)
+	{
+		const ITimer* pTimer = gEnv->pTimer;
+		if (!m_lastViewportRenderTime)
+		{
+			m_lastViewportRenderTime = pTimer->GetAsyncTime().GetMicroSecondsAsInt64();
+		}
+		const int64 currentTime = pTimer->GetAsyncTime().GetMicroSecondsAsInt64();
+		const int64 microSecPassed = currentTime - m_lastViewportRenderTime;
+		const int64 targetMicroSecPassed = static_cast<int64>((1.0f / maxFPS) * 1000000.0f);
+
+		if (microSecPassed < targetMicroSecPassed)
+		{
+			return;
+		}
+		m_lastViewportRenderTime = pTimer->GetAsyncTime().GetMicroSecondsAsInt64();
+	}
+
+	if (IsFocused())
+	{
+		ProcessMouse();
+		ProcessKeys();
 	}
 
 	if (CScopedRenderLock lock = CScopedRenderLock())
@@ -565,7 +592,6 @@ void CRenderViewport::Update()
 		gEnv->pSystem->SetViewCamera(CurCamera);
 
 		CViewport::Update();
-		gEnv->pSystem->SleepIfNeeded();
 		m_bUpdateViewport = false;
 	}
 }

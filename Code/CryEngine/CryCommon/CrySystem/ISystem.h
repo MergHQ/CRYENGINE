@@ -1183,8 +1183,6 @@ struct ISystem
 
 	virtual void RenderBegin(const SDisplayContextKey& displayContextKey, const SGraphicsPipelineKey& graphicsPipelineKey) = 0;
 	virtual void RenderEnd(bool bRenderStats = true) = 0;
-	//! Sleep to apply the sys_MaxFps setting, automatically called by the main loop.
-	virtual void SleepIfNeeded() = 0;
 
 	//! Updates the engine's systems without creating a rendered frame
 	virtual bool Update(CEnumFlags<ESystemUpdateFlags> updateFlags, int nPauseMode = 0) = 0;

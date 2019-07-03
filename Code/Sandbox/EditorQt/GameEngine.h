@@ -194,6 +194,7 @@ private:
 	bool                          m_bUpdateFlowSystem;
 	bool                          m_bJustCreated;
 	bool                          m_bIgnoreUpdates;
+	int64                         m_lastViewportRenderTime;
 	ISystem*                      m_pISystem;
 	CNavigation*                  m_pNavigation;
 	Matrix34                      m_playerViewTM;

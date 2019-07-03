@@ -212,6 +212,7 @@ class CGameToEditorInterface : public IGameToEditorInterface
 
 CGameEngine::CGameEngine()
 	: m_bIgnoreUpdates(false)
+	, m_lastViewportRenderTime(0)
 	, m_pEditorGame(nullptr)
 	, m_pSystemUserCallback(nullptr)
 	, m_ePendingGameMode(ePGM_NotPending)
@@ -1461,8 +1462,6 @@ void CGameEngine::Update()
 		return;
 	}
 
-	GetIEditorImpl()->GetAI()->EarlyUpdate();
-
 	switch (m_ePendingGameMode)
 	{
 	case ePGM_SwitchToInGame:
@@ -1478,6 +1477,8 @@ void CGameEngine::Update()
 
 	if (m_bInGameMode)
 	{
+		GetIEditorImpl()->GetAI()->EarlyUpdate();
+
 		QWidget* pFocusWidget = QApplication::focusWidget();
 		CViewport* pRenderViewport = GetIEditorImpl()->GetViewManager()->GetGameViewport();
 
@@ -1493,9 +1494,33 @@ void CGameEngine::Update()
 		}
 
 		UpdateAIManagerFromEditor(0);
+
+		GetIEditorImpl()->GetAI()->LateUpdate();
 	}
 	else
 	{
+		const ICVar* pSysMaxFPS = gEnv->pConsole->GetCVar("sys_MaxFPS");
+		const int maxFPS = pSysMaxFPS->GetIVal();
+		if (maxFPS > 0)
+		{
+			const ITimer* pTimer = gEnv->pTimer;
+			if (!m_lastViewportRenderTime)
+			{
+				m_lastViewportRenderTime = pTimer->GetAsyncTime().GetMicroSecondsAsInt64();
+			}
+			const int64 currentTime = pTimer->GetAsyncTime().GetMicroSecondsAsInt64();
+			const int64 microSecPassed = currentTime - m_lastViewportRenderTime;
+			const int64 targetMicroSecPassed = static_cast<int64>((1.0f / maxFPS) * 1000000.0f);
+
+			if (microSecPassed < targetMicroSecPassed)
+			{
+				return;
+			}
+			m_lastViewportRenderTime = pTimer->GetAsyncTime().GetMicroSecondsAsInt64();
+		}
+
+		GetIEditorImpl()->GetAI()->EarlyUpdate();
+
 		for (CListenerSet<IGameEngineListener*>::Notifier notifier(m_listeners); notifier.IsValid(); notifier.Next())
 		{
 			notifier->OnPreEditorUpdate();
@@ -1546,9 +1571,8 @@ void CGameEngine::Update()
 		{
 			notifier->OnPostEditorUpdate();
 		}
+		GetIEditorImpl()->GetAI()->LateUpdate();
 	}
-
-	GetIEditorImpl()->GetAI()->LateUpdate();
 }
 
 void CGameEngine::OnEditorNotifyEvent(EEditorNotifyEvent event)

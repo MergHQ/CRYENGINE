@@ -412,7 +412,7 @@ public:
 	void StartBootProfilerSession(const char* szName) override;
 	void EndBootProfilerSession() override;
 
-	virtual void SleepIfNeeded() override;
+	void         SleepIfNeeded();
 
 	virtual void DisplayErrorMessage(const char* acMessage, float fTime, const float* pfColor = 0, bool bHardError = true) override;
 
