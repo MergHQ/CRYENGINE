@@ -111,7 +111,6 @@ public:
 	// internal methods:
 	QPoint _toScreen(Point point) const;
 	void   _drawRowValue(QPainter& p, const char* text, const QFont* font, const QRect& rect, const QColor& color, bool pathEllipsis, bool center) const;
-	int    _updateHeightsTime() const { return updateHeightsTime_; }
 	int    _paintTime() const         { return paintTime_; }
 	bool   hasFocusOrInplaceHasFocus() const override;
 	bool   _isDragged(const PropertyRow* row) const override;
@@ -222,7 +221,6 @@ protected:
 	int                         aggregatedMouseEventCount_;
 	QScopedPointer<QMouseEvent> lastMouseMoveEvent_;
 
-	int                         updateHeightsTime_;
 	int                         paintTime_;
 	bool                        sizeToContent_;
 	QSize                       contentSize_;

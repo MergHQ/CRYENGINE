@@ -583,7 +583,6 @@ QPropertyTreeLegacy::QPropertyTreeLegacy(QWidget* parent)
 , dragController_(new DragController(this))
 , sizeToContent_(false)
 , editsScale_(1.6667f)
-, updateHeightsTime_(0)
 , paintTime_(0)
 , aggregatedMouseEventCount_(0)
 , aggregateMouseEvents_(false)
@@ -658,8 +657,6 @@ void QPropertyTreeLegacy::updateHeights(bool recalculateTextSize)
 	
 	updateScrollBar();
 
-	updateHeightsTime_ = timer.elapsed();
-
 	int	contentHeight = totalHeight + filterAreaHeight + 4;
 	if (sizeToContent_) {
 		setMaximumHeight(contentHeight);
@@ -669,6 +666,10 @@ void QPropertyTreeLegacy::updateHeights(bool recalculateTextSize)
 		setMaximumHeight(QWIDGETSIZE_MAX);
 		setMinimumHeight(0);
 	}
+
+	// Since the maximum and minimum height could've potentially triggered the widget size to change
+	// adjust the area to the new widget size
+	area_ = fromQRect(rect().adjusted(2, 2, -2 - scrollBarW, -2));
 
 	QSize contentSize = QSize(area_.width(), contentHeight);
 	if (contentSize_.height() != contentHeight) {
@@ -684,10 +685,6 @@ void QPropertyTreeLegacy::updateHeights(bool recalculateTextSize)
 	if (updateScrollBar() != scrollbarVisible)
 	{
 		updateHeights(recalculateTextSize);
-	}
-	else
-	{
-		update();
 	}
 
 	update();
