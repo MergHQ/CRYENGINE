@@ -492,7 +492,7 @@ const char* JobManager::CJobManager::GetJobName(JobManager::Invoker invoker)
 
 void JobManager::CJobManager::AddJob(JobManager::CJobDelegator& crJob, const JobManager::TJobHandle cJobHandle)
 {
-	CRY_PROFILE_FUNCTION_ARG(EProfiledSubsystem::PROFILE_SYSTEM, cJobHandle->cpString)
+	CRY_PROFILE_FUNCTION(EProfiledSubsystem::PROFILE_SYSTEM);
 
 	JobManager::SInfoBlock infoBlock;
 
@@ -522,6 +522,7 @@ void JobManager::CJobManager::AddJob(JobManager::CJobDelegator& crJob, const Job
 	// == When the job is filtered or job system is disabled, execute directly == //
 	if (!InvokeAsJob(cJobHandle))
 	{
+		CRY_PROFILE_SECTION_ARG(EProfiledSubsystem::PROFILE_SYSTEM, "Execute Job directly", cJobHandle->cpString);
 		Invoker delegator = crJob.GetGenericDelegator();
 		const void* pParamMem = crJob.GetJobParamData();
 		{

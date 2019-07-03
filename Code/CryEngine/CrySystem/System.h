@@ -645,6 +645,8 @@ public:
 	const CTimeValue& GetLastTickTime(void) const     { return m_lastTickTime; }
 	const ICVar*      GetDedicatedMaxRate(void) const { return m_svDedicatedMaxRate; }
 
+	static void ChangeProfilerCmd(IConsoleCmdArgs* pParams);
+
 private: // ------------------------------------------------------
 
 	// System environment.
@@ -1005,8 +1007,7 @@ protected: // -------------------------------------------------------------
 
 	friend struct SDefaultValidator;
 	friend struct SCryEngineFoldersLoader;
-	//	friend void ScreenshotCmd( IConsoleCmdArgs *pParams );
-
+	
 	std::vector<IWindowMessageHandler*> m_windowMessageHandlers;
 	IImeManager*                        m_pImeManager;
 

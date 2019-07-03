@@ -921,15 +921,12 @@ struct SSystemGlobalEnvironment
 	bool bPS4DevKit = false;
 #endif
 
-	//////////////////////////////////////////////////////////////////////////
 	//! Profiling callback functions.
-	typedef bool(*TProfilerSectionStartCallback)(struct SProfilingSection*);
-	typedef void(*TProfilerSectionEndCallback)  (struct SProfilingSection*);
 	typedef void(*TProfilerMarkerCallback)      (struct SProfilingMarker*);
+	typedef void(*TProfilerSectionEndCallback)  (struct SProfilingSection*);
+	typedef TProfilerSectionEndCallback (*TProfilerSectionStartCallback) (struct SProfilingSection*);
 	TProfilerSectionStartCallback startProfilingSection = nullptr;
-	TProfilerSectionEndCallback   endProfilingSection = nullptr;
 	TProfilerMarkerCallback       recordProfilingMarker = nullptr;
-	//////////////////////////////////////////////////////////////////////////
 
 	//! Whether we are running unattended, disallows message boxes and other blocking events that require human intervention
 	bool bUnattendedMode = false;

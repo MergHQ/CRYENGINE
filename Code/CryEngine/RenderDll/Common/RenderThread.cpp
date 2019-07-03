@@ -978,6 +978,7 @@ void SRenderThread::WaitFlushFinishedCond()
 	while (true)
 	{
 		{
+			CRY_PROFILE_SECTION_WAITING(PROFILE_RENDERER, "Do Wait");
 			std::unique_lock<std::mutex> lk(m_LockFlushStore);
 			auto NotFlushed = [this]() { return m_nFlush.load() == false; };
 			if (m_FlushCondition.wait_for(lk, std::chrono::milliseconds(10), NotFlushed))

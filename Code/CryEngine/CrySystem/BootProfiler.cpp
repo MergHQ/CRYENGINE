@@ -1029,7 +1029,7 @@ void CBootProfiler::OnMarker(int64 timeStamp, const SProfilingMarker& marker)
 {
 	if (m_pCurrentSession)
 	{
-		m_pCurrentSession->StartBlock(marker.pDescription->szMarkername, nullptr, timeStamp, gThreadsInterface.GetThreadIndexByID(marker.threadId));
+		m_pCurrentSession->StartBlock(marker.pDescription->szEventname, nullptr, timeStamp, gThreadsInterface.GetThreadIndexByID(marker.threadId));
 		// markers are indicated by a negative duration
 		m_pCurrentSession->StopBlock(0, -1, gThreadsInterface.GetThreadIndexByID(marker.threadId));
 	}

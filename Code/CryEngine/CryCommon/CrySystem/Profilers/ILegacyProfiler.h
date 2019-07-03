@@ -8,26 +8,24 @@
 #include "ICryProfilingSystem.h"
 #include "SamplerStats.h"
 #include <CryCore/RingBuffer.h>
+#include <CryThreading/CryAtomics.h>
 
 //! Static instances of this class are created at the places we want to profile to track every invocation of the code.
 struct SProfilingSectionTracker
 {
-	SProfilingSectionTracker(const SProfilingSectionDescription* pDesc, threadID tid) 
+	SProfilingSectionTracker(const SProfilingDescription* pDesc, threadID tid) 
 		: pDescription(pDesc), threadId(tid)
 		, pNextThreadTracker(nullptr), peakSelfValue(0)
+		, refCount(0)
 	{}
 
+	//{ these members are reset after each frame
 	//! Description of the tracked event.
-	const SProfilingSectionDescription* pDescription;
+	const SProfilingDescription* pDescription;
 	//! Thread Id of this instance.
 	threadID threadId;
 	//! trackers for different threads are stored as linked list
 	SProfilingSectionTracker* pNextThreadTracker;
-
-	//! Profiling may be filtered by subsystem or thread. Filtering status is cached here.
-	bool isActive;
-	
-	// the following data is reset after each frame
 	//! How many times this profiler counter was executed.
 	CSamplerStats<TProfilingCount> count;
 	//! Total time spent in this counter including time of child profilers.
@@ -36,6 +34,16 @@ struct SProfilingSectionTracker
 	CSamplerStats<TProfilingValue> selfValue;
 	//! longest selfValue of an associated event
 	float peakSelfValue;
+	//}
+
+	//! Profiling may be filtered by subsystem or thread. Filtering status is cached here.
+	bool isActive;
+
+	bool AddRef() { return CryInterlockedIncrement(&refCount) > 1; }
+	void Release() { if (CryInterlockedDecrement(&refCount) <= 0) delete this; }
+
+private:
+	volatile int refCount;
 };
 
 struct SPeakRecord

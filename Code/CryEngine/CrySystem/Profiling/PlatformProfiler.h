@@ -19,33 +19,20 @@ public:
 	CPlatformProfiler();
 	~CPlatformProfiler();
 
-	void Stop() final {}
-	bool IsStopped() const final { return false; }
-
 	void PauseRecording(bool pause) final;
 	bool IsPaused() const final { return m_paused; }
-
-	virtual void StartThread() final;
-	virtual void EndThread() final {}
-
-	void DescriptionCreated(SProfilingSectionDescription* pDesc) final { pDesc->color_argb = GenerateColorBasedOnName(pDesc->szEventname); }
-	void DescriptionDestroyed(SProfilingSectionDescription*) final {}
-
-	bool StartSection(SProfilingSection*) final;
-	void EndSection(SProfilingSection*) final;
 
 	void StartFrame() final;
 	void EndFrame() final;
 
-	void RecordMarker(SProfilingMarker*) final;
-
 	void RegisterCVars() final {}
+	void UnregisterCVars() final {}
 
-	static bool StartSectionStatic(SProfilingSection* p) { return s_pInstance->StartSection(p);}
-	static void EndSectionStatic(SProfilingSection* p) { s_pInstance->EndSection(p); }
-	static void RecordMarkerStatic(SProfilingMarker* p) { s_pInstance->RecordMarker(p); }
+	static SSystemGlobalEnvironment::TProfilerSectionEndCallback StartSectionStatic(SProfilingSection* p);
+	static void RecordMarkerStatic(SProfilingMarker* p);
 
 private:
+	static void EndSectionStatic(SProfilingSection* p);
 	static CPlatformProfiler* s_pInstance;
 
 	bool m_paused = false;

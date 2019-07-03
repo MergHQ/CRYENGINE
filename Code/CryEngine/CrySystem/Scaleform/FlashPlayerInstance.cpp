@@ -1080,7 +1080,7 @@ public:
 		: m_startTick(FlashTimer::GetTicks())
 	{
 		if(flashEvent == nullptr)
-			flashEvent = new SProfilingSectionDescription(__FILE__, "Flash", 0, false, EProfiledSubsystem::PROFILE_RENDERER);
+			flashEvent = new SProfilingDescription(__FILE__, "Flash", 0, false, EProfiledSubsystem::PROFILE_RENDERER);
 		new (&flashSectionStorage) SProfilingSection(flashEvent, nullptr);
 	}
 
@@ -1129,7 +1129,7 @@ public:
 	}
 
 private:
-	static SProfilingSectionDescription* flashEvent;
+	static SProfilingDescription* flashEvent;
 	SAlignedStorage<sizeof(SProfilingSection), alignof(SProfilingSection)>::type flashSectionStorage;
 
 	static volatile uint32 ms_deltaTicksAccum;
@@ -1141,7 +1141,7 @@ private:
 	uint64 m_startTick;
 };
 
-SProfilingSectionDescription* CFlashFunctionProfilerLight::flashEvent = nullptr;
+SProfilingDescription* CFlashFunctionProfilerLight::flashEvent = nullptr;
 volatile uint32 CFlashFunctionProfilerLight::ms_deltaTicksAccum = 0;
 uint32 CFlashFunctionProfilerLight::ms_histIdx = 0;
 float CFlashFunctionProfilerLight::ms_hist[HIST_SIZE] = { 0 };

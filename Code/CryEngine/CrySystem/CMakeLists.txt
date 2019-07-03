@@ -81,7 +81,7 @@ add_sources("CrySystem_uber_1.cpp"
 
 add_sources("CrySystem_uber_4.cpp"
 	PROJECTS CrySystem
-	SOURCE_GROUP "Profiler"
+	SOURCE_GROUP "Profiling"
 		"Profiling/PlatformProfiler_orbis.cpp"
 )
 
@@ -302,16 +302,18 @@ add_sources("CrySystem_uber_4.cpp"
 	SOURCE_GROUP "Localization"
 		"LocalizedStringManager.cpp"
 		"LocalizedStringManager.h"
-	SOURCE_GROUP "Profiler"
+	SOURCE_GROUP "Profiling"
 		"DiskProfiler.cpp"
 		"DiskProfilerWindowsSpecific.cpp"
 		"DiskProfilerWindowsSpecific.h"
+		"Profiling/NullProfiler.cpp"
 		"Profiling/CryProfilingSystem.cpp"
 		"Profiling/ProfilingRenderer.cpp"
 		"Profiling/CryBrofiler.cpp"
 		"Profiling/CryProfilingSystemSharedImpl.cpp"
 		"PerfHUD.cpp"
 		"DiskProfiler.h"
+		"Profiling/NullProfiler.h"
 		"Profiling/ProfilingRenderer.h"
 		"Profiling/CryProfilingSystem.h"
 		"Profiling/CryBrofiler.h"
@@ -506,7 +508,7 @@ add_sources("CrySystem_uber_1.cpp"
 
 add_sources("CrySystem_uber_4.cpp"
 	PROJECTS CrySystem
-	SOURCE_GROUP "Profiler"
+	SOURCE_GROUP "Profiling"
 		"Profiling/PlatformProfiler_durango.cpp"
 )
 
@@ -526,7 +528,7 @@ add_sources("CrySystem_uber_7.cpp"
 sources_platform(WINDOWS)
 add_sources("CrySystem_uber_4.cpp"
 	PROJECTS CrySystem
-	SOURCE_GROUP "Profiler"
+	SOURCE_GROUP "Profiling"
 		"Profiling/PlatformProfiler_win.cpp"
 		"Profiling/PixForWindows.cpp"
 		"Profiling/PixForWindows.h"

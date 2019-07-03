@@ -2046,12 +2046,7 @@ void CTimeDemoRecorder::StartSession()
 
 	if (m_demo_profile)
 	{
-		if (pProfSystem->IsStopped())
-		{
-			CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_WARNING, "The profiling system was already stopped, but peak profiling is requested for the time demo.");
-			m_demo_profile = false;
-		}
-		else if (GetISystem()->GetLegacyProfilerInterface() == nullptr)
+		if (GetISystem()->GetLegacyProfilerInterface() == nullptr)
 		{
 			CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_WARNING, "The used profiling system does not support peak profiling, but it was requested for the time demo.");
 			m_demo_profile = false;
@@ -2099,8 +2094,9 @@ void CTimeDemoRecorder::StopSession()
 	if (m_demo_profile)
 	{
 		SetConsoleVar("profile_peak_tolerance", m_oldPeakTolerance);
-		GetISystem()->GetLegacyProfilerInterface()->RemoveFrameListener(this);
 		pProfSystem->PauseRecording(m_profilingPaused);
+		if (auto pLegacyInterface = GetISystem()->GetLegacyProfilerInterface())
+			pLegacyInterface->RemoveFrameListener(this);
 	}
 
 	m_lastPlayedTotalTime = m_totalDemoTime.GetSeconds();

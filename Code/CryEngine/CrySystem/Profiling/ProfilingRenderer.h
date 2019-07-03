@@ -37,6 +37,7 @@ public:
 	// ~IInputEventListener
 
 	void RegisterCVars();
+	void UnregisterCVars();
 
 private:
 	bool Enabled() const { return profile != 0; }
@@ -44,14 +45,14 @@ private:
 	void DrawRect(float col1, float row1, float col2, float row2, const float* fColor);
 
 	void RenderMainHeader(CCryProfilingSystem*);
-	void RenderTrackerValues(ILegacyProfiler*);
+	void RenderTrackerValues(CCryProfilingSystem*);
 	void RenderTrackerValues(SProfilingSectionTracker* pProfiler, float row, bool bSelected);
 
-	void RenderPeaks(ILegacyProfiler*);
+	void RenderPeaks(CCryProfilingSystem*);
 	void RenderSubSystems(CCryProfilingSystem*);
-	void RenderThreadInfo(ILegacyProfiler*);
+	void RenderThreadInfo(CCryProfilingSystem*);
 
-	SProfilingSectionTracker* GetSelectedTracker(ILegacyProfiler* pProfSystem) const;
+	SProfilingSectionTracker* GetSelectedTracker(CCryProfilingSystem* pProfSystem) const;
 	const char* GetNameWithThread(SProfilingSectionTracker* pTracker) const;
 
 	bool m_isCollectionPaused;

@@ -23,21 +23,22 @@ int   CProfilingRenderer::profile_hide_waits = 0;
 static CProfilingRenderer* s_pRendererInstance = nullptr;
 void CProfilingRenderer::ChangeListenStatusCommand(ICVar*)
 {
-	static bool registered = false;
-	if(s_pRendererInstance && GetISystem()->GetLegacyProfilerInterface())
+	if (CRY_VERIFY(s_pRendererInstance != nullptr))
 	{
-		if (profile || profile_log)
+		if (GetISystem()->GetLegacyProfilerInterface())
 		{
-			if(!registered)
+			if (profile || profile_log)
 			{
 				GetISystem()->GetLegacyProfilerInterface()->AddFrameListener(s_pRendererInstance);
-				registered = true;
+			}
+			else
+			{
+				GetISystem()->GetLegacyProfilerInterface()->RemoveFrameListener(s_pRendererInstance);
 			}
 		}
 		else
 		{
-			GetISystem()->GetLegacyProfilerInterface()->RemoveFrameListener(s_pRendererInstance);
-			registered = false;
+			CryLog("The legacy profiler is required for this functionality. Use the 'profiler' command to enable it.");
 		}
 	}
 }
@@ -86,6 +87,20 @@ void CProfilingRenderer::RegisterCVars()
 	REGISTER_CVAR_CB(profile_log, 0, 0, "Writes profiler data into log. 'profile_log 1' to output average values. 'profile_log 2' to output min/max values.", &ChangeListenStatusCommand);
 	REGISTER_CVAR(profile_hide_waits, 1, 0, "Removes sections flagged as 'waiting' from the profile X displays.");
 	REGISTER_CVAR(profile_min_display_ms, 0.01f, 0, "Minimum duration for functions to be displayed in the profile view.");
+}
+
+void CProfilingRenderer::UnregisterCVars()
+{
+	if (IConsole* pConsole = gEnv->pConsole)
+	{
+		pConsole->UnregisterVariable("profile");
+		pConsole->UnregisterVariable("profile_row");
+		pConsole->UnregisterVariable("profile_col");
+		pConsole->UnregisterVariable("profile_peak_display");
+		pConsole->UnregisterVariable("profile_log");
+		pConsole->UnregisterVariable("profile_hide_waits");
+		pConsole->UnregisterVariable("profile_min_display_ms");
+	}
 }
 
 void CProfilingRenderer::OnFrameEnd(TTime timestamp, ILegacyProfiler* pProfSystem)
@@ -242,7 +257,7 @@ inline void CalculateColor(float value, float variance, float* outColor, float& 
 }
 
 //////////////////////////////////////////////////////////////////////////
-SProfilingSectionTracker* CProfilingRenderer::GetSelectedTracker(ILegacyProfiler* pProfSystem) const
+SProfilingSectionTracker* CProfilingRenderer::GetSelectedTracker(CCryProfilingSystem* pProfSystem) const
 {
 	if ((*pProfSystem->GetActiveTrackers()).empty())
 		return nullptr;
@@ -427,7 +442,7 @@ namespace
 	const float columnNameOffset = columnThreadOffset + 10;
 };
 
-void CProfilingRenderer::RenderTrackerValues(ILegacyProfiler* pProfSystem)
+void CProfilingRenderer::RenderTrackerValues(CCryProfilingSystem* pProfSystem)
 {
 	float row = c_mainHeaderRows;
 	// Header
@@ -549,7 +564,7 @@ void CProfilingRenderer::RenderTrackerValues(SProfilingSectionTracker* pTracker,
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CProfilingRenderer::RenderPeaks(ILegacyProfiler* pProfSystem)
+void CProfilingRenderer::RenderPeaks(CCryProfilingSystem* pProfSystem)
 {
 	const float HotPeakColor[4] = { 1, 1, 1, 1 };
 	const float ColdPeakColor[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
@@ -643,7 +658,7 @@ struct SThreadProfileInfo
 	uint sectionsTracked = 0;
 };
 
-void CProfilingRenderer::RenderThreadInfo(ILegacyProfiler* pProfSystem)
+void CProfilingRenderer::RenderThreadInfo(CCryProfilingSystem* pProfSystem)
 {
 	const float ActiveTimeOffset = 0;
 	const float ActiveTimePercentOffset = 8 + ActiveTimeOffset;

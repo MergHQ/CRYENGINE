@@ -3306,9 +3306,11 @@ void CD3D9Renderer::RT_EndFrame()
 		CRY_ASSERT(pDC->IsSwapChainBacked());
 		auto swapDC = static_cast<CSwapChainBackedRenderDisplayContext*>(pDC);
 
+		// marked waiting as this isn't CPU work
+		CRY_PROFILE_SECTION_WAITING(PROFILE_RENDERER, "Present");
+
 		if (!IsEditorMode())
 		{
-			CRY_PROFILE_SECTION(PROFILE_RENDERER, "Present");
 			pDC->PrePresent();
 
 #if CRY_RENDERER_GNM

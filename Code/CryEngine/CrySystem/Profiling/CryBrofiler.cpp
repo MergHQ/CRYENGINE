@@ -9,61 +9,43 @@
 
 thread_local Profiler::ThreadDescription* tls_pDescription = nullptr;
 
-CBrofiler* CBrofiler::s_pInstance = nullptr;
-
-CBrofiler::CBrofiler()
-{
-	CRY_ASSERT_MESSAGE(s_pInstance == nullptr, "Multiple instantiation!");
-	s_pInstance = this;
-}
-
-CBrofiler::~CBrofiler()
-{
-	s_pInstance = nullptr;
-}
-
-void CBrofiler::StartThread()
+void CBrofiler_OnStartThread()
 {
 	CRY_ASSERT(tls_pDescription == nullptr);
 	tls_pDescription = new Profiler::ThreadDescription(gEnv->pThreadManager->GetThreadName(CryGetCurrentThreadId()));
 }
 
-void CBrofiler::EndThread()
+void CBrofiler_OnEndThread()
 {
 	CRY_ASSERT(tls_pDescription != nullptr);
 	delete tls_pDescription;
 }
 
-void CBrofiler::DescriptionCreated(SProfilingSectionDescription* pDesc)
+REGISTER_PROFILER(CBrofiler, "Brofiler", "-brofiler", &CBrofiler_OnStartThread, &CBrofiler_OnEndThread);
+
+void CBrofiler::DescriptionCreated(SProfilingDescription* pDesc)
 {
+	CCryProfilingSystemImpl::DescriptionCreated(pDesc);
 	pDesc->customData = (uintptr_t) Profiler::EventDescription::Create(pDesc->szEventname, pDesc->szFilename, pDesc->line, GenerateColorBasedOnName(pDesc->szEventname));
 }
 
-void CBrofiler::DescriptionDestroyed(SProfilingSectionDescription* pDesc)
+void CBrofiler::DescriptionDestroyed(SProfilingDescription* pDesc)
 {
+	CCryProfilingSystemImpl::DescriptionDestroyed(pDesc);
 	Profiler::EventDescription::DestroyEventDescription((Profiler::EventDescription*) pDesc->customData);
+	pDesc->customData = 0;
 }
 
-bool CBrofiler::StartSection(SProfilingSection* pSection)
+SSystemGlobalEnvironment::TProfilerSectionEndCallback CBrofiler::StartSectionStatic(SProfilingSection* pSection)
 {
-	pSection->customData = (uintptr_t) Profiler::Event::Start(*(Profiler::EventDescription*) pSection->pDescription->customData);
-	return true;
+	pSection->customData = (uintptr_t)Profiler::Event::Start(*(Profiler::EventDescription*) pSection->pDescription->customData);
+	return &EndSectionStatic;
 }
 
-void CBrofiler::EndSection(SProfilingSection* pSection)
+void CBrofiler::EndSectionStatic(SProfilingSection* pSection)
 {
 	if (pSection->customData)
 		Profiler::Event::Stop(*(Profiler::EventData*) pSection->customData);
-}
-
-bool CBrofiler::StartSectionStatic(SProfilingSection* p)
-{
-	return s_pInstance->StartSection(p);
-}
-
-void CBrofiler::EndSectionStatic(SProfilingSection* p)
-{
-	s_pInstance->EndSection(p);
 }
 
 #endif

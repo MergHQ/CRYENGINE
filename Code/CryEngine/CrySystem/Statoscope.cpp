@@ -1678,8 +1678,7 @@ CStatoscope::CStatoscope()
 
 	RegisterBuiltInDataGroups();
 	RegisterBuiltInIvDataGroups();
-	isRegisteredAsFrameListener = false;
-
+	
 	m_pStatoscopeEnabledCVar = REGISTER_INT("e_StatoscopeEnabled", 0, VF_NULL, "Controls whether all statoscope is enabled.");
 	m_pStatoscopeDumpAllCVar = REGISTER_INT("e_StatoscopeDumpAll", 0, VF_NULL, "Controls whether all functions are dumped in a profile log.");
 	m_pStatoscopeDataGroupsCVar = REGISTER_INT64("e_StatoscopeDataGroups", AlphaBits64("fgmrtuO"), VF_BITFIELD, GetDataGroupsCVarHelpString(m_allDataGroups));
@@ -2740,26 +2739,23 @@ void CStatoscope::UpdateFrameListenerRegistration()
 {
 	if (m_pProfilerDG && m_pProfilerDG->IsEnabled() && IsRunning())
 	{
-		if (!isRegisteredAsFrameListener)
+		if (ILegacyProfiler* pProf = GetISystem()->GetLegacyProfilerInterface())
 		{
-			if (ILegacyProfiler* pProf = GetISystem()->GetLegacyProfilerInterface())
-			{
-				pProf->AddFrameListener(this);
-				isRegisteredAsFrameListener = true;
-			}
-			else
-			{
-				CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_WARNING, "Statoscope: Profiler data group ('r') is enabled, but not supported by the current profiling system!");
-				UnregisterDataGroup(m_pProfilerDG);
-			}
+			pProf->AddFrameListener(this);
+		}
+		else
+		{
+			CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_WARNING, 
+				"Statoscope data group 'r' is enabled, but not supported by the current profiling system!");
+			CryLog("Turning Statoscope data group 'r' off.");
+			UnregisterDataGroup(m_pProfilerDG);
 		}
 	}
-	else if (isRegisteredAsFrameListener)
+	else
 	{
 		if (ILegacyProfiler* pProf = GetISystem()->GetLegacyProfilerInterface())
 		{
 			pProf->RemoveFrameListener(this);
-			isRegisteredAsFrameListener = false;
 		}
 	}
 }

@@ -94,10 +94,10 @@
 #	include <Cry_Brofiler.h>
 #	include "Profiling/CryBrofiler.h"
 #endif
-#include "Profiling/PlatformProfiler.h"
 #include "Profiling/ProfilingRenderer.h"
+#include "Profiling/NullProfiler.h"
 #include "Profiling/CryProfilingSystem.h"
-#include "Profiling/PixForWindows.h"
+#include "Profiling/CryProfilingSystemSharedImpl.h"
 
 #include <CryMath/PNoise3.h>
 #include <CryString/StringUtils.h>
@@ -242,9 +242,8 @@ CSystem::CSystem(const SSystemInitParams& startupParams)
 	m_env.pSystem = this;
 	m_env.pTimer = &m_Time;
 	m_env.pNameTable = &m_nameTable;
-	m_env.startProfilingSection = CCryProfilingSystemImpl::StartSectionStaticDummy;
-	m_env.endProfilingSection = CCryProfilingSystemImpl::EndSectionStaticDummy;
-	m_env.recordProfilingMarker = CCryProfilingSystemImpl::RecordMarkerStaticDummy;
+	m_env.startProfilingSection = &CNullProfiler::StartSectionStatic;
+	m_env.recordProfilingMarker = &CNullProfiler::RecordMarkerStatic;
 
 	m_env.SetFMVIsPlaying(false);
 	m_env.SetCutsceneIsPlaying(false);
@@ -390,15 +389,44 @@ CSystem::CSystem(const SSystemInitParams& startupParams)
 	m_pProfileRenderer = nullptr;
 
 #ifdef ENABLE_PROFILING_CODE
-	const bool enableBootProfiler = (strstr(startupParams.szSystemCmdLine, "-bootprofiler") != nullptr);
-	const bool enableBrofiler = (strstr(startupParams.szSystemCmdLine, "-brofiler") != nullptr);
-	const bool enablePlatformProfiler = (strstr(startupParams.szSystemCmdLine, "-platformprofiler") != nullptr);
-#if CRY_PLATFORM_WINDOWS
-	const bool enablePIX4Windows = (strstr(startupParams.szSystemCmdLine, "-pix4windows") != nullptr);
-#else
-	const bool enablePIX4Windows = false;
-#endif
+	const std::vector<Cry::ProfilerRegistry::SEntry>& profilers = Cry::ProfilerRegistry::Get();
+
+	const Cry::ProfilerRegistry::SEntry* cmdLineProfilerChoice = nullptr;
+	for (const Cry::ProfilerRegistry::SEntry& profilerEntry : profilers)
+	{
+		if (strstr(startupParams.szSystemCmdLine, profilerEntry.cmdLineArgument.c_str()) != nullptr)
+		{
+			if (CRY_VERIFY_WITH_MESSAGE(cmdLineProfilerChoice == nullptr, "You specified more than one profiler on the command line!"))
+				cmdLineProfilerChoice = &profilerEntry;
+		}
+	}
+
+	const Cry::ProfilerRegistry::SEntry defaultEntry = CCryProfilingSystem::MakeRegistryEntry();
 	
+	if (cmdLineProfilerChoice == nullptr)
+	{
+		cmdLineProfilerChoice = &defaultEntry;
+	}
+
+	m_pProfilingSystem = cmdLineProfilerChoice->factory();
+	m_env.startProfilingSection = cmdLineProfilerChoice->sectionCallback;
+	m_env.recordProfilingMarker = cmdLineProfilerChoice->markerCallback;
+
+	if (cmdLineProfilerChoice->name == defaultEntry.name)
+	{
+		m_pLegacyProfiler = reinterpret_cast<CCryProfilingSystem*>(m_pProfilingSystem);
+	}
+
+#if defined(ENABLE_LOADING_PROFILER)
+	if (!startupParams.bShaderCacheGen)
+	{
+		CBootProfiler::GetInstance().Init(this, startupParams.szSystemCmdLine);
+	}
+	if (m_pLegacyProfiler)
+		m_pLegacyProfiler->SetBootProfiler(&CBootProfiler::GetInstance());
+#endif
+	m_pProfileRenderer = new CProfilingRenderer;
+
 	const char* szVerbosity = strstr(startupParams.szSystemCmdLine, "-profile_verbosity=");
 	if (szVerbosity != nullptr)
 	{
@@ -406,58 +434,6 @@ CSystem::CSystem(const SSystemInitParams& startupParams)
 		int verbosity = atoi(szVerbosity);
 		if (verbosity > 0)
 			CCryProfilingSystem::s_verbosity = verbosity;
-	}
-
-#ifndef RELEASE
-	if (enableBootProfiler + enableBrofiler + enablePlatformProfiler + enablePIX4Windows > 1)
-		__debugbreak(); // may only choose one
-#endif
-
-#if ALLOW_BROFILER
-	if (enableBrofiler)
-	{
-		m_pProfilingSystem = new CBrofiler;
-		m_env.startProfilingSection = CBrofiler::StartSectionStatic;
-		m_env.endProfilingSection = CBrofiler::EndSectionStatic;
-		// no markers on Brofiler
-	}
-	else
-#endif
-#if USE_PLATFORM_PROFILER
-	if (enablePlatformProfiler)
-	{
-		m_pProfilingSystem = new CPlatformProfiler;
-		m_env.startProfilingSection = CPlatformProfiler::StartSectionStatic;
-		m_env.endProfilingSection = CPlatformProfiler::EndSectionStatic;
-		m_env.recordProfilingMarker = CPlatformProfiler::RecordMarkerStatic;
-	}
-	else
-#endif
-#if CRY_PLATFORM_WINDOWS
-	if (enablePIX4Windows)
-	{
-		m_pProfilingSystem = new CPixForWindows;
-		m_env.startProfilingSection = CPixForWindows::StartSectionStatic;
-		m_env.endProfilingSection = CPixForWindows::EndSectionStatic;
-		m_env.recordProfilingMarker = CPixForWindows::RecordMarkerStatic;
-	}
-	else
-#endif
-	{
-		m_pLegacyProfiler = new CCryProfilingSystem;
-		m_pProfilingSystem = m_pLegacyProfiler;
-		m_env.startProfilingSection = CCryProfilingSystem::StartSectionStatic;
-		m_env.endProfilingSection = CCryProfilingSystem::EndSectionStatic;
-		m_env.recordProfilingMarker = CCryProfilingSystem::RecordMarkerStatic;
-
-#if defined(ENABLE_LOADING_PROFILER)
-		if (!startupParams.bShaderCacheGen)
-		{
-			CBootProfiler::GetInstance().Init(this, startupParams.szSystemCmdLine);
-		}
-		m_pLegacyProfiler->SetBootProfiler(&CBootProfiler::GetInstance());
-#endif
-		m_pProfileRenderer = new CProfilingRenderer;
 	}
 #endif
 
@@ -546,9 +522,8 @@ CSystem::~CSystem()
 
 	SAFE_DELETE(g_pPakHeap);
 
-	m_env.startProfilingSection = CCryProfilingSystemImpl::StartSectionStaticDummy;
-	m_env.endProfilingSection = CCryProfilingSystemImpl::EndSectionStaticDummy;
-	m_env.recordProfilingMarker = CCryProfilingSystemImpl::RecordMarkerStaticDummy;
+	m_env.startProfilingSection = &CNullProfiler::StartSectionStatic;
+	m_env.recordProfilingMarker = &CNullProfiler::RecordMarkerStatic;
 	SAFE_DELETE(m_pProfilingSystem);
 
 	m_env.pSystem = nullptr;

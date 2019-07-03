@@ -24,32 +24,24 @@ public:
 
 	//////////////////////////////////////////////////////////
 	// ICryProfilingSystem
-	void Stop() final;
-	bool IsStopped() const final;
-
 	void PauseRecording(bool pause) final;
 	//! Are we collecting profiling data?
 	bool IsPaused() const final;
 	
-	void StartThread() final;
-	void EndThread() final;
-
 	void AddFrameListener(ICryProfilerFrameListener*) final;
 	void RemoveFrameListener(ICryProfilerFrameListener*) final;
 
-	void DescriptionCreated(SProfilingSectionDescription*) final;
-	void DescriptionDestroyed(SProfilingSectionDescription*) final;
-
-	bool StartSection(SProfilingSection*) final;
-	void EndSection(SProfilingSection*) final;
+	void DescriptionDestroyed(SProfilingDescription*) final;
 
 	void StartFrame() final;
 	void EndFrame() final;
 
-	void RecordMarker(SProfilingMarker*) final;
-
 	using CCryProfilingSystemImpl::GetModuleName;
 	//////////////////////////////////////////////////////////
+
+	SSystemGlobalEnvironment::TProfilerSectionEndCallback StartSection(SProfilingSection*);
+	void EndSection(SProfilingSection*);
+	void RecordMarker(SProfilingMarker*);
 
 	// ILegacyProfiler
 	const TrackerList* GetActiveTrackers() const final;
@@ -64,15 +56,31 @@ public:
 
 	// CCryProfilingSystemImpl
 	void RegisterCVars() final;
+	void UnregisterCVars() final;
+	// ~CCryProfilingSystemImpl
 
 	void SetBootProfiler(CBootProfiler*);
 	
+	// callbacks to register in gEnv
+	static SSystemGlobalEnvironment::TProfilerSectionEndCallback StartSectionStatic(SProfilingSection*);
+	static void RecordMarkerStatic(SProfilingMarker*);
+
+	static void OnThreadEntry();
+	static void OnThreadExit();
+
+	// used as default profiler setup
+	static Cry::ProfilerRegistry::SEntry MakeRegistryEntry();
+
+	//! trackers with verbosity above this level are excluded
+	//! exposed so that it can be initialized form CSystem
+	static int s_verbosity;
+
 private:
 	struct AutoTimer;
 	typedef CryAutoReadLock<CryRWLock> AutoReadLock;
 	typedef CryAutoWriteLock<CryRWLock> AutoWriteLock;
 
-	SProfilingSectionTracker* AddTracker(const SProfilingSectionDescription* pDesc, threadID tid);
+	SProfilingSectionTracker* AddTracker(const SProfilingDescription* pDesc, threadID tid);
 
 	void CheckForPeak(int64, SProfilingSectionTracker* pTracker);
 	void CommitFrame(SProfilingSectionTracker* pTracker, float blendFactor);
@@ -81,7 +89,6 @@ private:
 	bool IsExcludedByFilter(const SProfilingMarker* pMarker) const;
 	void ReapplyTrackerFilter();
 
-	bool m_enabled        = true;
 	bool m_trackingPaused = false;
 	bool m_willPause      = false;
 
@@ -99,26 +106,19 @@ private:
 	TrackerList m_excludedTrackers;
 
 	// putting these into separate cache lines to avoid false sharing
-	CRY_ALIGN(64) CryRWLock m_trackerLock;
+	CRY_ALIGN(64) CryRWLock m_readWriteLock;
 	CRY_ALIGN(64) char __padding;
 	
-	friend class CSystem;
 	//////////////////////////////////////////////////////////
 	// CVars and callbacks
-
-	static CCryProfilingSystem* s_pInstance;
-	// callbacks to register in gEnv
-	static bool StartSectionStatic(SProfilingSection*);
 	static void EndSectionStatic(SProfilingSection*);
-	static void RecordMarkerStatic(SProfilingMarker*);
 
 	static void ProfilingSystemFilterCvarChangedCallback(struct ICVar* pCvar);
 	static void FilterSubsystemCommand(struct IConsoleCmdArgs* args);
 	static void FilterThreadCommand(struct IConsoleCmdArgs* args);
-	static void StopPofilingCommand(struct IConsoleCmdArgs* args);
 	
-	//! trackers with verbosity above this level are excluded
-	static int s_verbosity;
+	static CCryProfilingSystem* s_pInstance;
+	static volatile int         s_instanceLock;
 	//! if non-zero only profile this thread
 	static threadID s_exclusiveThread;
 	//! the bit (1 << ProfiledSubsystem) is set, if the subsystem should be excluded

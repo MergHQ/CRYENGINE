@@ -103,19 +103,23 @@
 	#define IF_USE_GPA(...)
 #endif // #if defined(CRY_PROFILE_MARKERS_USE_GPA)
 
-CPlatformProfiler* CPlatformProfiler::s_pInstance = nullptr;
+IF_USE_GPA(
+	void CPlatformProfiler_OnStartThread()
+	{
+		const char* szThreadName = gEnv->pThreadManager->GetThreadName(CryGetCurrentThreadId());
+		__itt_thread_set_name(szThreadName)
+	}
+
+	REGISTER_PROFILER(CPlatformProfiler, "GPA", "-platformprofiler", &CPlatformProfiler_OnStartThread);
+)
 
 CPlatformProfiler::CPlatformProfiler()
 {
-	s_pInstance = this;
 	IF_USE_GPA(assert(domain == nullptr));
 	IF_USE_GPA(domain = __itt_domain_create("CryEngine"));
 }
 
-CPlatformProfiler::~CPlatformProfiler()
-{
-	s_pInstance = nullptr;
-}
+CPlatformProfiler::~CPlatformProfiler() {}
 
 void CPlatformProfiler::PauseRecording(bool pause)
 {
@@ -129,14 +133,6 @@ void CPlatformProfiler::PauseRecording(bool pause)
 	m_paused = pause;
 }
 
-void CPlatformProfiler::StartThread()
-{
-	IF_USE_GPA(
-		const char* szThreadName = gEnv->pThreadManager->GetThreadName(CryGetCurrentThreadId());
-		__itt_thread_set_name(szThreadName)
-	);
-}
-
 void CPlatformProfiler::StartFrame()
 {
 	IF_USE_GPA( __itt_frame_begin_v3(domain, nullptr) );
@@ -147,20 +143,20 @@ void CPlatformProfiler::EndFrame()
 	IF_USE_GPA( __itt_frame_end_v3(domain, nullptr) );
 }
 
-bool CPlatformProfiler::StartSection(SProfilingSection* pSection)
+SSystemGlobalEnvironment::TProfilerSectionEndCallback CPlatformProfiler::StartSectionStatic(SProfilingSection* pSection)
 {
 	IF_USE_GPA( __itt_task_begin(domain, __itt_null, __itt_null, GetStringHandle(pSection->pTracker->pDescription->szEventname)) );
-	return false IF_USE_GPA( || true);
+	return (false IF_USE_GPA( || true)) ? &EndSectionStatic : nullptr;
 }
 
-void CPlatformProfiler::EndSection(SProfilingSection*)
+void CPlatformProfiler::EndSectionStatic(SProfilingSection*)
 {
 	IF_USE_GPA( __itt_task_end(domain) );
 }
 
-void CPlatformProfiler::RecordMarker(SProfilingMarker* pMarker)
+void CPlatformProfiler::RecordMarkerStatic(SProfilingMarker* pMarker)
 {
-	IF_USE_GPA( __itt_event_start(GetEventHandle(pMarker->pDescription->szMarkername)) );
+	IF_USE_GPA( __itt_event_start(GetEventHandle(pMarker->pDescription->szEventname)) );
 }
 
 #endif

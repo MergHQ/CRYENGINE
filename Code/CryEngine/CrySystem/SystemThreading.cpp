@@ -3,6 +3,7 @@
 #include "StdAfx.h"
 #include "System.h"
 #include "ThreadConfigManager.h"
+#include "Profiling/CryProfilingSystemSharedImpl.h"
 #include <CryThreading/IThreadManager.h>
 #include <CryCore/CryCustomTypes.h>
 
@@ -209,10 +210,12 @@ unsigned __stdcall CThreadManager::RunThread(void* thisPtr)
 	// Enable FPEs
 	gEnv->pThreadManager->EnableFloatExceptions((EFPE_Severity)g_cvars.sys_float_exceptions);
 
+
+	Cry::ProfilerRegistry::ExecuteOnThreadEntryCallbacks();
 	// Execute thread code
-	CRY_PROFILE_THREADSTART;
 	pThreadData->m_pThreadTask->ThreadEntry();
-	CRY_PROFILE_THREADEND;
+	Cry::ProfilerRegistry::ExecuteOnThreadExitCallbacks();
+
 
 	// Disable FPEs
 	gEnv->pThreadManager->EnableFloatExceptions(eFPE_None);
@@ -526,6 +529,8 @@ bool CThreadManager::RegisterThirdPartyThreadImpl(CryThreadUtil::TThreadHandle t
 		CryThreadUtil::EnableFloatExceptions(pThreadMetaData->m_threadId, (EFPE_Severity)g_cvars.sys_float_exceptions);
 	}
 
+	Cry::ProfilerRegistry::ExecuteOnThreadEntryCallbacks();
+
 	return true;
 }
 
@@ -553,6 +558,8 @@ bool CThreadManager::UnRegisterThirdPartyThread(const char* sThreadName, ...)
 bool CThreadManager::UnRegisterThirdPartyThreadImpl(const char* sThreadName)
 {
 	AUTO_LOCK(m_spawnedThirdPartyThreadsLock);
+
+	Cry::ProfilerRegistry::ExecuteOnThreadExitCallbacks();
 
 	SpawnedThirdPartyThreadMapIter res = m_spawnedThirdPartyThread.find(sThreadName);
 	if (res == m_spawnedThirdPartyThread.end())

@@ -12,47 +12,18 @@
 #endif
 #include <WinPixEventRuntime/pix3.h>
 
-void CPixForWindows::Stop() {}
-bool CPixForWindows::IsStopped() const { return false; }
+REGISTER_PROFILER(CPixForWindows, "PIX", "-pix4windows");
 
 void CPixForWindows::PauseRecording(bool pause) {}
 bool CPixForWindows::IsPaused() const { return false; }
 
-void CPixForWindows::StartThread() 
-{
-	// Proper name is already set in CryThreadUtil::CrySetThreadName()
-}
-void CPixForWindows::EndThread() {}
-
-void CPixForWindows::DescriptionCreated(SProfilingSectionDescription* pDesc)
-{
-	pDesc->color_argb = GenerateColorBasedOnName(pDesc->szEventname);
-}
-
-void CPixForWindows::DescriptionDestroyed(SProfilingSectionDescription*) {}
-
-bool CPixForWindows::StartSection(SProfilingSection* pSection)
-{
-	return StartSectionStatic(pSection);
-}
-
-void CPixForWindows::EndSection(SProfilingSection* p)
-{
-	EndSectionStatic(p);
-}
-
-void CPixForWindows::RecordMarker(SProfilingMarker* pMarker)
-{
-	RecordMarkerStatic(pMarker);
-}
-
-bool CPixForWindows::StartSectionStatic(SProfilingSection* pSection)
+SSystemGlobalEnvironment::TProfilerSectionEndCallback CPixForWindows::StartSectionStatic(SProfilingSection* pSection)
 {
 	if(pSection->szDynamicName && pSection->szDynamicName[0])
 		PIXBeginEvent(pSection->pDescription->color_argb, "%s\n%s", pSection->pDescription->szEventname, pSection->szDynamicName);
 	else
 		PIXBeginEvent(pSection->pDescription->color_argb, pSection->pDescription->szEventname);
-	return true;
+	return &EndSectionStatic;
 }
 
 void CPixForWindows::EndSectionStatic(SProfilingSection*)
@@ -62,7 +33,7 @@ void CPixForWindows::EndSectionStatic(SProfilingSection*)
 
 void CPixForWindows::RecordMarkerStatic(SProfilingMarker* pMarker)
 {
-	PIXSetMarker(pMarker->pDescription->color_argb, pMarker->pDescription->szMarkername);
+	PIXSetMarker(pMarker->pDescription->color_argb, pMarker->pDescription->szEventname);
 }
 
 void CPixForWindows::StartFrame()
@@ -74,5 +45,3 @@ void CPixForWindows::EndFrame()
 {
 	PIXEndEvent();
 }
-
-void CPixForWindows::RegisterCVars() {}

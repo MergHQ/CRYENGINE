@@ -812,7 +812,6 @@ private:
 	void WriteIntervalClassEvents();
 
 	void UpdateFrameListenerRegistration();
-	bool isRegisteredAsFrameListener;
 
 private:
 	IntervalGroupVec       m_intervalGroups;

@@ -77,7 +77,7 @@ void ParticleContainerRemoveTest(size_t containerSz, TParticleId* toRemove, size
 
 TEST(CParticleContainerTest, Remove)
 {
-	gEnv->startProfilingSection = [](SProfilingSection*) { return false; };
+	gEnv->startProfilingSection = [](SProfilingSection*) -> SSystemGlobalEnvironment::TProfilerSectionEndCallback { return nullptr; };
 	gEnv->recordProfilingMarker = [](SProfilingMarker*) {};
 
 	{

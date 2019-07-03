@@ -15,9 +15,9 @@ extern int64 CryMemoryGetThreadAllocatedSize();
 
 // debugging of profiler
 #if 0
-#define CRY_PROFILER_ASSERT(...) if(!(__VA_ARGS__)) __debugbreak(); //assert(__VA_ARGS__)
+#	define CRY_PROFILER_ASSERT(...) if(!(__VA_ARGS__)) __debugbreak(); //assert(__VA_ARGS__)
 #else
-#define CRY_PROFILER_ASSERT(...)
+#	define CRY_PROFILER_ASSERT(...)
 #endif
 
 // measuring the overhead also increases the overhead (by ~0.5ms main thread time)
@@ -35,7 +35,24 @@ int CCryProfilingSystem::profile_value = TIME;
 #define CRY_PROFILER_MAX_DEPTH 64
 // tracks nesting level of profiling sections
 static thread_local int tls_profilingStackDepth = 0;
-static thread_local SProfilingSection* tls_currentSections[CRY_PROFILER_MAX_DEPTH];
+
+static thread_local SProfilingSection* tls_currentSections[CRY_PROFILER_MAX_DEPTH] = {};
+
+CCryProfilingSystem* CCryProfilingSystem::s_pInstance = nullptr;
+volatile int CCryProfilingSystem::s_instanceLock = 0;
+static std::vector<SProfilingSection*volatile*> s_pTlsCurrentSections;
+
+static const char s_szLegacyProfilerName[] = "Legacy";
+static const char s_szLegacyProfilerClArg[] = "-bootprofiler";
+
+Cry::ProfilerRegistry::SEntry CCryProfilingSystem::MakeRegistryEntry()
+{
+	return Cry::ProfilerRegistry::SEntry{ s_szLegacyProfilerName, s_szLegacyProfilerClArg,
+		[]() -> CCryProfilingSystemImpl* {return new CCryProfilingSystem(); },
+		&CCryProfilingSystem::StartSectionStatic, &CCryProfilingSystem::RecordMarkerStatic };
+}
+
+REGISTER_PROFILER(CCryProfilingSystem, s_szLegacyProfilerName, s_szLegacyProfilerClArg);
 
 //! RAII struct for measuring profiling overhead
 struct CCryProfilingSystem::AutoTimer
@@ -75,14 +92,17 @@ static int64 GetFrequency_ProfilerInternal()
 CCryProfilingSystem::CCryProfilingSystem()
 	: m_MsPerTick(1000.0f / GetFrequency_ProfilerInternal())
 {
-	assert(s_pInstance == nullptr);
+	WriteLock wlock(s_instanceLock);
 	s_pInstance = this;
 }
 
 CCryProfilingSystem::~CCryProfilingSystem()
 {
-	Stop();
-	s_pInstance = nullptr;
+	if (s_pInstance == this)
+	{
+		WriteLock wlock(s_instanceLock);
+		s_pInstance = nullptr;
+	}
 }
 
 void CCryProfilingSystem::ProfilingSystemFilterCvarChangedCallback(ICVar* pCvar)
@@ -179,12 +199,6 @@ void CCryProfilingSystem::FilterThreadCommand(struct IConsoleCmdArgs* args)
 		CryLog("Thread not found.");
 }
 
-void CCryProfilingSystem::StopPofilingCommand(struct IConsoleCmdArgs* args)
-{
-	if (s_pInstance)
-		s_pInstance->Stop();
-}
-
 void CCryProfilingSystem::RegisterCVars()
 {
 	REGISTER_INT64_CB(PROF_CVAR_SUBSYSTEM, 0, VF_BITFIELD,
@@ -218,7 +232,6 @@ void CCryProfilingSystem::RegisterCVars()
 	}
 
 	REGISTER_COMMAND("profile_filterSubsystem", FilterSubsystemCommand, VF_NULL, filterSubsystemHelp.c_str());
-	REGISTER_COMMAND("profile_stop", StopPofilingCommand, VF_NULL, "Terminates the profiling session. (Cannot be restarted. Use the 'Scroll Lock' key for un/pausing.)");
 
 	REGISTER_CVAR(profile_peak_tolerance, 5.0f, VF_NULL, "Profiler Peaks Tolerance in Milliseconds."
 		" If the self time of a section in one frame exceeds its average by more than the tolerance a peak is logged.");
@@ -232,23 +245,19 @@ void CCryProfilingSystem::RegisterCVars()
 	}
 }
 
-void CCryProfilingSystem::Stop()
+void CCryProfilingSystem::UnregisterCVars()
 {
-	AutoTimer timer(this);
-	AutoWriteLock autoLock(m_trackerLock);
-	if (m_enabled)
+	if (IConsole* pConsole = gEnv->pConsole)
 	{
-		m_enabled = false;
-		stl::free_container(m_activeTrackers);
-		stl::free_container(m_excludedTrackers);
-		stl::free_container(m_FrameListeners);
-		m_pBootProfiler = nullptr;
-	}
-}
+		pConsole->UnregisterVariable(PROF_CVAR_SUBSYSTEM);
+		pConsole->UnregisterVariable(PROF_CVAR_THREAD);
+		pConsole->UnregisterVariable(PROF_CVAR_VERBOSITY);
+		pConsole->UnregisterVariable("profile_peak_tolerance");
+		pConsole->UnregisterVariable("profile_value");
 
-bool CCryProfilingSystem::IsStopped() const
-{
-	return !m_enabled;
+		pConsole->RemoveCommand("profile_exclusiveThread");
+		pConsole->RemoveCommand("profile_filterSubsystem");
+	}
 }
 
 void CCryProfilingSystem::PauseRecording(bool pause)
@@ -262,17 +271,11 @@ bool CCryProfilingSystem::IsPaused() const
 	return m_trackingPaused;
 }
 
-void CCryProfilingSystem::StartThread() {}
-
-void CCryProfilingSystem::EndThread() {}
-
 void CCryProfilingSystem::AddFrameListener(ICryProfilerFrameListener* pListener)
 {
-	AutoWriteLock autoLock(m_trackerLock);
-	if (m_enabled)
-	{
+	AutoWriteLock autoLock(m_readWriteLock);
+	if (!stl::find(m_FrameListeners, pListener))
 		m_FrameListeners.push_back(pListener);
-	}
 }
 
 void CCryProfilingSystem::SetBootProfiler(CBootProfiler* pProf)
@@ -283,19 +286,16 @@ void CCryProfilingSystem::SetBootProfiler(CBootProfiler* pProf)
 void CCryProfilingSystem::RemoveFrameListener(ICryProfilerFrameListener* pListener)
 {
 	AutoTimer timer(this);
-	AutoWriteLock autoLock(m_trackerLock);
+	AutoWriteLock autoLock(m_readWriteLock);
 	stl::find_and_erase(m_FrameListeners, pListener);
 }
 
-void CCryProfilingSystem::DescriptionCreated(SProfilingSectionDescription* pDesc)
+void CCryProfilingSystem::DescriptionDestroyed(SProfilingDescription* pDesc)
 {
-	pDesc->color_argb = GenerateColorBasedOnName(pDesc->szEventname);
-}
+	CCryProfilingSystemImpl::DescriptionDestroyed(pDesc);
 
-void CCryProfilingSystem::DescriptionDestroyed(SProfilingSectionDescription* pDesc)
-{
 	AutoTimer timer(this);
-	AutoWriteLock lock(m_trackerLock);
+	AutoWriteLock lock(m_readWriteLock);
 
 	SProfilingSectionTracker* pTracker = (SProfilingSectionTracker*) pDesc->customData;
 	while (pTracker)
@@ -309,14 +309,14 @@ void CCryProfilingSystem::DescriptionDestroyed(SProfilingSectionDescription* pDe
 
 		SProfilingSectionTracker* tmp = pTracker;
 		pTracker = pTracker->pNextThreadTracker;
-		delete tmp;
+		tmp->Release();
 	}
 	pDesc->customData = 0;
 }
 
-SProfilingSectionTracker* CCryProfilingSystem::AddTracker(const SProfilingSectionDescription* pDesc, threadID tid)
+SProfilingSectionTracker* CCryProfilingSystem::AddTracker(const SProfilingDescription* pDesc, threadID tid)
 {
-	AutoWriteLock autoLock(m_trackerLock);
+	AutoWriteLock autoLock(m_readWriteLock);
 
 	// look up to ensure there is not already a tracker for the current thread
 	SProfilingSectionTracker* pTracker = (SProfilingSectionTracker*)pDesc->customData;
@@ -328,6 +328,7 @@ SProfilingSectionTracker* CCryProfilingSystem::AddTracker(const SProfilingSectio
 	
 	// didn't find any, so create one
 	pTracker = new SProfilingSectionTracker(pDesc, tid);
+	pTracker->AddRef();
 	
 	pTracker->isActive = !IsExcludedByFilter(pTracker);
 	if (pTracker->isActive)
@@ -342,14 +343,12 @@ SProfilingSectionTracker* CCryProfilingSystem::AddTracker(const SProfilingSectio
 	return pTracker;
 }
 
-bool CCryProfilingSystem::StartSection(SProfilingSection* pSection)
+SSystemGlobalEnvironment::TProfilerSectionEndCallback CCryProfilingSystem::StartSection(SProfilingSection* pSection)
 {
-	if (!m_enabled)
-		return false;
 	AutoTimer timer(this);
 
 	if (tls_profilingStackDepth >= s_verbosity)
-		return false;
+		return nullptr;
 
 #if CRY_PROFILER_COMBINE_JOB_TRACKERS
 	const threadID currentTID = (gEnv->pJobManager && JobManager::IsWorkerThread()) ? CRY_PROFILER_JOB_THREAD_ID : CryGetCurrentThreadId();
@@ -359,7 +358,7 @@ bool CCryProfilingSystem::StartSection(SProfilingSection* pSection)
 
 	SProfilingSectionTracker* pTracker = nullptr;
 	{
-		AutoReadLock autoLock(m_trackerLock);
+		AutoReadLock autoLock(m_readWriteLock);
 
 		// look for tracker in the description's custom data
 		pTracker = (SProfilingSectionTracker*)pSection->pDescription->customData;
@@ -370,21 +369,24 @@ bool CCryProfilingSystem::StartSection(SProfilingSection* pSection)
 		if (pTracker == nullptr)
 		{
 			// AddTracker() write-locks internally
-			m_trackerLock.RUnlock();
+			m_readWriteLock.RUnlock();
 			pTracker = AddTracker(pSection->pDescription, currentTID);
-			m_trackerLock.RLock();
+			m_readWriteLock.RLock();
 		}
 	}
 	CRY_PROFILER_ASSERT(pTracker);
 
-	// no tracking on excluded sections
-	if (!pTracker->isActive)
-		return false;
-	if (!m_trackingPaused)
-		++pTracker->count;
+	if (pTracker->AddRef())
+	{
+		// no tracking on excluded sections
+		if (!pTracker->isActive)
+			return nullptr;
+		if (!m_trackingPaused)
+			++pTracker->count;
 
-	// use section custom data to store tracker, so we don't have to look it up again later
-	pSection->customData = (uintptr_t) pTracker;
+		// use section custom data to store tracker, so we don't have to look it up again later
+		pSection->customData = (uintptr_t)pTracker;
+	}
 
 	if(profile_value == MEMORY)
 		pSection->startValue = CryMemoryGetThreadAllocatedSize();
@@ -398,19 +400,12 @@ bool CCryProfilingSystem::StartSection(SProfilingSection* pSection)
 
 	tls_currentSections[tls_profilingStackDepth] = pSection;
 	++tls_profilingStackDepth;
-	return true;
+	return &EndSectionStatic;
 }
 
 void CCryProfilingSystem::EndSection(SProfilingSection* pSection)
 {
-	if (!m_enabled)
-		return;
 	AutoTimer timer(this);
-
-	// We need to finish sections that were started before pausing, so we pop before checking for m_trackingPaused
-	--tls_profilingStackDepth;
-	CRY_PROFILER_ASSERT(tls_profilingStackDepth >= 0);
-	CRY_PROFILER_ASSERT(tls_currentSections[tls_profilingStackDepth] == pSection);
 
 	// calculate measurements
 	SProfilingSectionEnd sectionEnd;
@@ -435,33 +430,37 @@ void CCryProfilingSystem::EndSection(SProfilingSection* pSection)
 
 	if (!m_trackingPaused)
 	{
-		SProfilingSection* const pParentSection = tls_profilingStackDepth > 0 ? tls_currentSections[tls_profilingStackDepth - 1] : nullptr;
 		SProfilingSectionTracker* const pTracker = (SProfilingSectionTracker*)pSection->customData;
+		if (pTracker) 
+		{
 #if CRY_PROFILER_COMBINE_JOB_TRACKERS
-		CRY_PROFILER_ASSERT(pTracker->threadId == CryGetCurrentThreadId() || (JobManager::IsWorkerThread() && pTracker->threadId == CRY_PROFILER_JOB_THREAD_ID));
+			CRY_PROFILER_ASSERT(pTracker->threadId == CryGetCurrentThreadId() || (JobManager::IsWorkerThread() && pTracker->threadId == CRY_PROFILER_JOB_THREAD_ID));
 #else
-		CRY_PROFILER_ASSERT(pTracker->threadId == CryGetCurrentThreadId());
+			CRY_PROFILER_ASSERT(pTracker->threadId == CryGetCurrentThreadId());
 #endif
 
+
+			// update tracker
+			pTracker->totalValue += sectionEnd.totalValue;
+			pTracker->selfValue += sectionEnd.selfValue;
+			if (profile_value == MEMORY)
+				pTracker->peakSelfValue = max(pTracker->peakSelfValue, SMemoryUpdateTraits::ToFloat(sectionEnd.selfValue));
+			else
+				pTracker->peakSelfValue = max(pTracker->peakSelfValue, STickUpdateTraits::ToFloat(sectionEnd.selfValue));
+			
+			pTracker->Release();
+		}
+
+		SProfilingSection* const pParentSection = tls_profilingStackDepth > 0 ? tls_currentSections[tls_profilingStackDepth - 1] : nullptr;
 		if (pParentSection != nullptr)
 		{
 			pParentSection->childExcludeValue += sectionEnd.totalValue;
 		}
-
-		// update tracker
-		pTracker->totalValue += sectionEnd.totalValue;
-		pTracker->selfValue += sectionEnd.selfValue;
-		if (profile_value == MEMORY)
-			pTracker->peakSelfValue = max(pTracker->peakSelfValue, SMemoryUpdateTraits::ToFloat(sectionEnd.selfValue));
-		else
-			pTracker->peakSelfValue = max(pTracker->peakSelfValue, STickUpdateTraits::ToFloat(sectionEnd.selfValue));
 	}
 }
 
 void CCryProfilingSystem::StartFrame()
 {
-	if (!m_enabled)
-		return;
 #if defined(ENABLE_LOADING_PROFILER)
 	AutoTimer timer(this);
 
@@ -472,8 +471,6 @@ void CCryProfilingSystem::StartFrame()
 
 void CCryProfilingSystem::EndFrame()
 {
-	if (IsStopped())
-		return;
 	AutoTimer timer(this);
 
 	const float blendFactor = gEnv->pTimer->GetProfileFrameBlending();
@@ -510,7 +507,7 @@ void CCryProfilingSystem::EndFrame()
 	m_profilingOverhead.CommitSample<STickUpdateTraits>(blendFactor);
 	if (!m_trackingPaused)
 	{
-		{ AutoWriteLock autoLock(m_trackerLock);
+		{ AutoWriteLock autoLock(m_readWriteLock);
 			for (SProfilingSectionTracker* pTracker : m_activeTrackers)
 				CommitFrame(pTracker, blendFactor);
 
@@ -518,7 +515,7 @@ void CCryProfilingSystem::EndFrame()
 				CheckForPeak(timer.timeStamp, pTracker);
 		}
 
-		{ AutoReadLock autoLock(m_trackerLock);
+		{ AutoReadLock autoLock(m_readWriteLock);
 			for (ICryProfilerFrameListener* pProfiler : m_FrameListeners)
 				pProfiler->OnFrameEnd(timer.timeStamp, this);
 
@@ -545,17 +542,12 @@ void CCryProfilingSystem::EndFrame()
 
 void CCryProfilingSystem::RecordMarker(SProfilingMarker* pMarker)
 {
-	if (!m_enabled || m_pBootProfiler == nullptr)
+	if (m_pBootProfiler == nullptr)
 		return;
 	AutoTimer timer(this);
 
 	if (IsExcludedByFilter(pMarker))
 		return;
-
-	if(pMarker->pDescription->color_argb == 0)
-	{
-		pMarker->pDescription->color_argb = GenerateColorBasedOnName(pMarker->pDescription->szMarkername);
-	}
 
 #if defined(ENABLE_LOADING_PROFILER)
 	m_pBootProfiler->OnMarker(timer.timeStamp, *pMarker);
@@ -639,7 +631,7 @@ void CCryProfilingSystem::ReapplyTrackerFilter()
 	TrackerList activeTrackers;
 	TrackerList excludedTrackers;
 
-	{ AutoReadLock autoLock(m_trackerLock);
+	{ AutoReadLock autoLock(m_readWriteLock);
 
 		activeTrackers.reserve(m_activeTrackers.size() + m_excludedTrackers.size());
 		excludedTrackers.reserve(m_activeTrackers.size() + m_excludedTrackers.size());
@@ -667,7 +659,7 @@ void CCryProfilingSystem::ReapplyTrackerFilter()
 		}
 	}
 
-	{ AutoWriteLock autoLock(m_trackerLock);
+	{ AutoWriteLock autoLock(m_readWriteLock);
 		
 		m_activeTrackers = activeTrackers;
 		m_excludedTrackers = excludedTrackers;
@@ -676,29 +668,40 @@ void CCryProfilingSystem::ReapplyTrackerFilter()
 
 void CCryProfilingSystem::AcquireReadAccess()
 {
-	m_trackerLock.RLock();
+	m_readWriteLock.RLock();
 }
 
 void CCryProfilingSystem::ReleaseReadAccess()
 {
-	m_trackerLock.RUnlock();
+	m_readWriteLock.RUnlock();
 }
 
-CCryProfilingSystem* CCryProfilingSystem::s_pInstance = nullptr;
-
-bool  CCryProfilingSystem::StartSectionStatic(SProfilingSection* pSection)
+SSystemGlobalEnvironment::TProfilerSectionEndCallback CCryProfilingSystem::StartSectionStatic(SProfilingSection* pSection)
 {
-	return s_pInstance->StartSection(pSection);
+	ReadLock rlock(s_instanceLock);
+	if (s_pInstance)
+		return s_pInstance->StartSection(pSection);
+	else
+		return nullptr;
 }
 
 void CCryProfilingSystem::EndSectionStatic(SProfilingSection* pSection)
 {
-	s_pInstance->EndSection(pSection);
+	// We need to finish all sections that were started, so we pop the stack before checking further handling
+	--tls_profilingStackDepth;
+	CRY_PROFILER_ASSERT(tls_profilingStackDepth >= 0);
+	CRY_PROFILER_ASSERT(tls_currentSections[tls_profilingStackDepth] == pSection);
+
+	ReadLock rlock(s_instanceLock);
+	if (s_pInstance)
+		s_pInstance->EndSection(pSection);
 }
 
 void CCryProfilingSystem::RecordMarkerStatic(SProfilingMarker* pMarker)
 {
-	s_pInstance->RecordMarker(pMarker);
+	ReadLock rlock(s_instanceLock);
+	if (s_pInstance)
+		s_pInstance->RecordMarker(pMarker);
 }
 
 const char* CCryProfilingSystem::GetModuleName(const SProfilingSectionTracker* pTracker) const

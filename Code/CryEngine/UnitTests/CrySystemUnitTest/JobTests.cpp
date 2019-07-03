@@ -15,7 +15,7 @@ void InitJobManager()
 {
 	gEnv->pJobManager = GetJobManagerInterface();
 	
-	gEnv->startProfilingSection = [](SProfilingSection*) { return false; };
+	gEnv->startProfilingSection = [](SProfilingSection*) -> SSystemGlobalEnvironment::TProfilerSectionEndCallback { return nullptr; };
 	gEnv->recordProfilingMarker = [](SProfilingMarker*) {};
 	gEnv->pJobManager->Init(8);
 }

@@ -212,9 +212,9 @@ void JobManager::ThreadBackEnd::CThreadBackEndWorkerThread::SignalStopWork()
 	}
 }
 
-inline const SProfilingSectionDescription* GetTrackerForName(const char* name)
+inline const SProfilingDescription* GetTrackerForName(const char* name)
 {
-	static std::vector<std::pair<const char*, const SProfilingSectionDescription*>> s_jobEvents;
+	static std::vector<std::pair<const char*, const SProfilingDescription*>> s_jobEvents;
 	static CryRWLock s_profilersLock;
 
 	s_profilersLock.RLock();
@@ -238,7 +238,7 @@ inline const SProfilingSectionDescription* GetTrackerForName(const char* name)
 		}
 	}
 
-	SProfilingSectionDescription* pDescription = new SProfilingSectionDescription(__FILE__, name, __LINE__, false, EProfiledSubsystem::PROFILE_SYSTEM);
+	SProfilingDescription* pDescription = new SProfilingDescription(__FILE__, name, __LINE__, false, EProfiledSubsystem::PROFILE_SYSTEM);
 	s_jobEvents.reserve(256);
 	s_jobEvents.emplace_back(name, pDescription);
 	s_profilersLock.WUnlock();

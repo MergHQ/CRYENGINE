@@ -4,8 +4,7 @@
 #include "CryProfilingSystemSharedImpl.h"
 #include <CryCore/CryCrc32.h>
 
-CCryProfilingSystemImpl::CCryProfilingSystemImpl()
-{}
+CCryProfilingSystemImpl::CCryProfilingSystemImpl() = default;
 
 bool CCryProfilingSystemImpl::OnInputEvent(const SInputEvent& event)
 {
@@ -68,7 +67,7 @@ const char* CCryProfilingSystemImpl::GetModuleName(EProfiledSubsystem subSystem)
 	case PROFILE_LOADING_ONLY:
 		return "Loading";
 	default:
-		assert(false);
+		CRY_ASSERT(false);
 		return "<Unknown Id>";
 	}
 }
@@ -84,3 +83,66 @@ uint32 CCryProfilingSystemImpl::GenerateColorBasedOnName(const char* name)
 	hash |= 0xFF000000; // force alpha to opaque
 	return hash;
 }
+
+void CCryProfilingSystemImpl::DescriptionCreated(SProfilingDescription* pDesc)
+{
+	pDesc->color_argb = GenerateColorBasedOnName(pDesc->szEventname);
+	m_descriptions.push_back(pDesc);
+}
+
+void CCryProfilingSystemImpl::DescriptionDestroyed(SProfilingDescription* pDesc)
+{
+	m_descriptions.try_remove(pDesc);
+}
+
+std::vector<SProfilingDescription*> CCryProfilingSystemImpl::ReleaseDescriptions()
+{
+	std::vector<SProfilingDescription*> result;
+	m_descriptions.swap(result);
+	for (SProfilingDescription* pDesc : result)
+	{
+		DescriptionDestroyed(pDesc);
+	}
+	return result;
+}
+
+namespace Cry {
+namespace ProfilerRegistry
+{
+	const std::vector<SEntry>& Get()
+	{
+		return Detail::Get();
+	}
+
+	void ExecuteOnThreadEntryCallbacks()
+	{
+#ifdef ENABLE_PROFILING_CODE
+		for (const Cry::ProfilerRegistry::SEntry& profiler : Cry::ProfilerRegistry::Get())
+		{
+			if (profiler.onThreadEntry)
+				profiler.onThreadEntry();
+		}
+#endif
+	}
+
+	void ExecuteOnThreadExitCallbacks()
+	{
+#ifdef ENABLE_PROFILING_CODE
+		for (const Cry::ProfilerRegistry::SEntry& profiler : Cry::ProfilerRegistry::Get())
+		{
+			if (profiler.onThreadExit)
+				profiler.onThreadExit();
+		}
+#endif
+	}
+
+	namespace Detail
+	{
+		// wrapped in a function to avoid static initialization order problems
+		std::vector<SEntry>& Get()
+		{
+			static std::vector<SEntry> s_profilerRegistry;
+			return s_profilerRegistry;
+		}
+	}
+}}

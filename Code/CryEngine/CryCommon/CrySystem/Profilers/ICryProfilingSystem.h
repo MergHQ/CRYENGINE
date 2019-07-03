@@ -6,7 +6,7 @@
 #include <CrySystem/ISystem.h>
 #include <CrySystem/ITimer.h>
 
-struct SProfilingSectionDescription;
+struct SProfilingDescription;
 struct SProfilingSection;
 struct SProfilingMarker;
 typedef int32 TProfilingCount;
@@ -39,26 +39,12 @@ enum EProfiledSubsystem : uint8
 
 struct ICryProfilingSystem
 {
-	//! end the profiling session
-	virtual void Stop() = 0;
-	virtual bool IsStopped() const = 0;
-
 	virtual void PauseRecording(bool pause) = 0;
 	//! Are we collecting profiling data?
 	virtual bool IsPaused() const = 0;
 
-	bool IsRunning() const { return !(IsStopped() || IsPaused()); };
-
-	virtual void StartThread() = 0;
-	virtual void EndThread() = 0;
-
-	virtual void DescriptionCreated(SProfilingSectionDescription*) = 0;
-	virtual void DescriptionDestroyed(SProfilingSectionDescription*) = 0;
-
-	virtual bool StartSection(SProfilingSection*) = 0;
-	virtual void EndSection(SProfilingSection*) = 0;
-
-	virtual void RecordMarker(SProfilingMarker*) = 0;
+	virtual void DescriptionCreated(SProfilingDescription*) = 0;
+	virtual void DescriptionDestroyed(SProfilingDescription*) = 0;
 
 	virtual void StartFrame() = 0;
 	virtual void EndFrame() = 0;
@@ -77,17 +63,17 @@ protected:
 };
 
 //! Description of a code section we're profiling.
-struct SProfilingSectionDescription
+struct SProfilingDescription
 {
-	SProfilingSectionDescription(const char* szFilename, const char* szEventname, uint16 line, bool isWaiting, EProfiledSubsystem subsystem)
+	SProfilingDescription(const char* szFilename, const char* szEventname, uint16 line, bool isWaiting, EProfiledSubsystem subsystem)
 		: szFilename(szFilename), szEventname(szEventname), line(line), isWaiting(isWaiting), subsystem(subsystem)
 		, color_argb(0), customData(0)
 	{
-		if(gEnv && gEnv->pSystem)
+		if (gEnv && gEnv->pSystem)
 			gEnv->pSystem->GetProfilingSystem()->DescriptionCreated(this);
 	}
 
-	~SProfilingSectionDescription()
+	~SProfilingDescription()
 	{
 		if (gEnv && gEnv->pSystem)
 			gEnv->pSystem->GetProfilingSystem()->DescriptionDestroyed(this);
@@ -107,19 +93,19 @@ struct SProfilingSectionDescription
 
 struct SProfilingSection
 {
-	SProfilingSection(const SProfilingSectionDescription* pDescription, const char* szDynamicName)
+	SProfilingSection(const SProfilingDescription* pDescription, const char* szDynamicName)
 		: pDescription(pDescription), szDynamicName(szDynamicName), childExcludeValue(0), customData(0) // startValue is set by the profiling system
 	{
-		wasStarted = gEnv->startProfilingSection(this);
+		endCallback = gEnv->startProfilingSection(this);
 	}
 
 	~SProfilingSection()
 	{
-		if(wasStarted)
-			gEnv->endProfilingSection(this);
+		if (endCallback)
+			endCallback(this);
 	}
 
-	const SProfilingSectionDescription* pDescription;
+	const SProfilingDescription* pDescription;
 	//! optional description of the specific instance, e.g. parameters of called function
 	const char* szDynamicName;
 
@@ -128,28 +114,22 @@ struct SProfilingSection
 
 	//! can be used by a profiling system to attach its own information
 	uintptr_t customData;
-	bool wasStarted;
-};
 
-struct SProfilingMarkerDescription
-{
-	const char* szFilename;
-	const char* szMarkername;
-	uint32 line;
-	EProfiledSubsystem subsystem;
-	//! color stored with 1B per channel
-	uint32 color_argb;
+protected:
+	//! upon starting a section the profiling system provides the callback to finish the section
+	SSystemGlobalEnvironment::TProfilerSectionEndCallback endCallback;
 };
 
 struct SProfilingMarker
 {
-	SProfilingMarker(SProfilingMarkerDescription* pDescription) :
-		pDescription(pDescription), threadId(CryGetCurrentThreadId())
+	SProfilingMarker(const SProfilingDescription* pDescription, const char* szDynamicName) :
+		pDescription(pDescription), szDynamicName(szDynamicName), threadId(CryGetCurrentThreadId())
 	{
 		gEnv->recordProfilingMarker(this);
 	}
 
-	SProfilingMarkerDescription* pDescription;
+	const SProfilingDescription* pDescription;
+	const char* szDynamicName;
 	threadID threadId;
 };
 
@@ -158,14 +138,11 @@ struct SProfilingMarker
 #define CRYPROF_CAT_(a, b) a ## b
 #define CRYPROF_CAT(a, b)  CRYPROF_CAT_(a, b)
 
-#define CRY_PROFILE_THREADSTART if(gEnv->pSystem) gEnv->pSystem->GetProfilingSystem()->StartThread()
-#define CRY_PROFILE_THREADEND   if(gEnv->pSystem) gEnv->pSystem->GetProfilingSystem()->EndThread()
-
 #define CRY_PROFILE_SECTION_FULL(subsystem, szName, szArg, isWaiting) \
 	static_assert(szName != nullptr, "Only use string literals as the name of a profiling section!"); \
 	static_assert(subsystem >= EProfiledSubsystem(0) || true, "The subsystem cannot be set dynamically!"); \
 	static_assert(isWaiting || true, "The waiting status cannot be set dynamically!"); \
-	const static SProfilingSectionDescription CRYPROF_CAT(profEventDesc, __LINE__) (__FILE__, szName, __LINE__, isWaiting, subsystem); \
+	const static SProfilingDescription CRYPROF_CAT(profEventDesc, __LINE__) (__FILE__, szName, __LINE__, isWaiting, subsystem); \
 	SProfilingSection CRYPROF_CAT(profSection, __LINE__)(&CRYPROF_CAT(profEventDesc, __LINE__), szArg);
 
 #define CRY_PROFILE_FUNCTION(subsystem)               CRY_PROFILE_SECTION_FULL(subsystem, __FUNC__, nullptr, false)
@@ -176,24 +153,26 @@ struct SProfilingMarker
 #define CRY_PROFILE_SECTION_ARG(subsystem, szName, szArg) CRY_PROFILE_SECTION_FULL(subsystem, szName, szArg, false)
 #define CRY_PROFILE_SECTION_WAITING(subsystem, szName)    CRY_PROFILE_SECTION_FULL(subsystem, szName, nullptr, true)
 
-#define CRY_PROFILE_MARKER(SYS, PNAME) \
-	static SProfilingMarkerDescription CRYPROF_CAT(profMarkerDesc, __LINE__) = {__FILE__, PNAME, __LINE__, SYS, 0}; \
-	SProfilingMarker CRYPROF_CAT(profMarker, __LINE__)(&CRYPROF_CAT(profMarkerDesc, __LINE__));
+#define CRY_PROFILE_MARKER(subsystem, szName) \
+	const static SProfilingDescription CRYPROF_CAT(profMarkerDesc, __LINE__) (__FILE__, szName, __LINE__, false, subsystem); \
+	SProfilingMarker CRYPROF_CAT(profMarker, __LINE__)(&CRYPROF_CAT(profMarkerDesc, __LINE__), nullptr);
+
+#define CRY_PROFILE_MARKER_ARG(subsystem, szName, szArg) \
+	const static SProfilingDescription CRYPROF_CAT(profMarkerDesc, __LINE__) (__FILE__, szName, __LINE__, false, subsystem); \
+	SProfilingMarker CRYPROF_CAT(profMarker, __LINE__)(&CRYPROF_CAT(profMarkerDesc, __LINE__), szArg);
 
 #else
 
-#define CRY_PROFILE_THREADSTART
-#define CRY_PROFILE_THREADEND
-
 #define CRY_PROFILE_FUNCTION(subsystem)
-#define CRY_PROFILE_FUNCTION_ARG(subsystem, argument)
+#define CRY_PROFILE_FUNCTION_ARG(subsystem, szArg)
 #define CRY_PROFILE_FUNCTION_WAITING(subsystem)
 
 #define CRY_PROFILE_SECTION(subsystem, szName)
-#define CRY_PROFILE_SECTION_ARG(subsystem, szName, argument)
+#define CRY_PROFILE_SECTION_ARG(subsystem, szName, szArg)
 #define CRY_PROFILE_SECTION_WAITING(subsystem, szName)
 
-#define CRY_PROFILE_MARKER(SYS, PNAME)
+#define CRY_PROFILE_MARKER(subsystem, szName)
+#define CRY_PROFILE_MARKER_ARG(subsystem, szName, szArg)
 
 #endif
 

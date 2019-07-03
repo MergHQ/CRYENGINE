@@ -75,7 +75,9 @@
 #include "ResourceManager.h"
 #include "BootProfiler.h"
 #include "Profiling/ProfilingRenderer.h"
+#include "Profiling/NullProfiler.h"
 #include "Profiling/CryProfilingSystem.h"
+#include "Profiling/CryProfilingSystemSharedImpl.h"
 #include "DiskProfiler.h"
 #include "Watchdog.h"
 #include "Statoscope.h"
@@ -2903,7 +2905,7 @@ bool CSystem::Initialize(SSystemInitParams& startupParams)
 #ifdef ENABLE_LOADING_PROFILER
 		CBootProfiler::GetInstance().RegisterCVars();
 #endif
-		if (m_pProfileRenderer)
+		if (m_pProfileRenderer && m_pLegacyProfiler)
 			m_pProfileRenderer->RegisterCVars();
 
 		// Register Audio-related system CVars
@@ -4400,6 +4402,80 @@ static void LvlRes_findunused(IConsoleCmdArgs* pParams)
 	gEnv->pLog->LogWithType(ILog::eInputResponse, " ");
 }
 
+#ifdef ENABLE_PROFILING_CODE
+void CSystem::ChangeProfilerCmd(IConsoleCmdArgs* pParams)
+{
+	const std::vector<Cry::ProfilerRegistry::SEntry>& profilers = Cry::ProfilerRegistry::Get();
+	if (pParams->GetArgCount() <= 1)
+	{
+		CryLog("Available profilers:");
+		for (const Cry::ProfilerRegistry::SEntry& entry : profilers)
+		{
+			CryLog("  %s", entry.name.c_str());
+		}
+	}
+	else
+	{
+		for (const Cry::ProfilerRegistry::SEntry& entry : profilers)
+		{
+			if (entry.name.compareNoCase(pParams->GetArg(1)) == 0)
+			{
+				CSystem* const pSystem = reinterpret_cast<CSystem*>(gEnv->pSystem);
+
+				// stop accepting new data on the profiler we want to replace
+				pSystem->m_env.startProfilingSection = &CNullProfiler::StartSectionStatic;
+				pSystem->m_env.recordProfilingMarker = &CNullProfiler::RecordMarkerStatic;
+
+				// start removing the old profiler and prepare the new one
+				CCryProfilingSystemImpl* const pOldProfiler = pSystem->m_pProfilingSystem;
+				pOldProfiler->UnregisterCVars();
+
+				CCryProfilingSystemImpl* const pNewProfiler = entry.factory();
+				pNewProfiler->RegisterCVars();
+
+				if (gEnv->pInput)
+				{
+					gEnv->pInput->RemoveEventListener(pOldProfiler);
+					gEnv->pInput->AddEventListener(pNewProfiler);
+				}
+				if (pSystem->m_pLegacyProfiler)
+					pSystem->m_pProfileRenderer->UnregisterCVars();
+
+				// do the actual switching
+				pSystem->m_pProfilingSystem = pNewProfiler;
+				// also for the legacy profiling systems
+				if (entry.name == CCryProfilingSystem::MakeRegistryEntry().name)
+				{
+					pSystem->m_pLegacyProfiler = reinterpret_cast<CCryProfilingSystem*>(pNewProfiler);
+#ifdef ENABLE_LOADING_PROFILER
+					reinterpret_cast<CCryProfilingSystem*>(pNewProfiler)->SetBootProfiler(&CBootProfiler::GetInstance());
+#endif
+					pSystem->m_pProfileRenderer->RegisterCVars();
+				}
+				else
+				{
+					pSystem->m_pLegacyProfiler = nullptr;
+				}
+
+				// transfer the section descriptions
+				for (SProfilingDescription* desc : pOldProfiler->ReleaseDescriptions())
+					pNewProfiler->DescriptionCreated(desc);
+
+				// re-enable recording
+				pSystem->m_env.startProfilingSection = entry.sectionCallback;
+				pSystem->m_env.recordProfilingMarker = entry.markerCallback;
+
+				// cleanup
+				delete pOldProfiler;
+				
+				return;
+			}
+		}
+		CryLog("Did not find a profiler named '%s'.", pParams->GetArg(1));
+	}
+}
+#endif
+
 // --------------------------------------------------------------------------------------------------------------------------
 
 static void RecordClipCmd(IConsoleCmdArgs* pArgs)
@@ -5178,6 +5254,9 @@ void CSystem::CreateSystemVars()
 	CCryMemoryManager::RegisterCVars();
 #if CAPTURE_REPLAY_LOG
 	CMemReplay::RegisterCVars();
+#endif
+#ifdef ENABLE_PROFILING_CODE
+	REGISTER_COMMAND("profiler", &ChangeProfilerCmd, 0, "switch to another profiler");
 #endif
 
 #if CRY_PLATFORM_WINDOWS || CRY_PLATFORM_DURANGO
