@@ -565,6 +565,7 @@ void CRenderViewport::Update()
 		gEnv->pSystem->SetViewCamera(CurCamera);
 
 		CViewport::Update();
+		gEnv->pSystem->SleepIfNeeded();
 		m_bUpdateViewport = false;
 	}
 }
