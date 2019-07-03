@@ -434,7 +434,7 @@ bool CCooperativeAnimation::StartAnimation(SCharacterParams& params, int charact
 	CRY_ASSERT(pAnimChar);
 
 	IAnimationGraphState* pGraphState = pAnimChar->GetAnimationGraphState();
-	CRY_ASSERT_MESSAGE(pGraphState, "Cannot retrieve animation graph state");
+	CRY_ASSERT(pGraphState, "Cannot retrieve animation graph state");
 	if (!pGraphState)
 		return false;
 
@@ -494,7 +494,7 @@ bool CCooperativeAnimation::StartAnimation(SCharacterParams& params, int charact
 		// exist. Therefore, running animations won't be interrupted if this fails.
 		if (!pGraphState->SetInputOptional("Signal", cSignal))
 		{
-			CRY_ASSERT_MESSAGE(0, "Could not set animation graph input 'coopanimation'.");
+			CRY_ASSERT(0, "Could not set animation graph input 'coopanimation'.");
 			CryLogAlways("Cooperative Animation start failed - animation graph not prepared?");
 			return false;
 		}
@@ -502,7 +502,7 @@ bool CCooperativeAnimation::StartAnimation(SCharacterParams& params, int charact
 		// Set the variation
 		if (!pGraphState->SetVariationInput("CoopAnimation", params.sSignalName))
 		{
-			CRY_ASSERT_MESSAGE(0, "Could not set animation graph variation 'CoopAnimation'.");
+			CRY_ASSERT(0, "Could not set animation graph variation 'CoopAnimation'.");
 			CryLogAlways("Cooperative Animation start failed - animation graph not prepared?");
 			return false;
 		}
@@ -521,7 +521,7 @@ bool CCooperativeAnimation::StartAnimation(SCharacterParams& params, int charact
 		cOutPut = pGraphState->QueryOutput("CoopAnim");
 		if (!cOutPut || cOutPut[0] == '\0')
 		{
-			CRY_ASSERT_MESSAGE(0, "Could not retrieve correct output from AG");
+			CRY_ASSERT(0, "Could not retrieve correct output from AG");
 			CryLogAlways("Cooperative Animation - state teleport failed? (Could not retrieve correct output from AG graph state %s)", pGraphState->GetCurrentStateName());
 
 			if (m_generalParams.bForceStart)
@@ -942,7 +942,7 @@ void CCooperativeAnimation::DetermineReferencePositionAndCalculateTargets()
 				m_refPoint.q = m_refPoint.q * (!rot);
 			else
 			{
-				CRY_ASSERT_MESSAGE(0, "Possibly an invalid quaternion, or only z deviation in animations.");
+				CRY_ASSERT(0, "Possibly an invalid quaternion, or only z deviation in animations.");
 			}
 
 			// now get the correct world space vector that point from the actor to the
@@ -975,7 +975,7 @@ QuatT CCooperativeAnimation::GetStartOffset(SCharacterParams& params)
 
 	if (!params.pActor)
 	{
-		CRY_ASSERT_MESSAGE(params.pActor, "No valid Actor received!");
+		CRY_ASSERT(params.pActor, "No valid Actor received!");
 		return retVal;
 	}
 
@@ -1000,7 +1000,7 @@ QuatT CCooperativeAnimation::GetStartOffset(SCharacterParams& params)
 	float animDuration = pAnimSet->GetDuration_sec(id);
 	if (animDuration < params.fSlidingDuration)
 	{
-		CRY_ASSERT_MESSAGE(animDuration > params.fSlidingDuration, "Incorrect parameter: Sliding Duration longer than animation.");
+		CRY_ASSERT(animDuration > params.fSlidingDuration, "Incorrect parameter: Sliding Duration longer than animation.");
 		CryLogAlways("Warning: sliding duration longer than actual animation. Will adjust given parameter.");
 		params.fSlidingDuration = min(animDuration, animParamDefaultSlidingDuration);
 	}
@@ -1024,7 +1024,7 @@ void CCooperativeAnimation::CleanupForFinishedCharacter(SCharacterParams& params
 #if defined(USE_CRY_ASSERT)
 	const ICooperativeAnimationManager* const pCAManager = gEnv->pGameFramework->GetICooperativeAnimationManager();
 	CRY_ASSERT(pCAManager);
-	CRY_ASSERT_MESSAGE(!pCAManager->IsActorBusy(params.pActor, this), "Cleaning up for a character that's already playing a second animation");
+	CRY_ASSERT(!pCAManager->IsActorBusy(params.pActor, this), "Cleaning up for a character that's already playing a second animation");
 #endif
 
 	// reset the movementOverride for the characters that haven't

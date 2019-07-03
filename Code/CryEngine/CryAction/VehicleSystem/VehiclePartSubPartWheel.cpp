@@ -136,7 +136,7 @@ bool CVehiclePartSubPartWheel::ChangeState(EVehiclePartState state, int flags)
 				}
 				else
 				{
-					CRY_ASSERT_MESSAGE(false, "Wheel index exceeds number of wheels");
+					CRY_ASSERT(false, "Wheel index exceeds number of wheels");
 				}
 			}
 		}
@@ -162,7 +162,7 @@ bool CVehiclePartSubPartWheel::ChangeState(EVehiclePartState state, int flags)
 				}
 				else
 				{
-					CRY_ASSERT_MESSAGE(false, "Wheel index exceeds number of wheels");
+					CRY_ASSERT(false, "Wheel index exceeds number of wheels");
 				}
 			}
 		}

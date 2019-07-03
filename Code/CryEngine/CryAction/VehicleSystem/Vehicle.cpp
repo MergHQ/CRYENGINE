@@ -407,7 +407,7 @@ bool CVehicle::Init(IGameObject* pGameObject)
 			assert(s_repairHitTypeId && s_disableCollisionsHitTypeId && s_collisionHitTypeId
 			       && s_normalHitTypeId && s_fireHitTypeId && s_punishHitTypeId);
 		}
-		CRY_ASSERT_MESSAGE(pGR, "No valid game rules set!");
+		CRY_ASSERT(pGR, "No valid game rules set!");
 	}
 
 	if (gEnv->bMultiplayer && (CCryActionCVars::Get().g_multiplayerEnableVehicles == 0))
@@ -1018,7 +1018,7 @@ bool CVehicle::ReloadExtension(IGameObject* pGameObject, const SEntitySpawnParam
 
 	Veh::RegisterEvents(*this, *pGameObject);
 
-	CRY_ASSERT_MESSAGE(false, "CVehicle::ReloadExtension not implemented");
+	CRY_ASSERT(false, "CVehicle::ReloadExtension not implemented");
 
 	return false;
 }
@@ -5433,7 +5433,7 @@ IMPLEMENT_RMI(CVehicle, ClRespawnWeapon)
 		++seatIter;
 	}
 
-	CRY_ASSERT_MESSAGE(false, "CVehicle::ClRespawnWeapon - Unable to find the correct seat weapon action to place the newly spawned weapon");
+	CRY_ASSERT(false, "CVehicle::ClRespawnWeapon - Unable to find the correct seat weapon action to place the newly spawned weapon");
 	CryLog("CVehicle::ClRespawnWeapon - Unable to find the correct seat weapon action to place the newly spawned weapon");
 	return true;
 }

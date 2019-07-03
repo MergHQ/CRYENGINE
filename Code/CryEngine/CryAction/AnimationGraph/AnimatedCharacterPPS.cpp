@@ -446,7 +446,7 @@ void CAnimatedCharacter::PostProcessingUpdate()
 		{
 			float landingBobFactor = CAnimationGraphCVars::Get().m_landingBobTimeFactor;
 			float landingBobLandFactor = CAnimationGraphCVars::Get().m_landingBobLandTimeFactor;
-			CRY_ASSERT_MESSAGE((landingBobFactor >= 0.0f) && (landingBobFactor <= 1.0f), "Invalid value for m_landingBobTimeFactor cvar, must be 0..1");
+			CRY_ASSERT((landingBobFactor >= 0.0f) && (landingBobFactor <= 1.0f), "Invalid value for m_landingBobTimeFactor cvar, must be 0..1");
 			landingBobFactor = clamp_tpl(landingBobFactor, 0.0f, 1.0f);
 			landingBobLandFactor = clamp_tpl(landingBobLandFactor, 0.0f, landingBobFactor);
 

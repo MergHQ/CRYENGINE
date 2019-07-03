@@ -267,7 +267,7 @@ public:
 			m_debugInfo.push_back(std::make_pair(tmp, id));
 			CUIFGStackMan::Add(1, m_debugInfo.rbegin()->first.c_str(), id);
 		}
-		CRY_ASSERT_MESSAGE(size() < 256, "Too many items on stack!");
+		CRY_ASSERT(size() < 256, "Too many items on stack!");
 	}
 
 	inline void pop()
@@ -296,7 +296,7 @@ public:
 		m_Impl.push_front(val);
 		if (IsUIAction())
 			CUIFGStackMan::Add();
-		CRY_ASSERT_MESSAGE(size() < 256, "Too many items on stack!");
+		CRY_ASSERT(size() < 256, "Too many items on stack!");
 	}
 
 	inline void pop()   { m_Impl.pop_back(); if (IsUIAction()) CUIFGStackMan::Remove(); }
@@ -325,7 +325,7 @@ private:
 
 	inline bool IsUIAction() const
 	{
-		CRY_ASSERT_MESSAGE(m_isUIAction != -1, "Stack was not intialized");
+		CRY_ASSERT(m_isUIAction != -1, "Stack was not intialized");
 		return m_isUIAction == 1 && m_pAction->IsEnabled();
 	};
 

@@ -1339,14 +1339,14 @@ void CPlayerProfileManager::RemoveListener(IPlayerProfileListener* pListener)
 //------------------------------------------------------------------------
 void CPlayerProfileManager::AddOnlineAttributesListener(IOnlineAttributesListener* pListener)
 {
-	CRY_ASSERT_MESSAGE(m_onlineAttributesListener == NULL, "PlayerProfileManager only handles a single OnlineAttributes Listener");
+	CRY_ASSERT(m_onlineAttributesListener == NULL, "PlayerProfileManager only handles a single OnlineAttributes Listener");
 	m_onlineAttributesListener = pListener;
 }
 
 //------------------------------------------------------------------------
 void CPlayerProfileManager::RemoveOnlineAttributesListener(IOnlineAttributesListener* pListener)
 {
-	CRY_ASSERT_MESSAGE(m_onlineAttributesListener == pListener, "Can't remove listener that hasn't been added!");
+	CRY_ASSERT(m_onlineAttributesListener == pListener, "Can't remove listener that hasn't been added!");
 	if (m_onlineAttributesListener == pListener)
 	{
 		m_onlineAttributesListener = NULL;
@@ -1475,7 +1475,7 @@ bool CPlayerProfileManager::RegisterOnlineAttributes()
 
 					if (!RegisterOnlineAttribute(name, type, onlineOnly, defaultValue, crc))
 					{
-						CRY_ASSERT_TRACE(false, ("Fail to register attribute %s - not enough space DataSlots %d/%d and Bytes %d/%d", name, m_onlineDataCount, k_maxOnlineDataCount, m_onlineDataByteCount, k_maxOnlineDataBytes));
+						CRY_ASSERT(false, "Fail to register attribute %s - not enough space DataSlots %d/%d and Bytes %d/%d", name, m_onlineDataCount, k_maxOnlineDataCount, m_onlineDataByteCount, k_maxOnlineDataBytes);
 						SetOnlineAttributesState(IOnlineAttributesListener::eOAE_Register, IOnlineAttributesListener::eOAS_Failed);
 						return false;
 					}
@@ -1672,7 +1672,7 @@ void CPlayerProfileManager::SaveOnlineAttributes(IPlayerProfile* pProfile)
 					TFlowInputData data;
 #if defined(USE_CRY_ASSERT)
 					bool hasAttr = pProfile->GetAttribute(iter->first.c_str(), data);
-					CRY_ASSERT_MESSAGE(hasAttr, ("Expected %s to be set by SavingOnlineAttributes but wasn't", iter->first.c_str()));
+					CRY_ASSERT(hasAttr, ("Expected %s to be set by SavingOnlineAttributes but wasn't", iter->first.c_str()));
 #else
 					pProfile->GetAttribute(iter->first.c_str(), data);
 #endif
@@ -1809,7 +1809,7 @@ bool CPlayerProfileManager::SetUserData(SCryLobbyUserData* data, const TFlowInpu
 				}
 				else
 				{
-					CRY_ASSERT_MESSAGE(false, "TFlowInputData int didn't match UserData types");
+					CRY_ASSERT(false, "TFlowInputData int didn't match UserData types");
 					return false;
 				}
 				return true;
@@ -1823,14 +1823,14 @@ bool CPlayerProfileManager::SetUserData(SCryLobbyUserData* data, const TFlowInpu
 				}
 				else
 				{
-					CRY_ASSERT_MESSAGE(false, "TFlowInputData int didn't match UserData types");
+					CRY_ASSERT(false, "TFlowInputData int didn't match UserData types");
 					return false;
 				}
 				return true;
 			}
 			else
 			{
-				CRY_ASSERT_MESSAGE(false, "TFlowInputData didn't contain expected int/bool");
+				CRY_ASSERT(false, "TFlowInputData didn't contain expected int/bool");
 				return false;
 			}
 		}
@@ -1856,14 +1856,14 @@ bool CPlayerProfileManager::SetUserData(SCryLobbyUserData* data, const TFlowInpu
 			}
 			else
 			{
-				CRY_ASSERT_MESSAGE(false, "TFlowInputData didn't contain expected float");
+				CRY_ASSERT(false, "TFlowInputData didn't contain expected float");
 				return false;
 			}
 		}
 		break;
 	}
 
-	CRY_ASSERT_MESSAGE(false, "Unable to store data size");
+	CRY_ASSERT(false, "Unable to store data size");
 	return false;
 }
 
@@ -1898,7 +1898,7 @@ bool CPlayerProfileManager::ReadUserData(const SCryLobbyUserData* data, TFlowInp
 		break;
 	}
 
-	CRY_ASSERT_MESSAGE(false, "Unable to read data size");
+	CRY_ASSERT(false, "Unable to read data size");
 	return false;
 }
 
@@ -1925,7 +1925,7 @@ uint32 CPlayerProfileManager::UserDataSize(const SCryLobbyUserData* data)
 		}
 	}
 
-	CRY_ASSERT_MESSAGE(0, "Unsupported LobbyUserData type");
+	CRY_ASSERT(0, "Unsupported LobbyUserData type");
 	return 0;
 }
 
@@ -2106,7 +2106,7 @@ int CPlayerProfileManager::ChecksumConvertValueToInt(const SCryLobbyUserData* pD
 		value = (int)pData->m_f32;
 		break;
 	default:
-		CRY_ASSERT_MESSAGE(0, string().Format("Unknown data type in online attribute data", pData->m_type));
+		CRY_ASSERT(0, string().Format("Unknown data type in online attribute data", pData->m_type));
 		break;
 	}
 
@@ -2435,7 +2435,7 @@ bool CPlayerProfileManager::MoveFileHelper(const char* existingFileName, const c
 	gEnv->pCryPak->AdjustFileName(existingFileName, oldPath, ICryPak::FLAGS_FOR_WRITING);
 	string msg;
 	msg.Format("CPlayerProfileManager::MoveFileHelper for this Platform not implemented yet.\nOriginal '%s' will be lost!", oldPath.c_str());
-	CRY_ASSERT_MESSAGE(0, msg.c_str());
+	CRY_ASSERT(0, msg.c_str());
 	GameWarning("%s", msg.c_str());
 	return false;
 }

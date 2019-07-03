@@ -93,12 +93,12 @@ void CView::Update(float frameTime, bool isActive)
 			if (!m_viewParams.position.IsValid())
 			{
 				m_viewParams.position = m_viewParams.GetPositionLast();
-				CRY_ASSERT_MESSAGE(0, "Camera position is invalid, reverting to old position");
+				CRY_ASSERT(0, "Camera position is invalid, reverting to old position");
 			}
 			if (!m_viewParams.rotation.IsValid())
 			{
 				m_viewParams.rotation = m_viewParams.GetRotationLast();
-				CRY_ASSERT_MESSAGE(0, "Camera rotation is invalid, reverting to old rotation");
+				CRY_ASSERT(0, "Camera rotation is invalid, reverting to old rotation");
 			}
 		}
 		else
@@ -346,13 +346,13 @@ void CView::SetViewShakeEx(const SShakeParams& params)
 //------------------------------------------------------------------------
 void CView::SetScale(const float scale)
 {
-	CRY_ASSERT_MESSAGE(scale == 1.0f || m_scale == 1.0f, "Attempting to CView::SetScale but has already been set!");
+	CRY_ASSERT(scale == 1.0f || m_scale == 1.0f, "Attempting to CView::SetScale but has already been set!");
 	m_scale = scale;
 }
 
 void CView::SetZoomedScale(const float scale)
 {
-	CRY_ASSERT_MESSAGE(scale == 1.0f || m_zoomedScale == 1.0f, "Attempting to CView::SetZoomedScale but has already been set!");
+	CRY_ASSERT(scale == 1.0f || m_zoomedScale == 1.0f, "Attempting to CView::SetZoomedScale but has already been set!");
 	m_zoomedScale = scale;
 }
 
@@ -509,10 +509,9 @@ void CView::CubeInterpolateVector(float t, SShake* pShake)
 	Vec3 v1 = pShake->goalShakeVectorSpeed * 0.8f;
 
 	pShake->shakeVector = (((p0 * 2.f + p1 * -2.f + v0 + v1) * t
-	                        + (p0 * -3.f + p1 * 3.f + v0 * -2.f - v1)) * t
-	                       + (v0)) * t
-	                      + p0;
-
+							+ (p0 * -3.f + p1 * 3.f + v0 * -2.f - v1)) * t
+							+ (v0)) * t
+							+ p0;
 }
 
 //////////////////////////////////////////////////////////////////////////

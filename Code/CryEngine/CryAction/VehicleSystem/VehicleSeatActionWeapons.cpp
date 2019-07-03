@@ -1331,7 +1331,7 @@ Vec3 CVehicleSeatActionWeapons::GetAverageFiringPos()
 
 void CVehicleSeatActionWeapons::OnWeaponRespawned(int weaponIndex, EntityId newWeaponEntityId)
 {
-	CRY_ASSERT_MESSAGE(weaponIndex < m_weapons.size(), "CVehicleSeatActionWeapons::WeaponRespawned - Invalid weaponIndex!");
+	CRY_ASSERT(weaponIndex < m_weapons.size(), "CVehicleSeatActionWeapons::WeaponRespawned - Invalid weaponIndex!");
 
 	ClSetupWeapon(weaponIndex, newWeaponEntityId);
 	m_pSeat->SetLocked(eVSLS_Unlocked);

@@ -508,7 +508,7 @@ CTimeDemoRecorder::CTimeDemoRecorder()
 //////////////////////////////////////////////////////////////////////////
 CTimeDemoRecorder::~CTimeDemoRecorder()
 {
-	CRY_ASSERT_MESSAGE(s_pTimeDemoRecorder == nullptr, "TimeDemoRecorder was not unregistered.");
+	CRY_ASSERT(s_pTimeDemoRecorder == nullptr, "TimeDemoRecorder was not unregistered.");
 }
 
 void CTimeDemoRecorder::OnRegistered()

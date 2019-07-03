@@ -291,7 +291,7 @@ void CFlowNode_AISequenceAction_ApproachAndEnterVehicle::HandleSequenceEvent(AIA
 			}
 			else
 			{
-				CRY_ASSERT_MESSAGE(0, "no compatible entity was provided");
+				CRY_ASSERT(0, "no compatible entity was provided");
 				CryWarning(VALIDATOR_MODULE_AI, VALIDATOR_WARNING, "Actor %s failed to enter vehicle (no compatible entity was provided)", m_actInfo.pEntity->GetName());
 				CancelSequenceAndActivateOutputPort(OutputPort_Done);
 			}
@@ -578,7 +578,7 @@ void CFlowNode_AISequenceAction_VehicleRotateTurret::HandleSequenceEvent(AIActio
 			// ensure the FG entity is an IActor
 			if (!pActor)
 			{
-				CRY_ASSERT_MESSAGE(0, "no compatible entity was provided");
+				CRY_ASSERT(0, "no compatible entity was provided");
 				CryWarning(VALIDATOR_MODULE_AI, VALIDATOR_WARNING, "Actor %s failed to enter vehicle (no compatible entity was provided)", m_actInfo.pEntity->GetName());
 				CancelSequenceAndActivateOutputPort(OutputPort_Done);
 				return;
@@ -588,7 +588,7 @@ void CFlowNode_AISequenceAction_VehicleRotateTurret::HandleSequenceEvent(AIActio
 			IVehicle* pVehicle = pActor->GetLinkedVehicle();
 			if (!pVehicle)
 			{
-				CRY_ASSERT_MESSAGE(0, "agent is not linked to a vehicle");
+				CRY_ASSERT(0, "agent is not linked to a vehicle");
 				CryWarning(VALIDATOR_MODULE_AI, VALIDATOR_WARNING, "Actor %s is not linked to a vehicle", m_actInfo.pEntity->GetName());
 				CancelSequenceAndActivateOutputPort(OutputPort_Done);
 				return;
@@ -598,7 +598,7 @@ void CFlowNode_AISequenceAction_VehicleRotateTurret::HandleSequenceEvent(AIActio
 			CVehicleSeat* pSeat = static_cast<CVehicleSeat*>(pVehicle->GetSeatForPassenger(m_actInfo.pEntity->GetId()));
 			if (!pSeat)
 			{
-				CRY_ASSERT_MESSAGE(0, "agent is not sitting in the vehicle it is linked to");
+				CRY_ASSERT(0, "agent is not sitting in the vehicle it is linked to");
 				CryWarning(VALIDATOR_MODULE_AI, VALIDATOR_WARNING, "Actor %s is not sitting in the vehicle it is linked to", m_actInfo.pEntity->GetName());
 				CancelSequenceAndActivateOutputPort(OutputPort_Done);
 				return;
@@ -618,7 +618,7 @@ void CFlowNode_AISequenceAction_VehicleRotateTurret::HandleSequenceEvent(AIActio
 			// ensure the vehicle-seat provided the correct action
 			if (!m_pActionRotateTurret)
 			{
-				CRY_ASSERT_MESSAGE(0, "a CVehicleSeatActionRotateTurret is not provided by the vehicle or someone else in the vehicle has reserved that action already.");
+				CRY_ASSERT(0, "a CVehicleSeatActionRotateTurret is not provided by the vehicle or someone else in the vehicle has reserved that action already.");
 				CryWarning(VALIDATOR_MODULE_AI, VALIDATOR_WARNING, "Actor %s could not find a CVehicleSeatActionRotateTurret or that action is already reserved by someone else", m_actInfo.pEntity->GetName());
 				CancelSequenceAndActivateOutputPort(OutputPort_Done);
 				return;

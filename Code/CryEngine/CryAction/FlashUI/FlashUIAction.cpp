@@ -22,7 +22,7 @@ CFlashUIAction::CFlashUIAction(EUIActionType type)
 {
 	if (m_type == eUIAT_FlowGraph)
 	{
-		CRY_ASSERT_MESSAGE(gEnv->pFlowSystem, "FlowSystem not initialized, crash will follow!");
+		CRY_ASSERT(gEnv->pFlowSystem, "FlowSystem not initialized, crash will follow!");
 		m_pFlowGraph = gEnv->pFlowSystem->CreateFlowGraph();
 		m_pFlowGraph->UnregisterFromFlowSystem();
 		m_pFlowGraph->AddRef();
@@ -31,7 +31,7 @@ CFlashUIAction::CFlashUIAction(EUIActionType type)
 	}
 	else
 	{
-		CRY_ASSERT_MESSAGE(gEnv->pScriptSystem, "ScriptSystem not initialized, crash will follow!");
+		CRY_ASSERT(gEnv->pScriptSystem, "ScriptSystem not initialized, crash will follow!");
 		m_pScript = gEnv->pScriptSystem->CreateTable();
 	}
 }
@@ -90,7 +90,7 @@ void CFlashUIAction::SetEnabled(bool bEnabled)
 //------------------------------------------------------------------------------------
 bool CFlashUIAction::Serialize(XmlNodeRef& xmlNode, bool bIsLoading)
 {
-	CRY_ASSERT_MESSAGE(m_type == eUIAT_FlowGraph, "Try to serialize Flowgraph of Lua UI Action");
+	CRY_ASSERT(m_type == eUIAT_FlowGraph, "Try to serialize Flowgraph of Lua UI Action");
 	bool ok = m_pFlowGraph->SerializeXML(xmlNode, bIsLoading);
 	SetValid(ok);
 	return ok;
@@ -99,7 +99,7 @@ bool CFlashUIAction::Serialize(XmlNodeRef& xmlNode, bool bIsLoading)
 //------------------------------------------------------------------------------------
 bool CFlashUIAction::Serialize(const char* scriptFile, bool bIsLoading)
 {
-	CRY_ASSERT_MESSAGE(m_type == eUIAT_LuaScript, "Try to serialize Script of FG UI Action");
+	CRY_ASSERT(m_type == eUIAT_LuaScript, "Try to serialize Script of FG UI Action");
 	m_sScriptFile = scriptFile;
 	return ReloadScript();
 }
@@ -249,7 +249,7 @@ void CUIActionManager::AddListener(IUIActionListener* pListener, const char* nam
 {
 #if defined(USE_CRY_ASSERT)
 	const bool ok = m_listener.Add(pListener, name);
-	CRY_ASSERT_MESSAGE(ok, "Listener already registered!");
+	CRY_ASSERT(ok, "Listener already registered!");
 #else
 	m_listener.Add(pListener, name);
 #endif
@@ -258,7 +258,7 @@ void CUIActionManager::AddListener(IUIActionListener* pListener, const char* nam
 //------------------------------------------------------------------------------------
 void CUIActionManager::RemoveListener(IUIActionListener* pListener)
 {
-	CRY_ASSERT_MESSAGE(m_listener.Contains(pListener), "Listener was never registered or already unregistered!");
+	CRY_ASSERT(m_listener.Contains(pListener), "Listener was never registered or already unregistered!");
 	m_listener.Remove(pListener);
 }
 

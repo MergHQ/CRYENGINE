@@ -32,8 +32,8 @@ struct SUIElementSerializer
 {
 	static bool Serialize(CFlashUIElement* pElement, XmlNodeRef& xmlNode, bool bIsLoading)
 	{
-		CRY_ASSERT_MESSAGE(pElement, "NULL pointer passed!");
-		CRY_ASSERT_MESSAGE(xmlNode != 0, "XmlNode is invalid");
+		CRY_ASSERT(pElement, "NULL pointer passed!");
+		CRY_ASSERT(xmlNode != 0, "XmlNode is invalid");
 
 		if (!pElement || !xmlNode) return false;
 
@@ -378,13 +378,13 @@ CFlashUIElement::~CFlashUIElement()
 		}
 	}
 
-	CRY_ASSERT_MESSAGE(m_variableObjects.empty(), "Variable objects not cleared!");
-	CRY_ASSERT_MESSAGE(!m_pFlashplayer, "Flash player not correct unloaded!");
-	CRY_ASSERT_MESSAGE(m_pBootStrapper == NULL, "Flash bootstrapper not correct unloaded!");
+	CRY_ASSERT(m_variableObjects.empty(), "Variable objects not cleared!");
+	CRY_ASSERT(!m_pFlashplayer, "Flash player not correct unloaded!");
+	CRY_ASSERT(m_pBootStrapper == NULL, "Flash bootstrapper not correct unloaded!");
 
 #if !defined (_RELEASE)
 	bool ok = stl::find_and_erase(s_ElementDebugList, this);
-	CRY_ASSERT_MESSAGE(ok, "UIElement was not registered to debug list!!");
+	CRY_ASSERT(ok, "UIElement was not registered to debug list!!");
 #endif
 
 	SUIElementSerializer::DeleteContainer(m_variables);
@@ -823,14 +823,14 @@ void CFlashUIElement::DestroyBootStrapper()
 	for (TDynTextures::TVec::iterator it = texVex.begin(); it != texVex.end(); ++it)
 		(*it)->Activate(true);
 
-	CRY_ASSERT_MESSAGE(!HasExtTexture(), "Can't destory Bootstrapper while still used by dynamic textures");
+	CRY_ASSERT(!HasExtTexture(), "Can't destory Bootstrapper while still used by dynamic textures");
 	SAFE_RELEASE(m_pBootStrapper);
 	UIACTION_LOG("%s: BootStrapper destroyed for flash file: \"%s\"", GetName(), m_sFlashFile.c_str());
 }
 //------------------------------------------------------------------------------------
 bool CFlashUIElement::Serialize(XmlNodeRef& xmlNode, bool bIsLoading)
 {
-	CRY_ASSERT_MESSAGE(bIsLoading, "only loading supported!");
+	CRY_ASSERT(bIsLoading, "only loading supported!");
 
 	bool res = true;
 	for (TUIElements::iterator iter = m_instances.begin(); iter != m_instances.end(); ++iter)
@@ -1024,7 +1024,7 @@ void CFlashUIElement::UpdateFlags()
 //------------------------------------------------------------------------------------
 void CFlashUIElement::SetFlag(EFlashUIFlags flag, bool bSet)
 {
-	CRY_ASSERT_MESSAGE((flag & eFUI_NOT_CHANGEABLE) == 0, "Not allowed to set non changeable flag during runtime!");
+	CRY_ASSERT((flag & eFUI_NOT_CHANGEABLE) == 0, "Not allowed to set non changeable flag during runtime!");
 	if ((flag & eFUI_NOT_CHANGEABLE) == 0)
 		SetFlagInt(flag, bSet);
 }
@@ -1067,12 +1067,12 @@ bool CFlashUIElement::DefaultInfoCheck(SFlashObjectInfo*& pInfo, const SUIParame
 	if (!LazyInit())
 		return false;
 
-	CRY_ASSERT_MESSAGE(pDesc, "NULL pointer passed!");
+	CRY_ASSERT(pDesc, "NULL pointer passed!");
 	if (!pDesc)
 		return false;
 
 	const SUIMovieClipDesc* pParentDesc = pTmplDesc ? pTmplDesc : m_pRoot;
-	CRY_ASSERT_MESSAGE(pParentDesc, "Invalid parent passed!");
+	CRY_ASSERT(pParentDesc, "Invalid parent passed!");
 	if (!pParentDesc)
 		return false;
 
@@ -1199,7 +1199,7 @@ IFlashVariableObject* CFlashUIElement::CreateMovieClip(const SUIMovieClipDesc*& 
 		return NULL;
 
 	const SUIMovieClipDesc* pParentDesc = pParentMC ? pParentMC : m_pRoot;
-	CRY_ASSERT_MESSAGE(pParentDesc, "Invalid parent passed!");
+	CRY_ASSERT(pParentDesc, "Invalid parent passed!");
 	if (!pParentDesc)
 		return NULL;
 
@@ -1304,7 +1304,7 @@ void CFlashUIElement::RemoveMovieClip(IFlashVariableObject* flashVarObj)
 			}
 		}
 	}
-	CRY_ASSERT_MESSAGE(false, "The given IFlashVariableObject was not created thru the UISystem!");
+	CRY_ASSERT(false, "The given IFlashVariableObject was not created thru the UISystem!");
 }
 
 //------------------------------------------------------------------------------------
@@ -1519,7 +1519,7 @@ bool CFlashUIElement::CreateArray(const SUIParameterDesc*& pNewDesc, const char*
 		return false;
 
 	const SUIMovieClipDesc* pParentDesc = pTmplDesc ? pTmplDesc : m_pRoot;
-	CRY_ASSERT_MESSAGE(pParentDesc && arrayName, "Invalid parent passed!");
+	CRY_ASSERT(pParentDesc && arrayName, "Invalid parent passed!");
 	if (!pParentDesc)
 		return false;
 
@@ -1541,7 +1541,7 @@ bool CFlashUIElement::CreateArray(const SUIParameterDesc*& pNewDesc, const char*
 	{
 #if defined(USE_CRY_ASSERT)
 		bool ok = m_pFlashplayer->CreateArray(pNewArray);
-		CRY_ASSERT_MESSAGE(ok, "Failed to create new flash array!");
+		CRY_ASSERT(ok, "Failed to create new flash array!");
 #else
 		m_pFlashplayer->CreateArray(pNewArray);
 #endif
@@ -1739,14 +1739,14 @@ Vec3 CFlashUIElement::MatMulVec3(const Matrix44& m, const Vec3& v) const
 //------------------------------------------------------------------------------------
 void CFlashUIElement::AddTexture(IDynTextureSource* pDynTexture)
 {
-	CRY_ASSERT_MESSAGE(pDynTexture, "NULL pointer passed!");
+	CRY_ASSERT(pDynTexture, "NULL pointer passed!");
 	if (pDynTexture)
 	{
 		UIACTION_LOG("%s (%i): UIElement registered by texture \"%p\"", GetName(), m_iInstanceID, pDynTexture);
 
 #if defined(USE_CRY_ASSERT)
 		const bool ok = m_textures.PushBackUnique(pDynTexture);
-		CRY_ASSERT_MESSAGE(ok, "Texture already registered!");
+		CRY_ASSERT(ok, "Texture already registered!");
 #else
 		m_textures.PushBackUnique(pDynTexture);
 #endif
@@ -1765,14 +1765,14 @@ void CFlashUIElement::AddTexture(IDynTextureSource* pDynTexture)
 //------------------------------------------------------------------------------------
 void CFlashUIElement::RemoveTexture(IDynTextureSource* pDynTexture)
 {
-	CRY_ASSERT_MESSAGE(pDynTexture, "NULL pointer passed!");
+	CRY_ASSERT(pDynTexture, "NULL pointer passed!");
 	if (pDynTexture)
 	{
 		UIACTION_LOG("%s (%i): UIElement unregistered by texture \"%p\"", GetName(), m_iInstanceID, pDynTexture);
 
 #if defined(USE_CRY_ASSERT)
 		const bool ok = m_textures.FindAndErase(pDynTexture);
-		CRY_ASSERT_MESSAGE(ok, "Texture was never registered or already unregistered!");
+		CRY_ASSERT(ok, "Texture was never registered or already unregistered!");
 #else
 		m_textures.FindAndErase(pDynTexture);
 #endif
@@ -1969,7 +1969,7 @@ bool CFlashUIElement::HandleInternalCommand(const char* sCommand, const SUIArgum
 			}
 		}
 
-		CRY_ASSERT_MESSAGE(ok, "cry_virtualKeyboard received with wrong arguments!");
+		CRY_ASSERT(ok, "cry_virtualKeyboard received with wrong arguments!");
 		if (ok)
 		{
 			unsigned int flags = IPlatformOS::KbdFlag_Default;
@@ -2115,7 +2115,7 @@ const SUIEventDesc* CFlashUIElement::GetOrCreateFunctionDesc(const char* pFuncti
 //------------------------------------------------------------------------------------
 CFlashUIElement::SFlashObjectInfo* CFlashUIElement::GetFlashVarObj(const SUIParameterDesc* pDesc, const SUIMovieClipDesc* pTmplDesc)
 {
-	CRY_ASSERT_MESSAGE(pDesc, "NULL pointer passed!");
+	CRY_ASSERT(pDesc, "NULL pointer passed!");
 	SFlashObjectInfo* pVarInfo = NULL;
 	const SUIMovieClipDesc* pRootDesc = pDesc != m_pRoot ? pTmplDesc ? pTmplDesc : m_pRoot : NULL;
 
@@ -2202,7 +2202,7 @@ void CFlashUIElement::RemoveFlashVarObj(const SUIParameterDesc* pDesc)
 			iterToDelete.push_back(std::make_pair(it, std::make_pair(pDescToDel, pParentDescToDel)));
 		}
 	}
-	CRY_ASSERT_MESSAGE(!iterToDelete.empty(), "The given ParameterDescription is not valid!");
+	CRY_ASSERT(!iterToDelete.empty(), "The given ParameterDescription is not valid!");
 	for (TDelList::iterator it = iterToDelete.begin(); it != iterToDelete.end(); ++it)
 	{
 		it->first->second.pObj->Release();
@@ -2212,7 +2212,7 @@ void CFlashUIElement::RemoveFlashVarObj(const SUIParameterDesc* pDesc)
 
 #if defined(USE_CRY_ASSERT)
 			const bool ok = stl::member_find_and_erase(map, it->second.first);
-			CRY_ASSERT_MESSAGE(ok, "no lookup for this object!");
+			CRY_ASSERT(ok, "no lookup for this object!");
 #else
 			stl::member_find_and_erase(map, it->second.first);
 #endif
@@ -2251,7 +2251,7 @@ void CFlashUIElement::AddEventListener(IUIElementEventListener* pListener, const
 {
 #if defined(USE_CRY_ASSERT)
 	const bool ok = m_eventListener.Add(pListener, name);
-	CRY_ASSERT_MESSAGE(ok, "Listener already registered!");
+	CRY_ASSERT(ok, "Listener already registered!");
 #else
 	m_eventListener.Add(pListener, name);
 #endif

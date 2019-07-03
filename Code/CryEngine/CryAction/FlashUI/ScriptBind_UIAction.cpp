@@ -90,7 +90,7 @@ IUIElement* CScriptBind_UIAction::GetElement(const char* sName, int instanceID, 
 	if (gEnv->IsDedicated())
 		return NULL;
 
-	CRY_ASSERT_MESSAGE(gEnv->pFlashUI, "FlashUI extension does not exist!");
+	CRY_ASSERT(gEnv->pFlashUI, "FlashUI extension does not exist!");
 	if (!gEnv->pFlashUI)
 	{
 		UIACTION_WARNING("LUA: FlashUI extension does not exist!");
@@ -117,7 +117,7 @@ IUIAction* CScriptBind_UIAction::GetAction(const char* sName)
 	if (gEnv->IsDedicated())
 		return NULL;
 
-	CRY_ASSERT_MESSAGE(gEnv->pFlashUI, "FlashUI extension does not exist!");
+	CRY_ASSERT(gEnv->pFlashUI, "FlashUI extension does not exist!");
 	if (!gEnv->pFlashUI)
 	{
 		UIACTION_WARNING("LUA: FlashUI extension does not exist!");
@@ -138,7 +138,7 @@ IUIEventSystem* CScriptBind_UIAction::GetEventSystem(const char* sName, IUIEvent
 	if (gEnv->IsDedicated())
 		return NULL;
 
-	CRY_ASSERT_MESSAGE(gEnv->pFlashUI, "FlashUI extension does not exist!");
+	CRY_ASSERT(gEnv->pFlashUI, "FlashUI extension does not exist!");
 	if (!gEnv->pFlashUI)
 	{
 		UIACTION_WARNING("LUA: FlashUI extension does not exist!");
@@ -1240,13 +1240,13 @@ bool LuaArgToUIArgImpl(T& t, int idx, TUIData& value)
 		}
 		break;
 	case svtNull:
-		CRY_ASSERT_MESSAGE(false, "Invalid data type for UIAction call!");
+		CRY_ASSERT(false, "Invalid data type for UIAction call!");
 		break;
 	case svtUserData:
-		CRY_ASSERT_MESSAGE(false, "Invalid data type for UIAction call!");
+		CRY_ASSERT(false, "Invalid data type for UIAction call!");
 		break;
 	case svtFunction:
-		CRY_ASSERT_MESSAGE(false, "Invalid data type for UIAction call!");
+		CRY_ASSERT(false, "Invalid data type for UIAction call!");
 		break;
 	}
 	return bOk;

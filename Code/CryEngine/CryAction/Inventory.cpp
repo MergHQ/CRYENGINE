@@ -1179,7 +1179,7 @@ void CInventory::ResetAmmo()
 //------------------------------------------------------------------------
 void CInventory::SetInventorySlotCapacity(IInventory::EInventorySlots slotId, unsigned int capacity)
 {
-	CRY_ASSERT_MESSAGE(((slotId >= 0) && (slotId < IInventory::eInventorySlot_Last)), "Invalid inventory slot!");
+	CRY_ASSERT(((slotId >= 0) && (slotId < IInventory::eInventorySlot_Last)), "Invalid inventory slot!");
 
 	m_stats.slotsInfo[slotId].maxCapacity = capacity;
 }
@@ -1187,7 +1187,7 @@ void CInventory::SetInventorySlotCapacity(IInventory::EInventorySlots slotId, un
 //------------------------------------------------------------------------
 void CInventory::AssociateItemCategoryToSlot(const char* itemCategory, IInventory::EInventorySlots slotId)
 {
-	CRY_ASSERT_MESSAGE(((slotId >= 0) && (slotId < IInventory::eInventorySlot_Last)), "Invalid inventory slot!");
+	CRY_ASSERT(((slotId >= 0) && (slotId < IInventory::eInventorySlot_Last)), "Invalid inventory slot!");
 
 	m_stats.categoriesToSlot.insert(TCategoriesToSlot::value_type(itemCategory, slotId));
 }
@@ -1195,7 +1195,7 @@ void CInventory::AssociateItemCategoryToSlot(const char* itemCategory, IInventor
 //------------------------------------------------------------------------
 EntityId CInventory::GetLastSelectedInSlot(IInventory::EInventorySlots slotId) const
 {
-	CRY_ASSERT_MESSAGE(((slotId >= 0) && (slotId < IInventory::eInventorySlot_Last)), "Invalid inventory slot!");
+	CRY_ASSERT(((slotId >= 0) && (slotId < IInventory::eInventorySlot_Last)), "Invalid inventory slot!");
 
 	return m_stats.slotsInfo[slotId].lastSelected;
 }
@@ -1469,7 +1469,7 @@ void CInventory::RemoveAmmoUser(IEntityClass* pAmmoType)
 
 	TAmmoInfoMap::iterator ammoUserIt = m_stats.ammoInfo.find(pAmmoType);
 
-	CRY_ASSERT_MESSAGE(ammoUserIt != m_stats.ammoInfo.end(), "Trying to remove user of an ammo which never was added.");
+	CRY_ASSERT(ammoUserIt != m_stats.ammoInfo.end(), "Trying to remove user of an ammo which never was added.");
 
 	if (ammoUserIt != m_stats.ammoInfo.end())
 	{
@@ -1497,13 +1497,13 @@ void CInventory::ResetAmmoAndUsers()
 
 void CInventory::AddListener(struct IInventoryListener* pListener)
 {
-	CRY_ASSERT_MESSAGE(m_iteratingListeners == false, "AddListener called during a listener broadcast.");
+	CRY_ASSERT(m_iteratingListeners == false, "AddListener called during a listener broadcast.");
 	stl::push_back_unique(m_listeners, pListener);
 }
 
 void CInventory::RemoveListener(struct IInventoryListener* pListener)
 {
-	CRY_ASSERT_MESSAGE(m_iteratingListeners == false, "RemoveListener called during a listener broadcast.");
+	CRY_ASSERT(m_iteratingListeners == false, "RemoveListener called during a listener broadcast.");
 	stl::find_and_erase(m_listeners, pListener);
 }
 

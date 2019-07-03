@@ -271,7 +271,7 @@ bool InitializeCompressorThread()
 
 	if (!gEnv->pThreadManager->SpawnThread(s_pCompressorThread, "ZLibCompressor"))
 	{
-		CRY_ASSERT_MESSAGE(false, "Error spawning \"ZLibCompressor\" thread.");
+		CRY_ASSERT(false, "Error spawning \"ZLibCompressor\" thread.");
 		delete s_pCompressorThread;
 		s_pCompressorThread = NULL;
 		return false;

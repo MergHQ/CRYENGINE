@@ -784,7 +784,7 @@ CFlashUIEventNode::CFlashUIEventNode(IUIElement* pUIElement, string sCategory, c
 	: CFlashUIBaseElementNode(pUIElement, sCategory)
 	, m_iCurrInstanceId(-1)
 {
-	CRY_ASSERT_MESSAGE(pEventDesc, "NULL pointer passed!");
+	CRY_ASSERT(pEventDesc, "NULL pointer passed!");
 	m_eventDesc = *pEventDesc;
 
 	//inputs
@@ -897,7 +897,7 @@ void CFlashUIEventNode::FlushNextEvent(SActivationInfo* pActInfo)
 		if (checkValue >= 0)
 		{
 			bTriggerEvent = false;
-			CRY_ASSERT_MESSAGE(checkValue < args.GetArgCount(), "Port does not exist!");
+			CRY_ASSERT(checkValue < args.GetArgCount(), "Port does not exist!");
 			if (checkValue < args.GetArgCount())
 			{
 				string val = GetPortString(pActInfo, eI_CheckValue);
@@ -915,7 +915,7 @@ void CFlashUIEventNode::FlushNextEvent(SActivationInfo* pActInfo)
 			int i = 0;
 			for (; i < end; ++i)
 			{
-				CRY_ASSERT_MESSAGE(i < args.GetArgCount(), "UIEvent received wrong number of arguments!");
+				CRY_ASSERT(i < args.GetArgCount(), "UIEvent received wrong number of arguments!");
 				ActivateDynOutput(i < args.GetArgCount() ? args.GetArg(i) : TUIData(string("")), m_eventDesc.InputParams.Params[i], pActInfo, i + 2);
 			}
 			if (m_eventDesc.InputParams.IsDynamic)
@@ -943,7 +943,7 @@ CFlashUIFunctionNode::CFlashUIFunctionNode(IUIElement* pUIElement, string sCateg
 	, m_pTmplDesc(NULL)
 	, m_isTemplate(isTemplate)
 {
-	CRY_ASSERT_MESSAGE(pFuncDesc, "NULL pointer passed!");
+	CRY_ASSERT(pFuncDesc, "NULL pointer passed!");
 	m_funcDesc = *pFuncDesc;
 
 	m_inPorts.push_back(InputPortConfig_Void("Call", "Calls the function"));

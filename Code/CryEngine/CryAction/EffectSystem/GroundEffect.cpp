@@ -287,7 +287,7 @@ void CGroundEffect::Stop(bool stop)
 
 void CGroundEffect::OnRayCastDataReceived(const QueuedRayID& rayID, const RayCastResult& result)
 {
-	CRY_ASSERT_MESSAGE(rayID == m_raycastID, "CGroundEffect: Received raycast data with mismatching id");
+	CRY_ASSERT(rayID == m_raycastID, "CGroundEffect: Received raycast data with mismatching id");
 
 	m_validRayWorldIntersect = result.hitCount > 0;
 

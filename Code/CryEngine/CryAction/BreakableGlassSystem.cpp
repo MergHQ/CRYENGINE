@@ -1330,6 +1330,6 @@ void CBreakableGlassSystem::ModifyEventToForceBreak(EventPhysCollision* pPhysEve
 void CBreakableGlassSystem::AssertUnusedIfDisabled()
 {
 #ifndef RELEASE
-	CRY_ASSERT_MESSAGE(m_enabled || m_glassPlanes.Count() == 0, "Breakable glass system is disabled, should not have any active planes.");
+	CRY_ASSERT(m_enabled || m_glassPlanes.Count() == 0, "Breakable glass system is disabled, should not have any active planes.");
 #endif
 }//-------------------------------------------------------------------------------------------------

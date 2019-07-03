@@ -24,14 +24,14 @@ bool CEntityContainerObject::ReloadExtension(IGameObject* pGameObject, const SEn
 {
 	ResetGameObject();
 
-	CRY_ASSERT_MESSAGE(false, "CEntityContainerObject::ReloadExtension not implemented");
+	CRY_ASSERT(false, "CEntityContainerObject::ReloadExtension not implemented");
 	return false;
 }
 
 
 bool CEntityContainerObject::GetEntityPoolSignature(TSerialize signature)
 {
-	CRY_ASSERT_MESSAGE(false, "CEntityContainerObject::GetEntityPoolSignature not implemented");
+	CRY_ASSERT(false, "CEntityContainerObject::GetEntityPoolSignature not implemented");
 	return true;
 }
 

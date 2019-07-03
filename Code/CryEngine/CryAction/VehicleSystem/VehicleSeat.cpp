@@ -99,7 +99,7 @@ CVehicleSeat::CVehicleSeat()
 //------------------------------------------------------------------------
 CVehicleSeat::~CVehicleSeat()
 {
-	CRY_ASSERT_MESSAGE(!m_passengerId, "Passenger should be long gone by now.");
+	CRY_ASSERT(!m_passengerId, "Passenger should be long gone by now.");
 
 	for (TVehicleSeatActionVector::iterator ite = m_seatActions.begin(); ite != m_seatActions.end(); ++ite)
 	{

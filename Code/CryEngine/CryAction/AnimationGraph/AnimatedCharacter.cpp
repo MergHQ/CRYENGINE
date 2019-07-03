@@ -229,7 +229,7 @@ CAnimatedCharacter::~CAnimatedCharacter()
 	DisableRigidCollider();
 	DestroyExtraSolidCollider();
 
-	CRY_ASSERT_MESSAGE(!m_pActionController, "ActionController should already be deleted. If not, the Exit of actions in the destructor could involve invalid objects.");
+	CRY_ASSERT(!m_pActionController, "ActionController should already be deleted. If not, the Exit of actions in the destructor could involve invalid objects.");
 	DeleteActionController();
 }
 
@@ -1067,7 +1067,7 @@ void CAnimatedCharacter::ValidateCharacterPtrs()
 	ICharacterInstance* pCharacter = GetEntity()->GetCharacter(0);
 	ICharacterInstance* pShadowCharacter = m_hasShadowCharacter ? GetEntity()->GetCharacter(m_shadowCharacterSlot) : NULL;
 	const bool characterChanged = (pCharacter != m_pCharacter) || (m_pShadowCharacter != pShadowCharacter);
-	CRY_ASSERT_TRACE(!characterChanged, ("CharacterPtrs out of date in %s. Ensure that updateCharacterPtrs is called on the animatedCharacter whenever new models are loaded", GetEntity()->GetName()));
+	CRY_ASSERT(!characterChanged, "CharacterPtrs out of date in %s. Ensure that updateCharacterPtrs is called on the animatedCharacter whenever new models are loaded", GetEntity()->GetName());
 #endif
 }
 

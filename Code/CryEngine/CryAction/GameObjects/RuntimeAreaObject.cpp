@@ -29,7 +29,7 @@ bool CRuntimeAreaObject::ReloadExtension(IGameObject* pGameObject, const SEntity
 {
 	ResetGameObject();
 
-	CRY_ASSERT_MESSAGE(false, "CRuntimeAreaObject::ReloadExtension not implemented");
+	CRY_ASSERT(false, "CRuntimeAreaObject::ReloadExtension not implemented");
 
 	return false;
 }
@@ -37,7 +37,7 @@ bool CRuntimeAreaObject::ReloadExtension(IGameObject* pGameObject, const SEntity
 ///////////////////////////////////////////////////////////////////////////
 bool CRuntimeAreaObject::NetSerialize(TSerialize ser, EEntityAspects aspect, uint8 profile, int flags)
 {
-	CRY_ASSERT_MESSAGE(false, "CRuntimeAreaObject::NetSerialize not implemented");
+	CRY_ASSERT(false, "CRuntimeAreaObject::NetSerialize not implemented");
 
 	return false;
 }

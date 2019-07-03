@@ -428,7 +428,7 @@ struct ExplosionInfo
 		}
 		else
 		{
-			CRY_ASSERT_MESSAGE(angle == 0.0f, "Non zero explosion angles are not supported in multiplayer");
+			CRY_ASSERT(angle == 0.0f, "Non zero explosion angles are not supported in multiplayer");
 		}
 
 		ser.Value("pressure", pressure, 'hPrs');

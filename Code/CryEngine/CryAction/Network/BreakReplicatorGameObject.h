@@ -51,7 +51,7 @@ inline bool CBreakRepGameObject::Init(IGameObject* pGameObject)
 inline bool CBreakRepGameObject::ReloadExtension(IGameObject* pGameObject, const SEntitySpawnParams& params)
 {
 	ResetGameObject();
-	CRY_ASSERT_MESSAGE(false, "CBreakRepGameObject::ReloadExtension not implemented");
+	CRY_ASSERT(false, "CBreakRepGameObject::ReloadExtension not implemented");
 	return false;
 }
 

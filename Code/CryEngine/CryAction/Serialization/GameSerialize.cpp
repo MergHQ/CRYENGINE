@@ -804,7 +804,7 @@ ELoadGameResult CGameSerialize::LoadGame(CCryAction* pCryAction, const char* met
 
 		// Flushing the system clears the navagation data, so reload it.
 		const ILevelInfo* pLevelInfo = GetLevelInfo();
-		CRY_ASSERT_MESSAGE(CCryAction::GetCryAction()->StartedGameContext() == false || (pLevelInfo != 0), "Can't find level info: This might break AI");
+		CRY_ASSERT(CCryAction::GetCryAction()->StartedGameContext() == false || (pLevelInfo != 0), "Can't find level info: This might break AI");
 		if (pLevelInfo)
 		{
 			const ILevelInfo::TGameTypeInfo* pGameTypeInfo = pLevelInfo->GetDefaultGameType();
@@ -1260,7 +1260,7 @@ bool CGameSerialize::SaveGameData(SSaveEnvironment& savEnv, TSerialize& gameStat
 				{
 					if ((pEntity->GetPhysics() && pEntity->GetPhysics()->GetType() == PE_ROPE) == !pass)
 						continue;
-					CRY_ASSERT_TRACE(!(pEntity->GetFlags() & ENTITY_FLAG_LOCAL_PLAYER), ("%s has ENTITY_FLAG_LOCAL_PLAYER - local player should not be in m_serializeEntities!", pEntity->GetEntityTextDescription().c_str()));
+					CRY_ASSERT(!(pEntity->GetFlags() & ENTITY_FLAG_LOCAL_PLAYER), "%s has ENTITY_FLAG_LOCAL_PLAYER - local player should not be in m_serializeEntities!", pEntity->GetEntityTextDescription().c_str());
 
 					// c++ entity data
 					gameState.BeginGroup("Entity");
@@ -1527,7 +1527,7 @@ bool CGameSerialize::LoadLevel(SLoadEnvironment& loadEnv, SGameStartParams& star
 
 	// Flushing the system clears the navagation data, so reload it.
 	const ILevelInfo* pLevelInfo = GetLevelInfo();
-	CRY_ASSERT_MESSAGE(CCryAction::GetCryAction()->StartedGameContext() == false || (pLevelInfo != 0), "Can't find level info: This might break AI");
+	CRY_ASSERT(CCryAction::GetCryAction()->StartedGameContext() == false || (pLevelInfo != 0), "Can't find level info: This might break AI");
 	if (pLevelInfo)
 	{
 		const ILevelInfo::TGameTypeInfo* pGameTypeInfo = pLevelInfo->GetDefaultGameType();

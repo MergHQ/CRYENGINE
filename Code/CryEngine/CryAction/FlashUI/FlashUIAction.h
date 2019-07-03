@@ -33,8 +33,8 @@ public:
 	virtual void             SetEnabled(bool bEnabled);
 	virtual bool             IsEnabled() const    { return m_bEnabled && m_bIsValid; }
 
-	virtual IFlowGraphPtr    GetFlowGraph() const { CRY_ASSERT_MESSAGE(m_type == eUIAT_FlowGraph, "Try to access Flowgraph of Lua UI Action"); return m_pFlowGraph; }
-	virtual SmartScriptTable GetScript() const    { CRY_ASSERT_MESSAGE(m_type == eUIAT_LuaScript, "Try to access ScriptTable of FG UI Action"); return m_pScript; }
+	virtual IFlowGraphPtr    GetFlowGraph() const { CRY_ASSERT(m_type == eUIAT_FlowGraph, "Try to access Flowgraph of Lua UI Action"); return m_pFlowGraph; }
+	virtual SmartScriptTable GetScript() const    { CRY_ASSERT(m_type == eUIAT_LuaScript, "Try to access ScriptTable of FG UI Action"); return m_pScript; }
 
 	virtual bool             Serialize(XmlNodeRef& xmlNode, bool bIsLoading);
 	virtual bool             Serialize(const char* scriptFile, bool bIsLoading);

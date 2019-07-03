@@ -101,7 +101,7 @@ bool CWorldQuery::ReloadExtension(IGameObject* pGameObject, const SEntitySpawnPa
 {
 	ResetGameObject();
 
-	CRY_ASSERT_MESSAGE(false, "CWorldQuery::ReloadExtension not implemented");
+	CRY_ASSERT(false, "CWorldQuery::ReloadExtension not implemented");
 
 	return false;
 }

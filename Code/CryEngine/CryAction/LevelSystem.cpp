@@ -21,7 +21,7 @@
 
 
 #define LOCAL_WARNING(cond, msg) do { if (!(cond)) { CryWarning(VALIDATOR_MODULE_GAME, VALIDATOR_WARNING, "%s", msg); } } while (0)
-//#define LOCAL_WARNING(cond, msg)  CRY_ASSERT_MESSAGE(cond, msg)
+//#define LOCAL_WARNING(cond, msg)  CRY_ASSERT(cond, msg)
 
 #define LEVEL_SYSTEM_SPAWN_ENTITIES_DURING_LOADING_COMPLETE_NOTIFICATION 1
 
@@ -550,7 +550,7 @@ void CLevelRotation::ShallowShuffle()
 	if (m_randFlags & ePRF_MaintainPairs)
 	{
 		Log_LevelRotation("CLevelRotation::ShallowShuffle doing pair shuffle");
-		CRY_ASSERT_MESSAGE(nEntries % 2 == 0, "CLevelRotation::Shuffle Set to maintain pairs shuffle, require even number of entries, but we have odd. Should have been handled during initialisation");
+		CRY_ASSERT(nEntries % 2 == 0, "CLevelRotation::Shuffle Set to maintain pairs shuffle, require even number of entries, but we have odd. Should have been handled during initialisation");
 
 		//swap, but only even indices with even indices, and the ones after the same
 		int nPairs = nEntries / 2;

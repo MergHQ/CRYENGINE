@@ -123,7 +123,7 @@ void CGameVolumesManager::Reset()
 void CGameVolumesManager::SetVolume(EntityId entityId, const IGameVolumes::VolumeInfo& volumeInfo)
 {
 	IEntity* pEntity = gEnv->pEntitySystem->GetEntity(entityId);
-	CRY_ASSERT_MESSAGE(pEntity != nullptr, "Invalid entity for game volume passed in!");
+	CRY_ASSERT(pEntity != nullptr, "Invalid entity for game volume passed in!");
 	if (pEntity == nullptr)
 		return;
 
@@ -149,7 +149,7 @@ void CGameVolumesManager::SetVolume(EntityId entityId, const IGameVolumes::Volum
 void CGameVolumesManager::DestroyVolume(EntityId entityId)
 {
 	IEntity* pEntity = gEnv->pEntitySystem->GetEntity(entityId);
-	CRY_ASSERT_MESSAGE(pEntity != nullptr, "Attempting to destroy game volume for invalid entity!");
+	CRY_ASSERT(pEntity != nullptr, "Attempting to destroy game volume for invalid entity!");
 
 	if (pEntity != nullptr)
 	{

@@ -214,7 +214,7 @@ void CGameObjectSystem::RegisterExtension(const char* szName, IGameObjectExtensi
 		//		pClsDesc->pUserProxyData = new SSpawnUserData(sName);
 		if (!gEnv->pEntitySystem->GetClassRegistry()->RegisterStdClass(*pClsDesc))
 		{
-			CRY_ASSERT_TRACE(0, ("Unable to register entity class '%s'", szName));
+			CRY_ASSERT(0, "Unable to register entity class '%s'", szName);
 			return;
 		}
 	}

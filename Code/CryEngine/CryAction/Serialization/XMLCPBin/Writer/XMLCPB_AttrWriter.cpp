@@ -32,7 +32,7 @@ bool IsInitialized(T val)
 	return IsInitialized(*reinterpret_cast<uint32*>(&val));
 }
 
-	#define ASSERT_INITIALIZED(cond, name) CRY_ASSERT_TRACE(IsInitialized(cond), ("Saving uninitialized variable %s", name))
+	#define ASSERT_INITIALIZED(cond, name) CRY_ASSERT(IsInitialized(cond), ("Saving uninitialized variable %s", name))
 #else
 	#define ASSERT_INITIALIZED(cond, name)
 #endif

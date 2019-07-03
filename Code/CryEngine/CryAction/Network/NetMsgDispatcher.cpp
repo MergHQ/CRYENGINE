@@ -117,7 +117,7 @@ void CNetMessageDistpatcher::SendMessage(const SNetMsgData& msg)
 {
 	uint32 cntDispatchedMsgs = 0;
 
-	CRY_ASSERT_MESSAGE(msg.tgt != SNetMsgData::eT_Invalid, "Invalid message target");
+	CRY_ASSERT(msg.tgt != SNetMsgData::eT_Invalid, "Invalid message target");
 
 	// Create network message
 	INetSendablePtr netMsg = new CSimpleNetMessage<SNetMsgData>(msg, CNetMessageDistpatcher::OnIncomingMessage);

@@ -96,12 +96,12 @@ public:
 	SCharacterParams(IAnimatedCharacter* actor, const char* signalName, bool allowHPhysics = false, float slidingDuration = animParamDefaultSlidingDuration) : deltaLocatorMovement(IDENTITY),
 		collisionsDisabledWithFirstActor(0), animationState(AS_Unrequested), animFilepathCRC(0)
 	{
-		CRY_ASSERT_MESSAGE(actor != NULL, "Invalid parameter. The actor here may not be NULL");
+		CRY_ASSERT(actor != NULL, "Invalid parameter. The actor here may not be NULL");
 
-		CRY_ASSERT_MESSAGE(signalName != NULL, "Invalid parameter. The signal name cannot be NULL");
-		CRY_ASSERT_MESSAGE(strcmp(signalName, "") != 0, "Invalid parameter. The signal name cannot be empty");
+		CRY_ASSERT(signalName != NULL, "Invalid parameter. The signal name cannot be NULL");
+		CRY_ASSERT(strcmp(signalName, "") != 0, "Invalid parameter. The signal name cannot be empty");
 
-		CRY_ASSERT_MESSAGE(slidingDuration > 0.0f, "Invalid parameter. The sliding duration cannot be <= 0.0f");
+		CRY_ASSERT(slidingDuration > 0.0f, "Invalid parameter. The sliding duration cannot be <= 0.0f");
 
 		bAnimationPlaying = false;
 		bAllowHorizontalPhysics = allowHPhysics;

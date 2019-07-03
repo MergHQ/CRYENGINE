@@ -926,7 +926,7 @@ void CActionController::ClearScopeContext(uint32 scopeContextID, bool flushAnima
 
 IScope* CActionController::GetScope(uint32 scopeID)
 {
-	CRY_ASSERT_MESSAGE((scopeID < m_scopeCount), "Invalid scope id");
+	CRY_ASSERT((scopeID < m_scopeCount), "Invalid scope id");
 
 	if (scopeID < m_scopeCount)
 	{
@@ -938,7 +938,7 @@ IScope* CActionController::GetScope(uint32 scopeID)
 
 const IScope* CActionController::GetScope(uint32 scopeID) const
 {
-	CRY_ASSERT_MESSAGE((scopeID < m_scopeCount), "Invalid scope id");
+	CRY_ASSERT((scopeID < m_scopeCount), "Invalid scope id");
 
 	if (scopeID < m_scopeCount)
 	{
@@ -2357,7 +2357,7 @@ bool CActionController::UpdateScopeContextValidity(uint32 scopeContextID)
 #if CRYMANNEQUIN_WARN_ABOUT_VALIDITY()
 		IEntity* expectedEntity = gEnv->pEntitySystem->GetEntity(scopeContext.entityId);
 		CryWarning(VALIDATOR_MODULE_GAME, VALIDATOR_ERROR, "[CActionController::UpdateScopeContextValidity] Dangling Entity %p (expected %p for id=%u) in context '%s'", (void*)scopeContext.pCachedEntity, (void*)expectedEntity, scopeContext.entityId, m_context.controllerDef.m_scopeContexts.GetTagName(scopeContextID));
-		CRY_ASSERT_MESSAGE(0,"[CActionController::UpdateScopeContextValidity] Dangling Entity");
+		CRY_ASSERT(0,"[CActionController::UpdateScopeContextValidity] Dangling Entity");
 #endif // !CRYMANNEQUIN_WARN_ABOUT_VALIDITY()
 
 		scopeContext.pCharInst = NULL;
@@ -2371,7 +2371,7 @@ bool CActionController::UpdateScopeContextValidity(uint32 scopeContextID)
 #if CRYMANNEQUIN_WARN_ABOUT_VALIDITY()
 		const char* entityName = (scopeContext.pCachedEntity ? scopeContext.pCachedEntity->GetName() : "<NULL>");
 		CryWarning(VALIDATOR_MODULE_GAME, VALIDATOR_ERROR, "[CActionController::UpdateScopeContextValidity] Dangling Char Inst in entity '%s' (id=%d) in context '%s'", entityName, scopeContext.entityId, m_context.controllerDef.m_scopeContexts.GetTagName(scopeContextID));
-		CRY_ASSERT_MESSAGE(0,"[CActionController::UpdateScopeContextValidity] Dangling Char Inst in entity ");
+		CRY_ASSERT(0,"[CActionController::UpdateScopeContextValidity] Dangling Char Inst in entity ");
 #endif // !CRYMANNEQUIN_WARN_ABOUT_VALIDITY()
 
 		scopeContext.pCharInst = NULL;
@@ -2388,7 +2388,7 @@ bool CActionController::UpdateRootEntityValidity()
 	{
 #if CRYMANNEQUIN_WARN_ABOUT_VALIDITY()
 		CryWarning(VALIDATOR_MODULE_GAME, VALIDATOR_ERROR, "[CActionController::UpdateRootEntityValidity] Dangling Entity %p (expected %p for id=%u) in actioncontroller for '%s'", (void*)m_cachedEntity, (void*)expectedEntity, m_entityId, m_context.controllerDef.m_filename.c_str());
-		CRY_ASSERT_MESSAGE(0,"[CActionController::UpdateRootEntityValidity] Dangling Entity");
+		CRY_ASSERT(0,"[CActionController::UpdateRootEntityValidity] Dangling Entity");
 #endif // !CRYMANNEQUIN_WARN_ABOUT_VALIDITY()
 		m_entityId = 0;
 		m_cachedEntity = NULL;

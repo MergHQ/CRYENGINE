@@ -97,7 +97,7 @@ bool CGameVolume_Water::ReloadExtension(IGameObject* pGameObject, const SEntityS
 
 	GVW::RegisterEvents(*this, *pGameObject);
 
-	CRY_ASSERT_MESSAGE(false, "CGameVolume_Water::ReloadExtension not implemented");
+	CRY_ASSERT(false, "CGameVolume_Water::ReloadExtension not implemented");
 
 	return false;
 }

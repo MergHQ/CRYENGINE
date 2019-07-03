@@ -73,7 +73,7 @@ CGameStatistics::CGameStatistics()
 
 CGameStatistics::~CGameStatistics()
 {
-	CRY_ASSERT_MESSAGE(!m_gameScopes.GetStackSize(), "Stack should be empty now");
+	CRY_ASSERT(!m_gameScopes.GetStackSize(), "Stack should be empty now");
 	if (m_gameScopes.GetStackSize())
 	{
 		CryWarning(VALIDATOR_MODULE_GAME, VALIDATOR_ERROR, "CGameStatistics::~CGameStatistics() Stack is not empty");
@@ -391,7 +391,7 @@ bool CGameStatistics::ValidateAddElement(const SNodeLocator& locator)
 
 	size_t stackPos = m_gameScopes.FindScopePos(locator.scopeID);
 
-	CRY_ASSERT_MESSAGE(stackPos != m_gameScopes.GetStackSize(), "Elements can be added only to the scopes on the stack");
+	CRY_ASSERT(stackPos != m_gameScopes.GetStackSize(), "Elements can be added only to the scopes on the stack");
 	if (stackPos == m_gameScopes.GetStackSize())
 	{
 		CryWarning(VALIDATOR_MODULE_GAME, VALIDATOR_ERROR, "CGameStatistics::AddGameElement() attempt to add element to non existing scope");
@@ -409,7 +409,7 @@ void CGameStatistics::RemoveElement(const SNodeLocator& locator)
 
 	size_t stackPos = m_gameScopes.FindScopePos(locator.scopeID);
 
-	CRY_ASSERT_MESSAGE(stackPos != m_gameScopes.GetStackSize(), "No such scope on the stack");
+	CRY_ASSERT(stackPos != m_gameScopes.GetStackSize(), "No such scope on the stack");
 	if (stackPos == m_gameScopes.GetStackSize())
 	{
 		CryWarning(VALIDATOR_MODULE_GAME, VALIDATOR_ERROR, "CGameStatistics::RemoveElement() attempt to remove element from non existing scope");

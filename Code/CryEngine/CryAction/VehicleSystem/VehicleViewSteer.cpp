@@ -55,8 +55,7 @@ CVehicleViewSteer::CVehicleViewSteer()
 
 //------------------------------------------------------------------------
 CVehicleViewSteer::~CVehicleViewSteer()
-{
-}
+{}
 
 static void getFlag(CVehicleParams& params, const char* key, int& flags, int flag)
 {
@@ -448,7 +447,7 @@ void CVehicleViewSteer::Update(float dt)
 	}
 	else
 	{
-		CRY_ASSERT_MESSAGE(0, "camera will fail because lookat position is invalid");
+		CRY_ASSERT(0, "camera will fail because lookat position is invalid");
 	}
 
 	m_rotatingAction.zero();
@@ -467,7 +466,7 @@ void CVehicleViewSteer::UpdateView(SViewParams& viewParams, EntityId playerId)
 	}
 	else
 	{
-		CRY_ASSERT_MESSAGE(0, "camera position invalid");
+		CRY_ASSERT(0, "camera position invalid");
 	}
 
 	Vec3 dir = (m_lookAt - m_position).GetNormalizedSafe();
@@ -477,7 +476,7 @@ void CVehicleViewSteer::UpdateView(SViewParams& viewParams, EntityId playerId)
 	}
 	else
 	{
-		CRY_ASSERT_MESSAGE(0, "camera rotation invalid");
+		CRY_ASSERT(0, "camera rotation invalid");
 	}
 
 	// set view direction on actor

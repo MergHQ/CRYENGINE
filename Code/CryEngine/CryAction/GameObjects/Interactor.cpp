@@ -73,7 +73,7 @@ bool CInteractor::ReloadExtension(IGameObject* pGameObject, const SEntitySpawnPa
 {
 	ResetGameObject();
 
-	CRY_ASSERT_MESSAGE(false, "CInteractor::ReloadExtension not implemented");
+	CRY_ASSERT(false, "CInteractor::ReloadExtension not implemented");
 
 	return false;
 }

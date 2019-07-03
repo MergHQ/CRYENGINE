@@ -684,7 +684,7 @@ EntityId CItemSystem::GiveItem(IActor* pActor, const char* item, bool sound, boo
 	{
 		EntityId itemEntId = pItemEnt->GetId();
 		IItem* pItem = GetItem(itemEntId);
-		CRY_ASSERT_MESSAGE(pItem, "Just spawned an entity assuming it was an item but it isn't");
+		CRY_ASSERT(pItem, "Just spawned an entity assuming it was an item but it isn't");
 		if (pItem)
 		{
 			// this may remove the entity
@@ -1071,7 +1071,7 @@ void CItemSystem::PreCacheLevelToLevelLoadout()
 {
 	IGameRules* pGameRules = CCryAction::GetCryAction()->GetIGameRulesSystem()->GetCurrentGameRules();
 
-	CRY_ASSERT_MESSAGE(pGameRules != NULL, "No game rules active, can not preload resources");
+	CRY_ASSERT(pGameRules != NULL, "No game rules active, can not preload resources");
 
 	if (pGameRules)
 	{

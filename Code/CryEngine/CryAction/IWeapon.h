@@ -82,7 +82,7 @@ struct IFireMode
 	virtual bool          IsSilenced() const = 0;
 	virtual bool          AllowZoom() const = 0;
 	virtual void          Cancel() = 0;
-	virtual void          SetProjectileLaunchParams(const SProjectileLaunchParams& launchParams) { CRY_ASSERT_MESSAGE(0, "Firemode does not handle launch params"); }
+	virtual void          SetProjectileLaunchParams(const SProjectileLaunchParams& launchParams) { CRY_ASSERT(0, "Firemode does not handle launch params"); }
 
 	virtual void          NetShoot(const Vec3& hit, int predictionHandle) = 0;
 	virtual void          NetShootEx(const Vec3& pos, const Vec3& dir, const Vec3& vel, const Vec3& hit, float extra, int predictionHandle) = 0;

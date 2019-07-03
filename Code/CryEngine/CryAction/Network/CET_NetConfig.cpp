@@ -25,7 +25,7 @@ public:
 		if (CGameContext* pGameContext = CCryAction::GetCryAction()->GetGameContext())
 		{
 			INetContext* pNetContext = pGameContext->GetNetContext();
-			CRY_ASSERT_MESSAGE(pNetContext, "Task should never be updated without NetContext");
+			CRY_ASSERT(pNetContext, "Task should never be updated without NetContext");
 			pNetContext->StartedEstablishingContext(m_token);
 		}
 		return eCETR_Ok;
@@ -56,7 +56,7 @@ public:
 		if (CGameContext* pGameContext = CCryAction::GetCryAction()->GetGameContext())
 		{
 			INetContext* pNetContext = pGameContext->GetNetContext();
-			CRY_ASSERT_MESSAGE(pNetContext, "Task should never be updated without NetContext");
+			CRY_ASSERT(pNetContext, "Task should never be updated without NetContext");
 			pNetContext->EstablishedContext(m_token);
 		}
 		return eCETR_Ok;
@@ -119,7 +119,7 @@ public:
 		if (CGameContext* pGameContext = CCryAction::GetCryAction()->GetGameContext())
 		{
 			INetContext* pNetContext = pGameContext->GetNetContext();
-			CRY_ASSERT_MESSAGE(pNetContext, "Task should never be updated without NetContext");
+			CRY_ASSERT(pNetContext, "Task should never be updated without NetContext");
 			pNetContext->DelegateAuthority(entityId, state.pSender);
 		}
 		return eCETR_Ok;
