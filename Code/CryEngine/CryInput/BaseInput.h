@@ -140,7 +140,7 @@ private:
 	static bool OnFilterInputEventDummy(SInputEvent* pInput);
 
 	// listener functionality
-	typedef std::list<IInputEventListener*> TInputEventListeners;
+	typedef CListenerSet<IInputEventListener*> TInputEventListeners;
 	TInputSymbols                      m_holdSymbols;
 	TInputEventListeners               m_listeners;
 	TInputEventListeners               m_consoleListeners;
