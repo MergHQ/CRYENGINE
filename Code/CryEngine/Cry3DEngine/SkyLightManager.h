@@ -22,8 +22,7 @@ public:
 			  , m_g(-0.99f)
 			  , m_rgbWaveLengths(650.0f, 570.0f, 475.0f)
 			  , m_sunDirection(0.0f, 0.707106f, 0.707106f)
-		{
-		}
+		{}
 
 		Vec3 m_sunIntensity;
 		float m_Km;
@@ -93,5 +92,5 @@ private:
 	Vec3 m_hazeColorMieNoPremulAccum;
 	Vec3 m_hazeColorRayleighNoPremulAccum;
 
-	CRY_ALIGN(16) SSkyLightRenderParams m_renderParams;
+	SSkyLightRenderParams m_renderParams;
 };

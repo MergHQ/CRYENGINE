@@ -1043,6 +1043,7 @@ enum eSkyType // Maps to "e_SkyType" CVar
 	eSkySpec_NumSkySpecs,
 };
 
+#pragma pack(push, 16)
 struct SSkyLightRenderParams
 {
 	static constexpr int skyDomeTextureWidth = 64;
@@ -1073,26 +1074,20 @@ struct SSkyLightRenderParams
 	{
 	}
 
-	// temporarily add padding bytes to prevent fetching Vec4 constants below from wrong offset
-	uint32 dummy0;
-	uint32 dummy1;
-
 	// Sky dome texture data
 	const void* m_pSkyDomeTextureDataMie;
 	const void* m_pSkyDomeTextureDataRayleigh;
 	size_t      m_skyDomeTexturePitch;
 	int         m_skyDomeTextureTimeStamp;
 
-	int         pad; //!< Enable 16 byte alignment for Vec4s.
-
 	// Sky dome shader constants
-	Vec4 m_partialMieInScatteringConst;
-	Vec4 m_partialRayleighInScatteringConst;
-	Vec4 m_sunDirection;
-	Vec4 m_phaseFunctionConsts;
-	Vec4 m_hazeColor;
-	Vec4 m_hazeColorMieNoPremul;
-	Vec4 m_hazeColorRayleighNoPremul;
+	CRY_ALIGN(16) Vec4 m_partialMieInScatteringConst;
+	CRY_ALIGN(16) Vec4 m_partialRayleighInScatteringConst;
+	CRY_ALIGN(16) Vec4 m_sunDirection;
+	CRY_ALIGN(16) Vec4 m_phaseFunctionConsts;
+	CRY_ALIGN(16) Vec4 m_hazeColor;
+	CRY_ALIGN(16) Vec4 m_hazeColorMieNoPremul;
+	CRY_ALIGN(16) Vec4 m_hazeColorRayleighNoPremul;
 
 	// Sky hemisphere colors
 	Vec3 m_skyColorTop;
@@ -1101,6 +1096,7 @@ struct SSkyLightRenderParams
 	Vec3 m_skyColorSouth;
 	Vec3 m_skyColorWest;
 };
+#pragma pack(pop)
 
 struct sRAEColdData
 {
@@ -1172,7 +1168,7 @@ struct CRY_ALIGN(16) SRainParams
 	bool bDisableOcclusion = false;
 
 	bool bApplySkyColor = false;
-	float fSkyColorWeight = 0.5f; 
+	float fSkyColorWeight = 0.5f;
 };
 
 struct SSnowParams
@@ -2677,8 +2673,8 @@ inline bool SRenderingPassInfo::IsShadowPass() const
 inline bool SRenderingPassInfo::IsCachedShadowPass() const
 {
 	return IsShadowPass() &&
-	       (GetShadowMapType() == SRenderingPassInfo::SHADOW_MAP_CACHED ||
-	        GetShadowMapType() == SRenderingPassInfo::SHADOW_MAP_CACHED_MGPU_COPY);
+		   (GetShadowMapType() == SRenderingPassInfo::SHADOW_MAP_CACHED ||
+			GetShadowMapType() == SRenderingPassInfo::SHADOW_MAP_CACHED_MGPU_COPY);
 }
 ///////////////////////////////////////////////////////////////////////////////
 inline SRenderingPassInfo::EShadowMapType SRenderingPassInfo::GetShadowMapType() const
@@ -2987,7 +2983,7 @@ inline SRenderingPassInfo SRenderingPassInfo::CreateBillBoardGenPassRenderingInf
 
 ////////////////////////////////////////////////////////////////////////////////
 inline SRenderingPassInfo SRenderingPassInfo::CreateGeneralPassRenderingInfo(const SGraphicsPipelineKey graphicsPipelineKey, const CCamera& rCamera,
-                                                                             uint32 nRenderingFlags, bool bAuxWindow, SDisplayContextKey displayContextKey)
+																			 uint32 nRenderingFlags, bool bAuxWindow, SDisplayContextKey displayContextKey)
 {
 	static ICVar* pCameraFreeze = gEnv->pConsole->GetCVar("e_CameraFreeze");
 
@@ -3049,8 +3045,8 @@ inline SRenderingPassInfo SRenderingPassInfo::CreateRecursivePassRenderingInfo(c
 
 ///////////////////////////////////////////////////////////////////////////////
 inline SRenderingPassInfo SRenderingPassInfo::CreateShadowPassRenderingInfo(const SGraphicsPipelineKey graphicsPipelineKey, IRenderViewPtr pRenderView, const CCamera& rCamera, int nLightFlags, int nShadowMapLod,
-                                                                            int nShadowCacheLod, bool bExtendedLod, bool bIsMGPUCopy, uint32 nSide,
-                                                                            uint32 nRenderingFlags)
+																			int nShadowCacheLod, bool bExtendedLod, bool bIsMGPUCopy, uint32 nSide,
+																			uint32 nRenderingFlags)
 {
 	SRenderingPassInfo passInfo;
 
