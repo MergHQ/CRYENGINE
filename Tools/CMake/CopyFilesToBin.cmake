@@ -240,8 +240,9 @@ macro(copy_binary_files_to_target)
 			endif()	
 		endif()
 		if (OPTION_SANDBOX)
-			# Qt: Debug && Profile will use the same win_x64 folder, for Release Qt will not be deployed. Empty second arg do the job
-			deploy_runtime_files("${QT_DEPLOY_ROOT}/Qt/bin/*.dll" "")
+			# Qt: Debug && Profile will use the same win_x64 folder, for Release Qt will not be deployed. Empty second arg do the job.
+			# d3dcompiler_47.dll file from Qt bin should not be copied in output folder
+			deploy_runtime_files("${QT_DEPLOY_ROOT}/Qt/bin/[^d][^3]*.dll" "")
 			deploy_runtime_files("${QT_DEPLOY_ROOT}/Qt/bin/QtWebEngineProcess.exe" "")
 			deploy_runtime_files("${QT_DEPLOY_ROOT}/PySide/PySide2/qt.conf" "")
 			deploy_runtime_files("${QT_DEPLOY_ROOT}/PySide/PySide2/shiboken2.cp37-win_amd64.pyd" "")
