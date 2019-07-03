@@ -36,6 +36,10 @@ bool SkeletonManager::Initialize(const string& rootPath)
 	RCLog("Starting preloading of skeletons.");
 	for (const string& skeletonFilename : foundSkeletons)
 	{
+		if (skeletonFilename == "Objects/characters/human/generic/skeleton_player_generic.chr")
+		{
+			RCLog("stop here");
+		}
 		RCLog("Loading skeleton '%s'", skeletonFilename.c_str());
 		LoadSkeletonInfo(skeletonFilename);
 	} 
@@ -74,6 +78,7 @@ const CSkeletonInfo* SkeletonManager::FindSkeletonByAnimFile(const char* szAnima
 			return &el.second.Skeleton();
 		}
 	}
+	RCLogError("Skeleton with animation file '%s' in its Animation List could not be found. Check that the skeleton's .chrparams file correctly references this file.", relativeAnimFilePath.c_str());
 	return nullptr;
 }
 
@@ -97,7 +102,7 @@ const CSkeletonInfo* SkeletonManager::LoadSkeletonInfo(const char* szFilename)
 	RCLog("Loading skeleton '%s'.", fullFile.c_str());
 
 	SkeletonLoader& skeletonInfo = m_fileToSkeletonInfo[szFilename];
-	skeletonInfo.Load(fullFile.c_str(), m_pPakSystem, m_pXmlParser, m_tmpPath);
+	skeletonInfo.Load(fullFile.c_str(), m_rootPath, m_pPakSystem, m_pXmlParser, m_tmpPath);
 	const bool bLoadSuccess = skeletonInfo.IsLoaded();
 	if (!bLoadSuccess)
 	{

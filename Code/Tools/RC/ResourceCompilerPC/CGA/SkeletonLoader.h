@@ -13,7 +13,7 @@ class SkeletonLoader
 public:
 	SkeletonLoader();
 
-	CSkeletonInfo* Load(const char* filename, IPakSystem* pakSystem, ICryXML* xml, const string& tempPath);
+	CSkeletonInfo* Load(const char* filename, const char* szAssetRootDir, IPakSystem* pakSystem, ICryXML* xml, const string& tempPath);
 
 	const char* GetTempName() const { return m_tempFileName.c_str(); }
 	const CSkeletonInfo& Skeleton() const{ return m_skeletonInfo; }

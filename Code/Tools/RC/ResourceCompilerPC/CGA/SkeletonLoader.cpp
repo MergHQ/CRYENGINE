@@ -274,7 +274,7 @@ static bool LoadIKSetup(const char* szChrParamsFileName, XmlNodeRef rootNode, CS
 	return true;
 }
 
-static bool LoadAnimList(const char* szChrParamsFileName, XmlNodeRef rootNode, CAnimList* pOutAnimList, ICryXML* pXmlParser, const char* strDefaultDirName = nullptr)
+static bool LoadAnimList(const char* szChrParamsFileName, const char* szAssetRootDir, XmlNodeRef rootNode, CAnimList* pOutAnimList, ICryXML* pXmlParser, const char* strDefaultDirName = nullptr)
 {
 	constexpr uint32 MAX_STRLEN = 512;
 
@@ -355,7 +355,8 @@ static bool LoadAnimList(const char* szChrParamsFileName, XmlNodeRef rootNode, C
 			else if (!stricmp(animName, "$Include"))
 			{
 				// load the new params file, but only parse the AnimationList section
-				XmlNodeRef topRoot = LoadXml(currentPathToken.c_str(), pXmlParser);
+				string fullPath = PathUtil::Make(szAssetRootDir, currentPathToken);
+				XmlNodeRef topRoot = LoadXml(fullPath.c_str(), pXmlParser);
 				if (topRoot)
 				{
 					const char* nodeTag = topRoot->getTag();
@@ -369,7 +370,7 @@ static bool LoadAnimList(const char* szChrParamsFileName, XmlNodeRef rootNode, C
 							const char* newNodeTag = node->getTag();
 							if (stricmp(newNodeTag, "AnimationList") == 0)
 							{
-								bSuccess &= LoadAnimList(szChrParamsFileName, node, pOutAnimList, pXmlParser, strAnimDirName);
+								bSuccess &= LoadAnimList(szChrParamsFileName, szAssetRootDir, node, pOutAnimList, pXmlParser, strAnimDirName);
 							}
 						}
 					}
@@ -408,7 +409,7 @@ static bool LoadAnimList(const char* szChrParamsFileName, XmlNodeRef rootNode, C
 	return bSuccess;
 }
 
-static bool LoadChrParams(const char* szFileNameXML, CAnimList* pOutAnimList, CSkinningInfo* pModelSkeleton, ICryXML* pXMLParser)
+static bool LoadChrParams(const char* szFileNameXML, const char* szAssetRootDir, CAnimList* pOutAnimList, CSkinningInfo* pModelSkeleton, ICryXML* pXMLParser)
 {
 	XmlNodeRef TopRoot = LoadXml(szFileNameXML, pXMLParser);
 	if (TopRoot == 0)
@@ -428,7 +429,7 @@ static bool LoadChrParams(const char* szFileNameXML, CAnimList* pOutAnimList, CS
 		}
 		if (stricmp(currentXmlTag, "AnimationList") == 0)
 		{
-			bSuccess &= LoadAnimList(szFileNameXML, currentChildNode, pOutAnimList, pXMLParser);
+			bSuccess &= LoadAnimList(szFileNameXML, szAssetRootDir, currentChildNode, pOutAnimList, pXMLParser);
 		}
 	}
 	return bSuccess;
@@ -442,20 +443,20 @@ SkeletonLoader::SkeletonLoader()
 
 
 //////////////////////////////////////////////////////////////////////////
-CSkeletonInfo* SkeletonLoader::Load(const char* filename, IPakSystem* pakSystem, ICryXML* xml, const string& tempPath)
+CSkeletonInfo* SkeletonLoader::Load(const char* szFilename, const char* szAssetRootDir, IPakSystem* pakSystem, ICryXML* xml, const string& tempPath)
 {
-	std::auto_ptr<TempFilePakExtraction> fileProxyCHR(new TempFilePakExtraction( filename, tempPath.c_str(), pakSystem ));
+	std::auto_ptr<TempFilePakExtraction> fileProxyCHR(new TempFilePakExtraction(szFilename, tempPath.c_str(), pakSystem ));
 	m_tempFileName = fileProxyCHR->GetTempName();
 
-	const bool bChr = StringHelpers::EndsWithIgnoreCase(filename, "chr");
+	const bool bChr = StringHelpers::EndsWithIgnoreCase(szFilename, "chr");
 
-	stack_string filenameChrParams = filename;
+	stack_string filenameChrParams = szFilename;
 	filenameChrParams.replace(".chr",".chrparams");
-	std::auto_ptr<TempFilePakExtraction> fileProxyChrParams(new TempFilePakExtraction( filenameChrParams.c_str(), tempPath.c_str(), pakSystem ));;
+	std::auto_ptr<TempFilePakExtraction> fileProxyChrParams(new TempFilePakExtraction( filenameChrParams.c_str(), tempPath.c_str(), pakSystem ));
 
 	if (bChr && m_skeletonInfo.LoadFromChr(m_tempFileName.c_str()))
 	{
-		LoadChrParams(fileProxyChrParams->GetTempName().c_str(), &m_skeletonInfo.m_animList, &m_skeletonInfo.m_SkinningInfo, xml);
+		LoadChrParams(fileProxyChrParams->GetTempName().c_str(), szAssetRootDir, &m_skeletonInfo.m_animList, &m_skeletonInfo.m_SkinningInfo, xml);
 		m_bLoaded = true;
 		return &m_skeletonInfo;
 	}

@@ -31,9 +31,9 @@ inline void CAnimList::AddFile(const char* szFile)
 {
 	if (szFile && szFile[0])
 	{
-		stack_string file = szFile;
-		file.MakeLower();
-		m_plainFilesSet.emplace(szFile);
+		stack_string fileLowercase = szFile;
+		fileLowercase.MakeLower();
+		m_plainFilesSet.emplace(fileLowercase);
 	}
 }
 

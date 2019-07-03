@@ -564,7 +564,7 @@ bool CAnimationConverter::RebuildDatabases()
 					}
 					continue;
 				}
-				const CSkeletonInfo* pSkeleton = m_skeletonManager->FindSkeletonByAnimFile(filePath);
+				const CSkeletonInfo* pSkeleton = m_skeletonManager->FindSkeletonByAnimFile(filePath, true);
 				if (!pSkeleton)
 				{
 					RCLogError("Failed to find skeleton for animation with name '%s'. If this animation is an aimpose or lookpose, it will not be correctly added to the .img files.", 
