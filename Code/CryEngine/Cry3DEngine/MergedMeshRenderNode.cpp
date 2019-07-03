@@ -3189,8 +3189,6 @@ void CMergedMeshRenderNode::StreamAsyncOnComplete(IReadStream* pStream, unsigned
 		return;
 	}
 
-	const float fExtents = c_MergedMeshesExtent;
-	const float fExtentsRec = 1.0f / c_MergedMeshesExtent;
 	size_t stepcount = 0u;
 
 	unsigned int nSize = pStream->GetBytesRead();
@@ -3223,9 +3221,9 @@ void CMergedMeshRenderNode::StreamAsyncOnComplete(IReadStream* pStream, unsigned
 #if MMRM_DEBUG
 			{
 				CRY_ASSERT(sectorChunk.m_StatInstGroupID == header->instGroupId);
-				CRY_ASSERT(sectorChunk.i == (uint32)floorf(abs(m_initPos.x) * fExtentsRec));
-				CRY_ASSERT(sectorChunk.j == (uint32)floorf(abs(m_initPos.y) * fExtentsRec));
-				CRY_ASSERT(sectorChunk.k == (uint32)floorf(abs(m_initPos.z) * fExtentsRec));
+				CRY_ASSERT(sectorChunk.i == (uint32)floorf(abs(m_initPos.x) / c_MergedMeshesExtent));
+				CRY_ASSERT(sectorChunk.j == (uint32)floorf(abs(m_initPos.y) / c_MergedMeshesExtent));
+				CRY_ASSERT(sectorChunk.k == (uint32)floorf(abs(m_initPos.z) / c_MergedMeshesExtent));
 			}
 #endif
 		}
@@ -3236,7 +3234,7 @@ void CMergedMeshRenderNode::StreamAsyncOnComplete(IReadStream* pStream, unsigned
 		stepcount += header->numSamples;
 	}
 
-	TMergedMesh_InitializeSamples job(fExtents, reinterpret_cast<const uint8*>(pStream->GetBuffer()));
+	TMergedMesh_InitializeSamples job(c_MergedMeshesExtent, reinterpret_cast<const uint8*>(pStream->GetBuffer()));
 	job.SetPriorityLevel(JobManager::eLowPriority);
 	job.SetClassInstance(this);
 	job.Run();
