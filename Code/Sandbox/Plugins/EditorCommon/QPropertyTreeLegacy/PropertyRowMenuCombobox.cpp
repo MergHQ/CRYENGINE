@@ -2,6 +2,8 @@
 
 #include "stdafx.h"
 #include <CryCore/Platform/platform.h>
+#include <CrySerialization/yasli/StringList.h>
+
 #include <Dialogs/TreeViewDialog.h>
 
 #include <QObject>
@@ -11,9 +13,8 @@
 #include <Serialization/PropertyTreeLegacy/PropertyTreeLegacy.h>
 #include <Serialization/PropertyTreeLegacy/PropertyRowImpl.h>
 #include <Serialization/PropertyTreeLegacy/IDrawContext.h>
-#include <Serialization/PropertyTreeLegacy/PropertyRowStringListValue.h>
-
-#include "Serialization/QPropertyTreeLegacy/QPropertyTreeLegacy.h"
+#include <Serialization/PropertyTreeLegacy/PropertyTreeModel.h>
+#include <Serialization/QPropertyTreeLegacy/QPropertyTreeLegacy.h>
 
 class QAction;
 
@@ -50,9 +51,9 @@ public:
 	void actionTriggered(QAction* pAction);
 
 private:
-	PropertyRow*   comboboxRow_;
-	yasli::string& value_;
-	PropertyTreeLegacy*  tree_;
+	PropertyRow*        comboboxRow_;
+	yasli::string&      value_;
+	PropertyTreeLegacy* tree_;
 };
 
 int widgetSizeMinHelper(const PropertyTreeLegacy* tree, const PropertyRow* row, RowWidthCache& widthCache)
@@ -63,9 +64,9 @@ int widgetSizeMinHelper(const PropertyTreeLegacy* tree, const PropertyRow* row, 
 	}
 
 	const int width =
-	  row->userWidgetToContent()
-	  ? widthCache.getOrUpdate(tree, row, tree->_defaultRowHeight())
-	  : 80;
+		row->userWidgetToContent()
+		? widthCache.getOrUpdate(tree, row, tree->_defaultRowHeight())
+		: 80;
 
 	return width;
 }
@@ -131,11 +132,11 @@ bool showPopup(QPropertyTreeLegacy* pTree, Rect rect, PropertyRow* pPropertyRow,
 		pMenu->setActiveAction(pSelectedAction);
 		pMenu->popup(menuPoint, pSelectedAction);
 	}
-	
+
 	return true;
 }
 
-class PropertyRowStaticMenuCombobox : public PropertyRowImpl<StringListStaticValue>
+class PropertyRowStaticMenuCombobox : public PropertyRowImpl<yasli::StringListStaticValue>
 {
 public:
 	PropertyRowStaticMenuCombobox() : value_(nullptr) {}
@@ -160,14 +161,14 @@ public:
 
 	bool          assignTo(const Serializer& ser) const override
 	{
-		*((StringListStaticValue*)ser.pointer()) = value_.c_str();
+		*((yasli::StringListStaticValue*)ser.pointer()) = value_.c_str();
 		return true;
 	}
 
 	void setValueAndContext(const Serializer& ser, yasli::Archive& ar) override
 	{
-		YASLI_ESCAPE(ser.size() == sizeof(StringListStaticValue), return );
-		const StringListStaticValue& stringListValue = *((StringListStaticValue*)(ser.pointer()));
+		YASLI_ESCAPE(ser.size() == sizeof(yasli::StringListStaticValue), return );
+		const yasli::StringListStaticValue& stringListValue = *((yasli::StringListStaticValue*)(ser.pointer()));
 		stringList_.resize(stringListValue.stringList().size());
 		for (size_t i = 0; i < stringList_.size(); ++i)
 			stringList_[i] = stringListValue.stringList()[i];
@@ -176,13 +177,13 @@ public:
 		type_ = stringListValue.type();
 	}
 
-	bool            isLeaf() const override                                { return true; }
-	bool            isStatic() const override                              { return false; }
-	int             widgetSizeMin(const PropertyTreeLegacy* tree) const override { return widgetSizeMinHelper(tree, this, widthCache_); }
-	WidgetPlacement widgetPlacement() const override                       { return WIDGET_VALUE; }
-	const void*     searchHandle() const override                          { return handle_; }
-	yasli::TypeID   typeId() const override                                { return type_; }
-	// Override behavior inherited from PropertyRowField, we always want clicks to trigger the drop-down 
+	bool            isLeaf() const override                                           { return true; }
+	bool            isStatic() const override                                         { return false; }
+	int             widgetSizeMin(const PropertyTreeLegacy* tree) const override      { return widgetSizeMinHelper(tree, this, widthCache_); }
+	WidgetPlacement widgetPlacement() const override                                  { return WIDGET_VALUE; }
+	const void*     searchHandle() const override                                     { return handle_; }
+	yasli::TypeID   typeId() const override                                           { return type_; }
+	// Override behavior inherited from PropertyRowField, we always want clicks to trigger the drop-down
 	bool            onMouseDown(PropertyTreeLegacy* tree, Point point, bool& changed) { return false; }
 
 	void            redraw(IDrawContext& context) override
@@ -231,25 +232,25 @@ public:
 
 	bool          assignTo(const Serializer& ser) const override
 	{
-		*((StringListValue*)ser.pointer()) = value_.c_str();
+		*((yasli::StringListValue*)ser.pointer()) = value_.c_str();
 		return true;
 	}
 	void setValueAndContext(const yasli::Serializer& ser, yasli::Archive& ar) override
 	{
-		YASLI_ESCAPE(ser.size() == sizeof(StringListValue), return );
-		const StringListValue& stringListValue = *((StringListValue*)(ser.pointer()));
+		YASLI_ESCAPE(ser.size() == sizeof(yasli::StringListValue), return );
+		const yasli::StringListValue& stringListValue = *((yasli::StringListValue*)(ser.pointer()));
 		stringList_ = stringListValue.stringList();
 		value_ = stringListValue.c_str();
 		handle_ = stringListValue.handle();
 		type_ = stringListValue.type();
 	}
 
-	bool            isLeaf() const override                                { return true; }
-	bool            isStatic() const override                              { return false; }
+	bool            isLeaf() const override                                      { return true; }
+	bool            isStatic() const override                                    { return false; }
 	int             widgetSizeMin(const PropertyTreeLegacy* tree) const override { return widgetSizeMinHelper(tree, this, widthCache_); }
-	WidgetPlacement widgetPlacement() const override                       { return WIDGET_VALUE; }
-	const void*     searchHandle() const override                          { return handle_; }
-	yasli::TypeID   typeId() const override                                { return type_; }
+	WidgetPlacement widgetPlacement() const override                             { return WIDGET_VALUE; }
+	const void*     searchHandle() const override                                { return handle_; }
+	yasli::TypeID   typeId() const override                                      { return type_; }
 
 	void            redraw(IDrawContext& context) override
 	{
@@ -286,6 +287,6 @@ void QComboBoxHandler::actionTriggered(QAction* pAction)
 	}
 }
 
-REGISTER_PROPERTY_ROW(StringListStaticValue, PropertyRowStaticMenuCombobox)
-REGISTER_PROPERTY_ROW(StringListValue, PropertyRowMenuCombobox)
+REGISTER_PROPERTY_ROW(yasli::StringListStaticValue, PropertyRowStaticMenuCombobox)
+REGISTER_PROPERTY_ROW(yasli::StringListValue, PropertyRowMenuCombobox)
 }

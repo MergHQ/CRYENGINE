@@ -110,7 +110,6 @@ void ResourceSelectorMenuHandler::onMenuJumpTo()
 PropertyRowResourceSelector::PropertyRowResourceSelector()
 	: provider_(0), id_(0), searchHandle_(0), bActive_(false), selector_(0)
 {
-	CRY_ASSERT(GetIEditor() && GetIEditor()->GetResourceSelectorHost());
 }
 
 property_tree::InplaceWidget* PropertyRowResourceSelector::createWidget(PropertyTreeLegacy* tree)
@@ -427,6 +426,8 @@ bool PropertyRowResourceSelector::editResource(PropertyTreeLegacy* tree)
 
 void PropertyRowResourceSelector::setValueAndContext(const Serialization::SStruct& ser, IArchive& ar)
 {
+	CRY_ASSERT(GetIEditor() && GetIEditor()->GetResourceSelectorHost());
+
 	IResourceSelector* value = (IResourceSelector*)ser.pointer();
 	if (selector_ == nullptr || type_ != value->resourceType)
 	{

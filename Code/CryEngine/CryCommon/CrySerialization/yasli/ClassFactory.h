@@ -168,7 +168,7 @@ public:
 		Creator(const TypeDescription* description, ClassFactory* factory = 0){
 			this->description_ = description;
 #if YASLI_NO_RTTI
-			// TODO: remove unnecessary static initialisation
+			// TODO: remove unnecessary static initialization
 			Derived vptrProbe;
             CreatorBase::vptr_ = extractVPtr(&vptrProbe);
 #endif
