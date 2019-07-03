@@ -179,7 +179,10 @@ public:
 			else
 			{
 				//just a line edit selection
-				selectAll();
+				if (!hasFocus())
+				{
+					selectAll();
+				}
 			}
 		}
 		else
