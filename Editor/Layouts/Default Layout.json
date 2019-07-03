@@ -1,11 +1,11 @@
 {
-    "MainWindowGeometry": "AdnQywADAAAAAAFWAAAAyQAACMcAAAT5AAABTwAAAMkAAAjOAAAFAAAAAAAAAAAACgAAAAFPAAAAyQAACM4AAAUA",
-    "MainWindowState": "AAAA/wAAAAD9AAAAAAAAB3gAAAPeAAAABAAAAAIAAAAIAAAAAvwAAAAGAAAAAAAAAAAAAAAAAAAAAAAAAAIAAAAAAAAAAgAAAAoAAAAeAFMAdABhAG4AZABhAHIAZABUAG8AbwBsAEIAYQByAQAAAAD/////AAAAAAAAAAAAAAAiAEUAZABpAHQAIABNAG8AZABlAHMAVABvAG8AbABCAGEAcgEAAACr/////wAAAAAAAAAAAAAAJABDAG8AbwByAGQAaQBuAGEAdABlAHMAVABvAG8AbABCAGEAcgEAAAEy/////wAAAAAAAAAAAAAAJABDAG8AbgBzAHQAcgBhAGkAbgB0AHMAVABvAG8AbABCAGEAcgAAAAEW/////wAAAAAAAAAAAAAAIABTAGUAbABlAGMAdABpAG8AbgBUAG8AbwBsAEIAYQByAQAAAbn/////AAAAAAAAAAAAAAAcAFAAaAB5AHMAaQBjAHMAVABvAG8AbABCAGEAcgAAAAOM/////wAAAAAAAAAAAAAAFgBHAGEAbQBlAFQAbwBvAGwAQgBhAHIBAAAC3/////8AAAAAAAAAAAAAABgAQQB1AGQAaQBvAFQAbwBvAGwAQgBhAHIBAAADZv////8AAAAAAAAAAAAAABwATABhAHkAbwB1AHQAcwBUAG8AbwBsAEIAYQByAQAAA9D/////AAAAAAAAAAAAAAAgAFYAaQBlAHcATQBvAGQAZQBzAFQAbwBvAGwAQgBhAHIAAAAD8AAAAT0AAAAAAAAAAAAAAAIAAAAAAAAAAwAAAAA=",
+    "MainWindowGeometry": "AdnQywADAAAAAAAHAAAAAAAAB3gAAAQIAAABcgAAAGYAAAYFAAADlgAAAAACAAAAB4AAAAAAAAAAAAAAB38AAAQP",
+    "MainWindowState": "AAAA/wAAAAD9AAAAAAAAB3gAAAO2AAAABAAAAAIAAAAIAAAAAvwAAAAGAAAAAAAAAAAAAAAAAAAAAAAAAAIAAAAAAAAAAgAAAAoAAAAeAFMAdABhAG4AZABhAHIAZABUAG8AbwBsAEIAYQByAQAAAAD/////AAAAAAAAAAAAAAAiAEUAZABpAHQAIABNAG8AZABlAHMAVABvAG8AbABCAGEAcgEAAACr/////wAAAAAAAAAAAAAAJABDAG8AbwByAGQAaQBuAGEAdABlAHMAVABvAG8AbABCAGEAcgEAAAEy/////wAAAAAAAAAAAAAAJABDAG8AbgBzAHQAcgBhAGkAbgB0AHMAVABvAG8AbABCAGEAcgAAAAEW/////wAAAAAAAAAAAAAAIABTAGUAbABlAGMAdABpAG8AbgBUAG8AbwBsAEIAYQByAQAAAbn/////AAAAAAAAAAAAAAAcAFAAaAB5AHMAaQBjAHMAVABvAG8AbABCAGEAcgAAAAOM/////wAAAAAAAAAAAAAAFgBHAGEAbQBlAFQAbwBvAGwAQgBhAHIBAAAC3/////8AAAAAAAAAAAAAABgAQQB1AGQAaQBvAFQAbwBvAGwAQgBhAHIBAAADZv////8AAAAAAAAAAAAAABwATABhAHkAbwB1AHQAcwBUAG8AbwBsAEIAYQByAQAAA9D/////AAAAAAAAAAAAAAAgAFYAaQBlAHcATQBvAGQAZQBzAFQAbwBvAGwAQgBhAHIAAAAD8AAAAT0AAAAAAAAAAAAAAAIAAAAAAAAAAwAAAAA=",
     "ToolsLayout": {
         "floatingWindows": [
         ],
         "mainWrapper": {
-            "geometry": "AdnQywADAAAAAAACAAAAAgAAB3UAAAPbAAAAAgAAAAIAAAd1AAAD2wAAAAAAAAAACgAAAAACAAAAAgAAB3UAAAPb",
+            "geometry": "AdnQywADAAAAAAACAAAAAgAAB3UAAAOzAAAAAgAAAAIAAAd1AAADswAAAAAAAAAAB4AAAAACAAAAAgAAB3UAAAOz",
             "name": "mainWrapper",
             "splitter": {
                 "items": [
@@ -26,7 +26,7 @@
                                 "type": "area"
                             }
                         ],
-                        "state": "AAAA/wAAAAEAAAACAAABGgAAAs0A/////wEAAAACAA==",
+                        "state": "AAAA/wAAAAEAAAACAAABHgAAAs0A/////wEAAAACAA==",
                         "type": "splitter"
                     },
                     {
@@ -46,7 +46,7 @@
                                 "type": "area"
                             }
                         ],
-                        "state": "AAAA/wAAAAEAAAACAAACEgAAAcQA/////wEAAAACAA==",
+                        "state": "AAAA/wAAAAEAAAACAAAB+AAAAbYA/////wEAAAACAA==",
                         "type": "splitter"
                     },
                     {
@@ -57,7 +57,7 @@
                         "type": "area"
                     }
                 ],
-                "state": "AAAA/wAAAAEAAAADAAABRQAABOIAAAFFAP////8BAAAAAQA=",
+                "state": "AAAA/wAAAAEAAAADAAABTwAABNgAAAFFAP////8BAAAAAQA=",
                 "type": "splitter"
             }
         },
@@ -68,6 +68,7 @@
             "class": "Asset Browser",
             "state": {
                 "adaptiveLayout": true,
+                "breadcrumbsVisible": true,
                 "detailsView": {
                     "columnData": {
                         "Bones count": {
@@ -85,7 +86,7 @@
                         "Dependencies": {
                             "data": "Dependencies",
                             "visible": false,
-                            "visualIndex": 21,
+                            "visualIndex": 20,
                             "width": 0
                         },
                         "Favorite": {
@@ -97,13 +98,13 @@
                         "Features count": {
                             "data": "Features count",
                             "visible": false,
-                            "visualIndex": 27,
+                            "visualIndex": 23,
                             "width": 0
                         },
                         "File extension": {
                             "data": "File extension",
                             "visible": false,
-                            "visualIndex": 23,
+                            "visualIndex": 22,
                             "width": 0
                         },
                         "Files count": {
@@ -187,7 +188,7 @@
                         "Usage count": {
                             "data": "Usage count",
                             "visible": false,
-                            "visualIndex": 22,
+                            "visualIndex": 21,
                             "width": 0
                         },
                         "VC status": {
@@ -223,7 +224,7 @@
                         "Work File": {
                             "data": "Work File",
                             "visible": false,
-                            "visualIndex": 20,
+                            "visualIndex": 19,
                             "width": 0
                         },
                         "XML Type": {
@@ -254,7 +255,6 @@
                         "Unique Id",
                         "_thumb_",
                         "_filter_string_",
-                        "VC status",
                         "Version Control Status",
                         "Work File",
                         "Usage count",
@@ -565,7 +565,7 @@
                             "data": "Name",
                             "visible": true,
                             "visualIndex": 4,
-                            "width": 240
+                            "width": 242
                         },
                         "Object Type": {
                             "data": "Object Type",
@@ -685,8 +685,8 @@
                 },
                 "cameraSpeed": 0.010999999940395355,
                 "resolutionMode": 1,
-                "xViewportRes": 1249,
-                "yViewportRes": 476
+                "xViewportRes": 1239,
+                "yViewportRes": 452
             }
         },
         "Properties": {

@@ -90,6 +90,88 @@
     "Asset Browser Widget": {
         "layout": {
             "adaptiveLayout": true,
+            "breadcrumbsVisible": true,
+            "detailsView": {
+                "columnData": {
+                    "Components count": {
+                        "data": "Components count",
+                        "visible": false,
+                        "visualIndex": 8,
+                        "width": 0
+                    },
+                    "Favorite": {
+                        "data": "Favorite",
+                        "visible": true,
+                        "visualIndex": 0,
+                        "width": 16
+                    },
+                    "Features count": {
+                        "data": "Features count",
+                        "visible": false,
+                        "visualIndex": 9,
+                        "width": 0
+                    },
+                    "Folder": {
+                        "data": "Folder",
+                        "visible": false,
+                        "visualIndex": 4,
+                        "width": 0
+                    },
+                    "Name": {
+                        "data": "Name",
+                        "visible": true,
+                        "visualIndex": 1,
+                        "width": 208
+                    },
+                    "Status": {
+                        "data": "Status",
+                        "visible": true,
+                        "visualIndex": 3,
+                        "width": 100
+                    },
+                    "Type": {
+                        "data": "Type",
+                        "visible": true,
+                        "visualIndex": 2,
+                        "width": 120
+                    },
+                    "Unique Id": {
+                        "data": "Unique Id",
+                        "visible": false,
+                        "visualIndex": 5,
+                        "width": 0
+                    },
+                    "_filter_string_": {
+                        "data": "_filter_string_",
+                        "visible": false,
+                        "visualIndex": 7,
+                        "width": 0
+                    },
+                    "_thumb_": {
+                        "data": "_thumb_",
+                        "visible": false,
+                        "visualIndex": 6,
+                        "width": 0
+                    }
+                },
+                "columnOrder": [
+                    "Favorite",
+                    "Name",
+                    "Type",
+                    "Status",
+                    "Folder",
+                    "Unique Id",
+                    "_thumb_",
+                    "_filter_string_",
+                    "Components count",
+                    "Features count"
+                ],
+                "headerSortingOrder": {
+                    "sortOrder": 0,
+                    "sortedSection": 1
+                },
+                "version": 1
+            },
             "editorContent": {
                 "isLocked": true,
                 "toolBarArea": [
@@ -148,6 +230,11 @@
                 "favoriteFilter": false
             },
             "foldersSplitter": "AAAA/wAAAAEAAAACAAAARQAAAqwB/////wEAAAACAA==",
+            "foldersView": {
+                "selected": [
+                    ""
+                ]
+            },
             "mainViewSplitter": "AAAA/wAAAAEAAAACAAAAOgAAAQAB/////wEAAAABAA==",
             "recursiveView": true,
             "showFolders": false,
@@ -160,6 +247,9 @@
             },
             "viewMode": 1
         }
+    },
+    "AssetSearchPopup": {
+        "size": null
     },
     "Audio Controls Editor": {
         "dockLayout": {
@@ -350,8 +440,8 @@
             }
         },
         "pos": {
-            "x": 813,
-            "y": 407
+            "x": 435,
+            "y": 170
         },
         "size": {
             "height": 768,
@@ -363,11 +453,11 @@
     },
     "CLevelEditorSharedState": {
         "AxisConstraint": 0,
-        "CoordSystem_0": 0,
+        "CoordSystem_0": 3,
         "CoordSystem_1": 0,
-        "CoordSystem_2": 0,
-        "CoordSystem_3": 0,
-        "CoordSystem_4": 0,
+        "CoordSystem_2": 3,
+        "CoordSystem_3": 3,
+        "CoordSystem_4": 3,
         "CoordSystem_5": 0,
         "DisplayInfoLevel": 0,
         "EditMode": 0,
@@ -1243,33 +1333,33 @@
     },
     "SelectProjectDialog": {
         "pos": {
-            "x": 798,
-            "y": 434
+            "x": 516,
+            "y": 231
         },
         "size": {
-            "height": 768,
-            "width": 1024
+            "height": 550,
+            "width": 920
         }
     },
     "SpawnLocation": {
         "Animation": {
-            "geometry": "AdnQywADAAAAAAINAAABTAAACD4AAATIAAACBgAAAUwAAAhFAAAEzwAAAAAAAAAACgAAAAIGAAABTAAACEUAAATP",
-            "path": "wrapper#32181"
+            "geometry": "AdnQywADAAAAAACnAAAARgAABtYAAAPCAAAAoAAAAEYAAAbdAAADyQAAAAAAAAAAB4AAAACgAAAARgAABt0AAAPJ",
+            "path": "wrapper#5290"
         },
         "Asset Browser": {
             "path": "mainWindow/h/1/v/1"
         },
         "Audio Controls Editor": {
-            "geometry": "AdnQywADAAAAAAG2AAABIQAAB+cAAASdAAABrwAAASEAAAfuAAAEpAAAAAAAAAAACgAAAAGvAAABIQAAB+4AAASk",
-            "path": "wrapper#3145"
+            "geometry": "AdnQywADAAAAAACnAAAARgAABtcAAAPCAAAAoAAAAEYAAAbeAAADyQAAAAAAAAAAB4AAAACgAAAARgAABt4AAAPJ",
+            "path": "wrapper#32453"
         },
         "Behavior Tree Editor": {
-            "geometry": "AdnQywADAAAAAAH9AAABWgAACC4AAATWAAAB9gAAAVoAAAg1AAAE3QAAAAAAAAAACgAAAAH2AAABWgAACDUAAATd",
-            "path": "wrapper#28356"
+            "geometry": "AdnQywADAAAAAACnAAAARgAABtYAAAPCAAAAoAAAAEYAAAbdAAADyQAAAAAAAAAAB4AAAACgAAAARgAABt0AAAPJ",
+            "path": "wrapper#11325"
         },
         "Character Tool": {
-            "geometry": "AdnQywADAAAAAAH+AAABVgAACC8AAATSAAAB9wAAAVYAAAg2AAAE2QAAAAAAAAAACgAAAAH3AAABVgAACDYAAATZ",
-            "path": "wrapper#29518"
+            "geometry": "AdnQywADAAAAAACnAAAARgAABtYAAAPCAAAAoAAAAEYAAAbdAAADyQAAAAAAAAAAB4AAAACgAAAARgAABt0AAAPJ",
+            "path": "wrapper#19694"
         },
         "Console": {
             "path": "mainWindow/h/0/v/0"
@@ -1286,28 +1376,28 @@
             "path": "mainWindow/h/0/v/0"
         },
         "DataBase View": {
-            "geometry": "AdnQywADAAAAAAHnAAABWAAACBgAAATUAAAB4AAAAVgAAAgfAAAE2wAAAAAAAAAACgAAAAHgAAABWAAACB8AAATb",
-            "path": "wrapper#32545"
+            "geometry": "AdnQywADAAAAAACnAAAARgAABtYAAAPCAAAAoAAAAEYAAAbdAAADyQAAAAAAAAAAB4AAAACgAAAARgAABt0AAAPJ",
+            "path": "wrapper#2488"
         },
         "Dependency Graph": {
-            "geometry": "AdnQywADAAAAAAISAAABSgAACEMAAATGAAACCwAAAUoAAAhKAAAEzQAAAAAAAAAACgAAAAILAAABSgAACEoAAATN",
-            "path": "wrapper#13712"
+            "geometry": "AdnQywADAAAAAACnAAAARgAABtoAAAPCAAAAoAAAAEYAAAbhAAADyQAAAAAAAAAAB4AAAACgAAAARgAABuEAAAPJ",
+            "path": "wrapper#26584"
         },
         "Dynamic Response System": {
-            "geometry": "AdnQywADAAAAAAH3AAABPwAACCgAAAS7AAAB8AAAAT8AAAgvAAAEwgAAAAAAAAAACgAAAAHwAAABPwAACC8AAATC",
-            "path": "wrapper#28667"
+            "geometry": "AdnQywADAAAAAACnAAAARgAABtkAAAPCAAAAoAAAAEYAAAbgAAADyQAAAAAAAAAAB4AAAACgAAAARgAABuAAAAPJ",
+            "path": "wrapper#30110"
         },
         "Environment Editor": {
-            "geometry": "AdnQywADAAAAAAHxAAABWQAACCIAAATVAAAB6gAAAVkAAAgpAAAE3AAAAAAAAAAACgAAAAHqAAABWQAACCkAAATc",
-            "path": "wrapper#2220"
+            "geometry": "AdnQywADAAAAAACnAAAARgAABtkAAAPCAAAAoAAAAEYAAAbgAAADyQAAAAAAAAAAB4AAAACgAAAARgAABuAAAAPJ",
+            "path": "wrapper#28748"
         },
         "Facial Editor": {
-            "geometry": "AdnQywADAAAAAAH/AAABVwAACDAAAATTAAAB+AAAAVcAAAg3AAAE2gAAAAAAAAAACgAAAAH4AAABVwAACDcAAATa",
-            "path": "wrapper#12079"
+            "geometry": "AdnQywADAAAAAACnAAAARgAABtoAAAPCAAAAoAAAAEYAAAbhAAADyQAAAAAAAAAAB4AAAACgAAAARgAABuEAAAPJ",
+            "path": "wrapper#2276"
         },
         "Flow Graph": {
-            "geometry": "AdnQywADAAAAAAIOAAABVgAACD8AAATSAAACBwAAAVYAAAhGAAAE2QAAAAAAAAAACgAAAAIHAAABVgAACEYAAATZ",
-            "path": "wrapper#20135"
+            "geometry": "AdnQywADAAAAAACnAAAARgAABtkAAAPCAAAAoAAAAEYAAAbgAAADyQAAAAAAAAAAB4AAAACgAAAARgAABuAAAAPJ",
+            "path": "wrapper#22578"
         },
         "Keyboard Shortcuts": {
             "geometry": "AdnQywADAAAAAALhAAAB7QAABtIAAATlAAAC2gAAAe0AAAbZAAAE7AAAAAAAAAAACgAAAALaAAAB7QAABtkAAATs",
@@ -1328,20 +1418,20 @@
             "path": "wrapper#2992"
         },
         "Mannequin Editor": {
-            "geometry": "AdnQywADAAAAAAIKAAABWgAACDsAAATWAAACAwAAAVoAAAhCAAAE3QAAAAAAAAAACgAAAAIDAAABWgAACEIAAATd",
-            "path": "wrapper#14170"
+            "geometry": "AdnQywADAAAAAACnAAAARgAABtkAAAPCAAAAoAAAAEYAAAbgAAADyQAAAAAAAAAAB4AAAACgAAAARgAABuAAAAPJ",
+            "path": "wrapper#22835"
         },
         "Material Editor": {
-            "geometry": "AdnQywADAAAAAAHdAAABDAAACA4AAASIAAAB1gAAAQwAAAgVAAAEjwAAAAAAAAAACgAAAAHWAAABDAAACBUAAASP",
-            "path": "wrapper#29919"
+            "geometry": "AdnQywADAAAAAACnAAAARgAABtcAAAPCAAAAoAAAAEYAAAbeAAADyQAAAAAAAAAAB4AAAACgAAAARgAABt4AAAPJ",
+            "path": "wrapper#15327"
         },
         "Material Editor Legacy": {
             "geometry": "AdnQywADAAAAAAHMAAABEQAAB/0AAASNAAABxQAAAREAAAgEAAAElAAAAAAAAAAACgAAAAHFAAABEQAACAQAAASU",
             "path": "wrapper#14604"
         },
         "Mesh": {
-            "geometry": "AdnQywADAAAAAAHrAAABRwAACBwAAATDAAAB5AAAAUcAAAgjAAAEygAAAAAAAAAACgAAAAHkAAABRwAACCMAAATK",
-            "path": "wrapper#29791"
+            "geometry": "AdnQywADAAAAAACnAAAARgAABtYAAAPCAAAAoAAAAEYAAAbdAAADyQAAAAAAAAAAB4AAAACgAAAARgAABt0AAAPJ",
+            "path": "wrapper#21559"
         },
         "Modeling": {
             "geometry": "AdnQywADAAAAAAcVAAABHgAACKgAAASqAAAHDgAAAR4AAAivAAAEsQAAAAAAAAAACgAAAAcOAAABHgAACK8AAASx",
@@ -1352,8 +1442,8 @@
             "path": "wrapper#7375"
         },
         "Particle Editor": {
-            "geometry": "AdnQywADAAAAAAHrAAABPwAACBwAAAS7AAAB5AAAAT8AAAgjAAAEwgAAAAAAAAAACgAAAAHkAAABPwAACCMAAATC",
-            "path": "wrapper#29852"
+            "geometry": "AdnQywADAAAAAACnAAAARgAABtoAAAPCAAAAoAAAAEYAAAbhAAADyQAAAAAAAAAAB4AAAACgAAAARgAABuEAAAPJ",
+            "path": "wrapper#3356"
         },
         "Preferences": {
             "geometry": "AdnQywADAAAAAALyAAAB3gAABuMAAATWAAAC6wAAAd4AAAbqAAAE3QAAAAAAAAAACgAAAALrAAAB3gAABuoAAATd",
@@ -1379,8 +1469,8 @@
             "path": "wrapper#7570"
         },
         "Skeleton": {
-            "geometry": "AdnQywADAAAAAAH6AAABWwAACCsAAATXAAAB8wAAAVsAAAgyAAAE3gAAAAAAAAAACgAAAAHzAAABWwAACDIAAATe",
-            "path": "wrapper#15440"
+            "geometry": "AdnQywADAAAAAACnAAAARgAABtcAAAPCAAAAoAAAAEYAAAbeAAADyQAAAAAAAAAAB4AAAACgAAAARgAABt4AAAPJ",
+            "path": "wrapper#10302"
         },
         "Terrain Editor": {
             "path": "mainWindow/h/2"
@@ -1401,8 +1491,8 @@
             "path": "mainWindow/h/2"
         },
         "Version Control System": {
-            "geometry": "AdnQywADAAAAAAN+AAAB2wAABo8AAAPHAAADdwAAAdsAAAaWAAADzgAAAAAAAAAACgAAAAN3AAAB2wAABpYAAAPO",
-            "path": "wrapper#10670"
+            "geometry": "AdnQywADAAAAAACAAAAAgAAAA5EAAAJsAAAAeQAAAIAAAAOYAAACcwAAAAAAAAAAB4AAAAB5AAAAgAAAA5gAAAJz",
+            "path": "wrapper#3470"
         },
         "ViewportClass_Perspective": {
             "path": "mainWindow/h/1/v/0"
