@@ -62,26 +62,12 @@
 
 // Heap checking/debugging can be enabled or disabled here.
 #if defined(_DEBUG)
-	#define HEAP_CHECK 1
-	#define HEAP_ASSERT(x)              CRY_ASSERT(x)
-	#define HEAP_ASSERT_MESSAGE(x, ...) CRY_ASSERT_MESSAGE(x, __VA_ARGS__)
+	#define HEAP_CHECK       1
+	#define HEAP_ASSERT(...) CRY_ASSERT(__VA_ARGS__)
 #else
-	#define HEAP_CHECK 0
-	#define HEAP_ASSERT(x)              ((void)0)
-	#define HEAP_ASSERT_MESSAGE(x, ...) ((void)0)
+	#define HEAP_CHECK       0
+	#define HEAP_ASSERT(...) ((void)0)
 #endif
-
-namespace Cry
-{
-	template<typename T, typename... Args>
-	inline T const& HeapVerify(T const& cond, Args&&... args)
-	{
-		HEAP_ASSERT_MESSAGE(cond, std::forward<Args>(args)...);
-		return cond;
-	}
-}
-
-#define CRY_HEAP_VERIFY(cond, ...) Cry::HeapVerify(cond, __VA_ARGS__)
 
 namespace Detail
 {
@@ -850,7 +836,7 @@ CGpuHeap::CGpuHeap(uint32_t numMemoryTypes, bool bCommitRegions)
 	if (numMemoryTypes <= kMaxMemoryTypes && numMemoryTypes != 0)
 	{
 #if HEAP_STATIC_STORAGE
-		HEAP_ASSERT_MESSAGE(gpHeapPages == nullptr, "Only one heap may be instantiated when HEAP_STATIC_STORAGE is set");
+		HEAP_ASSERT(gpHeapPages == nullptr, "Only one heap may be instantiated when HEAP_STATIC_STORAGE is set");
 		m_pHeaps = gHeapStorage;
 		m_pPages = gPageStorage;
 	#if HEAP_CHECK
@@ -1049,8 +1035,7 @@ CGpuHeap::THandle CGpuHeap::AllocateTiny(uint32_t memoryType, uint32_t bin)
 		const uint32_t blockState = blockIndex | (bin << STinyPage::kBlockBits);
 		if (pPage->IsFull())
 		{
-			STinyPage* pFirstPage = pages.PopFront(m_pPages);
-			CRY_HEAP_VERIFY(pFirstPage == pPage, "");
+			CRY_VERIFY(pages.PopFront(m_pPages) == pPage);
 			m_pHeaps[memoryType].tinyFull.PushFront(m_pPages, pPage);
 		}
 		return MakeExternalHandle(pageId, kPageTypeTiny, memoryType, blockState);
@@ -1092,8 +1077,7 @@ CGpuHeap::THandle CGpuHeap::AllocateSmall(uint32_t memoryType, uint32_t bin)
 	const uint32_t blockState = blockIndex | (bin << SSmallPage::kBlockBits);
 	if (pPage->IsFull())
 	{
-		SSmallPage* pFirstPage = pages.PopFront(m_pPages);
-		CRY_HEAP_VERIFY(pFirstPage == pPage, "");
+		CRY_VERIFY(pages.PopFront(m_pPages) == pPage);
 		m_pHeaps[memoryType].smallFull[bin].PushFront(m_pPages, pPage);
 	}
 	return MakeExternalHandle(pageId, kPageTypeSmall, memoryType, blockState);
@@ -1261,7 +1245,7 @@ CGpuHeap::THandle CGpuHeap::AllocateHuge(uint32_t memoryType, uint32_t bytes, ui
 	{
 		if (blockHandle)
 		{
-			HEAP_ASSERT_MESSAGE(false, "Block handle value too large");
+			HEAP_ASSERT(false, "Block handle value too large");
 			DeallocateBlock(memoryType, blockHandle, numRegions * kRegionSize);
 		}
 		DeallocatePage(m_pPages, pPage);
@@ -1560,7 +1544,7 @@ void* CGpuHeap::Map(THandle handle)
 		if (pAddress && !page.SetAddress(pAddress))
 		{
 			UnmapBlock(memoryType, blockHandle, pAddress);
-			HEAP_ASSERT_MESSAGE(false, "Block alignment does not meet requested alignment");
+			HEAP_ASSERT(false, "Block alignment does not meet requested alignment");
 		}
 	}
 
@@ -1589,7 +1573,7 @@ void CGpuHeap::Unmap(THandle handle)
 
 UPage* CGpuHeap::UnpackHandle(THandle handle, uint32_t& offset) const
 {
-	HEAP_ASSERT_MESSAGE(handle, "Null handle passed");
+	HEAP_ASSERT(handle, "Null handle passed");
 	SHandle internalHandle = MakeInternalHandle(handle);
 	offset = 0;
 	if (internalHandle.pageType == kPageTypeTiny)
@@ -1598,7 +1582,7 @@ UPage* CGpuHeap::UnpackHandle(THandle handle, uint32_t& offset) const
 		const uint32_t blockIndex = internalHandle.blockState & ((1U << STinyPage::kBlockBits) - 1U);
 		const uint32_t blockSize = GetBinSize(bin);
 		const STinyPage& page = m_pPages[internalHandle.pageIndex].tinyPage;
-		HEAP_ASSERT_MESSAGE((page.IsFull() ? m_pHeaps[internalHandle.memoryType].tinyFull : m_pHeaps[internalHandle.memoryType].tinyAlloc[bin]).Contains(m_pPages, &page) && page.IsAllocated(blockIndex), "Tiny handle not allocated (or already freed)");
+		HEAP_ASSERT((page.IsFull() ? m_pHeaps[internalHandle.memoryType].tinyFull : m_pHeaps[internalHandle.memoryType].tinyAlloc[bin]).Contains(m_pPages, &page) && page.IsAllocated(blockIndex), "Tiny handle not allocated (or already freed)");
 		offset += blockIndex * blockSize;
 		internalHandle = page.parentBlock;
 	}
@@ -1608,7 +1592,7 @@ UPage* CGpuHeap::UnpackHandle(THandle handle, uint32_t& offset) const
 		const uint32_t blockIndex = internalHandle.blockState & ((1U << SSmallPage::kBlockBits) - 1U);
 		const uint32_t blockSize = GetBinSize(bin + kTinyBlockBins);
 		const SSmallPage& page = m_pPages[internalHandle.pageIndex].smallPage;
-		HEAP_ASSERT_MESSAGE((page.IsFull() ? m_pHeaps[internalHandle.memoryType].smallFull[bin] : m_pHeaps[internalHandle.memoryType].smallAlloc[bin]).Contains(m_pPages, &page) && page.IsAllocated(blockIndex), "Small handle not allocated (or already freed)");
+		HEAP_ASSERT((page.IsFull() ? m_pHeaps[internalHandle.memoryType].smallFull[bin] : m_pHeaps[internalHandle.memoryType].smallAlloc[bin]).Contains(m_pPages, &page) && page.IsAllocated(blockIndex), "Small handle not allocated (or already freed)");
 		offset += blockIndex * blockSize;
 		offset += page.GetBegin(false) * kRegionSize;
 		internalHandle.pageIndex = page.parentPage;
@@ -1617,15 +1601,15 @@ UPage* CGpuHeap::UnpackHandle(THandle handle, uint32_t& offset) const
 	else if (internalHandle.pageType == kPageTypeLarge)
 	{
 		SLargePage& largePage = m_pPages[internalHandle.pageIndex].largePage;
-		HEAP_ASSERT_MESSAGE(m_pHeaps[internalHandle.memoryType].largeFull.Contains(m_pPages, &largePage) && !largePage.IsFree(), "Large handle not allocated (or already freed)");
+		HEAP_ASSERT(m_pHeaps[internalHandle.memoryType].largeFull.Contains(m_pPages, &largePage) && !largePage.IsFree(), "Large handle not allocated (or already freed)");
 		offset += largePage.GetBegin(false) * kRegionSize;
 		internalHandle.pageIndex = largePage.parentPage;
 		internalHandle.pageType = kPageTypeHuge;
 	}
-	HEAP_ASSERT_MESSAGE(internalHandle.pageType == kPageTypeHuge, "Invalid handle passed");
+	HEAP_ASSERT(internalHandle.pageType == kPageTypeHuge, "Invalid handle passed");
 	UPage* const pResult = m_pPages + internalHandle.pageIndex;
-	HEAP_ASSERT_MESSAGE(m_pHeaps[internalHandle.memoryType].hugeBlocks.Contains(m_pPages, &pResult->hugePage), "Huge handle not allocated (or already freed)");
-	HEAP_ASSERT_MESSAGE(offset < pResult->hugePage.size * kRegionSize, "Sub-block out of bounds");
+	HEAP_ASSERT(m_pHeaps[internalHandle.memoryType].hugeBlocks.Contains(m_pPages, &pResult->hugePage), "Huge handle not allocated (or already freed)");
+	HEAP_ASSERT(offset < pResult->hugePage.size * kRegionSize, "Sub-block out of bounds");
 	return pResult;
 }
 
