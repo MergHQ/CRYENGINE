@@ -1011,7 +1011,7 @@ bool CStatObj::LoadCGF(IChunkFile* chunkFile, const char* filename, bool isLod, 
 					}
 					break;
 				default:
-					CRY_ASSERT_MESSAGE(0, "Unknown CGFNode Helper type %d", pNode->helperType);
+					CRY_ASSERT(0, "Unknown CGFNode Helper type %d", pNode->helperType);
 				}
 			}
 
@@ -1611,9 +1611,7 @@ bool CStatObj::SaveToCGF(const char* sFilename, IChunkFile** pOutChunkFile, bool
 
 	return bResult;
 #else // #if defined(INCLUDE_SAVECGF)
-	#if !defined(_RELEASE)
-	__debugbreak();
-	#endif
+	CRY_FUNCTION_NOT_IMPLEMENTED;
 	return false;
 #endif
 }

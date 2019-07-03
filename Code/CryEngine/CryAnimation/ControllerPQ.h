@@ -253,9 +253,8 @@ public:
 	uint32 AssignKeyTime(const char* pData, uint32 numElements)
 	{
 #ifndef _RELEASE
-		if (IsConstant())
+		if (!CRY_VERIFY(!IsConstant()))
 		{
-			__debugbreak();
 			return 0;
 		}
 #endif
@@ -643,9 +642,8 @@ public:
 	uint32 AssignKeyTime(const char* pData, uint32 numElements)
 	{
 #ifndef _RELEASE
-		if (IsConstant())
+		if (!CRY_VERIFY(!IsConstant()))
 		{
-			__debugbreak();
 			return 0;
 		}
 #endif
@@ -780,9 +778,8 @@ public:
 	virtual uint32 AssignData(const char* pData, uint32 numElements)
 	{
 #ifndef _RELEASE
-		if (IsConstant())
+		if (!CRY_VERIFY(!IsConstant()))
 		{
-			__debugbreak();
 			return 0;
 		}
 #endif

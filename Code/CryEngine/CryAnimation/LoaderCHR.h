@@ -21,10 +21,7 @@ public:
 	}
 	~CryCHRLoader()
 	{
-#ifndef _RELEASE
-		if (m_pStream)
-			__debugbreak();
-#endif
+		CRY_ASSERT(m_pStream == nullptr);
 		ClearModel();
 	}
 

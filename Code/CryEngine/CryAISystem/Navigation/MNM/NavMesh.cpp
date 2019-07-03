@@ -191,22 +191,16 @@ void CNavMesh::TileContainerArray::BreakOnInvalidTriangle(const TriangleID trian
 	const TileID checkTileID = ComputeTileID(triangleID);
 	const size_t index = checkTileID - 1;
 
-	if (checkTileID == 0)
+	if (CRY_VERIFY(checkTileID != 0))
 	{
-		__debugbreak();
-	}
-	else if (checkTileID > m_tileCapacity)
-	{
-		__debugbreak();
-	}
-	#ifdef TILE_CONTAINER_ARRAY_STRICT_ACCESS_CHECKS
-	else if (stl::find(m_freeIndexes, index))
-	{
-		__debugbreak();
-	}
-	else if (index >= m_freeIndexes.size() + m_tileCount)
-	{
-		__debugbreak();
+		if (CRY_VERIFY(checkTileID <= m_tileCapacity))
+#ifdef TILE_CONTAINER_ARRAY_STRICT_ACCESS_CHECKS
+		{
+			if (CRY_VERIFY(!stl::find(m_freeIndexes, index)))
+			{
+				CRY_ASSERT(index < m_freeIndexes.size() + m_tileCount);
+			}
+		}
 	}
 	#endif // TILE_CONTAINER_ARRAY_STRICT_ACCESS_CHECKS
 }

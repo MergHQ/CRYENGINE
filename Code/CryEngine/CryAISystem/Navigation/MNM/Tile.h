@@ -119,8 +119,7 @@ struct CompareLink
 
 inline void BreakOnMultipleAdjacencyLinkage(const MNM::Tile::SLink* start, const MNM::Tile::SLink* end, const MNM::Tile::SLink& linkToTest)
 {
-	if (std::count_if(start, end, CompareLink(linkToTest)) > 1)
-		__debugbreak();
+	CRY_ASSERT(std::count_if(start, end, CompareLink(linkToTest)) <= 1);
 }
 #else
 inline void BreakOnMultipleAdjacencyLinkage(const MNM::Tile::SLink* start, const MNM::Tile::SLink* end, const MNM::Tile::SLink& linkToTest)

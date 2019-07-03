@@ -1736,15 +1736,7 @@ CLightAnimWrapper* CLightAnimWrapper::Create(const char* szName)
 
 void CLightAnimWrapper::ReconstructCache()
 {
-#if !defined(_RELEASE)
-
-	if (!ms_lightAnimWrapperCache.empty())
-	{
-		__debugbreak();
-	}
-
-#endif
-
+	CRY_ASSERT(ms_lightAnimWrapperCache.empty());
 	stl::reconstruct(ms_lightAnimWrapperCache);
 	SetLightAnimSet(0);
 }
@@ -1761,14 +1753,8 @@ void CLightAnimWrapper::SetLightAnimSet(IAnimSequence* pLightAnimSet)
 
 void CLightAnimWrapper::InvalidateAllNodes()
 {
-#if !defined(_RELEASE)
+	CRY_ASSERT(gEnv->IsEditor());
 
-	if (!gEnv->IsEditor())
-	{
-		__debugbreak();
-	}
-
-#endif
 	// !!! Will only work in Editor as the renderer runs in single threaded mode !!!
 	// Invalidate all node pointers before the light anim set can get destroyed via SetLightAnimSet(0).
 	// They'll get re-resolved in the next frame via Resolve(). Needed for Editor undo, import, etc.

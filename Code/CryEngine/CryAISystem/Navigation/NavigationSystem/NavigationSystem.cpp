@@ -4046,10 +4046,7 @@ uint16 FilterOffMeshLinksForTile(const MNM::STile& tile, MNM::Tile::STriangle* p
 	{
 		for (uint16 i = 0; i < trianglesCount; ++i)
 		{
-			if ((pTrianglesBuffer[i].firstLink + pTrianglesBuffer[i].linkCount) > newLinkCount)
-			{
-				__debugbreak();
-			}
+			CRY_ASSERT((pTrianglesBuffer[i].firstLink + pTrianglesBuffer[i].linkCount) <= newLinkCount);
 		}
 	}
 #endif

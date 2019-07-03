@@ -137,18 +137,12 @@ class AttrStringAllocatorImpl
 public:
 	static void LockPool()
 	{
-	#ifndef _RELEASE
-		if (gEnv->mMainThreadId != CryGetCurrentThreadId())
-			__debugbreak();
-	#endif
+		CRY_ASSERT(gEnv->mMainThreadId == CryGetCurrentThreadId());
 		s_poolInUse++;
 	}
 	static void* AttrStringAlloc()
 	{
-	#ifndef _RELEASE
-		if (gEnv->mMainThreadId != CryGetCurrentThreadId())
-			__debugbreak();
-	#endif
+		CRY_ASSERT(gEnv->mMainThreadId == CryGetCurrentThreadId());
 		uint64* ptr = s_ptr;
 		if (ptr)
 		{
@@ -160,10 +154,7 @@ public:
 		}
 		else
 		{
-	#ifndef _RELEASE
-			if (s_currentBucket == CRY_ARRAY_COUNT(s_buckets))
-				__debugbreak();
-	#endif
+			CRY_ASSERT(s_currentBucket != CRY_ARRAY_COUNT(s_buckets));
 			ptr = (uint64*)malloc(k_numPerBucket * sizeof(uint64));
 			assert(s_currentBucket >= 0 && s_currentBucket < CRY_ARRAY_COUNT(s_buckets));
 			s_buckets[s_currentBucket++] = ptr;
@@ -174,10 +165,7 @@ public:
 	}
 	static void CleanPool()
 	{
-	#ifndef _RELEASE
-		if (gEnv->mMainThreadId != CryGetCurrentThreadId())
-			__debugbreak();
-	#endif
+		CRY_ASSERT(gEnv->mMainThreadId == CryGetCurrentThreadId());
 		s_poolInUse--;
 		if (!s_poolInUse)
 		{

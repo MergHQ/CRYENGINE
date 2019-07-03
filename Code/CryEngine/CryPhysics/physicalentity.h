@@ -203,7 +203,7 @@ public:
 
 	// Not supported, use Create/Delete instead
 	void* operator new (size_t sz) throw() { return NULL; } 
-	void operator delete (void* p) { __debugbreak(); }
+	void operator delete (void* p) { CRY_FUNCTION_NOT_IMPLEMENTED; }
 
 	template <typename T>
 	static T* Create(CPhysicalWorld* pWorld, IGeneralMemoryHeap* pHeap) {

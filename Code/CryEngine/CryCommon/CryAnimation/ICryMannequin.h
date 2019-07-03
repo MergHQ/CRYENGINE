@@ -1403,12 +1403,7 @@ public:
 
 	virtual ~IAction()
 	{
-#ifndef _RELEASE
-		if ((m_flags & Started))
-		{
-			__debugbreak();
-		}
-#endif //_RELEASE
+		CRY_ASSERT((m_flags & Started) == 0);
 	}
 
 	IAction(int priority, FragmentID fragmentID = FRAGMENT_ID_INVALID, const TagState& fragTags = TAG_STATE_EMPTY, uint32 flags = 0, ActionScopes scopeMask = 0, uint32 userToken = 0)

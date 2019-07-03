@@ -2497,15 +2497,11 @@ void CMergedMeshRenderNode::CreateRenderMesh(RENDERMESH_UPDATE_TYPE type, const 
 				break;
 			}
 		}
-		if (mesh)
+
+		if (CRY_VERIFY(mesh, "Didn't find a proper mesh for the given group material, most likely the node wasn't properly reset after a material change."))
 		{
 			++num_updates[j];
 			groups_mesh[i] = j;
-		}
-		else
-		{
-			// we didn't find a proper mesh for the given group material, most likely the node wasn't properly reset after a material change
-			__debugbreak();
 		}
 	}
 
@@ -2644,8 +2640,8 @@ done:
 #if MMRM_USE_BOUNDS_CHECK
 				for (size_t u = 0; u < update->chunks.size(); ++u)
 				{
-					if (((SVF_P3S_C4B_T2S*)vtxBuf.data) + update->chunks[u].voff > (((SVF_P3S_C4B_T2S*)vtxBuf.data) + iv)) __debugbreak();
-					if (idxBuf + update->chunks[u].ioff > idxBuf + ii) __debugbreak();
+					CRY_ASSERT(((SVF_P3S_C4B_T2S*)vtxBuf.data) + update->chunks[u].voff <= (((SVF_P3S_C4B_T2S*)vtxBuf.data) + iv));
+					CRY_ASSERT(idxBuf + update->chunks[u].ioff <= idxBuf + ii);
 				}
 				update->general_end = ((SVF_P3S_C4B_T2S*)vtxBuf.data) + iv;
 				update->tangents_end = ((SPipTangents*)tgtBuf.data) + iv;
@@ -2889,7 +2885,7 @@ static_fallthrough:
 	case RENDERNODE_STATE_ERROR:
 		CryLogAlways("MergedMeshRendernode is in an Error state\n");
 	default:
-		//__debugbreak();
+		CRY_ASSERT(false, "Unhandled state %d", int(m_State));
 		break;
 	}
 	if (requiresPostRender)
@@ -3226,10 +3222,10 @@ void CMergedMeshRenderNode::StreamAsyncOnComplete(IReadStream* pStream, unsigned
 
 #if MMRM_DEBUG
 			{
-				if (sectorChunk.m_StatInstGroupID != header->instGroupId) __debugbreak();
-				if (sectorChunk.i != (uint32)floorf(abs(m_initPos.x) * fExtentsRec)) __debugbreak();
-				if (sectorChunk.j != (uint32)floorf(abs(m_initPos.y) * fExtentsRec)) __debugbreak();
-				if (sectorChunk.k != (uint32)floorf(abs(m_initPos.z) * fExtentsRec)) __debugbreak();
+				CRY_ASSERT(sectorChunk.m_StatInstGroupID == header->instGroupId);
+				CRY_ASSERT(sectorChunk.i == (uint32)floorf(abs(m_initPos.x) * fExtentsRec));
+				CRY_ASSERT(sectorChunk.j == (uint32)floorf(abs(m_initPos.y) * fExtentsRec));
+				CRY_ASSERT(sectorChunk.k == (uint32)floorf(abs(m_initPos.z) * fExtentsRec));
 			}
 #endif
 		}
@@ -3710,14 +3706,14 @@ bool CMergedMeshRenderNode::SyncAllJobs()
 Vec3 CMergedMeshRenderNode::GetSamplePos(size_t group, size_t sample) const
 {
 	const SMMRMGroupHeader* header;
-	if (group >= m_nGroups)
-		goto error;
-	header = &m_groups[group];
-	if (sample >= header->numSamples)
-		goto error;
-	return ConvertInstanceAbsolute(header->instances[sample], m_internalAABB.min, m_pos, m_zRotation, c_MergedMeshesExtent);
-error:
-	__debugbreak();
+	if (CRY_VERIFY(group < m_nGroups))
+	{
+		header = &m_groups[group];
+		if (CRY_VERIFY(sample < header->numSamples))
+		{
+			return ConvertInstanceAbsolute(header->instances[sample], m_internalAABB.min, m_pos, m_zRotation, c_MergedMeshesExtent);
+		}
+	}
 	return Vec3(-1, -1, -1);
 }
 
@@ -3727,17 +3723,17 @@ AABB CMergedMeshRenderNode::GetSampleAABB(size_t group, size_t sample) const
 	float fScale;
 	Quat q;
 	const SMMRMGroupHeader* header;
-	if (group >= m_nGroups)
-		goto error;
-	header = &m_groups[group];
-	if (sample >= header->numSamples)
-		goto error;
-	fScale = (1.f / VEGETATION_CONV_FACTOR) * header->instances[sample].scale;
-	DecompressQuat(q, header->instances[sample]);
-	bb = AABB::CreateTransformedAABB(CreateRotationQ(q, ConvertInstanceAbsolute(header->instances[sample], m_internalAABB.min, m_pos, m_zRotation, c_MergedMeshesExtent)) * Matrix34::CreateScale(Vec3(fScale, fScale, fScale)), header->procGeom->aabb);
-	return bb;
-error:
-	__debugbreak();
+	if (CRY_VERIFY(group < m_nGroups))
+	{
+		header = &m_groups[group];
+		if (CRY_VERIFY(sample < header->numSamples))
+		{
+			fScale = (1.f / VEGETATION_CONV_FACTOR) * header->instances[sample].scale;
+			DecompressQuat(q, header->instances[sample]);
+			bb = AABB::CreateTransformedAABB(CreateRotationQ(q, ConvertInstanceAbsolute(header->instances[sample], m_internalAABB.min, m_pos, m_zRotation, c_MergedMeshesExtent)) * Matrix34::CreateScale(Vec3(fScale, fScale, fScale)), header->procGeom->aabb);
+			return bb;
+		}
+	}
 	return AABB();
 }
 
@@ -4899,8 +4895,8 @@ void CDeformableNode::UpdateInternalDeform(
 #if MMRM_USE_BOUNDS_CHECK
 		for (size_t u = 0; u < update->chunks.size(); ++u)
 		{
-			if (((SVF_P3S_C4B_T2S*)vtxBuf.data) + update->chunks[u].voff >= (((SVF_P3S_C4B_T2S*)vtxBuf.data) + vertices)) __debugbreak();
-			if (((SVF_P3S_C4B_T2S*)vtxBuf.data) + update->chunks[u].voff + (update->chunks[u].vcnt - 1) >= (((SVF_P3S_C4B_T2S*)vtxBuf.data) + vertices)) __debugbreak();
+			CRY_ASSERT(((SVF_P3S_C4B_T2S*)vtxBuf.data) + update->chunks[u].voff < (((SVF_P3S_C4B_T2S*)vtxBuf.data) + vertices));
+			CRY_ASSERT(((SVF_P3S_C4B_T2S*)vtxBuf.data) + update->chunks[u].voff + (update->chunks[u].vcnt - 1) < (((SVF_P3S_C4B_T2S*)vtxBuf.data) + vertices));
 		}
 		update->general_end = ((SVF_P3S_C4B_T2S*)vtxBuf.data) + vertices;
 		update->tangents_end = ((SPipTangents*)tgtBuf.data) + vertices;

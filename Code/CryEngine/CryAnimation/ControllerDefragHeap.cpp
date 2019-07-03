@@ -225,12 +225,9 @@ uint32 CControllerDefragHeap::BeginCopy(void* pContext, UINT_PTR dstOffset, UINT
 void CControllerDefragHeap::Relocate(uint32 userMoveId, void* pContext, UINT_PTR newOffset, UINT_PTR oldOffset, UINT_PTR size)
 {
 	Copy& cp = m_copiesInFlight[userMoveId - 1];
-	if (cp.inUse && (cp.pContext == pContext))
+	if (CRY_VERIFY(cp.inUse && (cp.pContext == pContext)))
 	{
-#ifndef _RELEASE
-		if (cp.relocated)
-			__debugbreak();
-#endif
+		CRY_ASSERT(!cp.relocated);
 
 		char* pNewBase = m_pBaseAddress + newOffset;
 		char* pOldBase = m_pBaseAddress + oldOffset;
@@ -245,27 +242,19 @@ void CControllerDefragHeap::Relocate(uint32 userMoveId, void* pContext, UINT_PTR
 		cp.relocated = true;
 		return;
 	}
-
-#ifndef _RELEASE
-	__debugbreak();
-#endif
 }
 
 void CControllerDefragHeap::CancelCopy(uint32 userMoveId, void* pContext, bool bSync)
 {
 	CryAutoLock<CryCriticalSectionNonRecursive> lock(m_queuedCancelLock);
-#ifndef _RELEASE
-	if (m_numQueuedCancels == CRY_ARRAY_COUNT(m_queuedCancels))
-		__debugbreak();
-#endif
-	assert(m_numQueuedCancels < CRY_ARRAY_COUNT(m_queuedCancels));
+	CRY_ASSERT(m_numQueuedCancels < CRY_ARRAY_COUNT(m_queuedCancels));
 	m_queuedCancels[m_numQueuedCancels++] = userMoveId;
 }
 
 void CControllerDefragHeap::SyncCopy(void* pContext, UINT_PTR dstOffset, UINT_PTR srcOffset, UINT_PTR size)
 {
 	// Not supported - but shouldn't be needed.
-	__debugbreak();
+	CRY_FUNCTION_NOT_IMPLEMENTED;
 }
 
 bool CControllerDefragHeap::IncreaseRange(UINT_PTR offs, UINT_PTR sz)

@@ -559,18 +559,18 @@ public:
 	const char*             GetEntityClassName() const                                                          override { return "Runtime MergedMesh Proxy Instance"; }
 	Vec3                    GetPos(bool bWorldOnly = true) const                                                override { return m_host->GetSamplePos(m_headerIndex, m_sampleIndex); }
 	const AABB              GetBBox() const                                                                     override { return m_host->GetSampleAABB(m_headerIndex, m_sampleIndex); }
-	void                    SetBBox(const AABB& WSBBox)                                                         override { __debugbreak(); }
+	void                    SetBBox(const AABB& WSBBox)                                                         override { CRY_FUNCTION_NOT_IMPLEMENTED; }
 	void                    OffsetPosition(const Vec3& delta)                                                   override {}
-	void                    Render(const struct SRendParams& EntDrawParams, const SRenderingPassInfo& passInfo) override { __debugbreak(); }
+	void                    Render(const struct SRendParams& EntDrawParams, const SRenderingPassInfo& passInfo) override { CRY_FUNCTION_NOT_IMPLEMENTED; }
 
-	struct IPhysicalEntity* GetPhysics() const                                                                  override { __debugbreak(); return NULL; }
-	void                    SetPhysics(IPhysicalEntity* pPhys)                                                  override { __debugbreak(); }
-	void                    SetMaterial(IMaterial* pMat)                                                        override { __debugbreak(); }
-	IMaterial*              GetMaterial(Vec3* pHitPos = NULL) const                                             override { __debugbreak(); return NULL; }
-	IMaterial*              GetMaterialOverride()             const                                             override { __debugbreak(); return NULL; }
+	struct IPhysicalEntity* GetPhysics() const                                                                  override { CRY_FUNCTION_NOT_IMPLEMENTED; return NULL; }
+	void                    SetPhysics(IPhysicalEntity* pPhys)                                                  override { CRY_FUNCTION_NOT_IMPLEMENTED; }
+	void                    SetMaterial(IMaterial* pMat)                                                        override { CRY_FUNCTION_NOT_IMPLEMENTED; }
+	IMaterial*              GetMaterial(Vec3* pHitPos = NULL) const                                             override { CRY_FUNCTION_NOT_IMPLEMENTED; return NULL; }
+	IMaterial*              GetMaterialOverride()             const                                             override { CRY_FUNCTION_NOT_IMPLEMENTED; return NULL; }
 	EERType                 GetRenderNodeType()               const                                             override { return eERType_MergedMeshInstance; }
-	float                   GetMaxViewDist()                  const                                             override { __debugbreak(); return FLT_MAX; }
-	void                    GetMemoryUsage(ICrySizer* pSizer) const                                             override { __debugbreak(); }
+	float                   GetMaxViewDist()                  const                                             override { CRY_FUNCTION_NOT_IMPLEMENTED; return FLT_MAX; }
+	void                    GetMemoryUsage(ICrySizer* pSizer) const                                             override { CRY_FUNCTION_NOT_IMPLEMENTED; }
 };
 
 ////////////////////////////////////////////////////////////////////////////////

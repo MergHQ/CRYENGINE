@@ -37,9 +37,7 @@ CUIHUD3D::CUIHUD3D()
 	, m_fHudDist(1.1f)
 	, m_fHudZOffset(-0.1f)
 	, m_HUDRootEntityId(0)
-{
-
-}
+{}
 
 CUIHUD3D::~CUIHUD3D()
 {
@@ -259,8 +257,7 @@ void CUIHUD3D::Update(float fDeltaTime)
 
 		CRY_ASSERT(currWidth == gEnv->pRenderer->GetOverlayWidth());
 		CRY_ASSERT(currHeight == gEnv->pRenderer->GetOverlayHeight());
-
-		__debugbreak();
+		CRY_ASSERT(false);
 	}
 
 	if (currWidth != width || currHeight != height)

@@ -249,7 +249,7 @@ void CUIDraw::DrawQuad(float fX,
 
 	//m_pRenderer->DrawDynVB(aVertices, ausIndices, 4, 4, prtTriangleStrip);
 
-	__debugbreak();
+	CRY_FUNCTION_NOT_IMPLEMENTED;
 }
 
 //-----------------------------------------------------------------------------------------------------
@@ -296,7 +296,7 @@ void CUIDraw::DrawQuadSimple(float fX,
 
 	//m_pRenderer->DrawDynVB(aVertices, ausIndices, 4, 4, prtTriangleStrip);
 
-	__debugbreak();
+	CRY_FUNCTION_NOT_IMPLEMENTED;
 }
 
 //-----------------------------------------------------------------------------------------------------

@@ -1612,10 +1612,7 @@ void CPhysicalWorld::PatchEventsQueue(IPhysicalEntity* pEntity, void* pForeignDa
 				pMono->iForeignData = iForeignData;
 			}
 		} else {
-#     if !defined(_RELEASE)
-			// intentionally crashing here - please update the code if new events have been created
-            __debugbreak();
-#     endif
+			CRY_ASSERT(false, "Unhandled message type %d", pEvent->idval);
 		}
 	}
 }

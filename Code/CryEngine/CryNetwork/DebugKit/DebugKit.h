@@ -88,8 +88,8 @@ public:
 	void AddDataEnt(uint64 x)            { AddDataEnt(float(x)); }
 
 	// Only present to allow template instantiation for all SerializationTypes (see CryCommon)
-	void AddDataEnt(const XmlNodeRef& x)     { __debugbreak(); }
-	void AddDataEnt(const ScriptAnyValue& x) { __debugbreak(); }
+	void AddDataEnt(const XmlNodeRef& x)     { CRY_FUNCTION_NOT_IMPLEMENTED; }
+	void AddDataEnt(const ScriptAnyValue& x) { CRY_FUNCTION_NOT_IMPLEMENTED; }
 
 	void LogSnapping(const Vec3& witnessPos, const Vec3& witnessDir, const Vec3& entityPos0, const Vec3& entityPos1, const string& entityCls);
 

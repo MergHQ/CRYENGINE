@@ -1888,7 +1888,6 @@ CNetChannel* CNetwork::GetChannelByFastLookupId(int id)
 
 void CEnsureRealtime::Failed()
 {
-	__debugbreak();
 	NET_ASSERT(!"REALTIME");
 }
 

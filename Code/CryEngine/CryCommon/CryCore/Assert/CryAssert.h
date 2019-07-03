@@ -189,6 +189,8 @@
 	#define CRY_VERIFY(expr, ...)              Cry::VerifyWithMessage(expr, # expr, __FILE__, __LINE__, ##__VA_ARGS__)
 	#define CRY_VERIFY_WITH_MESSAGE(expr, ...) Cry::VerifyWithMessage(expr, # expr, __FILE__, __LINE__, ##__VA_ARGS__)
 
+	#define CRY_FUNCTION_NOT_IMPLEMENTED       CRY_ASSERT_MESSAGE(false, "Call to not implemented function: %s", __func__)
+
 	//! This forces boost to use CRY_ASSERT, regardless of what it is defined as.
 	#define BOOST_ENABLE_ASSERT_HANDLER
 	namespace boost

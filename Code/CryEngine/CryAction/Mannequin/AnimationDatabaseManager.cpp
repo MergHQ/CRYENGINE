@@ -156,11 +156,7 @@ void CAnimationDatabaseLibrary::CreateResource(THandle& hdlOut, const char* name
 
 void CAnimationDatabaseLibrary::PublishResource(THandle& hdl)
 {
-#ifndef _RELEASE
-	if (!hdl)
-		__debugbreak();
-#endif
-
+	CRY_ASSERT(hdl);
 	uint32 crc = CCrc32::ComputeLowercase(hdl->GetFilename());
 	Insert(crc, const_cast<CAnimationDatabase*>(static_cast<const CAnimationDatabase*>(hdl)));
 }
@@ -226,11 +222,7 @@ void CAnimationTagDefLibrary::CreateResource(THandle& hdlOut, const char* name, 
 
 void CAnimationTagDefLibrary::PublishResource(THandle& hdlOut)
 {
-#ifndef _RELEASE
-	if (!hdlOut)
-		__debugbreak();
-#endif
-
+	CRY_ASSERT(hdlOut);
 	uint32 crc32 = CCrc32::ComputeLowercase(hdlOut->GetFilename());
 	Insert(crc32, const_cast<CTagDefinition*>(hdlOut));
 }
@@ -298,11 +290,7 @@ void CAnimationControllerDefLibrary::CreateResource(THandle& hdlOut, const char*
 
 void CAnimationControllerDefLibrary::PublishResource(THandle& hdl)
 {
-#ifndef _RELEASE
-	if (!hdl)
-		__debugbreak();
-#endif
-
+	CRY_ASSERT(hdl);
 	uint32 crc32 = hdl->m_filename.crc;
 	Insert(crc32, const_cast<SControllerDef*>(hdl));
 }
@@ -2714,7 +2702,6 @@ void CAnimationDatabaseManager::PrepareSave(const CAnimationDatabase& animDB, co
 	const CAnimationDatabase::TSubADBList& vSubADBs = subAnimDB ? subAnimDB->subADBs : animDB.m_subADBs;
 	for (CAnimationDatabase::TSubADBList::const_iterator itSubADB = vSubADBs.begin(); itSubADB != vSubADBs.end(); ++itSubADB)
 		PrepareSave(animDB, &(*itSubADB), vFragSaveList, mBlendSaveDatabase);
-
 }
 
 void CAnimationDatabaseManager::SaveDatabasesSnapshot(SSnapshotCollection& snapshotCollection) const

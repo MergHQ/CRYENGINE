@@ -57,7 +57,6 @@ bool CCullThread::LoadLevel(const char* pFolderName)
 	FILE* pFile = gEnv->pCryPak->FOpen((string(pFolderName) + "/occluder.ocm").c_str(), "rb");
 	if (!pFile)
 	{
-		//__debugbreak();
 		return false;
 	}
 	gEnv->pCryPak->FSeek(pFile, 0, SEEK_END);
@@ -264,9 +263,7 @@ void CCullThread::PrepareCullbufferAsync(const CCamera& rCamera, const SGraphics
 	static int _debug = -1;
 	if (_debug == -1)
 		_debug = gEnv->pRenderer->GetFrameID(false);
-	else if (_debug == gEnv->pRenderer->GetFrameID(false))
-		__debugbreak();
-	else
+	else if (CRY_VERIFY(_debug != gEnv->pRenderer->GetFrameID(false), "double invocations of the prepare occlusion buffer job in one frame"))
 		_debug = gEnv->pRenderer->GetFrameID(false);
 #endif
 
@@ -758,7 +755,7 @@ void CCullThread::CheckOcclusion_JobEntry(SCheckOcclusionJobData checkOcclusionD
 	}
 	else
 	{
-		__debugbreak(); // unknown culler job type
+		CRY_ASSERT(false, "Unknown job type %d", int(checkOcclusionData.type));
 	}
 }
 
