@@ -15,7 +15,6 @@
 #define IDC_CRYASSERT_BUTTON_BREAK      1008
 #define IDC_CRYASSERT_BUTTON_IGNORE_ALL 1009
 #define IDC_CRYASSERT_BUTTON_MODULE     1010
-
 #define IDC_CRYASSERT_STATIC_TEXT       0
 
 #define DLG_TITLE                       L"Assertion Failed"
@@ -308,11 +307,10 @@ namespace Cry {
 				wstring message = L"Ignore All From ";
 				message += CryStringUtils::UTF8ToWStr(GetCryModuleName(eCryModule));
 				cry_strcpy_wchar(currentModuleItem.t, message.c_str());
-#else
-				SDlgItem<256> currentModuleItem = { BS_PUSHBUTTON | WS_CHILD | WS_VISIBLE | WS_DISABLED | WS_TABSTOP, 0, 165, 113, 100, 14, IDC_CRYASSERT_BUTTON_MODULE, 0xFFFF, 0x0080 };
-				cry_strcpy_wchar(currentModuleItem.t, L"Ignore All From <No Module>");
-#endif
 				const int numEntries = 17;
+#else
+				const int numEntries = 16;
+#endif
 
 				SDlgData dialog =
 				{
@@ -321,7 +319,7 @@ namespace Cry {
 					{ BS_PUSHBUTTON | WS_CHILD | WS_VISIBLE | WS_TABSTOP,                                                                      0, 7,           113, 50,  14,  IDC_CRYASSERT_BUTTON_CONTINUE, 0xFFFF, 0x0080, DLG_ITEM_TEXT_0, 0 },
 					{ BS_DEFPUSHBUTTON | WS_CHILD | WS_VISIBLE | WS_TABSTOP,                                                                   0, 60,          113, 50,  14,  IDC_CRYASSERT_BUTTON_IGNORE, 0xFFFF, 0x0080, DLG_ITEM_TEXT_12, 0 },
 					{ BS_PUSHBUTTON | WS_CHILD | WS_VISIBLE | (gEnv ? 0 : WS_DISABLED) | WS_TABSTOP,                                           0, 113,         113, 50,  14,  IDC_CRYASSERT_BUTTON_IGNORE_ALL, 0xFFFF, 0x0080, DLG_ITEM_TEXT_15, 0 },
-					{ BS_PUSHBUTTON | WS_CHILD | WS_VISIBLE | WS_TABSTOP,                                                                      0, 271,         113, 50,  14,  IDC_CRYASSERT_BUTTON_BREAK, 0xFFFF, 0x0080, DLG_ITEM_TEXT_14, 0 },
+					{ BS_PUSHBUTTON | WS_CHILD | (IsDebuggerPresent() ? WS_VISIBLE : 0) | WS_TABSTOP,                                          0, 271,         113, 50,  14,  IDC_CRYASSERT_BUTTON_BREAK, 0xFFFF, 0x0080, DLG_ITEM_TEXT_14, 0 },
 					{ BS_PUSHBUTTON | WS_CHILD | WS_VISIBLE | WS_TABSTOP,                                                                      0, 324,         113, 50,  14,  IDC_CRYASSERT_BUTTON_STOP, 0xFFFF, 0x0080, DLG_ITEM_TEXT_1, 0 },
 					{ BS_GROUPBOX | WS_CHILD | WS_VISIBLE,                                                                                     0, 7,           7,   366, 100, IDC_CRYASSERT_STATIC_TEXT, 0xFFFF, 0x0080, DLG_ITEM_TEXT_2, 0 },
 					{ ES_LEFT | ES_AUTOHSCROLL | ES_READONLY | WS_BORDER | WS_CHILD | WS_VISIBLE,                                              0, 50,          48,  25,  13,  IDC_CRYASSERT_EDIT_LINE, 0xFFFF, 0x0081, DLG_ITEM_TEXT_3, 0 },
@@ -391,7 +389,6 @@ namespace Cry {
 #undef IDC_CRYASSERT_BUTTON_BREAK
 #undef IDC_CRYASSERT_BUTTON_IGNORE_ALL
 #undef IDC_CRYASSERT_BUTTON_MODULE
-
 #undef IDC_CRYASSERT_STATIC_TEXT
 
 #undef DLG_TITLE

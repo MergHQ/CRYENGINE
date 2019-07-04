@@ -336,14 +336,16 @@ threadID CryGetCurrentThreadId()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CryDebugBreak()
+// Just a simple wrapper. Without it we'd have to add the required headers to plaform.h and leak them everywhere.
+bool CryIsDebuggerPresent()
 {
-	#if CRY_PLATFORM_WINDOWS && !defined(RELEASE)
-	if (IsDebuggerPresent())
-	#endif
-	{
-		__debugbreak();
-	}
+#if CRY_PLATFORM_WINDOWS
+	return IsDebuggerPresent();
+#else
+	// On platforms where we cannot check, we must assume the debugger is present.
+	// Otherwise debugging would not work properly (e.g. CryDebugBreak would never break).
+	return true;
+#endif
 }
 
 //////////////////////////////////////////////////////////////////////////

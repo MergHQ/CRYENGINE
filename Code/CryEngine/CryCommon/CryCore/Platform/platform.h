@@ -323,7 +323,10 @@ template<typename DestinationType, typename SourceType> inline DestinationType a
 
 }
 
-void CryDebugBreak();
+bool CryIsDebuggerPresent();
+// This needs to be a macro to have the debug break at the correct line, rather than inside a CryDebugBreak() function
+#define CryDebugBreak() if (CryIsDebuggerPresent()) { __debugbreak(); }
+
 #include <CryCore/Assert/CryAssert.h>
 
 // CryModule memory manager routines must always be included.
