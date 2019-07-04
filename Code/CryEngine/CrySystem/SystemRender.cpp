@@ -31,6 +31,7 @@
 #include <CryThreading/IJobManager.h>
 #include <CryCore/Platform/IPlatformOS.h>
 #include <CrySystem/ConsoleRegistration.h>
+#include <CrySystem/SystemInitParams.h>
 
 #include "CrySizerStats.h"
 #include "CrySizerImpl.h"

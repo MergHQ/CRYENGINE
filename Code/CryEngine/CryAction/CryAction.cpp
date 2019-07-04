@@ -39,6 +39,7 @@
 #include <CryAISystem/BehaviorTree/IBehaviorTree.h>
 #include <CryAISystem/INavigationSystem.h>
 #include <CrySandbox/IEditorGame.h>
+#include <CrySystem/SystemInitParams.h>
 #include <CrySystem/CryVersion.h>
 #include <CrySystem/Profilers/IStatoscope.h>
 #include <CrySystem/IStreamEngine.h>

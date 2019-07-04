@@ -6,6 +6,7 @@
 #include <CryCore/Platform/platform_impl.inl>
 
 #include <CrySystem/IEngineModule.h>
+#include <CrySystem/SystemInitParams.h>
 #include <CryExtension/ICryFactory.h>
 #include <CryExtension/ClassWeaver.h>
 

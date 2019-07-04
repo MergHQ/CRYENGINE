@@ -6,6 +6,7 @@
 
 #include <CrySystem/ICryPluginManager.h>
 #include <CrySystem/ICryPlugin.h>
+#include <CrySystem/SystemInitParams.h>
 #include <array>
 
 #include <CryCore/Platform/CryLibrary.h>

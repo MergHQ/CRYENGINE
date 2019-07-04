@@ -8,6 +8,7 @@
 #include <PathUtils.h>
 #include <QtUtil.h>
 
+#include <CrySystem/SystemInitParams.h>
 #include <CrySerialization/yasli/JSONIArchive.h>
 #include <CryString/CryStringUtils.h>
 

@@ -15,6 +15,7 @@
 
 #include <CryEntitySystem/IEntity.h>
 #include <CrySystem/IConsole.h>
+#include <CrySystem/SystemInitParams.h>
 #include <sys/types.h>
 #include <netdb.h>
 #include <sys/resource.h>

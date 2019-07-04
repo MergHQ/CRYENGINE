@@ -37,7 +37,6 @@ public:
 	//! Initialize System.
 	//! @return true if initialization succeeded, false otherwise
 	bool Init(
-		bool bPreviewMode,
 		bool bTestMode,
 		bool bShaderCacheGen,
 		const char* sCmdLine,

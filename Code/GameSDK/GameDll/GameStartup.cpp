@@ -12,6 +12,7 @@
 #include <CryNetwork/INetworkService.h>
 
 #include <CryInput/IHardwareMouse.h>
+#include <CrySystem/SystemInitParams.h>
 #include <CrySystem/File/ICryPak.h>
 #include <CrySystem/ILocalizationManager.h>
 #include "Editor/GameRealtimeRemoteUpdate.h"
@@ -125,7 +126,7 @@ void debugLogCallStack()
 
 void GameStartupErrorObserver::OnAssert(const char* condition, const char* message, const char* fileName, unsigned int fileLineNumber)
 {
-	if(!g_pGameCVars)
+	if (!g_pGameCVars)
 		return;
 
 	if (g_pGameCVars->cl_logAsserts != 0)

@@ -62,6 +62,7 @@
 #include <CryPhysics/IPhysics.h>
 #include <CrySandbox/IEditorGame.h>
 #include <CryScriptSystem/IScriptSystem.h>
+#include <CrySystem/SystemInitParams.h>
 #include <CrySystem/File/ICryPak.h>
 #include <CrySystem/ICryPluginManager.h>
 #include <CrySystem/ConsoleRegistration.h>
@@ -326,15 +327,14 @@ static void CmdGotoEditor(IConsoleCmdArgs* pArgs)
 	}
 }
 
-bool CGameEngine::Init(bool bPreviewMode, bool bTestMode, bool bShaderCacheGen, const char* sInCmdLine, IInitializeUIInfo* logo)
+bool CGameEngine::Init(bool bTestMode, bool bShaderCacheGen, const char* sInCmdLine, IInitializeUIInfo* logo)
 {
 	m_pSystemUserCallback = new SSystemUserCallback(logo);
 
 	SSystemInitParams startupParams;
 
 	startupParams.bEditor = true;
-	startupParams.bPreview = bPreviewMode;
-
+	
 	if (AfxGetMainWnd())
 	{
 		startupParams.hWnd = AfxGetMainWnd()->GetSafeHwnd();

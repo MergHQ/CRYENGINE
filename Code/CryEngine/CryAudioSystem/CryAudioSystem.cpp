@@ -127,7 +127,6 @@ class CEngineModule_CryAudioSystem : public ISystemModule
 #if defined(CRY_AUDIO_USE_DEBUG_CODE)
 		CryFixedStringT<MAX_MODULE_NAME_LENGTH> const previousModuleName(s_currentModuleName);
 		auto const pSystem = static_cast<CSystem*>(gEnv->pAudioSystem);
-		SSystemInitParams systemInitParams;
 		s_currentModuleName = pImplNameCvar->GetString();
 
 		if (!previousModuleName.empty())

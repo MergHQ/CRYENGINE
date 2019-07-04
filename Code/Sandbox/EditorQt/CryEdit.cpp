@@ -212,8 +212,6 @@ CCryEditApp::CCryEditApp()
 	s_pCCryEditApp = this;
 	m_mutexApplication = NULL;
 
-	cry_strcpy(m_sPreviewFile, "");
-
 #ifdef _DEBUG
 	int tmpDbgFlag;
 	tmpDbgFlag = _CrtSetDbgFlag(_CRTDBG_REPORT_FLAG);
@@ -422,16 +420,6 @@ BOOL CCryEditApp::FirstInstance(bool bForceNewInstance)
 		if (pwndFirst != pwndPopup)
 			pwndPopup->SetForegroundWindow();
 
-		if (m_bPreviewMode)
-		{
-			// IF in preview mode send this window copy data message to load new preview file.
-			COPYDATASTRUCT cd;
-			ZeroStruct(cd);
-			cd.dwData = 100;
-			cd.cbData = strlen(m_sPreviewFile);
-			cd.lpData = m_sPreviewFile;
-			pwndFirst->SendMessage(WM_COPYDATA, 0, (LPARAM)&cd);
-		}
 		return FALSE;
 	}
 	else
@@ -493,16 +481,6 @@ void CCryEditApp::InitFromCommandLine(CEditCommandLineInfo& cmdInfo)
 		m_bTestMode = true;
 	}
 
-	// Do we have a passed filename ?
-	if (!cmdInfo.m_strFileName.IsEmpty())
-	{
-		if (!cmdInfo.m_bRunPythonScript && CModelViewport::IsPreviewableFileType(cmdInfo.m_strFileName.GetString()))
-		{
-			m_bPreviewMode = true;
-			cry_strcpy(m_sPreviewFile, cmdInfo.m_strFileName);
-		}
-	}
-
 	if (cmdInfo.m_bAutoLoadLevel)
 	{
 		m_bLevelLoadTestMode = true;
@@ -539,9 +517,8 @@ struct SInitializeUIInfo : IInitializeUIInfo
 std::unique_ptr<CGameEngine> CCryEditApp::InitGameSystem()
 {
 	bool bShaderCacheGen = m_bPrecacheShaderList | m_bPrecacheShaders | m_bPrecacheShadersLevels;
-
 	std::unique_ptr<CGameEngine> pGameEngine = stl::make_unique<CGameEngine>();
-	if (!pGameEngine->Init(m_bPreviewMode, m_bTestMode, bShaderCacheGen, CryStringUtils::ANSIToUTF8(GetCommandLineA()).c_str(), &SInitializeUIInfo::GetInstance()))
+	if (!pGameEngine->Init(m_bTestMode, bShaderCacheGen, CryStringUtils::ANSIToUTF8(GetCommandLineA()).c_str(), &SInitializeUIInfo::GetInstance()))
 	{
 		return nullptr;
 	}

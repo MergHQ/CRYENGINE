@@ -2568,7 +2568,6 @@ bool CSystem::Initialize(SSystemInitParams& startupParams)
 	m_env.SetIsEditorSimulationMode(false);
 #endif
 
-	m_bPreviewMode = startupParams.bPreview;
 	m_bUIFrameworkMode = startupParams.bUIFramework;
 	m_pUserCallback = startupParams.pUserCallback;
 
@@ -2609,8 +2608,6 @@ bool CSystem::Initialize(SSystemInitParams& startupParams)
 #else
 	m_bNoCrashDialog = false;
 #endif
-
-	memcpy(gEnv->pProtectedFunctions, startupParams.pProtectedFunctions, sizeof(startupParams.pProtectedFunctions));
 
 	m_env.bIsOutOfMemory = false;
 
@@ -2860,7 +2857,7 @@ bool CSystem::Initialize(SSystemInitParams& startupParams)
 		Cry::Reflection::CTypeRegistrationChain::Execute(g_cvars.sys_reflection_natvis != 0);
 		// Init UDR
 
-		if (!startupParams.bPreview && !startupParams.bShaderCacheGen)
+		if (!startupParams.bShaderCacheGen)
 		{
 			CryLogAlways("UDR initialization");
 			if (!InitUDR(startupParams))
@@ -3100,7 +3097,7 @@ bool CSystem::Initialize(SSystemInitParams& startupParams)
 		// AUDIO
 		//////////////////////////////////////////////////////////////////////////
 		bool bAudioInitSuccess = false;
-		if (!startupParams.bPreview && !m_env.IsDedicated() && !m_bUIFrameworkMode && !startupParams.bShaderCacheGen &&
+		if (!m_env.IsDedicated() && !m_bUIFrameworkMode && !startupParams.bShaderCacheGen &&
 		    (m_sys_audio_disable->GetIVal() == 0))
 		{
 			CRY_PROFILE_SECTION(PROFILE_LOADING_ONLY, "AudioSystem initialization");
@@ -3333,7 +3330,7 @@ bool CSystem::Initialize(SSystemInitParams& startupParams)
 		//////////////////////////////////////////////////////////////////////////
 		// NETWORK
 		//////////////////////////////////////////////////////////////////////////
-		if (!startupParams.bPreview && !m_bUIFrameworkMode && !startupParams.bShaderCacheGen)
+		if (!m_bUIFrameworkMode && !startupParams.bShaderCacheGen)
 		{
 			INDENT_LOG_DURING_SCOPE();
 			InitNetwork(startupParams);
@@ -3384,7 +3381,7 @@ bool CSystem::Initialize(SSystemInitParams& startupParams)
 		//////////////////////////////////////////////////////////////////////////
 		// INPUT
 		//////////////////////////////////////////////////////////////////////////
-		if (!startupParams.bPreview && !gEnv->IsDedicated() && !startupParams.bShaderCacheGen)
+		if (!gEnv->IsDedicated() && !startupParams.bShaderCacheGen)
 		{
 			CryLogAlways("Input initialization");
 			INDENT_LOG_DURING_SCOPE();
@@ -3482,7 +3479,7 @@ bool CSystem::Initialize(SSystemInitParams& startupParams)
 		//////////////////////////////////////////////////////////////////////////
 		// ENTITY SYSTEM
 		//////////////////////////////////////////////////////////////////////////
-		if (!startupParams.bPreview && !startupParams.bShaderCacheGen)
+		if (!startupParams.bShaderCacheGen)
 		{
 			// Start with initializing Schematyc before the entity system
 			{
@@ -3580,7 +3577,7 @@ bool CSystem::Initialize(SSystemInitParams& startupParams)
 		//////////////////////////////////////////////////////////////////////////
 		// AI
 		//////////////////////////////////////////////////////////////////////////
-		if (!startupParams.bPreview && !m_bUIFrameworkMode && !startupParams.bShaderCacheGen)
+		if (!m_bUIFrameworkMode && !startupParams.bShaderCacheGen)
 		{
 			if (gEnv->IsDedicated() && m_svAISystem && !m_svAISystem->GetIVal())
 				;
@@ -3598,7 +3595,7 @@ bool CSystem::Initialize(SSystemInitParams& startupParams)
 		// AI SYSTEM INITIALIZATION
 		//////////////////////////////////////////////////////////////////////////
 		// AI System needs to be initialized after entity system
-		if (!startupParams.bPreview && !m_bUIFrameworkMode && m_env.pAISystem)
+		if (!m_bUIFrameworkMode && m_env.pAISystem)
 		{
 			MEMSTAT_CONTEXT(EMemStatContextType::Other, "Initialize AI System");
 

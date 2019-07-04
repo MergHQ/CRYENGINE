@@ -3,6 +3,7 @@
 #include "StdAfx.h"
 #include "System.h"
 #include <CryCore/Platform/platform_impl.inl>
+#include <CrySystem/SystemInitParams.h>
 #include "DebugCallStack.h"
 #include "MemReplay.h"
 

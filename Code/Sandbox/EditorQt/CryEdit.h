@@ -87,16 +87,14 @@ private:
 	bool   m_bExiting { false };
 	//! True if editor is in preview mode.
 	//! In this mode only very limited functionality is available and only for fast preview of models.
-	bool      m_bPreviewMode { false };
+	bool   m_bPreviewMode { false };
 	// Only console window is created.
-	bool      m_bConsoleMode { false };
+	bool   m_bConsoleMode { false };
 	// Level load test mode
-	bool      m_bLevelLoadTestMode { false };
-	//! Current file in preview mode.
-	char      m_sPreviewFile[_MAX_PATH];
+	bool   m_bLevelLoadTestMode { false };
 	//! True if "/runpython" was passed as a flag.
-	bool      m_bRunPythonScript { false };
-	float     m_moveSpeedStep { 0.1f };
+	bool   m_bRunPythonScript { false };
+	float  m_moveSpeedStep { 0.1f };
 
 	ULONG_PTR m_gdiplusToken { 0 };
 	HANDLE    m_mutexApplication;

@@ -30,6 +30,7 @@
 #include <CryEntitySystem/IEntitySystem.h>
 #include <CryInput/IInput.h>
 #include <CrySystem/ILog.h>
+#include <CrySystem/SystemInitParams.h>
 #include <CryAudio/IAudioSystem.h>
 #include <CryAnimation/ICryAnimation.h>
 #include <CryScriptSystem/IScriptSystem.h>
@@ -334,7 +335,6 @@ CSystem::CSystem(const SSystemInitParams& startupParams)
 	m_bShaderCacheGenMode = false;
 	m_bRelaunch = false;
 	m_iLoadingMode = 0;
-	m_bPreviewMode = false;
 	m_bIgnoreUpdates = false;
 	m_bNoCrashDialog = false;
 

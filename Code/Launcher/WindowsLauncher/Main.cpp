@@ -13,6 +13,7 @@
 
 #include <CryCore/Platform/CryLibrary.h>
 
+#include <CrySystem/SystemInitParams.h>
 #include <CrySystem/IConsole.h>
 #include <CrySystem/File/ICryPak.h>
 

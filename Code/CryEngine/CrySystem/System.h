@@ -664,7 +664,6 @@ private: // ------------------------------------------------------
 	bool               m_bRelaunch;             //!< relaunching the app or not (true beforerelaunch)
 	int                m_iLoadingMode;          //!< Game is loading w/o changing context (0 not, 1 quickloading, 2 full loading)
 	bool               m_bNoCrashDialog;
-	bool               m_bPreviewMode;          //!< If running in Preview mode.
 	bool               m_bUIFrameworkMode;
 	bool               m_bIgnoreUpdates;        //!< When set to true will ignore Update and Render calls,
 	IValidator*        m_pValidator;            //!< Pointer to validator interface.

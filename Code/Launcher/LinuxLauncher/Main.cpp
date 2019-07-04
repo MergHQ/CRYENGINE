@@ -16,6 +16,7 @@
 
 #include <CryEntitySystem/IEntity.h>
 #include <CrySystem/IConsole.h>
+#include <CrySystem/SystemInitParams.h>
 #include <sys/types.h>
 #include <netdb.h>
 #include <unistd.h>				// used for crash handling
