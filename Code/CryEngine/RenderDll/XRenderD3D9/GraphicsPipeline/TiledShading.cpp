@@ -38,11 +38,9 @@ void CTiledShadingStage::Execute()
 	auto* ssObscurance = m_graphicsPipeline.GetStage<CScreenSpaceObscuranceStage>();
 
 #if (CRY_RENDERER_DIRECT3D >= 110) && (CRY_RENDERER_DIRECT3D < 120)
-	CD3D9Renderer* const __restrict rd = gcpRendD3D;
 	// on dx11, some input resources might still be bound as render targets.
 	// dx11 will then just ignore the bind call
-	ID3D11RenderTargetView* nullViews[] = { nullptr, nullptr, nullptr, nullptr };
-	rd->GetDeviceContext().OMSetRenderTargets(4, nullViews, nullptr);
+	ClearDeviceOutputState();
 #endif
 
 	int screenWidth = GetViewport().width;

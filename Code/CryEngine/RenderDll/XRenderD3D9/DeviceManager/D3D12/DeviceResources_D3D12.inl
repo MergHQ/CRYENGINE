@@ -94,7 +94,7 @@ CDeviceResourceView* CDeviceResource::CreateResourceView(const SResourceView pVi
 		}
 
 		D3DShaderResource* pSRV = NULL;
-		hr = gcpRendD3D->GetDevice().CreateShaderResourceView(pResource, &srvDesc, &pSRV);
+		hr = gcpRendD3D->GetDevice()->CreateShaderResourceView(pResource, &srvDesc, &pSRV);
 		pResult = pSRV;
 	}
 	else // SResourceView::eRenderTargetView || SResourceView::eDepthStencilView || SResourceView::eUnorderedAccessView)
@@ -155,7 +155,7 @@ CDeviceResourceView* CDeviceResource::CreateResourceView(const SResourceView pVi
 		case SResourceView::eRenderTargetView:
 		{
 			D3DSurface* pRTV = NULL;
-			hr = gcpRendD3D->GetDevice().CreateRenderTargetView(pResource, &rtvDesc, &pRTV);
+			hr = gcpRendD3D->GetDevice()->CreateRenderTargetView(pResource, &rtvDesc, &pRTV);
 			pResult = pRTV;
 		}
 		break;
@@ -186,7 +186,7 @@ CDeviceResourceView* CDeviceResource::CreateResourceView(const SResourceView pVi
 				dsvDesc.ViewDimension = (D3D11_DSV_DIMENSION)(rtvDesc.ViewDimension - 1);
 
 			D3DDepthSurface* pDSV = NULL;
-			hr = gcpRendD3D->GetDevice().CreateDepthStencilView(pResource, &dsvDesc, &pDSV);
+			hr = gcpRendD3D->GetDevice()->CreateDepthStencilView(pResource, &dsvDesc, &pDSV);
 			pResult = pDSV;
 		}
 		break;
@@ -206,7 +206,7 @@ CDeviceResourceView* CDeviceResource::CreateResourceView(const SResourceView pVi
 				uavDesc.ViewDimension = D3D11_UAV_DIMENSION_UNKNOWN;
 
 			D3DUAV* pUAV = NULL;
-			hr = gcpRendD3D->GetDevice().CreateUnorderedAccessView(pResource, &uavDesc, &pUAV);
+			hr = gcpRendD3D->GetDevice()->CreateUnorderedAccessView(pResource, &uavDesc, &pUAV);
 			pResult = pUAV;
 		}
 		break;
@@ -749,22 +749,22 @@ void CDeviceTexture::DownloadToStagingResource(uint32 nSubRes, StagingHook cbTra
 
 	assert(pStagingResource);
 
-	if (gcpRendD3D->GetDeviceContext_Unsynchronized().CopyStagingResource(pStagingResource, m_pNativeResource, nSubRes, FALSE) == S_OK)
+	if (gcpRendD3D->GetDeviceContext()->CopyStagingResource(pStagingResource, m_pNativeResource, nSubRes, FALSE) == S_OK)
 	{
 		// Resources on D3D12_HEAP_TYPE_READBACK heaps do not support persistent map.
 		// Map and Unmap must be called between CPU and GPU accesses to the same memory
 		// address on some system architectures, when the page caching behavior is write-back.
 		// Map and Unmap invalidate and flush the last level CPU cache on some ARM systems,
 		// to marshal data between the CPU and GPU through memory addresses with write-back behavior.
-		gcpRendD3D->GetDeviceContext_Unsynchronized().WaitStagingResource(pStagingResource);
-		gcpRendD3D->GetDeviceContext_Unsynchronized().MapStagingResource(pStagingResource, FALSE, &pStagingMemory);
+		gcpRendD3D->GetDeviceContext()->WaitStagingResource(pStagingResource);
+		gcpRendD3D->GetDeviceContext()->MapStagingResource(pStagingResource, FALSE, &pStagingMemory);
 
 		D3D12_RESOURCE_DESC resourceDesc = m_pNativeResource->GetD3D12Resource()->GetDesc();
 		D3D12_PLACED_SUBRESOURCE_FOOTPRINT layout;
-		gcpRendD3D->GetDeviceContext_Unsynchronized().GetRealDeviceContext()->GetD3D12Device()->GetCopyableFootprints(&resourceDesc, nSubRes, 1, 0, &layout, nullptr, nullptr, nullptr);
+		gcpRendD3D->GetDeviceContext()->GetD3D12Device()->GetCopyableFootprints(&resourceDesc, nSubRes, 1, 0, &layout, nullptr, nullptr, nullptr);
 		cbTransfer(pStagingMemory, layout.Footprint.RowPitch, layout.Footprint.RowPitch * layout.Footprint.Width);
 
-		gcpRendD3D->GetDeviceContext_Unsynchronized().UnmapStagingResource(pStagingResource, FALSE);
+		gcpRendD3D->GetDeviceContext()->UnmapStagingResource(pStagingResource, FALSE);
 	}
 
 	if (!(m_pStagingResource[0]))
@@ -777,7 +777,7 @@ void CDeviceTexture::DownloadToStagingResource(uint32 nSubRes)
 {
 	assert(m_pStagingResource[0]);
 
-	gcpRendD3D->GetDeviceContext_Unsynchronized().CopyStagingResource(m_pStagingResource[0], m_pNativeResource, nSubRes, FALSE);
+	gcpRendD3D->GetDeviceContext()->CopyStagingResource(m_pStagingResource[0], m_pNativeResource, nSubRes, FALSE);
 }
 
 void CDeviceTexture::UploadFromStagingResource(uint32 nSubRes, StagingHook cbTransfer)
@@ -797,20 +797,20 @@ void CDeviceTexture::UploadFromStagingResource(uint32 nSubRes, StagingHook cbTra
 	// The first call to Map allocates a CPU virtual address range for the resource.
 	// The last call to Unmap deallocates the CPU virtual address range.
 	// Applications cannot rely on the address being consistent, unless Map is persistently nested.
-	gcpRendD3D->GetDeviceContext_Unsynchronized().WaitStagingResource(pStagingResource);
-	gcpRendD3D->GetDeviceContext_Unsynchronized().MapStagingResource(pStagingResource, TRUE, &pStagingMemory);
+	gcpRendD3D->GetDeviceContext()->WaitStagingResource(pStagingResource);
+	gcpRendD3D->GetDeviceContext()->MapStagingResource(pStagingResource, TRUE, &pStagingMemory);
 
 	D3D12_RESOURCE_DESC resourceDesc = m_pNativeResource->GetD3D12Resource()->GetDesc();
 	D3D12_PLACED_SUBRESOURCE_FOOTPRINT layout;
-	gcpRendD3D->GetDeviceContext_Unsynchronized().GetRealDeviceContext()->GetD3D12Device()->GetCopyableFootprints(&resourceDesc, nSubRes, 1, 0, &layout, nullptr, nullptr, nullptr);
+	gcpRendD3D->GetDeviceContext()->GetD3D12Device()->GetCopyableFootprints(&resourceDesc, nSubRes, 1, 0, &layout, nullptr, nullptr, nullptr);
 	if (cbTransfer(pStagingMemory, layout.Footprint.RowPitch, layout.Footprint.RowPitch * layout.Footprint.Width))
 	{
-		gcpRendD3D->GetDeviceContext_Unsynchronized().CopyStagingResource(pStagingResource, m_pNativeResource, nSubRes, TRUE);
+		gcpRendD3D->GetDeviceContext()->CopyStagingResource(pStagingResource, m_pNativeResource, nSubRes, TRUE);
 	}
 
 	// Unmap also flushes the CPU cache, when necessary, so that GPU reads to this
 	// address reflect any modifications made by the CPU.
-	gcpRendD3D->GetDeviceContext_Unsynchronized().UnmapStagingResource(pStagingResource, TRUE);
+	gcpRendD3D->GetDeviceContext()->UnmapStagingResource(pStagingResource, TRUE);
 
 	if (!(m_pStagingResource[1]))
 	{
@@ -822,25 +822,25 @@ void CDeviceTexture::UploadFromStagingResource(uint32 nSubRes)
 {
 	assert(m_pStagingResource[1]);
 
-	gcpRendD3D->GetDeviceContext_Unsynchronized().CopyStagingResource(m_pStagingResource[1], m_pNativeResource, nSubRes, TRUE);
+	gcpRendD3D->GetDeviceContext()->CopyStagingResource(m_pStagingResource[1], m_pNativeResource, nSubRes, TRUE);
 }
 
 void CDeviceTexture::AccessCurrStagingResource(uint32 nSubRes, bool forUpload, StagingHook cbTransfer)
 {
 	// Resources on D3D12_HEAP_TYPE_READBACK heaps do not support persistent map.
 	// Applications cannot rely on the address being consistent, unless Map is persistently nested.
-	gcpRendD3D->GetDeviceContext_Unsynchronized().WaitStagingResource(m_pStagingResource[forUpload]);
-	gcpRendD3D->GetDeviceContext_Unsynchronized().MapStagingResource(m_pStagingResource[forUpload], forUpload, &m_pStagingMemory[forUpload]);
+	gcpRendD3D->GetDeviceContext()->WaitStagingResource(m_pStagingResource[forUpload]);
+	gcpRendD3D->GetDeviceContext()->MapStagingResource(m_pStagingResource[forUpload], forUpload, &m_pStagingMemory[forUpload]);
 
 	SResourceMemoryAlignment memoryAlignment = GetAlignment();
 	cbTransfer(m_pStagingMemory[forUpload], memoryAlignment.rowStride, memoryAlignment.planeStride);
 
-	gcpRendD3D->GetDeviceContext_Unsynchronized().UnmapStagingResource(m_pStagingResource[forUpload], forUpload);
+	gcpRendD3D->GetDeviceContext()->UnmapStagingResource(m_pStagingResource[forUpload], forUpload);
 }
 
 bool CDeviceTexture::AccessCurrStagingResource(uint32 nSubRes, bool forUpload)
 {
-	return gcpRendD3D->GetDeviceContext_Unsynchronized().TestStagingResource(m_pStagingResource[forUpload]) == S_OK;
+	return gcpRendD3D->GetDeviceContext()->TestStagingResource(m_pStagingResource[forUpload]) == S_OK;
 }
 
 #endif

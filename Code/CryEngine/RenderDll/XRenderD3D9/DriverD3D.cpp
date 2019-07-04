@@ -48,7 +48,7 @@
 #pragma warning(push)
 #pragma warning(disable: 4244)
 
-#if CRY_PLATFORM_WINDOWS && !CRY_RENDERER_OPENGL && !CRY_RENDERER_VULKAN
+#if CRY_PLATFORM_WINDOWS && !CRY_RENDERER_VULKAN
 	#include <D3Dcompiler.h>
 #endif
 
@@ -277,7 +277,7 @@ void CD3D9Renderer::ChangeLog()
 		}
 
 		if (CV_r_log == 3)
-			SetLogFuncs(true);
+			CRY_ASSERT(0);
 
 		m_LogFile = fxopen("Direct3DLog.txt", "w");
 
@@ -303,8 +303,6 @@ void CD3D9Renderer::ChangeLog()
 
 	if (!CV_r_log && m_LogFile)
 	{
-		SetLogFuncs(false);
-
 		char time[128];
 		char date[128];
 		_strtime(time);
@@ -418,8 +416,8 @@ void CD3D9Renderer::RT_SuspendDevice()
 	assert(!m_bDeviceSuspended);
 
 #if defined(DEVICE_SUPPORTS_PERFORMANCE_DEVICE)
-	if (m_pPerformanceDeviceContext)
-		m_pPerformanceDeviceContext->Suspend(0);   // must be 0 for now, reserved for future use.
+	if (m_pPerformanceContext)
+		m_pPerformanceContext->Suspend(0);   // must be 0 for now, reserved for future use.
 #endif
 
 	m_bDeviceSuspended = true;
@@ -430,8 +428,8 @@ void CD3D9Renderer::RT_ResumeDevice()
 	assert(m_bDeviceSuspended);
 
 #if defined(DEVICE_SUPPORTS_PERFORMANCE_DEVICE)
-	if (m_pPerformanceDeviceContext)
-		m_pPerformanceDeviceContext->Resume();
+	if (m_pPerformanceContext)
+		m_pPerformanceContext->Resume();
 #endif
 
 	m_bDeviceSuspended = false;
@@ -453,10 +451,7 @@ void CD3D9Renderer::CalculateResolutions(int displayWidthRequested, int displayH
 
 	if (!IsEditorMode())
 	{
-	#if CRY_PLATFORM_CONSOLE
-		*pDisplayWidth  = 1920;
-		*pDisplayHeight = 1080;
-	#elif CRY_PLATFORM_MOBILE
+	#if CRY_PLATFORM_MOBILE
 		SDL_DisplayMode desktopDispMode;
 		if (SDL_GetDesktopDisplayMode(0, &desktopDispMode) == 0)
 		{
@@ -772,7 +767,7 @@ void CD3D9Renderer::BeginFrame(const SDisplayContextKey& displayContextKey, cons
 	// Set up everything so we can start rendering
 	//////////////////////////////////////////////////////////////////////
 
-	CRY_ASSERT(static_cast<const CD3D9Renderer*>(this)->GetDevice().IsValid());
+	CRY_ASSERT(static_cast<const CD3D9Renderer*>(this)->GetDevice());
 
 	FlushRTCommands(false, false, false);
 
@@ -3064,7 +3059,7 @@ void CD3D9Renderer::TryFlush()
 	//////////////////////////////////////////////////////////////////////
 
 	// Check for the presence of a D3D device
-	CRY_ASSERT(static_cast<const CD3D9Renderer*>(this)->GetDevice().IsValid());
+	CRY_ASSERT(static_cast<const CD3D9Renderer*>(this)->GetDevice());
 
 	m_pRT->RC_TryFlush();
 }
@@ -3195,7 +3190,7 @@ void CD3D9Renderer::EndFrame()
 	//////////////////////////////////////////////////////////////////////
 
 	// Check for the presence of a D3D device
-	CRY_ASSERT(static_cast<const CD3D9Renderer*>(this)->GetDevice().IsValid());
+	CRY_ASSERT(static_cast<const CD3D9Renderer*>(this)->GetDevice());
 
 	// Aux
 	RenderAux();
@@ -3257,9 +3252,7 @@ void CD3D9Renderer::RT_EndFrame()
 	m_SceneRecurseCount--;
 
 #if !defined(RELEASE)
-	int numInvalidDrawcalls =
-	  m_DevMan.GetNumInvalidDrawcalls() +
-	  m_pActiveGraphicsPipeline->GetNumInvalidDrawcalls();
+	int numInvalidDrawcalls = m_pActiveGraphicsPipeline->GetNumInvalidDrawcalls();
 
 	if (numInvalidDrawcalls > 0 && m_cEF.m_ShaderCacheStats.m_nNumShaderAsyncCompiles == 0)
 	{
@@ -3268,8 +3261,6 @@ void CD3D9Renderer::RT_EndFrame()
 		assert(0);
 	}
 #endif
-
-	gRenDev->m_DevMan.RT_Tick();
 
 	// NOTE: This flushes the start of the "BEGIN" label query
 	GetDeviceObjectFactory().OnEndFrame(gRenDev->GetRenderFrameID());
@@ -3317,17 +3308,9 @@ void CD3D9Renderer::RT_EndFrame()
 			auto* const pCommandList = GnmCommandList(GetDeviceObjectFactory().GetCoreCommandList().GetGraphicsInterfaceImpl());
 			const CGnmSwapChain::EFlipMode flipMode = m_VSync ? CGnmSwapChain::kFlipModeSequential : CGnmSwapChain::kFlipModeImmediate;
 			swapDC->GetSwapChain().Present(pCommandList, flipMode);
-#elif CRY_PLATFORM_ORBIS
-			HRESULT hReturn = swapDC->GetSwapChain().Present(m_VSync ? 1 : 0, 0);
 #elif CRY_PLATFORM_DURANGO
-	#if DURANGO_ENABLE_ASYNC_DIPS
-			WaitForAsynchronousDevice();
-	#endif
 			DWORD syncInterval = swapDC->ComputePresentInterval(m_VSync ? 1 : 0);
 			swapDC->GetSwapChain().Present(syncInterval, 0);
-	#if DURANGO_ENABLE_ASYNC_DIPS
-			WaitForAsynchronousDevice();
-	#endif
 #elif defined(SUPPORT_DEVICE_INFO)
 			DWORD syncInterval = swapDC->ComputePresentInterval(m_VSync ? 1 : 0);
 			HRESULT hReturn = swapDC->GetSwapChain().Present(syncInterval, 0);
@@ -3344,7 +3327,11 @@ void CD3D9Renderer::RT_EndFrame()
 			else if (DXGI_ERROR_DEVICE_REMOVED == hReturn)
 			{
 				//CryFatalError("DXGI_ERROR_DEVICE_REMOVED");
-				HRESULT result = m_DeviceWrapper.GetDeviceRemovedReason();
+#if defined(CRY_RENDERER_DIRECT3D)
+				HRESULT result = m_pDevice->GetDeviceRemovedReason();
+#else
+				HRESULT result = DXGI_ERROR_DRIVER_INTERNAL_ERROR;
+#endif
 				switch (result)
 				{
 				case DXGI_ERROR_DEVICE_HUNG:
@@ -3480,10 +3467,6 @@ void CD3D9Renderer::RT_EndFrame()
 		CREGeomCache::UpdateModified();
 #endif
 
-#if CRY_RENDERER_OPENGL
-	DXGLIssueFrameFences(GetDevice().GetRealDevice());
-#endif //CRY_RENDERER_OPENGL
-
 	// Note: Please be aware that the below has to be called AFTER the xenon texture-manager performs
 	// Note: Please be aware that the below has to be called AFTER the texture-manager performs
 	// it's garbage collection because a scheduled gpu copy might be pending
@@ -3532,16 +3515,11 @@ void CD3D9Renderer::RT_PresentFast()
 	auto swapDC = static_cast<CSwapChainBackedRenderDisplayContext*>(pDC);
 
 #if CRY_PLATFORM_DURANGO
-	#if DURANGO_ENABLE_ASYNC_DIPS
-	WaitForAsynchronousDevice();
-	#endif
 	CRY_VERIFY(swapDC->GetSwapChain().Present(m_VSync ? 1 : 0, 0) == S_OK);
 #elif CRY_RENDERER_GNM
 	auto* const pCommandList = GnmCommandList(GetDeviceObjectFactory().GetCoreCommandList().GetGraphicsInterfaceImpl());
 	const CGnmSwapChain::EFlipMode flipMode = m_VSync ? CGnmSwapChain::kFlipModeSequential : CGnmSwapChain::kFlipModeImmediate;
 	swapDC->GetSwapChain().Present(pCommandList, flipMode);
-#elif CRY_PLATFORM_ORBIS
-	CRY_VERIFY(swapDC->GetSwapChain().Present(m_VSync ? 1 : 0, 0) == S_OK);
 #elif defined(SUPPORT_DEVICE_INFO)
 
 	GetS3DRend().NotifyFrameFinished();
@@ -3780,7 +3758,7 @@ bool CD3D9Renderer::RT_ReadTexture(void* pDst, int destinationWidth, int destina
 bool CD3D9Renderer::InitCaptureFrameBufferFast(uint32 bufferWidth, uint32 bufferHeight)
 {
 #if defined(ENABLE_PROFILING_CODE)
-	if (!GetDevice().IsValid()) return(false);
+	if (!GetDevice()) return(false);
 
 	// Free the existing textures if they exist
 	SAFE_RELEASE(m_pSaveTexture[0]);
@@ -3801,7 +3779,7 @@ bool CD3D9Renderer::InitCaptureFrameBufferFast(uint32 bufferWidth, uint32 buffer
 	   srcBox.left = 0; srcBox.right = dstDesc.Width;
 	   srcBox.top = 0; srcBox.bottom = dstDesc.Height;
 	   srcBox.front = 0; srcBox.back = 1;
-	   GetDeviceContext().CopySubresourceRegion(m_pSaveTexture[0], 0, 0, 0, 0, pSourceTexture, 0, &srcBox);*/
+	   GetDeviceContext()->CopySubresourceRegion(m_pSaveTexture[0], 0, 0, 0, 0, pSourceTexture, 0, &srcBox);*/
 #endif
 	return(true);
 }
@@ -3828,7 +3806,7 @@ bool CD3D9Renderer::CaptureFrameBufferFast(unsigned char* pDstRGB8, int destinat
 
 #if defined(ENABLE_PROFILING_CODE)
 	//In case this routine is called without the init function being called
-	if (!CTexture::IsTextureExist(m_pSaveTexture[0]) || !CTexture::IsTextureExist(m_pSaveTexture[1]) || !GetDevice().IsValid()) 
+	if (!CTexture::IsTextureExist(m_pSaveTexture[0]) || !CTexture::IsTextureExist(m_pSaveTexture[1]) || !GetDevice()) 
 		return false;
 
 	CTexture* pSourceTexture = GetActiveDisplayContext()->GetPresentedBackBuffer();
@@ -3915,7 +3893,7 @@ bool CD3D9Renderer::CopyFrameBufferFast(unsigned char* pDstRGBA8, int destinatio
 
 #if defined(ENABLE_PROFILING_CODE)
 	//In case this routine is called without the init function being called
-	if (m_pSaveTexture[0] == NULL || m_pSaveTexture[1] == NULL || !GetDevice().IsValid())
+	if (m_pSaveTexture[0] == NULL || m_pSaveTexture[1] == NULL || !GetDevice())
 		return bStatus;
 
 	CTexture* pCopyTexture = m_captureFlipFlop ? m_pSaveTexture[0] : m_pSaveTexture[1];
@@ -5217,37 +5195,6 @@ void CD3D9Renderer::ActivateLayer(const char* pLayerName, bool activate)
 {
 	CDynTextureSourceLayerActivator::ActivateLayer(pLayerName, activate);
 }
-
-void CD3D9Renderer::RegisterDeviceWrapperHook(ICryDeviceWrapperHook* pDeviceWrapperHook)
-{
-	GetDevice().RegisterHook(pDeviceWrapperHook);
-	GetDeviceContext().RegisterHook(pDeviceWrapperHook);
-#if defined(DEVICE_SUPPORTS_PERFORMANCE_DEVICE)
-	GetPerformanceDevice().RegisterHook(pDeviceWrapperHook);
-	GetPerformanceDeviceContext().RegisterHook(pDeviceWrapperHook);
-#endif // DEVICE_SUPPORTS_PERFORMANCE_DEVICE
-}
-
-void CD3D9Renderer::UnregisterDeviceWrapperHook(const char* pDeviceHookName)
-{
-	GetDevice().UnregisterHook(pDeviceHookName);
-	GetDeviceContext().UnregisterHook(pDeviceHookName);
-#if defined(DEVICE_SUPPORTS_PERFORMANCE_DEVICE)
-	GetPerformanceDevice().UnregisterHook(pDeviceHookName);
-	GetPerformanceDeviceContext().UnregisterHook(pDeviceHookName);
-#endif
-}
-
-#ifdef SUPPORT_HW_MOUSE_CURSOR
-IHWMouseCursor* CD3D9Renderer::GetIHWMouseCursor()
-{
-	#if CRY_PLATFORM_ORBIS
-	return DXOrbis::m_pSwapChain ? DXOrbis::m_pSwapChain->GetIHWMouseCursor() : NULL;
-	#else
-		#error Need implementation of IHWMouseCursor
-	#endif
-}
-#endif
 
 IGraphicsDeviceConstantBufferPtr CD3D9Renderer::CreateGraphiceDeviceConstantBuffer()
 {

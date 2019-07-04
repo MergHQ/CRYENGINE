@@ -69,6 +69,8 @@ public:
 	void Resize(int renderWidth, int renderHeight) final;
 	void OnCVarsChanged(const CCVarUpdateRecorder& cvarUpdater) final;
 	void Update() final;
+	bool UpdatePerPassResourceSet() final;
+	bool UpdateRenderPasses() final;
 
 	void Execute();
 

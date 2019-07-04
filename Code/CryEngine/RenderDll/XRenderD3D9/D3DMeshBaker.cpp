@@ -278,7 +278,7 @@ bool CREBaker::mfDraw(CShader* ef, SShaderPass* sfm)
 					{
 						// Send the commands to the GPU to make sure we don't timeout the driver
 #ifdef RENDERER_ENABLE_LEGACY_PIPELINE
-						rd->GetDeviceContext().Flush();
+						rd->GetDeviceContext()->Flush();
 #endif
 						Sleep(1);
 					}
@@ -437,7 +437,7 @@ static void EtchAlphas(std::vector<IIndexedMesh*> outputList, IMaterial* pMateri
 			{
 				// Send the commands to the GPU to make sure we don't timeout the driver
 #ifdef RENDERER_ENABLE_LEGACY_PIPELINE
-				rd->GetDeviceContext().Flush();
+				rd->GetDeviceContext()->Flush();
 #endif
 				Sleep(1);
 			}

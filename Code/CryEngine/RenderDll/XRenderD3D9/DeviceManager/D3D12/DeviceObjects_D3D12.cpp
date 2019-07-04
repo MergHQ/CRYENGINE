@@ -134,7 +134,7 @@ CDeviceCommandListUPtr CDeviceObjectFactory::AcquireCommandList(EQueueType eQueu
 	NCryDX12::CCommandListPool& pQueue = m_pDX12Scheduler->GetCommandListPool(eQueueType);
 	m_pDX12Scheduler->CeaseAllCommandQueues(false);
 
-	DX12_PTR(CCommandList) pCL;
+	DX12_PTR(NCryDX12::CCommandList) pCL;
 	pQueue.AcquireCommandList(pCL);
 
 	m_pDX12Scheduler->ResumeAllCommandQueues();
@@ -151,7 +151,7 @@ std::vector<CDeviceCommandListUPtr> CDeviceObjectFactory::AcquireCommandLists(ui
 	m_pDX12Scheduler->CeaseAllCommandQueues(false);
 
 	std::vector<CDeviceCommandListUPtr> pCommandLists;
-	DX12_PTR(CCommandList) pCLs[256];
+	DX12_PTR(NCryDX12::CCommandList) pCLs[256];
 
 	// Allocate in chunks of 256
 	for (uint32 n = 0; n < listCount; n += 256U)
@@ -186,7 +186,7 @@ void CDeviceObjectFactory::ForfeitCommandLists(std::vector<CDeviceCommandListUPt
 	NCryDX12::CCommandListPool& pQueue = m_pDX12Scheduler->GetCommandListPool(eQueueType);
 
 	const uint32 listCount = pCommandLists.size();
-	DX12_PTR(CCommandList) pCLs[256];
+	DX12_PTR(NCryDX12::CCommandList) pCLs[256];
 
 	// Deallocate in chunks of 256
 	for (uint32 n = 0; n < listCount; n += 256U)
@@ -392,7 +392,7 @@ CDeviceSamplerState* CDeviceObjectFactory::CreateSamplerState(const SSamplerStat
 			assert(0);
 	}
 
-	HRESULT hr = gcpRendD3D->GetDevice().CreateSamplerState(&Desc, &pSamp);
+	HRESULT hr = gcpRendD3D->GetDevice()->CreateSamplerState(&Desc, &pSamp);
 	if (SUCCEEDED(hr))
 		return pSamp;
 	else
@@ -413,7 +413,7 @@ CDeviceInputLayout* CDeviceObjectFactory::CreateInputLayout(const SInputLayout& 
 	const void* pVSData = m_pConsumingVertexShader->m_pShaderData;
 
 	HRESULT hr = E_FAIL;
-	if (FAILED(hr = gcpRendD3D->GetDevice().CreateInputLayout(&pLayout.m_Declaration[0], pLayout.m_Declaration.size(), pVSData, nSize, &Layout)))
+	if (FAILED(hr = gcpRendD3D->GetDevice()->CreateInputLayout(&pLayout.m_Declaration[0], pLayout.m_Declaration.size(), pVSData, nSize, &Layout)))
 	{
 		return Layout;
 	}
@@ -430,7 +430,7 @@ void CDeviceObjectFactory::AllocateNullResources()
 	{
 		D3DResource* pNullResource = m_NullResources[eType];
 
-		if (pNullResource || (S_OK == gcpRendD3D->GetDevice_Unsynchronized().CreateNullResource(eType, &pNullResource)))
+		if (pNullResource || (S_OK == gcpRendD3D->GetDevice()->CreateNullResource(eType, &pNullResource)))
 		{
 			m_NullResources[eType] = pNullResource;
 			m_NullResources[eType]->AddRef();
@@ -469,7 +469,7 @@ D3DResource* CDeviceObjectFactory::AllocateStagingResource(D3DResource* pForTex,
 
 	if (result == S_OK && stagingResource != nullptr)
 	{
-		pStagingResource = CCryDX12Buffer::Create(gcpRendD3D->GetDevice_Unsynchronized().GetRealDevice(), stagingResource, initialState);
+		pStagingResource = CCryDX12Buffer::Create(gcpRendD3D->GetDevice(), stagingResource, initialState);
 		stagingResource->Release();
 
 		if (bUpload) // Resources on D3D12_HEAP_TYPE_READBACK heaps do not support persistent map.
@@ -481,11 +481,11 @@ D3DResource* CDeviceObjectFactory::AllocateStagingResource(D3DResource* pForTex,
 		}
 	}
 #else
-	gcpRendD3D->GetDevice_Unsynchronized().CreateStagingResource(pForTex, &pStagingResource, bUpload);
+	gcpRendD3D->GetDevice()->CreateStagingResource(pForTex, &pStagingResource, bUpload);
 
 	if (bUpload) // Resources on D3D12_HEAP_TYPE_READBACK heaps do not support persistent map.
 	{
-		gcpRendD3D->GetDeviceContext_Unsynchronized().MapStagingResource(pStagingResource, bUpload, &pMappedAddress);
+		gcpRendD3D->GetDeviceContext()->MapStagingResource(pStagingResource, bUpload, &pMappedAddress);
 	}
 #endif
 
@@ -512,10 +512,10 @@ void CDeviceObjectFactory::ReleaseStagingResource(D3DResource* pStagingTex)
 #else
 		if (false /* TODO: rResource.IsPersistentMappable() */) // Resources on D3D12_HEAP_TYPE_READBACK heaps do not support persistent map.
 		{
-			gcpRendD3D->GetDeviceContext_Unsynchronized().UnmapStagingResource(pStagingTex, true);
+			gcpRendD3D->GetDeviceContext()->UnmapStagingResource(pStagingTex, true);
 		}
 
-		gcpRendD3D->GetDevice_Unsynchronized().ReleaseStagingResource(pStagingTex);
+		gcpRendD3D->GetDevice()->ReleaseStagingResource(pStagingTex);
 #endif
 	}
 }
@@ -537,7 +537,7 @@ void CDeviceObjectFactory::RecycleResource(D3DResource* pResource)
 
 //=============================================================================
 
-HRESULT CDeviceObjectFactory::Create2DTexture(uint32 nWidth, uint32 nHeight, uint32 nMips, uint32 nArraySize, uint32 nUsage, const ColorF& cClearValue, D3DFormat Format, LPDEVICETEXTURE* ppDevTexture, const STexturePayload* pTI, int32 nESRAMOffset)
+HRESULT CDeviceObjectFactory::Create2DTexture(uint32 nWidth, uint32 nHeight, uint32 nMips, uint32 nArraySize, uint32 nUsage, const ColorF& cClearValue, D3DFormat Format, LPDEVICETEXTURE* ppDevTexture, const STexturePayload* pTI)
 {
 	D3D11_TEXTURE2D_DESC Desc;
 	ZeroStruct(Desc);
@@ -604,11 +604,11 @@ HRESULT CDeviceObjectFactory::Create2DTexture(const D3D11_TEXTURE2D_DESC& Desc, 
 
 	if (Desc.BindFlags & (D3D11_BIND_DEPTH_STENCIL | D3D11_BIND_RENDER_TARGET | D3D11_BIND_UNORDERED_ACCESS))
 	{
-		hr = gcpRendD3D->GetDevice_Unsynchronized().CreateTarget2D(&Desc, (const FLOAT*)&cClearValue, pSRD, &pD3DTex);
+		hr = gcpRendD3D->GetDevice()->CreateTarget2D(&Desc, (const FLOAT*)&cClearValue, pSRD, &pD3DTex);
 	}
 	else
 	{
-		hr = gcpRendD3D->GetDevice_Unsynchronized().CreateTexture2D(&Desc, pSRD, &pD3DTex);
+		hr = gcpRendD3D->GetDevice()->CreateTexture2D(&Desc, pSRD, &pD3DTex);
 	}
 
 	if (SUCCEEDED(hr) && pD3DTex)
@@ -636,11 +636,11 @@ HRESULT CDeviceObjectFactory::CreateCubeTexture(const D3D11_TEXTURE2D_DESC& Desc
 
 	if (Desc.BindFlags & (D3D11_BIND_DEPTH_STENCIL | D3D11_BIND_RENDER_TARGET | D3D11_BIND_UNORDERED_ACCESS))
 	{
-		hr = gcpRendD3D->GetDevice_Unsynchronized().CreateTarget2D(&Desc, (const FLOAT*)&cClearValue, pSRD, &pD3DTex);
+		hr = gcpRendD3D->GetDevice()->CreateTarget2D(&Desc, (const FLOAT*)&cClearValue, pSRD, &pD3DTex);
 	}
 	else
 	{
-		hr = gcpRendD3D->GetDevice_Unsynchronized().CreateTexture2D(&Desc, pSRD, &pD3DTex);
+		hr = gcpRendD3D->GetDevice()->CreateTexture2D(&Desc, pSRD, &pD3DTex);
 	}
 
 	if (SUCCEEDED(hr) && pD3DTex)
@@ -668,11 +668,11 @@ HRESULT CDeviceObjectFactory::CreateVolumeTexture(const D3D11_TEXTURE3D_DESC& De
 
 	if (Desc.BindFlags & (D3D11_BIND_DEPTH_STENCIL | D3D11_BIND_RENDER_TARGET | D3D11_BIND_UNORDERED_ACCESS))
 	{
-		hr = gcpRendD3D->GetDevice_Unsynchronized().CreateTarget3D(&Desc, (const FLOAT*)&cClearValue, pSRD, &pD3DTex);
+		hr = gcpRendD3D->GetDevice()->CreateTarget3D(&Desc, (const FLOAT*)&cClearValue, pSRD, &pD3DTex);
 	}
 	else
 	{
-		hr = gcpRendD3D->GetDevice_Unsynchronized().CreateTexture3D(&Desc, pSRD, &pD3DTex);
+		hr = gcpRendD3D->GetDevice()->CreateTexture3D(&Desc, pSRD, &pD3DTex);
 	}
 
 	if (SUCCEEDED(hr) && pD3DTex)
@@ -744,7 +744,7 @@ HRESULT CDeviceObjectFactory::CreateBuffer(
 		SRD.SysMemSlicePitch = BufDesc.ByteWidth;
 	}
 
-	hr = gcpRendD3D->GetDevice_Unsynchronized().CreateBuffer(&BufDesc, pSRD, ppBuff);
+	hr = gcpRendD3D->GetDevice()->CreateBuffer(&BufDesc, pSRD, ppBuff);
 	assert(hr == S_OK);
 	return hr;
 }
@@ -771,7 +771,7 @@ uint8* CDeviceObjectFactory::Map(D3DBuffer* buffer, uint32 subresource, buffer_s
 {
 	D3D11_MAPPED_SUBRESOURCE mapped_resource = { 0 };
 	SIZE_T BeginEndR[2] = { offset, offset + size };
-	CRY_VERIFY(gcpRendD3D->GetDeviceContext_ForMapAndUnmap().Map(
+	CRY_VERIFY(gcpRendD3D->GetDeviceContext()->Map(
 		buffer
 		, subresource
 		, BeginEndR
@@ -784,7 +784,7 @@ uint8* CDeviceObjectFactory::Map(D3DBuffer* buffer, uint32 subresource, buffer_s
 void CDeviceObjectFactory::Unmap(D3DBuffer* buffer, uint32 subresource, buffer_size_t offset, buffer_size_t size, D3D11_MAP mode)
 {
 	SIZE_T BeginEndW[2] = { offset, offset + size };
-	gcpRendD3D->GetDeviceContext_ForMapAndUnmap().Unmap(
+	gcpRendD3D->GetDeviceContext()->Unmap(
 		buffer
 		, subresource
 		, BeginEndW);
@@ -793,13 +793,13 @@ void CDeviceObjectFactory::Unmap(D3DBuffer* buffer, uint32 subresource, buffer_s
 template<const bool bDirectAccess>
 void CDeviceObjectFactory::UploadContents(D3DBuffer* buffer, uint32 subresource, buffer_size_t offset, buffer_size_t size, D3D11_MAP mode, const void* pInDataCPU, void* pOutDataGPU, UINT numDataBlocks)
 {
-	gcpRendD3D->GetDeviceContext_ForMapAndUnmap().MappedWriteToSubresource(buffer, subresource, offset, size, mode, pInDataCPU, numDataBlocks);
+	gcpRendD3D->GetDeviceContext()->MappedWriteToSubresource(buffer, subresource, offset, size, mode, pInDataCPU, numDataBlocks);
 }
 
 template<const bool bDirectAccess>
 void CDeviceObjectFactory::DownloadContents(D3DBuffer* buffer, uint32 subresource, buffer_size_t offset, buffer_size_t size, D3D11_MAP mode, void* pOutDataCPU, const void* pInDataGPU, UINT numDataBlocks)
 {
-	gcpRendD3D->GetDeviceContext_ForMapAndUnmap().MappedReadFromSubresource(buffer, subresource, offset, size, mode, pOutDataCPU, numDataBlocks);
+	gcpRendD3D->GetDeviceContext()->MappedReadFromSubresource(buffer, subresource, offset, size, mode, pOutDataCPU, numDataBlocks);
 }
 
 // Explicit instantiation
@@ -817,37 +817,37 @@ void CDeviceObjectFactory::DownloadContents<false>(D3DBuffer* buffer, uint32 sub
 ID3D11VertexShader* CDeviceObjectFactory::CreateVertexShader(const void* pData, size_t bytes)
 {
 	ID3D11VertexShader* pResult;
-	return SUCCEEDED(gcpRendD3D->GetDevice_Unsynchronized().CreateVertexShader(pData, bytes, nullptr, &pResult)) ? pResult : nullptr;
+	return SUCCEEDED(gcpRendD3D->GetDevice()->CreateVertexShader(pData, bytes, nullptr, &pResult)) ? pResult : nullptr;
 }
 
 ID3D11PixelShader* CDeviceObjectFactory::CreatePixelShader(const void* pData, size_t bytes)
 {
 	ID3D11PixelShader* pResult;
-	return SUCCEEDED(gcpRendD3D->GetDevice_Unsynchronized().CreatePixelShader(pData, bytes, nullptr, &pResult)) ? pResult : nullptr;
+	return SUCCEEDED(gcpRendD3D->GetDevice()->CreatePixelShader(pData, bytes, nullptr, &pResult)) ? pResult : nullptr;
 }
 
 ID3D11GeometryShader* CDeviceObjectFactory::CreateGeometryShader(const void* pData, size_t bytes)
 {
 	ID3D11GeometryShader* pResult;
-	return SUCCEEDED(gcpRendD3D->GetDevice_Unsynchronized().CreateGeometryShader(pData, bytes, nullptr, &pResult)) ? pResult : nullptr;
+	return SUCCEEDED(gcpRendD3D->GetDevice()->CreateGeometryShader(pData, bytes, nullptr, &pResult)) ? pResult : nullptr;
 }
 
 ID3D11HullShader* CDeviceObjectFactory::CreateHullShader(const void* pData, size_t bytes)
 {
 	ID3D11HullShader* pResult;
-	return SUCCEEDED(gcpRendD3D->GetDevice_Unsynchronized().CreateHullShader(pData, bytes, nullptr, &pResult)) ? pResult : nullptr;
+	return SUCCEEDED(gcpRendD3D->GetDevice()->CreateHullShader(pData, bytes, nullptr, &pResult)) ? pResult : nullptr;
 }
 
 ID3D11DomainShader* CDeviceObjectFactory::CreateDomainShader(const void* pData, size_t bytes)
 {
 	ID3D11DomainShader* pResult;
-	return SUCCEEDED(gcpRendD3D->GetDevice_Unsynchronized().CreateDomainShader(pData, bytes, nullptr, &pResult)) ? pResult : nullptr;
+	return SUCCEEDED(gcpRendD3D->GetDevice()->CreateDomainShader(pData, bytes, nullptr, &pResult)) ? pResult : nullptr;
 }
 
 ID3D11ComputeShader* CDeviceObjectFactory::CreateComputeShader(const void* pData, size_t bytes)
 {
 	ID3D11ComputeShader* pResult;
-	return SUCCEEDED(gcpRendD3D->GetDevice_Unsynchronized().CreateComputeShader(pData, bytes, nullptr, &pResult)) ? pResult : nullptr;
+	return SUCCEEDED(gcpRendD3D->GetDevice()->CreateComputeShader(pData, bytes, nullptr, &pResult)) ? pResult : nullptr;
 }
 
 // Occlusion Query API
@@ -857,10 +857,10 @@ D3DOcclusionQuery* CDeviceObjectFactory::CreateOcclusionQuery()
 	D3D11_QUERY_DESC desc;
 	desc.Query = D3D11_QUERY_OCCLUSION;
 	desc.MiscFlags = 0;
-	return SUCCEEDED(gcpRendD3D->GetDevice_Unsynchronized().CreateQuery(&desc, &pResult)) ? pResult : nullptr;
+	return SUCCEEDED(gcpRendD3D->GetDevice()->CreateQuery(&desc, &pResult)) ? pResult : nullptr;
 }
 
 bool CDeviceObjectFactory::GetOcclusionQueryResults(D3DOcclusionQuery* pQuery, uint64& samplesPassed)
 {
-	return gcpRendD3D->GetDeviceContext().GetData(pQuery, &samplesPassed, sizeof(uint64), 0) == S_OK;
+	return gcpRendD3D->GetDeviceContext()->GetData(pQuery, &samplesPassed, sizeof(uint64), 0) == S_OK;
 }

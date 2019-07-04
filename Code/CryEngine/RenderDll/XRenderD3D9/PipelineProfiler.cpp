@@ -417,6 +417,9 @@ void CRenderPipelineProfiler::UpdateThreadTimings(uint32 frameDataIndex)
 	smthThreadTimings.waitForRender  = (currThreadTimings.waitForRender  * smoothWeightDataNew + smthThreadTimings.waitForRender * smoothWeightDataOld);
 	smthThreadTimings.waitForGPU_MT  = (currThreadTimings.waitForGPU_MT  * smoothWeightDataNew + smthThreadTimings.waitForGPU_MT * smoothWeightDataOld);
 	smthThreadTimings.waitForGPU_RT  = (currThreadTimings.waitForGPU_RT  * smoothWeightDataNew + smthThreadTimings.waitForGPU_RT * smoothWeightDataOld);
+	smthThreadTimings.waitForFlip_RT = (currThreadTimings.waitForFlip_RT * smoothWeightDataNew + smthThreadTimings.waitForFlip_RT* smoothWeightDataOld);
+	smthThreadTimings.waitForPresentQueue_RT = (currThreadTimings.waitForPresentQueue_RT * smoothWeightDataNew + smthThreadTimings.waitForPresentQueue_RT* smoothWeightDataOld);
+	smthThreadTimings.waitForGPUActual_RT = (currThreadTimings.waitForGPUActual_RT * smoothWeightDataNew + smthThreadTimings.waitForGPUActual_RT* smoothWeightDataOld);
 	smthThreadTimings.gpuIdlePerc    = (currThreadTimings.gpuIdlePerc    * smoothWeightDataNew + smthThreadTimings.gpuIdlePerc   * smoothWeightDataOld);
 	smthThreadTimings.gpuFrameTime   = (currThreadTimings.gpuFrameTime   * smoothWeightDataNew + smthThreadTimings.gpuFrameTime  * smoothWeightDataOld);
 	smthThreadTimings.frameTime      = (currThreadTimings.frameTime      * smoothWeightDataNew + smthThreadTimings.frameTime     * smoothWeightDataOld);
@@ -786,7 +789,9 @@ void CRenderPipelineProfiler::UpdateStats(uint32 frameDataIndex)
 
 	AddToStats(pBasicStats[eRPPSTATS_OverallFrame], frameData.m_sections[0]);
 
+#if !CRY_PLATFORM_DURANGO
 	frameData.m_frameTimings.gpuFrameTime = frameData.m_sections[0].gpuTime / 1000.0f;
+#endif
 
 	if (m_frameDataLRU)
 	{
@@ -982,7 +987,7 @@ void CRenderPipelineProfiler::DisplayOverviewStats(uint32 frameDataIndex) const
 
 	// Threading info
 	{
-		DebugUI::DrawTable(0.05f, 0.1f, 0.45f, 4, "Overview");
+		DebugUI::DrawTable(0.05f, 0.1f, 0.45f, 6, "Overview");
 
 		float frameTime = smthThreadTimings.frameTime;
 		float mainThreadTime = max(smthThreadTimings.frameTime - smthThreadTimings.waitForRender - smthThreadTimings.waitForGPU_MT, 0.0f);
@@ -992,17 +997,21 @@ void CRenderPipelineProfiler::DisplayOverviewStats(uint32 frameDataIndex) const
 	#else
 		float gpuTime = max(smthThreadTimings.gpuFrameTime, 0.0f);
 	#endif
-		float waitForGPU = max(smthThreadTimings.waitForGPU_MT + smthThreadTimings.waitForGPU_RT, 0.0f);
+		float waitForGPU = smthThreadTimings.waitForGPUActual_RT;
 
 		DebugUI::DrawTableBar(0.335f, 0.1f, 0, mainThreadTime / frameTime, Col_Yellow);
 		DebugUI::DrawTableBar(0.335f, 0.1f, 1, renderThreadTime / frameTime, Col_Green);
 		DebugUI::DrawTableBar(0.335f, 0.1f, 2, gpuTime / frameTime, Col_Cyan);
 		DebugUI::DrawTableBar(0.335f, 0.1f, 3, waitForGPU / frameTime, Col_Red);
+		DebugUI::DrawTableBar(0.335f, 0.1f, 4, smthThreadTimings.waitForPresentQueue_RT / frameTime, Col_Red);
+		DebugUI::DrawTableBar(0.335f, 0.1f, 5, smthThreadTimings.waitForFlip_RT / frameTime, Col_Red);
 
 		DebugUI::DrawTableColumn(0.05f, 0.1f, 0, "Main Thread             %6.2f ms", mainThreadTime * 1000.0f);
 		DebugUI::DrawTableColumn(0.05f, 0.1f, 1, "Render Thread           %6.2f ms", renderThreadTime * 1000.0f);
 		DebugUI::DrawTableColumn(0.05f, 0.1f, 2, "GPU                     %6.2f ms", gpuTime * 1000.0f);
-		DebugUI::DrawTableColumn(0.05f, 0.1f, 3, "CPU waits for GPU       %6.2f ms", waitForGPU * 1000.0f);
+		DebugUI::DrawTableColumn(0.05f, 0.1f, 3, "GPU latency             %6.2f ms", waitForGPU * 1000.0f);
+		DebugUI::DrawTableColumn(0.05f, 0.1f, 4, "Swap Throttle           %6.2f ms", smthThreadTimings.waitForPresentQueue_RT * 1000.0f);
+		DebugUI::DrawTableColumn(0.05f, 0.1f, 5, "Flip latency            %6.2f ms", smthThreadTimings.waitForFlip_RT * 1000.0f);
 	}
 
 	// GPU times
@@ -1011,18 +1020,18 @@ void CRenderPipelineProfiler::DisplayOverviewStats(uint32 frameDataIndex) const
 		float gpuTimeSmoothed = 0.0f;
 
 		int numRows = sizeof(statsGroups) / sizeof(StatsGroup);
-		DebugUI::DrawTable(0.05f, 0.27f, 0.45f, numRows + 1, "GPU Time");
+		DebugUI::DrawTable(0.05f, 0.35f, 0.45f, numRows + 1, "GPU Time");
 
 		const RPProfilerStats* pBasicStats = m_basicStats[gRenDev->m_nFillThreadID];
 		for (uint32 i = 0; i < numRows; ++i)
 		{
 			const RPProfilerStats& stats = pBasicStats[statsGroups[i].statIndex];
 			if (statsGroups[i].partialSum) gpuTimeSmoothed += stats.gpuTimeSmoothed;
-			DebugUI::DrawTableColumn(0.05f, 0.27f, i, "%-20s  %4.1f ms  %2.0f %%", statsGroups[i].name, stats.gpuTimeSmoothed, stats.gpuTimeSmoothed / targetFrameTime * 100.0f);
+			DebugUI::DrawTableColumn(0.05f, 0.35f, i, "%-20s  %4.1f ms  %2.0f %%", statsGroups[i].name, stats.gpuTimeSmoothed, stats.gpuTimeSmoothed / targetFrameTime * 100.0f);
 		}
 
 		gpuTimeSmoothed = smthThreadTimings.gpuFrameTime * 1000.0f - gpuTimeSmoothed;
-		DebugUI::DrawTableColumn(0.05f, 0.27f, numRows, "%-20s  %4.1f ms  %2.0f %%", "Unlabeled", gpuTimeSmoothed, gpuTimeSmoothed / targetFrameTime * 100.0f);
+		DebugUI::DrawTableColumn(0.05f, 0.35f, numRows, "%-20s  %4.1f ms  %2.0f %%", "Unlabeled", gpuTimeSmoothed, gpuTimeSmoothed / targetFrameTime * 100.0f);
 	}
 #endif
 }

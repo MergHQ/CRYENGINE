@@ -272,6 +272,11 @@ private: // All function below are implemented inline and forward to one of the 
 	}
 
 protected:
+	void CopyImpl(D3DResource* pSrc, D3DResource* pDst)
+	{
+		VK_NOT_IMPLEMENTED;
+	}
+
 	void CopyImpl(CDeviceBuffer* pSrc, CDeviceBuffer* pDst)
 	{
 		CopyBuffer(UnwrapDeviceBuffer(pSrc), UnwrapDeviceBuffer(pDst));

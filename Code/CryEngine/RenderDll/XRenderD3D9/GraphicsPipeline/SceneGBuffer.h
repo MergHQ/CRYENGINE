@@ -53,6 +53,8 @@ public:
 
 	void Init() final;
 	void Update() final;
+	bool UpdatePerPassResourceSet() final;
+	bool UpdateRenderPasses() final;
 
 	bool IsStageActive(EShaderRenderingFlags flags) const final
 	{

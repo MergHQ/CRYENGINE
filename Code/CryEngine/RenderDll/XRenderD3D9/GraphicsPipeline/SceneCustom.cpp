@@ -240,8 +240,7 @@ bool CSceneCustomStage::UpdatePerPassResources(bool bOnInit)
 	if (bOnInit)
 		return true;
 
-	CRY_ASSERT(!m_perPassResources.HasChangedBindPoints()); // Cannot change resource layout after init. It is baked into the shaders
-	return m_pPerPassResourceSet->Update(m_perPassResources);
+	return UpdatePerPassResourceSet();
 }
 
 struct CHighlightPredicate
@@ -299,6 +298,26 @@ void CSceneCustomStage::Update()
 			m_graphicsPipelineResources.m_pTexSceneSelectionIDs
 		);
 	}
+}
+
+bool CSceneCustomStage::UpdatePerPassResourceSet()
+{
+	CRY_ASSERT(!m_perPassResources.HasChangedBindPoints()); // Cannot change resource layout after init. It is baked into the shaders
+	return m_pPerPassResourceSet->Update(m_perPassResources);
+}
+
+bool CSceneCustomStage::UpdateRenderPasses()
+{
+	bool result = true;
+	result &= m_debugViewPass.UpdateDeviceRenderPass();
+	result &= m_silhouetteMaskPass.UpdateDeviceRenderPass();
+
+	if (gEnv->IsEditor())
+	{
+		result &= m_selectionIDPass.UpdateDeviceRenderPass();
+	}
+
+	return result;
 }
 
 void CSceneCustomStage::Resize(int renderWidth, int renderHeight)

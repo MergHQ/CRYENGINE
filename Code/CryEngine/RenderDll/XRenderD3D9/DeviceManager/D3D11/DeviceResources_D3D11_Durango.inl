@@ -4,9 +4,244 @@
 
 #include "../../../Common/Textures/TextureStreamPool.h" // STexPoolItem
 
+////////////////////////////////////////////////////////////////////////////
+// CDeviceResource API
+
+#if DURANGO_USE_ESRAM
+bool CDeviceResource::IsESRAMResident()
+{
+	return m_bIsResident;
+}
+
+bool CDeviceResource::AcquireESRAMResidency(EResidencyCoherence residencyEntry, ColorF cClear, uint32 numBytes, uint32 alignment)
+{
+	if (!CRenderer::CV_r_useESRAM)
+	{
+		return false;
+	}
+
+	if (m_bIsResident)
+	{
+		return true;
+	}
+
+	CRY_ASSERT(!m_pNativeResourceESRAM);
+
+	auto& rFactory = CDeviceObjectFactory::GetInstance();
+	CDeviceCommandListRef commandList = rFactory.GetCoreCommandList();
+
+	if (!m_ESRAMAllocation.IsValid())
+	{
+		rFactory.m_ESRAMManager.Allocate(numBytes, alignment, m_ESRAMAllocation);
+		if (!m_ESRAMAllocation.IsValid())
+		{
+			return false;
+		}
+	}
+
+	const HRESULT result = rFactory.GetDX11Device()->DuplicateCommittedResource(m_pNativeResource, &m_pNativeResourceESRAM, m_ESRAMAllocation.m_esramPtr, m_ESRAMAllocation.m_esramSize);
+	if (result != S_OK)
+	{
+		rFactory.m_ESRAMManager.Free(m_ESRAMAllocation);
+		return false;
+	}
+
+	m_bIsResident = true;
+
+	ReleaseResourceViews();
+	AllocatePredefinedResourceViews();
+
+	switch (residencyEntry)
+	{
+	case eResCoherence_Uninitialize:
+		break;
+	case eResCoherence_Clear:
+		if ((m_eFlags & CDeviceObjectFactory::BIND_RENDER_TARGET))
+			commandList.GetGraphicsInterface()->ClearSurface(LookupRTV(EDefaultResourceViews::RenderTarget), cClear, 0, nullptr);
+		else if ((m_eFlags & CDeviceObjectFactory::BIND_DEPTH_STENCIL))
+			commandList.GetGraphicsInterface()->ClearSurface(LookupDSV(EDefaultResourceViews::DepthStencil), CLEAR_ZBUFFER | CLEAR_STENCIL, cClear.r, int8(cClear.g), 0, nullptr);
+		else if ((m_eFlags & CDeviceObjectFactory::BIND_UNORDERED_ACCESS))
+			commandList.GetComputeInterface()->ClearUAV(LookupUAV(EDefaultResourceViews::UnorderedAccess), cClear, 0, nullptr);
+		else
+			CRY_ASSERT(false);
+		break;
+	case eResCoherence_Transfer:
+		commandList.GetCopyInterface()->Copy(m_pNativeResource, m_pNativeResourceESRAM);
+		break;
+	}
+
+	return true;
+}
+
+bool CDeviceResource::ForfeitESRAMResidency(EResidencyCoherence residencyExit, ColorF cClear)
+{
+	if (!m_bIsResident)
+	{
+		return true;
+	}
+
+	CRY_ASSERT(m_pNativeResourceESRAM);
+	
+	auto& rFactory = CDeviceObjectFactory::GetInstance();
+	CDeviceCommandListRef commandList = rFactory.GetCoreCommandList();
+
+	switch (residencyExit)
+	{
+	case eResCoherence_Abandon:
+		break;
+	case eResCoherence_Clear:
+		if ((m_eFlags & CDeviceObjectFactory::BIND_RENDER_TARGET))
+			commandList.GetGraphicsInterface()->ClearSurface(LookupRTV(EDefaultResourceViews::RenderTarget), cClear, 0, nullptr);
+		else if ((m_eFlags & CDeviceObjectFactory::BIND_DEPTH_STENCIL))
+			commandList.GetGraphicsInterface()->ClearSurface(LookupDSV(EDefaultResourceViews::DepthStencil), CLEAR_ZBUFFER | CLEAR_STENCIL, cClear.r, int8(cClear.g), 0, nullptr);
+		else if ((m_eFlags & CDeviceObjectFactory::BIND_UNORDERED_ACCESS))
+			commandList.GetComputeInterface()->ClearUAV(LookupUAV(EDefaultResourceViews::UnorderedAccess), cClear, 0, nullptr);
+		else
+			CRY_ASSERT(false);
+		break;
+	case eResCoherence_Transfer:
+		commandList.GetCopyInterface()->Copy(m_pNativeResourceESRAM, m_pNativeResource);
+		break;
+	}
+
+	if (m_ESRAMAllocation.IsValid())
+	{
+		rFactory.m_ESRAMManager.Free(m_ESRAMAllocation);
+	}
+
+	rFactory.ReleaseResource(m_pNativeResourceESRAM);
+	m_pNativeResourceESRAM = nullptr;
+
+	m_bIsResident = false;
+
+	ReleaseResourceViews();
+	AllocatePredefinedResourceViews();
+
+	return true;
+}
+
+bool CDeviceResource::TransferESRAMAllocation(CDeviceResource& target)
+{
+	if (!m_ESRAMAllocation.IsValid() || target.m_ESRAMAllocation.IsValid())
+	{
+		return false;
+	}
+
+	target.m_ESRAMAllocation = m_ESRAMAllocation;
+	m_ESRAMAllocation.Invalidate();
+
+	return true;
+}
+
+void CDeviceResource::CleanupESRAMResource()
+{
+	if (m_ESRAMAllocation.IsValid())
+	{
+		GetDeviceObjectFactory().m_ESRAMManager.Free(m_ESRAMAllocation);
+	}
+
+	if (m_pNativeResourceESRAM)
+	{
+		GetDeviceObjectFactory().ReleaseResource(m_pNativeResourceESRAM);
+		m_pNativeResourceESRAM = nullptr;
+	}
+
+	m_bIsResident = false;
+}
+#endif
+
+////////////////////////////////////////////////////////////////////////////
+// CTexture API
+
+#if DURANGO_USE_ESRAM
+bool CTexture::IsESRAMResident()
+{
+	if (auto* devTexture = GetDevTexture())
+		return devTexture->IsESRAMResident();
+	return false;
+}
+
+bool CTexture::AcquireESRAMResidency(CDeviceResource::EResidencyCoherence residencyEntry)
+{
+	if (auto* devTexture = GetDevTexture())
+	{
+		if (m_nESRAMSize == 0)
+		{
+			ID3D11Texture2D* pDevTex = devTexture->Get2DTexture();
+
+			D3D11_TEXTURE2D_DESC desc;
+			pDevTex->GetDesc(&desc);
+
+			XG_TEXTURE2D_DESC xgDesc;
+			ZeroMemory(&xgDesc, sizeof(xgDesc));
+			xgDesc.Width = desc.Width;
+			xgDesc.Height = desc.Height;
+			xgDesc.MipLevels = desc.MipLevels;
+			xgDesc.ArraySize = desc.ArraySize;
+			xgDesc.Format = (XG_FORMAT)desc.Format;
+			xgDesc.SampleDesc.Count = desc.SampleDesc.Count;
+			xgDesc.SampleDesc.Quality = desc.SampleDesc.Quality;
+			xgDesc.Usage = XG_USAGE_DEFAULT;
+			xgDesc.BindFlags = desc.BindFlags;
+			xgDesc.CPUAccessFlags = 0;
+			xgDesc.MiscFlags = desc.MiscFlags | XG_RESOURCE_MISC_ESRAM_RESIDENT;
+			xgDesc.ESRAMOffsetBytes = 0;
+			xgDesc.ESRAMUsageBytes = 0;
+
+			XG_RESOURCE_LAYOUT layout;
+			if (XGComputeTexture2DLayout(&xgDesc, &layout) != S_OK)
+			{
+				return false;
+			}
+
+			m_nESRAMSize = (uint32)layout.SizeBytes;
+			m_nESRAMAlignment = (uint32)layout.BaseAlignmentBytes;
+		}
+
+		if (devTexture->AcquireESRAMResidency(residencyEntry, m_cClearColor, m_nESRAMSize, m_nESRAMAlignment))
+		{
+			const uint32 dirtyFlags = eDeviceResourceViewDirty
+				| (residencyEntry != CDeviceResource::eResCoherence_Transfer ? eDeviceResourceDirty : 0);
+			InvalidateDeviceResource(this, dirtyFlags);
+			return true;
+		}
+	}
+	return false;
+}
+
+bool CTexture::ForfeitESRAMResidency(CDeviceResource::EResidencyCoherence residencyExit)
+{
+	if (auto* devTexture = GetDevTexture())
+	{
+		if (devTexture->ForfeitESRAMResidency(residencyExit, m_cClearColor))
+		{
+			const uint32 dirtyFlags = eDeviceResourceViewDirty
+				| (residencyExit != CDeviceResource::eResCoherence_Transfer ? eDeviceResourceDirty : 0);
+			InvalidateDeviceResource(this, dirtyFlags);
+			return true;
+		}
+	}
+	return false;
+}
+
+bool CTexture::TransferESRAMAllocation(CTexture* target)
+{
+	auto* devTexture = GetDevTexture();
+	auto* targetDevTexture = target->GetDevTexture();
+	if (devTexture && targetDevTexture)
+	{
+		if (devTexture->TransferESRAMAllocation(*targetDevTexture))
+		{
+			return true;
+		}
+	}
+	return false;
+}
+#endif
+
 UINT64 CTexture::StreamInsertFence()
 {
-	return gcpRendD3D->GetPerformanceDeviceContext().InsertFence();
+	return gcpRendD3D->GetPerformanceContext()->InsertFence();
 }
 
 bool CTexture::StreamPrepare_Platform()
@@ -80,7 +315,7 @@ bool CTexture::StreamInCheckTileComplete_Durango(STexStreamInState& state)
 {
 	if (state.m_tileFence)
 	{
-		if (!gcpRendD3D->GetPerformanceDevice().IsFencePending(state.m_tileFence))
+		if (!gcpRendD3D->GetPerformanceDevice()->IsFencePending(state.m_tileFence))
 			state.m_tileFence = 0;
 		else
 			return false;
@@ -93,7 +328,7 @@ bool CTexture::StreamInCheckCopyComplete_Durango(STexStreamInState& state)
 {
 	if (state.m_copyMipsFence)
 	{
-		if (!gcpRendD3D->GetPerformanceDevice().IsFencePending(state.m_copyMipsFence))
+		if (!gcpRendD3D->GetPerformanceDevice()->IsFencePending(state.m_copyMipsFence))
 			state.m_copyMipsFence = 0;
 		else
 			return false;
@@ -107,7 +342,7 @@ bool CTexture::StreamOutCheckComplete_Durango(STexStreamOutState& state)
 #if defined(TEXSTRM_ASYNC_TEXCOPY)
 	if (state.m_copyFence)
 	{
-		if (!gcpRendD3D->GetPerformanceDevice().IsFencePending(state.m_copyFence))
+		if (!gcpRendD3D->GetPerformanceDevice()->IsFencePending(state.m_copyFence))
 			state.m_copyFence = 0;
 		else
 			return false;
@@ -492,7 +727,7 @@ void CDeviceTexture::InitD3DTexture()
 
 		CDeviceTexturePin pin(this);
 
-		HRESULT hr = gcpRendD3D->GetPerformanceDevice().CreatePlacementTexture2D(
+		HRESULT hr = gcpRendD3D->GetPerformanceDevice()->CreatePlacementTexture2D(
 			&m_pLayout->d3dDesc, m_pLayout->xgTileMode, 0, pin.GetBaseAddress(), (ID3D11Texture2D**)&m_pNativeResource);
 		if (FAILED(hr))
 			return;
@@ -614,10 +849,7 @@ void CDeviceTexture::GpuUnpin(ID3D11DmaEngineContextX* pCtx)
 
 void CDeviceTexture::GPUFlush()
 {
-#if DURANGO_ENABLE_ASYNC_DIPS
-	gcpRendD3D->WaitForAsynchronousDevice();
-#endif
-	gcpRendD3D->GetPerformanceDeviceContext().FlushGpuCaches(GetBaseTexture());
+	gcpRendD3D->GetPerformanceContext()->FlushGpuCaches(GetBaseTexture());
 }
 
 uint32 CDeviceTexture::TextureDataSize(uint32 nWidth, uint32 nHeight, uint32 nDepth, int8 nMips, uint32 nSlices, const ETEX_Format eTF, ETEX_TileMode eTM, uint32 eFlags)
@@ -702,3 +934,84 @@ uint32 CDeviceTexture::TextureDataSize(uint32 nWidth, uint32 nHeight, uint32 nDe
 	// Fallback to the default texture size function
 	return CTexture::TextureDataSize(nWidth, nHeight, nDepth, nMips, nSlices, eTF, eTM_None);
 }
+
+
+////////////////////////////////////////////////////////////////////////////
+// CGpuBuffer API
+#if DURANGO_USE_ESRAM
+bool CGpuBuffer::IsESRAMResident()
+{
+	if (auto* devBuffer = GetDevBuffer())
+		return devBuffer->IsESRAMResident();
+	return false;
+}
+
+bool CGpuBuffer::AcquireESRAMResidency(CDeviceResource::EResidencyCoherence residencyEntry)
+{
+	if (auto* devBuffer = GetDevBuffer())
+	{
+		if (m_nESRAMSize == 0)
+		{
+			D3D11_BUFFER_DESC desc;
+			devBuffer->GetBuffer()->GetDesc(&desc);
+			XG_BUFFER_DESC xgDesc;
+			ZeroMemory(&xgDesc, sizeof(xgDesc));
+			xgDesc.ByteWidth = desc.ByteWidth;
+			xgDesc.Usage = XG_USAGE_DEFAULT;
+			xgDesc.BindFlags = desc.BindFlags;
+			xgDesc.CPUAccessFlags = 0;
+			xgDesc.MiscFlags = desc.MiscFlags | XG_RESOURCE_MISC_ESRAM_RESIDENT;
+			xgDesc.StructureByteStride = desc.StructureByteStride;
+			xgDesc.ESRAMOffsetBytes = 0;
+			xgDesc.ESRAMUsageBytes = 0;
+
+			XG_RESOURCE_LAYOUT layout;
+			if (XGComputeBufferLayout(&xgDesc, &layout) != S_OK)
+			{
+				return false;
+			}
+
+			m_nESRAMSize = (uint32)layout.SizeBytes;
+			m_nESRAMAlignment = (uint32)layout.BaseAlignmentBytes;
+		}
+
+		if (devBuffer->AcquireESRAMResidency(residencyEntry, ColorF(), m_nESRAMSize, m_nESRAMAlignment))
+		{
+			const uint32 dirtyFlags = eDeviceResourceViewDirty
+				| (residencyEntry != CDeviceResource::eResCoherence_Transfer ? eDeviceResourceDirty : 0);
+			InvalidateDeviceResource(this, dirtyFlags);
+			return true;
+		}
+	}
+	return false;
+}
+
+bool CGpuBuffer::ForfeitESRAMResidency(CDeviceResource::EResidencyCoherence residencyExit)
+{
+	if (auto* devBuffer = GetDevBuffer())
+	{
+		if (devBuffer->ForfeitESRAMResidency(residencyExit, ColorF()))
+		{
+			const uint32 dirtyFlags = eDeviceResourceViewDirty
+				| (residencyExit != CDeviceResource::eResCoherence_Transfer ? eDeviceResourceDirty : 0);
+			InvalidateDeviceResource(this, dirtyFlags);
+			return true;
+		}
+	}
+	return false;
+}
+
+bool CGpuBuffer::TransferESRAMAllocation(CGpuBuffer* target)
+{
+	auto* devBuffer = GetDevBuffer();
+	auto* targetDevBuffer = target->GetDevBuffer();
+	if (devBuffer && targetDevBuffer)
+	{
+		if (devBuffer->TransferESRAMAllocation(*targetDevBuffer))
+		{
+			return true;
+		}
+	}
+	return false;
+}
+#endif

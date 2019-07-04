@@ -137,7 +137,7 @@ CD3DOculusRenderer::CD3DOculusRenderer(CryVR::Oculus::IOculusDevice* oculusDevic
 
 bool CD3DOculusRenderer::Initialize(int initialWidth, int initialeight)
 {
-	ID3D11Device* pD3d11Device = m_pRenderer->GetDevice_Unsynchronized().GetRealDevice();
+	ID3D11Device* pD3d11Device = m_pRenderer->GetDevice();
 
 	m_eyeWidth  = initialWidth;
 	m_eyeHeight = initialeight;
@@ -221,7 +221,9 @@ bool CD3DOculusRenderer::InitializeTextureSwapSet(ID3D11Device* pD3d11Device, EE
 		eyeRenderData.viewportSize = Vec2i(desc.width, desc.height);
 
 		// NOTE: Workaround for missing MultiGPU-support in the Oculus library
-		if (m_pRenderer->GetDevice().GetNodeCount() == 1)
+#if (CRY_RENDERER_DIRECT3D >= 120)
+		if (m_pRenderer->GetDevice()->GetNodeCount() == 1)
+#endif
 		{
 			auto textureName = name + std::to_string(t);
 
@@ -271,7 +273,9 @@ bool CD3DOculusRenderer::InitializeMirrorTexture(ID3D11Device* pD3d11Device, Cry
 	m_mirrorData.pMirrorTextureNative = m_mirrorData.vrMirrorTexture.pTexture;
 
 	// NOTE: Workaround for missing MultiGPU-support in the Oculus library
-	if (m_pRenderer->GetDevice().GetNodeCount() == 1)
+#if (CRY_RENDERER_DIRECT3D >= 120)
+	if (m_pRenderer->GetDevice()->GetNodeCount() == 1)
+#endif
 	{
 		#if (CRY_RENDERER_DIRECT3D >= 120)
 		D3DTexture* pTex = CCryDX12Texture2D::Create((CCryDX12Device*)pD3d11Device, nullptr, static_cast<ID3D12Resource*>(m_mirrorData.vrMirrorTexture.pTexture));
@@ -383,12 +387,12 @@ void CD3DOculusRenderer::SubmitFrame()
 #endif
 
 #if (CRY_RENDERER_DIRECT3D >= 120)
-	ID3D11Device* pD3d11Device = m_pRenderer->GetDevice_Unsynchronized().GetRealDevice();
+	ID3D11Device* pD3d11Device = m_pRenderer->GetDevice();
 	NCryDX12::CCommandList* pCL = ((CCryDX12Device*)pD3d11Device)->GetDeviceContext()->GetCoreGraphicsCommandList();
 
 #if DX12_LINKEDADAPTER
 	// NOTE: Workaround for missing MultiGPU-support in the Oculus library
-	if (m_pRenderer->GetDevice().GetNodeCount() > 1)
+	if (m_pRenderer->GetDevice()->GetNodeCount() > 1)
 	{
 		CopyMultiGPUFrameData();
 	}

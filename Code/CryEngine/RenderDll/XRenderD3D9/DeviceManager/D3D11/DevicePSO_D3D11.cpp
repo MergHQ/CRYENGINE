@@ -14,10 +14,6 @@ CDeviceGraphicsPSO_DX11::CDeviceGraphicsPSO_DX11()
 	m_ShaderFlags_RT = 0;
 	m_ShaderFlags_MD = 0;
 	m_ShaderFlags_MDV = MDV_NONE;
-	m_RasterizerStateIndex = 0;
-
-	m_NumSamplers.fill(0);
-	m_NumSRVs.fill(0);
 }
 
 CDeviceGraphicsPSO::EInitResult CDeviceGraphicsPSO_DX11::Init(const CDeviceGraphicsPSODesc& psoDesc)
@@ -30,8 +26,9 @@ CDeviceGraphicsPSO::EInitResult CDeviceGraphicsPSO_DX11::Init(const CDeviceGraph
 	m_pDepthStencilState = nullptr;
 	m_pInputLayout = nullptr;
 
-	m_NumSamplers.fill(0);
-	m_NumSRVs.fill(0);
+	m_requiredSRVs.fill(0);
+	m_requiredUAVs.fill(0);
+	m_requiredSamplers.fill(0);
 
 	SDeviceObjectHelpers::THwShaderInfo hwShaders;
 	EShaderStage validShaderStages = SDeviceObjectHelpers::GetShaderInstanceInfo(hwShaders, psoDesc.m_pShader, psoDesc.m_technique,
@@ -52,17 +49,18 @@ CDeviceGraphicsPSO::EInitResult CDeviceGraphicsPSO_DX11::Init(const CDeviceGraph
 
 	psoDesc.FillDescs(rasterizerDesc, blendDesc, depthStencilDesc);
 
-	uint32 rasterStateIndex = CDeviceStatesManagerDX11::GetInstance()->GetOrCreateRasterState(rasterizerDesc);
-	uint32 blendStateIndex = CDeviceStatesManagerDX11::GetInstance()->GetOrCreateBlendState(blendDesc);
-	uint32 depthStateIndex = CDeviceStatesManagerDX11::GetInstance()->GetOrCreateDepthState(depthStencilDesc);
+	CDeviceStatesManagerDX11 *const pDeviceStatesManager = CDeviceStatesManagerDX11::GetInstance();
+
+	uint32 rasterStateIndex = pDeviceStatesManager->GetOrCreateRasterState(rasterizerDesc);
+	uint32 blendStateIndex = pDeviceStatesManager->GetOrCreateBlendState(blendDesc);
+	uint32 depthStateIndex = pDeviceStatesManager->GetOrCreateDepthState(depthStencilDesc);
 
 	if (rasterStateIndex == uint32(-1) || blendStateIndex == uint32(-1) || depthStateIndex == uint32(-1))
 		return EInitResult::Failure;
 
-	m_pDepthStencilState = CDeviceStatesManagerDX11::GetInstance()->m_StatesDP[depthStateIndex].pState;
-	m_pRasterizerState = CDeviceStatesManagerDX11::GetInstance()->m_StatesRS[rasterStateIndex].pState;
-	m_RasterizerStateIndex = rasterStateIndex;
-	m_pBlendState = CDeviceStatesManagerDX11::GetInstance()->m_StatesBL[blendStateIndex].pState;
+	m_pDepthStencilState = pDeviceStatesManager->GetDepthState(depthStateIndex).pState;
+	m_pRasterizerState = pDeviceStatesManager->GetRasterState(rasterStateIndex).pState;
+	m_pBlendState = pDeviceStatesManager->GetBlendState(blendStateIndex).pState;
 
 	// input layout
 	m_pInputLayout = nullptr;
@@ -83,15 +81,21 @@ CDeviceGraphicsPSO::EInitResult CDeviceGraphicsPSO_DX11::Init(const CDeviceGraph
 			return EInitResult::Failure;
 	}
 
+	// init required data bit fields
 	for (EHWShaderClass shaderClass = eHWSC_Vertex; shaderClass < eHWSC_NumGfx; shaderClass = EHWShaderClass(shaderClass + 1))
 	{
 		if (auto pShaderInstance = reinterpret_cast<CHWShader_D3D::SHWSInstance*>(hwShaders[shaderClass].pHwShaderInstance))
 		{
+			// Sampler ranges
 			for (const auto& smp : pShaderInstance->m_Samplers)
-				m_Samplers[shaderClass][m_NumSamplers[shaderClass]++] = uint8(smp.m_dwCBufSlot);
+				m_requiredSamplers[shaderClass][smp.m_dwCBufSlot] = true;
 
+			// SRV ranges
 			for (const auto& tex : pShaderInstance->m_Textures)
-				m_SRVs[shaderClass][m_NumSRVs[shaderClass]++] = uint8(tex.m_dwCBufSlot);
+			{
+				CRY_ASSERT(tex.m_dwCBufSlot < m_requiredSRVs[shaderClass].size());
+				m_requiredSRVs[shaderClass][tex.m_dwCBufSlot] = true;
+			}
 		}
 	}
 
@@ -130,8 +134,8 @@ bool CDeviceComputePSO_DX11::Init(const CDeviceComputePSODesc& psoDesc)
 	if (validShaderStages != EShaderStage_Compute)
 		return false;
 
-	m_pDeviceShaders[eHWSC_Compute] = hwShaders[eHWSC_Compute].pDeviceShader;
-	m_pHwShaderInstance             = hwShaders[eHWSC_Compute].pHwShaderInstance;
+	m_pDeviceShader     = hwShaders[eHWSC_Compute].pDeviceShader;
+	m_pHwShaderInstance = hwShaders[eHWSC_Compute].pHwShaderInstance;
 
 	m_isValid = true;
 	return true;

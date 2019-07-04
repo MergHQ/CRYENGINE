@@ -2572,7 +2572,7 @@ const char* CHWShader::mfProfileString(EHWShaderClass eClass)
 	switch (eClass)
 	{
 	case eHWSC_Vertex:
-		if (CParserBin::m_nPlatform & (SF_D3D11 | SF_ORBIS | SF_DURANGO | SF_VULKAN | SF_GL4 | SF_GLES3))
+		if (CParserBin::m_nPlatform & (SF_D3D11 | SF_ORBIS | SF_DURANGO | SF_VULKAN))
 			szProfile = "vs_5_0";
 		else if (CParserBin::m_nPlatform & (SF_D3D12))
 			szProfile = "vs_6_0";
@@ -2580,7 +2580,7 @@ const char* CHWShader::mfProfileString(EHWShaderClass eClass)
 			assert(0);
 		break;
 	case eHWSC_Pixel:
-		if (CParserBin::m_nPlatform & (SF_D3D11 | SF_ORBIS | SF_DURANGO | SF_VULKAN | SF_GL4 | SF_GLES3))
+		if (CParserBin::m_nPlatform & (SF_D3D11 | SF_ORBIS | SF_DURANGO | SF_VULKAN))
 			szProfile = "ps_5_0";
 		else if (CParserBin::m_nPlatform & (SF_D3D12))
 			szProfile = "ps_6_0";
@@ -2590,7 +2590,7 @@ const char* CHWShader::mfProfileString(EHWShaderClass eClass)
 	case eHWSC_Geometry:
 		if (CParserBin::PlatformSupportsGeometryShaders())
 		{
-			if (CParserBin::m_nPlatform & (SF_D3D11 | SF_ORBIS | SF_DURANGO | SF_VULKAN | SF_GL4 | SF_GLES3))
+			if (CParserBin::m_nPlatform & (SF_D3D11 | SF_ORBIS | SF_DURANGO | SF_VULKAN))
 				szProfile = "gs_5_0";
 			else if (CParserBin::m_nPlatform & (SF_D3D12))
 				szProfile = "gs_6_0";
@@ -2601,7 +2601,7 @@ const char* CHWShader::mfProfileString(EHWShaderClass eClass)
 	case eHWSC_Domain:
 		if (CParserBin::PlatformSupportsGeometryShaders())
 		{
-			if (CParserBin::m_nPlatform & (SF_D3D11 | SF_ORBIS | SF_DURANGO | SF_VULKAN | SF_GL4 | SF_GLES3))
+			if (CParserBin::m_nPlatform & (SF_D3D11 | SF_ORBIS | SF_DURANGO | SF_VULKAN))
 				szProfile = "ds_5_0";
 			else if (CParserBin::m_nPlatform & (SF_D3D12))
 				szProfile = "ds_6_0";
@@ -2612,7 +2612,7 @@ const char* CHWShader::mfProfileString(EHWShaderClass eClass)
 	case eHWSC_Hull:
 		if (CParserBin::PlatformSupportsGeometryShaders())
 		{
-			if (CParserBin::m_nPlatform & (SF_D3D11 | SF_ORBIS | SF_DURANGO | SF_VULKAN | SF_GL4 | SF_GLES3))
+			if (CParserBin::m_nPlatform & (SF_D3D11 | SF_ORBIS | SF_DURANGO | SF_VULKAN))
 				szProfile = "hs_5_0";
 			else if (CParserBin::m_nPlatform & (SF_D3D12))
 				szProfile = "hs_6_0";
@@ -2623,7 +2623,7 @@ const char* CHWShader::mfProfileString(EHWShaderClass eClass)
 	case eHWSC_Compute:
 		if (CParserBin::PlatformSupportsGeometryShaders())
 		{
-			if (CParserBin::m_nPlatform & (SF_D3D11 | SF_ORBIS | SF_DURANGO | SF_VULKAN | SF_GL4 | SF_GLES3))
+			if (CParserBin::m_nPlatform & (SF_D3D11 | SF_ORBIS | SF_DURANGO | SF_VULKAN))
 				szProfile = "cs_5_0";
 			else if (CParserBin::m_nPlatform & (SF_D3D12))
 				szProfile = "cs_6_0";

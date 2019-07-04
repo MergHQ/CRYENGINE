@@ -203,6 +203,10 @@ void CPostAAStage::ApplySMAA(CTexture*& pCurrRT, CTexture*& pDestRT)
 	if (!pEdgesRT || !pBlendWeightsRT)
 		return;
 
+#if DURANGO_USE_ESRAM
+	pBlendWeightsRT->AcquireESRAMResidency(CDeviceResource::eResCoherence_Uninitialize);
+#endif
+
 	// Prepare stencil prepass
 	int stencilRef = -1;
 	if (CRenderer::CV_r_AntialiasingModeSCull)
@@ -217,9 +221,6 @@ void CPostAAStage::ApplySMAA(CTexture*& pCurrRT, CTexture*& pDestRT)
 
 		stencilRef = m_graphicsPipeline.m_nStencilMaskRef;
 	}
-
-	CClearSurfacePass::Execute(pEdgesRT, Clr_Transparent);
-	CClearSurfacePass::Execute(pBlendWeightsRT, Clr_Transparent);
 
 	// Pass 1: Edge Detection
 	{
@@ -265,7 +266,7 @@ void CPostAAStage::ApplySMAA(CTexture*& pCurrRT, CTexture*& pDestRT)
 
 	// Pass 2: Generate blend weight map
 	{
-		if (m_passSMAABlendWeights.IsDirty(pSTexture->GetTextureID(), CRenderer::CV_r_AntialiasingModeSCull))
+		if (m_passSMAABlendWeights.IsDirty(pSTexture->GetTextureID(), pBlendWeightsRT->GetTextureID(), CRenderer::CV_r_AntialiasingModeSCull))
 		{
 			static CCryNameTSCRC techBlendWeights("BlendWeightSMAA");
 			m_passSMAABlendWeights.SetPrimitiveFlags(CRenderPrimitive::eFlags_ReflectShaderConstants_PS);
@@ -300,7 +301,7 @@ void CPostAAStage::ApplySMAA(CTexture*& pCurrRT, CTexture*& pDestRT)
 
 	// Final Pass: Blend neighborhood pixels
 	{
-		if (m_passSMAANeighborhoodBlending.IsDirty(pCurrRT->GetTextureID()))
+		if (m_passSMAANeighborhoodBlending.IsDirty(pCurrRT->GetTextureID(), pBlendWeightsRT->GetTextureID()))
 		{
 			static CCryNameTSCRC techNeighborhoodBlending("NeighborhoodBlendingSMAA");
 			m_passSMAANeighborhoodBlending.SetPrimitiveFlags(CRenderPrimitive::eFlags_None);
@@ -316,6 +317,10 @@ void CPostAAStage::ApplySMAA(CTexture*& pCurrRT, CTexture*& pDestRT)
 
 		m_passSMAANeighborhoodBlending.Execute();
 	}
+
+#if DURANGO_USE_ESRAM
+	pBlendWeightsRT->ForfeitESRAMResidency(CDeviceResource::eResCoherence_Abandon);
+#endif
 
 	std::swap(pCurrRT, pDestRT);
 }

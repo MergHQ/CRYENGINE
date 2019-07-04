@@ -428,22 +428,6 @@ void SRenderThread::ProcessCommands()
 	if (!CheckFlushCond())
 		return;
 
-	DWORD nDeviceOwningThreadID = gcpRendD3D->GetBoundThreadID();
-	if (m_eVideoThreadMode == eVTM_Disabled)
-		gcpRendD3D->BindContextToThread(CryGetCurrentThreadId());
-
-	#if CRY_RENDERER_OPENGL && !DXGL_FULL_EMULATION
-		#if OGL_SINGLE_CONTEXT
-	if (m_eVideoThreadMode == eVTM_Disabled)
-		m_kDXGLDeviceContextHandle.Set(gcpRendD3D->GetDeviceContext().GetRealDeviceContext());
-		#else
-	if (CRenderer::CV_r_multithreaded)
-		m_kDXGLContextHandle.Set(gcpRendD3D->GetDevice().GetRealDevice());
-	if (m_eVideoThreadMode == eVTM_Disabled)
-		m_kDXGLDeviceContextHandle.Set(gcpRendD3D->GetDeviceContext().GetRealDeviceContext(), !CRenderer::CV_r_multithreaded);
-		#endif
-	#endif //CRY_RENDERER_OPENGL && !DXGL_FULL_EMULATION
-
 #if DO_RENDERSTATS
 	CTimeValue Time;
 #endif
@@ -608,9 +592,6 @@ void SRenderThread::ProcessCommands()
 			break;
 		}
 	}
-
-	if (m_eVideoThreadMode == eVTM_Disabled)
-		gcpRendD3D->BindContextToThread(nDeviceOwningThreadID);
 #endif //STRIP_RENDER_THREAD
 }
 #pragma warning(pop)
@@ -650,8 +631,6 @@ void SRenderThread::Process()
 		if (m_eVideoThreadMode == eVTM_RequestStart)
 		{
 			uint32 frameId = gRenDev->GetRenderFrameID();
-			DWORD nDeviceOwningThreadID = gcpRendD3D->GetBoundThreadID();
-			gcpRendD3D->BindContextToThread(CryGetCurrentThreadId());
 			gRenDev->m_DevBufMan.Sync(frameId); // make sure no request are flying when switching to render loading thread
 #if defined(ENABLE_SIMPLE_GPU_TIMERS)
 			gcpRendD3D->m_pPipelineProfiler->SetPaused(true);
@@ -738,7 +717,6 @@ void SRenderThread::Process()
 #if defined(ENABLE_SIMPLE_GPU_TIMERS)
 			gcpRendD3D->m_pPipelineProfiler->SetPaused(false);
 #endif
-			gcpRendD3D->BindContextToThread(nDeviceOwningThreadID);
 		}
 
 		const uint64 elapsed = CryGetTicks() - start;
@@ -746,14 +724,6 @@ void SRenderThread::Process()
 	}
 	// Late out, don't wait for MT/RT toggle (it won't happen when quitting)
 	while (!m_bQuit.load());
-#if CRY_RENDERER_OPENGL && !DXGL_FULL_EMULATION
-	#if OGL_SINGLE_CONTEXT
-	m_kDXGLDeviceContextHandle.Set(NULL);
-	#else
-	m_kDXGLDeviceContextHandle.Set(NULL, !CRenderer::CV_r_multithreaded);
-	m_kDXGLContextHandle.Set(NULL);
-	#endif
-#endif //CRY_RENDERER_OPENGL && !DXGL_FULL_EMULATION
 }
 
 void SRenderThread::ProcessLoading()
@@ -793,14 +763,6 @@ void SRenderThread::ProcessLoading()
 	}
 	// Late out, don't wait for MT/RLT toggle (it won't happen when quitting)
 	while (!m_bQuitLoading);
-#if CRY_RENDERER_OPENGL && !DXGL_FULL_EMULATION
-	#if OGL_SINGLE_CONTEXT
-	m_kDXGLDeviceContextHandle.Set(NULL);
-	#else
-	m_kDXGLDeviceContextHandle.Set(NULL, !CRenderer::CV_r_multithreaded);
-	m_kDXGLContextHandle.Set(NULL);
-	#endif
-#endif //CRY_RENDERER_OPENGL && !DXGL_FULL_EMULATION
 }
 
 #ifndef STRIP_RENDER_THREAD

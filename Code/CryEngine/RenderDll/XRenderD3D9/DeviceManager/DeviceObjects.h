@@ -8,6 +8,7 @@
 #include <array>
 #include <bitset>
 #include <atomic>
+#include <queue>
 
 #include "DeviceResources.h"                // CDeviceBuffer, CDeviceTexture, CDeviceInputStream
 #include "DeviceObjectValidation.h"
@@ -17,7 +18,6 @@ class CHWShader_D3D;
 class CShader;
 class CTexture;
 class CCryNameTSCRC;
-class CCryDeviceWrapper;
 class CConstantBuffer;
 class CDeviceBuffer;
 class CDeviceTexture;
@@ -96,7 +96,6 @@ class CDeviceObjectFactory
 
 public:
 	void AssignDevice(D3DDevice* pDevice);
-
 	static ILINE CDeviceObjectFactory& GetInstance()
 	{
 		return m_singleton;
@@ -280,8 +279,8 @@ public:
 	void           ReleaseResource(D3DResource* pResource);
 	void           RecycleResource(D3DResource* pResource);
 
-#define SKIP_ESRAM	-1
-	HRESULT        Create2DTexture(uint32 nWidth, uint32 nHeight, uint32 nMips, uint32 nArraySize, uint32 nUsage, const ColorF& cClearValue, D3DFormat Format, LPDEVICETEXTURE* ppDevTexture, const STexturePayload* pTI = nullptr, int32 nESRAMOffset = SKIP_ESRAM);
+#define SKIP_ESRAM	~0
+	HRESULT        Create2DTexture(uint32 nWidth, uint32 nHeight, uint32 nMips, uint32 nArraySize, uint32 nUsage, const ColorF& cClearValue, D3DFormat Format, LPDEVICETEXTURE* ppDevTexture, const STexturePayload* pTI = nullptr);
 	HRESULT        CreateCubeTexture(uint32 nSize, uint32 nMips, uint32 nArraySize, uint32 nUsage, const ColorF& cClearValue, D3DFormat Format, LPDEVICETEXTURE* ppDevTexture, const STexturePayload* pTI = nullptr);
 	HRESULT        CreateVolumeTexture(uint32 nWidth, uint32 nHeight, uint32 nDepth, uint32 nMips, uint32 nUsage, const ColorF& cClearValue, D3DFormat Format, LPDEVICETEXTURE* ppDevTexture, const STexturePayload* pTI = nullptr);
 	HRESULT        CreateBuffer(buffer_size_t nSize, buffer_size_t elemSize, uint32 nUsage, uint32 nBindFlags, D3DBuffer** ppBuff, const void* pData = nullptr);
@@ -345,6 +344,9 @@ public:
 #elif (CRY_RENDERER_DIRECT3D >= 110)
 	NCryDX11::CDevice*             GetDX11Device() const { return m_pDX11Device; }
 	NCryDX11::CCommandScheduler*   GetDX11Scheduler() const { return m_pDX11Scheduler; }
+
+	std::queue<ID3D11DeviceContext*>    m_deferredContexts;
+	std::vector<CDeviceCommandListUPtr> m_pendingCommandLists;
 #elif (CRY_RENDERER_VULKAN >= 10)
 	NCryVulkan::CDevice*           GetVKDevice   () const { return m_pVKDevice; }
 	NCryVulkan::CCommandScheduler* GetVKScheduler() const { return m_pVKScheduler; }
@@ -493,8 +495,6 @@ private:
 #endif
 
 #if defined(BUFFER_ENABLE_DIRECT_ACCESS) && (CRY_RENDERER_DIRECT3D >= 110) && (CRY_RENDERER_DIRECT3D < 120) && !CRY_RENDERER_GNM
-	friend class CSubmissionQueue_DX11;
-
 	// The buffer invalidations
 	struct SBufferInvalidation
 	{
@@ -587,6 +587,9 @@ public:
 	const SDeviceTextureDesc* Find2DResourceLayout(const D3D11_TEXTURE2D_DESC& Desc, uint32 eFlags, ETEX_TileMode tileMode);
 
 	CDurangoGPUMemoryManager       m_texturePool;
+#if DURANGO_USE_ESRAM
+	CDurangoESRAMManager           m_ESRAMManager;
+#endif
 	CDurangoGPURingMemAllocator    m_textureStagingRing;
 	CryCriticalSectionNonRecursive m_layoutTableLock;
 	TLayoutTableMap                m_layoutTable;

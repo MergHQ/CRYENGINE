@@ -323,6 +323,72 @@ void CSceneForwardStage::Update()
 		CClearSurfacePass::Execute(m_graphicsPipelineResources.m_pTexLinearDepthFixup, Clr_Empty);
 }
 
+std::vector<CSceneForwardStage::ResourceSetToBuild> CSceneForwardStage::GetResourceSetsToBuild()
+{
+	return
+	{
+#if RENDERER_ENABLE_FULL_PIPELINE
+		ResourceSetToBuild { m_opaquePassResources,            m_pOpaquePassResourceSet.get(),            eResSubset_General | eResSubset_TiledShadingOpaque | eResSubset_Particles },
+		ResourceSetToBuild { m_transparentPassResources,       m_pTransparentPassResourceSet.get(),       eResSubset_General | eResSubset_TiledShadingTransparent | eResSubset_Particles | eResSubset_ForwardShadows },
+		ResourceSetToBuild { m_eyeOverlayPassResources,	       m_pEyeOverlayPassResourceSet.get(),        eResSubset_General | eResSubset_EyeOverlay | eResSubset_Particles | eResSubset_ForwardShadows },
+#endif
+
+#if RENDERER_ENABLE_MOBILE_PIPELINE
+		ResourceSetToBuild { m_opaquePassResourcesMobile,      m_pOpaquePassResourceSetMobile.get(),      eResSubset_General | eResSubset_Particles },
+		ResourceSetToBuild { m_transparentPassResourcesMobile, m_pTransparentPassResourceSetMobile.get(), eResSubset_General | eResSubset_Particles },
+#endif
+	};
+}
+
+bool CSceneForwardStage::UpdatePerPassResourceSet()
+{
+	bool result = true;
+	auto resourceSetsToBuild = GetResourceSetsToBuild();
+	for (int i = 0; i < resourceSetsToBuild.size(); ++i)
+		result &= resourceSetsToBuild[i].pResourceSet->Update(resourceSetsToBuild[i].resourceDesc);
+
+	return result;
+}
+
+bool CSceneForwardStage::UpdateRenderPasses()
+{
+	EShaderRenderingFlags flags = (EShaderRenderingFlags)m_graphicsPipeline.GetRenderFlags();
+	const bool isForwardMinimal = (flags & SHDF_FORWARD_MINIMAL) != 0;
+
+	bool result = true;
+
+	if (!isForwardMinimal)
+	{
+#if RENDERER_ENABLE_FULL_PIPELINE
+		result &= m_forwardOpaquePass.UpdateDeviceRenderPass();
+		result &= m_forwardEyeOverlayPass.UpdateDeviceRenderPass();
+		result &= m_forwardOverlayPass.UpdateDeviceRenderPass();
+		result &= m_forwardTransparentBWPass.UpdateDeviceRenderPass();
+		result &= m_forwardTransparentAWPass.UpdateDeviceRenderPass();
+		result &= m_forwardTransparentLoResPass.UpdateDeviceRenderPass();
+		result &= m_forwardHDRPass.UpdateDeviceRenderPass();
+		result &= m_forwardLDRPass.UpdateDeviceRenderPass();
+#endif
+
+#if RENDERER_ENABLE_MOBILE_PIPELINE
+		result &= m_forwardOpaquePassMobile.UpdateDeviceRenderPass();
+		result &= m_forwardOverlayPassMobile.UpdateDeviceRenderPass();
+		result &= m_forwardTransparentPassMobile.UpdateDeviceRenderPass();
+#endif
+	}
+
+#if RENDERER_ENABLE_FULL_PIPELINE
+	// Recursive passes need to be updated in the non-recursive update as well because of PSO creation
+	{
+		result &= m_forwardOpaqueRecursivePass.UpdateDeviceRenderPass();
+		result &= m_forwardOverlayRecursivePass.UpdateDeviceRenderPass();
+		result &= m_forwardTransparentRecursivePass.UpdateDeviceRenderPass();
+	}
+#endif
+
+	return result;
+}
+
 bool CSceneForwardStage::CreatePipelineState(const SGraphicsPipelineStateDescription& desc,
                                              CDeviceGraphicsPSOPtr& outPSO,
                                              EPass passId,
@@ -592,34 +658,7 @@ bool CSceneForwardStage::UpdatePerPassResources(bool bOnInit, bool bShadowMask, 
 
 	CTexture* pShadowMask = bShadowMask ? m_graphicsPipelineResources.m_pTexShadowMask : CRendererResources::s_ptexBlack;
 
-	enum EResourcesSubset
-	{
-		eResSubset_General                 = BIT(0),
-		eResSubset_TiledShadingOpaque      = BIT(1),
-		eResSubset_TiledShadingTransparent = BIT(2),
-		eResSubset_Particles               = BIT(3),
-		eResSubset_EyeOverlay              = BIT(4),
-		eResSubset_ForwardShadows          = BIT(5),
-
-		eResSubset_All                     = eResSubset_General   | eResSubset_TiledShadingOpaque | eResSubset_TiledShadingTransparent | 
-		                                     eResSubset_Particles | eResSubset_EyeOverlay         | eResSubset_ForwardShadows,
-		eResSubset_None                    = ~eResSubset_All
-	};
-	
-
-	struct { CDeviceResourceSetDesc& resourceDesc; CDeviceResourceSet*  pResourceSet; uint32_t flags; } resourceSetsToBuild[] =
-	{
-#if RENDERER_ENABLE_FULL_PIPELINE
-		{ m_opaquePassResources,            m_pOpaquePassResourceSet.get(),            eResSubset_General | eResSubset_TiledShadingOpaque      | eResSubset_Particles },
-		{ m_transparentPassResources,       m_pTransparentPassResourceSet.get(),       eResSubset_General | eResSubset_TiledShadingTransparent | eResSubset_Particles | eResSubset_ForwardShadows },
-		{ m_eyeOverlayPassResources,	    m_pEyeOverlayPassResourceSet.get(),        eResSubset_General | eResSubset_EyeOverlay              | eResSubset_Particles | eResSubset_ForwardShadows },
-#endif
-
-#if RENDERER_ENABLE_MOBILE_PIPELINE
-		{ m_opaquePassResourcesMobile,      m_pOpaquePassResourceSetMobile.get(),      eResSubset_General | eResSubset_Particles},
-		{ m_transparentPassResourcesMobile, m_pTransparentPassResourceSetMobile.get(), eResSubset_General | eResSubset_Particles},
-#endif
-	};
+	auto resourceSetsToBuild = GetResourceSetsToBuild();
 
 	if (!bOnInit)
 	{
@@ -644,7 +683,7 @@ bool CSceneForwardStage::UpdatePerPassResources(bool bOnInit, bool bShadowMask, 
 		m_pPerPassCB->UpdateBuffer(cb, cbSize);
 	}
 
-	for (uint32 i = 0; i < CRY_ARRAY_COUNT(resourceSetsToBuild); i++)
+	for (uint32 i = 0; i < resourceSetsToBuild.size(); i++)
 	{
 
 		CDeviceResourceSetDesc& resources      = resourceSetsToBuild[i].resourceDesc;
@@ -862,7 +901,7 @@ bool CSceneForwardStage::UpdatePerPassResources(bool bOnInit, bool bShadowMask, 
 	}
 
 	bool allResourceSetsValid = true;
-	for (int i = 0; i < CRY_ARRAY_COUNT(resourceSetsToBuild); ++i)
+	for (int i = 0; i < resourceSetsToBuild.size(); ++i)
 		allResourceSetsValid &= resourceSetsToBuild[i].pResourceSet->IsValid();
 
 	return bOnInit || allResourceSetsValid;

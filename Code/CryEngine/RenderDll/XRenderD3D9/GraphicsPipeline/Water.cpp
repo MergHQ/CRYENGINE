@@ -231,7 +231,7 @@ void CWaterStage::Init()
 	m_deferredOceanStencilPrimitive[0].SetInlineConstantBuffer(eConstantBufferShaderSlot_PerPrimitive, pCB, EShaderStage_Vertex);
 	m_deferredOceanStencilPrimitive[1].SetInlineConstantBuffer(eConstantBufferShaderSlot_PerPrimitive, pCB, EShaderStage_Vertex);
 
-	m_aniso16xClampSampler      = CDeviceObjectFactory::GetOrCreateSamplerStateHandle(SSamplerState(FILTER_ANISO16X, eSamplerAddressMode_Clamp, eSamplerAddressMode_Clamp, eSamplerAddressMode_Clamp, 0x0));
+	m_aniso8xClampSampler      = CDeviceObjectFactory::GetOrCreateSamplerStateHandle(SSamplerState(FILTER_ANISO2X, eSamplerAddressMode_Clamp, eSamplerAddressMode_Clamp, eSamplerAddressMode_Clamp, 0x0));
 	m_aniso16xWrapSampler       = CDeviceObjectFactory::GetOrCreateSamplerStateHandle(SSamplerState(FILTER_ANISO16X, eSamplerAddressMode_Wrap, eSamplerAddressMode_Wrap, eSamplerAddressMode_Wrap, 0x0));
 	m_linearCompareClampSampler = CDeviceObjectFactory::GetOrCreateSamplerStateHandle(SSamplerState(FILTER_LINEAR, eSamplerAddressMode_Clamp, eSamplerAddressMode_Clamp, eSamplerAddressMode_Clamp, 0x0, true));
 	m_linearMirrorSampler       = CDeviceObjectFactory::GetOrCreateSamplerStateHandle(SSamplerState(FILTER_LINEAR, eSamplerAddressMode_Mirror, eSamplerAddressMode_Clamp, eSamplerAddressMode_Clamp, 0x0));
@@ -396,6 +396,54 @@ void CWaterStage::Update()
 
 	if (m_bOceanMaskGen)
 		CClearSurfacePass::Execute(m_pOceanMaskTex, Clr_Transparent);
+}
+
+bool CWaterStage::UpdateRenderPasses()
+{
+	bool result = true;
+
+	m_bOceanMaskGen = (gRenDev->EF_GetRenderQuality() >= eRQ_High) ? true : false;
+	
+	if (m_bOceanMaskGen)
+	{
+		result &= m_passOceanMaskGen.UpdateDeviceRenderPass();
+	}
+
+	result &= m_passWaterFogVolumeBeforeWater.UpdateDeviceRenderPass();
+	result &= m_passWaterSurface.UpdateDeviceRenderPass();
+	result &= m_passWaterFogVolumeAfterWater.UpdateDeviceRenderPass();
+
+	// TODO: looks something wrong between rect and viewport?
+	{
+		result &= m_passWaterReflectionGen.UpdateDeviceRenderPass();
+	}
+
+	if (CTexture::IsTextureExist(m_pVolumeCausticsRT)
+		&& CTexture::IsTextureExist(m_pVolumeCausticsTempRT)
+		&& CRenderer::CV_r_watercaustics
+		&& CRenderer::CV_r_watercausticsdeferred
+		&& CRenderer::CV_r_watervolumecaustics)
+	{
+		result &= m_passWaterCausticsSrcGen.UpdateDeviceRenderPass();
+	}
+
+	return result;
+}
+
+bool CWaterStage::UpdatePerPassResourceSet()
+{
+	bool result = true;
+
+	for (uint32 passId = 0; passId < ePass_Count; ++passId)
+	{
+		auto& resources = m_perPassResources[passId];
+		auto& pResourceSet = m_pPerPassResourceSets[passId];
+
+		CRY_ASSERT(!resources.HasChangedBindPoints()); // Cannot change resource layout after init. It is baked into the shaders
+		result &= pResourceSet->Update(resources);
+	}
+
+	return result;
 }
 
 void CWaterStage::Prepare()
@@ -1068,7 +1116,7 @@ bool CWaterStage::UpdatePerPassResources(bool bOnInit, EPass passId)
 		// Hard-coded point samplers
 		// NOTE: overwrite default material sampler to avoid the limitation of DXOrbis.
 		resources.SetSampler(ePerPassSampler_Aniso16xWrap, m_aniso16xWrapSampler, EShaderStage_AllWithoutCompute);
-		resources.SetSampler(ePerPassSampler_Aniso16xClamp, m_aniso16xClampSampler, EShaderStage_AllWithoutCompute);
+		resources.SetSampler(ePerPassSampler_Aniso16xClamp, m_aniso8xClampSampler, EShaderStage_AllWithoutCompute);
 
 		resources.SetSampler(ePerPassSampler_PointWrap, EDefaultSamplerStates::PointWrap, EShaderStage_AllWithoutCompute);
 		resources.SetSampler(ePerPassSampler_PointClamp, EDefaultSamplerStates::PointClamp, EShaderStage_AllWithoutCompute);

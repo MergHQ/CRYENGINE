@@ -99,7 +99,6 @@ bool CEntityLayer::IsSkippedBySpec() const
 	case ERenderType::Direct3D11:
 	case ERenderType::Direct3D12:
 #endif
-	case ERenderType::OpenGL:
 	case ERenderType::Vulkan:
 	default:
 		if (m_specs & eSpecType_PC)

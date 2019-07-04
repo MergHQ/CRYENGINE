@@ -288,9 +288,7 @@ CTexture* SSF_ResourcesD3D::GetColorSurface(CD3D9Renderer* pRenderer, int nWidth
 
 	bool allowUsingLargerRT = true;
 
-#if defined(OGL_DO_NOT_ALLOW_LARGER_RT)
-	allowUsingLargerRT = false;
-#elif defined(DX11_ALLOW_D3D_DEBUG_RUNTIME)
+#if defined(DX11_ALLOW_D3D_DEBUG_RUNTIME)
 	if (pRenderer->CV_r_EnableDebugLayer)
 		allowUsingLargerRT = false;
 #endif
@@ -725,7 +723,7 @@ bool CD3D9Renderer::SF_UpdateTexture(int texId, int mipLevel, int numRects, cons
 	if (!pDevTex)
 		return false;
 
-	GPUPIN_DEVICE_TEXTURE(GetPerformanceDeviceContext(), pDevTex);
+	GPUPIN_DEVICE_TEXTURE(GetPerformanceContext(), pDevTex);
 	for (int i = 0; i < numRects; ++i)
 	{
 		int sizePixel(CTexture::BytesPerPixel(eSrcFormat));
@@ -763,7 +761,7 @@ bool CD3D9Renderer::SF_ClearTexture(int texId, int mipLevel, int numRects, const
 	if (!pSurface)
 		return false;
 
-	GPUPIN_DEVICE_TEXTURE(GetPerformanceDeviceContext(), pDevTex);
+	GPUPIN_DEVICE_TEXTURE(GetPerformanceContext(), pDevTex);
 	const ColorF clearValue(pData[0], pData[1], pData[2], pData[3]);
 	if (!numRects || !pRects)
 	{

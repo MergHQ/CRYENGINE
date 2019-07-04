@@ -262,7 +262,6 @@ void CRenderItemDrawer::JobifyDrawSubmission(bool bForceImmediateExecution)
 	if (numItems == 0)
 		return;
 
-#if (CRY_RENDERER_DIRECT3D >= 120) || CRY_RENDERER_GNM || CRY_RENDERER_VULKAN
 	if (!CRenderer::CV_r_multithreadedDrawing)
 		bForceImmediateExecution = true;
 
@@ -312,7 +311,6 @@ void CRenderItemDrawer::JobifyDrawSubmission(bool bForceImmediateExecution)
 	}
 
 	if (bForceImmediateExecution)
-#endif
 	{
 		pCursor = pStart;
 		while (pCursor != pEnd)
@@ -338,12 +336,10 @@ void CRenderItemDrawer::JobifyDrawSubmission(bool bForceImmediateExecution)
 
 void CRenderItemDrawer::WaitForDrawSubmission()
 {
-#if (CRY_RENDERER_DIRECT3D >= 120) || CRY_RENDERER_GNM || CRY_RENDERER_VULKAN
 	if (CRenderer::CV_r_multithreadedDrawing == 0)
 		return;
 
 	CRY_PROFILE_FUNCTION_WAITING(PROFILE_RENDERER)
 
 	m_CoalescedContexts.WaitForJobs();
-#endif
 }

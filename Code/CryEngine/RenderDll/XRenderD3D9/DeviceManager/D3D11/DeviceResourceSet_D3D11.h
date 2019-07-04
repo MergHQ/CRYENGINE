@@ -22,8 +22,32 @@ struct CDeviceResourceSet_DX11 : CDeviceResourceSet
 	struct SCompiledUAV
 	{
 		ID3D11UnorderedAccessView* pUav;
-		EHWShaderClass shaderStage;
+		EHWShaderClass shaderType;
 		int slot;
+	};
+
+	template<typename T, uint32 MaxResourceCount>
+	struct SCompiledResourceRanges
+	{
+		SCompiledResourceRanges() { Clear(); }
+
+		void Clear();
+		void AddResource(T* pResource, const SResourceBindPoint& bindPoint);
+
+		template<typename ExecuteForRangeFunc> void ForEach(EHWShaderClass shaderClass, ExecuteForRangeFunc executeForRange) const;
+		template<typename ExecuteForRangeFunc> void ForEach(EHWShaderClass shaderClass, SCachedValue<T*>* shadowState, ExecuteForRangeFunc executeForRange) const;
+		template<typename ExecuteForRangeFunc> void ForEach(EHWShaderClass shaderClass, const std::bitset<MaxResourceCount>& requestedRanges,
+			SCachedValue<T*>* shadowState, ExecuteForRangeFunc executeForRange) const;
+
+		int GetRangeCount(EHWShaderClass shaderClass) const
+		{
+			int result = 0;
+			ForEach(shaderClass, [&result](EHWShaderClass, uint32, uint32, T* const *) { ++result; });
+			return result;
+		}
+
+		std::array<T*, MaxResourceCount>                     resources;
+		std::array<std::bitset<MaxResourceCount>, eHWSC_Num> ranges;
 	};
 
 	CDeviceResourceSet_DX11(CDeviceResourceSet::EFlags flags)
@@ -35,18 +59,14 @@ struct CDeviceResourceSet_DX11 : CDeviceResourceSet
 	void         ClearCompiledData();
 
 	// set via reflection from shader
-	std::array<std::array<ID3D11ShaderResourceView*, MAX_TMU>, eHWSC_Num>                  compiledSRVs;
-	std::array<uint8, eHWSC_Num> firstCompiledSRVs, lastCompiledSRVs;
-
-	std::array<std::array<ID3D11SamplerState*, MAX_TMU>, eHWSC_Num>                        compiledSamplers;
-	std::array<uint8, eHWSC_Num> firstCompiledSamplers, lastCompiledSamplers;
+	// SRVs, UAVs and samplers
+	SCompiledResourceRanges<ID3D11ShaderResourceView, ResourceSetMaxSrvCount>   compiledSRVs;
+	SCompiledResourceRanges<ID3D11UnorderedAccessView, ResourceSetMaxUavCount>  compiledUAVs;
+	SCompiledResourceRanges<ID3D11SamplerState, ResourceSetMaxSamplerCount>     compiledSamplers;
 
 	// set directly
 	std::array<std::array<SCompiledConstantBuffer, eConstantBufferShaderSlot_Count>, eHWSC_Num> compiledCBs;
-	std::array<uint8, eHWSC_Num> numCompiledCBs;
-
-	std::array<SCompiledUAV, D3D11_PS_CS_UAV_REGISTER_COUNT> compiledUAVs;
-	uint8 numCompiledUAVs;
+	std::array<uint8, eHWSC_Num>                                                                numCompiledCBs;
 };
 
 class CDeviceResourceLayout_DX11 : public CDeviceResourceLayout
@@ -56,3 +76,5 @@ public:
 		: CDeviceResourceLayout(requiredResourceBindings)
 	{}
 };
+
+#include "DeviceResourceSet_D3D11.inl"

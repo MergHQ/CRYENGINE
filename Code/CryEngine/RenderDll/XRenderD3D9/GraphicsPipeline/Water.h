@@ -111,6 +111,8 @@ public:
 	void                          Init() final;
 	void                          OnCVarsChanged(const CCVarUpdateRecorder& cvarUpdater) final;
 	void                          Update() final;
+	bool                          UpdateRenderPasses() final;
+	bool                          UpdatePerPassResourceSet() final;
 	void                          Prepare();
 	void                          Resize(int renderWidth, int renderHeight) final;
 
@@ -202,7 +204,7 @@ private:
 	Vec4                     m_oceanAnimationParams[2];
 
 	int32                    m_lastDepthCopyFrameID = 0;
-	int32                    m_aniso16xClampSampler;
+	int32                    m_aniso8xClampSampler;
 	int32                    m_aniso16xWrapSampler;
 	int32                    m_linearCompareClampSampler;
 	int32                    m_linearMirrorSampler;

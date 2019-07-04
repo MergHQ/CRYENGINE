@@ -2338,8 +2338,9 @@ void C3DEngine::UpdateTISettings()
 	int lowSpecMode = ti.lowSpecMode;
 	if (lowSpecMode > -2 && gEnv->IsEditor()) // otherwise we use value from sys_spec_Light.cfg
 		GetCVars()->e_svoTI_LowSpecMode = lowSpecMode;
-
+#if !CRY_PLATFORM_DURANGO
 	GetCVars()->e_svoTI_HalfresKernelPrimary = tiAdv.halfResKernelPrimary ? 1 : 0;
+#endif
 	GetCVars()->e_svoTI_HalfresKernelSecondary = tiAdv.halfresKernelSecondary ? 1 : 0;
 	GetCVars()->e_svoTI_UseTODSkyColor = ti.useTodSkyColor;
 

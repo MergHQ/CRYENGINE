@@ -756,8 +756,18 @@ bool CVolumetricFogStage::PreparePerPassResources(bool bOnInit)
 	if (bOnInit)
 		return true;
 
+	return UpdatePerPassResourceSet();
+}
+
+bool CVolumetricFogStage::UpdatePerPassResourceSet()
+{
 	CRY_ASSERT(!m_sceneRenderPassResources.HasChangedBindPoints()); // Cannot change resource layout after init. It is baked into the shaders
 	return m_pSceneRenderPassResourceSet->Update(m_sceneRenderPassResources);
+}
+
+bool CVolumetricFogStage::UpdateRenderPasses()
+{
+	return m_passInjectParticleDensity.UpdateDeviceRenderPass();
 }
 
 void CVolumetricFogStage::ExecuteInjectParticipatingMedia(const SScopedComputeCommandList& commandList)

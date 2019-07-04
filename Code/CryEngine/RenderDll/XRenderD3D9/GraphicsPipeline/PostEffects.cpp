@@ -227,6 +227,12 @@ void CPostEffectStage::Execute()
 			if (id >= EPostEffectID::PostAA)
 				m_context.EnableAltBackBuffer(false);
 
+#if DURANGO_USE_ESRAM
+			if (id > EPostEffectID::PostAA)
+				m_context.GetSrcBackBufferTexture()->AcquireESRAMResidency(CDeviceResource::eResCoherence_Uninitialize);
+#endif
+			
+
 			uint32 nRenderFlags = pCurrEffect->GetRenderFlags();
 			if (nRenderFlags & PSP_UPDATE_BACKBUFFER)
 			{
@@ -264,6 +270,10 @@ void CPostEffectStage::Execute()
 			}
 		}
 	}
+
+#if DURANGO_USE_ESRAM
+	m_context.GetSrcBackBufferTexture()->ForfeitESRAMResidency(CDeviceResource::eResCoherence_Abandon);
+#endif
 
 	// display debug info.
 #ifndef _RELEASE

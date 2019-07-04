@@ -642,16 +642,16 @@ static void OnChange_CV_D3D12HardwareComputeQueue(ICVar* /*pCVar*/)
 {
 	gcpRendD3D->FlushRTCommands(true, true, true);
 
-	reinterpret_cast<CCryDX12Device*>(gcpRendD3D->GetDevice().GetRealDevice())->FlushAndWaitForGPU();
-	reinterpret_cast<CCryDX12DeviceContext*>(gcpRendD3D->GetDeviceContext().GetRealDeviceContext())->RecreateCommandListPool(CMDQUEUE_COMPUTE);
+	reinterpret_cast<CCryDX12Device*>(gcpRendD3D->GetDevice())->FlushAndWaitForGPU();
+	reinterpret_cast<CCryDX12DeviceContext*>(gcpRendD3D->GetDeviceContext())->RecreateCommandListPool(CMDQUEUE_COMPUTE);
 }
 
 static void OnChange_CV_D3D12HardwareCopyQueue(ICVar* /*pCVar*/)
 {
 	gcpRendD3D->FlushRTCommands(true, true, true);
 
-	reinterpret_cast<CCryDX12Device*>(gcpRendD3D->GetDevice().GetRealDevice())->FlushAndWaitForGPU();
-	reinterpret_cast<CCryDX12DeviceContext*>(gcpRendD3D->GetDeviceContext().GetRealDeviceContext())->RecreateCommandListPool(CMDQUEUE_COPY);
+	reinterpret_cast<CCryDX12Device*>(gcpRendD3D->GetDevice())->FlushAndWaitForGPU();
+	reinterpret_cast<CCryDX12DeviceContext*>(gcpRendD3D->GetDeviceContext())->RecreateCommandListPool(CMDQUEUE_COPY);
 }
 #endif
 
@@ -690,7 +690,7 @@ static void OnChange_CV_r_ShaderTarget(ICVar* pCVar)
 	std::transform(r_driverStr.begin(), r_driverStr.end(), r_driverStr.begin(), toUpperLamda);
 
 #if CRY_PLATFORM_ANDROID || CRY_PLATFORM_LINUX || CRY_PLATFORM_APPLE
-	if (strcmp(pCVar->GetString(), STR_GL4_SHADER_TARGET) && strcmp(pCVar->GetString(), STR_VULKAN_SHADER_TARGET))
+	if (strcmp(pCVar->GetString(), STR_VULKAN_SHADER_TARGET))
 	{
 		pCVar->Set(STR_VULKAN_SHADER_TARGET);
 		return;
@@ -733,15 +733,13 @@ static void OnChange_CV_r_ShaderTarget(ICVar* pCVar)
 		else if (r_driverStr == STR_DX12_RENDERER)
 			CRenderer::ShaderTargetFlag = SF_D3D11;
 #endif
-		else if (r_driverStr == STR_GL_RENDERER)
-			CRenderer::ShaderTargetFlag = SF_GL4;
 		else if (r_driverStr == STR_VK_RENDERER)
 			CRenderer::ShaderTargetFlag = SF_VULKAN;
 	}
 	else if (shaderTargetStr == STR_ORBIS_SHADER_TARGET)
 	{
 		CRenderer::ShaderTargetFlag = SF_ORBIS;
-		if (r_driverStr != STR_GNM_RENDERER && r_driverStr != STR_DX11_RENDERER)
+		if (r_driverStr != STR_GNM_RENDERER)
 			CryFatalError("r_driver MUST support shader target flag.");
 	}
 	else if (shaderTargetStr == STR_DURANGO_SHADER_TARGET)
@@ -762,18 +760,6 @@ static void OnChange_CV_r_ShaderTarget(ICVar* pCVar)
 		if (r_driverStr != STR_DX12_RENDERER)
 			CryFatalError("r_driver MUST support shader target flag.");
 	}
-	else if (shaderTargetStr == STR_GL4_SHADER_TARGET)
-	{
-		CRenderer::ShaderTargetFlag = SF_GL4;
-		if (r_driverStr != STR_GL_RENDERER)
-			CryFatalError("r_driver MUST support shader target flag.");
-	}
-	else if (shaderTargetStr == STR_GLES3_SHADER_TARGET)
-	{
-		CRenderer::ShaderTargetFlag = SF_GLES3;
-		if (r_driverStr != STR_GL_RENDERER)
-			CryFatalError("r_driver MUST support shader target flag.");
-	}
 	else if (shaderTargetStr == STR_VULKAN_SHADER_TARGET)
 	{
 		CRenderer::ShaderTargetFlag = SF_VULKAN;
@@ -782,14 +768,12 @@ static void OnChange_CV_r_ShaderTarget(ICVar* pCVar)
 	}
 	else
 	{
-		CryFatalError("Using %s as a shader target string is not allowed. Available valid options are %s/%s/%s/%s/%s/%s/%s",
+		CryFatalError("Using %s as a shader target string is not allowed. Available valid options are %s/%s/%s/%s/%s/%s/%s", 
 		              shaderTargetStr.c_str(),
-		              STR_ORBIS_SHADER_TARGET,
+		              STR_ORBIS_SHADER_TARGET, 
 		              STR_DURANGO_SHADER_TARGET,
 		              STR_D3D11_SHADER_TARGET,
 		              STR_D3D12_SHADER_TARGET,
-		              STR_GL4_SHADER_TARGET,
-		              STR_GLES3_SHADER_TARGET,
 		              STR_VULKAN_SHADER_TARGET);
 	}
 }
@@ -1042,9 +1026,9 @@ void CRendererCVars::InitCVars()
 
 	CV_r_ShaderTarget = REGISTER_STRING_CB("r_ShaderTarget", "", VF_DUMPTODISK,
 	                                       "Shader cache generation only CVar."
-	                                       "Sets the shader generation target ( Orbis/Durango/D3D11/D3D12/GL4/GLES3/Vulkan ).\n"
+	                                       "Sets the shader generation target ( Orbis/Durango/D3D11/D3D12/Vulkan ).\n"
 	                                       "Specify in system.cfg like this: r_ShaderTarget = \"D3D11\"", OnChange_CV_r_ShaderTarget);
-	OnChange_CV_r_ShaderTarget(CV_r_ShaderTarget);
+		OnChange_CV_r_ShaderTarget(CV_r_ShaderTarget);
 
 #if CRY_RENDERER_VULKAN
 	CV_r_VkShaderCompiler = REGISTER_STRING("r_VkShaderCompiler", "DXC", VF_DUMPTODISK,
@@ -2729,8 +2713,8 @@ void CRendererCVars::InitCVars()
 	               "3=interlaced (lower field first)\n"
 	               "Usage: r_overrideScanlineOrder [0/1/2/3]");
 #endif
-	DefineConstIntCVar3("r_UseESRAM", CV_r_useESRAM, 1, VF_REQUIRE_APP_RESTART,
-	                    "Toggles using ESRAM for render targets (Durango only)\n"
+	DefineConstIntCVar3("r_UseESRAM", CV_r_useESRAM, 1, 0,
+	                    "Toggles using ESRAM for GPU resources (Durango only)\n"
 	                    "Usage: r_UseESRAM [0/1]");
 	//DefineConstIntCVar3("r_MeasureOverdraw", CV_r_measureoverdraw, 0, VF_CHEAT,
 	//                    "Activate a special rendering mode that visualize the rendering cost of each pixel by color.\n"

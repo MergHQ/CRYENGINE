@@ -13,7 +13,6 @@ public:
 
 	CScreenSpaceObscuranceStage(CGraphicsPipeline& graphicsPipeline)
 		: CGraphicsPipelineStage(graphicsPipeline)
-		, m_passCopyFromESRAM(&graphicsPipeline)
 		, m_passObscurance(&graphicsPipeline)
 		, m_passFilter(&graphicsPipeline)
 		, m_passAlbedoDownsample0(&graphicsPipeline)
@@ -34,7 +33,6 @@ public:
 	void Execute();
 
 private:
-	CStretchRectPass  m_passCopyFromESRAM;
 	CFullscreenPass   m_passObscurance;
 	CFullscreenPass   m_passFilter;
 	CStretchRectPass  m_passAlbedoDownsample0;

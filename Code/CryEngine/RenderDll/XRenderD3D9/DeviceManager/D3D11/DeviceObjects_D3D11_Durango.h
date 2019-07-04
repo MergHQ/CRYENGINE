@@ -261,6 +261,55 @@ private:
 	uint32 m_nLastCopyIdx;
 };
 
+#if DURANGO_USE_ESRAM
+// An allocation in ESRAM
+struct SESRAMAllocation
+{
+private:
+	static const uint32 INVALID_PTR = ~0;
+	static const uint16 INVALID_BLOCK = ~0;
+
+public:
+	SESRAMAllocation() : m_esramPtr(INVALID_PTR), m_beginBlock(INVALID_BLOCK), m_endBlock(INVALID_BLOCK) {}
+
+	BOOL        IsValid() const { return m_beginBlock != INVALID_BLOCK; }
+	void        Invalidate() { m_esramPtr = INVALID_PTR; m_beginBlock = m_endBlock = INVALID_BLOCK; }
+
+	uint32      m_esramPtr;     // The start location of this allocation in ESRAM
+	uint32      m_esramSize;    // The usable size of this allocation in bytes for resource creation. 
+								// The actual allocation size is equal or larger than this size.
+	uint16      m_beginBlock;   // The first block of this allocation
+	uint16      m_endBlock;     // One past the end, like STL
+};
+
+// An area of free space in ESRAM
+class SESRAMFreeSpace
+{
+public:
+	SESRAMFreeSpace(uint16 beginBlock, uint16 endBlock) : m_beginBlock(beginBlock), m_endBlock(endBlock) {}
+
+	uint16 m_beginBlock;
+	uint16 m_endBlock;   // One past the end, like STL
+};
+
+class CDurangoESRAMManager
+{
+private:
+	static const uint32 ESRAM_SIZE = 32 * 1024 * 1024;
+	static const uint32 BLOCK_SIZE = 64 * 1024;
+	static const uint32 BLOCK_COUNT = ESRAM_SIZE / BLOCK_SIZE;
+	std::vector<SESRAMFreeSpace> m_freeSpaces;
+public:
+	void Allocate(uint32 numBytes, uint32 alignment, SESRAMAllocation& alloc);
+	void Free(SESRAMAllocation& alloc);
+
+	CDurangoESRAMManager()
+	{
+		m_freeSpaces.emplace_back(0, BLOCK_COUNT);
+	}
+};
+#endif
+
 interface ID3D11DmaEngineContextX;
 
 class CDurangoGPURingMemAllocator

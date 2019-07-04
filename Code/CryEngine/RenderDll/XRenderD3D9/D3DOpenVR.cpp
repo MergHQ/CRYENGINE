@@ -46,7 +46,7 @@ CD3DOpenVRRenderer::CD3DOpenVRRenderer(CryVR::OpenVR::IOpenVRDevice* openVRDevic
 
 bool CD3DOpenVRRenderer::Initialize(int initialWidth, int initialeight)
 {
-	D3DDevice* d3d11Device = m_pRenderer->GetDevice_Unsynchronized().GetRealDevice();
+	D3DDevice* d3d11Device = m_pRenderer->GetDevice();
 
 #if CRY_RENDERER_DIRECT3D >= 120
 	ID3D12CommandQueue* pD3d12Queue = GetDeviceObjectFactory().GetNativeCoreCommandQueue();
@@ -310,7 +310,7 @@ void CD3DOpenVRRenderer::SubmitFrame()
 #if (CRY_RENDERER_DIRECT3D >= 120)
 	{
 		// Transition resources
-		ID3D11Device* pD3d11Device = m_pRenderer->GetDevice_Unsynchronized().GetRealDevice();
+		ID3D11Device* pD3d11Device = m_pRenderer->GetDevice();
 		NCryDX12::CCommandList* pCL = ((CCryDX12Device*)pD3d11Device)->GetDeviceContext()->GetCoreGraphicsCommandList();
 
 		CCryDX12RenderTargetView* lRV = (CCryDX12RenderTargetView*)m_scene3DRenderData[EEyeType::eEyeType_LeftEye].texture->GetSurface(-1, 0);

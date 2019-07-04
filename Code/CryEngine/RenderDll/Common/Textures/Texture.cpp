@@ -189,9 +189,6 @@ CTexture::CTexture(const uint32 nFlags, const ColorF& clearColor /*= ColorF(Clr_
 	m_nPersistentSize = 0;
 	m_fAvgBrightness = 0.0f;
 
-#if CRY_PLATFORM_DURANGO && DURANGO_USE_ESRAM
-	m_nESRAMOffset = SKIP_ESRAM;
-#endif
 
 	m_nUpdateFrameID = -1;
 	m_nAccessFrameID = -1;
@@ -1305,7 +1302,7 @@ STexDataPtr CTexture::ImagePreprocessing(STexDataPtr&& td, ETEX_Format eDstForma
 	const ETEX_Format eSrcFormat = td->m_eFormat;
 	const bool fmtConversionNeeded = eSrcFormat != eDstFormat;
 
-#if !CRY_PLATFORM_WINDOWS || CRY_RENDERER_OPENGL
+#if !CRY_PLATFORM_WINDOWS
 	if (fmtConversionNeeded)
 	{
 		// NOTE: leaks memory
@@ -2414,9 +2411,6 @@ bool CTexture::SetNoTexture(CTexture* pDefaultTexture /* = s_ptexNoTexture*/)
 		m_cMaxColor = 1.0f;
 		m_cClearColor = ColorF(0.0f, 0.0f, 0.0f, 1.0f);
 
-#if CRY_PLATFORM_DURANGO && DURANGO_USE_ESRAM
-		m_nESRAMOffset = SKIP_ESRAM;
-#endif
 
 		m_bNoTexture = true;
 		if (m_pFileTexMips)

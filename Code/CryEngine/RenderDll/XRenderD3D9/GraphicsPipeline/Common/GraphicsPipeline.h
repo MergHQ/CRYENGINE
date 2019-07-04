@@ -66,9 +66,6 @@ public:
 	CTexture* m_pTexSceneDiffuse = nullptr;
 	CTexture* m_pTexSceneNormalsMap = nullptr;                                              // RT with normals for deferred shading
 	CTexture* m_pTexSceneSpecular = nullptr;
-#if defined(DURANGO_USE_ESRAM)
-	CTexture* m_pTexSceneSpecularESRAM = nullptr;                                           // Temporary scene specular in ESRAM, aliased with other ESRAM RTs
-#endif
 	CTexture* m_pTexVelocityObjects[CCamera::eEye_eCount] = { nullptr, nullptr };           // CSceneGBufferStage, Dynamic object velocity (for left and right eye)
 	CTexture* m_pTexLinearDepth = nullptr;
 	CTexture* m_pTexHDRTarget = nullptr;
@@ -191,6 +188,12 @@ public:
 	virtual void Resize(int renderWidth, int renderHeight);
 	// Prepare all stages before actual drawing starts
 	virtual void Update(EShaderRenderingFlags renderingFlags);
+
+#if DURANGO_USE_ESRAM
+	bool UpdatePerPassResourceSet();
+	bool UpdateRenderPasses();
+#endif
+
 	virtual void OnCVarsChanged(const CCVarUpdateRecorder& rCVarRecs);
 	// Execute the pipeline and its stages
 	virtual void Execute() = 0;

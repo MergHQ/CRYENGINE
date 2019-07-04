@@ -19,14 +19,6 @@
 		#define PROFILE_LABEL_GPU(_NAME)      do { GetDeviceObjectFactory().GetCoreCommandList().GetGraphicsInterface()->SetProfilerMarker (_NAME); } while (0)
 		#define PROFILE_LABEL_PUSH_GPU(_NAME) do { GetDeviceObjectFactory().GetCoreCommandList().GetGraphicsInterface()->BeginProfilerEvent(_NAME); } while (0)
 		#define PROFILE_LABEL_POP_GPU(_NAME)  do { GetDeviceObjectFactory().GetCoreCommandList().GetGraphicsInterface()->EndProfilerEvent  (_NAME); } while (0)
-	#elif CRY_PLATFORM_ORBIS
-		#define PROFILE_LABEL_GPU(X)          do { DXOrbis::Device()->SetMarker(X); } while (0)
-		#define PROFILE_LABEL_PUSH_GPU(X)     do { DXOrbis::Device()->PushMarker(X); } while (0)
-		#define PROFILE_LABEL_POP_GPU(X)      do { DXOrbis::Device()->PopMarker(X); } while (0)
-	#elif CRY_RENDERER_OPENGL || CRY_RENDERER_OPENGLES
-		#define PROFILE_LABEL_GPU(_NAME)      DXGLProfileLabel(_NAME);
-		#define PROFILE_LABEL_PUSH_GPU(_NAME) DXGLProfileLabelPush(_NAME);
-		#define PROFILE_LABEL_POP_GPU(_NAME)  DXGLProfileLabelPop(_NAME);
 	#elif(CRY_RENDERER_VULKAN >= 10)
 		#define PROFILE_LABEL_GPU(_NAME)      do { GetDeviceObjectFactory().GetCoreCommandList().GetGraphicsInterface()->SetProfilerMarker (_NAME); } while (0)
 		#define PROFILE_LABEL_PUSH_GPU(_NAME) do { GetDeviceObjectFactory().GetCoreCommandList().GetGraphicsInterface()->BeginProfilerEvent(_NAME); } while (0)
@@ -38,14 +30,17 @@
 	#elif (CRY_RENDERER_DIRECT3D >= 110) && (CRY_RENDERER_DIRECT3D < 120) && CRY_PLATFORM_DURANGO
 		#ifdef USE_PIX_DURANGO
 			#include <CryString/UnicodeFunctions.h>
-			#define PROFILE_LABEL_GPU(X)      do { if (gcpRendD3D->GetPixProfiler() && gcpRendD3D->CV_r_durango_async_dips == 0) { wchar_t buf[256]; Unicode::Convert(buf, X); gcpRendD3D->GetPixProfiler()->SetMarker(buf); } } while (0)
-			#define PROFILE_LABEL_PUSH_GPU(X) do { if (gcpRendD3D->GetPixProfiler() && gcpRendD3D->CV_r_durango_async_dips == 0) { wchar_t buf[256]; Unicode::Convert(buf, X); gcpRendD3D->GetPixProfiler()->BeginEvent(buf); } } while (0)
-			#define PROFILE_LABEL_POP_GPU(X)  do { if (gcpRendD3D->GetPixProfiler() && gcpRendD3D->CV_r_durango_async_dips == 0) gcpRendD3D->GetPixProfiler()->EndEvent(); } while (0)
+			#define PROFILE_LABEL_GPU_MT(X, CTX)      do { wchar_t buf[256]; Unicode::Convert(buf, X); reinterpret_cast<ID3D11DeviceContextX*>(CTX)->PIXSetMarker(buf); } while (0)
+			#define PROFILE_LABEL_PUSH_GPU_MT(X, CTX) do { wchar_t buf[256]; Unicode::Convert(buf, X); reinterpret_cast<ID3D11DeviceContextX*>(CTX)->PIXBeginEvent(buf); } while (0)
+			#define PROFILE_LABEL_POP_GPU_MT(X, CTX)  do { reinterpret_cast<ID3D11DeviceContextX*>(CTX)->PIXEndEvent(); } while (0)
 		#else
-			#define PROFILE_LABEL_GPU(X)      do { /*PIX not enabled*/ } while (0)
-			#define PROFILE_LABEL_PUSH_GPU(X) do { /*PIX not enabled*/ } while (0)
-			#define PROFILE_LABEL_POP_GPU(X)  do { /*PIX not enabled*/ } while (0)
+			#define PROFILE_LABEL_GPU_MT(X, CTX)      do { /*PIX not enabled*/ } while (0)
+			#define PROFILE_LABEL_PUSH_GPU_MT(X, CTX) do { /*PIX not enabled*/ } while (0)
+			#define PROFILE_LABEL_POP_GPU_MT(X, CTX)  do { /*PIX not enabled*/ } while (0)
 		#endif
+			#define PROFILE_LABEL_GPU(X)      PROFILE_LABEL_GPU_MT(X, gcpRendD3D->GetDeviceContext())
+			#define PROFILE_LABEL_PUSH_GPU(X) PROFILE_LABEL_PUSH_GPU_MT(X, gcpRendD3D->GetDeviceContext())
+			#define PROFILE_LABEL_POP_GPU(X)  PROFILE_LABEL_POP_GPU_MT(X, gcpRendD3D->GetDeviceContext())
 	#elif  CRY_PLATFORM_WINDOWS
 		// TODO: replace by ID3DUserDefinedAnnotation https://msdn.microsoft.com/en-us/library/hh446881.aspx
 		#define PROFILE_LABEL_GPU(X)      do { wchar_t buf[256]; Unicode::Convert(buf, X); D3DPERF_SetMarker(0xffffffff, buf); } while (0)

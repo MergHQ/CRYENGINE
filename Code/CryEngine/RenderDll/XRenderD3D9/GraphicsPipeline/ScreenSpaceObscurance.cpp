@@ -36,18 +36,10 @@ void CScreenSpaceObscuranceStage::Update()
 
 void CScreenSpaceObscuranceStage::Execute()
 {
-#if defined(DURANGO_USE_ESRAM)
-	m_passCopyFromESRAM.Execute(m_graphicsPipelineResources.m_pTexSceneSpecularESRAM, m_graphicsPipelineResources.m_pTexSceneSpecular);
-#endif
-
 	PROFILE_LABEL_SCOPE("DIRECTIONAL_OCC");
 
 	const bool bLowResOutput = (CRendererCVars::CV_r_ssdoHalfRes == 3);
 	CTexture* CRendererResources__s_ptexSceneSpecular = m_graphicsPipelineResources.m_pTexSceneSpecularTmp[bLowResOutput];
-#if defined(DURANGO_USE_ESRAM)
-	if (!bLowResOutput)
-		CRendererResources__s_ptexSceneSpecular = m_graphicsPipelineResources.m_pTexSceneSpecularESRAM;
-#endif
 
 	CShader* pShader = CShaderMan::s_shDeferredShading;
 

@@ -159,11 +159,11 @@ void CSystem::CreateRendererVars(const SSystemInitParams& startupParams)
 #if CRY_PLATFORM_ANDROID
 	const char* p_r_DriverDef = STR_VK_RENDERER;
 #elif CRY_PLATFORM_LINUX || CRY_PLATFORM_APPLE
-	const char* p_r_DriverDef = STR_GL_RENDERER;
+	const char* p_r_DriverDef = STR_VK_RENDERER;
 #elif CRY_PLATFORM_DURANGO
 	const char* p_r_DriverDef = STR_DX11_RENDERER;
 #elif CRY_PLATFORM_ORBIS
-	const char* p_r_DriverDef = STR_DX11_RENDERER;
+	const char* p_r_DriverDef = STR_GNM_RENDERER;
 #else
 	const char* p_r_DriverDef = STR_AUTO_RENDERER;
 #endif

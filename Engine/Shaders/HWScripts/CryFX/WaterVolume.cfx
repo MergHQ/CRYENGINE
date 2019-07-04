@@ -1228,7 +1228,7 @@ pixout WaterPS(v2f_hs IN)
 
 	rayStart.xy = GetScaledScreenTC(normalize(rayEnd.xy - rayStart.xy));
 
-	half3 cSpecularAcc = reflectionTex.SampleGrad(aniso16xClampSState, reflNewst + reflTC * fReflMask, rayStart.xy * fGlossinessLod * CV_ScreenSize.w * 64, float2(0,0)).rgb;
+	half3 cSpecularAcc = reflectionTex.SampleGrad(aniso16xClampSState, reflNewst + reflTC * fReflMask, rayStart.xy * fGlossinessLod * CV_ScreenSize.w * 32, float2(0,0)).rgb;
 	// TODO_VR
 	//half3 cSpecularAcc = tex2Dgrad(ReflSampler, NVMultiRes_MapLinearToMultiRes(reflNewst + reflTC * fReflMask) * MultiResUVScaleBias.xy + MultiResUVScaleBias.zw, rayStart.xy * fGlossinessLod * PS_ScreenSize.w * 64, float2(0,0)).rgb;
 

@@ -199,9 +199,6 @@ void CRainStage::ExecuteDeferredRainGBuffer()
 	CD3D9Renderer* const RESTRICT_POINTER rd = gcpRendD3D;
 
 	CTexture* CRendererResources__s_ptexSceneSpecular = m_graphicsPipelineResources.m_pTexSceneSpecular;
-#if defined(DURANGO_USE_ESRAM)
-	CRendererResources__s_ptexSceneSpecular = m_graphicsPipelineResources.m_pTexSceneSpecularESRAM;
-#endif
 
 	// TODO: Try avoiding the copy by directly accessing UAVs
 	m_passCopyGBufferNormal.Execute(m_graphicsPipelineResources.m_pTexSceneNormalsMap, m_graphicsPipelineResources.m_pTexSceneNormalsBent);

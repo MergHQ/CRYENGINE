@@ -259,6 +259,11 @@ void CSceneRenderPass::ExchangeDepthTarget(CTexture* pNewDepthTarget, ResourceVi
 	m_renderPassDesc.SetDepthTarget(pNewDepthTarget, hDepthStencilView);
 }
 
+bool CSceneRenderPass::UpdateDeviceRenderPass()
+{
+	return CDeviceRenderPass::UpdateWithReevaluation(m_pRenderPass, m_renderPassDesc);
+}
+
 void CSceneRenderPass::PrepareRenderPassForUse(CDeviceCommandListRef RESTRICT_REFERENCE commandList)
 {
 	CDeviceRenderPass::UpdateWithReevaluation(m_pRenderPass, m_renderPassDesc);

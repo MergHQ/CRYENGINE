@@ -16,8 +16,6 @@
 #include <CryMemory/IDefragAllocator.h>
 #include "../XRenderD3D9/DeviceManager/DeviceResources.h"
 
-class CSubmissionQueue_DX11; // friend
-
 ////////////////////////////////////////////////////////////////////////////////////////
 // Usage hints
 enum BUFFER_USAGE
@@ -137,7 +135,7 @@ public:
 
 	inline uint64 GetCode() const
 	{
-#if CONSTANT_BUFFER_ENABLE_DIRECT_ACCESS || CRY_RENDERER_OPENGL
+#if CONSTANT_BUFFER_ENABLE_DIRECT_ACCESS
 		uint64 code = reinterpret_cast<uintptr_t>(m_buffer) ^ SwapEndianValue((uint64)m_offset, true);
 		return code;
 #else
@@ -186,7 +184,6 @@ class CDeviceBufferManager
 	// Should only be called from the below befriended function! Please do not abuse!
 
 	friend class CGuardedDeviceBufferManager;
-	friend class CSubmissionQueue_DX11;
 
 	void            PinItem_Locked(buffer_handle_t);
 	void            UnpinItem_Locked(buffer_handle_t);
@@ -505,6 +502,20 @@ public:
 	void           Create(buffer_size_t numElements, buffer_size_t elementSize, DXGI_FORMAT elementFormat, uint32 flags, const void* pData);
 	void           Release();
 
+	inline SBufferLayout GetLayout() const
+	{
+		const SBufferLayout Layout =
+		{
+			m_eFormat,
+			m_elementCount,
+			static_cast<uint16>(m_elementSize),
+			/* TODO: change FT_... to CDeviceObjectFactory::... */
+			m_eFlags,
+		};
+
+		return Layout;
+	}
+
 	void           OwnDevBuffer(CDeviceBuffer* pDeviceTex);
 	void           UpdateBufferContent(const void* pData, buffer_size_t nSize);
 	void*          Lock();
@@ -515,6 +526,13 @@ public:
 	CDeviceBuffer* GetDevBuffer()    const { return m_pDeviceBuffer; }
 	uint32         GetFlags()        const { return m_eFlags; }
 	buffer_size_t  GetElementCount() const { return m_elementCount; }
+
+#if DURANGO_USE_ESRAM
+	bool IsESRAMResident();
+	bool AcquireESRAMResidency(CDeviceResource::EResidencyCoherence residencyEntry);
+	bool ForfeitESRAMResidency(CDeviceResource::EResidencyCoherence residencyExit);
+	bool TransferESRAMAllocation(CGpuBuffer* target);
+#endif
 
 	inline void    SetDebugName(const char* name) const { m_pDeviceBuffer->SetDebugName(name); }
 
@@ -536,6 +554,11 @@ private:
 	DXGI_FORMAT                      m_eFormat;
 	
 	bool                             m_bLocked;
+
+#if DURANGO_USE_ESRAM
+	uint32                           m_nESRAMSize = 0;
+	uint32                           m_nESRAMAlignment;
+#endif
 
 };
 

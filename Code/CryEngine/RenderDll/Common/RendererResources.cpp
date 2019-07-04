@@ -120,7 +120,6 @@ CTexture* CRendererResources::s_ptexLTC1;
 CTexture* CRendererResources::s_ptexLTC2;
 CTexture* CRendererResources::s_ptexWindGrid;
 
-
 // Post-process related textures
 CTexture* CRendererResources::s_ptexDisplayTargetScaledPrev;
 

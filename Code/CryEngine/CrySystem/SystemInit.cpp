@@ -181,7 +181,6 @@ extern AAssetManager* androidGetAssetManager();
 #define DLL_3DENGINE      "Cry3DEngine"
 #define DLL_RENDERER_DX11 "CryRenderD3D11"
 #define DLL_RENDERER_DX12 "CryRenderD3D12"
-#define DLL_RENDERER_GL   "CryRenderOpenGL"
 #define DLL_RENDERER_VK   "CryRenderVulkan"
 #define DLL_RENDERER_GNM  "CryRenderGNM"
 #define DLL_LIVECREATE    "CryLiveCreate"
@@ -994,8 +993,6 @@ bool CSystem::OpenRenderLibrary(const SSystemInitParams& startupParams, const ch
 		return OpenRenderLibrary(startupParams, R_DX11_RENDERER);
 	else if (stricmp(t_rend, STR_DX12_RENDERER) == 0)
 		return OpenRenderLibrary(startupParams, R_DX12_RENDERER);
-	else if (stricmp(t_rend, STR_GL_RENDERER) == 0)
-		return OpenRenderLibrary(startupParams, R_GL_RENDERER);
 	else if (stricmp(t_rend, STR_VK_RENDERER) == 0)
 		return OpenRenderLibrary(startupParams, R_VK_RENDERER);
 	else if (stricmp(t_rend, STR_GNM_RENDERER) == 0)
@@ -1017,8 +1014,6 @@ bool CSystem::CloseRenderLibrary(const char* t_rend)
 		return UnloadEngineModule(DLL_RENDERER_DX11);
 	else if (stricmp(t_rend, STR_DX12_RENDERER) == 0)
 		return UnloadEngineModule(DLL_RENDERER_DX12);
-	else if (stricmp(t_rend, STR_GL_RENDERER) == 0)
-		return UnloadEngineModule(DLL_RENDERER_GL);
 	else if (stricmp(t_rend, STR_VK_RENDERER) == 0)
 		return UnloadEngineModule(DLL_RENDERER_VK);
 	else if (stricmp(t_rend, STR_GNM_RENDERER) == 0)
@@ -1111,8 +1106,6 @@ bool CSystem::OpenRenderLibrary(const SSystemInitParams& startupParams, int type
 		libname = DLL_RENDERER_DX11;
 	else if (type == R_DX12_RENDERER)
 		libname = DLL_RENDERER_DX12;
-	else if (type == R_GL_RENDERER)
-		libname = DLL_RENDERER_GL;
 	else if (type == R_VK_RENDERER)
 		libname = DLL_RENDERER_VK;
 	else if (type == R_GNM_RENDERER)
@@ -3005,8 +2998,6 @@ bool CSystem::Initialize(SSystemInitParams& startupParams)
 				m_env.pConsole->LoadConfigVar("r_Driver", STR_DX11_RENDERER);
 			else if (m_pCmdLine->FindArg(eCLAT_Pre, STR_DX12_RENDERER))
 				m_env.pConsole->LoadConfigVar("r_Driver", STR_DX12_RENDERER);
-			else if (m_pCmdLine->FindArg(eCLAT_Pre, STR_GL_RENDERER))
-				m_env.pConsole->LoadConfigVar("r_Driver", STR_GL_RENDERER);
 			else if (m_pCmdLine->FindArg(eCLAT_Pre, STR_VK_RENDERER))
 				m_env.pConsole->LoadConfigVar("r_Driver", STR_VK_RENDERER);
 			else if (m_pCmdLine->FindArg(eCLAT_Pre, STR_GNM_RENDERER))

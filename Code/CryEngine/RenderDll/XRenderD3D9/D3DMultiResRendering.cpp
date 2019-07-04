@@ -42,7 +42,34 @@ void CVrProjectionManager::Init()
 	m_projection = eVrProjection_Planar;
 
 #if defined(USE_NV_API) && (CRY_RENDERER_DIRECT3D >= 110) && (CRY_RENDERER_DIRECT3D < 120)
-	m_pRenderer->GetDeviceContext().QueryNvidiaProjectionFeatureSupport(m_multiResSupported, m_lensMatchedSupported);
+	m_multiResSupported = false;
+	m_lensMatchedSupported = false;
+
+	if (NvAPI_Initialize() == NVAPI_OK)
+	{
+		ID3D11Device* pDevice = m_pRenderer->GetDevice();
+		NvAPI_D3D_RegisterDevice(pDevice);
+
+		#include "Common/NvidiaFastGeometryShaderTest.h"
+
+		NvAPI_D3D11_CREATE_FASTGS_EXPLICIT_DESC FastGSArgs = {};
+		FastGSArgs.version = NVAPI_D3D11_CREATEFASTGSEXPLICIT_VER;
+		FastGSArgs.flags = NV_FASTGS_USE_VIEWPORT_MASK;
+
+		ID3D11GeometryShader* pShader = nullptr;
+		if (NvAPI_D3D11_CreateFastGeometryShaderExplicit(pDevice, g_main, sizeof(g_main), nullptr, &FastGSArgs, &pShader) == NVAPI_OK && pShader != nullptr)
+		{
+			m_multiResSupported = true;
+			pShader->Release();
+
+			NV_QUERY_MODIFIED_W_SUPPORT_PARAMS ModifiedWParams = {};
+			ModifiedWParams.version = NV_QUERY_MODIFIED_W_SUPPORT_PARAMS_VER;
+			if (NvAPI_D3D_QueryModifiedWSupport(pDevice, &ModifiedWParams) == NVAPI_OK)
+			{
+				m_lensMatchedSupported = ModifiedWParams.bModifiedWSupported != 0;
+			}
+		}
+	}
 
 	if (CRenderer::CV_r_VrProjectionType == 1 && m_multiResSupported)
 		m_projection = eVrProjection_MultiRes;

@@ -83,13 +83,9 @@ void CSceneDepthStage::ExecuteLinearization()
 
 	// Depth downsampling
 	{
-#if CRY_PLATFORM_DURANGO
-		pLTexture = pZTexture;  // On Durango reading device depth is faster since it is in ESRAM
-#endif
-
 		m_DownSamplePasses[0].Execute(pLTexture,
 			m_graphicsPipelineResources.m_pTexLinearDepthScaled[0],
-			m_graphicsPipelineResources.m_pTexSceneDepthScaled[0], (pLTexture == pZTexture), true);
+			m_graphicsPipelineResources.m_pTexSceneDepthScaled[0], false, true);
 
 		for (int res = 1; res < 3; ++res)
 			m_DownSamplePasses[res].Execute(

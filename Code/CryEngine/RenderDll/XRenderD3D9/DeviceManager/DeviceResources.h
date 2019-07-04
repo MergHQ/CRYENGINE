@@ -79,8 +79,9 @@ struct SResourceLayout
 	buffer_size_t m_elementCount;
 	uint32        m_eFlags;           // e.g. CDeviceObjectFactory::BIND_VERTEX_BUFFER
 
-#if CRY_PLATFORM_DURANGO && DURANGO_USE_ESRAM
+#if DURANGO_USE_ESRAM
 	int32         m_eSRAMOffset;
+	int32         m_eSRAMSize;
 #endif
 };
 
@@ -104,11 +105,8 @@ class CDeviceResource
 {
 
 public:
-	CDeviceResource()
-		: m_pNativeResource(nullptr)
-		, m_eNativeFormat(DXGI_FORMAT_UNKNOWN) {}
-	virtual ~CDeviceResource()
-	{ Cleanup();  }
+	CDeviceResource() {}
+	virtual ~CDeviceResource() { Cleanup();  }
 
 	SResourceLayout     GetLayout() const;
 
@@ -120,6 +118,11 @@ public:
 
 	inline D3DResource* GetNativeResource() const
 	{
+#if DURANGO_USE_ESRAM
+		if (m_bIsResident)
+			return m_pNativeResourceESRAM;
+#endif
+
 		return m_pNativeResource;
 	}
 
@@ -152,6 +155,21 @@ public:
 
 	ESubstitutionResult SubstituteUsedResource();
 
+#if DURANGO_USE_ESRAM
+	enum EResidencyCoherence
+	{
+		eResCoherence_Uninitialize,
+		eResCoherence_Abandon = eResCoherence_Uninitialize,
+		eResCoherence_Clear,
+		eResCoherence_Transfer
+	};
+
+	bool IsESRAMResident();
+	bool AcquireESRAMResidency(EResidencyCoherence residencyEntry, ColorF m_cClearColor, uint32 numBytes, uint32 alignment);
+	bool ForfeitESRAMResidency(EResidencyCoherence residencyExit , ColorF m_cClearColor);
+	bool TransferESRAMAllocation(CDeviceResource& target);
+#endif
+
 protected:
 	enum
 	{
@@ -160,8 +178,13 @@ protected:
 		eSubResource_Num
 	};
 
-	D3DResource*  m_pNativeResource;
-	D3DFormat     m_eNativeFormat;
+	D3DResource*  m_pNativeResource      = nullptr;
+#if DURANGO_USE_ESRAM
+	D3DResource*  m_pNativeResourceESRAM = nullptr;
+	SESRAMAllocation m_ESRAMAllocation;
+#endif
+
+	D3DFormat     m_eNativeFormat = DXGI_FORMAT_UNKNOWN;
 	uint32        m_eFlags;
 	buffer_size_t m_resourceElements; // For buffers: in bytes; for textures: in texels
 	uint16        m_subResources[eSubResource_Num];
@@ -170,8 +193,15 @@ protected:
 	bool          m_bIsSrgb     : 1;
 	bool          m_bAllowSrgb  : 1;
 	bool          m_bIsMSAA     : 1;
+#if DURANGO_USE_ESRAM
+	bool          m_bIsResident : 1;
+#endif
 
 	int32 Cleanup();
+
+#if DURANGO_USE_ESRAM
+	void CleanupESRAMResource();
+#endif
 
 	////////////////////////////////////////////////////////////////////////////
 	// ResourceView API
@@ -210,18 +240,12 @@ struct RenderTargetData
 		uint8 m_nMSAAQuality : 4;
 	};
 
-#if CRY_PLATFORM_DURANGO && DURANGO_USE_ESRAM
-	int32           m_nESRAMOffset;
-#endif
 	CDeviceTexture* m_pDeviceTextureMSAA;
 
 	RenderTargetData()
 	{
 		memset(this, 0, sizeof(*this));
 		m_nRTSetFrameID = -1;
-#if CRY_PLATFORM_DURANGO && DURANGO_USE_ESRAM
-		m_nESRAMOffset = SKIP_ESRAM;
-#endif
 	}
 
 	~RenderTargetData();
@@ -237,10 +261,6 @@ struct SBufferLayout
 	uint16        m_elementSize;
 
 	uint32        m_eFlags;           // e.g. CDeviceObjectFactory::BIND_VERTEX_BUFFER
-
-#if CRY_PLATFORM_DURANGO && DURANGO_USE_ESRAM
-	int32         m_eSRAMOffset;
-#endif
 };
 
 class CDeviceBuffer : public CDeviceResource
@@ -362,11 +382,6 @@ struct STextureLayout
 
 	// 128bits, [256,384)
 	ColorF            m_cClearColor;
-
-	// 32bits, [384,416)
-#if CRY_PLATFORM_DURANGO && DURANGO_USE_ESRAM
-	int32             m_nESRAMOffset;
-#endif
 };
 
 class CDeviceTexture : public CDeviceResource
@@ -508,27 +523,6 @@ public:
 #endif
 #endif
 
-#if CRY_PLATFORM_DURANGO && DURANGO_USE_ESRAM
-	// TODO: -> GetLayout()
-	void SetESRAMOffset(int32 offset)
-	{
-		if (m_pRenderTargetData)
-		{
-			m_pRenderTargetData->m_nESRAMOffset = offset;
-		}
-	}
-
-	int32 GetESRAMOffset()
-	{
-		if (m_pRenderTargetData)
-		{
-			return m_pRenderTargetData->m_nESRAMOffset;
-		}
-
-		return SKIP_ESRAM;
-	}
-#endif
-
 #if (CRY_RENDERER_DIRECT3D >= 110) && (CRY_RENDERER_DIRECT3D < 120) && CRY_PLATFORM_DURANGO
 	void InitD3DTexture();
 	bool IsInPool() const { return m_gpuHdl.IsValid(); }
@@ -653,13 +647,6 @@ class CDeviceTextureGpuPin
 public:
 	CDeviceTextureGpuPin(ID3DXboxPerformanceContext* pCtx, CDeviceTexture* pDevTex)
 		: m_pCtx(pCtx)
-		, m_pTexture(pDevTex)
-	{
-		pDevTex->GpuPin();
-	}
-
-	CDeviceTextureGpuPin(CCryPerformanceDeviceContextWrapper& ctx, CDeviceTexture* pDevTex)
-		: m_pCtx(ctx.GetRealPerformanceDeviceContext())
 		, m_pTexture(pDevTex)
 	{
 		pDevTex->GpuPin();

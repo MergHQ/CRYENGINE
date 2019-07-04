@@ -261,10 +261,6 @@ CHWShader* CHWShader::mfForName(const char* name, const char* nameSource, uint32
 		strName += AddStr.Format("(X1)");
 	else if (CParserBin::m_nPlatform == SF_D3D12)
 		strName += AddStr.Format("(X2)");
-	else if (CParserBin::m_nPlatform == SF_GL4)
-		strName + AddStr.Format("(G4)");
-	else if (CParserBin::m_nPlatform == SF_GLES3)
-		strName + AddStr.Format("(E3)");
 	else if (CParserBin::m_nPlatform == SF_VULKAN)
 		strName + AddStr.Format("(VK)");
 

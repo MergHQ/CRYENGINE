@@ -117,7 +117,7 @@ struct SPixFormatSupport
 
 	SPixFormat  m_FormatR9G9B9E5;                    // Shared exponent RGB
 
-#if CRY_RENDERER_OPENGL || CRY_RENDERER_VULKAN
+#if CRY_RENDERER_VULKAN
 	SPixFormat  m_FormatEAC_R11;                     // EAC compressed single channel for mobile, unsigned
 	SPixFormat  m_FormatEAC_R11S;                    // EAC compressed single channel for mobile, signed
 	SPixFormat  m_FormatEAC_RG11;                    // EAC compressed dual channel for mobile, unsigned

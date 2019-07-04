@@ -154,10 +154,6 @@ bool CD3D9Renderer::ChangeDisplayResolution(int nNewDisplayWidth, int nNewDispla
 
 		pBC->ChangeOutputIfNecessary(isFullscreen, IsVSynced());
 
-#if DURANGO_ENABLE_ASYNC_DIPS
-		WaitForAsynchronousDevice();
-#endif
-
 // 		OnD3D11PostCreateDevice(m_devInfo.Device());
 
 		if (isFullscreen)
@@ -215,29 +211,13 @@ void CD3D9Renderer::PostDeviceReset()
 //-----------------------------------------------------------------------------
 HRESULT CD3D9Renderer::ChangeWindowProperties(const int displayWidth, const int displayHeight)
 {
-#if CRY_PLATFORM_WINDOWS || CRY_RENDERER_OPENGL
+#if CRY_PLATFORM_WINDOWS
 	if (IsEditorMode())
 		return S_OK;
 #endif
 
-#if CRY_RENDERER_OPENGL
+#if CRY_PLATFORM_WINDOWS
 	CSwapChainBackedRenderDisplayContext* pDC = GetBaseDisplayContext();
-	const DXGI_SWAP_CHAIN_DESC& swapChainDesc(m_devInfo.SwapChainDesc());
-
-	DXGI_MODE_DESC modeDesc;
-	modeDesc.Width  = displayWidth;
-	modeDesc.Height = displayHeight;
-	modeDesc.RefreshRate = swapChainDesc.BufferDesc.RefreshRate;
-	modeDesc.Format = swapChainDesc.BufferDesc.Format;
-	modeDesc.ScanlineOrdering = swapChainDesc.BufferDesc.ScanlineOrdering;
-	modeDesc.Scaling = swapChainDesc.BufferDesc.Scaling;
-
-	HRESULT result = pDC->GetSwapChain()->ResizeTarget(&modeDesc);
-	if (FAILED(result))
-		return result;
-#elif CRY_PLATFORM_WINDOWS
-	CSwapChainBackedRenderDisplayContext* pDC = GetBaseDisplayContext();
-
 	HWND hwnd = (HWND)m_hWnd;
 	if (IsFullscreen())
 	{
@@ -304,7 +284,7 @@ bool compareDXGIMODEDESC(const DXGI_MODE_DESC& lhs, const DXGI_MODE_DESC& rhs)
 
 int CD3D9Renderer::EnumDisplayFormats(SDispFormat* formats)
 {
-#if CRY_PLATFORM_WINDOWS || CRY_RENDERER_OPENGL
+#if CRY_PLATFORM_WINDOWS
 
 	#if defined(SUPPORT_DEVICE_INFO)
 
@@ -365,9 +345,7 @@ void CD3D9Renderer::UnSetRes()
 
 void CD3D9Renderer::DestroyWindow(void)
 {
-#if defined(USE_SDL2_VIDEO) && (CRY_RENDERER_OPENGL || CRY_RENDERER_OPENGLES)
-	DXGLDestroySDLWindow(m_hWnd);
-#elif defined(USE_SDL2_VIDEO) && (CRY_RENDERER_VULKAN)
+#if defined(USE_SDL2_VIDEO) && (CRY_RENDERER_VULKAN)
 	VKDestroySDLWindow(m_hWnd);
 #elif CRY_PLATFORM_WINDOWS
 	if (gEnv && gEnv->pSystem && !m_bShaderCacheGen)
@@ -567,14 +545,6 @@ void CD3D9Renderer::ShutDownFast()
 	//CBaseResource::ShutDown();
 
 	SAFE_DELETE(m_pRT);
-
-#if CRY_RENDERER_OPENGL
-	#if !DXGL_FULL_EMULATION && !OGL_SINGLE_CONTEXT
-	if (CV_r_multithreaded)
-		DXGLReleaseContext(m_devInfo.Device());
-	#endif
-	m_devInfo.Release();
-#endif
 }
 
 static CryCriticalSection gs_contextLock;
@@ -647,14 +617,6 @@ void CD3D9Renderer::RT_ShutDown(uint32 nFlags)
 
 #if defined(SUPPORT_DEVICE_INFO)
 	//m_devInfo.Release();
-	#if CRY_RENDERER_OPENGL && !DXGL_FULL_EMULATION
-		#if OGL_SINGLE_CONTEXT
-	m_pRT->m_kDXGLDeviceContextHandle.Set(NULL);
-		#else
-	m_pRT->m_kDXGLDeviceContextHandle.Set(NULL, !CV_r_multithreaded);
-	m_pRT->m_kDXGLContextHandle.Set(NULL);
-		#endif
-	#endif
 #endif
 
 	// Shut Down all contexts.
@@ -664,13 +626,12 @@ void CD3D9Renderer::RT_ShutDown(uint32 nFlags)
 			pDisplayContext.second->ReleaseResources();
 	}
 
-#if !CRY_PLATFORM_ORBIS && !CRY_RENDERER_OPENGL
-	GetDeviceContext().ReleaseDeviceContext();
-#endif
-
 #if defined(ENABLE_NULL_D3D11DEVICE)
-	if (m_bShaderCacheGen)
-		GetDevice().ReleaseDevice();
+	if (m_bShaderCacheGen && m_pDevice != NULL)
+	{
+		m_pDevice->Release();
+		m_pDevice = NULL;
+	}
 #endif
 }
 
@@ -693,10 +654,6 @@ void CD3D9Renderer::ShutDown(bool bReInit)
 	//CBaseResource::ShutDown();
 	ForceFlushRTCommands();
 
-#ifdef USE_PIX_DURANGO
-	SAFE_RELEASE(m_pPixPerf);
-#endif
-
 	//////////////////////////////////////////////////////////////////////////
 	// Clear globals.
 	//////////////////////////////////////////////////////////////////////////
@@ -711,11 +668,6 @@ void CD3D9Renderer::ShutDown(bool bReInit)
 	}
 
 	SAFE_DELETE(m_pRT);
-
-#if CRY_RENDERER_OPENGL && !DXGL_FULL_EMULATION && !OGL_SINGLE_CONTEXT
-	if (CV_r_multithreaded)
-		DXGLReleaseContext(GetDevice().GetRealDevice());
-#endif
 
 	if (!m_DevBufMan.Shutdown())
 		CryWarning(VALIDATOR_MODULE_RENDERER, VALIDATOR_ERROR_DBGBRK, "could not free all buffers from CDevBufferMan!");
@@ -794,9 +746,7 @@ bool CD3D9Renderer::SetWindow(int width, int height)
 
 	GetISystem()->GetISystemEventDispatcher()->RegisterListener(this, "CD3DRenderer");
 
-#if USE_SDL2_VIDEO && (CRY_RENDERER_OPENGL || CRY_RENDERER_OPENGLES)
-	DXGLCreateSDLWindow(m_WinTitle, width, height, IsFullscreen(), &m_hWnd);
-#elif USE_SDL2_VIDEO && (CRY_RENDERER_VULKAN)
+#if USE_SDL2_VIDEO && (CRY_RENDERER_VULKAN)
 	VKCreateSDLWindow(m_WinTitle, width, height, IsFullscreen(), &m_hWnd);
 #elif CRY_PLATFORM_WINDOWS
 	DWORD style, exstyle;
@@ -1135,14 +1085,6 @@ CRY_HWND CD3D9Renderer::Init(int x, int y, int width, int height, unsigned int c
 
 	m_currWindowState = CalculateWindowState();
 
-#if (CRY_RENDERER_OPENGL || CRY_RENDERER_OPENGLES) && !DXGL_FULL_EMULATION
-	#if OGL_SINGLE_CONTEXT
-	DXGLInitialize(0);
-	#else
-	DXGLInitialize(CV_r_multithreaded ? 4 : 0);
-	#endif
-#endif //CRY_RENDERER_OPENGL && !DXGL_FULL_EMULATION
-
 	iLog->Log("Direct3D driver is creating...");
 	iLog->Log("Crytek Direct3D driver version %4.2f (%s <%s>)", VERSION_D3D, __DATE__, __TIME__);
 
@@ -1316,18 +1258,22 @@ CRY_HWND CD3D9Renderer::Init(int x, int y, int width, int height, unsigned int c
 		m_Features |= RFT_HW_SM40;
 
 #if defined(ENABLE_NULL_D3D11DEVICE)
-		m_DeviceWrapper.AssignDevice(new NullD3D11Device);
+		if (m_pDevice != NULL)
+			CryFatalError("Trying to assign two difference devices");
+		m_pDevice = new NullD3D11Device;
 		D3DDeviceContext* pContext = NULL;
 	#if (CRY_RENDERER_DIRECT3D >= 113)
-		GetDevice().GetImmediateContext3(&pContext);
+		GetDevice()->GetImmediateContext3(&pContext);
 	#elif (CRY_RENDERER_DIRECT3D >= 112)
-		GetDevice().GetImmediateContext2(&pContext);
+		GetDevice()->GetImmediateContext2(&pContext);
 	#elif (CRY_RENDERER_DIRECT3D >= 111)
-		GetDevice().GetImmediateContext1(&pContext);
+		GetDevice()->GetImmediateContext1(&pContext);
 	#else
-		GetDevice().GetImmediateContext(&pContext);
+		GetDevice()->GetImmediateContext(&pContext);
 	#endif
-		m_DeviceContextWrapper.AssignDeviceContext(pContext);
+		if (m_pDeviceContext != NULL && m_pDeviceContext != pContext)
+			CryFatalError("Trying to assign two difference devices context");
+		m_pDeviceContext = pContext;
 #endif
 	}
 
@@ -1374,16 +1320,6 @@ iLog->Log(" %s shader quality: %s", # name, sGetSQuality("q_Shader" # name)); } 
 	                 "Usage: GPUCapture name"
 	                 "Takes a PIX GPU capture with the specified name\n");
 #endif
-
-#if CRY_RENDERER_OPENGL && !DXGL_FULL_EMULATION
-	#if OGL_SINGLE_CONTEXT
-	if (!m_pRT->IsRenderThread())
-		DXGLUnbindDeviceContext(GetDeviceContext().GetRealDeviceContext());
-	#else
-	if (!m_pRT->IsRenderThread())
-		DXGLUnbindDeviceContext(GetDeviceContext().GetRealDeviceContext(), !CV_r_multithreaded);
-	#endif
-#endif //CRY_RENDERER_OPENGL && !DXGL_FULL_EMULATION
 
 	if (!bShaderCacheGen)
 	{
@@ -1457,7 +1393,7 @@ void CD3D9Renderer::InitAMDAPI()
 		HMODULE hDLL;
 		HRESULT hr = S_OK;
 		D3DDevice* device = NULL;
-		device = GetDevice().GetRealDevice();
+		device = GetDevice();
 
 	#if defined _WIN64
 		hDLL = GetModuleHandle("atidxx64.dll");
@@ -1528,7 +1464,7 @@ void CD3D9Renderer::InitNVAPI()
 	#if (CRY_RENDERER_DIRECT3D >= 110) && (CRY_RENDERER_DIRECT3D < 120)
 	// TODO: add DX12/Vulkan support
 	D3DDevice* device = NULL;
-	device = GetDevice().GetRealDevice();
+	device = GetDevice();
 	status = NvAPI_D3D_GetCurrentSLIState(device, &sliState);
 
 	if (status != NVAPI_OK)
@@ -1569,18 +1505,18 @@ bool CD3D9Renderer::CreateDeviceDurango()
 	ID3D12Device* pD3D12Device = nullptr;
 #endif
 
-	typedef HRESULT(WINAPI * FP_D3D11CreateDevice)(IDXGIAdapter*, D3D_DRIVER_TYPE, HMODULE, UINT, CONST D3D_FEATURE_LEVEL*, UINT, UINT, ID3D11Device**, D3D_FEATURE_LEVEL*, ID3D11DeviceContext**);
+	typedef HRESULT(WINAPI * FP_D3DCreateDevice)(IDXGIAdapter*, D3D_DRIVER_TYPE, HMODULE, UINT, CONST D3D_FEATURE_LEVEL*, UINT, UINT, ID3D11Device**, D3D_FEATURE_LEVEL*, ID3D11DeviceContext**);
 
-	FP_D3D11CreateDevice pD3D11CD =
+	FP_D3DCreateDevice pD3DCD =
 #if (CRY_RENDERER_DIRECT3D >= 120)
-		(FP_D3D11CreateDevice)DX12CreateDevice;
+		(FP_D3DCreateDevice)DX12CreateDevice;
 #else
-		(FP_D3D11CreateDevice)D3D11CreateDevice;
+		(FP_D3DCreateDevice)D3D11CreateDevice;
 #endif
 
-	if (pD3D11CD)
+	if (pD3DCD)
 	{
-		// On Durango we use an internal resolution of 720p but create a 1080p swap chain and do custom upscaling.
+		// On Durango we use a different internal resolution than the swap chain and do custom upscaling.
 		// This is required since the swap chain scaling does just point filtering and since the engine requires the
 		// backbuffer to be RGBA and not BGRA as required by the swap chain on Durango.
 
@@ -1604,7 +1540,7 @@ bool CD3D9Renderer::CreateDeviceDurango()
 
 		D3D_FEATURE_LEVEL featureLevel;
 
-		HRESULT hr = pD3D11CD(nullptr, driverType, 0, creationFlags, pFeatureLevels, uNumFeatureLevels, D3D11_SDK_VERSION, &pD3D11Device, &featureLevel, &pD3D11Context);
+		HRESULT hr = pD3DCD(nullptr, driverType, 0, creationFlags, pFeatureLevels, uNumFeatureLevels, D3D11_SDK_VERSION, &pD3D11Device, &featureLevel, &pD3D11Context);
 		if (SUCCEEDED(hr) && pD3D11Device && pD3D11Context)
 		{
 #if (CRY_RENDERER_DIRECT3D >= 120)
@@ -1644,50 +1580,40 @@ bool CD3D9Renderer::CreateDeviceDurango()
 	}
 
 	{
+		m_pDevice = reinterpret_cast<D3DDevice*>(pD3D11Device);
+		D3DDeviceContext* pDeviceContext = nullptr;
+		// TODOL check documentation if it is ok to ignore the context from create device? (both pointers are the same), some refcounting to look out for?
 #if (CRY_RENDERER_DIRECT3D >= 111)
-		// TODOL check documentation if it is ok to ignore the context from create device? (both pointers are the same), some refcounting to look out for?\	
-		ID3D11Device1* pDevice1 = static_cast<ID3D11Device1*>(pD3D11Device);
-		m_DeviceWrapper.AssignDevice(pDevice1);
-
-		D3DDeviceContext* pDeviceContext1 = nullptr;
-		GetDevice().GetImmediateContext1(&pDeviceContext1);
-		m_DeviceContextWrapper.AssignDeviceContext(pDeviceContext1);
+		GetDevice()->GetImmediateContext1(&pDeviceContext);
 #else
-		m_DeviceWrapper.AssignDevice(pD3D11Device);
-		m_DeviceContextWrapper.AssignDeviceContext(pDeviceContext);
+		GetDevice()->GetImmediateContext(&pDeviceContext);
 #endif
+		m_pDeviceContext = pDeviceContext;
 	}
 
 #if defined(DEVICE_SUPPORTS_PERFORMANCE_DEVICE)
 	{
 		// create performance context	and context
 		ID3DXboxPerformanceDevice* pPerformanceDevice = nullptr;
-		ID3DXboxPerformanceContext* pPerformanceDeviceContext = nullptr;
+		ID3DXboxPerformanceContext* pPerformanceContext = nullptr;
 
-		hr = GetDevice().QueryInterface(__uuidof(ID3DXboxPerformanceDevice), (void**)&pPerformanceDevice);
+		hr = GetDevice()->QueryInterface(__uuidof(ID3DXboxPerformanceDevice), (void**)&pPerformanceDevice);
 		assert(hr == S_OK);
 
-		hr = GetDeviceContext().QueryInterface(__uuidof(ID3DXboxPerformanceContext), (void**)&pPerformanceDeviceContext);
+		hr = GetDeviceContext()->QueryInterface(__uuidof(ID3DXboxPerformanceContext), (void**)&pPerformanceContext);
 		assert(hr == S_OK);
 
-		m_PerformanceDeviceWrapper.AssignPerformanceDevice(m_pPerformanceDevice = pPerformanceDevice);
-		m_PerformanceDeviceContextWrapper.AssignPerformanceDeviceContext(m_pPerformanceDeviceContext = pPerformanceDeviceContext);
+		m_pPerformanceDevice = pPerformanceDevice;
+		m_pPerformanceContext = pPerformanceContext;
 	}
 
-	hr = GetPerformanceDevice().SetDriverHint(XBOX_DRIVER_HINT_CONSTANT_BUFFER_OFFSETS_IN_CONSTANTS, 1);
+	hr = GetPerformanceDevice()->SetDriverHint(XBOX_DRIVER_HINT_CONSTANT_BUFFER_OFFSETS_IN_CONSTANTS, 1);
 	assert(hr == S_OK);
 #endif
 
-#ifdef USE_PIX_DURANGO
-	HRESULT res = GetDeviceContext().QueryInterface(__uuidof(ID3DUserDefinedAnnotation), reinterpret_cast<void**>(&m_pPixPerf));
-	assert(SUCCEEDED(res));
-#endif
-
-	m_DevMan.Init();
-
 	// Post device creation callbacks
-	OnD3D11CreateDevice(GetDevice().GetRealDevice());
-	OnD3D11PostCreateDevice(GetDevice().GetRealDevice());
+	OnD3D11CreateDevice(GetDevice());
+	OnD3D11PostCreateDevice(GetDevice());
 
 	return true;
 }
@@ -1750,30 +1676,16 @@ bool CD3D9Renderer::CreateDeviceGNM()
 
 	pDC->CreateSwapChain(pDC->GetDisplayResolution().x, pDC->GetDisplayResolution().y);
 
-	GetDevice().AssignDevice(gGnmDevice);
+	if (m_pDevice != NULL && m_pDevice != gGnmDevice)
+		CryFatalError("Trying to assign two difference devices");
+	m_pDevice = gGnmDevice;
 
-	BindContextToThread(CryGetCurrentThreadId());
-	m_DeviceContextWrapper.AssignDeviceContext(gGnmDevice);
+	if (m_pDeviceContext != NULL && m_pDeviceContext != gGnmDevice)
+		CryFatalError("Trying to assign two difference devices context");
+	m_pDeviceContext = gGnmDevice;
 
 	OnD3D11CreateDevice(gGnmDevice);
 	OnD3D11PostCreateDevice(gGnmDevice);
-
-	return true;
-}
-#elif CRY_PLATFORM_ORBIS
-bool CD3D9Renderer::CreateDeviceOrbis()
-{
-	auto* pDC = GetBaseDisplayContext();
-
-	DXOrbis::CreateCCryDXOrbisRenderDevice();
-	DXOrbis::CreateCCryDXOrbisSwapChain();
-	DXOrbis::Device()->RegisterDeviceThread();
-
-	GetDevice().AssignDevice(nullptr);
-	GetDeviceContext().AssignDeviceContext(nullptr);
-
-	OnD3D11CreateDevice(GetDevice().GetRealDevice());
-	OnD3D11PostCreateDevice(GetDevice().GetRealDevice());
 
 	return true;
 }
@@ -1803,11 +1715,6 @@ bool CD3D9Renderer::CreateDevice()
 #elif CRY_RENDERER_GNM
 	if (!CreateDeviceGNM())
 		return false;
-
-#elif CRY_PLATFORM_ORBIS
-	if (!CreateDeviceOrbis())
-		return false;
-
 #else
 	#error UNKNOWN RENDER DEVICE PLATFORM
 #endif
@@ -1884,11 +1791,11 @@ HRESULT CALLBACK CD3D9Renderer::OnD3D11CreateDevice(D3DDevice* pd3dDevice)
 {
 	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 	CD3D9Renderer* rd = gcpRendD3D;
-	rd->m_DeviceWrapper.AssignDevice(pd3dDevice);
+	rd->m_pDevice = pd3dDevice;
 	GetDeviceObjectFactory().AssignDevice(pd3dDevice);
 
 #if defined(SUPPORT_DEVICE_INFO)
-	rd->m_DeviceContextWrapper.AssignDeviceContext(rd->m_devInfo.Context());
+	rd->m_pDeviceContext = rd->m_devInfo.Context();
 #endif
 	rd->m_Features |= RFT_OCCLUSIONQUERY | RFT_ALLOWANISOTROPIC | RFT_HW_SM40 | RFT_HW_SM50;
 
@@ -1903,8 +1810,6 @@ HRESULT CALLBACK CD3D9Renderer::OnD3D11CreateDevice(D3DDevice* pd3dDevice)
 	GetDeviceObjectFactory().AllocatePredefinedInputLayouts();
 
 #if defined(SUPPORT_DEVICE_INFO)
-	rd->BindContextToThread(CryGetCurrentThreadId());
-
 	LARGE_INTEGER driverVersion;
 	driverVersion.LowPart = 0;
 	driverVersion.HighPart = 0;
@@ -1992,13 +1897,9 @@ HRESULT CALLBACK CD3D9Renderer::OnD3D11CreateDevice(D3DDevice* pd3dDevice)
 	rd->m_bDeviceSupportsInstancing = true;
 #endif
 
-#if !CRY_RENDERER_OPENGLES
 	rd->m_bDeviceSupportsGeometryShaders = (rd->m_Features & RFT_HW_SM40) != 0;
-#else
-	rd->m_bDeviceSupportsGeometryShaders = false;
-#endif
 
-#if !CRY_RENDERER_OPENGL && !CRY_RENDERER_VULKAN
+#if !CRY_RENDERER_VULKAN
 	rd->m_bDeviceSupportsTessellation = (rd->m_Features & RFT_HW_SM50) != 0;
 #else
 	rd->m_bDeviceSupportsTessellation = false;
@@ -2046,10 +1947,6 @@ HRESULT CALLBACK CD3D9Renderer::OnD3D11PostCreateDevice(D3DDevice* pd3dDevice)
 	pDC->m_nSSSamplesX = CV_r_Supersampling;
 	pDC->m_nSSSamplesY = CV_r_Supersampling;
 	pDC->m_bMainViewport = true;
-
-#if DX11_WRAPPABLE_INTERFACE && CAPTURE_REPLAY_LOG
-	rd->MemReplayWrapD3DDevice();
-#endif
 
 	// Force resize
 	const auto displayWidth = pDC->GetDisplayResolution().x;

@@ -17,7 +17,6 @@ class CHWShader_D3D;
 class CShader;
 class CTexture;
 class CCryNameTSCRC;
-class CCryDeviceWrapper;
 class CConstantBuffer;
 class CDeviceBuffer;
 class CDeviceTexture;
@@ -162,7 +161,9 @@ struct STexturePayload
 
 ////////////////////////////////////////////////////////////////////////////
 
-const int ResourceSetBufferCount = 8;
+const int ResourceSetMaxUavCount = 8;      // Maximum number of UAVs per resource set. Internal Dx11 limitation, increase if necessary
+const int ResourceSetMaxSrvCount = 64;     // Internal limitation
+const int ResourceSetMaxSamplerCount = 16; // Maximum number of Samplers per resource set. Dx11 limitation, DO NOT CHANGE!
 
 class CDeviceResourceSetDesc : NoCopy
 {

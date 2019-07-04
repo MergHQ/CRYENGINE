@@ -140,10 +140,6 @@ const char* CShaderSrv::GetPlatform() const
 		szTarget = "D3D11";
 	else if (CParserBin::m_nPlatform == SF_D3D12)
 		szTarget = "D3D12";
-	else if (CParserBin::m_nPlatform == SF_GL4)
-		szTarget = "GL4";
-	else if (CParserBin::m_nPlatform == SF_GLES3)
-		szTarget = "GLES3";
 	else if (CParserBin::m_nPlatform == SF_VULKAN)
 		szTarget = "VULKAN";
 

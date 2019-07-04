@@ -568,7 +568,7 @@ public:
 		{
 			DXGI_FORMAT_UNKNOWN, s_PoolConfig.m_pool_bank_size, 1,
 			CDeviceObjectFactory::USAGE_HIFREQ_HEAP |
-#if (CRY_RENDERER_DIRECT3D >= 120)
+#if defined(CRY_RENDERER_DIRECT3D)
 			CDeviceObjectFactory::USAGE_CPU_READ /* BIND_FLAGS */ // NOTE: this is a staging buffer, no bind-flags are allowed
 #else
 			CDeviceObjectFactory::USAGE_CPU_READ  | BIND_FLAGS    // NOTE: this is for CPU-to-GPU uploads
@@ -810,7 +810,7 @@ public:
 		{
 			DXGI_FORMAT_UNKNOWN, s_PoolConfig.m_pool_bank_size, 1,
 			CDeviceObjectFactory::USAGE_HIFREQ_HEAP |
-#if (CRY_RENDERER_DIRECT3D >= 120)
+#if defined(CRY_RENDERER_DIRECT3D)
 			CDeviceObjectFactory::USAGE_CPU_READ /* BIND_FLAGS */ // NOTE: this is a staging buffer, no bind-flags are allowed
 #else
 			CDeviceObjectFactory::USAGE_CPU_READ  | BIND_FLAGS    // NOTE: this is for CPU-to-GPU uploads
@@ -2717,7 +2717,7 @@ public:
 	bool FreeResources() final
 	{
 		// NOTE: Context could have been freed by ShutDown()
-		if (gcpRendD3D->GetDeviceContext().IsValid())
+		if (gcpRendD3D->GetDeviceContext())
 		{
 			CDeviceObjectFactory::ReleaseBasePointer(m_backing_buffer.m_buffer->GetBuffer());
 		}
@@ -3050,7 +3050,7 @@ public:
 		NCryDX12::CDescriptorBlock& block = blockList.blocks[itemHandle];
 		if (block.GetCapacity() == 0)
 		{
-			NCryDX12::CDevice* pDevice = reinterpret_cast<CCryDX12Device*>(gcpRendD3D->GetDevice().GetRealDevice())->GetDX12Device();
+			NCryDX12::CDevice* pDevice = reinterpret_cast<CCryDX12Device*>(gcpRendD3D->GetDevice())->GetDX12Device();
 			block = pDevice->GetGlobalDescriptorBlock(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, size);
 		}
 
@@ -4322,6 +4322,9 @@ void CGpuBuffer::Release()
 	m_eFlags = 0;
 	m_bLocked = false;
 	m_eMapMode = D3D11_MAP(0);
+#if DURANGO_USE_ESRAM
+	m_nESRAMSize = 0;
+#endif
 
 	InvalidateDeviceResource(this, eDeviceResourceDirty);
 }

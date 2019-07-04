@@ -1434,16 +1434,10 @@ void CRenderStatsWidget::Update()
 		break;
 #endif
 #if CRY_PLATFORM_MOBILE
-	case ERenderType::OpenGL:
-		pRenderType = "Mobile - OpenGL";
-		break;
 	case ERenderType::Vulkan:
 		pRenderType = "Mobile - Vulkan";
 		break;
 #else
-	case ERenderType::OpenGL:
-		pRenderType = "PC - OpenGL";
-		break;
 	case ERenderType::Vulkan:
 		pRenderType = "PC - Vulkan";
 		break;

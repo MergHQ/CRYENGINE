@@ -27,9 +27,9 @@ void CTexture::InitStreamingDev()
 #if defined(TEXSTRM_DEFERRED_UPLOAD)
 	if (CRenderer::CV_r_texturesstreamingDeferred)
 	{
-		if (gcpRendD3D->GetDevice().IsValid() && !s_pStreamDeferredCtx)
+		if (gcpRendD3D->GetDevice() && !s_pStreamDeferredCtx)
 		{
-			gcpRendD3D->GetDevice().CreateDeferredContext(0, &s_pStreamDeferredCtx);
+			gcpRendD3D->GetDevice()->CreateDeferredContext(0, &s_pStreamDeferredCtx);
 		}
 	}
 #endif
@@ -259,7 +259,7 @@ void CTexture::StreamActivateLod(int8 nMinMip)
 		pItem->m_nActiveLod = nDevMip;
 
 		//D3DDevice* dv = gcpRendD3D->GetD3DDevice();
-		//gcpRendD3D->GetDeviceContext().SetResourceMinLOD(m_pDevTexture->GetBaseTexture(), (FLOAT)nDevMip);
+		//gcpRendD3D->GetDeviceContext()->SetResourceMinLOD(m_pDevTexture->GetBaseTexture(), (FLOAT)nDevMip);
 	}
 
 	m_nMinMipVidActive = nMinMip;
@@ -302,9 +302,6 @@ void CTexture::StreamCopyMipsTexToMem(int8 nStartMip, int8 nEndMip, bool bToDevi
 	{
 		STextureLayout Layout = GetLayout();
 
-#if CRY_PLATFORM_DURANGO && DURANGO_USE_ESRAM
-		Layout.m_nESRAMOffset = SKIP_ESRAM;
-#endif
 		Layout.m_eFlags |= FT_STREAMED_FADEIN /* CDeviceObjectFactory::USAGE_STREAMING */;
 		Layout.m_eDstFormat = CTexture::GetClosestFormatSupported(Layout.m_eDstFormat, Layout.m_pPixelFormat);
 
@@ -483,7 +480,7 @@ ID3D11CommandList* CTexture::StreamCreateDeferred(int8 nStartMip, int8 nEndMip, 
 void CTexture::StreamApplyDeferred(ID3D11CommandList* pCmdList)
 {
 	FUNCTION_PROFILER_RENDERER();
-	gcpRendD3D->GetDeviceContext().ExecuteCommandList(pCmdList, TRUE);
+	gcpRendD3D->GetDeviceContext()->ExecuteCommandList(pCmdList, TRUE);
 }
 
 #endif
@@ -707,13 +704,13 @@ void CTexture::StreamCopyMipsTexToTex(STexPoolItem* const pSrcItem, int8 nSrcMip
 	{
 		// We can use the move engine!
 		UINT64 fence = StreamCopyMipsTexToTex_MoveEngine(pSrcItem, nSrcMipOffset, pDstItem, nDstMipOffset, nNumMips);
-		while (gcpRendD3D->GetPerformanceDevice().IsFencePending(fence))
+		while (gcpRendD3D->GetPerformanceDevice()->IsFencePending(fence))
 			CrySleep(1);
 	}
 #endif
 	else
 	{
-		GPUPIN_DEVICE_TEXTURE(gcpRendD3D->GetPerformanceDeviceContext(), pDstItem->m_pDevTexture);
+		GPUPIN_DEVICE_TEXTURE(gcpRendD3D->GetPerformanceContext(), pDstItem->m_pDevTexture);
 
 		for (uint32 iSlice = 0; iSlice < nSrcNumSlices; ++iSlice)
 			CopySliceChain(

@@ -29,9 +29,6 @@ void CGraphicsPipelineResources::Init()
 	m_pTexSceneNormalsMap = CTexture::GetOrCreateTextureObject(m_graphicsPipeline.MakeUniqueTexIdentifierName("$SceneNormalsMap").c_str(), 0, 0, 1, eTT_2D, nRTFlags, eTF_R8G8B8A8, TO_SCENE_NORMALMAP);
 	m_pTexSceneDiffuse = CTexture::GetOrCreateTextureObject(m_graphicsPipeline.MakeUniqueTexIdentifierName("$SceneDiffuse").c_str(), 0, 0, 1, eTT_2D, nRTFlags, eTF_R8G8B8A8);
 	m_pTexSceneSpecular = CTexture::GetOrCreateTextureObject(m_graphicsPipeline.MakeUniqueTexIdentifierName("$SceneSpecular").c_str(), 0, 0, 1, eTT_2D, nRTFlags, eTF_R8G8B8A8);
-#if defined(DURANGO_USE_ESRAM)
-	m_pTexSceneSpecularESRAM = CTexture::GetOrCreateTextureObject(m_graphicsPipeline.MakeUniqueTexIdentifierName("$SceneSpecularESRAM").c_str(), 0, 0, 1, eTT_2D, nRTFlags, eTF_R8G8B8A8);
-#endif
 
 	m_pTexLinearDepth = CTexture::GetOrCreateTextureObject(m_graphicsPipeline.MakeUniqueTexIdentifierName("$ZTarget").c_str(), 0, 0, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_RENDERTARGET, eTF_Unknown);
 	m_pTexHDRTarget = CTexture::GetOrCreateTextureObject(m_graphicsPipeline.MakeUniqueTexIdentifierName("$HDRTarget").c_str(), 0, 0, 1, eTT_2D, nRTFlags, eTF_Unknown);
@@ -80,31 +77,6 @@ void CGraphicsPipelineResources::Init()
 
 	m_pTexWaterVolumeRefl[0] = CTexture::GetOrCreateTextureObject(m_graphicsPipeline.MakeUniqueTexIdentifierName("$WaterVolumeRefl").c_str(), 64, 64, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_RENDERTARGET | FT_FORCE_MIPS, eTF_Unknown, TO_WATERVOLUMEREFLMAP);
 	m_pTexWaterVolumeRefl[1] = CTexture::GetOrCreateTextureObject(m_graphicsPipeline.MakeUniqueTexIdentifierName("$WaterVolumeReflPrev").c_str(), 64, 64, 1, eTT_2D, FT_DONT_RELEASE | FT_DONT_STREAM | FT_USAGE_RENDERTARGET | FT_FORCE_MIPS, eTF_Unknown, TO_WATERVOLUMEREFLMAPPREV);
-
-#if CRY_PLATFORM_DURANGO && DURANGO_USE_ESRAM
-	// Assign ESRAM offsets
-	if (CRenderer::CV_r_useESRAM)
-	{
-		// Precomputed offsets, using xg library and aligned to 4k
-		//     1600x900 RGBA16F:  11894784
-		//     1600x900 RGBA8:     5955584
-
-		if (gRenDev->GetWidth() <= 1600 && gRenDev->GetHeight() <= 900)
-		{
-			m_pTexHDRTarget->SetESRAMOffset(0);
-			m_pTexSceneSpecularESRAM->SetESRAMOffset(0);
-			m_pTexSceneNormalsMap->SetESRAMOffset(11894784 + 5955584 * 0);
-			m_pTexSceneDiffuse->SetESRAMOffset(11894784 + 5955584 * 1);
-			// Depth target uses: 11894784 + 5955584 * 2
-		}
-		else
-		{
-			iLog->LogError("Disabling ESRAM since resolution is larger than 1600x900");
-			assert(0);
-		}
-	}
-#endif
-
 
 	CreateResources(0, 0);
 }
@@ -164,9 +136,6 @@ void CGraphicsPipelineResources::CreateDeferredMaps(int resourceWidth, int resou
 	SD3DPostEffectsUtils::GetOrCreateRenderTarget(m_graphicsPipeline.MakeUniqueTexIdentifierName("$SceneNormalsMap").c_str(), m_pTexSceneNormalsMap, width, height, Clr_Unknown, true, false, eTF_R8G8B8A8, TO_SCENE_NORMALMAP, FT_USAGE_ALLOWREADSRGB);
 	SD3DPostEffectsUtils::GetOrCreateRenderTarget(m_graphicsPipeline.MakeUniqueTexIdentifierName("$SceneDiffuse").c_str(), m_pTexSceneDiffuse, width, height, Clr_Empty, true, false, eTF_R8G8B8A8, -1, FT_USAGE_ALLOWREADSRGB);
 	SD3DPostEffectsUtils::GetOrCreateRenderTarget(m_graphicsPipeline.MakeUniqueTexIdentifierName("$SceneSpecular").c_str(), m_pTexSceneSpecular, width, height, Clr_Empty, true, false, eTF_R8G8B8A8, -1, FT_USAGE_ALLOWREADSRGB);
-#if defined(DURANGO_USE_ESRAM)
-	SD3DPostEffectsUtils::GetOrCreateRenderTarget(m_graphicsPipeline.MakeUniqueTexIdentifierName("$SceneSpecularESRAM").c_str(), m_pTexSceneSpecularESRAM, width, height, Clr_Empty, true, false, eTF_R8G8B8A8, -1);
-#endif
 	SD3DPostEffectsUtils::GetOrCreateRenderTarget(m_graphicsPipeline.MakeUniqueTexIdentifierName("$VelocityObjects").c_str(), m_pTexVelocityObjects[0], width, height, Clr_Transparent, true, false, eTF_R16G16F, -1, FT_USAGE_UNORDERED_ACCESS);
 	if (gRenDev->IsStereoEnabled())
 	{
@@ -512,50 +481,50 @@ void CGraphicsPipelineResources::Discard()
 	// DISCARD RESOURCES
 	//------------------------------------------------------------------------------
 #if (CRY_RENDERER_DIRECT3D >= 111)
-	gcpRendD3D->GetDeviceContext().DiscardResource(m_pTexHDRTarget->GetDevTexture(false)->GetNativeResource());
-	gcpRendD3D->GetDeviceContext().DiscardResource(m_pTexHDRTargetPrev->GetDevTexture(false)->GetNativeResource());
-	gcpRendD3D->GetDeviceContext().DiscardResource(m_pTexHDRTargetMasked->GetDevTexture(false)->GetNativeResource());
-	gcpRendD3D->GetDeviceContext().DiscardResource(m_pTexLinearDepth->GetDevTexture(false)->GetNativeResource());
-	gcpRendD3D->GetDeviceContext().DiscardResource(m_pTexSceneDiffuse->GetDevTexture(false)->GetNativeResource());
-	gcpRendD3D->GetDeviceContext().DiscardResource(m_pTexSceneNormalsMap->GetDevTexture(false)->GetNativeResource());
-	gcpRendD3D->GetDeviceContext().DiscardResource(m_pTexSceneSpecular->GetDevTexture(false)->GetNativeResource());
-	gcpRendD3D->GetDeviceContext().DiscardResource(m_pTexVelocityObjects[0]->GetDevTexture(false)->GetNativeResource());
-	gcpRendD3D->GetDeviceContext().DiscardResource(m_pTexVelocityObjects[1]->GetDevTexture(false)->GetNativeResource());
-	gcpRendD3D->GetDeviceContext().DiscardResource(m_pTexShadowMask->GetDevTexture(false)->GetNativeResource());
-	gcpRendD3D->GetDeviceContext().DiscardResource(m_pTexSceneNormalsBent->GetDevTexture(false)->GetNativeResource());
-	gcpRendD3D->GetDeviceContext().DiscardResource(m_pTexLinearDepthScaled[0]->GetDevTexture(false)->GetNativeResource());
-	gcpRendD3D->GetDeviceContext().DiscardResource(m_pTexLinearDepthScaled[1]->GetDevTexture(false)->GetNativeResource());
-	gcpRendD3D->GetDeviceContext().DiscardResource(m_pTexLinearDepthScaled[2]->GetDevTexture(false)->GetNativeResource());
-	gcpRendD3D->GetDeviceContext().DiscardResource(m_pTexSceneDepthScaled[0]->GetDevTexture(false)->GetNativeResource());
-	gcpRendD3D->GetDeviceContext().DiscardResource(m_pTexSceneDepthScaled[1]->GetDevTexture(false)->GetNativeResource());
-	gcpRendD3D->GetDeviceContext().DiscardResource(m_pTexSceneDepthScaled[2]->GetDevTexture(false)->GetNativeResource());
-	gcpRendD3D->GetDeviceContext().DiscardResource(m_pTexClipVolumes->GetDevTexture(false)->GetNativeResource());
-	gcpRendD3D->GetDeviceContext().DiscardResource(m_pTexAOColorBleed->GetDevTexture(false)->GetNativeResource());
-	gcpRendD3D->GetDeviceContext().DiscardResource(m_pTexSceneDiffuseTmp->GetDevTexture(false)->GetNativeResource());
-	gcpRendD3D->GetDeviceContext().DiscardResource(m_pTexSceneSpecularTmp[0]->GetDevTexture(false)->GetNativeResource());
-	gcpRendD3D->GetDeviceContext().DiscardResource(m_pTexSceneSpecularTmp[1]->GetDevTexture(false)->GetNativeResource());
-	gcpRendD3D->GetDeviceContext().DiscardResource(m_pTexDisplayTargetScaled[0]->GetDevTexture(false)->GetNativeResource());
-	gcpRendD3D->GetDeviceContext().DiscardResource(m_pTexDisplayTargetScaled[1]->GetDevTexture(false)->GetNativeResource());
-	gcpRendD3D->GetDeviceContext().DiscardResource(m_pTexDisplayTargetScaled[2]->GetDevTexture(false)->GetNativeResource());
-	gcpRendD3D->GetDeviceContext().DiscardResource(m_pTexDisplayTargetDst->GetDevTexture(false)->GetNativeResource());
-	gcpRendD3D->GetDeviceContext().DiscardResource(m_pTexDisplayTargetSrc-> GetDevTexture(false)->GetNativeResource());
-	gcpRendD3D->GetDeviceContext().DiscardResource(m_pTexSceneSelectionIDs->GetDevTexture(false)->GetNativeResource());
-	gcpRendD3D->GetDeviceContext().DiscardResource(m_pTexSceneTargetR11G11B10F[0]->GetDevTexture(false)->GetNativeResource());
-	gcpRendD3D->GetDeviceContext().DiscardResource(m_pTexSceneTargetR11G11B10F[1]->GetDevTexture(false)->GetNativeResource());
-	gcpRendD3D->GetDeviceContext().DiscardResource(m_pTexLinearDepthFixup->GetDevTexture(false)->GetNativeResource());
-	gcpRendD3D->GetDeviceContext().DiscardResource(m_pTexSceneTarget->GetDevTexture(false)->GetNativeResource());
+	gcpRendD3D->GetDeviceContext()->DiscardResource(m_pTexHDRTarget->GetDevTexture(false)->GetNativeResource());
+	gcpRendD3D->GetDeviceContext()->DiscardResource(m_pTexHDRTargetPrev->GetDevTexture(false)->GetNativeResource());
+	gcpRendD3D->GetDeviceContext()->DiscardResource(m_pTexHDRTargetMasked->GetDevTexture(false)->GetNativeResource());
+	gcpRendD3D->GetDeviceContext()->DiscardResource(m_pTexLinearDepth->GetDevTexture(false)->GetNativeResource());
+	gcpRendD3D->GetDeviceContext()->DiscardResource(m_pTexSceneDiffuse->GetDevTexture(false)->GetNativeResource());
+	gcpRendD3D->GetDeviceContext()->DiscardResource(m_pTexSceneNormalsMap->GetDevTexture(false)->GetNativeResource());
+	gcpRendD3D->GetDeviceContext()->DiscardResource(m_pTexSceneSpecular->GetDevTexture(false)->GetNativeResource());
+	gcpRendD3D->GetDeviceContext()->DiscardResource(m_pTexVelocityObjects[0]->GetDevTexture(false)->GetNativeResource());
+	gcpRendD3D->GetDeviceContext()->DiscardResource(m_pTexVelocityObjects[1]->GetDevTexture(false)->GetNativeResource());
+	gcpRendD3D->GetDeviceContext()->DiscardResource(m_pTexShadowMask->GetDevTexture(false)->GetNativeResource());
+	gcpRendD3D->GetDeviceContext()->DiscardResource(m_pTexSceneNormalsBent->GetDevTexture(false)->GetNativeResource());
+	gcpRendD3D->GetDeviceContext()->DiscardResource(m_pTexLinearDepthScaled[0]->GetDevTexture(false)->GetNativeResource());
+	gcpRendD3D->GetDeviceContext()->DiscardResource(m_pTexLinearDepthScaled[1]->GetDevTexture(false)->GetNativeResource());
+	gcpRendD3D->GetDeviceContext()->DiscardResource(m_pTexLinearDepthScaled[2]->GetDevTexture(false)->GetNativeResource());
+	gcpRendD3D->GetDeviceContext()->DiscardResource(m_pTexSceneDepthScaled[0]->GetDevTexture(false)->GetNativeResource());
+	gcpRendD3D->GetDeviceContext()->DiscardResource(m_pTexSceneDepthScaled[1]->GetDevTexture(false)->GetNativeResource());
+	gcpRendD3D->GetDeviceContext()->DiscardResource(m_pTexSceneDepthScaled[2]->GetDevTexture(false)->GetNativeResource());
+	gcpRendD3D->GetDeviceContext()->DiscardResource(m_pTexClipVolumes->GetDevTexture(false)->GetNativeResource());
+	gcpRendD3D->GetDeviceContext()->DiscardResource(m_pTexAOColorBleed->GetDevTexture(false)->GetNativeResource());
+	gcpRendD3D->GetDeviceContext()->DiscardResource(m_pTexSceneDiffuseTmp->GetDevTexture(false)->GetNativeResource());
+	gcpRendD3D->GetDeviceContext()->DiscardResource(m_pTexSceneSpecularTmp[0]->GetDevTexture(false)->GetNativeResource());
+	gcpRendD3D->GetDeviceContext()->DiscardResource(m_pTexSceneSpecularTmp[1]->GetDevTexture(false)->GetNativeResource());
+	gcpRendD3D->GetDeviceContext()->DiscardResource(m_pTexDisplayTargetScaled[0]->GetDevTexture(false)->GetNativeResource());
+	gcpRendD3D->GetDeviceContext()->DiscardResource(m_pTexDisplayTargetScaled[1]->GetDevTexture(false)->GetNativeResource());
+	gcpRendD3D->GetDeviceContext()->DiscardResource(m_pTexDisplayTargetScaled[2]->GetDevTexture(false)->GetNativeResource());
+	gcpRendD3D->GetDeviceContext()->DiscardResource(m_pTexDisplayTargetDst->GetDevTexture(false)->GetNativeResource());
+	gcpRendD3D->GetDeviceContext()->DiscardResource(m_pTexDisplayTargetSrc-> GetDevTexture(false)->GetNativeResource());
+	gcpRendD3D->GetDeviceContext()->DiscardResource(m_pTexSceneSelectionIDs->GetDevTexture(false)->GetNativeResource());
+	gcpRendD3D->GetDeviceContext()->DiscardResource(m_pTexSceneTargetR11G11B10F[0]->GetDevTexture(false)->GetNativeResource());
+	gcpRendD3D->GetDeviceContext()->DiscardResource(m_pTexSceneTargetR11G11B10F[1]->GetDevTexture(false)->GetNativeResource());
+	gcpRendD3D->GetDeviceContext()->DiscardResource(m_pTexLinearDepthFixup->GetDevTexture(false)->GetNativeResource());
+	gcpRendD3D->GetDeviceContext()->DiscardResource(m_pTexSceneTarget->GetDevTexture(false)->GetNativeResource());
 
 	for (int i = 0; i < MAX_GPU_NUM; ++i)
 	{
-		gcpRendD3D->GetDeviceContext().DiscardResource(m_pTexHDRMeasuredLuminance[i]->GetDevTexture(false)->GetNativeResource());
+		gcpRendD3D->GetDeviceContext()->DiscardResource(m_pTexHDRMeasuredLuminance[i]->GetDevTexture(false)->GetNativeResource());
 	}
 
 	for (int i = 0; i < 4; ++i)
 	{
 		for (int j = 0; j < 4; ++j)
 		{
-			gcpRendD3D->GetDeviceContext().DiscardResource(m_pTexHDRTargetScaled[i][j]->GetDevTexture(false)->GetNativeResource());
-			gcpRendD3D->GetDeviceContext().DiscardResource(m_pTexHDRTargetMaskedScaled[i][j]->GetDevTexture(false)->GetNativeResource());
+			gcpRendD3D->GetDeviceContext()->DiscardResource(m_pTexHDRTargetScaled[i][j]->GetDevTexture(false)->GetNativeResource());
+			gcpRendD3D->GetDeviceContext()->DiscardResource(m_pTexHDRTargetMaskedScaled[i][j]->GetDevTexture(false)->GetNativeResource());
 		}
 	}
 #endif
@@ -759,6 +728,32 @@ void CGraphicsPipeline::Update(EShaderRenderingFlags renderingFlags)
 			(*it)->Update();
 	}
 }
+
+#if DURANGO_USE_ESRAM
+//////////////////////////////////////////////////////////////////////////
+bool CGraphicsPipeline::UpdatePerPassResourceSet()
+{
+	bool result = true;
+	for (auto it = m_pipelineStages.begin(); it != m_pipelineStages.end(); ++it)
+	{
+		if (*it && (*it)->IsStageActive(m_renderingFlags))
+			result &= (*it)->UpdatePerPassResourceSet();
+	}
+	return result;
+}
+
+//////////////////////////////////////////////////////////////////////////
+bool CGraphicsPipeline::UpdateRenderPasses()
+{
+	bool result = true;
+	for (auto it = m_pipelineStages.begin(); it != m_pipelineStages.end(); ++it)
+	{
+		if (*it && (*it)->IsStageActive(m_renderingFlags))
+			result &= (*it)->UpdateRenderPasses();
+	}
+	return result;
+}
+#endif
 
 //////////////////////////////////////////////////////////////////////////
 void CGraphicsPipeline::OnCVarsChanged(const CCVarUpdateRecorder& rCVarRecs)

@@ -296,13 +296,11 @@ class IManager;
 //////////////////////////////////////////////////////////////////////
 #define R_DX11_RENDERER   0
 #define R_DX12_RENDERER   1
-#define R_GL_RENDERER     2
 #define R_VK_RENDERER     3
 #define R_GNM_RENDERER    4
 
 #define STR_DX11_RENDERER   "DX11"
 #define STR_DX12_RENDERER   "DX12"
-#define STR_GL_RENDERER     "GL"
 #define STR_VK_RENDERER     "VK"
 #define STR_GNM_RENDERER    "GNM"
 #define STR_AUTO_RENDERER   "Auto"
@@ -311,8 +309,6 @@ class IManager;
 #define STR_DURANGO_SHADER_TARGET "DURANGO"
 #define STR_D3D11_SHADER_TARGET   "D3D11"
 #define STR_D3D12_SHADER_TARGET   "D3D12"
-#define STR_GL4_SHADER_TARGET     "GL4"
-#define STR_GLES3_SHADER_TARGET   "GLES3"
 #define STR_VULKAN_SHADER_TARGET  "VULKAN"
 
 //////////////////////////////////////////////////////////////////////
@@ -724,7 +720,6 @@ enum class ERenderType : uint8
 	Undefined,
 	Direct3D11,
 	Direct3D12,
-	OpenGL,
 	Vulkan,
 	GNM
 };

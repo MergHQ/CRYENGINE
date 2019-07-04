@@ -760,8 +760,9 @@ private:
 	ColorF                    m_cMaxColor;
 	ColorF                    m_cClearColor;
 
-#if CRY_PLATFORM_DURANGO && DURANGO_USE_ESRAM
-	int32                     m_nESRAMOffset;
+#if DURANGO_USE_ESRAM
+	uint32                    m_nESRAMSize = 0;
+	uint32                    m_nESRAMAlignment;
 #endif
 
 	string                    m_SrcName;
@@ -852,14 +853,10 @@ public:
 			/* TODO: change FT_... to CDeviceObjectFactory::... */
 			m_eFlags, m_bIsSRGB,
 			m_cClearColor,
-#if CRY_PLATFORM_DURANGO && DURANGO_USE_ESRAM
-			m_nESRAMOffset
-#endif
 		};
 
 		return Layout;
 	}
-
 
 	virtual const char*     GetName() const              final { return GetSourceName(); }
 	virtual const int       GetWidth() const             final { return m_nWidth; }
@@ -902,11 +899,11 @@ public:
 	virtual const ColorF& GetClearColor() const                    final { return m_cClearColor; }
 	virtual void          SetClearColor(const ColorF& cClearColor) final { m_cClearColor = cClearColor; }
 
-#if CRY_PLATFORM_DURANGO && DURANGO_USE_ESRAM
-	// The only reason this access exists, is because RenderTargets are CTexture and not CDeviceTexture,
-	// and they are allocated deferred (CDevicetexture doesn't exist when ESRAM-location is configured)
-	void SetESRAMOffset(int32 offset) { m_nESRAMOffset = offset; if (m_pDevTexture) m_pDevTexture->SetESRAMOffset(offset); }
-	int32 GetESRAMOffset() { if (m_pDevTexture) return m_pDevTexture->GetESRAMOffset(); return m_nESRAMOffset; }
+#if DURANGO_USE_ESRAM
+	bool IsESRAMResident();
+	bool AcquireESRAMResidency(CDeviceResource::EResidencyCoherence residencyEntry);
+	bool ForfeitESRAMResidency(CDeviceResource::EResidencyCoherence residencyExit);
+	bool TransferESRAMAllocation(CTexture* target);
 #endif
 
 	virtual void          GetMemoryUsage(ICrySizer* pSizer) const;

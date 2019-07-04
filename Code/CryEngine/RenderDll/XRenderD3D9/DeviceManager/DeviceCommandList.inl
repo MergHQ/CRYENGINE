@@ -605,6 +605,11 @@ inline void CDeviceComputeCommandInterface::DiscardUAVContents(D3DBaseView* pVie
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+inline void CDeviceCopyCommandInterface::Copy(D3DResource* pSrc, D3DResource* pDst)
+{
+	CopyImpl(pSrc, pDst);
+}
+
 inline void CDeviceCopyCommandInterface::Copy(CDeviceBuffer* pSrc, CDeviceBuffer* pDst)
 {
 	CopyImpl(pSrc, pDst);
@@ -718,3 +723,23 @@ inline void CDeviceNvidiaCommandInterface::SetModifiedWMode(bool enabled, uint32
 	CRY_ASSERT(false, "Only supported on DirectX11, PC");
 #endif
 }
+
+#if ((CRY_RENDERER_DIRECT3D >= 110) && (CRY_RENDERER_DIRECT3D < 120))
+#if BUFFER_USE_STAGED_UPDATES == 0
+namespace detail
+{
+	template<> inline void safe_release<ID3D11Buffer>(ID3D11Buffer*& ptr)
+	{
+		if (ptr)
+		{
+			void* buffer_ptr = CDeviceObjectFactory::GetBackingStorage(ptr);
+			if (ptr->Release() == 0ul)
+			{
+				CDeviceObjectFactory::FreeBackingStorage(buffer_ptr);
+			}
+			ptr = NULL;
+		}
+	}
+}
+#endif
+#endif

@@ -134,9 +134,17 @@ public:
 	uint32 GetOrCreateRasterState(const D3D11_RASTERIZER_DESC& rasterizerDec, const bool bAllowMSAA = true);
 	uint32 GetOrCreateDepthState(const D3D11_DEPTH_STENCIL_DESC& desc);
 
-public:
-	std::vector<SStateBlend>      m_StatesBL;
-	std::vector<SStateRaster>     m_StatesRS;
-	std::vector<SStateDepth>      m_StatesDP;
+	inline const SStateBlend&  GetBlendState(uint32 index) const { return m_StatesBL[index]; }
+	inline const SStateRaster& GetRasterState(uint32 index) const { return m_StatesRS[index]; }
+	inline const SStateDepth&  GetDepthState(uint32 index) const { return m_StatesDP[index]; }
+
+private:
+	std::vector<SStateBlend>  m_StatesBL;
+	std::vector<SStateRaster> m_StatesRS;
+	std::vector<SStateDepth>  m_StatesDP;
+
+	CryCriticalSectionNonRecursive m_BlendStateCacheLock;
+	CryCriticalSectionNonRecursive m_RasterStateCacheLock;
+	CryCriticalSectionNonRecursive m_DepthStateCacheLock;
 };
 

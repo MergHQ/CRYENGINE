@@ -73,7 +73,7 @@ void CTiledLightVolumesStage::Init()
 {
 	// Cubemap Array(s) ==================================================================
 
-#if CRY_RENDERER_OPENGLES || CRY_PLATFORM_ANDROID
+#if CRY_PLATFORM_ANDROID
 	ETEX_Format textureAtlasFormatSpecDiff = eTF_R9G9B9E5;
 	ETEX_Format textureAtlasFormatSpot = eTF_EAC_R11;
 #else
@@ -310,14 +310,6 @@ void CTiledLightVolumesStage::Destroy(bool destroyResolutionIndependentResources
 void CTiledLightVolumesStage::Update()
 {
 	// Tiled Light Volumes ===============================================================
-
-	if (IsSeparateVolumeListGen())
-	{
-		const ColorI nulls = { 0, 0, 0, 0 };
-
-		CClearSurfacePass::Execute(&m_tileOpaqueLightMaskBuf, nulls);
-		CClearSurfacePass::Execute(&m_tileTranspLightMaskBuf, nulls);
-	}
 
 	GenerateLightList();
 }
@@ -1318,6 +1310,12 @@ void CTiledLightVolumesStage::ExecuteVolumeListGen(uint32 dispatchSizeX, uint32 
 		worldBasisY[i] = wBasisY;
 		worldBasisZ[i] = wBasisZ;
 		viewerPos[i]   = camPos;
+	}
+	{
+		const ColorI nulls = { 0, 0, 0, 0 };
+
+		CClearSurfacePass::Execute(&m_tileOpaqueLightMaskBuf, nulls);
+		CClearSurfacePass::Execute(&m_tileTranspLightMaskBuf, nulls);
 	}
 
 	{

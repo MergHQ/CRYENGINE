@@ -154,6 +154,14 @@ void CStandardGraphicsPipeline::Update(EShaderRenderingFlags renderingFlags)
 		m_changedCVars.Reset();
 	}
 
+#if DURANGO_USE_ESRAM
+	if (!CRendererResources::s_ptexNormalsFitting->IsESRAMResident())
+		CRendererResources::s_ptexNormalsFitting->AcquireESRAMResidency(CDeviceResource::eResCoherence_Transfer);
+	if (!CRendererResources::s_ptexPerlinNoiseMap->IsESRAMResident())
+		CRendererResources::s_ptexPerlinNoiseMap->AcquireESRAMResidency(CDeviceResource::eResCoherence_Transfer);
+	GetCurrentRenderView()->GetDepthTarget()->AcquireESRAMResidency(CDeviceResource::eResCoherence_Uninitialize);
+#endif
+
 	m_renderingFlags = renderingFlags;
 	CGraphicsPipeline::Update(renderingFlags);
 }
@@ -284,9 +292,6 @@ void CStandardGraphicsPipeline::Execute()
 	// GBuffer
 	GetStage<CSceneGBufferStage>()->Execute();
 
-	// Wait for GBuffer draw jobs to finish
-	renderItemDrawer.WaitForDrawSubmission();
-
 	// Issue split barriers for GBuffer
 	CTexture* pTextures[] = {
 		m_pipelineResources.m_pTexSceneNormalsMap,
@@ -297,7 +302,6 @@ void CStandardGraphicsPipeline::Execute()
 
 	CDeviceGraphicsCommandInterface* pCmdList = GetDeviceObjectFactory().GetCoreCommandList().GetGraphicsInterface();
 	pCmdList->BeginResourceTransitions(CRY_ARRAY_COUNT(pTextures), pTextures, eResTransition_TextureRead);
-
 	// Shadow maps
 	if (GetStage<CShadowMapStage>()->IsStageActive(m_renderingFlags))
 		GetStage<CShadowMapStage>()->Execute();
@@ -354,6 +358,13 @@ void CStandardGraphicsPipeline::Execute()
 	GetStage<CWaterStage>()->ExecuteWaterVolumeCaustics();
 
 	SetPipelineFlags(GetPipelineFlags() | EPipelineFlags::NO_SHADER_FOG);
+
+#if DURANGO_USE_ESRAM
+	m_pipelineResources.m_pTexLinearDepthScaled[0]->ForfeitESRAMResidency(CDeviceResource::eResCoherence_Transfer);
+	m_pipelineResources.m_pTexHDRTarget->AcquireESRAMResidency(CDeviceResource::eResCoherence_Uninitialize);
+	UpdatePerPassResourceSet();
+	UpdateRenderPasses();
+#endif
 
 	// Deferred shading
 	{
@@ -447,6 +458,13 @@ void CStandardGraphicsPipeline::Execute()
 			// CRendererResources::s_ptexDisplayTarget
 			GetStage<CSceneForwardStage>()->ExecuteAfterPostProcessHDR();
 
+#if DURANGO_USE_ESRAM
+			m_pipelineResources.m_pTexHDRTarget->ForfeitESRAMResidency(CDeviceResource::eResCoherence_Abandon);
+			m_pipelineResources.m_pTexLinearDepth->ForfeitESRAMResidency(CDeviceResource::eResCoherence_Abandon);
+			UpdatePerPassResourceSet();
+			UpdateRenderPasses();
+#endif
+
 			// CRendererResources::s_ptexDisplayTarget -> CRenderOutput->m_pColorTarget (PostAA)
 			// Post effects disabled, copy diffuse to color target
 			if (GetStage<CPostEffectStage>()->IsStageActive(m_renderingFlags))
@@ -475,6 +493,13 @@ void CStandardGraphicsPipeline::Execute()
 	{
 		// Raw HDR copy
 		m_HDRToFramePass->Execute(m_pipelineResources.m_pTexHDRTarget, pRenderView->GetRenderOutput()->GetColorTarget());
+
+#if DURANGO_USE_ESRAM
+		m_pipelineResources.m_pTexHDRTarget->ForfeitESRAMResidency(CDeviceResource::eResCoherence_Abandon);
+		m_pipelineResources.m_pTexLinearDepth->ForfeitESRAMResidency(CDeviceResource::eResCoherence_Abandon);
+		UpdatePerPassResourceSet();
+		UpdateRenderPasses();
+#endif
 	}
 
 	if (GetStage<COmniCameraStage>()->IsStageActive(m_renderingFlags))
@@ -488,6 +513,10 @@ void CStandardGraphicsPipeline::Execute()
 	m_renderPassScheduler.SetEnabled(false);
 	m_renderPassScheduler.Execute(this);
 
+#if DURANGO_USE_ESRAM
+	m_pipelineResources.m_pTexSceneNormalsMap->ForfeitESRAMResidency(CDeviceResource::eResCoherence_Abandon);
+	pZTexture->ForfeitESRAMResidency(CDeviceResource::eResCoherence_Abandon);
+#endif
 	if (CRendererCVars::CV_r_PipelineResourceDiscardAfterFrame > 1)
 	{
 		m_pipelineResources.Discard();

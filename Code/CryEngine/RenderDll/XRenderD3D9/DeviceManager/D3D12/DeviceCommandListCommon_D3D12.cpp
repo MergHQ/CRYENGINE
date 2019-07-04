@@ -452,7 +452,7 @@ void CDeviceGraphicsCommandInterfaceImpl::BeginResourceTransitionsImpl(uint32 nu
 		pCommandListDX12->PendingResourceBarriers();
 
 		if (CRenderer::CV_r_D3D12EarlyResourceBarriers > 1)
-			gcpRendD3D->GetDeviceContext_Unsynchronized().Flush();
+			gcpRendD3D->GetDeviceContext()->Flush();
 	}
 }
 
@@ -761,13 +761,13 @@ void CDeviceGraphicsCommandInterfaceImpl::DiscardContentsImpl(D3DBaseView* pView
 void CDeviceGraphicsCommandInterfaceImpl::BeginOcclusionQueryImpl(D3DOcclusionQuery* pQuery)
 {
 	CRY_ASSERT(GetDX12CommandList() == GetDeviceObjectFactory().GetCoreCommandList().GetDX12CommandList());
-	gcpRendD3D->GetDeviceContext().GetRealDeviceContext()->Begin(pQuery);
+	gcpRendD3D->GetDeviceContext()->Begin(pQuery);
 }
 
 void CDeviceGraphicsCommandInterfaceImpl::EndOcclusionQueryImpl(D3DOcclusionQuery* pQuery)
 {
 	CRY_ASSERT(GetDX12CommandList() == GetDeviceObjectFactory().GetCoreCommandList().GetDX12CommandList());
-	gcpRendD3D->GetDeviceContext().GetRealDeviceContext()->End(pQuery);
+	gcpRendD3D->GetDeviceContext()->End(pQuery);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1016,54 +1016,60 @@ void CDeviceComputeCommandInterfaceImpl::DiscardUAVContentsImpl(D3DBaseView* pVi
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+void CDeviceCopyCommandInterfaceImpl::CopyImpl(D3DResource* pSrc, D3DResource* pDst)
+{
+	CD3D9Renderer* const __restrict rd = gcpRendD3D;
+	rd->GetDeviceContext()->CopyResource(pDst, pSrc);
+}
+
 void CDeviceCopyCommandInterfaceImpl::CopyImpl(CDeviceBuffer* pSrc, CDeviceBuffer* pDst)
 {
 	CD3D9Renderer* const __restrict rd = gcpRendD3D;
-	rd->GetDeviceContext().CopyResource(pDst->GetBaseBuffer(), pSrc->GetBaseBuffer());
+	rd->GetDeviceContext()->CopyResource(pDst->GetBaseBuffer(), pSrc->GetBaseBuffer());
 }
 
 void CDeviceCopyCommandInterfaceImpl::CopyImpl(D3DBuffer* pSrc, D3DBuffer* pDst)
 {
 	CD3D9Renderer* const __restrict rd = gcpRendD3D;
-	rd->GetDeviceContext().CopyResource(pDst, pSrc);
+	rd->GetDeviceContext()->CopyResource(pDst, pSrc);
 }
 
 void CDeviceCopyCommandInterfaceImpl::CopyImpl(CDeviceTexture* pSrc, CDeviceTexture* pDst)
 {
 	CD3D9Renderer* const __restrict rd = gcpRendD3D;
-	rd->GetDeviceContext().CopyResource(pDst->GetBaseTexture(), pSrc->GetBaseTexture());
+	rd->GetDeviceContext()->CopyResource(pDst->GetBaseTexture(), pSrc->GetBaseTexture());
 }
 
 void CDeviceCopyCommandInterfaceImpl::CopyImpl(CDeviceTexture* pSrc, D3DTexture* pDst)
 {
 	CD3D9Renderer* const __restrict rd = gcpRendD3D;
-	rd->GetDeviceContext().CopyResource(pDst, pSrc->GetBaseTexture());
+	rd->GetDeviceContext()->CopyResource(pDst, pSrc->GetBaseTexture());
 }
 
 void CDeviceCopyCommandInterfaceImpl::CopyImpl(D3DTexture* pSrc, D3DTexture* pDst)
 {
 	CD3D9Renderer* const __restrict rd = gcpRendD3D;
-	rd->GetDeviceContext().CopyResource(pDst, pSrc);
+	rd->GetDeviceContext()->CopyResource(pDst, pSrc);
 }
 
 void CDeviceCopyCommandInterfaceImpl::CopyImpl(D3DTexture* pSrc, CDeviceTexture* pDst)
 {
 	CD3D9Renderer* const __restrict rd = gcpRendD3D;
-	rd->GetDeviceContext().CopyResource(pDst->GetBaseTexture(), pSrc);
+	rd->GetDeviceContext()->CopyResource(pDst->GetBaseTexture(), pSrc);
 }
 
 void CDeviceCopyCommandInterfaceImpl::CopyImpl(CDeviceBuffer* pSrc, CDeviceBuffer* pDst, const SResourceRegionMapping& region)
 {
 	CD3D9Renderer* const __restrict rd = gcpRendD3D;
 	D3D11_BOX box = { region.SourceOffset.Left, region.SourceOffset.Top, region.SourceOffset.Front, region.SourceOffset.Left + region.Extent.Width, region.SourceOffset.Top + region.Extent.Height, region.SourceOffset.Front + region.Extent.Depth };
-	rd->GetDeviceContext().CopySubresourcesRegion1(pDst->GetBaseBuffer(), region.DestinationOffset.Subresource, region.DestinationOffset.Left, region.DestinationOffset.Top, region.DestinationOffset.Front, pSrc->GetBaseBuffer(), region.SourceOffset.Subresource, &box, region.Flags, region.Extent.Subresources);
+	rd->GetDeviceContext()->CopySubresourcesRegion1(pDst->GetBaseBuffer(), region.DestinationOffset.Subresource, region.DestinationOffset.Left, region.DestinationOffset.Top, region.DestinationOffset.Front, pSrc->GetBaseBuffer(), region.SourceOffset.Subresource, &box, region.Flags, region.Extent.Subresources);
 }
 
 void CDeviceCopyCommandInterfaceImpl::CopyImpl(D3DBuffer* pSrc, D3DBuffer* pDst, const SResourceRegionMapping& region)
 {
 	CD3D9Renderer* const __restrict rd = gcpRendD3D;
 	D3D11_BOX box = { region.SourceOffset.Left, region.SourceOffset.Top, region.SourceOffset.Front, region.SourceOffset.Left + region.Extent.Width, region.SourceOffset.Top + region.Extent.Height, region.SourceOffset.Front + region.Extent.Depth };
-	rd->GetDeviceContext().CopySubresourcesRegion1(pDst, region.DestinationOffset.Subresource, region.DestinationOffset.Left, region.DestinationOffset.Top, region.DestinationOffset.Front, pSrc, region.SourceOffset.Subresource, &box, region.Flags, region.Extent.Subresources);
+	rd->GetDeviceContext()->CopySubresourcesRegion1(pDst, region.DestinationOffset.Subresource, region.DestinationOffset.Left, region.DestinationOffset.Top, region.DestinationOffset.Front, pSrc, region.SourceOffset.Subresource, &box, region.Flags, region.Extent.Subresources);
 }
 
 void CDeviceCopyCommandInterfaceImpl::CopyImpl(CDeviceTexture* pSrc, CDeviceTexture* pDst, const SResourceRegionMapping& region)
@@ -1106,7 +1112,7 @@ void CDeviceCopyCommandInterfaceImpl::CopyImpl(CDeviceTexture* pSrc, CDeviceText
 	}
 	else
 	{
-		rd->GetDeviceContext().CopySubresourcesRegion1(pDst->GetBaseTexture(), region.DestinationOffset.Subresource, region.DestinationOffset.Left, region.DestinationOffset.Top, region.DestinationOffset.Front, pSrc->GetBaseTexture(), region.SourceOffset.Subresource, &box, region.Flags, region.Extent.Subresources);
+		rd->GetDeviceContext()->CopySubresourcesRegion1(pDst->GetBaseTexture(), region.DestinationOffset.Subresource, region.DestinationOffset.Left, region.DestinationOffset.Top, region.DestinationOffset.Front, pSrc->GetBaseTexture(), region.SourceOffset.Subresource, &box, region.Flags, region.Extent.Subresources);
 	}
 }
 
@@ -1114,46 +1120,46 @@ void CDeviceCopyCommandInterfaceImpl::CopyImpl(D3DTexture* pSrc, CDeviceTexture*
 {
 	CD3D9Renderer* const __restrict rd = gcpRendD3D;
 	D3D11_BOX box = { region.SourceOffset.Left, region.SourceOffset.Top, region.SourceOffset.Front, region.SourceOffset.Left + region.Extent.Width, region.SourceOffset.Top + region.Extent.Height, region.SourceOffset.Front + region.Extent.Depth };
-	rd->GetDeviceContext().CopySubresourcesRegion1(pDst->GetBaseTexture(), region.DestinationOffset.Subresource, region.DestinationOffset.Left, region.DestinationOffset.Top, region.DestinationOffset.Front, pSrc, region.SourceOffset.Subresource, &box, region.Flags, region.Extent.Subresources);
+	rd->GetDeviceContext()->CopySubresourcesRegion1(pDst->GetBaseTexture(), region.DestinationOffset.Subresource, region.DestinationOffset.Left, region.DestinationOffset.Top, region.DestinationOffset.Front, pSrc, region.SourceOffset.Subresource, &box, region.Flags, region.Extent.Subresources);
 }
 
 void CDeviceCopyCommandInterfaceImpl::CopyImpl(const void* pSrc, CConstantBuffer* pDst, const SResourceMemoryAlignment& memoryLayout)
 {
 	CD3D9Renderer* const __restrict rd = gcpRendD3D;
-	rd->GetDeviceContext().UpdateSubresource(pDst->GetD3D(), 0, nullptr, pSrc, 0, 0);
+	rd->GetDeviceContext()->UpdateSubresource(pDst->GetD3D(), 0, nullptr, pSrc, 0, 0);
 }
 
 void CDeviceCopyCommandInterfaceImpl::CopyImpl(const void* pSrc, CDeviceBuffer* pDst, const SResourceMemoryAlignment& memoryLayout)
 {
 	CD3D9Renderer* const __restrict rd = gcpRendD3D;
-	rd->GetDeviceContext().UpdateSubresource(pDst->GetBaseBuffer(), 0, nullptr, pSrc, memoryLayout.rowStride, memoryLayout.planeStride);
+	rd->GetDeviceContext()->UpdateSubresource(pDst->GetBaseBuffer(), 0, nullptr, pSrc, memoryLayout.rowStride, memoryLayout.planeStride);
 }
 
 void CDeviceCopyCommandInterfaceImpl::CopyImpl(const void* pSrc, CDeviceTexture* pDst, const SResourceMemoryAlignment& memoryLayout)
 {
 	CD3D9Renderer* const __restrict rd = gcpRendD3D;
-	rd->GetDeviceContext().UpdateSubresource(pDst->GetBaseTexture(), 0, nullptr, pSrc, memoryLayout.rowStride, memoryLayout.planeStride);
+	rd->GetDeviceContext()->UpdateSubresource(pDst->GetBaseTexture(), 0, nullptr, pSrc, memoryLayout.rowStride, memoryLayout.planeStride);
 }
 
 void CDeviceCopyCommandInterfaceImpl::CopyImpl(const void* pSrc, CConstantBuffer* pDst, const SResourceMemoryMapping& region)
 {
 	CD3D9Renderer* const __restrict rd = gcpRendD3D;
 	D3D11_BOX box = { region.ResourceOffset.Left, region.ResourceOffset.Top, region.ResourceOffset.Front, region.ResourceOffset.Left + region.Extent.Width, region.ResourceOffset.Top + region.Extent.Height, region.ResourceOffset.Front + region.Extent.Depth };
-	rd->GetDeviceContext().UpdateSubresource1(pDst->GetD3D(), region.ResourceOffset.Subresource, &box, pSrc, region.MemoryLayout.rowStride, region.MemoryLayout.planeStride, region.Flags);
+	rd->GetDeviceContext()->UpdateSubresource1(pDst->GetD3D(), region.ResourceOffset.Subresource, &box, pSrc, region.MemoryLayout.rowStride, region.MemoryLayout.planeStride, region.Flags);
 }
 
 void CDeviceCopyCommandInterfaceImpl::CopyImpl(const void* pSrc, CDeviceBuffer* pDst, const SResourceMemoryMapping& region)
 {
 	CD3D9Renderer* const __restrict rd = gcpRendD3D;
 	D3D11_BOX box = { region.ResourceOffset.Left, region.ResourceOffset.Top, region.ResourceOffset.Front, region.ResourceOffset.Left + region.Extent.Width, region.ResourceOffset.Top + region.Extent.Height, region.ResourceOffset.Front + region.Extent.Depth };
-	rd->GetDeviceContext().UpdateSubresource1(pDst->GetBaseBuffer(), region.ResourceOffset.Subresource, &box, pSrc, region.MemoryLayout.rowStride, region.MemoryLayout.planeStride, region.Flags);
+	rd->GetDeviceContext()->UpdateSubresource1(pDst->GetBaseBuffer(), region.ResourceOffset.Subresource, &box, pSrc, region.MemoryLayout.rowStride, region.MemoryLayout.planeStride, region.Flags);
 }
 
 void CDeviceCopyCommandInterfaceImpl::CopyImpl(const void* pSrc, CDeviceTexture* pDst, const SResourceMemoryMapping& region)
 {
 	CD3D9Renderer* const __restrict rd = gcpRendD3D;
 	D3D11_BOX box = { region.ResourceOffset.Left, region.ResourceOffset.Top, region.ResourceOffset.Front, region.ResourceOffset.Left + region.Extent.Width, region.ResourceOffset.Top + region.Extent.Height, region.ResourceOffset.Front + region.Extent.Depth };
-	rd->GetDeviceContext().UpdateSubresource1(pDst->GetBaseTexture(), region.ResourceOffset.Subresource, &box, pSrc, region.MemoryLayout.rowStride, region.MemoryLayout.planeStride, region.Flags);
+	rd->GetDeviceContext()->UpdateSubresource1(pDst->GetBaseTexture(), region.ResourceOffset.Subresource, &box, pSrc, region.MemoryLayout.rowStride, region.MemoryLayout.planeStride, region.Flags);
 }
 
 void CDeviceCopyCommandInterfaceImpl::CopyImpl(CDeviceBuffer* pSrc, void* pDst, const SResourceMemoryAlignment& memoryLayout)

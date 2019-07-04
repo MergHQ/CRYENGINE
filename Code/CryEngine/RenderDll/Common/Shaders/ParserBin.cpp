@@ -705,7 +705,6 @@ void CParserBin::Init()
 	FX_REGISTER_TOKEN(DURANGO);
 	FX_REGISTER_TOKEN(PCDX11);
 	FX_REGISTER_TOKEN(PCDX12);
-	FX_REGISTER_TOKEN(OPENGL);
 	FX_REGISTER_TOKEN(VULKAN);
 
 	FX_REGISTER_TOKEN(STANDARDSGLOBAL);
@@ -761,10 +760,6 @@ void CParserBin::Init()
 			SetupForPlatform(SF_ORBIS);
 	#elif CRY_PLATFORM_DURANGO
 			SetupForPlatform(SF_DURANGO);
-	#elif CRY_RENDERER_OPENGLES && DXGL_INPUT_GLSL
-			SetupForPlatform(SF_GLES3);
-	#elif CRY_RENDERER_OPENGL && DXGL_INPUT_GLSL
-			SetupForPlatform(SF_GL4);
 	#elif CRY_RENDERER_VULKAN
 			SetupForPlatform(SF_VULKAN);
 	#elif CRY_RENDERER_DIRECT3D >= 120
@@ -783,7 +778,7 @@ void CParserBin::SetupForPlatform(uint32 nPlatform)
 	switch (nPlatform)
 	{
 	case SF_D3D11:
-#if CRY_PLATFORM_WINDOWS || CRY_RENDERER_OPENGL
+#if CRY_PLATFORM_WINDOWS
 		AddMacro(CParserBin::fxToken("PCDX11"), nMacro, 1, 0, m_StaticMacros);
 #endif
 		gRenDev->m_cEF.m_ShadersCache = "Shaders/Cache/D3D11/";
@@ -802,27 +797,10 @@ void CParserBin::SetupForPlatform(uint32 nPlatform)
 		gRenDev->m_cEF.m_ShadersFilter = "Orbis";
 		break;
 
-	case SF_GL4:
-#if CRY_PLATFORM_WINDOWS || CRY_RENDERER_OPENGL
-		AddMacro(CParserBin::fxToken("PCDX11"), nMacro, 1, 0, m_StaticMacros);
-		AddMacro(CParserBin::fxToken("OPENGL"), nMacro, 1, 0, m_StaticMacros);
-#endif
-		gRenDev->m_cEF.m_ShadersCache = "Shaders/Cache/GL4/";
-		gRenDev->m_cEF.m_ShadersFilter = "GL4";
-		break;
-
 	case SF_DURANGO:
 		AddMacro(CParserBin::fxToken("DURANGO"), nMacro, 1, 0, m_StaticMacros);
 		gRenDev->m_cEF.m_ShadersCache = "Shaders/Cache/Durango/";
 		gRenDev->m_cEF.m_ShadersFilter = "Durango";
-		break;
-
-	case SF_GLES3:
-#if CRY_PLATFORM_WINDOWS || CRY_RENDERER_OPENGL
-		AddMacro(CParserBin::fxToken("PCDX11"), nMacro, 1, 0, m_StaticMacros);
-#endif
-		gRenDev->m_cEF.m_ShadersCache = "Shaders/Cache/GLES3/";
-		gRenDev->m_cEF.m_ShadersFilter = "GLES3";
 		break;
 
 	case SF_VULKAN:
@@ -853,10 +831,6 @@ const char* CParserBin::GetPlatformShaderlistName()
 		return "ShaderList_PC.txt";
 	if (CParserBin::m_nPlatform == SF_D3D12)
 		return "ShaderList_PC.txt";
-	if (CParserBin::m_nPlatform == SF_GL4)
-		return "ShaderList_GL4.txt";
-	if (CParserBin::m_nPlatform == SF_GLES3)
-		return "ShaderList_GLES3.txt";
 	if (CParserBin::m_nPlatform == SF_DURANGO)
 		return "ShaderList_Durango.txt";
 	if (CParserBin::m_nPlatform == SF_ORBIS)
@@ -876,12 +850,8 @@ CCryNameTSCRC CParserBin::GetPlatformSpecName(CCryNameTSCRC orgName)
 		nmTemp.add(0x200);
 	else if (CParserBin::m_nPlatform == SF_D3D12)
 		nmTemp.add(0x100);
-	else if (CParserBin::m_nPlatform == SF_GL4)
-		nmTemp.add(0x300);
 	else if (CParserBin::m_nPlatform == SF_VULKAN)
 		nmTemp.add(0x400);
-	else if (CParserBin::m_nPlatform == SF_GLES3)
-		nmTemp.add(0x800);
 	else if (CParserBin::m_nPlatform == SF_ORBIS)
 		nmTemp.add(0x600);
 	else if (CParserBin::m_nPlatform == SF_DURANGO)
@@ -1051,7 +1021,6 @@ void CParserBin::CleanPlatformMacros()
 	RemoveMacro(CParserBin::fxToken("DURANGO"), m_StaticMacros);
 	RemoveMacro(CParserBin::fxToken("ORBIS"),   m_StaticMacros);
 	RemoveMacro(CParserBin::fxToken("PCDX11"),  m_StaticMacros);
-	RemoveMacro(CParserBin::fxToken("OPENGL"),  m_StaticMacros);
 	RemoveMacro(CParserBin::fxToken("VULKAN"),  m_StaticMacros);
 }
 
@@ -3144,27 +3113,27 @@ void CParserBin::SetupFeatureDefines()
 
 	uint32 nEnable[1] = { eT_1 };
 #if defined(MESH_TESSELLATION)
-	if (m_nPlatform & (SF_D3D11 | SF_D3D12 | SF_DURANGO | SF_ORBIS | SF_GL4 | SF_VULKAN))
+	if (m_nPlatform & (SF_D3D11 | SF_D3D12 | SF_DURANGO | SF_ORBIS | SF_VULKAN))
 	{
 		AddMacro(CParserBin::GetCRC32("FEATURE_MESH_TESSELLATION"), nEnable, 1, 0, m_StaticMacros);
 	}
 #endif
 
 #if defined(FEATURE_DEFERRED_SHADING_SELF_SHADOWS)
-	if (m_nPlatform & (SF_D3D11 | SF_D3D12 | SF_GL4 | SF_GLES3 | SF_VULKAN))
+	if (m_nPlatform & (SF_D3D11 | SF_D3D12 | SF_VULKAN))
 	{
 		AddMacro(CParserBin::GetCRC32("FEATURE_SELF_SHADOWS"), nEnable, 1, 0, m_StaticMacros);
 	}
 #endif
 
 #if defined(PARTICLES_TESSELLATION)
-	if (m_nPlatform & (SF_D3D11 | SF_D3D12 | SF_DURANGO | SF_ORBIS |  SF_GL4 | SF_VULKAN))
+	if (m_nPlatform & (SF_D3D11 | SF_D3D12 | SF_DURANGO | SF_ORBIS |  SF_VULKAN))
 	{
 		AddMacro(CParserBin::GetCRC32("FEATURE_PARTICLES_TESSELLATION"), nEnable, 1, 0, m_StaticMacros);
 	}
 #endif
 
-	if (m_nPlatform & (SF_D3D11 | SF_D3D12 | SF_ORBIS | SF_DURANGO | SF_GL4 | SF_VULKAN))
+	if (m_nPlatform & (SF_D3D11 | SF_D3D12 | SF_ORBIS | SF_DURANGO | SF_VULKAN))
 	{
 		AddMacro(CParserBin::GetCRC32("FEATURE_GEOMETRY_SHADERS"), nEnable, 1, 0, m_StaticMacros);
 	}

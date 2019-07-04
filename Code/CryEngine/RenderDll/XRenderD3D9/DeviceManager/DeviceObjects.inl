@@ -130,8 +130,6 @@ inline void CDeviceObjectFactory::ExtractBasePointer(D3DBuffer* buffer, D3D11_MA
 #if BUFFER_ENABLE_DIRECT_ACCESS
 	#if CRY_RENDERER_GNM
 		base_ptr = buffer->GnmGetBaseAddress();
-	#elif CRY_PLATFORM_ORBIS
-		base_ptr = (uint8*)buffer->GetData();
 	#elif CRY_PLATFORM_DURANGO && (CRY_RENDERER_DIRECT3D >= 110) && (CRY_RENDERER_DIRECT3D < 120)
 		// Note: temporary solution, this should be removed as soon as the device
 		// layer for Durango is available

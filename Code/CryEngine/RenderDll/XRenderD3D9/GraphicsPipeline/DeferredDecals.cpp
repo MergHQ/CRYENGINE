@@ -305,14 +305,9 @@ void CDeferredDecalsStage::Execute()
 	// Sort decals
 	std::stable_sort(deferredDecals.begin(), deferredDecals.end(), DecalSortComparison());
 
-	CTexture* pSceneSpecular = m_graphicsPipelineResources.m_pTexSceneSpecular;
-#if defined(DURANGO_USE_ESRAM)
-	pSceneSpecular = m_graphicsPipelineResources.m_pTexSceneSpecularESRAM;
-#endif
-
 	m_decalPass.SetRenderTarget(0, m_graphicsPipelineResources.m_pTexSceneNormalsMap);
 	m_decalPass.SetRenderTarget(1, m_graphicsPipelineResources.m_pTexSceneDiffuse);
-	m_decalPass.SetRenderTarget(2, pSceneSpecular);
+	m_decalPass.SetRenderTarget(2, m_graphicsPipelineResources.m_pTexSceneSpecular);
 	m_decalPass.SetDepthTarget(RenderView()->GetDepthTarget());
 
 	m_decalPass.SetViewport(RenderView()->GetViewport());

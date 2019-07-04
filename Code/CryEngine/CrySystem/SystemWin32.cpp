@@ -91,13 +91,9 @@ const char* g_szModuleGroups[][2] = {
 	{ "Game.dll",            g_szGroupCore },
 	{ "CryAction.dll",       g_szGroupCore },
 	{ "CryAnimation.dll",    g_szGroupCore },
-	{ "CryRenderD3D9.dll",   g_szGroupCore },
-	{ "CryRenderD3D10.dll",  g_szGroupCore },
 	{ "CryRenderD3D11.dll",  g_szGroupCore },
 	{ "CryRenderD3D12.dll",  g_szGroupCore },
-	{ "CryRenderOpenGL.dll", g_szGroupCore },
 	{ "CryRenderVulkan.dll", g_szGroupCore },
-	{ "CryRenderNULL.dll",   g_szGroupCore },
 	{ "CryFlowGraph.dll",    g_szGroupCore }
 };
 

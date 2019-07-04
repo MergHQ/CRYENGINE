@@ -202,6 +202,8 @@ class CDeviceCopyCommandInterface : public CDeviceCopyCommandInterfaceImpl
 	// TODO: CopyResourceOvercross (MultiGPU, copy-queue)
 
 public:
+	void Copy(D3DResource*    pSrc, D3DResource*    pDst);
+
 	void Copy(CDeviceBuffer*  pSrc, CDeviceBuffer*  pDst);
 	void Copy(D3DBuffer*      pSrc, D3DBuffer*      pDst);
 	void Copy(CDeviceTexture* pSrc, CDeviceTexture* pDst);

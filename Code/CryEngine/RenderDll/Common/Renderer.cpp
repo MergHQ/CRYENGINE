@@ -43,7 +43,7 @@
 #include <CryRenderer/IShader.h>
 
 // TODO: replace by ID3DUserDefinedAnnotation https://msdn.microsoft.com/en-us/library/hh446881.aspx
-#if !CRY_RENDERER_GNM && !CRY_RENDERER_OPENGL && !CRY_RENDERER_VULKAN && (CRY_RENDERER_DIRECT3D < 120) && !CRY_PLATFORM_DURANGO && CRY_PLATFORM_WINDOWS
+#if !CRY_RENDERER_GNM && !CRY_RENDERER_VULKAN && (CRY_RENDERER_DIRECT3D < 120) && !CRY_PLATFORM_DURANGO && CRY_PLATFORM_WINDOWS
 	#ifdef ENABLE_FRAME_PROFILER_LABELS
 		// This is need for D3DPERF_ functions
 		LINK_SYSTEM_LIBRARY("d3d9.lib")
@@ -183,10 +183,6 @@ void CRenderer::InitRenderer()
 
 	// need to do this because the registering process can modify the default value (getting it from the .cfg) and will not notify the call back
 	SetShadowJittering(CV_r_shadow_jittering);
-
-#if !CRY_PLATFORM_DURANGO
-	m_DevMan.Init();
-#endif
 
 	m_nGPU = 1;
 
@@ -3666,8 +3662,6 @@ ERenderType CRenderer::GetRenderType() const
 {
 #if CRY_RENDERER_GNM
 	return ERenderType::GNM;
-#elif CRY_RENDERER_OPENGL
-	return ERenderType::OpenGL;
 #elif CRY_RENDERER_VULKAN
 	return ERenderType::Vulkan;
 #elif (CRY_RENDERER_DIRECT3D >= 120)
@@ -3770,10 +3764,29 @@ void SRenderStatistics::Finish()
 
 		// BK: We need a way of getting gpu frame time in release, without gpu timers
 		// for now we just use overall frame time
-#if CRY_PLATFORM_ORBIS && !CRY_RENDERER_GNM
-		m_Summary.gpuIdlePerc  = DXOrbis::Device()->GetGPUIdlePercentage();
-		m_Summary.waitForGPU   = DXOrbis::Device()->GetCPUWaitOnGPUTime();
-		m_Summary.gpuFrameTime = DXOrbis::Device()->GetCPUFrameTime();
+#if CRY_PLATFORM_DURANGO
+		constexpr int frameHistoryCount = 4;
+		CRY_ASSERT(frameHistoryCount < 17); // xbox driver limitation
+		DXGIX_FRAME_STATISTICS frameStatsBuffer[frameHistoryCount];
+		DXGIXGetFrameStatistics(frameHistoryCount, frameStatsBuffer);
+
+		m_Summary.gpuIdlePerc = 0.f;
+
+		// Find the most recent frame which is gone through the entire pipeline and is
+		// displayed, so we have correct numbers.
+		for (int frameIdx = 0; frameIdx < frameHistoryCount; ++frameIdx)
+		{
+			const DXGIX_FRAME_STATISTICS& frameStats = frameStatsBuffer[frameIdx];
+			if (frameStats.VSyncCount > 0)
+			{
+				constexpr double fGpuSecondPerClock = 1.0 / D3D11X_XBOX_GPU_TIMESTAMP_FREQUENCY;
+				m_Summary.gpuFrameTime = static_cast<float>(frameStats.GPUCountTitleUsed * fGpuSecondPerClock);
+				m_Summary.waitForFlip_RT = iTimer->TicksToSeconds(frameStats.CPUTimeFlip - frameStats.CPUTimeFrameComplete);
+				m_Summary.waitForPresentQueue_RT = iTimer->TicksToSeconds(frameStats.CPUTimeAddedToQueue - frameStats.CPUTimePresentCalled);
+				m_Summary.waitForGPUActual_RT = iTimer->TicksToSeconds(frameStats.CPUTimeFrameComplete - frameStats.CPUTimeAddedToQueue);
+				break;
+			}
+		}
 #else
 		m_Summary.gpuIdlePerc = 0;
 		m_Summary.gpuFrameTime = m_Summary.renderTime;
@@ -4449,11 +4462,7 @@ bool CRenderer::IsPost3DRendererEnabled() const
 
 void CRenderer::ExecuteAsyncDIP()
 {
-#if CRY_PLATFORM_DURANGO && DURANGO_ENABLE_ASYNC_DIPS == 1
-	m_DevMan.ExecuteAsyncDIP();
-#else
 	CryFatalError("The external ExecuteAsyncDIP functionality is only supported on Durango");
-#endif // CRY_PLATFORM_DURANGO && DURANGO_ENABLE_ASYNC_DIPS == 1
 }
 
 //////////////////////////////////////////////////////////////////////////

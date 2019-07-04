@@ -123,12 +123,6 @@ struct CRY_ALIGN(128) SRenderThread
 	CryEvent m_suspendWhileLoadingEvent;
 #endif
 	HRESULT m_hResult;
-#if CRY_RENDERER_OPENGL && !DXGL_FULL_EMULATION
-	#if !OGL_SINGLE_CONTEXT
-	SDXGLContextThreadLocalHandle m_kDXGLContextHandle;
-	#endif
-	SDXGLDeviceContextThreadLocalHandle m_kDXGLDeviceContextHandle;
-#endif //CRY_RENDERER_OPENGL && !DXGL_FULL_EMULATION
 	TArray<byte> m_Commands[RT_COMMAND_BUF_COUNT]; // m_nCurThreadFill shows which commands are filled by main thread
 
 	// The below loading queue contains all commands that were submitted and require full device access during loading.

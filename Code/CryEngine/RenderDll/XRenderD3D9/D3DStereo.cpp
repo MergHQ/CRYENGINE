@@ -28,7 +28,7 @@
 	#include <IBenchmarkRendererSensorManager.h>
 #endif
 
-#if defined(AMD_LIQUID_VR) && !CRY_RENDERER_OPENGL
+#if defined(AMD_LIQUID_VR)
 	#ifdef _M_AMD64
 		#define DXX_DLL_NAME "atidxx64.dll"
 		#define CFX_DLL_NAME "aticfx64.dll"
@@ -128,7 +128,7 @@ CD3DStereoRenderer::CD3DStereoRenderer()
 	if (m_device == EStereoDevice::STEREO_DEVICE_DEFAULT)
 		SelectDefaultDevice();
 
-#if defined(AMD_LIQUID_VR) && !CRY_RENDERER_OPENGL
+#if defined(AMD_LIQUID_VR)
 	//////////////////////////////////////////////////////////////////////////
 	// INTIALIZE LIQUID VR (to be relocated where appropriate later)
 	//////////////////////////////////////////////////////////////////////////
@@ -248,7 +248,7 @@ void CD3DStereoRenderer::InitDeviceAfterD3D()
 		if (pFnCreate != nullptr)
 		{
 			D3DDevice* device = NULL;
-			device = gcpRendD3D->GetDevice().GetRealDevice();
+			device = gcpRendD3D->GetDevice();
 			assert(device);
 			pFnCreate(device, &g_pDxxExt);
 
@@ -283,7 +283,7 @@ void CD3DStereoRenderer::InitDeviceAfterD3D()
 		}
 
 		void* pStereoHandle;
-		D3DDevice* device = gcpRendD3D->GetDevice().GetRealDevice();
+		D3DDevice* device = gcpRendD3D->GetDevice();
 
 		if (NvAPI_Stereo_CreateHandleFromIUnknown(device, &pStereoHandle) == NVAPI_OK)
 			m_nvStereoHandle = pStereoHandle;
@@ -296,13 +296,15 @@ void CD3DStereoRenderer::InitDeviceAfterD3D()
 	g_pMgpu = NULL;
 #endif
 
-	if (gcpRendD3D->m_DeviceWrapper.GetNodeCount() & 2)
+#if (CRY_RENDERER_DIRECT3D >= 120)
+	if (gcpRendD3D->GetDevice()->GetNodeCount() & 2)
 	{
 		m_submission = EStereoSubmission::STEREO_SUBMISSION_PARALLEL;
 
-		if (gcpRendD3D->m_DeviceWrapper.GetNodeCount() & 4)
+		if (gcpRendD3D->GetDevice()->GetNodeCount() & 4)
 			m_submission = EStereoSubmission::STEREO_SUBMISSION_PARALLEL_MULTIRES;
 	}
+#endif
 }
 
 void CD3DStereoRenderer::Shutdown()

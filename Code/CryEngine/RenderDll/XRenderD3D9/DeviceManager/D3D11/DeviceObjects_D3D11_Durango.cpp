@@ -4,6 +4,18 @@
 
 //=============================================================================
 
+#if CAPTURE_REPLAY_LOG && CRY_PLATFORM_DURANGO
+	#define MEMREPLAY_INSTRUMENT_TEXTUREPOOL
+
+	#if defined(MEMREPLAY_WRAP_XBOX_PERFORMANCE_DEVICE)
+		#define MEMREPLAY_HIDE_BANKALLOC() MEMREPLAY_SCOPE(EMemReplayAllocClass::UserPointer, EMemReplayUserPointerClass::CryMalloc)
+	#else
+		#define MEMREPLAY_HIDE_BANKALLOC() 
+	#endif
+#else
+	#define MEMREPLAY_HIDE_BANKALLOC() 
+#endif
+
 // Note: temporary solution, this should be removed as soon as the device
 // layer for Durango is available
 void* CDeviceObjectFactory::GetBackingStorage(D3DBuffer* buffer)
@@ -72,8 +84,8 @@ HRESULT CDeviceObjectFactory::IssueFence(DeviceFenceHandle query)
 	UINT64* handle = reinterpret_cast<UINT64*>(query);
 	if (handle)
 	{
-		*handle = gcpRendD3D->GetPerformanceDeviceContext().InsertFence();
-		gcpRendD3D->GetDeviceContext().Flush();
+		*handle = gcpRendD3D->GetPerformanceContext()->InsertFence();
+		gcpRendD3D->GetDeviceContext()->Flush();
 		hr = S_OK;
 	}
 	return hr;
@@ -87,7 +99,7 @@ HRESULT CDeviceObjectFactory::SyncFence(DeviceFenceHandle query, bool block, boo
 	{
 		do
 		{
-			if (gcpRendD3D->GetPerformanceDevice().IsFencePending(*handle) == false)
+			if (gcpRendD3D->GetPerformanceDevice()->IsFencePending(*handle) == false)
 			{
 				hr = S_OK;
 			}
@@ -279,7 +291,7 @@ bool CDurangoGPUMemoryManager::Init(size_t maximumSize, size_t bankSize, size_t 
 		D3D11_BUFFER_DESC desc = { 0 };
 		desc.ByteWidth = 1ull << m_bankShift;
 		desc.Usage = D3D11_USAGE_DEFAULT;
-		hr = gcpRendD3D->GetPerformanceDevice().CreatePlacementBuffer(&desc, bank.pBase, &bank.pBuffer);
+		hr = gcpRendD3D->GetPerformanceDevice()->CreatePlacementBuffer(&desc, bank.pBase, &bank.pBuffer);
 
 #ifndef _RELEASE
 		if (FAILED(hr))
@@ -432,7 +444,7 @@ CDurangoGPUMemoryManager::AllocateResult CDurangoGPUMemoryManager::AllocatePinne
 				D3D11_BUFFER_DESC desc = { 0 };
 				desc.ByteWidth = 1ull << m_bankShift;
 				desc.Usage = D3D11_USAGE_DEFAULT;
-				hr = gcpRendD3D->GetPerformanceDevice().CreatePlacementBuffer(&desc, newBank.pBase, &newBank.pBuffer);
+				hr = gcpRendD3D->GetPerformanceDevice()->CreatePlacementBuffer(&desc, newBank.pBase, &newBank.pBuffer);
 #ifndef _RELEASE
 				if (FAILED(hr))
 					__debugbreak();
@@ -498,7 +510,7 @@ void CDurangoGPUMemoryManager::Free(SGPUMemHdl hdl, UINT64 fence)
 		SRenderThread* pRT = gcpRendD3D->m_pRT;
 		if (pRT->IsRenderThread() && !pRT->IsRenderLoadingThread())
 		{
-			fence = gcpRendD3D->GetPerformanceDeviceContext().InsertFence(D3D11_INSERT_FENCE_NO_KICKOFF);
+			fence = gcpRendD3D->GetPerformanceContext()->InsertFence(D3D11_INSERT_FENCE_NO_KICKOFF);
 		}
 	}
 
@@ -609,7 +621,7 @@ void CDurangoGPUMemoryManager::GpuUnpin(SGPUMemHdl hdl, ID3DXboxPerformanceConte
 {
 	if (!hdl.IsFixed())
 	{
-		UINT64 fence = gcpRendD3D->GetPerformanceDeviceContext().InsertFence(D3D11_INSERT_FENCE_NO_KICKOFF);
+		UINT64 fence = gcpRendD3D->GetPerformanceContext()->InsertFence(D3D11_INSERT_FENCE_NO_KICKOFF);
 		PushPendingUnpin(hdl, fence);
 	}
 }
@@ -718,12 +730,12 @@ void CDurangoGPUMemoryManager::TickFrees_Locked()
 		{
 			if (currentFence == ~0ull)
 			{
-				currentFence = gcpRendD3D->GetPerformanceDeviceContext().InsertFence(D3D11_INSERT_FENCE_NO_KICKOFF);
+				currentFence = gcpRendD3D->GetPerformanceContext()->InsertFence(D3D11_INSERT_FENCE_NO_KICKOFF);
 			}
 			pf.fence = currentFence;
 		}
 
-		if (pf.fence != ~0ull && !gcpRendD3D->GetPerformanceDevice().IsFencePending(pf.fence))
+		if (pf.fence != ~0ull && !gcpRendD3D->GetPerformanceDevice()->IsFencePending(pf.fence))
 		{
 #if defined(MEMREPLAY_INSTRUMENT_TEXTUREPOOL)
 			MEMREPLAY_SCOPE(EMemReplayAllocClass::UserPointer, EMemReplayUserPointerClass::CryMalloc);
@@ -793,7 +805,7 @@ void CDurangoGPUMemoryManager::TickUnpins_Locked()
 		{
 			PendingFree& pf = m_pendingUnpins[testIdx];
 
-			if (!gcpRendD3D->GetPerformanceDevice().IsFencePending(pf.fence))
+			if (!gcpRendD3D->GetPerformanceDevice()->IsFencePending(pf.fence))
 			{
 				++numComplete;
 			}
@@ -861,7 +873,7 @@ void CDurangoGPUMemoryManager::CollectGarbage(size_t maxMoves, size_t maxAmount)
 {
 	ASSERT_IS_RENDER_THREAD(gcpRendD3D->m_pRT);
 
-	m_tickFence = gcpRendD3D->GetPerformanceDeviceContext().InsertFence();
+	m_tickFence = gcpRendD3D->GetPerformanceContext()->InsertFence();
 
 	CompleteMoves();
 	m_pAllocator->DefragmentTick(maxMoves, maxAmount);
@@ -893,7 +905,7 @@ void CDurangoGPUMemoryManager::CompleteMoves()
 			{
 				if (copy.copyFence != lastCopyFence)
 				{
-					lastCopyFenceCompleted = !gcpRendD3D->GetPerformanceDevice().IsFencePending(copy.copyFence);
+					lastCopyFenceCompleted = !gcpRendD3D->GetPerformanceDevice()->IsFencePending(copy.copyFence);
 					lastCopyFence = copy.copyFence;
 				}
 
@@ -907,7 +919,7 @@ void CDurangoGPUMemoryManager::CompleteMoves()
 			{
 				if (copy.inUseFence != lastInUseFence)
 				{
-					lastInUseFenceCompleted = !gcpRendD3D->GetPerformanceDevice().IsFencePending(copy.inUseFence);
+					lastInUseFenceCompleted = !gcpRendD3D->GetPerformanceDevice()->IsFencePending(copy.inUseFence);
 					lastInUseFence = copy.inUseFence;
 				}
 
@@ -974,11 +986,11 @@ void CDurangoGPUMemoryManager::Relocate_Int(CDeviceTexture* pDevTex, char* pOldT
 	ID3D11Texture2D* pD3DTex = NULL;
 
 #ifndef _RELEASE
-	HRESULT hr = gcpRendD3D->GetPerformanceDevice().CreatePlacementTexture2D(&pDesc->d3dDesc, pDesc->xgTileMode, 0, pTexBase, &pD3DTex);
+	HRESULT hr = gcpRendD3D->GetPerformanceDevice()->CreatePlacementTexture2D(&pDesc->d3dDesc, pDesc->xgTileMode, 0, pTexBase, &pD3DTex);
 	if (FAILED(hr))
 		__debugbreak();
 #else
-	gcpRendD3D->GetPerformanceDevice().CreatePlacementTexture2D(&pDesc->d3dDesc, pDesc->xgTileMode, 0, pTexBase, &pD3DTex);
+	gcpRendD3D->GetPerformanceDevice()->CreatePlacementTexture2D(&pDesc->d3dDesc, pDesc->xgTileMode, 0, pTexBase, &pD3DTex);
 #endif
 
 	pDevTex->ReplaceTexture(pD3DTex);
@@ -1059,7 +1071,7 @@ void CDurangoGPUMemoryManager::ScheduleCopies(CopyDesc* descriptions, size_t nco
 
 	if (bFallback)
 	{
-		fence = gcpRendD3D->GetPerformanceDeviceContext().InsertFence();
+		fence = gcpRendD3D->GetPerformanceContext()->InsertFence();
 
 		for (size_t i = 0; i < ncopies; ++i)
 		{
@@ -1080,6 +1092,120 @@ void CDurangoGPUMemoryManager::ScheduleCopies(CopyDesc* descriptions, size_t nco
 	}
 }
 
+//=============================================================================
+#if DURANGO_USE_ESRAM
+void CDurangoESRAMManager::Allocate(uint32 numBytes, uint32 alignment, SESRAMAllocation& alloc)
+{
+	CRY_ASSERT(!alloc.IsValid());
+
+	// Make sure the allocation comes back invalid if we can't fit
+	alloc.Invalidate();
+
+	if (m_freeSpaces.empty())
+	{
+		return;
+	}
+
+	// Try to find contiguous free space big enough to fit the aligned allocation
+	auto freeSpaceIter = std::find_if(m_freeSpaces.rbegin(), m_freeSpaces.rend(),
+		[numBytes, alignment](const SESRAMFreeSpace& freeSpace)
+	{
+		// See if we can fit the aligned allocation inside this free space
+		const uint32 beginPtr = freeSpace.m_beginBlock * BLOCK_SIZE;
+		const uint32 endPtr = freeSpace.m_endBlock * BLOCK_SIZE;
+		const uint32 alignedPtr = Align(beginPtr, alignment);
+
+		return alignedPtr + numBytes <= endPtr;
+	});
+
+	if (freeSpaceIter == m_freeSpaces.rend())
+	{
+		// Cannot find a big enough free space. Allocate the biggest possible
+		freeSpaceIter = std::max_element(m_freeSpaces.rbegin(), m_freeSpaces.rend(),
+			[](const SESRAMFreeSpace& a, const SESRAMFreeSpace& b)
+		{
+			const uint16 sizeA = a.m_endBlock - a.m_beginBlock;
+			const uint16 sizeB = b.m_endBlock - b.m_beginBlock;
+			return sizeA < sizeB;
+		});
+	}
+
+	CRY_ASSERT(freeSpaceIter != m_freeSpaces.rend());
+
+	SESRAMFreeSpace& freeSpace = *freeSpaceIter;
+
+	const uint32 beginPtr = freeSpace.m_beginBlock * BLOCK_SIZE;
+	const uint32 alignedPtr = Align(beginPtr, alignment);
+
+	alloc.m_beginBlock = freeSpace.m_beginBlock;
+	alloc.m_esramPtr = alignedPtr;
+
+	alloc.m_endBlock = std::min(freeSpace.m_endBlock, (uint16)(Align(alignedPtr + numBytes, BLOCK_SIZE) / BLOCK_SIZE));
+	freeSpace.m_beginBlock = alloc.m_endBlock;
+	alloc.m_esramSize = alloc.m_endBlock * BLOCK_SIZE - alignedPtr;
+	if (freeSpace.m_beginBlock == freeSpace.m_endBlock)
+	{
+		// We consumed this entire piece of free space
+		m_freeSpaces.erase((++freeSpaceIter).base()); // Need to increment to get the correct iterator for erase
+	}
+}
+
+void CDurangoESRAMManager::Free(SESRAMAllocation& alloc)
+{
+	// See if we can coalesce the freed memory with an existing free space
+	SESRAMFreeSpace* pCoalesced = nullptr;
+	for (auto iter = m_freeSpaces.rbegin(); iter != m_freeSpaces.rend(); ++iter)
+	{
+		SESRAMFreeSpace& freeSpace = *iter;
+		if (freeSpace.m_endBlock == alloc.m_beginBlock)
+		{
+			// This free space comes immediately before the allocation
+			if (pCoalesced == nullptr)
+			{
+				// Grow the free space to encompass the allocation
+				freeSpace.m_endBlock = alloc.m_endBlock;
+				pCoalesced = &freeSpace;
+			}
+			else
+			{
+				// We already found an area of free space that comes immediately after the allocation,
+				//  and now we found an area of free space that comes immediately before the allocation.
+				//  Coalesce the two free spaces.
+				pCoalesced->m_beginBlock = freeSpace.m_beginBlock;
+				m_freeSpaces.erase((++iter).base()); // Need to increment to get the correct iterator for erase
+				break;
+			}
+		}
+		else if (freeSpace.m_beginBlock == alloc.m_endBlock)
+		{
+			// This free space comes immediately after the allocation
+			if (pCoalesced == nullptr)
+			{
+				// Grow the free space to encompass the allocation
+				freeSpace.m_beginBlock = alloc.m_beginBlock;
+				pCoalesced = &freeSpace;
+			}
+			else
+			{
+				// We already found an area of free space that comes immediately before the allocation,
+				//  and now we found an area of free space that comes immediately after the allocation.
+				//  Coalesce the two free spaces.
+				pCoalesced->m_endBlock = freeSpace.m_endBlock;
+				m_freeSpaces.erase((++iter).base()); // Need to increment to get the correct iterator for erase
+				break;
+			}
+		}
+	}
+
+	if (pCoalesced == nullptr)
+	{
+		// We weren't able to coalesce this allocation with any existing free space, so add it to the list
+		m_freeSpaces.emplace_back(alloc.m_beginBlock, alloc.m_endBlock);
+	}
+
+	alloc.Invalidate();
+}
+#endif
 //=============================================================================
 
 CDurangoGPURingMemAllocator::CDurangoGPURingMemAllocator()
@@ -1211,7 +1337,7 @@ void* CDurangoGPURingMemAllocator::BeginAllocate(uint32 size, uint32 align, TAll
 
 		if (pBlock->fence)
 		{
-			while (gcpRendD3D->GetPerformanceDevice().IsFencePending(pBlock->fence))
+			while (gcpRendD3D->GetPerformanceDevice()->IsFencePending(pBlock->fence))
 			{
 				// Stall :(
 				CrySleep(1);
@@ -1385,7 +1511,7 @@ HRESULT CDeviceObjectFactory::BeginTileFromLinear2D(CDeviceTexture* pDst, const 
 
 		// Create a resource around the gpu memory (be it linear src or ring alloc)
 
-		hr = gcpRendD3D->GetPerformanceDevice().CreatePlacementTexture2D(&subResDesc, XG_TILE_MODE_LINEAR, 0, pGPUSrcAddr, &pTileSrcs[nSRI]);
+		hr = gcpRendD3D->GetPerformanceDevice()->CreatePlacementTexture2D(&subResDesc, XG_TILE_MODE_LINEAR, 0, pGPUSrcAddr, &pTileSrcs[nSRI]);
 		if (FAILED(hr))
 		{
 #ifndef _RELEASE
@@ -1410,7 +1536,7 @@ HRESULT CDeviceObjectFactory::BeginTileFromLinear2D(CDeviceTexture* pDst, const 
 #endif
 
 				ID3D11Texture2D* pLinSrc = NULL;
-				hr = gcpRendD3D->GetPerformanceDevice().CreatePlacementTexture2D(&subResDesc, XG_TILE_MODE_LINEAR, 0, (void*)pLinSurfaceSrc, &pLinSrc);
+				hr = gcpRendD3D->GetPerformanceDevice()->CreatePlacementTexture2D(&subResDesc, XG_TILE_MODE_LINEAR, 0, (void*)pLinSurfaceSrc, &pLinSrc);
 				if (FAILED(hr))
 				{
 #ifndef _RELEASE
@@ -1498,7 +1624,7 @@ HRESULT CDeviceObjectFactory::CreateInPlaceTexture2D(const D3D11_TEXTURE2D_DESC&
 	ID3D11Texture2D* pD3DTex = NULL;
 	if (!bDeferD3DConstruction)
 	{
-		hr = gcpRendD3D->GetPerformanceDevice().CreatePlacementTexture2D(&Desc, dstNativeTileMode, 0, pDstBaseAddress, &pD3DTex);
+		hr = gcpRendD3D->GetPerformanceDevice()->CreatePlacementTexture2D(&Desc, dstNativeTileMode, 0, pDstBaseAddress, &pD3DTex);
 		if (FAILED(hr))
 		{
 			m_texturePool.FreeUnused(texHdl);
@@ -1582,7 +1708,7 @@ HRESULT CDeviceObjectFactory::CreateInPlaceTexture2D(const D3D11_TEXTURE2D_DESC&
 					UINT64 fence = 0;
 					if (!FAILED(BeginTileFromLinear2D(pDeviceTexture, &req, 1, fence)))
 					{
-						while (gcpRendD3D->GetPerformanceDevice().IsFencePending(fence))
+						while (gcpRendD3D->GetPerformanceDevice()->IsFencePending(fence))
 						{
 							CrySleep(0);
 						}

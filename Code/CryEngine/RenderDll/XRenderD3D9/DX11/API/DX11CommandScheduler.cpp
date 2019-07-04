@@ -9,9 +9,11 @@ namespace NCryDX11
 //---------------------------------------------------------------------------------------------------------------------
 CCommandScheduler::CCommandScheduler(CDevice* pDevice)
 	: CDeviceObject(pDevice)
-	, m_CmdFenceSet(pDevice)
+	, m_CmdListFenceSet(pDevice)
+	, m_CmdListPool(pDevice)
 {
-	m_CmdFenceSet.Init();
+	m_CmdListPool.Init();
+	m_CmdListFenceSet.Init();
 
 	ZeroMemory(&m_FrameFenceValuesSubmitted, sizeof(m_FrameFenceValuesSubmitted));
 	ZeroMemory(&m_FrameFenceValuesCompleted, sizeof(m_FrameFenceValuesCompleted));
@@ -22,35 +24,43 @@ CCommandScheduler::CCommandScheduler(CDevice* pDevice)
 //---------------------------------------------------------------------------------------------------------------------
 CCommandScheduler::~CCommandScheduler()
 {
+}
 
+//---------------------------------------------------------------------------------------------------------------------
+bool CCommandScheduler::RecreateCommandListPool()
+{
+	m_CmdListPool.Clear();
+	m_CmdListPool.Init();
+
+	return true;
 }
 
 void CCommandScheduler::Flush(bool bWait)
 {
-	auto naryFences = m_CmdFenceSet.GetD3D11Fence(CMDQUEUE_IMMEDIATE);
+	auto naryFences = m_CmdListFenceSet.GetD3D11Fence();
 
-	const UINT64 currFenceValue = m_CmdFenceSet.GetCurrentValue(CMDQUEUE_IMMEDIATE);
+	const UINT64 currFenceValue = m_CmdListFenceSet.GetCurrentValue();
 	const UINT64 nextFenceValue = currFenceValue + 1;
 
 	{
 		// Same as "Schedule" (submit) + "Execute" (signal)
-		gcpRendD3D->GetDeviceContext().End((*naryFences)[currFenceValue % naryFences->size()]);
-		m_CmdFenceSet.SetSubmittedValue(currFenceValue, CMDQUEUE_IMMEDIATE);
+		gcpRendD3D->GetDeviceContext()->End((*naryFences)[currFenceValue % naryFences->size()]);
+		m_CmdListFenceSet.SetSubmittedValue(currFenceValue);
 
-		gcpRendD3D->GetDeviceContext().Flush();
-		m_CmdFenceSet.SetSignalledValue(currFenceValue, CMDQUEUE_IMMEDIATE);
+		gcpRendD3D->GetDeviceContext()->Flush();
+		m_CmdListFenceSet.SetSignalledValue(currFenceValue);
 
 		// Wait if necessary
 		if (bWait)
 		{
-			m_CmdFenceSet.WaitForFence(currFenceValue, CMDQUEUE_IMMEDIATE);
+			m_CmdListFenceSet.WaitForFence(currFenceValue);
 		}
 	}
 
 	{
 		// Raise fence for continuous time-line
-	//	gcpRendD3D->GetDeviceContext().Begin((*naryFences)[nextFenceValue % naryFences->size()]);
-		m_CmdFenceSet.SetCurrentValue(nextFenceValue, CMDQUEUE_IMMEDIATE);
+	//	gcpRendD3D->GetDeviceContext()->Begin((*naryFences)[nextFenceValue % naryFences->size()]);
+		m_CmdListFenceSet.SetCurrentValue(nextFenceValue);
 	}
 }
 
@@ -59,9 +69,8 @@ void CCommandScheduler::GarbageCollect()
 	CRY_PROFILE_SECTION(PROFILE_RENDERER, "FLUSH GPU HEAPS");
 
 	// Ring buffer for the _completed_ fences of past number of frames
-	m_CmdFenceSet.AdvanceCompletion();
-	m_CmdFenceSet.GetLastCompletedFenceValues(
-		m_FrameFenceValuesCompleted[(m_FrameFenceCursor)]);
+	m_CmdListFenceSet.AdvanceCompletion();
+	m_FrameFenceValuesCompleted[(m_FrameFenceCursor)] = m_CmdListFenceSet.GetLastCompletedFenceValue();
 	GetDevice()->FlushReleaseHeap(
 		m_FrameFenceValuesCompleted[(m_FrameFenceCursor)],
 		m_FrameFenceValuesCompleted[(m_FrameFenceCursor + (FRAME_FENCES - std::max(1, FRAME_FENCE_LATENCY - 1))) % FRAME_FENCES]);
@@ -73,9 +82,8 @@ void CCommandScheduler::SyncFrame()
 	CRY_PROFILE_SECTION(PROFILE_RENDERER, "SYNC TO FRAME FENCE");
 
 	// Block when more than N frames have not been rendered yet
-	m_CmdFenceSet.GetSubmittedValues(
-		m_FrameFenceValuesSubmitted[(m_FrameFenceCursor)]);
-	m_CmdFenceSet.WaitForFence(
+	m_FrameFenceValuesSubmitted[(m_FrameFenceCursor)] = m_CmdListFenceSet.GetSubmittedValue();
+	m_CmdListFenceSet.WaitForFence(
 		m_FrameFenceValuesSubmitted[(m_FrameFenceCursor + (FRAME_FENCES - std::max(1, FRAME_FENCE_INFLIGHT - 1))) % FRAME_FENCES]);
 }
 

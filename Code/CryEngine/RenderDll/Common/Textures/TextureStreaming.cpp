@@ -1341,7 +1341,7 @@ bool CTexture::StartStreaming(CTexture* pTex, STexPoolItem* pNewPoolItem, const 
 					CDeviceTexture* pDevTex = pNewPoolItem->m_pDevTexture;
 
 					D3DTexture* pD3DTex = pDevTex->Get2DTexture();
-	#if CRY_RENDERER_GNM
+					
 					// TODO: Fix this, this should NOT be here!
 					// The texture here is NOT created with any CPU access flags (or USAGE_STREAMING), and therefore it may not have been paged in yet.
 					// This is (afaik) a bug in the high-level code, it doesn't put any flags on created textures...
@@ -1350,10 +1350,6 @@ bool CTexture::StartStreaming(CTexture* pTex, STexPoolItem* pNewPoolItem, const 
 					EGnmTextureAspect aspect = kGnmTextureAspectColor;
 					size_t offset = pD3DTex->GnmGetSubResourceOffset(nMipIdx, 0, aspect);
 					pBaseAddress = pD3DTex->GnmGetBaseAddress(aspect) + offset;
-	#else
-					size_t offset = pD3DTex->GetMipOffset(nMipIdx, 0);
-					pBaseAddress = static_cast<byte*>(pD3DTex->RawPointer()) + offset;
-	#endif
 					streamRequests[nStreamRequests].params.nFlags |= IStreamEngine::FLAGS_WRITE_ONLY_EXTERNAL_BUFFER;
 #elif CRY_PLATFORM_DURANGO && (CRY_RENDERER_DIRECT3D >= 110) && (CRY_RENDERER_DIRECT3D < 120)
 					pBaseAddress = reinterpret_cast<byte*>(pPinnedBaseAddress + pDevTex->GetSurfaceOffset(nMipIdx, 0));

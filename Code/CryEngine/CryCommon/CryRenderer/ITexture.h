@@ -90,7 +90,7 @@ enum ETEX_Format : uint8
 	eTF_R4G4,
 	eTF_R4G4B4A4,
 
-	//! Only available as hardware format under OpenGL and Vulkan.
+	//! Only available as hardware format under Vulkan.
 	eTF_EAC_R11,
 	eTF_EAC_R11S,
 	eTF_EAC_RG11,

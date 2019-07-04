@@ -2286,9 +2286,6 @@ void C3DEngine::DisplayInfo(float& fTextPosX, float& fTextPosY, float& fTextStep
 	case ERenderType::Direct3D12:
 		pRenderType = STR_DX12_RENDERER;
 		break;
-	case ERenderType::OpenGL:
-		pRenderType = STR_GL_RENDERER;
-		break;
 	case ERenderType::Vulkan:
 		pRenderType = STR_VK_RENDERER;
 		break;

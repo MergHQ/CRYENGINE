@@ -9,18 +9,23 @@ class CDeviceNvidiaCommandInterfaceImpl;
 class CDeviceCopyCommandInterfaceImpl;
 class CDeviceRenderPass;
 
+namespace NCryDX11
+{
+	class CCommandList;
+}
+
 struct SSharedState
 {
+	DX11_PTR(NCryDX11::CCommandList) pCommandList;
+
 	SCachedValue<void*> shader[eHWSC_Num];
 	SCachedValue<ID3D11ShaderResourceView*>           shaderResourceView[eHWSC_Num][MAX_TMU];
 	SCachedValue<ID3D11SamplerState*>                 samplerState[eHWSC_Num][MAX_TMU];
 	SCachedValue<uint64>                              constantBuffer[eHWSC_Num][eConstantBufferShaderSlot_Count];
 
-	std::array<std::array<uint8, MAX_TMU>, eHWSC_Num> srvs;
-	std::array<std::array<uint8, MAX_TMU>, eHWSC_Num> samplers;
-
-	std::array<uint8, eHWSC_Num>                      numSRVs;
-	std::array<uint8, eHWSC_Num>                      numSamplers;
+	std::array < std::bitset<ResourceSetMaxSrvCount>, eHWSC_Num > requiredSRVs;
+	std::array < std::bitset<ResourceSetMaxUavCount>, eHWSC_Num > requiredUAVs;
+	std::array < std::bitset<ResourceSetMaxSamplerCount>, eHWSC_Num > requiredSamplers;
 
 	EShaderStage validShaderStages;
 };
@@ -29,7 +34,6 @@ struct SCustomGraphicsState
 {
 	SCachedValue<ID3D11DepthStencilState*> depthStencilState;
 	SCachedValue<ID3D11RasterizerState*>   rasterizerState;
-	uint32                                 rasterizerStateIndex;
 	SCachedValue<ID3D11BlendState*>        blendState;
 	SCachedValue<ID3D11InputLayout*>       inputLayout;
 	SCachedValue<D3D11_PRIMITIVE_TOPOLOGY> topology;
@@ -70,12 +74,16 @@ public:
 	void BeginProfilerEvent(const char* label);
 	void EndProfilerEvent(const char* label);
 
+	// Helper functions for DX11
+	NCryDX11::CCommandList* GetDX11CommandList() const { return m_sharedState.pCommandList; }
+
 protected:
 	void ClearStateImpl(bool bOutputMergerOnly) const;
 
 	void ResetImpl();
-	void LockToThreadImpl() {}
-	void CloseImpl()        {}
+	void LockToThreadImpl();
+	void CloseImpl();
+
 };
 
 ////////////////////////////////////////////////////////////////////////////
@@ -173,6 +181,8 @@ protected:
 class CDeviceCopyCommandInterfaceImpl : public CDeviceCommandListImpl
 {
 protected:
+	void CopyImpl(D3DResource*    pSrc, D3DResource*    pDst);
+
 	void CopyImpl(CDeviceBuffer*  pSrc, CDeviceBuffer*  pDst);
 	void CopyImpl(D3DBuffer*      pSrc, D3DBuffer*      pDst);
 	void CopyImpl(CDeviceTexture* pSrc, CDeviceTexture* pDst);
@@ -198,5 +208,9 @@ protected:
 
 	void CopyImpl(CDeviceBuffer*  pSrc, void* pDst, const SResourceMemoryMapping& memoryMapping);
 	void CopyImpl(CDeviceTexture* pSrc, void* pDst, const SResourceMemoryMapping& memoryMapping);
+
+private:
+	// This is not supported on 11.x and are emulated to behave the same as 12
+	void CopySubresourcesRegion1(ID3D11Resource* pDstResource, UINT DstSubresource, UINT DstX, UINT DstY, UINT DstZ, ID3D11Resource* pSrcResource, UINT SrcSubresource, const D3D11_BOX* pSrcBox, UINT CopyFlags, UINT NumSubresources);
 };
 

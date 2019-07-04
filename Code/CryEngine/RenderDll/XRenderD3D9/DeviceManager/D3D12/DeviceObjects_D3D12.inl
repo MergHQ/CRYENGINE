@@ -126,10 +126,6 @@ static inline D3D11_SUBRESOURCE_DATA* ConvertToDX11Data(uint32 numSubs, const ST
 		pDst[i].pSysMem = pSrc->m_pSysMemSubresourceData[i].m_pSysMem;
 		pDst[i].SysMemPitch = pSrc->m_pSysMemSubresourceData[i].m_sSysMemAlignment.rowStride;
 		pDst[i].SysMemSlicePitch = pSrc->m_pSysMemSubresourceData[i].m_sSysMemAlignment.planeStride;
-
-#if CRY_PLATFORM_ORBIS
-		pDst[i].SysMemTileMode = (D3D11_TEXTURE_TILE_MODE)pSrc.m_eSysMemTileMode;
-#endif
 	}
 
 	// Terminator

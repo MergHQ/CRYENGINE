@@ -19,7 +19,7 @@ class CJobManager;
 namespace ThreadBackEnd {
 namespace detail {
 
-#if DURANGO_ENABLE_ASYNC_DIPS == 1
+#if DURANGO_ENABLE_ASYNC_DIPS && !DEVICE_MANAGER_IMMEDIATE_STATE_WRITE
 	void ExecuteAsyncDipJob()
 	{
 		UAsyncDipState nCurrentState;
@@ -70,7 +70,7 @@ static thread_local int tls_workerSpins = 0;
 
 		void Wait()
 		{
-#if DURANGO_ENABLE_ASYNC_DIPS == 1
+#if DURANGO_ENABLE_ASYNC_DIPS && !DEVICE_MANAGER_IMMEDIATE_STATE_WRITE
 			ExecuteAsyncDipJob();
 #endif
 			if (tls_workerSpins++ > 10) // Worker failed more than 10 times to get work from the queue
@@ -139,7 +139,7 @@ static thread_local int tls_workerSpins = 0;
 			}
 			else
 			{
-#if DURANGO_ENABLE_ASYNC_DIPS == 1
+#if DURANGO_ENABLE_ASYNC_DIPS && !DEVICE_MANAGER_IMMEDIATE_STATE_WRITE
 				ExecuteAsyncDipJob();
 #endif
 				if (tls_workerSpins++ < 10) // Worker failed more than 10 times to get work from the queue

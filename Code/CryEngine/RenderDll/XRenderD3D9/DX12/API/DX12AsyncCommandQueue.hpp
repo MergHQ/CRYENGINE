@@ -10,6 +10,7 @@
 namespace NCryDX12
 {
 
+class CCommandList;
 class CCommandListPool;
 
 class CAsyncCommandQueue : public IThread

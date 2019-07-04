@@ -9,12 +9,6 @@
 #include <Common/ElementPool.h>
 #include <Common/RenderDisplayContext.h>
 
-#if defined(_DEBUG)
-	#define ENABLE_CONTEXT_THREAD_CHECKING 1
-#else
-	#define ENABLE_CONTEXT_THREAD_CHECKING 0
-#endif
-
 /*
    ===========================================
    The DXRenderer interface Class
@@ -168,49 +162,18 @@ public:
 	virtual void UpdateResolution() final;
 
 public:
-#ifdef USE_PIX_DURANGO
-	ILINE ID3DUserDefinedAnnotation* GetPixProfiler() { return m_pPixPerf; }
-#endif
-
 	/////////////////////////////////////////////////////////////////////////////
 	// Functions to access the device and associated objects
-	const CCryDeviceWrapper&        GetDevice() const;
-	CCryDeviceWrapper&              GetDevice();
-	ILINE CCryDeviceWrapper&        GetDevice_Unsynchronized()        { return m_DeviceWrapper; }
-	CCryDeviceContextWrapper&       GetDeviceContext();
-	ILINE CCryDeviceContextWrapper& GetDeviceContext_Unsynchronized() { return m_DeviceContextWrapper; }
-	ILINE CCryDeviceContextWrapper& GetDeviceContext_ForMapAndUnmap()
-	{
-#if (CRY_RENDERER_DIRECT3D >= 120)
-		// "ID3D12Resource::Map": Map and Unmap can be called by multiple threads safely.
-		return GetDeviceContext_Unsynchronized();
-#else
-		return GetDeviceContext();
-#endif
-	}
+	const D3DDevice*                GetDevice() const { return m_pDevice; }
+	D3DDevice*                      GetDevice()       { return m_pDevice; }
+	const D3DDeviceContext*         GetDeviceContext() const { return m_pDeviceContext; }
+	D3DDeviceContext*               GetDeviceContext()       { return m_pDeviceContext; }
 #if defined(DEVICE_SUPPORTS_PERFORMANCE_DEVICE)
-	CCryPerformanceDeviceWrapper&              GetPerformanceDevice();
-	ILINE CCryPerformanceDeviceWrapper&        GetPerformanceDevice_Unsynchronized()        { return m_PerformanceDeviceWrapper; }
-	CCryPerformanceDeviceContextWrapper&       GetPerformanceDeviceContext();
-	ILINE CCryPerformanceDeviceContextWrapper& GetPerformanceDeviceContext_Unsynchronized() { return m_PerformanceDeviceContextWrapper; }
+	const ID3DXboxPerformanceDevice* GetPerformanceDevice() const { return m_pPerformanceDevice; }
+	ID3DXboxPerformanceDevice*       GetPerformanceDevice()       { return m_pPerformanceDevice; }
+	const ID3DXboxPerformanceContext* GetPerformanceContext() const { return m_pPerformanceContext; }
+	ID3DXboxPerformanceContext*       GetPerformanceContext()       { return m_pPerformanceContext; }
 #endif
-
-	/////////////////////////////////////////////////////////////////////////////
-	// Debug Functions to check that the D3D DeviceContext is only accessed
-	// by its owning thread
-	void  BindContextToThread(DWORD threadID);
-	DWORD GetBoundThreadID() const;
-	void  CheckContextThreadAccess() const;
-
-	/////////////////////////////////////////////////////////////////////////////
-	// Util function to support synchronization if a asynchrounous device is used
-	void          WaitForAsynchronousDevice() const;
-	volatile int* GetAsynchronousDeviceState();
-
-	/////////////////////////////////////////////////////////////////////////////
-	// Util function to bind Device Hooks to all devices/contextes
-	void                             RegisterDeviceWrapperHook(ICryDeviceWrapperHook* pDeviceWrapperHook);
-	void                             UnregisterDeviceWrapperHook(const char* pDeviceHookName);
 
 	bool                             EF_PrepareShadowGenForLight(CRenderView* pRenderView, SRenderLight* pLight, int nLightID);
 	bool                             PrepareShadowGenForFrustum(CRenderView* pRenderView, CRenderView* pShadowView, ShadowMapFrustum* pCurFrustum, const SRenderLight* pLight, int nLightID);
@@ -564,9 +527,6 @@ public:
 
 	virtual void SetCurDownscaleFactor(Vec2 sf) final;
 
-	void         SetLogFuncs(bool bEnable);
-	void         MemReplayWrapD3DDevice();
-
 	void         DrawTexelsPerMeterInfo();
 
 #if CRY_PLATFORM_DURANGO
@@ -668,10 +628,6 @@ public:
 	void         BeginRenderDocCapture();
 	void         EndRenderDocCapture();
 
-#ifdef SUPPORT_HW_MOUSE_CURSOR
-	virtual IHWMouseCursor* GetIHWMouseCursor() override;
-#endif
-
 	virtual IGraphicsDeviceConstantBufferPtr           CreateGraphiceDeviceConstantBuffer() final;
 
 	virtual compute_skinning::IComputeSkinningStorage* GetComputeSkinningStorage() override;
@@ -717,16 +673,7 @@ public:
 	DWORD m_DeviceOwningthreadID;           // thread if of thread who is allows to access the D3D Context
 	volatile int m_nAsyncDeviceState;       // counter of how many jobs are currently executed in parallel on the device
 
-#if CRY_PLATFORM_DURANGO && (CRY_RENDERER_DIRECT3D >= 110) && (CRY_RENDERER_DIRECT3D < 120)
-	ID3DXboxPerformanceDevice*  m_pPerformanceDevice;
-	ID3DXboxPerformanceContext* m_pPerformanceDeviceContext;
-#endif
-
 	DXGI_SURFACE_DESC m_d3dsdBackBuffer;        // Surface desc of the BackBuffer
-
-#ifdef USE_PIX_DURANGO
-	ID3DUserDefinedAnnotation* m_pPixPerf;
-#endif
 
 	// x = average luminance, y = max luminance, z = min luminance,
 	Vec4               m_vSceneLuminanceInfo;
@@ -785,7 +732,7 @@ public:
 
 	static constexpr int MAX_RT_STACK = 8;
 
-#if CRY_PLATFORM_WINDOWS || CRY_RENDERER_OPENGL
+#if CRY_PLATFORM_WINDOWS
 	static constexpr int RT_STACK_WIDTH = D3D11_SIMULTANEOUS_RENDER_TARGET_COUNT;
 #else
 	static constexpr int RT_STACK_WIDTH = 4;
@@ -860,17 +807,17 @@ private:
 	int                    m_screenCapTexHandle[RT_COMMAND_BUF_COUNT];
 #endif
 
-	// fields to access the D3D Driver: Device, Context and other related objects
+	// fields to access the D3D Driver: Device, and other related objects
 	// all should be accessed through the provided getters:
-	// GetDevice(), GetDeviceContext() and so on
+	// GetDevice(), and so on
 	// To access the device without synchronization (which happens in presence of a asynchronous device)
-	// please use GetDevice_Unsynchronized(), GetDeviceContext_Unsynchronized() etc
-	CCryDeviceWrapper        m_DeviceWrapper;
-	CCryDeviceContextWrapper m_DeviceContextWrapper;
+	// please use GetDevice_Unsynchronized(), etc
+	D3DDevice*         m_pDevice;
+	D3DDeviceContext*  m_pDeviceContext;
 
 #if defined(DEVICE_SUPPORTS_PERFORMANCE_DEVICE)
-	CCryPerformanceDeviceWrapper        m_PerformanceDeviceWrapper;
-	CCryPerformanceDeviceContextWrapper m_PerformanceDeviceContextWrapper;
+	ID3DXboxPerformanceDevice*  m_pPerformanceDevice;
+	ID3DXboxPerformanceContext* m_pPerformanceContext;
 #endif
 
 	t_arrDeferredMeshIndBuff  m_arrDeferredInds;
@@ -899,92 +846,7 @@ private:
 };
 
 ///////////////////////////////////////////////////////////////////////////////
-inline void CD3D9Renderer::BindContextToThread(DWORD threadID)
-{
-#if ENABLE_CONTEXT_THREAD_CHECKING
-	m_DeviceOwningthreadID = threadID;
-#endif
-}
-
 ///////////////////////////////////////////////////////////////////////////////
-inline void CD3D9Renderer::CheckContextThreadAccess() const
-{
-#if ENABLE_CONTEXT_THREAD_CHECKING
-	if (m_DeviceOwningthreadID != CryGetCurrentThreadId())
-		CryFatalError("accessing d3d11 immediate context from unbound thread!");
-#endif
-}
-
-///////////////////////////////////////////////////////////////////////////////
-inline DWORD CD3D9Renderer::GetBoundThreadID() const
-{
-	return m_DeviceOwningthreadID;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-inline void CD3D9Renderer::WaitForAsynchronousDevice() const
-{
-#if DURANGO_ENABLE_ASYNC_DIPS
-	if (m_nAsyncDeviceState)
-	{
-		CRY_PROFILE_SECTION_WAITING(PROFILE_RENDERER, "Sync Async DIPS");
-
-		while (m_nAsyncDeviceState)
-		{
-#if CRY_PLATFORM_ORBIS || CRY_PLATFORM_APPLE || CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID
-			CrySleep(0);
-#else
-			SwitchToThread();
-#endif
-		}
-	}
-#endif
-}
-
-///////////////////////////////////////////////////////////////////////////////
-inline volatile int* CD3D9Renderer::GetAsynchronousDeviceState()
-{
-	CryInterlockedIncrement(&m_nAsyncDeviceState);
-	return &m_nAsyncDeviceState;
-
-}
-
-///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
-inline CCryDeviceWrapper& CD3D9Renderer::GetDevice()
-{
-	return m_DeviceWrapper;
-}
-
-inline const CCryDeviceWrapper& CD3D9Renderer::GetDevice() const
-{
-	return m_DeviceWrapper;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-inline CCryDeviceContextWrapper& CD3D9Renderer::GetDeviceContext()
-{
-	CheckContextThreadAccess();
-	WaitForAsynchronousDevice();
-	return m_DeviceContextWrapper;
-}
-
-#if defined(DEVICE_SUPPORTS_PERFORMANCE_DEVICE)
-///////////////////////////////////////////////////////////////////////////////
-inline CCryPerformanceDeviceWrapper& CD3D9Renderer::GetPerformanceDevice()
-{
-	return m_PerformanceDeviceWrapper;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-inline CCryPerformanceDeviceContextWrapper& CD3D9Renderer::GetPerformanceDeviceContext()
-{
-	CheckContextThreadAccess();
-	WaitForAsynchronousDevice();
-	return m_PerformanceDeviceContextWrapper;
-}
-#endif // DEVICE_SUPPORTS_PERFORMANCE_DEVICE
-
 extern CD3D9Renderer gcpRendD3D;
 
 //=========================================================================================

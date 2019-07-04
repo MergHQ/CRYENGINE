@@ -3,7 +3,6 @@
 #pragma once
 
 #include "Common/Shaders/ShaderComponents.h"
-#include "DeviceManager/D3D11/DeviceSubmissionQueue_D3D11.h"
 
 #if CRY_PLATFORM_ORBIS && defined(USE_SCUE)
 //#define USE_PER_FRAME_CONSTANT_BUFFER_UPDATES // TODO: Restore this
@@ -228,7 +227,7 @@ struct SShaderAsyncInfo
 	}
 	static void FlushPendingShaders();
 
-#if CRY_PLATFORM_DURANGO //|| CRY_RENDERER_OPENGL
+#if CRY_PLATFORM_DURANGO
 	#define LPD3DXBUFFER D3DBlob*
 	#define ID3DXBuffer  D3DBlob
 #endif

@@ -6,7 +6,7 @@
 #include <lzma/Lzma86.h>
 #include <cstring>
 
-#if !CRY_PLATFORM_ORBIS && !CRY_RENDERER_OPENGL && !CRY_RENDERER_OPENGLES && !CRY_RENDERER_VULKAN
+#if !CRY_RENDERER_VULKAN && !CRY_RENDERER_GNM
 	#if CRY_RENDERER_DIRECT3D >= 120
 		#if CRY_PLATFORM_DURANGO
 			#include <D3D12Shader_x.h>
@@ -725,10 +725,6 @@ void CHWShader_D3D::mfSetDefaultRT(uint64& nAndMask, uint64& nOrMask)
 		nBitsPlatform |= SHGD_HW_DX11;
 	else if (CParserBin::m_nPlatform == SF_D3D12)
 		nBitsPlatform |= SHGD_HW_DX12;
-	else if (CParserBin::m_nPlatform == SF_GL4)
-		nBitsPlatform |= SHGD_HW_GL4;
-	else if (CParserBin::m_nPlatform == SF_GLES3)
-		nBitsPlatform |= SHGD_HW_GLES3;
 	else if (CParserBin::m_nPlatform == SF_VULKAN)
 		nBitsPlatform |= SHGD_HW_VULKAN;
 
@@ -1083,7 +1079,7 @@ bool CHWShader_D3D::mfGenerateScript(CShader* pSH, SHWSInstance* pInst, std::vec
 			if (nStreams & VSM_HWSKIN)
 				CParserBin::AddDefineToken(eT__FT_SKIN_STREAM, NewTokens);
 #if ENABLE_NORMALSTREAM_SUPPORT
-			if (CParserBin::m_nPlatform& (SF_D3D11 | SF_D3D12 | SF_DURANGO | SF_ORBIS | SF_GL4 | SF_GLES3))
+			if (CParserBin::m_nPlatform & (SF_D3D11 | SF_D3D12 | SF_DURANGO | SF_ORBIS))
 			{
 				if (nStreams & VSM_NORMALS)
 					CParserBin::AddDefineToken(eT__FT_NORMAL, NewTokens);
@@ -2562,7 +2558,7 @@ bool CHWShader_D3D::mfUploadHW(SHWSInstance* pInst, const byte* pBuf, uint32 nSi
 				if (gcpRendD3D->GetVrProjectionManager()->IsMultiResEnabledStatic())
 				{
 					NvAPI_D3D11_CREATE_FASTGS_EXPLICIT_DESC FastGSArgs = { NVAPI_D3D11_CREATEFASTGSEXPLICIT_VER, NV_FASTGS_USE_VIEWPORT_MASK };
-					NvAPI_Status Status = NvAPI_D3D11_CreateFastGeometryShaderExplicit(gcpRendD3D->GetDevice().GetRealDevice(), alias_cast<DWORD*>(pBuf), nSize, NULL, &FastGSArgs, alias_cast<ID3D11GeometryShader**>(&handle));
+					NvAPI_Status Status = NvAPI_D3D11_CreateFastGeometryShaderExplicit(gcpRendD3D->GetDevice(), alias_cast<DWORD*>(pBuf), nSize, NULL, &FastGSArgs, alias_cast<ID3D11GeometryShader**>(&handle));
 					hr = (Status == NVAPI_OK) ? S_OK : E_FAIL;
 				}
 				else
@@ -2612,21 +2608,18 @@ bool CHWShader_D3D::mfUploadHW(SHWSInstance* pInst, const byte* pBuf, uint32 nSi
 #endif
 
 		// Assign name to Shader for enhanced debugging
-#if !defined(RELEASE) && (CRY_PLATFORM_WINDOWS || CRY_PLATFORM_ORBIS)
+#if !defined(RELEASE) && (CRY_PLATFORM_WINDOWS)
 		char name[1024];
 		sprintf(name, "%s_%s(LT%x)@(RT%llx)(MD%x)(MDV%x)(GL%llx)(PSS%llx)", pSH->GetName(), m_EntryFunc.c_str(), pInst->m_Ident.m_LightMask, pInst->m_Ident.m_RTMask, pInst->m_Ident.m_MDMask, pInst->m_Ident.m_MDVMask, pInst->m_Ident.m_GLMask, pInst->m_Ident.m_pipelineState.opaque);
 
 	#if CRY_PLATFORM_WINDOWS
 		#if CRY_RENDERER_DIRECT3D
-		auto pObject = (ID3D11DeviceChild*)pInst->m_Handle.m_pShader->GetHandle();
-		SetDebugName(pObject, name);
+			auto pObject = (ID3D11DeviceChild*)pInst->m_Handle.m_pShader->GetHandle();
+			SetDebugName(pObject, name);
 		#elif CRY_RENDERER_VULKAN
-		auto pObject = reinterpret_cast<NCryVulkan::CShader*>(pInst->m_Handle.m_pShader->GetHandle());
-		SetDebugName(pObject, name);
+			auto pObject = reinterpret_cast<NCryVulkan::CShader*>(pInst->m_Handle.m_pShader->GetHandle());
+			SetDebugName(pObject, name);
 		#endif
-	#elif CRY_PLATFORM_ORBIS && !CRY_RENDERER_GNM
-		auto pObject = (CCryDXOrbisShader*)pInst->m_Handle.m_pShader->GetHandle();
-		SetDebugName(pObject, name);
 	#endif
 #endif
 	}
@@ -3199,10 +3192,6 @@ void CHWShader_D3D::mfSubmitRequestLine(SHWSInstance* pInst, string* pRequestLin
 		  "ShaderList_Orbis.txt",
 #elif CRY_PLATFORM_DURANGO
 		  "ShaderList_Durango.txt",
-#elif CRY_RENDERER_OPENGLES && DXGL_INPUT_GLSL
-		  "ShaderList_GLES3.txt",
-#elif CRY_RENDERER_OPENGL && DXGL_INPUT_GLSL
-		  "ShaderList_GL4.txt",
 #else
 		  "ShaderList_PC.txt",
 #endif
@@ -3297,7 +3286,6 @@ bool CHWShader_D3D::mfCompileHLSL_Int(CShader* pSH, char* prog_text, D3DBlob** p
 	else
 	{
 		static bool s_logOnce_WrongPlatform = false;
-	#if !CRY_RENDERER_OPENGL
 		#if !defined(_RELEASE)
 		if (!s_logOnce_WrongPlatform && (CParserBin::m_nPlatform& (SF_D3D11 | SF_D3D12 | SF_DURANGO | SF_VULKAN)) == 0)
 		{
@@ -3340,7 +3328,6 @@ bool CHWShader_D3D::mfCompileHLSL_Int(CShader* pSH, char* prog_text, D3DBlob** p
 			}
 		}
 		return bRes;
-	#endif
 	}
 #endif // #if CRY_PLATFORM_WINDOWS || CRY_PLATFORM_DURANGO
 
@@ -3392,7 +3379,7 @@ void CHWShader_D3D::mfPrepareShaderDebugInfo(SHWSInstance* pInst, const char* sz
 			pInst->m_nInstructions = atoi(&szInst[13]);
 	}
 
-	if (CParserBin::m_nPlatform& (SF_D3D11 | SF_D3D12 | SF_DURANGO | SF_GL4 | SF_GLES3))
+	if (CParserBin::m_nPlatform & (SF_D3D11 | SF_D3D12 | SF_DURANGO))
 	{
 		D3DShaderReflection* pShaderReflection = (D3DShaderReflection*)pConstantTable;
 
@@ -3496,7 +3483,6 @@ bool CHWShader_D3D::mfCreateShaderEnv(int nThread, SHWSInstance* pInst, D3DBlob*
 
 	if (pShader && (nCombination < 0))
 	{
-#if !CRY_RENDERER_OPENGL
 		D3DBlob* pAsm = NULL;
 		D3DBlob* pSrc = (D3DBlob*)pShader;
 		UINT* pBuf = (UINT*)pSrc->GetBufferPointer();
@@ -3507,7 +3493,6 @@ bool CHWShader_D3D::mfCreateShaderEnv(int nThread, SHWSInstance* pInst, D3DBlob*
 			pSH->mfPrepareShaderDebugInfo(pInst, szAsm, InstBindVars, pConstantTable);
 		}
 		SAFE_RELEASE(pAsm);
-#endif
 	}
 	//assert(!pInst->m_pBindVars);
 
@@ -3516,10 +3501,6 @@ bool CHWShader_D3D::mfCreateShaderEnv(int nThread, SHWSInstance* pInst, D3DBlob*
 		bool bVF = pSH->m_eSHClass == eHWSC_Vertex;
 #if CRY_PLATFORM_DESKTOP
 		if (CParserBin::PlatformIsConsole())
-			bVF = false;
-#endif
-#if !CRY_RENDERER_OPENGL
-		if (CParserBin::m_nPlatform& (SF_GL4 | SF_GLES3))
 			bVF = false;
 #endif
 		if (bVF)
@@ -3851,10 +3832,6 @@ void CAsyncShaderTask::SubmitAsyncRequestLine(SShaderAsyncInfo* pAsync)
 			  "ShaderList_Orbis.txt",
 	#elif CRY_PLATFORM_DURANGO
 			  "ShaderList_Durango.txt",
-	#elif CRY_RENDERER_OPENGLES && DXGL_INPUT_GLSL
-			  "ShaderList_GLES3.txt",
-	#elif CRY_RENDERER_OPENGL && DXGL_INPUT_GLSL
-			  "ShaderList_GL4.txt",
 	#else
 			  "ShaderList_PC.txt",
 	#endif
@@ -3912,11 +3889,6 @@ bool CAsyncShaderTask::CompileAsyncShader(SShaderAsyncInfo* pAsync)
 		if (CParserBin::PlatformIsConsole())
 			bReflect = false;
 	#endif
-	#if !CRY_RENDERER_OPENGL
-		if (CParserBin::m_nPlatform& (SF_GL4 | SF_GLES3))
-			bReflect = false;
-	#endif
-
 		if (bReflect)
 		{
 			D3DShaderReflection* pShaderReflection;
@@ -3937,7 +3909,7 @@ bool CAsyncShaderTask::CompileAsyncShader(SShaderAsyncInfo* pAsync)
 			assert(0);
 		}
 	}
-	#if CRY_PLATFORM_WINDOWS && !CRY_RENDERER_OPENGL
+	#if CRY_PLATFORM_WINDOWS
 	else
 	{
 		static bool s_logOnce_WrongPlatform = false;

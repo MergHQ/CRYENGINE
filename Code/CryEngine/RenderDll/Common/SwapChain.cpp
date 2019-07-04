@@ -128,8 +128,6 @@ CSwapChain CSwapChain::CreateSwapChain(CRY_HWND hWnd, DXGIOutput* pOutput, uint3
 
 #if defined(SUPPORT_DEVICE_INFO)
 	HRESULT hr = gcpRendD3D.DevInfo().Factory()->CreateSwapChain(gcpRendD3D.DevInfo().Device(), &scDesc, &piSwapChain);
-#elif CRY_PLATFORM_ORBIS
-	HRESULT hr = CCryDXOrbisGIFactory().CreateSwapChain(gcpRendD3D.GetDevice().GetRealDevice(), &scDesc, &piSwapChain);
 #else
 #error UNKNOWN PLATFORM TRYING TO CREATE SWAP CHAIN
 #endif

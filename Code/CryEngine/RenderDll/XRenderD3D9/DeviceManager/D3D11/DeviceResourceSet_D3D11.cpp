@@ -11,23 +11,12 @@ const void* const CDeviceResourceSet_DX11::InvalidPointer = (const void* const)0
 void CDeviceResourceSet_DX11::ClearCompiledData()
 {
 	// Releasing resources is allowed to be done by any thread, just not concurrently
-	firstCompiledSRVs.fill(compiledSRVs.size());
-	lastCompiledSRVs.fill(0);
-
-	for (auto& stage : compiledSRVs)
-		stage.fill((ID3D11ShaderResourceView*)InvalidPointer);
-
-	firstCompiledSamplers.fill(compiledSamplers.size());
-	lastCompiledSamplers.fill(0);
-
-	for (auto& stage : compiledSamplers)
-		stage.fill((ID3D11SamplerState*)InvalidPointer);
-
 	ZeroMemory(&compiledCBs, sizeof(compiledCBs));
 	ZeroMemory(&numCompiledCBs, sizeof(numCompiledCBs));
 
-	ZeroMemory(&compiledUAVs, sizeof(compiledUAVs));
-	ZeroMemory(&numCompiledUAVs, sizeof(numCompiledUAVs));
+	compiledSRVs.Clear();
+	compiledUAVs.Clear();
+	compiledSamplers.Clear();
 }
 
 bool CDeviceResourceSet_DX11::UpdateImpl(const CDeviceResourceSetDesc& desc, CDeviceResourceSetDesc::EDirtyFlags dirtyFlags)
@@ -80,19 +69,7 @@ bool CDeviceResourceSet_DX11::UpdateImpl(const CDeviceResourceSetDesc& desc, CDe
 				: (CDeviceResource*)resource.pBuffer->GetDevBuffer();
 
 			ID3D11ShaderResourceView* pSRV = pResource->LookupSRV(resource.view);
-
-			// Shader stages are ordered by usage-frequency and loop exists according to usage-frequency (VS+PS fast, etc.)
-			int validShaderStages = bindPoint.stages;
-			for (EHWShaderClass shaderClass = eHWSC_Vertex; validShaderStages; shaderClass = EHWShaderClass(shaderClass + 1), validShaderStages >>= 1)
-			{
-				if (validShaderStages & 1)
-				{
-					compiledSRVs[shaderClass][bindPoint.slotNumber] = pSRV;
-
-					firstCompiledSRVs[shaderClass] = std::min(firstCompiledSRVs[shaderClass], bindPoint.slotNumber);
-					lastCompiledSRVs[shaderClass] = std::max(lastCompiledSRVs[shaderClass], bindPoint.slotNumber);
-				}
-			}
+			compiledSRVs.AddResource(pSRV, bindPoint);
 		};
 		break;
 
@@ -105,40 +82,14 @@ bool CDeviceResourceSet_DX11::UpdateImpl(const CDeviceResourceSetDesc& desc, CDe
 				: (CDeviceResource*)resource.pBuffer->GetDevBuffer();
 
 			ID3D11UnorderedAccessView* pUAV = pResource->LookupUAV(resource.view);
-
-			if (bindPoint.stages & EShaderStage_Compute)
-			{
-				SCompiledUAV compiledUAV = { pUAV, eHWSC_Compute, bindPoint.slotNumber };
-				compiledUAVs[numCompiledUAVs++] = compiledUAV;
-
-				CRY_ASSERT(numCompiledUAVs <= D3D11_PS_CS_UAV_REGISTER_COUNT);
-			}
-
-			if (bindPoint.stages & EShaderStage_Pixel)
-			{
-				SCompiledUAV compiledUAV = { pUAV, eHWSC_Pixel, bindPoint.slotNumber };
-				compiledUAVs[numCompiledUAVs++] = compiledUAV;
-			}
-
+			compiledUAVs.AddResource(pUAV, bindPoint);
 		};
 		break;
 
 		case SResourceBindPoint::ESlotType::Sampler:
 		{
 			ID3D11SamplerState* pSamplerState = CDeviceObjectFactory::LookupSamplerState(resource.samplerState).second;
-
-			// Shader stages are ordered by usage-frequency and loop exists according to usage-frequency (VS+PS fast, etc.)
-			int validShaderStages = bindPoint.stages;
-			for (EHWShaderClass shaderClass = eHWSC_Vertex; validShaderStages; shaderClass = EHWShaderClass(shaderClass + 1), validShaderStages >>= 1)
-			{
-				if (validShaderStages & 1)
-				{
-					compiledSamplers[shaderClass][bindPoint.slotNumber] = pSamplerState;
-
-					firstCompiledSamplers[shaderClass] = std::min(firstCompiledSamplers[shaderClass], bindPoint.slotNumber);
-					lastCompiledSamplers[shaderClass] = std::max(lastCompiledSamplers[shaderClass], bindPoint.slotNumber);
-				}
-			}
+			compiledSamplers.AddResource(pSamplerState, bindPoint);
 		}
 		break;
 		}

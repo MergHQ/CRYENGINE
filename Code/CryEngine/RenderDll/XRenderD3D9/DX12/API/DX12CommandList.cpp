@@ -210,7 +210,7 @@ void CCommandList::Submit()
 	{
 		// Inject a Wait() into the CommandQueue prior to executing it to wait for all required resources being available either readable or writable
 		// *INDENT-OFF*
-#ifdef VK_IN_ORDER_SUBMISSION
+#ifdef DX12_IN_ORDER_SUBMISSION
 		         m_UsedFenceValues[CMDTYPE_ANY][CMDQUEUE_COMPUTE ] = std::max(m_UsedFenceValues[CMDTYPE_READ][CMDQUEUE_COMPUTE ], m_UsedFenceValues[CMDTYPE_WRITE][CMDQUEUE_COMPUTE ]);
 		         m_UsedFenceValues[CMDTYPE_ANY][CMDQUEUE_GRAPHICS] = std::max(m_UsedFenceValues[CMDTYPE_READ][CMDQUEUE_GRAPHICS], m_UsedFenceValues[CMDTYPE_WRITE][CMDQUEUE_GRAPHICS]);
 		         m_UsedFenceValues[CMDTYPE_ANY][CMDQUEUE_COPY    ] = std::max(m_UsedFenceValues[CMDTYPE_READ][CMDQUEUE_COPY    ], m_UsedFenceValues[CMDTYPE_WRITE][CMDQUEUE_COPY    ]);

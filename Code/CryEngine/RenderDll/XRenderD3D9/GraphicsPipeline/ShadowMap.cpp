@@ -989,6 +989,15 @@ bool CShadowMapStage::CShadowMapPass::PrepareResources(const CRenderView* pMainV
 		m_perPassResources.SetTexture(EPerPassTexture_TerrainElevMap, CTexture::GetByID(nTerrainTex2), EDefaultResourceViews::Default, EShaderStage_Vertex);
 	}
 
+	// update per pass samplers
+	{
+		const EShaderStage shaderStages = EShaderStage_Vertex | EShaderStage_Hull | EShaderStage_Domain | EShaderStage_Pixel;
+
+		auto materialSamplers = m_pShadowMapStage->m_graphicsPipeline.GetDefaultMaterialSamplers();
+		for (size_t i = 0; i < materialSamplers.size(); ++i)
+			m_perPassResources.SetSampler(EEfResSamplers(i), materialSamplers[i], shaderStages);
+	}
+
 	// per pass CB
 	{
 		CTypedConstantBuffer<HLSL_PerPassConstantBuffer_ShadowGen, 256> cb(m_pPerPassConstantBuffer);

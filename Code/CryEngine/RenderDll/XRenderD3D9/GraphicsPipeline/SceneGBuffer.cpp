@@ -247,8 +247,7 @@ bool CSceneGBufferStage::UpdatePerPassResources(bool bOnInit)
 	if (bOnInit)
 		return true;
 
-	CRY_ASSERT(!m_perPassResources.HasChangedBindPoints()); // Cannot change resource layout after init. It is baked into the shaders
-	return m_pPerPassResourceSet->Update(m_perPassResources);
+	return UpdatePerPassResourceSet();
 }
 
 void CSceneGBufferStage::Update()
@@ -276,11 +275,6 @@ void CSceneGBufferStage::Update()
 
 	if (!isForwardMinimal)
 	{
-		CTexture* pSceneSpecular = m_graphicsPipelineResources.m_pTexSceneSpecular;
-#if defined(DURANGO_USE_ESRAM)
-		pSceneSpecular = m_graphicsPipelineResources.m_pTexSceneSpecularESRAM;
-#endif
-
 		// Opaque Pass
 		m_opaquePass.SetViewport(viewport);
 		m_opaquePass.SetRenderTargets(
@@ -291,7 +285,7 @@ void CSceneGBufferStage::Update()
 			// Color 1
 			m_graphicsPipelineResources.m_pTexSceneDiffuse,
 			// Color 2
-			pSceneSpecular
+			m_graphicsPipelineResources.m_pTexSceneSpecular
 		);
 
 		// Opaque with Velocity Pass
@@ -304,7 +298,7 @@ void CSceneGBufferStage::Update()
 			// Color 1
 			m_graphicsPipelineResources.m_pTexSceneDiffuse,
 			// Color 2
-			pSceneSpecular,
+			m_graphicsPipelineResources.m_pTexSceneSpecular,
 			// Color 3
 			m_graphicsPipelineResources.m_pTexVelocityObjects[0]
 		);
@@ -319,7 +313,7 @@ void CSceneGBufferStage::Update()
 			// Color 1
 			m_graphicsPipelineResources.m_pTexSceneDiffuse,
 			// Color 2
-			pSceneSpecular
+			m_graphicsPipelineResources.m_pTexSceneSpecular
 		);
 
 		// Micro GBuffer Pass
@@ -331,6 +325,32 @@ void CSceneGBufferStage::Update()
 			m_graphicsPipelineResources.m_pTexSceneNormalsMap
 		);
 	}
+}
+
+bool CSceneGBufferStage::UpdatePerPassResourceSet()
+{
+	CRY_ASSERT(!m_perPassResources.HasChangedBindPoints()); // Cannot change resource layout after init. It is baked into the shaders
+	return m_pPerPassResourceSet->Update(m_perPassResources);
+}
+
+bool CSceneGBufferStage::UpdateRenderPasses()
+{
+	EShaderRenderingFlags flags = (EShaderRenderingFlags)m_graphicsPipeline.GetRenderFlags();
+	const bool isForwardMinimal = (flags & SHDF_FORWARD_MINIMAL) != 0;
+
+	bool result = true;
+
+	result &= m_depthPrepass.UpdateDeviceRenderPass();
+
+	if (!isForwardMinimal)
+	{
+		result &= m_opaquePass.UpdateDeviceRenderPass();
+		result &= m_opaqueVelocityPass.UpdateDeviceRenderPass();
+		result &= m_overlayPass.UpdateDeviceRenderPass();
+		result &= m_microGBufferPass.UpdateDeviceRenderPass();
+	}
+
+	return result;
 }
 
 void CSceneGBufferStage::ExecuteDepthPrepass()
@@ -514,7 +534,15 @@ void CSceneGBufferStage::Execute()
 
 	if (CRenderer::CV_r_DeferredShadingTiled < CTiledShadingStage::eDeferredMode_Disabled)
 	{
+#if DURANGO_USE_ESRAM
+		m_graphicsPipelineResources.m_pTexSceneNormalsMap->AcquireESRAMResidency(CDeviceResource::eResCoherence_Uninitialize);
+		m_graphicsPipelineResources.m_pTexSceneDiffuse->AcquireESRAMResidency(CDeviceResource::eResCoherence_Uninitialize);
+		m_graphicsPipelineResources.m_pTexSceneSpecular->AcquireESRAMResidency(CDeviceResource::eResCoherence_Uninitialize);
+		UpdatePerPassResourceSet();
+		UpdateRenderPasses();
+#endif
 		bool bClearAll = CRenderer::CV_r_wireframe != 0 || CRendererCVars::CV_r_DeferredShadingDebugGBuffer > 0;
+
 
 		if (m_graphicsPipeline.GetVrProjectionManager()->IsMultiResEnabledStatic())
 			bClearAll = true;
@@ -554,42 +582,52 @@ void CSceneGBufferStage::Execute()
 	if (CRendererCVars::CV_r_UseZPass >= eZPassMode_PartialZPrePass)
 	{
 		ExecuteDepthPrepass();
-
-		if (CRendererCVars::CV_r_UseZPass == eZPassMode_FullZPrePass)
-		{
-			rendItemDrawer.JobifyDrawSubmission();
-			rendItemDrawer.WaitForDrawSubmission();
-
-			// Reading depth produces depth-target transitions which have to be reverted
-			m_graphicsPipeline.GetStage<CSceneDepthStage>()->Execute();
-			if (CRenderer::CV_r_DeferredShadingTiled < CTiledShadingStage::eDeferredMode_Disabled)
-				m_opaquePass.PrepareRenderPassForUse(commandList);
-
-			rendItemDrawer.InitDrawSubmission();
-		}
 	}
 
 	if (CRenderer::CV_r_DeferredShadingTiled < CTiledShadingStage::eDeferredMode_Disabled)
 	{
 		ExecuteSceneOpaque();
 
-		if (CRendererCVars::CV_r_UseZPass != eZPassMode_FullZPrePass)
-		{
-			rendItemDrawer.JobifyDrawSubmission();
-			rendItemDrawer.WaitForDrawSubmission();
+		rendItemDrawer.JobifyDrawSubmission();
+		rendItemDrawer.WaitForDrawSubmission();
+		
+#if DURANGO_USE_ESRAM
+		m_graphicsPipelineResources.m_pTexSceneDiffuse->ForfeitESRAMResidency(CDeviceResource::eResCoherence_Transfer);
+		m_graphicsPipelineResources.m_pTexSceneSpecular->ForfeitESRAMResidency(CDeviceResource::eResCoherence_Transfer);
+		m_graphicsPipelineResources.m_pTexLinearDepth->AcquireESRAMResidency(CDeviceResource::eResCoherence_Uninitialize);
+		m_graphicsPipelineResources.m_pTexLinearDepthScaled[0]->AcquireESRAMResidency(CDeviceResource::eResCoherence_Uninitialize);
+		m_graphicsPipeline.UpdatePerPassResourceSet();
+		m_graphicsPipeline.UpdateRenderPasses();
+#endif
 
 			// Reading depth produces depth-target transitions which have to be reverted
 			m_graphicsPipeline.GetStage<CSceneDepthStage>()->Execute();
 			m_overlayPass.PrepareRenderPassForUse(commandList);
 
-			rendItemDrawer.InitDrawSubmission();
-		}
+		rendItemDrawer.InitDrawSubmission();
 
 		// Needs depth for soft depth test
 		ExecuteSceneOverlays();
-	}
 
-	rendItemDrawer.JobifyDrawSubmission();
+		rendItemDrawer.JobifyDrawSubmission();
+		rendItemDrawer.WaitForDrawSubmission();
+	}
+	else
+	{
+		rendItemDrawer.JobifyDrawSubmission();
+		rendItemDrawer.WaitForDrawSubmission();
+
+#if DURANGO_USE_ESRAM
+		m_graphicsPipelineResources.m_pTexLinearDepth->AcquireESRAMResidency(CDeviceResource::eResCoherence_Uninitialize);
+		m_graphicsPipelineResources.m_pTexLinearDepthScaled[0]->AcquireESRAMResidency(CDeviceResource::eResCoherence_Uninitialize);
+		m_graphicsPipeline.UpdatePerPassResourceSet();
+		m_graphicsPipeline.UpdateRenderPasses();
+#endif
+
+		// Reading depth produces depth-target transitions which have to be reverted
+		m_graphicsPipeline.GetStage<CSceneDepthStage>()->Execute();
+		m_overlayPass.PrepareRenderPassForUse(commandList);
+	}
 }
 
 void CSceneGBufferStage::ExecuteMinimumZpass()

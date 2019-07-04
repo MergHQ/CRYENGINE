@@ -516,7 +516,6 @@ enum ECGTexture : uint8
 	ECGT_WaterVolumeDDN,
 	ECGT_WaterVolumeCaustics,
 	ECGT_WaterVolumeRefl,
-	ECGT_WaterVolumeReflPrev,
 	ECGT_RainOcclusion,
 
 	ECGT_TerrainNormMap,

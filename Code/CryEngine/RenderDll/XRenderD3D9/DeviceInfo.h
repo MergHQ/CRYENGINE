@@ -69,7 +69,7 @@ protected:
 	D3D_FEATURE_LEVEL                   m_featureLevel;
 	D3DFormat                           m_autoDepthStencilFmt;
 
-#if !CRY_RENDERER_OPENGL && !CRY_RENDERER_VULKAN && !CRY_RENDERER_GNM
+#if !CRY_RENDERER_VULKAN && !CRY_RENDERER_GNM
 	#if CRY_RENDERER_DIRECT3D >= 120
 		D3D12_FEATURE_DATA_D3D12_OPTIONS    m_D3D120aOptions;
 		D3D12_FEATURE_DATA_D3D12_OPTIONS1   m_D3D120bOptions;

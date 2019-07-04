@@ -181,7 +181,7 @@ void CSwapChainBackedRenderDisplayContext::ShutDown()
 
 void CSwapChainBackedRenderDisplayContext::ReleaseResources()
 {
-	if (gcpRendD3D.GetDeviceContext().IsValid())
+	if (gcpRendD3D.GetDeviceContext())
 		GetDeviceObjectFactory().GetCoreCommandList().GetGraphicsInterface()->ClearState(true);
 
 	CRenderDisplayContext::ReleaseResources();
@@ -488,8 +488,6 @@ void CSwapChainBackedRenderDisplayContext::ChangeDisplayResolution(uint32_t disp
 		desc.width = displayWidth;
 		desc.height = displayHeight;
 		GetSwapChain().GetSwapChain()->GnmSetDesc(desc);
-#elif CRY_PLATFORM_ORBIS
-		GetSwapChain().GetSwapChain()->UpdateBackbufferDimensions(displayWidth, displayHeight);
 #endif
 
 		m_pRenderOutput->InitializeDisplayContext();
@@ -500,7 +498,7 @@ void CSwapChainBackedRenderDisplayContext::ChangeDisplayResolution(uint32_t disp
 #if CRY_PLATFORM_WINDOWS && CRY_RENDERER_DIRECT3D
 		{
 			DXGIDevice* pDXGIDevice = nullptr;
-			if (SUCCEEDED(gcpRendD3D->GetDevice().GetRealDevice()->QueryInterface(IID_GFX_ARGS(&pDXGIDevice))) && pDXGIDevice)
+			if (SUCCEEDED(gcpRendD3D->GetDevice()->QueryInterface(IID_GFX_ARGS(&pDXGIDevice))) && pDXGIDevice)
 				pDXGIDevice->SetMaximumFrameLatency(CRendererCVars::CV_r_MaxFrameLatency);
 			SAFE_RELEASE(pDXGIDevice);
 		}
@@ -685,7 +683,7 @@ void CCustomRenderDisplayContext::ShutDown()
 
 void CCustomRenderDisplayContext::ReleaseResources()
 {
-	if (gcpRendD3D.GetDeviceContext().IsValid())
+	if (gcpRendD3D.GetDeviceContext())
 		GetDeviceObjectFactory().GetCoreCommandList().GetGraphicsInterface()->ClearState(true);
 
 	CRenderDisplayContext::ReleaseResources();

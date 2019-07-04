@@ -13,7 +13,6 @@
 
 class CCryDX12DeviceContext : public CCryDX12Object<ID3D11DeviceContext1ToImplement>
 {
-	friend class CSubmissionQueue_DX11;
 	friend class CDeviceObjectFactory;
 
 public:

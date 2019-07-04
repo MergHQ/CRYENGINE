@@ -21,7 +21,7 @@ DeviceInfo::DeviceInfo()
 {
 	memset(&m_adapterDesc, 0, sizeof(m_adapterDesc));
 
-#if !CRY_RENDERER_OPENGL && !CRY_RENDERER_VULKAN && !CRY_RENDERER_GNM
+#if !CRY_RENDERER_VULKAN && !CRY_RENDERER_GNM
 #if CRY_RENDERER_DIRECT3D >= 120
 	ZeroStruct(m_D3D120aOptions);
 	ZeroStruct(m_D3D120bOptions);
@@ -145,94 +145,7 @@ bool DeviceInfo::CreateDevice(int zbpp, OnCreateDeviceCallback pCreateDeviceCall
 		return false;
 	}
 
-#if CRY_RENDERER_OPENGL || CRY_RENDERER_OPENGLES
-
-	const int r_overrideDXGIAdapter = GetDXGIAdapterOverride();
-	const int r_multithreaded = GetMultithreaded();
-	unsigned int nAdapterOrdinal = r_overrideDXGIAdapter >= 0 ? r_overrideDXGIAdapter : 0;
-	FillSwapChainDesc(m_swapChainDesc, backbufferWidth, backbufferHeight, (HWND)hWnd, windowed);
-
-	if (!SUCCEEDED(CreateDXGIFactory1(__uuidof(IDXGIFactory1), (void**)&m_pFactory)) || !m_pFactory)
-	{
-		Release();
-		return false;
-	}
-
-	// Disable automatic DXGI alt + enter behavior
-	m_pFactory->MakeWindowAssociation((HWND)hWnd, DXGI_MWA_NO_ALT_ENTER | DXGI_MWA_NO_WINDOW_CHANGES);
-
-	while (m_pFactory->EnumAdapters1(nAdapterOrdinal, &m_pAdapter) != DXGI_ERROR_NOT_FOUND)
-	{
-		if (m_pAdapter)
-		{
-			m_driverType = D3D_DRIVER_TYPE_HARDWARE;
-			m_creationFlags = 0;
-
-			D3D_FEATURE_LEVEL* aFeatureLevels(NULL);
-			unsigned int uNumFeatureLevels(0);
-#if !defined(_RELEASE)
-			D3D_FEATURE_LEVEL eForcedFeatureLevel(CRY_RENDERER_DIRECT3D_FL);
-			if (GetForcedFeatureLevel(&eForcedFeatureLevel))
-			{
-				aFeatureLevels = &eForcedFeatureLevel;
-				uNumFeatureLevels = 1;
-			}
-#endif //!defined(_RELEASE)
-
-			const D3D_DRIVER_TYPE driverType = m_driverType == D3D_DRIVER_TYPE_HARDWARE ? D3D_DRIVER_TYPE_UNKNOWN : m_driverType;
-			HRESULT hr = D3D11CreateDeviceAndSwapChain(
-				m_pAdapter,
-				driverType,
-				0,
-				m_creationFlags,
-				aFeatureLevels,
-				uNumFeatureLevels,
-				D3D11_SDK_VERSION,
-				&m_swapChainDesc,
-				&m_pSwapChain,
-				&m_pDevice,
-				&m_featureLevel,
-				&m_pContext);
-			
-			if (SUCCEEDED(hr) && m_pDevice && m_pSwapChain)
-			{
-				if (SUCCEEDED(m_pAdapter->EnumOutputs(0, &pOutput)) && pOutput)
-				{
-					m_pAdapter->GetDesc1(&m_adapterDesc);
-					break;
-				}
-				else if (r_overrideDXGIAdapter >= 0)
-					CryLogAlways("No display connected to DXGI adapter override %d. Adapter cannot be used for rendering.", r_overrideDXGIAdapter);
-			}
-
-			SAFE_RELEASE(m_pContext);
-			SAFE_RELEASE(m_pDevice);
-			SAFE_RELEASE(m_pSwapChain);
-			SAFE_RELEASE(m_pAdapter);
-		}
-	}
-
-	if (!m_pDevice || !m_pSwapChain)
-	{
-		Release();
-		return false;
-	}
-
-	if (pCreateDeviceCallback)
-		pCreateDeviceCallback(m_pDevice);
-
-	#if !DXGL_FULL_EMULATION
-		#if OGL_SINGLE_CONTEXT
-	DXGLBindDeviceContext(m_pContext);
-		#else
-	if (r_multithreaded)
-		DXGLReserveContext(m_pDevice);
-	DXGLBindDeviceContext(m_pContext, !r_multithreaded);
-		#endif
-	#endif //!DXGL_FULL_EMULATION
-
-	return IsOk();
-#elif (CRY_RENDERER_VULKAN >= 10)
+#if (CRY_RENDERER_VULKAN >= 10)
 
 	const int r_overrideDXGIAdapter = GetDXGIAdapterOverride();
 	unsigned int nAdapterOrdinal = r_overrideDXGIAdapter >= 0 ? r_overrideDXGIAdapter : 0;
@@ -364,7 +277,7 @@ bool DeviceInfo::CreateDevice(int zbpp, OnCreateDeviceCallback pCreateDeviceCall
 					HRESULT hr = pD3D11CD(pAdapter, driverType, 0, m_creationFlags, pFeatureLevels, uNumFeatureLevels, D3D11_SDK_VERSION, &pDevice, &m_featureLevel, &pContext);
 					if (SUCCEEDED(hr) && pDevice && pContext)
 					{
-#if !CRY_RENDERER_OPENGL && !CRY_RENDERER_VULKAN && !CRY_RENDERER_GNM
+#if !CRY_RENDERER_VULKAN && !CRY_RENDERER_GNM
 	#if CRY_RENDERER_DIRECT3D >= 120
 						pDevice->CheckFeatureSupport((D3D11_FEATURE)D3D12_FEATURE_D3D12_OPTIONS , &m_D3D120aOptions, sizeof(m_D3D120aOptions));
 						pDevice->CheckFeatureSupport((D3D11_FEATURE)D3D12_FEATURE_D3D12_OPTIONS1, &m_D3D120bOptions, sizeof(m_D3D120bOptions));

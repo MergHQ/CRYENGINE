@@ -245,7 +245,7 @@ bool CTexture::Resolve(int nTarget, bool bUseViewportSize)
 #ifdef RENDERER_ENABLE_LEGACY_PIPELINE
 	const SPixFormat* pPF;
 	ETEX_Format eDstFormat = CTexture::GetClosestFormatSupported(m_eDstFormat, pPF);
-	gcpRendD3D->GetDeviceContext().ResolveSubresource(pDestSurf->Get2DTexture(), 0, pSrcSurf->Get2DTexture(), 0, (DXGI_FORMAT)pPF->DeviceFormat);
+	gcpRendD3D->GetDeviceContext()->ResolveSubresource(pDestSurf->Get2DTexture(), 0, pSrcSurf->Get2DTexture(), 0, (DXGI_FORMAT)pPF->DeviceFormat);
 #endif
 	return true;
 }
@@ -422,6 +422,9 @@ void CTexture::RT_ReleaseDeviceTexture(bool bKeepLastMips, bool bFromUnload) thr
 
 	m_pDevTexture = nullptr;
 	m_bNoTexture = false;
+#if DURANGO_USE_ESRAM
+	m_nESRAMSize = 0;
+#endif
 }
 
 const SPixFormat* CTexture::GetPixFormat(ETEX_Format eTFDst)
@@ -970,7 +973,7 @@ bool CTexture::GenerateMipMaps(bool bSetOrthoProj, bool bUseHW, bool bNormalMap)
 	// all d3d11 devices support autogenmipmaps
 	if (GetDevTexture()->IsWritable())
 	{
-		//	gcpRendD3D->GetDeviceContext().GenerateMips(m_pDeviceShaderResource);
+		//	gcpRendD3D->GetDeviceContext()->GenerateMips(m_pDeviceShaderResource);
 		CMipmapGenPass(gcpRendD3D->FindGraphicsPipeline(SGraphicsPipelineKey::BaseGraphicsPipelineKey).get()).Execute(this);
 	}
 
@@ -1299,7 +1302,7 @@ void CTexture::CopySliceChain(CDeviceTexture* const pDstDevTex, int8 nDstNumMips
 
 		UINT64 fence = pDMA->InsertFence(D3D11_INSERT_FENCE_NO_KICKOFF);
 		pDMA->Submit();
-		while (gcpRendD3D->GetPerformanceDevice().IsFencePending(fence))
+		while (gcpRendD3D->GetPerformanceDevice()->IsFencePending(fence))
 			CrySleep(1);
 	}
 #endif

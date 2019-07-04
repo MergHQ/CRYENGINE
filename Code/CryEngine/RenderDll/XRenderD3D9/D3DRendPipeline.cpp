@@ -108,6 +108,8 @@ void CD3D9Renderer::EF_Init()
 	m_waterUpdateInfo.m_fLastWaterUpdate       = 0;
 	m_waterUpdateInfo.m_nLastWaterFrameID      = 0;
 
+	m_nCurMinAniso = 4;
+	m_nCurMaxAniso = 16;
 	m_nMaterialAnisoHighSampler   = CDeviceObjectFactory::GetOrCreateSamplerStateHandle(SSamplerState(FILTER_ANISO16X, false));
 	m_nMaterialAnisoLowSampler    = CDeviceObjectFactory::GetOrCreateSamplerStateHandle(SSamplerState(FILTER_ANISO4X, false));
 	m_nMaterialAnisoSamplerBorder = CDeviceObjectFactory::GetOrCreateSamplerStateHandle(SSamplerState(FILTER_ANISO16X, eSamplerAddressMode_Border, eSamplerAddressMode_Border, eSamplerAddressMode_Border, 0x0));
@@ -863,10 +865,6 @@ void CD3D9Renderer::LogShaderImportMiss(const CShader* pShader)
 	shaderList = "ShaderList_Durango.txt";
 #elif CRY_PLATFORM_ORBIS
 	shaderList = "ShaderList_Orbis.txt";
-#elif CRY_RENDERER_OPENGLES && DXGL_INPUT_GLSL
-	shaderList = "ShaderList_GLES3.txt";
-#elif CRY_RENDERER_OPENGL && DXGL_INPUT_GLSL
-	shaderList = "ShaderList_GL4.txt";
 #else
 	shaderList = "ShaderList_PC.txt";
 #endif

@@ -52,6 +52,8 @@ public:
 
 	void Init() final;
 	void Update() final;
+	bool UpdatePerPassResourceSet() final;
+	bool UpdateRenderPasses() final;
 
 	bool         CreatePipelineStates(DevicePipelineStatesArray* pStateArray, const SGraphicsPipelineStateDescription& stateDesc, CGraphicsPipelineStateLocalCache* pStateCache);
 	bool         CreatePipelineState(const SGraphicsPipelineStateDescription& desc,
@@ -79,6 +81,29 @@ private:
 	void ExecuteTransparent(bool bBelowWater);
 
 private:
+	enum EResourcesSubset
+	{
+		eResSubset_General = BIT(0),
+		eResSubset_TiledShadingOpaque = BIT(1),
+		eResSubset_TiledShadingTransparent = BIT(2),
+		eResSubset_Particles = BIT(3),
+		eResSubset_EyeOverlay = BIT(4),
+		eResSubset_ForwardShadows = BIT(5),
+
+		eResSubset_All = eResSubset_General | eResSubset_TiledShadingOpaque | eResSubset_TiledShadingTransparent |
+		eResSubset_Particles | eResSubset_EyeOverlay | eResSubset_ForwardShadows,
+		eResSubset_None = ~eResSubset_All
+	};
+
+	struct ResourceSetToBuild
+	{
+		std::reference_wrapper<CDeviceResourceSetDesc> resourceDesc;
+		CDeviceResourceSet*  pResourceSet;
+		uint32_t flags;
+	};
+
+	std::vector<ResourceSetToBuild> GetResourceSetsToBuild();
+
 	CDeviceResourceLayoutPtr m_pOpaqueResourceLayout;
 	CDeviceResourceLayoutPtr m_pOpaqueResourceLayoutMobile;
 	CDeviceResourceLayoutPtr m_pTransparentResourceLayout;

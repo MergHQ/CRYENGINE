@@ -1491,7 +1491,7 @@ void CRenderView::AddRenderItem(CRenderElement* pElem, CRenderObject* RESTRICT_P
 
 	ERenderObjectFlags objFlags = pObj->m_ObjFlags;    // last time we read flags from renderObject
 
-	if (!(pElem->mfGetFlags() & FCEF_KEEP_DISTANCE))
+	if (!(pElem->mfGetFlags() & FCEF_KEEP_DISTANCE) || passInfo.IsShadowPass())
 	{
 		// Use the (possibly) tighter AABB extracted from the render element and store distance.
 		const auto position = passInfo.GetCamera().GetPosition();

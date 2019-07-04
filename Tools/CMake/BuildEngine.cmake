@@ -100,14 +100,8 @@ if (WINDOWS)
 	endif()
 endif()
 
-# Disable opengl renderer for now
-set(RENDERER_OPENGL OFF)
-
 if(ORBIS)
-	option(RENDERER_GNM "Use GNM renderer for Orbis" ON)
-	if(NOT RENDERER_GNM)
-		set(RENDERER_DX11 ON)
-	endif()
+	set(RENDERER_GNM ON) # TODO: remove after cleanup
 	option(GNM_VALIDATION "Enable GNM validation" ON)
 endif()
 

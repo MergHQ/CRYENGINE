@@ -140,6 +140,8 @@ protected:
 class CDeviceCopyCommandInterfaceImpl : public CDeviceCommandListImpl
 {
 protected:
+	void CopyImpl(D3DResource*    pSrc, D3DResource*    pDst);
+
 	void CopyImpl(CDeviceBuffer*  pSrc, CDeviceBuffer*  pDst);
 	void CopyImpl(D3DBuffer*      pSrc, D3DBuffer*      pDst);
 	void CopyImpl(CDeviceTexture* pSrc, CDeviceTexture* pDst);

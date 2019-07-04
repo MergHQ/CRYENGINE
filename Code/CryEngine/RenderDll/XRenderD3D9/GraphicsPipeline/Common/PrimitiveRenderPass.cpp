@@ -735,7 +735,6 @@ void CPrimitiveRenderPass::Execute()
 	if (m_pOutputNULLResourceSet)
 	{
 		pCommandInterface->SetResources(0, m_pOutputNULLResourceSet.get());
-		gcpRendD3D->m_DevMan.CommitDeviceStates();
 	}
 
 	pCommandInterface->EndRenderPass(*m_pRenderPass);

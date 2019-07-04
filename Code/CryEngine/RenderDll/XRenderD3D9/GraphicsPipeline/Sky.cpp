@@ -253,7 +253,7 @@ static void FillSkyTextureData(CTexture* pTexture, const void* pData, const uint
 	const SResourceMemoryAlignment layout = SResourceMemoryAlignment::Linear<CryHalf4>(width, height);
 	CRY_ASSERT(pitch == layout.rowStride);
 
-	GPUPIN_DEVICE_TEXTURE(gcpRendD3D->GetPerformanceDeviceContext(), pTexture->GetDevTexture());
+	GPUPIN_DEVICE_TEXTURE(gcpRendD3D->GetPerformanceContext(), pTexture->GetDevTexture());
 	GetDeviceObjectFactory().GetCoreCommandList().GetCopyInterface()->Copy(pData, pTexture->GetDevTexture(), layout);
 }
 

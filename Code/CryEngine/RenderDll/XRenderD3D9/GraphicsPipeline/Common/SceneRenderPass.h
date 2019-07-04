@@ -35,6 +35,7 @@ public:
 	void SetViewport(const D3DViewPort& viewport);
 	void SetViewport(const SRenderViewport& viewport);
 	void SetRenderTargets(CTexture* pDepthTarget, CTexture* pColorTarget0, CTexture* pColorTarget1 = NULL, CTexture* pColorTarget2 = NULL, CTexture* pColorTarget3 = NULL);
+	bool UpdateDeviceRenderPass();
 
 	// Called in Execute()
 	void SetupDrawContext(uint32 stageID, uint32 stagePassID, EShaderTechniqueID technique, uint32 includeFilter, uint32 excludeFilter = 0);

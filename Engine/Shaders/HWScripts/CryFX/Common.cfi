@@ -357,7 +357,7 @@ NORMALS_FITTING_MAP
 
 void CompressUnsignedNormalToNormalsBuffer(inout half4 vNormal)
 {
-	#if !%DETAIL_MAPPING && !%TEMP_VEGETATION && !%_RT_ALPHABLEND && !%_RT_ALPHATEST && !%TEMP_TERRAIN && !OPENGL
+	#if !%DETAIL_MAPPING && !%TEMP_VEGETATION && !%_RT_ALPHABLEND && !%_RT_ALPHATEST && !%TEMP_TERRAIN
 		// expand from unsigned
 		vNormal.rgb = vNormal.rgb * 2.h - 1.h;
 

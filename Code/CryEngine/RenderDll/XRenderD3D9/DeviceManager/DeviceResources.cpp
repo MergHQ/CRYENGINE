@@ -126,6 +126,10 @@ int32 CDeviceResource::Cleanup()
 		}
 	}
 
+#if DURANGO_USE_ESRAM
+	CleanupESRAMResource();
+#endif
+
 	return nRef;
 }
 
@@ -179,6 +183,7 @@ CDeviceBuffer* CDeviceBuffer::Create(const SBufferLayout& pLayout, const void* p
 	pDevBuffer->m_pNativeResource = pBuffer;
 
 	pDevBuffer->m_eNativeFormat = pLayout.m_eFormat;
+	pDevBuffer->m_eFlags = pLayout.m_eFlags;
 	pDevBuffer->m_resourceElements = elementCount * elementSize;
 	pDevBuffer->m_subResources[eSubResource_Mips] = 0;
 	pDevBuffer->m_subResources[eSubResource_Slices] = 0; 
@@ -187,7 +192,9 @@ CDeviceBuffer* CDeviceBuffer::Create(const SBufferLayout& pLayout, const void* p
 	pDevBuffer->m_bIsSrgb = false;
 	pDevBuffer->m_bAllowSrgb = false;
 	pDevBuffer->m_bIsMSAA = false;
-	pDevBuffer->m_eFlags = pLayout.m_eFlags;
+#if DURANGO_USE_ESRAM
+	pDevBuffer->m_bIsResident = false;
+#endif
 	pDevBuffer->AllocatePredefinedResourceViews();
 
 	return pDevBuffer;
@@ -235,11 +242,6 @@ CDeviceTexture* CDeviceTexture::Create(const STextureLayout& pLayout, const STex
 	CDeviceTexture* pDevTexture = nullptr;
 	RenderTargetData* pRenderTargetData = nullptr;
 	HRESULT hr = S_OK;
-
-	int32 nESRAMOffset = SKIP_ESRAM;
-#if CRY_PLATFORM_DURANGO && DURANGO_USE_ESRAM
-	nESRAMOffset = pLayout.m_nESRAMOffset;
-#endif
 
 	bool bIsSRGB = pLayout.m_bIsSRGB;
 #if CRY_PLATFORM_MAC
@@ -310,9 +312,6 @@ CDeviceTexture* CDeviceTexture::Create(const STextureLayout& pLayout, const STex
 		if (pLayout.m_eFlags & (FT_USAGE_RENDERTARGET | FT_USAGE_DEPTHSTENCIL | FT_USAGE_UNORDERED_ACCESS))
 		{
 			pRenderTargetData = new RenderTargetData();
-#if CRY_PLATFORM_DURANGO && DURANGO_USE_ESRAM
-			pRenderTargetData->m_nESRAMOffset = nESRAMOffset;
-#endif
 		}
 
 		DXGI_FORMAT nFormatOrig = D3DFmt;
@@ -354,7 +353,7 @@ CDeviceTexture* CDeviceTexture::Create(const STextureLayout& pLayout, const STex
 			}
 
 			{
-				hr = GetDeviceObjectFactory().Create2DTexture(nWdt, nHgt, nMips, nArraySize, eFlags, pLayout.m_cClearColor, D3DFmt, &pDevTexture, pPayload, nESRAMOffset);
+				hr = GetDeviceObjectFactory().Create2DTexture(nWdt, nHgt, nMips, nArraySize, eFlags, pLayout.m_cClearColor, D3DFmt, &pDevTexture, pPayload);
 				if (!FAILED(hr) && pDevTexture)
 					pDevTexture->SetNoDelete(!!(pLayout.m_eFlags & FT_DONT_RELEASE));
 			}
@@ -382,7 +381,7 @@ CDeviceTexture* CDeviceTexture::Create(const STextureLayout& pLayout, const STex
 				TI.m_nDstMSAASamples = pRenderTargetData->m_nMSAASamples;
 				TI.m_nDstMSAAQuality = pRenderTargetData->m_nMSAAQuality;
 
-				hr = GetDeviceObjectFactory().CreateCubeTexture(nWdt, nMips, pLayout.m_nArraySize, eFlags, pLayout.m_cClearColor, D3DFmt, &pRenderTargetData->m_pDeviceTextureMSAA, &TI);
+				hr = GetDeviceObjectFactory().CreateCubeTexture(nWdt, nMips, nArraySize, eFlags, pLayout.m_cClearColor, D3DFmt, &pRenderTargetData->m_pDeviceTextureMSAA, &TI);
 
 				assert(SUCCEEDED(hr));
 
@@ -390,7 +389,7 @@ CDeviceTexture* CDeviceTexture::Create(const STextureLayout& pLayout, const STex
 			}
 
 			{
-				hr = GetDeviceObjectFactory().CreateCubeTexture(nWdt, nMips, pLayout.m_nArraySize, eFlags, pLayout.m_cClearColor, D3DFmt, &pDevTexture, pPayload);
+				hr = GetDeviceObjectFactory().CreateCubeTexture(nWdt, nMips, nArraySize, eFlags, pLayout.m_cClearColor, D3DFmt, &pDevTexture, pPayload);
 				if (!FAILED(hr) && pDevTexture)
 					pDevTexture->SetNoDelete(!!(pLayout.m_eFlags & FT_DONT_RELEASE));
 			}
@@ -457,6 +456,7 @@ CDeviceTexture* CDeviceTexture::Create(const STextureLayout& pLayout, const STex
 	{
 		pDevTexture->m_pRenderTargetData = pRenderTargetData;
 		pDevTexture->m_eNativeFormat = D3DFmt;
+		pDevTexture->m_eFlags = eFlags | stagingFlags;
 		pDevTexture->m_resourceElements = CTexture::TextureDataSize(nWdt, nHgt, nDepth, nMips, nArraySize, eTF_A8, eTM_None);
 		pDevTexture->m_subResources[eSubResource_Mips] = nMips;
 		pDevTexture->m_subResources[eSubResource_Slices] = nArraySize;
@@ -465,7 +465,9 @@ CDeviceTexture* CDeviceTexture::Create(const STextureLayout& pLayout, const STex
 		pDevTexture->m_bIsSrgb = bIsSRGB;
 		pDevTexture->m_bAllowSrgb = !!(pLayout.m_eFlags & FT_USAGE_ALLOWREADSRGB);
 		pDevTexture->m_bIsMSAA = false;
-		pDevTexture->m_eFlags = eFlags | stagingFlags;
+#if DURANGO_USE_ESRAM
+		pDevTexture->m_bIsResident = false;
+#endif
 		pDevTexture->AllocatePredefinedResourceViews();
 	}
 
@@ -473,6 +475,7 @@ CDeviceTexture* CDeviceTexture::Create(const STextureLayout& pLayout, const STex
 	{
 		pRenderTargetData->m_pDeviceTextureMSAA->m_pRenderTargetData = nullptr;
 		pRenderTargetData->m_pDeviceTextureMSAA->m_eNativeFormat = D3DFmt;
+		pRenderTargetData->m_pDeviceTextureMSAA->m_eFlags = eFlags | stagingFlags;
 		pRenderTargetData->m_pDeviceTextureMSAA->m_resourceElements = CTexture::TextureDataSize(nWdt, nHgt, nDepth, nMips, nArraySize, eTF_A8, eTM_None) * pRenderTargetData->m_nMSAASamples;
 		pRenderTargetData->m_pDeviceTextureMSAA->m_subResources[eSubResource_Mips] = nMips;
 		pRenderTargetData->m_pDeviceTextureMSAA->m_subResources[eSubResource_Slices] = nArraySize;
@@ -481,7 +484,9 @@ CDeviceTexture* CDeviceTexture::Create(const STextureLayout& pLayout, const STex
 		pRenderTargetData->m_pDeviceTextureMSAA->m_bIsSrgb = bIsSRGB;
 		pRenderTargetData->m_pDeviceTextureMSAA->m_bAllowSrgb = !!(pLayout.m_eFlags & FT_USAGE_ALLOWREADSRGB);
 		pRenderTargetData->m_pDeviceTextureMSAA->m_bIsMSAA = true;
-		pRenderTargetData->m_pDeviceTextureMSAA->m_eFlags = eFlags | stagingFlags;
+#if DURANGO_USE_ESRAM
+		pRenderTargetData->m_pDeviceTextureMSAA->m_bIsResident = false;
+#endif
 		pRenderTargetData->m_pDeviceTextureMSAA->AllocatePredefinedResourceViews();
 	}
 
@@ -492,10 +497,6 @@ CDeviceTexture* CDeviceTexture::Associate(const STextureLayout& pLayout, D3DReso
 {
 	CDeviceTexture* pDevTexture = new CDeviceTexture();
 	RenderTargetData* pRenderTargetData = nullptr;
-
-#if CRY_PLATFORM_DURANGO && DURANGO_USE_ESRAM
-	int32 nESRAMOffset = pLayout.m_nESRAMOffset;
-#endif
 
 	bool bIsSRGB = pLayout.m_bIsSRGB;
 #if CRY_PLATFORM_MAC
@@ -556,9 +557,6 @@ CDeviceTexture* CDeviceTexture::Associate(const STextureLayout& pLayout, D3DReso
 		if (pLayout.m_eFlags & (FT_USAGE_RENDERTARGET | FT_USAGE_DEPTHSTENCIL | FT_USAGE_UNORDERED_ACCESS))
 		{
 			pRenderTargetData = new RenderTargetData();
-#if CRY_PLATFORM_DURANGO && DURANGO_USE_ESRAM
-			pRenderTargetData->m_nESRAMOffset = nESRAMOffset;
-#endif
 		}
 
 		bIsSRGB &= (pLayout.m_pPixelFormat->Options & FMTSUPPORT_SRGB) && (pLayout.m_eFlags & (FT_USAGE_MSAA | FT_USAGE_RENDERTARGET | FT_USAGE_DEPTHSTENCIL)) == 0;
@@ -575,6 +573,7 @@ CDeviceTexture* CDeviceTexture::Associate(const STextureLayout& pLayout, D3DReso
 
 	pDevTexture->m_pRenderTargetData = pRenderTargetData;
 	pDevTexture->m_eNativeFormat = D3DFmt;
+	pDevTexture->m_eFlags = eFlags;
 	pDevTexture->m_resourceElements = CTexture::TextureDataSize(nWdt, nHgt, nDepth, nMips, nArraySize, eTF_A8, eTM_None);
 	pDevTexture->m_subResources[eSubResource_Mips] = nMips;
 	pDevTexture->m_subResources[eSubResource_Slices] = nArraySize;
@@ -583,13 +582,16 @@ CDeviceTexture* CDeviceTexture::Associate(const STextureLayout& pLayout, D3DReso
 	pDevTexture->m_bIsSrgb = bIsSRGB;
 	pDevTexture->m_bAllowSrgb = !!(pLayout.m_eFlags & FT_USAGE_ALLOWREADSRGB);
 	pDevTexture->m_bIsMSAA = false;
-	pDevTexture->m_eFlags = eFlags;
+#if DURANGO_USE_ESRAM
+	pDevTexture->m_bIsResident = false;
+#endif
 	pDevTexture->AllocatePredefinedResourceViews();
 
 	if (pRenderTargetData && pRenderTargetData->m_pDeviceTextureMSAA)
 	{
 		pRenderTargetData->m_pDeviceTextureMSAA->m_pRenderTargetData = nullptr;
 		pRenderTargetData->m_pDeviceTextureMSAA->m_eNativeFormat = D3DFmt;
+		pRenderTargetData->m_pDeviceTextureMSAA->m_eFlags = eFlags;
 		pRenderTargetData->m_pDeviceTextureMSAA->m_resourceElements = pDevTexture->m_resourceElements * pRenderTargetData->m_nMSAASamples;
 		pRenderTargetData->m_pDeviceTextureMSAA->m_subResources[eSubResource_Mips] = nMips;
 		pRenderTargetData->m_pDeviceTextureMSAA->m_subResources[eSubResource_Slices] = nArraySize;
@@ -598,7 +600,9 @@ CDeviceTexture* CDeviceTexture::Associate(const STextureLayout& pLayout, D3DReso
 		pRenderTargetData->m_pDeviceTextureMSAA->m_bIsSrgb = bIsSRGB;
 		pRenderTargetData->m_pDeviceTextureMSAA->m_bAllowSrgb = !!(pLayout.m_eFlags & FT_USAGE_ALLOWREADSRGB);
 		pRenderTargetData->m_pDeviceTextureMSAA->m_bIsMSAA = true;
-		pRenderTargetData->m_pDeviceTextureMSAA->m_eFlags = eFlags;
+#if DURANGO_USE_ESRAM
+		pRenderTargetData->m_pDeviceTextureMSAA->m_bIsResident = false;
+#endif
 		pRenderTargetData->m_pDeviceTextureMSAA->AllocatePredefinedResourceViews();
 	}
 

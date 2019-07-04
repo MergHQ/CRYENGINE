@@ -12,7 +12,6 @@
 #include "RenderDisplayContext.h"
 #include "RenderThread.h"
 #include "../Scaleform/ScaleformRender.h"
-#include "../XRenderD3D9/DeviceManager/D3D11/DeviceSubmissionQueue_D3D11.h"
 #include "ElementPool.h"
 
 typedef void (PROCRENDEF)(SShaderPass* l, int nPrimType);
@@ -577,6 +576,9 @@ struct CRY_ALIGN(128) SRenderStatistics
 		float waitForRender = 0;
 		float waitForGPU_MT = 0;
 		float waitForGPU_RT = 0;
+		float waitForPresentQueue_RT = 0;
+		float waitForGPUActual_RT = 0;
+		float waitForFlip_RT = 0;
 		float gpuIdlePerc = 0;
 
 		float gpuFrameTime = 0.0166667f;
@@ -1427,7 +1429,6 @@ public:
 
 	// Shaders pipeline states
 	//=============================================================================================================
-	CSubmissionQueue_DX11 m_DevMan;
 	CDeviceBufferManager  m_DevBufMan;
 	//=============================================================================================================
 

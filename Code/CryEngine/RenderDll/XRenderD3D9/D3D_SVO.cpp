@@ -1920,6 +1920,7 @@ ShadowMapFrustum* CSvoRenderer::GetRsmSunFrustum(const CRenderView* pRenderView)
 
 CTexture* CSvoRenderer::GetRsmColorMap(CGraphicsPipeline& graphicsPipeline, const ShadowMapFrustum& rFr, bool bCheckUpdate)
 {
+#if defined(FEATURE_SVO_GI_ALLOW_HQ) || !CRY_PLATFORM_CONSOLE
 	auto* pShadowMapStage = graphicsPipeline.GetStage<CShadowMapStage>();
 	if (IsActive() && (rFr.nShadowMapLod == CSvoRenderer::GetInstance()->e_svoTI_GsmCascadeLod) && CSvoRenderer::GetInstance()->e_svoTI_InjectionMultiplier && CSvoRenderer::GetInstance()->e_svoTI_RsmUseColors >= 0)
 	{
@@ -1936,12 +1937,13 @@ CTexture* CSvoRenderer::GetRsmColorMap(CGraphicsPipeline& graphicsPipeline, cons
 
 		return CTexture::IsTextureExist(s_pRsmPoolCol) ? s_pRsmPoolCol.get() : nullptr;
 	}
-
+#endif
 	return NULL;
 }
 
 CTexture* CSvoRenderer::GetRsmNormlMap(CGraphicsPipeline& graphicsPipeline, const ShadowMapFrustum& rFr, bool bCheckUpdate)
 {
+#if defined(FEATURE_SVO_GI_ALLOW_HQ) || !CRY_PLATFORM_CONSOLE
 	auto* pShadowMapStage = graphicsPipeline.GetStage<CShadowMapStage>();
 	if (IsActive() && (rFr.nShadowMapLod == CSvoRenderer::GetInstance()->e_svoTI_GsmCascadeLod) && CSvoRenderer::GetInstance()->e_svoTI_InjectionMultiplier && CSvoRenderer::GetInstance()->e_svoTI_RsmUseColors >= 0)
 	{
@@ -1958,12 +1960,13 @@ CTexture* CSvoRenderer::GetRsmNormlMap(CGraphicsPipeline& graphicsPipeline, cons
 
 		return CTexture::IsTextureExist(s_pRsmPoolNor) ? s_pRsmPoolNor.get() : nullptr;
 	}
-
+#endif
 	return NULL;
 }
 
 void CSvoRenderer::GetRsmTextures(_smart_ptr<CTexture>& pRsmColorMap, _smart_ptr<CTexture>& pRsmNormlMap, _smart_ptr<CTexture>& pRsmPoolCol, _smart_ptr<CTexture>& pRsmPoolNor)
 {
+#if defined(FEATURE_SVO_GI_ALLOW_HQ) || !CRY_PLATFORM_CONSOLE
 	bool useRSM = gEnv->IsEditor() || (CSvoRenderer::GetInstance()->e_svoTI_InjectionMultiplier && CSvoRenderer::GetInstance()->e_svoTI_RsmUseColors >= 0);
 
 	if (useRSM)
@@ -1982,6 +1985,7 @@ void CSvoRenderer::GetRsmTextures(_smart_ptr<CTexture>& pRsmColorMap, _smart_ptr
 	pRsmNormlMap = s_pRsmNormlMap;
 	pRsmPoolCol = s_pRsmPoolCol;
 	pRsmPoolNor = s_pRsmPoolNor;
+#endif
 }
 
 void CSvoRenderer::CheckCreateUpdateRT(_smart_ptr<CTexture>& pTex, int nWidth, int nHeight, ETEX_Format eTF, ETEX_Type eTT, int nTexFlags, const char* szName)

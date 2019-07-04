@@ -22,7 +22,7 @@ enum GpuMask
 	GPUMASK_BOTH  = (GPUMASK_LEFT | GPUMASK_RIGHT)
 };
 
-#if defined(AMD_LIQUID_VR) && !CRY_RENDERER_OPENGL
+#if defined(AMD_LIQUID_VR)
 	#include <LiquidVR/public_mgpu/inc/AmdExtMgpuAppControl.h>
 	#include <LiquidVR/public_mgpu/inc/AmdDxExtMgpuAppControlApi.h>
 

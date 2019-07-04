@@ -96,6 +96,8 @@ public:
 	virtual void Resize(int renderWidth, int renderHeight) {}
 	// Update stage before actual rendering starts (called every "RenderScene")
 	virtual void Update()                                  {}
+	virtual bool UpdatePerPassResourceSet()                { return true; }
+	virtual bool UpdateRenderPasses()                      { return true; }
 
 	// Reset any cvar dependent states.
 	virtual void OnCVarsChanged(const CCVarUpdateRecorder& cvarUpdater) {}

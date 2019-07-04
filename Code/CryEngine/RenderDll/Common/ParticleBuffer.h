@@ -5,7 +5,6 @@
 #include <array>
 #include <CryRenderer/RenderElements/CREParticle.h>
 #include "../XRenderD3D9/DeviceManager/DeviceObjects.h"
-#include "../XRenderD3D9/DeviceManager/D3D11/DeviceSubmissionQueue_D3D11.h" // CSubmissionQueue_DX11
 
 struct CDeviceInputStream;
 class CConstantBuffer;
