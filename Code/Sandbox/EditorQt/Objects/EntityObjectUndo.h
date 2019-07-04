@@ -60,20 +60,23 @@ public:
 		CUndoBaseObject::Redo();
 
 		CEntityObject* pObject = static_cast<CEntityObject*>(GetIEditor()->GetObjectManager()->FindObject(m_guid));
-		IEntity* pEntity = pObject->GetIEntity();
-		if (pEntity == nullptr)
-			return;
-
-		for (const SCachedComponent& cachedComponent : m_cachedPropertiesRedo)
+		if (pObject)
 		{
-			IEntityComponent* pComponent = pEntity->GetComponentByGUID(cachedComponent.componentInstanceGUID);
-			if (pComponent == nullptr)
-				continue;
+			IEntity* pEntity = pObject->GetIEntity();
+			if (pEntity == nullptr)
+				return;
 
-			RestoreComponentProperties(pComponent, *cachedComponent.pProperties.get());
+			for (const SCachedComponent& cachedComponent : m_cachedPropertiesRedo)
+			{
+				IEntityComponent* pComponent = pEntity->GetComponentByGUID(cachedComponent.componentInstanceGUID);
+				if (pComponent == nullptr)
+					continue;
+
+				RestoreComponentProperties(pComponent, *cachedComponent.pProperties.get());
+			}
+
+			pObject->SetLayerModified();
 		}
-
-		pObject->SetLayerModified();
 	}
 
 protected:
