@@ -34,7 +34,7 @@ class EDITOR_COMMON_API CDockableContainer : public QWidget, public IStateSerial
 		QWidget* m_widget;
 		QString  m_spawnName;
 		WidgetInstance() {}
-		WidgetInstance(QWidget* widget, QString spawnName) 
+		WidgetInstance(QWidget* widget, QString spawnName)
 			: m_widget(widget), m_spawnName(spawnName)
 		{}
 	};
@@ -87,13 +87,16 @@ private:
 	typedef std::map<QString, FactoryInfo>    TNameMap;
 	typedef std::map<QString, WidgetInstance> TWidgetMap;
 
-	void showEvent(QShowEvent* event);
-	void paintEvent(QPaintEvent*) override;
+	virtual void showEvent(QShowEvent* event) override;
+	virtual void paintEvent(QPaintEvent*) override;
+	virtual bool eventFilter(QObject* pObject, QEvent* pEvent) override;
 
 	// Extra spawning functions; wraps internal functionality
 	QWidget* SpawnWidget(QString name, QString forceObjectName, const QToolWindowAreaTarget& target);
 	QWidget* SpawnWidget(QString name, QString forceObjectName, IToolWindowArea* area = nullptr, QToolWindowAreaReference reference = QToolWindowAreaReference::Combine, int index = -1, QRect geometry = QRect());
 	QWidget* Spawn(QString name, QString forceObjectName = QString());
+
+	void     CloseSpawnedWidgets();
 
 	// Called when a widget gets removed/destroyed.
 	void OnWidgetDestroyed(QObject* pObject);
@@ -104,6 +107,7 @@ private:
 	void    BuildWindowMenu();
 	// Resets the layout to the default.
 	void    ResetLayout();
+
 	TNameMap                                 m_registry;
 	TWidgetMap                               m_spawned;
 	QToolWindowManager*                      m_toolManager;
@@ -111,4 +115,5 @@ private:
 	CAbstractMenu*                           m_pMenu;
 	QMetaObject::Connection                  m_layoutChangedConnection;
 	QVariantMap                              m_startingLayout;
+	QPointer<QWidget>                        m_pOwner;
 };

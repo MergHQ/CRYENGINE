@@ -11,7 +11,6 @@ class CMaterialPreviewWidget : public QWidget
 {
 public:
 	CMaterialPreviewWidget(CMaterialEditor* pMatEd);
-	~CMaterialPreviewWidget();
 
 private:
 
@@ -22,8 +21,9 @@ private:
 
 	void OnMaterialChanged(CMaterial* pEditorMaterial);
 
-	void dragEnterEvent(QDragEnterEvent* pEvent) override;
-	void dropEvent(QDropEvent* pEvent) override;
+	virtual void dragEnterEvent(QDragEnterEvent* pEvent) override;
+	virtual void dropEvent(QDropEvent* pEvent) override;
+	virtual void closeEvent(QCloseEvent* pEvent) override;
 
 	CMaterialEditor* m_pMatEd;
 	QPreviewWidget*  m_pPreviewWidget;

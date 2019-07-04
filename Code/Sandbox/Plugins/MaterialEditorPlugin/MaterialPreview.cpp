@@ -11,6 +11,7 @@
 #include "DragDrop.h"
 #include "PathUtils.h"
 
+#include <QCloseEvent>
 #include <QDragEnterEvent>
 #include <QFileInfo>
 #include <QToolBar>
@@ -52,11 +53,6 @@ CMaterialPreviewWidget::CMaterialPreviewWidget(CMaterialEditor* pMatEd)
 	connect(this, &CMaterialPreviewWidget::customContextMenuRequested, this, &CMaterialPreviewWidget::OnContextMenu);
 
 	setAcceptDrops(true);
-}
-
-CMaterialPreviewWidget::~CMaterialPreviewWidget()
-{
-	m_pMatEd->signalMaterialForEditChanged.DisconnectObject(this);
 }
 
 void CMaterialPreviewWidget::OnContextMenu()
@@ -227,4 +223,10 @@ void CMaterialPreviewWidget::dropEvent(QDropEvent* pEvent)
 			return;
 		}
 	}
+}
+
+void CMaterialPreviewWidget::closeEvent(QCloseEvent* pEvent)
+{
+	pEvent->accept();
+	m_pMatEd->signalMaterialForEditChanged.DisconnectObject(this);
 }

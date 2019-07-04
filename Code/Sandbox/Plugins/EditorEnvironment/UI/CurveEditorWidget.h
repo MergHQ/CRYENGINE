@@ -13,11 +13,10 @@ class CCurveEditorWidget : public QWidget
 {
 public:
 	CCurveEditorWidget(CController& controller);
-	~CCurveEditorWidget();
 
 private:
-	// QWidget
 	virtual bool eventFilter(QObject* pObj, QEvent* pEvent) override;
+	virtual void closeEvent(QCloseEvent* pEvent) override;
 
 	void         CreateControls();
 	void         ConnectSignals();

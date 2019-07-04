@@ -1,21 +1,24 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-#include <QPainter>
-#include <QStyleOption>
 #include "DockableContainer.h"
-#include "QTrackingTooltip.h"
-#include "Menu/AbstractMenu.h"
+
 #include "Controls/EditorDialog.h"
+#include "Menu/AbstractMenu.h"
+#include "QTrackingTooltip.h"
 #include "QtViewPane.h"
+
 #include <QAction>
 #include <QBoxLayout>
+#include <QPainter>
+#include <QStyleOption>
 
 QToolWindowManagerClassFactory* CDockableContainer::s_dockingFactory = nullptr;
 
-CDockableContainer::CDockableContainer(QWidget* parent, QVariantMap startingLayout /*= QVariantMap()*/)
-	: QWidget(parent), m_startingLayout(startingLayout), m_toolManager(nullptr), m_defaultLayoutCallback(nullptr), m_pMenu(nullptr)
+CDockableContainer::CDockableContainer(QWidget* pParent, QVariantMap startingLayout /*= QVariantMap()*/)
+	: QWidget(pParent), m_pOwner(pParent), m_startingLayout(startingLayout), m_toolManager(nullptr), m_defaultLayoutCallback(nullptr), m_pMenu(nullptr)
 {
+	pParent->installEventFilter(this);
 }
 
 CDockableContainer::~CDockableContainer()
@@ -53,19 +56,19 @@ QWidget* CDockableContainer::Spawn(QString name, QString forceObjectName)
 				}	
 			}
 		}
-		QWidget* w = it->second.m_factory();
+		QWidget* pWidget = it->second.m_factory();
 		if (forceObjectName.isEmpty())
 		{
-			w->setObjectName(CreateObjectName(name));
+			pWidget->setObjectName(CreateObjectName(name));
 		}
 		else
 		{
-			w->setObjectName(forceObjectName);
+			pWidget->setObjectName(forceObjectName);
 		}
-		m_spawned[w->objectName()] = WidgetInstance(w, name);
-		connect(w, &QObject::destroyed, this, &CDockableContainer::OnWidgetDestroyed);
+		m_spawned[pWidget->objectName()] = WidgetInstance(pWidget, name);
+		connect(pWidget, &QObject::destroyed, this, &CDockableContainer::OnWidgetDestroyed);
 
-		return w;
+		return pWidget;
 	}
 	return nullptr;
 }
@@ -278,6 +281,14 @@ void CDockableContainer::ResetLayout()
 	m_toolManager->show();
 }
 
+void CDockableContainer::CloseSpawnedWidgets()
+{
+	for (auto& it : m_spawned)
+	{
+		it.second.m_widget->close();
+	}
+}
+
 std::vector<IPane*> CDockableContainer::GetPanes()
 {
 	std::vector<IPane*> panes;
@@ -298,4 +309,19 @@ void CDockableContainer::paintEvent(QPaintEvent* pEvent)
 	styleOption.init(this);
 	QPainter painter(this);
 	style()->drawPrimitive(QStyle::PE_Widget, &styleOption, &painter, this);
+}
+
+bool CDockableContainer::eventFilter(QObject* pObject, QEvent* pEvent)
+{
+	if (pEvent->type() != QEvent::Close || pObject != m_pOwner)
+	{
+		return false;
+	}
+
+	pObject->event(pEvent);
+	if (pEvent->isAccepted())
+	{
+		CloseSpawnedWidgets();
+	}
+	return true;
 }

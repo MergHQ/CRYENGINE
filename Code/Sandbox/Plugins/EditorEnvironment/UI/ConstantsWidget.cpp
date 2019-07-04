@@ -10,6 +10,7 @@
 #include <CrySerialization/IArchiveHost.h>
 #include <CrySystem/ISystem.h>
 
+#include <QCloseEvent>
 #include <QVBoxLayout>
 
 class CConstantsWidget::CUndoConstPropTreeCommand : public IUndoObject
@@ -106,13 +107,6 @@ CConstantsWidget::CConstantsWidget(CController& controller)
 	}
 }
 
-CConstantsWidget::~CConstantsWidget()
-{
-	m_controller.signalAssetOpened.DisconnectObject(this);
-	m_controller.signalAssetClosed.DisconnectObject(this);
-	m_controller.signalPlaybackModeChanged.DisconnectObject(this);
-}
-
 void CConstantsWidget::OnAssetOpened()
 {
 	auto& editor = m_controller.GetEditor();
@@ -160,4 +154,13 @@ void CConstantsWidget::OnChanged()
 void CConstantsWidget::OnPlaybackModeChanged(PlaybackMode newMode)
 {
 	m_pPropertyTree->setEnabled(newMode == PlaybackMode::Edit);
+}
+
+void CConstantsWidget::closeEvent(QCloseEvent* pEvent)
+{
+	pEvent->accept();
+
+	m_controller.signalAssetOpened.DisconnectObject(this);
+	m_controller.signalAssetClosed.DisconnectObject(this);
+	m_controller.signalPlaybackModeChanged.DisconnectObject(this);
 }

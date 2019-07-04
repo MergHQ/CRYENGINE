@@ -23,16 +23,13 @@ class CEffectPanel : public CDockableWidget
 public:
 	CEffectPanel(CEffectAssetModel* pModel, QWidget* pParent = nullptr);
 
-	virtual ~CEffectPanel();
-
-	// CDockableWidget
 	virtual const char* GetPaneTitle() const override { return "EffectComponents"; }
-	virtual void paintEvent(QPaintEvent* event) override;
-
-	// CEffectPanel
 	void SetEffect(IParticleEffect* pEffect);
 
 private:
+	virtual void paintEvent(QPaintEvent* event) override;
+	virtual void closeEvent(QCloseEvent*pEvent) override;
+
 	void onBeginEffectAssetChange();
 	void onEndEffectAssetChange();
 	void onEffectChanged();

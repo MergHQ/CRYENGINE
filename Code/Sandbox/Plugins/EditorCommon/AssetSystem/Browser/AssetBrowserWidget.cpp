@@ -9,6 +9,7 @@
 #include "Commands/QCommandAction.h"
 #include "ProxyModels/AttributeFilterProxyModel.h"
 
+#include <QCloseEvent>
 #include <QItemSelectionModel>
 #include <QVariant>
 #include <QTimer>
@@ -26,11 +27,6 @@ CAssetBrowserWidget::CAssetBrowserWidget(CAssetEditor* pOwner)
 
 	pOwner->signalAssetOpened.Connect(this, &CAssetBrowserWidget::OnAssetOpened);
 	OnAssetOpened();
-}
-
-CAssetBrowserWidget::~CAssetBrowserWidget()
-{
-	m_pAssetEditor->signalAssetOpened.DisconnectObject(this);
 }
 
 bool CAssetBrowserWidget::IsSyncSelection() const
@@ -146,4 +142,10 @@ void CAssetBrowserWidget::showEvent(QShowEvent* pEvent)
 	{
 		ScrollToSelected();
 	});
+}
+
+void CAssetBrowserWidget::closeEvent(QCloseEvent* pEvent)
+{
+	pEvent->accept();
+	m_pAssetEditor->signalAssetOpened.DisconnectObject(this);
 }

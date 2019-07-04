@@ -14,7 +14,6 @@ class CEffectAssetWidget : public QWidget
 
 public:
 	CEffectAssetWidget(CEffectAssetModel* pEffectAssetModel, QWidget* pParent = nullptr);
-	~CEffectAssetWidget();
 
 	const pfx2::IParticleEffect* GetEffect() const;
 	pfx2::IParticleEffect*       GetEffect();
@@ -27,10 +26,9 @@ public:
 
 	bool                         MakeNewComponent(const char* szTemplateName);
 
-protected:
-	// QWidget
+private:
 	virtual void paintEvent(QPaintEvent* event) override;
-	// ~QWidget
+	virtual void closeEvent(QCloseEvent*pEvent) override;
 
 private:
 	void OnBeginEffectAssetChange();

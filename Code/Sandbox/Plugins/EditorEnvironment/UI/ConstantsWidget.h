@@ -13,19 +13,20 @@ class CConstantsWidget : public QWidget
 {
 public:
 	CConstantsWidget(CController& controller);
-	~CConstantsWidget();
 	void OnChanged();
 
 private:
 	class CUndoConstPropTreeCommand;
 
-	void OnAssetOpened();
-	void OnAssetClosed();
+	virtual void closeEvent(QCloseEvent* pEvent) override;
 
-	void OnBeginUndo();
-	void OnEndUndo(bool acceptUndo);
-	void OnPlaybackModeChanged(PlaybackMode newMode);
+	void         OnAssetOpened();
+	void         OnAssetClosed();
 
-	CController&   m_controller;
+	void         OnBeginUndo();
+	void         OnEndUndo(bool acceptUndo);
+	void         OnPlaybackModeChanged(PlaybackMode newMode);
+
+	CController&         m_controller;
 	QPropertyTreeLegacy* m_pPropertyTree;
 };

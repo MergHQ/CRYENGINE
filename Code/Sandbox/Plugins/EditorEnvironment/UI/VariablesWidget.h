@@ -12,20 +12,21 @@ class CVariablesWidget : public QWidget
 {
 public:
 	CVariablesWidget(CController& controller);
-	~CVariablesWidget();
 
 private:
-	void OnTreeSelectionChanged();
-	void OnSelectedVariableStartChange();
-	void OnSelectedVariableEndChange();
+	virtual void closeEvent(QCloseEvent* pEvent) override;
 
-	void OnAssetOpened();
-	void OnAssetClosed();
-	void ResetTree();
-	void OnPlaybackModeChanged(PlaybackMode newMode);
-	void ProcessUserEventsFromCurveEditor(QEvent* pEvent);
+	void         OnTreeSelectionChanged();
+	void         OnSelectedVariableStartChange();
+	void         OnSelectedVariableEndChange();
+
+	void         OnAssetOpened();
+	void         OnAssetClosed();
+	void         ResetTree();
+	void         OnPlaybackModeChanged(PlaybackMode newMode);
+	void         ProcessUserEventsFromCurveEditor(QEvent* pEvent);
 
 	CController&                m_controller;
-	QPropertyTreeLegacy*              m_pPropertyTree;
+	QPropertyTreeLegacy*        m_pPropertyTree;
 	Serialization::CContextList m_treeContext;
 };

@@ -14,7 +14,6 @@ class CAssetBrowserWidget : public CAssetBrowser
 	Q_INTERFACES(IStateSerializable)
 public:
 	CAssetBrowserWidget(CAssetEditor* pOwner);
-	virtual ~CAssetBrowserWidget();
 
 	virtual const char* GetEditorName() const override { return "Asset Browser Widget"; }
 	virtual void        SetLayout(const QVariantMap& state) override;
@@ -28,6 +27,7 @@ protected:
 	virtual void OnActivated(CAsset* pAsset) override;
 
 	virtual void showEvent(QShowEvent* pEvent) override;
+	virtual void closeEvent(QCloseEvent* pEvent) override;
 
 private:
 	CAsset* GetCurrentAsset() const;

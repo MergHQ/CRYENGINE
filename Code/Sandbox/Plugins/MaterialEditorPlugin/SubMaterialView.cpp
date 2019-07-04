@@ -1,12 +1,17 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 #include "StdAfx.h"
 #include "SubMaterialView.h"
+
 #include "MaterialEditor.h"
-#include <Cry3DEngine/IMaterial.h>
+
+#include <EditorFramework/Events.h>
 #include <Menu/MenuWidgetBuilders.h>
 #include <QT/Widgets/QPreviewWidget.h>
-#include <EditorFramework/Events.h>
+
+#include <Cry3DEngine/IMaterial.h>
+
 #include <QAbstractItemModel>
+#include <QCloseEvent>
 
 class CSubMaterialView::Model : public QAbstractListModel
 {
@@ -279,13 +284,6 @@ CSubMaterialView::CSubMaterialView(CMaterialEditor* pMatEd)
 	m_previewWidget->setVisible(false); // hide this widget, it is just used to render to a pixmap
 }
 
-CSubMaterialView::~CSubMaterialView()
-{
-	m_pMatEd->signalMaterialLoaded.DisconnectObject(this);
-	m_pMatEd->signalMaterialForEditChanged.DisconnectObject(this);
-	m_pMatEd->signalMaterialPropertiesChanged.DisconnectObject(this);
-}
-
 void CSubMaterialView::OnMaterialChanged(CMaterial* pEditorMaterial)
 {
 	m_pModel->SetMaterial(pEditorMaterial);
@@ -460,4 +458,13 @@ void CSubMaterialView::customEvent(QEvent* event)
 			event->accept();
 		}
 	}
+}
+
+void CSubMaterialView::closeEvent(QCloseEvent* pEvent)
+{
+	pEvent->accept();
+
+	m_pMatEd->signalMaterialLoaded.DisconnectObject(this);
+	m_pMatEd->signalMaterialForEditChanged.DisconnectObject(this);
+	m_pMatEd->signalMaterialPropertiesChanged.DisconnectObject(this);
 }

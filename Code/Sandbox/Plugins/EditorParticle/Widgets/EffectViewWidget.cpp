@@ -13,6 +13,8 @@ CEffectAssetWidget::CEffectAssetWidget(CEffectAssetModel* pEffectAssetModel, QWi
 	, m_pEffectAssetModel(pEffectAssetModel)
 	, m_updated(false)
 {
+	CRY_ASSERT(m_pEffectAssetModel);
+
 	QBoxLayout* pMainLayout = new QVBoxLayout();
 	pMainLayout->setSpacing(0.0f);
 	pMainLayout->setContentsMargins(0.0f, 0.0f, 0.0f, 0.0f);
@@ -43,23 +45,14 @@ CEffectAssetWidget::CEffectAssetWidget(CEffectAssetModel* pEffectAssetModel, QWi
 	});
 }
 
-CEffectAssetWidget::~CEffectAssetWidget()
-{
-	if (m_pEffectAssetModel)
-	{
-		m_pEffectAssetModel->signalBeginEffectAssetChange.DisconnectObject(this);
-		m_pEffectAssetModel->signalEndEffectAssetChange.DisconnectObject(this);
-	}
-}
-
 const pfx2::IParticleEffect* CEffectAssetWidget::GetEffect() const
 {
-	return m_pEffectAssetModel ? m_pEffectAssetModel->GetEffect() : nullptr;
+	return m_pEffectAssetModel->GetEffect();
 }
 
 pfx2::IParticleEffect* CEffectAssetWidget::GetEffect()
 {
-	return m_pEffectAssetModel ? m_pEffectAssetModel->GetEffect() : nullptr;
+	return m_pEffectAssetModel->GetEffect();
 }
 
 const char* CEffectAssetWidget::GetName() const
@@ -135,6 +128,14 @@ void CEffectAssetWidget::OnEndEffectAssetChange()
 void CEffectAssetWidget::OnEffectEdited(int nComp, int nFeature)
 {
 	m_updated = true;
+}
+
+void CEffectAssetWidget::closeEvent(QCloseEvent*pEvent)
+{
+	pEvent->accept();
+
+	m_pEffectAssetModel->signalBeginEffectAssetChange.DisconnectObject(this);
+	m_pEffectAssetModel->signalEndEffectAssetChange.DisconnectObject(this);
 }
 
 }

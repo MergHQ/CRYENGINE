@@ -11,20 +11,20 @@ class CSubMaterialView : public QThumbnailsView
 {
 public:
 	CSubMaterialView(CMaterialEditor* pMatEd);
-	~CSubMaterialView();
 
 private:
 
-	void OnMaterialChanged(CMaterial* pEditorMaterial);
-	void OnMaterialForEditChanged(CMaterial* pEditorMaterial);
-	void OnMaterialPropertiesChanged(CMaterial* pEditorMaterial);
-	void OnSelectionChanged(const QModelIndex& current, const QModelIndex& previous);
-	void OnContextMenu(const QPoint& pos);
+	void         OnMaterialChanged(CMaterial* pEditorMaterial);
+	void         OnMaterialForEditChanged(CMaterial* pEditorMaterial);
+	void         OnMaterialPropertiesChanged(CMaterial* pEditorMaterial);
+	void         OnSelectionChanged(const QModelIndex& current, const QModelIndex& previous);
+	void         OnContextMenu(const QPoint& pos);
 
-	virtual void        customEvent(QEvent* event) override;
+	virtual void customEvent(QEvent* event) override;
+	virtual void closeEvent(QCloseEvent* pEvent) override;
 
 	class Model;
-	QPreviewWidget* m_previewWidget;
+	QPreviewWidget*        m_previewWidget;
 	std::unique_ptr<Model> m_pModel;
-	CMaterialEditor* m_pMatEd;
+	CMaterialEditor*       m_pMatEd;
 };

@@ -8,6 +8,7 @@
 
 #include <Serialization/QPropertyTreeLegacy/QPropertyTreeLegacy.h>
 
+#include <QCloseEvent>
 #include <QVBoxLayout>
 
 CVariablesWidget::CVariablesWidget(CController& controller)
@@ -46,16 +47,6 @@ CVariablesWidget::CVariablesWidget(CController& controller)
 		// The window is opened through Window->Panels->... command
 		OnAssetOpened();
 	}
-}
-
-CVariablesWidget::~CVariablesWidget()
-{
-	m_controller.signalAssetOpened.DisconnectObject(this);
-	m_controller.signalAssetClosed.DisconnectObject(this);
-	m_controller.signalVariableTreeChanged.DisconnectObject(this);
-	m_controller.signalPlaybackModeChanged.DisconnectObject(this);
-	m_controller.signalHandleKeyEventsInVarPropertyTree.DisconnectObject(this);
-	m_controller.signalCurrentTimeChanged.DisconnectObject(this);
 }
 
 // Handling user input
@@ -125,4 +116,16 @@ void CVariablesWidget::OnPlaybackModeChanged(PlaybackMode newMode)
 void CVariablesWidget::ProcessUserEventsFromCurveEditor(QEvent* pEvent)
 {
 	QApplication::sendEvent(m_pPropertyTree, pEvent);
+}
+
+void CVariablesWidget::closeEvent(QCloseEvent* pEvent)
+{
+	pEvent->accept();
+
+	m_controller.signalAssetOpened.DisconnectObject(this);
+	m_controller.signalAssetClosed.DisconnectObject(this);
+	m_controller.signalVariableTreeChanged.DisconnectObject(this);
+	m_controller.signalPlaybackModeChanged.DisconnectObject(this);
+	m_controller.signalHandleKeyEventsInVarPropertyTree.DisconnectObject(this);
+	m_controller.signalCurrentTimeChanged.DisconnectObject(this);
 }

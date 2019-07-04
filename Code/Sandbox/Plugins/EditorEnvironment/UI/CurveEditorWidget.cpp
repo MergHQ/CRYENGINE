@@ -53,16 +53,6 @@ CCurveEditorWidget::CCurveEditorWidget(CController& controller)
 	}
 }
 
-CCurveEditorWidget::~CCurveEditorWidget()
-{
-	m_controller.signalAssetOpened.DisconnectObject(this);
-	m_controller.signalAssetClosed.DisconnectObject(this);
-	m_controller.signalNewVariableSelected.DisconnectObject(this);
-	m_controller.signalCurveContentChanged.DisconnectObject(this);
-	m_controller.signalCurrentTimeChanged.DisconnectObject(this);
-	m_controller.signalPlaybackModeChanged.DisconnectObject(this);
-}
-
 void CCurveEditorWidget::CreateControls()
 {
 	QBoxLayout* pMainLayout = new QBoxLayout(QBoxLayout::TopToBottom);
@@ -304,4 +294,16 @@ bool CCurveEditorWidget::eventFilter(QObject* pObj, QEvent* pEvent)
 	}
 
 	return QObject::eventFilter(pObj, pEvent);
+}
+
+void CCurveEditorWidget::closeEvent(QCloseEvent* pEvent)
+{
+	pEvent->accept();
+
+	m_controller.signalAssetOpened.DisconnectObject(this);
+	m_controller.signalAssetClosed.DisconnectObject(this);
+	m_controller.signalNewVariableSelected.DisconnectObject(this);
+	m_controller.signalCurveContentChanged.DisconnectObject(this);
+	m_controller.signalCurrentTimeChanged.DisconnectObject(this);
+	m_controller.signalPlaybackModeChanged.DisconnectObject(this);
 }

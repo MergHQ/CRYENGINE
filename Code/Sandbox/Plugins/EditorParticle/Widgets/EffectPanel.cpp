@@ -14,7 +14,8 @@
 #include <QListWidget.h>
 #include <QStandardItemModel.h>
 
-/////////////////////////////////////////////////////////////////////////
+#include <QCloseEvent>
+
 QWidget* LabeledWidget(QWidget* child, const char* text)
 {
 	auto widget = new QWidget(child->parentWidget());
@@ -26,7 +27,6 @@ QWidget* LabeledWidget(QWidget* child, const char* text)
 	return widget;
 }
 
-/////////////////////////////////////////////////////////////////////////
 // Implement editing commands, with undo/redo
 namespace Command
 {
@@ -67,7 +67,6 @@ namespace Command
 	}
 }
 
-/////////////////////////////////////////////////////////////////////////
 namespace CryParticleEditor {
 
 template<typename T>
@@ -101,7 +100,6 @@ void EnableMove(QAbstractItemView* w)
 	w->setDropIndicatorShown(true);
 }
 
-/////////////////////////////////////////////////////////////////////////
 class CFeatureList: public QListWidget
 {
 public:
@@ -342,7 +340,6 @@ private:
 	QMenu*                         m_pFeatureMenu;
 	TFeatures                      m_featuresSelected;
 
-	/////////////////////////////////////////////////////////////////////////
 	// Commands
 	struct CFeatureCommand: Command::TCommand<CFeatureList>
 	{
@@ -465,7 +462,6 @@ private:
 	};
 };
 
-/////////////////////////////////////////////////////////////////////////
 class CComponentTree: public QTreeWidget
 {
 public:
@@ -779,7 +775,6 @@ private:
 		item->setForeground(0, fg);
 	}
 
-	/////////////////////////////////////////////////////////////////////////
 	// Commands
 	struct CComponentCommand: Command::TCommand<CComponentTree>
 	{
@@ -979,11 +974,12 @@ private:
 	};
 };
 
-/////////////////////////////////////////////////////////////////////////
 CEffectPanel::CEffectPanel(CEffectAssetModel* pModel, QWidget* pParent)
 	: CDockableWidget(pParent)
 	, m_pEffectAssetModel(pModel)
 {
+	CRY_ASSERT(m_pEffectAssetModel);
+
 	auto pLayout = new QHBoxLayout();
 	{
 		auto pSplitter = new QSplitter(Qt::Horizontal);
@@ -1021,15 +1017,6 @@ CEffectPanel::CEffectPanel(CEffectAssetModel* pModel, QWidget* pParent)
 	m_pEffectAssetModel->signalBeginEffectAssetChange.Connect(this, &CEffectPanel::onBeginEffectAssetChange);
 	m_pEffectAssetModel->signalEndEffectAssetChange.Connect(this, &CEffectPanel::onEndEffectAssetChange);
 	onEndEffectAssetChange();
-}
-
-CEffectPanel::~CEffectPanel()
-{
-	if (m_pEffectAssetModel)
-	{
-		m_pEffectAssetModel->signalBeginEffectAssetChange.DisconnectObject(this);
-		m_pEffectAssetModel->signalEndEffectAssetChange.DisconnectObject(this);
-	}
 }
 
 void CEffectPanel::onBeginEffectAssetChange()
@@ -1073,13 +1060,10 @@ void CEffectPanel::onEffectChanged()
 
 void CEffectPanel::onComponentChanged(IParticleComponent* pComp)
 {
-	if (m_pEffectAssetModel)
+	if (auto* pEffect = m_pEffectAssetModel->GetEffect())
 	{
-		if (auto* pEffect = m_pEffectAssetModel->GetEffect())
-		{
-			if (m_nComponent >= 0 && pEffect->GetComponent(m_nComponent) == pComp)
-				m_pFeatureList->SetComponent(pComp);
-		}
+		if (m_nComponent >= 0 && pEffect->GetComponent(m_nComponent) == pComp)
+			m_pFeatureList->SetComponent(pComp);
 	}
 }
 
@@ -1091,6 +1075,14 @@ void CEffectPanel::paintEvent(QPaintEvent* event)
 		m_updated = false;
 	}
 	CDockableWidget::paintEvent(event);
+}
+
+void CEffectPanel::closeEvent(QCloseEvent* pEvent)
+{
+	pEvent->accept();
+
+	m_pEffectAssetModel->signalBeginEffectAssetChange.DisconnectObject(this);
+	m_pEffectAssetModel->signalEndEffectAssetChange.DisconnectObject(this);
 }
 
 }
