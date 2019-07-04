@@ -45,6 +45,7 @@ public:
 				{
 					g_pCharacterManager = new CharacterManager;
 					gEnv->pCharacterManager = g_pCharacterManager;
+					gEnv->pCharacterManager->PostInit();
 				}
 				AnimEventLoader::SetPreLoadParticleEffects(false);
 				break;
