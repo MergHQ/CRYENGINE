@@ -340,7 +340,7 @@ threadID CryGetCurrentThreadId()
 bool CryIsDebuggerPresent()
 {
 #if CRY_PLATFORM_WINDOWS
-	return IsDebuggerPresent();
+	return IsDebuggerPresent() != 0;
 #else
 	// On platforms where we cannot check, we must assume the debugger is present.
 	// Otherwise debugging would not work properly (e.g. CryDebugBreak would never break).
