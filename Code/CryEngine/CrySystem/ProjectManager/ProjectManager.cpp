@@ -178,7 +178,10 @@ bool CProjectManager::ParseProjectFile()
 		}
 
 		// Set the legacy game folder and name
-		m_sys_game_folder->Set(m_project.assetDirectory);
+		if (strlen(m_sys_game_folder->GetString()) == 0)
+		{
+			m_sys_game_folder->Set(m_project.assetDirectory);
+		}
 		m_sys_game_name->Set(m_project.name);
 
 		for(const std::pair<string, string>& consoleVariablePair : m_project.consoleVariables)
@@ -354,8 +357,8 @@ void CProjectManager::RegisterCVars()
 
 	// Legacy
 	m_sys_game_name = REGISTER_STRING("sys_game_name", "CRYENGINE", VF_DUMPTODISK, "Specifies the name to be displayed in the Launcher window title bar");
-	m_sys_dll_game = REGISTER_STRING("sys_dll_game", "", VF_NULL, "Specifies the game DLL to load");
-	m_sys_game_folder = REGISTER_STRING("sys_game_folder", "", VF_NULL, "Specifies the game folder to read all data from. Can be fully pathed for external folders or relative path for folders inside the root.");
+	m_sys_dll_game = REGISTER_STRING("sys_dll_game", "", VF_CONST_CVAR | VF_REQUIRE_APP_RESTART, "Specifies the game DLL to load");
+	m_sys_game_folder = REGISTER_STRING("sys_game_folder", "", VF_CONST_CVAR | VF_REQUIRE_APP_RESTART, "Specifies the game folder to read all data from. Can be fully pathed for external folders or relative path for folders inside the root.");
 }
 
 //--- UTF8 parse helper routines

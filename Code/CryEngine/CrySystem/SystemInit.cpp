@@ -435,10 +435,6 @@ static void CmdDumpCvars(IConsoleCmdArgs* pArgs)
 			m_cvars.reserve(4000);
 		}
 
-		~CCVarSink()
-		{
-		}
-
 		void OnElementFound(ICVar* pCVar)
 		{
 			if (!pCVar)
@@ -2951,9 +2947,6 @@ bool CSystem::Initialize(SSystemInitParams& startupParams)
 
 		{
 			ILoadConfigurationEntrySink* pCVarsWhiteListConfigSink = GetCVarsWhiteListConfigSink();
-
-			// We have to load this file again since first time we did it without devmode
-			LoadConfiguration("%ENGINEROOT%/system.cfg", pCVarsWhiteListConfigSink, eLoadConfigInit, ELoadConfigurationFlags::SuppressConfigNotFoundWarning);
 			LoadConfiguration("user.cfg", pCVarsWhiteListConfigSink, eLoadConfigInit, ELoadConfigurationFlags::SuppressConfigNotFoundWarning);
 
 #if defined(ENABLE_STATS_AGENT)
@@ -4270,10 +4263,7 @@ public:
 class CLvlRes_findunused : public CLvlRes_base
 {
 public:
-
-	virtual void ProcessFile(const string& sFilePath)
-	{
-	}
+	virtual void ProcessFile(const string& sFilePath) override {}
 };
 
 static void LvlRes_finalstep(IConsoleCmdArgs* pParams)
