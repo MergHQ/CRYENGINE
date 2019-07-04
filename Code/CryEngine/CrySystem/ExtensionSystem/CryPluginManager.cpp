@@ -26,14 +26,12 @@ struct SNativePluginModule
 {
 	SNativePluginModule()
 		: m_pFactory(nullptr)
-	{
-	}
+	{}
 
 	SNativePluginModule(const char* szPath, ICryFactory* pFactory = nullptr)
 		: m_engineModulePath(szPath)
 		, m_pFactory(pFactory)
-	{
-	}
+	{}
 
 	SNativePluginModule(SNativePluginModule& other)
 		: m_engineModulePath(other.m_engineModulePath)
@@ -92,8 +90,7 @@ struct SPluginContainer
 		: m_pluginClassId(plugin->GetFactory()->GetClassID())
 		, m_pPlugin(plugin)
 		, m_module(std::move(module))
-	{
-	}
+	{}
 
 	// Constructor for managed (Mono) plug-ins, or statically linked ones
 	SPluginContainer(const std::shared_ptr<Cry::IEnginePlugin>& plugin)
@@ -234,8 +231,11 @@ void CCryPluginManager::LoadProjectPlugins()
 			LoadPluginByGUID(pluginDefinition.guid);
 		else
 			LoadPluginBinary(pluginDefinition.type, pluginDefinition.path);
+#else
+		CRY_ASSERT(false, "Trying to load plugin '%s', but shared libraries are not supported.", pluginDefinition.path.c_str());
 #endif // CrySharedLibrarySupported
 	}
+
 #if CrySharedLibrarySupported
 #if !defined(CRY_IS_MONOLITHIC_BUILD) && !defined(CRY_PLATFORM_CONSOLE)
 	// Always load the CryUserAnalytics plugin
@@ -448,12 +448,11 @@ bool CCryPluginManager::LoadPluginFromFile(const char* szPluginFile, bool notify
 		}
 	};
 
-#if CRY_PLATFORM_WINDOWS
 	SPluginFile plugin;
 	if (!gEnv->pSystem->GetArchiveHost()->LoadJsonFile(Serialization::SStruct(plugin), szPluginFile, true))
 	{
 		const string errorMessage = string().Format("Plugin load failed - could not parse plugin file %s", szPluginFile);
-		CryWarning(VALIDATOR_MODULE_SYSTEM, notifyUserOnFailure ? VALIDATOR_ERROR : VALIDATOR_COMMENT, errorMessage.c_str());
+		CryWarning(VALIDATOR_MODULE_SYSTEM, notifyUserOnFailure ? VALIDATOR_ERROR : VALIDATOR_COMMENT, "%s", errorMessage.c_str()); // "%s" indirection avoids compiler warning
 		if (notifyUserOnFailure)
 		{
 			CryMessageBox(errorMessage.c_str(), "Plug-in load failed!", eMB_Error);
@@ -469,18 +468,15 @@ bool CCryPluginManager::LoadPluginFromFile(const char* szPluginFile, bool notify
 	}
 
 	// Load all binaries specified in the .cryplugin file
-	constexpr const char* szBinFolder = "bin\\win_x64";
+	char pathBuffer[_MAX_PATH];
+	CryGetExecutableFolder(sizeof(pathBuffer), pathBuffer);
 
 	const string pluginRoot = PathUtil::GetPathWithoutFilename(szPluginFile);
-	const string binaryDirectory = PathUtil::Make(pluginRoot, szBinFolder);
+	const string binaryDirectory = PathUtil::Make(pluginRoot, pathBuffer);
 	for (const auto& it : plugin.content.binaries)
 		LoadPluginBinary(plugin.info.type, PathUtil::Make(binaryDirectory, it));
 
 	return true;
-#else
-	CryWarning(VALIDATOR_MODULE_SYSTEM, VALIDATOR_ERROR, "Plugins are currently not supported on this platform");
-	return false;
-#endif
 }
 
 bool CCryPluginManager::LoadPluginByGUID(CryGUID guid, bool notifyUserOnFailure)
@@ -673,12 +669,11 @@ bool CCryPluginManager::ParsePluginRegistry()
 
 	if (!gEnv->pSystem->GetArchiveHost()->LoadJsonBuffer(Serialization::SStruct(SRegisteredPluginWrapper{ m_registedPlugins }), buff.data(), fileSize))
 		return false;
-#else
-	CRY_ASSERT_MESSAGE(false, "Reading the plugin registry is not supported on this platform!");
-	return false;
-#endif // CRY_PLATFORM_WINDOWS
 
 	return true;
+#else
+	return false;
+#endif // CRY_PLATFORM_WINDOWS
 }
 
 void CCryPluginManager::UpdateBeforeSystem()
