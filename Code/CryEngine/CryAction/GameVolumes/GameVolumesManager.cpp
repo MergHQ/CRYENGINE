@@ -239,7 +239,11 @@ void CGameVolumesManager::ResolveEntityIdsFromGUIDs()
 	for (uint32 index = 0; index < count; ++index)
 	{
 		const EntityId entityId = gEnv->pEntitySystem->FindEntityByGuid(m_volumesData[index].entityGUID);
-		CRY_ASSERT(entityId != INVALID_ENTITYID);
+
+		// This is a valid case for some volumes which are baked (e.g. CLedgeObjectStatic) and not spawned as entity.
+		if (entityId == INVALID_ENTITYID)
+			continue; 
+
 		m_entityToIndexMap[entityId] = index;
 	}
 }
