@@ -161,7 +161,7 @@ CFacialAnimSequence::~CFacialAnimSequence()
 	if (m_pStream)
 		m_pStream->Abort();
 
-	assert(m_pStreamingData == NULL);
+	CRY_ASSERT(m_pStreamingData == NULL);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -180,7 +180,7 @@ bool CFacialAnimSequence::StartStreaming(const char* sFilename)
 		m_pStream = NULL;
 	}
 
-	assert(m_pStreamingData == NULL);
+	CRY_ASSERT(m_pStreamingData == NULL);
 
 	m_pStreamingData = new Data;
 	m_pStreamingData->m_nValidateID = m_data.m_nValidateID;
@@ -207,7 +207,7 @@ void CFacialAnimSequence::SetName(const char* sNewName)
 //////////////////////////////////////////////////////////////////////////
 IFacialAnimChannel* CFacialAnimSequence::GetChannel(int nIndex)
 {
-	assert(nIndex >= 0 && nIndex < (int)m_data.m_channels.size());
+	CRY_ASSERT(nIndex >= 0 && nIndex < (int)m_data.m_channels.size());
 	return m_data.m_channels[nIndex];
 }
 
@@ -291,7 +291,7 @@ void CFacialAnimSequence::Animate(const QuatTS& rAnimLocationNext, CFacialAnimSe
 {
 	if (IsInMemory())
 	{
-		assert(pInstance);
+		CRY_ASSERT(pInstance);
 
 		UpdateProceduralChannels();
 
@@ -315,14 +315,14 @@ void CFacialAnimSequence::Animate(const QuatTS& rAnimLocationNext, CFacialAnimSe
 			for (uint32 i = 0; i < end; ++i)
 			{
 				CFacialAnimSequenceInstance::BalanceChannelEntry& entry = pInstance->m_balanceChannelEntries[i];
-				assert(entry.nChannelIndex >= 0);
+				CRY_ASSERT(entry.nChannelIndex >= 0);
 				CFacialAnimChannel* pChannel = m_data.m_channels[entry.nChannelIndex];
 				entry.fEvaluatedBalance = pChannel->Evaluate(fTime);
 
 				// Loop through all the morphs in the state array that refer to this balance.
 				for (int stateIndexIndex = 0; stateIndexIndex < entry.nMorphIndexCount; ++stateIndexIndex)
 				{
-					assert(stateIndices != 0 && !"Zero Pointer Crash");
+					CRY_ASSERT(stateIndices != nullptr);
 					int stateIndex = stateIndices[entry.nMorphIndexStartIndex + stateIndexIndex];
 					balances[stateIndex] = entry.fEvaluatedBalance * entry.fEvaluatedBalance * entry.fEvaluatedBalance;
 				}
@@ -390,8 +390,7 @@ void CFacialAnimSequence::Animate(const QuatTS& rAnimLocationNext, CFacialAnimSe
 			//if (fabs(w) > MIN_CHANNEL_WEIGHT)
 			{
 				SFacialEffectorChannel* pEffectorAnimChannel = pInstance->m_pAnimContext->GetChannel(chinfo.nChannelId);
-				assert(pEffectorAnimChannel);   // Channel must exist.
-				if (pEffectorAnimChannel)
+				if (CRY_VERIFY(pEffectorAnimChannel))
 				{
 					pEffectorAnimChannel->fCurrWeight = w;
 					pEffectorAnimChannel->fWeight = w;
@@ -415,8 +414,7 @@ void CFacialAnimSequence::Animate(const QuatTS& rAnimLocationNext, CFacialAnimSe
 			if (fabs(fWeight) > MIN_CHANNEL_WEIGHT)
 			{
 				SFacialEffectorChannel* pEffectorAnimChannel = pInstance->m_pAnimContext->GetChannel(chinfo.nChannelId);
-				assert(pEffectorAnimChannel);   // Channel must exist.
-				if (pEffectorAnimChannel)
+				if (CRY_VERIFY(pEffectorAnimChannel))
 				{
 					pEffectorAnimChannel->fCurrWeight = fWeight;
 					pEffectorAnimChannel->fWeight = fWeight;
@@ -1263,7 +1261,7 @@ void CFacialAnimSequenceInstance::BindChannels(CFacialAnimationContext* pContext
 			int nBalanceChannelListIndex = rootBalanceChannelEntryIndex;
 			while (pParentChannel)
 			{
-				assert(pParentChannel->GetInstanceChannelId() >= 0 && pParentChannel->GetInstanceChannelId() < int(m_channels.size()));
+				CRY_ASSERT(pParentChannel->GetInstanceChannelId() >= 0 && pParentChannel->GetInstanceChannelId() < int(m_channels.size()));
 				ChannelInfo& parentInfo = m_channels[pParentChannel->GetInstanceChannelId()];
 				if (parentInfo.nBalanceChannelListIndex != -1)
 				{

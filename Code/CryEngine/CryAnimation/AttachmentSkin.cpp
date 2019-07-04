@@ -33,7 +33,7 @@ uint32 CAttachmentSKIN::Immediate_AddBinding( IAttachmentObject* pIAttachmentObj
 	if (pISkin==0)
 		CryFatalError("CryAnimation: if you create the binding for a Skin-Attachment, then you have to pass the pointer to an ISkin as well");
 
-	assert(pIAttachmentObject->GetAttachmentType() == IAttachmentObject::eAttachment_SkinMesh);
+	CRY_ASSERT(pIAttachmentObject->GetAttachmentType() == IAttachmentObject::eAttachment_SkinMesh);
 
 	uint32 nLogWarnings = (nLoadingFlags&CA_DisableLogWarnings)==0;
 	CSkin* pCSkinModel = (CSkin*)pISkin;
@@ -87,8 +87,8 @@ uint32 CAttachmentSKIN::Immediate_AddBinding( IAttachmentObject* pIAttachmentObj
 		// For now limited to CharEdit
 		if (pInstanceSkel->m_CharEditMode || (nLoadingFlags & CA_CharEditModel))
 		{
-			assert(pInstanceSkel->m_CharEditMode);
-			assert(nLoadingFlags & CA_CharEditModel);
+			CRY_ASSERT(pInstanceSkel->m_CharEditMode);
+			CRY_ASSERT(nLoadingFlags & CA_CharEditModel);
 			RecreateDefaultSkeleton(pInstanceSkel, nLoadingFlags | CA_CharEditModel);
 		}
 		else
@@ -139,7 +139,7 @@ void CAttachmentSKIN::Immediate_ClearBinding(uint32 nLoadingFlags)
 {
 	if (m_pIAttachmentObject)
 	{
-		assert(static_cast<CSKINAttachment*>(m_pIAttachmentObject)->m_pIAttachmentSkin == this);
+		CRY_ASSERT(static_cast<CSKINAttachment*>(m_pIAttachmentObject)->m_pIAttachmentSkin == this);
 		m_pIAttachmentObject->Release();
 		m_pIAttachmentObject = 0;
 		ReleaseModelSkin();
@@ -151,8 +151,8 @@ void CAttachmentSKIN::Immediate_ClearBinding(uint32 nLoadingFlags)
 		CCharInstance* pInstanceSkel = m_pAttachmentManager->m_pSkelInstance;
 		if (pInstanceSkel->m_CharEditMode || (nLoadingFlags & CA_CharEditModel))
 		{
-			assert(pInstanceSkel->m_CharEditMode);
-			assert(nLoadingFlags & CA_CharEditModel);
+			CRY_ASSERT(pInstanceSkel->m_CharEditMode);
+			CRY_ASSERT(nLoadingFlags & CA_CharEditModel);
 			RecreateDefaultSkeleton(pInstanceSkel, nLoadingFlags | CA_CharEditModel);
 		}
 	}
@@ -163,7 +163,7 @@ void CAttachmentSKIN::RecreateDefaultSkeleton(CCharInstance* pCharacter, uint32 
 	const char* originalSkeletonFilename = pCharacter->m_pDefaultSkeleton->GetModelFilePath();
 	if (pCharacter->m_pDefaultSkeleton->GetModelFilePathCRC64() != 0)
 	{
-		assert(originalSkeletonFilename[0] == '_');
+		CRY_ASSERT(originalSkeletonFilename[0] == '_');
 		originalSkeletonFilename++; // All extended skeletons have an '_' in front of the filepath to not confuse them with regular skeletons.
 	}
 
@@ -556,7 +556,7 @@ void CAttachmentSKIN::RenderAttachment(SRendParams& RendParams, const SRendering
 	if (bCheckMotion)
 		uLocalObjFlags |= FOB_MOTION_BLUR;
 
-	assert(RendParams.pMatrix);
+	CRY_ASSERT(RendParams.pMatrix);
 	Matrix34 RenderMat34 = (*RendParams.pMatrix);
 	pObj->SetMatrix(RenderMat34);
 	pObj->m_nClipVolumeStencilRef = RendParams.nClipVolumeStencilRef;
@@ -878,8 +878,8 @@ SSkinningData* CAttachmentSKIN::GetVertexTransformationData(bool useSwSkinningCp
 	if(pMaster->arrSkinningRendererData[nList].nFrameID != nFrameID )
 	{
 		pMaster->GetSkinningData(passInfo); // force master to compute skinning data if not available
-		assert(pMaster->arrSkinningRendererData[nList].nFrameID == nFrameID);
-		assert(pMaster->arrSkinningRendererData[nList].pSkinningData);
+		CRY_ASSERT(pMaster->arrSkinningRendererData[nList].nFrameID == nFrameID);
+		CRY_ASSERT(pMaster->arrSkinningRendererData[nList].pSkinningData);
 	}
 
 	uint32 nCustomDataSize = 0;
@@ -1050,7 +1050,7 @@ void CAttachmentSKIN::SoftwareSkinningDQ_VS_Emulator( CModelMesh* pModelMesh, Ma
 
 	uint32 numExtIndices	= pModelMesh->m_pIRenderMesh->GetIndicesCount();
 	uint32 numExtVertices	= pModelMesh->m_pIRenderMesh->GetVerticesCount();
-	assert(numExtVertices && numExtIndices);
+	CRY_ASSERT(numExtVertices && numExtIndices);
 
 	uint32 ssize=g_arrExtSkinnedStream.size();
 	if (ssize<numExtVertices)
@@ -1115,13 +1115,13 @@ void CAttachmentSKIN::SoftwareSkinningDQ_VS_Emulator( CModelMesh* pModelMesh, Ma
 			//---------------------------------------------------------------------
 			//get indices for bones (always 4 indices per vertex)
 			uint32 id0 = hwIndices[0];
-			assert(id0 < m_arrRemapTable.size());
+			CRY_ASSERT(id0 < m_arrRemapTable.size());
 			uint32 id1 = hwIndices[1];
-			assert(id1 < m_arrRemapTable.size());
+			CRY_ASSERT(id1 < m_arrRemapTable.size());
 			uint32 id2 = hwIndices[2];
-			assert(id2 < m_arrRemapTable.size());
+			CRY_ASSERT(id2 < m_arrRemapTable.size());
 			uint32 id3 = hwIndices[3];
-			assert(id3 < m_arrRemapTable.size());
+			CRY_ASSERT(id3 < m_arrRemapTable.size());
 
 			//get weights for vertices (always 4 weights per vertex)
 			f32 w0 = hwWeights[0]/255.0f;
@@ -1150,7 +1150,7 @@ void CAttachmentSKIN::SoftwareSkinningDQ_VS_Emulator( CModelMesh* pModelMesh, Ma
 			g_arrExtSkinnedStream[e] = rRenderMat34*(wquat*hwPosition);  //transform position by dual-quaternion
 
 			Quat QTangent = hwQTangent.GetQ();
-			assert( QTangent.IsUnit() );
+			CRY_ASSERT( QTangent.IsUnit() );
 
 			g_arrQTangents[e] = wquat.nq*QTangent;
 			if (g_arrQTangents[e].w<0.0f)

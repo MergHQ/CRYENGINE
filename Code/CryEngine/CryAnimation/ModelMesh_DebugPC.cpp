@@ -66,7 +66,7 @@ void CModelMesh::ExportModel(IRenderMesh* pIRenderMesh)
 		arrSrcPositions[i] = wpos;
 
 		arrSrcQTangents[i] = QTangent.GetQ();
-		assert(m_arrSrcQTangents[i].IsUnit());
+		CRY_ASSERT(m_arrSrcQTangents[i].IsUnit());
 
 		arrSrcVWeights[i].w0 = weights[0] / 255.0f;
 		arrSrcVWeights[i].w1 = weights[1] / 255.0f;

@@ -10,7 +10,7 @@
 uint32 CProxy::SetJointName(const char* szJointName)
 {
 	m_nJointID = -1;
-	if (!szJointName)  { assert(0); return 0; }
+	if (!CRY_VERIFY(szJointName))  { return 0; }
 	int nJointID = m_pAttachmentManager->m_pSkelInstance->m_pDefaultSkeleton->GetJointIDByName(szJointName);
 	if (nJointID < 0)
 	{

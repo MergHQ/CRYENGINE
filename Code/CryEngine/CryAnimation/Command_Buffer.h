@@ -99,7 +99,7 @@ public:
 	template<class Type>
 	Type* CreateCommand()
 	{
-		assert((sizeof(Type) & 3) == 0);
+		CRY_ASSERT((sizeof(Type) & 3) == 0);
 
 		uint32 lengthFree = GetLengthFree();
 		if (lengthFree < sizeof(Type))

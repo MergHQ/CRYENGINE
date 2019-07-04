@@ -141,7 +141,7 @@ void GlobalAnimationHeaderCAF::StartStreamingCAF()
 		ClearControllers();
 
 		OnAssetRequested();
-		assert(!m_pStream);
+		CRY_ASSERT(!m_pStream);
 
 		GlobalAnimationHeaderCAFStreamContent* pContent = new GlobalAnimationHeaderCAFStreamContent;
 		pContent->m_id = (int)std::distance(g_AnimationManager.m_arrGlobalCAF.begin(), this);
@@ -340,7 +340,7 @@ void GlobalAnimationHeaderCAF::ClearControllerData()
 
 bool GlobalAnimationHeaderCAFStreamContent::ParseChunkRange(IChunkFile* pChunkFile, uint32 min, uint32 max, bool bLoadOldChunks, char*& pStorage, IControllerRelocatableChain*& pRelocateHead)
 {
-	assert((int)max <= pChunkFile->NumChunks());
+	CRY_ASSERT((int)max <= pChunkFile->NumChunks());
 
 	//first we initialize the controllers
 	for (uint32 i = min; i < max; i++)
@@ -1094,7 +1094,7 @@ bool GlobalAnimationHeaderCAF::Export2HTR(const char* szAnimationName, const cha
 	for (uint32 j = 0; j < numJoints; j++)
 	{
 		const CDefaultSkeleton::SJoint* pJoint = &pDefaultSkeleton->m_arrModelJoints[j];
-		assert(pJoint);
+		CRY_ASSERT(pJoint);
 		jointNameArray.push_back(pJoint->m_strJointName.c_str());
 
 		int16 parentID = pJoint->m_idxParent;
@@ -1121,7 +1121,7 @@ bool GlobalAnimationHeaderCAF::Export2HTR(const char* szAnimationName, const cha
 	for (uint32 j = 0; j < numJoints; j++)
 	{
 		const CDefaultSkeleton::SJoint* pJoint = &pDefaultSkeleton->m_arrModelJoints[j];
-		assert(pJoint);
+		CRY_ASSERT(pJoint);
 		IController* pController = GetControllerByJointCRC32(pJoint->m_nJointCRC32);
 		f32 t = 0.0f;
 		for (uint32 k = 0; k < nFrames; k++)

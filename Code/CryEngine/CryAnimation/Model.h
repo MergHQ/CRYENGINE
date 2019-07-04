@@ -73,9 +73,9 @@ public:
 	void Insert(uint32 key, T value)
 	{
 		uint32 index = HashFunction(key);
-		assert(value != NODEINDEX_NONE);
-		assert(m_nextFreeNode < m_nodeAmount);
-		assert(index < BUCKET_AMOUNT);
+		CRY_ASSERT(value != NODEINDEX_NONE);
+		CRY_ASSERT(m_nextFreeNode < m_nodeAmount);
+		CRY_ASSERT(index < BUCKET_AMOUNT);
 		if (m_buckets[index].firstNode == NODEINDEX_NONE)
 		{
 			m_nodes[m_nextFreeNode].value = value;
@@ -450,9 +450,8 @@ public:
 	virtual const char* GetJointNameByID(int32 nJointID) const    // Return name of bone from bone table, return zero id nId is out of range
 	{
 		int32 numJoints = m_arrModelJoints.size();
-		if (nJointID >= 0 && nJointID < numJoints)
+		if (CRY_VERIFY(nJointID >= 0 && nJointID < numJoints, "GetJointNameByID - Index out of range!"))
 			return m_arrModelJoints[nJointID].m_strJointName.c_str();
-		assert("GetJointNameByID - Index out of range!");
 		return ""; // invalid bone id
 	}
 	virtual int32 GetJointIDByName(const char* strJointName) const
@@ -467,9 +466,8 @@ public:
 	virtual int32 GetJointParentIDByID(int32 nChildID) const
 	{
 		int32 numJoints = m_arrModelJoints.size();
-		if (nChildID >= 0 && nChildID < numJoints)
+		if (CRY_VERIFY(nChildID >= 0 && nChildID < numJoints))
 			return m_arrModelJoints[nChildID].m_idxParent;
-		assert(0);
 		return -1;
 	}
 	virtual int32 GetControllerIDByID(int32 nJointID) const
@@ -508,17 +506,15 @@ public:
 	virtual const QuatT& GetDefaultAbsJointByID(uint32 nJointIdx) const
 	{
 		uint32 jointCount = m_poseDefaultData.GetJointCount();
-		if (nJointIdx < jointCount)
+		if (CRY_VERIFY(nJointIdx < jointCount))
 			return m_poseDefaultData.GetJointAbsolute(nJointIdx);
-		assert(false);
 		return g_IdentityQuatT;
 	};
 	virtual const QuatT& GetDefaultRelJointByID(uint32 nJointIdx) const
 	{
 		uint32 jointCount = m_poseDefaultData.GetJointCount();
-		if (nJointIdx < jointCount)
+		if (CRY_VERIFY(nJointIdx < jointCount))
 			return m_poseDefaultData.GetJointRelative(nJointIdx);
-		assert(false);
 		return g_IdentityQuatT;
 	};
 	virtual const phys_geometry* GetJointPhysGeom(uint32 jointIndex, int nLod = 0) const

@@ -195,9 +195,8 @@ void CSkeletonPhysics::InitPhysicsSkeleton()
 
 void CSkeletonPhysics::SetPhysEntOnJoint(int32 nId, IPhysicalEntity* pPhysEnt)
 {
-	if (nId < 0 || nId >= (int)GetPoseDataDefault().GetJointCount())
+	if (!CRY_VERIFY(nId >= 0 && nId < (int)GetPoseDataDefault().GetJointCount()))
 	{
-		assert(0);
 		return;
 	}
 	if (!m_ppBonePhysics)
@@ -212,9 +211,8 @@ void CSkeletonPhysics::SetPhysEntOnJoint(int32 nId, IPhysicalEntity* pPhysEnt)
 
 int CSkeletonPhysics::GetPhysIdOnJoint(int32 nId) const
 {
-	if (nId < 0 || nId >= (int)GetPoseDataDefault().GetJointCount())
+	if (!CRY_VERIFY(nId >= 0 && nId < (int)GetPoseDataDefault().GetJointCount()))
 	{
-		assert(0);
 		return -1;
 	}
 
@@ -379,7 +377,7 @@ void CSkeletonPhysics::BuildPhysicalEntity(
 
 	if (rDefaultSkeleton.m_ObjectType == CGA)
 	{
-		assert(pent);
+		CRY_ASSERT(pent);
 
 		m_pCharPhysics = pent;
 
@@ -387,7 +385,7 @@ void CSkeletonPhysics::BuildPhysicalEntity(
 		float totalVolume = 0;
 
 		uint32 numJoints = m_arrCGAJoints->size();
-		assert(numJoints);
+		CRY_ASSERT(numJoints);
 		for (i = 0; i < numJoints; i++)
 		{
 			CCGAJoint* joint = &(*m_arrCGAJoints)[i];
@@ -403,7 +401,7 @@ void CSkeletonPhysics::BuildPhysicalEntity(
 
 		pe_articgeomparams params;
 		//	uint32 numJoints = m_arrJoints.size();
-		//	assert(numJoints);
+		//	CRY_ASSERT(numJoints);
 		for (i = 0; i < numJoints; i++)
 		{
 			CCGAJoint* joint = &(*m_arrCGAJoints)[i];
@@ -1606,10 +1604,9 @@ int CSkeletonPhysics::FillRopeLenArray(float* len, int i0, int sz)
 	for (i = 0; i < m_nAuxPhys && i + i0 < sz; i++)
 	{
 		int32 status = m_auxPhys[i].pPhysEnt->GetParams(&pr);
-		if (status == 0)
+		if (!CRY_VERIFY(status != 0))
 		{
 			g_pISystem->Warning(VALIDATOR_MODULE_ANIMATION, VALIDATOR_WARNING, VALIDATOR_FLAG_FILE, rDefaultSkeleton.GetModelFilePath(), "GetParams() returned 0");
-			assert(0);
 		}
 		len[i0 + i] = pr.length;
 	}
@@ -2246,7 +2243,7 @@ void CSkeletonPhysics::Physics_SynchronizeToAux(const Skeleton::CPoseData& poseD
 
 		}
 
-		assert(sr.pPoints);
+		CRY_ASSERT(sr.pPoints);
 		atv.points = sr.pPoints;
 		for (int i = 0; i < m_auxPhys[j].nBones; ++i)
 		{

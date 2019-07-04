@@ -355,7 +355,7 @@ struct SmallTreeDWORDQuat
 				//pack
 				short int packed = static_cast<short int>(floor((tmp.comp[i] + drange) * MAX_10BITf /* / 2.0f / drange*/ + 0.5f));// & 0x3FF;
 
-				//					assert(packed < 0x3FF);
+				//					CRY_ASSERT(packed < 0x3FF);
 				/*				if (packed > 0x3FF)
 				   {
 				   int a = 0;
@@ -1072,23 +1072,23 @@ public:
 		//m_Res1.comp[i] = static_cast<float>((float)packed  / MAX_21BITf ) - RANGE_21BIT;
 		//sqrsumm += m_Res1.comp[i]* m_Res1.comp[i];
 		//c += 21;
-		//assert(m_Res1.comp[i] == m_Res.comp[i]);
+		//CRY_ASSERT(m_Res1.comp[i] == m_Res.comp[i]);
 
 		//i = offset[1];
 		//packed = static_cast<int>((m_Val >> c) & mask);
 		//m_Res1.comp[i] = static_cast<float>((float)packed  / MAX_21BITf ) - RANGE_21BIT;
 		//sqrsumm += m_Res1.comp[i]* m_Res1.comp[i];
 		//c += 21;
-		//assert(m_Res1.comp[i] == m_Res.comp[i]);
+		//CRY_ASSERT(m_Res1.comp[i] == m_Res.comp[i]);
 		//mask = 0xFFFFF;
 		//i = offset[2];
 		//packed = static_cast<int>((m_Val >> c) & mask);
 		//m_Res1.comp[i] = static_cast<float>((float)packed  / MAX_20BITf ) - RANGE_20BIT;
 		//sqrsumm += m_Res1.comp[i]* m_Res1.comp[i];
-		//assert(m_Res1.comp[i] == m_Res.comp[i]);
+		//CRY_ASSERT(m_Res1.comp[i] == m_Res.comp[i]);
 
 		//m_Res1.comp[index] = sqrtf(1.0f - sqrsumm);
-		//assert(m_Res1.comp[index] == m_Res.comp[index]);
+		//CRY_ASSERT(m_Res1.comp[index] == m_Res.comp[index]);
 
 #endif
 

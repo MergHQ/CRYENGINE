@@ -490,9 +490,8 @@ bool CInternalDatabaseInfo::ReadController905(IChunkFile::ChunkDesc* pChunkDesc,
 
 #define BIG_STRING 1024
 
-		if (strSize > BIG_STRING)
+		if (!CRY_VERIFY(strSize <= BIG_STRING))
 		{
-			assert(0);
 			return false;
 		}
 		char tmp[BIG_STRING];

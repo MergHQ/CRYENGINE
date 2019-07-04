@@ -163,7 +163,7 @@ bool CPhonemesLibrary::GetPhonemeInfo(int nIndex, SPhonemeInfo& phoneme)
 //////////////////////////////////////////////////////////////////////////
 SPhoneme& CPhonemesLibrary::GetPhoneme(int nIndex)
 {
-	assert(nIndex >= 0 && nIndex < (int)m_phonemes.size());
+	CRY_ASSERT(nIndex >= 0 && nIndex < (int)m_phonemes.size());
 	return m_phonemes[nIndex];
 }
 

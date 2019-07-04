@@ -261,8 +261,7 @@ _smart_ptr<IRenderMesh> CModelMesh::CreateRenderMesh(CMesh* pMesh, const char* s
 		eRMType = eRMT_Dynamic;
 
 	_smart_ptr<IRenderMesh> pRenderMesh = g_pIRenderer->CreateRenderMesh("Character", szFilePath, NULL, eRMType);
-	assert(pRenderMesh != 0);
-	if (pRenderMesh == 0)
+	if (!CRY_VERIFY(pRenderMesh != 0))
 	{
 		g_pISystem->Warning(VALIDATOR_MODULE_ANIMATION, VALIDATOR_WARNING, VALIDATOR_FLAG_FILE, szFilePath, "Failed to create render mesh for lod %d", nLod);
 		return 0;
@@ -290,7 +289,7 @@ _smart_ptr<IRenderMesh> CModelMesh::CreateRenderMesh(CMesh* pMesh, const char* s
 
 void CModelMesh::CreateMorphsBuffer(CMesh* pMesh)
 {
-	assert(pMesh);
+	CRY_ASSERT(pMesh);
 
 	uint32 numMorphs = m_softwareMesh.GetVertexFrames().GetCount();
 	uint32 numVertexDeltas = m_softwareMesh.GetVertexFrames().GetVertexDeltasCount();

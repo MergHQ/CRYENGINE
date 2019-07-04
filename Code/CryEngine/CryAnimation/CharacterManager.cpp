@@ -183,8 +183,7 @@ void CharacterManager::PreloadModelsCHR()
 			}
 			filename = sFilenameInResource;
 			uint32 nFileOnDisk = gEnv->pCryPak->IsFileExist(filename);
-			assert(nFileOnDisk);
-			if (nFileOnDisk)
+			if (CRY_VERIFY(nFileOnDisk))
 			{
 				CSkin* pSkin = FetchModelSKIN(filename.c_str(), 0);
 				if (pSkin)
@@ -264,9 +263,8 @@ void CharacterManager::PreloadModelsCGA()
 
 			filename = sFilenameInResource;
 			uint32 nFileOnDisk = gEnv->pCryPak->IsFileExist(filename);
-			assert(nFileOnDisk);
 
-			if (nFileOnDisk)
+			if (CRY_VERIFY(nFileOnDisk))
 			{
 				LoadAnimationImageFile("animations/animations.img", "animations/DirectionalBlends.img");
 				CGALoader.Reset();
@@ -1327,7 +1325,7 @@ SClothGeometry* CharacterManager::LoadVClothGeometry(const CAttachmentVCLOTH& pA
 {
 	CRY_PROFILE_FUNCTION(PROFILE_ANIMATION)
 
-	assert(pAttachementVCloth.GetClothCacheKey() > 0);
+	CRY_ASSERT(pAttachementVCloth.GetClothCacheKey() > 0);
 	SClothGeometry& ret = m_clothGeometries[pAttachementVCloth.GetClothCacheKey()];
 	if (ret.weldMap != NULL)
 	{
@@ -3106,7 +3104,7 @@ void CharacterManager::ExtendDefaultSkeletonWithSkinAttachments(ICharacterInstan
 	const char* originalSkeletonFilename = pCharacter->m_pDefaultSkeleton->GetModelFilePath();
 	if (pCharacter->m_pDefaultSkeleton->GetModelFilePathCRC64() != 0)
 	{
-		assert(originalSkeletonFilename[0] == '_');
+		CRY_ASSERT(originalSkeletonFilename[0] == '_');
 		originalSkeletonFilename++; // All extended skeletons have an '_' in front of the filepath to not confuse them with regular skeletons.
 }
 
@@ -3186,7 +3184,7 @@ static struct
 
 	void parse(int32 idx, SNode* pModelJoints, uint32 numJoints)
 	{
-		assert(m_cidx != numJoints);
+		CRY_ASSERT(m_cidx != numJoints);
 		pModelJoints[m_cidx++] = m_arrHierarchy[idx];
 		int32 s = m_arrHierarchy[idx].m_idxNext;
 		if (s) parse(s, pModelJoints, numJoints);
@@ -3253,9 +3251,9 @@ CDefaultSkeleton* CharacterManager::CreateExtendedSkel(CDefaultSkeleton* const p
 {
 	CRY_PROFILE_FUNCTION(PROFILE_ANIMATION);
 
-	assert(pSourceSkeleton);
-	assert(pSourceSkeleton->GetModelFilePathCRC64() == 0);
-	assert(pMaterial);
+	CRY_ASSERT(pSourceSkeleton);
+	CRY_ASSERT(pSourceSkeleton->GetModelFilePathCRC64() == 0);
+	CRY_ASSERT(pMaterial);
 
 	uint64 extendedSkeletonCrc = CCrc32::ComputeLowercase(pSourceSkeleton->GetModelFilePath());
 	if (pMaterial != pSourceSkeleton->GetIMaterial())
@@ -3298,7 +3296,7 @@ CDefaultSkeleton* CharacterManager::CreateExtendedSkel(CDefaultSkeleton* const p
 		for (uint32 e = 0; e < nExtensionNeeded; ++e)
 	{
 			const CSkin* pSkin = CheckIfModelSKINLoaded(mismatchingSkins[e], nLoadingFlags);
-			assert(pSkin);
+			CRY_ASSERT(pSkin);
 
 			const CSkin::SJointInfo* parrModelJoints = &pSkin->m_arrModelJoints[0];
 			if (lh.find(numJoints, parrModelJoints[0].m_nJointCRC32Lower) < 0)
@@ -3386,7 +3384,7 @@ void CharacterManager::ReleaseCDF(const char* pathname)
 	if (ind != INVALID_CDF_ID)
 	{
 		//found CDF-name
-		assert(m_arrCacheForCDF[ind].m_nRefCounter);
+		CRY_ASSERT(m_arrCacheForCDF[ind].m_nRefCounter);
 		m_arrCacheForCDF[ind].m_nRefCounter--;
 		if (m_arrCacheForCDF[ind].m_nRefCounter == 0 && m_arrCacheForCDF[ind].m_nKeepInMemory == 0)
 		{
@@ -3624,7 +3622,7 @@ bool CharacterManager::LoadAnimationImageFileCAF(const char* filenameCAF)
 		rCAF.m_nControllers = 0;
 		rCAF.m_nControllers2 = pChunk->m_nControllers;
 
-		assert(rCAF.GetFilePathCRC32() == pChunk->m_FilePathCRC32);
+		CRY_ASSERT(rCAF.GetFilePathCRC32() == pChunk->m_FilePathCRC32);
 
 		if (rCAF.m_arrController.size() > 0)
 		{
@@ -3706,10 +3704,10 @@ bool CharacterManager::LoadAnimationImageFileAIM(const char* filenameAIM)
 		rAIM.m_MiddleAimPoseRot = pChunk->m_MiddleAimPoseRot;
 		rAIM.m_MiddleAimPose = pChunk->m_MiddleAimPose;
 
-		assert(rAIM.GetFilePathCRC32() == pChunk->m_FilePathCRC32);
+		CRY_ASSERT(rAIM.GetFilePathCRC32() == pChunk->m_FilePathCRC32);
 
-		assert(rAIM.m_MiddleAimPoseRot.IsValid());                                                          // TODO: Replace asserts with graceful asset validation
-		assert(rAIM.m_MiddleAimPose.IsValid());
+		CRY_ASSERT(rAIM.m_MiddleAimPoseRot.IsValid());                                                          // TODO: Replace asserts with graceful asset validation
+		CRY_ASSERT(rAIM.m_MiddleAimPose.IsValid());
 
 		for (uint32 v = 0; v < (CHUNK_GAHAIM_INFO::XGRID * CHUNK_GAHAIM_INFO::YGRID); ++v)
 		{
@@ -3732,7 +3730,7 @@ bool CharacterManager::LoadAnimationImageFileAIM(const char* filenameAIM)
 			{
 				const Quat quat = *reinterpret_cast<const Quat*>(pAimPoseMem);
 				pAimPoseMem += sizeof(Quat);
-				assert(quat.IsValid()); // TODO: Replace asserts with graceful asset validation
+				CRY_ASSERT(quat.IsValid()); // TODO: Replace asserts with graceful asset validation
 
 				rAIM.m_arrAimIKPosesAIM[a].m_arrRotation[r] = quat;
 			}
@@ -3745,7 +3743,7 @@ bool CharacterManager::LoadAnimationImageFileAIM(const char* filenameAIM)
 			{
 				const Vec3 pos = *(Vec3*)(pAimPoseMem);
 				pAimPoseMem += sizeof(Vec3);
-				assert(pos.IsValid());  // TODO: Replace asserts with graceful asset validation
+				CRY_ASSERT(pos.IsValid());  // TODO: Replace asserts with graceful asset validation
 
 				rAIM.m_arrAimIKPosesAIM[a].m_arrPosition[p] = pos;
 			}
@@ -3995,8 +3993,7 @@ const char* CharacterManager::GetDBAFilePathByGlobalID(int32 globalID) const
 	if (globalID >= 0)
 	{
 		int32 num = int32(m_AnimationManager.m_arrGlobalCAF.size());
-		assert(globalID < num);
-		if (globalID < num)
+		if (CRY_VERIFY(globalID < num))
 		{
 			const GlobalAnimationHeaderCAF& rCAF = m_AnimationManager.m_arrGlobalCAF[globalID];
 			for (int i = 0; i < m_AnimationManager.m_arrGlobalHeaderDBA.size(); i++)
@@ -4019,7 +4016,7 @@ void CharacterManager::UpdateDatabaseUnloadTimeStamp()
 uint32 CharacterManager::GetDatabaseUnloadTimeDelta() const
 {
 	uint32 currTimeStamp = uint32(1000.0f * gEnv->pTimer->GetCurrTime(ITimer::ETIMER_UI));
-	assert(m_lastDatabaseUnloadTimeStamp <= currTimeStamp);
+	CRY_ASSERT(m_lastDatabaseUnloadTimeStamp <= currTimeStamp);
 	uint32 delta = currTimeStamp - m_lastDatabaseUnloadTimeStamp;
 	if (delta > DBA_UNLOAD_MAX_DELTA_MS)
 		delta = DBA_UNLOAD_MAX_DELTA_MS;
@@ -4169,7 +4166,7 @@ void CharacterManager::RenderBlendSpace(const SRenderingPassInfo& passInfo, ICha
 	//check if ParaGroup is invalid
 	CAnimationSet* pAnimationSet = (CAnimationSet*)pCharacterInstance->GetIAnimationSet();
 	const ModelAnimationHeader* pAnim = pAnimationSet->GetModelAnimationHeader(nAnimID);
-	assert(pAnim->m_nAssetType == LMG_File);
+	CRY_ASSERT(pAnim->m_nAssetType == LMG_File);
 	GlobalAnimationHeaderLMG& rLMG = g_AnimationManager.m_arrGlobalLMG[pAnim->m_nGlobalAnimId];
 
 	SParametricSamplerInternal* pSampler = (SParametricSamplerInternal*)pAnimation->GetParametricSampler();

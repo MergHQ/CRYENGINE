@@ -83,7 +83,7 @@ extern uint32 g_DefaultTransitionInterpolationType;
 // CharacterManager instance). Also initializes the console variables
 ILINE void g_InitInterfaces()
 {
-	assert(g_pISystem);
+	CRY_ASSERT(g_pISystem);
 	g_pIConsole = gEnv->pConsole;
 	g_pITimer = gEnv->pTimer;
 	g_pILog = g_pISystem->GetILog();

@@ -271,7 +271,7 @@ void CAttachmentFACE::Update(Skeleton::CPoseData& poseData)
 		if (!ProjectAttachment(&poseData))
 		{
 			// Probably failed because mesh was not streamed in. Try again in next frame.
-			assert(!(m_AttFlags & FLAGS_ATTACH_PROJECTED));
+			CRY_ASSERT(!(m_AttFlags & FLAGS_ATTACH_PROJECTED));
 			return;
 		}
 	}

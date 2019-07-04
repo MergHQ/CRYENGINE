@@ -340,7 +340,7 @@ bool CDefaultSkeleton::SetupPhysicalProxiesChr(const char* filename, int nLod, c
 			if (pPhysicalGeometry == 0)
 			{
 				g_pISystem->Warning(VALIDATOR_MODULE_ANIMATION, VALIDATOR_WARNING, VALIDATOR_FLAG_FILE, filename, "Physics: Failed to create phys mesh");
-				assert(pPhysicalGeometry);
+				CRY_ASSERT(pPhysicalGeometry);
 				return false;
 			}
 			phys_geometry* pg = pPhysGeomMgr->RegisterGeometry(pPhysicalGeometry, defSurfaceIdx, &surfaceTypesId[0], numIds);

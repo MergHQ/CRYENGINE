@@ -76,8 +76,8 @@ struct CRY_ALIGN (16)GlobalAnimationHeaderCAF:public GlobalAnimationHeader
 	//! \return Segment duration, expressed in seconds.
 	ILINE f32 GetSegmentDuration(uint32 segmentIndex) const
 	{
-		assert(segmentIndex < m_Segments);
-		assert(segmentIndex + 1 < CRY_ARRAY_COUNT(m_SegmentsTime));
+		CRY_ASSERT(segmentIndex < m_Segments);
+		CRY_ASSERT(segmentIndex + 1 < CRY_ARRAY_COUNT(m_SegmentsTime));
 
 		const f32 t0 = m_SegmentsTime[segmentIndex + 0];
 		const f32 t1 = m_SegmentsTime[segmentIndex + 1];
@@ -91,8 +91,8 @@ struct CRY_ALIGN (16)GlobalAnimationHeaderCAF:public GlobalAnimationHeader
 	//! \return Input timepoint, converted to a single value normalized against the entire clip duration.
 	ILINE f32 GetNTimeforEntireClip(uint32 segmentIndex, f32 normalizedSegmentTime) const
 	{
-		assert(segmentIndex < m_Segments);
-		assert((0.f <= normalizedSegmentTime) && (normalizedSegmentTime <= 1.f));
+		CRY_ASSERT(segmentIndex < m_Segments);
+		CRY_ASSERT((0.f <= normalizedSegmentTime) && (normalizedSegmentTime <= 1.f));
 
 		const f32 totalDuration             = GetTotalDuration();
 		const f32 segmentDuration           = GetSegmentDuration(segmentIndex);
@@ -118,7 +118,7 @@ struct CRY_ALIGN (16)GlobalAnimationHeaderCAF:public GlobalAnimationHeader
 	f32 NTime2KTime(f32 ntime) const
 	{
 		ntime = min(ntime, 1.0f);
-		assert(ntime >= 0 && ntime <= 1);
+		CRY_ASSERT(ntime >= 0 && ntime <= 1);
 		f32 duration = m_fEndSec - m_fStartSec;
 		f32 start    = m_fStartSec;
 		f32 key      = (ntime * ANIMATION_30Hz * duration + start * ANIMATION_30Hz); ///40.0f;
@@ -194,8 +194,8 @@ struct CRY_ALIGN (16)GlobalAnimationHeaderCAF:public GlobalAnimationHeader
 
 		int32 nSize = m_arrControllerLookupVector.size();
 
-		assert(nSize <= m_arrController.size());
-		assert(m_arrController.size() == nSize);
+		CRY_ASSERT(nSize <= m_arrController.size());
+		CRY_ASSERT(m_arrController.size() == nSize);
 
 		IF (m_arrController.size() != nSize, false)
 			return NULL;

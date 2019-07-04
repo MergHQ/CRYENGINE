@@ -48,8 +48,8 @@ uint32 CSkeletonAnim::BlendManager(f32 fDeltaTime, DynArray<CAnimation>& arrAFIF
 	DEFINE_PROFILER_FUNCTION();
 
 	uint32 NumAnimsInQueue = arrAFIFO.size();
-	assert(NumAnimsInQueue > 0);
-	assert(nLayer < numVIRTUALLAYERS);
+	CRY_ASSERT(NumAnimsInQueue > 0);
+	CRY_ASSERT(nLayer < numVIRTUALLAYERS);
 
 	CAnimation* arrAnimFiFo = &arrAFIFO[0];
 	SParametricSamplerInternal* pParametric = (SParametricSamplerInternal*)arrAnimFiFo[0].GetParametricSampler();
@@ -103,9 +103,9 @@ uint32 CSkeletonAnim::BlendManager(f32 fDeltaTime, DynArray<CAnimation>& arrAFIF
 #ifdef _DEBUG
 	for (uint32 a = 0; a < nMaxActiveInQueue; a++)
 	{
-		assert(arrAnimFiFo[a].IsActivated());
+		CRY_ASSERT(arrAnimFiFo[a].IsActivated());
 		f32 t = arrAnimFiFo[a].m_fAnimTime[0];
-		assert(t >= 0.0f && t <= 1.0f);  //most likely this is coming from outside if CryAnimation
+		CRY_ASSERT(t >= 0.0f && t <= 1.0f);  //most likely this is coming from outside if CryAnimation
 	}
 #endif
 
@@ -121,33 +121,28 @@ uint32 CSkeletonAnim::BlendManager(f32 fDeltaTime, DynArray<CAnimation>& arrAFIF
 #ifdef _DEBUG
 	for (uint32 j = 0; j < nMaxActiveInQueue; j++)
 	{
-		if (arrAnimFiFo[j].GetTransitionWeight() < 0.0f)
-			assert(0);
-		if (arrAnimFiFo[j].GetTransitionWeight() > 1.0f)
-			assert(0);
-		if (arrAnimFiFo[j].GetTransitionPriority() < 0.0f)
-			assert(0);
-		if (arrAnimFiFo[j].GetTransitionPriority() > 1.0f)
-			assert(0);
+		CRY_ASSERT(arrAnimFiFo[j].GetTransitionWeight() >= 0.0f);
+		CRY_ASSERT(arrAnimFiFo[j].GetTransitionWeight() <= 1.0f);
+		CRY_ASSERT(arrAnimFiFo[j].GetTransitionPriority() >= 0.0f);
+		CRY_ASSERT(arrAnimFiFo[j].GetTransitionPriority() <= 1.0f);
 	}
 #endif
 
 	f32 TotalWeights = 0.0f;
 	for (uint32 i = 0; i < nMaxActiveInQueue; i++)
 		TotalWeights += arrAnimFiFo[i].GetTransitionWeight();
-	//		assert( fabsf(TotalWeights-1.0f) < 0.001f );
 
 	f32 fTotal = fabsf(TotalWeights - 1.0f);
 	if (fTotal > 0.01f)
 	{
-		assert(!"sum of transition-weights is wrong");
+		CRY_ASSERT(!"sum of transition-weights is wrong");
 		CryFatalError("CryAnimation: sum of transition-weights is wrong: %f %s", fTotal, m_pInstance->m_pDefaultSkeleton->GetModelFilePath());
 	}
 
 	for (uint32 a = 0; a < nMaxActiveInQueue; a++)
 	{
 		const CAnimation& rCurAnim = arrAnimFiFo[a];
-		assert(rCurAnim.IsActivated());
+		CRY_ASSERT(rCurAnim.IsActivated());
 		if (rCurAnim.HasStaticFlag(CA_FORCE_SKELETON_UPDATE))
 		{
 			m_pSkeletonPose->m_bFullSkeletonUpdate = 1; //This means we have to do a full-skeleton update
@@ -165,7 +160,7 @@ uint32 CSkeletonAnim::BlendManager(f32 fDeltaTime, DynArray<CAnimation>& arrAFIF
 	for (uint32 a = 0; a < nMaxActiveInQueue; a++)
 	{
 		CAnimation& rAnimation = arrAnimFiFo[a];
-		assert(rAnimation.IsActivated());
+		CRY_ASSERT(rAnimation.IsActivated());
 
 		UpdateAnimationTime(rAnimation, nLayer, NumAnimsInQueue, a, 0);
 
@@ -212,7 +207,7 @@ void CSkeletonAnim::UpdateParameters(CAnimation* arrAnimFiFo, uint32 nMaxActiveI
 	for (uint32 a = 0; a < nMaxActiveInQueue; a++)
 	{
 		CAnimation& rCurAnim = arrAnimFiFo[a];
-		assert(rCurAnim.IsActivated());
+		CRY_ASSERT(rCurAnim.IsActivated());
 
 		SParametricSamplerInternal* pParametric = (SParametricSamplerInternal*)rCurAnim.GetParametricSampler();
 		if (pParametric)
@@ -276,7 +271,7 @@ void CSkeletonAnim::UpdateParameters(CAnimation* arrAnimFiFo, uint32 nMaxActiveI
 		{
 			//this is a regular CAF
 			const ModelAnimationHeader* pAnim = pAnimationSet->GetModelAnimationHeader(rCurAnim.GetAnimationId());
-			assert(pAnim);
+			CRY_ASSERT(pAnim);
 			if (pAnim->m_nAssetType == CAF_File)
 			{
 				GlobalAnimationHeaderCAF& rGAH = g_AnimationManager.m_arrGlobalCAF[pAnim->m_nGlobalAnimId];
@@ -302,7 +297,7 @@ void CSkeletonAnim::UpdateAnimationTime(CAnimation& rAnimation, uint32 nLayer, u
 {
 	DEFINE_PROFILER_FUNCTION();
 
-	assert(rAnimation.m_fAnimTime[idx] <= 2.0f);
+	CRY_ASSERT(rAnimation.m_fAnimTime[idx] <= 2.0f);
 
 	const bool ManualUpdate = rAnimation.HasStaticFlag(CA_MANUAL_UPDATE);
 	if (ManualUpdate)
@@ -343,7 +338,7 @@ void CSkeletonAnim::UpdateAnimationTime(CAnimation& rAnimation, uint32 nLayer, u
 	if (numLoops > 0)
 	{
 		rAnimation.m_fAnimTime[idx] = rAnimation.m_fAnimTime[idx] - ((float)numLoops);  //warp fAnimTime when time is running forward
-		assert(rAnimation.m_fAnimTime[idx] >= 0.0f && rAnimation.m_fAnimTime[idx] <= 1.0f);
+		CRY_ASSERT(rAnimation.m_fAnimTime[idx] >= 0.0f && rAnimation.m_fAnimTime[idx] <= 1.0f);
 		rAnimation.m_DynFlags[idx] |= CA_EOC;
 		rAnimation.m_DynFlags[idx] |= CA_LOOPED; //..and set loop flag
 
@@ -470,7 +465,7 @@ void CSkeletonAnim::UpdateAnimationTime(CAnimation& rAnimation, uint32 nLayer, u
 			rAnimation.m_DynFlags[idx] |= CA_REMOVE_FROM_QUEUE;
 	}
 
-	assert(rAnimation.m_fAnimTime[idx] >= 0.0f && rAnimation.m_fAnimTime[idx] <= 1.0f);
+	CRY_ASSERT(rAnimation.m_fAnimTime[idx] >= 0.0f && rAnimation.m_fAnimTime[idx] <= 1.0f);
 	return;
 }
 
@@ -527,22 +522,22 @@ struct SAnimCallbackParams
 // (sendAnimEventsForTimeOld == false) => Triggers the events in the range (normalizedTimeOld, normalizedTimeNew]
 void CSkeletonAnim::AnimCallbackInternal(bool sendAnimEventsForTimeOld, f32 normalizedTimeOld, f32 normalizedTimeNew, SAnimCallbackParams& params)
 {
-	assert(0.f <= normalizedTimeOld);
-	assert(normalizedTimeOld <= 1.f);
+	CRY_ASSERT(0.f <= normalizedTimeOld);
+	CRY_ASSERT(normalizedTimeOld <= 1.f);
 
-	assert(0.f <= normalizedTimeNew);
-	assert(normalizedTimeNew <= 1.f);
+	CRY_ASSERT(0.f <= normalizedTimeNew);
+	CRY_ASSERT(normalizedTimeNew <= 1.f);
 
 	/*
-	   assert(
+	   CRY_ASSERT(
 	   ( sendAnimEventsForTimeOld && normalizedTimeOld <= normalizedTimeNew) ||
 	   (!sendAnimEventsForTimeOld && normalizedTimeOld <  normalizedTimeNew)
 	   );
 	 */
 
-	assert(params.pAnimEventList);
+	CRY_ASSERT(params.pAnimEventList);
 
-	assert(m_pEventCallback);
+	CRY_ASSERT(m_pEventCallback);
 
 	const uint32 animEventCount = params.pAnimEventList->GetCount();
 	for (uint32 i = 0; i < animEventCount; ++i)
@@ -560,10 +555,10 @@ void CSkeletonAnim::AnimCallbackInternal(bool sendAnimEventsForTimeOld, f32 norm
 		if (isAnimEventInRange)
 		{
 			const char* const strModelName = animEventData.GetModelName();
-			assert(strModelName);
+			CRY_ASSERT(strModelName);
 
 			const char* const strFilePath = m_pInstance->CCharInstance::GetFilePath();
-			assert(strFilePath);
+			CRY_ASSERT(strFilePath);
 
 			const bool equal = (strModelName[0] == 0 || strncmp(strModelName, strFilePath, 256) == 0);
 			if (equal)
@@ -609,7 +604,7 @@ void CSkeletonAnim::AnimCallback(CAnimation& rAnimation)
 	if (rAnimation.GetParametricSampler() == nullptr)
 	{
 		const CAnimationSet* const pAnimationSet = m_pInstance->m_pDefaultSkeleton->m_pAnimationSet;
-		assert(pAnimationSet);
+		CRY_ASSERT(pAnimationSet);
 
 		const ModelAnimationHeader* pAnim = pAnimationSet->GetModelAnimationHeader(rAnimation.GetAnimationId());
 		if (pAnim->m_nAssetType == CAF_File)
@@ -621,15 +616,15 @@ void CSkeletonAnim::AnimCallback(CAnimation& rAnimation)
 			normalizedTimeNew = rCAF.GetNTimeforEntireClip(segmentIndexNew, segmentNormalizedTimeNew);
 			pFilePath = rCAF.GetFilePath();
 			pAnimEventList = &rCAF.m_AnimEventsCAF;
-			assert(normalizedTimeNew >= normalizedTimeOld || looped);
+			CRY_ASSERT(normalizedTimeNew >= normalizedTimeOld || looped);
 		}
 	}
 	else
 	{
-		assert(rAnimation.GetAnimationId() >= 0);
+		CRY_ASSERT(rAnimation.GetAnimationId() >= 0);
 
 		const CAnimationSet* const pAnimationSet = m_pInstance->m_pDefaultSkeleton->m_pAnimationSet;
-		assert(pAnimationSet);
+		CRY_ASSERT(pAnimationSet);
 
 		const ModelAnimationHeader* pAnim = pAnimationSet->GetModelAnimationHeader(rAnimation.GetAnimationId());
 		if (pAnim->m_nAssetType == LMG_File)
@@ -646,8 +641,8 @@ void CSkeletonAnim::AnimCallback(CAnimation& rAnimation)
 				// TODO: This code partially duplicates other similar routines in this translation unit, particularily parts of CSkeletonAnim::GetAnimationNormalizedTime().
 				// All of them should be merged together (and probably abstracted by the GAH LMG class).
 
-				assert(segmentIndexOld == 0xff); // Note: CAnimation segment indices are not used and always set to 0xff in case of a parametric blendspaces.
-				assert(segmentIndexNew == 0xff); // We're making sure here that this invariant always holds, but animation state should ideally be unified and hidden behind a consistent abstraction layer.
+				CRY_ASSERT(segmentIndexOld == 0xff); // Note: CAnimation segment indices are not used and always set to 0xff in case of a parametric blendspaces.
+				CRY_ASSERT(segmentIndexNew == 0xff); // We're making sure here that this invariant always holds, but animation state should ideally be unified and hidden behind a consistent abstraction layer.
 
 				const GlobalAnimationHeaderCAF* pLongestCaf = nullptr;
 				uint32 longestCafIndexOld = 0;
@@ -668,7 +663,7 @@ void CSkeletonAnim::AnimCallback(CAnimation& rAnimation)
 
 				normalizedTimeOld = pLongestCaf ? pLongestCaf->GetNTimeforEntireClip(longestCafIndexOld, segmentNormalizedTimeOld) : 0.0f;
 				normalizedTimeNew = pLongestCaf ? pLongestCaf->GetNTimeforEntireClip(longestCafIndexNew, segmentNormalizedTimeNew) : 0.0f;
-				assert(normalizedTimeNew >= normalizedTimeOld || looped);
+				CRY_ASSERT(normalizedTimeNew >= normalizedTimeOld || looped);
 			}
 		}
 	}
@@ -1097,12 +1092,12 @@ uint32 CSkeletonAnim::EvaluateTransitionFlags(CAnimation* arrAnimFiFo, uint32 nu
 		if (Idle2Move)
 		{
 			Idle2Move = 0;  //lets be pessimistic and assume we can't use this flag at all
-			assert(!rCurAnimation.IsActivated());
+			CRY_ASSERT(!rCurAnimation.IsActivated());
 
 			if (rPrevAnimation.GetParametricSampler() != NULL)
 			{
 				const ModelAnimationHeader* pAnim = pAnimationSet->GetModelAnimationHeader(rPrevAnimation.GetAnimationId());
-				assert(pAnim->m_nAssetType == LMG_File);
+				CRY_ASSERT(pAnim->m_nAssetType == LMG_File);
 				GlobalAnimationHeaderLMG& rGlobalAnimHeader = g_AnimationManager.m_arrGlobalLMG[pAnim->m_nGlobalAnimId];
 				if (rGlobalAnimHeader.m_VEG_Flags & CA_VEG_I2M)
 					Idle2Move = 2;  //for this VEG we can use it
@@ -1127,7 +1122,7 @@ uint32 CSkeletonAnim::EvaluateTransitionFlags(CAnimation* arrAnimFiFo, uint32 nu
 
 			if (StartAtKeytime)
 			{
-				assert(!rCurAnimation.IsActivated());
+				CRY_ASSERT(!rCurAnimation.IsActivated());
 				f32 atnew = GetAnimationNormalizedTime(&rPrevAnimation);
 				f32 atold = atnew - 0.000001f; // FIXME
 				f32 keyTime = rCurAnimation.m_fStartTime;
@@ -1137,7 +1132,7 @@ uint32 CSkeletonAnim::EvaluateTransitionFlags(CAnimation* arrAnimFiFo, uint32 nu
 
 			if (StartAfter)
 			{
-				assert(!rCurAnimation.IsActivated());
+				CRY_ASSERT(!rCurAnimation.IsActivated());
 				if (rPrevAnimation.GetRepeat())
 					rCurAnimation.m_DynFlags[0] |= CA_ACTIVATED;
 			}

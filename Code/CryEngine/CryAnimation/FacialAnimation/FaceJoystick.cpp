@@ -154,18 +154,15 @@ const char* CFacialJoystick::GetName()
 
 IJoystickChannel* CFacialJoystick::GetChannel(ChannelType type)
 {
-	assert((uint)type < NumChannelTypes);
-	if ((uint)type >= NumChannelTypes)
-		return 0;
-	return m_channels[type];
+	if (CRY_VERIFY((uint)type < NumChannelTypes))
+		return m_channels[type];
+	return 0;
 }
 
 void CFacialJoystick::SetChannel(ChannelType type, IJoystickChannel* pChannel)
 {
-	assert((uint)type < NumChannelTypes);
-	if ((uint)type >= NumChannelTypes)
-		return;
-	m_channels[type] = static_cast<CFacialJoystickChannel*>(pChannel);
+	if (CRY_VERIFY((uint)type < NumChannelTypes))
+		m_channels[type] = static_cast<CFacialJoystickChannel*>(pChannel);
 }
 
 const Vec2& CFacialJoystick::GetCentre() const
@@ -190,10 +187,9 @@ void CFacialJoystick::SetDimensions(const Vec2& vDimensions)
 
 CFacialJoystickChannel* CFacialJoystick::GetDerivedChannel(ChannelType type)
 {
-	assert((uint)type < NumChannelTypes);
-	if ((uint)type >= NumChannelTypes)
-		return 0;
-	return m_channels[type];
+	if (CRY_VERIFY((uint)type < NumChannelTypes))
+		return m_channels[type];
+	return 0;
 }
 
 void CFacialJoystick::Bind(IFacialJoystickSerializeContext* pContext)
@@ -225,7 +221,7 @@ void CFacialJoystickSet::HandleRemovedChannel(IFacialAnimChannel* pRemovedChanne
 	for (JoystickContainer::iterator itJoystick = m_joysticks.begin(); itJoystick != m_joysticks.end(); ++itJoystick)
 	{
 		CFacialJoystick* pJoystick = *itJoystick;
-		assert(pJoystick);
+		CRY_ASSERT(pJoystick);
 		PREFAST_ASSUME(pJoystick);
 		for (size_t i = 0; i < IJoystick::NumChannelTypes; ++i)
 		{

@@ -846,7 +846,7 @@ void GlobalAnimationHeaderAIM::Debug_Blend4AimPose(const CDefaultSkeleton* pDefa
 Vec3 GlobalAnimationHeaderAIM::Debug_PolarCoordinate(const Quat& q) const
 {
 	Matrix33 m = Matrix33(q);
-	assert(m.IsOrthonormal());
+	CRY_ASSERT(m.IsOrthonormal());
 	f32 l = sqrtf(m.m01 * m.m01 + m.m11 * m.m11);
 	if (l > 0.0001)
 		return Vec3(atan2f(-m.m01 / l, m.m11 / l), -atan2f(m.m21, l), atan2f(-m.m20 / l, m.m22 / l));
@@ -1593,7 +1593,7 @@ void VExampleInit::CopyPoses2(const DynArray<SJointsAimIK_Rot>& rRot, const DynA
 	for (uint32 r = 0; r < numRot; r++)
 	{
 		int32 j = rRot[r].m_nJointIdx;
-		assert(j > 0);
+		CRY_ASSERT(j > 0);
 		rAIM.m_arrAimIKPosesAIM[skey].m_arrRotation[r] = m_arrDefaultRelPose[j].q;
 		IController* pFAimController = rAIM.GetControllerByJointCRC32(m_arrJointCRC32[j]);
 		if (pFAimController)
@@ -1620,7 +1620,7 @@ void VExampleInit::CopyPoses2(const DynArray<SJointsAimIK_Rot>& rRot, const DynA
 	for (uint32 r = 0; r < numPos; r++)
 	{
 		int32 j = rPos[r].m_nJointIdx;
-		assert(j > 0);
+		CRY_ASSERT(j > 0);
 		rAIM.m_arrAimIKPosesAIM[skey].m_arrPosition[r] = m_arrDefaultRelPose[j].t;
 		IController* pFAimController = rAIM.GetControllerByJointCRC32(m_arrJointCRC32[j]);
 		if (pFAimController)
@@ -1739,13 +1739,13 @@ uint32 VExampleInit::PointInQuat(const Vec2d& ControlPoint, GlobalAnimationHeade
 {
 #if defined(USE_CRY_ASSERT)
 	f64 sum0 = w0.x + w0.y + w0.z + w0.w;
-	assert(fabs(sum0 - 1.0f) < 0.00001);
+	CRY_ASSERT(fabs(sum0 - 1.0f) < 0.00001);
 	f64 sum1 = w1.x + w1.y + w1.z + w1.w;
-	assert(fabs(sum1 - 1.0f) < 0.00001);
+	CRY_ASSERT(fabs(sum1 - 1.0f) < 0.00001);
 	f64 sum2 = w2.x + w2.y + w2.z + w2.w;
-	assert(fabs(sum2 - 1.0f) < 0.00001);
+	CRY_ASSERT(fabs(sum2 - 1.0f) < 0.00001);
 	f64 sum3 = w3.x + w3.y + w3.z + w3.w;
-	assert(fabs(sum3 - 1.0f) < 0.00001);
+	CRY_ASSERT(fabs(sum3 - 1.0f) < 0.00001);
 #endif
 
 	Quatd mid;
@@ -1765,20 +1765,20 @@ uint32 VExampleInit::PointInQuat(const Vec2d& ControlPoint, GlobalAnimationHeade
 
 #if defined(USE_CRY_ASSERT)
 	Vec2d tp0 = Vec2d(PolarCoordinate(tq0));
-	assert(fabs(tp0.x) < 3.1416f);
-	assert(fabs(tp0.y) < 2.0f);
+	CRY_ASSERT(fabs(tp0.x) < 3.1416f);
+	CRY_ASSERT(fabs(tp0.y) < 2.0f);
 
 	Vec2d tp1 = Vec2d(PolarCoordinate(tq1));
-	assert(fabs(tp1.x) < 3.1416f);
-	assert(fabs(tp1.y) < 2.0f);
+	CRY_ASSERT(fabs(tp1.x) < 3.1416f);
+	CRY_ASSERT(fabs(tp1.y) < 2.0f);
 
 	Vec2d tp2 = Vec2d(PolarCoordinate(tq2));
-	assert(fabs(tp2.x) < 3.1416f);
-	assert(fabs(tp2.y) < 2.0f);
+	CRY_ASSERT(fabs(tp2.x) < 3.1416f);
+	CRY_ASSERT(fabs(tp2.y) < 2.0f);
 
 	Vec2d tp3 = Vec2d(PolarCoordinate(tq3));
-	assert(fabs(tp3.x) < 3.1416f);
-	assert(fabs(tp3.y) < 2.0f);
+	CRY_ASSERT(fabs(tp3.x) < 3.1416f);
+	CRY_ASSERT(fabs(tp3.y) < 2.0f);
 #endif
 
 	f64 t;
@@ -1790,7 +1790,7 @@ uint32 VExampleInit::PointInQuat(const Vec2d& ControlPoint, GlobalAnimationHeade
 	f64 maxstep = 0.250f;
 
 	f64 angle0 = std::max(acos_tpl(tq1 | tq2), 0.01);
-	assert(angle0 >= 0.009);
+	CRY_ASSERT(angle0 >= 0.009);
 	f64 step0 = std::min((1.0 / (angle0 * angle0 * 30.0)), maxstep);
 	for (f64 i = step0; i < 3.0; i += step0)
 	{
@@ -1806,7 +1806,7 @@ uint32 VExampleInit::PointInQuat(const Vec2d& ControlPoint, GlobalAnimationHeade
 	}
 
 	f64 angle1 = std::max(acos_tpl(tq1 | tq2), 0.01);
-	assert(angle1 >= 0.009);
+	CRY_ASSERT(angle1 >= 0.009);
 	f64 step1 = std::min((1.0 / (angle1 * angle1 * 30.0)), maxstep);
 	for (f64 i = step1; i < 3.0; i += step1)
 	{
@@ -1822,7 +1822,7 @@ uint32 VExampleInit::PointInQuat(const Vec2d& ControlPoint, GlobalAnimationHeade
 	}
 
 	f64 angle2 = std::max(acos_tpl(tq2 | tq3), 0.01);
-	assert(angle2 >= 0.009);
+	CRY_ASSERT(angle2 >= 0.009);
 	f64 step2 = std::min((1.0 / (angle2 * angle2 * 30.0)), maxstep);
 	for (f64 i = step2; i < 3.0; i += step2)
 	{
@@ -1838,7 +1838,7 @@ uint32 VExampleInit::PointInQuat(const Vec2d& ControlPoint, GlobalAnimationHeade
 	}
 
 	f64 angle3 = std::max(acos_tpl(tq3 | tq0), 0.01);
-	assert(angle3 >= 0.009);
+	CRY_ASSERT(angle3 >= 0.009);
 	f64 step3 = std::min((1.0 / (angle3 * angle3 * 30.0)), maxstep);
 	for (f64 i = step3; i < 3.0; i += step3)
 	{
@@ -1852,8 +1852,8 @@ uint32 VExampleInit::PointInQuat(const Vec2d& ControlPoint, GlobalAnimationHeade
 		;
 		if (t == 1.0) break;
 	}
-	assert(c);
-	assert(c < 1000);
+	CRY_ASSERT(c);
+	CRY_ASSERT(c < 1000);
 	polar[c] = polar[0];
 
 	Vec2d ControlPointEnd = ControlPoint + Vec2d(1, 0) * 10;

@@ -30,7 +30,7 @@ uint32 CAttachmentVCLOTH::Immediate_AddBinding(IAttachmentObject* pIAttachmentOb
 	if (pISkinRender == 0)
 		CryFatalError("CryAnimation: if you create the binding for a Skin-Attachment, then you have to pass the pointer to an ISkin as well");
 
-	assert(pIAttachmentObject->GetAttachmentType() == IAttachmentObject::eAttachment_SkinMesh);
+	CRY_ASSERT(pIAttachmentObject->GetAttachmentType() == IAttachmentObject::eAttachment_SkinMesh);
 
 	uint32 nLogWarnings = (nLoadingFlags&CA_DisableLogWarnings) == 0;
 	CSkin* pCSkinRenderModel = (CSkin*)pISkinRender;
@@ -186,7 +186,7 @@ void CAttachmentVCLOTH::Immediate_ClearBinding(uint32 nLoadingFlags)
 {
 	if (m_pIAttachmentObject)
 	{
-		assert(static_cast<CSKINAttachment*>(m_pIAttachmentObject)->m_pIAttachmentSkin == this);
+		CRY_ASSERT(static_cast<CSKINAttachment*>(m_pIAttachmentObject)->m_pIAttachmentSkin == this);
 		m_pIAttachmentObject->Release();
 		m_pIAttachmentObject = 0;
 
@@ -207,7 +207,7 @@ void CAttachmentVCLOTH::RecreateDefaultSkeleton(CCharInstance* pCharacter, uint3
 	const char* originalSkeletonFilename = pCharacter->m_pDefaultSkeleton->GetModelFilePath();
 	if (pCharacter->m_pDefaultSkeleton->GetModelFilePathCRC64() != 0)
 	{
-		assert(originalSkeletonFilename[0] == '_');
+		CRY_ASSERT(originalSkeletonFilename[0] == '_');
 		originalSkeletonFilename++; // All extended skeletons have an '_' in front of the filepath to not confuse them with regular skeletons.
 	}
 
@@ -638,7 +638,7 @@ void CAttachmentVCLOTH::RenderAttachment(SRendParams& RendParams, const SRenderi
 		uLocalObjFlags |= FOB_MOTION_BLUR;
 	}
 
-	assert(RendParams.pMatrix);
+	CRY_ASSERT(RendParams.pMatrix);
 	Matrix34 RenderMat34 = (*RendParams.pMatrix);
 	pObj->SetMatrix(RenderMat34);
 	pObj->m_nClipVolumeStencilRef = RendParams.nClipVolumeStencilRef;
@@ -2774,10 +2774,9 @@ bool CClothPiece::PrepareCloth(CSkeletonPose& skeletonPose, const Matrix34& worl
 	WaitForJob(true);
 
 	// get working buffers from the pool
-	if (m_buffers != NULL)
+	if (!CRY_VERIFY(m_buffers == NULL))
 	{
 		CryLog("[Character Cloth] the previous job is not done: %s - %s", m_pVClothAttachment->GetName(), skeletonPose.m_pInstance->GetFilePath());
-		assert(false);
 		return false;
 	}
 	if (m_poolIdx < 0)

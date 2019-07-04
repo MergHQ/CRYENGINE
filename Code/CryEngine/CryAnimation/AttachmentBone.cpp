@@ -12,7 +12,7 @@
 uint32 CAttachmentBONE::SetJointName(const char* szJointName)
 {
 	m_nJointID = -1;
-	if (!szJointName)  { assert(0); return 0; }
+	if (!CRY_VERIFY(szJointName))  { return 0; }
 	int nJointID = m_pAttachmentManager->m_pSkelInstance->m_pDefaultSkeleton->GetJointIDByName(szJointName);
 	if (nJointID < 0)
 	{
@@ -126,7 +126,7 @@ void CAttachmentBONE::Update(Skeleton::CPoseData& poseData)
 	{
 		if (!ProjectAttachment(&poseData))
 		{
-			assert(!(m_AttFlags & FLAGS_ATTACH_PROJECTED));
+			CRY_ASSERT(!(m_AttFlags & FLAGS_ATTACH_PROJECTED));
 			return;
 		}
 	}

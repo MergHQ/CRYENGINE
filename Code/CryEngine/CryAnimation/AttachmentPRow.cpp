@@ -74,7 +74,7 @@ const QuatTS CAttachmentPROW::GetAttWorldAbsolute() const
 uint32 CAttachmentPROW::SetJointName(const char* szJointName)
 {
 	m_nRowJointID = -1;
-	if (!szJointName)  { assert(0); return 0; }
+	if (!CRY_VERIFY(szJointName))  { return 0; }
 	int nJointID = m_pAttachmentManager->m_pSkelInstance->m_pDefaultSkeleton->GetJointIDByName(szJointName);
 	if (nJointID < 0)
 	{
@@ -571,7 +571,7 @@ void CPendulaRow::UpdatePendulumRow(const CAttachmentManager* pAttachmentManager
 				Vec3 ortho2 = ortho1 % vSimulationAxisN;
 				Matrix33 m33;
 				m33.SetFromVectors(ortho1, vSimulationAxisN, ortho2);
-				assert(m33.IsOrthonormalRH());
+				CRY_ASSERT(m33.IsOrthonormalRH());
 
 				{
 					f32 bsize = m_fRodLength;

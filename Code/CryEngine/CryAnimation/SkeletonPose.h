@@ -63,13 +63,12 @@ public:
 	virtual const QuatT& GetAbsJointByID(int32 index) const override
 	{
 		const Skeleton::CPoseData& poseData = GetPoseData();
-		if (index >= 0 && (uint32)index < poseData.GetJointCount())
+		if (CRY_VERIFY(index >= 0 && (uint32)index < poseData.GetJointCount()))
 		{
 			return poseData.GetJointAbsolute(index);
 		}
 		else
 		{
-			assert(false);
 			return g_IdentityQuatT;
 		}
 	}
@@ -77,13 +76,12 @@ public:
 	virtual const QuatT& GetRelJointByID(int32 index) const override
 	{
 		const Skeleton::CPoseData& poseData = GetPoseData();
-		if (index >= 0 && (uint32)index < poseData.GetJointCount())
+		if (CRY_VERIFY(index >= 0 && (uint32)index < poseData.GetJointCount()))
 		{
 			return poseData.GetJointRelative(index);
 		}
 		else
 		{
-			assert(false);
 			return g_IdentityQuatT;
 		}
 	}
@@ -91,13 +89,12 @@ public:
 	virtual Diag33 GetAbsJointScalingByID(int32 index) const override
 	{
 		const Skeleton::CPoseData& poseData = GetPoseData();
-		if (index >= 0 && (uint32)index < poseData.GetJointCount())
+		if (CRY_VERIFY(index >= 0 && (uint32)index < poseData.GetJointCount()))
 		{
 			return poseData.GetJointAbsoluteS(index);
 		}
 		else
 		{
-			assert(false);
 			return Diag33(1.0);
 		}
 	}
@@ -105,13 +102,12 @@ public:
 	virtual Diag33 GetRelJointScalingByID(int32 index) const override
 	{
 		const Skeleton::CPoseData& poseData = GetPoseData();
-		if (index >= 0 && (uint32)index < poseData.GetJointCount())
+		if (CRY_VERIFY(index >= 0 && (uint32)index < poseData.GetJointCount()))
 		{
 			return poseData.GetJointRelativeS(index);
 		}
 		else
 		{
-			assert(false);
 			return Diag33(1.0);
 		}
 	}

@@ -385,10 +385,10 @@ void CSkeletonAnim::Serialize(TSerialize ser)
 				}
 
 #ifdef _DEBUG
-				assert(pAnim);
+				CRY_ASSERT(pAnim);
 				if (anim.GetParametricSampler() != NULL)
 				{
-					assert(pAnim->m_nAssetType == LMG_File);  //obvious
+					CRY_ASSERT(pAnim->m_nAssetType == LMG_File);  //obvious
 				}
 #endif
 

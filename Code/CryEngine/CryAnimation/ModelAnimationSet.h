@@ -287,8 +287,8 @@ public:
 #endif
 	ILINE uint32 GetGlobalIDByAnimID_Fast(int nAnimationId) const
 	{
-		assert(nAnimationId >= 0);
-		assert(nAnimationId < m_arrAnimations.size());
+		CRY_ASSERT(nAnimationId >= 0);
+		CRY_ASSERT(nAnimationId < m_arrAnimations.size());
 		return m_arrAnimations[nAnimationId].m_nGlobalAnimId;
 	};
 

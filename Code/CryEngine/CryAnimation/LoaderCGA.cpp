@@ -189,7 +189,7 @@ void CryCGALoader::LoadAnimations(const char* cgaFile, CDefaultSkeleton* pCGAMod
 bool CryCGALoader::LoadAnimationANM(const char* animFile, CDefaultSkeleton* pCGAModel, uint32 unique_model_id, uint32 nLoadingFlags)
 {
 	// Get file name, this is a name of application.
-	assert(strlen(animFile) < _MAX_PATH);
+	CRY_ASSERT(strlen(animFile) < _MAX_PATH);
 	char fname[_MAX_PATH];
 	cry_strcpy(fname, animFile);
 	PathUtil::RemoveExtension(fname);
@@ -352,7 +352,7 @@ void CryCGALoader::InitNodes(CHeaderTCB* pSkinningInfo, CDefaultSkeleton* pCGAMo
 	pCGAModel->m_pCGA_Object = pRootStaticObj;
 
 	uint32 numNodes2 = pCGF->GetNodeCount();
-	assert(numNodes2);
+	CRY_ASSERT(numNodes2);
 
 	uint32 MeshNodeCounter = 0;
 	for (uint32 n = 0; n < numNodes2; n++)
@@ -378,7 +378,7 @@ void CryCGALoader::InitNodes(CHeaderTCB* pSkinningInfo, CDefaultSkeleton* pCGAMo
 		if (MeshNode || HelperNode)
 		{
 			pGFXNode2 = pCGF->GetNode(n);
-			assert(pGFXNode2);
+			CRY_ASSERT(pGFXNode2);
 
 			// Try to create object.
 			//			IStatObj::SSubObject *pSubObject = NULL;
@@ -395,13 +395,13 @@ void CryCGALoader::InitNodes(CHeaderTCB* pSkinningInfo, CDefaultSkeleton* pCGAMo
 #endif
 
 			if (nd.pos_cont_id != 0xffff)
-				assert(nd.pos_cont_id < numChunks);
+				CRY_ASSERT(nd.pos_cont_id < numChunks);
 			if (nd.rot_cont_id != 0xffff)
-				assert(nd.rot_cont_id < numChunks);
+				CRY_ASSERT(nd.rot_cont_id < numChunks);
 			if (nd.scl_cont_id != 0xffff)
-				assert(nd.scl_cont_id < numChunks);
+				CRY_ASSERT(nd.scl_cont_id < numChunks);
 
-			assert(pGFXNode2->nChunkId < (int)numChunks);
+			CRY_ASSERT(pGFXNode2->nChunkId < (int)numChunks);
 
 			pCGAModel->m_ModelAABB = AABB(Vec3(-2, -2, -2), Vec3(+2, +2, +2));
 
@@ -427,7 +427,7 @@ void CryCGALoader::InitNodes(CHeaderTCB* pSkinningInfo, CDefaultSkeleton* pCGAMo
 				uint16 ParentID = 0xffff;
 				if (pGFXNode2->nParentChunkId != 0xffffffff)
 				{
-					assert(pGFXNode2->nParentChunkId < (int)numChunks);
+					CRY_ASSERT(pGFXNode2->nParentChunkId < (int)numChunks);
 					uint32 numJoints = pCGAModel->m_arrModelJoints.size();
 					for (uint32 i = 0; i < numJoints; i++)
 						if (pGFXNode2->nParentChunkId == pCGAModel->m_arrModelJoints[i].m_ObjectID)
@@ -446,9 +446,6 @@ void CryCGALoader::InitNodes(CHeaderTCB* pSkinningInfo, CDefaultSkeleton* pCGAMo
 				pCGAModel->m_arrModelJoints.push_back(mj);
 
 				m_arrChunkNodes[pGFXNode2->nChunkId] = nd;
-				//		assert(nodecounter==n);
-				//		nodecounter++;
-				//	g_nControllerJID++;
 			}
 			else
 			{

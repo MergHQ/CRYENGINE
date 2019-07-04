@@ -35,7 +35,7 @@ CControllerDefragHeap::~CControllerDefragHeap()
 
 void CControllerDefragHeap::Init(size_t capacity)
 {
-	assert(!m_pAllocator);
+	CRY_ASSERT(!m_pAllocator);
 
 	m_pAddressRange = CryGetIMemoryManager()->ReserveAddressRange(capacity, "Anim Defrag Heap");
 	m_pBaseAddress = m_pAddressRange->GetBaseAddress();
@@ -141,7 +141,7 @@ void CControllerDefragHeap::Free(CControllerDefragHdl hdl)
 			MEMREPLAY_SCOPE_FREE(m_pBaseAddress + offs);
 		}
 
-		assert(hdl.IsValid());
+		CRY_ASSERT(hdl.IsValid());
 
 		// Ensure that pages are unmapped
 		UINT_PTR sz = m_pAllocator->UsableSize(hdl.AsHdl());
@@ -162,7 +162,7 @@ void CControllerDefragHeap::Free(CControllerDefragHdl hdl)
 
 size_t CControllerDefragHeap::UsableSize(CControllerDefragHdl hdl)
 {
-	assert(hdl.IsValid());
+	CRY_ASSERT(hdl.IsValid());
 	if (!hdl.IsFixed())
 	{
 		return m_pAllocator->UsableSize(hdl.AsHdl());
@@ -193,7 +193,7 @@ uint32 CControllerDefragHeap::BeginCopy(void* pContext, UINT_PTR dstOffset, UINT
 
 		if (nIdx != (uint32) - 1)
 		{
-			assert(nIdx >= 0 && nIdx < CRY_ARRAY_COUNT(m_copiesInFlight));
+			CRY_ASSERT(nIdx >= 0 && nIdx < CRY_ARRAY_COUNT(m_copiesInFlight));
 			Copy& cp = m_copiesInFlight[nIdx];
 			stl::reconstruct(cp, pContext, dstOffset, srcOffset, size, pNotification);
 

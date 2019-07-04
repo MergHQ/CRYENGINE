@@ -73,7 +73,7 @@ inline const QuatTNS& CControllerPQLog::DecodeKey(f32 keyTime) const
 	const int* const __restrict arrTimes = &m_arrTimes[0];
 	const int nNumKeysPQ = m_arrKeys.size();
 
-	assert(m_arrKeys.size() > 0);
+	CRY_ASSERT(m_arrKeys.size() > 0);
 
 	const f32 keytimeStart = (f32)arrTimes[0];
 	if (keyTime < keytimeStart)
@@ -91,7 +91,7 @@ inline const QuatTNS& CControllerPQLog::DecodeKey(f32 keyTime) const
 		return m_lastValue;
 	}
 
-	assert(m_arrKeys.size() > 1);
+	CRY_ASSERT(m_arrKeys.size() > 1);
 
 	int nPos = nNumKeysPQ >> 1;
 	int nStep = nNumKeysPQ >> 2;
@@ -126,7 +126,7 @@ inline const QuatTNS& CControllerPQLog::DecodeKey(f32 keyTime) const
 		nPos--;
 	}
 
-	assert(nPos > 0 && nPos < (int)nNumKeysPQ);
+	CRY_ASSERT(nPos > 0 && nPos < (int)nNumKeysPQ);
 
 	PQLogS pKeys[2] = { arrKeys[nPos - 1], arrKeys[nPos] };
 

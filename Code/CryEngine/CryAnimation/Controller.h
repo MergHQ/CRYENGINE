@@ -69,12 +69,12 @@ extern void AdjustLogRotations(Vec3& vRotLog1, Vec3& vRotLog2);
 class AnimCtrlSortPred
 {
 public:
-	bool operator()(const IController_AutoPtr& a, const IController_AutoPtr& b) { assert(a != (IController*)NULL && b != (IController*)NULL); return a->GetID() < b->GetID(); }
+	bool operator()(const IController_AutoPtr& a, const IController_AutoPtr& b) { CRY_ASSERT(a != (IController*)NULL && b != (IController*)NULL); return a->GetID() < b->GetID(); }
 };
 
 class AnimCtrlSortPredInt
 {
 public:
-	bool operator()(const IController* a, uint32 nID) { assert(a != (IController*)NULL); return a->GetID() < nID; }
-	bool operator()(uint32 nID, const IController* b) { assert(b != (IController*)NULL); return nID < b->GetID(); }
+	bool operator()(const IController* a, uint32 nID) { CRY_ASSERT(a != (IController*)NULL); return a->GetID() < nID; }
+	bool operator()(uint32 nID, const IController* b) { CRY_ASSERT(b != (IController*)NULL); return nID < b->GetID(); }
 };

@@ -22,7 +22,7 @@ f32 SParametricSamplerInternal::Parameterizer(const CAnimationSet* pAnimationSet
 
 	//check if ParaGroup is invalid
 	const ModelAnimationHeader* pAnim = pAnimationSet->GetModelAnimationHeader(nAnimID);
-	assert(pAnim->m_nAssetType == LMG_File);
+	CRY_ASSERT(pAnim->m_nAssetType == LMG_File);
 	GlobalAnimationHeaderLMG& rLMG = g_AnimationManager.m_arrGlobalLMG[pAnim->m_nGlobalAnimId];
 	uint32 nError = rLMG.m_Status.size();
 	if (nError == 0)
@@ -31,7 +31,7 @@ f32 SParametricSamplerInternal::Parameterizer(const CAnimationSet* pAnimationSet
 		//compute the Blend-Weights for a Parametric Group (using a VEG))
 		//---------------------------------------------------------------------
 		uint32 nDimensions = rLMG.m_Dimensions;
-		assert(nDimensions > 0 && nDimensions < 5);
+		CRY_ASSERT(nDimensions > 0 && nDimensions < 5);
 		uint32 numBlendSpaces = rLMG.m_arrCombinedBlendSpaces.size();
 		if (numBlendSpaces == 0)
 		{
@@ -361,7 +361,7 @@ void SParametricSamplerInternal::BlendSpace1D(GlobalAnimationHeaderLMG& rLMG, co
 
 #if defined(USE_CRY_ASSERT)
 		f32 sum = w0 + w1;
-		assert(fabsf(1.0f - sum) < 0.00001f);
+		CRY_ASSERT(fabsf(1.0f - sum) < 0.00001f);
 #endif
 		rLMG.m_arrParameter[i].m_Para = rLMG.m_arrParameter[i0].m_Para * w0 + rLMG.m_arrParameter[i1].m_Para * w1;
 	}
@@ -623,7 +623,7 @@ void SParametricSamplerInternal::BlendSpace2D(GlobalAnimationHeaderLMG& rLMG, co
 
 #if defined(USE_CRY_ASSERT)
 		f32 sum = w0 + w1;
-		assert(fabsf(1.0f - sum) < 0.00001f);
+		CRY_ASSERT(fabsf(1.0f - sum) < 0.00001f);
 #endif
 		rLMG.m_arrParameter[i].m_Para = rLMG.m_arrParameter[i0].m_Para * w0 + rLMG.m_arrParameter[i1].m_Para * w1;
 	}
@@ -976,7 +976,7 @@ void SParametricSamplerInternal::BlendSpace3D(GlobalAnimationHeaderLMG& rLMG, co
 
 #if defined(USE_CRY_ASSERT)
 		f32 sum = w0 + w1;
-		assert(fabsf(1.0f - sum) < 0.00001f);
+		CRY_ASSERT(fabsf(1.0f - sum) < 0.00001f);
 #endif
 		rLMG.m_arrParameter[i].m_Para = rLMG.m_arrParameter[i0].m_Para * w0 + rLMG.m_arrParameter[i1].m_Para * w1;
 	}
@@ -1014,7 +1014,7 @@ void SParametricSamplerInternal::BlendSpace3D(GlobalAnimationHeaderLMG& rLMG, co
 					f32 sum = 0.0f;
 					for (uint32 i = 0; i < numExamples; i++)
 						sum += arrWeights[i];
-					assert(fabsf(sum - 1.0f) < 0.005f);
+					CRY_ASSERT(fabsf(sum - 1.0f) < 0.005f);
 #endif
 					uint32 cell = c2 * rLMG.m_DimPara[1].m_cells * rLMG.m_DimPara[0].m_cells + c1 * rLMG.m_DimPara[0].m_cells + c0;
 					rLMG.m_VirtualExampleGrid3D[cell].i0 = 0;
@@ -1219,7 +1219,7 @@ int SParametricSamplerInternal::GetWeights1D(f32 fDesiredParameter, const Global
 #endif
 
 				f32 fDistance = x1 - x0;
-				assert(fDistance);
+				CRY_ASSERT(fDistance);
 				f32 d = fDesiredParameter - x0;
 				f32 w0 = 1.0f - d / fDistance;
 				f32 w1 = d / fDistance;
@@ -1269,7 +1269,7 @@ int SParametricSamplerInternal::GetWeights1D(f32 fDesiredParameter, const Global
 				f32 x1 = rLMG.m_arrParameter[i1].m_Para.x;
 
 				f32 fDistance = (x1 - x0);
-				assert(fDistance);
+				CRY_ASSERT(fDistance);
 				f32 d = fDesiredParameter - x0;
 				f32 w0 = 1.0f - d / fDistance;
 				f32 w1 = d / fDistance;
@@ -1315,7 +1315,7 @@ int SParametricSamplerInternal::GetWeights1D(f32 fDesiredParameter, const Global
 #endif
 
 			f32 fDistance = x1 - x0;
-			assert(fDistance);
+			CRY_ASSERT(fDistance);
 			f32 d = fDesiredParameter - x0;
 			f32 w0 = 1.0f - d / fDistance;
 			f32 w1 = d / fDistance;
@@ -1623,7 +1623,7 @@ BC4 SParametricSamplerInternal::WeightTetrahedron(const Vec3& CP, const Vec3& t0
 
 #if defined(USE_CRY_ASSERT)
 	f32 sum = bc.w0 + bc.w1 + bc.w2 + bc.w3;
-	assert(fabsf(sum - 1.0f) < 0.0001f);
+	CRY_ASSERT(fabsf(sum - 1.0f) < 0.0001f);
 #endif
 	return bc;
 }
@@ -2025,7 +2025,7 @@ void SParametricSamplerInternal::CombinedBlendSpaces(GlobalAnimationHeaderLMG& r
 				if (nGlobalID >= 0)
 				{
 					GlobalAnimationHeaderLMG& rLMG = g_AnimationManager.m_arrGlobalLMG[nGlobalID];
-					assert(rLMG.IsAssetLMG());                                                                                   //--- probably data mismatch
+					CRY_ASSERT(rLMG.IsAssetLMG());                                                                                   //--- probably data mismatch
 
 					for (uint32 d = 0; (d < rLMG.m_Dimensions) && (bestDist > 0.0f); d++)
 					{
@@ -2062,7 +2062,7 @@ void SParametricSamplerInternal::CombinedBlendSpaces(GlobalAnimationHeaderLMG& r
 		if (nGlobalID >= 0)
 		{
 			GlobalAnimationHeaderLMG& rLMG = g_AnimationManager.m_arrGlobalLMG[nGlobalID];
-			assert(rLMG.IsAssetLMG());                                                                                   //--- probably data mismatch
+			CRY_ASSERT(rLMG.IsAssetLMG());                                                                                   //--- probably data mismatch
 
 			PrefetchLine(&rLMG, offsetof(GlobalAnimationHeaderLMG, m_numExamples));
 
@@ -2146,7 +2146,7 @@ void SParametricSamplerInternal::VisualizeBlendSpace(const IAnimationSet* _pAnim
 	if (nDimensions > 3)
 		return;
 
-	assert(nDimensions > 0 && nDimensions < 4);
+	CRY_ASSERT(nDimensions > 0 && nDimensions < 4);
 	uint32 numExamples = rLMG.m_numExamples; //m_arrBSAnimations2.size();
 	uint32 numParameter = rLMG.m_arrParameter.size();
 	if (numDebugInstances < numParameter)

@@ -1224,8 +1224,8 @@ void CAttachmentManager::sAttachedCharactersCache::Erase(IAttachment* attachment
 void CAttachmentManager::RemoveAttachmentByIndex(uint32 index, uint32 loadingFlags)
 {
 	IAttachment* const pAttachment = GetInterfaceByIndex(index);
-	assert(pAttachment);
-	assert(pAttachment->GetType() == CA_BONE || pAttachment->GetType() == CA_FACE || pAttachment->GetType() == CA_SKIN || pAttachment->GetType() == CA_PROW || pAttachment->GetType() == CA_VCLOTH);
+	CRY_ASSERT(pAttachment);
+	CRY_ASSERT(pAttachment->GetType() == CA_BONE || pAttachment->GetType() == CA_FACE || pAttachment->GetType() == CA_SKIN || pAttachment->GetType() == CA_PROW || pAttachment->GetType() == CA_VCLOTH);
 
 	// Erase also in cache
 	m_attachedCharactersCache.Erase(pAttachment);
@@ -1380,7 +1380,7 @@ void CAttachmentManager::VerifyProxyLinks()
 			if (numUsedProxies == 0)
 				continue;
 
-			assert(numUsedProxies <= 100);
+			CRY_ASSERT(numUsedProxies <= 100);
 			string arrProxyNames[100];
 			for (uint32 p = 0; p < numUsedProxies; p++)
 			{
@@ -1412,7 +1412,7 @@ void CAttachmentManager::VerifyProxyLinks()
 			if (numUsedProxies == 0)
 				continue;
 
-			assert(numUsedProxies <= 100);
+			CRY_ASSERT(numUsedProxies <= 100);
 			string arrProxyNames[100];
 			for (uint32 p = 0; p < numUsedProxies; p++)
 			{
@@ -1592,9 +1592,9 @@ void CAttachmentManager::RebuildAttachedCharactersCache()
 		for (uint32 i = m_sortedRanges[eRange_BoneAttached].begin; i < m_sortedRanges[eRange_BoneAttached].end; ++i)
 		{
 			IAttachment* pIAttachment = m_arrAttachments[i];
-			assert(pIAttachment);
-			assert(pIAttachment->GetType() == CA_BONE);
-			assert(pIAttachment->GetIAttachmentObject());
+			CRY_ASSERT(pIAttachment);
+			CRY_ASSERT(pIAttachment->GetType() == CA_BONE);
+			CRY_ASSERT(pIAttachment->GetIAttachmentObject());
 			if (static_cast<CAttachmentBONE*>(pIAttachment)->m_nJointID < 0)
 				continue;
 
@@ -1604,9 +1604,9 @@ void CAttachmentManager::RebuildAttachedCharactersCache()
 		for (uint32 i = m_sortedRanges[eRange_FaceAttached].begin; i < m_sortedRanges[eRange_FaceAttached].end; ++i)
 		{
 			IAttachment* pIAttachment = m_arrAttachments[i];
-			assert(pIAttachment);
-			assert(pIAttachment->GetType() == CA_FACE);
-			assert(pIAttachment->GetIAttachmentObject());
+			CRY_ASSERT(pIAttachment);
+			CRY_ASSERT(pIAttachment->GetType() == CA_FACE);
+			CRY_ASSERT(pIAttachment->GetIAttachmentObject());
 
 			registerAttachedCharacters(*pIAttachment);
 		}
@@ -1627,13 +1627,13 @@ int CAttachmentManager::GenerateAttachedCharactersContexts()
 
 	int generatedContextsCount = 0;
 
-	assert(m_attachedCharactersCache.Attachments().size() == m_attachedCharactersCache.Characters().size());
+	CRY_ASSERT(m_attachedCharactersCache.Attachments().size() == m_attachedCharactersCache.Characters().size());
 	for (size_t i = 0, limit = m_attachedCharactersCache.Characters().size(); i < limit; ++i)
 	{
 		IAttachment* pAttachment = m_attachedCharactersCache.Attachment(i);
 		CCharInstance* pCharacter = m_attachedCharactersCache.Characters(i);
 
-		assert(!pCharacter->GetProcessingContext());
+		CRY_ASSERT(!pCharacter->GetProcessingContext());
 
 		CharacterInstanceProcessing::CContextQueue& queue = g_pCharacterManager->GetContextSyncQueue();
 		CharacterInstanceProcessing::SContext& ctx = queue.AppendContext();
@@ -1777,7 +1777,7 @@ void CAttachmentManager::DrawAttachments(SRendParams& rParams, const Matrix34& r
 
 	if (passInfo.IsAuxWindow())
 	{
-		assert(m_pSkelInstance->m_CharEditMode & CA_CharacterAuxEditor);
+		CRY_ASSERT(m_pSkelInstance->m_CharEditMode & CA_CharacterAuxEditor);
 
 		for (const IAttachment* pSocket : m_arrAttachments)
 		{
@@ -2397,9 +2397,9 @@ void CAttachmentManager::SortByType()
 
 void CAttachmentManager::ProcessAttachment(IAttachment* pSocket)
 {
-	assert(pSocket);
-	assert(pSocket->GetIAttachmentObject());
-	assert(static_cast<SAttachmentBase*>(pSocket)->m_pAttachmentManager == this);
+	CRY_ASSERT(pSocket);
+	CRY_ASSERT(pSocket->GetIAttachmentObject());
+	CRY_ASSERT(static_cast<SAttachmentBase*>(pSocket)->m_pAttachmentManager == this);
 
 	IAttachmentObject* pPlug = pSocket->GetIAttachmentObject();
 
@@ -2492,13 +2492,13 @@ void CAttachmentManager::Verification()
 	for (uint32 i = m_sortedRanges[eRange_BoneRedirect].begin; i < m_sortedRanges[eRange_BoneRedirect].end; i++)
 	{
 		IAttachment* pIAttachment = m_arrAttachments[i];
-		assert(pIAttachment->GetType() == CA_BONE);
+		CRY_ASSERT(pIAttachment->GetType() == CA_BONE);
 
 		CAttachmentBONE* pCAttachmentBone = static_cast<CAttachmentBONE*>(pIAttachment);
-		assert(pCAttachmentBone->m_nJointID < 0 || uint32(pCAttachmentBone->m_nJointID) < m_pSkelInstance->m_pDefaultSkeleton->GetJointCount());
-		assert(pCAttachmentBone->m_nJointID >= s);
-		assert(pCAttachmentBone->m_Simulation.m_useRedirect);
-		assert(pCAttachmentBone->m_Simulation.m_nClampType != SimulationParams::DISABLED);
+		CRY_ASSERT(pCAttachmentBone->m_nJointID < 0 || uint32(pCAttachmentBone->m_nJointID) < m_pSkelInstance->m_pDefaultSkeleton->GetJointCount());
+		CRY_ASSERT(pCAttachmentBone->m_nJointID >= s);
+		CRY_ASSERT(pCAttachmentBone->m_Simulation.m_useRedirect);
+		CRY_ASSERT(pCAttachmentBone->m_Simulation.m_nClampType != SimulationParams::DISABLED);
 
 		s = pCAttachmentBone->m_nJointID;
 	}
@@ -2506,49 +2506,49 @@ void CAttachmentManager::Verification()
 	for (uint32 i = m_sortedRanges[eRange_BoneEmpty].begin; i < m_sortedRanges[eRange_BoneEmpty].end; i++)
 	{
 		IAttachment* pIAttachment = m_arrAttachments[i];
-		assert(pIAttachment->GetType() == CA_BONE);
-		assert(!pIAttachment->GetIAttachmentObject());
+		CRY_ASSERT(pIAttachment->GetType() == CA_BONE);
+		CRY_ASSERT(!pIAttachment->GetIAttachmentObject());
 
 		CAttachmentBONE* pCAttachmentBone = static_cast<CAttachmentBONE*>(pIAttachment);
-		assert(pCAttachmentBone->m_nJointID < 0 || uint32(pCAttachmentBone->m_nJointID) < m_pSkelInstance->m_pDefaultSkeleton->GetJointCount());
-		assert(!pCAttachmentBone->m_Simulation.m_useRedirect);
+		CRY_ASSERT(pCAttachmentBone->m_nJointID < 0 || uint32(pCAttachmentBone->m_nJointID) < m_pSkelInstance->m_pDefaultSkeleton->GetJointCount());
+		CRY_ASSERT(!pCAttachmentBone->m_Simulation.m_useRedirect);
 	}
 
 	for (uint32 i = m_sortedRanges[eRange_BoneAttached].begin; i < m_sortedRanges[eRange_BoneAttached].end; i++)
 	{
 		IAttachment* pIAttachment = m_arrAttachments[i];
-		assert(pIAttachment->GetType() == CA_BONE);
-		assert(pIAttachment->GetIAttachmentObject());
+		CRY_ASSERT(pIAttachment->GetType() == CA_BONE);
+		CRY_ASSERT(pIAttachment->GetIAttachmentObject());
 
 		CAttachmentBONE* pCAttachmentBone = static_cast<CAttachmentBONE*>(pIAttachment);
-		assert(pCAttachmentBone->m_nJointID < 0 || uint32(pCAttachmentBone->m_nJointID) < m_pSkelInstance->m_pDefaultSkeleton->GetJointCount());
-		assert(!pCAttachmentBone->m_Simulation.m_useRedirect);
+		CRY_ASSERT(pCAttachmentBone->m_nJointID < 0 || uint32(pCAttachmentBone->m_nJointID) < m_pSkelInstance->m_pDefaultSkeleton->GetJointCount());
+		CRY_ASSERT(!pCAttachmentBone->m_Simulation.m_useRedirect);
 	}
 
 	for (uint32 i = m_sortedRanges[eRange_FaceEmpty].begin; i < m_sortedRanges[eRange_FaceEmpty].end; i++)
 	{
 		IAttachment* pIAttachment = m_arrAttachments[i];
-		assert(pIAttachment->GetType() == CA_FACE);
-		assert(!pIAttachment->GetIAttachmentObject());
+		CRY_ASSERT(pIAttachment->GetType() == CA_FACE);
+		CRY_ASSERT(!pIAttachment->GetIAttachmentObject());
 	}
 
 	for (uint32 i = m_sortedRanges[eRange_FaceAttached].begin; i < m_sortedRanges[eRange_FaceAttached].end; i++)
 	{
 		IAttachment* pIAttachment = m_arrAttachments[i];
-		assert(pIAttachment->GetType() == CA_FACE);
-		assert(pIAttachment->GetIAttachmentObject());
+		CRY_ASSERT(pIAttachment->GetType() == CA_FACE);
+		CRY_ASSERT(pIAttachment->GetIAttachmentObject());
 	}
 
 	for (uint32 i = m_sortedRanges[eRange_SkinMesh].begin; i < m_sortedRanges[eRange_SkinMesh].end; i++)
 	{
 		IAttachment* pIAttachment = m_arrAttachments[i];
-		assert(pIAttachment->GetType() == CA_SKIN);
+		CRY_ASSERT(pIAttachment->GetType() == CA_SKIN);
 	}
 
 	for (uint32 i = m_sortedRanges[eRange_VertexClothOrPendulumRow].begin; i < m_sortedRanges[eRange_VertexClothOrPendulumRow].end; i++)
 	{
 		IAttachment* pIAttachment = m_arrAttachments[i];
-		assert(pIAttachment->GetType() == CA_PROW || pIAttachment->GetType() == CA_VCLOTH);
+		CRY_ASSERT(pIAttachment->GetType() == CA_PROW || pIAttachment->GetType() == CA_VCLOTH);
 	}
 #endif
 }

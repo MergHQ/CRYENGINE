@@ -13,7 +13,7 @@ namespace
 	{
 		const CDefaultSkeleton& rDefaultSkeleton = *pCharacter->m_pDefaultSkeleton;
 		const uint32 p = rDefaultSkeleton.GetJointParentIDByID(jointId);
-		assert(p >= 0);
+		CRY_ASSERT(p >= 0);
 		poseData.SetJointAbsolute(jointId, q);
 		poseData.SetJointRelative(jointId, poseData.GetJointAbsolute(p).GetInverted() * q);
 		uint32 numChildren = children.size();
@@ -264,7 +264,7 @@ void CSimulation::UpdatePendulumSimulation(const CAttachmentManager* pAttachment
 		Vec3 ortho2 = ortho1 % vSimulationAxisN;
 		Matrix33 m33;
 		m33.SetFromVectors(ortho1, vSimulationAxisN, ortho2);
-		assert(m33.IsOrthonormalRH());
+		CRY_ASSERT(m33.IsOrthonormalRH());
 
 		{
 			QuatTS AttWorldAbsolute = rPhysLocation * rAttModelRelative * raddTransformation;
@@ -928,7 +928,7 @@ inline f32 CSimulation::GetBlendWeight(Skeleton::CPoseData& rPoseData) const
 	if (m_blendControlJointId <= 0) return fullBlend;
 
 	const int blendControlAxis = static_cast<int>(m_blendControlAxis);
-	assert(blendControlAxis >= 0 && blendControlAxis < 3);
+	CRY_ASSERT(blendControlAxis >= 0 && blendControlAxis < 3);
 	const f32 t = m_blendControlJointId > 0 ? clamp_tpl(rPoseData.GetJointAbsolute(m_blendControlJointId).t[blendControlAxis], noBlend, fullBlend) : fullBlend;
 	return t;
 }

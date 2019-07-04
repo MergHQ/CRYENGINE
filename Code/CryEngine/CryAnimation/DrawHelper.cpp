@@ -15,9 +15,9 @@ ILINE Matrix33 ComputeOrientationAlongDirectionMatrix(
   const uint forwardIndex, const Vec3& forwardVector,
   const uint upIndex, const Vec3& upVector)
 {
-	assert(forwardIndex < 3);
-	assert(upIndex < 3);
-	assert(forwardIndex != upIndex);
+	CRY_ASSERT(forwardIndex < 3);
+	CRY_ASSERT(upIndex < 3);
+	CRY_ASSERT(forwardIndex != upIndex);
 	const uint sideIndex = 3 - (forwardIndex + upIndex);
 
 	Vec3 m[3];
@@ -306,7 +306,7 @@ void Wireframe(IRenderMesh& mesh, const Matrix34& renderMatrix, const ColorB& co
 {
 	const uint32 indexCount = mesh.GetIndicesCount();
 	const uint32 vertexCount = mesh.GetVerticesCount();
-	assert(vertexCount > 0);
+	CRY_ASSERT(vertexCount > 0);
 
 	static std::vector<Vec3> transformedPositions;
 	if (transformedPositions.size() != vertexCount)

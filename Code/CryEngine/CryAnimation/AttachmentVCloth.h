@@ -328,7 +328,7 @@ public:
 	void                 SetSkinnedPositions(const Vector4* points);
 	void                 GetVertices(Vector4* pWorldCoords) const;
 	void                 GetVerticesFaded(Vector4* pWorldCoords);
-	bool                 IsParticleAttached(unsigned int idx) const { assert(idx < m_nVtx); return m_particlesCold[idx].bAttached != 0; }
+	bool                 IsParticleAttached(unsigned int idx) const { CRY_ASSERT(idx < m_nVtx); return m_particlesCold[idx].bAttached != 0; }
 
 	/**
 	 * Laplace-filter for input-positions, using the default mesh-edges.

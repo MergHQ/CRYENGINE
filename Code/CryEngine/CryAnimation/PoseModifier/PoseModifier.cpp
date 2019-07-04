@@ -1024,7 +1024,7 @@ bool CIkCCD::Execute(const SAnimationPoseModifierParams& params)
 		{
 			int32 c = m_arrJointChain[j];
 			int32 p = m_arrJointChain[j - 1];
-			assert(p >= 0);
+			CRY_ASSERT(p >= 0);
 			ANIM_ASSET_ASSERT(pRelPose[c].q.IsUnit());
 			ANIM_ASSET_ASSERT(pAbsPose[p].q.IsUnit());
 			pAbsPose[c] = pAbsPose[p] * pRelPose[c];
@@ -1055,7 +1055,7 @@ bool CIkCCD::Execute(const SAnimationPoseModifierParams& params)
 	{
 		int c = m_arrJointChain[i];
 		int p = m_arrJointChain[i - 1];
-		assert(p >= 0);
+		CRY_ASSERT(p >= 0);
 		pAbsPose[c].t += vAddDistance;
 		vAddDistance += bPartDistance;
 		ANIM_ASSET_ASSERT(pAbsPose[c].q.IsUnit());

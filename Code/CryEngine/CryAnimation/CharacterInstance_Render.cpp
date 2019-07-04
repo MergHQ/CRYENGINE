@@ -45,7 +45,7 @@ void CCharInstance::Render(const struct SRendParams& RendParams, const SRenderin
 	if (!(m_rpFlags & CS_FLAG_DRAW_MODEL))
 		return;
 
-	assert(RendParams.pMatrix);
+	CRY_ASSERT(RendParams.pMatrix);
 
 	const Matrix34& RenderMat34 = *RendParams.pMatrix;
 
@@ -139,7 +139,7 @@ void CCharInstance::RenderCGA(const struct SRendParams& RendParams, const Matrix
 	Matrix34 orthoTm34 = RenderMat34;
 	IMaterial* pMaterial = nodeRP.pMaterial;
 	uint32 numJoints = m_SkeletonPose.GetPoseData().GetJointCount();
-	assert(numJoints > 0);
+	CRY_ASSERT(numJoints > 0);
 	if (Console::GetInst().ca_DrawBaseMesh)
 	{
 		for (uint32 i = 0; i < numJoints; i++)
@@ -383,7 +383,7 @@ SSkinningData* CCharInstance::GetSkinningData(const SRenderingPassInfo& passInfo
 	arrSkinningRendererData[nList].pSkinningData = pSkinningData;
 	arrSkinningRendererData[nList].nFrameID = nFrameID;
 
-	assert(pSkinningData);
+	CRY_ASSERT(pSkinningData);
 	PREFAST_ASSUME(pSkinningData);
 
 	// set data for motion blur

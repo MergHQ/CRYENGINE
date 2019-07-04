@@ -265,7 +265,7 @@ void CSkeletonPose::UpdateBBox(uint32 update)
 			if (e) gEnv->pLog->LogError("CryAnimation: Invalid BBox of eAttachment_Entity");
 			if (c) gEnv->pLog->LogError("CryAnimation: Invalid BBox of eAttachment_Skeleton");
 			if (s) gEnv->pLog->LogError("CryAnimation: Invalid BBox of eAttachment_StatObj");
-			assert(0);
+			CRY_ASSERT(0);
 		}
 
 		nErrorCode = 0;
@@ -279,8 +279,7 @@ void CSkeletonPose::UpdateBBox(uint32 update)
 		if (aabb.max.y > +fMaxBBox) nErrorCode |= 0x0020;
 		if (aabb.max.z > +fMaxBBox) nErrorCode |= 0x0040;
 
-		assert(nErrorCode == 0);
-		if (nErrorCode)
+		if (!CRY_VERIFY(nErrorCode == 0))
 		{
 			if (e)
 			{
@@ -294,7 +293,6 @@ void CSkeletonPose::UpdateBBox(uint32 update)
 				{
 					gEnv->pLog->LogError("CryAnimation: Invalid BBox of eAttachment_Entity (%.3f,%.3f,%.3f)-(%.3f,%.3f,%.3f). ModenPath: '%s' ", aabb.min.x, aabb.min.y, aabb.min.z, aabb.max.x, aabb.max.y, aabb.max.z, m_pInstance->m_pDefaultSkeleton->GetModelFilePath());
 				}
-				assert(0);
 			}
 
 			if (c) gEnv->pLog->LogError("CryAnimation: Invalid BBox of eAttachment_Character (%.3f,%.3f,%.3f)-(%.3f,%.3f,%.3f). ModenPath: '%s'  ErrorCode: %08x", aabb.min.x, aabb.min.y, aabb.min.z, aabb.max.x, aabb.max.y, aabb.max.z, m_pInstance->m_pDefaultSkeleton->GetModelFilePath(), nErrorCode);
@@ -302,21 +300,21 @@ void CSkeletonPose::UpdateBBox(uint32 update)
 		}
 #endif
 
-		assert(aabb.min.IsValid());
-		assert(aabb.max.IsValid());
+		CRY_ASSERT(aabb.min.IsValid());
+		CRY_ASSERT(aabb.max.IsValid());
 		AABB taabb;
 		taabb.SetTransformedAABB(Matrix34(rCAttachment.m_AttModelRelative), aabb);
 #ifdef _DEBUG
-		assert(fabsf(taabb.min.x) < 3000.0f);
-		assert(fabsf(taabb.min.y) < 3000.0f);
-		assert(fabsf(taabb.min.z) < 3000.0f);
-		assert(fabsf(taabb.max.x) < 3000.0f);
-		assert(fabsf(taabb.max.y) < 3000.0f);
-		assert(fabsf(taabb.max.z) < 3000.0f);
+		CRY_ASSERT(fabsf(taabb.min.x) < 3000.0f);
+		CRY_ASSERT(fabsf(taabb.min.y) < 3000.0f);
+		CRY_ASSERT(fabsf(taabb.min.z) < 3000.0f);
+		CRY_ASSERT(fabsf(taabb.max.x) < 3000.0f);
+		CRY_ASSERT(fabsf(taabb.max.y) < 3000.0f);
+		CRY_ASSERT(fabsf(taabb.max.z) < 3000.0f);
 #endif
-		assert(taabb.min.IsValid());
+		CRY_ASSERT(taabb.min.IsValid());
 		rAABB.Add(taabb.min);
-		assert(taabb.max.IsValid());
+		CRY_ASSERT(taabb.max.IsValid());
 		rAABB.Add(taabb.max);
 		//float fColor[4] = {0,1,0,1};
 		//g_pAuxGeom->Draw2dLabel( 1,g_YLine, 1.3f, fColor, false,"BBox Update:  %s",pAttName),g_YLine+=16.0f;
@@ -338,7 +336,7 @@ void CSkeletonPose::UpdateBBox(uint32 update)
 	if (rAABB.max.x > +fMaxBBox) nErrorCode |= 0x0010;
 	if (rAABB.max.y > +fMaxBBox) nErrorCode |= 0x0020;
 	if (rAABB.max.z > +fMaxBBox) nErrorCode |= 0x0040;
-	assert(nErrorCode == 0);
+	CRY_ASSERT(nErrorCode == 0);
 #endif
 
 	rAABB.min -= rCModelSkeleton.m_AABBExtension.min;
@@ -360,7 +358,7 @@ void CSkeletonPose::UpdateBBox(uint32 update)
 	if (nErrorCode)
 	{
 		gEnv->pLog->LogError("CryAnimation: Invalid BBox (%.3f,%.3f,%.3f)-(%.3f,%.3f,%.3f). ModenPath: '%s'  ErrorCode: %08x", rAABB.min.x, rAABB.min.y, rAABB.min.z, rAABB.max.x, rAABB.max.y, rAABB.max.z, m_pInstance->m_pDefaultSkeleton->GetModelFilePath(), nErrorCode);
-		assert(!"Invalid BBox");
+		CRY_ASSERT(!"Invalid BBox");
 		rAABB.min = Vec3(-2, -2, -2);
 		rAABB.max = Vec3(2, 2, 2);
 

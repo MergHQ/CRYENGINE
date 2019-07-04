@@ -35,12 +35,12 @@ public:
 
 	float         GetWeight(int nIndex) const
 	{
-		assert(nIndex >= 0 && nIndex < (int)m_weights.size());
+		CRY_ASSERT(nIndex >= 0 && nIndex < (int)m_weights.size());
 		return m_weights[nIndex];
 	}
 	void SetWeight(int nIndex, float fWeight)
 	{
-		assert(nIndex >= 0 && nIndex < (int)m_weights.size());
+		CRY_ASSERT(nIndex >= 0 && nIndex < (int)m_weights.size());
 		m_weights[nIndex] = fWeight;
 	}
 	void SetWeight(IFacialEffector* pEffector, float fWeight)
@@ -51,12 +51,12 @@ public:
 	}
 	float GetBalance(int nIndex) const
 	{
-		assert(nIndex >= 0 && nIndex < (int)m_balance.size());
+		CRY_ASSERT(nIndex >= 0 && nIndex < (int)m_balance.size());
 		return m_balance[nIndex];
 	}
 	void SetBalance(int nIndex, float fBalance)
 	{
-		assert(nIndex >= 0 && nIndex < (int)m_balance.size());
+		CRY_ASSERT(nIndex >= 0 && nIndex < (int)m_balance.size());
 		m_balance[nIndex] = fBalance;
 	}
 	void   Reset();

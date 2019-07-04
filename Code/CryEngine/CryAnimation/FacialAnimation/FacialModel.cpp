@@ -77,7 +77,7 @@ void CFacialModel::InitMorphTargets()
 //////////////////////////////////////////////////////////////////////////
 void CFacialModel::AssignLibrary(IFacialEffectorsLibrary* pLibrary)
 {
-	assert(pLibrary);
+	CRY_ASSERT(pLibrary);
 	if (pLibrary == m_pEffectorsLibrary)
 		return;
 
@@ -432,14 +432,14 @@ void CFacialModel::ApplyDisplaceInfoToJoints(const CFacialDisplaceInfo& info, co
 		}
 	}
 
-	assert(firstDirty >= 1 && firstDirty < MAX_JOINT_AMOUNT);
+	CRY_ASSERT(firstDirty >= 1 && firstDirty < MAX_JOINT_AMOUNT);
 	PREFAST_ASSUME(firstDirty < numJoints && firstDirty < MAX_JOINT_AMOUNT);
 
 	for (uint32 i = firstDirty; i < numJoints; ++i)
 	{
 
 		int p = pSkeleton->m_arrModelJoints[i].m_idxParent;
-		assert(p >= 0 && p < MAX_JOINT_AMOUNT);
+		CRY_ASSERT(p >= 0 && p < MAX_JOINT_AMOUNT);
 		PREFAST_ASSUME(p >= 0 && p < MAX_JOINT_AMOUNT);
 		if (dirty[p])
 		{

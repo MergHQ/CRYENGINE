@@ -28,7 +28,7 @@ void CSkeletonPhysics::ResetNonphysicalBoneRotations(Skeleton::CPoseData& poseDa
 	// set non-physical bones to their default position wrt parent for LODs>0
 	// do it for every bone except the root, parents first
 	uint32 numBones = m_arrPhysicsJoints.size();
-	//	assert(numBones); having 0 physical bones is a legal case
+	//	CRY_ASSERT(numBones); having 0 physical bones is a legal case
 
 	for (uint32 nBone = 1; nBone < numBones; ++nBone)
 	{
@@ -218,10 +218,9 @@ void CSkeletonPhysics::Job_Physics_SynchronizeFromEntityPrepare(Memory::CPool& m
 
 	pe_status_pos sp;
 	int status2 = pPhysicalEntity->GetStatus(&sp);
-	if (status2 == 0)
+	if (!CRY_VERIFY(status2 != 0))
 	{
 		g_pISystem->Warning(VALIDATOR_MODULE_ANIMATION, VALIDATOR_WARNING, VALIDATOR_FLAG_FILE, rDefaultSkeleton.GetModelFilePath(), "GetStatus() returned 0");
-		assert(0);
 	}
 
 	if (!m_bPhysicsAwake)

@@ -106,7 +106,7 @@ struct GlobalAnimationHeaderAIM : public GlobalAnimationHeader
 	f32 NTime2KTime(f32 ntime) const
 	{
 		ntime = min(ntime, 1.0f);
-		assert(ntime >= 0 && ntime <= 1);
+		CRY_ASSERT(ntime >= 0 && ntime <= 1);
 		f32 duration = m_fEndSec - m_fStartSec;
 		f32 start = m_fStartSec;
 		f32 key = (ntime * ANIMATION_30Hz * duration + start * ANIMATION_30Hz); ///40.0f;

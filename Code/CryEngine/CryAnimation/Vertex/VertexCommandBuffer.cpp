@@ -94,7 +94,7 @@ void SVertexAnimationJob::Execute(int)
 		m_pPreviousRenderMesh = nullptr;
 	}
 
-	assert(m_pRenderMesh);
+	CRY_ASSERT(m_pRenderMesh);
 	m_pRenderMesh->UnlockStream(VSF_GENERAL);
 	m_pRenderMesh->UnlockStream(VSF_TANGENTS);
 	m_pRenderMesh->UnlockStream(VSF_VERTEX_VELOCITY);

@@ -78,7 +78,7 @@ bool AttachmentVClothPreProcess::NndcDijkstra(std::vector<Vec3> const& vtx, std:
 	// init per-vertex-data with results from dijkstra or (in case of islands) with default values
 	for (int idx = 0; idx < nVtx; ++idx)
 	{
-		assert(idx < results.size() && idx < m_nndc.size());
+		CRY_ASSERT(idx < results.size() && idx < m_nndc.size());
 
 		const int& nextParent = results[idx].nextNodeIdOnShortestPath;
 		const float& distanceToAttachedVtx = results[idx].weightTotal;
@@ -108,8 +108,8 @@ bool AttachmentVClothPreProcess::NndcDijkstra(std::vector<Vec3> const& vtx, std:
 		while (m_nndc[actualNode].nndcNextParent != source)
 		{
 			int nextParentNode = m_nndc[actualNode].nndcNextParent;
-			assert(nextParentNode >= 0);
-			assert(nextParentNode < nVtx); // +1 // +1 due to source
+			CRY_ASSERT(nextParentNode >= 0);
+			CRY_ASSERT(nextParentNode < nVtx); // +1 // +1 due to source
 			actualNode = nextParentNode;
 		}
 		m_nndc[idx].nndcIdx = actualNode;
@@ -214,7 +214,7 @@ static inline void AddBendTrianglePair(
 			}
 		}
 	}
-	assert(found);
+	CRY_ASSERT(found);
 	found = false;
 	for (int i = 2; i >= 0; i--)
 		for (int j = 0; j < 3; j++)
@@ -223,7 +223,7 @@ static inline void AddBendTrianglePair(
 				edge1Idx = i;
 				found = (t0[i] == t1[j]);
 			}
-	assert(found);
+	CRY_ASSERT(found);
 
 	// find vtx of each triangle, not belonging to edge
 	int idxP2 = edge0Idx == 1 ? 0 : (edge1Idx == 1 ? 2 : 1);
@@ -237,7 +237,7 @@ static inline void AddBendTrianglePair(
 			idxP3 = i;
 		}
 	}
-	assert(found);
+	CRY_ASSERT(found);
 
 	int idxNormal0 = idxListBendTriangles0;
 	int idxNormal1 = idxListBendTriangles1;
@@ -538,7 +538,7 @@ bool AttachmentVClothPreProcess::CalculateTopology(std::vector<Vec3> const& vtx,
 		{
 			int nTrisIntersect = VClothPreProcessUtils::IntersectLists(pVtxTris + pTris[idx[i * 3 + j]], pTris[idx[i * 3 + j] + 1] - pTris[idx[i * 3 + j]],
 			                                                           pVtxTris + pTris[idx[i * 3 + inc_mod3[j]]], pTris[idx[i * 3 + inc_mod3[j]] + 1] - pTris[idx[i * 3 + inc_mod3[j]]], pEdgeTris);
-			assert(nTrisIntersect <= nTris);   // check for possible memory corruption in case of degenerative triangles
+			CRY_ASSERT(nTrisIntersect <= nTris);   // check for possible memory corruption in case of degenerative triangles
 			// if (nTris!=2) - the mesh is not manifold
 			if (nTrisIntersect == 2)
 				pTopology[i].ibuddy[j] = pEdgeTris[iszero(i - pEdgeTris[0])];
@@ -756,7 +756,7 @@ bool AttachmentVClothPreProcess::CreateLinks(std::vector<Vec3> const& vtx, std::
 				do
 				{
 					// now trace ccw fan
-					assert(itri < nTris);
+					CRY_ASSERT(itri < nTris);
 					if (pInfo[itri][iedge].m_iEdge >= 0)
 						pVtxEdges[nVtxEdges++] = pInfo[itri][iedge].m_iEdge;
 					itrinew = pTopology[itri].ibuddy[dec_mod3[iedge]];

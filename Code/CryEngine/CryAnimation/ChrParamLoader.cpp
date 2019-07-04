@@ -1297,8 +1297,7 @@ bool CChrParamLoader::LoadIKDefLimbIK(const XmlNodeRef limbNode)
 				if (nEndEffectorIdx < 0)
 					continue;
 
-				assert(nRootIdx < nEndEffectorIdx);
-				if (nRootIdx >= nEndEffectorIdx)
+				if (!CRY_VERIFY(nRootIdx < nEndEffectorIdx))
 					continue;
 
 				int32 nBaseRootIdx = pDefaultSkeleton->GetJointParentIDByID(nRootIdx);
@@ -1385,8 +1384,7 @@ bool CChrParamLoader::LoadIKDefLimbIK(const XmlNodeRef limbNode)
 				if (nEndEffectorIdx < 0)
 					continue;
 
-				assert(nRootIdx < nEndEffectorIdx);
-				if (nRootIdx >= nEndEffectorIdx)
+				if (!CRY_VERIFY(nRootIdx < nEndEffectorIdx))
 					continue;
 
 				int32 nBaseRootIdx = pDefaultSkeleton->GetJointParentIDByID(nRootIdx);
@@ -1482,8 +1480,7 @@ bool CChrParamLoader::LoadIKDefLimbIK(const XmlNodeRef limbNode)
 				if (nEndEffectorIdx < 0)
 					continue;
 
-				assert(nRootIdx < nEndEffectorIdx);
-				if (nRootIdx >= nEndEffectorIdx)
+				if (!CRY_VERIFY(nRootIdx < nEndEffectorIdx))
 					continue;
 
 				int32 nBaseRootIdx = pDefaultSkeleton->GetJointParentIDByID(nRootIdx);
@@ -1752,8 +1749,7 @@ bool CChrParamLoader::LoadIKDefRecoil(XmlNodeRef aimNode)
 		{
 			const char* pJointName = node->getAttr("JointName");
 			int32 jidx = pDefaultSkeleton->GetJointIDByName(pJointName);
-			assert(jidx > 0);
-			if (jidx > 0)
+			if (CRY_VERIFY(jidx > 0))
 				pDefaultSkeleton->m_recoilDesc.m_weaponRightJointIndex = jidx;
 		}
 
@@ -1763,8 +1759,7 @@ bool CChrParamLoader::LoadIKDefRecoil(XmlNodeRef aimNode)
 		{
 			const char* pJointName = node->getAttr("JointName");
 			int32 jidx = pDefaultSkeleton->GetJointIDByName(pJointName);
-			assert(jidx > 0);
-			if (jidx > 0)
+			if (CRY_VERIFY(jidx > 0))
 				pDefaultSkeleton->m_recoilDesc.m_weaponLeftJointIndex = jidx;
 		}
 
@@ -1787,7 +1782,7 @@ bool CChrParamLoader::LoadIKDefRecoil(XmlNodeRef aimNode)
 						Recoil.m_nIdx = jidx;
 						Recoil.m_strJointName = pDefaultSkeleton->GetJointNameByID(jidx);
 					}
-					assert(jidx > 0);
+					CRY_ASSERT(jidx > 0);
 					nodeRot->getAttr("Arm", Recoil.m_nArm);
 					nodeRot->getAttr("Delay", Recoil.m_fDelay);
 					nodeRot->getAttr("Weight", Recoil.m_fWeight);
@@ -1863,7 +1858,7 @@ bool CChrParamLoader::LoadIKDefLookIK(const XmlNodeRef lookNode)
 						poseBlenderLookDesc.m_error++;
 						g_pISystem->Warning(VALIDATOR_MODULE_ANIMATION, VALIDATOR_WARNING, VALIDATOR_FLAG_FILE, m_pDefaultSkeleton->GetModelFilePath(), "JointName '%s' for Look-Pose not found in model", pJointName);
 					}
-					assert(jidx > 0);
+					CRY_ASSERT(jidx > 0);
 					nodeRot->getAttr("Primary", LookIK_Rot.m_nPreEvaluate);
 					nodeRot->getAttr("Additive", LookIK_Rot.m_nAdditive);
 					//	AimIK_Rot.m_nAdditive=0;
@@ -1918,7 +1913,7 @@ bool CChrParamLoader::LoadIKDefLookIK(const XmlNodeRef lookNode)
 						g_pISystem->Warning(VALIDATOR_MODULE_ANIMATION, VALIDATOR_WARNING, VALIDATOR_FLAG_FILE, m_pDefaultSkeleton->GetModelFilePath(), "JointName '%s' for Look-Pose not found in model", pJointName);
 					}
 
-					assert(jidx > 0);
+					CRY_ASSERT(jidx > 0);
 					nodePos->getAttr("Additive", LookIK_Pos.m_nAdditive);
 					poseBlenderLookDesc.m_positions.push_back(LookIK_Pos);
 				}
@@ -1954,7 +1949,7 @@ bool CChrParamLoader::LoadIKDefLookIK(const XmlNodeRef lookNode)
 						poseBlenderLookDesc.m_error++;
 						g_pISystem->Warning(VALIDATOR_MODULE_ANIMATION, VALIDATOR_WARNING, VALIDATOR_FLAG_FILE, m_pDefaultSkeleton->GetModelFilePath(), "Look-Pose Error: JointName '%s' for Look-Pose not found in model", pParameterJointName);
 					}
-					assert(jidx1 >= 0);
+					CRY_ASSERT(jidx1 >= 0);
 
 					const char* pStartJointName = nodePos->getAttr("StartJoint");
 					int jidx2 = pDefaultSkeleton->GetJointIDByName(pStartJointName);
@@ -1968,7 +1963,7 @@ bool CChrParamLoader::LoadIKDefLookIK(const XmlNodeRef lookNode)
 						poseBlenderLookDesc.m_error++;
 						g_pISystem->Warning(VALIDATOR_MODULE_ANIMATION, VALIDATOR_WARNING, VALIDATOR_FLAG_FILE, m_pDefaultSkeleton->GetModelFilePath(), "Look-Pose Error:  Start JointName '%s' for Look-Pose not found in model", pStartJointName);
 					}
-					assert(jidx2 >= 0);
+					CRY_ASSERT(jidx2 >= 0);
 
 					const char* pReferenceJointName = nodePos->getAttr("ReferenceJoint");
 					int jidx3 = pDefaultSkeleton->GetJointIDByName(pReferenceJointName);
@@ -1982,7 +1977,7 @@ bool CChrParamLoader::LoadIKDefLookIK(const XmlNodeRef lookNode)
 						poseBlenderLookDesc.m_error++;
 						g_pISystem->Warning(VALIDATOR_MODULE_ANIMATION, VALIDATOR_WARNING, VALIDATOR_FLAG_FILE, m_pDefaultSkeleton->GetModelFilePath(), "Look-Pose Error: Reference JointName '%s' for Look-Pose not found in model", pReferenceJointName);
 					}
-					assert(jidx3 >= 0);
+					CRY_ASSERT(jidx3 >= 0);
 
 					poseBlenderLookDesc.m_blends.push_back(DirBlend);
 				}
@@ -2046,7 +2041,7 @@ bool CChrParamLoader::LoadIKDefAimIK(XmlNodeRef aimNode)
 						poseBlenderAimDesc.m_error++;
 						g_pISystem->Warning(VALIDATOR_MODULE_ANIMATION, VALIDATOR_WARNING, VALIDATOR_FLAG_FILE, m_pDefaultSkeleton->GetModelFilePath(), "Aim-Pose Error: JointName '%s' for Aim-Pose not found in model", pParameterJointName);
 					}
-					assert(jidx1 >= 0);
+					CRY_ASSERT(jidx1 >= 0);
 
 					const char* pStartJointName = nodePos->getAttr("StartJoint");
 					int jidx2 = pDefaultSkeleton->GetJointIDByName(pStartJointName);
@@ -2060,7 +2055,7 @@ bool CChrParamLoader::LoadIKDefAimIK(XmlNodeRef aimNode)
 						poseBlenderAimDesc.m_error++;
 						g_pISystem->Warning(VALIDATOR_MODULE_ANIMATION, VALIDATOR_WARNING, VALIDATOR_FLAG_FILE, m_pDefaultSkeleton->GetModelFilePath(), "Aim-Pose Error: StartJointName '%s' for Aim-Pose not found in model", pStartJointName);
 					}
-					assert(jidx2 >= 0);
+					CRY_ASSERT(jidx2 >= 0);
 
 					const char* pReferenceJointName = nodePos->getAttr("ReferenceJoint");
 					int jidx3 = pDefaultSkeleton->GetJointIDByName(pReferenceJointName);
@@ -2074,7 +2069,7 @@ bool CChrParamLoader::LoadIKDefAimIK(XmlNodeRef aimNode)
 						poseBlenderAimDesc.m_error++;
 						g_pISystem->Warning(VALIDATOR_MODULE_ANIMATION, VALIDATOR_WARNING, VALIDATOR_FLAG_FILE, m_pDefaultSkeleton->GetModelFilePath(), "Aim-Pose Error: Reference JointName '%s' for Aim-Pose not found in model", pReferenceJointName);
 					}
-					assert(jidx3 >= 0);
+					CRY_ASSERT(jidx3 >= 0);
 
 					poseBlenderAimDesc.m_blends.push_back(DirBlend);
 				}
@@ -2105,7 +2100,7 @@ bool CChrParamLoader::LoadIKDefAimIK(XmlNodeRef aimNode)
 						poseBlenderAimDesc.m_error++;
 						g_pISystem->Warning(VALIDATOR_MODULE_ANIMATION, VALIDATOR_WARNING, VALIDATOR_FLAG_FILE, m_pDefaultSkeleton->GetModelFilePath(), "Aim-Pose Error: JointName '%s' for Aim-Pose not found in model", pJointName);
 					}
-					assert(jidx > 0);
+					CRY_ASSERT(jidx > 0);
 					nodeRot->getAttr("Primary", AimIK_Rot.m_nPreEvaluate);
 					nodeRot->getAttr("Additive", AimIK_Rot.m_nAdditive);
 					//	AimIK_Rot.m_nAdditive=0;
@@ -2159,7 +2154,7 @@ bool CChrParamLoader::LoadIKDefAimIK(XmlNodeRef aimNode)
 						poseBlenderAimDesc.m_error++;
 						g_pISystem->Warning(VALIDATOR_MODULE_ANIMATION, VALIDATOR_WARNING, VALIDATOR_FLAG_FILE, m_pDefaultSkeleton->GetModelFilePath(), "Aim-Pose Error: JointName '%s' for Aim-Pose not found in model", pJointName);
 					}
-					assert(jidx > 0);
+					CRY_ASSERT(jidx > 0);
 					nodePos->getAttr("Additive", AimIK_Pos.m_nAdditive);
 					poseBlenderAimDesc.m_positions.push_back(AimIK_Pos);
 				}

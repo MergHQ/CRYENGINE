@@ -156,8 +156,8 @@ bool SDirectionalBlender::ExecuteDirectionalIK(const SAnimationPoseModifierParam
 	m_dataOut.fDirIKInfluence = fIKBlend * fWeightOfAllAimPoses;
 
 	const f32 t0 = 1.0f - m_dataOut.fDirIKInfluence;
-	assert(t0 < 1.001f);
-	assert(t0 > -0.001f);
+	CRY_ASSERT(t0 < 1.001f);
+	CRY_ASSERT(t0 > -0.001f);
 
 	const f32 t1 = fIKBlend;
 	const SJointsAimIK_Rot* pAimIK_Rot = &rRot[0];
@@ -181,14 +181,14 @@ bool SDirectionalBlender::ExecuteDirectionalIK(const SAnimationPoseModifierParam
 		pRelPose[j].t.z *= t0;
 	}
 
-	assert(m_numActiveDirPoses);
+	CRY_ASSERT(m_numActiveDirPoses);
 
 	// TODO: Turn this around so that a single aimpose for an animation is not accumulated separately ever.
 	f32 fTotalWeight = t0;
 	const GlobalAnimationHeaderAIM* parrGlobalAIM = &g_AnimationManager.m_arrGlobalAIM[0];
 	for (int32 a = 0; a < m_numActiveDirPoses; a++)
 	{
-		assert(m_DirInfo[a].m_nGlobalDirID0 >= 0);
+		CRY_ASSERT(m_DirInfo[a].m_nGlobalDirID0 >= 0);
 		const GlobalAnimationHeaderAIM& rAIM = parrGlobalAIM[m_DirInfo[a].m_nGlobalDirID0];
 		const uint32 nAnimTokenCRC32 = rAIM.m_AnimTokenCRC32;
 		const f32 fAimPoseWeight = m_DirInfo[a].m_fWeight;
@@ -207,7 +207,7 @@ bool SDirectionalBlender::ExecuteDirectionalIK(const SAnimationPoseModifierParam
 			}
 		}
 	}
-	assert(fabsf(fTotalWeight - 1.0f) < 0.001f);
+	CRY_ASSERT(fabsf(fTotalWeight - 1.0f) < 0.001f);
 
 	for (uint32 r = 0; r < numRotJoints; r++)
 	{
@@ -280,7 +280,7 @@ void SDirectionalBlender::AccumulateAimPoses(const SAnimationPoseModifierParams&
 #endif
 
 	const uint32 numAimPosesCAF = rAim.m_arrAimIKPosesAIM.size();
-	assert(numAimPosesCAF == 9 || numAimPosesCAF == 15 || numAimPosesCAF == 21);
+	CRY_ASSERT(numAimPosesCAF == 9 || numAimPosesCAF == 15 || numAimPosesCAF == 21);
 	if (numAimPosesCAF == 0)
 		return;
 
@@ -428,7 +428,7 @@ void SDirectionalBlender::AccumulateAimPoses(const SAnimationPoseModifierParams&
 	}
 	else
 	{
-		assert(polarCoordinatesIndex < MAX_POLAR_COORDINATES_SMOOTH);
+		CRY_ASSERT(polarCoordinatesIndex < MAX_POLAR_COORDINATES_SMOOTH);
 		polarCoordinatesSmooth = m_polarCoordinatesSmooth[polarCoordinatesIndex].value;
 	}
 
@@ -523,7 +523,7 @@ void SDirectionalBlender::AccumulateAimPoses(const SAnimationPoseModifierParams&
 	f32 sum = 0.0f;
 	for (uint32 i = 0; i < numAimPosesCAF; i++)
 		sum += weights[i];
-	assert(fabs(sum - 1.0f) < 0.001);
+	CRY_ASSERT(fabs(sum - 1.0f) < 0.001);
 
 	for (uint32 i = 0; i < numAimPosesCAF; i++)
 	{
@@ -839,8 +839,8 @@ void SDirectionalBlender::DebugVEGrid(const SAnimationPoseModifierParams& params
 		rAIM0.Debug_Blend4AimPose(pDefaultSkeleton, rRot, numRotJoints, rPos, numPosJoints, i0, i1, i2, i3, w, arrRelPose, arrAbsPose);
 		Vec3 vPolarCoord = Vec2(rAIM0.Debug_PolarCoordinate(rAIM0.m_MiddleAimPose * arrAbsPose[widx].q));
 
-		assert(fabs(polcor.x - polcor.x) < 0.00001);
-		assert(fabs(polcor.y - polcor.y) < 0.00001);
+		CRY_ASSERT(fabs(polcor.x - polcor.x) < 0.00001);
+		CRY_ASSERT(fabs(polcor.y - polcor.y) < 0.00001);
 		g_pAuxGeom->DrawOBB(obb1, debugGridLocation * vPolarCoord, 1, RGBA8(0x00, 0xff, 0xff, 0x00), eBBD_Extremes_Color_Encoded);
 	}
 }

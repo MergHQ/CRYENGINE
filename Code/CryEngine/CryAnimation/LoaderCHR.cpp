@@ -73,7 +73,7 @@ bool CryCHRLoader::BeginLoadCHRRenderMesh(CDefaultSkeleton* pSkel, const DynArra
 	//--------------------------------------------------------------------------------------------
 
 	CModelMesh* pModelMesh = pSkel->GetModelMesh();
-	assert(pModelMesh);
+	CRY_ASSERT(pModelMesh);
 
 	const stack_string filename = stack_string(m_strGeomFileNameNoExt.c_str()) + "." + szExt;
 	const stack_string lodName = (pModelMesh->m_stream.bHasMeshFile) ? (filename + "m") : (filename);
@@ -137,7 +137,7 @@ void CryCHRLoader::EndStreamSkel(IReadStream* pStream)
 		return;
 
 	CModelMesh* pModelMesh = m_pModelSkel->GetModelMesh();
-	assert(pModelMesh);
+	CRY_ASSERT(pModelMesh);
 
 	m_pNewRenderMesh = pModelMesh->InitRenderMeshAsync(pMesh, m_pModelSkel->GetModelFilePath(), 0, m_arrNewRenderChunks);
 }
@@ -149,7 +149,7 @@ void CryCHRLoader::StreamOnComplete(IReadStream* pStream, unsigned nError)
 	if (m_pModelSkel)
 	{
 		CModelMesh* pModelMesh = m_pModelSkel->GetModelMesh();
-		assert(pModelMesh);
+		CRY_ASSERT(pModelMesh);
 
 		pModelMesh->InitRenderMeshSync(m_arrNewRenderChunks, m_pNewRenderMesh);
 		m_pNewRenderMesh = nullptr;
@@ -207,7 +207,7 @@ static bool InitializeBones(CDefaultSkeleton* pDefaultSkeleton, CSkinningInfo* p
 {
 	const int lod = 0;
 	uint32 numBones = pSkinningInfo->m_arrBonesDesc.size();
-	assert(numBones);
+	CRY_ASSERT(numBones);
 	if (numBones >= MAX_JOINT_AMOUNT)
 	{
 		g_pISystem->Warning(VALIDATOR_MODULE_ANIMATION, VALIDATOR_WARNING, VALIDATOR_FLAG_FILE, szFilePath, "Too many Joints in model. Current Limit is: %d", MAX_JOINT_AMOUNT);
@@ -226,7 +226,7 @@ static bool InitializeBones(CDefaultSkeleton* pDefaultSkeleton, CSkinningInfo* p
 	for (uint32 nBone = 0; nBone < numBones; ++nBone)
 	{
 		const CryBoneDescData& boneDesc = pSkinningInfo->m_arrBonesDesc[nBone];
-		assert(boneDesc.m_DefaultB2W.IsOrthonormalRH());
+		CRY_ASSERT(boneDesc.m_DefaultB2W.IsOrthonormalRH());
 		if (!boneDesc.m_DefaultB2W.IsOrthonormalRH())
 		{
 			g_pISystem->Warning(VALIDATOR_MODULE_ANIMATION, VALIDATOR_WARNING, VALIDATOR_FLAG_FILE, szFilePath, "Bone %d: B2W is not orthonormal RH in lod %d", nBone, lod);
@@ -503,7 +503,7 @@ bool CDefaultSkeleton::LoadNewSKEL(const char* szFilePath, uint32 nLoadingFlags)
 			m_ModelMeshEnabled = true;
 
 			CModelMesh* pModelMesh = GetModelMesh();
-			assert(pModelMesh);
+			CRY_ASSERT(pModelMesh);
 
 			uint32 success = pModelMesh->InitMesh(pMesh, pMeshNode, pMaterial, pSkinningInfo, m_strFilePath.c_str(), 0);
 			if (success == 0)

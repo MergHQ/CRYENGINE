@@ -470,7 +470,7 @@ void CFacialAnimationContext::AnimatePlayingSequences(const QuatTS& rAnimLocatio
 //////////////////////////////////////////////////////////////////////////
 void CFacialAnimationContext::PlaySequence(CFacialAnimSequence* pSequence, bool bExclusive, bool bLooping)
 {
-	assert(pSequence);
+	CRY_ASSERT(pSequence);
 
 	if (bExclusive)
 	{

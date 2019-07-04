@@ -117,7 +117,7 @@ CCharInstance::~CCharInstance()
 
 	m_AttachmentManager.RemoveAllAttachments();
 
-	assert(m_nRefCounter == 0);
+	CRY_ASSERT(m_nRefCounter == 0);
 	m_SkeletonPose.m_physics.DestroyPhysics();
 	KillAllSkeletonEffects();
 
@@ -238,7 +238,7 @@ void CCharInstance::UpdatePhysicsCGA(Skeleton::CPoseData& poseData, float fScale
 	pe_action_set_velocity asv;
 	pe_status_pos sp;
 	int numNodes = poseData.GetJointCount();
-	assert(numNodes);
+	CRY_ASSERT(numNodes);
 
 	int i, iLayer, iLast = -1;
 	bool bSetVel = false;
@@ -268,7 +268,7 @@ SetAgain:
 		//	params.partid = joint->m_nodeid;
 		params.partid = m_pDefaultSkeleton->m_arrModelJoints[i].m_NodeID;
 
-		assert(pAbsolutePose[i].IsValid());
+		CRY_ASSERT(pAbsolutePose[i].IsValid());
 		params.q = pAbsolutePose[i].q;
 
 		params.pos = pAbsolutePose[i].t * rAnimLocationNext.s;
@@ -533,7 +533,7 @@ void CCharInstance::BeginSkinningTransformationsComputation(SSkinningData* pSkin
 {
 	if (m_pDefaultSkeleton->m_ObjectType == CHR)
 	{
-		assert(pSkinningData->pMasterSkinningDataList);
+		CRY_ASSERT(pSkinningData->pMasterSkinningDataList);
 		*pSkinningData->pMasterSkinningDataList = SKINNING_TRANSFORMATION_RUNNING_INDICATOR;
 
 		TSkinningTransformationsComputation job(pSkinningData, m_pDefaultSkeleton.get(), 0, &m_SkeletonPose.GetPoseData(), &m_skinningTransformationsMovement);
@@ -670,9 +670,9 @@ void CCharInstance::SkeletonPostProcess()
 void CCharInstance::SkinningTransformationsComputation(SSkinningData* pSkinningData, CDefaultSkeleton* pDefaultSkeleton, int nRenderLod, const Skeleton::CPoseData* pPoseData, f32* pSkinningTransformationsMovement)
 {
 	DEFINE_PROFILER_FUNCTION();
-	assert(pSkinningData->pBoneQuatsS);
-	assert(pSkinningData->pPreviousSkinningRenderData);
-	assert(pSkinningData->pPreviousSkinningRenderData->pBoneQuatsS);
+	CRY_ASSERT(pSkinningData->pBoneQuatsS);
+	CRY_ASSERT(pSkinningData->pPreviousSkinningRenderData);
+	CRY_ASSERT(pSkinningData->pPreviousSkinningRenderData->pBoneQuatsS);
 
 	DualQuat* pSkinningTransformations = pSkinningData->pBoneQuatsS;
 	DualQuat* pSkinningTransformationsPrevious = pSkinningData->pPreviousSkinningRenderData->pBoneQuatsS;
@@ -731,7 +731,7 @@ void CCharInstance::SkinningTransformationsComputation(SSkinningData* pSkinningD
 		movement += 1.0f - (fQdot * fQdotSign);
 	}
 
-	assert(pSkinningData->pMasterSkinningDataList);
+	CRY_ASSERT(pSkinningData->pMasterSkinningDataList);
 
 	// set the list to NULL to indicate the mainthread that the skinning transformation job has finished
 	SSkinningData* pSkinningJobList = NULL;
@@ -810,7 +810,7 @@ void CCharInstance::GetMemoryUsage(ICrySizer* pSizer) const
 
 void CCharInstance::SetProcessingContext(CharacterInstanceProcessing::SContext& context)
 {
-	assert(context.slot < g_pCharacterManager->GetContextSyncQueue().GetNumberOfContexts());
+	CRY_ASSERT(context.slot < g_pCharacterManager->GetContextSyncQueue().GetNumberOfContexts());
 	m_processingContext = context.slot;
 }
 

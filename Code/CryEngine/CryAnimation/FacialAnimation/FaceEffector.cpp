@@ -124,7 +124,7 @@ CFacialEffCtrl::CFacialEffCtrl()
 //////////////////////////////////////////////////////////////////////////
 IFacialEffector* CFacialEffector::GetSubEffector(int nIndex)
 {
-	assert(nIndex >= 0 && nIndex < (int)m_subEffectors.size());
+	CRY_ASSERT(nIndex >= 0 && nIndex < (int)m_subEffectors.size());
 	IFacialEffCtrl* pCtrl = m_subEffectors[nIndex];
 	if (pCtrl)
 		return pCtrl->GetEffector();
@@ -134,7 +134,7 @@ IFacialEffector* CFacialEffector::GetSubEffector(int nIndex)
 //////////////////////////////////////////////////////////////////////////
 IFacialEffCtrl* CFacialEffector::GetSubEffCtrl(int nIndex)
 {
-	assert(nIndex >= 0 && nIndex < (int)m_subEffectors.size());
+	CRY_ASSERT(nIndex >= 0 && nIndex < (int)m_subEffectors.size());
 	return m_subEffectors[nIndex];
 }
 

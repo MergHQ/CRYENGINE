@@ -306,7 +306,6 @@ inline int CCharInstance::Release()
 	else if (m_nRefCounter < 0)
 	{
 		// Should never happens, someone tries to release CharacterInstance pointer twice.
-		assert(0 && "CSkelInstance::Release");
 		CryFatalError("CSkelInstance::Release");
 	}
 	return m_nRefCounter;

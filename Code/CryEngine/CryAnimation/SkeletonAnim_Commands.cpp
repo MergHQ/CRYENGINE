@@ -83,11 +83,11 @@ void BaseEvaluationLMG_CheckWeight(const IDefaultSkeleton& defaultSkeleton, cons
 	const uint32 localAnimationId = animation.GetAnimationId();
 
 	const ModelAnimationHeader* const pModelAnimationHeader = animationSet.GetModelAnimationHeader(localAnimationId);
-	assert(pModelAnimationHeader);
-	assert(pModelAnimationHeader->m_nAssetType == LMG_File);
+	CRY_ASSERT(pModelAnimationHeader);
+	CRY_ASSERT(pModelAnimationHeader->m_nAssetType == LMG_File);
 
 	const SParametricSamplerInternal* const pParametric = static_cast<const SParametricSamplerInternal*>(animation.GetParametricSampler());
-	assert(pParametric);
+	CRY_ASSERT(pParametric);
 
 	const f32 blendWeightSum = std::accumulate(pParametric->m_fBlendWeight, pParametric->m_fBlendWeight + pParametric->m_numExamples, 0.f);
 	if (0.09f < fabsf(blendWeightSum - 1.0f))
@@ -111,11 +111,11 @@ void BaseEvaluationLMG_DebugDrawSegmentation(const CCharInstance& characterInsta
 	const uint32 localAnimationId = animation.GetAnimationId();
 
 	const ModelAnimationHeader* const pModelAnimationHeader = animationSet.GetModelAnimationHeader(localAnimationId);
-	assert(pModelAnimationHeader);
-	assert(pModelAnimationHeader->m_nAssetType == LMG_File);
+	CRY_ASSERT(pModelAnimationHeader);
+	CRY_ASSERT(pModelAnimationHeader->m_nAssetType == LMG_File);
 
 	const SParametricSamplerInternal* const pParametric = static_cast<const SParametricSamplerInternal*>(animation.GetParametricSampler());
-	assert(pParametric);
+	CRY_ASSERT(pParametric);
 
 	const bool displayParameterInfo = (2 < debugSegmentation);
 	const bool displayDetailedSegmentationInfo = (1 < debugSegmentation || displayParameterInfo);
@@ -358,7 +358,7 @@ void CSkeletonAnim::Commands_BasePlayback(const CAnimation& rAnim, Command::CBuf
 	uint32 nSampleRateHZ30 = rAnim.m_nStaticFlags & CA_KEYFRAME_SAMPLE_30Hz;
 
 	const ModelAnimationHeader* pMAG = pAnimationSet->GetModelAnimationHeader(nAnimID);
-	assert(pMAG);
+	CRY_ASSERT(pMAG);
 	int32 nEGlobalID = pMAG->m_nGlobalAnimId;
 	if (pMAG->m_nAssetType == CAF_File)
 	{
@@ -409,7 +409,7 @@ void CSkeletonAnim::Commands_BasePlayback(const CAnimation& rAnim, Command::CBuf
 		f32 fKeys = fDuration * ANIMATION_30Hz;
 		f32 fKeyTime = ac->m_fETimeNew * fKeys;
 		ac->m_fETimeNew = f32(uint32(fKeyTime + 0.45f)) / fKeys;
-		assert(ac->m_fETimeNew >= 0.0f && ac->m_fETimeNew <= 1.0f);
+		CRY_ASSERT(ac->m_fETimeNew >= 0.0f && ac->m_fETimeNew <= 1.0f);
 	}
 }
 
@@ -427,8 +427,8 @@ void CreateCommandsForLmgAnimation(const bool animationDrivenMotion, const CAnim
 	const uint32 localAnimationId = animation.GetAnimationId();
 
 	const ModelAnimationHeader* const pModelAnimationHeader = animationSet.GetModelAnimationHeader(localAnimationId);
-	assert(pModelAnimationHeader);
-	assert(pModelAnimationHeader->m_nAssetType == LMG_File);
+	CRY_ASSERT(pModelAnimationHeader);
+	CRY_ASSERT(pModelAnimationHeader->m_nAssetType == LMG_File);
 
 	const uint32 globalAnimationId = pModelAnimationHeader->m_nGlobalAnimId;
 	const GlobalAnimationHeaderLMG& animationGlobalAnimationHeaderLMG = g_AnimationManager.m_arrGlobalLMG[globalAnimationId];
@@ -444,7 +444,7 @@ void CreateCommandsForLmgAnimation(const bool animationDrivenMotion, const CAnim
 
 	{
 		const SParametricSamplerInternal* const pParametricSampler = static_cast<const SParametricSamplerInternal*>(animation.GetParametricSampler());
-		assert(pParametricSampler);
+		CRY_ASSERT(pParametricSampler);
 
 		f32 mergedExampleWeights[MAX_LMG_ANIMS];
 		int mergedExampleIndices[MAX_LMG_ANIMS];
@@ -463,11 +463,11 @@ void CreateCommandsForLmgAnimation(const bool animationDrivenMotion, const CAnim
 			const int16 exampleLocalAnimationId = pParametricSampler->m_nAnimID[exampleIndex];
 
 			const ModelAnimationHeader* const pExampleModelAnimationHeader = animationSet.GetModelAnimationHeader(exampleLocalAnimationId);
-			assert(pExampleModelAnimationHeader);
+			CRY_ASSERT(pExampleModelAnimationHeader);
 
 			const int32 exampleGlobalAnimationId = pExampleModelAnimationHeader->m_nGlobalAnimId;
 
-			assert(pExampleModelAnimationHeader->m_nAssetType == CAF_File);
+			CRY_ASSERT(pExampleModelAnimationHeader->m_nAssetType == CAF_File);
 			const GlobalAnimationHeaderCAF& exampleGlobalAnimationHeaderCAF = g_AnimationManager.m_arrGlobalCAF[exampleGlobalAnimationId];
 
 			const f32 animationNormalizedTime = animation.GetCurrentSegmentNormalizedTime();
@@ -504,7 +504,7 @@ void CreateCommandsForLmgAnimation(const bool animationDrivenMotion, const CAnim
 void CSkeletonAnim::Commands_BaseEvaluationLMG(const CAnimation& rAnim, const uint32 nTargetBuffer, Command::CBuffer& buffer)
 {
 	const bool animationDrivenMotion = (m_AnimationDrivenMotion != 0);
-	assert(m_pInstance->m_pDefaultSkeleton->m_pAnimationSet);
+	CRY_ASSERT(m_pInstance->m_pDefaultSkeleton->m_pAnimationSet);
 	const CAnimationSet& animationSet = *m_pInstance->m_pDefaultSkeleton->m_pAnimationSet;
 	CreateCommandsForLmgAnimation(animationDrivenMotion, animationSet, nTargetBuffer, rAnim, buffer);
 
@@ -606,10 +606,10 @@ void CSkeletonAnim::Commands_LPlayback(const CAnimation& rAnim, uint32 nTargetBu
 {
 	const int32 nAnimID = rAnim.GetAnimationId();
 
-	assert(m_pInstance->m_pDefaultSkeleton->m_pAnimationSet);
+	CRY_ASSERT(m_pInstance->m_pDefaultSkeleton->m_pAnimationSet);
 	const CAnimationSet& animationSet = *m_pInstance->m_pDefaultSkeleton->m_pAnimationSet;
 	const ModelAnimationHeader* const pAnim = animationSet.GetModelAnimationHeader(nAnimID);
-	assert(pAnim->m_nAssetType == CAF_File);
+	CRY_ASSERT(pAnim->m_nAssetType == CAF_File);
 
 	const f32 w0 = rAnim.GetTransitionWeight(); //this is a percentage value between 0-1
 	const f32 w1 = rAnim.GetPlaybackWeight();   //this is a percentage value between 0-1

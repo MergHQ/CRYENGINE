@@ -334,7 +334,7 @@ class CKeyTimesInformationStartStop : public IKeyTimesInformation
 public:
 
 	CKeyTimesInformationStartStop() { m_arrKeys[0] = (TKeyTime)0; m_arrKeys[1] = (TKeyTime)0; };
-	CKeyTimesInformationStartStop(const TKeyTime* pKeys, uint32 numKeys) { assert(numKeys >= 2); m_arrKeys[0] = pKeys[0]; m_arrKeys[1] = pKeys[1]; };
+	CKeyTimesInformationStartStop(const TKeyTime* pKeys, uint32 numKeys) { CRY_ASSERT(numKeys >= 2); m_arrKeys[0] = pKeys[0]; m_arrKeys[1] = pKeys[1]; };
 
 	// return key value in f32 format
 	f32 GetKeyValueFloat(uint32 key) const { return /*TEncoder::DecodeKeyValue*/ (float)(m_arrKeys[0] + key); }

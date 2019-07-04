@@ -372,7 +372,7 @@ void CFacialInstance::ProcessWaitingLipSync()
 	if (m_waitingLipSync.IsWaiting())
 	{
 		IFacialAnimSequence* pSequence = m_waitingLipSync.GetAnimSequence();
-		assert(pSequence);
+		CRY_ASSERT(pSequence);
 		if (pSequence->IsInMemory())
 		{
 			REINST(lipsync to voice line)

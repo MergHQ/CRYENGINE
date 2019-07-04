@@ -88,8 +88,7 @@ void CEyeMovementFaceAnim::InitialiseChannels()
 
 uint32 CEyeMovementFaceAnim::GetChannelForEffector(EffectorID effector)
 {
-	assert(effector >= 0 && effector < EffectorCOUNT);
-	if (effector < 0 || effector >= EffectorCOUNT)
+	if (!CRY_VERIFY(effector >= 0 && effector < EffectorCOUNT))
 		return ~0;
 
 	// Check whether the effector has already been loaded.
@@ -101,8 +100,7 @@ uint32 CEyeMovementFaceAnim::GetChannelForEffector(EffectorID effector)
 
 uint32 CEyeMovementFaceAnim::CreateChannelForEffector(EffectorID effector)
 {
-	assert(effector >= 0 && effector < EffectorCOUNT);
-	if (effector < 0 || effector >= EffectorCOUNT)
+	if (!CRY_VERIFY(effector >= 0 && effector < EffectorCOUNT))
 		return ~0;
 
 	// Look up the effector.
@@ -154,7 +152,7 @@ void CEyeMovementFaceAnim::UpdateEye(const QuatTS& rAnimLocationNext, EyeID eye,
 	// Find the two closest directions to the angle.
 	float octantAngle = (angle + gf_PI) / gf_PI2;
 	octantAngle = (octantAngle * DirectionCOUNT);
-	assert(octantAngle >= 0);
+	CRY_ASSERT(octantAngle >= 0);
 
 	DirectionID directionInterpolateLow = DirectionID(int(floorf(octantAngle)));
 	if (directionInterpolateLow >= DirectionCOUNT)

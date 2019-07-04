@@ -682,7 +682,7 @@ bool CSkin::LoadNewSKIN(const char* szFilePath, uint32 nLoadingFlags)
 		{
 			const int nVtx = pMesh->GetVertexCount();
 			const int nIndices = pMesh->GetIndexCount();
-			assert(nVtx == pMesh->GetTexCoordCount());
+			CRY_ASSERT(nVtx == pMesh->GetTexCoordCount());
 
 			CModelMesh::sModelCache& cache = pModelMesh->CreateModelCache();
 			cache.vertices.resize(nVtx);

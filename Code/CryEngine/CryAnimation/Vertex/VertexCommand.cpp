@@ -315,8 +315,8 @@ void VertexCommandCopy::Execute(VertexCommandCopy& command, CVertexData& vertexD
 
 void VertexCommandSkin::Execute(VertexCommandSkin& command, CVertexData& vertexData)
 {
-	assert(command.pTransformations);
-	assert(command.pTransformationRemapTable);
+	CRY_ASSERT(command.pTransformations);
+	CRY_ASSERT(command.pTransformationRemapTable);
 
 	const bool hasPreviousPosition = vertexData.pPreviousPositions != 0;
 	const bool hasVelocity = vertexData.GetVelocities() != 0;

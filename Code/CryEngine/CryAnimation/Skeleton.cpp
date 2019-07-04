@@ -18,7 +18,7 @@ CPoseData::CPoseData()
 
 void CPoseData::SetMemoryPool(Memory::CPool* pMemoryPool)
 {
-	assert(pMemoryPool);
+	CRY_ASSERT(pMemoryPool);
 
 	JointsBuffer jointBufferTemp(m_jointsBuffer, Memory::PoolAllocator::Create(*pMemoryPool));
 	m_jointsBuffer.swap(jointBufferTemp);
@@ -106,8 +106,8 @@ bool CPoseData::AreScalingBuffersAllocated() const
 {
 	if (!m_scalingBuffer.empty() && m_scalingBuffer)
 	{
-		assert(m_scalingBuffer.size<0>() >= m_jointCount);
-		assert(m_scalingBuffer.size<1>() >= m_jointCount);
+		CRY_ASSERT(m_scalingBuffer.size<0>() >= m_jointCount);
+		CRY_ASSERT(m_scalingBuffer.size<1>() >= m_jointCount);
 		return true;
 	}
 	else
@@ -150,25 +150,25 @@ uint32 CPoseData::GetJointCount() const
 
 const QuatT& CPoseData::GetJointRelative(const uint32 index) const
 {
-	assert(index < m_jointCount);
+	CRY_ASSERT(index < m_jointCount);
 	return GetJointsRelative()[index];
 }
 
 const Vec3& CPoseData::GetJointRelativeP(const uint32 index) const
 {
-	assert(index < m_jointCount);
+	CRY_ASSERT(index < m_jointCount);
 	return GetJointsRelative()[index].t;
 }
 
 const Quat& CPoseData::GetJointRelativeO(const uint32 index) const
 {
-	assert(index < m_jointCount);
+	CRY_ASSERT(index < m_jointCount);
 	return GetJointsRelative()[index].q;
 }
 
 const Diag33 CPoseData::GetJointRelativeS(const uint32 index) const
 {
-	assert(index < m_jointCount);
+	CRY_ASSERT(index < m_jointCount);
 
 	const float* const relativeScaling = GetScalingRelative();
 	return Diag33(relativeScaling ? relativeScaling[index] : 1.0f);
@@ -176,25 +176,25 @@ const Diag33 CPoseData::GetJointRelativeS(const uint32 index) const
 
 void CPoseData::SetJointRelative(const uint32 index, const QuatT& transformation)
 {
-	assert(index < m_jointCount);
+	CRY_ASSERT(index < m_jointCount);
 	GetJointsRelative()[index] = transformation;
 }
 
 void CPoseData::SetJointRelativeP(const uint32 index, const Vec3& position)
 {
-	assert(index < m_jointCount);
+	CRY_ASSERT(index < m_jointCount);
 	GetJointsRelative()[index].t = position;
 }
 
 void CPoseData::SetJointRelativeO(const uint32 index, const Quat& orientation)
 {
-	assert(index < m_jointCount);
+	CRY_ASSERT(index < m_jointCount);
 	GetJointsRelative()[index].q = orientation;
 }
 
 void CPoseData::SetJointRelativeS(const uint32 index, const float scaling)
 {
-	assert(index < m_jointCount);
+	CRY_ASSERT(index < m_jointCount);
 
 	if (EnableScaling())
 	{
@@ -204,25 +204,25 @@ void CPoseData::SetJointRelativeS(const uint32 index, const float scaling)
 
 const QuatT& CPoseData::GetJointAbsolute(const uint32 index) const
 {
-	assert(index < m_jointCount);
+	CRY_ASSERT(index < m_jointCount);
 	return GetJointsAbsolute()[index];
 }
 
 const Vec3& CPoseData::GetJointAbsoluteP(const uint32 index) const
 {
-	assert(index < m_jointCount);
+	CRY_ASSERT(index < m_jointCount);
 	return GetJointsAbsolute()[index].t;
 }
 
 const Quat& CPoseData::GetJointAbsoluteO(const uint32 index) const
 {
-	assert(index < m_jointCount);
+	CRY_ASSERT(index < m_jointCount);
 	return GetJointsAbsolute()[index].q;
 }
 
 const Diag33 CPoseData::GetJointAbsoluteS(const uint32 index) const
 {
-	assert(index < m_jointCount);
+	CRY_ASSERT(index < m_jointCount);
 
 	const float* const absoluteScaling = GetScalingAbsolute();
 	return Diag33(absoluteScaling ? absoluteScaling[index] : 1.0f);
@@ -230,25 +230,25 @@ const Diag33 CPoseData::GetJointAbsoluteS(const uint32 index) const
 
 void CPoseData::SetJointAbsolute(const uint32 index, const QuatT& transformation)
 {
-	assert(index < m_jointCount);
+	CRY_ASSERT(index < m_jointCount);
 	GetJointsAbsolute()[index] = transformation;
 }
 
 void CPoseData::SetJointAbsoluteP(const uint32 index, const Vec3& position)
 {
-	assert(index < m_jointCount);
+	CRY_ASSERT(index < m_jointCount);
 	GetJointsAbsolute()[index].t = position;
 }
 
 void CPoseData::SetJointAbsoluteO(const uint32 index, const Quat& orientation)
 {
-	assert(index < m_jointCount);
+	CRY_ASSERT(index < m_jointCount);
 	GetJointsAbsolute()[index].q = orientation;
 }
 
 void CPoseData::SetJointAbsoluteS(const uint32 index, const float scaling)
 {
-	assert(index < m_jointCount);
+	CRY_ASSERT(index < m_jointCount);
 
 	if (EnableScaling())
 	{
@@ -258,7 +258,7 @@ void CPoseData::SetJointAbsoluteS(const uint32 index, const float scaling)
 
 const QuatTS CPoseData::GetJointAbsoluteOPS(const uint32 index) const
 {
-	assert(index < m_jointCount);
+	CRY_ASSERT(index < m_jointCount);
 
 	const QuatT& qt = GetJointsAbsolute()[index];
 	const float& s = GetScalingAbsolute() ? GetScalingAbsolute()[index] : 1.0f;
@@ -268,7 +268,7 @@ const QuatTS CPoseData::GetJointAbsoluteOPS(const uint32 index) const
 
 const QuatTS CPoseData::GetJointRelativeOPS(const uint32 index) const
 {
-	assert(index < m_jointCount);
+	CRY_ASSERT(index < m_jointCount);
 
 	const QuatT& qt = GetJointsRelative()[index];
 	const float& s = GetScalingRelative() ? GetScalingRelative()[index] : 1.0f;
@@ -283,17 +283,17 @@ void CPoseData::ComputeAbsolutePose(const CDefaultSkeleton& rDefaultSkeleton, bo
 
 	const CDefaultSkeleton::SJoint* const pJoints = &rDefaultSkeleton.m_arrModelJoints[0];
 
-	assert(pAbsolutePose);
-	assert(pRelativePose);
-	assert(!singleRoot || (pJoints[0].m_idxParent < 0)); // singleRoot => (pJoints[0].m_idxParent < 0)
+	CRY_ASSERT(pAbsolutePose);
+	CRY_ASSERT(pRelativePose);
+	CRY_ASSERT(!singleRoot || (pJoints[0].m_idxParent < 0)); // singleRoot => (pJoints[0].m_idxParent < 0)
 
 	if (IsScalingEnabled())
 	{
 		const float* const __restrict pRelativeScaling = GetScalingRelative();
 		float* const __restrict pAbsoluteScaling = GetScalingAbsolute();
 
-		assert(pRelativeScaling);
-		assert(pAbsoluteScaling);
+		CRY_ASSERT(pRelativeScaling);
+		CRY_ASSERT(pAbsoluteScaling);
 
 		CryPrefetch(&pJoints[0].m_idxParent);
 		for (uint32 i = 0; i < m_jointCount; ++i)
@@ -337,7 +337,7 @@ void CPoseData::ComputeAbsolutePose(const CDefaultSkeleton& rDefaultSkeleton, bo
 				CryPrefetch(&pRelativePose[i + 4]);
 
 				const int32 p = pJoints[i].m_idxParent;
-				assert(p >= 0);
+				CRY_ASSERT(p >= 0);
 
 				const QuatT pose = pAbsolutePose[p] * pRelativePose[i];
 				pAbsolutePose[i].q = pose.q.GetNormalizedSafe();
@@ -376,16 +376,16 @@ void CPoseData::ComputeRelativePose(const CDefaultSkeleton& rDefaultSkeleton)
 
 	const CDefaultSkeleton::SJoint* pJoints = &rDefaultSkeleton.m_arrModelJoints[0];
 
-	assert(pRelativePose);
-	assert(pAbsolutePose);
+	CRY_ASSERT(pRelativePose);
+	CRY_ASSERT(pAbsolutePose);
 
 	if (IsScalingEnabled())
 	{
 		const float* const __restrict pAbsoluteScaling = GetScalingAbsolute();
 		float* const __restrict pRelativeScaling = GetScalingRelative();
 
-		assert(pRelativeScaling);
-		assert(pAbsoluteScaling);
+		CRY_ASSERT(pRelativeScaling);
+		CRY_ASSERT(pAbsoluteScaling);
 
 		for (uint32 i = 0; i < m_jointCount; ++i)
 		{
