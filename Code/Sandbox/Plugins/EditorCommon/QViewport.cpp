@@ -782,9 +782,6 @@ void QViewport::Render(SDisplayContext& context)
 
 	context.SetState(e_Mode3D | e_AlphaBlended | e_FillModeSolid | e_CullModeBack | e_DepthWriteOff | e_DepthTestOn);
 
-	// wireframe mode
-	CScopedWireFrameMode scopedWireFrame(m_env->pRenderer, m_settings->rendering.wireframe ? R_WIREFRAME_MODE : R_SOLID_MODE);
-
 	SRenderingPassInfo passInfo = SRenderingPassInfo::CreateGeneralPassRenderingInfo(m_graphicsPipelineKey, *m_camera, SRenderingPassInfo::DEFAULT_FLAGS, true, context.GetDisplayContextKey());
 
 	if (m_settings->background.useGradient)

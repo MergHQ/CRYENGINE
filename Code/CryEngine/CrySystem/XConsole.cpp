@@ -1682,8 +1682,6 @@ void CXConsole::Draw()
 			}
 		}
 
-		CScopedWireFrameMode scopedWireFrame(m_pRenderer, R_SOLID_MODE);
-
 		// TODO: relative/normalized coordinate system in screen-space
 		if (!m_nProgressRange)
 		{

@@ -522,70 +522,66 @@ bool CPreviewModelCtrl::RenderInternal(SDisplayContext& context)
 	SRenderingPassInfo passInfo = SRenderingPassInfo::CreateGeneralPassRenderingInfo(m_graphicsPipelineKey, m_camera, SRenderingPassInfo::DEFAULT_FLAGS, true, context.GetDisplayContextKey());
 	m_pRenderer->EF_StartEf(passInfo);
 
+	// Add lights.
+	for (size_t i = 0; i < m_lights.size(); i++)
 	{
-		CScopedWireFrameMode scopedWireFrame(m_pRenderer, m_bDrawWireFrame ? R_WIREFRAME_MODE : R_SOLID_MODE);
-
-		// Add lights.
-		for (size_t i = 0; i < m_lights.size(); i++)
-		{
-			m_pRenderer->EF_ADDDlight(&m_lights[i], passInfo);
-		}
-
-		if (m_pCurrentMaterial)
-			m_pCurrentMaterial->DisableHighlight();
-
-		_smart_ptr<IMaterial> pMaterial;
-		if (m_pCurrentMaterial)
-			pMaterial = m_pCurrentMaterial->GetMatInfo();
-
-		if (m_bPrecacheMaterial)
-		{
-			IMaterial* pCurMat = pMaterial;
-			if (!pCurMat)
-			{
-				if (m_pObj)
-					pCurMat = m_pObj->GetMaterial();
-				else if (m_pEntity)
-					pCurMat = m_pEntity->GetMaterial();
-				else if (m_pCharacter)
-					pCurMat = m_pCharacter->GetIMaterial();
-				else if (m_pEmitter)
-					pCurMat = m_pEmitter->GetMaterial();
-			}
-			if (pCurMat)
-			{
-				pCurMat->PrecacheMaterial(0.0f, NULL, true, true);
-			}
-		}
-
-		{
-			// activate shader item
-			IMaterial* pCurMat = pMaterial;
-			if (!pCurMat)
-			{
-				if (m_pObj)
-					pCurMat = m_pObj->GetMaterial();
-				else if (m_pEntity)
-					pCurMat = m_pEntity->GetMaterial();
-				else if (m_pCharacter)
-					pCurMat = m_pCharacter->GetIMaterial();
-				else if (m_pEmitter)
-					pCurMat = m_pEmitter->GetMaterial();
-			}
-			/*if (pCurMat)
-			   {
-			   pCurMat->ActivateAllShaderItem();
-			   }*/
-		}
-
-		if (m_bShowObject)
-			RenderObject(pMaterial, passInfo);
-
-		m_pRenderer->EF_EndEf3D(-1, -1, passInfo, m_graphicsPipelineDesc.shaderFlags);
-
-		if (true)
-			RenderEffect(pMaterial, passInfo);
+		m_pRenderer->EF_ADDDlight(&m_lights[i], passInfo);
 	}
+
+	if (m_pCurrentMaterial)
+		m_pCurrentMaterial->DisableHighlight();
+
+	_smart_ptr<IMaterial> pMaterial;
+	if (m_pCurrentMaterial)
+		pMaterial = m_pCurrentMaterial->GetMatInfo();
+
+	if (m_bPrecacheMaterial)
+	{
+		IMaterial* pCurMat = pMaterial;
+		if (!pCurMat)
+		{
+			if (m_pObj)
+				pCurMat = m_pObj->GetMaterial();
+			else if (m_pEntity)
+				pCurMat = m_pEntity->GetMaterial();
+			else if (m_pCharacter)
+				pCurMat = m_pCharacter->GetIMaterial();
+			else if (m_pEmitter)
+				pCurMat = m_pEmitter->GetMaterial();
+		}
+		if (pCurMat)
+		{
+			pCurMat->PrecacheMaterial(0.0f, NULL, true, true);
+		}
+	}
+
+	{
+		// activate shader item
+		IMaterial* pCurMat = pMaterial;
+		if (!pCurMat)
+		{
+			if (m_pObj)
+				pCurMat = m_pObj->GetMaterial();
+			else if (m_pEntity)
+				pCurMat = m_pEntity->GetMaterial();
+			else if (m_pCharacter)
+				pCurMat = m_pCharacter->GetIMaterial();
+			else if (m_pEmitter)
+				pCurMat = m_pEmitter->GetMaterial();
+		}
+		/*if (pCurMat)
+			  {
+			  pCurMat->ActivateAllShaderItem();
+			  }*/
+	}
+
+	if (m_bShowObject)
+		RenderObject(pMaterial, passInfo);
+
+	m_pRenderer->EF_EndEf3D(-1, -1, passInfo, m_graphicsPipelineDesc.shaderFlags);
+
+	if (true)
+		RenderEffect(pMaterial, passInfo);
 
 	m_pRenderer->RenderDebug(false);
 

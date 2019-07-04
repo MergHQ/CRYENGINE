@@ -641,10 +641,13 @@ inline FILE* fxopen(const char* file, const char* mode, bool bGameRelativePath =
 	}
 
 	bool hasWriteAccess = false;
+
+#if CRY_PLATFORM_WINDOWS
 	bool hasReadAccess = false;
 	bool isAppend = false;
 	bool isTextMode = false;
 	bool isBinaryMode = false;
+#endif
 
 	for (const char* s = mode; *s; s++)
 	{
@@ -652,6 +655,8 @@ inline FILE* fxopen(const char* file, const char* mode, bool bGameRelativePath =
 		{
 			hasWriteAccess = true;
 		}
+
+#if CRY_PLATFORM_WINDOWS
 		if (*s == 'r' || *s == 'R' || *s == '+')
 		{
 			hasReadAccess = true;
@@ -670,6 +675,7 @@ inline FILE* fxopen(const char* file, const char* mode, bool bGameRelativePath =
 			isBinaryMode = true;
 			isTextMode = false;
 		}
+#endif
 	}
 
 	// This is on windows/xbox/Linux/Mac

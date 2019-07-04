@@ -1178,14 +1178,16 @@ const bool ConvertFilenameNoCase(char* szFilepathToAdj)
 		}
 	}
 
-	char* slash;
-	char* name;
 	if ((szFilepathToAdj) == (char*)-1)
 	{
 		return false;
 	}
 
+	char* slash;
 	slash = strrchr(szFilepathToAdj, '/');
+
+#if !CRY_PLATFORM_LINUX && !CRY_PLATFORM_ANDROID && !CRY_PLATFORM_APPLE
+	char* name;
 	if (slash)
 	{
 		name = slash + 1;
@@ -1195,6 +1197,12 @@ const bool ConvertFilenameNoCase(char* szFilepathToAdj)
 	{
 		name = szFilepathToAdj;
 	}
+#else
+	if (slash)
+	{
+		*slash = 0;
+	}
+#endif
 
 	#if !CRY_PLATFORM_LINUX && !CRY_PLATFORM_ANDROID && !CRY_PLATFORM_APPLE // fix the parent path anyhow.
 	// Check for wildcards. We'll always return true if the specified filename is

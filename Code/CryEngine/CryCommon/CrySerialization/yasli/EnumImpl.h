@@ -24,15 +24,21 @@ YASLI_INLINE void EnumDescription::add(int value, const char* name, const char *
 {
     YASLI_ESCAPE( name, return );
 	nameToValue_[name] = value;
-    if (label)
+	if (label != nullptr)
+	{
         labelToValue_[label] = value;
+	}
 	valueToName_[value] = name;
-    if (label)
+	if (label != nullptr)
+	{
         valueToLabel_[value] = label;
+	}
 	valueToIndex_[value] = int(names_.size());
 	names_.push_back(name);
-	if (label)
+	if (label != nullptr)
+	{
 		labels_.push_back(label);
+	}
 	values_.push_back(value);
 }
 

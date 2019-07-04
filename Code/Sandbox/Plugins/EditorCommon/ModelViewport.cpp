@@ -559,11 +559,7 @@ void CModelViewport::OnRender(SDisplayContext& context)
 
 		SRenderingPassInfo passInfo = SRenderingPassInfo::CreateGeneralPassRenderingInfo(m_graphicsPipelineKey, m_Camera, SRenderingPassInfo::DEFAULT_FLAGS, true, displayContextKey);
 		passInfo.GetIRenderView()->SetTargetClearColor(ColorF(clearColor, 1.0f), true);
-
-		{
-			CScopedWireFrameMode scopedWireFrame(m_renderer, mv_showWireframe1 ? R_WIREFRAME_MODE : R_SOLID_MODE);
-			DrawModel(passInfo);
-		}
+		DrawModel(passInfo);
 
 		ICharacterManager* pCharMan = gEnv->pCharacterManager;
 		if (pCharMan)

@@ -280,7 +280,7 @@ public:
 	{
 		int prevsz = m_nSize;
 		char* prevbuf = m_pBuf;
-		m_pBuf = (char*)malloc(m_nSize = (m_iPos + sz - 1 & ~0xFFF) + 0x1000);
+		m_pBuf = (char*)malloc(m_nSize = ((m_iPos + sz - 1) & ~0xFFF) + 0x1000);
 		memcpy(m_pBuf, prevbuf, (unsigned int)prevsz);
 		free(prevbuf);
 	}

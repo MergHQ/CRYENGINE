@@ -837,96 +837,92 @@ bool QPreviewWidget::Render()
 		SRenderingPassInfo passInfo = SRenderingPassInfo::CreateGeneralPassRenderingInfo(m_graphicsPipelineKey, m_camera, SRenderingPassInfo::DEFAULT_FLAGS, true, m_displayContextKey);
 		m_pRenderer->EF_StartEf(passInfo);
 
+		// Add lights.
+		for (std::size_t i = 0; i < m_lights.size(); ++i)
 		{
-			CScopedWireFrameMode scopedWireFrame(m_pRenderer, m_bDrawWireFrame ? R_WIREFRAME_MODE : R_SOLID_MODE);
-
-			// Add lights.
-			for (std::size_t i = 0; i < m_lights.size(); ++i)
-			{
-				m_pRenderer->EF_ADDDlight(&m_lights[i], passInfo);
-			}
-
-			if (m_pCurrentMaterial)
-			{
-				m_pCurrentMaterial->DisableHighlight();
-			}
-
-			_smart_ptr<IMaterial> pMaterial;
-			if (m_pCurrentMaterial)
-			{
-				pMaterial = m_pCurrentMaterial->GetMatInfo();
-			}
-
-			if (m_bPrecacheMaterial)
-			{
-				auto pCurrentMaterial = pMaterial;
-				if (!pCurrentMaterial)
-				{
-					if (m_pObject)
-					{
-						pCurrentMaterial = m_pObject->GetMaterial();
-					}
-					else if (m_pEntity)
-					{
-						pCurrentMaterial = m_pEntity->GetMaterial();
-					}
-					else if (m_pCharacter)
-					{
-						pCurrentMaterial = m_pCharacter->GetIMaterial();
-					}
-					else if (m_pEmitter)
-					{
-						pCurrentMaterial = m_pEmitter->GetMaterial();
-					}
-				}
-
-				if (pCurrentMaterial)
-				{
-					pCurrentMaterial->PrecacheMaterial(0.0f, nullptr, true, true);
-				}
-			}
-
-			bool bNoPreview = false;
-			{
-				// activate shader item
-				auto pCurrentMaterial = pMaterial;
-				if (!pCurrentMaterial)
-				{
-					if (m_pObject)
-					{
-						pCurrentMaterial = m_pObject->GetMaterial();
-					}
-					else if (m_pEntity)
-					{
-						pCurrentMaterial = m_pEntity->GetMaterial();
-					}
-					else if (m_pCharacter)
-					{
-						pCurrentMaterial = m_pCharacter->GetIMaterial();
-					}
-					else if (m_pEmitter)
-					{
-						pCurrentMaterial = m_pEmitter->GetMaterial();
-					}
-				}
-				// ActivateAllShaderItem();
-
-				if (pCurrentMaterial)
-				{
-					if ((pCurrentMaterial->GetFlags() & MTL_FLAG_NOPREVIEW))
-					{
-						bNoPreview = true;
-					}
-				}
-			}
-
-			if (m_bShowObject && !bNoPreview)
-			{
-				RenderObject(pMaterial, passInfo);
-			}
-
-			m_pRenderer->EF_EndEf3D(-1, -1, passInfo, m_graphicsPipelineDesc.shaderFlags);
+			m_pRenderer->EF_ADDDlight(&m_lights[i], passInfo);
 		}
+
+		if (m_pCurrentMaterial)
+		{
+			m_pCurrentMaterial->DisableHighlight();
+		}
+
+		_smart_ptr<IMaterial> pMaterial;
+		if (m_pCurrentMaterial)
+		{
+			pMaterial = m_pCurrentMaterial->GetMatInfo();
+		}
+
+		if (m_bPrecacheMaterial)
+		{
+			auto pCurrentMaterial = pMaterial;
+			if (!pCurrentMaterial)
+			{
+				if (m_pObject)
+				{
+					pCurrentMaterial = m_pObject->GetMaterial();
+				}
+				else if (m_pEntity)
+				{
+					pCurrentMaterial = m_pEntity->GetMaterial();
+				}
+				else if (m_pCharacter)
+				{
+					pCurrentMaterial = m_pCharacter->GetIMaterial();
+				}
+				else if (m_pEmitter)
+				{
+					pCurrentMaterial = m_pEmitter->GetMaterial();
+				}
+			}
+
+			if (pCurrentMaterial)
+			{
+				pCurrentMaterial->PrecacheMaterial(0.0f, nullptr, true, true);
+			}
+		}
+
+		bool bNoPreview = false;
+		{
+			// activate shader item
+			auto pCurrentMaterial = pMaterial;
+			if (!pCurrentMaterial)
+			{
+				if (m_pObject)
+				{
+					pCurrentMaterial = m_pObject->GetMaterial();
+				}
+				else if (m_pEntity)
+				{
+					pCurrentMaterial = m_pEntity->GetMaterial();
+				}
+				else if (m_pCharacter)
+				{
+					pCurrentMaterial = m_pCharacter->GetIMaterial();
+				}
+				else if (m_pEmitter)
+				{
+					pCurrentMaterial = m_pEmitter->GetMaterial();
+				}
+			}
+			// ActivateAllShaderItem();
+
+			if (pCurrentMaterial)
+			{
+				if ((pCurrentMaterial->GetFlags() & MTL_FLAG_NOPREVIEW))
+				{
+					bNoPreview = true;
+				}
+			}
+		}
+
+		if (m_bShowObject && !bNoPreview)
+		{
+			RenderObject(pMaterial, passInfo);
+		}
+
+		m_pRenderer->EF_EndEf3D(-1, -1, passInfo, m_graphicsPipelineDesc.shaderFlags);
 
 		m_pRenderer->RenderDebug(false);
 		m_pRenderer->EndFrame();

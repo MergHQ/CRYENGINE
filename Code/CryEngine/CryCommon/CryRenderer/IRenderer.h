@@ -1726,21 +1726,6 @@ private:
 	virtual void EF_QueryImpl(ERenderQueryTypes eQuery, void* pInOut0, uint32 nInOutSize0, void* pInOut1, uint32 nInOutSize1) = 0;
 };
 
-//! Util class to change wireframe mode.
-//! \cond INTERNAL
-class CScopedWireFrameMode
-{
-public:
-	CScopedWireFrameMode(IRenderer* pRenderer, int nMode) : m_nMode(nMode)
-	{
-	}
-	~CScopedWireFrameMode()
-	{
-	}
-private:
-	int m_nMode;
-};
-
 struct SShaderCacheStatistics
 {
 	size_t m_nTotalLevelShaderCacheMisses;
