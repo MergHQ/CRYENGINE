@@ -249,7 +249,7 @@ struct SDummyCVar : ICVar
 			DummyCVar() : Detail::SDummyCVar<type>(value) {}                                              \
 			const char* GetName() const { return name; }                                                  \
 		} DummyStaticInstance;                                                                            \
-		if (!(gEnv->pConsole != nullptr ? ConsoleRegistrationHelper::Register(&DummyStaticInstance) : 0)) \
+		if (!CRY_VERIFY((gEnv->pConsole != nullptr) ? ConsoleRegistrationHelper::Register(&DummyStaticInstance) : 0)) \
 		{                                                                                                 \
 			CryFatalError("Can not register dummy CVar");                                                 \
 		}                                                                                                 \

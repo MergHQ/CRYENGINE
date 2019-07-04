@@ -151,21 +151,15 @@ void CAsyncIOFileRequest::AddRef()
 
 int CAsyncIOFileRequest::Release()
 {
-	int nRef = CryInterlockedDecrement(&m_nRefCount);
+	const int nRef = CryInterlockedDecrement(&m_nRefCount);
 
 	STREAM_DECOMPRESS_TRACE("[StreamDecompress] Release(%x) %p %i %s\n", CryGetCurrentThreadId(), this, nRef, m_strFileName.c_str());
 
-#ifndef _RELEASE
-	if (nRef < 0)
-		__debugbreak();
-#endif
-
+	CRY_ASSERT(nRef >= 0);
 	if (nRef == 0)
 	{
 		Finalize();
-
 		CryInterlockedPushEntrySList(s_freeRequests, m_nextFree);
-
 	}
 
 	return nRef;
@@ -734,13 +728,9 @@ void CAsyncIOFileRequest::JobFinalize_Transfer(CAsyncIOFileRequest_TransferPtr& 
 			// If we have more then 3 call back threads, use this one for merged meshes only.
 			(*engineState.pReportQueues)[3]->TransferRequest(pSelf);
 		}
-		else if (nCallbackThreads > 0)
+		else if (CRY_VERIFY(nCallbackThreads > 0))
 		{
 			(*engineState.pReportQueues)[0]->TransferRequest(pSelf);
-		}
-		else
-		{
-			__debugbreak();
 		}
 	}
 }

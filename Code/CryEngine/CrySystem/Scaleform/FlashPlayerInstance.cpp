@@ -2553,7 +2553,6 @@ CFlashPlayer::~CFlashPlayer()
 		if (extRefs > 0)
 		{
 			CryGFxLog::GetAccess().LogError("Releasing flash player object while still holding %d associated flash variable object reference(s)! Enforce breaking into the debugger...", (int) extRefs);
-			//__debugbreak();
 		}
 	#endif
 

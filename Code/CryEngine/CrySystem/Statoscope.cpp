@@ -1641,8 +1641,7 @@ void CStatoscopeEventWriter::Flush(CDataWriter* pWriter)
 		{
 			pHdr = (StatoscopeDataWriter::EventHeader*)pBuff;
 
-			if (pHdr->timeStampUs < firstTimestampUs)
-				__debugbreak();
+			CRY_ASSERT(pHdr->timeStampUs >= firstTimestampUs);
 			firstTimestampUs = pHdr->timeStampUs;
 
 			pBuff += pHdr->eventLengthInWords * 4;

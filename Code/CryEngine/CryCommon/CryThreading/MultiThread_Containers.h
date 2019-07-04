@@ -360,9 +360,9 @@ inline SingleProducerSingleConsumerQueue<T>::~SingleProducerSingleConsumerQueue(
 template<typename T>
 inline void SingleProducerSingleConsumerQueue<T >::Init(size_t nSize)
 {
-	assert(m_arrBuffer == NULL);
-	assert(m_nBufferSize == 0);
-	assert((nSize & (nSize - 1)) == 0);
+	CRY_ASSERT(m_arrBuffer == NULL);
+	CRY_ASSERT(m_nBufferSize == 0);
+	CRY_ASSERT((nSize & (nSize - 1)) == 0);
 
 	m_arrBuffer = alias_cast<T*>(CryModuleMemalign(nSize * sizeof(T), 16));
 	m_nBufferSize = nSize;
@@ -372,8 +372,8 @@ inline void SingleProducerSingleConsumerQueue<T >::Init(size_t nSize)
 template<typename T>
 inline void SingleProducerSingleConsumerQueue<T >::Push(const T& rObj)
 {
-	assert(m_arrBuffer != NULL);
-	assert(m_nBufferSize != 0);
+	CRY_ASSERT(m_arrBuffer != NULL);
+	CRY_ASSERT(m_nBufferSize != 0);
 	SingleProducerSingleConsumerQueueBase::Push((void*)&rObj, m_nProducerIndex, m_nComsumerIndex, m_nBufferSize, m_arrBuffer, sizeof(T));
 }
 
@@ -381,8 +381,8 @@ inline void SingleProducerSingleConsumerQueue<T >::Push(const T& rObj)
 template<typename T>
 inline void SingleProducerSingleConsumerQueue<T >::Pop(T* pResult)
 {
-	assert(m_arrBuffer != NULL);
-	assert(m_nBufferSize != 0);
+	CRY_ASSERT(m_arrBuffer != NULL);
+	CRY_ASSERT(m_nBufferSize != 0);
 	SingleProducerSingleConsumerQueueBase::Pop(pResult, m_nProducerIndex, m_nComsumerIndex, m_nBufferSize, m_arrBuffer, sizeof(T));
 }
 
@@ -441,10 +441,10 @@ inline N_ProducerSingleConsumerQueue<T>::~N_ProducerSingleConsumerQueue()
 template<typename T>
 inline void N_ProducerSingleConsumerQueue<T >::Init(size_t nSize)
 {
-	assert(m_arrBuffer == NULL);
-	assert(m_arrStates == NULL);
-	assert(m_nBufferSize == 0);
-	assert((nSize & (nSize - 1)) == 0);
+	CRY_ASSERT(m_arrBuffer == NULL);
+	CRY_ASSERT(m_arrStates == NULL);
+	CRY_ASSERT(m_nBufferSize == 0);
+	CRY_ASSERT((nSize & (nSize - 1)) == 0);
 
 	m_arrBuffer = alias_cast<T*>(CryModuleMemalign(nSize * sizeof(T), 16));
 	m_arrStates = alias_cast<uint32*>(CryModuleMemalign(nSize * sizeof(uint32), 16));
@@ -456,10 +456,7 @@ inline void N_ProducerSingleConsumerQueue<T >::Init(size_t nSize)
 template<typename T>
 inline void N_ProducerSingleConsumerQueue<T >::SetRunningState()
 {
-#if !defined(_RELEASE)
-	if (m_nRunning == 1)
-		__debugbreak();
-#endif
+	CRY_ASSERT(m_nRunning != 1);
 	m_nRunning = 1;
 	m_nProducerCount = 1;
 }
@@ -468,13 +465,10 @@ inline void N_ProducerSingleConsumerQueue<T >::SetRunningState()
 template<typename T>
 inline void N_ProducerSingleConsumerQueue<T >::AddProducer()
 {
-	assert(m_arrBuffer != NULL);
-	assert(m_arrStates != NULL);
-	assert(m_nBufferSize != 0);
-#if !defined(_RELEASE)
-	if (m_nRunning == 0)
-		__debugbreak();
-#endif
+	CRY_ASSERT(m_arrBuffer != NULL);
+	CRY_ASSERT(m_arrStates != NULL);
+	CRY_ASSERT(m_nBufferSize != 0);
+	CRY_ASSERT(m_nRunning != 0);
 	CryInterlockedIncrement((volatile int*)&m_nProducerCount);
 }
 
@@ -482,13 +476,10 @@ inline void N_ProducerSingleConsumerQueue<T >::AddProducer()
 template<typename T>
 inline void N_ProducerSingleConsumerQueue<T >::RemoveProducer()
 {
-	assert(m_arrBuffer != NULL);
-	assert(m_arrStates != NULL);
-	assert(m_nBufferSize != 0);
-#if !defined(_RELEASE)
-	if (m_nRunning == 0)
-		__debugbreak();
-#endif
+	CRY_ASSERT(m_arrBuffer != NULL);
+	CRY_ASSERT(m_arrStates != NULL);
+	CRY_ASSERT(m_nBufferSize != 0);
+	CRY_ASSERT(m_nRunning != 0);
 	if (CryInterlockedDecrement((volatile int*)&m_nProducerCount) == 0)
 		m_nRunning = 0;
 }
@@ -497,9 +488,9 @@ inline void N_ProducerSingleConsumerQueue<T >::RemoveProducer()
 template<typename T>
 inline void N_ProducerSingleConsumerQueue<T >::Push(const T& rObj)
 {
-	assert(m_arrBuffer != NULL);
-	assert(m_arrStates != NULL);
-	assert(m_nBufferSize != 0);
+	CRY_ASSERT(m_arrBuffer != NULL);
+	CRY_ASSERT(m_arrStates != NULL);
+	CRY_ASSERT(m_nBufferSize != 0);
 	CryMT::detail::N_ProducerSingleConsumerQueueBase::Push((void*)&rObj, m_nProducerIndex, m_nComsumerIndex, m_nRunning, m_arrBuffer, m_nBufferSize, sizeof(T), m_arrStates);
 }
 
@@ -507,9 +498,9 @@ inline void N_ProducerSingleConsumerQueue<T >::Push(const T& rObj)
 template<typename T>
 inline bool N_ProducerSingleConsumerQueue<T >::Pop(T* pResult)
 {
-	assert(m_arrBuffer != NULL);
-	assert(m_arrStates != NULL);
-	assert(m_nBufferSize != 0);
+	CRY_ASSERT(m_arrBuffer != NULL);
+	CRY_ASSERT(m_arrStates != NULL);
+	CRY_ASSERT(m_nBufferSize != 0);
 	return CryMT::detail::N_ProducerSingleConsumerQueueBase::Pop(pResult, m_nProducerIndex, m_nComsumerIndex, m_nRunning, m_arrBuffer, m_nBufferSize, sizeof(T), m_arrStates);
 }
 
@@ -517,9 +508,9 @@ inline bool N_ProducerSingleConsumerQueue<T >::Pop(T* pResult)
 template<typename T>
 inline bool N_ProducerSingleConsumerQueue<T >::TryPop(T* pResult)
 {
-	assert(m_arrBuffer != NULL);
-	assert(m_arrStates != NULL);
-	assert(m_nBufferSize != 0);
+	CRY_ASSERT(m_arrBuffer != NULL);
+	CRY_ASSERT(m_arrStates != NULL);
+	CRY_ASSERT(m_nBufferSize != 0);
 	return CryMT::detail::N_ProducerSingleConsumerQueueBase::TryPop(pResult, m_nProducerIndex, m_nComsumerIndex, m_nRunning, m_arrBuffer, m_nBufferSize, sizeof(T), m_arrStates);
 }
 };

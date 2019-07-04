@@ -78,22 +78,19 @@ public:
 
 	void SetOwner(volatile const void* pOwner)
 	{
-		if (m_pOwner != NULL)
-			__debugbreak();
+		CRY_ASSERT(m_pOwner == NULL);
 		m_pOwner = pOwner;
 	}
 
 	void ClearOwner(volatile const void* pOwner)
 	{
-		if (m_pOwner != pOwner)
-			__debugbreak();
-
+		CRY_ASSERT(m_pOwner == pOwner);
 		m_pOwner = NULL;
 	}
 
 	bool AddRef(volatile const void* pOwner)
 	{
-		if (m_pOwner != pOwner)
+		if (!CRY_VERIFY(m_pOwner == pOwner))
 			return false;
 
 		++m_nRefCounter;
@@ -101,9 +98,7 @@ public:
 	}
 	uint32 DecRef(volatile const void* pOwner)
 	{
-		if (m_pOwner != pOwner)
-			__debugbreak();
-
+		CRY_ASSERT(m_pOwner == pOwner);
 		return --m_nRefCounter;
 	}
 

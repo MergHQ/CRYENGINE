@@ -102,12 +102,8 @@ CAsyncIOFileRequest::CAsyncIOFileRequest()
 //////////////////////////////////////////////////////////////////////////
 CAsyncIOFileRequest::~CAsyncIOFileRequest()
 {
-#ifndef _RELEASE
-	if (m_pMemoryBuffer)
-		__debugbreak();
-	if (m_eType)
-		__debugbreak();
-#endif
+	CRY_ASSERT(m_pMemoryBuffer == nullptr);
+	CRY_ASSERT(m_eType == 0);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -519,10 +515,7 @@ void CAsyncIOFileRequest::Flush()
 
 void CAsyncIOFileRequest::Reset()
 {
-#ifndef _RELEASE
-	if (m_pMemoryBuffer)
-		__debugbreak();
-#endif
+	CRY_ASSERT(m_pMemoryBuffer == nullptr);
 
 	m_pReadStream = NULL;
 	m_strFileName.resize(0);
@@ -540,11 +533,7 @@ void CAsyncIOFileRequest::Reset()
 
 void CAsyncIOFileRequest::Init(EStreamTaskType eType)
 {
-#ifndef _RELEASE
-	if (!eType)
-		__debugbreak();
-#endif
-
+	CRY_ASSERT(eType != 0);
 	m_eType = eType;
 
 #ifdef STREAMENGINE_ENABLE_STATS
@@ -563,10 +552,7 @@ void CAsyncIOFileRequest::Init(EStreamTaskType eType)
 
 void CAsyncIOFileRequest::Finalize()
 {
-#ifndef _RELEASE
-	if (!m_eType)
-		__debugbreak();
-#endif
+	CRY_ASSERT(m_eType != 0);
 
 #ifdef STREAMENGINE_ENABLE_LISTENER
 	IStreamEngineListener* pListener = gEnv->pSystem->GetStreamEngine()->GetListener();
@@ -724,7 +710,6 @@ uint32 CAsyncIOFileRequest::ReadFileInPages(CStreamingIOThread* pIOThread, CCryF
 	                                : 0;
 
 	byte* const pReadBase = (byte*)m_pReadMemoryBuffer + nReadStartOffset;
-	byte* const pReadEnd = (byte*)m_pReadMemoryBuffer + m_nReadMemoryBufferSize;
 
 	CStreamEngine* pStreamEngine = static_cast<CStreamEngine*>(gEnv->pSystem->GetStreamEngine());
 
@@ -746,14 +731,12 @@ uint32 CAsyncIOFileRequest::ReadFileInPages(CStreamingIOThread* pIOThread, CCryF
 			return nError;
 
 		byte* pReadTarget = pReadBase + m_nPageReadCurrent;
-		byte* pReadTargetEnd = pReadTarget + nPageSize;
 		bool bTemporaryReadTarget = false;
 		SStreamPageHdr* pTemporaryPageHdr = NULL;
 
 		if (bInPlace)
 		{
-			if (pReadTargetEnd > pReadEnd)
-				__debugbreak();
+			CRY_ASSERT(pReadTarget + nPageSize <= (byte*)m_pReadMemoryBuffer + m_nReadMemoryBufferSize);
 		}
 		else
 		{
@@ -766,10 +749,7 @@ uint32 CAsyncIOFileRequest::ReadFileInPages(CStreamingIOThread* pIOThread, CCryF
 			pTemporaryPageHdr->nRefs = 1;
 		}
 
-#ifndef _RELEASE
-		if (m_nPageReadCurrent + nPageSize > nPageReadLen)
-			__debugbreak();
-#endif
+		CRY_ASSERT(m_nPageReadCurrent + nPageSize <= nPageReadLen);
 
 		{
 #ifdef STREAMENGINE_ENABLE_LISTENER
@@ -829,9 +809,9 @@ uint32 CAsyncIOFileRequest::ReadFileInPages(CStreamingIOThread* pIOThread, CCryF
 			{
 				PushDecompressPage(pStreamEngine->GetJobEngineState(), pReadTarget, pTemporaryPageHdr, nPageSize, bLastBlock);
 			}
-			else if (bTemporaryReadTarget)
+			else
 			{
-				__debugbreak();
+				CRY_ASSERT(!bTemporaryReadTarget);
 			}
 
 			if (pTemporaryPageHdr && CryInterlockedDecrement(&pTemporaryPageHdr->nRefs) == 0)

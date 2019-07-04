@@ -820,9 +820,8 @@ int ReplaySocketWriter::Write(const void* data, size_t sz, size_t n)
 		{
 			int sent = send(m_sock, bdata, toSend, 0);
 
-			if (sent == CRY_SOCKET_ERROR)
+			if (!CRY_VERIFY(sent != CRY_SOCKET_ERROR))
 			{
-				__debugbreak();
 				break;
 			}
 
@@ -1013,8 +1012,7 @@ void RetrieveMemReplaySuffix(char* pSuffixBuffer, const char* lwrCommandLine, in
 ReplayAllocator::ReplayAllocator()
 {
 	m_heap = ReserveAddressSpace(MaxSize);
-	if (!m_heap)
-		__debugbreak();
+	CRY_ASSERT(m_heap);
 
 	m_commitEnd = m_heap;
 	m_allocEnd = m_heap;
@@ -1035,8 +1033,7 @@ void ReplayAllocator::Reserve(size_t sz)
 	if ((newCommitEnd - commitEnd) > 0)
 	{
 		LPVOID res = MapAddressSpace(m_commitEnd, newCommitEnd - commitEnd);
-		if (!res)
-			__debugbreak();
+		CRY_ASSERT_MESSAGE(res, "Memory allocation failed (MapAddressSpace)");
 	}
 
 	m_commitEnd = reinterpret_cast<void*>(newCommitEnd);
@@ -1055,12 +1052,10 @@ void* ReplayAllocator::Allocate(size_t sz)
 	{
 		uint8* alignedEnd = reinterpret_cast<uint8*>((reinterpret_cast<INT_PTR>(newEnd) + (PageSize - 1)) & ~(PageSize - 1));
 
-		if (alignedEnd > reinterpret_cast<uint8*>(m_allocEnd) + MaxSize)
-			__debugbreak();
-
+		CRY_ASSERT(alignedEnd <= reinterpret_cast<uint8*>(m_allocEnd) + MaxSize);
+		
 		LPVOID res = MapAddressSpace(m_commitEnd, alignedEnd - reinterpret_cast<uint8*>(m_commitEnd));
-		if (!res)
-			__debugbreak();
+		CRY_ASSERT_MESSAGE(res, "Memory allocation failed (MapAddressSpace)");
 
 		m_commitEnd = alignedEnd;
 	}
@@ -1109,8 +1104,7 @@ void ReplayCompressor::Flush()
 
 void ReplayCompressor::Write(const uint8* data, size_t len)
 {
-	if (CompressTargetSize < len)
-		__debugbreak();
+	CRY_ASSERT(len <= CompressTargetSize);
 
 	m_compressStream.next_in = const_cast<uint8*>(data);
 	m_compressStream.avail_in = len;

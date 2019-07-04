@@ -701,7 +701,7 @@ IDefragAllocator::Hdl CDefragAllocator::Allocate_Locked(size_t sz, size_t alignm
 		bestChunkIdx = FirstFit_FindFreeBlockFor(sz, alignment, 0, ~(uint32)0, true);
 		break;
 	default:
-		__debugbreak();
+		CRY_ASSERT_MESSAGE(false, "Unknown block search kind %d", int(m_policy.blockSearchKind));
 		break;
 	}
 
@@ -952,8 +952,7 @@ void CDefragAllocator::Tick_Validation_Locked()
 
 					if (!chunk.attr.IsInvalid())
 					{
-						if (hash && chunk.hash && (hash != chunk.hash))
-							__debugbreak();
+						CRY_ASSERT(hash == 0 || chunk.hash == 0 || (hash == chunk.hash));
 					}
 
 					chunk.hash = hash;

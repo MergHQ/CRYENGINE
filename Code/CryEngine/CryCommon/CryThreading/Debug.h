@@ -20,9 +20,7 @@ struct SThreadAccessInfo
 		threadID curThread = CryGetCurrentThreadId();
 		threadID prevThread = m_currentThread.exchange(curThread);
 
-		if ((prevThread != 0 && prevThread != curThread) || m_currentThreadLockCount < 0)
-			__debugbreak();
-
+		CRY_ASSERT((prevThread == 0 || prevThread == curThread) && m_currentThreadLockCount >= 0);
 		++m_currentThreadLockCount;
 	}
 
@@ -31,9 +29,7 @@ struct SThreadAccessInfo
 		threadID curThread = CryGetCurrentThreadId();
 		threadID prevThread = m_currentThread.load();
 
-		if (prevThread != curThread || m_currentThreadLockCount <= 0)
-			__debugbreak();
-
+		CRY_ASSERT(prevThread == curThread && m_currentThreadLockCount > 0);
 		if (--m_currentThreadLockCount == 0)
 			m_currentThread = 0;
 	}

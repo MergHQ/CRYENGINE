@@ -323,11 +323,7 @@ int CReadStream::AddRef()
 int CReadStream::Release()
 {
 	int nRef = CryInterlockedDecrement(&m_nRefCount);
-
-#ifndef _RELEASE
-	if (nRef < 0)
-		__debugbreak();
-#endif
+	CRY_ASSERT(nRef >= 0);
 
 	if (nRef == 0)
 	{

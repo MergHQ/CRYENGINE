@@ -109,9 +109,8 @@ void* CPageMappingHeap::Map(size_t length)
 	const size_t pageSize = m_addrRange.GetPageSize();
 	const size_t numPages = m_addrRange.GetPageCount();
 
-	if (length % pageSize)
+	if (!CRY_VERIFY(length % pageSize == 0))
 	{
-		__debugbreak();
 		length = (length + (pageSize - 1)) & ~(pageSize - 1);
 	}
 
@@ -153,9 +152,8 @@ void CPageMappingHeap::Unmap(void* mem, size_t length)
 	CryAutoLock<CryCriticalSectionNonRecursive> lock(m_lock);
 	const size_t pageSize = m_addrRange.GetPageSize();
 
-	if (length % pageSize)
+	if (!CRY_VERIFY(length % pageSize == 0))
 	{
-		__debugbreak();
 		length = (length + (pageSize - 1)) & ~(pageSize - 1);
 	}
 

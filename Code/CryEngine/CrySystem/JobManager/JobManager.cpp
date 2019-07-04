@@ -1263,9 +1263,8 @@ JobManager::TSemaphoreHandle JobManager::CJobManager::AllocateSemaphore(volatile
 	int nSpinCount = 0;
 	for (;; ) // normally we should never spin here, if we do, increase the semaphore pool size
 	{
-		if (nSpinCount > 10)
-			__debugbreak(); // breaking here means that there is a logic flaw which causes not finished syncvars to be returned to the pool
-
+		CRY_ASSERT_MESSAGE(nSpinCount <= 10, "there is a logic flaw which causes not finished syncvars to be returned to the pool");
+		
 		uint32 nIndex = (++m_nCurrentSemaphoreIndex) % nSemaphorePoolSize;
 		SJobFinishedConditionVariable* pSemaphore = &m_JobSemaphorePool[nIndex];
 		if (pSemaphore->HasOwner())
@@ -1293,8 +1292,7 @@ void JobManager::CJobManager::DeallocateSemaphore(JobManager::TSemaphoreHandle n
 
 	if (pSemaphore->DecRef(pOwner) == 0)
 	{
-		if (pSemaphore->IsRunning())
-			__debugbreak();
+		CRY_ASSERT(!pSemaphore->IsRunning());
 		pSemaphore->ClearOwner(pOwner);
 	}
 }
@@ -1375,7 +1373,6 @@ JobManager::IBackend* JobManager::CJobManager::GetBackEnd(JobManager::EBackEndTy
 		return m_pBlockingBackEnd;
 	default:
 		CRY_ASSERT_MESSAGE(0, "Unsupported EBackEndType encountered.");
-		__debugbreak();
 		return nullptr;
 	}
 

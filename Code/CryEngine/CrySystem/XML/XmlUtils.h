@@ -15,11 +15,7 @@
 
 #include <CrySystem/ISystem.h>
 
-#ifdef _RELEASE
-	#define CHECK_STATS_THREAD_OWNERSHIP()
-#else
-	#define CHECK_STATS_THREAD_OWNERSHIP() if (m_statsThreadOwner != CryGetCurrentThreadId()) __debugbreak();
-#endif
+#define CHECK_STATS_THREAD_OWNERSHIP() CRY_ASSERT(m_statsThreadOwner == CryGetCurrentThreadId())
 
 class CXmlNodePool;
 class CXMLPatcher;

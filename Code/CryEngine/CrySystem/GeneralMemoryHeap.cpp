@@ -79,10 +79,7 @@ int CGeneralMemoryHeap::Release()
 {
 	int nRef = CryInterlockedDecrement(&m_nRefCount);
 
-#if !defined(_RELEASE)
-	//	IF (nRef < 0, 0)
-	//	  __debugbreak();
-#endif
+	CRY_ASSERT(nRef >= 0);
 	if (nRef == 0)
 		delete this;
 

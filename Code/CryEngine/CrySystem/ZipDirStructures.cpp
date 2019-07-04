@@ -72,13 +72,9 @@ static void ZlibOverlapInflate(int* pReturnCode, z_stream* pZStream, ZipDir::Unc
 				                     ? sizeof(lookahead.buffer) - nWrZ
 				                     : nWrW - nWrZ;
 			}
-			else if (!nIn)
+			else if (CRY_VERIFY(!nIn))
 			{
 				break;
-			}
-			else
-			{
-				__debugbreak();
 			}
 		}
 
@@ -205,12 +201,8 @@ void ZlibInflateElementPartial_Impl(
 	}
 
 	//error during inflate
-	if (*pReturnCode != Z_STREAM_END && *pReturnCode != Z_OK)
+	if (!CRY_VERIFY(*pReturnCode == Z_STREAM_END || *pReturnCode == Z_OK))
 	{
-#ifndef _RELEASE
-		__debugbreak();
-#endif
-
 		inflateEnd(pZStream);
 		return;
 	}
@@ -220,11 +212,8 @@ void ZlibInflateElementPartial_Impl(
 	{
 		inflateEnd(pZStream);
 	}
-	else if (bUsingLocal)
+	else if (!CRY_VERIFY(!bUsingLocal))
 	{
-#ifndef _RELEASE
-		__debugbreak();
-#endif
 		*pReturnCode = Z_VERSION_ERROR;
 	}
 }

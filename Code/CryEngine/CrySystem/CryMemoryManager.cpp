@@ -30,11 +30,11 @@ const bool bProfileMemManager = 0;
 #ifdef CRYMM_SUPPORT_DEADLIST
 namespace
 {
-struct DeadHeadSize
-{
-	DeadHeadSize* pPrev;
-	UINT_PTR      nSize;
-};
+	struct DeadHeadSize
+	{
+		DeadHeadSize* pPrev;
+		UINT_PTR      nSize;
+	};
 }
 
 static CryCriticalSectionNonRecursive s_deadListLock;
@@ -48,10 +48,9 @@ static void DeadListValidate(const uint8* p, size_t sz, uint8 val)
 {
 	for (const uint8* pe = p + sz; p != pe; ++p)
 	{
-		if (*p != val)
+		if (!CRY_VERIFY_WITH_MESSAGE(*p == val, "Deadlist validation failed, there seems to have been a use after free"))
 		{
 			CryGetIMemReplay()->Stop();
-			__debugbreak();
 		}
 	}
 }

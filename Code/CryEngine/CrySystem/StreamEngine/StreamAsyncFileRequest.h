@@ -411,10 +411,7 @@ public:
 
 	CAsyncIOFileRequest_TransferPtr& operator=(CAsyncIOFileRequest* p)
 	{
-#ifndef _RELEASE
-		if (m_p)
-			__debugbreak();
-#endif
+		CRY_ASSERT(m_p == nullptr);
 		m_p = p;
 		return *this;
 	}

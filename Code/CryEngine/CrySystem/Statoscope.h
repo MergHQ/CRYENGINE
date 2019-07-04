@@ -561,8 +561,7 @@ public:
 		m_eventStreamLock.Lock();
 		CTimeValue tv = gEnv->pTimer->GetAsyncTime();
 		uint64 timeStamp = (uint64)tv.GetMicroSecondsAsInt64();
-		if (timeStamp < m_lastTimestampUs)
-			__debugbreak();
+		CRY_ASSERT(timeStamp >= m_lastTimestampUs);
 		m_lastTimestampUs = timeStamp;
 	}
 

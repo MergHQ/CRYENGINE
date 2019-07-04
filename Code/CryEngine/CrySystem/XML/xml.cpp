@@ -1124,12 +1124,8 @@ char* CXmlNode::AddToXmlStringUnsafe(char* xml, int level, char* endPtr, FILE* p
 			xml = cry_stpcpy(xml, it->key);
 			*(xml++) = '=';
 			*(xml++) = '\"';
-#ifndef _RELEASE
-			if (it->value[strcspn(it->value, "\"\'&><")])
-			{
-				__debugbreak();
-			}
-#endif
+			CRY_ASSERT(it->value[strcspn(it->value, "\"\'&><")] == 0);
+
 			xml = cry_stpcpy(xml, it->value);
 			++it;
 			*(xml++) = '\"';
@@ -1149,12 +1145,7 @@ char* CXmlNode::AddToXmlStringUnsafe(char* xml, int level, char* endPtr, FILE* p
 		*(xml++) = '>';
 	}
 
-#ifndef _RELEASE
-	if (m_content[strcspn(m_content, "\"\'&><")])
-	{
-		__debugbreak();
-	}
-#endif
+	CRY_ASSERT(m_content[strcspn(m_content, "\"\'&><")] == 0);
 	xml = cry_stpcpy(xml, m_content);
 
 	if (!bHasChildren)

@@ -288,12 +288,10 @@ void GFxMemoryArenaWrapper::Destroy(unsigned int arenaID)
 
 	CryAutoCriticalSection lock(m_lock);
 
-	#if !defined(_RELEASE)
-	IF (!m_arenasRefCnt[arenaID], 0) __debugbreak();
-	#endif
+	CRY_ASSERT(m_arenasRefCnt[arenaID] > 0);
 	if (!--m_arenasRefCnt[arenaID])
 	{
-		if (GMemory::ArenaIsEmpty(arenaID))
+		if (CRY_VERIFY(GMemory::ArenaIsEmpty(arenaID)))
 		{
 			const unsigned int areaIDAsBit = 1 << arenaID;
 
@@ -306,10 +304,6 @@ void GFxMemoryArenaWrapper::Destroy(unsigned int arenaID)
 				m_arenasResetCache &= ~areaIDAsBit;
 			}
 		}
-	#if !defined(_RELEASE)
-		else
-			__debugbreak();
-	#endif
 	}
 }
 

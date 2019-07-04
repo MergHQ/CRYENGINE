@@ -359,17 +359,13 @@ private:
 
 		GRendererCommandBuffer& operator[](size_t i)
 		{
-	#if !defined(_RELEASE)
-			if (!m_pCmdDB) __debugbreak();
-	#endif
+			CRY_ASSERT_MESSAGE(m_pCmdDB, "Fatal error");
 			return (*m_pCmdDB)[i];
 		}
 
 		const GRendererCommandBuffer& operator[](size_t i) const
 		{
-	#if !defined(_RELEASE)
-			if (!m_pCmdDB) __debugbreak();
-	#endif
+			CRY_ASSERT_MESSAGE(m_pCmdDB, "Fatal error");
 			return (*m_pCmdDB)[i];
 		}
 
