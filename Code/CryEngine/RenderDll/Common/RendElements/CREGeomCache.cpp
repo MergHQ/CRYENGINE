@@ -191,11 +191,7 @@ DynArray<CREGeomCache::SMeshRenderData>* CREGeomCache::GetRenderDataPtr()
 
 void CREGeomCache::DisplayFilledBuffer(const int threadId)
 {
-	if (m_bUpdateFrame[threadId])
-	{
-		// You need to call SetAsyncUpdateState before DisplayFilledBuffer
-		__debugbreak();
-	}
+	CRY_ASSERT_MESSAGE(!m_bUpdateFrame[threadId], "You need to call SetAsyncUpdateState before DisplayFilledBuffer");
 	m_bUpdateFrame[threadId] = true;
 }
 

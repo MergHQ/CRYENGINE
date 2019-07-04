@@ -1586,7 +1586,7 @@ public:
 	virtual void*         BeginRead(SBufferPoolItem* item)                                            { return NULL; }
 	virtual void*         BeginWrite(SBufferPoolItem* item)                                           { return NULL; }
 	virtual void          EndReadWrite(SBufferPoolItem* item, bool requires_flush)                    {}
-	virtual void          Write(SBufferPoolItem* item, const void* src, buffer_size_t size, buffer_size_t offset) { __debugbreak(); }
+	virtual void          Write(SBufferPoolItem* item, const void* src, buffer_size_t size, buffer_size_t offset) { CRY_FUNCTION_NOT_IMPLEMENTED; }
 	SBufferPoolItem*      Resolve(item_handle_t handle)                                               { return &m_item_table[handle]; }
 };
 
@@ -2005,7 +2005,7 @@ struct CBufferPoolImpl final
 		SPendingMove& move = m_pending_moves[userMoveId - 1];
 		move.m_canceled = true;
 	}
-	void SyncCopy(void* pContext, UINT_PTR dstOffset, UINT_PTR srcOffset, UINT_PTR size) final { __debugbreak(); }
+	void SyncCopy(void* pContext, UINT_PTR dstOffset, UINT_PTR srcOffset, UINT_PTR size) final { CRY_FUNCTION_NOT_IMPLEMENTED; }
 
 public:
 	CBufferPoolImpl(SStagingResources& resources)
@@ -4271,7 +4271,7 @@ SResourceView SResourceView::UnorderedAccessRawView(DXGI_FORMAT nFormat, int nFi
 void CGpuBuffer::OwnDevBuffer(CDeviceBuffer* pDeviceBuf)
 {
 	// TODO: not sure how to handle this
-	__debugbreak();
+	CRY_FUNCTION_NOT_IMPLEMENTED;
 
 #if 0
 	SAFE_RELEASE(m_pDevBuffer);
@@ -4493,10 +4493,6 @@ CConstantBufferPtr CGraphicsDeviceConstantBuffer::GetNullConstantBuffer()
 	{
 		m_pConstantBuffer = gRenDev->m_DevBufMan.GetNullConstantBuffer();
 	}
-	if (m_bDirty && m_data.size() > 0)
-	{
-		// NOTE: A null-buffer isn't suppose to be dirty or have a size
-		__debugbreak();
-	}
+	CRY_ASSERT_MESSAGE(!m_bDirty || m_data.size() == 0, "A null-buffer isn't supposed to be dirty or have a size");
 	return m_pConstantBuffer;
 }

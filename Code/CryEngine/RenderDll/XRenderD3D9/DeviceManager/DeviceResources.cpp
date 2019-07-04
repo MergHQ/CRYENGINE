@@ -551,7 +551,7 @@ CDeviceTexture* CDeviceTexture::Associate(const STextureLayout& pLayout, D3DReso
 		if (pLayout.m_eFlags & FT_FORCE_MIPS)
 			eFlags |= CDeviceObjectFactory::USAGE_AUTOGENMIPS;
 		if (pLayout.m_eFlags & FT_USAGE_MSAA)
-			__debugbreak(); // TODO: one texture given, two textures needed
+			CRY_ASSERT_MESSAGE(false, "Handling of flag FT_USAGE_MSAA not implemented yet."); // TODO: one texture given, two textures needed
 
 		if (pLayout.m_eFlags & (FT_USAGE_RENDERTARGET | FT_USAGE_DEPTHSTENCIL | FT_USAGE_UNORDERED_ACCESS))
 		{
@@ -637,8 +637,8 @@ int CDeviceTexture::Cleanup()
 			if (m_Pinned)
 			{
 				CryWarning(VALIDATOR_MODULE_RENDERER, EValidatorSeverity::VALIDATOR_WARNING, "Freeing a texture from the texture pool while it is still pinned!");
-				__debugbreak();
 			}
+			CRY_ASSERT(!m_Pinned);
 			GetDeviceObjectFactory().m_texturePool.Free(m_gpuHdl);
 			m_gpuHdl = SGPUMemHdl();
 		}

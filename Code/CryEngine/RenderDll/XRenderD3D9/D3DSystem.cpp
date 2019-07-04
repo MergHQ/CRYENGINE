@@ -90,9 +90,7 @@ void CD3D9Renderer::DisplaySplash()
 
 bool CD3D9Renderer::ChangeRenderResolution(int nNewRenderWidth, int nNewRenderHeight, CRenderView* pRenderView)
 {
-#if !defined(_RELEASE) && (CRY_PLATFORM_WINDOWS || CRY_PLATFORM_APPLE || CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID)
-	if (m_pRT && !m_pRT->IsRenderThread()) __debugbreak();
-#endif
+	CRY_ASSERT(!m_pRT || m_pRT->IsRenderThread());
 
 	pRenderView->ChangeRenderResolution(nNewRenderWidth, nNewRenderHeight, false);
 	pRenderView->SetViewport(SRenderViewport(0, 0, nNewRenderWidth, nNewRenderHeight));
@@ -102,9 +100,7 @@ bool CD3D9Renderer::ChangeRenderResolution(int nNewRenderWidth, int nNewRenderHe
 
 bool CD3D9Renderer::ChangeOutputResolution(int nNewOutputWidth, int nNewOutputHeight, CRenderOutput* pRenderOutput)
 {
-#if !defined(_RELEASE) && (CRY_PLATFORM_WINDOWS || CRY_PLATFORM_APPLE || CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID)
-	if (m_pRT && !m_pRT->IsRenderThread()) __debugbreak();
-#endif
+	CRY_ASSERT(!m_pRT || m_pRT->IsRenderThread());
 
 	pRenderOutput->ChangeOutputResolution(nNewOutputWidth, nNewOutputHeight);
 	pRenderOutput->SetViewport(SRenderViewport(0, 0, nNewOutputWidth, nNewOutputHeight));
@@ -192,9 +188,7 @@ bool CD3D9Renderer::ChangeDisplayResolution(int nNewDisplayWidth, int nNewDispla
 
 bool CD3D9Renderer::ChangeDisplayResolution(int nNewDisplayWidth, int nNewDisplayHeight, int nNewColDepth, int nNewRefreshHZ, bool bForceReset, const SDisplayContextKey& displayContextKey)
 {
-#if !defined(_RELEASE) && (CRY_PLATFORM_WINDOWS || CRY_PLATFORM_APPLE || CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID)
-	if (m_pRT && !m_pRT->IsRenderThread()) __debugbreak();
-#endif
+	CRY_ASSERT(!m_pRT || m_pRT->IsRenderThread());
 
 	CRenderDisplayContext* pBC = GetBaseDisplayContext();
 	CRenderDisplayContext* pDC = pBC;

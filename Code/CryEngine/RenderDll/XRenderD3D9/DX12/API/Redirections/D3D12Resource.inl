@@ -480,20 +480,14 @@ public:
 		int count = CryInterlockedDecrement(&m_MapCount);
 		if (count == 0)
 		{
-//			__debugbreak();
 			delete [] m_Buffer;
 			m_Buffer = nullptr;
 			m_RealBuffer = nullptr;
 		}
 
-		if (count >= 0)
+		if (CRY_VERIFY(count >= 0))
 		{
 			Pick(0, Unmap(Subresource, pWrittenRange));
-		}
-
-		if (count < 0)
-		{
-			__debugbreak();
 		}
 #else
 		// Nest the broadcasted Map()/Unmap() to prevent getting the VirtualAddressTranslationTable-hit

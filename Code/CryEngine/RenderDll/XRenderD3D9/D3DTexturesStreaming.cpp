@@ -538,8 +538,7 @@ void CTexture::StreamAssignPoolItem(STexPoolItem* pItem, int8 nMinMip)
 
 	if (m_pFileTexMips->m_pPoolItem == NULL)
 	{
-		if (m_pDevTexture)
-			__debugbreak();
+		CRY_ASSERT(m_pDevTexture == nullptr);
 	}
 
 	int nPersMip = m_nMips - m_CacheFileHeader.m_nMipsPersistent;

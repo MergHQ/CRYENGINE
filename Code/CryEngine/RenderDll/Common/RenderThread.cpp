@@ -466,8 +466,7 @@ void SRenderThread::ProcessCommands()
 	#if !defined(_RELEASE)
 		// Ensure that the command hasn't been processed already
 		int* pProcessed = (int*)(pP + sizeof(int));
-		IF_UNLIKELY (*pProcessed)
-			__debugbreak();
+		CRY_ASSERT(*pProcessed == 0);
 		*pProcessed = 1;
 		n += sizeof(int);
 	#endif

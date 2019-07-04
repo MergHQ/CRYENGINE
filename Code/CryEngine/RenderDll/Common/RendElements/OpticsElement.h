@@ -249,7 +249,7 @@ public:
 	{
 #ifndef RELEASE
 		iLog->Log("ERROR");
-		__debugbreak();
+		CRY_FUNCTION_NOT_IMPLEMENTED;
 #endif
 		return 0;
 	}

@@ -685,13 +685,10 @@ bool CTexture::StreamPrepare(CImageFilePtr&& pIM)
 	const ColorF& cMaxColor = pIM->mfGet_maxColor();
 	ETEX_TileMode eSrcTileMode = pIM->mfGetTileMode();
 
-#ifndef _RELEASE
 	if (eSrcTileMode != eTM_None)
 	{
-		if (eSrcFormat != eDstFormat)
-			__debugbreak();
+		CRY_ASSERT(eSrcFormat == eDstFormat);
 	}
-#endif
 
 	int8 nMipsPersistent = std::max<int8>(pIM->mfGet_numPersistantMips(), DDSSplitted::GetNumLastMips(nWidth, nHeight, nMips, nSides, eSrcFormat, (m_eFlags & FT_ALPHA) ? FIM_ALPHA : 0));
 
@@ -1102,8 +1099,7 @@ uint8 CTexture::StreamComputeFormatCode(uint32 nWidth, uint32 nHeight, uint32 nM
 	TStreamFormatCodeKeyMap::iterator it = s_formatCodeMap.find(key);
 	if (it == s_formatCodeMap.end())
 	{
-		if (s_nFormatCodes == MaxFormatCodes)
-			__debugbreak();
+		CRY_ASSERT(s_nFormatCodes != MaxFormatCodes);
 
 		SStreamFormatCode code;
 		memset(&code, 0, sizeof(code));
@@ -1266,12 +1262,9 @@ bool CTexture::StartStreaming(CTexture* pTex, STexPoolItem* pNewPoolItem, const 
 
 	if (pTex->TryAddRef() > 0)
 	{
-		if (pTex->IsStreaming())
-			__debugbreak();
-
+		CRY_ASSERT(!pTex->IsStreaming());
 		// TODO: support eTT_2DArray and eTT_CubeArray
-		if (pTex->m_eTT != eTT_2D && pTex->m_eTT != eTT_Cube)
-			__debugbreak();
+		CRY_ASSERT(pTex->m_eTT == eTT_2D || pTex->m_eTT == eTT_Cube);
 
 		STexStreamInState* pStreamState = StreamState_AllocateIn();
 		if (pStreamState)
@@ -1660,10 +1653,8 @@ void CTexture::AbortStreamingTasks(CTexture* pTex)
 #ifdef TEXSTRM_ASYNC_TEXCOPY
 			STexStreamOutState& streamState = *s_StreamOutTasks.GetPtrFromIdx(pTex->m_nStreamSlot & StreamIdxMask);
 
-	#ifndef _RELEASE
-			if (streamState.m_pTexture != pTex) __debugbreak();
-	#endif
-
+			CRY_ASSERT(streamState.m_pTexture == pTex);
+	
 			streamState.m_bAborted = true;
 			if (!streamState.m_bDone)
 				streamState.m_jobState.Wait();
@@ -1675,10 +1666,7 @@ void CTexture::AbortStreamingTasks(CTexture* pTex)
 		else if (pTex->m_nStreamSlot & StreamPrepMask)
 		{
 			STexStreamPrepState*& pStreamState = *s_StreamPrepTasks.GetPtrFromIdx(pTex->m_nStreamSlot & StreamIdxMask);
-
-#ifndef _RELEASE
-			if (pStreamState->m_pTexture != pTex) __debugbreak();
-#endif
+			CRY_ASSERT(pStreamState->m_pTexture == pTex);
 
 			delete pStreamState;
 			pStreamState = NULL;
@@ -1687,10 +1675,7 @@ void CTexture::AbortStreamingTasks(CTexture* pTex)
 		else
 		{
 			STexStreamInState& streamState = *s_StreamInTasks.GetPtrFromIdx(pTex->m_nStreamSlot & StreamIdxMask);
-
-#ifndef _RELEASE
-			if (streamState.m_pTexture != pTex) __debugbreak();
-#endif
+			CRY_ASSERT(streamState.m_pTexture == pTex);
 
 			streamState.m_bAborted = true;
 

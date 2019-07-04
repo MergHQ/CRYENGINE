@@ -1271,10 +1271,8 @@ void CTexture::CopySliceChain(CDeviceTexture* const pDstDevTex, int8 nDstNumMips
 	D3DBaseTexture* pSrcResource = pSrcDevTex->GetBaseTexture();
 #endif
 
-#ifndef _RELEASE
-	if (!pDstResource) __debugbreak();
-	if (!pSrcResource) __debugbreak();
-#endif
+	CRY_ASSERT(pDstResource);
+	CRY_ASSERT(pSrcResource);
 
 	if (0)
 	{

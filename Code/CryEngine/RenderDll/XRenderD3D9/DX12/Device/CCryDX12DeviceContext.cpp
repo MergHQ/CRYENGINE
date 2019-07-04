@@ -1117,7 +1117,7 @@ void STDMETHODCALLTYPE CCryDX12DeviceContext::Begin(
 	}
 	else
 	{
-		__debugbreak();
+		CRY_ASSERT_MESSAGE(false, "Unhandled query type %d", int(desc.Query));
 	}
 }
 
@@ -1156,7 +1156,7 @@ void STDMETHODCALLTYPE CCryDX12DeviceContext::End(
 	}
 	else // || desc.Query == D3D11_QUERY_OCCLUSION_PREDICATE)
 	{
-		__debugbreak();
+		CRY_ASSERT_MESSAGE(false, "Unhandled query type %d", int(desc.Query));
 	}
 }
 
@@ -1211,7 +1211,7 @@ HRESULT STDMETHODCALLTYPE CCryDX12DeviceContext::GetData(
 	}
 	else // || desc.Query == D3D11_QUERY_OCCLUSION_PREDICATE
 	{
-		__debugbreak();
+		CRY_ASSERT_MESSAGE(false, "Unhandled query type %d", int(desc.Query));
 	}
 
 	return S_OK;
@@ -1578,10 +1578,6 @@ void STDMETHODCALLTYPE CCryDX12DeviceContext::UploadResource(
 		}
 
 		assert(cpySize != 0);
-		if (cpySize == 0)
-		{
-			__debugbreak();
-		}
 
 		initialData.pData = CryModuleMemalign(size_t(curSize), CRY_PLATFORM_ALIGNMENT);
 		memset((char*)(initialData.pData) + cpySize, 0, size_t(curSize - cpySize));

@@ -248,15 +248,8 @@ CTexture::~CTexture()
 	// sizes of these structures should NOT exceed L2 cache line!
 	static_assert((offsetof(CTexture, m_fCurrentMipBias) - offsetof(CTexture, m_pFileTexMips)) <= 64, "Invalid offset!");
 
-#ifndef _RELEASE
-	if (!gRenDev->m_pRT->IsRenderThread() || gRenDev->m_pRT->IsRenderLoadingThread())
-		__debugbreak();
-#endif
-
-#ifndef _RELEASE
-	if (IsStreaming())
-		__debugbreak();
-#endif
+	CRY_ASSERT(gRenDev->m_pRT->IsRenderThread() && !gRenDev->m_pRT->IsRenderLoadingThread());
+	CRY_ASSERT(!IsStreaming());
 
 	ReleaseDeviceTexture(false);
 
@@ -272,10 +265,7 @@ CTexture::~CTexture()
 		s_pStreamListener->OnDestroyedStreamedTexture(this);
 #endif
 
-#ifndef _RELEASE
-	if (m_bInDistanceSortedList)
-		__debugbreak();
-#endif
+	CRY_ASSERT(!m_bInDistanceSortedList);
 
 #ifdef TEXTURE_GET_SYSTEM_COPY_SUPPORT
 	{
@@ -1287,10 +1277,7 @@ STexDataPtr CTexture::FormatFixup(STexDataPtr&& td)
 	}
 	else
 	{
-#ifndef _RELEASE
-		if (eDstFormat != eSrcFormat)
-			__debugbreak();
-#endif
+		CRY_ASSERT(eDstFormat == eSrcFormat);
 	}
 
 	return td;

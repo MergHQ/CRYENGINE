@@ -510,11 +510,9 @@ void CPlanningTextureStreamer::OnTextureDestroy(CTexture* pTexture)
 		m_state = S_QueuedForScheduleDiscard;
 		break;
 
-#ifndef _RELEASE
 	default:
-		__debugbreak();
+		CRY_ASSERT_MESSAGE(false, "Unhandled state %d", int(m_state));
 		break;
-#endif
 	}
 
 	// Remove the texture from the pending list of mip updates

@@ -26,9 +26,7 @@ static uint32 GetTexReqStreamSizePreClamped(const SPlanningTextureOrderKey& key,
 
 #if defined(PLAN_TEXSTRM_DEBUG)
 		uint32 nTotalSizeTest = key.pTexture->StreamComputeSysDataSize(reqMip);
-
-		if (nTotalSizeTest != nTotalSize)
-			__debugbreak();
+		CRY_ASSERT(nTotalSizeTest == nTotalSize);
 #endif
 	}
 	else

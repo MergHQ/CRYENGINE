@@ -1565,10 +1565,10 @@ void CRenderer::EF_StartEf(const SRenderingPassInfo& passInfo)
 	pRenderView->SwitchUsageMode(CRenderView::eUsageModeWriting);
 
 	ASSERT_IS_MAIN_THREAD(m_pRT)
-#if defined(USE_CRY_ASSERT) || !defined(_RELEASE)
-	int nR = passInfo.GetRecursiveLevel();
-	CRY_VERIFY(nR < 2);
-#endif
+	if (!CRY_VERIFY(passInfo.GetRecursiveLevel() < MAX_REND_RECURSION_LEVELS))
+	{
+		CryFatalError("Recursive level (%d) >= MAX_REND_RECURSION_LEVELS(%d). This will cause an out-of-bounds error!", passInfo.GetRecursiveLevel(), MAX_REND_RECURSION_LEVELS);
+	}
 
 	if (!passInfo.IsRecursivePass())
 	{
@@ -1576,14 +1576,6 @@ void CRenderer::EF_StartEf(const SRenderingPassInfo& passInfo)
 	}
 
 	pRenderView->SetSkinningDataPools(GetSkinningDataPools());
-
-#ifndef _RELEASE
-	if (nR >= MAX_REND_RECURSION_LEVELS)
-	{
-		CryLogAlways("nR (%d) >= MAX_REND_RECURSION_LEVELS (%d)\n", nR, MAX_REND_RECURSION_LEVELS);
-		__debugbreak(); // otherwise about to go out of bounds in the loop below
-	}
-#endif
 
 	pRenderView->PrepareForWriting();
 	//EF_PushObjectsList(nID);

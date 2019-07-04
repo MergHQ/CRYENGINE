@@ -512,8 +512,8 @@ bool DeviceInfo::CreateDevice(int zbpp, OnCreateDeviceCallback pCreateDeviceCall
 #if defined(SUPPORT_DEVICE_INFO_MSG_PROCESSING)
 void DeviceInfo::PushSystemEvent(ESystemEvent event, UINT_PTR wParam, UINT_PTR lParam)
 {
-	#if !defined(_RELEASE) && !defined(STRIP_RENDER_THREAD)
-	if (gcpRendD3D->m_pRT && !gcpRendD3D->m_pRT->IsMainThread()) __debugbreak();
+	#if !defined(STRIP_RENDER_THREAD)
+	CRY_ASSERT(!gcpRendD3D->m_pRT || gcpRendD3D->m_pRT->IsMainThread());
 	#endif
 	CryAutoCriticalSection lock(m_msgQueueLock);
 	m_msgQueue.push_back(DeviceInfoInternal::MsgQueueItem(event, wParam, lParam));
@@ -521,9 +521,7 @@ void DeviceInfo::PushSystemEvent(ESystemEvent event, UINT_PTR wParam, UINT_PTR l
 
 void DeviceInfo::ProcessSystemEventQueue()
 {
-	#if !defined(_RELEASE)
-	if (gcpRendD3D->m_pRT && !gcpRendD3D->m_pRT->IsRenderThread()) __debugbreak();
-	#endif
+	CRY_ASSERT(!gcpRendD3D->m_pRT || gcpRendD3D->m_pRT->IsRenderThread());
 
 	m_msgQueueLock.Lock();
 	DeviceInfoInternal::MsgQueue localQueue;
@@ -539,10 +537,8 @@ void DeviceInfo::ProcessSystemEventQueue()
 
 void DeviceInfo::ProcessSystemEvent(ESystemEvent event, UINT_PTR wParam, UINT_PTR lParam)
 {
-	#if !defined(_RELEASE)
-	if (gcpRendD3D->m_pRT && !gcpRendD3D->m_pRT->IsRenderThread()) __debugbreak();
-	#endif
-
+	CRY_ASSERT(!gcpRendD3D->m_pRT || gcpRendD3D->m_pRT->IsRenderThread());
+	
 	switch (event)
 	{
 	case ESYSTEM_EVENT_ACTIVATE:

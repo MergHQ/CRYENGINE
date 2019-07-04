@@ -4951,10 +4951,7 @@ void CRenderMesh::UnLockForThreadAccess()
 { 
 	SREC_AUTO_LOCK(m_sResLock); 
 	--m_nThreadAccessCounter; 
-	if(m_nThreadAccessCounter < 0 )
-	{
-		__debugbreak(); // if this triggers, a mismatch betweend rendermesh thread access lock/unlock has occured
-	}
+	CRY_ASSERT_MESSAGE(m_nThreadAccessCounter >= 0, "a mismatch betweend rendermesh thread access lock/unlock has occured");
 # if !defined(_RELEASE) && defined(RM_CATCH_EXCESSIVE_LOCKS)
 	m_lockTime = 0.f;
 # endif

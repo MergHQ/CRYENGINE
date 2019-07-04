@@ -213,7 +213,7 @@ CDeviceResourceLayoutPtr CDeviceObjectFactory::CreateResourceLayoutImpl(const SD
 CDeviceCommandListUPtr CDeviceObjectFactory::AcquireCommandList(EQueueType eQueueType /*= eQueue_Graphics*/)
 {
 	// TODO: implement deferred contexts
-	__debugbreak();
+	CRY_FUNCTION_NOT_IMPLEMENTED;
 
 	return stl::make_unique<CDeviceCommandList>();
 }
@@ -221,7 +221,7 @@ CDeviceCommandListUPtr CDeviceObjectFactory::AcquireCommandList(EQueueType eQueu
 std::vector<CDeviceCommandListUPtr> CDeviceObjectFactory::AcquireCommandLists(uint32 listCount, EQueueType eQueueType /*= eQueue_Graphics*/)
 {
 	// TODO: implement deferred contexts
-	__debugbreak();
+	CRY_FUNCTION_NOT_IMPLEMENTED;
 
 	return std::vector<CDeviceCommandListUPtr>(size_t(listCount));
 }
@@ -229,7 +229,7 @@ std::vector<CDeviceCommandListUPtr> CDeviceObjectFactory::AcquireCommandLists(ui
 void CDeviceObjectFactory::ForfeitCommandList(CDeviceCommandListUPtr pCommandList, EQueueType eQueueType /*= eQueue_Graphics*/)
 {
 	// TODO: implement deferred contexts
-	__debugbreak();
+	CRY_FUNCTION_NOT_IMPLEMENTED;
 
 	// pContext->ExecuteCommandList(ID3D11CommandList)
 }
@@ -237,7 +237,7 @@ void CDeviceObjectFactory::ForfeitCommandList(CDeviceCommandListUPtr pCommandLis
 void CDeviceObjectFactory::ForfeitCommandLists(std::vector<CDeviceCommandListUPtr> pCommandLists, EQueueType eQueueType /*= eQueue_Graphics*/)
 {
 	// TODO: implement deferred contexts
-	__debugbreak();
+	CRY_FUNCTION_NOT_IMPLEMENTED;
 
 	// pContext->ExecuteCommandList(ID3D11CommandList)
 }

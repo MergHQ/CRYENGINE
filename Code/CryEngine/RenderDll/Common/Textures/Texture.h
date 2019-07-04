@@ -412,7 +412,7 @@ struct STexStreamingInfo
 
 private:
 	void* operator new(size_t sz);
-	void  operator delete(void* ptr) { __debugbreak(); }
+	void  operator delete(void* ptr) { CRY_FUNCTION_NOT_IMPLEMENTED; }
 };
 
 struct STexStreamInMipState
@@ -926,7 +926,6 @@ public:
 	const ETEX_Type   GetTexType() const   { return m_eTT; }
 	const uint32      StreamGetNumSlices() const
 	{
-#if !defined(_RELEASE)
 		switch (m_eTT)
 		{
 		case eTT_1D:
@@ -944,9 +943,8 @@ public:
 			break;
 
 		default:
-			__debugbreak();
+			CRY_ASSERT_MESSAGE(false, "Unknown texture type %d", int(m_eTT));
 		}
-#endif
 
 		return m_nArraySize;
 	}

@@ -342,7 +342,7 @@ void CImageDDSFile::StreamAsyncOnComplete(IReadStream* pStream, uint32 nError)
 		}
 		else
 		{
-#if 1
+#if 1 && !defined(RELEASE)
 			const char* pBase = (const char*)m_pFileMemory->GetData();
 			const char* pEnd = pBase + m_pFileMemory->GetSize();
 
@@ -351,10 +351,10 @@ void CImageDDSFile::StreamAsyncOnComplete(IReadStream* pStream, uint32 nError)
 			const char* pSrc = reinterpret_cast<const char*>(pStream->GetBuffer()) + m_pStreamState->m_requests[rp.dwUserData].nOffs;
 			const char* pSrcEnd = pSrc + m_pStreamState->m_requests[rp.dwUserData].nSize;
 
-			if (pDst < pBase) __debugbreak();
-			if (pDstEnd > pEnd) __debugbreak();
-			if (pSrc < pStream->GetBuffer()) __debugbreak();
-			if (pSrcEnd > reinterpret_cast<const char*>(pStream->GetBuffer()) + pStream->GetBytesRead()) __debugbreak();
+			CRY_ASSERT(pDst >= pBase);
+			CRY_ASSERT(pDstEnd <= pEnd);
+			CRY_ASSERT(pSrc >= pStream->GetBuffer());
+			CRY_ASSERT(pSrcEnd <= reinterpret_cast<const char*>(pStream->GetBuffer()) + pStream->GetBytesRead());
 			memcpy(pDst, pSrc, m_pStreamState->m_requests[rp.dwUserData].nSize);
 #endif
 
@@ -382,8 +382,7 @@ void CImageDDSFile::StreamAsyncOnComplete(IReadStream* pStream, uint32 nError)
 		}
 		else
 		{
-			if (nPending)
-				__debugbreak();
+			CRY_ASSERT(nPending == 0);
 			m_pStreamState->RaiseComplete(nullptr);
 		}
 	}
@@ -937,8 +936,7 @@ size_t LoadMipRequests(RequestInfo* pReqs, size_t nReqsCap, const DDSDesc& desc,
 	size_t nNumNames = GetFilesToRead(names, 16, desc, nStartMip, nEndMip);
 	if (nNumNames)
 	{
-		if (nNumNames * desc.nSides > nReqsCap)
-			__debugbreak();
+		CRY_ASSERT(nNumNames * desc.nSides <= nReqsCap);
 
 		for (ChunkInfo* it = names, * itEnd = names + nNumNames; it != itEnd; ++it)
 		{

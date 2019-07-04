@@ -897,7 +897,7 @@ void CClearRegionPass::Execute(CGpuBuffer* pBuf, const ColorF& cClear, const uin
 	}
 
 	// TODO: implement as a Dispatch(), same way it is implemented as a Draw() for Surfaces
-	__debugbreak();
+	CRY_ASSERT_MESSAGE(false, "Partial buffer clearing not implemented yet");
 #endif
 }
 
@@ -914,7 +914,7 @@ void CClearRegionPass::Execute(CGpuBuffer* pBuf, const ColorI& cClear, const uin
 	}
 
 	// TODO: implement as a Dispatch(), same way it is implemented as a Draw() for Surfaces
-	__debugbreak();
+	CRY_ASSERT_MESSAGE(false, "Partial buffer clearing not implemented yet");
 #endif
 }
 

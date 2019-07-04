@@ -749,7 +749,7 @@ void CDeviceComputeCommandInterfaceImpl::SetInlineShaderResourceImpl(uint32 bind
 
 void CDeviceComputeCommandInterfaceImpl::SetInlineConstantsImpl(uint32 bindSlot, uint32 constantCount, float* pConstants)
 {
-	__debugbreak();
+	CRY_FUNCTION_NOT_IMPLEMENTED;
 }
 
 void CDeviceComputeCommandInterfaceImpl::DispatchImpl(uint32 X, uint32 Y, uint32 Z)
