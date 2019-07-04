@@ -144,7 +144,7 @@ protected:
 	virtual void         TryExecute(IAIObject* pAI, IFlowNode::EFlowEvent event, IFlowNode::SActivationInfo* pActInfo);
 	virtual EForceMethod GetForceMethod(IFlowNode::SActivationInfo* pActInfo) const
 	{
-		assert(!"Must implement for derived classes!");
+		CRY_ASSERT(!"Must implement for derived classes!");
 		return eNoForce;
 	}
 	virtual void SetForceMethod(IAIObject* pAI, EForceMethod method);
@@ -851,7 +851,7 @@ template<bool TBlocking> void CFlowNode_AIForceableBase<TBlocking >::SetForceMet
 			pAIProxy->SetForcedExecute(false);
 		break;
 	default:
-		assert(0);
+		CRY_ASSERT(0);
 		break;
 	}
 

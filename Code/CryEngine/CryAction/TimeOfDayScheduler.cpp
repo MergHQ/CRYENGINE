@@ -38,8 +38,7 @@ void CTimeOfDayScheduler::Reset()
 
 CTimeOfDayScheduler::TimeOfDayTimerId CTimeOfDayScheduler::AddTimer(float time, CTimeOfDayScheduler::TimeOfDayTimerCallback callback, void* pUserData)
 {
-	assert(callback != 0);
-	if (callback == 0)
+	if (!CRY_VERIFY(callback != 0))
 		return InvalidTimerId;
 	SEntry entryForTime(0, time, 0, 0);
 	TEntries::iterator iter = std::lower_bound(m_entries.begin(), m_entries.end(), entryForTime);
@@ -86,7 +85,7 @@ void CTimeOfDayScheduler::Update()
 	while (iter != iterEnd)
 	{
 		const SEntry& entry = *iter;
-		assert(entry.time >= lastTime);
+		CRY_ASSERT(entry.time >= lastTime);
 		if (entry.time > maxTime)
 			break;
 		// CryLogAlways("Adding: %d time=%f", entry.id, entry.time);
@@ -195,7 +194,7 @@ public:
 
 	void RegisterTimer(SActivationInfo* pActInfo)
 	{
-		assert(m_timerId == CTimeOfDayScheduler::InvalidTimerId);
+		CRY_ASSERT(m_timerId == CTimeOfDayScheduler::InvalidTimerId);
 		const float time = GetPortFloat(pActInfo, EIP_Time);
 		m_timerId = CCryAction::GetCryAction()->GetTimeOfDayScheduler()->AddTimer(time, OnTODCallback, (void*)this);
 	}

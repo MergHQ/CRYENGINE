@@ -203,7 +203,7 @@ void CWrinkleMapShaderParamCallback::SetupShaderParams(
 					m_eSemantic[i] = pParams->GetSemanticByName(wrinkleMask[i]);
 				}
 
-				assert(m_eSemantic[i] != 0);
+				CRY_ASSERT(m_eSemantic[i] != 0);
 
 				if (pParams->GetParamBySemantic(m_eSemantic[i]) == 0)
 				{
@@ -217,7 +217,7 @@ void CWrinkleMapShaderParamCallback::SetupShaderParams(
 			for (uint i = 0; i < 3; ++i)
 			{
 				pShaderParams[i] = pParams->GetParamBySemantic(m_eSemantic[i]);
-				assert(pShaderParams[i] != NULL);
+				CRY_ASSERT(pShaderParams[i] != NULL);
 			}
 
 			uint infoCount = m_WrinkleBoneInfo.size();

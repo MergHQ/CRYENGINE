@@ -164,7 +164,7 @@ private:
 		{
 			if (--m_nRefs <= 0)
 			{
-				assert(std::find(m_pVS->m_iteratorPool.begin(),
+				CRY_ASSERT(std::find(m_pVS->m_iteratorPool.begin(),
 				                 m_pVS->m_iteratorPool.end(), this) == m_pVS->m_iteratorPool.end());
 				// Call my own destructor before I push to the pool - avoids tripping up the STLP debugging {2008/12/09})
 				this->~CVehicleIterator();
@@ -248,7 +248,7 @@ public:
 
 	size_t GetWheelCount(int group) const
 	{
-		assert(group >= 0);
+		CRY_ASSERT(group >= 0);
 
 		if (group < (int)wheelGroups.size())
 			return wheelGroups[group].m_wheels.size();
@@ -258,19 +258,19 @@ public:
 
 	int GetWheelAt(int group, int wheel) const
 	{
-		assert(group >= 0);
-		assert(wheel >= 0);
+		CRY_ASSERT(group >= 0);
+		CRY_ASSERT(wheel >= 0);
 
 		if (group < (int)wheelGroups.size() && wheel < (int)wheelGroups[group].m_wheels.size())
 			return wheelGroups[group].m_wheels[wheel];
 
-		assert(0 && "GetWheelAt: idx out of bounds");
+		CRY_ASSERT(false, "GetWheelAt: idx out of bounds");
 		return 0;
 	}
 
 	bool IsGroupActive(int group) const
 	{
-		assert(group >= 0);
+		CRY_ASSERT(group >= 0);
 		if (group < (int)wheelGroups.size())
 			return wheelGroups[group].active;
 

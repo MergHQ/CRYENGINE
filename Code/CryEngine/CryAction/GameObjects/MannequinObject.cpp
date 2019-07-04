@@ -44,7 +44,7 @@ CMannequinObject::CMannequinObject()
 void CMannequinObject::Initialize()
 {
 	const auto pGameObject = gEnv->pGameFramework->GetIGameObjectSystem()->CreateGameObjectForEntity(GetEntity()->GetId());
-	assert(pGameObject);
+	CRY_ASSERT(pGameObject);
 
 	pGameObject->EnablePrePhysicsUpdate(ePPU_Always);
 	pGameObject->EnablePhysicsEvent(true, eEPE_OnPostStepImmediate);
@@ -88,7 +88,7 @@ void CMannequinObject::Reset()
 	IEntity& entity = *GetEntity();
 
 	const auto pGameObject = gEnv->pGameFramework->GetIGameObjectSystem()->CreateGameObjectForEntity(entity.GetId());
-	assert(pGameObject);
+	CRY_ASSERT(pGameObject);
 
 	if (!m_pAnimatedCharacter)
 	{

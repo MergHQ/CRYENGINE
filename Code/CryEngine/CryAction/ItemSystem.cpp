@@ -1117,7 +1117,7 @@ void CItemSystem::RegisterCVars()
 
 	// Auto complete
 #if !defined(_RELEASE)
-	assert(gEnv->pConsole);
+	CRY_ASSERT(gEnv->pConsole);
 	PREFAST_ASSUME(gEnv->pConsole);
 	gEnv->pConsole->RegisterAutoComplete("i_giveitem", &s_itemListAutoComplete);
 #endif // !defined(_RELEASE)
@@ -1502,7 +1502,7 @@ int CItemSystem::GetItemParamsCount() const
 const char* CItemSystem::GetItemParamName(int index) const
 {
 	// FIXME: maybe return an iterator class, so get rid of advance (it's a map, argh)
-	assert(index >= 0 && index < m_params.size());
+	CRY_ASSERT(index >= 0 && index < m_params.size());
 	TItemParamsMap::const_iterator iter = m_params.begin();
 	std::advance(iter, index);
 	return iter->first.c_str();

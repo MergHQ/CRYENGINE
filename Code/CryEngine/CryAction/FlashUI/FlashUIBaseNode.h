@@ -58,9 +58,9 @@ class CFlashUIBaseDescNode : public CFlashUIBaseNode
 public:
 	CFlashUIBaseDescNode() : m_pObjectDesc(NULL), m_pTmplDesc(NULL) {}
 
-	virtual void         GetConfiguration(SFlowNodeConfig&)               { assert(false); };
-	virtual void         ProcessEvent(EFlowEvent event, SActivationInfo*) { assert(false); };
-	virtual IFlowNodePtr Clone(SActivationInfo* pActInfo)                 { assert(false); return new CFlashUIBaseDescNode(); }
+	virtual void         GetConfiguration(SFlowNodeConfig&)               { CRY_ASSERT(false); };
+	virtual void         ProcessEvent(EFlowEvent event, SActivationInfo*) { CRY_ASSERT(false); };
+	virtual IFlowNodePtr Clone(SActivationInfo* pActInfo)                 { CRY_ASSERT(false); return new CFlashUIBaseDescNode(); }
 
 	void                 UpdateObjectDesc(const string& sInputStr, SActivationInfo* pActInfo, bool isTemplate)
 	{
@@ -177,7 +177,7 @@ private:
 class CFlashUIBaseElementNode : public CFlashUIBaseNodeDynPorts
 {
 public:
-	CFlashUIBaseElementNode(IUIElement* pUIElement, string sCategory) : CFlashUIBaseNodeDynPorts(sCategory), m_pElement(pUIElement) { assert(pUIElement); }
+	CFlashUIBaseElementNode(IUIElement* pUIElement, string sCategory) : CFlashUIBaseNodeDynPorts(sCategory), m_pElement(pUIElement) { CRY_ASSERT(pUIElement); }
 	virtual ~CFlashUIBaseElementNode() {};
 
 	virtual void GetConfiguration(SFlowNodeConfig& config) = 0;
@@ -212,16 +212,15 @@ public:
 		m_Size -= count;
 		for (int i = 0; i < count; ++i)
 		{
-			const bool ok = stl::member_find_and_erase(m_debugInfo, id);
-			assert(ok);
+			CRY_VERIFY(stl::member_find_and_erase(m_debugInfo, id));
 		}
-		assert(m_Size >= 0);
+		CRY_ASSERT(m_Size >= 0);
 	}
 	static const std::map<int, const char*>& GetStack()                { return m_debugInfo; }
 	static int                               GetNextId()               { static int id = 0; return id++; }
 #else
 	static void                              Add(int count = 1)        { m_Size += count; }
-	static void                              Remove(int count = 1)     { m_Size -= count; assert(m_Size >= 0); }
+	static void                              Remove(int count = 1)     { m_Size -= count; CRY_ASSERT(m_Size >= 0); }
 #endif
 	static bool                              IsEnabled()               { return m_bEnabled; }
 	static void                              SetEnabled(bool bEnabled) { m_bEnabled = bEnabled; }

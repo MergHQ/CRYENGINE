@@ -44,8 +44,8 @@ bool LoadTagDefinitionImplXml(XmlNodeRef pXmlNode, CTagDefinition & tagDefinitio
 //////////////////////////////////////////////////////////////////////////
 STagDefinitionImportsInfo& mannequin::GetDefaultImportsInfo(const char* const filename)
 {
-	assert(filename);
-	assert(filename[0]);
+	CRY_ASSERT(filename);
+	CRY_ASSERT(filename[0]);
 
 	const uint32 crc = CCrc32::ComputeLowercase(filename);
 	STagDefinitionImportsInfo& importsInfo = impl::g_defaultImportInfo[crc];
@@ -75,7 +75,7 @@ struct STagDefinitionXml<1>
 #endif
 	                 STagDefinitionImportsInfo& importsInfo)
 	{
-		assert(pXmlNode != 0);
+		CRY_ASSERT(pXmlNode != 0);
 		const int childCount = pXmlNode->getChildCount();
 		for (int i = 0; i < childCount; ++i)
 		{
@@ -87,7 +87,7 @@ struct STagDefinitionXml<1>
 
 	static void Save(XmlNodeRef pXmlNode, const CTagDefinition& tagDefinition)
 	{
-		assert(pXmlNode != 0);
+		CRY_ASSERT(pXmlNode != 0);
 		pXmlNode->setAttr("version", 1);
 
 		std::vector<XmlNodeRef> groupXmlNodes;
@@ -131,7 +131,7 @@ struct STagDefinitionXml<1>
 private:
 	static void LoadTagOrGroupNode(XmlNodeRef pXmlNode, CTagDefinition& tagDefinitionOut, STagDefinitionImportsInfo& importsInfo)
 	{
-		assert(pXmlNode != 0);
+		CRY_ASSERT(pXmlNode != 0);
 		const int childCount = pXmlNode->getChildCount();
 		const bool isGroupNode = (childCount != 0);
 		if (isGroupNode)
@@ -146,7 +146,7 @@ private:
 
 	static void LoadTagNode(XmlNodeRef pXmlNode, const char* const groupName, CTagDefinition& tagDefinitionOut, STagDefinitionImportsInfo& importsInfo)
 	{
-		assert(pXmlNode != 0);
+		CRY_ASSERT(pXmlNode != 0);
 
 		uint32 priority = 0;
 		pXmlNode->getAttr("priority", priority);
@@ -164,8 +164,8 @@ private:
 
 	static void LoadGroupNode(XmlNodeRef pXmlNode, const int childCount, CTagDefinition& tagDefinitionOut, STagDefinitionImportsInfo& importsInfo)
 	{
-		assert(pXmlNode != 0);
-		assert(pXmlNode->getChildCount() == childCount);
+		CRY_ASSERT(pXmlNode != 0);
+		CRY_ASSERT(pXmlNode->getChildCount() == childCount);
 
 		const char* const groupName = pXmlNode->getTag();
 		for (int i = 0; i < childCount; ++i)
@@ -186,7 +186,7 @@ struct STagDefinitionXml<2>
 #endif
 	                 STagDefinitionImportsInfo& importsInfo)
 	{
-		assert(pXmlNode != 0);
+		CRY_ASSERT(pXmlNode != 0);
 
 		XmlNodeRef pXmlImportsNode = pXmlNode->findChild("Imports");
 		const bool importsLoadSuccess = LoadImportsNode(pXmlImportsNode, tagDefinitionOut,
@@ -247,7 +247,7 @@ private:
 #endif
 	                           STagDefinitionImportsInfo& importsInfo)
 	{
-		assert(pXmlNode != 0);
+		CRY_ASSERT(pXmlNode != 0);
 
 		const char* const filename = pXmlNode->getAttr("filename");
 		if (!filename)
@@ -285,7 +285,7 @@ private:
 
 	static bool LoadTagOrGroupNode(XmlNodeRef pXmlNode, CTagDefinition& tagDefinitionOut, STagDefinitionImportsInfo& importsInfo)
 	{
-		assert(pXmlNode != 0);
+		CRY_ASSERT(pXmlNode != 0);
 		const int childCount = pXmlNode->getChildCount();
 		const bool isGroupNode = (childCount != 0);
 		if (isGroupNode)
@@ -302,7 +302,7 @@ private:
 
 	static bool LoadTagNode(XmlNodeRef pXmlNode, const char* const groupName, CTagDefinition& tagDefinitionOut, STagDefinitionImportsInfo& importsInfo)
 	{
-		assert(pXmlNode != 0);
+		CRY_ASSERT(pXmlNode != 0);
 
 		uint32 priority = 0;
 		pXmlNode->getAttr("priority", priority);
@@ -341,8 +341,8 @@ private:
 
 	static bool LoadGroupNode(XmlNodeRef pXmlNode, const int childCount, CTagDefinition& tagDefinitionOut, STagDefinitionImportsInfo& importsInfo)
 	{
-		assert(pXmlNode != 0);
-		assert(pXmlNode->getChildCount() == childCount);
+		CRY_ASSERT(pXmlNode != 0);
+		CRY_ASSERT(pXmlNode->getChildCount() == childCount);
 
 		const char* const groupName = pXmlNode->getAttr("name");
 		if (!groupName)
@@ -367,9 +367,9 @@ private:
 
 	static XmlNodeRef CreateChildNode(XmlNodeRef pXmlNode, const char* const childName)
 	{
-		assert(pXmlNode != 0);
-		assert(childName);
-		assert(childName[0]);
+		CRY_ASSERT(pXmlNode != 0);
+		CRY_ASSERT(childName);
+		CRY_ASSERT(childName[0]);
 
 		XmlNodeRef pXmlChildNode = pXmlNode->createNode(childName);
 		pXmlNode->addChild(pXmlChildNode);
@@ -378,7 +378,7 @@ private:
 
 	static void SaveImportsNode(XmlNodeRef pXmlNode, const TImportsList& importsList)
 	{
-		assert(pXmlNode != 0);
+		CRY_ASSERT(pXmlNode != 0);
 
 		const size_t importsCount = importsList.size();
 		if (importsCount == 0)
@@ -397,7 +397,7 @@ private:
 
 	static void SaveImportNode(XmlNodeRef pXmlNode, const string& filename)
 	{
-		assert(pXmlNode != 0);
+		CRY_ASSERT(pXmlNode != 0);
 
 		XmlNodeRef pXmlImportNode = CreateChildNode(pXmlNode, "Import");
 		pXmlImportNode->setAttr("filename", filename.c_str());
@@ -478,8 +478,8 @@ bool mannequin::LoadTagDefinitionImpl(const char* const filename, CTagDefinition
 #endif
                                       STagDefinitionImportsInfo& importsInfo)
 {
-	assert(filename);
-	assert(filename[0]);
+	CRY_ASSERT(filename);
+	CRY_ASSERT(filename[0]);
 
 #if RECURSIVE_IMPORT_CHECK
 	for (int i = 0; i < recursiveGuardListOut.size(); ++i)
@@ -518,7 +518,7 @@ bool mannequin::impl::LoadTagDefinitionImplXml(XmlNodeRef pXmlNode, CTagDefiniti
 #endif
                                                STagDefinitionImportsInfo& importsInfo)
 {
-	assert(pXmlNode != 0);
+	CRY_ASSERT(pXmlNode != 0);
 
 	bool loadSuccess = false;
 
@@ -550,8 +550,8 @@ bool mannequin::impl::LoadTagDefinitionImplXml(XmlNodeRef pXmlNode, CTagDefiniti
 //////////////////////////////////////////////////////////////////////////
 bool mannequin::LoadTagDefinition(const char* const filename, CTagDefinition& tagDefinitionOut, bool isTags)
 {
-	assert(filename);
-	assert(filename[0]);
+	CRY_ASSERT(filename);
+	CRY_ASSERT(filename[0]);
 
 	tagDefinitionOut.Clear();
 	tagDefinitionOut.SetFilename(filename);
@@ -605,7 +605,7 @@ size_t FindImportInfoIndex(const std::vector<const STagDefinitionImportsInfo*>& 
 			return i;
 		}
 	}
-	assert(false);
+	CRY_ASSERT(false);
 	return size_t(~0);
 }
 }
@@ -626,7 +626,7 @@ void mannequin::SaveTagDefinition(const CTagDefinition& tagDefinition, TTagDefin
 	for (size_t i = 0; i < totalImportsInfoCount; ++i)
 	{
 		const STagDefinitionImportsInfo* pImportsInfo = importsInfoList[i];
-		assert(pImportsInfo);
+		CRY_ASSERT(pImportsInfo);
 		const char* const filename = pImportsInfo->GetFilename();
 
 		CTagDefinition& tagDefinitionSave = saveTagDefinitionList[i];
@@ -639,7 +639,7 @@ void mannequin::SaveTagDefinition(const CTagDefinition& tagDefinition, TTagDefin
 		const STagDefinitionImportsInfo& importInfoForTag = importsInfo.Find(tagId);
 
 		const size_t importInfoId = FindImportInfoIndex(importsInfoList, importInfoForTag);
-		assert(importInfoId < importsInfoList.size());
+		CRY_ASSERT(importInfoId < importsInfoList.size());
 
 		const char* const tagName = tagDefinition.GetTagName(tagId);
 		const TagGroupID tagGroupId = tagDefinition.GetGroupID(tagId);

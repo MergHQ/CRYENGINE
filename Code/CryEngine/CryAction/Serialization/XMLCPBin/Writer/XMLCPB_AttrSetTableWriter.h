@@ -106,7 +106,7 @@ private:
 				return m_owner.m_checkHash;
 
 			CAttrSet set;
-			assert(ID < m_owner.m_numAttrsArray.size());
+			CRY_ASSERT(ID < m_owner.m_numAttrsArray.size());
 			set.m_numAttrs = m_owner.m_numAttrsArray[ID];
 			set.m_pHeaders = (uint16*)(m_owner.m_buffer.GetPointerFromAddr(m_owner.m_setAddrs[ID]));
 
@@ -126,7 +126,7 @@ private:
 private:
 	ILINE void BuildSetForLessThanCheck(CAttrSet& set, const AttrSetID ID) const
 	{
-		assert(ID != XMLCPB_INVALID_ID);
+		CRY_ASSERT(ID != XMLCPB_INVALID_ID);
 
 		if (ID == SEARCHING_ID)
 		{
@@ -134,7 +134,7 @@ private:
 		}
 		else
 		{
-			assert(ID < m_numAttrsArray.size());
+			CRY_ASSERT(ID < m_numAttrsArray.size());
 			set.m_numAttrs = m_numAttrsArray[ID];
 			set.m_pHeaders = (uint16*)(m_buffer.GetPointerFromAddr(m_setAddrs[ID]));
 		}

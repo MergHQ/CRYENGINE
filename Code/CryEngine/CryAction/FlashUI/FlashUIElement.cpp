@@ -37,7 +37,7 @@ struct SUIElementSerializer
 
 		if (!pElement || !xmlNode) return false;
 
-		if (bIsLoading)
+		if (CRY_VERIFY(bIsLoading, "Saving not yet supported"))
 		{
 			pElement->m_baseInfo = xmlNode;
 
@@ -77,12 +77,6 @@ struct SUIElementSerializer
 			ReadEventNodes(xmlNode->findChild("functions"), pElement->m_functions, "funcname", pElement->m_pRoot);
 
 			pElement->m_firstDynamicDisplObjIndex = pElement->m_displayObjects.size();
-		}
-		else
-		{
-			// save - not needed atm
-			// maybe we need it to serialize dynamic created stuff?
-			assert(false);
 		}
 		return true;
 	}
@@ -596,7 +590,7 @@ bool CFlashUIElement::Init(bool bLoadAsset)
 	m_pFlashplayer->SetFSCommandHandler(this);
 	IFlashVariableObject* pRoot = NULL;
 	m_pFlashplayer->GetVariable(m_pRoot->sName, pRoot);
-	assert(pRoot);
+	CRY_ASSERT(pRoot);
 	m_variableObjects[CCryName(m_pRoot->sName)].pObj = pRoot;
 	m_variableObjects[CCryName(m_pRoot->sName)].pParent = NULL;
 	m_variableObjectsLookup[(const SUIParameterDesc*)NULL][m_pRoot] = &m_variableObjects[CCryName(m_pRoot->sName)];
@@ -2262,7 +2256,7 @@ void CFlashUIElement::RemoveEventListener(IUIElementEventListener* pListener)
 {
 	// Since flow nodes will unregister at all living instances to make sure they only re-register at elements of interest
 	// this check is disabled
-	// assert( m_eventListener.Contains(pListener) );
+	// CRY_ASSERT( m_eventListener.Contains(pListener) );
 	m_eventListener.Remove(pListener);
 }
 

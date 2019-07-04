@@ -626,7 +626,7 @@ void CViewSystem::OnUnloadComplete(ILevelInfo* pLevel)
 	if (shouldClearViews)
 		ClearAllViews();
 
-	assert(m_listeners.empty());
+	CRY_ASSERT(m_listeners.empty());
 	stl::free_container(m_listeners);
 }
 

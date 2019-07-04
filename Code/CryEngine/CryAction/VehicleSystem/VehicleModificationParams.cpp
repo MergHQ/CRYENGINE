@@ -22,7 +22,7 @@ CVehicleModificationParams::CVehicleModificationParams()
 CVehicleModificationParams::CVehicleModificationParams(XmlNodeRef xmlVehicleData, const char* modificationName)
 	: m_pImpl(NULL)
 {
-	assert(modificationName != NULL);
+	CRY_ASSERT(modificationName != NULL);
 	if (modificationName[0] == 0)
 	{
 		return;
@@ -69,7 +69,7 @@ CVehicleModificationParams::~CVehicleModificationParams()
 //////////////////////////////////////////////////////////////////////////
 void CVehicleModificationParams::InitModification(XmlNodeRef xmlModificationData)
 {
-	assert(xmlModificationData);
+	CRY_ASSERT(xmlModificationData);
 
 	bool hasParentModification = xmlModificationData->haveAttr("parent");
 	if (hasParentModification)
@@ -101,8 +101,8 @@ void CVehicleModificationParams::InitModification(XmlNodeRef xmlModificationData
 //////////////////////////////////////////////////////////////////////////
 XmlNodeRef CVehicleModificationParams::FindModificationNodeByName(const char* name, XmlNodeRef xmlModificationsGroup)
 {
-	assert(name != NULL);
-	assert(xmlModificationsGroup);
+	CRY_ASSERT(name != NULL);
+	CRY_ASSERT(xmlModificationsGroup);
 
 	int numNodes = xmlModificationsGroup->getChildCount();
 	for (int i = 0; i < numNodes; i++)
@@ -121,8 +121,8 @@ XmlNodeRef CVehicleModificationParams::FindModificationNodeByName(const char* na
 //////////////////////////////////////////////////////////////////////////
 void CVehicleModificationParams::InitModificationElem(XmlNodeRef xmlElem)
 {
-	assert(m_pImpl != NULL);
-	assert(xmlElem != (IXmlNode*)NULL);
+	CRY_ASSERT(m_pImpl != NULL);
+	CRY_ASSERT(xmlElem != (IXmlNode*)NULL);
 
 	bool valid = true;
 	valid &= xmlElem->haveAttr("idRef");
@@ -145,8 +145,8 @@ void CVehicleModificationParams::InitModificationElem(XmlNodeRef xmlElem)
 //////////////////////////////////////////////////////////////////////////
 XmlNodeRef CVehicleModificationParams::GetModificationNode(const char* nodeId, const char* attrName) const
 {
-	assert(nodeId != NULL);
-	assert(attrName != NULL);
+	CRY_ASSERT(nodeId != NULL);
+	CRY_ASSERT(attrName != NULL);
 
 	if (m_pImpl == NULL)
 	{

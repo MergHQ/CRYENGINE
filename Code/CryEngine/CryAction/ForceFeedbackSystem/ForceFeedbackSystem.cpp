@@ -38,9 +38,7 @@ class CForceFeedBackSystemDebug
 public:
 	static void Init()
 	{
-		assert(s_pDebugHistoryManager == NULL);
-
-		if (s_pDebugHistoryManager == NULL)
+		if (CRY_VERIFY(s_pDebugHistoryManager == NULL))
 		{
 			s_pDebugHistoryManager = CCryAction::GetCryAction()->CreateDebugHistoryManager();
 		}
@@ -149,7 +147,7 @@ public:
 
 void CForceFeedBackSystem::FFBInternalId::Set(const char* _name)
 {
-	assert(_name);
+	CRY_ASSERT(_name);
 	name = _name;
 	id = CryStringUtils::CalculateHash(_name);
 }
@@ -163,7 +161,7 @@ const char* CForceFeedBackSystem::FFBInternalId::GetDebugName() const
 
 void CForceFeedBackSystem::FFBInternalId::Set(const char* _name)
 {
-	assert(_name);
+	CRY_ASSERT(_name);
 	id = CryStringUtils::CalculateHash(_name);
 }
 

@@ -82,8 +82,7 @@ struct CGameSerialize::DebugSaveParts
 ILevelInfo* GetLevelInfo()
 {
 	ILevelSystem* pLevelSystem = CCryAction::GetCryAction()->GetILevelSystem();
-	assert(pLevelSystem != 0);
-	if (pLevelSystem)
+	if (CRY_VERIFY(pLevelSystem))
 	{
 		return pLevelSystem->GetCurrentLevel();
 	}
@@ -195,7 +194,7 @@ CGameSerialize::~CGameSerialize()
 //////////////////////////////////////////////////////////////////////////
 void CGameSerialize::OnSpawn(IEntity* pEntity, SEntitySpawnParams&)
 {
-	assert(pEntity);
+	CRY_ASSERT(pEntity);
 
 	if (!gEnv->bMultiplayer && !(pEntity->GetFlags() & ENTITY_FLAG_UNREMOVABLE))
 	{
@@ -220,7 +219,7 @@ bool CGameSerialize::OnRemove(IEntity* pEntity)
 //////////////////////////////////////////////////////////////////////////
 bool CGameSerialize::OnLoadingStart(ILevelInfo* pLevelInfo)
 {
-	assert(pLevelInfo);
+	CRY_ASSERT(pLevelInfo);
 
 	// load the list of entities to serialize from the level pak.
 	//	This creates a list of ids which will be fully serialized.
@@ -365,7 +364,7 @@ bool CGameSerialize::SaveGame(CCryAction* pCryAction, const char* method, const 
 	if (!saveEnvironment.InitSave(name, reason))
 		return false;
 
-	assert(gEnv->pSystem);
+	CRY_ASSERT(gEnv->pSystem);
 	SSaveGameAutoCleanup autoCleanup;
 
 	//savegame header
@@ -855,11 +854,11 @@ ELoadGameResult CGameSerialize::LoadGame(CCryAction* pCryAction, const char* met
 	{
 		return loadEnvironment.m_failure;
 	}
-	assert(!loadEnvironment.m_bLoadingErrors);
+	CRY_ASSERT(!loadEnvironment.m_bLoadingErrors);
 
 	// load game data and proxies
 	LoadGameData(loadEnvironment);
-	//assert(!loadEnvironment.m_bLoadingErrors);
+	//CRY_ASSERT(!loadEnvironment.m_bLoadingErrors);
 
 	//unlock entity system
 	pEntitySystem->LockSpawning(false);
@@ -1169,7 +1168,7 @@ bool CGameSerialize::SaveEntities(SSaveEnvironment& savEnv)
 		for (TEntitiesToSerialize::const_iterator it = entities.begin(); it != itEnd; ++it)
 		{
 			IEntity* pEntity = *it;
-			assert(pEntity);
+			CRY_ASSERT(pEntity);
 			//that's all that is left from entity properties (using early out to reduce save size)
 			int32 iEntityFlags = pEntity->GetFlags();
 			if ((iEntityFlags & ENTITY_SERIALIZE_PROPERTIES) && !(iEntityFlags & ENTITY_FLAG_UNREMOVABLE))
@@ -1283,7 +1282,7 @@ bool CGameSerialize::SaveGameData(SSaveEnvironment& savEnv, TSerialize& gameStat
 			}
 
 			// also save all dynamic entities
-			assert(stl::find(m_dynamicEntities, CCryAction::GetCryAction()->GetClientActorId()));
+			CRY_ASSERT(stl::find(m_dynamicEntities, CCryAction::GetCryAction()->GetClientActorId()));
 			for (TEntitySet::iterator iter = m_dynamicEntities.begin(), end = m_dynamicEntities.end(); iter != end; ++iter)
 			{
 				IEntity* pEntity = gEnv->pEntitySystem->GetEntity(*iter);
@@ -1522,7 +1521,7 @@ bool CGameSerialize::LoadLevel(SLoadEnvironment& loadEnv, SGameStartParams& star
 
 	// Remove all AI objects created during the level load too (to avoid collisions with ones in the save file).
 	//	For quickloads this flush/reload happens earlier.
-	assert(!bIsQuickLoading);
+	CRY_ASSERT(!bIsQuickLoading);
 	if (gEnv->pAISystem)
 		gEnv->pAISystem->FlushSystem();
 
@@ -1667,7 +1666,7 @@ void CGameSerialize::LoadBasicEntityData(SLoadEnvironment& loadEnv)
 			SEntitySpawnParams params;
 			params.id = bed.id;
 			params.guid = bed.guid;
-			assert(!bed.ignorePosRotScl);
+			CRY_ASSERT(!bed.ignorePosRotScl);
 			//this will also be set in RepositionEntities
 			params.vPosition = bed.pos;
 			params.qRotation = bed.rot;

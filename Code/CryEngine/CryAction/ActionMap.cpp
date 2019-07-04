@@ -59,8 +59,8 @@ struct CryNameSorter
 	//------------------------------------------------------------------------
 	bool operator()(const CCryName& lhs, const CCryName& rhs) const
 	{
-		assert(lhs.c_str() != 0);
-		assert(rhs.c_str() != 0);
+		CRY_ASSERT(lhs.c_str() != 0);
+		CRY_ASSERT(rhs.c_str() != 0);
 		return strcmp(lhs.c_str(), rhs.c_str()) < 0;
 	}
 };

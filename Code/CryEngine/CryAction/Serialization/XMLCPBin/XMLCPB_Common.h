@@ -168,7 +168,7 @@ const char*                   GetDataTypeName(eAttrDataType type);
 void                          InitializeDataTypeInfo();
 const char*                   GetConstantString(uint32 ind);
 inline bool                   IsTypeStrConstant(eAttrDataType type)   { return type >= DT_FIRST_CONST_STR && type <= DT_LAST_CONST_STR; }
-inline StringID               GetStringConstantID(eAttrDataType type) { assert(IsTypeStrConstant(type)); return type - DT_FIRST_CONST_STR; }
+inline StringID               GetStringConstantID(eAttrDataType type) { CRY_ASSERT(IsTypeStrConstant(type)); return type - DT_FIRST_CONST_STR; }
 template<class T> inline bool IsFlagActive(T val, uint32 flag)
 {
 	return (val & flag) != 0;

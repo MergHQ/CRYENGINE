@@ -94,8 +94,8 @@ private:
 	// TODO: Create proper separate signal names in the procedural clip.
 	inline void ExtractSignalNames(const char* dataString, CryFixedStringT<64>* onEnterSignalString, CryFixedStringT<64>* onExitSignalString)
 	{
-		assert(onEnterSignalString != NULL);
-		assert(onExitSignalString != NULL);
+		CRY_ASSERT(onEnterSignalString != NULL);
+		CRY_ASSERT(onExitSignalString != NULL);
 
 		// It is allowed to omit any of the signal names in the data string.
 		onEnterSignalString->clear();
@@ -121,7 +121,7 @@ private:
 			dataString++;
 		}
 #if !defined(_RELEASE)
-		assert((dataString - dataStringStart) < onExitSignalString->MAX_SIZE);
+		CRY_ASSERT((dataString - dataStringStart) < onExitSignalString->MAX_SIZE);
 #endif
 		if (chr == '\0')
 		{
@@ -132,7 +132,7 @@ private:
 		dataString++; // Skip the separator character.
 
 #if !defined(_RELEASE)
-		assert(strlen(dataString) <= onExitSignalString->MAX_SIZE);
+		CRY_ASSERT(strlen(dataString) <= onExitSignalString->MAX_SIZE);
 #endif
 
 		*onExitSignalString = dataString;

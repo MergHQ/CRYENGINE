@@ -24,7 +24,7 @@ CAttrReader::CAttrReader(CReader& Reader)
 
 void CAttrReader::InitFromCompact(FlatAddr addr, uint16 header)
 {
-	assert(addr != XMLCPB_INVALID_FLATADDR);
+	CRY_ASSERT(addr != XMLCPB_INVALID_FLATADDR);
 
 	m_type = eAttrDataType(header & MASK_TYPEID);
 	m_nameId = header >> BITS_TYPEID;  // nameStringId is always in the upper part, typeID in the lower part
@@ -124,7 +124,7 @@ void CAttrReader::Get(int32& val) const
 
 	default:
 		{
-			assert(false);
+			CRY_ASSERT(false);
 			break;
 		}
 	}
@@ -210,19 +210,18 @@ void CAttrReader::Get(const char*& pStr) const
 		uint32 size;
 		FlatAddr addr = m_Reader.ReadFromBuffer(GetDataAddr(), size);
 		pStr = (const char*)(m_Reader.GetPointerFromFlatAddr(addr));
-		assert(pStr[size - 1] == 0);
+		CRY_ASSERT(pStr[size - 1] == 0);
 		return;
 	}
 	if (IsTypeStrConstant(m_type))
 	{
-		assert(m_type >= DT_FIRST_CONST_STR && m_type <= DT_LAST_CONST_STR);
+		CRY_ASSERT(m_type >= DT_FIRST_CONST_STR && m_type <= DT_LAST_CONST_STR);
 		pStr = GetConstantString(m_type - DT_FIRST_CONST_STR);
 		return;
 	}
 
-	if (m_type != DT_STR)
+	if (!CRY_VERIFY(m_type == DT_STR))
 	{
-		assert(false);
 		pStr = "";
 		return;
 	}
@@ -315,7 +314,7 @@ float CAttrReader::UnpackFloatInSemiConstType(uint8 mask, uint32 ind, FlatAddr& 
 		}
 	default:
 		{
-			assert(false);
+			CRY_ASSERT(false);
 			return 0;
 		}
 	}
@@ -377,7 +376,7 @@ void CAttrReader::Get(Vec3& val) const
 
 	default:
 		{
-			assert(false);
+			CRY_ASSERT(false);
 			break;
 		}
 	}
@@ -418,7 +417,7 @@ void CAttrReader::Get(Quat& val) const
 
 	default:
 		{
-			assert(false);
+			CRY_ASSERT(false);
 			break;
 		}
 	}
@@ -426,7 +425,7 @@ void CAttrReader::Get(Quat& val) const
 
 void CAttrReader::Get(uint8*& rdata, uint32& outSize) const
 {
-	assert(m_type == DT_RAWDATA);
+	CRY_ASSERT(m_type == DT_RAWDATA);
 
 	// Read in the size of the raw chunk which follows
 	uint32 size;
@@ -488,7 +487,7 @@ void CAttrReader::GetValueAsString(string& str) const
 
 	default:
 		str = "";
-		assert(false);
+		CRY_ASSERT(false);
 		break;
 	}
 }

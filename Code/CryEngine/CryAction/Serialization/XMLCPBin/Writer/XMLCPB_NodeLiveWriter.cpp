@@ -26,9 +26,8 @@ void CNodeLiveWriterRef::CopyFrom(const CNodeLiveWriterRef& other)
 	if (m_nodeId != XMLCPB_INVALID_ID)
 	{
 		CNodeLiveWriter* pNode = m_Writer.GetNodeLive(m_nodeId);
-		if (!pNode->IsValid() || pNode->GetSafeCheckID() != m_safecheckID)
+		if (!CRY_VERIFY(pNode->IsValid() && pNode->GetSafeCheckID() == m_safecheckID))
 		{
-			assert(false);
 			m_nodeId = XMLCPB_INVALID_ID;
 			m_pNode_Debug = NULL;
 		}
@@ -43,9 +42,8 @@ CNodeLiveWriter* CNodeLiveWriterRef::GetNode() const
 
 	CNodeLiveWriter* pNode = m_Writer.GetNodeLive(m_nodeId);
 
-	if (!pNode->IsValid() || pNode->GetSafeCheckID() != m_safecheckID)
+	if (!CRY_VERIFY(pNode->IsValid() && pNode->GetSafeCheckID() == m_safecheckID))
 	{
-		assert(false);
 		return NULL;
 	}
 
@@ -63,9 +61,8 @@ CNodeLiveWriterRef::CNodeLiveWriterRef(CWriter& Writer, NodeLiveID nodeId)
 
 	CNodeLiveWriter* pNode = m_Writer.GetNodeLive(m_nodeId);
 
-	if (!pNode->IsValid())
+	if (!CRY_VERIFY(pNode->IsValid()))
 	{
-		assert(false);
 		return;
 	}
 
@@ -98,7 +95,7 @@ CNodeLiveWriter::CNodeLiveWriter(CWriter& Writer, NodeLiveID ID, StringID IDTag,
 
 CNodeLiveWriterRef CNodeLiveWriter::AddChildNode(const char* pChildName)
 {
-	assert(!m_done && m_valid);
+	CRY_ASSERT(!m_done && m_valid);
 
 	m_totalAmountChildren++;
 
@@ -110,7 +107,7 @@ CNodeLiveWriterRef CNodeLiveWriter::AddChildNode(const char* pChildName)
 			pPreviousChild->Done();
 	}
 
-	assert(m_children.size() <= CHILDREN_PER_BLOCK);
+	CRY_ASSERT(m_children.size() <= CHILDREN_PER_BLOCK);
 	if (m_children.size() == CHILDREN_PER_BLOCK)
 		CompactPendingChildren();
 
@@ -128,7 +125,7 @@ CNodeLiveWriterRef CNodeLiveWriter::AddChildNode(const char* pChildName)
 
 void CNodeLiveWriter::SetParent(NodeLiveID ID)
 {
-	assert(m_IDParent == XMLCPB_INVALID_ID);
+	CRY_ASSERT(m_IDParent == XMLCPB_INVALID_ID);
 	m_IDParent = ID;
 }
 
@@ -137,7 +134,7 @@ void CNodeLiveWriter::SetParent(NodeLiveID ID)
 
 void CNodeLiveWriter::Done()
 {
-	assert(!m_done && m_valid);
+	CRY_ASSERT(!m_done && m_valid);
 	m_done = true;
 
 	int numChildren = m_children.size();
@@ -198,8 +195,8 @@ void CNodeLiveWriter::CompactPendingChildren()
 
 void CNodeLiveWriter::AddAttr(const char* pAttrName, const uint8* data, uint32 len, bool needInmediateCopy)
 {
-	assert(data && len > 0);
-	assert(!m_done && m_valid);
+	CRY_ASSERT(data && len > 0);
+	CRY_ASSERT(!m_done && m_valid);
 
 	CAttrWriter attr(m_Writer);
 	attr.Set(pAttrName, data, len, needInmediateCopy);
@@ -269,7 +266,7 @@ void CNodeLiveWriter::Reuse(StringID IDTag, uint32 safecheckID)
 
 void CNodeLiveWriter::Compact()
 {
-	assert(m_done);
+	CRY_ASSERT(m_done);
 
 	CBufferWriter& writeBuffer = m_Writer.GetMainBuffer();
 
@@ -283,13 +280,13 @@ void CNodeLiveWriter::Compact()
 	NodeGlobalID lastGlobalId = m_Writer.GetLastUsedGlobalId();
 	uint32 numChildBlocks = m_globalIdLastChildInBlock.size();
 
-	assert(m_IDTag <= MAX_TAGID);
+	CRY_ASSERT(m_IDTag <= MAX_TAGID);
 	uint16 nodeHeader = m_IDTag;
 
 	static_assert(BITS_TAGID + HIGHPART_ATTRID_NUM_BITS + CHILDREN_HEADER_BITS <= LOWEST_BIT_USED_AS_FLAG_IN_NODE_HEADER, "Unexpected values!");
 
 	uint32 numAttrs = m_attrs.size();
-	assert(numAttrs <= MAX_NUM_ATTRS);
+	CRY_ASSERT(numAttrs <= MAX_NUM_ATTRS);
 
 #ifdef XMLCPB_CHECK_HARDCODED_LIMITS
 	CheckHardcodedLimits();
@@ -340,7 +337,7 @@ void CNodeLiveWriter::Compact()
 	// add num children
 	if (m_totalAmountChildren > MAX_NUMBER_OF_CHILDREN_IN_8BITS)  // when the number of children does not fit in 8 bits
 	{
-		assert(m_totalAmountChildren < MAX_NUMBER_OF_CHILDREN_IN_16BITS);
+		CRY_ASSERT(m_totalAmountChildren < MAX_NUMBER_OF_CHILDREN_IN_16BITS);
 		uint8 childrenLow = m_totalAmountChildren & 255;
 		uint8 childrenHigh = m_totalAmountChildren >> 8;
 		childrenHigh |= FL_CHILDREN_NUMBER_IS_16BITS;
@@ -354,7 +351,7 @@ void CNodeLiveWriter::Compact()
 
 		if (children <= CHILDANDDISTINONEBYTE_MAX_AMOUNT_CHILDREN && !childrenRightBefore)
 		{
-			assert(lastGlobalId > m_globalIdLastChildInBlock[0]);
+			CRY_ASSERT(lastGlobalId > m_globalIdLastChildInBlock[0]);
 			uint32 distNodes = (lastGlobalId - m_globalIdLastChildInBlock[0]) - 1; // dirty trick: -1 because, as it cant never be 0, by doing that we can extend the range a little bit
 			if (distNodes <= CHILDANDDISTINONEBYTE_MAX_DIST)
 			{
@@ -377,7 +374,7 @@ void CNodeLiveWriter::Compact()
 		if (attrSetIdReal > ATTRID_MAX_VALUE_8BITS)
 		{
 			uint16 val16 = attrSetIdReal;
-			assert(attrSetIdReal < 65536);
+			CRY_ASSERT(attrSetIdReal < 65536);
 			writeBuffer.AddData(&val16, sizeof(val16));
 		}
 	}

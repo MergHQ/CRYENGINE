@@ -61,8 +61,8 @@ void CPlayerProfileImplFS::InternalMakeFSPath(SUserEntry* pEntry, const char* pr
 //------------------------------------------------------------------------
 void CPlayerProfileImplFS::InternalMakeFSSaveGamePath(SUserEntry* pEntry, const char* profileName, string& outPath, bool bNeedFolder)
 {
-	assert(pEntry != 0);
-	assert(profileName != 0);
+	CRY_ASSERT(pEntry != 0);
+	CRY_ASSERT(profileName != 0);
 
 	if (m_pMgr->IsSaveGameFolderShared())
 	{
@@ -367,8 +367,8 @@ void CPlayerProfileImplFSDir::InternalMakeFSPath(SUserEntry* pEntry, const char*
 //------------------------------------------------------------------------
 void CPlayerProfileImplFSDir::InternalMakeFSSaveGamePath(SUserEntry* pEntry, const char* profileName, string& outPath, bool bNeedFolder)
 {
-	assert(pEntry != 0);
-	assert(profileName != 0);
+	CRY_ASSERT(pEntry != 0);
+	CRY_ASSERT(profileName != 0);
 
 	if (m_pMgr->IsSaveGameFolderShared())
 	{
@@ -666,8 +666,7 @@ ILevelRotationFile* CPlayerProfileImplFSDir::GetLevelRotationFile(SUserEntry* pE
 
 bool CCommonSaveGameHelper::GetSaveGameThumbnail(CPlayerProfileManager::SUserEntry* pEntry, const char* saveGameName, CPlayerProfileManager::SThumbnail& thumbnail)
 {
-	assert(pEntry->pCurrentProfile != 0);
-	if (pEntry->pCurrentProfile == 0)
+	if (CRY_VERIFY(pEntry->pCurrentProfile != 0))
 	{
 		GameWarning("CCommonSaveGameHelper:GetSaveGameThumbnail: Entry for user '%s' has no current profile", pEntry->userId.c_str());
 		return false;
@@ -811,15 +810,14 @@ public:
 	{
 		m_pProfileImpl = pImpl;
 		m_pEntry = pEntry;
-		assert(m_pProfileImpl != 0);
-		assert(m_pEntry != 0);
+		CRY_ASSERT(m_pProfileImpl != 0);
+		CRY_ASSERT(m_pEntry != 0);
 	}
 
 	// ILoadGame
 	virtual bool Init(const char* name)
 	{
-		assert(m_pEntry->pCurrentProfile != 0);
-		if (m_pEntry->pCurrentProfile == 0)
+		if (!CRY_VERIFY(m_pEntry->pCurrentProfile != 0))
 		{
 			GameWarning("CXMLSaveGameFSDir: Entry for user '%s' has no current profile", m_pEntry->userId.c_str());
 			return false;
@@ -964,8 +962,8 @@ public:
 	void AddSimpleXmlToRoot(XmlNodeRef node)
 	{
 		XMLCPB::CNodeLiveWriterRef binNode = m_binXmlWriter.GetRoot();
-		assert(binNode.IsValid());
-		assert(node->getChildCount() == 0);
+		CRY_ASSERT(binNode.IsValid());
+		CRY_ASSERT(node->getChildCount() == 0);
 		binNode = binNode->AddChildNode(node->getTag());
 		for (int i = 0; i < node->getNumAttributes(); ++i)
 		{
@@ -1024,8 +1022,8 @@ public:
 	{
 		m_pImpl = pImpl;
 		m_pEntry = pEntry;
-		assert(m_pImpl != 0);
-		assert(m_pEntry != 0);
+		CRY_ASSERT(m_pImpl != 0);
+		CRY_ASSERT(m_pEntry != 0);
 	}
 
 	// ILoadGame
@@ -1040,8 +1038,7 @@ public:
 
 	bool ObtainFinalFileName(const char* name)
 	{
-		assert(m_pEntry->pCurrentProfile != 0);
-		if (m_pEntry->pCurrentProfile == 0)
+		if (!CRY_VERIFY(m_pEntry->pCurrentProfile != 0))
 		{
 			GameWarning("CXMLLoadGameFSDir: Entry for user '%s' has no current profile", m_pEntry->userId.c_str());
 			return false;
@@ -1311,14 +1308,14 @@ const char* PROFILE_LAST_PLAYED = "LastPlayed";
 
 CSerializerXML::CSerializerXML(XmlNodeRef& root, bool bLoading) : m_bLoading(bLoading), m_root(root)
 {
-	assert(m_root != 0);
+	CRY_ASSERT(m_root != 0);
 }
 
 XmlNodeRef CSerializerXML::CreateNewSection(CPlayerProfileManager::EPlayerProfileSection section, const char* name)
 {
 	int sectionIdx = (int)section;
-	assert(sectionIdx >= 0 && sectionIdx < (int)CPlayerProfileManager::ePPS_Num);
-	assert(m_sections[sectionIdx] == 0);
+	CRY_ASSERT(sectionIdx >= 0 && sectionIdx < (int)CPlayerProfileManager::ePPS_Num);
+	CRY_ASSERT(m_sections[sectionIdx] == 0);
 
 	XmlNodeRef newNode = GetISystem()->CreateXmlNode(name);
 	m_sections[sectionIdx] = newNode;
@@ -1329,8 +1326,8 @@ XmlNodeRef CSerializerXML::CreateNewSection(CPlayerProfileManager::EPlayerProfil
 void CSerializerXML::SetSection(CPlayerProfileManager::EPlayerProfileSection section, XmlNodeRef& node)
 {
 	int sectionIdx = (int)section;
-	assert(sectionIdx >= 0 && sectionIdx < (int)CPlayerProfileManager::ePPS_Num);
-	assert(m_sections[sectionIdx] == 0);
+	CRY_ASSERT(sectionIdx >= 0 && sectionIdx < (int)CPlayerProfileManager::ePPS_Num);
+	CRY_ASSERT(m_sections[sectionIdx] == 0);
 
 	if (node != 0)
 		m_sections[sectionIdx] = node;
@@ -1339,7 +1336,7 @@ void CSerializerXML::SetSection(CPlayerProfileManager::EPlayerProfileSection sec
 XmlNodeRef CSerializerXML::GetSection(CPlayerProfileManager::EPlayerProfileSection section)
 {
 	int sectionIdx = (int)section;
-	assert(sectionIdx >= 0 && sectionIdx < (int)CPlayerProfileManager::ePPS_Num);
+	CRY_ASSERT(sectionIdx >= 0 && sectionIdx < (int)CPlayerProfileManager::ePPS_Num);
 
 	return m_sections[sectionIdx];
 }

@@ -83,8 +83,7 @@ void CActionController::RegisterCVars()
 	if (!s_registeredCVars)
 	{
 		IConsole* pConsole = gEnv->pConsole;
-		assert(pConsole);
-		if (!pConsole)
+		if (!CRY_VERIFY(pConsole))
 			return;
 
 #ifndef _RELEASE

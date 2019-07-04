@@ -13,8 +13,8 @@ using namespace XMLCPB;
 
 void SBufferReader::ReadFromFile(CReader& Reader, IPlatformOS::ISaveReaderPtr& pOSSaveReader, uint32 readSize)
 {
-	assert(m_bufferSize == 0);
-	assert(!m_pBuffer);
+	CRY_ASSERT(m_bufferSize == 0);
+	CRY_ASSERT(!m_pBuffer);
 
 	m_pBuffer = (uint8*)m_pHeap->Malloc(readSize, "");
 
@@ -27,8 +27,8 @@ void SBufferReader::ReadFromFile(CReader& Reader, IPlatformOS::ISaveReaderPtr& p
 
 void SBufferReader::ReadFromMemory(CReader& Reader, const uint8* pData, uint32 dataSize, uint32 readSize, uint32& outReadLoc)
 {
-	assert(m_bufferSize == 0);
-	assert(!m_pBuffer);
+	CRY_ASSERT(m_bufferSize == 0);
+	CRY_ASSERT(!m_pBuffer);
 
 	m_pBuffer = (uint8*)m_pHeap->Malloc(readSize, "");
 

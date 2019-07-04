@@ -148,7 +148,7 @@ int CNetDebug::AspectToIdx(EEntityAspects aspect)
 	case eEA_GameServerDynamic:
 		return 5;
 	default:
-		assert(!"Not supported aspect value");
+		CRY_ASSERT(!"Not supported aspect value");
 		return 6;
 	}
 }

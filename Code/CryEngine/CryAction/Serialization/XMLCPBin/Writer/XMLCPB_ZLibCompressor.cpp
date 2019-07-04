@@ -85,10 +85,7 @@ public:
 		}
 #endif
 
-		IPlatformOS::EFileOperationCode code = m_pPlatformOSSaveWriter->AppendBytes(pSrc, numBytes);
-		bool ok = (code == IPlatformOS::eFOC_Success);
-		assert(ok);
-		if (ok)
+		if (CRY_VERIFY(m_pPlatformOSSaveWriter->AppendBytes(pSrc, numBytes) == IPlatformOS::eFOC_Success))
 		{
 			m_bytesWrittenIntoFile += numBytes;
 			return true;
@@ -147,7 +144,7 @@ public:
 
 			for (CFile* pFile: m_files.pop_all())
 			{
-				assert(pFile);
+				CRY_ASSERT(pFile);
 				PREFAST_ASSUME(pFile);
 
 				while (!pFile->Closed() || !pFile->m_blocks.empty())
@@ -159,7 +156,7 @@ public:
 
 					for (SZLibBlock* block : pFile->m_blocks.pop_all())
 					{
-						assert(block);
+						CRY_ASSERT(block);
 						PREFAST_ASSUME(block);
 
 						if (pFile->m_pCompressor->m_bUseZLibCompression)

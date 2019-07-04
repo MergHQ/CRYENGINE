@@ -259,7 +259,7 @@ bool CVehicleDamageBehaviorDetachPart::MovePartToTheNewEntity(IEntity* pTargetEn
 	if (!pPartBase)
 		return false;
 
-	assert(m_detachedEntityId == pTargetEntity->GetId());
+	CRY_ASSERT(m_detachedEntityId == pTargetEntity->GetId());
 
 	IStatObj* pStatObj = pPartBase->GetStatObj();
 	if (pStatObj)
@@ -306,8 +306,8 @@ void CVehicleDamageBehaviorDetachPart::AttachParticleEffect(IEntity* pDetachedEn
 //------------------------------------------------------------------------
 void CVehicleDamageBehaviorDetachPart::OnVehicleEvent(EVehicleEvent event, const SVehicleEventParams& params)
 {
-	assert(event == eVE_Timer);
-	assert(m_detachedEntityId);
+	CRY_ASSERT(event == eVE_Timer);
+	CRY_ASSERT(m_detachedEntityId);
 
 	IEntity* pEntity = gEnv->pEntitySystem->GetEntity(m_detachedEntityId);
 	if (pEntity)

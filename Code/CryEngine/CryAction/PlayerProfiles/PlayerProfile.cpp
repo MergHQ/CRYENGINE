@@ -353,7 +353,7 @@ bool CPlayerProfile::SerializeXML(CPlayerProfileManager::IProfileXMLSerializer* 
 const CPlayerProfile::TAttributeMap& CPlayerProfile::GetDefaultAttributeMap() const
 {
 	CPlayerProfile* pDefaultProfile = static_cast<CPlayerProfile*>(m_pManager->GetDefaultProfile());
-	assert(pDefaultProfile != 0);
+	CRY_ASSERT(pDefaultProfile != 0);
 	return pDefaultProfile->GetAttributeMap();
 }
 

@@ -421,7 +421,7 @@ void CView::ProcessShakeNormal(SShake* pShake, float frameTime)
 //////////////////////////////////////////////////////////////////////////
 void CView::ProcessShakeSmooth(SShake* pShake, float frameTime)
 {
-	assert(pShake->timeDone >= 0);
+	CRY_ASSERT(pShake->timeDone >= 0);
 
 	float endTimeFadeIn = pShake->fadeInDuration;
 	float endTimeSustain = pShake->sustainDuration + endTimeFadeIn;

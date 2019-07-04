@@ -78,7 +78,7 @@ CCryActionCVars::CCryActionCVars()
 
 CCryActionCVars::~CCryActionCVars()
 {
-	assert(s_pThis != 0);
+	CRY_ASSERT(s_pThis != 0);
 	s_pThis = 0;
 
 	IConsole* pConsole = gEnv->pConsole;

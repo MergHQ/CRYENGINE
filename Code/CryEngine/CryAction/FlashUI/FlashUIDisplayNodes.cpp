@@ -803,7 +803,7 @@ public:
 								if (pEntity->GetSlotFlags(m_dynTexGeomSlot) & ENTITY_SLOT_RENDER_NEAREST)
 								{
 									ICVar* r_drawnearfov = gEnv->pConsole->GetCVar("r_DrawNearFoV");
-									assert(r_drawnearfov);
+									CRY_ASSERT(r_drawnearfov);
 									cam.SetFrustum(cam.GetViewSurfaceX(), cam.GetViewSurfaceZ(), DEG2RAD(r_drawnearfov->GetFVal()), cam.GetNearPlane(), cam.GetFarPlane(), cam.GetPixelAspectRatio());
 								}
 

@@ -154,7 +154,7 @@ void CVehicleViewSteer::Reset()
 	CVehicleViewBase::Reset();
 
 	IEntity* pEntity = m_pVehicle->GetEntity();
-	assert(pEntity);
+	CRY_ASSERT(pEntity);
 	m_position = pEntity->GetWorldTM() * m_localSpaceCameraOffset;
 	CalcLookAt(pEntity->GetWorldTM());
 	m_lastOffset = m_position - m_lookAt;
@@ -204,7 +204,7 @@ void CVehicleViewSteer::OnStopUsing()
 void CVehicleViewSteer::Update(float dt)
 {
 	IEntity* pEntity = m_pVehicle->GetEntity();
-	assert(pEntity);
+	CRY_ASSERT(pEntity);
 
 	IVehicleMovement* pVehicleMovement = m_pVehicle->GetMovement();
 	if (pVehicleMovement == NULL)

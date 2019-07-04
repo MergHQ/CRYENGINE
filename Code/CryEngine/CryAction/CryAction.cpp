@@ -4384,13 +4384,13 @@ void CCryAction::DumpStatsCmd(IConsoleCmdArgs* args)
 
 void CCryAction::AddBreakEventListener(IBreakEventListener* pListener)
 {
-	assert(m_pBreakEventListener == NULL);
+	CRY_ASSERT(m_pBreakEventListener == NULL);
 	m_pBreakEventListener = pListener;
 }
 
 void CCryAction::RemoveBreakEventListener(IBreakEventListener* pListener)
 {
-	assert(m_pBreakEventListener == pListener);
+	CRY_ASSERT(m_pBreakEventListener == pListener);
 	m_pBreakEventListener = NULL;
 }
 
@@ -4517,9 +4517,8 @@ void CCryAction::CheckEndLevelSchedule()
 	if (!m_bScheduleLevelEnd)
 		return;
 	m_bScheduleLevelEnd = false;
-	if (m_pLocalAllocs == 0)
+	if (!CRY_VERIFY(m_pLocalAllocs != 0))
 	{
-		assert(false);
 		return;
 	}
 

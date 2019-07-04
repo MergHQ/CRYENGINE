@@ -134,7 +134,7 @@ struct SClientBatchConsoleVariablesParams : public ISerializable
 			return false;
 		}
 
-		assert(actual < batchLimit);
+		CRY_ASSERT(actual < batchLimit);
 		vars[actual].key = k;
 		vars[actual].value = v;
 		actual++;

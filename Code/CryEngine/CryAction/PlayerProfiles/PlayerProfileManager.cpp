@@ -200,7 +200,7 @@ CPlayerProfileManager::CPlayerProfileManager(CPlayerProfileManager::IPlatformImp
 	, m_loadingProfile(false)
 	, m_savingProfile(false)
 {
-	assert(m_pImpl != 0);
+	CRY_ASSERT(m_pImpl != 0);
 
 	// FIXME: TODO: temp stuff
 	static bool testInit = false;
@@ -308,9 +308,8 @@ int CPlayerProfileManager::GetUserCount()
 //------------------------------------------------------------------------
 bool CPlayerProfileManager::GetUserInfo(int index, IPlayerProfileManager::SUserInfo& outInfo)
 {
-	if (index < 0 || index >= m_userVec.size())
+	if (!CRY_VERIFY(index >= 0 && index < m_userVec.size()))
 	{
-		assert(index >= 0 && index < m_userVec.size());
 		return false;
 	}
 
@@ -460,7 +459,7 @@ bool CPlayerProfileManager::GetProfileInfo(const char* userId, int index, IPlaye
 	int count = pEntry->profileDesc.size();
 	if (index >= count)
 	{
-		assert(index < count);
+		CRY_ASSERT(index < count);
 		return false;
 	}
 	SLocalProfileInfo& info = pEntry->profileDesc[index];
@@ -484,7 +483,7 @@ void CPlayerProfileManager::SetProfileLastLoginTime(const char* userId, int inde
 	int count = pEntry->profileDesc.size();
 	if (index >= count)
 	{
-		assert(index < count);
+		CRY_ASSERT(index < count);
 		return;
 	}
 	SLocalProfileInfo& info = pEntry->profileDesc[index];
@@ -1082,8 +1081,8 @@ class CSaveGameEnumerator : public ISaveGameEnumerator
 public:
 	CSaveGameEnumerator(CPlayerProfileManager::IPlatformImpl* pImpl, CPlayerProfileManager::SUserEntry* pEntry) : m_nRefs(0), m_pImpl(pImpl), m_pEntry(pEntry)
 	{
-		assert(m_pImpl != 0);
-		assert(m_pEntry != 0);
+		CRY_ASSERT(m_pImpl != 0);
+		CRY_ASSERT(m_pEntry != 0);
 		pImpl->GetSaveGames(m_pEntry, m_saveGameInfoVec);
 	}
 

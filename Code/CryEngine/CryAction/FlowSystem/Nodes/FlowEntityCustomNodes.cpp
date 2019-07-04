@@ -1315,7 +1315,7 @@ private:
 
 void CEntityLinksSetNode::CEntityOriginalLinks::StoreCurrentEntityState(IEntity& entity)
 {
-	assert(m_linkDescs.empty()); // Storing the same entity twice ? Sounds like links could have been meddled with between these two storages.
+	CRY_ASSERT(m_linkDescs.empty()); // Storing the same entity twice ? Sounds like links could have been meddled with between these two storages.
 	m_linkDescs.clear();
 	for (IEntityLink* pLink = entity.GetEntityLinks(); pLink; pLink = pLink->next)
 	{

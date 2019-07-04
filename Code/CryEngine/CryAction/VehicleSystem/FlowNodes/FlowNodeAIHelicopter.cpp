@@ -420,7 +420,7 @@ private:
 
 	void NotifyCurrentListenerFollowPathStopped(IEntity* pEntity)
 	{
-		assert(pEntity);
+		CRY_ASSERT(pEntity);
 		const EntityId entityId = pEntity->GetId();
 		CFlowNode_Helicopter_FollowPath* pNode = GetCurrentFollowPathNode(entityId);
 		if (pNode && pNode != this)
@@ -431,7 +431,7 @@ private:
 
 	void ProcessEventSpeedPortActivated(SActivationInfo* pActInfo)
 	{
-		assert(pActInfo != NULL);
+		CRY_ASSERT(pActInfo != NULL);
 
 		IEntity* pEntity = pActInfo->pEntity;
 		if (pEntity == NULL)

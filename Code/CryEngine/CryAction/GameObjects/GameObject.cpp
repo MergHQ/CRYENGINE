@@ -870,7 +870,7 @@ static const char* AspectProfileSerializationName(int i)
 		buffer[7] = 'e';
 	}
 
-	assert(i >= 0 && i < 256);
+	CRY_ASSERT(i >= 0 && i < 256);
 	i = clamp_tpl<int>(i, 0, 255);
 	buffer[8] = 0;
 	buffer[9] = 0;
@@ -1203,8 +1203,7 @@ IGameObjectExtension* CGameObject::ChangeExtension(const char* name, EChangeExte
 					ext.refCount += (change == eCE_Acquire);
 					ext.activated |= (change == eCE_Activate);
 					ext.pExtension = pGameObjectSystem->Instantiate(ext.id, this);
-					assert(ext.pExtension);
-					if (ext.pExtension)
+					if (CRY_VERIFY(ext.pExtension))
 					{
 						pRet = ext.pExtension;
 						if (updatingEntity == GetEntityId())

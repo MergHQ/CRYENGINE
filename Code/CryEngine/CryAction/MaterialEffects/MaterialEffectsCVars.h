@@ -45,7 +45,7 @@ public:
 
 	static inline CMaterialEffectsCVars& Get()
 	{
-		assert(s_pThis != 0);
+		CRY_ASSERT(s_pThis != 0);
 		return *s_pThis;
 	}
 

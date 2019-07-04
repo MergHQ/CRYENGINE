@@ -191,7 +191,7 @@ void CGameContext::Init(INetContext* pNetContext)
 
 #if ENABLE_NETDEBUG
 	m_pNetDebug = new CNetDebug();
-	assert(m_pNetDebug);
+	CRY_ASSERT(m_pNetDebug);
 #endif
 
 	m_pNetContext->DeclareAspect("GameClientDynamic", eEA_GameClientDynamic, eAF_Delegatable);

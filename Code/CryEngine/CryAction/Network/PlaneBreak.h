@@ -56,7 +56,7 @@ public:
 
 	virtual bool                 AllowComplete(const SProceduralBreakRecordingState& state);
 
-	virtual bool                 SendOnlyOnClientJoin() { assert(m_bes.size() > 0); return m_bes[0].bFirstBreak == 0; }
+	virtual bool                 SendOnlyOnClientJoin() { CRY_ASSERT(m_bes.size() > 0); return m_bes[0].bFirstBreak == 0; }
 
 private:
 	DynArray<SBreakEvent> m_bes;

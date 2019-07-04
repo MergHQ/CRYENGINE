@@ -729,7 +729,7 @@ CVehicleComponent::SSharedParamsConstPtr CVehicleComponent::GetSharedParams(cons
 			sharedParams.useDamageLevels = true;
 		}
 
-		assert(m_pVehicle->GetEntity());
+		CRY_ASSERT(m_pVehicle->GetEntity());
 		CVehicleDamages::ParseDamageMultipliers(sharedParams.damageMultipliersByHitType, sharedParams.damageMultipliersByProjectile, paramsTable, *m_pVehicle->GetEntity());
 
 		pSharedParams = CastSharedParamsPtr<SSharedParams>(pSharedParamsManager->Register(vehicleComponentName, sharedParams));

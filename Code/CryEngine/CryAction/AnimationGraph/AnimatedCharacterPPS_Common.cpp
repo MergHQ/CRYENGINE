@@ -495,7 +495,7 @@ void CAnimatedCharacter::RefreshAnimTarget()
 	if (m_pMannequinAGState)
 	{
 		IActorSystem* pActorSystem = CCryAction::GetCryAction()->GetIActorSystem();
-		assert(pActorSystem != NULL);
+		CRY_ASSERT(pActorSystem != NULL);
 		IActor* pActor = pActorSystem->GetActor(GetEntity()->GetId());
 		IMovementController* pMovementController = pActor->GetMovementController();
 		if (pMovementController)

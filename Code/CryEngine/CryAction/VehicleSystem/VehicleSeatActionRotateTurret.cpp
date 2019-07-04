@@ -41,7 +41,7 @@ bool CVehicleSeatActionRotateTurret::Init(IVehicle* pVehicle, IVehicleSeat* pSea
 
 	m_pVehicle = static_cast<CVehicle*>(pVehicle);
 	m_pSeat = static_cast<CVehicleSeat*>(pSeat);
-	assert(m_pSeat);
+	CRY_ASSERT(m_pSeat);
 
 	CVehicleParams rotationTable = table.findChild("RotateTurret");
 	if (!rotationTable)

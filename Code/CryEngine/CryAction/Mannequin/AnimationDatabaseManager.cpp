@@ -626,7 +626,7 @@ void CAnimationDatabaseManager::RevertTagDef(const char* szFilename)
 
 void CAnimationDatabaseManager::ReloadTagDefinition(CTagDefinition* pTagDefinition)
 {
-	assert(pTagDefinition);
+	CRY_ASSERT(pTagDefinition);
 	pTagDefinition->Clear();
 
 	const char* const filename = pTagDefinition->GetFilename();
@@ -924,7 +924,7 @@ void CAnimationDatabaseManager::GetIncludedTagDefs(const CTagDefinition* pQuerie
 	for (uint32 importIndex = 0, size = flatImportsInfoList.size(); importIndex < size; ++importIndex)
 	{
 		const STagDefinitionImportsInfo* pImportsInfo = flatImportsInfoList[importIndex];
-		assert(pImportsInfo);
+		CRY_ASSERT(pImportsInfo);
 		CTagDefinition* pFoundTagDef = stl::find_in_map(m_tagDefs, CCrc32::ComputeLowercase(pImportsInfo->GetFilename()), NULL);
 
 		if (pFoundTagDef && (pFoundTagDef != pQueriedTagDef))
@@ -2072,7 +2072,7 @@ SControllerDef* CAnimationControllerDefLibrary::LoadControllerDef(const XmlNodeR
 		DynArray<bool> loadedScopeDefs(scopeTD.GetNum(), false);
 		const uint32 numScopeDefs = scopeDefList ? scopeDefList->getChildCount() : 0;
 
-		assert(numScopeDefs <= sizeof(ActionScopes) * 8);
+		CRY_ASSERT(numScopeDefs <= sizeof(ActionScopes) * 8);
 
 		for (uint32 i = 0; i < numScopeDefs; ++i)
 		{
@@ -2272,8 +2272,7 @@ EModifyFragmentIdResult CAnimationDatabaseManager::CreateFragmentID(const CTagDe
 	const uint32 fragmentDefFilenameCrc = CCrc32::ComputeLowercase(fragmentDefFilename);
 
 	CTagDefinition* fragmentDefs = stl::find_in_map(m_tagDefs, fragmentDefFilenameCrc, NULL);
-	assert(fragmentDefs);
-	if (!fragmentDefs)
+	if (!CRY_VERIFY(fragmentDefs))
 	{
 		return eMFIR_UnknownInputTagDefinition;
 	}
@@ -2286,7 +2285,7 @@ EModifyFragmentIdResult CAnimationDatabaseManager::CreateFragmentID(const CTagDe
 	}
 #if defined(USE_CRY_ASSERT)
 	const int newFragmentTagId = fragmentDefs->AddTag(szFragmentIdName);
-	assert(newFragmentTagId != FRAGMENT_ID_INVALID);
+	CRY_ASSERT(newFragmentTagId != FRAGMENT_ID_INVALID);
 #else
 	fragmentDefs->AddTag(szFragmentIdName);
 #endif
@@ -2312,7 +2311,7 @@ EModifyFragmentIdResult CAnimationDatabaseManager::CreateFragmentID(const CTagDe
 		if (usingSameFragmentDef)
 		{
 			CAnimationDatabase::SFragmentEntry* fragmentEntry = new CAnimationDatabase::SFragmentEntry();
-			assert(otherAnimDB->m_fragmentList.size() == newFragmentTagId);
+			CRY_ASSERT(otherAnimDB->m_fragmentList.size() == newFragmentTagId);
 			otherAnimDB->m_fragmentList.push_back(fragmentEntry);
 		}
 	}
@@ -2351,9 +2350,8 @@ EModifyFragmentIdResult CAnimationDatabaseManager::RenameFragmentID(const CTagDe
 	const uint32 fragmentDefFilenameCrc = CCrc32::ComputeLowercase(fragmentDefFilename);
 
 	CTagDefinition* fragmentDefs = stl::find_in_map(m_tagDefs, fragmentDefFilenameCrc, NULL);
-	assert(fragmentDefs);
-	assert(fragmentDefs == &fragmentIds);
-	if (!fragmentDefs)
+	CRY_ASSERT(fragmentDefs == &fragmentIds);
+	if (!CRY_VERIFY(fragmentDefs))
 	{
 		return eMFIR_UnknownInputTagDefinition;
 	}
@@ -2377,9 +2375,8 @@ EModifyFragmentIdResult CAnimationDatabaseManager::DeleteFragmentID(const CTagDe
 	const uint32 fragmentDefFilenameCrc = CCrc32::ComputeLowercase(fragmentDefFilename);
 
 	CTagDefinition* fragmentDefs = stl::find_in_map(m_tagDefs, fragmentDefFilenameCrc, NULL);
-	assert(fragmentDefs);
-	assert(fragmentDefs == &fragmentIds);
-	if (!fragmentDefs)
+	CRY_ASSERT(fragmentDefs == &fragmentIds);
+	if (!CRY_VERIFY(fragmentDefs))
 		return eMFIR_UnknownInputTagDefinition;
 
 	fragmentDefs->RemoveTag(fragmentID);
@@ -2421,9 +2418,8 @@ bool CAnimationDatabaseManager::SetFragmentTagDef(const CTagDefinition& fragment
 	const uint32 fragmentDefFilenameCrc = CCrc32::ComputeLowercase(fragmentDefFilename);
 
 	CTagDefinition* fragmentDefs = stl::find_in_map(m_tagDefs, fragmentDefFilenameCrc, NULL);
-	assert(fragmentDefs);
-	assert(fragmentDefs == &fragmentIds);
-	if (fragmentDefs)
+	CRY_ASSERT(fragmentDefs == &fragmentIds);
+	if (CRY_VERIFY(fragmentDefs))
 	{
 		fragmentDefs->SetSubTagDefinition(fragmentID, pFragTagDefs);
 		return true;
@@ -2443,8 +2439,7 @@ void CAnimationDatabaseManager::SetFragmentDef(const SControllerDef& inControlle
 	const uint32 controllerDefFilenameCrc = CCrc32::ComputeLowercase(controllerDefFilename);
 
 	SControllerDef* controllerDef = stl::find_in_map(m_controllerDefs, controllerDefFilenameCrc, NULL);
-	assert(controllerDef);
-	if (!controllerDef)
+	if (!CRY_VERIFY(controllerDef))
 	{
 		return;
 	}
@@ -2460,7 +2455,7 @@ void CAnimationDatabaseManager::SetFragmentDef(const SControllerDef& inControlle
 
 bool CAnimationDatabaseManager::DeleteFragmentEntry(IAnimationDatabase* pDatabaseInterface, FragmentID fragmentID, const SFragTagState& tagState, uint32 optionIdx, bool logWarning)
 {
-	assert(pDatabaseInterface);
+	CRY_ASSERT(pDatabaseInterface);
 	CAnimationDatabase* pDatabase = static_cast<CAnimationDatabase*>(pDatabaseInterface);
 
 	bool successfullyDeleted = pDatabase->DeleteEntry(fragmentID, tagState, optionIdx);
@@ -2498,7 +2493,7 @@ bool CAnimationDatabaseManager::DeleteFragmentEntry(IAnimationDatabase* pDatabas
 
 uint32 CAnimationDatabaseManager::AddFragmentEntry(IAnimationDatabase* pDatabaseInterface, FragmentID fragmentID, const SFragTagState& tagState, const CFragment& fragment)
 {
-	assert(pDatabaseInterface);
+	CRY_ASSERT(pDatabaseInterface);
 	CAnimationDatabase* pDatabase = static_cast<CAnimationDatabase*>(pDatabaseInterface);
 
 	uint32 idxRoot = pDatabase->AddEntry(fragmentID, tagState, fragment);
@@ -2532,7 +2527,7 @@ uint32 CAnimationDatabaseManager::AddFragmentEntry(IAnimationDatabase* pDatabase
 
 void CAnimationDatabaseManager::SetFragmentEntry(IAnimationDatabase* pDatabaseInterface, FragmentID fragmentID, const SFragTagState& tagState, uint32 optionIdx, const CFragment& fragment)
 {
-	assert(pDatabaseInterface);
+	CRY_ASSERT(pDatabaseInterface);
 	CAnimationDatabase* pDatabase = static_cast<CAnimationDatabase*>(pDatabaseInterface);
 
 	int fragCRC = pDatabase->m_pFragDef->GetTagCRC(fragmentID);
@@ -2838,8 +2833,7 @@ void CAnimationDatabaseManager::SaveSubADB
 ) const
 {
 	XmlNodeRef xmlAnimationDatabase = SaveDatabase(animationDatabase, &subADB, vFragSaveList, mBlendSaveDatabase);
-	assert(xmlAnimationDatabase != 0);
-	if (!xmlAnimationDatabase)
+	if (!CRY_VERIFY(xmlAnimationDatabase != 0))
 	{
 		return;
 	}
@@ -2854,8 +2848,8 @@ void CAnimationDatabaseManager::SaveSubADB
 void CAnimationDatabaseManager::SaveDatabase(IMannequinWriter* pWriter, const IAnimationDatabase* pIAnimationDatabase) const
 {
 	const CAnimationDatabase* pAnimationDatabase = static_cast<const CAnimationDatabase*>(pIAnimationDatabase);
-	assert(pWriter);
-	assert(pAnimationDatabase);
+	CRY_ASSERT(pWriter);
+	CRY_ASSERT(pAnimationDatabase);
 
 	TFragmentSaveList vFragSaveList;
 	TFragmentBlendSaveDatabase mBlendSaveDatabase;
@@ -2867,8 +2861,7 @@ void CAnimationDatabaseManager::SaveDatabase(IMannequinWriter* pWriter, const IA
 		SaveSubADB(pWriter, *pAnimationDatabase, pAnimationDatabase->m_subADBs[i], vFragSaveList, mBlendSaveDatabase);
 
 	XmlNodeRef xmlAnimationDatabase = SaveDatabase(*pAnimationDatabase, NULL, vFragSaveList, mBlendSaveDatabase);
-	assert(xmlAnimationDatabase != 0);
-	if (!xmlAnimationDatabase)
+	if (!CRY_VERIFY(xmlAnimationDatabase))
 	{
 		return;
 	}
@@ -2879,12 +2872,11 @@ void CAnimationDatabaseManager::SaveDatabase(IMannequinWriter* pWriter, const IA
 
 void CAnimationDatabaseManager::SaveControllerDef(IMannequinWriter* pWriter, const SControllerDef* pControllerDef) const
 {
-	assert(pWriter);
-	assert(pControllerDef);
+	CRY_ASSERT(pWriter);
+	CRY_ASSERT(pControllerDef);
 
 	XmlNodeRef xmlControllerDef = SaveControllerDef(*pControllerDef);
-	assert(xmlControllerDef != 0);
-	if (!xmlControllerDef)
+	if (!CRY_VERIFY(xmlControllerDef))
 	{
 		return;
 	}
@@ -2895,8 +2887,8 @@ void CAnimationDatabaseManager::SaveControllerDef(IMannequinWriter* pWriter, con
 
 void CAnimationDatabaseManager::SaveTagDefinition(IMannequinWriter* pWriter, const CTagDefinition* pTagDefinition) const
 {
-	assert(pWriter);
-	assert(pTagDefinition);
+	CRY_ASSERT(pWriter);
+	CRY_ASSERT(pTagDefinition);
 
 	mannequin::TTagDefinitionSaveDataList saveList;
 	mannequin::SaveTagDefinition(*pTagDefinition, saveList);

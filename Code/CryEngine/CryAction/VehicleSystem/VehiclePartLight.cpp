@@ -82,7 +82,7 @@ SVehicleLightParamsConstPtr LoadVehicleLightParams(ISharedParamsManager* pShared
 	for (int i = 0; i < numberOfLights; ++i)
 	{
 		const XmlNodeRef lightParamsNode = lightsListNode->getChild(i);
-		assert(lightParamsNode != (IXmlNode*)NULL);
+		CRY_ASSERT(lightParamsNode != (IXmlNode*)NULL);
 
 		IF_UNLIKELY (strcmp(lightParamsNode->getTag(), "Light") != 0)
 			continue;

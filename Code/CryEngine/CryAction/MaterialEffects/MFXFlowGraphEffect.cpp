@@ -25,7 +25,7 @@ CMaterialFGManager* GetFGManager()
 	if (pMFX == 0)
 		return 0;
 	CMaterialFGManager* pMFXFGMgr = pMFX->GetFGManager();
-	assert(pMFXFGMgr != 0);
+	CRY_ASSERT(pMFXFGMgr != 0);
 	return pMFXFGMgr;
 }
 };

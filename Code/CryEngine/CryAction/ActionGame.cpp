@@ -782,7 +782,7 @@ void CActionGame::PostInit(const SGameStartParams* pGameStartParams, bool* io_ok
 
 void CActionGame::LogModeInformation(const bool isMultiplayer, const char* hostname) const
 {
-	assert(gEnv->pSystem);
+	CRY_ASSERT(gEnv->pSystem);
 
 	if (gEnv->IsEditor())
 	{
@@ -907,7 +907,7 @@ bool CActionGame::BlockingSpawnPlayer()
 {
 	CAdjustLocalConnectionPacketRate adjuster(50.0f, 30.0f);
 
-	assert(gEnv->IsEditor());
+	CRY_ASSERT(gEnv->IsEditor());
 
 	if (!m_pGameContext)
 		return false;
@@ -1192,7 +1192,7 @@ bool CActionGame::Update()
 void CActionGame::OnBreakageSpawnedEntity(IEntity* pEntity, IPhysicalEntity* pPhysEntity, IPhysicalEntity* pSrcPhysEntity)
 {
 	// For now this is MP only
-	assert(gEnv->bMultiplayer);
+	CRY_ASSERT(gEnv->bMultiplayer);
 
 	// The breakable manager spawned a new entity - add it to the fade list
 	if (pSrcPhysEntity != pPhysEntity)
@@ -2056,7 +2056,7 @@ void CActionGame::PerformPlaneBreak(const EventPhysCollision& epc, SBreakEvent* 
 	if (pEntityTrg && rec.itype == PHYS_FOREIGN_ID_ENTITY)
 	{
 		BreakLogAlways("> PHYS_FOREIGN_ID_ENTITY");
-		assert(pEntityTrg);
+		CRY_ASSERT(pEntityTrg);
 		if ((pStatObj = pEntityTrg->GetStatObj(ENTITY_SLOT_ACTUAL)) &&
 		    (pStatObj->GetFlags() & (STATIC_OBJECT_COMPOUND | STATIC_OBJECT_CLONE)) == STATIC_OBJECT_COMPOUND)
 		{
@@ -2164,7 +2164,7 @@ void CActionGame::PerformPlaneBreak(const EventPhysCollision& epc, SBreakEvent* 
 					//	later reversion in the kill cam
 					for (int i = 0; i < s_this->m_brokenObjs.size(); i++)
 					{
-						//assert(s_this->m_brokenObjs[i].pBrush);
+						//CRY_ASSERT(s_this->m_brokenObjs[i].pBrush);
 						if (s_this->m_brokenObjs[i].pBrush == rec.pBrush)
 						{
 							BreakLogAlways(">> Found brush match at index %d", i);
@@ -2191,7 +2191,7 @@ void CActionGame::PerformPlaneBreak(const EventPhysCollision& epc, SBreakEvent* 
 						BreakLogAlways("> Searching m_brokenObjs for match, StatObj marked as generated");
 						for (int i = 0; i < s_this->m_brokenObjs.size(); i++)
 						{
-							assert(s_this->m_brokenObjs[i].pBrush);
+							CRY_ASSERT(s_this->m_brokenObjs[i].pBrush);
 							BreakLogAlways(">>  Index: %0d, pBrush 0x%p", i, s_this->m_brokenObjs[i].pBrush);
 							if (s_this->m_brokenObjs[i].pBrush == rec.pBrush)
 							{
@@ -2368,7 +2368,7 @@ void CActionGame::PerformPlaneBreak(const EventPhysCollision& epc, SBreakEvent* 
 		if (result == eProcessImpact_Delayed ||
 		    result == eProcessImpact_DelayedMeshOnly)
 		{
-			assert(pDelayedTask != 0);
+			CRY_ASSERT(pDelayedTask != 0);
 			pDelayedTask->m_islandIn = out.islandIn;
 			pDelayedTask->m_bMeshPrepOnly = (result == eProcessImpact_DelayedMeshOnly);
 			pDelayedTask->m_status = CDelayedPlaneBreak::eStatus_STARTED;
@@ -2459,7 +2459,7 @@ void CActionGame::PerformPlaneBreak(const EventPhysCollision& epc, SBreakEvent* 
 		{
 			if (rec.itype == PHYS_FOREIGN_ID_ENTITY)
 			{
-				assert(pEntityTrg);
+				CRY_ASSERT(pEntityTrg);
 				pp.partid = pEntityTrg->SetStatObj(pStatObjNew, epc.partid[1], true);
 				if (pEntityTrg->GetPhysics())
 					pEntityTrg->GetPhysics()->SetParams(&pp);
@@ -2508,7 +2508,7 @@ ForceObjUpdate:
 		{
 			if (rec.itype == PHYS_FOREIGN_ID_ENTITY)
 			{
-				assert(pEntityTrg);
+				CRY_ASSERT(pEntityTrg);
 				pEntityTrg->SetStatObj(pStatObjAux, -1, true);
 				SProcBrokenObjRec rec2;
 				rec2.itype = PHYS_FOREIGN_ID_ENTITY;
@@ -2564,7 +2564,7 @@ ForceObjUpdate:
 
 		if (g_glassNoDecals == 0 && !bIsExplosion && pb2d && pb2d->crack_decal_scale && r > 0)
 		{
-			assert(pEntityTrg || rec.itype != PHYS_FOREIGN_ID_ENTITY);
+			CRY_ASSERT(pEntityTrg || rec.itype != PHYS_FOREIGN_ID_ENTITY);
 			CryEngineDecalInfo dcl;
 			dcl.ownerInfo.pRenderNode = rec.itype == PHYS_FOREIGN_ID_ENTITY ?
 			                            (pEntityTrg->GetRenderInterface())->GetRenderNode() : pBrush;
@@ -3499,7 +3499,7 @@ int CActionGame::ReuseBrokenTrees(const EventPhysCollision* pCEvent, float size,
 
 			do
 			{
-				assert(pStatObj);
+				CRY_ASSERT(pStatObj);
 				PREFAST_ASSUME(pStatObj);
 				esp.id = 0;
 				esp.sName = pentSrc->GetName();
@@ -3672,7 +3672,7 @@ struct CrySizerNaive : ICrySizer
 	virtual size_t              GetObjectCount() { return m_count; }
 	virtual IResourceCollector* GetResourceCollector()
 	{
-		assert(0);
+		CRY_ASSERT(0);
 		return (IResourceCollector*)0;
 	}
 	virtual void Push(const char*)                                     {}
@@ -4362,7 +4362,7 @@ void CActionGame::ApplyBreakToClonedObjectFromEvent(const SRenderNodeCloneLookup
 		{
 			iNodeIndex = a;
 			BreakLogAlways(">>>> Found break for index %d at time: %.6f", a, m_breakEvents[i].time);
-			assert(m_breakEvents[i].time > 0.0f);
+			CRY_ASSERT(m_breakEvents[i].time > 0.0f);
 			break;
 		}
 	}
@@ -4503,7 +4503,7 @@ void CActionGame::CloneBrokenObjectsByIndex(uint16* pBreakEventIndices, int32& i
 				//	Get the kill cam working for entities that have breakable planes. Doesn't currently. Code below would work,
 				//	or nearly work, if there was an output array for cloned entities, not just StatObj
 
-				//assert(0);
+				//CRY_ASSERT(0);
 				//        IEntity * pOriginalEntity = gEnv->pEntitySystem->GetEntity(m_brokenObjs[i].idEnt);
 				//
 				//        IRenderNode * pRenderNode = m_brokenObjs[i].pBrush;
@@ -4533,7 +4533,7 @@ void CActionGame::CloneBrokenObjectsByIndex(uint16* pBreakEventIndices, int32& i
 				//
 				//          IEntity *pClonedEntity = pBreakableMgr->CreateObjectAsEntity(m_brokenObjs[i].pStatObjOrg, NULL, createParams);
 				//
-				//          assert(pClonedEntity);
+				//          CRY_ASSERT(pClonedEntity);
 				//
 				//          pOutClonedEntities[iNumClonedEntitiesLocal] = pClonedEntity->GetId();
 				//          iNumClonedEntitiesLocal++;
@@ -4609,7 +4609,7 @@ void CActionGame::CloneBrokenObjectsByIndex(uint16* pBreakEventIndices, int32& i
 				}
 				else
 				{
-					assert(!"RenderNode type not supported");
+					CRY_ASSERT(!"RenderNode type not supported");
 				}
 			}
 		}

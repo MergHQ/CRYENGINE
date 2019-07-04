@@ -831,9 +831,8 @@ void CLevelInfo::ReadMetaData()
 				for (int a = 0; a < rulesNode->getChildCount(); ++a)
 				{
 					XmlNodeRef attrib = rulesNode->getChild(a);
-					assert(m_levelAttributes.find(attrib->getTag()) == m_levelAttributes.end());
+					CRY_ASSERT(m_levelAttributes.find(attrib->getTag()) == m_levelAttributes.end());
 					m_levelAttributes[attrib->getTag()] = TFlowInputData(string(attrib->getAttr("value")));
-					;
 				}
 			}
 			else if (!stricmp(name, "LevelType"))

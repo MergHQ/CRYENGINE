@@ -583,15 +583,14 @@ public:
 		m_thumbnailWidth = 0;
 		m_thumbnailHeight = 0;
 		m_thumbnailDepth = 0;
-		assert(m_pProfileImpl != 0);
-		assert(m_pEntry != 0);
+		CRY_ASSERT(m_pProfileImpl != 0);
+		CRY_ASSERT(m_pEntry != 0);
 	}
 
 	// ILoadGame
 	virtual bool Init(const char* name)
 	{
-		assert(m_pEntry->pCurrentProfile != 0);
-		if (m_pEntry->pCurrentProfile == 0)
+		if (!CRY_VERIFY(m_pEntry->pCurrentProfile != 0))
 		{
 			GameWarning("CXMLRichSaveGame: Entry for user '%s' has no current profile", m_pEntry->userId.c_str());
 			return false;
@@ -761,9 +760,8 @@ public:
 				// CryLogAlways("CXMLRichSaveGame: TEST_THUMBNAIL_AUTOCAPTURE: capWidth=%d capHeight=%d (off=%d,%d) thmbw=%d thmbh=%d rw=%d rh=%d",
 				//	captureDestWidth, captureDestHeight, captureDestOffX, captureDestOffY, m_thumbnailWidth, m_thumbnailHeight, w,h);
 
-				if (captureDestWidth > m_thumbnailWidth || captureDestHeight > m_thumbnailHeight)
+				if (!CRY_VERIFY(captureDestWidth <= m_thumbnailWidth && captureDestHeight <= m_thumbnailHeight))
 				{
-					assert(false);
 					GameWarning("CXMLRichSaveGame: TEST_THUMBNAIL_AUTOCAPTURE: capWidth=%d capHeight=%d", captureDestWidth, captureDestHeight);
 					captureDestHeight = m_thumbnailHeight;
 					captureDestWidth = m_thumbnailWidth;
@@ -839,15 +837,14 @@ public:
 	{
 		m_pImpl = pImpl;
 		m_pEntry = pEntry;
-		assert(m_pImpl != 0);
-		assert(m_pEntry != 0);
+		CRY_ASSERT(m_pImpl != 0);
+		CRY_ASSERT(m_pEntry != 0);
 	}
 
 	// ILoadGame
 	virtual bool Init(const char* name)
 	{
-		assert(m_pEntry->pCurrentProfile != 0);
-		if (m_pEntry->pCurrentProfile == 0)
+		if (!CRY_VERIFY(m_pEntry->pCurrentProfile != 0))
 		{
 			GameWarning("CXMLRichLoadGame: Entry for user '%s' has no current profile", m_pEntry->userId.c_str());
 			return false;
@@ -1052,8 +1049,7 @@ bool CRichSaveGameHelper::MoveSaveGames(CPlayerProfileManager::SUserEntry* pEntr
 
 bool CRichSaveGameHelper::GetSaveGameThumbnail(CPlayerProfileManager::SUserEntry* pEntry, const char* saveGameName, CPlayerProfileManager::SThumbnail& thumbnail)
 {
-	assert(pEntry->pCurrentProfile != 0);
-	if (pEntry->pCurrentProfile == 0)
+	if (!CRY_VERIFY(pEntry->pCurrentProfile != 0))
 	{
 		GameWarning("CXMLRichLoadGame:GetSaveGameThumbnail: Entry for user '%s' has no current profile", pEntry->userId.c_str());
 		return false;

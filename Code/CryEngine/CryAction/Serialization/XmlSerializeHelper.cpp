@@ -20,7 +20,7 @@ CXmlSerializedObject::CXmlSerializedObject(const char* szSection)
 	: m_nRefCount(0)
 	, m_sTag(szSection)
 {
-	assert(szSection && szSection[0]);
+	CRY_ASSERT(szSection && szSection[0]);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -55,7 +55,7 @@ void CXmlSerializedObject::Serialize(TSerialize& serialize)
 void CXmlSerializedObject::CreateRootNode()
 {
 	m_XmlNode = gEnv->pSystem->CreateXmlNode(m_sTag.c_str());
-	assert(m_XmlNode);
+	CRY_ASSERT(m_XmlNode);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -85,20 +85,20 @@ void CXmlSerializeHelper::GetMemoryUsage(ICrySizer* pSizer) const
 //////////////////////////////////////////////////////////////////////////
 _smart_ptr<ISerializedObject> CXmlSerializeHelper::CreateSerializedObject(const char* szSection)
 {
-	assert(szSection && szSection[0]);
+	CRY_ASSERT(szSection && szSection[0]);
 	return _smart_ptr<ISerializedObject>(new CXmlSerializedObject(szSection));
 }
 
 //////////////////////////////////////////////////////////////////////////
 CXmlSerializedObject* CXmlSerializeHelper::GetXmlSerializedObject(ISerializedObject* pObject)
 {
-	assert(pObject);
+	CRY_ASSERT(pObject);
 
 	CXmlSerializedObject* pXmlObject = NULL;
 	if (pObject && CXmlSerializedObject::GUID == pObject->GetGUID())
 	{
 		pXmlObject = static_cast<CXmlSerializedObject*>(pObject);
-		assert(pXmlObject);
+		CRY_ASSERT(pXmlObject);
 	}
 
 	return pXmlObject;
@@ -107,7 +107,7 @@ CXmlSerializedObject* CXmlSerializeHelper::GetXmlSerializedObject(ISerializedObj
 //////////////////////////////////////////////////////////////////////////
 bool CXmlSerializeHelper::Write(ISerializedObject* pObject, TSerializeFunc serializeFunc, void* pArgument /*= NULL*/)
 {
-	assert(pObject);
+	CRY_ASSERT(pObject);
 
 	bool bResult = false;
 
@@ -126,7 +126,7 @@ bool CXmlSerializeHelper::Write(ISerializedObject* pObject, TSerializeFunc seria
 //////////////////////////////////////////////////////////////////////////
 bool CXmlSerializeHelper::Read(ISerializedObject* pObject, TSerializeFunc serializeFunc, void* pArgument /*= NULL*/)
 {
-	assert(pObject);
+	CRY_ASSERT(pObject);
 
 	bool bResult = false;
 

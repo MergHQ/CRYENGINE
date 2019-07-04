@@ -67,12 +67,12 @@ private:
 	}
 	ILINE bool GetAttr(XMLCPB::CNodeLiveReaderRef& node, const char* name, const string& value)
 	{
-		assert(false);
+		CRY_ASSERT(false);
 		return false;
 	}
 	ILINE bool GetAttr(XMLCPB::CNodeLiveReaderRef& node, const char* name, SNetObjectID& value)
 	{
-		assert(false);
+		CRY_ASSERT(false);
 		return false;
 	}
 
@@ -80,7 +80,7 @@ private:
 
 private:
 	//CTimeValue m_curTime;
-	XMLCPB::CNodeLiveReaderRef& CurNode() { assert(!m_nodeStack.empty()); return m_nodeStack.back(); }
+	XMLCPB::CNodeLiveReaderRef& CurNode() { CRY_ASSERT(!m_nodeStack.empty()); return m_nodeStack.back(); }
 
 	int                                     m_nErrors;
 	std::vector<XMLCPB::CNodeLiveReaderRef> m_nodeStack;

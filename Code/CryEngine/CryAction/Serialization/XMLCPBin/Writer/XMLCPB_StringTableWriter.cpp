@@ -51,12 +51,7 @@ void CStringTableWriter::CreateStringsFromConstants()
 	for (int i = 0; i < DT_NUM_CONST_STR; i++)
 	{
 		const char* pString = GetConstantString(i);
-#if defined(USE_CRY_ASSERT)
-		StringID id = AddString(pString, StringHasher::HashString(pString));
-		assert(id == i);
-#else
-		AddString(pString, StringHasher::HashString(pString));
-#endif
+		CRY_VERIFY(i == AddString(pString, StringHasher::HashString(pString)));
 	}
 }
 
@@ -88,8 +83,8 @@ StringID CStringTableWriter::GetStringID(const char* pString, bool addIfCantFind
 
 StringID CStringTableWriter::AddString(const char* pString, size_t hash)
 {
-	assert(m_stringAddrs.size() < m_maxNumStrings);
-	assert(!HasStringID(pString));
+	CRY_ASSERT(m_stringAddrs.size() < m_maxNumStrings);
+	CRY_ASSERT(!HasStringID(pString));
 
 	int size = strlen(pString) + 1;
 
@@ -160,7 +155,7 @@ void CStringTableWriter::WriteToFile()
 	for (size_t i = 0, size = flatAddrs.size(); i < size; ++i)
 		SwapIntegerValue(flatAddrs[i]);
 
-	assert(!flatAddrs.empty());
+	CRY_ASSERT(!flatAddrs.empty());
 
 	FlatAddr* p = &(flatAddrs[0]);
 
@@ -179,7 +174,7 @@ void CStringTableWriter::WriteToMemory(uint8*& rpData, uint32& outWriteLoc)
 	FlatAddrVec flatAddrs;
 	CalculateFlatAddrs(flatAddrs);
 
-	assert(!flatAddrs.empty());
+	CRY_ASSERT(!flatAddrs.empty());
 
 	FlatAddr* p = &(flatAddrs[0]);
 

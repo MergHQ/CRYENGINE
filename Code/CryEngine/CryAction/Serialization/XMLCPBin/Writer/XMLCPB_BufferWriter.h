@@ -55,11 +55,11 @@ public:
 
 	ILINE uint8* GetPointerFromAddr(const SAddr& addr) const
 	{
-		assert(!m_usingStreaming);
+		CRY_ASSERT(!m_usingStreaming);
 		//if (m_usingStreaming)
 		//	return NULL;
 
-		assert(addr.bufferIndex < m_buffers.size());
+		CRY_ASSERT(addr.bufferIndex < m_buffers.size());
 		return m_buffers[addr.bufferIndex]->GetPointer(addr.bufferOffset);
 	}
 
@@ -88,7 +88,7 @@ private:
 		void   AddData(const uint8* pSource, int sizeToAdd);
 		int    GetFreeSpaceSize() const        { return m_size - m_used; }
 		uint32 GetUsed() const                 { return m_used; }
-		uint8* GetPointer(uint32 offset) const { assert(offset < m_used); return GetBasePointer() + offset; }
+		uint8* GetPointer(uint32 offset) const { CRY_ASSERT(offset < m_used); return GetBasePointer() + offset; }
 		void   WriteToFile(CWriter& Writer);
 		void   WriteToMemory(CWriter& Writer, uint8*& rpData, uint32& outWriteLoc);
 		uint32 GetDataSize() const    { return m_used; }
@@ -118,7 +118,7 @@ inline void CBufferWriter::AddDataEndianAware(T val)
 
 inline void CBufferWriter::SSimpleBuffer::AddData(const uint8* pSource, int sizeToAdd)
 {
-	assert(CanAddData(sizeToAdd));
+	CRY_ASSERT(CanAddData(sizeToAdd));
 
 	memcpy(GetBasePointer() + m_used, pSource, sizeToAdd);
 
@@ -156,7 +156,7 @@ public:
 		{
 			CRY_ASSERT(s_currentBucket != CRY_ARRAY_COUNT(s_buckets));
 			ptr = (uint64*)malloc(k_numPerBucket * sizeof(uint64));
-			assert(s_currentBucket >= 0 && s_currentBucket < CRY_ARRAY_COUNT(s_buckets));
+			CRY_ASSERT(s_currentBucket >= 0 && s_currentBucket < CRY_ARRAY_COUNT(s_buckets));
 			s_buckets[s_currentBucket++] = ptr;
 			s_ptr = ptr + 1;
 			s_end = ptr + k_numPerBucket;

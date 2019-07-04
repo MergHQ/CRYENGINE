@@ -23,7 +23,7 @@ CAnimationGraphCVars* CAnimationGraphCVars::s_pThis = 0;
 
 CAnimationGraphCVars::CAnimationGraphCVars()
 {
-	assert(s_pThis == 0);
+	CRY_ASSERT(s_pThis == 0);
 	s_pThis = this;
 
 	// TODO: remove once animation graph transition is complete
@@ -82,7 +82,7 @@ CAnimationGraphCVars::CAnimationGraphCVars()
 
 CAnimationGraphCVars::~CAnimationGraphCVars()
 {
-	assert(s_pThis != 0);
+	CRY_ASSERT(s_pThis != 0);
 	s_pThis = 0;
 
 	IConsole* pConsole = gEnv->pConsole;

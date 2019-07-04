@@ -140,8 +140,7 @@ private:
 
 	inline TMFXContainerPtr InternalGetEffect(TMFXEffectId effectId) const
 	{
-		assert(effectId < m_effectContainers.size());
-		if (effectId < m_effectContainers.size())
+		if (CRY_VERIFY(effectId < m_effectContainers.size()))
 			return m_effectContainers[effectId];
 		return 0;
 	}

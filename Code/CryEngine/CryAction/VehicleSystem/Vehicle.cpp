@@ -404,7 +404,7 @@ bool CVehicle::Init(IGameObject* pGameObject)
 			s_punishHitTypeId = pGR->GetHitTypeId("punish");
 			s_vehicleDestructionTypeId = pGR->GetHitTypeId("vehicleDestruction");
 
-			assert(s_repairHitTypeId && s_disableCollisionsHitTypeId && s_collisionHitTypeId
+			CRY_ASSERT(s_repairHitTypeId && s_disableCollisionsHitTypeId && s_collisionHitTypeId
 			       && s_normalHitTypeId && s_fireHitTypeId && s_punishHitTypeId);
 		}
 		CRY_ASSERT(pGR, "No valid game rules set!");
@@ -3037,7 +3037,7 @@ bool CVehicle::OnUsed(EntityId userId, int index)
 			int actionIndex = (index & 0xffff0000) >> 16;
 			int param = index & 0x0000ffff;
 
-			assert(actionIndex < m_actions.size());
+			CRY_ASSERT(actionIndex < m_actions.size());
 
 			SVehicleEventParams eventParams;
 			eventParams.entityId = userId;
@@ -3419,7 +3419,7 @@ IVehicleSeat* CVehicle::GetWeaponParentSeat(EntityId weaponId)
 //------------------------------------------------------------------------
 bool CVehicle::SetMovement(const string& movementName, const CVehicleParams& table)
 {
-	assert(!m_pMovement);
+	CRY_ASSERT(!m_pMovement);
 
 	m_pMovement = m_pVehicleSystem->CreateVehicleMovement(movementName);
 
@@ -4268,7 +4268,7 @@ const CVehicleSeatActionWeapons* CVehicle::GetCurrentSeatActionWeapons(EntityId 
 			for (TVehicleSeatActionVector::const_iterator it = seatActions.begin(), itEnd = seatActions.end(); it != itEnd; ++it)
 			{
 				IVehicleSeatAction* pSeatAction = it->pSeatAction;
-				assert(pSeatAction);
+				CRY_ASSERT(pSeatAction);
 
 				if (const CVehicleSeatActionWeapons* pWeaponAction = CAST_VEHICLEOBJECT(CVehicleSeatActionWeapons, pSeatAction))
 				{
@@ -5223,7 +5223,7 @@ int CVehicle::GetWeaponCount() const
 	for (TVehicleSeatVector::const_iterator it = m_seats.begin(); it != itSeatsEnd; ++it)
 	{
 		const CVehicleSeat* pSeat = it->second;
-		assert(pSeat);
+		CRY_ASSERT(pSeat);
 
 		const TVehicleSeatActionVector& seatActions = pSeat->GetSeatActions();
 		for (TVehicleSeatActionVector::const_iterator itActions = seatActions.begin(), itActionsEnd = seatActions.end(); itActions != itActionsEnd; ++itActions)
@@ -5247,7 +5247,7 @@ EntityId CVehicle::GetWeaponId(int index) const
 	for (TVehicleSeatVector::const_iterator it = m_seats.begin(); it != itSeatsEnd; ++it)
 	{
 		const CVehicleSeat* pSeat = it->second;
-		assert(pSeat);
+		CRY_ASSERT(pSeat);
 
 		const TVehicleSeatActionVector& seatActions = pSeat->GetSeatActions();
 		for (TVehicleSeatActionVector::const_iterator itActions = seatActions.begin(), itActionsEnd = seatActions.end(); itActions != itActionsEnd; ++itActions)

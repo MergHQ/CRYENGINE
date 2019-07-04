@@ -1900,15 +1900,15 @@ void* CBreakReplicator::SerialiseBreakage(TSerialize ser, BreakStream* pStream)
 		array.Serialize(breakIdx, 0, NET_MAX_BREAKS - 1);
 		array.Serialize(subBreakIdx, 0, 255);
 		array.Serialize(type, 1, BreakStream::k_numTypes - 1);
-		assert(pStream == NULL);
+		CRY_ASSERT(pStream == NULL);
 		if (type == BreakStream::k_partBreak)
 			pStream = new PartBreak;
 		if (type == BreakStream::k_planeBreak)
 			pStream = new PlaneBreak;
 		if (type == BreakStream::k_deformBreak)
 			pStream = new DeformBreak;
-		assert(pStream);
-		assert(pStream->m_type == type);
+		CRY_ASSERT(pStream);
+		CRY_ASSERT(pStream->m_type == type);
 		pStream->m_breakIdx = breakIdx;
 		pStream->m_subBreakIdx = subBreakIdx;
 	}

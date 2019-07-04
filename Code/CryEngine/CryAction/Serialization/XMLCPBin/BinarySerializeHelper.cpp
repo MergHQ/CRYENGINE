@@ -22,7 +22,7 @@ CBinarySerializedObject::CBinarySerializedObject(const char* szSection)
 	, m_uSerializedDataSize(0)
 	, m_pSerializedData(0)
 {
-	assert(szSection && szSection[0]);
+	CRY_ASSERT(szSection && szSection[0]);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -123,20 +123,20 @@ void CBinarySerializeHelper::GetMemoryUsage(ICrySizer* pSizer) const
 //////////////////////////////////////////////////////////////////////////
 _smart_ptr<ISerializedObject> CBinarySerializeHelper::CreateSerializedObject(const char* szSection)
 {
-	assert(szSection && szSection[0]);
+	CRY_ASSERT(szSection && szSection[0]);
 	return _smart_ptr<ISerializedObject>(new CBinarySerializedObject(szSection));
 }
 
 //////////////////////////////////////////////////////////////////////////
 CBinarySerializedObject* CBinarySerializeHelper::GetBinarySerializedObject(ISerializedObject* pObject)
 {
-	assert(pObject);
+	CRY_ASSERT(pObject);
 
 	CBinarySerializedObject* pBinaryObject = NULL;
 	if (pObject && CBinarySerializedObject::GUID == pObject->GetGUID())
 	{
 		pBinaryObject = static_cast<CBinarySerializedObject*>(pObject);
-		assert(pBinaryObject);
+		CRY_ASSERT(pBinaryObject);
 	}
 
 	return pBinaryObject;
@@ -145,7 +145,7 @@ CBinarySerializedObject* CBinarySerializeHelper::GetBinarySerializedObject(ISeri
 //////////////////////////////////////////////////////////////////////////
 bool CBinarySerializeHelper::Write(ISerializedObject* pObject, TSerializeFunc serializeFunc, void* pArgument /*= NULL*/)
 {
-	assert(pObject);
+	CRY_ASSERT(pObject);
 
 	bool bResult = false;
 
@@ -172,7 +172,7 @@ bool CBinarySerializeHelper::Write(ISerializedObject* pObject, TSerializeFunc se
 //////////////////////////////////////////////////////////////////////////
 bool CBinarySerializeHelper::Read(ISerializedObject* pObject, TSerializeFunc serializeFunc, void* pArgument /*= NULL*/)
 {
-	assert(pObject);
+	CRY_ASSERT(pObject);
 
 	bool bResult = false;
 
@@ -183,7 +183,7 @@ bool CBinarySerializeHelper::Read(ISerializedObject* pObject, TSerializeFunc ser
 		if (pBinaryObject->PrepareReading(Reader))
 		{
 			XMLCPB::CNodeLiveReaderRef readNode = Reader.GetRoot()->GetChildNode(pBinaryObject->GetSectionName());
-			assert(readNode.IsValid());
+			CRY_ASSERT(readNode.IsValid());
 
 			std::unique_ptr<CSerializeReaderXMLCPBin> pReaderXMLCPBin = std::unique_ptr<CSerializeReaderXMLCPBin>(new CSerializeReaderXMLCPBin(readNode, Reader));
 			std::unique_ptr<ISerialize> pReader = std::unique_ptr<ISerialize>(new CSimpleSerializeWithDefaults<CSerializeReaderXMLCPBin>(*pReaderXMLCPBin));

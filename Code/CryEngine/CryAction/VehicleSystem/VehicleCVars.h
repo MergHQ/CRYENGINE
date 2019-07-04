@@ -79,7 +79,7 @@ public:
 
 	static inline CVehicleCVars& Get()
 	{
-		assert(s_pThis != 0);
+		CRY_ASSERT(s_pThis != 0);
 		return *s_pThis;
 	}
 

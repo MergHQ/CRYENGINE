@@ -148,7 +148,7 @@ void CGameObjectSystem::LoadSerializationOrderFile()
 			CryWarning(VALIDATOR_MODULE_GAME, VALIDATOR_ERROR, "CGameObjectSystem::LoadSerializationOrderFile() - Duplicated game object extension: '%s'. Savegames wont have properly sorted game object extensions now", name.c_str());
 		}
 	}
-	assert(!duplicatedEntriesInXML);
+	CRY_ASSERT(!duplicatedEntriesInXML);
 }
 
 //////////////////////////////////////////////////////////////////////////

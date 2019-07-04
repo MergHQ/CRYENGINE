@@ -1172,7 +1172,7 @@ void SUIEventSystemLuaCallback::SEventSystemListener::Clear()
 //------------------------------------------------------------------------
 SUIArgumentsRet SUIEventSystemLuaCallback::SEventSystemListener::OnEvent(const SUIEvent& event)
 {
-	assert(m_pOwner && m_pEventSystem);
+	CRY_ASSERT(m_pOwner && m_pEventSystem);
 	m_pOwner->OnEvent(m_pEventSystem, event);
 	return SUIArguments();
 }
@@ -1189,12 +1189,12 @@ void SUIEventSystemLuaCallback::SEventSystemListener::OnEventSystemDestroyed(IUI
 namespace SUIConvHelperTmpl
 {
 template<class T>
-ScriptVarType            GetVarType(T& t, int idx)                 { assert(false); return svtNull; }
+ScriptVarType            GetVarType(T& t, int idx)                 { CRY_ASSERT(false); return svtNull; }
 template<> ScriptVarType GetVarType(SmartScriptTable& t, int idx)  { return t->GetAtType(idx); }
 template<> ScriptVarType GetVarType(IFunctionHandler*& t, int idx) { return t->GetParamType(idx); }
 
 template<class T, class V>
-bool                   GetVarValue(T& t, int idx, V& val)                 { assert(false); return false; }
+bool                   GetVarValue(T& t, int idx, V& val)                 { CRY_ASSERT(false); return false; }
 template<class V> bool GetVarValue(SmartScriptTable& t, int idx, V& val)  { return t->GetAt(idx, val); }
 template<class V> bool GetVarValue(IFunctionHandler*& t, int idx, V& val) { return t->GetParam(idx, val); }
 
@@ -1256,7 +1256,7 @@ template<class T>
 ScriptAnyValue GetValueRaw(const TUIData& value)
 {
 	const T* val = value.GetPtr<T>();
-	assert(val);
+	CRY_ASSERT(val);
 	return ScriptAnyValue(*val);
 }
 

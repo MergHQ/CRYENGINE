@@ -171,7 +171,7 @@ bool CNodeLiveReader::ReadAttr(const char* pAttrName, T& data) const
 template<class T>
 void CNodeLiveReader::ReadAttr(uint32 index, T& data) const
 {
-	assert(index < m_numAttrs);
+	CRY_ASSERT(index < m_numAttrs);
 	CAttrReader attr(m_Reader);
 	FlatAddr nextAddr = m_addrFirstAttr;
 

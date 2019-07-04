@@ -41,7 +41,7 @@ CFlashUIAction::~CFlashUIAction()
 {
 	if (m_type == eUIAT_FlowGraph)
 	{
-		assert(m_pFlowGraph != NULL);
+		CRY_ASSERT(m_pFlowGraph != NULL);
 		m_pFlowGraph->Release();
 	}
 }
@@ -54,7 +54,7 @@ bool CFlashUIAction::Init()
 	UIACTION_LOG("UIAction %s Init (%s)", GetName(), m_type == eUIAT_FlowGraph ? "FG Action" : "Lua Action");
 	if (m_type == eUIAT_FlowGraph)
 	{
-		assert(m_pFlowGraph != NULL);
+		CRY_ASSERT(m_pFlowGraph != NULL);
 		m_pFlowGraph->SetEnabled(true);
 		m_pFlowGraph->InitializeValues();
 		m_pFlowGraph->SetEnabled(m_bEnabled);
@@ -70,12 +70,12 @@ void CFlashUIAction::SetEnabled(bool bEnabled)
 	m_bEnabled = bEnabled;
 	if (m_type == eUIAT_FlowGraph)
 	{
-		assert(m_pFlowGraph != NULL);
+		CRY_ASSERT(m_pFlowGraph != NULL);
 		m_pFlowGraph->SetEnabled(bEnabled);
 	}
 	else
 	{
-		assert(m_pScript.GetPtr() != NULL);
+		CRY_ASSERT(m_pScript.GetPtr() != NULL);
 		if (m_scriptAvail[eSF_OnInit] && bEnabled)
 		{
 			Script::CallMethod(m_pScript, "OnInit");
@@ -143,12 +143,12 @@ void CFlashUIAction::Update()
 
 	if (m_type == eUIAT_FlowGraph)
 	{
-		assert(m_pFlowGraph != NULL);
+		CRY_ASSERT(m_pFlowGraph != NULL);
 		m_pFlowGraph->Update();
 	}
 	else
 	{
-		assert(m_pScript.GetPtr() != NULL);
+		CRY_ASSERT(m_pScript.GetPtr() != NULL);
 		if (m_scriptAvail[eSF_OnUpdate])
 			Script::CallMethod(m_pScript, "OnUpdate");
 	}
@@ -159,7 +159,7 @@ void CFlashUIAction::StartScript(const SUIArguments& args)
 {
 	if (!m_bIsValid) return;
 
-	assert(m_pScript.GetPtr() != NULL);
+	CRY_ASSERT(m_pScript.GetPtr() != NULL);
 	SmartScriptTable table = gEnv->pScriptSystem->CreateTable();
 	SUIToLuaConversationHelper::UIArgsToLuaTable(args, table);
 	if (m_scriptAvail[eSF_OnStart])
@@ -171,7 +171,7 @@ void CFlashUIAction::EndScript()
 {
 	if (!m_bIsValid) return;
 
-	assert(m_pScript.GetPtr() != NULL);
+	CRY_ASSERT(m_pScript.GetPtr() != NULL);
 	if (m_scriptAvail[eSF_OnEnd])
 		Script::CallMethod(m_pScript, "OnEnd");
 }

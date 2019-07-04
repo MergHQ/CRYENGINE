@@ -76,7 +76,7 @@ Status AnimateFragment::Update(const UpdateContext& context)
 		return Failure;
 	}
 
-	assert(runtimeData.action.get() != NULL);
+	CRY_ASSERT(runtimeData.action.get() != NULL);
 	const IAction::EStatus currentActionStatus = runtimeData.action->GetStatus();
 	IF_UNLIKELY ((currentActionStatus == IAction::None) || (currentActionStatus == IAction::Finished))
 	{
@@ -92,16 +92,14 @@ void AnimateFragment::QueueAction(const UpdateContext& context)
 
 	IActor* actor = CCryAction::GetCryAction()->GetIActorSystem()->GetActor(context.entityId);
 
-	IF_UNLIKELY (actor == NULL)
+	IF_UNLIKELY (!CRY_VERIFY(actor != NULL))
 	{
-		assert(false);
 		return;
 	}
 
 	IAnimatedCharacter* animChar = actor->GetAnimatedCharacter();
-	IF_UNLIKELY (animChar == NULL)
+	IF_UNLIKELY (!CRY_VERIFY(animChar != NULL))
 	{
-		assert(false);
 		return;
 	}
 

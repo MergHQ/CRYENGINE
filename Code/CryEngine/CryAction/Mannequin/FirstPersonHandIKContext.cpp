@@ -19,9 +19,9 @@ CFirstPersonHandIKContext::SParams::SParams(IDefaultSkeleton* pIDefaultSkeleton)
 	m_leftHandTargetIdx = pIDefaultSkeleton->GetJointIDByName("Bip01 LHand2Weapon_IKTarget");
 	m_rightBlendIkIdx = pIDefaultSkeleton->GetJointIDByName("Bip01 RHand2RiflePos_IKBlend");
 
-	assert(m_weaponTargetIdx != -1);
-	assert(m_leftHandTargetIdx != -1);
-	assert(m_rightBlendIkIdx != -1);
+	CRY_ASSERT(m_weaponTargetIdx != -1);
+	CRY_ASSERT(m_leftHandTargetIdx != -1);
+	CRY_ASSERT(m_rightBlendIkIdx != -1);
 }
 
 CFirstPersonHandIKContext::CFirstPersonHandIKContext()

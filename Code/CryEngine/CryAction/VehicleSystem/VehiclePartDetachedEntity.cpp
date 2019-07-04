@@ -73,7 +73,7 @@ bool CVehiclePartDetachedEntity::ReloadExtension(IGameObject* pGameObject, const
 //------------------------------------------------------------------------
 void CVehiclePartDetachedEntity::InitVehiclePart(IGameObject* pGameObject)
 {
-	assert(pGameObject);
+	CRY_ASSERT(pGameObject);
 
 	// Set so we receive render events (when GO is set to update due to being visible), allowing last seen timer to reset
 	pGameObject->EnableUpdateSlot(this, 0);

@@ -254,7 +254,7 @@ void CFlowNode_AISequenceAction_ApproachAndEnterVehicle::HandleSequenceEvent(AIA
 
 			m_vehicleSeatEnterPosition = pEnterHelper->GetWorldSpaceTranslation();
 
-			assert(gEnv && gEnv->pGameFramework && gEnv->pGameFramework->GetIActorSystem());
+			CRY_ASSERT(gEnv && gEnv->pGameFramework && gEnv->pGameFramework->GetIActorSystem());
 			IActor* pActor = gEnv->pGameFramework->GetIActorSystem()->GetActor(m_actInfo.pEntity->GetId());
 
 			// if it's the player, have him enter quickly (we assume that the user moved him close enough to the vehicle)
@@ -313,7 +313,7 @@ void CFlowNode_AISequenceAction_ApproachAndEnterVehicle::HandleSequenceEvent(AIA
 
 IEntity* CFlowNode_AISequenceAction_ApproachAndEnterVehicle::GetEntity()
 {
-	assert(gEnv && gEnv->pEntitySystem);
+	CRY_ASSERT(gEnv && gEnv->pEntitySystem);
 	return gEnv->pEntitySystem->GetEntity(m_entityId);
 }
 
@@ -322,7 +322,7 @@ IVehicle* CFlowNode_AISequenceAction_ApproachAndEnterVehicle::GetVehicle(bool al
 	if (!m_vehicleId)
 		return NULL;
 
-	assert(gEnv && gEnv->pGameFramework && gEnv->pGameFramework->GetIVehicleSystem());
+	CRY_ASSERT(gEnv && gEnv->pGameFramework && gEnv->pGameFramework->GetIVehicleSystem());
 	IVehicle* pVehicle = gEnv->pGameFramework->GetIVehicleSystem()->GetVehicle(m_vehicleId);
 	if (!pVehicle)
 		return NULL;
@@ -356,7 +356,7 @@ bool CFlowNode_AISequenceAction_ApproachAndEnterVehicle::GetAnimationTransitionE
 
 void CFlowNode_AISequenceAction_ApproachAndEnterVehicle::MovementRequestCallback(const MovementRequestResult& result)
 {
-	assert(m_movementRequestID == result.requestID);
+	CRY_ASSERT(m_movementRequestID == result.requestID);
 
 	switch (result.result)
 	{
@@ -572,7 +572,7 @@ void CFlowNode_AISequenceAction_VehicleRotateTurret::HandleSequenceEvent(AIActio
 				return;
 			}
 
-			assert(gEnv && gEnv->pGameFramework && gEnv->pGameFramework->GetIActorSystem());
+			CRY_ASSERT(gEnv && gEnv->pGameFramework && gEnv->pGameFramework->GetIActorSystem());
 			IActor* pActor = gEnv->pGameFramework->GetIActorSystem()->GetActor(m_actInfo.pEntity->GetId());
 
 			// ensure the FG entity is an IActor

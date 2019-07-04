@@ -132,7 +132,7 @@ void CPersistantDebug::UpdateTags(float frameTime, SObj& obj, bool doFirstPass)
 	}
 
 	IFFont* pFont = gEnv->pCryFont->GetFont("default");
-	assert(pFont);
+	CRY_ASSERT(pFont);
 	STextDrawContext ctx;
 	ctx.SetSizeIn800x600(false);
 	ctx.SetProportional(true);

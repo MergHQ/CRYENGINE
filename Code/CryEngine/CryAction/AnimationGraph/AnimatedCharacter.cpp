@@ -37,7 +37,7 @@ const char* g_szColliderModeLayerString[eColliderModeLayer_COUNT] = { "AG", "Gam
 #undef CHECKQNAN_FLT
 #if defined(ENABLE_NAN_CHECK)
 	#define CHECKQNAN_FLT(x) \
-	  assert(((*(unsigned*)&(x)) & 0xff000000) != 0xff000000u && (*(unsigned*)&(x) != 0x7fc00000))
+	  CRY_ASSERT(((*(unsigned*)&(x)) & 0xff000000) != 0xff000000u && (*(unsigned*)&(x) != 0x7fc00000))
 #else
 	#define CHECKQNAN_FLT(x) (void*)0
 #endif
@@ -568,7 +568,7 @@ void CAnimatedCharacter::FullSerialize(TSerialize ser)
 
 	char mcm[32] = "m_movementControlMethod";
 	static const int basicStringLength = 23;
-	assert(strlen(mcm) == basicStringLength);
+	CRY_ASSERT(strlen(mcm) == basicStringLength);
 	for (int slot = 0; slot < eMCMSlot_COUNT; ++slot)
 	{
 		mcm[basicStringLength] = 'H';
@@ -597,21 +597,21 @@ void CAnimatedCharacter::Update(SEntityUpdateContext& ctx, int slot)
 {
 	CRY_PROFILE_FUNCTION(PROFILE_ACTION);
 
-	//assert(!m_simplifyMovement); // If we have simplified movement, the this GameObject extension should not be updated here.
+	//CRY_ASSERT(!m_simplifyMovement); // If we have simplified movement, the this GameObject extension should not be updated here.
 
-	assert(m_entLocation.IsValid());
-	//assert(m_colliderModeLayers[eColliderModeLayer_ForceSleep] == eColliderMode_Undefined);
+	CRY_ASSERT(m_entLocation.IsValid());
+	//CRY_ASSERT(m_colliderModeLayers[eColliderModeLayer_ForceSleep] == eColliderMode_Undefined);
 
 	if (m_simplifyMovement)
 	{
 		GetCurrentEntityLocation();
 	}
 
-	assert(m_entLocation.IsValid());
+	CRY_ASSERT(m_entLocation.IsValid());
 
 	SetAnimationPostProcessParameters();
 
-	assert(m_entLocation.IsValid());
+	CRY_ASSERT(m_entLocation.IsValid());
 
 	/*
 	   This code which was around here is highly suspect; I suggest we fix 'standing on moving platforms' in a better way
@@ -638,7 +638,7 @@ void CAnimatedCharacter::Update(SEntityUpdateContext& ctx, int slot)
 	   }
 	 */
 
-	assert(m_entLocation.IsValid());
+	CRY_ASSERT(m_entLocation.IsValid());
 
 	/*
 	   CRYANIMATION2
@@ -723,7 +723,7 @@ void CAnimatedCharacter::HandleEvent(const SGameObjectEvent& event)
 			/*
 			      // This might happen for faked collisions, such as punches.
 			      else
-			        assert(!"Entity recieved collision event without being part of collision!");
+			        CRY_ASSERT(!"Entity recieved collision event without being part of collision!");
 			 */
 			// We only care about the horizontal part, so we remove the vertical component for simplicity.
 			m_collisionNormal[m_collisionNormalCount].z = 0.0f;
@@ -789,7 +789,7 @@ void CAnimatedCharacter::ResetState()
 void CAnimatedCharacter::ResetVars()
 {
 	IEntity* pEntity = GetEntity();
-	assert(pEntity);
+	CRY_ASSERT(pEntity);
 
 	m_params.Reset();
 
@@ -838,7 +838,7 @@ void CAnimatedCharacter::ResetVars()
 	if (pEntity)
 	{
 		IActorSystem* pActorSystem = CCryAction::GetCryAction()->GetIActorSystem();
-		assert(pActorSystem != NULL);
+		CRY_ASSERT(pActorSystem != NULL);
 		IActor* pActor = pActorSystem->GetActor(pEntity->GetId());
 
 		//No longer asserting, as the animated character is no longer just used on actors
@@ -1036,8 +1036,8 @@ void CAnimatedCharacter::AddMovement(const SCharacterMoveRequest& request)
 {
 	if (request.type != eCMT_None)
 	{
-		assert(request.rotation.IsValid());
-		assert(request.velocity.IsValid());
+		CRY_ASSERT(request.rotation.IsValid());
+		CRY_ASSERT(request.velocity.IsValid());
 
 		CheckNANVec(Vec3(request.velocity), GetEntity());
 
@@ -1045,8 +1045,8 @@ void CAnimatedCharacter::AddMovement(const SCharacterMoveRequest& request)
 		m_moveRequest = request;
 		m_moveRequestFrameID = gEnv->nMainFrameID;
 
-		assert(m_moveRequest.rotation.IsValid());
-		assert(m_moveRequest.velocity.IsValid());
+		CRY_ASSERT(m_moveRequest.rotation.IsValid());
+		CRY_ASSERT(m_moveRequest.velocity.IsValid());
 	}
 	else
 	{
