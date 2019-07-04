@@ -271,7 +271,7 @@ public:
 			return;
 
 		auto audioObjects = container.IOStream(EPDT_AudioObject);
-		STempUpdateBuffer<float> values(runtime, m_value, runtime.FullRange());
+		STempUpdateBuffer<float> values(runtime, m_value);
 
 		for (auto particleId : runtime.FullRange())
 		{

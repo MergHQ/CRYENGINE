@@ -42,7 +42,7 @@ ILINE floatv LoadIndexed4(const float* __restrict pStream, const uint32v index, 
 template<>
 ILINE floatv TIStream<float>::SafeLoad(TParticleGroupId pgId) const
 {
-	return _mm_load_ps(m_pStream + (pgId & m_safeMask));
+	return _mm_load_ps(m_aElems + (pgId & m_safeMask));
 }
 
 template<>
@@ -50,7 +50,7 @@ ILINE floatv TIStream<float>::SafeLoad(TParticleIdv pIdv) const
 {
 	if (!m_safeMask)
 		return m_safeSink;
-	return detail::LoadIndexed4(m_pStream, pIdv, m_safeSink);
+	return detail::LoadIndexed4(m_aElems, pIdv, m_safeSink);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -59,7 +59,7 @@ ILINE floatv TIStream<float>::SafeLoad(TParticleIdv pIdv) const
 template<>
 ILINE uint32v TIStream<uint32>::SafeLoad(TParticleGroupId pgId) const
 {
-	return _mm_load_si128(reinterpret_cast<const __m128i*>(m_pStream + (pgId & m_safeMask)));
+	return _mm_load_si128(reinterpret_cast<const __m128i*>(m_aElems + (pgId & m_safeMask)));
 }
 
 template<>
@@ -67,7 +67,7 @@ ILINE uint32v TIStream<uint32>::SafeLoad(TParticleIdv pIdv) const
 {
 	if (!m_safeMask)
 		return m_safeSink;
-	const float* streamF = reinterpret_cast<const float*>(m_pStream);
+	const float* streamF = reinterpret_cast<const float*>(m_aElems);
 	auto dataF = detail::LoadIndexed4(streamF, pIdv, vcast<floatv>(m_safeSink));
 	return vcast<uint32v>(dataF);
 }
@@ -78,7 +78,7 @@ ILINE uint32v TIStream<uint32>::SafeLoad(TParticleIdv pIdv) const
 template<>
 ILINE UColv TIStream<UCol>::SafeLoad(TParticleGroupId pgId) const
 {
-	return _mm_load_si128(reinterpret_cast<const __m128i*>(m_pStream + (pgId & m_safeMask)));
+	return _mm_load_si128(reinterpret_cast<const __m128i*>(m_aElems + (pgId & m_safeMask)));
 }
 
 template<>
@@ -86,7 +86,7 @@ ILINE UColv TIStream<UCol>::SafeLoad(TParticleIdv pIdv) const
 {
 	if (!m_safeMask)
 		return m_safeSink;
-	const float* streamF = reinterpret_cast<const float*>(m_pStream);
+	const float* streamF = reinterpret_cast<const float*>(m_aElems);
 	auto dataF = detail::LoadIndexed4(streamF, pIdv, vcast<floatv>(m_safeSink));
 	return vcast<UColv>(dataF);
 }

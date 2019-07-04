@@ -103,18 +103,18 @@ struct SVisibilityParams
 
 struct STimingParams
 {
-	float m_maxParticleLife = 0;  // Max time a particle can live
 	float m_maxTotalLife    = 0;  // Max time an emitter can live
 	float m_stableTime      = 0;  // Max time for particles, including children, to die
 	float m_equilibriumTime = 0;  // Time for emitter to reach equilibrium after activation
-
-	bool  IsImmortal() const { return !valueisfinite(m_maxTotalLife); }
 };
 
-struct SComponentParams: STimingParams
+struct SComponentParams
 {
 	bool                      m_usesGPU              = false;
 	bool                      m_isPreAged            = false;
+	bool                      m_isImmortal           = false;
+	bool                      m_keepParentAlive      = false;
+	bool                      m_childKeepsAlive      = false;
 	SParticleShaderData       m_shaderData;
 	_smart_ptr<IMaterial>     m_pMaterial;
 	EShaderType               m_requiredShaderType   = eST_All;

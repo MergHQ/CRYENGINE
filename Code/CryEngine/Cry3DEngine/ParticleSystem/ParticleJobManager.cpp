@@ -47,38 +47,19 @@ void CParticleJobManager::AddUpdateEmitter(CParticleEmitter* pEmitter)
 		// Update synchronously in main thread
 		pEmitter->UpdateParticles();
 	}
-	else if (threadMode > 0 && threadMode <= 4)
+	else if (threadMode >= 2 && pEmitter->WasRenderedLastFrame())
 	{
 		// Schedule emitters rendered last frame first
-		if (threadMode >= 2 && pEmitter->WasRenderedLastFrame())
-		{
-			if (threadMode >= 4 && pEmitter->GetRuntimesDeferred().size())
-				m_emittersDeferred.push_back(pEmitter);
-			else
-				m_emittersVisible.push_back(pEmitter);
-		}
-		else if (threadMode < 3 || !pEmitter->IsStable())
-			m_emittersInvisible.push_back(pEmitter);
+		if (threadMode >= 4 && pEmitter->GetRuntimesDeferred().size())
+			m_emittersDeferred.push_back(pEmitter);
+		else
+			m_emittersVisible.push_back(pEmitter);
 	}
-	else // if (threadMode >= 5)
-	{
-		auto job = [pEmitter]() { pEmitter->UpdateParticles(); };
-		if (pEmitter->WasRenderedLastFrame())
-		{
-			if (pEmitter->GetRuntimesDeferred().size())
-			{
-				gEnv->pJobManager->AddLambdaJob("job:pfx2:UpdateEmitter (deferred)", job, JobManager::eHighPriority, &m_updateState);
-			}
-			else
-			{
-				gEnv->pJobManager->AddLambdaJob("job:pfx2:UpdateEmitter (visible)", job, JobManager::eRegularPriority, &m_updateState);
-			}
-		}
-		else if (!pEmitter->IsStable())
-		{
-			gEnv->pJobManager->AddLambdaJob("job:pfx2:UpdateEmitter (invisible)", job, JobManager::eStreamPriority, &m_updateState);
-		}
-	}
+	else if (threadMode < 3 || !pEmitter->IsStable())
+		m_emittersInvisible.push_back(pEmitter);
+	else if (DebugVar() & 1)
+		// When displaying stats, track non-updating emitters
+		m_emittersNoUpdate.push_back(pEmitter);
 }
 
 void CParticleJobManager::ScheduleUpdateEmitter(CParticleEmitter* pEmitter, JobManager::TPriorityLevel priority)
@@ -99,6 +80,7 @@ void CParticleJobManager::ScheduleUpdates()
 
 	if (!m_emittersDeferred.empty())
 	{
+		// Schedule deferred emitters in individual high-priority jobs
 		ScheduleUpdateEmitters(m_emittersDeferred, JobManager::eHighPriority);
 	}
 	
@@ -144,11 +126,8 @@ void CParticleJobManager::ScheduleUpdateEmitters(TDynArray<CParticleEmitter*>& e
 		auto job = [emitterGroup]()
 		{
 			for (auto pEmitter : emitterGroup)
-			{
 				pEmitter->UpdateParticles();
-			}
 		};
-
 		gEnv->pJobManager->AddLambdaJob("job:pfx2:UpdateEmitters", job, priority, &m_updateState);
 	}
 
@@ -159,6 +138,16 @@ void CParticleJobManager::SynchronizeUpdates()
 {
 	CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
 	m_updateState.Wait();
+	if (DebugVar() & 1)
+	{
+		// When displaying stats, accum stats for non-updating emitters.
+		for (auto pEmitter : m_emittersNoUpdate)
+		{
+			for (auto pRuntime : pEmitter->GetRuntimes())
+				pRuntime->AccumStats(false);
+		}
+	}
+	m_emittersNoUpdate.resize(0);
 	m_emittersInvisible.resize(0);
 	m_emittersVisible.resize(0);
 	m_emittersDeferred.resize(0);

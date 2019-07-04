@@ -5,6 +5,7 @@
 #include "../ParticleSystem.h"
 #include "../ParticleComponentRuntime.h"
 #include "TimeOfDay.h"
+#include "3dEngine.h"
 
 namespace pfx2
 {
@@ -182,7 +183,7 @@ EDataDomain CDomain::GetDomain() const
 	{
 	case EDomain::Global:
 	case EDomain::Attribute:
-		return update;
+		return EDataDomain(EDD_Emitter | update);
 	}
 
 	switch (m_sourceOwner)

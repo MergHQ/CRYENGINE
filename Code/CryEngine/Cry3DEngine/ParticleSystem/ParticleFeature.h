@@ -72,11 +72,15 @@ public:
 
 	virtual void MainPreUpdate(CParticleComponentRuntime& runtime) {}
 
-	virtual void UpdateSpawners(CParticleComponentRuntime& runtime) {}
+	virtual void RemoveSpawners(CParticleComponentRuntime& runtime) {}
+
+	virtual void AddSpawners(CParticleComponentRuntime& runtime) {}
 
 	virtual void CullSpawners(CParticleComponentRuntime& runtime, TVarArray<SSpawnerDesc>& spawners) {}
 
 	virtual void InitSpawners(CParticleComponentRuntime& runtime) {}
+
+	virtual void UpdateSpawners(CParticleComponentRuntime& runtime) {}
 
 	// Particle initialization
 	virtual void KillParticles(CParticleComponentRuntime& runtime) {}
@@ -128,9 +132,11 @@ struct SFeatureDispatchers
 	FEATURE_DISPATCHER(MainPreUpdate);
 	FEATURE_DISPATCHER(GetDynamicData);
 
-	FEATURE_DISPATCHER(UpdateSpawners);
+	FEATURE_DISPATCHER(RemoveSpawners);
+	FEATURE_DISPATCHER(AddSpawners);
 	FEATURE_DISPATCHER(CullSpawners);
 	FEATURE_DISPATCHER(InitSpawners);
+	FEATURE_DISPATCHER(UpdateSpawners);
 	FEATURE_DISPATCHER(KillParticles);
 	FEATURE_DISPATCHER(SpawnParticles);
 

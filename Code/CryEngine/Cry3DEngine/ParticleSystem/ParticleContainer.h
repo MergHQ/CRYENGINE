@@ -19,6 +19,11 @@ typedef TIOStream<uint32>      IOUintStream;
 typedef TIStream<TParticleId>  IPidStream;
 typedef TIOStream<TParticleId> IOPidStream;
 
+namespace detail
+{
+using SMoveElem = std::pair<TParticleId, TParticleId>;
+}
+
 class CParticleContainer
 {
 public:
@@ -35,8 +40,8 @@ public:
 	template<typename T> void         FillData(TDataType<T> type, const T& data, SUpdateRange range);
 	void                              CopyData(EParticleDataType dstType, EParticleDataType srcType, SUpdateRange range);
 
-	template<typename T> TIStream<T>  IStream(TDataType<T> type, const T& defaultVal = T()) const { return TIStream<T>(Data(type), defaultVal);	}
-	template<typename T> TIOStream<T> IOStream(TDataType<T> type) 	                              { return TIOStream<T>(Data(type));	}
+	template<typename T> TIStream<T>  IStream(TDataType<T> type, const T& defaultVal = T()) const { return TIStream<T>(Data(type), AlignedSize(), defaultVal);	}
+	template<typename T> TIOStream<T> IOStream(TDataType<T> type) 	                              { return TIOStream<T>(Data(type), AlignedSize());	}
 
 	TIStream<Vec3>                    IStream(TDataType<Vec3> type, Vec3 defaultVal = Vec3(0)) const;
 	TIOStream<Vec3>                   IOStream(TDataType<Vec3> type);
@@ -57,6 +62,9 @@ public:
 
 	uint32                            Size() const                    { CRY_PFX2_ASSERT(!HasNewBorns()); return m_lastId; }
 	uint32                            RealSize() const                { return m_lastId + HasNewBorns() * NumSpawned(); }
+	uint32                            ExtendedSize() const            { return m_lastDeadId;}
+	uint32                            AlignedSize() const             { return CRY_PFX2_GROUP_ALIGN(m_lastDeadId); }
+	uint32                            NumElements() const             { return RealSize() + DeadRange().size(); }
 	uint32                            Capacity() const                { return m_capacity; }
 	uint32                            LastSpawned() const             { return m_lastSpawnId; }
 	uint32                            NumSpawned() const              { return m_lastSpawnId - m_firstSpawnId; }
@@ -66,15 +74,19 @@ public:
 	SUpdateRange                      FullRange() const               { CRY_PFX2_ASSERT(!HasNewBorns()); return SUpdateRange(0, m_lastId); }
 	SUpdateRange                      SpawnedRange() const            { return SUpdateRange(m_firstSpawnId, m_lastSpawnId); }
 	SUpdateRange                      NonSpawnedRange() const         { return SUpdateRange(0, min(m_lastId, m_firstSpawnId)); }
+	SUpdateRange                      DeadRange() const               { return SUpdateRange(m_firstDeadId, m_lastDeadId); }
 	uint32                            TotalSpawned() const            { return m_totalSpawned; }
 	uint32                            GetSpawnIdOffset() const        { return m_totalSpawned - m_lastSpawnId; }
+	bool                              IdIsAlive(TParticleId id) const { return id < m_lastId; }
+	bool                              IdIsDead(TParticleId id) const  { return id >= m_firstDeadId && id < m_lastDeadId; }
+	bool                              IdIsValid(TParticleId id) const { return IdIsAlive(id) || IdIsDead(id); }
 
 	void                              BeginSpawn();
-	void                              AddElements(uint count);
+	bool                              AddNeedsMove(uint count) const;
+	void                              AddElements(uint count, TVarArray<TParticleId> swapIds = {});
 	void                              EndSpawn();
-	void                              MakeSwapIds(TConstArray<TParticleId> toRemove, TVarArray<TParticleId> swapIds);
-	void                              RemoveElements(TVarArray<TParticleId> toRemove);
-	void                              Reparent(TConstArray<TParticleId> swapIds, TDataType<TParticleId> parentType, bool removeOrphans = false);
+	void                              RemoveElements(TConstArray<TParticleId> toRemove, TConstArray<bool> doPreserve = {}, TVarArray<TParticleId> swapIds = {});
+	void                              Reparent(TConstArray<TParticleId> swapIds, TDataType<TParticleId> parentType);
 
 	// Old names	
 	uint32                            GetNumParticles() const { return Size(); }
@@ -87,15 +99,19 @@ private:
 
 	byte*                             AllocData(uint cap, uint size);
 	void                              FreeData();
-	
-	SUseDataRef m_useData;
-	byte*       m_pData        = 0;
+	void                              MoveData(uint dst, uint src, uint count);
+	void                              MoveData(TConstArray<detail::SMoveElem> toMove, TVarArray<TParticleId> swapIds);
 
 	TParticleId m_lastId       = 0;
 	TParticleId m_firstSpawnId = 0;
 	TParticleId m_lastSpawnId  = 0;
+	TParticleId m_firstDeadId  = 0;
+	TParticleId m_lastDeadId   = 0;
 	TParticleId m_capacity     = 0;
 	TParticleId m_totalSpawned = 0;
+
+	SUseDataRef m_useData;
+	byte*       m_pData        = 0;
 };
 
 }

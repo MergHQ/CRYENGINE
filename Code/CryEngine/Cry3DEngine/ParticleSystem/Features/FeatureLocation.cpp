@@ -242,7 +242,7 @@ public:
 			for (auto i : range)
 			{
 				const Vec3 axis1 = m_axisScale * abs(sizes[i].end),
-						   axis0 = m_axisScale * abs(sizes[i].start);
+						   axis0 = m_axisScale * (abs(sizes[i].start) * m_innerFraction);
 				extents[i] += Vec4(1,
 					(axis1.x + axis1.y + axis1.z) * 0.5f,
 					axis1.x * axis1.y + axis1.y * axis1.z + axis1.z * axis1.x,
@@ -358,7 +358,7 @@ public:
 			for (auto i : range)
 			{
 				const Vec2 axis1 = m_axisScale * abs(sizes[i].end),
-				           axis0 = m_axisScale * abs(sizes[i].start);
+				           axis0 = m_axisScale * (abs(sizes[i].start) * m_innerFraction);
 				extents[i] += Vec4(1,
 					axis1.x + axis1.y,
 					axis1.x * axis1.y - axis0.x * axis0.y,
@@ -1085,8 +1085,8 @@ public:
 	{
 		// Need to compute average final velocity and travel for particles.
 		// Run particles for full lifetime in a temporary runtime
-		CParticleComponentRuntime runtimeTemp(runtime.GetEmitter(), runtime.GetComponent());
-		runtimeTemp.RunParticles(32, runtime.ComponentParams().m_maxParticleLife);
+		CParticleComponentRuntime runtimeTemp(runtime.GetEmitter(), runtime.Parent(), runtime.GetComponent());
+		runtimeTemp.RunParticles(32, runtime.GetDynamicData(EPDT_LifeTime));
 
 		CParticleContainer& container = runtimeTemp.GetContainer();
 		auto positions = container.IStream(EPVF_Position);
@@ -1187,12 +1187,12 @@ public:
 		
 		if (newPositions.size())
 		{
-			const float life = runtime.ComponentParams().m_maxParticleLife;
-			float fracNewSpawned = deltaTime / life;
+			const float particleLife = runtime.GetDynamicData(EPDT_LifeTime);
+			float fracNewSpawned = deltaTime / particleLife;
 			SSpawnEntry spawn = {};
 			spawn.m_count = uint(newPositions.size() * (1.0f - fracNewSpawned));
 			spawn.m_ageBegin = 0.0f;
-			spawn.m_ageIncrement = life / float(spawn.m_count);
+			spawn.m_ageIncrement = particleLife / float(spawn.m_count);
 			runtime.AddParticles({&spawn, 1});
 		}
 
@@ -1365,11 +1365,11 @@ private:
 	}
 
 	// Parameters
-	CParamMod<EDD_None, UFloat100> m_visibilityRange;
-	bool                           m_spawnOutsideView = false;
+	CParamMod<EDD_Emitter, UFloat100> m_visibilityRange;
+	bool                              m_spawnOutsideView = false;
 
 	// Debugging options
-	bool                           m_useEmitterLocation = false;
+	bool                              m_useEmitterLocation = false;
 };
 
 CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureLocationOmni, "Location", "Omni", colorLocation);

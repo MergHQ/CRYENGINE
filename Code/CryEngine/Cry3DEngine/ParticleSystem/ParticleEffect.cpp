@@ -224,7 +224,8 @@ IParticleEmitter* CParticleEffect::Spawn(const ParticleLoc& loc, const SpawnPara
 	CParticleEmitter* pCEmitter = static_cast<CParticleEmitter*>(pEmitter.get());
 	if (pSpawnParams)
 		pCEmitter->SetSpawnParams(*pSpawnParams);
-	pEmitter->Activate(true);
+	if (!DebugMode('a')) // Force all emitters inactive on load
+		pEmitter->Activate(true);
 	pCEmitter->SetLocation(loc);
 	return pEmitter;
 }

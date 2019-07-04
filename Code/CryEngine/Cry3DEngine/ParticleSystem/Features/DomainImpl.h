@@ -431,7 +431,7 @@ void TModFunction<Child, T, TFrom>::Sample(TVarArray<TFrom> samples) const
 	Child().DoModify(
 		*s_pNone,
 		SUpdateRange(0, samples.size()),
-		TIOStream<TFrom>(samples.data()),
+		TIOStream<TFrom>(samples.data(), samples.size()),
 		detail::ParticleIdSampler(samples.size()));
 }
 

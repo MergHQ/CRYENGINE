@@ -9,6 +9,7 @@
 namespace pfx2
 {
 
+extern TDataType<STimingParams> EEDT_Timings;
 
 //////////////////////////////////////////////////////////////////////////
 class CFeatureChildBase : public CParticleFeature
@@ -23,9 +24,18 @@ public:
 	{
 		if (!pComponent->GetParentComponent())
 			return;
-		pComponent->UpdateSpawners.add(this);
+		pComponent->AddSpawners.add(this);
 		if (IsDelayed())
-			pParams->m_maxTotalLife += pComponent->GetParentComponent()->GetComponentParams().m_maxParticleLife;
+			pComponent->GetDynamicData.add(this);
+	}
+
+	virtual void GetDynamicData(const CParticleComponentRuntime& runtime, EParticleDataType type, void* data, EDataDomain domain, SUpdateRange range) override
+	{
+		if (auto timings = EEDT_Timings.Cast(type, data, range))
+		{
+			const float parentLife = runtime.Parent()->GetDynamicData(EPDT_LifeTime);
+			timings[0].m_maxTotalLife += parentLife;
+		}
 	}
 
 	virtual bool IsDelayed() const { return false; }
@@ -40,7 +50,7 @@ public:
 
 	static uint DefaultForType() { return EFT_Child; }
 
-	void UpdateSpawners(CParticleComponentRuntime& runtime) override
+	void AddSpawners(CParticleComponentRuntime& runtime) override
 	{
 		CParticleContainer& parentContainer = runtime.GetParentContainer();
 		IFStream normAges = parentContainer.GetIFStream(EPDT_NormalAge);
@@ -70,7 +80,7 @@ public:
 
 	bool IsDelayed() const override { return true; }
 
-	void UpdateSpawners(CParticleComponentRuntime& runtime) override
+	void AddSpawners(CParticleComponentRuntime& runtime) override
 	{
 		CParticleContainer& parentContainer = runtime.GetParentContainer();
 		
@@ -127,7 +137,7 @@ public:
 
 	bool IsDelayed() const override { return true; }
 
-	void UpdateSpawners(CParticleComponentRuntime& runtime) override
+	void AddSpawners(CParticleComponentRuntime& runtime) override
 	{
 		CParticleContainer& parentContainer = runtime.GetParentContainer();
 		THeapArray<SSpawnerDesc> spawners(runtime.MemHeap());

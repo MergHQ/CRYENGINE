@@ -159,11 +159,13 @@ enum EDataDomain
 
 	EDD_Particle       = BIT(0), // Data is per particle
 	EDD_Spawner        = BIT(1), // Data is per particle spawner
+	EDD_Emitter        = BIT(2), // Data is per emitter
 
-	EDD_HasUpdate      = BIT(2), // Data is updated per-frame, has additional init-value element
+	EDD_HasUpdate      = BIT(4), // Data is updated per-frame, has additional init-value element
 
 	EDD_ParticleUpdate = EDD_Particle | EDD_HasUpdate,
-	EDD_SpawnerUpdate  = EDD_Spawner | EDD_HasUpdate
+	EDD_SpawnerUpdate  = EDD_Spawner | EDD_HasUpdate,
+	EDD_EmitterUpdate  = EDD_Emitter | EDD_HasUpdate
 };
 
 inline int ElementType(EDataDomain domain) { return (domain & 3) - 1; }
@@ -366,7 +368,8 @@ struct SUseDataRef
 // Standard data types
 extern TDataType<TParticleId>
 	EPDT_SpawnId,
-	EPDT_ParentId;
+	EPDT_ParentId,
+	EPDT_SpawnerId;
 
 extern TDataType<float>
 	EPDT_NormalAge,

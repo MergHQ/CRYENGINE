@@ -12,67 +12,135 @@ using namespace pfx2;
 
 #define arraysize(array) (sizeof(array) / sizeof(array[0]))
 
-void ParticleContainerRemoveTest(size_t containerSz, TParticleId* toRemove, size_t toRemoveSz)
+void ParticleContainerRemovePreserveTest(size_t containerSz, TConstArray<TParticleId> toRemove, TConstArray<bool> doPreserve)
 {
 	// create particles with SpawnId
 	TParticleHeap heap;
 	pfx2::CParticleContainer container;
-	PUseData useData = NewUseData();
-	useData->AddData(EPDT_SpawnId);
-	container.SetUsedData(useData, EDD_Particle);
+	{
+		PUseData useData = NewUseData();
+		useData->AddData(EPDT_SpawnId);
+		container.SetUsedData(useData, EDD_Particle);
+	}
 	container.BeginSpawn();
 	container.AddElements(containerSz);
 	container.EndSpawn();
+
 	IOPidStream spawnIds = container.IOStream(EPDT_SpawnId);
-	for (uint i = 0; i < containerSz; ++i)
+	for (auto i : container.FullRange())
+		spawnIds[i] = i;
+
+	// create child container with ParentId
+	pfx2::CParticleContainer childContainer;
 	{
-		spawnIds.Store(i, i);
+		PUseData useData = NewUseData();
+		useData->AddData(EPDT_ParentId);
+		childContainer.SetUsedData(useData, EDD_Particle);
 	}
+	childContainer.BeginSpawn();
+	childContainer.AddElements((containerSz + 1) / 2);
+	childContainer.EndSpawn();
+
+	IOPidStream parentIds = childContainer.IOStream(EPDT_ParentId);
+	for (auto i : childContainer.FullRange())
+		parentIds[i] = i * 2;
 
 	// remove particles
-	TParticleIdArray toRemoveMem(heap);
-	toRemoveMem.reserve(toRemoveSz);
-	for (size_t i = 0; i < toRemoveSz; ++i)
-	{
-		toRemoveMem.push_back(toRemove[i]);
-	}
 	TParticleIdArray swapIds(heap, container.Size());
-	container.MakeSwapIds(toRemoveMem, swapIds);
-	container.RemoveElements(toRemoveMem);
+	container.RemoveElements(toRemove, doPreserve, swapIds);
+
+	uint newCount = containerSz - toRemove.size();
+	REQUIRE(container.FullRange().size() == newCount);
+
+	spawnIds = container.IOStream(EPDT_SpawnId);
 
 	// check if none of the particles are in the toRemove list
-	for (uint i = 0; i < containerSz - toRemoveSz; ++i)
+	for (auto i : container.FullRange())
 	{
-		for (uint j = 0; j < toRemoveSz; ++j)
+		for (auto r : toRemove)
 		{
-			REQUIRE(spawnIds.Load(i) != toRemove[j]);
+			REQUIRE(spawnIds[i] != r);
 		}
 	}
 
 	// check that no ids are repeated
-	for (uint i = 0; i < containerSz - toRemoveSz; ++i)
+	for (auto i : container.FullRange())
 	{
-		for (uint j = 0; j < containerSz - toRemoveSz; ++j)
+		for (auto j : container.FullRange())
 		{
 			if (i == j)
-			{
 				continue;
-			}
-			REQUIRE(spawnIds.Load(i) != spawnIds.Load(j));
+			REQUIRE(spawnIds[i] != spawnIds[j]);
 		}
 	}
 
-	// check if SwapIds is consistent with the actual final locations of the particles
-	TParticleIdArray expected(heap, containerSz);
-	for (uint i = 0; i < containerSz - toRemoveSz; ++i)
+	// check that elements were archived
+	if (doPreserve.size())
 	{
-		expected[spawnIds.Load(i)] = i;
+		auto deadIndex = container.DeadRange().m_begin;
+		for (auto id : toRemove)
+		{
+			if (doPreserve[id])
+			{
+				REQUIRE(deadIndex < container.DeadRange().m_end);
+				uint spawnId = spawnIds[deadIndex++];
+				REQUIRE(spawnId == id);
+			}
+		}
 	}
-	for (uint i = 0; i < toRemoveSz; ++i)
+
+	// check that SwapIds correspond to swapped SpawnIds
+	for (TParticleId i = 0; i < containerSz; ++i)
+	{ 
+		TParticleId i1 = swapIds[i];
+		if (i1 != gInvalidId)
+		{
+			TParticleId spawn = spawnIds[i1];
+			REQUIRE(spawn == i);
+		}
+	}
+
+	// check reparenting of child
+	childContainer.Reparent(swapIds, EPDT_ParentId);
+	for (auto i : childContainer.FullRange())
 	{
-		expected[toRemove[i]] = gInvalidId;
+		uint parentId0 = i * 2;
+		bool removed = stl::find(toRemove, parentId0);
+		bool archived = removed && doPreserve.size() && doPreserve[parentId0];
+
+		uint parentId = parentIds[i];
+		if (parentId == gInvalidId)
+		{
+			REQUIRE(removed && !archived);
+		}
+		else
+		{
+			REQUIRE(!removed || archived);
+			REQUIRE(parentId < container.ExtendedSize());
+			uint parentSpawnId = spawnIds[parentId];
+			REQUIRE(parentSpawnId == parentId0);
+		}
 	}
-	REQUIRE(memcmp(swapIds.data(), expected.data(), sizeof(TParticleId) * containerSz) == 0);
+}
+
+void ParticleContainerRemoveTest(size_t containerSz, TConstArray<TParticleId> toRemove, TConstArray<TParticleId> toArchive)
+{
+	if (!toArchive.size())
+		return ParticleContainerRemovePreserveTest(containerSz, toRemove, {});
+
+	TParticleHeap heap;
+	THeapArray<bool> doPreserve(heap);
+	doPreserve.resize(containerSz, false);
+	for (auto id : toArchive)
+		doPreserve[id] = true;
+
+	THeapArray<TParticleId> toRemoveFull(heap);
+	toRemoveFull.reserve(toRemove.size() + toArchive.size());
+	toRemoveFull.append(toRemove);
+	toRemoveFull.append(toArchive);
+	stl::sort(toRemoveFull, [](TParticleId id) { return id; });
+
+	ParticleContainerRemovePreserveTest(containerSz, toRemoveFull, doPreserve);
 }
 
 TEST(CParticleContainerTest, Remove)
@@ -82,37 +150,47 @@ TEST(CParticleContainerTest, Remove)
 
 	{
 		TParticleId toRemove[] = { 3, 4 };
-		ParticleContainerRemoveTest(5, toRemove, arraysize(toRemove));
+		ParticleContainerRemoveTest(5, toRemove, {});
+		ParticleContainerRemoveTest(5, {}, toRemove);
 	}
 
 	{
 		TParticleId toRemove[] = { 8, 12 };
-		ParticleContainerRemoveTest(13, toRemove, arraysize(toRemove));
+		ParticleContainerRemoveTest(13, toRemove, {});
+		ParticleContainerRemoveTest(13, {}, toRemove);
 	}
 
 	{
 		TParticleId toRemove[] = { 0, 4 };
-		ParticleContainerRemoveTest(5, toRemove, arraysize(toRemove));
+		TParticleId toArchive[] = { 2 };
+		ParticleContainerRemoveTest(5, toRemove, toArchive);
+		ParticleContainerRemoveTest(5, toArchive, toRemove);
 	}
 
 	{
 		TParticleId toRemove[] = { 4, 7, 9 };
-		ParticleContainerRemoveTest(10, toRemove, arraysize(toRemove));
+		TParticleId toArchive[] = { 0, 8 };
+		ParticleContainerRemoveTest(10, toRemove, toArchive);
+		ParticleContainerRemoveTest(10, toArchive, toRemove);
 	}
 
 	{
 		TParticleId toRemove[] = { 0, 1, 2, 4, 5, 6 };
-		ParticleContainerRemoveTest(7, toRemove, arraysize(toRemove));
+		ParticleContainerRemoveTest(7, toRemove, {});
+		ParticleContainerRemoveTest(7, {}, toRemove);
 	}
 
 	{
 		TParticleId toRemove[] = { 0 };
-		ParticleContainerRemoveTest(1, toRemove, arraysize(toRemove));
+		ParticleContainerRemoveTest(1, toRemove, {});
+		ParticleContainerRemoveTest(1, {}, toRemove);
 	}
 
 	{
-		TParticleId toRemove[] = { 9, 11 };
-		ParticleContainerRemoveTest(21, toRemove, arraysize(toRemove));
+		TParticleId toRemove[] = { 0, 1, 2, 4 };
+		TParticleId toArchive[] = { 3, 5 };
+		ParticleContainerRemoveTest(6, toRemove, toArchive);
+		ParticleContainerRemoveTest(6, toArchive, toRemove);
 	}
 }
 
@@ -288,14 +366,14 @@ TEST(ParticleSSE, IndexedLoad4)
 	got = LoadIndexed4(stream, index, -1.0f);
 	REQUIRE(All(got == expected));
 
-	index = _mm_set_epi32(0, -1, 2, -1);
-	expected = _mm_set_ps(0.0f, -1.0f, 2.0f, -1.0f);
+	index = _mm_set_epi32(3, 4, 5, -1);
+	expected = _mm_set_ps(3.0f, 4.0f, 5.0f, -1.0f);
 	got = LoadIndexed4(stream, index, -1.0f);
 	REQUIRE(All(got == expected));
 
 	index = _mm_set_epi32(-1, -1, -1, -1);
-	expected = _mm_set_ps(-1.0f, -1.0f, -1.0f, -1.0f);
-	got = LoadIndexed4(stream, index, -1.0f);
+	expected = _mm_set_ps(-2.0f, -2.0f, -2.0f, -2.0f);
+	got = LoadIndexed4(stream, index, -2.0f);
 	REQUIRE(All(got == expected));
 
 	index = _mm_set_epi32(9, 9, 2, 2);

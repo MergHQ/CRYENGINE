@@ -360,17 +360,18 @@ void CParticleEmitter::DebugRender(const SRenderingPassInfo& passInfo) const
 		{
 			if (pRuntime->GetComponent()->IsVisible() && !pRuntime->GetBounds().IsReset())
 			{
-				uint numParticles = pRuntime->GetNumParticles();
+				uint numParticles = pRuntime->Container().RealSize();
 				emitterParticles += numParticles;
 				const float volumeRatio = div_min(pRuntime->GetBounds().GetVolume(), m_realBounds.GetVolume(), 1.0f);
 				bool hasShadows = !!(pRuntime->ComponentParams().m_environFlags & ENV_CAST_SHADOWS);
 				const ColorB componentColor = ColorF(!hasShadows, 0.5, 0) * (alphaColor * sqrt(sqrt(volumeRatio)));
 				pRenderAux->DrawAABB(pRuntime->GetBounds(), false, componentColor, eBBD_Faceted);
-				string label = string().Format("%s #%d", pRuntime->GetComponent()->GetName(), numParticles);
+				string label = string().Format("%s #S:%d #P:%d",
+					pRuntime->GetComponent()->GetName(), pRuntime->Container(EDD_Spawner).Size(), numParticles);
 				IRenderAuxText::DrawLabelEx(pRuntime->GetBounds().GetCenter(), 1.5f, componentColor, true, true, label);
 			}
 		}
-		string label = string().Format("%s #%d Age %.3f", m_pEffect->GetShortName().c_str(), emitterParticles, GetAge());
+		string label = string().Format("%s Age:%.3f #P:%d", m_pEffect->GetShortName().c_str(), GetAge(), emitterParticles);
 		IRenderAuxText::DrawLabelEx(m_location.t, 1.5f, (float*)&alphaColor, true, true, label);
 	}
 	if (!m_bounds.IsReset())
@@ -712,16 +713,20 @@ void CParticleEmitter::UpdateRuntimes()
 			continue;
 		}
 
+		auto parentComponent = pComponent->GetParentComponent();
 		CParticleComponentRuntime* pRuntime = stl::find_value_if(m_runtimes,
 			[&](CParticleComponentRuntime* pRuntime)
 			{
-				return pRuntime->GetComponent() == pComponent;
+				auto thisParentComponent = pRuntime->Parent() ? pRuntime->Parent()->GetComponent() : nullptr;
+				return pRuntime->GetComponent() == pComponent
+					&& thisParentComponent == parentComponent;
 			}
 		);
 
 		if (!pRuntime || !pRuntime->IsValidForComponent())
 		{
-			pRuntime = new CParticleComponentRuntime(this, pComponent);
+			auto parentRuntime = parentComponent ? GetRuntimeFor(parentComponent) : nullptr;
+			pRuntime = new CParticleComponentRuntime(this, parentRuntime, pComponent);
 		}
 		else
 		{
@@ -868,7 +873,7 @@ uint CParticleEmitter::GetParticleSpec() const
 	return GetPSystem()->GetParticleSpec();
 }
 
-pfx2::STimingParams CParticleEmitter::GetMaxTimings() const
+STimingParams CParticleEmitter::GetMaxTimings() const
 {
 	CRY_PFX2_PROFILE_DETAIL;
 
@@ -878,7 +883,6 @@ pfx2::STimingParams CParticleEmitter::GetMaxTimings() const
 		if (!pRuntime->GetComponent()->GetParentComponent())
 		{
 			STimingParams timings = pRuntime->GetMaxTimings();
-			SetMax(timingsMax.m_maxParticleLife, timings.m_maxParticleLife);
 			SetMax(timingsMax.m_stableTime, timings.m_stableTime);
 			SetMax(timingsMax.m_equilibriumTime, timings.m_equilibriumTime);
 			SetMax(timingsMax.m_maxTotalLife, timings.m_maxTotalLife);

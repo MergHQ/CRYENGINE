@@ -126,17 +126,20 @@ template<EDataDomain Domain, typename T>
 auto CParamMod<Domain, T>::GetValues(const CParticleComponentRuntime& runtime, TVarArray<TType> data, EDataDomain domain) const -> TRange<TFrom>
 {
 	TRange<TType> minmax(1);
-	TIOStream<TType> stream(data.data());
+	TIOStream<TType> stream(data.data(), data.size());
 	SUpdateRange range(0, data.size());
 
 	data.fill(m_baseValue);
 
 	for (auto& pMod : m_modifiers)
 	{
-		if (domain >= (min(pMod->GetDomain(), Domain) & ~EDD_HasUpdate))
-			pMod->Modify(runtime, range, stream, domain);
-		else
-			minmax = minmax * pMod->GetMinMax();
+		if (pMod && pMod->IsEnabled())
+		{
+			if (pMod->GetDomain() >= (max(domain, Domain) & ~EDD_HasUpdate))
+				pMod->Modify(runtime, range, stream, domain);
+			else
+				minmax = minmax * pMod->GetMinMax();
+		}
 	}
 	return minmax;
 }
@@ -146,7 +149,7 @@ auto CParamMod<Domain, T>::GetValueRange(const CParticleComponentRuntime& runtim
 {
 	floatv curValueV = convert<floatv>(0.0f);
 	float& curValue = (float&)curValueV;
-	auto minmax = GetValues(runtime, TVarArray<float>(&curValue, 1), EDD_None);
+	auto minmax = GetValues(runtime, TVarArray<float>(&curValue, 1), EDD_Emitter);
 	return minmax * curValue;
 }
 
@@ -155,7 +158,10 @@ auto CParamMod<Domain, T>::GetValueRange() const -> TRange<TFrom>
 {
 	TRange<TType> minmax(m_baseValue);
 	for (auto& pMod : m_modifiers)
-		minmax = minmax * pMod->GetMinMax();
+	{
+		if (pMod && pMod->IsEnabled())
+			minmax = minmax * pMod->GetMinMax();
+	}
 	return minmax;
 }
 
@@ -165,7 +171,7 @@ void pfx2::CParamMod<Domain, T>::Sample(TVarArray<TFrom> samples) const
 	samples.fill(T::From(m_baseValue));
 	for (auto& pMod : m_modifiers)
 	{
-		if (pMod->IsEnabled())
+		if (pMod && pMod->IsEnabled())
 			pMod->Sample(samples);
 	}
 }

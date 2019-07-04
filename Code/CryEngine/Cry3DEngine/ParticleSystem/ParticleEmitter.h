@@ -123,7 +123,6 @@ public:
 	bool                      HasParticles() const;
 	bool                      HasBounds() const            { return m_bounds.GetVolume() > 0.0f; }
 	void                      AddBounds(const AABB& bb);
-	bool                      NeedsUpdate() const          { return ThreadMode() < 3 || !IsStable() || WasRenderedLastFrame(); }
 	uint                      Debug() const                { return m_debug; }
 
 private:

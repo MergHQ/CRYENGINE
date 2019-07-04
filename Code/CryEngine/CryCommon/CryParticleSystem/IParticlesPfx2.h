@@ -94,6 +94,7 @@ struct IParticleComponent : public _i_reference_target_t
 struct SSpawnEntry
 {
 	uint32 m_count;
+	uint32 m_spawnerId;
 	uint32 m_parentId;
 	float  m_ageBegin;
 	float  m_ageIncrement;

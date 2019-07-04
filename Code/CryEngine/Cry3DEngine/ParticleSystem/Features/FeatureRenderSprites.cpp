@@ -406,7 +406,7 @@ void CFeatureRenderSprites::SortSprites(SSpritesContext& spritesContext)
 				keys[i] = (float)ids.Load(particleId);
 			}
 		}
-		else if (!spritesContext.m_runtime.ComponentParams().IsImmortal()
+		else if (!spritesContext.m_runtime.ComponentParams().m_isImmortal
 		&& container.HasData(EPDT_SpawnFraction))
 		{
 			auto fractions = container.IStream(EPDT_SpawnFraction);

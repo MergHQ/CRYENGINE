@@ -40,10 +40,23 @@ void CParticleContainer::FreeData()
 	if (!m_pData)
 		return;
 	CryModuleMemalignFree(m_pData);
-	UsedMem[m_useData.domain] -= m_lastId * m_useData.totalSize;
-	AllocMem[m_useData.domain] -= m_capacity * m_useData.totalSize;
+	UsedMem[m_useData.domain] -= NumElements() * m_useData.totalSize;
+	AllocMem[m_useData.domain] -= Capacity() * m_useData.totalSize;
 }
 
+void CParticleContainer::MoveData(uint dst, uint src, uint count)
+{
+	CRY_PFX2_PROFILE_DETAIL;
+
+	for (auto type : EParticleDataType::indices())
+	{
+		if (byte* pBytes = ByteData(type))
+		{
+			const size_t stride = type.info().typeSize;
+			memcpy(pBytes + dst * stride, pBytes + src * stride, count * stride);
+		}
+	}
+}
 
 void CParticleContainer::Resize(uint32 newSize)
 {
@@ -64,7 +77,7 @@ void CParticleContainer::Resize(uint32 newSize)
 			{
 				uint offset = m_useData.offsets[type];
 				const size_t stride = type.info().typeSize;
-				memcpy(pNew + offset * newCapacity, m_pData + m_capacity * offset, m_lastId * stride);
+				memcpy(pNew + offset * newCapacity, m_pData + m_capacity * offset, ExtendedSize() * stride);
 			}
 		}
 	}
@@ -84,12 +97,12 @@ void CParticleContainer::SetUsedData(const PUseData& pUseData, EDataDomain domai
 			|| memcmp(pUseData->offsets.data(), m_useData.offsets.data(), m_useData.offsets.size_mem()))
 		{
 			// Transfer existing data
-			byte* pNew = AllocData(m_lastId * pUseData->totalSizes[domain], m_capacity * pUseData->totalSizes[domain]);
+			byte* pNew = AllocData(ExtendedSize() * pUseData->totalSizes[domain], m_capacity * pUseData->totalSizes[domain]);
 			for (auto type : EParticleDataType::indices())
 			{
 				if (pUseData->Used(type) && m_useData.Used(type))
 				{
-					memcpy(pNew + m_capacity * pUseData->offsets[type], m_pData + m_capacity * m_useData.offsets[type], m_lastId * type.info().typeSize);
+					memcpy(pNew + m_capacity * pUseData->offsets[type], m_pData + m_capacity * m_useData.offsets[type], ExtendedSize() * type.info().typeSize);
 				}
 			}
 			FreeData();
@@ -121,46 +134,72 @@ void CParticleContainer::Clear()
 {
 	FreeData();
 	m_pData = nullptr;
-	m_capacity = m_lastId = m_firstSpawnId = m_lastSpawnId = m_totalSpawned = 0;
+	m_capacity = m_lastId = m_firstSpawnId = m_lastSpawnId = m_firstDeadId = m_lastDeadId = m_totalSpawned = 0;
 }
 
-template<typename TData, typename FnCopy>
-ILINE void SwapToEndRemove(TParticleId lastParticleId, TConstArray<TParticleId> toRemove, TData* pData, size_t stride, FnCopy fnCopy)
+
+namespace detail
 {
-	const uint finalSize = lastParticleId - toRemove.size();
-	uint end = lastParticleId - 1;
-	uint i = 0;
-	uint j = toRemove.size() - 1;
-	for (; i < toRemove.size() && toRemove[i] < finalSize; ++i, --end)
+template<typename T> ILINE void copyElement(T* pData, size_t stride, size_t dst, size_t src)
+{
+	pData[dst] = pData[src];
+}
+template<> ILINE void copyElement(char* pData, size_t stride, size_t dst, size_t src)
+{
+	memcpy(pData + dst * stride, pData + src * stride, stride);
+}
+
+template<typename T>
+void MoveElements(TConstArray<SMoveElem> toMove, T* pData, size_t stride = 0)
+{
+	for (auto move : toMove)
 	{
-		for (; end == toRemove[j]; --j, --end)
-			;
-		fnCopy(pData + stride * toRemove[i], pData + stride * end, stride * sizeof(TData));
+		copyElement(pData, stride, move.second, move.first);
 	}
 }
 
-void SwapToEndRemove(TParticleId lastParticleId, TConstArray<TParticleId> toRemove, void* pData, size_t stride)
+void AddMove(TDynArray<SMoveElem>& toMove, TParticleId src, TParticleId dst)
 {
-	auto copyFn = [](uint8* pDest, uint8* pSrc, uint stride)
+	if (src != dst)
 	{
-		memcpy(pDest, pSrc, stride);
-	};
-	SwapToEndRemove(lastParticleId, toRemove, reinterpret_cast<uint8*>(pData), stride, copyFn);
+		if (toMove.size() && toMove.back().second == src)
+			toMove.back().second = dst;
+		else
+			toMove.emplace_back(src, dst);
+	}
 }
 
-template<typename TData>
-void SwapToEndRemove(TParticleId lastParticleId, TConstArray<TParticleId> toRemove, TData* pData)
+void RemoveElements(TConstArray<TParticleId> toRemove, TDynArray<SMoveElem>& toMove, TParticleId& endId)
 {
-	auto copyFn = [](TData* pDest, TData* pSrc, uint stride)
+	uint pos;
+	for (pos = toRemove.size(); pos-- > 0; )
 	{
-		*pDest = *pSrc;
-	};
-	SwapToEndRemove(lastParticleId, toRemove, pData, 1, copyFn);
+		AddMove(toMove, --endId, toRemove[pos]);
+	}
+}
+
+void InitSwapIds(TVarArray<TParticleId> swapIds)
+{
+	for (TParticleId id = 0; id < swapIds.size(); ++id)
+		swapIds[id] = id;
+}
+
 }
 
 void CParticleContainer::BeginSpawn()
 {
 	m_firstSpawnId = m_lastSpawnId = m_lastId;
+}
+
+bool CParticleContainer::AddNeedsMove(uint count) const
+{
+	if (!count || m_lastDeadId == m_firstDeadId)
+		return false;
+
+	TParticleId newfirstSpawn = max(m_firstSpawnId, CRY_PFX2_GROUP_ALIGN(m_lastId));
+	TParticleId newLastSpawn = newfirstSpawn + count;
+
+	return newLastSpawn > m_firstDeadId;
 }
 
 void CParticleContainer::AddElement()
@@ -169,91 +208,118 @@ void CParticleContainer::AddElement()
 	EndSpawn();
 }
 
-void CParticleContainer::AddElements(uint count)
+void CParticleContainer::AddElements(uint count, TVarArray<TParticleId> swapIds)
 {
 	if (!count)
 		return;
 
-	if (m_firstSpawnId <= m_lastId)
-		m_firstSpawnId = m_lastSpawnId = CRY_PFX2_GROUP_ALIGN(m_lastId);
-
-	m_lastSpawnId += count;
-	m_totalSpawned += count;
-
-	Resize(m_lastSpawnId);
-}
-
-void CParticleContainer::RemoveElements(TVarArray<TParticleId> toRemove)
-{
 	CRY_PFX2_PROFILE_DETAIL;
 
-	if (toRemove.empty())
-		return;
+	// Resize for added elements
+	if (m_firstSpawnId <= m_lastId)
+		m_firstSpawnId = m_lastSpawnId = CRY_PFX2_GROUP_ALIGN(m_lastId);
+	m_lastSpawnId += count;
 
-	for (auto dataTypeId : EParticleDataType::indices())
+	uint deadCount = DeadRange().size();
+	if (AddNeedsMove(count))
 	{
-		byte* pData = ByteData(dataTypeId);
-		if (!pData)
-			continue;
-		const uint stride = dataTypeId.info().typeSize;
-		switch (stride)
+		CRY_ASSERT(swapIds.size() >= ExtendedSize());
+		uint newDead = max(m_firstDeadId, CRY_PFX2_GROUP_ALIGN(m_lastSpawnId));
+		uint newSize = newDead + deadCount;
+
+		Resize(newSize);
+
+		// Move dead elements out of added range
+		uint moveEnd = min(newDead, m_lastDeadId);
+		uint moveDest = max(newDead, m_lastDeadId);
+		uint moveCount = moveEnd - m_firstDeadId;
+
+		MoveData(moveDest, m_firstDeadId, moveCount);
+
+		detail::InitSwapIds(swapIds);
+		while (m_firstDeadId < moveEnd)
+			swapIds[m_firstDeadId++] = moveDest++;
+
+		m_firstDeadId = newDead;
+		m_lastDeadId = newSize;
+	}
+	else
+	{
+		Resize(m_lastSpawnId);
+		if (!deadCount)
+			m_firstDeadId = m_lastDeadId = m_lastSpawnId;
+	}
+
+	m_totalSpawned += count;
+}
+
+void CParticleContainer::RemoveElements(TConstArray<TParticleId> toRemove, TConstArray<bool> doPreserve, TVarArray<TParticleId> swapIds)
+{
+	CRY_PFX2_PROFILE_DETAIL;
+	CRY_ASSERT(!HasNewBorns());
+
+	// Create move schema
+	TDynArray<detail::SMoveElem> toMove;
+
+	uint archiveCount = 0;
+	if (doPreserve.size())
+	{
+		CRY_ASSERT(doPreserve.size() >= ExtendedSize());
+
+		// Remove unpreserved dead elements
+		for (TParticleId id = m_lastDeadId; id-- > m_firstDeadId; )
 		{
-		case 1:
-			SwapToEndRemove(m_lastId, toRemove, reinterpret_cast<uint8*>(pData));
-			break;
-		case 4:
-			SwapToEndRemove(m_lastId, toRemove, reinterpret_cast<uint32*>(pData));
-			break;
-		case 8:
-			SwapToEndRemove(m_lastId, toRemove, reinterpret_cast<uint64*>(pData));
-			break;
-		default:
-			SwapToEndRemove(m_lastId, toRemove, pData, stride);
+			if (!doPreserve[id])
+				detail::AddMove(toMove, --m_lastDeadId, id);
+		}
+
+		// Count archived elements
+		for (TParticleId id : toRemove)
+			archiveCount += doPreserve[id];
+
+		if (archiveCount)
+		{
+			// Expand for archived elements
+			if (m_lastDeadId == m_firstDeadId)
+				m_firstDeadId = m_lastDeadId = CRY_PFX2_GROUP_ALIGN(m_lastId);
+			m_lastDeadId += archiveCount;
+			Resize(m_lastDeadId);
 		}
 	}
 
-	m_lastId -= toRemove.size();
+	// Remove live elements, swapping from end
+	for (TParticleId archiveDest = m_lastDeadId; toRemove.size(); toRemove.erase_back())
+	{
+		TParticleId id = toRemove.back();
+		CRY_ASSERT(IdIsAlive(id));
+		if (doPreserve.size() && doPreserve[id])
+			detail::AddMove(toMove, id, --archiveDest);
+		detail::AddMove(toMove, --m_lastId, id);
+	}
+
+	if (m_firstDeadId == m_lastDeadId)
+		m_firstDeadId = m_lastDeadId = m_lastId;
 	m_firstSpawnId = m_lastSpawnId = m_lastId;
+
+	MoveData(toMove, swapIds);
 }
 
-void CParticleContainer::Reparent(TConstArray<TParticleId> swapIds, TDataType<TParticleId> parentType, bool removeOrphans)
+void CParticleContainer::Reparent(TConstArray<TParticleId> swapIds, TDataType<TParticleId> parentType)
 {
 	CRY_PFX2_PROFILE_DETAIL;
 
-	TDynArray<TParticleId> removeIds;
 	auto parentIds = IOStream(parentType);
 	for (auto id : FullRange())
 	{
 		TParticleId& parentId = parentIds[id];
 		if (parentId != gInvalidId)
 			parentId = swapIds[parentId];
-		if (removeOrphans && parentId == gInvalidId)
-			removeIds.push_back(id);
 	}
-	if (!removeIds.empty())
-		RemoveElements(removeIds);
-}
-
-void CParticleContainer::MakeSwapIds(TConstArray<TParticleId> toRemove, TVarArray<TParticleId> swapIds)
-{
-	CRY_PFX2_PROFILE_DETAIL;
-
-	const uint finalSize = m_lastId - toRemove.size();
-	CRY_PFX2_ASSERT(uint(swapIds.size()) >= m_lastId);    // swapIds not big enough
-
-	for (TParticleId j = 0; j < m_lastId; ++j)
-		swapIds[j] = j;
-
-	SwapToEndRemove(m_lastId, toRemove, swapIds.data());
-	for (uint i = finalSize; i < m_lastId; ++i)
-		swapIds[i] = gInvalidId;
-
-	for (uint i = 0; i < finalSize; ++i)
+	for (auto id : DeadRange())
 	{
-		TParticleId v0 = swapIds[i];
-		TParticleId v1 = swapIds[v0];
-		swapIds[i] = v1;
-		swapIds[v0] = i;
+		TParticleId& parentId = parentIds[id];
+		if (parentId != gInvalidId)
+			parentId = swapIds[parentId];
 	}
 }
 
@@ -269,19 +335,67 @@ void CParticleContainer::EndSpawn()
 	{
 		const uint numSpawn = NumSpawned();
 		const uint movingId = m_lastSpawnId - min(gapSize, numSpawn);
-		for (auto type : EParticleDataType::indices())
-		{
-			if (byte* pBytes = ByteData(type))
-			{
-				const size_t stride = type.info().typeSize;
-				memcpy(pBytes + m_lastId * stride, pBytes + movingId * stride, gapSize * stride);
-			}
-		}
+		MoveData(m_lastId, movingId, gapSize);
 		m_lastSpawnId -= gapSize;
 		m_firstSpawnId -= gapSize;
 	}
 
 	m_lastId = m_lastSpawnId;
+}
+
+void CParticleContainer::MoveData(TConstArray<detail::SMoveElem> toMove, TVarArray<TParticleId> swapIds)
+{
+	if (!swapIds.empty())
+	{
+		// Update from element moves
+		TDynArray<TParticleId> ids(max(swapIds.size(), ExtendedSize()));
+		detail::InitSwapIds(ids);
+
+		for (auto move : toMove)
+			ids[move.second] = ids[move.first];
+
+		// Create swapIds from current ids
+		swapIds.fill(gInvalidId);
+		for (auto i : FullRange())
+		{
+			TParticleId v0 = ids[i];
+			swapIds[v0] = i;
+		}
+		for (auto i : DeadRange())
+		{
+			TParticleId v0 = ids[i];
+			swapIds[v0] = i;
+		}
+	}
+
+	// Now move
+	if (!toMove.empty())
+	{
+		for (auto dataTypeId : EParticleDataType::indices())
+		{
+			byte* pData = ByteData(dataTypeId);
+			if (!pData)
+				continue;
+			const uint stride = dataTypeId.info().typeSize;
+			switch (stride)
+			{
+			case 1:
+				detail::MoveElements(toMove, (uint8*)pData);
+				break;
+			case 2:
+				detail::MoveElements(toMove, (uint16*)pData);
+				break;
+			case 4:
+				detail::MoveElements(toMove, (uint32*)pData);
+				break;
+			case 8:
+				detail::MoveElements(toMove, (uint64*)pData);
+				break;
+			default:
+				detail::MoveElements(toMove, (char*)pData, stride);
+			}
+		}
+	}
 }
 
 }

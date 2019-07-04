@@ -6,6 +6,8 @@
 namespace pfx2
 {
 
+extern TDataType<STimingParams> EEDT_Timings;
+
 class CFeatureLifeTime : public CParticleFeature
 {
 public:
@@ -30,18 +32,29 @@ public:
 	virtual void AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams) override
 	{
 		m_lifeTime.AddToComponent(pComponent, this, EPDT_LifeTime);
+		pComponent->GetDynamicData.add(this);
 		pComponent->PreInitParticles.add(this);
-
-		float maxLifetime = m_lifeTime.GetValueRange().end;
 		if (m_killOnParentDeath)
-		{
-			pComponent->PostUpdateParticles.add(this);
-			if (CParticleComponent* pParent = pComponent->GetParentComponent())
-				SetMin(maxLifetime, pParent->ComponentParams().m_maxParticleLife);
-		}
+			pComponent->KillParticles.add(this);
 
-		pComponent->ComponentParams().m_maxParticleLife = maxLifetime;
 		pComponent->UpdateGPUParams.add(this);
+	}
+
+	virtual void GetDynamicData(const CParticleComponentRuntime& runtime, EParticleDataType type, void* data, EDataDomain domain, SUpdateRange range) override
+	{
+		if (auto lifeTimes = EPDT_LifeTime.Cast(type, data, range))
+		{
+			float maxLife = m_lifeTime.GetValueRange(runtime).end;
+			if (m_killOnParentDeath)
+			{
+				if (runtime.Parent())
+				{
+					const float parentLife = runtime.Parent()->GetDynamicData(EPDT_LifeTime);
+					SetMin(maxLife, parentLife);
+				}
+			}
+			SetMax(lifeTimes[0], maxLife);
+		}
 	}
 
 	virtual void PreInitParticles(CParticleComponentRuntime& runtime) override
@@ -95,22 +108,22 @@ public:
 		}
 	}
 
-	virtual void PostUpdateParticles(CParticleComponentRuntime& runtime) override
+	virtual void KillParticles(CParticleComponentRuntime& runtime) override
 	{
 		CRY_PFX2_PROFILE_DETAIL;
 
 		// Kill on parent death
-		CParticleContainer& container = runtime.GetContainer();
 		const CParticleContainer& parentContainer = runtime.GetParentContainer();
 		const auto parentAges = parentContainer.GetIFStream(EPDT_NormalAge);
 
+		CParticleContainer& container = runtime.GetContainer();
 		const IPidStream parentIds = container.GetIPidStream(EPDT_ParentId);
 		IOFStream ages = container.GetIOFStream(EPDT_NormalAge);
 
 		for (auto particleId : runtime.FullRange())
 		{
 			const TParticleId parentId = parentIds.Load(particleId);
-			if (parentId == gInvalidId || IsExpired(parentAges.Load(parentId)))
+			if (!parentContainer.IdIsAlive(parentId) || IsExpired(parentAges.Load(parentId)))
 				ages.Store(particleId, 1.0f);
 		}
 	}

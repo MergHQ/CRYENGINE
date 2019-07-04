@@ -201,7 +201,7 @@ class CColorAttribute : public IColorModifier
 public:
 	virtual EDataDomain GetDomain() const
 	{
-		return m_spawnOnly ? EDD_HasUpdate : EDD_None;
+		return m_spawnOnly ? EDD_EmitterUpdate : EDD_Emitter;
 	}
 
 	virtual void Serialize(Serialization::IArchive& ar)

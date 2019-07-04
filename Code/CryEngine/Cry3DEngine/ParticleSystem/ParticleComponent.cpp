@@ -14,6 +14,7 @@ namespace pfx2
 {
 
 MakeDataType(EPDT_SpawnId,          TParticleId);
+MakeDataType(EPDT_SpawnerId,        TParticleId);
 MakeDataType(EPDT_ParentId,         TParticleId);
 MakeDataType(EPDT_SpawnFraction,    float);
 MakeDataType(EPDT_NormalAge,        float);
@@ -225,12 +226,12 @@ uint CParticleComponent::GetIndex(bool fromParent /*= false*/)
 	return children.size();
 }
 
-const pfx2::CParticleComponent::TComponents& CParticleComponent::GetParentChildren() const
+const CParticleComponent::TComponents& CParticleComponent::GetParentChildren() const
 {
 	return m_parent ? m_parent->m_children : m_pEffect->GetTopComponents();
 }
 
-pfx2::CParticleComponent::TComponents& CParticleComponent::GetParentChildren()
+CParticleComponent::TComponents& CParticleComponent::GetParentChildren()
 {
 	return m_parent ? m_parent->m_children : m_pEffect->GetTopComponents();
 }
@@ -373,6 +374,8 @@ void CParticleComponent::FinalizeCompile()
 		m_params.m_pMaterial = GetPSystem()->GetTextureMaterial(s_defaultDiffuseMap, 
 			m_params.m_usesGPU, m_GPUParams.facingMode);
 	}
+	if (m_parent && m_params.m_keepParentAlive)
+		m_parent->m_params.m_childKeepsAlive = true;
 	m_dirty = false;
 }
 
@@ -440,7 +443,7 @@ string CParticleComponent::GetFullName() const
 	return m_pEffect->GetShortName() + "." + m_name;
 }
 
-pfx2::CParticleFeature* CParticleComponent::FindFeature(const SParticleFeatureParams& params, const CParticleFeature* pSkip /*= nullptr*/) const
+CParticleFeature* CParticleComponent::FindFeature(const SParticleFeatureParams& params, const CParticleFeature* pSkip /*= nullptr*/) const
 {
 	for (const auto& pFeature : m_features)
 	{

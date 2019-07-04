@@ -1,14 +1,14 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-#include <CryEntitySystem/IEntity.h>
-#include <CryEntitySystem/IEntitySystem.h>
 #include "ParticleProfiler.h"
 #include "ParticleComponentRuntime.h"
 #include "ParticleEmitter.h"
 #include "ParticleSystem.h"
 
-CRY_PFX2_DBG
+#include <CryEntitySystem/IEntity.h>
+#include <CryEntitySystem/IEntitySystem.h>
+#include <CryRenderer/IRenderAuxGeom.h>
 
 namespace pfx2
 {
@@ -73,7 +73,7 @@ public:
 		CParticleEmitter* pEmitter = runtime.GetEmitter();
 		CParticleEffect* pEffect = pEmitter->GetCEffect();
 		IEntity* pEntity = pEmitter->GetOwnerEntity();
-		cstr effectName = pEffect->GetFullName();
+		cstr effectName = pEffect->GetName();
 		cstr componentName = pComponent->GetName();
 		cstr entityName = pEntity ? pEntity->GetName() : gDefaultEntityName;
 
@@ -83,7 +83,7 @@ public:
 			effectName));
 		Column(string().Format("%s%s%s%s", 
 			pComponent->GetParentComponent() ? "#Child " : "",
-			pComponent->ComponentParams().IsImmortal() ? "#Immortal " : "",
+			pComponent->ComponentParams().m_isImmortal ? "#Immortal " : "",
 			runtime.IsAlive() ? "#C:Alive " : "#C:Dead ",
 			componentName));
 		Column(string().Format("%s%s", entityName, 
@@ -220,8 +220,6 @@ void CParticleProfiler::Display()
 			if (GetCVars()->e_ParticlesProfiler & AlphaBit('f'))
 			{
 				SaveToFile();
-				if (!(GetCVars()->e_ParticlesProfiler & AlphaBit('s')))
-					GetCVars()->e_ParticlesProfiler &= ~AlphaBit('f');
 			}
 #endif
 			if (GetCVars()->e_ParticlesProfiler & 1)
@@ -428,7 +426,7 @@ void CParticleProfiler::DrawStats(CStatisticsDisplay& output, Vec2 pos, EProfile
 
 		const cstr format = "\"%s\" : %s : %s (%d)";
 		const cstr componentName = pComponent->GetName();
-		const cstr effectName = pComponent->GetEffect()->GetFullName();
+		const cstr effectName = pComponent->GetEffect()->GetName();
 		const cstr entityName = pEntity ? pEntity->GetName() : gDefaultEntityName;
 		output.DrawText(textPos, color, format, entityName, effectName, componentName, value);
 		textPos.y += gDisplayLineGap;

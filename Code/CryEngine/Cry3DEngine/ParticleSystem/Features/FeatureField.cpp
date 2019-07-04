@@ -125,7 +125,7 @@ public:
 		CParticleContainer& container = runtime.GetContainer();
 		IVec3Stream positions = container.GetIVec3Stream(EPVF_Position);
 		IOFStream sizes = container.GetIOFStream(EPDT_Size);
-		IFStream inputAlphas = m_initAlphas ? IFStream(nullptr, 1.0f) : container.GetIFStream(EPDT_Alpha);
+		IFStream inputAlphas = m_initAlphas ? IFStream(nullptr, 1, 1.0f) : container.GetIFStream(EPDT_Alpha);
 		IOFStream outputAlphas = container.GetIOFStream(EPDT_Alpha);
 
 		for (auto particleGroupId : runtime.FullRangeV())

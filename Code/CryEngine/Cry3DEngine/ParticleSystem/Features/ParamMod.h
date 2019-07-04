@@ -89,10 +89,12 @@ public:
 	TType         GetBaseValue() const       { return m_baseValue; }
 	bool          IsEnabled() const          { return crymath::valueisfinite(m_baseValue); }
 
+	static EDataDomain GetDomain() { return Domain; }
+
 protected:
-	T                      m_baseValue;
-	uint16                 m_initMask = 0, m_updateMask = 0;
-	DynArray<std::unique_ptr<TModifier>, uint> m_modifiers;
+	T                                       m_baseValue;
+	uint16                                  m_initMask = 0, m_updateMask = 0;
+	TSmallArray<std::unique_ptr<TModifier>> m_modifiers;
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -121,14 +123,13 @@ struct STempBuffer: TIStream<T>
 {
 	template<typename TParamMod>
 	STempBuffer(const CParticleComponentRuntime& runtime, TParamMod& paramMod)
-		: TIStream<T>(nullptr, paramMod.GetBaseValue())
+		: TIStream<T>(nullptr, 1, paramMod.GetBaseValue())
 		, m_buffer(runtime.MemHeap())
 	{}
 
 	TIOStream<T> RawStream()
 	{
-		assert(this->IsValid());
-		return *this;
+		return TIOStream<T>(non_const(this->Data()), this->size());
 	}
 
 protected:
@@ -138,8 +139,8 @@ protected:
 	void Allocate(SGroupRange range)
 	{
 		m_buffer.resize(range.size());
-		T* data = m_buffer.data() - +*range.begin();
-		new(this) TIStream<T>(data);
+		T* data = m_buffer.data() - +range.m_begin;
+		new(this) TIStream<T>(data, +range.m_end);
 	}
 };
 
@@ -147,31 +148,28 @@ template<typename T>
 struct STempInitBuffer: STempBuffer<T>
 {
 	template<typename TParamMod>
-	STempInitBuffer(const CParticleComponentRuntime& runtime, TParamMod& paramMod, SUpdateRange range, bool alwaysAlloc = false)
+	STempInitBuffer(const CParticleComponentRuntime& runtime, TParamMod& paramMod)
 		: STempBuffer<T>(runtime, paramMod)
 	{
-		if (alwaysAlloc || paramMod.HasInitModifiers())
+		if (paramMod.HasInitModifiers())
 		{
+			auto range = runtime.SpawnedRange(paramMod.GetDomain());
 			this->Allocate(range);
 			paramMod.ModifyInit(runtime, this->RawStream(), range);
 		}
 	}
-
-	template<typename TParamMod>
-	STempInitBuffer(const CParticleComponentRuntime& runtime, TParamMod& paramMod)
-		: STempInitBuffer<T>(runtime, paramMod, runtime.SpawnedRange())
-	{}
 };
 
 template<typename T>
 struct STempUpdateBuffer: STempBuffer<T>
 {
 	template<typename TParamMod>
-	STempUpdateBuffer(const CParticleComponentRuntime& runtime, TParamMod& paramMod, SUpdateRange range, bool alwaysAlloc = false)
+	STempUpdateBuffer(const CParticleComponentRuntime& runtime, TParamMod& paramMod)
 		: STempBuffer<T>(runtime, paramMod)
 	{
-		if (alwaysAlloc || paramMod.HasModifiers())
+		if (paramMod.HasModifiers())
 		{
+			auto range = runtime.FullRange(paramMod.GetDomain());
 			this->Allocate(range);
 			paramMod.ModifyInit(runtime, this->RawStream(), range);
 			paramMod.ModifyUpdate(runtime, this->RawStream(), range);
@@ -183,12 +181,11 @@ template<typename T>
 struct SSpawnerUpdateBuffer: STempBuffer<T>
 {
 	template<typename TParamMod>
-	SSpawnerUpdateBuffer(const CParticleComponentRuntime& runtime, TParamMod& paramMod, EDataDomain domain, bool alwaysAlloc = false)
+	SSpawnerUpdateBuffer(const CParticleComponentRuntime& runtime, TParamMod& paramMod, EDataDomain domain)
 		: STempBuffer<T>(runtime, paramMod)
-		, m_parentIds(runtime.IStream(ESDT_ParentId))
 		, m_range(1, 1)
 	{
-		if (alwaysAlloc || paramMod.HasModifiers())
+		if (paramMod.HasModifiers())
 		{
 			this->Allocate(SUpdateRange(0, runtime.DomainSize(domain)));
 			m_range = paramMod.GetValues(runtime, this->m_buffer, domain);
@@ -197,15 +194,11 @@ struct SSpawnerUpdateBuffer: STempBuffer<T>
 
 	TRange<T> operator[](uint id) const
 	{
-		if (this->IsValid())
-			return m_range * this->SafeLoad(m_parentIds[id]);
-		else
-			return this->Load(0);
+		return m_range * this->SafeLoad(id);
 	}
 
 private:
-	IPidStream m_parentIds;
-	TRange<T>  m_range;
+	TRange<T> m_range;
 };
 
 

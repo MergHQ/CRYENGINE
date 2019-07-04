@@ -29,7 +29,7 @@ struct SMaxParticleCounts
 class CParticleComponentRuntime : public _i_reference_target_t, public IParticleVertexCreator
 {
 public:
-	CParticleComponentRuntime(CParticleEmitter* pEmitter, CParticleComponent* pComponent);
+	CParticleComponentRuntime(CParticleEmitter* pEmitter, CParticleComponentRuntime* pParent, CParticleComponent* pComponent);
 	~CParticleComponentRuntime();
 
 	bool                          IsCPURuntime() const   { return !m_pGpuRuntime; }
@@ -37,11 +37,11 @@ public:
 	CParticleComponent*           GetComponent() const   { return m_pComponent; }
 	bool                          IsValidForComponent() const;
 	const AABB&                   GetBounds() const      { return m_pGpuRuntime ? m_pGpuRuntime->GetBounds() : m_bounds; }
-	uint                          GetNumParticles() const;
 	void                          AddBounds(const AABB& bounds);
 	bool                          IsChild() const        { return m_pComponent->GetParentComponent() != nullptr; }
 	void                          Reparent(TConstArray<TParticleId> swapIds);
 	void                          AddSpawners(TVarArray<SSpawnerDesc> descs, bool cull = true);
+	void                          RemoveSpawners(TConstArray<TParticleId> removeIds);
 	void                          RemoveAllSpawners();
 	void                          RunParticles(uint count, float deltaTime);
 
@@ -52,7 +52,7 @@ public:
 	CParticleEffect*          GetEffect() const          { return m_pComponent->GetEffect(); }
 	CParticleEmitter*         GetEmitter() const         { return m_pEmitter; }
 
-	CParticleComponentRuntime* ParentRuntime() const;
+	CParticleComponentRuntime* Parent() const            { return m_parent; }
 	
 	CParticleContainer&       ParentContainer(EDataDomain domain = EDD_Particle);
 	const CParticleContainer& ParentContainer(EDataDomain domain = EDD_Particle) const;
@@ -66,17 +66,29 @@ public:
 
 	void                      UpdateAll();
 	void                      AddParticles(TConstArray<SSpawnEntry> spawnEntries);
+	void                      ReparentChildren(TConstArray<TParticleId> swapIds);
 
 	bool                      IsAlive() const         { return m_alive; }
 	void                      SetAlive()              { m_alive = true; }
 	uint                      DomainSize(EDataDomain domain) const;
 
+	template<typename T> void GetDynamicData(TDataType<T> type, T* data, EDataDomain domain, SUpdateRange range) const
+	{
+		m_pComponent->GetDynamicData(*this, type, data, domain, range);
+	}
+	template<typename T> T    GetDynamicData(TDataType<T> type) const
+	{
+		T data = {};
+		GetDynamicData(type, &data, EDD_Emitter, SUpdateRange(0, 1));
+		return data;
+	}
+	STimingParams             GetMaxTimings() const;
 	void                      GetMaxParticleCounts(int& total, int& perFrame, float minFPS = 4.0f, float maxFPS = 120.0f) const;
 	void                      GetEmitLocations(TVarArray<QuatTS> locations, uint firstInstance) const;
 	void                      EmitParticle();
 
 	bool                      HasParticles() const;
-	void                      AccumStats();
+	void                      AccumStats(bool updated);
 
 	SChaosKey&                Chaos() const           { return m_chaos; }
 	SChaosKeyV&               ChaosV() const          { return m_chaosV; }
@@ -87,7 +99,6 @@ public:
 	SGroupRange               SpawnedRangeV(EDataDomain domain = EDD_Particle) const { return SGroupRange(Container(domain).SpawnedRange()); }
 
 	const SComponentParams&   ComponentParams() const { return m_pComponent->GetComponentParams(); }
-	STimingParams             GetMaxTimings() const;
 
 	static TParticleHeap&     MemHeap();
 	float                     DeltaTime() const;
@@ -153,6 +164,7 @@ private:
 
 	_smart_ptr<CParticleComponent>       m_pComponent;
 	CParticleEmitter*                    m_pEmitter;
+	CParticleComponentRuntime*           m_parent;
 	ElementTypeArray<CParticleContainer> m_containers;
 	TReuseArray<PRenderObject>           m_renderObjects[RT_COMMAND_BUF_COUNT];
 	AABB                                 m_bounds;
@@ -169,11 +181,11 @@ private:
 template<typename T>
 struct SDynamicData : THeapArray<T>
 {
-	SDynamicData(const CParticleComponentRuntime& runtime, EParticleDataType type, EDataDomain domain, SUpdateRange range)
+	SDynamicData(const CParticleComponentRuntime& runtime, TDataType<T> type, EDataDomain domain, SUpdateRange range)
 		: THeapArray<T>(runtime.MemHeap(), range.size())
 	{
 		memset(this->data(), 0, this->size_mem());
-		runtime.GetComponent()->GetDynamicData(runtime, type, this->data(), domain, range);
+		runtime.GetDynamicData(type, this->data(), domain, range);
 	}
 };
 

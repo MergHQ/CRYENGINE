@@ -9,21 +9,18 @@ namespace pfx2
 {
 
 
-MakeDataType(EPDT_RibbonId, TParticleId);  // Corresponds to ParentId, preserved after parent death
-
 extern TDataType<float> EPDT_Alpha;
 extern TDataType<UCol>  EPDT_Color;
 
-
 SERIALIZATION_DECLARE_ENUM(ERibbonMode,
-                           Camera,
-                           Free
-                           )
+	Camera,
+	Free
+)
 
 SERIALIZATION_DECLARE_ENUM(ERibbonStreamSource,
-                           Age,
-                           Spawn
-                           )
+	Age,
+	Spawn
+)
 
 
 TDataType<float> DataType(ERibbonStreamSource source)
@@ -51,13 +48,12 @@ public:
 
 	virtual void AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams) override;
 	virtual void Serialize(Serialization::IArchive& ar) override;
-	virtual void InitParticles(CParticleComponentRuntime& runtime) override;
 	virtual void ComputeVertices(const CParticleComponentRuntime& runtime, const SCameraInfo& camInfo, CREParticle* pRE, uint64 uRenderFlags, float fMaxPixels) override;
 
 private:
-	void MakeRibbons(const CParticleComponentRuntime& runtime, TParticleIdArray* pSortEntries, TRibbons* pRibbons, uint* pNumVertices);
-	void WriteToGPUMem(const CParticleComponentRuntime& runtime, const CCamera& cameraMain, const CCamera& cameraRender, CREParticle* pRE, const TParticleIdArray& pSortEntries, const TRibbons& pRibbons, uint numVertices, float fMaxPixels);
-	void CullRibbonAreas(const CParticleComponentRuntime& runtime, const CCamera& camera, float fMaxPixels, TConstArray<uint> sortEntries, TConstArray<SRibbon> ribbons, TVarArray<float> ribbonAlphas, float& pixels, float &pixelsDrawn);
+	void MakeRibbons(const CParticleComponentRuntime& runtime, TVarArray<TParticleId> sortEntries, TRibbons& ribbons, uint& numVertices);
+	void WriteToGPUMem(const CParticleComponentRuntime& runtime, const CCamera& cameraMain, const CCamera& cameraRender, CREParticle* pRE, TConstArray<TParticleId> sortEntries, TConstArray<SRibbon> ribbons, uint numVertices, float fMaxPixels);
+	void CullRibbonAreas(const CParticleComponentRuntime& runtime, const CCamera& camera, float fMaxPixels, TConstArray<TParticleId> sortEntries, TConstArray<SRibbon> ribbons, TVarArray<float> ribbonAlphas, float& pixels, float &pixelsDrawn);
 
 	ERibbonMode         m_ribbonMode       = ERibbonMode::Camera;
 	ERibbonStreamSource m_streamSource     = ERibbonStreamSource::Age;
@@ -72,13 +68,10 @@ CRY_PFX2_IMPLEMENT_FEATURE(CParticleFeature, CFeatureRenderRibbon, "Render", "Ri
 void CFeatureRenderRibbon::AddToComponent(CParticleComponent* pComponent, SComponentParams* pParams)
 {
 	BaseClass::AddToComponent(pComponent, pParams);
-	CParticleComponent* pParent = pComponent->GetParentComponent();
-	pComponent->InitParticles.add(this);
 	pComponent->AddParticleData(EPDT_ParentId);
 	pComponent->AddParticleData(EPDT_SpawnId);
-	if (pParent)
-		pParent->AddParticleData(EPDT_SpawnId);
-	pComponent->AddParticleData(EPDT_RibbonId);
+	pComponent->AddParticleData(EPDT_SpawnerId);
+	pParams->m_keepParentAlive = true;
 	pComponent->AddParticleData(EPDT_Size);
 	pComponent->AddParticleData(EPDT_NormalAge);
 	pParams->m_shaderData.m_expansion[1] = 0.0f;
@@ -107,24 +100,6 @@ void CFeatureRenderRibbon::Serialize(Serialization::IArchive& ar)
 		ar(m_connectToParent, "ConnectToOrigin", "");
 }
 
-void CFeatureRenderRibbon::InitParticles(CParticleComponentRuntime& runtime)
-{
-	CRY_PROFILE_FUNCTION(PROFILE_PARTICLE);
-
-	CParticleContainer& container = runtime.GetContainer();
-	CParticleContainer& parentContainer = runtime.GetParentContainer();
-	IOUintStream ribbonIds = container.IOStream(EPDT_RibbonId);
-	IPidStream parentIds = container.IStream(EPDT_ParentId);
-	IPidStream parentSpawnIds = parentContainer.IStream(EPDT_SpawnId);
-
-	for (auto particleId : runtime.SpawnedRange())
-	{
-		const TParticleId parentId = parentIds.Load(particleId);
-		const uint32 parentSpawnId = parentSpawnIds.SafeLoad(parentId);
-		ribbonIds.Store(particleId, parentSpawnId);
-	}
-}
-
 void CFeatureRenderRibbon::ComputeVertices(const CParticleComponentRuntime& runtime, const SCameraInfo& camInfo, CREParticle* pRE, uint64 uRenderFlags, float fMaxPixels)
 {
 	const CParticleContainer& container = runtime.GetContainer();
@@ -140,70 +115,55 @@ void CFeatureRenderRibbon::ComputeVertices(const CParticleComponentRuntime& runt
 	uint numVertices;
 	TParticleIdArray sortEntries(memHeap, numParticles);
 	TRibbons ribbons(memHeap);
-	MakeRibbons(runtime, &sortEntries, &ribbons, &numVertices);
+	MakeRibbons(runtime, sortEntries, ribbons, numVertices);
 	if (ribbons.size())
 		WriteToGPUMem(runtime, *camInfo.pMainCamera, *camInfo.pCamera, pRE, sortEntries, ribbons, numVertices, fMaxPixels);
 }
 
-void CFeatureRenderRibbon::MakeRibbons(const CParticleComponentRuntime& runtime, TParticleIdArray* pSortEntries, TRibbons* pRibbons, uint* pNumVertices)
+void CFeatureRenderRibbon::MakeRibbons(const CParticleComponentRuntime& runtime, TVarArray<TParticleId> sortEntries, TRibbons& ribbons, uint& numVertices)
 {
 	CRY_PFX2_PROFILE_DETAIL;
 
 	auto& memHeap = GetPSystem()->GetThreadData().memHeap;
-	const CParticleContainer& container = runtime.GetContainer();
-	const IUintStream ribbonIds = container.IStream(EPDT_RibbonId);
-	const IUintStream parentIds = container.IStream(EPDT_ParentId);
+	const CParticleContainer& container = runtime.Container();
+	const IUintStream ribbonIds = container.IStream(EPDT_SpawnerId);
 	const IPidStream spawnIds = container.IStream(EPDT_SpawnId);
 	const uint32 numParticles = container.Size();
 
+	ribbons.reserve(runtime.DomainSize(EDD_Spawner));
+
 	{
-		THeapArray<uint64> sortEntries(memHeap, numParticles);
+		THeapArray<uint64> ranks(memHeap, numParticles);
 		for (auto particleId : runtime.FullRange())
 		{
 			const TParticleId ribbonId = ribbonIds.Load(particleId);
 			const uint32 spawnId = spawnIds.Load(particleId);
 			const uint64 key = (uint64(ribbonId) << 32) | uint64(spawnId);
-			sortEntries[particleId] = key;
+			ranks[particleId] = key;
 		}
 		RadixSort(
-		  pSortEntries->begin(), pSortEntries->end(),
-		  sortEntries.begin(), sortEntries.end(), memHeap);
+		  sortEntries.begin(), sortEntries.end(),
+		  ranks.begin(), ranks.end(), memHeap);
 	}
 
-	uint ribbonCount = 0;
-	uint lastRibbonId = ribbonIds.Load((*pSortEntries)[0]);
+	TParticleId lastRibbonId = ribbonIds.Load(sortEntries[0]);
 	SRibbon ribbon;
 	ribbon.m_firstIdx = 0;
 	ribbon.m_lastIdx = 0;
-	for (; ribbon.m_lastIdx < numParticles; ++ribbon.m_lastIdx)
-	{
-		const TParticleId particleId = (*pSortEntries)[ribbon.m_lastIdx];
-		const TParticleId ribbonId = ribbonIds.Load(particleId);
-		if (ribbonId != lastRibbonId)
-		{
-			if (ribbon.m_lastIdx - ribbon.m_firstIdx + m_connectToParent >= 2)
-				++ribbonCount;
-			ribbon.m_firstIdx = ribbon.m_lastIdx;
-			lastRibbonId = ribbonId;
-		}
-	}
-	++ribbonCount;
-	pRibbons->reserve(ribbonCount);
 
-	*pNumVertices = 0;
-	ribbon.m_firstIdx = 0;
-	ribbon.m_lastIdx = 0;
+	numVertices = 0;
 	for (; ribbon.m_lastIdx <= numParticles; ++ribbon.m_lastIdx)
 	{
-		const TParticleId ribbonId = ribbon.m_lastIdx < numParticles ? ribbonIds.Load((*pSortEntries)[ribbon.m_lastIdx]) : gInvalidId;
+		const TParticleId ribbonId = ribbon.m_lastIdx < numParticles ?
+			ribbonIds.Load(sortEntries[ribbon.m_lastIdx]) :
+			gInvalidId;
 		if (ribbonId != lastRibbonId)
 		{
-			const bool connectParent = m_connectToParent && ribbon.m_lastIdx > 0 && parentIds.Load((*pSortEntries)[ribbon.m_lastIdx - 1]) != gInvalidId;
-			const uint numVertices = ribbon.m_lastIdx - ribbon.m_firstIdx + connectParent + 1;
-			if (numVertices >= 3)
+			const uint numElements = ribbon.m_lastIdx - ribbon.m_firstIdx + m_connectToParent;
+			if (numElements >= 2)
 			{
-				pRibbons->push_back(ribbon);
-				*pNumVertices += numVertices;
+				ribbons.push_back(ribbon);
+				numVertices += numElements + 1;
 			}
 			ribbon.m_firstIdx = ribbon.m_lastIdx;
 			lastRibbonId = ribbonId;
@@ -291,7 +251,7 @@ private:
 	const IFStream     m_stream;
 };
 
-void CFeatureRenderRibbon::WriteToGPUMem(const CParticleComponentRuntime& runtime, const CCamera& cameraMain, const CCamera& cameraRender, CREParticle* pRE, const TParticleIdArray& sortEntries, const TRibbons& ribbons, uint numVertices, float fMaxPixels)
+void CFeatureRenderRibbon::WriteToGPUMem(const CParticleComponentRuntime& runtime, const CCamera& cameraMain, const CCamera& cameraRender, CREParticle* pRE, TConstArray<TParticleId> sortEntries, TConstArray<SRibbon> ribbons, uint numVertices, float fMaxPixels)
 {
 	CRY_PFX2_PROFILE_DETAIL;
 
@@ -329,8 +289,12 @@ void CFeatureRenderRibbon::WriteToGPUMem(const CParticleComponentRuntime& runtim
 		const SRibbon ribbon = ribbons[ribbonId];
 
 		const TParticleId ribbonParentId = parentIds.Load(sortEntries[ribbon.m_lastIdx - 1]);
-		const bool connectToParent = m_connectToParent && ribbonParentId != gInvalidId;
-		const uint numVertices = ribbon.m_lastIdx - ribbon.m_firstIdx + connectToParent + 1;
+		if (m_connectToParent)
+		{
+			assert(parentContainer.IdIsValid(ribbonParentId));
+			assert(!parentPositions.Load(ribbonParentId).IsZero());
+		}
+		const uint numVertices = ribbon.m_lastIdx - ribbon.m_firstIdx + m_connectToParent + 1;
 		if (!localPositions.CheckAvailable(numVertices) || !localAxes.CheckAvailable(numVertices) || !localColorSTs.CheckAvailable(numVertices))
 			break;
 
@@ -341,7 +305,7 @@ void CFeatureRenderRibbon::WriteToGPUMem(const CParticleComponentRuntime& runtim
 			movingPositions[0]
 		};
 
-		const float parentAge = ribbonParentId != gInvalidId ? parentAges.Load(ribbonParentId) : 1.0f;
+		const float parentAge = parentContainer.IdIsAlive(ribbonParentId) ? parentAges.Load(ribbonParentId) : 1.0f;
 		const float animPos = parentAge * float(params.m_shaderData.m_frameCount);
 		const uint frameId = int(min(animPos, params.m_shaderData.m_frameCount - 1));
 
@@ -351,7 +315,8 @@ void CFeatureRenderRibbon::WriteToGPUMem(const CParticleComponentRuntime& runtim
 		colorSTsSampler.Init(colorST, frameId, animPos);
 		float axisScale = 1.0f;
 
-		const uint lastIdx = ribbon.m_lastIdx + connectToParent;
+		const uint lastIdx = ribbon.m_lastIdx + m_connectToParent;
+		uint ribbonLen = 0;
 		for (uint i = ribbon.m_firstIdx; i < lastIdx; ++i)
 		{
 			const TParticleId particleId = sortEntries[min(i, ribbon.m_lastIdx - 1)];
@@ -362,7 +327,7 @@ void CFeatureRenderRibbon::WriteToGPUMem(const CParticleComponentRuntime& runtim
 			{
 				if (i + 1 < ribbon.m_lastIdx)
 					movingPositions[2] = positions.Load(sortEntries[i + 1]);
-				else if (connectToParent)
+				else if (m_connectToParent)
 					movingPositions[2] = parentPositions.Load(ribbonParentId);
 			}
 			else
@@ -391,12 +356,13 @@ void CFeatureRenderRibbon::WriteToGPUMem(const CParticleComponentRuntime& runtim
 				localPositions.Array().push_back(position);
 				localAxes.Array().push_back(axes);
 				localColorSTs.Array().push_back(colorST);
+				ribbonLen++;
 			}
 			axisScale = 0.5f;
 		}
 
 		// Add degenerate vertex between ribbons
-		if (ribbonId < ribbons.size() - 1)
+		if (ribbonLen > 0 && ribbonId < ribbons.size() - 1)
 		{
 			colorST.st.x = 255;
 			localPositions.Array().push_back(position);
@@ -477,11 +443,13 @@ void CFeatureRenderRibbon::CullRibbonAreas(const CParticleComponentRuntime& runt
 		{
 			sizes.Load(rIds[0]), sizes.Load(rIds[1]), sizes.Load(rIds[2])
 		};
+		if (m_connectToParent)
+			assert(parentContainer.IdIsValid(parentIds.Load(rIds[2])));
 		Vec3 rPositions[3] =
 		{
 			positions.Load(rIds[0]),
 			positions.Load(rIds[1]),
-			m_connectToParent && parentIds.Load(rIds[2]) != gInvalidId ?
+			m_connectToParent ?
 				parentPositions.Load(parentIds.Load(rIds[2])) :
 				positions.Load(rIds[2])
 		};

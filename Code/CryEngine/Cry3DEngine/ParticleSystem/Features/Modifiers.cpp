@@ -512,7 +512,7 @@ public:
 
 	virtual EDataDomain GetDomain() const
 	{
-		return EDD_None;
+		return EDD_Emitter;
 	}
 
 	virtual Range GetMinMax() const
@@ -570,7 +570,7 @@ class CModAttribute : public IFModifier
 public:
 	virtual EDataDomain GetDomain() const
 	{
-		return m_spawnOnly ? EDD_None : EDD_HasUpdate;
+		return m_spawnOnly ? EDD_Emitter : EDD_EmitterUpdate;
 	}
 
 	virtual void Serialize(Serialization::IArchive& ar)

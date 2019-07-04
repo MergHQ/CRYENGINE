@@ -10,60 +10,73 @@ namespace pfx2
 //////////////////////////////////////////////////////////////////////////
 // TIStream, TIOStream
 
+// In debug compiles, Stream classes are Arrays, with count, for range checks and debugging visualization.
 template<typename T>
-struct TIOStream
+struct TIOStream 
+#ifdef CRY_PFX2_DEBUG
+	: TVarArray<T>
+#endif
 {
-public:
-	typedef vector4_t<T> Tv;
+	typedef vector4_t<typename std::remove_const<T>::type> Tv;
 
-	explicit TIOStream(T* pStream)              : m_pStream(pStream) {}
-	bool IsValid() const                        { return m_pStream != 0; }
-	T    Load(TParticleId pId) const            { return m_pStream[pId]; }
-	void Store(TParticleId pId, T value)        { m_pStream[pId] = value; }
-	void Fill(SUpdateRange range, T value);
+#ifdef CRY_PFX2_DEBUG
+	explicit TIOStream(T* pStream, uint count) : TVarArray<T>(pStream, count) {}
+	
+	using TVarArray<T>::operator[];
+#else
+	explicit TIOStream(T* pStream, uint count) : m_aElems(pStream) {}
 
-	T operator[](TParticleId pId) const         { return m_pStream[pId]; }
-	T& operator[](TParticleId pId)              { return m_pStream[pId]; }
-
-#ifdef CRY_PFX2_USE_SSE
-	Tv   Load(TParticleGroupId pgId) const      { return *(const Tv*)(m_pStream + pgId); }
-	void Store(TParticleGroupId pgId, Tv value) { *(Tv*)(m_pStream + pgId) = value; }
-
-	Tv operator[](TParticleGroupId pgId) const  { return *(const Tv*)(m_pStream + pgId); }
-	Tv& operator[](TParticleGroupId pgId)       { return *(Tv*)(m_pStream + pgId); }
+	const T& operator[](TParticleId pId) const  { return m_aElems[pId]; }
+	T& operator[](TParticleId pId)              { return m_aElems[pId]; }
 #endif
 
-	T* Data()                                   { return m_pStream; }
+	bool IsValid() const                        { return m_aElems != 0; }
+	T    Load(TParticleId pId) const            { return (*this)[pId]; }
+	void Store(TParticleId pId, T value)        { (*this)[pId] = value; }
+	void Fill(SUpdateRange range, T value);
+
+#ifdef CRY_PFX2_USE_SSE
+	Tv   Load(TParticleGroupId pgId) const      { return (*this)[pgId]; }
+	void Store(TParticleGroupId pgId, Tv value) { (*this)[pgId] = value; }
+
+	Tv operator[](TParticleGroupId pgId) const  { return (const Tv&)(*this)[+pgId]; }
+	Tv& operator[](TParticleGroupId pgId)       { return (Tv&)(*this)[+pgId]; }
+#endif
+
+	T* Data()                                   { return m_aElems; }
 
 protected:
-	T* __restrict m_pStream;
+#ifdef CRY_PFX2_DEBUG
+	using TVarArray<T>::m_aElems;
+#else
+	T* __restrict m_aElems;
+	static uint size()                          { return 0;}
+#endif
 };
 
 template<typename T>
-struct TIStream: public TIOStream<T>
+struct TIStream: public TIOStream<const T>
 {
-public:
 	typedef vector4_t<T> Tv;
 
-	explicit TIStream(const T* pStream = nullptr, T defaultVal = T());
+	explicit TIStream(const T* pStream, uint count, T defaultVal = T());
 	bool IsValid() const                       { return m_safeMask != 0; }
-	T SafeLoad(TParticleId pId) const          { return m_pStream[pId & m_safeMask]; }
+	T SafeLoad(TParticleId pId) const          { return Base::operator[](pId & m_safeMask); }
 	T operator[](TParticleId pId) const        { return SafeLoad(pId); }
 
 #ifdef CRY_PFX2_USE_SSE
-	Tv SafeLoad(TParticleGroupId pgId) const   { return *(const Tv*)(m_pStream + (pgId & m_safeMask)); }
+	Tv SafeLoad(TParticleGroupId pgId) const   { return Base::operator[](pgId & m_safeMask); }
 	Tv operator[](TParticleGroupId pgId) const { return SafeLoad(pgId); }
 	Tv SafeLoad(TParticleIdv pIdv) const;
 #endif
 
-	const T* Data() const                      { return m_pStream; }
-
 private:
-	using TIOStream<T>::Store;
-	using TIOStream<T>::m_pStream;
+	using Base = TIOStream<const T>;
+	using Base::Store;
+	using Base::m_aElems;
 
-	Tv                  m_safeSink;
-	uint32              m_safeMask;
+	Tv     m_safeSink;
+	uint32 m_safeMask;
 };
 
 // Legacy types
