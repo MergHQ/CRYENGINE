@@ -12,6 +12,12 @@ void ToggleLocked(std::vector<CObjectLayer*>& layers, std::vector<CBaseObject*>&
 bool AreVisible(const std::vector<CObjectLayer*>& layers, const std::vector<CBaseObject*>& objects);
 void ToggleVisibility(std::vector<CObjectLayer*>& layers, std::vector<CBaseObject*>& objects);
 
+bool AreChildrenLocked(const std::vector<CObjectLayer*>& layers);
+void ToggleChildrenLocked(const std::vector<CObjectLayer*>& layers);
+
+bool AreChildrenVisible(const std::vector<CObjectLayer*>& layers);
+void ToggleChildrenVisibility(const std::vector<CObjectLayer*>& layers);
+
 bool AreExportable(const std::vector<CObjectLayer*>& layers);
 void ToggleExportable(std::vector<CObjectLayer*>& layers);
 

@@ -4,98 +4,173 @@
 
 // Sandbox
 #include "Objects/ObjectLayer.h"
+#include "Objects/ObjectManager.h"
 
 // EditorCommon
 #include <Objects/BaseObject.h>
 
 namespace LevelExplorerCommandHelper
 {
-	namespace Private_LevelExplorerCommandHelper
+namespace Private_LevelExplorerCommandHelper
+{
+bool GetLastItemState(const std::vector<CObjectLayer*>& layers, std::function<bool(const CObjectLayer*)> layerStateCallBack)
+{
+	if (!layers.empty())
 	{
-		bool GetLastItemState(const std::vector<CObjectLayer*>& layers, std::function<bool(const CObjectLayer*)> layerStateCallBack)
-		{
-			if (!layers.empty())
-			{
-				return layerStateCallBack(layers[layers.size() - 1]);
-			}
+		return layerStateCallBack(layers[layers.size() - 1]);
+	}
 
-			return false;
-		}
+	return false;
+}
 
-		bool GetLastItemState(const std::vector<CObjectLayer*>& layers, const std::vector<CBaseObject*>& objects,
-			std::function<bool(const CObjectLayer*)> layerStateCallBack, std::function<bool(const CBaseObject*)> objectStateCallBack)
+bool GetLastItemState(const std::vector<CObjectLayer*>& layers, const std::vector<CBaseObject*>& objects,
+                      std::function<bool(const CObjectLayer*)> layerStateCallBack, std::function<bool(const CBaseObject*)> objectStateCallBack)
+{
+	if (!objects.empty())
+	{
+		return objectStateCallBack(objects[objects.size() - 1]);
+	}
+	else if (!layers.empty())
+	{
+		return layerStateCallBack(layers[layers.size() - 1]);
+	}
+
+	return false;
+}
+
+// Returns pair of booleans indicating that a child was found followed by it's state
+std::pair<bool, bool> GetLastChildItemState(const std::vector<CObjectLayer*>& layers, std::function<bool(const CBaseObject*)> objectStateCallBack)
+{
+	if (!layers.empty())
+	{
+		for (auto ite = layers.rbegin(); ite != layers.rend(); ++ite)
 		{
+			CObjectLayer* pLayer = *ite;
+			std::vector<CBaseObject*> objects;
+			GetIEditor()->GetObjectManager()->GetObjects(objects, pLayer);
 			if (!objects.empty())
 			{
-				return objectStateCallBack(objects[objects.size() - 1]);
-			}
-			else if (!layers.empty())
-			{
-				return layerStateCallBack(layers[layers.size() - 1]);
+				return std::pair<bool, bool>(true, objectStateCallBack(objects[objects.size() - 1]));
 			}
 
-			return false;
-		}
+			if (!pLayer->GetChildCount())
+				continue;
 
-		bool CheckState(const std::vector<CObjectLayer*>& layers, const std::function<bool(const CObjectLayer*)> layerStateCallBack)
-		{
-			bool firstItemState = GetLastItemState(layers, layerStateCallBack);
-
-			for (const CObjectLayer* pLayer : layers)
+			for (int i = pLayer->GetChildCount() - 1; i >= 0; --i)
 			{
-				if (firstItemState != layerStateCallBack(pLayer))
-					return false;
-			}
-
-			return firstItemState;
-		}
-
-		bool CheckState(const std::vector<CObjectLayer*>& layers, const std::vector<CBaseObject*>& objects,
-			std::function<bool(const CObjectLayer*)> layerStateCallBack, std::function<bool(const CBaseObject*)> objectStateCallBack)
-		{
-			bool firstItemState = GetLastItemState(layers, objects, layerStateCallBack, objectStateCallBack);
-
-			for (const CBaseObject* pObject : objects)
-			{
-				if (firstItemState != objectStateCallBack(pObject))
-					return false;
-			}
-
-			for (const CObjectLayer* pLayer : layers)
-			{
-				if (firstItemState != layerStateCallBack(pLayer))
-					return false;
-			}
-
-			return firstItemState;
-		}
-
-		void SetState(std::vector<CObjectLayer*>& layers, std::function<void(CObjectLayer*)> layerStateCallBack)
-		{
-			for (CObjectLayer* pLayer : layers)
-			{
-				layerStateCallBack(pLayer);
-			}
-		}
-
-		void SetState(std::vector<CObjectLayer*>& layers, std::vector<CBaseObject*>& objects,
-			std::function<void(CObjectLayer*)> layerStateCallBack, std::function<void(CBaseObject*)> objectStateCallBack)
-		{
-			for (CBaseObject* pObject : objects)
-			{
-				objectStateCallBack(pObject);
-			}
-
-			for (CObjectLayer* pLayer : layers)
-			{
-				layerStateCallBack(pLayer);
+				std::pair<bool, bool> result = GetLastChildItemState({ pLayer->GetChild(i) }, objectStateCallBack);
+				if (result.first)
+					return result;
 			}
 		}
 	}
 
+	return std::pair<bool, bool>(false, false);
+}
+
+bool CheckState(const std::vector<CObjectLayer*>& layers, const std::function<bool(const CObjectLayer*)> layerStateCallBack)
+{
+	bool lastItemState = GetLastItemState(layers, layerStateCallBack);
+
+	for (const CObjectLayer* pLayer : layers)
+	{
+		if (lastItemState != layerStateCallBack(pLayer))
+			return false;
+	}
+
+	return lastItemState;
+}
+
+bool CheckState(const std::vector<CObjectLayer*>& layers, const std::vector<CBaseObject*>& objects,
+                std::function<bool(const CObjectLayer*)> layerStateCallBack, std::function<bool(const CBaseObject*)> objectStateCallBack)
+{
+	bool lastItemState = GetLastItemState(layers, objects, layerStateCallBack, objectStateCallBack);
+
+	for (const CBaseObject* pObject : objects)
+	{
+		if (lastItemState != objectStateCallBack(pObject))
+			return false;
+	}
+
+	for (const CObjectLayer* pLayer : layers)
+	{
+		if (lastItemState != layerStateCallBack(pLayer))
+			return false;
+	}
+
+	return lastItemState;
+}
+
+bool CheckChildState(const std::vector<CObjectLayer*>& layers, std::function<bool(const CBaseObject*)> objectStateCallBack)
+{
+	bool lastChildState = GetLastChildItemState(layers, objectStateCallBack).second;
+	for (const CObjectLayer* pLayer : layers)
+	{
+		std::vector<CBaseObject*> objects;
+		GetIEditorImpl()->GetObjectManager()->GetObjects(objects, pLayer);
+
+		for (const CBaseObject* pObject : objects)
+		{
+			if (lastChildState != objectStateCallBack(pObject))
+				return false;
+		}
+
+		// Do the same for all child layers
+		for (int i = 0; i < pLayer->GetChildCount(); i++)
+		{
+			if (lastChildState != CheckChildState({ pLayer->GetChild(i) }, objectStateCallBack))
+				return false;
+		}
+	}
+	return lastChildState;
+}
+
+void SetState(std::vector<CObjectLayer*>& layers, std::function<void(CObjectLayer*)> layerStateCallBack)
+{
+	for (CObjectLayer* pLayer : layers)
+	{
+		layerStateCallBack(pLayer);
+	}
+}
+
+void SetState(std::vector<CObjectLayer*>& layers, std::vector<CBaseObject*>& objects,
+              std::function<void(CObjectLayer*)> layerStateCallBack, std::function<void(CBaseObject*)> objectStateCallBack)
+{
+	for (CBaseObject* pObject : objects)
+	{
+		objectStateCallBack(pObject);
+	}
+
+	for (CObjectLayer* pLayer : layers)
+	{
+		layerStateCallBack(pLayer);
+	}
+}
+
+void SetChildState(const std::vector<CObjectLayer*>& layers, std::function<void(CBaseObject*)> objectStateCallBack)
+{
+	for (CObjectLayer* pLayer : layers)
+	{
+		CBaseObjectsArray objects;
+		GetIEditorImpl()->GetObjectManager()->GetObjects(objects, pLayer);
+
+		for (CBaseObject* pObject : objects)
+		{
+			objectStateCallBack(pObject);
+		}
+
+		// Do the same for all child layers
+		for (int i = 0; i < pLayer->GetChildCount(); i++)
+		{
+			SetChildState({ pLayer->GetChild(i) }, objectStateCallBack);
+		}
+	}
+}
+}
+
 bool AreLocked(const std::vector<CObjectLayer*>& layers, const std::vector<CBaseObject*>& objects)
 {
-	std::function<bool(const CObjectLayer*)> layerStateCallBack = [](const CObjectLayer* pLayer) { return pLayer->IsFrozen(true); };
+	std::function<bool(const CObjectLayer*)> layerStateCallBack = [](const CObjectLayer* pLayer) { return pLayer->IsFrozen(); };
 	std::function<bool(const CBaseObject*)> objectStateCallBack = [](const CBaseObject* pObject) { return pObject->IsFrozen(); };
 
 	return Private_LevelExplorerCommandHelper::CheckState(layers, objects, layerStateCallBack, objectStateCallBack);
@@ -108,15 +183,15 @@ void ToggleLocked(std::vector<CObjectLayer*>& layers, std::vector<CBaseObject*>&
 
 	bool locked = AreLocked(layers, objects);
 
-	std::function<void(CObjectLayer*)> layerStateCallBack = [locked](CObjectLayer* pLayer) { pLayer->SetFrozen(!locked); };
-	std::function<void(CBaseObject*)> objectStateCallBack = [locked](CBaseObject* pObject) { pObject->SetFrozen(!locked); };
+	std::function<void(CObjectLayer*)> layerStateCallBack = [&locked](CObjectLayer* pLayer) { pLayer->SetFrozen(!locked); };
+	std::function<void(CBaseObject*)> objectStateCallBack = [&locked](CBaseObject* pObject) { pObject->SetFrozen(!locked); };
 
 	Private_LevelExplorerCommandHelper::SetState(layers, objects, layerStateCallBack, objectStateCallBack);
 }
 
 bool AreVisible(const std::vector<CObjectLayer*>& layers, const std::vector<CBaseObject*>& objects)
 {
-	std::function<bool(const CObjectLayer*)> layerStateCallBack = [](const CObjectLayer* pLayer) { return pLayer->IsVisible(true); };
+	std::function<bool(const CObjectLayer*)> layerStateCallBack = [](const CObjectLayer* pLayer) { return pLayer->IsVisible(); };
 	std::function<bool(const CBaseObject*)> objectStateCallBack = [](const CBaseObject* pObject) { return pObject->IsVisible(); };
 
 	return Private_LevelExplorerCommandHelper::CheckState(layers, objects, layerStateCallBack, objectStateCallBack);
@@ -129,10 +204,44 @@ void ToggleVisibility(std::vector<CObjectLayer*>& layers, std::vector<CBaseObjec
 
 	bool visible = AreVisible(layers, objects);
 
-	std::function<void(CObjectLayer*)> layerStateCallBack = [visible](CObjectLayer* pLayer) { pLayer->SetVisible(!visible); };
-	std::function<void(CBaseObject*)> objectStateCallBack = [visible](CBaseObject* pObject) { pObject->SetVisible(!visible); };
+	std::function<void(CObjectLayer*)> layerStateCallBack = [&visible](CObjectLayer* pLayer) { pLayer->SetVisible(!visible); };
+	std::function<void(CBaseObject*)> objectStateCallBack = [&visible](CBaseObject* pObject) { pObject->SetVisible(!visible); };
 
 	Private_LevelExplorerCommandHelper::SetState(layers, objects, layerStateCallBack, objectStateCallBack);
+}
+
+bool AreChildrenLocked(const std::vector<CObjectLayer*>& layers)
+{
+	return Private_LevelExplorerCommandHelper::CheckChildState(layers,
+	                                                           [](const CBaseObject* pObject) { return pObject->IsFrozen(); });
+}
+
+void ToggleChildrenLocked(const std::vector<CObjectLayer*>& layers)
+{
+	if (layers.empty())
+		return;
+
+	bool locked = AreChildrenLocked(layers);
+
+	Private_LevelExplorerCommandHelper::SetChildState(layers,
+	                                                  [&locked](CBaseObject* pObject) { return pObject->SetFrozen(!locked); });
+}
+
+bool AreChildrenVisible(const std::vector<CObjectLayer*>& layers)
+{
+	return Private_LevelExplorerCommandHelper::CheckChildState(layers,
+	                                                           [](const CBaseObject* pObject) { return pObject->IsVisible(); });
+}
+
+void ToggleChildrenVisibility(const std::vector<CObjectLayer*>& layers)
+{
+	if (layers.empty())
+		return;
+
+	bool visible = AreChildrenVisible(layers);
+
+	Private_LevelExplorerCommandHelper::SetChildState(layers,
+	                                                  [&visible](CBaseObject* pObject) { return pObject->SetVisible(!visible); });
 }
 
 bool AreExportable(const std::vector<CObjectLayer*>& layers)

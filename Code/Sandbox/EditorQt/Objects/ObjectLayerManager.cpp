@@ -136,7 +136,26 @@ private:
 	string m_redoName;
 };
 
-};
+void GetLayerHierarchy(const CObjectLayer* pLayer, std::unordered_set<CObjectLayer*>& result)
+{
+	// Collect descendants
+	std::vector<CObjectLayer*> descendants;
+	pLayer->GetDescendants(descendants);
+	for (CObjectLayer* pDescendant : descendants)
+	{
+		result.insert(pDescendant);
+	}
+
+	// Collect ancestors
+	std::vector<CObjectLayer*> ancestors;
+	pLayer->GetAncestors(ancestors);
+	for (CObjectLayer* pAncestor : ancestors)
+	{
+		result.insert(pAncestor);
+	}
+}
+
+}
 
 void CLayerChangeEvent::Send() const
 {
@@ -1275,8 +1294,32 @@ void CObjectLayerManager::FreezeROnly()
 		}
 	}
 }
+
+bool CObjectLayerManager::ShouldToggleFreezeAllBut(CObjectLayer* pLayer) const
+{
+	std::unordered_set<CObjectLayer*> layerHierarchy;
+	layerHierarchy.insert(pLayer);
+	Private_ObjectLayerManager::GetLayerHierarchy(pLayer, layerHierarchy);
+
+	for (LayersMap::const_iterator it = m_layersMap.begin(); it != m_layersMap.end(); ++it)
+	{
+		CObjectLayer* pObjectLayer = it->second;
+		if (layerHierarchy.find(pObjectLayer) == layerHierarchy.end() && pObjectLayer->GetLayerType() != eObjectLayerType_Terrain)
+		{
+			if (!pObjectLayer->IsFrozen())
+			{
+				return true;
+			}
+		}
+	}
+
+	return false;
+}
+
 void CObjectLayerManager::ToggleFreezeAllBut(CObjectLayer* pLayer)
 {
+	bool freezeAll = ShouldToggleFreezeAllBut(pLayer);
+
 	std::unordered_set<CObjectLayer*> layerHierarchy;
 	layerHierarchy.insert(pLayer);
 	pLayer->SetVisible(true);
@@ -1290,20 +1333,6 @@ void CObjectLayerManager::ToggleFreezeAllBut(CObjectLayer* pLayer)
 		pParent = pParent->GetParent();
 	}
 
-	bool freezeAll = false;
-	for (LayersMap::const_iterator it = m_layersMap.begin(); it != m_layersMap.end(); ++it)
-	{
-		CObjectLayer* pObjectLayer = it->second;
-		if (layerHierarchy.find(pObjectLayer) == layerHierarchy.end() && pObjectLayer->GetLayerType() != eObjectLayerType_Terrain)
-		{
-			if (!pObjectLayer->IsFrozen())
-			{
-				freezeAll = true;
-				break;
-			}
-		}
-	}
-
 	for (LayersMap::const_iterator it = m_layersMap.begin(); it != m_layersMap.end(); ++it)
 	{
 		CObjectLayer* pObjectLayer = it->second;
@@ -1315,8 +1344,31 @@ void CObjectLayerManager::ToggleFreezeAllBut(CObjectLayer* pLayer)
 	}
 }
 
+bool CObjectLayerManager::ShouldToggleHideAllBut(CObjectLayer* pLayer) const
+{
+	std::unordered_set<CObjectLayer*> layerHierarchy;
+	layerHierarchy.insert(pLayer);
+	Private_ObjectLayerManager::GetLayerHierarchy(pLayer, layerHierarchy);
+
+	for (LayersMap::const_iterator it = m_layersMap.begin(); it != m_layersMap.end(); ++it)
+	{
+		CObjectLayer* pObjectLayer = it->second;
+		if (layerHierarchy.find(pObjectLayer) == layerHierarchy.end() && pObjectLayer->GetLayerType() != eObjectLayerType_Terrain)
+		{
+			if (pObjectLayer->IsVisible())
+			{
+				return true;
+			}
+		}
+	}
+
+	return false;
+}
+
 void CObjectLayerManager::ToggleHideAllBut(CObjectLayer* pLayer)
 {
+	bool hideAll = ShouldToggleHideAllBut(pLayer);
+
 	std::unordered_set<CObjectLayer*> layerHierarchy;
 	layerHierarchy.insert(pLayer);
 	pLayer->SetVisible(true);
@@ -1327,20 +1379,6 @@ void CObjectLayerManager::ToggleHideAllBut(CObjectLayer* pLayer)
 		layerHierarchy.insert(pParent);
 		pParent->SetVisible(true);
 		pParent = pParent->GetParent();
-	}
-
-	bool hideAll = false;
-	for (LayersMap::const_iterator it = m_layersMap.begin(); it != m_layersMap.end(); ++it)
-	{
-		CObjectLayer* pObjectLayer = it->second;
-		if (layerHierarchy.find(pObjectLayer) == layerHierarchy.end() && pObjectLayer->GetLayerType() != eObjectLayerType_Terrain)
-		{
-			if (pObjectLayer->IsVisible())
-			{
-				hideAll = true;
-				break;
-			}
-		}
 	}
 
 	for (LayersMap::const_iterator it = m_layersMap.begin(); it != m_layersMap.end(); ++it)

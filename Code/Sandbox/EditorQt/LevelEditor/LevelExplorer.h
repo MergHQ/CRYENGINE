@@ -126,10 +126,6 @@ private:
 
 	bool         OnLockReadOnlyLayers();
 	bool         OnMakeLayerActive();
-	bool         IsFirstChildLocked(const std::vector<CObjectLayer*>& layers) const;
-	bool         DoChildrenMatchLockedState(const std::vector<CObjectLayer*>& layers, bool isLocked) const;
-	bool         IsFirstChildHidden(const std::vector<CObjectLayer*>& layers) const;
-	bool         DoChildrenMatchHiddenState(const std::vector<CObjectLayer*>& layers, bool isHidden) const;
 
 	bool         IsolateLocked(const QModelIndex& index);
 	bool         IsolateVisibility(const QModelIndex& index);

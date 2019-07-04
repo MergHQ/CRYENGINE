@@ -42,6 +42,8 @@ extern CItemModelAttribute s_PlatformAttribute;
 
 namespace LevelModelsUtil
 {
+CObjectLayer*   LayerFromIndexData(const QModelIndex& index);
+CBaseObject*    ObjectFromIndexData(const QModelIndex& index);
 void            GetAllLayersForIndexList(const QModelIndexList& list, std::vector<CObjectLayer*>& outLayers);
 void            GetFolderLayersForIndexList(const QModelIndexList& list, std::vector<CObjectLayer*>& outLayers);
 void            GetObjectLayersForIndexList(const QModelIndexList& list, std::vector<CObjectLayer*>& outLayers);

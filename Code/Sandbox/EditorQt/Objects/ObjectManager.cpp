@@ -1959,20 +1959,28 @@ void CObjectManager::HideObject(CBaseObject* obj, bool hide)
 	InvalidateVisibleList();
 }
 
+bool CObjectManager::ShouldToggleHideAllBut(CBaseObject* pObject) const
+{
+	CBaseObjectsArray objects;
+	GetObjects(objects, (CObjectLayer*)pObject->GetLayer());
+
+	for (CBaseObject* pOtherObject : objects)
+	{
+		if (pOtherObject != pObject && pOtherObject->IsVisible())
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
 void CObjectManager::ToggleHideAllBut(CBaseObject* pObject)
 {
 	CBaseObjectsArray objects;
 	GetObjects(objects, (CObjectLayer*)pObject->GetLayer());
 
-	bool hideAll = false;
-	for (CBaseObject* pOtherObject : objects)
-	{
-		if (pOtherObject != pObject && pOtherObject->IsVisible())
-		{
-			hideAll = true;
-			break;
-		}
-	}
+	bool hideAll = ShouldToggleHideAllBut(pObject);
 
 	if (hideAll)
 	{
@@ -2022,20 +2030,28 @@ void CObjectManager::FreezeObject(CBaseObject* obj, bool freeze)
 	InvalidateVisibleList();
 }
 
+bool CObjectManager::ShouldToggleFreezeAllBut(CBaseObject* pObject) const
+{
+	CBaseObjectsArray objects;
+	GetObjects(objects, (CObjectLayer*)pObject->GetLayer());
+
+	for (CBaseObject* pOtherObject : objects)
+	{
+		if (pOtherObject != pObject && !pOtherObject->IsFrozen())
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
 void CObjectManager::ToggleFreezeAllBut(CBaseObject* pObject)
 {
 	CBaseObjectsArray objects;
 	GetObjects(objects, (CObjectLayer*)pObject->GetLayer());
 
-	bool freezeAll = false;
-	for (CBaseObject* pOtherObject : objects)
-	{
-		if (pObject != pOtherObject && !pOtherObject->IsFrozen())
-		{
-			freezeAll = true;
-			break;
-		}
-	}
+	bool freezeAll = ShouldToggleFreezeAllBut(pObject);
 
 	if (freezeAll)
 	{

@@ -556,6 +556,24 @@ CObjectLayer* CObjectLayer::GetChild(int index) const
 	return m_childLayers[index];
 }
 
+void CObjectLayer::GetDescendants(std::vector<CObjectLayer*>& result) const
+{
+	for (const _smart_ptr<CObjectLayer>& pLayer : m_childLayers)
+	{
+		result.push_back(pLayer.get());
+		pLayer->GetDescendants(result);
+	}
+}
+
+void CObjectLayer::GetAncestors(std::vector<CObjectLayer*>& result) const
+{
+	if (m_parent)
+	{
+		result.push_back(m_parent);
+		m_parent->GetAncestors(result);
+	}
+}
+
 //////////////////////////////////////////////////////////////////////////
 bool CObjectLayer::IsChildOf(const CObjectLayer* pParent) const
 {

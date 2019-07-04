@@ -173,12 +173,16 @@ struct IObjectManager
 	//////////////////////////////////////////////////////////////////////////
 	//! Makes object visible or invisible.
 	virtual void HideObject(CBaseObject* obj, bool hide) = 0;
+	//! Returns if the item can be isolated or if it's already isolated
+	virtual bool ShouldToggleHideAllBut(CBaseObject* pObject) const = 0;
 	//! Isolates the current object's visibility
 	virtual void ToggleHideAllBut(CBaseObject* obj) = 0;
 	//! Unhide all hidden objects.
 	virtual void UnhideAll() = 0;
 	//! Freeze object, making it unselectable.
 	virtual void FreezeObject(CBaseObject* obj, bool freeze) = 0;
+	//! Returns if the item can be isolated or if it's already isolated
+	virtual bool ShouldToggleFreezeAllBut(CBaseObject* pObject) const = 0;
 	//! Isolates the current object's frozen state
 	virtual void ToggleFreezeAllBut(CBaseObject* pObject) = 0;
 	//! Unfreeze all frozen objects.

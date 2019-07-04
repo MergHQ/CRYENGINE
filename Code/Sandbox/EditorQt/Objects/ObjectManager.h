@@ -138,12 +138,16 @@ public:
 	//////////////////////////////////////////////////////////////////////////
 	//! Makes object visible or invisible.
 	void HideObject(CBaseObject* obj, bool hide);
+	//! Returns if the item can be isolated or if it's already isolated
+	bool ShouldToggleHideAllBut(CBaseObject* pObject) const override;
 	//! Isolates the current object's visibility
 	void ToggleHideAllBut(CBaseObject* pObj) override;
 	//! Unhide all hidden objects.
 	void UnhideAll();
 	//! Freeze object, making it unselectable.
 	void FreezeObject(CBaseObject* obj, bool freeze);
+	//! Returns if the item can be isolated or if it's already isolated
+	bool ShouldToggleFreezeAllBut(CBaseObject* pObject) const override;
 	//! Isolates the current object's frozen state
 	void ToggleFreezeAllBut(CBaseObject* pObject) override;
 	//! Unfreeze all frozen objects.

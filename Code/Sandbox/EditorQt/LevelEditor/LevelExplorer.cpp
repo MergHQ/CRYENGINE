@@ -814,13 +814,13 @@ CObjectLayer* CLevelExplorer::GetParentLayerForIndexList(const QModelIndexList& 
 	if (indexList.isEmpty())
 		return nullptr;
 
-	QModelIndex lastSelectedItem = indexList.last();
-	QVariant type = indexList.last().data(static_cast<int>(CLevelModel::Roles::TypeCheckRole));
+	QModelIndex lastIndex = indexList.last();
+	QVariant type = lastIndex.data(static_cast<int>(CLevelModel::Roles::TypeCheckRole));
 
 	if (type.toInt() != ELevelElementType::eLevelElement_Layer)
 		return nullptr;
 
-	CObjectLayer* pLayer = static_cast<CObjectLayer*>(lastSelectedItem.internalPointer());
+	CObjectLayer* pLayer = LevelModelsUtil::LayerFromIndexData(lastIndex);
 	if (pLayer->GetLayerType() == eObjectLayerType_Folder)
 	{
 		return pLayer;
@@ -1158,22 +1158,7 @@ bool CLevelExplorer::OnToggleLockChildren()
 	if (allLayers.empty())
 		return false;
 
-	// First check if all layers have the same lock state
-	bool isFirstObjectLocked = IsFirstChildLocked(allLayers);
-	bool hasMultipleState = DoChildrenMatchLockedState(allLayers, isFirstObjectLocked);
-
-	for (CObjectLayer* pLayer : allLayers)
-	{
-		// If layers don't have the same lock state, then make them all unlocked. If not, then toggle their lock state
-		if (hasMultipleState || isFirstObjectLocked)
-		{
-			OnUnlockAllInLayer(pLayer);
-		}
-		else
-		{
-			OnLockAllInLayer(pLayer);
-		}
-	}
+	LevelExplorerCommandHelper::ToggleChildrenLocked(allLayers);
 
 	return true;
 }
@@ -1218,108 +1203,7 @@ bool CLevelExplorer::OnToggleHideChildren()
 	if (allLayers.empty())
 		return false;
 
-	// First check if all layers have the same lock state
-	bool isFirstObjectHidden = IsFirstChildHidden(allLayers);
-	bool hasMultipleState = DoChildrenMatchHiddenState(allLayers, isFirstObjectHidden);
-
-	for (CObjectLayer* pLayer : allLayers)
-	{
-		// If layers don't have the same lock state, then make them all unlocked. If not, then toggle their lock state
-		if (hasMultipleState || isFirstObjectHidden)
-		{
-			OnUnhideAllInLayer(pLayer);
-		}
-		else
-		{
-			OnHideAllInLayer(pLayer);
-		}
-	}
-
-	return true;
-}
-
-bool CLevelExplorer::IsFirstChildLocked(const std::vector<CObjectLayer*>& layers) const
-{
-	for (const CObjectLayer* pLayer : layers)
-	{
-		CBaseObjectsArray objects;
-		GetIEditorImpl()->GetObjectManager()->GetObjects(objects, pLayer);
-
-		for (const CBaseObject* pObject : objects)
-		{
-			return pObject->IsFrozen();
-		}
-	}
-
-	return false;
-}
-
-bool CLevelExplorer::DoChildrenMatchLockedState(const std::vector<CObjectLayer*>& layers, bool isLocked) const
-{
-	for (const CObjectLayer* pLayer : layers)
-	{
-		CBaseObjectsArray objects;
-		GetIEditorImpl()->GetObjectManager()->GetObjects(objects, pLayer);
-
-		for (const CBaseObject* pObject : objects)
-		{
-			if (isLocked != pObject->IsFrozen())
-				return false;
-		}
-
-		std::vector<CObjectLayer*> childLayers;
-		childLayers.reserve(pLayer->GetChildCount());
-		for (int i = 0; i < pLayer->GetChildCount(); i++)
-		{
-			childLayers.push_back(pLayer->GetChild(i));
-		}
-
-		if (!DoChildrenMatchLockedState(childLayers, isLocked))
-			return false;
-	}
-
-	return true;
-}
-
-bool CLevelExplorer::IsFirstChildHidden(const std::vector<CObjectLayer*>& layers) const
-{
-	for (const CObjectLayer* pLayer : layers)
-	{
-		CBaseObjectsArray objects;
-		GetIEditorImpl()->GetObjectManager()->GetObjects(objects, pLayer);
-
-		for (const CBaseObject* pObject : objects)
-		{
-			return pObject->IsHidden();
-		}
-	}
-
-	return false;
-}
-
-bool CLevelExplorer::DoChildrenMatchHiddenState(const std::vector<CObjectLayer*>& layers, bool isHidden) const
-{
-	for (const CObjectLayer* pLayer : layers)
-	{
-		CBaseObjectsArray objects;
-		GetIEditorImpl()->GetObjectManager()->GetObjects(objects, pLayer);
-
-		for (const CBaseObject* pObject : objects)
-		{
-			if (isHidden != pObject->IsFrozen())
-				return false;
-		}
-
-		std::vector<CObjectLayer*> childLayers;
-		childLayers.reserve(pLayer->GetChildCount());
-		for (int i = 0; i < pLayer->GetChildCount(); i++)
-		{
-			childLayers.push_back(pLayer->GetChild(i));
-		}
-
-		if (!DoChildrenMatchHiddenState(childLayers, isHidden))
-			return false;
-	}
+	LevelExplorerCommandHelper::ToggleChildrenVisibility(allLayers);
 
 	return true;
 }
@@ -1702,7 +1586,13 @@ void CLevelExplorer::OnSelectionChanged(const QItemSelection& selected, const QI
 	if (pObjectManager->IsLayerChanging())
 		return;
 
-	if (!m_syncSelection || m_ignoreSelectionEvents || m_modelType == Layers)
+	if (!m_syncSelection)
+	{
+		UpdateSelectionActionState();
+		return;
+	}
+
+	if (m_ignoreSelectionEvents || m_modelType == Layers)
 		return;
 
 	//Propagate selection to object manager
@@ -1835,6 +1725,34 @@ void CLevelExplorer::UpdateSelectionActionState()
 		SetActionChecked("layer.toggle_exportable_to_pak", LevelExplorerCommandHelper::AreExportableToPak(layers));
 		SetActionChecked("layer.toggle_auto_load", LevelExplorerCommandHelper::AreAutoLoaded(layers));
 		SetActionChecked("layer.toggle_physics", LevelExplorerCommandHelper::HavePhysics(layers));
+
+		SetActionChecked("general.toggle_children_visibility", LevelExplorerCommandHelper::AreChildrenVisible(layers));
+		SetActionChecked("general.toggle_children_locking", LevelExplorerCommandHelper::AreChildrenLocked(layers));
+	}
+
+	if (m_treeView->currentIndex().isValid())
+	{
+		QVariant type = m_treeView->currentIndex().data(static_cast<int>(CLevelModel::Roles::TypeCheckRole));
+		if (type.toInt() == ELevelElementType::eLevelElement_Layer)
+		{
+			CObjectLayer* pLayer = LevelModelsUtil::LayerFromIndexData(m_treeView->currentIndex());
+			if (pLayer)
+			{
+				CObjectLayerManager* pLayerManager = GetIEditor()->GetObjectManager()->GetLayersManager();
+				SetActionChecked("general.isolate_visibility", !pLayerManager->ShouldToggleHideAllBut(pLayer));
+				SetActionChecked("general.isolate_locked", !pLayerManager->ShouldToggleFreezeAllBut(pLayer));
+			}
+		}
+		else if (type.toInt() == ELevelElementType::eLevelElement_Object)
+		{
+			CBaseObject* pObject = LevelModelsUtil::ObjectFromIndexData(m_treeView->currentIndex());
+			if (pObject)
+			{
+				IObjectManager* pObjectManager = GetIEditor()->GetObjectManager();
+				SetActionChecked("general.isolate_visibility", !pObjectManager->ShouldToggleHideAllBut(pObject));
+				SetActionChecked("general.isolate_locked", !pObjectManager->ShouldToggleFreezeAllBut(pObject));
+			}
+		}
 	}
 }
 

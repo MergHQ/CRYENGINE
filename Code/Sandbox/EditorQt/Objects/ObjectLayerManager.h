@@ -145,8 +145,12 @@ public:
 
 	//! Freeze read-only layers.
 	void FreezeROnly();
+	//! Returns if the item can be isolated or if it's already isolated
+	bool ShouldToggleFreezeAllBut(CObjectLayer* pLayer) const;
 	//! Freeze all layers except for the one specified
 	void ToggleFreezeAllBut(CObjectLayer* pLayer);
+	//! Returns if the item can be isolated or if it's already isolated
+	bool ShouldToggleHideAllBut(CObjectLayer* pLayer) const;
 	//! Hide all layers except for the one specified
 	void ToggleHideAllBut(CObjectLayer* pLayer);
 

@@ -68,7 +68,7 @@ public:
 
 	//////////////////////////////////////////////////////////////////////////
 	//! Save/Load layer to/from xml node.
-	void SerializeBase(XmlNodeRef& node, bool isLoading);
+	void         SerializeBase(XmlNodeRef& node, bool isLoading);
 	virtual void Serialize(XmlNodeRef& node, bool isLoading);
 
 	//! Get number of objects.
@@ -80,11 +80,13 @@ public:
 	void          AddChild(CObjectLayer* pLayer, bool isNotify = true);
 	void          RemoveChild(CObjectLayer* pLayer, bool isNotify = true);
 	void          SetAsRootLayer();
-	int           GetChildCount() const override { return m_childLayers.size(); }
+	int           GetChildCount() const override                 { return m_childLayers.size(); }
 	CObjectLayer* GetChild(int index) const;
-	CObjectLayer* GetParent() const             { return m_parent; }
-	IObjectLayer* GetParentIObjectLayer() const { return m_parent; }
+	CObjectLayer* GetParent() const                              { return m_parent; }
+	IObjectLayer* GetParentIObjectLayer() const                  { return m_parent; }
 	IObjectLayer* GetChildIObjectLayer(int index) const override { return GetChild(index); }
+	void          GetDescendants(std::vector<CObjectLayer*>& result) const;
+	void          GetAncestors(std::vector<CObjectLayer*>& result) const;
 
 	//! Check if specified layer is direct or indirect parent of this layer.
 	bool IsChildOf(const CObjectLayer* pParent) const;
@@ -106,9 +108,9 @@ public:
 	uint16 GetLayerID() const          { return m_nLayerId; }
 
 	//! Returns the filepath of this layer. The path may not exist if the level has not been saved yet.
-	string              GetLayerFilepath() const override;
+	string                             GetLayerFilepath() const override;
 
-	EObjectLayerType    GetLayerType() const { return m_layerType; }
+	EObjectLayerType                   GetLayerType() const      { return m_layerType; }
 
 	virtual const std::vector<string>& GetFiles() const override { return m_files; }
 
