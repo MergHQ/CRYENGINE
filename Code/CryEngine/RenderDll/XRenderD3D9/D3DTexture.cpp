@@ -1261,7 +1261,7 @@ void CTexture::CopySliceChain(CDeviceTexture* const pDstDevTex, int8 nDstNumMips
                               CDeviceTexture* const pSrcDevTex, int8 nSrcNumMips, int nSrcSliceOffset, int8 nSrcMipOffset, int nNumSlices, int8 nNumMips)
 {
 	CRY_ASSERT(pSrcDevTex && pDstDevTex);
-	CRY_ASSERT_MESSAGE(nNumSlices == 1, "TODO: allow multiple slices being uploaded with the same command");
+	CRY_ASSERT(nNumSlices == 1, "TODO: allow multiple slices being uploaded with the same command");
 
 #if CRY_PLATFORM_DURANGO && (CRY_RENDERER_DIRECT3D >= 110) && (CRY_RENDERER_DIRECT3D < 120)
 	pDstDevTex->InitD3DTexture();

@@ -626,7 +626,7 @@ void CDeviceObjectFactory::RecycleResource(D3DResource* pResource)
 template<typename T>
 static inline EHeapType SuggestVKHeapType(const T& desc)
 {
-	CRY_ASSERT_MESSAGE((desc & (CDeviceObjectFactory::USAGE_CPU_READ | CDeviceObjectFactory::USAGE_CPU_WRITE)) != (CDeviceObjectFactory::USAGE_CPU_READ | CDeviceObjectFactory::USAGE_CPU_WRITE), "CPU Read and Write can't be requested together!");
+	CRY_ASSERT((desc & (CDeviceObjectFactory::USAGE_CPU_READ | CDeviceObjectFactory::USAGE_CPU_WRITE)) != (CDeviceObjectFactory::USAGE_CPU_READ | CDeviceObjectFactory::USAGE_CPU_WRITE), "CPU Read and Write can't be requested together!");
 
 	// *INDENT-OFF*
 	return EHeapType(

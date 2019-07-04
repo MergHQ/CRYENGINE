@@ -426,7 +426,7 @@ void CD3DStereoRenderer::PrepareStereo()
 
 				if (!m_pHmdRenderer->Initialize(eyeWidth, eyeHeight))
 				{
-					CRY_ASSERT_MESSAGE(false, "m_pHmdRenderer->Initialize() failed!");
+					CRY_ASSERT(false, "m_pHmdRenderer->Initialize() failed!");
 				}
 			}
 		}
@@ -667,7 +667,7 @@ void CD3DStereoRenderer::RenderScene(const SStereoRenderContext& context)
 	if (!m_pHmdRenderer)
 		return;
 
-	CRY_ASSERT_MESSAGE(!m_framePrepared, "Frame already prepared.");
+	CRY_ASSERT(!m_framePrepared, "Frame already prepared.");
 
 	// Wait to begin frame, might block
 	PrepareFrame();

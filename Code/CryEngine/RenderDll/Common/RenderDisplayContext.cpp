@@ -569,7 +569,7 @@ RectI CSwapChainBackedRenderDisplayContext::GetCurrentMonitorBounds() const
 
 	return RectI{ monitorInfo.rcMonitor.left, monitorInfo.rcMonitor.top, monitorInfo.rcMonitor.right - monitorInfo.rcMonitor.left, monitorInfo.rcMonitor.bottom - monitorInfo.rcMonitor.top };
 #else
-	CRY_ASSERT_MESSAGE(false, "Not implemented for platform!");
+	CRY_ASSERT(false, "Not implemented for platform!");
 	return RectI();
 #endif
 }

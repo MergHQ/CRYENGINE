@@ -387,7 +387,7 @@ int CRenderMesh::Release()
 # if !defined(_RELEASE)
 	if (refCnt < 0)
 	{
-		CRY_ASSERT_MESSAGE(refCnt>=0, "CRenderMesh::Release() called so many times on rendermesh that refcount became negative");
+		CRY_ASSERT(refCnt>=0, "CRenderMesh::Release() called so many times on rendermesh that refcount became negative");
 	}
 # endif
 	if (refCnt == 0)
@@ -396,7 +396,7 @@ int CRenderMesh::Release()
 #   if !defined(_RELEASE)
 		if (m_nFlags & FRM_RELEASED)
 		{
-			CRY_ASSERT_MESSAGE(refCnt > 0, "CRenderMesh::Release() mesh already in the garbage list (double delete pending)");
+			CRY_ASSERT(refCnt > 0, "CRenderMesh::Release() mesh already in the garbage list (double delete pending)");
 		}
 #   endif
 		m_nFlags |= FRM_RELEASED;
@@ -658,7 +658,7 @@ void *CRenderMesh::LockVB(int nStream, uint32 nFlags, int nOffset, int nVerts, i
 	MEMSTAT_CONTEXT(EMemStatContextType::RenderMeshType, this->GetTypeName());
 	MEMSTAT_CONTEXT(EMemStatContextType::RenderMesh, this->GetSourceName());
 # if !defined(_RELEASE)
-	CRY_ASSERT_MESSAGE(m_nThreadAccessCounter, "rendermesh must be locked via LockForThreadAccess() before LockIB/VB is called");
+	CRY_ASSERT(m_nThreadAccessCounter, "rendermesh must be locked via LockForThreadAccess() before LockIB/VB is called");
 #endif
 
 	// NOTE: When called from a job thread we will use main thread ID
@@ -820,7 +820,7 @@ vtx_idx *CRenderMesh::LockIB(uint32 nFlags, int nOffset, int nInds)
 	MEMORY_SCOPE_CHECK_HEAP();
 	byte *pD;
 # if !defined(_RELEASE)
-	CRY_ASSERT_MESSAGE(m_nThreadAccessCounter, "rendermesh must be locked via LockForThreadAccess() before LockIB/VB is called");
+	CRY_ASSERT(m_nThreadAccessCounter, "rendermesh must be locked via LockForThreadAccess() before LockIB/VB is called");
 #endif
 	if (!CanUpdate()) // if allocation failure suffered, don't lock anything anymore
 		return NULL;
@@ -1586,7 +1586,7 @@ void CRenderMesh::SetSkinningDataCharacter(CMesh& mesh, uint32 flags, struct SMe
 	// stop initializing if allocation failed
 	if( pSkinBuff == NULL ) 
 	{
-		CRY_ASSERT_MESSAGE(pSkinBuff, "Skinning buffer allocation failed");
+		CRY_ASSERT(pSkinBuff, "Skinning buffer allocation failed");
 		return; 
 	}
 
@@ -4312,7 +4312,7 @@ void CRenderMesh::PrintMeshLeaks()
 	{
 		CRenderMesh* pRM = iter->item<&CRenderMesh::m_Chain>();
 		Warning("--- CRenderMesh '%s' leak after level unload", (!pRM->m_sSource.empty() ? pRM->m_sSource.c_str() : pRM->m_sType.c_str()));
-		CRY_ASSERT_MESSAGE(0, "CRenderMesh leak");
+		CRY_ASSERT(0, "CRenderMesh leak");
 	}
 }
 
@@ -4740,7 +4740,7 @@ void CRenderMesh::CreateRemappedBoneIndicesPair(const uint pairGuid, const TRend
 		const SVF_W4B_I4S* pIndicesWeights = reinterpret_cast<SVF_W4B_I4S*>(GetHWSkinPtr(stride, FSL_READ));
 		remappedIndices = reinterpret_cast<SVF_W4B_I4S*>(AllocateMeshDataUnpooled(sizeof(SVF_W4B_I4S) * vtxCount));
 
-		CRY_ASSERT_MESSAGE(stride == sizeof(SVF_W4B_I4S), "Stride doesn't match");
+		CRY_ASSERT(stride == sizeof(SVF_W4B_I4S), "Stride doesn't match");
 		CRY_ASSERT(remappedIndices && pIndicesWeights);
 
 		if (remappedIndices && pIndicesWeights)
@@ -4813,7 +4813,7 @@ void CRenderMesh::CreateRemappedBoneIndicesPair(const DynArray<JointIdType> &arr
 		const SVF_W4B_I4S* pIndicesWeights = reinterpret_cast<SVF_W4B_I4S*>(GetHWSkinPtr(stride, FSL_READ));
 		remappedIndices = reinterpret_cast<SVF_W4B_I4S*>(AllocateMeshDataUnpooled(sizeof(SVF_W4B_I4S) * vtxCount));
 
-		CRY_ASSERT_MESSAGE(stride == sizeof(SVF_W4B_I4S), "Stride doesn't match");
+		CRY_ASSERT(stride == sizeof(SVF_W4B_I4S), "Stride doesn't match");
 		CRY_ASSERT(remappedIndices && pIndicesWeights);
 
 
@@ -4921,7 +4921,7 @@ void CRenderMesh::ReleaseRemappedBoneIndicesPair(const uint pairGuid)
 		{
 			if (m_CreatedBoneIndices[i].guid == pairGuid)
 			{
-				CRY_ASSERT_MESSAGE(m_CreatedBoneIndices[i].refcount > 0, "Bone indices pair over-released!");
+				CRY_ASSERT(m_CreatedBoneIndices[i].refcount > 0, "Bone indices pair over-released!");
 				if (--m_CreatedBoneIndices[i].refcount == 0)
 				{
 					deleted = i; 

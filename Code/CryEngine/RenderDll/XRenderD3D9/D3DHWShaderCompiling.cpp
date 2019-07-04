@@ -693,7 +693,7 @@ InputLayoutHandle CHWShader_D3D::mfVertexFormat(SHWSInstance* pInst, CHWShader_D
 #endif
 		else
 		{
-			CRY_ASSERT_TRACE(0, ("Invalid SemanticName %s", IDesc.SemanticName));
+			CRY_ASSERT(0, "Invalid SemanticName %s", IDesc.SemanticName);
 		}
 
 #if CRY_RENDERER_VULKAN
@@ -1154,7 +1154,7 @@ bool CHWShader_D3D::AutoGenMultiresGS(TArray<char>& sNewScr, CShader* pSH)
 		if (!szPosA || szPosA >= szStrEnd)
 		{
 #if !defined(_RELEASE)
-			CRY_ASSERT_MESSAGE(false, "Cannot generate a GS for a VS with no SV_Position output");
+			CRY_ASSERT(false, "Cannot generate a GS for a VS with no SV_Position output");
 #endif
 			return false;
 		}
@@ -1291,7 +1291,7 @@ std::string resourceTypeToString(SResourceBindPoint::ESlotType type)
 	case SResourceBindPoint::ESlotType::UnorderedAccessView:
 		return "u";
 	default:
-		CRY_ASSERT_MESSAGE(false, "Type is not defined.");
+		CRY_ASSERT(false, "Type is not defined.");
 		return "";
 	};
 };
@@ -2188,7 +2188,7 @@ bool CHWShader_D3D::mfAddCacheItem(SDiskShaderCache* pCache, SShaderCacheHeaderI
 	SDirEntryOpen* pOE = pCache->m_pRes->mfOpenEntry(de.GetName());
 	if (!pOE)
 	{
-		CRY_ASSERT_MESSAGE(false, "CHWShader_D3D::mfAddCacheItem(): Couldn't add/open cache entry");
+		CRY_ASSERT(false, "CHWShader_D3D::mfAddCacheItem(): Couldn't add/open cache entry");
 		delete[] pNew;
 		return false;
 	}
@@ -2398,7 +2398,7 @@ bool SDiskShaderCache::mfOptimiseCacheFile(SOptimiseStats* pStats)
 		SResFileLookupData* pLookupCache = m_pRes->GetLookupData();
 		if (pLookupCache == NULL || pLookupCache->m_CacheMajorVer != nMajor || pLookupCache->m_CacheMinorVer != nMinor)
 		{
-			CRY_ASSERT_MESSAGE(pLookupCache == NULL, "Losing ShaderIdents by recreating lookupdata cache");
+			CRY_ASSERT(pLookupCache == NULL, "Losing ShaderIdents by recreating lookupdata cache");
 			m_pRes->StoreLookupData(0, (float)FX_CACHE_VER);
 		}
 
@@ -2592,7 +2592,7 @@ bool CHWShader_D3D::mfUploadHW(SHWSInstance* pInst, const byte* pBuf, uint32 nSi
 			pInst->m_Handle = SD3DShaderHandle(handle, m_eSHClass, nSize);
 	}
 
-	CRY_ASSERT_MESSAGE(pInst->m_Handle.m_pShader && pInst->m_Handle.m_pShader->GetHandle(), "Shader creation failed");
+	CRY_ASSERT(pInst->m_Handle.m_pShader && pInst->m_Handle.m_pShader->GetHandle(), "Shader creation failed");
 
 	if ((m_eSHClass == eHWSC_Vertex) && (!(nFlags & HWSF_PRECACHE)) && !pInst->m_bFallback)
 		mfUpdateFXVertexFormat(pInst, pSH);

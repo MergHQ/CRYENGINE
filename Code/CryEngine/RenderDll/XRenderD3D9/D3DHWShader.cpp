@@ -697,7 +697,7 @@ SDeviceShaderEntry CHWShader_D3D::mfShaderEntryFromCache(CShader* pFX, const CDi
 		// Upload to device
 		if (!mfUploadHW(&instance, pBuf, nSize, pFX, 0))
 		{
-			CRY_ASSERT_MESSAGE(false, "CHWShader_D3D::mfShaderEntryFromCache(): mfUploadHW() failed!");
+			CRY_ASSERT(false, "CHWShader_D3D::mfShaderEntryFromCache(): mfUploadHW() failed!");
 			return {};
 		}
 
@@ -707,7 +707,7 @@ SDeviceShaderEntry CHWShader_D3D::mfShaderEntryFromCache(CShader* pFX, const CDi
 		D3DShaderReflection* pShaderReflection = (D3DShaderReflection*)pShaderReflBuf;
 		if (hr != S_OK)
 		{
-			CRY_ASSERT_MESSAGE(false, "CHWShader_D3D::mfShaderEntryFromCache(): D3DReflect() failed!");
+			CRY_ASSERT(false, "CHWShader_D3D::mfShaderEntryFromCache(): D3DReflect() failed!");
 			return {};
 		}
 
@@ -793,7 +793,7 @@ void CHWShader_D3D::mfPrecacheAllCombinations(CShader* pFX, CResFileOpenScope& r
 
 		// Find where this goes into the entries list
 		auto it = std::lower_bound(entries.begin(), entries.end(), offset, entries_pred);
-		CRY_ASSERT_MESSAGE(it == entries.end() || std::get<0>(*it) > offset, "CHWShader_D3D::mfPrecacheAllCombinations(): Unmarked duplicate entry!");
+		CRY_ASSERT(it == entries.end() || std::get<0>(*it) > offset, "CHWShader_D3D::mfPrecacheAllCombinations(): Unmarked duplicate entry!");
 
 		// Check for dev cache items with identical name
 		const auto devCacheIt = devCache.find(devCacheKey);
@@ -827,7 +827,7 @@ void CHWShader_D3D::mfPrecacheAllCombinations(CShader* pFX, CResFileOpenScope& r
 	{
 		const auto offset = p.first;
 		auto it = std::lower_bound(entries.begin(), entries.end(), offset, entries_pred);
-		CRY_ASSERT_MESSAGE(it != entries.end() && std::get<0>(*it) == offset, "CHWShader_D3D::mfPrecacheAllCombinations(): Duplicate entry not found!");
+		CRY_ASSERT(it != entries.end() && std::get<0>(*it) == offset, "CHWShader_D3D::mfPrecacheAllCombinations(): Duplicate entry not found!");
 
 		// Add duplicate entry
 		const auto ptr = std::get<1>(*it);

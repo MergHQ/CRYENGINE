@@ -197,7 +197,7 @@ CResFile::~CResFile()
 				{
 					break;
 				}
-				CRY_ASSERT_TRACE(false, ("CResFile - File still open at shutdown: %s (streaming: %s)", pCurrent->mfGetFileName(), i ? "no" : "yes"));
+				CRY_ASSERT(false, "CResFile - File still open at shutdown: %s (streaming: %s)", pCurrent->mfGetFileName(), i ? "no" : "yes");
 				pCurrent = i ? pCurrent->m_Next : pCurrent->m_NextStream;
 			}
 		}

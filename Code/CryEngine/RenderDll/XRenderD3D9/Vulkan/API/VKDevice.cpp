@@ -131,7 +131,7 @@ CDevice::CDevice(const SPhysicalDeviceInfo* pDeviceInfo, VkAllocationCallbacks* 
 		CryFatalError("Failed to initialize global descriptor pool!");
 
 	if (!m_occlusionQueries.Init(GetVkDevice()))
-		CRY_ASSERT_MESSAGE(false, "Failed to initialize occlusion queries");
+		CRY_ASSERT(false, "Failed to initialize occlusion queries");
 
 	m_Scheduler.BeginScheduling();
 }

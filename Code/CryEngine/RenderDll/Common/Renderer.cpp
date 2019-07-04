@@ -2826,7 +2826,7 @@ void CRenderer::PrecacheTexture(ITexture* pTP, float fMipFactor, float fTimeToRe
 	if (!CRenderer::CV_r_texturesstreaming)
 		return;
 
-	CRY_ASSERT_MESSAGE(pTP, "Invalid parameter given to EF_PrecacheResource");
+	CRY_ASSERT(pTP, "Invalid parameter given to EF_PrecacheResource");
 	CTexture* pTexture = (CTexture*)pTP;
 
 	pTexture->PrecacheAsynchronously(fMipFactor, Flags, nUpdateId);
@@ -2841,7 +2841,7 @@ bool CRenderer::EF_PrecacheResource(ITexture* pTP, float fMipFactor, float fTime
 
 bool CRenderer::EF_PrecacheResource(SRenderLight* pLS, float fMipFactor, float fTimeToReady, int Flags, int nUpdateId)
 {
-	CRY_ASSERT_MESSAGE(pLS, "Invalid parameter given to EF_PrecacheResource");
+	CRY_ASSERT(pLS, "Invalid parameter given to EF_PrecacheResource");
 	ITexture* pLightTexture = pLS->m_pLightImage ? pLS->m_pLightImage : pLS->m_pLightDynTexSource ? pLS->m_pLightDynTexSource->GetTexture() : NULL;
 
 	if (pLightTexture)
@@ -2856,7 +2856,7 @@ bool CRenderer::EF_PrecacheResource(SRenderLight* pLS, float fMipFactor, float f
 
 bool CRenderer::EF_PrecacheResource(IRenderShaderResources* pShaderResources, float fMipFactorSI, float fTimeToReady, int nFlags, int nUpdateId)
 {
-	CRY_ASSERT_MESSAGE(pShaderResources, "Invalid parameter given to EF_PrecacheResource");
+	CRY_ASSERT(pShaderResources, "Invalid parameter given to EF_PrecacheResource");
 	CShaderResources* pSR = (CShaderResources*)pShaderResources;
 
 	// Optimizations: 1) Virtual calls removed. 2) Prefetch next iteration's SEfResTexture
@@ -2900,7 +2900,7 @@ bool CRenderer::EF_PrecacheResource(IRenderShaderResources* pShaderResources, fl
 
 bool CRenderer::EF_PrecacheResource(IRenderShaderResources* pShaderResources, int iScreenTexels, float fTimeToReady, int Flags, int nUpdateId)
 {
-	CRY_ASSERT_MESSAGE(pShaderResources, "Invalid parameter given to EF_PrecacheResource");
+	CRY_ASSERT(pShaderResources, "Invalid parameter given to EF_PrecacheResource");
 	CShaderResources* pSR = (CShaderResources*)pShaderResources;
 
 	// Optimizations: 1) Virtual calls removed. 2) Prefetch next iteration's SEfResTexture
@@ -2952,7 +2952,7 @@ bool CRenderer::EF_PrecacheResource(IRenderShaderResources* pShaderResources, in
 
 bool CRenderer::EF_PrecacheResource(SShaderItem* pSI, float fMipFactorSI, float fTimeToReady, int Flags, int nUpdateId)
 {
-	CRY_ASSERT_MESSAGE(pSI, "Invalid parameter given to EF_PrecacheResource");
+	CRY_ASSERT(pSI, "Invalid parameter given to EF_PrecacheResource");
 	CShader* pSH = (CShader*)pSI->m_pShader;
 
 	if (pSH && !(pSH->m_Flags & EF_NODRAW))
@@ -2966,7 +2966,7 @@ bool CRenderer::EF_PrecacheResource(SShaderItem* pSI, float fMipFactorSI, float 
 
 bool CRenderer::EF_PrecacheResource(SShaderItem* pSI, int iScreenTexels, float fTimeToReady, int Flags, int nUpdateId)
 {
-	CRY_ASSERT_MESSAGE(pSI, "Invalid parameter given to EF_PrecacheResource");
+	CRY_ASSERT(pSI, "Invalid parameter given to EF_PrecacheResource");
 	CShader* pSH = (CShader*)pSI->m_pShader;
 
 	if (pSH && !(pSH->m_Flags & EF_NODRAW))
@@ -2985,7 +2985,7 @@ bool CRenderer::EF_PrecacheResource(IShader* pSH, float fMipFactor, float fTimeT
 
 bool CRenderer::EF_PrecacheResource(IRenderMesh* _pPB, IMaterial* pMaterial, float fMipFactor, float fTimeToReady, int nFlags, int nUpdateId)
 {
-	CRY_ASSERT_MESSAGE(_pPB && pMaterial, "Invalid parameter given to EF_PrecacheResource");
+	CRY_ASSERT(_pPB && pMaterial, "Invalid parameter given to EF_PrecacheResource");
 	CRenderMesh* pPB = (CRenderMesh*)_pPB;
 
 	for (int i = 0; i < pPB->m_Chunks.size(); i++)
@@ -4459,7 +4459,7 @@ void CRenderer::ExecuteAsyncDIP()
 //////////////////////////////////////////////////////////////////////////
 void CRenderer::EF_SetPostEffectParam(const char* pParam, float fValue, bool bForceValue)
 {
-	CRY_ASSERT_MESSAGE((pParam), "mfSetParameter: null parameter");
+	CRY_ASSERT((pParam), "mfSetParameter: null parameter");
 	if (!pParam)
 	{
 		return;
@@ -4476,7 +4476,7 @@ void CRenderer::EF_SetPostEffectParam(const char* pParam, float fValue, bool bFo
 
 void CRenderer::EF_SetPostEffectParamVec4(const char* pParam, const Vec4& pValue, bool bForceValue)
 {
-	CRY_ASSERT_MESSAGE((pParam), "mfSetParameter: null parameter");
+	CRY_ASSERT((pParam), "mfSetParameter: null parameter");
 
 	CEffectParam* pEffectParam = PostEffectMgr()->GetByName(pParam);
 	if (!pEffectParam)
@@ -4490,7 +4490,7 @@ void CRenderer::EF_SetPostEffectParamVec4(const char* pParam, const Vec4& pValue
 //////////////////////////////////////////////////////////////////////////
 void CRenderer::EF_SetPostEffectParamString(const char* pParam, const char* pszArg)
 {
-	CRY_ASSERT_MESSAGE((pParam && pszArg), "mfSetParameter: null parameter");
+	CRY_ASSERT((pParam && pszArg), "mfSetParameter: null parameter");
 
 	CEffectParam* pEffectParam = PostEffectMgr()->GetByName(pParam);
 	if (!pEffectParam)
@@ -4504,7 +4504,7 @@ void CRenderer::EF_SetPostEffectParamString(const char* pParam, const char* pszA
 //////////////////////////////////////////////////////////////////////////
 void CRenderer::EF_GetPostEffectParam(const char* pParam, float& fValue)
 {
-	CRY_ASSERT_MESSAGE((pParam), "mfGetParameter: null parameter");
+	CRY_ASSERT((pParam), "mfGetParameter: null parameter");
 
 	CEffectParam* pEffectParam = PostEffectMgr()->GetByName(pParam);
 	if (!pEffectParam)
@@ -4518,7 +4518,7 @@ void CRenderer::EF_GetPostEffectParam(const char* pParam, float& fValue)
 //////////////////////////////////////////////////////////////////////////
 void CRenderer::EF_GetPostEffectParamVec4(const char* pParam, Vec4& pValue)
 {
-	CRY_ASSERT_MESSAGE((pParam), "mfGetParameter: null parameter");
+	CRY_ASSERT((pParam), "mfGetParameter: null parameter");
 
 	CEffectParam* pEffectParam = PostEffectMgr()->GetByName(pParam);
 	if (!pEffectParam)
@@ -4532,7 +4532,7 @@ void CRenderer::EF_GetPostEffectParamVec4(const char* pParam, Vec4& pValue)
 //////////////////////////////////////////////////////////////////////////
 void CRenderer::EF_GetPostEffectParamString(const char* pParam, const char*& pszArg)
 {
-	CRY_ASSERT_MESSAGE((pParam && pszArg), "mfGetParameter: null parameter");
+	CRY_ASSERT((pParam && pszArg), "mfGetParameter: null parameter");
 
 	CEffectParam* pEffectParam = PostEffectMgr()->GetByName(pParam);
 	if(!pParam || !pszArg)
@@ -4546,7 +4546,7 @@ void CRenderer::EF_GetPostEffectParamString(const char* pParam, const char*& psz
 //////////////////////////////////////////////////////////////////////////
 int32 CRenderer::EF_GetPostEffectID(const char* pPostEffectName)
 {
-	CRY_ASSERT_MESSAGE(pPostEffectName, "mfGetParameter: null parameter");
+	CRY_ASSERT(pPostEffectName, "mfGetParameter: null parameter");
 
 	if (!pPostEffectName)
 	{

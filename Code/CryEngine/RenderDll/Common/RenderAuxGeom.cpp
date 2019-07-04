@@ -547,7 +547,7 @@ void CAuxGeomCB::DrawBuffer(const SAuxVertex* inVertices, uint32 numVertices, bo
 
 SAuxVertex * CAuxGeomCB::BeginDrawBuffer(uint32 maxVertices, bool textured)
 {
-	CRY_ASSERT_MESSAGE(!IsDrawBufferActive(), "Nested BeginDrawBuffer-EndDrawBuffer is not allowed.");
+	CRY_ASSERT(!IsDrawBufferActive(), "Nested BeginDrawBuffer-EndDrawBuffer is not allowed.");
 	MEMSTAT_FUNCTION_CONTEXT(EMemStatContextType::Debug);
 
 	SAuxVertex* bufVertices;
@@ -2527,7 +2527,7 @@ void CAuxGeomCB::AddPushBufferEntry(uint32 numVertices, uint32 numIndices, const
 
 void CAuxGeomCB::AddPrimitive(SAuxVertex*& pVertices, uint32 numVertices, const SAuxGeomRenderFlags& renderFlags)
 {
-	CRY_ASSERT_MESSAGE(!IsDrawBufferActive(), "Adding primitive while BeginDrawBuffer will cause issue in aux drawing.");
+	CRY_ASSERT(!IsDrawBufferActive(), "Adding primitive while BeginDrawBuffer will cause issue in aux drawing.");
 	CRY_ASSERT(numVertices > 0);
 	MEMSTAT_FUNCTION_CONTEXT(EMemStatContextType::Debug);
 	
@@ -2544,7 +2544,7 @@ void CAuxGeomCB::AddPrimitive(SAuxVertex*& pVertices, uint32 numVertices, const 
 
 void CAuxGeomCB::AddIndexedPrimitive(SAuxVertex*& pVertices, uint32 numVertices, vtx_idx*& pIndices, uint32 numIndices, const SAuxGeomRenderFlags& renderFlags)
 {
-	CRY_ASSERT_MESSAGE(!IsDrawBufferActive(), "Adding primitive while BeginDrawBuffer will cause issue in aux drawing.");
+	CRY_ASSERT(!IsDrawBufferActive(), "Adding primitive while BeginDrawBuffer will cause issue in aux drawing.");
 	CRY_ASSERT(numVertices > 0);
 	CRY_ASSERT(numIndices > 0);
 	MEMSTAT_FUNCTION_CONTEXT(EMemStatContextType::Debug);
@@ -2592,7 +2592,7 @@ void CAuxGeomCB::SAuxGeomCBRawData::GetMemoryUsage(ICrySizer* pSizer) const
 
 void CAuxGeomCB::SetActivateDrawBuffer(bool enabled)
 {
-	CRY_ASSERT_MESSAGE(!enabled || !IsDrawBufferActive(), "a buffer cannot be re-enabled while it is active.");
+	CRY_ASSERT(!enabled || !IsDrawBufferActive(), "a buffer cannot be re-enabled while it is active.");
 	if(enabled)
 		m_activeDrawBufferInfo.m_state |= SActiveDrawBufferInfo::Enabled;
 	else

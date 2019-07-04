@@ -1473,11 +1473,11 @@ struct CConstantBufferAllocator
 	bool Allocate(CConstantBuffer* cbuffer)
 	{
 		CRY_PROFILE_FUNCTION(PROFILE_RENDERER);
-		CRY_ASSERT_MESSAGE(cbuffer && cbuffer->m_size, "Bad allocation request");
+		CRY_ASSERT(cbuffer && cbuffer->m_size, "Bad allocation request");
 		const unsigned size = cbuffer->m_size;
 		const unsigned nsize = NextPower2(size);
 		const unsigned bucket = IntegerLog2(nsize) - 8;
-		CRY_ASSERT_MESSAGE(bucket < CRY_ARRAY_COUNT(m_page_buckets), "Bad allocation size");
+		CRY_ASSERT(bucket < CRY_ARRAY_COUNT(m_page_buckets), "Bad allocation size");
 		bool failed = false;
 retry:
 		for (size_t i = m_page_buckets[bucket].size(); i > 0; --i)
@@ -3122,7 +3122,7 @@ public:
 
 		VkDescriptorSet vkDescriptorSet = VK_NULL_HANDLE;
 		VkResult result = vkAllocateDescriptorSets(pDevice->GetVkDevice(), &descriptorSetAllocateInfo, &vkDescriptorSet);
-		CRY_ASSERT_MESSAGE(result == VK_SUCCESS, "Vulkan fails to provide a descriptor set!");
+		CRY_ASSERT(result == VK_SUCCESS, "Vulkan fails to provide a descriptor set!");
 
 		if (result != VK_SUCCESS)
 			return nullptr;
@@ -4399,7 +4399,7 @@ void CGpuBuffer::PrepareUnusedBuffer()
 		}
 #endif
 		const CDeviceResource::ESubstitutionResult substitutionResult = m_pDeviceBuffer->SubstituteUsedResource();
-		CRY_ASSERT_MESSAGE(substitutionResult != CDeviceResource::eSubResult_Failed, "Failed to create resource substitute, probably out of memory");
+		CRY_ASSERT(substitutionResult != CDeviceResource::eSubResult_Failed, "Failed to create resource substitute, probably out of memory");
 		if (substitutionResult == CDeviceResource::eSubResult_Substituted)
 			InvalidateDeviceResource(this, eDeviceResourceDirty);
 

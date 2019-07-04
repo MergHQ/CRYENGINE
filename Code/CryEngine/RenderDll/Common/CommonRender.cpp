@@ -297,7 +297,7 @@ void CResourceBindingInvalidator::InvalidateDeviceResource(CGpuBuffer* pBuffer, 
 {
 //	pBuffer->AddRef();
 	InvalidateDeviceResource(UResourceReference(pBuffer), dirtyFlags);
-	CRY_ASSERT_MESSAGE(!(dirtyFlags & eResourceDestroyed) || (CountInvalidateCallbacks() == 0), "CGpuBuffer %s is destroyd but the invalidation callbacks haven't been removed!", "Unknown" /*pBuffer->GetName()*/);
+	CRY_ASSERT(!(dirtyFlags & eResourceDestroyed) || (CountInvalidateCallbacks() == 0), "CGpuBuffer %s is destroyd but the invalidation callbacks haven't been removed!", "Unknown" /*pBuffer->GetName()*/);
 //	pBuffer->Release();
 }
 
@@ -305,7 +305,7 @@ void CResourceBindingInvalidator::InvalidateDeviceResource(CTexture* pTexture, u
 {
 	pTexture->AddRef();
 	InvalidateDeviceResource(UResourceReference(pTexture), dirtyFlags);
-	CRY_ASSERT_MESSAGE(!(dirtyFlags & eResourceDestroyed) || (CountInvalidateCallbacks() == 0), "CTexture %s is destroyd but the invalidation callbacks haven't been removed!", pTexture->GetName());
+	CRY_ASSERT(!(dirtyFlags & eResourceDestroyed) || (CountInvalidateCallbacks() == 0), "CTexture %s is destroyd but the invalidation callbacks haven't been removed!", pTexture->GetName());
 	pTexture->Release();
 }
 

@@ -401,7 +401,7 @@ NCryVulkan::CMemoryHandle NCryVulkan::CHeap::Allocate(const VkMemoryRequirements
 			}
 		}
 
-		CRY_ASSERT_MESSAGE(types == 0, "Memory fallback happened!");
+		CRY_ASSERT(types == 0, "Memory fallback happened!");
 	}
 	return result;
 }

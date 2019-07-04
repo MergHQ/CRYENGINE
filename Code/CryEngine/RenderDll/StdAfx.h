@@ -951,7 +951,7 @@ const int32 g_nD3D10MaxSupportedSubres = (6 * 8 * 64);
 	public:
 		void AssignDevice(D3DDevice* pDevice) { m_pDevice = pDevice; }
 		void ReleaseDevice() { SAFE_RELEASE(m_pDevice); }
-		D3DDevice* GetRealDevice() const { CRY_ASSERT_MESSAGE(false, "Don't use device wrapper without legacy define set!"); return m_pDevice; }
+		D3DDevice* GetRealDevice() const { CRY_ASSERT(false, "Don't use device wrapper without legacy define set!"); return m_pDevice; }
 		UINT GetNodeCount() const { return 1; }
 		void SwitchNodeVisibility(UINT) {}
 		bool IsValid() const { return m_pDevice != nullptr; }
@@ -967,7 +967,7 @@ const int32 g_nD3D10MaxSupportedSubres = (6 * 8 * 64);
 	public:
 		void AssignDeviceContext(D3DDeviceContext* pDevice) { m_pDevice = pDevice; }
 		void ReleaseDeviceContext() { SAFE_RELEASE(m_pDevice); }
-		D3DDeviceContext* GetRealDeviceContext() const { CRY_ASSERT_MESSAGE(false, "Don't use device context wrapper without legacy define set!"); return m_pDevice; }
+		D3DDeviceContext* GetRealDeviceContext() const { CRY_ASSERT(false, "Don't use device context wrapper without legacy define set!"); return m_pDevice; }
 		int GetNodeCount() const { return 1; }
 		bool IsValid() const { return m_pDevice != nullptr; }
 		void RegisterHook(ICryDeviceWrapperHook*) { CRY_ASSERT(false); }
@@ -1234,7 +1234,7 @@ unsigned sizeOfMapS(Map& map)
 #define DEVRES_TRACK_LATENCY    0
 
 #ifdef WIN32
-	#define ASSERT_LEGACY_PIPELINE CRY_ASSERT_MESSAGE(0, __func__);
+	#define ASSERT_LEGACY_PIPELINE CRY_ASSERT(0, __func__);
 #else
 	#define ASSERT_LEGACY_PIPELINE assert(0);
 #endif

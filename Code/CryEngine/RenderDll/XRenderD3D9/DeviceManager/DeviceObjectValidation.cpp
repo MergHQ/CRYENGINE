@@ -136,7 +136,7 @@ bool CDeviceObjectValidator::ValidateResourceLayout(const SDeviceResourceLayoutD
 	{
 		if (usedLayoutBindSlots.insert(layoutSlot).second == false)
 		{
-			CRY_ASSERT_TRACE(false, ("Invalid Resource Layout: Multiple resources on layout (CPU side) slot %d", layoutSlot));
+			CRY_ASSERT(false, "Invalid Resource Layout: Multiple resources on layout (CPU side) slot %d", layoutSlot);
 			return false;
 		}
 
@@ -184,7 +184,7 @@ bool CDeviceObjectValidator::ValidateResourceLayout(const SDeviceResourceLayoutD
 					auto& existingResource = insertResultS.first->second;
 					auto& currentResource = resource;
 
-					CRY_ASSERT_TRACE(false, ("Invalid Resource Layout : Multiple resources bound to shader slot %s across multiple layoutSlots: A: %s - B: %s",
+					CRY_ASSERT(false, ("Invalid Resource Layout : Multiple resources bound to shader slot %s across multiple layoutSlots: A: %s - B: %s",
 						GetBindPointName(bindPoint), GetResourceName(existingResource), GetResourceName(currentResource)));
 #endif
 
@@ -211,7 +211,7 @@ bool CDeviceObjectValidator::ValidateResourceLayout(const SDeviceResourceLayoutD
 			auto& existingResource = insertResultL.first->second;
 			auto& currentResource = resource;
 
-			CRY_ASSERT_TRACE(false, ("Invalid Resource Layout : Multiple resources bound to shader slot %s within the same layoutSlot: A: %s - B: %s",
+			CRY_ASSERT(false, ("Invalid Resource Layout : Multiple resources bound to shader slot %s within the same layoutSlot: A: %s - B: %s",
 				GetBindPointName(bindPoint), GetResourceName(existingResource), GetResourceName(currentResource)));
 #endif
 
@@ -242,7 +242,7 @@ bool CDeviceObjectValidator::ValidateResourceLayout(const SDeviceResourceLayoutD
 #define VALIDATE_LIMIT(requiredValue, supportedValue, errorMessage)                                          \
 	if (requiredValue > supportedValue)                                                                      \
 	{                                                                                                        \
-		CRY_ASSERT_TRACE(false, ("Invalid Resource Layout: " errorMessage, requiredValue, supportedValue));  \
+		CRY_ASSERT(false, "Invalid Resource Layout: " errorMessage, requiredValue, supportedValue);  \
 		return false;                                                                                        \
 	}
 
@@ -254,7 +254,7 @@ bool CDeviceObjectValidator::ValidateResourceLayout(const SDeviceResourceLayoutD
 		{
 			if (slot != previousSlot + 1)
 			{
-				CRY_ASSERT_MESSAGE(false, "Invalid Resource Layout: gap in layout (CPU side) slots");
+				CRY_ASSERT(false, "Invalid Resource Layout: gap in layout (CPU side) slots");
 				return false;
 			}
 
@@ -324,7 +324,7 @@ bool CDeviceObjectValidator::ValidateResourceSet(const VectorMap<SResourceBindPo
 
 	if (bufferCount > Limits.PerResourceSet.NumBuffers)
 	{
-		CRY_ASSERT_MESSAGE(false, "Invalid Resource set: buffer count exceeded: %d of %d", bufferCount, Limits.PerResourceSet.NumBuffers);
+		CRY_ASSERT(false, "Invalid Resource set: buffer count exceeded: %d of %d", bufferCount, Limits.PerResourceSet.NumBuffers);
 		return false;
 	}
 

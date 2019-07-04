@@ -26,7 +26,7 @@ void DumpWarning(const char* str)
 
 void DumpError(const char* str)
 {
-	CRY_ASSERT_MESSAGE(false, "[Vk Compiler] ERROR: %s", str);
+	CRY_ASSERT(false, "[Vk Compiler] ERROR: %s", str);
 	CryLogAlways("[Vk Compiler] ERROR: %s", str);
 	fwrite(str, sizeof(char), strlen(str), stderr);
 }
@@ -183,7 +183,7 @@ HRESULT D3DCompile(_In_reads_bytes_(SrcDataSize) LPCVOID pSrcData, _In_ SIZE_T S
 	shaderFile.open(shaderPathWithoutFormat + INPUT_HLSL_FORMAT);
 	if (!shaderFile.good())
 	{
-		CRY_ASSERT_MESSAGE(shaderFile.good(), ("Cannot create " + shaderPathWithoutFormat + INPUT_HLSL_FORMAT + " shader file.").c_str());
+		CRY_ASSERT(shaderFile.good(), ("Cannot create " + shaderPathWithoutFormat + INPUT_HLSL_FORMAT + " shader file.").c_str());
 		return E_FAIL;
 	}
 
@@ -238,7 +238,7 @@ HRESULT D3DCompile(_In_reads_bytes_(SrcDataSize) LPCVOID pSrcData, _In_ SIZE_T S
 	std::ifstream spirvShaderFile(shaderPathWithoutFormat + OUTPUT_SPIRV_FORMAT, std::ios::binary);
 	if (!spirvShaderFile.good())
 	{
-		CRY_ASSERT_MESSAGE(false, (shaderPathWithoutFormat + OUTPUT_SPIRV_FORMAT + " cannot be opened").c_str());
+		CRY_ASSERT(false, (shaderPathWithoutFormat + OUTPUT_SPIRV_FORMAT + " cannot be opened").c_str());
 		return E_FAIL;
 	}
 
@@ -680,7 +680,7 @@ CCryVKShaderReflectionConstantBuffer::CCryVKShaderReflectionConstantBuffer(CCryV
 	{
 		if (sscanf_s(name.c_str(), "type_%[a-zA-Z_]", m_name, sizeof(m_name)) != 1)
 		{
-			CRY_ASSERT_MESSAGE(false, "Constant buffer name format is not covered.");
+			CRY_ASSERT(false, "Constant buffer name format is not covered.");
 		}
 	}
 	else if (vkShaderCompiler == STR_VK_SHADER_COMPILER_GLSLANG)

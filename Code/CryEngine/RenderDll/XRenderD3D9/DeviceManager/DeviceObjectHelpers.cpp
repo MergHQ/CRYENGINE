@@ -188,7 +188,7 @@ bool SDeviceObjectHelpers::CShaderConstantManager::AllocateShaderReflection(::CS
 				if (validShaderStages & 1)
 				{
 					CRY_ASSERT(pHWShaders[shaderClass]);
-					CRY_ASSERT_MESSAGE(m_pShaderReflection->bufferCount < MaxReflectedBuffers, "Maximum reflected buffer count exceeded. Feel free to increase if necessary");
+					CRY_ASSERT(m_pShaderReflection->bufferCount < MaxReflectedBuffers, "Maximum reflected buffer count exceeded. Feel free to increase if necessary");
 
 #ifndef RELEASE
 					// check for overlap with another CB
@@ -196,7 +196,7 @@ bool SDeviceObjectHelpers::CShaderConstantManager::AllocateShaderReflection(::CS
 					{
 						if (cb.shaderSlot == ReflectedBufferShaderSlot && (cb.shaderStages & SHADERSTAGE_FROM_SHADERCLASS(shaderClass)))
 						{
-							CRY_ASSERT_MESSAGE(false, "Overlapping constant buffer bindings detected! Cannot assign typed constant buffer " \
+							CRY_ASSERT(false, "Overlapping constant buffer bindings detected! Cannot assign typed constant buffer " \
 							                          "to 'ReflectedBufferShaderSlot' when shader reflection is used.");
 						}
 					}
@@ -360,7 +360,7 @@ bool SDeviceObjectHelpers::CShaderConstantManager::IsBufferUsedForReflection(int
 
 void SDeviceObjectHelpers::CShaderConstantManager::BeginNamedConstantUpdate()
 {
-	CRY_ASSERT_MESSAGE(m_pShaderReflection, "Shader reflection not initialized. If you get this on a CRenderPrimitive, please make sure the primitive " \
+	CRY_ASSERT(m_pShaderReflection, "Shader reflection not initialized. If you get this on a CRenderPrimitive, please make sure the primitive " \
 	                                        "has eFlags_ReflectShaderConstants and CRenderPrimitive::Compile() has been executed successfully");
 
 	if (m_isConstantUpdateEnabled)
@@ -443,7 +443,7 @@ bool SDeviceObjectHelpers::CShaderConstantManager::SetNamedConstant(const CCryNa
 
 bool SDeviceObjectHelpers::CShaderConstantManager::SetNamedConstantArray(const CCryNameR& paramName, const Vec4 params[], uint32 numParams, EHWShaderClass shaderClass)
 {
-	CRY_ASSERT_MESSAGE(m_pShaderReflection, "Flag eFlags_ReflectConstantBuffersFromShader might be required for pass");
+	CRY_ASSERT(m_pShaderReflection, "Flag eFlags_ReflectConstantBuffersFromShader might be required for pass");
 
 	if (m_pShaderReflection->bValid && m_isConstantUpdateEnabled)
 	{

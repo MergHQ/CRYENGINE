@@ -597,7 +597,7 @@ uint32 CPostEffectsMgr::GetCRC(const char* pszName)
 {
 	if (!pszName)
 	{
-		CRY_ASSERT_MESSAGE(false, "CPostEffectsMgr::GetCRC() invalid string passed");
+		CRY_ASSERT(false, "CPostEffectsMgr::GetCRC() invalid string passed");
 		return 0;
 	}
 
@@ -624,7 +624,7 @@ uint32 CPostEffectsMgr::GetCRC(const char* pszName)
 
 CEffectParam* CPostEffectsMgr::GetByName(const char* pszParam)
 {
-	CRY_ASSERT_MESSAGE(pszParam, "mfGetByName: null FX name");
+	CRY_ASSERT(pszParam, "mfGetByName: null FX name");
 
 	uint32 nCurrKey = GetCRC(pszParam);
 
@@ -712,7 +712,7 @@ int CParamTexture::Create(const char* pszFileName)
 
 	pThreadSafeData->pTexParam = CTexture::ForNamePtr(pszFileName, FT_DONT_STREAM, eTF_Unknown);
 	pThreadSafeData->bSetThisFrame = true;
-	CRY_ASSERT_MESSAGE(pThreadSafeData->pTexParam, "CParamTexture.Create: texture not found!");
+	CRY_ASSERT(pThreadSafeData->pTexParam, "CParamTexture.Create: texture not found!");
 
 	return 1;
 }

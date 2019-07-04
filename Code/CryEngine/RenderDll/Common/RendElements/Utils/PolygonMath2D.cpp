@@ -6,7 +6,7 @@
 
 #ifndef RELEASE
 	#define ASSERT_NUM_POLY_SIDES(numPts) { if (numPts < 0 || numPts > POLY_ARRAY_SIZE) {                  \
-	  CRY_ASSERT_MESSAGE(0, "[BreakGlassSystem Error]: Polygon too large, need to increase array sizes."); \
+	  CRY_ASSERT(0, "[BreakGlassSystem Error]: Polygon too large, need to increase array sizes."); \
 	  CryLogAlways("[BreakGlassSystem Error]: Polygon too large, need to increase array sizes."); }        \
 }
 #else

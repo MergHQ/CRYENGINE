@@ -10,7 +10,7 @@ extern int g_nPrintDX12;
 	#define DX12_ERROR(...) \
 		do { CryLog("DX12 Error: " __VA_ARGS__); } while (false)
 	#define DX12_ASSERT(cond, ...) \
-		do { if (!(cond)) { DX12_ERROR(#cond); CRY_ASSERT_MESSAGE(false, __VA_ARGS__); } } while (false)
+		do { if (!(cond)) { DX12_ERROR(#cond); CRY_ASSERT(false, __VA_ARGS__); } } while (false)
 #else
 	#define DX12_ERROR(...)        ((void)0)
 	#define DX12_ASSERT(cond, ...) ((void)0)

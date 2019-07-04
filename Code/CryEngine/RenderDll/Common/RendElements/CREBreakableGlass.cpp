@@ -158,7 +158,7 @@ bool CREBreakableGlass::InitialiseRenderElement(const SBreakableGlassInitParams&
 #if GLASSCFG_USE_HASH_GRID
 	if (m_pHashGrid)
 	{
-		CRY_ASSERT_MESSAGE(0, "Glass render element initialised twice.");
+		CRY_ASSERT(0, "Glass render element initialised twice.");
 		LOG_GLASS_ERROR("Element initialised twice.");
 	}
 #endif
@@ -1310,7 +1310,7 @@ bool CREBreakableGlass::FindImpactFragment(const SGlassImpactParams& impact, uin
 			{
 				// Get hashed data
 				const uint8 ownerFrag = pImpactFrags[i];
-				CRY_ASSERT_MESSAGE(ownerFrag < GLASSCFG_FRAGMENT_ARRAY_SIZE, "Invalid frag index");
+				CRY_ASSERT(ownerFrag < GLASSCFG_FRAGMENT_ARRAY_SIZE, "Invalid frag index");
 
 				// Check if this is the impact fragment
 				const PodArray<Vec2>& fragOutline = m_frags[ownerFrag].m_outlinePts;
@@ -1356,7 +1356,7 @@ bool CREBreakableGlass::FindImpactFragment(const SGlassImpactParams& impact, uin
 //--------------------------------------------------------------------------------------------------
 SGlassFragment* CREBreakableGlass::AddFragment()
 {
-	CRY_ASSERT_MESSAGE(!m_freeFragIndices.empty(), "Tried to add glass fragment, but none free.");
+	CRY_ASSERT(!m_freeFragIndices.empty(), "Tried to add glass fragment, but none free.");
 	SGlassFragment* pFrag = NULL;
 
 	if (!m_freeFragIndices.empty())
@@ -1468,7 +1468,7 @@ void CREBreakableGlass::GenerateSubFragments(const uint8 parentFragIndex, const 
 
 	// Find how many trees were made
 	int numUsedCrackTrees = fragIntersectPts.size();
-	CRY_ASSERT_MESSAGE(numUsedCrackTrees > 0, "Should always generate something, as it's forced");
+	CRY_ASSERT(numUsedCrackTrees > 0, "Should always generate something, as it's forced");
 
 	// When we hit our limit, all new fragments are loose
 	// - Leads to fragments still being split when knocked out
@@ -1664,7 +1664,7 @@ void CREBreakableGlass::GenerateSubFragmentCracks(const uint8 parentFragIndex, c
 				}
 			}
 
-			CRY_ASSERT_MESSAGE(found, "Crack line leaves fragment but did not find intersection point.");
+			CRY_ASSERT(found, "Crack line leaves fragment but did not find intersection point.");
 
 			// Move end point to intersection
 			pRadialPts[j + 1]->x = crackLine.start.x * (1.0f - outA) + crackLine.end.x * outA;

@@ -202,7 +202,7 @@ bool CD3D9Renderer::FX_DrawToRenderTarget(
 
 	if (!Tex)
 	{
-		CRY_ASSERT_MESSAGE(Tex, "DrawToRenderTarget called without passing a target texture!");
+		CRY_ASSERT(Tex, "DrawToRenderTarget called without passing a target texture!");
 		return false;
 	}
 

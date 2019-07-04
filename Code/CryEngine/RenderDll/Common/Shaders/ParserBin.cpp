@@ -832,7 +832,7 @@ void CParserBin::SetupForPlatform(uint32 nPlatform)
 		break;
 
 	default:
-		CRY_ASSERT_MESSAGE(false, "Unknown platform.");
+		CRY_ASSERT(false, "Unknown platform.");
 		gRenDev->m_cEF.m_ShadersCache = "Shaders/Cache/INVALIDPATH/";
 		gRenDev->m_cEF.m_ShadersFilter = "INVALIDFILTER";
 	}

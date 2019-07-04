@@ -33,8 +33,8 @@ CConstantBufferPtr CRenderObjectsPools::AllocatePerDrawConstantBuffer()
 		CConstantBufferPtr ptr = std::move(m_freeConstantBuffers.back());
 		m_freeConstantBuffers.pop_back();
 
-		CRY_ASSERT_MESSAGE(!ptr || (ptr->m_nRefCount == 1), "Someones hold a ref-count, can't reuse ConstantBuffer!");
-		CRY_ASSERT_MESSAGE(ptr && !ptr->IsNullBuffer(), "Invalid cached pointer");
+		CRY_ASSERT(!ptr || (ptr->m_nRefCount == 1), "Someones hold a ref-count, can't reuse ConstantBuffer!");
+		CRY_ASSERT(ptr && !ptr->IsNullBuffer(), "Invalid cached pointer");
 		return ptr;
 	}
 
@@ -55,7 +55,7 @@ void CRenderObjectsPools::FreePerDrawConstantBuffer(CConstantBufferPtr&& buffer)
 {
 	if (buffer && !buffer->IsNullBuffer())
 	{
-		// Constant buffer can still be temporary used CRY_ASSERT_MESSAGE(buffer->m_nRefCount == 1, "Attempt to free a buffer that is still used elsewhere");
+		// Constant buffer can still be temporary used CRY_ASSERT(buffer->m_nRefCount == 1, "Attempt to free a buffer that is still used elsewhere");
 		m_freeConstantBuffers.emplace_back(std::move(buffer));
 	}
 }
@@ -72,7 +72,7 @@ CCompiledRenderObject::~CCompiledRenderObject()
 
 	if (m_bOwnPerInstanceCB)
 	{
-		CRY_ASSERT_MESSAGE(m_perDrawCB, "CompiledRenderObject tagged as owning a buffer, but no buffer present");
+		CRY_ASSERT(m_perDrawCB, "CompiledRenderObject tagged as owning a buffer, but no buffer present");
 		if (m_perDrawCB)
 		{
 			s_pPools->FreePerDrawConstantBuffer(std::move(m_perDrawCB));
@@ -138,16 +138,16 @@ void CCompiledRenderObject::UpdatePerDrawCB(void* pData, size_t size)
 {
 	if (!m_perDrawCB)
 	{
-		CRY_ASSERT_MESSAGE(!m_bOwnPerInstanceCB, "CompiledRenderObject tagged as owning a buffer, but no buffer present");
+		CRY_ASSERT(!m_bOwnPerInstanceCB, "CompiledRenderObject tagged as owning a buffer, but no buffer present");
 		if (!(m_perDrawCB = s_pPools->AllocatePerDrawConstantBuffer()))
 		{
-			CRY_ASSERT_MESSAGE(false, "Warning! Running out of memory for ConstantBuffers!");
+			CRY_ASSERT(false, "Warning! Running out of memory for ConstantBuffers!");
 			return;
 		}
 		m_bOwnPerInstanceCB = true;
 	}
 
-	CRY_ASSERT_MESSAGE(!m_perDrawCB->IsNullBuffer(), "Not allowed to write into the Null resource!");
+	CRY_ASSERT(!m_perDrawCB->IsNullBuffer(), "Not allowed to write into the Null resource!");
 	m_perDrawCB->UpdateBuffer(pData, size);
 
 }
@@ -393,7 +393,7 @@ void CCompiledRenderObject::CompilePerDrawExtraResources(CRenderObject* pRenderO
 	if (!m_bHasTessellation && !pRenderObject->m_data.m_pSkinningData) // only needed for skinning and tessellation at the moment
 	{
 		m_perDrawExtraResources = CSceneRenderPass::GetDefaulDrawExtraResourceSet();
-		CRY_ASSERT_MESSAGE(m_perDrawExtraResources && m_perDrawExtraResources->IsValid(), "Bad shared default resources");
+		CRY_ASSERT(m_perDrawExtraResources && m_perDrawExtraResources->IsValid(), "Bad shared default resources");
 		return;
 	}
 

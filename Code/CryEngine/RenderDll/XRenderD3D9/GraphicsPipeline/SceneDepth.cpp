@@ -136,7 +136,7 @@ void CSceneDepthStage::ExecuteReadback()
 	{
 		if (!CreateResources(sourceWidth, sourceHeight))
 		{
-			CRY_ASSERT_MESSAGE(false, "Unable to create resources, this should only be possible in response to CVar changes (ie, developer mode)");
+			CRY_ASSERT(false, "Unable to create resources, this should only be possible in response to CVar changes (ie, developer mode)");
 			return;
 		}
 	}
@@ -204,7 +204,7 @@ CTexture* CSceneDepthStage::GetInputTexture(EConfigurationFlags& flags)
 
 bool CSceneDepthStage::CreateResources(uint32 sourceWidth, uint32 sourceHeight)
 {
-	CRY_ASSERT_MESSAGE(sourceWidth != 0 && sourceHeight != 0, "Bad input size requested");
+	CRY_ASSERT(sourceWidth != 0 && sourceHeight != 0, "Bad input size requested");
 	bool bFailed = false;
 
 	// Find number of downsample passes needed for source resolution
@@ -219,7 +219,7 @@ bool CSceneDepthStage::CreateResources(uint32 sourceWidth, uint32 sourceHeight)
 	{
 		const uint32 downsampleIndex = i + (kMaxDownsamplePasses - m_downsamplePassCount);
 		CTexture* const pTarget = m_pTexLinearDepthDownSample[downsampleIndex];
-		CRY_ASSERT_MESSAGE(pTarget, "Z Downsample target should already exist");
+		CRY_ASSERT(pTarget, "Z Downsample target should already exist");
 
 		// Ensure the intermediate textures are never larger than the source image
 		const uint32 width = CULL_SIZEX << std::min(m_downsamplePassCount - i, downSampleX);
@@ -243,7 +243,7 @@ bool CSceneDepthStage::CreateResources(uint32 sourceWidth, uint32 sourceHeight)
 	{
 		const uint32 downsampleIndex = i - m_downsamplePassCount;
 		CTexture* const pTarget = m_pTexLinearDepthDownSample[downsampleIndex];
-		CRY_ASSERT_MESSAGE(pTarget, "Z Downsample target should already exist");
+		CRY_ASSERT(pTarget, "Z Downsample target should already exist");
 
 		if (pTarget->GetDevTexture())
 		{
@@ -259,7 +259,7 @@ bool CSceneDepthStage::CreateResources(uint32 sourceWidth, uint32 sourceHeight)
 	{
 		const uint32 readbackIndex = i;
 		CTexture* const pTarget = m_pTexLinearDepthReadBack[readbackIndex];
-		CRY_ASSERT_MESSAGE(pTarget, "Z Readback target should already exist");
+		CRY_ASSERT(pTarget, "Z Readback target should already exist");
 
 		if (pTarget->GetDevTexture())
 		{

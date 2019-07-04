@@ -713,7 +713,7 @@ void CDeviceGraphicsCommandInterfaceImpl::SetStencilRefImpl(uint8 stencilRefValu
 
 void CDeviceGraphicsCommandInterfaceImpl::SetDepthBiasImpl(float constBias, float slopeBias, float biasClamp)
 {
-	CRY_ASSERT_MESSAGE(false, "Depth bias can only be set via PSO on DirectX 12");
+	CRY_ASSERT(false, "Depth bias can only be set via PSO on DirectX 12");
 }
 
 void CDeviceGraphicsCommandInterfaceImpl::SetDepthBoundsImpl(float fMin, float fMax)

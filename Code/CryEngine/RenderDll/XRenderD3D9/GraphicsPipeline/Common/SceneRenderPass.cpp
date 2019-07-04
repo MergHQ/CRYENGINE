@@ -185,7 +185,7 @@ void CSceneRenderPass::SetupDrawContext(uint32 stageID, uint32 stagePassID, ESha
 
 void CSceneRenderPass::SetPassResources(CDeviceResourceLayoutPtr pResourceLayout, CDeviceResourceSetPtr pPerPassResources)
 {
-	CRY_ASSERT_MESSAGE(!!pResourceLayout, "Layout to be set turns out to be invalid!");
+	CRY_ASSERT(!!pResourceLayout, "Layout to be set turns out to be invalid!");
 
 	m_pResourceLayout = pResourceLayout;
 	m_pPerPassResourceSet = pPerPassResources;
@@ -199,12 +199,12 @@ void CSceneRenderPass::SetRenderTargets(CTexture* pDepthTarget, CTexture* pColor
 	m_renderPassDesc.SetRenderTarget(3, pColorTarget3);
 	m_renderPassDesc.SetDepthTarget(pDepthTarget);
 
-	CRY_ASSERT_MESSAGE(
+	CRY_ASSERT(
 		(!pColorTarget0 || !pColorTarget1 || pColorTarget0->GetWidth() == pColorTarget1->GetWidth()) &&
 		(!pColorTarget1 || !pColorTarget2 || pColorTarget1->GetWidth() == pColorTarget2->GetWidth()) &&
 		(!pColorTarget2 || !pColorTarget3 || pColorTarget2->GetWidth() == pColorTarget3->GetWidth()),
 		"Color targets are of different size!");
-	CRY_ASSERT_MESSAGE(
+	CRY_ASSERT(
 		(!pDepthTarget || !pColorTarget0 || pDepthTarget->GetWidth() >= pColorTarget0->GetWidth()),
 		"Depth target is smaller than the color target(s)!");
 

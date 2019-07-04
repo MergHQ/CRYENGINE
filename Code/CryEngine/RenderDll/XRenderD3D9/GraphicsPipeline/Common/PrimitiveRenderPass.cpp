@@ -135,7 +135,7 @@ bool CRenderPrimitive::IsDirty() const
 
 CRenderPrimitive::EDirtyFlags CRenderPrimitive::Compile(const CPrimitiveRenderPass& targetPass)
 {
-	CRY_ASSERT_MESSAGE(targetPass.GetRenderPass() && targetPass.GetRenderPass()->IsValid(),
+	CRY_ASSERT(targetPass.GetRenderPass() && targetPass.GetRenderPass()->IsValid(),
 	                   "Target pass needs to have a valid renderpass for compilation. Call CPrimitiveRenderPass::BeginAddingPrimitives first");
 
 	// Merge local and remote dirty flags to test for changes
@@ -612,7 +612,7 @@ void CPrimitiveRenderPass::Prepare(CDeviceCommandListRef RESTRICT_REFERENCE comm
 
 		CRY_ASSERT(pPrimitive->m_pPipelineState->IsValid());
 		CRY_ASSERT(pPrimitive->m_pResourceLayout);
-		CRY_ASSERT_MESSAGE(pPrimitive->m_type == SCompiledRenderPrimitive::eType_RenderPrimitive ? !static_cast<CRenderPrimitive*>(pPrimitive)->IsDirty() : true, "Render primitive of the current render pass is dirty!");
+		CRY_ASSERT(pPrimitive->m_type == SCompiledRenderPrimitive::eType_RenderPrimitive ? !static_cast<CRenderPrimitive*>(pPrimitive)->IsDirty() : true, "Render primitive of the current render pass is dirty!");
 
 		if (pPrimitive->m_pResources)
 		{

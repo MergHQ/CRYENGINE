@@ -325,7 +325,7 @@ void CPostAAStage::ApplyTemporalAA(CTexture*& pCurrRT, CTexture*& pMgpuRT, uint3
 	CTexture* pDestRT = GetAARenderTarget(RenderView(), true);
 	CTexture* pPrevRT = ((SPostEffectsUtils::m_iFrameCounter - m_lastFrameID) < 10) ? GetAARenderTarget(RenderView(), false) : pCurrRT;
 
-	CRY_ASSERT_MESSAGE(pDestRT && pPrevRT, "PostAA rendertargets do not exist!");
+	CRY_ASSERT(pDestRT && pPrevRT, "PostAA rendertargets do not exist!");
 	if (!pDestRT || !pPrevRT)
 		return;
 

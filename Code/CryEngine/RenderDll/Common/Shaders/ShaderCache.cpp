@@ -1266,7 +1266,7 @@ string CShaderMan::mfGetShaderCompileFlags(EHWShaderClass eClass, UPipelineState
 				result.Format("%s -HwStage=%s -HwISA=%c", pCompilerGnm, "C", kISA[(pipelineState.GNM.CS.targetStage >> 5) & 3]);
 				break;
 			default:
-				CRY_ASSERT_MESSAGE(false, "Unknown stage");
+				CRY_ASSERT(false, "Unknown stage");
 				break;
 			}
 			

@@ -143,7 +143,7 @@ std::size_t CRenderView::OptimizeTransparentRenderItemsResolves(STransparentSegm
 	const auto max_resolves = CRendererCVars::CV_r_RefractionPartialResolveMaxResolveCount;
 	const auto min_reslolve_area = CRendererCVars::CV_r_RefractionPartialResolveMinimalResolveArea;
 
-	CRY_ASSERT_MESSAGE(CRendererCVars::CV_r_RefractionPartialResolveMode == 1 || CRendererCVars::CV_r_RefractionPartialResolveMode == 2,
+	CRY_ASSERT(CRendererCVars::CV_r_RefractionPartialResolveMode == 1 || CRendererCVars::CV_r_RefractionPartialResolveMode == 2,
 		"Unknown value for r_RefractionPartialResolveMode, defaulting to 2.");
 
 	if (CRendererCVars::CV_r_RefractionPartialResolveMode == 1)

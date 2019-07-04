@@ -759,7 +759,7 @@ void CRenderPipelineProfiler::UpdateStats(uint32 frameDataIndex)
 			strcmp(section.name, "SCENE") != 0 &&
 			strcmp(section.name, "GRAPHICS_PIPELINE") != 0)
 		{
-			// CRY_ASSERT_MESSAGE(false, "Label %s not added to known summary sections!", section.name);
+			// CRY_ASSERT(false, "Label %s not added to known summary sections!", section.name);
 		}
 
 		// Update detailed stats

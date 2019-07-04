@@ -3474,7 +3474,7 @@ STexPool::~STexPool()
 		*const_cast<STexPool**>(&pIT->m_pOwner) = NULL;
 		pITH = pNext;
 	}
-	CRY_ASSERT_MESSAGE(poolEmpty, "Texture pool was not empty on shutdown");
+	CRY_ASSERT(poolEmpty, "Texture pool was not empty on shutdown");
 }
 
 const ETEX_Type CTexture::GetTextureType() const

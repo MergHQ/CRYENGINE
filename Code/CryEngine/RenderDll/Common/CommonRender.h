@@ -810,7 +810,7 @@ private:
 
 public:
 	CResourceBindingInvalidator() { }
-	virtual ~CResourceBindingInvalidator() { CRY_ASSERT_MESSAGE(m_invalidateCallbacks.empty(), "Make sure any clients (e.g. Renderpasses, resource sets, etc..) are released before destroying this resource"); }
+	virtual ~CResourceBindingInvalidator() { CRY_ASSERT(m_invalidateCallbacks.empty(), "Make sure any clients (e.g. Renderpasses, resource sets, etc..) are released before destroying this resource"); }
 
 	size_t CountInvalidateCallbacks() threadsafe;
 	void AddInvalidateCallback(void* listener, const SResourceBindPoint bindPoint, const SResourceBinding::InvalidateCallbackFunction& callback) threadsafe;

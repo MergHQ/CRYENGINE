@@ -697,7 +697,7 @@ void CTexture::StreamCopyMipsTexToTex(STexPoolItem* const pSrcItem, int8 nSrcMip
 	CHK_RENDTH;
 
 	const uint32 nSrcNumSlices = pSrcItem->m_pOwner->GetNumSlices();
-	CRY_ASSERT_MESSAGE(pDstItem->m_pOwner->GetNumSlices() == nSrcNumSlices, "Can't stream individual slices!");
+	CRY_ASSERT(pDstItem->m_pOwner->GetNumSlices() == nSrcNumSlices, "Can't stream individual slices!");
 
 	if (0)
 	{

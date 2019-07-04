@@ -45,7 +45,7 @@ bool CDeviceResourceSet_DX11::UpdateImpl(const CDeviceResourceSetDesc& desc, CDe
 
 		if (!resource.IsValid())
 		{
-			CRY_ASSERT_MESSAGE(false, "Invalid resource in resource set desc. Update failed");
+			CRY_ASSERT(false, "Invalid resource in resource set desc. Update failed");
 			return false;
 		}
 

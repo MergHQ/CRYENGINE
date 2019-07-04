@@ -377,7 +377,7 @@ public:
 	}
 	const STransparentSegments& GetTransparentSegments(ERenderListID list) const
 	{
-		CRY_ASSERT_MESSAGE(list == EFSLIST_TRANSP_BW || list == EFSLIST_TRANSP_AW || list == EFSLIST_TRANSP_NEAREST, "'list' does not name a transparent list");
+		CRY_ASSERT(list == EFSLIST_TRANSP_BW || list == EFSLIST_TRANSP_AW || list == EFSLIST_TRANSP_NEAREST, "'list' does not name a transparent list");
 		const int idx = static_cast<int>(list - EFSLIST_TRANSP_BW);
 		return m_transparentSegments[idx];
 	}
@@ -403,7 +403,7 @@ private:
 	TRect_tpl<uint16>      ComputeResolveViewport(const AABB& aabb, bool forceFullscreenUpdate) const;
 	STransparentSegments&  GetTransparentSegments(ERenderListID list)
 	{
-		CRY_ASSERT_MESSAGE(list == EFSLIST_TRANSP_BW || list == EFSLIST_TRANSP_AW || list == EFSLIST_TRANSP_NEAREST, "'list' does not name a transparent list");
+		CRY_ASSERT(list == EFSLIST_TRANSP_BW || list == EFSLIST_TRANSP_AW || list == EFSLIST_TRANSP_NEAREST, "'list' does not name a transparent list");
 		const int idx = static_cast<int>(list - EFSLIST_TRANSP_BW);
 		return m_transparentSegments[idx];
 	}

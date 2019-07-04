@@ -25,7 +25,7 @@ public:
 		else
 		{
 			CryLogAlways("FixedPodArray::resize() failing as size too large - NOT resizing array");
-			CRY_ASSERT_MESSAGE(0, "FixedPodArray::resize() failing as size too large - NOT resizing array");
+			CRY_ASSERT(0, "FixedPodArray::resize() failing as size too large - NOT resizing array");
 		}
 	}
 
@@ -49,7 +49,7 @@ public:
 		else
 		{
 			CryLogAlways("FixedPodArray::erase() failing as element range invalid - NOT removing element");
-			CRY_ASSERT_MESSAGE(0, "FixedPodArray::erase() failing as element range invalid - NOT removing element");
+			CRY_ASSERT(0, "FixedPodArray::erase() failing as element range invalid - NOT removing element");
 		}
 	}
 
@@ -70,7 +70,7 @@ public:
 		else
 		{
 			CryLogAlways("FixedPodArray::insert_before() failing as element index invalid - NOT inserting element");
-			CRY_ASSERT_MESSAGE(0, "FixedPodArray::insert_before() failing as element index invalid - NOT inserting element");
+			CRY_ASSERT(0, "FixedPodArray::insert_before() failing as element index invalid - NOT inserting element");
 		}
 	}
 

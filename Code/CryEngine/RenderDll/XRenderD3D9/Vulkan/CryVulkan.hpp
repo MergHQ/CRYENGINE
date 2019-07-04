@@ -8,7 +8,7 @@
 	#define VK_ERROR(...) \
 		do { CryLog("Vulkan Error: ", __VA_ARGS__); } while (false)
 	#define VK_ASSERT(cond, ...) \
-		do { if (!(cond)) { VK_ERROR(__VA_ARGS__); CRY_ASSERT_MESSAGE(false, __VA_ARGS__); } } while (false)
+		do { if (!(cond)) { VK_ERROR(__VA_ARGS__); CRY_ASSERT(false, __VA_ARGS__); } } while (false)
 #else
 	#define VK_ERROR(...)        ((void)0)
 	#define VK_ASSERT(cond, ...) (0 ? (void)(cond) : (void)0)

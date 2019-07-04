@@ -715,6 +715,6 @@ inline void CDeviceNvidiaCommandInterface::SetModifiedWMode(bool enabled, uint32
 #if defined(USE_NV_API) && (CRY_RENDERER_DIRECT3D >= 110) && (CRY_RENDERER_DIRECT3D < 120)
 	SetModifiedWModeImpl(enabled, numViewports, pA, pB);
 #else
-	CRY_ASSERT_MESSAGE(false, "Only supported on DirectX11, PC");
+	CRY_ASSERT(false, "Only supported on DirectX11, PC");
 #endif
 }

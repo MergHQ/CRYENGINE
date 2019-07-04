@@ -10,7 +10,7 @@ extern int g_nPrintDX11;
 	#define DX11_ERROR(...) \
 		do { CryLog("DX11 Error: ", __VA_ARGS__); } while (false)
 	#define DX11_ASSERT(cond, ...) \
-		do { if (!(cond)) { DX11_ERROR(__VA_ARGS__); CRY_ASSERT_MESSAGE(false, __VA_ARGS__); } } while (false)
+		do { if (!(cond)) { DX11_ERROR(__VA_ARGS__); CRY_ASSERT(false, __VA_ARGS__); } } while (false)
 #else
 	#define DX11_ERROR(...)        ((void)0)
 	#define DX11_ASSERT(cond, ...) ((void)0)

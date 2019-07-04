@@ -10,7 +10,7 @@ void COmniCameraStage::Execute()
 {
 	PROFILE_LABEL_SCOPE("OMNICAMERA");
 
-	CRY_ASSERT_MESSAGE(false, "I doubt this function actually works");
+	CRY_ASSERT(false, "I doubt this function actually works");
 
 	CTexture* pTargetTexture = RenderView()->GetColorTarget();
 	uint32 totalPixel = CRendererResources::s_renderArea;

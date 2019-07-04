@@ -757,7 +757,7 @@ void CTextureCompiler::GetNextItem(TProcItem* &item, int &pending)
 
 	if (foundrc == m_qProcessingList.end())
 	{
-		CRY_ASSERT_MESSAGE(foundrc != m_qProcessingList.end(), "Severe container-damage, should not happen.");
+		CRY_ASSERT(foundrc != m_qProcessingList.end(), "Severe container-damage, should not happen.");
 		return;
 	}
 

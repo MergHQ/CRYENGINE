@@ -304,7 +304,7 @@ void CSwapChain::ResizeSwapChain(uint32_t buffers, uint32_t width, uint32_t heig
 
 	{
 #if (CRY_RENDERER_DIRECT3D >= 120)
-		CRY_ASSERT_MESSAGE(!isFullscreen || (scDesc.Flags & DXGI_SWAP_CHAIN_FLAG_FRAME_LATENCY_WAITABLE_OBJECT) == 0, "Fullscreen does not work with Waitable SwapChain");
+		CRY_ASSERT(!isFullscreen || (scDesc.Flags & DXGI_SWAP_CHAIN_FLAG_FRAME_LATENCY_WAITABLE_OBJECT) == 0, "Fullscreen does not work with Waitable SwapChain");
 #endif
 
 		m_pSwapChain->SetFullscreenState(isFullscreen, NULL);

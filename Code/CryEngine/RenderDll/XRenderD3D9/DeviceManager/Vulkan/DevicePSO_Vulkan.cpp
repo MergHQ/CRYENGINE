@@ -100,7 +100,7 @@ CDeviceGraphicsPSO::EInitResult CDeviceGraphicsPSO_Vulkan::Init(const CDeviceGra
 			stage = VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT;
 			break;
 		default:
-			CRY_ASSERT_MESSAGE(0, "Shader class not supported");
+			CRY_ASSERT(0, "Shader class not supported");
 			return EInitResult::Failure;
 		}
 
@@ -153,7 +153,7 @@ CDeviceGraphicsPSO::EInitResult CDeviceGraphicsPSO_Vulkan::Init(const CDeviceGra
 						{
 							if (itBinding->binding == declInputElement.InputSlot)
 							{
-								CRY_ASSERT_MESSAGE(itBinding->inputRate == (declInputElement.InputSlotClass == D3D11_INPUT_PER_VERTEX_DATA ? VK_VERTEX_INPUT_RATE_VERTEX : VK_VERTEX_INPUT_RATE_INSTANCE), "Mismatching input rate not supported");
+								CRY_ASSERT(itBinding->inputRate == (declInputElement.InputSlotClass == D3D11_INPUT_PER_VERTEX_DATA ? VK_VERTEX_INPUT_RATE_VERTEX : VK_VERTEX_INPUT_RATE_INSTANCE), "Mismatching input rate not supported");
 								break;
 							}
 						}
@@ -161,7 +161,7 @@ CDeviceGraphicsPSO::EInitResult CDeviceGraphicsPSO_Vulkan::Init(const CDeviceGra
 						// need to add a new binding
 						if (itBinding == vertexInputBindingDescriptions.end())
 						{
-							CRY_ASSERT_MESSAGE(declInputElement.InputSlotClass == D3D11_INPUT_PER_VERTEX_DATA || declInputElement.InstanceDataStepRate == 1, "Data step rate not supported");
+							CRY_ASSERT(declInputElement.InputSlotClass == D3D11_INPUT_PER_VERTEX_DATA || declInputElement.InstanceDataStepRate == 1, "Data step rate not supported");
 
 							VkVertexInputBindingDescription bindingDesc;
 							bindingDesc.binding = declInputElement.InputSlot;
@@ -219,7 +219,7 @@ CDeviceGraphicsPSO::EInitResult CDeviceGraphicsPSO_Vulkan::Init(const CDeviceGra
 
 		if (topology == VK_PRIMITIVE_TOPOLOGY_MAX_ENUM)
 		{
-			CRY_ASSERT_MESSAGE(0, "Primitive type not supported");
+			CRY_ASSERT(0, "Primitive type not supported");
 			return EInitResult::Failure;
 		}
 	}

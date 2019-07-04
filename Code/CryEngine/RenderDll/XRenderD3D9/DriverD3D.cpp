@@ -915,10 +915,10 @@ void CD3D9Renderer::RT_BeginFrame(const SDisplayContextKey& displayContextKey, c
 #endif
 
 	const auto pair = SetCurrentContext(displayContextKey);
-	CRY_ASSERT_MESSAGE(pair.first, "RT_BeginFrame: SetCurrentContext() failed!");
+	CRY_ASSERT(pair.first, "RT_BeginFrame: SetCurrentContext() failed!");
 
 	std::shared_ptr<CGraphicsPipeline> pActiveGraphicsPipeline = SetCurrentGraphicsPipeline(graphicsPipelineKey);
-	CRY_ASSERT_MESSAGE(pActiveGraphicsPipeline, "RT_BeginFrame: SetCurrentGraphicsPipeline() failed!");
+	CRY_ASSERT(pActiveGraphicsPipeline, "RT_BeginFrame: SetCurrentGraphicsPipeline() failed!");
 
 	m_pVRProjectionManager->BeginFrame(pActiveGraphicsPipeline.get());
 #if defined(FEATURE_SVO_GI)
@@ -2354,7 +2354,7 @@ void CD3D9Renderer::DebugDrawStats8(const SRenderStatistics& RStats)
 void CD3D9Renderer::DebugDrawStats2(const SRenderStatistics& RStats)
 {
 	// NOT IMPLEMENTED
-	CRY_ASSERT_MESSAGE(false, "CD3D9Renderer::DebugDrawStats2");
+	CRY_ASSERT(false, "CD3D9Renderer::DebugDrawStats2");
 }
 
 void CD3D9Renderer::DebugDrawStats20(const SRenderStatistics& RStats)
@@ -3383,7 +3383,7 @@ void CD3D9Renderer::RT_EndFrame()
 		else
 		{
 #if CRY_PLATFORM_DURANGO || CRY_PLATFORM_ORBIS
-			CRY_ASSERT_MESSAGE(0, "Case in EndFrame() not implemented yet");
+			CRY_ASSERT(0, "Case in EndFrame() not implemented yet");
 #elif defined(SUPPORT_DEVICE_INFO)
 			HRESULT hReturn = E_FAIL;
 			DWORD dwFlags = 0;

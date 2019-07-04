@@ -197,7 +197,7 @@ SShaderGenBit* CShaderMan::mfCompileShaderGenProperty(char* scr)
 					shgm->m_nDependencySet |= SHGD_TEX_SPECULAR;
 
 				else
-					CRY_ASSERT_TRACE(0, ("Unknown eDependencySet value %s", data));
+					CRY_ASSERT(0, "Unknown eDependencySet value %s", data);
 			}
 			break;
 
@@ -281,7 +281,7 @@ SShaderGenBit* CShaderMan::mfCompileShaderGenProperty(char* scr)
 					shgm->m_nDependencySet |= SHGD_TEX_SPECULAR;
 
 				else
-					CRY_ASSERT_TRACE(0, ("Unknown eDependencyReset value %s", data));
+					CRY_ASSERT(0, "Unknown eDependencyReset value %s", data);
 			}
 			break;
 		}

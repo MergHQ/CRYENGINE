@@ -162,7 +162,7 @@ HRESULT STDMETHODCALLTYPE CCryDX12SwapChain::ResizeBuffers(
 	m_pDX12SwapChain->FlushAndWaitForBuffers();
 
 	HRESULT res = m_pDX12SwapChain->ResizeBuffers(BufferCount, Width, Height, NewFormat, SwapChainFlags);
-	CRY_ASSERT_MESSAGE(res == S_OK, "Failed ResizeBuffers, the resolution of the display will be out-of-sync!");
+	CRY_ASSERT(res == S_OK, "Failed ResizeBuffers, the resolution of the display will be out-of-sync!");
 	if (res == S_OK)
 	{
 		m_pDX12SwapChain->AcquireBuffers();
