@@ -100,12 +100,14 @@ CItemSystem::~CItemSystem()
 }
 
 //------------------------------------------------------------------------
-void CItemSystem::OnLoadingStart(ILevelInfo* pLevelInfo)
+bool CItemSystem::OnLoadingStart(ILevelInfo* pLevelInfo)
 {
 	Reset();
 
 	ClearGeometryCache();
 	ClearSoundCache();
+
+	return true;
 }
 
 //------------------------------------------------------------------------

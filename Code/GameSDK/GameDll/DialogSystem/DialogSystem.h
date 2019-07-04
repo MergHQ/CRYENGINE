@@ -42,25 +42,20 @@ public:
 	void GetMemoryStatistics(ICrySizer* s);
 
 	// Later go into IDialogSystem i/f
-	virtual void Update(const float dt);
 	virtual void Shutdown();
 	virtual void Serialize(TSerialize ser);   // serializes load/save. After load serialization PostLoad needs to be called
 
 	// IDialogSystem
-	virtual bool                     Init();
-	virtual void                     Reset(bool bUnload);
-	virtual IDialogScriptIteratorPtr CreateScriptIterator();
-	virtual bool                     ReloadScripts(const char* levelName = NULL);
+	virtual void                     Update(const float dt) override;
+	virtual bool                     Init() override;
+	virtual void                     Reset(bool bUnload) override;
+	virtual IDialogScriptIteratorPtr CreateScriptIterator() override;
+	virtual bool                     ReloadScripts(const char* levelName = NULL) override;
+	virtual bool                     IsEntityInDialog(EntityId entityId) const override;
 	// ~IDialogSystem
 
 	// ILevelSystemListener
-	virtual void OnLevelNotFound(const char* levelName)                    {};
-	virtual void OnLoadingStart(ILevelInfo* pLevel)                        {};
-	virtual void OnLoadingLevelEntitiesStart(ILevelInfo* pLevelInfo)       {}
-	virtual void OnLoadingComplete(ILevelInfo* pLevel);
-	virtual void OnLoadingError(ILevelInfo* pLevel, const char* error)     {};
-	virtual void OnLoadingProgress(ILevelInfo* pLevel, int progressAmount) {};
-	virtual void OnUnloadComplete(ILevelInfo* pLevel)                      {};
+	virtual void OnLoadingComplete(ILevelInfo* pLevel) override;
 	// ~ILevelSystemListener
 
 	SessionID            CreateSession(const string& scriptID);
@@ -70,7 +65,6 @@ public:
 	CDialogActorContext* GetActiveSessionActorContext(ActorContextID id) const;
 	const CDialogScript* GetScriptByID(const string& scriptID) const;
 
-	virtual bool         IsEntityInDialog(EntityId entityId) const;
 	bool                 FindSessionAndActorForEntity(EntityId entityId, SessionID& outSessionID, CDialogScript::TActorID& outActorId) const;
 
 	// called from CDialogSession

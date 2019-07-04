@@ -218,7 +218,7 @@ bool CGameSerialize::OnRemove(IEntity* pEntity)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CGameSerialize::OnLoadingStart(ILevelInfo* pLevelInfo)
+bool CGameSerialize::OnLoadingStart(ILevelInfo* pLevelInfo)
 {
 	assert(pLevelInfo);
 
@@ -245,7 +245,7 @@ void CGameSerialize::OnLoadingStart(ILevelInfo* pLevelInfo)
 				if (!node->getChild(0)->haveAttr("guid"))
 				{
 					CryMessageBox("Level serialization XML contained legacy entity identifiers, please re-export the level and try again!", "Level Load Warning", eMB_Info);
-					return;
+					return false;
 				}
 
 				for (int i = 0; i < count; ++i)
@@ -259,6 +259,7 @@ void CGameSerialize::OnLoadingStart(ILevelInfo* pLevelInfo)
 			}
 		}
 	}
+	return true;
 }
 
 void CGameSerialize::OnUnloadComplete(ILevelInfo* pLevel)

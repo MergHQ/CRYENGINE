@@ -58,13 +58,8 @@ public:
 	~CWorldBuilder();
 	
 	// ILevelSystemListener
-	virtual void OnLevelNotFound(const char* levelName) {};
-	virtual void OnLoadingLevelEntitiesStart(ILevelInfo* pLevel) {}
-	virtual void OnLoadingStart(ILevelInfo* pLevel);
-	virtual void OnLoadingComplete(ILevelInfo* pLevel);
-	virtual void OnLoadingError(ILevelInfo* pLevel, const char* error) {};
-	virtual void OnLoadingProgress(ILevelInfo* pLevel, int progressAmount) {};
-	virtual void OnUnloadComplete(ILevelInfo* pLevel);
+	virtual bool OnLoadingStart(ILevelInfo* pLevel) override;
+	virtual void OnLoadingComplete(ILevelInfo* pLevel) override;
 	// ~ILevelSystemListener
 
 	CryGame::CPrefabManager &GetPrefabManager() { return (m_PrefabManager); }

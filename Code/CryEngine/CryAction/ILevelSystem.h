@@ -153,14 +153,14 @@ struct ILevelInfo
 
 struct ILevelSystemListener
 {
-	virtual ~ILevelSystemListener(){}
-	virtual void OnLevelNotFound(const char* levelName) = 0;
-	virtual void OnLoadingStart(ILevelInfo* pLevel) = 0;
-	virtual void OnLoadingLevelEntitiesStart(ILevelInfo* pLevel) = 0;
-	virtual void OnLoadingComplete(ILevelInfo* pLevel) = 0;
-	virtual void OnLoadingError(ILevelInfo* pLevel, const char* error) = 0;
-	virtual void OnLoadingProgress(ILevelInfo* pLevel, int progressAmount) = 0;
-	virtual void OnUnloadComplete(ILevelInfo* pLevel) = 0;
+	virtual ~ILevelSystemListener()                                        {}
+	virtual void OnLevelNotFound(const char* levelName)                    {}
+	virtual bool OnLoadingStart(ILevelInfo* pLevel)                        { return true; }
+	virtual void OnLoadingLevelEntitiesStart(ILevelInfo* pLevel)           {}
+	virtual void OnLoadingComplete(ILevelInfo* pLevel)                     {}
+	virtual void OnLoadingError(ILevelInfo* pLevel, const char* error)     {}
+	virtual void OnLoadingProgress(ILevelInfo* pLevel, int progressAmount) {}
+	virtual void OnUnloadComplete(ILevelInfo* pLevel)                      {}
 
 	void         GetMemoryUsage(ICrySizer* pSizer) const { /*nothing*/ }
 };

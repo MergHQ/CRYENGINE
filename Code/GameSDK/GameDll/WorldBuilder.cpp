@@ -39,10 +39,11 @@ CWorldBuilder::~CWorldBuilder()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CWorldBuilder::OnLoadingStart(ILevelInfo *pLevel)
+bool CWorldBuilder::OnLoadingStart(ILevelInfo *pLevel)
 {
 	// reset existing prefabs before loading the level
 	m_PrefabManager.Clear(false);
+	return true;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -69,12 +70,6 @@ void CWorldBuilder::OnLoadingComplete(ILevelInfo* pLevel)
 		}
 	}
 
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CWorldBuilder::OnUnloadComplete(ILevelInfo* pLevel)
-{
-	return;
 }
 
 //////////////////////////////////////////////////////////////////////////

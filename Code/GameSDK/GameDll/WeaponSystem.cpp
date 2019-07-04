@@ -380,7 +380,7 @@ void CWeaponSystem::LoadItemParams(IItemSystem* pItemSystem)
 }
 
 //------------------------------------------------------------------------
-void CWeaponSystem::OnLoadingStart(ILevelInfo *pLevel)
+bool CWeaponSystem::OnLoadingStart(ILevelInfo *pLevel)
 {
 	CCCPOINT(WeaponSystem_OnLoadingStart);
 
@@ -402,6 +402,7 @@ void CWeaponSystem::OnLoadingStart(ILevelInfo *pLevel)
 	}
 
 	CRY_ASSERT(m_linkedProjectiles.size() == 0);
+	return true;
 }
 
 //------------------------------------------------------------------------

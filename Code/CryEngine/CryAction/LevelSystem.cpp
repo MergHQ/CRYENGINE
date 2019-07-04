@@ -394,7 +394,6 @@ void CLevelRotation::ResetAdvancement()
 	{
 		m_rotation[iLevel].currentModeIndex = 0;
 	}
-
 }
 
 //------------------------------------------------------------------------
@@ -924,9 +923,6 @@ CLevelSystem::~CLevelSystem()
 {
 	// register with system to get loading progress events
 	m_pSystem->SetLoadingProgressListener(0);
-
-	// clean up the listeners
-	stl::free_container(m_listeners);
 }
 
 //------------------------------------------------------------------------
@@ -1133,29 +1129,15 @@ CLevelInfo* CLevelSystem::GetLevelInfoByPathInternal(const char* szLevelPath)
 //------------------------------------------------------------------------
 void CLevelSystem::AddListener(ILevelSystemListener* pListener)
 {
-	std::vector<ILevelSystemListener*>::iterator it = std::find(m_listeners.begin(), m_listeners.end(), pListener);
-
-	if (it == m_listeners.end())
-	{
-		m_listeners.reserve(12);
-		m_listeners.push_back(pListener);
-	}
+	CRY_ASSERT(m_listeners.find(pListener) == m_listeners.end());
+	m_listeners.insert(pListener);
 }
 
 //------------------------------------------------------------------------
 void CLevelSystem::RemoveListener(ILevelSystemListener* pListener)
 {
-	std::vector<ILevelSystemListener*>::iterator it = std::find(m_listeners.begin(), m_listeners.end(), pListener);
-
-	if (it != m_listeners.end())
-	{
-		m_listeners.erase(it);
-
-		if (m_listeners.empty())
-		{
-			stl::free_container(m_listeners);
-		}
-	}
+	CRY_ASSERT(m_listeners.find(pListener) != m_listeners.end());
+	m_listeners.erase(pListener);
 }
 
 // a guard scope that ensured that LiveCreate commands are not executed while level is loading
@@ -1272,7 +1254,8 @@ public:
 			}
 
 			m_levelSystem.m_pLoadingLevelInfo = pLevelInfo;
-			m_levelSystem.OnLoadingStart(pLevelInfo);
+			if (!m_levelSystem.OnLoadingStart(pLevelInfo))
+				return SetFailed("Failed to initialize level loading");
 		}
 
 		NEXT_STEP(EStep::PhysGlobalArea)
@@ -1482,9 +1465,9 @@ public:
 
 				CRY_PROFILE_SECTION(PROFILE_LOADING_ONLY, "OnLoadingComplete");
 				// Inform Level system listeners that loading of the level is complete.
-				for (std::vector<ILevelSystemListener*>::const_iterator it = m_levelSystem.m_listeners.begin(); it != m_levelSystem.m_listeners.end(); ++it)
+				for (ILevelSystemListener* pListener: m_levelSystem.m_listeners)
 				{
-					(*it)->OnLoadingComplete(m_levelSystem.m_pCurrentLevelInfo);
+					pListener->OnLoadingComplete(m_levelSystem.m_pCurrentLevelInfo);
 				}
 			}
 		}
@@ -1799,14 +1782,14 @@ void CLevelSystem::PrepareNextLevel(const char* levelName)
 //------------------------------------------------------------------------
 void CLevelSystem::OnLevelNotFound(const char* levelName)
 {
-	for (std::vector<ILevelSystemListener*>::const_iterator it = m_listeners.begin(); it != m_listeners.end(); ++it)
+	for (ILevelSystemListener* pListener : m_listeners)
 	{
-		(*it)->OnLevelNotFound(levelName);
+		pListener->OnLevelNotFound(levelName);
 	}
 }
 
 //------------------------------------------------------------------------
-void CLevelSystem::OnLoadingStart(ILevelInfo* pLevelInfo)
+bool CLevelSystem::OnLoadingStart(ILevelInfo* pLevelInfo)
 {
 	CRY_PROFILE_FUNCTION(PROFILE_LOADING_ONLY);
 
@@ -1834,18 +1817,20 @@ void CLevelSystem::OnLoadingStart(ILevelInfo* pLevelInfo)
 	 */
 #endif
 
-	for (std::vector<ILevelSystemListener*>::const_iterator it = m_listeners.begin(); it != m_listeners.end(); ++it)
+	for (ILevelSystemListener* pListener : m_listeners)
 	{
-		(*it)->OnLoadingStart(pLevelInfo);
+		if (!pListener->OnLoadingStart(pLevelInfo))
+			return false;
 	}
+	return true;
 }
 
 //------------------------------------------------------------------------
 void CLevelSystem::OnLoadingLevelEntitiesStart(ILevelInfo* pLevelInfo)
 {
-	for (std::vector<ILevelSystemListener*>::const_iterator it = m_listeners.begin(); it != m_listeners.end(); ++it)
+	for (ILevelSystemListener* pListener : m_listeners)
 	{
-		(*it)->OnLoadingLevelEntitiesStart(pLevelInfo);
+		pListener->OnLoadingLevelEntitiesStart(pLevelInfo);
 	}
 }
 
@@ -1866,9 +1851,9 @@ void CLevelSystem::OnLoadingError(ILevelInfo* pLevelInfo, const char* error)
 		gEnv->pRenderer->SetTexturePrecaching(false);
 	}
 
-	for (std::vector<ILevelSystemListener*>::const_iterator it = m_listeners.begin(); it != m_listeners.end(); ++it)
+	for (ILevelSystemListener* pListener : m_listeners)
 	{
-		(*it)->OnLoadingError(pLevelInfo, error);
+		pListener->OnLoadingError(pLevelInfo, error);
 	}
 
 	((CLevelInfo*)pLevelInfo)->CloseLevelPak();
@@ -1933,9 +1918,9 @@ void CLevelSystem::OnLoadingComplete(ILevelInfo* pLevelInfo)
 	// LoadLevel is not called in the editor, hence OnLoadingComplete is not invoked on the ILevelSystemListeners
 	if (gEnv->IsEditor() && pLevelInfo)
 	{
-		for (std::vector<ILevelSystemListener*>::const_iterator it = m_listeners.begin(); it != m_listeners.end(); ++it)
+		for (ILevelSystemListener* pListener : m_listeners)
 		{
-			(*it)->OnLoadingComplete(pLevelInfo);
+			pListener->OnLoadingComplete(pLevelInfo);
 		}
 	}
 }
@@ -1943,18 +1928,18 @@ void CLevelSystem::OnLoadingComplete(ILevelInfo* pLevelInfo)
 //------------------------------------------------------------------------
 void CLevelSystem::OnLoadingProgress(ILevelInfo* pLevel, int progressAmount)
 {
-	for (std::vector<ILevelSystemListener*>::const_iterator it = m_listeners.begin(); it != m_listeners.end(); ++it)
+	for (ILevelSystemListener* pListener : m_listeners)
 	{
-		(*it)->OnLoadingProgress(pLevel, progressAmount);
+		pListener->OnLoadingProgress(pLevel, progressAmount);
 	}
 }
 
 //------------------------------------------------------------------------
 void CLevelSystem::OnUnloadComplete(ILevelInfo* pLevel)
 {
-	for (std::vector<ILevelSystemListener*>::const_iterator it = m_listeners.begin(); it != m_listeners.end(); ++it)
+	for (ILevelSystemListener* pListener : m_listeners)
 	{
-		(*it)->OnUnloadComplete(pLevel);
+		pListener->OnUnloadComplete(pLevel);
 	}
 }
 
@@ -2145,19 +2130,19 @@ void CLevelInfo::CloseLevelPak()
 	if (!m_levelPakFullPath.empty())
 	{
 		gEnv->pCryPak->ClosePack(m_levelPakFullPath.c_str(), ICryPak::FLAGS_PATH_REAL);
-		stl::free_container(m_levelPakFullPath);
+		m_levelPakFullPath.clear();
 	}
 
 	if (!m_levelMMPakFullPath.empty())
 	{
 		gEnv->pCryPak->ClosePack(m_levelMMPakFullPath.c_str(), ICryPak::FLAGS_PATH_REAL);
-		stl::free_container(m_levelMMPakFullPath);
+		m_levelMMPakFullPath.clear();
 	}
 
 	if (!m_levelSvoPakFullPath.empty())
 	{
 		gEnv->pCryPak->ClosePack(m_levelSvoPakFullPath.c_str(), ICryPak::FLAGS_PATH_REAL);
-		stl::free_container(m_levelSvoPakFullPath);
+		m_levelSvoPakFullPath.clear();
 	}
 }
 
@@ -2374,7 +2359,7 @@ void CLevelSystem::UnLoadLevel()
 		m_pLoadingLevelInfo = NULL;
 	}
 
-	stl::free_container(m_lastLevelName);
+	m_lastLevelName.clear();
 
 	GetISystem()->GetIResourceManager()->UnloadLevel();
 

@@ -605,7 +605,7 @@ void CViewSystem::SetOverrideCameraRotation(bool bOverride, Quat rotation)
 }
 
 //////////////////////////////////////////////////////////////////
-void CViewSystem::OnLoadingStart(ILevelInfo* pLevel)
+bool CViewSystem::OnLoadingStart(ILevelInfo* pLevel)
 {
 	//If the level is being restarted (IsSerializingFile() == 1)
 	//views should not be cleared, because the main view (player one) won't be recreated in this case
@@ -614,6 +614,8 @@ void CViewSystem::OnLoadingStart(ILevelInfo* pLevel)
 
 	if (shouldClearViews)
 		ClearAllViews();
+
+	return true;
 }
 
 /////////////////////////////////////////////////////////////////////

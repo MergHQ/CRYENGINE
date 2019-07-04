@@ -251,7 +251,7 @@ private:
 
 	// ILevelSystemListener events notification
 	void OnLevelNotFound(const char* levelName);
-	void OnLoadingStart(ILevelInfo* pLevel);
+	bool OnLoadingStart(ILevelInfo* pLevel);
 	void OnLoadingLevelEntitiesStart(ILevelInfo* pLevelInfo);
 	void OnLoadingComplete(ILevelInfo* pLevel);
 	void OnLoadingError(ILevelInfo* pLevel, const char* error);
@@ -293,7 +293,7 @@ private:
 
 	static int                         s_loadCount;
 
-	std::vector<ILevelSystemListener*> m_listeners;
+	std::set<ILevelSystemListener*>    m_listeners;
 
 	DynArray<string>                   m_levelTypeList;
 

@@ -311,13 +311,8 @@ class CTelemetryCollector : public ITelemetryCollector, public ILevelSystemListe
 		virtual void	GetMemoryUsage(ICrySizer* pSizer) const;
 
 		// ILevelSystemListener
-		virtual void OnLevelNotFound(const char* levelName) {}
-		virtual void OnLoadingLevelEntitiesStart(ILevelInfo* pLevel) {}
-		virtual void OnLoadingStart(ILevelInfo* pLevel);
+		virtual bool OnLoadingStart(ILevelInfo* pLevel);
 		virtual void OnLoadingComplete(ILevelInfo* pLevel);
-		virtual void OnLoadingError(ILevelInfo* pLevel, const char* error) {}
-		virtual void OnLoadingProgress(ILevelInfo* pLevel, int progressAmount) {}
-		virtual void OnUnloadComplete(ILevelInfo* pLevel) {}
 		//~ILevelSystemListener
 };
 

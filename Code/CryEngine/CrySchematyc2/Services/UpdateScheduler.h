@@ -104,13 +104,7 @@ namespace Schematyc2
 		// ~ISystemEventListener
 
 		// ILevelSystemListener
-		virtual void OnLevelNotFound(const char* levelName) override {}
-		virtual void OnLoadingStart(ILevelInfo* pLevel) override {}
 		virtual void OnLoadingLevelEntitiesStart(ILevelInfo* pLevel) override;
-		virtual void OnLoadingComplete(ILevelInfo* pLevel) override {}
-		virtual void OnLoadingError(ILevelInfo* pLevel, const char* error) override {}
-		virtual void OnLoadingProgress(ILevelInfo* pLevel, int progressAmount) override {}
-		virtual void OnUnloadComplete(ILevelInfo* pLevel) override {}
 		// ~ILevelSystemListener
 
 		bool Register(CUpdateScope* pScope, const UpdateCallback& callback, UpdateFrequency frequency, UpdatePriority priority, const UpdateFilter& filter);

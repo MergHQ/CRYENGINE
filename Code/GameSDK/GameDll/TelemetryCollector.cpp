@@ -2720,10 +2720,11 @@ void CTelemetryCollector::SetTestSessionId()
 	SetSessionId(newId);
 }
 
-void CTelemetryCollector::OnLoadingStart(ILevelInfo *pLevel)
+bool CTelemetryCollector::OnLoadingStart(ILevelInfo *pLevel)
 {
 //	CryLog("CTelemetryCollector::OnLoadingStart()");
 //	OutputMemoryUsage("OnLoadingStart", pLevel->GetDisplayName());
+	return true;
 }
 
 void CTelemetryCollector::OnLoadingComplete(ILevelInfo* pLevel)
