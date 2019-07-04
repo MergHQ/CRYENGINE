@@ -8,7 +8,6 @@
 // included directly from the precompiled header in 3dEngine, the gamedll will
 // fail to compile!
 #include <CryMemory/CryPool/PoolAlloc.h>
-#include <CrySystem/InplaceFactory.h>
 #include <CryCore/StlUtils.h>
 
 using NCryPoolAlloc::CFirstFit;        // speed of allocations are crucial, so simply use the first fitting free allocation
@@ -69,7 +68,7 @@ private:
 	// Frees the temporary pool
 	static bool Shutdown()
 	{
-		if (s_Instance == NULL)
+		if (s_Instance == nullptr)
 		{
 			CryFatalError("CTemporaryPool::Shutdown(): no temporary pool instance present");
 			return false;
@@ -83,18 +82,8 @@ private:
 			error = true;
 
 		delete s_Instance;
-		s_Instance = NULL;
+		s_Instance = nullptr;
 		return !error;
-	}
-
-	// Templated construct helper member function using an inplace factory
-	//
-	// Called from the templated New<T, Expr> function below. Returns a typed
-	// pointer to the inplace constructed object.
-	template<typename T, typename InPlaceFactory>
-	T* Construct(const InPlaceFactory& factory, void* storage)
-	{
-		return reinterpret_cast<T*>(factory.template apply<T>(storage));
 	}
 
 	// Templated destruct helper member function.
@@ -120,27 +109,11 @@ public:
 	{
 		AUTO_LOCK_T(CryCriticalSectionNonRecursive, Lock);
 		void* pData = Pool.Allocate<void*>(size, align);
-		if (pData == NULL)
+		if (pData == nullptr)
 		{
 			CryFatalError("**** could not allocate %" PRISIZE_T " bytes from temporary pool", size);
 		}
 		return Pool.Resolve<void*>(pData);
-	}
-
-	// Allocates memory and constructs object of type 'T'
-	//
-	// Note: This method is respects the alignment of 'T' via C99 alignof()
-	template<typename T, typename Expr>
-	T* New(const Expr& expr)
-	{
-		AUTO_LOCK_T(CryCriticalSectionNonRecursive, Lock);
-		void* pObjStorage = Pool.Allocate<void*>(sizeof(T), alignof(T));
-		if (pObjStorage == NULL)
-		{
-			CryFatalError("**** could not allocate %d bytes from temporary pool",
-			              (int)sizeof(T));
-		}
-		return Construct<T>(expr, pObjStorage);
 	}
 
 	// Allocates memory and constructs object of type 'T'
@@ -151,12 +124,12 @@ public:
 	{
 		AUTO_LOCK_T(CryCriticalSectionNonRecursive, Lock);
 		void* pObjStorage = Pool.Allocate<void*>(sizeof(T), alignof(T));
-		if (pObjStorage == NULL)
+		if (pObjStorage == nullptr)
 		{
 			CryFatalError("**** could not allocate %d bytes from temporary pool",
 			              (int)sizeof(T));
 		}
-		return Construct<T>(InplaceFactory(), pObjStorage);
+		return new (pObjStorage) T;
 	}
 
 	// Frees a block of memory from the temporary pool

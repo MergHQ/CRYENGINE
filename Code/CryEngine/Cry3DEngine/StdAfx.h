@@ -63,7 +63,6 @@ const int nThreadsNum = 3;
 #include <CryRenderer/IRenderer.h>
 #include <CryRenderer/IRenderAuxGeom.h>
 #include <Cry3DEngine/IRenderNode.h>
-#include <CryCore/Containers/StackContainer.h>
 #include <Cry3DEngine/I3DEngine.h>
 #include <CrySystem/File/ICryPak.h>
 #include <CrySystem/File/CryFile.h>

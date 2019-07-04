@@ -16,7 +16,6 @@
 #include <CryCore/TypeInfo_impl.h>
 #include <CryCore/Common_TypeInfo2.h>
 #include <CryString/StringUtils.h>
-#include <CrySystem/InplaceFactory.h>
 #include <CryString/CryPath.h>
 #include "ReadOnlyChunkFile.h"
 #include <CryCore/CryCustomTypes.h>
@@ -34,44 +33,15 @@ enum { MAX_NUMBER_OF_BONES = 65534 };
 
 namespace
 {
-// Templated construct helper function using an inplace factory
-//
-// Called from the templated New<T, Expr> function below. Returns a typed
-// pointer to the inplace constructed object.
-template<typename T, typename InPlaceFactory>
-T* Construct(
-  const InPlaceFactory& factory,
-  void* (*pAllocFnc)(size_t))
-{
-	return reinterpret_cast<T*>(factory.template apply<T>(pAllocFnc(sizeof(T))));
-}
-
-// Templated construct helper function using an inplace factory
-//
-// Called from the templated New<T, Expr> function below. Returns a typed
-// pointer to the inplace constructed object.
-template<typename T>
-T* Construct(void* (*pAllocFnc)(size_t))
-{
-	return new(pAllocFnc(sizeof(T)))T;
-}
-
-// Templated destruct helper function
-//
-// Calls the object's destructor and returns a void pointer to the storage
-template<typename T>
-void Destruct(T* obj, void (* pDestructFnc)(void*))
-{
-	obj->~T();
-	pDestructFnc(reinterpret_cast<void*>(obj));
-}
+	template<typename T, typename... TConstructorParams>
+	T* Construct(void* (*pAllocFnc)(size_t), TConstructorParams&&... params)
+	{
+		return new (pAllocFnc(sizeof(T))) T(std::forward<TConstructorParams>(params)...);
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////
-CLoaderCGF::CLoaderCGF(
-  AllocFncPtr pAllocFnc,
-  DestructFncPtr pDestructFnc,
-  bool bAllowStreamSharing)
+CLoaderCGF::CLoaderCGF(AllocFncPtr pAllocFnc, DestructFncPtr pDestructFnc, bool bAllowStreamSharing)
 	: m_pAllocFnc(pAllocFnc)
 	, m_pDestructFnc(pDestructFnc)
 {
@@ -94,8 +64,7 @@ CLoaderCGF::CLoaderCGF(
 
 //////////////////////////////////////////////////////////////////////////
 CLoaderCGF::~CLoaderCGF()
-{
-}
+{}
 
 //////////////////////////////////////////////////////////////////////////
 CContentCGF* CLoaderCGF::LoadCGF(const char* filename, IChunkFile& chunkFile, ILoaderCGFListener* pListener, uint32 loadingFlags)
@@ -2360,7 +2329,7 @@ bool CLoaderCGF::LoadNodeChunk(IChunkFile::ChunkDesc* pChunkDesc, bool bJustGeom
 	SwapEndian(*nodeChunk, pChunkDesc->bSwapEndian);
 	pChunkDesc->bSwapEndian = false;
 
-	CNodeCGF* pNodeCGF = Construct<CNodeCGF>(InplaceFactory(m_pDestructFnc), m_pAllocFnc);
+	CNodeCGF* pNodeCGF = Construct<CNodeCGF>(m_pAllocFnc, m_pDestructFnc);
 	m_pCGF->AddNode(pNodeCGF);
 
 	cry_strcpy(pNodeCGF->name, nodeChunk->name);
@@ -3895,7 +3864,7 @@ CMaterialCGF* CLoaderCGF::LoadMaterialNameChunk(IChunkFile::ChunkDesc* pChunkDes
 		memcpy(&chunk, pChunkDesc->data, sizeof(chunk));
 		SwapEndian(chunk, bSwapEndianness);
 
-		CMaterialCGF* pMtlCGF = Construct<CMaterialCGF>(InplaceFactory(m_pDestructFnc), m_pAllocFnc);
+		CMaterialCGF* pMtlCGF = Construct<CMaterialCGF>(m_pAllocFnc, m_pDestructFnc);
 		pMtlCGF->nChunkId = pChunkDesc->chunkId;
 		m_pCGF->AddMaterial(pMtlCGF);
 
@@ -3980,7 +3949,7 @@ CMaterialCGF* CLoaderCGF::LoadMaterialNameChunk(IChunkFile::ChunkDesc* pChunkDes
 			}
 		}
 
-		CMaterialCGF* pMtlCGF = Construct<CMaterialCGF>(InplaceFactory(m_pDestructFnc), m_pAllocFnc);
+		CMaterialCGF* pMtlCGF = Construct<CMaterialCGF>(m_pAllocFnc, m_pDestructFnc);
 		pMtlCGF->nChunkId = pChunkDesc->chunkId;
 		m_pCGF->AddMaterial(pMtlCGF);
 		cry_strcpy(pMtlCGF->name, chunk.name);
