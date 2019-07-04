@@ -150,7 +150,7 @@ namespace Cry
 
 			void CAccount::SetAvatarInfo(const rail::RailArray<uint8_t>& data, const rail::RailImageDataDescriptor& descriptor)
 			{
-				if (descriptor.pixel_format == rail::kRailImagePixelFormatR8G8B8A8 && descriptor.stride_in_bytes == 0)
+				if (descriptor.pixel_format == rail::kRailImagePixelFormatR8G8B8A8)
 				{
 					const ETEX_Format format = eTF_R8G8B8A8;
 

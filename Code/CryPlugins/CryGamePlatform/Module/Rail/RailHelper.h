@@ -244,24 +244,6 @@ namespace Cry
 				return pPlayer ? pPlayer->GetGameID() : rail::kInvalidGameId;
 			}
 
-			inline const char* Helper::ErrorString(rail::RailResult code)
-			{
-				if (rail::IRailUtils* pUtils = Helper::Utils())
-				{
-					auto pos = s_errorCache.find(code);
-					if (pos != s_errorCache.end())
-					{
-						return pos->second.c_str();
-					}
-
-					rail::RailString& msg = s_errorCache[code];
-					pUtils->GetErrorString(code, &msg);
-					return msg.c_str();
-				}
-
-				return "Unknown Result";
-			}
-
 			inline const char* Helper::EnumString(rail::EnumRoomType value)
 			{
 				switch (value)

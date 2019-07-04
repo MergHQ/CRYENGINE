@@ -180,6 +180,11 @@ namespace Cry
 					}
 				}
 
+				if (CAccount* pAcc = GetLocalAccount())
+				{
+					RequestUserInformation(pAcc->GetIdentifier(), eUIF_Name | eUIF_Avatar);
+				}
+
 				return true;
 			}
 
@@ -480,13 +485,13 @@ namespace Cry
 
 			bool CService::RequestUserInformation(const AccountIdentifier& accountId, UserInformationMask info)
 			{
-				if (rail::IRailFriends* pRailFriends = Helper::Friends())
+				if (rail::IRailUsersHelper* pRailUsers = Helper::UsersHelper())
 				{
 					rail::RailArray<rail::RailID> friends;
 					friends.push_back(ExtractRailID(accountId));
 
 					// Response in callback : OnRailUsersInfoData()
-					const rail::RailResult res = pRailFriends->AsyncGetPersonalInfo(friends, "");
+					const rail::RailResult res = pRailUsers->AsyncGetUsersInfo(friends, "");
 					if (res == rail::kSuccess)
 					{
 						return true;
