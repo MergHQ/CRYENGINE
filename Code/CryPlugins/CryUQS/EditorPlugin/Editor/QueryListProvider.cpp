@@ -64,7 +64,7 @@ void SUqsQueryEntry::Delete()
 
 void SUqsQueryEntry::Reset()
 {
-	CRY_ASSERT_MESSAGE(false, "not implmented - reset is normally not called, but might be called in SaveAs");
+	CRY_ASSERT(false, "not implmented - reset is normally not called, but might be called in SaveAs");
 }
 
 void SUqsQueryEntry::Serialize(Serialization::IArchive& ar)

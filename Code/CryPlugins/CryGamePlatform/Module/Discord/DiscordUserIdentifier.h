@@ -20,7 +20,7 @@ namespace Cry
 					return AccountIdentifierValue(tmpStr.c_str());
 				}
 
-				CRY_ASSERT_MESSAGE(false, "[Discord] AccountIdentifier '%s' does not seem to contain a valid Discord ID", accountId.ToDebugString());
+				CRY_ASSERT(false, "[Discord] AccountIdentifier '%s' does not seem to contain a valid Discord ID", accountId.ToDebugString());
 				return AccountIdentifierValue();
 			}
 		}

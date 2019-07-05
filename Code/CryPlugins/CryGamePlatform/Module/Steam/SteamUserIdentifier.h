@@ -22,7 +22,7 @@ namespace Cry
 					}
 				}
 
-				CRY_ASSERT_MESSAGE(false, "[Steam] AccountIdentifier '%s' does not seem to contain a valid Steam ID", accountId.ToDebugString());
+				CRY_ASSERT(false, "[Steam] AccountIdentifier '%s' does not seem to contain a valid Steam ID", accountId.ToDebugString());
 				return k_steamIDNil;
 			}
 
@@ -37,7 +37,7 @@ namespace Cry
 					}
 				}
 
-				CRY_ASSERT_MESSAGE(false, "[Steam] LobbyIdentifier '%s' does not seem to contain a valid Steam ID", lobbyId.ToDebugString());
+				CRY_ASSERT(false, "[Steam] LobbyIdentifier '%s' does not seem to contain a valid Steam ID", lobbyId.ToDebugString());
 				return k_steamIDNil;
 			}
 
@@ -57,7 +57,7 @@ namespace Cry
 					}
 				}
 
-				CRY_ASSERT_MESSAGE(false, "[Steam] ApplicationIdentifier '%s' does not seem to contain a valid Steam ID", appId.ToDebugString());
+				CRY_ASSERT(false, "[Steam] ApplicationIdentifier '%s' does not seem to contain a valid Steam ID", appId.ToDebugString());
 				return k_uAppIdInvalid;
 			}
 		}

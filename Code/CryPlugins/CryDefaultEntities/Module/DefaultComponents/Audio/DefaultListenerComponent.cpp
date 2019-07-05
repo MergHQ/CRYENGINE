@@ -28,7 +28,7 @@ void CDefaultListenerComponent::Initialize()
 	if (m_pIListener == nullptr)
 	{
 		Matrix34 const tm = GetWorldTransformMatrix();
-		CRY_ASSERT_MESSAGE(tm.IsValid(), "Invalid Matrix34 during CDefaultListenerComponent::Initialize");
+		CRY_ASSERT(tm.IsValid(), "Invalid Matrix34 during CDefaultListenerComponent::Initialize");
 		m_previousTransformation = tm;
 
 		SetName("DefaultListener");

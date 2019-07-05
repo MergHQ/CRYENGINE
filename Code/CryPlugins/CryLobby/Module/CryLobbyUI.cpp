@@ -5,8 +5,8 @@
 
 CCryLobbyUI::CCryLobbyUI(CCryLobby* pLobby, CCryLobbyService* pService)
 {
-	CRY_ASSERT_MESSAGE(pLobby, "CCryLobbyUI::CCryLobbyUI: Lobby not specified");
-	CRY_ASSERT_MESSAGE(pService, "CCryLobbyUI::CCryLobbyUI: Service not specified");
+	CRY_ASSERT(pLobby, "CCryLobbyUI::CCryLobbyUI: Lobby not specified");
+	CRY_ASSERT(pService, "CCryLobbyUI::CCryLobbyUI: Service not specified");
 
 	m_pLobby = pLobby;
 	m_pService = pService;
@@ -21,7 +21,7 @@ ECryLobbyError CCryLobbyUI::Initialise()
 {
 	for (uint32 i = 0; i < MAX_LOBBYUI_TASKS; i++)
 	{
-		CRY_ASSERT_MESSAGE(m_pTask[i], "CCryLobbyUI: Task base pointers not setup");
+		CRY_ASSERT(m_pTask[i], "CCryLobbyUI: Task base pointers not setup");
 		m_pTask[i]->used = false;
 	}
 
@@ -32,7 +32,7 @@ ECryLobbyError CCryLobbyUI::Terminate()
 {
 	for (uint32 i = 0; i < MAX_LOBBYUI_TASKS; i++)
 	{
-		CRY_ASSERT_MESSAGE(m_pTask[i], "CCryLobbyUI: Task base pointers not setup");
+		CRY_ASSERT(m_pTask[i], "CCryLobbyUI: Task base pointers not setup");
 
 		if (m_pTask[i]->used)
 		{
@@ -53,7 +53,7 @@ ECryLobbyError CCryLobbyUI::StartTask(uint32 eTask, bool startRunning, CryLobbyU
 		{
 			STask* pTask = m_pTask[i];
 
-			CRY_ASSERT_MESSAGE(pTask, "CCryLobbyUI: Task base pointers not setup");
+			CRY_ASSERT(pTask, "CCryLobbyUI: Task base pointers not setup");
 
 			if (!pTask->used)
 			{
@@ -98,7 +98,7 @@ void CCryLobbyUI::FreeTask(CryLobbyUITaskID uiTaskID)
 {
 	STask* pTask = m_pTask[uiTaskID];
 
-	CRY_ASSERT_MESSAGE(pTask, "CCryLobbyUI: Task base pointers not setup");
+	CRY_ASSERT(pTask, "CCryLobbyUI: Task base pointers not setup");
 
 	for (uint32 i = 0; i < MAX_LOBBYUI_PARAMS; i++)
 	{
@@ -127,7 +127,7 @@ void CCryLobbyUI::CancelTask(CryLobbyTaskID lTaskID)
 		{
 			STask* pTask = m_pTask[i];
 
-			CRY_ASSERT_MESSAGE(pTask, "CCryLobbyUI: Task base pointers not setup");
+			CRY_ASSERT(pTask, "CCryLobbyUI: Task base pointers not setup");
 
 			if (pTask->used && (pTask->lTaskID == lTaskID))
 			{
@@ -145,7 +145,7 @@ ECryLobbyError CCryLobbyUI::CreateTaskParamMem(CryLobbyUITaskID uiTaskID, uint32
 {
 	STask* pTask = m_pTask[uiTaskID];
 
-	CRY_ASSERT_MESSAGE(pTask, "CCryLobbyUI: Task base pointers not setup");
+	CRY_ASSERT(pTask, "CCryLobbyUI: Task base pointers not setup");
 
 	if (paramDataSize > 0)
 	{
@@ -174,7 +174,7 @@ void CCryLobbyUI::UpdateTaskError(CryLobbyUITaskID uiTaskID, ECryLobbyError erro
 {
 	STask* pTask = m_pTask[uiTaskID];
 
-	CRY_ASSERT_MESSAGE(pTask, "CCryLobbyUI: Task base pointers not setup");
+	CRY_ASSERT(pTask, "CCryLobbyUI: Task base pointers not setup");
 
 	if (pTask->error == eCLE_Success)
 	{

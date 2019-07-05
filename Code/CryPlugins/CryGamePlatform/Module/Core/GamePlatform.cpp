@@ -456,7 +456,7 @@ namespace Cry
 
 		void CPlugin::RegisterMainService(IService& service)
 		{
-			CRY_ASSERT_MESSAGE(GetMainService() == nullptr, "Main service already registered");
+			CRY_ASSERT(GetMainService() == nullptr, "Main service already registered");
 			if (GetMainService() == nullptr)
 			{
 				m_services[0] = &service;

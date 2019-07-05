@@ -151,7 +151,7 @@ namespace Cry
 					}
 				}
 
-				CRY_ASSERT_MESSAGE(languageId != ILocalizationManager::ePILID_MAX_OR_INVALID, "Invalid language ID");
+				CRY_ASSERT(languageId != ILocalizationManager::ePILID_MAX_OR_INVALID, "Invalid language ID");
 				if (languageId != ILocalizationManager::ePILID_MAX_OR_INVALID)
 				{
 					const char* szLanguage = gEnv->pSystem->GetLocalizationManager()->LangNameFromPILID(languageId);

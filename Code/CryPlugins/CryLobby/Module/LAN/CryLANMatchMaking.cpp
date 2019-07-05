@@ -309,7 +309,7 @@ void CCryLANMatchMaking::FreeRemoteConnection(CryLobbySessionHandle h, CryMatchM
 
 uint64 CCryLANMatchMaking::GetSIDFromSessionHandle(CryLobbySessionHandle h)
 {
-	CRY_ASSERT_MESSAGE((h < MAX_MATCHMAKING_SESSIONS) && (m_sessions[h].localFlags & CRYSESSION_LOCAL_FLAG_USED), "CCryLANMatchMaking::GetSIDFromSessionHandle: invalid session handle");
+	CRY_ASSERT((h < MAX_MATCHMAKING_SESSIONS) && (m_sessions[h].localFlags & CRYSESSION_LOCAL_FLAG_USED), "CCryLANMatchMaking::GetSIDFromSessionHandle: invalid session handle");
 
 	return m_sessions[h].sid;
 }
@@ -629,7 +629,7 @@ ECryLobbyError CCryLANMatchMaking::SessionCreate(uint32* users, int numUsers, ui
 
 	if (gEnv->IsDedicated())
 	{
-		CRY_ASSERT_MESSAGE(numUsers == 1, "Dedicated Server, but number of users on create != 1 - Being forced to 0");
+		CRY_ASSERT(numUsers == 1, "Dedicated Server, but number of users on create != 1 - Being forced to 0");
 		numUsers = 0;
 	}
 
@@ -2245,7 +2245,7 @@ bool CCryLANMatchMaking::ParamFilter(uint32 nParams, const SCrySessionSearchData
 						case eCLUDT_Float64:
 						case eCLUDT_Float32:
 							{
-								CRY_ASSERT_MESSAGE(0, "eCSSO_BitwiseAndNotEqualZero not supported on floating point numbers.");
+								CRY_ASSERT(0, "eCSSO_BitwiseAndNotEqualZero not supported on floating point numbers.");
 								bOk = false;
 							}
 							break;
@@ -2640,7 +2640,7 @@ void CCryLANMatchMaking::ProcessHostMigrationFromServer(const TNetAddress& addr,
 	}
 
 	// If HostMigrationClient() was not called, this client will be pruned (after timeout) on the new host
-	CRY_ASSERT_MESSAGE(false, "ProcessHostMigrationFromServer failed to call HostMigrationClient");
+	CRY_ASSERT(false, "ProcessHostMigrationFromServer failed to call HostMigrationClient");
 }
 
 void CCryLANMatchMaking::ProcessHostMigrationFromClient(const TNetAddress& addr, CCrySharedLobbyPacket* pPacket)

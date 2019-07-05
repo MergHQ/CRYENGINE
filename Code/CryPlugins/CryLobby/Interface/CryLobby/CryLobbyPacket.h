@@ -115,8 +115,8 @@ public:
 
 	void StartWrite(uint32 packetType, bool reliable)
 	{
-		CRY_ASSERT_MESSAGE(m_pWriteBuffer, "CCryLobbyPacket: Buffer not set");
-		CRY_ASSERT_MESSAGE((reliable && (CryLobbyPacketReliableHeaderSize <= m_bufferSize)) || (!reliable && (CryLobbyPacketUnReliableHeaderSize <= m_bufferSize)), "CCryLobbyPacket: Buffer too small");
+		CRY_ASSERT(m_pWriteBuffer, "CCryLobbyPacket: Buffer not set");
+		CRY_ASSERT((reliable && (CryLobbyPacketReliableHeaderSize <= m_bufferSize)) || (!reliable && (CryLobbyPacketUnReliableHeaderSize <= m_bufferSize)), "CCryLobbyPacket: Buffer too small");
 
 		m_packetHeader.reliable = reliable;
 		m_dataHeader.lobbyPacketType = packetType;
@@ -133,8 +133,8 @@ public:
 
 	uint32 StartRead()
 	{
-		CRY_ASSERT_MESSAGE(m_pReadBuffer, "CCryLobbyPacket: Buffer not set");
-		CRY_ASSERT_MESSAGE((m_packetHeader.reliable && (CryLobbyPacketReliableHeaderSize <= m_bufferSize)) || (!m_packetHeader.reliable && (CryLobbyPacketUnReliableHeaderSize <= m_bufferSize)), "CCryLobbyPacket: Buffer too small");
+		CRY_ASSERT(m_pReadBuffer, "CCryLobbyPacket: Buffer not set");
+		CRY_ASSERT((m_packetHeader.reliable && (CryLobbyPacketReliableHeaderSize <= m_bufferSize)) || (!m_packetHeader.reliable && (CryLobbyPacketUnReliableHeaderSize <= m_bufferSize)), "CCryLobbyPacket: Buffer too small");
 
 		if (m_packetHeader.reliable)
 		{
@@ -150,8 +150,8 @@ public:
 
 	void WriteUINT8(uint8 data)
 	{
-		CRY_ASSERT_MESSAGE(m_pWriteBuffer, "CCryLobbyPacket: Buffer not set");
-		CRY_ASSERT_MESSAGE(m_bufferPos + CryLobbyPacketUINT8Size <= m_bufferSize, "CCryLobbyPacket: Buffer too small");
+		CRY_ASSERT(m_pWriteBuffer, "CCryLobbyPacket: Buffer not set");
+		CRY_ASSERT(m_bufferPos + CryLobbyPacketUINT8Size <= m_bufferSize, "CCryLobbyPacket: Buffer too small");
 
 		if (m_pWriteBuffer && (m_bufferPos + CryLobbyPacketUINT8Size <= m_bufferSize))
 		{
@@ -161,8 +161,8 @@ public:
 
 	uint8 ReadUINT8()
 	{
-		CRY_ASSERT_MESSAGE(m_pReadBuffer, "CCryLobbyPacket: Buffer not set");
-		CRY_ASSERT_MESSAGE(m_bufferPos + CryLobbyPacketUINT8Size <= m_bufferSize, "CCryLobbyPacket: Buffer too small");
+		CRY_ASSERT(m_pReadBuffer, "CCryLobbyPacket: Buffer not set");
+		CRY_ASSERT(m_bufferPos + CryLobbyPacketUINT8Size <= m_bufferSize, "CCryLobbyPacket: Buffer too small");
 
 		if (m_pReadBuffer && (m_bufferPos + CryLobbyPacketUINT8Size <= m_bufferSize))
 		{
@@ -174,8 +174,8 @@ public:
 
 	void WriteUINT16(uint16 data)
 	{
-		CRY_ASSERT_MESSAGE(m_pWriteBuffer, "CCryLobbyPacket: Buffer not set");
-		CRY_ASSERT_MESSAGE(m_bufferPos + CryLobbyPacketUINT16Size <= m_bufferSize, "CCryLobbyPacket: Buffer too small");
+		CRY_ASSERT(m_pWriteBuffer, "CCryLobbyPacket: Buffer not set");
+		CRY_ASSERT(m_bufferPos + CryLobbyPacketUINT16Size <= m_bufferSize, "CCryLobbyPacket: Buffer too small");
 
 		if (m_pWriteBuffer && (m_bufferPos + CryLobbyPacketUINT16Size <= m_bufferSize))
 		{
@@ -186,8 +186,8 @@ public:
 
 	uint16 ReadUINT16()
 	{
-		CRY_ASSERT_MESSAGE(m_pReadBuffer, "CCryLobbyPacket: Buffer not set");
-		CRY_ASSERT_MESSAGE(m_bufferPos + CryLobbyPacketUINT16Size <= m_bufferSize, "CCryLobbyPacket: Buffer too small");
+		CRY_ASSERT(m_pReadBuffer, "CCryLobbyPacket: Buffer not set");
+		CRY_ASSERT(m_bufferPos + CryLobbyPacketUINT16Size <= m_bufferSize, "CCryLobbyPacket: Buffer too small");
 
 		if (m_pReadBuffer && (m_bufferPos + CryLobbyPacketUINT16Size <= m_bufferSize))
 		{
@@ -204,8 +204,8 @@ public:
 
 	void WriteUINT32(uint32 data)
 	{
-		CRY_ASSERT_MESSAGE(m_pWriteBuffer, "CCryLobbyPacket: Buffer not set");
-		CRY_ASSERT_MESSAGE(m_bufferPos + CryLobbyPacketUINT32Size <= m_bufferSize, "CCryLobbyPacket: Buffer too small");
+		CRY_ASSERT(m_pWriteBuffer, "CCryLobbyPacket: Buffer not set");
+		CRY_ASSERT(m_bufferPos + CryLobbyPacketUINT32Size <= m_bufferSize, "CCryLobbyPacket: Buffer too small");
 
 		if (m_pWriteBuffer && (m_bufferPos + CryLobbyPacketUINT32Size <= m_bufferSize))
 		{
@@ -218,8 +218,8 @@ public:
 
 	uint32 ReadUINT32()
 	{
-		CRY_ASSERT_MESSAGE(m_pReadBuffer, "CCryLobbyPacket: Buffer not set");
-		CRY_ASSERT_MESSAGE(m_bufferPos + CryLobbyPacketUINT32Size <= m_bufferSize, "CCryLobbyPacket: Buffer too small");
+		CRY_ASSERT(m_pReadBuffer, "CCryLobbyPacket: Buffer not set");
+		CRY_ASSERT(m_bufferPos + CryLobbyPacketUINT32Size <= m_bufferSize, "CCryLobbyPacket: Buffer too small");
 
 		if (m_pReadBuffer && (m_bufferPos + CryLobbyPacketUINT32Size <= m_bufferSize))
 		{
@@ -238,8 +238,8 @@ public:
 
 	void WriteUINT64(uint64 data)
 	{
-		CRY_ASSERT_MESSAGE(m_pWriteBuffer, "CCryLobbyPacket: Buffer not set");
-		CRY_ASSERT_MESSAGE(m_bufferPos + CryLobbyPacketUINT64Size <= m_bufferSize, "CCryLobbyPacket: Buffer too small");
+		CRY_ASSERT(m_pWriteBuffer, "CCryLobbyPacket: Buffer not set");
+		CRY_ASSERT(m_bufferPos + CryLobbyPacketUINT64Size <= m_bufferSize, "CCryLobbyPacket: Buffer too small");
 
 		if (m_pWriteBuffer && (m_bufferPos + CryLobbyPacketUINT64Size <= m_bufferSize))
 		{
@@ -256,8 +256,8 @@ public:
 
 	uint64 ReadUINT64()
 	{
-		CRY_ASSERT_MESSAGE(m_pReadBuffer, "CCryLobbyPacket: Buffer not set");
-		CRY_ASSERT_MESSAGE(m_bufferPos + CryLobbyPacketUINT64Size <= m_bufferSize, "CCryLobbyPacket: Buffer too small");
+		CRY_ASSERT(m_pReadBuffer, "CCryLobbyPacket: Buffer not set");
+		CRY_ASSERT(m_bufferPos + CryLobbyPacketUINT64Size <= m_bufferSize, "CCryLobbyPacket: Buffer too small");
 
 		if (m_pReadBuffer && (m_bufferPos + CryLobbyPacketUINT64Size <= m_bufferSize))
 		{
@@ -280,8 +280,8 @@ public:
 
 	void WriteBool(bool data)
 	{
-		CRY_ASSERT_MESSAGE(m_pWriteBuffer, "CCryLobbyPacket: Buffer not set");
-		CRY_ASSERT_MESSAGE(m_bufferPos + CryLobbyPacketBoolSize <= m_bufferSize, "CCryLobbyPacket: Buffer too small");
+		CRY_ASSERT(m_pWriteBuffer, "CCryLobbyPacket: Buffer not set");
+		CRY_ASSERT(m_bufferPos + CryLobbyPacketBoolSize <= m_bufferSize, "CCryLobbyPacket: Buffer too small");
 
 		if (m_pWriteBuffer && (m_bufferPos + CryLobbyPacketBoolSize <= m_bufferSize))
 		{
@@ -291,8 +291,8 @@ public:
 
 	bool ReadBool()
 	{
-		CRY_ASSERT_MESSAGE(m_pReadBuffer, "CCryLobbyPacket: Buffer not set");
-		CRY_ASSERT_MESSAGE(m_bufferPos + CryLobbyPacketBoolSize <= m_bufferSize, "CCryLobbyPacket: Buffer too small");
+		CRY_ASSERT(m_pReadBuffer, "CCryLobbyPacket: Buffer not set");
+		CRY_ASSERT(m_bufferPos + CryLobbyPacketBoolSize <= m_bufferSize, "CCryLobbyPacket: Buffer too small");
 
 		if (m_pReadBuffer && (m_bufferPos + CryLobbyPacketBoolSize <= m_bufferSize))
 		{
@@ -304,8 +304,8 @@ public:
 
 	void WriteData(const void* pData, uint32 dataSize)
 	{
-		CRY_ASSERT_MESSAGE(m_pWriteBuffer, "CCryLobbyPacket: Buffer not set");
-		CRY_ASSERT_MESSAGE(m_bufferPos + dataSize <= m_bufferSize, "CCryLobbyPacket: Buffer too small");
+		CRY_ASSERT(m_pWriteBuffer, "CCryLobbyPacket: Buffer not set");
+		CRY_ASSERT(m_bufferPos + dataSize <= m_bufferSize, "CCryLobbyPacket: Buffer too small");
 
 		if (m_pWriteBuffer && (m_bufferPos + dataSize <= m_bufferSize))
 		{
@@ -316,8 +316,8 @@ public:
 
 	void ReadData(void* pData, uint32 dataSize)
 	{
-		CRY_ASSERT_MESSAGE(m_pReadBuffer, "CCryLobbyPacket: Buffer not set");
-		CRY_ASSERT_MESSAGE(m_bufferPos + dataSize <= m_bufferSize, "CCryLobbyPacket: Buffer too small");
+		CRY_ASSERT(m_pReadBuffer, "CCryLobbyPacket: Buffer not set");
+		CRY_ASSERT(m_bufferPos + dataSize <= m_bufferSize, "CCryLobbyPacket: Buffer too small");
 
 		if (m_pReadBuffer && (m_bufferPos + dataSize <= m_bufferSize))
 		{
@@ -330,8 +330,8 @@ public:
 	void WriteString(const char* pData, uint32 dataSize)
 	{
 		dataSize--;          // Don't bother sending null terminator
-		CRY_ASSERT_MESSAGE(m_pWriteBuffer, "CCryLobbyPacket: Buffer not set");
-		CRY_ASSERT_MESSAGE(m_bufferPos + dataSize <= m_bufferSize, "CCryLobbyPacket: Buffer too small");
+		CRY_ASSERT(m_pWriteBuffer, "CCryLobbyPacket: Buffer not set");
+		CRY_ASSERT(m_bufferPos + dataSize <= m_bufferSize, "CCryLobbyPacket: Buffer too small");
 
 		if (m_pWriteBuffer && (m_bufferPos + dataSize <= m_bufferSize))
 		{
@@ -344,8 +344,8 @@ public:
 	void ReadString(char* pData, uint32 dataSize)
 	{
 		dataSize--;          // NULL terminator is not in stream
-		CRY_ASSERT_MESSAGE(m_pReadBuffer, "CCryLobbyPacket: Buffer not set");
-		CRY_ASSERT_MESSAGE(m_bufferPos + dataSize <= m_bufferSize, "CCryLobbyPacket: Buffer too small");
+		CRY_ASSERT(m_pReadBuffer, "CCryLobbyPacket: Buffer not set");
+		CRY_ASSERT(m_bufferPos + dataSize <= m_bufferSize, "CCryLobbyPacket: Buffer too small");
 
 		if (m_pReadBuffer && (m_bufferPos + dataSize <= m_bufferSize))
 		{
@@ -396,7 +396,7 @@ public:
 			break;
 
 		default:
-			CRY_ASSERT_MESSAGE(0, "CCryLobbyPacket::WriteCryLobbyUserData: Undefined data type");
+			CRY_ASSERT(0, "CCryLobbyPacket::WriteCryLobbyUserData: Undefined data type");
 			break;
 		}
 	}
@@ -428,7 +428,7 @@ public:
 			break;
 
 		default:
-			CRY_ASSERT_MESSAGE(0, "CCryLobbyPacket::ReadCryLobbyUserData: Undefined data type");
+			CRY_ASSERT(0, "CCryLobbyPacket::ReadCryLobbyUserData: Undefined data type");
 			break;
 		}
 	}

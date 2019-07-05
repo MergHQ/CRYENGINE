@@ -95,8 +95,8 @@ void CEnvironmentProbeEntity::OnResetState()
 
 	if (!m_light.GetSpecularCubemap() || !m_light.GetDiffuseCubemap())
 	{
-		CRY_ASSERT_MESSAGE(m_light.GetSpecularCubemap(), "Failed to load specular cubemap for environment probe!");
-		CRY_ASSERT_MESSAGE(m_light.GetDiffuseCubemap(), "Failed to load diffuse cubemap for environment probe!");
+		CRY_ASSERT(m_light.GetSpecularCubemap(), "Failed to load specular cubemap for environment probe!");
+		CRY_ASSERT(m_light.GetDiffuseCubemap(), "Failed to load diffuse cubemap for environment probe!");
 
 		m_light.DropResources();
 		m_light.m_Flags &= ~DLF_DEFERRED_CUBEMAPS;

@@ -119,7 +119,7 @@ namespace Cry
 			inline bool Helper::GetFptr(const char* szName, TFPtr& pFun)
 			{
 				void* pFunVoid = CryGetProcAddress(s_libHandle, szName);
-				CRY_ASSERT_MESSAGE(pFunVoid, "[Rail][Helper] Function '%s' not found in '%s'!", szName, szLibName);
+				CRY_ASSERT(pFunVoid, "[Rail][Helper] Function '%s' not found in '%s'!", szName, szLibName);
 				pFun = (TFPtr)pFunVoid;
 
 				return pFun == nullptr;

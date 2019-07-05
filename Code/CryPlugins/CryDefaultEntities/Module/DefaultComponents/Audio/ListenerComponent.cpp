@@ -28,7 +28,7 @@ void CListenerComponent::Initialize()
 	if (m_pIListener == nullptr)
 	{
 		Matrix34 const tm = GetWorldTransformMatrix();
-		CRY_ASSERT_MESSAGE(tm.IsValid(), "Invalid Matrix34 during CListenerComponent::Initialize");
+		CRY_ASSERT(tm.IsValid(), "Invalid Matrix34 during CListenerComponent::Initialize");
 		m_previousTransformation = tm;
 
 		SetName("Listener");

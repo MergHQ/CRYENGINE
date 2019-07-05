@@ -137,7 +137,7 @@ void CUserAnalytics::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR
 
 			if (!gEnv->pThreadManager->SpawnThread(m_pUserAnalyticsSendThread, "UserAnalytics"))
 			{
-				CRY_ASSERT_MESSAGE(false, "Error spawning \"UserAnalytics\" thread.");
+				CRY_ASSERT(false, "Error spawning \"UserAnalytics\" thread.");
 				delete m_pUserAnalyticsSendThread;
 				m_pUserAnalyticsSendThread = nullptr;
 			}

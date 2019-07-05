@@ -64,7 +64,7 @@ namespace Cry
 
 			virtual void RequestMoveTo(const Vec3 &position)
 			{
-				CRY_ASSERT_MESSAGE(m_movementRequestId.id == 0, "RequestMoveTo can not be called while another request is being handled!");
+				CRY_ASSERT(m_movementRequestId.id == 0, "RequestMoveTo can not be called while another request is being handled!");
 
 				MovementRequest movementRequest;
 				movementRequest.entityID = GetEntityId();

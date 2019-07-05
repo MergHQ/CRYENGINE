@@ -279,7 +279,7 @@ namespace Cry
 
 						if (tmpVal.index() != idx)
 						{
-							CRY_ASSERT_MESSAGE(tmpVal.index() == idx, "Variant deserialization failed!");
+							CRY_ASSERT(tmpVal.index() == idx, "Variant deserialization failed!");
 							return;
 						}
 

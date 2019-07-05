@@ -37,8 +37,8 @@ void CEntityFlowNodeFactory::UnregisterFactory()
 
 void CEntityFlowNodeFactory::AddInputs(const std::vector<SInputPortConfig>& inputs, FlowNodeOnActivateFunction callback)
 {
-	CRY_ASSERT_MESSAGE(m_inputs.empty(), "Supplying entity node inputs multiple times: not supported");
-	CRY_ASSERT_MESSAGE(m_callbacks.empty(), "Using global callback with individually specified callbacks: not supported");
+	CRY_ASSERT(m_inputs.empty(), "Supplying entity node inputs multiple times: not supported");
+	CRY_ASSERT(m_callbacks.empty(), "Using global callback with individually specified callbacks: not supported");
 
 	m_inputs.clear();
 	m_callbacks.clear();

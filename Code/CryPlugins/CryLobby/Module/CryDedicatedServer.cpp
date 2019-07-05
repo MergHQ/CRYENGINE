@@ -81,7 +81,7 @@ ECryLobbyError CCryDedicatedServer::Terminate()
 
 uint64 CCryDedicatedServer::GetSIDFromSessionHandle(CryLobbySessionHandle h)
 {
-	CRY_ASSERT_MESSAGE((h < MAX_MATCHMAKING_SESSIONS) && (m_sessions[h].localFlags & CRYSESSION_LOCAL_FLAG_USED), "CCryLANMatchMaking::GetSIDFromSessionHandle: invalid session handle");
+	CRY_ASSERT((h < MAX_MATCHMAKING_SESSIONS) && (m_sessions[h].localFlags & CRYSESSION_LOCAL_FLAG_USED), "CCryLANMatchMaking::GetSIDFromSessionHandle: invalid session handle");
 
 	return m_sessions[h].sid;
 }

@@ -228,7 +228,7 @@ bool CCrySteamReward::RequestStats()
 
 CCrySteamReward::~CCrySteamReward(void)
 {
-	CRY_ASSERT_MESSAGE(m_count == 0, "CrySteamReward: still have pending awards at destruction");
+	CRY_ASSERT(m_count == 0, "CrySteamReward: still have pending awards at destruction");
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

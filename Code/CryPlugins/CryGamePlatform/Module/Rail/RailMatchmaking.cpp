@@ -25,7 +25,7 @@ namespace Cry
 				case IUserLobby::EVisibility::Invisible:   return rail::kRailRoomTypeHidden;
 				}
 
-				CRY_ASSERT_MESSAGE(false, "[Rail][Matchmaking] Unrecognized IUserLobby::EVisibility enum value! Defaulting to 'Public'.");
+				CRY_ASSERT(false, "[Rail][Matchmaking] Unrecognized IUserLobby::EVisibility enum value! Defaulting to 'Public'.");
 				return rail::kRailRoomTypePublic;
 			}
 
@@ -40,7 +40,7 @@ namespace Cry
 				case IUserLobby::EComparison::NotEqual:             return rail::kRailComparisonTypeNotEqual;
 				}
 
-				CRY_ASSERT_MESSAGE(false, "[Rail][Matchmaking] Unrecognized IUserLobby::EComparison enum value! Defaulting to 'Equal'.");
+				CRY_ASSERT(false, "[Rail][Matchmaking] Unrecognized IUserLobby::EComparison enum value! Defaulting to 'Equal'.");
 				return rail::kRailComparisonTypeEqual;
 			}
 
@@ -91,7 +91,7 @@ namespace Cry
 					}
 					else
 					{
-						CRY_ASSERT_MESSAGE(false, "[Rail][Matchmaking] AsyncCreateRoom() returned NULL!");
+						CRY_ASSERT(false, "[Rail][Matchmaking] AsyncCreateRoom() returned NULL!");
 					}
 				}
 			}
@@ -227,7 +227,7 @@ namespace Cry
 					rail::RailResult res = rail::kSuccess;
 					if (rail::IRailRoom* pRoom = pRailMatchmaking->OpenRoom(lobbyId, &res))
 					{
-						CRY_ASSERT_MESSAGE(res == rail::kSuccess, "[Rail][Matchmaking] OpenRoom() succeeded but returned an error : %s", Helper::ErrorString(res));
+						CRY_ASSERT(res == rail::kSuccess, "[Rail][Matchmaking] OpenRoom() succeeded but returned an error : %s", Helper::ErrorString(res));
 						// Actual creation of Lobby is in callback: OnLocalJoin()
 						res = pRoom->AsyncJoinRoom(szPassword, "");
 						if (res == rail::kSuccess)
@@ -285,7 +285,7 @@ namespace Cry
 
 				if (idx >= m_roomInstances.size())
 				{
-					CRY_ASSERT_MESSAGE(false, "[Rail][Matchmaking] couldn't find a match for provided room id: '%" PRIu64 "'!", roomId);
+					CRY_ASSERT(false, "[Rail][Matchmaking] couldn't find a match for provided room id: '%" PRIu64 "'!", roomId);
 					return nullptr;
 				}
 
@@ -294,7 +294,7 @@ namespace Cry
 					m_lobbies.resize(idx + 1);
 				}
 
-				CRY_ASSERT_MESSAGE(!m_lobbies[idx], "[Rail][Matchmaking] A user lobby instance was already created for room id: '%" PRIu64 "'. It will be destroyed!", roomId);
+				CRY_ASSERT(!m_lobbies[idx], "[Rail][Matchmaking] A user lobby instance was already created for room id: '%" PRIu64 "'. It will be destroyed!", roomId);
 
 				m_lobbies[idx] = stl::make_unique<CUserLobby>(m_service, *m_roomInstances[idx]);
 
@@ -429,7 +429,7 @@ namespace Cry
 
 				if (pInvite->invite_type != rail::kRailUsersInviteTypeRoom)
 				{
-					CRY_ASSERT_MESSAGE(false, "[Rail][Matchmaking] Only 'Room' invite type is supported!");
+					CRY_ASSERT(false, "[Rail][Matchmaking] Only 'Room' invite type is supported!");
 					return;
 				}
 
@@ -458,7 +458,7 @@ namespace Cry
 					arg = cmdLine.Tokenize(szArgSeparators, curPos);
 				}
 
-				CRY_ASSERT_MESSAGE(!roomId.empty(), "[Rail][Matchmaking] Command line parsing failed!");
+				CRY_ASSERT(!roomId.empty(), "[Rail][Matchmaking] Command line parsing failed!");
 				const uint64_t railRoomId = Schematyc2::StringUtils::UInt64FromString(roomId.c_str(), 0);
 				JoinLobby(railRoomId, password.c_str());
 			}
@@ -475,7 +475,7 @@ namespace Cry
 					{
 						if (&((*it)->GetRoom()) == pRoomToRelease)
 						{
-							CRY_ASSERT_MESSAGE(false, "[Rail][Matchmaking] Found a User Lobby still associated with room '%" PRIu64 "' that we have already left!", pLeaveInfo->room_id);
+							CRY_ASSERT(false, "[Rail][Matchmaking] Found a User Lobby still associated with room '%" PRIu64 "' that we have already left!", pLeaveInfo->room_id);
 							m_lobbies.erase(it);
 							break;
 						}

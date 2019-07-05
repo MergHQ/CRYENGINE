@@ -39,7 +39,7 @@ namespace Cry
 					}
 				}
 
-				CRY_ASSERT_MESSAGE(false, "[Rail] AccountIdentifier '%s' does not seem to contain a valid Rail ID", accountId.ToDebugString());
+				CRY_ASSERT(false, "[Rail] AccountIdentifier '%s' does not seem to contain a valid Rail ID", accountId.ToDebugString());
 				return rail::kInvalidRailId;
 			}
 
@@ -54,7 +54,7 @@ namespace Cry
 					}
 				}
 
-				CRY_ASSERT_MESSAGE(false, "[Rail] LobbyIdentifier '%s' does not seem to contain a valid Rail ID", lobbyId.ToDebugString());
+				CRY_ASSERT(false, "[Rail] LobbyIdentifier '%s' does not seem to contain a valid Rail ID", lobbyId.ToDebugString());
 				return 0;
 			}
 
@@ -69,7 +69,7 @@ namespace Cry
 					}
 				}
 
-				CRY_ASSERT_MESSAGE(false, "[Rail] ApplicationIdentifier '%s' does not seem to contain a valid Rail ID", appId.ToDebugString());
+				CRY_ASSERT(false, "[Rail] ApplicationIdentifier '%s' does not seem to contain a valid Rail ID", appId.ToDebugString());
 				return 0;
 			}
 		}

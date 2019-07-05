@@ -33,7 +33,7 @@ void CCrySignIn::CancelTask(CryLobbyTaskID lTaskID)
 		{
 			STask* pTask = m_pTask[siTaskID];
 
-			CRY_ASSERT_MESSAGE(pTask, "CCrySignIn: Task base pointers not setup");
+			CRY_ASSERT(pTask, "CCrySignIn: Task base pointers not setup");
 
 			if (pTask && pTask->used && (pTask->lTaskID == lTaskID))
 			{
@@ -110,7 +110,7 @@ ECryLobbyError CCrySignIn::StartTask(uint32 eTask, CrySignInTaskID* pSITaskID, C
 		{
 			STask* pTask = m_pTask[siTaskID];
 
-			CRY_ASSERT_MESSAGE(pTask, "CCrySignIn: Task base pointers not setup");
+			CRY_ASSERT(pTask, "CCrySignIn: Task base pointers not setup");
 
 			if (!pTask->used)
 			{
@@ -143,7 +143,7 @@ void CCrySignIn::FreeTask(CrySignInTaskID siTaskID)
 {
 	STask* pTask = m_pTask[siTaskID];
 
-	CRY_ASSERT_MESSAGE(pTask, "CCrySignIn: Task base pointers not setup");
+	CRY_ASSERT(pTask, "CCrySignIn: Task base pointers not setup");
 
 	if (pTask && pTask->used)
 	{
@@ -168,7 +168,7 @@ ECryLobbyError CCrySignIn::CreateTaskParamMem(CrySignInTaskID siTaskID, uint32 p
 	ECryLobbyError result;
 	STask* pTask = m_pTask[siTaskID];
 
-	CRY_ASSERT_MESSAGE(pTask, "CCrySignIn: Task base pointers not setup");
+	CRY_ASSERT(pTask, "CCrySignIn: Task base pointers not setup");
 
 	if (paramDataSize > 0)
 	{
@@ -200,7 +200,7 @@ void CCrySignIn::UpdateTaskError(CrySignInTaskID siTaskID, ECryLobbyError error)
 {
 	STask* pTask = m_pTask[siTaskID];
 
-	CRY_ASSERT_MESSAGE(pTask, "CCrySignIn: Task base pointers not setup");
+	CRY_ASSERT(pTask, "CCrySignIn: Task base pointers not setup");
 
 	if (pTask->error == eCLE_Success)
 	{

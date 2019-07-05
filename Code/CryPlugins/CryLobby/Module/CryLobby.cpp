@@ -659,8 +659,8 @@ void CCryLobby::InternalSocketCreate(ECryLobbyService service)
 {
 	SSocketService* pSocketService = GetCorrectSocketService(service);
 
-	CRY_ASSERT_MESSAGE(service < eCLS_NumServices, "Illegal service specified");
-	CRY_ASSERT_MESSAGE(m_services[service] != NULL, "Tried to create a socket for a non existant service.");
+	CRY_ASSERT(service < eCLS_NumServices, "Illegal service specified");
+	CRY_ASSERT(m_services[service] != NULL, "Tried to create a socket for a non existant service.");
 
 	pSocketService->m_socketConnectPort = 0;
 	pSocketService->m_socketListenPort = 0;
@@ -739,7 +739,7 @@ void CCryLobby::InternalSocketCreate(ECryLobbyService service)
 
 void CCryLobby::InternalSocketDie(ECryLobbyService service)
 {
-	CRY_ASSERT_MESSAGE(service < eCLS_NumServices, "Illegal service specified");
+	CRY_ASSERT(service < eCLS_NumServices, "Illegal service specified");
 	SSocketService* pSocketService = GetCorrectSocketService(service);
 	ISocketIOManager* pSocketIOManager = GetExternalSocketIOManager();
 	if (service == eCLS_LAN)
@@ -2479,7 +2479,7 @@ void CCryLobbyService::CancelTask(CryLobbyTaskID lTaskID)
 		{
 			STask* pTask = GetTask(i);
 
-			CRY_ASSERT_MESSAGE(pTask, "CCryLobby: Task base pointers not setup");
+			CRY_ASSERT(pTask, "CCryLobby: Task base pointers not setup");
 
 			if (pTask->used && (pTask->lTaskID == lTaskID))
 			{
@@ -2693,7 +2693,7 @@ ECryLobbyError CCryLobbyService::CreateTaskParamMem(CryLobbyServiceTaskID lsTask
 {
 	STask* pTask = &m_tasks[lsTaskID];
 
-	CRY_ASSERT_MESSAGE(pTask, "CCryLobbyService: Task base pointers not setup");
+	CRY_ASSERT(pTask, "CCryLobbyService: Task base pointers not setup");
 
 	if (paramDataSize > 0)
 	{

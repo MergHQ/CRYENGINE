@@ -103,7 +103,7 @@ namespace Cry
 
 			void CAccount::SetDiscordUser(const DiscordUser& user)
 			{
-				CRY_ASSERT_MESSAGE(strlen(user.userId) < m_id.MAX_SIZE);
+				CRY_ASSERT(strlen(user.userId) < m_id.MAX_SIZE);
 
 				m_id = user.userId;
 				m_nickname = user.username;
