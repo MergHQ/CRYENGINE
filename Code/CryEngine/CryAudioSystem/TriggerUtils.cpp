@@ -23,13 +23,13 @@ void SendFinishedTriggerInstanceRequest(
 	void* const pUserData /*= nullptr*/,
 	void* const pUserDataOwner /*= nullptr*/)
 {
-	if ((flags& ERequestFlags::DoneCallbackOnExternalThread) != 0)
+	if ((flags& ERequestFlags::SubsequentCallbackOnExternalThread) != 0)
 	{
 		SCallbackRequestData<ECallbackRequestType::ReportFinishedTriggerInstance> const requestData(triggerId, entityId);
 		CRequest const request(&requestData, ERequestFlags::CallbackOnExternalOrCallingThread, pOwner, pUserData, pUserDataOwner);
 		g_system.PushRequest(request);
 	}
-	else if ((flags& ERequestFlags::DoneCallbackOnAudioThread) != 0)
+	else if ((flags& ERequestFlags::SubsequentCallbackOnAudioThread) != 0)
 	{
 		SCallbackRequestData<ECallbackRequestType::ReportFinishedTriggerInstance> const requestData(triggerId, entityId);
 		CRequest const request(&requestData, ERequestFlags::CallbackOnAudioThread, pOwner, pUserData, pUserDataOwner);
@@ -72,7 +72,7 @@ void ExecuteDefaultTriggerConnections(Control const* const pControl, TriggerConn
 
 	if ((numPlayingInstances > 0) || (numPendingInstances > 0))
 	{
-		ConstructGlobalTriggerInstance(pControl->GetId(), numPlayingInstances, numPendingInstances, ERequestFlags::None, nullptr, nullptr, nullptr);
+		ConstructTriggerInstance(pControl->GetId(), numPlayingInstances, numPendingInstances, ERequestFlags::None, nullptr, nullptr, nullptr);
 	}
 	else
 	{
@@ -82,7 +82,7 @@ void ExecuteDefaultTriggerConnections(Control const* const pControl, TriggerConn
 }
 
 //////////////////////////////////////////////////////////////////////////
-void ConstructGlobalTriggerInstance(
+void ConstructTriggerInstance(
 	ControlId const triggerId,
 	uint16 const numPlayingConnectionInstances,
 	uint16 const numPendingConnectionInstances,

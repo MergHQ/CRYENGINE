@@ -70,6 +70,7 @@ public:
 
 	void      SetPendingToPlaying();
 	void      SendFinishedRequest();
+	void      SendCallbackRequest(ESystemEvents const events);
 	void      Release();
 
 #if defined(CRY_AUDIO_USE_DEBUG_CODE)

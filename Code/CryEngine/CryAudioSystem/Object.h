@@ -125,11 +125,13 @@ public:
 
 	void ReportStartedTriggerInstance(TriggerInstanceId const triggerInstanceId, ETriggerResult const result);
 	void ReportFinishedTriggerInstance(TriggerInstanceId const triggerInstanceId, ETriggerResult const result);
+	void ReportTriggerInstanceCallback(TriggerInstanceId const triggerInstanceId, ESystemEvents const events);
 
 private:
 
 	// CryAudio::IObject
 	virtual void ExecuteTrigger(ControlId const triggerId, EntityId const entityId = INVALID_ENTITYID, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override;
+	virtual void ExecuteTriggerWithCallbacks(STriggerCallbackData const& callbackData, EntityId const entityId = INVALID_ENTITYID, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override;
 	virtual void StopTrigger(ControlId const triggerId = InvalidControlId, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override;
 	virtual void SetTransformation(CTransformation const& transformation, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override;
 	virtual void SetParameter(ControlId const parameterId, float const value, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) override;

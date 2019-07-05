@@ -55,6 +55,7 @@ ContextId g_currentLevelContextId = InvalidContextId;
 
 constexpr uint16 g_systemExecuteTriggerPoolSize = 4;
 constexpr uint16 g_systemExecuteTriggerExPoolSize = 16;
+constexpr uint16 g_systemExecuteTriggerWithCallbacksPoolSize = 16;
 constexpr uint16 g_systemStopTriggerPoolSize = 4;
 constexpr uint16 g_systemRegisterObjectPoolSize = 16;
 constexpr uint16 g_systemReleaseObjectPoolSize = 16;
@@ -62,6 +63,7 @@ constexpr uint16 g_systemSetParameterPoolSize = 4;
 constexpr uint16 g_systemSetSwitchStatePoolSize = 4;
 
 constexpr uint16 g_objectExecuteTriggerPoolSize = 64;
+constexpr uint16 g_objectExecuteTriggerWithCallbacksPoolSize = 16;
 constexpr uint16 g_objectStopTriggerPoolSize = 128;
 constexpr uint16 g_objectSetTransformationPoolSize = 128;
 constexpr uint16 g_objectSetParameterPoolSize = 128;
@@ -75,6 +77,8 @@ constexpr uint16 g_listenerSetTransformationPoolSize = 2;
 constexpr uint16 g_callbackReportStartedTriggerConnectionInstancePoolSize = 64;
 constexpr uint16 g_callbackReportFinishedTriggerConnectionInstancePoolSize = 128;
 constexpr uint16 g_callbackReportFinishedTriggerInstancePoolSize = 128;
+constexpr uint16 g_callbackReportTriggerConnectionInstanceCallbackPoolSize = 16;
+constexpr uint16 g_callbackSendTriggerInstanceCallbackPoolSize = 16;
 constexpr uint16 g_callbackReportPhysicalizedObjectPoolSize = 64;
 constexpr uint16 g_callbackReportVirtualizedObjectPoolSize = 64;
 
@@ -102,6 +106,7 @@ struct SRequestCount final
 
 	uint16 systemExecuteTrigger = 0;
 	uint16 systemExecuteTriggerEx = 0;
+	uint16 systemExecuteTriggerWithCallbacks = 0;
 	uint16 systemStopTrigger = 0;
 	uint16 systemRegisterObject = 0;
 	uint16 systemReleaseObject = 0;
@@ -109,6 +114,7 @@ struct SRequestCount final
 	uint16 systemSetSwitchState = 0;
 
 	uint16 objectExecuteTrigger = 0;
+	uint16 objectExecuteTriggerWithCallbacks = 0;
 	uint16 objectStopTrigger = 0;
 	uint16 objectSetTransformation = 0;
 	uint16 objectSetParameter = 0;
@@ -122,6 +128,8 @@ struct SRequestCount final
 	uint16 callbackReportStartedriggerConnectionInstance = 0;
 	uint16 callbackReportFinishedTriggerConnectionInstance = 0;
 	uint16 callbackReportFinishedTriggerInstance = 0;
+	uint16 callbackReportTriggerConnectionInstanceCallback = 0;
+	uint16 callbackSendTriggerInstanceCallback = 0;
 	uint16 callbackReportPhysicalizedObject = 0;
 	uint16 callbackReportVirtualizedObject = 0;
 };
@@ -171,6 +179,12 @@ void CountRequestPerUpdate(CRequest const& request)
 
 						break;
 					}
+				case ESystemRequestType::ExecuteTriggerWithCallbacks:
+					{
+						g_requestsPerUpdate.systemExecuteTriggerWithCallbacks++;
+
+						break;
+					}
 				case ESystemRequestType::StopTrigger:
 					{
 						g_requestsPerUpdate.systemStopTrigger++;
@@ -206,6 +220,12 @@ void CountRequestPerUpdate(CRequest const& request)
 				case EObjectRequestType::ExecuteTrigger:
 					{
 						g_requestsPerUpdate.objectExecuteTrigger++;
+
+						break;
+					}
+				case EObjectRequestType::ExecuteTriggerWithCallbacks:
+					{
+						g_requestsPerUpdate.objectExecuteTriggerWithCallbacks++;
 
 						break;
 					}
@@ -294,6 +314,18 @@ void CountRequestPerUpdate(CRequest const& request)
 
 						break;
 					}
+				case ECallbackRequestType::ReportTriggerConnectionInstanceCallback:
+					{
+						g_requestsPerUpdate.callbackReportTriggerConnectionInstanceCallback++;
+
+						break;
+					}
+				case ECallbackRequestType::SendTriggerInstanceCallback:
+					{
+						g_requestsPerUpdate.callbackSendTriggerInstanceCallback++;
+
+						break;
+					}
 				case ECallbackRequestType::ReportPhysicalizedObject:
 					{
 						g_requestsPerUpdate.callbackReportPhysicalizedObject++;
@@ -331,11 +363,13 @@ void SetRequestCountPeak()
 	g_requestPeaks.systemReleaseObject = std::max(g_requestPeaks.systemReleaseObject, g_requestsPerUpdate.systemReleaseObject);
 	g_requestPeaks.systemExecuteTrigger = std::max(g_requestPeaks.systemExecuteTrigger, g_requestsPerUpdate.systemExecuteTrigger);
 	g_requestPeaks.systemExecuteTriggerEx = std::max(g_requestPeaks.systemExecuteTriggerEx, g_requestsPerUpdate.systemExecuteTriggerEx);
+	g_requestPeaks.systemExecuteTriggerWithCallbacks = std::max(g_requestPeaks.systemExecuteTriggerWithCallbacks, g_requestsPerUpdate.systemExecuteTriggerWithCallbacks);
 	g_requestPeaks.systemStopTrigger = std::max(g_requestPeaks.systemStopTrigger, g_requestsPerUpdate.systemStopTrigger);
 	g_requestPeaks.systemSetParameter = std::max(g_requestPeaks.systemSetParameter, g_requestsPerUpdate.systemSetParameter);
 	g_requestPeaks.systemSetSwitchState = std::max(g_requestPeaks.systemSetSwitchState, g_requestsPerUpdate.systemSetSwitchState);
 
 	g_requestPeaks.objectExecuteTrigger = std::max(g_requestPeaks.objectExecuteTrigger, g_requestsPerUpdate.objectExecuteTrigger);
+	g_requestPeaks.objectExecuteTriggerWithCallbacks = std::max(g_requestPeaks.objectExecuteTriggerWithCallbacks, g_requestsPerUpdate.objectExecuteTriggerWithCallbacks);
 	g_requestPeaks.objectStopTrigger = std::max(g_requestPeaks.objectStopTrigger, g_requestsPerUpdate.objectStopTrigger);
 	g_requestPeaks.objectSetTransformation = std::max(g_requestPeaks.objectSetTransformation, g_requestsPerUpdate.objectSetTransformation);
 	g_requestPeaks.objectSetParameter = std::max(g_requestPeaks.objectSetParameter, g_requestsPerUpdate.objectSetParameter);
@@ -349,6 +383,8 @@ void SetRequestCountPeak()
 	g_requestPeaks.callbackReportStartedriggerConnectionInstance = std::max(g_requestPeaks.callbackReportStartedriggerConnectionInstance, g_requestsPerUpdate.callbackReportStartedriggerConnectionInstance);
 	g_requestPeaks.callbackReportFinishedTriggerConnectionInstance = std::max(g_requestPeaks.callbackReportFinishedTriggerConnectionInstance, g_requestsPerUpdate.callbackReportFinishedTriggerConnectionInstance);
 	g_requestPeaks.callbackReportFinishedTriggerInstance = std::max(g_requestPeaks.callbackReportFinishedTriggerInstance, g_requestsPerUpdate.callbackReportFinishedTriggerInstance);
+	g_requestPeaks.callbackReportTriggerConnectionInstanceCallback = std::max(g_requestPeaks.callbackReportTriggerConnectionInstanceCallback, g_requestsPerUpdate.callbackReportTriggerConnectionInstanceCallback);
+	g_requestPeaks.callbackSendTriggerInstanceCallback = std::max(g_requestPeaks.callbackSendTriggerInstanceCallback, g_requestsPerUpdate.callbackSendTriggerInstanceCallback);
 	g_requestPeaks.callbackReportPhysicalizedObject = std::max(g_requestPeaks.callbackReportPhysicalizedObject, g_requestsPerUpdate.callbackReportPhysicalizedObject);
 	g_requestPeaks.callbackReportVirtualizedObject = std::max(g_requestPeaks.callbackReportVirtualizedObject, g_requestsPerUpdate.callbackReportVirtualizedObject);
 
@@ -547,7 +583,7 @@ void ReportStartedGlobalTriggerInstance(TriggerInstanceId const triggerInstanceI
 }
 
 ///////////////////////////////////////////////////////////////////////////
-void ReportFinishedGlobalTriggerInstance(TriggerInstanceId const triggerInstanceId, ETriggerResult const result)
+void ReportFinishedTriggerInstance(TriggerInstanceId const triggerInstanceId, ETriggerResult const result)
 {
 	TriggerInstances::iterator const iter(g_triggerInstances.find(triggerInstanceId));
 
@@ -587,6 +623,23 @@ void ReportFinishedGlobalTriggerInstance(TriggerInstanceId const triggerInstance
 }
 
 ///////////////////////////////////////////////////////////////////////////
+void ReportTriggerInstanceCallback(TriggerInstanceId const triggerInstanceId, ESystemEvents const events)
+{
+	TriggerInstances::iterator const iter(g_triggerInstances.find(triggerInstanceId));
+
+	if (iter != g_triggerInstances.end())
+	{
+		iter->second->SendCallbackRequest(events);
+	}
+#if defined(CRY_AUDIO_USE_DEBUG_CODE)
+	else
+	{
+		Cry::Audio::Log(ELogType::Warning, "Unknown trigger instance id %u during %s", triggerInstanceId, __FUNCTION__);
+	}
+#endif  // CRY_AUDIO_USE_DEBUG_CODE
+}
+
+///////////////////////////////////////////////////////////////////////////
 void UpdateGlobalData(float const deltaTime)
 {
 	if (!g_triggerInstances.empty())
@@ -613,6 +666,7 @@ void AllocateMemoryPools()
 	// System requests
 	SSystemRequestData<ESystemRequestType::ExecuteTrigger>::CreateAllocator(g_systemExecuteTriggerPoolSize);
 	SSystemRequestData<ESystemRequestType::ExecuteTriggerEx>::CreateAllocator(g_systemExecuteTriggerExPoolSize);
+	SSystemRequestData<ESystemRequestType::ExecuteTriggerWithCallbacks>::CreateAllocator(g_systemExecuteTriggerWithCallbacksPoolSize);
 	SSystemRequestData<ESystemRequestType::StopTrigger>::CreateAllocator(g_systemStopTriggerPoolSize);
 	SSystemRequestData<ESystemRequestType::RegisterObject>::CreateAllocator(g_systemRegisterObjectPoolSize);
 	SSystemRequestData<ESystemRequestType::ReleaseObject>::CreateAllocator(g_systemReleaseObjectPoolSize);
@@ -621,6 +675,7 @@ void AllocateMemoryPools()
 
 	// Object requests
 	SObjectRequestData<EObjectRequestType::ExecuteTrigger>::CreateAllocator(g_objectExecuteTriggerPoolSize);
+	SObjectRequestData<EObjectRequestType::ExecuteTriggerWithCallbacks>::CreateAllocator(g_objectExecuteTriggerWithCallbacksPoolSize);
 	SObjectRequestData<EObjectRequestType::StopTrigger>::CreateAllocator(g_objectStopTriggerPoolSize);
 	SObjectRequestData<EObjectRequestType::SetTransformation>::CreateAllocator(g_objectSetTransformationPoolSize);
 	SObjectRequestData<EObjectRequestType::SetParameter>::CreateAllocator(g_objectSetParameterPoolSize);
@@ -636,6 +691,8 @@ void AllocateMemoryPools()
 	SCallbackRequestData<ECallbackRequestType::ReportStartedTriggerConnectionInstance>::CreateAllocator(g_callbackReportStartedTriggerConnectionInstancePoolSize);
 	SCallbackRequestData<ECallbackRequestType::ReportFinishedTriggerConnectionInstance>::CreateAllocator(g_callbackReportFinishedTriggerConnectionInstancePoolSize);
 	SCallbackRequestData<ECallbackRequestType::ReportFinishedTriggerInstance>::CreateAllocator(g_callbackReportFinishedTriggerInstancePoolSize);
+	SCallbackRequestData<ECallbackRequestType::ReportTriggerConnectionInstanceCallback>::CreateAllocator(g_callbackReportTriggerConnectionInstanceCallbackPoolSize);
+	SCallbackRequestData<ECallbackRequestType::SendTriggerInstanceCallback>::CreateAllocator(g_callbackSendTriggerInstanceCallbackPoolSize);
 	SCallbackRequestData<ECallbackRequestType::ReportPhysicalizedObject>::CreateAllocator(g_callbackReportPhysicalizedObjectPoolSize);
 	SCallbackRequestData<ECallbackRequestType::ReportVirtualizedObject>::CreateAllocator(g_callbackReportVirtualizedObjectPoolSize);
 }
@@ -658,6 +715,7 @@ void FreeMemoryPools()
 	// System requests
 	SSystemRequestData<ESystemRequestType::ExecuteTrigger>::FreeMemoryPool();
 	SSystemRequestData<ESystemRequestType::ExecuteTriggerEx>::FreeMemoryPool();
+	SSystemRequestData<ESystemRequestType::ExecuteTriggerWithCallbacks>::FreeMemoryPool();
 	SSystemRequestData<ESystemRequestType::StopTrigger>::FreeMemoryPool();
 	SSystemRequestData<ESystemRequestType::RegisterObject>::FreeMemoryPool();
 	SSystemRequestData<ESystemRequestType::ReleaseObject>::FreeMemoryPool();
@@ -666,6 +724,7 @@ void FreeMemoryPools()
 
 	// Object requests
 	SObjectRequestData<EObjectRequestType::ExecuteTrigger>::FreeMemoryPool();
+	SObjectRequestData<EObjectRequestType::ExecuteTriggerWithCallbacks>::FreeMemoryPool();
 	SObjectRequestData<EObjectRequestType::StopTrigger>::FreeMemoryPool();
 	SObjectRequestData<EObjectRequestType::SetTransformation>::FreeMemoryPool();
 	SObjectRequestData<EObjectRequestType::SetParameter>::FreeMemoryPool();
@@ -681,6 +740,8 @@ void FreeMemoryPools()
 	SCallbackRequestData<ECallbackRequestType::ReportStartedTriggerConnectionInstance>::FreeMemoryPool();
 	SCallbackRequestData<ECallbackRequestType::ReportFinishedTriggerConnectionInstance>::FreeMemoryPool();
 	SCallbackRequestData<ECallbackRequestType::ReportFinishedTriggerInstance>::FreeMemoryPool();
+	SCallbackRequestData<ECallbackRequestType::ReportTriggerConnectionInstanceCallback>::FreeMemoryPool();
+	SCallbackRequestData<ECallbackRequestType::SendTriggerInstanceCallback>::FreeMemoryPool();
 	SCallbackRequestData<ECallbackRequestType::ReportPhysicalizedObject>::FreeMemoryPool();
 	SCallbackRequestData<ECallbackRequestType::ReportVirtualizedObject>::FreeMemoryPool();
 }
@@ -1280,6 +1341,14 @@ void CSystem::ExecuteTrigger(ControlId const triggerId, SRequestUserData const& 
 }
 
 //////////////////////////////////////////////////////////////////////////
+void CSystem::ExecuteTriggerWithCallbacks(STriggerCallbackData const& callbackData, SRequestUserData const& userData /* = SRequestUserData::GetEmptyObject() */)
+{
+	SSystemRequestData<ESystemRequestType::ExecuteTriggerWithCallbacks> const requestData(callbackData);
+	CRequest const request(&requestData, userData);
+	PushRequest(request);
+}
+
+//////////////////////////////////////////////////////////////////////////
 void CSystem::StopTrigger(ControlId const triggerId /* = CryAudio::InvalidControlId */, SRequestUserData const& userData /* = SAudioRequestUserData::GetEmptyObject() */)
 {
 	if (triggerId != InvalidControlId)
@@ -1414,6 +1483,14 @@ void CSystem::ReportStartedTriggerConnectionInstance(TriggerInstanceId const tri
 void CSystem::ReportFinishedTriggerConnectionInstance(TriggerInstanceId const triggerInstanceId, ETriggerResult const result, SRequestUserData const& userData /*= SRequestUserData::GetEmptyObject()*/)
 {
 	SCallbackRequestData<ECallbackRequestType::ReportFinishedTriggerConnectionInstance> const requestData(triggerInstanceId, result);
+	CRequest const request(&requestData, userData);
+	PushRequest(request);
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CSystem::ReportTriggerConnectionInstanceCallback(TriggerInstanceId const triggerInstanceId, ESystemEvents const systemEvent, SRequestUserData const& userData /* = SRequestUserData::GetEmptyObject() */)
+{
+	SCallbackRequestData<ECallbackRequestType::ReportTriggerConnectionInstanceCallback> const requestData(triggerInstanceId, systemEvent);
 	CRequest const request(&requestData, userData);
 	PushRequest(request);
 }
@@ -1914,6 +1991,20 @@ ERequestStatus CSystem::ProcessSystemRequest(CRequest const& request)
 			if (pTrigger != nullptr)
 			{
 				pTrigger->Execute(request.pOwner, request.pUserData, request.pUserDataOwner, request.flags);
+				result = ERequestStatus::Success;
+			}
+
+			break;
+		}
+	case ESystemRequestType::ExecuteTriggerWithCallbacks:
+		{
+			auto const pRequestData = static_cast<SSystemRequestData<ESystemRequestType::ExecuteTriggerWithCallbacks> const* const>(request.GetData());
+
+			CTrigger const* const pTrigger = stl::find_in_map(g_triggerLookup, pRequestData->data.triggerId, nullptr);
+
+			if (pTrigger != nullptr)
+			{
+				pTrigger->ExecuteWithCallbacks(pRequestData->data, request.pOwner, request.pUserData, request.pUserDataOwner, request.flags);
 				result = ERequestStatus::Success;
 			}
 
@@ -2612,7 +2703,43 @@ ERequestStatus CSystem::ProcessCallbackRequest(CRequest& request)
 			}
 			else if (std::find(g_triggerInstanceIds.begin(), g_triggerInstanceIds.end(), pRequestData->triggerInstanceId) != g_triggerInstanceIds.end())
 			{
-				ReportFinishedGlobalTriggerInstance(pRequestData->triggerInstanceId, pRequestData->result);
+				ReportFinishedTriggerInstance(pRequestData->triggerInstanceId, pRequestData->result);
+
+#if defined(CRY_AUDIO_USE_DEBUG_CODE)
+				objectFound = true;
+#endif      // CRY_AUDIO_USE_DEBUG_CODE
+			}
+
+#if defined(CRY_AUDIO_USE_DEBUG_CODE)
+			CRY_ASSERT_MESSAGE(objectFound, "TriggerInstanceId %u is not mapped to an object during %s", pRequestData->triggerInstanceId, __FUNCTION__);
+#endif  // CRY_AUDIO_USE_DEBUG_CODE
+
+			result = ERequestStatus::Success;
+
+			break;
+		}
+	case ECallbackRequestType::ReportTriggerConnectionInstanceCallback:
+		{
+			auto const pRequestData = static_cast<SCallbackRequestData<ECallbackRequestType::ReportTriggerConnectionInstanceCallback> const*>(request.GetData());
+
+#if defined(CRY_AUDIO_USE_DEBUG_CODE)
+			bool objectFound = false;
+#endif  // CRY_AUDIO_USE_DEBUG_CODE
+
+			CObject* const pObject = stl::find_in_map(g_triggerInstanceIdLookup, pRequestData->triggerInstanceId, nullptr);
+
+			if (pObject != nullptr)
+			{
+				pObject->ReportTriggerInstanceCallback(pRequestData->triggerInstanceId, pRequestData->events);
+
+#if defined(CRY_AUDIO_USE_DEBUG_CODE)
+				objectFound = true;
+#endif    // CRY_AUDIO_USE_DEBUG_CODE
+
+			}
+			else if (std::find(g_triggerInstanceIds.begin(), g_triggerInstanceIds.end(), pRequestData->triggerInstanceId) != g_triggerInstanceIds.end())
+			{
+				ReportTriggerInstanceCallback(pRequestData->triggerInstanceId, pRequestData->events);
 
 #if defined(CRY_AUDIO_USE_DEBUG_CODE)
 				objectFound = true;
@@ -2707,6 +2834,20 @@ ERequestStatus CSystem::ProcessObjectRequest(CRequest const& request)
 			if (pTrigger != nullptr)
 			{
 				pTrigger->Execute(*pObject, request.pOwner, request.pUserData, request.pUserDataOwner, request.flags, pRequestData->entityId);
+				result = ERequestStatus::Success;
+			}
+
+			break;
+		}
+	case EObjectRequestType::ExecuteTriggerWithCallbacks:
+		{
+			auto const pRequestData = static_cast<SObjectRequestData<EObjectRequestType::ExecuteTriggerWithCallbacks> const*>(request.GetData());
+
+			CTrigger const* const pTrigger = stl::find_in_map(g_triggerLookup, pRequestData->data.triggerId, nullptr);
+
+			if (pTrigger != nullptr)
+			{
+				pTrigger->ExecuteWithCallbacks(*pObject, pRequestData->data, request.pOwner, request.pUserData, request.pUserDataOwner, request.flags, pRequestData->entityId);
 				result = ERequestStatus::Success;
 			}
 
@@ -3022,6 +3163,14 @@ void CSystem::NotifyListener(CRequest const& request)
 
 					break;
 				}
+			case ESystemRequestType::ExecuteTriggerWithCallbacks:
+				{
+					auto const pRequestData = static_cast<SSystemRequestData<ESystemRequestType::ExecuteTriggerWithCallbacks> const*>(pBase);
+					controlID = pRequestData->data.triggerId;
+					systemEvent = ESystemEvents::TriggerExecuted;
+
+					break;
+				}
 			default:
 				{
 					break;
@@ -3042,6 +3191,22 @@ void CSystem::NotifyListener(CRequest const& request)
 					controlID = pRequestData->triggerId;
 					entityId = pRequestData->entityId;
 					systemEvent = ESystemEvents::TriggerFinished;
+
+					break;
+				}
+			case ECallbackRequestType::ReportTriggerConnectionInstanceCallback:
+				{
+					auto const pRequestData = static_cast<SCallbackRequestData<ECallbackRequestType::ReportTriggerConnectionInstanceCallback> const*>(pBase);
+					systemEvent = pRequestData->events;
+
+					break;
+				}
+			case ECallbackRequestType::SendTriggerInstanceCallback:
+				{
+					auto const pRequestData = static_cast<SCallbackRequestData<ECallbackRequestType::SendTriggerInstanceCallback> const*>(pBase);
+					controlID = pRequestData->triggerId;
+					entityId = pRequestData->entityId;
+					systemEvent = pRequestData->events;
 
 					break;
 				}
@@ -3075,6 +3240,15 @@ void CSystem::NotifyListener(CRequest const& request)
 				{
 					auto const pRequestData = static_cast<SObjectRequestData<EObjectRequestType::ExecuteTrigger> const*>(pBase);
 					controlID = pRequestData->triggerId;
+					entityId = pRequestData->entityId;
+					systemEvent = ESystemEvents::TriggerExecuted;
+
+					break;
+				}
+			case EObjectRequestType::ExecuteTriggerWithCallbacks:
+				{
+					auto const pRequestData = static_cast<SObjectRequestData<EObjectRequestType::ExecuteTriggerWithCallbacks> const*>(pBase);
+					controlID = pRequestData->data.triggerId;
 					entityId = pRequestData->entityId;
 					systemEvent = ESystemEvents::TriggerExecuted;
 
@@ -3691,6 +3865,7 @@ void DrawRequestDebugInfo(IRenderAuxGeom& auxGeom, float const posX, float posY)
 	DrawRequestCategoryInfo(auxGeom, posX, posY, "System");
 	DrawRequestPeakInfo(auxGeom, posX, posY, "ExecuteTrigger", g_requestPeaks.systemExecuteTrigger, g_systemExecuteTriggerPoolSize);
 	DrawRequestPeakInfo(auxGeom, posX, posY, "ExecuteTriggerEx", g_requestPeaks.systemExecuteTriggerEx, g_systemExecuteTriggerExPoolSize);
+	DrawRequestPeakInfo(auxGeom, posX, posY, "ExecuteTriggerWithCallbacks", g_requestPeaks.systemExecuteTriggerWithCallbacks, g_systemExecuteTriggerWithCallbacksPoolSize);
 	DrawRequestPeakInfo(auxGeom, posX, posY, "StopTrigger", g_requestPeaks.systemStopTrigger, g_systemStopTriggerPoolSize);
 	DrawRequestPeakInfo(auxGeom, posX, posY, "RegisterObject", g_requestPeaks.systemRegisterObject, g_systemRegisterObjectPoolSize);
 	DrawRequestPeakInfo(auxGeom, posX, posY, "ReleaseObject", g_requestPeaks.systemReleaseObject, g_systemReleaseObjectPoolSize);
@@ -3699,6 +3874,7 @@ void DrawRequestDebugInfo(IRenderAuxGeom& auxGeom, float const posX, float posY)
 
 	DrawRequestCategoryInfo(auxGeom, posX, posY, "Object");
 	DrawRequestPeakInfo(auxGeom, posX, posY, "ExecuteTrigger", g_requestPeaks.objectExecuteTrigger, g_objectExecuteTriggerPoolSize);
+	DrawRequestPeakInfo(auxGeom, posX, posY, "ExecuteTriggerWithCallbacks", g_requestPeaks.objectExecuteTriggerWithCallbacks, g_objectExecuteTriggerWithCallbacksPoolSize);
 	DrawRequestPeakInfo(auxGeom, posX, posY, "StopTrigger", g_requestPeaks.objectStopTrigger, g_objectStopTriggerPoolSize);
 	DrawRequestPeakInfo(auxGeom, posX, posY, "SetTransformation", g_requestPeaks.objectSetTransformation, g_objectSetTransformationPoolSize);
 	DrawRequestPeakInfo(auxGeom, posX, posY, "SetParameter", g_requestPeaks.objectSetParameter, g_objectSetParameterPoolSize);
@@ -3714,6 +3890,8 @@ void DrawRequestDebugInfo(IRenderAuxGeom& auxGeom, float const posX, float posY)
 	DrawRequestPeakInfo(auxGeom, posX, posY, "ReportStartedTriggerConnectionInstance", g_requestPeaks.callbackReportStartedriggerConnectionInstance, g_callbackReportStartedTriggerConnectionInstancePoolSize);
 	DrawRequestPeakInfo(auxGeom, posX, posY, "ReportFinishedTriggerConnectionInstance", g_requestPeaks.callbackReportFinishedTriggerConnectionInstance, g_callbackReportFinishedTriggerConnectionInstancePoolSize);
 	DrawRequestPeakInfo(auxGeom, posX, posY, "ReportFinishedTriggerInstance", g_requestPeaks.callbackReportFinishedTriggerInstance, g_callbackReportFinishedTriggerInstancePoolSize);
+	DrawRequestPeakInfo(auxGeom, posX, posY, "ReportTriggerConnectionInstanceCallback", g_requestPeaks.callbackReportTriggerConnectionInstanceCallback, g_callbackReportTriggerConnectionInstanceCallbackPoolSize);
+	DrawRequestPeakInfo(auxGeom, posX, posY, "SendTriggerInstanceCallback", g_requestPeaks.callbackSendTriggerInstanceCallback, g_callbackSendTriggerInstanceCallbackPoolSize);
 	DrawRequestPeakInfo(auxGeom, posX, posY, "ReportPhysicalizedObject", g_requestPeaks.callbackReportPhysicalizedObject, g_callbackReportPhysicalizedObjectPoolSize);
 	DrawRequestPeakInfo(auxGeom, posX, posY, "ReportVirtualizedObject", g_requestPeaks.callbackReportVirtualizedObject, g_callbackReportVirtualizedObjectPoolSize);
 }

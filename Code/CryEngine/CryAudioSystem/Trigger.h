@@ -51,7 +51,23 @@ public:
 		ERequestFlags const flags = ERequestFlags::None,
 		EntityId const entityId = INVALID_ENTITYID) const;
 
+	void ExecuteWithCallbacks(
+		CObject& object,
+		STriggerCallbackData const& callbackData,
+		void* const pOwner = nullptr,
+		void* const pUserData = nullptr,
+		void* const pUserDataOwner = nullptr,
+		ERequestFlags const flags = ERequestFlags::None,
+		EntityId const entityId = INVALID_ENTITYID) const;
+
 	void Execute(
+		void* const pOwner = nullptr,
+		void* const pUserData = nullptr,
+		void* const pUserDataOwner = nullptr,
+		ERequestFlags const flags = ERequestFlags::None) const;
+
+	void ExecuteWithCallbacks(
+		STriggerCallbackData const& callbackData,
 		void* const pOwner = nullptr,
 		void* const pUserData = nullptr,
 		void* const pUserDataOwner = nullptr,

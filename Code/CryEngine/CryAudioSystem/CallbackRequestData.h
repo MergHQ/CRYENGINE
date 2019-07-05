@@ -19,6 +19,8 @@ enum class ECallbackRequestType : EnumFlagsType
 	ReportStartedTriggerConnectionInstance,
 	ReportFinishedTriggerConnectionInstance,
 	ReportFinishedTriggerInstance,
+	ReportTriggerConnectionInstanceCallback,
+	SendTriggerInstanceCallback,
 	ReportPhysicalizedObject,
 	ReportVirtualizedObject,
 	ReportContextActivated,
@@ -117,6 +119,53 @@ struct SCallbackRequestData<ECallbackRequestType::ReportFinishedTriggerInstance>
 
 	ControlId const triggerId;
 	EntityId const  entityId;
+};
+
+//////////////////////////////////////////////////////////////////////////
+template<>
+struct SCallbackRequestData<ECallbackRequestType::ReportTriggerConnectionInstanceCallback> final : public SCallbackRequestDataBase, public CPoolObject<SCallbackRequestData<ECallbackRequestType::ReportTriggerConnectionInstanceCallback>, stl::PSyncMultiThread>
+{
+	explicit SCallbackRequestData(TriggerInstanceId const triggerInstanceId_, ESystemEvents const events_)
+		: SCallbackRequestDataBase(ECallbackRequestType::ReportTriggerConnectionInstanceCallback)
+		, triggerInstanceId(triggerInstanceId_)
+		, events(events_)
+	{}
+
+	explicit SCallbackRequestData(SCallbackRequestData<ECallbackRequestType::ReportTriggerConnectionInstanceCallback> const* const pCRData)
+		: SCallbackRequestDataBase(ECallbackRequestType::ReportTriggerConnectionInstanceCallback)
+		, triggerInstanceId(pCRData->triggerInstanceId)
+		, events(pCRData->events)
+	{}
+
+	virtual ~SCallbackRequestData() override = default;
+
+	TriggerInstanceId const triggerInstanceId;
+	ESystemEvents const     events;
+};
+
+//////////////////////////////////////////////////////////////////////////
+template<>
+struct SCallbackRequestData<ECallbackRequestType::SendTriggerInstanceCallback> final : public SCallbackRequestDataBase, public CPoolObject<SCallbackRequestData<ECallbackRequestType::SendTriggerInstanceCallback>, stl::PSyncNone> // Intentionally not PSyncMultiThread because this gets only called from the audio thread.
+{
+	explicit SCallbackRequestData(ControlId const triggerId_, EntityId const entityId_, ESystemEvents const events_)
+		: SCallbackRequestDataBase(ECallbackRequestType::SendTriggerInstanceCallback)
+		, triggerId(triggerId_)
+		, entityId(entityId_)
+		, events(events_)
+	{}
+
+	explicit SCallbackRequestData(SCallbackRequestData<ECallbackRequestType::SendTriggerInstanceCallback> const* const pCRData)
+		: SCallbackRequestDataBase(ECallbackRequestType::SendTriggerInstanceCallback)
+		, triggerId(pCRData->triggerId)
+		, entityId(pCRData->entityId)
+		, events(pCRData->events)
+	{}
+
+	virtual ~SCallbackRequestData() override = default;
+
+	ControlId const     triggerId;
+	EntityId const      entityId;
+	ESystemEvents const events;
 };
 
 //////////////////////////////////////////////////////////////////////////

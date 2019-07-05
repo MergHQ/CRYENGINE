@@ -48,6 +48,12 @@ ETriggerResult CSnapshot::Execute(IObject* const pIObject, TriggerInstanceId con
 }
 
 //////////////////////////////////////////////////////////////////////////
+ETriggerResult CSnapshot::ExecuteWithCallbacks(IObject* const pIObject, TriggerInstanceId const triggerInstanceId, STriggerCallbackData const& callbackData)
+{
+	return Execute(pIObject, triggerInstanceId);
+}
+
+//////////////////////////////////////////////////////////////////////////
 void CSnapshot::Stop(IObject* const pIObject)
 {
 	criAtomEx_ApplyDspBusSnapshot(nullptr, m_changeoverTime);

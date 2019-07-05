@@ -57,14 +57,12 @@ public:
 
 			InputPortConfig_Void("Play",                        _HELP("Executes the Play Trigger")),
 			InputPortConfig_Void("Stop",                        _HELP("Executes the Stop Trigger if it is provided, o/w stops all events started by the Start Trigger")),
-			{ 0 }
-		};
+			{ 0 } };
 
 		static const SOutputPortConfig outputs[] =
 		{
 			OutputPortConfig_Void("Done", _HELP("Activated when all of the triggered events have finished playing")),
-			{ 0 }
-		};
+			{ 0 } };
 
 		config.pInputPorts = inputs;
 		config.pOutputPorts = outputs;
@@ -168,15 +166,13 @@ private:
 		ePlayMode_None = 0,
 		ePlayMode_Play = 1,
 		ePlayMode_PlayStop = 2,
-		ePlayMode_ForceStop = 3,
-	};
+		ePlayMode_ForceStop = 3, };
 
 	enum EFlowNodeAudioTriggerFlags : CryAudio::EnumFlagsType
 	{
 		eFlowNodeAudioTriggerFlags_None = 0,
 		eFlowNodeAudioTriggerFlags_IsPlaying = BIT(0),
-		eFlowNodeAudioTriggerFlags_IsListener = BIT(1),
-	};
+		eFlowNodeAudioTriggerFlags_IsListener = BIT(1), };
 
 	//////////////////////////////////////////////////////////////////////////
 	static void OnAudioTriggerFinished(CryAudio::SRequestInfo const* const pAudioRequestInfo)
@@ -238,7 +234,7 @@ private:
 			{
 			case ePlayMode_Play:
 				{
-					CryAudio::SRequestUserData const userData(CryAudio::ERequestFlags::DoneCallbackOnExternalThread, this, reinterpret_cast<void*>(static_cast<UINT_PTR>(m_playActivationInfo.pGraph->GetGraphId())), this);
+					CryAudio::SRequestUserData const userData(CryAudio::ERequestFlags::SubsequentCallbackOnExternalThread, this, reinterpret_cast<void*>(static_cast<UINT_PTR>(m_playActivationInfo.pGraph->GetGraphId())), this);
 					pIEntityAudioComponent->SetCurrentEnvironments();
 					pIEntityAudioComponent->ExecuteTrigger(audioTriggerId, CryAudio::DefaultAuxObjectId, INVALID_ENTITYID, userData);
 

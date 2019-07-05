@@ -65,6 +65,12 @@ ETriggerResult CSnapshot::Execute(IObject* const pIObject, TriggerInstanceId con
 }
 
 //////////////////////////////////////////////////////////////////////////
+ETriggerResult CSnapshot::ExecuteWithCallbacks(IObject* const pIObject, TriggerInstanceId const triggerInstanceId, STriggerCallbackData const& callbackData)
+{
+	return Execute(pIObject, triggerInstanceId);
+}
+
+//////////////////////////////////////////////////////////////////////////
 void CSnapshot::Stop(IObject* const pIObject)
 {
 	for (auto const& snapshotPair : g_activeSnapshots)

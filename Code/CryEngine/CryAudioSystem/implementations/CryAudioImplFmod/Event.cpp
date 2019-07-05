@@ -13,6 +13,9 @@ namespace Impl
 {
 namespace Fmod
 {
+constexpr FMOD_STUDIO_EVENT_CALLBACK_TYPE g_eventCallbackTypes = (FMOD_STUDIO_EVENT_CALLBACK_START_FAILED | FMOD_STUDIO_EVENT_CALLBACK_STOPPED);
+constexpr FMOD_STUDIO_EVENT_CALLBACK_TYPE g_programmerSoundCallbackTypes = (FMOD_STUDIO_EVENT_CALLBACK_CREATE_PROGRAMMER_SOUND | FMOD_STUDIO_EVENT_CALLBACK_DESTROY_PROGRAMMER_SOUND);
+
 //////////////////////////////////////////////////////////////////////////
 FMOD_RESULT F_CALLBACK EventCallback(FMOD_STUDIO_EVENT_CALLBACK_TYPE type, FMOD_STUDIO_EVENTINSTANCE* event, void* parameters)
 {
@@ -26,7 +29,29 @@ FMOD_RESULT F_CALLBACK EventCallback(FMOD_STUDIO_EVENT_CALLBACK_TYPE type, FMOD_
 
 		if (pEventInstance != nullptr)
 		{
-			pEventInstance->SetToBeRemoved();
+			switch (type)
+			{
+			case FMOD_STUDIO_EVENT_CALLBACK_START_FAILED: // Intentional fall-through.
+			case FMOD_STUDIO_EVENT_CALLBACK_STOPPED:
+				{
+					pEventInstance->SetToBeRemoved();
+					break;
+				}
+			case FMOD_STUDIO_EVENT_CALLBACK_TIMELINE_BEAT:
+				{
+					gEnv->pAudioSystem->ReportTriggerConnectionInstanceCallback(pEventInstance->GetTriggerInstanceId(), ESystemEvents::OnBeat);
+					break;
+				}
+			case FMOD_STUDIO_EVENT_CALLBACK_TIMELINE_MARKER:
+				{
+					gEnv->pAudioSystem->ReportTriggerConnectionInstanceCallback(pEventInstance->GetTriggerInstanceId(), ESystemEvents::OnUserMarker);
+					break;
+				}
+			default:
+				{
+					break;
+				}
+			}
 		}
 	}
 
@@ -45,38 +70,62 @@ FMOD_RESULT F_CALLBACK ProgrammerSoundCallback(FMOD_STUDIO_EVENT_CALLBACK_TYPE t
 
 		if (pEventInstance != nullptr)
 		{
-			if (type == FMOD_STUDIO_EVENT_CALLBACK_CREATE_PROGRAMMER_SOUND)
+			switch (type)
 			{
-				CRY_ASSERT_MESSAGE(pInOutParameters != nullptr, "pInOutParameters is null pointer during %s", __FUNCTION__);
-				auto const pInOutProperties = reinterpret_cast<FMOD_STUDIO_PROGRAMMER_SOUND_PROPERTIES*>(pInOutParameters);
-				char const* const szKey = pEventInstance->GetEvent().GetKey().c_str();
+			case FMOD_STUDIO_EVENT_CALLBACK_CREATE_PROGRAMMER_SOUND:
+				{
+					CRY_ASSERT_MESSAGE(pInOutParameters != nullptr, "pInOutParameters is null pointer during %s", __FUNCTION__);
+					auto const pInOutProperties = reinterpret_cast<FMOD_STUDIO_PROGRAMMER_SOUND_PROPERTIES*>(pInOutParameters);
+					char const* const szKey = pEventInstance->GetEvent().GetKey().c_str();
 
-				FMOD_STUDIO_SOUND_INFO soundInfo;
-				fmodResult = g_pStudioSystem->getSoundInfo(szKey, &soundInfo);
-				CRY_AUDIO_IMPL_FMOD_ASSERT_OK;
+					FMOD_STUDIO_SOUND_INFO soundInfo;
+					fmodResult = g_pStudioSystem->getSoundInfo(szKey, &soundInfo);
+					CRY_AUDIO_IMPL_FMOD_ASSERT_OK;
 
-				FMOD::Sound* pSound = nullptr;
-				FMOD_MODE const mode = FMOD_CREATECOMPRESSEDSAMPLE | FMOD_NONBLOCKING | FMOD_3D | soundInfo.mode;
-				fmodResult = g_pCoreSystem->createSound(soundInfo.name_or_data, mode, &soundInfo.exinfo, &pSound);
-				CRY_AUDIO_IMPL_FMOD_ASSERT_OK;
+					FMOD::Sound* pSound = nullptr;
+					FMOD_MODE const mode = FMOD_CREATECOMPRESSEDSAMPLE | FMOD_NONBLOCKING | FMOD_3D | soundInfo.mode;
+					fmodResult = g_pCoreSystem->createSound(soundInfo.name_or_data, mode, &soundInfo.exinfo, &pSound);
+					CRY_AUDIO_IMPL_FMOD_ASSERT_OK;
 
-				pInOutProperties->sound = reinterpret_cast<FMOD_SOUND*>(pSound);
-				pInOutProperties->subsoundIndex = soundInfo.subsoundindex;
-			}
-			else if (type == FMOD_STUDIO_EVENT_CALLBACK_DESTROY_PROGRAMMER_SOUND)
-			{
-				CRY_ASSERT_MESSAGE(pInOutParameters != nullptr, "pInOutParameters is null pointer during %s", __FUNCTION__);
-				auto const pInOutProperties = reinterpret_cast<FMOD_STUDIO_PROGRAMMER_SOUND_PROPERTIES*>(pInOutParameters);
+					pInOutProperties->sound = reinterpret_cast<FMOD_SOUND*>(pSound);
+					pInOutProperties->subsoundIndex = soundInfo.subsoundindex;
 
-				auto* pSound = reinterpret_cast<FMOD::Sound*>(pInOutProperties->sound);
+					break;
+				}
+			case FMOD_STUDIO_EVENT_CALLBACK_DESTROY_PROGRAMMER_SOUND:
+				{
+					CRY_ASSERT_MESSAGE(pInOutParameters != nullptr, "pInOutParameters is null pointer during %s", __FUNCTION__);
+					auto const pInOutProperties = reinterpret_cast<FMOD_STUDIO_PROGRAMMER_SOUND_PROPERTIES*>(pInOutParameters);
 
-				fmodResult = pSound->release();
-				CRY_AUDIO_IMPL_FMOD_ASSERT_OK;
-			}
-			else if ((type == FMOD_STUDIO_EVENT_CALLBACK_START_FAILED) || (type == FMOD_STUDIO_EVENT_CALLBACK_STOPPED))
-			{
-				CRY_AUDIO_IMPL_FMOD_ASSERT_OK;
-				pEventInstance->SetToBeRemoved();
+					auto* pSound = reinterpret_cast<FMOD::Sound*>(pInOutProperties->sound);
+
+					fmodResult = pSound->release();
+					CRY_AUDIO_IMPL_FMOD_ASSERT_OK;
+
+					break;
+				}
+			case FMOD_STUDIO_EVENT_CALLBACK_START_FAILED:   // Intentional fall-through.
+			case FMOD_STUDIO_EVENT_CALLBACK_STOPPED:
+				{
+					CRY_AUDIO_IMPL_FMOD_ASSERT_OK;
+					pEventInstance->SetToBeRemoved();
+
+					break;
+				}
+			case FMOD_STUDIO_EVENT_CALLBACK_TIMELINE_BEAT:
+				{
+					gEnv->pAudioSystem->ReportTriggerConnectionInstanceCallback(pEventInstance->GetTriggerInstanceId(), ESystemEvents::OnBeat);
+					break;
+				}
+			case FMOD_STUDIO_EVENT_CALLBACK_TIMELINE_MARKER:
+				{
+					gEnv->pAudioSystem->ReportTriggerConnectionInstanceCallback(pEventInstance->GetTriggerInstanceId(), ESystemEvents::OnUserMarker);
+					break;
+				}
+			default:
+				{
+					break;
+				}
 			}
 		}
 	}
@@ -92,6 +141,29 @@ CEvent::~CEvent()
 
 //////////////////////////////////////////////////////////////////////////
 ETriggerResult CEvent::Execute(IObject* const pIObject, TriggerInstanceId const triggerInstanceId)
+{
+	return ExecuteInternally(pIObject, triggerInstanceId, g_eventCallbackTypes);
+}
+
+//////////////////////////////////////////////////////////////////////////
+ETriggerResult CEvent::ExecuteWithCallbacks(IObject* const pIObject, TriggerInstanceId const triggerInstanceId, STriggerCallbackData const& callbackData)
+{
+	FMOD_STUDIO_EVENT_CALLBACK_TYPE callbackTypes = g_eventCallbackTypes;
+
+	if ((callbackData.events & ESystemEvents::OnBeat) != 0)
+	{
+		callbackTypes |= FMOD_STUDIO_EVENT_CALLBACK_TIMELINE_BEAT;
+	}
+
+	if ((callbackData.events & ESystemEvents::OnUserMarker) != 0)
+	{
+		callbackTypes |= FMOD_STUDIO_EVENT_CALLBACK_TIMELINE_MARKER;
+	}
+	return ExecuteInternally(pIObject, triggerInstanceId, callbackTypes);
+}
+
+//////////////////////////////////////////////////////////////////////////
+ETriggerResult CEvent::ExecuteInternally(IObject* const pIObject, TriggerInstanceId const triggerInstanceId, FMOD_STUDIO_EVENT_CALLBACK_TYPE const callbackTypes)
 {
 	ETriggerResult result = ETriggerResult::Failure;
 
@@ -155,11 +227,11 @@ ETriggerResult CEvent::Execute(IObject* const pIObject, TriggerInstanceId const 
 
 				if ((m_flags& EEventFlags::HasProgrammerSound) != 0)
 				{
-					fmodResult = pEventInstance->GetFmodEventInstance()->setCallback(ProgrammerSoundCallback);
+					fmodResult = pEventInstance->GetFmodEventInstance()->setCallback(ProgrammerSoundCallback, callbackTypes | g_programmerSoundCallbackTypes);
 				}
 				else
 				{
-					fmodResult = pEventInstance->GetFmodEventInstance()->setCallback(EventCallback, FMOD_STUDIO_EVENT_CALLBACK_START_FAILED | FMOD_STUDIO_EVENT_CALLBACK_STOPPED);
+					fmodResult = pEventInstance->GetFmodEventInstance()->setCallback(EventCallback, callbackTypes);
 				}
 
 				CRY_AUDIO_IMPL_FMOD_ASSERT_OK;

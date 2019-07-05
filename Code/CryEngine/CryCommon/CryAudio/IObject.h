@@ -1,10 +1,9 @@
 // Copyright 2001-2018 Crytek GmbH / Crytek Group. All rights reserved.
 
 #pragma once
-#include "IAudioInterfacesCommonData.h"
-#include <CryEntitySystem/IEntityBasicTypes.h>
 
 #include "IAudioInterfacesCommonData.h"
+#include <CryEntitySystem/IEntityBasicTypes.h>
 
 /**
  * @namespace CryAudio
@@ -16,6 +15,8 @@ namespace CryAudio
  * @struct CryAudio::IObject
  * @brief A struct exposing public methods to interact with audio objects.
  */
+struct STriggerCallbackData;
+
 struct IObject
 {
 	// <interfuscator:shuffle>
@@ -32,6 +33,16 @@ struct IObject
 	 * @see StopTrigger
 	 */
 	virtual void ExecuteTrigger(ControlId const triggerId, EntityId const entityId = INVALID_ENTITYID, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) = 0;
+
+	/**
+	 * Executes the passed trigger ID on this audio object and registers the trigger for callbacks to get received.
+	 * @param callbackData - struct to pass data for callbacks to the request.
+	 * @param entityId - ID of the entity that will receive the started/stopped callback depending on what it registered to.
+	 * @param userData - optional struct used to pass additional data to the internal request.
+	 * @return void
+	 * @see StopTrigger
+	 */
+	virtual void ExecuteTriggerWithCallbacks(STriggerCallbackData const& callbackData, EntityId const entityId = INVALID_ENTITYID, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) = 0;
 
 	/**
 	 * Stops all instances of the passed trigger ID or all instances of all active triggers if CryAudio::InvalidControlId (default) is passed on this audio object.

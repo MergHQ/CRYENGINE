@@ -164,6 +164,12 @@ ETriggerResult CEvent::Execute(IObject* const pIObject, TriggerInstanceId const 
 }
 
 //////////////////////////////////////////////////////////////////////////
+ETriggerResult CEvent::ExecuteWithCallbacks(IObject* const pIObject, TriggerInstanceId const triggerInstanceId, STriggerCallbackData const& callbackData)
+{
+	return Execute(pIObject, triggerInstanceId);
+}
+
+//////////////////////////////////////////////////////////////////////////
 void CEvent::Stop(IObject* const pIObject)
 {
 	auto const pObject = static_cast<CObject*>(pIObject);

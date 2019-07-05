@@ -35,7 +35,7 @@ float CSpeakerManager::s_defaultPauseAfterLines = 0.2f;
 CSpeakerManager::CSpeakerManager() : m_listeners(2)
 {
 	//the audio callbacks we are interested in, all related to audio-asset finished or failed to start
-  CryAudio::ESystemEvents events = CryAudio::ESystemEvents::TriggerExecuted | CryAudio::ESystemEvents::TriggerFinished;
+	CryAudio::ESystemEvents events = CryAudio::ESystemEvents::TriggerExecuted | CryAudio::ESystemEvents::TriggerFinished;
 	gEnv->pAudioSystem->AddRequestListener(&CSpeakerManager::OnAudioCallback, this, events);
 
 	m_audioParameterIdGlobal = CryAudio::InvalidControlId;
@@ -150,7 +150,7 @@ void CSpeakerManager::Update()
 	}
 
 	//remove finished speakers
-	for (SpeakerList::iterator it = m_activeSpeakers.begin(); it != m_activeSpeakers.end(); )
+	for (SpeakerList::iterator it = m_activeSpeakers.begin(); it != m_activeSpeakers.end();)
 	{
 		if (it->endingConditions == eEC_Done)
 		{
@@ -211,7 +211,7 @@ void CSpeakerManager::Update()
 		if (!m_queuedSpeakers.empty())
 		{
 			QueuedSpeakerList m_queuedSpeakersCopy = m_queuedSpeakers;
-			for (auto itActorAndFinishTime = m_recentlyFinishedSpeakers.begin(); itActorAndFinishTime != m_recentlyFinishedSpeakers.end(); )
+			for (auto itActorAndFinishTime = m_recentlyFinishedSpeakers.begin(); itActorAndFinishTime != m_recentlyFinishedSpeakers.end();)
 			{
 				if (itActorAndFinishTime->second + s_delayBeforeExecutingQueuedLines < currentTime)
 				{
@@ -347,7 +347,7 @@ DRS::ISpeakerManager::IListener::eLineEvent CSpeakerManager::StartSpeaking(DRS::
 				{
 					//soft interruption: we execute the stop trigger on the old line. That trigger should cause the old line to end after a while. And only then, do we start the playback of the next line
 					pLine = (pLineSet) ? pLineSet->PickLine() : nullptr;
-					CryAudio::SRequestUserData const userData(CryAudio::ERequestFlags::DoneCallbackOnExternalThread | CryAudio::ERequestFlags::CallbackOnExternalOrCallingThread, this, (void* const)(pLine), (void* const)(activateSpeaker.pActor));
+					CryAudio::SRequestUserData const userData(CryAudio::ERequestFlags::SubsequentCallbackOnExternalThread | CryAudio::ERequestFlags::CallbackOnExternalOrCallingThread, this, (void* const)(pLine), (void* const)(activateSpeaker.pActor));
 					if (!pEntityAudioProxy->ExecuteTrigger(activateSpeaker.stopTriggerID, activateSpeaker.speechAuxObjectId, INVALID_ENTITYID, userData))
 					{
 						//failed to start the stop trigger, therefore we fallback to hard-interruption by stopping the start trigger
@@ -477,7 +477,7 @@ bool CSpeakerManager::CancelSpeaking(const DRS::IResponseActor* pActor, int maxP
 
 	if (bCancelQueuedLines)
 	{
-		for (QueuedSpeakerList::iterator itQueued = m_queuedSpeakers.begin(); itQueued != m_queuedSpeakers.end(); )
+		for (QueuedSpeakerList::iterator itQueued = m_queuedSpeakers.begin(); itQueued != m_queuedSpeakers.end();)
 		{
 			if ((itQueued->pActor == pActor || pActor == nullptr)
 			    && (itQueued->linePriority <= maxPrioToCancel || maxPrioToCancel < 0)
@@ -605,7 +605,7 @@ void CSpeakerManager::OnAudioCallback(const CryAudio::SRequestInfo* const pAudio
 //--------------------------------------------------------------------------------------------------
 void CSpeakerManager::OnActorRemoved(const CResponseActor* pActor)
 {
-	for (SpeakerList::iterator it = m_activeSpeakers.begin(); it != m_activeSpeakers.end(); )
+	for (SpeakerList::iterator it = m_activeSpeakers.begin(); it != m_activeSpeakers.end();)
 	{
 		if (it->pActor == pActor)
 		{
@@ -618,7 +618,7 @@ void CSpeakerManager::OnActorRemoved(const CResponseActor* pActor)
 		}
 	}
 
-	for (QueuedSpeakerList::iterator itQueued = m_queuedSpeakers.begin(); itQueued != m_queuedSpeakers.end(); )
+	for (QueuedSpeakerList::iterator itQueued = m_queuedSpeakers.begin(); itQueued != m_queuedSpeakers.end();)
 	{
 		if (itQueued->pActor == pActor)
 		{
@@ -631,7 +631,7 @@ void CSpeakerManager::OnActorRemoved(const CResponseActor* pActor)
 		}
 	}
 
-	for (std::vector<std::pair<CResponseActor*, float>>::iterator itRecent = m_recentlyFinishedSpeakers.begin(); itRecent != m_recentlyFinishedSpeakers.end(); )
+	for (std::vector<std::pair<CResponseActor*, float>>::iterator itRecent = m_recentlyFinishedSpeakers.begin(); itRecent != m_recentlyFinishedSpeakers.end();)
 	{
 		if (itRecent->first == pActor)
 		{
@@ -752,13 +752,13 @@ void CSpeakerManager::ExecuteStartSpeaking(SSpeakInfo* pSpeakerInfoToUse)
 				pSpeakerInfoToUse->speechAuxObjectId = CryAudio::DefaultAuxObjectId;
 		}
 
-		CryAudio::SRequestUserData const userData(CryAudio::ERequestFlags::DoneCallbackOnExternalThread | CryAudio::ERequestFlags::CallbackOnExternalOrCallingThread, this, (void* const)(pSpeakerInfoToUse->pPickedLine), (void* const)(pSpeakerInfoToUse->pActor));
+		CryAudio::SRequestUserData const userData(CryAudio::ERequestFlags::SubsequentCallbackOnExternalThread | CryAudio::ERequestFlags::CallbackOnExternalOrCallingThread, this, (void* const)(pSpeakerInfoToUse->pPickedLine), (void* const)(pSpeakerInfoToUse->pActor));
 
 		bool bAudioPlaybackStarted = true;
 
 		if (pSpeakerInfoToUse->startTriggerID)
 		{
-			bAudioPlaybackStarted = pEntityAudioProxy->ExecuteTrigger(pSpeakerInfoToUse->startTriggerID, pSpeakerInfoToUse->speechAuxObjectId,INVALID_ENTITYID, userData);
+			bAudioPlaybackStarted = pEntityAudioProxy->ExecuteTrigger(pSpeakerInfoToUse->startTriggerID, pSpeakerInfoToUse->speechAuxObjectId, INVALID_ENTITYID, userData);
 		}
 
 		if (bAudioPlaybackStarted)

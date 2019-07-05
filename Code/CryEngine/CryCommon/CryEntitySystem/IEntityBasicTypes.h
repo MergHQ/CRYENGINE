@@ -311,7 +311,7 @@ enum class EEvent : uint64
 	NameChanged = BIT64(48),
 
 	//! Called when an event related to an audio trigger occurred.
-	//! REMARK:: Only sent for triggers that have their ERequestFlags set to receive Callbacks via (CallbackOnExternalOrCallingThread | DoneCallbackOnExternalThread) from the main-thread
+	//! REMARK:: Only sent for triggers that have their ERequestFlags set to receive Callbacks via (CallbackOnExternalOrCallingThread | SubsequentCallbackOnExternalThread) from the main-thread
 	//! nParam[0] stores a const CryAudio::SRequestInfo* const
 	AudioTriggerStarted = BIT64(49),
 	//! Remark: Will also be sent), if the trigger failed to start

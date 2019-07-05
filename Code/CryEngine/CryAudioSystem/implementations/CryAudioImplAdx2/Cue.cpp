@@ -96,6 +96,12 @@ ETriggerResult CCue::Execute(IObject* const pIObject, TriggerInstanceId const tr
 }
 
 //////////////////////////////////////////////////////////////////////////
+ETriggerResult CCue::ExecuteWithCallbacks(IObject* const pIObject, TriggerInstanceId const triggerInstanceId, STriggerCallbackData const& callbackData)
+{
+	return Execute(pIObject, triggerInstanceId);
+}
+
+//////////////////////////////////////////////////////////////////////////
 void CCue::Stop(IObject* const pIObject)
 {
 	auto const pObject = static_cast<CObject*>(pIObject);

@@ -269,7 +269,7 @@ void CTriggerComponent::Play()
 	if ((m_pIEntityAudioComponent != nullptr) && (m_playTrigger.m_id != CryAudio::InvalidControlId))
 	{
 		auto const pAuxObjectId = reinterpret_cast<void*>(static_cast<uintptr_t>(m_auxObjectId));
-		CryAudio::SRequestUserData const userData(CryAudio::ERequestFlags::DoneCallbackOnExternalThread | CryAudio::ERequestFlags::CallbackOnExternalOrCallingThread, this, pAuxObjectId);
+		CryAudio::SRequestUserData const userData(CryAudio::ERequestFlags::SubsequentCallbackOnExternalThread | CryAudio::ERequestFlags::CallbackOnExternalOrCallingThread, this, pAuxObjectId);
 		m_pIEntityAudioComponent->ExecuteTrigger(m_playTrigger.m_id, m_auxObjectId, m_pIEntityAudioComponent->GetEntityId(), userData);
 	}
 }
@@ -282,7 +282,7 @@ void CTriggerComponent::Stop()
 		if (m_stopTrigger.m_id != CryAudio::InvalidControlId)
 		{
 			auto const pAuxObjectId = reinterpret_cast<void*>(static_cast<uintptr_t>(m_auxObjectId));
-			CryAudio::SRequestUserData const userData(CryAudio::ERequestFlags::DoneCallbackOnExternalThread | CryAudio::ERequestFlags::CallbackOnExternalOrCallingThread, this, pAuxObjectId);
+			CryAudio::SRequestUserData const userData(CryAudio::ERequestFlags::SubsequentCallbackOnExternalThread | CryAudio::ERequestFlags::CallbackOnExternalOrCallingThread, this, pAuxObjectId);
 			m_pIEntityAudioComponent->ExecuteTrigger(m_stopTrigger.m_id, m_auxObjectId, m_pIEntityAudioComponent->GetEntityId(), userData);
 		}
 		else if (m_playTrigger.m_id != CryAudio::InvalidControlId)

@@ -48,6 +48,7 @@ public:
 
 	// CryAudio::Impl::ITriggerConnection
 	virtual ETriggerResult Execute(IObject* const pIObject, TriggerInstanceId const triggerInstanceId) override;
+	virtual ETriggerResult ExecuteWithCallbacks(IObject* const pIObject, TriggerInstanceId const triggerInstanceId, STriggerCallbackData const& callbackData) override;
 	virtual void           Stop(IObject* const pIObject) override;
 	// ~CryAudio::Impl::ITriggerConnection
 

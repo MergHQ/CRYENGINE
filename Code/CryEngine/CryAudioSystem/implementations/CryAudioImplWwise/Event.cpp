@@ -16,12 +16,134 @@ namespace Impl
 namespace Wwise
 {
 //////////////////////////////////////////////////////////////////////////
-void EndEventCallback(AkCallbackType callbackType, AkCallbackInfo* pCallbackInfo)
+AkCallbackType SystemToWwiseCallbacks(ESystemEvents const events)
 {
-	if ((callbackType == AK_EndOfEvent) && !g_pImpl->IsToBeReleased() && (pCallbackInfo->pCookie != nullptr))
+	int callbackTypes = AK_EndOfEvent;
+
+	if ((events& ESystemEvents::OnBar) != 0)
 	{
-		auto const pEventInstance = static_cast<CEventInstance*>(pCallbackInfo->pCookie);
-		pEventInstance->SetToBeRemoved();
+		callbackTypes |= AK_MusicSyncBar;
+	}
+
+	if ((events& ESystemEvents::OnBeat) != 0)
+	{
+		callbackTypes |= AK_MusicSyncBeat;
+	}
+
+	if ((events& ESystemEvents::OnEntry) != 0)
+	{
+		callbackTypes |= AK_MusicSyncEntry;
+	}
+
+	if ((events& ESystemEvents::OnExit) != 0)
+	{
+		callbackTypes |= AK_MusicSyncExit;
+	}
+
+	if ((events& ESystemEvents::OnGrid) != 0)
+	{
+		callbackTypes |= AK_MusicSyncGrid;
+	}
+
+	if ((events& ESystemEvents::OnSyncPoint) != 0)
+	{
+		callbackTypes |= AK_MusicSyncPoint;
+	}
+
+	if ((events& ESystemEvents::OnUserMarker) != 0)
+	{
+		callbackTypes |= AK_MusicSyncUserCue;
+	}
+
+	return static_cast<AkCallbackType>(callbackTypes);
+}
+
+//////////////////////////////////////////////////////////////////////////
+ESystemEvents WwiseToSystemCallback(AkCallbackType const callbackType)
+{
+	ESystemEvents events = ESystemEvents::None;
+
+	switch (callbackType)
+	{
+	case AK_MusicSyncBar:
+		{
+			events = ESystemEvents::OnBar;
+			break;
+		}
+	case AK_MusicSyncBeat:
+		{
+			events = ESystemEvents::OnBeat;
+			break;
+		}
+	case AK_MusicSyncEntry:
+		{
+			events = ESystemEvents::OnEntry;
+			break;
+		}
+	case AK_MusicSyncExit:
+		{
+			events = ESystemEvents::OnExit;
+			break;
+		}
+	case AK_MusicSyncGrid:
+		{
+			events = ESystemEvents::OnGrid;
+			break;
+		}
+	case AK_MusicSyncPoint:
+		{
+			events = ESystemEvents::OnSyncPoint;
+			break;
+		}
+	case AK_MusicSyncUserCue:
+		{
+			events = ESystemEvents::OnUserMarker;
+			break;
+		}
+	default:
+		{
+			break;
+		}
+	}
+
+	return events;
+}
+
+//////////////////////////////////////////////////////////////////////////
+void EventCallback(AkCallbackType callbackType, AkCallbackInfo* pCallbackInfo)
+{
+	switch (callbackType)
+	{
+	case AK_EndOfEvent:
+		{
+			if (!g_pImpl->IsToBeReleased() && (pCallbackInfo->pCookie != nullptr))
+			{
+				auto const pEventInstance = static_cast<CEventInstance*>(pCallbackInfo->pCookie);
+				pEventInstance->SetToBeRemoved();
+			}
+
+			break;
+		}
+	case AK_MusicSyncBar:     // Intentional fall-through.
+	case AK_MusicSyncBeat:    // Intentional fall-through.
+	case AK_MusicSyncEntry:   // Intentional fall-through.
+	case AK_MusicSyncExit:    // Intentional fall-through.
+	case AK_MusicSyncGrid:    // Intentional fall-through.
+	case AK_MusicSyncPoint:   // Intentional fall-through.
+	case AK_MusicSyncUserCue: // Intentional fall-through.
+		{
+			if (!g_pImpl->IsToBeReleased() && (pCallbackInfo->pCookie != nullptr))
+			{
+				auto const pEventInstance = static_cast<CEventInstance*>(pCallbackInfo->pCookie);
+				gEnv->pAudioSystem->ReportTriggerConnectionInstanceCallback(pEventInstance->GetTriggerInstanceId(), WwiseToSystemCallback(callbackType));
+			}
+
+			break;
+		}
+	default:
+		{
+			break;
+		}
 	}
 }
 
@@ -44,6 +166,18 @@ void PrepareEventCallback(
 //////////////////////////////////////////////////////////////////////////
 ETriggerResult CEvent::Execute(IObject* const pIObject, TriggerInstanceId const triggerInstanceId)
 {
+	return ExecuteInternally(pIObject, triggerInstanceId, AK_EndOfEvent);
+}
+
+//////////////////////////////////////////////////////////////////////////
+ETriggerResult CEvent::ExecuteWithCallbacks(IObject* const pIObject, TriggerInstanceId const triggerInstanceId, STriggerCallbackData const& callbackData)
+{
+	return ExecuteInternally(pIObject, triggerInstanceId, SystemToWwiseCallbacks(callbackData.events));
+}
+
+//////////////////////////////////////////////////////////////////////////
+ETriggerResult CEvent::ExecuteInternally(IObject* const pIObject, TriggerInstanceId const triggerInstanceId, AkCallbackType const callbackTypes)
+{
 	ETriggerResult result = ETriggerResult::Failure;
 
 	auto const pObject = static_cast<CObject*>(pIObject);
@@ -56,7 +190,7 @@ ETriggerResult CEvent::Execute(IObject* const pIObject, TriggerInstanceId const 
 
 	pObject->SetAuxSendValues();
 
-	AkPlayingID const playingId = AK::SoundEngine::PostEvent(m_id, pObject->GetId(), AK_EndOfEvent, &EndEventCallback, pEventInstance);
+	AkPlayingID const playingId = AK::SoundEngine::PostEvent(m_id, pObject->GetId(), callbackTypes, &EventCallback, pEventInstance);
 
 	if (playingId != AK_INVALID_PLAYING_ID)
 	{

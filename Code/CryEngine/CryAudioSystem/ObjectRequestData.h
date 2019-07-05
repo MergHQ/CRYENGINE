@@ -15,6 +15,7 @@ enum class EObjectRequestType : EnumFlagsType
 {
 	None,
 	ExecuteTrigger,
+	ExecuteTriggerWithCallbacks,
 	StopTrigger,
 	StopAllTriggers,
 	SetTransformation,
@@ -86,6 +87,28 @@ struct SObjectRequestData<EObjectRequestType::ExecuteTrigger> final : public SOb
 
 	ControlId const triggerId;
 	EntityId const  entityId;
+};
+
+//////////////////////////////////////////////////////////////////////////
+template<>
+struct SObjectRequestData<EObjectRequestType::ExecuteTriggerWithCallbacks> final : public SObjectRequestDataBase, public CPoolObject<SObjectRequestData<EObjectRequestType::ExecuteTriggerWithCallbacks>, stl::PSyncMultiThread>
+{
+	explicit SObjectRequestData(CObject* const pObject_, EntityId const entityId_, STriggerCallbackData const& data_)
+		: SObjectRequestDataBase(EObjectRequestType::ExecuteTriggerWithCallbacks, pObject_)
+		, entityId(entityId_)
+		, data(data_)
+	{}
+
+	explicit SObjectRequestData(SObjectRequestData<EObjectRequestType::ExecuteTriggerWithCallbacks> const* const pORData)
+		: SObjectRequestDataBase(EObjectRequestType::ExecuteTriggerWithCallbacks, pORData->pObject)
+		, entityId(pORData->entityId)
+		, data(pORData->data)
+	{}
+
+	virtual ~SObjectRequestData() override = default;
+
+	EntityId const             entityId;
+	STriggerCallbackData const data;
 };
 
 //////////////////////////////////////////////////////////////////////////

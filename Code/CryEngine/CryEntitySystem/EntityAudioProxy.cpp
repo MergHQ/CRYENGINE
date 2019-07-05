@@ -264,6 +264,48 @@ bool CEntityComponentAudio::ExecuteTrigger(
 }
 
 //////////////////////////////////////////////////////////////////////////
+bool CEntityComponentAudio::ExecuteTriggerWithCallbacks(
+	CryAudio::STriggerCallbackData const& callbackData,
+	CryAudio::AuxObjectId const audioAuxObjectId /* = DefaultAuxObjectId */,
+	EntityId const entityId /*= INVALID_ENTITYID*/,
+	CryAudio::SRequestUserData const& userData /* = SAudioRequestUserData::GetEmptyObject() */)
+{
+	if (m_pEntity != nullptr)
+	{
+		if (audioAuxObjectId != CryAudio::InvalidAuxObjectId)
+		{
+			AuxObjectPair const& audioObjectPair = GetAudioAuxObjectPair(audioAuxObjectId);
+
+			if (audioObjectPair.first != CryAudio::InvalidAuxObjectId)
+			{
+				audioObjectPair.second.pIObject->ExecuteTriggerWithCallbacks(callbackData, entityId, userData);
+				return true;
+			}
+#if defined(INCLUDE_ENTITYSYSTEM_PRODUCTION_CODE)
+			else
+			{
+				gEnv->pSystem->Warning(VALIDATOR_MODULE_ENTITYSYSTEM, VALIDATOR_WARNING, VALIDATOR_FLAG_AUDIO, nullptr, "<Audio> Could not find AuxAudioProxy with id '%u' on entity '%s' to execute trigger with id '%u'", audioAuxObjectId, m_pEntity->GetEntityTextDescription().c_str(), callbackData.triggerId);
+			}
+#endif  // INCLUDE_ENTITYSYSTEM_PRODUCTION_CODE
+		}
+		else
+		{
+			for (auto const& auxObjectPair : m_mapAuxObjects)
+			{
+				auxObjectPair.second.pIObject->ExecuteTriggerWithCallbacks(callbackData, entityId, userData);
+			}
+			return !m_mapAuxObjects.empty();
+		}
+	}
+	else
+	{
+		gEnv->pSystem->Warning(VALIDATOR_MODULE_ENTITYSYSTEM, VALIDATOR_WARNING, VALIDATOR_FLAG_AUDIO, nullptr, "<Audio> Trying to execute an audio trigger on an EntityAudioProxy without a valid entity!");
+	}
+
+	return false;
+}
+
+//////////////////////////////////////////////////////////////////////////
 void CEntityComponentAudio::StopTrigger(
 	CryAudio::ControlId const audioTriggerId,
 	CryAudio::AuxObjectId const audioAuxObjectId /* = DefaultAuxObjectId */,

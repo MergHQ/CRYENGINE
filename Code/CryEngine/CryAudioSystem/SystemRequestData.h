@@ -49,6 +49,7 @@ enum class ESystemRequestType : EnumFlagsType
 	ReleaseObject,
 	ExecuteTrigger,
 	ExecuteTriggerEx,
+	ExecuteTriggerWithCallbacks,
 	ExecuteDefaultTrigger,
 	StopTrigger,
 	StopAllTriggers,
@@ -337,10 +338,10 @@ struct SSystemRequestData<ESystemRequestType::SetParameter> final : public SSyst
 		, value(value_)
 	{}
 
-	explicit SSystemRequestData(SSystemRequestData<ESystemRequestType::SetParameter> const* const pASRData)
+	explicit SSystemRequestData(SSystemRequestData<ESystemRequestType::SetParameter> const* const pSRData)
 		: SSystemRequestDataBase(ESystemRequestType::SetParameter)
-		, parameterId(pASRData->parameterId)
-		, value(pASRData->value)
+		, parameterId(pSRData->parameterId)
+		, value(pSRData->value)
 	{}
 
 	virtual ~SSystemRequestData() override = default;
@@ -359,10 +360,10 @@ struct SSystemRequestData<ESystemRequestType::SetParameterGlobally> final : publ
 		, value(value_)
 	{}
 
-	explicit SSystemRequestData(SSystemRequestData<ESystemRequestType::SetParameterGlobally> const* const pASRData)
+	explicit SSystemRequestData(SSystemRequestData<ESystemRequestType::SetParameterGlobally> const* const pSRData)
 		: SSystemRequestDataBase(ESystemRequestType::SetParameterGlobally)
-		, parameterId(pASRData->parameterId)
-		, value(pASRData->value)
+		, parameterId(pSRData->parameterId)
+		, value(pSRData->value)
 	{}
 
 	virtual ~SSystemRequestData() override = default;
@@ -381,10 +382,10 @@ struct SSystemRequestData<ESystemRequestType::SetSwitchState> final : public SSy
 		, switchStateId(switchStateId_)
 	{}
 
-	explicit SSystemRequestData(SSystemRequestData<ESystemRequestType::SetSwitchState> const* const pASRData)
+	explicit SSystemRequestData(SSystemRequestData<ESystemRequestType::SetSwitchState> const* const pSRData)
 		: SSystemRequestDataBase(ESystemRequestType::SetSwitchState)
-		, switchId(pASRData->switchId)
-		, switchStateId(pASRData->switchStateId)
+		, switchId(pSRData->switchId)
+		, switchStateId(pSRData->switchStateId)
 	{}
 
 	virtual ~SSystemRequestData() override = default;
@@ -403,10 +404,10 @@ struct SSystemRequestData<ESystemRequestType::SetSwitchStateGlobally> final : pu
 		, switchStateId(switchStateId_)
 	{}
 
-	explicit SSystemRequestData(SSystemRequestData<ESystemRequestType::SetSwitchStateGlobally> const* const pASRData)
+	explicit SSystemRequestData(SSystemRequestData<ESystemRequestType::SetSwitchStateGlobally> const* const pSRData)
 		: SSystemRequestDataBase(ESystemRequestType::SetSwitchStateGlobally)
-		, switchId(pASRData->switchId)
-		, switchStateId(pASRData->switchStateId)
+		, switchId(pSRData->switchId)
+		, switchStateId(pSRData->switchStateId)
 	{}
 
 	virtual ~SSystemRequestData() override = default;
@@ -637,14 +638,33 @@ struct SSystemRequestData<ESystemRequestType::ExecuteTrigger> final : public SSy
 		, triggerId(triggerId_)
 	{}
 
-	explicit SSystemRequestData(SSystemRequestData<ESystemRequestType::ExecuteTrigger> const* const pASRData)
+	explicit SSystemRequestData(SSystemRequestData<ESystemRequestType::ExecuteTrigger> const* const pSRData)
 		: SSystemRequestDataBase(ESystemRequestType::ExecuteTrigger)
-		, triggerId(pASRData->triggerId)
+		, triggerId(pSRData->triggerId)
 	{}
 
 	virtual ~SSystemRequestData() override = default;
 
 	ControlId const triggerId;
+};
+
+//////////////////////////////////////////////////////////////////////////
+template<>
+struct SSystemRequestData<ESystemRequestType::ExecuteTriggerWithCallbacks> final : public SSystemRequestDataBase, public CPoolObject<SSystemRequestData<ESystemRequestType::ExecuteTriggerWithCallbacks>, stl::PSyncMultiThread>
+{
+	explicit SSystemRequestData(STriggerCallbackData const& data_)
+		: SSystemRequestDataBase(ESystemRequestType::ExecuteTriggerWithCallbacks)
+		, data(data_)
+	{}
+
+	explicit SSystemRequestData(SSystemRequestData<ESystemRequestType::ExecuteTriggerWithCallbacks> const* const pSRData)
+		: SSystemRequestDataBase(ESystemRequestType::ExecuteTriggerWithCallbacks)
+		, data(pSRData->data)
+	{}
+
+	virtual ~SSystemRequestData() override = default;
+
+	STriggerCallbackData const data;
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -712,9 +732,9 @@ struct SSystemRequestData<ESystemRequestType::StopTrigger> final : public SSyste
 		, triggerId(triggerId_)
 	{}
 
-	explicit SSystemRequestData(SSystemRequestData<ESystemRequestType::StopTrigger> const* const pASRData)
+	explicit SSystemRequestData(SSystemRequestData<ESystemRequestType::StopTrigger> const* const pSRData)
 		: SSystemRequestDataBase(ESystemRequestType::StopTrigger)
-		, triggerId(pASRData->triggerId)
+		, triggerId(pSRData->triggerId)
 	{}
 
 	virtual ~SSystemRequestData() override = default;

@@ -112,6 +112,7 @@ public:
 
 	// CryAudio::Impl::ITriggerConnection
 	virtual ETriggerResult Execute(IObject* const pIObject, TriggerInstanceId const triggerInstanceId) override;
+	virtual ETriggerResult ExecuteWithCallbacks(IObject* const pIObject, TriggerInstanceId const triggerInstanceId, STriggerCallbackData const& callbackData) override;
 	virtual void           Stop(IObject* const pIObject) override;
 	// ~CryAudio::Impl::ITriggerConnection
 
@@ -128,6 +129,8 @@ public:
 	void                                         SetToBeDestructed()     { m_toBeDestructed = true; }
 
 private:
+
+	ETriggerResult ExecuteInternally(IObject* const pIObject, TriggerInstanceId const triggerInstanceId, FMOD_STUDIO_EVENT_CALLBACK_TYPE const callbackTypes);
 
 	uint32 const                                m_id;
 	EActionType const                           m_actionType;

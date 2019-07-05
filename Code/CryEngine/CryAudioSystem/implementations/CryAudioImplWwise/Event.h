@@ -5,6 +5,7 @@
 #include <ITriggerConnection.h>
 #include <PoolObject.h>
 #include <AK/SoundEngine/Common/AkTypes.h>
+#include <AK/SoundEngine/Common/AkCallback.h>
 
 namespace CryAudio
 {
@@ -50,6 +51,7 @@ public:
 
 	// CryAudio::Impl::ITriggerConnection
 	virtual ETriggerResult Execute(IObject* const pIObject, TriggerInstanceId const triggerInstanceId) override;
+	virtual ETriggerResult ExecuteWithCallbacks(IObject* const pIObject, TriggerInstanceId const triggerInstanceId, STriggerCallbackData const& callbackData) override;
 	virtual void           Stop(IObject* const pIObject) override;
 	// ~CryAudio::Impl::ITriggerConnection
 
@@ -68,6 +70,8 @@ public:
 #endif  // CRY_AUDIO_IMPL_WWISE_USE_DEBUG_CODE
 
 private:
+
+	ETriggerResult ExecuteInternally(IObject* const pIObject, TriggerInstanceId const triggerInstanceId, AkCallbackType const callbackTypes);
 
 	AkUniqueID const m_id;
 	EEventFlags      m_flags;

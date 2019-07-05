@@ -49,7 +49,13 @@ struct ITriggerInfo;
  * @var CryAudio::ESystemEvents::TriggerFinished
  * @var CryAudio::ESystemEvents::ContextActivated
  * @var CryAudio::ESystemEvents::ContextDeactivated
- * @var CryAudio::ESystemEvents::All
+ * @var CryAudio::ESystemEvents::OnBar
+ * @var CryAudio::ESystemEvents::OnBeat
+ * @var CryAudio::ESystemEvents::OnEntry
+ * @var CryAudio::ESystemEvents::OnExit
+ * @var CryAudio::ESystemEvents::OnGrid
+ * @var CryAudio::ESystemEvents::OnSyncPoint
+ * @var CryAudio::ESystemEvents::OnUserMarker
  */
 enum class ESystemEvents : EnumFlagsType
 {
@@ -59,7 +65,13 @@ enum class ESystemEvents : EnumFlagsType
 	TriggerFinished    = BIT(2),     /**< Invoked once all of the spawned event instances finished playing. */
 	ContextActivated   = BIT(3),     /**< Invoked once a context got activated. */
 	ContextDeactivated = BIT(4),     /**< Invoked once a context got deactivated. */
-	All                = 0xFFFFFFFF, /**< Listen to all supported audio system events. */
+	OnBar              = BIT(5),     /**< Invoked on every music bar if supported by the used middleware. */
+	OnBeat             = BIT(6),     /**< Invoked on every music beat if supported by the used middleware. */
+	OnEntry            = BIT(7),     /**< Invoked on music entry point if supported by the used middleware. */
+	OnExit             = BIT(8),     /**< Invoked on music exit point if supported by the used middleware. */
+	OnGrid             = BIT(9),     /**< Invoked on every music grid if supported by the used middleware. */
+	OnSyncPoint        = BIT(10),    /**< Invoked on every synchronization point if supported by the used middleware. */
+	OnUserMarker       = BIT(11),    /**< Invoked on every user marker if supported by the used middleware. */
 };
 CRY_CREATE_ENUM_FLAG_OPERATORS(ESystemEvents);
 
@@ -184,6 +196,22 @@ struct SExecuteTriggerData : public SCreateObjectData
 	EntityId const  entityId;
 };
 
+struct STriggerCallbackData
+{
+	explicit STriggerCallbackData(
+		ControlId const controlId_,
+		ESystemEvents const events_,
+		void (*func_)(SRequestInfo const* const))
+		: triggerId(controlId_)
+		, events(events_)
+		, func(func_)
+	{}
+
+	ControlId const     triggerId;
+	ESystemEvents const events;
+	void                (* func)(SRequestInfo const* const);
+};
+
 struct ISystemModule : public Cry::IDefaultModule
 {
 	CRYINTERFACE_DECLARE_GUID(ISystemModule, "6c7ba422-375b-4325-ae00-918679610d2e"_cry_guid);
@@ -234,6 +262,15 @@ struct IAudioSystem
 	 * @see StopTrigger
 	 */
 	virtual void ExecuteTrigger(ControlId const triggerId, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) = 0;
+
+	/**
+	 * Executes the passed trigger ID and registers the trigger for callbacks to get received. Also registers an event listener.
+	 * @param callbackData - struct to pass data for callbacks to the request.
+	 * @param userData - optional struct used to pass additional data to the internal request. Registers pOwner as event listener.
+	 * @return void
+	 * @see StopTrigger
+	 */
+	virtual void ExecuteTriggerWithCallbacks(STriggerCallbackData const& callbackData, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) = 0;
 
 	/**
 	 * Stops all instances of the passed trigger ID or all instances of all active triggers if CryAudio::InvalidControlId (default) is passed.
@@ -297,6 +334,15 @@ struct IAudioSystem
 	 * @return void
 	 */
 	virtual void ReportFinishedTriggerConnectionInstance(TriggerInstanceId const triggerInstanceId, ETriggerResult const result, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) = 0;
+
+	/**
+	 * Used by audio middleware implementations to inform the AudioSystem that an instance of a trigger connection finished producing sound.
+	 * @param triggerInstanceId - id of the the instance of the trigger connection that fired the callback.
+	 * @param systemEvent - system event that was listened to.
+	 * @param userData - optional struct used to pass additional data to the internal request.
+	 * @return void
+	 */
+	virtual void ReportTriggerConnectionInstanceCallback(TriggerInstanceId const triggerInstanceId, ESystemEvents const systemEvent, SRequestUserData const& userData = SRequestUserData::GetEmptyObject()) = 0;
 
 	/**
 	 * Used by audio middleware implementations to inform the AudioSystem that an object got physical.

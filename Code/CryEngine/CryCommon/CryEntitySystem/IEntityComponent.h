@@ -712,6 +712,7 @@ struct IEntityAudioComponent : public IEntityComponent
 	//! \par Example
 	//! \include CryEntitySystem/Examples/Audio/ExecuteTrigger.cpp
 	virtual bool ExecuteTrigger(CryAudio::ControlId const audioTriggerId, CryAudio::AuxObjectId const audioAuxObjectId = CryAudio::DefaultAuxObjectId, EntityId const entityId = INVALID_ENTITYID, CryAudio::SRequestUserData const& userData = CryAudio::SRequestUserData::GetEmptyObject()) = 0;
+	virtual bool ExecuteTriggerWithCallbacks(CryAudio::STriggerCallbackData const& callbackData, CryAudio::AuxObjectId const audioAuxObjectId = CryAudio::DefaultAuxObjectId, EntityId const entityId = INVALID_ENTITYID, CryAudio::SRequestUserData const& userData = CryAudio::SRequestUserData::GetEmptyObject()) = 0;
 	virtual void StopTrigger(CryAudio::ControlId const audioTriggerId, CryAudio::AuxObjectId const audioAuxObjectId = CryAudio::DefaultAuxObjectId, CryAudio::SRequestUserData const& userData = CryAudio::SRequestUserData::GetEmptyObject()) = 0;
 	//! Sets the current state of a switch in the entity
 	//! \param audioSwitchId Identifier of the switch whose state we want to change

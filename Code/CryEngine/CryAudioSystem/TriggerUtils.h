@@ -17,7 +17,7 @@ void SendFinishedTriggerInstanceRequest(
 
 void ExecuteDefaultTriggerConnections(Control const* const pControl, TriggerConnections const& connections);
 
-void ConstructGlobalTriggerInstance(
+void ConstructTriggerInstance(
 	ControlId const triggerId,
 	uint16 const numPlayingConnectionInstances,
 	uint16 const numPendingConnectionInstances,

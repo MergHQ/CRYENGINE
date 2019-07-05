@@ -4276,7 +4276,7 @@ int CScriptBind_Entity::ExecuteAudioTrigger(IFunctionHandler* pH, ScriptHandle c
 
 	if (pIEntityAudioComponent != nullptr)
 	{
-		CryAudio::SRequestUserData const userData(CryAudio::ERequestFlags::DoneCallbackOnExternalThread, this);
+		CryAudio::SRequestUserData const userData(CryAudio::ERequestFlags::SubsequentCallbackOnExternalThread, this);
 		pIEntityAudioComponent->ExecuteTrigger(HandleToInt<CryAudio::ControlId>(hTriggerID), HandleToInt<CryAudio::AuxObjectId>(hAudioProxyLocalID), INVALID_ENTITYID, userData);
 	}
 
@@ -4293,7 +4293,7 @@ int CScriptBind_Entity::StopAudioTrigger(IFunctionHandler* pH, ScriptHandle cons
 
 	if (pIEntityAudioComponent != nullptr)
 	{
-		CryAudio::SRequestUserData const userData(CryAudio::ERequestFlags::DoneCallbackOnExternalThread, this, reinterpret_cast<void*>((UINT_PTR)pEntity->GetId()), this);
+		CryAudio::SRequestUserData const userData(CryAudio::ERequestFlags::SubsequentCallbackOnExternalThread, this, reinterpret_cast<void*>((UINT_PTR)pEntity->GetId()), this);
 		pIEntityAudioComponent->StopTrigger(HandleToInt<CryAudio::ControlId>(hTriggerID), HandleToInt<CryAudio::AuxObjectId>(hAudioProxyLocalID), userData);
 	}
 

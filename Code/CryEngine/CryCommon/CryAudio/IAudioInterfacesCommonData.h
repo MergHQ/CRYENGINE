@@ -126,17 +126,17 @@ static ListenerIds const g_defaultListenerIds{ DefaultListenerId };
  * @var CryAudio::ERequestFlags::ExecuteBlocking
  * @var CryAudio::ERequestFlags::CallbackOnExternalOrCallingThread
  * @var CryAudio::ERequestFlags::CallbackOnAudioThread
- * @var CryAudio::ERequestFlags::DoneCallbackOnExternalThread
- * @var CryAudio::ERequestFlags::DoneCallbackOnAudioThread
+ * @var CryAudio::ERequestFlags::SubsequentCallbackOnExternalThread
+ * @var CryAudio::ERequestFlags::SubsequentCallbackOnAudioThread
  */
 enum class ERequestFlags : EnumFlagsType
 {
-	None,                                       /**< Used to initialize variables of this type. */
-	ExecuteBlocking                   = BIT(0), /**< Blocks the calling thread until the request has been processed. */
-	CallbackOnExternalOrCallingThread = BIT(1), /**< Invokes a callback on the calling thread for blocking requests or invokes a callback on the external thread for non-blocking requests. */
-	CallbackOnAudioThread             = BIT(2), /**< Invokes a callback on the audio thread informing of the outcome of the request. */
-	DoneCallbackOnExternalThread      = BIT(3), /**< Invokes a callback on the external thread once a trigger instance finished playback of all its events. */
-	DoneCallbackOnAudioThread         = BIT(4), /**< Invokes a callback on the audio thread once a trigger instance finished playback of all its events. */
+	None,                                        /**< Used to initialize variables of this type. */
+	ExecuteBlocking                    = BIT(0), /**< Blocks the calling thread until the request has been processed. */
+	CallbackOnExternalOrCallingThread  = BIT(1), /**< Invokes a callback on the calling thread for blocking requests or invokes a callback on the external thread for non-blocking requests. */
+	CallbackOnAudioThread              = BIT(2), /**< Invokes a callback on the audio thread informing of the outcome of the request. */
+	SubsequentCallbackOnExternalThread = BIT(3), /**< Invokes a callback on the external thread once a trigger instance fires a subsequent callback. */
+	SubsequentCallbackOnAudioThread    = BIT(4), /**< Invokes a callback on the audio thread once a trigger instance fires a subsequent callback. */
 };
 CRY_CREATE_ENUM_FLAG_OPERATORS(ERequestFlags);
 
@@ -144,11 +144,11 @@ CRY_CREATE_ENUM_FLAG_OPERATORS(ERequestFlags);
  * @enum CryAudio::ERequestStatus
  * @brief A strongly typed enum class representing a list of possible statuses of an internally generated audio request. Used as a return type for many methods used by the AudioSystem internally and also for most of the CryAudio::Impl::IImpl calls.
  * @var CryAudio::ERequestStatus::None
- * @var CryAudio::ERequestStatus::ExecuteBlocking
- * @var CryAudio::ERequestStatus::CallbackOnExternalOrCallingThread
- * @var CryAudio::ERequestStatus::CallbackOnAudioThread
- * @var CryAudio::ERequestStatus::DoneCallbackOnExternalThread
- * @var CryAudio::ERequestStatus::DoneCallbackOnAudioThread
+ * @var CryAudio::ERequestStatus::Success
+ * @var CryAudio::ERequestStatus::SuccessNeedsRefresh
+ * @var CryAudio::ERequestStatus::PartialSuccess
+ * @var CryAudio::ERequestStatus::Failure
+ * @var CryAudio::ERequestStatus::Pending
  */
 enum class ERequestStatus : EnumFlagsType
 {

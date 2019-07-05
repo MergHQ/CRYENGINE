@@ -18,12 +18,12 @@ static void ExecuteTrigger(uint triggerId, bool bExecuteSync)
 {
 	if (bExecuteSync)
 	{
-		CryAudio::SRequestUserData const data(CryAudio::ERequestFlags::ExecuteBlocking | CryAudio::ERequestFlags::CallbackOnExternalOrCallingThread | CryAudio::ERequestFlags::DoneCallbackOnExternalThread);
+		CryAudio::SRequestUserData const data(CryAudio::ERequestFlags::ExecuteBlocking | CryAudio::ERequestFlags::CallbackOnExternalOrCallingThread | CryAudio::ERequestFlags::SubsequentCallbackOnExternalThread);
 		gEnv->pAudioSystem->ExecuteTrigger(triggerId, data);
 	}
 	else
 	{
-		CryAudio::SRequestUserData const data(CryAudio::ERequestFlags::CallbackOnExternalOrCallingThread | CryAudio::ERequestFlags::DoneCallbackOnExternalThread);
+		CryAudio::SRequestUserData const data(CryAudio::ERequestFlags::CallbackOnExternalOrCallingThread | CryAudio::ERequestFlags::SubsequentCallbackOnExternalThread);
 		gEnv->pAudioSystem->ExecuteTrigger(triggerId, data);
 	}
 }
@@ -134,12 +134,12 @@ static void ExecuteAudioObjectTrigger(CryAudio::IObject* pAudioObject, uint trig
 {
 	if (bExecuteSync)
 	{
-		const CryAudio::SRequestUserData data(CryAudio::ERequestFlags::ExecuteBlocking | CryAudio::ERequestFlags::CallbackOnExternalOrCallingThread | CryAudio::ERequestFlags::DoneCallbackOnExternalThread);
+		const CryAudio::SRequestUserData data(CryAudio::ERequestFlags::ExecuteBlocking | CryAudio::ERequestFlags::CallbackOnExternalOrCallingThread | CryAudio::ERequestFlags::SubsequentCallbackOnExternalThread);
 		pAudioObject->ExecuteTrigger(triggerId, entityId, data);
 	}
 	else
 	{
-		const CryAudio::SRequestUserData data(CryAudio::ERequestFlags::CallbackOnExternalOrCallingThread | CryAudio::ERequestFlags::DoneCallbackOnExternalThread);
+		const CryAudio::SRequestUserData data(CryAudio::ERequestFlags::CallbackOnExternalOrCallingThread | CryAudio::ERequestFlags::SubsequentCallbackOnExternalThread);
 		pAudioObject->ExecuteTrigger(triggerId, entityId, data);
 	}
 

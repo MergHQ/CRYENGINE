@@ -187,6 +187,23 @@ void CObject::ReportFinishedTriggerInstance(TriggerInstanceId const triggerInsta
 }
 
 ///////////////////////////////////////////////////////////////////////////
+void CObject::ReportTriggerInstanceCallback(TriggerInstanceId const triggerInstanceId, ESystemEvents const events)
+{
+	TriggerInstances::iterator const iter(m_triggerInstances.find(triggerInstanceId));
+
+	if (iter != m_triggerInstances.end())
+	{
+		iter->second->SendCallbackRequest(events);
+	}
+#if defined(CRY_AUDIO_USE_DEBUG_CODE)
+	else
+	{
+		Cry::Audio::Log(ELogType::Warning, "Unknown trigger instance id %u during %s", triggerInstanceId, __FUNCTION__);
+	}
+#endif  // CRY_AUDIO_USE_DEBUG_CODE
+}
+
+///////////////////////////////////////////////////////////////////////////
 void CObject::StopAllTriggers()
 {
 	m_pIObject->StopAllTriggers();
@@ -926,6 +943,16 @@ void CObject::ExecuteTrigger(
 	SRequestUserData const& userData /* = SAudioRequestUserData::GetEmptyObject() */)
 {
 	SObjectRequestData<EObjectRequestType::ExecuteTrigger> requestData(this, triggerId, entityId);
+	PushRequest(requestData, userData);
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CObject::ExecuteTriggerWithCallbacks(
+	STriggerCallbackData const& callbackData,
+	EntityId const entityId /*= INVALID_ENTITYID*/,
+	SRequestUserData const& userData /* = SAudioRequestUserData::GetEmptyObject() */)
+{
+	SObjectRequestData<EObjectRequestType::ExecuteTriggerWithCallbacks> requestData(this, entityId, callbackData);
 	PushRequest(requestData, userData);
 }
 
