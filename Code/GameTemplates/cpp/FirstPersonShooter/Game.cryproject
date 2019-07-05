@@ -1,37 +1,59 @@
 {
-	"version": 3,
-	"type": "",
-	"info": {
-		"name": "First Person Shooter",
-		"guid": "18848a42-b446-94c0-8317-cb2b0eff8774"
-	},
-	"content": {
-		"assets": [ "Assets" ],
-		"code": [ "Code" ],
-		"libs": [
-			{
-				"name": "First Person Shooter",
-				"shared": { "any": "", "win_x64": "", "win_x86": "" }
-			}
-		]
-	},
-	"require": {
-		"engine": "engine-dev",
-		"plugins": [
-			{ "type": "EPluginType::Native", "path": "CryDefaultEntities" },
-			{ "type": "EPluginType::Native", "path": "CrySensorSystem" },
-			{ "type": "EPluginType::Native", "path": "CryPerceptionSystem" },
-			{ "type": "EPluginType::Native", "path": "bin/win_x64/Game.dll" },
-			{
-				"type": "EPluginType::Native",
-				"path": "CryGamePlatform",
-				"platforms": [ "PS4" ]
-			}
-		]
-	},
-	"console_variables": {
-		"sys_target_platforms": "pc,ps4,xboxone,linux",
-		"cl_DefaultNearPlane": "0.05"
-	},
-	"console_commands": { }
+    "version": 3,
+    "type": "",
+    "info": {
+        "name": "First Person Shooter",
+        "guid": "18848a42-b446-94c0-8317-cb2b0eff8774"
+    },
+    "content": {
+        "assets": [
+            "Assets"
+        ],
+        "code": [
+            "Code"
+        ],
+        "libs": [
+            {
+                "name": "First Person Shooter",
+                "shared": {
+                    "any": "",
+                    "win_x64": "",
+                    "win_x86": ""
+                }
+            }
+        ]
+    },
+    "require": {
+        "engine": "engine-5.6",
+        "plugins": [
+            {
+                "type": "EPluginType::Native",
+                "path": "CryDefaultEntities"
+            },
+            {
+                "type": "EPluginType::Native",
+                "path": "CrySensorSystem"
+            },
+            {
+                "type": "EPluginType::Native",
+                "path": "CryPerceptionSystem"
+            },
+            {
+                "type": "EPluginType::Native",
+                "path": "bin/win_x64/Game.dll"
+            },
+            {
+                "type": "EPluginType::Native",
+                "path": "CryGamePlatform",
+                "platforms": [
+                    "PS4"
+                ]
+            }
+        ]
+    },
+    "console_variables": {
+        "sys_target_platforms": "pc,ps4,xboxone,linux",
+        "cl_DefaultNearPlane": "0.05"
+    },
+    "console_commands": {}
 }
