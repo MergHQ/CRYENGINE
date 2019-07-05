@@ -1,0 +1,516 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>CPack IFW Generator &mdash; CMake 3.14.5 Documentation</title>
+
+    <link rel="stylesheet" href="../_static/cmake.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="shortcut icon" href="../_static/cmake-favicon.ico"/>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="CPack NSIS Generator" href="nsis.html" />
+    <link rel="prev" title="CPack FreeBSD Generator" href="freebsd.html" />
+  
+ 
+
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="nsis.html" title="CPack NSIS Generator"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="freebsd.html" title="CPack FreeBSD Generator"
+             accesskey="P">previous</a> |</li>
+  <li>
+    <img src="../_static/cmake-logo-16.png" alt=""
+         style="vertical-align: middle; margin-top: -2px" />
+  </li>
+  <li>
+    <a href="https://cmake.org/">CMake</a> &#187;
+  </li>
+  <li>
+    <a href="../index.html">3.14.5 Documentation</a> &#187;
+  </li>
+
+          <li class="nav-item nav-item-1"><a href="../manual/cpack-generators.7.html" accesskey="U">cpack-generators(7)</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="cpack-ifw-generator">
+<span id="cpack_gen:CPack IFW Generator"></span><h1>CPack IFW Generator<a class="headerlink" href="#cpack-ifw-generator" title="Permalink to this headline">¶</a></h1>
+<p>See <span class="target" id="index-0-module:CPackIFW"></span><a class="reference internal" href="../module/CPackIFW.html#module:CPackIFW" title="CPackIFW"><code class="xref cmake cmake-module docutils literal notranslate"><span class="pre">CPackIFW</span></code></a> for details on the CPackIFW module.</p>
+<div class="section" id="overview">
+<h2>Overview<a class="headerlink" href="#overview" title="Permalink to this headline">¶</a></h2>
+<p>CPack <code class="docutils literal notranslate"><span class="pre">IFW</span></code> generator helps you to create online and offline
+binary cross-platform installers with a graphical user interface.</p>
+<p>CPack IFW generator prepares project installation and generates configuration
+and meta information for <a class="reference external" href="http://doc.qt.io/qtinstallerframework/index.html">QtIFW</a> tools.</p>
+<p>The <a class="reference external" href="http://doc.qt.io/qtinstallerframework/index.html">QtIFW</a> provides a set of tools and utilities to create
+installers for the supported desktop Qt platforms: Linux, Microsoft Windows,
+and macOS.</p>
+<p>You should also install <a class="reference external" href="http://doc.qt.io/qtinstallerframework/index.html">QtIFW</a> to use CPack <code class="docutils literal notranslate"><span class="pre">IFW</span></code> generator.</p>
+</div>
+<div class="section" id="hints">
+<h2>Hints<a class="headerlink" href="#hints" title="Permalink to this headline">¶</a></h2>
+<p>Generally, the CPack <code class="docutils literal notranslate"><span class="pre">IFW</span></code> generator automatically finds <a class="reference external" href="http://doc.qt.io/qtinstallerframework/index.html">QtIFW</a> tools,
+but if you don’t use a default path for installation of the <a class="reference external" href="http://doc.qt.io/qtinstallerframework/index.html">QtIFW</a> tools,
+the path may be specified in either a CMake or an environment variable:</p>
+<dl class="variable">
+<dt id="variable:CPACK_IFW_ROOT">
+<code class="descname">CPACK_IFW_ROOT</code><a class="headerlink" href="#variable:CPACK_IFW_ROOT" title="Permalink to this definition">¶</a></dt>
+<dd><p>An CMake variable which specifies the location of the <a class="reference external" href="http://doc.qt.io/qtinstallerframework/index.html">QtIFW</a> tool suite.</p>
+<p>The variable will be cached in the <code class="docutils literal notranslate"><span class="pre">CPackConfig.cmake</span></code> file and used at
+CPack runtime.</p>
+</dd></dl>
+
+<dl class="variable">
+<dt id="variable:QTIFWDIR">
+<code class="descname">QTIFWDIR</code><a class="headerlink" href="#variable:QTIFWDIR" title="Permalink to this definition">¶</a></dt>
+<dd><p>An environment variable which specifies the location of the <a class="reference external" href="http://doc.qt.io/qtinstallerframework/index.html">QtIFW</a> tool
+suite.</p>
+</dd></dl>
+
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">The specified path should not contain “bin” at the end
+(for example: “D:\DevTools\QtIFW2.0.5”).</p>
+</div>
+<p>The <span class="target" id="index-0-variable:CPACK_IFW_ROOT"></span><a class="reference internal" href="#variable:CPACK_IFW_ROOT" title="CPACK_IFW_ROOT"><code class="xref cmake cmake-variable docutils literal notranslate"><span class="pre">CPACK_IFW_ROOT</span></code></a> variable has a higher priority and overrides
+the value of the <span class="target" id="index-0-variable:QTIFWDIR"></span><a class="reference internal" href="#variable:QTIFWDIR" title="QTIFWDIR"><code class="xref cmake cmake-variable docutils literal notranslate"><span class="pre">QTIFWDIR</span></code></a> variable.</p>
+</div>
+<div class="section" id="internationalization">
+<h2>Internationalization<a class="headerlink" href="#internationalization" title="Permalink to this headline">¶</a></h2>
+<p>Some variables and command arguments support internationalization via
+CMake script. This is an optional feature.</p>
+<p>Installers created by <a class="reference external" href="http://doc.qt.io/qtinstallerframework/index.html">QtIFW</a> tools have built-in support for
+internationalization and many phrases are localized to many languages,
+but this does not apply to the description of the your components and groups
+that will be distributed.</p>
+<p>Localization of the description of your components and groups is useful for
+users of your installers.</p>
+<p>A localized variable or argument can contain a single default value, and a
+set of pairs the name of the locale and the localized value.</p>
+<p>For example:</p>
+<div class="highlight-cmake notranslate"><div class="highlight"><pre><span></span><span class="nf">set(</span><span class="no">LOCALIZABLE_VARIABLE</span><span class="w"> </span><span class="s">&quot;Default value&quot;</span><span class="w"></span>
+<span class="w">  </span><span class="nb">en</span><span class="w"> </span><span class="s">&quot;English value&quot;</span><span class="w"></span>
+<span class="w">  </span><span class="nb">en_US</span><span class="w"> </span><span class="s">&quot;American value&quot;</span><span class="w"></span>
+<span class="w">  </span><span class="nb">en_GB</span><span class="w"> </span><span class="s">&quot;Great Britain value&quot;</span><span class="w"></span>
+<span class="w">  </span><span class="nf">)</span><span class="w"></span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="variables">
+<h2>Variables<a class="headerlink" href="#variables" title="Permalink to this headline">¶</a></h2>
+<p>You can use the following variables to change behavior of CPack <code class="docutils literal notranslate"><span class="pre">IFW</span></code>
+generator.</p>
+<div class="section" id="debug">
+<h3>Debug<a class="headerlink" href="#debug" title="Permalink to this headline">¶</a></h3>
+<dl class="variable">
+<dt id="variable:CPACK_IFW_VERBOSE">
+<code class="descname">CPACK_IFW_VERBOSE</code><a class="headerlink" href="#variable:CPACK_IFW_VERBOSE" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set to <code class="docutils literal notranslate"><span class="pre">ON</span></code> to enable addition debug output.
+By default is <code class="docutils literal notranslate"><span class="pre">OFF</span></code>.</p>
+</dd></dl>
+
+</div>
+<div class="section" id="package">
+<h3>Package<a class="headerlink" href="#package" title="Permalink to this headline">¶</a></h3>
+<dl class="variable">
+<dt id="variable:CPACK_IFW_PACKAGE_TITLE">
+<code class="descname">CPACK_IFW_PACKAGE_TITLE</code><a class="headerlink" href="#variable:CPACK_IFW_PACKAGE_TITLE" title="Permalink to this definition">¶</a></dt>
+<dd><p>Name of the installer as displayed on the title bar.
+By default used <span class="target" id="index-0-variable:CPACK_PACKAGE_DESCRIPTION_SUMMARY"></span><a class="reference internal" href="../module/CPack.html#variable:CPACK_PACKAGE_DESCRIPTION_SUMMARY" title="CPACK_PACKAGE_DESCRIPTION_SUMMARY"><code class="xref cmake cmake-variable docutils literal notranslate"><span class="pre">CPACK_PACKAGE_DESCRIPTION_SUMMARY</span></code></a>.</p>
+</dd></dl>
+
+<dl class="variable">
+<dt id="variable:CPACK_IFW_PACKAGE_PUBLISHER">
+<code class="descname">CPACK_IFW_PACKAGE_PUBLISHER</code><a class="headerlink" href="#variable:CPACK_IFW_PACKAGE_PUBLISHER" title="Permalink to this definition">¶</a></dt>
+<dd><p>Publisher of the software (as shown in the Windows Control Panel).
+By default used <span class="target" id="index-0-variable:CPACK_PACKAGE_VENDOR"></span><a class="reference internal" href="../module/CPack.html#variable:CPACK_PACKAGE_VENDOR" title="CPACK_PACKAGE_VENDOR"><code class="xref cmake cmake-variable docutils literal notranslate"><span class="pre">CPACK_PACKAGE_VENDOR</span></code></a>.</p>
+</dd></dl>
+
+<dl class="variable">
+<dt id="variable:CPACK_IFW_PRODUCT_URL">
+<code class="descname">CPACK_IFW_PRODUCT_URL</code><a class="headerlink" href="#variable:CPACK_IFW_PRODUCT_URL" title="Permalink to this definition">¶</a></dt>
+<dd><p>URL to a page that contains product information on your web site.</p>
+</dd></dl>
+
+<dl class="variable">
+<dt id="variable:CPACK_IFW_PACKAGE_ICON">
+<code class="descname">CPACK_IFW_PACKAGE_ICON</code><a class="headerlink" href="#variable:CPACK_IFW_PACKAGE_ICON" title="Permalink to this definition">¶</a></dt>
+<dd><p>Filename for a custom installer icon. The actual file is ‘.icns’ (macOS),
+‘.ico’ (Windows). No functionality on Unix.</p>
+</dd></dl>
+
+<dl class="variable">
+<dt id="variable:CPACK_IFW_PACKAGE_WINDOW_ICON">
+<code class="descname">CPACK_IFW_PACKAGE_WINDOW_ICON</code><a class="headerlink" href="#variable:CPACK_IFW_PACKAGE_WINDOW_ICON" title="Permalink to this definition">¶</a></dt>
+<dd><p>Filename for a custom window icon in PNG format for the Installer
+application.</p>
+</dd></dl>
+
+<dl class="variable">
+<dt id="variable:CPACK_IFW_PACKAGE_LOGO">
+<code class="descname">CPACK_IFW_PACKAGE_LOGO</code><a class="headerlink" href="#variable:CPACK_IFW_PACKAGE_LOGO" title="Permalink to this definition">¶</a></dt>
+<dd><p>Filename for a logo is used as QWizard::LogoPixmap.</p>
+</dd></dl>
+
+<dl class="variable">
+<dt id="variable:CPACK_IFW_PACKAGE_WATERMARK">
+<code class="descname">CPACK_IFW_PACKAGE_WATERMARK</code><a class="headerlink" href="#variable:CPACK_IFW_PACKAGE_WATERMARK" title="Permalink to this definition">¶</a></dt>
+<dd><p>Filename for a watermark is used as QWizard::WatermarkPixmap.</p>
+</dd></dl>
+
+<dl class="variable">
+<dt id="variable:CPACK_IFW_PACKAGE_BANNER">
+<code class="descname">CPACK_IFW_PACKAGE_BANNER</code><a class="headerlink" href="#variable:CPACK_IFW_PACKAGE_BANNER" title="Permalink to this definition">¶</a></dt>
+<dd><p>Filename for a banner is used as QWizard::BannerPixmap.</p>
+</dd></dl>
+
+<dl class="variable">
+<dt id="variable:CPACK_IFW_PACKAGE_BACKGROUND">
+<code class="descname">CPACK_IFW_PACKAGE_BACKGROUND</code><a class="headerlink" href="#variable:CPACK_IFW_PACKAGE_BACKGROUND" title="Permalink to this definition">¶</a></dt>
+<dd><p>Filename for an image used as QWizard::BackgroundPixmap (only used by MacStyle).</p>
+</dd></dl>
+
+<dl class="variable">
+<dt id="variable:CPACK_IFW_PACKAGE_WIZARD_STYLE">
+<code class="descname">CPACK_IFW_PACKAGE_WIZARD_STYLE</code><a class="headerlink" href="#variable:CPACK_IFW_PACKAGE_WIZARD_STYLE" title="Permalink to this definition">¶</a></dt>
+<dd><p>Wizard style to be used (“Modern”, “Mac”, “Aero” or “Classic”).</p>
+</dd></dl>
+
+<dl class="variable">
+<dt id="variable:CPACK_IFW_PACKAGE_WIZARD_DEFAULT_WIDTH">
+<code class="descname">CPACK_IFW_PACKAGE_WIZARD_DEFAULT_WIDTH</code><a class="headerlink" href="#variable:CPACK_IFW_PACKAGE_WIZARD_DEFAULT_WIDTH" title="Permalink to this definition">¶</a></dt>
+<dd><p>Default width of the wizard in pixels. Setting a banner image will override this.</p>
+</dd></dl>
+
+<dl class="variable">
+<dt id="variable:CPACK_IFW_PACKAGE_WIZARD_DEFAULT_HEIGHT">
+<code class="descname">CPACK_IFW_PACKAGE_WIZARD_DEFAULT_HEIGHT</code><a class="headerlink" href="#variable:CPACK_IFW_PACKAGE_WIZARD_DEFAULT_HEIGHT" title="Permalink to this definition">¶</a></dt>
+<dd><p>Default height of the wizard in pixels. Setting a watermark image will override this.</p>
+</dd></dl>
+
+<dl class="variable">
+<dt id="variable:CPACK_IFW_PACKAGE_TITLE_COLOR">
+<code class="descname">CPACK_IFW_PACKAGE_TITLE_COLOR</code><a class="headerlink" href="#variable:CPACK_IFW_PACKAGE_TITLE_COLOR" title="Permalink to this definition">¶</a></dt>
+<dd><p>Color of the titles and subtitles (takes an HTML color code, such as “#88FF33”).</p>
+</dd></dl>
+
+<dl class="variable">
+<dt id="variable:CPACK_IFW_PACKAGE_START_MENU_DIRECTORY">
+<code class="descname">CPACK_IFW_PACKAGE_START_MENU_DIRECTORY</code><a class="headerlink" href="#variable:CPACK_IFW_PACKAGE_START_MENU_DIRECTORY" title="Permalink to this definition">¶</a></dt>
+<dd><p>Name of the default program group for the product in the Windows Start menu.</p>
+<p>By default used <span class="target" id="index-0-variable:CPACK_IFW_PACKAGE_NAME"></span><a class="reference internal" href="#variable:CPACK_IFW_PACKAGE_NAME" title="CPACK_IFW_PACKAGE_NAME"><code class="xref cmake cmake-variable docutils literal notranslate"><span class="pre">CPACK_IFW_PACKAGE_NAME</span></code></a>.</p>
+</dd></dl>
+
+<dl class="variable">
+<dt id="variable:CPACK_IFW_TARGET_DIRECTORY">
+<code class="descname">CPACK_IFW_TARGET_DIRECTORY</code><a class="headerlink" href="#variable:CPACK_IFW_TARGET_DIRECTORY" title="Permalink to this definition">¶</a></dt>
+<dd><p>Default target directory for installation.
+By default used
+“&#64;ApplicationsDir&#64;/<span class="target" id="index-0-variable:CPACK_PACKAGE_INSTALL_DIRECTORY"></span><a class="reference internal" href="../module/CPack.html#variable:CPACK_PACKAGE_INSTALL_DIRECTORY" title="CPACK_PACKAGE_INSTALL_DIRECTORY"><code class="xref cmake cmake-variable docutils literal notranslate"><span class="pre">CPACK_PACKAGE_INSTALL_DIRECTORY</span></code></a>”</p>
+<p>You can use predefined variables.</p>
+</dd></dl>
+
+<dl class="variable">
+<dt id="variable:CPACK_IFW_ADMIN_TARGET_DIRECTORY">
+<code class="descname">CPACK_IFW_ADMIN_TARGET_DIRECTORY</code><a class="headerlink" href="#variable:CPACK_IFW_ADMIN_TARGET_DIRECTORY" title="Permalink to this definition">¶</a></dt>
+<dd><p>Default target directory for installation with administrator rights.</p>
+<p>You can use predefined variables.</p>
+</dd></dl>
+
+<dl class="variable">
+<dt id="variable:CPACK_IFW_PACKAGE_GROUP">
+<code class="descname">CPACK_IFW_PACKAGE_GROUP</code><a class="headerlink" href="#variable:CPACK_IFW_PACKAGE_GROUP" title="Permalink to this definition">¶</a></dt>
+<dd><p>The group, which will be used to configure the root package</p>
+</dd></dl>
+
+<dl class="variable">
+<dt id="variable:CPACK_IFW_PACKAGE_NAME">
+<code class="descname">CPACK_IFW_PACKAGE_NAME</code><a class="headerlink" href="#variable:CPACK_IFW_PACKAGE_NAME" title="Permalink to this definition">¶</a></dt>
+<dd><p>The root package name, which will be used if configuration group is not
+specified</p>
+</dd></dl>
+
+<dl class="variable">
+<dt id="variable:CPACK_IFW_PACKAGE_MAINTENANCE_TOOL_NAME">
+<code class="descname">CPACK_IFW_PACKAGE_MAINTENANCE_TOOL_NAME</code><a class="headerlink" href="#variable:CPACK_IFW_PACKAGE_MAINTENANCE_TOOL_NAME" title="Permalink to this definition">¶</a></dt>
+<dd><p>Filename of the generated maintenance tool.
+The platform-specific executable file extension is appended.</p>
+<p>By default used <a class="reference external" href="http://doc.qt.io/qtinstallerframework/index.html">QtIFW</a> defaults (<code class="docutils literal notranslate"><span class="pre">maintenancetool</span></code>).</p>
+</dd></dl>
+
+<dl class="variable">
+<dt id="variable:CPACK_IFW_PACKAGE_REMOVE_TARGET_DIR">
+<code class="descname">CPACK_IFW_PACKAGE_REMOVE_TARGET_DIR</code><a class="headerlink" href="#variable:CPACK_IFW_PACKAGE_REMOVE_TARGET_DIR" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set to <code class="docutils literal notranslate"><span class="pre">OFF</span></code> if the target directory should not be deleted when uninstalling.</p>
+<p>Is <code class="docutils literal notranslate"><span class="pre">ON</span></code> by default</p>
+</dd></dl>
+
+<dl class="variable">
+<dt id="variable:CPACK_IFW_PACKAGE_MAINTENANCE_TOOL_INI_FILE">
+<code class="descname">CPACK_IFW_PACKAGE_MAINTENANCE_TOOL_INI_FILE</code><a class="headerlink" href="#variable:CPACK_IFW_PACKAGE_MAINTENANCE_TOOL_INI_FILE" title="Permalink to this definition">¶</a></dt>
+<dd><p>Filename for the configuration of the generated maintenance tool.</p>
+<p>By default used <a class="reference external" href="http://doc.qt.io/qtinstallerframework/index.html">QtIFW</a> defaults (<code class="docutils literal notranslate"><span class="pre">maintenancetool.ini</span></code>).</p>
+</dd></dl>
+
+<dl class="variable">
+<dt id="variable:CPACK_IFW_PACKAGE_ALLOW_NON_ASCII_CHARACTERS">
+<code class="descname">CPACK_IFW_PACKAGE_ALLOW_NON_ASCII_CHARACTERS</code><a class="headerlink" href="#variable:CPACK_IFW_PACKAGE_ALLOW_NON_ASCII_CHARACTERS" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set to <code class="docutils literal notranslate"><span class="pre">ON</span></code> if the installation path can contain non-ASCII characters.</p>
+<p>Is <code class="docutils literal notranslate"><span class="pre">ON</span></code> for <a class="reference external" href="http://doc.qt.io/qtinstallerframework/index.html">QtIFW</a> less 2.0 tools.</p>
+</dd></dl>
+
+<dl class="variable">
+<dt id="variable:CPACK_IFW_PACKAGE_ALLOW_SPACE_IN_PATH">
+<code class="descname">CPACK_IFW_PACKAGE_ALLOW_SPACE_IN_PATH</code><a class="headerlink" href="#variable:CPACK_IFW_PACKAGE_ALLOW_SPACE_IN_PATH" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set to <code class="docutils literal notranslate"><span class="pre">OFF</span></code> if the installation path cannot contain space characters.</p>
+<p>Is <code class="docutils literal notranslate"><span class="pre">ON</span></code> for <a class="reference external" href="http://doc.qt.io/qtinstallerframework/index.html">QtIFW</a> less 2.0 tools.</p>
+</dd></dl>
+
+<dl class="variable">
+<dt id="variable:CPACK_IFW_PACKAGE_CONTROL_SCRIPT">
+<code class="descname">CPACK_IFW_PACKAGE_CONTROL_SCRIPT</code><a class="headerlink" href="#variable:CPACK_IFW_PACKAGE_CONTROL_SCRIPT" title="Permalink to this definition">¶</a></dt>
+<dd><p>Filename for a custom installer control script.</p>
+</dd></dl>
+
+<dl class="variable">
+<dt id="variable:CPACK_IFW_PACKAGE_RESOURCES">
+<code class="descname">CPACK_IFW_PACKAGE_RESOURCES</code><a class="headerlink" href="#variable:CPACK_IFW_PACKAGE_RESOURCES" title="Permalink to this definition">¶</a></dt>
+<dd><p>List of additional resources (‘.qrc’ files) to include in the installer
+binary.</p>
+<p>You can use <span class="target" id="index-0-command:cpack_ifw_add_package_resources"></span><a class="reference internal" href="../module/CPackIFW.html#command:cpack_ifw_add_package_resources" title="cpack_ifw_add_package_resources"><code class="xref cmake cmake-command docutils literal notranslate"><span class="pre">cpack_ifw_add_package_resources()</span></code></a> command to resolve
+relative paths.</p>
+</dd></dl>
+
+<dl class="variable">
+<dt id="variable:CPACK_IFW_PACKAGE_FILE_EXTENSION">
+<code class="descname">CPACK_IFW_PACKAGE_FILE_EXTENSION</code><a class="headerlink" href="#variable:CPACK_IFW_PACKAGE_FILE_EXTENSION" title="Permalink to this definition">¶</a></dt>
+<dd><p>The target binary extension.</p>
+<p>On Linux, the name of the target binary is automatically extended with
+‘.run’, if you do not specify the extension.</p>
+<p>On Windows, the target is created as an application with the extension
+‘.exe’, which is automatically added, if not supplied.</p>
+<p>On Mac, the target is created as an DMG disk image with the extension
+‘.dmg’, which is automatically added, if not supplied.</p>
+</dd></dl>
+
+<dl class="variable">
+<dt id="variable:CPACK_IFW_REPOSITORIES_ALL">
+<code class="descname">CPACK_IFW_REPOSITORIES_ALL</code><a class="headerlink" href="#variable:CPACK_IFW_REPOSITORIES_ALL" title="Permalink to this definition">¶</a></dt>
+<dd><p>The list of remote repositories.</p>
+<p>The default value of this variable is computed by CPack and contains
+all repositories added with command <span class="target" id="index-0-command:cpack_ifw_add_repository"></span><a class="reference internal" href="../module/CPackIFW.html#command:cpack_ifw_add_repository" title="cpack_ifw_add_repository"><code class="xref cmake cmake-command docutils literal notranslate"><span class="pre">cpack_ifw_add_repository()</span></code></a>
+or updated with command <span class="target" id="index-0-command:cpack_ifw_update_repository"></span><a class="reference internal" href="../module/CPackIFW.html#command:cpack_ifw_update_repository" title="cpack_ifw_update_repository"><code class="xref cmake cmake-command docutils literal notranslate"><span class="pre">cpack_ifw_update_repository()</span></code></a>.</p>
+</dd></dl>
+
+<dl class="variable">
+<dt id="variable:CPACK_IFW_DOWNLOAD_ALL">
+<code class="descname">CPACK_IFW_DOWNLOAD_ALL</code><a class="headerlink" href="#variable:CPACK_IFW_DOWNLOAD_ALL" title="Permalink to this definition">¶</a></dt>
+<dd><p>If this is <code class="docutils literal notranslate"><span class="pre">ON</span></code> all components will be downloaded.
+By default is <code class="docutils literal notranslate"><span class="pre">OFF</span></code> or used value
+from <code class="docutils literal notranslate"><span class="pre">CPACK_DOWNLOAD_ALL</span></code> if set</p>
+</dd></dl>
+
+</div>
+<div class="section" id="components">
+<h3>Components<a class="headerlink" href="#components" title="Permalink to this headline">¶</a></h3>
+<dl class="variable">
+<dt id="variable:CPACK_IFW_RESOLVE_DUPLICATE_NAMES">
+<code class="descname">CPACK_IFW_RESOLVE_DUPLICATE_NAMES</code><a class="headerlink" href="#variable:CPACK_IFW_RESOLVE_DUPLICATE_NAMES" title="Permalink to this definition">¶</a></dt>
+<dd><p>Resolve duplicate names when installing components with groups.</p>
+</dd></dl>
+
+<dl class="variable">
+<dt id="variable:CPACK_IFW_PACKAGES_DIRECTORIES">
+<code class="descname">CPACK_IFW_PACKAGES_DIRECTORIES</code><a class="headerlink" href="#variable:CPACK_IFW_PACKAGES_DIRECTORIES" title="Permalink to this definition">¶</a></dt>
+<dd><p>Additional prepared packages dirs that will be used to resolve
+dependent components.</p>
+</dd></dl>
+
+<dl class="variable">
+<dt id="variable:CPACK_IFW_REPOSITORIES_DIRECTORIES">
+<code class="descname">CPACK_IFW_REPOSITORIES_DIRECTORIES</code><a class="headerlink" href="#variable:CPACK_IFW_REPOSITORIES_DIRECTORIES" title="Permalink to this definition">¶</a></dt>
+<dd><p>Additional prepared repository dirs that will be used to resolve and
+repack dependent components. This feature available only
+since <a class="reference external" href="http://doc.qt.io/qtinstallerframework/index.html">QtIFW</a> 3.1.</p>
+</dd></dl>
+
+</div>
+<div class="section" id="tools">
+<h3>Tools<a class="headerlink" href="#tools" title="Permalink to this headline">¶</a></h3>
+<dl class="variable">
+<dt id="variable:CPACK_IFW_FRAMEWORK_VERSION">
+<code class="descname">CPACK_IFW_FRAMEWORK_VERSION</code><a class="headerlink" href="#variable:CPACK_IFW_FRAMEWORK_VERSION" title="Permalink to this definition">¶</a></dt>
+<dd><p>The version of used <a class="reference external" href="http://doc.qt.io/qtinstallerframework/index.html">QtIFW</a> tools.</p>
+</dd></dl>
+
+<dl class="variable">
+<dt id="variable:CPACK_IFW_BINARYCREATOR_EXECUTABLE">
+<code class="descname">CPACK_IFW_BINARYCREATOR_EXECUTABLE</code><a class="headerlink" href="#variable:CPACK_IFW_BINARYCREATOR_EXECUTABLE" title="Permalink to this definition">¶</a></dt>
+<dd><p>The path to “binarycreator” command line client.</p>
+<p>This variable is cached and may be configured if needed.</p>
+</dd></dl>
+
+<dl class="variable">
+<dt id="variable:CPACK_IFW_REPOGEN_EXECUTABLE">
+<code class="descname">CPACK_IFW_REPOGEN_EXECUTABLE</code><a class="headerlink" href="#variable:CPACK_IFW_REPOGEN_EXECUTABLE" title="Permalink to this definition">¶</a></dt>
+<dd><p>The path to “repogen” command line client.</p>
+<p>This variable is cached and may be configured if needed.</p>
+</dd></dl>
+
+<dl class="variable">
+<dt id="variable:CPACK_IFW_INSTALLERBASE_EXECUTABLE">
+<code class="descname">CPACK_IFW_INSTALLERBASE_EXECUTABLE</code><a class="headerlink" href="#variable:CPACK_IFW_INSTALLERBASE_EXECUTABLE" title="Permalink to this definition">¶</a></dt>
+<dd><p>The path to “installerbase” installer executable base.</p>
+<p>This variable is cached and may be configured if needed.</p>
+</dd></dl>
+
+<dl class="variable">
+<dt id="variable:CPACK_IFW_DEVTOOL_EXECUTABLE">
+<code class="descname">CPACK_IFW_DEVTOOL_EXECUTABLE</code><a class="headerlink" href="#variable:CPACK_IFW_DEVTOOL_EXECUTABLE" title="Permalink to this definition">¶</a></dt>
+<dd><p>The path to “devtool” command line client.</p>
+<p>This variable is cached and may be configured if needed.</p>
+</dd></dl>
+
+</div>
+</div>
+<div class="section" id="online-installer">
+<h2>Online installer<a class="headerlink" href="#online-installer" title="Permalink to this headline">¶</a></h2>
+<p>By default CPack IFW generator makes offline installer. This means that all
+components will be packaged into a binary file.</p>
+<p>To make a component downloaded, you must set the <code class="docutils literal notranslate"><span class="pre">DOWNLOADED</span></code> option in
+<span class="target" id="index-0-command:cpack_add_component"></span><a class="reference internal" href="../module/CPackComponent.html#command:cpack_add_component" title="cpack_add_component"><code class="xref cmake cmake-command docutils literal notranslate"><span class="pre">cpack_add_component()</span></code></a>.</p>
+<p>Then you would use the command <span class="target" id="index-0-command:cpack_configure_downloads"></span><a class="reference internal" href="../module/CPackComponent.html#command:cpack_configure_downloads" title="cpack_configure_downloads"><code class="xref cmake cmake-command docutils literal notranslate"><span class="pre">cpack_configure_downloads()</span></code></a>.
+If you set <code class="docutils literal notranslate"><span class="pre">ALL</span></code> option all components will be downloaded.</p>
+<p>You also can use command <span class="target" id="index-1-command:cpack_ifw_add_repository"></span><a class="reference internal" href="../module/CPackIFW.html#command:cpack_ifw_add_repository" title="cpack_ifw_add_repository"><code class="xref cmake cmake-command docutils literal notranslate"><span class="pre">cpack_ifw_add_repository()</span></code></a> and
+variable <span class="target" id="index-0-variable:CPACK_IFW_DOWNLOAD_ALL"></span><a class="reference internal" href="#variable:CPACK_IFW_DOWNLOAD_ALL" title="CPACK_IFW_DOWNLOAD_ALL"><code class="xref cmake cmake-variable docutils literal notranslate"><span class="pre">CPACK_IFW_DOWNLOAD_ALL</span></code></a> for more specific configuration.</p>
+<p>CPack IFW generator creates “repository” dir in current binary dir. You
+would copy content of this dir to specified <code class="docutils literal notranslate"><span class="pre">site</span></code> (<code class="docutils literal notranslate"><span class="pre">url</span></code>).</p>
+</div>
+<div class="section" id="see-also">
+<h2>See Also<a class="headerlink" href="#see-also" title="Permalink to this headline">¶</a></h2>
+<p>Qt Installer Framework Manual:</p>
+<ul class="simple">
+<li>Index page:
+<a class="reference external" href="http://doc.qt.io/qtinstallerframework/index.html">http://doc.qt.io/qtinstallerframework/index.html</a></li>
+<li>Component Scripting:
+<a class="reference external" href="http://doc.qt.io/qtinstallerframework/scripting.html">http://doc.qt.io/qtinstallerframework/scripting.html</a></li>
+<li>Predefined Variables:
+<a class="reference external" href="http://doc.qt.io/qtinstallerframework/scripting.html#predefined-variables">http://doc.qt.io/qtinstallerframework/scripting.html#predefined-variables</a></li>
+<li>Promoting Updates:
+<a class="reference external" href="http://doc.qt.io/qtinstallerframework/ifw-updates.html">http://doc.qt.io/qtinstallerframework/ifw-updates.html</a></li>
+</ul>
+<dl class="docutils">
+<dt>Download Qt Installer Framework for you platform from Qt site:</dt>
+<dd><a class="reference external" href="http://download.qt.io/official_releases/qt-installer-framework">http://download.qt.io/official_releases/qt-installer-framework</a></dd>
+</dl>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">CPack IFW Generator</a><ul>
+<li><a class="reference internal" href="#overview">Overview</a></li>
+<li><a class="reference internal" href="#hints">Hints</a></li>
+<li><a class="reference internal" href="#internationalization">Internationalization</a></li>
+<li><a class="reference internal" href="#variables">Variables</a><ul>
+<li><a class="reference internal" href="#debug">Debug</a></li>
+<li><a class="reference internal" href="#package">Package</a></li>
+<li><a class="reference internal" href="#components">Components</a></li>
+<li><a class="reference internal" href="#tools">Tools</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#online-installer">Online installer</a></li>
+<li><a class="reference internal" href="#see-also">See Also</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="freebsd.html"
+                        title="previous chapter">CPack FreeBSD Generator</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="nsis.html"
+                        title="next chapter">CPack NSIS Generator</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/cpack_gen/ifw.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="nsis.html" title="CPack NSIS Generator"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="freebsd.html" title="CPack FreeBSD Generator"
+             >previous</a> |</li>
+  <li>
+    <img src="../_static/cmake-logo-16.png" alt=""
+         style="vertical-align: middle; margin-top: -2px" />
+  </li>
+  <li>
+    <a href="https://cmake.org/">CMake</a> &#187;
+  </li>
+  <li>
+    <a href="../index.html">3.14.5 Documentation</a> &#187;
+  </li>
+
+          <li class="nav-item nav-item-1"><a href="../manual/cpack-generators.7.html" >cpack-generators(7)</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2000-2019 Kitware, Inc. and Contributors.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.7.2.
+    </div>
+  </body>
+</html>

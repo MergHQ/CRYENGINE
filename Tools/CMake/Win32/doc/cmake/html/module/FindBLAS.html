@@ -1,0 +1,211 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>FindBLAS &mdash; CMake 3.14.5 Documentation</title>
+
+    <link rel="stylesheet" href="../_static/cmake.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="shortcut icon" href="../_static/cmake-favicon.ico"/>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="FindBacktrace" href="FindBacktrace.html" />
+    <link rel="prev" title="FindBISON" href="FindBISON.html" />
+  
+ 
+
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="FindBacktrace.html" title="FindBacktrace"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="FindBISON.html" title="FindBISON"
+             accesskey="P">previous</a> |</li>
+  <li>
+    <img src="../_static/cmake-logo-16.png" alt=""
+         style="vertical-align: middle; margin-top: -2px" />
+  </li>
+  <li>
+    <a href="https://cmake.org/">CMake</a> &#187;
+  </li>
+  <li>
+    <a href="../index.html">3.14.5 Documentation</a> &#187;
+  </li>
+
+          <li class="nav-item nav-item-1"><a href="../manual/cmake-modules.7.html" accesskey="U">cmake-modules(7)</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="findblas">
+<span id="module:FindBLAS"></span><h1>FindBLAS<a class="headerlink" href="#findblas" title="Permalink to this headline">¶</a></h1>
+<p>Find BLAS library</p>
+<p>This module finds an installed fortran library that implements the
+BLAS linear-algebra interface (see <a class="reference external" href="http://www.netlib.org/blas/">http://www.netlib.org/blas/</a>).  The
+list of libraries searched for is taken from the autoconf macro file,
+acx_blas.m4 (distributed at
+<a class="reference external" href="http://ac-archive.sourceforge.net/ac-archive/acx_blas.html">http://ac-archive.sourceforge.net/ac-archive/acx_blas.html</a>).</p>
+<div class="section" id="input-variables">
+<h2>Input Variables<a class="headerlink" href="#input-variables" title="Permalink to this headline">¶</a></h2>
+<p>The following variables may be set to influence this module’s behavior:</p>
+<dl class="docutils">
+<dt><code class="docutils literal notranslate"><span class="pre">BLA_STATIC</span></code></dt>
+<dd>if <code class="docutils literal notranslate"><span class="pre">ON</span></code> use static linkage</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">BLA_VENDOR</span></code></dt>
+<dd><p class="first">If set, checks only the specified vendor, if not set checks all the
+possibilities.  List of vendors valid in this module:</p>
+<ul class="last simple">
+<li>Goto</li>
+<li>OpenBLAS</li>
+<li>FLAME</li>
+<li>ATLAS PhiPACK</li>
+<li>CXML</li>
+<li>DXML</li>
+<li>SunPerf</li>
+<li>SCSL</li>
+<li>SGIMATH</li>
+<li>IBMESSL</li>
+<li>Intel10_32 (intel mkl v10 32 bit)</li>
+<li>Intel10_64lp (intel mkl v10+ 64 bit, threaded code, lp64 model)</li>
+<li>Intel10_64lp_seq (intel mkl v10+ 64 bit, sequential code, lp64 model)</li>
+<li>Intel10_64ilp (intel mkl v10+ 64 bit, threaded code, ilp64 model)</li>
+<li>Intel10_64ilp_seq (intel mkl v10+ 64 bit, sequential code, ilp64 model)</li>
+<li>Intel (obsolete versions of mkl 32 and 64 bit)</li>
+<li>ACML</li>
+<li>ACML_MP</li>
+<li>ACML_GPU</li>
+<li>Apple</li>
+<li>NAS</li>
+<li>Generic</li>
+</ul>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">BLA_F95</span></code></dt>
+<dd>if <code class="docutils literal notranslate"><span class="pre">ON</span></code> tries to find the BLAS95 interfaces</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">BLA_PREFER_PKGCONFIG</span></code></dt>
+<dd>if set pkg-config will be used to search for a BLAS library first
+and if one is found that is preferred</dd>
+</dl>
+</div>
+<div class="section" id="result-variables">
+<h2>Result Variables<a class="headerlink" href="#result-variables" title="Permalink to this headline">¶</a></h2>
+<p>This module defines the following variables:</p>
+<dl class="docutils">
+<dt><code class="docutils literal notranslate"><span class="pre">BLAS_FOUND</span></code></dt>
+<dd>library implementing the BLAS interface is found</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">BLAS_LINKER_FLAGS</span></code></dt>
+<dd>uncached list of required linker flags (excluding -l and -L).</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">BLAS_LIBRARIES</span></code></dt>
+<dd>uncached list of libraries (using full path name) to link against
+to use BLAS (may be empty if compiler implicitly links BLAS)</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">BLAS95_LIBRARIES</span></code></dt>
+<dd>uncached list of libraries (using full path name) to link against
+to use BLAS95 interface</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">BLAS95_FOUND</span></code></dt>
+<dd>library implementing the BLAS95 interface is found</dd>
+</dl>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p>C or CXX must be enabled to use Intel MKL</p>
+<p>For example, to use Intel MKL libraries and/or Intel compiler:</p>
+<div class="last highlight-cmake notranslate"><div class="highlight"><pre><span></span><span class="nf">set(</span><span class="no">BLA_VENDOR</span><span class="w"> </span><span class="nb">Intel10_64lp</span><span class="nf">)</span><span class="w"></span>
+<span class="nf">find_package(</span><span class="no">BLAS</span><span class="nf">)</span><span class="w"></span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">FindBLAS</a><ul>
+<li><a class="reference internal" href="#input-variables">Input Variables</a></li>
+<li><a class="reference internal" href="#result-variables">Result Variables</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="FindBISON.html"
+                        title="previous chapter">FindBISON</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="FindBacktrace.html"
+                        title="next chapter">FindBacktrace</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/module/FindBLAS.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="FindBacktrace.html" title="FindBacktrace"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="FindBISON.html" title="FindBISON"
+             >previous</a> |</li>
+  <li>
+    <img src="../_static/cmake-logo-16.png" alt=""
+         style="vertical-align: middle; margin-top: -2px" />
+  </li>
+  <li>
+    <a href="https://cmake.org/">CMake</a> &#187;
+  </li>
+  <li>
+    <a href="../index.html">3.14.5 Documentation</a> &#187;
+  </li>
+
+          <li class="nav-item nav-item-1"><a href="../manual/cmake-modules.7.html" >cmake-modules(7)</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2000-2019 Kitware, Inc. and Contributors.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.7.2.
+    </div>
+  </body>
+</html>
