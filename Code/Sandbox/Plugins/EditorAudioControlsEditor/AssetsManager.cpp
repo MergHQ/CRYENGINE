@@ -119,7 +119,7 @@ CControl* CAssetsManager::CreateDefaultControl(string const& name, EAssetType co
 {
 	CControl* pControl = nullptr;
 
-	if ((flags& EAssetFlags::IsInternalControl) != 0)
+	if ((flags& EAssetFlags::IsInternalControl) != EAssetFlags::None)
 	{
 		pControl = CreateControl(name, type, pParent);
 	}
@@ -505,17 +505,17 @@ void CAssetsManager::UpdateAssetConnectionStates(CAsset* const pAsset)
 
 				EAssetFlags const childFlags = pChild->GetFlags();
 
-				if ((childFlags& EAssetFlags::HasPlaceholderConnection) != 0)
+				if ((childFlags& EAssetFlags::HasPlaceholderConnection) != EAssetFlags::None)
 				{
 					hasPlaceholder = true;
 				}
 
-				if ((childFlags& EAssetFlags::HasConnection) == 0)
+				if ((childFlags& EAssetFlags::HasConnection) == EAssetFlags::None)
 				{
 					hasNoConnection = true;
 				}
 
-				if ((childFlags& EAssetFlags::HasControl) != 0)
+				if ((childFlags& EAssetFlags::HasControl) != EAssetFlags::None)
 				{
 					hasControl = true;
 				}
@@ -534,7 +534,7 @@ void CAssetsManager::UpdateAssetConnectionStates(CAsset* const pAsset)
 				pControl->SetFlags(pControl->GetFlags() | EAssetFlags::HasControl);
 
 				bool hasPlaceholder = false;
-				bool hasConnection = (pControl->GetFlags() & EAssetFlags::IsDefaultControl) != 0;
+				bool hasConnection = (pControl->GetFlags() & EAssetFlags::IsDefaultControl) != EAssetFlags::None;
 				size_t const connectionCount = pControl->GetConnectionCount();
 
 				for (size_t i = 0; i < connectionCount; ++i)
@@ -544,7 +544,7 @@ void CAssetsManager::UpdateAssetConnectionStates(CAsset* const pAsset)
 
 					if (pIItem != nullptr)
 					{
-						if ((pIItem->GetFlags() & EItemFlags::IsPlaceHolder) != 0)
+						if ((pIItem->GetFlags() & EItemFlags::IsPlaceHolder) != EItemFlags::None)
 						{
 							hasPlaceholder = true;
 							break;
@@ -597,7 +597,7 @@ void CAssetsManager::DeleteAsset(CAsset* const pAsset)
 			m_libraries.erase(std::remove(m_libraries.begin(), m_libraries.end(), pLibrary), m_libraries.end());
 			SignalOnAfterLibraryRemoved();
 
-			if ((pLibrary->GetPakStatus() & EPakStatus::InPak) != 0)
+			if ((pLibrary->GetPakStatus() & EPakStatus::InPak) != EPakStatus::None)
 			{
 				m_reloadAfterSave = true;
 			}

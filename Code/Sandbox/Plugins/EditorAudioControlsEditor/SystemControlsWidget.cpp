@@ -470,39 +470,39 @@ void CSystemControlsWidget::OnContextMenu(QPoint const& pos)
 
 							pAddMenu->addAction(GetAssetIcon(EAssetType::Folder), tr("Folder"), [=]() { CreateFolder(pParent); });
 
-							if ((g_implInfo.flags & EImplInfoFlags::SupportsTriggers) != 0)
+							if ((g_implInfo.flags & EImplInfoFlags::SupportsTriggers) != EImplInfoFlags::None)
 							{
 								pAddMenu->addAction(GetAssetIcon(EAssetType::Trigger), tr("Trigger"), [=]() { CreateControl("new_trigger", EAssetType::Trigger, pParent); });
 							}
 
-							if ((g_implInfo.flags & EImplInfoFlags::SupportsParameters) != 0)
+							if ((g_implInfo.flags & EImplInfoFlags::SupportsParameters) != EImplInfoFlags::None)
 							{
 								pAddMenu->addAction(GetAssetIcon(EAssetType::Parameter), tr("Parameter"), [=]() { CreateControl("new_parameter", EAssetType::Parameter, pParent); });
 							}
 
-							if ((g_implInfo.flags & EImplInfoFlags::SupportsSwitches) != 0)
+							if ((g_implInfo.flags & EImplInfoFlags::SupportsSwitches) != EImplInfoFlags::None)
 							{
 								pAddMenu->addAction(GetAssetIcon(EAssetType::Switch), tr("Switch"), [=]() { CreateControl("new_switch", EAssetType::Switch, pParent); });
 							}
 
-							if ((g_implInfo.flags & EImplInfoFlags::SupportsEnvironments) != 0)
+							if ((g_implInfo.flags & EImplInfoFlags::SupportsEnvironments) != EImplInfoFlags::None)
 							{
 								pAddMenu->addAction(GetAssetIcon(EAssetType::Environment), tr("Environment"), [=]() { CreateControl("new_environment", EAssetType::Environment, pParent); });
 							}
 
-							if ((g_implInfo.flags & EImplInfoFlags::SupportsPreloads) != 0)
+							if ((g_implInfo.flags & EImplInfoFlags::SupportsPreloads) != EImplInfoFlags::None)
 							{
 								pAddMenu->addAction(GetAssetIcon(EAssetType::Preload), tr("Preload"), [=]() { CreateControl("new_preload", EAssetType::Preload, pParent); });
 							}
 
-							if ((g_implInfo.flags & EImplInfoFlags::SupportsSettings) != 0)
+							if ((g_implInfo.flags & EImplInfoFlags::SupportsSettings) != EImplInfoFlags::None)
 							{
 								pAddMenu->addAction(GetAssetIcon(EAssetType::Setting), tr("Setting"), [=]() { CreateControl("new_setting", EAssetType::Setting, pParent); });
 							}
 
 							if (pParent->GetType() == EAssetType::Library)
 							{
-								if ((libraries[0]->GetPakStatus() & EPakStatus::OnDisk) != 0)
+								if ((libraries[0]->GetPakStatus() & EPakStatus::OnDisk) != EPakStatus::None)
 								{
 									pContextMenu->addAction(tr("Show in File Explorer"), [=]()
 										{
@@ -513,7 +513,7 @@ void CSystemControlsWidget::OnContextMenu(QPoint const& pos)
 								}
 							}
 
-							if ((g_implInfo.flags & EImplInfoFlags::SupportsFileImport) != 0)
+							if ((g_implInfo.flags & EImplInfoFlags::SupportsFileImport) != EImplInfoFlags::None)
 							{
 								pImportAsset = pAsset;
 							}
@@ -535,7 +535,7 @@ void CSystemControlsWidget::OnContextMenu(QPoint const& pos)
 					}
 					else if (controlType == EAssetType::Switch)
 					{
-						if ((g_implInfo.flags & EImplInfoFlags::SupportsStates) != 0)
+						if ((g_implInfo.flags & EImplInfoFlags::SupportsStates) != EImplInfoFlags::None)
 						{
 							pAddMenu->addAction(GetAssetIcon(EAssetType::State), tr("State"), [&]() { CreateControl("new_state", EAssetType::State, pControl); });
 						}
@@ -615,7 +615,7 @@ void CSystemControlsWidget::OnContextMenu(QPoint const& pos)
 		}
 		else if ((libraries.size() == 1) && controls.empty() && folders.empty())
 		{
-			if ((libraries[0]->GetPakStatus() & EPakStatus::OnDisk) != 0)
+			if ((libraries[0]->GetPakStatus() & EPakStatus::OnDisk) != EPakStatus::None)
 			{
 				CAsset const* const pLibrary = static_cast<CAsset*>(libraries[0]);
 
@@ -725,11 +725,11 @@ void CSystemControlsWidget::OnDeleteSelectedControls()
 					{
 						auto const pLibrary = static_cast<CLibrary* const>(pAsset);
 
-						if ((pLibrary->GetPakStatus() & EPakStatus::OnDisk) != 0)
+						if ((pLibrary->GetPakStatus() & EPakStatus::OnDisk) != EPakStatus::None)
 						{
 							g_assetsManager.DeleteAsset(pAsset);
 						}
-						else if ((pLibrary->GetPakStatus() & EPakStatus::InPak) == 0)
+						else if ((pLibrary->GetPakStatus() & EPakStatus::InPak) == EPakStatus::None)
 						{
 							// Newly created, unsaved library.
 							g_assetsManager.DeleteAsset(pAsset);
@@ -804,7 +804,7 @@ void CSystemControlsWidget::ExecuteControl()
 
 	if ((pAsset != nullptr) && (pAsset->GetType() == EAssetType::Trigger))
 	{
-		if ((pAsset->GetFlags() & EAssetFlags::IsModified) == 0)
+		if ((pAsset->GetFlags() & EAssetFlags::IsModified) == EAssetFlags::None)
 		{
 			CAudioControlsEditorPlugin::ExecuteTrigger(pAsset->GetName());
 		}
@@ -917,13 +917,13 @@ void CSystemControlsWidget::OnUpdateCreateButtons()
 					bool const isLibraryOrFolder = (assetType == EAssetType::Library) || (assetType == EAssetType::Folder);
 
 					m_pCreateFolderAction->setVisible(isLibraryOrFolder);
-					m_pCreateTriggerAction->setVisible(isLibraryOrFolder && ((g_implInfo.flags & EImplInfoFlags::SupportsTriggers) != 0));
-					m_pCreateParameterAction->setVisible(isLibraryOrFolder && ((g_implInfo.flags & EImplInfoFlags::SupportsParameters) != 0));
-					m_pCreateSwitchAction->setVisible(isLibraryOrFolder && ((g_implInfo.flags & EImplInfoFlags::SupportsSwitches) != 0));
-					m_pCreateStateAction->setVisible((assetType == EAssetType::Switch) && ((g_implInfo.flags & EImplInfoFlags::SupportsStates) != 0));
-					m_pCreateEnvironmentAction->setVisible(isLibraryOrFolder && ((g_implInfo.flags & EImplInfoFlags::SupportsEnvironments) != 0));
-					m_pCreatePreloadAction->setVisible(isLibraryOrFolder && ((g_implInfo.flags & EImplInfoFlags::SupportsPreloads) != 0));
-					m_pCreateSettingAction->setVisible(isLibraryOrFolder && ((g_implInfo.flags & EImplInfoFlags::SupportsSettings) != 0));
+					m_pCreateTriggerAction->setVisible(isLibraryOrFolder && ((g_implInfo.flags & EImplInfoFlags::SupportsTriggers) != EImplInfoFlags::None));
+					m_pCreateParameterAction->setVisible(isLibraryOrFolder && ((g_implInfo.flags & EImplInfoFlags::SupportsParameters) != EImplInfoFlags::None));
+					m_pCreateSwitchAction->setVisible(isLibraryOrFolder && ((g_implInfo.flags & EImplInfoFlags::SupportsSwitches) != EImplInfoFlags::None));
+					m_pCreateStateAction->setVisible((assetType == EAssetType::Switch) && ((g_implInfo.flags & EImplInfoFlags::SupportsStates) != EImplInfoFlags::None));
+					m_pCreateEnvironmentAction->setVisible(isLibraryOrFolder && ((g_implInfo.flags & EImplInfoFlags::SupportsEnvironments) != EImplInfoFlags::None));
+					m_pCreatePreloadAction->setVisible(isLibraryOrFolder && ((g_implInfo.flags & EImplInfoFlags::SupportsPreloads) != EImplInfoFlags::None));
+					m_pCreateSettingAction->setVisible(isLibraryOrFolder && ((g_implInfo.flags & EImplInfoFlags::SupportsSettings) != EImplInfoFlags::None));
 
 					isActionVisible = true;
 				}
@@ -1015,7 +1015,7 @@ bool CSystemControlsWidget::IsDefaultControlSelected() const
 		{
 			CAsset const* const pAsset = CSystemSourceModel::GetAssetFromIndex(index, g_systemNameColumn);
 
-			if ((pAsset != nullptr) && ((pAsset->GetFlags() & EAssetFlags::IsDefaultControl) != 0))
+			if ((pAsset != nullptr) && ((pAsset->GetFlags() & EAssetFlags::IsDefaultControl) != EAssetFlags::None))
 			{
 				isDefaultControlSelected = true;
 				break;

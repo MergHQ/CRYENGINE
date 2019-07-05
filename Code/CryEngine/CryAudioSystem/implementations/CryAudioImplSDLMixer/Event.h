@@ -120,7 +120,7 @@ public:
 	void  IncrementNumInstances()           { ++m_numInstances; }
 	void  DecrementNumInstances();
 
-	bool  CanBeDestructed() const { return ((m_flags& EEventFlags::ToBeDestructed) != 0) && (m_numInstances == 0); }
+	bool  CanBeDestructed() const { return ((m_flags& EEventFlags::ToBeDestructed) != EEventFlags::None) && (m_numInstances == 0); }
 
 private:
 

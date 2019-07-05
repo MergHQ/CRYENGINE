@@ -106,7 +106,7 @@ CObject::CObject(CTransformation const& transformation, CListener* const pListen
 //////////////////////////////////////////////////////////////////////////
 CObject::~CObject()
 {
-	if ((m_flags& EObjectFlags::TrackVelocityForDoppler) != 0)
+	if ((m_flags& EObjectFlags::TrackVelocityForDoppler) != EObjectFlags::None)
 	{
 		CRY_ASSERT_MESSAGE(g_numObjectsWithDoppler > 0, "g_numObjectsWithDoppler is 0 but an object with doppler tracking still exists during %s", __FUNCTION__);
 		g_numObjectsWithDoppler--;
@@ -133,9 +133,9 @@ void CObject::Update(float const deltaTime)
 		{
 			CCueInstance* const pCueInstance = *iter;
 
-			if ((pCueInstance->GetFlags() & ECueInstanceFlags::ToBeRemoved) != 0)
+			if ((pCueInstance->GetFlags() & ECueInstanceFlags::ToBeRemoved) != ECueInstanceFlags::None)
 			{
-				ETriggerResult const result = ((pCueInstance->GetFlags() & ECueInstanceFlags::IsPending) != 0) ? ETriggerResult::Pending : ETriggerResult::Playing;
+				ETriggerResult const result = ((pCueInstance->GetFlags() & ECueInstanceFlags::IsPending) != ECueInstanceFlags::None) ? ETriggerResult::Pending : ETriggerResult::Playing;
 				gEnv->pAudioSystem->ReportFinishedTriggerConnectionInstance(pCueInstance->GetTriggerInstanceId(), result);
 				g_pImpl->DestructCueInstance(pCueInstance);
 				removedCueInstance = true;
@@ -149,11 +149,11 @@ void CObject::Update(float const deltaTime)
 				iter = m_cueInstances.begin();
 				iterEnd = m_cueInstances.end();
 			}
-			else if ((pCueInstance->GetFlags() & ECueInstanceFlags::IsPending) != 0)
+			else if ((pCueInstance->GetFlags() & ECueInstanceFlags::IsPending) != ECueInstanceFlags::None)
 			{
 				if (pCueInstance->PrepareForPlayback(*this))
 				{
-					ETriggerResult const result = ((pCueInstance->GetFlags() & ECueInstanceFlags::IsVirtual) == 0) ? ETriggerResult::Playing : ETriggerResult::Virtual;
+					ETriggerResult const result = ((pCueInstance->GetFlags() & ECueInstanceFlags::IsVirtual) == ECueInstanceFlags::None) ? ETriggerResult::Playing : ETriggerResult::Virtual;
 					gEnv->pAudioSystem->ReportStartedTriggerConnectionInstance(pCueInstance->GetTriggerInstanceId(), result);
 
 					UpdateVirtualState(pCueInstance);
@@ -172,11 +172,11 @@ void CObject::Update(float const deltaTime)
 
 	if ((previousFlags != m_flags) && !m_cueInstances.empty())
 	{
-		if (((previousFlags& EObjectFlags::IsVirtual) != 0) && ((m_flags& EObjectFlags::IsVirtual) == 0))
+		if (((previousFlags& EObjectFlags::IsVirtual) != EObjectFlags::None) && ((m_flags& EObjectFlags::IsVirtual) == EObjectFlags::None))
 		{
 			gEnv->pAudioSystem->ReportPhysicalizedObject(this);
 		}
-		else if (((previousFlags& EObjectFlags::IsVirtual) == 0) && ((m_flags& EObjectFlags::IsVirtual) != 0))
+		else if (((previousFlags& EObjectFlags::IsVirtual) == EObjectFlags::None) && ((m_flags& EObjectFlags::IsVirtual) != EObjectFlags::None))
 		{
 			gEnv->pAudioSystem->ReportVirtualizedObject(this);
 		}
@@ -187,7 +187,7 @@ void CObject::Update(float const deltaTime)
 		UpdateVelocityTracking();
 	}
 
-	if (((m_flags& EObjectFlags::MovingOrDecaying) != 0) && (deltaTime > 0.0f))
+	if (((m_flags& EObjectFlags::MovingOrDecaying) != EObjectFlags::None) && (deltaTime > 0.0f))
 	{
 		UpdateVelocities(deltaTime);
 	}
@@ -198,7 +198,7 @@ void CObject::SetTransformation(CTransformation const& transformation)
 {
 	m_position = transformation.GetPosition();
 
-	if (((m_flags& EObjectFlags::TrackAbsoluteVelocity) != 0) || ((m_flags& EObjectFlags::TrackVelocityForDoppler) != 0))
+	if (((m_flags& EObjectFlags::TrackAbsoluteVelocity) != EObjectFlags::None) || ((m_flags& EObjectFlags::TrackVelocityForDoppler) != EObjectFlags::None))
 	{
 		m_flags |= EObjectFlags::MovingOrDecaying;
 	}
@@ -217,7 +217,7 @@ void CObject::SetTransformation(CTransformation const& transformation)
 		criAtomEx3dSource_SetPosition(m_p3dSource, &m_3dAttributes.pos);
 		criAtomEx3dSource_SetOrientation(m_p3dSource, &m_3dAttributes.fwd, &m_3dAttributes.up);
 
-		if ((m_flags& EObjectFlags::TrackVelocityForDoppler) != 0)
+		if ((m_flags& EObjectFlags::TrackVelocityForDoppler) != EObjectFlags::None)
 		{
 			Fill3DAttributeVelocity(m_velocity, m_3dAttributes);
 			criAtomEx3dSource_SetVelocity(m_p3dSource, &m_3dAttributes.vel);
@@ -284,12 +284,12 @@ void CObject::DrawDebugInfo(IRenderAuxGeom& auxGeom, float const posX, float pos
 {
 #if defined(CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE)
 
-	if (((m_flags& EObjectFlags::TrackAbsoluteVelocity) != 0) || ((m_flags& EObjectFlags::TrackVelocityForDoppler) != 0))
+	if (((m_flags& EObjectFlags::TrackAbsoluteVelocity) != EObjectFlags::None) || ((m_flags& EObjectFlags::TrackVelocityForDoppler) != EObjectFlags::None))
 	{
 		bool isVirtual = false;
 		// To do: add check for virtual states.
 
-		if ((m_flags& EObjectFlags::TrackAbsoluteVelocity) != 0)
+		if ((m_flags& EObjectFlags::TrackAbsoluteVelocity) != EObjectFlags::None)
 		{
 			auxGeom.Draw2dLabel(
 				posX,
@@ -305,7 +305,7 @@ void CObject::DrawDebugInfo(IRenderAuxGeom& auxGeom, float const posX, float pos
 			posY += Debug::g_objectLineHeight;
 		}
 
-		if ((m_flags& EObjectFlags::TrackVelocityForDoppler) != 0)
+		if ((m_flags& EObjectFlags::TrackVelocityForDoppler) != EObjectFlags::None)
 		{
 			auxGeom.Draw2dLabel(
 				posX,
@@ -388,8 +388,8 @@ void CObject::UpdateVelocityTracking()
 	while ((iter != iterEnd) && !(trackAbsoluteVelocity && trackDoppler))
 	{
 		CCueInstance* const pCueInstance = *iter;
-		trackAbsoluteVelocity |= ((pCueInstance->GetFlags() & ECueInstanceFlags::HasAbsoluteVelocity) != 0);
-		trackDoppler |= ((pCueInstance->GetFlags() & ECueInstanceFlags::HasDoppler) != 0);
+		trackAbsoluteVelocity |= ((pCueInstance->GetFlags() & ECueInstanceFlags::HasAbsoluteVelocity) != ECueInstanceFlags::None);
+		trackDoppler |= ((pCueInstance->GetFlags() & ECueInstanceFlags::HasDoppler) != ECueInstanceFlags::None);
 		++iter;
 	}
 
@@ -421,7 +421,7 @@ void CObject::UpdateVelocityTracking()
 
 	if (trackDoppler)
 	{
-		if ((m_flags& EObjectFlags::TrackVelocityForDoppler) == 0)
+		if ((m_flags& EObjectFlags::TrackVelocityForDoppler) == EObjectFlags::None)
 		{
 			m_flags |= EObjectFlags::TrackVelocityForDoppler;
 			g_numObjectsWithDoppler++;
@@ -429,7 +429,7 @@ void CObject::UpdateVelocityTracking()
 	}
 	else
 	{
-		if ((m_flags& EObjectFlags::TrackVelocityForDoppler) != 0)
+		if ((m_flags& EObjectFlags::TrackVelocityForDoppler) != EObjectFlags::None)
 		{
 			m_flags &= ~EObjectFlags::TrackVelocityForDoppler;
 
@@ -448,14 +448,14 @@ void CObject::UpdateVirtualState(CCueInstance* const pCueInstance)
 {
 #if defined(CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE)
 	// Always update in production code for debug draw.
-	if ((pCueInstance->GetFlags() & ECueInstanceFlags::IsVirtual) == 0)
+	if ((pCueInstance->GetFlags() & ECueInstanceFlags::IsVirtual) == ECueInstanceFlags::None)
 	{
 		m_flags &= ~EObjectFlags::IsVirtual;
 	}
 #else
-	if (((m_flags& EObjectFlags::IsVirtual) != 0) && ((m_flags& EObjectFlags::UpdateVirtualStates) != 0))
+	if (((m_flags& EObjectFlags::IsVirtual) != EObjectFlags::None) && ((m_flags& EObjectFlags::UpdateVirtualStates) != EObjectFlags::None))
 	{
-		if ((pCueInstance->GetFlags() & ECueInstanceFlags::IsVirtual) == 0)
+		if ((pCueInstance->GetFlags() & ECueInstanceFlags::IsVirtual) == ECueInstanceFlags::None)
 		{
 			m_flags &= ~EObjectFlags::IsVirtual;
 		}
@@ -485,7 +485,7 @@ void CObject::UpdateVelocities(float const deltaTime)
 			m_flags &= ~EObjectFlags::MovingOrDecaying;
 		}
 
-		if ((m_flags& EObjectFlags::TrackVelocityForDoppler) != 0)
+		if ((m_flags& EObjectFlags::TrackVelocityForDoppler) != EObjectFlags::None)
 		{
 			Fill3DAttributeVelocity(m_velocity, m_3dAttributes);
 			criAtomEx3dSource_SetVelocity(m_p3dSource, &m_3dAttributes.vel);
@@ -493,7 +493,7 @@ void CObject::UpdateVelocities(float const deltaTime)
 		}
 	}
 
-	if ((m_flags& EObjectFlags::TrackAbsoluteVelocity) != 0)
+	if ((m_flags& EObjectFlags::TrackAbsoluteVelocity) != EObjectFlags::None)
 	{
 		float const absoluteVelocity = m_velocity.GetLength();
 

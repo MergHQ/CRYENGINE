@@ -20,37 +20,37 @@ AkCallbackType SystemToWwiseCallbacks(ESystemEvents const events)
 {
 	int callbackTypes = AK_EndOfEvent;
 
-	if ((events& ESystemEvents::OnBar) != 0)
+	if ((events& ESystemEvents::OnBar) != ESystemEvents::None)
 	{
 		callbackTypes |= AK_MusicSyncBar;
 	}
 
-	if ((events& ESystemEvents::OnBeat) != 0)
+	if ((events& ESystemEvents::OnBeat) != ESystemEvents::None)
 	{
 		callbackTypes |= AK_MusicSyncBeat;
 	}
 
-	if ((events& ESystemEvents::OnEntry) != 0)
+	if ((events& ESystemEvents::OnEntry) != ESystemEvents::None)
 	{
 		callbackTypes |= AK_MusicSyncEntry;
 	}
 
-	if ((events& ESystemEvents::OnExit) != 0)
+	if ((events& ESystemEvents::OnExit) != ESystemEvents::None)
 	{
 		callbackTypes |= AK_MusicSyncExit;
 	}
 
-	if ((events& ESystemEvents::OnGrid) != 0)
+	if ((events& ESystemEvents::OnGrid) != ESystemEvents::None)
 	{
 		callbackTypes |= AK_MusicSyncGrid;
 	}
 
-	if ((events& ESystemEvents::OnSyncPoint) != 0)
+	if ((events& ESystemEvents::OnSyncPoint) != ESystemEvents::None)
 	{
 		callbackTypes |= AK_MusicSyncPoint;
 	}
 
-	if ((events& ESystemEvents::OnUserMarker) != 0)
+	if ((events& ESystemEvents::OnUserMarker) != ESystemEvents::None)
 	{
 		callbackTypes |= AK_MusicSyncUserCue;
 	}

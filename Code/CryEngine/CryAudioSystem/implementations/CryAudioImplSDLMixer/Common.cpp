@@ -77,7 +77,7 @@ void SetChannelPosition(CEvent const& event, int const channelID, float const di
 {
 	uint8 distanceToSet = 0;
 
-	if ((event.GetFlags() & EEventFlags::IsAttenuationEnnabled) != 0)
+	if ((event.GetFlags() & EEventFlags::IsAttenuationEnnabled) != EEventFlags::None)
 	{
 		float const minDistance = event.GetAttenuationMinDistance();
 
@@ -101,7 +101,7 @@ void SetChannelPosition(CEvent const& event, int const channelID, float const di
 	// Temp code, to be reviewed during the SetChannelPosition rewrite:
 	Mix_SetDistance(channelID, distanceToSet);
 
-	if ((event.GetFlags() & EEventFlags::IsPanningEnabled) != 0)
+	if ((event.GetFlags() & EEventFlags::IsPanningEnabled) != EEventFlags::None)
 	{
 		// Temp code, to be reviewed during the SetChannelPosition rewrite:
 		float const absAngle = fabs(angle);

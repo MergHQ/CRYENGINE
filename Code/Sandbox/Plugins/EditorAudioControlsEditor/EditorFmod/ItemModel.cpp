@@ -155,11 +155,11 @@ QVariant CItemModel::data(QModelIndex const& index, int role) const
 						{
 							EItemFlags const flags = pItem->GetFlags();
 
-							if ((flags & (EItemFlags::IsConnected | EItemFlags::IsContainer)) == 0)
+							if ((flags & (EItemFlags::IsConnected | EItemFlags::IsContainer)) == EItemFlags::None)
 							{
 								variant = ModelUtils::GetItemNotificationIcon(ModelUtils::EItemStatus::NoConnection);
 							}
-							else if ((flags& EItemFlags::IsLocalized) != 0)
+							else if ((flags& EItemFlags::IsLocalized) != EItemFlags::None)
 							{
 								variant = ModelUtils::GetItemNotificationIcon(ModelUtils::EItemStatus::Localized);
 							}
@@ -170,11 +170,11 @@ QVariant CItemModel::data(QModelIndex const& index, int role) const
 						{
 							EItemFlags const flags = pItem->GetFlags();
 
-							if ((flags & (EItemFlags::IsConnected | EItemFlags::IsContainer)) == 0)
+							if ((flags & (EItemFlags::IsConnected | EItemFlags::IsContainer)) == EItemFlags::None)
 							{
 								variant = TypeToString(pItem->GetType()) + tr(" is not connected to any audio system control");
 							}
-							else if ((flags& EItemFlags::IsLocalized) != 0)
+							else if ((flags& EItemFlags::IsLocalized) != EItemFlags::None)
 							{
 								variant = TypeToString(pItem->GetType()) + tr(" is localized");
 							}
@@ -198,9 +198,9 @@ QVariant CItemModel::data(QModelIndex const& index, int role) const
 				{
 					EItemFlags const flags = pItem->GetFlags();
 
-					if ((role == Qt::CheckStateRole) && ((flags& EItemFlags::IsContainer) == 0))
+					if ((role == Qt::CheckStateRole) && ((flags& EItemFlags::IsContainer) == EItemFlags::None))
 					{
-						variant = ((flags& EItemFlags::IsConnected) != 0) ? Qt::Checked : Qt::Unchecked;
+						variant = ((flags& EItemFlags::IsConnected) != EItemFlags::None) ? Qt::Checked : Qt::Unchecked;
 					}
 
 					break;
@@ -209,9 +209,9 @@ QVariant CItemModel::data(QModelIndex const& index, int role) const
 				{
 					EItemFlags const flags = pItem->GetFlags();
 
-					if ((role == Qt::CheckStateRole) && ((flags& EItemFlags::IsContainer) == 0))
+					if ((role == Qt::CheckStateRole) && ((flags& EItemFlags::IsContainer) == EItemFlags::None))
 					{
-						variant = ((flags& EItemFlags::IsLocalized) != 0) ? Qt::Checked : Qt::Unchecked;
+						variant = ((flags& EItemFlags::IsLocalized) != EItemFlags::None) ? Qt::Checked : Qt::Unchecked;
 					}
 
 					break;
@@ -243,7 +243,7 @@ QVariant CItemModel::data(QModelIndex const& index, int role) const
 						}
 					case static_cast<int>(ModelUtils::ERoles::IsPlaceholder):
 						{
-							variant = (pItem->GetFlags() & EItemFlags::IsPlaceHolder) != 0;
+							variant = (pItem->GetFlags() & EItemFlags::IsPlaceHolder) != EItemFlags::None;
 							break;
 						}
 					case static_cast<int>(ModelUtils::ERoles::InternalPointer):
@@ -332,7 +332,7 @@ Qt::ItemFlags CItemModel::flags(QModelIndex const& index) const
 	{
 		CItem const* const pItem = ItemFromIndex(index);
 
-		if ((pItem != nullptr) && ((pItem->GetFlags() & EItemFlags::IsPlaceHolder) == 0))
+		if ((pItem != nullptr) && ((pItem->GetFlags() & EItemFlags::IsPlaceHolder) == EItemFlags::None))
 		{
 			flags |= Qt::ItemIsDragEnabled;
 		}

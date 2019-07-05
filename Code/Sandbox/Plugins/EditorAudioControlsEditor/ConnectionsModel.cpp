@@ -228,11 +228,11 @@ QVariant CConnectionsModel::data(QModelIndex const& index, int role) const
 						{
 						case Qt::DecorationRole:
 							{
-								if ((flags& EItemFlags::IsPlaceHolder) != 0)
+								if ((flags& EItemFlags::IsPlaceHolder) != EItemFlags::None)
 								{
 									variant = ModelUtils::GetItemNotificationIcon(ModelUtils::EItemStatus::Placeholder);
 								}
-								else if ((flags& EItemFlags::IsLocalized) != 0)
+								else if ((flags& EItemFlags::IsLocalized) != EItemFlags::None)
 								{
 									variant = ModelUtils::GetItemNotificationIcon(ModelUtils::EItemStatus::Localized);
 								}
@@ -241,11 +241,11 @@ QVariant CConnectionsModel::data(QModelIndex const& index, int role) const
 							}
 						case Qt::ToolTipRole:
 							{
-								if ((flags& EItemFlags::IsPlaceHolder) != 0)
+								if ((flags& EItemFlags::IsPlaceHolder) != EItemFlags::None)
 								{
 									variant = g_pIImpl->GetItemTypeName(pIItem) + tr(" not found in middleware project");
 								}
-								else if ((flags& EItemFlags::IsLocalized) != 0)
+								else if ((flags& EItemFlags::IsLocalized) != EItemFlags::None)
 								{
 									variant = g_pIImpl->GetItemTypeName(pIItem) + tr(" is localized");
 								}

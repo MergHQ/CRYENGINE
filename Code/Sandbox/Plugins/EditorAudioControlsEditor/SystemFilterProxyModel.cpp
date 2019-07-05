@@ -24,7 +24,7 @@ bool CSystemFilterProxyModel::rowMatchesFilter(int sourceRow, QModelIndex const&
 			CRY_ASSERT_MESSAGE(pAsset != nullptr, "Asset is null pointer during %s", __FUNCTION__);
 
 			// Hide internal controls.
-			matchesFilter = (pAsset->GetFlags() & EAssetFlags::IsInternalControl) == 0;
+			matchesFilter = (pAsset->GetFlags() & EAssetFlags::IsInternalControl) == EAssetFlags::None;
 		}
 	}
 

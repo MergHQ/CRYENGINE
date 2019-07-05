@@ -85,7 +85,7 @@ void CEventListenerManager::NotifyListener(SRequestInfo const* const pResultInfo
 
 	for (auto const& listener : m_listeners)
 	{
-		if (((listener.eventMask & pResultInfo->systemEvent) != 0)                                               //check: is the listener interested in this specific event?
+		if (((listener.eventMask & pResultInfo->systemEvent) != ESystemEvents::None)                             //check: is the listener interested in this specific event?
 		    && ((listener.pObjectToListenTo == nullptr) || (listener.pObjectToListenTo == pResultInfo->pOwner))) //check: is the listener interested in events from this sender
 		{
 			listener.OnEvent(pResultInfo);

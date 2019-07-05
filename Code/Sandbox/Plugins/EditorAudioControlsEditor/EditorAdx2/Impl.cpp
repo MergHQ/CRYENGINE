@@ -891,7 +891,7 @@ XmlNodeRef CImpl::CreateXMLNodeFromConnection(
 			{
 				node->setAttr(CryAudio::g_szNameAttribute, pItem->GetName());
 
-				if ((pItem->GetFlags() & EItemFlags::IsLocalized) != 0)
+				if ((pItem->GetFlags() & EItemFlags::IsLocalized) != EItemFlags::None)
 				{
 					node->setAttr(CryAudio::Impl::Adx2::g_szLocalizedAttribute, CryAudio::Impl::Adx2::g_szTrueValue);
 				}

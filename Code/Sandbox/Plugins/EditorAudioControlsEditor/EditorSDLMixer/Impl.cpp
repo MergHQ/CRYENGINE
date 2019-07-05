@@ -327,7 +327,7 @@ IConnection* CImpl::CreateConnectionFromXMLNode(XmlNodeRef const& node, EAssetTy
 		{
 			string name = node->getAttr(CryAudio::g_szNameAttribute);
 			string path = node->getAttr(CryAudio::Impl::SDL_mixer::g_szPathAttribute);
-			// Backwards compatibility will be removed before March 2019.
+			// Backwards compatibility will be removed with CE 5.7.
 #if defined (USE_BACKWARDS_COMPATIBILITY)
 			if (name.IsEmpty() && node->haveAttr("sdl_name"))
 			{
@@ -553,7 +553,7 @@ XmlNodeRef CImpl::CreateXMLNodeFromConnection(
 						}
 					}
 
-					if ((pItem->GetFlags() & EItemFlags::IsLocalized) != 0)
+					if ((pItem->GetFlags() & EItemFlags::IsLocalized) != EItemFlags::None)
 					{
 						node->setAttr(CryAudio::Impl::SDL_mixer::g_szLocalizedAttribute, CryAudio::Impl::SDL_mixer::g_szTrueValue);
 					}
@@ -587,7 +587,7 @@ XmlNodeRef CImpl::CreateXMLNodeFromConnection(
 						node->setAttr(CryAudio::Impl::SDL_mixer::g_szShiftAttribute, pParameterConnection->GetShift());
 					}
 
-					if ((pItem->GetFlags() & EItemFlags::IsLocalized) != 0)
+					if ((pItem->GetFlags() & EItemFlags::IsLocalized) != EItemFlags::None)
 					{
 						node->setAttr(CryAudio::Impl::SDL_mixer::g_szLocalizedAttribute, CryAudio::Impl::SDL_mixer::g_szTrueValue);
 					}
@@ -613,7 +613,7 @@ XmlNodeRef CImpl::CreateXMLNodeFromConnection(
 
 					node->setAttr(CryAudio::Impl::SDL_mixer::g_szValueAttribute, pStateConnection->GetValue());
 
-					if ((pItem->GetFlags() & EItemFlags::IsLocalized) != 0)
+					if ((pItem->GetFlags() & EItemFlags::IsLocalized) != EItemFlags::None)
 					{
 						node->setAttr(CryAudio::Impl::SDL_mixer::g_szLocalizedAttribute, CryAudio::Impl::SDL_mixer::g_szTrueValue);
 					}

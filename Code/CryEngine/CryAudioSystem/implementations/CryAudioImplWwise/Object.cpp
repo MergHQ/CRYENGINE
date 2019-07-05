@@ -61,7 +61,7 @@ CObject::CObject(
 //////////////////////////////////////////////////////////////////////////
 CObject::~CObject()
 {
-	if ((m_flags& EObjectFlags::TrackRelativeVelocity) != 0)
+	if ((m_flags& EObjectFlags::TrackRelativeVelocity) != EObjectFlags::None)
 	{
 		CRY_ASSERT_MESSAGE(g_numObjectsWithRelativeVelocity > 0, "g_numObjectsWithRelativeVelocity is 0 but object \"%s\"with relative velocity tracking still exists during %s", m_name.c_str(), __FUNCTION__);
 		g_numObjectsWithRelativeVelocity--;
@@ -117,7 +117,7 @@ void CObject::Update(float const deltaTime)
 				m_flags &= ~EObjectFlags::IsVirtual;
 			}
 #else
-			if (((m_flags& EObjectFlags::IsVirtual) != 0) && ((m_flags& EObjectFlags::UpdateVirtualStates) != 0))
+			if (((m_flags& EObjectFlags::IsVirtual) != EObjectFlags::None) && ((m_flags& EObjectFlags::UpdateVirtualStates) != EObjectFlags::None))
 			{
 				pEventInstance->UpdateVirtualState(m_shortestDistanceToListener);
 
@@ -133,11 +133,11 @@ void CObject::Update(float const deltaTime)
 
 	if ((previousFlags != m_flags) && !m_eventInstances.empty())
 	{
-		if (((previousFlags& EObjectFlags::IsVirtual) != 0) && ((m_flags& EObjectFlags::IsVirtual) == 0))
+		if (((previousFlags& EObjectFlags::IsVirtual) != EObjectFlags::None) && ((m_flags& EObjectFlags::IsVirtual) == EObjectFlags::None))
 		{
 			gEnv->pAudioSystem->ReportPhysicalizedObject(this);
 		}
-		else if (((previousFlags& EObjectFlags::IsVirtual) == 0) && ((m_flags& EObjectFlags::IsVirtual) != 0))
+		else if (((previousFlags& EObjectFlags::IsVirtual) == EObjectFlags::None) && ((m_flags& EObjectFlags::IsVirtual) != EObjectFlags::None))
 		{
 			gEnv->pAudioSystem->ReportVirtualizedObject(this);
 		}
@@ -154,7 +154,7 @@ void CObject::SetTransformation(CTransformation const& transformation)
 {
 	m_position = transformation.GetPosition();
 
-	if (((m_flags& EObjectFlags::TrackAbsoluteVelocity) != 0) || ((m_flags& EObjectFlags::TrackRelativeVelocity) != 0))
+	if (((m_flags& EObjectFlags::TrackAbsoluteVelocity) != EObjectFlags::None) || ((m_flags& EObjectFlags::TrackRelativeVelocity) != EObjectFlags::None))
 	{
 		m_flags |= EObjectFlags::MovingOrDecaying;
 	}
@@ -277,7 +277,7 @@ void CObject::AddEventInstance(CEventInstance* const pEventInstance)
 
 	pEventInstance->UpdateVirtualState(m_shortestDistanceToListener);
 
-	if ((m_flags& EObjectFlags::IsVirtual) != 0)
+	if ((m_flags& EObjectFlags::IsVirtual) != EObjectFlags::None)
 	{
 		if (pEventInstance->GetState() != EEventInstanceState::Virtual)
 		{
@@ -361,7 +361,7 @@ void CObject::SetAuxBusSend(AkAuxBusID const busId, float const amount)
 ///////////////////////////////////////////////////////////////////////////
 void CObject::UpdateVelocities(float const deltaTime)
 {
-	if ((m_flags& EObjectFlags::MovingOrDecaying) != 0)
+	if ((m_flags& EObjectFlags::MovingOrDecaying) != EObjectFlags::None)
 	{
 		Vec3 const deltaPos(m_position - m_previousPosition);
 
@@ -383,7 +383,7 @@ void CObject::UpdateVelocities(float const deltaTime)
 			}
 		}
 
-		if ((m_flags& EObjectFlags::TrackAbsoluteVelocity) != 0)
+		if ((m_flags& EObjectFlags::TrackAbsoluteVelocity) != EObjectFlags::None)
 		{
 			float const absoluteVelocity = m_velocity.GetLength();
 
@@ -404,14 +404,14 @@ void CObject::UpdateVelocities(float const deltaTime)
 			}
 		}
 
-		if ((m_flags& EObjectFlags::TrackRelativeVelocity) != 0)
+		if ((m_flags& EObjectFlags::TrackRelativeVelocity) != EObjectFlags::None)
 		{
 			// Approaching positive, departing negative value. Highest value of all listeners is used.
 			float relativeVelocity = 0.0f;
 
 			for (auto const& info : m_listenerInfos)
 			{
-				if (((m_flags& EObjectFlags::MovingOrDecaying) != 0) && !info.pListener->HasMoved())
+				if (((m_flags& EObjectFlags::MovingOrDecaying) != EObjectFlags::None) && !info.pListener->HasMoved())
 				{
 					float const tempRelativeVelocity = -m_velocity.Dot((m_position - info.pListener->GetPosition()).GetNormalized());
 
@@ -420,7 +420,7 @@ void CObject::UpdateVelocities(float const deltaTime)
 						relativeVelocity = tempRelativeVelocity;
 					}
 				}
-				else if (((m_flags& EObjectFlags::MovingOrDecaying) != 0) && info.pListener->HasMoved())
+				else if (((m_flags& EObjectFlags::MovingOrDecaying) != EObjectFlags::None) && info.pListener->HasMoved())
 				{
 					Vec3 const relativeVelocityVec(m_velocity - info.pListener->GetVelocity());
 
@@ -436,7 +436,7 @@ void CObject::UpdateVelocities(float const deltaTime)
 			TryToSetRelativeVelocity(relativeVelocity);
 		}
 	}
-	else if ((m_flags& EObjectFlags::TrackRelativeVelocity) != 0)
+	else if ((m_flags& EObjectFlags::TrackRelativeVelocity) != EObjectFlags::None)
 	{
 		for (auto const& info : m_listenerInfos)
 		{
@@ -575,7 +575,7 @@ void CObject::ToggleFunctionality(EObjectFunctionality const type, bool const en
 		{
 			if (enable)
 			{
-				if ((m_flags& EObjectFlags::TrackRelativeVelocity) == 0)
+				if ((m_flags& EObjectFlags::TrackRelativeVelocity) == EObjectFlags::None)
 				{
 					m_flags |= EObjectFlags::TrackRelativeVelocity;
 					g_numObjectsWithRelativeVelocity++;
@@ -583,7 +583,7 @@ void CObject::ToggleFunctionality(EObjectFunctionality const type, bool const en
 			}
 			else
 			{
-				if ((m_flags& EObjectFlags::TrackRelativeVelocity) != 0)
+				if ((m_flags& EObjectFlags::TrackRelativeVelocity) != EObjectFlags::None)
 				{
 					m_flags &= ~EObjectFlags::TrackRelativeVelocity;
 

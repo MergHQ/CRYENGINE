@@ -112,7 +112,7 @@ FileId CFileCacheManager::TryAddFileCacheEntry(XmlNodeRef const& fileNode, Conte
 			}
 			else
 			{
-				if (((pExisitingFile->m_flags & EFileFlags::UseCounted) != 0) && bAutoLoad)
+				if (((pExisitingFile->m_flags & EFileFlags::UseCounted) != EFileFlags::None) && bAutoLoad)
 				{
 					// This file entry is upgraded from "manual loading" to "auto loading" but needs a reset to "manual loading" again!
 					pExisitingFile->m_flags = (pExisitingFile->m_flags | EFileFlags::NeedsResetToManualLoading) & ~EFileFlags::UseCounted;
@@ -149,7 +149,7 @@ bool CFileCacheManager::TryRemoveFileCacheEntry(FileId const id, ContextId const
 			delete pFile;
 			m_files.erase(iter);
 		}
-		else if ((contextId != GlobalContextId) && ((pFile->m_flags & EFileFlags::NeedsResetToManualLoading) != 0))
+		else if ((contextId != GlobalContextId) && ((pFile->m_flags & EFileFlags::NeedsResetToManualLoading) != EFileFlags::None))
 		{
 			pFile->m_flags = (pFile->m_flags | EFileFlags::UseCounted) & ~EFileFlags::NeedsResetToManualLoading;
 
@@ -169,9 +169,9 @@ void CFileCacheManager::UpdateLocalizedFileCacheEntries()
 	{
 		CFile* const pFile = filePair.second;
 
-		if (pFile != nullptr && (pFile->m_flags & EFileFlags::Localized) != 0)
+		if (pFile != nullptr && (pFile->m_flags & EFileFlags::Localized) != EFileFlags::None)
 		{
-			if ((pFile->m_flags & (EFileFlags::Cached | EFileFlags::Loading)) != 0)
+			if ((pFile->m_flags & (EFileFlags::Cached | EFileFlags::Loading)) != EFileFlags::None)
 			{
 				// The file needs to be unloaded first.
 				size_t const useCount = pFile->m_useCount;
@@ -285,10 +285,10 @@ bool CFileCacheManager::UncacheFileCacheEntryInternal(CFile* const pFile, bool c
 	if (pFile->m_useCount < 1 || bIgnoreUsedCount)
 	{
 		// Must be cached to proceed.
-		if ((pFile->m_flags & EFileFlags::Cached) != 0)
+		if ((pFile->m_flags & EFileFlags::Cached) != EFileFlags::None)
 		{
 			// Only "use-counted" files can become removable!
-			if ((pFile->m_flags & EFileFlags::UseCounted) != 0)
+			if ((pFile->m_flags & EFileFlags::UseCounted) != EFileFlags::None)
 			{
 				pFile->m_flags |= EFileFlags::Removable;
 			}
@@ -298,7 +298,7 @@ bool CFileCacheManager::UncacheFileCacheEntryInternal(CFile* const pFile, bool c
 				UncacheFile(pFile);
 			}
 		}
-		else if ((pFile->m_flags & EFileFlags::Loading) != 0)
+		else if ((pFile->m_flags & EFileFlags::Loading) != EFileFlags::None)
 		{
 #if defined(CRY_AUDIO_USE_DEBUG_CODE)
 			Cry::Audio::Log(ELogType::Always, "Trying to remove a loading file cache entry %s", pFile->m_path.c_str());
@@ -307,7 +307,7 @@ bool CFileCacheManager::UncacheFileCacheEntryInternal(CFile* const pFile, bool c
 			// Abort loading and reset the entry.
 			UncacheFile(pFile);
 		}
-		else if ((pFile->m_flags & EFileFlags::MemAllocFail) != 0)
+		else if ((pFile->m_flags & EFileFlags::MemAllocFail) != EFileFlags::None)
 		{
 #if defined(CRY_AUDIO_USE_DEBUG_CODE)
 			Cry::Audio::Log(ELogType::Always, "Resetting a memalloc-failed file cache entry %s", pFile->m_path.c_str());
@@ -362,11 +362,11 @@ void CFileCacheManager::UpdateDebugInfo(char const* const szDebugFilter)
 
 				if (pFile->m_contextId == GlobalContextId)
 				{
-					canEmplace = (drawAll || drawGlobals) || (drawUseCounted && ((pFile->m_flags & EFileFlags::UseCounted) != 0));
+					canEmplace = (drawAll || drawGlobals) || (drawUseCounted && ((pFile->m_flags & EFileFlags::UseCounted) != EFileFlags::None));
 				}
 				else
 				{
-					canEmplace = (drawAll || drawUserDefined) || (drawUseCounted && (pFile->m_flags & EFileFlags::UseCounted) != 0);
+					canEmplace = (drawAll || drawUserDefined) || (drawUseCounted && (pFile->m_flags & EFileFlags::UseCounted) != EFileFlags::None);
 				}
 
 				if (canEmplace)
@@ -409,23 +409,23 @@ void CFileCacheManager::DrawDebugInfo(IRenderAuxGeom& auxGeom, float const posX,
 			CFile* const pFile = infoPair.second;
 			ColorF color = (pFile->m_contextId == GlobalContextId) ? Debug::s_afcmColorContextGlobal : Debug::s_afcmColorContextUserDefined;
 
-			if ((pFile->m_flags & EFileFlags::Loading) != 0)
+			if ((pFile->m_flags & EFileFlags::Loading) != EFileFlags::None)
 			{
 				color = Debug::s_afcmColorFileLoading;
 			}
-			else if ((pFile->m_flags & EFileFlags::MemAllocFail) != 0)
+			else if ((pFile->m_flags & EFileFlags::MemAllocFail) != EFileFlags::None)
 			{
 				color = Debug::s_afcmColorFileMemAllocFail;
 			}
-			else if ((pFile->m_flags & EFileFlags::Removable) != 0)
+			else if ((pFile->m_flags & EFileFlags::Removable) != EFileFlags::None)
 			{
 				color = Debug::s_afcmColorFileRemovable;
 			}
-			else if ((pFile->m_flags & EFileFlags::NotCached) != 0)
+			else if ((pFile->m_flags & EFileFlags::NotCached) != EFileFlags::None)
 			{
 				color = Debug::s_afcmColorFileNotCached;
 			}
-			else if ((pFile->m_flags & EFileFlags::NotFound) != 0)
+			else if ((pFile->m_flags & EFileFlags::NotFound) != EFileFlags::None)
 			{
 				color = Debug::s_afcmColorFileNotFound;
 			}
@@ -439,7 +439,7 @@ void CFileCacheManager::DrawDebugInfo(IRenderAuxGeom& auxGeom, float const posX,
 				color[2] *= clamp_tpl(ratio, 0.0f, color[2]);
 			}
 
-			if ((pFile->m_flags & EFileFlags::UseCounted) != 0)
+			if ((pFile->m_flags & EFileFlags::UseCounted) != EFileFlags::None)
 			{
 				auxGeom.Draw2dLabel(posX, posY, Debug::g_listFontSize, color, false, "%s [%" PRISIZE_T "]", infoPair.first.c_str(), pFile->m_useCount);
 			}
@@ -464,7 +464,7 @@ bool CFileCacheManager::FinishStreamInternal(IReadStreamPtr const pStream, int u
 	CRY_ASSERT(pFile != nullptr);
 
 	// Must be loading in to proceed.
-	if ((pFile != nullptr) && ((pFile->m_flags & EFileFlags::Loading) != 0))
+	if ((pFile != nullptr) && ((pFile->m_flags & EFileFlags::Loading) != EFileFlags::None))
 	{
 		if (error == 0)
 		{
@@ -482,7 +482,7 @@ bool CFileCacheManager::FinishStreamInternal(IReadStreamPtr const pStream, int u
 			fileInfo.pImplData = pFile->m_pImplData;
 			fileInfo.szFileName = PathUtil::GetFile(pFile->m_path.c_str());
 			fileInfo.szFilePath = pFile->m_path.c_str();
-			fileInfo.bLocalized = (pFile->m_flags & EFileFlags::Localized) != 0;
+			fileInfo.bLocalized = (pFile->m_flags & EFileFlags::Localized) != EFileFlags::None;
 
 			g_pIImpl->RegisterInMemoryFile(&fileInfo);
 			bSuccess = true;
@@ -552,7 +552,7 @@ void CFileCacheManager::UncacheFile(CFile* const pFile)
 		pFile->m_pReadStream = nullptr;
 	}
 
-	if ((pFile->m_flags & EFileFlags::Cached) != 0 && pFile->m_pMemoryBlock != nullptr && pFile->m_pMemoryBlock->GetData() != nullptr)
+	if (((pFile->m_flags & EFileFlags::Cached) != EFileFlags::None) && (pFile->m_pMemoryBlock != nullptr) && (pFile->m_pMemoryBlock->GetData() != nullptr))
 	{
 		Impl::SFileInfo fileInfo;
 		fileInfo.memoryBlockAlignment = pFile->m_memoryBlockAlignment;
@@ -582,8 +582,8 @@ void CFileCacheManager::TryToUncacheFiles()
 		CFile* const pFile = filePair.second;
 
 		if ((pFile != nullptr) &&
-		    ((pFile->m_flags & EFileFlags::Cached) != 0) &&
-		    ((pFile->m_flags & EFileFlags::Removable) != 0))
+		    ((pFile->m_flags & EFileFlags::Cached) != EFileFlags::None) &&
+		    ((pFile->m_flags & EFileFlags::Removable) != EFileFlags::None))
 		{
 			UncacheFileCacheEntryInternal(pFile, true);
 		}
@@ -623,8 +623,8 @@ bool CFileCacheManager::TryCacheFileCacheEntryInternal(
 	bool bSuccess = false;
 
 	if (!pFile->m_path.empty() &&
-	    ((pFile->m_flags & EFileFlags::NotCached) != 0) &&
-	    (pFile->m_flags & (EFileFlags::Cached | EFileFlags::Loading)) == 0)
+	    ((pFile->m_flags & EFileFlags::NotCached) != EFileFlags::None) &&
+	    (pFile->m_flags & (EFileFlags::Cached | EFileFlags::Loading)) == EFileFlags::None)
 	{
 		if (AllocateMemoryBlockInternal(pFile))
 		{
@@ -666,11 +666,11 @@ bool CFileCacheManager::TryCacheFileCacheEntryInternal(
 #endif  // CRY_AUDIO_USE_DEBUG_CODE
 		}
 	}
-	else if ((pFile->m_flags & (EFileFlags::Cached | EFileFlags::Loading)) != 0)
+	else if ((pFile->m_flags & (EFileFlags::Cached | EFileFlags::Loading)) != EFileFlags::None)
 	{
 
 #if defined(CRY_AUDIO_USE_DEBUG_CODE)
-		if ((pFile->m_flags & EFileFlags::Loading) != 0)
+		if ((pFile->m_flags & EFileFlags::Loading) != EFileFlags::None)
 		{
 			Cry::Audio::Log(ELogType::Warning, R"(AFCM: could not cache "%s" as it's already loading!)", pFile->m_path.c_str());
 		}
@@ -679,7 +679,7 @@ bool CFileCacheManager::TryCacheFileCacheEntryInternal(
 		bSuccess = true;
 	}
 #if defined(CRY_AUDIO_USE_DEBUG_CODE)
-	else if ((pFile->m_flags & EFileFlags::NotFound) != 0)
+	else if ((pFile->m_flags & EFileFlags::NotFound) != EFileFlags::None)
 	{
 		// The user should be made aware of it.
 		Cry::Audio::Log(ELogType::Error, R"(AFCM: could not cache "%s" as it was not found at the target location!)", pFile->m_path.c_str());
@@ -687,7 +687,7 @@ bool CFileCacheManager::TryCacheFileCacheEntryInternal(
 #endif // CRY_AUDIO_USE_DEBUG_CODE
 
 	// Increment the used count on GameHints.
-	if (((pFile->m_flags & EFileFlags::UseCounted) != 0) && ((pFile->m_flags & (EFileFlags::Cached | EFileFlags::Loading)) != 0))
+	if (((pFile->m_flags & EFileFlags::UseCounted) != EFileFlags::None) && ((pFile->m_flags & (EFileFlags::Cached | EFileFlags::Loading)) != EFileFlags::None))
 	{
 		if (bOverrideUseCount)
 		{

@@ -23,13 +23,13 @@ void SendFinishedTriggerInstanceRequest(
 	void* const pUserData /*= nullptr*/,
 	void* const pUserDataOwner /*= nullptr*/)
 {
-	if ((flags& ERequestFlags::SubsequentCallbackOnExternalThread) != 0)
+	if ((flags& ERequestFlags::SubsequentCallbackOnExternalThread) != ERequestFlags::None)
 	{
 		SCallbackRequestData<ECallbackRequestType::ReportFinishedTriggerInstance> const requestData(triggerId, entityId);
 		CRequest const request(&requestData, ERequestFlags::CallbackOnExternalOrCallingThread, pOwner, pUserData, pUserDataOwner);
 		g_system.PushRequest(request);
 	}
-	else if ((flags& ERequestFlags::SubsequentCallbackOnAudioThread) != 0)
+	else if ((flags& ERequestFlags::SubsequentCallbackOnAudioThread) != ERequestFlags::None)
 	{
 		SCallbackRequestData<ECallbackRequestType::ReportFinishedTriggerInstance> const requestData(triggerId, entityId);
 		CRequest const request(&requestData, ERequestFlags::CallbackOnAudioThread, pOwner, pUserData, pUserDataOwner);

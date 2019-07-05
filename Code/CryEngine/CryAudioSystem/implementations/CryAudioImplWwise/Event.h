@@ -63,7 +63,7 @@ public:
 	void       IncrementNumInstances()         { ++m_numInstances; }
 	void       DecrementNumInstances();
 
-	bool       CanBeDestructed() const { return ((m_flags& EEventFlags::ToBeDestructed) != 0) && (m_numInstances == 0); }
+	bool       CanBeDestructed() const { return ((m_flags& EEventFlags::ToBeDestructed) != EEventFlags::None) && (m_numInstances == 0); }
 
 #if defined(CRY_AUDIO_IMPL_WWISE_USE_DEBUG_CODE)
 	char const* GetName() const { return m_name.c_str(); }

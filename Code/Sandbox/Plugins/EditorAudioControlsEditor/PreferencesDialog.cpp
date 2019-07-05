@@ -56,7 +56,7 @@ CPreferencesDialog::CPreferencesDialog(QWidget* const pParent)
 	pBrowseButton->setToolTip(tr("Select project path"));
 	pBrowseButton->setIconSize(QSize(16, 16));
 
-	if ((g_implInfo.flags & EImplInfoFlags::SupportsProjects) != 0)
+	if ((g_implInfo.flags & EImplInfoFlags::SupportsProjects) != EImplInfoFlags::None)
 	{
 		QObject::connect(pLineEdit, &QLineEdit::textChanged, [=](QString const& projectPath)
 			{

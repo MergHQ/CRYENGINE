@@ -666,7 +666,7 @@ void CImpl::UpdateLocalizedEvents()
 {
 	for (auto const pEvent : g_events)
 	{
-		if ((pEvent->GetFlags() & EEventFlags::IsLocalized) != 0)
+		if ((pEvent->GetFlags() & EEventFlags::IsLocalized) != EEventFlags::None)
 		{
 			stack_string path = m_localizedSoundBankFolder.c_str();
 			path += "/";

@@ -35,7 +35,7 @@ bool CEventInstance::PrepareForOcclusion()
 	FMOD_RESULT const fmodResult = m_pInstance->getChannelGroup(&m_pMasterTrack);
 	CRY_AUDIO_IMPL_FMOD_ASSERT_OK_OR_NOT_LOADED;
 
-	if ((m_pMasterTrack != nullptr) && ((m_event.GetFlags() & EEventFlags::HasOcclusionParameter) == 0))
+	if ((m_pMasterTrack != nullptr) && ((m_event.GetFlags() & EEventFlags::HasOcclusionParameter) == EEventFlags::None))
 	{
 		m_pLowpass = nullptr;
 		int numDSPs = 0;
@@ -73,7 +73,7 @@ bool CEventInstance::PrepareForOcclusion()
 //////////////////////////////////////////////////////////////////////////
 void CEventInstance::SetOcclusion(float const occlusion)
 {
-	if (((m_event.GetFlags() & EEventFlags::HasOcclusionParameter) == 0) && (m_pLowpass != nullptr))
+	if (((m_event.GetFlags() & EEventFlags::HasOcclusionParameter) == EEventFlags::None) && (m_pLowpass != nullptr))
 	{
 		float const range = m_lowpassFrequencyMax - std::max(m_lowpassFrequencyMin, g_cvars.m_lowpassMinCutoffFrequency);
 		float const value = m_lowpassFrequencyMax - (occlusion * range);

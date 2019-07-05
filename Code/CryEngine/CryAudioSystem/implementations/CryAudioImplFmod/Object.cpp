@@ -55,7 +55,7 @@ CObject::CObject(CTransformation const& transformation, int const listenerMask, 
 //////////////////////////////////////////////////////////////////////////
 CObject::~CObject()
 {
-	if ((m_flags& EObjectFlags::TrackVelocityForDoppler) != 0)
+	if ((m_flags& EObjectFlags::TrackVelocityForDoppler) != EObjectFlags::None)
 	{
 		CRY_ASSERT_MESSAGE(g_numObjectsWithDoppler > 0, "g_numObjectsWithDoppler is 0 but an object with doppler tracking still exists during %s", __FUNCTION__);
 		g_numObjectsWithDoppler--;
@@ -118,11 +118,11 @@ void CObject::Update(float const deltaTime)
 
 	if ((previousFlags != m_flags) && !m_eventInstances.empty())
 	{
-		if (((previousFlags& EObjectFlags::IsVirtual) != 0) && ((m_flags& EObjectFlags::IsVirtual) == 0))
+		if (((previousFlags& EObjectFlags::IsVirtual) != EObjectFlags::None) && ((m_flags& EObjectFlags::IsVirtual) == EObjectFlags::None))
 		{
 			gEnv->pAudioSystem->ReportPhysicalizedObject(this);
 		}
-		else if (((previousFlags& EObjectFlags::IsVirtual) == 0) && ((m_flags& EObjectFlags::IsVirtual) != 0))
+		else if (((previousFlags& EObjectFlags::IsVirtual) == EObjectFlags::None) && ((m_flags& EObjectFlags::IsVirtual) != EObjectFlags::None))
 		{
 			gEnv->pAudioSystem->ReportVirtualizedObject(this);
 		}
@@ -133,7 +133,7 @@ void CObject::Update(float const deltaTime)
 		UpdateVelocityTracking();
 	}
 
-	if (((m_flags& EObjectFlags::MovingOrDecaying) != 0) && (deltaTime > 0.0f))
+	if (((m_flags& EObjectFlags::MovingOrDecaying) != EObjectFlags::None) && (deltaTime > 0.0f))
 	{
 		UpdateVelocities(deltaTime);
 	}
@@ -144,7 +144,7 @@ void CObject::SetTransformation(CTransformation const& transformation)
 {
 	m_position = transformation.GetPosition();
 
-	if (((m_flags& EObjectFlags::TrackAbsoluteVelocity) != 0) || ((m_flags& EObjectFlags::TrackVelocityForDoppler) != 0))
+	if (((m_flags& EObjectFlags::TrackAbsoluteVelocity) != EObjectFlags::None) || ((m_flags& EObjectFlags::TrackVelocityForDoppler) != EObjectFlags::None))
 	{
 		m_flags |= EObjectFlags::MovingOrDecaying;
 	}
@@ -160,7 +160,7 @@ void CObject::SetTransformation(CTransformation const& transformation)
 		m_transformation = transformation;
 		Fill3DAttributeTransformation(m_transformation, m_attributes);
 
-		if ((m_flags& EObjectFlags::TrackVelocityForDoppler) != 0)
+		if ((m_flags& EObjectFlags::TrackVelocityForDoppler) != EObjectFlags::None)
 		{
 			Fill3DAttributeVelocity(m_velocity, m_attributes);
 		}
@@ -302,7 +302,7 @@ void CObject::ToggleFunctionality(EObjectFunctionality const type, bool const en
 		{
 			if (enable)
 			{
-				if ((m_flags& EObjectFlags::TrackVelocityForDoppler) == 0)
+				if ((m_flags& EObjectFlags::TrackVelocityForDoppler) == EObjectFlags::None)
 				{
 					m_flags |= EObjectFlags::TrackVelocityForDoppler;
 					g_numObjectsWithDoppler++;
@@ -310,7 +310,7 @@ void CObject::ToggleFunctionality(EObjectFunctionality const type, bool const en
 			}
 			else
 			{
-				if ((m_flags& EObjectFlags::TrackVelocityForDoppler) != 0)
+				if ((m_flags& EObjectFlags::TrackVelocityForDoppler) != EObjectFlags::None)
 				{
 					m_flags &= ~EObjectFlags::TrackVelocityForDoppler;
 
@@ -337,7 +337,7 @@ void CObject::DrawDebugInfo(IRenderAuxGeom& auxGeom, float const posX, float pos
 {
 #if defined(CRY_AUDIO_IMPL_FMOD_USE_DEBUG_CODE)
 
-	if (((m_flags& EObjectFlags::TrackAbsoluteVelocity) != 0) || ((m_flags& EObjectFlags::TrackVelocityForDoppler) != 0))
+	if (((m_flags& EObjectFlags::TrackAbsoluteVelocity) != EObjectFlags::None) || ((m_flags& EObjectFlags::TrackVelocityForDoppler) != EObjectFlags::None))
 	{
 		bool isVirtual = true;
 
@@ -350,7 +350,7 @@ void CObject::DrawDebugInfo(IRenderAuxGeom& auxGeom, float const posX, float pos
 			}
 		}
 
-		if ((m_flags& EObjectFlags::TrackAbsoluteVelocity) != 0)
+		if ((m_flags& EObjectFlags::TrackAbsoluteVelocity) != EObjectFlags::None)
 		{
 			auxGeom.Draw2dLabel(
 				posX,
@@ -365,7 +365,7 @@ void CObject::DrawDebugInfo(IRenderAuxGeom& auxGeom, float const posX, float pos
 			posY += Debug::g_objectLineHeight;
 		}
 
-		if ((m_flags& EObjectFlags::TrackVelocityForDoppler) != 0)
+		if ((m_flags& EObjectFlags::TrackVelocityForDoppler) != EObjectFlags::None)
 		{
 			auxGeom.Draw2dLabel(
 				posX,
@@ -538,7 +538,7 @@ void CObject::UpdateVirtualFlag(CEventInstance* const pEventInstance)
 		m_flags &= ~EObjectFlags::IsVirtual;
 	}
 #else
-	if (((m_flags& EObjectFlags::IsVirtual) != 0) && ((m_flags& EObjectFlags::UpdateVirtualStates) != 0))
+	if (((m_flags& EObjectFlags::IsVirtual) != EObjectFlags::None) && ((m_flags& EObjectFlags::UpdateVirtualStates) != EObjectFlags::None))
 	{
 		pEventInstance->UpdateVirtualState();
 
@@ -557,7 +557,7 @@ void CObject::UpdateVelocityTracking()
 
 	for (auto const pEventInstance : m_eventInstances)
 	{
-		if ((pEventInstance->GetEvent().GetFlags() & EEventFlags::HasAbsoluteVelocityParameter) != 0)
+		if ((pEventInstance->GetEvent().GetFlags() & EEventFlags::HasAbsoluteVelocityParameter) != EEventFlags::None)
 		{
 			trackVelocity = true;
 			break;
@@ -589,14 +589,14 @@ void CObject::UpdateVelocities(float const deltaTime)
 			m_flags &= ~EObjectFlags::MovingOrDecaying;
 		}
 
-		if ((m_flags& EObjectFlags::TrackVelocityForDoppler) != 0)
+		if ((m_flags& EObjectFlags::TrackVelocityForDoppler) != EObjectFlags::None)
 		{
 			Fill3DAttributeVelocity(m_velocity, m_attributes);
 			Set3DAttributes();
 		}
 	}
 
-	if ((m_flags& EObjectFlags::TrackAbsoluteVelocity) != 0)
+	if ((m_flags& EObjectFlags::TrackAbsoluteVelocity) != EObjectFlags::None)
 	{
 		float const absoluteVelocity = m_velocity.GetLength();
 

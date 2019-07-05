@@ -75,7 +75,7 @@ void CCueInstance::Resume()
 //////////////////////////////////////////////////////////////////////////
 void CCueInstance::StartFadeOut()
 {
-	if ((m_cue.GetFadeOutTime() > 0.0f) && ((m_flags& ECueInstanceFlags::IsStopping) == 0))
+	if ((m_cue.GetFadeOutTime() > 0.0f) && ((m_flags& ECueInstanceFlags::IsStopping) == ECueInstanceFlags::None))
 	{
 		SetFlag(ECueInstanceFlags::IsStopping);
 		m_timeFadeOutStarted = gEnv->pTimer->GetAsyncTime().GetSeconds();

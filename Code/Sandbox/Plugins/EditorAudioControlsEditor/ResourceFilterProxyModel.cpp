@@ -22,7 +22,7 @@ bool CResourceFilterProxyModel::rowMatchesFilter(int sourceRow, QModelIndex cons
 		{
 			auto const pControl = static_cast<CControl const*>(CSystemSourceModel::GetAssetFromIndex(index, 0));
 
-			if ((pControl != nullptr) && ((pControl->GetFlags() & EAssetFlags::IsHiddenInResourceSelector) == 0))
+			if ((pControl != nullptr) && ((pControl->GetFlags() & EAssetFlags::IsHiddenInResourceSelector) == EAssetFlags::None))
 			{
 				CryAudio::ContextId const contextId = pControl->GetContextId();
 				matchesFilter =

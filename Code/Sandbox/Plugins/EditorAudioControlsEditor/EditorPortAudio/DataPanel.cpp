@@ -121,7 +121,7 @@ void CDataPanel::OnContextMenu(QPoint const& pos)
 					pContextMenu->addSeparator();
 				}
 
-				if ((pItem->GetFlags() & EItemFlags::IsConnected) != 0)
+				if ((pItem->GetFlags() & EItemFlags::IsConnected) != EItemFlags::None)
 				{
 					SControlInfos controlInfos;
 					m_impl.SignalGetConnectedSystemControls(pItem->GetId(), controlInfos);
@@ -144,7 +144,7 @@ void CDataPanel::OnContextMenu(QPoint const& pos)
 					}
 				}
 
-				if (((pItem->GetPakStatus() & EPakStatus::OnDisk) != 0) && !pItem->GetFilePath().IsEmpty())
+				if (((pItem->GetPakStatus() & EPakStatus::OnDisk) != EPakStatus::None) && !pItem->GetFilePath().IsEmpty())
 				{
 					pContextMenu->addAction(tr("Show in File Explorer"), [=]()
 								{
@@ -181,7 +181,7 @@ void CDataPanel::PlayEvent()
 	{
 		g_previewTriggerInfo.name = pItem->GetName().c_str();
 		g_previewTriggerInfo.path = pItem->GetPath().c_str();
-		g_previewTriggerInfo.isLocalized = (pItem->GetFlags() & EItemFlags::IsLocalized) != 0;
+		g_previewTriggerInfo.isLocalized = (pItem->GetFlags() & EItemFlags::IsLocalized) != EItemFlags::None;
 
 		gEnv->pAudioSystem->ExecutePreviewTriggerEx(g_previewTriggerInfo);
 		g_isPreviewPlaying = true;

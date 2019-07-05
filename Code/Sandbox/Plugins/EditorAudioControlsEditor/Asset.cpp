@@ -51,7 +51,7 @@ void CAsset::SetName(string const& name)
 	string fixedName = name;
 	g_nameValidator.FixupString(fixedName);
 
-	if ((!fixedName.IsEmpty()) && (fixedName != m_name) && ((m_flags& EAssetFlags::IsDefaultControl) == 0) && g_nameValidator.IsValid(fixedName))
+	if ((!fixedName.IsEmpty()) && (fixedName != m_name) && ((m_flags& EAssetFlags::IsDefaultControl) == EAssetFlags::None) && g_nameValidator.IsValid(fixedName))
 	{
 		if (m_type == EAssetType::Library)
 		{
@@ -140,7 +140,7 @@ string CAsset::GetFullHierarchyName() const
 //////////////////////////////////////////////////////////////////////////
 bool CAsset::HasDefaultControlChildren(AssetNames& names) const
 {
-	bool hasDefaultControlChildren = (m_flags& EAssetFlags::IsDefaultControl) != 0;
+	bool hasDefaultControlChildren = (m_flags& EAssetFlags::IsDefaultControl) != EAssetFlags::None;
 
 	if (hasDefaultControlChildren)
 	{
@@ -169,7 +169,7 @@ void CAsset::Serialize(Serialization::IArchive& ar)
 {
 	string const name = m_name;
 
-	if ((m_flags& EAssetFlags::IsDefaultControl) != 0)
+	if ((m_flags& EAssetFlags::IsDefaultControl) != EAssetFlags::None)
 	{
 		ar(name, "name", "!Name");
 	}
@@ -182,7 +182,7 @@ void CAsset::Serialize(Serialization::IArchive& ar)
 
 	string const description = m_description;
 
-	if ((m_flags& EAssetFlags::IsDefaultControl) != 0)
+	if ((m_flags& EAssetFlags::IsDefaultControl) != EAssetFlags::None)
 	{
 		ar(description, "description", "!Description");
 	}

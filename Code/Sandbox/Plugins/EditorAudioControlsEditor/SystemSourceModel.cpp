@@ -521,7 +521,7 @@ QVariant CSystemSourceModel::data(QModelIndex const& index, int role) const
 	{
 		if (role == static_cast<int>(ModelUtils::ERoles::IsDefaultControl))
 		{
-			variant = (pLibrary->GetFlags() & EAssetFlags::IsDefaultControl) != 0;
+			variant = (pLibrary->GetFlags() & EAssetFlags::IsDefaultControl) != EAssetFlags::None;
 		}
 		else
 		{
@@ -535,15 +535,15 @@ QVariant CSystemSourceModel::data(QModelIndex const& index, int role) const
 					{
 					case Qt::DecorationRole:
 						{
-							if ((flags& EAssetFlags::HasPlaceholderConnection) != 0)
+							if ((flags& EAssetFlags::HasPlaceholderConnection) != EAssetFlags::None)
 							{
 								variant = ModelUtils::GetItemNotificationIcon(ModelUtils::EItemStatus::Placeholder);
 							}
-							else if ((flags& EAssetFlags::HasConnection) == 0)
+							else if ((flags& EAssetFlags::HasConnection) == EAssetFlags::None)
 							{
 								variant = ModelUtils::GetItemNotificationIcon(ModelUtils::EItemStatus::NoConnection);
 							}
-							else if ((flags& EAssetFlags::HasControl) == 0)
+							else if ((flags& EAssetFlags::HasControl) == EAssetFlags::None)
 							{
 								variant = ModelUtils::GetItemNotificationIcon(ModelUtils::EItemStatus::NoControl);
 							}
@@ -552,15 +552,15 @@ QVariant CSystemSourceModel::data(QModelIndex const& index, int role) const
 						}
 					case Qt::ToolTipRole:
 						{
-							if ((flags& EAssetFlags::HasPlaceholderConnection) != 0)
+							if ((flags& EAssetFlags::HasPlaceholderConnection) != EAssetFlags::None)
 							{
 								variant = tr("Contains item whose connection was not found in middleware project");
 							}
-							else if ((flags& EAssetFlags::HasConnection) == 0)
+							else if ((flags& EAssetFlags::HasConnection) == EAssetFlags::None)
 							{
 								variant = tr("Contains item that is not connected to any middleware control");
 							}
-							else if ((flags& EAssetFlags::HasControl) == 0)
+							else if ((flags& EAssetFlags::HasControl) == EAssetFlags::None)
 							{
 								variant = tr("Contains no audio control");
 							}
@@ -579,7 +579,7 @@ QVariant CSystemSourceModel::data(QModelIndex const& index, int role) const
 				{
 					if (role == Qt::CheckStateRole)
 					{
-						variant = ((flags& EAssetFlags::HasPlaceholderConnection) == 0) ? Qt::Checked : Qt::Unchecked;
+						variant = ((flags& EAssetFlags::HasPlaceholderConnection) == EAssetFlags::None) ? Qt::Checked : Qt::Unchecked;
 					}
 
 					break;
@@ -588,7 +588,7 @@ QVariant CSystemSourceModel::data(QModelIndex const& index, int role) const
 				{
 					if (role == Qt::CheckStateRole)
 					{
-						variant = ((flags& EAssetFlags::HasConnection) != 0) ? Qt::Checked : Qt::Unchecked;
+						variant = ((flags& EAssetFlags::HasConnection) != EAssetFlags::None) ? Qt::Checked : Qt::Unchecked;
 					}
 
 					break;
@@ -597,7 +597,7 @@ QVariant CSystemSourceModel::data(QModelIndex const& index, int role) const
 				{
 					if (role == Qt::CheckStateRole)
 					{
-						variant = ((flags& EAssetFlags::HasControl) == 0) ? Qt::Checked : Qt::Unchecked;
+						variant = ((flags& EAssetFlags::HasControl) == EAssetFlags::None) ? Qt::Checked : Qt::Unchecked;
 					}
 
 					break;
@@ -619,11 +619,11 @@ QVariant CSystemSourceModel::data(QModelIndex const& index, int role) const
 							{
 								variant = tr("Library is in pak and on disk");
 							}
-							else if ((pakStatus& EPakStatus::InPak) != 0)
+							else if ((pakStatus& EPakStatus::InPak) != EPakStatus::None)
 							{
 								variant = tr("Library is only in pak file");
 							}
-							else if ((pakStatus& EPakStatus::OnDisk) != 0)
+							else if ((pakStatus& EPakStatus::OnDisk) != EPakStatus::None)
 							{
 								variant = tr("Library is only on disk");
 							}
@@ -646,7 +646,7 @@ QVariant CSystemSourceModel::data(QModelIndex const& index, int role) const
 				{
 					if (role == Qt::CheckStateRole)
 					{
-						variant = ((pLibrary->GetPakStatus() & EPakStatus::InPak) != 0) ? Qt::Checked : Qt::Unchecked;
+						variant = ((pLibrary->GetPakStatus() & EPakStatus::InPak) != EPakStatus::None) ? Qt::Checked : Qt::Unchecked;
 					}
 
 					break;
@@ -655,7 +655,7 @@ QVariant CSystemSourceModel::data(QModelIndex const& index, int role) const
 				{
 					if (role == Qt::CheckStateRole)
 					{
-						variant = ((pLibrary->GetPakStatus() & EPakStatus::OnDisk) != 0) ? Qt::Checked : Qt::Unchecked;
+						variant = ((pLibrary->GetPakStatus() & EPakStatus::OnDisk) != EPakStatus::None) ? Qt::Checked : Qt::Unchecked;
 					}
 
 					break;
@@ -671,7 +671,7 @@ QVariant CSystemSourceModel::data(QModelIndex const& index, int role) const
 						}
 					case Qt::DisplayRole:
 						{
-							if ((pLibrary->GetFlags() & EAssetFlags::IsModified) != 0)
+							if ((pLibrary->GetFlags() & EAssetFlags::IsModified) != EAssetFlags::None)
 							{
 								variant = QtUtil::ToQString(pLibrary->GetName() + " *");
 							}
@@ -834,13 +834,13 @@ bool CSystemSourceModel::canDropMimeData(QMimeData const* pData, Qt::DropAction 
 
 		if (pParent != nullptr)
 		{
-			canDrop = ((pParent->GetFlags() & EAssetFlags::IsDefaultControl) == 0) && CanDropData(pData, *pParent);
+			canDrop = ((pParent->GetFlags() & EAssetFlags::IsDefaultControl) == EAssetFlags::None) && CanDropData(pData, *pParent);
 
 			if (canDrop)
 			{
 				dragText = tr("Add to ") + QtUtil::ToQString(pParent->GetName());
 			}
-			else if ((pParent->GetFlags() & EAssetFlags::IsDefaultControl) != 0)
+			else if ((pParent->GetFlags() & EAssetFlags::IsDefaultControl) != EAssetFlags::None)
 			{
 				dragText = tr("Cannot add items to the default controls library.");
 			}

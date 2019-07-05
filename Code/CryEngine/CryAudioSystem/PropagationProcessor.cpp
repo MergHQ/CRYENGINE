@@ -522,7 +522,7 @@ bool CPropagationProcessor::CanRunOcclusion()
 
 	if ((m_occlusionType != EOcclusionType::None) &&
 	    (m_occlusionType != EOcclusionType::Ignore) &&
-	    ((m_object.GetFlags() & EObjectFlags::Virtual) == 0) &&
+	    ((m_object.GetFlags() & EObjectFlags::Virtual) == EObjectFlags::None) &&
 	    s_bCanIssueRWIs)
 	{
 		for (auto const pInfo : m_occlusionInfos)
@@ -689,7 +689,7 @@ void CPropagationProcessor::ProcessObstructionOcclusion()
 		}
 
 	#if defined(CRY_AUDIO_USE_DEBUG_CODE)
-		if ((m_object.GetFlags() & EObjectFlags::CanRunOcclusion) != 0)
+		if ((m_object.GetFlags() & EObjectFlags::CanRunOcclusion) != EObjectFlags::None)
 		{
 			for (uint8 i = 0; i < numConcurrentRays; ++i)
 			{

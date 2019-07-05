@@ -25,14 +25,14 @@ QString GetTargetFolderPath(CItem const* const pItem)
 {
 	QString folderName;
 
-	if ((pItem->GetFlags() & EItemFlags::IsContainer) != 0)
+	if ((pItem->GetFlags() & EItemFlags::IsContainer) != EItemFlags::None)
 	{
 		folderName = QtUtil::ToQString(pItem->GetName());
 	}
 
 	auto pParent = static_cast<CItem const*>(pItem->GetParent());
 
-	while ((pParent != nullptr) && ((pParent->GetFlags() & EItemFlags::IsContainer) != 0))
+	while ((pParent != nullptr) && ((pParent->GetFlags() & EItemFlags::IsContainer) != EItemFlags::None))
 	{
 		QString parentName = QtUtil::ToQString(pParent->GetName());
 
@@ -207,11 +207,11 @@ QVariant CItemModel::data(QModelIndex const& index, int role) const
 						{
 							EItemFlags const flags = pItem->GetFlags();
 
-							if ((flags & (EItemFlags::IsConnected | EItemFlags::IsContainer)) == 0)
+							if ((flags & (EItemFlags::IsConnected | EItemFlags::IsContainer)) == EItemFlags::None)
 							{
 								variant = ModelUtils::GetItemNotificationIcon(ModelUtils::EItemStatus::NoConnection);
 							}
-							else if ((flags& EItemFlags::IsLocalized) != 0)
+							else if ((flags& EItemFlags::IsLocalized) != EItemFlags::None)
 							{
 								variant = ModelUtils::GetItemNotificationIcon(ModelUtils::EItemStatus::Localized);
 							}
@@ -222,11 +222,11 @@ QVariant CItemModel::data(QModelIndex const& index, int role) const
 						{
 							EItemFlags const flags = pItem->GetFlags();
 
-							if ((flags & (EItemFlags::IsConnected | EItemFlags::IsContainer)) == 0)
+							if ((flags & (EItemFlags::IsConnected | EItemFlags::IsContainer)) == EItemFlags::None)
 							{
 								variant = TypeToString(pItem->GetType()) + tr(" is not connected to any audio system control");
 							}
-							else if ((flags& EItemFlags::IsLocalized) != 0)
+							else if ((flags& EItemFlags::IsLocalized) != EItemFlags::None)
 							{
 								variant = TypeToString(pItem->GetType()) + tr(" is localized");
 							}
@@ -250,9 +250,9 @@ QVariant CItemModel::data(QModelIndex const& index, int role) const
 				{
 					EItemFlags const flags = pItem->GetFlags();
 
-					if ((role == Qt::CheckStateRole) && ((flags& EItemFlags::IsContainer) == 0))
+					if ((role == Qt::CheckStateRole) && ((flags& EItemFlags::IsContainer) == EItemFlags::None))
 					{
-						variant = ((flags& EItemFlags::IsConnected) != 0) ? Qt::Checked : Qt::Unchecked;
+						variant = ((flags& EItemFlags::IsConnected) != EItemFlags::None) ? Qt::Checked : Qt::Unchecked;
 					}
 
 					break;
@@ -280,11 +280,11 @@ QVariant CItemModel::data(QModelIndex const& index, int role) const
 							{
 								variant = TypeToString(pItem->GetType()) + tr(" is in pak and on disk");
 							}
-							else if ((pakStatus& EPakStatus::InPak) != 0)
+							else if ((pakStatus& EPakStatus::InPak) != EPakStatus::None)
 							{
 								variant = TypeToString(pItem->GetType()) + tr(" is only in pak file");
 							}
-							else if ((pakStatus& EPakStatus::OnDisk) != 0)
+							else if ((pakStatus& EPakStatus::OnDisk) != EPakStatus::None)
 							{
 								variant = TypeToString(pItem->GetType()) + tr(" is only on disk");
 							}
@@ -299,7 +299,7 @@ QVariant CItemModel::data(QModelIndex const& index, int role) const
 				{
 					if (role == Qt::CheckStateRole)
 					{
-						variant = ((pItem->GetPakStatus() & EPakStatus::InPak) != 0) ? Qt::Checked : Qt::Unchecked;
+						variant = ((pItem->GetPakStatus() & EPakStatus::InPak) != EPakStatus::None) ? Qt::Checked : Qt::Unchecked;
 					}
 
 					break;
@@ -308,7 +308,7 @@ QVariant CItemModel::data(QModelIndex const& index, int role) const
 				{
 					if (role == Qt::CheckStateRole)
 					{
-						variant = ((pItem->GetPakStatus() & EPakStatus::OnDisk) != 0) ? Qt::Checked : Qt::Unchecked;
+						variant = ((pItem->GetPakStatus() & EPakStatus::OnDisk) != EPakStatus::None) ? Qt::Checked : Qt::Unchecked;
 					}
 
 					break;
@@ -317,7 +317,7 @@ QVariant CItemModel::data(QModelIndex const& index, int role) const
 				{
 					if (role == Qt::CheckStateRole)
 					{
-						variant = ((pItem->GetFlags() & EItemFlags::IsLocalized) != 0) ? Qt::Checked : Qt::Unchecked;
+						variant = ((pItem->GetFlags() & EItemFlags::IsLocalized) != EItemFlags::None) ? Qt::Checked : Qt::Unchecked;
 					}
 
 					break;
@@ -349,7 +349,7 @@ QVariant CItemModel::data(QModelIndex const& index, int role) const
 						}
 					case static_cast<int>(ModelUtils::ERoles::IsPlaceholder):
 						{
-							variant = (pItem->GetFlags() & EItemFlags::IsPlaceHolder) != 0;
+							variant = (pItem->GetFlags() & EItemFlags::IsPlaceHolder) != EItemFlags::None;
 							break;
 						}
 					case static_cast<int>(ModelUtils::ERoles::InternalPointer):
@@ -439,7 +439,7 @@ Qt::ItemFlags CItemModel::flags(QModelIndex const& index) const
 	{
 		CItem const* const pItem = ItemFromIndex(index);
 
-		if ((pItem != nullptr) && ((pItem->GetFlags() & EItemFlags::IsPlaceHolder) == 0))
+		if ((pItem != nullptr) && ((pItem->GetFlags() & EItemFlags::IsPlaceHolder) == EItemFlags::None))
 		{
 			flags |= Qt::ItemIsDragEnabled;
 		}
@@ -519,7 +519,7 @@ bool CItemModel::dropMimeData(QMimeData const* pData, Qt::DropAction action, int
 			if (pItem != nullptr)
 			{
 				targetFolderName = GetTargetFolderPath(pItem);
-				isLocalized = ((pItem->GetFlags() & EItemFlags::IsLocalized) != 0);
+				isLocalized = ((pItem->GetFlags() & EItemFlags::IsLocalized) != EItemFlags::None);
 			}
 		}
 
@@ -643,7 +643,7 @@ QString CItemModel::GetTargetFolderName(QModelIndex const& index, bool& isLocali
 		if (pItem != nullptr)
 		{
 			targetFolderName = GetTargetFolderPath(pItem);
-			isLocalized = ((pItem->GetFlags() & EItemFlags::IsLocalized) != 0);
+			isLocalized = ((pItem->GetFlags() & EItemFlags::IsLocalized) != EItemFlags::None);
 		}
 	}
 

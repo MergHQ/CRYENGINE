@@ -28,7 +28,7 @@ void CControl::SetName(string const& name)
 	string fixedName = name;
 	g_nameValidator.FixupString(fixedName);
 
-	if ((!fixedName.IsEmpty()) && (fixedName != m_name) && ((m_flags& EAssetFlags::IsDefaultControl) == 0) && g_nameValidator.IsValid(fixedName))
+	if ((!fixedName.IsEmpty()) && (fixedName != m_name) && ((m_flags& EAssetFlags::IsDefaultControl) == EAssetFlags::None) && g_nameValidator.IsValid(fixedName))
 	{
 		SignalOnBeforeControlModified();
 
@@ -65,7 +65,7 @@ void CControl::Serialize(Serialization::IArchive& ar)
 	// Name
 	string const name = m_name;
 
-	if ((m_flags& EAssetFlags::IsDefaultControl) != 0)
+	if ((m_flags& EAssetFlags::IsDefaultControl) != EAssetFlags::None)
 	{
 		ar(name, "name", "!Name");
 	}
@@ -79,7 +79,7 @@ void CControl::Serialize(Serialization::IArchive& ar)
 	// Description
 	string const description = m_description;
 
-	if ((m_flags& EAssetFlags::IsDefaultControl) != 0)
+	if ((m_flags& EAssetFlags::IsDefaultControl) != EAssetFlags::None)
 	{
 		ar(description, "description", "!Description");
 	}
@@ -93,7 +93,7 @@ void CControl::Serialize(Serialization::IArchive& ar)
 	// Context
 	CryAudio::ContextId contextId = m_contextId;
 
-	if (((m_flags& EAssetFlags::IsDefaultControl) == 0) && (m_type != EAssetType::State))
+	if (((m_flags& EAssetFlags::IsDefaultControl) == EAssetFlags::None) && (m_type != EAssetType::State))
 	{
 		Serialization::StringList contextList;
 

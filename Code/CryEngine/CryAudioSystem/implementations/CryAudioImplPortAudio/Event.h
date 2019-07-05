@@ -78,7 +78,7 @@ public:
 	char const* GetFolder() const                                     { return m_folder.c_str(); }
 	char const* GetName() const                                       { return m_name.c_str(); }
 
-	bool        CanBeDestructed() const                               { return ((m_flags& EEventFlags::ToBeDestructed) != 0) && (m_numInstances == 0); }
+	bool        CanBeDestructed() const                               { return ((m_flags& EEventFlags::ToBeDestructed) != EEventFlags::None) && (m_numInstances == 0); }
 
 	void        IncrementNumInstances()                               { ++m_numInstances; }
 	void        DecrementNumInstances();

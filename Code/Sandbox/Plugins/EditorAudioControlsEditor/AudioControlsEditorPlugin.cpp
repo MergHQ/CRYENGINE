@@ -77,12 +77,12 @@ void CAudioControlsEditorPlugin::SaveData()
 //////////////////////////////////////////////////////////////////////////
 void CAudioControlsEditorPlugin::ReloadData(EReloadFlags const flags)
 {
-	if ((flags& EReloadFlags::SendSignals) != 0)
+	if ((flags& EReloadFlags::SendSignals) != EReloadFlags::None)
 	{
 		SignalOnBeforeLoad();
 	}
 
-	if ((flags& EReloadFlags::ReloadSystemControls) != 0)
+	if ((flags& EReloadFlags::ReloadSystemControls) != EReloadFlags::None)
 	{
 		GetIEditor()->GetIUndoManager()->Suspend();
 
@@ -92,7 +92,7 @@ void CAudioControlsEditorPlugin::ReloadData(EReloadFlags const flags)
 
 		if (g_pIImpl != nullptr)
 		{
-			if ((flags& EReloadFlags::ReloadImplData) != 0)
+			if ((flags& EReloadFlags::ReloadImplData) != EReloadFlags::None)
 			{
 				ReloadImplData(flags);
 			}
@@ -122,12 +122,12 @@ void CAudioControlsEditorPlugin::ReloadData(EReloadFlags const flags)
 
 		GetIEditor()->GetIUndoManager()->Resume();
 	}
-	else if ((flags& EReloadFlags::ReloadImplData) != 0)
+	else if ((flags& EReloadFlags::ReloadImplData) != EReloadFlags::None)
 	{
 		ReloadImplData(flags);
 	}
 
-	if ((flags& EReloadFlags::SendSignals) != 0)
+	if ((flags& EReloadFlags::SendSignals) != EReloadFlags::None)
 	{
 		SignalOnAfterLoad();
 	}
@@ -138,7 +138,7 @@ void CAudioControlsEditorPlugin::ReloadImplData(EReloadFlags const flags)
 {
 	if (g_pIImpl != nullptr)
 	{
-		if ((flags& EReloadFlags::BackupConnections) != 0)
+		if ((flags& EReloadFlags::BackupConnections) != EReloadFlags::None)
 		{
 			g_assetsManager.BackupAndClearAllConnections();
 		}
@@ -146,7 +146,7 @@ void CAudioControlsEditorPlugin::ReloadImplData(EReloadFlags const flags)
 		CryWarning(VALIDATOR_MODULE_EDITOR, VALIDATOR_COMMENT, "[Audio Controls Editor] Reloading audio implementation data");
 		g_pIImpl->Reload(g_implInfo);
 
-		if ((flags& EReloadFlags::BackupConnections) != 0)
+		if ((flags& EReloadFlags::BackupConnections) != EReloadFlags::None)
 		{
 			g_assetsManager.ReloadAllConnections();
 		}

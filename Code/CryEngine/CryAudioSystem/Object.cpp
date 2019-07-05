@@ -58,7 +58,7 @@ void CObject::Destruct()
 void CObject::SetActive()
 {
 #if defined(CRY_AUDIO_USE_OCCLUSION)
-	if (((m_flags& EObjectFlags::Virtual) == 0) && m_triggerInstances.empty())
+	if (((m_flags& EObjectFlags::Virtual) == EObjectFlags::None) && m_triggerInstances.empty())
 	{
 		m_propagationProcessor.UpdateOcclusion();
 	}
@@ -127,7 +127,7 @@ void CObject::ReportStartedTriggerInstance(TriggerInstanceId const triggerInstan
 	if (iter != m_triggerInstances.end())
 	{
 #if defined(CRY_AUDIO_USE_OCCLUSION)
-		if ((result == ETriggerResult::Playing) && ((m_flags& EObjectFlags::Virtual) != 0))
+		if ((result == ETriggerResult::Playing) && ((m_flags& EObjectFlags::Virtual) != EObjectFlags::None))
 		{
 			m_flags &= ~EObjectFlags::Virtual;
 			m_propagationProcessor.UpdateOcclusion();
@@ -619,8 +619,8 @@ void CObject::DrawDebugInfo(
 			doesObjectNameMatchFilter = (lowerCaseObjectName.find(lowerCaseSearchString) != CryFixedStringT<MaxControlNameLength>::npos);
 		}
 
-		bool const hasActiveData = (m_flags& EObjectFlags::Active) != 0;
-		bool const isVirtual = (m_flags& EObjectFlags::Virtual) != 0;
+		bool const hasActiveData = (m_flags& EObjectFlags::Active) != EObjectFlags::None;
+		bool const isVirtual = (m_flags& EObjectFlags::Virtual) != EObjectFlags::None;
 		bool const canDraw = (g_cvars.m_hideInactiveObjects == 0) || ((g_cvars.m_hideInactiveObjects != 0) && hasActiveData && !isVirtual);
 
 		if (canDraw)
@@ -748,7 +748,7 @@ void CObject::DrawDebugInfo(
 			}
 
 	#if defined(CRY_AUDIO_USE_OCCLUSION)
-			if (((m_flags& EObjectFlags::CanRunOcclusion) != 0) && (isTextFilterDisabled || doesObjectNameMatchFilter))
+			if (((m_flags& EObjectFlags::CanRunOcclusion) != EObjectFlags::None) && (isTextFilterDisabled || doesObjectNameMatchFilter))
 			{
 				if (drawOcclusionRayLabel)
 				{
@@ -841,8 +841,8 @@ void CObject::ForceImplementationRefresh()
 {
 	m_pIObject->SetTransformation(m_transformation);
 
-	m_pIObject->ToggleFunctionality(EObjectFunctionality::TrackAbsoluteVelocity, (m_flags& EObjectFlags::TrackAbsoluteVelocity) != 0);
-	m_pIObject->ToggleFunctionality(EObjectFunctionality::TrackRelativeVelocity, (m_flags& EObjectFlags::TrackRelativeVelocity) != 0);
+	m_pIObject->ToggleFunctionality(EObjectFunctionality::TrackAbsoluteVelocity, (m_flags& EObjectFlags::TrackAbsoluteVelocity) != EObjectFlags::None);
+	m_pIObject->ToggleFunctionality(EObjectFunctionality::TrackRelativeVelocity, (m_flags& EObjectFlags::TrackRelativeVelocity) != EObjectFlags::None);
 
 	// Parameters
 	for (auto const& parameterPair : m_parameters)

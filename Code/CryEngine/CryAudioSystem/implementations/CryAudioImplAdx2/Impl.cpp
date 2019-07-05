@@ -1790,15 +1790,15 @@ void CImpl::DrawDebugInfoList(IRenderAuxGeom& auxGeom, float& posX, float posY, 
 						CryFixedStringT<MaxMiscStringLength> debugText;
 						debugText.Format("%s on %s (%s)", szCueName, pCueInstance->GetObject().GetName(), szListenerName);
 
-						if ((flags& ECueInstanceFlags::IsPending) != 0)
+						if ((flags& ECueInstanceFlags::IsPending) != ECueInstanceFlags::None)
 						{
 							color = Debug::s_listColorItemLoading;
 						}
-						else if ((flags& ECueInstanceFlags::IsVirtual) != 0)
+						else if ((flags& ECueInstanceFlags::IsVirtual) != ECueInstanceFlags::None)
 						{
 							color = Debug::s_globalColorVirtual;
 						}
-						else if ((flags& ECueInstanceFlags::IsStopping) != 0)
+						else if ((flags& ECueInstanceFlags::IsStopping) != ECueInstanceFlags::None)
 						{
 							float const fadeOutTime = pCueInstance->GetCue().GetFadeOutTime();
 							float const remainingTime = std::max(0.0f, fadeOutTime - (gEnv->pTimer->GetAsyncTime().GetSeconds() - pCueInstance->GetTimeFadeOutStarted()));

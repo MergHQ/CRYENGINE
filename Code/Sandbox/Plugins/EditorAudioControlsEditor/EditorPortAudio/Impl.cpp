@@ -261,7 +261,7 @@ IConnection* CImpl::CreateConnectionFromXMLNode(XmlNodeRef const& node, EAssetTy
 		{
 			string name = node->getAttr(CryAudio::g_szNameAttribute);
 			string path = node->getAttr(CryAudio::Impl::PortAudio::g_szPathAttribute);
-			// Backwards compatibility will be removed before March 2019.
+			// Backwards compatibility will be removed with CE 5.7.
 #if defined (USE_BACKWARDS_COMPATIBILITY)
 			if (name.IsEmpty() && node->haveAttr("portaudio_name"))
 			{
@@ -357,7 +357,7 @@ XmlNodeRef CImpl::CreateXMLNodeFromConnection(
 			node->setAttr(CryAudio::g_szTypeAttribute, CryAudio::Impl::PortAudio::g_szStopValue);
 		}
 
-		if ((pItem->GetFlags() & EItemFlags::IsLocalized) != 0)
+		if ((pItem->GetFlags() & EItemFlags::IsLocalized) != EItemFlags::None)
 		{
 			node->setAttr(CryAudio::Impl::PortAudio::g_szLocalizedAttribute, CryAudio::Impl::PortAudio::g_szTrueValue);
 		}

@@ -88,7 +88,7 @@ void CProjectLoader::LoadFolder(string const& assetsPath, string const& folderPa
 //////////////////////////////////////////////////////////////////////////
 CItem* CProjectLoader::CreateItem(string const& assetsPath, string const& name, string const& path, EItemType const type, CItem& parent, EItemFlags flags)
 {
-	bool const isLocalized = (flags& EItemFlags::IsLocalized) != 0;
+	bool const isLocalized = (flags& EItemFlags::IsLocalized) != EItemFlags::None;
 	ControlId const id = Utils::GetId(type, name, path, isLocalized);
 	auto pItem = static_cast<CItem*>(m_impl.GetItem(id));
 

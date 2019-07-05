@@ -114,7 +114,7 @@ void CDataPanel::OnContextMenu(QPoint const& pos)
 					pContextMenu->addSeparator();
 				}
 
-				if ((pItem->GetFlags() & EItemFlags::IsConnected) != 0)
+				if ((pItem->GetFlags() & EItemFlags::IsConnected) != EItemFlags::None)
 				{
 					SControlInfos controlInfos;
 					m_impl.SignalGetConnectedSystemControls(pItem->GetId(), controlInfos);
@@ -137,7 +137,7 @@ void CDataPanel::OnContextMenu(QPoint const& pos)
 					}
 				}
 
-				if (((pItem->GetPakStatus() & EPakStatus::OnDisk) != 0) && !pItem->GetFilePath().IsEmpty())
+				if (((pItem->GetPakStatus() & EPakStatus::OnDisk) != EPakStatus::None) && !pItem->GetFilePath().IsEmpty())
 				{
 					pContextMenu->addAction(tr("Show in File Explorer"), [=]()
 								{

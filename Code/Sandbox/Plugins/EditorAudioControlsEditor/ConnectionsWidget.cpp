@@ -170,7 +170,7 @@ void CConnectionsWidget::OnContextMenu(QPoint const& pos)
 			ControlId const itemId = static_cast<ControlId>(selection[0].data(static_cast<int>(ModelUtils::ERoles::Id)).toInt());
 			Impl::IItem const* const pIItem = g_pIImpl->GetItem(itemId);
 
-			if ((pIItem != nullptr) && ((pIItem->GetFlags() & EItemFlags::IsPlaceHolder) == 0))
+			if ((pIItem != nullptr) && ((pIItem->GetFlags() & EItemFlags::IsPlaceHolder) == EItemFlags::None))
 			{
 				pContextMenu->addSeparator();
 				pContextMenu->addAction(tr("Select in Middleware Data"), [=]()
@@ -186,7 +186,7 @@ void CConnectionsWidget::OnContextMenu(QPoint const& pos)
 		canExec = true;
 	}
 
-	if ((g_implInfo.flags & EImplInfoFlags::SupportsFileImport) != 0)
+	if ((g_implInfo.flags & EImplInfoFlags::SupportsFileImport) != EImplInfoFlags::None)
 	{
 		pContextMenu->addSeparator();
 		pContextMenu->addAction(tr("Import Files"), [=]()

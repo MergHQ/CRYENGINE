@@ -49,7 +49,7 @@ ETriggerResult CCue::Execute(IObject* const pIObject, TriggerInstanceId const tr
 
 				if (pCueInstance->PrepareForPlayback(*pObject))
 				{
-					result = ((pCueInstance->GetFlags() & ECueInstanceFlags::IsVirtual) != 0) ? ETriggerResult::Virtual : ETriggerResult::Playing;
+					result = ((pCueInstance->GetFlags() & ECueInstanceFlags::IsVirtual) != ECueInstanceFlags::None) ? ETriggerResult::Virtual : ETriggerResult::Playing;
 				}
 				else
 				{

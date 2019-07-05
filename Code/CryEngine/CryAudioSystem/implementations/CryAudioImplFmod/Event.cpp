@@ -150,12 +150,12 @@ ETriggerResult CEvent::ExecuteWithCallbacks(IObject* const pIObject, TriggerInst
 {
 	FMOD_STUDIO_EVENT_CALLBACK_TYPE callbackTypes = g_eventCallbackTypes;
 
-	if ((callbackData.events & ESystemEvents::OnBeat) != 0)
+	if ((callbackData.events & ESystemEvents::OnBeat) != ESystemEvents::None)
 	{
 		callbackTypes |= FMOD_STUDIO_EVENT_CALLBACK_TIMELINE_BEAT;
 	}
 
-	if ((callbackData.events & ESystemEvents::OnUserMarker) != 0)
+	if ((callbackData.events & ESystemEvents::OnUserMarker) != ESystemEvents::None)
 	{
 		callbackTypes |= FMOD_STUDIO_EVENT_CALLBACK_TIMELINE_MARKER;
 	}
@@ -197,7 +197,7 @@ ETriggerResult CEvent::ExecuteInternally(IObject* const pIObject, TriggerInstanc
 				pFmodEventInstance->setListenerMask(pObject->GetListenerMask());
 				pEventInstance->SetFmodEventInstance(pFmodEventInstance);
 
-				if ((m_flags& EEventFlags::CheckedParameters) == 0)
+				if ((m_flags& EEventFlags::CheckedParameters) == EEventFlags::None)
 				{
 					int count = 0;
 					m_pEventDescription->getParameterDescriptionCount(&count);
@@ -225,7 +225,7 @@ ETriggerResult CEvent::ExecuteInternally(IObject* const pIObject, TriggerInstanc
 					m_flags |= EEventFlags::CheckedParameters;
 				}
 
-				if ((m_flags& EEventFlags::HasProgrammerSound) != 0)
+				if ((m_flags& EEventFlags::HasProgrammerSound) != EEventFlags::None)
 				{
 					fmodResult = pEventInstance->GetFmodEventInstance()->setCallback(ProgrammerSoundCallback, callbackTypes | g_programmerSoundCallbackTypes);
 				}

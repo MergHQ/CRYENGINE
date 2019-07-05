@@ -90,7 +90,7 @@ public:
 	void           IncrementNumInstances()       { ++m_numInstances; }
 	void           DecrementNumInstances();
 
-	bool           CanBeDestructed() const { return ((m_flags& ECueFlags::ToBeDestructed) != 0) && (m_numInstances == 0); }
+	bool           CanBeDestructed() const { return ((m_flags& ECueFlags::ToBeDestructed) != ECueFlags::None) && (m_numInstances == 0); }
 
 #if defined(CRY_AUDIO_IMPL_ADX2_USE_DEBUG_CODE)
 	float GetFadeOutTime() const { return m_fadeOutTime; }

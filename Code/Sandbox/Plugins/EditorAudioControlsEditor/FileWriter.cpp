@@ -270,7 +270,7 @@ void WriteLibraryEditorData(CAsset const& library, XmlNodeRef const& node)
 {
 	string const& description = library.GetDescription();
 
-	if (!description.IsEmpty() && (library.GetFlags() & EAssetFlags::IsDefaultControl) == 0)
+	if (!description.IsEmpty() && (library.GetFlags() & EAssetFlags::IsDefaultControl) == EAssetFlags::None)
 	{
 		node->setAttr(g_szDescriptionAttribute, description);
 	}
@@ -294,7 +294,7 @@ void WriteFolderEditorData(CAsset const& library, XmlNodeRef const& node)
 				folderNode->setAttr(CryAudio::g_szNameAttribute, pAsset->GetName());
 				string const description = pAsset->GetDescription();
 
-				if (!description.IsEmpty() && ((pAsset->GetFlags() & EAssetFlags::IsDefaultControl) == 0))
+				if (!description.IsEmpty() && ((pAsset->GetFlags() & EAssetFlags::IsDefaultControl) == EAssetFlags::None))
 				{
 					folderNode->setAttr(g_szDescriptionAttribute, description);
 				}
@@ -325,7 +325,7 @@ void WriteControlsEditorData(CAsset const& parentAsset, XmlNodeRef const& node)
 			{
 				string const& description = asset.GetDescription();
 
-				if (!description.IsEmpty() && ((asset.GetFlags() & EAssetFlags::IsDefaultControl) == 0))
+				if (!description.IsEmpty() && ((asset.GetFlags() & EAssetFlags::IsDefaultControl) == EAssetFlags::None))
 				{
 					controlNode->setAttr(CryAudio::g_szNameAttribute, asset.GetName());
 					controlNode->setAttr(g_szDescriptionAttribute, description);
@@ -421,20 +421,20 @@ void CFileWriter::WriteAll()
 //////////////////////////////////////////////////////////////////////////
 void CFileWriter::WriteLibrary(CLibrary& library, ContextIds& contextIds)
 {
-	if ((library.GetFlags() & EAssetFlags::IsModified) != 0)
+	if ((library.GetFlags() & EAssetFlags::IsModified) != EAssetFlags::None)
 	{
 		g_pIImpl->OnBeforeWriteLibrary();
 
 		LibraryStorage libraryXmlNodes;
 		size_t const itemCount = library.ChildCount();
 
-		if ((library.GetFlags() & EAssetFlags::IsDefaultControl) != 0)
+		if ((library.GetFlags() & EAssetFlags::IsDefaultControl) != EAssetFlags::None)
 		{
 			for (size_t i = 0; i < itemCount; ++i)
 			{
 				CAsset* const pAsset = library.GetChild(i);
 
-				if ((pAsset != nullptr) && ((pAsset->GetFlags() & EAssetFlags::IsInternalControl) == 0))
+				if ((pAsset != nullptr) && ((pAsset->GetFlags() & EAssetFlags::IsInternalControl) == EAssetFlags::None))
 				{
 					WriteItem(pAsset, "", libraryXmlNodes);
 				}
@@ -484,7 +484,7 @@ void CFileWriter::WriteLibrary(CLibrary& library, ContextIds& contextIds)
 
 				// Don't write control counts for default library, because default controls are not pooled.
 				// But connections of default controls need to get written.
-				if ((library.GetFlags() & EAssetFlags::IsDefaultControl) == 0)
+				if ((library.GetFlags() & EAssetFlags::IsDefaultControl) == EAssetFlags::None)
 				{
 					if (libScope.numTriggers > 0)
 					{

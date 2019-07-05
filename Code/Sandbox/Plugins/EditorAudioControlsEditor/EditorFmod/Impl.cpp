@@ -69,7 +69,7 @@ EItemType TagToType(char const* const szTag)
 		type = EItemType::VCA;
 	}
 
-	// Backwards compatibility will be removed before March 2019.
+	// Backwards compatibility will be removed with CE 5.7.
 #if defined (USE_BACKWARDS_COMPATIBILITY)
 	else if (_stricmp(szTag, "FmodEvent") == 0)
 	{
@@ -928,7 +928,7 @@ XmlNodeRef CImpl::CreateXMLNodeFromConnection(
 			{
 				node->setAttr(CryAudio::g_szNameAttribute, pItem->GetName());
 
-				if ((pItem->GetFlags() & EItemFlags::IsLocalized) != 0)
+				if ((pItem->GetFlags() & EItemFlags::IsLocalized) != EItemFlags::None)
 				{
 					node->setAttr(CryAudio::Impl::Fmod::g_szLocalizedAttribute, CryAudio::Impl::Fmod::g_szTrueValue);
 				}

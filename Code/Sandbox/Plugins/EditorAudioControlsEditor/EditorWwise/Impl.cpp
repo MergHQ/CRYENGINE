@@ -56,7 +56,7 @@ EItemType TagToType(char const* const szTag)
 		type = EItemType::AuxBus;
 	}
 
-	// Backwards compatibility will be removed before March 2019.
+	// Backwards compatibility will be removed with CE 5.7.
 #if defined (USE_BACKWARDS_COMPATIBILITY)
 	else if (_stricmp(szTag, "WwiseEvent") == 0)
 	{
@@ -743,7 +743,7 @@ XmlNodeRef CImpl::CreateXMLNodeFromConnection(
 				XmlNodeRef connectionNode = GetISystem()->CreateXmlNode(TypeToTag(itemType));
 				connectionNode->setAttr(CryAudio::g_szNameAttribute, pItem->GetName());
 
-				if ((pItem->GetFlags() & EItemFlags::IsLocalized) != 0)
+				if ((pItem->GetFlags() & EItemFlags::IsLocalized) != EItemFlags::None)
 				{
 					connectionNode->setAttr(CryAudio::Impl::Wwise::g_szLocalizedAttribute, CryAudio::Impl::Wwise::g_szTrueValue);
 				}

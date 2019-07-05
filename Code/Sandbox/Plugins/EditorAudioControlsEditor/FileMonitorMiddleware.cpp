@@ -30,7 +30,7 @@ void CFileMonitorMiddleware::Enable()
 		m_monitorFolders.push_back(g_implInfo.assetsPath.c_str());
 		m_monitorFolders.push_back(g_implInfo.localizedAssetsPath.c_str());
 
-		if ((g_implInfo.flags & EImplInfoFlags::SupportsProjects) != 0)
+		if ((g_implInfo.flags & EImplInfoFlags::SupportsProjects) != EImplInfoFlags::None)
 		{
 			m_monitorFolders.push_back(g_implInfo.projectPath.c_str());
 		}

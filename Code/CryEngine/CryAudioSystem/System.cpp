@@ -548,12 +548,12 @@ void HandleUpdateDebugInfo(EDebugUpdateFilter const filter)
 {
 	char const* const szDebugFilter = g_cvars.m_pDebugFilter->GetString();
 
-	if ((filter& EDebugUpdateFilter::FileCacheManager) != 0)
+	if ((filter& EDebugUpdateFilter::FileCacheManager) != EDebugUpdateFilter::None)
 	{
 		g_fileCacheManager.UpdateDebugInfo(szDebugFilter);
 	}
 
-	if ((filter& EDebugUpdateFilter::Contexts) != 0)
+	if ((filter& EDebugUpdateFilter::Contexts) != EDebugUpdateFilter::None)
 	{
 		UpdateContextDebugInfo(szDebugFilter);
 	}
@@ -777,7 +777,7 @@ void UpdateActiveObjects(float const deltaTime)
 			{
 				pObject->RemoveFlag(EObjectFlags::Active);
 
-				if ((pObject->GetFlags() & EObjectFlags::InUse) == 0)
+				if ((pObject->GetFlags() & EObjectFlags::InUse) == EObjectFlags::None)
 				{
 					pObject->Destruct();
 				}
@@ -874,11 +874,11 @@ void CSystem::PushRequest(CRequest const& request)
 {
 	CRY_PROFILE_FUNCTION(PROFILE_AUDIO);
 
-	if ((g_systemStates& ESystemStates::ImplShuttingDown) == 0)
+	if ((g_systemStates& ESystemStates::ImplShuttingDown) == ESystemStates::None)
 	{
 		m_requestQueue.enqueue(request);
 
-		if ((request.flags & ERequestFlags::ExecuteBlocking) != 0)
+		if ((request.flags & ERequestFlags::ExecuteBlocking) != ERequestFlags::None)
 		{
 			// If sleeping, wake up the audio thread to start processing requests again.
 			m_audioThreadWakeupEvent.Set();
@@ -886,7 +886,7 @@ void CSystem::PushRequest(CRequest const& request)
 			m_mainEvent.Wait();
 			m_mainEvent.Reset();
 
-			if ((request.flags & ERequestFlags::CallbackOnExternalOrCallingThread) != 0)
+			if ((request.flags & ERequestFlags::CallbackOnExternalOrCallingThread) != ERequestFlags::None)
 			{
 				NotifyListener(m_syncRequest);
 			}
@@ -1803,7 +1803,7 @@ void CSystem::Log(ELogType const type, char const* const szFormat, ...)
 		{
 		case ELogType::Warning:
 			{
-				if ((loggingOptions& ELoggingOptions::Warnings) != 0)
+				if ((loggingOptions& ELoggingOptions::Warnings) != ELoggingOptions::None)
 				{
 					gEnv->pSystem->Warning(VALIDATOR_MODULE_AUDIO, VALIDATOR_WARNING, VALIDATOR_FLAG_AUDIO, nullptr, "<Audio>: %s", buffer);
 				}
@@ -1812,7 +1812,7 @@ void CSystem::Log(ELogType const type, char const* const szFormat, ...)
 			}
 		case ELogType::Error:
 			{
-				if ((loggingOptions& ELoggingOptions::Errors) != 0)
+				if ((loggingOptions& ELoggingOptions::Errors) != ELoggingOptions::None)
 				{
 					gEnv->pSystem->Warning(VALIDATOR_MODULE_AUDIO, VALIDATOR_ERROR, VALIDATOR_FLAG_AUDIO, nullptr, "<Audio>: %s", buffer);
 				}
@@ -1821,7 +1821,7 @@ void CSystem::Log(ELogType const type, char const* const szFormat, ...)
 			}
 		case ELogType::Comment:
 			{
-				if ((gEnv->pLog != nullptr) && (gEnv->pLog->GetVerbosityLevel() >= 4) && ((loggingOptions& ELoggingOptions::Comments) != 0))
+				if ((gEnv->pLog != nullptr) && (gEnv->pLog->GetVerbosityLevel() >= 4) && ((loggingOptions& ELoggingOptions::Comments) != ELoggingOptions::None))
 				{
 					CryLogAlways("<Audio>: %s", buffer);
 				}
@@ -1864,18 +1864,18 @@ void CSystem::ProcessRequests(Requests& requestQueue)
 
 		if (request.status != ERequestStatus::Pending)
 		{
-			if ((request.flags & ERequestFlags::CallbackOnAudioThread) != 0)
+			if ((request.flags & ERequestFlags::CallbackOnAudioThread) != ERequestFlags::None)
 			{
 				NotifyListener(request);
 
-				if ((request.flags & ERequestFlags::ExecuteBlocking) != 0)
+				if ((request.flags & ERequestFlags::ExecuteBlocking) != ERequestFlags::None)
 				{
 					m_mainEvent.Set();
 				}
 			}
-			else if ((request.flags & ERequestFlags::CallbackOnExternalOrCallingThread) != 0)
+			else if ((request.flags & ERequestFlags::CallbackOnExternalOrCallingThread) != ERequestFlags::None)
 			{
-				if ((request.flags & ERequestFlags::ExecuteBlocking) != 0)
+				if ((request.flags & ERequestFlags::ExecuteBlocking) != ERequestFlags::None)
 				{
 					m_syncRequest = request;
 					m_mainEvent.Set();
@@ -1892,7 +1892,7 @@ void CSystem::ProcessRequests(Requests& requestQueue)
 					m_syncCallbacks.enqueue(request);
 				}
 			}
-			else if ((request.flags & ERequestFlags::ExecuteBlocking) != 0)
+			else if ((request.flags & ERequestFlags::ExecuteBlocking) != ERequestFlags::None)
 			{
 				m_mainEvent.Set();
 			}
@@ -2075,7 +2075,7 @@ ERequestStatus CSystem::ProcessSystemRequest(CRequest const& request)
 				pTrigger->Execute(*pNewObject, request.pOwner, request.pUserData, request.pUserDataOwner, request.flags, pRequestData->entityId);
 				pNewObject->RemoveFlag(EObjectFlags::InUse);
 
-				if ((pNewObject->GetFlags() & EObjectFlags::Active) == 0)
+				if ((pNewObject->GetFlags() & EObjectFlags::Active) == EObjectFlags::None)
 				{
 					pNewObject->Destruct();
 				}
@@ -2093,7 +2093,7 @@ ERequestStatus CSystem::ProcessSystemRequest(CRequest const& request)
 			{
 			case EDefaultTriggerType::LoseFocus:
 				{
-					if ((g_systemStates& ESystemStates::IsMuted) == 0)
+					if ((g_systemStates& ESystemStates::IsMuted) == ESystemStates::None)
 					{
 						g_loseFocusTrigger.Execute();
 					}
@@ -2104,7 +2104,7 @@ ERequestStatus CSystem::ProcessSystemRequest(CRequest const& request)
 				}
 			case EDefaultTriggerType::GetFocus:
 				{
-					if ((g_systemStates& ESystemStates::IsMuted) == 0)
+					if ((g_systemStates& ESystemStates::IsMuted) == ESystemStates::None)
 					{
 						g_getFocusTrigger.Execute();
 					}
@@ -2224,7 +2224,7 @@ ERequestStatus CSystem::ProcessSystemRequest(CRequest const& request)
 	case ESystemRequestType::PreloadSingleRequest:
 		{
 			auto const pRequestData = static_cast<SSystemRequestData<ESystemRequestType::PreloadSingleRequest> const*>(request.GetData());
-			result = g_fileCacheManager.TryLoadRequest(pRequestData->preloadRequestId, ((request.flags & ERequestFlags::ExecuteBlocking) != 0), pRequestData->bAutoLoadOnly);
+			result = g_fileCacheManager.TryLoadRequest(pRequestData->preloadRequestId, ((request.flags & ERequestFlags::ExecuteBlocking) != ERequestFlags::None), pRequestData->bAutoLoadOnly);
 
 			break;
 		}
@@ -2488,7 +2488,7 @@ ERequestStatus CSystem::ProcessSystemRequest(CRequest const& request)
 
 			pRequestData->pObject->RemoveFlag(EObjectFlags::InUse);
 
-			if ((pRequestData->pObject->GetFlags() & EObjectFlags::Active) == 0)
+			if ((pRequestData->pObject->GetFlags() & EObjectFlags::Active) == EObjectFlags::None)
 			{
 				pRequestData->pObject->Destruct();
 			}
@@ -3347,7 +3347,7 @@ ERequestStatus CSystem::HandleSetImpl(Impl::IImpl* const pIImpl)
 	g_xmlProcessor.ParseSystemData();
 
 #if defined(CRY_AUDIO_USE_DEBUG_CODE)
-	if ((g_systemStates& ESystemStates::PoolsAllocated) == 0)
+	if ((g_systemStates& ESystemStates::PoolsAllocated) == ESystemStates::None)
 	{
 		// Don't allocate again after impl switch.
 		AllocateMemoryPools();
@@ -3914,8 +3914,8 @@ void DrawObjectInfo(
 		char const* const szObjectName = object.GetName();
 		CryFixedStringT<MaxControlNameLength> lowerCaseObjectName(szObjectName);
 		lowerCaseObjectName.MakeLower();
-		bool const hasActiveData = (object.GetFlags() & EObjectFlags::Active) != 0;
-		bool const isVirtual = (object.GetFlags() & EObjectFlags::Virtual) != 0;
+		bool const hasActiveData = (object.GetFlags() & EObjectFlags::Active) != EObjectFlags::None;
+		bool const isVirtual = (object.GetFlags() & EObjectFlags::Virtual) != EObjectFlags::None;
 		bool const stringFound = (lowerCaseSearchString.empty() || (lowerCaseSearchString.compareNoCase("0") == 0)) || (lowerCaseObjectName.find(lowerCaseSearchString) != CryFixedStringT<MaxControlNameLength>::npos);
 		bool const draw = stringFound && ((g_cvars.m_hideInactiveObjects == 0) || ((g_cvars.m_hideInactiveObjects != 0) && hasActiveData && !isVirtual));
 
@@ -3923,7 +3923,7 @@ void DrawObjectInfo(
 		{
 			CryFixedStringT<MaxMiscStringLength> debugText;
 
-			if ((object.GetFlags() & EObjectFlags::InUse) != 0)
+			if ((object.GetFlags() & EObjectFlags::InUse) != EObjectFlags::None)
 			{
 				debugText.Format(szObjectName);
 			}
@@ -3981,7 +3981,7 @@ void DrawPerActiveObjectDebugInfo(IRenderAuxGeom& auxGeom)
 
 	for (auto const pObject : g_activeObjects)
 	{
-		if ((pObject->GetFlags() & EObjectFlags::IgnoreDrawDebugInfo) == 0)
+		if ((pObject->GetFlags() & EObjectFlags::IgnoreDrawDebugInfo) == EObjectFlags::None)
 		{
 			pObject->DrawDebugInfo(auxGeom, isTextFilterDisabled, lowerCaseSearchString);
 		}
@@ -4376,8 +4376,8 @@ void CSystem::HandleDrawDebug()
 			size_t const totalMemSize = memAllocSize + totalFileSize;
 			Debug::FormatMemoryString(totalMemSizeString, totalMemSize);
 
-			char const* const szMuted = ((g_systemStates& ESystemStates::IsMuted) != 0) ? " - Muted" : "";
-			char const* const szPaused = ((g_systemStates& ESystemStates::IsPaused) != 0) ? " - Paused" : "";
+			char const* const szMuted = ((g_systemStates& ESystemStates::IsMuted) != ESystemStates::None) ? " - Muted" : "";
+			char const* const szPaused = ((g_systemStates& ESystemStates::IsPaused) != ESystemStates::None) ? " - Paused" : "";
 
 			if (totalFileSize > 0)
 			{
@@ -4604,12 +4604,12 @@ void CSystem::HandleRetriggerControls()
 	ForceGlobalDataImplRefresh();
 	g_previewObject.ForceImplementationRefresh();
 
-	if ((g_systemStates& ESystemStates::IsMuted) != 0)
+	if ((g_systemStates& ESystemStates::IsMuted) != ESystemStates::None)
 	{
 		ExecuteDefaultTrigger(EDefaultTriggerType::MuteAll);
 	}
 
-	if ((g_systemStates& ESystemStates::IsPaused) != 0)
+	if ((g_systemStates& ESystemStates::IsPaused) != ESystemStates::None)
 	{
 		ExecuteDefaultTrigger(EDefaultTriggerType::PauseAll);
 	}

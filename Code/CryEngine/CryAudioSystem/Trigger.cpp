@@ -76,7 +76,7 @@ void CTrigger::Execute(
 		{
 			object.RemoveFlag(EObjectFlags::Virtual);
 		}
-		else if ((object.GetFlags() & EObjectFlags::Active) == 0)
+		else if ((object.GetFlags() & EObjectFlags::Active) == EObjectFlags::None)
 		{
 			// Only when no trigger was active before, the object can get set to virtual here.
 			object.SetFlag(EObjectFlags::Virtual);
@@ -152,7 +152,7 @@ void CTrigger::ExecuteWithCallbacks(
 		{
 			object.RemoveFlag(EObjectFlags::Virtual);
 		}
-		else if ((object.GetFlags() & EObjectFlags::Active) == 0)
+		else if ((object.GetFlags() & EObjectFlags::Active) == EObjectFlags::None)
 		{
 			// Only when no trigger was active before, the object can get set to virtual here.
 			object.SetFlag(EObjectFlags::Virtual);
