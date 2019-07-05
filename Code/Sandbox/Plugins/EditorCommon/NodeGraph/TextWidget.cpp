@@ -92,6 +92,10 @@ void CTextWidget::SetText(const QString& text)
 
 void CTextWidget::mousePressEvent(QGraphicsSceneMouseEvent* pEvent)
 {
+	// Dragging is done through artificial posting of QMouseEvent with Qt::LeftButton, which shouldn't trigger this code path.
+	if (m_viewWidget.GetView().dragMode() != QGraphicsView::NoDrag)
+		return;
+
 	if (m_item.GetAcceptsRenaming() || m_item.GetAcceptsTextEditing())
 	{
 		const int remainingTime = m_clickTimer.remainingTime();
